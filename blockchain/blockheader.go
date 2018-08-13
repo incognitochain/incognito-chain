@@ -14,7 +14,7 @@ const MaxBlockHeaderPayload = 16 + (common.HashSize * 2)
 
 type BlockHeader struct {
 	// Version of the block.  This is not the same as the protocol version.
-	Version int32
+	Version int
 
 	// Hash of the previous block header in the block chain.
 	PrevBlockHash common.Hash
@@ -27,10 +27,10 @@ type BlockHeader struct {
 	Timestamp time.Time
 
 	// Difficulty target for the block.
-	Difficulty uint32
+	Difficulty int
 
 	// Nonce used to generate the block.
-	Nonce uint32
+	Nonce int
 }
 
 /**

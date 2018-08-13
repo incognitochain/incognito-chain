@@ -7,7 +7,7 @@ const (
 )
 
 type MessageBlock struct {
-	Block *blockchain.MsgBlock
+	Block *blockchain.Block
 }
 
 func (msg *MessageBlock) MessageType() string {
