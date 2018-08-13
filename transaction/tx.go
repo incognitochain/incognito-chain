@@ -8,18 +8,18 @@ import (
 
 type Tx struct {
 	Version  int
-	TxIn     []*TxIn
-	TxOut    []*TxOut
+	TxIn     []TxIn
+	TxOut    []TxOut
 	LockTime int
 	TxHash   *common.Hash
 }
 
-func (self Tx) AddTxIn(ti *TxIn) {
+func (self Tx) AddTxIn(ti TxIn) {
 	self.TxIn = append(self.TxIn, ti)
 }
 
-func (self Tx) AddTxOut(ti *TxIn) {
-	self.TxIn = append(self.TxIn, ti)
+func (self Tx) AddTxOut(to TxOut) {
+	self.TxOut = append(self.TxOut, to)
 }
 
 func (self Tx) Hash() (*common.Hash) {
