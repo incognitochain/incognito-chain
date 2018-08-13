@@ -7,19 +7,22 @@ import (
 // list message type
 const (
 	CmdBlock = "block"
+	CmdTx    = "tx"
 )
 
+// Interface for message wire on P2P network
 type Message interface {
 	MessageType() string
-	MaxPayloadLength(uint32) uint32
+	MaxPayloadLength(int) int
 }
 
 func makeEmptyMessage(command string) (Message, error) {
 	var msg Message
 	switch command {
 	case CmdBlock:
-		msg = &MsgBlock{}
-
+		msg = &MessageBlock{}
+	case CmdTx:
+		msg = &MessageTransaction{}
 	default:
 		return nil, fmt.Errorf("unhandled command [%s]", command)
 	}
