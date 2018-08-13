@@ -14,13 +14,26 @@ import (
 	"github.com/libp2p/go-libp2p-net"
 	"bufio"
 	"sync"
+	"github.com/internet-cash/prototype/wire"
+	"github.com/davecgh/go-spew/spew"
 )
 
 type Peer struct {
 	Host          host.Host
 	ListeningPort int
 	Seed          int64
-	flagMutex     sync.Mutex
+	FlagMutex     sync.Mutex
+
+	Config Config
+}
+
+type Config struct {
+	MessageListeners MessageListeners
+}
+
+type MessageListeners struct {
+	OnTx    func(p *Peer, msg *wire.MessageTransaction)
+	OnBlock func(p *Peer, msg *wire.MessageBlock)
 }
 
 func (self Peer) NewPeer() (*Peer, error) {
@@ -92,24 +105,27 @@ func (self Peer) InHandler(rw *bufio.ReadWriter) {
 			return
 		}
 		if str != "\n" {
-			chain := make([]Block, 0)
-			if err := json.Unmarshal([]byte(str), &chain); err != nil {
-				log.Fatal(err)
-			}
+			var message wire.Message
+			message.JsonDeserialize(str)
 
-			self.flagMutex.Lock()
-			if len(chain) > len(Blockchain) {
-				Blockchain = chain
-				bytes, err := json.MarshalIndent(Blockchain, "", "  ")
-				if err != nil {
-
-					log.Fatal(err)
+			switch msg := message.(type) {
+			case *wire.MessageTransaction:
+				if self.Config.MessageListeners.OnTx != nil {
+					self.FlagMutex.Lock()
+					self.Config.MessageListeners.OnTx(&self, msg)
+					self.FlagMutex.Unlock()
 				}
-				// Green console color: 	\x1b[32m
-				// Reset console color: 	\x1b[0m
-				fmt.Printf("\x1b[32m%s\x1b[0m> ", string(bytes))
+			case *wire.MessageBlock:
+				if self.Config.MessageListeners.OnBlock != nil {
+					self.FlagMutex.Lock()
+					self.Config.MessageListeners.OnBlock(&self, msg)
+					self.FlagMutex.Unlock()
+				}
+			default:
+				log.Printf("Received unhandled message of type %v "+
+					"from %v", msg.MessageType(), self)
+				spew.Dump(msg)
 			}
-			self.flagMutex.Unlock()
 		}
 	}
 }
