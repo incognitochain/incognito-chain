@@ -14,6 +14,8 @@ const (
 type Message interface {
 	MessageType() string
 	MaxPayloadLength(int) int
+	JsonSerialize() string
+	JsonDeserialize(string)
 }
 
 func MakeEmptyMessage(messageType string) (Message, error) {
