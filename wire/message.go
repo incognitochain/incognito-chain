@@ -16,15 +16,15 @@ type Message interface {
 	MaxPayloadLength(int) int
 }
 
-func makeEmptyMessage(command string) (Message, error) {
+func MakeEmptyMessage(messageType string) (Message, error) {
 	var msg Message
-	switch command {
+	switch messageType {
 	case CmdBlock:
 		msg = &MessageBlock{}
 	case CmdTx:
 		msg = &MessageTransaction{}
 	default:
-		return nil, fmt.Errorf("unhandled command [%s]", command)
+		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}
 	return msg, nil
 }
