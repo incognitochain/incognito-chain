@@ -69,6 +69,18 @@ type ConnManager struct {
 }
 
 type Config struct {
+	// ListenerPeers defines a slice of listeners for which the connection
+	// manager will take ownership of and accept connections.  When a
+	// connection is accepted, the OnAccept handler will be invoked with the
+	// connection.  Since the connection manager takes ownership of these
+	// listeners, they will be closed when the connection manager is
+	// stopped.
+	//
+	// This field will not have any effect if the OnAccept field is not
+	// also specified.  It may be nil if the caller does not wish to listen
+	// for incoming connections.
+	ListenerPeers []peer.Peer
+
 	// OnInboundAccept is a callback that is fired when an inbound connection is accepted
 	OnInboundAccept func(*peer.Peer)
 
@@ -141,6 +153,12 @@ func (self *ConnManager) HandleFailedConn(c *ConnReq) {
 	// TODO
 }
 
+// connHandler handles all connection related requests.  It must be run as a
+// goroutine.
+//
+// The connection handler makes sure that we maintain a pool of active outbound
+// connections so that we remain connected to the network.  Connection requests
+// are processed and mapped by their assigned ids.
 func (self ConnManager) connHandler() {
 	// pending holds all registered conn requests that have yet to
 	// succeed.
@@ -277,4 +295,10 @@ func (self ConnManager) Start() {
 	self.WaitGroup.Add(1)
 	// Start handler to listent channel from connection peer
 	go self.connHandler()
+
+	// Start all the listeners so long as the caller requested them and
+	// provided a callback to be invoked when connections are accepted.
+	for _, listner := range self.Config.ListenerPeers {
+		listner.Start()
+	}
 }

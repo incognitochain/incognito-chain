@@ -19,10 +19,11 @@ import (
 )
 
 type Peer struct {
-	Host          host.Host
-	ListeningPort int
-	Seed          int64
-	FlagMutex     sync.Mutex
+	Host               host.Host
+	ListeningIpAddress string
+	ListeningPort      string
+	Seed               int64
+	FlagMutex          sync.Mutex
 
 	Config Config
 }
@@ -55,7 +56,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	}
 
 	opts := []libp2p.Option{
-		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", self.ListeningPort)),
+		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/tcp/%s", self.ListeningIpAddress, self.ListeningPort)),
 		libp2p.Identity(priv),
 	}
 
