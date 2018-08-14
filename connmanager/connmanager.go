@@ -7,6 +7,12 @@ import (
 	"sync/atomic"
 )
 
+const (
+	// defaultTargetOutbound is the default number of outbound connections to
+	// maintain.
+	defaultTargetOutbound = uint32(8)
+)
+
 // ConnState represents the state of the requested connection.
 type ConnState uint8
 
@@ -104,10 +110,24 @@ type handleFailed struct {
 	err error
 }
 
+// Stop gracefully shuts down the connection manager.
+func (cm *ConnManager) Stop() {
+	if atomic.AddInt32(&cm.stop, 1) != 1 {
+		log.Println("Connection manager already stopped")
+		return
+	}
+	close(cm.Quit)
+	log.Println("Connection manager stopped")
+}
+
 func (self ConnManager) New(cfg *Config) (*ConnManager, error) {
+	if cfg.TargetOutbound == 0 {
+		cfg.TargetOutbound = defaultTargetOutbound
+	}
 	cm := ConnManager{
-		Config: *cfg, // Copy so caller can't mutate
-		Quit:   make(chan struct{}),
+		Config:   *cfg, // Copy so caller can't mutate
+		Quit:     make(chan struct{}),
+		Requests: make(chan interface{}),
 	}
 	return &cm, nil
 }
