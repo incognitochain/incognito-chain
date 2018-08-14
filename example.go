@@ -199,7 +199,7 @@ func writeData(rw *bufio.ReadWriter) {
 
 }
 
-func main() {
+func main_test() {
 	t := time.Now()
 	genesisBlock := Block{}
 	genesisBlock = Block{0, t.String(), 0, calculateHash(genesisBlock), "", 1, ""}
