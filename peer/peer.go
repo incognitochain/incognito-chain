@@ -17,11 +17,12 @@ import (
 	"github.com/internet-cash/prototype/wire"
 	"github.com/davecgh/go-spew/spew"
 	"strings"
+	n "net"
 )
 
 type Peer struct {
 	Host             host.Host
-	ListeningAddress string
+	ListeningAddress n.Addr
 	Seed             int64
 	FlagMutex        sync.Mutex
 
@@ -55,12 +56,18 @@ func (self Peer) NewPeer() (*Peer, error) {
 		return &self, err
 	}
 
-	ip := strings.Split(self.ListeningAddress, ":")[0]
+	ip := strings.Split(self.ListeningAddress.String(), ":")[0]
 	if len(ip) == 0 {
 		ip = "127.0.0.1"
 	}
-	port := strings.Split(self.ListeningAddress, ":")[1]
-	listeningAddressString := fmt.Sprintf("/ip4/%s/tcp/%s", ip, port)
+	port := strings.Split(self.ListeningAddress.String(), ":")[1]
+	net := self.ListeningAddress.Network()
+	if net == "tcp4" {
+		net = "ip4"
+	} else {
+		net = "ip6"
+	}
+	listeningAddressString := fmt.Sprintf("/%s/%s/tcp/%s", net, ip, port)
 	opts := []libp2p.Option{
 		libp2p.ListenAddrStrings(listeningAddressString),
 		libp2p.Identity(priv),
