@@ -124,6 +124,8 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		go self.ConnManager.Connect(&connReq)
 	}
 
+
+
 	return &self, nil
 }
 
@@ -147,6 +149,9 @@ func (self Server) WaitForShutdown() {
 
 // Stop gracefully shuts down the connection manager.
 func (self Server) Stop() error {
+	// stop connection manager
+	self.ConnManager.Stop()
+
 	close(self.Quit)
 	return nil
 }
@@ -155,6 +160,7 @@ func (self Server) Stop() error {
 // peers to and from the server, banning peers, and broadcasting messages to
 // peers.  It must be run in a goroutine.
 func (self Server) peerHandler() {
+	log.Println("Start peer handler")
 	go self.ConnManager.Start()
 out:
 	for {

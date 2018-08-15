@@ -7,7 +7,6 @@ import (
 	"log"
 	"sync/atomic"
 	"context"
-	"github.com/davecgh/go-spew/spew"
 )
 
 const (
@@ -127,12 +126,23 @@ type handleFailed struct {
 }
 
 // Stop gracefully shuts down the connection manager.
-func (cm *ConnManager) Stop() {
-	if atomic.AddInt32(&cm.stop, 1) != 1 {
+func (self ConnManager) Stop() {
+	if atomic.AddInt32(&self.stop, 1) != 1 {
 		log.Println("Connection manager already stopped")
 		return
 	}
-	close(cm.Quit)
+	log.Println("Stop connection manager")
+
+	// Stop all the listeners.  There will not be any listeners if
+	// listening is disabled.
+	for _, listener := range self.Config.ListenerPeers {
+		for _, c := range self.Connected {
+			listener.Host.Peerstore().ClearAddrs(c.Peer.PeerId)
+		}
+		listener.Host.Close()
+	}
+
+	close(self.Quit)
 	log.Println("Connection manager stopped")
 }
 
@@ -197,7 +207,7 @@ out:
 					connReq.UpdateState(ConnEstablished)
 					connReq.Peer = msg.Peer
 					self.Connected[connReq.Id] = connReq
-					spew.Dump("Connected to ", connReq)
+					//spew.Dump("Connected to ", connReq)
 					connReq.retryCount = 0
 					self.FailedAttempts = 0
 
@@ -316,15 +326,15 @@ func (self ConnManager) Connect(c *ConnReq) {
 		}
 	}
 
-	spew.Dump("Attempting to connect to", c.Peer.Multiaddr.String())
+	//spew.Dump("Attempting to connect to", c.Peer.Multiaddr.String())
 
-	for _, listner := range self.Config.ListenerPeers {
-		listner.Host.Peerstore().AddAddr(c.Peer.PeerId, c.Peer.Multiaddr, pstore.PermanentAddrTTL)
+	for _, listen := range self.Config.ListenerPeers {
+		listen.Host.Peerstore().AddAddr(c.Peer.PeerId, c.Peer.Multiaddr, pstore.PermanentAddrTTL)
 		log.Println("opening stream")
 		// make a new stream from host B to host A
 		// it should be handled on host A by the handler we set above because
 		// we use the same /peer/1.0.0 protocol
-		_, err := listner.Host.NewStream(context.Background(), c.Peer.PeerId, "/peer/1.0.0")
+		_, err := listen.Host.NewStream(context.Background(), c.Peer.PeerId, "/peer/1.0.0")
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -333,6 +343,20 @@ func (self ConnManager) Connect(c *ConnReq) {
 	select {
 	case self.Requests <- handleConnected{c, c.Peer}:
 	case <-self.Quit:
+	}
+}
+
+// Disconnect disconnects the connection corresponding to the given connection
+// id. If permanent, the connection will be retried with an increasing backoff
+// duration.
+func (cm *ConnManager) Disconnect(id uint64) {
+	if atomic.LoadInt32(&cm.stop) != 0 {
+		return
+	}
+
+	select {
+	case cm.Requests <- handleDisconnected{id, true}:
+	case <-cm.Quit:
 	}
 }
 
@@ -349,7 +373,16 @@ func (self ConnManager) Start() {
 
 	// Start all the listeners so long as the caller requested them and
 	// provided a callback to be invoked when connections are accepted.
-	for _, listner := range self.Config.ListenerPeers {
-		listner.Start()
+	if self.Config.OnInboundAccept != nil {
+		for _, listner := range self.Config.ListenerPeers {
+			self.WaitGroup.Add(1)
+			go self.listenHandler(listner)
+		}
 	}
+}
+
+// listenHandler accepts incoming connections on a given listener.  It must be
+// run as a goroutine.
+func (self ConnManager) listenHandler(listen peer.Peer) {
+	listen.Start()
 }
