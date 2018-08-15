@@ -95,17 +95,20 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		// given multiaddress
 		ipfsaddr, err := ma.NewMultiaddr(addr)
 		if err != nil {
-			log.Fatalln(err)
+			log.Print(err)
+			continue
 		}
 
 		pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
 		if err != nil {
-			log.Fatalln(err)
+			log.Print(err)
+			continue
 		}
 
 		peerid, err := libpeer.IDB58Decode(pid)
 		if err != nil {
-			log.Fatalln(err)
+			log.Print(err)
+			continue
 		}
 
 		// Decapsulate the /ipfs/<peerID> part from the target
@@ -123,8 +126,6 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		}
 		go self.ConnManager.Connect(&connReq)
 	}
-
-
 
 	return &self, nil
 }

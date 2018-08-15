@@ -96,11 +96,13 @@ func (self Peer) NewPeer() (*Peer, error) {
 	log.Printf("I am listening on %s\n", fullAddr)
 	pid, err := fullAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
-		log.Fatalln(err)
+		log.Print(err)
+		return &self, err
 	}
 	peerid, err := peer.IDB58Decode(pid)
 	if err != nil {
-		log.Fatalln(err)
+		log.Print(err)
+		return &self, err
 	}
 
 	self.Host = basicHost
@@ -112,8 +114,8 @@ func (self Peer) NewPeer() (*Peer, error) {
 
 func (self Peer) Start() (error) {
 	self.Host.SetStreamHandler("/peer/1.0.0", self.HandleStream)
+	// Hang forever
 	<-make(chan struct{})
-	// hang forever
 	return nil
 }
 
@@ -135,16 +137,18 @@ func (self Peer) HandleStream(s net.Stream) {
 	rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
 
 	go self.InHandler(rw)
+	go self.InHandler(rw)
 }
 
 /**
 Handle all in message
  */
 func (self Peer) InHandler(rw *bufio.ReadWriter) {
-	for atomic.LoadInt32(&self.disconnect) == 0 {
+	for {
 		str, err := rw.ReadString('\n')
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
+			return
 		}
 
 		if str == "" {
@@ -174,9 +178,6 @@ func (self Peer) InHandler(rw *bufio.ReadWriter) {
 			}
 		}
 	}
-	rw.Reader.Reset(rw.Reader)
-	rw.Writer.Reset(rw.Writer)
-	self.Disconnect()
 }
 
 // Disconnect disconnects the peer by closing the connection.  Calling this

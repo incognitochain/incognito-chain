@@ -128,7 +128,7 @@ func writeData(rw *bufio.ReadWriter) {
 
 }
 
-func main() {
+func main1() {
 
 	sourcePort := flag.Int("sp", 0, "Source port number")
 	dest := flag.String("d", "", "Dest MultiAddr String")
