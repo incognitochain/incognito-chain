@@ -19,6 +19,7 @@ import (
 	"strings"
 	n "net"
 	"github.com/libp2p/go-libp2p-peer"
+	"sync/atomic"
 )
 
 const (
@@ -26,6 +27,9 @@ const (
 )
 
 type Peer struct {
+	connected  int32
+	disconnect int32
+
 	Host             host.Host
 	Multiaddr        ma.Multiaddr
 	PeerId           peer.ID
@@ -34,6 +38,8 @@ type Peer struct {
 	FlagMutex        sync.Mutex
 
 	Config Config
+
+	quit chan struct{}
 }
 
 type Config struct {
@@ -106,10 +112,23 @@ func (self Peer) NewPeer() (*Peer, error) {
 
 func (self Peer) Start() (error) {
 	self.Host.SetStreamHandler("/peer/1.0.0", self.HandleStream)
+	<-make(chan struct{})
+	// hang forever
 	return nil
 }
 
+// WaitForDisconnect waits until the peer has completely disconnected and all
+// resources are cleaned up.  This will happen if either the local or remote
+// side has been disconnected or the peer is forcibly disconnected via
+// Disconnect.
+func (p Peer) WaitForDisconnect() {
+	<-p.quit
+}
+
 func (self Peer) HandleStream(s net.Stream) {
+	// Remember to close the stream when we are done.
+	defer s.Close()
+
 	log.Println("Got a new stream!")
 
 	// Create a buffer stream for non blocking read and write.
@@ -122,8 +141,7 @@ func (self Peer) HandleStream(s net.Stream) {
 Handle all in message
  */
 func (self Peer) InHandler(rw *bufio.ReadWriter) {
-
-	for {
+	for atomic.LoadInt32(&self.disconnect) == 0 {
 		str, err := rw.ReadString('\n')
 		if err != nil {
 			log.Fatal(err)
@@ -156,4 +174,25 @@ func (self Peer) InHandler(rw *bufio.ReadWriter) {
 			}
 		}
 	}
+	rw.Reader.Reset(rw.Reader)
+	rw.Writer.Reset(rw.Writer)
+	self.Disconnect()
+}
+
+// Disconnect disconnects the peer by closing the connection.  Calling this
+// function when the peer is already disconnected or in the process of
+// disconnecting will have no effect.
+func (self Peer) Disconnect() {
+	if atomic.AddInt32(&self.disconnect, 1) != 1 {
+		return
+	}
+
+	log.Printf("Disconnecting %s", self)
+	if atomic.LoadInt32(&self.connected) != 0 {
+		self.Host.Close()
+	}
+	if self.quit != nil {
+		close(self.quit)
+	}
+	self.disconnect = 1
 }
