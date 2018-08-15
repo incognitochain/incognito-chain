@@ -138,6 +138,7 @@ func (self ConnManager) Stop() {
 	for _, listener := range self.Config.ListenerPeers {
 		for _, c := range self.Connected {
 			listener.Host.Peerstore().ClearAddrs(c.Peer.PeerId)
+			listener.Host.RemoveStreamHandler("/peer/1.0.0")
 		}
 		listener.Host.Close()
 	}
