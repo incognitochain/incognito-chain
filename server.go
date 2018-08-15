@@ -226,6 +226,7 @@ func (self Server) NewPeerConfig() (*peer.Config) {
 	return &peer.Config{
 		MessageListeners: peer.MessageListeners{
 			OnBlock: self.OnBlock,
+			OnTx:    self.OnTx,
 		},
 	}
 }
@@ -233,5 +234,13 @@ func (self Server) NewPeerConfig() (*peer.Config) {
 // OnBlock is invoked when a peer receives a block message.  It
 // blocks until the bitcoin block has been fully processed.
 func (self Server) OnBlock(p *peer.Peer, msg *wire.MessageBlock) {
-	// TODO
+	// TODO get message block and process, Tuan Anh
+}
+
+// OnTx is invoked when a peer receives a tx message.  It blocks
+// until the transaction has been fully processed.  Unlock the block
+// handler this does not serialize all transactions through a single thread
+// transactions don't rely on the previous one in a linear fashion like blocks.
+func (sp Server) OnTx(_ *peer.Peer, msg *wire.MessageTx) {
+	// TODO get message tx and process, Tuan Anh
 }

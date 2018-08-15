@@ -38,7 +38,7 @@ type Config struct {
 }
 
 type MessageListeners struct {
-	OnTx    func(p *Peer, msg *wire.MessageTransaction)
+	OnTx    func(p *Peer, msg *wire.MessageTx)
 	OnBlock func(p *Peer, msg *wire.MessageBlock)
 }
 
@@ -122,7 +122,7 @@ func (self Peer) InHandler(rw *bufio.ReadWriter) {
 			message.JsonDeserialize(str)
 
 			switch msg := message.(type) {
-			case *wire.MessageTransaction:
+			case *wire.MessageTx:
 				if self.Config.MessageListeners.OnTx != nil {
 					self.FlagMutex.Lock()
 					self.Config.MessageListeners.OnTx(&self, msg)

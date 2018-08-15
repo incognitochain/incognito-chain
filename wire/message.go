@@ -24,7 +24,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdBlock:
 		msg = &MessageBlock{}
 	case CmdTx:
-		msg = &MessageTransaction{}
+		msg = &MessageTx{}
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}

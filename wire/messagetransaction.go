@@ -5,23 +5,23 @@ import (
 	"encoding/json"
 )
 
-type MessageTransaction struct {
+type MessageTx struct {
 	Transaction transaction.Tx
 }
 
-func (self MessageTransaction) MessageType() string {
+func (self MessageTx) MessageType() string {
 	return CmdTx
 }
 
-func (self MessageTransaction) MaxPayloadLength(pver int) int {
+func (self MessageTx) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self MessageTransaction) JsonSerialize() string {
+func (self MessageTx) JsonSerialize() string {
 	jsonStr, _ := json.Marshal(self)
 	return string(jsonStr)
 }
 
-func (self MessageTransaction) JsonDeserialize(jsonStr string) {
+func (self MessageTx) JsonDeserialize(jsonStr string) {
 	_ = json.Unmarshal([]byte(jsonStr), self)
 }
