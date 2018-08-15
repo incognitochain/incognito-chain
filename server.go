@@ -207,7 +207,7 @@ func (self Server) InitListenerPeers(listenAddrs []string) ([]peer.Peer, error) 
 		peer, err := peer.Peer{
 			Seed:             0,
 			FlagMutex:        sync.Mutex{},
-			ListeningAddress: addr.String(),
+			ListeningAddress: addr,
 			Config:           *self.NewPeerConfig(),
 		}.NewPeer()
 		if err != nil {

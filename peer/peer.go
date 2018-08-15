@@ -20,6 +20,10 @@ import (
 	n "net"
 )
 
+const (
+	LOCAL_HOST = "127.0.0.1"
+)
+
 type Peer struct {
 	Host             host.Host
 	ListeningAddress n.Addr
@@ -58,7 +62,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 
 	ip := strings.Split(self.ListeningAddress.String(), ":")[0]
 	if len(ip) == 0 {
-		ip = "127.0.0.1"
+		ip = LOCAL_HOST
 	}
 	port := strings.Split(self.ListeningAddress.String(), ":")[1]
 	net := self.ListeningAddress.Network()
@@ -85,7 +89,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	// by encapsulating both addresses:
 	addr := basicHost.Addrs()[0]
 	fullAddr := addr.Encapsulate(hostAddr)
-	log.Printf("I am %s\n", fullAddr)
+	log.Printf("I am listening on %s\n", fullAddr)
 	self.Host = basicHost
 	return &self, nil
 }
