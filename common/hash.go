@@ -39,7 +39,7 @@ func (hash Hash) CloneBytes() []byte {
 /**
 SetBytes sets the bytes which represent the hash.  An error is returned if the number of bytes passed in is not HashSize.
  */
-func (hash Hash) SetBytes(newHash []byte) error {
+func (hash *Hash) SetBytes(newHash []byte) error {
 	nhlen := len(newHash)
 	if nhlen != HashSize {
 		return fmt.Errorf("invalid hash length of %v, want %v", nhlen,
