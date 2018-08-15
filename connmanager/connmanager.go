@@ -147,12 +147,10 @@ func (self ConnManager) New(cfg *Config) (*ConnManager, error) {
 	if cfg.TargetOutbound == 0 {
 		cfg.TargetOutbound = defaultTargetOutbound
 	}
-	cm := ConnManager{
-		Config:   *cfg, // Copy so caller can't mutate
-		Quit:     make(chan struct{}),
-		Requests: make(chan interface{}),
-	}
-	return &cm, nil
+	self.Config = *cfg
+	self.Quit = make(chan struct{})
+	self.Requests = make(chan interface{})
+	return &self, nil
 }
 
 // HandleFailedConn handles a connection failed due to a disconnect or any

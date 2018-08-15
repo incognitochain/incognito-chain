@@ -50,6 +50,8 @@ type Server struct {
 
 	ChainParams *blockchain.Params
 	ConnManager *connmanager.ConnManager
+	Chain       *blockchain.BlockChain
+	Db          database.DB
 
 	Quit      chan struct{}
 	WaitGroup sync.WaitGroup
@@ -66,8 +68,21 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		}
 	}
 
+	// Init data for Server
 	self.ChainParams = chainParams
 	self.Quit = make(chan struct{})
+	self.Db = db
+
+	// Create a new block chain instance with the appropriate configuration.
+	var err error
+	self.Chain, err = blockchain.BlockChain{}.New(&blockchain.Config{
+		ChainParams: self.ChainParams,
+		Db:          self.Db,
+		Interrupt:   interrupt,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	// Create a connection manager.
 	targetOutbound := defaultNumberOfTargetOutbound
