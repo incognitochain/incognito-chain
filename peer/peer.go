@@ -66,11 +66,6 @@ func (self Peer) NewPeer() (*Peer, error) {
 	}
 	port := strings.Split(self.ListeningAddress.String(), ":")[1]
 	net := self.ListeningAddress.Network()
-	if net == "tcp4" {
-		net = "ip4"
-	} else {
-		net = "ip6"
-	}
 	listeningAddressString := fmt.Sprintf("/%s/%s/tcp/%s", net, ip, port)
 	opts := []libp2p.Option{
 		libp2p.ListenAddrStrings(listeningAddressString),
