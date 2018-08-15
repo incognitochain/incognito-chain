@@ -690,8 +690,8 @@ func loadConfig() (*config, []string, error) {
 	// duplicate addresses.
 	cfg.AddPeers = normalizeAddresses(cfg.AddPeers,
 		activeNetParams.DefaultPort)
-	cfg.ConnectPeers = normalizeAddresses(cfg.ConnectPeers,
-		activeNetParams.DefaultPort)
+	//cfg.ConnectPeers = normalizeAddresses(cfg.ConnectPeers,
+	//	activeNetParams.DefaultPort)
 
 	// Warn about missing config file only after all other configuration is
 	// done.  This prevents the warning on help messages and invalid

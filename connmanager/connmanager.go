@@ -2,9 +2,12 @@ package connmanager
 
 import (
 	"github.com/internet-cash/prototype/peer"
+	pstore "github.com/libp2p/go-libp2p-peerstore"
 	"sync"
 	"log"
 	"sync/atomic"
+	"context"
+	"github.com/davecgh/go-spew/spew"
 )
 
 const (
@@ -48,8 +51,9 @@ func (self *ConnReq) UpdateState(state ConnState) {
 }
 
 type ConnManager struct {
-	start int32
-	stop  int32
+	connReqCount uint64
+	start        int32
+	stop         int32
 
 	Config Config
 	// Pending Connection
@@ -193,7 +197,7 @@ out:
 					connReq.UpdateState(ConnEstablished)
 					connReq.Peer = msg.Peer
 					self.Connected[connReq.Id] = connReq
-					log.Printf("Connected to %v", connReq)
+					spew.Dump("Connected to ", connReq)
 					connReq.retryCount = 0
 					self.FailedAttempts = 0
 
@@ -283,6 +287,53 @@ out:
 	}
 	self.WaitGroup.Done()
 	log.Printf("Connection handler done")
+}
+
+func (self ConnManager) Connect(c *ConnReq) {
+	if atomic.LoadInt32(&self.stop) != 0 {
+		return
+	}
+	if atomic.LoadUint64(&c.Id) == 0 {
+		atomic.StoreUint64(&c.Id, atomic.AddUint64(&self.connReqCount, 1))
+
+		// Submit a request of a pending connection attempt to the
+		// connection manager. By registering the id before the
+		// connection is even established, we'll be able to later
+		// cancel the connection via the Remove method.
+		done := make(chan struct{})
+		select {
+		case self.Requests <- registerPending{c, done}:
+		case <-self.Quit:
+			return
+		}
+
+		// Wait for the registration to successfully add the pending
+		// conn req to the conn manager's internal state.
+		select {
+		case <-done:
+		case <-self.Quit:
+			return
+		}
+	}
+
+	spew.Dump("Attempting to connect to", c.Peer.Multiaddr.String())
+
+	for _, listner := range self.Config.ListenerPeers {
+		listner.Host.Peerstore().AddAddr(c.Peer.PeerId, c.Peer.Multiaddr, pstore.PermanentAddrTTL)
+		log.Println("opening stream")
+		// make a new stream from host B to host A
+		// it should be handled on host A by the handler we set above because
+		// we use the same /peer/1.0.0 protocol
+		_, err := listner.Host.NewStream(context.Background(), c.Peer.PeerId, "/peer/1.0.0")
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
+
+	select {
+	case self.Requests <- handleConnected{c, c.Peer}:
+	case <-self.Quit:
+	}
 }
 
 func (self ConnManager) Start() {

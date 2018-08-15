@@ -18,6 +18,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"strings"
 	n "net"
+	"github.com/libp2p/go-libp2p-peer"
 )
 
 const (
@@ -26,6 +27,8 @@ const (
 
 type Peer struct {
 	Host             host.Host
+	Multiaddr        ma.Multiaddr
+	PeerId           peer.ID
 	ListeningAddress n.Addr
 	Seed             int64
 	FlagMutex        sync.Mutex
@@ -85,7 +88,19 @@ func (self Peer) NewPeer() (*Peer, error) {
 	addr := basicHost.Addrs()[0]
 	fullAddr := addr.Encapsulate(hostAddr)
 	log.Printf("I am listening on %s\n", fullAddr)
+	pid, err := fullAddr.ValueForProtocol(ma.P_IPFS)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	peerid, err := peer.IDB58Decode(pid)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	self.Host = basicHost
+	self.Multiaddr = fullAddr
+	self.PeerId = peerid
+
 	return &self, nil
 }
 

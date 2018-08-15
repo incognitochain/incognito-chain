@@ -1,10 +1,6 @@
 package main
 
 import (
-	"github.com/internet-cash/prototype/blockchain"
-	"github.com/internet-cash/prototype/connmanager"
-	"github.com/internet-cash/prototype/database"
-	"github.com/internet-cash/prototype/peer"
 	"sync"
 	"sync/atomic"
 	"log"
@@ -13,7 +9,13 @@ import (
 	"net"
 	"runtime"
 	"fmt"
+	"github.com/internet-cash/prototype/blockchain"
+	"github.com/internet-cash/prototype/connmanager"
+	"github.com/internet-cash/prototype/database"
+	"github.com/internet-cash/prototype/peer"
 	"github.com/internet-cash/prototype/wire"
+	ma "github.com/multiformats/go-multiaddr"
+	libpeer "github.com/libp2p/go-libp2p-peer"
 )
 
 const (
@@ -26,17 +28,20 @@ type simpleAddr struct {
 }
 
 // String returns the address.
-//
 // This is part of the net.Addr interface.
 func (a simpleAddr) String() string {
 	return a.addr
 }
 
 // Network returns the network.
-//
 // This is part of the net.Addr interface.
 func (a simpleAddr) Network() string {
 	return a.net
+}
+
+// onionAddr implements the net.Addr interface and represents a tor address.
+type onionAddr struct {
+	addr string
 }
 
 type Server struct {
@@ -69,7 +74,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	if cfg.MaxPeers < targetOutbound {
 		targetOutbound = cfg.MaxPeers
 	}
-	connmanager, err := connmanager.ConnManager{}.New(&connmanager.Config{
+	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
 		ListenerPeers:        peers,
@@ -78,12 +83,45 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	if err != nil {
 		return nil, err
 	}
-	self.ConnManager = connmanager
+	self.ConnManager = connManager
 
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
 	if len(permanentPeers) == 0 {
 		permanentPeers = cfg.AddPeers
+	}
+	for _, addr := range permanentPeers {
+		// The following code extracts target's peer ID from the
+		// given multiaddress
+		ipfsaddr, err := ma.NewMultiaddr(addr)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		peerid, err := libpeer.IDB58Decode(pid)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		// Decapsulate the /ipfs/<peerID> part from the target
+		// /ip4/<a.b.c.d>/ipfs/<peer> becomes /ip4/<a.b.c.d>
+		targetPeerAddr, _ := ma.NewMultiaddr(
+			fmt.Sprintf("/ipfs/%s", libpeer.IDB58Encode(peerid)))
+		targetAddr := ipfsaddr.Decapsulate(targetPeerAddr)
+
+		connReq := connmanager.ConnReq{
+			Permanent: true,
+			Peer: peer.Peer{
+				Multiaddr: targetAddr,
+				PeerId:    peerid,
+			},
+		}
+		go self.ConnManager.Connect(&connReq)
 	}
 
 	return &self, nil
