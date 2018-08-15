@@ -688,8 +688,8 @@ func loadConfig() (*config, []string, error) {
 
 	// Add default port to all added peer addresses if needed and remove
 	// duplicate addresses.
-	cfg.AddPeers = normalizeAddresses(cfg.AddPeers,
-		activeNetParams.DefaultPort)
+	//cfg.AddPeers = normalizeAddresses(cfg.AddPeers,
+	//	activeNetParams.DefaultPort)
 	//cfg.ConnectPeers = normalizeAddresses(cfg.ConnectPeers,
 	//	activeNetParams.DefaultPort)
 
