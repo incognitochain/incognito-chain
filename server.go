@@ -13,6 +13,7 @@ import (
 	"net"
 	"runtime"
 	"fmt"
+	"github.com/internet-cash/prototype/wire"
 )
 
 const (
@@ -204,10 +205,10 @@ func (self Server) InitListenerPeers(listenAddrs []string) ([]peer.Peer, error) 
 	peers := make([]peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
 		peer, err := peer.Peer{
-			Seed:               0,
-			FlagMutex:          sync.Mutex{},
-			ListeningPort:      strings.Split(addr.String(), ":")[0],
-			ListeningIpAddress: strings.Split(addr.String(), ":")[1],
+			Seed:             0,
+			FlagMutex:        sync.Mutex{},
+			ListeningAddress: addr.String(),
+			Config:           *self.NewPeerConfig(),
 		}.NewPeer()
 		if err != nil {
 			return nil, err
@@ -215,4 +216,19 @@ func (self Server) InitListenerPeers(listenAddrs []string) ([]peer.Peer, error) 
 		peers = append(peers, *peer)
 	}
 	return peers, nil
+}
+
+// newPeerConfig returns the configuration for the listening Peer.
+func (self Server) NewPeerConfig() (*peer.Config) {
+	return &peer.Config{
+		MessageListeners: peer.MessageListeners{
+			OnBlock: self.OnBlock,
+		},
+	}
+}
+
+// OnBlock is invoked when a peer receives a block message.  It
+// blocks until the bitcoin block has been fully processed.
+func (self Server) OnBlock(p *peer.Peer, msg *wire.MessageBlock) {
+	// TODO
 }
