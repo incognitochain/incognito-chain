@@ -8,6 +8,7 @@ import (
 	"github.com/internet-cash/prototype/common"
 	"github.com/internet-cash/prototype/transaction"
 	"sync"
+	"github.com/internet-cash/prototype/mining"
 )
 
 //Peer Ids, so that orphans can be identified by which peer first repayed them.
@@ -29,24 +30,10 @@ type orphanTx struct {
 	expiration time.Time
 }
 
-type Desc struct {
-	// Tx is the transaction associated with the entry.
-	Tx *transaction.Tx
 
-	// Added is the time when the entry was added to the source pool.
-	Added time.Time
-
-	// Height is the block height when the entry was added to the the source pool.
-	Height int32
-
-	// Fee is the total fee the transaction associated with the entry pays.
-	Fee int64
-
-	//@todo add more properties to TxDesc if we need more laster
-}
 type TxDesc struct {
 	//tracsaction details
-	Desc Desc
+	Desc mining.TxDesc
 
 	// StartingPriority is the priority of the transaction when it was added
 	// to the pool.
@@ -76,7 +63,7 @@ type TxPool struct {
 //add transaction into pool
 func (tp *TxPool) addTx(tx *transaction.Tx) *TxDesc {
 	txD := &TxDesc{
-		Desc: Desc{
+		Desc: mining.TxDesc{
 			Tx:     tx,
 			Added:  time.Now(),
 			Height: 1,   //@todo we will apply calc function for height.
