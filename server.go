@@ -217,8 +217,10 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		}
 
 		rpcConfig := rpcserver.RpcServerConfig{
-			Listenters: rpcListeners,
-			RPCQuirks:  cfg.RPCQuirks,
+			Listenters:    rpcListeners,
+			RPCQuirks:     cfg.RPCQuirks,
+			RPCMaxClients: cfg.RPCMaxClients,
+			ChainParams:   chainParams,
 		}
 		self.RpcServer, err = rpcserver.RpcServer{}.Init(&rpcConfig)
 		if err != nil {
