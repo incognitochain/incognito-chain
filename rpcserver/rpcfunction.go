@@ -1,8 +1,8 @@
 package rpcserver
 
-type commandHandler func(*RpcServer, interface{}, <-chan struct{}) (interface{}, error)
+import "log"
 
-var RpcHandler = map[string]commandHandler{
+var RpcHandler = map[string]interface{}{
 	"dosomething":       handleDoSomething,
 	"createtransaction": handleCreateTransaction,
 }
@@ -12,10 +12,10 @@ var RpcLimited = map[string]struct{}{
 
 }
 
-func handleDoSomething(self *RpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return nil, nil
+func handleDoSomething(self *RpcServer, cmd interface{}, closeChan <-chan struct{}) {
+	log.Println(cmd)
 }
 
-func handleCreateTransaction(self *RpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return nil, nil
+func handleCreateTransaction(self *RpcServer, cmd interface{}, closeChan <-chan struct{}) {
+	log.Println(cmd)
 }

@@ -1,8 +1,6 @@
 package jsonrpc
 
-import (
-	"encoding/json"
-)
+import "encoding/json"
 
 // Request is a type for raw JSON-RPC 1.0 requests.  The Method field identifies
 // the specific command type which in turns leads to different parameters.

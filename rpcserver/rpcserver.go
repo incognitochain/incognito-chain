@@ -14,8 +14,6 @@ import (
 	"fmt"
 	"strconv"
 	"encoding/json"
-	"strings"
-	"reflect"
 	"sync"
 	"io"
 )
@@ -28,27 +26,9 @@ const (
 // creating multiple instances.
 var timeZeroVal time.Time
 
-var (
-	// These fields are used to map the registered types to method names.
-	registerLock         sync.RWMutex
-	methodToConcreteType = make(map[string]reflect.Type)
-	methodToInfo         = make(map[string]methodInfo)
-	concreteTypeToMethod = make(map[reflect.Type]string)
-)
-
 // UsageFlag define flags that specify additional properties about the
 // circumstances under which a command can be used.
 type UsageFlag uint32
-
-// parsedRPCCmd represents a JSON-RPC request object that has been parsed into
-// a known concrete command along with any error that might have happened while
-// parsing it.
-type parsedRPCCmd struct {
-	id     interface{}
-	method string
-	cmd    interface{}
-	err    *common.RPCError
-}
 
 // rpcServer provides a concurrent safe RPC server to a chain server.
 type RpcServer struct {
@@ -74,6 +54,7 @@ type RpcServerConfig struct {
 
 func (self RpcServer) Init(config *RpcServerConfig) (*RpcServer, error) {
 	self.Config = *config
+	self.statusLines = make(map[int]string)
 	return &self, nil
 }
 
@@ -249,6 +230,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 			errCode, err), errCode)
 		return
 	}
+	log.Println(string(body))
 
 	// Unfortunately, the http server doesn't provide the ability to
 	// change the read deadline for the new connection and having one breaks
@@ -336,12 +318,8 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 		if jsonErr == nil {
 			// Attempt to parse the JSON-RPC request into a known concrete
 			// command.
-			parsedCmd := self.parseCmd(&request)
-			if parsedCmd.err != nil {
-				jsonErr = parsedCmd.err
-			} else {
-				result, jsonErr = self.standardCmdResult(parsedCmd, closeChan)
-			}
+			commandHandler := RpcHandler[request.Method]
+			commandHandler.(func(*RpcServer, interface{}, <-chan struct{}))(&self, request, closeChan)
 		}
 	}
 	// Marshal the response.
@@ -450,155 +428,4 @@ func (self RpcServer) writeHTTPResponseHeaders(req *http.Request, headers http.H
 
 	_, err = io.WriteString(w, "\r\n")
 	return err
-}
-
-// standardCmdResult checks that a parsed command is a standard Bitcoin JSON-RPC
-// command and runs the appropriate handler to reply to the command.  Any
-// commands which are not recognized or not implemented will return an error
-// suitable for use in replies.
-func (self RpcServer) standardCmdResult(cmd *parsedRPCCmd, closeChan <-chan struct{}) (interface{}, error) {
-	handler, ok := RpcHandler[cmd.method]
-	if ok {
-		goto handled
-	}
-	return nil, common.ErrRPCMethodNotFound
-handled:
-
-	return handler(&self, cmd.cmd, closeChan)
-}
-
-// parseCmd parses a JSON-RPC request object into known concrete command.  The
-// err field of the returned parsedRPCCmd struct will contain an RPC error that
-// is suitable for use in replies if the command is invalid in some way such as
-// an unregistered command or invalid parameters.
-func (self RpcServer) parseCmd(request *jsonrpc.Request) *parsedRPCCmd {
-	var parsedCmd parsedRPCCmd
-	parsedCmd.id = request.ID
-	parsedCmd.method = request.Method
-
-	cmd, err := self.UnmarshalCmd(request)
-	if err != nil {
-		// When the error is because the method is not registered,
-		// produce a method not found RPC error.
-		if jerr, ok := err.(common.Error); ok &&
-			jerr.ErrorCode == common.ErrUnregisteredMethod {
-
-			parsedCmd.err = common.ErrRPCMethodNotFound
-			return &parsedCmd
-		}
-
-		// Otherwise, some type of invalid parameters is the
-		// cause, so produce the equivalent RPC error.
-		parsedCmd.err = common.NewRPCError(
-			common.ErrRPCInvalidParams.Code, err.Error())
-		return &parsedCmd
-	}
-
-	parsedCmd.cmd = cmd
-	return &parsedCmd
-}
-
-// methodInfo keeps track of information about each registered method such as
-// the parameter information.
-type methodInfo struct {
-	maxParams    int
-	numReqParams int
-	numOptParams int
-	defaults     map[int]reflect.Value
-	flags        UsageFlag
-	usage        string
-}
-
-// checkNumParams ensures the supplied number of params is at least the minimum
-// required number for the command and less than the maximum allowed.
-func (self RpcServer) checkNumParams(numParams int, info *methodInfo) error {
-	if numParams < info.numReqParams || numParams > info.maxParams {
-		if info.numReqParams == info.maxParams {
-			str := fmt.Sprintf("wrong number of params (expected "+
-				"%d, received %d)", info.numReqParams,
-				numParams)
-			return common.MakeError(common.ErrNumParams, str)
-		}
-
-		str := fmt.Sprintf("wrong number of params (expected "+
-			"between %d and %d, received %d)", info.numReqParams,
-			info.maxParams, numParams)
-		return common.MakeError(common.ErrNumParams, str)
-	}
-
-	return nil
-}
-
-// UnmarshalCmd unmarshals a JSON-RPC request into a suitable concrete command
-// so long as the method type contained within the marshalled request is
-// registered.
-func (self RpcServer) UnmarshalCmd(r *jsonrpc.Request) (interface{}, error) {
-	registerLock.RLock()
-	rtp, ok := methodToConcreteType[r.Method]
-	info := methodToInfo[r.Method]
-	registerLock.RUnlock()
-	if !ok {
-		str := fmt.Sprintf("%q is not registered", r.Method)
-		return nil, common.MakeError(common.ErrUnregisteredMethod, str)
-	}
-	rt := rtp.Elem()
-	rvp := reflect.New(rt)
-	rv := rvp.Elem()
-
-	// Ensure the number of parameters are correct.
-	numParams := len(r.Params)
-	if err := self.checkNumParams(numParams, &info); err != nil {
-		return nil, err
-	}
-
-	// Loop through each of the struct fields and unmarshal the associated
-	// parameter into them.
-	for i := 0; i < numParams; i++ {
-		rvf := rv.Field(i)
-		// Unmarshal the parameter into the struct field.
-		concreteVal := rvf.Addr().Interface()
-		if err := json.Unmarshal(r.Params[i], &concreteVal); err != nil {
-			// The most common error is the wrong type, so
-			// explicitly detect that error and make it nicer.
-			fieldName := strings.ToLower(rt.Field(i).Name)
-			if jerr, ok := err.(*json.UnmarshalTypeError); ok {
-				str := fmt.Sprintf("parameter #%d '%s' must "+
-					"be type %v (got %v)", i+1, fieldName,
-					jerr.Type, jerr.Value)
-				return nil, common.MakeError(common.ErrInvalidType, str)
-			}
-
-			// Fallback to showing the underlying error.
-			str := fmt.Sprintf("parameter #%d '%s' failed to "+
-				"unmarshal: %v", i+1, fieldName, err)
-			return nil, common.MakeError(common.ErrInvalidType, str)
-		}
-	}
-
-	// When there are less supplied parameters than the total number of
-	// params, any remaining struct fields must be optional.  Thus, populate
-	// them with their associated default value as needed.
-	if numParams < info.maxParams {
-		self.populateDefaults(numParams, &info, rv)
-	}
-
-	return rvp.Interface(), nil
-}
-
-// populateDefaults populates default values into any remaining optional struct
-// fields that did not have parameters explicitly provided.  The caller should
-// have previously checked that the number of parameters being passed is at
-// least the required number of parameters to avoid unnecessary work in this
-// function, but since required fields never have default values, it will work
-// properly even without the check.
-func (self RpcServer) populateDefaults(numParams int, info *methodInfo, rv reflect.Value) {
-	// When there are no more parameters left in the supplied parameters,
-	// any remaining struct fields must be optional.  Thus, populate them
-	// with their associated default value as needed.
-	for i := numParams; i < info.maxParams; i++ {
-		rvf := rv.Field(i)
-		if defaultVal, ok := info.defaults[i]; ok {
-			rvf.Set(defaultVal)
-		}
-	}
 }
