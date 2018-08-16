@@ -206,7 +206,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		}
 
 		rpcConfig := rpcserver.RpcServerConfig{
-			Port: rpcListeners[0].Addr().String(),
+			Listenters: rpcListeners,
 		}
 		self.RpcServer, err = rpcserver.RpcServer{}.Init(&rpcConfig)
 		if err != nil {
@@ -342,7 +342,7 @@ func parseListeners(addrs []string, netType string) ([]net.Addr, error) {
 		// To4 returns nil when the IP is not an IPv4 address, so use
 		// this determine the address type.
 		if ip.To4() == nil {
-			netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
+			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
 		} else {
 			netAddrs = append(netAddrs, simpleAddr{net: netType + "4", addr: addr})
 		}

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 	"log"
+	"net"
 )
 
 const (
@@ -33,9 +34,9 @@ type RpcServer struct {
 }
 
 type RpcServerConfig struct {
+	Listenters    []net.Listener
 	ChainParams   *blockchain.Params
 	RPCMaxClients int
-	Port          string
 }
 
 func (self RpcServer) Init(config *RpcServerConfig) (*RpcServer, error) {
@@ -97,7 +98,6 @@ func (self RpcServer) Start() (error) {
 	}
 	rpcServeMux := http.NewServeMux()
 	self.HttpServer = &http.Server{
-		Addr:    ":9334",
 		Handler: rpcServeMux,
 
 		// Timeout connections which don't complete the initial
@@ -106,14 +106,22 @@ func (self RpcServer) Start() (error) {
 	}
 
 	rpcServeMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Connection", "close")
-		w.Header().Set("Content-Type", "application/json")
-		r.Close = true
+		self.RpcHandleRequest(w, r)
 	})
-	log.Printf("RPC server listening on %s", self.HttpServer.Addr)
-	self.HttpServer.ListenAndServe()
-	log.Printf("RPC listener done for %s", self.HttpServer.Addr)
+	for _, listen := range self.Config.Listenters {
+		go func(listen net.Listener) {
+			log.Printf("RPC server listening on %s", listen.Addr())
+			go self.HttpServer.Serve(listen)
+			log.Printf("RPC listener done for %s", listen.Addr())
+		}(listen)
+	}
 	return nil
+}
+
+func (self RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Connection", "close")
+	w.Header().Set("Content-Type", "application/json")
+	r.Close = true
 }
 
 // Stop is used by server.go to stop the rpc listener.
@@ -124,6 +132,9 @@ func (self RpcServer) Stop() error {
 	}
 	log.Println("RPC server shutting down")
 	self.HttpServer.Close()
+	for _, listen := range self.Config.Listenters {
+		listen.Close()
+	}
 	close(self.quit)
 	log.Println("RPC server shutdown complete")
 	return nil
