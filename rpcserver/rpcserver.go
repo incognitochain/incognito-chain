@@ -8,15 +8,25 @@ import (
 	"time"
 	"log"
 	"net"
+	"io/ioutil"
+	"fmt"
+	"strconv"
+	"github.com/internet-cash/prototype/jsonrpc"
+	"encoding/json"
 )
 
 const (
 	rpcAuthTimeoutSeconds = 10
 )
 
+// timeZeroVal is simply the zero value for a time.Time and is used to avoid
+// creating multiple instances.
+var timeZeroVal time.Time
+
 type commandHandler func(*RpcServer, interface{}, <-chan struct{}) (interface{}, error)
 
 var RpcHandler = map[string]commandHandler{
+	"dosomething":       handleDoSomething,
 	"createtransaction": handleCreateTransaction,
 }
 
@@ -191,7 +201,7 @@ func (self *RpcServer) incrementClients() {
 //
 // This function is safe for concurrent access.
 func (self *RpcServer) decrementClients() {
-	atomic.AddInt32(&s.numClients, -1)
+	atomic.AddInt32(&self.numClients, -1)
 }
 
 // AuthFail sends a message back to the client if the http auth is rejected.
@@ -200,6 +210,57 @@ func (self RpcServer) AuthFail(w http.ResponseWriter) {
 	http.Error(w, "401 Unauthorized.", http.StatusUnauthorized)
 }
 
+/**
+handles reading and responding to RPC messages.
+ */
 func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request) {
+	if atomic.LoadInt32(&self.shutdown) != 0 {
+		return
+	}
+	// Read and close the JSON-RPC request body from the caller.
+	body, err := ioutil.ReadAll(r.Body)
+	r.Body.Close()
+	if err != nil {
+		errCode := http.StatusBadRequest
+		http.Error(w, fmt.Sprintf("%d error reading JSON message: %v",
+			errCode, err), errCode)
+		return
+	}
 
+	// Unfortunately, the http server doesn't provide the ability to
+	// change the read deadline for the new connection and having one breaks
+	// long polling.  However, not having a read deadline on the initial
+	// connection would mean clients can connect and idle forever.  Thus,
+	// hijack the connecton from the HTTP server, clear the read deadline,
+	// and handle writing the response manually.
+	hj, ok := w.(http.Hijacker)
+	if !ok {
+		errMsg := "webserver doesn't support hijacking"
+		log.Print(errMsg)
+		errCode := http.StatusInternalServerError
+		http.Error(w, strconv.Itoa(errCode)+" "+errMsg, errCode)
+		return
+	}
+	conn, buf, err := hj.Hijack()
+	if err != nil {
+		log.Printf("Failed to hijack HTTP connection: %v", err)
+		errCode := http.StatusInternalServerError
+		http.Error(w, strconv.Itoa(errCode)+" "+err.Error(), errCode)
+		return
+	}
+	defer conn.Close()
+	defer buf.Flush()
+	conn.SetReadDeadline(timeZeroVal)
+
+	// Attempt to parse the raw body into a JSON-RPC request.
+	var responseID interface{}
+	var jsonErr error
+	var result interface{}
+	var request jsonrpc.Request
+	if err := json.Unmarshal(body, &request); err != nil {
+		jsonErr = &jsonrpc.RPCError{
+			Code:    jsonrpc.ErrRPCParse.Code,
+			Message: "Failed to parse request: " + err.Error(),
+		}
+	}
 }
