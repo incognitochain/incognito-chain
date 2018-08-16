@@ -12,3 +12,9 @@
 *.out
 
 *.lock
+
+.idea
+
+vendor
+
+prototype
