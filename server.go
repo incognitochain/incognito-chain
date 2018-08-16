@@ -5,19 +5,22 @@ import (
 	"log"
 	"net"
 	"fmt"
-	"github.com/internet-cash/prototype/blockchain"
-	"github.com/internet-cash/prototype/connmanager"
-	"github.com/internet-cash/prototype/database"
-	"github.com/internet-cash/prototype/peer"
-	"github.com/internet-cash/prototype/wire"
-	ma "github.com/multiformats/go-multiaddr"
-	libpeer "github.com/libp2p/go-libp2p-peer"
 	"strings"
 	"sync/atomic"
 	"time"
 	"runtime"
 	"errors"
+
+	ma "github.com/multiformats/go-multiaddr"
+	libpeer "github.com/libp2p/go-libp2p-peer"
+
+	"github.com/internet-cash/prototype/blockchain"
+	"github.com/internet-cash/prototype/connmanager"
+	"github.com/internet-cash/prototype/database"
+	"github.com/internet-cash/prototype/peer"
+	"github.com/internet-cash/prototype/wire"
 	"github.com/internet-cash/prototype/rpcserver"
+	"github.com/internet-cash/prototype/mempool"
 )
 
 const (
