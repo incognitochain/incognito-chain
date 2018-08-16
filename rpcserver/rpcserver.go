@@ -115,13 +115,8 @@ func (self RpcServer) Start() (error) {
 			log.Printf("RPC listener done for %s", listen.Addr())
 		}(listen)
 	}
+	self.started = 1
 	return nil
-}
-
-func (self RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Connection", "close")
-	w.Header().Set("Content-Type", "application/json")
-	r.Close = true
 }
 
 // Stop is used by server.go to stop the rpc listener.
@@ -137,9 +132,74 @@ func (self RpcServer) Stop() error {
 	}
 	close(self.quit)
 	log.Println("RPC server shutdown complete")
+	self.started = 0
+	self.shutdown = 1
 	return nil
 }
 
-func handleCreateTransaction(self *RpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return nil, nil
+func (self RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Connection", "close")
+	w.Header().Set("Content-Type", "application/json")
+	r.Close = true
+
+	// Limit the number of connections to max allowed.
+	if self.limitConnections(w, r.RemoteAddr) {
+		return
+	}
+
+	// Keep track of the number of connected clients.
+	self.incrementClients()
+	defer self.decrementClients()
+	// TODO
+	_, _, err := self.checkAuth(r, true)
+	if err != nil {
+		self.AuthFail(w)
+		return
+	}
+
+	self.ProcessRpcRequest(w, r)
+}
+
+// checkAuth checks the HTTP Basic authentication supplied by a wallet
+// or RPC client in the HTTP request r.  If the supplied authentication
+// does not match the username and password expected, a non-nil error is
+// returned.
+//
+// This check is time-constant.
+//
+// The first bool return value signifies auth success (true if successful) and
+// the second bool return value specifies whether the user can change the state
+// of the server (true) or whether the user is limited (false). The second is
+// always false if the first is.
+func (self RpcServer) checkAuth(r *http.Request, require bool) (bool, bool, error) {
+	// TODO
+	return true, true, nil
+}
+
+// incrementClients adds one to the number of connected RPC clients.  Note
+// this only applies to standard clients.  Websocket clients have their own
+// limits and are tracked separately.
+//
+// This function is safe for concurrent access.
+func (self *RpcServer) incrementClients() {
+	atomic.AddInt32(&self.numClients, 1)
+}
+
+// decrementClients subtracts one from the number of connected RPC clients.
+// Note this only applies to standard clients.  Websocket clients have their own
+// limits and are tracked separately.
+//
+// This function is safe for concurrent access.
+func (self *RpcServer) decrementClients() {
+	atomic.AddInt32(&s.numClients, -1)
+}
+
+// AuthFail sends a message back to the client if the http auth is rejected.
+func (self RpcServer) AuthFail(w http.ResponseWriter) {
+	w.Header().Add("WWW-Authenticate", `Basic realm="RPC"`)
+	http.Error(w, "401 Unauthorized.", http.StatusUnauthorized)
+}
+
+func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request) {
+
 }
