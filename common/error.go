@@ -1,4 +1,4 @@
-package jsonrpc
+package common
 
 import "fmt"
 
@@ -18,7 +18,7 @@ func (e Error) Error() string {
 }
 
 // makeError creates an Error given a set of arguments.
-func makeError(c RpcErrorCode, desc string) Error {
+func MakeError(c RpcErrorCode, desc string) Error {
 	return Error{ErrorCode: c, Description: desc}
 }
 

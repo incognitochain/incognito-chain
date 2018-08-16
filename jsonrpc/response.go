@@ -3,6 +3,7 @@ package jsonrpc
 import (
 	"fmt"
 	"encoding/json"
+	"github.com/internet-cash/prototype/common"
 )
 
 // Response is the general form of a JSON-RPC response.  The type of the Result
@@ -10,9 +11,9 @@ import (
 // interface.  The ID field has to be a pointer for Go to put a null in it when
 // empty.
 type Response struct {
-	Result json.RawMessage `json:"result"`
-	Error  *RPCError       `json:"error"`
-	ID     *interface{}    `json:"id"`
+	Result json.RawMessage  `json:"result"`
+	Error  *common.RPCError `json:"error"`
+	ID     *interface{}     `json:"id"`
 }
 
 // NewResponse returns a new JSON-RPC response object given the provided id,
@@ -21,10 +22,10 @@ type Response struct {
 //
 // Typically callers will instead want to create the fully marshalled JSON-RPC
 // response to send over the wire with the MarshalResponse function.
-func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*Response, error) {
+func NewResponse(id interface{}, marshalledResult []byte, rpcErr *common.RPCError) (*Response, error) {
 	if !IsValidIDType(id) {
 		str := fmt.Sprintf("the id of type '%T' is invalid", id)
-		return nil, makeError(ErrInvalidType, str)
+		return nil, common.MakeError(common.ErrInvalidType, str)
 	}
 
 	pid := &id
@@ -57,7 +58,7 @@ func IsValidIDType(id interface{}) bool {
 
 // MarshalResponse marshals the passed id, result, and RPCError to a JSON-RPC
 // response byte slice that is suitable for transmission to a JSON-RPC client.
-func MarshalResponse(id interface{}, result interface{}, rpcErr *RPCError) ([]byte, error) {
+func MarshalResponse(id interface{}, result interface{}, rpcErr *common.RPCError) ([]byte, error) {
 	marshalledResult, err := json.Marshal(result)
 	if err != nil {
 		return nil, err

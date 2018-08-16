@@ -1,6 +1,8 @@
 package rpcserver
 
 import (
+	"github.com/internet-cash/prototype/common"
+	"github.com/internet-cash/prototype/jsonrpc"
 	"github.com/internet-cash/prototype/blockchain"
 	"sync/atomic"
 	"net/http"
@@ -11,7 +13,6 @@ import (
 	"io/ioutil"
 	"fmt"
 	"strconv"
-	"github.com/internet-cash/prototype/jsonrpc"
 	"encoding/json"
 	"strings"
 	"reflect"
@@ -34,7 +35,7 @@ type parsedRPCCmd struct {
 	id     interface{}
 	method string
 	cmd    interface{}
-	err    *jsonrpc.RPCError
+	err    *common.RPCError
 }
 
 // rpcServer provides a concurrent safe RPC server to a chain server.
@@ -268,8 +269,8 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 	var result interface{}
 	var request jsonrpc.Request
 	if err := json.Unmarshal(body, &request); err != nil {
-		jsonErr = &jsonrpc.RPCError{
-			Code:    jsonrpc.ErrRPCParse.Code,
+		jsonErr = &common.RPCError{
+			Code:    common.ErrRPCParse.Code,
 			Message: "Failed to parse request: " + err.Error(),
 		}
 	}
@@ -314,8 +315,8 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 		// Check if the user is limited and set error if method unauthorized
 		if !isAdmin {
 			if _, ok := RpcLimited[request.Method]; !ok {
-				jsonErr = &jsonrpc.RPCError{
-					Code:    jsonrpc.ErrRPCInvalidParams.Code,
+				jsonErr = &common.RPCError{
+					Code:    common.ErrRPCInvalidParams.Code,
 					Message: "limited user not authorized for this method",
 				}
 			}
@@ -358,9 +359,9 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 // passed parameters.  It will automatically convert errors that are not of
 // the type *btcjson.RPCError to the appropriate type as needed.
 func createMarshalledReply(id, result interface{}, replyErr error) ([]byte, error) {
-	var jsonErr *jsonrpc.RPCError
+	var jsonErr *common.RPCError
 	if replyErr != nil {
-		if jErr, ok := replyErr.(*jsonrpc.RPCError); ok {
+		if jErr, ok := replyErr.(*common.RPCError); ok {
 			jsonErr = jErr
 		} else {
 			jsonErr = internalRPCError(replyErr.Error(), "")
@@ -375,13 +376,13 @@ func createMarshalledReply(id, result interface{}, replyErr error) ([]byte, erro
 // RPC server subsystem since internal errors really should not occur.  The
 // context parameter is only used in the log message and may be empty if it's
 // not needed.
-func internalRPCError(errStr, context string) *jsonrpc.RPCError {
+func internalRPCError(errStr, context string) *common.RPCError {
 	logStr := errStr
 	if context != "" {
 		logStr = context + ": " + errStr
 	}
 	log.Println(logStr)
-	return jsonrpc.NewRPCError(jsonrpc.ErrRPCInternal.Code, errStr)
+	return common.NewRPCError(common.ErrRPCInternal.Code, errStr)
 }
 
 // httpStatusLine returns a response Status-Line (RFC 2616 Section 6.1)
@@ -448,7 +449,7 @@ func (self RpcServer) standardCmdResult(cmd *parsedRPCCmd, closeChan <-chan stru
 	if ok {
 		goto handled
 	}
-	return nil, jsonrpc.ErrRPCMethodNotFound
+	return nil, common.ErrRPCMethodNotFound
 handled:
 
 	return handler(&self, cmd.cmd, closeChan)
@@ -467,17 +468,17 @@ func parseCmd(request *jsonrpc.Request) *parsedRPCCmd {
 	if err != nil {
 		// When the error is because the method is not registered,
 		// produce a method not found RPC error.
-		if jerr, ok := err.(jsonrpc.Error); ok &&
-			jerr.ErrorCode == jsonrpc.ErrUnregisteredMethod {
+		if jerr, ok := err.(common.Error); ok &&
+			jerr.ErrorCode == common.ErrUnregisteredMethod {
 
-			parsedCmd.err = jsonrpc.ErrRPCMethodNotFound
+			parsedCmd.err = common.ErrRPCMethodNotFound
 			return &parsedCmd
 		}
 
 		// Otherwise, some type of invalid parameters is the
 		// cause, so produce the equivalent RPC error.
-		parsedCmd.err = jsonrpc.NewRPCError(
-			jsonrpc.ErrRPCInvalidParams.Code, err.Error())
+		parsedCmd.err = common.NewRPCError(
+			common.ErrRPCInvalidParams.Code, err.Error())
 		return &parsedCmd
 	}
 
@@ -509,8 +510,8 @@ type methodInfo struct {
 }
 
 // makeError creates an Error given a set of arguments.
-func makeError(c jsonrpc.RpcErrorCode, desc string) jsonrpc.Error {
-	return jsonrpc.Error{ErrorCode: c, Description: desc}
+func makeError(c common.RpcErrorCode, desc string) common.Error {
+	return common.Error{ErrorCode: c, Description: desc}
 }
 
 // checkNumParams ensures the supplied number of params is at least the minimum
@@ -521,13 +522,13 @@ func checkNumParams(numParams int, info *methodInfo) error {
 			str := fmt.Sprintf("wrong number of params (expected "+
 				"%d, received %d)", info.numReqParams,
 				numParams)
-			return makeError(jsonrpc.ErrNumParams, str)
+			return makeError(common.ErrNumParams, str)
 		}
 
 		str := fmt.Sprintf("wrong number of params (expected "+
 			"between %d and %d, received %d)", info.numReqParams,
 			info.maxParams, numParams)
-		return makeError(jsonrpc.ErrNumParams, str)
+		return makeError(common.ErrNumParams, str)
 	}
 
 	return nil
@@ -543,7 +544,7 @@ func UnmarshalCmd(r *jsonrpc.Request) (interface{}, error) {
 	registerLock.RUnlock()
 	if !ok {
 		str := fmt.Sprintf("%q is not registered", r.Method)
-		return nil, makeError(jsonrpc.ErrUnregisteredMethod, str)
+		return nil, makeError(common.ErrUnregisteredMethod, str)
 	}
 	rt := rtp.Elem()
 	rvp := reflect.New(rt)
@@ -569,13 +570,13 @@ func UnmarshalCmd(r *jsonrpc.Request) (interface{}, error) {
 				str := fmt.Sprintf("parameter #%d '%s' must "+
 					"be type %v (got %v)", i+1, fieldName,
 					jerr.Type, jerr.Value)
-				return nil, makeError(jsonrpc.ErrInvalidType, str)
+				return nil, makeError(common.ErrInvalidType, str)
 			}
 
 			// Fallback to showing the underlying error.
 			str := fmt.Sprintf("parameter #%d '%s' failed to "+
 				"unmarshal: %v", i+1, fieldName, err)
-			return nil, makeError(jsonrpc.ErrInvalidType, str)
+			return nil, makeError(common.ErrInvalidType, str)
 		}
 	}
 
