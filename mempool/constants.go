@@ -1,5 +1,7 @@
 package mempool
 
+import "time"
+
 const (
 	// DefaultBlockPrioritySize is the default size in bytes for high-
 	// priority / low-fee transactions.  It is used to help determine which
@@ -14,6 +16,5 @@ const (
 
 	// orphanExpireScanInterval is the minimum amount of time in between
 	// scans of the orphan pool to evict expired transactions.
-	//orphanExpireScanInterval = time.Minute * 5
-
+	orphanExpireScanInterval = time.Minute * 5
 )
