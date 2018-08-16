@@ -1,22 +1,23 @@
 package main
 
 import (
-	"sync"
-	"log"
-	"net"
+	"errors"
 	"fmt"
 	"github.com/internet-cash/prototype/blockchain"
 	"github.com/internet-cash/prototype/connmanager"
 	"github.com/internet-cash/prototype/database"
+	"github.com/internet-cash/prototype/mempool"
 	"github.com/internet-cash/prototype/peer"
 	"github.com/internet-cash/prototype/wire"
-	ma "github.com/multiformats/go-multiaddr"
 	libpeer "github.com/libp2p/go-libp2p-peer"
+	ma "github.com/multiformats/go-multiaddr"
+	"log"
+	"net"
+	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
-	"runtime"
-	"errors"
 )
 
 const (
@@ -44,6 +45,9 @@ func (a simpleAddr) Network() string {
 type onionAddr struct {
 	addr string
 }
+type pool struct {
+	TxPool mempool.TxPool
+}
 
 type Server struct {
 	started     int32
@@ -53,9 +57,9 @@ type Server struct {
 	ConnManager *connmanager.ConnManager
 	Chain       *blockchain.BlockChain
 	Db          database.DB
-
-	Quit      chan struct{}
-	WaitGroup sync.WaitGroup
+	MemPool     pool
+	Quit        chan struct{}
+	WaitGroup   sync.WaitGroup
 }
 
 // setupRPCListeners returns a slice of listeners that are configured for use
@@ -122,6 +126,11 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	self.ChainParams = chainParams
 	self.Quit = make(chan struct{})
 	self.Db = db
+	self.MemPool = pool{
+		TxPool: *mempool.New(&mempool.Config{
+			Policy: mempool.Policy{},
+		}),
+	}
 
 	// Create a new block chain instance with the appropriate configuration.
 	var err error
@@ -272,7 +281,7 @@ func (self Server) Start() {
 	// Start the peer handler which in turn starts the address and block
 	// managers.
 	self.WaitGroup.Add(1)
-	go self.PeerHandler()
+	go self.peerHandler()
 }
 
 // parseListeners determines whether each listen address is IPv4 and IPv6 and
@@ -345,7 +354,7 @@ func (self Server) InitListenerPeers(listenAddrs []string) ([]peer.Peer, error) 
 }
 
 // newPeerConfig returns the configuration for the listening Peer.
-func (self Server) NewPeerConfig() (*peer.Config) {
+func (self Server) NewPeerConfig() *peer.Config {
 	return &peer.Config{
 		MessageListeners: peer.MessageListeners{
 			OnBlock: self.OnBlock,
@@ -368,4 +377,11 @@ func (self Server) OnBlock(p *peer.Peer,
 func (sp Server) OnTx(_ *peer.Peer,
 	msg *wire.MessageTx) {
 	// TODO get message tx and process, Tuan Anh
+	hash, txDesc, error := sp.MemPool.TxPool.CanAcceptTransaction(&msg.Transaction)
+	if error != nil {
+		fmt.Print("there is hash of transaction", hash)
+		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)
+	} else {
+		fmt.Print(error)
+	}
 }
