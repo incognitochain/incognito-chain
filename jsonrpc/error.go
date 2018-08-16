@@ -6,10 +6,10 @@ import "fmt"
 // error typically is used more by the consumers of the package as opposed to
 // RPCErrors which are intended to be returned to the client across the wire via
 // a JSON-RPC Response.  The caller can use type assertions to determine the
-// specific error and access the ErrorCode field.
+// specific error and access the RpcErrorCode field.
 type Error struct {
-	ErrorCode   ErrorCode // Describes the kind of error
-	Description string    // Human readable description of the issue
+	ErrorCode   RpcErrorCode // Describes the kind of error
+	Description string       // Human readable description of the issue
 }
 
 // Error satisfies the error interface and prints human-readable errors.
@@ -18,7 +18,7 @@ func (e Error) Error() string {
 }
 
 // makeError creates an Error given a set of arguments.
-func makeError(c ErrorCode, desc string) Error {
+func makeError(c RpcErrorCode, desc string) Error {
 	return Error{ErrorCode: c, Description: desc}
 }
 
@@ -46,15 +46,15 @@ var (
 	}
 )
 
-// ErrorCode identifies a kind of error.  These error codes are NOT used for
+// RpcErrorCode identifies a kind of error.  These error codes are NOT used for
 // JSON-RPC response errors.
-type ErrorCode int
+type RpcErrorCode int
 
 // These constants are used to identify a specific RuleError.
 const (
 	// ErrDuplicateMethod indicates a command with the specified method
 	// already exists.
-	ErrDuplicateMethod ErrorCode = iota
+	ErrDuplicateMethod RpcErrorCode = iota
 
 	// ErrInvalidUsageFlags indicates one or more unrecognized flag bits
 	// were specified.

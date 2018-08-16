@@ -509,7 +509,7 @@ type methodInfo struct {
 }
 
 // makeError creates an Error given a set of arguments.
-func makeError(c jsonrpc.ErrorCode, desc string) jsonrpc.Error {
+func makeError(c jsonrpc.RpcErrorCode, desc string) jsonrpc.Error {
 	return jsonrpc.Error{ErrorCode: c, Description: desc}
 }
 
