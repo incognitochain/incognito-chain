@@ -12,10 +12,10 @@ var RpcLimited = map[string]struct{}{
 
 }
 
-func handleDoSomething(self *RpcServer, cmd interface{}, closeChan <-chan struct{}) {
-	log.Println(cmd)
+func handleDoSomething(self *RpcServer, params interface{}, closeChan <-chan struct{}) {
+	log.Println(params)
 }
 
-func handleCreateTransaction(self *RpcServer, cmd interface{}, closeChan <-chan struct{}) {
-	log.Println(cmd)
+func handleCreateTransaction(self *RpcServer, params interface{}, closeChan <-chan struct{}) {
+	log.Println(params)
 }
