@@ -2,12 +2,8 @@ package main
 
 import (
 	"sync"
-	"sync/atomic"
 	"log"
-	"time"
-	"strings"
 	"net"
-	"runtime"
 	"fmt"
 	"github.com/internet-cash/prototype/blockchain"
 	"github.com/internet-cash/prototype/connmanager"
@@ -16,6 +12,11 @@ import (
 	"github.com/internet-cash/prototype/wire"
 	ma "github.com/multiformats/go-multiaddr"
 	libpeer "github.com/libp2p/go-libp2p-peer"
+	"strings"
+	"sync/atomic"
+	"time"
+	"runtime"
+	"errors"
 )
 
 const (
@@ -55,6 +56,55 @@ type Server struct {
 
 	Quit      chan struct{}
 	WaitGroup sync.WaitGroup
+}
+
+// setupRPCListeners returns a slice of listeners that are configured for use
+// with the RPC server depending on the configuration settings for listen
+// addresses and TLS.
+func setupRPCListeners() ([]net.Listener, error) {
+	// Setup TLS if not disabled.
+	listenFunc := net.Listen
+	if !cfg.DisableTLS {
+		// Generate the TLS cert and key file if both don't already
+		// exist.
+		//if !fileExists(cfg.RPCKey) && !fileExists(cfg.RPCCert) {
+		//	err := genCertPair(cfg.RPCCert, cfg.RPCKey)
+		//	if err != nil {
+		//		return nil, err
+		//	}
+		//}
+		//keypair, err := tls.LoadX509KeyPair(cfg.RPCCert, cfg.RPCKey)
+		//if err != nil {
+		//	return nil, err
+		//}
+		//
+		//tlsConfig := tls.Config{
+		//	Certificates: []tls.Certificate{keypair},
+		//	MinVersion:   tls.VersionTLS12,
+		//}
+		//
+		//// Change the standard net.Listen function to the tls one.
+		//listenFunc = func(net string, laddr string) (net.Listener, error) {
+		//	return tls.Listen(net, laddr, &tlsConfig)
+		//}
+	}
+
+	netAddrs, err := parseListeners(cfg.RPCListeners)
+	if err != nil {
+		return nil, err
+	}
+
+	listeners := make([]net.Listener, 0, len(netAddrs))
+	for _, addr := range netAddrs {
+		listener, err := listenFunc(addr.Network(), addr.String())
+		if err != nil {
+			log.Printf("Can't listen on %s: %v", addr, err)
+			continue
+		}
+		listeners = append(listeners, listener)
+	}
+
+	return listeners, nil
 }
 
 func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *blockchain.Params, interrupt <-chan struct{}) (*Server, error) {
@@ -142,6 +192,18 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		go self.ConnManager.Connect(&connReq)
 	}
 
+	if !cfg.DisableRPC {
+		// Setup listeners for the configured RPC listen addresses and
+		// TLS settings.
+		rpcListeners, err := setupRPCListeners()
+		if err != nil {
+			return nil, err
+		}
+		if len(rpcListeners) == 0 {
+			return nil, errors.New("RPCS: No valid listen address")
+		}
+	}
+
 	return &self, nil
 }
 
@@ -154,7 +216,8 @@ func (self Server) InboundPeerConnected(peer *peer.Peer) {
 // peer instance, associates it with the relevant state such as the connection
 // request instance and the connection itself, and finally notifies the address
 // manager of the attempt.
-func (self Server) OutboundPeerConnected(connRequest *connmanager.ConnReq, peer *peer.Peer) {
+func (self Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
+	peer *peer.Peer) {
 
 }
 
@@ -172,10 +235,10 @@ func (self Server) Stop() error {
 	return nil
 }
 
-// peerHandler is used to handle peer operations such as adding and removing
+// PeerHandler is used to handle peer operations such as adding and removing
 // peers to and from the server, banning peers, and broadcasting messages to
 // peers.  It must be run in a goroutine.
-func (self Server) peerHandler() {
+func (self Server) PeerHandler() {
 	log.Println("Start peer handler")
 	go self.ConnManager.Start()
 out:
@@ -209,7 +272,7 @@ func (self Server) Start() {
 	// Start the peer handler which in turn starts the address and block
 	// managers.
 	self.WaitGroup.Add(1)
-	go self.peerHandler()
+	go self.PeerHandler()
 }
 
 // parseListeners determines whether each listen address is IPv4 and IPv6 and
@@ -293,7 +356,8 @@ func (self Server) NewPeerConfig() (*peer.Config) {
 
 // OnBlock is invoked when a peer receives a block message.  It
 // blocks until the bitcoin block has been fully processed.
-func (self Server) OnBlock(p *peer.Peer, msg *wire.MessageBlock) {
+func (self Server) OnBlock(p *peer.Peer,
+	msg *wire.MessageBlock) {
 	// TODO get message block and process, Tuan Anh
 }
 
@@ -301,6 +365,7 @@ func (self Server) OnBlock(p *peer.Peer, msg *wire.MessageBlock) {
 // until the transaction has been fully processed.  Unlock the block
 // handler this does not serialize all transactions through a single thread
 // transactions don't rely on the previous one in a linear fashion like blocks.
-func (sp Server) OnTx(_ *peer.Peer, msg *wire.MessageTx) {
+func (sp Server) OnTx(_ *peer.Peer,
+	msg *wire.MessageTx) {
 	// TODO get message tx and process, Tuan Anh
 }
