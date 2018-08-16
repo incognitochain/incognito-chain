@@ -13,6 +13,10 @@ import (
 	"strconv"
 	"github.com/internet-cash/prototype/jsonrpc"
 	"encoding/json"
+	"strings"
+	"reflect"
+	"sync"
+	"io"
 )
 
 const (
@@ -23,11 +27,14 @@ const (
 // creating multiple instances.
 var timeZeroVal time.Time
 
-type commandHandler func(*RpcServer, interface{}, <-chan struct{}) (interface{}, error)
-
-var RpcHandler = map[string]commandHandler{
-	"dosomething":       handleDoSomething,
-	"createtransaction": handleCreateTransaction,
+// parsedRPCCmd represents a JSON-RPC request object that has been parsed into
+// a known concrete command along with any error that might have happened while
+// parsing it.
+type parsedRPCCmd struct {
+	id     interface{}
+	method string
+	cmd    interface{}
+	err    *jsonrpc.RPCError
 }
 
 // rpcServer provides a concurrent safe RPC server to a chain server.
@@ -36,8 +43,10 @@ type RpcServer struct {
 	shutdown   int32
 	numClients int32
 
-	Config     RpcServerConfig
-	HttpServer *http.Server
+	Config      RpcServerConfig
+	HttpServer  *http.Server
+	statusLock  sync.RWMutex
+	statusLines map[int]string
 
 	requestProcessShutdown chan struct{}
 	quit                   chan int
@@ -47,6 +56,7 @@ type RpcServerConfig struct {
 	Listenters    []net.Listener
 	ChainParams   *blockchain.Params
 	RPCMaxClients int
+	RPCQuirks     bool
 }
 
 func (self RpcServer) Init(config *RpcServerConfig) (*RpcServer, error) {
@@ -161,13 +171,13 @@ func (self RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
 	self.incrementClients()
 	defer self.decrementClients()
 	// TODO
-	_, _, err := self.checkAuth(r, true)
+	_, isAdmin, err := self.checkAuth(r, true)
 	if err != nil {
 		self.AuthFail(w)
 		return
 	}
 
-	self.ProcessRpcRequest(w, r)
+	self.ProcessRpcRequest(w, r, isAdmin)
 }
 
 // checkAuth checks the HTTP Basic authentication supplied by a wallet
@@ -213,7 +223,7 @@ func (self RpcServer) AuthFail(w http.ResponseWriter) {
 /**
 handles reading and responding to RPC messages.
  */
-func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request) {
+func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, isAdmin bool) {
 	if atomic.LoadInt32(&self.shutdown) != 0 {
 		return
 	}
@@ -261,6 +271,338 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request) 
 		jsonErr = &jsonrpc.RPCError{
 			Code:    jsonrpc.ErrRPCParse.Code,
 			Message: "Failed to parse request: " + err.Error(),
+		}
+	}
+
+	if jsonErr == nil {
+		// The JSON-RPC 1.0 spec defines that notifications must have their "id"
+		// set to null and states that notifications do not have a response.
+		//
+		// A JSON-RPC 2.0 notification is a request with "json-rpc":"2.0", and
+		// without an "id" member. The specification states that notifications
+		// must not be responded to. JSON-RPC 2.0 permits the null value as a
+		// valid request id, therefore such requests are not notifications.
+		//
+		// Bitcoin Core serves requests with "id":null or even an absent "id",
+		// and responds to such requests with "id":null in the response.
+		//
+		// Btcd does not respond to any request without and "id" or "id":null,
+		// regardless the indicated JSON-RPC protocol version unless RPC quirks
+		// are enabled. With RPC quirks enabled, such requests will be responded
+		// to if the reqeust does not indicate JSON-RPC version.
+		//
+		// RPC quirks can be enabled by the user to avoid compatibility issues
+		// with software relying on Core's behavior.
+		if request.ID == nil && !(self.Config.RPCQuirks && request.Jsonrpc == "") {
+			return
+		}
+
+		// The parse was at least successful enough to have an ID so
+		// set it for the response.
+		responseID = request.ID
+
+		// Setup a close notifier.  Since the connection is hijacked,
+		// the CloseNotifer on the ResponseWriter is not available.
+		closeChan := make(chan struct{}, 1)
+		go func() {
+			_, err := conn.Read(make([]byte, 1))
+			if err != nil {
+				close(closeChan)
+			}
+		}()
+
+		// Check if the user is limited and set error if method unauthorized
+		if !isAdmin {
+			if _, ok := RpcLimited[request.Method]; !ok {
+				jsonErr = &jsonrpc.RPCError{
+					Code:    jsonrpc.ErrRPCInvalidParams.Code,
+					Message: "limited user not authorized for this method",
+				}
+			}
+		}
+		if jsonErr == nil {
+			// Attempt to parse the JSON-RPC request into a known concrete
+			// command.
+			parsedCmd := parseCmd(&request)
+			if parsedCmd.err != nil {
+				jsonErr = parsedCmd.err
+			} else {
+				result, jsonErr = self.standardCmdResult(parsedCmd, closeChan)
+			}
+		}
+	}
+	// Marshal the response.
+	msg, err := createMarshalledReply(responseID, result, jsonErr)
+	if err != nil {
+		log.Printf("Failed to marshal reply: %v", err)
+		return
+	}
+
+	// Write the response.
+	err = self.writeHTTPResponseHeaders(r, w.Header(), http.StatusOK, buf)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	if _, err := buf.Write(msg); err != nil {
+		log.Printf("Failed to write marshalled reply: %v", err)
+	}
+
+	// Terminate with newline to maintain compatibility with Bitcoin Core.
+	if err := buf.WriteByte('\n'); err != nil {
+		log.Printf("Failed to append terminating newline to reply: %v", err)
+	}
+}
+
+// createMarshalledReply returns a new marshalled JSON-RPC response given the
+// passed parameters.  It will automatically convert errors that are not of
+// the type *btcjson.RPCError to the appropriate type as needed.
+func createMarshalledReply(id, result interface{}, replyErr error) ([]byte, error) {
+	var jsonErr *jsonrpc.RPCError
+	if replyErr != nil {
+		if jErr, ok := replyErr.(*jsonrpc.RPCError); ok {
+			jsonErr = jErr
+		} else {
+			jsonErr = internalRPCError(replyErr.Error(), "")
+		}
+	}
+
+	return jsonrpc.MarshalResponse(id, result, jsonErr)
+}
+
+// internalRPCError is a convenience function to convert an internal error to
+// an RPC error with the appropriate code set.  It also logs the error to the
+// RPC server subsystem since internal errors really should not occur.  The
+// context parameter is only used in the log message and may be empty if it's
+// not needed.
+func internalRPCError(errStr, context string) *jsonrpc.RPCError {
+	logStr := errStr
+	if context != "" {
+		logStr = context + ": " + errStr
+	}
+	log.Println(logStr)
+	return jsonrpc.NewRPCError(jsonrpc.ErrRPCInternal.Code, errStr)
+}
+
+// httpStatusLine returns a response Status-Line (RFC 2616 Section 6.1)
+// for the given request and response status code.  This function was lifted and
+// adapted from the standard library HTTP server code since it's not exported.
+func (self RpcServer) httpStatusLine(req *http.Request, code int) string {
+	// Fast path:
+	key := code
+	proto11 := req.ProtoAtLeast(1, 1)
+	if !proto11 {
+		key = -key
+	}
+	self.statusLock.RLock()
+	line, ok := self.statusLines[key]
+	self.statusLock.RUnlock()
+	if ok {
+		return line
+	}
+
+	// Slow path:
+	proto := "HTTP/1.0"
+	if proto11 {
+		proto = "HTTP/1.1"
+	}
+	codeStr := strconv.Itoa(code)
+	text := http.StatusText(code)
+	if text != "" {
+		line = proto + " " + codeStr + " " + text + "\r\n"
+		self.statusLock.Lock()
+		self.statusLines[key] = line
+		self.statusLock.Unlock()
+	} else {
+		text = "status code " + codeStr
+		line = proto + " " + codeStr + " " + text + "\r\n"
+	}
+
+	return line
+}
+
+// writeHTTPResponseHeaders writes the necessary response headers prior to
+// writing an HTTP body given a request to use for protocol negotiation, headers
+// to write, a status code, and a writer.
+func (self RpcServer) writeHTTPResponseHeaders(req *http.Request, headers http.Header, code int, w io.Writer) error {
+	_, err := io.WriteString(w, self.httpStatusLine(req, code))
+	if err != nil {
+		return err
+	}
+
+	err = headers.Write(w)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.WriteString(w, "\r\n")
+	return err
+}
+
+// standardCmdResult checks that a parsed command is a standard Bitcoin JSON-RPC
+// command and runs the appropriate handler to reply to the command.  Any
+// commands which are not recognized or not implemented will return an error
+// suitable for use in replies.
+func (self RpcServer) standardCmdResult(cmd *parsedRPCCmd, closeChan <-chan struct{}) (interface{}, error) {
+	handler, ok := RpcHandler[cmd.method]
+	if ok {
+		goto handled
+	}
+	return nil, jsonrpc.ErrRPCMethodNotFound
+handled:
+
+	return handler(&self, cmd.cmd, closeChan)
+}
+
+// parseCmd parses a JSON-RPC request object into known concrete command.  The
+// err field of the returned parsedRPCCmd struct will contain an RPC error that
+// is suitable for use in replies if the command is invalid in some way such as
+// an unregistered command or invalid parameters.
+func parseCmd(request *jsonrpc.Request) *parsedRPCCmd {
+	var parsedCmd parsedRPCCmd
+	parsedCmd.id = request.ID
+	parsedCmd.method = request.Method
+
+	cmd, err := UnmarshalCmd(request)
+	if err != nil {
+		// When the error is because the method is not registered,
+		// produce a method not found RPC error.
+		if jerr, ok := err.(jsonrpc.Error); ok &&
+			jerr.ErrorCode == jsonrpc.ErrUnregisteredMethod {
+
+			parsedCmd.err = jsonrpc.ErrRPCMethodNotFound
+			return &parsedCmd
+		}
+
+		// Otherwise, some type of invalid parameters is the
+		// cause, so produce the equivalent RPC error.
+		parsedCmd.err = jsonrpc.NewRPCError(
+			jsonrpc.ErrRPCInvalidParams.Code, err.Error())
+		return &parsedCmd
+	}
+
+	parsedCmd.cmd = cmd
+	return &parsedCmd
+}
+
+var (
+	// These fields are used to map the registered types to method names.
+	registerLock         sync.RWMutex
+	methodToConcreteType = make(map[string]reflect.Type)
+	methodToInfo         = make(map[string]methodInfo)
+	concreteTypeToMethod = make(map[reflect.Type]string)
+)
+
+// UsageFlag define flags that specify additional properties about the
+// circumstances under which a command can be used.
+type UsageFlag uint32
+
+// methodInfo keeps track of information about each registered method such as
+// the parameter information.
+type methodInfo struct {
+	maxParams    int
+	numReqParams int
+	numOptParams int
+	defaults     map[int]reflect.Value
+	flags        UsageFlag
+	usage        string
+}
+
+// makeError creates an Error given a set of arguments.
+func makeError(c jsonrpc.ErrorCode, desc string) jsonrpc.Error {
+	return jsonrpc.Error{ErrorCode: c, Description: desc}
+}
+
+// checkNumParams ensures the supplied number of params is at least the minimum
+// required number for the command and less than the maximum allowed.
+func checkNumParams(numParams int, info *methodInfo) error {
+	if numParams < info.numReqParams || numParams > info.maxParams {
+		if info.numReqParams == info.maxParams {
+			str := fmt.Sprintf("wrong number of params (expected "+
+				"%d, received %d)", info.numReqParams,
+				numParams)
+			return makeError(jsonrpc.ErrNumParams, str)
+		}
+
+		str := fmt.Sprintf("wrong number of params (expected "+
+			"between %d and %d, received %d)", info.numReqParams,
+			info.maxParams, numParams)
+		return makeError(jsonrpc.ErrNumParams, str)
+	}
+
+	return nil
+}
+
+// UnmarshalCmd unmarshals a JSON-RPC request into a suitable concrete command
+// so long as the method type contained within the marshalled request is
+// registered.
+func UnmarshalCmd(r *jsonrpc.Request) (interface{}, error) {
+	registerLock.RLock()
+	rtp, ok := methodToConcreteType[r.Method]
+	info := methodToInfo[r.Method]
+	registerLock.RUnlock()
+	if !ok {
+		str := fmt.Sprintf("%q is not registered", r.Method)
+		return nil, makeError(jsonrpc.ErrUnregisteredMethod, str)
+	}
+	rt := rtp.Elem()
+	rvp := reflect.New(rt)
+	rv := rvp.Elem()
+
+	// Ensure the number of parameters are correct.
+	numParams := len(r.Params)
+	if err := checkNumParams(numParams, &info); err != nil {
+		return nil, err
+	}
+
+	// Loop through each of the struct fields and unmarshal the associated
+	// parameter into them.
+	for i := 0; i < numParams; i++ {
+		rvf := rv.Field(i)
+		// Unmarshal the parameter into the struct field.
+		concreteVal := rvf.Addr().Interface()
+		if err := json.Unmarshal(r.Params[i], &concreteVal); err != nil {
+			// The most common error is the wrong type, so
+			// explicitly detect that error and make it nicer.
+			fieldName := strings.ToLower(rt.Field(i).Name)
+			if jerr, ok := err.(*json.UnmarshalTypeError); ok {
+				str := fmt.Sprintf("parameter #%d '%s' must "+
+					"be type %v (got %v)", i+1, fieldName,
+					jerr.Type, jerr.Value)
+				return nil, makeError(jsonrpc.ErrInvalidType, str)
+			}
+
+			// Fallback to showing the underlying error.
+			str := fmt.Sprintf("parameter #%d '%s' failed to "+
+				"unmarshal: %v", i+1, fieldName, err)
+			return nil, makeError(jsonrpc.ErrInvalidType, str)
+		}
+	}
+
+	// When there are less supplied parameters than the total number of
+	// params, any remaining struct fields must be optional.  Thus, populate
+	// them with their associated default value as needed.
+	if numParams < info.maxParams {
+		populateDefaults(numParams, &info, rv)
+	}
+
+	return rvp.Interface(), nil
+}
+
+// populateDefaults populates default values into any remaining optional struct
+// fields that did not have parameters explicitly provided.  The caller should
+// have previously checked that the number of parameters being passed is at
+// least the required number of parameters to avoid unnecessary work in this
+// function, but since required fields never have default values, it will work
+// properly even without the check.
+func populateDefaults(numParams int, info *methodInfo, rv reflect.Value) {
+	// When there are no more parameters left in the supplied parameters,
+	// any remaining struct fields must be optional.  Thus, populate them
+	// with their associated default value as needed.
+	for i := numParams; i < info.maxParams; i++ {
+		rvf := rv.Field(i)
+		if defaultVal, ok := info.defaults[i]; ok {
+			rvf.Set(defaultVal)
 		}
 	}
 }

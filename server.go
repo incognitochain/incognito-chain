@@ -62,8 +62,8 @@ type Server struct {
 	Db          database.DB
 	RpcServer   *rpcserver.RpcServer
 	MemPool     pool
-	Quit      chan struct{}
-	WaitGroup sync.WaitGroup
+	Quit        chan struct{}
+	WaitGroup   sync.WaitGroup
 }
 
 // setupRPCListeners returns a slice of listeners that are configured for use
@@ -218,6 +218,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 
 		rpcConfig := rpcserver.RpcServerConfig{
 			Listenters: rpcListeners,
+			RPCQuirks:  cfg.RPCQuirks,
 		}
 		self.RpcServer, err = rpcserver.RpcServer{}.Init(&rpcConfig)
 		if err != nil {
