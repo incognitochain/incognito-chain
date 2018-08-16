@@ -97,7 +97,7 @@ func (self RpcServer) Start() (error) {
 	}
 	rpcServeMux := http.NewServeMux()
 	self.HttpServer = &http.Server{
-		Addr:    ":" + self.Config.Port,
+		Addr:    ":9334",
 		Handler: rpcServeMux,
 
 		// Timeout connections which don't complete the initial
@@ -110,14 +110,16 @@ func (self RpcServer) Start() (error) {
 		w.Header().Set("Content-Type", "application/json")
 		r.Close = true
 	})
+	log.Printf("RPC server listening on %s", self.HttpServer.Addr)
 	self.HttpServer.ListenAndServe()
+	log.Printf("RPC listener done for %s", self.HttpServer.Addr)
 	return nil
 }
 
 // Stop is used by server.go to stop the rpc listener.
 func (self RpcServer) Stop() error {
 	if atomic.AddInt32(&self.shutdown, 1) != 1 {
-		rpcsLog.Infof("RPC server is already in the process of shutting down")
+		log.Println("RPC server is already in the process of shutting down")
 		return nil
 	}
 	log.Println("RPC server shutting down")

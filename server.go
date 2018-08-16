@@ -91,7 +91,7 @@ func setupRPCListeners() ([]net.Listener, error) {
 		//}
 	}
 
-	netAddrs, err := parseListeners(cfg.RPCListeners)
+	netAddrs, err := parseListeners(cfg.RPCListeners, "tcp")
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func (self Server) Stop() error {
 	self.ConnManager.Stop()
 
 	// Shutdown the RPC server if it's not disabled.
-	if !cfg.DisableRPC {
+	if !cfg.DisableRPC && self.RpcServer != nil {
 		self.RpcServer.Stop()
 	}
 
@@ -295,7 +295,7 @@ func (self Server) Start() {
 	self.WaitGroup.Add(1)
 	go self.PeerHandler()
 
-	if !cfg.DisableRPC {
+	if !cfg.DisableRPC && self.RpcServer != nil {
 		self.WaitGroup.Add(1)
 
 		// Start the rebroadcastHandler, which ensures user tx received by
@@ -310,7 +310,7 @@ func (self Server) Start() {
 // returns a slice of appropriate net.Addrs to listen on with TCP. It also
 // properly detects addresses which apply to "all interfaces" and adds the
 // address as both IPv4 and IPv6.
-func parseListeners(addrs []string) ([]net.Addr, error) {
+func parseListeners(addrs []string, netType string) ([]net.Addr, error) {
 	netAddrs := make([]net.Addr, 0, len(addrs)*2)
 	for _, addr := range addrs {
 		host, _, err := net.SplitHostPort(addr)
@@ -321,8 +321,8 @@ func parseListeners(addrs []string) ([]net.Addr, error) {
 
 		// Empty host or host of * on plan9 is both IPv4 and IPv6.
 		if host == "" || (host == "*" && runtime.GOOS == "plan9") {
-			netAddrs = append(netAddrs, simpleAddr{net: "ip4", addr: addr})
-			//netAddrs = append(netAddrs, simpleAddr{net: "ip6", addr: addr})
+			netAddrs = append(netAddrs, simpleAddr{net: netType + "4", addr: addr})
+			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
 			continue
 		}
 
@@ -342,9 +342,9 @@ func parseListeners(addrs []string) ([]net.Addr, error) {
 		// To4 returns nil when the IP is not an IPv4 address, so use
 		// this determine the address type.
 		if ip.To4() == nil {
-			netAddrs = append(netAddrs, simpleAddr{net: "ip6", addr: addr})
+			netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
 		} else {
-			netAddrs = append(netAddrs, simpleAddr{net: "ip4", addr: addr})
+			netAddrs = append(netAddrs, simpleAddr{net: netType + "4", addr: addr})
 		}
 	}
 	return netAddrs, nil
@@ -354,7 +354,7 @@ func parseListeners(addrs []string) ([]net.Addr, error) {
 // addresses to the address manager. Returns the listeners and a NAT interface,
 // which is non-nil if UPnP is in use.
 func (self Server) InitListenerPeers(listenAddrs []string) ([]peer.Peer, error) {
-	netAddrs, err := parseListeners(listenAddrs)
+	netAddrs, err := parseListeners(listenAddrs, "ip")
 	if err != nil {
 		return nil, err
 	}
