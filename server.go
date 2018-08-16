@@ -17,6 +17,7 @@ import (
 	"time"
 	"runtime"
 	"errors"
+	"github.com/internet-cash/prototype/rpcserver"
 )
 
 const (
@@ -53,6 +54,7 @@ type Server struct {
 	ConnManager *connmanager.ConnManager
 	Chain       *blockchain.BlockChain
 	Db          database.DB
+	RpcServer   *rpcserver.RpcServer
 
 	Quit      chan struct{}
 	WaitGroup sync.WaitGroup
@@ -202,6 +204,20 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		if len(rpcListeners) == 0 {
 			return nil, errors.New("RPCS: No valid listen address")
 		}
+
+		rpcConfig := rpcserver.RpcServerConfig{
+			Port: rpcListeners[0].Addr().String(),
+		}
+		self.RpcServer, err = rpcserver.RpcServer{}.Init(&rpcConfig)
+		if err != nil {
+			return nil, err
+		}
+
+		// Signal process shutdown when the RPC server requests it.
+		go func() {
+			<-self.RpcServer.RequestedProcessShutdown()
+			shutdownRequestChannel <- struct{}{}
+		}()
 	}
 
 	return &self, nil
@@ -230,6 +246,11 @@ func (self Server) WaitForShutdown() {
 func (self Server) Stop() error {
 	// stop connection manager
 	self.ConnManager.Stop()
+
+	// Shutdown the RPC server if it's not disabled.
+	if !cfg.DisableRPC {
+		self.RpcServer.Stop()
+	}
 
 	close(self.Quit)
 	return nil
@@ -273,6 +294,16 @@ func (self Server) Start() {
 	// managers.
 	self.WaitGroup.Add(1)
 	go self.PeerHandler()
+
+	if !cfg.DisableRPC {
+		self.WaitGroup.Add(1)
+
+		// Start the rebroadcastHandler, which ensures user tx received by
+		// the RPC server are rebroadcast until being included in a block.
+		//go self.rebroadcastHandler()
+
+		self.RpcServer.Start()
+	}
 }
 
 // parseListeners determines whether each listen address is IPv4 and IPv6 and
