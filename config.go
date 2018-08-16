@@ -534,10 +534,10 @@ func loadConfig() (*config, []string, error) {
 	}
 
 	// The RPC server is disabled if no username or password is provided.
-	if (cfg.RPCUser == "" || cfg.RPCPass == "") &&
+	/*if (cfg.RPCUser == "" || cfg.RPCPass == "") &&
 		(cfg.RPCLimitUser == "" || cfg.RPCLimitPass == "") {
 		cfg.DisableRPC = true
-	}
+	}*/
 
 	if cfg.DisableRPC {
 		log.Println("RPC service is disabled")
@@ -545,7 +545,7 @@ func loadConfig() (*config, []string, error) {
 
 	// Default RPC to listen on localhost only.
 	if !cfg.DisableRPC && len(cfg.RPCListeners) == 0 {
-		addrs, err := net.LookupHost("localhost")
+		addrs, err := net.LookupHost("127.0.0.1")
 		if err != nil {
 			return nil, nil, err
 		}
