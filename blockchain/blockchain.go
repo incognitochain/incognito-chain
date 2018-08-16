@@ -2,7 +2,7 @@ package blockchain
 
 import (
 	"github.com/internet-cash/prototype/database"
-	"github.com/pkg/errors"
+	"errors"
 )
 
 type BlockChain struct {
