@@ -57,7 +57,7 @@ func (self BlockChain) New(config *Config) (*BlockChain, error) {
 // initChainState attempts to load and initialize the chain state from the
 // database.  When the db does not yet contain any chain state, both it and the
 // chain state are initialized to the genesis block.
-func (self BlockChain) InitChainState() (error) {
+func (self *BlockChain) InitChainState() (error) {
 	// TODO
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
@@ -77,7 +77,7 @@ func (self BlockChain) InitChainState() (error) {
 // createChainState initializes both the database and the chain state to the
 // genesis block.  This includes creating the necessary buckets and inserting
 // the genesis block, so it must only be called on an uninitialized database.
-func (self BlockChain) CreateChainState() error {
+func (self *BlockChain) CreateChainState() error {
 	// TODO something
 	genesisBlock := self.Config.ChainParams.GenesisBlock
 	self.Blocks = append(self.Blocks, *genesisBlock)
