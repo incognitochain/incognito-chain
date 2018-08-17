@@ -70,7 +70,32 @@ func MarshalResponse(id interface{}, result interface{}, rpcErr *common.RPCError
 	return json.Marshal(&response)
 }
 
-type GetBlockChainInfoResponse struct {
-	Chain  string `json:"chain"`
-	Blocks int    `json:"blocks"`
+// GetBlockChainInfoResult models the data returned from the getblockchaininfo
+// command.
+type GetBlockChainInfoResult struct {
+	Chain                string  `json:"chain"`
+	Blocks               int     `json:"blocks"`
+	Headers              int32   `json:"headers"`
+	BestBlockHash        string  `json:"bestblockhash"`
+	Difficulty           float64 `json:"difficulty"`
+	MedianTime           int64   `json:"mediantime"`
+	VerificationProgress float64 `json:"verificationprogress,omitempty"`
+	Pruned               bool    `json:"pruned"`
+	PruneHeight          int32   `json:"pruneheight,omitempty"`
+	ChainWork            string  `json:"chainwork,omitempty"`
+	//SoftForks            []*SoftForkDescription              `json:"softforks"`
+	//Bip9SoftForks        map[string]*Bip9SoftForkDescription `json:"bip9_softforks"`
+}
+
+// ListUnspentResult models a successful response from the listunspent request.
+type ListUnspentResult struct {
+	TxID          string  `json:"txid"`
+	Vout          int     `json:"vout"`
+	Address       string  `json:"address"`
+	Account       string  `json:"account"`
+	ScriptPubKey  string  `json:"scriptPubKey"`
+	RedeemScript  string  `json:"redeemScript,omitempty"`
+	Amount        float64 `json:"amount"`
+	Confirmations int64   `json:"confirmations"`
+	Spendable     bool    `json:"spendable"`
 }

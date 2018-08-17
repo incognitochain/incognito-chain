@@ -17,7 +17,7 @@ type params struct {
 
 var mainNetParams = params{
 	Params:  &blockchain.MainNetParams,
-	rpcPort: "9334",
+	rpcPort: MAINNET_RPC_SERVER_PORT,
 }
 
 // netName returns the name used when referring to a coin network.  At the
