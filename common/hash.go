@@ -17,7 +17,7 @@ type Hash [HashSize]byte
 String returns the Hash as the hexadecimal string of the byte-reversed
  hash.
  */
-func (hash Hash) String() string {
+func (hash *Hash) String() string {
 	for i := 0; i < HashSize/2; i++ {
 		hash[i], hash[HashSize-1-i] = hash[HashSize-1-i], hash[i]
 	}
@@ -29,7 +29,7 @@ CloneBytes returns a copy of the bytes which represent the hash as a byte
 slice.
 NOTE: It is generally cheaper to just slice the hash directly thereby reusing the same bytes rather than calling this method.
  */
-func (hash Hash) CloneBytes() []byte {
+func (hash *Hash) CloneBytes() []byte {
 	newHash := make([]byte, HashSize)
 	copy(newHash, hash[:])
 
@@ -91,7 +91,7 @@ func (self Hash) NewHashFromStr(hash string) (*Hash, error) {
 // Decode decodes the byte-reversed hexadecimal string encoding of a Hash to a
 // destination.
  */
-func (self Hash) Decode(dst *Hash, src string) error {
+func (self *Hash) Decode(dst *Hash, src string) error {
 	// Return error if hash string is too long.
 	if len(src) > MaxHashStringSize {
 		return ErrHashStrSize
