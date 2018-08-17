@@ -205,7 +205,7 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 
 	fmt.Printf("there is hash of transaction: %s", hash.String())
 	fmt.Println()
-	fmt.Printf("there is priority of transaction in pool: %", txDesc.StartingPriority)
+	fmt.Printf("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 	// broadcast message
 	self.Config.Server.PushTxMessage(hash)

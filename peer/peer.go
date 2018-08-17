@@ -40,7 +40,6 @@ type Peer struct {
 	ListeningAddress n.Addr
 	Seed             int64
 	FlagMutex        sync.Mutex
-	ReadWrite        *bufio.ReadWriter
 
 	Config Config
 
@@ -133,14 +132,13 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.Host = basicHost
 	self.Multiaddr = fullAddr
 	self.PeerId = peerid
+	self.quit = make(chan struct{})
+	self.sendMessageQueue = make(chan outMsg, 1)
 
 	return &self, nil
 }
 
 func (self Peer) Start() (error) {
-
-	go self.sendMessageHandler()
-
 	self.Host.SetStreamHandler("/peer/1.0.0", self.HandleStream)
 	// Hang forever
 	<-make(chan struct{})
@@ -160,19 +158,24 @@ func (self Peer) HandleStream(s net.Stream) {
 	defer s.Close()
 
 	log.Println("Got a new stream!")
+	if !atomic.CompareAndSwapInt32(&self.connected, 0, 1) {
+		return
+	}
 
 	// Create a buffer stream for non blocking read and write.
-	self.ReadWrite = bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
+	rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
 
-	go self.InHandler(self.ReadWrite)
+	go self.InMessageHandler(rw)
+	go self.OutMessageHandler(rw)
 }
 
 /**
 Handle all in message
  */
-func (self Peer) InHandler(rw *bufio.ReadWriter) {
+func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 	for {
 		str, err := rw.ReadString('\n')
+		log.Printf("afafsfsafasfasfsfsfsfssf %s", str)
 		if err != nil {
 			log.Print(err)
 			return
@@ -207,6 +210,42 @@ func (self Peer) InHandler(rw *bufio.ReadWriter) {
 	}
 }
 
+/**
+// OutMessageHandler handles the queuing of outgoing data for the peer. This runs as
+// a muxer for various sources of input so we can ensure that server and peer
+// handlers will not block on us sending a message.  That data is then passed on
+// to outHandler to be actually written.
+*/
+func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
+	log.Println("Handle Send message handler")
+out:
+	for {
+		select {
+		case msg := <-self.sendMessageQueue:
+			{
+				self.FlagMutex.Lock()
+				// TODO
+				// send message
+				rw.WriteString(msg.msg.JsonSerialize())
+				rw.Flush()
+				self.FlagMutex.Unlock()
+			}
+		case <-self.quit:
+			break out
+			//default:
+			//	log.Println("Wait for sending message")
+		}
+	}
+}
+
+// Connected returns whether or not the peer is currently connected.
+//
+// This function is safe for concurrent access.
+func (self Peer) Connected() bool {
+	return atomic.LoadInt32(&self.connected) != 0 &&
+		atomic.LoadInt32(&self.disconnect) == 0
+}
+
 // Disconnect disconnects the peer by closing the connection.  Calling this
 // function when the peer is already disconnected or in the process of
 // disconnecting will have no effect.
@@ -225,38 +264,6 @@ func (self Peer) Disconnect() {
 	self.disconnect = 1
 }
 
-/**
-// SendMessageHandler handles the queuing of outgoing data for the peer. This runs as
-// a muxer for various sources of input so we can ensure that server and peer
-// handlers will not block on us sending a message.  That data is then passed on
-// to outHandler to be actually written.
-*/
-func (self Peer) sendMessageHandler() {
-out:
-	for {
-		select {
-		case msg := <-self.sendMessageQueue:
-			{
-				self.FlagMutex.Lock()
-				// TODO
-				// send message
-				self.ReadWrite.Write([]byte(msg.msg.JsonSerialize()))
-				self.FlagMutex.Unlock()
-			}
-		case <-self.quit:
-			break out
-		}
-	}
-}
-
-// Connected returns whether or not the peer is currently connected.
-//
-// This function is safe for concurrent access.
-func (self Peer) Connected() bool {
-	return atomic.LoadInt32(&self.connected) != 0 &&
-		atomic.LoadInt32(&self.disconnect) == 0
-}
-
 // QueueMessageWithEncoding adds the passed bitcoin message to the peer send
 // queue. This function is identical to QueueMessage, however it allows the
 // caller to specify the wire encoding type that should be used when
@@ -264,13 +271,17 @@ func (self Peer) Connected() bool {
 //
 // This function is safe for concurrent access.
 func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
-	if !self.Connected() {
-		if doneChan != nil {
-			go func() {
-				doneChan <- struct{}{}
-			}()
-		}
-		return
-	}
+	//if !self.Connected() {
+	//	if doneChan != nil {
+	//		go func() {
+	//			doneChan <- struct{}{}
+	//		}()
+	//	}
+	//	return
+	//}
 	self.sendMessageQueue <- outMsg{msg: msg, doneChan: doneChan}
+	//self.FlagMutex.Lock()
+	//self.ReadWrite.WriteString("test test test")
+	//self.ReadWrite.Flush()
+	//self.FlagMutex.Unlock()
 }

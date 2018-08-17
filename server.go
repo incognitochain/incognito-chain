@@ -416,6 +416,7 @@ func (self Server) OnBlock(p *peer.Peer,
 // transactions don't rely on the previous one in a linear fashion like blocks.
 func (self Server) OnTx(_ *peer.Peer,
 	msg *wire.MessageTx) {
+	log.Println("Receive a new transaction")
 	// TODO get message tx and process, Tuan Anh
 	hash, txDesc, error := self.MemPool.TxPool.CanAcceptTransaction(&msg.Transaction)
 	if error != nil {
