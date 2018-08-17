@@ -221,6 +221,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 			RPCQuirks:     cfg.RPCQuirks,
 			RPCMaxClients: cfg.RPCMaxClients,
 			ChainParams:   chainParams,
+			Chain:         self.Chain,
 		}
 		self.RpcServer, err = rpcserver.RpcServer{}.Init(&rpcConfig)
 		if err != nil {
@@ -400,7 +401,7 @@ func (self Server) NewPeerConfig() *peer.Config {
 }
 
 // OnBlock is invoked when a peer receives a block message.  It
-// blocks until the bitcoin block has been fully processed.
+// blocks until the coin block has been fully processed.
 func (self Server) OnBlock(p *peer.Peer,
 	msg *wire.MessageBlock) {
 	// TODO get message block and process, Tuan Anh

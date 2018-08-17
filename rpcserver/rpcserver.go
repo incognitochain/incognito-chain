@@ -2,7 +2,7 @@ package rpcserver
 
 import (
 	"github.com/internet-cash/prototype/common"
-	"github.com/internet-cash/prototype/jsonrpc"
+	"github.com/internet-cash/prototype/rpcserver/jsonrpc"
 	"github.com/internet-cash/prototype/blockchain"
 	"sync/atomic"
 	"net/http"
@@ -48,6 +48,7 @@ type RpcServer struct {
 type RpcServerConfig struct {
 	Listenters    []net.Listener
 	ChainParams   *blockchain.Params
+	Chain         *blockchain.BlockChain
 	RPCMaxClients int
 	RPCQuirks     bool
 }
@@ -278,7 +279,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 		// must not be responded to. JSON-RPC 2.0 permits the null value as a
 		// valid request id, therefore such requests are not notifications.
 		//
-		// Bitcoin Core serves requests with "id":null or even an absent "id",
+		// coin Core serves requests with "id":null or even an absent "id",
 		// and responds to such requests with "id":null in the response.
 		//
 		// Btcd does not respond to any request without and "id" or "id":null,
@@ -318,8 +319,8 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 		if jsonErr == nil {
 			// Attempt to parse the JSON-RPC request into a known concrete
 			// command.
-			commandHandler := RpcHandler[request.Method]
-			commandHandler.(func(*RpcServer, interface{}, <-chan struct{}))(&self, request.Params, closeChan)
+			command := RpcHandler[request.Method]
+			result, jsonErr = command(&self, request.Params, closeChan)
 		}
 	}
 	// Marshal the response.
@@ -339,7 +340,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 		log.Printf("Failed to write marshalled reply: %v", err)
 	}
 
-	// Terminate with newline to maintain compatibility with Bitcoin Core.
+	// Terminate with newline to maintain compatibility with coin Core.
 	if err := buf.WriteByte('\n'); err != nil {
 		log.Printf("Failed to append terminating newline to reply: %v", err)
 	}

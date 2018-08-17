@@ -1,10 +1,10 @@
 package common
 
 const (
-	// UnitcoinPerCoincent is the number of satoshi in one bitcoin cent.
+	// UnitcoinPerCoincent is the number of satoshi in one coin cent.
 	UnitcoinPerCoincent = 1e6
 
-	// UnitCoinPerCoin is the number of satoshi in one bitcoin (1 BTC).
+	// UnitCoinPerCoin is the number of satoshi in one coin (1 BTC).
 	UnitCoinPerCoin = 1e8
 
 	// MaxUnitCoin is the maximum transaction amount allowed in satoshi.

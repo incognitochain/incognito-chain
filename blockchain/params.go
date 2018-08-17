@@ -11,7 +11,7 @@ var (
 	// the overhead of creating it multiple times.
 	bigOne = big.NewInt(1)
 
-	// mainPowLimit is the highest proof of work value a Bitcoin block can
+	// mainPowLimit is the highest proof of work value a coin block can
 	// have for the main network.  It is the value 2^224 - 1.
 	mainPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 224), bigOne)
 )
@@ -146,18 +146,18 @@ type Params struct {
 	HDCoinType uint32
 }
 
-// MainNetParams defines the network parameters for the main Bitcoin network.
+// MainNetParams defines the network parameters for the main coin network.
 var MainNetParams = Params{
 	Name:        MAINNET_NAME,
 	Net:         MAINNET,
 	DefaultPort: MAINET_DEFAULT_PORT,
 	DNSSeeds: []DNSSeed{
-		/*{"seed.bitcoin.sipa.be", true},
+		/*{"seed.coin.sipa.be", true},
 		{"dnsseed.bluematt.me", true},
-		{"dnsseed.bitcoin.dashjr.org", false},
-		{"seed.bitcoinstats.com", true},
+		{"dnsseed.coin.dashjr.org", false},
+		{"seed.coinstats.com", true},
 		{"seed.bitnodes.io", false},
-		{"seed.bitcoin.jonasschnelli.ch", true},*/
+		{"seed.coin.jonasschnelli.ch", true},*/
 	},
 
 	// Chain parameters

@@ -6,7 +6,7 @@ const (
 	MaxTxInSequenceNum int = 0xffffffff
 )
 
-// OutPoint defines a bitcoin data type that is used to track previous
+// OutPoint defines a coin data type that is used to track previous
 // transaction outputs.
 type OutPoint struct {
 	Hash common.Hash
