@@ -319,7 +319,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 			// Attempt to parse the JSON-RPC request into a known concrete
 			// command.
 			commandHandler := RpcHandler[request.Method]
-			commandHandler.(func(*RpcServer, interface{}, <-chan struct{}))(&self, request, closeChan)
+			commandHandler.(func(*RpcServer, interface{}, <-chan struct{}))(&self, request.Params, closeChan)
 		}
 	}
 	// Marshal the response.
