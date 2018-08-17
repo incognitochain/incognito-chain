@@ -175,11 +175,11 @@ Handle all in message
 func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 	for {
 		str, err := rw.ReadString('\n')
-		log.Printf("afafsfsafasfasfsfsfsfssf %s", str)
 		if err != nil {
 			log.Print(err)
 			return
 		}
+		log.Printf("afafsfsafasfasfsfsfsfssf %s", str)
 
 		if str == "" {
 			return
@@ -226,7 +226,8 @@ out:
 				self.FlagMutex.Lock()
 				// TODO
 				// send message
-				rw.WriteString(msg.msg.JsonSerialize())
+				message := msg.msg.JsonSerialize()
+				rw.WriteString(message)
 				rw.Flush()
 				self.FlagMutex.Unlock()
 			}

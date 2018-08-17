@@ -7,6 +7,7 @@ import (
 	"log"
 	"sync/atomic"
 	"context"
+	"bufio"
 )
 
 const (
@@ -294,12 +295,12 @@ out:
 	log.Printf("Connection handler done")
 }
 
-func (self ConnManager) Connect(c *ConnReq) {
+func (self ConnManager) Connect(connRequest *ConnReq) {
 	if atomic.LoadInt32(&self.stop) != 0 {
 		return
 	}
-	if atomic.LoadUint64(&c.Id) == 0 {
-		atomic.StoreUint64(&c.Id, atomic.AddUint64(&self.connReqCount, 1))
+	if atomic.LoadUint64(&connRequest.Id) == 0 {
+		atomic.StoreUint64(&connRequest.Id, atomic.AddUint64(&self.connReqCount, 1))
 
 		// Submit a request of a pending connection attempt to the
 		// connection manager. By registering the id before the
@@ -307,7 +308,7 @@ func (self ConnManager) Connect(c *ConnReq) {
 		// cancel the connection via the Remove method.
 		done := make(chan struct{})
 		select {
-		case self.Requests <- registerPending{c, done}:
+		case self.Requests <- registerPending{connRequest, done}:
 		case <-self.Quit:
 			return
 		}
@@ -321,22 +322,29 @@ func (self ConnManager) Connect(c *ConnReq) {
 		}
 	}
 
-	//spew.Dump("Attempting to connect to", c.Peer.Multiaddr.String())
+	//spew.Dump("Attempting to connect to", connRequest.Peer.Multiaddr.String())
 
 	for _, listen := range self.Config.ListenerPeers {
-		listen.Host.Peerstore().AddAddr(c.Peer.PeerId, c.Peer.Multiaddr, pstore.PermanentAddrTTL)
+		listen.Host.Peerstore().AddAddr(connRequest.Peer.PeerId, connRequest.Peer.Multiaddr, pstore.PermanentAddrTTL)
 		log.Println("opening stream")
 		// make a new stream from host B to host A
 		// it should be handled on host A by the handler we set above because
 		// we use the same /peer/1.0.0 protocol
-		_, err := listen.Host.NewStream(context.Background(), c.Peer.PeerId, "/peer/1.0.0")
+		s, err := listen.Host.NewStream(context.Background(), connRequest.Peer.PeerId, "/peer/1.0.0")
 		if err != nil {
 			log.Fatalln(err)
 		}
+		//		// Create a buffered stream so that read and writes are non blocking.
+		rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
+		//
+		//		// Create a thread to read and write data.
+		go connRequest.Peer.InMessageHandler(rw)
+		go connRequest.Peer.OutMessageHandler(rw)
+		select {}
 	}
 
 	select {
-	case self.Requests <- handleConnected{c, c.Peer}:
+	case self.Requests <- handleConnected{connRequest, connRequest.Peer}:
 	case <-self.Quit:
 	}
 }
