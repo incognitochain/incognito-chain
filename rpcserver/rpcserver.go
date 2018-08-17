@@ -16,6 +16,8 @@ import (
 	"encoding/json"
 	"sync"
 	"io"
+	"github.com/internet-cash/prototype/database"
+	"github.com/internet-cash/prototype/mempool"
 )
 
 const (
@@ -46,9 +48,13 @@ type RpcServer struct {
 }
 
 type RpcServerConfig struct {
-	Listenters    []net.Listener
-	ChainParams   *blockchain.Params
-	Chain         *blockchain.BlockChain
+	Listenters []net.Listener
+
+	ChainParams *blockchain.Params
+	Chain       *blockchain.BlockChain
+	Db          *database.DB
+
+	TxMemPool     *mempool.TxPool
 	RPCMaxClients int
 	RPCQuirks     bool
 }

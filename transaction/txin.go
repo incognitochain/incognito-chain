@@ -1,6 +1,8 @@
 package transaction
 
-import "github.com/internet-cash/prototype/common"
+import (
+	"github.com/internet-cash/prototype/common"
+)
 
 const (
 	MaxTxInSequenceNum int = 0xffffffff
@@ -12,6 +14,23 @@ type OutPoint struct {
 	Hash common.Hash
 	Vout int
 }
+
+//func (self OutPoint) MarshalJSON() ([]byte, error) {
+//	result, _ := json.Marshal(&struct {
+//		Hash string
+//		*OutPoint
+//	}{Hash: self.Hash.String(), OutPoint: &self})
+//	return result, nil
+//}
+//
+//func (self OutPoint) UnmarshalJSON(data []byte) error {
+//	json.Unmarshal(data, &struct {
+//		*OutPoint
+//	}{
+//		OutPoint: &self,
+//	})
+//	return nil
+//}
 
 type TxIn struct {
 	PreviousOutPoint OutPoint

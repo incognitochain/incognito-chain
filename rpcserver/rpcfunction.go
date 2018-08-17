@@ -9,6 +9,7 @@ import (
 	"github.com/internet-cash/prototype/transaction"
 	"github.com/internet-cash/prototype/common"
 	"encoding/hex"
+	"fmt"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -19,6 +20,8 @@ var RpcHandler = map[string]commandHandler{
 	"createtransaction":    RpcServer.handleCreateTransaction,
 	"listunspent":          RpcServer.handleListUnSpent,
 	"createrawtransaction": RpcServer.handleCreateRawTrasaction,
+	"signrawtransaction":   RpcServer.handleSignRawTransaction,
+	"sendrawtransaction":   RpcServer.handleSendRawTransaction,
 }
 
 // Commands that are available to a limited user
@@ -145,9 +148,62 @@ Parameter #2—unspent transaction output details
 Parameter #3—private keys for signing
 Parameter #4—signature hash type
 Result—the transaction with any signatures made
-
 */
 func (self RpcServer) handleSignRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	log.Println(params)
+	arrayParams := common.InterfaceSlice(params)
+	hexRawTx := arrayParams[0].(string)
+	rawTxBytes, err := hex.DecodeString(hexRawTx)
 
-	return nil, nil
+	if err != nil {
+		return nil, err
+	}
+	var tx transaction.Tx
+	log.Println(string(rawTxBytes))
+	err = json.Unmarshal(rawTxBytes, &tx)
+	if err != nil {
+		return nil, err
+	}
+	for i := 0; i < len(tx.TxIn); i++ {
+		log.Println(WALLET_OWNER_PUBKEY_ADDRESS)
+		tx.TxIn[i].SignatureScript = []byte(WALLET_OWNER_PUBKEY_ADDRESS)
+	}
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		return nil, err
+	}
+	log.Println(string(byteArrays))
+	return hex.EncodeToString(byteArrays), nil
+}
+
+/**
+// handleSendRawTransaction implements the sendrawtransaction command.
+Parameter #1—a serialized transaction to broadcast
+Parameter #2–whether to allow high fees
+Result—a TXID or error message
+*/
+func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	log.Println(params)
+	arrayParams := common.InterfaceSlice(params)
+	hexRawTx := arrayParams[0].(string)
+	rawTxBytes, err := hex.DecodeString(hexRawTx)
+
+	if err != nil {
+		return nil, err
+	}
+	var tx transaction.Tx
+	log.Println(string(rawTxBytes))
+	err = json.Unmarshal(rawTxBytes, &tx)
+	if err != nil {
+		return nil, err
+	}
+
+	hash, txDesc, err := self.Config.TxMemPool.CanAcceptTransaction(&tx)
+	if err != nil {
+		fmt.Print("there is hash of transaction", hash)
+		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)
+		return nil, err
+	}
+
+	return tx.Hash(), nil
 }

@@ -222,6 +222,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 			RPCMaxClients: cfg.RPCMaxClients,
 			ChainParams:   chainParams,
 			Chain:         self.Chain,
+			TxMemPool:     &self.MemPool.TxPool,
 		}
 		self.RpcServer, err = rpcserver.RpcServer{}.Init(&rpcConfig)
 		if err != nil {
@@ -411,10 +412,10 @@ func (self Server) OnBlock(p *peer.Peer,
 // until the transaction has been fully processed.  Unlock the block
 // handler this does not serialize all transactions through a single thread
 // transactions don't rely on the previous one in a linear fashion like blocks.
-func (sp Server) OnTx(_ *peer.Peer,
+func (self Server) OnTx(_ *peer.Peer,
 	msg *wire.MessageTx) {
 	// TODO get message tx and process, Tuan Anh
-	hash, txDesc, error := sp.MemPool.TxPool.CanAcceptTransaction(&msg.Transaction)
+	hash, txDesc, error := self.MemPool.TxPool.CanAcceptTransaction(&msg.Transaction)
 	if error != nil {
 		fmt.Print("there is hash of transaction", hash)
 		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)

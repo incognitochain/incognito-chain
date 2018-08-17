@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"encoding/hex"
+	"encoding/json"
 )
 
 const HashSize = 32
@@ -12,6 +13,18 @@ const MaxHashStringSize = HashSize * 2
 var ErrHashStrSize = fmt.Errorf("max hash string length is %v bytes", MaxHashStringSize)
 
 type Hash [HashSize]byte
+
+func (hash Hash) MarshalJSON() ([]byte, error) {
+	hashString := hash.String()
+	return json.Marshal(hashString)
+}
+
+func (hash *Hash) UnmarshalJSON(data []byte) (error) {
+	hashString := ""
+	_ = json.Unmarshal(data, &hashString)
+	hash.Decode(hash, hashString)
+	return nil
+}
 
 /**
 String returns the Hash as the hexadecimal string of the byte-reversed
