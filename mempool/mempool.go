@@ -9,6 +9,7 @@ import (
 	"github.com/internet-cash/prototype/transaction"
 	"sync"
 	"github.com/internet-cash/prototype/mining"
+	"log"
 )
 
 //Peer Ids, so that orphans can be identified by which peer first repayed them.
@@ -29,7 +30,6 @@ type orphanTx struct {
 	id         Id
 	expiration time.Time
 }
-
 
 type TxDesc struct {
 	//tracsaction details
@@ -71,7 +71,7 @@ func (tp *TxPool) addTx(tx *transaction.Tx) *TxDesc {
 		},
 		StartingPriority: 1, //@todo we will apply calc function for it.
 	}
-	tp.pool[*tx.TxHash] = txD
+	tp.pool[*tx.Hash()] = txD
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	return txD
 }
@@ -80,13 +80,13 @@ func (tp *TxPool) CanAcceptTransaction(tx *transaction.Tx) (*common.Hash, *TxDes
 	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
 	txD := tp.addTx(tx)
-	return nil, txD, nil
+	return tx.Hash(), txD, nil
 }
 
 //remove transaction for pool
 func (tp *TxPool) removeTx(tx transaction.Tx) {
-	if _, exists := tp.pool[*tx.TxHash]; exists {
-		delete(tp.pool, *tx.TxHash)
+	if _, exists := tp.pool[*tx.Hash()]; exists {
+		delete(tp.pool, *tx.Hash())
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	}
 }
@@ -101,6 +101,7 @@ func (tp *TxPool) RemoveTx(tx transaction.Tx) {
 //this function is safe for access concurrent access.
 func (tp *TxPool) GetTx(txHash *common.Hash) (*transaction.Tx, error) {
 	tp.mtx.Lock()
+	log.Println(txHash.String())
 	txDesc, exists := tp.pool[*txHash]
 	tp.mtx.Unlock()
 	if exists {

@@ -20,10 +20,14 @@ import (
 	n "net"
 	"github.com/libp2p/go-libp2p-peer"
 	"sync/atomic"
+	"time"
 )
 
 const (
 	LOCAL_HOST = "127.0.0.1"
+	// trickleTimeout is the duration of the ticker which trickles down the
+	// inventory to a peer.
+	trickleTimeout = 10 * time.Second
 )
 
 type Peer struct {
@@ -36,19 +40,40 @@ type Peer struct {
 	ListeningAddress n.Addr
 	Seed             int64
 	FlagMutex        sync.Mutex
+	ReadWrite        *bufio.ReadWriter
 
 	Config Config
 
-	quit chan struct{}
+	sendMessageQueue chan outMsg
+	quit             chan struct{}
 }
 
+// Config is the struct to hold configuration options useful to Peer.
 type Config struct {
 	MessageListeners MessageListeners
 }
 
+// MessageListeners defines callback function pointers to invoke with message
+// listeners for a peer. Any listener which is not set to a concrete callback
+// during peer initialization is ignored. Execution of multiple message
+// listeners occurs serially, so one callback blocks the execution of the next.
+//
+// NOTE: Unless otherwise documented, these listeners must NOT directly call any
+// blocking calls (such as WaitForShutdown) on the peer instance since the input
+// handler goroutine blocks until the callback has completed.  Doing so will
+// result in a deadlock.
 type MessageListeners struct {
 	OnTx    func(p *Peer, msg *wire.MessageTx)
 	OnBlock func(p *Peer, msg *wire.MessageBlock)
+}
+
+// outMsg is used to house a message to be sent along with a channel to signal
+// when the message has been sent (or won't be sent due to things such as
+// shutdown)
+type outMsg struct {
+	msg      wire.Message
+	doneChan chan<- struct{}
+	//encoding wire.MessageEncoding
 }
 
 func (self Peer) NewPeer() (*Peer, error) {
@@ -113,6 +138,9 @@ func (self Peer) NewPeer() (*Peer, error) {
 }
 
 func (self Peer) Start() (error) {
+
+	go self.sendMessageHandler()
+
 	self.Host.SetStreamHandler("/peer/1.0.0", self.HandleStream)
 	// Hang forever
 	<-make(chan struct{})
@@ -134,10 +162,9 @@ func (self Peer) HandleStream(s net.Stream) {
 	log.Println("Got a new stream!")
 
 	// Create a buffer stream for non blocking read and write.
-	rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
+	self.ReadWrite = bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
 
-	go self.InHandler(rw)
-	go self.InHandler(rw)
+	go self.InHandler(self.ReadWrite)
 }
 
 /**
@@ -196,4 +223,54 @@ func (self Peer) Disconnect() {
 		close(self.quit)
 	}
 	self.disconnect = 1
+}
+
+/**
+// SendMessageHandler handles the queuing of outgoing data for the peer. This runs as
+// a muxer for various sources of input so we can ensure that server and peer
+// handlers will not block on us sending a message.  That data is then passed on
+// to outHandler to be actually written.
+*/
+func (self Peer) sendMessageHandler() {
+out:
+	for {
+		select {
+		case msg := <-self.sendMessageQueue:
+			{
+				self.FlagMutex.Lock()
+				// TODO
+				// send message
+				self.ReadWrite.Write([]byte(msg.msg.JsonSerialize()))
+				self.FlagMutex.Unlock()
+			}
+		case <-self.quit:
+			break out
+		}
+	}
+}
+
+// Connected returns whether or not the peer is currently connected.
+//
+// This function is safe for concurrent access.
+func (self Peer) Connected() bool {
+	return atomic.LoadInt32(&self.connected) != 0 &&
+		atomic.LoadInt32(&self.disconnect) == 0
+}
+
+// QueueMessageWithEncoding adds the passed bitcoin message to the peer send
+// queue. This function is identical to QueueMessage, however it allows the
+// caller to specify the wire encoding type that should be used when
+// encoding/decoding blocks and transactions.
+//
+// This function is safe for concurrent access.
+func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
+	if !self.Connected() {
+		if doneChan != nil {
+			go func() {
+				doneChan <- struct{}{}
+			}()
+		}
+		return
+	}
+	self.sendMessageQueue <- outMsg{msg: msg, doneChan: doneChan}
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/internet-cash/prototype/wire"
 	"github.com/internet-cash/prototype/rpcserver"
 	"github.com/internet-cash/prototype/mempool"
+	"github.com/internet-cash/prototype/common"
 )
 
 const (
@@ -223,6 +224,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 			ChainParams:   chainParams,
 			Chain:         self.Chain,
 			TxMemPool:     &self.MemPool.TxPool,
+			Server:        self,
 		}
 		self.RpcServer, err = rpcserver.RpcServer{}.Init(&rpcConfig)
 		if err != nil {
@@ -421,5 +423,16 @@ func (self Server) OnTx(_ *peer.Peer,
 		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)
 	} else {
 		fmt.Print(error)
+	}
+}
+
+func (self Server) PushTxMessage(hashTx *common.Hash) {
+	var dc chan<- struct{}
+	tx, _ := self.MemPool.TxPool.GetTx(hashTx)
+	for _, listen := range self.ConnManager.Config.ListenerPeers {
+		msgTx := wire.MessageTx{
+			Transaction: *tx,
+		}
+		listen.QueueMessageWithEncoding(msgTx, dc)
 	}
 }

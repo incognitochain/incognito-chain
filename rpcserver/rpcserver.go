@@ -38,8 +38,9 @@ type RpcServer struct {
 	shutdown   int32
 	numClients int32
 
-	Config      RpcServerConfig
-	HttpServer  *http.Server
+	Config     RpcServerConfig
+	HttpServer *http.Server
+
 	statusLock  sync.RWMutex
 	statusLines map[int]string
 
@@ -53,6 +54,9 @@ type RpcServerConfig struct {
 	ChainParams *blockchain.Params
 	Chain       *blockchain.BlockChain
 	Db          *database.DB
+	Server interface {
+		PushTxMessage(*common.Hash)
+	}
 
 	TxMemPool     *mempool.TxPool
 	RPCMaxClients int

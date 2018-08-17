@@ -3,7 +3,6 @@ package mempool
 import (
 	"testing"
 
-	"github.com/internet-cash/prototype/common"
 	"github.com/internet-cash/prototype/transaction"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -23,16 +22,15 @@ func TestNew(t *testing.T) {
 
 func (m *TxMockedObject) GetTransaction() transaction.Tx {
 
-	hash, error := common.Hash{}.NewHash([]byte("12345678901234567890123456789012"))
-	if error != nil {
-
-	}
+	//hash, error := common.Hash{}.NewHash([]byte("12345678901234567890123456789012"))
+	//if error != nil {
+	//
+	//}
 	return transaction.Tx{
 		Version:  0,
 		TxIn:     nil,
 		TxOut:    nil,
 		LockTime: 0,
-		TxHash:   hash,
 	}
 
 }
@@ -41,16 +39,11 @@ func TestTxPool_CanAcceptTransaction(t *testing.T) {
 	mempool := New(&Config{
 		Policy: Policy{},
 	})
-	hash, error := common.Hash{}.NewHash([]byte("12345678901234567890123456789012"))
-	if error != nil {
-
-	}
 	tx := transaction.Tx{
 		Version:  0,
 		TxIn:     nil,
 		TxOut:    nil,
 		LockTime: 0,
-		TxHash:   hash,
 	}
 	txHash, txDesc, txError := mempool.CanAcceptTransaction(&tx)
 

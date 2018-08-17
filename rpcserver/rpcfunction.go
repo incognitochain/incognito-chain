@@ -200,10 +200,15 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 
 	hash, txDesc, err := self.Config.TxMemPool.CanAcceptTransaction(&tx)
 	if err != nil {
-		fmt.Print("there is hash of transaction", hash)
-		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)
 		return nil, err
 	}
+
+	fmt.Printf("there is hash of transaction: %s", hash.String())
+	fmt.Println()
+	fmt.Printf("there is priority of transaction in pool: %", txDesc.StartingPriority)
+
+	// broadcast message
+	self.Config.Server.PushTxMessage(hash)
 
 	return tx.Hash(), nil
 }

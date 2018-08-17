@@ -11,7 +11,7 @@ type Tx struct {
 	TxIn     []TxIn
 	TxOut    []TxOut
 	LockTime int
-	TxHash   *common.Hash
+	txHash   *common.Hash
 }
 
 func (self *Tx) AddTxIn(ti TxIn) {
@@ -23,8 +23,8 @@ func (self *Tx) AddTxOut(to TxOut) {
 }
 
 func (self *Tx) Hash() (*common.Hash) {
-	if self.TxHash != nil {
-		return self.TxHash
+	if self.txHash != nil {
+		return self.txHash
 	}
 	record := strconv.Itoa(self.Version) + strconv.Itoa(self.Version)
 	for _, txin := range self.TxIn {
@@ -38,6 +38,6 @@ func (self *Tx) Hash() (*common.Hash) {
 		record += string(txout.PkScript)
 	}
 	hash := common.DoubleHashH([]byte(record))
-	self.TxHash = &hash
-	return self.TxHash
+	self.txHash = &hash
+	return self.txHash
 }

@@ -3,6 +3,7 @@ package wire
 import (
 	"github.com/internet-cash/prototype/transaction"
 	"encoding/json"
+	"encoding/hex"
 )
 
 type MessageTx struct {
@@ -19,9 +20,10 @@ func (self MessageTx) MaxPayloadLength(pver int) int {
 
 func (self MessageTx) JsonSerialize() string {
 	jsonStr, _ := json.Marshal(self)
-	return string(jsonStr)
+	return hex.EncodeToString(jsonStr)
 }
 
 func (self MessageTx) JsonDeserialize(jsonStr string) {
-	_ = json.Unmarshal([]byte(jsonStr), self)
+	jsonDecodeString, _ := hex.DecodeString(jsonStr)
+	_ = json.Unmarshal([]byte(jsonDecodeString), self)
 }
