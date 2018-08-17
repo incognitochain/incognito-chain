@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 	"unicode"
+	"reflect"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -98,4 +99,19 @@ func appDataDir(goos, appName string, roaming bool) string {
 //   Plan 9: $home/myapp
 func AppDataDir(appName string, roaming bool) string {
 	return appDataDir(runtime.GOOS, appName, roaming)
+}
+
+func InterfaceSlice(slice interface{}) []interface{} {
+	s := reflect.ValueOf(slice)
+	if s.Kind() != reflect.Slice {
+		panic("InterfaceSlice() given a non-slice type")
+	}
+
+	ret := make([]interface{}, s.Len())
+
+	for i := 0; i < s.Len(); i++ {
+		ret[i] = s.Index(i).Interface()
+	}
+
+	return ret
 }

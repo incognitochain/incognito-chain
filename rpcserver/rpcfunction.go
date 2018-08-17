@@ -6,7 +6,6 @@ import (
 	"github.com/internet-cash/prototype/rpcserver/jsonrpc"
 	"bytes"
 	"strings"
-	"reflect"
 	"github.com/internet-cash/prototype/transaction"
 	"github.com/internet-cash/prototype/common"
 	"encoding/hex"
@@ -27,18 +26,18 @@ var RpcLimited = map[string]struct{}{
 
 }
 
+func (self RpcServer) handleDoSomething(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	log.Println(params)
+	result := make(map[string]string)
+	result["param"] = string(params.([]json.RawMessage)[0])
+	return result, nil
+}
+
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	result := jsonrpc.GetBlockChainInfoResult{
 		Chain:  self.Config.ChainParams.Name,
 		Blocks: len(self.Config.Chain.Blocks),
 	}
-	return result, nil
-}
-
-func (self RpcServer) handleDoSomething(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
-	result := make(map[string]string)
-	result["param"] = string(params.([]json.RawMessage)[0])
 	return result, nil
 }
 
@@ -60,7 +59,7 @@ Parameter #3—the addresses an output must pay
  */
 func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
-	paramsArray := InterfaceSlice(params)
+	paramsArray := common.InterfaceSlice(params)
 	min := int(paramsArray[0].(float64))
 	max := int(paramsArray[1].(float64))
 	listAddresses := paramsArray[2].(string)
@@ -96,11 +95,11 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
  */
 func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
-	arrayParams := InterfaceSlice(params)
+	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.Tx{
 		Version: 1,
 	}
-	txIns := InterfaceSlice(arrayParams[0])
+	txIns := common.InterfaceSlice(arrayParams[0])
 	for _, txIn := range txIns {
 		temp := txIn.(map[string]interface{})
 		txId := temp["txid"].(string)
@@ -130,17 +129,25 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 	return hex.EncodeToString(byteArrays), nil
 }
 
-func InterfaceSlice(slice interface{}) []interface{} {
-	s := reflect.ValueOf(slice)
-	if s.Kind() != reflect.Slice {
-		panic("InterfaceSlice() given a non-slice type")
-	}
+/**
+// SignTransaction uses secrets of the wallet, as well as additional secrets
+// passed in by the caller, to create and add input signatures to a transaction.
+//
+// Transaction input script validation is used to confirm that all signatures
+// are valid.  For any invalid input, a SignatureError is added to the returns.
+// The final error return is reserved for unexpected or fatal errors, such as
+// being unable to determine a previous output script to redeem.
+//
+// The transaction pointed to by tx is modified by this function.
 
-	ret := make([]interface{}, s.Len())
+Parameter #1—the transaction to sign
+Parameter #2—unspent transaction output details
+Parameter #3—private keys for signing
+Parameter #4—signature hash type
+Result—the transaction with any signatures made
 
-	for i := 0; i < s.Len(); i++ {
-		ret[i] = s.Index(i).Interface()
-	}
+*/
+func (self RpcServer) handleSignRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 
-	return ret
+	return nil, nil
 }
