@@ -14,15 +14,15 @@ type Tx struct {
 	TxHash   *common.Hash
 }
 
-func (self Tx) AddTxIn(ti TxIn) {
+func (self *Tx) AddTxIn(ti TxIn) {
 	self.TxIn = append(self.TxIn, ti)
 }
 
-func (self Tx) AddTxOut(to TxOut) {
+func (self *Tx) AddTxOut(to TxOut) {
 	self.TxOut = append(self.TxOut, to)
 }
 
-func (self Tx) Hash() (*common.Hash) {
+func (self *Tx) Hash() (*common.Hash) {
 	if self.TxHash != nil {
 		return self.TxHash
 	}

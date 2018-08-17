@@ -6,15 +6,20 @@ import (
 	"github.com/internet-cash/prototype/rpcserver/jsonrpc"
 	"bytes"
 	"strings"
+	"reflect"
+	"github.com/internet-cash/prototype/transaction"
+	"github.com/internet-cash/prototype/common"
+	"encoding/hex"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
 
 var RpcHandler = map[string]commandHandler{
-	"dosomething":       RpcServer.handleDoSomething,
-	"getblockchaininfo": RpcServer.handleGetBlockChainInfo,
-	"createtransaction": RpcServer.handleCreateTransaction,
-	"listunspent":       RpcServer.handleListUnSpent,
+	"dosomething":          RpcServer.handleDoSomething,
+	"getblockchaininfo":    RpcServer.handleGetBlockChainInfo,
+	"createtransaction":    RpcServer.handleCreateTransaction,
+	"listunspent":          RpcServer.handleListUnSpent,
+	"createrawtransaction": RpcServer.handleCreateRawTrasaction,
 }
 
 // Commands that are available to a limited user
@@ -55,9 +60,10 @@ Parameter #3—the addresses an output must pay
  */
 func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
-	min := string(params.([]json.RawMessage)[0])
-	max := string(params.([]json.RawMessage)[1])
-	listAddresses := string(params.([]json.RawMessage)[2][1:len(params.([]json.RawMessage)[2])-1])
+	paramsArray := InterfaceSlice(params)
+	min := int(paramsArray[0].(float64))
+	max := int(paramsArray[1].(float64))
+	listAddresses := paramsArray[2].(string)
 	_ = min
 	_ = max
 	var addresses []string
@@ -83,4 +89,58 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 		}
 	}
 	return result, nil
+}
+
+/**
+// handleCreateRawTransaction handles createrawtransaction commands.
+ */
+func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	log.Println(params)
+	arrayParams := InterfaceSlice(params)
+	tx := transaction.Tx{
+		Version: 1,
+	}
+	txIns := InterfaceSlice(arrayParams[0])
+	for _, txIn := range txIns {
+		temp := txIn.(map[string]interface{})
+		txId := temp["txid"].(string)
+		hashTxId, err := common.Hash{}.NewHashFromStr(txId)
+		if err != nil {
+			return nil, err
+		}
+		item := transaction.TxIn{
+			PreviousOutPoint: transaction.OutPoint{
+				Hash: *hashTxId,
+				Vout: int(temp["vout"].(float64)),
+			},
+		}
+		tx.AddTxIn(item)
+	}
+	txOut := arrayParams[1].(map[string]interface{})
+	for key, val := range txOut {
+		tx.AddTxOut(transaction.TxOut{
+			PkScript: []byte(key),
+			Value:    val.(float64),
+		})
+	}
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		return nil, err
+	}
+	return hex.EncodeToString(byteArrays), nil
+}
+
+func InterfaceSlice(slice interface{}) []interface{} {
+	s := reflect.ValueOf(slice)
+	if s.Kind() != reflect.Slice {
+		panic("InterfaceSlice() given a non-slice type")
+	}
+
+	ret := make([]interface{}, s.Len())
+
+	for i := 0; i < s.Len(); i++ {
+		ret[i] = s.Index(i).Interface()
+	}
+
+	return ret
 }
