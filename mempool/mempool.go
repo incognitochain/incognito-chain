@@ -111,6 +111,24 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (*transaction.Tx, error) {
 	return nil, fmt.Errorf("transaction is not in the pool")
 }
 
+
+// MiningDescs returns a slice of mining descriptors for all the transactions
+// in the pool.
+func (tp *TxPool) MiningDescs() []*mining.TxDesc {
+	tp.mtx.RLock()
+	descs := make([]*mining.TxDesc, len(tp.pool))
+	i := 0
+	for _, desc := range tp.pool {
+		descs[i] = &desc.Desc
+		i++
+	}
+	tp.mtx.RUnlock()
+
+	return descs
+}
+
+
+// return len of transaction pool
 func (tp *TxPool) Count() int {
 	tp.mtx.RLock()
 	count := len(tp.pool)

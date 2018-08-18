@@ -1,9 +1,11 @@
 package mining
 
 import (
+	"time"
+
 	"github.com/internet-cash/prototype/blockchain"
 	"github.com/internet-cash/prototype/common"
-	"time"
+	"github.com/internet-cash/prototype/transaction"
 )
 
 func NewBlkTmplGenerator(txSource TxSource, chain *blockchain.BlockChain) *BlkTmplGenerator {
@@ -13,8 +15,66 @@ func NewBlkTmplGenerator(txSource TxSource, chain *blockchain.BlockChain) *BlkTm
 	}
 }
 
-func (g *BlkTmplGenerator) NewBlockTemplate() (*BlockTemplate, error) {
+// createCoinbaseTx returns a coinbase transaction paying an appropriate subsidy
+// based on the passed block height to the provided address.  When the address
+// is nil, the coinbase transaction will instead be redeemable by anyone.
+
+func createCoinbaseTx(params *blockchain.Params, coinbaseScript []byte, addr blockchain.Address) (*transaction.Tx, error) {
+	// Create the script to pay to the provided payment address if one was
+	// specified.  Otherwise create a script that allows the coinbase to be
+	// redeemable by anyone.
+	var pkScript []byte
+	if addr != nil {
+		var err error
+		pkScript, err = []byte(""), nil //@todo add public key of the receiver where
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		var err error
+		//@todo add create new public key of the receiver where
+		pkScript, err = []byte(""), nil
+		if err != nil {
+			return nil, err
+		}
+	}
+	//create new tx
+	tx := &transaction.Tx{
+		Version: 1,
+		TxIn:    make([]transaction.TxIn, 0, 2),
+		TxOut:   make([]transaction.TxOut, 0, 1),
+	}
+	//create outpoint
+	outPoint := &transaction.OutPoint{
+		Hash: common.Hash{},
+		Vout: 1,
+	}
+
+	txIn := *transaction.TxIn{}.NewTxIn(outPoint, coinbaseScript)
+	tx.AddTxIn(txIn)
+	//@todo add value of tx out logic
+	txOut := *transaction.TxOut{}.NewTxOut(float64(1.5), pkScript)
+	tx.AddTxOut(txOut)
+
+	return tx, nil
+}
+
+func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress blockchain.Address) (*BlockTemplate, error) {
 	prevBlockHash, _ := common.Hash{}.NewHash([]byte("1234567890123456789012"))
+	sourceTxns := g.txSource.MiningDescs()
+	//@todo we need apply sort rules for sourceTxns here
+
+	coinbaseScript := []byte("1234567890123456789012") //@todo should be create function create basescript
+
+	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{},coinbaseScript, payToAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	blockTxns := make([]*transaction.Tx, 0, len(sourceTxns))
+	blockTxns = append(blockTxns, coinbaseTx)
+
+
 	txFees := make([]int64, 0, 1)
 	var msgBlock blockchain.Block
 	msgBlock.Header = blockchain.BlockHeader{

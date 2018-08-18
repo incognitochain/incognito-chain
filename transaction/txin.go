@@ -38,7 +38,7 @@ type TxIn struct {
 	Sequence         int
 }
 
-func (self TxIn) NewTxIn(prevOut *OutPoint, signatureScript []byte, witness [][]byte) *TxIn {
+func (self TxIn) NewTxIn(prevOut *OutPoint, signatureScript []byte) *TxIn {
 	self = TxIn{
 		PreviousOutPoint: *prevOut,
 		SignatureScript:  signatureScript,

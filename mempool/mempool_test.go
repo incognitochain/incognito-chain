@@ -49,6 +49,6 @@ func TestTxPool_CanAcceptTransaction(t *testing.T) {
 
 	assert.Nil(t, txError)
 
-	assert.Nil(t, txHash, "should not return hash")
+	assert.NotNil(t, txHash, "hash should not nil")
 	assert.NotEmpty(t, txDesc, "have txDesc")
 }
