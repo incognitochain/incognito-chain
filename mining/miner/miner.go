@@ -14,6 +14,7 @@ var (
 
 
 type Config struct {
+
 	// ChainParams identifies which chain parameters the cpu miner is
 	// associated with.
 	ChainParams *blockchain.Params
