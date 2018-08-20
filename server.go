@@ -437,3 +437,8 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 		listen.QueueMessageWithEncoding(msgTx, dc)
 	}
 }
+
+func (self Server) PushBlockMessage() {
+	// TODO push block message for connected peer
+	//
+}

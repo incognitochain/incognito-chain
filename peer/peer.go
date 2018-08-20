@@ -174,9 +174,14 @@ Handle all in message
  */
 func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 	for {
+		log.Printf("read stream")
 		str, err := rw.ReadString('\n')
 		if err != nil {
 			log.Print(err)
+			self.FlagMutex.Lock()
+			rw.WriteString("Can not connect you \n")
+			rw.Flush()
+			self.FlagMutex.Unlock()
 			return
 		}
 		log.Printf("afafsfsafasfasfsfsfsfssf %s", str)
@@ -226,7 +231,8 @@ out:
 				self.FlagMutex.Lock()
 				// TODO
 				// send message
-				message := msg.msg.JsonSerialize()
+				message := msg.msg.JsonSerialize() + "\n"
+				log.Printf("Send a message: %s", message)
 				rw.WriteString(message)
 				rw.Flush()
 				self.FlagMutex.Unlock()

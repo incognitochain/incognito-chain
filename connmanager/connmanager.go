@@ -339,7 +339,7 @@ func (self ConnManager) Connect(connRequest *ConnReq) {
 		//
 		//		// Create a thread to read and write data.
 		go connRequest.Peer.InMessageHandler(rw)
-		go connRequest.Peer.OutMessageHandler(rw)
+		//go connRequest.Peer.OutMessageHandler(rw)
 		select {}
 	}
 
