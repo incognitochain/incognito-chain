@@ -21,11 +21,12 @@ func (self MessageBlock) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self MessageBlock) JsonSerialize() string {
-	jsonStr, _ := json.Marshal(self)
-	return string(jsonStr)
+func (self MessageBlock) JsonSerialize() (string, error) {
+	jsonStr, err := json.Marshal(self)
+	return string(jsonStr), err
 }
 
-func (self MessageBlock) JsonDeserialize(jsonStr string) {
-	_ = json.Unmarshal([]byte(jsonStr), self)
+func (self MessageBlock) JsonDeserialize(jsonStr string) error {
+	err := json.Unmarshal([]byte(jsonStr), self)
+	return err
 }

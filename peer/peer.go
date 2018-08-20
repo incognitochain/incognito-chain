@@ -169,6 +169,8 @@ func (self Peer) HandleStream(stream net.Stream) {
 	//defer stream.Close()
 
 	log.Printf("%s Received a new stream!", self.Host.ID().String())
+
+	// TODO this code make EOF for libp2p
 	//if !atomic.CompareAndSwapInt32(&self.connected, 0, 1) {
 	//	return
 	//}
@@ -198,7 +200,10 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 		log.Printf("Message: %s \n", str)
 		if str != "\n" {
 			var message wire.Message
-			message.JsonDeserialize(str)
+			err = message.JsonDeserialize(str)
+			if err != nil {
+				continue
+			}
 
 			switch msg := message.(type) {
 			case *wire.MessageTx:
@@ -229,6 +234,7 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 // to outHandler to be actually written.
 */
 func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
+	/* for test message
 	go func() {
 		for {
 			time.Sleep(1 * time.Second)
@@ -239,7 +245,7 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 			rw.Writer.Flush()
 			self.FlagMutex.Unlock()
 		}
-	}()
+	}()*/
 	for {
 		select {
 		case msg := <-self.sendMessageQueue:
@@ -247,7 +253,11 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 				self.FlagMutex.Lock()
 				// TODO
 				// send message
-				message := msg.msg.JsonSerialize() + "\n"
+				message, err := msg.msg.JsonSerialize()
+				if err != nil {
+					continue
+				}
+				message += "\n"
 				log.Printf("Send a message: %s", message)
 				rw.Writer.WriteString(message)
 				rw.Writer.Flush()
