@@ -15,12 +15,12 @@ import (
 	"bufio"
 	"sync"
 	"github.com/internet-cash/prototype/wire"
-	"github.com/davecgh/go-spew/spew"
 	"strings"
 	n "net"
 	"github.com/libp2p/go-libp2p-peer"
 	"sync/atomic"
 	"time"
+	"github.com/davecgh/go-spew/spew"
 )
 
 const (
@@ -117,7 +117,12 @@ func (self Peer) NewPeer() (*Peer, error) {
 	}
 
 	// Build Host multiaddress
-	hostAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", basicHost.ID().Pretty()))
+	mulAddrStr := fmt.Sprintf("/ipfs/%s", basicHost.ID().Pretty())
+	hostAddr, err := ma.NewMultiaddr(mulAddrStr)
+	if err != nil {
+		log.Print(err)
+		return &self, err
+	}
 
 	// Now we can build a full multiaddress to reach this Host
 	// by encapsulating both addresses:
@@ -140,15 +145,14 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.PeerId = peerid
 	self.quit = make(chan struct{})
 	self.sendMessageQueue = make(chan outMsg, 1)
-
 	return &self, nil
 }
 
 func (self Peer) Start() (error) {
-	log.Printf("Peer start")
-	self.Host.SetStreamHandler("/peer/1.0.0", self.HandleStream)
-	// Hang forever
-	<-make(chan struct{})
+	log.Println("Peer start")
+	log.Println("Set stream handler and wait for connection from other peer")
+	self.Host.SetStreamHandler("/blockchain/1.0.0", self.HandleStream)
+	select {} // hang forever
 	return nil
 }
 
@@ -162,40 +166,36 @@ func (p Peer) WaitForDisconnect() {
 
 func (self Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
-	defer stream.Close()
+	//defer stream.Close()
 
-	log.Printf("%s Received a new stream!", self.Host.ID())
-	if !atomic.CompareAndSwapInt32(&self.connected, 0, 1) {
-		return
-	}
+	log.Printf("%s Received a new stream!", self.Host.ID().String())
+	//if !atomic.CompareAndSwapInt32(&self.connected, 0, 1) {
+	//	return
+	//}
 
 	// Create a buffer stream for non blocking read and write.
-	wrappedStream := WrappedStream{
-		Reader: bufio.NewReader(stream),
-		Writer: bufio.NewWriter(stream),
-		Stream: stream,
-	}
-	go self.InMessageHandler(&wrappedStream)
-	go self.OutMessageHandler(&wrappedStream)
+	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+
+	go self.InMessageHandler(rw)
+	go self.OutMessageHandler(rw)
 }
 
 /**
 Handle all in message
  */
-func (self Peer) InMessageHandler(rw *WrappedStream) {
-	log.Println("Handle Read message handler")
+func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 	for {
 		log.Printf("read stream")
-		str, err := rw.Reader.ReadString('\n')
+		str, err := rw.ReadString('\n')
 		if err != nil {
-			log.Printf("Error: %s", err.Error())
-			break
-		}
-		log.Printf("Message: %s", str)
-
-		if str == "" {
+			log.Println(err)
 			return
 		}
+
+		//if str == "" {
+		//	return
+		//}
+		log.Printf("Message: %s \n", str)
 		if str != "\n" {
 			var message wire.Message
 			message.JsonDeserialize(str)
@@ -228,9 +228,18 @@ func (self Peer) InMessageHandler(rw *WrappedStream) {
 // handlers will not block on us sending a message.  That data is then passed on
 // to outHandler to be actually written.
 */
-func (self Peer) OutMessageHandler(rw *WrappedStream) {
-	log.Println("Handle Send message handler")
-out:
+func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
+	go func() {
+		for {
+			time.Sleep(1 * time.Second)
+			a := fmt.Sprintf("%s hello \n", self.Host.ID().String())
+			log.Printf("%s Write string %s", self.Host.ID().String(), a)
+			self.FlagMutex.Lock()
+			rw.Writer.WriteString(a)
+			rw.Writer.Flush()
+			self.FlagMutex.Unlock()
+		}
+	}()
 	for {
 		select {
 		case msg := <-self.sendMessageQueue:
@@ -245,7 +254,7 @@ out:
 				self.FlagMutex.Unlock()
 			}
 		case <-self.quit:
-			break out
+			break
 			//default:
 			//	log.Println("Wait for sending message")
 		}

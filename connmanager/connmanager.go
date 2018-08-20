@@ -364,27 +364,21 @@ func (self ConnManager) Connect(addr string) {
 
 	for _, listen := range self.Config.ListenerPeers {
 		listen.Host.Peerstore().AddAddr(connReq.Peer.PeerId, connReq.Peer.TargetAddress, pstore.PermanentAddrTTL)
-		log.Println("opening stream")
+		log.Printf("opening stream %s \n", connReq.Peer.PeerId.String())
 		// make a new stream from host B to host A
 		// it should be handled on host A by the handler we set above because
 		// we use the same /peer/1.0.0 protocol
-		stream, err := listen.Host.NewStream(context.Background(), connReq.Peer.PeerId, "/peer/1.0.0")
-		defer stream.Close()
+		stream, err := listen.Host.NewStream(context.Background(), connReq.Peer.PeerId, "/blockchain/1.0.0")
 		if err != nil {
 			log.Println(err)
 			continue
 		}
 		// Create a buffered stream so that read and writes are non blocking.
-		wrapperStream := peer.WrappedStream{
-			Stream: stream,
-			Reader: bufio.NewReader(stream),
-			Writer: bufio.NewWriter(stream),
-		}
+		rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 		// Create a thread to read and write data.
-		go listen.InMessageHandler(&wrapperStream)
-		go listen.OutMessageHandler(&wrapperStream)
-		select {}
+		go listen.InMessageHandler(rw)
+		//go listen.OutMessageHandler(rw)
 	}
 
 	select {
@@ -423,7 +417,7 @@ func (self ConnManager) Start() {
 	if self.Config.OnInboundAccept != nil {
 		for _, listner := range self.Config.ListenerPeers {
 			self.WaitGroup.Add(1)
-			self.listenHandler(listner)
+			go self.listenHandler(listner)
 		}
 	}
 }
