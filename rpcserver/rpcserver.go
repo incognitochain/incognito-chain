@@ -55,6 +55,7 @@ type RpcServerConfig struct {
 	Chain       *blockchain.BlockChain
 	Db          *database.DB
 	Server interface {
+		// Push Tx message
 		PushTxMessage(*common.Hash)
 	}
 

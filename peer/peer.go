@@ -139,6 +139,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 }
 
 func (self Peer) Start() (error) {
+	log.Printf("Peer start")
 	self.Host.SetStreamHandler("/peer/1.0.0", self.HandleStream)
 	// Hang forever
 	<-make(chan struct{})
@@ -177,14 +178,14 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 		log.Printf("read stream")
 		str, err := rw.ReadString('\n')
 		if err != nil {
-			log.Print(err)
+			log.Printf("Error: %s", err.Error())
 			self.FlagMutex.Lock()
 			rw.WriteString("Can not connect you \n")
 			rw.Flush()
 			self.FlagMutex.Unlock()
 			return
 		}
-		log.Printf("afafsfsafasfasfsfsfsfssf %s", str)
+		log.Printf("Message: %s", str)
 
 		if str == "" {
 			return

@@ -295,6 +295,8 @@ out:
 	log.Printf("Connection handler done")
 }
 
+// Connect assigns an id and dials a connection to the address of the
+// connection request.
 func (self ConnManager) Connect(connRequest *ConnReq) {
 	if atomic.LoadInt32(&self.stop) != 0 {
 		return
@@ -338,8 +340,9 @@ func (self ConnManager) Connect(connRequest *ConnReq) {
 		rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
 		//
 		//		// Create a thread to read and write data.
+		_ = rw
 		go connRequest.Peer.InMessageHandler(rw)
-		//go connRequest.Peer.OutMessageHandler(rw)
+		go connRequest.Peer.OutMessageHandler(rw)
 		select {}
 	}
 
