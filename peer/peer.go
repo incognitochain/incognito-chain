@@ -35,7 +35,7 @@ type Peer struct {
 	disconnect int32
 
 	Host             host.Host
-	Multiaddr        ma.Multiaddr
+	TargetAddress    ma.Multiaddr
 	PeerId           peer.ID
 	ListeningAddress n.Addr
 	Seed             int64
@@ -50,6 +50,12 @@ type Peer struct {
 // Config is the struct to hold configuration options useful to Peer.
 type Config struct {
 	MessageListeners MessageListeners
+}
+
+type WrappedStream struct {
+	Stream net.Stream
+	Writer *bufio.Writer
+	Reader *bufio.Reader
 }
 
 // MessageListeners defines callback function pointers to invoke with message
@@ -130,7 +136,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	}
 
 	self.Host = basicHost
-	self.Multiaddr = fullAddr
+	self.TargetAddress = fullAddr
 	self.PeerId = peerid
 	self.quit = make(chan struct{})
 	self.sendMessageQueue = make(chan outMsg, 1)
@@ -154,36 +160,36 @@ func (p Peer) WaitForDisconnect() {
 	<-p.quit
 }
 
-func (self Peer) HandleStream(s net.Stream) {
+func (self Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
-	defer s.Close()
+	defer stream.Close()
 
-	log.Println("Got a new stream!")
+	log.Printf("%s Received a new stream!", self.Host.ID())
 	if !atomic.CompareAndSwapInt32(&self.connected, 0, 1) {
 		return
 	}
 
 	// Create a buffer stream for non blocking read and write.
-	rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
-
-	go self.InMessageHandler(rw)
-	go self.OutMessageHandler(rw)
+	wrappedStream := WrappedStream{
+		Reader: bufio.NewReader(stream),
+		Writer: bufio.NewWriter(stream),
+		Stream: stream,
+	}
+	go self.InMessageHandler(&wrappedStream)
+	go self.OutMessageHandler(&wrappedStream)
 }
 
 /**
 Handle all in message
  */
-func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
+func (self Peer) InMessageHandler(rw *WrappedStream) {
+	log.Println("Handle Read message handler")
 	for {
 		log.Printf("read stream")
-		str, err := rw.ReadString('\n')
+		str, err := rw.Reader.ReadString('\n')
 		if err != nil {
 			log.Printf("Error: %s", err.Error())
-			self.FlagMutex.Lock()
-			rw.WriteString("Can not connect you \n")
-			rw.Flush()
-			self.FlagMutex.Unlock()
-			return
+			break
 		}
 		log.Printf("Message: %s", str)
 
@@ -222,7 +228,7 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 // handlers will not block on us sending a message.  That data is then passed on
 // to outHandler to be actually written.
 */
-func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
+func (self Peer) OutMessageHandler(rw *WrappedStream) {
 	log.Println("Handle Send message handler")
 out:
 	for {
@@ -234,8 +240,8 @@ out:
 				// send message
 				message := msg.msg.JsonSerialize() + "\n"
 				log.Printf("Send a message: %s", message)
-				rw.WriteString(message)
-				rw.Flush()
+				rw.Writer.WriteString(message)
+				rw.Writer.Flush()
 				self.FlagMutex.Unlock()
 			}
 		case <-self.quit:

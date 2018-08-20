@@ -11,9 +11,6 @@ import (
 	"runtime"
 	"errors"
 
-	ma "github.com/multiformats/go-multiaddr"
-	libpeer "github.com/libp2p/go-libp2p-peer"
-
 	"github.com/internet-cash/prototype/blockchain"
 	"github.com/internet-cash/prototype/connmanager"
 	"github.com/internet-cash/prototype/database"
@@ -170,40 +167,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		permanentPeers = cfg.AddPeers
 	}
 	for _, addr := range permanentPeers {
-		// The following code extracts target's peer ID from the
-		// given multiaddress
-		ipfsaddr, err := ma.NewMultiaddr(addr)
-		if err != nil {
-			log.Print(err)
-			continue
-		}
-
-		pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
-		if err != nil {
-			log.Print(err)
-			continue
-		}
-
-		peerid, err := libpeer.IDB58Decode(pid)
-		if err != nil {
-			log.Print(err)
-			continue
-		}
-
-		// Decapsulate the /ipfs/<peerID> part from the target
-		// /ip4/<a.b.c.d>/ipfs/<peer> becomes /ip4/<a.b.c.d>
-		targetPeerAddr, _ := ma.NewMultiaddr(
-			fmt.Sprintf("/ipfs/%s", libpeer.IDB58Encode(peerid)))
-		targetAddr := ipfsaddr.Decapsulate(targetPeerAddr)
-
-		connReq := connmanager.ConnReq{
-			Permanent: true,
-			Peer: peer.Peer{
-				Multiaddr: targetAddr,
-				PeerId:    peerid,
-			},
-		}
-		go self.ConnManager.Connect(&connReq)
+		go self.ConnManager.Connect(addr)
 	}
 
 	if !cfg.DisableRPC {

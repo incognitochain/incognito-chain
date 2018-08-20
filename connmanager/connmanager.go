@@ -3,11 +3,14 @@ package connmanager
 import (
 	"github.com/internet-cash/prototype/peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
+	ma "github.com/multiformats/go-multiaddr"
+	libpeer "github.com/libp2p/go-libp2p-peer"
 	"sync"
 	"log"
 	"sync/atomic"
 	"context"
 	"bufio"
+	"fmt"
 )
 
 const (
@@ -297,12 +300,45 @@ out:
 
 // Connect assigns an id and dials a connection to the address of the
 // connection request.
-func (self ConnManager) Connect(connRequest *ConnReq) {
+func (self ConnManager) Connect(addr string) {
 	if atomic.LoadInt32(&self.stop) != 0 {
 		return
 	}
-	if atomic.LoadUint64(&connRequest.Id) == 0 {
-		atomic.StoreUint64(&connRequest.Id, atomic.AddUint64(&self.connReqCount, 1))
+	// The following code extracts target's peer ID from the
+	// given multiaddress
+	ipfsaddr, err := ma.NewMultiaddr(addr)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	peerId, err := libpeer.IDB58Decode(pid)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	// Decapsulate the /ipfs/<peerID> part from the target
+	// /ip4/<a.b.c.d>/ipfs/<peer> becomes /ip4/<a.b.c.d>
+	targetPeerAddr, _ := ma.NewMultiaddr(
+		fmt.Sprintf("/ipfs/%s", libpeer.IDB58Encode(peerId)))
+	targetAddr := ipfsaddr.Decapsulate(targetPeerAddr)
+
+	connReq := ConnReq{
+		Permanent: true,
+		Peer: peer.Peer{
+			TargetAddress: targetAddr,
+			PeerId:        peerId,
+		},
+	}
+	if atomic.LoadUint64(&connReq.Id) == 0 {
+		atomic.StoreUint64(&connReq.Id, atomic.AddUint64(&self.connReqCount, 1))
 
 		// Submit a request of a pending connection attempt to the
 		// connection manager. By registering the id before the
@@ -310,7 +346,7 @@ func (self ConnManager) Connect(connRequest *ConnReq) {
 		// cancel the connection via the Remove method.
 		done := make(chan struct{})
 		select {
-		case self.Requests <- registerPending{connRequest, done}:
+		case self.Requests <- registerPending{&connReq, done}:
 		case <-self.Quit:
 			return
 		}
@@ -324,30 +360,35 @@ func (self ConnManager) Connect(connRequest *ConnReq) {
 		}
 	}
 
-	//spew.Dump("Attempting to connect to", connRequest.Peer.Multiaddr.String())
+	//spew.Dump("Attempting to connect to", connRequest.Peer.TargetAddress.String())
 
 	for _, listen := range self.Config.ListenerPeers {
-		listen.Host.Peerstore().AddAddr(connRequest.Peer.PeerId, connRequest.Peer.Multiaddr, pstore.PermanentAddrTTL)
+		listen.Host.Peerstore().AddAddr(connReq.Peer.PeerId, connReq.Peer.TargetAddress, pstore.PermanentAddrTTL)
 		log.Println("opening stream")
 		// make a new stream from host B to host A
 		// it should be handled on host A by the handler we set above because
 		// we use the same /peer/1.0.0 protocol
-		s, err := listen.Host.NewStream(context.Background(), connRequest.Peer.PeerId, "/peer/1.0.0")
+		stream, err := listen.Host.NewStream(context.Background(), connReq.Peer.PeerId, "/peer/1.0.0")
+		defer stream.Close()
 		if err != nil {
-			log.Fatalln(err)
+			log.Println(err)
+			continue
 		}
-		//		// Create a buffered stream so that read and writes are non blocking.
-		rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
-		//
-		//		// Create a thread to read and write data.
-		_ = rw
-		go connRequest.Peer.InMessageHandler(rw)
-		go connRequest.Peer.OutMessageHandler(rw)
+		// Create a buffered stream so that read and writes are non blocking.
+		wrapperStream := peer.WrappedStream{
+			Stream: stream,
+			Reader: bufio.NewReader(stream),
+			Writer: bufio.NewWriter(stream),
+		}
+
+		// Create a thread to read and write data.
+		go listen.InMessageHandler(&wrapperStream)
+		go listen.OutMessageHandler(&wrapperStream)
 		select {}
 	}
 
 	select {
-	case self.Requests <- handleConnected{connRequest, connRequest.Peer}:
+	case self.Requests <- handleConnected{&connReq, connReq.Peer}:
 	case <-self.Quit:
 	}
 }
@@ -382,7 +423,7 @@ func (self ConnManager) Start() {
 	if self.Config.OnInboundAccept != nil {
 		for _, listner := range self.Config.ListenerPeers {
 			self.WaitGroup.Add(1)
-			go self.listenHandler(listner)
+			self.listenHandler(listner)
 		}
 	}
 }
