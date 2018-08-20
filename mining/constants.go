@@ -17,7 +17,7 @@ type Policy struct {
 
 type TxDesc struct {
 	// Tx is the transaction associated with the entry.
-	Tx *transaction.Tx
+	Tx transaction.Transaction
 
 	// Added is the time when the entry was added to the source pool.
 	Added time.Time

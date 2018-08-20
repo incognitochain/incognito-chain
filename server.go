@@ -382,7 +382,7 @@ func (self Server) OnTx(_ *peer.Peer,
 	msg *wire.MessageTx) {
 	log.Println("Receive a new transaction")
 	// TODO get message tx and process, Tuan Anh
-	hash, txDesc, error := self.MemPool.TxPool.CanAcceptTransaction(&msg.Transaction)
+	hash, txDesc, error := self.MemPool.TxPool.CanAcceptTransaction(msg.Transaction)
 	if error != nil {
 		fmt.Print("there is hash of transaction", hash)
 		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)
@@ -396,7 +396,7 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 	tx, _ := self.MemPool.TxPool.GetTx(hashTx)
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
 		msgTx := wire.MessageTx{
-			Transaction: *tx,
+			Transaction: tx,
 		}
 		listen.QueueMessageWithEncoding(msgTx, dc)
 	}

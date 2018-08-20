@@ -70,7 +70,7 @@ mempoolLoop:
 	for _, txDesc := range sourceTxns  {
 		tx := txDesc.Tx
 		//@todo need apply validate tx, logic check all referenced here
-		if tx.TxOut != nil {
+		if tx.ValidateTransaction() {
 			continue mempoolLoop
 		}
 

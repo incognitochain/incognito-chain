@@ -7,7 +7,7 @@ import (
 )
 
 type MessageTx struct {
-	Transaction transaction.Tx
+	Transaction transaction.Transaction
 }
 
 func (self MessageTx) MessageType() string {
