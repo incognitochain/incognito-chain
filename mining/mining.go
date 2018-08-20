@@ -8,24 +8,17 @@ import (
 	"github.com/internet-cash/prototype/transaction"
 )
 
-func NewBlkTmplGenerator(txSource TxSource, chain *blockchain.BlockChain) *BlkTmplGenerator {
-	return &BlkTmplGenerator{
-		txSource:    txSource,
-		chain:       chain,
-	}
-}
-
 // createCoinbaseTx returns a coinbase transaction paying an appropriate subsidy
 // based on the passed block height to the provided address.  When the address
 // is nil, the coinbase transaction will instead be redeemable by anyone.
 
-func createCoinbaseTx(params *blockchain.Params, coinbaseScript []byte, addr blockchain.Address) (*transaction.Tx, error) {
+func createCoinbaseTx(params *blockchain.Params, coinbaseScript []byte, addr string) (*transaction.Tx, error) {
 	// Create the script to pay to the provided payment address if one was
 	// specified.  Otherwise create a script that allows the coinbase to be
 	// redeemable by anyone.
 	var pkScript []byte
 
-	pkScript = []byte(addr.Address) //@todo add public key of the receiver where
+	pkScript = []byte(addr) //@todo add public key of the receiver where
 
 	//create new tx
 	tx := &transaction.Tx{
@@ -48,10 +41,10 @@ func createCoinbaseTx(params *blockchain.Params, coinbaseScript []byte, addr blo
 	return tx, nil
 }
 
-func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress blockchain.Address, chain *blockchain.BlockChain) (*BlockTemplate, error) {
+func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain) (*BlockTemplate, error) {
 
 	prevBlockHash  := chain.Blocks[len(chain.Blocks) -1].Hash()
-	sourceTxns := g.txSource.MiningDescs()
+	sourceTxns := g.txSource
 	//@todo we need apply sort rules for sourceTxns here
 
 	coinbaseScript := []byte("1234567890123456789012") //@todo should be create function create basescript
@@ -70,7 +63,7 @@ mempoolLoop:
 	for _, txDesc := range sourceTxns  {
 		tx := txDesc.Tx
 		//@todo need apply validate tx, logic check all referenced here
-		if tx.TxOut != nil {
+		if tx.TxOut == nil {
 			continue mempoolLoop
 		}
 
@@ -98,4 +91,12 @@ mempoolLoop:
 		Fees:              txFees,
 	}, nil
 
+}
+
+
+func NewBlkTmplGenerator(txSource []*TxDesc, chain *blockchain.BlockChain) *BlkTmplGenerator {
+	return &BlkTmplGenerator{
+		txSource:    txSource,
+		chain:       chain,
+	}
 }

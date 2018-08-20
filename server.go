@@ -19,6 +19,8 @@ import (
 	"github.com/internet-cash/prototype/rpcserver"
 	"github.com/internet-cash/prototype/mempool"
 	"github.com/internet-cash/prototype/common"
+	"github.com/internet-cash/prototype/mining/miner"
+	"github.com/internet-cash/prototype/mining"
 )
 
 const (
@@ -46,9 +48,6 @@ func (a simpleAddr) Network() string {
 type onionAddr struct {
 	addr string
 }
-type pool struct {
-	TxPool mempool.TxPool
-}
 
 type Server struct {
 	started     int32
@@ -59,9 +58,10 @@ type Server struct {
 	Chain       *blockchain.BlockChain
 	Db          database.DB
 	RpcServer   *rpcserver.RpcServer
-	MemPool     pool
+	MemPool     mempool.TxPool
 	Quit        chan struct{}
 	WaitGroup   sync.WaitGroup
+	Miner       *miner.Miner
 }
 
 // setupRPCListeners returns a slice of listeners that are configured for use
@@ -128,11 +128,9 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	self.ChainParams = chainParams
 	self.Quit = make(chan struct{})
 	self.Db = db
-	self.MemPool = pool{
-		TxPool: *mempool.New(&mempool.Config{
-			Policy: mempool.Policy{},
-		}),
-	}
+	self.MemPool =  *mempool.New(&mempool.Config{
+		Policy: mempool.Policy{},
+	})
 
 	// Create a new block chain instance with the appropriate configuration.
 	var err error
@@ -145,11 +143,21 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		return nil, err
 	}
 
+	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool.MiningDescs(), self.Chain)
+
+	self.Miner = miner.New(&miner.Config{
+		ChainParams: self.ChainParams,
+		BlockTemplateGenerator: blockTemplateGenerator,
+		MiningAddrs: cfg.MiningAddrs,
+		Chain:		 self.Chain,
+	})
+
 	// Create a connection manager.
 	targetOutbound := defaultNumberOfTargetOutbound
 	if cfg.MaxPeers < targetOutbound {
 		targetOutbound = cfg.MaxPeers
 	}
+
 	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
@@ -187,7 +195,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 			RPCMaxClients: cfg.RPCMaxClients,
 			ChainParams:   chainParams,
 			Chain:         self.Chain,
-			TxMemPool:     &self.MemPool.TxPool,
+			TxMemPool:     &self.MemPool,
 			Server:        self,
 		}
 		self.RpcServer, err = rpcserver.RpcServer{}.Init(&rpcConfig)
@@ -233,6 +241,8 @@ func (self Server) Stop() error {
 	if !cfg.DisableRPC && self.RpcServer != nil {
 		self.RpcServer.Stop()
 	}
+
+	self.Miner.Stop()
 
 	close(self.Quit)
 	return nil
@@ -285,6 +295,11 @@ func (self Server) Start() {
 		//go self.rebroadcastHandler()
 
 		self.RpcServer.Start()
+	}
+
+	//creat mining
+	if cfg.Generate == true && (len(cfg.MiningAddrs) > 0)  {
+		self.Miner.Start()
 	}
 }
 
@@ -382,7 +397,7 @@ func (self Server) OnTx(_ *peer.Peer,
 	msg *wire.MessageTx) {
 	log.Println("Receive a new transaction")
 	// TODO get message tx and process, Tuan Anh
-	hash, txDesc, error := self.MemPool.TxPool.CanAcceptTransaction(&msg.Transaction)
+	hash, txDesc, error := self.MemPool.CanAcceptTransaction(&msg.Transaction)
 	if error != nil {
 		fmt.Print("there is hash of transaction", hash)
 		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)
@@ -393,7 +408,7 @@ func (self Server) OnTx(_ *peer.Peer,
 
 func (self Server) PushTxMessage(hashTx *common.Hash) {
 	var dc chan<- struct{}
-	tx, _ := self.MemPool.TxPool.GetTx(hashTx)
+	tx, _ := self.MemPool.GetTx(hashTx)
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
 		msgTx := wire.MessageTx{
 			Transaction: *tx,
@@ -405,4 +420,9 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 func (self Server) PushBlockMessage() {
 	// TODO push block message for connected peer
 	//
+}
+
+func (self Server) handleMiner() error  {
+
+	return nil
 }
