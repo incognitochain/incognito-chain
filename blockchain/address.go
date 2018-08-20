@@ -1,13 +1,7 @@
 package blockchain
 
-type Address interface {
+type Address struct {
 	// String returns the string encoding of the transaction output
 	// destination.
-	String() string
-
-	EncodeAddress() string
-
-	ScriptAddress() []byte
-
-	IsForNet(*Params) bool
+	Address string
 }

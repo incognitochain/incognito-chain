@@ -24,20 +24,9 @@ func createCoinbaseTx(params *blockchain.Params, coinbaseScript []byte, addr blo
 	// specified.  Otherwise create a script that allows the coinbase to be
 	// redeemable by anyone.
 	var pkScript []byte
-	if addr != nil {
-		var err error
-		pkScript, err = []byte(""), nil //@todo add public key of the receiver where
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		var err error
-		//@todo add create new public key of the receiver where
-		pkScript, err = []byte(""), nil
-		if err != nil {
-			return nil, err
-		}
-	}
+
+	pkScript = []byte(addr.Address) //@todo add public key of the receiver where
+
 	//create new tx
 	tx := &transaction.Tx{
 		Version: 1,
@@ -59,8 +48,9 @@ func createCoinbaseTx(params *blockchain.Params, coinbaseScript []byte, addr blo
 	return tx, nil
 }
 
-func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress blockchain.Address) (*BlockTemplate, error) {
-	prevBlockHash, _ := common.Hash{}.NewHash([]byte("1234567890123456789012"))
+func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress blockchain.Address, chain *blockchain.BlockChain) (*BlockTemplate, error) {
+
+	prevBlockHash  := chain.Blocks[len(chain.Blocks) -1].Hash()
 	sourceTxns := g.txSource.MiningDescs()
 	//@todo we need apply sort rules for sourceTxns here
 
@@ -74,16 +64,31 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress blockchain.Address) (*B
 	blockTxns := make([]*transaction.Tx, 0, len(sourceTxns))
 	blockTxns = append(blockTxns, coinbaseTx)
 
+	merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(blockTxns)
+	merkleRoot := merkleRoots[len(merkleRoots) - 1]
+mempoolLoop:
+	for _, txDesc := range sourceTxns  {
+		tx := txDesc.Tx
+		//@todo need apply validate tx, logic check all referenced here
+		if tx.TxOut != nil {
+			continue mempoolLoop
+		}
 
+	}
 	txFees := make([]int64, 0, 1)
 	var msgBlock blockchain.Block
 	msgBlock.Header = blockchain.BlockHeader{
-		Version:       0,
+		Version:       1,
 		PrevBlockHash: *prevBlockHash,
-		MerkleRoot:    *prevBlockHash,
+		MerkleRoot:    *merkleRoot,
 		Timestamp:     time.Now(),
-		Difficulty:    0,
-		Nonce:         0,
+		Difficulty:    0,//@todo should be create Difficulty logic
+		Nonce:         0,//@todo should be create Nonce logic
+	}
+	for _, tx := range blockTxns {
+		if err := msgBlock.AddTransaction(*tx); err != nil {
+			return nil, err
+		}
 	}
 
 	msgBlock.BlockHash = prevBlockHash
