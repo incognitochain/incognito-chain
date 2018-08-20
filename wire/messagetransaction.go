@@ -7,7 +7,7 @@ import (
 )
 
 type MessageTx struct {
-	Transaction transaction.Tx
+	Transaction transaction.Transaction
 }
 
 func (self MessageTx) MessageType() string {
@@ -18,12 +18,13 @@ func (self MessageTx) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self MessageTx) JsonSerialize() string {
-	jsonStr, _ := json.Marshal(self)
-	return hex.EncodeToString(jsonStr)
+func (self MessageTx) JsonSerialize() (string, error) {
+	jsonStr, err := json.Marshal(self)
+	return hex.EncodeToString(jsonStr), err
 }
 
-func (self MessageTx) JsonDeserialize(jsonStr string) {
+func (self MessageTx) JsonDeserialize(jsonStr string) error {
 	jsonDecodeString, _ := hex.DecodeString(jsonStr)
-	_ = json.Unmarshal([]byte(jsonDecodeString), self)
+	err := json.Unmarshal([]byte(jsonDecodeString), self)
+	return err
 }

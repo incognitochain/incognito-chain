@@ -61,7 +61,7 @@ type TxPool struct {
 }
 
 //add transaction into pool
-func (tp *TxPool) addTx(tx *transaction.Tx) *TxDesc {
+func (tp *TxPool) addTx(tx transaction.Transaction) *TxDesc {
 	txD := &TxDesc{
 		Desc: mining.TxDesc{
 			Tx:     tx,
@@ -76,7 +76,7 @@ func (tp *TxPool) addTx(tx *transaction.Tx) *TxDesc {
 	return txD
 }
 
-func (tp *TxPool) CanAcceptTransaction(tx *transaction.Tx) (*common.Hash, *TxDesc, error) {
+func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
 	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
 	txD := tp.addTx(tx)
@@ -99,7 +99,7 @@ func (tp *TxPool) RemoveTx(tx transaction.Tx) {
 }
 
 //this function is safe for access concurrent access.
-func (tp *TxPool) GetTx(txHash *common.Hash) (*transaction.Tx, error) {
+func (tp *TxPool) GetTx(txHash *common.Hash) (transaction.Transaction, error) {
 	tp.mtx.Lock()
 	log.Println(txHash.String())
 	txDesc, exists := tp.pool[*txHash]
