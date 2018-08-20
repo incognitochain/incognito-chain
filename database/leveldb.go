@@ -1,43 +1,43 @@
 package database
 
 import (
-	"github.com/internet-cash/prototype/blockchain"
-	"github.com/syndtr/goleveldb/leveldb"
 	"encoding/json"
 	"path/filepath"
-	"github.com/syndtr/goleveldb/leveldb/errors"
-	"github.com/btcsuite/btcd/database"
 	"fmt"
+
+	"github.com/internet-cash/prototype/blockchain"
+	"github.com/internet-cash/prototype/common"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 func init() {
 	dbCreator := func(name string, dir string) (DB, error) {
-		return NewGoLevelDB(name, dir)
+		return NewLevelDB(name, dir)
 	}
-	registerDBCreator(LevelDBBackend, dbCreator, false)
 	registerDBCreator(GoLevelDBBackend, dbCreator, false)
 }
 
-var _ DB = (*LevelDB)(nil)
+var _ DB = (LevelDB)(nil)
 
 type LevelDB struct {
 	db *leveldb.DB
 }
 
-func NewGoLevelDB(name string, dir string) (*LevelDB, error) {
+func NewLevelDB(name string, dir string) (LevelDB, error) {
 	dbPath := filepath.Join(dir, name+".db")
-	db, err := leveldb.OpenFile(dbPath, nil)
+	_data, err := leveldb.OpenFile(dbPath, nil)
 	if err != nil {
 		return nil, err
 	}
 	database := &LevelDB{
-		db: db,
+		db: _data,
 	}
 	return database, nil
 }
 
 // Implements DB.
-func (db *LevelDB) Get(key []byte) []byte {
+func (db *LevelDB) get(key []byte) []byte {
 	key = nonNilBytes(key)
 	res, err := db.db.Get(key, nil)
 	if err != nil {
@@ -50,7 +50,7 @@ func (db *LevelDB) Get(key []byte) []byte {
 }
 
 
-func (db *LevelDB) Set(key []byte, value []byte) {
+func (db *LevelDB) set(key []byte, value []byte) {
 	key = nonNilBytes(key)
 	value = nonNilBytes(value)
 	err := db.db.Put(key, value, nil)
@@ -66,14 +66,20 @@ func nonNilBytes(bz []byte) []byte {
 	return bz
 }
 
-func (db LevelDB) PutChain([]*blockchain.Block) {
-
+func (db LevelDB) PutChain(block *blockchain.Block) (bool, error){
+	data, err := json.Marshal(block)
+	if err != nil {
+		return false, err
+	}
+	var key = []byte(block.Hash().String())
+	db.set(key, data)
+	return true, nil
 }
 
-func (db LevelDB) GetChain() []*blockchain.Block {
-	var key = []byte("")
-	data := db.Get(key)
-	var chain []*blockchain.Block
+func (db LevelDB) GetChain(hash common.Hash) *blockchain.Block {
+	var key = []byte(hash.String())
+	data := db.get(key)
+	var chain *blockchain.Block
 
 	if len(data) > 1 {
 		err := json.Unmarshal(data,&chain)
