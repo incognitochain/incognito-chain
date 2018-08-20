@@ -37,18 +37,8 @@ type BlockTemplate struct {
 	Fees []int64
 }
 
-type TxSource interface {
-	// LastUpdated returns the last time a transaction was added to or
-	// removed from the source pool.
-	LastUpdated() time.Time
-
-	// MiningDescs returns a slice of mining descriptors for all the
-	// transactions in the source pool.
-	MiningDescs() []*TxDesc
-
-}
 
 type BlkTmplGenerator struct {
-	txSource    TxSource
+	txSource    []*TxDesc
 	chain       *blockchain.BlockChain
 }
