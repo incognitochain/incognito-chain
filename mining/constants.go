@@ -3,8 +3,8 @@ package mining
 import (
 	"time"
 
-	"github.com/ninjadotorg/money-prototype/transaction"
-	"github.com/ninjadotorg/money-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 )
 
 const (

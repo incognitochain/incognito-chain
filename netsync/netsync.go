@@ -1,9 +1,9 @@
 package netsync
 
 import (
-	"github.com/ninjadotorg/money-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"sync"
-	"github.com/ninjadotorg/money-prototype/peer"
+	"github.com/ninjadotorg/cash-prototype/peer"
 )
 
 type NetSync struct {
