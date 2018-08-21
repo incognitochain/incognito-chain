@@ -22,6 +22,8 @@ var RpcHandler = map[string]commandHandler{
 	"createrawtransaction": RpcServer.handleCreateRawTrasaction,
 	"signrawtransaction":   RpcServer.handleSignRawTransaction,
 	"sendrawtransaction":   RpcServer.handleSendRawTransaction,
+	"getNumberOfCoins":   RpcServer.handleGetNumberOfCoins,
+	"getNumberOfBonds":   RpcServer.handleGetNumberOfBonds,
 	"createActionParamsTrasaction":   RpcServer.handleCreateActionParamsTrasaction,
 }
 
@@ -220,7 +222,7 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
  * handleGetNumberOfCoins handles getNumberOfCoins commands.
  */
 func (self RpcServer) handleGetNumberOfCoins(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return 10, nil
+	return 1000, nil
 }
 
 
@@ -248,8 +250,8 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 	param := arrayParams[0].(map[string]interface{})
 	tx.Param = &transaction.Param{
 		AgentID: param["agentId"].(string),
-		NumOfIssuingCoins: param["NumOfIssuingCoins"].(int),
-		NumOfIssuingBonds: param["NumOfIssuingBonds"].(int),
+		NumOfIssuingCoins: int(param["numOfIssuingCoins"].(float64)),
+		NumOfIssuingBonds: int(param["numOfIssuingBonds"].(float64)),
 		Tax: param["tax"].(float64),
 	}
 
@@ -258,12 +260,8 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 		return nil, err
 	}
 
-	fmt.Printf("there is hash of transaction: %s", hash.String())
-	fmt.Println()
-	fmt.Printf("there is priority of transaction in pool: %d", txDesc.StartingPriority)
-
 	// broadcast message
-	self.Config.Server.PushTxMessage(hash)
+	// self.Config.Server.PushTxMessage(hash)
 
 	return tx.Hash(), nil
 }
