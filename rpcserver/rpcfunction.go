@@ -79,12 +79,16 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 	for _, block := range blocks {
 		if (len(block.Transactions) > 0) {
 			for _, tx := range block.Transactions {
-				if (len(tx.TxOut) > 0) {
-					for index, txOut := range tx.TxOut {
+				if tx.GetType() == "ACTION_PARAMS" {
+					continue
+				}
+				normalTx := tx.(*transaction.Tx)
+				if (len(normalTx.TxOut) > 0) {
+					for index, txOut := range normalTx.TxOut {
 						if (bytes.Compare(txOut.PkScript, []byte(addresses[0])) == 0) {
 							result = append(result, jsonrpc.ListUnspentResult{
 								Vout:    index,
-								TxID:    tx.Hash().String(),
+								TxID:    normalTx.Hash().String(),
 								Address: string(txOut.PkScript),
 								Amount:  txOut.Value,
 							})

@@ -9,7 +9,7 @@ import (
 type Merkle struct {
 }
 
-func (self Merkle) BuildMerkleTreeStore(transactions []*transaction.Tx) ([]*common.Hash) {
+func (self Merkle) BuildMerkleTreeStore(transactions []transaction.Transaction) ([]*common.Hash) {
 	// Calculate how many entries are required to hold the binary merkle
 	// tree as a linear array and create an array of that size.
 	nextPoT := self.nextPowerOfTwo(len(transactions))
