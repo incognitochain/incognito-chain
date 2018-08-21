@@ -84,6 +84,7 @@ func (self *BlockChain) CreateChainState() error {
 	// TODO something
 	genesisBlock := self.Config.ChainParams.GenesisBlock
 	self.Blocks[genesisBlock.Hash()] = genesisBlock
+	self.Headers[genesisBlock.Hash()] = &genesisBlock.Header
 	self.BestBlock = genesisBlock
 	return nil
 }
