@@ -13,6 +13,7 @@ const (
 type OutPoint struct {
 	Hash common.Hash
 	Vout int
+	Index uint32
 }
 
 //func (self OutPoint) MarshalJSON() ([]byte, error) {

@@ -2,11 +2,22 @@ package mining
 
 import (
 	"time"
+	"fmt"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
+
+type txPrioItem struct {
+	tx       transaction.Transaction
+	fee      int64
+	priority float64
+	feePerKB int64
+
+	dependsOn map[common.Hash]struct{}
+}
+
 
 
 func filterActionParamsTxs(block *blockchain.Block) []*transaction.ActionParamTx {
@@ -89,20 +100,65 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 		return nil, err
 	}
 
+	dependers := make(map[common.Hash]map[common.Hash]*txPrioItem)
+
 	blockTxns := make([]transaction.Transaction, 0, len(sourceTxns))
 	blockTxns = append(blockTxns, coinbaseTx)
 
 	merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(blockTxns)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
+
+	txFees := make([]int64, 0, 0)
+
 mempoolLoop:
 	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
 		//@todo need apply validate tx, logic check all referenced here
+
+		/*utxos, err := g.chain.FetchUtxoView(&tx)
+		if err != nil {
+			fmt.Print("Unable to fetch utxo view for tx %s: %v",
+				tx.Hash(), err)
+			continue
+		}
+		prioItem := &txPrioItem{tx: tx}
+		for _, txIn := range tx.TxIn {
+			originHash := &txIn.PreviousOutPoint.Hash
+			entry := utxos.LookupEntry(txIn.PreviousOutPoint)
+			if entry == nil || entry.IsSpent() {
+				if !TxPool.HaveTx(originHash) {
+					fmt.Print("Skipping tx %s because it "+
+						"references unspent output %s "+
+						"which is not available",
+						tx.Hash(), txIn.PreviousOutPoint)
+					continue mempoolLoop
+				}
+
+				// The transaction is referencing another
+				// transaction in the source pool, so setup an
+				// ordering dependency.
+				deps, exists := dependers[*originHash]
+				if !exists {
+					deps = make(map[common.Hash]*txPrioItem)
+					dependers[*originHash] = deps
+				}
+				deps[*prioItem.tx.Hash()] = prioItem
+				if prioItem.dependsOn == nil {
+					prioItem.dependsOn = make(
+						map[common.Hash]struct{})
+				}
+				prioItem.dependsOn[*originHash] = struct{}{}
+
+				// Skip the check below. We already know the
+				// referenced transaction is available.
+				continue
+			}
+		}*/
 		if tx.ValidateTransaction() {
 			continue mempoolLoop
 		}
 	}
-	txFees := make([]int64, 0, 1)
+
 	var msgBlock blockchain.Block
 	msgBlock.Header = blockchain.BlockHeader{
 		Version:       1,

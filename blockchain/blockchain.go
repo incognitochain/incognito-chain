@@ -5,6 +5,7 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"sync"
 )
 
 type BlockChain struct {
@@ -12,6 +13,8 @@ type BlockChain struct {
 	Blocks    map[*common.Hash]*Block
 	Headers   map[*common.Hash]*BlockHeader
 	BestBlock *Block
+
+	chainLock sync.RWMutex
 }
 
 // Config is a descriptor which specifies the blockchain instance configuration.
