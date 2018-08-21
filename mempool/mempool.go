@@ -59,12 +59,24 @@ type TxPool struct {
 	// to on an unconditional timer.
 	nextExpireScan time.Time
 }
+//check transaction in pool
+func (mp *TxPool) isTxInPool(hash *common.Hash) bool {
+	if _, exists := mp.pool[*hash]; exists {
+		return true
+	}
 
-//check existed block
-func (tp *TxPool) HasBlock(hash common.Hash) bool {
-
+	return false
 }
 
+//check existed transaction
+func (tp *TxPool) HaveTx(hash *common.Hash) bool {
+	// Protect concurrent access.
+	tp.mtx.RLock()
+	haveTx := tp.isTxInPool(hash)
+	tp.mtx.RUnlock()
+
+	return haveTx
+}
 //add transaction into pool
 func (tp *TxPool) addTx(tx transaction.Transaction) *TxDesc {
 	txD := &TxDesc{
