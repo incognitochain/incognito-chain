@@ -417,7 +417,7 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 		if err != nil {
 			return
 		}
-		msg.(*wire.MessageTx).Transaction = *tx
+		msg.(*wire.MessageTx).Transaction = tx
 		listen.QueueMessageWithEncoding(msg, dc)
 	}
 }
