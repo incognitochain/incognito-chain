@@ -21,6 +21,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/mining/miner"
 	"github.com/ninjadotorg/cash-prototype/mining"
+	"github.com/ninjadotorg/cash-prototype/netsync"
 )
 
 const (
@@ -58,10 +59,11 @@ type Server struct {
 	Chain       *blockchain.BlockChain
 	Db          database.DB
 	RpcServer   *rpcserver.RpcServer
-	MemPool     mempool.TxPool
+	MemPool     *mempool.TxPool
 	Quit        chan struct{}
 	WaitGroup   sync.WaitGroup
 	Miner       *miner.Miner
+	NetSync     *netsync.NetSync
 }
 
 // setupRPCListeners returns a slice of listeners that are configured for use
@@ -119,21 +121,13 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	self.ChainParams = chainParams
 	self.Quit = make(chan struct{})
 	self.Db = db
-	self.MemPool = *mempool.New(&mempool.Config{
+	self.MemPool = mempool.New(&mempool.Config{
 		Policy: mempool.Policy{},
 	})
 
-	var peers []peer.Peer
-	if !cfg.DisableListen {
-		var err error
-		peers, err = self.InitListenerPeers(listenAddrs)
-		if err != nil {
-			return nil, err
-		}
-	}
+	var err error
 
 	// Create a new block chain instance with the appropriate configuration.9
-	var err error
 	self.Chain, err = blockchain.BlockChain{}.New(&blockchain.Config{
 		ChainParams: self.ChainParams,
 		Db:          self.Db,
@@ -156,6 +150,25 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	targetOutbound := defaultNumberOfTargetOutbound
 	if cfg.MaxPeers < targetOutbound {
 		targetOutbound = cfg.MaxPeers
+	}
+
+	// Init Net Sync manager to process messages
+	self.NetSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
+		Chain:      self.Chain,
+		ChainParam: chainParams,
+		MemPool:    self.MemPool,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var peers []peer.Peer
+	if !cfg.DisableListen {
+		var err error
+		peers, err = self.InitListenerPeers(listenAddrs)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
@@ -195,7 +208,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 			RPCMaxClients: cfg.RPCMaxClients,
 			ChainParams:   chainParams,
 			Chain:         self.Chain,
-			TxMemPool:     &self.MemPool,
+			TxMemPool:     self.MemPool,
 			Server:        self,
 		}
 		self.RpcServer, err = rpcserver.RpcServer{}.Init(&rpcConfig)
@@ -252,6 +265,14 @@ func (self Server) Stop() error {
 // peers to and from the server, banning peers, and broadcasting messages to
 // peers.  It must be run in a goroutine.
 func (self Server) PeerHandler() {
+	// Start the address manager and sync manager, both of which are needed
+	// by peers.  This is done here since their lifecycle is closely tied
+	// to this handler and rather than adding more channels to sychronize
+	// things, it's easier and slightly faster to simply start and stop them
+	// in this handler.
+	//self.addrManager.Start()
+	self.NetSync.Start()
+
 	log.Println("Start peer handler")
 	go self.ConnManager.Start()
 out:
@@ -268,6 +289,7 @@ out:
 			}
 		}
 	}
+	self.NetSync.Stop()
 	self.ConnManager.Stop()
 }
 
@@ -395,18 +417,12 @@ func (self *Server) OnBlock(p *peer.Peer,
 // until the transaction has been fully processed.  Unlock the block
 // handler this does not serialize all transactions through a single thread
 // transactions don't rely on the previous one in a linear fashion like blocks.
-func (self Server) OnTx(_ *peer.Peer,
+func (self Server) OnTx(peer *peer.Peer,
 	msg *wire.MessageTx) {
 	log.Println("Receive a new transaction")
-	// TODO get message tx and process, Tuan Anh
-	hash, txDesc, error := self.MemPool.CanAcceptTransaction(msg.Transaction)
-
-	if error != nil {
-		fmt.Print(error)
-	} else {
-		fmt.Print("there is hash of transaction", hash)
-		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)
-	}
+	var txProcessed chan struct{}
+	self.NetSync.QueueTx(nil, msg, txProcessed)
+	<-txProcessed
 }
 
 func (self Server) PushTxMessage(hashTx *common.Hash) {
@@ -418,7 +434,7 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 			return
 		}
 		msg.(*wire.MessageTx).Transaction = tx
-		listen.QueueMessageWithEncoding(msg, dc)
+		listen.QueueMessageWithEncoding(msg, dc, )
 	}
 }
 

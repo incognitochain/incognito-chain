@@ -2,12 +2,13 @@ package wire
 
 import (
 	"fmt"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 // list message type
 const (
 	MessageHeaderSize = 24
-	
+
 	CmdBlock = "block"
 	CmdTx    = "tx"
 )
@@ -26,7 +27,9 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdBlock:
 		msg = &MessageBlock{}
 	case CmdTx:
-		msg = &MessageTx{}
+		msg = &MessageTx{
+			Transaction: &transaction.Tx{},
+		}
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}
