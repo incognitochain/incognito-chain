@@ -10,14 +10,14 @@ import (
 type GenesisBlockGenerator struct {
 }
 
-func (self GenesisBlockGenerator) CalcMerkleRoot(txns []transaction.Tx) common.Hash {
+func (self GenesisBlockGenerator) CalcMerkleRoot(txns []transaction.Transaction) common.Hash {
 	if len(txns) == 0 {
 		return common.Hash{}
 	}
 
-	utilTxns := make([]*transaction.Tx, 0, len(txns))
+	utilTxns := make([]transaction.Transaction, 0, len(txns))
 	for _, tx := range txns {
-		utilTxns = append(utilTxns, &tx)
+		utilTxns = append(utilTxns, tx)
 	}
 	merkles := Merkle{}.BuildMerkleTreeStore(utilTxns)
 	return *merkles[len(merkles)-1]
@@ -48,6 +48,6 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(time time.Time, nonce int, 
 		}},
 	}
 	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
-	genesisBlock.Transactions = append(genesisBlock.Transactions, tx)
+	genesisBlock.Transactions = append(genesisBlock.Transactions, &tx)
 	return &genesisBlock
 }

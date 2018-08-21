@@ -14,7 +14,7 @@ func filterActionParamsTxs(block *blockchain.Block) []*transaction.ActionParamTx
 	var actionParamTxs []*transaction.ActionParamTx
 	for _, tx := range allTxs {
 		if tx.GetType() == "ACTION_PARAMS" {
-			actionParamTxs = append(actionParamTxs, tx)
+			actionParamTxs = append(actionParamTxs, (tx.(*transaction.ActionParamTx)))
 		}
 	}
 	return actionParamTxs
@@ -31,7 +31,7 @@ func getRecentActionParamsTxs(numOfBlocks int, chain *blockchain.BlockChain) []*
 	prevBlockHash := bestBlock.Header.PrevBlockHash
 
 	for i := 0; i < numOfBlocks - 1; i++ {
-		block, ok := chain[prevBlockHash]
+		block, ok := chain.Blocks[&prevBlockHash]
 		if !ok {
 			return actionParamTxs
 		}
@@ -89,7 +89,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 		return nil, err
 	}
 
-	blockTxns := make([]*transaction.Tx, 0, len(sourceTxns))
+	blockTxns := make([]transaction.Transaction, 0, len(sourceTxns))
 	blockTxns = append(blockTxns, coinbaseTx)
 
 	merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(blockTxns)
@@ -113,7 +113,7 @@ mempoolLoop:
 		Nonce:         0, //@todo should be create Nonce logic
 	}
 	for _, tx := range blockTxns {
-		if err := msgBlock.AddTransaction(*tx); err != nil {
+		if err := msgBlock.AddTransaction(tx); err != nil {
 			return nil, err
 		}
 	}

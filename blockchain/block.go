@@ -17,13 +17,13 @@ type Block struct {
 	BlockHash    *common.Hash
 }
 
-func (self Block) AddTransaction(tx transaction.Tx) error {
+func (self Block) AddTransaction(tx transaction.Transaction) error {
 	self.Transactions = append(self.Transactions, tx)
 	return nil
 }
 
 func (self Block) ClearTransactions() {
-	self.Transactions = make([]transaction.Tx, 0, defaultTransactionAlloc)
+	self.Transactions = make([]transaction.Transaction, 0, defaultTransactionAlloc)
 }
 
 func (self Block) Hash() (*common.Hash) {
