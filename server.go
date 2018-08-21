@@ -410,7 +410,10 @@ func (self *Server) NewPeerConfig() *peer.Config {
 // blocks until the coin block has been fully processed.
 func (self *Server) OnBlock(p *peer.Peer,
 	msg *wire.MessageBlock) {
-	// TODO get message block and process, Tuan Anh
+	log.Println("Receive a new block")
+	var txProcessed chan struct{}
+	self.NetSync.QueueBlock(nil, msg, txProcessed)
+	<-txProcessed
 }
 
 // OnTx is invoked when a peer receives a tx message.  It blocks

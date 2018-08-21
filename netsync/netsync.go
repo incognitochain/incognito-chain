@@ -81,6 +81,10 @@ out:
 					{
 						self.HandleMessageTx(msg)
 					}
+				case *wire.MessageBlock:
+					{
+						self.HandleMessageBlock(msg)
+					}
 				default:
 					log.Printf("Invalid message type in block "+"handler: %T", msg)
 				}
@@ -111,6 +115,7 @@ func (self *NetSync) QueueTx(_ *peer.Peer, msg *wire.MessageTx, done chan struct
 
 // handleTxMsg handles transaction messages from all peers.
 func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
+	log.Println("Handling new message tx")
 	// TODO get message tx and process, Tuan Anh
 	hash, txDesc, error := self.Config.MemPool.CanAcceptTransaction(msg.Transaction)
 
@@ -120,4 +125,22 @@ func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 		fmt.Print("there is hash of transaction", hash)
 		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)
 	}
+}
+
+// QueueBlock adds the passed block message and peer to the block handling
+// queue. Responds to the done channel argument after the block message is
+// processed.
+func (self *NetSync) QueueBlock(_ *peer.Peer, msg *wire.MessageBlock, done chan struct{}) {
+	// Don't accept more transactions if we're shutting down.
+	if atomic.LoadInt32(&self.shutdown) != 0 {
+		done <- struct{}{}
+		return
+	}
+	self.msgChan <- msg
+}
+
+func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
+	log.Println("Handling new message block")
+	// TODO get message block and process, Tuan Anh
+
 }
