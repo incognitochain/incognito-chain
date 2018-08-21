@@ -8,6 +8,7 @@ import (
 
 type Tx struct {
 	Version  int
+	Type     string // NORMAL / ACTION_PARAMS
 	TxIn     []TxIn
 	TxOut    []TxOut
 	LockTime int
@@ -27,6 +28,7 @@ func (self *Tx) Hash() (*common.Hash) {
 		return self.txHash
 	}
 	record := strconv.Itoa(self.Version) + strconv.Itoa(self.Version)
+	record += self.Type
 	for _, txin := range self.TxIn {
 		record += fmt.Sprint(txin.Sequence)
 		record += string(txin.SignatureScript)
@@ -41,3 +43,8 @@ func (self *Tx) Hash() (*common.Hash) {
 	self.txHash = &hash
 	return self.txHash
 }
+
+func (self *Tx) ValidateTransaction() (bool) {
+	return true
+}
+

@@ -22,6 +22,9 @@ var RpcHandler = map[string]commandHandler{
 	"createrawtransaction": RpcServer.handleCreateRawTrasaction,
 	"signrawtransaction":   RpcServer.handleSignRawTransaction,
 	"sendrawtransaction":   RpcServer.handleSendRawTransaction,
+	"getNumberOfCoins":   RpcServer.handleGetNumberOfCoins,
+	"getNumberOfBonds":   RpcServer.handleGetNumberOfBonds,
+	"createActionParamsTrasaction":   RpcServer.handleCreateActionParamsTrasaction,
 }
 
 // Commands that are available to a limited user
@@ -101,6 +104,7 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.Tx{
 		Version: 1,
+		Type: "NORMAL",
 	}
 	txIns := common.InterfaceSlice(arrayParams[0])
 	for _, txIn := range txIns {
@@ -209,6 +213,55 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 
 	// broadcast message
 	self.Config.Server.PushTxMessage(hash)
+
+	return tx.Hash(), nil
+}
+
+
+/**
+ * handleGetNumberOfCoins handles getNumberOfCoins commands.
+ */
+func (self RpcServer) handleGetNumberOfCoins(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return 1000, nil
+}
+
+
+/**
+ * handleGetNumberOfBonds handles getNumberOfBonds commands.
+ */
+func (self RpcServer) handleGetNumberOfBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return 5, nil
+}
+
+/**
+// handleCreateRawTransaction handles createrawtransaction commands.
+ */
+func (self RpcServer) handleCreateActionParamsTrasaction(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, error) {
+	log.Println(params)
+	arrayParams := common.InterfaceSlice(params)
+	tx := transaction.ActionParamTx{
+		Version: 1,
+		Type: "ACTION_PARAMS",
+	}
+
+	param := arrayParams[0].(map[string]interface{})
+	tx.Param = &transaction.Param{
+		AgentID: param["agentId"].(string),
+		NumOfIssuingCoins: int(param["numOfIssuingCoins"].(float64)),
+		NumOfIssuingBonds: int(param["numOfIssuingBonds"].(float64)),
+		Tax: param["tax"].(float64),
+	}
+
+	hash, txDesc, err := self.Config.TxMemPool.CanAcceptTransaction(&tx)
+	if err != nil {
+		return nil, err
+	}
+
+	// broadcast message
+	// self.Config.Server.PushTxMessage(hash)
 
 	return tx.Hash(), nil
 }

@@ -399,7 +399,8 @@ func (self Server) OnTx(_ *peer.Peer,
 	msg *wire.MessageTx) {
 	log.Println("Receive a new transaction")
 	// TODO get message tx and process, Tuan Anh
-	hash, txDesc, error := self.MemPool.CanAcceptTransaction(&msg.Transaction)
+	hash, txDesc, error := self.MemPool.CanAcceptTransaction(msg.Transaction)
+
 	if error != nil {
 		fmt.Print(error)
 	} else {
