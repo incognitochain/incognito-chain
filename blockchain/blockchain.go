@@ -3,11 +3,14 @@ package blockchain
 import (
 	"github.com/internet-cash/prototype/database"
 	"errors"
+	"github.com/internet-cash/prototype/common"
 )
 
 type BlockChain struct {
-	Config Config
-	Blocks []Block
+	Config    Config
+	Blocks    map[*common.Hash]*Block
+	Headers   map[*common.Hash]*BlockHeader
+	BestBlock *Block
 }
 
 // Config is a descriptor which specifies the blockchain instance configuration.
@@ -80,6 +83,8 @@ func (self *BlockChain) InitChainState() (error) {
 func (self *BlockChain) CreateChainState() error {
 	// TODO something
 	genesisBlock := self.Config.ChainParams.GenesisBlock
-	self.Blocks = append(self.Blocks, *genesisBlock)
+	self.Blocks[genesisBlock.Hash()] = genesisBlock
+	self.Headers[genesisBlock.Hash()] = &genesisBlock.Header
+	self.BestBlock = genesisBlock
 	return nil
 }

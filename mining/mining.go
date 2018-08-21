@@ -43,13 +43,13 @@ func createCoinbaseTx(params *blockchain.Params, coinbaseScript []byte, addr str
 
 func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain) (*BlockTemplate, error) {
 
-	prevBlockHash  := chain.Blocks[len(chain.Blocks) -1].Hash()
+	prevBlockHash := chain.BestBlock.Hash()
 	sourceTxns := g.txSource
 	//@todo we need apply sort rules for sourceTxns here
 
 	coinbaseScript := []byte("1234567890123456789012") //@todo should be create function create basescript
 
-	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{},coinbaseScript, payToAddress)
+	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, coinbaseScript, payToAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -58,9 +58,9 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	blockTxns = append(blockTxns, coinbaseTx)
 
 	merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(blockTxns)
-	merkleRoot := merkleRoots[len(merkleRoots) - 1]
+	merkleRoot := merkleRoots[len(merkleRoots)-1]
 mempoolLoop:
-	for _, txDesc := range sourceTxns  {
+	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
 		//@todo need apply validate tx, logic check all referenced here
 		if tx.ValidateTransaction() {
@@ -74,8 +74,8 @@ mempoolLoop:
 		PrevBlockHash: *prevBlockHash,
 		MerkleRoot:    *merkleRoot,
 		Timestamp:     time.Now(),
-		Difficulty:    0,//@todo should be create Difficulty logic
-		Nonce:         0,//@todo should be create Nonce logic
+		Difficulty:    0, //@todo should be create Difficulty logic
+		Nonce:         0, //@todo should be create Nonce logic
 	}
 	for _, tx := range blockTxns {
 		if err := msgBlock.AddTransaction(*tx); err != nil {
@@ -86,16 +86,15 @@ mempoolLoop:
 	msgBlock.BlockHash = prevBlockHash
 
 	return &BlockTemplate{
-		Block:             &msgBlock,
-		Fees:              txFees,
+		Block: &msgBlock,
+		Fees:  txFees,
 	}, nil
 
 }
 
-
 func NewBlkTmplGenerator(txSource []*TxDesc, chain *blockchain.BlockChain) *BlkTmplGenerator {
 	return &BlkTmplGenerator{
-		txSource:    txSource,
-		chain:       chain,
+		txSource: txSource,
+		chain:    chain,
 	}
 }
