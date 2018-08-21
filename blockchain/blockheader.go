@@ -4,7 +4,7 @@ import (
 	"time"
 	"crypto/sha256"
 	"fmt"
-	"github.com/ninjadotorg/money-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 // MaxBlockHeaderPayload is the maximum number of bytes a block header can be.

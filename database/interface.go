@@ -1,8 +1,8 @@
 package database
 
 import (
-	"github.com/ninjadotorg/money-prototype/blockchain"
-	"github.com/ninjadotorg/money-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 type DB interface {

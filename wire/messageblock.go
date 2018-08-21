@@ -1,7 +1,7 @@
 package wire
 
 import (
-	"github.com/ninjadotorg/money-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"encoding/json"
 )
 

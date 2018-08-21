@@ -1,7 +1,7 @@
 package transaction
 
 import (
-	"github.com/ninjadotorg/money-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/common"
 	"strconv"
 	"fmt"
 )

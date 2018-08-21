@@ -4,10 +4,10 @@ import (
 	"runtime"
 	"runtime/debug"
 	"os"
-	"github.com/ninjadotorg/money-prototype/limits"
+	"github.com/ninjadotorg/cash-prototype/limits"
 	"fmt"
 	"log"
-	"github.com/ninjadotorg/money-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/database"
 )
 
 var (

@@ -3,11 +3,11 @@ package rpcserver
 import (
 	"log"
 	"encoding/json"
-	"github.com/ninjadotorg/money-prototype/rpcserver/jsonrpc"
+	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"bytes"
 	"strings"
-	"github.com/ninjadotorg/money-prototype/transaction"
-	"github.com/ninjadotorg/money-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/common"
 	"encoding/hex"
 	"fmt"
 )

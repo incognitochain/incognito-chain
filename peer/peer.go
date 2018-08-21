@@ -14,7 +14,7 @@ import (
 	"github.com/libp2p/go-libp2p-net"
 	"bufio"
 	"sync"
-	"github.com/ninjadotorg/money-prototype/wire"
+	"github.com/ninjadotorg/cash-prototype/wire"
 	"strings"
 	n "net"
 	"github.com/libp2p/go-libp2p-peer"

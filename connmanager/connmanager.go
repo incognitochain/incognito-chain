@@ -1,7 +1,7 @@
 package connmanager
 
 import (
-	"github.com/ninjadotorg/money-prototype/peer"
+	"github.com/ninjadotorg/cash-prototype/peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 	libpeer "github.com/libp2p/go-libp2p-peer"

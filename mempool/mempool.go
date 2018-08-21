@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"fmt"
-	"github.com/ninjadotorg/money-prototype/common"
-	"github.com/ninjadotorg/money-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 	"sync"
-	"github.com/ninjadotorg/money-prototype/mining"
+	"github.com/ninjadotorg/cash-prototype/mining"
 	"log"
 )
 
