@@ -3,13 +3,14 @@ package rpcserver
 import (
 	"log"
 	"encoding/json"
-	"github.com/ninjadotorg/money-prototype/rpcserver/jsonrpc"
 	"bytes"
 	"strings"
-	"github.com/ninjadotorg/money-prototype/transaction"
-	"github.com/ninjadotorg/money-prototype/common"
 	"encoding/hex"
 	"fmt"
+
+	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
+	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)

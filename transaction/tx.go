@@ -1,9 +1,10 @@
 package transaction
 
 import (
-	"github.com/ninjadotorg/money-prototype/common"
 	"strconv"
 	"fmt"
+
+	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 type Tx struct {

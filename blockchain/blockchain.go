@@ -1,9 +1,10 @@
 package blockchain
 
 import (
-	"github.com/ninjadotorg/money-prototype/database"
 	"errors"
-	"github.com/ninjadotorg/money-prototype/common"
+
+	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 type BlockChain struct {
@@ -36,6 +37,10 @@ type Config struct {
 }
 
 func (self BlockChain) New(config *Config) (*BlockChain, error) {
+
+	self.Headers = make(map[*common.Hash]*BlockHeader)
+	self.Blocks = make(map[*common.Hash]*Block)
+
 	// Enforce required config fields.
 	// TODO
 	//if config.Db == nil {

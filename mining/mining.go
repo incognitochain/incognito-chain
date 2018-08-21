@@ -3,9 +3,9 @@ package mining
 import (
 	"time"
 
-	"github.com/ninjadotorg/money-prototype/blockchain"
-	"github.com/ninjadotorg/money-prototype/common"
-	"github.com/ninjadotorg/money-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 

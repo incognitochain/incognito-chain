@@ -3,9 +3,6 @@ package main
 import (
 	"time"
 	"path/filepath"
-	"github.com/ninjadotorg/money-prototype/common"
-	"github.com/ninjadotorg/money-prototype/mempool"
-	"github.com/jessevdk/go-flags"
 	"os"
 	"runtime"
 	"fmt"
@@ -16,6 +13,9 @@ import (
 	"math/rand"
 	"net"
 	"log"
+	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/mempool"
+	"github.com/jessevdk/go-flags"
 	"github.com/davecgh/go-spew/spew"
 )
 

@@ -1,29 +1,30 @@
 package peer
 
 import (
-	"github.com/libp2p/go-libp2p-host"
-	"github.com/libp2p/go-libp2p"
 	"log"
 	"io"
 	"crypto/rand"
 	mrand "math/rand"
-	"github.com/libp2p/go-libp2p-crypto"
 	"fmt"
 	"context"
-	ma "github.com/multiformats/go-multiaddr"
-	"github.com/libp2p/go-libp2p-net"
 	"bufio"
 	"sync"
-	"github.com/ninjadotorg/money-prototype/wire"
-	"strings"
 	n "net"
-	"github.com/libp2p/go-libp2p-peer"
+	"strings"
 	"sync/atomic"
 	"time"
 	"encoding/hex"
 	"encoding/json"
 	"reflect"
 	"bytes"
+
+	"github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-host"
+	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p-crypto"
+	ma "github.com/multiformats/go-multiaddr"
+	"github.com/libp2p/go-libp2p-net"
+	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
 const (

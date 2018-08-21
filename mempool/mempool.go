@@ -3,13 +3,13 @@ package mempool
 import (
 	"sync/atomic"
 	"time"
-
-	"fmt"
-	"github.com/ninjadotorg/money-prototype/common"
-	"github.com/ninjadotorg/money-prototype/transaction"
-	"sync"
-	"github.com/ninjadotorg/money-prototype/mining"
 	"log"
+	"fmt"
+	"sync"
+
+	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/mining"
 )
 
 //Peer Ids, so that orphans can be identified by which peer first repayed them.
