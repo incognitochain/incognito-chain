@@ -37,6 +37,10 @@ type Config struct {
 }
 
 func (self BlockChain) New(config *Config) (*BlockChain, error) {
+
+	self.Headers = make(map[*common.Hash]*BlockHeader)
+	self.Blocks = make(map[*common.Hash]*Block)
+
 	// Enforce required config fields.
 	// TODO
 	//if config.Db == nil {
