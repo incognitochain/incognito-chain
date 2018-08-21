@@ -4,7 +4,7 @@ import "fmt"
 type DBBackendType string
 
 const (
-	GoLevelDBBackend DBBackendType = "goleveldb"
+	LevelDBBackend DBBackendType = "leveldb"
 )
 
 type dbCreator func(name string, dir string) (DB, error)

@@ -15,7 +15,7 @@ func init() {
 	dbCreator := func(name string, dir string) (DB, error) {
 		return NewLevelDB(name, dir)
 	}
-	registerDBCreator(GoLevelDBBackend, dbCreator, false)
+	registerDBCreator(LevelDBBackend, dbCreator, false)
 }
 
 var _ DB = (LevelDB)(nil)
@@ -24,7 +24,7 @@ type LevelDB struct {
 	db *leveldb.DB
 }
 
-func NewLevelDB(name string, dir string) (LevelDB, error) {
+func NewLevelDB(name string, dir string) (*LevelDB, error) {
 	dbPath := filepath.Join(dir, name+".db")
 	_data, err := leveldb.OpenFile(dbPath, nil)
 	if err != nil {
@@ -66,7 +66,8 @@ func nonNilBytes(bz []byte) []byte {
 	return bz
 }
 
-func (db LevelDB) PutChain(block *blockchain.Block) (bool, error){
+//save block
+func (db LevelDB) SaveBlock(block *blockchain.Block) (bool, error){
 	data, err := json.Marshal(block)
 	if err != nil {
 		return false, err
@@ -76,7 +77,8 @@ func (db LevelDB) PutChain(block *blockchain.Block) (bool, error){
 	return true, nil
 }
 
-func (db LevelDB) GetChain(hash common.Hash) *blockchain.Block {
+//get block
+func (db LevelDB) GetBlock(hash common.Hash) *blockchain.Block {
 	var key = []byte(hash.String())
 	data := db.get(key)
 	var chain *blockchain.Block

@@ -60,6 +60,11 @@ type TxPool struct {
 	nextExpireScan time.Time
 }
 
+//check existed block
+func (tp *TxPool) HasBlock(hash common.Hash) bool {
+
+}
+
 //add transaction into pool
 func (tp *TxPool) addTx(tx transaction.Transaction) *TxDesc {
 	txD := &TxDesc{

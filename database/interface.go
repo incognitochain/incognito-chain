@@ -7,6 +7,6 @@ import (
 
 type DB interface {
 
-	GetChain(hash common.Hash) *blockchain.Block
-	PutChain(block *blockchain.Block) (bool, error)
+	GetBlock(hash common.Hash) *blockchain.Block
+	SaveBlock(block *blockchain.Block) (bool, error)
 }
