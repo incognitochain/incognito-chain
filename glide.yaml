@@ -1,0 +1,9 @@
+package: github.com/internet-cash/prototype
+import:
+- package: github.com/libp2p/go-libp2p
+  version: ^6.0.8
+- package: github.com/stretchr/testify
+  version: ^1.2.2
+- package: github.com/syndtr/goleveldb
+  subpackages:
+  - leveldb
