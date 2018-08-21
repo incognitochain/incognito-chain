@@ -14,11 +14,11 @@ import (
 	"sync"
 	"io"
 
-	"github.com/ninjadotorg/money-prototype/common"
-	"github.com/ninjadotorg/money-prototype/rpcserver/jsonrpc"
-	"github.com/ninjadotorg/money-prototype/blockchain"
-	"github.com/ninjadotorg/money-prototype/database"
-	"github.com/ninjadotorg/money-prototype/mempool"
+	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
+	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/mempool"
 )
 
 const (

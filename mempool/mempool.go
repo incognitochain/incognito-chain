@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/ninjadotorg/money-prototype/common"
-	"github.com/ninjadotorg/money-prototype/transaction"
-	"github.com/ninjadotorg/money-prototype/mining"
+	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/mining"
 )
 
 //Peer Ids, so that orphans can be identified by which peer first repayed them.

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"encoding/hex"
 
-	"github.com/ninjadotorg/money-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 type MessageTx struct {

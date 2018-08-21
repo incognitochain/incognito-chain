@@ -24,7 +24,7 @@ import (
 	"github.com/libp2p/go-libp2p-crypto"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/libp2p/go-libp2p-net"
-	"github.com/ninjadotorg/money-prototype/wire"
+	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
 const (

@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"fmt"
 
-	"github.com/ninjadotorg/money-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 type Tx struct {

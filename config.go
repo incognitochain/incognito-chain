@@ -13,8 +13,8 @@ import (
 	"math/rand"
 	"net"
 	"log"
-	"github.com/ninjadotorg/money-prototype/common"
-	"github.com/ninjadotorg/money-prototype/mempool"
+	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/jessevdk/go-flags"
 	"github.com/davecgh/go-spew/spew"
 )
