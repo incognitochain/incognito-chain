@@ -9,8 +9,11 @@ import (
 const (
 	MessageHeaderSize = 24
 
-	CmdBlock = "block"
-	CmdTx    = "tx"
+	CmdBlock     = "block"
+	CmdTx        = "tx"
+	CmdGetBlocks = "getblocks"
+	CmdInv       = "inv"
+	CmdGetData   = "getdata"
 )
 
 // Interface for message wire on P2P network
