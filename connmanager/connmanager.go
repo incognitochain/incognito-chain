@@ -378,7 +378,7 @@ func (self ConnManager) Connect(addr string) {
 
 		// Create a thread to read and write data.
 		go listen.InMessageHandler(rw)
-		//go listen.OutMessageHandler(rw)
+		go listen.OutMessageHandler(rw)
 	}
 
 	select {

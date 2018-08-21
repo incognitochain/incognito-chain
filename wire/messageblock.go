@@ -23,6 +23,9 @@ func (self MessageBlock) MaxPayloadLength(pver int) int {
 
 func (self MessageBlock) JsonSerialize() (string, error) {
 	jsonStr, err := json.Marshal(self)
+	header := make([]byte, MessageHeaderSize)
+	copy(header[:], self.MessageType())
+	jsonStr = append(jsonStr, header...)
 	return string(jsonStr), err
 }
 

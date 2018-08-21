@@ -115,6 +115,14 @@ func setupRPCListeners() ([]net.Listener, error) {
 
 func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *blockchain.Params, interrupt <-chan struct{}) (*Server, error) {
 
+	// Init data for Server
+	self.ChainParams = chainParams
+	self.Quit = make(chan struct{})
+	self.Db = db
+	self.MemPool = *mempool.New(&mempool.Config{
+		Policy: mempool.Policy{},
+	})
+
 	var peers []peer.Peer
 	if !cfg.DisableListen {
 		var err error
@@ -124,15 +132,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		}
 	}
 
-	// Init data for Server
-	self.ChainParams = chainParams
-	self.Quit = make(chan struct{})
-	self.Db = db
-	self.MemPool =  *mempool.New(&mempool.Config{
-		Policy: mempool.Policy{},
-	})
-
-	// Create a new block chain instance with the appropriate configuration.
+	// Create a new block chain instance with the appropriate configuration.9
 	var err error
 	self.Chain, err = blockchain.BlockChain{}.New(&blockchain.Config{
 		ChainParams: self.ChainParams,
@@ -146,10 +146,10 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool.MiningDescs(), self.Chain)
 
 	self.Miner = miner.New(&miner.Config{
-		ChainParams: self.ChainParams,
+		ChainParams:            self.ChainParams,
 		BlockTemplateGenerator: blockTemplateGenerator,
-		MiningAddrs: cfg.MiningAddrs,
-		Chain:		 self.Chain,
+		MiningAddrs:            cfg.MiningAddrs,
+		Chain:                  self.Chain,
 	})
 
 	// Create a connection manager.
@@ -298,7 +298,7 @@ func (self Server) Start() {
 	}
 
 	//creat mining
-	if cfg.Generate == true && (len(cfg.MiningAddrs) > 0)  {
+	if cfg.Generate == true && (len(cfg.MiningAddrs) > 0) {
 		self.Miner.Start()
 	}
 }
@@ -372,8 +372,10 @@ func (self Server) InitListenerPeers(listenAddrs []string) ([]peer.Peer, error) 
 	return peers, nil
 }
 
+/**
 // newPeerConfig returns the configuration for the listening Peer.
-func (self Server) NewPeerConfig() *peer.Config {
+*/
+func (self *Server) NewPeerConfig() *peer.Config {
 	return &peer.Config{
 		MessageListeners: peer.MessageListeners{
 			OnBlock: self.OnBlock,
@@ -384,7 +386,7 @@ func (self Server) NewPeerConfig() *peer.Config {
 
 // OnBlock is invoked when a peer receives a block message.  It
 // blocks until the coin block has been fully processed.
-func (self Server) OnBlock(p *peer.Peer,
+func (self *Server) OnBlock(p *peer.Peer,
 	msg *wire.MessageBlock) {
 	// TODO get message block and process, Tuan Anh
 }
@@ -400,10 +402,10 @@ func (self Server) OnTx(_ *peer.Peer,
 	hash, txDesc, error := self.MemPool.CanAcceptTransaction(msg.Transaction)
 
 	if error != nil {
+		fmt.Print(error)
+	} else {
 		fmt.Print("there is hash of transaction", hash)
 		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)
-	} else {
-		fmt.Print(error)
 	}
 }
 
@@ -411,10 +413,12 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 	var dc chan<- struct{}
 	tx, _ := self.MemPool.GetTx(hashTx)
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		msgTx := wire.MessageTx{
-			Transaction: tx,
+		msg, err := wire.MakeEmptyMessage(wire.CmdTx)
+		if err != nil {
+			return
 		}
-		listen.QueueMessageWithEncoding(msgTx, dc)
+		msg.(*wire.MessageTx).Transaction = tx
+		listen.QueueMessageWithEncoding(msg, dc)
 	}
 }
 
@@ -423,7 +427,7 @@ func (self Server) PushBlockMessage() {
 	//
 }
 
-func (self Server) handleMiner() error  {
+func (self Server) handleMiner() error {
 
 	return nil
 }

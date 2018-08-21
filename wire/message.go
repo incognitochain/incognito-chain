@@ -6,6 +6,8 @@ import (
 
 // list message type
 const (
+	MessageHeaderSize = 24
+	
 	CmdBlock = "block"
 	CmdTx    = "tx"
 )

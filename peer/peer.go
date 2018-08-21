@@ -20,7 +20,10 @@ import (
 	"github.com/libp2p/go-libp2p-peer"
 	"sync/atomic"
 	"time"
-	"github.com/davecgh/go-spew/spew"
+	"encoding/hex"
+	"encoding/json"
+	"reflect"
+	"bytes"
 )
 
 const (
@@ -199,29 +202,48 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 		//}
 		log.Printf("Message: %s \n", str)
 		if str != "\n" {
-			var message wire.Message
-			err = message.JsonDeserialize(str)
+
+			// Parse Message header
+			jsonDecodeString, _ := hex.DecodeString(str)
+			messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
+			messageHeader = bytes.Trim(messageHeader, "\x00")
+			log.Println(string(messageHeader))
+
+			messageType := string(messageHeader[:len(messageHeader)])
+			var message, err = wire.MakeEmptyMessage(string(messageType))
+
+			// Parse Message body
+			messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
+			log.Println(string(messageBody))
 			if err != nil {
+				log.Println(err)
 				continue
 			}
-
-			switch msg := message.(type) {
-			case *wire.MessageTx:
+			err = json.Unmarshal(messageBody, &message)
+			//temp := message.(map[string]interface{})
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			realType := reflect.TypeOf(message)
+			log.Print(realType)
+			// check type of Message
+			switch realType {
+			case reflect.TypeOf(&wire.MessageTx{}):
 				if self.Config.MessageListeners.OnTx != nil {
 					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnTx(&self, msg)
+					self.Config.MessageListeners.OnTx(&self, message.(*wire.MessageTx))
 					self.FlagMutex.Unlock()
 				}
-			case *wire.MessageBlock:
+			case reflect.TypeOf(&wire.MessageBlock{}):
 				if self.Config.MessageListeners.OnBlock != nil {
 					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnBlock(&self, msg)
+					self.Config.MessageListeners.OnBlock(&self, message.(*wire.MessageBlock))
 					self.FlagMutex.Unlock()
 				}
 			default:
 				log.Printf("Received unhandled message of type %v "+
-					"from %v", msg.MessageType(), self)
-				spew.Dump(msg)
+					"from %v", realType, self)
 			}
 		}
 	}
@@ -248,12 +270,12 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 	}()*/
 	for {
 		select {
-		case msg := <-self.sendMessageQueue:
+		case outMsg := <-self.sendMessageQueue:
 			{
 				self.FlagMutex.Lock()
 				// TODO
 				// send message
-				message, err := msg.msg.JsonSerialize()
+				message, err := outMsg.msg.JsonSerialize()
 				if err != nil {
 					continue
 				}

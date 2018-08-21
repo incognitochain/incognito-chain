@@ -201,7 +201,7 @@ func writeData(rw *bufio.ReadWriter) {
 
 }
 
-func main_1() {
+func main1() {
 	t := time.Now()
 	genesisBlock := Block{}
 	genesisBlock = Block{0, t.String(), 0, calculateHash(genesisBlock), "", 1, ""}
@@ -272,15 +272,25 @@ func main_1() {
 		// make a new stream from host B to host A
 		// it should be handled on host A by the handler we set above because
 		// we use the same /peer/1.0.0 protocol
-		s, err := ha.NewStream(context.Background(), peerid, "/peer/1.0.0")
+		s, err := ha.NewStream(context.Background(), peerid, "/blockchain/1.0.0")
 		if err != nil {
 			log.Fatalln(err)
 		}
 		_ = s
 		// Create a buffered stream so that read and writes are non blocking.
-		//rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
+		rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
 
 		// Create a thread to read and write data.
+		go func() {
+			for {
+				a, err := rw.ReadString('\n')
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				log.Printf("Message receive: %s", a)
+			}
+		}()
 		//go writeData(rw)
 		//go readData(rw)
 
