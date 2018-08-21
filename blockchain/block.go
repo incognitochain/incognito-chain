@@ -13,7 +13,7 @@ const (
 
 type Block struct {
 	Header       BlockHeader
-	Transactions []transaction.Tx
+	Transactions []transaction.Transaction
 	BlockHash    *common.Hash
 }
 

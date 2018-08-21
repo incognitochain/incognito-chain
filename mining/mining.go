@@ -8,6 +8,41 @@ import (
 	"github.com/ninjadotorg/money-prototype/transaction"
 )
 
+
+func filterActionParamsTxs(block *blockchain.Block) []*transaction.ActionParamTx {
+	allTxs := block.Transactions
+	var actionParamTxs []*transaction.ActionParamTx
+	for _, tx := range allTxs {
+		if tx.GetType() == "ACTION_PARAMS" {
+			actionParamTxs = append(actionParamTxs, tx)
+		}
+	}
+	return actionParamTxs
+}
+
+func getRecentActionParamsTxs(numOfBlocks int, chain *blockchain.BlockChain) []*transaction.ActionParamTx {
+	if chain == nil || chain.BestBlock == nil {
+		return []*transaction.ActionParamTx{}
+	}
+	actionParamTxs := []*transaction.ActionParamTx{}
+	bestBlock := chain.BestBlock
+	actionParamTxsInBestBlock := filterActionParamsTxs(bestBlock)
+	actionParamTxs = append(actionParamTxs, actionParamTxsInBestBlock...)
+	prevBlockHash := bestBlock.Header.PrevBlockHash
+
+	for i := 0; i < numOfBlocks - 1; i++ {
+		block, ok := chain[prevBlockHash]
+		if !ok {
+			return actionParamTxs
+		}
+		actionParamTxsInBlock := filterActionParamsTxs(block)
+		actionParamTxs = append(actionParamTxs, actionParamTxsInBlock...)
+		prevBlockHash = block.Header.PrevBlockHash
+	}
+	return actionParamTxs
+}
+
+
 // createCoinbaseTx returns a coinbase transaction paying an appropriate subsidy
 // based on the passed block height to the provided address.  When the address
 // is nil, the coinbase transaction will instead be redeemable by anyone.
