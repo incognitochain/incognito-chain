@@ -202,14 +202,19 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 		//}
 		log.Printf("Message: %s \n", str)
 		if str != "\n" {
+
+			// Parse Message header
 			jsonDecodeString, _ := hex.DecodeString(str)
 			messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 			messageHeader = bytes.Trim(messageHeader, "\x00")
 			log.Println(string(messageHeader))
+
 			messageType := string(messageHeader[:len(messageHeader)])
+			var message, err = wire.MakeEmptyMessage(string(messageType))
+
+			// Parse Message body
 			messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
 			log.Println(string(messageBody))
-			var message, err = wire.MakeEmptyMessage(string(messageType))
 			if err != nil {
 				log.Println(err)
 				continue
@@ -222,7 +227,7 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 			}
 			realType := reflect.TypeOf(message)
 			log.Print(realType)
-
+			// check type of Message
 			switch realType {
 			case reflect.TypeOf(&wire.MessageTx{}):
 				if self.Config.MessageListeners.OnTx != nil {
