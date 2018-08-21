@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"fmt"
 
-	"github.com/internet-cash/prototype/blockchain"
-	"github.com/internet-cash/prototype/common"
+	"github.com/ninjadotorg/money-prototype/blockchain"
+	"github.com/ninjadotorg/money-prototype/common"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 )

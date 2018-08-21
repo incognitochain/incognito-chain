@@ -1,9 +1,10 @@
 package blockchain
 
 import (
-	"github.com/internet-cash/prototype/database"
 	"errors"
-	"github.com/internet-cash/prototype/common"
+
+	"github.com/ninjadotorg/money-prototype/database"
+	"github.com/ninjadotorg/money-prototype/common"
 )
 
 type BlockChain struct {

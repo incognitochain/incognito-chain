@@ -3,7 +3,7 @@ package jsonrpc
 import (
 	"fmt"
 	"encoding/json"
-	"github.com/internet-cash/prototype/common"
+	"github.com/ninjadotorg/money-prototype/common"
 )
 
 // Response is the general form of a JSON-RPC response.  The type of the Result

@@ -1,9 +1,9 @@
 package blockchain
 
 import (
-	"github.com/internet-cash/prototype/transaction"
 	"math"
-	"github.com/internet-cash/prototype/common"
+	"github.com/ninjadotorg/money-prototype/transaction"
+	"github.com/ninjadotorg/money-prototype/common"
 )
 
 type Merkle struct {

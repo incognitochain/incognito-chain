@@ -1,16 +1,17 @@
 package connmanager
 
 import (
-	"github.com/internet-cash/prototype/peer"
-	pstore "github.com/libp2p/go-libp2p-peerstore"
-	ma "github.com/multiformats/go-multiaddr"
-	libpeer "github.com/libp2p/go-libp2p-peer"
 	"sync"
 	"log"
 	"sync/atomic"
 	"context"
 	"bufio"
 	"fmt"
+
+	"github.com/ninjadotorg/money-prototype/peer"
+	pstore "github.com/libp2p/go-libp2p-peerstore"
+	ma "github.com/multiformats/go-multiaddr"
+	libpeer "github.com/libp2p/go-libp2p-peer"
 )
 
 const (

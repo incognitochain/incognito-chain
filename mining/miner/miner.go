@@ -7,9 +7,9 @@ import (
 	"errors"
 	"math/rand"
 
-	"github.com/internet-cash/prototype/blockchain"
-	"github.com/internet-cash/prototype/mining"
-	"github.com/internet-cash/prototype/common"
+	"github.com/ninjadotorg/money-prototype/blockchain"
+	"github.com/ninjadotorg/money-prototype/mining"
+	"github.com/ninjadotorg/money-prototype/common"
 )
 
 var (

@@ -1,9 +1,10 @@
 package blockchain
 
 import (
-	"github.com/internet-cash/prototype/common"
 	"math/big"
 	"time"
+
+	"github.com/ninjadotorg/money-prototype/common"
 )
 
 var (

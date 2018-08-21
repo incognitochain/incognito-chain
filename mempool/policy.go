@@ -1,7 +1,7 @@
 package mempool
 
 import (
-	"github.com/internet-cash/prototype/transaction"
+	"github.com/ninjadotorg/money-prototype/transaction"
 )
 
 // Policy houses the policy (configuration parameters) which is used to control the mempool.

@@ -1,9 +1,10 @@
 package blockchain
 
 import (
-	"github.com/internet-cash/prototype/transaction"
-	"github.com/internet-cash/prototype/common"
 	"time"
+
+	"github.com/ninjadotorg/money-prototype/transaction"
+	"github.com/ninjadotorg/money-prototype/common"
 )
 
 type GenesisBlockGenerator struct {

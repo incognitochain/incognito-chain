@@ -11,16 +11,16 @@ import (
 	"runtime"
 	"errors"
 
-	"github.com/internet-cash/prototype/blockchain"
-	"github.com/internet-cash/prototype/connmanager"
-	"github.com/internet-cash/prototype/database"
-	"github.com/internet-cash/prototype/peer"
-	"github.com/internet-cash/prototype/wire"
-	"github.com/internet-cash/prototype/rpcserver"
-	"github.com/internet-cash/prototype/mempool"
-	"github.com/internet-cash/prototype/common"
-	"github.com/internet-cash/prototype/mining/miner"
-	"github.com/internet-cash/prototype/mining"
+	"github.com/ninjadotorg/money-prototype/blockchain"
+	"github.com/ninjadotorg/money-prototype/connmanager"
+	"github.com/ninjadotorg/money-prototype/database"
+	"github.com/ninjadotorg/money-prototype/peer"
+	"github.com/ninjadotorg/money-prototype/wire"
+	"github.com/ninjadotorg/money-prototype/rpcserver"
+	"github.com/ninjadotorg/money-prototype/mempool"
+	"github.com/ninjadotorg/money-prototype/common"
+	"github.com/ninjadotorg/money-prototype/mining/miner"
+	"github.com/ninjadotorg/money-prototype/mining"
 )
 
 const (

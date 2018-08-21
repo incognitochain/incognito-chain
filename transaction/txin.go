@@ -1,7 +1,7 @@
 package transaction
 
 import (
-	"github.com/internet-cash/prototype/common"
+	"github.com/ninjadotorg/money-prototype/common"
 )
 
 const (

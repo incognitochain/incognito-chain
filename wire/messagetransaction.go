@@ -1,9 +1,10 @@
 package wire
 
 import (
-	"github.com/internet-cash/prototype/transaction"
 	"encoding/json"
 	"encoding/hex"
+
+	"github.com/ninjadotorg/money-prototype/transaction"
 )
 
 type MessageTx struct {

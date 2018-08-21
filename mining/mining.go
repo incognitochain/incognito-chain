@@ -3,9 +3,9 @@ package mining
 import (
 	"time"
 
-	"github.com/internet-cash/prototype/blockchain"
-	"github.com/internet-cash/prototype/common"
-	"github.com/internet-cash/prototype/transaction"
+	"github.com/ninjadotorg/money-prototype/blockchain"
+	"github.com/ninjadotorg/money-prototype/common"
+	"github.com/ninjadotorg/money-prototype/transaction"
 )
 
 // createCoinbaseTx returns a coinbase transaction paying an appropriate subsidy

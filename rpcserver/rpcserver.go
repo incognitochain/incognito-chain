@@ -1,9 +1,6 @@
 package rpcserver
 
 import (
-	"github.com/internet-cash/prototype/common"
-	"github.com/internet-cash/prototype/rpcserver/jsonrpc"
-	"github.com/internet-cash/prototype/blockchain"
 	"sync/atomic"
 	"net/http"
 	"errors"
@@ -16,8 +13,12 @@ import (
 	"encoding/json"
 	"sync"
 	"io"
-	"github.com/internet-cash/prototype/database"
-	"github.com/internet-cash/prototype/mempool"
+
+	"github.com/ninjadotorg/money-prototype/common"
+	"github.com/ninjadotorg/money-prototype/rpcserver/jsonrpc"
+	"github.com/ninjadotorg/money-prototype/blockchain"
+	"github.com/ninjadotorg/money-prototype/database"
+	"github.com/ninjadotorg/money-prototype/mempool"
 )
 
 const (

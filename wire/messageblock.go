@@ -1,8 +1,8 @@
 package wire
 
 import (
-	"github.com/internet-cash/prototype/blockchain"
 	"encoding/json"
+	"github.com/ninjadotorg/money-prototype/blockchain"
 )
 
 const (
