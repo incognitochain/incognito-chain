@@ -523,6 +523,10 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 	}
 }
 
+func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId peer2.ID) bool {
+	return true
+}
+
 func (self Server) PushBlockMessage(block *blockchain.Block) bool {
 	// TODO push block message for connected peer
 	return true

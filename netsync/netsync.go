@@ -11,6 +11,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/wire"
+	peer2 "github.com/libp2p/go-libp2p-peer"
 )
 
 type NetSync struct {
@@ -32,6 +33,7 @@ type NetSyncConfig struct {
 	MemPool    *mempool.TxPool
 	Server interface {
 		// list functions callback which are assigned from Server struct
+		PushBlockMessageWithPeerId(*blockchain.Block, peer2.ID)
 	}
 }
 
