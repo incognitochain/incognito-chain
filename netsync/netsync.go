@@ -20,9 +20,6 @@ type NetSync struct {
 	msgChan   chan interface{}
 	waitgroup sync.WaitGroup
 	quit      chan struct{}
-	Server interface {
-		// list functions callback which are assigned from Server struct
-	}
 	//
 	syncPeer *peer.Peer
 
@@ -33,6 +30,9 @@ type NetSyncConfig struct {
 	Chain      *blockchain.BlockChain
 	ChainParam *blockchain.Params
 	MemPool    *mempool.TxPool
+	Server interface {
+		// list functions callback which are assigned from Server struct
+	}
 }
 
 func (self NetSync) New(cfg *NetSyncConfig) (*NetSync, error) {
