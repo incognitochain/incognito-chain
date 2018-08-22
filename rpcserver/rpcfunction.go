@@ -7,6 +7,7 @@ import (
 	"strings"
 	"encoding/hex"
 	"fmt"
+	"time"
 
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/transaction"
@@ -248,6 +249,7 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 	tx := transaction.ActionParamTx{
 		Version: 1,
 		Type:    "ACTION_PARAMS",
+		LockTime: time.Now().Unix(),
 	}
 
 	param := arrayParams[0].(map[string]interface{})

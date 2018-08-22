@@ -3,7 +3,6 @@ package mining
 import (
 	"time"
 	"math"
-	// "fmt"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -68,7 +67,7 @@ func getMedians(actionParamTxs []*transaction.ActionParamTx) (float64, float64, 
 }
 
 
-func calculateReward(actionParamTxs []*transaction.ActionParamTx, txFees []float64) (map[string]float64) {
+func calculateReward(actionParamTxs []*transaction.ActionParamTx, feeMap map[string]float64) (map[string]float64) {
 	latestTxsByAgentId := map[string]*transaction.ActionParamTx{}
 	for _, tx := range actionParamTxs {
 
@@ -117,15 +116,11 @@ func calculateReward(actionParamTxs []*transaction.ActionParamTx, txFees []float
 	}
 	if len(issuingCoinsActions) < len(contractingCoinsActions) {
 		_, medianBond, medianTax := getMedians(contractingCoinsActions)
-		var coins float64
-		coins = 0
-		for _, fee := range txFees {
-			coins += (100 - medianTax) * 0.01 * fee
-		}
-		// TODO: remember that there are 2 type of tx out: coin and bond -> recalculate by type
+		coins := (100 - medianTax) * 0.01 * feeMap["coin"]
+		bonds := medianBond + feeMap["bond"]
 		return map[string]float64{
 			"coins": coins,
-			"bonds": medianBond,
+			"bonds": bonds,
 		}
 	}
 	// issuing coins
@@ -135,6 +130,7 @@ func calculateReward(actionParamTxs []*transaction.ActionParamTx, txFees []float
 		"bonds": 0,
 	}
 }
+
 
 
 // createCoinbaseTx returns a coinbase transaction paying an appropriate subsidy
@@ -169,10 +165,9 @@ func createCoinbaseTx(
 	txIn := *transaction.TxIn{}.NewTxIn(outPoint, coinbaseScript)
 	tx.AddTxIn(txIn)
 	//@todo add value of tx out logic
-	for _, rewardValue := range rewardMap {
+	for rewardType, rewardValue := range rewardMap {
 		if rewardValue > 0 {
-			// TODO: add reward type to txOut
-			txOut := *transaction.TxOut{}.NewTxOut(rewardValue, pkScript)
+			txOut := *transaction.TxOut{}.NewTxOut(rewardValue, pkScript, rewardType)
 			tx.AddTxOut(txOut)
 		}
 	}
@@ -180,17 +175,56 @@ func createCoinbaseTx(
 	return tx, nil
 }
 
+
+func sumTxInValues(txIns []transaction.TxIn) float64 {
+	// TODO: calcualte sum of txIn values
+	return 10.5
+}
+
+
+func sumTxOutValues(txOuts []transaction.TxOut) float64 {
+	var sum float64 = 0
+	for _, txOut := range txOuts {
+		sum += txOut.Value
+	}
+	return sum
+}
+
+
+func extractTxsAndComputeInitialFees(txDescs []*TxDesc) ([]transaction.Transaction, map[string]float64) {
+	var txs []transaction.Transaction
+	var feeMap = map[string]float64{
+		"coin": 0,
+		"bond": 0,
+	}
+	for _, txDesc := range txDescs {
+		tx := txDesc.Tx
+		txs = append(txs, tx)
+		txType := tx.GetType()
+		if txType == ACTION_PARAMS_TRANSACTION_TYPE {
+			continue
+		}
+		normalTx, _ := tx.(*transaction.Tx)
+		txInsValue := sumTxInValues(normalTx.TxIn)
+		txOutsValue := sumTxOutValues(normalTx.TxOut)
+		feeMap[txType] += txInsValue - txOutsValue
+	}
+	return txs, feeMap
+}
+
+
 func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain) (*BlockTemplate, error) {
 
 	prevBlockHash := chain.BestBlock.Hash()
 	sourceTxns := g.txSource
+	txs, feeMap := extractTxsAndComputeInitialFees(sourceTxns)
 	//@todo we need apply sort rules for sourceTxns here
 
 
 	// TODO: need to compute real txFees from transactions
 	actionParamTxs := getRecentActionParamsTxs(NUMBER_OF_LAST_BLOCKS, chain)
-	txFees := make([]float64, 0, 1)
-	rewardMap := calculateReward(actionParamTxs, txFees)
+	// txFees := make([]float64, 0, 1)
+	rewardMap := calculateReward(actionParamTxs, feeMap)
 
 	coinbaseScript := []byte("1234567890123456789012") //@todo should be create function create basescript
 
@@ -201,13 +235,13 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 
 	// dependers := make(map[common.Hash]map[common.Hash]*txPrioItem)
 
-	blockTxns := make([]transaction.Transaction, 0, len(sourceTxns))
-	blockTxns = append(blockTxns, coinbaseTx)
+	// blockTxns := make([]transaction.Transaction, 0, len(sourceTxns))
+	// blockTxns = append(blockTxns, coinbaseTx)
+
+	blockTxns := append([]transaction.Transaction{coinbaseTx}, txs...)
 
 	merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(blockTxns)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
-
-	// txFees := make([]int64, 0, 0)
 
 mempoolLoop:
 	for _, txDesc := range sourceTxns {
@@ -258,8 +292,6 @@ mempoolLoop:
 		}
 	}
 
-	// txFees := make([]int64, 0, 1)
-
 	var msgBlock blockchain.Block
 	msgBlock.Header = blockchain.BlockHeader{
 		Version:       1,
@@ -279,7 +311,6 @@ mempoolLoop:
 
 	return &BlockTemplate{
 		Block: &msgBlock,
-		Fees:  txFees, // TODO: need Fees here?????
 	}, nil
 
 }
