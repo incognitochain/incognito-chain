@@ -307,8 +307,6 @@ mempoolLoop:
 		}
 	}
 
-	msgBlock.BlockHash = prevBlockHash
-
 	return &BlockTemplate{
 		Block: &msgBlock,
 	}, nil

@@ -38,14 +38,17 @@ type Peer struct {
 	connected  int32
 	disconnect int32
 
-	Host             host.Host
+	Host                host.Host
+	ReaderWritersStream map[peer.ID]*bufio.ReadWriter
+
 	TargetAddress    ma.Multiaddr
 	PeerId           peer.ID
+	RawAddress       string
 	ListeningAddress n.Addr
-	Seed             int64
-	FlagMutex        sync.Mutex
 
-	Config Config
+	Seed      int64
+	FlagMutex sync.Mutex
+	Config    Config
 
 	sendMessageQueue chan outMsg
 	quit             chan struct{}
@@ -72,8 +75,9 @@ type WrappedStream struct {
 // handler goroutine blocks until the callback has completed.  Doing so will
 // result in a deadlock.
 type MessageListeners struct {
-	OnTx    func(p *Peer, msg *wire.MessageTx)
-	OnBlock func(p *Peer, msg *wire.MessageBlock)
+	OnTx      func(p *Peer, msg *wire.MessageTx)
+	OnBlock   func(p *Peer, msg *wire.MessageBlock)
+	OnVersion func(p *Peer, msg *wire.MessageVersion)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal
@@ -144,6 +148,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 		return &self, err
 	}
 
+	self.RawAddress = fullAddr.String()
 	self.Host = basicHost
 	self.TargetAddress = fullAddr
 	self.PeerId = peerid
@@ -241,6 +246,12 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 				if self.Config.MessageListeners.OnBlock != nil {
 					self.FlagMutex.Lock()
 					self.Config.MessageListeners.OnBlock(&self, message.(*wire.MessageBlock))
+					self.FlagMutex.Unlock()
+				}
+			case reflect.TypeOf(&wire.MessageVersion{}):
+				if self.Config.MessageListeners.OnVersion != nil {
+					self.FlagMutex.Lock()
+					self.Config.MessageListeners.OnVersion(&self, message.(*wire.MessageVersion))
 					self.FlagMutex.Unlock()
 				}
 			default:
@@ -342,3 +353,76 @@ func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- stru
 	//self.ReadWrite.Flush()
 	//self.FlagMutex.Unlock()
 }
+
+// negotiateOutboundProtocol sends our version message then waits to receive a
+// version message from the peer.  If the events do not occur in that order then
+// it returns an error.
+func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
+	// Generate a unique nonce for this peer so self connections can be
+	// detected.  This is accomplished by adding it to a size-limited map of
+	// recently seen nonces.
+	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
+	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
+	msg.(*wire.MessageVersion).LocalAddress = self.ListeningAddress
+	msg.(*wire.MessageVersion).RemoteAddress = peer.ListeningAddress
+	msg.(*wire.MessageVersion).LastBlock = 0
+	msg.(*wire.MessageVersion).ProtocolVersion = 1
+	if err != nil {
+		return err
+	}
+	msgVersion, err := msg.JsonSerialize()
+	if err != nil {
+		return err
+	}
+	msgVersion += "\n"
+	log.Printf("Send a msgVersion: %s", msgVersion)
+	rw := self.ReaderWritersStream[peer.PeerId]
+	self.FlagMutex.Lock()
+	rw.Writer.WriteString(msgVersion)
+	rw.Writer.Flush()
+	self.FlagMutex.Unlock()
+	for {
+		// wait for a response
+		var err1 error
+		versionResponse, err1 := rw.ReadString('\n')
+		if err1 != nil {
+			return err1
+		}
+		if versionResponse == "\n" {
+			// TODO
+		}
+	}
+
+	return nil
+}
+
+//// negotiateOutboundProtocol sends our version message then waits to receive a
+//// version message from the peer.  If the events do not occur in that order then
+//// it returns an error.
+//func (p *Peer) NegotiateOutboundProtocol() error {
+//	if err := p.writeLocalVersionMsg(); err != nil {
+//		return err
+//	}
+//
+//	return p.readRemoteVersionMsg()
+//}
+//
+//// writeLocalVersionMsg writes our version message to the remote peer.
+//func (p *Peer) writeLocalVersionMsg() error {
+//	localVerMsg, err := p.localVersionMsg()
+//	if err != nil {
+//		return err
+//	}
+//
+//	return p.writeMessage(localVerMsg, wire.LatestEncoding)
+//}
+//
+//// localVersionMsg creates a version message that can be used to send to the
+//// remote peer.
+//func (p *Peer) localVersionMsg() (*wire.MessageVersion, error) {
+//	msg := wire.MessageVersion{
+//		Timestamp: time.Unix(time.Now().Unix(), 0),
+//		LastBlock:0,
+//		LocalAddress:
+//	}
+//}

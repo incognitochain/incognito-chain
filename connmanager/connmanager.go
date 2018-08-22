@@ -70,7 +70,7 @@ type ConnManager struct {
 
 	// Request channel
 	Requests chan interface{}
-	// Quit channel
+	// quit channel
 	Quit chan struct{}
 
 	FailedAttempts uint32
@@ -334,8 +334,10 @@ func (self ConnManager) Connect(addr string) {
 	connReq := ConnReq{
 		Permanent: true,
 		Peer: peer.Peer{
-			TargetAddress: targetAddr,
-			PeerId:        peerId,
+			TargetAddress:       targetAddr,
+			PeerId:              peerId,
+			RawAddress:          addr,
+			ReaderWritersStream: make(map[libpeer.ID]*bufio.ReadWriter),
 		},
 	}
 	if atomic.LoadUint64(&connReq.Id) == 0 {
@@ -376,6 +378,8 @@ func (self ConnManager) Connect(addr string) {
 		}
 		// Create a buffered stream so that read and writes are non blocking.
 		rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+		// Cache stream to outbound peer
+		listen.ReaderWritersStream[connReq.Peer.PeerId] = rw
 
 		// Create a thread to read and write data.
 		go listen.InMessageHandler(rw)

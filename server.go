@@ -22,6 +22,9 @@ import (
 	"github.com/ninjadotorg/cash-prototype/mining/miner"
 	"github.com/ninjadotorg/cash-prototype/mining"
 	"github.com/ninjadotorg/cash-prototype/netsync"
+	"github.com/ninjadotorg/cash-prototype/addrmanager"
+	"bufio"
+	peer2 "github.com/libp2p/go-libp2p-peer"
 )
 
 const (
@@ -54,16 +57,20 @@ type Server struct {
 	started     int32
 	startupTime int64
 
+	donePeers chan *peer.Peer
+	quit      chan struct{}
+	newPeers  chan *peer.Peer
+
 	ChainParams *blockchain.Params
 	ConnManager *connmanager.ConnManager
 	Chain       *blockchain.BlockChain
 	Db          database.DB
 	RpcServer   *rpcserver.RpcServer
 	MemPool     *mempool.TxPool
-	Quit        chan struct{}
 	WaitGroup   sync.WaitGroup
 	Miner       *miner.Miner
 	NetSync     *netsync.NetSync
+	AddrManager *addrmanager.AddrManager
 }
 
 // setupRPCListeners returns a slice of listeners that are configured for use
@@ -119,11 +126,13 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 
 	// Init data for Server
 	self.ChainParams = chainParams
-	self.Quit = make(chan struct{})
+	self.quit = make(chan struct{})
 	self.Db = db
 	self.MemPool = mempool.New(&mempool.Config{
 		Policy: mempool.Policy{},
 	})
+
+	self.AddrManager = addrmanager.New(cfg.DataDir, nil)
 
 	var err error
 
@@ -146,12 +155,6 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		Chain:                  self.Chain,
 	})
 
-	// Create a connection manager.
-	targetOutbound := defaultNumberOfTargetOutbound
-	if cfg.MaxPeers < targetOutbound {
-		targetOutbound = cfg.MaxPeers
-	}
-
 	// Init Net Sync manager to process messages
 	self.NetSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
 		Chain:      self.Chain,
@@ -165,12 +168,17 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	var peers []peer.Peer
 	if !cfg.DisableListen {
 		var err error
-		peers, err = self.InitListenerPeers(listenAddrs)
+		peers, err = self.InitListenerPeers(self.AddrManager, listenAddrs)
 		if err != nil {
 			return nil, err
 		}
 	}
 
+	// Create a connection manager.
+	targetOutbound := defaultNumberOfTargetOutbound
+	if cfg.MaxPeers < targetOutbound {
+		targetOutbound = cfg.MaxPeers
+	}
 	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
@@ -226,8 +234,8 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	return &self, nil
 }
 
-func (self Server) InboundPeerConnected(peer *peer.Peer) {
-
+func (self *Server) InboundPeerConnected(peer *peer.Peer) {
+	log.Println("inbound connected")
 }
 
 // outboundPeerConnected is invoked by the connection manager when a new
@@ -235,9 +243,25 @@ func (self Server) InboundPeerConnected(peer *peer.Peer) {
 // peer instance, associates it with the relevant state such as the connection
 // request instance and the connection itself, and finally notifies the address
 // manager of the attempt.
-func (self Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
+func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	peer *peer.Peer) {
+	log.Println("outbound connected")
 
+	// TODO:
+	// call address manager to process new outbound peer
+	// push message version
+	// if message version is compatible -> add outbound peer to address manager
+	for _, listen := range self.ConnManager.Config.ListenerPeers {
+		listen.NegotiateOutboundProtocol(peer)
+	}
+	go self.peerDoneHandler(peer)
+}
+
+// peerDoneHandler handles peer disconnects by notifiying the server that it's
+// done along with other performing other desirable cleanup.
+func (self *Server) peerDoneHandler(peer *peer.Peer) {
+	peer.WaitForDisconnect()
+	self.donePeers <- peer
 }
 
 // WaitForShutdown blocks until the main listener and peer handlers are stopped.
@@ -257,20 +281,20 @@ func (self Server) Stop() error {
 
 	self.Miner.Stop()
 
-	close(self.Quit)
+	close(self.quit)
 	return nil
 }
 
-// PeerHandler is used to handle peer operations such as adding and removing
+// peerHandler is used to handle peer operations such as adding and removing
 // peers to and from the server, banning peers, and broadcasting messages to
 // peers.  It must be run in a goroutine.
-func (self Server) PeerHandler() {
+func (self Server) peerHandler() {
 	// Start the address manager and sync manager, both of which are needed
 	// by peers.  This is done here since their lifecycle is closely tied
 	// to this handler and rather than adding more channels to sychronize
 	// things, it's easier and slightly faster to simply start and stop them
 	// in this handler.
-	//self.addrManager.Start()
+	self.AddrManager.Start()
 	self.NetSync.Start()
 
 	log.Println("Start peer handler")
@@ -278,7 +302,11 @@ func (self Server) PeerHandler() {
 out:
 	for {
 		select {
-		case <-self.Quit:
+		case p := <-self.donePeers:
+			self.handleDonePeerMsg(p)
+		case p := <-self.newPeers:
+			self.handleAddPeerMsg(p)
+		case <-self.quit:
 			{
 				// Disconnect all peers on server shutdown.
 				//state.forAllPeers(func(sp *serverPeer) {
@@ -290,6 +318,7 @@ out:
 		}
 	}
 	self.NetSync.Stop()
+	self.AddrManager.Stop()
 	self.ConnManager.Stop()
 }
 
@@ -307,7 +336,7 @@ func (self Server) Start() {
 	// Start the peer handler which in turn starts the address and block
 	// managers.
 	self.WaitGroup.Add(1)
-	go self.PeerHandler()
+	go self.peerHandler()
 
 	if !cfg.DisableRPC && self.RpcServer != nil {
 		self.WaitGroup.Add(1)
@@ -372,7 +401,7 @@ func parseListeners(addrs []string, netType string) ([]net.Addr, error) {
 // initListeners initializes the configured net listeners and adds any bound
 // addresses to the address manager. Returns the listeners and a NAT interface,
 // which is non-nil if UPnP is in use.
-func (self Server) InitListenerPeers(listenAddrs []string) ([]peer.Peer, error) {
+func (self Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string) ([]peer.Peer, error) {
 	netAddrs, err := parseListeners(listenAddrs, "ip")
 	if err != nil {
 		return nil, err
@@ -381,10 +410,11 @@ func (self Server) InitListenerPeers(listenAddrs []string) ([]peer.Peer, error) 
 	peers := make([]peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
 		peer, err := peer.Peer{
-			Seed:             0,
-			FlagMutex:        sync.Mutex{},
-			ListeningAddress: addr,
-			Config:           *self.NewPeerConfig(),
+			Seed:                0,
+			FlagMutex:           sync.Mutex{},
+			ListeningAddress:    addr,
+			Config:              *self.NewPeerConfig(),
+			ReaderWritersStream: make(map[peer2.ID]*bufio.ReadWriter),
 		}.NewPeer()
 		if err != nil {
 			return nil, err
@@ -400,8 +430,9 @@ func (self Server) InitListenerPeers(listenAddrs []string) ([]peer.Peer, error) 
 func (self *Server) NewPeerConfig() *peer.Config {
 	return &peer.Config{
 		MessageListeners: peer.MessageListeners{
-			OnBlock: self.OnBlock,
-			OnTx:    self.OnTx,
+			OnBlock:   self.OnBlock,
+			OnTx:      self.OnTx,
+			OnVersion: self.OnVersion,
 		},
 	}
 }
@@ -428,6 +459,24 @@ func (self Server) OnTx(peer *peer.Peer,
 	<-txProcessed
 }
 
+// OnVersion is invoked when a peer receives a version bitcoin message
+// and is used to negotiate the protocol version details as well as kick start
+// the communications.
+func (self *Server) OnVersion(_ *peer.Peer, msg *wire.MessageVersion) {
+	self.newPeers <- &peer.Peer{
+		ListeningAddress: msg.LocalAddress,
+	}
+	// TODO push message again for remote peer
+	var dc chan<- struct{}
+	for _, listen := range self.ConnManager.Config.ListenerPeers {
+		msg, err := wire.MakeEmptyMessage(wire.Cmdveack)
+		if err != nil {
+			return
+		}
+		listen.QueueMessageWithEncoding(msg, dc, )
+	}
+}
+
 func (self Server) PushTxMessage(hashTx *common.Hash) {
 	var dc chan<- struct{}
 	tx, _ := self.MemPool.GetTx(hashTx)
@@ -446,7 +495,20 @@ func (self Server) PushBlockMessage() {
 	//
 }
 
-func (self Server) handleMiner() error {
+// handleDonePeerMsg deals with peers that have signalled they are done.  It is
+// invoked from the peerHandler goroutine.
+func (self *Server) handleDonePeerMsg(sp *peer.Peer) {
+	//self.AddrManager.
+	// TODO
+}
 
-	return nil
+// handleAddPeerMsg deals with adding new peers.  It is invoked from the
+// peerHandler goroutine.
+func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
+	if peer == nil {
+		return false
+	}
+
+	// TODO:
+	return true
 }
