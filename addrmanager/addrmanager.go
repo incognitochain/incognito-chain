@@ -147,7 +147,8 @@ func (self *AddrManager) loadPeers() {
 
 // NumAddresses returns the number of addresses known to the address manager.
 func (a *AddrManager) numAddresses() int {
-	return a.nTried + a.nNew
+	//return a.nTried + a.nNew
+	return len(a.addrIndex)
 }
 
 // reset resets the address manager by reinitialising the random source
@@ -257,4 +258,25 @@ func (a *AddrManager) Connected(peer *peer.Peer) {
 // manager it will be ignored.
 func (self *AddrManager) Good(addr *peer.Peer) {
 	self.addrIndex[addr.RawAddress] = addr
+}
+
+func (self *AddrManager) AddAddresses(addr []*peer.Peer) {
+	for _, peer := range addr {
+		self.addrIndex[peer.RawAddress] = peer
+	}
+}
+
+// AddressCache returns the current address cache.  It must be treated as
+// read-only (but since it is a copy now, this is not as dangerous).
+func (self *AddrManager) AddressCache() []*peer.Peer {
+	addrIndexLen := len(self.addrIndex)
+	if addrIndexLen == 0 {
+		return nil
+	}
+	allAddr := make([]*peer.Peer, 0, addrIndexLen)
+	// Iteration order is undefined here, but we randomise it anyway.
+	for _, v := range self.addrIndex {
+		allAddr = append(allAddr, v)
+	}
+	return allAddr
 }

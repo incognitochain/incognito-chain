@@ -283,6 +283,20 @@ func (self Server) peerHandler() {
 	self.NetSync.Start()
 
 	log.Println("Start peer handler")
+
+	if !cfg.DisableDNSSeed {
+		// TODO load peer from seed DNS
+		// add to address manager
+		self.AddrManager.AddAddresses(make([]*peer.Peer, 0))
+	}
+
+	if len(cfg.ConnectPeers) == 0 {
+		// TODO connect with peer in file
+		for _, addr := range self.AddrManager.AddressCache() {
+			go self.ConnManager.Connect(addr.RawAddress)
+		}
+	}
+
 	go self.ConnManager.Start()
 out:
 	for {
