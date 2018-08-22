@@ -146,12 +146,6 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		Chain:                  self.Chain,
 	})
 
-	// Create a connection manager.
-	targetOutbound := defaultNumberOfTargetOutbound
-	if cfg.MaxPeers < targetOutbound {
-		targetOutbound = cfg.MaxPeers
-	}
-
 	// Init Net Sync manager to process messages
 	self.NetSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
 		Chain:      self.Chain,
@@ -171,6 +165,11 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		}
 	}
 
+	// Create a connection manager.
+	targetOutbound := defaultNumberOfTargetOutbound
+	if cfg.MaxPeers < targetOutbound {
+		targetOutbound = cfg.MaxPeers
+	}
 	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
@@ -227,7 +226,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 }
 
 func (self Server) InboundPeerConnected(peer *peer.Peer) {
-
+	log.Println("inbound connected")
 }
 
 // outboundPeerConnected is invoked by the connection manager when a new
@@ -237,7 +236,11 @@ func (self Server) InboundPeerConnected(peer *peer.Peer) {
 // manager of the attempt.
 func (self Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	peer *peer.Peer) {
+	log.Println("outbound connected")
 
+	// TODO call address manager to process new outbound peer
+	//
+	//
 }
 
 // WaitForShutdown blocks until the main listener and peer handlers are stopped.
@@ -444,9 +447,4 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 func (self Server) PushBlockMessage() {
 	// TODO push block message for connected peer
 	//
-}
-
-func (self Server) handleMiner() error {
-
-	return nil
 }
