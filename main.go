@@ -92,7 +92,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	}*/
 
 	// Create server and start it.
-	var db = database.NewDB("", database.LevelDBBackend, cfg.DataDir)
+	var db = database.NewDB("", database.LevelDBBackend, cfg.DataDir, 0,0 )
 	server, err := Server{}.NewServer(cfg.Listeners, db, activeNetParams.Params,
 		interrupt)
 	if err != nil {

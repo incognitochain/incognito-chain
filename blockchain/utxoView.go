@@ -71,7 +71,7 @@ func (view *UtxoViewpoint) fetchUtxosMain(db database.DB, outpoints map[transact
 		return nil
 	}
 
-	return db.View(func(dbTx database.Tx) error {
+	/*return db.View(func(dbTx database.Tx) error {
 		for outpoint := range outpoints {
 			//entry, err :=  nil, nil ///dbFetchUtxoEntry(dbTx, outpoint)
 			//if err != nil {
@@ -82,7 +82,8 @@ func (view *UtxoViewpoint) fetchUtxosMain(db database.DB, outpoints map[transact
 		}
 
 		return nil
-	})
+	})*/
+	return nil
 }
 
 func NewUtxoViewpoint() *UtxoViewpoint {
