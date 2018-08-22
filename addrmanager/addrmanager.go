@@ -10,6 +10,8 @@ import (
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"sync/atomic"
 	"time"
+	"path/filepath"
+	"math/rand"
 )
 
 const (
@@ -36,17 +38,19 @@ type localAddress struct {
 type AddressPriority int
 
 type AddrManager struct {
-	mtx       sync.Mutex
-	peersFile string
-	key       [32]byte
-	started   int32
-	shutdown  int32
-	waitgroup sync.WaitGroup
-	quit      chan struct{}
-	nTried    int
-	nNew      int
+	mtx        sync.Mutex
+	peersFile  string
+	lookupFunc func(string) ([]string, error)
+	rand       *rand.Rand
+	key        [32]byte
+	started    int32
+	shutdown   int32
+	waitgroup  sync.WaitGroup
+	quit       chan struct{}
+	nTried     int
+	nNew       int
 
-	addrIndex map[string]*peer.Peer // address key to ka for all addrs.
+	addrIndex map[string]*peer.Peer // address key to KnownAddress for all addrs.
 
 	localAddresses map[string]*localAddress
 }
@@ -67,6 +71,18 @@ type serializedAddrManager struct {
 	Addresses    []*serializedKnownAddress
 	NewBuckets   [newBucketCount][]string // string is NetAddressKey
 	TriedBuckets [triedBucketCount][]string
+}
+
+func New(dataDir string, lookupFunc func(string) ([]string, error)) *AddrManager {
+	addrManager := AddrManager{
+		peersFile:      filepath.Join(dataDir, "peer.json"),
+		lookupFunc:     lookupFunc,
+		rand:           rand.New(rand.NewSource(time.Now().UnixNano())),
+		quit:           make(chan struct{}),
+		localAddresses: make(map[string]*localAddress),
+	}
+	addrManager.reset()
+	return &addrManager
 }
 
 // savePeers saves all the known addresses to a file so they can be read back
@@ -220,4 +236,21 @@ out:
 	self.SavePeers()
 	self.waitgroup.Done()
 	log.Printf("Address handler done")
+}
+
+// Connected Marks the given address as currently connected and working at the
+// current time.  The address must already be known to AddrManager else it will
+// be ignored.
+func (a *AddrManager) Connected(peer *peer.Peer) {
+	a.mtx.Lock()
+	defer a.mtx.Unlock()
+
+	// TODO
+}
+
+// Good marks the given address as good.  To be called after a successful
+// connection and version exchange.  If the address is unknown to the address
+// manager it will be ignored.
+func (self *AddrManager) Good(addr *peer.Peer) {
+	self.addrIndex[addr.RawAddress] = addr
 }

@@ -14,6 +14,7 @@ const (
 	CmdGetBlocks = "getblocks"
 	CmdInv       = "inv"
 	CmdGetData   = "getdata"
+	CmdVersion   = "version"
 )
 
 // Interface for message wire on P2P network
@@ -33,6 +34,8 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageTx{
 			Transaction: &transaction.Tx{},
 		}
+	case CmdVersion:
+		msg = &MessageVersion{}
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}

@@ -38,7 +38,8 @@ type Peer struct {
 	connected  int32
 	disconnect int32
 
-	Host host.Host
+	Host        host.Host
+	ReadWriters map[peer.ID]*bufio.ReadWriter
 
 	TargetAddress    ma.Multiaddr
 	PeerId           peer.ID
@@ -345,3 +346,48 @@ func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- stru
 	//self.ReadWrite.Flush()
 	//self.FlagMutex.Unlock()
 }
+
+// negotiateOutboundProtocol sends our version message then waits to receive a
+// version message from the peer.  If the events do not occur in that order then
+// it returns an error.
+func (self *Peer) NegotiateOutboundProtocol() error {
+	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
+	//msg.(wire.MessageVersion).
+	if err != nil {
+		return err
+	}
+	var dc chan<- struct{}
+	self.sendMessageQueue <- outMsg{msg: msg, doneChan: dc}
+	return nil
+}
+
+//// negotiateOutboundProtocol sends our version message then waits to receive a
+//// version message from the peer.  If the events do not occur in that order then
+//// it returns an error.
+//func (p *Peer) NegotiateOutboundProtocol() error {
+//	if err := p.writeLocalVersionMsg(); err != nil {
+//		return err
+//	}
+//
+//	return p.readRemoteVersionMsg()
+//}
+//
+//// writeLocalVersionMsg writes our version message to the remote peer.
+//func (p *Peer) writeLocalVersionMsg() error {
+//	localVerMsg, err := p.localVersionMsg()
+//	if err != nil {
+//		return err
+//	}
+//
+//	return p.writeMessage(localVerMsg, wire.LatestEncoding)
+//}
+//
+//// localVersionMsg creates a version message that can be used to send to the
+//// remote peer.
+//func (p *Peer) localVersionMsg() (*wire.MessageVersion, error) {
+//	msg := wire.MessageVersion{
+//		Timestamp: time.Unix(time.Now().Unix(), 0),
+//		LastBlock:0,
+//		LocalAddress:
+//	}
+//}
