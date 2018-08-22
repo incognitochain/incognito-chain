@@ -247,8 +247,8 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 	log.Println(params)
 	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.ActionParamTx{
-		Version: 1,
-		Type:    "ACTION_PARAMS",
+		Version:  1,
+		Type:     ACTION_PARAMS_TRANSACTION_TYPE,
 		LockTime: time.Now().Unix(),
 	}
 

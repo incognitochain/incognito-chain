@@ -117,10 +117,12 @@ func calculateReward(actionParamTxs []*transaction.ActionParamTx, feeMap map[str
 	if len(issuingCoinsActions) < len(contractingCoinsActions) {
 		_, medianBond, medianTax := getMedians(contractingCoinsActions)
 		coins := (100 - medianTax) * 0.01 * feeMap["coin"]
+		burnedCoins := feeMap["coin"] - coins
 		bonds := medianBond + feeMap["bond"]
 		return map[string]float64{
 			"coins": coins,
 			"bonds": bonds,
+			"burnedCoins": burnedCoins,
 		}
 	}
 	// issuing coins
@@ -166,10 +168,19 @@ func createCoinbaseTx(
 	tx.AddTxIn(txIn)
 	//@todo add value of tx out logic
 	for rewardType, rewardValue := range rewardMap {
-		if rewardValue > 0 {
-			txOut := *transaction.TxOut{}.NewTxOut(rewardValue, pkScript, rewardType)
-			tx.AddTxOut(txOut)
+		if rewardValue <= 0 {
+			continue
 		}
+		txOutTypeMap := map[string]string{
+			"coins": TXOUT_COIN_TYPE,
+			"bonds": TXOUT_BOND_TYPE,
+			"burnedCoins": TXOUT_COIN_TYPE,
+		}
+		if rewardType == "burnedCoins" {
+			pkScript = []byte(DEFAULT_ADDRESS_FOR_BURNING)
+		}
+		txOut := *transaction.TxOut{}.NewTxOut(rewardValue, pkScript, txOutTypeMap[rewardType])
+		tx.AddTxOut(txOut)
 	}
 
 	return tx, nil
