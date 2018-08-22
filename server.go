@@ -23,6 +23,8 @@ import (
 	"github.com/ninjadotorg/cash-prototype/mining"
 	"github.com/ninjadotorg/cash-prototype/netsync"
 	"github.com/ninjadotorg/cash-prototype/addrmanager"
+	"bufio"
+	peer2 "github.com/libp2p/go-libp2p-peer"
 )
 
 const (
@@ -57,6 +59,7 @@ type Server struct {
 
 	donePeers chan *peer.Peer
 	quit      chan struct{}
+	newPeers  chan *peer.Peer
 
 	ChainParams *blockchain.Params
 	ConnManager *connmanager.ConnManager
@@ -249,7 +252,7 @@ func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	// push message version
 	// if message version is compatible -> add outbound peer to address manager
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		listen.NegotiateOutboundProtocol()
+		listen.NegotiateOutboundProtocol(peer)
 	}
 	go self.peerDoneHandler(peer)
 }
@@ -301,6 +304,8 @@ out:
 		select {
 		case p := <-self.donePeers:
 			self.handleDonePeerMsg(p)
+		case p := <-self.newPeers:
+			self.handleAddPeerMsg(p)
 		case <-self.quit:
 			{
 				// Disconnect all peers on server shutdown.
@@ -405,10 +410,11 @@ func (self Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs 
 	peers := make([]peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
 		peer, err := peer.Peer{
-			Seed:             0,
-			FlagMutex:        sync.Mutex{},
-			ListeningAddress: addr,
-			Config:           *self.NewPeerConfig(),
+			Seed:                0,
+			FlagMutex:           sync.Mutex{},
+			ListeningAddress:    addr,
+			Config:              *self.NewPeerConfig(),
+			ReaderWritersStream: make(map[peer2.ID]*bufio.ReadWriter),
 		}.NewPeer()
 		if err != nil {
 			return nil, err
@@ -452,6 +458,24 @@ func (self Server) OnTx(peer *peer.Peer,
 	<-txProcessed
 }
 
+// OnVersion is invoked when a peer receives a version bitcoin message
+// and is used to negotiate the protocol version details as well as kick start
+// the communications.
+func (self *Server) OnVersion(_ *peer.Peer, msg *wire.MessageVersion) {
+	self.newPeers <- &peer.Peer{
+		ListeningAddress: msg.LocalAddress,
+	}
+	// TODO push message again for remote peer
+	var dc chan<- struct{}
+	for _, listen := range self.ConnManager.Config.ListenerPeers {
+		msg, err := wire.MakeEmptyMessage(wire.Cmdveack)
+		if err != nil {
+			return
+		}
+		listen.QueueMessageWithEncoding(msg, dc, )
+	}
+}
+
 func (self Server) PushTxMessage(hashTx *common.Hash) {
 	var dc chan<- struct{}
 	tx, _ := self.MemPool.GetTx(hashTx)
@@ -475,4 +499,15 @@ func (self Server) PushBlockMessage() {
 func (self *Server) handleDonePeerMsg(sp *peer.Peer) {
 	//self.AddrManager.
 	// TODO
+}
+
+// handleAddPeerMsg deals with adding new peers.  It is invoked from the
+// peerHandler goroutine.
+func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
+	if peer == nil {
+		return false
+	}
+
+	// TODO:
+	return true
 }

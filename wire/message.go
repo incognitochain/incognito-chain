@@ -15,6 +15,7 @@ const (
 	CmdInv       = "inv"
 	CmdGetData   = "getdata"
 	CmdVersion   = "version"
+	Cmdveack     = "verack"
 )
 
 // Interface for message wire on P2P network
@@ -36,6 +37,8 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		}
 	case CmdVersion:
 		msg = &MessageVersion{}
+	case Cmdveack:
+		msg = &MessageVerAck{}
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}

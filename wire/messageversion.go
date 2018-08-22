@@ -15,7 +15,7 @@ type MessageVersion struct {
 }
 
 func (self MessageVersion) MessageType() string {
-	return CmdBlock
+	return CmdVersion
 }
 
 func (self MessageVersion) MaxPayloadLength(pver int) int {

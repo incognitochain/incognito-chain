@@ -38,8 +38,8 @@ type Peer struct {
 	connected  int32
 	disconnect int32
 
-	Host        host.Host
-	ReadWriters map[peer.ID]*bufio.ReadWriter
+	Host                host.Host
+	ReaderWritersStream map[peer.ID]*bufio.ReadWriter
 
 	TargetAddress    ma.Multiaddr
 	PeerId           peer.ID
@@ -75,8 +75,9 @@ type WrappedStream struct {
 // handler goroutine blocks until the callback has completed.  Doing so will
 // result in a deadlock.
 type MessageListeners struct {
-	OnTx    func(p *Peer, msg *wire.MessageTx)
-	OnBlock func(p *Peer, msg *wire.MessageBlock)
+	OnTx      func(p *Peer, msg *wire.MessageTx)
+	OnBlock   func(p *Peer, msg *wire.MessageBlock)
+	OnVersion func(p *Peer, msg *wire.MessageBlock)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal
@@ -247,6 +248,12 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 					self.Config.MessageListeners.OnBlock(&self, message.(*wire.MessageBlock))
 					self.FlagMutex.Unlock()
 				}
+			case reflect.TypeOf(&wire.MessageVersion{}):
+				if self.Config.MessageListeners.OnVersion != nil {
+					self.FlagMutex.Lock()
+					self.Config.MessageListeners.OnVersion(&self, message.(*wire.MessageBlock))
+					self.FlagMutex.Unlock()
+				}
 			default:
 				log.Printf("Received unhandled message of type %v "+
 					"from %v", realType, self)
@@ -350,14 +357,42 @@ func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- stru
 // negotiateOutboundProtocol sends our version message then waits to receive a
 // version message from the peer.  If the events do not occur in that order then
 // it returns an error.
-func (self *Peer) NegotiateOutboundProtocol() error {
+func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
+	// Generate a unique nonce for this peer so self connections can be
+	// detected.  This is accomplished by adding it to a size-limited map of
+	// recently seen nonces.
 	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
-	//msg.(wire.MessageVersion).
+	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
+	msg.(*wire.MessageVersion).LocalAddress = self.ListeningAddress
+	msg.(*wire.MessageVersion).RemoteAddress = peer.ListeningAddress
+	msg.(*wire.MessageVersion).LastBlock = 0
+	msg.(*wire.MessageVersion).ProtocolVersion = 1
 	if err != nil {
 		return err
 	}
-	var dc chan<- struct{}
-	self.sendMessageQueue <- outMsg{msg: msg, doneChan: dc}
+	message, err := msg.JsonSerialize()
+	if err != nil {
+		return err
+	}
+	message += "\n"
+	log.Printf("Send a message: %s", message)
+	rw := self.ReaderWritersStream[peer.PeerId]
+	self.FlagMutex.Lock()
+	rw.Writer.WriteString(message)
+	rw.Writer.Flush()
+	self.FlagMutex.Unlock()
+	for {
+		// wait for a response
+		var err1 error
+		versionResponse, err1 := rw.ReadString('\n')
+		if err1 != nil {
+			return err1
+		}
+		if versionResponse == "\n" {
+			// TODO
+		}
+	}
+
 	return nil
 }
 
