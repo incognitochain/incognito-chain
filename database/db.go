@@ -7,7 +7,7 @@ const (
 	LevelDBBackend DBBackendType = "leveldb"
 )
 
-type dbCreator func(name string, dir string) (DB, error)
+type dbCreator func(name string, dir string, cache int, handles int) (DB, error)
 
 var backends = map[DBBackendType]dbCreator{}
 
@@ -19,8 +19,8 @@ func registerDBCreator(backend DBBackendType, creator dbCreator, force bool) {
 	backends[backend] = creator
 }
 
-func NewDB(name string, backend DBBackendType, dir string) DB {
-	db, err := backends[backend](name, dir)
+func NewDB(name string, backend DBBackendType, dir string, cache int, handles int) DB {
+	db, err := backends[backend](name, dir, cache, handles)
 	if err != nil {
 		panic(fmt.Sprintf("Error initializing DB: %v", err))
 	}
