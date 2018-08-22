@@ -17,7 +17,7 @@ import (
 const (
 	// dumpAddressInterval is the interval used to dump the address
 	// cache to disk for future use.
-	dumpAddressInterval = time.Minute * 10
+	dumpAddressInterval = time.Second * 10
 
 	// newBucketCount is the number of buckets that we spread new addresses
 	// over.
@@ -87,9 +87,13 @@ func New(dataDir string, lookupFunc func(string) ([]string, error)) *AddrManager
 
 // savePeers saves all the known addresses to a file so they can be read back
 // in at next run.
-func (self *AddrManager) SavePeers() {
+func (self *AddrManager) savePeers() {
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
+
+	if len(self.addrIndex) == 0 {
+		return
+	}
 
 	sam := new(serializedAddrManager)
 	sam.Version = 1
@@ -227,13 +231,13 @@ out:
 	for {
 		select {
 		case <-dumpAddressTicker.C:
-			self.SavePeers()
+			self.savePeers()
 
 		case <-self.quit:
 			break out
 		}
 	}
-	self.SavePeers()
+	self.savePeers()
 	self.waitgroup.Done()
 	log.Printf("Address handler done")
 }

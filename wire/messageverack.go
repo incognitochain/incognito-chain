@@ -1,6 +1,9 @@
 package wire
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"encoding/hex"
+)
 
 // MsgVerAck defines a bitcoin verack message which is used for a peer to
 // acknowledge a version message (MsgVersion) after it has used the information
@@ -22,10 +25,11 @@ func (self MessageVerAck) JsonSerialize() (string, error) {
 	header := make([]byte, MessageHeaderSize)
 	copy(header[:], self.MessageType())
 	jsonStr = append(jsonStr, header...)
-	return string(jsonStr), err
+	return hex.EncodeToString(jsonStr), err
 }
 
 func (self MessageVerAck) JsonDeserialize(jsonStr string) error {
-	err := json.Unmarshal([]byte(jsonStr), self)
+	jsonDecodeString, _ := hex.DecodeString(jsonStr)
+	err := json.Unmarshal([]byte(jsonDecodeString), self)
 	return err
 }
