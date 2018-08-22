@@ -251,7 +251,7 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 			case reflect.TypeOf(&wire.MessageVersion{}):
 				if self.Config.MessageListeners.OnVersion != nil {
 					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnVersion(&self, message.(*wire.MessageBlock))
+					self.Config.MessageListeners.OnVersion(&self, message.(*wire.MessageVersion))
 					self.FlagMutex.Unlock()
 				}
 			default:
