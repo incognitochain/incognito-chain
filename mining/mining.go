@@ -275,8 +275,6 @@ mempoolLoop:
 		}
 	}
 
-	msgBlock.BlockHash = prevBlockHash
-
 	return &BlockTemplate{
 		Block: &msgBlock,
 		Fees:  txFees, // TODO: need Fees here?????
