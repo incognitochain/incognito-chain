@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/thaibaoautonomous/btcd/privacy/client/crypto/sha256"
+	"github.com/ninjadotorg/cash-prototype/privacy/client/crypto/sha256"
 	"golang.org/x/crypto/blake2b"
 )
 

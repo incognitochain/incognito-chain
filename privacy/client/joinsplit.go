@@ -6,14 +6,14 @@ import (
 	"log"
 	"time"
 
-	"github.com/thaibaoautonomous/btcd/privacy/proto/zksnark"
+	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
 	"google.golang.org/grpc"
 )
 
 type JSInput struct {
-	WitnessPath MerklePath
-	Key         SpendingKey
-	InputNote   Note
+	WitnessPath *MerklePath
+	Key         *SpendingKey
+	InputNote   *Note
 }
 
 type JSOutput struct {
@@ -49,7 +49,7 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
 	for _, input := range inputs {
 		var rho [32]byte
 		copy(rho[:], input.InputNote.Rho)
-		input.InputNote.Nf = GetNullifier(input.Key, rho)
+		input.InputNote.Nf = GetNullifier(*input.Key, rho)
 	}
 	seed := RandBits(256)
 	hSig := HSigCRH(seed, inputs[0].InputNote.Nf, inputs[1].InputNote.Nf, pubKey)
@@ -89,7 +89,7 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
 	zkNotes := Notes2ZksnarkNotes(outNotes)
 	zkInputs := JSInputs2ZkInputs(inputs)
 	var proveRequest = &zksnark.ProveRequest{Hsig: hSig, Phi: phi, Rt: rt, OutNotes: zkNotes, Inputs: zkInputs}
-	fmt.Printf("%v\n", proveRequest)
+	fmt.Printf("proveRequest: %v\n", proveRequest)
 	r, err := c.Prove(ctx, proveRequest)
 	if err != nil {
 		log.Fatalf("fail to prove: %v", err)
@@ -119,13 +119,14 @@ func JSInputs2ZkInputs(inputs []*JSInput) []*zksnark.JSInput {
 	var zkInputs []*zksnark.JSInput
 	for _, input := range inputs {
 		var zkinput zksnark.JSInput
-		for _, hash := range input.WitnessPath.AuthPath {
-			zkinput.WitnessPath.AuthPath = append(zkinput.WitnessPath.AuthPath, &zksnark.MerkleHash{Hash: hash})
-		}
+		zkinput.WitnessPath = &zksnark.MerklePath{}
 		copy(zkinput.WitnessPath.Index, input.WitnessPath.Index)
+		for _, hash := range input.WitnessPath.AuthPath {
+			zkinput.WitnessPath.AuthPath = append(zkinput.WitnessPath.AuthPath, &zksnark.MerkleHash{Hash: *hash})
+		}
 		copy(zkinput.SpendingKey, input.Key[:])
 
-		zkinput.Note = Note2ZksnarkNote(&input.InputNote)
+		zkinput.Note = Note2ZksnarkNote(input.InputNote)
 
 		zkInputs = append(zkInputs, &zkinput)
 	}
