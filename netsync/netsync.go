@@ -197,7 +197,7 @@ func (self *NetSync) HandleMessageGetBlock(msg *wire.MessageGetBlocks) {
 	}
 
 	// log.Printf("Send a msgVersion: %s", msgNewJSON)
-	// rw := self.syncPeer.ReaderWritersStream[msg.SenderID]
+	// rw := self.syncPeer.OutboundReaderWriterStreams[msg.SenderID]
 	// self.syncPeer.FlagMutex.Lock()
 	// rw.Writer.WriteString(msgNewJSON)
 	// rw.Writer.Flush()

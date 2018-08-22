@@ -38,9 +38,10 @@ type Peer struct {
 	connected  int32
 	disconnect int32
 
-	Host                host.Host
-	ReaderWritersStream map[peer.ID]*bufio.ReadWriter
-	verAckReceived      bool
+	Host                        host.Host
+	OutboundReaderWriterStreams map[peer.ID]*bufio.ReadWriter
+	InboundReaderWriterStreams  map[peer.ID]*bufio.ReadWriter
+	verAckReceived              bool
 
 	TargetAddress    ma.Multiaddr
 	PeerId           peer.ID
@@ -260,7 +261,9 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 			case reflect.TypeOf(&wire.MessageVersion{}):
 				if self.Config.MessageListeners.OnVersion != nil {
 					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnVersion(&self, message.(*wire.MessageVersion))
+					versionMessage := message.(*wire.MessageVersion)
+					self.InboundReaderWriterStreams[versionMessage.LocalPeerId] = rw
+					self.Config.MessageListeners.OnVersion(&self, versionMessage)
 					self.FlagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageVerAck{}):
@@ -398,7 +401,7 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 	}
 	msgVersion += "\n"
 	log.Printf("Send a msgVersion: %s", msgVersion)
-	rw := self.ReaderWritersStream[peer.PeerId]
+	rw := self.OutboundReaderWriterStreams[peer.PeerId]
 	self.FlagMutex.Lock()
 	rw.Writer.WriteString(msgVersion)
 	rw.Writer.Flush()

@@ -139,7 +139,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		BlockTemplateGenerator: blockTemplateGenerator,
 		MiningAddrs:            cfg.MiningAddrs,
 		Chain:                  self.Chain,
-		SendBlock: 				self.PushBlockMessage,
+		SendBlock:              self.PushBlockMessage,
 	})
 
 	// Init Net Sync manager to process messages
@@ -234,23 +234,22 @@ func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	peer *peer.Peer) {
 	log.Println("outbound connected")
 
-	msgNew, err := wire.MakeEmptyMessage(wire.CmdVersion)
-	msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.Chain.BestBlock.Hash()
-	msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerId
-	if err != nil {
-		return
-	}
-	peer.QueueMessageWithEncoding(msgNew, nil)
+	//msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
+	//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.Chain.BestBlock.Hash()
+	//msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerId
+	//if err != nil {
+	//	return
+	//}
+	//peer.QueueMessageWithEncoding(msgNew, nil)
 
 	// TODO:
 	// call address manager to process new outbound peer
 	// push message version
 	// if message version is compatible -> add outbound peer to address manager
-
-	// for _, listen := range self.ConnManager.Config.ListenerPeers {
-	// 	listen.NegotiateOutboundProtocol(peer)
-	// }
-	// go self.peerDoneHandler(peer)
+	for _, listen := range self.ConnManager.Config.ListenerPeers {
+		listen.NegotiateOutboundProtocol(peer)
+	}
+	go self.peerDoneHandler(peer)
 }
 
 // peerDoneHandler handles peer disconnects by notifiying the server that it's
@@ -420,11 +419,12 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 	peers := make([]peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
 		peer, err := peer.Peer{
-			Seed:                0,
-			FlagMutex:           sync.Mutex{},
-			ListeningAddress:    addr,
-			Config:              *self.NewPeerConfig(),
-			ReaderWritersStream: make(map[peer2.ID]*bufio.ReadWriter),
+			Seed:                        0,
+			FlagMutex:                   sync.Mutex{},
+			ListeningAddress:            addr,
+			Config:                      *self.NewPeerConfig(),
+			OutboundReaderWriterStreams: make(map[peer2.ID]*bufio.ReadWriter),
+			InboundReaderWriterStreams:  make(map[peer2.ID]*bufio.ReadWriter),
 		}.NewPeer()
 		if err != nil {
 			return nil, err
@@ -444,6 +444,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnTx:        self.OnTx,
 			OnVersion:   self.OnVersion,
 			OnGetBlocks: self.OnGetBlocks,
+			OnVerAck:    self.OnVerAck,
 		},
 	}
 }
@@ -506,6 +507,7 @@ func (self *Server) OnVersion(_ *peer.Peer, msg *wire.MessageVersion) {
 
 func (self *Server) OnVerAck(_ *peer.Peer, msg *wire.MessageVerAck) {
 	// TODO for onverack message
+	log.Printf("Receive verack message")
 }
 
 func (self Server) PushTxMessage(hashTx *common.Hash) {
@@ -521,7 +523,7 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 	}
 }
 
-func (self Server) PushBlockMessage(block *blockchain.Block) bool{
+func (self Server) PushBlockMessage(block *blockchain.Block) bool {
 	// TODO push block message for connected peer
 	return true
 
