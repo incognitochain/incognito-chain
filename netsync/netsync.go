@@ -20,9 +20,8 @@ type NetSync struct {
 	msgChan   chan interface{}
 	waitgroup sync.WaitGroup
 	quit      chan struct{}
-	Server    interface {
-		// Push Tx message
-		PushBlockMessage(*blockchain.Block)
+	Server interface {
+		// list functions callback which are assigned from Server struct
 	}
 	//
 	syncPeer *peer.Peer
