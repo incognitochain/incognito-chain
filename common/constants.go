@@ -48,4 +48,10 @@ const (
 	// in a multi-signature transaction output script for it to be
 	// considered standard.
 	maxStandardMultiSigKeys = 3
+
+	TxNormalType = "NORMAL"
+	TxActionParamsType = "ACTION_PARAMS"
+
+	TxOutCoinType = "TXOUT_COIN"
+	TxOutBondType = "TXOUT_BOND"
 )

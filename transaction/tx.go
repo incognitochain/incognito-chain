@@ -9,7 +9,7 @@ import (
 
 type Tx struct {
 	Version  int
-	Type     string // COIN / BOND / ACTION_PARAMS
+	Type     string // NORMAL / ACTION_PARAMS
 	TxIn     []TxIn
 	TxOut    []TxOut
 	LockTime int
