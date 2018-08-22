@@ -1,30 +1,31 @@
 package main
 
 import (
-	"sync"
+	"errors"
+	"fmt"
 	"log"
 	"net"
-	"fmt"
+	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
-	"runtime"
-	"errors"
 
+	"bufio"
+
+	peer2 "github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/cash-prototype/addrmanager"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/connmanager"
 	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/peer"
-	"github.com/ninjadotorg/cash-prototype/wire"
-	"github.com/ninjadotorg/cash-prototype/rpcserver"
 	"github.com/ninjadotorg/cash-prototype/mempool"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/mining/miner"
 	"github.com/ninjadotorg/cash-prototype/mining"
+	"github.com/ninjadotorg/cash-prototype/mining/miner"
 	"github.com/ninjadotorg/cash-prototype/netsync"
-	"github.com/ninjadotorg/cash-prototype/addrmanager"
-	"bufio"
-	peer2 "github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/cash-prototype/peer"
+	"github.com/ninjadotorg/cash-prototype/rpcserver"
+	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
 const (
@@ -233,14 +234,23 @@ func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	peer *peer.Peer) {
 	log.Println("outbound connected")
 
+	msgNew, err := wire.MakeEmptyMessage(wire.CmdVersion)
+	msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.Chain.BestBlock.Hash()
+	msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerId
+	if err != nil {
+		return
+	}
+	peer.QueueMessageWithEncoding(msgNew, nil)
+
 	// TODO:
 	// call address manager to process new outbound peer
 	// push message version
 	// if message version is compatible -> add outbound peer to address manager
-	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		listen.NegotiateOutboundProtocol(peer)
-	}
-	go self.peerDoneHandler(peer)
+
+	// for _, listen := range self.ConnManager.Config.ListenerPeers {
+	// 	listen.NegotiateOutboundProtocol(peer)
+	// }
+	// go self.peerDoneHandler(peer)
 }
 
 // peerDoneHandler handles peer disconnects by notifiying the server that it's
@@ -430,9 +440,10 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 func (self *Server) NewPeerConfig() *peer.Config {
 	return &peer.Config{
 		MessageListeners: peer.MessageListeners{
-			OnBlock:   self.OnBlock,
-			OnTx:      self.OnTx,
-			OnVersion: self.OnVersion,
+			OnBlock:     self.OnBlock,
+			OnTx:        self.OnTx,
+			OnVersion:   self.OnVersion,
+			OnGetBlocks: self.OnGetBlocks,
 		},
 	}
 }
@@ -444,6 +455,13 @@ func (self *Server) OnBlock(p *peer.Peer,
 	log.Println("Receive a new block")
 	var txProcessed chan struct{}
 	self.NetSync.QueueBlock(nil, msg, txProcessed)
+	<-txProcessed
+}
+
+func (self *Server) OnGetBlocks(_ *peer.Peer, msg *wire.MessageGetBlocks) {
+	log.Println("Receive a get-block message")
+	var txProcessed chan struct{}
+	self.NetSync.QueueGetBlock(nil, msg, txProcessed)
 	<-txProcessed
 }
 
@@ -482,7 +500,7 @@ func (self *Server) OnVersion(_ *peer.Peer, msg *wire.MessageVersion) {
 		if err != nil {
 			return
 		}
-		listen.QueueMessageWithEncoding(msg, dc, )
+		listen.QueueMessageWithEncoding(msg, dc)
 	}
 }
 
@@ -499,7 +517,7 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 			return
 		}
 		msg.(*wire.MessageTx).Transaction = tx
-		listen.QueueMessageWithEncoding(msg, dc, )
+		listen.QueueMessageWithEncoding(msg, dc)
 	}
 }
 

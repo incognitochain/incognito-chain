@@ -2,11 +2,14 @@ package wire
 
 import (
 	"encoding/json"
+
+	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 type MessageGetBlocks struct {
 	LastBlockHash common.Hash
+	SenderID      peer.ID
 }
 
 func (self MessageGetBlocks) MessageType() string {

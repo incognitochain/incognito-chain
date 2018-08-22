@@ -1,8 +1,8 @@
 package mining
 
 import (
-	"time"
 	"math"
+	"time"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -18,7 +18,6 @@ type txPrioItem struct {
 	dependsOn map[common.Hash]struct{}
 }
 
-
 func filterActionParamsTxs(block *blockchain.Block) []*transaction.ActionParamTx {
 	allTxs := block.Transactions
 	var actionParamTxs []*transaction.ActionParamTx
@@ -30,7 +29,6 @@ func filterActionParamsTxs(block *blockchain.Block) []*transaction.ActionParamTx
 	return actionParamTxs
 }
 
-
 func getRecentActionParamsTxs(numOfBlocks int, chain *blockchain.BlockChain) []*transaction.ActionParamTx {
 	if chain == nil || chain.BestBlock == nil {
 		return []*transaction.ActionParamTx{}
@@ -41,18 +39,17 @@ func getRecentActionParamsTxs(numOfBlocks int, chain *blockchain.BlockChain) []*
 	actionParamTxs = append(actionParamTxs, actionParamTxsInBestBlock...)
 	prevBlockHash := bestBlock.Header.PrevBlockHash
 
-	for i := 0; i < numOfBlocks - 1; i++ {
-		block, ok := chain.Blocks[&prevBlockHash]
+	for i := 0; i < numOfBlocks-1; i++ {
+		blockIdx, ok := chain.Headers[prevBlockHash]
 		if !ok {
 			return actionParamTxs
 		}
-		actionParamTxsInBlock := filterActionParamsTxs(block)
+		actionParamTxsInBlock := filterActionParamsTxs(chain.Blocks[blockIdx])
 		actionParamTxs = append(actionParamTxs, actionParamTxsInBlock...)
-		prevBlockHash = block.Header.PrevBlockHash
+		prevBlockHash = chain.Blocks[blockIdx].Header.PrevBlockHash
 	}
 	return actionParamTxs
 }
-
 
 func getMedians(actionParamTxs []*transaction.ActionParamTx) (float64, float64, float64) {
 	sumOfCoins := 0
@@ -66,8 +63,7 @@ func getMedians(actionParamTxs []*transaction.ActionParamTx) (float64, float64, 
 	return float64(sumOfCoins / len(actionParamTxs)), float64(sumOfBonds / len(actionParamTxs)), float64(sumOfTaxs / float64(len(actionParamTxs)))
 }
 
-
-func calculateReward(actionParamTxs []*transaction.ActionParamTx, feeMap map[string]float64) (map[string]float64) {
+func calculateReward(actionParamTxs []*transaction.ActionParamTx, feeMap map[string]float64) map[string]float64 {
 	latestTxsByAgentId := map[string]*transaction.ActionParamTx{}
 	for _, tx := range actionParamTxs {
 
@@ -101,7 +97,7 @@ func calculateReward(actionParamTxs []*transaction.ActionParamTx, feeMap map[str
 			contractingCoinsActions = append(contractingCoinsActions, tx)
 		}
 	}
-	if math.Max(float64(len(issuingCoinsActions)), float64(len(contractingCoinsActions))) < (math.Floor(float64(len(latestTxsByAgentId) / 2)) + 1) {
+	if math.Max(float64(len(issuingCoinsActions)), float64(len(contractingCoinsActions))) < (math.Floor(float64(len(latestTxsByAgentId)/2)) + 1) {
 		return map[string]float64{
 			"coins": DEFAULT_COINS,
 			"bonds": DEFAULT_BONDS,
@@ -132,8 +128,6 @@ func calculateReward(actionParamTxs []*transaction.ActionParamTx, feeMap map[str
 		"bonds": 0,
 	}
 }
-
-
 
 // createCoinbaseTx returns a coinbase transaction paying an appropriate subsidy
 // based on the passed block height to the provided address.  When the address
@@ -186,12 +180,10 @@ func createCoinbaseTx(
 	return tx, nil
 }
 
-
 func sumTxInValues(txIns []transaction.TxIn) float64 {
 	// TODO: calcualte sum of txIn values
 	return 10.5
 }
-
 
 func sumTxOutValues(txOuts []transaction.TxOut) float64 {
 	var sum float64 = 0
@@ -200,7 +192,6 @@ func sumTxOutValues(txOuts []transaction.TxOut) float64 {
 	}
 	return sum
 }
-
 
 func extractTxsAndComputeInitialFees(txDescs []*TxDesc) ([]transaction.Transaction, map[string]float64) {
 	var txs []transaction.Transaction
@@ -223,14 +214,12 @@ func extractTxsAndComputeInitialFees(txDescs []*TxDesc) ([]transaction.Transacti
 	return txs, feeMap
 }
 
-
 func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain) (*BlockTemplate, error) {
 
 	prevBlockHash := chain.BestBlock.Hash()
 	sourceTxns := g.txSource
 	txs, feeMap := extractTxsAndComputeInitialFees(sourceTxns)
 	//@todo we need apply sort rules for sourceTxns here
-
 
 	// TODO: need to compute real txFees from transactions
 	actionParamTxs := getRecentActionParamsTxs(NUMBER_OF_LAST_BLOCKS, chain)

@@ -1,30 +1,30 @@
 package peer
 
 import (
-	"log"
-	"io"
-	"crypto/rand"
-	mrand "math/rand"
-	"fmt"
-	"context"
 	"bufio"
-	"sync"
-	"strings"
-	"sync/atomic"
-	"time"
+	"bytes"
+	"context"
+	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	mrand "math/rand"
 	"reflect"
-	"bytes"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
 
-	"github.com/libp2p/go-libp2p-peer"
-	"github.com/libp2p/go-libp2p-host"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-crypto"
-	ma "github.com/multiformats/go-multiaddr"
+	"github.com/libp2p/go-libp2p-host"
 	"github.com/libp2p/go-libp2p-net"
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/libp2p/go-libp2p-peer"
+	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
 const (
@@ -76,10 +76,11 @@ type WrappedStream struct {
 // handler goroutine blocks until the callback has completed.  Doing so will
 // result in a deadlock.
 type MessageListeners struct {
-	OnTx      func(p *Peer, msg *wire.MessageTx)
-	OnBlock   func(p *Peer, msg *wire.MessageBlock)
-	OnVersion func(p *Peer, msg *wire.MessageVersion)
-	OnVerAck  func(p *Peer, msg *wire.MessageVerAck)
+	OnTx        func(p *Peer, msg *wire.MessageTx)
+	OnBlock     func(p *Peer, msg *wire.MessageBlock)
+	OnGetBlocks func(p *Peer, msg *wire.MessageGetBlocks)
+	OnVersion   func(p *Peer, msg *wire.MessageVersion)
+	OnVerAck    func(p *Peer, msg *wire.MessageVerAck)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal
@@ -159,7 +160,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	return &self, nil
 }
 
-func (self Peer) Start() (error) {
+func (self Peer) Start() error {
 	log.Println("Peer start")
 	log.Println("Set stream handler and wait for connection from other peer")
 	self.Host.SetStreamHandler("/blockchain/1.0.0", self.HandleStream)
@@ -195,7 +196,7 @@ func (self Peer) HandleStream(stream net.Stream) {
 
 /**
 Handle all in message
- */
+*/
 func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 	for {
 		log.Printf("read stream")
@@ -248,6 +249,12 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 				if self.Config.MessageListeners.OnBlock != nil {
 					self.FlagMutex.Lock()
 					self.Config.MessageListeners.OnBlock(&self, message.(*wire.MessageBlock))
+					self.FlagMutex.Unlock()
+				}
+			case reflect.TypeOf(&wire.MessageGetBlocks{}):
+				if self.Config.MessageListeners.OnBlock != nil {
+					self.FlagMutex.Lock()
+					self.Config.MessageListeners.OnGetBlocks(&self, message.(*wire.MessageGetBlocks))
 					self.FlagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageVersion{}):
