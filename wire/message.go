@@ -2,14 +2,18 @@ package wire
 
 import (
 	"fmt"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 // list message type
 const (
 	MessageHeaderSize = 24
-	
-	CmdBlock = "block"
-	CmdTx    = "tx"
+
+	CmdBlock     = "block"
+	CmdTx        = "tx"
+	CmdGetBlocks = "getblocks"
+	CmdInv       = "inv"
+	CmdGetData   = "getdata"
 )
 
 // Interface for message wire on P2P network
@@ -26,7 +30,9 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdBlock:
 		msg = &MessageBlock{}
 	case CmdTx:
-		msg = &MessageTx{}
+		msg = &MessageTx{
+			Transaction: &transaction.Tx{},
+		}
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}

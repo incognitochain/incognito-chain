@@ -5,7 +5,6 @@ import (
 
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
-
 )
 
 func init() {
@@ -39,6 +38,10 @@ func nonNilBytes(bz []byte) []byte {
 		return []byte{}
 	}
 	return bz
+}
+
+func (db *LevelDB) View(fn func(Tx) error) error {
+	return nil
 }
 
 //save block

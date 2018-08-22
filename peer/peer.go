@@ -207,11 +207,12 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 			// Parse Message header
 			jsonDecodeString, _ := hex.DecodeString(str)
 			messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
-			messageHeader = bytes.Trim(messageHeader, "\x00")
-			log.Println(string(messageHeader))
 
-			messageType := string(messageHeader[:len(messageHeader)])
-			var message, err = wire.MakeEmptyMessage(string(messageType))
+			commandInHeader := messageHeader[:12]
+			commandInHeader = bytes.Trim(messageHeader, "\x00")
+			log.Println(string(commandInHeader))
+			commandType := string(messageHeader[:len(commandInHeader)])
+			var message, err = wire.MakeEmptyMessage(string(commandType))
 
 			// Parse Message body
 			messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]

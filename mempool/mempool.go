@@ -96,8 +96,12 @@ func (tp *TxPool) addTx(tx transaction.Transaction) *TxDesc {
 func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
 	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
-	txD := tp.addTx(tx)
-	return tx.Hash(), txD, nil
+
+	if tp.HaveTx(tx.Hash()) != true{
+		txD := tp.addTx(tx)
+		return tx.Hash(), txD, nil
+	}
+	return tx.Hash(), nil, nil
 }
 
 //remove transaction for pool
