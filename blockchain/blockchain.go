@@ -2,10 +2,9 @@ package blockchain
 
 import (
 	"errors"
-
+	"sync"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/common"
-	"sync"
 )
 
 type BlockChain struct {
@@ -94,5 +93,10 @@ func (self *BlockChain) CreateChainState() error {
 	self.Blocks[genesisBlock.Hash()] = genesisBlock
 	self.Headers[genesisBlock.Hash()] = &genesisBlock.Header
 	self.BestBlock = genesisBlock
+	return nil
+}
+
+func (bc *BlockChain) Reset() error {
+	//Todo reset genesis bock logic
 	return nil
 }
