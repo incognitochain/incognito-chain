@@ -38,7 +38,7 @@ type TxDesc struct {
 type BlockTemplate struct {
 	Block *blockchain.Block
 
-	Fees []float64
+	// Fees []float64
 }
 
 

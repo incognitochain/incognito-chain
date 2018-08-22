@@ -17,7 +17,7 @@ type ActionParamTx struct {
 	Version int
 	Type string // COIN / BOND / ACTION_PARAMS
 	Param *Param
-	LockTime int
+	LockTime int64
 	txHash *common.Hash
 }
 
