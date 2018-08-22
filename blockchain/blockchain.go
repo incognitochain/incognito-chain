@@ -10,8 +10,8 @@ import (
 
 type BlockChain struct {
 	Config    Config
-	Blocks    map[*common.Hash]*Block
-	Headers   map[*common.Hash]*BlockHeader
+	Blocks  map[*common.Hash]*Block
+	Headers map[*common.Hash]*BlockHeader
 	BestBlock *Block
 
 	chainLock sync.RWMutex

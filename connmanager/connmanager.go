@@ -336,6 +336,7 @@ func (self ConnManager) Connect(addr string) {
 		Peer: peer.Peer{
 			TargetAddress: targetAddr,
 			PeerId:        peerId,
+			RawAddress:    addr,
 		},
 	}
 	if atomic.LoadUint64(&connReq.Id) == 0 {

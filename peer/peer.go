@@ -38,14 +38,16 @@ type Peer struct {
 	connected  int32
 	disconnect int32
 
-	Host             host.Host
+	Host host.Host
+
 	TargetAddress    ma.Multiaddr
 	PeerId           peer.ID
+	RawAddress       string
 	ListeningAddress n.Addr
-	Seed             int64
-	FlagMutex        sync.Mutex
 
-	Config Config
+	Seed      int64
+	FlagMutex sync.Mutex
+	Config    Config
 
 	sendMessageQueue chan outMsg
 	quit             chan struct{}
@@ -144,6 +146,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 		return &self, err
 	}
 
+	self.RawAddress = fullAddr.String()
 	self.Host = basicHost
 	self.TargetAddress = fullAddr
 	self.PeerId = peerid
