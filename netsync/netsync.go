@@ -94,7 +94,7 @@ out:
 					}
 				case *wire.MessageGetBlocks:
 					{
-						self.HandleMessageGetBlock(msg)
+						self.HandleMessageGetBlocks(msg)
 					}
 
 				default:
@@ -175,7 +175,7 @@ func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 
 }
 
-func (self *NetSync) HandleMessageGetBlock(msg *wire.MessageGetBlocks) {
+func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	log.Println("Handling new message getblock")
 	if senderBlockHeaderIndex, ok := self.Config.Chain.Headers[msg.LastBlockHash]; ok {
 		if self.Config.Chain.BestBlock.Hash() != &msg.LastBlockHash {
