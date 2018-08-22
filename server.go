@@ -138,6 +138,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		BlockTemplateGenerator: blockTemplateGenerator,
 		MiningAddrs:            cfg.MiningAddrs,
 		Chain:                  self.Chain,
+		SendBlock: 				self.PushBlockMessage,
 	})
 
 	// Init Net Sync manager to process messages
@@ -502,9 +503,21 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 	}
 }
 
-func (self Server) PushBlockMessage() {
+func (self Server) PushBlockMessage(block *blockchain.Block) bool{
 	// TODO push block message for connected peer
-	//
+	return true
+
+	//@todo got error here
+	var dc chan<- struct{}
+	for _, listen := range self.ConnManager.Config.ListenerPeers {
+		msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+		if err != nil {
+			return false
+		}
+		msg.(*wire.MessageBlock).Block = *block
+		listen.QueueMessageWithEncoding(msg, dc, )
+	}
+	return true
 }
 
 // handleDonePeerMsg deals with peers that have signalled they are done.  It is
