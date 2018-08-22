@@ -2,6 +2,7 @@ package mining
 
 import (
 	"time"
+	"math"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -13,12 +14,13 @@ func filterActionParamsTxs(block *blockchain.Block) []*transaction.ActionParamTx
 	allTxs := block.Transactions
 	var actionParamTxs []*transaction.ActionParamTx
 	for _, tx := range allTxs {
-		if tx.GetType() == "ACTION_PARAMS" {
-			actionParamTxs = append(actionParamTxs, (tx.(*transaction.ActionParamTx)))
+		if tx.GetType() == ACTION_PARAMS_TRANSACTION_TYPE {
+			actionParamTxs = append(actionParamTxs, tx.(*transaction.ActionParamTx))
 		}
 	}
 	return actionParamTxs
 }
+
 
 func getRecentActionParamsTxs(numOfBlocks int, chain *blockchain.BlockChain) []*transaction.ActionParamTx {
 	if chain == nil || chain.BestBlock == nil {
@@ -43,11 +45,98 @@ func getRecentActionParamsTxs(numOfBlocks int, chain *blockchain.BlockChain) []*
 }
 
 
+func getMedians(actionParamTxs []*transaction.ActionParamTx) (float64, float64, float64) {
+	sumOfCoins := 0
+	sumOfBonds := 0
+	var sumOfTaxs float64 = 0
+	for _, tx := range actionParamTxs {
+		sumOfCoins += tx.Param.NumOfIssuingCoins
+		sumOfBonds += tx.Param.NumOfIssuingBonds
+		sumOfTaxs += tx.Param.Tax
+	}
+	return float64(sumOfCoins / len(actionParamTxs)), float64(sumOfBonds / len(actionParamTxs)), float64(sumOfTaxs / float64(len(actionParamTxs)))
+}
+
+
+func calculateReward(actionParamTxs []*transaction.ActionParamTx, txFees []float64) (map[string]float64) {
+	latestTxsByAgentId := map[string]*transaction.ActionParamTx{}
+	for _, tx := range actionParamTxs {
+
+		agentId := tx.Param.AgentID
+		existingTx, ok := latestTxsByAgentId[agentId]
+		if !ok {
+			latestTxsByAgentId[agentId] = tx
+			continue
+		}
+		if existingTx.LockTime < tx.LockTime {
+			latestTxsByAgentId[agentId] = tx
+		}
+	}
+	if len(latestTxsByAgentId) < NUMBER_OF_MAKING_DECISION_AGENTS {
+		return map[string]float64{
+			"coins": DEFAULT_COINS,
+			"bonds": DEFAULT_BONDS,
+		}
+	}
+
+	// get group of action params tx that issuing coins
+	issuingCoinsActions := []*transaction.ActionParamTx{}
+	contractingCoinsActions := []*transaction.ActionParamTx{}
+	for _, tx := range latestTxsByAgentId {
+		if (tx.Param.NumOfIssuingCoins > 0 && tx.Param.NumOfIssuingBonds > 0) || (tx.Param.NumOfIssuingCoins > 0 && tx.Param.Tax > 0) {
+			continue
+		}
+		if tx.Param.NumOfIssuingCoins > 0 {
+			issuingCoinsActions = append(issuingCoinsActions, tx)
+		} else {
+			contractingCoinsActions = append(contractingCoinsActions, tx)
+		}
+	}
+	if math.Max(float64(len(issuingCoinsActions)), float64(len(contractingCoinsActions))) < (math.Floor(float64(len(latestTxsByAgentId) / 2)) + 1) {
+		return map[string]float64{
+			"coins": DEFAULT_COINS,
+			"bonds": DEFAULT_BONDS,
+		}
+	}
+
+	if len(issuingCoinsActions) == len(contractingCoinsActions) {
+		return map[string]float64{
+			"coins": DEFAULT_COINS,
+			"bonds": DEFAULT_BONDS,
+		}
+	}
+	if len(issuingCoinsActions) < len(contractingCoinsActions) {
+		_, medianBond, medianTax := getMedians(contractingCoinsActions)
+		var coins float64
+		coins = 0
+		for _, fee := range txFees {
+			coins += (100 - medianTax) * 0.01 * fee
+		}
+		// TODO: remember that there are 2 tx out: coin and bond -> recalculate by type
+		return map[string]float64{
+			"coins": coins,
+			"bonds": medianBond,
+		}
+	}
+	// issuing coins
+	medianCoin, _, _ := getMedians(contractingCoinsActions)
+	return map[string]float64{
+		"coins": medianCoin,
+		"bonds": 0,
+	}
+}
+
+
 // createCoinbaseTx returns a coinbase transaction paying an appropriate subsidy
 // based on the passed block height to the provided address.  When the address
 // is nil, the coinbase transaction will instead be redeemable by anyone.
 
-func createCoinbaseTx(params *blockchain.Params, coinbaseScript []byte, addr string) (*transaction.Tx, error) {
+func createCoinbaseTx(
+	params *blockchain.Params,
+	coinbaseScript []byte,
+	addr string,
+	rewardMap map[string]float64,
+) (*transaction.Tx, error) {
 	// Create the script to pay to the provided payment address if one was
 	// specified.  Otherwise create a script that allows the coinbase to be
 	// redeemable by anyone.
@@ -70,8 +159,13 @@ func createCoinbaseTx(params *blockchain.Params, coinbaseScript []byte, addr str
 	txIn := *transaction.TxIn{}.NewTxIn(outPoint, coinbaseScript)
 	tx.AddTxIn(txIn)
 	//@todo add value of tx out logic
-	txOut := *transaction.TxOut{}.NewTxOut(float64(1.5), pkScript)
-	tx.AddTxOut(txOut)
+	for _, rewardValue := range rewardMap {
+		if rewardValue > 0 {
+			// TODO: add reward type to txOut
+			txOut := *transaction.TxOut{}.NewTxOut(rewardValue, pkScript)
+			tx.AddTxOut(txOut)
+		}
+	}
 
 	return tx, nil
 }
@@ -82,9 +176,15 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	sourceTxns := g.txSource
 	//@todo we need apply sort rules for sourceTxns here
 
+
+	// TODO: need to compute real txFees from transactions
+	actionParamTxs := getRecentActionParamsTxs(NUMBER_OF_LAST_BLOCKS, chain)
+	txFees := make([]float64, 0, 1)
+	rewardMap := calculateReward(actionParamTxs, txFees)
+
 	coinbaseScript := []byte("1234567890123456789012") //@todo should be create function create basescript
 
-	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, coinbaseScript, payToAddress)
+	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, coinbaseScript, payToAddress, rewardMap)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +202,7 @@ mempoolLoop:
 			continue mempoolLoop
 		}
 	}
-	txFees := make([]int64, 0, 1)
+	// txFees := make([]int64, 0, 1)
 	var msgBlock blockchain.Block
 	msgBlock.Header = blockchain.BlockHeader{
 		Version:       1,
@@ -122,7 +222,7 @@ mempoolLoop:
 
 	return &BlockTemplate{
 		Block: &msgBlock,
-		Fees:  txFees,
+		Fees:  txFees, // TODO: need Fees here?????
 	}, nil
 
 }

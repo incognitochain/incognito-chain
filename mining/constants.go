@@ -8,7 +8,11 @@ import (
 )
 
 const (
-
+	ACTION_PARAMS_TRANSACTION_TYPE = "ACTION_PARAMS"
+	NUMBER_OF_LAST_BLOCKS = 10
+	NUMBER_OF_MAKING_DECISION_AGENTS = 3
+	DEFAULT_COINS = 5
+	DEFAULT_BONDS = 5
 )
 
 type Policy struct {
@@ -34,7 +38,7 @@ type TxDesc struct {
 type BlockTemplate struct {
 	Block *blockchain.Block
 
-	Fees []int64
+	Fees []float64
 }
 
 

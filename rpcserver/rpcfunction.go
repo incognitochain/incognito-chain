@@ -79,7 +79,7 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 	for _, block := range blocks {
 		if (len(block.Transactions) > 0) {
 			for _, tx := range block.Transactions {
-				if tx.GetType() == "ACTION_PARAMS" {
+				if tx.GetType() == ACTION_PARAMS_TRANSACTION_TYPE {
 					continue
 				}
 				normalTx := tx.(*transaction.Tx)
