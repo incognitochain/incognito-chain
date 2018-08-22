@@ -430,8 +430,9 @@ func (self Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs 
 func (self *Server) NewPeerConfig() *peer.Config {
 	return &peer.Config{
 		MessageListeners: peer.MessageListeners{
-			OnBlock: self.OnBlock,
-			OnTx:    self.OnTx,
+			OnBlock:   self.OnBlock,
+			OnTx:      self.OnTx,
+			OnVersion: self.OnVersion,
 		},
 	}
 }

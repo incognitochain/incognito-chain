@@ -77,7 +77,7 @@ type WrappedStream struct {
 type MessageListeners struct {
 	OnTx      func(p *Peer, msg *wire.MessageTx)
 	OnBlock   func(p *Peer, msg *wire.MessageBlock)
-	OnVersion func(p *Peer, msg *wire.MessageBlock)
+	OnVersion func(p *Peer, msg *wire.MessageVersion)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal
@@ -370,15 +370,15 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 	if err != nil {
 		return err
 	}
-	message, err := msg.JsonSerialize()
+	msgVersion, err := msg.JsonSerialize()
 	if err != nil {
 		return err
 	}
-	message += "\n"
-	log.Printf("Send a message: %s", message)
+	msgVersion += "\n"
+	log.Printf("Send a msgVersion: %s", msgVersion)
 	rw := self.ReaderWritersStream[peer.PeerId]
 	self.FlagMutex.Lock()
-	rw.Writer.WriteString(message)
+	rw.Writer.WriteString(msgVersion)
 	rw.Writer.Flush()
 	self.FlagMutex.Unlock()
 	for {
