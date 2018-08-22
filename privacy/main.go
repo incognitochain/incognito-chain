@@ -1,10 +1,19 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
+	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
 )
 
 func main() {
+	zkinput := zksnark.JSInput{SpendingKey: make([]byte, 32)}
+	var k [32]byte
+	b := [32]byte{1, 2, 3}
+	copy(zkinput.SpendingKey, b[:])
+	fmt.Println(zkinput, k, b)
+
 	outApk := client.SpendingAddress{1}
 	ekey := client.TransmissionKey{2}
 	outNote1 := client.Note{Value: 1000, Apk: outApk}
@@ -13,14 +22,14 @@ func main() {
 		&client.JSOutput{EncKey: ekey, OutputNote: outNote1},
 		&client.JSOutput{EncKey: ekey, OutputNote: outNote2}}
 
-	hash1 := [32]byte{3}
+	hash1 := [29]byte{3}
 	mhash1 := [29]*client.MerkleHash{}
 	for i := 0; i < 29; i++ {
 		mh := client.MerkleHash{}
 		copy(mh[:], hash1[:])
 		mhash1[i] = &mh
 	}
-	index1 := [32]bool{true}
+	index1 := [29]bool{true}
 	mpath1 := client.MerklePath{AuthPath: mhash1[:], Index: index1[:]}
 	hash2 := [32]byte{4}
 	mhash2 := [29]*client.MerkleHash{}

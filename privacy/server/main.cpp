@@ -69,6 +69,7 @@ bool transform_prove_request(const ProveRequest *request,
                              ProveOutnotes &out_notes,
                              uint256 &hsig, uint252 &phi, uint256 &rt)
 {
+    cout << "START!!!\n";
     if (request->inputs_size() != ZC_NUM_JS_INPUTS || request->outnotes_size() != ZC_NUM_JS_OUTPUTS)
         return false;
 
@@ -78,10 +79,13 @@ bool transform_prove_request(const ProveRequest *request,
     {
         // Convert spending key
         uint252 key;
+        cout << "Start convert spending key\n";
+        cout << input.spendingkey().size() << '\n';
         bool s = string_to_uint252(input.spendingkey(), key);
         if (!s)
             return false;
         inputs[i].key = libzcash::SproutSpendingKey(key);
+        cout << "Done convert spending key\n";
 
         // Convert witness
         // Witness' authentication path
@@ -95,6 +99,7 @@ bool transform_prove_request(const ProveRequest *request,
                 return false;
             auth_path.push_back(path);
         }
+        cout << "Done convert auth_path\n";
 
         // Witness' index
         vector<bool> index;
@@ -104,14 +109,17 @@ bool transform_prove_request(const ProveRequest *request,
         }
 
         // The length of the witness and merkle tree's depth must match
+        cout << auth_path.size() << ' ' << index.size() << '\n';
         if (auth_path.size() != index.size() || index.size() != INCREMENTAL_MERKLE_TREE_DEPTH)
             return false;
 
         inputs[i].witness = ZCIncrementalWitness(auth_path, index);
+        cout << "Done convert witness\n";
 
         // Convert note
         convert_note(input.note(), inputs[i].note);
         i++;
+        cout << "Done note\n";
     }
 
     // Convert outnotes
@@ -120,6 +128,7 @@ bool transform_prove_request(const ProveRequest *request,
     {
         convert_note(outnote, out_notes[i]);
         i++;
+        cout << "Done outnotes\n";
     }
 
     // Convert hsig

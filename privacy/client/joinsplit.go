@@ -89,7 +89,8 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
 	zkNotes := Notes2ZksnarkNotes(outNotes)
 	zkInputs := JSInputs2ZkInputs(inputs)
 	var proveRequest = &zksnark.ProveRequest{Hsig: hSig, Phi: phi, Rt: rt, OutNotes: zkNotes, Inputs: zkInputs}
-	fmt.Printf("proveRequest: %v\n", proveRequest)
+	// fmt.Printf("proveRequest: %v\n", proveRequest)
+	fmt.Printf("key: %x\n", proveRequest.Inputs[0].SpendingKey)
 	r, err := c.Prove(ctx, proveRequest)
 	if err != nil {
 		log.Fatalf("fail to prove: %v", err)
@@ -118,13 +119,15 @@ func Notes2ZksnarkNotes(notes []*Note) []*zksnark.Note {
 func JSInputs2ZkInputs(inputs []*JSInput) []*zksnark.JSInput {
 	var zkInputs []*zksnark.JSInput
 	for _, input := range inputs {
-		var zkinput zksnark.JSInput
-		zkinput.WitnessPath = &zksnark.MerklePath{}
+		zkinput := zksnark.JSInput{SpendingKey: make([]byte, 32)}
+		zkinput.WitnessPath = &zksnark.MerklePath{Index: make([]bool, len(input.WitnessPath.Index))}
 		copy(zkinput.WitnessPath.Index, input.WitnessPath.Index)
 		for _, hash := range input.WitnessPath.AuthPath {
 			zkinput.WitnessPath.AuthPath = append(zkinput.WitnessPath.AuthPath, &zksnark.MerkleHash{Hash: *hash})
 		}
 		copy(zkinput.SpendingKey, input.Key[:])
+		// fmt.Printf("zkinput.SpendingKey: %x %x\n", zkinput.SpendingKey, input.Key)
+		fmt.Printf("%v\n", zkinput.WitnessPath.Index)
 
 		zkinput.Note = Note2ZksnarkNote(input.InputNote)
 
