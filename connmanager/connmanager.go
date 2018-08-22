@@ -364,7 +364,7 @@ func (self ConnManager) Connect(addr string) {
 	}
 
 	//spew.Dump("Attempting to connect to", connRequest.Peer.TargetAddress.String())
-
+	flag := false
 	for _, listen := range self.Config.ListenerPeers {
 		listen.Host.Peerstore().AddAddr(connReq.Peer.PeerId, connReq.Peer.TargetAddress, pstore.PermanentAddrTTL)
 		log.Printf("opening stream %s \n", connReq.Peer.PeerId.String())
@@ -384,11 +384,14 @@ func (self ConnManager) Connect(addr string) {
 		// Create a thread to read and write data.
 		go listen.InMessageHandler(rw)
 		go listen.OutMessageHandler(rw)
+		flag = true
 	}
 
-	select {
-	case self.Requests <- handleConnected{&connReq, connReq.Peer}:
-	case <-self.Quit:
+	if flag {
+		select {
+		case self.Requests <- handleConnected{&connReq, connReq.Peer}:
+		case <-self.Quit:
+		}
 	}
 }
 

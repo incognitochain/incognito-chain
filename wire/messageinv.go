@@ -2,6 +2,7 @@ package wire
 
 import (
 	"encoding/json"
+	"encoding/hex"
 )
 
 type MessageInv struct {
@@ -21,10 +22,11 @@ func (self MessageInv) JsonSerialize() (string, error) {
 	header := make([]byte, MessageHeaderSize)
 	copy(header[:], self.MessageType())
 	jsonStr = append(jsonStr, header...)
-	return string(jsonStr), err
+	return hex.EncodeToString(jsonStr), err
 }
 
 func (self MessageInv) JsonDeserialize(jsonStr string) error {
-	err := json.Unmarshal([]byte(jsonStr), self)
+	jsonDecodeString, _ := hex.DecodeString(jsonStr)
+	err := json.Unmarshal([]byte(jsonDecodeString), self)
 	return err
 }

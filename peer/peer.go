@@ -9,7 +9,6 @@ import (
 	"context"
 	"bufio"
 	"sync"
-	n "net"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -25,6 +24,7 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/libp2p/go-libp2p-net"
 	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 const (
@@ -40,11 +40,12 @@ type Peer struct {
 
 	Host                host.Host
 	ReaderWritersStream map[peer.ID]*bufio.ReadWriter
+	verAckReceived      bool
 
 	TargetAddress    ma.Multiaddr
 	PeerId           peer.ID
 	RawAddress       string
-	ListeningAddress n.Addr
+	ListeningAddress common.SimpleAddr
 
 	Seed      int64
 	FlagMutex sync.Mutex
@@ -78,6 +79,7 @@ type MessageListeners struct {
 	OnTx      func(p *Peer, msg *wire.MessageTx)
 	OnBlock   func(p *Peer, msg *wire.MessageBlock)
 	OnVersion func(p *Peer, msg *wire.MessageVersion)
+	OnVerAck  func(p *Peer, msg *wire.MessageVerAck)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal
@@ -254,6 +256,15 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 					self.Config.MessageListeners.OnVersion(&self, message.(*wire.MessageVersion))
 					self.FlagMutex.Unlock()
 				}
+			case reflect.TypeOf(&wire.MessageVerAck{}):
+				self.FlagMutex.Lock()
+				self.verAckReceived = true
+				self.FlagMutex.Unlock()
+				if self.Config.MessageListeners.OnVerAck != nil {
+					self.FlagMutex.Lock()
+					self.Config.MessageListeners.OnVerAck(&self, message.(*wire.MessageVerAck))
+					self.FlagMutex.Unlock()
+				}
 			default:
 				log.Printf("Received unhandled message of type %v "+
 					"from %v", realType, self)
@@ -293,7 +304,7 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 					continue
 				}
 				message += "\n"
-				log.Printf("Send a message: %s", message)
+				log.Printf("Send a message %s: %s", outMsg.msg.MessageType(), message)
 				rw.Writer.WriteString(message)
 				rw.Writer.Flush()
 				self.FlagMutex.Unlock()
@@ -364,7 +375,11 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
 	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
 	msg.(*wire.MessageVersion).LocalAddress = self.ListeningAddress
+	msg.(*wire.MessageVersion).RawLocalAddress = self.RawAddress
+	msg.(*wire.MessageVersion).LocalPeerId = self.PeerId
 	msg.(*wire.MessageVersion).RemoteAddress = peer.ListeningAddress
+	msg.(*wire.MessageVersion).RawRemoteAddress = peer.RawAddress
+	msg.(*wire.MessageVersion).RemotePeerId = peer.PeerId
 	msg.(*wire.MessageVersion).LastBlock = 0
 	msg.(*wire.MessageVersion).ProtocolVersion = 1
 	if err != nil {
@@ -381,18 +396,6 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 	rw.Writer.WriteString(msgVersion)
 	rw.Writer.Flush()
 	self.FlagMutex.Unlock()
-	for {
-		// wait for a response
-		var err1 error
-		versionResponse, err1 := rw.ReadString('\n')
-		if err1 != nil {
-			return err1
-		}
-		if versionResponse == "\n" {
-			// TODO
-		}
-	}
-
 	return nil
 }
 
@@ -426,3 +429,15 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 //		LocalAddress:
 //	}
 //}
+
+// VerAckReceived returns whether or not a verack message was received by the
+// peer.
+//
+// This function is safe for concurrent access.
+func (p *Peer) VerAckReceived() bool {
+	p.FlagMutex.Lock()
+	verAckReceived := p.verAckReceived
+	p.FlagMutex.Unlock()
+
+	return verAckReceived
+}

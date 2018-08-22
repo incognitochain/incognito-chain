@@ -31,23 +31,6 @@ const (
 	defaultNumberOfTargetOutbound = 8
 )
 
-// onionAddr implements the net.Addr interface with two struct fields
-type simpleAddr struct {
-	net, addr string
-}
-
-// String returns the address.
-// This is part of the net.Addr interface.
-func (a simpleAddr) String() string {
-	return a.addr
-}
-
-// Network returns the network.
-// This is part of the net.Addr interface.
-func (a simpleAddr) Network() string {
-	return a.net
-}
-
 // onionAddr implements the net.Addr interface and represents a tor address.
 type onionAddr struct {
 	addr string
@@ -127,6 +110,8 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	// Init data for Server
 	self.ChainParams = chainParams
 	self.quit = make(chan struct{})
+	self.donePeers = make(chan *peer.Peer)
+	self.newPeers = make(chan *peer.Peer)
 	self.Db = db
 	self.MemPool = mempool.New(&mempool.Config{
 		Policy: mempool.Policy{},
@@ -298,6 +283,20 @@ func (self Server) peerHandler() {
 	self.NetSync.Start()
 
 	log.Println("Start peer handler")
+
+	if !cfg.DisableDNSSeed {
+		// TODO load peer from seed DNS
+		// add to address manager
+		self.AddrManager.AddAddresses(make([]*peer.Peer, 0))
+	}
+
+	if len(cfg.ConnectPeers) == 0 {
+		// TODO connect with peer in file
+		for _, addr := range self.AddrManager.AddressCache() {
+			go self.ConnManager.Connect(addr.RawAddress)
+		}
+	}
+
 	go self.ConnManager.Start()
 out:
 	for {
@@ -358,8 +357,8 @@ func (self Server) Start() {
 // returns a slice of appropriate net.Addrs to listen on with TCP. It also
 // properly detects addresses which apply to "all interfaces" and adds the
 // address as both IPv4 and IPv6.
-func parseListeners(addrs []string, netType string) ([]net.Addr, error) {
-	netAddrs := make([]net.Addr, 0, len(addrs)*2)
+func parseListeners(addrs []string, netType string) ([]common.SimpleAddr, error) {
+	netAddrs := make([]common.SimpleAddr, 0, len(addrs)*2)
 	for _, addr := range addrs {
 		host, _, err := net.SplitHostPort(addr)
 		if err != nil {
@@ -369,7 +368,7 @@ func parseListeners(addrs []string, netType string) ([]net.Addr, error) {
 
 		// Empty host or host of * on plan9 is both IPv4 and IPv6.
 		if host == "" || (host == "*" && runtime.GOOS == "plan9") {
-			netAddrs = append(netAddrs, simpleAddr{net: netType + "4", addr: addr})
+			netAddrs = append(netAddrs, common.SimpleAddr{Net: netType + "4", Addr: addr})
 			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
 			continue
 		}
@@ -392,7 +391,7 @@ func parseListeners(addrs []string, netType string) ([]net.Addr, error) {
 		if ip.To4() == nil {
 			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
 		} else {
-			netAddrs = append(netAddrs, simpleAddr{net: netType + "4", addr: addr})
+			netAddrs = append(netAddrs, common.SimpleAddr{Net: netType + "4", Addr: addr})
 		}
 	}
 	return netAddrs, nil
@@ -401,7 +400,7 @@ func parseListeners(addrs []string, netType string) ([]net.Addr, error) {
 // initListeners initializes the configured net listeners and adds any bound
 // addresses to the address manager. Returns the listeners and a NAT interface,
 // which is non-nil if UPnP is in use.
-func (self Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string) ([]peer.Peer, error) {
+func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string) ([]peer.Peer, error) {
 	netAddrs, err := parseListeners(listenAddrs, "ip")
 	if err != nil {
 		return nil, err
@@ -463,9 +462,18 @@ func (self Server) OnTx(peer *peer.Peer,
 // and is used to negotiate the protocol version details as well as kick start
 // the communications.
 func (self *Server) OnVersion(_ *peer.Peer, msg *wire.MessageVersion) {
-	self.newPeers <- &peer.Peer{
+	remotePeer := &peer.Peer{
 		ListeningAddress: msg.LocalAddress,
+		RawAddress:       msg.RawLocalAddress,
+		PeerId:           msg.LocalPeerId,
 	}
+	self.newPeers <- remotePeer
+	// TODO check version message
+	//
+
+	// if version message is ok -> add to addManager
+	self.AddrManager.Good(remotePeer)
+
 	// TODO push message again for remote peer
 	var dc chan<- struct{}
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
@@ -475,6 +483,10 @@ func (self *Server) OnVersion(_ *peer.Peer, msg *wire.MessageVersion) {
 		}
 		listen.QueueMessageWithEncoding(msg, dc, )
 	}
+}
+
+func (self *Server) OnVerAck(_ *peer.Peer, msg *wire.MessageVerAck) {
+	// TODO for onverack message
 }
 
 func (self Server) PushTxMessage(hashTx *common.Hash) {

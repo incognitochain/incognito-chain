@@ -17,7 +17,7 @@ import (
 const (
 	// dumpAddressInterval is the interval used to dump the address
 	// cache to disk for future use.
-	dumpAddressInterval = time.Minute * 10
+	dumpAddressInterval = time.Second * 10
 
 	// newBucketCount is the number of buckets that we spread new addresses
 	// over.
@@ -87,9 +87,13 @@ func New(dataDir string, lookupFunc func(string) ([]string, error)) *AddrManager
 
 // savePeers saves all the known addresses to a file so they can be read back
 // in at next run.
-func (self *AddrManager) SavePeers() {
+func (self *AddrManager) savePeers() {
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
+
+	if len(self.addrIndex) == 0 {
+		return
+	}
 
 	sam := new(serializedAddrManager)
 	sam.Version = 1
@@ -143,7 +147,8 @@ func (self *AddrManager) loadPeers() {
 
 // NumAddresses returns the number of addresses known to the address manager.
 func (a *AddrManager) numAddresses() int {
-	return a.nTried + a.nNew
+	//return a.nTried + a.nNew
+	return len(a.addrIndex)
 }
 
 // reset resets the address manager by reinitialising the random source
@@ -227,13 +232,13 @@ out:
 	for {
 		select {
 		case <-dumpAddressTicker.C:
-			self.SavePeers()
+			self.savePeers()
 
 		case <-self.quit:
 			break out
 		}
 	}
-	self.SavePeers()
+	self.savePeers()
 	self.waitgroup.Done()
 	log.Printf("Address handler done")
 }
@@ -253,4 +258,25 @@ func (a *AddrManager) Connected(peer *peer.Peer) {
 // manager it will be ignored.
 func (self *AddrManager) Good(addr *peer.Peer) {
 	self.addrIndex[addr.RawAddress] = addr
+}
+
+func (self *AddrManager) AddAddresses(addr []*peer.Peer) {
+	for _, peer := range addr {
+		self.addrIndex[peer.RawAddress] = peer
+	}
+}
+
+// AddressCache returns the current address cache.  It must be treated as
+// read-only (but since it is a copy now, this is not as dangerous).
+func (self *AddrManager) AddressCache() []*peer.Peer {
+	addrIndexLen := len(self.addrIndex)
+	if addrIndexLen == 0 {
+		return nil
+	}
+	allAddr := make([]*peer.Peer, 0, addrIndexLen)
+	// Iteration order is undefined here, but we randomise it anyway.
+	for _, v := range self.addrIndex {
+		allAddr = append(allAddr, v)
+	}
+	return allAddr
 }
