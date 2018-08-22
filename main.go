@@ -37,7 +37,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	defer log.Println("Shutdown complete")
 
 	// Show version at startup.
-	log.Printf("Version %s", "0.0")
+	log.Printf("Version %s", "1")
 
 	// Return now if an interrupt signal was triggered.
 	if interruptRequested(interrupt) {
@@ -92,7 +92,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	}*/
 
 	// Create server and start it.
-	var db = database.NewDB("", database.LevelDBBackend, cfg.DataDir, 0,0 )
+	var db = database.NewDB("", database.LevelDBBackend, cfg.DataDir, 0, 0)
 	server, err := Server{}.NewServer(cfg.Listeners, db, activeNetParams.Params,
 		interrupt)
 	if err != nil {

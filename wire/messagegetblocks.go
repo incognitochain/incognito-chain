@@ -2,11 +2,15 @@ package wire
 
 import (
 	"encoding/json"
+
+	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"encoding/hex"
 )
 
 type MessageGetBlocks struct {
 	LastBlockHash common.Hash
+	SenderID      peer.ID
 }
 
 func (self MessageGetBlocks) MessageType() string {
@@ -22,7 +26,7 @@ func (self MessageGetBlocks) JsonSerialize() (string, error) {
 	header := make([]byte, MessageHeaderSize)
 	copy(header[:], self.MessageType())
 	jsonStr = append(jsonStr, header...)
-	return string(jsonStr), err
+	return hex.EncodeToString(jsonStr), err
 }
 
 func (self MessageGetBlocks) JsonDeserialize(jsonStr string) error {

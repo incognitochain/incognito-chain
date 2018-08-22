@@ -2,16 +2,19 @@ package blockchain
 
 import (
 	"errors"
+	"fmt"
+	"time"
 
-	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/common"
 	"sync"
+
+	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/database"
 )
 
 type BlockChain struct {
 	Config    Config
-	Blocks  map[*common.Hash]*Block
-	Headers map[*common.Hash]*BlockHeader
+	Blocks    []*Block
+	Headers   map[common.Hash]int
 	BestBlock *Block
 
 	chainLock sync.RWMutex
@@ -41,8 +44,8 @@ type Config struct {
 
 func (self BlockChain) New(config *Config) (*BlockChain, error) {
 
-	self.Headers = make(map[*common.Hash]*BlockHeader)
-	self.Blocks = make(map[*common.Hash]*Block)
+	self.Headers = make(map[common.Hash]int)
+	// self.Blocks = make(map[*common.Hash]*Block)
 
 	// Enforce required config fields.
 	// TODO
@@ -68,7 +71,7 @@ func (self BlockChain) New(config *Config) (*BlockChain, error) {
 // initChainState attempts to load and initialize the chain state from the
 // database.  When the db does not yet contain any chain state, both it and the
 // chain state are initialized to the genesis block.
-func (self *BlockChain) InitChainState() (error) {
+func (self *BlockChain) InitChainState() error {
 	// TODO
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
@@ -91,8 +94,35 @@ func (self *BlockChain) InitChainState() (error) {
 func (self *BlockChain) CreateChainState() error {
 	// TODO something
 	genesisBlock := self.Config.ChainParams.GenesisBlock
-	self.Blocks[genesisBlock.Hash()] = genesisBlock
-	self.Headers[genesisBlock.Hash()] = &genesisBlock.Header
+	self.Blocks = append(self.Blocks, genesisBlock)
+	self.Headers[*genesisBlock.Hash()] = 0
 	self.BestBlock = genesisBlock
+
+	// Spam random blocks
+
+	for index := 0; index < 10; index++ {
+		newSpamBlock := &Block{
+			Header: BlockHeader{
+				Version:       1,
+				PrevBlockHash: *self.BestBlock.Hash(),
+				Timestamp:     time.Now(),
+				Difficulty:    0, //@todo should be create Difficulty logic
+				Nonce:         0, //@todo should be create Nonce logic
+			},
+		}
+		self.Blocks = append(self.Blocks, newSpamBlock)
+		self.Headers[*newSpamBlock.Hash()] = index + 1
+		self.BestBlock = newSpamBlock
+	}
+
+	for _, block := range self.Blocks {
+		fmt.Println(fmt.Sprintf("%x %x", *block.Hash(), block.Header.PrevBlockHash))
+	}
+
+	return nil
+}
+
+func (bc *BlockChain) Reset() error {
+	//Todo reset genesis bock logic
 	return nil
 }

@@ -2,7 +2,9 @@ package wire
 
 import (
 	"encoding/json"
+
 	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"encoding/hex"
 )
 
 const (
@@ -26,7 +28,7 @@ func (self MessageBlock) JsonSerialize() (string, error) {
 	header := make([]byte, MessageHeaderSize)
 	copy(header[:], self.MessageType())
 	jsonStr = append(jsonStr, header...)
-	return string(jsonStr), err
+	return hex.EncodeToString(jsonStr), err
 }
 
 func (self MessageBlock) JsonDeserialize(jsonStr string) error {

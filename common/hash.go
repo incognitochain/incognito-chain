@@ -63,6 +63,13 @@ func (hash *Hash) SetBytes(newHash []byte) error {
 	return nil
 }
 
+// BytesToHash sets b to hash If b is larger than len(h), b will be cropped from the left.
+func (hash *Hash) BytesToHash(b []byte) Hash {
+	var h Hash
+	h.SetBytes(b)
+	return h
+}
+
 /**
 IsEqual returns true if target is the same as hash.
  */
