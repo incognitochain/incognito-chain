@@ -249,7 +249,7 @@ func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	if err != nil {
 		return
 	}
-	self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
+	//self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
 }
 
 // peerDoneHandler handles peer disconnects by notifiying the server that it's
@@ -427,10 +427,10 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 	peers := make([]peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
 		peer, err := peer.Peer{
-			Seed:             0,
-			FlagMutex:        sync.Mutex{},
-			ListeningAddress: addr,
-			Config:           *self.NewPeerConfig(),
+			Seed:                        0,
+			FlagMutex:                   sync.Mutex{},
+			ListeningAddress:            addr,
+			Config:                      *self.NewPeerConfig(),
 			OutboundReaderWriterStreams: make(map[peer2.ID]*bufio.ReadWriter),
 			InboundReaderWriterStreams:  make(map[peer2.ID]*bufio.ReadWriter),
 		}.NewPeer()
@@ -577,6 +577,6 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 
 func (self *Server) UpdateChain(block *blockchain.Block) {
 	self.Chain.Blocks = append(self.Chain.Blocks, block)
-	self.Chain.Headers[*block.Hash()] = len(self.Chain.Blocks) - 1
+	self.Chain.Headers[block.Hash().String()] = len(self.Chain.Blocks) - 1
 	self.Chain.BestBlock = block
 }

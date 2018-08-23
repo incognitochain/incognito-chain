@@ -302,12 +302,12 @@ mempoolLoop:
 	}
 
 	// TODO PoW
-	time.Sleep(time.Second * 15)
+	//time.Sleep(time.Second * 15)
 
 	block := blockchain.Block{}
 	block.Header = blockchain.BlockHeader{
 		Version:       1,
-		PrevBlockHash: *prevBlockHash,
+		PrevBlockHash: prevBlockHash.String(),
 		MerkleRoot:    *merkleRoot,
 		Timestamp:     time.Now(),
 		Difficulty:    0, //@todo should be create Difficulty logic
