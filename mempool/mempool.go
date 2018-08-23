@@ -59,6 +59,7 @@ type TxPool struct {
 	// to on an unconditional timer.
 	nextExpireScan time.Time
 }
+
 //check transaction in pool
 func (mp *TxPool) isTxInPool(hash *common.Hash) bool {
 	if _, exists := mp.pool[*hash]; exists {
@@ -77,6 +78,7 @@ func (tp *TxPool) HaveTx(hash *common.Hash) bool {
 
 	return haveTx
 }
+
 //add transaction into pool
 func (tp *TxPool) addTx(tx transaction.Transaction) *TxDesc {
 	txD := &TxDesc{
@@ -88,6 +90,7 @@ func (tp *TxPool) addTx(tx transaction.Transaction) *TxDesc {
 		},
 		StartingPriority: 1, //@todo we will apply calc function for it.
 	}
+	log.Printf(tx.Hash().String())
 	tp.pool[*tx.Hash()] = txD
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	return txD
@@ -97,7 +100,7 @@ func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash
 	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
 
-	if tp.HaveTx(tx.Hash()) != true{
+	if tp.HaveTx(tx.Hash()) != true {
 		txD := tp.addTx(tx)
 		return tx.Hash(), txD, nil
 	}
@@ -106,6 +109,7 @@ func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash
 
 //remove transaction for pool
 func (tp *TxPool) removeTx(tx transaction.Tx) {
+	log.Printf(tx.Hash().String())
 	if _, exists := tp.pool[*tx.Hash()]; exists {
 		delete(tp.pool, *tx.Hash())
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
@@ -117,6 +121,10 @@ func (tp *TxPool) RemoveTx(tx transaction.Tx) {
 	tp.mtx.Lock()
 	tp.removeTx(tx)
 	tp.mtx.Unlock()
+}
+
+func (tp *TxPool) Clear() {
+	tp.pool = make(map[common.Hash]*TxDesc)
 }
 
 //this function is safe for access concurrent access.
@@ -132,7 +140,6 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (transaction.Transaction, error) {
 	return nil, fmt.Errorf("transaction is not in the pool")
 }
 
-
 // MiningDescs returns a slice of mining descriptors for all the transactions
 // in the pool.
 func (tp *TxPool) MiningDescs() []*mining.TxDesc {
@@ -147,7 +154,6 @@ func (tp *TxPool) MiningDescs() []*mining.TxDesc {
 
 	return descs
 }
-
 
 // return len of transaction pool
 func (tp *TxPool) Count() int {

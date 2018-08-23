@@ -297,6 +297,8 @@ mempoolLoop:
 		if !tx.ValidateTransaction() {
 			continue mempoolLoop
 		}
+
+		g.txSource.Clear()
 	}
 
 	// TODO PoW
@@ -352,6 +354,10 @@ type TxSource interface {
 	// HaveTransaction returns whether or not the passed transaction hash
 	// exists in the source pool.
 	//HaveTransaction(hash *common.Hash) bool
+
+	RemoveTx(tx transaction.Tx)
+
+	Clear()
 }
 
 func NewBlkTmplGenerator(txSource TxSource, chain *blockchain.BlockChain) *BlkTmplGenerator {

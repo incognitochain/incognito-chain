@@ -26,6 +26,7 @@ type Config struct {
 
 	Server interface {
 		PushBlockMessage(*blockchain.Block) bool
+		UpdateChain(*blockchain.Block)
 	}
 }
 
@@ -92,7 +93,7 @@ func (m *Miner) commitBlock(block *blockchain.Block) (bool, error) {
 		fmt.Print("sending error...........")
 		return false, nil
 	}
-
+	m.cfg.Server.UpdateChain(block)
 	return true, nil
 }
 

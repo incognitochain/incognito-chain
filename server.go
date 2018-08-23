@@ -139,7 +139,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		BlockTemplateGenerator: blockTemplateGenerator,
 		MiningAddrs:            cfg.MiningAddrs,
 		Chain:                  self.Chain,
-		Server:                 self,
+		Server:                 &self,
 	})
 
 	// Init Net Sync manager to process messages
@@ -147,6 +147,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		Chain:      self.Chain,
 		ChainParam: chainParams,
 		MemPool:    self.MemPool,
+		Server:     &self,
 	})
 	if err != nil {
 		return nil, err
@@ -361,6 +362,14 @@ func (self Server) Start() {
 	if cfg.Generate == true && (len(cfg.MiningAddrs) > 0) {
 		self.Miner.Start()
 	}
+
+	// test, print length of chain
+	go func(server Server) {
+		for {
+			time.Sleep(time.Second * 3)
+			log.Printf("\n --- Chain length: %d ---- \n", len(server.Chain.Blocks))
+		}
+	}(self)
 }
 
 // parseListeners determines whether each listen address is IPv4 and IPv6 and
@@ -523,11 +532,11 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 	}
 }
 
-func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId peer2.ID) bool {
+func (self *Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId peer2.ID) bool {
 	return true
 }
 
-func (self Server) PushBlockMessage(block *blockchain.Block) bool {
+func (self *Server) PushBlockMessage(block *blockchain.Block) bool {
 	// TODO push block message for connected peer
 	//@todo got error here
 	var dc chan<- struct{}
@@ -558,4 +567,10 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 
 	// TODO:
 	return true
+}
+
+func (self *Server) UpdateChain(block *blockchain.Block) {
+	self.Chain.Blocks = append(self.Chain.Blocks, block)
+	self.Chain.Headers[*block.Hash()] = len(self.Chain.Blocks) - 1
+	self.Chain.BestBlock = block
 }
