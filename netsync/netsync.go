@@ -178,7 +178,7 @@ func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	log.Println("Handling new message getblock")
-	if senderBlockHeaderIndex, ok := self.Config.Chain.Headers[msg.LastBlockHash.String()]; ok {
+	if senderBlockHeaderIndex, ok := self.Config.Chain.Headers[msg.LastBlockHash]; ok {
 		if self.Config.Chain.BestBlock.Hash() != &msg.LastBlockHash {
 			// Send Blocks to requestor
 			for index := senderBlockHeaderIndex + 1; index < len(self.Config.Chain.Blocks); index++ {

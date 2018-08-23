@@ -17,7 +17,7 @@ type BlockHeader struct {
 
 	Db database.DB
 	// Hash of the previous block header in the block chain.
-	PrevBlockHash string
+	PrevBlockHash common.Hash
 
 	// Merkle tree reference to hash of all transactions for the block.
 	MerkleRoot common.Hash

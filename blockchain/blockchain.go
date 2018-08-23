@@ -7,15 +7,16 @@ import (
 
 	"sync"
 
-	//"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"fmt"
+	//"log"
 )
 
 type BlockChain struct {
 	Config    Config
 	Blocks    []*Block
-	Headers   map[string]int
+	Headers   map[common.Hash]int
 	BestBlock *Block
 
 	chainLock sync.RWMutex
@@ -45,7 +46,7 @@ type Config struct {
 
 func (self BlockChain) New(config *Config) (*BlockChain, error) {
 
-	self.Headers = make(map[string]int)
+	self.Headers = make(map[common.Hash]int)
 	// self.Blocks = make(map[*common.Hash]*Block)
 
 	// Enforce required config fields.
@@ -96,31 +97,31 @@ func (self *BlockChain) CreateChainState() error {
 	// TODO something
 	genesisBlock := self.Config.ChainParams.GenesisBlock
 	self.Blocks = append(self.Blocks, genesisBlock)
-	self.Headers[genesisBlock.Hash().String()] = 0
+	self.Headers[*genesisBlock.Hash()] = 0
 	self.BestBlock = genesisBlock
 
 	// Spam random blocks
 
-	//for index := 0; index < 10; index++ {
-	//	hashBestBlock := self.BestBlock.Hash()
-	//	println("best " + hashBestBlock.String())
-	//	newSpamBlock := &Block{
-	//		Header: BlockHeader{
-	//			Version:       1,
-	//			PrevBlockHash: *hashBestBlock,
-	//			Timestamp:     time.Now(),
-	//			Difficulty:    0, //@todo should be create Difficulty logic
-	//			Nonce:         0, //@todo should be create Nonce logic
-	//		},
-	//	}
-	//	println("new block " + newSpamBlock.Hash().String())
-	//	self.Blocks = append(self.Blocks, newSpamBlock)
-	//	self.Headers[*newSpamBlock.Hash()] = index + 1
-	//	self.BestBlock = newSpamBlock
-	//}
-	//
+	for index := 0; index < 10; index++ {
+		hashBestBlock := *self.BestBlock.Hash()
+		//log.Printf(hashBestBlock.String())
+		newSpamBlock := Block{
+			Header: BlockHeader{
+				Version:       1,
+				PrevBlockHash: hashBestBlock,
+				//Timestamp:     time.Now(),
+				Difficulty: 0,     //@todo should be create Difficulty logic
+				Nonce:      index, //@todo should be create Nonce logic
+			},
+		}
+		//log.Printf(newSpamBlock.Header.PrevBlockHash.String())
+		self.Blocks = append(self.Blocks, &newSpamBlock)
+		self.Headers[*newSpamBlock.Hash()] = index + 1
+		self.BestBlock = &newSpamBlock
+	}
+
 	for _, block := range self.Blocks {
-		fmt.Println(fmt.Sprintf("%s %s", block.Hash().String(), block.Header.PrevBlockHash))
+		fmt.Println(fmt.Sprintf("-> %s -> %s", block.Hash().String(), block.Header.PrevBlockHash.String()))
 	}
 
 	return nil

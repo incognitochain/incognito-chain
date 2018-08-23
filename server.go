@@ -577,6 +577,6 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 
 func (self *Server) UpdateChain(block *blockchain.Block) {
 	self.Chain.Blocks = append(self.Chain.Blocks, block)
-	self.Chain.Headers[block.Hash().String()] = len(self.Chain.Blocks) - 1
+	self.Chain.Headers[*block.Hash()] = len(self.Chain.Blocks) - 1
 	self.Chain.BestBlock = block
 }
