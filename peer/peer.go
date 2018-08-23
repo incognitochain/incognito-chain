@@ -253,7 +253,7 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 					self.FlagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageGetBlocks{}):
-				if self.Config.MessageListeners.OnBlock != nil {
+				if self.Config.MessageListeners.OnGetBlocks != nil {
 					self.FlagMutex.Lock()
 					self.Config.MessageListeners.OnGetBlocks(&self, message.(*wire.MessageGetBlocks))
 					self.FlagMutex.Unlock()
@@ -311,6 +311,7 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 				// send message
 				message, err := outMsg.msg.JsonSerialize()
 				if err != nil {
+					fmt.Println(err)
 					continue
 				}
 				message += "\n"

@@ -147,6 +147,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		Chain:      self.Chain,
 		ChainParam: chainParams,
 		MemPool:    self.MemPool,
+		Server:     &self,
 	})
 	if err != nil {
 		return nil, err
@@ -233,15 +234,6 @@ func (self *Server) InboundPeerConnected(peer *peer.Peer) {
 func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	peer *peer.Peer) {
 	log.Println("outbound connected")
-
-	//msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
-	//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.Chain.BestBlock.Hash()
-	//msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerId
-	//if err != nil {
-	//	return
-	//}
-	//peer.QueueMessageWithEncoding(msgNew, nil)
-
 	// TODO:
 	// call address manager to process new outbound peer
 	// push message version
@@ -250,6 +242,14 @@ func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 		listen.NegotiateOutboundProtocol(peer)
 	}
 	go self.peerDoneHandler(peer)
+
+	msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
+	msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.Chain.BestBlock.Hash()
+	msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerId
+	if err != nil {
+		return
+	}
+	self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
 }
 
 // peerDoneHandler handles peer disconnects by notifiying the server that it's
@@ -419,10 +419,10 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 	peers := make([]peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
 		peer, err := peer.Peer{
-			Seed:                        0,
-			FlagMutex:                   sync.Mutex{},
-			ListeningAddress:            addr,
-			Config:                      *self.NewPeerConfig(),
+			Seed:             0,
+			FlagMutex:        sync.Mutex{},
+			ListeningAddress: addr,
+			Config:           *self.NewPeerConfig(),
 			OutboundReaderWriterStreams: make(map[peer2.ID]*bufio.ReadWriter),
 			InboundReaderWriterStreams:  make(map[peer2.ID]*bufio.ReadWriter),
 		}.NewPeer()
@@ -524,6 +524,13 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 }
 
 func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId peer2.ID) bool {
+	var dc chan<- struct{}
+	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+	msg.(*wire.MessageBlock).Block = *block
+	if err != nil {
+		return false
+	}
+	self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msg, dc)
 	return true
 }
 
@@ -539,7 +546,7 @@ func (self Server) PushBlockMessage(block *blockchain.Block) bool {
 			return false
 		}
 		msg.(*wire.MessageBlock).Block = *block
-		listen.QueueMessageWithEncoding(msg, dc, )
+		listen.QueueMessageWithEncoding(msg, dc)
 	}
 	return true
 }

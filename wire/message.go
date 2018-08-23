@@ -2,6 +2,7 @@ package wire
 
 import (
 	"fmt"
+
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
@@ -31,6 +32,8 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	switch messageType {
 	case CmdBlock:
 		msg = &MessageBlock{}
+	case CmdGetBlocks:
+		msg = &MessageGetBlocks{}
 	case CmdTx:
 		msg = &MessageTx{
 			Transaction: &transaction.Tx{},

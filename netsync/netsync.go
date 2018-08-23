@@ -7,11 +7,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/wire"
-	peer2 "github.com/libp2p/go-libp2p-peer"
 )
 
 type NetSync struct {
@@ -31,9 +31,9 @@ type NetSyncConfig struct {
 	Chain      *blockchain.BlockChain
 	ChainParam *blockchain.Params
 	MemPool    *mempool.TxPool
-	Server interface {
+	Server     interface {
 		// list functions callback which are assigned from Server struct
-		PushBlockMessageWithPeerId(*blockchain.Block, peer2.ID)
+		PushBlockMessageWithPeerId(*blockchain.Block, peer2.ID) bool
 	}
 }
 
@@ -172,27 +172,19 @@ func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 		self.Config.Chain.Blocks = append(self.Config.Chain.Blocks, &newBlock)
 		self.Config.Chain.Headers[*msg.Block.Hash()] = len(self.Config.Chain.Blocks) - 1
 		self.Config.Chain.BestBlock = &newBlock
+		fmt.Println("New block received")
 	}
-
 }
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	log.Println("Handling new message getblock")
 	if senderBlockHeaderIndex, ok := self.Config.Chain.Headers[msg.LastBlockHash]; ok {
 		if self.Config.Chain.BestBlock.Hash() != &msg.LastBlockHash {
-			// Send Block to requestor
-			for index := senderBlockHeaderIndex; index < len(self.Config.Chain.Blocks); index++ {
-				msgNew, err := wire.MakeEmptyMessage(wire.CmdBlock)
-				msgNew.(*wire.MessageBlock).Block = *self.Config.Chain.Blocks[index]
-				if err != nil {
-					return
-				}
-				// msgNewJSON, err := msg.JsonSerialize()
-				// if err != nil {
-				// 	return
-				// }
-
-				time.Sleep(10 * time.Millisecond)
+			// Send Blocks to requestor
+			for index := senderBlockHeaderIndex + 1; index < len(self.Config.Chain.Blocks); index++ {
+				fmt.Printf("Send block %x \n", *self.Config.Chain.Blocks[index].Hash())
+				self.Config.Server.PushBlockMessageWithPeerId(self.Config.Chain.Blocks[index], msg.SenderID)
+				time.Sleep(100 * time.Millisecond)
 			}
 		}
 	}
