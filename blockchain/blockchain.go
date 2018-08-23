@@ -2,13 +2,12 @@ package blockchain
 
 import (
 	"errors"
-	"fmt"
-	"time"
-
 	"sync"
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
+	"time"
+	"fmt"
 )
 
 type BlockChain struct {

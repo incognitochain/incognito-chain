@@ -1,5 +1,5 @@
-hash: 1777c770545dddb5957218116daf6708bc5e7ca2401cbbab5eee36b0cc319617
-updated: 2018-08-21T11:48:24.834334+07:00
+hash: 4327f53fe90411038ce42ea44d2b73bea24f27b470715d71268dc2c23acc55ee
+updated: 2018-08-23T12:00:13.726703+07:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -79,7 +79,7 @@ imports:
 - name: github.com/libp2p/go-flow-metrics
   version: 3b3bcfcf78f2dc0e85be13ef3c3adc64cc5a9347
 - name: github.com/libp2p/go-libp2p
-  version: cc70c4be36f765ba9fb92d6e0528722773af607d
+  version: ab978fcf9dcf614300807c9f9003ce2fa7d504a3
   subpackages:
   - config
   - p2p/host/basic
@@ -175,6 +175,8 @@ imports:
   subpackages:
   - ext
   - log
+- name: github.com/pkg/errors
+  version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/spaolacci/murmur3
   version: f09979ecbc725b9e6d41a297405f65e7e8804acc
 - name: github.com/stretchr/testify

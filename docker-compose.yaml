@@ -1,0 +1,18 @@
+version: '3'
+services:
+  cash:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["./cash-prototype"]
+    environment:
+      - GOROOT=/usr/lib/go
+      - GOPATH=/go
+    ports:
+    - 9333:9333
+    networks:
+    - cash-net
+networks:
+  cash-net:
+volumes:
+  cash-data:

@@ -7,3 +7,5 @@ import:
 - package: github.com/syndtr/goleveldb
   subpackages:
   - leveldb
+- package: github.com/pkg/errors
+  version: ^0.8.0
