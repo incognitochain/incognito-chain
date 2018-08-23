@@ -12,6 +12,9 @@ find_package(GMP REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(GRPC REQUIRED)
 
+include_directories(${GRPC_INCLUDE_DIR})
+message(STATUS ${GRPC_INCLUDE_DIR})
+
 set(EXTRA_LIBS ${EXTRA_LIBS} ${Boost_LIBRARIES})
 set(EXTRA_LIBS ${EXTRA_LIBS} ${sodium_LIBRARY_RELEASE})
 set(EXTRA_LIBS ${EXTRA_LIBS} ${GMP_LIBRARIES})
