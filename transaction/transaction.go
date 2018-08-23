@@ -5,7 +5,7 @@ import (
 )
 
 type Transaction interface {
-    Hash() (*common.Hash)
-    ValidateTransaction() (bool)
-    GetType() (string)
+	Hash() (*common.Hash)
+	ValidateTransaction() (bool)
+	GetType() (string)
 }

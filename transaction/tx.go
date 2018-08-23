@@ -21,16 +21,15 @@ func (self *Tx) AddTxIn(ti TxIn) {
 }
 
 func (self *Tx) GetTxIn() []TxIn {
-	return  self.TxIn
+	return self.TxIn
 }
 
 func (self *Tx) AddTxOut(to TxOut) {
 	self.TxOut = append(self.TxOut, to)
 }
 
-
 func (self *Tx) GetTxOUt() []TxOut {
-	return  self.TxOut
+	return self.TxOut
 }
 
 func (self *Tx) Hash() (*common.Hash) {
@@ -61,4 +60,3 @@ func (self *Tx) ValidateTransaction() (bool) {
 func (self *Tx) GetType() (string) {
 	return self.Type
 }
-

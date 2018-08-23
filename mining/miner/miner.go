@@ -26,6 +26,7 @@ type Config struct {
 
 	Server interface {
 		PushBlockMessage(*blockchain.Block) bool
+		UpdateChain(*blockchain.Block)
 	}
 }
 
@@ -92,7 +93,7 @@ func (m *Miner) commitBlock(block *blockchain.Block) (bool, error) {
 		fmt.Print("sending error...........")
 		return false, nil
 	}
-
+	m.cfg.Server.UpdateChain(block)
 	return true, nil
 }
 
@@ -111,7 +112,7 @@ out:
 
 		template, err := m.g.NewBlockTemplate(payToAddr, m.cfg.Chain)
 		m.submitBlockLock.Unlock()
-		if err != nil && len(template.Block.Transactions) == 0 {
+		if err != nil || len(template.Block.Transactions) == 0 {
 			fmt.Sprint("Failed to create new block template: %v", err)
 			continue
 		}

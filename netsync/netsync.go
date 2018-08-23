@@ -34,6 +34,7 @@ type NetSyncConfig struct {
 	Server     interface {
 		// list functions callback which are assigned from Server struct
 		PushBlockMessageWithPeerId(*blockchain.Block, peer2.ID) bool
+		UpdateChain(*blockchain.Block)
 	}
 }
 
@@ -163,16 +164,13 @@ func (self *NetSync) QueueGetBlock(peer *peer.Peer, msg *wire.MessageGetBlocks, 
 
 func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 	log.Println("Handling new message block")
-	// TODO get message block and process, Tuan Anh
+	// TODO get message block and process
 
 	// Skip verify and insert directly to local blockchain
 	// There should be a method in blockchain.go to insert block to prevent data-race if we read from memory
 	if msg.Block.Header.PrevBlockHash == *self.Config.Chain.BestBlock.Hash() {
 		newBlock := msg.Block
-		self.Config.Chain.Blocks = append(self.Config.Chain.Blocks, &newBlock)
-		self.Config.Chain.Headers[*msg.Block.Hash()] = len(self.Config.Chain.Blocks) - 1
-		self.Config.Chain.BestBlock = &newBlock
-		fmt.Println("New block received")
+		self.Config.Server.UpdateChain(&newBlock)
 	}
 }
 
