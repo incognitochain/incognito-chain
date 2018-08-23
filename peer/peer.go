@@ -329,7 +329,7 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 					continue
 				}
 				message += "\n"
-				log.Printf("Send a message %s: %s", outMsg.msg.MessageType(), message)
+				log.Printf("\nSend a message %s: %s", outMsg.msg.MessageType(), message)
 				rw.Writer.WriteString(message)
 				rw.Writer.Flush()
 				self.FlagMutex.Unlock()
