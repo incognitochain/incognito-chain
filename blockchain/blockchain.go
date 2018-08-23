@@ -11,6 +11,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/database"
 	"fmt"
 	//"log"
+	"log"
 )
 
 type BlockChain struct {
@@ -102,27 +103,33 @@ func (self *BlockChain) CreateChainState() error {
 
 	// Spam random blocks
 
-	//for index := 0; index < 10; index++ {
-	//	hashBestBlock := *self.BestBlock.Hash()
-	//	//log.Printf(hashBestBlock.String())
-	//	newSpamBlock := Block{
-	//		Header: BlockHeader{
-	//			Version:       1,
-	//			PrevBlockHash: hashBestBlock,
-	//			//Timestamp:     time.Now(),
-	//			Difficulty: 0,     //@todo should be create Difficulty logic
-	//			Nonce:      index, //@todo should be create Nonce logic
-	//		},
-	//	}
-	//	//log.Printf(newSpamBlock.Header.PrevBlockHash.String())
-	//	self.Blocks = append(self.Blocks, &newSpamBlock)
-	//	self.Headers[*newSpamBlock.Hash()] = index + 1
-	//	self.BestBlock = &newSpamBlock
-	//}
-
-	for _, block := range self.Blocks {
-		fmt.Println(fmt.Sprintf("-> %s -> %s", block.Hash().String(), block.Header.PrevBlockHash.String()))
+	for index := 0; index < 10; index++ {
+		hashBestBlock := *self.BestBlock.Hash()
+		//log.Printf(hashBestBlock.String())
+		newSpamBlock := Block{
+			Header: BlockHeader{
+				Version:       1,
+				PrevBlockHash: hashBestBlock,
+				//Timestamp:     time.Now(),
+				Difficulty: 0,     //@todo should be create Difficulty logic
+				Nonce:      index, //@todo should be create Nonce logic
+			},
+		}
+		//log.Printf(newSpamBlock.Header.PrevBlockHash.String())
+		self.Blocks = append(self.Blocks, &newSpamBlock)
+		self.Headers[*newSpamBlock.Hash()] = index + 1
+		self.BestBlock = &newSpamBlock
 	}
+
+	log.Printf("Blocks : \n ---------------------------------------------------------------")
+	for i, block := range self.Blocks {
+		if i == 0 {
+			fmt.Println(fmt.Sprintf("%d -> %s -> %s", i, block.Hash().String(), block.Header.PrevBlockHash.String()))
+		} else {
+			fmt.Println(fmt.Sprintf("%d -> %s", i, block.Hash().String()))
+		}
+	}
+	log.Printf("\n ---------------------------------------------------------------")
 
 	return nil
 }
