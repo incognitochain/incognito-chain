@@ -139,7 +139,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		BlockTemplateGenerator: blockTemplateGenerator,
 		MiningAddrs:            cfg.MiningAddrs,
 		Chain:                  self.Chain,
-		SendBlock:              self.PushBlockMessage,
+		Server:                 self,
 	})
 
 	// Init Net Sync manager to process messages

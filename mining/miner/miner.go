@@ -24,7 +24,9 @@ type Config struct {
 
 	MiningAddrs []string
 
-	SendBlock func(*blockchain.Block) bool
+	Server interface {
+		PushBlockMessage(*blockchain.Block) bool
+	}
 }
 
 type Miner struct {
