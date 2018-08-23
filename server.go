@@ -132,7 +132,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		return nil, err
 	}
 
-	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool.MiningDescs(), self.Chain)
+	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.Chain)
 
 	self.Miner = miner.New(&miner.Config{
 		ChainParams:            self.ChainParams,

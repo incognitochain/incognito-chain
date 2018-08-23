@@ -109,7 +109,7 @@ out:
 
 		template, err := m.g.NewBlockTemplate(payToAddr, m.cfg.Chain)
 		m.submitBlockLock.Unlock()
-		if err != nil {
+		if err != nil && len(template.Block.Transactions) == 0 {
 			fmt.Sprint("Failed to create new block template: %v", err)
 			continue
 		}

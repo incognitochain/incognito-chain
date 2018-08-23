@@ -116,8 +116,8 @@ func calculateReward(actionParamTxs []*transaction.ActionParamTx, feeMap map[str
 		burnedCoins := feeMap["coin"] - coins
 		bonds := medianBond + feeMap["bond"]
 		return map[string]float64{
-			"coins": coins,
-			"bonds": bonds,
+			"coins":       coins,
+			"bonds":       bonds,
 			"burnedCoins": burnedCoins,
 		}
 	}
@@ -166,8 +166,8 @@ func createCoinbaseTx(
 			continue
 		}
 		txOutTypeMap := map[string]string{
-			"coins": TXOUT_COIN_TYPE,
-			"bonds": TXOUT_BOND_TYPE,
+			"coins":       TXOUT_COIN_TYPE,
+			"bonds":       TXOUT_BOND_TYPE,
 			"burnedCoins": TXOUT_COIN_TYPE,
 		}
 		if rewardType == "burnedCoins" {
@@ -217,7 +217,7 @@ func extractTxsAndComputeInitialFees(txDescs []*TxDesc) ([]transaction.Transacti
 func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain) (*BlockTemplate, error) {
 
 	prevBlockHash := chain.BestBlock.Hash()
-	sourceTxns := g.txSource
+	sourceTxns := g.txSource.MiningDescs()
 	txs, feeMap := extractTxsAndComputeInitialFees(sourceTxns)
 	//@todo we need apply sort rules for sourceTxns here
 
@@ -292,6 +292,9 @@ mempoolLoop:
 		}
 	}
 
+	// TODO PoW
+	//time.Sleep(time.Second * 15)
+
 	var msgBlock blockchain.Block
 	msgBlock.Header = blockchain.BlockHeader{
 		Version:       1,
@@ -313,7 +316,39 @@ mempoolLoop:
 
 }
 
-func NewBlkTmplGenerator(txSource []*TxDesc, chain *blockchain.BlockChain) *BlkTmplGenerator {
+type BlkTmplGenerator struct {
+	txSource    TxSource
+	chain       *blockchain.BlockChain
+	chainParams *blockchain.Params
+	policy      *Policy
+}
+
+type BlockTemplate struct {
+	Block *blockchain.Block
+
+	// Fees []float64
+}
+
+// TxSource represents a source of transactions to consider for inclusion in
+// new blocks.
+//
+// The interface contract requires that all of these methods are safe for
+// concurrent access with respect to the source.
+type TxSource interface {
+	// LastUpdated returns the last time a transaction was added to or
+	// removed from the source pool.
+	//LastUpdated() time.Time
+
+	// MiningDescs returns a slice of mining descriptors for all the
+	// transactions in the source pool.
+	MiningDescs() []*TxDesc
+
+	// HaveTransaction returns whether or not the passed transaction hash
+	// exists in the source pool.
+	//HaveTransaction(hash *common.Hash) bool
+}
+
+func NewBlkTmplGenerator(txSource TxSource, chain *blockchain.BlockChain) *BlkTmplGenerator {
 	return &BlkTmplGenerator{
 		txSource: txSource,
 		chain:    chain,
