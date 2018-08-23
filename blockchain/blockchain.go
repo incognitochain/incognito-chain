@@ -9,6 +9,7 @@ import (
 
 	//"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
+	"fmt"
 )
 
 type BlockChain struct {
@@ -118,9 +119,9 @@ func (self *BlockChain) CreateChainState() error {
 	//	self.BestBlock = newSpamBlock
 	//}
 	//
-	//for _, block := range self.Blocks {
-	//	fmt.Println(fmt.Sprintf("%s %s", block.Hash().String(), block.Header.PrevBlockHash.String()))
-	//}
+	for _, block := range self.Blocks {
+		fmt.Println(fmt.Sprintf("%s %s", block.Hash().String(), block.Header.PrevBlockHash))
+	}
 
 	return nil
 }
