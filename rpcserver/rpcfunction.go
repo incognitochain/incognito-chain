@@ -80,7 +80,7 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 	for _, block := range blocks {
 		if (len(block.Transactions) > 0) {
 			for _, tx := range block.Transactions {
-				if tx.GetType() == ACTION_PARAMS_TRANSACTION_TYPE {
+				if tx.GetType() == common.TxActionParamsType {
 					continue
 				}
 				normalTx := tx.(*transaction.Tx)
@@ -110,7 +110,7 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.Tx{
 		Version: 1,
-		Type:    "NORMAL",
+		Type:    common.TxNormalType,
 	}
 	txIns := common.InterfaceSlice(arrayParams[0])
 	for _, txIn := range txIns {
@@ -248,7 +248,7 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.ActionParamTx{
 		Version:  1,
-		Type:     ACTION_PARAMS_TRANSACTION_TYPE,
+		Type:     common.TxActionParamsType,
 		LockTime: time.Now().Unix(),
 	}
 

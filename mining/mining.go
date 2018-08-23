@@ -2,6 +2,7 @@ package mining
 
 import (
 	"math"
+	"fmt"
 	"time"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
@@ -22,7 +23,7 @@ func filterActionParamsTxs(block *blockchain.Block) []*transaction.ActionParamTx
 	allTxs := block.Transactions
 	var actionParamTxs []*transaction.ActionParamTx
 	for _, tx := range allTxs {
-		if tx.GetType() == ACTION_PARAMS_TRANSACTION_TYPE {
+		if tx.GetType() == common.TxActionParamsType {
 			actionParamTxs = append(actionParamTxs, tx.(*transaction.ActionParamTx))
 		}
 	}
@@ -79,8 +80,8 @@ func calculateReward(actionParamTxs []*transaction.ActionParamTx, feeMap map[str
 	}
 	if len(latestTxsByAgentId) < NUMBER_OF_MAKING_DECISION_AGENTS {
 		return map[string]float64{
-			"coins": DEFAULT_COINS,
-			"bonds": DEFAULT_BONDS,
+			"coins": DEFAULT_COINS + feeMap[common.TxOutCoinType],
+			"bonds": DEFAULT_BONDS + feeMap[common.TxOutBondType],
 		}
 	}
 
@@ -99,22 +100,22 @@ func calculateReward(actionParamTxs []*transaction.ActionParamTx, feeMap map[str
 	}
 	if math.Max(float64(len(issuingCoinsActions)), float64(len(contractingCoinsActions))) < (math.Floor(float64(len(latestTxsByAgentId)/2)) + 1) {
 		return map[string]float64{
-			"coins": DEFAULT_COINS,
-			"bonds": DEFAULT_BONDS,
+			"coins": DEFAULT_COINS + feeMap[common.TxOutCoinType],
+			"bonds": DEFAULT_BONDS + feeMap[common.TxOutBondType],
 		}
 	}
 
 	if len(issuingCoinsActions) == len(contractingCoinsActions) {
 		return map[string]float64{
-			"coins": DEFAULT_COINS,
-			"bonds": DEFAULT_BONDS,
+			"coins": DEFAULT_COINS + feeMap[common.TxOutCoinType],
+			"bonds": DEFAULT_BONDS + feeMap[common.TxOutBondType],
 		}
 	}
 	if len(issuingCoinsActions) < len(contractingCoinsActions) {
 		_, medianBond, medianTax := getMedians(contractingCoinsActions)
-		coins := (100 - medianTax) * 0.01 * feeMap["coin"]
-		burnedCoins := feeMap["coin"] - coins
-		bonds := medianBond + feeMap["bond"]
+		coins := (100 - medianTax) * 0.01 * feeMap[common.TxOutCoinType]
+		burnedCoins := feeMap[common.TxOutCoinType] - coins
+		bonds := medianBond + feeMap[common.TxOutBondType]
 		return map[string]float64{
 			"coins":       coins,
 			"bonds":       bonds,
@@ -124,8 +125,8 @@ func calculateReward(actionParamTxs []*transaction.ActionParamTx, feeMap map[str
 	// issuing coins
 	medianCoin, _, _ := getMedians(contractingCoinsActions)
 	return map[string]float64{
-		"coins": medianCoin,
-		"bonds": 0,
+		"coins": medianCoin + feeMap[common.TxOutCoinType],
+		"bonds": feeMap[common.TxOutBondType],
 	}
 }
 
@@ -196,8 +197,8 @@ func sumTxOutValues(txOuts []transaction.TxOut) float64 {
 func extractTxsAndComputeInitialFees(txDescs []*TxDesc) ([]transaction.Transaction, map[string]float64) {
 	var txs []transaction.Transaction
 	var feeMap = map[string]float64{
-		"coin": 0,
-		"bond": 0,
+		fmt.Sprintf(common.TxOutCoinType): 0,
+		fmt.Sprintf(common.TxOutBondType): 0,
 	}
 	for _, txDesc := range txDescs {
 		tx := txDesc.Tx
@@ -209,7 +210,9 @@ func extractTxsAndComputeInitialFees(txDescs []*TxDesc) ([]transaction.Transacti
 		normalTx, _ := tx.(*transaction.Tx)
 		txInsValue := sumTxInValues(normalTx.TxIn)
 		txOutsValue := sumTxOutValues(normalTx.TxOut)
-		feeMap[txType] += txInsValue - txOutsValue
+		if len(normalTx.TxOut) > 0 {
+			feeMap[normalTx.TxOut[0].TxOutType] += (txInsValue - txOutsValue)
+		}
 	}
 	return txs, feeMap
 }
