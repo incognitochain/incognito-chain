@@ -18,11 +18,11 @@ type JSInput struct {
 
 type JSOutput struct {
 	EncKey     TransmissionKey
-	OutputNote Note
+	OutputNote *Note
 }
 
 // Prove calls libsnark's Prove and return the proof
-// inputs: WitnessPath and Key must be set; InputeNote's Value, Apk and Rho must also be set before calling this function
+// inputs: WitnessPath and Key must be set; InputeNote's Value, Apk, R and Rho must also be set before calling this function
 // outputs: EncKey, OutputNote's Apk and Value must be set before calling this function
 func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
 	// TODO: think how to implement vpub
@@ -50,6 +50,9 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
 		var rho [32]byte
 		copy(rho[:], input.InputNote.Rho)
 		input.InputNote.Nf = GetNullifier(*input.Key, rho)
+
+		// Compute cm for old notes to check for merkle path
+		input.InputNote.Cm = GetCommitment(input.InputNote)
 	}
 	seed := RandBits(256)
 	hSig := HSigCRH(seed, inputs[0].InputNote.Nf, inputs[1].InputNote.Nf, pubKey)
@@ -82,12 +85,12 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
 	defer conn.Close()
 
 	c := zksnark.NewZksnarkClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
 	var outNotes []*Note
 	for _, output := range outputs {
-		outNotes = append(outNotes, &output.OutputNote)
+		outNotes = append(outNotes, output.OutputNote)
 	}
 
 	zkNotes := Notes2ZksnarkNotes(outNotes)

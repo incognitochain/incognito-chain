@@ -16,8 +16,8 @@ func main() {
 
 	outApk := client.SpendingAddress{1}
 	ekey := client.TransmissionKey{2}
-	outNote1 := client.Note{Value: 1000, Apk: outApk}
-	outNote2 := client.Note{Value: 2000, Apk: outApk}
+	outNote1 := &client.Note{Value: 1000, Apk: outApk}
+	outNote2 := &client.Note{Value: 2000, Apk: outApk}
 	outputs := []*client.JSOutput{
 		&client.JSOutput{EncKey: ekey, OutputNote: outNote1},
 		&client.JSOutput{EncKey: ekey, OutputNote: outNote2}}
@@ -42,6 +42,7 @@ func main() {
 	index2 := [merkleTreeDepth]bool{true}
 	mpath2 := client.MerklePath{AuthPath: mhash2[:], Index: index2[:]}
 
+	// TODO: add input's R
 	skey := client.SpendingKey{5}
 	inpApk := client.SpendingAddress{6}
 	rho1 := [32]byte{7}

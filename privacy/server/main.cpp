@@ -151,6 +151,7 @@ class ZksnarkImpl final : public Zksnark::Service
         uint252 phi;
         bool success = transform_prove_request(request, inputs, out_notes, hsig, phi, rt);
         cout << "transform_prove_request status: " << success << '\n';
+        js->prove(inputs, out_notes, rt, hsig, phi);
         return Status::OK;
     }
 };

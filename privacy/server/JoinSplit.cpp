@@ -230,6 +230,7 @@ public:
             // TODO: remove vpub_old and vpub_new in joinsplit_gadget if necessary
             joinsplit_gadget<FieldT, NumInputs, NumOutputs> g(pb);
             g.generate_r1cs_constraints();
+            std::cout << "Done generate_r1cs_constraints\n";
             g.generate_r1cs_witness(
                 phi,
                 rt,
@@ -239,6 +240,7 @@ public:
                 0,
                 0
             );
+            std::cout << "Done generate_r1cs_witness\n";
         }
 
         // The constraint system must be satisfied or there is an unimplemented
