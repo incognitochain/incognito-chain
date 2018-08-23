@@ -8,6 +8,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/pkg/errors"
 )
 
 type txPrioItem struct {
@@ -221,6 +222,9 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 
 	prevBlockHash := chain.BestBlock.Hash()
 	sourceTxns := g.txSource.MiningDescs()
+	if len(sourceTxns) == 0 {
+		return nil, errors.New("No Tx")
+	}
 	txs, feeMap := extractTxsAndComputeInitialFees(sourceTxns)
 	//@todo we need apply sort rules for sourceTxns here
 
@@ -290,7 +294,7 @@ mempoolLoop:
 				continue
 			}
 		}*/
-		if tx.ValidateTransaction() {
+		if !tx.ValidateTransaction() {
 			continue mempoolLoop
 		}
 	}
@@ -298,8 +302,8 @@ mempoolLoop:
 	// TODO PoW
 	//time.Sleep(time.Second * 15)
 
-	var msgBlock blockchain.Block
-	msgBlock.Header = blockchain.BlockHeader{
+	block := blockchain.Block{}
+	block.Header = blockchain.BlockHeader{
 		Version:       1,
 		PrevBlockHash: *prevBlockHash,
 		MerkleRoot:    *merkleRoot,
@@ -308,15 +312,14 @@ mempoolLoop:
 		Nonce:         0, //@todo should be create Nonce logic
 	}
 	for _, tx := range blockTxns {
-		if err := msgBlock.AddTransaction(tx); err != nil {
+		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
 		}
 	}
-
-	return &BlockTemplate{
-		Block: &msgBlock,
-	}, nil
-
+	blockTemp := &BlockTemplate{
+		Block: &block,
+	}
+	return blockTemp, nil
 }
 
 type BlkTmplGenerator struct {

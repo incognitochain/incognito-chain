@@ -529,8 +529,6 @@ func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId pe
 
 func (self Server) PushBlockMessage(block *blockchain.Block) bool {
 	// TODO push block message for connected peer
-	return true
-
 	//@todo got error here
 	var dc chan<- struct{}
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
