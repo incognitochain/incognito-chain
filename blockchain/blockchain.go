@@ -102,23 +102,23 @@ func (self *BlockChain) CreateChainState() error {
 
 	// Spam random blocks
 
-	for index := 0; index < 10; index++ {
-		hashBestBlock := *self.BestBlock.Hash()
-		//log.Printf(hashBestBlock.String())
-		newSpamBlock := Block{
-			Header: BlockHeader{
-				Version:       1,
-				PrevBlockHash: hashBestBlock,
-				//Timestamp:     time.Now(),
-				Difficulty: 0,     //@todo should be create Difficulty logic
-				Nonce:      index, //@todo should be create Nonce logic
-			},
-		}
-		//log.Printf(newSpamBlock.Header.PrevBlockHash.String())
-		self.Blocks = append(self.Blocks, &newSpamBlock)
-		self.Headers[*newSpamBlock.Hash()] = index + 1
-		self.BestBlock = &newSpamBlock
-	}
+	//for index := 0; index < 10; index++ {
+	//	hashBestBlock := *self.BestBlock.Hash()
+	//	//log.Printf(hashBestBlock.String())
+	//	newSpamBlock := Block{
+	//		Header: BlockHeader{
+	//			Version:       1,
+	//			PrevBlockHash: hashBestBlock,
+	//			//Timestamp:     time.Now(),
+	//			Difficulty: 0,     //@todo should be create Difficulty logic
+	//			Nonce:      index, //@todo should be create Nonce logic
+	//		},
+	//	}
+	//	//log.Printf(newSpamBlock.Header.PrevBlockHash.String())
+	//	self.Blocks = append(self.Blocks, &newSpamBlock)
+	//	self.Headers[*newSpamBlock.Hash()] = index + 1
+	//	self.BestBlock = &newSpamBlock
+	//}
 
 	for _, block := range self.Blocks {
 		fmt.Println(fmt.Sprintf("-> %s -> %s", block.Hash().String(), block.Header.PrevBlockHash.String()))

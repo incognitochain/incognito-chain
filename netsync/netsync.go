@@ -184,7 +184,7 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 			for index := senderBlockHeaderIndex + 1; index < len(self.Config.Chain.Blocks); index++ {
 				fmt.Printf("Send block %x \n", *self.Config.Chain.Blocks[index].Hash())
 				self.Config.Server.PushBlockMessageWithPeerId(self.Config.Chain.Blocks[index], msg.SenderID)
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep(time.Second * 3)
 			}
 		}
 	}

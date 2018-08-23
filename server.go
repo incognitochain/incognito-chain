@@ -249,7 +249,7 @@ func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	if err != nil {
 		return
 	}
-	//self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
+	self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
 }
 
 // peerDoneHandler handles peer disconnects by notifiying the server that it's
@@ -464,14 +464,14 @@ func (self *Server) OnBlock(p *peer.Peer,
 	log.Println("Receive a new block")
 	var txProcessed chan struct{}
 	self.NetSync.QueueBlock(nil, msg, txProcessed)
-	<-txProcessed
+	//<-txProcessed
 }
 
 func (self *Server) OnGetBlocks(_ *peer.Peer, msg *wire.MessageGetBlocks) {
 	log.Println("Receive a get-block message")
 	var txProcessed chan struct{}
 	self.NetSync.QueueGetBlock(nil, msg, txProcessed)
-	<-txProcessed
+	//<-txProcessed
 }
 
 // OnTx is invoked when a peer receives a tx message.  It blocks
@@ -483,7 +483,7 @@ func (self Server) OnTx(peer *peer.Peer,
 	log.Println("Receive a new transaction")
 	var txProcessed chan struct{}
 	self.NetSync.QueueTx(nil, msg, txProcessed)
-	<-txProcessed
+	//<-txProcessed
 }
 
 // OnVersion is invoked when a peer receives a version bitcoin message
