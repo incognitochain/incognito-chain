@@ -22,23 +22,24 @@ func main() {
 		&client.JSOutput{EncKey: ekey, OutputNote: outNote1},
 		&client.JSOutput{EncKey: ekey, OutputNote: outNote2}}
 
-	hash1 := [29]byte{3}
-	mhash1 := [29]*client.MerkleHash{}
-	for i := 0; i < 29; i++ {
+	const merkleTreeDepth = 29
+	hash1 := [32]byte{3}
+	mhash1 := [merkleTreeDepth]*client.MerkleHash{}
+	for i := 0; i < merkleTreeDepth; i++ {
 		mh := client.MerkleHash{}
 		copy(mh[:], hash1[:])
 		mhash1[i] = &mh
 	}
-	index1 := [29]bool{true}
+	index1 := [merkleTreeDepth]bool{true}
 	mpath1 := client.MerklePath{AuthPath: mhash1[:], Index: index1[:]}
 	hash2 := [32]byte{4}
-	mhash2 := [29]*client.MerkleHash{}
-	for i := 0; i < 29; i++ {
+	mhash2 := [merkleTreeDepth]*client.MerkleHash{}
+	for i := 0; i < merkleTreeDepth; i++ {
 		mh := client.MerkleHash{}
 		copy(mh[:], hash2[:])
 		mhash2[i] = &mh
 	}
-	index2 := [32]bool{true}
+	index2 := [merkleTreeDepth]bool{true}
 	mpath2 := client.MerklePath{AuthPath: mhash2[:], Index: index2[:]}
 
 	skey := client.SpendingKey{5}

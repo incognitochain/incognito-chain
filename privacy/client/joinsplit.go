@@ -66,6 +66,10 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
 		output.OutputNote.Cm = GetCommitment(output.OutputNote)
 	}
 
+	fmt.Printf("hsig: %x\n", hSig)
+	fmt.Printf("phi: %x\n", phi)
+	fmt.Printf("rt: %x\n", rt)
+
 	// TODO: encrypt note's data
 	// TODO: malleability
 
