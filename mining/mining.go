@@ -302,7 +302,7 @@ mempoolLoop:
 	}
 
 	// TODO PoW
-	//time.Sleep(time.Second * 15)
+	time.Sleep(time.Second * 15)
 
 	block := blockchain.Block{}
 	block.Header = blockchain.BlockHeader{

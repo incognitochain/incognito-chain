@@ -3,6 +3,7 @@ package wire
 import (
 	"fmt"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 )
 
 // list message type
@@ -30,7 +31,11 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	var msg Message
 	switch messageType {
 	case CmdBlock:
-		msg = &MessageBlock{}
+		msg = &MessageBlock{
+			Block: blockchain.Block{
+				Transactions: make([]transaction.Transaction, 0),
+			},
+		}
 	case CmdTx:
 		msg = &MessageTx{
 			Transaction: &transaction.Tx{},

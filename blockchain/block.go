@@ -14,7 +14,7 @@ const (
 type Block struct {
 	Header       BlockHeader
 	Transactions []transaction.Transaction
-	BlockHash    *common.Hash
+	blockHash    *common.Hash
 }
 
 func (self *Block) AddTransaction(tx transaction.Transaction) error {
@@ -27,11 +27,11 @@ func (self *Block) ClearTransactions() {
 }
 
 func (self *Block) Hash() (*common.Hash) {
-	if self.BlockHash != nil {
-		return self.BlockHash
+	if self.blockHash != nil {
+		return self.blockHash
 	}
 	record := strconv.Itoa(self.Header.Version) + self.Header.MerkleRoot.String() + self.Header.Timestamp.String() + self.Header.PrevBlockHash.String() + strconv.Itoa(self.Header.Nonce) + strconv.Itoa(len(self.Transactions))
 	hash := common.DoubleHashH([]byte(record))
-	self.BlockHash = &hash
-	return self.BlockHash
+	self.blockHash = &hash
+	return self.blockHash
 }
