@@ -25,6 +25,7 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 )
 
 const (
@@ -230,7 +231,20 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 				log.Println(err)
 				continue
 			}
-			err = json.Unmarshal(messageBody, &message)
+			if commandType != wire.CmdBlock {
+				err = json.Unmarshal(messageBody, &message)
+			} else {
+				m := make(map[string]interface{})
+				_ = json.Unmarshal(messageBody, &m)
+				blockHeader := blockchain.BlockHeader{
+					//Version: int(m["Header"].(float64)),
+				}
+				block := blockchain.Block{
+					Header: blockHeader,
+				}
+				message.(*wire.MessageBlock).Block = block
+
+			}
 			//temp := message.(map[string]interface{})
 			if err != nil {
 				log.Println(err)
@@ -315,7 +329,7 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 					continue
 				}
 				message += "\n"
-				log.Printf("Send a message %s: %s", outMsg.msg.MessageType(), message)
+				log.Printf("\nSend a message %s: %s", outMsg.msg.MessageType(), message)
 				rw.Writer.WriteString(message)
 				rw.Writer.Flush()
 				self.FlagMutex.Unlock()

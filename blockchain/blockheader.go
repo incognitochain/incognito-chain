@@ -2,9 +2,6 @@ package blockchain
 
 import (
 	"time"
-	"crypto/sha256"
-	"fmt"
-
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 )
@@ -34,18 +31,6 @@ type BlockHeader struct {
 
 	// Nonce used to generate the block.
 	Nonce int
-}
-
-/**
- BlockHash computes the block identifier hash for the given block header.
- */
-func (h BlockHeader) BlockHash() (common.Hash) {
-	record := fmt.Sprint(h.Version) + h.Timestamp.String() + h.MerkleRoot.String() + h.PrevBlockHash.String() + fmt.Sprint(h.Nonce)
-	hash256 := sha256.New()
-	hash256.Write([]byte(record))
-	hashed := hash256.Sum(nil)
-	hash, _ := common.Hash{}.NewHash(hashed)
-	return *hash
 }
 
 func (h *BlockChain) GetBlockByHash(hash common.Hash) *Block {

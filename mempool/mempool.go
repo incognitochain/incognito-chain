@@ -10,6 +10,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/mining"
+	"github.com/pkg/errors"
 )
 
 //Peer Ids, so that orphans can be identified by which peer first repayed them.
@@ -104,7 +105,7 @@ func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash
 		txD := tp.addTx(tx)
 		return tx.Hash(), txD, nil
 	}
-	return tx.Hash(), nil, nil
+	return nil, nil, errors.New("Exist this tx in pool")
 }
 
 //remove transaction for pool

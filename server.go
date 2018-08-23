@@ -427,10 +427,10 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 	peers := make([]peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
 		peer, err := peer.Peer{
-			Seed:             0,
-			FlagMutex:        sync.Mutex{},
-			ListeningAddress: addr,
-			Config:           *self.NewPeerConfig(),
+			Seed:                        0,
+			FlagMutex:                   sync.Mutex{},
+			ListeningAddress:            addr,
+			Config:                      *self.NewPeerConfig(),
 			OutboundReaderWriterStreams: make(map[peer2.ID]*bufio.ReadWriter),
 			InboundReaderWriterStreams:  make(map[peer2.ID]*bufio.ReadWriter),
 		}.NewPeer()
@@ -464,14 +464,14 @@ func (self *Server) OnBlock(p *peer.Peer,
 	log.Println("Receive a new block")
 	var txProcessed chan struct{}
 	self.NetSync.QueueBlock(nil, msg, txProcessed)
-	<-txProcessed
+	//<-txProcessed
 }
 
 func (self *Server) OnGetBlocks(_ *peer.Peer, msg *wire.MessageGetBlocks) {
 	log.Println("Receive a get-block message")
 	var txProcessed chan struct{}
 	self.NetSync.QueueGetBlock(nil, msg, txProcessed)
-	<-txProcessed
+	//<-txProcessed
 }
 
 // OnTx is invoked when a peer receives a tx message.  It blocks
@@ -483,7 +483,7 @@ func (self Server) OnTx(peer *peer.Peer,
 	log.Println("Receive a new transaction")
 	var txProcessed chan struct{}
 	self.NetSync.QueueTx(nil, msg, txProcessed)
-	<-txProcessed
+	//<-txProcessed
 }
 
 // OnVersion is invoked when a peer receives a version bitcoin message

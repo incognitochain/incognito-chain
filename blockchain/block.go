@@ -27,11 +27,12 @@ func (self *Block) ClearTransactions() {
 }
 
 func (self *Block) Hash() (*common.Hash) {
-	if self.blockHash != nil {
-		return self.blockHash
-	}
+	//if self.blockHash != nil {
+	//	return self.blockHash
+	//}
 	record := strconv.Itoa(self.Header.Version) + self.Header.MerkleRoot.String() + self.Header.Timestamp.String() + self.Header.PrevBlockHash.String() + strconv.Itoa(self.Header.Nonce) + strconv.Itoa(len(self.Transactions))
 	hash := common.DoubleHashH([]byte(record))
-	self.blockHash = &hash
-	return self.blockHash
+	//self.blockHash = &hash
+	//return self.blockHash
+	return &hash
 }
