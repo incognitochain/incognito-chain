@@ -1,5 +1,5 @@
-hash: 4327f53fe90411038ce42ea44d2b73bea24f27b470715d71268dc2c23acc55ee
-updated: 2018-08-23T12:00:13.726703+07:00
+hash: b7763aa5e93a08ee0a2bff4221ae2205d941f923dd6466ba13941dc5f70c7035
+updated: 2018-08-24T17:42:40.427993+07:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -68,6 +68,10 @@ imports:
   - ratelimit
 - name: github.com/jessevdk/go-flags
   version: c6ca198ec95c841fdb89fc0de7496fed11ab854e
+- name: github.com/jrick/logrotate
+  version: a93b200c26cbae3bb09dd0dc2c7c7fe1468a034a
+  subpackages:
+  - rotator
 - name: github.com/libp2p/go-addr-util
   version: 26ae616f0dac754fff557513e984f930fbd88a92
 - name: github.com/libp2p/go-conn-security

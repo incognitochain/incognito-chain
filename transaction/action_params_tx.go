@@ -8,12 +8,12 @@ import (
 )
 
 type Param struct {
-	AgentID string
-	AgentSig string
-	NumOfCoins float64
-	NumOfBonds float64
-	Tax float64
-	EligibleAgentIDs []string
+	AgentID string `json:"AgentID"`
+	AgentSig string `json:"AgentSig"`
+	NumOfCoins float64 `json:"NumOfCoins"`
+	NumOfBonds float64 `json:"NumOfBonds"`
+	Tax float64 `json:"Tax"`
+	EligibleAgentIDs []string `json:"EligibleAgentIDs"`
 }
 
 //func (self *Param) MarshalJSON() ([]byte, error) {
@@ -37,17 +37,13 @@ type Param struct {
 //}
 
 type ActionParamTx struct {
-	Version  int
-	Type     string // NORMAL / ACTION_PARAMS
-	Param    *Param
-	LockTime int64
-	txHash   *common.Hash
+	Version  int    `json:"Version"`
+	Type     string `json:"Type"` // NORMAL / ACTION_PARAMS
+	Param    *Param `json:"Param"`
+	LockTime int64  `json:"LockTime"`
 }
 
 func (self *ActionParamTx) Hash() (*common.Hash) {
-	if self.txHash != nil {
-		return self.txHash
-	}
 	record := strconv.Itoa(self.Version) + strconv.Itoa(self.Version)
 	record += self.Type
 	record += self.Param.AgentID
@@ -57,8 +53,7 @@ func (self *ActionParamTx) Hash() (*common.Hash) {
 	record += fmt.Sprint(self.Param.Tax)
 	record += fmt.Sprint(self.Param.EligibleAgentIDs)
 	hash := common.DoubleHashH([]byte(record))
-	self.txHash = &hash
-	return self.txHash
+	return &hash
 }
 
 func (self *ActionParamTx) ValidateTransaction() bool {

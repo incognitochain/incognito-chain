@@ -37,7 +37,7 @@ type Config struct {
 	// This field can be nil if the caller does not desire the behavior.
 	Interrupt <-chan struct{}
 
-	// ChainParams identifies which chain parameters the chain is associated
+	// chainParams identifies which chain parameters the chain is associated
 	// with.
 	//
 	// This field is required.
@@ -101,8 +101,7 @@ func (self *BlockChain) CreateChainState() error {
 	self.BestBlock = genesisBlock
 
 	// Spam random blocks
-
-	for index := 0; index < 10; index++ {
+	for index := 0; index < 0; index++ {
 		hashBestBlock := *self.BestBlock.Hash()
 		//log.Printf(hashBestBlock.String())
 		newSpamBlock := Block{

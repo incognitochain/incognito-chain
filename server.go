@@ -45,7 +45,7 @@ type Server struct {
 	quit      chan struct{}
 	newPeers  chan *peer.Peer
 
-	ChainParams *blockchain.Params
+	chainParams *blockchain.Params
 	ConnManager *connmanager.ConnManager
 	Chain       *blockchain.BlockChain
 	Db          database.DB
@@ -109,7 +109,7 @@ func setupRPCListeners() ([]net.Listener, error) {
 func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *blockchain.Params, interrupt <-chan struct{}) (*Server, error) {
 
 	// Init data for Server
-	self.ChainParams = chainParams
+	self.chainParams = chainParams
 	self.quit = make(chan struct{})
 	self.donePeers = make(chan *peer.Peer)
 	self.newPeers = make(chan *peer.Peer)
@@ -124,7 +124,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 
 	// Create a new block chain instance with the appropriate configuration.9
 	self.Chain, err = blockchain.BlockChain{}.New(&blockchain.Config{
-		ChainParams: self.ChainParams,
+		ChainParams: self.chainParams,
 		Db:          self.Db,
 		Interrupt:   interrupt,
 	})
@@ -135,7 +135,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.Chain)
 
 	self.Miner = miner.New(&miner.Config{
-		ChainParams:            self.ChainParams,
+		ChainParams:            self.chainParams,
 		BlockTemplateGenerator: blockTemplateGenerator,
 		MiningAddrs:            cfg.MiningAddrs,
 		Chain:                  self.Chain,
@@ -223,7 +223,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 }
 
 func (self *Server) InboundPeerConnected(peer *peer.Peer) {
-	log.Println("inbound connected")
+	Logger.log.Info("inbound connected")
 }
 
 // outboundPeerConnected is invoked by the connection manager when a new
@@ -233,7 +233,7 @@ func (self *Server) InboundPeerConnected(peer *peer.Peer) {
 // manager of the attempt.
 func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	peer *peer.Peer) {
-	log.Println("outbound connected")
+	Logger.log.Info("Outbound PEER connected with PEER ID - " + peer.PeerId.String())
 	// TODO:
 	// call address manager to process new outbound peer
 	// push message version
@@ -249,7 +249,7 @@ func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	if err != nil {
 		return
 	}
-	self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
+	//self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
 }
 
 // peerDoneHandler handles peer disconnects by notifiying the server that it's
@@ -292,7 +292,7 @@ func (self Server) peerHandler() {
 	self.AddrManager.Start()
 	self.NetSync.Start()
 
-	log.Println("Start peer handler")
+	Logger.log.Info("Start peer handler")
 
 	if !cfg.DisableDNSSeed {
 		// TODO load peer from seed DNS
@@ -338,7 +338,7 @@ func (self Server) Start() {
 		return
 	}
 
-	log.Println("Starting server")
+	Logger.log.Info("Starting server")
 	// Server startup time. Used for the uptime command for uptime calculation.
 	self.startupTime = time.Now().Unix()
 
@@ -363,12 +363,12 @@ func (self Server) Start() {
 	}
 
 	// test, print length of chain
-	go func(server Server) {
+	/*go func(server Server) {
 		for {
 			time.Sleep(time.Second * 3)
 			log.Printf("\n --- Chain length: %d ---- \n", len(server.Chain.Blocks))
 		}
-	}(self)
+	}(self)*/
 }
 
 // parseListeners determines whether each listen address is IPv4 and IPv6 and
@@ -461,14 +461,14 @@ func (self *Server) NewPeerConfig() *peer.Config {
 // blocks until the coin block has been fully processed.
 func (self *Server) OnBlock(p *peer.Peer,
 	msg *wire.MessageBlock) {
-	log.Println("Receive a new block")
+	Logger.log.Info("Receive a new block")
 	var txProcessed chan struct{}
 	self.NetSync.QueueBlock(nil, msg, txProcessed)
 	//<-txProcessed
 }
 
 func (self *Server) OnGetBlocks(_ *peer.Peer, msg *wire.MessageGetBlocks) {
-	log.Println("Receive a get-block message")
+	Logger.log.Info("Receive a get-block message")
 	var txProcessed chan struct{}
 	self.NetSync.QueueGetBlock(nil, msg, txProcessed)
 	//<-txProcessed
@@ -480,7 +480,7 @@ func (self *Server) OnGetBlocks(_ *peer.Peer, msg *wire.MessageGetBlocks) {
 // transactions don't rely on the previous one in a linear fashion like blocks.
 func (self Server) OnTx(peer *peer.Peer,
 	msg *wire.MessageTx) {
-	log.Println("Receive a new transaction")
+	Logger.log.Info("Receive a new transaction")
 	var txProcessed chan struct{}
 	self.NetSync.QueueTx(nil, msg, txProcessed)
 	//<-txProcessed
