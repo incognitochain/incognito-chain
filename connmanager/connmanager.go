@@ -368,13 +368,13 @@ func (self ConnManager) Connect(addr string) {
 	flag := false
 	for _, listen := range self.Config.ListenerPeers {
 		listen.Host.Peerstore().AddAddr(connReq.Peer.PeerId, connReq.Peer.TargetAddress, pstore.PermanentAddrTTL)
-		Logger.log.Infof("opening stream %s \n", connReq.Peer.PeerId.String())
+		Logger.log.Infof("Opening stream to PEER ID - %s \n", connReq.Peer.PeerId.String())
 		// make a new stream from host B to host A
 		// it should be handled on host A by the handler we set above because
 		// we use the same /peer/1.0.0 protocol
 		stream, err := listen.Host.NewStream(context.Background(), connReq.Peer.PeerId, "/blockchain/1.0.0")
 		if err != nil {
-			log.Println(err)
+			Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", connReq.Peer.PeerId.String(), err.Error())
 			continue
 		}
 		// Create a buffered stream so that read and writes are non blocking.

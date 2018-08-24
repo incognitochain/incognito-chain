@@ -45,7 +45,7 @@ type Server struct {
 	quit      chan struct{}
 	newPeers  chan *peer.Peer
 
-	ChainParams *blockchain.Params
+	chainParams *blockchain.Params
 	ConnManager *connmanager.ConnManager
 	Chain       *blockchain.BlockChain
 	Db          database.DB
@@ -109,7 +109,7 @@ func setupRPCListeners() ([]net.Listener, error) {
 func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *blockchain.Params, interrupt <-chan struct{}) (*Server, error) {
 
 	// Init data for Server
-	self.ChainParams = chainParams
+	self.chainParams = chainParams
 	self.quit = make(chan struct{})
 	self.donePeers = make(chan *peer.Peer)
 	self.newPeers = make(chan *peer.Peer)
@@ -124,7 +124,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 
 	// Create a new block chain instance with the appropriate configuration.9
 	self.Chain, err = blockchain.BlockChain{}.New(&blockchain.Config{
-		ChainParams: self.ChainParams,
+		ChainParams: self.chainParams,
 		Db:          self.Db,
 		Interrupt:   interrupt,
 	})
@@ -135,7 +135,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.Chain)
 
 	self.Miner = miner.New(&miner.Config{
-		ChainParams:            self.ChainParams,
+		ChainParams:            self.chainParams,
 		BlockTemplateGenerator: blockTemplateGenerator,
 		MiningAddrs:            cfg.MiningAddrs,
 		Chain:                  self.Chain,
