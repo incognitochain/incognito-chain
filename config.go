@@ -17,6 +17,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/jessevdk/go-flags"
 	"github.com/davecgh/go-spew/spew"
+	"sort"
 )
 
 const (
@@ -25,6 +26,7 @@ const (
 	defaultDataPrefix           = "block"
 	defaultLogLevel             = "info"
 	defaultLogDirname           = "logs"
+	defaultLogFilename          = "log.log"
 	defaultMaxPeers             = 125
 	defaultBanDuration          = time.Hour * 24
 	defaultBanThreshold         = 100
@@ -106,6 +108,7 @@ type config struct {
 	AddCheckpoints       []string      `long:"addcheckpoint" description:"Add a custom checkpoint.  Format: '<height>:<hash>'"`
 	DisableCheckpoints   bool          `long:"nocheckpoints" description:"Disable built-in checkpoints.  Don't do this unless you know what you're doing."`
 	DbType               string        `long:"dbtype" description:"Database backend to use for the Block Chain"`
+	DebugLevel           string        `short:"d" long:"debuglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
 	CPUProfile           string        `long:"cpuprofile" description:"Write CPU profile to the specified file"`
 	Upnp                 bool          `long:"upnp" description:"Use UPnP to map our listening port outside of NAT"`
 	MinRelayTxFee        float64       `long:"minrelaytxfee" description:"The minimum transaction fee in BTC/kB to be considered a non-zero fee."`
@@ -306,6 +309,7 @@ func removeDuplicateAddresses(addrs []string) []string {
 func loadConfig() (*config, []string, error) {
 	cfg := config{
 		ConfigFile:           defaultConfigFile,
+		DebugLevel:           defaultLogLevel,
 		MaxPeers:             defaultMaxPeers,
 		BanDuration:          defaultBanDuration,
 		BanThreshold:         defaultBanThreshold,
@@ -462,6 +466,24 @@ func loadConfig() (*config, []string, error) {
 	// per network in the same fashion as the data directory.
 	cfg.LogDir = cleanAndExpandPath(cfg.LogDir)
 	cfg.LogDir = filepath.Join(cfg.LogDir, netName(activeNetParams))
+
+	// Special show command to list supported subsystems and exit.
+	if cfg.DebugLevel == "show" {
+		fmt.Println("Supported subsystems", supportedSubsystems())
+		os.Exit(0)
+	}
+
+	// Initialize log rotation.  After log rotation has been initialized, the
+	// logger variables may be used.
+	initLogRotator(filepath.Join(cfg.LogDir, defaultLogFilename))
+
+	// Parse, validate, and set debug log level(s).
+	if err := parseAndSetDebugLevels(cfg.DebugLevel); err != nil {
+		err := fmt.Errorf("%s: %v", funcName, err.Error())
+		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, usageMessage)
+		return nil, nil, err
+	}
 
 	// Validate database type.
 	// Database
@@ -711,4 +733,88 @@ func loadConfig() (*config, []string, error) {
 	}
 
 	return &cfg, remainingArgs, nil
+}
+
+// supportedSubsystems returns a sorted slice of the supported subsystems for
+// logging purposes.
+func supportedSubsystems() []string {
+	// Convert the subsystemLoggers map keys to a slice.
+	subsystems := make([]string, 0, len(subsystemLoggers))
+	for subsysID := range subsystemLoggers {
+		subsystems = append(subsystems, subsysID)
+	}
+
+	// Sort the subsystems for stable display.
+	sort.Strings(subsystems)
+	return subsystems
+}
+
+// validLogLevel returns whether or not logLevel is a valid debug log level.
+func validLogLevel(logLevel string) bool {
+	switch logLevel {
+	case "trace":
+		fallthrough
+	case "debug":
+		fallthrough
+	case "info":
+		fallthrough
+	case "warn":
+		fallthrough
+	case "error":
+		fallthrough
+	case "critical":
+		return true
+	}
+	return false
+}
+
+// parseAndSetDebugLevels attempts to parse the specified debug level and set
+// the levels accordingly.  An appropriate error is returned if anything is
+// invalid.
+func parseAndSetDebugLevels(debugLevel string) error {
+	// When the specified string doesn't have any delimters, treat it as
+	// the log level for all subsystems.
+	if !strings.Contains(debugLevel, ",") && !strings.Contains(debugLevel, "=") {
+		// Validate debug log level.
+		if !validLogLevel(debugLevel) {
+			str := "The specified debug level [%v] is invalid"
+			return fmt.Errorf(str, debugLevel)
+		}
+
+		// Change the logging level for all subsystems.
+		setLogLevels(debugLevel)
+
+		return nil
+	}
+
+	// Split the specified string into subsystem/level pairs while detecting
+	// issues and update the log levels accordingly.
+	for _, logLevelPair := range strings.Split(debugLevel, ",") {
+		if !strings.Contains(logLevelPair, "=") {
+			str := "The specified debug level contains an invalid " +
+				"subsystem/level pair [%v]"
+			return fmt.Errorf(str, logLevelPair)
+		}
+
+		// Extract the specified subsystem and log level.
+		fields := strings.Split(logLevelPair, "=")
+		subsysID, logLevel := fields[0], fields[1]
+
+		// Validate subsystem.
+		if _, exists := subsystemLoggers[subsysID]; !exists {
+			str := "The specified subsystem [%v] is invalid -- " +
+				"supported subsytems %v"
+			return fmt.Errorf(str, subsysID, supportedSubsystems())
+		}
+
+		// Validate log level.
+		if !validLogLevel(logLevel) {
+			str := "The specified debug level [%v] is invalid"
+			return fmt.Errorf(str, logLevel)
+		}
+
+		setLogLevel(subsysID, logLevel)
+	}
+
+	return nil
 }

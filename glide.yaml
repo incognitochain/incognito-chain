@@ -9,5 +9,7 @@ import:
   - leveldb
 - package: github.com/pkg/errors
   version: ^0.8.0
-- package: github.com/fatih/color
-  version: ^1.7.0
+- package: github.com/jrick/logrotate
+  version: v1.0.0
+  subpackages:
+  - rotator

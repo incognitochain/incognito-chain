@@ -11,7 +11,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"github.com/fatih/color"
 )
 
 // Logger is an interface which describes a level-based logger.  A default
@@ -72,11 +71,6 @@ type Logger interface {
 	// SetLevel changes the logging level to the passed level.
 	SetLevel(level Level)
 }
-
-// init color
-var FgYellow = color.New(color.FgYellow).SprintFunc()
-var FgRed = color.New(color.FgRed).SprintFunc()
-var FgGreen = color.New(color.FgGreen).SprintFunc()
 
 // defaultFlags specifies changes to the default logger behavior.  It is set
 // during package init and configured using the LOGFLAGS environment variable.
@@ -410,7 +404,6 @@ func (l *slog) Debugf(format string, args ...interface{}) {
 func (l *slog) Info(args ...interface{}) {
 	lvl := l.Level()
 	if lvl <= LevelInfo {
-		args = append(args, FgGreen())
 		l.b.print("INF", l.tag, args...)
 	}
 }
@@ -422,7 +415,6 @@ func (l *slog) Info(args ...interface{}) {
 func (l *slog) Infof(format string, args ...interface{}) {
 	lvl := l.Level()
 	if lvl <= LevelInfo {
-		args = append(args, FgGreen())
 		l.b.printf("INF", l.tag, format, args...)
 	}
 }
@@ -434,7 +426,6 @@ func (l *slog) Infof(format string, args ...interface{}) {
 func (l *slog) Warn(args ...interface{}) {
 	lvl := l.Level()
 	if lvl <= LevelWarn {
-		args = append(args, FgYellow())
 		l.b.print("WRN", l.tag, args...)
 	}
 }
@@ -446,7 +437,6 @@ func (l *slog) Warn(args ...interface{}) {
 func (l *slog) Warnf(format string, args ...interface{}) {
 	lvl := l.Level()
 	if lvl <= LevelWarn {
-		args = append(args, FgYellow())
 		l.b.printf("WRN", l.tag, format, args...)
 	}
 }
@@ -458,7 +448,6 @@ func (l *slog) Warnf(format string, args ...interface{}) {
 func (l *slog) Error(args ...interface{}) {
 	lvl := l.Level()
 	if lvl <= LevelError {
-		args = append(args, FgRed())
 		l.b.print("ERR", l.tag, args...)
 	}
 }
@@ -470,7 +459,6 @@ func (l *slog) Error(args ...interface{}) {
 func (l *slog) Errorf(format string, args ...interface{}) {
 	lvl := l.Level()
 	if lvl <= LevelError {
-		args = append(args, FgRed())
 		l.b.printf("ERR", l.tag, format, args...)
 	}
 }

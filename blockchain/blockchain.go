@@ -10,7 +10,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"fmt"
-	//"log"
 	"log"
 )
 
@@ -38,7 +37,7 @@ type Config struct {
 	// This field can be nil if the caller does not desire the behavior.
 	Interrupt <-chan struct{}
 
-	// ChainParams identifies which chain parameters the chain is associated
+	// chainParams identifies which chain parameters the chain is associated
 	// with.
 	//
 	// This field is required.

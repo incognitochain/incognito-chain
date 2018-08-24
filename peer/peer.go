@@ -140,7 +140,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	// by encapsulating both addresses:
 	addr := basicHost.Addrs()[0]
 	fullAddr := addr.Encapsulate(hostAddr)
-	log.Printf("I am listening on %s\n", fullAddr)
+	Logger.log.Infof("I am listening on %s with PEER ID - %s\n", fullAddr, basicHost.ID().String())
 	pid, err := fullAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		log.Print(err)
@@ -162,8 +162,8 @@ func (self Peer) NewPeer() (*Peer, error) {
 }
 
 func (self Peer) Start() error {
-	log.Println("Peer start")
-	log.Println("Set stream handler and wait for connection from other peer")
+	Logger.log.Info("Peer start")
+	Logger.log.Info("Set stream handler and wait for connection from other peer")
 	self.Host.SetStreamHandler("/blockchain/1.0.0", self.HandleStream)
 	select {} // hang forever
 	return nil
@@ -181,7 +181,8 @@ func (self Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
 	//defer stream.Close()
 
-	log.Printf("%s Received a new stream!", self.Host.ID().String())
+	remotePeerId := stream.Conn().RemotePeer()
+	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID-%s", self.Host.ID().String(), remotePeerId.String())
 
 	// TODO this code make EOF for libp2p
 	//if !atomic.CompareAndSwapInt32(&self.connected, 0, 1) {
@@ -190,6 +191,7 @@ func (self Peer) HandleStream(stream net.Stream) {
 
 	// Create a buffer stream for non blocking read and write.
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+	self.InboundReaderWriterStreams[remotePeerId] = rw
 
 	go self.InMessageHandler(rw)
 	go self.OutMessageHandler(rw)
@@ -200,33 +202,34 @@ Handle all in message
 */
 func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 	for {
-		log.Printf("read stream")
+		Logger.log.Infof("Reading stream")
 		str, err := rw.ReadString('\n')
 		if err != nil {
-			log.Println(err)
+			Logger.log.Error(err)
 			return
 		}
 
 		//if str == "" {
 		//	return
 		//}
-		log.Printf("Message: %s \n", str)
+		Logger.log.Infof("Received message: %s \n", str)
 		if str != "\n" {
 
 			// Parse Message header
 			jsonDecodeString, _ := hex.DecodeString(str)
 			messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 
-			commandInHeader := bytes.Trim(messageHeader, "\x00")
-			log.Println(string(commandInHeader))
+			commandInHeader := messageHeader[:12]
+			commandInHeader = bytes.Trim(messageHeader, "\x00")
+			Logger.log.Info("Message Type - " + string(commandInHeader))
 			commandType := string(messageHeader[:len(commandInHeader)])
 			var message, err = wire.MakeEmptyMessage(string(commandType))
 
 			// Parse Message body
 			messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
-			log.Println(string(messageBody))
+			Logger.log.Info("Message Body - " + string(messageBody))
 			if err != nil {
-				log.Println(err)
+				Logger.log.Error(err)
 				continue
 			}
 			if commandType != wire.CmdBlock {
@@ -236,7 +239,7 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 			}
 			//temp := message.(map[string]interface{})
 			if err != nil {
-				log.Println(err)
+				Logger.log.Error(err)
 				continue
 			}
 			realType := reflect.TypeOf(message)
@@ -265,7 +268,6 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 				if self.Config.MessageListeners.OnVersion != nil {
 					self.FlagMutex.Lock()
 					versionMessage := message.(*wire.MessageVersion)
-					self.InboundReaderWriterStreams[versionMessage.LocalPeerId] = rw
 					self.Config.MessageListeners.OnVersion(&self, versionMessage)
 					self.FlagMutex.Unlock()
 				}
@@ -279,7 +281,7 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 					self.FlagMutex.Unlock()
 				}
 			default:
-				log.Printf("Received unhandled message of type %v "+
+				Logger.log.Warnf("Received unhandled message of type %v "+
 					"from %v", realType, self)
 			}
 		}
@@ -293,18 +295,6 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 // to outHandler to be actually written.
 */
 func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
-	/* for test message
-	go func() {
-		for {
-			time.Sleep(1 * time.Second)
-			a := fmt.Sprintf("%s hello \n", self.Host.ID().String())
-			log.Printf("%s Write string %s", self.Host.ID().String(), a)
-			self.FlagMutex.Lock()
-			rw.Writer.WriteString(a)
-			rw.Writer.Flush()
-			self.FlagMutex.Unlock()
-		}
-	}()*/
 	for {
 		select {
 		case outMsg := <-self.sendMessageQueue:
@@ -323,7 +313,7 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 				messageByte = append(messageByte, header...)
 				message := hex.EncodeToString(messageByte)
 				message += "\n"
-				log.Printf("\nSend a message %s: %s", outMsg.msg.MessageType(), message)
+				Logger.log.Infof("Send a message %s: %s", outMsg.msg.MessageType(), message)
 				rw.Writer.WriteString(message)
 				rw.Writer.Flush()
 				self.FlagMutex.Unlock()
@@ -331,7 +321,7 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 		case <-self.quit:
 			break
 			//default:
-			//	log.Println("Wait for sending message")
+			//	Logger.log.Info("Wait for sending message")
 		}
 	}
 }
@@ -352,7 +342,7 @@ func (self Peer) Disconnect() {
 		return
 	}
 
-	log.Printf("Disconnecting %s", self)
+	Logger.log.Infof("Disconnecting %s", self)
 	if atomic.LoadInt32(&self.connected) != 0 {
 		self.Host.Close()
 	}
@@ -414,7 +404,7 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 	msgVersion = append(msgVersion, header...)
 	msgVersionStr := hex.EncodeToString(msgVersion)
 	msgVersionStr += "\n"
-	log.Printf("Send a msgVersion: %s", msgVersion)
+	Logger.log.Infof("Send a msgVersion: %s", msgVersionStr)
 	rw := self.OutboundReaderWriterStreams[peer.PeerId]
 	self.FlagMutex.Lock()
 	rw.Writer.WriteString(msgVersionStr)

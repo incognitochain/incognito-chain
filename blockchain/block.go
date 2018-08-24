@@ -6,7 +6,10 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/transaction"
-	"github.com/pkg/errors"
+	"github.com/ninjadotorg/cash-prototype/common"
+	"strconv"
+	"encoding/json"
+	"errors"
 )
 
 const (
@@ -14,11 +17,22 @@ const (
 	defaultTransactionAlloc = 2048
 )
 
+type AgentDataPoint struct {
+	AgentID string
+	AgentSig string
+	NumOfCoins float64
+	NumOfBonds float64
+	Tax float64
+	EligibleAgentIDs []string
+	LockTime int64
+}
+
 type Block struct {
 	Header        BlockHeader
 	Transactions  []transaction.Transaction
 	CommitteeSigs map[string]string
 	ValidatorSig  string
+	AgentDataPoints map[string]*AgentDataPoint
 	blockHash     *common.Hash
 }
 
@@ -86,8 +100,10 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 			param := transaction.Param{
 				Tax:               txTemp["Tax"].(float64),
 				AgentID:           txTemp["AgentID"].(string),
-				NumOfIssuingBonds: int(txTemp["NumOfIssuingBonds"].(float64)),
-				NumOfIssuingCoins: int(txTemp["NumOfIssuingCoins"].(float64)),
+				AgentSig:           txTemp["AgentSig"].(string),
+				NumOfBonds: txTemp["NumOfBonds"].(float64),
+				NumOfCoins: txTemp["NumOfCoins"].(float64),
+				EligibleAgentIDs: txTemp["EligibleAgentIDs"].([]string),
 			}
 			txAction := transaction.ActionParamTx{
 				LockTime: int64(txTemp["LockTime"].(float64)),
