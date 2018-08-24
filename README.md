@@ -18,12 +18,28 @@ Pre: install glide https://github.com/Masterminds/glide
     ```
 
 ## run with docker-compose
-* run docker build
+* To start dev container
     ```
-    $docker-compose build
-    ```
-* then run docker up
-    ```
-    $docker-compose up
+    $docker-compose -p cashdev -f dev-env/docker-compose.yaml up -d
     ``` 
-    
+* To stop dev container
+    ```
+    $docker-compose -f dev-env/docker-compose.yaml down
+    ``` 
+* To start developing
+    ```
+    $docker exec -it cash-prototype-dev sh
+    ``` 
+    ```
+    $glide install
+    ```
+    ```
+    $go build
+    ```
+    ```
+    $./cash-prototype
+    ```
+* To start other nodes (these nodes will start will config file in dev-env/nodes-data/node-<NODE_NUMBER>)
+    ```
+    $docker run -i -t --net cashdev_cash-net --mount type=bind,src=$PWD/cash-prototype,dst=/cash-prototype --mount type=bind,src=$PWD/dev-env/nodes-data/node<REPLACE THIS WILL NODE_NUMBER>,dst=/nodedata --expose 9333 alpine:3.7 /cash-prototype --configfile /nodedata/config.conf
+    ```
