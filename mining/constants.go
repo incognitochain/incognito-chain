@@ -7,14 +7,11 @@ import (
 )
 
 const (
-	ACTION_PARAMS_TRANSACTION_TYPE   = "ACTION_PARAMS"
-	TXOUT_COIN_TYPE                  = "TXOUT_COIN"
-	TXOUT_BOND_TYPE                  = "TXOUT_BOND"
 	DEFAULT_ADDRESS_FOR_BURNING      = "0x0000000000"
-	NUMBER_OF_LAST_BLOCKS            = 10
 	NUMBER_OF_MAKING_DECISION_AGENTS = 3
+	MAX_OF_MAKING_DECISION_AGENTS    = 21
 	DEFAULT_COINS                    = 5
-	DEFAULT_BONDS                    = 5
+	DEFAULT_BONDS                    = 0
 )
 
 type TxDesc struct {

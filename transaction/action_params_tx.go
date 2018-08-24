@@ -8,10 +8,12 @@ import (
 )
 
 type Param struct {
-	AgentID           string
-	NumOfIssuingCoins int
-	NumOfIssuingBonds int
-	Tax               float64
+	AgentID string
+	AgentSig string
+	NumOfCoins float64
+	NumOfBonds float64
+	Tax float64
+	EligibleAgentIDs []string
 }
 
 //func (self *Param) MarshalJSON() ([]byte, error) {
@@ -49,9 +51,11 @@ func (self *ActionParamTx) Hash() (*common.Hash) {
 	record := strconv.Itoa(self.Version) + strconv.Itoa(self.Version)
 	record += self.Type
 	record += self.Param.AgentID
-	record += fmt.Sprint(self.Param.NumOfIssuingCoins)
-	record += fmt.Sprint(self.Param.NumOfIssuingBonds)
+	record += self.Param.AgentSig
+	record += fmt.Sprint(self.Param.NumOfCoins)
+	record += fmt.Sprint(self.Param.NumOfBonds)
 	record += fmt.Sprint(self.Param.Tax)
+	record += fmt.Sprint(self.Param.EligibleAgentIDs)
 	hash := common.DoubleHashH([]byte(record))
 	self.txHash = &hash
 	return self.txHash

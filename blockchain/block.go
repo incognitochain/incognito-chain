@@ -11,10 +11,21 @@ const (
 	defaultTransactionAlloc = 2048
 )
 
+type AgentDataPoint struct {
+	AgentID string
+	AgentSig string
+	NumOfCoins float64
+	NumOfBonds float64
+	Tax float64
+	EligibleAgentIDs []string
+	LockTime int64
+}
+
 type Block struct {
 	Header       BlockHeader
 	Transactions []transaction.Transaction
 	blockHash    *common.Hash
+	AgentDataPoints map[string]*AgentDataPoint
 }
 
 func (self *Block) AddTransaction(tx transaction.Transaction) error {

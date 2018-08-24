@@ -254,10 +254,12 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 
 	param := arrayParams[0].(map[string]interface{})
 	tx.Param = &transaction.Param{
-		AgentID:           param["agentId"].(string),
-		NumOfIssuingCoins: int(param["numOfIssuingCoins"].(float64)),
-		NumOfIssuingBonds: int(param["numOfIssuingBonds"].(float64)),
-		Tax:               param["tax"].(float64),
+		AgentID:          param["agentId"].(string),
+		AgentSig:         param["agentSig"].(string),
+		NumOfCoins: 	  param["numOfCoins"].(float64),
+		NumOfBonds: 	  param["numOfBonds"].(float64),
+		Tax:              param["tax"].(float64),
+		EligibleAgentIDs: param["eligibleAgentIDs"].([]string),
 	}
 
 	_, _, err := self.Config.TxMemPool.CanAcceptTransaction(&tx)

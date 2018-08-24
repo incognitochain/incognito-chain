@@ -10,7 +10,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"fmt"
-	//"log"
 	"log"
 )
 
