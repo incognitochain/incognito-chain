@@ -11,6 +11,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/rpcserver"
 	"github.com/ninjadotorg/cash-prototype/netsync"
 	"github.com/ninjadotorg/cash-prototype/peer"
+	"github.com/ninjadotorg/cash-prototype/database"
 )
 
 var (
@@ -25,6 +26,7 @@ var (
 	rpcLogger         = backendLog.Logger("RPC Log")
 	netsyncLogger     = backendLog.Logger("Netsync Log")
 	peerLogger        = backendLog.Logger("Peer Log")
+	dbLogger          = backendLog.Logger("Database Log")
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -47,6 +49,7 @@ func init() {
 	rpcserver.Logger.Init(rpcLogger)
 	netsync.Logger.Init(netsyncLogger)
 	peer.Logger.Init(peerLogger)
+	database.Logger.Init(dbLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
