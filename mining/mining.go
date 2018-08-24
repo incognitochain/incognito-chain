@@ -4,11 +4,11 @@ import (
 	"math"
 	"fmt"
 	"time"
+	"errors"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/transaction"
-	"github.com/pkg/errors"
 )
 
 type txPrioItem struct {

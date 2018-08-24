@@ -6,11 +6,11 @@ import (
 	"log"
 	"fmt"
 	"sync"
+	"errors"
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/mining"
-	"github.com/pkg/errors"
 )
 
 //Peer Ids, so that orphans can be identified by which peer first repayed them.
