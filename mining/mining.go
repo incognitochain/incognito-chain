@@ -204,8 +204,12 @@ func getLatestAgentDataPoints(
 ) (
 	map[string]*blockchain.AgentDataPoint,
 ) {
+	agentDataPoints := map[string]*blockchain.AgentDataPoint{}
 	bestBlock := chain.BestBlock
-	agentDataPoints := bestBlock.AgentDataPoints
+	if bestBlock == nil {
+		return agentDataPoints
+	}
+	agentDataPoints = bestBlock.AgentDataPoints
 	for _, actionParamTx := range actionParamTxs {
 		inputAgentID := actionParamTx.Param.AgentID
 		_, ok := agentDataPoints[inputAgentID]
