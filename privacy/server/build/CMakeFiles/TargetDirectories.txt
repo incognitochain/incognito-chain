@@ -1,0 +1,3 @@
+/Users/autonomous/Go/src/github.com/ninjadotorg/cash-prototype/privacy/server/build/CMakeFiles/rebuild_cache.dir
+/Users/autonomous/Go/src/github.com/ninjadotorg/cash-prototype/privacy/server/build/CMakeFiles/edit_cache.dir
+/Users/autonomous/Go/src/github.com/ninjadotorg/cash-prototype/privacy/server/build/CMakeFiles/main.dir
