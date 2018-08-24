@@ -4,11 +4,13 @@ import (
 	"os"
 	"github.com/jrick/logrotate/rotator"
 	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/fatih/color"
 	"github.com/ninjadotorg/cash-prototype/connmanager"
 	"github.com/ninjadotorg/cash-prototype/addrmanager"
 	"path/filepath"
 	"fmt"
+	"github.com/ninjadotorg/cash-prototype/rpcserver"
+	"github.com/ninjadotorg/cash-prototype/netsync"
+	"github.com/ninjadotorg/cash-prototype/peer"
 )
 
 var (
@@ -17,8 +19,12 @@ var (
 	logRotator *rotator.Rotator
 
 	backendLog        = common.NewBackend(logWriter{})
-	addrManagerLoger  = backendLog.Logger(color.MagentaString("Address Log"))
-	connManagerLogger = backendLog.Logger(color.BlueString("Connection Manager Log"))
+	addrManagerLoger  = backendLog.Logger("Address Log")
+	connManagerLogger = backendLog.Logger("Connection Manager Log")
+	mainLogger        = backendLog.Logger("Server Log")
+	rpcLogger         = backendLog.Logger("RPC Log")
+	netsyncLogger     = backendLog.Logger("Netsync Log")
+	peerLogger        = backendLog.Logger("Peer Log")
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -32,14 +38,26 @@ func (logWriter) Write(p []byte) (n int, err error) {
 }
 
 func init() {
+	// for main thread
+	Logger.Init(mainLogger)
+
+	// for other components
 	connmanager.Logger.Init(connManagerLogger)
 	addrmanager.Logger.Init(addrManagerLoger)
+	rpcserver.Logger.Init(rpcLogger)
+	netsync.Logger.Init(netsyncLogger)
+	peer.Logger.Init(peerLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
 var subsystemLoggers = map[string]common.Logger{
+	"MAIN": mainLogger,
+
 	"AMGR": addrManagerLoger,
 	"CMGR": connManagerLogger,
+	"RPCS": rpcLogger,
+	"NSYN": netsyncLogger,
+	"PEER": peerLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
@@ -104,3 +122,14 @@ func pickNoun(n uint64, singular, plural string) string {
 	}
 	return plural
 }
+
+type MainLogger struct {
+	log common.Logger
+}
+
+func (self *MainLogger) Init(inst common.Logger) {
+	self.log = inst
+}
+
+// Global instant to use
+var Logger = MainLogger{}

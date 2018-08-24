@@ -5,11 +5,11 @@ import (
 )
 
 type ConnManagerLogger struct {
-	logger common.Logger
+	log common.Logger
 }
 
 func (self *ConnManagerLogger) Init(inst common.Logger) {
-	self.logger = inst
+	self.log = inst
 }
 
 // Global instant to use

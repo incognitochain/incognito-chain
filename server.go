@@ -223,7 +223,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 }
 
 func (self *Server) InboundPeerConnected(peer *peer.Peer) {
-	log.Println("inbound connected")
+	Logger.log.Info("inbound connected")
 }
 
 // outboundPeerConnected is invoked by the connection manager when a new
@@ -233,7 +233,7 @@ func (self *Server) InboundPeerConnected(peer *peer.Peer) {
 // manager of the attempt.
 func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	peer *peer.Peer) {
-	log.Println("outbound connected")
+	Logger.log.Info("outbound connected")
 	// TODO:
 	// call address manager to process new outbound peer
 	// push message version
@@ -292,7 +292,7 @@ func (self Server) peerHandler() {
 	self.AddrManager.Start()
 	self.NetSync.Start()
 
-	log.Println("Start peer handler")
+	Logger.log.Info("Start peer handler")
 
 	if !cfg.DisableDNSSeed {
 		// TODO load peer from seed DNS
@@ -338,7 +338,7 @@ func (self Server) Start() {
 		return
 	}
 
-	log.Println("Starting server")
+	Logger.log.Info("Starting server")
 	// Server startup time. Used for the uptime command for uptime calculation.
 	self.startupTime = time.Now().Unix()
 
@@ -461,14 +461,14 @@ func (self *Server) NewPeerConfig() *peer.Config {
 // blocks until the coin block has been fully processed.
 func (self *Server) OnBlock(p *peer.Peer,
 	msg *wire.MessageBlock) {
-	log.Println("Receive a new block")
+	Logger.log.Info("Receive a new block")
 	var txProcessed chan struct{}
 	self.NetSync.QueueBlock(nil, msg, txProcessed)
 	//<-txProcessed
 }
 
 func (self *Server) OnGetBlocks(_ *peer.Peer, msg *wire.MessageGetBlocks) {
-	log.Println("Receive a get-block message")
+	Logger.log.Info("Receive a get-block message")
 	var txProcessed chan struct{}
 	self.NetSync.QueueGetBlock(nil, msg, txProcessed)
 	//<-txProcessed
@@ -480,7 +480,7 @@ func (self *Server) OnGetBlocks(_ *peer.Peer, msg *wire.MessageGetBlocks) {
 // transactions don't rely on the previous one in a linear fashion like blocks.
 func (self Server) OnTx(peer *peer.Peer,
 	msg *wire.MessageTx) {
-	log.Println("Receive a new transaction")
+	Logger.log.Info("Receive a new transaction")
 	var txProcessed chan struct{}
 	self.NetSync.QueueTx(nil, msg, txProcessed)
 	//<-txProcessed

@@ -223,7 +223,7 @@ out:
 					if !ok {
 						connReq, ok = self.Pending[msg.id]
 						if !ok {
-							log.Printf("Unknown connid=%d",
+							Logger.log.Infof("Unknown connid=%d",
 								msg.id)
 							continue
 						}
@@ -233,14 +233,14 @@ out:
 						// ignore a later, successful
 						// connection.
 						connReq.UpdateState(ConnCanceled)
-						log.Printf("Canceling: %v", connReq)
+						Logger.log.Infof("Canceling: %v", connReq)
 						delete(self.Pending, msg.id)
 						continue
 					}
 					// An existing connection was located, mark as
 					// disconnected and execute disconnection
 					// callback.
-					log.Printf("Disconnected from %v", connReq)
+					Logger.log.Infof("Disconnected from %v", connReq)
 					delete(self.Connected, msg.id)
 
 					//if connReq.Peer != nil {
@@ -269,7 +269,7 @@ out:
 						connReq.Permanent {
 
 						connReq.UpdateState(ConnPending)
-						log.Printf("Reconnecting to %v",
+						Logger.log.Infof("Reconnecting to %v",
 							connReq)
 						self.Pending[msg.id] = connReq
 						self.HandleFailedConn(connReq)
@@ -280,13 +280,13 @@ out:
 					connReq := msg.c
 
 					if _, ok := self.Pending[connReq.Id]; !ok {
-						log.Printf("Ignoring connection for "+
+						Logger.log.Infof("Ignoring connection for "+
 							"canceled conn req: %v", connReq)
 						continue
 					}
 
 					connReq.UpdateState(ConnFailing)
-					log.Printf("Failed to connect to %v: %v",
+					Logger.log.Infof("Failed to connect to %v: %v",
 						connReq, msg.err)
 					self.HandleFailedConn(connReq)
 				}
@@ -296,7 +296,7 @@ out:
 		}
 	}
 	self.WaitGroup.Done()
-	log.Printf("Connection handler done")
+	Logger.log.Infof("Connection handler done")
 }
 
 // Connect assigns an id and dials a connection to the address of the
@@ -338,7 +338,7 @@ func (self ConnManager) Connect(addr string) {
 			PeerId:                      peerId,
 			RawAddress:                  addr,
 			OutboundReaderWriterStreams: make(map[libpeer.ID]*bufio.ReadWriter),
-			InboundReaderWriterStreams: make(map[libpeer.ID]*bufio.ReadWriter),
+			InboundReaderWriterStreams:  make(map[libpeer.ID]*bufio.ReadWriter),
 		},
 	}
 	if atomic.LoadUint64(&connReq.Id) == 0 {
@@ -368,7 +368,7 @@ func (self ConnManager) Connect(addr string) {
 	flag := false
 	for _, listen := range self.Config.ListenerPeers {
 		listen.Host.Peerstore().AddAddr(connReq.Peer.PeerId, connReq.Peer.TargetAddress, pstore.PermanentAddrTTL)
-		log.Printf("opening stream %s \n", connReq.Peer.PeerId.String())
+		Logger.log.Infof("opening stream %s \n", connReq.Peer.PeerId.String())
 		// make a new stream from host B to host A
 		// it should be handled on host A by the handler we set above because
 		// we use the same /peer/1.0.0 protocol
@@ -416,7 +416,7 @@ func (self ConnManager) Start() {
 		return
 	}
 
-	log.Println("Connection manager started")
+	Logger.log.Info("Connection manager started")
 	self.WaitGroup.Add(1)
 	// Start handler to listent channel from connection peer
 	go self.connHandler()

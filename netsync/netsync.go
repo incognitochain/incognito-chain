@@ -2,7 +2,6 @@ package netsync
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -50,7 +49,7 @@ func (self *NetSync) Start() {
 	if atomic.AddInt32(&self.started, 1) != 1 {
 		return
 	}
-	log.Print("Starting sync manager")
+	Logger.log.Info("Starting sync manager")
 	self.waitgroup.Add(1)
 	go self.messageHandler()
 	time.AfterFunc(2*time.Second, func() {
@@ -62,12 +61,12 @@ func (self *NetSync) Start() {
 // handlers and waiting for them to finish.
 func (self *NetSync) Stop() error {
 	if atomic.AddInt32(&self.shutdown, 1) != 1 {
-		log.Print("Sync manager is already in the process of " +
+		Logger.log.Info("Sync manager is already in the process of " +
 			"shutting down")
 		return nil
 	}
 
-	log.Print("Sync manager shutting down")
+	Logger.log.Info("Sync manager shutting down")
 	close(self.quit)
 	self.waitgroup.Wait()
 	return nil
@@ -100,19 +99,19 @@ out:
 					}
 
 				default:
-					log.Printf("Invalid message type in block "+"handler: %T", msg)
+					Logger.log.Infof("Invalid message type in block "+"handler: %T", msg)
 				}
 			}
 		case msgChan := <-self.quit:
 			{
-				log.Println(msgChan)
+				Logger.log.Info(msgChan)
 				break out
 			}
 		}
 	}
 
 	self.waitgroup.Done()
-	log.Print("Block handler done")
+	Logger.log.Info("Block handler done")
 }
 
 // QueueTx adds the passed transaction message and peer to the block handling
@@ -129,7 +128,7 @@ func (self *NetSync) QueueTx(_ *peer.Peer, msg *wire.MessageTx, done chan struct
 
 // handleTxMsg handles transaction messages from all peers.
 func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
-	log.Println("Handling new message tx")
+	Logger.log.Info("Handling new message tx")
 	// TODO get message tx and process, Tuan Anh
 	hash, txDesc, error := self.Config.MemPool.CanAcceptTransaction(msg.Transaction)
 
@@ -163,13 +162,13 @@ func (self *NetSync) QueueGetBlock(peer *peer.Peer, msg *wire.MessageGetBlocks, 
 }
 
 func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
-	log.Println("Handling new message block")
+	Logger.log.Info("Handling new message block")
 	// TODO get message block and process
 
 	// Skip verify and insert directly to local blockchain
 	// There should be a method in blockchain.go to insert block to prevent data-race if we read from memory
 	a := self.Config.Chain.BestBlock.Hash().String()
-	log.Printf(a)
+	Logger.log.Infof(a)
 	//if msg.Block.Header.PrevBlockHash == a {
 	newBlock := msg.Block
 	self.Config.Server.UpdateChain(&newBlock)
@@ -177,7 +176,7 @@ func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 }
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
-	log.Println("Handling new message getblock")
+	Logger.log.Info("Handling new message getblock")
 	if senderBlockHeaderIndex, ok := self.Config.Chain.Headers[msg.LastBlockHash]; ok {
 		if self.Config.Chain.BestBlock.Hash() != &msg.LastBlockHash {
 			// Send Blocks to requestor
@@ -189,7 +188,7 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 		}
 	}
 
-	// log.Printf("Send a msgVersion: %s", msgNewJSON)
+	// Logger.log.Infof("Send a msgVersion: %s", msgNewJSON)
 	// rw := self.syncPeer.OutboundReaderWriterStreams[msg.SenderID]
 	// self.syncPeer.FlagMutex.Lock()
 	// rw.Writer.WriteString(msgNewJSON)
