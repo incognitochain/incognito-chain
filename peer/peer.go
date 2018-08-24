@@ -140,7 +140,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	// by encapsulating both addresses:
 	addr := basicHost.Addrs()[0]
 	fullAddr := addr.Encapsulate(hostAddr)
-	Logger.log.Infof("I am listening on %s\n", fullAddr)
+	Logger.log.Infof("I am listening on %s with PEER ID - %s\n", fullAddr, basicHost.ID().String())
 	pid, err := fullAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		log.Print(err)
@@ -179,9 +179,10 @@ func (p Peer) WaitForDisconnect() {
 
 func (self Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
-	//defer stream.Close()
+	defer stream.Close()
 
-	Logger.log.Infof("%s Received a new stream!", self.Host.ID().String())
+	remotePeerId := stream.Conn().RemotePeer()
+	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID-%s", self.Host.ID().String(), remotePeerId.String())
 
 	// TODO this code make EOF for libp2p
 	//if !atomic.CompareAndSwapInt32(&self.connected, 0, 1) {
@@ -190,6 +191,7 @@ func (self Peer) HandleStream(stream net.Stream) {
 
 	// Create a buffer stream for non blocking read and write.
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+	self.InboundReaderWriterStreams[remotePeerId] = rw
 
 	go self.InMessageHandler(rw)
 	go self.OutMessageHandler(rw)
@@ -266,7 +268,6 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 				if self.Config.MessageListeners.OnVersion != nil {
 					self.FlagMutex.Lock()
 					versionMessage := message.(*wire.MessageVersion)
-					self.InboundReaderWriterStreams[versionMessage.LocalPeerId] = rw
 					self.Config.MessageListeners.OnVersion(&self, versionMessage)
 					self.FlagMutex.Unlock()
 				}
