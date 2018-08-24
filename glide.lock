@@ -1,5 +1,5 @@
-hash: 4327f53fe90411038ce42ea44d2b73bea24f27b470715d71268dc2c23acc55ee
-updated: 2018-08-23T12:00:13.726703+07:00
+hash: f7e7453e831ace6b39ff565d895ace89779c11a1c2a6a3dff6ec7a0094b26f01
+updated: 2018-08-24T14:44:35.50244+07:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -18,6 +18,8 @@ imports:
   version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
+- name: github.com/fatih/color
+  version: 5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4
 - name: github.com/fd/go-nat
   version: bad65a492f32121a87197f4a085905c35e2a367e
 - name: github.com/gogo/protobuf

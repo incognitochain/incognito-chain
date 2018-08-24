@@ -102,8 +102,7 @@ func (self *BlockChain) CreateChainState() error {
 	self.BestBlock = genesisBlock
 
 	// Spam random blocks
-
-	for index := 0; index < 10; index++ {
+	for index := 0; index < 0; index++ {
 		hashBestBlock := *self.BestBlock.Hash()
 		//log.Printf(hashBestBlock.String())
 		newSpamBlock := Block{
