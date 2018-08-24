@@ -233,7 +233,7 @@ func (self *Server) InboundPeerConnected(peer *peer.Peer) {
 // manager of the attempt.
 func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	peer *peer.Peer) {
-	Logger.log.Info("outbound connected")
+	Logger.log.Info("Outbound PEER connected with PEER ID - " + peer.PeerId.String())
 	// TODO:
 	// call address manager to process new outbound peer
 	// push message version
@@ -249,7 +249,7 @@ func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	if err != nil {
 		return
 	}
-	self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
+	//self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
 }
 
 // peerDoneHandler handles peer disconnects by notifiying the server that it's
@@ -363,12 +363,12 @@ func (self Server) Start() {
 	}
 
 	// test, print length of chain
-	go func(server Server) {
+	/*go func(server Server) {
 		for {
 			time.Sleep(time.Second * 3)
 			log.Printf("\n --- Chain length: %d ---- \n", len(server.Chain.Blocks))
 		}
-	}(self)
+	}(self)*/
 }
 
 // parseListeners determines whether each listen address is IPv4 and IPv6 and

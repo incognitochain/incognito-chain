@@ -179,7 +179,7 @@ func (p Peer) WaitForDisconnect() {
 
 func (self Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
-	defer stream.Close()
+	//defer stream.Close()
 
 	remotePeerId := stream.Conn().RemotePeer()
 	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID-%s", self.Host.ID().String(), remotePeerId.String())
@@ -202,17 +202,17 @@ Handle all in message
 */
 func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 	for {
-		Logger.log.Infof("read stream")
+		Logger.log.Infof("Reading stream")
 		str, err := rw.ReadString('\n')
 		if err != nil {
-			Logger.log.Info(err)
+			Logger.log.Error(err)
 			return
 		}
 
 		//if str == "" {
 		//	return
 		//}
-		Logger.log.Infof("Message: %s \n", str)
+		Logger.log.Infof("Received message: %s \n", str)
 		if str != "\n" {
 
 			// Parse Message header
@@ -221,15 +221,15 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 
 			commandInHeader := messageHeader[:12]
 			commandInHeader = bytes.Trim(messageHeader, "\x00")
-			Logger.log.Info(string(commandInHeader))
+			Logger.log.Info("Message Type - " + string(commandInHeader))
 			commandType := string(messageHeader[:len(commandInHeader)])
 			var message, err = wire.MakeEmptyMessage(string(commandType))
 
 			// Parse Message body
 			messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
-			Logger.log.Info(string(messageBody))
+			Logger.log.Info("Message Body - " + string(messageBody))
 			if err != nil {
-				Logger.log.Info(err)
+				Logger.log.Error(err)
 				continue
 			}
 			if commandType != wire.CmdBlock {
@@ -239,7 +239,7 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 			}
 			//temp := message.(map[string]interface{})
 			if err != nil {
-				Logger.log.Info(err)
+				Logger.log.Error(err)
 				continue
 			}
 			realType := reflect.TypeOf(message)
@@ -281,7 +281,7 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 					self.FlagMutex.Unlock()
 				}
 			default:
-				Logger.log.Infof("Received unhandled message of type %v "+
+				Logger.log.Warnf("Received unhandled message of type %v "+
 					"from %v", realType, self)
 			}
 		}
@@ -295,18 +295,6 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 // to outHandler to be actually written.
 */
 func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
-	/* for test message
-	go func() {
-		for {
-			time.Sleep(1 * time.Second)
-			a := fmt.Sprintf("%s hello \n", self.Host.ID().String())
-			Logger.log.Infof("%s Write string %s", self.Host.ID().String(), a)
-			self.FlagMutex.Lock()
-			rw.Writer.WriteString(a)
-			rw.Writer.Flush()
-			self.FlagMutex.Unlock()
-		}
-	}()*/
 	for {
 		select {
 		case outMsg := <-self.sendMessageQueue:
@@ -320,7 +308,7 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 					continue
 				}
 				message += "\n"
-				Logger.log.Infof("\nSend a message %s: %s", outMsg.msg.MessageType(), message)
+				Logger.log.Infof("Send a message %s: %s", outMsg.msg.MessageType(), message)
 				rw.Writer.WriteString(message)
 				rw.Writer.Flush()
 				self.FlagMutex.Unlock()
