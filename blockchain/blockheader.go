@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"time"
+
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 )
@@ -31,6 +32,9 @@ type BlockHeader struct {
 
 	// Nonce used to generate the block.
 	Nonce int
+
+	// POS
+	CommitteeSigs map[string]string //include validator signature
 }
 
 func (h *BlockChain) GetBlockByHash(hash common.Hash) *Block {

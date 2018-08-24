@@ -27,9 +27,8 @@ type AgentDataPoint struct {
 type Block struct {
 	Header          BlockHeader
 	Transactions    []transaction.Transaction
-	CommitteeSigs   map[string]string
-	ValidatorSig    string
 	AgentDataPoints map[string]*AgentDataPoint
+	ValidatorSig    string
 	blockHash       *common.Hash
 }
 

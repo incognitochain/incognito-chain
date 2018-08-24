@@ -21,11 +21,11 @@ const (
 	CmdVerack    = "verack"
 
 	// POS Cmd
-	CmdSignedBlock   = "signedblock"
-	CmdGetCommittee  = "getcommittee"
-	CmdGetCandidate  = "getcandidate"
-	CmdVoteCandidate = "votecandidate"
-	CmdRequestSign   = "requestsign"
+	CmdGetBlockHeader = "getheader"
+	CmdBlockHeader    = "header"
+	CmdSignedBlock    = "signedblock"
+	CmdVoteCandidate  = "votecandidate"
+	CmdRequestSign    = "requestsign"
 )
 
 // Interface for message wire on P2P network
@@ -55,6 +55,17 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageVersion{}
 	case CmdVerack:
 		msg = &MessageVerAck{}
+	// POS
+	case CmdGetBlockHeader:
+		msg = &MessageGetBlockHeader{}
+	case CmdBlockHeader:
+		msg = &MessageBlockHeader{}
+	case CmdSignedBlock:
+		msg = &MessageSignedBlock{}
+	case CmdRequestSign:
+		msg = &MessageRequestSign{}
+	case CmdVoteCandidate:
+		msg = &MessageVoteCandidate{}
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}
@@ -73,6 +84,17 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdVersion, nil
 	case reflect.TypeOf(&MessageVerAck{}):
 		return CmdVerack, nil
+	// POS
+	case reflect.TypeOf(&MessageGetBlockHeader{}):
+		return CmdGetBlockHeader, nil
+	case reflect.TypeOf(&MessageBlockHeader{}):
+		return CmdBlockHeader, nil
+	case reflect.TypeOf(&MessageSignedBlock{}):
+		return CmdSignedBlock, nil
+	case reflect.TypeOf(&MessageRequestSign{}):
+		return CmdRequestSign, nil
+	case reflect.TypeOf(&MessageVoteCandidate{}):
+		return CmdVoteCandidate, nil
 	default:
 		return "", fmt.Errorf("unhandled this message type [%s]", msgType)
 	}
