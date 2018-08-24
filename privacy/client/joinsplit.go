@@ -95,6 +95,8 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
 
 	zkNotes := Notes2ZksnarkNotes(outNotes)
 	zkInputs := JSInputs2ZkInputs(inputs)
+	fmt.Printf("zkInputs[0].Note.R: %x\n", zkInputs[0].Note.R)
+	fmt.Printf("zkInputs[0].WitnessPath.AuthPath[0]: %x\n", zkInputs[0].WitnessPath.AuthPath[0].Hash)
 	var proveRequest = &zksnark.ProveRequest{Hsig: hSig, Phi: phi, Rt: rt, OutNotes: zkNotes, Inputs: zkInputs}
 	// fmt.Printf("proveRequest: %v\n", proveRequest)
 	fmt.Printf("key: %x\n", proveRequest.Inputs[0].SpendingKey)
@@ -106,7 +108,14 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
 }
 
 func Note2ZksnarkNote(note *Note) *zksnark.Note {
-	var zknote = zksnark.Note{Value: note.Value}
+	var zknote = zksnark.Note{
+		Value: note.Value,
+		Cm:    make([]byte, len(note.Cm)),
+		R:     make([]byte, len(note.R)),
+		Nf:    make([]byte, len(note.Nf)),
+		Rho:   make([]byte, len(note.Rho)),
+		Apk:   make([]byte, len(note.Apk)),
+	}
 	copy(zknote.Cm, note.Cm)
 	copy(zknote.R, note.R)
 	copy(zknote.Nf, note.Nf) // Might be 0 for output notes
@@ -134,7 +143,6 @@ func JSInputs2ZkInputs(inputs []*JSInput) []*zksnark.JSInput {
 		}
 		copy(zkinput.SpendingKey, input.Key[:])
 		// fmt.Printf("zkinput.SpendingKey: %x %x\n", zkinput.SpendingKey, input.Key)
-		fmt.Printf("%v\n", zkinput.WitnessPath.Index)
 
 		zkinput.Note = Note2ZksnarkNote(input.InputNote)
 

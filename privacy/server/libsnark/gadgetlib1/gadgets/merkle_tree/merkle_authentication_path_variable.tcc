@@ -38,16 +38,20 @@ template<typename FieldT, typename HashT>
 void merkle_authentication_path_variable<FieldT, HashT>::generate_r1cs_witness(const size_t address, const merkle_authentication_path &path)
 {
     assert(path.size() == tree_depth);
+    std::cout << "merkle_auth_path: Done assert path.size()\n";
 
     for (size_t i = 0; i < tree_depth; ++i)
     {
+        std::cout << path[i].size() << " " << HashT::get_digest_len() << '\n';
         if (address & (1ul << (tree_depth-1-i)))
         {
             left_digests[i].generate_r1cs_witness(path[i]);
+            std::cout << "merkle_auth_path: Done gen left_digests[i]\n";
         }
         else
         {
             right_digests[i].generate_r1cs_witness(path[i]);
+            std::cout << "merkle_auth_path: Done gen right_digests[i]\n";
         }
     }
 }

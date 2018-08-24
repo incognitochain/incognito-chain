@@ -1,19 +1,10 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
-	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
 )
 
 func main() {
-	zkinput := zksnark.JSInput{SpendingKey: make([]byte, 32)}
-	var k [32]byte
-	b := [32]byte{1, 2, 3}
-	copy(zkinput.SpendingKey, b[:])
-	fmt.Println(zkinput, k, b)
-
 	outApk := client.SpendingAddress{1}
 	ekey := client.TransmissionKey{2}
 	outNote1 := &client.Note{Value: 1000, Apk: outApk}
@@ -27,6 +18,7 @@ func main() {
 	mhash1 := [merkleTreeDepth]*client.MerkleHash{}
 	for i := 0; i < merkleTreeDepth; i++ {
 		mh := client.MerkleHash{}
+		mh = make([]byte, len(hash1))
 		copy(mh[:], hash1[:])
 		mhash1[i] = &mh
 	}
@@ -36,6 +28,7 @@ func main() {
 	mhash2 := [merkleTreeDepth]*client.MerkleHash{}
 	for i := 0; i < merkleTreeDepth; i++ {
 		mh := client.MerkleHash{}
+		mh = make([]byte, len(hash2))
 		copy(mh[:], hash2[:])
 		mhash2[i] = &mh
 	}
@@ -47,8 +40,10 @@ func main() {
 	inpApk := client.SpendingAddress{6}
 	rho1 := [32]byte{7}
 	rho2 := [32]byte{8}
-	inpNote1 := client.Note{Value: 400, Apk: inpApk, Rho: rho1[:]}
-	inpNote2 := client.Note{Value: 2600, Apk: inpApk, Rho: rho2[:]}
+	r1 := [32]byte{11}
+	r2 := [32]byte{12}
+	inpNote1 := client.Note{Value: 400, Apk: inpApk, Rho: rho1[:], R: r1[:]} // Value, Apk, Rho and R should be gotten from note's memo
+	inpNote2 := client.Note{Value: 2600, Apk: inpApk, Rho: rho2[:], R: r2[:]}
 	input1 := client.JSInput{WitnessPath: &mpath1, Key: &skey, InputNote: &inpNote1}
 	input2 := client.JSInput{WitnessPath: &mpath2, Key: &skey, InputNote: &inpNote2}
 	inputs := []*client.JSInput{&input1, &input2}

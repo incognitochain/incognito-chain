@@ -53,8 +53,11 @@ public:
         size_t path_index = convertVectorToInt(path.index);
 
         positions.fill_with_bits_of_ulong(this->pb, path_index);
+        std::cout << "merkle_gadget: Done fill positions\n";
 
         authvars->generate_r1cs_witness(path_index, path.authentication_path);
+        std::cout << "merkle_gadget: Done gen authvars\n";
         auth->generate_r1cs_witness();
+        std::cout << "merkle_gadget: Done gen auth\n";
     }
 };

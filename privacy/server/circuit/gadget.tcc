@@ -256,7 +256,6 @@ public:
         for (size_t i = 0; i < NumInputs; i++) {
             // Witness the input information.
             auto merkle_path = inputs[i].witness.path();
-            std::cout << merkle_path.index.size() << " " << merkle_path.authentication_path.size() << '\n';
             zk_input_notes[i]->generate_r1cs_witness(
                 merkle_path,
                 inputs[i].key,
