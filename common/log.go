@@ -410,7 +410,7 @@ func (l *slog) Debugf(format string, args ...interface{}) {
 func (l *slog) Info(args ...interface{}) {
 	lvl := l.Level()
 	if lvl <= LevelInfo {
-		args = append(args, FgGreen())
+		//args = append(args, FgGreen())
 		l.b.print("INF", l.tag, args...)
 	}
 }
@@ -422,7 +422,7 @@ func (l *slog) Info(args ...interface{}) {
 func (l *slog) Infof(format string, args ...interface{}) {
 	lvl := l.Level()
 	if lvl <= LevelInfo {
-		args = append(args, FgGreen())
+		//args = append(args, FgGreen())
 		l.b.printf("INF", l.tag, format, args...)
 	}
 }
@@ -434,7 +434,7 @@ func (l *slog) Infof(format string, args ...interface{}) {
 func (l *slog) Warn(args ...interface{}) {
 	lvl := l.Level()
 	if lvl <= LevelWarn {
-		args = append(args, FgYellow())
+		//args = append(args, FgYellow())
 		l.b.print("WRN", l.tag, args...)
 	}
 }
@@ -446,7 +446,7 @@ func (l *slog) Warn(args ...interface{}) {
 func (l *slog) Warnf(format string, args ...interface{}) {
 	lvl := l.Level()
 	if lvl <= LevelWarn {
-		args = append(args, FgYellow())
+		//args = append(args, FgYellow())
 		l.b.printf("WRN", l.tag, format, args...)
 	}
 }
@@ -470,7 +470,7 @@ func (l *slog) Error(args ...interface{}) {
 func (l *slog) Errorf(format string, args ...interface{}) {
 	lvl := l.Level()
 	if lvl <= LevelError {
-		args = append(args, FgRed())
+		//args = append(args, FgRed())
 		l.b.printf("ERR", l.tag, format, args...)
 	}
 }
