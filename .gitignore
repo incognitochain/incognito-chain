@@ -18,3 +18,7 @@
 vendor
 
 prototype
+
+cash-prototype
+
+/dev-env/nodes-data/node*/data
