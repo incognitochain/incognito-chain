@@ -35,9 +35,9 @@ public:
 
     uint252() : contents() {};
     explicit uint252(const uint256& in) : contents(in) {
-        if (*contents.begin() & 0xF0) {
-            throw std::domain_error("leading bits are set in argument given to uint252 constructor");
-        }
+        // if (*contents.begin() & 0xF0) {
+        //     throw std::domain_error("leading bits are set in argument given to uint252 constructor");
+        // }
     }
 
     uint256 inner() const {

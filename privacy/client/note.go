@@ -10,7 +10,7 @@ type Note struct {
 	Rho, R, Nf, Cm []byte
 }
 
-func GetCommitment(note Note) []byte {
+func GetCommitment(note *Note) []byte {
 	var data [CMPreImageLength]byte
 	data[0] = 0xB0
 	copy(data[1:], note.Apk[:])

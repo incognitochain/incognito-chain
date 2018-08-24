@@ -212,6 +212,7 @@ public:
             this->pb,
             uint256_to_bool_vector(rt)
         );
+        std::cout << "Done fill zk_merkle_root\n";
 
         // Witness public balance values
         zk_vpub_old.fill_with_bits(
@@ -222,6 +223,7 @@ public:
             this->pb,
             uint64_to_bool_vector(vpub_new)
         );
+        std::cout << "Done fill zk_vpub\n";
 
         {
             // Witness total_uint64 bits
@@ -235,30 +237,36 @@ public:
                 uint64_to_bool_vector(left_side_acc)
             );
         }
+        std::cout << "Done fill zk_total_uint64\n";
 
         // Witness phi
         zk_phi->bits.fill_with_bits(
             this->pb,
             uint252_to_bool_vector(phi)
         );
+        std::cout << "Done fill zk_phi\n";
 
         // Witness h_sig
         zk_h_sig->bits.fill_with_bits(
             this->pb,
             uint256_to_bool_vector(h_sig)
         );
+        std::cout << "Done fill zk_h_sig\n";
 
         for (size_t i = 0; i < NumInputs; i++) {
             // Witness the input information.
             auto merkle_path = inputs[i].witness.path();
+            std::cout << merkle_path.index.size() << " " << merkle_path.authentication_path.size() << '\n';
             zk_input_notes[i]->generate_r1cs_witness(
                 merkle_path,
                 inputs[i].key,
                 inputs[i].note
             );
+            std::cout << "Done fill zk_input_notes\n";
 
             // Witness macs
             zk_mac_authentication[i]->generate_r1cs_witness();
+            std::cout << "Done fill zk_mac\n";
         }
 
         for (size_t i = 0; i < NumOutputs; i++) {

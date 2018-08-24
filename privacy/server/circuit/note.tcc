@@ -131,6 +131,7 @@ public:
 
         // Witness a_pk for a_sk with PRF_addr
         spend_authority->generate_r1cs_witness();
+        std::cout << "Done fill a_sk and spend_authority\n";
 
         // [SANITY CHECK] Witness a_pk with note information
         a_pk->bits.fill_with_bits(
@@ -143,12 +144,14 @@ public:
             this->pb,
             uint256_to_bool_vector(note.rho)
         );
+        std::cout << "Done fill a_pk and rho\n";
 
         // Witness the nullifier for the input note
         expose_nullifiers->generate_r1cs_witness();
 
         // Witness the commitment of the input note
         commit_to_inputs->generate_r1cs_witness();
+        std::cout << "Done fill expose_nullifier and commit_to_inputs\n";
 
         // [SANITY CHECK] Ensure the commitment is
         // valid.
@@ -156,6 +159,7 @@ public:
             this->pb,
             uint256_to_bool_vector(note.cm)
         );
+        std::cout << "Done fill cm\n";
 
         // Set enforce flag for nonzero input value
         this->pb.val(value_enforce) = (note.value() != 0) ? FieldT::one() : FieldT::zero();
