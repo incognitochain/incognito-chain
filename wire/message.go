@@ -2,9 +2,10 @@ package wire
 
 import (
 	"fmt"
+	"reflect"
 
-	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 // list message type
@@ -17,14 +18,21 @@ const (
 	CmdInv       = "inv"
 	CmdGetData   = "getdata"
 	CmdVersion   = "version"
-	Cmdveack     = "verack"
+	CmdVerack    = "verack"
+
+	// POS Cmd
+	CmdSignedBlock   = "signedblock"
+	CmdGetCommittee  = "getcommittee"
+	CmdGetCandidate  = "getcandidate"
+	CmdVoteCandidate = "votecandidate"
+	CmdRequestSign   = "requestsign"
 )
 
 // Interface for message wire on P2P network
 type Message interface {
 	MessageType() string
 	MaxPayloadLength(int) int
-	JsonSerialize() (string, error)
+	JsonSerialize() ([]byte, error)
 	JsonDeserialize(string) error
 }
 
@@ -45,10 +53,27 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		}
 	case CmdVersion:
 		msg = &MessageVersion{}
-	case Cmdveack:
+	case CmdVerack:
 		msg = &MessageVerAck{}
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}
 	return msg, nil
+}
+
+func GetCmdType(msgType reflect.Type) (string, error) {
+	switch msgType {
+	case reflect.TypeOf(&MessageBlock{}):
+		return CmdBlock, nil
+	case reflect.TypeOf(&MessageGetBlocks{}):
+		return CmdGetBlocks, nil
+	case reflect.TypeOf(&MessageTx{}):
+		return CmdTx, nil
+	case reflect.TypeOf(&MessageVersion{}):
+		return CmdVersion, nil
+	case reflect.TypeOf(&MessageVerAck{}):
+		return CmdVerack, nil
+	default:
+		return "", fmt.Errorf("unhandled this message type [%s]", msgType)
+	}
 }

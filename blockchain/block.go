@@ -1,10 +1,11 @@
 package blockchain
 
 import (
-	"github.com/ninjadotorg/cash-prototype/transaction"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"strconv"
 	"encoding/json"
+	"strconv"
+
+	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/pkg/errors"
 )
 
@@ -14,15 +15,17 @@ const (
 )
 
 type Block struct {
-	Header       BlockHeader
-	Transactions []transaction.Transaction
-	blockHash    *common.Hash
+	Header        BlockHeader
+	Transactions  []transaction.Transaction
+	CommitteeSigs map[string]string
+	ValidatorSig  string
+	blockHash     *common.Hash
 }
 
 /**
 Customer UnmarshalJSON to parse list Tx
- */
-func (self *Block) UnmarshalJSON(data []byte) (error) {
+*/
+func (self *Block) UnmarshalJSON(data []byte) error {
 	type Alias Block
 	temp := &struct {
 		Transactions []map[string]interface{}
@@ -111,7 +114,7 @@ func (self *Block) ClearTransactions() {
 	self.Transactions = make([]transaction.Transaction, 0, defaultTransactionAlloc)
 }
 
-func (self *Block) Hash() (*common.Hash) {
+func (self *Block) Hash() *common.Hash {
 	//if self.blockHash != nil {
 	//	return self.blockHash
 	//}

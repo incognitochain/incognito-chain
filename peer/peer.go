@@ -217,8 +217,7 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 			jsonDecodeString, _ := hex.DecodeString(str)
 			messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 
-			commandInHeader := messageHeader[:12]
-			commandInHeader = bytes.Trim(messageHeader, "\x00")
+			commandInHeader := bytes.Trim(messageHeader, "\x00")
 			log.Println(string(commandInHeader))
 			commandType := string(messageHeader[:len(commandInHeader)])
 			var message, err = wire.MakeEmptyMessage(string(commandType))
@@ -313,11 +312,16 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 				self.FlagMutex.Lock()
 				// TODO
 				// send message
-				message, err := outMsg.msg.JsonSerialize()
+				messageByte, err := outMsg.msg.JsonSerialize()
 				if err != nil {
 					fmt.Println(err)
 					continue
 				}
+				header := make([]byte, wire.MessageHeaderSize)
+				CmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.msg))
+				copy(header[:], []byte(CmdType))
+				messageByte = append(messageByte, header...)
+				message := hex.EncodeToString(messageByte)
 				message += "\n"
 				log.Printf("\nSend a message %s: %s", outMsg.msg.MessageType(), message)
 				rw.Writer.WriteString(message)
@@ -404,11 +408,16 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 	if err != nil {
 		return err
 	}
-	msgVersion += "\n"
+	header := make([]byte, wire.MessageHeaderSize)
+	CmdType, _ := wire.GetCmdType(reflect.TypeOf(msg))
+	copy(header[:], []byte(CmdType))
+	msgVersion = append(msgVersion, header...)
+	msgVersionStr := hex.EncodeToString(msgVersion)
+	msgVersionStr += "\n"
 	log.Printf("Send a msgVersion: %s", msgVersion)
 	rw := self.OutboundReaderWriterStreams[peer.PeerId]
 	self.FlagMutex.Lock()
-	rw.Writer.WriteString(msgVersion)
+	rw.Writer.WriteString(msgVersionStr)
 	rw.Writer.Flush()
 	self.FlagMutex.Unlock()
 	return nil

@@ -427,10 +427,10 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 	peers := make([]peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
 		peer, err := peer.Peer{
-			Seed:                        0,
-			FlagMutex:                   sync.Mutex{},
-			ListeningAddress:            addr,
-			Config:                      *self.NewPeerConfig(),
+			Seed:             0,
+			FlagMutex:        sync.Mutex{},
+			ListeningAddress: addr,
+			Config:           *self.NewPeerConfig(),
 			OutboundReaderWriterStreams: make(map[peer2.ID]*bufio.ReadWriter),
 			InboundReaderWriterStreams:  make(map[peer2.ID]*bufio.ReadWriter),
 		}.NewPeer()
@@ -505,7 +505,7 @@ func (self *Server) OnVersion(_ *peer.Peer, msg *wire.MessageVersion) {
 	// TODO push message again for remote peer
 	var dc chan<- struct{}
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		msg, err := wire.MakeEmptyMessage(wire.Cmdveack)
+		msg, err := wire.MakeEmptyMessage(wire.CmdVerack)
 		if err != nil {
 			return
 		}
