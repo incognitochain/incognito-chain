@@ -177,6 +177,9 @@ func (p Peer) WaitForDisconnect() {
 	<-p.quit
 }
 
+/**
+HandleStream will be listening from other peers for a new RW stream
+ */
 func (self Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
 	//defer stream.Close()
@@ -212,13 +215,13 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 		//if str == "" {
 		//	return
 		//}
-		Logger.log.Infof("Received message: %s \n", str)
+		Logger.log.Infof("Received message: %s", str)
 		if str != "\n" {
-
 			// Parse Message header
 			jsonDecodeString, _ := hex.DecodeString(str)
 			messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 
+			// Get message type from header
 			commandInHeader := messageHeader[:12]
 			commandInHeader = bytes.Trim(messageHeader, "\x00")
 			Logger.log.Info("Message Type - " + string(commandInHeader))
@@ -232,18 +235,12 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 				Logger.log.Error(err)
 				continue
 			}
-			if commandType != wire.CmdBlock {
-				err = json.Unmarshal(messageBody, &message)
-			} else {
-				err = json.Unmarshal(messageBody, &message)
-			}
-			//temp := message.(map[string]interface{})
+			err = json.Unmarshal(messageBody, &message)
 			if err != nil {
 				Logger.log.Error(err)
 				continue
 			}
 			realType := reflect.TypeOf(message)
-			log.Print(realType)
 			// check type of Message
 			switch realType {
 			case reflect.TypeOf(&wire.MessageTx{}):
@@ -299,7 +296,6 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 		select {
 		case outMsg := <-self.sendMessageQueue:
 			{
-				self.FlagMutex.Lock()
 				// TODO
 				// send message
 				messageByte, err := outMsg.msg.JsonSerialize()
@@ -307,14 +303,19 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 					fmt.Println(err)
 					continue
 				}
+				Logger.log.Infof("Preparing to send json serialize: %s", string(messageByte))
 				header := make([]byte, wire.MessageHeaderSize)
 				CmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.msg))
 				copy(header[:], []byte(CmdType))
 				messageByte = append(messageByte, header...)
 				message := hex.EncodeToString(messageByte)
 				message += "\n"
+				self.FlagMutex.Lock()
 				Logger.log.Infof("Send a message %s: %s", outMsg.msg.MessageType(), message)
-				rw.Writer.WriteString(message)
+				_, err = rw.Writer.WriteString(message)
+				if err != nil {
+					Logger.log.Error(err)
+				}
 				rw.Writer.Flush()
 				self.FlagMutex.Unlock()
 			}
