@@ -177,6 +177,9 @@ func (p Peer) WaitForDisconnect() {
 	<-p.quit
 }
 
+/**
+HandleStream will be listening from other peers for a new RW stream
+ */
 func (self Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
 	//defer stream.Close()
@@ -212,13 +215,13 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 		//if str == "" {
 		//	return
 		//}
-		Logger.log.Infof("Received message: %s \n", str)
+		Logger.log.Infof("Received message: %s", str)
 		if str != "\n" {
-
 			// Parse Message header
 			jsonDecodeString, _ := hex.DecodeString(str)
 			messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 
+			// Get message type from header
 			commandInHeader := messageHeader[:12]
 			commandInHeader = bytes.Trim(messageHeader, "\x00")
 			Logger.log.Info("Message Type - " + string(commandInHeader))
@@ -300,6 +303,7 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 					fmt.Println(err)
 					continue
 				}
+				Logger.log.Infof("Preparing to send json serialize: %s", string(messageByte))
 				header := make([]byte, wire.MessageHeaderSize)
 				CmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.msg))
 				copy(header[:], []byte(CmdType))
