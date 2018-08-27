@@ -41,6 +41,17 @@ message ProveRequest {
     bytes rt = 5;
 }
 
+message PHGRProof {
+    bytes g_A = 1;
+    bytes g_A_prime = 2;
+    bytes g_B = 3;
+    bytes g_B_prime = 4;
+    bytes g_C = 5;
+    bytes g_C_prime = 6;
+    bytes g_K = 7;
+    bytes g_H = 8;
+}
+
 message ProveReply {
-    string dummy = 1;
+    PHGRProof proof = 1;
 }

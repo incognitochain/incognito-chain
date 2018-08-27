@@ -104,7 +104,7 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
 	if err != nil {
 		log.Fatalf("fail to prove: %v", err)
 	}
-	log.Printf("response: %v", r.Dummy)
+	log.Printf("response: %v", r.Proof)
 }
 
 func Note2ZksnarkNote(note *Note) *zksnark.Note {

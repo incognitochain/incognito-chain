@@ -22,6 +22,10 @@ public:
     template<typename libsnark_Fq>
     libsnark_Fq to_libsnark_fq() const;
 
+    std::string to_string() {
+        return std::string(data.begin(), data.end());
+    }
+
     // ADD_SERIALIZE_METHODS;
 
     // template <typename Stream, typename Operation>
@@ -54,6 +58,10 @@ public:
 
     template<typename libsnark_Fq2>
     libsnark_Fq2 to_libsnark_fq2() const;
+
+    std::string to_string() {
+        return std::string(data.begin(), data.end());
+    }
 
     // ADD_SERIALIZE_METHODS;
 
@@ -89,6 +97,12 @@ public:
 
     template<typename libsnark_G1>
     libsnark_G1 to_libsnark_g1() const;
+
+    std::string to_string() {
+        char leadingByte[2] = {0};
+        leadingByte[0] |= y_lsb;
+        return std::string(leadingByte) + x.to_string();  // TODO(@0xbunyip): check for endianness
+    }
 
     // ADD_SERIALIZE_METHODS;
 
@@ -140,6 +154,12 @@ public:
     template<typename libsnark_G2>
     libsnark_G2 to_libsnark_g2() const;
 
+    std::string to_string() {
+        char leadingByte[2] = {0};
+        leadingByte[0] |= y_gt;
+        return std::string(leadingByte) + x.to_string();  // TODO(@0xbunyip): check for endianness
+    }
+
     // ADD_SERIALIZE_METHODS;
 
     // template <typename Stream, typename Operation>
@@ -177,7 +197,7 @@ public:
 
 // Compressed zkSNARK proof
 class PHGRProof {
-private:
+public:
     CompressedG1 g_A;
     CompressedG1 g_A_prime;
     CompressedG2 g_B;
@@ -187,7 +207,6 @@ private:
     CompressedG1 g_K;
     CompressedG1 g_H;
 
-public:
     PHGRProof() : g_A(), g_A_prime(), g_B(), g_B_prime(), g_C(), g_C_prime(), g_K(), g_H() { }
 
     // Produces a compressed proof using a libsnark zkSNARK proof

@@ -140,6 +140,18 @@ bool transform_prove_request(const ProveRequest *request,
     return success;
 }
 
+bool transform_prove_reply(libzcash::PHGRProof &proof, zksnark::PHGRProof &zk_proof) {
+    zk_proof.set_g_a(proof.g_A.to_string());
+    zk_proof.set_g_a_prime(proof.g_A_prime.to_string());
+    zk_proof.set_g_b(proof.g_B.to_string());
+    zk_proof.set_g_b_prime(proof.g_B_prime.to_string());
+    zk_proof.set_g_c(proof.g_C.to_string());
+    zk_proof.set_g_c_prime(proof.g_C_prime.to_string());
+    zk_proof.set_g_h(proof.g_H.to_string());
+    zk_proof.set_g_k(proof.g_K.to_string());
+    return true;
+}
+
 class ZksnarkImpl final : public Zksnark::Service
 {
     Status Prove(ServerContext *context, const ProveRequest *request, ProveReply *reply) override
@@ -151,7 +163,15 @@ class ZksnarkImpl final : public Zksnark::Service
         uint252 phi;
         bool success = transform_prove_request(request, inputs, out_notes, hsig, phi, rt);
         cout << "transform_prove_request status: " << success << '\n';
-        js->prove(inputs, out_notes, rt, hsig, phi);
+
+        bool compute_proof = false;
+        auto proof = js->prove(inputs, out_notes, rt, hsig, phi, compute_proof);
+
+        zksnark::PHGRProof *zk_proof = new zksnark::PHGRProof();
+        success = transform_prove_reply(proof, *zk_proof);
+        cout << "transform_prove_reply status: " << success << '\n';
+        cout << "setting allocated_proof\n";
+        reply->set_allocated_proof(zk_proof);
         return Status::OK;
     }
 };
