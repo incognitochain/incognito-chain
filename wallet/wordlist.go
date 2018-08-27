@@ -3,10 +3,15 @@ package wallet
 import (
 	"io/ioutil"
 	"strings"
+	"path/filepath"
 )
 
 func NewWordList(language string) []string {
-	englishBytes, err := ioutil.ReadFile(language + ".txt")
+	absPath, err := filepath.Abs("wallet/" + language + ".txt")
+	if err != nil {
+		Logger.log.Error(err)
+	}
+	englishBytes, err := ioutil.ReadFile(absPath)
 	english := string(englishBytes)
 	if err != nil {
 		Logger.log.Error(err)
