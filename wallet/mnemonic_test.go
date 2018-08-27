@@ -7,7 +7,8 @@ import (
 )
 
 func TestNewEntropy(t *testing.T) {
-	entropy, err := NewEntropy(128)
+	mnemonic := MnemonicGenerator{}
+	entropy, err := mnemonic.NewEntropy(128)
 	if err != nil {
 		t.Error("Can not create entropy")
 	}
@@ -15,11 +16,12 @@ func TestNewEntropy(t *testing.T) {
 }
 
 func TestNewMnemonic(t *testing.T) {
-	entropy, err := NewEntropy(128)
+	mnemonicGen := MnemonicGenerator{}
+	entropy, err := mnemonicGen.NewEntropy(128)
 	if err != nil {
 		t.Error("Can not create entropy")
 	}
-	mnemonic, err := NewMnemonic(entropy)
+	mnemonic, err := mnemonicGen.NewMnemonic(entropy)
 	if err != nil {
 		t.Error("Can not create mnemonic")
 	}
@@ -27,14 +29,15 @@ func TestNewMnemonic(t *testing.T) {
 }
 
 func TestNewSeed(t *testing.T) {
-	entropy, err := NewEntropy(128)
+	mnemonicGen := MnemonicGenerator{}
+	entropy, err := mnemonicGen.NewEntropy(128)
 	if err != nil {
 		t.Error("Can not create entropy")
 	}
-	mnemonic, err := NewMnemonic(entropy)
+	mnemonic, err := mnemonicGen.NewMnemonic(entropy)
 	if err != nil {
 		t.Error("Can not create mnemonic")
 	}
-	seed := NewSeed(mnemonic, "password")
+	seed := mnemonicGen.NewSeed(mnemonic, "password")
 	log.Print(hex.EncodeToString(seed))
 }

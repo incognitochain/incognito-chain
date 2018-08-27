@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-func NewWordList() []string {
-	englishBytes, err := ioutil.ReadFile("english.txt")
+func NewWordList(language string) []string {
+	englishBytes, err := ioutil.ReadFile(language + ".txt")
 	english := string(englishBytes)
 	if err != nil {
 		Logger.log.Error(err)
