@@ -12,6 +12,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/netsync"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
 var (
@@ -27,6 +28,7 @@ var (
 	netsyncLogger     = backendLog.Logger("Netsync Log")
 	peerLogger        = backendLog.Logger("Peer Log")
 	dbLogger          = backendLog.Logger("Database Log")
+	walletLogger      = backendLog.Logger("Wallet log")
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -50,6 +52,7 @@ func init() {
 	netsync.Logger.Init(netsyncLogger)
 	peer.Logger.Init(peerLogger)
 	database.Logger.Init(dbLogger)
+	wallet.Logger.Init(walletLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -61,6 +64,8 @@ var subsystemLoggers = map[string]common.Logger{
 	"RPCS": rpcLogger,
 	"NSYN": netsyncLogger,
 	"PEER": peerLogger,
+	"DABA": dbLogger,
+	"WALL": walletLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

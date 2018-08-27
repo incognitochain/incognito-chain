@@ -26,6 +26,7 @@ const (
 	CmdSignedBlock    = "signedblock"
 	CmdVoteCandidate  = "votecandidate"
 	CmdRequestSign    = "requestsign"
+	CmdInvalidBlock   = "invalidblock"
 )
 
 // Interface for message wire on P2P network
@@ -66,6 +67,8 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageRequestSign{}
 	case CmdVoteCandidate:
 		msg = &MessageVoteCandidate{}
+	case CmdInvalidBlock:
+		msg = &MessageInvalidBlock{}
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}
@@ -95,6 +98,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdRequestSign, nil
 	case reflect.TypeOf(&MessageVoteCandidate{}):
 		return CmdVoteCandidate, nil
+	case reflect.TypeOf(&MessageInvalidBlock{}):
+		return CmdInvalidBlock, nil
 	default:
 		return "", fmt.Errorf("unhandled this message type [%s]", msgType)
 	}

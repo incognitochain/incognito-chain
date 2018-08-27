@@ -1,14 +1,14 @@
 package main
 
 import (
-	"runtime"
-	"runtime/debug"
-	"os"
 	"fmt"
 	"log"
+	"os"
+	"runtime"
+	"runtime/debug"
 
-	"github.com/ninjadotorg/cash-prototype/limits"
 	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/limits"
 )
 
 var (
