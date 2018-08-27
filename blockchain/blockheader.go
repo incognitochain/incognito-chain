@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/database"
 )
 
 // MaxBlockHeaderPayload is the maximum number of bytes a block header can be.
@@ -16,7 +15,6 @@ type BlockHeader struct {
 	// Version of the block.  This is not the same as the protocol version.
 	Version int
 
-	Db database.DB
 	// Hash of the previous block header in the block chain.
 	PrevBlockHash common.Hash
 
@@ -34,7 +32,9 @@ type BlockHeader struct {
 	Nonce int
 
 	// POS
-	CommitteeSigs map[string]string //include validator signature
+	CommitteeSigs      map[string]string //include validator signature
+	NextBlockCommittee []string          //Voted committee for the next block
+	Candidates         []string
 }
 
 func (h *BlockChain) GetBlockByHash(hash common.Hash) *Block {

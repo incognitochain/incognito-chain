@@ -17,7 +17,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/btcsuite/btcd/cashec"
+	"github.com/ninjadotorg/cash-prototype/cashec"
 )
 
 func main() {

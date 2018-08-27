@@ -1,17 +1,19 @@
 package rpcserver
 
 import (
-	"log"
-	"encoding/json"
 	"bytes"
-	"strings"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/transaction"
-	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -27,18 +29,67 @@ var RpcHandler = map[string]commandHandler{
 	"getNumberOfCoins":             RpcServer.handleGetNumberOfCoins,
 	"getNumberOfBonds":             RpcServer.handleGetNumberOfBonds,
 	"createActionParamsTrasaction": RpcServer.handleCreateActionParamsTrasaction,
+
+	//POS
+	"votecandidate": RpcServer.handleVoteCandidate,
+	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 }
 
 // Commands that are available to a limited user
-var RpcLimited = map[string]struct{}{
-
-}
+var RpcLimited = map[string]struct{}{}
 
 func (self RpcServer) handleDoSomething(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
 	result := make(map[string]string)
 	result["param"] = string(params.([]json.RawMessage)[0])
 	return result, nil
+}
+
+func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	log.Println(params)
+	result := jsonrpc.GetHeaderResult{}
+
+	arrayParams := common.InterfaceSlice(params)
+	log.Println(arrayParams)
+	getBy := arrayParams[0].(string)
+	query := arrayParams[1].(string)
+	log.Println(getBy, query)
+	switch getBy {
+	case "blockhash":
+		bhash := common.Hash{}
+		err := bhash.Decode(&bhash, query)
+		log.Println(bhash)
+		if err != nil {
+			return nil, errors.New("Invalid blockhash format")
+		}
+		bnum, ok := self.Config.Chain.Headers[bhash]
+		if !ok {
+			return nil, errors.New("Block not exist")
+		}
+		result.Header = self.Config.Chain.Blocks[bnum].Header
+		result.BlockNum = bnum + 1
+		result.BlockHash = bhash.String()
+	case "blocknum":
+		bnum, err := strconv.Atoi(query)
+		if err != nil {
+			return nil, errors.New("Invalid blocknum format")
+		}
+		if len(self.Config.Chain.Blocks) < bnum || bnum <= 0 {
+			return nil, errors.New("Block not exist")
+		}
+		result.Header = self.Config.Chain.Blocks[bnum-1].Header
+		result.BlockNum = bnum
+		result.BlockHash = self.Config.Chain.Blocks[bnum-1].Hash().String()
+	default:
+		return nil, errors.New("Wrong request format")
+	}
+
+	return result, nil
+}
+
+func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+
+	return "", nil
 }
 
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -64,7 +115,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
  Parameter #1—the minimum number of confirmations an output must have
 Parameter #2—the maximum number of confirmations an output may have
 Parameter #3—the addresses an output must pay
- */
+*/
 func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
 	paramsArray := common.InterfaceSlice(params)
@@ -78,15 +129,15 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 	blocks := self.Config.Chain.Blocks
 	result := make([]jsonrpc.ListUnspentResult, 0)
 	for _, block := range blocks {
-		if (len(block.Transactions) > 0) {
+		if len(block.Transactions) > 0 {
 			for _, tx := range block.Transactions {
 				if tx.GetType() == common.TxActionParamsType {
 					continue
 				}
 				normalTx := tx.(*transaction.Tx)
-				if (len(normalTx.TxOut) > 0) {
+				if len(normalTx.TxOut) > 0 {
 					for index, txOut := range normalTx.TxOut {
-						if (bytes.Compare(txOut.PkScript, []byte(addresses[0])) == 0) {
+						if bytes.Compare(txOut.PkScript, []byte(addresses[0])) == 0 {
 							result = append(result, jsonrpc.ListUnspentResult{
 								Vout:    index,
 								TxID:    normalTx.Hash().String(),
@@ -104,7 +155,7 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 
 /**
 // handleCreateRawTransaction handles createrawtransaction commands.
- */
+*/
 func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
 	arrayParams := common.InterfaceSlice(params)
@@ -239,7 +290,7 @@ func (self RpcServer) handleGetNumberOfBonds(params interface{}, closeChan <-cha
 
 /**
 // handleCreateRawTransaction handles createrawtransaction commands.
- */
+*/
 func (self RpcServer) handleCreateActionParamsTrasaction(
 	params interface{},
 	closeChan <-chan struct{},
@@ -256,8 +307,8 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 	tx.Param = &transaction.Param{
 		AgentID:          param["agentId"].(string),
 		AgentSig:         param["agentSig"].(string),
-		NumOfCoins: 	  param["numOfCoins"].(float64),
-		NumOfBonds: 	  param["numOfBonds"].(float64),
+		NumOfCoins:       param["numOfCoins"].(float64),
+		NumOfBonds:       param["numOfBonds"].(float64),
 		Tax:              param["tax"].(float64),
 		EligibleAgentIDs: param["eligibleAgentIDs"].([]string),
 	}

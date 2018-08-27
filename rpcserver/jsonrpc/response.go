@@ -1,8 +1,10 @@
 package jsonrpc
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
+
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
 )
 
@@ -46,10 +48,10 @@ func NewResponse(id interface{}, marshalledResult []byte, rpcErr *common.RPCErro
 func IsValidIDType(id interface{}) bool {
 	switch id.(type) {
 	case int, int8, int16, int32, int64,
-	uint, uint8, uint16, uint32, uint64,
-	float32, float64,
-	string,
-	nil:
+		uint, uint8, uint16, uint32, uint64,
+		float32, float64,
+		string,
+		nil:
 		return true
 	default:
 		return false
@@ -98,4 +100,10 @@ type ListUnspentResult struct {
 	Amount        float64 `json:"amount"`
 	Confirmations int64   `json:"confirmations"`
 	Spendable     bool    `json:"spendable"`
+}
+
+type GetHeaderResult struct {
+	BlockNum  int                    `json:"blocknum"`
+	BlockHash string                 `json:"blockhash"`
+	Header    blockchain.BlockHeader `json:"header"`
 }
