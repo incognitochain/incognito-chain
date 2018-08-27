@@ -237,6 +237,17 @@ func (self RpcServer) handleGetNumberOfBonds(params interface{}, closeChan <-cha
 	return 5, nil
 }
 
+
+func assertEligibleAgentIDs(eligibleAgentIDs interface{}) ([]string) {
+	assertedEligibleAgentIDs := eligibleAgentIDs.([]interface{})
+	results := []string{}
+	for _, item := range assertedEligibleAgentIDs {
+		results = append(results, item.(string))
+	}
+	return results
+}
+
+
 /**
 // handleCreateRawTransaction handles createrawtransaction commands.
  */
@@ -259,7 +270,7 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 		NumOfCoins: 	  param["numOfCoins"].(float64),
 		NumOfBonds: 	  param["numOfBonds"].(float64),
 		Tax:              param["tax"].(float64),
-		EligibleAgentIDs: param["eligibleAgentIDs"].([]string),
+		EligibleAgentIDs: assertEligibleAgentIDs(param["eligibleAgentIDs"]),
 	}
 
 	_, _, err := self.Config.TxMemPool.CanAcceptTransaction(&tx)
