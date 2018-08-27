@@ -17,6 +17,8 @@ using grpc::ServerContext;
 using grpc::Status;
 using zksnark::ProveReply;
 using zksnark::ProveRequest;
+using zksnark::VerifyReply;
+using zksnark::VerifyRequest;
 using zksnark::Zksnark;
 
 ZCJoinSplit *js;
@@ -24,6 +26,8 @@ ZCJoinSplit *js;
 typedef std::array<libzcash::JSInput, ZC_NUM_JS_INPUTS> ProveInputs;
 typedef std::array<libzcash::SproutNote, ZC_NUM_JS_OUTPUTS> ProveOutnotes;
 
+typedef std::array<uint256, ZC_NUM_JS_INPUTS> NullifierArray;
+typedef std::array<uint256, ZC_NUM_JS_OUTPUTS> CommitmentArray;
 
 bool string_to_uint256(const string &data, uint256 &result)
 {
@@ -140,7 +144,8 @@ bool transform_prove_request(const ProveRequest *request,
     return success;
 }
 
-bool transform_prove_reply(libzcash::PHGRProof &proof, zksnark::PHGRProof &zk_proof) {
+bool transform_prove_reply(libzcash::PHGRProof &proof, zksnark::PHGRProof &zk_proof)
+{
     zk_proof.set_g_a(proof.g_A.to_string());
     zk_proof.set_g_a_prime(proof.g_A_prime.to_string());
     zk_proof.set_g_b(proof.g_B.to_string());
@@ -150,6 +155,43 @@ bool transform_prove_reply(libzcash::PHGRProof &proof, zksnark::PHGRProof &zk_pr
     zk_proof.set_g_h(proof.g_H.to_string());
     zk_proof.set_g_k(proof.g_K.to_string());
     return true;
+}
+
+bool transform_verify_request(const VerifyRequest *request,
+                              libzcash::PHGRProof &proof,
+                              NullifierArray &nullifiers,
+                              CommitmentArray &commitments,
+                              uint256 &hsig,
+                              uint256 &rt)
+{
+    if (request->nullifiers_size() != ZC_NUM_JS_INPUTS || request->commits_size() != ZC_NUM_JS_OUTPUTS)
+        return false;
+
+    // TODO(@0xbunyip): convert PHGRProof
+
+    // Convert nullifiers
+    for (int i = 0; i < request->nullifiers_size(); ++i)
+    {
+        auto nf = request->nullifiers(i);
+        string_to_uint256(nf, nullifiers[i]);
+    }
+
+    // Convert commits
+    for (int i = 0; i < request->commits_size(); ++i)
+    {
+        auto cm = request->commits(i);
+        string_to_uint256(cm, commitments[i]);
+    }
+
+    // Convert hsig
+    bool success = true;
+    success &= string_to_uint256(request->hsig(), hsig);
+    cout << "hsig: " << hsig.GetHex() << '\n';
+
+    // Convert rt
+    success &= string_to_uint256(request->rt(), rt);
+    cout << "rt: " << rt.GetHex() << '\n';
+    return success;
 }
 
 class ZksnarkImpl final : public Zksnark::Service
@@ -172,6 +214,18 @@ class ZksnarkImpl final : public Zksnark::Service
         cout << "transform_prove_reply status: " << success << '\n';
         cout << "setting allocated_proof\n";
         reply->set_allocated_proof(zk_proof);
+        return Status::OK;
+    }
+
+    Status Verify(ServerContext *context, const VerifyRequest *request, VerifyReply *reply) override
+    {
+        libzcash::PHGRProof proof;
+        uint256 hsig, rt;
+        NullifierArray nullifiers;
+        CommitmentArray commitments;
+        bool success = transform_verify_request(request, proof, nullifiers, commitments, hsig, rt);
+        // TODO(@0xbunyip): create verifier and macs
+        // bool valid = js->verify(proof, verifier, macs, nullifiers, commitments, rt, hsig);
         return Status::OK;
     }
 };

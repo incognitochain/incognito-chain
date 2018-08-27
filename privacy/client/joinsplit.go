@@ -107,6 +107,30 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
 	log.Printf("response: %v", r.Proof)
 }
 
+func Verify(proof *zksnark.PHGRProof, nf, cm *[][]byte, rt, hSig []byte) bool {
+	// Calling libsnark's verify
+	const address = "localhost:50052"
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("fail to connect %v", err)
+	}
+	defer conn.Close()
+
+	c := zksnark.NewZksnarkClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	defer cancel()
+
+	var verifyRequest = &zksnark.VerifyRequest{Proof: proof, Hsig: hSig, Rt: rt, Nullifiers: *nf, Commits: *cm}
+	fmt.Printf("verifyRequest: %v\n", verifyRequest)
+	r, err := c.Verify(ctx, verifyRequest)
+	if err != nil {
+		log.Fatalf("fail to verify: %v", err)
+	}
+	log.Printf("response: %v", r.Valid)
+
+	return true
+}
+
 func Note2ZksnarkNote(note *Note) *zksnark.Note {
 	var zknote = zksnark.Note{
 		Value: note.Value,

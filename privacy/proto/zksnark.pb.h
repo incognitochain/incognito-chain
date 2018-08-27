@@ -36,7 +36,7 @@ namespace protobuf_zksnark_2eproto {
 struct TableStruct {
   static const ::google::protobuf::internal::ParseTableField entries[];
   static const ::google::protobuf::internal::AuxillaryParseTableField aux[];
-  static const ::google::protobuf::internal::ParseTable schema[7];
+  static const ::google::protobuf::internal::ParseTable schema[9];
   static const ::google::protobuf::internal::FieldMetadata field_metadata[];
   static const ::google::protobuf::internal::SerializationTable serialization_table[];
   static const ::google::protobuf::uint32 offsets[];
@@ -56,6 +56,10 @@ void InitDefaultsPHGRProofImpl();
 void InitDefaultsPHGRProof();
 void InitDefaultsProveReplyImpl();
 void InitDefaultsProveReply();
+void InitDefaultsVerifyRequestImpl();
+void InitDefaultsVerifyRequest();
+void InitDefaultsVerifyReplyImpl();
+void InitDefaultsVerifyReply();
 inline void InitDefaults() {
   InitDefaultsMerkleHash();
   InitDefaultsMerklePath();
@@ -64,6 +68,8 @@ inline void InitDefaults() {
   InitDefaultsProveRequest();
   InitDefaultsPHGRProof();
   InitDefaultsProveReply();
+  InitDefaultsVerifyRequest();
+  InitDefaultsVerifyReply();
 }
 }  // namespace protobuf_zksnark_2eproto
 namespace zksnark {
@@ -88,6 +94,12 @@ extern ProveReplyDefaultTypeInternal _ProveReply_default_instance_;
 class ProveRequest;
 class ProveRequestDefaultTypeInternal;
 extern ProveRequestDefaultTypeInternal _ProveRequest_default_instance_;
+class VerifyReply;
+class VerifyReplyDefaultTypeInternal;
+extern VerifyReplyDefaultTypeInternal _VerifyReply_default_instance_;
+class VerifyRequest;
+class VerifyRequestDefaultTypeInternal;
+extern VerifyRequestDefaultTypeInternal _VerifyRequest_default_instance_;
 }  // namespace zksnark
 namespace zksnark {
 
@@ -1095,6 +1107,283 @@ class ProveReply : public ::google::protobuf::Message /* @@protoc_insertion_poin
   friend struct ::protobuf_zksnark_2eproto::TableStruct;
   friend void ::protobuf_zksnark_2eproto::InitDefaultsProveReplyImpl();
 };
+// -------------------------------------------------------------------
+
+class VerifyRequest : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:zksnark.VerifyRequest) */ {
+ public:
+  VerifyRequest();
+  virtual ~VerifyRequest();
+
+  VerifyRequest(const VerifyRequest& from);
+
+  inline VerifyRequest& operator=(const VerifyRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  VerifyRequest(VerifyRequest&& from) noexcept
+    : VerifyRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline VerifyRequest& operator=(VerifyRequest&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const VerifyRequest& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const VerifyRequest* internal_default_instance() {
+    return reinterpret_cast<const VerifyRequest*>(
+               &_VerifyRequest_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    7;
+
+  void Swap(VerifyRequest* other);
+  friend void swap(VerifyRequest& a, VerifyRequest& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline VerifyRequest* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  VerifyRequest* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const VerifyRequest& from);
+  void MergeFrom(const VerifyRequest& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(VerifyRequest* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // repeated bytes nullifiers = 4;
+  int nullifiers_size() const;
+  void clear_nullifiers();
+  static const int kNullifiersFieldNumber = 4;
+  const ::std::string& nullifiers(int index) const;
+  ::std::string* mutable_nullifiers(int index);
+  void set_nullifiers(int index, const ::std::string& value);
+  #if LANG_CXX11
+  void set_nullifiers(int index, ::std::string&& value);
+  #endif
+  void set_nullifiers(int index, const char* value);
+  void set_nullifiers(int index, const void* value, size_t size);
+  ::std::string* add_nullifiers();
+  void add_nullifiers(const ::std::string& value);
+  #if LANG_CXX11
+  void add_nullifiers(::std::string&& value);
+  #endif
+  void add_nullifiers(const char* value);
+  void add_nullifiers(const void* value, size_t size);
+  const ::google::protobuf::RepeatedPtrField< ::std::string>& nullifiers() const;
+  ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_nullifiers();
+
+  // repeated bytes commits = 5;
+  int commits_size() const;
+  void clear_commits();
+  static const int kCommitsFieldNumber = 5;
+  const ::std::string& commits(int index) const;
+  ::std::string* mutable_commits(int index);
+  void set_commits(int index, const ::std::string& value);
+  #if LANG_CXX11
+  void set_commits(int index, ::std::string&& value);
+  #endif
+  void set_commits(int index, const char* value);
+  void set_commits(int index, const void* value, size_t size);
+  ::std::string* add_commits();
+  void add_commits(const ::std::string& value);
+  #if LANG_CXX11
+  void add_commits(::std::string&& value);
+  #endif
+  void add_commits(const char* value);
+  void add_commits(const void* value, size_t size);
+  const ::google::protobuf::RepeatedPtrField< ::std::string>& commits() const;
+  ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_commits();
+
+  // bytes hsig = 2;
+  void clear_hsig();
+  static const int kHsigFieldNumber = 2;
+  const ::std::string& hsig() const;
+  void set_hsig(const ::std::string& value);
+  #if LANG_CXX11
+  void set_hsig(::std::string&& value);
+  #endif
+  void set_hsig(const char* value);
+  void set_hsig(const void* value, size_t size);
+  ::std::string* mutable_hsig();
+  ::std::string* release_hsig();
+  void set_allocated_hsig(::std::string* hsig);
+
+  // bytes rt = 3;
+  void clear_rt();
+  static const int kRtFieldNumber = 3;
+  const ::std::string& rt() const;
+  void set_rt(const ::std::string& value);
+  #if LANG_CXX11
+  void set_rt(::std::string&& value);
+  #endif
+  void set_rt(const char* value);
+  void set_rt(const void* value, size_t size);
+  ::std::string* mutable_rt();
+  ::std::string* release_rt();
+  void set_allocated_rt(::std::string* rt);
+
+  // .zksnark.PHGRProof proof = 1;
+  bool has_proof() const;
+  void clear_proof();
+  static const int kProofFieldNumber = 1;
+  const ::zksnark::PHGRProof& proof() const;
+  ::zksnark::PHGRProof* release_proof();
+  ::zksnark::PHGRProof* mutable_proof();
+  void set_allocated_proof(::zksnark::PHGRProof* proof);
+
+  // @@protoc_insertion_point(class_scope:zksnark.VerifyRequest)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::RepeatedPtrField< ::std::string> nullifiers_;
+  ::google::protobuf::RepeatedPtrField< ::std::string> commits_;
+  ::google::protobuf::internal::ArenaStringPtr hsig_;
+  ::google::protobuf::internal::ArenaStringPtr rt_;
+  ::zksnark::PHGRProof* proof_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_zksnark_2eproto::TableStruct;
+  friend void ::protobuf_zksnark_2eproto::InitDefaultsVerifyRequestImpl();
+};
+// -------------------------------------------------------------------
+
+class VerifyReply : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:zksnark.VerifyReply) */ {
+ public:
+  VerifyReply();
+  virtual ~VerifyReply();
+
+  VerifyReply(const VerifyReply& from);
+
+  inline VerifyReply& operator=(const VerifyReply& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  VerifyReply(VerifyReply&& from) noexcept
+    : VerifyReply() {
+    *this = ::std::move(from);
+  }
+
+  inline VerifyReply& operator=(VerifyReply&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const VerifyReply& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const VerifyReply* internal_default_instance() {
+    return reinterpret_cast<const VerifyReply*>(
+               &_VerifyReply_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    8;
+
+  void Swap(VerifyReply* other);
+  friend void swap(VerifyReply& a, VerifyReply& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline VerifyReply* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  VerifyReply* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const VerifyReply& from);
+  void MergeFrom(const VerifyReply& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(VerifyReply* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // bool valid = 1;
+  void clear_valid();
+  static const int kValidFieldNumber = 1;
+  bool valid() const;
+  void set_valid(bool value);
+
+  // @@protoc_insertion_point(class_scope:zksnark.VerifyReply)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  bool valid_;
+  mutable int _cached_size_;
+  friend struct ::protobuf_zksnark_2eproto::TableStruct;
+  friend void ::protobuf_zksnark_2eproto::InitDefaultsVerifyReplyImpl();
+};
 // ===================================================================
 
 
@@ -1115,13 +1404,13 @@ inline const ::std::string& MerkleHash::hash() const {
   return hash_.GetNoArena();
 }
 inline void MerkleHash::set_hash(const ::std::string& value) {
-
+  
   hash_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.MerkleHash.hash)
 }
 #if LANG_CXX11
 inline void MerkleHash::set_hash(::std::string&& value) {
-
+  
   hash_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.MerkleHash.hash)
@@ -1129,31 +1418,31 @@ inline void MerkleHash::set_hash(::std::string&& value) {
 #endif
 inline void MerkleHash::set_hash(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   hash_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.MerkleHash.hash)
 }
 inline void MerkleHash::set_hash(const void* value, size_t size) {
-
+  
   hash_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.MerkleHash.hash)
 }
 inline ::std::string* MerkleHash::mutable_hash() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.MerkleHash.hash)
   return hash_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* MerkleHash::release_hash() {
   // @@protoc_insertion_point(field_release:zksnark.MerkleHash.hash)
-
+  
   return hash_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void MerkleHash::set_allocated_hash(::std::string* hash) {
   if (hash != NULL) {
-
+    
   } else {
-
+    
   }
   hash_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), hash);
   // @@protoc_insertion_point(field_set_allocated:zksnark.MerkleHash.hash)
@@ -1236,7 +1525,7 @@ inline ::google::protobuf::uint64 Note::value() const {
   return value_;
 }
 inline void Note::set_value(::google::protobuf::uint64 value) {
-
+  
   value_ = value;
   // @@protoc_insertion_point(field_set:zksnark.Note.value)
 }
@@ -1250,13 +1539,13 @@ inline const ::std::string& Note::cm() const {
   return cm_.GetNoArena();
 }
 inline void Note::set_cm(const ::std::string& value) {
-
+  
   cm_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.Note.cm)
 }
 #if LANG_CXX11
 inline void Note::set_cm(::std::string&& value) {
-
+  
   cm_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.Note.cm)
@@ -1264,31 +1553,31 @@ inline void Note::set_cm(::std::string&& value) {
 #endif
 inline void Note::set_cm(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   cm_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.Note.cm)
 }
 inline void Note::set_cm(const void* value, size_t size) {
-
+  
   cm_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.Note.cm)
 }
 inline ::std::string* Note::mutable_cm() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.Note.cm)
   return cm_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* Note::release_cm() {
   // @@protoc_insertion_point(field_release:zksnark.Note.cm)
-
+  
   return cm_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void Note::set_allocated_cm(::std::string* cm) {
   if (cm != NULL) {
-
+    
   } else {
-
+    
   }
   cm_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), cm);
   // @@protoc_insertion_point(field_set_allocated:zksnark.Note.cm)
@@ -1303,13 +1592,13 @@ inline const ::std::string& Note::r() const {
   return r_.GetNoArena();
 }
 inline void Note::set_r(const ::std::string& value) {
-
+  
   r_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.Note.r)
 }
 #if LANG_CXX11
 inline void Note::set_r(::std::string&& value) {
-
+  
   r_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.Note.r)
@@ -1317,31 +1606,31 @@ inline void Note::set_r(::std::string&& value) {
 #endif
 inline void Note::set_r(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   r_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.Note.r)
 }
 inline void Note::set_r(const void* value, size_t size) {
-
+  
   r_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.Note.r)
 }
 inline ::std::string* Note::mutable_r() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.Note.r)
   return r_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* Note::release_r() {
   // @@protoc_insertion_point(field_release:zksnark.Note.r)
-
+  
   return r_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void Note::set_allocated_r(::std::string* r) {
   if (r != NULL) {
-
+    
   } else {
-
+    
   }
   r_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), r);
   // @@protoc_insertion_point(field_set_allocated:zksnark.Note.r)
@@ -1356,13 +1645,13 @@ inline const ::std::string& Note::rho() const {
   return rho_.GetNoArena();
 }
 inline void Note::set_rho(const ::std::string& value) {
-
+  
   rho_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.Note.rho)
 }
 #if LANG_CXX11
 inline void Note::set_rho(::std::string&& value) {
-
+  
   rho_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.Note.rho)
@@ -1370,31 +1659,31 @@ inline void Note::set_rho(::std::string&& value) {
 #endif
 inline void Note::set_rho(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   rho_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.Note.rho)
 }
 inline void Note::set_rho(const void* value, size_t size) {
-
+  
   rho_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.Note.rho)
 }
 inline ::std::string* Note::mutable_rho() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.Note.rho)
   return rho_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* Note::release_rho() {
   // @@protoc_insertion_point(field_release:zksnark.Note.rho)
-
+  
   return rho_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void Note::set_allocated_rho(::std::string* rho) {
   if (rho != NULL) {
-
+    
   } else {
-
+    
   }
   rho_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), rho);
   // @@protoc_insertion_point(field_set_allocated:zksnark.Note.rho)
@@ -1409,13 +1698,13 @@ inline const ::std::string& Note::apk() const {
   return apk_.GetNoArena();
 }
 inline void Note::set_apk(const ::std::string& value) {
-
+  
   apk_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.Note.apk)
 }
 #if LANG_CXX11
 inline void Note::set_apk(::std::string&& value) {
-
+  
   apk_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.Note.apk)
@@ -1423,31 +1712,31 @@ inline void Note::set_apk(::std::string&& value) {
 #endif
 inline void Note::set_apk(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   apk_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.Note.apk)
 }
 inline void Note::set_apk(const void* value, size_t size) {
-
+  
   apk_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.Note.apk)
 }
 inline ::std::string* Note::mutable_apk() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.Note.apk)
   return apk_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* Note::release_apk() {
   // @@protoc_insertion_point(field_release:zksnark.Note.apk)
-
+  
   return apk_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void Note::set_allocated_apk(::std::string* apk) {
   if (apk != NULL) {
-
+    
   } else {
-
+    
   }
   apk_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), apk);
   // @@protoc_insertion_point(field_set_allocated:zksnark.Note.apk)
@@ -1462,13 +1751,13 @@ inline const ::std::string& Note::nf() const {
   return nf_.GetNoArena();
 }
 inline void Note::set_nf(const ::std::string& value) {
-
+  
   nf_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.Note.nf)
 }
 #if LANG_CXX11
 inline void Note::set_nf(::std::string&& value) {
-
+  
   nf_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.Note.nf)
@@ -1476,31 +1765,31 @@ inline void Note::set_nf(::std::string&& value) {
 #endif
 inline void Note::set_nf(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   nf_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.Note.nf)
 }
 inline void Note::set_nf(const void* value, size_t size) {
-
+  
   nf_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.Note.nf)
 }
 inline ::std::string* Note::mutable_nf() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.Note.nf)
   return nf_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* Note::release_nf() {
   // @@protoc_insertion_point(field_release:zksnark.Note.nf)
-
+  
   return nf_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void Note::set_allocated_nf(::std::string* nf) {
   if (nf != NULL) {
-
+    
   } else {
-
+    
   }
   nf_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), nf);
   // @@protoc_insertion_point(field_set_allocated:zksnark.Note.nf)
@@ -1528,13 +1817,13 @@ inline const ::zksnark::MerklePath& JSInput::witnesspath() const {
 }
 inline ::zksnark::MerklePath* JSInput::release_witnesspath() {
   // @@protoc_insertion_point(field_release:zksnark.JSInput.witnessPath)
-
+  
   ::zksnark::MerklePath* temp = witnesspath_;
   witnesspath_ = NULL;
   return temp;
 }
 inline ::zksnark::MerklePath* JSInput::mutable_witnesspath() {
-
+  
   if (witnesspath_ == NULL) {
     witnesspath_ = new ::zksnark::MerklePath;
   }
@@ -1552,9 +1841,9 @@ inline void JSInput::set_allocated_witnesspath(::zksnark::MerklePath* witnesspat
       witnesspath = ::google::protobuf::internal::GetOwnedMessage(
           message_arena, witnesspath, submessage_arena);
     }
-
+    
   } else {
-
+    
   }
   witnesspath_ = witnesspath;
   // @@protoc_insertion_point(field_set_allocated:zksnark.JSInput.witnessPath)
@@ -1569,13 +1858,13 @@ inline const ::std::string& JSInput::spendingkey() const {
   return spendingkey_.GetNoArena();
 }
 inline void JSInput::set_spendingkey(const ::std::string& value) {
-
+  
   spendingkey_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.JSInput.spendingKey)
 }
 #if LANG_CXX11
 inline void JSInput::set_spendingkey(::std::string&& value) {
-
+  
   spendingkey_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.JSInput.spendingKey)
@@ -1583,31 +1872,31 @@ inline void JSInput::set_spendingkey(::std::string&& value) {
 #endif
 inline void JSInput::set_spendingkey(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   spendingkey_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.JSInput.spendingKey)
 }
 inline void JSInput::set_spendingkey(const void* value, size_t size) {
-
+  
   spendingkey_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.JSInput.spendingKey)
 }
 inline ::std::string* JSInput::mutable_spendingkey() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.JSInput.spendingKey)
   return spendingkey_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* JSInput::release_spendingkey() {
   // @@protoc_insertion_point(field_release:zksnark.JSInput.spendingKey)
-
+  
   return spendingkey_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void JSInput::set_allocated_spendingkey(::std::string* spendingkey) {
   if (spendingkey != NULL) {
-
+    
   } else {
-
+    
   }
   spendingkey_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), spendingkey);
   // @@protoc_insertion_point(field_set_allocated:zksnark.JSInput.spendingKey)
@@ -1631,13 +1920,13 @@ inline const ::zksnark::Note& JSInput::note() const {
 }
 inline ::zksnark::Note* JSInput::release_note() {
   // @@protoc_insertion_point(field_release:zksnark.JSInput.note)
-
+  
   ::zksnark::Note* temp = note_;
   note_ = NULL;
   return temp;
 }
 inline ::zksnark::Note* JSInput::mutable_note() {
-
+  
   if (note_ == NULL) {
     note_ = new ::zksnark::Note;
   }
@@ -1655,9 +1944,9 @@ inline void JSInput::set_allocated_note(::zksnark::Note* note) {
       note = ::google::protobuf::internal::GetOwnedMessage(
           message_arena, note, submessage_arena);
     }
-
+    
   } else {
-
+    
   }
   note_ = note;
   // @@protoc_insertion_point(field_set_allocated:zksnark.JSInput.note)
@@ -1736,13 +2025,13 @@ inline const ::std::string& ProveRequest::hsig() const {
   return hsig_.GetNoArena();
 }
 inline void ProveRequest::set_hsig(const ::std::string& value) {
-
+  
   hsig_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.ProveRequest.hsig)
 }
 #if LANG_CXX11
 inline void ProveRequest::set_hsig(::std::string&& value) {
-
+  
   hsig_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.ProveRequest.hsig)
@@ -1750,31 +2039,31 @@ inline void ProveRequest::set_hsig(::std::string&& value) {
 #endif
 inline void ProveRequest::set_hsig(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   hsig_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.ProveRequest.hsig)
 }
 inline void ProveRequest::set_hsig(const void* value, size_t size) {
-
+  
   hsig_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.ProveRequest.hsig)
 }
 inline ::std::string* ProveRequest::mutable_hsig() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.ProveRequest.hsig)
   return hsig_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* ProveRequest::release_hsig() {
   // @@protoc_insertion_point(field_release:zksnark.ProveRequest.hsig)
-
+  
   return hsig_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void ProveRequest::set_allocated_hsig(::std::string* hsig) {
   if (hsig != NULL) {
-
+    
   } else {
-
+    
   }
   hsig_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), hsig);
   // @@protoc_insertion_point(field_set_allocated:zksnark.ProveRequest.hsig)
@@ -1789,13 +2078,13 @@ inline const ::std::string& ProveRequest::phi() const {
   return phi_.GetNoArena();
 }
 inline void ProveRequest::set_phi(const ::std::string& value) {
-
+  
   phi_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.ProveRequest.phi)
 }
 #if LANG_CXX11
 inline void ProveRequest::set_phi(::std::string&& value) {
-
+  
   phi_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.ProveRequest.phi)
@@ -1803,31 +2092,31 @@ inline void ProveRequest::set_phi(::std::string&& value) {
 #endif
 inline void ProveRequest::set_phi(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   phi_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.ProveRequest.phi)
 }
 inline void ProveRequest::set_phi(const void* value, size_t size) {
-
+  
   phi_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.ProveRequest.phi)
 }
 inline ::std::string* ProveRequest::mutable_phi() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.ProveRequest.phi)
   return phi_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* ProveRequest::release_phi() {
   // @@protoc_insertion_point(field_release:zksnark.ProveRequest.phi)
-
+  
   return phi_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void ProveRequest::set_allocated_phi(::std::string* phi) {
   if (phi != NULL) {
-
+    
   } else {
-
+    
   }
   phi_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), phi);
   // @@protoc_insertion_point(field_set_allocated:zksnark.ProveRequest.phi)
@@ -1842,13 +2131,13 @@ inline const ::std::string& ProveRequest::rt() const {
   return rt_.GetNoArena();
 }
 inline void ProveRequest::set_rt(const ::std::string& value) {
-
+  
   rt_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.ProveRequest.rt)
 }
 #if LANG_CXX11
 inline void ProveRequest::set_rt(::std::string&& value) {
-
+  
   rt_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.ProveRequest.rt)
@@ -1856,31 +2145,31 @@ inline void ProveRequest::set_rt(::std::string&& value) {
 #endif
 inline void ProveRequest::set_rt(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   rt_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.ProveRequest.rt)
 }
 inline void ProveRequest::set_rt(const void* value, size_t size) {
-
+  
   rt_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.ProveRequest.rt)
 }
 inline ::std::string* ProveRequest::mutable_rt() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.ProveRequest.rt)
   return rt_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* ProveRequest::release_rt() {
   // @@protoc_insertion_point(field_release:zksnark.ProveRequest.rt)
-
+  
   return rt_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void ProveRequest::set_allocated_rt(::std::string* rt) {
   if (rt != NULL) {
-
+    
   } else {
-
+    
   }
   rt_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), rt);
   // @@protoc_insertion_point(field_set_allocated:zksnark.ProveRequest.rt)
@@ -1899,13 +2188,13 @@ inline const ::std::string& PHGRProof::g_a() const {
   return g_a_.GetNoArena();
 }
 inline void PHGRProof::set_g_a(const ::std::string& value) {
-
+  
   g_a_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.PHGRProof.g_A)
 }
 #if LANG_CXX11
 inline void PHGRProof::set_g_a(::std::string&& value) {
-
+  
   g_a_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.PHGRProof.g_A)
@@ -1913,31 +2202,31 @@ inline void PHGRProof::set_g_a(::std::string&& value) {
 #endif
 inline void PHGRProof::set_g_a(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   g_a_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.PHGRProof.g_A)
 }
 inline void PHGRProof::set_g_a(const void* value, size_t size) {
-
+  
   g_a_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.PHGRProof.g_A)
 }
 inline ::std::string* PHGRProof::mutable_g_a() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.PHGRProof.g_A)
   return g_a_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* PHGRProof::release_g_a() {
   // @@protoc_insertion_point(field_release:zksnark.PHGRProof.g_A)
-
+  
   return g_a_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void PHGRProof::set_allocated_g_a(::std::string* g_a) {
   if (g_a != NULL) {
-
+    
   } else {
-
+    
   }
   g_a_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), g_a);
   // @@protoc_insertion_point(field_set_allocated:zksnark.PHGRProof.g_A)
@@ -1952,13 +2241,13 @@ inline const ::std::string& PHGRProof::g_a_prime() const {
   return g_a_prime_.GetNoArena();
 }
 inline void PHGRProof::set_g_a_prime(const ::std::string& value) {
-
+  
   g_a_prime_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.PHGRProof.g_A_prime)
 }
 #if LANG_CXX11
 inline void PHGRProof::set_g_a_prime(::std::string&& value) {
-
+  
   g_a_prime_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.PHGRProof.g_A_prime)
@@ -1966,31 +2255,31 @@ inline void PHGRProof::set_g_a_prime(::std::string&& value) {
 #endif
 inline void PHGRProof::set_g_a_prime(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   g_a_prime_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.PHGRProof.g_A_prime)
 }
 inline void PHGRProof::set_g_a_prime(const void* value, size_t size) {
-
+  
   g_a_prime_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.PHGRProof.g_A_prime)
 }
 inline ::std::string* PHGRProof::mutable_g_a_prime() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.PHGRProof.g_A_prime)
   return g_a_prime_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* PHGRProof::release_g_a_prime() {
   // @@protoc_insertion_point(field_release:zksnark.PHGRProof.g_A_prime)
-
+  
   return g_a_prime_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void PHGRProof::set_allocated_g_a_prime(::std::string* g_a_prime) {
   if (g_a_prime != NULL) {
-
+    
   } else {
-
+    
   }
   g_a_prime_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), g_a_prime);
   // @@protoc_insertion_point(field_set_allocated:zksnark.PHGRProof.g_A_prime)
@@ -2005,13 +2294,13 @@ inline const ::std::string& PHGRProof::g_b() const {
   return g_b_.GetNoArena();
 }
 inline void PHGRProof::set_g_b(const ::std::string& value) {
-
+  
   g_b_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.PHGRProof.g_B)
 }
 #if LANG_CXX11
 inline void PHGRProof::set_g_b(::std::string&& value) {
-
+  
   g_b_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.PHGRProof.g_B)
@@ -2019,31 +2308,31 @@ inline void PHGRProof::set_g_b(::std::string&& value) {
 #endif
 inline void PHGRProof::set_g_b(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   g_b_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.PHGRProof.g_B)
 }
 inline void PHGRProof::set_g_b(const void* value, size_t size) {
-
+  
   g_b_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.PHGRProof.g_B)
 }
 inline ::std::string* PHGRProof::mutable_g_b() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.PHGRProof.g_B)
   return g_b_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* PHGRProof::release_g_b() {
   // @@protoc_insertion_point(field_release:zksnark.PHGRProof.g_B)
-
+  
   return g_b_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void PHGRProof::set_allocated_g_b(::std::string* g_b) {
   if (g_b != NULL) {
-
+    
   } else {
-
+    
   }
   g_b_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), g_b);
   // @@protoc_insertion_point(field_set_allocated:zksnark.PHGRProof.g_B)
@@ -2058,13 +2347,13 @@ inline const ::std::string& PHGRProof::g_b_prime() const {
   return g_b_prime_.GetNoArena();
 }
 inline void PHGRProof::set_g_b_prime(const ::std::string& value) {
-
+  
   g_b_prime_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.PHGRProof.g_B_prime)
 }
 #if LANG_CXX11
 inline void PHGRProof::set_g_b_prime(::std::string&& value) {
-
+  
   g_b_prime_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.PHGRProof.g_B_prime)
@@ -2072,31 +2361,31 @@ inline void PHGRProof::set_g_b_prime(::std::string&& value) {
 #endif
 inline void PHGRProof::set_g_b_prime(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   g_b_prime_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.PHGRProof.g_B_prime)
 }
 inline void PHGRProof::set_g_b_prime(const void* value, size_t size) {
-
+  
   g_b_prime_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.PHGRProof.g_B_prime)
 }
 inline ::std::string* PHGRProof::mutable_g_b_prime() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.PHGRProof.g_B_prime)
   return g_b_prime_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* PHGRProof::release_g_b_prime() {
   // @@protoc_insertion_point(field_release:zksnark.PHGRProof.g_B_prime)
-
+  
   return g_b_prime_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void PHGRProof::set_allocated_g_b_prime(::std::string* g_b_prime) {
   if (g_b_prime != NULL) {
-
+    
   } else {
-
+    
   }
   g_b_prime_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), g_b_prime);
   // @@protoc_insertion_point(field_set_allocated:zksnark.PHGRProof.g_B_prime)
@@ -2111,13 +2400,13 @@ inline const ::std::string& PHGRProof::g_c() const {
   return g_c_.GetNoArena();
 }
 inline void PHGRProof::set_g_c(const ::std::string& value) {
-
+  
   g_c_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.PHGRProof.g_C)
 }
 #if LANG_CXX11
 inline void PHGRProof::set_g_c(::std::string&& value) {
-
+  
   g_c_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.PHGRProof.g_C)
@@ -2125,31 +2414,31 @@ inline void PHGRProof::set_g_c(::std::string&& value) {
 #endif
 inline void PHGRProof::set_g_c(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   g_c_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.PHGRProof.g_C)
 }
 inline void PHGRProof::set_g_c(const void* value, size_t size) {
-
+  
   g_c_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.PHGRProof.g_C)
 }
 inline ::std::string* PHGRProof::mutable_g_c() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.PHGRProof.g_C)
   return g_c_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* PHGRProof::release_g_c() {
   // @@protoc_insertion_point(field_release:zksnark.PHGRProof.g_C)
-
+  
   return g_c_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void PHGRProof::set_allocated_g_c(::std::string* g_c) {
   if (g_c != NULL) {
-
+    
   } else {
-
+    
   }
   g_c_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), g_c);
   // @@protoc_insertion_point(field_set_allocated:zksnark.PHGRProof.g_C)
@@ -2164,13 +2453,13 @@ inline const ::std::string& PHGRProof::g_c_prime() const {
   return g_c_prime_.GetNoArena();
 }
 inline void PHGRProof::set_g_c_prime(const ::std::string& value) {
-
+  
   g_c_prime_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.PHGRProof.g_C_prime)
 }
 #if LANG_CXX11
 inline void PHGRProof::set_g_c_prime(::std::string&& value) {
-
+  
   g_c_prime_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.PHGRProof.g_C_prime)
@@ -2178,31 +2467,31 @@ inline void PHGRProof::set_g_c_prime(::std::string&& value) {
 #endif
 inline void PHGRProof::set_g_c_prime(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   g_c_prime_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.PHGRProof.g_C_prime)
 }
 inline void PHGRProof::set_g_c_prime(const void* value, size_t size) {
-
+  
   g_c_prime_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.PHGRProof.g_C_prime)
 }
 inline ::std::string* PHGRProof::mutable_g_c_prime() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.PHGRProof.g_C_prime)
   return g_c_prime_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* PHGRProof::release_g_c_prime() {
   // @@protoc_insertion_point(field_release:zksnark.PHGRProof.g_C_prime)
-
+  
   return g_c_prime_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void PHGRProof::set_allocated_g_c_prime(::std::string* g_c_prime) {
   if (g_c_prime != NULL) {
-
+    
   } else {
-
+    
   }
   g_c_prime_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), g_c_prime);
   // @@protoc_insertion_point(field_set_allocated:zksnark.PHGRProof.g_C_prime)
@@ -2217,13 +2506,13 @@ inline const ::std::string& PHGRProof::g_k() const {
   return g_k_.GetNoArena();
 }
 inline void PHGRProof::set_g_k(const ::std::string& value) {
-
+  
   g_k_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.PHGRProof.g_K)
 }
 #if LANG_CXX11
 inline void PHGRProof::set_g_k(::std::string&& value) {
-
+  
   g_k_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.PHGRProof.g_K)
@@ -2231,31 +2520,31 @@ inline void PHGRProof::set_g_k(::std::string&& value) {
 #endif
 inline void PHGRProof::set_g_k(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   g_k_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.PHGRProof.g_K)
 }
 inline void PHGRProof::set_g_k(const void* value, size_t size) {
-
+  
   g_k_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.PHGRProof.g_K)
 }
 inline ::std::string* PHGRProof::mutable_g_k() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.PHGRProof.g_K)
   return g_k_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* PHGRProof::release_g_k() {
   // @@protoc_insertion_point(field_release:zksnark.PHGRProof.g_K)
-
+  
   return g_k_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void PHGRProof::set_allocated_g_k(::std::string* g_k) {
   if (g_k != NULL) {
-
+    
   } else {
-
+    
   }
   g_k_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), g_k);
   // @@protoc_insertion_point(field_set_allocated:zksnark.PHGRProof.g_K)
@@ -2270,13 +2559,13 @@ inline const ::std::string& PHGRProof::g_h() const {
   return g_h_.GetNoArena();
 }
 inline void PHGRProof::set_g_h(const ::std::string& value) {
-
+  
   g_h_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
   // @@protoc_insertion_point(field_set:zksnark.PHGRProof.g_H)
 }
 #if LANG_CXX11
 inline void PHGRProof::set_g_h(::std::string&& value) {
-
+  
   g_h_.SetNoArena(
     &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
   // @@protoc_insertion_point(field_set_rvalue:zksnark.PHGRProof.g_H)
@@ -2284,31 +2573,31 @@ inline void PHGRProof::set_g_h(::std::string&& value) {
 #endif
 inline void PHGRProof::set_g_h(const char* value) {
   GOOGLE_DCHECK(value != NULL);
-
+  
   g_h_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
   // @@protoc_insertion_point(field_set_char:zksnark.PHGRProof.g_H)
 }
 inline void PHGRProof::set_g_h(const void* value, size_t size) {
-
+  
   g_h_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
   // @@protoc_insertion_point(field_set_pointer:zksnark.PHGRProof.g_H)
 }
 inline ::std::string* PHGRProof::mutable_g_h() {
-
+  
   // @@protoc_insertion_point(field_mutable:zksnark.PHGRProof.g_H)
   return g_h_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline ::std::string* PHGRProof::release_g_h() {
   // @@protoc_insertion_point(field_release:zksnark.PHGRProof.g_H)
-
+  
   return g_h_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void PHGRProof::set_allocated_g_h(::std::string* g_h) {
   if (g_h != NULL) {
-
+    
   } else {
-
+    
   }
   g_h_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), g_h);
   // @@protoc_insertion_point(field_set_allocated:zksnark.PHGRProof.g_H)
@@ -2336,13 +2625,13 @@ inline const ::zksnark::PHGRProof& ProveReply::proof() const {
 }
 inline ::zksnark::PHGRProof* ProveReply::release_proof() {
   // @@protoc_insertion_point(field_release:zksnark.ProveReply.proof)
-
+  
   ::zksnark::PHGRProof* temp = proof_;
   proof_ = NULL;
   return temp;
 }
 inline ::zksnark::PHGRProof* ProveReply::mutable_proof() {
-
+  
   if (proof_ == NULL) {
     proof_ = new ::zksnark::PHGRProof;
   }
@@ -2360,17 +2649,337 @@ inline void ProveReply::set_allocated_proof(::zksnark::PHGRProof* proof) {
       proof = ::google::protobuf::internal::GetOwnedMessage(
           message_arena, proof, submessage_arena);
     }
-
+    
   } else {
-
+    
   }
   proof_ = proof;
   // @@protoc_insertion_point(field_set_allocated:zksnark.ProveReply.proof)
 }
 
+// -------------------------------------------------------------------
+
+// VerifyRequest
+
+// .zksnark.PHGRProof proof = 1;
+inline bool VerifyRequest::has_proof() const {
+  return this != internal_default_instance() && proof_ != NULL;
+}
+inline void VerifyRequest::clear_proof() {
+  if (GetArenaNoVirtual() == NULL && proof_ != NULL) {
+    delete proof_;
+  }
+  proof_ = NULL;
+}
+inline const ::zksnark::PHGRProof& VerifyRequest::proof() const {
+  const ::zksnark::PHGRProof* p = proof_;
+  // @@protoc_insertion_point(field_get:zksnark.VerifyRequest.proof)
+  return p != NULL ? *p : *reinterpret_cast<const ::zksnark::PHGRProof*>(
+      &::zksnark::_PHGRProof_default_instance_);
+}
+inline ::zksnark::PHGRProof* VerifyRequest::release_proof() {
+  // @@protoc_insertion_point(field_release:zksnark.VerifyRequest.proof)
+  
+  ::zksnark::PHGRProof* temp = proof_;
+  proof_ = NULL;
+  return temp;
+}
+inline ::zksnark::PHGRProof* VerifyRequest::mutable_proof() {
+  
+  if (proof_ == NULL) {
+    proof_ = new ::zksnark::PHGRProof;
+  }
+  // @@protoc_insertion_point(field_mutable:zksnark.VerifyRequest.proof)
+  return proof_;
+}
+inline void VerifyRequest::set_allocated_proof(::zksnark::PHGRProof* proof) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == NULL) {
+    delete proof_;
+  }
+  if (proof) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      proof = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, proof, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  proof_ = proof;
+  // @@protoc_insertion_point(field_set_allocated:zksnark.VerifyRequest.proof)
+}
+
+// bytes hsig = 2;
+inline void VerifyRequest::clear_hsig() {
+  hsig_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& VerifyRequest::hsig() const {
+  // @@protoc_insertion_point(field_get:zksnark.VerifyRequest.hsig)
+  return hsig_.GetNoArena();
+}
+inline void VerifyRequest::set_hsig(const ::std::string& value) {
+  
+  hsig_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.hsig)
+}
+#if LANG_CXX11
+inline void VerifyRequest::set_hsig(::std::string&& value) {
+  
+  hsig_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:zksnark.VerifyRequest.hsig)
+}
+#endif
+inline void VerifyRequest::set_hsig(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  hsig_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:zksnark.VerifyRequest.hsig)
+}
+inline void VerifyRequest::set_hsig(const void* value, size_t size) {
+  
+  hsig_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:zksnark.VerifyRequest.hsig)
+}
+inline ::std::string* VerifyRequest::mutable_hsig() {
+  
+  // @@protoc_insertion_point(field_mutable:zksnark.VerifyRequest.hsig)
+  return hsig_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* VerifyRequest::release_hsig() {
+  // @@protoc_insertion_point(field_release:zksnark.VerifyRequest.hsig)
+  
+  return hsig_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void VerifyRequest::set_allocated_hsig(::std::string* hsig) {
+  if (hsig != NULL) {
+    
+  } else {
+    
+  }
+  hsig_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), hsig);
+  // @@protoc_insertion_point(field_set_allocated:zksnark.VerifyRequest.hsig)
+}
+
+// bytes rt = 3;
+inline void VerifyRequest::clear_rt() {
+  rt_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& VerifyRequest::rt() const {
+  // @@protoc_insertion_point(field_get:zksnark.VerifyRequest.rt)
+  return rt_.GetNoArena();
+}
+inline void VerifyRequest::set_rt(const ::std::string& value) {
+  
+  rt_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.rt)
+}
+#if LANG_CXX11
+inline void VerifyRequest::set_rt(::std::string&& value) {
+  
+  rt_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:zksnark.VerifyRequest.rt)
+}
+#endif
+inline void VerifyRequest::set_rt(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  rt_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:zksnark.VerifyRequest.rt)
+}
+inline void VerifyRequest::set_rt(const void* value, size_t size) {
+  
+  rt_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:zksnark.VerifyRequest.rt)
+}
+inline ::std::string* VerifyRequest::mutable_rt() {
+  
+  // @@protoc_insertion_point(field_mutable:zksnark.VerifyRequest.rt)
+  return rt_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* VerifyRequest::release_rt() {
+  // @@protoc_insertion_point(field_release:zksnark.VerifyRequest.rt)
+  
+  return rt_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void VerifyRequest::set_allocated_rt(::std::string* rt) {
+  if (rt != NULL) {
+    
+  } else {
+    
+  }
+  rt_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), rt);
+  // @@protoc_insertion_point(field_set_allocated:zksnark.VerifyRequest.rt)
+}
+
+// repeated bytes nullifiers = 4;
+inline int VerifyRequest::nullifiers_size() const {
+  return nullifiers_.size();
+}
+inline void VerifyRequest::clear_nullifiers() {
+  nullifiers_.Clear();
+}
+inline const ::std::string& VerifyRequest::nullifiers(int index) const {
+  // @@protoc_insertion_point(field_get:zksnark.VerifyRequest.nullifiers)
+  return nullifiers_.Get(index);
+}
+inline ::std::string* VerifyRequest::mutable_nullifiers(int index) {
+  // @@protoc_insertion_point(field_mutable:zksnark.VerifyRequest.nullifiers)
+  return nullifiers_.Mutable(index);
+}
+inline void VerifyRequest::set_nullifiers(int index, const ::std::string& value) {
+  // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.nullifiers)
+  nullifiers_.Mutable(index)->assign(value);
+}
+#if LANG_CXX11
+inline void VerifyRequest::set_nullifiers(int index, ::std::string&& value) {
+  // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.nullifiers)
+  nullifiers_.Mutable(index)->assign(std::move(value));
+}
+#endif
+inline void VerifyRequest::set_nullifiers(int index, const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  nullifiers_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:zksnark.VerifyRequest.nullifiers)
+}
+inline void VerifyRequest::set_nullifiers(int index, const void* value, size_t size) {
+  nullifiers_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:zksnark.VerifyRequest.nullifiers)
+}
+inline ::std::string* VerifyRequest::add_nullifiers() {
+  // @@protoc_insertion_point(field_add_mutable:zksnark.VerifyRequest.nullifiers)
+  return nullifiers_.Add();
+}
+inline void VerifyRequest::add_nullifiers(const ::std::string& value) {
+  nullifiers_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:zksnark.VerifyRequest.nullifiers)
+}
+#if LANG_CXX11
+inline void VerifyRequest::add_nullifiers(::std::string&& value) {
+  nullifiers_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:zksnark.VerifyRequest.nullifiers)
+}
+#endif
+inline void VerifyRequest::add_nullifiers(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  nullifiers_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:zksnark.VerifyRequest.nullifiers)
+}
+inline void VerifyRequest::add_nullifiers(const void* value, size_t size) {
+  nullifiers_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:zksnark.VerifyRequest.nullifiers)
+}
+inline const ::google::protobuf::RepeatedPtrField< ::std::string>&
+VerifyRequest::nullifiers() const {
+  // @@protoc_insertion_point(field_list:zksnark.VerifyRequest.nullifiers)
+  return nullifiers_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::std::string>*
+VerifyRequest::mutable_nullifiers() {
+  // @@protoc_insertion_point(field_mutable_list:zksnark.VerifyRequest.nullifiers)
+  return &nullifiers_;
+}
+
+// repeated bytes commits = 5;
+inline int VerifyRequest::commits_size() const {
+  return commits_.size();
+}
+inline void VerifyRequest::clear_commits() {
+  commits_.Clear();
+}
+inline const ::std::string& VerifyRequest::commits(int index) const {
+  // @@protoc_insertion_point(field_get:zksnark.VerifyRequest.commits)
+  return commits_.Get(index);
+}
+inline ::std::string* VerifyRequest::mutable_commits(int index) {
+  // @@protoc_insertion_point(field_mutable:zksnark.VerifyRequest.commits)
+  return commits_.Mutable(index);
+}
+inline void VerifyRequest::set_commits(int index, const ::std::string& value) {
+  // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.commits)
+  commits_.Mutable(index)->assign(value);
+}
+#if LANG_CXX11
+inline void VerifyRequest::set_commits(int index, ::std::string&& value) {
+  // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.commits)
+  commits_.Mutable(index)->assign(std::move(value));
+}
+#endif
+inline void VerifyRequest::set_commits(int index, const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  commits_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:zksnark.VerifyRequest.commits)
+}
+inline void VerifyRequest::set_commits(int index, const void* value, size_t size) {
+  commits_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:zksnark.VerifyRequest.commits)
+}
+inline ::std::string* VerifyRequest::add_commits() {
+  // @@protoc_insertion_point(field_add_mutable:zksnark.VerifyRequest.commits)
+  return commits_.Add();
+}
+inline void VerifyRequest::add_commits(const ::std::string& value) {
+  commits_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:zksnark.VerifyRequest.commits)
+}
+#if LANG_CXX11
+inline void VerifyRequest::add_commits(::std::string&& value) {
+  commits_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:zksnark.VerifyRequest.commits)
+}
+#endif
+inline void VerifyRequest::add_commits(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  commits_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:zksnark.VerifyRequest.commits)
+}
+inline void VerifyRequest::add_commits(const void* value, size_t size) {
+  commits_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:zksnark.VerifyRequest.commits)
+}
+inline const ::google::protobuf::RepeatedPtrField< ::std::string>&
+VerifyRequest::commits() const {
+  // @@protoc_insertion_point(field_list:zksnark.VerifyRequest.commits)
+  return commits_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::std::string>*
+VerifyRequest::mutable_commits() {
+  // @@protoc_insertion_point(field_mutable_list:zksnark.VerifyRequest.commits)
+  return &commits_;
+}
+
+// -------------------------------------------------------------------
+
+// VerifyReply
+
+// bool valid = 1;
+inline void VerifyReply::clear_valid() {
+  valid_ = false;
+}
+inline bool VerifyReply::valid() const {
+  // @@protoc_insertion_point(field_get:zksnark.VerifyReply.valid)
+  return valid_;
+}
+inline void VerifyReply::set_valid(bool value) {
+  
+  valid_ = value;
+  // @@protoc_insertion_point(field_set:zksnark.VerifyReply.valid)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

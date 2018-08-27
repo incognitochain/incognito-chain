@@ -87,43 +87,46 @@ public:
         saveToFile(pkPath, keypair.pk);
     }
 
-    // bool verify(
-    //     const PHGRProof& proof,
-    //     ProofVerifier& verifier,
-    //     const uint256& joinSplitPubKey,
-    //     const uint256& randomSeed,
-    //     const std::array<uint256, NumInputs>& macs,
-    //     const std::array<uint256, NumInputs>& nullifiers,
-    //     const std::array<uint256, NumOutputs>& commitments,
-    //     uint64_t vpub_old,
-    //     uint64_t vpub_new,
-    //     const uint256& rt
-    // ) {
-    //     try {
-    //         auto r1cs_proof = proof.to_libsnark_proof<r1cs_ppzksnark_proof<ppzksnark_ppT>>();
+    bool verify(
+        const PHGRProof& proof,
+        ProofVerifier& verifier,
+        // const uint256& joinSplitPubKey,
+        // const uint256& randomSeed,
+        const std::array<uint256, NumInputs>& macs,
+        const std::array<uint256, NumInputs>& nullifiers,
+        const std::array<uint256, NumOutputs>& commitments,
+        // uint64_t vpub_old,
+        // uint64_t vpub_new,
+        const uint256& rt,
+        uint256 &h_sig
+    ) {
+        try {
+            auto r1cs_proof = proof.to_libsnark_proof<r1cs_ppzksnark_proof<ppzksnark_ppT>>();
 
-    //         uint256 h_sig = this->h_sig(randomSeed, nullifiers, joinSplitPubKey);
+            // uint256 h_sig = this->h_sig(randomSeed, nullifiers, joinSplitPubKey);
 
-    //         auto witness = joinsplit_gadget<FieldT, NumInputs, NumOutputs>::witness_map(
-    //             rt,
-    //             h_sig,
-    //             macs,
-    //             nullifiers,
-    //             commitments,
-    //             vpub_old,
-    //             vpub_new
-    //         );
+            auto witness = joinsplit_gadget<FieldT, NumInputs, NumOutputs>::witness_map(
+                rt,
+                h_sig,
+                macs,
+                nullifiers,
+                commitments,
+                0,
+                0
+                // vpub_old,
+                // vpub_new
+            );
 
-    //         return verifier.check(
-    //             vk,
-    //             vk_precomp,
-    //             witness,
-    //             r1cs_proof
-    //         );
-    //     } catch (...) {
-    //         return false;
-    //     }
-    // }
+            return verifier.check(
+                vk,
+                vk_precomp,
+                witness,
+                r1cs_proof
+            );
+        } catch (...) {
+            return false;
+        }
+    }
 
     PHGRProof prove(
         // bool makeGrothProof,

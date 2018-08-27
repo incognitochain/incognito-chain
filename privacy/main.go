@@ -2,9 +2,10 @@ package main
 
 import (
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
+	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
 )
 
-func main() {
+func runProve() {
 	outApk := client.SpendingAddress{1}
 	ekey := client.TransmissionKey{2}
 	outNote1 := &client.Note{Value: 1000, Apk: outApk}
@@ -35,7 +36,6 @@ func main() {
 	index2 := [merkleTreeDepth]bool{true}
 	mpath2 := client.MerklePath{AuthPath: mhash2[:], Index: index2[:]}
 
-	// TODO: add input's R
 	skey := client.SpendingKey{5}
 	inpApk := client.SpendingAddress{6}
 	rho1 := [32]byte{7}
@@ -51,4 +51,28 @@ func main() {
 	pubKey := [32]byte{9}
 	rt := [32]byte{10}
 	client.Prove(inputs, outputs, pubKey[:], rt[:])
+}
+
+func runVerify() {
+	proof := &zksnark.PHGRProof{}
+
+	nf1 := [32]byte{1}
+	nf2 := [32]byte{2}
+	var nf [][]byte
+	nf = append(nf, nf1[:])
+	nf = append(nf, nf2[:])
+
+	cm1 := [32]byte{3}
+	cm2 := [32]byte{4}
+	var cm [][]byte
+	cm = append(cm, cm1[:])
+	cm = append(cm, cm2[:])
+	rt := [32]byte{5}
+	hSig := [32]byte{6}
+	client.Verify(proof, &nf, &cm, rt[:], hSig[:])
+}
+
+func main() {
+	// runProve()
+	runVerify()
 }

@@ -91,18 +91,19 @@ public:
         // uint256 *out_esk = nullptr
     ) = 0;
 
-    // virtual bool verify(
-    //     const PHGRProof& proof,
-    //     ProofVerifier& verifier,
-    //     const uint256& joinSplitPubKey,
-    //     const uint256& randomSeed,
-    //     const std::array<uint256, NumInputs>& hmacs,
-    //     const std::array<uint256, NumInputs>& nullifiers,
-    //     const std::array<uint256, NumOutputs>& commitments,
-    //     uint64_t vpub_old,
-    //     uint64_t vpub_new,
-    //     const uint256& rt
-    // ) = 0;
+    virtual bool verify(
+        const PHGRProof& proof,
+        ProofVerifier& verifier,
+        // const uint256& joinSplitPubKey,
+        // const uint256& randomSeed,
+        const std::array<uint256, NumInputs>& macs,
+        const std::array<uint256, NumInputs>& nullifiers,
+        const std::array<uint256, NumOutputs>& commitments,
+        // uint64_t vpub_old,
+        // uint64_t vpub_new,
+        const uint256& rt,
+        uint256 &h_sig
+    ) = 0;
 
 protected:
     JoinSplit() {}

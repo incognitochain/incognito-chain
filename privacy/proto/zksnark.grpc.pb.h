@@ -45,9 +45,18 @@ class Zksnark final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::zksnark::ProveReply>> PrepareAsyncProve(::grpc::ClientContext* context, const ::zksnark::ProveRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::zksnark::ProveReply>>(PrepareAsyncProveRaw(context, request, cq));
     }
+    virtual ::grpc::Status Verify(::grpc::ClientContext* context, const ::zksnark::VerifyRequest& request, ::zksnark::VerifyReply* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::zksnark::VerifyReply>> AsyncVerify(::grpc::ClientContext* context, const ::zksnark::VerifyRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::zksnark::VerifyReply>>(AsyncVerifyRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::zksnark::VerifyReply>> PrepareAsyncVerify(::grpc::ClientContext* context, const ::zksnark::VerifyRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::zksnark::VerifyReply>>(PrepareAsyncVerifyRaw(context, request, cq));
+    }
   private:
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::zksnark::ProveReply>* AsyncProveRaw(::grpc::ClientContext* context, const ::zksnark::ProveRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::zksnark::ProveReply>* PrepareAsyncProveRaw(::grpc::ClientContext* context, const ::zksnark::ProveRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::zksnark::VerifyReply>* AsyncVerifyRaw(::grpc::ClientContext* context, const ::zksnark::VerifyRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::zksnark::VerifyReply>* PrepareAsyncVerifyRaw(::grpc::ClientContext* context, const ::zksnark::VerifyRequest& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
@@ -59,12 +68,22 @@ class Zksnark final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::zksnark::ProveReply>> PrepareAsyncProve(::grpc::ClientContext* context, const ::zksnark::ProveRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::zksnark::ProveReply>>(PrepareAsyncProveRaw(context, request, cq));
     }
+    ::grpc::Status Verify(::grpc::ClientContext* context, const ::zksnark::VerifyRequest& request, ::zksnark::VerifyReply* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::zksnark::VerifyReply>> AsyncVerify(::grpc::ClientContext* context, const ::zksnark::VerifyRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::zksnark::VerifyReply>>(AsyncVerifyRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::zksnark::VerifyReply>> PrepareAsyncVerify(::grpc::ClientContext* context, const ::zksnark::VerifyRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::zksnark::VerifyReply>>(PrepareAsyncVerifyRaw(context, request, cq));
+    }
 
    private:
     std::shared_ptr< ::grpc::ChannelInterface> channel_;
     ::grpc::ClientAsyncResponseReader< ::zksnark::ProveReply>* AsyncProveRaw(::grpc::ClientContext* context, const ::zksnark::ProveRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::zksnark::ProveReply>* PrepareAsyncProveRaw(::grpc::ClientContext* context, const ::zksnark::ProveRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::zksnark::VerifyReply>* AsyncVerifyRaw(::grpc::ClientContext* context, const ::zksnark::VerifyRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::zksnark::VerifyReply>* PrepareAsyncVerifyRaw(::grpc::ClientContext* context, const ::zksnark::VerifyRequest& request, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_Prove_;
+    const ::grpc::internal::RpcMethod rpcmethod_Verify_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
 
@@ -73,6 +92,7 @@ class Zksnark final {
     Service();
     virtual ~Service();
     virtual ::grpc::Status Prove(::grpc::ServerContext* context, const ::zksnark::ProveRequest* request, ::zksnark::ProveReply* response);
+    virtual ::grpc::Status Verify(::grpc::ServerContext* context, const ::zksnark::VerifyRequest* request, ::zksnark::VerifyReply* response);
   };
   template <class BaseClass>
   class WithAsyncMethod_Prove : public BaseClass {
@@ -94,7 +114,27 @@ class Zksnark final {
       ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_Prove<Service > AsyncService;
+  template <class BaseClass>
+  class WithAsyncMethod_Verify : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service *service) {}
+   public:
+    WithAsyncMethod_Verify() {
+      ::grpc::Service::MarkMethodAsync(1);
+    }
+    ~WithAsyncMethod_Verify() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Verify(::grpc::ServerContext* context, const ::zksnark::VerifyRequest* request, ::zksnark::VerifyReply* response) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestVerify(::grpc::ServerContext* context, ::zksnark::VerifyRequest* request, ::grpc::ServerAsyncResponseWriter< ::zksnark::VerifyReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  typedef WithAsyncMethod_Prove<WithAsyncMethod_Verify<Service > > AsyncService;
   template <class BaseClass>
   class WithGenericMethod_Prove : public BaseClass {
    private:
@@ -108,6 +148,23 @@ class Zksnark final {
     }
     // disable synchronous version of this method
     ::grpc::Status Prove(::grpc::ServerContext* context, const ::zksnark::ProveRequest* request, ::zksnark::ProveReply* response) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_Verify : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service *service) {}
+   public:
+    WithGenericMethod_Verify() {
+      ::grpc::Service::MarkMethodGeneric(1);
+    }
+    ~WithGenericMethod_Verify() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Verify(::grpc::ServerContext* context, const ::zksnark::VerifyRequest* request, ::zksnark::VerifyReply* response) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -133,6 +190,26 @@ class Zksnark final {
     }
   };
   template <class BaseClass>
+  class WithRawMethod_Verify : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service *service) {}
+   public:
+    WithRawMethod_Verify() {
+      ::grpc::Service::MarkMethodRaw(1);
+    }
+    ~WithRawMethod_Verify() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Verify(::grpc::ServerContext* context, const ::zksnark::VerifyRequest* request, ::zksnark::VerifyReply* response) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestVerify(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithStreamedUnaryMethod_Prove : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service *service) {}
@@ -152,9 +229,29 @@ class Zksnark final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedProve(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::zksnark::ProveRequest,::zksnark::ProveReply>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_Prove<Service > StreamedUnaryService;
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_Verify : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service *service) {}
+   public:
+    WithStreamedUnaryMethod_Verify() {
+      ::grpc::Service::MarkMethodStreamed(1,
+        new ::grpc::internal::StreamedUnaryHandler< ::zksnark::VerifyRequest, ::zksnark::VerifyReply>(std::bind(&WithStreamedUnaryMethod_Verify<BaseClass>::StreamedVerify, this, std::placeholders::_1, std::placeholders::_2)));
+    }
+    ~WithStreamedUnaryMethod_Verify() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status Verify(::grpc::ServerContext* context, const ::zksnark::VerifyRequest* request, ::zksnark::VerifyReply* response) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedVerify(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::zksnark::VerifyRequest,::zksnark::VerifyReply>* server_unary_streamer) = 0;
+  };
+  typedef WithStreamedUnaryMethod_Prove<WithStreamedUnaryMethod_Verify<Service > > StreamedUnaryService;
   typedef Service SplitStreamedService;
-  typedef WithStreamedUnaryMethod_Prove<Service > StreamedService;
+  typedef WithStreamedUnaryMethod_Prove<WithStreamedUnaryMethod_Verify<Service > > StreamedService;
 };
 
 }  // namespace zksnark

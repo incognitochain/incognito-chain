@@ -55,6 +55,16 @@ class ProveReplyDefaultTypeInternal {
   ::google::protobuf::internal::ExplicitlyConstructed<ProveReply>
       _instance;
 } _ProveReply_default_instance_;
+class VerifyRequestDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<VerifyRequest>
+      _instance;
+} _VerifyRequest_default_instance_;
+class VerifyReplyDefaultTypeInternal {
+ public:
+  ::google::protobuf::internal::ExplicitlyConstructed<VerifyReply>
+      _instance;
+} _VerifyReply_default_instance_;
 }  // namespace zksnark
 namespace protobuf_zksnark_2eproto {
 void InitDefaultsMerkleHashImpl() {
@@ -210,7 +220,50 @@ void InitDefaultsProveReply() {
   ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsProveReplyImpl);
 }
 
-::google::protobuf::Metadata file_level_metadata[7];
+void InitDefaultsVerifyRequestImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  protobuf_zksnark_2eproto::InitDefaultsPHGRProof();
+  {
+    void* ptr = &::zksnark::_VerifyRequest_default_instance_;
+    new (ptr) ::zksnark::VerifyRequest();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::zksnark::VerifyRequest::InitAsDefaultInstance();
+}
+
+void InitDefaultsVerifyRequest() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsVerifyRequestImpl);
+}
+
+void InitDefaultsVerifyReplyImpl() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
+#else
+  ::google::protobuf::internal::InitProtobufDefaults();
+#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
+  {
+    void* ptr = &::zksnark::_VerifyReply_default_instance_;
+    new (ptr) ::zksnark::VerifyReply();
+    ::google::protobuf::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::zksnark::VerifyReply::InitAsDefaultInstance();
+}
+
+void InitDefaultsVerifyReply() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsVerifyReplyImpl);
+}
+
+::google::protobuf::Metadata file_level_metadata[9];
 
 const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
   ~0u,  // no _has_bits_
@@ -274,6 +327,22 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::ProveReply, proof_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyRequest, proof_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyRequest, hsig_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyRequest, rt_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyRequest, nullifiers_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyRequest, commits_),
+  ~0u,  // no _has_bits_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyReply, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyReply, valid_),
 };
 static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROTOBUF_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::zksnark::MerkleHash)},
@@ -283,6 +352,8 @@ static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROT
   { 32, -1, sizeof(::zksnark::ProveRequest)},
   { 42, -1, sizeof(::zksnark::PHGRProof)},
   { 55, -1, sizeof(::zksnark::ProveReply)},
+  { 61, -1, sizeof(::zksnark::VerifyRequest)},
+  { 71, -1, sizeof(::zksnark::VerifyReply)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -293,6 +364,8 @@ static ::google::protobuf::Message const * const file_default_instances[] = {
   reinterpret_cast<const ::google::protobuf::Message*>(&::zksnark::_ProveRequest_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::zksnark::_PHGRProof_default_instance_),
   reinterpret_cast<const ::google::protobuf::Message*>(&::zksnark::_ProveReply_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::zksnark::_VerifyRequest_default_instance_),
+  reinterpret_cast<const ::google::protobuf::Message*>(&::zksnark::_VerifyReply_default_instance_),
 };
 
 void protobuf_AssignDescriptors() {
@@ -311,7 +384,7 @@ void protobuf_AssignDescriptorsOnce() {
 void protobuf_RegisterTypes(const ::std::string&) GOOGLE_PROTOBUF_ATTRIBUTE_COLD;
 void protobuf_RegisterTypes(const ::std::string&) {
   protobuf_AssignDescriptorsOnce();
-  ::google::protobuf::internal::RegisterAllTypes(file_level_metadata, 7);
+  ::google::protobuf::internal::RegisterAllTypes(file_level_metadata, 9);
 }
 
 void AddDescriptorsImpl() {
@@ -332,12 +405,17 @@ void AddDescriptorsImpl() {
       "_B\030\003 \001(\014\022\021\n\tg_B_prime\030\004 \001(\014\022\013\n\003g_C\030\005 \001(\014"
       "\022\021\n\tg_C_prime\030\006 \001(\014\022\013\n\003g_K\030\007 \001(\014\022\013\n\003g_H\030"
       "\010 \001(\014\"/\n\nProveReply\022!\n\005proof\030\001 \001(\0132\022.zks"
-      "nark.PHGRProof2@\n\007Zksnark\0225\n\005Prove\022\025.zks"
-      "nark.ProveRequest\032\023.zksnark.ProveReply\"\000"
-      "b\006proto3"
+      "nark.PHGRProof\"q\n\rVerifyRequest\022!\n\005proof"
+      "\030\001 \001(\0132\022.zksnark.PHGRProof\022\014\n\004hsig\030\002 \001(\014"
+      "\022\n\n\002rt\030\003 \001(\014\022\022\n\nnullifiers\030\004 \003(\014\022\017\n\007comm"
+      "its\030\005 \003(\014\"\034\n\013VerifyReply\022\r\n\005valid\030\001 \001(\0102"
+      "z\n\007Zksnark\0225\n\005Prove\022\025.zksnark.ProveReque"
+      "st\032\023.zksnark.ProveReply\"\000\0228\n\006Verify\022\026.zk"
+      "snark.VerifyRequest\032\024.zksnark.VerifyRepl"
+      "y\"\000b\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 688);
+      descriptor, 891);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "zksnark.proto", &protobuf_RegisterTypes);
 }
@@ -2931,6 +3009,655 @@ void ProveReply::InternalSwap(ProveReply* other) {
 }
 
 ::google::protobuf::Metadata ProveReply::GetMetadata() const {
+  protobuf_zksnark_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_zksnark_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void VerifyRequest::InitAsDefaultInstance() {
+  ::zksnark::_VerifyRequest_default_instance_._instance.get_mutable()->proof_ = const_cast< ::zksnark::PHGRProof*>(
+      ::zksnark::PHGRProof::internal_default_instance());
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int VerifyRequest::kProofFieldNumber;
+const int VerifyRequest::kHsigFieldNumber;
+const int VerifyRequest::kRtFieldNumber;
+const int VerifyRequest::kNullifiersFieldNumber;
+const int VerifyRequest::kCommitsFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+VerifyRequest::VerifyRequest()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_zksnark_2eproto::InitDefaultsVerifyRequest();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:zksnark.VerifyRequest)
+}
+VerifyRequest::VerifyRequest(const VerifyRequest& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      nullifiers_(from.nullifiers_),
+      commits_(from.commits_),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  hsig_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.hsig().size() > 0) {
+    hsig_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.hsig_);
+  }
+  rt_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.rt().size() > 0) {
+    rt_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.rt_);
+  }
+  if (from.has_proof()) {
+    proof_ = new ::zksnark::PHGRProof(*from.proof_);
+  } else {
+    proof_ = NULL;
+  }
+  // @@protoc_insertion_point(copy_constructor:zksnark.VerifyRequest)
+}
+
+void VerifyRequest::SharedCtor() {
+  hsig_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  rt_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  proof_ = NULL;
+  _cached_size_ = 0;
+}
+
+VerifyRequest::~VerifyRequest() {
+  // @@protoc_insertion_point(destructor:zksnark.VerifyRequest)
+  SharedDtor();
+}
+
+void VerifyRequest::SharedDtor() {
+  hsig_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  rt_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (this != internal_default_instance()) delete proof_;
+}
+
+void VerifyRequest::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* VerifyRequest::descriptor() {
+  ::protobuf_zksnark_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_zksnark_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const VerifyRequest& VerifyRequest::default_instance() {
+  ::protobuf_zksnark_2eproto::InitDefaultsVerifyRequest();
+  return *internal_default_instance();
+}
+
+VerifyRequest* VerifyRequest::New(::google::protobuf::Arena* arena) const {
+  VerifyRequest* n = new VerifyRequest;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void VerifyRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:zksnark.VerifyRequest)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  nullifiers_.Clear();
+  commits_.Clear();
+  hsig_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  rt_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (GetArenaNoVirtual() == NULL && proof_ != NULL) {
+    delete proof_;
+  }
+  proof_ = NULL;
+  _internal_metadata_.Clear();
+}
+
+bool VerifyRequest::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:zksnark.VerifyRequest)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // .zksnark.PHGRProof proof = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(10u /* 10 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+               input, mutable_proof()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // bytes hsig = 2;
+      case 2: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
+                input, this->mutable_hsig()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // bytes rt = 3;
+      case 3: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(26u /* 26 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
+                input, this->mutable_rt()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // repeated bytes nullifiers = 4;
+      case 4: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(34u /* 34 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
+                input, this->add_nullifiers()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // repeated bytes commits = 5;
+      case 5: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(42u /* 42 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
+                input, this->add_commits()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:zksnark.VerifyRequest)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:zksnark.VerifyRequest)
+  return false;
+#undef DO_
+}
+
+void VerifyRequest::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:zksnark.VerifyRequest)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .zksnark.PHGRProof proof = 1;
+  if (this->has_proof()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      1, *this->proof_, output);
+  }
+
+  // bytes hsig = 2;
+  if (this->hsig().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBytesMaybeAliased(
+      2, this->hsig(), output);
+  }
+
+  // bytes rt = 3;
+  if (this->rt().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBytesMaybeAliased(
+      3, this->rt(), output);
+  }
+
+  // repeated bytes nullifiers = 4;
+  for (int i = 0, n = this->nullifiers_size(); i < n; i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteBytes(
+      4, this->nullifiers(i), output);
+  }
+
+  // repeated bytes commits = 5;
+  for (int i = 0, n = this->commits_size(); i < n; i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteBytes(
+      5, this->commits(i), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:zksnark.VerifyRequest)
+}
+
+::google::protobuf::uint8* VerifyRequest::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:zksnark.VerifyRequest)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .zksnark.PHGRProof proof = 1;
+  if (this->has_proof()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      InternalWriteMessageToArray(
+        1, *this->proof_, deterministic, target);
+  }
+
+  // bytes hsig = 2;
+  if (this->hsig().size() > 0) {
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteBytesToArray(
+        2, this->hsig(), target);
+  }
+
+  // bytes rt = 3;
+  if (this->rt().size() > 0) {
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteBytesToArray(
+        3, this->rt(), target);
+  }
+
+  // repeated bytes nullifiers = 4;
+  for (int i = 0, n = this->nullifiers_size(); i < n; i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteBytesToArray(4, this->nullifiers(i), target);
+  }
+
+  // repeated bytes commits = 5;
+  for (int i = 0, n = this->commits_size(); i < n; i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteBytesToArray(5, this->commits(i), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:zksnark.VerifyRequest)
+  return target;
+}
+
+size_t VerifyRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:zksnark.VerifyRequest)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // repeated bytes nullifiers = 4;
+  total_size += 1 *
+      ::google::protobuf::internal::FromIntSize(this->nullifiers_size());
+  for (int i = 0, n = this->nullifiers_size(); i < n; i++) {
+    total_size += ::google::protobuf::internal::WireFormatLite::BytesSize(
+      this->nullifiers(i));
+  }
+
+  // repeated bytes commits = 5;
+  total_size += 1 *
+      ::google::protobuf::internal::FromIntSize(this->commits_size());
+  for (int i = 0, n = this->commits_size(); i < n; i++) {
+    total_size += ::google::protobuf::internal::WireFormatLite::BytesSize(
+      this->commits(i));
+  }
+
+  // bytes hsig = 2;
+  if (this->hsig().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::BytesSize(
+        this->hsig());
+  }
+
+  // bytes rt = 3;
+  if (this->rt().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::BytesSize(
+        this->rt());
+  }
+
+  // .zksnark.PHGRProof proof = 1;
+  if (this->has_proof()) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::MessageSize(
+        *this->proof_);
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void VerifyRequest::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:zksnark.VerifyRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  const VerifyRequest* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const VerifyRequest>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:zksnark.VerifyRequest)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:zksnark.VerifyRequest)
+    MergeFrom(*source);
+  }
+}
+
+void VerifyRequest::MergeFrom(const VerifyRequest& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:zksnark.VerifyRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  nullifiers_.MergeFrom(from.nullifiers_);
+  commits_.MergeFrom(from.commits_);
+  if (from.hsig().size() > 0) {
+
+    hsig_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.hsig_);
+  }
+  if (from.rt().size() > 0) {
+
+    rt_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.rt_);
+  }
+  if (from.has_proof()) {
+    mutable_proof()->::zksnark::PHGRProof::MergeFrom(from.proof());
+  }
+}
+
+void VerifyRequest::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:zksnark.VerifyRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void VerifyRequest::CopyFrom(const VerifyRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:zksnark.VerifyRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool VerifyRequest::IsInitialized() const {
+  return true;
+}
+
+void VerifyRequest::Swap(VerifyRequest* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void VerifyRequest::InternalSwap(VerifyRequest* other) {
+  using std::swap;
+  nullifiers_.InternalSwap(&other->nullifiers_);
+  commits_.InternalSwap(&other->commits_);
+  hsig_.Swap(&other->hsig_);
+  rt_.Swap(&other->rt_);
+  swap(proof_, other->proof_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata VerifyRequest::GetMetadata() const {
+  protobuf_zksnark_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_zksnark_2eproto::file_level_metadata[kIndexInFileMessages];
+}
+
+
+// ===================================================================
+
+void VerifyReply::InitAsDefaultInstance() {
+}
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int VerifyReply::kValidFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+VerifyReply::VerifyReply()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    ::protobuf_zksnark_2eproto::InitDefaultsVerifyReply();
+  }
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:zksnark.VerifyReply)
+}
+VerifyReply::VerifyReply(const VerifyReply& from)
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  valid_ = from.valid_;
+  // @@protoc_insertion_point(copy_constructor:zksnark.VerifyReply)
+}
+
+void VerifyReply::SharedCtor() {
+  valid_ = false;
+  _cached_size_ = 0;
+}
+
+VerifyReply::~VerifyReply() {
+  // @@protoc_insertion_point(destructor:zksnark.VerifyReply)
+  SharedDtor();
+}
+
+void VerifyReply::SharedDtor() {
+}
+
+void VerifyReply::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* VerifyReply::descriptor() {
+  ::protobuf_zksnark_2eproto::protobuf_AssignDescriptorsOnce();
+  return ::protobuf_zksnark_2eproto::file_level_metadata[kIndexInFileMessages].descriptor;
+}
+
+const VerifyReply& VerifyReply::default_instance() {
+  ::protobuf_zksnark_2eproto::InitDefaultsVerifyReply();
+  return *internal_default_instance();
+}
+
+VerifyReply* VerifyReply::New(::google::protobuf::Arena* arena) const {
+  VerifyReply* n = new VerifyReply;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void VerifyReply::Clear() {
+// @@protoc_insertion_point(message_clear_start:zksnark.VerifyReply)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  valid_ = false;
+  _internal_metadata_.Clear();
+}
+
+bool VerifyReply::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:zksnark.VerifyReply)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // bool valid = 1;
+      case 1: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(8u /* 8 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &valid_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, _internal_metadata_.mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:zksnark.VerifyReply)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:zksnark.VerifyReply)
+  return false;
+#undef DO_
+}
+
+void VerifyReply::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:zksnark.VerifyReply)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool valid = 1;
+  if (this->valid() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(1, this->valid(), output);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
+  }
+  // @@protoc_insertion_point(serialize_end:zksnark.VerifyReply)
+}
+
+::google::protobuf::uint8* VerifyReply::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
+  // @@protoc_insertion_point(serialize_to_array_start:zksnark.VerifyReply)
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bool valid = 1;
+  if (this->valid() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(1, this->valid(), target);
+  }
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:zksnark.VerifyReply)
+  return target;
+}
+
+size_t VerifyReply::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:zksnark.VerifyReply)
+  size_t total_size = 0;
+
+  if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()));
+  }
+  // bool valid = 1;
+  if (this->valid() != 0) {
+    total_size += 1 + 1;
+  }
+
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = cached_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void VerifyReply::MergeFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:zksnark.VerifyReply)
+  GOOGLE_DCHECK_NE(&from, this);
+  const VerifyReply* source =
+      ::google::protobuf::internal::DynamicCastToGenerated<const VerifyReply>(
+          &from);
+  if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:zksnark.VerifyReply)
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:zksnark.VerifyReply)
+    MergeFrom(*source);
+  }
+}
+
+void VerifyReply::MergeFrom(const VerifyReply& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:zksnark.VerifyReply)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  ::google::protobuf::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.valid() != 0) {
+    set_valid(from.valid());
+  }
+}
+
+void VerifyReply::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:zksnark.VerifyReply)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void VerifyReply::CopyFrom(const VerifyReply& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:zksnark.VerifyReply)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool VerifyReply::IsInitialized() const {
+  return true;
+}
+
+void VerifyReply::Swap(VerifyReply* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void VerifyReply::InternalSwap(VerifyReply* other) {
+  using std::swap;
+  swap(valid_, other->valid_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata VerifyReply::GetMetadata() const {
   protobuf_zksnark_2eproto::protobuf_AssignDescriptorsOnce();
   return ::protobuf_zksnark_2eproto::file_level_metadata[kIndexInFileMessages];
 }
