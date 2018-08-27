@@ -232,18 +232,12 @@ func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
 				Logger.log.Error(err)
 				continue
 			}
-			if commandType != wire.CmdBlock {
-				err = json.Unmarshal(messageBody, &message)
-			} else {
-				err = json.Unmarshal(messageBody, &message)
-			}
-			//temp := message.(map[string]interface{})
+			err = json.Unmarshal(messageBody, &message)
 			if err != nil {
 				Logger.log.Error(err)
 				continue
 			}
 			realType := reflect.TypeOf(message)
-			log.Print(realType)
 			// check type of Message
 			switch realType {
 			case reflect.TypeOf(&wire.MessageTx{}):
@@ -299,7 +293,6 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 		select {
 		case outMsg := <-self.sendMessageQueue:
 			{
-				self.FlagMutex.Lock()
 				// TODO
 				// send message
 				messageByte, err := outMsg.msg.JsonSerialize()
@@ -313,8 +306,12 @@ func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
 				messageByte = append(messageByte, header...)
 				message := hex.EncodeToString(messageByte)
 				message += "\n"
+				self.FlagMutex.Lock()
 				Logger.log.Infof("Send a message %s: %s", outMsg.msg.MessageType(), message)
-				rw.Writer.WriteString(message)
+				_, err = rw.Writer.WriteString(message)
+				if err != nil {
+					Logger.log.Error(err)
+				}
 				rw.Writer.Flush()
 				self.FlagMutex.Unlock()
 			}
