@@ -98,4 +98,5 @@ type ListUnspentResult struct {
 	Amount        float64 `json:"amount"`
 	Confirmations int64   `json:"confirmations"`
 	Spendable     bool    `json:"spendable"`
+	TxOutType     string  `json:"txOutType"`
 }

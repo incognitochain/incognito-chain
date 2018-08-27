@@ -24,8 +24,7 @@ var RpcHandler = map[string]commandHandler{
 	"createrawtransaction":         RpcServer.handleCreateRawTrasaction,
 	"signrawtransaction":           RpcServer.handleSignRawTransaction,
 	"sendrawtransaction":           RpcServer.handleSendRawTransaction,
-	"getNumberOfCoins":             RpcServer.handleGetNumberOfCoins,
-	"getNumberOfBonds":             RpcServer.handleGetNumberOfBonds,
+	"getNumberOfCoinsAndBonds":     RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createActionParamsTrasaction": RpcServer.handleCreateActionParamsTrasaction,
 }
 
@@ -92,6 +91,7 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 								TxID:    normalTx.Hash().String(),
 								Address: string(txOut.PkScript),
 								Amount:  txOut.Value,
+								TxOutType: txOut.TxOutType,
 							})
 						}
 					}
@@ -223,18 +223,65 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 	return tx.Hash(), nil
 }
 
-/**
- * handleGetNumberOfCoins handles getNumberOfCoins commands.
- */
-func (self RpcServer) handleGetNumberOfCoins(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return 1000, nil
+
+func isExisted(item int, arr []int) bool {
+	for _, i := range arr {
+		if item == i {
+			return true
+		}
+	}
+	return false
 }
 
 /**
- * handleGetNumberOfBonds handles getNumberOfBonds commands.
+ * handleGetNumberOfCoins handles getNumberOfCoins commands.
  */
-func (self RpcServer) handleGetNumberOfBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return 5, nil
+func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// return 1000, nil
+	log.Println(params)
+	blocks := self.Config.Chain.Blocks
+	txInsMap := map[string][]int{}
+	txOuts := []jsonrpc.ListUnspentResult{}
+	for _, block := range blocks {
+		for _, tx := range block.Transactions {
+			if tx.GetType() == common.TxActionParamsType {
+				continue
+			}
+			normalTx := tx.(*transaction.Tx)
+			for _, txIn := range normalTx.TxIn {
+				txInKey := txIn.PreviousOutPoint.Hash.String()
+				idx := txIn.PreviousOutPoint.Vout
+				txInsMap[txInKey] = append(txInsMap[txInKey], idx)
+			}
+
+			for index, txOut := range normalTx.TxOut {
+				txOuts = append(txOuts, jsonrpc.ListUnspentResult{
+					Vout:    index,
+					TxID:    normalTx.Hash().String(),
+					Address: string(txOut.PkScript),
+					Amount:  txOut.Value,
+					TxOutType: txOut.TxOutType,
+				})
+			}
+		}
+	}
+
+	result := map[string]float64{
+		common.TxOutCoinType: 0,
+		common.TxOutBondType: 0,
+	}
+	for _, txOut := range txOuts {
+		idxs, ok := txInsMap[txOut.TxID]
+		if !ok { // not existing -> not used yet
+			result[txOut.TxOutType] += txOut.Amount
+			continue
+		}
+		// existing in txIns -> check Vout index
+		if !isExisted(txOut.Vout, idxs) {
+			result[txOut.TxOutType] += txOut.Amount
+		}
+	}
+	return result, nil
 }
 
 
