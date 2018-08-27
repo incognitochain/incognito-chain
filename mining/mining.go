@@ -90,7 +90,7 @@ func calculateReward(
 		_, medianBond, medianTax := getMedians(contractingCoinsActions)
 		coins := (100 - medianTax) * 0.01 * feeMap[common.TxOutCoinType]
 		burnedCoins := feeMap[common.TxOutCoinType] - coins
-		bonds := medianBond + feeMap[common.TxOutBondType]
+		bonds := medianBond + feeMap[common.TxOutBondType] + burnedCoins
 		return map[string]float64{
 			"coins":       coins,
 			"bonds":       bonds,
