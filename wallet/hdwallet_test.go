@@ -23,8 +23,6 @@ func TestNewMasterkey(t *testing.T) {
 	masterKey, _ := NewMasterKey(seed)
 	//b58privateKey := masterKey.Base58CheckSerialize(true)
 
-	aaa := ec211
-
 	b58publicKey := masterKey.Base58CheckSerialize(false)
 	fmt.Printf("Base58Check encode of public key: %s\n", b58publicKey)
 	fmt.Printf("Address of public key: %s\n", masterKey.ToAddress(false))
