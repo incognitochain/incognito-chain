@@ -7,10 +7,10 @@ import (
 
 	"sync"
 
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/database"
 	"fmt"
 	"log"
+
+	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 type BlockChain struct {
@@ -28,7 +28,7 @@ type Config struct {
 	// store all metadata created by this package such as the utxo set.
 	//
 	// This field is required.
-	Db database.DB
+	// Db database.DB
 
 	// Interrupt specifies a channel the caller can close to signal that
 	// long running operations, such as catching up indexes or performing

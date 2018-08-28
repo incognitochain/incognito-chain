@@ -1,14 +1,16 @@
 package main
 
 import (
-	"runtime"
-	"runtime/debug"
-	"os"
 	"fmt"
 	"log"
+	"os"
+	"runtime"
+	"runtime/debug"
 
-	"github.com/ninjadotorg/cash-prototype/limits"
 	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/limits"
+
+	_ "github.com/ninjadotorg/cash-prototype/database/lvdb"
 )
 
 var (
@@ -92,7 +94,10 @@ func mainMaster(serverChan chan<- *Server) error {
 	}*/
 
 	// Create server and start it.
-	var db = database.NewDB("", database.LevelDBBackend, cfg.DataDir, 0, 0)
+	db, err := database.Open("leveldb", cfg.DataDir)
+	if err != nil {
+		log.Fatalf("could not open connection to leveldb: %v", err)
+	}
 	server, err := Server{}.NewServer(cfg.Listeners, db, activeNetParams.Params,
 		interrupt)
 	if err != nil {

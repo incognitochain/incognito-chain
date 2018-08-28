@@ -16,6 +16,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/connmanager"
+	"github.com/ninjadotorg/cash-prototype/consensus/pos"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/ninjadotorg/cash-prototype/mining"
@@ -53,6 +54,8 @@ type Server struct {
 	Miner       *miner.Miner
 	NetSync     *netsync.NetSync
 	AddrManager *addrmanager.AddrManager
+
+	ConsensusEngine *pos.Engine
 }
 
 // setupRPCListeners returns a slice of listeners that are configured for use
@@ -123,8 +126,8 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	// Create a new block chain instance with the appropriate configuration.9
 	self.Chain, err = blockchain.BlockChain{}.New(&blockchain.Config{
 		ChainParams: self.chainParams,
-		Db:          self.Db,
-		Interrupt:   interrupt,
+		// Db:          self.Db,
+		Interrupt: interrupt,
 	})
 	if err != nil {
 		return nil, err
@@ -138,6 +141,13 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		MiningAddrs:            cfg.MiningAddrs,
 		Chain:                  self.Chain,
 		Server:                 &self,
+	})
+
+	self.ConsensusEngine = pos.New(&pos.Config{
+		ChainParams: self.chainParams,
+		Chain:       self.Chain,
+		BlockGen:    blockTemplateGenerator,
+		Server:      &self,
 	})
 
 	// Init Net Sync manager to process messages
@@ -535,30 +545,38 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 	}
 }
 
-func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId peer2.ID) bool {
+func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId peer2.ID) error {
 	var dc chan<- struct{}
 	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
 	msg.(*wire.MessageBlock).Block = *block
 	if err != nil {
-		return false
+		return err
 	}
 	self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msg, dc)
-	return true
+	return nil
 }
 
-func (self *Server) PushBlockMessage(block *blockchain.Block) bool {
+func (self *Server) PushBlockMessage(block *blockchain.Block) error {
 	// TODO push block message for connected peer
 	//@todo got error here
 	var dc chan<- struct{}
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
 		msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
 		if err != nil {
-			return false
+			return err
 		}
 		msg.(*wire.MessageBlock).Block = *block
 		listen.QueueMessageWithEncoding(msg, dc)
 	}
-	return true
+	return nil
+}
+
+func (self *Server) PushInvalidBlockMessage(msg *wire.MessageInvalidBlock) error {
+	var dc chan<- struct{}
+	for _, listen := range self.ConnManager.Config.ListenerPeers {
+		listen.QueueMessageWithEncoding(msg, dc)
+	}
+	return nil
 }
 
 // handleDonePeerMsg deals with peers that have signalled they are done.  It is
@@ -580,7 +598,9 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 }
 
 func (self *Server) UpdateChain(block *blockchain.Block) {
+
 	self.Chain.Blocks = append(self.Chain.Blocks, block)
 	self.Chain.Headers[*block.Hash()] = len(self.Chain.Blocks) - 1
 	self.Chain.BestBlock = block
+
 }

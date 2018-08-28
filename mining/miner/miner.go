@@ -25,7 +25,7 @@ type Config struct {
 	MiningAddrs []string
 
 	Server interface {
-		PushBlockMessage(*blockchain.Block) bool
+		PushBlockMessage(*blockchain.Block) error
 		UpdateChain(*blockchain.Block)
 	}
 }
@@ -88,8 +88,8 @@ func (m *Miner) GenerateBlock(n uint32) ([]*common.Hash, error) {
 func (m *Miner) commitBlock(block *blockchain.Block) (bool, error) {
 	m.submitBlockLock.Lock()
 	defer m.submitBlockLock.Unlock()
-	sended := m.cfg.Server.PushBlockMessage(block)
-	if sended != true {
+	err := m.cfg.Server.PushBlockMessage(block)
+	if err != nil {
 		fmt.Print("sending error...........")
 		return false, nil
 	}

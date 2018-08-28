@@ -1,24 +1,24 @@
 package rpcserver
 
 import (
-	"sync/atomic"
-	"net/http"
+	"encoding/json"
 	"errors"
-	"time"
+	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net"
-	"io/ioutil"
-	"fmt"
+	"net/http"
 	"strconv"
-	"encoding/json"
 	"sync"
-	"io"
+	"sync/atomic"
+	"time"
 
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/mempool"
+	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 )
 
 const (
@@ -55,7 +55,7 @@ type RpcServerConfig struct {
 	ChainParams *blockchain.Params
 	Chain       *blockchain.BlockChain
 	Db          *database.DB
-	Server interface {
+	Server      interface {
 		// Push Tx message
 		PushTxMessage(*common.Hash)
 	}
@@ -119,7 +119,7 @@ func genCertPair(certFile, keyFile string) error {
 	return nil
 }
 
-func (self RpcServer) Start() (error) {
+func (self RpcServer) Start() error {
 	if atomic.AddInt32(&self.started, 1) != 1 {
 		return errors.New("RPC server is already started")
 	}
@@ -153,11 +153,13 @@ func (self RpcServer) Stop() error {
 		return nil
 	}
 	Logger.log.Info("RPC server shutting down")
-	self.HttpServer.Close()
+	if self.started != 0 {
+		self.HttpServer.Close()
+		close(self.quit)
+	}
 	for _, listen := range self.Config.Listenters {
 		listen.Close()
 	}
-	close(self.quit)
 	Logger.log.Info("RPC server shutdown complete")
 	self.started = 0
 	self.shutdown = 1
@@ -229,7 +231,7 @@ func (self RpcServer) AuthFail(w http.ResponseWriter) {
 
 /**
 handles reading and responding to RPC messages.
- */
+*/
 func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, isAdmin bool) {
 	if atomic.LoadInt32(&self.shutdown) != 0 {
 		return

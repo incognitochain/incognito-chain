@@ -8,6 +8,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"time"
+	"errors"
+	"strconv"
 
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/transaction"
@@ -24,9 +26,12 @@ var RpcHandler = map[string]commandHandler{
 	"createrawtransaction":         RpcServer.handleCreateRawTrasaction,
 	"signrawtransaction":           RpcServer.handleSignRawTransaction,
 	"sendrawtransaction":           RpcServer.handleSendRawTransaction,
-	"getNumberOfCoins":             RpcServer.handleGetNumberOfCoins,
-	"getNumberOfBonds":             RpcServer.handleGetNumberOfBonds,
+	"getNumberOfCoinsAndBonds":     RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createActionParamsTrasaction": RpcServer.handleCreateActionParamsTrasaction,
+
+	//POS
+	"votecandidate": RpcServer.handleVoteCandidate,
+	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 }
 
 // Commands that are available to a limited user
@@ -39,6 +44,53 @@ func (self RpcServer) handleDoSomething(params interface{}, closeChan <-chan str
 	result := make(map[string]string)
 	result["param"] = string(params.([]json.RawMessage)[0])
 	return result, nil
+}
+
+func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	log.Println(params)
+	result := jsonrpc.GetHeaderResult{}
+
+	arrayParams := common.InterfaceSlice(params)
+	log.Println(arrayParams)
+	getBy := arrayParams[0].(string)
+	query := arrayParams[1].(string)
+	log.Println(getBy, query)
+	switch getBy {
+	case "blockhash":
+		bhash := common.Hash{}
+		err := bhash.Decode(&bhash, query)
+		log.Println(bhash)
+		if err != nil {
+			return nil, errors.New("Invalid blockhash format")
+		}
+		bnum, ok := self.Config.Chain.Headers[bhash]
+		if !ok {
+			return nil, errors.New("Block not exist")
+		}
+		result.Header = self.Config.Chain.Blocks[bnum].Header
+		result.BlockNum = bnum + 1
+		result.BlockHash = bhash.String()
+	case "blocknum":
+		bnum, err := strconv.Atoi(query)
+		if err != nil {
+			return nil, errors.New("Invalid blocknum format")
+		}
+		if len(self.Config.Chain.Blocks) < bnum || bnum <= 0 {
+			return nil, errors.New("Block not exist")
+		}
+		result.Header = self.Config.Chain.Blocks[bnum-1].Header
+		result.BlockNum = bnum
+		result.BlockHash = self.Config.Chain.Blocks[bnum-1].Hash().String()
+	default:
+		return nil, errors.New("Wrong request format")
+	}
+
+	return result, nil
+}
+
+func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+
+	return "", nil
 }
 
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -92,6 +144,7 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 								TxID:    normalTx.Hash().String(),
 								Address: string(txOut.PkScript),
 								Amount:  txOut.Value,
+								TxOutType: txOut.TxOutType,
 							})
 						}
 					}
@@ -128,11 +181,14 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 		}
 		tx.AddTxIn(item)
 	}
-	txOut := arrayParams[1].(map[string]interface{})
-	for key, val := range txOut {
+	// txOut := arrayParams[1].(map[string]interface{})
+	txOuts := common.InterfaceSlice(arrayParams[1])
+	for _, txOut := range txOuts {
+		temp := txOut.(map[string]interface{})
 		tx.AddTxOut(transaction.TxOut{
-			PkScript: []byte(key),
-			Value:    val.(float64),
+			PkScript:  []byte(temp["pkScript"].(string)),
+			Value:     temp["value"].(float64),
+			TxOutType: temp["txOutType"].(string),
 		})
 	}
 	byteArrays, err := json.Marshal(tx)
@@ -223,19 +279,77 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 	return tx.Hash(), nil
 }
 
-/**
- * handleGetNumberOfCoins handles getNumberOfCoins commands.
- */
-func (self RpcServer) handleGetNumberOfCoins(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return 1000, nil
+
+func isExisted(item int, arr []int) bool {
+	for _, i := range arr {
+		if item == i {
+			return true
+		}
+	}
+	return false
 }
 
 /**
- * handleGetNumberOfBonds handles getNumberOfBonds commands.
+ * handleGetNumberOfCoins handles getNumberOfCoins commands.
  */
-func (self RpcServer) handleGetNumberOfBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return 5, nil
+func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// return 1000, nil
+	log.Println(params)
+	blocks := self.Config.Chain.Blocks
+	txInsMap := map[string][]int{}
+	txOuts := []jsonrpc.ListUnspentResult{}
+	for _, block := range blocks {
+		for _, tx := range block.Transactions {
+			if tx.GetType() == common.TxActionParamsType {
+				continue
+			}
+			normalTx := tx.(*transaction.Tx)
+			for _, txIn := range normalTx.TxIn {
+				txInKey := txIn.PreviousOutPoint.Hash.String()
+				idx := txIn.PreviousOutPoint.Vout
+				txInsMap[txInKey] = append(txInsMap[txInKey], idx)
+			}
+
+			for index, txOut := range normalTx.TxOut {
+				txOuts = append(txOuts, jsonrpc.ListUnspentResult{
+					Vout:    index,
+					TxID:    normalTx.Hash().String(),
+					Address: string(txOut.PkScript),
+					Amount:  txOut.Value,
+					TxOutType: txOut.TxOutType,
+				})
+			}
+		}
+	}
+
+	result := map[string]float64{
+		common.TxOutCoinType: 0,
+		common.TxOutBondType: 0,
+	}
+	for _, txOut := range txOuts {
+		idxs, ok := txInsMap[txOut.TxID]
+		if !ok { // not existing -> not used yet
+			result[txOut.TxOutType] += txOut.Amount
+			continue
+		}
+		// existing in txIns -> check Vout index
+		if !isExisted(txOut.Vout, idxs) {
+			result[txOut.TxOutType] += txOut.Amount
+		}
+	}
+	return result, nil
 }
+
+
+func assertEligibleAgentIDs(eligibleAgentIDs interface{}) ([]string) {
+	assertedEligibleAgentIDs := eligibleAgentIDs.([]interface{})
+	results := []string{}
+	for _, item := range assertedEligibleAgentIDs {
+		results = append(results, item.(string))
+	}
+	return results
+}
+
 
 /**
 // handleCreateRawTransaction handles createrawtransaction commands.
@@ -259,7 +373,7 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 		NumOfCoins: 	  param["numOfCoins"].(float64),
 		NumOfBonds: 	  param["numOfBonds"].(float64),
 		Tax:              param["tax"].(float64),
-		EligibleAgentIDs: param["eligibleAgentIDs"].([]string),
+		EligibleAgentIDs: assertEligibleAgentIDs(param["eligibleAgentIDs"]),
 	}
 
 	_, _, err := self.Config.TxMemPool.CanAcceptTransaction(&tx)
