@@ -9,6 +9,8 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/limits"
+
+	_ "github.com/ninjadotorg/cash-prototype/database/lvdb"
 )
 
 var (
