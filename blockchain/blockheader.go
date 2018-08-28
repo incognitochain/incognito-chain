@@ -15,6 +15,7 @@ type BlockHeader struct {
 	// Version of the block.  This is not the same as the protocol version.
 	Version int
 
+	ChainID byte
 	// Hash of the previous block header in the block chain.
 	PrevBlockHash common.Hash
 
@@ -32,9 +33,9 @@ type BlockHeader struct {
 	Nonce int
 
 	// POS
-	CommitteeSigs      map[string]string //include validator signature
-	NextBlockCommittee []string          //Voted committee for the next block
-	Candidates         []string
+	CommitteeSigs map[string]string //include validator signature
+	NextCommittee []string          //Voted committee for the next block
+	Candidates    []string
 }
 
 func (h *BlockChain) GetBlockByHash(hash common.Hash) *Block {

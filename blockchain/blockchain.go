@@ -2,9 +2,13 @@ package blockchain
 
 import (
 	"errors"
+	//"fmt"
+	//"time"
+
+	"sync"
+
 	"fmt"
 	"log"
-	"sync"
 
 	"github.com/ninjadotorg/cash-prototype/common"
 )

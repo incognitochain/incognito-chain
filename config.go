@@ -1,23 +1,24 @@
 package main
 
 import (
-	"time"
-	"path/filepath"
-	"os"
-	"runtime"
-	"fmt"
-	"strings"
 	"bufio"
 	"encoding/base64"
+	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net"
-	"log"
+	"os"
+	"path/filepath"
+	"runtime"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/jessevdk/go-flags"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/mempool"
-	"github.com/jessevdk/go-flags"
-	"github.com/davecgh/go-spew/spew"
-	"sort"
 )
 
 const (
@@ -141,6 +142,10 @@ type config struct {
 	//miningAddrs []btcutil.Address
 	//minRelayTxFee        btcutil.Amount
 	//whitelists           []*net.IPNet
+
+	// PoS config
+	SealerPrvKey  string `long:"sealerprvkey" description:"Private key of the block sealer used to seal block"`
+	RewardAddress string `long:"rewardaddr" description:"Address of the owner of sealer key"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -305,7 +310,7 @@ func removeDuplicateAddresses(addrs []string) []string {
 // The above results in btcd functioning properly without any config settings
 // while still allowing the user to override settings with config files and
 // command line options.  Command line options always take precedence.
- */
+*/
 func loadConfig() (*config, []string, error) {
 	cfg := config{
 		ConfigFile:           defaultConfigFile,
