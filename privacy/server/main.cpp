@@ -167,7 +167,17 @@ bool transform_verify_request(const VerifyRequest *request,
     if (request->nullifiers_size() != ZC_NUM_JS_INPUTS || request->commits_size() != ZC_NUM_JS_OUTPUTS)
         return false;
 
-    // TODO(@0xbunyip): convert PHGRProof
+    cout << "Done check size\n";
+    // Convert PHGRProof
+    bool success = proof.g_A.from_string(request->proof().g_a());
+    success &= proof.g_A_prime.from_string(request->proof().g_a_prime());
+    success &= proof.g_B.from_string(request->proof().g_b());
+    success &= proof.g_B_prime.from_string(request->proof().g_b_prime());
+    success &= proof.g_C.from_string(request->proof().g_c());
+    success &= proof.g_C_prime.from_string(request->proof().g_c_prime());
+    success &= proof.g_K.from_string(request->proof().g_k());
+    success &= proof.g_H.from_string(request->proof().g_h());
+    cout << "convert PHGRProof: " << success << '\n';
 
     // Convert nullifiers
     for (int i = 0; i < request->nullifiers_size(); ++i)
@@ -184,7 +194,6 @@ bool transform_verify_request(const VerifyRequest *request,
     }
 
     // Convert hsig
-    bool success = true;
     success &= string_to_uint256(request->hsig(), hsig);
     cout << "hsig: " << hsig.GetHex() << '\n';
 
@@ -223,9 +232,13 @@ class ZksnarkImpl final : public Zksnark::Service
         uint256 hsig, rt;
         NullifierArray nullifiers;
         CommitmentArray commitments;
+        NullifierArray macs;
         bool success = transform_verify_request(request, proof, nullifiers, commitments, hsig, rt);
-        // TODO(@0xbunyip): create verifier and macs
-        // bool valid = js->verify(proof, verifier, macs, nullifiers, commitments, rt, hsig);
+        cout << "transform_verify_request status: " << success << '\n';
+        bool valid = false;
+        if (success)
+            valid = js->verify(proof, macs, nullifiers, commitments, rt, hsig);
+        reply->set_valid(valid);
         return Status::OK;
     }
 };
@@ -233,8 +246,8 @@ class ZksnarkImpl final : public Zksnark::Service
 void RunServer()
 {
     // Creating zksnark circuit and load params
-    js = ZCJoinSplit::Prepared("/home/ubuntu/go/src/github.com/thaibaoautonomous/btcd/privacy/server/build/verifying.key",
-                               "/home/ubuntu/go/src/github.com/thaibaoautonomous/btcd/privacy/server/build/proving.key");
+    js = ZCJoinSplit::Prepared("./verifying.key",
+                               "./proving.key");
     cout << "Done preparing zksnark\n";
 
     // Run server

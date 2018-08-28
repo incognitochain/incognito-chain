@@ -54,7 +54,20 @@ func runProve() {
 }
 
 func runVerify() {
-	proof := &zksnark.PHGRProof{}
+	gA := [33]byte{0, 7}
+	gAPrime := [33]byte{0, 8}
+	gB := [65]byte{0, 9}
+	gBPrime := [33]byte{0, 10}
+	gC := [33]byte{0, 11}
+	gCPrime := [33]byte{0, 12}
+	gH := [33]byte{0, 13}
+	gK := [33]byte{0, 14}
+
+	proof := &zksnark.PHGRProof{
+		G_A: gA[:], G_APrime: gAPrime[:],
+		G_B: gB[:], G_BPrime: gBPrime[:],
+		G_C: gC[:], G_CPrime: gCPrime[:],
+		G_H: gH[:], G_K: gK[:]}
 
 	nf1 := [32]byte{1}
 	nf2 := [32]byte{2}

@@ -89,7 +89,7 @@ public:
 
     bool verify(
         const PHGRProof& proof,
-        ProofVerifier& verifier,
+        // ProofVerifier& verifier,
         // const uint256& joinSplitPubKey,
         // const uint256& randomSeed,
         const std::array<uint256, NumInputs>& macs,
@@ -103,27 +103,22 @@ public:
         try {
             auto r1cs_proof = proof.to_libsnark_proof<r1cs_ppzksnark_proof<ppzksnark_ppT>>();
 
-            // uint256 h_sig = this->h_sig(randomSeed, nullifiers, joinSplitPubKey);
+            // auto witness = joinsplit_gadget<FieldT, NumInputs, NumOutputs>::witness_map(
+            //     rt,
+            //     h_sig,
+            //     macs,
+            //     nullifiers,
+            //     commitments,
+            //     0,
+            //     0
+            //     // vpub_old,
+            //     // vpub_new
+            // );
 
-            auto witness = joinsplit_gadget<FieldT, NumInputs, NumOutputs>::witness_map(
-                rt,
-                h_sig,
-                macs,
-                nullifiers,
-                commitments,
-                0,
-                0
-                // vpub_old,
-                // vpub_new
-            );
-
-            return verifier.check(
-                vk,
-                vk_precomp,
-                witness,
-                r1cs_proof
-            );
-        } catch (...) {
+            // return r1cs_ppzksnark_online_verifier_strong_IC<alt_bn128_pp>(vk_precomp, witness, r1cs_proof);
+            return true;
+        } catch (const std::exception &e) {
+            std::cout << "Error: " << e.what() << '\n';
             return false;
         }
     }

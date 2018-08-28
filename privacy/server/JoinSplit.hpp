@@ -93,7 +93,7 @@ public:
 
     virtual bool verify(
         const PHGRProof& proof,
-        ProofVerifier& verifier,
+        // ProofVerifier& verifier,
         // const uint256& joinSplitPubKey,
         // const uint256& randomSeed,
         const std::array<uint256, NumInputs>& macs,

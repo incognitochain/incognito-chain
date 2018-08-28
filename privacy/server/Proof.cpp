@@ -223,29 +223,4 @@ void initialize_curve_params()
     std::call_once (init_public_params_once_flag, curve_pp::init_public_params);
 }
 
-ProofVerifier ProofVerifier::Strict() {
-    initialize_curve_params();
-    return ProofVerifier(true);
-}
-
-ProofVerifier ProofVerifier::Disabled() {
-    initialize_curve_params();
-    return ProofVerifier(false);
-}
-
-template<>
-bool ProofVerifier::check(
-    const r1cs_ppzksnark_verification_key<curve_pp>& vk,
-    const r1cs_ppzksnark_processed_verification_key<curve_pp>& pvk,
-    const r1cs_primary_input<curve_Fr>& primary_input,
-    const r1cs_ppzksnark_proof<curve_pp>& proof
-)
-{
-    if (perform_verification) {
-        return r1cs_ppzksnark_online_verifier_strong_IC<curve_pp>(pvk, primary_input, proof);
-    } else {
-        return true;
-    }
-}
-
 }

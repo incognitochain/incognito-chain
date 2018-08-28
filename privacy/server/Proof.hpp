@@ -26,6 +26,14 @@ public:
         return std::string(data.begin(), data.end());
     }
 
+    bool from_string(std::string &s) {
+        if (s.size() != 32)  // 32 bytes
+            return false;
+        const unsigned char *data_mem = (const unsigned char *)s.c_str();
+        memcpy(data.begin(), data_mem, s.size());
+        return true;
+    }
+
     // ADD_SERIALIZE_METHODS;
 
     // template <typename Stream, typename Operation>
@@ -61,6 +69,14 @@ public:
 
     std::string to_string() {
         return std::string(data.begin(), data.end());
+    }
+
+    bool from_string(std::string &s) {
+        if (s.size() != 64)  // 64 bytes
+            return false;
+        const unsigned char *data_mem = (const unsigned char *)s.c_str();
+        memcpy(data.begin(), data_mem, s.size());
+        return true;
     }
 
     // ADD_SERIALIZE_METHODS;
@@ -102,6 +118,18 @@ public:
         char leadingByte[2] = {0};
         leadingByte[0] |= y_lsb;
         return std::string(leadingByte) + x.to_string();  // TODO(@0xbunyip): check for endianness
+    }
+
+    bool from_string(const std::string &s) {
+        if (s.size() != 33)  // 32 bytes and y_lsb
+            return false;
+        const unsigned char *data_mem = (const unsigned char *)s.c_str();
+        char leadingByte = data_mem[0];
+        if (leadingByte & (~1) != 0)
+            return false;
+        y_lsb = leadingByte & 1;
+        std::string sub = s.substr(1);
+        return x.from_string(sub);
     }
 
     // ADD_SERIALIZE_METHODS;
@@ -158,6 +186,18 @@ public:
         char leadingByte[2] = {0};
         leadingByte[0] |= y_gt;
         return std::string(leadingByte) + x.to_string();  // TODO(@0xbunyip): check for endianness
+    }
+
+    bool from_string(const std::string &s) {
+        if (s.size() != 65)  // 64 bytes and y_gt
+            return false;
+        const unsigned char *data_mem = (const unsigned char *)s.c_str();
+        char leadingByte = data_mem[0];
+        if (leadingByte & (~1) != 0)
+            return false;
+        y_gt = leadingByte & 1;
+        std::string sub = s.substr(1);
+        return x.from_string(sub);
     }
 
     // ADD_SERIALIZE_METHODS;
@@ -255,40 +295,5 @@ public:
 };
 
 void initialize_curve_params();
-
-class ProofVerifier {
-private:
-    bool perform_verification;
-
-    ProofVerifier(bool perform_verification) : perform_verification(perform_verification) { }
-
-public:
-    // ProofVerifier should never be copied
-    ProofVerifier(const ProofVerifier&) = delete;
-    ProofVerifier& operator=(const ProofVerifier&) = delete;
-    ProofVerifier(ProofVerifier&&);
-    ProofVerifier& operator=(ProofVerifier&&);
-
-    // Creates a verification context that strictly verifies
-    // all proofs using libsnark's API.
-    static ProofVerifier Strict();
-
-    // Creates a verification context that performs no
-    // verification, used when avoiding duplicate effort
-    // such as during reindexing.
-    static ProofVerifier Disabled();
-
-    template <typename VerificationKey,
-              typename ProcessedVerificationKey,
-              typename PrimaryInput,
-              typename Proof
-              >
-    bool check(
-        const VerificationKey& vk,
-        const ProcessedVerificationKey& pvk,
-        const PrimaryInput& pi,
-        const Proof& p
-    );
-};
 }
 #endif // ZC_PROOF_H_
