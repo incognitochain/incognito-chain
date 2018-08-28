@@ -1,9 +1,18 @@
 package wallet
 
-/*const (
+import (
+	"crypto/hmac"
+	"crypto/sha512"
+	"errors"
+	"github.com/ninjadotorg/cash-prototype/cashec"
+	"bytes"
+	"github.com/ninjadotorg/cash-prototype/common/base58"
+)
+
+const (
 	// FirstHardenedChild is the index of the firxt "harded" child key as per the
 	// bip32 spec
-	FirstHardenedChild = uint32(0x80000000)
+	//FirstHardenedChild = uint32(0x80000000)
 
 	// PublicKeyCompressedLength is the byte count of a compressed public key
 	PublicKeyCompressedLength = 33
@@ -11,10 +20,10 @@ package wallet
 
 var (
 	// PrivateWalletVersion is the version flag for serialized private keys
-	PrivateWalletVersion, _ = hex.DecodeString("0488ADE4")
+	//PrivateWalletVersion, _ = hex.DecodeString("0488ADE4")
 
 	// PublicWalletVersion is the version flag for serialized private keys
-	PublicWalletVersion, _ = hex.DecodeString("0488B21E")
+	//PublicWalletVersion, _ = hex.DecodeString("0488B21E")
 
 	// ErrSerializedKeyWrongSize is returned when trying to deserialize a key that
 	// has an incorrect length
@@ -35,15 +44,12 @@ var (
 	ErrInvalidPublicKey = errors.New("Invalid public key")
 )
 
-// Key represents a bip32 extended key
+// KeyPair represents a bip32 extended key
 type Key struct {
-	Key         []byte // 33 bytes
-	Version     []byte // 4 bytes
-	ChildNumber []byte // 4 bytes
-	FingerPrint []byte // 4 bytes
-	ChainCode   []byte // 32 bytes
 	Depth       byte   // 1 bytes
-	IsPrivate   bool   // unserialized
+	ChildNumber []byte // 4 bytes
+	ChainCode   []byte // 32 bytes
+	KeyPair     cashec.KeyPair
 }
 
 // NewMasterKey creates a new master extended key from a seed
@@ -57,24 +63,26 @@ func NewMasterKey(seed []byte) (*Key, error) {
 	intermediary := hmac.Sum(nil)
 
 	// Split it into our key and chain code
-	keyBytes := intermediary[:32]
-	chainCode := intermediary[32:]
+	keyBytes := intermediary[:32]  // use to create master private/public keypair
+	chainCode := intermediary[32:] // be used with public key (in keypair) for new child keys
 
 	// Validate key
-	err = validatePrivateKey(keyBytes)
+	/*err = validatePrivateKey(keyBytes)
+	if err != nil {
+		return nil, err
+	}*/
+
+	keyPair, err := (&cashec.KeyPair{}).GenerateKey(keyBytes)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create the key struct
 	key := &Key{
-		Version:     PrivateWalletVersion,
 		ChainCode:   chainCode,
-		Key:         keyBytes,
-		Depth:       0x0,
+		KeyPair:     *keyPair,
+		Depth:       0x00,
 		ChildNumber: []byte{0x00, 0x00, 0x00, 0x00},
-		FingerPrint: []byte{0x00, 0x00, 0x00, 0x00},
-		IsPrivate:   true,
 	}
 
 	return key, nil
@@ -82,56 +90,20 @@ func NewMasterKey(seed []byte) (*Key, error) {
 
 // NewChildKey derives a child key from a given parent as outlined by bip32
 func (key *Key) NewChildKey(childIdx uint32) (*Key, error) {
-	// Fail early if trying to create hardned child from public key
-	if !key.IsPrivate && childIdx >= FirstHardenedChild {
-		return nil, ErrHardnedChildPublicKey
-	}
-
 	intermediary, err := key.getIntermediary(childIdx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create child Key with data common to all both scenarios
+	newSeed := key.KeyPair.PrivateKey
+	newSeed = append(newSeed, intermediary[:32]...)
+	newKeypair, err := (&cashec.KeyPair{}).GenerateKey(newSeed)
+	// Create child KeyPair with data common to all both scenarios
 	childKey := &Key{
 		ChildNumber: uint32Bytes(childIdx),
 		ChainCode:   intermediary[32:],
 		Depth:       key.Depth + 1,
-		IsPrivate:   key.IsPrivate,
-	}
-
-	// Bip32 CKDpriv
-	if key.IsPrivate {
-		childKey.Version = PrivateWalletVersion
-		fingerprint, err := hash160(publicKeyForPrivateKey(key.Key))
-		if err != nil {
-			return nil, err
-		}
-		childKey.FingerPrint = fingerprint[:4]
-		childKey.Key = addPrivateKeys(intermediary[:32], key.Key)
-
-		// Validate key
-		err = validatePrivateKey(childKey.Key)
-		if err != nil {
-			return nil, err
-		}
-		// Bip32 CKDpub
-	} else {
-		keyBytes := publicKeyForPrivateKey(intermediary[:32])
-
-		// Validate key
-		err := validateChildPublicKey(keyBytes)
-		if err != nil {
-			return nil, err
-		}
-
-		childKey.Version = PublicWalletVersion
-		fingerprint, err := hash160(key.Key)
-		if err != nil {
-			return nil, err
-		}
-		childKey.FingerPrint = fingerprint[:4]
-		childKey.Key = addPublicKeys(keyBytes, key.Key)
+		KeyPair:     *newKeypair,
 	}
 
 	return childKey, nil
@@ -144,15 +116,11 @@ func (key *Key) getIntermediary(childIdx uint32) ([]byte, error) {
 	childIndexBytes := uint32Bytes(childIdx)
 
 	var data []byte
-	if childIdx >= FirstHardenedChild {
-		data = append([]byte{0x0}, key.Key...)
-	} else {
-		if key.IsPrivate {
-			data = publicKeyForPrivateKey(key.Key)
-		} else {
-			data = key.Key
-		}
-	}
+	//if childIdx >= FirstHardenedChild {
+	//	data = append([]byte{0x0}, key.KeyPair.PrivateKey...)
+	//} else {
+	data = key.KeyPair.PublicKey
+	//}
 	data = append(data, childIndexBytes...)
 
 	hmac := hmac.New(sha512.New, key.ChainCode)
@@ -163,42 +131,25 @@ func (key *Key) getIntermediary(childIdx uint32) ([]byte, error) {
 	return hmac.Sum(nil), nil
 }
 
-// PublicKey returns the public version of key or return a copy
-// The 'Neuter' function from the bip32 spec
-func (key *Key) PublicKey() *Key {
-	keyBytes := key.Key
-
-	if key.IsPrivate {
-		keyBytes = publicKeyForPrivateKey(keyBytes)
-	}
-
-	return &Key{
-		Version:     PublicWalletVersion,
-		Key:         keyBytes,
-		Depth:       key.Depth,
-		ChildNumber: key.ChildNumber,
-		FingerPrint: key.FingerPrint,
-		ChainCode:   key.ChainCode,
-		IsPrivate:   false,
-	}
-}
-
-// Serialize a Key to a 78 byte byte slice
-func (key *Key) Serialize() ([]byte, error) {
-	// Private keys should be prepended with a single null byte
-	keyBytes := key.Key
-	if key.IsPrivate {
-		keyBytes = append([]byte{0x0}, keyBytes...)
-	}
-
+// Serialize a KeyPair to a 78 byte byte slice
+func (key *Key) Serialize(privateKey bool) ([]byte, error) {
 	// Write fields to buffer in order
 	buffer := new(bytes.Buffer)
-	buffer.Write(key.Version)
 	buffer.WriteByte(key.Depth)
-	buffer.Write(key.FingerPrint)
 	buffer.Write(key.ChildNumber)
 	buffer.Write(key.ChainCode)
-	buffer.Write(keyBytes)
+	if privateKey {
+		// Private keys should be prepended with a single null byte
+		keyBytes := key.KeyPair.PrivateKey
+		keyBytes = append([]byte{byte(len(key.KeyPair.PrivateKey))}, keyBytes...)
+		keyBytes = append([]byte{0x0}, keyBytes...)
+		buffer.Write(keyBytes)
+	} else {
+		keyBytes := key.KeyPair.PublicKey
+		keyBytes = append([]byte{byte(len(key.KeyPair.PublicKey))}, keyBytes...)
+		keyBytes = append([]byte{0x1}, keyBytes...)
+		buffer.Write(keyBytes)
+	}
 
 	// Append the standard doublesha256 checksum
 	serializedKey, err := addChecksumToBytes(buffer.Bytes())
@@ -209,9 +160,9 @@ func (key *Key) Serialize() ([]byte, error) {
 	return serializedKey, nil
 }
 
-// B58Serialize encodes the Key in the standard Bitcoin base58 encoding
-func (key *Key) B58Serialize() string {
-	serializedKey, err := key.Serialize()
+// B58Serialize encodes the KeyPair in the standard Bitcoin base58 encoding
+func (key *Key) B58Serialize(private bool) string {
+	serializedKey, err := key.Serialize(private)
 	if err != nil {
 		return ""
 	}
@@ -219,37 +170,30 @@ func (key *Key) B58Serialize() string {
 	return base58Encode(serializedKey)
 }
 
-// String encodes the Key in the standard Bitcoin base58 encoding
-func (key *Key) String() string {
-	return key.B58Serialize()
+// String encodes the KeyPair in the standard Bitcoin base58 encoding
+func (key *Key) String(private bool) string {
+	return key.B58Serialize(private)
 }
 
-// Deserialize a byte slice into a Key
+// Deserialize a byte slice into a KeyPair
 func Deserialize(data []byte) (*Key, error) {
-	if len(data) != 82 {
-		return nil, ErrSerializedKeyWrongSize
-	}
+	//if len(data) != 101 {
+	//	return nil, ErrSerializedKeyWrongSize
+	//}
 	var key = &Key{}
-	key.Version = data[0:4]
-	key.Depth = data[4]
-	key.FingerPrint = data[5:9]
-	key.ChildNumber = data[9:13]
-	key.ChainCode = data[13:45]
-
-	if data[45] == byte(0) {
-		key.IsPrivate = true
-		key.Key = data[46:78]
+	key.Depth = data[0]
+	key.ChildNumber = data[1:5]
+	key.ChainCode = data[5:37]
+	keyType := data[37]
+	keyLength := data[38]
+	if keyType == byte(0) {
+		key.KeyPair.PrivateKey = data[39:39+keyLength ]
 	} else {
-		key.IsPrivate = false
-		key.Key = data[45:78]
+		key.KeyPair.PublicKey = data[39:39+keyLength]
 	}
 
 	// validate checksum
-	cs1, err := checksum(data[0: len(data)-4])
-	if err != nil {
-		return nil, err
-	}
-
+	cs1 := base58.ChecksumFirst4Bytes(data[0: len(data)-4])
 	cs2 := data[len(data)-4:]
 	for i := range cs1 {
 		if cs1[i] != cs2[i] {
@@ -259,19 +203,11 @@ func Deserialize(data []byte) (*Key, error) {
 	return key, nil
 }
 
-// B58Deserialize deserializes a Key encoded in base58 encoding
+// B58Deserialize deserializes a KeyPair encoded in base58 encoding
 func B58Deserialize(data string) (*Key, error) {
-	b, err := base58Decode(data)
+	b, _, err := base58Decode(data)
 	if err != nil {
 		return nil, err
 	}
 	return Deserialize(b)
 }
-
-// NewSeed returns a cryptographically secure seed
-func NewSeed() ([]byte, error) {
-	// Well that easy, just make go read 256 random bytes into a slice
-	s := make([]byte, 256)
-	_, err := rand.Read(s)
-	return s, err
-}*/
