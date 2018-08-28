@@ -8,7 +8,7 @@ import (
 
 func init() {
 	driver := database.Driver{
-		DbType: "lvdb",
+		DbType: "leveldb",
 		Open:   openDriver,
 	}
 	if err := database.RegisterDriver(driver); err != nil {
