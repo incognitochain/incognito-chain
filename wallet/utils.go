@@ -2,13 +2,12 @@ package wallet
 
 import (
 	"encoding/binary"
-	"github.com/thaibaoautonomous/golangcrypto/ripemd160"
 	"io"
-	"btcutil/base58"
-	base582 "github.com/ninjadotorg/cash-prototype/common/base58"
 	"math/big"
 	"bytes"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/thaibaoautonomous/golangcrypto/ripemd160"
+	"github.com/ninjadotorg/cash-prototype/common/base58"
 )
 
 //
@@ -39,16 +38,8 @@ func hash160(data []byte) ([]byte, error) {
 //
 
 func addChecksumToBytes(data []byte) ([]byte, error) {
-	checksum := base582.ChecksumFirst4Bytes(data)
+	checksum := base58.ChecksumFirst4Bytes(data)
 	return append(data, checksum...), nil
-}
-
-func base58Encode(data []byte) string {
-	return base58.CheckEncode(data, byte(0x0))
-}
-
-func base58Decode(data string) ([]byte, byte, error) {
-	return base58.CheckDecode(data)
 }
 
 // Keys

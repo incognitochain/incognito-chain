@@ -13,8 +13,11 @@ import (
 var bigRadix = big.NewInt(58)
 var bigZero = big.NewInt(0)
 
+type Base58 struct {
+}
+
 // Decode decodes a modified base58 string to a byte slice.
-func Decode(b string) []byte {
+func (self Base58) Decode(b string) []byte {
 	answer := big.NewInt(0)
 	j := big.NewInt(1)
 
@@ -46,7 +49,7 @@ func Decode(b string) []byte {
 }
 
 // Encode encodes a byte slice to a modified base58 string.
-func Encode(b []byte) string {
+func (self Base58) Encode(b []byte) string {
 	x := new(big.Int)
 	x.SetBytes(b)
 

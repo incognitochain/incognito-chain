@@ -160,19 +160,26 @@ func (key *Key) Serialize(privateKey bool) ([]byte, error) {
 	return serializedKey, nil
 }
 
-// B58Serialize encodes the KeyPair in the standard Bitcoin base58 encoding
-func (key *Key) B58Serialize(private bool) string {
+// Base58CheckSerialize encodes the KeyPair in the standard Bitcoin base58 encoding
+func (key *Key) Base58CheckSerialize(private bool) string {
 	serializedKey, err := key.Serialize(private)
 	if err != nil {
 		return ""
 	}
 
-	return base58Encode(serializedKey)
+	return base58.Base58Check{}.Encode(serializedKey, byte(0x00))
 }
 
-// String encodes the KeyPair in the standard Bitcoin base58 encoding
-func (key *Key) String(private bool) string {
-	return key.B58Serialize(private)
+func (key *Key) ToAddress(private bool) string {
+	serializedKey, err := key.Serialize(private)
+	if err != nil {
+		return ""
+	}
+	serializedKey, err = hash160(serializedKey)
+	if err != nil {
+		return ""
+	}
+	return base58.Base58Check{}.Encode(serializedKey, byte(0x00))
 }
 
 // Deserialize a byte slice into a KeyPair
@@ -203,9 +210,9 @@ func Deserialize(data []byte) (*Key, error) {
 	return key, nil
 }
 
-// B58Deserialize deserializes a KeyPair encoded in base58 encoding
-func B58Deserialize(data string) (*Key, error) {
-	b, _, err := base58Decode(data)
+// Base58CheckDeserialize deserializes a KeyPair encoded in base58 encoding
+func Base58CheckDeserialize(data string) (*Key, error) {
+	b, _, err := base58.Base58Check{}.Decode(data)
 	if err != nil {
 		return nil, err
 	}
