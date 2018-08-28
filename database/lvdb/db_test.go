@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
@@ -35,10 +34,8 @@ func TestBlock(t *testing.T) {
 	db, teardown := setup(t)
 	defer teardown()
 
-	hash := common.Hash([32]byte{})
 	block := &blockchain.Block{
 		Header:       blockchain.BlockHeader{},
-		BlockHash:    &hash,
 		Transactions: []transaction.Transaction{},
 	}
 
@@ -47,7 +44,7 @@ func TestBlock(t *testing.T) {
 		t.Errorf("db.StoreBlock returns err: %+v", err)
 	}
 
-	exists, err := db.HasBlock(&hash)
+	exists, err := db.HasBlock(block.Hash())
 	if err != nil {
 		t.Errorf("db.HasBlock returns err: %+v", err)
 	}
@@ -55,7 +52,7 @@ func TestBlock(t *testing.T) {
 		t.Errorf("block should exists")
 	}
 
-	fetched, err := db.FetchBlock(&hash)
+	fetched, err := db.FetchBlock(block.Hash())
 	if err != nil {
 		t.Errorf("db.FetchBlock returns err: %+v", err)
 	}
