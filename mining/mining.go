@@ -34,10 +34,13 @@ func filterActionParamsTxs(block *blockchain.Block) []*transaction.ActionParamTx
 func getMedians(agentDataPoints []*blockchain.AgentDataPoint) (
 	float64, float64, float64,
 ) {
+	agentDataPointsLen := len(agentDataPoints)
+	if agentDataPointsLen == 0 {
+		return 0, 0, 0
+	}
 	var sumOfCoins float64 = 0
 	var sumOfBonds float64 = 0
 	var sumOfTaxs float64 = 0
-	agentDataPointsLen := len(agentDataPoints)
 	for _, dataPoint := range agentDataPoints {
 		sumOfCoins += dataPoint.NumOfCoins
 		sumOfBonds += dataPoint.NumOfBonds
@@ -98,7 +101,8 @@ func calculateReward(
 		}
 	}
 	// issuing coins
-	medianCoin, _, _ := getMedians(contractingCoinsActions)
+	medianCoin, _, _ := getMedians(issuingCoinsActions)
+
 	return map[string]float64{
 		"coins": medianCoin + feeMap[common.TxOutCoinType],
 		"bonds": feeMap[common.TxOutBondType],
@@ -192,7 +196,11 @@ func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 		txInsValue := sumTxInValues(normalTx.TxIn)
 		txOutsValue := sumTxOutValues(normalTx.TxOut)
 		if len(normalTx.TxOut) > 0 {
-			feeMap[normalTx.TxOut[0].TxOutType] += (txInsValue - txOutsValue)
+			txOutType := normalTx.TxOut[0].TxOutType
+			if txOutType == "" {
+				txOutType = common.TxOutCoinType
+			}
+			feeMap[txOutType] += (txInsValue - txOutsValue)
 		}
 	}
 	return txs, actionParamTxs, feeMap
@@ -227,7 +235,7 @@ func getLatestAgentDataPoints(
 		}
 	}
 
-	// in case of have not had enough number of agents yet
+	// in case of not being enough number of agents
 	dataPointsLen := len(agentDataPoints)
 	if dataPointsLen < NUMBER_OF_MAKING_DECISION_AGENTS {
 		return agentDataPoints
@@ -357,6 +365,7 @@ mempoolLoop:
 
 	//update the latest AgentDataPoints to block
 	block.AgentDataPoints = agentDataPoints
+
 	blockTemp := &BlockTemplate{
 		Block: &block,
 	}
