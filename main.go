@@ -92,7 +92,10 @@ func mainMaster(serverChan chan<- *Server) error {
 	}*/
 
 	// Create server and start it.
-	var db = database.NewDB("", database.LevelDBBackend, cfg.DataDir, 0, 0)
+	db, err := database.Open("leveldb", cfg.DataDir)
+	if err != nil {
+		log.Fatalf("could not open connection to leveldb: %v", err)
+	}
 	server, err := Server{}.NewServer(cfg.Listeners, db, activeNetParams.Params,
 		interrupt)
 	if err != nil {
