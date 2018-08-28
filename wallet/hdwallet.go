@@ -7,6 +7,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"bytes"
 	"github.com/ninjadotorg/cash-prototype/common/base58"
+	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 const (
@@ -175,7 +176,7 @@ func (key *Key) ToAddress(private bool) string {
 	if err != nil {
 		return ""
 	}
-	serializedKey, err = hash160(serializedKey)
+	serializedKey, err = common.Hash160(serializedKey)
 	if err != nil {
 		return ""
 	}

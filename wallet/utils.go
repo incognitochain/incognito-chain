@@ -2,36 +2,10 @@ package wallet
 
 import (
 	"encoding/binary"
-	"io"
 	"math/big"
 	"bytes"
-	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/common/base58"
-	"golang.org/x/crypto/ripemd160"
 )
-
-//
-// Hashes
-//
-
-func hashRipeMD160(data []byte) ([]byte, error) {
-	hasher := ripemd160.New()
-	_, err := io.WriteString(hasher, string(data))
-	if err != nil {
-		return nil, err
-	}
-	return hasher.Sum(nil), nil
-}
-
-func hash160(data []byte) ([]byte, error) {
-	hash1 := common.HashB(data)
-	hash2, err := hashRipeMD160(hash1)
-	if err != nil {
-		return nil, err
-	}
-
-	return hash2, nil
-}
 
 //
 // Encoding

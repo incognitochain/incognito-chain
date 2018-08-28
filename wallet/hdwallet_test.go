@@ -32,4 +32,9 @@ func TestNewMasterkey(t *testing.T) {
 
 	Public, _ := Base58CheckDeserialize(b58publicKey)
 	log.Print(hex.EncodeToString(Public.KeyPair.PublicKey))
+
+	child0, _ := masterKey.NewChildKey(0)
+	b58ChildpublicKey := child0.Base58CheckSerialize(false)
+	fmt.Printf("Base58Check encode of public key: %s\n", b58ChildpublicKey)
+	fmt.Printf("Address of public key: %s\n", child0.ToAddress(false))
 }
