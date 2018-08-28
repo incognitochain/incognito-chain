@@ -5,13 +5,16 @@ import (
 	"log"
 	"sync/atomic"
 	"context"
-	"bufio"
 	"fmt"
 
 	"github.com/ninjadotorg/cash-prototype/peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 	libpeer "github.com/libp2p/go-libp2p-peer"
+	"strings"
+	"github.com/ninjadotorg/cash-prototype/common"
+	"net"
+	"runtime"
 )
 
 const (
@@ -74,6 +77,7 @@ type ConnManager struct {
 	Quit chan struct{}
 
 	FailedAttempts uint32
+
 }
 
 type Config struct {
@@ -130,6 +134,50 @@ type handleFailed struct {
 	err error
 }
 
+// parseListeners determines whether each listen address is IPv4 and IPv6 and
+// returns a slice of appropriate net.Addrs to listen on with TCP. It also
+// properly detects addresses which apply to "all interfaces" and adds the
+// address as both IPv4 and IPv6.
+func parseListeners(addrs []string, netType string) ([]common.SimpleAddr, error) {
+	netAddrs := make([]common.SimpleAddr, 0, len(addrs)*2)
+	for _, addr := range addrs {
+		host, _, err := net.SplitHostPort(addr)
+		if err != nil {
+			// Shouldn't happen due to already being normalized.
+			return nil, err
+		}
+
+		// Empty host or host of * on plan9 is both IPv4 and IPv6.
+		if host == "" || (host == "*" && runtime.GOOS == "plan9") {
+			netAddrs = append(netAddrs, common.SimpleAddr{Net: netType + "4", Addr: addr})
+			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
+			continue
+		}
+
+		// Strip IPv6 zone id if present since net.ParseIP does not
+		// handle it.
+		zoneIndex := strings.LastIndex(host, "%")
+		if zoneIndex > 0 {
+			host = host[:zoneIndex]
+		}
+
+		// Parse the IP.
+		ip := net.ParseIP(host)
+		if ip == nil {
+			return nil, fmt.Errorf("'%s' is not a valid IP address", host)
+		}
+
+		// To4 returns nil when the IP is not an IPv4 address, so use
+		// this determine the address type.
+		if ip.To4() == nil {
+			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
+		} else {
+			netAddrs = append(netAddrs, common.SimpleAddr{Net: netType + "4", Addr: addr})
+		}
+	}
+	return netAddrs, nil
+}
+
 // Stop gracefully shuts down the connection manager.
 func (self ConnManager) Stop() {
 	if atomic.AddInt32(&self.stop, 1) != 1 {
@@ -155,6 +203,7 @@ func (self ConnManager) New(cfg *Config) (*ConnManager, error) {
 	self.Config = *cfg
 	self.Quit = make(chan struct{})
 	self.Requests = make(chan interface{})
+
 	return &self, nil
 }
 
@@ -334,11 +383,12 @@ func (self ConnManager) Connect(addr string) {
 	connReq := ConnReq{
 		Permanent: true,
 		Peer: peer.Peer{
-			TargetAddress:               targetAddr,
-			PeerId:                      peerId,
-			RawAddress:                  addr,
-			OutboundReaderWriterStreams: make(map[libpeer.ID]*bufio.ReadWriter),
-			InboundReaderWriterStreams:  make(map[libpeer.ID]*bufio.ReadWriter),
+			TargetAddress:   targetAddr,
+			PeerId:          peerId,
+			RawAddress:      addr,
+			PearConnections: make(map[libpeer.ID]*peer.PeerConn),
+			//OutboundReaderWriterStreams: make(map[libpeer.ID]*bufio.ReadWriter),
+			//InboundReaderWriterStreams:  make(map[libpeer.ID]*bufio.ReadWriter),
 		},
 	}
 	if atomic.LoadUint64(&connReq.Id) == 0 {
@@ -377,14 +427,17 @@ func (self ConnManager) Connect(addr string) {
 			Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", connReq.Peer.PeerId.String(), err.Error())
 			continue
 		}
-		// Create a buffered stream so that read and writes are non blocking.
-		rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
-		// Cache stream to outbound peer
-		listen.OutboundReaderWriterStreams[connReq.Peer.PeerId] = rw
+		//// Create a buffered stream so that read and writes are non blocking.
+		//rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+		//// Cache stream to outbound peer
+		//listen.OutboundReaderWriterStreams[connReq.Peer.PeerId] = rw
+		//
+		//// Create a thread to read and write data.
+		//go listen.InMessageHandler(rw)
+		//go listen.OutMessageHandler(rw)
 
-		// Create a thread to read and write data.
-		go listen.InMessageHandler(rw)
-		go listen.OutMessageHandler(rw)
+		listen.NewPeerConnection(stream)
+
 		flag = true
 	}
 

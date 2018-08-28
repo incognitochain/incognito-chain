@@ -2,11 +2,9 @@ package peer
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -38,10 +36,10 @@ type Peer struct {
 	connected  int32
 	disconnect int32
 
-	Host                        host.Host
-	OutboundReaderWriterStreams map[peer.ID]*bufio.ReadWriter
-	InboundReaderWriterStreams  map[peer.ID]*bufio.ReadWriter
-	verAckReceived              bool
+	Host host.Host
+	//OutboundReaderWriterStreams map[peer.ID]*bufio.ReadWriter
+	//InboundReaderWriterStreams  map[peer.ID]*bufio.ReadWriter
+	verAckReceived bool
 
 	TargetAddress    ma.Multiaddr
 	PeerId           peer.ID
@@ -54,6 +52,8 @@ type Peer struct {
 
 	sendMessageQueue chan outMsg
 	quit             chan struct{}
+
+	PearConnections map[peer.ID]*PeerConn
 }
 
 // Config is the struct to hold configuration options useful to Peer.
@@ -77,11 +77,11 @@ type WrappedStream struct {
 // handler goroutine blocks until the callback has completed.  Doing so will
 // result in a deadlock.
 type MessageListeners struct {
-	OnTx        func(p *Peer, msg *wire.MessageTx)
-	OnBlock     func(p *Peer, msg *wire.MessageBlock)
-	OnGetBlocks func(p *Peer, msg *wire.MessageGetBlocks)
-	OnVersion   func(p *Peer, msg *wire.MessageVersion)
-	OnVerAck    func(p *Peer, msg *wire.MessageVerAck)
+	OnTx        func(p *PeerConn, msg *wire.MessageTx)
+	OnBlock     func(p *PeerConn, msg *wire.MessageBlock)
+	OnGetBlocks func(p *PeerConn, msg *wire.MessageGetBlocks)
+	OnVersion   func(p *PeerConn, msg *wire.MessageVersion)
+	OnVerAck    func(p *PeerConn, msg *wire.MessageVerAck)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal
@@ -177,6 +177,38 @@ func (p Peer) WaitForDisconnect() {
 	<-p.quit
 }
 
+func (self Peer) NewPeerConnection(stream net.Stream) (*PeerConn, error) {
+	remotePeerId := stream.Conn().RemotePeer()
+
+	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+	//self.InboundReaderWriterStreams[remotePeerId] = rw
+
+	//go self.InMessageHandler(rw)
+	//go self.OutMessageHandler(rw)
+
+	peerConnection := PeerConn{
+		Peer:               &self,
+		Host:               self.Host,
+		Config:             self.Config,
+		PeerId:             remotePeerId,
+		ReaderWriterStream: rw,
+		quit:               make(chan struct{}),
+		sendMessageQueue:   make(chan outMsg, 1),
+	}
+
+	self.PearConnections[peerConnection.PeerId] = &peerConnection
+
+	go peerConnection.InMessageHandler(rw)
+	go peerConnection.OutMessageHandler(rw)
+
+	return &peerConnection, nil
+}
+
+func (self *Peer) DeletePeerConnection(peerID peer.ID) (error) {
+	delete(self.PearConnections, peerID)
+	return nil
+}
+
 func (self Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
 	//defer stream.Close()
@@ -191,140 +223,155 @@ func (self Peer) HandleStream(stream net.Stream) {
 
 	// Create a buffer stream for non blocking read and write.
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
-	self.InboundReaderWriterStreams[remotePeerId] = rw
+	//self.InboundReaderWriterStreams[remotePeerId] = rw
 
-	go self.InMessageHandler(rw)
-	go self.OutMessageHandler(rw)
+	//go self.InMessageHandler(rw)
+	//go self.OutMessageHandler(rw)
+
+	peerConnection := PeerConn{
+		Peer:               &self,
+		Host:               self.Host,
+		Config:             self.Config,
+		PeerId:             remotePeerId,
+		ReaderWriterStream: rw,
+		quit:               make(chan struct{}),
+		sendMessageQueue:   make(chan outMsg, 1),
+	}
+
+	self.PearConnections[peerConnection.PeerId] = &peerConnection
+
+	go peerConnection.InMessageHandler(rw)
+	go peerConnection.OutMessageHandler(rw)
 }
 
 /**
 Handle all in message
 */
-func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
-	for {
-		Logger.log.Infof("Reading stream")
-		str, err := rw.ReadString('\n')
-		if err != nil {
-			Logger.log.Error(err)
-			return
-		}
-
-		//if str == "" {
-		//	return
-		//}
-		Logger.log.Infof("Received message: %s \n", str)
-		if str != "\n" {
-
-			// Parse Message header
-			jsonDecodeString, _ := hex.DecodeString(str)
-			messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
-
-			commandInHeader := messageHeader[:12]
-			commandInHeader = bytes.Trim(messageHeader, "\x00")
-			Logger.log.Info("Message Type - " + string(commandInHeader))
-			commandType := string(messageHeader[:len(commandInHeader)])
-			var message, err = wire.MakeEmptyMessage(string(commandType))
-
-			// Parse Message body
-			messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
-			Logger.log.Info("Message Body - " + string(messageBody))
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if commandType != wire.CmdBlock {
-				err = json.Unmarshal(messageBody, &message)
-			} else {
-				err = json.Unmarshal(messageBody, &message)
-			}
-			//temp := message.(map[string]interface{})
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			realType := reflect.TypeOf(message)
-			log.Print(realType)
-			// check type of Message
-			switch realType {
-			case reflect.TypeOf(&wire.MessageTx{}):
-				if self.Config.MessageListeners.OnTx != nil {
-					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnTx(&self, message.(*wire.MessageTx))
-					self.FlagMutex.Unlock()
-				}
-			case reflect.TypeOf(&wire.MessageBlock{}):
-				if self.Config.MessageListeners.OnBlock != nil {
-					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnBlock(&self, message.(*wire.MessageBlock))
-					self.FlagMutex.Unlock()
-				}
-			case reflect.TypeOf(&wire.MessageGetBlocks{}):
-				if self.Config.MessageListeners.OnGetBlocks != nil {
-					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnGetBlocks(&self, message.(*wire.MessageGetBlocks))
-					self.FlagMutex.Unlock()
-				}
-			case reflect.TypeOf(&wire.MessageVersion{}):
-				if self.Config.MessageListeners.OnVersion != nil {
-					self.FlagMutex.Lock()
-					versionMessage := message.(*wire.MessageVersion)
-					self.Config.MessageListeners.OnVersion(&self, versionMessage)
-					self.FlagMutex.Unlock()
-				}
-			case reflect.TypeOf(&wire.MessageVerAck{}):
-				self.FlagMutex.Lock()
-				self.verAckReceived = true
-				self.FlagMutex.Unlock()
-				if self.Config.MessageListeners.OnVerAck != nil {
-					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnVerAck(&self, message.(*wire.MessageVerAck))
-					self.FlagMutex.Unlock()
-				}
-			default:
-				Logger.log.Warnf("Received unhandled message of type %v "+
-					"from %v", realType, self)
-			}
-		}
-	}
-}
-
-/**
-// OutMessageHandler handles the queuing of outgoing data for the peer. This runs as
-// a muxer for various sources of input so we can ensure that server and peer
-// handlers will not block on us sending a message.  That data is then passed on
-// to outHandler to be actually written.
-*/
-func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
-	for {
-		select {
-		case outMsg := <-self.sendMessageQueue:
-			{
-				self.FlagMutex.Lock()
-				// TODO
-				// send message
-				messageByte, err := outMsg.msg.JsonSerialize()
-				if err != nil {
-					fmt.Println(err)
-					continue
-				}
-				header := make([]byte, wire.MessageHeaderSize)
-				CmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.msg))
-				copy(header[:], []byte(CmdType))
-				messageByte = append(messageByte, header...)
-				message := hex.EncodeToString(messageByte)
-				message += "\n"
-				Logger.log.Infof("Send a message %s: %s", outMsg.msg.MessageType(), message)
-				rw.Writer.WriteString(message)
-				rw.Writer.Flush()
-				self.FlagMutex.Unlock()
-			}
-		case <-self.quit:
-			break
-			//default:
-			//	Logger.log.Info("Wait for sending message")
-		}
-	}
-}
+//func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
+//	for {
+//		Logger.log.Infof("Reading stream")
+//		str, err := rw.ReadString('\n')
+//		if err != nil {
+//			Logger.log.Error(err)
+//			return
+//		}
+//
+//		//if str == "" {
+//		//	return
+//		//}
+//		Logger.log.Infof("Received message: %s \n", str)
+//		if str != "\n" {
+//
+//			// Parse Message header
+//			jsonDecodeString, _ := hex.DecodeString(str)
+//			messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
+//
+//			commandInHeader := messageHeader[:12]
+//			commandInHeader = bytes.Trim(messageHeader, "\x00")
+//			Logger.log.Info("Message Type - " + string(commandInHeader))
+//			commandType := string(messageHeader[:len(commandInHeader)])
+//			var message, err = wire.MakeEmptyMessage(string(commandType))
+//
+//			// Parse Message body
+//			messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
+//			Logger.log.Info("Message Body - " + string(messageBody))
+//			if err != nil {
+//				Logger.log.Error(err)
+//				continue
+//			}
+//			if commandType != wire.CmdBlock {
+//				err = json.Unmarshal(messageBody, &message)
+//			} else {
+//				err = json.Unmarshal(messageBody, &message)
+//			}
+//			//temp := message.(map[string]interface{})
+//			if err != nil {
+//				Logger.log.Error(err)
+//				continue
+//			}
+//			realType := reflect.TypeOf(message)
+//			log.Print(realType)
+//			// check type of Message
+//			switch realType {
+//			case reflect.TypeOf(&wire.MessageTx{}):
+//				if self.Config.MessageListeners.OnTx != nil {
+//					self.FlagMutex.Lock()
+//					self.Config.MessageListeners.OnTx(&self, message.(*wire.MessageTx))
+//					self.FlagMutex.Unlock()
+//				}
+//			case reflect.TypeOf(&wire.MessageBlock{}):
+//				if self.Config.MessageListeners.OnBlock != nil {
+//					self.FlagMutex.Lock()
+//					self.Config.MessageListeners.OnBlock(&self, message.(*wire.MessageBlock))
+//					self.FlagMutex.Unlock()
+//				}
+//			case reflect.TypeOf(&wire.MessageGetBlocks{}):
+//				if self.Config.MessageListeners.OnGetBlocks != nil {
+//					self.FlagMutex.Lock()
+//					self.Config.MessageListeners.OnGetBlocks(&self, message.(*wire.MessageGetBlocks))
+//					self.FlagMutex.Unlock()
+//				}
+//			case reflect.TypeOf(&wire.MessageVersion{}):
+//				if self.Config.MessageListeners.OnVersion != nil {
+//					self.FlagMutex.Lock()
+//					versionMessage := message.(*wire.MessageVersion)
+//					self.Config.MessageListeners.OnVersion(&self, versionMessage)
+//					self.FlagMutex.Unlock()
+//				}
+//			case reflect.TypeOf(&wire.MessageVerAck{}):
+//				self.FlagMutex.Lock()
+//				self.verAckReceived = true
+//				self.FlagMutex.Unlock()
+//				if self.Config.MessageListeners.OnVerAck != nil {
+//					self.FlagMutex.Lock()
+//					self.Config.MessageListeners.OnVerAck(&self, message.(*wire.MessageVerAck))
+//					self.FlagMutex.Unlock()
+//				}
+//			default:
+//				Logger.log.Warnf("Received unhandled message of type %v "+
+//					"from %v", realType, self)
+//			}
+//		}
+//	}
+//}
+//
+///**
+//// OutMessageHandler handles the queuing of outgoing data for the peer. This runs as
+//// a muxer for various sources of input so we can ensure that server and peer
+//// handlers will not block on us sending a message.  That data is then passed on
+//// to outHandler to be actually written.
+//*/
+//func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
+//	for {
+//		select {
+//		case outMsg := <-self.sendMessageQueue:
+//			{
+//				self.FlagMutex.Lock()
+//				// TODO
+//				// send message
+//				messageByte, err := outMsg.msg.JsonSerialize()
+//				if err != nil {
+//					fmt.Println(err)
+//					continue
+//				}
+//				header := make([]byte, wire.MessageHeaderSize)
+//				CmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.msg))
+//				copy(header[:], []byte(CmdType))
+//				messageByte = append(messageByte, header...)
+//				message := hex.EncodeToString(messageByte)
+//				message += "\n"
+//				Logger.log.Infof("Send a message %s %s: %s", self.PeerId.String(), outMsg.msg.MessageType(), message)
+//				rw.Writer.WriteString(message)
+//				rw.Writer.Flush()
+//				self.FlagMutex.Unlock()
+//			}
+//		case <-self.quit:
+//			break
+//			//default:
+//			//	Logger.log.Info("Wait for sending message")
+//		}
+//	}
+//}
 
 // Connected returns whether or not the peer is currently connected.
 //
@@ -367,11 +414,17 @@ func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- stru
 	//	}
 	//	return
 	//}
-	self.sendMessageQueue <- outMsg{msg: msg, doneChan: doneChan}
+
+	//self.sendMessageQueue <- outMsg{msg: msg, doneChan: doneChan}
+
 	//self.FlagMutex.Lock()
 	//self.ReadWrite.WriteString("test test test")
 	//self.ReadWrite.Flush()
 	//self.FlagMutex.Unlock()
+
+	for _, peerConnection := range self.PearConnections {
+		peerConnection.QueueMessageWithEncoding(msg, doneChan)
+	}
 }
 
 // negotiateOutboundProtocol sends our version message then waits to receive a
@@ -405,7 +458,7 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 	msgVersionStr := hex.EncodeToString(msgVersion)
 	msgVersionStr += "\n"
 	Logger.log.Infof("Send a msgVersion: %s", msgVersionStr)
-	rw := self.OutboundReaderWriterStreams[peer.PeerId]
+	rw := self.PearConnections[peer.PeerId].ReaderWriterStream
 	self.FlagMutex.Lock()
 	rw.Writer.WriteString(msgVersionStr)
 	rw.Writer.Flush()

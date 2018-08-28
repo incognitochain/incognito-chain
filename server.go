@@ -11,8 +11,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"bufio"
-
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/addrmanager"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
@@ -167,6 +165,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	if cfg.MaxPeers < targetOutbound {
 		targetOutbound = cfg.MaxPeers
 	}
+
 	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
@@ -183,6 +182,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	if len(permanentPeers) == 0 {
 		permanentPeers = cfg.AddPeers
 	}
+
 	for _, addr := range permanentPeers {
 		go self.ConnManager.Connect(addr)
 	}
@@ -308,6 +308,8 @@ func (self Server) peerHandler() {
 	}
 
 	go self.ConnManager.Start()
+	//go self.ConnManager.StartListener(self.NewPeerConfig())
+
 out:
 	for {
 		select {
@@ -345,6 +347,7 @@ func (self Server) Start() {
 	// Start the peer handler which in turn starts the address and block
 	// managers.
 	self.WaitGroup.Add(1)
+
 	go self.peerHandler()
 
 	if !cfg.DisableRPC && self.RpcServer != nil {
@@ -431,8 +434,9 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 			FlagMutex:        sync.Mutex{},
 			ListeningAddress: addr,
 			Config:           *self.NewPeerConfig(),
-			OutboundReaderWriterStreams: make(map[peer2.ID]*bufio.ReadWriter),
-			InboundReaderWriterStreams:  make(map[peer2.ID]*bufio.ReadWriter),
+			PearConnections:  make(map[peer2.ID]*peer.PeerConn),
+			//OutboundReaderWriterStreams: make(map[peer2.ID]*bufio.ReadWriter),
+			//InboundReaderWriterStreams:  make(map[peer2.ID]*bufio.ReadWriter),
 		}.NewPeer()
 		if err != nil {
 			return nil, err
@@ -459,7 +463,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 
 // OnBlock is invoked when a peer receives a block message.  It
 // blocks until the coin block has been fully processed.
-func (self *Server) OnBlock(p *peer.Peer,
+func (self *Server) OnBlock(p *peer.PeerConn,
 	msg *wire.MessageBlock) {
 	Logger.log.Info("Receive a new block")
 	var txProcessed chan struct{}
@@ -467,7 +471,7 @@ func (self *Server) OnBlock(p *peer.Peer,
 	//<-txProcessed
 }
 
-func (self *Server) OnGetBlocks(_ *peer.Peer, msg *wire.MessageGetBlocks) {
+func (self *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Receive a get-block message")
 	var txProcessed chan struct{}
 	self.NetSync.QueueGetBlock(nil, msg, txProcessed)
@@ -478,7 +482,7 @@ func (self *Server) OnGetBlocks(_ *peer.Peer, msg *wire.MessageGetBlocks) {
 // until the transaction has been fully processed.  Unlock the block
 // handler this does not serialize all transactions through a single thread
 // transactions don't rely on the previous one in a linear fashion like blocks.
-func (self Server) OnTx(peer *peer.Peer,
+func (self Server) OnTx(peer *peer.PeerConn,
 	msg *wire.MessageTx) {
 	Logger.log.Info("Receive a new transaction")
 	var txProcessed chan struct{}
@@ -489,7 +493,7 @@ func (self Server) OnTx(peer *peer.Peer,
 // OnVersion is invoked when a peer receives a version bitcoin message
 // and is used to negotiate the protocol version details as well as kick start
 // the communications.
-func (self *Server) OnVersion(_ *peer.Peer, msg *wire.MessageVersion) {
+func (self *Server) OnVersion(_ *peer.PeerConn, msg *wire.MessageVersion) {
 	remotePeer := &peer.Peer{
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
@@ -507,13 +511,13 @@ func (self *Server) OnVersion(_ *peer.Peer, msg *wire.MessageVersion) {
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
 		msg, err := wire.MakeEmptyMessage(wire.CmdVerack)
 		if err != nil {
-			return
+			continue
 		}
 		listen.QueueMessageWithEncoding(msg, dc)
 	}
 }
 
-func (self *Server) OnVerAck(_ *peer.Peer, msg *wire.MessageVerAck) {
+func (self *Server) OnVerAck(_ *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
 	log.Printf("Receive verack message")
 }
