@@ -206,12 +206,14 @@ func getLatestAgentDataPoints(
 ) {
 	agentDataPoints := map[string]*blockchain.AgentDataPoint{}
 	bestBlock := chain.BestBlock
-	if bestBlock == nil {
-		return agentDataPoints
+
+	if bestBlock != nil && bestBlock.AgentDataPoints != nil {
+		agentDataPoints = bestBlock.AgentDataPoints
 	}
-	agentDataPoints = bestBlock.AgentDataPoints
+
 	for _, actionParamTx := range actionParamTxs {
 		inputAgentID := actionParamTx.Param.AgentID
+
 		_, ok := agentDataPoints[inputAgentID]
 		if !ok || actionParamTx.LockTime > agentDataPoints[inputAgentID].LockTime {
 			agentDataPoints[inputAgentID] = &blockchain.AgentDataPoint{
@@ -256,9 +258,11 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 
 	prevBlockHash := chain.BestBlock.Hash()
 	sourceTxns := g.txSource.MiningDescs()
+
 	if len(sourceTxns) == 0 {
 		return nil, errors.New("No Tx")
 	}
+
 	txs, actionParamTxs, feeMap := extractTxsAndComputeInitialFees(sourceTxns)
 	//@todo we need apply sort rules for sourceTxns here
 
@@ -353,7 +357,6 @@ mempoolLoop:
 
 	//update the latest AgentDataPoints to block
 	block.AgentDataPoints = agentDataPoints
-
 	blockTemp := &BlockTemplate{
 		Block: &block,
 	}
