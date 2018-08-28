@@ -42,9 +42,8 @@ func (self *Engine) Start() {
 		return
 	}
 	self.quit = make(chan struct{})
-	Logger.log.Info("Starting sync manager")
+	Logger.log.Info("Starting Proof of Stake engine")
 	self.waitgroup.Add(1)
-	go self.messageHandler()
 	time.AfterFunc(2*time.Second, func() {
 
 	})
