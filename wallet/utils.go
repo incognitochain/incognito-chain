@@ -1,38 +1,19 @@
 package wallet
 
 import (
-	"crypto/sha256"
 	"encoding/binary"
 	"github.com/thaibaoautonomous/golangcrypto/ripemd160"
 	"io"
 	"btcutil/base58"
+	base582 "github.com/ninjadotorg/cash-prototype/common/base58"
+	"math/big"
+	"bytes"
+	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 //
 // Hashes
 //
-
-func hashSha256(data []byte) ([]byte, error) {
-	hasher := sha256.New()
-	_, err := hasher.Write(data)
-	if err != nil {
-		return nil, err
-	}
-	return hasher.Sum(nil), nil
-}
-
-func hashDoubleSha256(data []byte) ([]byte, error) {
-	hash1, err := hashSha256(data)
-	if err != nil {
-		return nil, err
-	}
-
-	hash2, err := hashSha256(hash1)
-	if err != nil {
-		return nil, err
-	}
-	return hash2, nil
-}
 
 func hashRipeMD160(data []byte) ([]byte, error) {
 	hasher := ripemd160.New()
@@ -44,11 +25,7 @@ func hashRipeMD160(data []byte) ([]byte, error) {
 }
 
 func hash160(data []byte) ([]byte, error) {
-	hash1, err := hashSha256(data)
-	if err != nil {
-		return nil, err
-	}
-
+	hash1 := common.HashB(data)
 	hash2, err := hashRipeMD160(hash1)
 	if err != nil {
 		return nil, err
@@ -61,20 +38,8 @@ func hash160(data []byte) ([]byte, error) {
 // Encoding
 //
 
-func checksum(data []byte) ([]byte, error) {
-	hash, err := hashDoubleSha256(data)
-	if err != nil {
-		return nil, err
-	}
-
-	return hash[:4], nil
-}
-
 func addChecksumToBytes(data []byte) ([]byte, error) {
-	checksum, err := checksum(data)
-	if err != nil {
-		return nil, err
-	}
+	checksum := base582.ChecksumFirst4Bytes(data)
 	return append(data, checksum...), nil
 }
 
@@ -87,21 +52,22 @@ func base58Decode(data string) ([]byte, byte, error) {
 }
 
 // Keys
-//func compressPublicKey(x *big.Int, y *big.Int) []byte {
-//	var key bytes.Buffer
-//
-//	// Write header; 0x2 for even y value; 0x3 for odd
-//	key.WriteByte(byte(0x2) + byte(y.Bit(0)))
-//
-//	// Write X coord; Pad the key so x is aligned with the LSB. Pad size is key length - header size (1) - xBytes size
-//	xBytes := x.Bytes()
-//	for i := 0; i < (PublicKeyCompressedLength - 1 - len(xBytes)); i++ {
-//		key.WriteByte(0x0)
-//	}
-//	key.Write(xBytes)
-//
-//	return key.Bytes()
-//}
+func compressPublicKey(x *big.Int, y *big.Int) []byte {
+	var key bytes.Buffer
+
+	// Write header; 0x2 for even y value; 0x3 for odd
+	key.WriteByte(byte(0x2) + byte(y.Bit(0)))
+
+	// Write X coord; Pad the key so x is aligned with the LSB. Pad size is key length - header size (1) - xBytes size
+	xBytes := x.Bytes()
+	for i := 0; i < (PublicKeyCompressedLength - 1 - len(xBytes)); i++ {
+		key.WriteByte(0x0)
+	}
+	key.Write(xBytes)
+
+	return key.Bytes()
+}
+
 //
 //// As described at https://crypto.stackexchange.com/a/8916
 //func expandPublicKey(key []byte) (*big.Int, *big.Int) {

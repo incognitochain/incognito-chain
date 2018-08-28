@@ -20,12 +20,12 @@ func TestNewMasterkey(t *testing.T) {
 	log.Print(hex.EncodeToString(seed))
 
 	masterKey, _ := NewMasterKey(seed)
-	b58privateKey := masterKey.B58Serialize(true)
-	//b58publicKey := masterKey.B58Serialize(false)
+	//b58privateKey := masterKey.B58Serialize(true)
+	b58publicKey := masterKey.B58Serialize(false)
 
-	Private, _ := B58Deserialize(b58privateKey)
-	log.Print(hex.EncodeToString(Private.KeyPair.PrivateKey))
+	//Private, _ := B58Deserialize(b58privateKey)
+	//log.Print(hex.EncodeToString(Private.KeyPair.PrivateKey))
 
-	//Public, _ := B58Deserialize(b58publicKey)
-	//log.Print(hex.EncodeToString(Public.KeyPair.PublicKey))
+	Public, _ := B58Deserialize(b58publicKey)
+	log.Print(hex.EncodeToString(Public.KeyPair.PublicKey))
 }

@@ -6,15 +6,16 @@ import (
 	"errors"
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"bytes"
+	"github.com/ninjadotorg/cash-prototype/common/base58"
 )
 
 const (
-// FirstHardenedChild is the index of the firxt "harded" child key as per the
-// bip32 spec
-//FirstHardenedChild = uint32(0x80000000)
+	// FirstHardenedChild is the index of the firxt "harded" child key as per the
+	// bip32 spec
+	//FirstHardenedChild = uint32(0x80000000)
 
-// PublicKeyCompressedLength is the byte count of a compressed public key
-//PublicKeyCompressedLength = 33
+	// PublicKeyCompressedLength is the byte count of a compressed public key
+	PublicKeyCompressedLength = 33
 )
 
 var (
@@ -186,17 +187,13 @@ func Deserialize(data []byte) (*Key, error) {
 	keyType := data[37]
 	keyLength := data[38]
 	if keyType == byte(0) {
-		key.KeyPair.PrivateKey = data[39:keyLength]
+		key.KeyPair.PrivateKey = data[39:39+keyLength ]
 	} else {
-		key.KeyPair.PublicKey = data[39:keyLength]
+		key.KeyPair.PublicKey = data[39:39+keyLength]
 	}
 
 	// validate checksum
-	cs1, err := checksum(data[0: len(data)-4])
-	if err != nil {
-		return nil, err
-	}
-
+	cs1 := base58.ChecksumFirst4Bytes(data[0: len(data)-4])
 	cs2 := data[len(data)-4:]
 	for i := range cs1 {
 		if cs1[i] != cs2[i] {
