@@ -62,12 +62,13 @@ bool string_to_bools(const string &data, vector<bool> &result)
 bool convert_note(const zksnark::Note &zk_note, libzcash::SproutNote &note)
 {
     note.value_ = zk_note.value();
-    string_to_uint256(zk_note.cm(), note.cm);
-    string_to_uint256(zk_note.r(), note.r);
-    string_to_uint256(zk_note.rho(), note.rho);
-    string_to_uint256(zk_note.apk(), note.a_pk);
-    string_to_uint256(zk_note.nf(), note.nf);
-    return true;
+    bool success = true;
+    success &= string_to_uint256(zk_note.cm(), note.cm);
+    success &= string_to_uint256(zk_note.r(), note.r);
+    success &= string_to_uint256(zk_note.rho(), note.rho);
+    success &= string_to_uint256(zk_note.apk(), note.a_pk);
+    success &= string_to_uint256(zk_note.nf(), note.nf);
+    return success;
 }
 
 bool transform_prove_request(const ProveRequest *request,
@@ -79,6 +80,7 @@ bool transform_prove_request(const ProveRequest *request,
         return false;
 
     // Convert inputs
+    bool success = true;
     int i = 0;
     for (auto &input : request->inputs())
     {
@@ -116,7 +118,7 @@ bool transform_prove_request(const ProveRequest *request,
         inputs[i].witness = ZCIncrementalWitness(auth_path, index);
 
         // Convert note
-        convert_note(input.note(), inputs[i].note);
+        success &= convert_note(input.note(), inputs[i].note);
         i++;
     }
 
@@ -124,12 +126,11 @@ bool transform_prove_request(const ProveRequest *request,
     i = 0;
     for (auto &outnote : request->outnotes())
     {
-        convert_note(outnote, out_notes[i]);
+        success &= convert_note(outnote, out_notes[i]);
         i++;
     }
 
     // Convert hsig
-    bool success = true;
     success &= string_to_uint256(request->hsig(), hsig);
     cout << "hsig: " << hsig.GetHex() << '\n';
 
@@ -215,7 +216,7 @@ class ZksnarkImpl final : public Zksnark::Service
         bool success = transform_prove_request(request, inputs, out_notes, hsig, phi, rt);
         cout << "transform_prove_request status: " << success << '\n';
 
-        bool compute_proof = false;
+        bool compute_proof = true;
         auto proof = js->prove(inputs, out_notes, rt, hsig, phi, compute_proof);
 
         zksnark::PHGRProof *zk_proof = new zksnark::PHGRProof();

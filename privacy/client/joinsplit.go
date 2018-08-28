@@ -54,16 +54,25 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
 		// Compute cm for old notes to check for merkle path
 		input.InputNote.Cm = GetCommitment(input.InputNote)
 	}
-	seed := RandBits(256)
-	hSig := HSigCRH(seed, inputs[0].InputNote.Nf, inputs[1].InputNote.Nf, pubKey)
+
+	// TODO:(0xbunyip): remove debug here
+	// seed := RandBits(256)
+	// seed := []byte{155, 31, 215, 9, 16, 242, 239, 233, 201, 109, 141, 58, 24, 239, 210, 117, 155, 17, 23, 188, 70, 125, 245, 85, 154, 42, 212, 0, 164, 221, 80, 94}
+	// hSig := HSigCRH(seed, inputs[0].InputNote.Nf, inputs[1].InputNote.Nf, pubKey)
+	hSig := []byte{155, 31, 215, 9, 16, 242, 239, 233, 201, 109, 141, 58, 24, 239, 210, 117, 155, 17, 23, 188, 70, 125, 245, 85, 154, 42, 212, 0, 164, 221, 80, 94}
 
 	// Generate rho and r for new notes
 	const phiLen = 252
-	phi := RandBits(phiLen)
+	// TODO:(0xbunyip): remove debug here
+	// phi := RandBits(phiLen)
+	phi := []byte{80, 163, 129, 14, 224, 14, 22, 199, 9, 222, 152, 68, 97, 249, 132, 138, 69, 64, 195, 13, 46, 200, 79, 248, 16, 161, 73, 187, 200, 122, 235, 6}
+
 	for i, output := range outputs {
 		rho := PRF_rho(uint64(i), phi, hSig)
-		copy(output.OutputNote.Rho[:], rho)
-		copy(output.OutputNote.R[:], RandBits(256))
+		output.OutputNote.Rho = make([]byte, len(rho))
+		output.OutputNote.R = make([]byte, 32)
+		copy(output.OutputNote.Rho, rho)
+		copy(output.OutputNote.R, RandBits(256))
 
 		// Compute cm for new notes to check for Note commitment integrity
 		output.OutputNote.Cm = GetCommitment(output.OutputNote)
@@ -72,6 +81,8 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
 	fmt.Printf("hsig: %x\n", hSig)
 	fmt.Printf("phi: %x\n", phi)
 	fmt.Printf("rt: %x\n", rt)
+	fmt.Printf("rho0: %x\n", outputs[0].OutputNote.Rho)
+	fmt.Printf("rho1: %x\n", outputs[1].OutputNote.Rho)
 
 	// TODO: encrypt note's data
 	// TODO: malleability

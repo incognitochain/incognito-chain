@@ -16,7 +16,7 @@ public:
         pb_variable_array<FieldT>& rho,
         pb_variable_array<FieldT>& r,
         std::shared_ptr<digest_variable<FieldT>> result
-    ) : gadget<FieldT>(pb) {
+    ) : gadget<FieldT>(pb, "note_commitment_gadget") {
         pb_variable_array<FieldT> leading_byte =
             from_bits({1, 0, 1, 1, 0, 0, 0, 0}, ZERO);
 

@@ -4,7 +4,7 @@ public:
     pb_variable_array<FieldT> value;
     std::shared_ptr<digest_variable<FieldT>> r;
 
-    note_gadget(protoboard<FieldT> &pb) : gadget<FieldT>(pb) {
+    note_gadget(protoboard<FieldT> &pb, std::string annotation_prefix) : gadget<FieldT>(pb, annotation_prefix) {
         value.allocate(pb, 64);
         r.reset(new digest_variable<FieldT>(pb, 256, ""));
     }
@@ -49,7 +49,7 @@ public:
         pb_variable<FieldT>& ZERO,
         std::shared_ptr<digest_variable<FieldT>> nullifier,
         digest_variable<FieldT> rt
-    ) : note_gadget<FieldT>(pb) {
+    ) : note_gadget<FieldT>(pb, "input_note_gadget") {
         a_sk.reset(new digest_variable<FieldT>(pb, 252, ""));
         a_pk.reset(new digest_variable<FieldT>(pb, 256, ""));
         rho.reset(new digest_variable<FieldT>(pb, 256, ""));
@@ -186,7 +186,7 @@ public:
         pb_variable_array<FieldT>& h_sig,
         bool nonce,
         std::shared_ptr<digest_variable<FieldT>> commitment
-    ) : note_gadget<FieldT>(pb) {
+    ) : note_gadget<FieldT>(pb, "output_note_gadget") {
         rho.reset(new digest_variable<FieldT>(pb, 256, ""));
         a_pk.reset(new digest_variable<FieldT>(pb, 256, ""));
 

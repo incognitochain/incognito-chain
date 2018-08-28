@@ -25,6 +25,7 @@ add_definitions(-DCURVE_ALT_BN128)
 add_definitions(-DNO_PROCPS)
 add_definitions(-DBINARY_OUTPUT)
 add_definitions(-DNO_PT_COMPRESSION)
+add_definitions(-DDEBUG)
 
 set(LS_PATH "./libsnark")
 set(CURVE_PATH "${LS_PATH}/algebra/curves/alt_bn128/")

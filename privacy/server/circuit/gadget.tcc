@@ -46,7 +46,7 @@ public:
     static_assert(NumOutputs <= 2, "NumOutputs > 2");
     // BOOST_STATIC_ASSERT(NumOutputs <= 2);
 
-    joinsplit_gadget(protoboard<FieldT> &pb) : gadget<FieldT>(pb) {
+    joinsplit_gadget(protoboard<FieldT> &pb) : gadget<FieldT>(pb, "joinsplit_gadget") {
         // Verification
         {
             // The verification inputs are all bit-strings of various
@@ -85,6 +85,8 @@ public:
             ));
         }
 
+        std::cout << "Done joinsplit_gadget verification\n";
+
         // We need a constant "zero" variable in some contexts. In theory
         // it should never be necessary, but libsnark does not synthesize
         // optimal circuits.
@@ -119,6 +121,8 @@ public:
             ));
         }
 
+        std::cout << "Done create input_note_gadget and PRF_pk_gadget\n";
+
         for (size_t i = 0; i < NumOutputs; i++) {
             zk_output_notes[i].reset(new output_note_gadget<FieldT>(
                 pb,
@@ -129,6 +133,7 @@ public:
                 zk_output_commitments[i]
             ));
         }
+        std::cout << "Done create output_note_gadget\n";
     }
 
     void generate_r1cs_constraints() {

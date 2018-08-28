@@ -226,6 +226,7 @@ public:
         protoboard<FieldT> pb;
         {
             // TODO(@0xbunyip): remove vpub_old and vpub_new in joinsplit_gadget if necessary
+            std::cout << "Creating joinsplit_gadget\n";
             joinsplit_gadget<FieldT, NumInputs, NumOutputs> g(pb);
             g.generate_r1cs_constraints();
             std::cout << "Done generate_r1cs_constraints\n";
@@ -240,6 +241,8 @@ public:
             );
             std::cout << "Done generate_r1cs_witness\n";
         }
+        std::cout << "h_sig: " << h_sig.GetHex() << '\n';
+        std::cout << "phi: " << phi.inner().GetHex() << '\n';
 
         // The constraint system must be satisfied or there is an unimplemented
         // or incorrect sanity check above. Or the constraint system is broken!

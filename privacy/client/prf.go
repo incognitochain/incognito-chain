@@ -25,6 +25,9 @@ func PRF_rho(index uint64, phi, hsig []byte) []byte {
 
 func PRF(a, b, c, d bool, x, y []byte) []byte {
 	// TODO: check for x, y length
+	xc := make([]byte, len(x))
+	copy(xc, x)
+
 	var h byte
 	if a {
 		h |= 1 << 7
@@ -39,9 +42,9 @@ func PRF(a, b, c, d bool, x, y []byte) []byte {
 		h |= 1 << 4
 	}
 
-	x[0] &= 0x0F
-	x[0] |= h
-	z := append(x, y...)
+	xc[0] &= 0x0F
+	xc[0] |= h
+	z := append(xc, y...)
 	// fmt.Printf("PRF z: %x\n", z)
 
 	r := sha256.Sum256NoPad(z)

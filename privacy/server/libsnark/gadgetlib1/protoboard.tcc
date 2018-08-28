@@ -11,6 +11,8 @@
 #include <cstdio>
 #include <cstdarg>
 #include "common/profiling.hpp"
+#include <cstdlib>
+
 
 namespace libsnark {
 
@@ -37,8 +39,14 @@ template<typename FieldT>
 var_index_t protoboard<FieldT>::allocate_var_index(const std::string &annotation)
 {
 #ifdef DEBUG
-    assert(annotation != "");
-    constraint_system.variable_annotations[next_free_var] = annotation;
+    // assert(annotation != "");
+    std::string ann = annotation;
+    if (annotation == "") {
+        char buffer [33] = {0};
+        sprintf(buffer, "var_%d", int(next_free_var));
+        ann = std::string(buffer);
+    }
+    constraint_system.variable_annotations[next_free_var] = ann;
 #else
     UNUSED(annotation);
 #endif
@@ -100,8 +108,14 @@ template<typename FieldT>
 void protoboard<FieldT>::add_r1cs_constraint(const r1cs_constraint<FieldT> &constr, const std::string &annotation)
 {
 #ifdef DEBUG
-    assert(annotation != "");
-    constraint_system.constraint_annotations[constraint_system.constraints.size()] = annotation;
+    // assert(annotation != "");
+    std::string ann = annotation;
+    if (annotation == "") {
+        char buffer [33] = {0};
+        sprintf(buffer, "r1cs_constraint_%d", int(constraint_system.constraints.size()));
+        ann = std::string(buffer);
+    }
+    constraint_system.constraint_annotations[constraint_system.constraints.size()] = ann;
 #else
     UNUSED(annotation);
 #endif

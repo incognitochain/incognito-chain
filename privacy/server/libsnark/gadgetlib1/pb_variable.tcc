@@ -23,9 +23,9 @@ void pb_variable<FieldT>::allocate(protoboard<FieldT> &pb, const std::string &an
 template<typename FieldT>
 void pb_variable_array<FieldT>::allocate(protoboard<FieldT> &pb, const size_t n, const std::string &annotation_prefix)
 {
-#ifdef DEBUG
-    assert(annotation_prefix != "");
-#endif
+// #ifdef DEBUG
+//     assert(annotation_prefix != "");
+// #endif
     (*this).resize(n);
 
     for (size_t i = 0; i < n; ++i)

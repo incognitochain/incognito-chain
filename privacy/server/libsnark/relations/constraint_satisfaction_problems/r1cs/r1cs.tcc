@@ -134,6 +134,7 @@ bool r1cs_constraint_system<FieldT>::is_satisfied(const r1cs_primary_input<Field
 {
     assert(primary_input.size() == num_inputs());
     assert(primary_input.size() + auxiliary_input.size() == num_variables());
+    std::cout << "Done assert r1cs_constraint_system input size\n";
 
     r1cs_variable_assignment<FieldT> full_variable_assignment = primary_input;
     full_variable_assignment.insert(full_variable_assignment.end(), auxiliary_input.begin(), auxiliary_input.end());
