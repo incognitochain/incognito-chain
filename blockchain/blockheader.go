@@ -1,12 +1,11 @@
 package blockchain
 
 import (
-	"time"
 	"crypto/sha256"
 	"fmt"
+	"time"
 
 	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/database"
 )
 
 // MaxBlockHeaderPayload is the maximum number of bytes a block header can be.
@@ -18,7 +17,7 @@ type BlockHeader struct {
 	// Version of the block.  This is not the same as the protocol version.
 	Version int
 
-	Db database.DB
+	// Db database.DB
 	// Hash of the previous block header in the block chain.
 	PrevBlockHash common.Hash
 
@@ -37,9 +36,9 @@ type BlockHeader struct {
 }
 
 /**
- BlockHash computes the block identifier hash for the given block header.
- */
-func (h BlockHeader) BlockHash() (common.Hash) {
+BlockHash computes the block identifier hash for the given block header.
+*/
+func (h BlockHeader) BlockHash() common.Hash {
 	record := fmt.Sprint(h.Version) + h.Timestamp.String() + h.MerkleRoot.String() + h.PrevBlockHash.String() + fmt.Sprint(h.Nonce)
 	hash256 := sha256.New()
 	hash256.Write([]byte(record))

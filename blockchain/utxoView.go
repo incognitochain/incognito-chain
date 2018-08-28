@@ -1,9 +1,8 @@
 package blockchain
 
 import (
-	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 type txoFlags uint8
@@ -19,6 +18,7 @@ const (
 	// loaded.
 	tfModified
 )
+
 type UtxoEntry struct {
 	amount      int64
 	pkScript    []byte // The public key script for the output.
@@ -35,7 +35,6 @@ type UtxoViewpoint struct {
 	entries  map[transaction.OutPoint]*UtxoEntry
 	bestHash common.Hash
 }
-
 
 func (view *UtxoViewpoint) LookupEntry(outpoint transaction.OutPoint) *UtxoEntry {
 	return view.entries[outpoint]
@@ -65,26 +64,26 @@ func (view *UtxoViewpoint) LookupEntry(outpoint transaction.OutPoint) *UtxoEntry
 // 	return view, nil
 // }
 
-func (view *UtxoViewpoint) fetchUtxosMain(db database.DB, outpoints map[transaction.OutPoint]struct{}) error {
-	// Nothing to do if there are no requested outputs.
-	if len(outpoints) == 0 {
-		return nil
-	}
-
-	/*return db.View(func(dbTx database.Tx) error {
-		for outpoint := range outpoints {
-			//entry, err :=  nil, nil ///dbFetchUtxoEntry(dbTx, outpoint)
-			//if err != nil {
-			//	return err
-			//}
-			var entry UtxoEntry
-			view.entries[outpoint] = &entry
-		}
-
-		return nil
-	})*/
-	return nil
-}
+// func (view *UtxoViewpoint) fetchUtxosMain(db database.DB, outpoints map[transaction.OutPoint]struct{}) error {
+//         // Nothing to do if there are no requested outputs.
+//         if len(outpoints) == 0 {
+//                 return nil
+//         }
+//
+//         [>return db.View(func(dbTx database.Tx) error {
+//                 for outpoint := range outpoints {
+//                         //entry, err :=  nil, nil ///dbFetchUtxoEntry(dbTx, outpoint)
+//                         //if err != nil {
+//                         //	return err
+//                         //}
+//                         var entry UtxoEntry
+//                         view.entries[outpoint] = &entry
+//                 }
+//
+//                 return nil
+//         })*/
+//         return nil
+// }
 
 func NewUtxoViewpoint() *UtxoViewpoint {
 	return &UtxoViewpoint{
