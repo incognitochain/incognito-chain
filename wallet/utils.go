@@ -6,8 +6,8 @@ import (
 	"math/big"
 	"bytes"
 	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/thaibaoautonomous/golangcrypto/ripemd160"
 	"github.com/ninjadotorg/cash-prototype/common/base58"
+	"golang.org/x/crypto/ripemd160"
 )
 
 //
