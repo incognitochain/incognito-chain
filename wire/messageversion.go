@@ -1,11 +1,12 @@
 package wire
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"time"
-	"encoding/hex"
-	"github.com/ninjadotorg/cash-prototype/common"
+
 	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 type MessageVersion struct {
@@ -28,12 +29,9 @@ func (self MessageVersion) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self MessageVersion) JsonSerialize() (string, error) {
-	jsonStr, err := json.Marshal(self)
-	header := make([]byte, MessageHeaderSize)
-	copy(header[:], self.MessageType())
-	jsonStr = append(jsonStr, header...)
-	return hex.EncodeToString(jsonStr), err
+func (self MessageVersion) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(self)
+	return jsonBytes, err
 }
 
 func (self MessageVersion) JsonDeserialize(jsonStr string) error {

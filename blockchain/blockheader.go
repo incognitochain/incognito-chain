@@ -1,8 +1,6 @@
 package blockchain
 
 import (
-	"crypto/sha256"
-	"fmt"
 	"time"
 
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -17,7 +15,6 @@ type BlockHeader struct {
 	// Version of the block.  This is not the same as the protocol version.
 	Version int
 
-	// Db database.DB
 	// Hash of the previous block header in the block chain.
 	PrevBlockHash common.Hash
 
@@ -33,18 +30,11 @@ type BlockHeader struct {
 
 	// Nonce used to generate the block.
 	Nonce int
-}
 
-/**
-BlockHash computes the block identifier hash for the given block header.
-*/
-func (h BlockHeader) BlockHash() common.Hash {
-	record := fmt.Sprint(h.Version) + h.Timestamp.String() + h.MerkleRoot.String() + h.PrevBlockHash.String() + fmt.Sprint(h.Nonce)
-	hash256 := sha256.New()
-	hash256.Write([]byte(record))
-	hashed := hash256.Sum(nil)
-	hash, _ := common.Hash{}.NewHash(hashed)
-	return *hash
+	// POS
+	CommitteeSigs      map[string]string //include validator signature
+	NextBlockCommittee []string          //Voted committee for the next block
+	Candidates         []string
 }
 
 func (h *BlockChain) GetBlockByHash(hash common.Hash) *Block {

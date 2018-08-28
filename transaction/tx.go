@@ -5,15 +5,15 @@ import (
 	"fmt"
 
 	"github.com/ninjadotorg/cash-prototype/common"
+	//"encoding/json"
 )
 
 type Tx struct {
-	Version  int
-	Type     string // NORMAL / ACTION_PARAMS
-	TxIn     []TxIn
-	TxOut    []TxOut
-	LockTime int
-	txHash   *common.Hash
+	Version  int     `json:"Version"`
+	Type     string  `json:"Type"` // NORMAL / ACTION_PARAMS
+	TxIn     []TxIn  `json:"TxIn"`
+	TxOut    []TxOut `json:"TxOut"`
+	LockTime int     `json:"LockTime"`
 }
 
 func (self *Tx) AddTxIn(ti TxIn) {
@@ -21,22 +21,18 @@ func (self *Tx) AddTxIn(ti TxIn) {
 }
 
 func (self *Tx) GetTxIn() []TxIn {
-	return  self.TxIn
+	return self.TxIn
 }
 
 func (self *Tx) AddTxOut(to TxOut) {
 	self.TxOut = append(self.TxOut, to)
 }
 
-
 func (self *Tx) GetTxOUt() []TxOut {
-	return  self.TxOut
+	return self.TxOut
 }
 
 func (self *Tx) Hash() (*common.Hash) {
-	if self.txHash != nil {
-		return self.txHash
-	}
 	record := strconv.Itoa(self.Version) + strconv.Itoa(self.Version)
 	record += self.Type
 	for _, txin := range self.TxIn {
@@ -50,8 +46,7 @@ func (self *Tx) Hash() (*common.Hash) {
 		record += string(txout.PkScript)
 	}
 	hash := common.DoubleHashH([]byte(record))
-	self.txHash = &hash
-	return self.txHash
+	return &hash
 }
 
 func (self *Tx) ValidateTransaction() (bool) {
@@ -61,4 +56,3 @@ func (self *Tx) ValidateTransaction() (bool) {
 func (self *Tx) GetType() (string) {
 	return self.Type
 }
-

@@ -3,8 +3,7 @@ package blockchain
 import (
 	"errors"
 	"fmt"
-	"time"
-
+	"log"
 	"sync"
 
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -34,7 +33,7 @@ type Config struct {
 	// This field can be nil if the caller does not desire the behavior.
 	Interrupt <-chan struct{}
 
-	// ChainParams identifies which chain parameters the chain is associated
+	// chainParams identifies which chain parameters the chain is associated
 	// with.
 	//
 	// This field is required.
@@ -98,25 +97,33 @@ func (self *BlockChain) CreateChainState() error {
 	self.BestBlock = genesisBlock
 
 	// Spam random blocks
-
-	for index := 0; index < 10; index++ {
-		newSpamBlock := &Block{
+	for index := 0; index < 0; index++ {
+		hashBestBlock := *self.BestBlock.Hash()
+		//log.Printf(hashBestBlock.String())
+		newSpamBlock := Block{
 			Header: BlockHeader{
 				Version:       1,
-				PrevBlockHash: *self.BestBlock.Hash(),
-				Timestamp:     time.Now(),
-				Difficulty:    0, //@todo should be create Difficulty logic
-				Nonce:         0, //@todo should be create Nonce logic
+				PrevBlockHash: hashBestBlock,
+				//Timestamp:     time.Now(),
+				Difficulty: 0,     //@todo should be create Difficulty logic
+				Nonce:      index, //@todo should be create Nonce logic
 			},
 		}
-		self.Blocks = append(self.Blocks, newSpamBlock)
+		//log.Printf(newSpamBlock.Header.PrevBlockHash.String())
+		self.Blocks = append(self.Blocks, &newSpamBlock)
 		self.Headers[*newSpamBlock.Hash()] = index + 1
-		self.BestBlock = newSpamBlock
+		self.BestBlock = &newSpamBlock
 	}
 
-	for _, block := range self.Blocks {
-		fmt.Println(fmt.Sprintf("%x %x", *block.Hash(), block.Header.PrevBlockHash))
+	log.Printf("Blocks : \n ---------------------------------------------------------------")
+	for i, block := range self.Blocks {
+		if i == 0 {
+			fmt.Println(fmt.Sprintf("%d -> %s -> %s", i, block.Hash().String(), block.Header.PrevBlockHash.String()))
+		} else {
+			fmt.Println(fmt.Sprintf("%d -> %s", i, block.Hash().String()))
+		}
 	}
+	log.Printf("\n ---------------------------------------------------------------")
 
 	return nil
 }

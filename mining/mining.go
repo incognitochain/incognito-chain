@@ -4,6 +4,7 @@ import (
 	"math"
 	"fmt"
 	"time"
+	"errors"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -30,75 +31,48 @@ func filterActionParamsTxs(block *blockchain.Block) []*transaction.ActionParamTx
 	return actionParamTxs
 }
 
-func getRecentActionParamsTxs(numOfBlocks int, chain *blockchain.BlockChain) []*transaction.ActionParamTx {
-	if chain == nil || chain.BestBlock == nil {
-		return []*transaction.ActionParamTx{}
-	}
-	actionParamTxs := []*transaction.ActionParamTx{}
-	bestBlock := chain.BestBlock
-	actionParamTxsInBestBlock := filterActionParamsTxs(bestBlock)
-	actionParamTxs = append(actionParamTxs, actionParamTxsInBestBlock...)
-	prevBlockHash := bestBlock.Header.PrevBlockHash
-
-	for i := 0; i < numOfBlocks-1; i++ {
-		blockIdx, ok := chain.Headers[prevBlockHash]
-		if !ok {
-			return actionParamTxs
-		}
-		actionParamTxsInBlock := filterActionParamsTxs(chain.Blocks[blockIdx])
-		actionParamTxs = append(actionParamTxs, actionParamTxsInBlock...)
-		prevBlockHash = chain.Blocks[blockIdx].Header.PrevBlockHash
-	}
-	return actionParamTxs
-}
-
-func getMedians(actionParamTxs []*transaction.ActionParamTx) (float64, float64, float64) {
-	sumOfCoins := 0
-	sumOfBonds := 0
+func getMedians(agentDataPoints []*blockchain.AgentDataPoint) (
+	float64, float64, float64,
+) {
+	var sumOfCoins float64 = 0
+	var sumOfBonds float64 = 0
 	var sumOfTaxs float64 = 0
-	for _, tx := range actionParamTxs {
-		sumOfCoins += tx.Param.NumOfIssuingCoins
-		sumOfBonds += tx.Param.NumOfIssuingBonds
-		sumOfTaxs += tx.Param.Tax
+	agentDataPointsLen := len(agentDataPoints)
+	for _, dataPoint := range agentDataPoints {
+		sumOfCoins += dataPoint.NumOfCoins
+		sumOfBonds += dataPoint.NumOfBonds
+		sumOfTaxs += dataPoint.Tax
 	}
-	return float64(sumOfCoins / len(actionParamTxs)), float64(sumOfBonds / len(actionParamTxs)), float64(sumOfTaxs / float64(len(actionParamTxs)))
+	return float64(sumOfCoins / float64(agentDataPointsLen)), float64(sumOfBonds / float64(agentDataPointsLen)), float64(sumOfTaxs / float64(agentDataPointsLen))
 }
 
-func calculateReward(actionParamTxs []*transaction.ActionParamTx, feeMap map[string]float64) map[string]float64 {
-	latestTxsByAgentId := map[string]*transaction.ActionParamTx{}
-	for _, tx := range actionParamTxs {
-
-		agentId := tx.Param.AgentID
-		existingTx, ok := latestTxsByAgentId[agentId]
-		if !ok {
-			latestTxsByAgentId[agentId] = tx
-			continue
-		}
-		if existingTx.LockTime < tx.LockTime {
-			latestTxsByAgentId[agentId] = tx
-		}
-	}
-	if len(latestTxsByAgentId) < NUMBER_OF_MAKING_DECISION_AGENTS {
+func calculateReward(
+	agentDataPoints map[string]*blockchain.AgentDataPoint,
+	feeMap map[string]float64,
+) (
+	map[string]float64,
+) {
+	if len(agentDataPoints) < NUMBER_OF_MAKING_DECISION_AGENTS {
 		return map[string]float64{
 			"coins": DEFAULT_COINS + feeMap[common.TxOutCoinType],
 			"bonds": DEFAULT_BONDS + feeMap[common.TxOutBondType],
 		}
 	}
 
-	// get group of action params tx that issuing coins
-	issuingCoinsActions := []*transaction.ActionParamTx{}
-	contractingCoinsActions := []*transaction.ActionParamTx{}
-	for _, tx := range latestTxsByAgentId {
-		if (tx.Param.NumOfIssuingCoins > 0 && tx.Param.NumOfIssuingBonds > 0) || (tx.Param.NumOfIssuingCoins > 0 && tx.Param.Tax > 0) {
+	// group actions by their purpose (ie. issuing or contracting)
+	issuingCoinsActions := []*blockchain.AgentDataPoint{}
+	contractingCoinsActions := []*blockchain.AgentDataPoint{}
+	for _, dataPoint := range agentDataPoints {
+		if (dataPoint.NumOfCoins > 0 && dataPoint.NumOfBonds > 0) || (dataPoint.NumOfCoins > 0 && dataPoint.Tax > 0) {
 			continue
 		}
-		if tx.Param.NumOfIssuingCoins > 0 {
-			issuingCoinsActions = append(issuingCoinsActions, tx)
-		} else {
-			contractingCoinsActions = append(contractingCoinsActions, tx)
+		if dataPoint.NumOfCoins > 0 {
+			issuingCoinsActions = append(issuingCoinsActions, dataPoint)
+			continue
 		}
+		contractingCoinsActions = append(contractingCoinsActions, dataPoint)
 	}
-	if math.Max(float64(len(issuingCoinsActions)), float64(len(contractingCoinsActions))) < (math.Floor(float64(len(latestTxsByAgentId)/2)) + 1) {
+	if math.Max(float64(len(issuingCoinsActions)), float64(len(contractingCoinsActions))) < (math.Floor(float64(len(agentDataPoints)/2)) + 1) {
 		return map[string]float64{
 			"coins": DEFAULT_COINS + feeMap[common.TxOutCoinType],
 			"bonds": DEFAULT_BONDS + feeMap[common.TxOutBondType],
@@ -111,14 +85,15 @@ func calculateReward(actionParamTxs []*transaction.ActionParamTx, feeMap map[str
 			"bonds": DEFAULT_BONDS + feeMap[common.TxOutBondType],
 		}
 	}
+
 	if len(issuingCoinsActions) < len(contractingCoinsActions) {
 		_, medianBond, medianTax := getMedians(contractingCoinsActions)
 		coins := (100 - medianTax) * 0.01 * feeMap[common.TxOutCoinType]
 		burnedCoins := feeMap[common.TxOutCoinType] - coins
-		bonds := medianBond + feeMap[common.TxOutBondType]
+		bonds := medianBond + feeMap[common.TxOutBondType] + burnedCoins
 		return map[string]float64{
-			"coins": coins,
-			"bonds": bonds,
+			"coins":       coins,
+			"bonds":       bonds,
 			"burnedCoins": burnedCoins,
 		}
 	}
@@ -167,9 +142,9 @@ func createCoinbaseTx(
 			continue
 		}
 		txOutTypeMap := map[string]string{
-			"coins": TXOUT_COIN_TYPE,
-			"bonds": TXOUT_BOND_TYPE,
-			"burnedCoins": TXOUT_COIN_TYPE,
+			"coins":       common.TxOutCoinType,
+			"bonds":       common.TxOutBondType,
+			"burnedCoins": common.TxOutCoinType,
 		}
 		if rewardType == "burnedCoins" {
 			pkScript = []byte(DEFAULT_ADDRESS_FOR_BURNING)
@@ -194,8 +169,13 @@ func sumTxOutValues(txOuts []transaction.TxOut) float64 {
 	return sum
 }
 
-func extractTxsAndComputeInitialFees(txDescs []*TxDesc) ([]transaction.Transaction, map[string]float64) {
+func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
+	[]transaction.Transaction,
+	[]*transaction.ActionParamTx,
+	map[string]float64,
+) {
 	var txs []transaction.Transaction
+	var actionParamTxs []*transaction.ActionParamTx
 	var feeMap = map[string]float64{
 		fmt.Sprintf(common.TxOutCoinType): 0,
 		fmt.Sprintf(common.TxOutBondType): 0,
@@ -204,7 +184,8 @@ func extractTxsAndComputeInitialFees(txDescs []*TxDesc) ([]transaction.Transacti
 		tx := txDesc.Tx
 		txs = append(txs, tx)
 		txType := tx.GetType()
-		if txType == ACTION_PARAMS_TRANSACTION_TYPE {
+		if txType == common.TxActionParamsType {
+			actionParamTxs = append(actionParamTxs, tx.(*transaction.ActionParamTx))
 			continue
 		}
 		normalTx, _ := tx.(*transaction.Tx)
@@ -214,20 +195,79 @@ func extractTxsAndComputeInitialFees(txDescs []*TxDesc) ([]transaction.Transacti
 			feeMap[normalTx.TxOut[0].TxOutType] += (txInsValue - txOutsValue)
 		}
 	}
-	return txs, feeMap
+	return txs, actionParamTxs, feeMap
+}
+
+func getLatestAgentDataPoints(
+	chain *blockchain.BlockChain,
+	actionParamTxs []*transaction.ActionParamTx,
+) (
+	map[string]*blockchain.AgentDataPoint,
+) {
+	agentDataPoints := map[string]*blockchain.AgentDataPoint{}
+	bestBlock := chain.BestBlock
+
+	if bestBlock != nil && bestBlock.AgentDataPoints != nil {
+		agentDataPoints = bestBlock.AgentDataPoints
+	}
+
+	for _, actionParamTx := range actionParamTxs {
+		inputAgentID := actionParamTx.Param.AgentID
+
+		_, ok := agentDataPoints[inputAgentID]
+		if !ok || actionParamTx.LockTime > agentDataPoints[inputAgentID].LockTime {
+			agentDataPoints[inputAgentID] = &blockchain.AgentDataPoint{
+				AgentID: actionParamTx.Param.AgentID,
+				AgentSig: actionParamTx.Param.AgentSig,
+				NumOfCoins: actionParamTx.Param.NumOfCoins,
+				NumOfBonds: actionParamTx.Param.NumOfBonds,
+				Tax: actionParamTx.Param.Tax,
+				EligibleAgentIDs: actionParamTx.Param.EligibleAgentIDs,
+			}
+		}
+	}
+
+	// in case of have not had enough number of agents yet
+	dataPointsLen := len(agentDataPoints)
+	if dataPointsLen < NUMBER_OF_MAKING_DECISION_AGENTS {
+		return agentDataPoints
+	}
+
+	// check add/remove agents by number of votes
+	votesForAgents := map[string]int{}
+	for _, dataPoint := range agentDataPoints {
+		for _, eligibleAgentID := range dataPoint.EligibleAgentIDs {
+			if _, ok := votesForAgents[eligibleAgentID]; !ok {
+				votesForAgents[eligibleAgentID] = 1
+				continue
+			}
+			votesForAgents[eligibleAgentID] += 1
+		}
+	}
+
+	for agentID, votes := range votesForAgents {
+		if votes < int(math.Floor(float64(dataPointsLen/2)) + 1) {
+			delete(agentDataPoints, agentID)
+		}
+	}
+
+	return agentDataPoints
 }
 
 func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain) (*BlockTemplate, error) {
 
 	prevBlockHash := chain.BestBlock.Hash()
-	sourceTxns := g.txSource
-	txs, feeMap := extractTxsAndComputeInitialFees(sourceTxns)
+	sourceTxns := g.txSource.MiningDescs()
+
+	if len(sourceTxns) == 0 {
+		return nil, errors.New("No Tx")
+	}
+
+	txs, actionParamTxs, feeMap := extractTxsAndComputeInitialFees(sourceTxns)
 	//@todo we need apply sort rules for sourceTxns here
 
-	// TODO: need to compute real txFees from transactions
-	actionParamTxs := getRecentActionParamsTxs(NUMBER_OF_LAST_BLOCKS, chain)
-	// txFees := make([]float64, 0, 1)
-	rewardMap := calculateReward(actionParamTxs, feeMap)
+	agentDataPoints := getLatestAgentDataPoints(chain, actionParamTxs)
+	rewardMap := calculateReward(agentDataPoints, feeMap)
 
 	coinbaseScript := []byte("1234567890123456789012") //@todo should be create function create basescript
 
@@ -290,13 +330,18 @@ mempoolLoop:
 				continue
 			}
 		}*/
-		if tx.ValidateTransaction() {
+		if !tx.ValidateTransaction() {
 			continue mempoolLoop
 		}
+
+		g.txSource.Clear()
 	}
 
-	var msgBlock blockchain.Block
-	msgBlock.Header = blockchain.BlockHeader{
+	// TODO PoW
+	//time.Sleep(time.Second * 15)
+
+	block := blockchain.Block{}
+	block.Header = blockchain.BlockHeader{
 		Version:       1,
 		PrevBlockHash: *prevBlockHash,
 		MerkleRoot:    *merkleRoot,
@@ -305,18 +350,56 @@ mempoolLoop:
 		Nonce:         0, //@todo should be create Nonce logic
 	}
 	for _, tx := range blockTxns {
-		if err := msgBlock.AddTransaction(tx); err != nil {
+		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
 		}
 	}
 
-	return &BlockTemplate{
-		Block: &msgBlock,
-	}, nil
-
+	//update the latest AgentDataPoints to block
+	block.AgentDataPoints = agentDataPoints
+	blockTemp := &BlockTemplate{
+		Block: &block,
+	}
+	return blockTemp, nil
 }
 
-func NewBlkTmplGenerator(txSource []*TxDesc, chain *blockchain.BlockChain) *BlkTmplGenerator {
+type BlkTmplGenerator struct {
+	txSource    TxSource
+	chain       *blockchain.BlockChain
+	chainParams *blockchain.Params
+	policy      *Policy
+}
+
+type BlockTemplate struct {
+	Block *blockchain.Block
+
+	// Fees []float64
+}
+
+// TxSource represents a source of transactions to consider for inclusion in
+// new blocks.
+//
+// The interface contract requires that all of these methods are safe for
+// concurrent access with respect to the source.
+type TxSource interface {
+	// LastUpdated returns the last time a transaction was added to or
+	// removed from the source pool.
+	//LastUpdated() time.Time
+
+	// MiningDescs returns a slice of mining descriptors for all the
+	// transactions in the source pool.
+	MiningDescs() []*TxDesc
+
+	// HaveTransaction returns whether or not the passed transaction hash
+	// exists in the source pool.
+	//HaveTransaction(hash *common.Hash) bool
+
+	RemoveTx(tx transaction.Tx)
+
+	Clear()
+}
+
+func NewBlkTmplGenerator(txSource TxSource, chain *blockchain.BlockChain) *BlkTmplGenerator {
 	return &BlkTmplGenerator{
 		txSource: txSource,
 		chain:    chain,

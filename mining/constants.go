@@ -4,23 +4,15 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/cash-prototype/transaction"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
 )
 
 const (
-	ACTION_PARAMS_TRANSACTION_TYPE = "ACTION_PARAMS"
-	TXOUT_COIN_TYPE = "TXOUT_COIN"
-	TXOUT_BOND_TYPE = "TXOUT_BOND"
-	DEFAULT_ADDRESS_FOR_BURNING = "0x0000000000"
-	NUMBER_OF_LAST_BLOCKS = 10
+	DEFAULT_ADDRESS_FOR_BURNING      = "0x0000000000"
 	NUMBER_OF_MAKING_DECISION_AGENTS = 3
-	DEFAULT_COINS = 5.0
-	DEFAULT_BONDS = 0.0
+	MAX_OF_MAKING_DECISION_AGENTS    = 21
+	DEFAULT_COINS                    = 5
+	DEFAULT_BONDS                    = 0
 )
-
-type Policy struct {
-	//@todo well will declare it later
-}
 
 type TxDesc struct {
 	// Tx is the transaction associated with the entry.
@@ -36,16 +28,4 @@ type TxDesc struct {
 	Fee int64
 
 	//@todo add more properties to TxDesc if we need more laster
-}
-
-type BlockTemplate struct {
-	Block *blockchain.Block
-
-	// Fees []float64
-}
-
-
-type BlkTmplGenerator struct {
-	txSource    []*TxDesc
-	chain       *blockchain.BlockChain
 }

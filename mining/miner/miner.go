@@ -24,7 +24,10 @@ type Config struct {
 
 	MiningAddrs []string
 
-	SendBlock func(*blockchain.Block) bool
+	Server interface {
+		PushBlockMessage(*blockchain.Block) bool
+		UpdateChain(*blockchain.Block)
+	}
 }
 
 type Miner struct {
@@ -85,12 +88,12 @@ func (m *Miner) GenerateBlock(n uint32) ([]*common.Hash, error) {
 func (m *Miner) commitBlock(block *blockchain.Block) (bool, error) {
 	m.submitBlockLock.Lock()
 	defer m.submitBlockLock.Unlock()
-	sended := m.cfg.SendBlock(block)
+	sended := m.cfg.Server.PushBlockMessage(block)
 	if sended != true {
 		fmt.Print("sending error...........")
 		return false, nil
 	}
-
+	m.cfg.Server.UpdateChain(block)
 	return true, nil
 }
 
@@ -109,7 +112,7 @@ out:
 
 		template, err := m.g.NewBlockTemplate(payToAddr, m.cfg.Chain)
 		m.submitBlockLock.Unlock()
-		if err != nil {
+		if err != nil || len(template.Block.Transactions) == 0 {
 			fmt.Sprint("Failed to create new block template: %v", err)
 			continue
 		}

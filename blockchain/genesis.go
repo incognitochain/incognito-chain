@@ -27,6 +27,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(time time.Time, nonce int, 
 	genesisBlock := Block{}
 	// update default genesis block
 	genesisBlock.Header.Timestamp = time
+	//genesisBlock.Header.PrevBlockHash = (&common.Hash{}).String()
 	genesisBlock.Header.Nonce = nonce
 	genesisBlock.Header.Difficulty = difficulty
 	genesisBlock.Header.Version = version
@@ -43,8 +44,9 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(time time.Time, nonce int, 
 			},
 		},
 		TxOut: []transaction.TxOut{{
-			Value:    genesisReward,
-			PkScript: []byte(GENESIS_BLOCK_PUBKEY_ADDR),
+			Value:     genesisReward,
+			PkScript:  []byte(GENESIS_BLOCK_PUBKEY_ADDR),
+			TxOutType: common.TxOutCoinType,
 		}},
 	}
 	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)

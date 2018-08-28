@@ -1,8 +1,8 @@
 package wire
 
 import (
-	"encoding/json"
 	"encoding/hex"
+	"encoding/json"
 
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
@@ -19,12 +19,9 @@ func (self MessageTx) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self MessageTx) JsonSerialize() (string, error) {
-	jsonStr, err := json.Marshal(self)
-	header := make([]byte, MessageHeaderSize)
-	copy(header[:], self.MessageType())
-	jsonStr = append(jsonStr, header...)
-	return hex.EncodeToString(jsonStr), err
+func (self MessageTx) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(self)
+	return jsonBytes, err
 }
 
 func (self MessageTx) JsonDeserialize(jsonStr string) error {

@@ -2,7 +2,6 @@ package wire
 
 import (
 	"encoding/json"
-	"encoding/hex"
 )
 
 type MessagGetData struct {
@@ -17,12 +16,9 @@ func (self MessagGetData) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self MessagGetData) JsonSerialize() (string, error) {
-	jsonStr, err := json.Marshal(self)
-	header := make([]byte, MessageHeaderSize)
-	copy(header[:], self.MessageType())
-	jsonStr = append(jsonStr, header...)
-	return hex.EncodeToString(jsonStr), err
+func (self MessagGetData) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(self)
+	return jsonBytes, err
 }
 
 func (self MessagGetData) JsonDeserialize(jsonStr string) error {
