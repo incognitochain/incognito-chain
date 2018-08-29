@@ -164,6 +164,11 @@ func (tp *TxPool) Count() int {
 	return count
 }
 
+// Clear
+func (tp *TxPool) Clear() {
+	tp.pool = make(map[common.Hash]*TxDesc)
+}
+
 // New returns a new memory pool for validating and storing standalone
 // transactions until they are mined into a block.
 func New(cfg *Config) *TxPool {

@@ -162,7 +162,7 @@ func sumTxInValues(txIns []transaction.TxIn) float64 {
 	// TODO: calcualte sum of txIn values
 	var sum float64
 	for _, txIn := range txIns {
-		sum += txIn.Fee
+		sum += txIn.Value
 	}
 	return sum
 }
