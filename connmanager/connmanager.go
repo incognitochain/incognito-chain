@@ -4,7 +4,6 @@ import (
 	"sync"
 	"log"
 	"sync/atomic"
-	"context"
 	"fmt"
 
 	"github.com/ninjadotorg/cash-prototype/peer"
@@ -77,7 +76,6 @@ type ConnManager struct {
 	Quit chan struct{}
 
 	FailedAttempts uint32
-
 }
 
 type Config struct {
@@ -383,10 +381,10 @@ func (self ConnManager) Connect(addr string) {
 	connReq := ConnReq{
 		Permanent: true,
 		Peer: peer.Peer{
-			TargetAddress:   targetAddr,
-			PeerId:          peerId,
-			RawAddress:      addr,
-			PearConnections: make(map[libpeer.ID]*peer.PeerConn),
+			TargetAddress: targetAddr,
+			PeerId:        peerId,
+			RawAddress:    addr,
+			PearConns:     make(map[libpeer.ID]*peer.PeerConn),
 			//OutboundReaderWriterStreams: make(map[libpeer.ID]*bufio.ReadWriter),
 			//InboundReaderWriterStreams:  make(map[libpeer.ID]*bufio.ReadWriter),
 		},
@@ -418,15 +416,15 @@ func (self ConnManager) Connect(addr string) {
 	flag := false
 	for _, listen := range self.Config.ListenerPeers {
 		listen.Host.Peerstore().AddAddr(connReq.Peer.PeerId, connReq.Peer.TargetAddress, pstore.PermanentAddrTTL)
-		Logger.log.Infof("Opening stream to PEER ID - %s \n", connReq.Peer.PeerId.String())
+		//Logger.log.Infof("Opening stream to PEER ID - %s \n", connReq.Peer.PeerId.String())
 		// make a new stream from host B to host A
 		// it should be handled on host A by the handler we set above because
 		// we use the same /peer/1.0.0 protocol
-		stream, err := listen.Host.NewStream(context.Background(), connReq.Peer.PeerId, "/blockchain/1.0.0")
-		if err != nil {
-			Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", connReq.Peer.PeerId.String(), err.Error())
-			continue
-		}
+		//stream, err := listen.Host.NewStream(context.Background(), connReq.Peer.PeerId, "/blockchain/1.0.0")
+		//if err != nil {
+		//	Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", connReq.Peer.PeerId.String(), err.Error())
+		//	continue
+		//}
 		//// Create a buffered stream so that read and writes are non blocking.
 		//rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 		//// Cache stream to outbound peer
@@ -436,9 +434,10 @@ func (self ConnManager) Connect(addr string) {
 		//go listen.InMessageHandler(rw)
 		//go listen.OutMessageHandler(rw)
 
-		listen.NewPeerConnection(stream)
-
-		flag = true
+		_, err := listen.NewPeerConnection(connReq.Peer.PeerId)
+		if err == nil {
+			flag = true
+		}
 	}
 
 	if flag {

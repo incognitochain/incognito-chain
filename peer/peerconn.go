@@ -21,6 +21,11 @@ type PeerConn struct {
 	connected  int32
 	disconnect int32
 
+	RetryCount int32
+	IsOutbound bool
+	state      ConnState
+	stateMtx   sync.RWMutex
+
 	Host               host.Host
 	ReaderWriterStream *bufio.ReadWriter
 	verAckReceived     bool
@@ -38,12 +43,16 @@ type PeerConn struct {
 	quit             chan struct{}
 
 	Peer *Peer
+
+	HandleConnected    func(peerConn *PeerConn)
+	HandleDisconnected func(peerConn *PeerConn)
+	HandleFailed       func(peerConn *PeerConn)
 }
 
 /**
 Handle all in message
 */
-func (self PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
+func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	for {
 		Logger.log.Infof("Reading stream")
 		str, err := rw.ReadString('\n')
@@ -52,6 +61,11 @@ func (self PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 			Logger.log.Infof("PEER %s quit IN message handler", self.PeerId)
 			self.quit <- struct{}{}
+
+			if self.HandleDisconnected != nil {
+				self.HandleDisconnected(self)
+			}
+
 			return
 		}
 
@@ -95,26 +109,26 @@ func (self PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			case reflect.TypeOf(&wire.MessageTx{}):
 				if self.Config.MessageListeners.OnTx != nil {
 					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnTx(&self, message.(*wire.MessageTx))
+					self.Config.MessageListeners.OnTx(self, message.(*wire.MessageTx))
 					self.FlagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageBlock{}):
 				if self.Config.MessageListeners.OnBlock != nil {
 					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnBlock(&self, message.(*wire.MessageBlock))
+					self.Config.MessageListeners.OnBlock(self, message.(*wire.MessageBlock))
 					self.FlagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageGetBlocks{}):
 				if self.Config.MessageListeners.OnGetBlocks != nil {
 					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnGetBlocks(&self, message.(*wire.MessageGetBlocks))
+					self.Config.MessageListeners.OnGetBlocks(self, message.(*wire.MessageGetBlocks))
 					self.FlagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageVersion{}):
 				if self.Config.MessageListeners.OnVersion != nil {
 					self.FlagMutex.Lock()
 					versionMessage := message.(*wire.MessageVersion)
-					self.Config.MessageListeners.OnVersion(&self, versionMessage)
+					self.Config.MessageListeners.OnVersion(self, versionMessage)
 					self.FlagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageVerAck{}):
@@ -123,7 +137,7 @@ func (self PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				self.FlagMutex.Unlock()
 				if self.Config.MessageListeners.OnVerAck != nil {
 					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnVerAck(&self, message.(*wire.MessageVerAck))
+					self.Config.MessageListeners.OnVerAck(self, message.(*wire.MessageVerAck))
 					self.FlagMutex.Unlock()
 				}
 			default:
@@ -162,10 +176,10 @@ func (self PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				Logger.log.Infof("Send a message %s %s: %s", self.PeerId.String(), outMsg.msg.MessageType(), message)
 				rw.Writer.WriteString(message)
 				rw.Writer.Flush()
+
 				self.FlagMutex.Unlock()
 			}
 		case <-self.quit:
-			self.Peer.DeletePeerConnection(self.PeerId)
 			Logger.log.Infof("PEER %s quit OUT message handler", self.PeerId)
 			break
 			//default:
@@ -228,4 +242,19 @@ func (p *PeerConn) VerAckReceived() bool {
 	p.FlagMutex.Unlock()
 
 	return verAckReceived
+}
+
+// updateState updates the state of the connection request.
+func (p *PeerConn) updateState(state ConnState) {
+	p.stateMtx.Lock()
+	p.state = state
+	p.stateMtx.Unlock()
+}
+
+// State is the connection state of the requested connection.
+func (p *PeerConn) State() ConnState {
+	p.stateMtx.RLock()
+	state := p.state
+	p.stateMtx.RUnlock()
+	return state
 }

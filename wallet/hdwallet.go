@@ -59,6 +59,7 @@ func NewMasterKey(seed []byte) (*Key, error) {
 	hmac := hmac.New(sha512.New, []byte("Bitcoin Seed"))
 	_, err := hmac.Write(seed)
 	if err != nil {
+		Logger.log.Error(err)
 		return nil, err
 	}
 	intermediary := hmac.Sum(nil)
@@ -75,6 +76,7 @@ func NewMasterKey(seed []byte) (*Key, error) {
 
 	keyPair, err := (&cashec.KeyPair{}).GenerateKey(keyBytes)
 	if err != nil {
+		Logger.log.Error(err)
 		return nil, err
 	}
 
@@ -155,6 +157,7 @@ func (key *Key) Serialize(privateKey bool) ([]byte, error) {
 	// Append the standard doublesha256 checksum
 	serializedKey, err := addChecksumToBytes(buffer.Bytes())
 	if err != nil {
+		Logger.log.Error(err)
 		return nil, err
 	}
 
