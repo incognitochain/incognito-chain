@@ -88,12 +88,14 @@ func (self *Wallet) Save(password string) (error) {
 	// parse to byte[]
 	data, err := json.Marshal(*self)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
 
 	// encrypt
 	cipherText, err := AES{}.Encrypt(password, data)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
 	// and
@@ -106,10 +108,12 @@ func (self *Wallet) LoadWallet(password string) (error) {
 	// read file and decrypt
 	bytesData, err := ioutil.ReadFile(self.Config.DataPath)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
 	bufBytes, err := AES{}.Decrypt(password, string(bytesData))
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
 
