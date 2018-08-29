@@ -415,10 +415,7 @@ Result—a list of accounts and their balances
  */
 func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
 	result := jsonrpc.ListAccounts{}
-	result.Accounts = make(map[string]float64)
-	for _, account := range self.Config.Wallet.MasterAccount.Child {
-		result.Accounts[account.Name] = 0.0
-	}
+	result.Accounts = self.Config.Wallet.ListAccounts()
 	return result, nil
 }
 
@@ -430,13 +427,9 @@ Result—a list of addresses
  */
 func (self RpcServer) handleGetAddressesByAccount(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
 	result := jsonrpc.GetAddressesByAccount{}
-	result.Addresses = make([]string, 0)
-	for _, account := range self.Config.Wallet.MasterAccount.Child {
-		if account.Name == params.(string) {
-			result.Addresses = append(result.Addresses, account.Key.ToAddress(false))
-		}
-	}
-	return result, nil
+	var err error
+	result.Addresses, err = self.Config.Wallet.GetAddressesByAccount(params.(string))
+	return result, err
 }
 
 /**
@@ -445,13 +438,7 @@ Parameter #1—an account name
 Result—a bitcoin address
  */
 func (self RpcServer) handleGetAccountAddress(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
-	for _, account := range self.Config.Wallet.MasterAccount.Child {
-		if account.Name == params.(string) {
-			return account.Key.ToAddress(false), nil
-		}
-	}
-	newAccount := self.Config.Wallet.CreateNewAccount(params.(string))
-	return newAccount.Key.ToAddress(false), nil
+	return self.Config.Wallet.GetAccountAddress(params.(string))
 }
 
 /**
@@ -461,11 +448,5 @@ Parameter #1—the address corresponding to the private key to get
 Result—the private key
  */
 func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
-	for _, account := range self.Config.Wallet.MasterAccount.Child {
-		address := account.Key.ToAddress(false)
-		if address == params.(string) {
-			return account.Key.Base58CheckSerialize(true), nil
-		}
-	}
-	return "", nil
+	return self.Config.Wallet.DumpPrivkey(params.(string))
 }

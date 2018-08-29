@@ -87,10 +87,6 @@ func (self *Wallet) ImportAccount(privateKey string) {
 	self.MasterAccount.Child = append(self.MasterAccount.Child, account)
 }
 
-func (self *Wallet) ListAccounts() ([]Account) {
-	return self.MasterAccount.Child
-}
-
 func (self *Wallet) Save(password string) (error) {
 	if password == "" {
 		password = self.PassPhrase
@@ -131,4 +127,42 @@ func (self *Wallet) LoadWallet(password string) (error) {
 	// read to struct
 	err = json.Unmarshal(bufBytes, &self)
 	return err
+}
+
+func (self *Wallet) DumpPrivkey(address string) (string, error) {
+	for _, account := range self.MasterAccount.Child {
+		address := account.Key.ToAddress(false)
+		if address == address {
+			return account.Key.Base58CheckSerialize(true), nil
+		}
+	}
+	return "", nil
+}
+
+func (self *Wallet) GetAccountAddress(accountParam string) (string, error) {
+	for _, account := range self.MasterAccount.Child {
+		if account.Name == accountParam {
+			return account.Key.ToAddress(false), nil
+		}
+	}
+	newAccount := self.CreateNewAccount(accountParam)
+	return newAccount.Key.ToAddress(false), nil
+}
+
+func (self *Wallet) GetAddressesByAccount(accountParam string) ([]string, error) {
+	result := make([]string, 0)
+	for _, account := range self.MasterAccount.Child {
+		if account.Name == accountParam {
+			result = append(result, account.Key.ToAddress(false))
+		}
+	}
+	return result, nil
+}
+
+func (self *Wallet) ListAccounts() (map[string]float64) {
+	result := make(map[string]float64)
+	for _, account := range self.MasterAccount.Child {
+		result[account.Name] = 0.0
+	}
+	return result
 }
