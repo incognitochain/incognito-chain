@@ -20,5 +20,5 @@ vendor
 prototype
 
 # Build Directory
-/privacy/build
+/privacy/server/build
 
