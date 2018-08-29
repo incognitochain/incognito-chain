@@ -444,7 +444,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 			FlagMutex:        sync.Mutex{},
 			ListeningAddress: addr,
 			Config:           *self.NewPeerConfig(),
-			PearConnections:  make(map[peer2.ID]*peer.PeerConn),
+			PearConns:        make(map[peer2.ID]*peer.PeerConn),
 			//OutboundReaderWriterStreams: make(map[peer2.ID]*bufio.ReadWriter),
 			//InboundReaderWriterStreams:  make(map[peer2.ID]*bufio.ReadWriter),
 		}.NewPeer()
