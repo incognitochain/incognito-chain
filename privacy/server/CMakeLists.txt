@@ -13,6 +13,15 @@ find_package(Protobuf REQUIRED)
 find_package(GRPC REQUIRED)
 
 include_directories(${GRPC_INCLUDE_DIR})
+<<<<<<< HEAD
+message(STATUS ${GRPC_INCLUDE_DIR})
+message(STATUS ${GRPC_INCLUDE_DIR})
+message(STATUS ${GRPC_INCLUDE_DIR})
+message(STATUS ${GRPC_INCLUDE_DIR})
+message(STATUS ${GRPC_INCLUDE_DIR})
+message(STATUS ${GRPC_INCLUDE_DIR})
+=======
+>>>>>>> 642a7896093d88852367d97e15488c27e6f9a6ac
 
 set(EXTRA_LIBS ${EXTRA_LIBS} ${Boost_LIBRARIES})
 set(EXTRA_LIBS ${EXTRA_LIBS} ${sodium_LIBRARY_RELEASE})
