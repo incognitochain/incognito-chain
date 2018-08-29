@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	// FirstHardenedChild is the index of the firxt "harded" child key as per the
+	// FirstHardenedChild is the index of the firxt "harded" Child Key as per the
 	// bip32 spec
 	//FirstHardenedChild = uint32(0x80000000)
 
-	// PublicKeyCompressedLength is the byte count of a compressed public key
+	// PublicKeyCompressedLength is the byte count of a compressed public Key
 	PublicKeyCompressedLength = 33
 )
 
@@ -26,26 +26,26 @@ var (
 	// PublicWalletVersion is the version flag for serialized private keys
 	//PublicWalletVersion, _ = hex.DecodeString("0488B21E")
 
-	// ErrSerializedKeyWrongSize is returned when trying to deserialize a key that
+	// ErrSerializedKeyWrongSize is returned when trying to deserialize a Key that
 	// has an incorrect length
 	ErrSerializedKeyWrongSize = errors.New("Serialized keys should by exactly 82 bytes")
 
-	// ErrHardnedChildPublicKey is returned when trying to create a harded child
-	// of the public key
-	ErrHardnedChildPublicKey = errors.New("Can't create hardened child for public key")
+	// ErrHardnedChildPublicKey is returned when trying to create a harded Child
+	// of the public Key
+	ErrHardnedChildPublicKey = errors.New("Can't create hardened Child for public Key")
 
-	// ErrInvalidChecksum is returned when deserializing a key with an incorrect
+	// ErrInvalidChecksum is returned when deserializing a Key with an incorrect
 	// checksum
 	ErrInvalidChecksum = errors.New("Checksum doesn't match")
 
-	// ErrInvalidPrivateKey is returned when a derived private key is invalid
-	ErrInvalidPrivateKey = errors.New("Invalid private key")
+	// ErrInvalidPrivateKey is returned when a derived private Key is invalid
+	ErrInvalidPrivateKey = errors.New("Invalid private Key")
 
-	// ErrInvalidPublicKey is returned when a derived public key is invalid
-	ErrInvalidPublicKey = errors.New("Invalid public key")
+	// ErrInvalidPublicKey is returned when a derived public Key is invalid
+	ErrInvalidPublicKey = errors.New("Invalid public Key")
 )
 
-// KeyPair represents a bip32 extended key
+// KeyPair represents a bip32 extended Key
 type Key struct {
 	Depth       byte   // 1 bytes
 	ChildNumber []byte // 4 bytes
@@ -53,21 +53,21 @@ type Key struct {
 	KeyPair     cashec.KeyPair
 }
 
-// NewMasterKey creates a new master extended key from a seed
+// NewMasterKey creates a new master extended Key from a Seed
 func NewMasterKey(seed []byte) (*Key, error) {
-	// Generate key and chaincode
-	hmac := hmac.New(sha512.New, []byte("Bitcoin seed"))
+	// Generate Key and chaincode
+	hmac := hmac.New(sha512.New, []byte("Bitcoin Seed"))
 	_, err := hmac.Write(seed)
 	if err != nil {
 		return nil, err
 	}
 	intermediary := hmac.Sum(nil)
 
-	// Split it into our key and chain code
+	// Split it into our Key and chain code
 	keyBytes := intermediary[:32]  // use to create master private/public keypair
-	chainCode := intermediary[32:] // be used with public key (in keypair) for new child keys
+	chainCode := intermediary[32:] // be used with public Key (in keypair) for new Child keys
 
-	// Validate key
+	// Validate Key
 	/*err = validatePrivateKey(keyBytes)
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func NewMasterKey(seed []byte) (*Key, error) {
 		return nil, err
 	}
 
-	// Create the key struct
+	// Create the Key struct
 	key := &Key{
 		ChainCode:   chainCode,
 		KeyPair:     *keyPair,
@@ -89,7 +89,7 @@ func NewMasterKey(seed []byte) (*Key, error) {
 	return key, nil
 }
 
-// NewChildKey derives a child key from a given parent as outlined by bip32
+// NewChildKey derives a Child Key from a given parent as outlined by bip32
 func (key *Key) NewChildKey(childIdx uint32) (*Key, error) {
 	intermediary, err := key.getIntermediary(childIdx)
 	if err != nil {
@@ -99,7 +99,7 @@ func (key *Key) NewChildKey(childIdx uint32) (*Key, error) {
 	newSeed := key.KeyPair.PrivateKey
 	newSeed = append(newSeed, intermediary[:32]...)
 	newKeypair, err := (&cashec.KeyPair{}).GenerateKey(newSeed)
-	// Create child KeyPair with data common to all both scenarios
+	// Create Child KeyPair with data common to all both scenarios
 	childKey := &Key{
 		ChildNumber: uint32Bytes(childIdx),
 		ChainCode:   intermediary[32:],
@@ -111,14 +111,14 @@ func (key *Key) NewChildKey(childIdx uint32) (*Key, error) {
 }
 
 func (key *Key) getIntermediary(childIdx uint32) ([]byte, error) {
-	// Get intermediary to create key and chaincode from
-	// Hardened children are based on the private key
-	// NonHardened children are based on the public key
+	// Get intermediary to create Key and chaincode from
+	// Hardened children are based on the private Key
+	// NonHardened children are based on the public Key
 	childIndexBytes := uint32Bytes(childIdx)
 
 	var data []byte
 	//if childIdx >= FirstHardenedChild {
-	//	data = append([]byte{0x0}, key.KeyPair.PrivateKey...)
+	//	data = append([]byte{0x0}, Key.KeyPair.PrivateKey...)
 	//} else {
 	data = key.KeyPair.PublicKey
 	//}

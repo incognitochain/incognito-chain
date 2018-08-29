@@ -337,7 +337,7 @@ cherry
 chest
 chicken
 chief
-child
+Child
 chimney
 choice
 choose
@@ -994,7 +994,7 @@ kangaroo
 keen
 keep
 ketchup
-key
+Key
 kick
 kid
 kidney
@@ -1577,7 +1577,7 @@ second
 secret
 section
 security
-seed
+Seed
 seek
 segment
 select
