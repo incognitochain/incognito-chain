@@ -10,5 +10,6 @@ type DB interface {
 	StoreBlock(*blockchain.Block) error
 	FetchBlock(*common.Hash) ([]byte, error)
 	HasBlock(*common.Hash) (bool, error)
+	StoreTx([]byte) error
 	Close() error
 }

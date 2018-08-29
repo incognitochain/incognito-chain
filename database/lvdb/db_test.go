@@ -61,3 +61,20 @@ func TestBlock(t *testing.T) {
 		t.Logf("should equal")
 	}
 }
+
+func TestStoreTxOut(t *testing.T) {
+	db, teardown := setup(t)
+	defer teardown()
+
+	tx := []byte("abcd")
+	err := db.StoreTx(tx)
+	if err != nil {
+		t.Errorf("db.StoreTx %v", err)
+	}
+
+	tx = []byte("efgh")
+	err = db.StoreTx(tx)
+	if err != nil {
+		t.Errorf("db.StoreTx %v", err)
+	}
+}

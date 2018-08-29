@@ -6,40 +6,29 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
+	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 )
 
+var usedTxKey = []byte("usedTx")
+
 func open(dbPath string) (database.DB, error) {
 	ldb, err := leveldb.OpenFile(filepath.Join(dbPath, "db"), nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "leveldb.OpenFile %s", dbPath)
 	}
-	return &db{ldb}, nil
+	return &db{ldb: ldb}, nil
 }
 
 type db struct {
 	ldb *leveldb.DB
 }
 
-func (db *db) hasKey(key []byte) (bool, error) {
-	if key == nil {
-		return false, nil
-	}
-	res, err := db.ldb.Get(key, nil)
-	if err != nil {
-		return false, errors.Wrap(err, "db.ldb.Get")
-	}
-	if res == nil {
-		return false, nil
-	}
-	return true, nil
-}
-
 func (db *db) hasBlock(key []byte) bool {
-	ret, err := db.hasKey(key)
+	ret, err := db.ldb.Has(key, nil)
 	if err != nil {
 		return false
 	}
@@ -90,6 +79,25 @@ func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
 	return block, nil
 }
 
-func (db *db) StoreTxOut(tx string) error {
+func (db *db) StoreTx(tx []byte) error {
+	res, err := db.ldb.Get(usedTxKey, nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return errors.Wrap(err, "db.ldb.Get")
+	}
+
+	var txs [][]byte
+	if len(res) > 0 {
+		if err := json.Unmarshal(res, &txs); err != nil {
+			return errors.Wrap(err, "json.Unmarshal")
+		}
+	}
+	txs = append(txs, tx)
+	b, err := json.Marshal(txs)
+	if err != nil {
+		return errors.Wrap(err, "json.Marshal")
+	}
+	if err := db.ldb.Put(usedTxKey, b, nil); err != nil {
+		return err
+	}
 	return nil
 }
