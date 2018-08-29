@@ -8,7 +8,6 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 
-	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 )
@@ -35,15 +34,23 @@ func (db *db) hasBlock(key []byte) bool {
 	return ret
 }
 
-func (db *db) StoreBlock(b *blockchain.Block) error {
+type hasher interface {
+	Hash() *common.Hash
+}
+
+func (db *db) StoreBlock(v interface{}) error {
+	h, ok := v.(hasher)
+	if !ok {
+		return errors.New("v must implement Hash() method")
+	}
 	var (
-		hash = b.Hash()
+		hash = h.Hash()
 		key  = hash[:]
 	)
 	if db.hasBlock(key) {
 		return errors.Errorf("block %s already exists", hash.String())
 	}
-	val, err := json.Marshal(b)
+	val, err := json.Marshal(v)
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
 	}
