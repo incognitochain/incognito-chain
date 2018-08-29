@@ -38,6 +38,7 @@ var RpcHandler = map[string]commandHandler{
 	"listaccounts":          RpcServer.handleListAccounts,
 	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
 	"getaccountaddress":     RpcServer.handleGetAccountAddress,
+	"dumpprivkey":           RpcServer.handleDumpPrivkey,
 }
 
 // Commands that are available to a limited user
@@ -451,4 +452,20 @@ func (self RpcServer) handleGetAccountAddress(params interface{}, closeChan <-ch
 	}
 	newAccount := self.Config.Wallet.CreateNewAccount(params.(string))
 	return newAccount.Key.ToAddress(false), nil
+}
+
+/**
+ dumpprivkey RPC returns the wallet-import-format (WIP) private key corresponding to an address. (But does not remove it from the wallet.)
+
+Parameter #1—the address corresponding to the private key to get
+Result—the private key
+ */
+func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
+	for _, account := range self.Config.Wallet.MasterAccount.Child {
+		address := account.Key.ToAddress(false)
+		if address == params.(string) {
+			return account.Key.Base58CheckSerialize(true), nil
+		}
+	}
+	return "", nil
 }
