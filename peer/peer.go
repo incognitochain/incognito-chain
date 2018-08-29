@@ -32,6 +32,21 @@ const (
 	trickleTimeout = 10 * time.Second
 )
 
+// ConnState represents the state of the requested connection.
+type ConnState uint8
+
+// ConnState can be either pending, established, disconnected or failed.  When
+// a new connection is requested, it is attempted and categorized as
+// established or failed depending on the connection result.  An established
+// connection which was disconnected is categorized as disconnected.
+const (
+	ConnPending      ConnState = iota
+	ConnFailing
+	ConnCanceled
+	ConnEstablished
+	ConnDisconnected
+)
+
 type Peer struct {
 	connected  int32
 	disconnect int32
@@ -53,7 +68,7 @@ type Peer struct {
 	sendMessageQueue chan outMsg
 	quit             chan struct{}
 
-	PearConnections map[peer.ID]*PeerConn
+	PearConns map[peer.ID]*PeerConn
 }
 
 // Config is the struct to hold configuration options useful to Peer.
@@ -177,7 +192,15 @@ func (p Peer) WaitForDisconnect() {
 	<-p.quit
 }
 
-func (self Peer) NewPeerConnection(stream net.Stream) (*PeerConn, error) {
+func (self Peer) NewPeerConnection(peerId peer.ID) (*PeerConn, error) {
+	Logger.log.Infof("Opening stream to PEER ID - %s \n", self.PeerId.String())
+
+	stream, err := self.Host.NewStream(context.Background(), peerId, "/blockchain/1.0.0")
+	if err != nil {
+		Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", self.PeerId.String(), err.Error())
+		return nil, err
+	}
+
 	remotePeerId := stream.Conn().RemotePeer()
 
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
@@ -186,7 +209,8 @@ func (self Peer) NewPeerConnection(stream net.Stream) (*PeerConn, error) {
 	//go self.InMessageHandler(rw)
 	//go self.OutMessageHandler(rw)
 
-	peerConnection := PeerConn{
+	peerConn := PeerConn{
+		IsOutbound:         true,
 		Peer:               &self,
 		Host:               self.Host,
 		Config:             self.Config,
@@ -196,20 +220,18 @@ func (self Peer) NewPeerConnection(stream net.Stream) (*PeerConn, error) {
 		sendMessageQueue:   make(chan outMsg, 1),
 	}
 
-	self.PearConnections[peerConnection.PeerId] = &peerConnection
+	self.PearConns[peerConn.PeerId] = &peerConn
 
-	go peerConnection.InMessageHandler(rw)
-	go peerConnection.OutMessageHandler(rw)
+	go peerConn.InMessageHandler(rw)
+	go peerConn.OutMessageHandler(rw)
 
-	return &peerConnection, nil
+	peerConn.RetryCount = 0
+	peerConn.updateState(ConnEstablished)
+
+	return &peerConn, nil
 }
 
-func (self *Peer) DeletePeerConnection(peerID peer.ID) (error) {
-	delete(self.PearConnections, peerID)
-	return nil
-}
-
-func (self Peer) HandleStream(stream net.Stream) {
+func (self *Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
 	//defer stream.Close()
 
@@ -228,20 +250,27 @@ func (self Peer) HandleStream(stream net.Stream) {
 	//go self.InMessageHandler(rw)
 	//go self.OutMessageHandler(rw)
 
-	peerConnection := PeerConn{
-		Peer:               &self,
+	peerConn := PeerConn{
+		IsOutbound:         false,
+		Peer:               self,
 		Host:               self.Host,
 		Config:             self.Config,
 		PeerId:             remotePeerId,
 		ReaderWriterStream: rw,
 		quit:               make(chan struct{}),
 		sendMessageQueue:   make(chan outMsg, 1),
+		HandleConnected:    self.handleConnected,
+		HandleDisconnected: self.handleDisconnected,
+		HandleFailed:       self.handleFailed,
 	}
 
-	self.PearConnections[peerConnection.PeerId] = &peerConnection
+	self.PearConns[peerConn.PeerId] = &peerConn
 
-	go peerConnection.InMessageHandler(rw)
-	go peerConnection.OutMessageHandler(rw)
+	go peerConn.InMessageHandler(rw)
+	go peerConn.OutMessageHandler(rw)
+
+	peerConn.RetryCount = 0
+	peerConn.updateState(ConnEstablished)
 }
 
 /**
@@ -422,7 +451,7 @@ func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- stru
 	//self.ReadWrite.Flush()
 	//self.FlagMutex.Unlock()
 
-	for _, peerConnection := range self.PearConnections {
+	for _, peerConnection := range self.PearConns {
 		peerConnection.QueueMessageWithEncoding(msg, doneChan)
 	}
 }
@@ -458,7 +487,7 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 	msgVersionStr := hex.EncodeToString(msgVersion)
 	msgVersionStr += "\n"
 	Logger.log.Infof("Send a msgVersion: %s", msgVersionStr)
-	rw := self.PearConnections[peer.PeerId].ReaderWriterStream
+	rw := self.PearConns[peer.PeerId].ReaderWriterStream
 	self.FlagMutex.Lock()
 	rw.Writer.WriteString(msgVersionStr)
 	rw.Writer.Flush()
@@ -507,4 +536,28 @@ func (p *Peer) VerAckReceived() bool {
 	p.FlagMutex.Unlock()
 
 	return verAckReceived
+}
+
+func (p *Peer) handleConnected(peerConn *PeerConn) {
+	peerConn.RetryCount = 0
+}
+
+func (p *Peer) handleDisconnected(peerConn *PeerConn) {
+	if peerConn.IsOutbound {
+		_peerConn, ok := p.PearConns[peerConn.PeerId]
+		if ok {
+			delete(p.PearConns, _peerConn.PeerId)
+		}
+	} else {
+		peerConn.RetryCount += 1
+		peerConn.updateState(ConnPending)
+		p.NewPeerConnection(peerConn.PeerId)
+	}
+}
+
+func (p *Peer) handleFailed(peerConn *PeerConn) {
+	_peerConn, ok := p.PearConns[peerConn.PeerId]
+	if ok {
+		delete(p.PearConns, _peerConn.PeerId)
+	}
 }
