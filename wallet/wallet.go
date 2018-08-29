@@ -1,22 +1,21 @@
 package wallet
 
 import (
-	"bytes"
-	"encoding/binary"
 	"io/ioutil"
+	"encoding/json"
 )
 
 type Account struct {
-	key        Key
-	child      []Account
-	isImported bool
+	Key        Key
+	Child      []Account
+	IsImported bool
 }
 type Wallet struct {
-	seed          []byte
-	entropy       []byte
-	passPhrase    string
-	mnemonic      string
-	masterAccount Account
+	Seed          []byte
+	Entropy       []byte
+	PassPhrase    string
+	Mnemonic      string
+	MasterAccount Account
 
 	Config *WalletConfig
 }
@@ -29,14 +28,14 @@ type WalletConfig struct {
 
 func (self *Wallet) Init(passPhrase string, numOfAccount uint32) {
 	mnemonicGen := MnemonicGenerator{}
-	self.entropy, _ = mnemonicGen.NewEntropy(128)
-	self.mnemonic, _ = mnemonicGen.NewMnemonic(self.entropy)
-	self.seed = mnemonicGen.NewSeed(self.mnemonic, passPhrase)
+	self.Entropy, _ = mnemonicGen.NewEntropy(128)
+	self.Mnemonic, _ = mnemonicGen.NewMnemonic(self.Entropy)
+	self.Seed = mnemonicGen.NewSeed(self.Mnemonic, passPhrase)
 
-	masterKey, _ := NewMasterKey(self.seed)
-	self.masterAccount = Account{
-		key:   *masterKey,
-		child: make([]Account, 0),
+	masterKey, _ := NewMasterKey(self.Seed)
+	self.MasterAccount = Account{
+		Key:   *masterKey,
+		Child: make([]Account, 0),
 	}
 
 	if numOfAccount == 0 {
@@ -44,70 +43,81 @@ func (self *Wallet) Init(passPhrase string, numOfAccount uint32) {
 	}
 
 	for i := uint32(0); i < numOfAccount; i++ {
-		childKey, _ := self.masterAccount.key.NewChildKey(i)
+		childKey, _ := self.MasterAccount.Key.NewChildKey(i)
 		account := Account{
-			key:   *childKey,
-			child: make([]Account, 0),
+			Key:   *childKey,
+			Child: make([]Account, 0),
 		}
-		self.masterAccount.child = append(self.masterAccount.child, account)
+		self.MasterAccount.Child = append(self.MasterAccount.Child, account)
 	}
 }
 
 func (self *Wallet) CreateNewAccount() {
-	newIndex := uint32(len(self.masterAccount.child))
-	childKey, _ := self.masterAccount.key.NewChildKey(newIndex)
+	newIndex := uint32(len(self.MasterAccount.Child))
+	childKey, _ := self.MasterAccount.Key.NewChildKey(newIndex)
 	account := Account{
-		key:   *childKey,
-		child: make([]Account, 0),
+		Key:   *childKey,
+		Child: make([]Account, 0),
 	}
-	self.masterAccount.child = append(self.masterAccount.child, account)
+	self.MasterAccount.Child = append(self.MasterAccount.Child, account)
 }
 
 func (self *Wallet) ExportAccount(childIndex uint32) (string) {
-	return self.masterAccount.child[childIndex].key.Base58CheckSerialize(true)
+	return self.MasterAccount.Child[childIndex].Key.Base58CheckSerialize(true)
 }
 
 func (self *Wallet) ImportAccount(privateKey string) {
 	key, _ := Base58CheckDeserialize(privateKey)
 	account := Account{
-		key:        *key,
-		child:      make([]Account, 0),
-		isImported: true,
+		Key:        *key,
+		Child:      make([]Account, 0),
+		IsImported: true,
 	}
-	self.masterAccount.child = append(self.masterAccount.child, account)
+	self.MasterAccount.Child = append(self.MasterAccount.Child, account)
 }
 
 func (self *Wallet) ListAccounts() ([]Account) {
-	return self.masterAccount.child
+	return self.MasterAccount.Child
 }
 
 func (self *Wallet) Save(password string) (error) {
 	if password == "" {
-		password = self.passPhrase
+		password = self.PassPhrase
+	}
+
+	// parse to byte[]
+	data, err := json.Marshal(*self)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
 	}
 
 	// encrypt
-	buf := &bytes.Buffer{}
-	err := binary.Write(buf, binary.BigEndian, &self)
+	cipherText, err := AES{}.Encrypt(password, data)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
-	cipherText := AES{}.Encrypt(password, buf.Bytes())
-
+	// and
 	// save file
-	err = ioutil.WriteFile(self.Config.DataDir+self.Config.DataFile, []byte(cipherText), 0644)
+	err = ioutil.WriteFile(self.Config.DataPath, []byte(cipherText), 0644)
 	return err
 }
 
 func (self *Wallet) LoadWallet(password string) (error) {
-	_, err := ioutil.ReadFile(self.Config.DataDir + self.Config.DataFile)
+	// read file and decrypt
+	bytesData, err := ioutil.ReadFile(self.Config.DataPath)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
-	//bufBytes := AES{}.Decrypt(password, string(bytes))
+	bufBytes, err := AES{}.Decrypt(password, string(bytesData))
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
 
-	//buf := &bytes.Buffer{}
-	//buf.Read(bufBytes)
-	//err = binary.Read(buf, binary.BigEndian, &self)
+	// read to struct
+	err = json.Unmarshal(bufBytes, &self)
 	return err
 }

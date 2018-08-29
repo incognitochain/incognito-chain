@@ -151,6 +151,7 @@ type config struct {
 	RewardAddress string `long:"rewardaddr" description:"Address of the owner of sealer key"`
 
 	// For Wallet
+	Wallet           bool   `long:"wallet" description:"Use wallet"`
 	WalletDbName     string `long:"walletdbname" description:"Wallet Database Name file, default is wallet.db"`
 	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
 }
