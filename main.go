@@ -122,13 +122,19 @@ func mainMaster(serverChan chan<- *Server) error {
 	}
 
 	// Check wallet and start it
-	wallet := wallet2.Wallet{}
-	wallet.Config = &wallet2.WalletConfig{
-		DataDir:  cfg.DataDir,
-		DataFile: cfg.WalletDbName,
-		DataPath: filepath.Join(cfg.DataDir, cfg.WalletDbName),
+	if cfg.Wallet == true {
+		wallet := wallet2.Wallet{}
+		wallet.Config = &wallet2.WalletConfig{
+			DataDir:  cfg.DataDir,
+			DataFile: cfg.WalletDbName,
+			DataPath: filepath.Join(cfg.DataDir, cfg.WalletDbName),
+		}
+		err = wallet.LoadWallet(cfg.WalletPassphrase)
+		if err != nil {
+			wallet.Init(cfg.WalletPassphrase, 0)
+			wallet.Save(cfg.WalletPassphrase)
+		}
 	}
-	//wallet.LoadWallet()
 
 	// Wait until the interrupt signal is received from an OS signal or
 	// shutdown is requested through one of the subsystems such as the RPC
