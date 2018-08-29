@@ -25,6 +25,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/rpcserver"
 	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
 const (
@@ -54,6 +55,7 @@ type Server struct {
 	Miner       *miner.Miner
 	NetSync     *netsync.NetSync
 	AddrManager *addrmanager.AddrManager
+	Wallet      *wallet.Wallet
 
 	ConsensusEngine *pos.Engine
 }
@@ -107,7 +109,7 @@ func setupRPCListeners() ([]net.Listener, error) {
 	return listeners, nil
 }
 
-func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *blockchain.Params, interrupt <-chan struct{}) (*Server, error) {
+func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams *blockchain.Params, interrupt <-chan struct{}) (error) {
 
 	// Init data for Server
 	self.chainParams = chainParams
@@ -130,7 +132,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		Interrupt: interrupt,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.Chain)
@@ -140,14 +142,14 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		BlockTemplateGenerator: blockTemplateGenerator,
 		MiningAddrs:            cfg.MiningAddrs,
 		Chain:                  self.Chain,
-		Server:                 &self,
+		Server:                 self,
 	})
 
 	self.ConsensusEngine = pos.New(&pos.Config{
 		ChainParams: self.chainParams,
 		Chain:       self.Chain,
 		BlockGen:    blockTemplateGenerator,
-		Server:      &self,
+		Server:      self,
 	})
 
 	// Init Net Sync manager to process messages
@@ -155,10 +157,10 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		Chain:      self.Chain,
 		ChainParam: chainParams,
 		MemPool:    self.MemPool,
-		Server:     &self,
+		Server:     self,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var peers []peer.Peer
@@ -166,7 +168,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		var err error
 		peers, err = self.InitListenerPeers(self.AddrManager, listenAddrs)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -183,7 +185,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		TargetOutbound:       uint32(targetOutbound),
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	self.ConnManager = connManager
 
@@ -202,10 +204,10 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		// TLS settings.
 		rpcListeners, err := setupRPCListeners()
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if len(rpcListeners) == 0 {
-			return nil, errors.New("RPCS: No valid listen address")
+			return errors.New("RPCS: No valid listen address")
 		}
 
 		rpcConfig := rpcserver.RpcServerConfig{
@@ -216,10 +218,12 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 			Chain:         self.Chain,
 			TxMemPool:     self.MemPool,
 			Server:        self,
+			Wallet:        self.Wallet,
 		}
-		self.RpcServer, err = rpcserver.RpcServer{}.Init(&rpcConfig)
+		self.RpcServer = &rpcserver.RpcServer{}
+		err = self.RpcServer.Init(&rpcConfig)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		// Signal process shutdown when the RPC server requests it.
@@ -229,7 +233,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		}()
 	}
 
-	return &self, nil
+	return nil
 }
 
 func (self *Server) InboundPeerConnected(peer *peer.Peer) {

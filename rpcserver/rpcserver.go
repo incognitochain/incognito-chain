@@ -19,6 +19,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
+	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
 const (
@@ -55,7 +56,8 @@ type RpcServerConfig struct {
 	ChainParams *blockchain.Params
 	Chain       *blockchain.BlockChain
 	Db          *database.DB
-	Server      interface {
+	Wallet      *wallet.Wallet
+	Server interface {
 		// Push Tx message
 		PushTxMessage(*common.Hash)
 	}
@@ -65,10 +67,10 @@ type RpcServerConfig struct {
 	RPCQuirks     bool
 }
 
-func (self RpcServer) Init(config *RpcServerConfig) (*RpcServer, error) {
+func (self *RpcServer) Init(config *RpcServerConfig) (error) {
 	self.Config = *config
 	self.statusLines = make(map[int]string)
-	return &self, nil
+	return nil
 }
 
 // RequestedProcessShutdown returns a channel that is sent to when an authorized

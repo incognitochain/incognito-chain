@@ -3,9 +3,11 @@ package wallet
 import (
 	"io/ioutil"
 	"encoding/json"
+	"fmt"
 )
 
 type Account struct {
+	Name       string
 	Key        Key
 	Child      []Account
 	IsImported bool
@@ -31,11 +33,13 @@ func (self *Wallet) Init(passPhrase string, numOfAccount uint32) {
 	self.Entropy, _ = mnemonicGen.NewEntropy(128)
 	self.Mnemonic, _ = mnemonicGen.NewMnemonic(self.Entropy)
 	self.Seed = mnemonicGen.NewSeed(self.Mnemonic, passPhrase)
+	self.PassPhrase = passPhrase
 
 	masterKey, _ := NewMasterKey(self.Seed)
 	self.MasterAccount = Account{
 		Key:   *masterKey,
 		Child: make([]Account, 0),
+		Name:  "master",
 	}
 
 	if numOfAccount == 0 {
@@ -47,19 +51,26 @@ func (self *Wallet) Init(passPhrase string, numOfAccount uint32) {
 		account := Account{
 			Key:   *childKey,
 			Child: make([]Account, 0),
+			Name:  fmt.Sprintf("Account %d", i),
 		}
 		self.MasterAccount.Child = append(self.MasterAccount.Child, account)
 	}
 }
 
-func (self *Wallet) CreateNewAccount() {
+func (self *Wallet) CreateNewAccount(accountName string) *Account {
 	newIndex := uint32(len(self.MasterAccount.Child))
 	childKey, _ := self.MasterAccount.Key.NewChildKey(newIndex)
+	if accountName == "" {
+		accountName = fmt.Sprintf("Account %d", len(self.MasterAccount.Child))
+	}
 	account := Account{
 		Key:   *childKey,
 		Child: make([]Account, 0),
+		Name:  accountName,
 	}
 	self.MasterAccount.Child = append(self.MasterAccount.Child, account)
+	self.Save(self.PassPhrase)
+	return &account
 }
 
 func (self *Wallet) ExportAccount(childIndex uint32) (string) {

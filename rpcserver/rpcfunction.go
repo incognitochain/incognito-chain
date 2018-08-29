@@ -32,6 +32,12 @@ var RpcHandler = map[string]commandHandler{
 	//POS
 	"votecandidate": RpcServer.handleVoteCandidate,
 	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
+
+	// WALLET
+	"getaccount":            RpcServer.handleGetAccount,
+	"listaccounts":          RpcServer.handleListAccounts,
+	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
+	"getaccountaddress":     RpcServer.handleGetAccountAddress,
 }
 
 // Commands that are available to a limited user
@@ -140,10 +146,10 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 					for index, txOut := range normalTx.TxOut {
 						if (bytes.Compare(txOut.PkScript, []byte(addresses[0])) == 0) {
 							result = append(result, jsonrpc.ListUnspentResult{
-								Vout:    index,
-								TxID:    normalTx.Hash().String(),
-								Address: string(txOut.PkScript),
-								Amount:  txOut.Value,
+								Vout:      index,
+								TxID:      normalTx.Hash().String(),
+								Address:   string(txOut.PkScript),
+								Amount:    txOut.Value,
 								TxOutType: txOut.TxOutType,
 							})
 						}
@@ -279,7 +285,6 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 	return tx.Hash(), nil
 }
 
-
 func isExisted(item int, arr []int) bool {
 	for _, i := range arr {
 		if item == i {
@@ -312,10 +317,10 @@ func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeCh
 
 			for index, txOut := range normalTx.TxOut {
 				txOuts = append(txOuts, jsonrpc.ListUnspentResult{
-					Vout:    index,
-					TxID:    normalTx.Hash().String(),
-					Address: string(txOut.PkScript),
-					Amount:  txOut.Value,
+					Vout:      index,
+					TxID:      normalTx.Hash().String(),
+					Address:   string(txOut.PkScript),
+					Amount:    txOut.Value,
 					TxOutType: txOut.TxOutType,
 				})
 			}
@@ -340,7 +345,6 @@ func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeCh
 	return result, nil
 }
 
-
 func assertEligibleAgentIDs(eligibleAgentIDs interface{}) ([]string) {
 	assertedEligibleAgentIDs := eligibleAgentIDs.([]interface{})
 	results := []string{}
@@ -349,7 +353,6 @@ func assertEligibleAgentIDs(eligibleAgentIDs interface{}) ([]string) {
 	}
 	return results
 }
-
 
 /**
 // handleCreateRawTransaction handles createrawtransaction commands.
@@ -370,8 +373,8 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 	tx.Param = &transaction.Param{
 		AgentID:          param["agentId"].(string),
 		AgentSig:         param["agentSig"].(string),
-		NumOfCoins: 	  param["numOfCoins"].(float64),
-		NumOfBonds: 	  param["numOfBonds"].(float64),
+		NumOfCoins:       param["numOfCoins"].(float64),
+		NumOfBonds:       param["numOfBonds"].(float64),
 		Tax:              param["tax"].(float64),
 		EligibleAgentIDs: assertEligibleAgentIDs(param["eligibleAgentIDs"]),
 	}
@@ -385,4 +388,67 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 	// self.Config.Server.PushTxMessage(hash)
 
 	return tx.Hash(), nil
+}
+
+/**
+getaccount RPC returns the name of the account associated with the given address.
+- Param #1: address
+ */
+func (self RpcServer) handleGetAccount(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
+	for _, account := range self.Config.Wallet.MasterAccount.Child {
+		address := account.Key.ToAddress(false)
+		if address == params.(string) {
+			return account.Name, nil
+		}
+	}
+	return "", nil
+}
+
+/**
+listaccount RPC lists accounts and their balances.
+
+Parameter #1—the minimum number of confirmations a transaction must have
+Parameter #2—whether to include watch-only addresses in results
+Result—a list of accounts and their balances
+
+ */
+func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
+	result := jsonrpc.ListAccounts{}
+	result.Accounts = make(map[string]float64)
+	for _, account := range self.Config.Wallet.MasterAccount.Child {
+		result.Accounts[account.Name] = 0.0
+	}
+	return result, nil
+}
+
+/**
+getaddressesbyaccount RPC returns a list of every address assigned to a particular account.
+
+Parameter #1—the account name
+Result—a list of addresses
+ */
+func (self RpcServer) handleGetAddressesByAccount(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
+	result := jsonrpc.GetAddressesByAccount{}
+	result.Addresses = make([]string, 0)
+	for _, account := range self.Config.Wallet.MasterAccount.Child {
+		if account.Name == params.(string) {
+			result.Addresses = append(result.Addresses, account.Key.ToAddress(false))
+		}
+	}
+	return result, nil
+}
+
+/**
+getaccountaddress RPC returns the current Bitcoin address for receiving payments to this account. If the account doesn’t exist, it creates both the account and a new address for receiving payment. Once a payment has been received to an address, future calls to this RPC for the same account will return a different address.
+Parameter #1—an account name
+Result—a bitcoin address
+ */
+func (self RpcServer) handleGetAccountAddress(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
+	for _, account := range self.Config.Wallet.MasterAccount.Child {
+		if account.Name == params.(string) {
+			return account.Key.ToAddress(false), nil
+		}
+	}
+	newAccount := self.Config.Wallet.CreateNewAccount(params.(string))
+	return newAccount.Key.ToAddress(false), nil
 }
