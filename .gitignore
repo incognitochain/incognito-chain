@@ -18,3 +18,7 @@
 vendor
 
 prototype
+
+# Build Directory
+/privacy/build
+
