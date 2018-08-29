@@ -24,6 +24,7 @@ type Wallet struct {
 type WalletConfig struct {
 	DataDir  string
 	DataFile string
+	DataPath string
 }
 
 func (self *Wallet) Init(passPhrase string, numOfAccount uint32) {
@@ -99,14 +100,14 @@ func (self *Wallet) Save(password string) (error) {
 }
 
 func (self *Wallet) LoadWallet(password string) (error) {
-	bytes, err := ioutil.ReadFile(self.Config.DataDir + self.Config.DataFile)
+	_, err := ioutil.ReadFile(self.Config.DataDir + self.Config.DataFile)
 	if err != nil {
 		return err
 	}
-	bufBytes := AES{}.Decrypt(password, string(bytes))
+	//bufBytes := AES{}.Decrypt(password, string(bytes))
 
-	buf := &bytes.Buffer{}
-	buf.Read(bufBytes)
-	err = binary.Read(buf, binary.BigEndian, &self)
+	//buf := &bytes.Buffer{}
+	//buf.Read(bufBytes)
+	//err = binary.Read(buf, binary.BigEndian, &self)
 	return err
 }

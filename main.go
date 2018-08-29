@@ -11,6 +11,8 @@ import (
 	"github.com/ninjadotorg/cash-prototype/limits"
 
 	_ "github.com/ninjadotorg/cash-prototype/database/lvdb"
+	wallet2 "github.com/ninjadotorg/cash-prototype/wallet"
+	"path/filepath"
 )
 
 var (
@@ -93,11 +95,13 @@ func mainMaster(serverChan chan<- *Server) error {
 		return nil
 	}*/
 
-	// Create server and start it.
+	// Create db and use it.
 	db, err := database.Open("leveldb", cfg.DataDir)
 	if err != nil {
 		log.Fatalf("could not open connection to leveldb: %v", err)
 	}
+
+	// Create server and start it.
 	server, err := Server{}.NewServer(cfg.Listeners, db, activeNetParams.Params,
 		interrupt)
 	if err != nil {
@@ -116,6 +120,15 @@ func mainMaster(serverChan chan<- *Server) error {
 	if serverChan != nil {
 		serverChan <- server
 	}
+
+	// Check wallet and start it
+	wallet := wallet2.Wallet{}
+	wallet.Config = &wallet2.WalletConfig{
+		DataDir:  cfg.DataDir,
+		DataFile: cfg.WalletDbName,
+		DataPath: filepath.Join(cfg.DataDir, cfg.WalletDbName),
+	}
+	//wallet.LoadWallet()
 
 	// Wait until the interrupt signal is received from an OS signal or
 	// shutdown is requested through one of the subsystems such as the RPC

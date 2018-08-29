@@ -52,6 +52,9 @@ const (
 	sampleConfigFilename         = "sample-config.conf"
 	defaultTxIndex               = false
 	defaultAddrIndex             = false
+
+	// For wallet
+	defaultWalletDbName = "wallet.db"
 )
 
 var (
@@ -146,6 +149,10 @@ type config struct {
 	// PoS config
 	SealerPrvKey  string `long:"sealerprvkey" description:"Private key of the block sealer used to seal block"`
 	RewardAddress string `long:"rewardaddr" description:"Address of the owner of sealer key"`
+
+	// For Wallet
+	WalletDbName     string `long:"walletdbname" description:"Wallet Database Name file, default is wallet.db"`
+	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -339,6 +346,7 @@ func loadConfig() (*config, []string, error) {
 		Generate:             defaultGenerate,
 		TxIndex:              defaultTxIndex,
 		AddrIndex:            defaultAddrIndex,
+		WalletDbName:         defaultWalletDbName,
 	}
 
 	// Service options which are only added on Windows.
