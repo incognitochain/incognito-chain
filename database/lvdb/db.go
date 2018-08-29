@@ -2,6 +2,7 @@ package lvdb
 
 import (
 	"encoding/json"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -12,7 +13,7 @@ import (
 )
 
 func open(dbPath string) (database.DB, error) {
-	ldb, err := leveldb.OpenFile(dbPath, nil)
+	ldb, err := leveldb.OpenFile(filepath.Join(dbPath, "db"), nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "leveldb.OpenFile %s", dbPath)
 	}
@@ -87,4 +88,8 @@ func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
 		return nil, errors.Wrap(err, "db.ldb.Get")
 	}
 	return block, nil
+}
+
+func (db *db) StoreTxOut(tx string) error {
+	return nil
 }
