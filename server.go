@@ -260,7 +260,7 @@ func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	go self.peerDoneHandler(peer)
 
 	msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
-	msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.Chain.BestBlock.Hash()
+	msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.Chain.BestState.BestBlock.Hash()
 	msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerId
 	if err != nil {
 		return
@@ -473,7 +473,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 	}
 
 	kc.Save()
-	
+
 	return peers, nil
 }
 
@@ -622,6 +622,6 @@ func (self *Server) UpdateChain(block *blockchain.Block) {
 
 	self.Chain.Blocks = append(self.Chain.Blocks, block)
 	self.Chain.Headers[*block.Hash()] = len(self.Chain.Blocks) - 1
-	self.Chain.BestBlock = block
+	self.Chain.BestState.BestBlock = block
 
 }

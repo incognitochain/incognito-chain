@@ -43,7 +43,7 @@ func CountSigOps(tx *transaction.Tx) float64 {
 // 	// The previous output of a coin base must have a max value index and
 // 	// a zero hash.
 // 	prevOut := &tx.TxIn[0].PreviousOutPoint
-// 	if prevOut.Index != math.MaxUint32 || prevOut.Hash != zeroHash {
+// 	if prevOut.height != math.MaxUint32 || prevOut.Hash != zeroHash {
 // 		return false
 // 	}
 
