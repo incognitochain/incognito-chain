@@ -15,8 +15,9 @@ type DB interface {
 
 	StoreTx([]byte) error
 
-	StoreBestBlockIndex(int32) error
-	FetchBestBlockIndex() (int32, error)
+	StoreBlockIndex(*common.Hash, int32) error
+	GetIndexOfBlock(*common.Hash) (int32, error)
+	GetBlockByIndex(int32) ([]byte, error)
 
 	Close() error
 }
