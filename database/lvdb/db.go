@@ -9,14 +9,16 @@ import (
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
+	"github.com/syndtr/goleveldb/leveldb/util"
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 )
 
 var (
-	usedTxKey    = []byte("usedTx")
-	bestBlockKey = []byte("bestBlock")
+	blockKeyPrefix = []byte("b-")
+	usedTxKey      = []byte("usedTx")
+	bestBlockKey   = []byte("bestBlock")
 )
 
 func open(dbPath string) (database.DB, error) {
@@ -50,7 +52,7 @@ func (db *db) StoreBlock(v interface{}) error {
 	}
 	var (
 		hash = h.Hash()
-		key  = hash[:]
+		key  = append(blockKeyPrefix, hash[:]...)
 	)
 	if db.hasBlock(key) {
 		return errors.Errorf("block %s already exists", hash.String())
@@ -170,4 +172,17 @@ func (db *db) GetBlockByIndex(idx int32) ([]byte, error) {
 		return nil, errors.Wrap(err, "db.ldb.Get")
 	}
 	return b, nil
+}
+
+func (db *db) FetchAllBlocks() ([][]byte, error) {
+	var keys [][]byte
+	iter := db.ldb.NewIterator(util.BytesPrefix(blockKeyPrefix), nil)
+	for iter.Next() {
+		keys = append(keys, iter.Key())
+	}
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		return nil, errors.Wrap(err, "iter.Error")
+	}
+	return keys, nil
 }
