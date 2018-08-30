@@ -178,7 +178,7 @@ func (db *db) FetchAllBlocks() ([][]byte, error) {
 	var keys [][]byte
 	iter := db.ldb.NewIterator(util.BytesPrefix(blockKeyPrefix), nil)
 	for iter.Next() {
-		keys = append(keys, iter.Key())
+		keys = append(keys, iter.Key()[len(blockKeyPrefix):])
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
