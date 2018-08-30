@@ -1,6 +1,8 @@
 package lvdb
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"path/filepath"
 
@@ -12,7 +14,13 @@ import (
 	"github.com/ninjadotorg/cash-prototype/database"
 )
 
-var usedTxKey = []byte("usedTx")
+var (
+	usedTxKey = []byte("usedTx")
+
+	bestBlockKey        = []byte("bestBlock")
+	bestBlockIndexKey   = []byte("bestBlockIndex")
+	indexToBestBlockKey = []byte("indexToBestBlock")
+)
 
 func open(dbPath string) (database.DB, error) {
 	ldb, err := leveldb.OpenFile(filepath.Join(dbPath, "db"), nil)
@@ -107,4 +115,48 @@ func (db *db) StoreTx(tx []byte) error {
 		return err
 	}
 	return nil
+}
+
+func (db *db) StoreBestBlock(v interface{}) error {
+	val, err := json.Marshal(v)
+	if err != nil {
+		return errors.Wrap(err, "json.Marshal")
+	}
+	if err := db.put(bestBlockKey, val); err != nil {
+		return errors.Wrap(err, "db.Put")
+	}
+	return nil
+}
+
+func (db *db) FetchBestBlock() ([]byte, error) {
+	block, err := db.ldb.Get(bestBlockKey, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "db.ldb.Get")
+	}
+	return block, nil
+}
+
+func (db *db) StoreBestBlockIndex(idx int32) error {
+	buf := new(bytes.Buffer)
+	if err := binary.Write(buf, binary.LittleEndian, idx); err != nil {
+		return errors.Wrapf(err, "binary.Write %d", idx)
+	}
+	if err := db.ldb.Put(bestBlockIndexKey, buf.Bytes(), nil); err != nil {
+		return errors.Wrap(err, "db.ldb.Put")
+	}
+	return nil
+}
+
+func (db *db) FetchBestBlockIndex() (int32, error) {
+	b, err := db.ldb.Get(bestBlockIndexKey, nil)
+	if err != nil {
+		return 0, errors.Wrap(err, "db.ldb.Get")
+	}
+
+	var idx int32
+	buf := bytes.NewReader(b)
+	if err := binary.Read(buf, binary.LittleEndian, &idx); err != nil {
+		return 0, errors.Wrap(err, "binary.Read")
+	}
+	return idx, nil
 }
