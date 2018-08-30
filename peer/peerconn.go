@@ -9,8 +9,6 @@ import (
 	"log"
 	"reflect"
 	"sync"
-	"sync/atomic"
-	"github.com/libp2p/go-libp2p-host"
 	"github.com/libp2p/go-libp2p-peer"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -26,7 +24,6 @@ type PeerConn struct {
 	state      ConnState
 	stateMtx   sync.RWMutex
 
-	//Host               host.Host
 	ReaderWriterStream *bufio.ReadWriter
 	verAckReceived     bool
 
@@ -69,9 +66,6 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			return
 		}
 
-		//if str == "" {
-		//	return
-		//}
 		Logger.log.Infof("Received message: %s \n", str)
 		if str != "\n" {
 
@@ -191,36 +185,8 @@ func (self PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		case <-self.quit:
 			Logger.log.Infof("PEER %s quit OUT message handler", self.PeerId)
 			break
-			//default:
-			//	Logger.log.Info("Wait for sending message")
 		}
 	}
-}
-
-// Connected returns whether or not the peer is currently connected.
-//
-// This function is safe for concurrent access.
-func (self PeerConn) Connected() bool {
-	return atomic.LoadInt32(&self.connected) != 0 &&
-		atomic.LoadInt32(&self.disconnect) == 0
-}
-
-// Disconnect disconnects the peer by closing the connection.  Calling this
-// function when the peer is already disconnected or in the process of
-// disconnecting will have no effect.
-func (self PeerConn) Disconnect() {
-	if atomic.AddInt32(&self.disconnect, 1) != 1 {
-		return
-	}
-
-	Logger.log.Infof("Disconnecting %s", self)
-	if atomic.LoadInt32(&self.connected) != 0 {
-		self.Host.Close()
-	}
-	if self.quit != nil {
-		close(self.quit)
-	}
-	self.disconnect = 1
 }
 
 // QueueMessageWithEncoding adds the passed bitcoin message to the peer send
@@ -230,19 +196,7 @@ func (self PeerConn) Disconnect() {
 //
 // This function is safe for concurrent access.
 func (self PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
-	//if !self.Connected() {
-	//	if doneChan != nil {
-	//		go func() {
-	//			doneChan <- struct{}{}
-	//		}()
-	//	}
-	//	return
-	//}
 	self.sendMessageQueue <- outMsg{msg: msg, doneChan: doneChan}
-	//self.FlagMutex.Lock()
-	//self.ReadWrite.WriteString("test test test")
-	//self.ReadWrite.Flush()
-	//self.FlagMutex.Unlock()
 }
 
 func (p *PeerConn) VerAckReceived() bool {
