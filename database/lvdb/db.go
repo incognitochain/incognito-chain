@@ -15,11 +15,8 @@ import (
 )
 
 var (
-	usedTxKey = []byte("usedTx")
-
-	bestBlockKey        = []byte("bestBlock")
-	bestBlockIndexKey   = []byte("bestBlockIndex")
-	indexToBestBlockKey = []byte("indexToBestBlock")
+	usedTxKey    = []byte("usedTx")
+	bestBlockKey = []byte("bestBlock")
 )
 
 func open(dbPath string) (database.DB, error) {
@@ -136,27 +133,41 @@ func (db *db) FetchBestBlock() ([]byte, error) {
 	return block, nil
 }
 
-func (db *db) StoreBestBlockIndex(idx int32) error {
+func (db *db) StoreBlockIndex(h *common.Hash, idx int32) error {
 	buf := new(bytes.Buffer)
 	if err := binary.Write(buf, binary.LittleEndian, idx); err != nil {
 		return errors.Wrapf(err, "binary.Write %d", idx)
 	}
-	if err := db.ldb.Put(bestBlockIndexKey, buf.Bytes(), nil); err != nil {
+	if err := db.ldb.Put(h[:], buf.Bytes(), nil); err != nil {
+		return errors.Wrap(err, "db.ldb.Put")
+	}
+	if err := db.ldb.Put(buf.Bytes(), h[:], nil); err != nil {
 		return errors.Wrap(err, "db.ldb.Put")
 	}
 	return nil
 }
 
-func (db *db) FetchBestBlockIndex() (int32, error) {
-	b, err := db.ldb.Get(bestBlockIndexKey, nil)
+func (db *db) GetIndexOfBlock(h *common.Hash) (int32, error) {
+	b, err := db.ldb.Get(h[:], nil)
 	if err != nil {
 		return 0, errors.Wrap(err, "db.ldb.Get")
 	}
 
 	var idx int32
-	buf := bytes.NewReader(b)
-	if err := binary.Read(buf, binary.LittleEndian, &idx); err != nil {
+	if err := binary.Read(bytes.NewReader(b), binary.LittleEndian, &idx); err != nil {
 		return 0, errors.Wrap(err, "binary.Read")
 	}
 	return idx, nil
+}
+
+func (db *db) GetBlockByIndex(idx int32) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	if err := binary.Write(buf, binary.LittleEndian, idx); err != nil {
+		return nil, errors.Wrapf(err, "binary.Write %d", idx)
+	}
+	b, err := db.ldb.Get(buf.Bytes(), nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "db.ldb.Get")
+	}
+	return b, nil
 }
