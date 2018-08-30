@@ -1,14 +1,15 @@
-package lvdb
+package lvdb_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/database"
+	_ "github.com/ninjadotorg/cash-prototype/database/lvdb"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
@@ -18,7 +19,7 @@ func setup(t *testing.T) (database.DB, func()) {
 		t.Fatalf("failed to create temp dir: %+v", err)
 	}
 	t.Log(dbPath)
-	db, err := open(dbPath)
+	db, err := database.Open("leveldb", dbPath)
 	if err != nil {
 		t.Fatalf("could not open db path: %s, %+v", dbPath, err)
 	}
@@ -57,7 +58,24 @@ func TestBlock(t *testing.T) {
 		t.Errorf("db.FetchBlock returns err: %+v", err)
 	}
 	blockJSON, _ := json.Marshal(block)
-	if !reflect.DeepEqual(blockJSON, fetched) {
+	if !bytes.Equal(blockJSON, fetched) {
 		t.Logf("should equal")
+	}
+}
+
+func TestStoreTxOut(t *testing.T) {
+	db, teardown := setup(t)
+	defer teardown()
+
+	tx := []byte("abcd")
+	err := db.StoreTx(tx)
+	if err != nil {
+		t.Errorf("db.StoreTx %v", err)
+	}
+
+	tx = []byte("efgh")
+	err = db.StoreTx(tx)
+	if err != nil {
+		t.Errorf("db.StoreTx %v", err)
 	}
 }

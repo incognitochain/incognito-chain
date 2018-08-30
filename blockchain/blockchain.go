@@ -11,6 +11,7 @@ import (
 	"log"
 
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/database"
 )
 
 type BlockChain struct {
@@ -28,7 +29,7 @@ type Config struct {
 	// store all metadata created by this package such as the utxo set.
 	//
 	// This field is required.
-	// Db database.DB
+	Db database.DB
 
 	// Interrupt specifies a channel the caller can close to signal that
 	// long running operations, such as catching up indexes or performing
@@ -44,7 +45,7 @@ type Config struct {
 	ChainParams *Params
 }
 
-func (self BlockChain) New(config *Config) (*BlockChain, error) {
+func (self *BlockChain) Init(config *Config) (error) {
 
 	self.Headers = make(map[common.Hash]int)
 	// self.Blocks = make(map[*common.Hash]*Block)
@@ -55,7 +56,7 @@ func (self BlockChain) New(config *Config) (*BlockChain, error) {
 	//	return nil, errors.New("blockchain.New database is nil")
 	//}
 	if config.ChainParams == nil {
-		return nil, errors.New("blockchain.New chain parameters nil")
+		return errors.New("blockchain.New chain parameters nil")
 	}
 
 	self.Config = *config
@@ -64,10 +65,10 @@ func (self BlockChain) New(config *Config) (*BlockChain, error) {
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
 	if err := self.InitChainState(); err != nil {
-		return nil, err
+		return err
 	}
 
-	return &self, nil
+	return nil
 }
 
 // initChainState attempts to load and initialize the chain state from the
@@ -99,6 +100,11 @@ func (self *BlockChain) CreateChainState() error {
 	self.Blocks = append(self.Blocks, genesisBlock)
 	self.Headers[*genesisBlock.Hash()] = 0
 	self.BestBlock = genesisBlock
+
+	err := self.Config.Db.StoreBlock(genesisBlock)
+	if err != nil {
+		return err
+	}
 
 	// Spam random blocks
 	for index := 0; index < 0; index++ {

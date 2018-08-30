@@ -101,8 +101,26 @@ func mainMaster(serverChan chan<- *Server) error {
 		log.Fatalf("could not open connection to leveldb: %v", err)
 	}
 
+	// Check wallet and start it
+	var wallet *wallet2.Wallet
+	if cfg.Wallet == true {
+		wallet = &wallet2.Wallet{}
+		wallet.Config = &wallet2.WalletConfig{
+			DataDir:  cfg.DataDir,
+			DataFile: cfg.WalletDbName,
+			DataPath: filepath.Join(cfg.DataDir, cfg.WalletDbName),
+		}
+		err = wallet.LoadWallet(cfg.WalletPassphrase)
+		if err != nil {
+			wallet.Init(cfg.WalletPassphrase, 0)
+			wallet.Save(cfg.WalletPassphrase)
+		}
+	}
+
 	// Create server and start it.
-	server, err := Server{}.NewServer(cfg.Listeners, db, activeNetParams.Params,
+	server := Server{}
+	server.Wallet = wallet
+	err = server.NewServer(cfg.Listeners, db, activeNetParams.Params,
 		interrupt)
 	if err != nil {
 		// TODO: this logging could do with some beautifying.
@@ -118,22 +136,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	}()
 	server.Start()
 	if serverChan != nil {
-		serverChan <- server
-	}
-
-	// Check wallet and start it
-	if cfg.Wallet == true {
-		wallet := wallet2.Wallet{}
-		wallet.Config = &wallet2.WalletConfig{
-			DataDir:  cfg.DataDir,
-			DataFile: cfg.WalletDbName,
-			DataPath: filepath.Join(cfg.DataDir, cfg.WalletDbName),
-		}
-		err = wallet.LoadWallet(cfg.WalletPassphrase)
-		if err != nil {
-			wallet.Init(cfg.WalletPassphrase, 0)
-			wallet.Save(cfg.WalletPassphrase)
-		}
+		serverChan <- &server
 	}
 
 	// Wait until the interrupt signal is received from an OS signal or
