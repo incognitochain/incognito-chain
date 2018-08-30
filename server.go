@@ -656,9 +656,17 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 }
 
 func (self *Server) UpdateChain(block *blockchain.Block) {
-
+	// save block
 	self.Chain.Blocks = append(self.Chain.Blocks, block)
-	self.Chain.Headers[*block.Hash()] = len(self.Chain.Blocks) - 1
-	self.Chain.BestState.BestBlock = block
+	self.Chain.StoreBlockIndex(block)
 
+	// save best state
+	newBestState := &blockchain.BestState{}
+	numTxns := uint64(len(block.Transactions))
+	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0))
+	self.Chain.BestState = newBestState
+	self.Chain.StoreBestState()
+
+	// save index of block
+	self.Chain.StoreBlockIndex(block)
 }
