@@ -384,7 +384,7 @@ func (self ConnManager) Connect(addr string) {
 			TargetAddress: targetAddr,
 			PeerId:        peerId,
 			RawAddress:    addr,
-			PearConns:     make(map[libpeer.ID]*peer.PeerConn),
+			PeerConns:     make(map[libpeer.ID]*peer.PeerConn),
 			//OutboundReaderWriterStreams: make(map[libpeer.ID]*bufio.ReadWriter),
 			//InboundReaderWriterStreams:  make(map[libpeer.ID]*bufio.ReadWriter),
 		},

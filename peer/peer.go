@@ -65,10 +65,10 @@ type Peer struct {
 	FlagMutex sync.Mutex
 	Config    Config
 
-	sendMessageQueue chan outMsg
-	quit             chan struct{}
+	//sendMessageQueue chan outMsg
+	quit chan struct{}
 
-	PearConns map[peer.ID]*PeerConn
+	PeerConns map[peer.ID]*PeerConn
 }
 
 // Config is the struct to hold configuration options useful to Peer.
@@ -175,7 +175,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.TargetAddress = fullAddr
 	self.PeerId = peerid
 	self.quit = make(chan struct{})
-	self.sendMessageQueue = make(chan outMsg, 1)
+	//self.sendMessageQueue = make(chan outMsg, 1)
 	return &self, nil
 }
 
@@ -226,7 +226,7 @@ func (self Peer) NewPeerConnection(peerId peer.ID) (*PeerConn, error) {
 		HandleFailed:       self.handleFailed,
 	}
 
-	self.PearConns[peerConn.PeerId] = &peerConn
+	self.PeerConns[peerConn.PeerId] = &peerConn
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
@@ -270,7 +270,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		HandleFailed:       self.handleFailed,
 	}
 
-	self.PearConns[peerConn.PeerId] = &peerConn
+	self.PeerConns[peerConn.PeerId] = &peerConn
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
@@ -457,7 +457,7 @@ func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- stru
 	//self.ReadWrite.Flush()
 	//self.FlagMutex.Unlock()
 
-	for _, peerConnection := range self.PearConns {
+	for _, peerConnection := range self.PeerConns {
 		peerConnection.QueueMessageWithEncoding(msg, doneChan)
 	}
 }
@@ -493,7 +493,7 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 	msgVersionStr := hex.EncodeToString(msgVersion)
 	msgVersionStr += "\n"
 	Logger.log.Infof("Send a msgVersion: %s", msgVersionStr)
-	rw := self.PearConns[peer.PeerId].ReaderWriterStream
+	rw := self.PeerConns[peer.PeerId].ReaderWriterStream
 	self.FlagMutex.Lock()
 	rw.Writer.WriteString(msgVersionStr)
 	rw.Writer.Flush()
@@ -559,16 +559,16 @@ func (p *Peer) handleDisconnected(peerConn *PeerConn) {
 			p.NewPeerConnection(peerConn.PeerId)
 		})
 	} else {
-		_peerConn, ok := p.PearConns[peerConn.PeerId]
+		_peerConn, ok := p.PeerConns[peerConn.PeerId]
 		if ok {
-			delete(p.PearConns, _peerConn.PeerId)
+			delete(p.PeerConns, _peerConn.PeerId)
 		}
 	}
 }
 
 func (p *Peer) handleFailed(peerConn *PeerConn) {
-	_peerConn, ok := p.PearConns[peerConn.PeerId]
+	_peerConn, ok := p.PeerConns[peerConn.PeerId]
 	if ok {
-		delete(p.PearConns, _peerConn.PeerId)
+		delete(p.PeerConns, _peerConn.PeerId)
 	}
 }

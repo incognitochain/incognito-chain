@@ -43,11 +43,14 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(time time.Time, nonce int, 
 				},
 			},
 		},
-		TxOut: []transaction.TxOut{{
-			Value:     genesisReward,
-			PkScript:  []byte(GENESIS_BLOCK_PUBKEY_ADDR),
-			TxOutType: common.TxOutCoinType,
-		}},
+		TxOut: []transaction.TxOut{
+			{
+				Value:     genesisReward,
+				PkScript:  []byte(GENESIS_BLOCK_PUBKEY_ADDR),
+				TxOutType: common.TxOutCoinType,
+			},
+		},
+		Type: common.TxNormalType,
 	}
 	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
 	genesisBlock.Transactions = append(genesisBlock.Transactions, &tx)

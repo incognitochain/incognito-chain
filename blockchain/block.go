@@ -61,10 +61,11 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				LockTime: int(txTemp["LockTime"].(float64)),
 			}
 			// process for txin
-			txTempTxIn := txTemp["TxIn"].([]map[string]interface{})
+			txTempTxIn := txTemp["TxIn"].([]interface{})
 			txIn := make([]transaction.TxIn, 0)
-			for _, v := range txTempTxIn {
-				tempOutPoint := v["OutPoint"].(map[string]interface{})
+			for _, k := range txTempTxIn {
+				v := k.(map[string]interface{})
+				tempOutPoint := v["PreviousOutPoint"].(map[string]interface{})
 				preHash, _ := common.Hash{}.NewHashFromStr(tempOutPoint["Hash"].(string))
 				pOutPoint := transaction.OutPoint{
 					Hash: *preHash,
@@ -80,9 +81,10 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 			txNormal.TxIn = txIn
 
 			// process for txout
-			txTempTxOut := txTemp["TxOut"].([]map[string]interface{})
+			txTempTxOut := txTemp["TxOut"].([]interface{})
 			txOut := make([]transaction.TxOut, 0)
-			for _, v := range txTempTxOut {
+			for _, k := range txTempTxOut {
+				v := k.(map[string]interface{})
 				t := transaction.TxOut{
 					TxOutType: v["TxOutType"].(string),
 					Value:     v["Value"].(float64),
