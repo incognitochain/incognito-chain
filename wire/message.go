@@ -71,6 +71,10 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageVoteCandidate{}
 	case CmdInvalidBlock:
 		msg = &MessageInvalidBlock{}
+	case CmdGetAddr:
+		msg = &MessageGetAddr{}
+	case CmdAddr:
+		msg = &MessageAddr{}
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}
@@ -102,6 +106,10 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdVoteCandidate, nil
 	case reflect.TypeOf(&MessageInvalidBlock{}):
 		return CmdInvalidBlock, nil
+	case reflect.TypeOf(&MessageGetAddr{}):
+		return CmdGetAddr, nil
+	case reflect.TypeOf(&MessageAddr{}):
+		return CmdAddr, nil
 	default:
 		return "", fmt.Errorf("unhandled this message type [%s]", msgType)
 	}
