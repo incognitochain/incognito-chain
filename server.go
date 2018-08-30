@@ -271,7 +271,7 @@ func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 // peerDoneHandler handles peer disconnects by notifiying the server that it's
 // done along with other performing other desirable cleanup.
 func (self *Server) peerDoneHandler(peer *peer.Peer) {
-	peer.WaitForDisconnect()
+	//peer.WaitForDisconnect()
 	self.donePeers <- peer
 }
 

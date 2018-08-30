@@ -164,7 +164,6 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.Host = basicHost
 	self.TargetAddress = fullAddr
 	self.PeerId = peerid
-	self.quit = make(chan struct{})
 	//self.sendMessageQueue = make(chan outMsg, 1)
 	return &self, nil
 }
@@ -175,14 +174,6 @@ func (self Peer) Start() error {
 	self.Host.SetStreamHandler("/blockchain/1.0.0", self.HandleStream)
 	select {} // hang forever
 	return nil
-}
-
-// WaitForDisconnect waits until the peer has completely disconnected and all
-// resources are cleaned up.  This will happen if either the local or remote
-// side has been disconnected or the peer is forcibly disconnected via
-// Disconnect.
-func (p Peer) WaitForDisconnect() {
-	<-p.quit
 }
 
 func (self Peer) NewPeerConnection(peerId peer.ID) (*PeerConn, error) {
@@ -205,7 +196,6 @@ func (self Peer) NewPeerConnection(peerId peer.ID) (*PeerConn, error) {
 	peerConn := PeerConn{
 		IsOutbound:         true,
 		Peer:               &self,
-		Host:               self.Host,
 		Config:             self.Config,
 		PeerId:             remotePeerId,
 		ReaderWriterStream: rw,
@@ -249,7 +239,6 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	peerConn := PeerConn{
 		IsOutbound:         false,
 		Peer:               self,
-		Host:               self.Host,
 		Config:             self.Config,
 		PeerId:             remotePeerId,
 		ReaderWriterStream: rw,
@@ -318,6 +307,9 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 	rw.Writer.Flush()
 	self.FlagMutex.Unlock()
 	return nil
+}
+
+func (p *Peer) Disconnect() {
 }
 
 func (p *Peer) handleConnected(peerConn *PeerConn) {
