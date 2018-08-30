@@ -26,7 +26,7 @@ type PeerConn struct {
 	state      ConnState
 	stateMtx   sync.RWMutex
 
-	Host               host.Host
+	//Host               host.Host
 	ReaderWriterStream *bufio.ReadWriter
 	verAckReceived     bool
 
