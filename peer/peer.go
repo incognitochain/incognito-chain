@@ -91,8 +91,9 @@ type MessageListeners struct {
 	OnAddr      func(p *PeerConn, msg *wire.MessageAddr)
 
 	//PoS
-
-	// OnVerAck    func(p *PeerConn, msg *wire.MessageVerAck)
+	OnRequestSign  func(p *PeerConn, msg *wire.MessageRequestSign)
+	OnInvalidBlock func(p *PeerConn, msg *wire.MessageInvalidBlock)
+	OnSignedBlock  func(p *PeerConn, msg *wire.MessageSignedBlock)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal

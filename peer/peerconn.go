@@ -9,6 +9,7 @@ import (
 	"log"
 	"reflect"
 	"sync"
+
 	"github.com/libp2p/go-libp2p-peer"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -141,6 +142,33 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				if self.Config.MessageListeners.OnGetAddr != nil {
 					self.FlagMutex.Lock()
 					self.Config.MessageListeners.OnGetAddr(self, message.(*wire.MessageGetAddr))
+					self.FlagMutex.Unlock()
+				}
+			case reflect.TypeOf(&wire.MessageRequestSign{}):
+				self.FlagMutex.Lock()
+				self.verAckReceived = true
+				self.FlagMutex.Unlock()
+				if self.Config.MessageListeners.OnRequestSign != nil {
+					self.FlagMutex.Lock()
+					self.Config.MessageListeners.OnRequestSign(self, message.(*wire.MessageRequestSign))
+					self.FlagMutex.Unlock()
+				}
+			case reflect.TypeOf(&wire.MessageInvalidBlock{}):
+				self.FlagMutex.Lock()
+				self.verAckReceived = true
+				self.FlagMutex.Unlock()
+				if self.Config.MessageListeners.OnInvalidBlock != nil {
+					self.FlagMutex.Lock()
+					self.Config.MessageListeners.OnInvalidBlock(self, message.(*wire.MessageInvalidBlock))
+					self.FlagMutex.Unlock()
+				}
+			case reflect.TypeOf(&wire.MessageSignedBlock{}):
+				self.FlagMutex.Lock()
+				self.verAckReceived = true
+				self.FlagMutex.Unlock()
+				if self.Config.MessageListeners.OnSignedBlock != nil {
+					self.FlagMutex.Lock()
+					self.Config.MessageListeners.OnSignedBlock(self, message.(*wire.MessageSignedBlock))
 					self.FlagMutex.Unlock()
 				}
 			default:

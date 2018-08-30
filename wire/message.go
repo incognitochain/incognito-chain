@@ -12,23 +12,23 @@ import (
 const (
 	MessageHeaderSize = 24
 
-	CmdBlock     = "block"
-	CmdTx        = "tx"
-	CmdGetBlocks = "getblocks"
-	CmdInv       = "inv"
-	CmdGetData   = "getdata"
-	CmdVersion   = "version"
-	CmdVerack    = "verack"
-	CmdGetAddr   = "getaddr"
-	CmdAddr      = "addr"
-
-	// POS Cmd
+	CmdBlock          = "block"
+	CmdTx             = "tx"
+	CmdGetBlocks      = "getblocks"
+	CmdInv            = "inv"
+	CmdGetData        = "getdata"
+	CmdVersion        = "version"
+	CmdVerack         = "verack"
+	CmdGetAddr        = "getaddr"
+	CmdAddr           = "addr"
 	CmdGetBlockHeader = "getheader"
 	CmdBlockHeader    = "header"
-	CmdSignedBlock    = "signedblock"
-	CmdVoteCandidate  = "votecandidate"
-	CmdRequestSign    = "requestsign"
-	CmdInvalidBlock   = "invalidblock"
+
+	// POS Cmd
+	CmdVoteCandidate = "votecandidate"
+	CmdRequestSign   = "requestsign"
+	CmdInvalidBlock  = "invalidblock"
+	CmdSignedBlock   = "signedblock"
 )
 
 // Interface for message wire on P2P network
@@ -58,11 +58,11 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageVersion{}
 	case CmdVerack:
 		msg = &MessageVerAck{}
-		// POS
 	case CmdGetBlockHeader:
 		msg = &MessageGetBlockHeader{}
 	case CmdBlockHeader:
 		msg = &MessageBlockHeader{}
+	// POS start
 	case CmdSignedBlock:
 		msg = &MessageSignedBlock{}
 	case CmdRequestSign:
@@ -71,6 +71,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageVoteCandidate{}
 	case CmdInvalidBlock:
 		msg = &MessageInvalidBlock{}
+	// POS end
 	case CmdGetAddr:
 		msg = &MessageGetAddr{}
 	case CmdAddr:
@@ -93,11 +94,11 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdVersion, nil
 	case reflect.TypeOf(&MessageVerAck{}):
 		return CmdVerack, nil
-		// POS
 	case reflect.TypeOf(&MessageGetBlockHeader{}):
 		return CmdGetBlockHeader, nil
 	case reflect.TypeOf(&MessageBlockHeader{}):
 		return CmdBlockHeader, nil
+	// POS start
 	case reflect.TypeOf(&MessageSignedBlock{}):
 		return CmdSignedBlock, nil
 	case reflect.TypeOf(&MessageRequestSign{}):
@@ -106,6 +107,7 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdVoteCandidate, nil
 	case reflect.TypeOf(&MessageInvalidBlock{}):
 		return CmdInvalidBlock, nil
+	// POS end
 	case reflect.TypeOf(&MessageGetAddr{}):
 		return CmdGetAddr, nil
 	case reflect.TypeOf(&MessageAddr{}):

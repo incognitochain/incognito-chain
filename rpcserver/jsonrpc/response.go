@@ -48,10 +48,10 @@ func NewResponse(id interface{}, marshalledResult []byte, rpcErr *common.RPCErro
 func IsValidIDType(id interface{}) bool {
 	switch id.(type) {
 	case int, int8, int16, int32, int64,
-	uint, uint8, uint16, uint32, uint64,
-	float32, float64,
-	string,
-	nil:
+		uint, uint8, uint16, uint32, uint64,
+		float32, float64,
+		string,
+		nil:
 		return true
 	default:
 		return false
@@ -105,6 +105,7 @@ type ListUnspentResult struct {
 
 type GetHeaderResult struct {
 	BlockNum  int                    `json:"blocknum"`
+	ChainID   byte                   `json:"chainid"`
 	BlockHash string                 `json:"blockhash"`
 	Header    blockchain.BlockHeader `json:"header"`
 }
@@ -114,5 +115,5 @@ type ListAccounts struct {
 }
 
 type GetAddressesByAccount struct {
-	Addresses [] string
+	Addresses []string
 }

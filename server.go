@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -20,7 +21,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/ninjadotorg/cash-prototype/mining"
-	"github.com/ninjadotorg/cash-prototype/mining/miner"
 	"github.com/ninjadotorg/cash-prototype/netsync"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/rpcserver"
@@ -52,7 +52,7 @@ type Server struct {
 	RpcServer   *rpcserver.RpcServer
 	MemPool     *mempool.TxPool
 	WaitGroup   sync.WaitGroup
-	Miner       *miner.Miner
+	// Miner       *miner.Miner
 	NetSync     *netsync.NetSync
 	AddrManager *addrmanager.AddrManager
 	Wallet      *wallet.Wallet
@@ -138,13 +138,13 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.Chain)
 
-	self.Miner = miner.New(&miner.Config{
-		ChainParams:            self.chainParams,
-		BlockTemplateGenerator: blockTemplateGenerator,
-		MiningAddrs:            cfg.MiningAddrs,
-		Chain:                  self.Chain,
-		Server:                 self,
-	})
+	// self.Miner = miner.New(&miner.Config{
+	// 	ChainParams:            self.chainParams,
+	// 	BlockTemplateGenerator: blockTemplateGenerator,
+	// 	MiningAddrs:            cfg.MiningAddrs,
+	// 	Chain:                  self.Chain,
+	// 	Server:                 self,
+	// })
 
 	self.ConsensusEngine = pos.New(&pos.Config{
 		ChainParams: self.chainParams,
@@ -490,6 +490,11 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnVerAck:    self.OnVerAck,
 			OnGetAddr:   self.OnGetAddr,
 			OnAddr:      self.OnAddr,
+
+			//PoS
+			OnRequestSign:  self.OnRequestSign,
+			OnInvalidBlock: self.OnInvalidBlock,
+			OnSignedBlock:  self.OnSignedBlock,
 		},
 	}
 }
@@ -572,6 +577,17 @@ func (self *Server) OnAddr(_ *peer.PeerConn, msg *wire.MessageAddr) {
 	log.Printf("Receive addr message")
 }
 
+func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageRequestSign) {
+
+}
+
+func (self *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {
+
+}
+
+func (self *Server) OnSignedBlock(_ *peer.PeerConn, msg *wire.MessageSignedBlock) {
+
+}
 func (self Server) PushTxMessage(hashTx *common.Hash) {
 	var dc chan<- struct{}
 	tx, _ := self.MemPool.GetTx(hashTx)

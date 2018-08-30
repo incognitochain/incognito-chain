@@ -2,9 +2,6 @@ package blockchain
 
 import (
 	"errors"
-	"time"
-	//"fmt"
-	//"time"
 
 	"sync"
 
@@ -17,9 +14,15 @@ import (
 type BlockChain struct {
 	Config    Config
 	Blocks    [][]*Block
+	Headers   map[common.Hash]*blockIdx
 	BestState *BestState
 
 	chainLock sync.RWMutex
+}
+
+type blockIdx struct {
+	Idx     int
+	ChainID byte
 }
 
 // Config is a descriptor which specifies the blockchain instance configuration.
@@ -44,7 +47,8 @@ type Config struct {
 	ChainParams *Params
 }
 
-func (self *BlockChain) Init(config *Config) (error) {
+func (self *BlockChain) Init(config *Config) error {
+	self.Headers = make(map[common.Hash]*blockIdx)
 	// Enforce required config fields.
 	// TODO
 	if config.Db == nil {
@@ -54,7 +58,7 @@ func (self *BlockChain) Init(config *Config) (error) {
 		return errors.New("blockchain.New chain parameters nil")
 	}
 
-	//self.Headers = make(map[common.Hash]int)
+	self.Headers = make(map[common.Hash]int)
 	// self.Blocks = make(map[*common.Hash]*Block)
 
 	self.Config = *config
@@ -66,7 +70,7 @@ func (self *BlockChain) Init(config *Config) (error) {
 		return err
 	}
 
-	Logger.log.Infof("Chain state (height %d, hash %v, totaltx %d)", self.BestState.Height, self.BestState.BestBlockHash.String(), self.BestState.TotalTxns, )
+	Logger.log.Infof("Chain state (height %d, hash %v, totaltx %d)", self.BestState.Height, self.BestState.BestBlockHash.String(), self.BestState.TotalTxns)
 
 	return nil
 }
@@ -110,6 +114,10 @@ func (self *BlockChain) createChainState() error {
 	genesisBlock := self.Config.ChainParams.GenesisBlock
 	self.Blocks = make([][]*Block, 20)
 	self.Blocks[0] = append(self.Blocks[0], genesisBlock)
+	self.Headers[*genesisBlock.Hash()] = &blockIdx{
+		Idx:     0,
+		ChainID: 0,
+	}
 
 	// Initialize the state related to the best block.  Since it is the
 	// genesis block, use its timestamp for the median time.
