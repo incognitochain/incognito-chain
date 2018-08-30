@@ -473,7 +473,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 	}
 
 	kc.Save()
-	
+
 	return peers, nil
 }
 
@@ -488,6 +488,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnVersion:   self.OnVersion,
 			OnGetBlocks: self.OnGetBlocks,
 			OnVerAck:    self.OnVerAck,
+			OnGetAddr:   self.OnGetAddr,
 		},
 	}
 }
@@ -548,9 +549,21 @@ func (self *Server) OnVersion(_ *peer.PeerConn, msg *wire.MessageVersion) {
 	}
 }
 
-func (self *Server) OnVerAck(_ *peer.PeerConn, msg *wire.MessageVerAck) {
+func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
 	log.Printf("Receive verack message")
+
+	msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
+	if err != nil {
+		return
+	}
+	var dc chan<- struct{}
+	peerConn.QueueMessageWithEncoding(msgS, dc)
+}
+
+func (self *Server) OnGetAddr(_ *peer.PeerConn, msg *wire.MessageGetAddr) {
+	// TODO for ongetaddr message
+	log.Printf("Receive getaddr message")
 }
 
 func (self Server) PushTxMessage(hashTx *common.Hash) {
