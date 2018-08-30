@@ -16,9 +16,10 @@ import (
 )
 
 var (
-	blockKeyPrefix = []byte("b-")
-	usedTxKey      = []byte("usedTx")
-	bestBlockKey   = []byte("bestBlock")
+	blockKeyPrefix    = []byte("b-")
+	blockKeyIdxPrefix = []byte("i-")
+	usedTxKey         = []byte("usedTx")
+	bestBlockKey      = []byte("bestBlock")
 )
 
 func open(dbPath string) (database.DB, error) {
@@ -79,18 +80,21 @@ func (db *db) put(key, value []byte) error {
 }
 
 func (db *db) HasBlock(hash *common.Hash) (bool, error) {
-	if exists := db.hasBlock(hash[:]); exists {
+	if exists := db.hasBlock(db.getKey(hash)); exists {
 		return true, nil
 	}
 	return false, nil
 }
 
 func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
-	block, err := db.ldb.Get(hash[:], nil)
+	block, err := db.ldb.Get(db.getKey(hash), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "db.ldb.Get")
 	}
-	return block, nil
+
+	ret := make([]byte, len(block))
+	copy(ret, block)
+	return ret, nil
 }
 
 func (db *db) StoreTx(tx []byte) error {
@@ -140,7 +144,8 @@ func (db *db) StoreBlockIndex(h *common.Hash, idx int32) error {
 	if err := binary.Write(buf, binary.LittleEndian, idx); err != nil {
 		return errors.Wrapf(err, "binary.Write %d", idx)
 	}
-	if err := db.ldb.Put(h[:], buf.Bytes(), nil); err != nil {
+
+	if err := db.ldb.Put(db.getKeyIdx(h), buf.Bytes(), nil); err != nil {
 		return errors.Wrap(err, "db.ldb.Put")
 	}
 	if err := db.ldb.Put(buf.Bytes(), h[:], nil); err != nil {
@@ -150,7 +155,7 @@ func (db *db) StoreBlockIndex(h *common.Hash, idx int32) error {
 }
 
 func (db *db) GetIndexOfBlock(h *common.Hash) (int32, error) {
-	b, err := db.ldb.Get(h[:], nil)
+	b, err := db.ldb.Get(db.getKeyIdx(h), nil)
 	if err != nil {
 		return 0, errors.Wrap(err, "db.ldb.Get")
 	}
@@ -174,15 +179,32 @@ func (db *db) GetBlockByIndex(idx int32) ([]byte, error) {
 	return b, nil
 }
 
-func (db *db) FetchAllBlocks() ([][]byte, error) {
-	var keys [][]byte
+func (db *db) FetchAllBlocks() ([]*common.Hash, error) {
+	var keys []*common.Hash
 	iter := db.ldb.NewIterator(util.BytesPrefix(blockKeyPrefix), nil)
 	for iter.Next() {
-		keys = append(keys, iter.Key())
+		var h common.Hash
+		key := iter.Key()[len(blockKeyPrefix):]
+		for i, b := range key {
+			h[i] = b
+		}
+		keys = append(keys, &h)
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
 		return nil, errors.Wrap(err, "iter.Error")
 	}
 	return keys, nil
+}
+
+func (db *db) getKey(h *common.Hash) []byte {
+	var key []byte
+	key = append(blockKeyPrefix, h[:]...)
+	return key
+}
+
+func (db *db) getKeyIdx(h *common.Hash) []byte {
+	var key []byte
+	key = append(blockKeyIdxPrefix, h[:]...)
+	return key
 }

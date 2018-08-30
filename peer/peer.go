@@ -47,7 +47,7 @@ const (
 )
 
 type Peer struct {
-	Host           host.Host
+	Host host.Host
 
 	TargetAddress    ma.Multiaddr
 	PeerId           peer.ID
@@ -59,6 +59,8 @@ type Peer struct {
 	Config    Config
 
 	PeerConns map[peer.ID]*PeerConn
+
+	quit chan struct{}
 }
 
 // Config is the struct to hold configuration options useful to Peer.
@@ -170,6 +172,8 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.TargetAddress = fullAddr
 	self.PeerId = peerid
 	//self.sendMessageQueue = make(chan outMsg, 1)
+	self.quit = make(chan struct{}, 1)
+
 	return &self, nil
 }
 
@@ -177,7 +181,11 @@ func (self Peer) Start() error {
 	Logger.log.Info("Peer start")
 	Logger.log.Info("Set stream handler and wait for connection from other peer")
 	self.Host.SetStreamHandler("/blockchain/1.0.0", self.HandleStream)
-	select {} // hang forever
+	select {
+	case <-self.quit:
+		Logger.log.Infof("PEER %s quit", self.PeerId)
+		break
+	} // hang forever
 	return nil
 }
 
@@ -314,7 +322,9 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 	return nil
 }
 
-func (p *Peer) Disconnect() {
+func (self *Peer) Disconnect() {
+	self.Host.Close()
+	self.quit <- struct{}{}
 }
 
 func (p *Peer) handleConnected(peerConn *PeerConn) {
