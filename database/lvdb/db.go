@@ -90,7 +90,10 @@ func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "db.ldb.Get")
 	}
-	return block, nil
+
+	ret := make([]byte, len(block))
+	copy(ret, block)
+	return ret, nil
 }
 
 func (db *db) StoreTx(tx []byte) error {
