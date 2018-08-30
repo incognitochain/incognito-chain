@@ -45,7 +45,7 @@ func (view *UtxoViewpoint) LookupEntry(outpoint transaction.OutPoint) *UtxoEntry
 // 	neededSet := make(map[transaction.OutPoint]struct{})
 // 	prevOut := transaction.OutPoint{Hash: *tx.Hash()}
 // 	for txOutIdx := range tx.TxOut {
-// 		prevOut.Index = uint32(txOutIdx)
+// 		prevOut.height = uint32(txOutIdx)
 // 		neededSet[prevOut] = struct{}{}
 // 	}
 // 	if !IsCoinBaseTx(tx) {

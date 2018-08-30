@@ -13,6 +13,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/wallet"
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 )
 
 var (
@@ -29,6 +30,7 @@ var (
 	peerLogger        = backendLog.Logger("Peer Log")
 	dbLogger          = backendLog.Logger("Database Log")
 	walletLogger      = backendLog.Logger("Wallet log")
+	blockchainLogger  = backendLog.Logger("BlockChain log")
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -53,6 +55,7 @@ func init() {
 	peer.Logger.Init(peerLogger)
 	database.Logger.Init(dbLogger)
 	wallet.Logger.Init(walletLogger)
+	blockchain.Logger.Init(blockchainLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -66,6 +69,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"PEER": peerLogger,
 	"DABA": dbLogger,
 	"WALL": walletLogger,
+	"BLOC": blockchainLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

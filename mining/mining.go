@@ -213,7 +213,7 @@ func getLatestAgentDataPoints(
 	actionParamTxs []*transaction.ActionParamTx,
 ) map[string]*blockchain.AgentDataPoint {
 	agentDataPoints := map[string]*blockchain.AgentDataPoint{}
-	bestBlock := chain.BestBlock
+	bestBlock := chain.BestState.BestBlock
 
 	if bestBlock != nil && bestBlock.AgentDataPoints != nil {
 		agentDataPoints = bestBlock.AgentDataPoints
@@ -264,7 +264,7 @@ func getLatestAgentDataPoints(
 
 func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain) (*BlockTemplate, error) {
 
-	prevBlockHash := chain.BestBlock.Hash()
+	prevBlockHash := chain.BestState.BestBlock.Hash()
 	sourceTxns := g.txSource.MiningDescs()
 
 	if len(sourceTxns) == 0 {

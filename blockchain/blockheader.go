@@ -27,7 +27,7 @@ type BlockHeader struct {
 	Timestamp time.Time
 
 	// Difficulty target for the block.
-	Difficulty int
+	Difficulty uint32
 
 	// Nonce used to generate the block.
 	Nonce int

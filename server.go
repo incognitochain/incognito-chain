@@ -260,7 +260,7 @@ func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	go self.peerDoneHandler(peer)
 
 	msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
-	msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.Chain.BestBlock.Hash()
+	msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.Chain.BestState.BestBlock.Hash()
 	msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerId
 	if err != nil {
 		return
@@ -271,7 +271,7 @@ func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 // peerDoneHandler handles peer disconnects by notifiying the server that it's
 // done along with other performing other desirable cleanup.
 func (self *Server) peerDoneHandler(peer *peer.Peer) {
-	peer.WaitForDisconnect()
+	//peer.WaitForDisconnect()
 	self.donePeers <- peer
 }
 
@@ -462,7 +462,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 			FlagMutex:        sync.Mutex{},
 			ListeningAddress: addr,
 			Config:           *self.NewPeerConfig(),
-			PearConns:        make(map[peer2.ID]*peer.PeerConn),
+			PeerConns:        make(map[peer2.ID]*peer.PeerConn),
 			//OutboundReaderWriterStreams: make(map[peer2.ID]*bufio.ReadWriter),
 			//InboundReaderWriterStreams:  make(map[peer2.ID]*bufio.ReadWriter),
 		}.NewPeer()
@@ -489,6 +489,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnGetBlocks: self.OnGetBlocks,
 			OnVerAck:    self.OnVerAck,
 			OnGetAddr:   self.OnGetAddr,
+			OnAddr:      self.OnAddr,
 		},
 	}
 }
@@ -564,6 +565,11 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 func (self *Server) OnGetAddr(_ *peer.PeerConn, msg *wire.MessageGetAddr) {
 	// TODO for ongetaddr message
 	log.Printf("Receive getaddr message")
+}
+
+func (self *Server) OnAddr(_ *peer.PeerConn, msg *wire.MessageAddr) {
+	// TODO for onaddr message
+	log.Printf("Receive addr message")
 }
 
 func (self Server) PushTxMessage(hashTx *common.Hash) {
@@ -653,6 +659,6 @@ func (self *Server) UpdateChain(block *blockchain.Block) {
 
 	self.Chain.Blocks = append(self.Chain.Blocks, block)
 	self.Chain.Headers[*block.Hash()] = len(self.Chain.Blocks) - 1
-	self.Chain.BestBlock = block
+	self.Chain.BestState.BestBlock = block
 
 }
