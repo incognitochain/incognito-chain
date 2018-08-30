@@ -19,6 +19,8 @@ const (
 	CmdGetData   = "getdata"
 	CmdVersion   = "version"
 	CmdVerack    = "verack"
+	CmdGetAddr   = "getaddr"
+	CmdAddr      = "addr"
 
 	// POS Cmd
 	CmdGetBlockHeader = "getheader"
@@ -56,7 +58,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageVersion{}
 	case CmdVerack:
 		msg = &MessageVerAck{}
-	// POS
+		// POS
 	case CmdGetBlockHeader:
 		msg = &MessageGetBlockHeader{}
 	case CmdBlockHeader:
@@ -87,7 +89,7 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdVersion, nil
 	case reflect.TypeOf(&MessageVerAck{}):
 		return CmdVerack, nil
-	// POS
+		// POS
 	case reflect.TypeOf(&MessageGetBlockHeader{}):
 		return CmdGetBlockHeader, nil
 	case reflect.TypeOf(&MessageBlockHeader{}):
