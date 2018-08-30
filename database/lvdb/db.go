@@ -179,7 +179,8 @@ func (db *db) FetchAllBlocks() ([]*common.Hash, error) {
 	iter := db.ldb.NewIterator(util.BytesPrefix(blockKeyPrefix), nil)
 	for iter.Next() {
 		var h common.Hash
-		for i, b := range iter.Key() {
+		key := iter.Key()[len(blockKeyPrefix):]
+		for i, b := range key {
 			h[i] = b
 		}
 		keys = append(keys, &h)

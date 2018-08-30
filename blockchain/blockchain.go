@@ -11,6 +11,7 @@ import (
 	"time"
 	"encoding/json"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"log"
 )
 
 type BlockChain struct {
@@ -134,6 +135,8 @@ func (self *BlockChain) createChainState() error {
 	// store block hash by index and index by block hash
 	err = self.StoreBlockIndex(genesisBlock)
 
+	_, _ = self.GetAllBlocks()
+
 	return err
 }
 
@@ -151,4 +154,33 @@ func (self *BlockChain) StoreBlock(block *Block) error {
 
 func (self *BlockChain) StoreBlockIndex(block *Block) error {
 	return self.Config.Db.StoreBlockIndex(block.Hash(), block.Height)
+}
+
+func (self *BlockChain) GetAllBlocks() ([]*Block, error) {
+	result := make([]*Block, 0)
+	data, err := self.Config.Db.FetchAllBlocks()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, item := range data {
+		log.Printf(string(item))
+		hash := common.Hash{}
+		err := json.Unmarshal(item, hash)
+		if err != nil {
+			return nil, err
+		}
+
+		blockBytes, err := self.Config.Db.FetchBlock(&hash)
+		if err != nil {
+			return nil, err
+		}
+		block := Block{}
+		err = json.Unmarshal(blockBytes, &block)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, &block)
+	}
+	return result, nil
 }
