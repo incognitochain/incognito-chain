@@ -16,9 +16,10 @@ import (
 )
 
 var (
-	blockKeyPrefix = []byte("b-")
-	usedTxKey      = []byte("usedTx")
-	bestBlockKey   = []byte("bestBlock")
+	blockKeyPrefix    = []byte("b-")
+	blockKeyIdxPrefix = []byte("i-")
+	usedTxKey         = []byte("usedTx")
+	bestBlockKey      = []byte("bestBlock")
 )
 
 func open(dbPath string) (database.DB, error) {
@@ -144,7 +145,7 @@ func (db *db) StoreBlockIndex(h *common.Hash, idx int32) error {
 		return errors.Wrapf(err, "binary.Write %d", idx)
 	}
 
-	if err := db.ldb.Put(db.getKey(h), buf.Bytes(), nil); err != nil {
+	if err := db.ldb.Put(db.getKeyIdx(h), buf.Bytes(), nil); err != nil {
 		return errors.Wrap(err, "db.ldb.Put")
 	}
 	if err := db.ldb.Put(buf.Bytes(), h[:], nil); err != nil {
@@ -154,7 +155,7 @@ func (db *db) StoreBlockIndex(h *common.Hash, idx int32) error {
 }
 
 func (db *db) GetIndexOfBlock(h *common.Hash) (int32, error) {
-	b, err := db.ldb.Get(db.getKey(h), nil)
+	b, err := db.ldb.Get(db.getKeyIdx(h), nil)
 	if err != nil {
 		return 0, errors.Wrap(err, "db.ldb.Get")
 	}
@@ -199,5 +200,11 @@ func (db *db) FetchAllBlocks() ([]*common.Hash, error) {
 func (db *db) getKey(h *common.Hash) []byte {
 	var key []byte
 	key = append(blockKeyPrefix, h[:]...)
+	return key
+}
+
+func (db *db) getKeyIdx(h *common.Hash) []byte {
+	var key []byte
+	key = append(blockKeyIdxPrefix, h[:]...)
 	return key
 }
