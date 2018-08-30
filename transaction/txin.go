@@ -36,6 +36,7 @@ type TxIn struct {
 	PreviousOutPoint OutPoint
 	SignatureScript  []byte
 	Sequence         int
+	Value            float64
 }
 
 func (self TxIn) NewTxIn(prevOut *OutPoint, signatureScript []byte) *TxIn {

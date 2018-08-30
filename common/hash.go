@@ -30,7 +30,7 @@ func (hash *Hash) UnmarshalJSON(data []byte) (error) {
 String returns the Hash as the hexadecimal string of the byte-reversed
  hash.
  */
-func (hash *Hash) String() string {
+func (hash Hash) String() string {
 	for i := 0; i < HashSize/2; i++ {
 		hash[i], hash[HashSize-1-i] = hash[HashSize-1-i], hash[i]
 	}
@@ -63,17 +63,24 @@ func (hash *Hash) SetBytes(newHash []byte) error {
 	return nil
 }
 
+// BytesToHash sets b to hash If b is larger than len(h), b will be cropped from the left.
+func (hash *Hash) BytesToHash(b []byte) Hash {
+	var h Hash
+	h.SetBytes(b)
+	return h
+}
+
 /**
 IsEqual returns true if target is the same as hash.
  */
-func (hash Hash) IsEqual(target *Hash) bool {
+func (hash *Hash) IsEqual(target *Hash) bool {
 	if &hash == nil && target == nil {
 		return true
 	}
 	if &hash == nil || target == nil {
 		return false
 	}
-	return hash == *target
+	return *hash == *target
 }
 
 /**

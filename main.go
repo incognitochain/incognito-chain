@@ -1,14 +1,18 @@
 package main
 
 import (
-	"runtime"
-	"runtime/debug"
-	"os"
 	"fmt"
 	"log"
+	"os"
+	"runtime"
+	"runtime/debug"
 
-	"github.com/ninjadotorg/cash-prototype/limits"
 	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/limits"
+
+	_ "github.com/ninjadotorg/cash-prototype/database/lvdb"
+	wallet2 "github.com/ninjadotorg/cash-prototype/wallet"
+	"path/filepath"
 )
 
 var (
@@ -37,7 +41,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	defer log.Println("Shutdown complete")
 
 	// Show version at startup.
-	log.Printf("Version %s", "0.0")
+	log.Printf("Version %s", "1")
 
 	// Return now if an interrupt signal was triggered.
 	if interruptRequested(interrupt) {
@@ -91,9 +95,32 @@ func mainMaster(serverChan chan<- *Server) error {
 		return nil
 	}*/
 
+	// Create db and use it.
+	db, err := database.Open("leveldb", cfg.DataDir)
+	if err != nil {
+		log.Fatalf("could not open connection to leveldb: %v", err)
+	}
+
+	// Check wallet and start it
+	var wallet *wallet2.Wallet
+	if cfg.Wallet == true {
+		wallet = &wallet2.Wallet{}
+		wallet.Config = &wallet2.WalletConfig{
+			DataDir:  cfg.DataDir,
+			DataFile: cfg.WalletDbName,
+			DataPath: filepath.Join(cfg.DataDir, cfg.WalletDbName),
+		}
+		err = wallet.LoadWallet(cfg.WalletPassphrase)
+		if err != nil {
+			wallet.Init(cfg.WalletPassphrase, 0)
+			wallet.Save(cfg.WalletPassphrase)
+		}
+	}
+
 	// Create server and start it.
-	var db = database.NewDB("", database.LevelDBBackend, cfg.DataDir, 0,0 )
-	server, err := Server{}.NewServer(cfg.Listeners, db, activeNetParams.Params,
+	server := Server{}
+	server.Wallet = wallet
+	err = server.NewServer(cfg.Listeners, db, activeNetParams.Params,
 		interrupt)
 	if err != nil {
 		// TODO: this logging could do with some beautifying.
@@ -109,7 +136,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	}()
 	server.Start()
 	if serverChan != nil {
-		serverChan <- server
+		serverChan <- &server
 	}
 
 	// Wait until the interrupt signal is received from an OS signal or

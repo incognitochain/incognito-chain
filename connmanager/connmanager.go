@@ -4,14 +4,16 @@ import (
 	"sync"
 	"log"
 	"sync/atomic"
-	"context"
-	"bufio"
 	"fmt"
 
 	"github.com/ninjadotorg/cash-prototype/peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 	libpeer "github.com/libp2p/go-libp2p-peer"
+	"strings"
+	"github.com/ninjadotorg/cash-prototype/common"
+	"net"
+	"runtime"
 )
 
 const (
@@ -130,6 +132,50 @@ type handleFailed struct {
 	err error
 }
 
+// parseListeners determines whether each listen address is IPv4 and IPv6 and
+// returns a slice of appropriate net.Addrs to listen on with TCP. It also
+// properly detects addresses which apply to "all interfaces" and adds the
+// address as both IPv4 and IPv6.
+func parseListeners(addrs []string, netType string) ([]common.SimpleAddr, error) {
+	netAddrs := make([]common.SimpleAddr, 0, len(addrs)*2)
+	for _, addr := range addrs {
+		host, _, err := net.SplitHostPort(addr)
+		if err != nil {
+			// Shouldn't happen due to already being normalized.
+			return nil, err
+		}
+
+		// Empty host or host of * on plan9 is both IPv4 and IPv6.
+		if host == "" || (host == "*" && runtime.GOOS == "plan9") {
+			netAddrs = append(netAddrs, common.SimpleAddr{Net: netType + "4", Addr: addr})
+			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
+			continue
+		}
+
+		// Strip IPv6 zone id if present since net.ParseIP does not
+		// handle it.
+		zoneIndex := strings.LastIndex(host, "%")
+		if zoneIndex > 0 {
+			host = host[:zoneIndex]
+		}
+
+		// Parse the IP.
+		ip := net.ParseIP(host)
+		if ip == nil {
+			return nil, fmt.Errorf("'%s' is not a valid IP address", host)
+		}
+
+		// To4 returns nil when the IP is not an IPv4 address, so use
+		// this determine the address type.
+		if ip.To4() == nil {
+			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
+		} else {
+			netAddrs = append(netAddrs, common.SimpleAddr{Net: netType + "4", Addr: addr})
+		}
+	}
+	return netAddrs, nil
+}
+
 // Stop gracefully shuts down the connection manager.
 func (self ConnManager) Stop() {
 	if atomic.AddInt32(&self.stop, 1) != 1 {
@@ -155,6 +201,7 @@ func (self ConnManager) New(cfg *Config) (*ConnManager, error) {
 	self.Config = *cfg
 	self.Quit = make(chan struct{})
 	self.Requests = make(chan interface{})
+
 	return &self, nil
 }
 
@@ -223,7 +270,7 @@ out:
 					if !ok {
 						connReq, ok = self.Pending[msg.id]
 						if !ok {
-							log.Printf("Unknown connid=%d",
+							Logger.log.Infof("Unknown connid=%d",
 								msg.id)
 							continue
 						}
@@ -233,14 +280,14 @@ out:
 						// ignore a later, successful
 						// connection.
 						connReq.UpdateState(ConnCanceled)
-						log.Printf("Canceling: %v", connReq)
+						Logger.log.Infof("Canceling: %v", connReq)
 						delete(self.Pending, msg.id)
 						continue
 					}
 					// An existing connection was located, mark as
 					// disconnected and execute disconnection
 					// callback.
-					log.Printf("Disconnected from %v", connReq)
+					Logger.log.Infof("Disconnected from %v", connReq)
 					delete(self.Connected, msg.id)
 
 					//if connReq.Peer != nil {
@@ -269,7 +316,7 @@ out:
 						connReq.Permanent {
 
 						connReq.UpdateState(ConnPending)
-						log.Printf("Reconnecting to %v",
+						Logger.log.Infof("Reconnecting to %v",
 							connReq)
 						self.Pending[msg.id] = connReq
 						self.HandleFailedConn(connReq)
@@ -280,13 +327,13 @@ out:
 					connReq := msg.c
 
 					if _, ok := self.Pending[connReq.Id]; !ok {
-						log.Printf("Ignoring connection for "+
+						Logger.log.Infof("Ignoring connection for "+
 							"canceled conn req: %v", connReq)
 						continue
 					}
 
 					connReq.UpdateState(ConnFailing)
-					log.Printf("Failed to connect to %v: %v",
+					Logger.log.Infof("Failed to connect to %v: %v",
 						connReq, msg.err)
 					self.HandleFailedConn(connReq)
 				}
@@ -296,7 +343,7 @@ out:
 		}
 	}
 	self.WaitGroup.Done()
-	log.Printf("Connection handler done")
+	Logger.log.Infof("Connection handler done")
 }
 
 // Connect assigns an id and dials a connection to the address of the
@@ -334,10 +381,12 @@ func (self ConnManager) Connect(addr string) {
 	connReq := ConnReq{
 		Permanent: true,
 		Peer: peer.Peer{
-			TargetAddress:       targetAddr,
-			PeerId:              peerId,
-			RawAddress:          addr,
-			ReaderWritersStream: make(map[libpeer.ID]*bufio.ReadWriter),
+			TargetAddress: targetAddr,
+			PeerId:        peerId,
+			RawAddress:    addr,
+			PeerConns:     make(map[libpeer.ID]*peer.PeerConn),
+			//OutboundReaderWriterStreams: make(map[libpeer.ID]*bufio.ReadWriter),
+			//InboundReaderWriterStreams:  make(map[libpeer.ID]*bufio.ReadWriter),
 		},
 	}
 	if atomic.LoadUint64(&connReq.Id) == 0 {
@@ -364,31 +413,38 @@ func (self ConnManager) Connect(addr string) {
 	}
 
 	//spew.Dump("Attempting to connect to", connRequest.Peer.TargetAddress.String())
-
+	flag := false
 	for _, listen := range self.Config.ListenerPeers {
 		listen.Host.Peerstore().AddAddr(connReq.Peer.PeerId, connReq.Peer.TargetAddress, pstore.PermanentAddrTTL)
-		log.Printf("opening stream %s \n", connReq.Peer.PeerId.String())
+		//Logger.log.Infof("Opening stream to PEER ID - %s \n", connReq.Peer.PeerId.String())
 		// make a new stream from host B to host A
 		// it should be handled on host A by the handler we set above because
 		// we use the same /peer/1.0.0 protocol
-		stream, err := listen.Host.NewStream(context.Background(), connReq.Peer.PeerId, "/blockchain/1.0.0")
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		// Create a buffered stream so that read and writes are non blocking.
-		rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
-		// Cache stream to outbound peer
-		listen.ReaderWritersStream[connReq.Peer.PeerId] = rw
+		//stream, err := listen.Host.NewStream(context.Background(), connReq.Peer.PeerId, "/blockchain/1.0.0")
+		//if err != nil {
+		//	Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", connReq.Peer.PeerId.String(), err.Error())
+		//	continue
+		//}
+		//// Create a buffered stream so that read and writes are non blocking.
+		//rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+		//// Cache stream to outbound peer
+		//listen.OutboundReaderWriterStreams[connReq.Peer.PeerId] = rw
+		//
+		//// Create a thread to read and write data.
+		//go listen.InMessageHandler(rw)
+		//go listen.OutMessageHandler(rw)
 
-		// Create a thread to read and write data.
-		go listen.InMessageHandler(rw)
-		go listen.OutMessageHandler(rw)
+		_, err := listen.NewPeerConnection(connReq.Peer.PeerId)
+		if err == nil {
+			flag = true
+		}
 	}
 
-	select {
-	case self.Requests <- handleConnected{&connReq, connReq.Peer}:
-	case <-self.Quit:
+	if flag {
+		select {
+		case self.Requests <- handleConnected{&connReq, connReq.Peer}:
+		case <-self.Quit:
+		}
 	}
 }
 
@@ -412,7 +468,7 @@ func (self ConnManager) Start() {
 		return
 	}
 
-	log.Println("Connection manager started")
+	Logger.log.Info("Connection manager started")
 	self.WaitGroup.Add(1)
 	// Start handler to listent channel from connection peer
 	go self.connHandler()

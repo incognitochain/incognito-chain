@@ -23,10 +23,11 @@ func (self GenesisBlockGenerator) CalcMerkleRoot(txns []transaction.Transaction)
 	return *merkles[len(merkles)-1]
 }
 
-func (self GenesisBlockGenerator) CreateGenesisBlock(time time.Time, nonce int, difficulty int, version int, genesisReward float64) *Block {
+func (self GenesisBlockGenerator) CreateGenesisBlock(time time.Time, nonce int, difficulty uint32, version int, genesisReward float64) *Block {
 	genesisBlock := Block{}
 	// update default genesis block
 	genesisBlock.Header.Timestamp = time
+	//genesisBlock.Header.PrevBlockHash = (&common.Hash{}).String()
 	genesisBlock.Header.Nonce = nonce
 	genesisBlock.Header.Difficulty = difficulty
 	genesisBlock.Header.Version = version
@@ -42,10 +43,14 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(time time.Time, nonce int, 
 				},
 			},
 		},
-		TxOut: []transaction.TxOut{{
-			Value:    genesisReward,
-			PkScript: []byte(GENESIS_BLOCK_PUBKEY_ADDR),
-		}},
+		TxOut: []transaction.TxOut{
+			{
+				Value:     genesisReward,
+				PkScript:  []byte(GENESIS_BLOCK_PUBKEY_ADDR),
+				TxOutType: common.TxOutCoinType,
+			},
+		},
+		Type: common.TxNormalType,
 	}
 	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
 	genesisBlock.Transactions = append(genesisBlock.Transactions, &tx)

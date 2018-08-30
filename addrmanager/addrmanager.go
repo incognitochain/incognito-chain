@@ -5,7 +5,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"os"
 	"encoding/json"
-	"log"
 	"fmt"
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"sync/atomic"
@@ -113,13 +112,13 @@ func (self *AddrManager) savePeers() {
 
 	w, err := os.Create(self.peersFile)
 	if err != nil {
-		log.Printf("Error opening file %s: %v", self.peersFile, err)
+		Logger.log.Infof("Error opening file %s: %v", self.peersFile, err)
 		return
 	}
 	enc := json.NewEncoder(w)
 	defer w.Close()
 	if err := enc.Encode(&sam); err != nil {
-		log.Printf("Failed to encode file %s: %v", self.peersFile, err)
+		Logger.log.Infof("Failed to encode file %s: %v", self.peersFile, err)
 		return
 	}
 }
@@ -132,22 +131,23 @@ func (self *AddrManager) loadPeers() {
 
 	err := self.deserializePeers(self.peersFile)
 	if err != nil {
-		log.Printf("Failed to parse file %s: %v", self.peersFile, err)
+		Logger.log.Infof("Failed to parse file %s: %v", self.peersFile, err)
 		// if it is invalid we nuke the old one unconditionally.
 		err = os.Remove(self.peersFile)
 		if err != nil {
-			log.Printf("Failed to remove corrupt peers file %s: %v",
+			Logger.log.Infof("Failed to remove corrupt peers file %s: %v",
 				self.peersFile, err)
 		}
 		self.reset()
 		return
 	}
-	log.Printf("Loaded %d addresses from file '%s'", self.numAddresses(), self.peersFile)
+	Logger.log.Infof("Loaded %d addresses from file '%s'", self.numAddresses(), self.peersFile)
 }
 
 // NumAddresses returns the number of addresses known to the address manager.
 func (a *AddrManager) numAddresses() int {
-	return a.nTried + a.nNew
+	//return a.nTried + a.nNew
+	return len(a.addrIndex)
 }
 
 // reset resets the address manager by reinitialising the random source
@@ -198,7 +198,7 @@ func (self *AddrManager) Start() {
 		return
 	}
 
-	log.Printf("Starting address manager")
+	Logger.log.Info("Starting address manager")
 
 	// Load peers we already know about from file.
 	self.loadPeers()
@@ -211,12 +211,12 @@ func (self *AddrManager) Start() {
 // Stop gracefully shuts down the address manager by stopping the main handler.
 func (self *AddrManager) Stop() error {
 	if atomic.AddInt32(&self.shutdown, 1) != 1 {
-		log.Printf("Address manager is already in the process of " +
+		Logger.log.Infof("Address manager is already in the process of " +
 			"shutting down")
 		return nil
 	}
 
-	log.Printf("Address manager shutting down")
+	Logger.log.Infof("Address manager shutting down")
 	close(self.quit)
 	self.waitgroup.Wait()
 	return nil
@@ -239,7 +239,7 @@ out:
 	}
 	self.savePeers()
 	self.waitgroup.Done()
-	log.Printf("Address handler done")
+	Logger.log.Infof("Address handler done")
 }
 
 // Connected Marks the given address as currently connected and working at the
@@ -257,4 +257,25 @@ func (a *AddrManager) Connected(peer *peer.Peer) {
 // manager it will be ignored.
 func (self *AddrManager) Good(addr *peer.Peer) {
 	self.addrIndex[addr.RawAddress] = addr
+}
+
+func (self *AddrManager) AddAddresses(addr []*peer.Peer) {
+	for _, peer := range addr {
+		self.addrIndex[peer.RawAddress] = peer
+	}
+}
+
+// AddressCache returns the current address cache.  It must be treated as
+// read-only (but since it is a copy now, this is not as dangerous).
+func (self *AddrManager) AddressCache() []*peer.Peer {
+	addrIndexLen := len(self.addrIndex)
+	if addrIndexLen == 0 {
+		return nil
+	}
+	allAddr := make([]*peer.Peer, 0, addrIndexLen)
+	// Iteration order is undefined here, but we randomise it anyway.
+	for _, v := range self.addrIndex {
+		allAddr = append(allAddr, v)
+	}
+	return allAddr
 }

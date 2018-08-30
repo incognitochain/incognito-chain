@@ -8,6 +8,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"time"
+	"errors"
+	"strconv"
 
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/transaction"
@@ -24,9 +26,19 @@ var RpcHandler = map[string]commandHandler{
 	"createrawtransaction":         RpcServer.handleCreateRawTrasaction,
 	"signrawtransaction":           RpcServer.handleSignRawTransaction,
 	"sendrawtransaction":           RpcServer.handleSendRawTransaction,
-	"getNumberOfCoins":             RpcServer.handleGetNumberOfCoins,
-	"getNumberOfBonds":             RpcServer.handleGetNumberOfBonds,
+	"getNumberOfCoinsAndBonds":     RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createActionParamsTrasaction": RpcServer.handleCreateActionParamsTrasaction,
+
+	//POS
+	"votecandidate": RpcServer.handleVoteCandidate,
+	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
+
+	// WALLET
+	"getaccount":            RpcServer.handleGetAccount,
+	"listaccounts":          RpcServer.handleListAccounts,
+	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
+	"getaccountaddress":     RpcServer.handleGetAccountAddress,
+	"dumpprivkey":           RpcServer.handleDumpPrivkey,
 }
 
 // Commands that are available to a limited user
@@ -39,6 +51,53 @@ func (self RpcServer) handleDoSomething(params interface{}, closeChan <-chan str
 	result := make(map[string]string)
 	result["param"] = string(params.([]json.RawMessage)[0])
 	return result, nil
+}
+
+func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	log.Println(params)
+	result := jsonrpc.GetHeaderResult{}
+
+	arrayParams := common.InterfaceSlice(params)
+	log.Println(arrayParams)
+	getBy := arrayParams[0].(string)
+	query := arrayParams[1].(string)
+	log.Println(getBy, query)
+	switch getBy {
+	case "blockhash":
+		bhash := common.Hash{}
+		err := bhash.Decode(&bhash, query)
+		log.Println(bhash)
+		if err != nil {
+			return nil, errors.New("Invalid blockhash format")
+		}
+		bnum, err := self.Config.Chain.GetBlockHeighByBlockHash(&bhash)
+		if err != nil {
+			return nil, errors.New("Block not exist")
+		}
+		result.Header = self.Config.Chain.Blocks[bnum].Header
+		result.BlockNum = int(bnum) + 1
+		result.BlockHash = bhash.String()
+	case "blocknum":
+		bnum, err := strconv.Atoi(query)
+		if err != nil {
+			return nil, errors.New("Invalid blocknum format")
+		}
+		if len(self.Config.Chain.Blocks) < bnum || bnum <= 0 {
+			return nil, errors.New("Block not exist")
+		}
+		result.Header = self.Config.Chain.Blocks[bnum-1].Header
+		result.BlockNum = bnum
+		result.BlockHash = self.Config.Chain.Blocks[bnum-1].Hash().String()
+	default:
+		return nil, errors.New("Wrong request format")
+	}
+
+	return result, nil
+}
+
+func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+
+	return "", nil
 }
 
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -80,7 +139,7 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 	for _, block := range blocks {
 		if (len(block.Transactions) > 0) {
 			for _, tx := range block.Transactions {
-				if tx.GetType() == ACTION_PARAMS_TRANSACTION_TYPE {
+				if tx.GetType() == common.TxActionParamsType {
 					continue
 				}
 				normalTx := tx.(*transaction.Tx)
@@ -88,10 +147,11 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 					for index, txOut := range normalTx.TxOut {
 						if (bytes.Compare(txOut.PkScript, []byte(addresses[0])) == 0) {
 							result = append(result, jsonrpc.ListUnspentResult{
-								Vout:    index,
-								TxID:    normalTx.Hash().String(),
-								Address: string(txOut.PkScript),
-								Amount:  txOut.Value,
+								Vout:      index,
+								TxID:      normalTx.Hash().String(),
+								Address:   string(txOut.PkScript),
+								Amount:    txOut.Value,
+								TxOutType: txOut.TxOutType,
 							})
 						}
 					}
@@ -110,7 +170,7 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.Tx{
 		Version: 1,
-		Type:    "NORMAL",
+		Type:    common.TxNormalType,
 	}
 	txIns := common.InterfaceSlice(arrayParams[0])
 	for _, txIn := range txIns {
@@ -128,11 +188,14 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 		}
 		tx.AddTxIn(item)
 	}
-	txOut := arrayParams[1].(map[string]interface{})
-	for key, val := range txOut {
+	// txOut := arrayParams[1].(map[string]interface{})
+	txOuts := common.InterfaceSlice(arrayParams[1])
+	for _, txOut := range txOuts {
+		temp := txOut.(map[string]interface{})
 		tx.AddTxOut(transaction.TxOut{
-			PkScript: []byte(key),
-			Value:    val.(float64),
+			PkScript:  []byte(temp["pkScript"].(string)),
+			Value:     temp["value"].(float64),
+			TxOutType: temp["txOutType"].(string),
 		})
 	}
 	byteArrays, err := json.Marshal(tx)
@@ -223,18 +286,73 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 	return tx.Hash(), nil
 }
 
-/**
- * handleGetNumberOfCoins handles getNumberOfCoins commands.
- */
-func (self RpcServer) handleGetNumberOfCoins(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return 1000, nil
+func isExisted(item int, arr []int) bool {
+	for _, i := range arr {
+		if item == i {
+			return true
+		}
+	}
+	return false
 }
 
 /**
- * handleGetNumberOfBonds handles getNumberOfBonds commands.
+ * handleGetNumberOfCoins handles getNumberOfCoins commands.
  */
-func (self RpcServer) handleGetNumberOfBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return 5, nil
+func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// return 1000, nil
+	log.Println(params)
+	blocks := self.Config.Chain.Blocks
+	txInsMap := map[string][]int{}
+	txOuts := []jsonrpc.ListUnspentResult{}
+	for _, block := range blocks {
+		for _, tx := range block.Transactions {
+			if tx.GetType() == common.TxActionParamsType {
+				continue
+			}
+			normalTx := tx.(*transaction.Tx)
+			for _, txIn := range normalTx.TxIn {
+				txInKey := txIn.PreviousOutPoint.Hash.String()
+				idx := txIn.PreviousOutPoint.Vout
+				txInsMap[txInKey] = append(txInsMap[txInKey], idx)
+			}
+
+			for index, txOut := range normalTx.TxOut {
+				txOuts = append(txOuts, jsonrpc.ListUnspentResult{
+					Vout:      index,
+					TxID:      normalTx.Hash().String(),
+					Address:   string(txOut.PkScript),
+					Amount:    txOut.Value,
+					TxOutType: txOut.TxOutType,
+				})
+			}
+		}
+	}
+
+	result := map[string]float64{
+		common.TxOutCoinType: 0,
+		common.TxOutBondType: 0,
+	}
+	for _, txOut := range txOuts {
+		idxs, ok := txInsMap[txOut.TxID]
+		if !ok { // not existing -> not used yet
+			result[txOut.TxOutType] += txOut.Amount
+			continue
+		}
+		// existing in txIns -> check Vout index
+		if !isExisted(txOut.Vout, idxs) {
+			result[txOut.TxOutType] += txOut.Amount
+		}
+	}
+	return result, nil
+}
+
+func assertEligibleAgentIDs(eligibleAgentIDs interface{}) ([]string) {
+	assertedEligibleAgentIDs := eligibleAgentIDs.([]interface{})
+	results := []string{}
+	for _, item := range assertedEligibleAgentIDs {
+		results = append(results, item.(string))
+	}
+	return results
 }
 
 /**
@@ -247,17 +365,19 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 	log.Println(params)
 	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.ActionParamTx{
-		Version: 1,
-		Type:    "ACTION_PARAMS",
+		Version:  1,
+		Type:     common.TxActionParamsType,
 		LockTime: time.Now().Unix(),
 	}
 
 	param := arrayParams[0].(map[string]interface{})
 	tx.Param = &transaction.Param{
-		AgentID:           param["agentId"].(string),
-		NumOfIssuingCoins: int(param["numOfIssuingCoins"].(float64)),
-		NumOfIssuingBonds: int(param["numOfIssuingBonds"].(float64)),
-		Tax:               param["tax"].(float64),
+		AgentID:          param["agentId"].(string),
+		AgentSig:         param["agentSig"].(string),
+		NumOfCoins:       param["numOfCoins"].(float64),
+		NumOfBonds:       param["numOfBonds"].(float64),
+		Tax:              param["tax"].(float64),
+		EligibleAgentIDs: assertEligibleAgentIDs(param["eligibleAgentIDs"]),
 	}
 
 	_, _, err := self.Config.TxMemPool.CanAcceptTransaction(&tx)
@@ -269,4 +389,64 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 	// self.Config.Server.PushTxMessage(hash)
 
 	return tx.Hash(), nil
+}
+
+/**
+getaccount RPC returns the name of the account associated with the given address.
+- Param #1: address
+ */
+func (self RpcServer) handleGetAccount(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
+	for _, account := range self.Config.Wallet.MasterAccount.Child {
+		address := account.Key.ToAddress(false)
+		if address == params.(string) {
+			return account.Name, nil
+		}
+	}
+	return "", nil
+}
+
+/**
+listaccount RPC lists accounts and their balances.
+
+Parameter #1—the minimum number of confirmations a transaction must have
+Parameter #2—whether to include watch-only addresses in results
+Result—a list of accounts and their balances
+
+ */
+func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
+	result := jsonrpc.ListAccounts{}
+	result.Accounts = self.Config.Wallet.ListAccounts()
+	return result, nil
+}
+
+/**
+getaddressesbyaccount RPC returns a list of every address assigned to a particular account.
+
+Parameter #1—the account name
+Result—a list of addresses
+ */
+func (self RpcServer) handleGetAddressesByAccount(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
+	result := jsonrpc.GetAddressesByAccount{}
+	var err error
+	result.Addresses, err = self.Config.Wallet.GetAddressesByAccount(params.(string))
+	return result, err
+}
+
+/**
+getaccountaddress RPC returns the current Bitcoin address for receiving payments to this account. If the account doesn’t exist, it creates both the account and a new address for receiving payment. Once a payment has been received to an address, future calls to this RPC for the same account will return a different address.
+Parameter #1—an account name
+Result—a bitcoin address
+ */
+func (self RpcServer) handleGetAccountAddress(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
+	return self.Config.Wallet.GetAccountAddress(params.(string))
+}
+
+/**
+ dumpprivkey RPC returns the wallet-import-format (WIP) private key corresponding to an address. (But does not remove it from the wallet.)
+
+Parameter #1—the address corresponding to the private key to get
+Result—the private key
+ */
+func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
+	return self.Config.Wallet.DumpPrivkey(params.(string))
 }

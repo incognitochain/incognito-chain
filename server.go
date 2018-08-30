@@ -1,30 +1,32 @@
 package main
 
 import (
-	"sync"
+	"errors"
+	"fmt"
 	"log"
 	"net"
-	"fmt"
+	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
-	"runtime"
-	"errors"
 
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/connmanager"
-	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/peer"
-	"github.com/ninjadotorg/cash-prototype/wire"
-	"github.com/ninjadotorg/cash-prototype/rpcserver"
-	"github.com/ninjadotorg/cash-prototype/mempool"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/mining/miner"
-	"github.com/ninjadotorg/cash-prototype/mining"
-	"github.com/ninjadotorg/cash-prototype/netsync"
-	"github.com/ninjadotorg/cash-prototype/addrmanager"
-	"bufio"
 	peer2 "github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/cash-prototype/addrmanager"
+	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/connmanager"
+	"github.com/ninjadotorg/cash-prototype/consensus/pos"
+	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/mempool"
+	"github.com/ninjadotorg/cash-prototype/mining"
+	"github.com/ninjadotorg/cash-prototype/mining/miner"
+	"github.com/ninjadotorg/cash-prototype/netsync"
+	"github.com/ninjadotorg/cash-prototype/peer"
+	"github.com/ninjadotorg/cash-prototype/rpcserver"
+	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/cash-prototype/wallet"
+	"path/filepath"
 )
 
 const (
@@ -44,7 +46,7 @@ type Server struct {
 	quit      chan struct{}
 	newPeers  chan *peer.Peer
 
-	ChainParams *blockchain.Params
+	chainParams *blockchain.Params
 	ConnManager *connmanager.ConnManager
 	Chain       *blockchain.BlockChain
 	Db          database.DB
@@ -54,6 +56,9 @@ type Server struct {
 	Miner       *miner.Miner
 	NetSync     *netsync.NetSync
 	AddrManager *addrmanager.AddrManager
+	Wallet      *wallet.Wallet
+
+	ConsensusEngine *pos.Engine
 }
 
 // setupRPCListeners returns a slice of listeners that are configured for use
@@ -105,10 +110,10 @@ func setupRPCListeners() ([]net.Listener, error) {
 	return listeners, nil
 }
 
-func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *blockchain.Params, interrupt <-chan struct{}) (*Server, error) {
+func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams *blockchain.Params, interrupt <-chan struct{}) (error) {
 
 	// Init data for Server
-	self.ChainParams = chainParams
+	self.chainParams = chainParams
 	self.quit = make(chan struct{})
 	self.donePeers = make(chan *peer.Peer)
 	self.newPeers = make(chan *peer.Peer)
@@ -122,22 +127,31 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	var err error
 
 	// Create a new block chain instance with the appropriate configuration.9
-	self.Chain, err = blockchain.BlockChain{}.New(&blockchain.Config{
-		ChainParams: self.ChainParams,
+	self.Chain = &blockchain.BlockChain{}
+	err = self.Chain.Init(&blockchain.Config{
+		ChainParams: self.chainParams,
 		Db:          self.Db,
 		Interrupt:   interrupt,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool.MiningDescs(), self.Chain)
+	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.Chain)
 
 	self.Miner = miner.New(&miner.Config{
-		ChainParams:            self.ChainParams,
+		ChainParams:            self.chainParams,
 		BlockTemplateGenerator: blockTemplateGenerator,
 		MiningAddrs:            cfg.MiningAddrs,
 		Chain:                  self.Chain,
+		Server:                 self,
+	})
+
+	self.ConsensusEngine = pos.New(&pos.Config{
+		ChainParams: self.chainParams,
+		Chain:       self.Chain,
+		BlockGen:    blockTemplateGenerator,
+		Server:      self,
 	})
 
 	// Init Net Sync manager to process messages
@@ -145,9 +159,10 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		Chain:      self.Chain,
 		ChainParam: chainParams,
 		MemPool:    self.MemPool,
+		Server:     self,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var peers []peer.Peer
@@ -155,7 +170,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		var err error
 		peers, err = self.InitListenerPeers(self.AddrManager, listenAddrs)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -164,6 +179,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	if cfg.MaxPeers < targetOutbound {
 		targetOutbound = cfg.MaxPeers
 	}
+
 	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
@@ -171,7 +187,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		TargetOutbound:       uint32(targetOutbound),
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	self.ConnManager = connManager
 
@@ -180,6 +196,7 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 	if len(permanentPeers) == 0 {
 		permanentPeers = cfg.AddPeers
 	}
+
 	for _, addr := range permanentPeers {
 		go self.ConnManager.Connect(addr)
 	}
@@ -189,10 +206,10 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		// TLS settings.
 		rpcListeners, err := setupRPCListeners()
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if len(rpcListeners) == 0 {
-			return nil, errors.New("RPCS: No valid listen address")
+			return errors.New("RPCS: No valid listen address")
 		}
 
 		rpcConfig := rpcserver.RpcServerConfig{
@@ -203,10 +220,12 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 			Chain:         self.Chain,
 			TxMemPool:     self.MemPool,
 			Server:        self,
+			Wallet:        self.Wallet,
 		}
-		self.RpcServer, err = rpcserver.RpcServer{}.Init(&rpcConfig)
+		self.RpcServer = &rpcserver.RpcServer{}
+		err = self.RpcServer.Init(&rpcConfig)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		// Signal process shutdown when the RPC server requests it.
@@ -216,11 +235,11 @@ func (self Server) NewServer(listenAddrs []string, db database.DB, chainParams *
 		}()
 	}
 
-	return &self, nil
+	return nil
 }
 
 func (self *Server) InboundPeerConnected(peer *peer.Peer) {
-	log.Println("inbound connected")
+	Logger.log.Info("inbound connected")
 }
 
 // outboundPeerConnected is invoked by the connection manager when a new
@@ -230,8 +249,7 @@ func (self *Server) InboundPeerConnected(peer *peer.Peer) {
 // manager of the attempt.
 func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 	peer *peer.Peer) {
-	log.Println("outbound connected")
-
+	Logger.log.Info("Outbound PEER connected with PEER ID - " + peer.PeerId.String())
 	// TODO:
 	// call address manager to process new outbound peer
 	// push message version
@@ -240,12 +258,20 @@ func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
 		listen.NegotiateOutboundProtocol(peer)
 	}
 	go self.peerDoneHandler(peer)
+
+	msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
+	msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.Chain.BestState.BestBlock.Hash()
+	msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerId
+	if err != nil {
+		return
+	}
+	//self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
 }
 
 // peerDoneHandler handles peer disconnects by notifiying the server that it's
 // done along with other performing other desirable cleanup.
 func (self *Server) peerDoneHandler(peer *peer.Peer) {
-	peer.WaitForDisconnect()
+	//peer.WaitForDisconnect()
 	self.donePeers <- peer
 }
 
@@ -282,8 +308,24 @@ func (self Server) peerHandler() {
 	self.AddrManager.Start()
 	self.NetSync.Start()
 
-	log.Println("Start peer handler")
+	Logger.log.Info("Start peer handler")
+
+	if !cfg.DisableDNSSeed {
+		// TODO load peer from seed DNS
+		// add to address manager
+		self.AddrManager.AddAddresses(make([]*peer.Peer, 0))
+	}
+
+	if len(cfg.ConnectPeers) == 0 {
+		// TODO connect with peer in file
+		for _, addr := range self.AddrManager.AddressCache() {
+			go self.ConnManager.Connect(addr.RawAddress)
+		}
+	}
+
 	go self.ConnManager.Start()
+	//go self.ConnManager.StartListener(self.NewPeerConfig())
+
 out:
 	for {
 		select {
@@ -314,13 +356,14 @@ func (self Server) Start() {
 		return
 	}
 
-	log.Println("Starting server")
+	Logger.log.Info("Starting server")
 	// Server startup time. Used for the uptime command for uptime calculation.
 	self.startupTime = time.Now().Unix()
 
 	// Start the peer handler which in turn starts the address and block
 	// managers.
 	self.WaitGroup.Add(1)
+
 	go self.peerHandler()
 
 	if !cfg.DisableRPC && self.RpcServer != nil {
@@ -337,6 +380,14 @@ func (self Server) Start() {
 	if cfg.Generate == true && (len(cfg.MiningAddrs) > 0) {
 		self.Miner.Start()
 	}
+
+	// test, print length of chain
+	/*go func(server Server) {
+		for {
+			time.Sleep(time.Second * 3)
+			log.Printf("\n --- Chain length: %d ---- \n", len(server.Chain.Blocks))
+		}
+	}(self)*/
 }
 
 // parseListeners determines whether each listen address is IPv4 and IPv6 and
@@ -392,20 +443,37 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 		return nil, err
 	}
 
+	kc := KeyCache{}
+	kc.Load(filepath.Join(cfg.DataDir, "kc.json"))
+
 	peers := make([]peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
+		key := fmt.Sprintf("%s_seed", addr.String())
+		seedT := kc.Get(key)
+		seed := int64(0)
+		if seedT == nil {
+			seed = time.Now().UnixNano()
+			kc.Set(key, seed)
+		} else {
+			seed = int64(seedT.(float64))
+		}
 		peer, err := peer.Peer{
-			Seed:                0,
-			FlagMutex:           sync.Mutex{},
-			ListeningAddress:    addr,
-			Config:              *self.NewPeerConfig(),
-			ReaderWritersStream: make(map[peer2.ID]*bufio.ReadWriter),
+			Seed:             seed,
+			FlagMutex:        sync.Mutex{},
+			ListeningAddress: addr,
+			Config:           *self.NewPeerConfig(),
+			PeerConns:        make(map[peer2.ID]*peer.PeerConn),
+			//OutboundReaderWriterStreams: make(map[peer2.ID]*bufio.ReadWriter),
+			//InboundReaderWriterStreams:  make(map[peer2.ID]*bufio.ReadWriter),
 		}.NewPeer()
 		if err != nil {
 			return nil, err
 		}
 		peers = append(peers, *peer)
 	}
+
+	kc.Save()
+
 	return peers, nil
 }
 
@@ -415,39 +483,50 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 func (self *Server) NewPeerConfig() *peer.Config {
 	return &peer.Config{
 		MessageListeners: peer.MessageListeners{
-			OnBlock:   self.OnBlock,
-			OnTx:      self.OnTx,
-			OnVersion: self.OnVersion,
+			OnBlock:     self.OnBlock,
+			OnTx:        self.OnTx,
+			OnVersion:   self.OnVersion,
+			OnGetBlocks: self.OnGetBlocks,
+			OnVerAck:    self.OnVerAck,
+			OnGetAddr:   self.OnGetAddr,
+			OnAddr:      self.OnAddr,
 		},
 	}
 }
 
 // OnBlock is invoked when a peer receives a block message.  It
 // blocks until the coin block has been fully processed.
-func (self *Server) OnBlock(p *peer.Peer,
+func (self *Server) OnBlock(p *peer.PeerConn,
 	msg *wire.MessageBlock) {
-	log.Println("Receive a new block")
+	Logger.log.Info("Receive a new block")
 	var txProcessed chan struct{}
 	self.NetSync.QueueBlock(nil, msg, txProcessed)
-	<-txProcessed
+	//<-txProcessed
+}
+
+func (self *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
+	Logger.log.Info("Receive a get-block message")
+	var txProcessed chan struct{}
+	self.NetSync.QueueGetBlock(nil, msg, txProcessed)
+	//<-txProcessed
 }
 
 // OnTx is invoked when a peer receives a tx message.  It blocks
 // until the transaction has been fully processed.  Unlock the block
 // handler this does not serialize all transactions through a single thread
 // transactions don't rely on the previous one in a linear fashion like blocks.
-func (self Server) OnTx(peer *peer.Peer,
+func (self Server) OnTx(peer *peer.PeerConn,
 	msg *wire.MessageTx) {
-	log.Println("Receive a new transaction")
+	Logger.log.Info("Receive a new transaction")
 	var txProcessed chan struct{}
 	self.NetSync.QueueTx(nil, msg, txProcessed)
-	<-txProcessed
+	//<-txProcessed
 }
 
 // OnVersion is invoked when a peer receives a version bitcoin message
 // and is used to negotiate the protocol version details as well as kick start
 // the communications.
-func (self *Server) OnVersion(_ *peer.Peer, msg *wire.MessageVersion) {
+func (self *Server) OnVersion(_ *peer.PeerConn, msg *wire.MessageVersion) {
 	remotePeer := &peer.Peer{
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
@@ -463,16 +542,34 @@ func (self *Server) OnVersion(_ *peer.Peer, msg *wire.MessageVersion) {
 	// TODO push message again for remote peer
 	var dc chan<- struct{}
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		msg, err := wire.MakeEmptyMessage(wire.Cmdveack)
+		msg, err := wire.MakeEmptyMessage(wire.CmdVerack)
 		if err != nil {
-			return
+			continue
 		}
-		listen.QueueMessageWithEncoding(msg, dc, )
+		listen.QueueMessageWithEncoding(msg, dc)
 	}
 }
 
-func (self *Server) OnVerAck(_ *peer.Peer, msg *wire.MessageVerAck) {
+func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
+	log.Printf("Receive verack message")
+
+	msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
+	if err != nil {
+		return
+	}
+	var dc chan<- struct{}
+	peerConn.QueueMessageWithEncoding(msgS, dc)
+}
+
+func (self *Server) OnGetAddr(_ *peer.PeerConn, msg *wire.MessageGetAddr) {
+	// TODO for ongetaddr message
+	log.Printf("Receive getaddr message")
+}
+
+func (self *Server) OnAddr(_ *peer.PeerConn, msg *wire.MessageAddr) {
+	// TODO for onaddr message
+	log.Printf("Receive addr message")
 }
 
 func (self Server) PushTxMessage(hashTx *common.Hash) {
@@ -484,13 +581,42 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 			return
 		}
 		msg.(*wire.MessageTx).Transaction = tx
-		listen.QueueMessageWithEncoding(msg, dc, )
+		listen.QueueMessageWithEncoding(msg, dc)
 	}
 }
 
-func (self Server) PushBlockMessage() {
+func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId peer2.ID) error {
+	var dc chan<- struct{}
+	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+	msg.(*wire.MessageBlock).Block = *block
+	if err != nil {
+		return err
+	}
+	self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msg, dc)
+	return nil
+}
+
+func (self *Server) PushBlockMessage(block *blockchain.Block) error {
 	// TODO push block message for connected peer
-	//
+	//@todo got error here
+	var dc chan<- struct{}
+	for _, listen := range self.ConnManager.Config.ListenerPeers {
+		msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+		if err != nil {
+			return err
+		}
+		msg.(*wire.MessageBlock).Block = *block
+		listen.QueueMessageWithEncoding(msg, dc)
+	}
+	return nil
+}
+
+func (self *Server) PushInvalidBlockMessage(msg *wire.MessageInvalidBlock) error {
+	var dc chan<- struct{}
+	for _, listen := range self.ConnManager.Config.ListenerPeers {
+		listen.QueueMessageWithEncoding(msg, dc)
+	}
+	return nil
 }
 
 // handleDonePeerMsg deals with peers that have signalled they are done.  It is
@@ -509,4 +635,20 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 
 	// TODO:
 	return true
+}
+
+func (self *Server) UpdateChain(block *blockchain.Block) {
+	// save block
+	self.Chain.Blocks = append(self.Chain.Blocks, block)
+	self.Chain.StoreBlockIndex(block)
+
+	// save best state
+	newBestState := &blockchain.BestState{}
+	numTxns := uint64(len(block.Transactions))
+	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0))
+	self.Chain.BestState = newBestState
+	self.Chain.StoreBestState()
+
+	// save index of block
+	self.Chain.StoreBlockIndex(block)
 }

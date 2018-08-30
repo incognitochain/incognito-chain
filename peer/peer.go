@@ -1,30 +1,27 @@
 package peer
 
 import (
-	"log"
-	"io"
-	"crypto/rand"
-	mrand "math/rand"
-	"fmt"
-	"context"
 	"bufio"
-	"sync"
-	"strings"
-	"sync/atomic"
-	"time"
+	"context"
+	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	mrand "math/rand"
 	"reflect"
-	"bytes"
+	"strings"
+	"sync"
+	"time"
 
-	"github.com/libp2p/go-libp2p-peer"
-	"github.com/libp2p/go-libp2p-host"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-crypto"
-	ma "github.com/multiformats/go-multiaddr"
+	"github.com/libp2p/go-libp2p-host"
 	"github.com/libp2p/go-libp2p-net"
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/libp2p/go-libp2p-peer"
+	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
 const (
@@ -34,13 +31,23 @@ const (
 	trickleTimeout = 10 * time.Second
 )
 
-type Peer struct {
-	connected  int32
-	disconnect int32
+// ConnState represents the state of the requested connection.
+type ConnState uint8
 
-	Host                host.Host
-	ReaderWritersStream map[peer.ID]*bufio.ReadWriter
-	verAckReceived      bool
+// ConnState can be either pending, established, disconnected or failed.  When
+// a new connection is requested, it is attempted and categorized as
+// established or failed depending on the connection result.  An established
+// connection which was disconnected is categorized as disconnected.
+const (
+	ConnPending      ConnState = iota
+	ConnFailing
+	ConnCanceled
+	ConnEstablished
+	ConnDisconnected
+)
+
+type Peer struct {
+	Host           host.Host
 
 	TargetAddress    ma.Multiaddr
 	PeerId           peer.ID
@@ -51,8 +58,7 @@ type Peer struct {
 	FlagMutex sync.Mutex
 	Config    Config
 
-	sendMessageQueue chan outMsg
-	quit             chan struct{}
+	PeerConns map[peer.ID]*PeerConn
 }
 
 // Config is the struct to hold configuration options useful to Peer.
@@ -76,10 +82,13 @@ type WrappedStream struct {
 // handler goroutine blocks until the callback has completed.  Doing so will
 // result in a deadlock.
 type MessageListeners struct {
-	OnTx      func(p *Peer, msg *wire.MessageTx)
-	OnBlock   func(p *Peer, msg *wire.MessageBlock)
-	OnVersion func(p *Peer, msg *wire.MessageVersion)
-	OnVerAck  func(p *Peer, msg *wire.MessageVerAck)
+	OnTx        func(p *PeerConn, msg *wire.MessageTx)
+	OnBlock     func(p *PeerConn, msg *wire.MessageBlock)
+	OnGetBlocks func(p *PeerConn, msg *wire.MessageGetBlocks)
+	OnVersion   func(p *PeerConn, msg *wire.MessageVersion)
+	OnVerAck    func(p *PeerConn, msg *wire.MessageVerAck)
+	OnGetAddr   func(p *PeerConn, msg *wire.MessageGetAddr)
+	OnAddr      func(p *PeerConn, msg *wire.MessageAddr)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal
@@ -128,6 +137,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 
 	// Build Host multiaddress
 	mulAddrStr := fmt.Sprintf("/ipfs/%s", basicHost.ID().Pretty())
+
 	hostAddr, err := ma.NewMultiaddr(mulAddrStr)
 	if err != nil {
 		log.Print(err)
@@ -138,7 +148,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	// by encapsulating both addresses:
 	addr := basicHost.Addrs()[0]
 	fullAddr := addr.Encapsulate(hostAddr)
-	log.Printf("I am listening on %s\n", fullAddr)
+	Logger.log.Infof("I am listening on %s with PEER ID - %s\n", fullAddr, basicHost.ID().String())
 	pid, err := fullAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		log.Print(err)
@@ -154,32 +164,65 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.Host = basicHost
 	self.TargetAddress = fullAddr
 	self.PeerId = peerid
-	self.quit = make(chan struct{})
-	self.sendMessageQueue = make(chan outMsg, 1)
+	//self.sendMessageQueue = make(chan outMsg, 1)
 	return &self, nil
 }
 
-func (self Peer) Start() (error) {
-	log.Println("Peer start")
-	log.Println("Set stream handler and wait for connection from other peer")
+func (self Peer) Start() error {
+	Logger.log.Info("Peer start")
+	Logger.log.Info("Set stream handler and wait for connection from other peer")
 	self.Host.SetStreamHandler("/blockchain/1.0.0", self.HandleStream)
 	select {} // hang forever
 	return nil
 }
 
-// WaitForDisconnect waits until the peer has completely disconnected and all
-// resources are cleaned up.  This will happen if either the local or remote
-// side has been disconnected or the peer is forcibly disconnected via
-// Disconnect.
-func (p Peer) WaitForDisconnect() {
-	<-p.quit
+func (self Peer) NewPeerConnection(peerId peer.ID) (*PeerConn, error) {
+	Logger.log.Infof("Opening stream to PEER ID - %s \n", self.PeerId.String())
+
+	stream, err := self.Host.NewStream(context.Background(), peerId, "/blockchain/1.0.0")
+	if err != nil {
+		Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", self.PeerId.String(), err.Error())
+		return nil, err
+	}
+
+	remotePeerId := stream.Conn().RemotePeer()
+
+	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+	//self.InboundReaderWriterStreams[remotePeerId] = rw
+
+	//go self.InMessageHandler(rw)
+	//go self.OutMessageHandler(rw)
+
+	peerConn := PeerConn{
+		IsOutbound:         true,
+		Peer:               &self,
+		Config:             self.Config,
+		PeerId:             remotePeerId,
+		ReaderWriterStream: rw,
+		quit:               make(chan struct{}),
+		sendMessageQueue:   make(chan outMsg, 1),
+		HandleConnected:    self.handleConnected,
+		HandleDisconnected: self.handleDisconnected,
+		HandleFailed:       self.handleFailed,
+	}
+
+	self.PeerConns[peerConn.PeerId] = &peerConn
+
+	go peerConn.InMessageHandler(rw)
+	go peerConn.OutMessageHandler(rw)
+
+	peerConn.RetryCount = 0
+	peerConn.updateState(ConnEstablished)
+
+	return &peerConn, nil
 }
 
-func (self Peer) HandleStream(stream net.Stream) {
+func (self *Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
 	//defer stream.Close()
 
-	log.Printf("%s Received a new stream!", self.Host.ID().String())
+	remotePeerId := stream.Conn().RemotePeer()
+	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID-%s", self.Host.ID().String(), remotePeerId.String())
 
 	// TODO this code make EOF for libp2p
 	//if !atomic.CompareAndSwapInt32(&self.connected, 0, 1) {
@@ -188,159 +231,31 @@ func (self Peer) HandleStream(stream net.Stream) {
 
 	// Create a buffer stream for non blocking read and write.
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
+	//self.InboundReaderWriterStreams[remotePeerId] = rw
 
-	go self.InMessageHandler(rw)
-	go self.OutMessageHandler(rw)
-}
+	//go self.InMessageHandler(rw)
+	//go self.OutMessageHandler(rw)
 
-/**
-Handle all in message
- */
-func (self Peer) InMessageHandler(rw *bufio.ReadWriter) {
-	for {
-		log.Printf("read stream")
-		str, err := rw.ReadString('\n')
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		//if str == "" {
-		//	return
-		//}
-		log.Printf("Message: %s \n", str)
-		if str != "\n" {
-
-			// Parse Message header
-			jsonDecodeString, _ := hex.DecodeString(str)
-			messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
-
-			commandInHeader := messageHeader[:12]
-			commandInHeader = bytes.Trim(messageHeader, "\x00")
-			log.Println(string(commandInHeader))
-			commandType := string(messageHeader[:len(commandInHeader)])
-			var message, err = wire.MakeEmptyMessage(string(commandType))
-
-			// Parse Message body
-			messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
-			log.Println(string(messageBody))
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			err = json.Unmarshal(messageBody, &message)
-			//temp := message.(map[string]interface{})
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			realType := reflect.TypeOf(message)
-			log.Print(realType)
-			// check type of Message
-			switch realType {
-			case reflect.TypeOf(&wire.MessageTx{}):
-				if self.Config.MessageListeners.OnTx != nil {
-					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnTx(&self, message.(*wire.MessageTx))
-					self.FlagMutex.Unlock()
-				}
-			case reflect.TypeOf(&wire.MessageBlock{}):
-				if self.Config.MessageListeners.OnBlock != nil {
-					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnBlock(&self, message.(*wire.MessageBlock))
-					self.FlagMutex.Unlock()
-				}
-			case reflect.TypeOf(&wire.MessageVersion{}):
-				if self.Config.MessageListeners.OnVersion != nil {
-					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnVersion(&self, message.(*wire.MessageVersion))
-					self.FlagMutex.Unlock()
-				}
-			case reflect.TypeOf(&wire.MessageVerAck{}):
-				self.FlagMutex.Lock()
-				self.verAckReceived = true
-				self.FlagMutex.Unlock()
-				if self.Config.MessageListeners.OnVerAck != nil {
-					self.FlagMutex.Lock()
-					self.Config.MessageListeners.OnVerAck(&self, message.(*wire.MessageVerAck))
-					self.FlagMutex.Unlock()
-				}
-			default:
-				log.Printf("Received unhandled message of type %v "+
-					"from %v", realType, self)
-			}
-		}
-	}
-}
-
-/**
-// OutMessageHandler handles the queuing of outgoing data for the peer. This runs as
-// a muxer for various sources of input so we can ensure that server and peer
-// handlers will not block on us sending a message.  That data is then passed on
-// to outHandler to be actually written.
-*/
-func (self Peer) OutMessageHandler(rw *bufio.ReadWriter) {
-	/* for test message
-	go func() {
-		for {
-			time.Sleep(1 * time.Second)
-			a := fmt.Sprintf("%s hello \n", self.Host.ID().String())
-			log.Printf("%s Write string %s", self.Host.ID().String(), a)
-			self.FlagMutex.Lock()
-			rw.Writer.WriteString(a)
-			rw.Writer.Flush()
-			self.FlagMutex.Unlock()
-		}
-	}()*/
-	for {
-		select {
-		case outMsg := <-self.sendMessageQueue:
-			{
-				self.FlagMutex.Lock()
-				// TODO
-				// send message
-				message, err := outMsg.msg.JsonSerialize()
-				if err != nil {
-					continue
-				}
-				message += "\n"
-				log.Printf("Send a message %s: %s", outMsg.msg.MessageType(), message)
-				rw.Writer.WriteString(message)
-				rw.Writer.Flush()
-				self.FlagMutex.Unlock()
-			}
-		case <-self.quit:
-			break
-			//default:
-			//	log.Println("Wait for sending message")
-		}
-	}
-}
-
-// Connected returns whether or not the peer is currently connected.
-//
-// This function is safe for concurrent access.
-func (self Peer) Connected() bool {
-	return atomic.LoadInt32(&self.connected) != 0 &&
-		atomic.LoadInt32(&self.disconnect) == 0
-}
-
-// Disconnect disconnects the peer by closing the connection.  Calling this
-// function when the peer is already disconnected or in the process of
-// disconnecting will have no effect.
-func (self Peer) Disconnect() {
-	if atomic.AddInt32(&self.disconnect, 1) != 1 {
-		return
+	peerConn := PeerConn{
+		IsOutbound:         false,
+		Peer:               self,
+		Config:             self.Config,
+		PeerId:             remotePeerId,
+		ReaderWriterStream: rw,
+		quit:               make(chan struct{}),
+		sendMessageQueue:   make(chan outMsg, 1),
+		HandleConnected:    self.handleConnected,
+		HandleDisconnected: self.handleDisconnected,
+		HandleFailed:       self.handleFailed,
 	}
 
-	log.Printf("Disconnecting %s", self)
-	if atomic.LoadInt32(&self.connected) != 0 {
-		self.Host.Close()
-	}
-	if self.quit != nil {
-		close(self.quit)
-	}
-	self.disconnect = 1
+	self.PeerConns[peerConn.PeerId] = &peerConn
+
+	go peerConn.InMessageHandler(rw)
+	go peerConn.OutMessageHandler(rw)
+
+	peerConn.RetryCount = 0
+	peerConn.updateState(ConnEstablished)
 }
 
 // QueueMessageWithEncoding adds the passed bitcoin message to the peer send
@@ -350,19 +265,9 @@ func (self Peer) Disconnect() {
 //
 // This function is safe for concurrent access.
 func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
-	//if !self.Connected() {
-	//	if doneChan != nil {
-	//		go func() {
-	//			doneChan <- struct{}{}
-	//		}()
-	//	}
-	//	return
-	//}
-	self.sendMessageQueue <- outMsg{msg: msg, doneChan: doneChan}
-	//self.FlagMutex.Lock()
-	//self.ReadWrite.WriteString("test test test")
-	//self.ReadWrite.Flush()
-	//self.FlagMutex.Unlock()
+	for _, peerConnection := range self.PeerConns {
+		peerConnection.QueueMessageWithEncoding(msg, doneChan)
+	}
 }
 
 // negotiateOutboundProtocol sends our version message then waits to receive a
@@ -389,55 +294,49 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 	if err != nil {
 		return err
 	}
-	msgVersion += "\n"
-	log.Printf("Send a msgVersion: %s", msgVersion)
-	rw := self.ReaderWritersStream[peer.PeerId]
+	header := make([]byte, wire.MessageHeaderSize)
+	CmdType, _ := wire.GetCmdType(reflect.TypeOf(msg))
+	copy(header[:], []byte(CmdType))
+	msgVersion = append(msgVersion, header...)
+	msgVersionStr := hex.EncodeToString(msgVersion)
+	msgVersionStr += "\n"
+	Logger.log.Infof("Send a msgVersion: %s", msgVersionStr)
+	rw := self.PeerConns[peer.PeerId].ReaderWriterStream
 	self.FlagMutex.Lock()
-	rw.Writer.WriteString(msgVersion)
+	rw.Writer.WriteString(msgVersionStr)
 	rw.Writer.Flush()
 	self.FlagMutex.Unlock()
 	return nil
 }
 
-//// negotiateOutboundProtocol sends our version message then waits to receive a
-//// version message from the peer.  If the events do not occur in that order then
-//// it returns an error.
-//func (p *Peer) NegotiateOutboundProtocol() error {
-//	if err := p.writeLocalVersionMsg(); err != nil {
-//		return err
-//	}
-//
-//	return p.readRemoteVersionMsg()
-//}
-//
-//// writeLocalVersionMsg writes our version message to the remote peer.
-//func (p *Peer) writeLocalVersionMsg() error {
-//	localVerMsg, err := p.localVersionMsg()
-//	if err != nil {
-//		return err
-//	}
-//
-//	return p.writeMessage(localVerMsg, wire.LatestEncoding)
-//}
-//
-//// localVersionMsg creates a version message that can be used to send to the
-//// remote peer.
-//func (p *Peer) localVersionMsg() (*wire.MessageVersion, error) {
-//	msg := wire.MessageVersion{
-//		Timestamp: time.Unix(time.Now().Unix(), 0),
-//		LastBlock:0,
-//		LocalAddress:
-//	}
-//}
+func (p *Peer) Disconnect() {
+}
 
-// VerAckReceived returns whether or not a verack message was received by the
-// peer.
-//
-// This function is safe for concurrent access.
-func (p *Peer) VerAckReceived() bool {
-	p.FlagMutex.Lock()
-	verAckReceived := p.verAckReceived
-	p.FlagMutex.Unlock()
+func (p *Peer) handleConnected(peerConn *PeerConn) {
+	Logger.log.Infof("handleConnected %s", peerConn.PeerId.String())
 
-	return verAckReceived
+	peerConn.RetryCount = 0
+}
+
+func (p *Peer) handleDisconnected(peerConn *PeerConn) {
+	if peerConn.IsOutbound {
+		time.AfterFunc(10*time.Second, func() {
+			Logger.log.Infof("Retry New Peer Connection %s", peerConn.PeerId.String())
+			peerConn.RetryCount += 1
+			peerConn.updateState(ConnPending)
+			p.NewPeerConnection(peerConn.PeerId)
+		})
+	} else {
+		_peerConn, ok := p.PeerConns[peerConn.PeerId]
+		if ok {
+			delete(p.PeerConns, _peerConn.PeerId)
+		}
+	}
+}
+
+func (p *Peer) handleFailed(peerConn *PeerConn) {
+	_peerConn, ok := p.PeerConns[peerConn.PeerId]
+	if ok {
+		delete(p.PeerConns, _peerConn.PeerId)
+	}
 }

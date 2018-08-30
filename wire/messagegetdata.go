@@ -1,6 +1,8 @@
 package wire
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type MessagGetData struct {
 	InvList []InvVect
@@ -14,12 +16,9 @@ func (self MessagGetData) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self MessagGetData) JsonSerialize() (string, error) {
-	jsonStr, err := json.Marshal(self)
-	header := make([]byte, MessageHeaderSize)
-	copy(header[:], self.MessageType())
-	jsonStr = append(jsonStr, header...)
-	return string(jsonStr), err
+func (self MessagGetData) JsonSerialize() ([]byte, error) {
+	jsonBytes, err := json.Marshal(self)
+	return jsonBytes, err
 }
 
 func (self MessagGetData) JsonDeserialize(jsonStr string) error {

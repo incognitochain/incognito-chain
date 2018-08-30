@@ -1,19 +1,20 @@
 package mempool
 
 import (
+	"errors"
+	"fmt"
+	"log"
+	"sync"
 	"sync/atomic"
 	"time"
-	"log"
-	"fmt"
-	"sync"
 
 	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/mining"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
-//Peer Ids, so that orphans can be identified by which peer first repayed them.
-type Id uint64
+// ID is Peer Ids, so that orphans can be identified by which peer first re-payed them.
+type ID uint64
 
 // Config is a descriptor containing the memory pool configuration.
 type Config struct {
@@ -27,12 +28,13 @@ type Config struct {
 // to it such as an expiration time to help prevent caching the orphan forever.
 type orphanTx struct {
 	tx         *transaction.Tx
-	id         Id
+	id         ID
 	expiration time.Time
 }
 
+// TxDesc is transaction description in mempool
 type TxDesc struct {
-	//tracsaction details
+	// transaction details
 	Desc mining.TxDesc
 
 	// StartingPriority is the priority of the transaction when it was added
@@ -40,6 +42,7 @@ type TxDesc struct {
 	StartingPriority float64
 }
 
+// TxPool is transaction pool
 type TxPool struct {
 	// The following variables must only be used atomically.
 	lastUpdated int64 // last time pool was updated
@@ -59,16 +62,17 @@ type TxPool struct {
 	// to on an unconditional timer.
 	nextExpireScan time.Time
 }
-//check transaction in pool
-func (mp *TxPool) isTxInPool(hash *common.Hash) bool {
-	if _, exists := mp.pool[*hash]; exists {
+
+// check transaction in pool
+func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
+	if _, exists := tp.pool[*hash]; exists {
 		return true
 	}
 
 	return false
 }
 
-//check existed transaction
+// HaveTx check existed transaction
 func (tp *TxPool) HaveTx(hash *common.Hash) bool {
 	// Protect concurrent access.
 	tp.mtx.RLock()
@@ -77,7 +81,8 @@ func (tp *TxPool) HaveTx(hash *common.Hash) bool {
 
 	return haveTx
 }
-//add transaction into pool
+
+// add transaction into pool
 func (tp *TxPool) addTx(tx transaction.Transaction) *TxDesc {
 	txD := &TxDesc{
 		Desc: mining.TxDesc{
@@ -88,38 +93,41 @@ func (tp *TxPool) addTx(tx transaction.Transaction) *TxDesc {
 		},
 		StartingPriority: 1, //@todo we will apply calc function for it.
 	}
+	log.Printf(tx.Hash().String())
 	tp.pool[*tx.Hash()] = txD
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	return txD
 }
 
+// CanAcceptTransaction validate transaction is valid and can add to pool
 func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
 	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
 
-	if tp.HaveTx(tx.Hash()) != true{
+	if tp.HaveTx(tx.Hash()) != true {
 		txD := tp.addTx(tx)
 		return tx.Hash(), txD, nil
 	}
-	return tx.Hash(), nil, nil
+	return nil, nil, errors.New("Exist this tx in pool")
 }
 
-//remove transaction for pool
+// remove transaction for pool
 func (tp *TxPool) removeTx(tx transaction.Tx) {
+	log.Printf(tx.Hash().String())
 	if _, exists := tp.pool[*tx.Hash()]; exists {
 		delete(tp.pool, *tx.Hash())
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	}
 }
 
-//safe remove transaction for pool
+// RemoveTx safe remove transaction for pool
 func (tp *TxPool) RemoveTx(tx transaction.Tx) {
 	tp.mtx.Lock()
 	tp.removeTx(tx)
 	tp.mtx.Unlock()
 }
 
-//this function is safe for access concurrent access.
+// GetTx get transaction info by hash
 func (tp *TxPool) GetTx(txHash *common.Hash) (transaction.Transaction, error) {
 	tp.mtx.Lock()
 	log.Println(txHash.String())
@@ -131,7 +139,6 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (transaction.Transaction, error) {
 
 	return nil, fmt.Errorf("transaction is not in the pool")
 }
-
 
 // MiningDescs returns a slice of mining descriptors for all the transactions
 // in the pool.
@@ -148,14 +155,18 @@ func (tp *TxPool) MiningDescs() []*mining.TxDesc {
 	return descs
 }
 
-
-// return len of transaction pool
+// Count return len of transaction pool
 func (tp *TxPool) Count() int {
 	tp.mtx.RLock()
 	count := len(tp.pool)
 	tp.mtx.RUnlock()
 
 	return count
+}
+
+// Clear
+func (tp *TxPool) Clear() {
+	tp.pool = make(map[common.Hash]*TxDesc)
 }
 
 // New returns a new memory pool for validating and storing standalone

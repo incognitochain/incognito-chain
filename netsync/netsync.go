@@ -1,14 +1,16 @@
 package netsync
 
 import (
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"sync"
-	"github.com/ninjadotorg/cash-prototype/peer"
-	"sync/atomic"
-	"log"
-	"github.com/ninjadotorg/cash-prototype/mempool"
-	"github.com/ninjadotorg/cash-prototype/wire"
 	"fmt"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	peer2 "github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/mempool"
+	"github.com/ninjadotorg/cash-prototype/peer"
+	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
 type NetSync struct {
@@ -18,7 +20,6 @@ type NetSync struct {
 	msgChan   chan interface{}
 	waitgroup sync.WaitGroup
 	quit      chan struct{}
-
 	//
 	syncPeer *peer.Peer
 
@@ -29,6 +30,11 @@ type NetSyncConfig struct {
 	Chain      *blockchain.BlockChain
 	ChainParam *blockchain.Params
 	MemPool    *mempool.TxPool
+	Server interface {
+		// list functions callback which are assigned from Server struct
+		PushBlockMessageWithPeerId(*blockchain.Block, peer2.ID) error
+		UpdateChain(*blockchain.Block)
+	}
 }
 
 func (self NetSync) New(cfg *NetSyncConfig) (*NetSync, error) {
@@ -43,22 +49,24 @@ func (self *NetSync) Start() {
 	if atomic.AddInt32(&self.started, 1) != 1 {
 		return
 	}
-	log.Print("Starting sync manager")
+	Logger.log.Info("Starting sync manager")
 	self.waitgroup.Add(1)
 	go self.messageHandler()
+	time.AfterFunc(2*time.Second, func() {
 
+	})
 }
 
 // Stop gracefully shuts down the sync manager by stopping all asynchronous
 // handlers and waiting for them to finish.
 func (self *NetSync) Stop() error {
 	if atomic.AddInt32(&self.shutdown, 1) != 1 {
-		log.Print("Sync manager is already in the process of " +
+		Logger.log.Info("Sync manager is already in the process of " +
 			"shutting down")
 		return nil
 	}
 
-	log.Print("Sync manager shutting down")
+	Logger.log.Info("Sync manager shutting down")
 	close(self.quit)
 	self.waitgroup.Wait()
 	return nil
@@ -85,20 +93,25 @@ out:
 					{
 						self.HandleMessageBlock(msg)
 					}
+				case *wire.MessageGetBlocks:
+					{
+						self.HandleMessageGetBlocks(msg)
+					}
+
 				default:
-					log.Printf("Invalid message type in block "+"handler: %T", msg)
+					Logger.log.Infof("Invalid message type in block "+"handler: %T", msg)
 				}
 			}
 		case msgChan := <-self.quit:
 			{
-				log.Println(msgChan)
+				Logger.log.Info(msgChan)
 				break out
 			}
 		}
 	}
 
 	self.waitgroup.Done()
-	log.Print("Block handler done")
+	Logger.log.Info("Block handler done")
 }
 
 // QueueTx adds the passed transaction message and peer to the block handling
@@ -115,7 +128,7 @@ func (self *NetSync) QueueTx(_ *peer.Peer, msg *wire.MessageTx, done chan struct
 
 // handleTxMsg handles transaction messages from all peers.
 func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
-	log.Println("Handling new message tx")
+	Logger.log.Info("Handling new message tx")
 	// TODO get message tx and process, Tuan Anh
 	hash, txDesc, error := self.Config.MemPool.CanAcceptTransaction(msg.Transaction)
 
@@ -139,8 +152,46 @@ func (self *NetSync) QueueBlock(_ *peer.Peer, msg *wire.MessageBlock, done chan 
 	self.msgChan <- msg
 }
 
-func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
-	log.Println("Handling new message block")
-	// TODO get message block and process, Tuan Anh
+func (self *NetSync) QueueGetBlock(peer *peer.Peer, msg *wire.MessageGetBlocks, done chan struct{}) {
+	// Don't accept more transactions if we're shutting down.
+	if atomic.LoadInt32(&self.shutdown) != 0 {
+		done <- struct{}{}
+		return
+	}
+	self.msgChan <- msg
+}
 
+func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
+	Logger.log.Info("Handling new message block")
+	// TODO get message block and process
+
+	// Skip verify and insert directly to local blockchain
+	// There should be a method in blockchain.go to insert block to prevent data-race if we read from memory
+	a := self.Config.Chain.BestState.BestBlock.Hash().String()
+	Logger.log.Infof(a)
+	//if msg.Block.Header.PrevBlockHash == a {
+	newBlock := msg.Block
+	self.Config.Server.UpdateChain(&newBlock)
+	//}
+}
+
+func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
+	Logger.log.Info("Handling new message getblock")
+	if senderBlockHeaderIndex, err := self.Config.Chain.GetBlockHeighByBlockHash(&msg.LastBlockHash); err == nil {
+		if self.Config.Chain.BestState.BestBlock.Hash() != &msg.LastBlockHash {
+			// Send Blocks back to requestor
+			for index := int(senderBlockHeaderIndex) + 1; index < len(self.Config.Chain.Blocks); index++ {
+				fmt.Printf("Send block %x \n", *self.Config.Chain.Blocks[index].Hash())
+				self.Config.Server.PushBlockMessageWithPeerId(self.Config.Chain.Blocks[index], msg.SenderID)
+				time.Sleep(time.Second * 3)
+			}
+		}
+	}
+
+	// Logger.log.Infof("Send a msgVersion: %s", msgNewJSON)
+	// rw := self.syncPeer.OutboundReaderWriterStreams[msg.SenderID]
+	// self.syncPeer.FlagMutex.Lock()
+	// rw.Writer.WriteString(msgNewJSON)
+	// rw.Writer.Flush()
+	// self.syncPeer.FlagMutex.Unlock()
 }

@@ -1,24 +1,25 @@
 package rpcserver
 
 import (
-	"sync/atomic"
-	"net/http"
+	"encoding/json"
 	"errors"
-	"time"
+	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net"
-	"io/ioutil"
-	"fmt"
+	"net/http"
 	"strconv"
-	"encoding/json"
 	"sync"
-	"io"
+	"sync/atomic"
+	"time"
 
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/mempool"
+	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
+	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
 const (
@@ -55,6 +56,7 @@ type RpcServerConfig struct {
 	ChainParams *blockchain.Params
 	Chain       *blockchain.BlockChain
 	Db          *database.DB
+	Wallet      *wallet.Wallet
 	Server interface {
 		// Push Tx message
 		PushTxMessage(*common.Hash)
@@ -65,10 +67,10 @@ type RpcServerConfig struct {
 	RPCQuirks     bool
 }
 
-func (self RpcServer) Init(config *RpcServerConfig) (*RpcServer, error) {
+func (self *RpcServer) Init(config *RpcServerConfig) (error) {
 	self.Config = *config
 	self.statusLines = make(map[int]string)
-	return &self, nil
+	return nil
 }
 
 // RequestedProcessShutdown returns a channel that is sent to when an authorized
@@ -84,7 +86,7 @@ func (self RpcServer) RequestedProcessShutdown() <-chan struct{} {
 // This function is safe for concurrent access.
 func (self RpcServer) limitConnections(w http.ResponseWriter, remoteAddr string) bool {
 	if int(atomic.LoadInt32(&self.numClients)+1) > self.Config.RPCMaxClients {
-		log.Printf("Max RPC clients exceeded [%d] - "+
+		Logger.log.Infof("Max RPC clients exceeded [%d] - "+
 			"disconnecting client %s", self.Config.RPCMaxClients,
 			remoteAddr)
 		http.Error(w, "503 Too busy.  Try again later.",
@@ -119,7 +121,7 @@ func genCertPair(certFile, keyFile string) error {
 	return nil
 }
 
-func (self RpcServer) Start() (error) {
+func (self RpcServer) Start() error {
 	if atomic.AddInt32(&self.started, 1) != 1 {
 		return errors.New("RPC server is already started")
 	}
@@ -137,9 +139,9 @@ func (self RpcServer) Start() (error) {
 	})
 	for _, listen := range self.Config.Listenters {
 		go func(listen net.Listener) {
-			log.Printf("RPC server listening on %s", listen.Addr())
+			Logger.log.Infof("RPC server listening on %s", listen.Addr())
 			go self.HttpServer.Serve(listen)
-			log.Printf("RPC listener done for %s", listen.Addr())
+			Logger.log.Infof("RPC listener done for %s", listen.Addr())
 		}(listen)
 	}
 	self.started = 1
@@ -149,16 +151,18 @@ func (self RpcServer) Start() (error) {
 // Stop is used by server.go to stop the rpc listener.
 func (self RpcServer) Stop() error {
 	if atomic.AddInt32(&self.shutdown, 1) != 1 {
-		log.Println("RPC server is already in the process of shutting down")
+		Logger.log.Info("RPC server is already in the process of shutting down")
 		return nil
 	}
-	log.Println("RPC server shutting down")
-	self.HttpServer.Close()
+	Logger.log.Info("RPC server shutting down")
+	if self.started != 0 {
+		self.HttpServer.Close()
+		close(self.quit)
+	}
 	for _, listen := range self.Config.Listenters {
 		listen.Close()
 	}
-	close(self.quit)
-	log.Println("RPC server shutdown complete")
+	Logger.log.Info("RPC server shutdown complete")
 	self.started = 0
 	self.shutdown = 1
 	return nil
@@ -229,7 +233,7 @@ func (self RpcServer) AuthFail(w http.ResponseWriter) {
 
 /**
 handles reading and responding to RPC messages.
- */
+*/
 func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, isAdmin bool) {
 	if atomic.LoadInt32(&self.shutdown) != 0 {
 		return
@@ -243,7 +247,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 			errCode, err), errCode)
 		return
 	}
-	log.Println(string(body))
+	Logger.log.Info(string(body))
 
 	// Unfortunately, the http server doesn't provide the ability to
 	// change the read deadline for the new connection and having one breaks
@@ -261,7 +265,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 	}
 	conn, buf, err := hj.Hijack()
 	if err != nil {
-		log.Printf("Failed to hijack HTTP connection: %v", err)
+		Logger.log.Infof("Failed to hijack HTTP connection: %v", err)
 		errCode := http.StatusInternalServerError
 		http.Error(w, strconv.Itoa(errCode)+" "+err.Error(), errCode)
 		return
@@ -338,23 +342,23 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 	// Marshal the response.
 	msg, err := self.createMarshalledReply(responseID, result, jsonErr)
 	if err != nil {
-		log.Printf("Failed to marshal reply: %v", err)
+		Logger.log.Infof("Failed to marshal reply: %v", err)
 		return
 	}
 
 	// Write the response.
 	err = self.writeHTTPResponseHeaders(r, w.Header(), http.StatusOK, buf)
 	if err != nil {
-		log.Println(err)
+		Logger.log.Info(err)
 		return
 	}
 	if _, err := buf.Write(msg); err != nil {
-		log.Printf("Failed to write marshalled reply: %v", err)
+		Logger.log.Infof("Failed to write marshalled reply: %v", err)
 	}
 
 	// Terminate with newline to maintain compatibility with coin Core.
 	if err := buf.WriteByte('\n'); err != nil {
-		log.Printf("Failed to append terminating newline to reply: %v", err)
+		Logger.log.Infof("Failed to append terminating newline to reply: %v", err)
 	}
 }
 
@@ -384,7 +388,7 @@ func (self RpcServer) internalRPCError(errStr, context string) *common.RPCError 
 	if context != "" {
 		logStr = context + ": " + errStr
 	}
-	log.Println(logStr)
+	Logger.log.Info(logStr)
 	return common.NewRPCError(common.ErrRPCInternal.Code, errStr)
 }
 

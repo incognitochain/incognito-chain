@@ -2,17 +2,22 @@ package blockchain
 
 import (
 	"errors"
+	//"fmt"
+	//"time"
+
+	"sync"
 
 	"github.com/ninjadotorg/cash-prototype/database"
+	"time"
+	"encoding/json"
 	"github.com/ninjadotorg/cash-prototype/common"
-	"sync"
 )
 
 type BlockChain struct {
-	Config    Config
-	Blocks  map[*common.Hash]*Block
-	Headers map[*common.Hash]*BlockHeader
-	BestBlock *Block
+	Config Config
+	Blocks []*Block
+	//Headers   map[common.Hash]int
+	BestState *BestState
 
 	chainLock sync.RWMutex
 }
@@ -32,52 +37,64 @@ type Config struct {
 	// This field can be nil if the caller does not desire the behavior.
 	Interrupt <-chan struct{}
 
-	// ChainParams identifies which chain parameters the chain is associated
+	// chainParams identifies which chain parameters the chain is associated
 	// with.
 	//
 	// This field is required.
 	ChainParams *Params
 }
 
-func (self BlockChain) New(config *Config) (*BlockChain, error) {
-
-	self.Headers = make(map[*common.Hash]*BlockHeader)
-	self.Blocks = make(map[*common.Hash]*Block)
-
+func (self *BlockChain) Init(config *Config) (error) {
 	// Enforce required config fields.
 	// TODO
-	//if config.Db == nil {
-	//	return nil, errors.New("blockchain.New database is nil")
-	//}
-	if config.ChainParams == nil {
-		return nil, errors.New("blockchain.New chain parameters nil")
+	if config.Db == nil {
+		return errors.New("blockchain.New database is nil")
 	}
+	if config.ChainParams == nil {
+		return errors.New("blockchain.New chain parameters nil")
+	}
+
+	//self.Headers = make(map[common.Hash]int)
+	// self.Blocks = make(map[*common.Hash]*Block)
 
 	self.Config = *config
 
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
-	if err := self.InitChainState(); err != nil {
-		return nil, err
+	if err := self.initChainState(); err != nil {
+		return err
 	}
 
-	return &self, nil
+	Logger.log.Infof("Chain state (height %d, hash %v, totaltx %d)", self.BestState.Height, self.BestState.BestBlockHash.String(), self.BestState.TotalTxns, )
+
+	return nil
 }
 
 // initChainState attempts to load and initialize the chain state from the
 // database.  When the db does not yet contain any chain state, both it and the
 // chain state are initialized to the genesis block.
-func (self *BlockChain) InitChainState() (error) {
+func (self *BlockChain) initChainState() error {
 	// TODO
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	var initialized bool
+	bestStateBytes, err := self.Config.Db.FetchBestBlock()
+	if err == nil {
+		err = json.Unmarshal(bestStateBytes, &self.BestState)
+		if err != nil {
+			initialized = false
+		} else {
+			initialized = true
+		}
+	} else {
+		initialized = false
+	}
 
 	if !initialized {
 		// At this point the database has not already been initialized, so
 		// initialize both it and the chain state to the genesis block.
-		return self.CreateChainState()
+		return self.createChainState()
 	}
 
 	// TODO
@@ -88,11 +105,50 @@ func (self *BlockChain) InitChainState() (error) {
 // createChainState initializes both the database and the chain state to the
 // genesis block.  This includes creating the necessary buckets and inserting
 // the genesis block, so it must only be called on an uninitialized database.
-func (self *BlockChain) CreateChainState() error {
-	// TODO something
+func (self *BlockChain) createChainState() error {
+	// Create a new block from genesis block and set it as best block of chain
 	genesisBlock := self.Config.ChainParams.GenesisBlock
-	self.Blocks[genesisBlock.Hash()] = genesisBlock
-	self.Headers[genesisBlock.Hash()] = &genesisBlock.Header
-	self.BestBlock = genesisBlock
-	return nil
+	genesisBlock.Height = 0
+	self.Blocks = append(self.Blocks, genesisBlock)
+
+	// Initialize the state related to the best block.  Since it is the
+	// genesis block, use its timestamp for the median time.
+	numTxns := uint64(len(genesisBlock.Transactions))
+	//blockSize := uint64(genesisBlock.SerializeSize())
+	//blockWeight := uint64(GetBlockWeight(genesisBlock))
+	self.BestState = &BestState{}
+	self.BestState.Init(genesisBlock, 0, 0, numTxns, numTxns, time.Unix(genesisBlock.Header.Timestamp.Unix(), 0))
+
+	// store block genesis
+	err := self.StoreBlock(genesisBlock)
+	if err != nil {
+		return err
+	}
+
+	// store best state
+	err = self.StoreBestState()
+	if err != nil {
+		return err
+	}
+
+	// store block hash by index and index by block hash
+	err = self.StoreBlockIndex(genesisBlock)
+
+	return err
+}
+
+func (self *BlockChain) GetBlockHeighByBlockHash(hash *common.Hash) (int32, error) {
+	return self.Config.Db.GetIndexOfBlock(hash)
+}
+
+func (self *BlockChain) StoreBestState() (error) {
+	return self.Config.Db.StoreBestBlock(self.BestState)
+}
+
+func (self *BlockChain) StoreBlock(block *Block) error {
+	return self.Config.Db.StoreBlock(block)
+}
+
+func (self *BlockChain) StoreBlockIndex(block *Block) error {
+	return self.Config.Db.StoreBlockIndex(block.Hash(), block.Height)
 }

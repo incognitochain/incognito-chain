@@ -1,33 +1,33 @@
 package miner
 
 import (
-	"sync"
-	"runtime"
-	"fmt"
 	"errors"
+	"fmt"
 	"math/rand"
+	"sync"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/mining"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/mining"
 )
 
 var (
-	defaultNumWorkers = uint32(runtime.NumCPU())
+	defaultNumWorkers = uint32(1) //uint32(runtime.NumCPU())
 )
 
-
 type Config struct {
-
 	ChainParams *blockchain.Params
 
-	Chain 		*blockchain.BlockChain
+	Chain *blockchain.BlockChain
 
 	BlockTemplateGenerator *mining.BlkTmplGenerator
 
 	MiningAddrs []string
 
-	SendBlock func(*blockchain.Block) bool
+	Server interface {
+		PushBlockMessage(*blockchain.Block) error
+		UpdateChain(*blockchain.Block)
+	}
 }
 
 type Miner struct {
@@ -45,10 +45,10 @@ type Miner struct {
 	quit              chan struct{}
 }
 
-func (m *Miner) GenerateBlock (n uint32) ([]*common.Hash, error)  {
+func (m *Miner) GenerateBlock(n uint32) ([]*common.Hash, error) {
 	m.Lock()
 	// Respond with an error if server is already mining.
-	if m.started  {
+	if m.started {
 		m.Unlock()
 		return nil, errors.New("Server is already CPU mining....")
 	}
@@ -85,15 +85,15 @@ func (m *Miner) GenerateBlock (n uint32) ([]*common.Hash, error)  {
 
 }
 
-func (m *Miner) commitBlock (block *blockchain.Block) (bool, error)  {
+func (m *Miner) commitBlock(block *blockchain.Block) (bool, error) {
 	m.submitBlockLock.Lock()
 	defer m.submitBlockLock.Unlock()
-	sended := m.cfg.SendBlock(block)
-	if sended != true {
+	err := m.cfg.Server.PushBlockMessage(block)
+	if err != nil {
 		fmt.Print("sending error...........")
 		return false, nil
 	}
-
+	m.cfg.Server.UpdateChain(block)
 	return true, nil
 }
 
@@ -112,7 +112,7 @@ out:
 
 		template, err := m.g.NewBlockTemplate(payToAddr, m.cfg.Chain)
 		m.submitBlockLock.Unlock()
-		if err != nil {
+		if err != nil || len(template.Block.Transactions) == 0 {
 			fmt.Sprint("Failed to create new block template: %v", err)
 			continue
 		}
@@ -209,7 +209,6 @@ func (m *Miner) Stop() {
 	m.started = false
 	fmt.Print("CPU miner stopped")
 }
-
 
 // New returns a new instance of a CPU miner for the provided configuration.
 // Use Start to begin the mining process.  See the documentation for CPUMiner
