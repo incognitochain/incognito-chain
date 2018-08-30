@@ -121,7 +121,6 @@ func (self Peer) NewPeer() (*Peer, error) {
 		r = mrand.New(mrand.NewSource(self.Seed))
 	}
 
-
 	// Generate a key pair for this Host. We will use it
 	// to obtain a valid Host ID.
 	priv, _, err := crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, r)
@@ -222,6 +221,9 @@ func (self Peer) NewPeerConnection(peerId peer.ID) (*PeerConn, error) {
 		ReaderWriterStream: rw,
 		quit:               make(chan struct{}),
 		sendMessageQueue:   make(chan outMsg, 1),
+		HandleConnected:    self.handleConnected,
+		HandleDisconnected: self.handleDisconnected,
+		HandleFailed:       self.handleFailed,
 	}
 
 	self.PearConns[peerConn.PeerId] = &peerConn
@@ -543,19 +545,24 @@ func (p *Peer) VerAckReceived() bool {
 }
 
 func (p *Peer) handleConnected(peerConn *PeerConn) {
+	Logger.log.Infof("handleConnected %s", peerConn.PeerId.String())
+
 	peerConn.RetryCount = 0
 }
 
 func (p *Peer) handleDisconnected(peerConn *PeerConn) {
 	if peerConn.IsOutbound {
+		time.AfterFunc(10*time.Second, func() {
+			Logger.log.Infof("Retry New Peer Connection %s", peerConn.PeerId.String())
+			peerConn.RetryCount += 1
+			peerConn.updateState(ConnPending)
+			p.NewPeerConnection(peerConn.PeerId)
+		})
+	} else {
 		_peerConn, ok := p.PearConns[peerConn.PeerId]
 		if ok {
 			delete(p.PearConns, _peerConn.PeerId)
 		}
-	} else {
-		peerConn.RetryCount += 1
-		peerConn.updateState(ConnPending)
-		p.NewPeerConnection(peerConn.PeerId)
 	}
 }
 

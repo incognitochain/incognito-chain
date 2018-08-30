@@ -489,6 +489,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnGetBlocks: self.OnGetBlocks,
 			OnVerAck:    self.OnVerAck,
 			OnGetAddr:   self.OnGetAddr,
+			OnAddr:      self.OnAddr,
 		},
 	}
 }
@@ -564,6 +565,11 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 func (self *Server) OnGetAddr(_ *peer.PeerConn, msg *wire.MessageGetAddr) {
 	// TODO for ongetaddr message
 	log.Printf("Receive getaddr message")
+}
+
+func (self *Server) OnAddr(_ *peer.PeerConn, msg *wire.MessageAddr) {
+	// TODO for onaddr message
+	log.Printf("Receive addr message")
 }
 
 func (self Server) PushTxMessage(hashTx *common.Hash) {
