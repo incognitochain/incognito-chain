@@ -28,8 +28,10 @@ type Block struct {
 	Header          BlockHeader
 	Transactions    []transaction.Transaction
 	AgentDataPoints map[string]*AgentDataPoint
+	Index           int32
 	ValidatorSig    string // PoS only
-	blockHash       *common.Hash
+
+	blockHash *common.Hash
 }
 
 /**

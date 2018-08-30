@@ -7,9 +7,6 @@ import (
 
 	"sync"
 
-	"fmt"
-	"log"
-
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 )
@@ -83,7 +80,7 @@ func (self *BlockChain) InitChainState() error {
 	if !initialized {
 		// At this point the database has not already been initialized, so
 		// initialize both it and the chain state to the genesis block.
-		return self.CreateChainState()
+		return self.createChainState()
 	}
 
 	// TODO
@@ -94,46 +91,17 @@ func (self *BlockChain) InitChainState() error {
 // createChainState initializes both the database and the chain state to the
 // genesis block.  This includes creating the necessary buckets and inserting
 // the genesis block, so it must only be called on an uninitialized database.
-func (self *BlockChain) CreateChainState() error {
-	// TODO something
+func (self *BlockChain) createChainState() error {
+	// Create a new block from genesis block and set it as best block of chain
 	genesisBlock := self.Config.ChainParams.GenesisBlock
 	self.Blocks = append(self.Blocks, genesisBlock)
 	self.Headers[*genesisBlock.Hash()] = 0
 	self.BestBlock = genesisBlock
 
-	err := self.Config.Db.StoreBlock(genesisBlock)
-	if err != nil {
-		return err
-	}
-
-	// Spam random blocks
-	for index := 0; index < 0; index++ {
-		hashBestBlock := *self.BestBlock.Hash()
-		//log.Printf(hashBestBlock.String())
-		newSpamBlock := Block{
-			Header: BlockHeader{
-				Version:       1,
-				PrevBlockHash: hashBestBlock,
-				//Timestamp:     time.Now(),
-				Difficulty: 0,     //@todo should be create Difficulty logic
-				Nonce:      index, //@todo should be create Nonce logic
-			},
-		}
-		//log.Printf(newSpamBlock.Header.PrevBlockHash.String())
-		self.Blocks = append(self.Blocks, &newSpamBlock)
-		self.Headers[*newSpamBlock.Hash()] = index + 1
-		self.BestBlock = &newSpamBlock
-	}
-
-	log.Printf("Blocks : \n ---------------------------------------------------------------")
-	for i, block := range self.Blocks {
-		if i == 0 {
-			fmt.Println(fmt.Sprintf("%d -> %s -> %s", i, block.Hash().String(), block.Header.PrevBlockHash.String()))
-		} else {
-			fmt.Println(fmt.Sprintf("%d -> %s", i, block.Hash().String()))
-		}
-	}
-	log.Printf("\n ---------------------------------------------------------------")
+	//err := self.Config.Db.StoreBlock(genesisBlock)
+	//if err != nil {
+	//	return err
+	//}
 
 	return nil
 }
