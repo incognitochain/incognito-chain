@@ -6,6 +6,8 @@ import (
 
 type MessageInvalidBlock struct {
 	Reason       string //the reason it's invalid could be in
+	BlockHash    string
+	ChainID      byte
 	Validator    string
 	ValidatorSig string
 }

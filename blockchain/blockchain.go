@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"errors"
+	"time"
 	//"fmt"
 	//"time"
 
@@ -13,7 +14,7 @@ import (
 
 type BlockChain struct {
 	Config    Config
-	Blocks    []*Block
+	Blocks    [][]*Block
 	Headers   map[common.Hash]int
 	BestBlock *Block
 
@@ -94,7 +95,8 @@ func (self *BlockChain) InitChainState() error {
 func (self *BlockChain) createChainState() error {
 	// Create a new block from genesis block and set it as best block of chain
 	genesisBlock := self.Config.ChainParams.GenesisBlock
-	self.Blocks = append(self.Blocks, genesisBlock)
+	self.Blocks = make([][]*Block, 20)
+	self.Blocks[0] = append(self.Blocks[0], genesisBlock)
 	self.Headers[*genesisBlock.Hash()] = 0
 	self.BestBlock = genesisBlock
 

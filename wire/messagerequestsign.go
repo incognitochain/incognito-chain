@@ -2,9 +2,12 @@ package wire
 
 import (
 	"encoding/json"
+
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 )
 
 type MessageRequestSign struct {
+	Block blockchain.Block
 }
 
 func (self MessageRequestSign) MessageType() string {

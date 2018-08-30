@@ -24,9 +24,8 @@ import (
 	"github.com/ninjadotorg/cash-prototype/netsync"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/rpcserver"
-	"github.com/ninjadotorg/cash-prototype/wire"
 	"github.com/ninjadotorg/cash-prototype/wallet"
-	"path/filepath"
+	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
 const (
@@ -110,7 +109,7 @@ func setupRPCListeners() ([]net.Listener, error) {
 	return listeners, nil
 }
 
-func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams *blockchain.Params, interrupt <-chan struct{}) (error) {
+func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams *blockchain.Params, interrupt <-chan struct{}) error {
 
 	// Init data for Server
 	self.chainParams = chainParams
@@ -150,6 +149,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	self.ConsensusEngine = pos.New(&pos.Config{
 		ChainParams: self.chainParams,
 		Chain:       self.Chain,
+		MemPool:     self.MemPool,
 		BlockGen:    blockTemplateGenerator,
 		Server:      self,
 	})
@@ -566,7 +566,7 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 	}
 }
 
-func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId peer2.ID) error {
+func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerID peer2.ID) error {
 	var dc chan<- struct{}
 	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
 	msg.(*wire.MessageBlock).Block = *block
@@ -587,6 +587,24 @@ func (self *Server) PushBlockMessage(block *blockchain.Block) error {
 			return err
 		}
 		msg.(*wire.MessageBlock).Block = *block
+		listen.QueueMessageWithEncoding(msg, dc)
+	}
+	return nil
+}
+
+func (self *Server) PushRequestSignBlock(block *blockchain.Block, peerID peer2.ID) error {
+	//TODO push block to specific peerID
+	msg, err := wire.MakeEmptyMessage(wire.CmdRequestSign)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageRequestSign).Block = *block
+	return nil
+}
+
+func (self *Server) PushBlockSignature(msg *wire.MessageSignedBlock) error {
+	var dc chan<- struct{}
+	for _, listen := range self.ConnManager.Config.ListenerPeers {
 		listen.QueueMessageWithEncoding(msg, dc)
 	}
 	return nil

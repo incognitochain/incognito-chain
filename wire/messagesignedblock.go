@@ -5,14 +5,18 @@ import (
 )
 
 type MessageSignedBlock struct {
+	BlockHash    string
+	ChainID      byte
+	Validator    string
+	ValidatorSig string
 }
 
 func (self MessageSignedBlock) MessageType() string {
-	return CmdRequestSign
+	return CmdSignedBlock
 }
 
 func (self MessageSignedBlock) MaxPayloadLength(pver int) int {
-	return MaxHeaderPayload
+	return MaxBlockPayload
 }
 
 func (self MessageSignedBlock) JsonSerialize() ([]byte, error) {

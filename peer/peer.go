@@ -40,7 +40,7 @@ type ConnState uint8
 // established or failed depending on the connection result.  An established
 // connection which was disconnected is categorized as disconnected.
 const (
-	ConnPending      ConnState = iota
+	ConnPending ConnState = iota
 	ConnFailing
 	ConnCanceled
 	ConnEstablished
@@ -99,6 +99,10 @@ type MessageListeners struct {
 	OnVerAck    func(p *PeerConn, msg *wire.MessageVerAck)
 	OnGetAddr   func(p *PeerConn, msg *wire.MessageGetAddr)
 	OnAddr      func(p *PeerConn, msg *wire.MessageAddr)
+
+	//PoS
+
+	// OnVerAck    func(p *PeerConn, msg *wire.MessageVerAck)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal

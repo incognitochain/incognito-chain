@@ -5,6 +5,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/mempool"
+
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/mining"
 	"github.com/ninjadotorg/cash-prototype/wire"
@@ -28,9 +30,12 @@ type Config struct {
 	Chain       *blockchain.BlockChain
 	ChainParams *blockchain.Params
 	BlockGen    *mining.BlkTmplGenerator
+	MemPool     *mempool.TxPool
 	Server      interface {
 		// list functions callback which are assigned from Server struct
 		PushBlockMessage(*blockchain.Block) error
+		PushBlockSignature(*wire.MessageSignedBlock) error
+		PushRequestSignBlock(*blockchain.Block) error
 		PushInvalidBlockMessage(*wire.MessageInvalidBlock) error
 		UpdateChain(*blockchain.Block)
 	}
@@ -75,6 +80,14 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 func (self *Engine) signBlock(block *blockchain.Block) (*blockchain.Block, error) {
 	return block, nil
 }
+
+func (self *Engine) OnRequestSign(block *blockchain.Block) {
+	return
+}
+
+// func (self *Engine) filterTx() []*transaction.Transaction {
+
+// }
 
 func New(cfg *Config) *Engine {
 	return &Engine{
