@@ -174,11 +174,15 @@ func (db *db) GetBlockByIndex(idx int32) ([]byte, error) {
 	return b, nil
 }
 
-func (db *db) FetchAllBlocks() ([][]byte, error) {
-	var keys [][]byte
+func (db *db) FetchAllBlocks() ([]*common.Hash, error) {
+	var keys []*common.Hash
 	iter := db.ldb.NewIterator(util.BytesPrefix(blockKeyPrefix), nil)
 	for iter.Next() {
-		keys = append(keys, iter.Key())
+		var h common.Hash
+		for i, b := range iter.Key() {
+			h[i] = b
+		}
+		keys = append(keys, &h)
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
