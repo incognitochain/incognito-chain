@@ -471,7 +471,7 @@ func (self ConnManager) Start() {
 	Logger.log.Info("Connection manager started")
 	self.WaitGroup.Add(1)
 	// Start handler to listent channel from connection peer
-	go self.connHandler()
+	//go self.connHandler()
 
 	// Start all the listeners so long as the caller requested them and
 	// provided a callback to be invoked when connections are accepted.
