@@ -70,12 +70,12 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 		if err != nil {
 			return nil, errors.New("Invalid blockhash format")
 		}
-		bnum, ok := self.Config.Chain.Headers[bhash]
-		if !ok {
+		bnum, err := self.Config.Chain.GetBlockHeighByBlockHash(&bhash)
+		if err != nil {
 			return nil, errors.New("Block not exist")
 		}
 		result.Header = self.Config.Chain.Blocks[bnum].Header
-		result.BlockNum = bnum + 1
+		result.BlockNum = int(bnum) + 1
 		result.BlockHash = bhash.String()
 	case "blocknum":
 		bnum, err := strconv.Atoi(query)

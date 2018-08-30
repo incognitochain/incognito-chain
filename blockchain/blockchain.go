@@ -7,16 +7,16 @@ import (
 
 	"sync"
 
-	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"time"
 	"encoding/json"
+	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 type BlockChain struct {
-	Config    Config
-	Blocks    []*Block
-	Headers   map[common.Hash]int
+	Config Config
+	Blocks []*Block
+	//Headers   map[common.Hash]int
 	BestState *BestState
 
 	chainLock sync.RWMutex
@@ -54,7 +54,7 @@ func (self *BlockChain) Init(config *Config) (error) {
 		return errors.New("blockchain.New chain parameters nil")
 	}
 
-	self.Headers = make(map[common.Hash]int)
+	//self.Headers = make(map[common.Hash]int)
 	// self.Blocks = make(map[*common.Hash]*Block)
 
 	self.Config = *config
@@ -108,8 +108,8 @@ func (self *BlockChain) initChainState() error {
 func (self *BlockChain) createChainState() error {
 	// Create a new block from genesis block and set it as best block of chain
 	genesisBlock := self.Config.ChainParams.GenesisBlock
+	genesisBlock.Height = 0
 	self.Blocks = append(self.Blocks, genesisBlock)
-	self.Headers[*genesisBlock.Hash()] = 0
 
 	// Initialize the state related to the best block.  Since it is the
 	// genesis block, use its timestamp for the median time.
@@ -119,18 +119,36 @@ func (self *BlockChain) createChainState() error {
 	self.BestState = &BestState{}
 	self.BestState.Init(genesisBlock, 0, 0, numTxns, numTxns, time.Unix(genesisBlock.Header.Timestamp.Unix(), 0))
 
-	// store block
-	err := self.Config.Db.StoreBlock(genesisBlock)
+	// store block genesis
+	err := self.StoreBlock(genesisBlock)
 	if err != nil {
 		return err
 	}
 
 	// store best state
-	err = self.Config.Db.StoreBestBlock(self.BestState)
-
+	err = self.StoreBestState()
 	if err != nil {
 		return err
 	}
 
-	return nil
+	// store block hash by index and index by block hash
+	err = self.StoreBlockIndex(genesisBlock)
+
+	return err
+}
+
+func (self *BlockChain) GetBlockHeighByBlockHash(hash *common.Hash) (int32, error) {
+	return self.Config.Db.GetIndexOfBlock(hash)
+}
+
+func (self *BlockChain) StoreBestState() (error) {
+	return self.Config.Db.StoreBestBlock(self.BestState)
+}
+
+func (self *BlockChain) StoreBlock(block *Block) error {
+	return self.Config.Db.StoreBlock(block)
+}
+
+func (self *BlockChain) StoreBlockIndex(block *Block) error {
+	return self.Config.Db.StoreBlockIndex(block.Hash(), block.Height)
 }

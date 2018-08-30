@@ -264,6 +264,7 @@ func getLatestAgentDataPoints(
 
 func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain) (*BlockTemplate, error) {
 
+	prevBlock := chain.BestState.BestBlock
 	prevBlockHash := chain.BestState.BestBlock.Hash()
 	sourceTxns := g.txSource.MiningDescs()
 
@@ -365,6 +366,9 @@ mempoolLoop:
 
 	//update the latest AgentDataPoints to block
 	block.AgentDataPoints = agentDataPoints
+
+	// Set height
+	block.Height = prevBlock.Height + 1
 
 	blockTemp := &BlockTemplate{
 		Block: &block,
