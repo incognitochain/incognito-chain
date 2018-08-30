@@ -126,10 +126,11 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	var err error
 
 	// Create a new block chain instance with the appropriate configuration.9
-	self.Chain, err = blockchain.BlockChain{}.New(&blockchain.Config{
+	self.Chain = &blockchain.BlockChain{}
+	err = self.Chain.Init(&blockchain.Config{
 		ChainParams: self.chainParams,
-		// Db:          self.Db,
-		Interrupt: interrupt,
+		Db:          self.Db,
+		Interrupt:   interrupt,
 	})
 	if err != nil {
 		return err
