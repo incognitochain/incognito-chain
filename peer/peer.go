@@ -97,6 +97,8 @@ type MessageListeners struct {
 	OnGetBlocks func(p *PeerConn, msg *wire.MessageGetBlocks)
 	OnVersion   func(p *PeerConn, msg *wire.MessageVersion)
 	OnVerAck    func(p *PeerConn, msg *wire.MessageVerAck)
+	OnGetAddr   func(p *PeerConn, msg *wire.MessageGetAddr)
+	OnAddr      func(p *PeerConn, msg *wire.MessageAddr)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal
@@ -118,6 +120,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	} else {
 		r = mrand.New(mrand.NewSource(self.Seed))
 	}
+
 
 	// Generate a key pair for this Host. We will use it
 	// to obtain a valid Host ID.
@@ -145,6 +148,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 
 	// Build Host multiaddress
 	mulAddrStr := fmt.Sprintf("/ipfs/%s", basicHost.ID().Pretty())
+
 	hostAddr, err := ma.NewMultiaddr(mulAddrStr)
 	if err != nil {
 		log.Print(err)

@@ -140,6 +140,15 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					self.Config.MessageListeners.OnVerAck(self, message.(*wire.MessageVerAck))
 					self.FlagMutex.Unlock()
 				}
+			case reflect.TypeOf(&wire.MessageGetAddr{}):
+				self.FlagMutex.Lock()
+				self.verAckReceived = true
+				self.FlagMutex.Unlock()
+				if self.Config.MessageListeners.OnGetAddr != nil {
+					self.FlagMutex.Lock()
+					self.Config.MessageListeners.OnGetAddr(self, message.(*wire.MessageGetAddr))
+					self.FlagMutex.Unlock()
+				}
 			default:
 				Logger.log.Warnf("Received unhandled message of type %v "+
 					"from %v", realType, self)

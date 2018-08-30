@@ -25,6 +25,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/rpcserver"
 	"github.com/ninjadotorg/cash-prototype/wire"
+	"path/filepath"
 )
 
 const (
@@ -437,10 +438,22 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 		return nil, err
 	}
 
+	kc := KeyCache{}
+	kc.Load(filepath.Join(cfg.DataDir, "kc.json"))
+
 	peers := make([]peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
+		key := fmt.Sprintf("%s_seed", addr.String())
+		seedT := kc.Get(key)
+		seed := int64(0)
+		if seedT == nil {
+			seed = time.Now().UnixNano()
+			kc.Set(key, seed)
+		} else {
+			seed = int64(seedT.(float64))
+		}
 		peer, err := peer.Peer{
-			Seed:             0,
+			Seed:             seed,
 			FlagMutex:        sync.Mutex{},
 			ListeningAddress: addr,
 			Config:           *self.NewPeerConfig(),
@@ -453,6 +466,9 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 		}
 		peers = append(peers, *peer)
 	}
+
+	kc.Save()
+
 	return peers, nil
 }
 
