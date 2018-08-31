@@ -9,7 +9,7 @@ type DB interface {
 	StoreBlock(v interface{}) error
 	FetchBlock(*common.Hash) ([]byte, error)
 	HasBlock(*common.Hash) (bool, error)
-	FetchAllBlocks() ([][]byte, error)
+	FetchAllBlocks() ([]*common.Hash, error)
 
 	StoreBestBlock(v interface{}) error
 	FetchBestBlock() ([]byte, error)
@@ -18,7 +18,7 @@ type DB interface {
 
 	StoreBlockIndex(*common.Hash, int32) error
 	GetIndexOfBlock(*common.Hash) (int32, error)
-	GetBlockByIndex(int32) ([]byte, error)
+	GetBlockByIndex(int32) (*common.Hash, error)
 
 	Close() error
 }

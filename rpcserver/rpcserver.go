@@ -56,7 +56,7 @@ type RpcServerConfig struct {
 	Listenters []net.Listener
 
 	ChainParams *blockchain.Params
-	Chain       *blockchain.BlockChain
+	BlockChain  *blockchain.BlockChain
 	Db          *database.DB
 	Wallet      *wallet.Wallet
 	ConnMgr     *connmanager.ConnManager
