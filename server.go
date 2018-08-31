@@ -639,7 +639,6 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 
 func (self *Server) UpdateChain(block *blockchain.Block) {
 	// save block
-	self.Chain.Blocks = append(self.Chain.Blocks, block)
 	self.Chain.StoreBlockIndex(block)
 
 	// save best state
