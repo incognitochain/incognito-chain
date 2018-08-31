@@ -127,6 +127,7 @@ func createCoinbaseTx(
 	//create new tx
 	tx := &transaction.Tx{
 		Version: 1,
+		Type:    common.TxNormalType,
 		TxIn:    make([]transaction.TxIn, 0, 2),
 		TxOut:   make([]transaction.TxOut, 0, 1),
 	}
@@ -227,6 +228,7 @@ func getLatestAgentDataPoints(
 				NumOfBonds:       actionParamTx.Param.NumOfBonds,
 				Tax:              actionParamTx.Param.Tax,
 				EligibleAgentIDs: actionParamTx.Param.EligibleAgentIDs,
+				LockTime:         actionParamTx.LockTime,
 			}
 		}
 	}
@@ -362,7 +364,6 @@ mempoolLoop:
 
 	//update the latest AgentDataPoints to block
 	block.AgentDataPoints = agentDataPoints
-
 	// Set height
 	block.Height = prevBlock.Height + 1
 
