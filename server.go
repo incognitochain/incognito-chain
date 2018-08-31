@@ -282,7 +282,7 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 	if err != nil {
 		return
 	}
-	var dc chan<- struct{}
+	dc := make(chan struct{})
 	peerConn.QueueMessageWithEncoding(msg, dc)
 }
 
@@ -567,25 +567,11 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	//	listen.QueueMessageWithEncoding(msg, dc)
 	//}
 
-	//go func() {
-	//	msgV, err := wire.MakeEmptyMessage(wire.CmdVerack)
-	//	if err != nil {
-	//		return
-	//	}
-	//	dc := make(chan struct{})
-	//	peerConn.QueueMessageWithEncoding(msgV, dc)
-	//	//select {
-	//	//case <-dc:
-	//	//	Logger.log.Infof("PEER %s send verack message DONE", peerConn.PeerId.String())
-	//	//	break
-	//	//}
-	//}()
-
 	msgV, err := wire.MakeEmptyMessage(wire.CmdVerack)
 	if err != nil {
 		return
 	}
-	dc := make(chan struct{})
+	var dc chan<- struct{}
 	peerConn.QueueMessageWithEncoding(msgV, dc)
 
 }
@@ -594,20 +580,6 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
 	log.Printf("Receive verack message")
 	self.AddrManager.Good(peerConn.Peer)
-	//go func() {
-	//	msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
-	//	if err != nil {
-	//		return
-	//	}
-	//	dc := make(chan struct{})
-	//	peerConn.QueueMessageWithEncoding(msgS, dc)
-	//	//select {
-	//	//case <-dc:
-	//	//	Logger.log.Infof("PEER %s send getaddr message DONE", peerConn.PeerId.String())
-	//	//	break
-	//	//}
-	//}()
-
 
 	msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
 	if err != nil {
@@ -694,7 +666,7 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 
 func (self *Server) UpdateChain(block *blockchain.Block) {
 	// save block
-	self.Chain.StoreBlock(block)
+	self.Chain.StoreBlockIndex(block)
 
 	// save best state
 	newBestState := &blockchain.BestState{}

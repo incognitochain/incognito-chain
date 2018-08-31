@@ -178,7 +178,6 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 
 				self.FlagMutex.Unlock()
 
-				//outMsg.doneChan <- struct{}{}
 			}
 		case <-self.quit:
 			Logger.log.Infof("PEER %s quit OUT message handler", self.PeerId)
