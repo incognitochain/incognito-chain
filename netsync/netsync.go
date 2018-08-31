@@ -164,13 +164,19 @@ func (self *NetSync) QueueGetBlock(peer *peer.Peer, msg *wire.MessageGetBlocks, 
 func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 	Logger.log.Info("Handling new message block")
 	// TODO get message block and process
+	newBlock := msg.Block
 
 	// Skip verify and insert directly to local blockchain
 	// There should be a method in blockchain.go to insert block to prevent data-race if we read from memory
+
+	isMainChain, isOrphanBlock, err := self.Config.Chain.ProcessBlock(&newBlock)
+	_ = isMainChain
+	_ = isOrphanBlock
+	_ = err
+
 	a := self.Config.Chain.BestState.BestBlock.Hash().String()
 	Logger.log.Infof(a)
 	//if msg.Block.Header.PrevBlockHash == a {
-	newBlock := msg.Block
 	self.Config.Server.UpdateChain(&newBlock)
 	//}
 }

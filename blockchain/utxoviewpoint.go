@@ -34,7 +34,7 @@ type UtxoEntry struct {
 	// specifically crafted to result in minimal padding.  There will be a
 	// lot of these in memory, so a few extra bytes of padding adds up.
 
-	amount      int64
+	amount      float64
 	pkScript    []byte // The public key script for the output.
 	blockHeight int32  // Height of block containing tx.
 
@@ -79,7 +79,7 @@ func (entry *UtxoEntry) Spend() {
 }
 
 // Amount returns the amount of the output.
-func (entry *UtxoEntry) Amount() int64 {
+func (entry *UtxoEntry) Amount() float64 {
 	return entry.amount
 }
 
@@ -134,6 +134,55 @@ func (view *UtxoViewpoint) SetBestHash(hash *common.Hash) {
 // disconnected during a reorg.
 func (view *UtxoViewpoint) LookupEntry(outpoint transaction.OutPoint) *UtxoEntry {
 	return view.entries[outpoint]
+}
+
+// addTxOut adds the specified output to the view if it is not provably
+// unspendable.  When the view already has an entry for the output, it will be
+// marked unspent.  All fields will be updated for existing entries since it's
+// possible it has changed during a reorg.
+func (view *UtxoViewpoint) addTxOut(outpoint transaction.OutPoint, txOut *transaction.TxOut, isCoinBase bool, blockHeight int32) {
+	// Don't add provably unspendable outputs.
+	//if txscript.IsUnspendable(txOut.PkScript) {
+	//	return
+	//}
+
+	// Update existing entries.  All fields are updated because it's
+	// possible (although extremely unlikely) that the existing entry is
+	// being replaced by a different transaction with the same hash.  This
+	// is allowed so long as the previous transaction is fully spent.
+	entry := view.LookupEntry(outpoint)
+	if entry == nil {
+		entry = new(UtxoEntry)
+		view.entries[outpoint] = entry
+	}
+
+	entry.amount = txOut.Value
+	entry.pkScript = txOut.PkScript
+	entry.blockHeight = blockHeight
+	entry.packedFlags = tfModified
+	if isCoinBase {
+		entry.packedFlags |= tfCoinBase
+	}
+}
+
+// AddTxOuts adds all outputs in the passed transaction which are not provably
+// unspendable to the view.  When the view already has entries for any of the
+// outputs, they are simply marked unspent.  All fields will be updated for
+// existing entries since it's possible it has changed during a reorg.
+func (view *UtxoViewpoint) AddTxOuts(tx *transaction.Tx, blockHeight int32) {
+	// Loop all of the transaction outputs and add those which are not
+	// provably unspendable.
+	isCoinBase := IsCoinBaseTx(*tx)
+	prevOut := transaction.OutPoint{Hash: *tx.Hash()}
+	for txOutIdx, txOut := range tx.TxOut {
+		// Update existing entries.  All fields are updated because it's
+		// possible (although extremely unlikely) that the existing
+		// entry is being replaced by a different transaction with the
+		// same hash.  This is allowed so long as the previous
+		// transaction is fully spent.
+		prevOut.Vout = uint32(txOutIdx)
+		view.addTxOut(prevOut, &txOut, isCoinBase, blockHeight)
+	}
 }
 
 // Entries returns the underlying map that stores of all the utxo entries.

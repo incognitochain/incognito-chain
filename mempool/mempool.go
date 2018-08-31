@@ -53,9 +53,9 @@ type TxPool struct {
 	// The following variables must only be used atomically.
 	lastUpdated int64 // last time pool was updated
 
-	mtx  sync.RWMutex
-	cfg  Config
-	pool map[common.Hash]*TxDesc
+	mtx    sync.RWMutex
+	Config Config
+	pool   map[common.Hash]*TxDesc
 	//orphans       map[chainhash.Hash]*orphanTx
 	//orphansByPrev map[wire.OutPoint]map[common.Hash]*Tx
 	//outpoints     map[wire.OutPoint]*Tx
@@ -109,14 +109,14 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee float64) *
 func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
 	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
-	bestHeight := tp.cfg.BlockChain.BestState.BestBlock.Height
+	bestHeight := tp.Config.BlockChain.BestState.BestBlock.Height
 	nextBlockHeight := bestHeight + 1
 
 	// Perform several checks on the transaction inputs using the invariant
 	// rules in blockchain for what transactions are allowed into blocks.
 	// Also returns the fees associated with the transaction which will be
 	// used later.
-	txFee, err := tp.cfg.BlockChain.CheckTransactionInputs(&tx, nextBlockHeight, nil, tp.cfg.ChainParams)
+	txFee, err := tp.Config.BlockChain.CheckTransactionInputs(&tx, nextBlockHeight, nil, tp.Config.ChainParams)
 	if err != nil {
 		//if cerr, ok := err.(blockchain.RuleError); ok {
 		//	return nil, nil, chainRuleError(cerr)
@@ -193,7 +193,7 @@ func (tp *TxPool) Clear() {
 // transactions until they are mined into a block.
 func New(cfg *Config) *TxPool {
 	return &TxPool{
-		cfg:            *cfg,
+		Config:         *cfg,
 		pool:           make(map[common.Hash]*TxDesc),
 		nextExpireScan: time.Now().Add(orphanExpireScanInterval),
 	}
