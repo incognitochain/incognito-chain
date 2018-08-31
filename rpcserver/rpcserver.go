@@ -20,6 +20,8 @@ import (
 	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/wallet"
+	"github.com/ninjadotorg/cash-prototype/connmanager"
+	"github.com/ninjadotorg/cash-prototype/addrmanager"
 )
 
 const (
@@ -57,6 +59,8 @@ type RpcServerConfig struct {
 	Chain       *blockchain.BlockChain
 	Db          *database.DB
 	Wallet      *wallet.Wallet
+	ConnMgr     *connmanager.ConnManager
+	AddrMgr     *addrmanager.AddrManager
 	Server interface {
 		// Push Tx message
 		PushTxMessage(*common.Hash)

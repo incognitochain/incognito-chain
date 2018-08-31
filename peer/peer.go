@@ -178,7 +178,7 @@ func (self Peer) Start() error {
 	self.Host.SetStreamHandler("/blockchain/1.0.0", self.HandleStream)
 	select {
 	case <-self.quit:
-		Logger.log.Infof("PEER %s quit", self.PeerId)
+		Logger.log.Infof("PEER server shutdown complete %s", self.PeerId)
 		break
 	} // hang forever
 	return nil
@@ -324,7 +324,6 @@ func (self *Peer) Disconnect() {
 
 func (p *Peer) handleConnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleConnected %s", peerConn.PeerId.String())
-
 	peerConn.RetryCount = 0
 }
 
