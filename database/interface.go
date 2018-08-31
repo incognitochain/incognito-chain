@@ -18,7 +18,7 @@ type DB interface {
 
 	StoreBlockIndex(*common.Hash, int32) error
 	GetIndexOfBlock(*common.Hash) (int32, error)
-	GetBlockByIndex(int32) ([]byte, error)
+	GetBlockByIndex(int32) (*common.Hash, error)
 
 	Close() error
 }
