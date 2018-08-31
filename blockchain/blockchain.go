@@ -134,19 +134,26 @@ func (self *BlockChain) createChainState() error {
 	// store block hash by index and index by block hash
 	err = self.StoreBlockIndex(genesisBlock)
 
-	_, _ = self.GetAllBlocks()
-
 	return err
 }
 
+/**
+Get block index(height) of block
+ */
 func (self *BlockChain) GetBlockHeightByBlockHash(hash *common.Hash) (int32, error) {
 	return self.Config.Db.GetIndexOfBlock(hash)
 }
 
+/**
+Get block hash by block index(height)
+ */
 func (self *BlockChain) GetBlockHashByBlockHeight(height int32) (*common.Hash, error) {
 	return self.Config.Db.GetBlockByIndex(height)
 }
 
+/**
+Fetch DB and get block by index(height) of block
+ */
 func (self *BlockChain) GetBlockByBlockHeight(height int32) (*Block, error) {
 	hashBlock, err := self.Config.Db.GetBlockByIndex(height)
 	if err != nil {
@@ -164,6 +171,9 @@ func (self *BlockChain) GetBlockByBlockHeight(height int32) (*Block, error) {
 	return &block, nil
 }
 
+/**
+Fetch DB and get block data by block hash
+ */
 func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 	blockBytes, err := self.Config.Db.FetchBlock(hash)
 	if err != nil {
@@ -177,18 +187,33 @@ func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 	return &block, nil
 }
 
+/**
+Store best state of block(best block, num of tx, ...) into Database
+ */
 func (self *BlockChain) StoreBestState() (error) {
 	return self.Config.Db.StoreBestBlock(self.BestState)
 }
 
+/**
+Store block into Database
+ */
 func (self *BlockChain) StoreBlock(block *Block) error {
 	return self.Config.Db.StoreBlock(block)
 }
 
+/**
+Save index(height) of block by block hash
+and
+Save block hash by index(height) of block
+ */
 func (self *BlockChain) StoreBlockIndex(block *Block) error {
 	return self.Config.Db.StoreBlockIndex(block.Hash(), block.Height)
 }
 
+/**
+Get all blocks in chain
+Return block array
+ */
 func (self *BlockChain) GetAllBlocks() ([]*Block, error) {
 	result := make([]*Block, 0)
 	data, err := self.Config.Db.FetchAllBlocks()
@@ -211,6 +236,10 @@ func (self *BlockChain) GetAllBlocks() ([]*Block, error) {
 	return result, nil
 }
 
+/**
+Get all hash of blocks in chain
+Return hashes array
+ */
 func (self *BlockChain) GetAllHashBlocks() ([]*common.Hash, error) {
 	data, err := self.Config.Db.FetchAllBlocks()
 	if err != nil {
