@@ -103,11 +103,16 @@ func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan s
 	return "", nil
 }
 
+/**
+getblockchaininfo RPC return information fo blockchain node
+ */
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	allHashBlocks, _ := self.Config.Chain.GetAllHashBlocks()
 	result := jsonrpc.GetBlockChainInfoResult{
-		Chain:  self.Config.ChainParams.Name,
-		Blocks: len(allHashBlocks),
+		Chain:         self.Config.ChainParams.Name,
+		Blocks:        len(allHashBlocks),
+		BestBlockHash: self.Config.Chain.BestState.BestBlockHash.String(),
+		Difficulty:    self.Config.Chain.BestState.Difficulty,
 	}
 	return result, nil
 }

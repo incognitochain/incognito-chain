@@ -79,7 +79,7 @@ type GetBlockChainInfoResult struct {
 	Blocks               int     `json:"Blocks"`
 	Headers              int32   `json:"Headers"`
 	BestBlockHash        string  `json:"BestBlockHash"`
-	Difficulty           float64 `json:"Difficulty"`
+	Difficulty           uint32  `json:"Difficulty"`
 	MedianTime           int64   `json:"MedianTime"`
 	VerificationProgress float64 `json:"VerificationProgress,omitempty"`
 	Pruned               bool    `json:"Pruned"`

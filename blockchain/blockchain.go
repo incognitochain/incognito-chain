@@ -14,9 +14,7 @@ import (
 )
 
 type BlockChain struct {
-	Config Config
-	//Blocks []*Block
-	//Headers   map[common.Hash]int
+	Config    Config
 	BestState *BestState
 
 	chainLock sync.RWMutex
@@ -53,9 +51,6 @@ func (self *BlockChain) Init(config *Config) (error) {
 	if config.ChainParams == nil {
 		return errors.New("blockchain.New chain parameters nil")
 	}
-
-	//self.Headers = make(map[common.Hash]int)
-	// self.Blocks = make(map[*common.Hash]*Block)
 
 	self.Config = *config
 
