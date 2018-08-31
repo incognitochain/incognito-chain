@@ -465,13 +465,11 @@ func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan str
 	log.Println(params)
 	result := make(map[string]interface{})
 
-	peersMap := []map[string]interface{}{}
+	peersMap := []string{}
 
 	peers := self.Config.AddrMgr.AddressCache()
 	for _, peer := range peers {
-		peerMap := map[string]interface{}{}
-		peerMap["peer_id"] = peer.PeerId
-		peerMap["raw_address"] = peer.RawAddress
+		peersMap = append(peersMap, peer.RawAddress)
 	}
 
 	result["peers"] = peersMap
