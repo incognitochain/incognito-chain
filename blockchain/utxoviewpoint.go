@@ -2,8 +2,8 @@ package blockchain
 
 import (
 	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 // txoFlags is a bitmask defining additional information and state for a
@@ -140,6 +140,13 @@ func (view *UtxoViewpoint) Entries() map[transaction.OutPoint]*UtxoEntry {
 	return view.entries
 }
 
+// fetchUtxosMain fetches unspent transaction output data about the provided
+// set of outpoints from the point of view of the end of the main chain at the
+// time of the call.
+//
+// Upon completion of this function, the view will contain an entry for each
+// requested outpoint.  Spent outputs, or those which otherwise don't exist,
+// will result in a nil entry in the view.
 func (view *UtxoViewpoint) fetchUtxosMain(db database.DB, outpoints map[transaction.OutPoint]struct{}) error {
 	// Nothing to do if there are no requested outputs.
 	if len(outpoints) == 0 {

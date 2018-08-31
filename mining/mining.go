@@ -390,6 +390,7 @@ type TxSource interface {
 
 	RemoveTx(tx transaction.Tx)
 
+	// TODO using when demo
 	Clear()
 }
 

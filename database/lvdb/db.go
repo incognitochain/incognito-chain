@@ -133,7 +133,7 @@ func (db *db) StoreBestBlock(v interface{}) error {
 	return nil
 }
 
-func (db *db) FetchBestBlock() ([]byte, error) {
+func (db *db) FetchBestState() ([]byte, error) {
 	block, err := db.ldb.Get(bestBlockKey, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "db.ldb.Get")

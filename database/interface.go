@@ -13,7 +13,7 @@ type DB interface {
 	FetchAllBlocks() ([]*common.Hash, error)
 
 	StoreBestBlock(v interface{}) error
-	FetchBestBlock() ([]byte, error)
+	FetchBestState() ([]byte, error)
 
 	StoreTx([]byte) error
 
