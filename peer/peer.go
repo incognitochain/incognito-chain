@@ -29,6 +29,9 @@ const (
 	// trickleTimeout is the duration of the ticker which trickles down the
 	// inventory to a peer.
 	trickleTimeout = 10 * time.Second
+
+	maxRetryConn      = 10
+	retryConnDuration = 10 * time.Second
 )
 
 // ConnState represents the state of the requested connection.
@@ -353,12 +356,7 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 
 	if peerConn.IsOutbound {
 		if peerConn.State() != ConnCanceled {
-			time.AfterFunc(10*time.Second, func() {
-				Logger.log.Infof("Retry New Peer Connection %s", peerConn.PeerId.String())
-				peerConn.RetryCount += 1
-				peerConn.updateState(ConnPending)
-				self.NewPeerConnection(peerConn.Peer)
-			})
+
 		}
 	} else {
 		_peerConn, ok := self.PeerConns[peerConn.PeerId]
@@ -383,4 +381,25 @@ func (self *Peer) handleFailed(peerConn *PeerConn) {
 	if self.HandleFailed != nil {
 		self.HandleFailed(peerConn)
 	}
+}
+
+func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
+	time.AfterFunc(retryConnDuration, func() {
+		Logger.log.Infof("Retry New Peer Connection %s", peerConn.PeerId.String())
+		peerConn.RetryCount += 1
+
+		if peerConn.RetryCount < maxRetryConn {
+			peerConn.updateState(ConnPending)
+			_, err := peerConn.ListenerPeer.NewPeerConnection(peerConn.Peer)
+			if err != nil {
+				self.retryPeerConnection(peerConn)
+			}
+		} else {
+			peerConn.updateState(ConnCanceled)
+			_peerConn, ok := self.PeerConns[peerConn.PeerId]
+			if ok {
+				delete(self.PeerConns, _peerConn.PeerId)
+			}
+		}
+	})
 }

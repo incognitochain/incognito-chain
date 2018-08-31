@@ -246,6 +246,35 @@ func (self *BlockChain) StoreBlockIndex(block *Block) error {
 	return self.Config.DataBase.StoreBlockIndex(block.Hash(), block.Height)
 }
 
+// Uses an existing database to update the utxo set
+// in the database based on the provided utxo view contents and state.  In
+// particular, only the entries that have been marked as modified are written
+// to the database.
+func (self *BlockChain) StoreUtxoView(view *UtxoViewpoint) error {
+	for outpoint, entry := range view.entries {
+		// No need to update the database if the entry was not modified.
+		if entry == nil || !entry.isModified() {
+			continue
+		}
+
+		// Remove the utxo entry if it is spent.
+		if entry.IsSpent() {
+			err := self.Config.DataBase.DeleteUtxoEntry(&outpoint)
+			//recycleOutpointKey(key)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
+		err := self.Config.DataBase.StoreUtxoEntry(&outpoint, entry)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 /**
 Get all blocks in chain
 Return block array
@@ -311,7 +340,6 @@ func (b *BlockChain) FetchUtxoView(tx transaction.Tx) (*UtxoViewpoint, error) {
 	// chain.
 	view := NewUtxoViewpoint()
 	b.chainLock.RLock()
-	//@todo will implement late
 	err := view.fetchUtxosMain(b.Config.DataBase, neededSet)
 	b.chainLock.RUnlock()
 	return view, err

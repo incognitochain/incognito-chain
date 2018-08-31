@@ -47,7 +47,7 @@ type Server struct {
 
 	chainParams *blockchain.Params
 	ConnManager *connmanager.ConnManager
-	Chain       *blockchain.BlockChain
+	BlockChain  *blockchain.BlockChain
 	Db          database.DB
 	RpcServer   *rpcserver.RpcServer
 	MemPool     *mempool.TxPool
@@ -117,17 +117,12 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	self.donePeers = make(chan *peer.Peer)
 	self.newPeers = make(chan *peer.Peer)
 	self.Db = db
-	self.MemPool = mempool.New(&mempool.Config{
-		Policy: mempool.Policy{},
-	})
-
-	self.AddrManager = addrmanager.New(cfg.DataDir, nil)
 
 	var err error
 
 	// Create a new block chain instance with the appropriate configuration.9
-	self.Chain = &blockchain.BlockChain{}
-	err = self.Chain.Init(&blockchain.Config{
+	self.BlockChain = &blockchain.BlockChain{}
+	err = self.BlockChain.Init(&blockchain.Config{
 		ChainParams: self.chainParams,
 		DataBase:    self.Db,
 		Interrupt:   interrupt,
@@ -136,19 +131,27 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		return err
 	}
 
-	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.Chain)
+	self.MemPool = mempool.New(&mempool.Config{
+		Policy:      mempool.Policy{},
+		BlockChain:  self.BlockChain,
+		ChainParams: chainParams,
+	})
 
-	// self.Miner = miner.New(&miner.Config{
-	// 	ChainParams:            self.chainParams,
-	// 	BlockTemplateGenerator: blockTemplateGenerator,
-	// 	MiningAddrs:            cfg.MiningAddrs,
-	// 	Chain:                  self.Chain,
-	// 	Server:                 self,
-	// })
+	self.AddrManager = addrmanager.New(cfg.DataDir, nil)
+
+	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.BlockChain)
+
+	self.Miner = miner.New(&miner.Config{
+		ChainParams:            self.chainParams,
+		BlockTemplateGenerator: blockTemplateGenerator,
+		MiningAddrs:            cfg.MiningAddrs,
+		Chain:                  self.BlockChain,
+		Server:                 self,
+	})
 
 	self.ConsensusEngine = pos.New(&pos.Config{
 		ChainParams: self.chainParams,
-		Chain:       self.Chain,
+		Chain:       self.BlockChain,
 		MemPool:     self.MemPool,
 		BlockGen:    blockTemplateGenerator,
 		Server:      self,
@@ -156,7 +159,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	// Init Net Sync manager to process messages
 	self.NetSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
-		Chain:      self.Chain,
+		Chain:      self.BlockChain,
 		ChainParam: chainParams,
 		MemPool:    self.MemPool,
 		Server:     self,
@@ -217,7 +220,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 			RPCQuirks:     cfg.RPCQuirks,
 			RPCMaxClients: cfg.RPCMaxClients,
 			ChainParams:   chainParams,
-			BlockChain:    self.Chain,
+			BlockChain:    self.BlockChain,
 			TxMemPool:     self.MemPool,
 			Server:        self,
 			Wallet:        self.Wallet,
@@ -261,7 +264,7 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 	//go self.peerDoneHandler(peer)
 	//
 	//msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
-	//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.Chain.BestState.BestBlock.Hash()
+	//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.BlockChain.BestState.BestBlock.Hash()
 	//msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerId
 	//if err != nil {
 	//	return
@@ -282,7 +285,7 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 	if err != nil {
 		return
 	}
-	var dc chan<- struct{}
+	dc := make(chan struct{})
 	peerConn.QueueMessageWithEncoding(msg, dc)
 }
 
@@ -572,25 +575,11 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	//	listen.QueueMessageWithEncoding(msg, dc)
 	//}
 
-	//go func() {
-	//	msgV, err := wire.MakeEmptyMessage(wire.CmdVerack)
-	//	if err != nil {
-	//		return
-	//	}
-	//	dc := make(chan struct{})
-	//	peerConn.QueueMessageWithEncoding(msgV, dc)
-	//	//select {
-	//	//case <-dc:
-	//	//	Logger.log.Infof("PEER %s send verack message DONE", peerConn.PeerId.String())
-	//	//	break
-	//	//}
-	//}()
-
 	msgV, err := wire.MakeEmptyMessage(wire.CmdVerack)
 	if err != nil {
 		return
 	}
-	dc := make(chan struct{})
+	var dc chan<- struct{}
 	peerConn.QueueMessageWithEncoding(msgV, dc)
 
 }
@@ -599,20 +588,6 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
 	log.Printf("Receive verack message")
 	self.AddrManager.Good(peerConn.Peer)
-	//go func() {
-	//	msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
-	//	if err != nil {
-	//		return
-	//	}
-	//	dc := make(chan struct{})
-	//	peerConn.QueueMessageWithEncoding(msgS, dc)
-	//	//select {
-	//	//case <-dc:
-	//	//	Logger.log.Infof("PEER %s send getaddr message DONE", peerConn.PeerId.String())
-	//	//	break
-	//	//}
-	//}()
-
 
 	msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
 	if err != nil {
@@ -728,15 +703,15 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 
 func (self *Server) UpdateChain(block *blockchain.Block) {
 	// save block
-	self.Chain.StoreBlock(block)
+	self.BlockChain.StoreBlock(block)
 
 	// save best state
 	newBestState := &blockchain.BestState{}
 	numTxns := uint64(len(block.Transactions))
 	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0))
-	self.Chain.BestState = newBestState
-	self.Chain.StoreBestState()
+	self.BlockChain.BestState = newBestState
+	self.BlockChain.StoreBestState()
 
 	// save index of block
-	self.Chain.StoreBlockIndex(block)
+	self.BlockChain.StoreBlockIndex(block)
 }

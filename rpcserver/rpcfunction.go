@@ -1,17 +1,21 @@
 package rpcserver
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"golang.org/x/crypto/ed25519"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -102,7 +106,7 @@ func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan s
 
 /**
 getblockchaininfo RPC return information fo blockchain node
- */
+*/
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	allHashBlocks, _ := self.Config.BlockChain.GetAllHashBlocks()
 	result := jsonrpc.GetBlockChainInfoResult{
@@ -142,29 +146,29 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 	addresses = strings.Fields(listAddresses)
 	blocks, _ := self.Config.BlockChain.GetAllBlocks()
 	result := make([]jsonrpc.ListUnspentResult, 0)
-	// for _, block := range blocks {
-	// 	if len(block.Transactions) > 0 {
-	// 		for _, tx := range block.Transactions {
-	// 			if tx.GetType() == common.TxActionParamsType {
-	// 				continue
-	// 			}
-	// 			normalTx := tx.(*transaction.Tx)
-	// 			if len(normalTx.TxOut) > 0 {
-	// 				for index, txOut := range normalTx.TxOut {
-	// 					if bytes.Compare(txOut.PkScript, []byte(addresses[0])) == 0 {
-	// 						result = append(result, jsonrpc.ListUnspentResult{
-	// 							Vout:      index,
-	// 							TxID:      normalTx.Hash().String(),
-	// 							Address:   string(txOut.PkScript),
-	// 							Amount:    txOut.Value,
-	// 							TxOutType: txOut.TxOutType,
-	// 						})
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
+	for _, block := range blocks {
+		if len(block.Transactions) > 0 {
+			for _, tx := range block.Transactions {
+				if tx.GetType() == common.TxActionParamsType {
+					continue
+				}
+				normalTx := tx.(*transaction.Tx)
+				if len(normalTx.TxOut) > 0 {
+					for index, txOut := range normalTx.TxOut {
+						if bytes.Compare(txOut.PkScript, []byte(addresses[0])) == 0 {
+							result = append(result, jsonrpc.ListUnspentResult{
+								Vout:      index,
+								TxID:      normalTx.Hash().String(),
+								Address:   string(txOut.PkScript),
+								Amount:    txOut.Value,
+								TxOutType: txOut.TxOutType,
+							})
+						}
+					}
+				}
+			}
+		}
+	}
 	return result, nil
 }
 
@@ -385,6 +389,21 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 		Tax:              param["tax"].(float64),
 		EligibleAgentIDs: assertEligibleAgentIDs(param["eligibleAgentIDs"]),
 	}
+
+	// check signed tx
+	message := map[string]interface{}{
+		"agentId":          tx.Param.AgentID,
+		"numOfCoins":       tx.Param.NumOfCoins,
+		"numOfBonds":       tx.Param.NumOfBonds,
+		"tax":              tx.Param.Tax,
+		"eligibleAgentIDs": tx.Param.EligibleAgentIDs,
+	}
+	pubKeyInBytes, _ := base64.StdEncoding.DecodeString(tx.Param.AgentID)
+	sigInBytes, _ := base64.StdEncoding.DecodeString(tx.Param.AgentSig)
+	messageInBytes, _ := json.Marshal(message)
+
+	isValid := ed25519.Verify(pubKeyInBytes, messageInBytes, sigInBytes)
+	fmt.Println("isValid: ", isValid)
 
 	_, _, err := self.Config.TxMemPool.CanAcceptTransaction(&tx)
 	if err != nil {
