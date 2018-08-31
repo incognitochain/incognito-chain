@@ -2,6 +2,7 @@ package database
 
 import (
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 // DB provides the interface that is used to store blocks.
@@ -19,6 +20,8 @@ type DB interface {
 	StoreBlockIndex(*common.Hash, int32) error
 	GetIndexOfBlock(*common.Hash) (int32, error)
 	GetBlockByIndex(int32) (*common.Hash, error)
+
+	StoreOutpoint(*transaction.OutPoint) error
 
 	Close() error
 }
