@@ -21,7 +21,8 @@ type DB interface {
 	GetIndexOfBlock(*common.Hash) (int32, error)
 	GetBlockByIndex(int32) (*common.Hash, error)
 
-	StoreOutpoint(*transaction.OutPoint) error
+	StoreEntry(*transaction.OutPoint, interface{}) error
+	FetchEntry(*transaction.OutPoint) ([]byte, error)
 
 	Close() error
 }
