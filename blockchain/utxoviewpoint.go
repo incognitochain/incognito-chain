@@ -4,6 +4,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"encoding/json"
 )
 
 // txoFlags is a bitmask defining additional information and state for a
@@ -161,11 +162,13 @@ func (view *UtxoViewpoint) fetchUtxosMain(db database.DB, outpoints map[transact
 	// so other code can use the presence of an entry in the store as a way
 	// to unnecessarily avoid attempting to reload it from the database.
 	for outpoint := range outpoints {
-		//entry, err := db.FetchUtxoEntry(outpoint)
-		//if err != nil {
-		//	return err
-		//}
-		view.entries[outpoint] = nil
+		entryBytes, err := db.FetchUtxoEntry(&outpoint)
+		if err != nil {
+			return err
+		}
+		entry := UtxoEntry{}
+		err = json.Unmarshal(entryBytes, &entry)
+		view.entries[outpoint] = &entry
 	}
 
 	return nil

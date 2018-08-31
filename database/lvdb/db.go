@@ -210,23 +210,32 @@ func (db *db) getKeyIdx(h *common.Hash) []byte {
 	return key
 }
 
-func (db *db) StoreEntry(op *transaction.OutPoint, v interface{}) error {
+func (db *db) StoreUtxoEntry(op *transaction.OutPoint, v interface{}) error {
 	val, err := json.Marshal(v)
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
 	}
-	key := fmt.Sprintf("%s%d", op.Hash.String(), op.Vout)
-	if err := db.ldb.Put([]byte(key), val, nil); err != nil {
+	if err := db.ldb.Put([]byte(db.getUtxoKey(op)), val, nil); err != nil {
 		return errors.Wrap(err, "db.ldb.Put")
 	}
 	return nil
 }
 
-func (db *db) FetchEntry(op *transaction.OutPoint) ([]byte, error) {
-	key := fmt.Sprintf("%s%d", op.Hash.String(), op.Vout)
-	b, err := db.ldb.Get([]byte(key), nil)
+func (db *db) FetchUtxoEntry(op *transaction.OutPoint) ([]byte, error) {
+	b, err := db.ldb.Get([]byte(db.getUtxoKey(op)), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "db.ldb.Get")
 	}
 	return b, nil
+}
+
+func (db *db) DeleteUtxoEntry(op *transaction.OutPoint) error {
+	if err := db.ldb.Delete([]byte(db.getUtxoKey(op)), nil); err != nil {
+		return errors.Wrap(err, "db.ldb.Delete")
+	}
+	return nil
+}
+
+func (db *db) getUtxoKey(op *transaction.OutPoint) string {
+	return fmt.Sprintf("%s%d", op.Hash.String(), op.Vout)
 }

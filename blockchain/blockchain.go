@@ -242,6 +242,27 @@ func (self *BlockChain) StoreBlockIndex(block *Block) error {
 	return self.Config.DataBase.StoreBlockIndex(block.Hash(), block.Height)
 }
 
+func (self *BlockChain) StoreUtxoView(view *UtxoViewpoint) {
+	for _, entry := range view.entries {
+		// No need to update the database if the entry was not modified.
+		if entry == nil || !entry.isModified() {
+			continue
+		}
+
+		// Remove the utxo entry if it is spent.
+		if entry.IsSpent() {
+			//key := outpointKey(outpoint)
+			//err := utxoBucket.Delete(*key)
+			//recycleOutpointKey(key)
+			//if err != nil {
+			//	return err
+			//}
+			//
+			//continue
+		}
+	}
+}
+
 /**
 Get all blocks in chain
 Return block array
@@ -307,7 +328,6 @@ func (b *BlockChain) FetchUtxoView(tx transaction.Tx) (*UtxoViewpoint, error) {
 	// chain.
 	view := NewUtxoViewpoint()
 	b.chainLock.RLock()
-	//@todo will implement late
 	err := view.fetchUtxosMain(b.Config.DataBase, neededSet)
 	b.chainLock.RUnlock()
 	return view, err
