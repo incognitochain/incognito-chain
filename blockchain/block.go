@@ -69,7 +69,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				preHash, _ := common.Hash{}.NewHashFromStr(tempOutPoint["Hash"].(string))
 				pOutPoint := transaction.OutPoint{
 					Hash: *preHash,
-					Vout: int(tempOutPoint["Vout"].(float64)),
+					Vout: uint32(tempOutPoint["Vout"].(float64)),
 				}
 				t := transaction.TxIn{
 					Sequence:         int(v["Sequence"].(float64)),

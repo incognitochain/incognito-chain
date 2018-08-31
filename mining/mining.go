@@ -133,7 +133,7 @@ func createCoinbaseTx(
 	//create outpoint
 	outPoint := &transaction.OutPoint{
 		Hash: common.Hash{},
-		Vout: 1,
+		Vout: transaction.MaxPrevOutIndex,
 	}
 
 	txIn := *transaction.TxIn{}.NewTxIn(outPoint, coinbaseScript)
@@ -161,8 +161,8 @@ func createCoinbaseTx(
 func sumTxInValues(txIns []transaction.TxIn) float64 {
 	// TODO: calcualte sum of txIn values
 	var sum float64
-	for _, txIn := range txIns {
-		sum += txIn.Value
+	for _, _ = range txIns {
+		//sum += txIn.Value
 	}
 	return sum
 }
