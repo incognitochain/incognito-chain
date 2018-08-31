@@ -23,6 +23,7 @@ type DB interface {
 
 	StoreUtxoEntry(*transaction.OutPoint, interface{}) error
 	FetchUtxoEntry(*transaction.OutPoint) ([]byte, error)
+	DeleteUtxoEntry(*transaction.OutPoint) error
 
 	Close() error
 }
