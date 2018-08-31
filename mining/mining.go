@@ -159,6 +159,21 @@ func createCoinbaseTx(
 	return tx, nil
 }
 
+// spendTransaction updates the passed view by marking the inputs to the passed
+// transaction as spent.  It also adds all outputs in the passed transaction
+// which are not provably unspendable as available unspent transaction outputs.
+func spendTransaction(utxoView *blockchain.UtxoViewpoint, tx *transaction.Tx, height int32) error {
+	for _, txIn := range tx.TxIn {
+		entry := utxoView.LookupEntry(txIn.PreviousOutPoint)
+		if entry != nil {
+			entry.Spend()
+		}
+	}
+
+	utxoView.AddTxOuts(tx, height)
+	return nil
+}
+
 func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 	[]transaction.Transaction,
 	[]*transaction.ActionParamTx,
