@@ -177,12 +177,14 @@ func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Handling new message getblock")
-	if senderBlockHeaderIndex, err := self.Config.Chain.GetBlockHeighByBlockHash(&msg.LastBlockHash); err == nil {
+	if senderBlockHeaderIndex, err := self.Config.Chain.GetBlockHeightByBlockHash(&msg.LastBlockHash); err == nil {
 		if self.Config.Chain.BestState.BestBlock.Hash() != &msg.LastBlockHash {
 			// Send Blocks back to requestor
-			for index := int(senderBlockHeaderIndex) + 1; index < len(self.Config.Chain.Blocks); index++ {
-				fmt.Printf("Send block %x \n", *self.Config.Chain.Blocks[index].Hash())
-				self.Config.Server.PushBlockMessageWithPeerId(self.Config.Chain.Blocks[index], msg.SenderID)
+			allBlocks, _ := self.Config.Chain.GetAllBlocks()
+			for index := int(senderBlockHeaderIndex) + 1; index < len(allBlocks); index++ {
+				block, _ := self.Config.Chain.GetBlockByBlockHeight(int32(index))
+				fmt.Printf("Send block %x \n", *block.Hash())
+				self.Config.Server.PushBlockMessageWithPeerId(block, msg.SenderID)
 				time.Sleep(time.Second * 3)
 			}
 		}

@@ -48,7 +48,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		return nil
 	}
 
-	// Process Db
+	// Process DataBase
 	// Load the block database.
 	/*db, err := loadBlockDB(cfg)
 	if err != nil {

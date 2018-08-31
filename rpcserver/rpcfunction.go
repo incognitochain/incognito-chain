@@ -37,6 +37,7 @@ var RpcHandler = map[string]commandHandler{
 	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
 	"getaccountaddress":     RpcServer.handleGetAccountAddress,
 	"dumpprivkey":           RpcServer.handleDumpPrivkey,
+	"getAllPeers":           RpcServer.handleGetAllPeers,
 }
 
 // Commands that are available to a limited user
@@ -66,16 +67,12 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 		if err != nil {
 			return nil, errors.New("Invalid blockhash format")
 		}
-		blkIdx, ok := self.Config.Chain.Headers[bhash]
-		if !ok {
-		bnum, err := self.Config.Chain.GetBlockHeighByBlockHash(&bhash)
+		bnum, err := self.Config.BlockChain.GetBlockHeightByBlockHash(&bhash)
+		block, err := self.Config.BlockChain.GetBlockByBlockHash(&bhash)
 		if err != nil {
 			return nil, errors.New("Block not exist")
 		}
-		result.Header = self.Config.Chain.Blocks[blkIdx.ChainID][blkIdx.Idx].Header
-		result.BlockNum = blkIdx.Idx + 1
-		result.ChainID = blkIdx.ChainID
-		result.Header = self.Config.Chain.Blocks[bnum].Header
+		result.Header = block.Header
 		result.BlockNum = int(bnum) + 1
 		result.BlockHash = bhash.String()
 	case "blocknum":
@@ -83,17 +80,14 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 		if err != nil {
 			return nil, errors.New("Invalid blocknum format")
 		}
-		if len(arrayParams) < 3 {
-			return nil, errors.New("Not enough params")
-		}
-		chainID := arrayParams[2].(byte)
-		if len(self.Config.Chain.Blocks[chainID]) < bnum || bnum <= 0 {
+		allHashBlocks, _ := self.Config.BlockChain.GetAllHashBlocks()
+		if len(allHashBlocks) < bnum || bnum <= 0 {
 			return nil, errors.New("Block not exist")
 		}
-		result.Header = self.Config.Chain.Blocks[chainID][bnum-1].Header
+		block, _ := self.Config.BlockChain.GetBlockByBlockHeight(int32(bnum - 1))
+		result.Header = block.Header
 		result.BlockNum = bnum
-		result.ChainID = chainID
-		result.BlockHash = self.Config.Chain.Blocks[chainID][bnum-1].Hash().String()
+		result.BlockHash = block.Hash().String()
 	default:
 		return nil, errors.New("Wrong request format")
 	}
@@ -106,10 +100,16 @@ func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan s
 	return "", nil
 }
 
+/**
+getblockchaininfo RPC return information fo blockchain node
+ */
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	allHashBlocks, _ := self.Config.BlockChain.GetAllHashBlocks()
 	result := jsonrpc.GetBlockChainInfoResult{
-		Chain:  self.Config.ChainParams.Name,
-		Blocks: len(self.Config.Chain.Blocks),
+		Chain:         self.Config.ChainParams.Name,
+		Blocks:        len(allHashBlocks),
+		BestBlockHash: self.Config.BlockChain.BestState.BestBlockHash.String(),
+		Difficulty:    self.Config.BlockChain.BestState.Difficulty,
 	}
 	return result, nil
 }
@@ -132,15 +132,15 @@ Parameter #3—the addresses an output must pay
 */
 func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
-	// paramsArray := common.InterfaceSlice(params)
-	// min := int(paramsArray[0].(float64))
-	// max := int(paramsArray[1].(float64))
-	// listAddresses := paramsArray[2].(string)
-	// _ = min
-	// _ = max
-	// var addresses []string
-	// addresses = strings.Fields(listAddresses)
-	// blocks := self.Config.Chain.Blocks
+	paramsArray := common.InterfaceSlice(params)
+	min := int(paramsArray[0].(float64))
+	max := int(paramsArray[1].(float64))
+	listAddresses := paramsArray[2].(string)
+	_ = min
+	_ = max
+	var addresses []string
+	addresses = strings.Fields(listAddresses)
+	blocks, _ := self.Config.BlockChain.GetAllBlocks()
 	result := make([]jsonrpc.ListUnspentResult, 0)
 	// for _, block := range blocks {
 	// 	if len(block.Transactions) > 0 {
@@ -189,7 +189,7 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 		item := transaction.TxIn{
 			PreviousOutPoint: transaction.OutPoint{
 				Hash: *hashTxId,
-				Vout: int(temp["vout"].(float64)),
+				Vout: uint32(temp["vout"].(float64)),
 			},
 		}
 		tx.AddTxIn(item)
@@ -307,20 +307,20 @@ func isExisted(item int, arr []int) bool {
 func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// return 1000, nil
 	log.Println(params)
-	// blocks := self.Config.Chain.Blocks
-	// txInsMap := map[string][]int{}
-	// txOuts := []jsonrpc.ListUnspentResult{}
-	// for _, block := range blocks {
-	// 	for _, tx := range block.Transactions {
-	// 		if tx.GetType() == common.TxActionParamsType {
-	// 			continue
-	// 		}
-	// 		normalTx := tx.(*transaction.Tx)
-	// 		for _, txIn := range normalTx.TxIn {
-	// 			txInKey := txIn.PreviousOutPoint.Hash.String()
-	// 			idx := txIn.PreviousOutPoint.Vout
-	// 			txInsMap[txInKey] = append(txInsMap[txInKey], idx)
-	// 		}
+	blocks, _ := self.Config.BlockChain.GetAllBlocks()
+	txInsMap := map[string][]int{}
+	txOuts := []jsonrpc.ListUnspentResult{}
+	for _, block := range blocks {
+		for _, tx := range block.Transactions {
+			if tx.GetType() == common.TxActionParamsType {
+				continue
+			}
+			normalTx := tx.(*transaction.Tx)
+			for _, txIn := range normalTx.TxIn {
+				txInKey := txIn.PreviousOutPoint.Hash.String()
+				idx := txIn.PreviousOutPoint.Vout
+				txInsMap[txInKey] = append(txInsMap[txInKey], int(idx))
+			}
 
 	// 		for index, txOut := range normalTx.TxOut {
 	// 			txOuts = append(txOuts, jsonrpc.ListUnspentResult{
@@ -455,4 +455,22 @@ Result—the private key
 */
 func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	return self.Config.Wallet.DumpPrivkey(params.(string))
+}
+
+func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	log.Println(params)
+	result := make(map[string]interface{})
+
+	peersMap := []map[string]interface{}{}
+
+	peers := self.Config.AddrMgr.AddressCache()
+	for _, peer := range peers {
+		peerMap := map[string]interface{}{}
+		peerMap["peer_id"] = peer.PeerId
+		peerMap["raw_address"] = peer.RawAddress
+	}
+
+	result["peers"] = peersMap
+
+	return result, nil
 }

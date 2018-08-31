@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 var (
@@ -167,7 +169,7 @@ func (db *db) GetIndexOfBlock(h *common.Hash) (int32, error) {
 	return idx, nil
 }
 
-func (db *db) GetBlockByIndex(idx int32) ([]byte, error) {
+func (db *db) GetBlockByIndex(idx int32) (*common.Hash, error) {
 	buf := new(bytes.Buffer)
 	if err := binary.Write(buf, binary.LittleEndian, idx); err != nil {
 		return nil, errors.Wrapf(err, "binary.Write %d", idx)
@@ -176,19 +178,18 @@ func (db *db) GetBlockByIndex(idx int32) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "db.ldb.Get")
 	}
-	return b, nil
+	h := new(common.Hash)
+	_ = h.SetBytes(b[len(blockKeyIdxPrefix):])
+	return h, nil
 }
 
 func (db *db) FetchAllBlocks() ([]*common.Hash, error) {
 	var keys []*common.Hash
 	iter := db.ldb.NewIterator(util.BytesPrefix(blockKeyPrefix), nil)
 	for iter.Next() {
-		var h common.Hash
-		key := iter.Key()[len(blockKeyPrefix):]
-		for i, b := range key {
-			h[i] = b
-		}
-		keys = append(keys, &h)
+		h := new(common.Hash)
+		_ = h.SetBytes(iter.Key()[len(blockKeyPrefix):])
+		keys = append(keys, h)
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
@@ -207,4 +208,16 @@ func (db *db) getKeyIdx(h *common.Hash) []byte {
 	var key []byte
 	key = append(blockKeyIdxPrefix, h[:]...)
 	return key
+}
+
+func (db *db) StoreOutpoint(outpoint *transaction.OutPoint) error {
+	b, err := json.Marshal(outpoint)
+	if err != nil {
+		return errors.Wrap(err, "json.Marshal")
+	}
+	key := fmt.Sprintf("%s%d", outpoint.Hash.String(), outpoint.Vout)
+	if err := db.ldb.Put([]byte(key), b, nil); err != nil {
+		return errors.Wrap(err, "db.ldb.Put")
+	}
+	return nil
 }
