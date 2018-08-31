@@ -240,7 +240,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	return nil
 }
 
-func (self *Server) InboundPeerConnected(peer *peer.Peer) {
+func (self *Server) InboundPeerConnected(peerConn *peer.PeerConn) {
 	Logger.log.Info("inbound connected")
 }
 
@@ -249,25 +249,41 @@ func (self *Server) InboundPeerConnected(peer *peer.Peer) {
 // peer instance, associates it with the relevant state such as the connection
 // request instance and the connection itself, and finally notifies the address
 // manager of the attempt.
-func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
-	peer *peer.Peer) {
-	Logger.log.Info("Outbound PEER connected with PEER ID - " + peer.PeerId.String())
+func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
+	Logger.log.Info("Outbound PEER connected with PEER ID - " + peerConn.PeerId.String())
 	// TODO:
 	// call address manager to process new outbound peer
 	// push message version
 	// if message version is compatible -> add outbound peer to address manager
-	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		listen.NegotiateOutboundProtocol(peer)
-	}
-	go self.peerDoneHandler(peer)
+	//for _, listen := range self.ConnManager.Config.ListenerPeers {
+	//	listen.NegotiateOutboundProtocol(peer)
+	//}
+	//go self.peerDoneHandler(peer)
+	//
+	//msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
+	//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.Chain.BestState.BestBlock.Hash()
+	//msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerId
+	//if err != nil {
+	//	return
+	//}
+	//self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
 
-	msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
-	msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.Chain.BestState.BestBlock.Hash()
-	msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerId
+	// push message version
+	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
+	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
+	msg.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.ListeningAddress
+	msg.(*wire.MessageVersion).RawLocalAddress = peerConn.ListenerPeer.RawAddress
+	msg.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerId
+	msg.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
+	msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
+	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerId
+	msg.(*wire.MessageVersion).LastBlock = 0
+	msg.(*wire.MessageVersion).ProtocolVersion = 1
 	if err != nil {
 		return
 	}
-	//self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
+	var dc chan<- struct{}
+	peerConn.QueueMessageWithEncoding(msg, dc)
 }
 
 // peerDoneHandler handles peer disconnects by notifiying the server that it's
@@ -528,7 +544,7 @@ func (self Server) OnTx(peer *peer.PeerConn,
 // OnVersion is invoked when a peer receives a version bitcoin message
 // and is used to negotiate the protocol version details as well as kick start
 // the communications.
-func (self *Server) OnVersion(_ *peer.PeerConn, msg *wire.MessageVersion) {
+func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion) {
 	remotePeer := &peer.Peer{
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
@@ -539,28 +555,65 @@ func (self *Server) OnVersion(_ *peer.PeerConn, msg *wire.MessageVersion) {
 	//
 
 	// if version message is ok -> add to addManager
-	self.AddrManager.Good(remotePeer)
+	//self.AddrManager.Good(remotePeer)
 
 	// TODO push message again for remote peer
-	var dc chan<- struct{}
-	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		msg, err := wire.MakeEmptyMessage(wire.CmdVerack)
-		if err != nil {
-			continue
-		}
-		listen.QueueMessageWithEncoding(msg, dc)
+	//var dc chan<- struct{}
+	//for _, listen := range self.ConnManager.Config.ListenerPeers {
+	//	msg, err := wire.MakeEmptyMessage(wire.CmdVerack)
+	//	if err != nil {
+	//		continue
+	//	}
+	//	listen.QueueMessageWithEncoding(msg, dc)
+	//}
+
+	//go func() {
+	//	msgV, err := wire.MakeEmptyMessage(wire.CmdVerack)
+	//	if err != nil {
+	//		return
+	//	}
+	//	dc := make(chan struct{})
+	//	peerConn.QueueMessageWithEncoding(msgV, dc)
+	//	//select {
+	//	//case <-dc:
+	//	//	Logger.log.Infof("PEER %s send verack message DONE", peerConn.PeerId.String())
+	//	//	break
+	//	//}
+	//}()
+
+	msgV, err := wire.MakeEmptyMessage(wire.CmdVerack)
+	if err != nil {
+		return
 	}
+	dc := make(chan struct{})
+	peerConn.QueueMessageWithEncoding(msgV, dc)
+
 }
 
 func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
 	log.Printf("Receive verack message")
+	self.AddrManager.Good(peerConn.Peer)
+	//go func() {
+	//	msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
+	//	if err != nil {
+	//		return
+	//	}
+	//	dc := make(chan struct{})
+	//	peerConn.QueueMessageWithEncoding(msgS, dc)
+	//	//select {
+	//	//case <-dc:
+	//	//	Logger.log.Infof("PEER %s send getaddr message DONE", peerConn.PeerId.String())
+	//	//	break
+	//	//}
+	//}()
+
 
 	msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
 	if err != nil {
 		return
 	}
-	var dc chan<- struct{}
+	dc := make(chan struct{})
 	peerConn.QueueMessageWithEncoding(msgS, dc)
 }
 

@@ -92,10 +92,10 @@ type Config struct {
 	ListenerPeers []peer.Peer
 
 	// OnInboundAccept is a callback that is fired when an inbound connection is accepted
-	OnInboundAccept func(*peer.Peer)
+	OnInboundAccept func(peerConn *peer.PeerConn)
 
 	//OnOutboundConnection is a callback that is fired when an outbound connection is established
-	OnOutboundConnection func(*ConnReq, *peer.Peer)
+	OnOutboundConnection func(peerConn *peer.PeerConn)
 
 	//OnOutboundDisconnection is a callback that is fired when an outbound connection is disconnected
 	OnOutboundDisconnection func(*ConnReq)
@@ -187,7 +187,7 @@ func (self ConnManager) Stop() {
 	// Stop all the listeners.  There will not be any listeners if
 	// listening is disabled.
 	for _, listener := range self.Config.ListenerPeers {
-		listener.Disconnect()
+		listener.Stop()
 	}
 
 	close(self.Quit)
@@ -221,129 +221,129 @@ func (self *ConnManager) HandleFailedConn(c *ConnReq) {
 // connections so that we remain connected to the network.  Connection requests
 // are processed and mapped by their assigned ids.
 func (self ConnManager) connHandler() {
-	// pending holds all registered conn requests that have yet to
-	// succeed.
-	self.Pending = make(map[uint64]*ConnReq)
-
-	// conns represents the set of all actively connected peers.
-	self.Connected = make(map[uint64]*ConnReq, self.Config.TargetOutbound)
-
-out:
-	for {
-		select {
-		case req := <-self.Requests:
-			switch msg := req.(type) {
-			case registerPending:
-				{
-					connReq := msg.connRequest
-					connReq.UpdateState(ConnPending)
-					self.Pending[msg.connRequest.Id] = connReq
-					close(msg.done)
-				}
-			case handleConnected:
-				{
-					connReq := msg.connRequest
-					if _, ok := self.Pending[connReq.Id]; !ok {
-						if msg.connRequest != nil {
-							//msg.conn.Close()
-						}
-						//log.Debugf("Ignoring connection for "+
-						//	"canceled connreq=%v", connReq)
-						continue
-					}
-					connReq.UpdateState(ConnEstablished)
-					connReq.Peer = msg.Peer
-					self.Connected[connReq.Id] = connReq
-					//spew.Dump("Connected to ", connReq)
-					connReq.retryCount = 0
-					self.FailedAttempts = 0
-
-					delete(self.Pending, connReq.Id)
-
-					if self.Config.OnOutboundConnection != nil {
-						go self.Config.OnOutboundConnection(connReq, &msg.Peer)
-					}
-				}
-			case handleDisconnected:
-				{
-					connReq, ok := self.Connected[msg.id]
-					if !ok {
-						connReq, ok = self.Pending[msg.id]
-						if !ok {
-							Logger.log.Infof("Unknown connid=%d",
-								msg.id)
-							continue
-						}
-
-						// Pending connection was found, remove
-						// it from pending map if we should
-						// ignore a later, successful
-						// connection.
-						connReq.UpdateState(ConnCanceled)
-						Logger.log.Infof("Canceling: %v", connReq)
-						delete(self.Pending, msg.id)
-						continue
-					}
-					// An existing connection was located, mark as
-					// disconnected and execute disconnection
-					// callback.
-					Logger.log.Infof("Disconnected from %v", connReq)
-					delete(self.Connected, msg.id)
-
-					//if connReq.Peer != nil {
-					//connReq.conn.Close()
-					//}
-
-					if self.Config.OnOutboundDisconnection != nil {
-						go self.Config.OnOutboundDisconnection(connReq)
-					}
-
-					// All internal state has been cleaned up, if
-					// this connection is being removed, we will
-					// make no further attempts with this request.
-					if !msg.retry {
-						connReq.UpdateState(ConnDisconnected)
-						continue
-					}
-
-					// Otherwise, we will attempt a reconnection if
-					// we do not have enough peers, or if this is a
-					// persistent peer. The connection request is
-					// re added to the pending map, so that
-					// subsequent processing of connections and
-					// failures do not ignore the request.
-					if uint32(len(self.Connected)) < self.Config.TargetOutbound ||
-						connReq.Permanent {
-
-						connReq.UpdateState(ConnPending)
-						Logger.log.Infof("Reconnecting to %v",
-							connReq)
-						self.Pending[msg.id] = connReq
-						self.HandleFailedConn(connReq)
-					}
-				}
-			case handleFailed:
-				{
-					connReq := msg.c
-
-					if _, ok := self.Pending[connReq.Id]; !ok {
-						Logger.log.Infof("Ignoring connection for "+
-							"canceled conn req: %v", connReq)
-						continue
-					}
-
-					connReq.UpdateState(ConnFailing)
-					Logger.log.Infof("Failed to connect to %v: %v",
-						connReq, msg.err)
-					self.HandleFailedConn(connReq)
-				}
-			}
-		case <-self.Quit:
-			break out
-		}
-	}
-	self.WaitGroup.Done()
-	Logger.log.Infof("Connection handler done")
+//	// pending holds all registered conn requests that have yet to
+//	// succeed.
+//	self.Pending = make(map[uint64]*ConnReq)
+//
+//	// conns represents the set of all actively connected peers.
+//	self.Connected = make(map[uint64]*ConnReq, self.Config.TargetOutbound)
+//
+//out:
+//	for {
+//		select {
+//		case req := <-self.Requests:
+//			switch msg := req.(type) {
+//			case registerPending:
+//				{
+//					connReq := msg.connRequest
+//					connReq.UpdateState(ConnPending)
+//					self.Pending[msg.connRequest.Id] = connReq
+//					close(msg.done)
+//				}
+//			case handleConnected:
+//				{
+//					connReq := msg.connRequest
+//					if _, ok := self.Pending[connReq.Id]; !ok {
+//						if msg.connRequest != nil {
+//							//msg.conn.Close()
+//						}
+//						//log.Debugf("Ignoring connection for "+
+//						//	"canceled connreq=%v", connReq)
+//						continue
+//					}
+//					connReq.UpdateState(ConnEstablished)
+//					connReq.Peer = msg.Peer
+//					self.Connected[connReq.Id] = connReq
+//					//spew.Dump("Connected to ", connReq)
+//					connReq.retryCount = 0
+//					self.FailedAttempts = 0
+//
+//					delete(self.Pending, connReq.Id)
+//
+//					if self.Config.OnOutboundConnection != nil {
+//						go self.Config.OnOutboundConnection(connReq, &msg.Peer)
+//					}
+//				}
+//			case handleDisconnected:
+//				{
+//					connReq, ok := self.Connected[msg.id]
+//					if !ok {
+//						connReq, ok = self.Pending[msg.id]
+//						if !ok {
+//							Logger.log.Infof("Unknown connid=%d",
+//								msg.id)
+//							continue
+//						}
+//
+//						// Pending connection was found, remove
+//						// it from pending map if we should
+//						// ignore a later, successful
+//						// connection.
+//						connReq.UpdateState(ConnCanceled)
+//						Logger.log.Infof("Canceling: %v", connReq)
+//						delete(self.Pending, msg.id)
+//						continue
+//					}
+//					// An existing connection was located, mark as
+//					// disconnected and execute disconnection
+//					// callback.
+//					Logger.log.Infof("Disconnected from %v", connReq)
+//					delete(self.Connected, msg.id)
+//
+//					//if connReq.Peer != nil {
+//					//connReq.conn.Close()
+//					//}
+//
+//					if self.Config.OnOutboundDisconnection != nil {
+//						go self.Config.OnOutboundDisconnection(connReq)
+//					}
+//
+//					// All internal state has been cleaned up, if
+//					// this connection is being removed, we will
+//					// make no further attempts with this request.
+//					if !msg.retry {
+//						connReq.UpdateState(ConnDisconnected)
+//						continue
+//					}
+//
+//					// Otherwise, we will attempt a reconnection if
+//					// we do not have enough peers, or if this is a
+//					// persistent peer. The connection request is
+//					// re added to the pending map, so that
+//					// subsequent processing of connections and
+//					// failures do not ignore the request.
+//					if uint32(len(self.Connected)) < self.Config.TargetOutbound ||
+//						connReq.Permanent {
+//
+//						connReq.UpdateState(ConnPending)
+//						Logger.log.Infof("Reconnecting to %v",
+//							connReq)
+//						self.Pending[msg.id] = connReq
+//						self.HandleFailedConn(connReq)
+//					}
+//				}
+//			case handleFailed:
+//				{
+//					connReq := msg.c
+//
+//					if _, ok := self.Pending[connReq.Id]; !ok {
+//						Logger.log.Infof("Ignoring connection for "+
+//							"canceled conn req: %v", connReq)
+//						continue
+//					}
+//
+//					connReq.UpdateState(ConnFailing)
+//					Logger.log.Infof("Failed to connect to %v: %v",
+//						connReq, msg.err)
+//					self.HandleFailedConn(connReq)
+//				}
+//			}
+//		case <-self.Quit:
+//			break out
+//		}
+//	}
+//	self.WaitGroup.Done()
+//	Logger.log.Infof("Connection handler done")
 }
 
 // Connect assigns an id and dials a connection to the address of the
@@ -378,44 +378,56 @@ func (self ConnManager) Connect(addr string) {
 		fmt.Sprintf("/ipfs/%s", libpeer.IDB58Encode(peerId)))
 	targetAddr := ipfsaddr.Decapsulate(targetPeerAddr)
 
-	connReq := ConnReq{
-		Permanent: true,
-		Peer: peer.Peer{
-			TargetAddress: targetAddr,
-			PeerId:        peerId,
-			RawAddress:    addr,
-			PeerConns:     make(map[libpeer.ID]*peer.PeerConn),
-			//OutboundReaderWriterStreams: make(map[libpeer.ID]*bufio.ReadWriter),
-			//InboundReaderWriterStreams:  make(map[libpeer.ID]*bufio.ReadWriter),
-		},
-	}
-	if atomic.LoadUint64(&connReq.Id) == 0 {
-		atomic.StoreUint64(&connReq.Id, atomic.AddUint64(&self.connReqCount, 1))
+	//connReq := ConnReq{
+	//	Permanent: true,
+	//	Peer: peer.Peer{
+	//		TargetAddress: targetAddr,
+	//		PeerId:        peerId,
+	//		RawAddress:    addr,
+	//		PeerConns:     make(map[libpeer.ID]*peer.PeerConn),
+	//		//OutboundReaderWriterStreams: make(map[libpeer.ID]*bufio.ReadWriter),
+	//		//InboundReaderWriterStreams:  make(map[libpeer.ID]*bufio.ReadWriter),
+	//	},
+	//}
 
-		// Submit a request of a pending connection attempt to the
-		// connection manager. By registering the id before the
-		// connection is even established, we'll be able to later
-		// cancel the connection via the Remove method.
-		done := make(chan struct{})
-		select {
-		case self.Requests <- registerPending{&connReq, done}:
-		case <-self.Quit:
-			return
-		}
-
-		// Wait for the registration to successfully add the pending
-		// conn req to the conn manager's internal state.
-		select {
-		case <-done:
-		case <-self.Quit:
-			return
-		}
-	}
+	//if atomic.LoadUint64(&connReq.Id) == 0 {
+	//	atomic.StoreUint64(&connReq.Id, atomic.AddUint64(&self.connReqCount, 1))
+	//
+	//	// Submit a request of a pending connection attempt to the
+	//	// connection manager. By registering the id before the
+	//	// connection is even established, we'll be able to later
+	//	// cancel the connection via the Remove method.
+	//	done := make(chan struct{})
+	//	select {
+	//	case self.Requests <- registerPending{&connReq, done}:
+	//	case <-self.Quit:
+	//		return
+	//	}
+	//
+	//	// Wait for the registration to successfully add the pending
+	//	// conn req to the conn manager's internal state.
+	//	select {
+	//	case <-done:
+	//	case <-self.Quit:
+	//		return
+	//	}
+	//}
 
 	//spew.Dump("Attempting to connect to", connRequest.Peer.TargetAddress.String())
-	flag := false
+	//flag := false
 	for _, listen := range self.Config.ListenerPeers {
-		listen.Host.Peerstore().AddAddr(connReq.Peer.PeerId, connReq.Peer.TargetAddress, pstore.PermanentAddrTTL)
+		peer := peer.Peer{
+			TargetAddress:      targetAddr,
+			PeerId:             peerId,
+			RawAddress:         addr,
+			Config:             listen.Config,
+			PeerConns:          make(map[libpeer.ID]*peer.PeerConn),
+			HandleConnected:    self.handleConnected,
+			HandleDisconnected: self.handleDisconnected,
+			HandleFailed:       self.handleFailed,
+		}
+
+		listen.Host.Peerstore().AddAddr(peer.PeerId, peer.TargetAddress, pstore.PermanentAddrTTL)
 		//Logger.log.Infof("Opening stream to PEER ID - %s \n", connReq.Peer.PeerId.String())
 		// make a new stream from host B to host A
 		// it should be handled on host A by the handler we set above because
@@ -434,18 +446,19 @@ func (self ConnManager) Connect(addr string) {
 		//go listen.InMessageHandler(rw)
 		//go listen.OutMessageHandler(rw)
 
-		_, err := listen.NewPeerConnection(connReq.Peer.PeerId)
-		if err == nil {
-			flag = true
-		}
+		listen.NewPeerConnection(&peer)
+
+		//if err == nil {
+		//	flag = true
+		//}
 	}
 
-	if flag {
-		select {
-		case self.Requests <- handleConnected{&connReq, connReq.Peer}:
-		case <-self.Quit:
-		}
-	}
+	//if flag {
+	//	select {
+	//	case self.Requests <- handleConnected{&connReq, connReq.Peer}:
+	//	case <-self.Quit:
+	//	}
+	//}
 }
 
 // Disconnect disconnects the connection corresponding to the given connection
@@ -478,6 +491,11 @@ func (self ConnManager) Start() {
 	if self.Config.OnInboundAccept != nil {
 		for _, listner := range self.Config.ListenerPeers {
 			self.WaitGroup.Add(1)
+
+			listner.HandleConnected = self.handleConnected
+			listner.HandleDisconnected = self.handleDisconnected
+			listner.HandleFailed = self.handleFailed
+
 			go self.listenHandler(listner)
 		}
 	}
@@ -487,4 +505,26 @@ func (self ConnManager) Start() {
 // run as a goroutine.
 func (self ConnManager) listenHandler(listen peer.Peer) {
 	listen.Start()
+}
+
+func (self *ConnManager) handleConnected(peerConn *peer.PeerConn) {
+	Logger.log.Infof("handleConnected %s", peerConn.PeerId.String())
+	if peerConn.IsOutbound {
+		Logger.log.Infof("handleConnected OUTBOUND %s", peerConn.PeerId.String())
+
+		if self.Config.OnOutboundConnection != nil {
+			self.Config.OnOutboundConnection(peerConn)
+		}
+
+	} else {
+		Logger.log.Infof("handleConnected INBOUND %s", peerConn.PeerId.String())
+	}
+}
+
+func (p *ConnManager) handleDisconnected(peerConn *peer.PeerConn) {
+	Logger.log.Infof("handleDisconnected %s", peerConn.PeerId.String())
+}
+
+func (self *ConnManager) handleFailed(peerConn *peer.PeerConn) {
+	Logger.log.Infof("handleFailed %s", peerConn.PeerId.String())
 }
