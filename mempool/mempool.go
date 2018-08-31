@@ -89,7 +89,7 @@ func (tp *TxPool) HaveTx(hash *common.Hash) bool {
 }
 
 // add transaction into pool
-func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee int64) *TxDesc {
+func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee float64) *TxDesc {
 	txD := &TxDesc{
 		Desc: mining.TxDesc{
 			Tx:     tx,
