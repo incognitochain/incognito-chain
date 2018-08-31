@@ -40,7 +40,8 @@ type PeerConn struct {
 	sendMessageQueue chan outMsg
 	quit             chan struct{}
 
-	Peer *Peer
+	Peer         *Peer
+	ListenerPeer *Peer
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -52,18 +53,13 @@ Handle all in message
 */
 func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	for {
-		Logger.log.Infof("Reading stream")
+		Logger.log.Infof("PEER %s Reading stream", self.PeerId.String())
 		str, err := rw.ReadString('\n')
 		if err != nil {
 			Logger.log.Error(err)
 
 			Logger.log.Infof("PEER %s quit IN message handler", self.PeerId)
 			self.quit <- struct{}{}
-
-			if self.HandleDisconnected != nil {
-				self.HandleDisconnected(self)
-			}
-
 			return
 		}
 
@@ -185,7 +181,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 // handlers will not block on us sending a message.  That data is then passed on
 // to outHandler to be actually written.
 */
-func (self PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
+func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 	for {
 		select {
 		case outMsg := <-self.sendMessageQueue:
@@ -209,9 +205,16 @@ func (self PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				rw.Writer.Flush()
 
 				self.FlagMutex.Unlock()
+
+				//outMsg.doneChan <- struct{}{}
 			}
 		case <-self.quit:
 			Logger.log.Infof("PEER %s quit OUT message handler", self.PeerId)
+
+			if self.HandleDisconnected != nil {
+				self.HandleDisconnected(self)
+			}
+
 			break
 		}
 	}
