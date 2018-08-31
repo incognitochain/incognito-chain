@@ -1,4 +1,4 @@
-package: github.com/internet-cash/prototype
+package: github.com/ninjadotorg/cash-prototype
 import:
 - package: github.com/libp2p/go-libp2p
   version: ^6.0.8

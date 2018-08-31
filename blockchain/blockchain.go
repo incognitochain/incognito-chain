@@ -11,6 +11,7 @@ import (
 	"time"
 	"encoding/json"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 type BlockChain struct {
@@ -74,7 +75,7 @@ func (self *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	var initialized bool
-	bestStateBytes, err := self.Config.DataBase.FetchBestBlock()
+	bestStateBytes, err := self.Config.DataBase.FetchBestState()
 	if err == nil {
 		err = json.Unmarshal(bestStateBytes, &self.BestState)
 		if err != nil {
@@ -92,8 +93,6 @@ func (self *BlockChain) initChainState() error {
 		return self.createChainState()
 	}
 
-	// TODO
-	// Attempt to load the chain state from the database.
 	return nil
 }
 
@@ -218,6 +217,15 @@ func (self *BlockChain) StoreBestState() (error) {
 	return self.Config.DataBase.StoreBestBlock(self.BestState)
 }
 
+func (self *BlockChain) GetBestState() (*BestState, error) {
+	bestState := BestState{}
+	bestStateBytes, err := self.Config.DataBase.FetchBestState()
+	if err == nil {
+		err = json.Unmarshal(bestStateBytes, &bestState)
+	}
+	return &bestState, err
+}
+
 /**
 Store block into Database
  */
@@ -270,4 +278,52 @@ func (self *BlockChain) GetAllHashBlocks() ([]*common.Hash, error) {
 		return nil, err
 	}
 	return data, err
+}
+
+// FetchUtxoView loads unspent transaction outputs for the inputs referenced by
+// the passed transaction from the point of view of the end of the main chain.
+// It also attempts to fetch the utxos for the outputs of the transaction itself
+// so the returned view can be examined for duplicate transactions.
+//
+// This function is safe for concurrent access however the returned view is NOT.
+func (b *BlockChain) FetchUtxoView(tx transaction.Tx) (*UtxoViewpoint, error) {
+	neededSet := make(map[transaction.OutPoint]struct{})
+
+	// create outpoint map for txout of tx by itself hash
+	prevOut := transaction.OutPoint{Hash: *tx.Hash()}
+	for txOutIdx, _ := range tx.TxOut {
+		prevOut.Vout = uint32(txOutIdx)
+		neededSet[prevOut] = struct{}{}
+	}
+
+	// create outpoint map for txin of tx
+	if !IsCoinBaseTx(tx) {
+		for _, txIn := range tx.TxIn {
+			neededSet[txIn.PreviousOutPoint] = struct{}{}
+		}
+	}
+
+	// Request the utxos from the point of view of the end of the main
+	// chain.
+	view := NewUtxoViewpoint()
+	b.chainLock.RLock()
+	//@todo will implement late
+	err := view.fetchUtxosMain(b.Config.DataBase, neededSet)
+	b.chainLock.RUnlock()
+	return view, err
+}
+
+// CheckTransactionInputs performs a series of checks on the inputs to a
+// transaction to ensure they are valid.  An example of some of the checks
+// include verifying all inputs exist, ensuring the coinbase seasoning
+// requirements are met, detecting double spends, validating all values and fees
+// are in the legal range and the total output amount doesn't exceed the input
+// amount, and verifying the signatures to prove the spender was the owner of
+// the bitcoins and therefore allowed to spend them.  As it checks the inputs,
+// it also calculates the total fees for the transaction and returns that value.
+//
+// NOTE: The transaction MUST have already been sanity checked with the
+// CheckTransactionSanity function prior to calling this function.
+func (self *BlockChain) CheckTransactionInputs(tx *transaction.Transaction, txHeight int32, utxoView *UtxoViewpoint, chainParams *Params) (float64, error) {
+	return 0, nil
 }

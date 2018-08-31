@@ -193,7 +193,7 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 		item := transaction.TxIn{
 			PreviousOutPoint: transaction.OutPoint{
 				Hash: *hashTxId,
-				Vout: int(temp["vout"].(float64)),
+				Vout: uint32(temp["vout"].(float64)),
 			},
 		}
 		tx.AddTxIn(item)
@@ -323,7 +323,7 @@ func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeCh
 			for _, txIn := range normalTx.TxIn {
 				txInKey := txIn.PreviousOutPoint.Hash.String()
 				idx := txIn.PreviousOutPoint.Vout
-				txInsMap[txInKey] = append(txInsMap[txInKey], idx)
+				txInsMap[txInKey] = append(txInsMap[txInKey], int(idx))
 			}
 
 			for index, txOut := range normalTx.TxOut {

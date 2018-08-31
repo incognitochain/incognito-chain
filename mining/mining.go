@@ -133,7 +133,7 @@ func createCoinbaseTx(
 	//create outpoint
 	outPoint := &transaction.OutPoint{
 		Hash: common.Hash{},
-		Vout: 1,
+		Vout: transaction.MaxPrevOutIndex,
 	}
 
 	txIn := *transaction.TxIn{}.NewTxIn(outPoint, coinbaseScript)
@@ -158,23 +158,6 @@ func createCoinbaseTx(
 	return tx, nil
 }
 
-func sumTxInValues(txIns []transaction.TxIn) float64 {
-	// TODO: calcualte sum of txIn values
-	var sum float64
-	for _, txIn := range txIns {
-		sum += txIn.Value
-	}
-	return sum
-}
-
-func sumTxOutValues(txOuts []transaction.TxOut) float64 {
-	var sum float64
-	for _, txOut := range txOuts {
-		sum += txOut.Value
-	}
-	return sum
-}
-
 func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 	[]transaction.Transaction,
 	[]*transaction.ActionParamTx,
@@ -195,14 +178,12 @@ func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 			continue
 		}
 		normalTx, _ := tx.(*transaction.Tx)
-		txInsValue := sumTxInValues(normalTx.TxIn)
-		txOutsValue := sumTxOutValues(normalTx.TxOut)
 		if len(normalTx.TxOut) > 0 {
 			txOutType := normalTx.TxOut[0].TxOutType
 			if txOutType == "" {
 				txOutType = common.TxOutCoinType
 			}
-			feeMap[txOutType] += (txInsValue - txOutsValue)
+			feeMap[txOutType] += txDesc.Fee
 		}
 	}
 	return txs, actionParamTxs, feeMap
@@ -409,6 +390,7 @@ type TxSource interface {
 
 	RemoveTx(tx transaction.Tx)
 
+	// TODO using when demo
 	Clear()
 }
 

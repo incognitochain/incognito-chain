@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 var (
@@ -131,7 +133,7 @@ func (db *db) StoreBestBlock(v interface{}) error {
 	return nil
 }
 
-func (db *db) FetchBestBlock() ([]byte, error) {
+func (db *db) FetchBestState() ([]byte, error) {
 	block, err := db.ldb.Get(bestBlockKey, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "db.ldb.Get")
@@ -206,4 +208,25 @@ func (db *db) getKeyIdx(h *common.Hash) []byte {
 	var key []byte
 	key = append(blockKeyIdxPrefix, h[:]...)
 	return key
+}
+
+func (db *db) StoreEntry(op *transaction.OutPoint, v interface{}) error {
+	val, err := json.Marshal(v)
+	if err != nil {
+		return errors.Wrap(err, "json.Marshal")
+	}
+	key := fmt.Sprintf("%s%d", op.Hash.String(), op.Vout)
+	if err := db.ldb.Put([]byte(key), val, nil); err != nil {
+		return errors.Wrap(err, "db.ldb.Put")
+	}
+	return nil
+}
+
+func (db *db) FetchEntry(op *transaction.OutPoint) ([]byte, error) {
+	key := fmt.Sprintf("%s%d", op.Hash.String(), op.Vout)
+	b, err := db.ldb.Get([]byte(key), nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "db.ldb.Get")
+	}
+	return b, nil
 }
