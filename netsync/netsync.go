@@ -32,7 +32,7 @@ type NetSyncConfig struct {
 	MemPool    *mempool.TxPool
 	Server interface {
 		// list functions callback which are assigned from Server struct
-		PushBlockMessageWithPeerId(*blockchain.Block, peer2.ID) bool
+		PushBlockMessageWithPeerId(*blockchain.Block, peer2.ID) error
 		UpdateChain(*blockchain.Block)
 	}
 }
@@ -167,7 +167,7 @@ func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 
 	// Skip verify and insert directly to local blockchain
 	// There should be a method in blockchain.go to insert block to prevent data-race if we read from memory
-	a := self.Config.Chain.BestBlock.Hash().String()
+	a := self.Config.Chain.BestState.BestBlock.Hash().String()
 	Logger.log.Infof(a)
 	//if msg.Block.Header.PrevBlockHash == a {
 	newBlock := msg.Block
@@ -177,12 +177,14 @@ func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Handling new message getblock")
-	if senderBlockHeaderIndex, ok := self.Config.Chain.Headers[msg.LastBlockHash]; ok {
-		if self.Config.Chain.BestBlock.Hash() != &msg.LastBlockHash {
-			// Send Blocks to requestor
-			for index := senderBlockHeaderIndex + 1; index < len(self.Config.Chain.Blocks); index++ {
-				fmt.Printf("Send block %x \n", *self.Config.Chain.Blocks[index].Hash())
-				self.Config.Server.PushBlockMessageWithPeerId(self.Config.Chain.Blocks[index], msg.SenderID)
+	if senderBlockHeaderIndex, err := self.Config.Chain.GetBlockHeightByBlockHash(&msg.LastBlockHash); err == nil {
+		if self.Config.Chain.BestState.BestBlock.Hash() != &msg.LastBlockHash {
+			// Send Blocks back to requestor
+			allBlocks, _ := self.Config.Chain.GetAllBlocks()
+			for index := int(senderBlockHeaderIndex) + 1; index < len(allBlocks); index++ {
+				block, _ := self.Config.Chain.GetBlockByBlockHeight(int32(index))
+				fmt.Printf("Send block %x \n", *block.Hash())
+				self.Config.Server.PushBlockMessageWithPeerId(block, msg.SenderID)
 				time.Sleep(time.Second * 3)
 			}
 		}

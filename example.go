@@ -32,7 +32,7 @@ package main
 //
 //// Block represents each 'item' in the blockchain
 //type Block struct {
-//	Index      int
+//	height      int
 //	Timestamp  string
 //	BPM        int
 //	Hash       string
@@ -301,7 +301,7 @@ package main
 //
 //// make sure block is valid by checking index, and comparing the hash of the previous block
 //func isBlockValid(newBlock, oldBlock Block) bool {
-//	if oldBlock.Index+1 != newBlock.Index {
+//	if oldBlock.height+1 != newBlock.height {
 //		return false
 //	}
 //
@@ -318,7 +318,7 @@ package main
 //
 //// SHA256 hashing
 //func calculateHash(block Block) string {
-//	record := strconv.Itoa(block.Index) + block.Timestamp + strconv.Itoa(block.BPM) + block.PrevHash + block.Nonce
+//	record := strconv.Itoa(block.height) + block.Timestamp + strconv.Itoa(block.BPM) + block.PrevHash + block.Nonce
 //	h := sha256.New()
 //	h.Write([]byte(record))
 //	hashed := h.Sum(nil)
@@ -332,7 +332,7 @@ package main
 //
 //	t := time.Now()
 //
-//	newBlock.Index = oldBlock.Index + 1
+//	newBlock.height = oldBlock.height + 1
 //	newBlock.Timestamp = t.String()
 //	newBlock.BPM = BPM
 //	newBlock.PrevHash = oldBlock.Hash

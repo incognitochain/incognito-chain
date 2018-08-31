@@ -34,6 +34,14 @@ var RpcHandler = map[string]commandHandler{
 	//POS
 	"votecandidate": RpcServer.handleVoteCandidate,
 	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
+
+	// WALLET
+	"getaccount":            RpcServer.handleGetAccount,
+	"listaccounts":          RpcServer.handleListAccounts,
+	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
+	"getaccountaddress":     RpcServer.handleGetAccountAddress,
+	"dumpprivkey":           RpcServer.handleDumpPrivkey,
+	"getAllPeers":           RpcServer.handleGetAllPeers,
 }
 
 // Commands that are available to a limited user
@@ -63,24 +71,27 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 		if err != nil {
 			return nil, errors.New("Invalid blockhash format")
 		}
-		bnum, ok := self.Config.Chain.Headers[bhash]
-		if !ok {
+		bnum, err := self.Config.BlockChain.GetBlockHeightByBlockHash(&bhash)
+		block, err := self.Config.BlockChain.GetBlockByBlockHash(&bhash)
+		if err != nil {
 			return nil, errors.New("Block not exist")
 		}
-		result.Header = self.Config.Chain.Blocks[bnum].Header
-		result.BlockNum = bnum + 1
+		result.Header = block.Header
+		result.BlockNum = int(bnum) + 1
 		result.BlockHash = bhash.String()
 	case "blocknum":
 		bnum, err := strconv.Atoi(query)
 		if err != nil {
 			return nil, errors.New("Invalid blocknum format")
 		}
-		if len(self.Config.Chain.Blocks) < bnum || bnum <= 0 {
+		allHashBlocks, _ := self.Config.BlockChain.GetAllHashBlocks()
+		if len(allHashBlocks) < bnum || bnum <= 0 {
 			return nil, errors.New("Block not exist")
 		}
-		result.Header = self.Config.Chain.Blocks[bnum-1].Header
+		block, _ := self.Config.BlockChain.GetBlockByBlockHeight(int32(bnum - 1))
+		result.Header = block.Header
 		result.BlockNum = bnum
-		result.BlockHash = self.Config.Chain.Blocks[bnum-1].Hash().String()
+		result.BlockHash = block.Hash().String()
 	default:
 		return nil, errors.New("Wrong request format")
 	}
@@ -93,10 +104,16 @@ func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan s
 	return "", nil
 }
 
+/**
+getblockchaininfo RPC return information fo blockchain node
+*/
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	allHashBlocks, _ := self.Config.BlockChain.GetAllHashBlocks()
 	result := jsonrpc.GetBlockChainInfoResult{
-		Chain:  self.Config.ChainParams.Name,
-		Blocks: len(self.Config.Chain.Blocks),
+		Chain:         self.Config.ChainParams.Name,
+		Blocks:        len(allHashBlocks),
+		BestBlockHash: self.Config.BlockChain.BestState.BestBlockHash.String(),
+		Difficulty:    self.Config.BlockChain.BestState.Difficulty,
 	}
 	return result, nil
 }
@@ -127,7 +144,7 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 	_ = max
 	var addresses []string
 	addresses = strings.Fields(listAddresses)
-	blocks := self.Config.Chain.Blocks
+	blocks, _ := self.Config.BlockChain.GetAllBlocks()
 	result := make([]jsonrpc.ListUnspentResult, 0)
 	for _, block := range blocks {
 		if len(block.Transactions) > 0 {
@@ -176,7 +193,7 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 		item := transaction.TxIn{
 			PreviousOutPoint: transaction.OutPoint{
 				Hash: *hashTxId,
-				Vout: int(temp["vout"].(float64)),
+				Vout: uint32(temp["vout"].(float64)),
 			},
 		}
 		tx.AddTxIn(item)
@@ -294,7 +311,7 @@ func isExisted(item int, arr []int) bool {
 func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// return 1000, nil
 	log.Println(params)
-	blocks := self.Config.Chain.Blocks
+	blocks, _ := self.Config.BlockChain.GetAllBlocks()
 	txInsMap := map[string][]int{}
 	txOuts := []jsonrpc.ListUnspentResult{}
 	for _, block := range blocks {
@@ -306,7 +323,7 @@ func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeCh
 			for _, txIn := range normalTx.TxIn {
 				txInKey := txIn.PreviousOutPoint.Hash.String()
 				idx := txIn.PreviousOutPoint.Vout
-				txInsMap[txInKey] = append(txInsMap[txInKey], idx)
+				txInsMap[txInKey] = append(txInsMap[txInKey], int(idx))
 			}
 
 			for index, txOut := range normalTx.TxOut {
@@ -397,4 +414,82 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 	// self.Config.Server.PushTxMessage(hash)
 
 	return tx.Hash(), nil
+}
+
+/**
+getaccount RPC returns the name of the account associated with the given address.
+- Param #1: address
+*/
+func (self RpcServer) handleGetAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	for _, account := range self.Config.Wallet.MasterAccount.Child {
+		address := account.Key.ToAddress(false)
+		if address == params.(string) {
+			return account.Name, nil
+		}
+	}
+	return "", nil
+}
+
+/**
+listaccount RPC lists accounts and their balances.
+
+Parameter #1—the minimum number of confirmations a transaction must have
+Parameter #2—whether to include watch-only addresses in results
+Result—a list of accounts and their balances
+
+*/
+func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	result := jsonrpc.ListAccounts{}
+	result.Accounts = self.Config.Wallet.ListAccounts()
+	return result, nil
+}
+
+/**
+getaddressesbyaccount RPC returns a list of every address assigned to a particular account.
+
+Parameter #1—the account name
+Result—a list of addresses
+*/
+func (self RpcServer) handleGetAddressesByAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	result := jsonrpc.GetAddressesByAccount{}
+	var err error
+	result.Addresses, err = self.Config.Wallet.GetAddressesByAccount(params.(string))
+	return result, err
+}
+
+/**
+getaccountaddress RPC returns the current Bitcoin address for receiving payments to this account. If the account doesn’t exist, it creates both the account and a new address for receiving payment. Once a payment has been received to an address, future calls to this RPC for the same account will return a different address.
+Parameter #1—an account name
+Result—a bitcoin address
+*/
+func (self RpcServer) handleGetAccountAddress(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return self.Config.Wallet.GetAccountAddress(params.(string))
+}
+
+/**
+ dumpprivkey RPC returns the wallet-import-format (WIP) private key corresponding to an address. (But does not remove it from the wallet.)
+
+Parameter #1—the address corresponding to the private key to get
+Result—the private key
+*/
+func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return self.Config.Wallet.DumpPrivkey(params.(string))
+}
+
+func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	log.Println(params)
+	result := make(map[string]interface{})
+
+	peersMap := []map[string]interface{}{}
+
+	peers := self.Config.AddrMgr.AddressCache()
+	for _, peer := range peers {
+		peerMap := map[string]interface{}{}
+		peerMap["peer_id"] = peer.PeerId
+		peerMap["raw_address"] = peer.RawAddress
+	}
+
+	result["peers"] = peersMap
+
+	return result, nil
 }

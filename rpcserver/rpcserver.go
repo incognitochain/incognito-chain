@@ -1,24 +1,27 @@
 package rpcserver
 
 import (
-	"sync/atomic"
-	"net/http"
+	"encoding/json"
 	"errors"
-	"time"
+	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net"
-	"io/ioutil"
-	"fmt"
+	"net/http"
 	"strconv"
-	"encoding/json"
 	"sync"
-	"io"
+	"sync/atomic"
+	"time"
 
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/mempool"
+	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
+	"github.com/ninjadotorg/cash-prototype/wallet"
+	"github.com/ninjadotorg/cash-prototype/connmanager"
+	"github.com/ninjadotorg/cash-prototype/addrmanager"
 )
 
 const (
@@ -53,8 +56,11 @@ type RpcServerConfig struct {
 	Listenters []net.Listener
 
 	ChainParams *blockchain.Params
-	Chain       *blockchain.BlockChain
+	BlockChain  *blockchain.BlockChain
 	Db          *database.DB
+	Wallet      *wallet.Wallet
+	ConnMgr     *connmanager.ConnManager
+	AddrMgr     *addrmanager.AddrManager
 	Server interface {
 		// Push Tx message
 		PushTxMessage(*common.Hash)
@@ -65,10 +71,10 @@ type RpcServerConfig struct {
 	RPCQuirks     bool
 }
 
-func (self RpcServer) Init(config *RpcServerConfig) (*RpcServer, error) {
+func (self *RpcServer) Init(config *RpcServerConfig) (error) {
 	self.Config = *config
 	self.statusLines = make(map[int]string)
-	return &self, nil
+	return nil
 }
 
 // RequestedProcessShutdown returns a channel that is sent to when an authorized
@@ -119,7 +125,7 @@ func genCertPair(certFile, keyFile string) error {
 	return nil
 }
 
-func (self RpcServer) Start() (error) {
+func (self RpcServer) Start() error {
 	if atomic.AddInt32(&self.started, 1) != 1 {
 		return errors.New("RPC server is already started")
 	}
@@ -153,11 +159,13 @@ func (self RpcServer) Stop() error {
 		return nil
 	}
 	Logger.log.Info("RPC server shutting down")
-	self.HttpServer.Close()
+	if self.started != 0 {
+		self.HttpServer.Close()
+		close(self.quit)
+	}
 	for _, listen := range self.Config.Listenters {
 		listen.Close()
 	}
-	close(self.quit)
 	Logger.log.Info("RPC server shutdown complete")
 	self.started = 0
 	self.shutdown = 1
@@ -229,7 +237,7 @@ func (self RpcServer) AuthFail(w http.ResponseWriter) {
 
 /**
 handles reading and responding to RPC messages.
- */
+*/
 func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, isAdmin bool) {
 	if atomic.LoadInt32(&self.shutdown) != 0 {
 		return

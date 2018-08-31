@@ -6,11 +6,13 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"math"
 )
 
 var (
 	zeroHash common.Hash
 )
+
 func nonNilBytes(bz []byte) []byte {
 	if bz == nil {
 		return []byte{}
@@ -34,18 +36,26 @@ func CountSigOps(tx *transaction.Tx) float64 {
 	return totalSigOps
 }
 
-// func IsCoinBaseTx(tx transaction.Transaction) bool {
-// 	// A coin base must only have one transaction input.
-// 	if len(tx.TxIn) != 1 {
-// 		return false
-// 	}
+// IsCoinBaseTx determines whether or not a transaction is a coinbase.  A coinbase
+// is a special transaction created by miners that has no inputs.  This is
+// represented in the block chain by a transaction with a single input that has
+// a previous output transaction index set to the maximum value along with a
+// zero hash.
+//
+// This function only differs from IsCoinBase in that it works with a raw wire
+// transaction as opposed to a higher level util transaction.
+func IsCoinBaseTx(tx transaction.Tx) bool {
+	// A coin base must only have one transaction input.
+	if len(tx.TxIn) != 1 {
+		return false
+	}
 
-// 	// The previous output of a coin base must have a max value index and
-// 	// a zero hash.
-// 	prevOut := &tx.TxIn[0].PreviousOutPoint
-// 	if prevOut.Index != math.MaxUint32 || prevOut.Hash != zeroHash {
-// 		return false
-// 	}
+	// The previous output of a coin base must have a max value index and
+	// a zero hash.
+	prevOut := &tx.TxIn[0].PreviousOutPoint
+	if prevOut.Vout != math.MaxUint32 || prevOut.Hash != zeroHash {
+		return false
+	}
 
-// 	return true
-// }
+	return true
+}

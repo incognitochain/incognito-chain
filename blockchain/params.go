@@ -161,7 +161,7 @@ var MainNetParams = Params{
 		{"seed.coin.jonasschnelli.ch", true},*/
 	},
 
-	// Chain parameters
+	// BlockChain parameters
 	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlock(time.Date(2018, 8, 1, 0, 0, 0, 0, time.Local), 0x18aea41a, 0x1d00ffff, 1, GENESIS_BLOCK_REWARD),
 	PowLimit:     mainPowLimit,
 	PowLimitBits: 486604799,

@@ -19,6 +19,8 @@ const (
 	CmdGetData   = "getdata"
 	CmdVersion   = "version"
 	CmdVerack    = "verack"
+	CmdGetAddr   = "getaddr"
+	CmdAddr      = "addr"
 
 	// POS Cmd
 	CmdGetBlockHeader = "getheader"
@@ -56,7 +58,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageVersion{}
 	case CmdVerack:
 		msg = &MessageVerAck{}
-	// POS
+		// POS
 	case CmdGetBlockHeader:
 		msg = &MessageGetBlockHeader{}
 	case CmdBlockHeader:
@@ -69,6 +71,10 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageVoteCandidate{}
 	case CmdInvalidBlock:
 		msg = &MessageInvalidBlock{}
+	case CmdGetAddr:
+		msg = &MessageGetAddr{}
+	case CmdAddr:
+		msg = &MessageAddr{}
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}
@@ -87,7 +93,7 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdVersion, nil
 	case reflect.TypeOf(&MessageVerAck{}):
 		return CmdVerack, nil
-	// POS
+		// POS
 	case reflect.TypeOf(&MessageGetBlockHeader{}):
 		return CmdGetBlockHeader, nil
 	case reflect.TypeOf(&MessageBlockHeader{}):
@@ -100,6 +106,10 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdVoteCandidate, nil
 	case reflect.TypeOf(&MessageInvalidBlock{}):
 		return CmdInvalidBlock, nil
+	case reflect.TypeOf(&MessageGetAddr{}):
+		return CmdGetAddr, nil
+	case reflect.TypeOf(&MessageAddr{}):
+		return CmdAddr, nil
 	default:
 		return "", fmt.Errorf("unhandled this message type [%s]", msgType)
 	}

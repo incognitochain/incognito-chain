@@ -134,7 +134,7 @@ func createCoinbaseTx(
 	//create outpoint
 	outPoint := &transaction.OutPoint{
 		Hash: common.Hash{},
-		Vout: 1,
+		Vout: transaction.MaxPrevOutIndex,
 	}
 
 	txIn := *transaction.TxIn{}.NewTxIn(outPoint, coinbaseScript)
@@ -159,19 +159,6 @@ func createCoinbaseTx(
 	return tx, nil
 }
 
-func sumTxInValues(txIns []transaction.TxIn) float64 {
-	// TODO: calcualte sum of txIn values
-	return 10.5
-}
-
-func sumTxOutValues(txOuts []transaction.TxOut) float64 {
-	var sum float64 = 0
-	for _, txOut := range txOuts {
-		sum += txOut.Value
-	}
-	return sum
-}
-
 func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 	[]transaction.Transaction,
 	[]*transaction.ActionParamTx,
@@ -192,14 +179,12 @@ func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 			continue
 		}
 		normalTx, _ := tx.(*transaction.Tx)
-		txInsValue := sumTxInValues(normalTx.TxIn)
-		txOutsValue := sumTxOutValues(normalTx.TxOut)
 		if len(normalTx.TxOut) > 0 {
 			txOutType := normalTx.TxOut[0].TxOutType
 			if txOutType == "" {
 				txOutType = common.TxOutCoinType
 			}
-			feeMap[txOutType] += (txInsValue - txOutsValue)
+			feeMap[txOutType] += txDesc.Fee
 		}
 	}
 	return txs, actionParamTxs, feeMap
@@ -210,7 +195,7 @@ func getLatestAgentDataPoints(
 	actionParamTxs []*transaction.ActionParamTx,
 ) map[string]*blockchain.AgentDataPoint {
 	agentDataPoints := map[string]*blockchain.AgentDataPoint{}
-	bestBlock := chain.BestBlock
+	bestBlock := chain.BestState.BestBlock
 
 	if bestBlock != nil && bestBlock.AgentDataPoints != nil {
 		agentDataPoints = bestBlock.AgentDataPoints
@@ -262,7 +247,8 @@ func getLatestAgentDataPoints(
 
 func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain) (*BlockTemplate, error) {
 
-	prevBlockHash := chain.BestBlock.Hash()
+	prevBlock := chain.BestState.BestBlock
+	prevBlockHash := chain.BestState.BestBlock.Hash()
 	sourceTxns := g.txSource.MiningDescs()
 
 	if len(sourceTxns) == 0 {
@@ -363,6 +349,9 @@ mempoolLoop:
 
 	//update the latest AgentDataPoints to block
 	block.AgentDataPoints = agentDataPoints
+	// Set height
+	block.Height = prevBlock.Height + 1
+
 	blockTemp := &BlockTemplate{
 		Block: &block,
 	}
@@ -402,6 +391,7 @@ type TxSource interface {
 
 	RemoveTx(tx transaction.Tx)
 
+	// TODO using when demo
 	Clear()
 }
 

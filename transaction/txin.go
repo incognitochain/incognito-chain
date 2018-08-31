@@ -6,36 +6,25 @@ import (
 
 const (
 	MaxTxInSequenceNum int = 0xffffffff
+
+	// MaxPrevOutIndex is the maximum index the index field of a previous
+	// outpoint can be.
+	MaxPrevOutIndex uint32 = 0xffffffff
 )
 
 // OutPoint defines a coin data type that is used to track previous
 // transaction outputs.
 type OutPoint struct {
 	Hash common.Hash
-	Vout int
+	Vout uint32
 }
 
-//func (self OutPoint) MarshalJSON() ([]byte, error) {
-//	result, _ := json.Marshal(&struct {
-//		Hash string
-//		*OutPoint
-//	}{Hash: self.Hash.String(), OutPoint: &self})
-//	return result, nil
-//}
-//
-//func (self OutPoint) UnmarshalJSON(data []byte) error {
-//	json.Unmarshal(data, &struct {
-//		*OutPoint
-//	}{
-//		OutPoint: &self,
-//	})
-//	return nil
-//}
-
 type TxIn struct {
+	// PreviousOutPoint contains (hash and index of txout) in prev tx
 	PreviousOutPoint OutPoint
-	SignatureScript  []byte
-	Sequence         int
+
+	SignatureScript []byte
+	Sequence        int
 }
 
 func (self TxIn) NewTxIn(prevOut *OutPoint, signatureScript []byte) *TxIn {

@@ -11,6 +11,8 @@ import (
 	"github.com/ninjadotorg/cash-prototype/limits"
 
 	_ "github.com/ninjadotorg/cash-prototype/database/lvdb"
+	wallet2 "github.com/ninjadotorg/cash-prototype/wallet"
+	"path/filepath"
 )
 
 var (
@@ -46,7 +48,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		return nil
 	}
 
-	// Process Db
+	// Process DataBase
 	// Load the block database.
 	/*db, err := loadBlockDB(cfg)
 	if err != nil {
@@ -93,12 +95,32 @@ func mainMaster(serverChan chan<- *Server) error {
 		return nil
 	}*/
 
-	// Create server and start it.
+	// Create db and use it.
 	db, err := database.Open("leveldb", cfg.DataDir)
 	if err != nil {
 		log.Fatalf("could not open connection to leveldb: %v", err)
 	}
-	server, err := Server{}.NewServer(cfg.Listeners, db, activeNetParams.Params,
+
+	// Check wallet and start it
+	var wallet *wallet2.Wallet
+	if cfg.Wallet == true {
+		wallet = &wallet2.Wallet{}
+		wallet.Config = &wallet2.WalletConfig{
+			DataDir:  cfg.DataDir,
+			DataFile: cfg.WalletDbName,
+			DataPath: filepath.Join(cfg.DataDir, cfg.WalletDbName),
+		}
+		err = wallet.LoadWallet(cfg.WalletPassphrase)
+		if err != nil {
+			wallet.Init(cfg.WalletPassphrase, 0)
+			wallet.Save(cfg.WalletPassphrase)
+		}
+	}
+
+	// Create server and start it.
+	server := Server{}
+	server.Wallet = wallet
+	err = server.NewServer(cfg.Listeners, db, activeNetParams.Params,
 		interrupt)
 	if err != nil {
 		// TODO: this logging could do with some beautifying.
@@ -114,7 +136,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	}()
 	server.Start()
 	if serverChan != nil {
-		serverChan <- server
+		serverChan <- &server
 	}
 
 	// Wait until the interrupt signal is received from an OS signal or

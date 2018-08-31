@@ -1,23 +1,24 @@
 package main
 
 import (
-	"time"
-	"path/filepath"
-	"os"
-	"runtime"
-	"fmt"
-	"strings"
 	"bufio"
 	"encoding/base64"
+	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net"
-	"log"
+	"os"
+	"path/filepath"
+	"runtime"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/jessevdk/go-flags"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/mempool"
-	"github.com/jessevdk/go-flags"
-	"github.com/davecgh/go-spew/spew"
-	"sort"
 )
 
 const (
@@ -51,6 +52,9 @@ const (
 	sampleConfigFilename         = "sample-config.conf"
 	defaultTxIndex               = false
 	defaultAddrIndex             = false
+
+	// For wallet
+	defaultWalletDbName = "wallet.db"
 )
 
 var (
@@ -107,7 +111,7 @@ type config struct {
 	SimNet               bool          `long:"simnet" description:"Use the simulation test network"`
 	AddCheckpoints       []string      `long:"addcheckpoint" description:"Add a custom checkpoint.  Format: '<height>:<hash>'"`
 	DisableCheckpoints   bool          `long:"nocheckpoints" description:"Disable built-in checkpoints.  Don't do this unless you know what you're doing."`
-	DbType               string        `long:"dbtype" description:"Database backend to use for the Block Chain"`
+	DbType               string        `long:"dbtype" description:"Database backend to use for the Block BlockChain"`
 	DebugLevel           string        `short:"d" long:"debuglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
 	CPUProfile           string        `long:"cpuprofile" description:"Write CPU profile to the specified file"`
 	Upnp                 bool          `long:"upnp" description:"Use UPnP to map our listening port outside of NAT"`
@@ -141,6 +145,15 @@ type config struct {
 	//miningAddrs []btcutil.Address
 	//minRelayTxFee        btcutil.Amount
 	//whitelists           []*net.IPNet
+
+	// PoS config
+	SealerPrvKey  string `long:"sealerprvkey" description:"Private key of the block sealer used to seal block"`
+	RewardAddress string `long:"rewardaddr" description:"Address of the owner of sealer key"`
+
+	// For Wallet
+	Wallet           bool   `long:"wallet" description:"Use wallet"`
+	WalletDbName     string `long:"walletdbname" description:"Wallet Database Name file, default is wallet.db"`
+	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -305,7 +318,7 @@ func removeDuplicateAddresses(addrs []string) []string {
 // The above results in btcd functioning properly without any config settings
 // while still allowing the user to override settings with config files and
 // command line options.  Command line options always take precedence.
- */
+*/
 func loadConfig() (*config, []string, error) {
 	cfg := config{
 		ConfigFile:           defaultConfigFile,
@@ -334,6 +347,7 @@ func loadConfig() (*config, []string, error) {
 		Generate:             defaultGenerate,
 		TxIndex:              defaultTxIndex,
 		AddrIndex:            defaultAddrIndex,
+		WalletDbName:         defaultWalletDbName,
 	}
 
 	// Service options which are only added on Windows.
