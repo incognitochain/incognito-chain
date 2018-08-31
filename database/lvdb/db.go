@@ -210,7 +210,7 @@ func (db *db) getKeyIdx(h *common.Hash) []byte {
 	return key
 }
 
-func (db *db) StoreEntry(op *transaction.OutPoint, v interface{}) error {
+func (db *db) StoreUtxoEntry(op *transaction.OutPoint, v interface{}) error {
 	val, err := json.Marshal(v)
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
@@ -222,7 +222,7 @@ func (db *db) StoreEntry(op *transaction.OutPoint, v interface{}) error {
 	return nil
 }
 
-func (db *db) FetchEntry(op *transaction.OutPoint) ([]byte, error) {
+func (db *db) FetchUtxoEntry(op *transaction.OutPoint) ([]byte, error) {
 	key := fmt.Sprintf("%s%d", op.Hash.String(), op.Vout)
 	b, err := db.ldb.Get([]byte(key), nil)
 	if err != nil {
