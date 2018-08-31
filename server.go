@@ -221,6 +221,8 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 			TxMemPool:     self.MemPool,
 			Server:        self,
 			Wallet:        self.Wallet,
+			ConnMgr:       self.ConnManager,
+			AddrMgr:       self.AddrManager,
 		}
 		self.RpcServer = &rpcserver.RpcServer{}
 		err = self.RpcServer.Init(&rpcConfig)

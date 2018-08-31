@@ -39,6 +39,7 @@ var RpcHandler = map[string]commandHandler{
 	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
 	"getaccountaddress":     RpcServer.handleGetAccountAddress,
 	"dumpprivkey":           RpcServer.handleDumpPrivkey,
+	"getAllPeers":           RpcServer.handleGetAllPeers,
 }
 
 // Commands that are available to a limited user
@@ -458,4 +459,22 @@ Result—the private key
  */
 func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
 	return self.Config.Wallet.DumpPrivkey(params.(string))
+}
+
+func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	log.Println(params)
+	result := make(map[string]interface{})
+
+	peersMap := []map[string]interface{}{}
+
+	peers := self.Config.AddrMgr.AddressCache()
+	for _, peer := range peers {
+		peerMap := map[string]interface{}{}
+		peerMap["peer_id"] = peer.PeerId
+		peerMap["raw_address"] = peer.RawAddress
+	}
+
+	result["peers"] = peersMap
+
+	return result, nil
 }
