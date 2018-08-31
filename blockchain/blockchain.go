@@ -79,7 +79,7 @@ func (self *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	var initialized bool
-	bestStateBytes, err := self.Config.DataBase.FetchBestBlock()
+	bestStateBytes, err := self.Config.DataBase.FetchBestState()
 	if err == nil {
 		err = json.Unmarshal(bestStateBytes, &self.BestState)
 		if err != nil {
@@ -97,8 +97,6 @@ func (self *BlockChain) initChainState() error {
 		return self.createChainState()
 	}
 
-	// TODO
-	// Attempt to load the chain state from the database.
 	return nil
 }
 
@@ -221,6 +219,15 @@ Store best state of block(best block, num of tx, ...) into Database
  */
 func (self *BlockChain) StoreBestState() (error) {
 	return self.Config.DataBase.StoreBestBlock(self.BestState)
+}
+
+func (self *BlockChain) GetBestState() (*BestState, error) {
+	bestState := BestState{}
+	bestStateBytes, err := self.Config.DataBase.FetchBestState()
+	if err == nil {
+		err = json.Unmarshal(bestStateBytes, &bestState)
+	}
+	return &bestState, err
 }
 
 /**

@@ -133,7 +133,7 @@ func (db *db) StoreBestBlock(v interface{}) error {
 	return nil
 }
 
-func (db *db) FetchBestBlock() ([]byte, error) {
+func (db *db) FetchBestState() ([]byte, error) {
 	block, err := db.ldb.Get(bestBlockKey, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "db.ldb.Get")
@@ -210,14 +210,23 @@ func (db *db) getKeyIdx(h *common.Hash) []byte {
 	return key
 }
 
-func (db *db) StoreOutpoint(outpoint *transaction.OutPoint) error {
-	b, err := json.Marshal(outpoint)
+func (db *db) StoreEntry(op *transaction.OutPoint, v interface{}) error {
+	val, err := json.Marshal(v)
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
 	}
-	key := fmt.Sprintf("%s%d", outpoint.Hash.String(), outpoint.Vout)
-	if err := db.ldb.Put([]byte(key), b, nil); err != nil {
+	key := fmt.Sprintf("%s%d", op.Hash.String(), op.Vout)
+	if err := db.ldb.Put([]byte(key), val, nil); err != nil {
 		return errors.Wrap(err, "db.ldb.Put")
 	}
 	return nil
+}
+
+func (db *db) FetchEntry(op *transaction.OutPoint) ([]byte, error) {
+	key := fmt.Sprintf("%s%d", op.Hash.String(), op.Vout)
+	b, err := db.ldb.Get([]byte(key), nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "db.ldb.Get")
+	}
+	return b, nil
 }
