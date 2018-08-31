@@ -75,7 +75,7 @@ func MarshalResponse(id interface{}, result interface{}, rpcErr *common.RPCError
 // GetBlockChainInfoResult models the data returned from the getblockchaininfo
 // command.
 type GetBlockChainInfoResult struct {
-	Chain                string  `json:"Chain"`
+	Chain                string  `json:"BlockChain"`
 	Blocks               int     `json:"Blocks"`
 	Headers              int32   `json:"Headers"`
 	BestBlockHash        string  `json:"BestBlockHash"`

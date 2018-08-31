@@ -70,8 +70,8 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 		if err != nil {
 			return nil, errors.New("Invalid blockhash format")
 		}
-		bnum, err := self.Config.Chain.GetBlockHeightByBlockHash(&bhash)
-		block, err := self.Config.Chain.GetBlockByBlockHash(&bhash)
+		bnum, err := self.Config.BlockChain.GetBlockHeightByBlockHash(&bhash)
+		block, err := self.Config.BlockChain.GetBlockByBlockHash(&bhash)
 		if err != nil {
 			return nil, errors.New("Block not exist")
 		}
@@ -83,11 +83,11 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 		if err != nil {
 			return nil, errors.New("Invalid blocknum format")
 		}
-		allHashBlocks, _ := self.Config.Chain.GetAllHashBlocks()
+		allHashBlocks, _ := self.Config.BlockChain.GetAllHashBlocks()
 		if len(allHashBlocks) < bnum || bnum <= 0 {
 			return nil, errors.New("Block not exist")
 		}
-		block, _ := self.Config.Chain.GetBlockByBlockHeight(int32(bnum - 1))
+		block, _ := self.Config.BlockChain.GetBlockByBlockHeight(int32(bnum - 1))
 		result.Header = block.Header
 		result.BlockNum = bnum
 		result.BlockHash = block.Hash().String()
@@ -107,12 +107,12 @@ func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan s
 getblockchaininfo RPC return information fo blockchain node
  */
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	allHashBlocks, _ := self.Config.Chain.GetAllHashBlocks()
+	allHashBlocks, _ := self.Config.BlockChain.GetAllHashBlocks()
 	result := jsonrpc.GetBlockChainInfoResult{
 		Chain:         self.Config.ChainParams.Name,
 		Blocks:        len(allHashBlocks),
-		BestBlockHash: self.Config.Chain.BestState.BestBlockHash.String(),
-		Difficulty:    self.Config.Chain.BestState.Difficulty,
+		BestBlockHash: self.Config.BlockChain.BestState.BestBlockHash.String(),
+		Difficulty:    self.Config.BlockChain.BestState.Difficulty,
 	}
 	return result, nil
 }
@@ -143,7 +143,7 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 	_ = max
 	var addresses []string
 	addresses = strings.Fields(listAddresses)
-	blocks, _ := self.Config.Chain.GetAllBlocks()
+	blocks, _ := self.Config.BlockChain.GetAllBlocks()
 	result := make([]jsonrpc.ListUnspentResult, 0)
 	for _, block := range blocks {
 		if (len(block.Transactions) > 0) {
@@ -310,7 +310,7 @@ func isExisted(item int, arr []int) bool {
 func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// return 1000, nil
 	log.Println(params)
-	blocks, _ := self.Config.Chain.GetAllBlocks()
+	blocks, _ := self.Config.BlockChain.GetAllBlocks()
 	txInsMap := map[string][]int{}
 	txOuts := []jsonrpc.ListUnspentResult{}
 	for _, block := range blocks {

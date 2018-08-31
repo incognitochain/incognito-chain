@@ -130,7 +130,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	self.Chain = &blockchain.BlockChain{}
 	err = self.Chain.Init(&blockchain.Config{
 		ChainParams: self.chainParams,
-		Db:          self.Db,
+		DataBase:    self.Db,
 		Interrupt:   interrupt,
 	})
 	if err != nil {
@@ -217,7 +217,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 			RPCQuirks:     cfg.RPCQuirks,
 			RPCMaxClients: cfg.RPCMaxClients,
 			ChainParams:   chainParams,
-			Chain:         self.Chain,
+			BlockChain:    self.Chain,
 			TxMemPool:     self.MemPool,
 			Server:        self,
 			Wallet:        self.Wallet,
@@ -385,7 +385,7 @@ func (self Server) Start() {
 	/*go func(server Server) {
 		for {
 			time.Sleep(time.Second * 3)
-			log.Printf("\n --- Chain length: %d ---- \n", len(server.Chain.Blocks))
+			log.Printf("\n --- BlockChain length: %d ---- \n", len(server.BlockChain.Blocks))
 		}
 	}(self)*/
 }
