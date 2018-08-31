@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 var (
@@ -206,4 +208,16 @@ func (db *db) getKeyIdx(h *common.Hash) []byte {
 	var key []byte
 	key = append(blockKeyIdxPrefix, h[:]...)
 	return key
+}
+
+func (db *db) StoreOutpoint(outpoint *transaction.OutPoint) error {
+	b, err := json.Marshal(outpoint)
+	if err != nil {
+		return errors.Wrap(err, "json.Marshal")
+	}
+	key := fmt.Sprintf("%s%d", outpoint.Hash.String(), outpoint.Vout)
+	if err := db.ldb.Put([]byte(key), b, nil); err != nil {
+		return errors.Wrap(err, "db.ldb.Put")
+	}
+	return nil
 }
