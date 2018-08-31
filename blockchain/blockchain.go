@@ -15,7 +15,7 @@ import (
 
 type BlockChain struct {
 	Config Config
-	Blocks []*Block
+	//Blocks []*Block
 	//Headers   map[common.Hash]int
 	BestState *BestState
 
@@ -109,7 +109,7 @@ func (self *BlockChain) createChainState() error {
 	// Create a new block from genesis block and set it as best block of chain
 	genesisBlock := self.Config.ChainParams.GenesisBlock
 	genesisBlock.Height = 0
-	self.Blocks = append(self.Blocks, genesisBlock)
+	//self.Blocks = append(self.Blocks, genesisBlock)
 
 	// Initialize the state related to the best block.  Since it is the
 	// genesis block, use its timestamp for the median time.
@@ -139,8 +139,42 @@ func (self *BlockChain) createChainState() error {
 	return err
 }
 
-func (self *BlockChain) GetBlockHeighByBlockHash(hash *common.Hash) (int32, error) {
+func (self *BlockChain) GetBlockHeightByBlockHash(hash *common.Hash) (int32, error) {
 	return self.Config.Db.GetIndexOfBlock(hash)
+}
+
+func (self *BlockChain) GetBlockHashByBlockHeight(height int32) (*common.Hash, error) {
+	return self.Config.Db.GetBlockByIndex(height)
+}
+
+func (self *BlockChain) GetBlockByBlockHeight(height int32) (*Block, error) {
+	hashBlock, err := self.Config.Db.GetBlockByIndex(height)
+	if err != nil {
+		return nil, err
+	}
+	blockBytes, err := self.Config.Db.FetchBlock(hashBlock)
+	if err != nil {
+		return nil, err
+	}
+	block := Block{}
+	err = json.Unmarshal(blockBytes, &block)
+	if err != nil {
+		return nil, err
+	}
+	return &block, nil
+}
+
+func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
+	blockBytes, err := self.Config.Db.FetchBlock(hash)
+	if err != nil {
+		return nil, err
+	}
+	block := Block{}
+	err = json.Unmarshal(blockBytes, &block)
+	if err != nil {
+		return nil, err
+	}
+	return &block, nil
 }
 
 func (self *BlockChain) StoreBestState() (error) {

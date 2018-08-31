@@ -70,11 +70,12 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 		if err != nil {
 			return nil, errors.New("Invalid blockhash format")
 		}
-		bnum, err := self.Config.Chain.GetBlockHeighByBlockHash(&bhash)
+		bnum, err := self.Config.Chain.GetBlockHeightByBlockHash(&bhash)
+		block, err := self.Config.Chain.GetBlockByBlockHash(&bhash)
 		if err != nil {
 			return nil, errors.New("Block not exist")
 		}
-		result.Header = self.Config.Chain.Blocks[bnum].Header
+		result.Header = block.Header
 		result.BlockNum = int(bnum) + 1
 		result.BlockHash = bhash.String()
 	case "blocknum":
@@ -82,12 +83,14 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 		if err != nil {
 			return nil, errors.New("Invalid blocknum format")
 		}
-		if len(self.Config.Chain.Blocks) < bnum || bnum <= 0 {
+		allHashBlocks, _ := self.Config.Chain.GetAllHashBlocks()
+		if len(allHashBlocks) < bnum || bnum <= 0 {
 			return nil, errors.New("Block not exist")
 		}
-		result.Header = self.Config.Chain.Blocks[bnum-1].Header
+		block, _ := self.Config.Chain.GetBlockByBlockHeight(int32(bnum - 1))
+		result.Header = block.Header
 		result.BlockNum = bnum
-		result.BlockHash = self.Config.Chain.Blocks[bnum-1].Hash().String()
+		result.BlockHash = block.Hash().String()
 	default:
 		return nil, errors.New("Wrong request format")
 	}
@@ -101,9 +104,10 @@ func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan s
 }
 
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	allHashBlocks, _ := self.Config.Chain.GetAllHashBlocks()
 	result := jsonrpc.GetBlockChainInfoResult{
 		Chain:  self.Config.ChainParams.Name,
-		Blocks: len(self.Config.Chain.Blocks),
+		Blocks: len(allHashBlocks),
 	}
 	return result, nil
 }
@@ -134,7 +138,7 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 	_ = max
 	var addresses []string
 	addresses = strings.Fields(listAddresses)
-	blocks := self.Config.Chain.Blocks
+	blocks, _ := self.Config.Chain.GetAllBlocks()
 	result := make([]jsonrpc.ListUnspentResult, 0)
 	for _, block := range blocks {
 		if (len(block.Transactions) > 0) {
@@ -301,7 +305,7 @@ func isExisted(item int, arr []int) bool {
 func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// return 1000, nil
 	log.Println(params)
-	blocks := self.Config.Chain.Blocks
+	blocks, _ := self.Config.Chain.GetAllBlocks()
 	txInsMap := map[string][]int{}
 	txOuts := []jsonrpc.ListUnspentResult{}
 	for _, block := range blocks {
