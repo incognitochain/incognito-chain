@@ -1,19 +1,21 @@
 package rpcserver
 
 import (
-	"log"
-	"encoding/json"
 	"bytes"
-	"strings"
+	"encoding/base64"
 	"encoding/hex"
-	"fmt"
-	"time"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"strconv"
+	"strings"
+	"time"
 
+	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/transaction"
-	"github.com/ninjadotorg/cash-prototype/common"
+	"golang.org/x/crypto/ed25519"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -35,9 +37,7 @@ var RpcHandler = map[string]commandHandler{
 }
 
 // Commands that are available to a limited user
-var RpcLimited = map[string]struct{}{
-
-}
+var RpcLimited = map[string]struct{}{}
 
 func (self RpcServer) handleDoSomething(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
@@ -116,7 +116,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
  Parameter #1—the minimum number of confirmations an output must have
 Parameter #2—the maximum number of confirmations an output may have
 Parameter #3—the addresses an output must pay
- */
+*/
 func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
 	paramsArray := common.InterfaceSlice(params)
@@ -130,20 +130,20 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 	blocks := self.Config.Chain.Blocks
 	result := make([]jsonrpc.ListUnspentResult, 0)
 	for _, block := range blocks {
-		if (len(block.Transactions) > 0) {
+		if len(block.Transactions) > 0 {
 			for _, tx := range block.Transactions {
 				if tx.GetType() == common.TxActionParamsType {
 					continue
 				}
 				normalTx := tx.(*transaction.Tx)
-				if (len(normalTx.TxOut) > 0) {
+				if len(normalTx.TxOut) > 0 {
 					for index, txOut := range normalTx.TxOut {
-						if (bytes.Compare(txOut.PkScript, []byte(addresses[0])) == 0) {
+						if bytes.Compare(txOut.PkScript, []byte(addresses[0])) == 0 {
 							result = append(result, jsonrpc.ListUnspentResult{
-								Vout:    index,
-								TxID:    normalTx.Hash().String(),
-								Address: string(txOut.PkScript),
-								Amount:  txOut.Value,
+								Vout:      index,
+								TxID:      normalTx.Hash().String(),
+								Address:   string(txOut.PkScript),
+								Amount:    txOut.Value,
 								TxOutType: txOut.TxOutType,
 							})
 						}
@@ -157,7 +157,7 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 
 /**
 // handleCreateRawTransaction handles createrawtransaction commands.
- */
+*/
 func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
 	arrayParams := common.InterfaceSlice(params)
@@ -279,7 +279,6 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 	return tx.Hash(), nil
 }
 
-
 func isExisted(item int, arr []int) bool {
 	for _, i := range arr {
 		if item == i {
@@ -312,10 +311,10 @@ func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeCh
 
 			for index, txOut := range normalTx.TxOut {
 				txOuts = append(txOuts, jsonrpc.ListUnspentResult{
-					Vout:    index,
-					TxID:    normalTx.Hash().String(),
-					Address: string(txOut.PkScript),
-					Amount:  txOut.Value,
+					Vout:      index,
+					TxID:      normalTx.Hash().String(),
+					Address:   string(txOut.PkScript),
+					Amount:    txOut.Value,
 					TxOutType: txOut.TxOutType,
 				})
 			}
@@ -340,8 +339,7 @@ func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeCh
 	return result, nil
 }
 
-
-func assertEligibleAgentIDs(eligibleAgentIDs interface{}) ([]string) {
+func assertEligibleAgentIDs(eligibleAgentIDs interface{}) []string {
 	assertedEligibleAgentIDs := eligibleAgentIDs.([]interface{})
 	results := []string{}
 	for _, item := range assertedEligibleAgentIDs {
@@ -350,10 +348,9 @@ func assertEligibleAgentIDs(eligibleAgentIDs interface{}) ([]string) {
 	return results
 }
 
-
 /**
 // handleCreateRawTransaction handles createrawtransaction commands.
- */
+*/
 func (self RpcServer) handleCreateActionParamsTrasaction(
 	params interface{},
 	closeChan <-chan struct{},
@@ -370,11 +367,26 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 	tx.Param = &transaction.Param{
 		AgentID:          param["agentId"].(string),
 		AgentSig:         param["agentSig"].(string),
-		NumOfCoins: 	  param["numOfCoins"].(float64),
-		NumOfBonds: 	  param["numOfBonds"].(float64),
+		NumOfCoins:       param["numOfCoins"].(float64),
+		NumOfBonds:       param["numOfBonds"].(float64),
 		Tax:              param["tax"].(float64),
 		EligibleAgentIDs: assertEligibleAgentIDs(param["eligibleAgentIDs"]),
 	}
+
+	// check signed tx
+	message := map[string]interface{}{
+		"agentId":          tx.Param.AgentID,
+		"numOfCoins":       tx.Param.NumOfCoins,
+		"numOfBonds":       tx.Param.NumOfBonds,
+		"tax":              tx.Param.Tax,
+		"eligibleAgentIDs": tx.Param.EligibleAgentIDs,
+	}
+	pubKeyInBytes, _ := base64.StdEncoding.DecodeString(tx.Param.AgentID)
+	sigInBytes, _ := base64.StdEncoding.DecodeString(tx.Param.AgentSig)
+	messageInBytes, _ := json.Marshal(message)
+
+	isValid := ed25519.Verify(pubKeyInBytes, messageInBytes, sigInBytes)
+	fmt.Println("isValid: ", isValid)
 
 	_, _, err := self.Config.TxMemPool.CanAcceptTransaction(&tx)
 	if err != nil {

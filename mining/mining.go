@@ -1,10 +1,10 @@
 package mining
 
 import (
-	"math"
-	"fmt"
-	"time"
 	"errors"
+	"fmt"
+	"math"
+	"time"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -52,9 +52,7 @@ func getMedians(agentDataPoints []*blockchain.AgentDataPoint) (
 func calculateReward(
 	agentDataPoints map[string]*blockchain.AgentDataPoint,
 	feeMap map[string]float64,
-) (
-	map[string]float64,
-) {
+) map[string]float64 {
 	if len(agentDataPoints) < NUMBER_OF_MAKING_DECISION_AGENTS {
 		return map[string]float64{
 			"coins": DEFAULT_COINS + feeMap[common.TxOutCoinType],
@@ -129,6 +127,7 @@ func createCoinbaseTx(
 	//create new tx
 	tx := &transaction.Tx{
 		Version: 1,
+		Type:    common.TxNormalType,
 		TxIn:    make([]transaction.TxIn, 0, 2),
 		TxOut:   make([]transaction.TxOut, 0, 1),
 	}
@@ -209,9 +208,7 @@ func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 func getLatestAgentDataPoints(
 	chain *blockchain.BlockChain,
 	actionParamTxs []*transaction.ActionParamTx,
-) (
-	map[string]*blockchain.AgentDataPoint,
-) {
+) map[string]*blockchain.AgentDataPoint {
 	agentDataPoints := map[string]*blockchain.AgentDataPoint{}
 	bestBlock := chain.BestBlock
 
@@ -225,12 +222,13 @@ func getLatestAgentDataPoints(
 		_, ok := agentDataPoints[inputAgentID]
 		if !ok || actionParamTx.LockTime > agentDataPoints[inputAgentID].LockTime {
 			agentDataPoints[inputAgentID] = &blockchain.AgentDataPoint{
-				AgentID: actionParamTx.Param.AgentID,
-				AgentSig: actionParamTx.Param.AgentSig,
-				NumOfCoins: actionParamTx.Param.NumOfCoins,
-				NumOfBonds: actionParamTx.Param.NumOfBonds,
-				Tax: actionParamTx.Param.Tax,
+				AgentID:          actionParamTx.Param.AgentID,
+				AgentSig:         actionParamTx.Param.AgentSig,
+				NumOfCoins:       actionParamTx.Param.NumOfCoins,
+				NumOfBonds:       actionParamTx.Param.NumOfBonds,
+				Tax:              actionParamTx.Param.Tax,
 				EligibleAgentIDs: actionParamTx.Param.EligibleAgentIDs,
+				LockTime:         actionParamTx.LockTime,
 			}
 		}
 	}
@@ -254,7 +252,7 @@ func getLatestAgentDataPoints(
 	}
 
 	for agentID, votes := range votesForAgents {
-		if votes < int(math.Floor(float64(dataPointsLen/2)) + 1) {
+		if votes < int(math.Floor(float64(dataPointsLen/2))+1) {
 			delete(agentDataPoints, agentID)
 		}
 	}
@@ -365,7 +363,6 @@ mempoolLoop:
 
 	//update the latest AgentDataPoints to block
 	block.AgentDataPoints = agentDataPoints
-
 	blockTemp := &BlockTemplate{
 		Block: &block,
 	}
