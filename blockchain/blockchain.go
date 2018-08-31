@@ -104,7 +104,6 @@ func (self *BlockChain) createChainState() error {
 	// Create a new block from genesis block and set it as best block of chain
 	genesisBlock := self.Config.ChainParams.GenesisBlock
 	genesisBlock.Height = 0
-	//self.Blocks = append(self.Blocks, genesisBlock)
 
 	// Initialize the state related to the best block.  Since it is the
 	// genesis block, use its timestamp for the median time.
@@ -120,14 +119,44 @@ func (self *BlockChain) createChainState() error {
 		return err
 	}
 
+	// store block hash by index and index by block hash
+	err = self.StoreBlockIndex(genesisBlock)
+
 	// store best state
 	err = self.StoreBestState()
 	if err != nil {
 		return err
 	}
 
-	// store block hash by index and index by block hash
-	err = self.StoreBlockIndex(genesisBlock)
+	// Spam random blocks
+	for index := 0; index < 0; index++ {
+		hashBestBlock := self.BestState.BestBlockHash
+		newSpamBlock := Block{
+			Header: BlockHeader{
+				Version:       1,
+				PrevBlockHash: hashBestBlock,
+				Timestamp:     time.Now(),
+				Difficulty:    0,     //@todo should be create Difficulty logic
+				Nonce:         index, //@todo should be create Nonce logic
+			},
+			Height: int32(index + 1),
+		}
+		// store block genesis
+		err := self.StoreBlock(&newSpamBlock)
+		if err != nil {
+			return err
+		}
+		err = self.StoreBlockIndex(genesisBlock)
+		if err != nil {
+			return err
+		}
+		self.BestState.Init(&newSpamBlock, 0, 0, numTxns, numTxns, time.Unix(newSpamBlock.Header.Timestamp.Unix(), 0))
+		err = self.StoreBestState()
+		if err != nil {
+			return err
+		}
+	}
+	// Spam random blocks
 
 	return err
 }
