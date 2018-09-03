@@ -28,7 +28,7 @@ type Block struct {
 	Header          BlockHeader
 	Transactions    []transaction.Transaction
 	AgentDataPoints map[string]*AgentDataPoint
-	ValidatorSig    string // PoS only
+	ChainLeaderSig  string
 
 	Height    int32
 	blockHash *common.Hash

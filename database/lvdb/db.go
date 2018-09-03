@@ -18,6 +18,7 @@ import (
 )
 
 var (
+	chainIDPrefix     = []byte("c")
 	blockKeyPrefix    = []byte("b-")
 	blockKeyIdxPrefix = []byte("i-")
 	usedTxKey         = []byte("usedTx")
@@ -25,19 +26,19 @@ var (
 )
 
 func open(dbPath string) (database.DB, error) {
-	ldb, err := leveldb.OpenFile(filepath.Join(dbPath, "db"), nil)
+	lvdb, err := leveldb.OpenFile(filepath.Join(dbPath, "db"), nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "leveldb.OpenFile %s", dbPath)
 	}
-	return &db{ldb: ldb}, nil
+	return &db{lvdb: lvdb}, nil
 }
 
 type db struct {
-	ldb *leveldb.DB
+	lvdb *leveldb.DB
 }
 
 func (db *db) hasBlock(key []byte) bool {
-	ret, err := db.ldb.Has(key, nil)
+	ret, err := db.lvdb.Has(key, nil)
 	if err != nil {
 		return false
 	}
@@ -48,14 +49,15 @@ type hasher interface {
 	Hash() *common.Hash
 }
 
-func (db *db) StoreBlock(v interface{}) error {
+func (db *db) StoreBlock(v interface{}, chainID byte) error {
 	h, ok := v.(hasher)
 	if !ok {
 		return errors.New("v must implement Hash() method")
 	}
 	var (
 		hash = h.Hash()
-		key  = append(blockKeyPrefix, hash[:]...)
+		key  = append(append(chainIDPrefix, chainID), append(blockKeyPrefix, hash[:]...)...)
+		// key should look like this c10b-blockhash
 	)
 	if db.hasBlock(key) {
 		return errors.Errorf("block %s already exists", hash.String())
@@ -71,12 +73,12 @@ func (db *db) StoreBlock(v interface{}) error {
 }
 
 func (db *db) Close() error {
-	return errors.Wrap(db.ldb.Close(), "db.ldb.Close")
+	return errors.Wrap(db.lvdb.Close(), "db.lvdb.Close")
 }
 
 func (db *db) put(key, value []byte) error {
-	if err := db.ldb.Put(key, value, nil); err != nil {
-		return errors.Wrap(err, "db.ldb.Put")
+	if err := db.lvdb.Put(key, value, nil); err != nil {
+		return errors.Wrap(err, "db.lvdb.Put")
 	}
 	return nil
 }
@@ -89,9 +91,9 @@ func (db *db) HasBlock(hash *common.Hash) (bool, error) {
 }
 
 func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
-	block, err := db.ldb.Get(db.getKey(hash), nil)
+	block, err := db.lvdb.Get(db.getKey(hash), nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "db.ldb.Get")
+		return nil, errors.Wrap(err, "db.lvdb.Get")
 	}
 
 	ret := make([]byte, len(block))
@@ -100,9 +102,9 @@ func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
 }
 
 func (db *db) StoreTx(tx []byte) error {
-	res, err := db.ldb.Get(usedTxKey, nil)
+	res, err := db.lvdb.Get(usedTxKey, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return errors.Wrap(err, "db.ldb.Get")
+		return errors.Wrap(err, "db.lvdb.Get")
 	}
 
 	var txs [][]byte
@@ -116,84 +118,92 @@ func (db *db) StoreTx(tx []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
 	}
-	if err := db.ldb.Put(usedTxKey, b, nil); err != nil {
+	if err := db.lvdb.Put(usedTxKey, b, nil); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (db *db) StoreBestBlock(v interface{}) error {
+func (db *db) StoreBestBlock(v interface{}, chainID byte) error {
 	val, err := json.Marshal(v)
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
 	}
-	if err := db.put(bestBlockKey, val); err != nil {
+	key := append(bestBlockKey, chainID)
+	if err := db.put(key, val); err != nil {
 		return errors.Wrap(err, "db.Put")
 	}
 	return nil
 }
 
-func (db *db) FetchBestState() ([]byte, error) {
-	block, err := db.ldb.Get(bestBlockKey, nil)
+func (db *db) FetchBestState(chainID byte) ([]byte, error) {
+	key := append(bestBlockKey, chainID)
+	block, err := db.lvdb.Get(key, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "db.ldb.Get")
+		return nil, errors.Wrap(err, "db.lvdb.Get")
 	}
 	return block, nil
 }
 
-func (db *db) StoreBlockIndex(h *common.Hash, idx int32) error {
-	buf := new(bytes.Buffer)
-	if err := binary.Write(buf, binary.LittleEndian, idx); err != nil {
-		return errors.Wrapf(err, "binary.Write %d", idx)
-	}
+func (db *db) StoreBlockIndex(h *common.Hash, idx int32, chainID int32) error {
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint32(buf, uint32(idx))
+	binary.LittleEndian.PutUint32(buf[4:], uint32(chainID))
 
-	if err := db.ldb.Put(db.getKeyIdx(h), buf.Bytes(), nil); err != nil {
-		return errors.Wrap(err, "db.ldb.Put")
+	if err := db.lvdb.Put(db.getKeyIdx(h), buf, nil); err != nil {
+		return errors.Wrap(err, "db.lvdb.Put")
 	}
-	if err := db.ldb.Put(buf.Bytes(), h[:], nil); err != nil {
-		return errors.Wrap(err, "db.ldb.Put")
+	if err := db.lvdb.Put(buf, h[:], nil); err != nil {
+		return errors.Wrap(err, "db.lvdb.Put")
 	}
 	return nil
 }
 
-func (db *db) GetIndexOfBlock(h *common.Hash) (int32, error) {
-	b, err := db.ldb.Get(db.getKeyIdx(h), nil)
+func (db *db) GetIndexOfBlock(h *common.Hash) (int32, byte, error) {
+	b, err := db.lvdb.Get(db.getKeyIdx(h), nil)
 	if err != nil {
-		return 0, errors.Wrap(err, "db.ldb.Get")
+		return 0, 0, errors.Wrap(err, "db.lvdb.Get")
 	}
 
 	var idx int32
-	if err := binary.Read(bytes.NewReader(b), binary.LittleEndian, &idx); err != nil {
-		return 0, errors.Wrap(err, "binary.Read")
+	var chainID byte
+	if err := binary.Read(bytes.NewReader(b[:3]), binary.LittleEndian, &idx); err != nil {
+		return 0, 0, errors.Wrap(err, "binary.Read")
 	}
-	return idx, nil
+	if err = binary.Read(bytes.NewReader(b[4:7]), binary.LittleEndian, &chainID); err != nil {
+		return 0, 0, errors.Wrap(err, "binary.Read")
+	}
+	return idx, chainID, nil
 }
 
-func (db *db) GetBlockByIndex(idx int32) (*common.Hash, error) {
-	buf := new(bytes.Buffer)
-	if err := binary.Write(buf, binary.LittleEndian, idx); err != nil {
-		return nil, errors.Wrapf(err, "binary.Write %d", idx)
-	}
-	b, err := db.ldb.Get(buf.Bytes(), nil)
+func (db *db) GetBlockByIndex(idx int32, chainID byte) (*common.Hash, error) {
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint32(buf, uint32(idx))
+	binary.LittleEndian.PutUint32(buf[4:], uint32(chainID))
+
+	b, err := db.lvdb.Get(buf, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "db.ldb.Get")
+		return nil, errors.Wrap(err, "db.lvdb.Get")
 	}
 	h := new(common.Hash)
 	_ = h.SetBytes(b[len(blockKeyIdxPrefix):])
 	return h, nil
 }
 
-func (db *db) FetchAllBlocks() ([]*common.Hash, error) {
-	var keys []*common.Hash
-	iter := db.ldb.NewIterator(util.BytesPrefix(blockKeyPrefix), nil)
-	for iter.Next() {
-		h := new(common.Hash)
-		_ = h.SetBytes(iter.Key()[len(blockKeyPrefix):])
-		keys = append(keys, h)
-	}
-	iter.Release()
-	if err := iter.Error(); err != nil {
-		return nil, errors.Wrap(err, "iter.Error")
+func (db *db) FetchAllBlocks() ([][]*common.Hash, error) {
+	var keys [][]*common.Hash
+	for chainID := byte(0); chainID <= 19; chainID++ {
+		prefix := append(append(chainIDPrefix, chainID), blockKeyPrefix...)
+		iter := db.lvdb.NewIterator(util.BytesPrefix(blockKeyPrefix), nil)
+		for iter.Next() {
+			h := new(common.Hash)
+			_ = h.SetBytes(iter.Key()[len(prefix):])
+			keys[chainID] = append(keys[chainID], h)
+		}
+		iter.Release()
+		if err := iter.Error(); err != nil {
+			return nil, errors.Wrap(err, "iter.Error")
+		}
 	}
 	return keys, nil
 }
@@ -215,23 +225,23 @@ func (db *db) StoreUtxoEntry(op *transaction.OutPoint, v interface{}) error {
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
 	}
-	if err := db.ldb.Put([]byte(db.getUtxoKey(op)), val, nil); err != nil {
-		return errors.Wrap(err, "db.ldb.Put")
+	if err := db.lvdb.Put([]byte(db.getUtxoKey(op)), val, nil); err != nil {
+		return errors.Wrap(err, "db.lvdb.Put")
 	}
 	return nil
 }
 
 func (db *db) FetchUtxoEntry(op *transaction.OutPoint) ([]byte, error) {
-	b, err := db.ldb.Get([]byte(db.getUtxoKey(op)), nil)
+	b, err := db.lvdb.Get([]byte(db.getUtxoKey(op)), nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "db.ldb.Get")
+		return nil, errors.Wrap(err, "db.lvdb.Get")
 	}
 	return b, nil
 }
 
 func (db *db) DeleteUtxoEntry(op *transaction.OutPoint) error {
-	if err := db.ldb.Delete([]byte(db.getUtxoKey(op)), nil); err != nil {
-		return errors.Wrap(err, "db.ldb.Delete")
+	if err := db.lvdb.Delete([]byte(db.getUtxoKey(op)), nil); err != nil {
+		return errors.Wrap(err, "db.lvdb.Delete")
 	}
 	return nil
 }

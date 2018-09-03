@@ -31,7 +31,7 @@ type DNSSeed struct {
 Params defines a network by its params. These params may be used by Applications
 to differentiate network as well as addresses and keys for one network
 from those intended for use on another network
- */
+*/
 type Params struct {
 	// Name defines a human-readable identifier for the network.
 	Name string
@@ -147,12 +147,14 @@ type Params struct {
 	HDCoinType uint32
 }
 
+var pposValidators = []string{""}
+
 // MainNetParams defines the network parameters for the main coin network.
 var MainNetParams = Params{
 	Name:        MAINNET_NAME,
 	Net:         MAINNET,
 	DefaultPort: MAINET_DEFAULT_PORT,
-	DNSSeeds: []DNSSeed{
+	DNSSeeds:    []DNSSeed{
 		/*{"seed.coin.sipa.be", true},
 		{"dnsseed.bluematt.me", true},
 		{"dnsseed.coin.dashjr.org", false},
@@ -162,7 +164,7 @@ var MainNetParams = Params{
 	},
 
 	// BlockChain parameters
-	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlock(time.Date(2018, 8, 1, 0, 0, 0, 0, time.Local), 0x18aea41a, 0x1d00ffff, 1, GENESIS_BLOCK_REWARD),
+	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(time.Date(2018, 8, 1, 0, 0, 0, 0, time.Local), 0x18aea41a, 0x1d00ffff, 1, GENESIS_BLOCK_REWARD, pposValidators),
 	PowLimit:     mainPowLimit,
 	PowLimitBits: 486604799,
 	//BIP0034Height:            227931, // 000000000000024b89b42a942fe0d9fea3bb44ab7bd1b19115dd6a759c0808b8

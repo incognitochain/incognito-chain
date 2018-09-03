@@ -5,16 +5,17 @@ import (
 
 	"sync"
 
-	"github.com/ninjadotorg/cash-prototype/database"
-	"time"
 	"encoding/json"
+	"time"
+
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 type BlockChain struct {
 	Config    Config
-	BestState *BestState
+	BestState []*BestState //BestState of 20 chain.
 
 	chainLock sync.RWMutex
 }
@@ -47,7 +48,6 @@ type Config struct {
 }
 
 func (self *BlockChain) Init(config *Config) error {
-	self.Headers = make(map[common.Hash]*blockIdx)
 	// Enforce required config fields.
 	// TODO
 	if config.DataBase == nil {
@@ -66,7 +66,7 @@ func (self *BlockChain) Init(config *Config) error {
 		return err
 	}
 
-	Logger.log.Infof("BlockChain state (height %d, hash %v, totaltx %d)", self.BestState.Height, self.BestState.BestBlockHash.String(), self.BestState.TotalTxns, )
+	// Logger.log.Infof("BlockChain state (height %d, hash %v, totaltx %d)", self.BestState.Height, self.BestState.BestBlockHash.String(), self.BestState.TotalTxns)
 
 	return nil
 }
@@ -79,22 +79,28 @@ func (self *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	var initialized bool
-	bestStateBytes, err := self.Config.DataBase.FetchBestState()
-	if err == nil {
-		err = json.Unmarshal(bestStateBytes, &self.BestState)
-		if err != nil {
-			initialized = false
+	for chainID := byte(0); chainID <= 19; chainID++ {
+		bestStateBytes, err := self.Config.DataBase.FetchBestState(chainID)
+		if err == nil {
+			err = json.Unmarshal(bestStateBytes, &self.BestState)
+			if err != nil {
+				initialized = false
+			} else {
+				initialized = true
+			}
 		} else {
-			initialized = true
+			initialized = false
 		}
-	} else {
-		initialized = false
-	}
 
-	if !initialized {
-		// At this point the database has not already been initialized, so
-		// initialize both it and the chain state to the genesis block.
-		return self.createChainState()
+		if !initialized {
+			// At this point the database has not already been initialized, so
+			// initialize both it and the chain state to the genesis block.
+			err := self.createChainState(chainID)
+			if err != nil {
+				return err
+			}
+
+		}
 	}
 
 	return nil
@@ -103,86 +109,90 @@ func (self *BlockChain) initChainState() error {
 // createChainState initializes both the database and the chain state to the
 // genesis block.  This includes creating the necessary buckets and inserting
 // the genesis block, so it must only be called on an uninitialized database.
-func (self *BlockChain) createChainState() error {
+func (self *BlockChain) createChainState(chainID byte) error {
 	// Create a new block from genesis block and set it as best block of chain
-	genesisBlock := self.Config.ChainParams.GenesisBlock
-	genesisBlock.Height = 0
+	var initBlock *Block
+	if chainID == 0 {
+		initBlock = self.Config.ChainParams.GenesisBlock
+	} else {
+		initBlock = &Block{}
+	}
+	initBlock.Height = 0
 
 	// Initialize the state related to the best block.  Since it is the
 	// genesis block, use its timestamp for the median time.
-	numTxns := uint64(len(genesisBlock.Transactions))
-	//blockSize := uint64(genesisBlock.SerializeSize())
-	//blockWeight := uint64(GetBlockWeight(genesisBlock))
-	self.BestState = &BestState{}
-	self.BestState.Init(genesisBlock, 0, 0, numTxns, numTxns, time.Unix(genesisBlock.Header.Timestamp.Unix(), 0))
+	numTxns := uint64(len(initBlock.Transactions))
+	//blockSize := uint64(initBlock.SerializeSize())
+	//blockWeight := uint64(GetBlockWeight(initBlock))
+	self.BestState[chainID] = &BestState{}
+	self.BestState[chainID].Init(initBlock, 0, 0, numTxns, numTxns, time.Unix(initBlock.Header.Timestamp.Unix(), 0))
 
 	// store block genesis
-	err := self.StoreBlock(genesisBlock)
+	err := self.StoreBlock(initBlock)
 	if err != nil {
 		return err
 	}
 
 	// store block hash by index and index by block hash
-	err = self.StoreBlockIndex(genesisBlock)
+	err = self.StoreBlockIndex(initBlock)
 
 	// store best state
-	err = self.StoreBestState()
+	err = self.StoreBestState(chainID)
 	if err != nil {
 		return err
 	}
 
 	// Spam random blocks
-	for index := 0; index < 0; index++ {
-		hashBestBlock := self.BestState.BestBlockHash
-		newSpamBlock := Block{
-			Header: BlockHeader{
-				Version:       1,
-				PrevBlockHash: hashBestBlock,
-				Timestamp:     time.Now(),
-				Difficulty:    0,     //@todo should be create Difficulty logic
-				Nonce:         index, //@todo should be create Nonce logic
-			},
-			Height: int32(index + 1),
-		}
-		// store block genesis
-		err := self.StoreBlock(&newSpamBlock)
-		if err != nil {
-			return err
-		}
-		err = self.StoreBlockIndex(genesisBlock)
-		if err != nil {
-			return err
-		}
-		self.BestState.Init(&newSpamBlock, 0, 0, numTxns, numTxns, time.Unix(newSpamBlock.Header.Timestamp.Unix(), 0))
-		err = self.StoreBestState()
-		if err != nil {
-			return err
-		}
-	}
-	// Spam random blocks
+	// for index := 0; index < 0; index++ {
+	// 	hashBestBlock := self.BestState[0].BestBlockHash
+	// 	newSpamBlock := Block{
+	// 		Header: BlockHeader{
+	// 			Version:       1,
+	// 			PrevBlockHash: hashBestBlock,
+	// 			Timestamp:     time.Now(),
+	// 			Difficulty:    0,     //@todo should be create Difficulty logic
+	// 			Nonce:         index, //@todo should be create Nonce logic
+	// 		},
+	// 		Height: int32(index + 1),
+	// 	}
+	// 	// store block genesis
+	// 	err := self.StoreBlock(&newSpamBlock)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	err = self.StoreBlockIndex(initBlock)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	self.BestState[chainID].Init(&newSpamBlock, 0, 0, numTxns, numTxns, time.Unix(newSpamBlock.Header.Timestamp.Unix(), 0))
+	// 	err = self.StoreBestState(chainID)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
-	return err
+	return nil
 }
 
 /**
 Get block index(height) of block
- */
-func (self *BlockChain) GetBlockHeightByBlockHash(hash *common.Hash) (int32, error) {
+*/
+func (self *BlockChain) GetBlockHeightByBlockHash(hash *common.Hash) (int32, byte, error) {
 	return self.Config.DataBase.GetIndexOfBlock(hash)
 }
 
 /**
 Get block hash by block index(height)
- */
-func (self *BlockChain) GetBlockHashByBlockHeight(height int32) (*common.Hash, error) {
-	return self.Config.DataBase.GetBlockByIndex(height)
+*/
+func (self *BlockChain) GetBlockHashByBlockHeight(height int32, chainID byte) (*common.Hash, error) {
+	return self.Config.DataBase.GetBlockByIndex(height, chainID)
 }
 
 /**
 Fetch DB and get block by index(height) of block
- */
-func (self *BlockChain) GetBlockByBlockHeight(height int32) (*Block, error) {
-	hashBlock, err := self.Config.DataBase.GetBlockByIndex(height)
+*/
+func (self *BlockChain) GetBlockByBlockHeight(height int32, chainID byte) (*Block, error) {
+	hashBlock, err := self.Config.DataBase.GetBlockByIndex(height, chainID)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +210,7 @@ func (self *BlockChain) GetBlockByBlockHeight(height int32) (*Block, error) {
 
 /**
 Fetch DB and get block data by block hash
- */
+*/
 func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 	blockBytes, err := self.Config.DataBase.FetchBlock(hash)
 	if err != nil {
@@ -216,14 +226,14 @@ func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 
 /**
 Store best state of block(best block, num of tx, ...) into Database
- */
-func (self *BlockChain) StoreBestState() (error) {
-	return self.Config.DataBase.StoreBestBlock(self.BestState)
+*/
+func (self *BlockChain) StoreBestState(chainID byte) error {
+	return self.Config.DataBase.StoreBestBlock(self.BestState[chainID], chainID)
 }
 
-func (self *BlockChain) GetBestState() (*BestState, error) {
+func (self *BlockChain) GetBestState(chainID byte) (*BestState, error) {
 	bestState := BestState{}
-	bestStateBytes, err := self.Config.DataBase.FetchBestState()
+	bestStateBytes, err := self.Config.DataBase.FetchBestState(chainID)
 	if err == nil {
 		err = json.Unmarshal(bestStateBytes, &bestState)
 	}
@@ -232,18 +242,18 @@ func (self *BlockChain) GetBestState() (*BestState, error) {
 
 /**
 Store block into Database
- */
+*/
 func (self *BlockChain) StoreBlock(block *Block) error {
-	return self.Config.DataBase.StoreBlock(block)
+	return self.Config.DataBase.StoreBlock(block, block.Header.ChainID)
 }
 
 /**
 Save index(height) of block by block hash
 and
 Save block hash by index(height) of block
- */
+*/
 func (self *BlockChain) StoreBlockIndex(block *Block) error {
-	return self.Config.DataBase.StoreBlockIndex(block.Hash(), block.Height)
+	return self.Config.DataBase.StoreBlockIndex(block.Hash(), block.Height, block.Header.ChainID)
 }
 
 // Uses an existing database to update the utxo set
@@ -278,34 +288,37 @@ func (self *BlockChain) StoreUtxoView(view *UtxoViewpoint) error {
 /**
 Get all blocks in chain
 Return block array
- */
-func (self *BlockChain) GetAllBlocks() ([]*Block, error) {
-	result := make([]*Block, 0)
+*/
+func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
+	result := make([][]*Block, 0)
 	data, err := self.Config.DataBase.FetchAllBlocks()
 	if err != nil {
 		return nil, err
 	}
 
-	for _, item := range data {
-		blockBytes, err := self.Config.DataBase.FetchBlock(item)
-		if err != nil {
-			return nil, err
+	for chainID, chain := range data {
+		for _, item := range chain {
+			blockBytes, err := self.Config.DataBase.FetchBlock(item)
+			if err != nil {
+				return nil, err
+			}
+			block := Block{}
+			err = json.Unmarshal(blockBytes, &block)
+			if err != nil {
+				return nil, err
+			}
+			result[chainID] = append(result[chainID], &block)
 		}
-		block := Block{}
-		err = json.Unmarshal(blockBytes, &block)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, &block)
 	}
+
 	return result, nil
 }
 
 /**
 Get all hash of blocks in chain
 Return hashes array
- */
-func (self *BlockChain) GetAllHashBlocks() ([]*common.Hash, error) {
+*/
+func (self *BlockChain) GetAllHashBlocks() ([][]*common.Hash, error) {
 	data, err := self.Config.DataBase.FetchAllBlocks()
 	if err != nil {
 		return nil, err

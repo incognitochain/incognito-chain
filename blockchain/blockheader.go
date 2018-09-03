@@ -14,8 +14,6 @@ const MaxBlockHeaderPayload = 16 + (common.HashSize * 2)
 type BlockHeader struct {
 	// Version of the block.  This is not the same as the protocol version.
 	Version int
-
-	ChainID byte
 	// Hash of the previous block header in the block chain.
 	PrevBlockHash common.Hash
 
@@ -33,9 +31,12 @@ type BlockHeader struct {
 	Nonce int
 
 	// POS
-	CommitteeSigs map[string]string //include validator signature
+	CommitteeSigs map[string]string //Include validator signature
 	NextCommittee []string          //Voted committee for the next block
-	Candidates    []string
+	Candidates    []string          //
+
+	// Parallel PoS
+	ChainID byte
 }
 
 func (h *BlockChain) GetBlockByHash(hash common.Hash) *Block {

@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"time"
+
 	"github.com/ninjadotorg/cash-prototype/common"
 )
 
@@ -27,7 +28,7 @@ type BestState struct {
 	MedianTime  time.Time // Median time as per CalcPastMedianTime.
 }
 
-func (self *BestState) Init(block *Block, blocksize, blockweigh, numTxts, totalTxns uint64, medianTime time.Time) {
+func (self *BestState) Init(block *Block, blocksize, blockweight, numTxts, totalTxns uint64, medianTime time.Time) {
 	self.BestBlock = block
 	self.BestBlockHash = *self.BestBlock.Hash()
 
@@ -35,5 +36,5 @@ func (self *BestState) Init(block *Block, blocksize, blockweigh, numTxts, totalT
 	self.NumTxns = numTxts
 	self.Height = block.Height
 	self.Difficulty = block.Header.Difficulty
-	self.BlockWeight = blockweigh
+	self.BlockWeight = blockweight
 }
