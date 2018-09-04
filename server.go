@@ -334,7 +334,16 @@ func (self Server) peerHandler() {
 	if !cfg.DisableDNSSeed {
 		// TODO load peer from seed DNS
 		// add to address manager
-		self.AddrManager.AddAddresses(make([]*peer.Peer, 0))
+		//self.AddrManager.AddAddresses(make([]*peer.Peer, 0))
+
+		self.ConnManager.SeedFromDNS(self.chainParams.DNSSeeds, func(addrs []string) {
+			// Bitcoind uses a lookup of the dns seeder here. This
+			// is rather strange since the values looked up by the
+			// DNS seed lookups will vary quite a lot.
+			// to replicate this behaviour we put all addresses as
+			// having come from the first one.
+			self.AddrManager.AddAddressesStr(addrs)
+		})
 	}
 
 	if len(cfg.ConnectPeers) == 0 {
@@ -345,7 +354,6 @@ func (self Server) peerHandler() {
 	}
 
 	go self.ConnManager.Start()
-	//go self.ConnManager.StartListener(self.NewPeerConfig())
 
 out:
 	for {
