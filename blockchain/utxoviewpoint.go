@@ -5,6 +5,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"encoding/json"
+	"fmt"
 )
 
 // txoFlags is a bitmask defining additional information and state for a
@@ -22,6 +23,20 @@ const (
 	// loaded.
 	tfModified
 )
+
+type SpentTxOut struct {
+	// Amount is the amount of the output.
+	Amount float64
+
+	// PkScipt is the the public key script for the output.
+	PkScript []byte
+
+	// Height is the height of the the block containing the creating tx.
+	Height int32
+
+	// Denotes if the creating tx is a coinbase.
+	IsCoinBase bool
+}
 
 // UtxoEntry houses details about an individual transaction output in a utxo
 // view such as whether or not it was contained in a coinbase tx, the height of
@@ -227,4 +242,126 @@ func NewUtxoViewpoint() *UtxoViewpoint {
 	return &UtxoViewpoint{
 		entries: make(map[transaction.OutPoint]*UtxoEntry),
 	}
+}
+
+// fetchInputUtxos loads the unspent transaction outputs for the inputs
+// referenced by the transactions in the given block into the view from the
+// database as needed.  In particular, referenced entries that are earlier in
+// the block are added to the view and entries that are already in the view are
+// not modified.
+func (view *UtxoViewpoint) fetchInputUtxos(db database.DB, block *Block) error {
+	// Build a map of in-flight transactions because some of the inputs in
+	// this block could be referencing other transactions earlier in this
+	// block which are not yet in the chain.
+	txInFlight := map[common.Hash]int{}
+	transactions := block.Transactions
+	for i, tx := range transactions {
+		txInFlight[*tx.Hash()] = i
+	}
+
+	// Loop through all of the transaction inputs (except for the coinbase
+	// which has no inputs) collecting them into sets of what is needed and
+	// what is already known (in-flight).
+	neededSet := make(map[transaction.OutPoint]struct{})
+	for i, tx := range transactions[1:] {
+		for _, txIn := range tx.(*transaction.Tx).TxIn {
+			// It is acceptable for a transaction input to reference
+			// the output of another transaction in this block only
+			// if the referenced transaction comes before the
+			// current one in this block.  Add the outputs of the
+			// referenced transaction as available utxos when this
+			// is the case.  Otherwise, the utxo details are still
+			// needed.
+			//
+			// NOTE: The >= is correct here because i is one less
+			// than the actual position of the transaction within
+			// the block due to skipping the coinbase.
+			originHash := &txIn.PreviousOutPoint.Hash
+			if inFlightIndex, ok := txInFlight[*originHash]; ok &&
+				i >= inFlightIndex {
+
+				originTx := transactions[inFlightIndex]
+				view.AddTxOuts(originTx.(*transaction.Tx), block.Height)
+				continue
+			}
+
+			// Don't request entries that are already in the view
+			// from the database.
+			if _, ok := view.entries[txIn.PreviousOutPoint]; ok {
+				continue
+			}
+
+			neededSet[txIn.PreviousOutPoint] = struct{}{}
+		}
+	}
+
+	// Request the input utxos from the database.
+	return view.fetchUtxosMain(db, neededSet)
+}
+
+// connectTransaction updates the view by adding all new utxos created by the
+// passed transaction and marking all utxos that the transactions spend as
+// spent.  In addition, when the 'stxos' argument is not nil, it will be updated
+// to append an entry for each spent txout.  An error will be returned if the
+// view does not contain the required utxos.
+func (view *UtxoViewpoint) connectTransaction(tx *transaction.Tx, blockHeight int32, stxos *[]SpentTxOut) error {
+	// Coinbase transactions don't have any inputs to spend.
+	if IsCoinBaseTx(*tx) {
+		// Add the transaction's outputs as available utxos.
+		view.AddTxOuts(tx, blockHeight)
+		return nil
+	}
+
+	// Spend the referenced utxos by marking them spent in the view and,
+	// if a slice was provided for the spent txout details, append an entry
+	// to it.
+	for _, txIn := range tx.TxIn {
+		// Ensure the referenced utxo exists in the view.  This should
+		// never happen unless there is a bug is introduced in the code.
+		entry := view.entries[txIn.PreviousOutPoint]
+		if entry == nil {
+			return AssertError(fmt.Sprintf("view missing input %v",
+				txIn.PreviousOutPoint))
+		}
+
+		// Only create the stxo details if requested.
+		if stxos != nil {
+			// Populate the stxo details using the utxo entry.
+			var stxo = SpentTxOut{
+				Amount:     entry.Amount(),
+				PkScript:   entry.PkScript(),
+				Height:     entry.BlockHeight(),
+				IsCoinBase: entry.IsCoinBase(),
+			}
+			*stxos = append(*stxos, stxo)
+		}
+
+		// Mark the entry as spent.  This is not done until after the
+		// relevant details have been accessed since spending it might
+		// clear the fields from memory in the future.
+		entry.Spend()
+	}
+
+	// Add the transaction's outputs as available utxos.
+	view.AddTxOuts(tx, blockHeight)
+	return nil
+}
+
+// connectTransactions updates the view by adding all new utxos created by all
+// of the transactions in the passed block, marking all utxos the transactions
+// spend as spent, and setting the best hash for the view to the passed block.
+// In addition, when the 'stxos' argument is not nil, it will be updated to
+// append an entry for each spent txout.
+func (view *UtxoViewpoint) connectTransactions(block *Block, stxos *[]SpentTxOut) error {
+	for _, tx := range block.Transactions {
+		err := view.connectTransaction(tx.(*transaction.Tx), block.Height, stxos)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Update the best hash for view to include this block since all of its
+	// transactions have been connected.
+	view.SetBestHash(block.Hash())
+	return nil
 }
