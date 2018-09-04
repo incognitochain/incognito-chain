@@ -61,7 +61,7 @@ type Peer struct {
 	FlagMutex sync.Mutex
 	Config    Config
 
-	PeerConns map[peer.ID]*PeerConn
+	PeerConns map[string]*PeerConn
 
 	quit chan struct{}
 
@@ -218,7 +218,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		HandleFailed:       peer.handleFailed,
 	}
 
-	self.PeerConns[peerConn.PeerId] = &peerConn
+	self.PeerConns[peerConn.RawAddress] = &peerConn
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
@@ -264,7 +264,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		HandleFailed:       self.handleFailed,
 	}
 
-	self.PeerConns[peerConn.PeerId] = &peerConn
+	self.PeerConns[peerConn.RawAddress] = &peerConn
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
@@ -318,7 +318,7 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 	msgVersionStr := hex.EncodeToString(msgVersion)
 	msgVersionStr += "\n"
 	Logger.log.Infof("Send a msgVersion: %s", msgVersionStr)
-	rw := self.PeerConns[peer.PeerId].ReaderWriterStream
+	rw := self.PeerConns[peer.RawAddress].ReaderWriterStream
 	self.FlagMutex.Lock()
 	rw.Writer.WriteString(msgVersionStr)
 	rw.Writer.Flush()
@@ -351,12 +351,12 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 
 	if peerConn.IsOutbound {
 		if peerConn.State() != ConnCanceled {
-
+			self.retryPeerConnection(peerConn)
 		}
 	} else {
-		_peerConn, ok := self.PeerConns[peerConn.PeerId]
+		_peerConn, ok := self.PeerConns[peerConn.RawAddress]
 		if ok {
-			delete(self.PeerConns, _peerConn.PeerId)
+			delete(self.PeerConns, _peerConn.RawAddress)
 		}
 	}
 
@@ -368,9 +368,9 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 func (self *Peer) handleFailed(peerConn *PeerConn) {
 	Logger.log.Infof("handleFailed %s", peerConn.PeerId.String())
 
-	_peerConn, ok := self.PeerConns[peerConn.PeerId]
+	_peerConn, ok := self.PeerConns[peerConn.RawAddress]
 	if ok {
-		delete(self.PeerConns, _peerConn.PeerId)
+		delete(self.PeerConns, _peerConn.RawAddress)
 	}
 
 	if self.HandleFailed != nil {
@@ -391,9 +391,9 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 			}
 		} else {
 			peerConn.updateState(ConnCanceled)
-			_peerConn, ok := self.PeerConns[peerConn.PeerId]
+			_peerConn, ok := self.PeerConns[peerConn.RawAddress]
 			if ok {
-				delete(self.PeerConns, _peerConn.PeerId)
+				delete(self.PeerConns, _peerConn.RawAddress)
 			}
 		}
 	})

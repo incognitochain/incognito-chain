@@ -425,7 +425,7 @@ func (self ConnManager) Connect(addr string) {
 			PeerId:             peerId,
 			RawAddress:         addr,
 			Config:             listen.Config,
-			PeerConns:          make(map[libpeer.ID]*peer.PeerConn),
+			PeerConns:          make(map[string]*peer.PeerConn),
 			HandleConnected:    self.handleConnected,
 			HandleDisconnected: self.handleDisconnected,
 			HandleFailed:       self.handleFailed,
@@ -545,13 +545,13 @@ func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)
 		}`)
 		request, err := http.NewRequest("GET", host, reader)
 		if err != nil {
-			log.Println(err)
+			Logger.log.Info(err)
 			continue
 		}
 		client := &http.Client{}
 		resp, err := client.Do(request)
 		if err != nil {
-			log.Println(err)
+			Logger.log.Info(err)
 			continue
 		}
 		if resp.StatusCode != http.StatusOK {
@@ -559,13 +559,13 @@ func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)
 		}
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			log.Println(err)
+			Logger.log.Info(err)
 			continue
 		}
 		results := map[string]interface{}{}
 		err = json.Unmarshal(bodyBytes, &results)
 		if err != nil {
-			log.Println(err)
+			Logger.log.Info(err)
 			continue
 		}
 		resultT, ok := results["result"]
