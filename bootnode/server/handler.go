@@ -1,20 +1,16 @@
 package server
 
-type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
 
-var RpcHandler = map[string]commandHandler{
-	"ping": RpcServer.handlePing,
+type Handler struct {
+	server *RpcServer
 }
 
-// Commands that are available to a limited user
-var RpcLimited = map[string]struct{}{}
+func (s Handler) Ping(ID string, peers *[]string) error {
+	s.server.AddPeer(ID)
 
-func (self RpcServer) handlePing(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	sParams := params.(map[string]string)
-	ID := sParams["ID"]
-	self.AddPeer(ID)
+	for _, peer := range s.server.Peers {
+		*peers = append(*peers, peer.ID)
+	}
 
-	result := make(map[string]interface{})
-	result["peers"] = self.peers
-	return result, nil
+	return nil
 }

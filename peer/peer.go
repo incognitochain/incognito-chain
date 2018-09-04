@@ -6,8 +6,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"io"
 	"log"
 	mrand "math/rand"
@@ -65,6 +63,8 @@ type Peer struct {
 	Config    Config
 
 	PeerConns map[peer.ID]*PeerConn
+
+	Peers []string
 
 	quit chan struct{}
 
@@ -282,29 +282,32 @@ func (self *Peer) HandleStream(stream net.Stream) {
 
 func (self Peer) HandleExchangePeers() {
 	Logger.log.Infof("Start Exchange Peers")
-	client, err := rpc.DialHTTP("tcp", "127.0.0.1:9339")
-	Logger.log.Infof("[Exchange Peers] Debug 1")
-	if err != nil {
-		Logger.log.Error("[Exchange Peers] connect:", err)
-		return
-	}
-	Logger.log.Infof("[Exchange Peers] Debug 2")
+	var client *rpc.Client
+	var err error
+
+listen:
 	for {
-		Logger.log.Infof("[Exchange Peers] Ping")
-		request := jsonrpc.Request{
-			"2.0",
-			"ping",
-			self.Host.ID().Pretty(),
-			uuid.New().String(),
+		Logger.log.Infof("Peers", self.Peers)
+		if client == nil {
+			client, err = rpc.Dial("tcp", "127.0.0.1:9339")
+			if err != nil {
+				Logger.log.Error("[Exchange Peers] re-connect:", err)
+			}
 		}
-		Logger.log.Info("Request", request)
-		var response interface{}
-		err := client.Call("/", request, &response)
-		if err != nil {
-			Logger.log.Error("[Exchange Peers] Ping:", err)
-			return
+		if client != nil {
+			Logger.log.Infof("[Exchange Peers] Ping")
+			var response []string
+			err := client.Call("Handler.Ping", self.RawAddress, &response)
+			if err != nil {
+				Logger.log.Error("[Exchange Peers] Ping:", err)
+				client = nil
+				time.Sleep(time.Second * 2)
+
+				goto listen
+			}
+			self.Peers = response
+			Logger.log.Infof("Ping Response", response)
 		}
-		Logger.log.Infof("Ping Response", response)
 		time.Sleep(time.Second * 2)
 	}
 }
