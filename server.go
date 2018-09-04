@@ -29,6 +29,7 @@ import (
 	"path/filepath"
 	"os"
 	"strconv"
+	"crypto/tls"
 )
 
 const (
@@ -70,28 +71,31 @@ func setupRPCListeners() ([]net.Listener, error) {
 	// Setup TLS if not disabled.
 	listenFunc := net.Listen
 	if !cfg.DisableTLS {
+		Logger.log.Info("Disable TLS for RPC is false")
 		// Generate the TLS cert and key file if both don't already
 		// exist.
-		//if !fileExists(cfg.RPCKey) && !fileExists(cfg.RPCCert) {
-		//	err := genCertPair(cfg.RPCCert, cfg.RPCKey)
-		//	if err != nil {
-		//		return nil, err
-		//	}
-		//}
-		//keypair, err := tls.LoadX509KeyPair(cfg.RPCCert, cfg.RPCKey)
-		//if err != nil {
-		//	return nil, err
-		//}
-		//
-		//tlsConfig := tls.Config{
-		//	Certificates: []tls.Certificate{keypair},
-		//	MinVersion:   tls.VersionTLS12,
-		//}
-		//
-		//// Change the standard net.Listen function to the tls one.
-		//listenFunc = func(net string, laddr string) (net.Listener, error) {
-		//	return tls.Listen(net, laddr, &tlsConfig)
-		//}
+		if !fileExists(cfg.RPCKey) && !fileExists(cfg.RPCCert) {
+			err := rpcserver.GenCertPair(cfg.RPCCert, cfg.RPCKey)
+			if err != nil {
+				return nil, err
+			}
+		}
+		keypair, err := tls.LoadX509KeyPair(cfg.RPCCert, cfg.RPCKey)
+		if err != nil {
+			return nil, err
+		}
+
+		tlsConfig := tls.Config{
+			Certificates: []tls.Certificate{keypair},
+			MinVersion:   tls.VersionTLS12,
+		}
+
+		// Change the standard net.Listen function to the tls one.
+		listenFunc = func(net string, laddr string) (net.Listener, error) {
+			return tls.Listen(net, laddr, &tlsConfig)
+		}
+	} else {
+		Logger.log.Info("Disable TLS for RPC is true")
 	}
 
 	netAddrs, err := parseListeners(cfg.RPCListeners, "tcp")
@@ -228,6 +232,10 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 			Wallet:        self.Wallet,
 			ConnMgr:       self.ConnManager,
 			AddrMgr:       self.AddrManager,
+			RPCUser:       cfg.RPCUser,
+			RPCPass:       cfg.RPCPass,
+			RPCLimitUser:  cfg.RPCLimitUser,
+			RPCLimitPass:  cfg.RPCLimitPass,
 		}
 		self.RpcServer = &rpcserver.RpcServer{}
 		err = self.RpcServer.Init(&rpcConfig)

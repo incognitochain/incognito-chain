@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"net"
 	"os"
@@ -52,6 +51,7 @@ const (
 	sampleConfigFilename         = "sample-config.conf"
 	defaultTxIndex               = false
 	defaultAddrIndex             = false
+	deafaultDisableRpcTls        = true
 
 	// For wallet
 	defaultWalletDbName = "wallet.db"
@@ -348,6 +348,7 @@ func loadConfig() (*config, []string, error) {
 		TxIndex:              defaultTxIndex,
 		AddrIndex:            defaultAddrIndex,
 		WalletDbName:         defaultWalletDbName,
+		DisableTLS:           deafaultDisableRpcTls,
 	}
 
 	// Service options which are only added on Windows.
@@ -549,7 +550,6 @@ func loadConfig() (*config, []string, error) {
 		}
 	}
 
-	// Check to make sure limited and admin users don't have the same username
 	if cfg.RPCUser == cfg.RPCLimitUser && cfg.RPCUser != "" {
 		str := "%s: --rpcuser and --rpclimituser must not specify the " +
 			"same username"
@@ -570,13 +570,14 @@ func loadConfig() (*config, []string, error) {
 	}
 
 	// The RPC server is disabled if no username or password is provided.
-	/*if (cfg.RPCUser == "" || cfg.RPCPass == "") &&
+	if (cfg.RPCUser == "" || cfg.RPCPass == "") &&
 		(cfg.RPCLimitUser == "" || cfg.RPCLimitPass == "") {
+		Logger.log.Info("The RPC server is disabled if no username or password is provided.")
 		cfg.DisableRPC = true
-	}*/
+	}
 
 	if cfg.DisableRPC {
-		log.Println("RPC service is disabled")
+		Logger.log.Info("RPC service is disabled")
 	}
 
 	// Default RPC to listen on localhost only.
