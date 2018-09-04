@@ -26,6 +26,10 @@ import (
 	"github.com/ninjadotorg/cash-prototype/rpcserver"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/cash-prototype/wallet"
+	"path/filepath"
+	"os"
+	"strconv"
 )
 
 const (
@@ -477,14 +481,19 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 
 	peers := make([]peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
-		key := fmt.Sprintf("%s_seed", addr.String())
-		seedT := kc.Get(key)
 		seed := int64(0)
-		if seedT == nil {
-			seed = time.Now().UnixNano()
-			kc.Set(key, seed)
+		seedC, _ := strconv.ParseInt(os.Getenv("NODE_SEED"), 10, 64)
+		if seedC == 0 {
+			key := fmt.Sprintf("%s_seed", addr.String())
+			seedT := kc.Get(key)
+			if seedT == nil {
+				seed = time.Now().UnixNano()
+				kc.Set(key, seed)
+			} else {
+				seed = int64(seedT.(float64))
+			}
 		} else {
-			seed = int64(seedT.(float64))
+			seed = seedC
 		}
 		peer, err := peer.Peer{
 			Seed:             seed,
