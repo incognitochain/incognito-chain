@@ -24,6 +24,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/addrmanager"
 	"crypto/sha256"
 	"encoding/base64"
+	"crypto/subtle"
 )
 
 const (
@@ -207,8 +208,35 @@ func (self RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
 // of the server (true) or whether the user is limited (false). The second is
 // always false if the first is.
 func (self RpcServer) checkAuth(r *http.Request, require bool) (bool, bool, error) {
-	// TODO
-	return true, true, nil
+	authhdr := r.Header["Authorization"]
+	if len(authhdr) <= 0 {
+		if require {
+			Logger.log.Warnf("RPC authentication failure from %s",
+				r.RemoteAddr)
+			return false, false, errors.New("auth failure")
+		}
+
+		return false, false, nil
+	}
+
+	authsha := sha256.Sum256([]byte(authhdr[0]))
+
+	// Check for limited auth first as in environments with limited users, those
+	// are probably expected to have a higher volume of calls
+	limitcmp := subtle.ConstantTimeCompare(authsha[:], self.limitauthsha[:])
+	if limitcmp == 1 {
+		return true, false, nil
+	}
+
+	// Check for admin-level auth
+	cmp := subtle.ConstantTimeCompare(authsha[:], self.authsha[:])
+	if cmp == 1 {
+		return true, true, nil
+	}
+
+	// Request's auth doesn't match either user
+	Logger.log.Warnf("RPC authentication failure from %s", r.RemoteAddr)
+	return false, false, errors.New("auth failure")
 }
 
 // IncrementClients adds one to the number of connected RPC clients.  Note
