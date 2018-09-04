@@ -14,6 +14,9 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"net"
 	"runtime"
+	"net/http"
+	"io/ioutil"
+	"encoding/json"
 )
 
 const (
@@ -429,6 +432,7 @@ func (self ConnManager) Connect(addr string) {
 		}
 
 		listen.Host.Peerstore().AddAddr(peer.PeerId, peer.TargetAddress, pstore.PermanentAddrTTL)
+
 		//Logger.log.Infof("Opening stream to PEER ID - %s \n", connReq.Peer.PeerId.String())
 		// make a new stream from host B to host A
 		// it should be handled on host A by the handler we set above because
@@ -528,4 +532,61 @@ func (p *ConnManager) handleDisconnected(peerConn *peer.PeerConn) {
 
 func (self *ConnManager) handleFailed(peerConn *peer.PeerConn) {
 	Logger.log.Infof("handleFailed %s", peerConn.PeerId.String())
+}
+
+func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)) {
+	addrs := []string{}
+	for _, host := range hosts {
+		reader := strings.NewReader(`{
+			"jsonrpc": "2.0",
+			"method": "getAllPeers",
+			"params": {
+			}
+		}`)
+		request, err := http.NewRequest("GET", host, reader)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		client := &http.Client{}
+		resp, err := client.Do(request)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		if resp.StatusCode != http.StatusOK {
+			continue
+		}
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		results := map[string]interface{}{}
+		err = json.Unmarshal(bodyBytes, &results)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		resultT, ok := results["result"]
+		if !ok {
+			continue
+		}
+		result, ok := resultT.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		peersT, ok := result["peers"]
+		if !ok {
+			continue
+		}
+		peers, ok := peersT.([]string)
+		if !ok {
+			continue
+		}
+		for _, peer := range peers {
+			addrs = append(addrs, peer)
+		}
+	}
+	seedFn(addrs)
 }

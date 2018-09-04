@@ -265,6 +265,15 @@ func (self *AddrManager) AddAddresses(addr []*peer.Peer) {
 	}
 }
 
+func (self *AddrManager) AddAddressesStr(addrs []string) {
+	for _, addr := range addrs {
+		peer := peer.Peer{
+			RawAddress: addr,
+		}
+		self.addrIndex[addr] = &peer
+	}
+}
+
 // AddressCache returns the current address cache.  It must be treated as
 // read-only (but since it is a copy now, this is not as dangerous).
 func (self *AddrManager) AddressCache() []*peer.Peer {
