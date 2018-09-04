@@ -186,14 +186,14 @@ func (self RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
 	// Keep track of the number of connected clients.
 	self.IncrementClients()
 	defer self.DecrementClients()
-	// TODO
-	_, isAdmin, err := self.checkAuth(r, true)
+	// Check authentication for rpc user
+	_, isLimitUser, err := self.checkAuth(r, true)
 	if err != nil {
 		self.AuthFail(w)
 		return
 	}
 
-	self.ProcessRpcRequest(w, r, isAdmin)
+	self.ProcessRpcRequest(w, r, isLimitUser)
 }
 
 // checkAuth checks the HTTP Basic authentication supplied by a wallet
@@ -266,7 +266,7 @@ func (self RpcServer) AuthFail(w http.ResponseWriter) {
 /**
 handles reading and responding to RPC messages.
 */
-func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, isAdmin bool) {
+func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, isLimitedUser bool) {
 	if atomic.LoadInt32(&self.shutdown) != 0 {
 		return
 	}
@@ -356,7 +356,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 		}()
 
 		// Check if the user is limited and set error if method unauthorized
-		if !isAdmin {
+		if !isLimitedUser {
 			if _, ok := RpcLimited[request.Method]; !ok {
 				jsonErr = &common.RPCError{
 					Code:    common.ErrRPCInvalidParams.Code,
