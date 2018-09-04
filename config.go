@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"net"
 	"os"
@@ -52,6 +51,7 @@ const (
 	sampleConfigFilename         = "sample-config.conf"
 	defaultTxIndex               = false
 	defaultAddrIndex             = false
+	deafaultDisableRpcTls        = true
 
 	// For wallet
 	defaultWalletDbName = "wallet.db"
@@ -86,6 +86,7 @@ type config struct {
 	DisableBanning       bool          `long:"nobanning" description:"Disable banning of misbehaving peers"`
 	BanDuration          time.Duration `long:"banduration" description:"How long to ban misbehaving peers.  Valid time units are {s, m, h}.  Minimum 1 second"`
 	BanThreshold         uint32        `long:"banthreshold" description:"Maximum allowed ban score before disconnecting and banning misbehaving peers."`
+	RPCDisableAuth       bool          `long:"norpcauth" description:"Disable RPC authorization by username/password"`
 	RPCUser              string        `short:"u" long:"rpcuser" description:"Username for RPC connections"`
 	RPCPass              string        `short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`
 	RPCLimitUser         string        `long:"rpclimituser" description:"Username for limited RPC connections"`
@@ -348,6 +349,8 @@ func loadConfig() (*config, []string, error) {
 		TxIndex:              defaultTxIndex,
 		AddrIndex:            defaultAddrIndex,
 		WalletDbName:         defaultWalletDbName,
+		DisableTLS:           deafaultDisableRpcTls,
+		RPCDisableAuth:       true,
 	}
 
 	// Service options which are only added on Windows.
@@ -549,7 +552,6 @@ func loadConfig() (*config, []string, error) {
 		}
 	}
 
-	// Check to make sure limited and admin users don't have the same username
 	if cfg.RPCUser == cfg.RPCLimitUser && cfg.RPCUser != "" {
 		str := "%s: --rpcuser and --rpclimituser must not specify the " +
 			"same username"
@@ -570,13 +572,14 @@ func loadConfig() (*config, []string, error) {
 	}
 
 	// The RPC server is disabled if no username or password is provided.
-	/*if (cfg.RPCUser == "" || cfg.RPCPass == "") &&
+	if (cfg.RPCUser == "" || cfg.RPCPass == "") &&
 		(cfg.RPCLimitUser == "" || cfg.RPCLimitPass == "") {
+		Logger.log.Info("The RPC server is disabled if no username or password is provided.")
 		cfg.DisableRPC = true
-	}*/
+	}
 
 	if cfg.DisableRPC {
-		log.Println("RPC service is disabled")
+		Logger.log.Info("RPC service is disabled")
 	}
 
 	// Default RPC to listen on localhost only.
