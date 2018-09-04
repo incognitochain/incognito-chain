@@ -297,8 +297,11 @@ mempoolLoop:
 	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
 		//@todo need apply validate tx, logic check all referenced here
-
-		/*utxos, err := g.chain.FetchUtxoView(&tx)
+		// call function spendTransaction to mark utxo
+		utxos, err := g.chain.FetchUtxoView(*tx.(*transaction.Tx))
+		_ = utxos
+		_ = err
+		/*
 		if err != nil {
 			fmt.Print("Unable to fetch utxo view for tx %s: %v",
 				tx.Hash(), err)
