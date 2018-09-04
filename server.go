@@ -141,13 +141,13 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.BlockChain)
 
-	self.Miner = miner.New(&miner.Config{
-		ChainParams:            self.chainParams,
-		BlockTemplateGenerator: blockTemplateGenerator,
-		MiningAddrs:            cfg.MiningAddrs,
-		Chain:                  self.BlockChain,
-		Server:                 self,
-	})
+	// self.Miner = miner.New(&miner.Config{
+	// 	ChainParams:            self.chainParams,
+	// 	BlockTemplateGenerator: blockTemplateGenerator,
+	// 	MiningAddrs:            cfg.MiningAddrs,
+	// 	Chain:                  self.BlockChain,
+	// 	Server:                 self,
+	// })
 
 	self.ConsensusEngine = pos.New(&pos.Config{
 		ChainParams: self.chainParams,
