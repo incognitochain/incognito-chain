@@ -34,6 +34,9 @@ var RpcHandler = map[string]commandHandler{
 	//POS
 	"votecandidate": RpcServer.handleVoteCandidate,
 	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
+
+	//
+	"getallpeers": RpcServer.handleGetAllPeers,
 }
 
 // Commands that are available to a limited user
@@ -44,7 +47,6 @@ var RpcLimited = map[string]commandHandler{
 	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
 	"getaccountaddress":     RpcServer.handleGetAccountAddress,
 	"dumpprivkey":           RpcServer.handleDumpPrivkey,
-	"getAllPeers":           RpcServer.handleGetAllPeers,
 }
 
 func (self RpcServer) handleDoSomething(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
