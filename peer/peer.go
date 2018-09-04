@@ -6,9 +6,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"io"
 	"log"
 	mrand "math/rand"
+	"net/rpc"
 	"reflect"
 	"strings"
 	"sync"
@@ -61,7 +64,7 @@ type Peer struct {
 	FlagMutex sync.Mutex
 	Config    Config
 
-	PeerConns map[string]*PeerConn
+	PeerConns map[peer.ID]*PeerConn
 
 	quit chan struct{}
 
@@ -181,6 +184,8 @@ func (self Peer) NewPeer() (*Peer, error) {
 
 func (self *Peer) Start() error {
 	Logger.log.Info("Peer start")
+	// ping to bootnode for test env
+	go self.HandleExchangePeers()
 	Logger.log.Info("Set stream handler and wait for connection from other peer")
 	self.Host.SetStreamHandler("/blockchain/1.0.0", self.HandleStream)
 	select {
@@ -218,7 +223,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		HandleFailed:       peer.handleFailed,
 	}
 
-	self.PeerConns[peerConn.RawAddress] = &peerConn
+	self.PeerConns[peerConn.PeerId] = &peerConn
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
@@ -264,7 +269,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		HandleFailed:       self.handleFailed,
 	}
 
-	self.PeerConns[peerConn.RawAddress] = &peerConn
+	self.PeerConns[peerConn.PeerId] = &peerConn
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
@@ -273,6 +278,35 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	peerConn.updateState(ConnEstablished)
 
 	self.handleConnected(&peerConn)
+}
+
+func (self Peer) HandleExchangePeers() {
+	Logger.log.Infof("Start Exchange Peers")
+	client, err := rpc.DialHTTP("tcp", "127.0.0.1:9339")
+	Logger.log.Infof("[Exchange Peers] Debug 1")
+	if err != nil {
+		Logger.log.Error("[Exchange Peers] connect:", err)
+		return
+	}
+	Logger.log.Infof("[Exchange Peers] Debug 2")
+	for {
+		Logger.log.Infof("[Exchange Peers] Ping")
+		request := jsonrpc.Request{
+			"2.0",
+			"ping",
+			self.Host.ID().Pretty(),
+			uuid.New().String(),
+		}
+		Logger.log.Info("Request", request)
+		var response interface{}
+		err := client.Call("/", request, &response)
+		if err != nil {
+			Logger.log.Error("[Exchange Peers] Ping:", err)
+			return
+		}
+		Logger.log.Infof("Ping Response", response)
+		time.Sleep(time.Second * 2)
+	}
 }
 
 // QueueMessageWithEncoding adds the passed bitcoin message to the peer send
@@ -318,7 +352,7 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 	msgVersionStr := hex.EncodeToString(msgVersion)
 	msgVersionStr += "\n"
 	Logger.log.Infof("Send a msgVersion: %s", msgVersionStr)
-	rw := self.PeerConns[peer.RawAddress].ReaderWriterStream
+	rw := self.PeerConns[peer.PeerId].ReaderWriterStream
 	self.FlagMutex.Lock()
 	rw.Writer.WriteString(msgVersionStr)
 	rw.Writer.Flush()
@@ -351,12 +385,12 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 
 	if peerConn.IsOutbound {
 		if peerConn.State() != ConnCanceled {
-			self.retryPeerConnection(peerConn)
+
 		}
 	} else {
-		_peerConn, ok := self.PeerConns[peerConn.RawAddress]
+		_peerConn, ok := self.PeerConns[peerConn.PeerId]
 		if ok {
-			delete(self.PeerConns, _peerConn.RawAddress)
+			delete(self.PeerConns, _peerConn.PeerId)
 		}
 	}
 
@@ -368,9 +402,9 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 func (self *Peer) handleFailed(peerConn *PeerConn) {
 	Logger.log.Infof("handleFailed %s", peerConn.PeerId.String())
 
-	_peerConn, ok := self.PeerConns[peerConn.RawAddress]
+	_peerConn, ok := self.PeerConns[peerConn.PeerId]
 	if ok {
-		delete(self.PeerConns, _peerConn.RawAddress)
+		delete(self.PeerConns, _peerConn.PeerId)
 	}
 
 	if self.HandleFailed != nil {
@@ -391,9 +425,9 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 			}
 		} else {
 			peerConn.updateState(ConnCanceled)
-			_peerConn, ok := self.PeerConns[peerConn.RawAddress]
+			_peerConn, ok := self.PeerConns[peerConn.PeerId]
 			if ok {
-				delete(self.PeerConns, _peerConn.RawAddress)
+				delete(self.PeerConns, _peerConn.PeerId)
 			}
 		}
 	})
