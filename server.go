@@ -236,6 +236,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 			RPCPass:       cfg.RPCPass,
 			RPCLimitUser:  cfg.RPCLimitUser,
 			RPCLimitPass:  cfg.RPCLimitPass,
+			DisableAuth:   cfg.RPCDisableAuth,
 		}
 		self.RpcServer = &rpcserver.RpcServer{}
 		err = self.RpcServer.Init(&rpcConfig)

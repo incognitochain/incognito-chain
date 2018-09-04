@@ -81,6 +81,7 @@ type RpcServerConfig struct {
 	RPCPass      string
 	RPCLimitUser string
 	RPCLimitPass string
+	DisableAuth  bool
 }
 
 func (self *RpcServer) Init(config *RpcServerConfig) (error) {
@@ -208,6 +209,9 @@ func (self RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
 // of the server (true) or whether the user is limited (false). The second is
 // always false if the first is.
 func (self RpcServer) checkAuth(r *http.Request, require bool) (bool, bool, error) {
+	if self.Config.DisableAuth == true {
+		return true, true, nil
+	}
 	authhdr := r.Header["Authorization"]
 	if len(authhdr) <= 0 {
 		if require {
