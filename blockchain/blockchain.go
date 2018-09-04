@@ -355,3 +355,61 @@ func (b *BlockChain) FetchUtxoView(tx transaction.Tx) (*UtxoViewpoint, error) {
 func (self *BlockChain) CheckTransactionInputs(tx *transaction.Transaction, txHeight int32, utxoView *UtxoViewpoint, chainParams *Params) (float64, error) {
 	return 0, nil
 }
+
+// connectBestChain handles connecting the passed block to the chain while
+// respecting proper chain selection according to the chain with the most
+// proof of work.  In the typical case, the new block simply extends the main
+// chain.  However, it may also be extending (or creating) a side chain (fork)
+// which may or may not end up becoming the main chain depending on which fork
+// cumulatively has the most proof of work.  It returns whether or not the block
+// ended up on the main chain (either due to extending the main chain or causing
+// a reorganization to become the main chain).
+func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
+	// We are extending the main (best) chain with a new block.  This is the
+	// most common case.
+	parentHash := &block.Header.PrevBlockHash
+	if parentHash.IsEqual(&b.BestState.BestBlockHash) {
+		view := NewUtxoViewpoint()
+		view.SetBestHash(parentHash)
+
+		err := view.fetchInputUtxos(b.Config.DataBase, block)
+		stxos := make([]SpentTxOut, 0, countSpentOutputs(block))
+		if err != nil {
+			return false, err
+		}
+
+		//
+		err = view.connectTransactions(block, &stxos)
+		if err != nil {
+			return false, err
+		}
+
+		// TODO with stxos
+		_ = stxos
+
+		// Update the utxo set using the state of the utxo view.  This
+		// entails removing all of the utxos spent and adding the new
+		// ones created by the block.
+		err = b.StoreUtxoView(view)
+		if err != nil {
+			return false, err
+		}
+
+		return true, nil
+	} else {
+		// we in sub chain
+		return false, nil
+	}
+}
+
+// countSpentOutputs returns the number of utxos the passed block spends.
+func countSpentOutputs(block *Block) int {
+	// Exclude the coinbase transaction since it can't spend anything.
+	var numSpent int
+	for _, tx := range block.Transactions[1:] {
+		if (tx.GetType() == common.TxNormalType) {
+			numSpent += len(tx.(*transaction.Tx).TxIn)
+		}
+	}
+	return numSpent
+}
