@@ -43,6 +43,10 @@ func (self *BlockChain) maybeAcceptBlock(block *Block) (bool, error) {
 	}
 
 	// fetch utxo from block and save
+	isMainChain, err := self.connectBestChain(block)
+	if err != nil {
+		return false, err
+	}
 
-	return true, nil
+	return isMainChain, nil
 }
