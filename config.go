@@ -86,6 +86,7 @@ type config struct {
 	DisableBanning       bool          `long:"nobanning" description:"Disable banning of misbehaving peers"`
 	BanDuration          time.Duration `long:"banduration" description:"How long to ban misbehaving peers.  Valid time units are {s, m, h}.  Minimum 1 second"`
 	BanThreshold         uint32        `long:"banthreshold" description:"Maximum allowed ban score before disconnecting and banning misbehaving peers."`
+	RPCDisableAuth       bool          `long:"norpcauth" description:"Disable RPC authorization by username/password"`
 	RPCUser              string        `short:"u" long:"rpcuser" description:"Username for RPC connections"`
 	RPCPass              string        `short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`
 	RPCLimitUser         string        `long:"rpclimituser" description:"Username for limited RPC connections"`
@@ -349,6 +350,7 @@ func loadConfig() (*config, []string, error) {
 		AddrIndex:            defaultAddrIndex,
 		WalletDbName:         defaultWalletDbName,
 		DisableTLS:           deafaultDisableRpcTls,
+		RPCDisableAuth:       true,
 	}
 
 	// Service options which are only added on Windows.

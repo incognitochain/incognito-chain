@@ -238,6 +238,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 			RPCPass:       cfg.RPCPass,
 			RPCLimitUser:  cfg.RPCLimitUser,
 			RPCLimitPass:  cfg.RPCLimitPass,
+			DisableAuth:   cfg.RPCDisableAuth,
 		}
 		self.RpcServer = &rpcserver.RpcServer{}
 		err = self.RpcServer.Init(&rpcConfig)
@@ -508,7 +509,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 			FlagMutex:        sync.Mutex{},
 			ListeningAddress: addr,
 			Config:           *self.NewPeerConfig(),
-			PeerConns:        make(map[peer2.ID]*peer.PeerConn),
+			PeerConns:        make(map[string]*peer.PeerConn),
 			//OutboundReaderWriterStreams: make(map[peer2.ID]*bufio.ReadWriter),
 			//InboundReaderWriterStreams:  make(map[peer2.ID]*bufio.ReadWriter),
 		}.NewPeer()
