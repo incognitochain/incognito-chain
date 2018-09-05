@@ -11,21 +11,21 @@ import (
 
 // TODO(@0xbunyip): add randomSeed, MACs and epk
 type JoinSplitDesc struct {
-	Anchor        []byte
-	Nullifiers    [][]byte
-	Commitments   [][]byte
-	Proof         *zksnark.PHGRProof
-	EncryptedData []byte
+	Anchor        []byte             `json:Anchor`
+	Nullifiers    [][]byte           `json:Nullifiers`
+	Commitments   [][]byte           `json:Commitments`
+	Proof         *zksnark.PHGRProof `json:Proof`
+	EncryptedData []byte             `json:EncryptedData`
 }
 
 type Tx struct {
-	Version  int    `json:"Version"`
-	Type     string `json:"Type"` // NORMAL / ACTION_PARAMS
-	LockTime int    `json:"LockTime"`
-	NumDescs int
-	Desc     []*JoinSplitDesc
-	JSPubKey []byte // 32 bytes
-	JSSig    []byte // 64 bytes
+	Version  int              `json:"Version"`
+	Type     string           `json:"Type"` // NORMAL / ACTION_PARAMS
+	LockTime int              `json:"LockTime"`
+	NumDescs int              `json:NumDescs`
+	Desc     []*JoinSplitDesc `json:Desc`
+	JSPubKey []byte           `json:JSPubKey` // 32 bytes
+	JSSig    []byte           `json:JSSig`    // 64 bytes
 }
 
 func collectUnspentNotes(ask *SpendingKey, valueWanted uint64) ([]*Note, error) {
