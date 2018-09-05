@@ -537,13 +537,7 @@ func (self *ConnManager) handleFailed(peerConn *peer.PeerConn) {
 func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)) {
 	addrs := []string{}
 	for _, host := range hosts {
-		reader := strings.NewReader(`{
-			"jsonrpc": "2.0",
-			"method": "getAllPeers",
-			"params": {
-			}
-		}`)
-		request, err := http.NewRequest("GET", host, reader)
+		request, err := http.NewRequest("GET", host, nil)
 		if err != nil {
 			Logger.log.Info(err)
 			continue
@@ -568,23 +562,15 @@ func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)
 			Logger.log.Info(err)
 			continue
 		}
-		resultT, ok := results["result"]
+		dataT, ok := results["data"]
 		if !ok {
 			continue
 		}
-		result, ok := resultT.(map[string]interface{})
+		data, ok := dataT.([]string)
 		if !ok {
 			continue
 		}
-		peersT, ok := result["peers"]
-		if !ok {
-			continue
-		}
-		peers, ok := peersT.([]string)
-		if !ok {
-			continue
-		}
-		for _, peer := range peers {
+		for _, peer := range data {
 			addrs = append(addrs, peer)
 		}
 	}
