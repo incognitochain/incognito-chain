@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -26,6 +27,49 @@ type Tx struct {
 	Desc     []*JoinSplitDesc `json:Desc`
 	JSPubKey []byte           `json:JSPubKey` // 32 bytes
 	JSSig    []byte           `json:JSSig`    // 64 bytes
+}
+
+func (desc *JoinSplitDesc) toString() string {
+	s := string(desc.Anchor)
+	for _, nf := range desc.Nullifiers {
+		s += string(nf)
+	}
+	for _, cm := range desc.Commitments {
+		s += string(cm)
+	}
+	s += desc.Proof.String()
+	s += string(desc.EncryptedData)
+	return s
+}
+
+// Hash returns the hash of all fields of the transaction
+func (tx *Tx) Hash() *common.Hash {
+	record := strconv.Itoa(tx.Version)
+	record += tx.Type
+	record += strconv.Itoa(tx.LockTime)
+	record += strconv.Itoa(tx.NumDescs)
+	for _, desc := range tx.Desc {
+		record += desc.toString()
+	}
+	record += string(tx.JSPubKey)
+	record += string(tx.JSSig)
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+// ValidateTransaction returns true if transaction is valid:
+// - All data fields are well formed
+// - JSDescriptions are valid (zk-snark proof satisfied)
+// - Signature matches the signing public key
+// Note: This method doesn't check for double spending
+func (tx *Tx) ValidateTransaction() bool {
+	// TODO(@0xbunyip): implement
+	return true
+}
+
+// GetType returns the type of the transaction
+func (tx *Tx) GetType() string {
+	return tx.Type
 }
 
 func collectUnspentNotes(ask *SpendingKey, valueWanted uint64) ([]*Note, error) {
