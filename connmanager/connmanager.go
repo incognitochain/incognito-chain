@@ -425,7 +425,7 @@ func (self ConnManager) Connect(addr string) {
 			PeerId:             peerId,
 			RawAddress:         addr,
 			Config:             listen.Config,
-			PeerConns:          make(map[string]*peer.PeerConn),
+			PeerConns:          make(map[libpeer.ID]*peer.PeerConn),
 			HandleConnected:    self.handleConnected,
 			HandleDisconnected: self.handleDisconnected,
 			HandleFailed:       self.handleFailed,
