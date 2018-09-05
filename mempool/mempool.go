@@ -11,6 +11,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/mining"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 )
 
 // ID is Peer Ids, so that orphans can be identified by which peer first re-payed them.
@@ -21,6 +22,11 @@ type Config struct {
 	// Policy defines the various mempool configuration options related
 	// to policy.
 	Policy Policy
+
+	// Block chain of node
+	BlockChain *blockchain.BlockChain
+
+	ChainParams *blockchain.Params
 }
 
 // orphanTx is normal transaction that references an ancestor transaction
@@ -47,9 +53,9 @@ type TxPool struct {
 	// The following variables must only be used atomically.
 	lastUpdated int64 // last time pool was updated
 
-	mtx  sync.RWMutex
-	cfg  Config
-	pool map[common.Hash]*TxDesc
+	mtx    sync.RWMutex
+	Config Config
+	pool   map[common.Hash]*TxDesc
 	//orphans       map[chainhash.Hash]*orphanTx
 	//orphansByPrev map[wire.OutPoint]map[common.Hash]*Tx
 	//outpoints     map[wire.OutPoint]*Tx
@@ -83,13 +89,13 @@ func (tp *TxPool) HaveTx(hash *common.Hash) bool {
 }
 
 // add transaction into pool
-func (tp *TxPool) addTx(tx transaction.Transaction) *TxDesc {
+func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee float64) *TxDesc {
 	txD := &TxDesc{
 		Desc: mining.TxDesc{
 			Tx:     tx,
 			Added:  time.Now(),
-			Height: 1,   //@todo we will apply calc function for height.
-			Fee:    200, //@todo we will apply calc function for fee.
+			Height: height, //@todo we will apply calc function for height.
+			Fee:    fee,    //@todo we will apply calc function for fee.
 		},
 		StartingPriority: 1, //@todo we will apply calc function for it.
 	}
@@ -103,9 +109,23 @@ func (tp *TxPool) addTx(tx transaction.Transaction) *TxDesc {
 func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
 	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
+	bestHeight := tp.Config.BlockChain.BestState.BestBlock.Height
+	nextBlockHeight := bestHeight + 1
+
+	// Perform several checks on the transaction inputs using the invariant
+	// rules in blockchain for what transactions are allowed into blocks.
+	// Also returns the fees associated with the transaction which will be
+	// used later.
+	txFee, err := tp.Config.BlockChain.CheckTransactionInputs(&tx, nextBlockHeight, nil, tp.Config.ChainParams)
+	if err != nil {
+		//if cerr, ok := err.(blockchain.RuleError); ok {
+		//	return nil, nil, chainRuleError(cerr)
+		//}
+		return nil, nil, err
+	}
 
 	if tp.HaveTx(tx.Hash()) != true {
-		txD := tp.addTx(tx)
+		txD := tp.addTx(tx, bestHeight, txFee)
 		return tx.Hash(), txD, nil
 	}
 	return nil, nil, errors.New("Exist this tx in pool")
@@ -173,7 +193,7 @@ func (tp *TxPool) Clear() {
 // transactions until they are mined into a block.
 func New(cfg *Config) *TxPool {
 	return &TxPool{
-		cfg:            *cfg,
+		Config:         *cfg,
 		pool:           make(map[common.Hash]*TxDesc),
 		nextExpireScan: time.Now().Add(orphanExpireScanInterval),
 	}

@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	mrand "math/rand"
+	"net/rpc"
 	"reflect"
 	"strings"
 	"sync"
@@ -29,6 +30,9 @@ const (
 	// trickleTimeout is the duration of the ticker which trickles down the
 	// inventory to a peer.
 	trickleTimeout = 10 * time.Second
+
+	maxRetryConn      = 10
+	retryConnDuration = 10 * time.Second
 )
 
 // ConnState represents the state of the requested connection.
@@ -47,7 +51,7 @@ const (
 )
 
 type Peer struct {
-	Host           host.Host
+	Host host.Host
 
 	TargetAddress    ma.Multiaddr
 	PeerId           peer.ID
@@ -59,6 +63,14 @@ type Peer struct {
 	Config    Config
 
 	PeerConns map[peer.ID]*PeerConn
+
+	Peers []string
+
+	quit chan struct{}
+
+	HandleConnected    func(peerConn *PeerConn)
+	HandleDisconnected func(peerConn *PeerConn)
+	HandleFailed       func(peerConn *PeerConn)
 }
 
 // Config is the struct to hold configuration options useful to Peer.
@@ -165,21 +177,29 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.TargetAddress = fullAddr
 	self.PeerId = peerid
 	//self.sendMessageQueue = make(chan outMsg, 1)
+	self.quit = make(chan struct{}, 1)
+
 	return &self, nil
 }
 
-func (self Peer) Start() error {
+func (self *Peer) Start() error {
 	Logger.log.Info("Peer start")
+	// ping to bootnode for test env
+	go self.HandleExchangePeers()
 	Logger.log.Info("Set stream handler and wait for connection from other peer")
 	self.Host.SetStreamHandler("/blockchain/1.0.0", self.HandleStream)
-	select {} // hang forever
+	select {
+	case <-self.quit:
+		Logger.log.Infof("PEER server shutdown complete %s", self.PeerId)
+		break
+	} // hang forever
 	return nil
 }
 
-func (self Peer) NewPeerConnection(peerId peer.ID) (*PeerConn, error) {
+func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER ID - %s \n", self.PeerId.String())
 
-	stream, err := self.Host.NewStream(context.Background(), peerId, "/blockchain/1.0.0")
+	stream, err := self.Host.NewStream(context.Background(), peer.PeerId, "/blockchain/1.0.0")
 	if err != nil {
 		Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", self.PeerId.String(), err.Error())
 		return nil, err
@@ -188,22 +208,19 @@ func (self Peer) NewPeerConnection(peerId peer.ID) (*PeerConn, error) {
 	remotePeerId := stream.Conn().RemotePeer()
 
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
-	//self.InboundReaderWriterStreams[remotePeerId] = rw
-
-	//go self.InMessageHandler(rw)
-	//go self.OutMessageHandler(rw)
 
 	peerConn := PeerConn{
 		IsOutbound:         true,
-		Peer:               &self,
+		Peer:               peer,
+		ListenerPeer:       self,
 		Config:             self.Config,
 		PeerId:             remotePeerId,
 		ReaderWriterStream: rw,
 		quit:               make(chan struct{}),
 		sendMessageQueue:   make(chan outMsg, 1),
-		HandleConnected:    self.handleConnected,
-		HandleDisconnected: self.handleDisconnected,
-		HandleFailed:       self.handleFailed,
+		HandleConnected:    peer.handleConnected,
+		HandleDisconnected: peer.handleDisconnected,
+		HandleFailed:       peer.handleFailed,
 	}
 
 	self.PeerConns[peerConn.PeerId] = &peerConn
@@ -213,6 +230,8 @@ func (self Peer) NewPeerConnection(peerId peer.ID) (*PeerConn, error) {
 
 	peerConn.RetryCount = 0
 	peerConn.updateState(ConnEstablished)
+
+	peer.handleConnected(&peerConn)
 
 	return &peerConn, nil
 }
@@ -238,6 +257,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 
 	peerConn := PeerConn{
 		IsOutbound:         false,
+		ListenerPeer:       self,
 		Peer:               self,
 		Config:             self.Config,
 		PeerId:             remotePeerId,
@@ -256,6 +276,40 @@ func (self *Peer) HandleStream(stream net.Stream) {
 
 	peerConn.RetryCount = 0
 	peerConn.updateState(ConnEstablished)
+
+	self.handleConnected(&peerConn)
+}
+
+func (self Peer) HandleExchangePeers() {
+	Logger.log.Infof("Start Exchange Peers")
+	var client *rpc.Client
+	var err error
+
+listen:
+	for {
+		Logger.log.Infof("Peers", self.Peers)
+		if client == nil {
+			client, err = rpc.Dial("tcp", "127.0.0.1:9339")
+			if err != nil {
+				Logger.log.Error("[Exchange Peers] re-connect:", err)
+			}
+		}
+		if client != nil {
+			Logger.log.Infof("[Exchange Peers] Ping")
+			var response []string
+			err := client.Call("Handler.Ping", self.RawAddress, &response)
+			if err != nil {
+				Logger.log.Error("[Exchange Peers] Ping:", err)
+				client = nil
+				time.Sleep(time.Second * 2)
+
+				goto listen
+			}
+			self.Peers = response
+			Logger.log.Infof("Ping Response", response)
+		}
+		time.Sleep(time.Second * 2)
+	}
 }
 
 // QueueMessageWithEncoding adds the passed bitcoin message to the peer send
@@ -309,34 +363,75 @@ func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
 	return nil
 }
 
-func (p *Peer) Disconnect() {
+func (self *Peer) Stop() {
+	Logger.log.Infof("PEER %s Stop", self.PeerId.String())
+
+	self.Host.Close()
+	for _, peerConn := range self.PeerConns {
+		peerConn.updateState(ConnCanceled)
+	}
+	self.quit <- struct{}{}
 }
 
-func (p *Peer) handleConnected(peerConn *PeerConn) {
+func (self *Peer) handleConnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleConnected %s", peerConn.PeerId.String())
-
 	peerConn.RetryCount = 0
+	peerConn.updateState(ConnEstablished)
+
+	if self.HandleConnected != nil {
+		self.HandleConnected(peerConn)
+	}
 }
 
-func (p *Peer) handleDisconnected(peerConn *PeerConn) {
+func (self *Peer) handleDisconnected(peerConn *PeerConn) {
+	Logger.log.Infof("handleDisconnected %s", peerConn.PeerId.String())
+
 	if peerConn.IsOutbound {
-		time.AfterFunc(10*time.Second, func() {
-			Logger.log.Infof("Retry New Peer Connection %s", peerConn.PeerId.String())
-			peerConn.RetryCount += 1
-			peerConn.updateState(ConnPending)
-			p.NewPeerConnection(peerConn.PeerId)
-		})
+		if peerConn.State() != ConnCanceled {
+
+		}
 	} else {
-		_peerConn, ok := p.PeerConns[peerConn.PeerId]
+		_peerConn, ok := self.PeerConns[peerConn.PeerId]
 		if ok {
-			delete(p.PeerConns, _peerConn.PeerId)
+			delete(self.PeerConns, _peerConn.PeerId)
 		}
 	}
+
+	if self.HandleDisconnected != nil {
+		self.HandleDisconnected(peerConn)
+	}
 }
 
-func (p *Peer) handleFailed(peerConn *PeerConn) {
-	_peerConn, ok := p.PeerConns[peerConn.PeerId]
+func (self *Peer) handleFailed(peerConn *PeerConn) {
+	Logger.log.Infof("handleFailed %s", peerConn.PeerId.String())
+
+	_peerConn, ok := self.PeerConns[peerConn.PeerId]
 	if ok {
-		delete(p.PeerConns, _peerConn.PeerId)
+		delete(self.PeerConns, _peerConn.PeerId)
 	}
+
+	if self.HandleFailed != nil {
+		self.HandleFailed(peerConn)
+	}
+}
+
+func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
+	time.AfterFunc(retryConnDuration, func() {
+		Logger.log.Infof("Retry New Peer Connection %s", peerConn.PeerId.String())
+		peerConn.RetryCount += 1
+
+		if peerConn.RetryCount < maxRetryConn {
+			peerConn.updateState(ConnPending)
+			_, err := peerConn.ListenerPeer.NewPeerConnection(peerConn.Peer)
+			if err != nil {
+				self.retryPeerConnection(peerConn)
+			}
+		} else {
+			peerConn.updateState(ConnCanceled)
+			_peerConn, ok := self.PeerConns[peerConn.PeerId]
+			if ok {
+				delete(self.PeerConns, _peerConn.PeerId)
+			}
+		}
+	})
 }

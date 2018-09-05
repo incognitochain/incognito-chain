@@ -1,18 +1,19 @@
 package transaction
 
 import (
-	"github.com/ninjadotorg/cash-prototype/common"
-	"strconv"
 	"fmt"
+	"strconv"
+
+	"github.com/ninjadotorg/cash-prototype/common"
 	//"encoding/json"
 )
 
 type Param struct {
-	AgentID string `json:"AgentID"`
-	AgentSig string `json:"AgentSig"`
-	NumOfCoins float64 `json:"NumOfCoins"`
-	NumOfBonds float64 `json:"NumOfBonds"`
-	Tax float64 `json:"Tax"`
+	AgentID          string   `json:"AgentID"`
+	AgentSig         string   `json:"AgentSig"`
+	NumOfCoins       float64  `json:"NumOfCoins"`
+	NumOfBonds       float64  `json:"NumOfBonds"`
+	Tax              float64  `json:"Tax"`
 	EligibleAgentIDs []string `json:"EligibleAgentIDs"`
 }
 
@@ -43,11 +44,11 @@ type ActionParamTx struct {
 	LockTime int64  `json:"LockTime"`
 }
 
-func (self *ActionParamTx) Hash() (*common.Hash) {
+func (self *ActionParamTx) Hash() *common.Hash {
 	record := strconv.Itoa(self.Version) + strconv.Itoa(self.Version)
 	record += self.Type
 	record += self.Param.AgentID
-	record += self.Param.AgentSig
+	record += string(self.Param.AgentSig)
 	record += fmt.Sprint(self.Param.NumOfCoins)
 	record += fmt.Sprint(self.Param.NumOfBonds)
 	record += fmt.Sprint(self.Param.Tax)
@@ -60,6 +61,6 @@ func (self *ActionParamTx) ValidateTransaction() bool {
 	return true
 }
 
-func (self *ActionParamTx) GetType() (string) {
+func (self *ActionParamTx) GetType() string {
 	return self.Type
 }

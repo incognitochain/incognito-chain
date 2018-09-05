@@ -27,6 +27,9 @@ import (
 	"github.com/ninjadotorg/cash-prototype/wire"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"path/filepath"
+	"os"
+	"strconv"
+	"crypto/tls"
 )
 
 const (
@@ -48,7 +51,7 @@ type Server struct {
 
 	chainParams *blockchain.Params
 	ConnManager *connmanager.ConnManager
-	Chain       *blockchain.BlockChain
+	BlockChain  *blockchain.BlockChain
 	Db          database.DB
 	RpcServer   *rpcserver.RpcServer
 	MemPool     *mempool.TxPool
@@ -68,28 +71,31 @@ func setupRPCListeners() ([]net.Listener, error) {
 	// Setup TLS if not disabled.
 	listenFunc := net.Listen
 	if !cfg.DisableTLS {
+		Logger.log.Info("Disable TLS for RPC is false")
 		// Generate the TLS cert and key file if both don't already
 		// exist.
-		//if !fileExists(cfg.RPCKey) && !fileExists(cfg.RPCCert) {
-		//	err := genCertPair(cfg.RPCCert, cfg.RPCKey)
-		//	if err != nil {
-		//		return nil, err
-		//	}
-		//}
-		//keypair, err := tls.LoadX509KeyPair(cfg.RPCCert, cfg.RPCKey)
-		//if err != nil {
-		//	return nil, err
-		//}
-		//
-		//tlsConfig := tls.Config{
-		//	Certificates: []tls.Certificate{keypair},
-		//	MinVersion:   tls.VersionTLS12,
-		//}
-		//
-		//// Change the standard net.Listen function to the tls one.
-		//listenFunc = func(net string, laddr string) (net.Listener, error) {
-		//	return tls.Listen(net, laddr, &tlsConfig)
-		//}
+		if !fileExists(cfg.RPCKey) && !fileExists(cfg.RPCCert) {
+			err := rpcserver.GenCertPair(cfg.RPCCert, cfg.RPCKey)
+			if err != nil {
+				return nil, err
+			}
+		}
+		keypair, err := tls.LoadX509KeyPair(cfg.RPCCert, cfg.RPCKey)
+		if err != nil {
+			return nil, err
+		}
+
+		tlsConfig := tls.Config{
+			Certificates: []tls.Certificate{keypair},
+			MinVersion:   tls.VersionTLS12,
+		}
+
+		// Change the standard net.Listen function to the tls one.
+		listenFunc = func(net string, laddr string) (net.Listener, error) {
+			return tls.Listen(net, laddr, &tlsConfig)
+		}
+	} else {
+		Logger.log.Info("Disable TLS for RPC is true")
 	}
 
 	netAddrs, err := parseListeners(cfg.RPCListeners, "tcp")
@@ -118,45 +124,48 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	self.donePeers = make(chan *peer.Peer)
 	self.newPeers = make(chan *peer.Peer)
 	self.Db = db
-	self.MemPool = mempool.New(&mempool.Config{
-		Policy: mempool.Policy{},
-	})
-
-	self.AddrManager = addrmanager.New(cfg.DataDir, nil)
 
 	var err error
 
 	// Create a new block chain instance with the appropriate configuration.9
-	self.Chain = &blockchain.BlockChain{}
-	err = self.Chain.Init(&blockchain.Config{
+	self.BlockChain = &blockchain.BlockChain{}
+	err = self.BlockChain.Init(&blockchain.Config{
 		ChainParams: self.chainParams,
-		Db:          self.Db,
+		DataBase:    self.Db,
 		Interrupt:   interrupt,
 	})
 	if err != nil {
 		return err
 	}
 
-	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.Chain)
+	self.MemPool = mempool.New(&mempool.Config{
+		Policy:      mempool.Policy{},
+		BlockChain:  self.BlockChain,
+		ChainParams: chainParams,
+	})
+
+	self.AddrManager = addrmanager.New(cfg.DataDir, nil)
+
+	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.BlockChain)
 
 	self.Miner = miner.New(&miner.Config{
 		ChainParams:            self.chainParams,
 		BlockTemplateGenerator: blockTemplateGenerator,
 		MiningAddrs:            cfg.MiningAddrs,
-		Chain:                  self.Chain,
+		Chain:                  self.BlockChain,
 		Server:                 self,
 	})
 
 	self.ConsensusEngine = pos.New(&pos.Config{
 		ChainParams: self.chainParams,
-		Chain:       self.Chain,
+		Chain:       self.BlockChain,
 		BlockGen:    blockTemplateGenerator,
 		Server:      self,
 	})
 
 	// Init Net Sync manager to process messages
 	self.NetSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
-		Chain:      self.Chain,
+		BlockChain: self.BlockChain,
 		ChainParam: chainParams,
 		MemPool:    self.MemPool,
 		Server:     self,
@@ -217,10 +226,17 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 			RPCQuirks:     cfg.RPCQuirks,
 			RPCMaxClients: cfg.RPCMaxClients,
 			ChainParams:   chainParams,
-			Chain:         self.Chain,
+			BlockChain:    self.BlockChain,
 			TxMemPool:     self.MemPool,
 			Server:        self,
 			Wallet:        self.Wallet,
+			ConnMgr:       self.ConnManager,
+			AddrMgr:       self.AddrManager,
+			RPCUser:       cfg.RPCUser,
+			RPCPass:       cfg.RPCPass,
+			RPCLimitUser:  cfg.RPCLimitUser,
+			RPCLimitPass:  cfg.RPCLimitPass,
+			DisableAuth:   cfg.RPCDisableAuth,
 		}
 		self.RpcServer = &rpcserver.RpcServer{}
 		err = self.RpcServer.Init(&rpcConfig)
@@ -238,7 +254,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	return nil
 }
 
-func (self *Server) InboundPeerConnected(peer *peer.Peer) {
+func (self *Server) InboundPeerConnected(peerConn *peer.PeerConn) {
 	Logger.log.Info("inbound connected")
 }
 
@@ -247,25 +263,41 @@ func (self *Server) InboundPeerConnected(peer *peer.Peer) {
 // peer instance, associates it with the relevant state such as the connection
 // request instance and the connection itself, and finally notifies the address
 // manager of the attempt.
-func (self *Server) OutboundPeerConnected(connRequest *connmanager.ConnReq,
-	peer *peer.Peer) {
-	Logger.log.Info("Outbound PEER connected with PEER ID - " + peer.PeerId.String())
+func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
+	Logger.log.Info("Outbound PEER connected with PEER ID - " + peerConn.PeerId.String())
 	// TODO:
 	// call address manager to process new outbound peer
 	// push message version
 	// if message version is compatible -> add outbound peer to address manager
-	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		listen.NegotiateOutboundProtocol(peer)
-	}
-	go self.peerDoneHandler(peer)
+	//for _, listen := range self.ConnManager.Config.ListenerPeers {
+	//	listen.NegotiateOutboundProtocol(peer)
+	//}
+	//go self.peerDoneHandler(peer)
+	//
+	//msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
+	//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.BlockChain.BestState.BestBlock.Hash()
+	//msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerId
+	//if err != nil {
+	//	return
+	//}
+	//self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
 
-	msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
-	msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.Chain.BestState.BestBlock.Hash()
-	msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerId
+	// push message version
+	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
+	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
+	msg.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.ListeningAddress
+	msg.(*wire.MessageVersion).RawLocalAddress = peerConn.ListenerPeer.RawAddress
+	msg.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerId
+	msg.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
+	msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
+	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerId
+	msg.(*wire.MessageVersion).LastBlock = 0
+	msg.(*wire.MessageVersion).ProtocolVersion = 1
 	if err != nil {
 		return
 	}
-	//self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
+	dc := make(chan struct{})
+	peerConn.QueueMessageWithEncoding(msg, dc)
 }
 
 // peerDoneHandler handles peer disconnects by notifiying the server that it's
@@ -313,7 +345,16 @@ func (self Server) peerHandler() {
 	if !cfg.DisableDNSSeed {
 		// TODO load peer from seed DNS
 		// add to address manager
-		self.AddrManager.AddAddresses(make([]*peer.Peer, 0))
+		//self.AddrManager.AddAddresses(make([]*peer.Peer, 0))
+
+		self.ConnManager.SeedFromDNS(self.chainParams.DNSSeeds, func(addrs []string) {
+			// Bitcoind uses a lookup of the dns seeder here. This
+			// is rather strange since the values looked up by the
+			// DNS seed lookups will vary quite a lot.
+			// to replicate this behaviour we put all addresses as
+			// having come from the first one.
+			self.AddrManager.AddAddressesStr(addrs)
+		})
 	}
 
 	if len(cfg.ConnectPeers) == 0 {
@@ -324,7 +365,6 @@ func (self Server) peerHandler() {
 	}
 
 	go self.ConnManager.Start()
-	//go self.ConnManager.StartListener(self.NewPeerConfig())
 
 out:
 	for {
@@ -385,7 +425,7 @@ func (self Server) Start() {
 	/*go func(server Server) {
 		for {
 			time.Sleep(time.Second * 3)
-			log.Printf("\n --- Chain length: %d ---- \n", len(server.Chain.Blocks))
+			log.Printf("\n --- BlockChain length: %d ---- \n", len(server.BlockChain.Blocks))
 		}
 	}(self)*/
 }
@@ -448,14 +488,19 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 
 	peers := make([]peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
-		key := fmt.Sprintf("%s_seed", addr.String())
-		seedT := kc.Get(key)
 		seed := int64(0)
-		if seedT == nil {
-			seed = time.Now().UnixNano()
-			kc.Set(key, seed)
+		seedC, _ := strconv.ParseInt(os.Getenv("NODE_SEED"), 10, 64)
+		if seedC == 0 {
+			key := fmt.Sprintf("%s_seed", addr.String())
+			seedT := kc.Get(key)
+			if seedT == nil {
+				seed = time.Now().UnixNano()
+				kc.Set(key, seed)
+			} else {
+				seed = int64(seedT.(float64))
+			}
 		} else {
-			seed = int64(seedT.(float64))
+			seed = seedC
 		}
 		peer, err := peer.Peer{
 			Seed:             seed,
@@ -526,7 +571,7 @@ func (self Server) OnTx(peer *peer.PeerConn,
 // OnVersion is invoked when a peer receives a version bitcoin message
 // and is used to negotiate the protocol version details as well as kick start
 // the communications.
-func (self *Server) OnVersion(_ *peer.PeerConn, msg *wire.MessageVersion) {
+func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion) {
 	remotePeer := &peer.Peer{
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
@@ -537,28 +582,37 @@ func (self *Server) OnVersion(_ *peer.PeerConn, msg *wire.MessageVersion) {
 	//
 
 	// if version message is ok -> add to addManager
-	self.AddrManager.Good(remotePeer)
+	//self.AddrManager.Good(remotePeer)
 
 	// TODO push message again for remote peer
-	var dc chan<- struct{}
-	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		msg, err := wire.MakeEmptyMessage(wire.CmdVerack)
-		if err != nil {
-			continue
-		}
-		listen.QueueMessageWithEncoding(msg, dc)
+	//var dc chan<- struct{}
+	//for _, listen := range self.ConnManager.Config.ListenerPeers {
+	//	msg, err := wire.MakeEmptyMessage(wire.CmdVerack)
+	//	if err != nil {
+	//		continue
+	//	}
+	//	listen.QueueMessageWithEncoding(msg, dc)
+	//}
+
+	msgV, err := wire.MakeEmptyMessage(wire.CmdVerack)
+	if err != nil {
+		return
 	}
+	var dc chan<- struct{}
+	peerConn.QueueMessageWithEncoding(msgV, dc)
+
 }
 
 func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
 	log.Printf("Receive verack message")
+	self.AddrManager.Good(peerConn.Peer)
 
 	msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
 	if err != nil {
 		return
 	}
-	var dc chan<- struct{}
+	dc := make(chan struct{})
 	peerConn.QueueMessageWithEncoding(msgS, dc)
 }
 
@@ -639,16 +693,15 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 
 func (self *Server) UpdateChain(block *blockchain.Block) {
 	// save block
-	self.Chain.Blocks = append(self.Chain.Blocks, block)
-	self.Chain.StoreBlockIndex(block)
+	self.BlockChain.StoreBlock(block)
 
 	// save best state
 	newBestState := &blockchain.BestState{}
 	numTxns := uint64(len(block.Transactions))
 	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0))
-	self.Chain.BestState = newBestState
-	self.Chain.StoreBestState()
+	self.BlockChain.BestState = newBestState
+	self.BlockChain.StoreBestState()
 
 	// save index of block
-	self.Chain.StoreBlockIndex(block)
+	self.BlockChain.StoreBlockIndex(block)
 }

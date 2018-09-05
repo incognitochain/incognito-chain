@@ -44,7 +44,7 @@ type Params struct {
 
 	// DNSSeeds defines a list of DNS seeds for the network that are used
 	// as one method to discover peers.
-	DNSSeeds []DNSSeed
+	DNSSeeds []string
 
 	// GenesisBlock defines the first block of the chain.
 	GenesisBlock *Block
@@ -152,16 +152,17 @@ var MainNetParams = Params{
 	Name:        MAINNET_NAME,
 	Net:         MAINNET,
 	DefaultPort: MAINET_DEFAULT_PORT,
-	DNSSeeds: []DNSSeed{
+	DNSSeeds: []string{
 		/*{"seed.coin.sipa.be", true},
 		{"dnsseed.bluematt.me", true},
 		{"dnsseed.coin.dashjr.org", false},
 		{"seed.coinstats.com", true},
 		{"seed.bitnodes.io", false},
 		{"seed.coin.jonasschnelli.ch", true},*/
+		//"/ip4/127.0.0.1/tcp/9333/ipfs/QmRuvXN7BpTqxqpPLSftDFbKEYiRZRUb7iqZJcz2CxFvVS",
 	},
 
-	// Chain parameters
+	// BlockChain parameters
 	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlock(time.Date(2018, 8, 1, 0, 0, 0, 0, time.Local), 0x18aea41a, 0x1d00ffff, 1, GENESIS_BLOCK_REWARD),
 	PowLimit:     mainPowLimit,
 	PowLimitBits: 486604799,

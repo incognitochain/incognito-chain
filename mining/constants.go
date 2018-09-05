@@ -25,7 +25,7 @@ type TxDesc struct {
 	Height int32
 
 	// Fee is the total fee the transaction associated with the entry pays.
-	Fee int64
+	Fee float64
 
 	//@todo add more properties to TxDesc if we need more laster
 }

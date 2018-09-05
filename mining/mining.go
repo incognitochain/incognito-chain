@@ -127,13 +127,14 @@ func createCoinbaseTx(
 	//create new tx
 	tx := &transaction.Tx{
 		Version: 1,
+		Type:    common.TxNormalType,
 		TxIn:    make([]transaction.TxIn, 0, 2),
 		TxOut:   make([]transaction.TxOut, 0, 1),
 	}
 	//create outpoint
 	outPoint := &transaction.OutPoint{
 		Hash: common.Hash{},
-		Vout: 1,
+		Vout: transaction.MaxPrevOutIndex,
 	}
 
 	txIn := *transaction.TxIn{}.NewTxIn(outPoint, coinbaseScript)
@@ -158,21 +159,19 @@ func createCoinbaseTx(
 	return tx, nil
 }
 
-func sumTxInValues(txIns []transaction.TxIn) float64 {
-	// TODO: calcualte sum of txIn values
-	var sum float64
-	for _, txIn := range txIns {
-		sum += txIn.Value
+// spendTransaction updates the passed view by marking the inputs to the passed
+// transaction as spent.  It also adds all outputs in the passed transaction
+// which are not provably unspendable as available unspent transaction outputs.
+func spendTransaction(utxoView *blockchain.UtxoViewpoint, tx *transaction.Tx, height int32) error {
+	for _, txIn := range tx.TxIn {
+		entry := utxoView.LookupEntry(txIn.PreviousOutPoint)
+		if entry != nil {
+			entry.Spend()
+		}
 	}
-	return sum
-}
 
-func sumTxOutValues(txOuts []transaction.TxOut) float64 {
-	var sum float64
-	for _, txOut := range txOuts {
-		sum += txOut.Value
-	}
-	return sum
+	utxoView.AddTxOuts(tx, height)
+	return nil
 }
 
 func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
@@ -195,14 +194,12 @@ func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 			continue
 		}
 		normalTx, _ := tx.(*transaction.Tx)
-		txInsValue := sumTxInValues(normalTx.TxIn)
-		txOutsValue := sumTxOutValues(normalTx.TxOut)
 		if len(normalTx.TxOut) > 0 {
 			txOutType := normalTx.TxOut[0].TxOutType
 			if txOutType == "" {
 				txOutType = common.TxOutCoinType
 			}
-			feeMap[txOutType] += (txInsValue - txOutsValue)
+			feeMap[txOutType] += txDesc.Fee
 		}
 	}
 	return txs, actionParamTxs, feeMap
@@ -231,6 +228,7 @@ func getLatestAgentDataPoints(
 				NumOfBonds:       actionParamTx.Param.NumOfBonds,
 				Tax:              actionParamTx.Param.Tax,
 				EligibleAgentIDs: actionParamTx.Param.EligibleAgentIDs,
+				LockTime:         actionParamTx.LockTime,
 			}
 		}
 	}
@@ -299,8 +297,11 @@ mempoolLoop:
 	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
 		//@todo need apply validate tx, logic check all referenced here
-
-		/*utxos, err := g.chain.FetchUtxoView(&tx)
+		// call function spendTransaction to mark utxo
+		utxos, err := g.chain.FetchUtxoView(*tx.(*transaction.Tx))
+		_ = utxos
+		_ = err
+		/*
 		if err != nil {
 			fmt.Print("Unable to fetch utxo view for tx %s: %v",
 				tx.Hash(), err)
@@ -366,7 +367,6 @@ mempoolLoop:
 
 	//update the latest AgentDataPoints to block
 	block.AgentDataPoints = agentDataPoints
-
 	// Set height
 	block.Height = prevBlock.Height + 1
 
@@ -409,6 +409,7 @@ type TxSource interface {
 
 	RemoveTx(tx transaction.Tx)
 
+	// TODO using when demo
 	Clear()
 }
 
