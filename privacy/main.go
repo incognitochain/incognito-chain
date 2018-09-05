@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
 )
 
-func runProve() {
+func runProve() (*zksnark.PHGRProof, error) {
 	// ask := client.RandSpendingKey()
 	ask := client.SpendingKey{127, 9, 42, 195, 53, 40, 231, 23, 127, 206, 167, 170, 20, 82, 217, 40, 248, 110, 181, 16, 253, 131, 117, 145, 0, 30, 57, 18, 84, 57, 189, 8}
 	outApk := client.GenSpendingAddress(ask)
@@ -53,24 +55,26 @@ func runProve() {
 
 	pubKey := [32]byte{9}
 	rt := [32]byte{10}
-	client.Prove(inputs, outputs, pubKey[:], rt[:])
+	return client.Prove(inputs, outputs, pubKey[:], rt[:])
 }
 
-func runVerify() {
-	gA := [33]byte{0, 7}
-	gAPrime := [33]byte{0, 8}
-	gB := [65]byte{0, 9}
-	gBPrime := [33]byte{0, 10}
-	gC := [33]byte{0, 11}
-	gCPrime := [33]byte{0, 12}
-	gH := [33]byte{0, 13}
-	gK := [33]byte{0, 14}
+func runVerify(proof *zksnark.PHGRProof) {
+	if proof == nil {
+		gA := [33]byte{0, 7}
+		gAPrime := [33]byte{0, 8}
+		gB := [65]byte{0, 9}
+		gBPrime := [33]byte{0, 10}
+		gC := [33]byte{0, 11}
+		gCPrime := [33]byte{0, 12}
+		gH := [33]byte{0, 13}
+		gK := [33]byte{0, 14}
 
-	proof := &zksnark.PHGRProof{
-		G_A: gA[:], G_APrime: gAPrime[:],
-		G_B: gB[:], G_BPrime: gBPrime[:],
-		G_C: gC[:], G_CPrime: gCPrime[:],
-		G_H: gH[:], G_K: gK[:]}
+		proof = &zksnark.PHGRProof{
+			G_A: gA[:], G_APrime: gAPrime[:],
+			G_B: gB[:], G_BPrime: gBPrime[:],
+			G_C: gC[:], G_CPrime: gCPrime[:],
+			G_H: gH[:], G_K: gK[:]}
+	}
 
 	nf1 := [32]byte{1}
 	nf2 := [32]byte{2}
@@ -88,7 +92,22 @@ func runVerify() {
 	client.Verify(proof, &nf, &cm, rt[:], hSig[:])
 }
 
+func runProveThenVerify() {
+	if proof, err := runProve(); err != nil {
+		runVerify(proof)
+	}
+}
+
+func test(a [3]int) {
+	a[0] = 12
+}
+
 func main() {
-	runProve()
+	// runProve()
 	// runVerify()
+	// runProveThenVerify()
+
+	b := [3]int{1, 2, 3}
+	test(b)
+	fmt.Println(b)
 }

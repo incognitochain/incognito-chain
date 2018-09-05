@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -24,7 +25,7 @@ type JSOutput struct {
 // Prove calls libsnark's Prove and return the proof
 // inputs: WitnessPath and Key must be set; InputeNote's Value, Apk, R and Rho must also be set before calling this function
 // outputs: EncKey, OutputNote's Apk and Value must be set before calling this function
-func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
+func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) (*zksnark.PHGRProof, error) {
 	// TODO: think how to implement vpub
 	// TODO: check for inputs (witness root & cm)
 
@@ -96,7 +97,7 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
 	defer conn.Close()
 
 	c := zksnark.NewZksnarkClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*180)
 	defer cancel()
 
 	var outNotes []*Note
@@ -114,8 +115,10 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) {
 	r, err := c.Prove(ctx, proveRequest)
 	if err != nil {
 		log.Fatalf("fail to prove: %v", err)
+		return nil, errors.New("Fail to prove JoinSplit")
 	}
 	log.Printf("response: %v", r.Proof)
+	return r.Proof, nil
 }
 
 func Verify(proof *zksnark.PHGRProof, nf, cm *[][]byte, rt, hSig []byte) bool {

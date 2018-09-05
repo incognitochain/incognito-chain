@@ -65,22 +65,22 @@ func GenSpendingAddress(ask SpendingKey) SpendingAddress {
 }
 
 type ViewingKey struct {
-	apk   SpendingAddress
-	skenc ReceivingKey
+	Apk   SpendingAddress
+	Skenc ReceivingKey
 }
 
 func GenViewingKey(ask SpendingKey) ViewingKey {
 	var ivk ViewingKey
-	ivk.apk = GenSpendingAddress(ask)
-	ivk.skenc = GenReceivingKey(ask)
+	ivk.Apk = GenSpendingAddress(ask)
+	ivk.Skenc = GenReceivingKey(ask)
 	return ivk
 }
 
 type TransmissionKey [32]byte
 
 type PaymentAddress struct {
-	apk   SpendingAddress
-	pkenc TransmissionKey
+	Apk   SpendingAddress
+	Pkenc TransmissionKey
 }
 
 func GenTransmissionKey(skenc ReceivingKey) TransmissionKey {
@@ -96,7 +96,19 @@ func GenTransmissionKey(skenc ReceivingKey) TransmissionKey {
 
 func GenPaymentAddress(ask SpendingKey) PaymentAddress {
 	var addr PaymentAddress
-	addr.apk = GenSpendingAddress(ask)
-	addr.pkenc = GenTransmissionKey(GenReceivingKey(ask))
+	addr.Apk = GenSpendingAddress(ask)
+	addr.Pkenc = GenTransmissionKey(GenReceivingKey(ask))
 	return addr
+}
+
+// FullKey convenient struct storing all keys and addresses
+type FullKey struct {
+	Ask  SpendingKey
+	Ivk  ViewingKey
+	Addr PaymentAddress
+}
+
+// GenFullKey generates all needed keys from a single SpendingKey
+func (ask SpendingKey) GenFullKey() FullKey {
+	return FullKey{Ask: ask, Ivk: GenViewingKey(ask), Addr: GenPaymentAddress(ask)}
 }

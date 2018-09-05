@@ -36,14 +36,14 @@ func TestPaymentAddress(t *testing.T) {
 	expTransmissionKey := [...]byte{151, 101, 142, 174, 19, 254, 217, 234, 63, 192, 81, 135, 96, 114, 181, 206, 51, 134, 131, 166, 30, 106, 238, 242, 67, 64, 116, 37, 39, 52, 34, 19}
 
 	for i, v := range expSpendingAddress {
-		if v != addr.apk[i] {
-			t.Errorf("SpendingAddress incorrect:\nExpected: %x\n Received: %x\n", expSpendingAddress, addr.apk)
+		if v != addr.Apk[i] {
+			t.Errorf("SpendingAddress incorrect:\nExpected: %x\n Received: %x\n", expSpendingAddress, addr.Apk)
 		}
 	}
 
 	for i, v := range expTransmissionKey {
-		if v != addr.pkenc[i] {
-			t.Errorf("SpendingAddress incorrect:\nExpected: %x\n Received: %x\n", expTransmissionKey, addr.pkenc)
+		if v != addr.Pkenc[i] {
+			t.Errorf("SpendingAddress incorrect:\nExpected: %x\n Received: %x\n", expTransmissionKey, addr.Pkenc)
 		}
 	}
 }
