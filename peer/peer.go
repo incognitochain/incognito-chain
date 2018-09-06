@@ -213,6 +213,13 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		return nil, nil
 	}
 
+	if peer.PeerId.Pretty() == self.PeerId.Pretty() {
+		Logger.log.Infof("Myself PEER ID - %s", peer.PeerId.String())
+
+		self.outboundMutex.Unlock()
+		return nil, nil
+	}
+
 	if len(self.PeerConns) >= self.MaxOutbound {
 		Logger.log.Infof("Max Peer Conn")
 

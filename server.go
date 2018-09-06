@@ -600,7 +600,9 @@ func (self *Server) OnAddr(_ *peer.PeerConn, msg *wire.MessageAddr) {
 	log.Printf("Receive addr message")
 
 	for _, addr := range msg.RawAddresses {
-		go self.ConnManager.Connect(addr)
+		if !self.AddrManager.ExistedAddr(addr) {
+			go self.ConnManager.Connect(addr)
+		}
 	}
 
 }
