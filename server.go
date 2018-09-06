@@ -6,8 +6,6 @@ import (
 	"log"
 	"net"
 	"path/filepath"
-	"runtime"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -581,7 +579,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 
 /**
 OnVerAck is invoked when a peer receives a version acknowlege message
- */
+*/
 func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
 	log.Printf("Receive verack message")
@@ -616,9 +614,10 @@ func (self *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlo
 func (self *Server) OnSignedBlock(_ *peer.PeerConn, msg *wire.MessageSignedBlock) {
 
 }
+
 /**
 PushTxMessage broadcast tx for connected peers
- */
+*/
 func (self Server) PushTxMessage(hashTx *common.Hash) {
 	var dc chan<- struct{}
 	tx, _ := self.MemPool.GetTx(hashTx)
@@ -634,7 +633,7 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 
 /**
 PushBlockMessageWithPeerId broadcast block to specific connected peer
- */
+*/
 func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId peer2.ID) error {
 	var dc chan<- struct{}
 	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
@@ -648,7 +647,7 @@ func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId pe
 
 /**
 PushBlockMessage broadcast block to connected peer
- */
+*/
 func (self *Server) PushBlockMessage(block *blockchain.Block) error {
 	// TODO push block message for connected peer
 	//@todo got error here
@@ -684,7 +683,7 @@ func (self *Server) PushBlockSignature(msg *wire.MessageSignedBlock) error {
 
 /**
 PushBlockMessage broadcast invalid block message to connected peer
- */
+*/
 func (self *Server) PushInvalidBlockMessage(msg *wire.MessageInvalidBlock) error {
 	var dc chan<- struct{}
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
@@ -713,7 +712,7 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 
 /**
 UpdateChain - Update chain with received block
- */
+*/
 func (self *Server) UpdateChain(block *blockchain.Block) {
 	// save block
 	self.BlockChain.StoreBlock(block)
