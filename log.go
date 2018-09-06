@@ -1,19 +1,21 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
+
 	"github.com/jrick/logrotate/rotator"
+	"github.com/ninjadotorg/cash-prototype/addrmanager"
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/connmanager"
-	"github.com/ninjadotorg/cash-prototype/addrmanager"
-	"path/filepath"
-	"fmt"
-	"github.com/ninjadotorg/cash-prototype/rpcserver"
+	"github.com/ninjadotorg/cash-prototype/consensus/pos"
+	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/netsync"
 	"github.com/ninjadotorg/cash-prototype/peer"
-	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/rpcserver"
 	"github.com/ninjadotorg/cash-prototype/wallet"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
 )
 
 var (
@@ -31,6 +33,7 @@ var (
 	dbLogger          = backendLog.Logger("Database Log")
 	walletLogger      = backendLog.Logger("Wallet log")
 	blockchainLogger  = backendLog.Logger("BlockChain log")
+	consensusLogger   = backendLog.Logger("Consensus log")
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -56,6 +59,7 @@ func init() {
 	database.Logger.Init(dbLogger)
 	wallet.Logger.Init(walletLogger)
 	blockchain.Logger.Init(blockchainLogger)
+	pos.Logger.Init(consensusLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -70,6 +74,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"DABA": dbLogger,
 	"WALL": walletLogger,
 	"BLOC": blockchainLogger,
+	"CONS": consensusLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

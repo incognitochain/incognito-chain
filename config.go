@@ -351,7 +351,7 @@ func loadConfig() (*config, []string, error) {
 		WalletDbName:         defaultWalletDbName,
 		DisableTLS:           deafaultDisableRpcTls,
 		RPCDisableAuth:       true,
-		SealerPrvKey:		  os.Getenv("SEALERPRVKEY"),
+		SealerPrvKey:         os.Getenv("SEALERPRVKEY"),
 	}
 
 	// Service options which are only added on Windows.
@@ -687,9 +687,9 @@ func loadConfig() (*config, []string, error) {
 
 	// Ensure there is at least one mining address when the generate flag is
 	// set.
-	if cfg.Generate && len(cfg.MiningAddrs) == 0 {
-		str := "%s: the generate flag is set, but there are no mining " +
-			"addresses specified "
+	if cfg.Generate && len(cfg.SealerPrvKey) == 0 {
+		str := "%s: the generate flag is set, but there are no sealer's key " +
+			"specified "
 		err := fmt.Errorf(str, funcName)
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, usageMessage)

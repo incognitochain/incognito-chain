@@ -8,7 +8,7 @@ import (
 type Policy struct {
 	//@todo we are defining for them
 	Consensus interface {
-		GetSenderChain(string) (byte, error)
+		GetSenderChain(byte) (byte, error)
 	}
 }
 

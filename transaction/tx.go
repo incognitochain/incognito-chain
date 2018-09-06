@@ -11,7 +11,7 @@ import (
 type Tx struct {
 	Version     int     `json:"Version"`
 	Type        string  `json:"Type"` // NORMAL / ACTION_PARAMS
-	AddressHash string  `json:"AddressHash"`
+	AddressHash byte    `json:"AddressHash"`
 	TxIn        []TxIn  `json:"TxIn"`
 	TxOut       []TxOut `json:"TxOut"`
 	LockTime    int     `json:"LockTime"`

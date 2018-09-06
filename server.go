@@ -429,7 +429,7 @@ func (self Server) Start() {
 	// }
 
 	if cfg.Generate == true && (len(cfg.SealerPrvKey) > 0) {
-		self.ConsensusEngine.Start()
+		self.ConsensusEngine.Start([]byte(cfg.SealerPrvKey))
 	}
 
 	// test, print length of chain
