@@ -58,9 +58,9 @@ type Peer struct {
 	RawAddress       string
 	ListeningAddress common.SimpleAddr
 
-	Seed      int64
-	FlagMutex sync.Mutex
-	Config    Config
+	Seed          int64
+	outboundMutex sync.Mutex
+	Config        Config
 
 	PeerConns map[peer.ID]*PeerConn
 
@@ -77,7 +77,7 @@ type Peer struct {
 // Config is the struct to hold configuration options useful to Peer.
 type Config struct {
 	MessageListeners MessageListeners
-	SealerPrvKey string
+	SealerPrvKey     string
 }
 
 type WrappedStream struct {
@@ -178,7 +178,6 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.Host = basicHost
 	self.TargetAddress = fullAddr
 	self.PeerId = peerid
-	//self.sendMessageQueue = make(chan outMsg, 1)
 	self.quit = make(chan struct{}, 1)
 	self.disconnectPeer = make(chan *PeerConn)
 	self.Peers = make(map[string]string)
