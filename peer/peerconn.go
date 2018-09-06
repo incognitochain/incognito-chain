@@ -140,31 +140,31 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageRequestSign{}):
-				self.FlagMutex.Lock()
+				self.flagMutex.Lock()
 				self.verAckReceived = true
-				self.FlagMutex.Unlock()
+				self.flagMutex.Unlock()
 				if self.Config.MessageListeners.OnRequestSign != nil {
-					self.FlagMutex.Lock()
+					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnRequestSign(self, message.(*wire.MessageRequestSign))
-					self.FlagMutex.Unlock()
+					self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageInvalidBlock{}):
-				self.FlagMutex.Lock()
+				self.flagMutex.Lock()
 				self.verAckReceived = true
-				self.FlagMutex.Unlock()
+				self.flagMutex.Unlock()
 				if self.Config.MessageListeners.OnInvalidBlock != nil {
-					self.FlagMutex.Lock()
+					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnInvalidBlock(self, message.(*wire.MessageInvalidBlock))
-					self.FlagMutex.Unlock()
+					self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageSignedBlock{}):
-				self.FlagMutex.Lock()
+				self.flagMutex.Lock()
 				self.verAckReceived = true
-				self.FlagMutex.Unlock()
+				self.flagMutex.Unlock()
 				if self.Config.MessageListeners.OnSignedBlock != nil {
-					self.FlagMutex.Lock()
+					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnSignedBlock(self, message.(*wire.MessageSignedBlock))
-					self.FlagMutex.Unlock()
+					self.flagMutex.Unlock()
 				}
 			default:
 				Logger.log.Warnf("Received unhandled message of type %v "+
