@@ -183,6 +183,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	//self.sendMessageQueue = make(chan outMsg, 1)
 	self.quit = make(chan struct{}, 1)
 	self.disconnectPeer = make(chan *PeerConn)
+	self.Peers = make(map[string]string)
 
 	return &self, nil
 }
@@ -329,8 +330,9 @@ listen:
 
 				goto listen
 			}
+			Logger.log.Infof("Ping response", response)
 			for _, rawPeer := range response {
-				keyPair := cashec.KeyPair{}
+				keyPair := &cashec.KeyPair{}
 				keyPair.Import([]byte(rawPeer.SealerPrvKey))
 
 				_, exist := self.Peers[string(keyPair.PublicKey)]
