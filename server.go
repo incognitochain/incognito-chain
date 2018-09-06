@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"runtime"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -67,7 +65,7 @@ type Server struct {
 // setupRPCListeners returns a slice of listeners that are configured for use
 // with the RPC server depending on the configuration settings for listen
 // addresses and TLS.
-func setupRPCListeners() ([]net.Listener, error) {
+func (self Server) setupRPCListeners() ([]net.Listener, error) {
 	// Setup TLS if not disabled.
 	listenFunc := net.Listen
 	if !cfg.DisableTLS {
@@ -98,7 +96,7 @@ func setupRPCListeners() ([]net.Listener, error) {
 		Logger.log.Info("Disable TLS for RPC is true")
 	}
 
-	netAddrs, err := parseListeners(cfg.RPCListeners, "tcp")
+	netAddrs, err := common.ParseListeners(cfg.RPCListeners, "tcp")
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +211,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	if !cfg.DisableRPC {
 		// Setup listeners for the configured RPC listen addresses and
 		// TLS settings.
-		rpcListeners, err := setupRPCListeners()
+		rpcListeners, err := self.setupRPCListeners()
 		if err != nil {
 			return err
 		}
@@ -254,6 +252,8 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	return nil
 }
 
+// InboundPeerConnected is invoked by the connection manager when a new
+// inbound connection is established.
 func (self *Server) InboundPeerConnected(peerConn *peer.PeerConn) {
 	Logger.log.Info("inbound connected")
 }
@@ -430,55 +430,11 @@ func (self Server) Start() {
 	}(self)*/
 }
 
-// parseListeners determines whether each listen address is IPv4 and IPv6 and
-// returns a slice of appropriate net.Addrs to listen on with TCP. It also
-// properly detects addresses which apply to "all interfaces" and adds the
-// address as both IPv4 and IPv6.
-func parseListeners(addrs []string, netType string) ([]common.SimpleAddr, error) {
-	netAddrs := make([]common.SimpleAddr, 0, len(addrs)*2)
-	for _, addr := range addrs {
-		host, _, err := net.SplitHostPort(addr)
-		if err != nil {
-			// Shouldn't happen due to already being normalized.
-			return nil, err
-		}
-
-		// Empty host or host of * on plan9 is both IPv4 and IPv6.
-		if host == "" || (host == "*" && runtime.GOOS == "plan9") {
-			netAddrs = append(netAddrs, common.SimpleAddr{Net: netType + "4", Addr: addr})
-			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
-			continue
-		}
-
-		// Strip IPv6 zone id if present since net.ParseIP does not
-		// handle it.
-		zoneIndex := strings.LastIndex(host, "%")
-		if zoneIndex > 0 {
-			host = host[:zoneIndex]
-		}
-
-		// Parse the IP.
-		ip := net.ParseIP(host)
-		if ip == nil {
-			return nil, fmt.Errorf("'%s' is not a valid IP address", host)
-		}
-
-		// To4 returns nil when the IP is not an IPv4 address, so use
-		// this determine the address type.
-		if ip.To4() == nil {
-			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
-		} else {
-			netAddrs = append(netAddrs, common.SimpleAddr{Net: netType + "4", Addr: addr})
-		}
-	}
-	return netAddrs, nil
-}
-
 // initListeners initializes the configured net listeners and adds any bound
 // addresses to the address manager. Returns the listeners and a NAT interface,
 // which is non-nil if UPnP is in use.
 func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string) ([]peer.Peer, error) {
-	netAddrs, err := parseListeners(listenAddrs, "ip")
+	netAddrs, err := common.ParseListeners(listenAddrs, "ip")
 	if err != nil {
 		return nil, err
 	}
@@ -569,9 +525,11 @@ func (self Server) OnTx(peer *peer.PeerConn,
 	//<-txProcessed
 }
 
-// OnVersion is invoked when a peer receives a version bitcoin message
+/**
+// OnVersion is invoked when a peer receives a version message
 // and is used to negotiate the protocol version details as well as kick start
 // the communications.
+*/
 func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion) {
 	remotePeer := &peer.Peer{
 		ListeningAddress: msg.LocalAddress,
@@ -604,6 +562,9 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 
 }
 
+/**
+OnVerAck is invoked when a peer receives a version acknowlege message
+ */
 func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
 	log.Printf("Receive verack message")
@@ -627,6 +588,9 @@ func (self *Server) OnAddr(_ *peer.PeerConn, msg *wire.MessageAddr) {
 	log.Printf("Receive addr message")
 }
 
+/**
+PushTxMessage broadcast tx for connected peers
+ */
 func (self Server) PushTxMessage(hashTx *common.Hash) {
 	var dc chan<- struct{}
 	tx, _ := self.MemPool.GetTx(hashTx)
@@ -640,6 +604,9 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 	}
 }
 
+/**
+PushBlockMessageWithPeerId broadcast block to specific connected peer
+ */
 func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId peer2.ID) error {
 	var dc chan<- struct{}
 	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
@@ -651,6 +618,9 @@ func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId pe
 	return nil
 }
 
+/**
+PushBlockMessage broadcast block to connected peer
+ */
 func (self *Server) PushBlockMessage(block *blockchain.Block) error {
 	// TODO push block message for connected peer
 	//@todo got error here
@@ -666,6 +636,9 @@ func (self *Server) PushBlockMessage(block *blockchain.Block) error {
 	return nil
 }
 
+/**
+PushBlockMessage broadcast invalid block message to connected peer
+ */
 func (self *Server) PushInvalidBlockMessage(msg *wire.MessageInvalidBlock) error {
 	var dc chan<- struct{}
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
@@ -692,6 +665,9 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 	return true
 }
 
+/**
+UpdateChain - Update chain with received block
+ */
 func (self *Server) UpdateChain(block *blockchain.Block) {
 	// save block
 	self.BlockChain.StoreBlock(block)
