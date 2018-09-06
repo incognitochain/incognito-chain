@@ -8,6 +8,8 @@ import (
 	"strings"
 	"unicode"
 	"reflect"
+	"net"
+	"fmt"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -101,6 +103,9 @@ func AppDataDir(appName string, roaming bool) string {
 	return appDataDir(runtime.GOOS, appName, roaming)
 }
 
+/**
+Convert interface of slice to slice
+ */
 func InterfaceSlice(slice interface{}) []interface{} {
 	s := reflect.ValueOf(slice)
 	if s.Kind() != reflect.Slice {
@@ -114,4 +119,50 @@ func InterfaceSlice(slice interface{}) []interface{} {
 	}
 
 	return ret
+}
+
+/**
+// parseListeners determines whether each listen address is IPv4 and IPv6 and
+// returns a slice of appropriate net.Addrs to listen on with TCP. It also
+// properly detects addresses which apply to "all interfaces" and adds the
+// address as both IPv4 and IPv6.
+*/
+func ParseListeners(addrs []string, netType string) ([]SimpleAddr, error) {
+	netAddrs := make([]SimpleAddr, 0, len(addrs)*2)
+	for _, addr := range addrs {
+		host, _, err := net.SplitHostPort(addr)
+		if err != nil {
+			// Shouldn't happen due to already being normalized.
+			return nil, err
+		}
+
+		// Empty host or host of * on plan9 is both IPv4 and IPv6.
+		if host == "" || (host == "*" && runtime.GOOS == "plan9") {
+			netAddrs = append(netAddrs, SimpleAddr{Net: netType + "4", Addr: addr})
+			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
+			continue
+		}
+
+		// Strip IPv6 zone id if present since net.ParseIP does not
+		// handle it.
+		zoneIndex := strings.LastIndex(host, "%")
+		if zoneIndex > 0 {
+			host = host[:zoneIndex]
+		}
+
+		// Parse the IP.
+		ip := net.ParseIP(host)
+		if ip == nil {
+			return nil, fmt.Errorf("'%s' is not a valid IP address", host)
+		}
+
+		// To4 returns nil when the IP is not an IPv4 address, so use
+		// this determine the address type.
+		if ip.To4() == nil {
+			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
+		} else {
+			netAddrs = append(netAddrs, SimpleAddr{Net: netType + "4", Addr: addr})
+		}
+	}
+	return netAddrs, nil
 }
