@@ -16,6 +16,7 @@ type DB interface {
 
 	StoreNullifiers([]byte) error
 	FetchNullifiers() ([][]byte, error)
+	HasNullifier([]byte) (bool, error)
 
 	StoreBlockIndex(*common.Hash, int32) error
 	GetIndexOfBlock(*common.Hash) (int32, error)

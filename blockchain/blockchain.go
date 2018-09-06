@@ -11,12 +11,13 @@ import (
 	"time"
 	"encoding/json"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 type BlockChain struct {
 	Config    Config
 	BestState *BestState
-	
+
 	chainLock sync.RWMutex
 }
 
@@ -271,6 +272,50 @@ func (self *BlockChain) StoreBlockIndex(block *Block) error {
 }*/
 
 /**
+Uses an existing database to update the set of used tx by saving list nullifier of privacy,
+this is a list tx-out which are used by a new tx
+ */
+func (self *BlockChain) StoreUsedTxFromUsedTxViewPoint(view UsedTxViewPoint) (error) {
+	for _, nullifier := range view.listNullifiers {
+		err := self.Config.DataBase.StoreNullifiers(nullifier)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+/**
+Uses an existing database to update the set of used tx by saving list nullifier of privacy,
+this is a list tx-out which are used by a new tx
+ */
+func (self *BlockChain) StoreUsedTxFromListNullifier(nullifiers [][]byte) (error) {
+	for _, nullifier := range nullifiers {
+		err := self.Config.DataBase.StoreNullifiers(nullifier)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+/**
+Uses an existing database to update the set of used tx by saving list nullifier of privacy,
+this is a list tx-out which are used by a new tx
+ */
+func (self *BlockChain) StoreUsedTxFromTx(tx *transaction.Tx) (error) {
+	for _, desc := range tx.Desc {
+		for _, nullifier := range desc.Nullifiers {
+			err := self.Config.DataBase.StoreNullifiers(nullifier)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+/**
 Get all blocks in chain
 Return block array
  */
@@ -400,6 +445,34 @@ func (self *BlockChain) GetAllHashBlocks() ([]*common.Hash, error) {
 		return false, nil
 	}
 }*/
+func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
+	// We are extending the main (best) chain with a new block.  This is the
+	// most common case.
+	parentHash := &block.Header.PrevBlockHash
+	if parentHash.IsEqual(&b.BestState.BestBlockHash) {
+		view := NewUsedTxViewPoint()
+		view.SetBestHash(parentHash)
+
+		err := view.fetchUsedTx(b.Config.DataBase, block)
+		if err != nil {
+			return false, err
+		}
+
+		view.SetBestHash(block.Hash())
+		// Update the list used txs set using the state of the used tx view point. This
+		// entails adding the new
+		// ones created by the block.
+		err = b.StoreUsedTxFromUsedTxViewPoint(*view)
+		if err != nil {
+			return false, err
+		}
+
+		return true, nil
+	} else {
+		// we in sub chain
+		return false, nil
+	}
+}
 
 // countSpentOutputs returns the number of utxos the passed block spends.
 /*func countSpentOutputs(block *Block) int {

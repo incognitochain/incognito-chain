@@ -107,10 +107,11 @@ func calculateReward(
 	}
 }
 
+/**
 // createCoinbaseTx returns a coinbase transaction paying an appropriate subsidy
 // based on the passed block height to the provided address.  When the address
 // is nil, the coinbase transaction will instead be redeemable by anyone.
-
+*/
 func createCoinbaseTx(
 	params *blockchain.Params,
 	coinbaseScript []byte,
@@ -121,6 +122,7 @@ func createCoinbaseTx(
 	// specified.  Otherwise create a script that allows the coinbase to be
 	// redeemable by anyone.
 	var pkScript []byte
+	_ = pkScript
 
 	pkScript = []byte(addr) //@todo add public key of the receiver where
 
@@ -128,17 +130,17 @@ func createCoinbaseTx(
 	tx := &transaction.Tx{
 		Version: 1,
 		Type:    common.TxNormalType,
-		TxIn:    make([]transaction.TxIn, 0, 2),
-		TxOut:   make([]transaction.TxOut, 0, 1),
+		//TxIn:    make([]transaction.TxIn, 0, 2),
+		//TxOut:   make([]transaction.TxOut, 0, 1),
 	}
 	//create outpoint
-	outPoint := &transaction.OutPoint{
-		Hash: common.Hash{},
-		Vout: transaction.MaxPrevOutIndex,
-	}
+	//outPoint := &transaction.OutPoint{
+	//	Hash: common.Hash{},
+	//	Vout: transaction.MaxPrevOutIndex,
+	//}
 
-	txIn := *transaction.TxIn{}.NewTxIn(outPoint, coinbaseScript)
-	tx.AddTxIn(txIn)
+	//txIn := *transaction.TxIn{}.NewTxIn(outPoint, coinbaseScript)
+	//tx.AddTxIn(txIn)
 	//@todo add value of tx out logic
 	for rewardType, rewardValue := range rewardMap {
 		if rewardValue <= 0 {
@@ -152,8 +154,9 @@ func createCoinbaseTx(
 		if rewardType == "burnedCoins" {
 			pkScript = []byte(DEFAULT_ADDRESS_FOR_BURNING)
 		}
-		txOut := *transaction.TxOut{}.NewTxOut(rewardValue, pkScript, txOutTypeMap[rewardType])
-		tx.AddTxOut(txOut)
+		_ = txOutTypeMap
+		//txOut := *transaction.TxOut{}.NewTxOut(rewardValue, pkScript, txOutTypeMap[rewardType])
+		//tx.AddTxOut(txOut)
 	}
 
 	return tx, nil
@@ -162,7 +165,7 @@ func createCoinbaseTx(
 // spendTransaction updates the passed view by marking the inputs to the passed
 // transaction as spent.  It also adds all outputs in the passed transaction
 // which are not provably unspendable as available unspent transaction outputs.
-func spendTransaction(utxoView *blockchain.UtxoViewpoint, tx *transaction.Tx, height int32) error {
+/*func spendTransaction(utxoView *blockchain.UtxoViewpoint, tx *transaction.Tx, height int32) error {
 	for _, txIn := range tx.TxIn {
 		entry := utxoView.LookupEntry(txIn.PreviousOutPoint)
 		if entry != nil {
@@ -172,7 +175,7 @@ func spendTransaction(utxoView *blockchain.UtxoViewpoint, tx *transaction.Tx, he
 
 	utxoView.AddTxOuts(tx, height)
 	return nil
-}
+}*/
 
 func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 	[]transaction.Transaction,
@@ -194,12 +197,9 @@ func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 			continue
 		}
 		normalTx, _ := tx.(*transaction.Tx)
-		if len(normalTx.TxOut) > 0 {
-			txOutType := normalTx.TxOut[0].TxOutType
-			if txOutType == "" {
-				txOutType = common.TxOutCoinType
-			}
-			feeMap[txOutType] += txDesc.Fee
+		for _, desc := range normalTx.Desc {
+			joinSplitDescType := desc.Type
+			feeMap[joinSplitDescType] += txDesc.Fee
 		}
 	}
 	return txs, actionParamTxs, feeMap
@@ -297,7 +297,7 @@ mempoolLoop:
 	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
 		//@todo need apply validate tx, logic check all referenced here
-		// call function spendTransaction to mark utxo
+		// call function spendTransaction to mark utxo - (** no need because use privacy**)
 		utxos, err := g.chain.FetchUtxoView(*tx.(*transaction.Tx))
 		_ = utxos
 		_ = err

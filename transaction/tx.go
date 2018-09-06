@@ -22,6 +22,8 @@ type JoinSplitDesc struct {
 	Commitments   [][]byte           `json:Commitments`
 	Proof         *zksnark.PHGRProof `json:Proof`
 	EncryptedData []byte             `json:EncryptedData`
+	Type          string             `json:"Type"`
+	Reward        uint64             `json:"Reward"`
 }
 
 type Tx struct {

@@ -135,6 +135,19 @@ func (db *db) FetchNullifiers() ([][]byte, error) {
 	return txs, nil
 }
 
+func (db *db) HasNullifier(nullifier []byte) (bool, error) {
+	listNullifiers, err := db.FetchNullifiers()
+	if err != nil {
+		return false, err
+	}
+	for _, item := range listNullifiers {
+		if bytes.Equal(item, nullifier) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (db *db) StoreBestBlock(v interface{}) error {
 	val, err := json.Marshal(v)
 	if err != nil {
