@@ -78,12 +78,6 @@ type Config struct {
 	MessageListeners MessageListeners
 }
 
-type WrappedStream struct {
-	Stream net.Stream
-	Writer *bufio.Writer
-	Reader *bufio.Reader
-}
-
 // MessageListeners defines callback function pointers to invoke with message
 // listeners for a peer. Any listener which is not set to a concrete callback
 // during peer initialization is ignored. Execution of multiple message
