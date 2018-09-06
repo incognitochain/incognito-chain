@@ -780,6 +780,12 @@ class ProveRequest : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::std::string* release_rt();
   void set_allocated_rt(::std::string* rt);
 
+  // uint64 reward = 6;
+  void clear_reward();
+  static const int kRewardFieldNumber = 6;
+  ::google::protobuf::uint64 reward() const;
+  void set_reward(::google::protobuf::uint64 value);
+
   // @@protoc_insertion_point(class_scope:zksnark.ProveRequest)
  private:
 
@@ -789,6 +795,7 @@ class ProveRequest : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::google::protobuf::internal::ArenaStringPtr hsig_;
   ::google::protobuf::internal::ArenaStringPtr phi_;
   ::google::protobuf::internal::ArenaStringPtr rt_;
+  ::google::protobuf::uint64 reward_;
   mutable int _cached_size_;
   friend struct ::protobuf_zksnark_2eproto::TableStruct;
   friend void ::protobuf_zksnark_2eproto::InitDefaultsProveRequestImpl();
@@ -1272,6 +1279,12 @@ class VerifyRequest : public ::google::protobuf::Message /* @@protoc_insertion_p
   ::zksnark::PHGRProof* mutable_proof();
   void set_allocated_proof(::zksnark::PHGRProof* proof);
 
+  // uint64 reward = 6;
+  void clear_reward();
+  static const int kRewardFieldNumber = 6;
+  ::google::protobuf::uint64 reward() const;
+  void set_reward(::google::protobuf::uint64 value);
+
   // @@protoc_insertion_point(class_scope:zksnark.VerifyRequest)
  private:
 
@@ -1281,6 +1294,7 @@ class VerifyRequest : public ::google::protobuf::Message /* @@protoc_insertion_p
   ::google::protobuf::internal::ArenaStringPtr hsig_;
   ::google::protobuf::internal::ArenaStringPtr rt_;
   ::zksnark::PHGRProof* proof_;
+  ::google::protobuf::uint64 reward_;
   mutable int _cached_size_;
   friend struct ::protobuf_zksnark_2eproto::TableStruct;
   friend void ::protobuf_zksnark_2eproto::InitDefaultsVerifyRequestImpl();
@@ -2175,6 +2189,20 @@ inline void ProveRequest::set_allocated_rt(::std::string* rt) {
   // @@protoc_insertion_point(field_set_allocated:zksnark.ProveRequest.rt)
 }
 
+// uint64 reward = 6;
+inline void ProveRequest::clear_reward() {
+  reward_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ProveRequest::reward() const {
+  // @@protoc_insertion_point(field_get:zksnark.ProveRequest.reward)
+  return reward_;
+}
+inline void ProveRequest::set_reward(::google::protobuf::uint64 value) {
+  
+  reward_ = value;
+  // @@protoc_insertion_point(field_set:zksnark.ProveRequest.reward)
+}
+
 // -------------------------------------------------------------------
 
 // PHGRProof
@@ -2953,6 +2981,20 @@ inline ::google::protobuf::RepeatedPtrField< ::std::string>*
 VerifyRequest::mutable_commits() {
   // @@protoc_insertion_point(field_mutable_list:zksnark.VerifyRequest.commits)
   return &commits_;
+}
+
+// uint64 reward = 6;
+inline void VerifyRequest::clear_reward() {
+  reward_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 VerifyRequest::reward() const {
+  // @@protoc_insertion_point(field_get:zksnark.VerifyRequest.reward)
+  return reward_;
+}
+inline void VerifyRequest::set_reward(::google::protobuf::uint64 value) {
+  
+  reward_ = value;
+  // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.reward)
 }
 
 // -------------------------------------------------------------------

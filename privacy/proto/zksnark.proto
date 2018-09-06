@@ -40,6 +40,7 @@ message ProveRequest {
     bytes hsig = 3;
     bytes phi = 4;
     bytes rt = 5;
+    uint64 reward = 6;
 }
 
 message PHGRProof {
@@ -63,6 +64,7 @@ message VerifyRequest {
     bytes rt = 3;
     repeated bytes nullifiers = 4;
     repeated bytes commits = 5;
+    uint64 reward = 6;
 }
 
 message VerifyReply {
