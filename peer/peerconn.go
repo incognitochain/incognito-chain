@@ -32,8 +32,7 @@ type PeerConn struct {
 	RawAddress       string
 	ListeningAddress common.SimpleAddr
 
-	Seed      int64
-	FlagMutex sync.Mutex
+	flagMutex sync.Mutex
 	Config    Config
 
 	sendMessageQueue chan outMsg
@@ -98,46 +97,46 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			switch realType {
 			case reflect.TypeOf(&wire.MessageTx{}):
 				if self.Config.MessageListeners.OnTx != nil {
-					self.FlagMutex.Lock()
+					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnTx(self, message.(*wire.MessageTx))
-					self.FlagMutex.Unlock()
+					self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageBlock{}):
 				if self.Config.MessageListeners.OnBlock != nil {
-					self.FlagMutex.Lock()
+					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnBlock(self, message.(*wire.MessageBlock))
-					self.FlagMutex.Unlock()
+					self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageGetBlocks{}):
 				if self.Config.MessageListeners.OnGetBlocks != nil {
-					self.FlagMutex.Lock()
+					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnGetBlocks(self, message.(*wire.MessageGetBlocks))
-					self.FlagMutex.Unlock()
+					self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageVersion{}):
 				if self.Config.MessageListeners.OnVersion != nil {
-					self.FlagMutex.Lock()
+					self.flagMutex.Lock()
 					versionMessage := message.(*wire.MessageVersion)
 					self.Config.MessageListeners.OnVersion(self, versionMessage)
-					self.FlagMutex.Unlock()
+					self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageVerAck{}):
-				self.FlagMutex.Lock()
+				self.flagMutex.Lock()
 				self.verAckReceived = true
-				self.FlagMutex.Unlock()
+				self.flagMutex.Unlock()
 				if self.Config.MessageListeners.OnVerAck != nil {
-					self.FlagMutex.Lock()
+					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnVerAck(self, message.(*wire.MessageVerAck))
-					self.FlagMutex.Unlock()
+					self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageGetAddr{}):
-				self.FlagMutex.Lock()
+				self.flagMutex.Lock()
 				self.verAckReceived = true
-				self.FlagMutex.Unlock()
+				self.flagMutex.Unlock()
 				if self.Config.MessageListeners.OnGetAddr != nil {
-					self.FlagMutex.Lock()
+					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnGetAddr(self, message.(*wire.MessageGetAddr))
-					self.FlagMutex.Unlock()
+					self.flagMutex.Unlock()
 				}
 			default:
 				Logger.log.Warnf("Received unhandled message of type %v "+
@@ -158,7 +157,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		select {
 		case outMsg := <-self.sendMessageQueue:
 			{
-				self.FlagMutex.Lock()
+				self.flagMutex.Lock()
 				// TODO
 				// send message
 				messageByte, err := outMsg.msg.JsonSerialize()
@@ -176,7 +175,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				rw.Writer.WriteString(message)
 				rw.Writer.Flush()
 
-				self.FlagMutex.Unlock()
+				self.flagMutex.Unlock()
 
 			}
 		case <-self.quit:
@@ -202,9 +201,9 @@ func (self PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- 
 }
 
 func (p *PeerConn) VerAckReceived() bool {
-	p.FlagMutex.Lock()
+	p.flagMutex.Lock()
 	verAckReceived := p.verAckReceived
-	p.FlagMutex.Unlock()
+	p.flagMutex.Unlock()
 
 	return verAckReceived
 }
