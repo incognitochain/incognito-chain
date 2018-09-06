@@ -332,13 +332,15 @@ listen:
 			}
 			Logger.log.Infof("Ping response", response)
 			for _, rawPeer := range response {
-				keyPair := &cashec.KeyPair{}
-				keyPair.Import([]byte(rawPeer.SealerPrvKey))
+				if rawPeer.SealerPrvKey != "" && !strings.Contains(rawPeer.RawAddress, self.PeerId.String()) {
+					keyPair := &cashec.KeyPair{}
+					keyPair.Import([]byte(rawPeer.SealerPrvKey))
 
-				_, exist := self.Peers[string(keyPair.PublicKey)]
+					_, exist := self.Peers[string(keyPair.PublicKey)]
 
-				if !exist {
-					self.Peers[string(keyPair.PublicKey)] = rawPeer.RawAddress
+					if !exist {
+						self.Peers[string(keyPair.PublicKey)] = rawPeer.RawAddress
+					}
 				}
 			}
 			Logger.log.Infof("Ping response Peers", self.Peers)
