@@ -198,7 +198,7 @@ func (self *Peer) Start() error {
 }
 
 func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
-	Logger.log.Infof("Opening stream to PEER ID - %s \n", self.PeerId.String())
+	Logger.log.Infof("Opening stream to PEER ID - %s \n", peer.PeerId.String())
 
 	self.outboundMutex.Lock()
 
@@ -218,7 +218,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	}
 
 	if len(self.PeerConns) >= self.MaxOutbound {
-		Logger.log.Infof("Max Peer Conn")
+		Logger.log.Infof("Max Peer Outbound Connection")
 
 		self.outboundMutex.Unlock()
 		return nil, nil
