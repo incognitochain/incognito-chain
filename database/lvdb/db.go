@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 var (
@@ -99,7 +97,7 @@ func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
 	return ret, nil
 }
 
-func (db *db) StoreTx(tx []byte) error {
+func (db *db) StoreNullifiers(nullifier []byte) error {
 	res, err := db.ldb.Get(usedTxKey, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return errors.Wrap(err, "db.ldb.Get")
@@ -111,7 +109,7 @@ func (db *db) StoreTx(tx []byte) error {
 			return errors.Wrap(err, "json.Unmarshal")
 		}
 	}
-	txs = append(txs, tx)
+	txs = append(txs, nullifier)
 	b, err := json.Marshal(txs)
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
@@ -120,6 +118,21 @@ func (db *db) StoreTx(tx []byte) error {
 		return err
 	}
 	return nil
+}
+
+func (db *db) FetchNullifiers() ([][]byte, error) {
+	res, err := db.ldb.Get(usedTxKey, nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return make([][]byte, 0), errors.Wrap(err, "db.ldb.Get")
+	}
+
+	var txs [][]byte
+	if len(res) > 0 {
+		if err := json.Unmarshal(res, &txs); err != nil {
+			return make([][]byte, 0), errors.Wrap(err, "json.Unmarshal")
+		}
+	}
+	return txs, nil
 }
 
 func (db *db) StoreBestBlock(v interface{}) error {
@@ -210,7 +223,7 @@ func (db *db) getKeyIdx(h *common.Hash) []byte {
 	return key
 }
 
-func (db *db) StoreUtxoEntry(op *transaction.OutPoint, v interface{}) error {
+/*func (db *db) StoreUtxoEntry(op *transaction.OutPoint, v interface{}) error {
 	val, err := json.Marshal(v)
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
@@ -238,4 +251,4 @@ func (db *db) DeleteUtxoEntry(op *transaction.OutPoint) error {
 
 func (db *db) getUtxoKey(op *transaction.OutPoint) string {
 	return fmt.Sprintf("%s%d", op.Hash.String(), op.Vout)
-}
+}*/

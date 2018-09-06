@@ -11,13 +11,12 @@ import (
 	"time"
 	"encoding/json"
 	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 type BlockChain struct {
 	Config    Config
 	BestState *BestState
-
+	
 	chainLock sync.RWMutex
 }
 
@@ -246,7 +245,7 @@ func (self *BlockChain) StoreBlockIndex(block *Block) error {
 // in the database based on the provided utxo view contents and state.  In
 // particular, only the entries that have been marked as modified are written
 // to the database.
-func (self *BlockChain) StoreUtxoView(view *UtxoViewpoint) error {
+/*func (self *BlockChain) StoreUtxoView(view *UtxoViewpoint) error {
 	for outpoint, entry := range view.entries {
 		// No need to update the database if the entry was not modified.
 		if entry == nil || !entry.isModified() {
@@ -269,7 +268,7 @@ func (self *BlockChain) StoreUtxoView(view *UtxoViewpoint) error {
 		}
 	}
 	return nil
-}
+}*/
 
 /**
 Get all blocks in chain
@@ -315,7 +314,7 @@ func (self *BlockChain) GetAllHashBlocks() ([]*common.Hash, error) {
 // so the returned view can be examined for duplicate transactions.
 //
 // This function is safe for concurrent access however the returned view is NOT.
-func (b *BlockChain) FetchUtxoView(tx transaction.Tx) (*UtxoViewpoint, error) {
+/*func (b *BlockChain) FetchUtxoView(tx transaction.Tx) (*UtxoViewpoint, error) {
 	neededSet := make(map[transaction.OutPoint]struct{})
 
 	// create outpoint map for txout of tx by itself hash
@@ -339,7 +338,7 @@ func (b *BlockChain) FetchUtxoView(tx transaction.Tx) (*UtxoViewpoint, error) {
 	err := view.fetchUtxosMain(b.Config.DataBase, neededSet)
 	b.chainLock.RUnlock()
 	return view, err
-}
+}*/
 
 // CheckTransactionInputs performs a series of checks on the inputs to a
 // transaction to ensure they are valid.  An example of some of the checks
@@ -352,9 +351,9 @@ func (b *BlockChain) FetchUtxoView(tx transaction.Tx) (*UtxoViewpoint, error) {
 //
 // NOTE: The transaction MUST have already been sanity checked with the
 // CheckTransactionSanity function prior to calling this function.
-func (self *BlockChain) CheckTransactionInputs(tx *transaction.Transaction, txHeight int32, utxoView *UtxoViewpoint, chainParams *Params) (float64, error) {
+/*func (self *BlockChain) CheckTransactionInputs(tx *transaction.Transaction, txHeight int32, utxoView *UtxoViewpoint, chainParams *Params) (float64, error) {
 	return 0, nil
-}
+}*/
 
 // connectBestChain handles connecting the passed block to the chain while
 // respecting proper chain selection according to the chain with the most
@@ -364,7 +363,7 @@ func (self *BlockChain) CheckTransactionInputs(tx *transaction.Transaction, txHe
 // cumulatively has the most proof of work.  It returns whether or not the block
 // ended up on the main chain (either due to extending the main chain or causing
 // a reorganization to become the main chain).
-func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
+/*func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 	// We are extending the main (best) chain with a new block.  This is the
 	// most common case.
 	parentHash := &block.Header.PrevBlockHash
@@ -400,10 +399,10 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 		// we in sub chain
 		return false, nil
 	}
-}
+}*/
 
 // countSpentOutputs returns the number of utxos the passed block spends.
-func countSpentOutputs(block *Block) int {
+/*func countSpentOutputs(block *Block) int {
 	// Exclude the coinbase transaction since it can't spend anything.
 	var numSpent int
 	for _, tx := range block.Transactions[1:] {
@@ -412,4 +411,4 @@ func countSpentOutputs(block *Block) int {
 		}
 	}
 	return numSpent
-}
+}*/

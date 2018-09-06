@@ -1,5 +1,6 @@
 package blockchain
 
+/*
 import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
@@ -365,3 +366,4 @@ func (view *UtxoViewpoint) connectTransactions(block *Block, stxos *[]SpentTxOut
 	view.SetBestHash(block.Hash())
 	return nil
 }
+*/

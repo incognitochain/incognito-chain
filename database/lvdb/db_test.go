@@ -68,14 +68,14 @@ func TestStoreTxOut(t *testing.T) {
 	defer teardown()
 
 	tx := []byte("abcd")
-	err := db.StoreTx(tx)
+	err := db.StoreNullifiers(tx)
 	if err != nil {
-		t.Errorf("db.StoreTx %v", err)
+		t.Errorf("db.StoreNullifiers %v", err)
 	}
 
 	tx = []byte("efgh")
-	err = db.StoreTx(tx)
+	err = db.StoreNullifiers(tx)
 	if err != nil {
-		t.Errorf("db.StoreTx %v", err)
+		t.Errorf("db.StoreNullifiers %v", err)
 	}
 }

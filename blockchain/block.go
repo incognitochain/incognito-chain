@@ -1,8 +1,6 @@
 package blockchain
 
 import (
-	"encoding/json"
-	"errors"
 	"strconv"
 
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -37,7 +35,7 @@ type Block struct {
 /**
 Customer UnmarshalJSON to parse list Tx
 */
-func (self *Block) UnmarshalJSON(data []byte) error {
+/*func (self *Block) UnmarshalJSON(data []byte) error {
 	type Alias Block
 	temp := &struct {
 		Transactions []map[string]interface{}
@@ -119,7 +117,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 
 	self.Header = temp.Alias.Header
 	return nil
-}
+}*/
 
 func (self *Block) AddTransaction(tx transaction.Transaction) error {
 	self.Transactions = append(self.Transactions, tx)

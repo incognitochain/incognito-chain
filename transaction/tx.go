@@ -2,57 +2,78 @@ package transaction
 
 import (
 	"strconv"
-	"fmt"
-
 	"github.com/ninjadotorg/cash-prototype/common"
 	//"encoding/json"
+	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
 )
 
-type Tx struct {
+/*type Tx struct {
 	Version  int     `json:"Version"`
 	Type     string  `json:"Type"` // NORMAL / ACTION_PARAMS
 	TxIn     []TxIn  `json:"TxIn"`
 	TxOut    []TxOut `json:"TxOut"`
 	LockTime int     `json:"LockTime"`
+}*/
+
+// TODO(@0xbunyip): add randomSeed, MACs and epk
+type JoinSplitDesc struct {
+	Anchor        []byte             `json:Anchor`
+	Nullifiers    [][]byte           `json:Nullifiers`
+	Commitments   [][]byte           `json:Commitments`
+	Proof         *zksnark.PHGRProof `json:Proof`
+	EncryptedData []byte             `json:EncryptedData`
 }
 
-func (self *Tx) AddTxIn(ti TxIn) {
-	self.TxIn = append(self.TxIn, ti)
+type Tx struct {
+	Version  int    `json:"Version"`
+	Type     string `json:"Type"` // NORMAL / ACTION_PARAMS
+	LockTime int    `json:"LockTime"`
+	Fee      uint64 `json:"Fee"`
+
+	Desc     []*JoinSplitDesc `json:Desc`
+	JSPubKey []byte           `json:JSPubKey` // 32 bytes
+	JSSig    []byte           `json:JSSig`    // 64 bytes
 }
 
-func (self *Tx) GetTxIn() []TxIn {
-	return self.TxIn
-}
-
-func (self *Tx) AddTxOut(to TxOut) {
-	self.TxOut = append(self.TxOut, to)
-}
-
-func (self *Tx) GetTxOUt() []TxOut {
-	return self.TxOut
-}
-
-func (self *Tx) Hash() (*common.Hash) {
-	record := strconv.Itoa(self.Version) + strconv.Itoa(self.Version)
-	record += self.Type
-	for _, txin := range self.TxIn {
-		record += fmt.Sprint(txin.Sequence)
-		record += string(txin.SignatureScript)
-		record += fmt.Sprint(txin.PreviousOutPoint.Vout)
-		record += fmt.Sprint(txin.PreviousOutPoint.Hash.String())
+func (desc *JoinSplitDesc) toString() string {
+	s := string(desc.Anchor)
+	for _, nf := range desc.Nullifiers {
+		s += string(nf)
 	}
-	for _, txout := range self.TxOut {
-		record += fmt.Sprint(txout.Value)
-		record += string(txout.PkScript)
+	for _, cm := range desc.Commitments {
+		s += string(cm)
 	}
+	s += desc.Proof.String()
+	s += string(desc.EncryptedData)
+	return s
+}
+
+// Hash returns the hash of all fields of the transaction
+func (tx *Tx) Hash() *common.Hash {
+	record := strconv.Itoa(tx.Version)
+	record += tx.Type
+	record += strconv.Itoa(tx.LockTime)
+	record += strconv.Itoa(len(tx.Desc))
+	for _, desc := range tx.Desc {
+		record += desc.toString()
+	}
+	record += string(tx.JSPubKey)
+	record += string(tx.JSSig)
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
-func (self *Tx) ValidateTransaction() (bool) {
+// ValidateTransaction returns true if transaction is valid:
+// - All data fields are well formed
+// - JSDescriptions are valid (zk-snark proof satisfied)
+// - Signature matches the signing public key
+// Note: This method doesn't check for double spending
+func (tx *Tx) ValidateTransaction() bool {
+	// TODO(@0xbunyip): implement
 	return true
 }
 
-func (self *Tx) GetType() (string) {
-	return self.Type
+// GetType returns the type of the transaction
+func (tx *Tx) GetType() string {
+	return tx.Type
 }
