@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	mrand "math/rand"
-	"net/rpc"
 	"reflect"
 	"strings"
 	"sync"
@@ -66,7 +65,8 @@ type Peer struct {
 
 	Peers []string
 
-	quit chan struct{}
+	quit           chan struct{}
+	disconnectPeer chan *PeerConn
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -183,6 +183,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.PeerId = peerid
 	//self.sendMessageQueue = make(chan outMsg, 1)
 	self.quit = make(chan struct{}, 1)
+	self.disconnectPeer = make(chan *PeerConn)
 
 	return &self, nil
 }
@@ -210,6 +211,8 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		return nil, err
 	}
 
+	defer stream.Close()
+
 	remotePeerId := stream.Conn().RemotePeer()
 
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
@@ -223,9 +226,9 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		ReaderWriterStream: rw,
 		quit:               make(chan struct{}),
 		sendMessageQueue:   make(chan outMsg, 1),
-		HandleConnected:    peer.handleConnected,
-		HandleDisconnected: peer.handleDisconnected,
-		HandleFailed:       peer.handleFailed,
+		HandleConnected:    self.handleConnected,
+		HandleDisconnected: self.handleDisconnected,
+		HandleFailed:       self.handleFailed,
 	}
 
 	self.PeerConns[peerConn.PeerId] = &peerConn
@@ -236,7 +239,17 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	peerConn.RetryCount = 0
 	peerConn.updateState(ConnEstablished)
 
-	peer.handleConnected(&peerConn)
+	go self.handleConnected(&peerConn)
+
+	for {
+		select {
+		case peerConnT := <-self.disconnectPeer:
+			if &peerConn == peerConnT {
+				Logger.log.Infof("NewPeerConnection Close Stream")
+				break
+			}
+		}
+	}
 
 	return &peerConn, nil
 }
@@ -255,10 +268,6 @@ func (self *Peer) HandleStream(stream net.Stream) {
 
 	// Create a buffer stream for non blocking read and write.
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
-	//self.InboundReaderWriterStreams[remotePeerId] = rw
-
-	//go self.InMessageHandler(rw)
-	//go self.OutMessageHandler(rw)
 
 	peerConn := PeerConn{
 		IsOutbound:         false,
@@ -282,39 +291,49 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	peerConn.RetryCount = 0
 	peerConn.updateState(ConnEstablished)
 
-	self.handleConnected(&peerConn)
+	go self.handleConnected(&peerConn)
+
+	for {
+		select {
+		case peerConnT := <-self.disconnectPeer:
+			if &peerConn == peerConnT {
+				Logger.log.Infof("HandleStream Close Stream")
+				break
+			}
+		}
+	}
 }
 
 func (self Peer) HandleExchangePeers() {
-	Logger.log.Infof("Start Exchange Peers")
-	var client *rpc.Client
-	var err error
-
-listen:
-	for {
-		Logger.log.Infof("Peers", self.Peers)
-		if client == nil {
-			client, err = rpc.Dial("tcp", "127.0.0.1:9339")
-			if err != nil {
-				Logger.log.Error("[Exchange Peers] re-connect:", err)
-			}
-		}
-		if client != nil {
-			Logger.log.Infof("[Exchange Peers] Ping")
-			var response []string
-			err := client.Call("Handler.Ping", self.RawAddress, &response)
-			if err != nil {
-				Logger.log.Error("[Exchange Peers] Ping:", err)
-				client = nil
-				time.Sleep(time.Second * 2)
-
-				goto listen
-			}
-			self.Peers = response
-			Logger.log.Infof("Ping Response", response)
-		}
-		time.Sleep(time.Second * 2)
-	}
+	//	Logger.log.Infof("Start Exchange Peers")
+	//	var client *rpc.Client
+	//	var err error
+	//
+	//listen:
+	//	for {
+	//		Logger.log.Infof("Peers", self.Peers)
+	//		if client == nil {
+	//			client, err = rpc.Dial("tcp", "127.0.0.1:9339")
+	//			if err != nil {
+	//				Logger.log.Error("[Exchange Peers] re-connect:", err)
+	//			}
+	//		}
+	//		if client != nil {
+	//			Logger.log.Infof("[Exchange Peers] Ping")
+	//			var response []string
+	//			err := client.Call("Handler.Ping", self.RawAddress, &response)
+	//			if err != nil {
+	//				Logger.log.Error("[Exchange Peers] Ping:", err)
+	//				client = nil
+	//				time.Sleep(time.Second * 2)
+	//
+	//				goto listen
+	//			}
+	//			self.Peers = response
+	//			Logger.log.Infof("Ping Response", response)
+	//		}
+	//		time.Sleep(time.Second * 2)
+	//	}
 }
 
 // QueueMessageWithEncoding adds the passed bitcoin message to the peer send
@@ -391,9 +410,11 @@ func (self *Peer) handleConnected(peerConn *PeerConn) {
 func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.PeerId.String())
 
+	peerConn.ListenerPeer.disconnectPeer <- peerConn
+
 	if peerConn.IsOutbound {
 		if peerConn.State() != ConnCanceled {
-
+			go self.retryPeerConnection(peerConn)
 		}
 	} else {
 		_peerConn, ok := self.PeerConns[peerConn.PeerId]
@@ -429,7 +450,7 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 			peerConn.updateState(ConnPending)
 			_, err := peerConn.ListenerPeer.NewPeerConnection(peerConn.Peer)
 			if err != nil {
-				self.retryPeerConnection(peerConn)
+				go self.retryPeerConnection(peerConn)
 			}
 		} else {
 			peerConn.updateState(ConnCanceled)

@@ -203,8 +203,8 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 
 	// Logger.log.Infof("Send a msgVersion: %s", msgNewJSON)
 	// rw := self.syncPeer.OutboundReaderWriterStreams[msg.SenderID]
-	// self.syncPeer.FlagMutex.Lock()
+	// self.syncPeer.flagMutex.Lock()
 	// rw.Writer.WriteString(msgNewJSON)
 	// rw.Writer.Flush()
-	// self.syncPeer.FlagMutex.Unlock()
+	// self.syncPeer.flagMutex.Unlock()
 }
