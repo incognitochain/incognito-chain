@@ -581,11 +581,15 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 		if err != nil {
 			return
 		}
-		addresses := []string{peerConn.Peer.RawAddress}
+
+		addresses := []string{}
+		peers := self.AddrManager.AddressCache()
+		for _, peer := range peers {
+			addresses = append(addresses, peer.RawAddress)
+		}
 		msgS.(*wire.MessageAddr).RawAddresses = addresses
 		var doneChan chan<- struct{}
 		for _, _peerConn := range listen.PeerConns {
-			log.Printf("Send message addr to PEER %s", _peerConn.Peer.PeerId)
 			_peerConn.QueueMessageWithEncoding(msgS, doneChan)
 		}
 	}
