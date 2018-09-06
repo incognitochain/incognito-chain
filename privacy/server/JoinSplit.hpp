@@ -79,7 +79,7 @@ public:
         // std::array<uint256, NumInputs>& out_hmacs,
         // std::array<uint256, NumInputs>& out_nullifiers,
         // std::array<uint256, NumOutputs>& out_commitments,
-        // uint64_t vpub_old,
+        uint64_t vpub_old,
         // uint64_t vpub_new,
         const uint256& rt,
         uint256 &h_sig,
@@ -99,7 +99,7 @@ public:
         const std::array<uint256, NumInputs>& macs,
         const std::array<uint256, NumInputs>& nullifiers,
         const std::array<uint256, NumOutputs>& commitments,
-        // uint64_t vpub_old,
+        uint64_t vpub_old,
         // uint64_t vpub_new,
         const uint256& rt,
         uint256 &h_sig
