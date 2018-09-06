@@ -5,7 +5,7 @@ import (
 )
 
 type MessageAddr struct {
-	RawRemoteAddress string
+	RawAddresses []string
 }
 
 func (self MessageAddr) MessageType() string {

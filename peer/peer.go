@@ -61,6 +61,7 @@ type Peer struct {
 	Seed          int64
 	outboundMutex sync.Mutex
 	Config        Config
+	MaxOutbound   int
 
 	PeerConns map[peer.ID]*PeerConn
 
@@ -182,6 +183,8 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.disconnectPeer = make(chan *PeerConn)
 	self.Peers = make(map[string]string)
 
+	self.outboundMutex = sync.Mutex{}
+
 	return &self, nil
 }
 
@@ -202,9 +205,28 @@ func (self *Peer) Start() error {
 func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER ID - %s \n", self.PeerId.String())
 
+	self.outboundMutex.Lock()
+
+	_peerConn, ok := self.PeerConns[peer.PeerId]
+	if ok && _peerConn.State() == ConnEstablished {
+		Logger.log.Infof("Existed PEER ID - %s", peer.PeerId.String())
+
+		self.outboundMutex.Unlock()
+		return nil, nil
+	}
+
+	if len(self.PeerConns) >= self.MaxOutbound {
+		Logger.log.Infof("Max Peer Conn")
+
+		self.outboundMutex.Unlock()
+		return nil, nil
+	}
+
 	stream, err := self.Host.NewStream(context.Background(), peer.PeerId, "/blockchain/1.0.0")
 	if err != nil {
 		Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", self.PeerId.String(), err.Error())
+
+		self.outboundMutex.Unlock()
 		return nil, err
 	}
 
@@ -237,6 +259,8 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	peerConn.updateState(ConnEstablished)
 
 	go self.handleConnected(&peerConn)
+
+	self.outboundMutex.Unlock()
 
 	for {
 		select {

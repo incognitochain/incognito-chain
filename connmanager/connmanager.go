@@ -190,6 +190,7 @@ func (self ConnManager) Connect(addr string) {
 	targetAddr := ipfsaddr.Decapsulate(targetPeerAddr)
 
 	for _, listen := range self.Config.ListenerPeers {
+		listen.MaxOutbound = int(self.Config.TargetOutbound)
 
 		listen.HandleConnected = self.handleConnected
 		listen.HandleDisconnected = self.handleDisconnected
