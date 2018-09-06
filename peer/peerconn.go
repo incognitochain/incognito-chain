@@ -197,7 +197,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 // encoding/decoding blocks and transactions.
 //
 // This function is safe for concurrent access.
-func (self PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
+func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
 	self.sendMessageQueue <- outMsg{msg: msg, doneChan: doneChan}
 }
 
