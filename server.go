@@ -577,14 +577,29 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	peerConn.QueueMessageWithEncoding(msgS, dc)
 }
 
-func (self *Server) OnGetAddr(_ *peer.PeerConn, msg *wire.MessageGetAddr) {
+func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr) {
 	// TODO for ongetaddr message
 	log.Printf("Receive getaddr message")
+
+	peers := self.AddrManager.AddressCache()
+	for _, peer := range peers {
+		msgS, err := wire.MakeEmptyMessage(wire.CmdAddr)
+		if err != nil {
+			return
+		}
+
+		msgS.(*wire.MessageAddr).RawRemoteAddress = peer.RawAddress
+		var dc chan<- struct{}
+		peerConn.QueueMessageWithEncoding(msgS, dc)
+	}
+
 }
 
 func (self *Server) OnAddr(_ *peer.PeerConn, msg *wire.MessageAddr) {
 	// TODO for onaddr message
 	log.Printf("Receive addr message")
+
+	go self.ConnManager.Connect(msg.RawRemoteAddress)
 }
 
 /**

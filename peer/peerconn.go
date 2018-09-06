@@ -61,12 +61,14 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			return
 		}
 
-		Logger.log.Infof("Received message: %s \n", str)
+		//Logger.log.Infof("Received message: %s \n", str)
 		if str != "\n" {
 
 			// Parse Message header
 			jsonDecodeString, _ := hex.DecodeString(str)
 			messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
+
+			Logger.log.Infof("Received message: %s \n", jsonDecodeString)
 
 			commandInHeader := messageHeader[:12]
 			commandInHeader = bytes.Trim(messageHeader, "\x00")
@@ -127,8 +129,8 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				if self.Config.MessageListeners.OnVerAck != nil {
 					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnVerAck(self, message.(*wire.MessageVerAck))
-					self.flagMutex.Unlock()
 				}
+				self.flagMutex.Unlock()
 			case reflect.TypeOf(&wire.MessageGetAddr{}):
 				self.flagMutex.Lock()
 				self.verAckReceived = true
@@ -136,8 +138,17 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				if self.Config.MessageListeners.OnGetAddr != nil {
 					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnGetAddr(self, message.(*wire.MessageGetAddr))
-					self.flagMutex.Unlock()
 				}
+				self.flagMutex.Unlock()
+			case reflect.TypeOf(&wire.MessageAddr{}):
+				self.flagMutex.Lock()
+				self.verAckReceived = true
+				self.flagMutex.Unlock()
+				if self.Config.MessageListeners.OnGetAddr != nil {
+					self.flagMutex.Lock()
+					self.Config.MessageListeners.OnAddr(self, message.(*wire.MessageAddr))
+				}
+				self.flagMutex.Unlock()
 			default:
 				Logger.log.Warnf("Received unhandled message of type %v "+
 					"from %v", realType, self)
@@ -171,7 +182,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				messageByte = append(messageByte, header...)
 				message := hex.EncodeToString(messageByte)
 				message += "\n"
-				Logger.log.Infof("Send a message %s %s: %s", self.PeerId.String(), outMsg.msg.MessageType(), message)
+				Logger.log.Infof("Send a message %s %s: %s", self.PeerId.String(), outMsg.msg.MessageType(), string(messageByte))
 				rw.Writer.WriteString(message)
 				rw.Writer.Flush()
 

@@ -2,18 +2,14 @@ package wire
 
 import (
 	"encoding/json"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/libp2p/go-libp2p-peer"
 )
 
 type MessageAddr struct {
-	RemoteAddress    common.SimpleAddr
 	RawRemoteAddress string
-	RemotePeerId     peer.ID
 }
 
 func (self MessageAddr) MessageType() string {
-	return CmdGetAddr
+	return CmdAddr
 }
 
 func (self MessageAddr) MaxPayloadLength(pver int) int {

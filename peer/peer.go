@@ -4,12 +4,10 @@ import (
 	"bufio"
 	"context"
 	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
 	mrand "math/rand"
-	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -346,41 +344,41 @@ func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- stru
 // negotiateOutboundProtocol sends our version message then waits to receive a
 // version message from the peer.  If the events do not occur in that order then
 // it returns an error.
-func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
-	// Generate a unique nonce for this peer so self connections can be
-	// detected.  This is accomplished by adding it to a size-limited map of
-	// recently seen nonces.
-	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
-	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
-	msg.(*wire.MessageVersion).LocalAddress = self.ListeningAddress
-	msg.(*wire.MessageVersion).RawLocalAddress = self.RawAddress
-	msg.(*wire.MessageVersion).LocalPeerId = self.PeerId
-	msg.(*wire.MessageVersion).RemoteAddress = peer.ListeningAddress
-	msg.(*wire.MessageVersion).RawRemoteAddress = peer.RawAddress
-	msg.(*wire.MessageVersion).RemotePeerId = peer.PeerId
-	msg.(*wire.MessageVersion).LastBlock = 0
-	msg.(*wire.MessageVersion).ProtocolVersion = 1
-	if err != nil {
-		return err
-	}
-	msgVersion, err := msg.JsonSerialize()
-	if err != nil {
-		return err
-	}
-	header := make([]byte, wire.MessageHeaderSize)
-	CmdType, _ := wire.GetCmdType(reflect.TypeOf(msg))
-	copy(header[:], []byte(CmdType))
-	msgVersion = append(msgVersion, header...)
-	msgVersionStr := hex.EncodeToString(msgVersion)
-	msgVersionStr += "\n"
-	Logger.log.Infof("Send a msgVersion: %s", msgVersionStr)
-	rw := self.PeerConns[peer.PeerId].ReaderWriterStream
-	self.FlagMutex.Lock()
-	rw.Writer.WriteString(msgVersionStr)
-	rw.Writer.Flush()
-	self.FlagMutex.Unlock()
-	return nil
-}
+//func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
+//	// Generate a unique nonce for this peer so self connections can be
+//	// detected.  This is accomplished by adding it to a size-limited map of
+//	// recently seen nonces.
+//	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
+//	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
+//	msg.(*wire.MessageVersion).LocalAddress = self.ListeningAddress
+//	msg.(*wire.MessageVersion).RawLocalAddress = self.RawAddress
+//	msg.(*wire.MessageVersion).LocalPeerId = self.PeerId
+//	msg.(*wire.MessageVersion).RemoteAddress = peer.ListeningAddress
+//	msg.(*wire.MessageVersion).RawRemoteAddress = peer.RawAddress
+//	msg.(*wire.MessageVersion).RemotePeerId = peer.PeerId
+//	msg.(*wire.MessageVersion).LastBlock = 0
+//	msg.(*wire.MessageVersion).ProtocolVersion = 1
+//	if err != nil {
+//		return err
+//	}
+//	msgVersion, err := msg.JsonSerialize()
+//	if err != nil {
+//		return err
+//	}
+//	header := make([]byte, wire.MessageHeaderSize)
+//	CmdType, _ := wire.GetCmdType(reflect.TypeOf(msg))
+//	copy(header[:], []byte(CmdType))
+//	msgVersion = append(msgVersion, header...)
+//	msgVersionStr := hex.EncodeToString(msgVersion)
+//	msgVersionStr += "\n"
+//	Logger.log.Infof("Send a msgVersion: %s", msgVersionStr)
+//	rw := self.PeerConns[peer.PeerId].ReaderWriterStream
+//	self.FlagMutex.Lock()
+//	rw.Writer.WriteString(msgVersionStr)
+//	rw.Writer.Flush()
+//	self.FlagMutex.Unlock()
+//	return nil
+//}
 
 func (self *Peer) Stop() {
 	Logger.log.Infof("PEER %s Stop", self.PeerId.String())
