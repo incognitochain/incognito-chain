@@ -322,6 +322,7 @@ listen:
 			Logger.log.Infof("[Exchange Peers] Ping")
 			var response []server.RawPeer
 			args := &server.PingArgs{self.RawAddress, self.Config.SealerPrvKey}
+			Logger.log.Infof("[Exchange Peers] Ping", args)
 			err := client.Call("Handler.Ping", args, &response)
 			if err != nil {
 				Logger.log.Error("[Exchange Peers] Ping:", err)
