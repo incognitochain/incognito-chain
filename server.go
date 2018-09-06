@@ -471,12 +471,9 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 		}
 		peer, err := peer.Peer{
 			Seed:             seed,
-			FlagMutex:        sync.Mutex{},
 			ListeningAddress: addr,
 			Config:           *self.NewPeerConfig(),
 			PeerConns:        make(map[peer2.ID]*peer.PeerConn),
-			//OutboundReaderWriterStreams: make(map[peer2.ID]*bufio.ReadWriter),
-			//InboundReaderWriterStreams:  make(map[peer2.ID]*bufio.ReadWriter),
 		}.NewPeer()
 		if err != nil {
 			return nil, err
@@ -508,6 +505,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnInvalidBlock: self.OnInvalidBlock,
 			OnSignedBlock:  self.OnSignedBlock,
 		},
+		SealerPrvKey: cfg.SealerPrvKey,
 	}
 }
 
@@ -593,14 +591,36 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	peerConn.QueueMessageWithEncoding(msgS, dc)
 }
 
-func (self *Server) OnGetAddr(_ *peer.PeerConn, msg *wire.MessageGetAddr) {
+func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr) {
 	// TODO for ongetaddr message
 	log.Printf("Receive getaddr message")
+
+	msgS, err := wire.MakeEmptyMessage(wire.CmdAddr)
+	if err != nil {
+		return
+	}
+
+	addresses := []string{}
+	peers := self.AddrManager.AddressCache()
+	for _, peer := range peers {
+		addresses = append(addresses, peer.RawAddress)
+	}
+
+	msgS.(*wire.MessageAddr).RawAddresses = addresses
+	var dc chan<- struct{}
+	peerConn.QueueMessageWithEncoding(msgS, dc)
 }
 
 func (self *Server) OnAddr(_ *peer.PeerConn, msg *wire.MessageAddr) {
 	// TODO for onaddr message
 	log.Printf("Receive addr message")
+
+	for _, addr := range msg.RawAddresses {
+		if !self.AddrManager.ExistedAddr(addr) {
+			go self.ConnManager.Connect(addr)
+		}
+	}
+
 }
 
 func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageRequestSign) {

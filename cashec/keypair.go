@@ -3,7 +3,6 @@ package cashec
 import (
 	"bytes"
 	"errors"
-
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -38,7 +37,7 @@ func (self *KeyPair) Import(privateKey []byte) (*KeyPair, error) {
 	case "ed25519":
 		newKey := ed25519.PrivateKey{}
 		newKey = privateKey
-		self.PublicKey = newKey.Public().([]byte)
+		self.PublicKey = newKey.Public().(ed25519.PublicKey)
 		self.PrivateKey = privateKey
 	default:
 		return self, errors.New("this curve isn't supported")
