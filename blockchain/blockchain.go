@@ -79,10 +79,11 @@ func (self *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	var initialized bool
-	for chainID := byte(0); chainID <= 19; chainID++ {
+	self.BestState = make([]*BestState, 20)
+	for chainID := byte(0); chainID < 20; chainID++ {
 		bestStateBytes, err := self.Config.DataBase.FetchBestState(chainID)
 		if err == nil {
-			err = json.Unmarshal(bestStateBytes, &self.BestState)
+			err = json.Unmarshal(bestStateBytes, &self.BestState[chainID])
 			if err != nil {
 				initialized = false
 			} else {
@@ -116,6 +117,9 @@ func (self *BlockChain) createChainState(chainID byte) error {
 		initBlock = self.Config.ChainParams.GenesisBlock
 	} else {
 		initBlock = &Block{}
+		initBlock.Header.ChainID = chainID
+		initBlock.Header.Timestamp = self.Config.ChainParams.GenesisBlock.Header.Timestamp
+		initBlock.Header.NextCommittee = self.Config.ChainParams.GenesisBlock.Header.NextCommittee
 	}
 	initBlock.Height = 0
 
@@ -314,6 +318,29 @@ func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
 	return result, nil
 }
 
+func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
+	result := make([]*Block, 0)
+	data, err := self.Config.DataBase.FetchChainBlocks(chainID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, item := range data {
+		blockBytes, err := self.Config.DataBase.FetchBlock(item)
+		if err != nil {
+			return nil, err
+		}
+		block := Block{}
+		err = json.Unmarshal(blockBytes, &block)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, &block)
+	}
+
+	return result, nil
+}
+
 /**
 Get all hash of blocks in chain
 Return hashes array
@@ -385,7 +412,7 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 	// We are extending the main (best) chain with a new block.  This is the
 	// most common case.
 	parentHash := &block.Header.PrevBlockHash
-	if parentHash.IsEqual(&b.BestState.BestBlockHash) {
+	if parentHash.IsEqual(&b.BestState[block.Header.ChainID].BestBlockHash) {
 		view := NewUtxoViewpoint()
 		view.SetBestHash(parentHash)
 
@@ -424,7 +451,7 @@ func countSpentOutputs(block *Block) int {
 	// Exclude the coinbase transaction since it can't spend anything.
 	var numSpent int
 	for _, tx := range block.Transactions[1:] {
-		if (tx.GetType() == common.TxNormalType) {
+		if tx.GetType() == common.TxNormalType {
 			numSpent += len(tx.(*transaction.Tx).TxIn)
 		}
 	}

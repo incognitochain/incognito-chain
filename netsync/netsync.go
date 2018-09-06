@@ -30,10 +30,14 @@ type NetSyncConfig struct {
 	BlockChain *blockchain.BlockChain
 	ChainParam *blockchain.Params
 	MemPool    *mempool.TxPool
-	Server interface {
+	Server     interface {
 		// list functions callback which are assigned from Server struct
 		PushBlockMessageWithPeerId(*blockchain.Block, peer2.ID) error
 		UpdateChain(*blockchain.Block)
+	}
+	Consensus interface {
+		OnRequestSign(*blockchain.Block)
+		OnBlockReceived(*blockchain.Block)
 	}
 }
 
@@ -166,29 +170,30 @@ func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 	// TODO get message block and process
 	newBlock := msg.Block
 
-	// Skip verify and insert directly to local blockchain
-	// There should be a method in blockchain.go to insert block to prevent data-race if we read from memory
+	// // Skip verify and insert directly to local blockchain
+	// // There should be a method in blockchain.go to insert block to prevent data-race if we read from memory
 
-	isMainChain, isOrphanBlock, err := self.Config.BlockChain.ProcessBlock(&newBlock)
-	_ = isMainChain
-	_ = isOrphanBlock
-	_ = err
+	// isMainChain, isOrphanBlock, err := self.Config.BlockChain.ProcessBlock(&newBlock)
+	// _ = isMainChain
+	// _ = isOrphanBlock
+	// _ = err
 
-	a := self.Config.BlockChain.BestState.BestBlock.Hash().String()
-	Logger.log.Infof(a)
-	//if msg.Block.Header.PrevBlockHash == a {
-	self.Config.Server.UpdateChain(&newBlock)
-	//}
+	// a := self.Config.BlockChain.BestState.BestBlock.Hash().String()
+	// Logger.log.Infof(a)
+	// //if msg.Block.Header.PrevBlockHash == a {
+	// self.Config.Server.UpdateChain(&newBlock)
+	// //}
+	self.Config.Consensus.OnBlockReceived(&newBlock)
 }
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Handling new message getblock")
-	if senderBlockHeaderIndex, err := self.Config.BlockChain.GetBlockHeightByBlockHash(&msg.LastBlockHash); err == nil {
-		if self.Config.BlockChain.BestState.BestBlock.Hash() != &msg.LastBlockHash {
+	if senderBlockHeaderIndex, chainID, err := self.Config.BlockChain.GetBlockHeightByBlockHash(&msg.LastBlockHash); err == nil {
+		if self.Config.BlockChain.BestState[chainID].BestBlock.Hash() != &msg.LastBlockHash {
 			// Send Blocks back to requestor
-			allBlocks, _ := self.Config.BlockChain.GetAllBlocks()
-			for index := int(senderBlockHeaderIndex) + 1; index < len(allBlocks); index++ {
-				block, _ := self.Config.BlockChain.GetBlockByBlockHeight(int32(index))
+			chainBlocks, _ := self.Config.BlockChain.GetChainBlocks(chainID)
+			for index := int(senderBlockHeaderIndex) + 1; index < len(chainBlocks); index++ {
+				block, _ := self.Config.BlockChain.GetBlockByBlockHeight(int32(index), chainID)
 				fmt.Printf("Send block %x \n", *block.Hash())
 				self.Config.Server.PushBlockMessageWithPeerId(block, msg.SenderID)
 				time.Sleep(time.Second * 3)

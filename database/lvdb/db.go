@@ -145,10 +145,10 @@ func (db *db) FetchBestState(chainID byte) ([]byte, error) {
 	return block, nil
 }
 
-func (db *db) StoreBlockIndex(h *common.Hash, idx int32, chainID int32) error {
-	buf := make([]byte, 8)
+func (db *db) StoreBlockIndex(h *common.Hash, idx int32, chainID byte) error {
+	buf := make([]byte, 5)
 	binary.LittleEndian.PutUint32(buf, uint32(idx))
-	binary.LittleEndian.PutUint32(buf[4:], uint32(chainID))
+	buf[4] = chainID
 
 	if err := db.lvdb.Put(db.getKeyIdx(h), buf, nil); err != nil {
 		return errors.Wrap(err, "db.lvdb.Put")
@@ -204,6 +204,22 @@ func (db *db) FetchAllBlocks() ([][]*common.Hash, error) {
 		if err := iter.Error(); err != nil {
 			return nil, errors.Wrap(err, "iter.Error")
 		}
+	}
+	return keys, nil
+}
+
+func (db *db) FetchChainBlocks(chainID byte) ([]*common.Hash, error) {
+	var keys []*common.Hash
+	prefix := append(append(chainIDPrefix, chainID), blockKeyPrefix...)
+	iter := db.lvdb.NewIterator(util.BytesPrefix(blockKeyPrefix), nil)
+	for iter.Next() {
+		h := new(common.Hash)
+		_ = h.SetBytes(iter.Key()[len(prefix):])
+		keys = append(keys, h)
+	}
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		return nil, errors.Wrap(err, "iter.Error")
 	}
 	return keys, nil
 }

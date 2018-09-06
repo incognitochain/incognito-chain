@@ -1,19 +1,20 @@
 package transaction
 
 import (
-	"strconv"
 	"fmt"
+	"strconv"
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	//"encoding/json"
 )
 
 type Tx struct {
-	Version  int     `json:"Version"`
-	Type     string  `json:"Type"` // NORMAL / ACTION_PARAMS
-	TxIn     []TxIn  `json:"TxIn"`
-	TxOut    []TxOut `json:"TxOut"`
-	LockTime int     `json:"LockTime"`
+	Version     int     `json:"Version"`
+	Type        string  `json:"Type"` // NORMAL / ACTION_PARAMS
+	AddressHash string  `json:"AddressHash"`
+	TxIn        []TxIn  `json:"TxIn"`
+	TxOut       []TxOut `json:"TxOut"`
+	LockTime    int     `json:"LockTime"`
 }
 
 func (self *Tx) AddTxIn(ti TxIn) {
@@ -32,7 +33,7 @@ func (self *Tx) GetTxOUt() []TxOut {
 	return self.TxOut
 }
 
-func (self *Tx) Hash() (*common.Hash) {
+func (self *Tx) Hash() *common.Hash {
 	record := strconv.Itoa(self.Version) + strconv.Itoa(self.Version)
 	record += self.Type
 	for _, txin := range self.TxIn {
@@ -49,10 +50,10 @@ func (self *Tx) Hash() (*common.Hash) {
 	return &hash
 }
 
-func (self *Tx) ValidateTransaction() (bool) {
+func (self *Tx) ValidateTransaction() bool {
 	return true
 }
 
-func (self *Tx) GetType() (string) {
+func (self *Tx) GetType() string {
 	return self.Type
 }

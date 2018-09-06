@@ -35,19 +35,17 @@ var RpcHandler = map[string]commandHandler{
 	"votecandidate": RpcServer.handleVoteCandidate,
 	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 
-	//
-	"getallpeers": RpcServer.handleGetAllPeers,
-}
-
-// Commands that are available to a limited user
-var RpcLimited = map[string]commandHandler{
 	// WALLET
 	"getaccount":            RpcServer.handleGetAccount,
 	"listaccounts":          RpcServer.handleListAccounts,
 	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
 	"getaccountaddress":     RpcServer.handleGetAccountAddress,
 	"dumpprivkey":           RpcServer.handleDumpPrivkey,
+	"getAllPeers":           RpcServer.handleGetAllPeers,
 }
+
+// Commands that are available to a limited user
+var RpcLimited = map[string]struct{}{}
 
 func (self RpcServer) handleDoSomething(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
@@ -64,7 +62,7 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 	log.Println(arrayParams)
 	getBy := arrayParams[0].(string)
 	block := arrayParams[1].(string)
-
+	chainID := arrayParams[2].(byte)
 	switch getBy {
 	case "blockhash":
 		bhash := common.Hash{}
@@ -73,13 +71,14 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 		if err != nil {
 			return nil, errors.New("Invalid blockhash format")
 		}
-		bnum, err := self.Config.BlockChain.GetBlockHeightByBlockHash(&bhash)
+		bnum, chainID, err := self.Config.BlockChain.GetBlockHeightByBlockHash(&bhash)
 		block, err := self.Config.BlockChain.GetBlockByBlockHash(&bhash)
 		if err != nil {
 			return nil, errors.New("Block not exist")
 		}
 		result.Header = block.Header
 		result.BlockNum = int(bnum) + 1
+		result.ChainID = chainID
 		result.BlockHash = bhash.String()
 	case "blocknum":
 		bnum, err := strconv.Atoi(block)
@@ -90,9 +89,10 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 		if len(allHashBlocks) < bnum || bnum <= 0 {
 			return nil, errors.New("Block not exist")
 		}
-		block, _ := self.Config.BlockChain.GetBlockByBlockHeight(int32(bnum - 1))
+		block, _ := self.Config.BlockChain.GetBlockByBlockHeight(int32(bnum-1), chainID)
 		result.Header = block.Header
 		result.BlockNum = bnum
+		result.ChainID = chainID
 		result.BlockHash = block.Hash().String()
 	default:
 		return nil, errors.New("Wrong request format")
@@ -112,10 +112,12 @@ getblockchaininfo RPC return information fo blockchain node
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	allHashBlocks, _ := self.Config.BlockChain.GetAllHashBlocks()
 	result := jsonrpc.GetBlockChainInfoResult{
-		Chain:         self.Config.ChainParams.Name,
-		Blocks:        len(allHashBlocks),
-		BestBlockHash: self.Config.BlockChain.BestState.BestBlockHash.String(),
-		Difficulty:    self.Config.BlockChain.BestState.Difficulty,
+		Chain:  self.Config.ChainParams.Name,
+		Blocks: len(allHashBlocks),
+	}
+
+	for _, bestState := range self.Config.BlockChain.BestState {
+		result.BestBlockHash = append(result.BestBlockHash, bestState.BestBlockHash.String())
 	}
 	return result, nil
 }
@@ -148,29 +150,32 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 	addresses = strings.Fields(listAddresses)
 	blocks, _ := self.Config.BlockChain.GetAllBlocks()
 	result := make([]jsonrpc.ListUnspentResult, 0)
-	for _, block := range blocks {
-		if len(block.Transactions) > 0 {
-			for _, tx := range block.Transactions {
-				if tx.GetType() == common.TxActionParamsType {
-					continue
-				}
-				normalTx := tx.(*transaction.Tx)
-				if len(normalTx.TxOut) > 0 {
-					for index, txOut := range normalTx.TxOut {
-						if bytes.Compare(txOut.PkScript, []byte(addresses[0])) == 0 {
-							result = append(result, jsonrpc.ListUnspentResult{
-								Vout:      index,
-								TxID:      normalTx.Hash().String(),
-								Address:   string(txOut.PkScript),
-								Amount:    txOut.Value,
-								TxOutType: txOut.TxOutType,
-							})
+	for index := 0; index < 20; index++ {
+		for _, block := range blocks[index] {
+			if len(block.Transactions) > 0 {
+				for _, tx := range block.Transactions {
+					if tx.GetType() == common.TxActionParamsType {
+						continue
+					}
+					normalTx := tx.(*transaction.Tx)
+					if len(normalTx.TxOut) > 0 {
+						for index, txOut := range normalTx.TxOut {
+							if bytes.Compare(txOut.PkScript, []byte(addresses[0])) == 0 {
+								result = append(result, jsonrpc.ListUnspentResult{
+									Vout:      index,
+									TxID:      normalTx.Hash().String(),
+									Address:   string(txOut.PkScript),
+									Amount:    txOut.Value,
+									TxOutType: txOut.TxOutType,
+								})
+							}
 						}
 					}
 				}
 			}
 		}
 	}
+
 	return result, nil
 }
 
@@ -313,20 +318,20 @@ func isExisted(item int, arr []int) bool {
 func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// return 1000, nil
 	log.Println(params)
-	blocks, _ := self.Config.BlockChain.GetAllBlocks()
-	txInsMap := map[string][]int{}
-	txOuts := []jsonrpc.ListUnspentResult{}
-	for _, block := range blocks {
-		for _, tx := range block.Transactions {
-			if tx.GetType() == common.TxActionParamsType {
-				continue
-			}
-			normalTx := tx.(*transaction.Tx)
-			for _, txIn := range normalTx.TxIn {
-				txInKey := txIn.PreviousOutPoint.Hash.String()
-				idx := txIn.PreviousOutPoint.Vout
-				txInsMap[txInKey] = append(txInsMap[txInKey], int(idx))
-			}
+	// blocks, _ := self.Config.BlockChain.GetAllBlocks()
+	// txInsMap := map[string][]int{}
+	// txOuts := []jsonrpc.ListUnspentResult{}
+	// for _, block := range blocks {
+	// 	for _, tx := range block.Transactions {
+	// 		if tx.GetType() == common.TxActionParamsType {
+	// 			continue
+	// 		}
+	// 		normalTx := tx.(*transaction.Tx)
+	// 		for _, txIn := range normalTx.TxIn {
+	// 			txInKey := txIn.PreviousOutPoint.Hash.String()
+	// 			idx := txIn.PreviousOutPoint.Vout
+	// 			txInsMap[txInKey] = append(txInsMap[txInKey], int(idx))
+	// 		}
 
 	// 		for index, txOut := range normalTx.TxOut {
 	// 			txOuts = append(txOuts, jsonrpc.ListUnspentResult{

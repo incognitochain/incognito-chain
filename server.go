@@ -12,6 +12,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"crypto/tls"
+	"os"
+	"strconv"
+
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/addrmanager"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
@@ -26,11 +30,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/rpcserver"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"github.com/ninjadotorg/cash-prototype/wire"
-	"github.com/ninjadotorg/cash-prototype/wallet"
-	"path/filepath"
-	"os"
-	"strconv"
-	"crypto/tls"
 )
 
 const (
@@ -159,18 +158,20 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	self.ConsensusEngine = pos.New(&pos.Config{
 		ChainParams: self.chainParams,
-		Chain:       self.BlockChain,
+		BlockChain:  self.BlockChain,
 		MemPool:     self.MemPool,
 		BlockGen:    blockTemplateGenerator,
 		Server:      self,
 	})
 
+	self.MemPool.Config.Policy.Consensus = self.ConsensusEngine
 	// Init Net Sync manager to process messages
 	self.NetSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
 		BlockChain: self.BlockChain,
 		ChainParam: chainParams,
 		MemPool:    self.MemPool,
 		Server:     self,
+		Consensus:  self.ConsensusEngine,
 	})
 	if err != nil {
 		return err
@@ -324,7 +325,11 @@ func (self Server) Stop() error {
 		self.RpcServer.Stop()
 	}
 
-	self.Miner.Stop()
+	// self.Miner.Stop()
+
+	if cfg.Generate == true && (len(cfg.SealerPrvKey) > 0) {
+		self.ConsensusEngine.Stop()
+	}
 
 	close(self.quit)
 	return nil
@@ -418,9 +423,13 @@ func (self Server) Start() {
 		self.RpcServer.Start()
 	}
 
-	//creat mining
-	if cfg.Generate == true && (len(cfg.MiningAddrs) > 0) {
-		self.Miner.Start()
+	// //creat mining
+	// if cfg.Generate == true && (len(cfg.MiningAddrs) > 0) {
+	// 	self.Miner.Start()
+	// }
+
+	if cfg.Generate == true && (len(cfg.SealerPrvKey) > 0) {
+		self.ConsensusEngine.Start()
 	}
 
 	// test, print length of chain
@@ -683,7 +692,7 @@ func (self *Server) PushBlockMessage(block *blockchain.Block) error {
 	return nil
 }
 
-func (self *Server) PushRequestSignBlock(block *blockchain.Block, peerID peer2.ID) error {
+func (self *Server) PushRequestSignBlock(block *blockchain.Block, validatorAddress string) error {
 	//TODO push block to specific peerID
 	msg, err := wire.MakeEmptyMessage(wire.CmdRequestSign)
 	if err != nil {
@@ -735,8 +744,8 @@ func (self *Server) UpdateChain(block *blockchain.Block) {
 	newBestState := &blockchain.BestState{}
 	numTxns := uint64(len(block.Transactions))
 	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0))
-	self.BlockChain.BestState = newBestState
-	self.BlockChain.StoreBestState()
+	self.BlockChain.BestState[block.Header.ChainID] = newBestState
+	self.BlockChain.StoreBestState(block.Header.ChainID)
 
 	// save index of block
 	self.BlockChain.StoreBlockIndex(block)

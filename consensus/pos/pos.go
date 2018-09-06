@@ -31,7 +31,7 @@ type Engine struct {
 }
 
 type Config struct {
-	Chain       *blockchain.BlockChain
+	BlockChain  *blockchain.BlockChain
 	ChainParams *blockchain.Params
 	BlockGen    *mining.BlkTmplGenerator
 	MemPool     *mempool.TxPool
@@ -39,7 +39,7 @@ type Config struct {
 		// list functions callback which are assigned from Server struct
 		PushBlockMessage(*blockchain.Block) error
 		PushBlockSignature(*wire.MessageSignedBlock) error
-		PushRequestSignBlock(*blockchain.Block) error
+		PushRequestSignBlock(*blockchain.Block, string) error
 		PushInvalidBlockMessage(*wire.MessageInvalidBlock) error
 		UpdateChain(*blockchain.Block)
 	}
@@ -51,7 +51,7 @@ func (self *Engine) Start() {
 		return
 	}
 	self.quit = make(chan struct{})
-	Logger.log.Info("Starting Proof of Stake engine")
+	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
 	self.waitgroup.Add(1)
 	time.AfterFunc(2*time.Second, func() {
 
@@ -62,19 +62,19 @@ func (self *Engine) Start() {
 // handlers and waiting for them to finish.
 func (self *Engine) Stop() error {
 	if atomic.AddInt32(&self.shutdown, 1) != 1 {
-		Logger.log.Info("Sync manager is already in the process of " +
+		Logger.log.Info("Consensus engine is already in the process of " +
 			"shutting down")
 		return nil
 	}
 
-	Logger.log.Info("Sync manager shutting down")
+	Logger.log.Info("Consensus engine shutting down")
 	close(self.quit)
 	self.waitgroup.Wait()
 	return nil
 }
 
 func (self *Engine) createBlock(chainID byte) (*blockchain.Block, error) {
-	newblock, err := self.cfg.BlockGen.NewBlockTemplate(self.CurrentLeader, self.cfg.Chain)
+	newblock, err := self.cfg.BlockGen.NewBlockTemplate(self.CurrentLeader, self.cfg.BlockChain, chainID)
 	if err != nil {
 		return newblock.Block, err
 	}
@@ -82,14 +82,18 @@ func (self *Engine) createBlock(chainID byte) (*blockchain.Block, error) {
 }
 
 func (self *Engine) signBlock(block *blockchain.Block) (*blockchain.Block, error) {
+
 	return block, nil
 }
 
-func (self *Engine) getChainValidators(chainID byte) ([]string, error) {
+func (self *Engine) validateBlock(block *blockchain.Block) error {
+	return nil
+}
+func (self *Engine) GetChainValidators(chainID byte) ([]string, error) {
 	var validators []string
 	for index := 1; index <= 11; index++ {
-		validatorID := math.Mod((index + int(chainID)), 21)
-		validators = append(validators, self.CurrentCommittee[validatorID])
+		validatorID := math.Mod(float64(index+int(chainID)), 21)
+		validators = append(validators, self.CurrentCommittee[int(validatorID)])
 	}
 	if len(validators) == 11 {
 		return validators, nil
@@ -97,7 +101,7 @@ func (self *Engine) getChainValidators(chainID byte) ([]string, error) {
 	return nil, errors.New("can't get chain's validators")
 }
 
-func (self *Engine) getSenderChain(senderAddress string) (byte, error) {
+func (self *Engine) GetSenderChain(senderAddress string) (byte, error) {
 	addrBig := new(big.Int)
 	addrBig.SetBytes([]byte(senderAddress))
 
@@ -111,15 +115,21 @@ func (self *Engine) getSenderChain(senderAddress string) (byte, error) {
 
 	for index := uint64(0); index < 5; index++ {
 		if (modResult.Uint64()-index)%5 == 0 {
-			return 0, (modResult.Uint64() - index) / 5
+			return byte((modResult.Uint64() - index) / 5), nil
 		}
 	}
 
-	return nil, errors.New("can't get sender's chainID")
+	return 0, errors.New("can't get sender's chainID")
 
 }
 
 func (self *Engine) OnRequestSign(block *blockchain.Block) {
+
+	return
+}
+
+func (self *Engine) OnBlockReceived(block *blockchain.Block) {
+	self.cfg.Server.UpdateChain(block)
 	return
 }
 

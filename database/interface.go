@@ -11,6 +11,7 @@ type DB interface {
 	FetchBlock(*common.Hash) ([]byte, error)
 	HasBlock(*common.Hash) (bool, error)
 	FetchAllBlocks() ([][]*common.Hash, error)
+	FetchChainBlocks(byte) ([]*common.Hash, error)
 
 	StoreBestBlock(interface{}, byte) error
 	FetchBestState(byte) ([]byte, error)

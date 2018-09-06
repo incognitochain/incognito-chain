@@ -8,10 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/mining"
 	"github.com/ninjadotorg/cash-prototype/transaction"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
 )
 
 // ID is Peer Ids, so that orphans can be identified by which peer first re-payed them.
@@ -109,9 +109,14 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee float64) *
 func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
 	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
-	bestHeight := tp.Config.BlockChain.BestState.BestBlock.Height
-	nextBlockHeight := bestHeight + 1
+	txInfo := tx.(*transaction.Tx)
 
+	chainID, err := tp.Config.Policy.Consensus.GetSenderChain(txInfo.AddressHash)
+	if err != nil {
+		return nil, nil, err
+	}
+	bestHeight := tp.Config.BlockChain.BestState[chainID].BestBlock.Height
+	nextBlockHeight := bestHeight + 1
 	// Perform several checks on the transaction inputs using the invariant
 	// rules in blockchain for what transactions are allowed into blocks.
 	// Also returns the fees associated with the transaction which will be

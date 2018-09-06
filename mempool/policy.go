@@ -7,6 +7,9 @@ import (
 // Policy houses the policy (configuration parameters) which is used to control the mempool.
 type Policy struct {
 	//@todo we are defining for them
+	Consensus interface {
+		GetSenderChain(string) (byte, error)
+	}
 }
 
 // return min transacton fee required for a transaction that we accpted into the memmory pool and replayed.

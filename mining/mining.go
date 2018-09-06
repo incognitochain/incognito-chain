@@ -205,91 +205,88 @@ func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 	return txs, actionParamTxs, feeMap
 }
 
-func getLatestAgentDataPoints(
-	chain *blockchain.BlockChain,
-	actionParamTxs []*transaction.ActionParamTx,
-) map[string]*blockchain.AgentDataPoint {
-	agentDataPoints := map[string]*blockchain.AgentDataPoint{}
-	bestBlock := chain.BestState.BestBlock
+// func getLatestAgentDataPoints(chain *blockchain.BlockChain, actionParamTxs []*transaction.ActionParamTx) map[string]*blockchain.AgentDataPoint {
+// 	agentDataPoints := map[string]*blockchain.AgentDataPoint{}
+// 	bestBlock := chain.BestState.BestBlock
 
-	if bestBlock != nil && bestBlock.AgentDataPoints != nil {
-		agentDataPoints = bestBlock.AgentDataPoints
-	}
+// 	if bestBlock != nil && bestBlock.AgentDataPoints != nil {
+// 		agentDataPoints = bestBlock.AgentDataPoints
+// 	}
 
-	for _, actionParamTx := range actionParamTxs {
-		inputAgentID := actionParamTx.Param.AgentID
+// 	for _, actionParamTx := range actionParamTxs {
+// 		inputAgentID := actionParamTx.Param.AgentID
 
-		_, ok := agentDataPoints[inputAgentID]
-		if !ok || actionParamTx.LockTime > agentDataPoints[inputAgentID].LockTime {
-			agentDataPoints[inputAgentID] = &blockchain.AgentDataPoint{
-				AgentID:          actionParamTx.Param.AgentID,
-				AgentSig:         actionParamTx.Param.AgentSig,
-				NumOfCoins:       actionParamTx.Param.NumOfCoins,
-				NumOfBonds:       actionParamTx.Param.NumOfBonds,
-				Tax:              actionParamTx.Param.Tax,
-				EligibleAgentIDs: actionParamTx.Param.EligibleAgentIDs,
-				LockTime:         actionParamTx.LockTime,
-			}
-		}
-	}
+// 		_, ok := agentDataPoints[inputAgentID]
+// 		if !ok || actionParamTx.LockTime > agentDataPoints[inputAgentID].LockTime {
+// 			agentDataPoints[inputAgentID] = &blockchain.AgentDataPoint{
+// 				AgentID:          actionParamTx.Param.AgentID,
+// 				AgentSig:         actionParamTx.Param.AgentSig,
+// 				NumOfCoins:       actionParamTx.Param.NumOfCoins,
+// 				NumOfBonds:       actionParamTx.Param.NumOfBonds,
+// 				Tax:              actionParamTx.Param.Tax,
+// 				EligibleAgentIDs: actionParamTx.Param.EligibleAgentIDs,
+// 				LockTime:         actionParamTx.LockTime,
+// 			}
+// 		}
+// 	}
 
-	// in case of not being enough number of agents
-	dataPointsLen := len(agentDataPoints)
-	if dataPointsLen < NUMBER_OF_MAKING_DECISION_AGENTS {
-		return agentDataPoints
-	}
+// 	// in case of not being enough number of agents
+// 	dataPointsLen := len(agentDataPoints)
+// 	if dataPointsLen < NUMBER_OF_MAKING_DECISION_AGENTS {
+// 		return agentDataPoints
+// 	}
 
-	// check add/remove agents by number of votes
-	votesForAgents := map[string]int{}
-	for _, dataPoint := range agentDataPoints {
-		for _, eligibleAgentID := range dataPoint.EligibleAgentIDs {
-			if _, ok := votesForAgents[eligibleAgentID]; !ok {
-				votesForAgents[eligibleAgentID] = 1
-				continue
-			}
-			votesForAgents[eligibleAgentID] += 1
-		}
-	}
+// 	// check add/remove agents by number of votes
+// 	votesForAgents := map[string]int{}
+// 	for _, dataPoint := range agentDataPoints {
+// 		for _, eligibleAgentID := range dataPoint.EligibleAgentIDs {
+// 			if _, ok := votesForAgents[eligibleAgentID]; !ok {
+// 				votesForAgents[eligibleAgentID] = 1
+// 				continue
+// 			}
+// 			votesForAgents[eligibleAgentID] += 1
+// 		}
+// 	}
 
-	for agentID, votes := range votesForAgents {
-		if votes < int(math.Floor(float64(dataPointsLen/2))+1) {
-			delete(agentDataPoints, agentID)
-		}
-	}
+// 	for agentID, votes := range votesForAgents {
+// 		if votes < int(math.Floor(float64(dataPointsLen/2))+1) {
+// 			delete(agentDataPoints, agentID)
+// 		}
+// 	}
 
-	return agentDataPoints
-}
+// 	return agentDataPoints
+// }
 
-func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain) (*BlockTemplate, error) {
+func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain, chainID byte) (*BlockTemplate, error) {
 
-	prevBlock := chain.BestState.BestBlock
-	prevBlockHash := chain.BestState.BestBlock.Hash()
+	prevBlock := chain.BestState[chainID].BestBlock
+	prevBlockHash := chain.BestState[chainID].BestBlock.Hash()
 	sourceTxns := g.txSource.MiningDescs()
 
 	if len(sourceTxns) == 0 {
 		return nil, errors.New("No Tx")
 	}
 
-	txs, actionParamTxs, feeMap := extractTxsAndComputeInitialFees(sourceTxns)
+	txs, _, _ := extractTxsAndComputeInitialFees(sourceTxns)
 	//@todo we need apply sort rules for sourceTxns here
 
-	agentDataPoints := getLatestAgentDataPoints(chain, actionParamTxs)
-	rewardMap := calculateReward(agentDataPoints, feeMap)
+	// agentDataPoints := getLatestAgentDataPoints(chain, actionParamTxs)
+	// rewardMap := calculateReward(agentDataPoints, feeMap)
 
-	coinbaseScript := []byte("1234567890123456789012") //@todo should be create function create basescript
+	// coinbaseScript := []byte("1234567890123456789012") //@todo should be create function create basescript
 
-	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, coinbaseScript, payToAddress, rewardMap)
-	if err != nil {
-		return nil, err
-	}
+	// coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, coinbaseScript, payToAddress, rewardMap)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// dependers := make(map[common.Hash]map[common.Hash]*txPrioItem)
 
 	// blockTxns := make([]transaction.Transaction, 0, len(sourceTxns))
 	// blockTxns = append(blockTxns, coinbaseTx)
 
-	blockTxns := append([]transaction.Transaction{coinbaseTx}, txs...)
-
+	// blockTxns := append([]transaction.Transaction{coinbaseTx}, txs...)
+	blockTxns := txs
 	merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(blockTxns)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 
@@ -302,44 +299,44 @@ mempoolLoop:
 		_ = utxos
 		_ = err
 		/*
-		if err != nil {
-			fmt.Print("Unable to fetch utxo view for tx %s: %v",
-				tx.Hash(), err)
-			continue
-		}
-		prioItem := &txPrioItem{tx: tx}
-		for _, txIn := range tx.TxIn {
-			originHash := &txIn.PreviousOutPoint.Hash
-			entry := utxos.LookupEntry(txIn.PreviousOutPoint)
-			if entry == nil || entry.IsSpent() {
-				if !TxPool.HaveTx(originHash) {
-					fmt.Print("Skipping tx %s because it "+
-						"references unspent output %s "+
-						"which is not available",
-						tx.Hash(), txIn.PreviousOutPoint)
-					continue mempoolLoop
-				}
-
-				// The transaction is referencing another
-				// transaction in the source pool, so setup an
-				// ordering dependency.
-				deps, exists := dependers[*originHash]
-				if !exists {
-					deps = make(map[common.Hash]*txPrioItem)
-					dependers[*originHash] = deps
-				}
-				deps[*prioItem.tx.Hash()] = prioItem
-				if prioItem.dependsOn == nil {
-					prioItem.dependsOn = make(
-						map[common.Hash]struct{})
-				}
-				prioItem.dependsOn[*originHash] = struct{}{}
-
-				// Skip the check below. We already know the
-				// referenced transaction is available.
+			if err != nil {
+				fmt.Print("Unable to fetch utxo view for tx %s: %v",
+					tx.Hash(), err)
 				continue
 			}
-		}*/
+			prioItem := &txPrioItem{tx: tx}
+			for _, txIn := range tx.TxIn {
+				originHash := &txIn.PreviousOutPoint.Hash
+				entry := utxos.LookupEntry(txIn.PreviousOutPoint)
+				if entry == nil || entry.IsSpent() {
+					if !TxPool.HaveTx(originHash) {
+						fmt.Print("Skipping tx %s because it "+
+							"references unspent output %s "+
+							"which is not available",
+							tx.Hash(), txIn.PreviousOutPoint)
+						continue mempoolLoop
+					}
+
+					// The transaction is referencing another
+					// transaction in the source pool, so setup an
+					// ordering dependency.
+					deps, exists := dependers[*originHash]
+					if !exists {
+						deps = make(map[common.Hash]*txPrioItem)
+						dependers[*originHash] = deps
+					}
+					deps[*prioItem.tx.Hash()] = prioItem
+					if prioItem.dependsOn == nil {
+						prioItem.dependsOn = make(
+							map[common.Hash]struct{})
+					}
+					prioItem.dependsOn[*originHash] = struct{}{}
+
+					// Skip the check below. We already know the
+					// referenced transaction is available.
+					continue
+				}
+			}*/
 		if !tx.ValidateTransaction() {
 			continue mempoolLoop
 		}
@@ -366,7 +363,7 @@ mempoolLoop:
 	}
 
 	//update the latest AgentDataPoints to block
-	block.AgentDataPoints = agentDataPoints
+	// block.AgentDataPoints = agentDataPoints
 	// Set height
 	block.Height = prevBlock.Height + 1
 
