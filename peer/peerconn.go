@@ -6,13 +6,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
-	"reflect"
-	"sync"
 	"github.com/libp2p/go-libp2p-peer"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/wire"
+	"log"
+	"reflect"
+	"sync"
 )
 
 type PeerConn struct {
@@ -39,6 +39,7 @@ type PeerConn struct {
 	quit             chan struct{}
 
 	Peer         *Peer
+	ValidatorAddress      string
 	ListenerPeer *Peer
 
 	HandleConnected    func(peerConn *PeerConn)

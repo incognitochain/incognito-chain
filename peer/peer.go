@@ -1,10 +1,13 @@
 package peer
 
 import (
+	"net/rpc"
 	"bufio"
 	"context"
 	"crypto/rand"
 	"fmt"
+	"github.com/ninjadotorg/cash-prototype/bootnode/server"
+	"github.com/ninjadotorg/cash-prototype/cashec"
 	"io"
 	"log"
 	mrand "math/rand"
@@ -61,7 +64,7 @@ type Peer struct {
 
 	PeerConns map[peer.ID]*PeerConn
 
-	Peers []string
+	Peers map[string]string
 
 	quit           chan struct{}
 	disconnectPeer chan *PeerConn
@@ -74,6 +77,7 @@ type Peer struct {
 // Config is the struct to hold configuration options useful to Peer.
 type Config struct {
 	MessageListeners MessageListeners
+	SealerPrvKey string
 }
 
 type WrappedStream struct {
@@ -177,6 +181,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	//self.sendMessageQueue = make(chan outMsg, 1)
 	self.quit = make(chan struct{}, 1)
 	self.disconnectPeer = make(chan *PeerConn)
+	self.Peers = make(map[string]string)
 
 	return &self, nil
 }
@@ -298,35 +303,49 @@ func (self *Peer) HandleStream(stream net.Stream) {
 }
 
 func (self Peer) HandleExchangePeers() {
-	//	Logger.log.Infof("Start Exchange Peers")
-	//	var client *rpc.Client
-	//	var err error
-	//
-	//listen:
-	//	for {
-	//		Logger.log.Infof("Peers", self.Peers)
-	//		if client == nil {
-	//			client, err = rpc.Dial("tcp", "127.0.0.1:9339")
-	//			if err != nil {
-	//				Logger.log.Error("[Exchange Peers] re-connect:", err)
-	//			}
-	//		}
-	//		if client != nil {
-	//			Logger.log.Infof("[Exchange Peers] Ping")
-	//			var response []string
-	//			err := client.Call("Handler.Ping", self.RawAddress, &response)
-	//			if err != nil {
-	//				Logger.log.Error("[Exchange Peers] Ping:", err)
-	//				client = nil
-	//				time.Sleep(time.Second * 2)
-	//
-	//				goto listen
-	//			}
-	//			self.Peers = response
-	//			Logger.log.Infof("Ping Response", response)
-	//		}
-	//		time.Sleep(time.Second * 2)
-	//	}
+	Logger.log.Infof("Start Exchange Peers")
+	var client *rpc.Client
+	var err error
+
+listen:
+	for {
+		Logger.log.Infof("Peers", self.Peers)
+		if client == nil {
+			client, err = rpc.Dial("tcp", "35.199.177.89:9339")
+			if err != nil {
+				Logger.log.Error("[Exchange Peers] re-connect:", err)
+			}
+		}
+		if client != nil {
+			Logger.log.Infof("[Exchange Peers] Ping")
+			var response []server.RawPeer
+			args := &server.PingArgs{self.RawAddress, self.Config.SealerPrvKey}
+			Logger.log.Infof("[Exchange Peers] Ping", args)
+			err := client.Call("Handler.Ping", args, &response)
+			if err != nil {
+				Logger.log.Error("[Exchange Peers] Ping:", err)
+				client = nil
+				time.Sleep(time.Second * 2)
+
+				goto listen
+			}
+			Logger.log.Infof("Ping response", response)
+			for _, rawPeer := range response {
+				if rawPeer.SealerPrvKey != "" && !strings.Contains(rawPeer.RawAddress, self.PeerId.String()) {
+					keyPair := &cashec.KeyPair{}
+					keyPair.Import([]byte(rawPeer.SealerPrvKey))
+
+					_, exist := self.Peers[string(keyPair.PublicKey)]
+
+					if !exist {
+						self.Peers[string(keyPair.PublicKey)] = rawPeer.RawAddress
+					}
+				}
+			}
+			Logger.log.Infof("Ping response Peers", self.Peers)
+		}
+		time.Sleep(time.Second * 2)
+	}
 }
 
 // QueueMessageWithEncoding adds the passed bitcoin message to the peer send
