@@ -45,6 +45,8 @@ type ConnManager struct {
 	// Connected Connection
 	Connected map[libpeer.ID]*peer.Peer
 
+	ListeningPeers map[libpeer.ID]*peer.Peer
+
 	WaitGroup sync.WaitGroup
 
 	// Request channel
@@ -152,13 +154,35 @@ func (self ConnManager) New(cfg *Config) (*ConnManager, error) {
 	self.Quit = make(chan struct{})
 	self.Requests = make(chan interface{})
 
+	self.Pending = map[libpeer.ID]*peer.Peer{}
+	self.Connected = map[libpeer.ID]*peer.Peer{}
+	self.ListeningPeers = map[libpeer.ID]*peer.Peer{}
+
 	return &self, nil
 }
 
+func (self ConnManager) GetPeerId(addr string) string {
+	ipfsaddr, err := ma.NewMultiaddr(addr)
+	if err != nil {
+		log.Print(err)
+		return ""
+	}
+	pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
+	if err != nil {
+		log.Print(err)
+		return ""
+	}
+	peerId, err := libpeer.IDB58Decode(pid)
+	if err != nil {
+		log.Print(err)
+		return ""
+	}
+	return peerId.Pretty()
+}
 
 // Connect assigns an id and dials a connection to the address of the
 // connection request.
-func (self ConnManager) Connect(addr string) {
+func (self *ConnManager) Connect(addr string) {
 	if atomic.LoadInt32(&self.stop) != 0 {
 		return
 	}
@@ -218,7 +242,7 @@ func (self ConnManager) Connect(addr string) {
 	}
 }
 
-func (self ConnManager) Start() {
+func (self *ConnManager) Start() {
 	// Already started?
 	if atomic.AddInt32(&self.start, 1) != 1 {
 		return
@@ -238,13 +262,15 @@ func (self ConnManager) Start() {
 			listner.HandleDisconnected = self.handleDisconnected
 			listner.HandleFailed = self.handleFailed
 			go self.listenHandler(listner)
+
+			self.ListeningPeers[listner.PeerId] = &listner
 		}
 	}
 }
 
 // listenHandler accepts incoming connections on a given listener.  It must be
 // run as a goroutine.
-func (self ConnManager) listenHandler(listen peer.Peer) {
+func (self *ConnManager) listenHandler(listen peer.Peer) {
 	listen.Start()
 }
 

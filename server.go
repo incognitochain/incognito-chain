@@ -583,18 +583,36 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	log.Printf("Receive verack message")
 	self.AddrManager.Good(peerConn.Peer)
 
+	// send message for get addr
 	msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
 	if err != nil {
 		return
 	}
 	dc := make(chan struct{})
 	peerConn.QueueMessageWithEncoding(msgS, dc)
+
+	//	broadcast addr to all peer
+	for _, listen := range self.ConnManager.ListeningPeers {
+		msgS, err := wire.MakeEmptyMessage(wire.CmdAddr)
+		if err != nil {
+			return
+		}
+		addresses := []string{peerConn.Peer.RawAddress}
+		msgS.(*wire.MessageAddr).RawAddresses = addresses
+		var doneChan chan<- struct{}
+		for _, _peerConn := range listen.PeerConns {
+			log.Printf("Send message addr to PEER %s", _peerConn.Peer.PeerId)
+			_peerConn.QueueMessageWithEncoding(msgS, doneChan)
+		}
+	}
+
 }
 
 func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr) {
 	// TODO for ongetaddr message
 	log.Printf("Receive getaddr message")
 
+	// send message for addr
 	msgS, err := wire.MakeEmptyMessage(wire.CmdAddr)
 	if err != nil {
 		return
@@ -603,7 +621,9 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 	addresses := []string{}
 	peers := self.AddrManager.AddressCache()
 	for _, peer := range peers {
-		addresses = append(addresses, peer.RawAddress)
+		if peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+			addresses = append(addresses, peer.RawAddress)
+		}
 	}
 
 	msgS.(*wire.MessageAddr).RawAddresses = addresses
@@ -614,13 +634,15 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 func (self *Server) OnAddr(_ *peer.PeerConn, msg *wire.MessageAddr) {
 	// TODO for onaddr message
 	log.Printf("Receive addr message")
-
 	for _, addr := range msg.RawAddresses {
-		if !self.AddrManager.ExistedAddr(addr) {
-			go self.ConnManager.Connect(addr)
+		for _, listen := range self.ConnManager.ListeningPeers {
+			for _, _peerConn := range listen.PeerConns {
+				if _peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(addr) {
+					go self.ConnManager.Connect(addr)
+				}
+			}
 		}
 	}
-
 }
 
 func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageRequestSign) {

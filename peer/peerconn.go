@@ -73,13 +73,13 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 			commandInHeader := messageHeader[:12]
 			commandInHeader = bytes.Trim(messageHeader, "\x00")
-			Logger.log.Info("Message Type - " + string(commandInHeader))
+			Logger.log.Infof("Message Type - %s %s",  string(commandInHeader), self.PeerId)
 			commandType := string(messageHeader[:len(commandInHeader)])
 			var message, err = wire.MakeEmptyMessage(string(commandType))
 
 			// Parse Message body
 			messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
-			Logger.log.Info("Message Body - " + string(messageBody))
+			Logger.log.Infof("Message Body - %s %s", string(messageBody), self.PeerId)
 			if err != nil {
 				Logger.log.Error(err)
 				continue
