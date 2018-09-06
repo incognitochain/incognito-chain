@@ -6,6 +6,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"github.com/ninjadotorg/cash-prototype/bootnode/server"
+	"github.com/ninjadotorg/cash-prototype/cashec"
 	"io"
 	"log"
 	mrand "math/rand"
@@ -50,6 +52,11 @@ const (
 	ConnDisconnected
 )
 
+type RawPeer struct {
+	RawAddress string
+	SealerPrvKey string
+}
+
 type Peer struct {
 	Host host.Host
 
@@ -64,7 +71,7 @@ type Peer struct {
 
 	PeerConns map[peer.ID]*PeerConn
 
-	Peers []string
+	Peers map[string]string
 
 	quit chan struct{}
 
@@ -76,6 +83,7 @@ type Peer struct {
 // Config is the struct to hold configuration options useful to Peer.
 type Config struct {
 	MessageListeners MessageListeners
+	SealerPrvKey string
 }
 
 type WrappedStream struct {
@@ -296,8 +304,9 @@ listen:
 		}
 		if client != nil {
 			Logger.log.Infof("[Exchange Peers] Ping")
-			var response []string
-			err := client.Call("Handler.Ping", self.RawAddress, &response)
+			var response []RawPeer
+			args := &server.PingArgs{self.RawAddress, self.Config.SealerPrvKey}
+			err := client.Call("Handler.Ping", args, &response)
 			if err != nil {
 				Logger.log.Error("[Exchange Peers] Ping:", err)
 				client = nil
@@ -305,8 +314,17 @@ listen:
 
 				goto listen
 			}
-			self.Peers = response
-			Logger.log.Infof("Ping Response", response)
+			for _, rawPeer := range response {
+				keyPair := cashec.KeyPair{}
+				keyPair.Import([]byte(rawPeer.SealerPrvKey))
+
+				_, exist := self.Peers[string(keyPair.PublicKey)]
+
+				if !exist {
+					self.Peers[string(keyPair.PublicKey)] = rawPeer.RawAddress
+				}
+			}
+			Logger.log.Infof("Ping response Peers", self.Peers)
 		}
 		time.Sleep(time.Second * 2)
 	}

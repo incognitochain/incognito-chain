@@ -536,6 +536,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnGetAddr:   self.OnGetAddr,
 			OnAddr:      self.OnAddr,
 		},
+		SealerPrvKey: cfg.SealerPrvKey,
 	}
 }
 
