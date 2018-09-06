@@ -52,11 +52,6 @@ const (
 	ConnDisconnected
 )
 
-type RawPeer struct {
-	RawAddress string
-	SealerPrvKey string
-}
-
 type Peer struct {
 	Host host.Host
 
@@ -324,7 +319,7 @@ listen:
 		}
 		if client != nil {
 			Logger.log.Infof("[Exchange Peers] Ping")
-			var response []RawPeer
+			var response []server.RawPeer
 			args := &server.PingArgs{self.RawAddress, self.Config.SealerPrvKey}
 			err := client.Call("Handler.Ping", args, &response)
 			if err != nil {
