@@ -17,7 +17,6 @@ import (
 
 type PeerConn struct {
 	connected  int32
-	disconnect int32
 
 	RetryCount int32
 	IsOutbound bool
@@ -37,10 +36,11 @@ type PeerConn struct {
 
 	sendMessageQueue chan outMsg
 	quit             chan struct{}
+	disconnect       chan struct{}
 
-	Peer         *Peer
-	ValidatorAddress      string
-	ListenerPeer *Peer
+	Peer             *Peer
+	ValidatorAddress string
+	ListenerPeer     *Peer
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -192,6 +192,8 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 			}
 		case <-self.quit:
 			Logger.log.Infof("PEER %s quit OUT message handler", self.PeerId)
+
+			self.disconnect <- struct{}{}
 
 			if self.HandleDisconnected != nil {
 				self.HandleDisconnected(self)

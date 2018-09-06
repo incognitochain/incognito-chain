@@ -68,7 +68,6 @@ type Peer struct {
 	Peers map[string]string
 
 	quit           chan struct{}
-	disconnectPeer chan *PeerConn
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -180,7 +179,6 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.TargetAddress = fullAddr
 	self.PeerId = peerid
 	self.quit = make(chan struct{}, 1)
-	self.disconnectPeer = make(chan *PeerConn)
 	self.Peers = make(map[string]string)
 
 	self.outboundMutex = sync.Mutex{}
@@ -264,11 +262,9 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 	for {
 		select {
-		case peerConnT := <-self.disconnectPeer:
-			if &peerConn == peerConnT {
-				Logger.log.Infof("NewPeerConnection Close Stream")
-				break
-			}
+		case <- peerConn.disconnect:
+			Logger.log.Infof("NewPeerConnection Close Stream PEER ID %s", peerConn.PeerId.String())
+			break
 		}
 	}
 
@@ -277,7 +273,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 func (self *Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
-	//defer stream.Close()
+	defer stream.Close()
 
 	remotePeerId := stream.Conn().RemotePeer()
 	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID-%s", self.Host.ID().String(), remotePeerId.String())
@@ -316,11 +312,9 @@ func (self *Peer) HandleStream(stream net.Stream) {
 
 	for {
 		select {
-		case peerConnT := <-self.disconnectPeer:
-			if &peerConn == peerConnT {
-				Logger.log.Infof("HandleStream Close Stream")
-				break
-			}
+		case <-peerConn.disconnect:
+			Logger.log.Infof("HandleStream Close Stream PEER ID %s", peerConn.PeerId.String())
+			break
 		}
 	}
 }
@@ -444,8 +438,6 @@ func (self *Peer) handleConnected(peerConn *PeerConn) {
 
 func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.PeerId.String())
-
-	peerConn.ListenerPeer.disconnectPeer <- peerConn
 
 	if peerConn.IsOutbound {
 		if peerConn.State() != ConnCanceled {
