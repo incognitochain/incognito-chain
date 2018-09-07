@@ -35,10 +35,10 @@ func (view *TxViewPoint) SetBestHash(hash *common.Hash) {
 }
 
 /**
-// fetchUsedTx get list nullifiers from txs in block and check if they are not in Main chain db
+// fetchTxViewPoint get list nullifiers and commitments from txs in block and check if they are not in Main chain db
 return list new nullifiers
 */
-func (view *TxViewPoint) fetchUsedTx(db database.DB, block *Block) (error) {
+func (view *TxViewPoint) fetchTxViewPoint(db database.DB, block *Block) (error) {
 	transactions := block.Transactions
 	// Loop through all of the transaction descs (except for the coinbase tx)
 	acceptedNullifiers := make(map[string][][]byte)

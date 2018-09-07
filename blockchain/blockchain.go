@@ -275,7 +275,7 @@ func (self *BlockChain) StoreBlockIndex(block *Block) error {
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
  */
-func (self *BlockChain) StoreUsedTxFromUsedTxViewPoint(view TxViewPoint) (error) {
+func (self *BlockChain) StoreNullifiersFromUsedTxViewPoint(view TxViewPoint) (error) {
 	for typeJoinSplitDesc, item := range view.listNullifiers {
 		for _, item1 := range item {
 			err := self.Config.DataBase.StoreNullifiers(item1, typeJoinSplitDesc)
@@ -291,7 +291,7 @@ func (self *BlockChain) StoreUsedTxFromUsedTxViewPoint(view TxViewPoint) (error)
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
  */
-func (self *BlockChain) StoreNotUsedTxFromUsedTxViewPoint(view TxViewPoint) (error) {
+func (self *BlockChain) StoreCommitmentsFromUsedTxViewPoint(view TxViewPoint) (error) {
 	for typeJoinSplitDesc, item := range view.listCommitments {
 		for _, item1 := range item {
 			err := self.Config.DataBase.StoreCommitments(item1, typeJoinSplitDesc)
@@ -307,7 +307,7 @@ func (self *BlockChain) StoreNotUsedTxFromUsedTxViewPoint(view TxViewPoint) (err
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
  */
-func (self *BlockChain) StoreUsedTxFromListNullifier(nullifiers [][]byte, typeJoinSplitDesc string) (error) {
+func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, typeJoinSplitDesc string) (error) {
 	for _, nullifier := range nullifiers {
 		err := self.Config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc)
 		if err != nil {
@@ -321,7 +321,7 @@ func (self *BlockChain) StoreUsedTxFromListNullifier(nullifiers [][]byte, typeJo
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
  */
-func (self *BlockChain) StoreNotUsedTxFromListNullifier(commitments [][]byte, typeJoinSplitDesc string) (error) {
+func (self *BlockChain) StoreCommitmentsFromListNullifier(commitments [][]byte, typeJoinSplitDesc string) (error) {
 	for _, item := range commitments {
 		err := self.Config.DataBase.StoreCommitments(item, typeJoinSplitDesc)
 		if err != nil {
@@ -335,7 +335,7 @@ func (self *BlockChain) StoreNotUsedTxFromListNullifier(commitments [][]byte, ty
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
  */
-func (self *BlockChain) StoreUsedTxFromTx(tx *transaction.Tx, typeJoinSplitDesc string) (error) {
+func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx, typeJoinSplitDesc string) (error) {
 	for _, desc := range tx.Desc {
 		for _, nullifier := range desc.Nullifiers {
 			err := self.Config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc)
@@ -351,7 +351,7 @@ func (self *BlockChain) StoreUsedTxFromTx(tx *transaction.Tx, typeJoinSplitDesc 
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
  */
-func (self *BlockChain) StoreNotUsedTxFromTx(tx *transaction.Tx, typeJoinSplitDesc string) (error) {
+func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx, typeJoinSplitDesc string) (error) {
 	for _, desc := range tx.Desc {
 		for _, item := range desc.Commitments {
 			err := self.Config.DataBase.StoreCommitments(item, typeJoinSplitDesc)
@@ -531,7 +531,7 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 		view := NewTxViewPoint()
 		view.SetBestHash(parentHash)
 
-		err := view.fetchUsedTx(b.Config.DataBase, block)
+		err := view.fetchTxViewPoint(b.Config.DataBase, block)
 		if err != nil {
 			return false, err
 		}
@@ -540,12 +540,12 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 		// Update the list used txs set using the state of the used tx view point. This
 		// entails adding the new
 		// ones created by the block.
-		err = b.StoreUsedTxFromUsedTxViewPoint(*view)
+		err = b.StoreNullifiersFromUsedTxViewPoint(*view)
 		if err != nil {
 			return false, err
 		}
 
-		err = b.StoreNotUsedTxFromUsedTxViewPoint(*view)
+		err = b.StoreCommitmentsFromUsedTxViewPoint(*view)
 		if err != nil {
 			return false, err
 		}
