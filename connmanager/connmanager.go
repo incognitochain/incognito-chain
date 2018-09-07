@@ -226,6 +226,7 @@ func (self *ConnManager) Connect(addr string) {
 			RawAddress:         addr,
 			Config:             listen.Config,
 			PeerConns:          make(map[libpeer.ID]*peer.PeerConn),
+			PendingPeers:       make(map[libpeer.ID]*peer.Peer),
 			HandleConnected:    self.handleConnected,
 			HandleDisconnected: self.handleDisconnected,
 			HandleFailed:       self.handleFailed,
