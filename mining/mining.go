@@ -51,10 +51,10 @@ func getMedians(agentDataPoints []*blockchain.AgentDataPoint) (
 
 func calculateReward(
 	agentDataPoints map[string]*blockchain.AgentDataPoint,
-	feeMap map[string]float64,
-) map[string]float64 {
+	feeMap map[string]uint64,
+) map[string]uint64 {
 	if len(agentDataPoints) < NUMBER_OF_MAKING_DECISION_AGENTS {
-		return map[string]float64{
+		return map[string]uint64{
 			"coins": DEFAULT_COINS + feeMap[common.TxOutCoinType],
 			"bonds": DEFAULT_BONDS + feeMap[common.TxOutBondType],
 		}
@@ -74,14 +74,14 @@ func calculateReward(
 		contractingCoinsActions = append(contractingCoinsActions, dataPoint)
 	}
 	if math.Max(float64(len(issuingCoinsActions)), float64(len(contractingCoinsActions))) < (math.Floor(float64(len(agentDataPoints)/2)) + 1) {
-		return map[string]float64{
+		return map[string]uint64{
 			"coins": DEFAULT_COINS + feeMap[common.TxOutCoinType],
 			"bonds": DEFAULT_BONDS + feeMap[common.TxOutBondType],
 		}
 	}
 
 	if len(issuingCoinsActions) == len(contractingCoinsActions) {
-		return map[string]float64{
+		return map[string]uint64{
 			"coins": DEFAULT_COINS + feeMap[common.TxOutCoinType],
 			"bonds": DEFAULT_BONDS + feeMap[common.TxOutBondType],
 		}
@@ -89,10 +89,10 @@ func calculateReward(
 
 	if len(issuingCoinsActions) < len(contractingCoinsActions) {
 		_, medianBond, medianTax := getMedians(contractingCoinsActions)
-		coins := (100 - medianTax) * 0.01 * feeMap[common.TxOutCoinType]
+		coins := uint64(math.Floor((100 - medianTax) * 0.01 * float64(feeMap[common.TxOutCoinType])))
 		burnedCoins := feeMap[common.TxOutCoinType] - coins
-		bonds := medianBond + feeMap[common.TxOutBondType] + burnedCoins
-		return map[string]float64{
+		bonds := uint64(math.Floor(medianBond)) + feeMap[common.TxOutBondType] + burnedCoins
+		return map[string]uint64{
 			"coins":       coins,
 			"bonds":       bonds,
 			"burnedCoins": burnedCoins,
@@ -101,8 +101,8 @@ func calculateReward(
 	// issuing coins
 	medianCoin, _, _ := getMedians(issuingCoinsActions)
 
-	return map[string]float64{
-		"coins": medianCoin + feeMap[common.TxOutCoinType],
+	return map[string]uint64{
+		"coins": uint64(math.Floor(medianCoin)) + feeMap[common.TxOutCoinType],
 		"bonds": feeMap[common.TxOutBondType],
 	}
 }
@@ -116,7 +116,7 @@ func createCoinbaseTx(
 	params *blockchain.Params,
 	coinbaseScript []byte,
 	addr string,
-	rewardMap map[string]float64,
+	rewardMap map[string]uint64,
 ) (*transaction.Tx, error) {
 	// Create the script to pay to the provided payment address if one was
 	// specified.  Otherwise create a script that allows the coinbase to be
@@ -180,11 +180,11 @@ func createCoinbaseTx(
 func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 	[]transaction.Transaction,
 	[]*transaction.ActionParamTx,
-	map[string]float64,
+	map[string]uint64,
 ) {
 	var txs []transaction.Transaction
 	var actionParamTxs []*transaction.ActionParamTx
-	var feeMap = map[string]float64{
+	var feeMap = map[string]uint64{
 		fmt.Sprintf(common.TxOutCoinType): 0,
 		fmt.Sprintf(common.TxOutBondType): 0,
 	}
@@ -297,10 +297,13 @@ mempoolLoop:
 	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
 		//@todo need apply validate tx, logic check all referenced here
-		// call function spendTransaction to mark utxo - (** no need because use privacy**)
-		utxos, err := g.chain.FetchUtxoView(*tx.(*transaction.Tx))
-		_ = utxos
-		_ = err
+		for _, desc := range tx.(*transaction.Tx).Desc {
+			view, err := g.chain.FetchTxViewPoint(desc.Type)
+			_ = view
+			_ = err
+		}
+		//_ = utxos
+		//_ = err
 		/*
 		if err != nil {
 			fmt.Print("Unable to fetch utxo view for tx %s: %v",

@@ -89,7 +89,7 @@ func (tp *TxPool) HaveTx(hash *common.Hash) bool {
 }
 
 // add transaction into pool
-func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee float64) *TxDesc {
+func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *TxDesc {
 	txD := &TxDesc{
 		Desc: mining.TxDesc{
 			Tx:     tx,
@@ -112,11 +112,11 @@ func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash
 	bestHeight := tp.Config.BlockChain.BestState.BestBlock.Height
 	nextBlockHeight := bestHeight + 1
 
-	// Perform several checks on the transaction inputs using the invariant
+	// Perform several checks on the transaction data using the invariant
 	// rules in blockchain for what transactions are allowed into blocks.
 	// Also returns the fees associated with the transaction which will be
 	// used later.
-	txFee, err := tp.Config.BlockChain.CheckTransactionInputs(&tx, nextBlockHeight, nil, tp.Config.ChainParams)
+	txFee, err := tp.Config.BlockChain.CheckTransactionData(tx, nextBlockHeight, nil, tp.Config.ChainParams)
 	if err != nil {
 		//if cerr, ok := err.(blockchain.RuleError); ok {
 		//	return nil, nil, chainRuleError(cerr)

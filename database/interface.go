@@ -14,9 +14,12 @@ type DB interface {
 	StoreBestBlock(v interface{}) error
 	FetchBestState() ([]byte, error)
 
-	StoreNullifiers([]byte) error
-	FetchNullifiers() ([][]byte, error)
-	HasNullifier([]byte) (bool, error)
+	StoreNullifiers([]byte, string) error
+	FetchNullifiers(string) ([][]byte, error)
+	HasNullifier([]byte, string) (bool, error)
+	StoreCommitments([]byte, string) error
+	FetchCommitments(string) ([][]byte, error)
+	HasCommitment([]byte, string) (bool, error)
 
 	StoreBlockIndex(*common.Hash, int32) error
 	GetIndexOfBlock(*common.Hash) (int32, error)

@@ -1,7 +1,6 @@
 package rpcserver
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -9,7 +8,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -138,39 +136,39 @@ Parameter #3—the addresses an output must pay
 */
 func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
-	paramsArray := common.InterfaceSlice(params)
-	min := int(paramsArray[0].(float64))
-	max := int(paramsArray[1].(float64))
-	listAddresses := paramsArray[2].(string)
-	_ = min
-	_ = max
-	var addresses []string
-	addresses = strings.Fields(listAddresses)
-	blocks, _ := self.Config.BlockChain.GetAllBlocks()
+	//paramsArray := common.InterfaceSlice(params)
+	//min := int(paramsArray[0].(float64))
+	//max := int(paramsArray[1].(float64))
+	//listAddresses := paramsArray[2].(string)
+	//_ = min
+	//_ = max
+	//var addresses []string
+	//addresses = strings.Fields(listAddresses)
+	//blocks, _ := self.Config.BlockChain.GetAllBlocks()
 	result := make([]jsonrpc.ListUnspentResult, 0)
-	for _, block := range blocks {
-		if len(block.Transactions) > 0 {
-			for _, tx := range block.Transactions {
-				if tx.GetType() == common.TxActionParamsType {
-					continue
-				}
-				normalTx := tx.(*transaction.Tx)
-				if len(normalTx.TxOut) > 0 {
-					for index, txOut := range normalTx.TxOut {
-						if bytes.Compare(txOut.PkScript, []byte(addresses[0])) == 0 {
-							result = append(result, jsonrpc.ListUnspentResult{
-								Vout:      index,
-								TxID:      normalTx.Hash().String(),
-								Address:   string(txOut.PkScript),
-								Amount:    txOut.Value,
-								TxOutType: txOut.TxOutType,
-							})
-						}
-					}
-				}
-			}
-		}
-	}
+	//for _, block := range blocks {
+	//	if len(block.Transactions) > 0 {
+	//		for _, tx := range block.Transactions {
+	//			if tx.GetType() == common.TxActionParamsType {
+	//				continue
+	//			}
+	//			normalTx := tx.(*transaction.Tx)
+	//			if len(normalTx.TxOut) > 0 {
+	//				for index, txOut := range normalTx.TxOut {
+	//					if bytes.Compare(txOut.PkScript, []byte(addresses[0])) == 0 {
+	//						result = append(result, jsonrpc.ListUnspentResult{
+	//							Vout:      index,
+	//							TxID:      normalTx.Hash().String(),
+	//							Address:   string(txOut.PkScript),
+	//							Amount:    txOut.Value,
+	//							TxOutType: txOut.TxOutType,
+	//						})
+	//					}
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
 	return result, nil
 }
 
@@ -179,7 +177,7 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 */
 func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
-	arrayParams := common.InterfaceSlice(params)
+	/*arrayParams := common.InterfaceSlice(params)
 	tx := transaction.Tx{
 		Version: 1,
 		Type:    common.TxNormalType,
@@ -214,7 +212,8 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 	if err != nil {
 		return nil, err
 	}
-	return hex.EncodeToString(byteArrays), nil
+	return hex.EncodeToString(byteArrays), nil*/
+	return "", nil
 }
 
 /**
@@ -236,7 +235,7 @@ Result—the transaction with any signatures made
 */
 func (self RpcServer) handleSignRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
-	arrayParams := common.InterfaceSlice(params)
+	/*arrayParams := common.InterfaceSlice(params)
 	hexRawTx := arrayParams[0].(string)
 	rawTxBytes, err := hex.DecodeString(hexRawTx)
 
@@ -258,7 +257,8 @@ func (self RpcServer) handleSignRawTransaction(params interface{}, closeChan <-c
 		return nil, err
 	}
 	log.Println(string(byteArrays))
-	return hex.EncodeToString(byteArrays), nil
+	return hex.EncodeToString(byteArrays), nil*/
+	return "", nil
 }
 
 /**
@@ -313,7 +313,7 @@ func isExisted(item int, arr []int) bool {
 func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// return 1000, nil
 	log.Println(params)
-	blocks, _ := self.Config.BlockChain.GetAllBlocks()
+	/*blocks, _ := self.Config.BlockChain.GetAllBlocks()
 	txInsMap := map[string][]int{}
 	txOuts := []jsonrpc.ListUnspentResult{}
 	for _, block := range blocks {
@@ -355,7 +355,8 @@ func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeCh
 			result[txOut.TxOutType] += txOut.Amount
 		}
 	}
-	return result, nil
+	return result, nil*/
+	return "", nil
 }
 
 func assertEligibleAgentIDs(eligibleAgentIDs interface{}) []string {

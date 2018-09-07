@@ -275,11 +275,29 @@ func (self *BlockChain) StoreBlockIndex(block *Block) error {
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
  */
-func (self *BlockChain) StoreUsedTxFromUsedTxViewPoint(view UsedTxViewPoint) (error) {
-	for _, nullifier := range view.listNullifiers {
-		err := self.Config.DataBase.StoreNullifiers(nullifier)
-		if err != nil {
-			return err
+func (self *BlockChain) StoreUsedTxFromUsedTxViewPoint(view TxViewPoint) (error) {
+	for typeJoinSplitDesc, item := range view.listNullifiers {
+		for _, item1 := range item {
+			err := self.Config.DataBase.StoreNullifiers(item1, typeJoinSplitDesc)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+/**
+Uses an existing database to update the set of not used tx by saving list commitments of privacy,
+this is a list tx-in which are used by a new tx
+ */
+func (self *BlockChain) StoreNotUsedTxFromUsedTxViewPoint(view TxViewPoint) (error) {
+	for typeJoinSplitDesc, item := range view.listCommitments {
+		for _, item1 := range item {
+			err := self.Config.DataBase.StoreCommitments(item1, typeJoinSplitDesc)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -289,9 +307,23 @@ func (self *BlockChain) StoreUsedTxFromUsedTxViewPoint(view UsedTxViewPoint) (er
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
  */
-func (self *BlockChain) StoreUsedTxFromListNullifier(nullifiers [][]byte) (error) {
+func (self *BlockChain) StoreUsedTxFromListNullifier(nullifiers [][]byte, typeJoinSplitDesc string) (error) {
 	for _, nullifier := range nullifiers {
-		err := self.Config.DataBase.StoreNullifiers(nullifier)
+		err := self.Config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+/**
+Uses an existing database to update the set of not used tx by saving list commitments of privacy,
+this is a list tx-in which are used by a new tx
+ */
+func (self *BlockChain) StoreNotUsedTxFromListNullifier(commitments [][]byte, typeJoinSplitDesc string) (error) {
+	for _, item := range commitments {
+		err := self.Config.DataBase.StoreCommitments(item, typeJoinSplitDesc)
 		if err != nil {
 			return err
 		}
@@ -303,10 +335,26 @@ func (self *BlockChain) StoreUsedTxFromListNullifier(nullifiers [][]byte) (error
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
  */
-func (self *BlockChain) StoreUsedTxFromTx(tx *transaction.Tx) (error) {
+func (self *BlockChain) StoreUsedTxFromTx(tx *transaction.Tx, typeJoinSplitDesc string) (error) {
 	for _, desc := range tx.Desc {
 		for _, nullifier := range desc.Nullifiers {
-			err := self.Config.DataBase.StoreNullifiers(nullifier)
+			err := self.Config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+/**
+Uses an existing database to update the set of not used tx by saving list commitments of privacy,
+this is a list tx-in which are used by a new tx
+ */
+func (self *BlockChain) StoreNotUsedTxFromTx(tx *transaction.Tx, typeJoinSplitDesc string) (error) {
+	for _, desc := range tx.Desc {
+		for _, item := range desc.Commitments {
+			err := self.Config.DataBase.StoreCommitments(item, typeJoinSplitDesc)
 			if err != nil {
 				return err
 			}
@@ -385,6 +433,21 @@ func (self *BlockChain) GetAllHashBlocks() ([]*common.Hash, error) {
 	return view, err
 }*/
 
+func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string) (*TxViewPoint, error) {
+	view := NewTxViewPoint()
+	commitments, err := self.Config.DataBase.FetchCommitments(typeJoinSplitDesc)
+	if err != nil {
+		return nil, err
+	}
+	view.listNullifiers[typeJoinSplitDesc] = commitments
+	nullifiers, err := self.Config.DataBase.FetchNullifiers(typeJoinSplitDesc)
+	if err != nil {
+		return nil, err
+	}
+	view.listNullifiers[typeJoinSplitDesc] = nullifiers
+	return view, nil
+}
+
 // CheckTransactionInputs performs a series of checks on the inputs to a
 // transaction to ensure they are valid.  An example of some of the checks
 // include verifying all inputs exist, ensuring the coinbase seasoning
@@ -399,6 +462,21 @@ func (self *BlockChain) GetAllHashBlocks() ([]*common.Hash, error) {
 /*func (self *BlockChain) CheckTransactionInputs(tx *transaction.Transaction, txHeight int32, utxoView *UtxoViewpoint, chainParams *Params) (float64, error) {
 	return 0, nil
 }*/
+
+func (self *BlockChain) CheckTransactionData(tx transaction.Transaction, nextBlockHeigt int32, txViewPoint *TxViewPoint, chainParams *Params) (uint64, error) {
+	txType := tx.GetType()
+	if txType == common.TxNormalType {
+		normalTx := tx.(*transaction.Tx)
+		fee := normalTx.Fee
+		// TODO validate
+		return fee, nil
+	} else if txType == common.TxActionParamsType {
+		// TODO validate
+		return 0, nil
+	} else {
+		return 0, errors.New("Wrong tx type")
+	}
+}
 
 // connectBestChain handles connecting the passed block to the chain while
 // respecting proper chain selection according to the chain with the most
@@ -450,7 +528,7 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 	// most common case.
 	parentHash := &block.Header.PrevBlockHash
 	if parentHash.IsEqual(&b.BestState.BestBlockHash) {
-		view := NewUsedTxViewPoint()
+		view := NewTxViewPoint()
 		view.SetBestHash(parentHash)
 
 		err := view.fetchUsedTx(b.Config.DataBase, block)
@@ -463,6 +541,11 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 		// entails adding the new
 		// ones created by the block.
 		err = b.StoreUsedTxFromUsedTxViewPoint(*view)
+		if err != nil {
+			return false, err
+		}
+
+		err = b.StoreNotUsedTxFromUsedTxViewPoint(*view)
 		if err != nil {
 			return false, err
 		}

@@ -5,6 +5,8 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"encoding/json"
+	"errors"
 )
 
 const (
@@ -35,7 +37,7 @@ type Block struct {
 /**
 Customer UnmarshalJSON to parse list Tx
 */
-/*func (self *Block) UnmarshalJSON(data []byte) error {
+func (self *Block) UnmarshalJSON(data []byte) error {
 	type Alias Block
 	temp := &struct {
 		Transactions []map[string]interface{}
@@ -59,7 +61,7 @@ Customer UnmarshalJSON to parse list Tx
 				LockTime: int(txTemp["LockTime"].(float64)),
 			}
 			// process for txin
-			txTempTxIn := txTemp["TxIn"].([]interface{})
+			/*txTempTxIn := txTemp["TxIn"].([]interface{})
 			txIn := make([]transaction.TxIn, 0)
 			for _, k := range txTempTxIn {
 				v := k.(map[string]interface{})
@@ -76,10 +78,10 @@ Customer UnmarshalJSON to parse list Tx
 				}
 				txIn = append(txIn, t)
 			}
-			txNormal.TxIn = txIn
+			txNormal.TxIn = txIn*/
 
 			// process for txout
-			txTempTxOut := txTemp["TxOut"].([]interface{})
+			/*txTempTxOut := txTemp["TxOut"].([]interface{})
 			txOut := make([]transaction.TxOut, 0)
 			for _, k := range txTempTxOut {
 				v := k.(map[string]interface{})
@@ -90,7 +92,7 @@ Customer UnmarshalJSON to parse list Tx
 				}
 				txOut = append(txOut, t)
 			}
-			txNormal.TxOut = txOut
+			txNormal.TxOut = txOut*/
 
 			self.Transactions = append(self.Transactions, txNormal)
 		} else if txTemp["Type"].(string) == common.TxActionParamsType {
@@ -117,7 +119,7 @@ Customer UnmarshalJSON to parse list Tx
 
 	self.Header = temp.Alias.Header
 	return nil
-}*/
+}
 
 func (self *Block) AddTransaction(tx transaction.Transaction) error {
 	self.Transactions = append(self.Transactions, tx)
