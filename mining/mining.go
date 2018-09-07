@@ -317,9 +317,9 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	agentDataPoints := getLatestAgentDataPoints(chain, actionParamTxs)
 	rewardMap := calculateReward(agentDataPoints, feeMap)
 
-	coinbaseScript := []byte("1234567890123456789012") //@todo should be create function create basescript
+	_ = []byte("1234567890123456789012") //@todo should be create function create basescript
 
-	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, coinbaseScript, payToAddress, rewardMap)
+	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, nil, rewardMap, nil)
 	if err != nil {
 		return nil, err
 	}

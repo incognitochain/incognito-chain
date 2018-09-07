@@ -59,6 +59,7 @@ type Peer struct {
 	outboundMutex sync.Mutex
 	Config        Config
 	MaxOutbound   int
+	MaxInbound    int
 
 	PeerConns    map[peer.ID]*PeerConn
 	PendingPeers map[peer.ID]*Peer
@@ -217,6 +218,26 @@ func (self *Peer) ConnCanceled(peer *Peer) {
 	self.PendingPeers[peer.PeerId] = peer
 }
 
+func (self *Peer) NumInbound() int {
+	ret := int(0)
+	for _, peerConn := range self.PeerConns {
+		if !peerConn.IsOutbound {
+			ret += 1
+		}
+	}
+	return ret
+}
+
+func (self *Peer) NumOutbound() int {
+	ret := int(0)
+	for _, peerConn := range self.PeerConns {
+		if peerConn.IsOutbound {
+			ret += 1
+		}
+	}
+	return ret
+}
+
 func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER ID - %s \n", peer.PeerId.String())
 
@@ -239,7 +260,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		return nil, nil
 	}
 
-	if len(self.PeerConns) >= self.MaxOutbound && !ok {
+	if self.NumOutbound() >= self.MaxOutbound && !ok {
 		Logger.log.Infof("Max Peer Outbound Connection")
 
 		self.ConnPending(peer)
@@ -303,6 +324,12 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 func (self *Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
+
+	if self.NumInbound() >= self.MaxInbound {
+		Logger.log.Infof("Max Peer Inbound Connection")
+
+		return
+	}
 
 	remotePeerId := stream.Conn().RemotePeer()
 	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID-%s", self.Host.ID().String(), remotePeerId.String())
