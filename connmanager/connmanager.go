@@ -4,6 +4,7 @@ import (
 	"net/rpc"
 	"github.com/ninjadotorg/cash-prototype/bootnode/server"
 	"github.com/ninjadotorg/cash-prototype/cashec"
+	"os"
 	"sync"
 	"log"
 	"sync/atomic"
@@ -416,7 +417,18 @@ listen:
 					publicKey = string(keyPair.PublicKey)
 				}
 
-				args := &server.PingArgs{listener.RawAddress, publicKey}
+				// remove later
+				rawAddress := listener.RawAddress
+
+				externalAddress := os.Getenv("EXTERNAL_ADDRESS")
+				if externalAddress != "" {
+					host, _, err := net.SplitHostPort(externalAddress)
+					if err != nil {
+						externalAddress = strings.Replace(externalAddress, "127.0.0.1", host, 1)
+					}
+				}
+
+				args := &server.PingArgs{rawAddress, publicKey}
 				Logger.log.Infof("[Exchange Peers] Ping", args)
 				err := client.Call("Handler.Ping", args, &response)
 				if err != nil {
