@@ -83,6 +83,8 @@ type config struct {
 	DisableListen        bool          `long:"nolisten" description:"Disable listening for incoming connections -- NOTE: Listening is automatically disabled if the --connect or --proxy options are used without also specifying listen interfaces via --listen"`
 	Listeners            []string      `long:"listen" description:"Add an interface/port to listen for connections (default all interfaces port: 8333, testnet: 18333)"`
 	MaxPeers             int           `long:"maxpeers" description:"Max number of inbound and outbound peers"`
+	MaxOutPeers          int           `long:"maxoutpeers" description:"Max number of outbound peers"`
+	MaxInPeers           int           `long:"maxinpeers" description:"Max number of inbound peers"`
 	DisableBanning       bool          `long:"nobanning" description:"Disable banning of misbehaving peers"`
 	BanDuration          time.Duration `long:"banduration" description:"How long to ban misbehaving peers.  Valid time units are {s, m, h}.  Minimum 1 second"`
 	BanThreshold         uint32        `long:"banthreshold" description:"Maximum allowed ban score before disconnecting and banning misbehaving peers."`
@@ -325,6 +327,8 @@ func loadConfig() (*config, []string, error) {
 		ConfigFile:           defaultConfigFile,
 		DebugLevel:           defaultLogLevel,
 		MaxPeers:             defaultMaxPeers,
+		MaxOutPeers:          defaultMaxPeers,
+		MaxInPeers:           defaultMaxPeers,
 		BanDuration:          defaultBanDuration,
 		BanThreshold:         defaultBanThreshold,
 		RPCMaxClients:        defaultMaxRPCClients,

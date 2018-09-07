@@ -186,8 +186,12 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	// Create a connection manager.
 	targetOutbound := defaultNumberOfTargetOutbound
-	if cfg.MaxPeers < targetOutbound {
-		targetOutbound = cfg.MaxPeers
+	if cfg.MaxOutPeers < targetOutbound {
+		targetOutbound = cfg.MaxOutPeers
+	}
+	targetInbound := defaultNumberOfTargetOutbound
+	if cfg.MaxInPeers < targetOutbound {
+		targetInbound = cfg.MaxInPeers
 	}
 
 	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
@@ -195,6 +199,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		OnOutboundConnection: self.OutboundPeerConnected,
 		ListenerPeers:        peers,
 		TargetOutbound:       uint32(targetOutbound),
+		TargetInbound:        uint32(targetInbound),
 	})
 	if err != nil {
 		return err
@@ -689,6 +694,33 @@ func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId pe
 		return err
 	}
 	self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msg, dc)
+	return nil
+}
+
+/**
+PushBlockMessageWithPeerId broadcast block to specific connected peer
+ */
+func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block, validatorAddress string) error {
+	var dc chan<- struct{}
+	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+	msg.(*wire.MessageBlock).Block = *block
+	if err != nil {
+		return err
+	}
+
+	discoverdPeer, exist := self.ConnManager.DiscoveredPeers[validatorAddress]
+	if exist {
+		for _, listener := range self.ConnManager.Config.ListenerPeers {
+			peerConn, exist := listener.PeerConns[discoverdPeer.PeerId]
+
+			if exist {
+				peerConn.QueueMessageWithEncoding(msg, dc)
+			}
+		}
+	} else {
+		return errors.New(fmt.Sprintf("Can not found peer with validator address %s", validatorAddress))
+	}
+
 	return nil
 }
 

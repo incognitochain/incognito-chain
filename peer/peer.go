@@ -54,18 +54,19 @@ type Peer struct {
 	PeerId           peer.ID
 	RawAddress       string
 	ListeningAddress common.SimpleAddr
+	PublicKey		 string
 
 	Seed          int64
 	outboundMutex sync.Mutex
 	Config        Config
 	MaxOutbound   int
+	MaxInbound    int
 
 	PeerConns    map[peer.ID]*PeerConn
 	PendingPeers map[peer.ID]*Peer
 
-	Peers map[string]string
-
-	quit chan struct{}
+	quit           chan struct{}
+	disconnectPeer chan *PeerConn
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -182,7 +183,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.TargetAddress = fullAddr
 	self.PeerId = peerid
 	self.quit = make(chan struct{}, 1)
-	self.Peers = make(map[string]string)
+	self.disconnectPeer = make(chan *PeerConn)
 
 	self.outboundMutex = sync.Mutex{}
 
@@ -192,7 +193,6 @@ func (self Peer) NewPeer() (*Peer, error) {
 func (self *Peer) Start() error {
 	Logger.log.Info("Peer start")
 	// ping to bootnode for test env
-	go self.HandleExchangePeers()
 	Logger.log.Info("Set stream handler and wait for connection from other peer")
 	self.Host.SetStreamHandler("/blockchain/1.0.0", self.HandleStream)
 	select {
@@ -222,6 +222,26 @@ func (self *Peer) ConnCanceled(peer *Peer) {
 	self.PendingPeers[peer.PeerId] = peer
 }
 
+func (self *Peer) NumInbound() int {
+	ret := int(0)
+	for _, peerConn := range self.PeerConns {
+		if !peerConn.IsOutbound {
+			ret += 1
+		}
+	}
+	return ret
+}
+
+func (self *Peer) NumOutbound() int {
+	ret := int(0)
+	for _, peerConn := range self.PeerConns {
+		if peerConn.IsOutbound {
+			ret += 1
+		}
+	}
+	return ret
+}
+
 func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER ID - %s \n", peer.PeerId.String())
 
@@ -244,7 +264,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		return nil, nil
 	}
 
-	if len(self.PeerConns) >= self.MaxOutbound && !ok {
+	if self.NumOutbound() >= self.MaxOutbound && !ok {
 		Logger.log.Infof("Max Peer Outbound Connection")
 
 		self.ConnPending(peer)
@@ -309,6 +329,12 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
+	if self.NumInbound() >= self.MaxInbound {
+		Logger.log.Infof("Max Peer Inbound Connection")
+
+		return
+	}
+
 	remotePeerId := stream.Conn().RemotePeer()
 	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID-%s", self.Host.ID().String(), remotePeerId.String())
 
@@ -352,52 +378,6 @@ func (self *Peer) HandleStream(stream net.Stream) {
 			break
 		}
 	}
-}
-
-func (self Peer) HandleExchangePeers() {
-	//	Logger.log.Infof("Start Exchange Peers")
-	//	var client *rpc.Client
-	//	var err error
-	//
-	//listen:
-	//	for {
-	//		Logger.log.Infof("Peers", self.Peers)
-	//		if client == nil {
-	//			client, err = rpc.Dial("tcp", "35.199.177.89:9339")
-	//			if err != nil {
-	//				Logger.log.Error("[Exchange Peers] re-connect:", err)
-	//			}
-	//		}
-	//		if client != nil {
-	//			Logger.log.Infof("[Exchange Peers] Ping")
-	//			var response []server.RawPeer
-	//			args := &server.PingArgs{self.RawAddress, self.Config.SealerPrvKey}
-	//			Logger.log.Infof("[Exchange Peers] Ping", args)
-	//			err := client.Call("Handler.Ping", args, &response)
-	//			if err != nil {
-	//				Logger.log.Error("[Exchange Peers] Ping:", err)
-	//				client = nil
-	//				time.Sleep(time.Second * 2)
-	//
-	//				goto listen
-	//			}
-	//			Logger.log.Infof("Ping response", response)
-	//			for _, rawPeer := range response {
-	//				if rawPeer.SealerPrvKey != "" && !strings.Contains(rawPeer.RawAddress, self.PeerId.String()) {
-	//					keyPair := &cashec.KeyPair{}
-	//					keyPair.Import([]byte(rawPeer.SealerPrvKey))
-	//
-	//					_, exist := self.Peers[string(keyPair.PublicKey)]
-	//
-	//					if !exist {
-	//						self.Peers[string(keyPair.PublicKey)] = rawPeer.RawAddress
-	//					}
-	//				}
-	//			}
-	//			Logger.log.Infof("Ping response Peers", self.Peers)
-	//		}
-	//		time.Sleep(time.Second * 2)
-	//	}
 }
 
 // QueueMessageWithEncoding adds the passed bitcoin message to the peer send

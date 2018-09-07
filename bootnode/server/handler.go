@@ -8,19 +8,19 @@ type Handler struct {
 
 type RawPeer struct {
 	RawAddress string
-	SealerPrvKey string
+	PublicKey string
 }
 
 type PingArgs struct {
-	ID string
-	SealerPrvKey string
+	RawAddress string
+	PublicKey string
 }
 func (s Handler) Ping(args *PingArgs, peers *[]RawPeer) error {
 	fmt.Println("Ping", args)
-	s.server.AddPeer(args.ID, args.SealerPrvKey)
+	s.server.AddOrUpdatePeer(args.RawAddress, args.PublicKey)
 
 	for _, p := range s.server.Peers {
-		*peers = append(*peers, RawPeer{p.ID, p.SealerPrvKey})
+		*peers = append(*peers, RawPeer{p.RawAddress, p.PublicKey})
 	}
 
 	fmt.Println("Response", *peers)
