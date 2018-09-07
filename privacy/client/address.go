@@ -29,9 +29,6 @@ func RandBits(n int) []byte {
 // RandSpendingKey generates a random SpendingKey
 func RandSpendingKey() SpendingKey {
 	b := RandBits(SpendingKeyLength*8 - 4)
-	// b := make([]byte, SpendingKeyLength)
-	// rand.Read(b)
-	// b[SpendingKeyLength-1] &= 0x0F // First 4 bits are 0
 
 	ask := *new(SpendingKey)
 	copy(ask[:], b)
@@ -81,6 +78,23 @@ type TransmissionKey [32]byte
 type PaymentAddress struct {
 	Apk   SpendingAddress
 	Pkenc TransmissionKey
+}
+
+// FromBytes converts a byte stream to PaymentAddress
+func (addr *PaymentAddress) FromBytes(data []byte) *PaymentAddress {
+	copy(addr.Apk[:], data[:32])   // First 32 bytes are Apk's
+	copy(addr.Pkenc[:], data[32:]) // Last 32 bytes are Pkenc's
+	return addr
+}
+
+// ToBytes converts a PaymentAddress to a byte slice
+func (addr *PaymentAddress) ToBytes() []byte {
+	result := make([]byte, 32)
+	pkenc := make([]byte, 32)
+	copy(result, addr.Apk[:32])
+	copy(pkenc, addr.Pkenc[:32])
+	result = append(result, pkenc...)
+	return result
 }
 
 func GenTransmissionKey(skenc ReceivingKey) TransmissionKey {

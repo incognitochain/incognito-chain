@@ -148,10 +148,19 @@ func CreateTx(senderKey *client.SpendingKey, receiverAddr *client.PaymentAddress
 }
 
 func createDummyNote(randomKey *client.SpendingKey) *client.Note {
-	// TODO(@0xbunyip): create dummy note according to 4.7.1
-	return nil
+	addr := client.GenSpendingAddress(*randomKey)
+	var rho [32]byte
+	copy(rho[:], client.RandBits(32*8))
+	note := &client.Note{
+		Value: 0,
+		Apk:   addr,
+		Rho:   rho[:],
+		Nf:    client.GetNullifier(*randomKey, rho),
+	}
+	return note
 }
 
+// CreateRandomJSInput creates a dummy input with 0 value note that is sended to a random address
 func CreateRandomJSInput() *client.JSInput {
 	randomKey := client.RandSpendingKey()
 	input := new(client.JSInput)
@@ -161,18 +170,14 @@ func CreateRandomJSInput() *client.JSInput {
 	return input
 }
 
-func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) (*Tx, error) {
-	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
-	keyBytes := []byte{} // TODO(0xbunyip): randomize seed?
-	keyPair, err := (&cashec.KeyPair{}).GenerateKey(keyBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	proof, err := client.Prove(inputs, outputs, keyPair.PublicKey, rt, reward)
-	if err != nil {
-		return nil, err
-	}
+func generateTxAndSign(
+	inputs []*client.JSInput,
+	outputs []*client.JSOutput,
+	proof *zksnark.PHGRProof,
+	rt []byte,
+	reward uint64,
+	keyPair *cashec.KeyPair,
+) (*Tx, error) {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
 
@@ -189,7 +194,7 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 		Version:  1,
 		Type:     common.TxNormalType,
 		Descs:    desc,
-		JSPubKey: keyPair.PublicKey,
+		JSPubKey: keyPair.PublicKey[:],
 		JSSig:    nil,
 	}
 
@@ -205,4 +210,45 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 	tx.JSSig = jsSig
 
 	return tx, nil
+}
+
+func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) (*Tx, error) {
+	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
+	keyBytes := []byte{} // TODO(0xbunyip): randomize seed?
+	keyPair, err := (&cashec.KeyPair{}).GenerateKey(keyBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	var seed, phi []byte
+	proof, err := client.Prove(inputs, outputs, keyPair.PublicKey[:], rt, reward, seed, phi)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := generateTxAndSign(inputs, outputs, proof, rt, reward, keyPair)
+	return tx, err
+}
+
+func GenerateProofAndSignForGenesisTx(
+	inputs []*client.JSInput,
+	outputs []*client.JSOutput,
+	rt []byte,
+	reward uint64,
+	seed, phi []byte,
+) (*Tx, error) {
+	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
+	privateSignKey := [32]byte{1}
+	keyPair, err := (&cashec.KeyPair{}).Import(privateSignKey[:])
+	if err != nil {
+		return nil, err
+	}
+
+	proof, err := client.Prove(inputs, outputs, keyPair.PublicKey[:], rt, reward, seed, phi)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := generateTxAndSign(inputs, outputs, proof, rt, reward, keyPair)
+	return tx, err
 }

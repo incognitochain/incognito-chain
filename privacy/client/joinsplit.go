@@ -37,7 +37,7 @@ func printProof(proof *zksnark.PHGRProof) {
 // inputs: WitnessPath and Key must be set; InputeNote's Value, Apk, R and Rho must also be set before calling this function
 // outputs: EncKey, OutputNote's Apk and Value must be set before calling this function
 // reward: for coinbase tx, this is the mining reward; for other tx, it must be 0
-func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte, reward uint64) (*zksnark.PHGRProof, error) {
+func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte, reward uint64, seed, phi []byte) (*zksnark.PHGRProof, error) {
 	// TODO: think how to implement vpub
 	// TODO: check for inputs (witness root & cm)
 
@@ -69,17 +69,18 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte, rew
 		input.InputNote.Cm = GetCommitment(input.InputNote)
 	}
 
-	// TODO:(0xbunyip): remove debug here
-	// seed := RandBits(256)
-	// seed := []byte{155, 31, 215, 9, 16, 242, 239, 233, 201, 109, 141, 58, 24, 239, 210, 117, 155, 17, 23, 188, 70, 125, 245, 85, 154, 42, 212, 0, 164, 221, 80, 94}
-	// hSig := HSigCRH(seed, inputs[0].InputNote.Nf, inputs[1].InputNote.Nf, pubKey)
-	hSig := []byte{155, 31, 215, 9, 16, 242, 239, 233, 201, 109, 141, 58, 24, 239, 210, 117, 155, 17, 23, 188, 70, 125, 245, 85, 154, 42, 212, 0, 164, 221, 80, 94}
+	if seed == nil { // seed != nil only for the transaction is genesis block
+		seed = RandBits(256)
+	}
+	hSig := HSigCRH(seed, inputs[0].InputNote.Nf, inputs[1].InputNote.Nf, pubKey)
+	// hSig := []byte{155, 31, 215, 9, 16, 242, 239, 233, 201, 109, 141, 58, 24, 239, 210, 117, 155, 17, 23, 188, 70, 125, 245, 85, 154, 42, 212, 0, 164, 221, 80, 94}
 
 	// Generate rho and r for new notes
 	const phiLen = 252
-	// TODO:(0xbunyip): remove debug here
-	// phi := RandBits(phiLen)
-	phi := []byte{80, 163, 129, 14, 224, 14, 22, 199, 9, 222, 152, 68, 97, 249, 132, 138, 69, 64, 195, 13, 46, 200, 79, 248, 16, 161, 73, 187, 200, 122, 235, 6}
+	if phi == nil {
+		phi = RandBits(phiLen)
+	}
+	// phi := []byte{80, 163, 129, 14, 224, 14, 22, 199, 9, 222, 152, 68, 97, 249, 132, 138, 69, 64, 195, 13, 46, 200, 79, 248, 16, 161, 73, 187, 200, 122, 235, 6}
 
 	for i, output := range outputs {
 		rho := PRF_rho(uint64(i), phi, hSig)
