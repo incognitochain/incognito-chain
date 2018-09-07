@@ -7,18 +7,18 @@ import (
 
 type KeyPair struct {
 	PrivateKey client.SpendingKey
-	PublicKey  client.SpendingAddress
+	PublicKey  client.PaymentAddress
 }
 
 func (self *KeyPair) GenerateKey(seed []byte) (*KeyPair, error) {
 	copy(self.PrivateKey[:], common.HashB(seed))
-	self.PublicKey = client.GenSpendingAddress(self.PrivateKey)
+	self.PublicKey = client.GenPaymentAddress(self.PrivateKey)
 	return self, nil
 }
 
 func (self *KeyPair) Import(privateKey []byte) (*KeyPair, error) {
 	copy(self.PrivateKey[:], privateKey)
-	self.PublicKey = client.GenSpendingAddress(self.PrivateKey)
+	self.PublicKey = client.GenPaymentAddress(self.PrivateKey)
 	return self, nil
 }
 

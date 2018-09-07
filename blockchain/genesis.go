@@ -74,7 +74,13 @@ func (self GenesisBlockGenerator) createGenesisTx(coinReward uint64) (*transacti
 	return tx, err
 }
 
-func (self GenesisBlockGenerator) CreateGenesisBlock(time time.Time, nonce int, difficulty uint32, version int, genesisReward uint64) *Block {
+func (self GenesisBlockGenerator) CreateGenesisBlock(
+	time time.Time,
+	nonce int,
+	difficulty uint32,
+	version int,
+	genesisReward uint64,
+) *Block {
 	genesisBlock := Block{}
 	// update default genesis block
 	genesisBlock.Header.Timestamp = time

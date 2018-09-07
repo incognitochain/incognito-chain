@@ -1,13 +1,14 @@
 package wallet
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha512"
 	"errors"
+
 	"github.com/ninjadotorg/cash-prototype/cashec"
-	"bytes"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/common/base58"
 )
 
 const (
@@ -98,8 +99,8 @@ func (key *Key) NewChildKey(childIdx uint32) (*Key, error) {
 		return nil, err
 	}
 
-	newSeed := key.KeyPair.PrivateKey
-	newSeed = append(newSeed, intermediary[:32]...)
+	newSeed := []byte{}
+	newSeed = append(newSeed[:], intermediary[:32]...)
 	newKeypair, err := (&cashec.KeyPair{}).GenerateKey(newSeed)
 	// Create Child KeyPair with data common to all both scenarios
 	childKey := &Key{
@@ -122,7 +123,7 @@ func (key *Key) getIntermediary(childIdx uint32) ([]byte, error) {
 	//if childIdx >= FirstHardenedChild {
 	//	data = append([]byte{0x0}, Key.KeyPair.PrivateKey...)
 	//} else {
-	data = key.KeyPair.PublicKey
+	// data = key.KeyPair.PublicKey
 	//}
 	data = append(data, childIndexBytes...)
 
@@ -143,13 +144,13 @@ func (key *Key) Serialize(privateKey bool) ([]byte, error) {
 	buffer.Write(key.ChainCode)
 	if privateKey {
 		// Private keys should be prepended with a single null byte
-		keyBytes := key.KeyPair.PrivateKey
+		keyBytes := key.KeyPair.PrivateKey[:]
 		keyBytes = append([]byte{byte(len(key.KeyPair.PrivateKey))}, keyBytes...)
 		keyBytes = append([]byte{0x0}, keyBytes...)
 		buffer.Write(keyBytes)
 	} else {
-		keyBytes := key.KeyPair.PublicKey
-		keyBytes = append([]byte{byte(len(key.KeyPair.PublicKey))}, keyBytes...)
+		keyBytes := append(key.KeyPair.PublicKey.Apk[:], key.KeyPair.PublicKey.Pkenc[:]...)
+		keyBytes = append([]byte{byte(len(key.KeyPair.PublicKey.Apk) + len(key.KeyPair.PublicKey.Pkenc))}, keyBytes...)
 		keyBytes = append([]byte{0x1}, keyBytes...)
 		buffer.Write(keyBytes)
 	}
@@ -198,13 +199,18 @@ func Deserialize(data []byte) (*Key, error) {
 	keyType := data[37]
 	keyLength := data[38]
 	if keyType == byte(0) {
-		key.KeyPair.PrivateKey = data[39:39+keyLength ]
+		copy(key.KeyPair.PrivateKey[:], data[39:39+keyLength])
+		// key.KeyPair.PrivateKey = data[39 : 39+keyLength]
 	} else {
-		key.KeyPair.PublicKey = data[39:39+keyLength]
+		data := make([]byte, keyLength)
+		copy(data, data[39:39+keyLength])
+		copy(key.KeyPair.PublicKey.Apk[:], data[:32])
+		copy(key.KeyPair.PublicKey.Pkenc[:], data[32:])
+		// key.KeyPair.PublicKey = data[39 : 39+keyLength]
 	}
 
 	// validate checksum
-	cs1 := base58.ChecksumFirst4Bytes(data[0: len(data)-4])
+	cs1 := base58.ChecksumFirst4Bytes(data[0 : len(data)-4])
 	cs2 := data[len(data)-4:]
 	for i := range cs1 {
 		if cs1[i] != cs2[i] {
