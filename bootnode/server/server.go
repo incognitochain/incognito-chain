@@ -24,7 +24,8 @@ type UsageFlag uint32
 
 type Peer struct {
 	ID string
-	SealerPrvKey string
+	RawAddress string
+	PublicKey string
 	FirstPing time.Time
 	LastPing time.Time
 }
@@ -58,17 +59,17 @@ func (self *RpcServer) Start() {
 	server.Accept(l)
 }
 
-func (self *RpcServer) AddPeer(ID string, sealerPrvKey string) {
+func (self *RpcServer) AddOrUpdatePeer(rawAddress string, publicKey string) {
 	exist := false
 	for _, peer := range self.Peers {
-		if peer.ID == ID {
+		if self.CombineID(rawAddress, publicKey) == peer.ID {
 			exist = true
 			peer.LastPing = time.Now().Local()
 		}
 	}
 
 	if !exist {
-		self.Peers = append(self.Peers, &Peer{ID, sealerPrvKey,time.Now().Local(), time.Now().Local()})
+		self.Peers = append(self.Peers, &Peer{self.CombineID(rawAddress, publicKey), rawAddress, publicKey,time.Now().Local(), time.Now().Local()})
 		sort.Slice(self.Peers, func(i, j int) bool {
 			return self.Peers[i].FirstPing.Sub(self.Peers[j].FirstPing) <= 0
 		})
@@ -90,6 +91,10 @@ func (self *RpcServer) RemovePeer(ID string) {
 
 func (self *RpcServer) RemovePeerByIdx(idx int) {
 	self.Peers = append(self.Peers[:idx], self.Peers[idx+1:]...)
+}
+
+func (self *RpcServer) CombineID(rawAddress string, publicKey string) string {
+	return rawAddress + publicKey
 }
 
 func (self *RpcServer) PeerHeartBeat() {

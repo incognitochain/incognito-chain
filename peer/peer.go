@@ -1,14 +1,11 @@
 package peer
 
 import (
-	"net/rpc"
 	"bufio"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"github.com/ninjadotorg/cash-prototype/bootnode/server"
-	"github.com/ninjadotorg/cash-prototype/cashec"
 	"io"
 	"log"
 	mrand "math/rand"
@@ -59,14 +56,13 @@ type Peer struct {
 	PeerId           peer.ID
 	RawAddress       string
 	ListeningAddress common.SimpleAddr
+	PublicKey		 string
 
 	Seed      int64
 	FlagMutex sync.Mutex
 	Config    Config
 
 	PeerConns map[peer.ID]*PeerConn
-
-	Peers map[string]string
 
 	quit           chan struct{}
 	disconnectPeer chan *PeerConn
@@ -183,7 +179,6 @@ func (self Peer) NewPeer() (*Peer, error) {
 	//self.sendMessageQueue = make(chan outMsg, 1)
 	self.quit = make(chan struct{}, 1)
 	self.disconnectPeer = make(chan *PeerConn)
-	self.Peers = make(map[string]string)
 
 	return &self, nil
 }
@@ -191,7 +186,6 @@ func (self Peer) NewPeer() (*Peer, error) {
 func (self *Peer) Start() error {
 	Logger.log.Info("Peer start")
 	// ping to bootnode for test env
-	go self.HandleExchangePeers()
 	Logger.log.Info("Set stream handler and wait for connection from other peer")
 	self.Host.SetStreamHandler("/blockchain/1.0.0", self.HandleStream)
 	select {
@@ -301,52 +295,6 @@ func (self *Peer) HandleStream(stream net.Stream) {
 				break
 			}
 		}
-	}
-}
-
-func (self Peer) HandleExchangePeers() {
-	Logger.log.Infof("Start Exchange Peers")
-	var client *rpc.Client
-	var err error
-
-listen:
-	for {
-		Logger.log.Infof("Peers", self.Peers)
-		if client == nil {
-			client, err = rpc.Dial("tcp", "35.199.177.89:9339")
-			if err != nil {
-				Logger.log.Error("[Exchange Peers] re-connect:", err)
-			}
-		}
-		if client != nil {
-			Logger.log.Infof("[Exchange Peers] Ping")
-			var response []server.RawPeer
-			args := &server.PingArgs{self.RawAddress, self.Config.SealerPrvKey}
-			Logger.log.Infof("[Exchange Peers] Ping", args)
-			err := client.Call("Handler.Ping", args, &response)
-			if err != nil {
-				Logger.log.Error("[Exchange Peers] Ping:", err)
-				client = nil
-				time.Sleep(time.Second * 2)
-
-				goto listen
-			}
-			Logger.log.Infof("Ping response", response)
-			for _, rawPeer := range response {
-				if rawPeer.SealerPrvKey != "" && !strings.Contains(rawPeer.RawAddress, self.PeerId.String()) {
-					keyPair := &cashec.KeyPair{}
-					keyPair.Import([]byte(rawPeer.SealerPrvKey))
-
-					_, exist := self.Peers[string(keyPair.PublicKey)]
-
-					if !exist {
-						self.Peers[string(keyPair.PublicKey)] = rawPeer.RawAddress
-					}
-				}
-			}
-			Logger.log.Infof("Ping response Peers", self.Peers)
-		}
-		time.Sleep(time.Second * 2)
 	}
 }
 

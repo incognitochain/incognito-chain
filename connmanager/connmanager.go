@@ -1,10 +1,14 @@
 package connmanager
 
 import (
+	"net/rpc"
+	"github.com/ninjadotorg/cash-prototype/bootnode/server"
+	"github.com/ninjadotorg/cash-prototype/cashec"
 	"sync"
 	"log"
 	"sync/atomic"
 	"fmt"
+	"time"
 
 	"github.com/ninjadotorg/cash-prototype/peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
@@ -71,6 +75,9 @@ type ConnManager struct {
 	// Connected Connection
 	Connected map[libpeer.ID]*peer.Peer
 
+	// Discover Peers
+	DiscoveredPeers map[string]*DiscoverPeerInfo
+
 	WaitGroup sync.WaitGroup
 
 	// Request channel
@@ -106,6 +113,12 @@ type Config struct {
 	// TargetOutbound is the number of outbound network connections to
 	// maintain. Defaults to 8.
 	TargetOutbound uint32
+}
+
+type DiscoverPeerInfo struct {
+	PublicKey string
+	RawAddress string
+	PeerId libpeer.ID
 }
 
 // registerPending is used to register a pending connection attempt. By
@@ -204,6 +217,7 @@ func (self ConnManager) New(cfg *Config) (*ConnManager, error) {
 	self.Config = *cfg
 	self.Quit = make(chan struct{})
 	self.Requests = make(chan interface{})
+	self.DiscoveredPeers = make(map[string]*DiscoverPeerInfo)
 
 	return &self, nil
 }
@@ -492,6 +506,8 @@ func (self ConnManager) Start() {
 			listner.HandleFailed = self.handleFailed
 			go self.listenHandler(listner)
 		}
+
+		go self.DiscoverPeers()
 	}
 }
 
@@ -564,4 +580,79 @@ func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)
 		}
 	}
 	seedFn(addrs)
+}
+
+func (self *ConnManager) DiscoverPeers() {
+	Logger.log.Infof("Start Exchange Peers")
+	var client *rpc.Client
+	var err error
+
+listen:
+	for {
+		Logger.log.Infof("Peers", self.DiscoveredPeers)
+		if client == nil {
+			client, err = rpc.Dial("tcp", "35.199.177.89:9339")
+			if err != nil {
+				Logger.log.Error("[Exchange Peers] re-connect:", err)
+			}
+		}
+		if client != nil {
+			for _, listener := range self.Config.ListenerPeers {
+				Logger.log.Infof("[Exchange Peers] Ping")
+				var response []server.RawPeer
+
+				var publicKey string
+
+				if listener.Config.SealerPrvKey != "" {
+					keyPair := &cashec.KeyPair{}
+					keyPair.Import([]byte(listener.Config.SealerPrvKey))
+					publicKey = string(keyPair.PublicKey)
+				}
+
+				args := &server.PingArgs{listener.RawAddress, publicKey}
+				Logger.log.Infof("[Exchange Peers] Ping", args)
+				err := client.Call("Handler.Ping", args, &response)
+				if err != nil {
+					Logger.log.Error("[Exchange Peers] Ping:", err)
+					client = nil
+					time.Sleep(time.Second * 2)
+
+					goto listen
+				}
+				Logger.log.Infof("Ping response", response)
+				for _, rawPeer := range response {
+					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerId.String()) {
+						_, exist := self.DiscoveredPeers[rawPeer.PublicKey]
+
+						if !exist {
+							// The following code extracts target's peer ID from the
+							// given multiaddress
+							ipfsaddr, err := ma.NewMultiaddr(rawPeer.RawAddress)
+							if err != nil {
+								log.Print(err)
+								return
+							}
+
+							pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
+							if err != nil {
+								log.Print(err)
+								return
+							}
+
+							peerId, err := libpeer.IDB58Decode(pid)
+							if err != nil {
+								log.Print(err)
+								return
+							}
+
+							self.DiscoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
+							go self.Connect(rawPeer.RawAddress)
+						}
+					}
+				}
+				Logger.log.Infof("Ping response Peers", self.DiscoveredPeers)
+			}
+		}
+		time.Sleep(time.Second * 2)
+	}
 }
