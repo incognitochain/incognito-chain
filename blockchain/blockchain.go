@@ -529,7 +529,6 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 	parentHash := &block.Header.PrevBlockHash
 	if parentHash.IsEqual(&b.BestState.BestBlockHash) {
 		view := NewTxViewPoint()
-		view.SetBestHash(parentHash)
 
 		err := view.fetchTxViewPoint(b.Config.DataBase, block)
 		if err != nil {
