@@ -59,41 +59,20 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				Version:  int(txTemp["Version"].(float64)),
 				Type:     txTemp["Type"].(string),
 				LockTime: int(txTemp["LockTime"].(float64)),
+				Fee:      uint64(txTemp["Fee"].(float64)),
 			}
-			// process for txin
-			/*txTempTxIn := txTemp["TxIn"].([]interface{})
-			txIn := make([]transaction.TxIn, 0)
-			for _, k := range txTempTxIn {
-				v := k.(map[string]interface{})
-				tempOutPoint := v["PreviousOutPoint"].(map[string]interface{})
-				preHash, _ := common.Hash{}.NewHashFromStr(tempOutPoint["Hash"].(string))
-				pOutPoint := transaction.OutPoint{
-					Hash: *preHash,
-					Vout: uint32(tempOutPoint["Vout"].(float64)),
-				}
-				t := transaction.TxIn{
-					Sequence:         int(v["Sequence"].(float64)),
-					SignatureScript:  []byte(v["SignatureScript"].(string)),
-					PreviousOutPoint: pOutPoint,
-				}
-				txIn = append(txIn, t)
+			jSPubKey, ok := txTemp["JSPubKey"]
+			if ok && jSPubKey != nil {
+				txNormal.JSPubKey = []byte(jSPubKey.(string))
 			}
-			txNormal.TxIn = txIn*/
-
-			// process for txout
-			/*txTempTxOut := txTemp["TxOut"].([]interface{})
-			txOut := make([]transaction.TxOut, 0)
-			for _, k := range txTempTxOut {
-				v := k.(map[string]interface{})
-				t := transaction.TxOut{
-					TxOutType: v["TxOutType"].(string),
-					Value:     v["Value"].(float64),
-					PkScript:  []byte(v["PkScript"].(string)),
-				}
-				txOut = append(txOut, t)
+			jSSig, ok := txTemp["JSSig"]
+			if ok && jSSig != nil {
+				txNormal.JSSig = []byte(jSSig.(string))
 			}
-			txNormal.TxOut = txOut*/
-
+			desc, ok := txTemp["Desc"]
+			if ok && desc != nil {
+				txNormal.Desc = desc.([]*transaction.JoinSplitDesc)
+			}
 			self.Transactions = append(self.Transactions, txNormal)
 		} else if txTemp["Type"].(string) == common.TxActionParamsType {
 			// init a tx
