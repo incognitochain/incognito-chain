@@ -4,9 +4,9 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
 type GenesisBlockGenerator struct {
@@ -53,17 +53,18 @@ func (self GenesisBlockGenerator) createGenesisTx(coinReward uint64) (*transacti
 	inputs = append(inputs, createGenesisJSInput(1))
 
 	// Create new notes: first one is a coinbase UTXO, second one has 0 value
-	paymentAddrBytes := base58.Base58{}.Decode(GENESIS_BLOCK_PAYMENT_ADDR)
-	var paymentAddr = (&client.PaymentAddress{}).FromBytes(paymentAddrBytes)
-	outNote := &client.Note{Value: coinReward, Apk: paymentAddr.Apk}
-	placeHolderOutputNote := &client.Note{Value: 0, Apk: paymentAddr.Apk}
+	key, err := wallet.Base58CheckDeserialize(GENESIS_BLOCK_PAYMENT_ADDR)
+	if err != nil {
+		panic(err)
+	}
+	outNote := &client.Note{Value: coinReward, Apk: key.KeyPair.PublicKey.Apk}
+	placeHolderOutputNote := &client.Note{Value: 0, Apk: key.KeyPair.PublicKey.Apk}
 
 	// Create deterministic outputs
-	outputs := make([]*client.JSOutput, 2)
-	outputs[0].EncKey = paymentAddr.Pkenc
-	outputs[0].OutputNote = outNote
-	outputs[1].EncKey = paymentAddr.Pkenc
-	outputs[1].OutputNote = placeHolderOutputNote
+	outputs := []*client.JSOutput{
+		&client.JSOutput{EncKey: key.KeyPair.PublicKey.Pkenc, OutputNote: outNote},
+		&client.JSOutput{EncKey: key.KeyPair.PublicKey.Pkenc, OutputNote: placeHolderOutputNote},
+	}
 
 	// Since input notes of genesis tx have 0 value, rt can be anything
 	rt := make([]byte, 32)

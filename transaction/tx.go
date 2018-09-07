@@ -190,11 +190,12 @@ func generateTxAndSign(
 		Reward:      reward,
 	}}
 
+	// TODO(@0xbunyip): use Apk of PubKey temporarily, we should derive another scheme for signing tx later
 	tx := &Tx{
 		Version:  1,
 		Type:     common.TxNormalType,
 		Descs:    desc,
-		JSPubKey: keyPair.PublicKey[:],
+		JSPubKey: keyPair.PublicKey.Apk[:],
 		JSSig:    nil,
 	}
 
@@ -221,7 +222,7 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 	}
 
 	var seed, phi []byte
-	proof, err := client.Prove(inputs, outputs, keyPair.PublicKey[:], rt, reward, seed, phi)
+	proof, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, seed, phi)
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +245,7 @@ func GenerateProofAndSignForGenesisTx(
 		return nil, err
 	}
 
-	proof, err := client.Prove(inputs, outputs, keyPair.PublicKey[:], rt, reward, seed, phi)
+	proof, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, seed, phi)
 	if err != nil {
 		return nil, err
 	}

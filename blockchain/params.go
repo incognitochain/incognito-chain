@@ -31,7 +31,7 @@ type DNSSeed struct {
 Params defines a network by its params. These params may be used by Applications
 to differentiate network as well as addresses and keys for one network
 from those intended for use on another network
- */
+*/
 type Params struct {
 	// Name defines a human-readable identifier for the network.
 	Name string
@@ -152,7 +152,7 @@ var MainNetParams = Params{
 	Name:        MAINNET_NAME,
 	Net:         MAINNET,
 	DefaultPort: MAINET_DEFAULT_PORT,
-	DNSSeeds: []string{
+	DNSSeeds:    []string{
 		/*{"seed.coin.sipa.be", true},
 		{"dnsseed.bluematt.me", true},
 		{"dnsseed.coin.dashjr.org", false},

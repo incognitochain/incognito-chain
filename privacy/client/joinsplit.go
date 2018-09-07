@@ -121,8 +121,8 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte, rew
 
 	zkNotes := Notes2ZksnarkNotes(outNotes)
 	zkInputs := JSInputs2ZkInputs(inputs)
-	fmt.Printf("zkInputs[0].Note.R: %x\n", zkInputs[0].Note.R)
-	fmt.Printf("zkInputs[0].WitnessPath.AuthPath[0]: %x\n", zkInputs[0].WitnessPath.AuthPath[0].Hash)
+	// fmt.Printf("zkInputs[0].Note.R: %x\n", zkInputs[0].Note.R)
+	// fmt.Printf("zkInputs[0].WitnessPath.AuthPath[0]: %x\n", zkInputs[0].WitnessPath.AuthPath[0].Hash)
 	var proveRequest = &zksnark.ProveRequest{
 		Hsig:     hSig,
 		Phi:      phi,
