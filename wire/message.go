@@ -48,33 +48,46 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 				Transactions: make([]transaction.Transaction, 0),
 			},
 		}
+		break
 	case CmdGetBlocks:
 		msg = &MessageGetBlocks{}
+		break
 	case CmdTx:
 		msg = &MessageTx{
 			Transaction: &transaction.Tx{},
 		}
+		break
 	case CmdVersion:
 		msg = &MessageVersion{}
+		break
 	case CmdVerack:
 		msg = &MessageVerAck{}
+		break
 		// POS
 	case CmdGetBlockHeader:
 		msg = &MessageGetBlockHeader{}
+		break
 	case CmdBlockHeader:
 		msg = &MessageBlockHeader{}
+		break
 	case CmdSignedBlock:
 		msg = &MessageSignedBlock{}
+		break
 	case CmdRequestSign:
 		msg = &MessageRequestSign{}
+		break
 	case CmdVoteCandidate:
 		msg = &MessageVoteCandidate{}
+		break
 	case CmdInvalidBlock:
 		msg = &MessageInvalidBlock{}
+		break
 	case CmdGetAddr:
 		msg = &MessageGetAddr{}
+		break
 	case CmdAddr:
 		msg = &MessageAddr{}
+		break
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}

@@ -183,8 +183,12 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	// Create a connection manager.
 	targetOutbound := defaultNumberOfTargetOutbound
-	if cfg.MaxPeers < targetOutbound {
-		targetOutbound = cfg.MaxPeers
+	if cfg.MaxOutPeers < targetOutbound {
+		targetOutbound = cfg.MaxOutPeers
+	}
+	targetInbound := defaultNumberOfTargetOutbound
+	if cfg.MaxInPeers < targetOutbound {
+		targetInbound = cfg.MaxInPeers
 	}
 
 	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
@@ -192,6 +196,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		OnOutboundConnection: self.OutboundPeerConnected,
 		ListenerPeers:        peers,
 		TargetOutbound:       uint32(targetOutbound),
+		TargetInbound:        uint32(targetInbound),
 	})
 	if err != nil {
 		return err
@@ -460,12 +465,10 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 		}
 		peer, err := peer.Peer{
 			Seed:             seed,
-			FlagMutex:        sync.Mutex{},
 			ListeningAddress: addr,
 			Config:           *self.NewPeerConfig(),
 			PeerConns:        make(map[peer2.ID]*peer.PeerConn),
-			//OutboundReaderWriterStreams: make(map[peer2.ID]*bufio.ReadWriter),
-			//InboundReaderWriterStreams:  make(map[peer2.ID]*bufio.ReadWriter),
+			PendingPeers:     make(map[peer2.ID]*peer.Peer),
 		}.NewPeer()
 		if err != nil {
 			return nil, err
@@ -570,22 +573,70 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	log.Printf("Receive verack message")
 	self.AddrManager.Good(peerConn.Peer)
 
+	// send message for get addr
 	msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
 	if err != nil {
 		return
 	}
 	dc := make(chan struct{})
 	peerConn.QueueMessageWithEncoding(msgS, dc)
+
+	//	broadcast addr to all peer
+	for _, listen := range self.ConnManager.ListeningPeers {
+		msgS, err := wire.MakeEmptyMessage(wire.CmdAddr)
+		if err != nil {
+			return
+		}
+
+		addresses := []string{}
+		peers := self.AddrManager.AddressCache()
+		for _, peer := range peers {
+			addresses = append(addresses, peer.RawAddress)
+		}
+		msgS.(*wire.MessageAddr).RawAddresses = addresses
+		var doneChan chan<- struct{}
+		for _, _peerConn := range listen.PeerConns {
+			_peerConn.QueueMessageWithEncoding(msgS, doneChan)
+		}
+	}
+
 }
 
-func (self *Server) OnGetAddr(_ *peer.PeerConn, msg *wire.MessageGetAddr) {
+func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr) {
 	// TODO for ongetaddr message
 	log.Printf("Receive getaddr message")
+
+	// send message for addr
+	msgS, err := wire.MakeEmptyMessage(wire.CmdAddr)
+	if err != nil {
+		return
+	}
+
+	addresses := []string{}
+	peers := self.AddrManager.AddressCache()
+	for _, peer := range peers {
+		if peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+			addresses = append(addresses, peer.RawAddress)
+		}
+	}
+
+	msgS.(*wire.MessageAddr).RawAddresses = addresses
+	var dc chan<- struct{}
+	peerConn.QueueMessageWithEncoding(msgS, dc)
 }
 
 func (self *Server) OnAddr(_ *peer.PeerConn, msg *wire.MessageAddr) {
 	// TODO for onaddr message
 	log.Printf("Receive addr message")
+	for _, addr := range msg.RawAddresses {
+		for _, listen := range self.ConnManager.ListeningPeers {
+			for _, _peerConn := range listen.PeerConns {
+				if _peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(addr) {
+					go self.ConnManager.Connect(addr)
+				}
+			}
+		}
+	}
 }
 
 /**

@@ -288,3 +288,8 @@ func (self *AddrManager) AddressCache() []*peer.Peer {
 	}
 	return allAddr
 }
+
+func (self *AddrManager) ExistedAddr(addr string) bool {
+	_, ok := self.addrIndex[addr]
+	return ok
+}
