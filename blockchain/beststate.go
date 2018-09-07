@@ -17,7 +17,7 @@ import (
 // shared by all callers.
 type BestState struct {
 	BestBlockHash common.Hash // The hash of the block.
-	BestBlock     *Block      // The hash of the block.
+	BestBlock     *Block      // The block.
 
 	Height      int32     // The height of the block.
 	Difficulty  uint32    // The difficulty bits of the block.

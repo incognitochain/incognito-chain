@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"errors"
+	"fmt"
 
 	"sync"
 
@@ -102,6 +103,10 @@ func (self *BlockChain) initChainState() error {
 			}
 
 		}
+	}
+
+	for _, chain := range self.BestState {
+		fmt.Println(chain)
 	}
 
 	return nil

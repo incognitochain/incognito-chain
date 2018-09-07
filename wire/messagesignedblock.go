@@ -9,6 +9,7 @@ type MessageSignedBlock struct {
 	ChainID      byte
 	Validator    string
 	ValidatorSig string
+	BlockSig     string
 }
 
 func (self MessageSignedBlock) MessageType() string {

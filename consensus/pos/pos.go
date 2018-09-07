@@ -46,7 +46,6 @@ type Config struct {
 
 func (self *Engine) Start(sealerPrvKey []byte) error {
 	self.Lock()
-	// Respond with an error if server is already mining.
 	if self.started {
 		self.Unlock()
 		return errors.New("Consensus engine is already started")
@@ -95,6 +94,7 @@ func (self *Engine) signData(data []byte) (string, error) {
 }
 
 func (self *Engine) validateBlock(block *blockchain.Block) error {
+	// #TODO validate block size, transactions, committee
 	return nil
 }
 
@@ -160,6 +160,27 @@ func (self *Engine) OnRequestSign(block *blockchain.Block) {
 		return
 	}
 
+	sig, err := self.Config.ValidatorKeyPair.Sign([]byte(block.Hash().String()))
+	if err != nil {
+		// ??? something went terribly wrong
+		return
+	}
+	signedBlockMsg := &wire.MessageSignedBlock{
+		BlockHash: block.Hash().String(),
+		ChainID:   block.Header.ChainID,
+		Validator: string(self.Config.ValidatorKeyPair.PublicKey),
+		BlockSig:  string(sig),
+	}
+	dataByte, _ := signedBlockMsg.JsonSerialize()
+	signedBlockMsg.ValidatorSig, err = self.signData(dataByte)
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
+	err = self.Config.Server.PushBlockSignature(signedBlockMsg)
+	if err != nil {
+		Logger.log.Error(err)
+	}
 	return
 }
 
@@ -172,9 +193,15 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 	return
 }
 
-// func (self *Engine) filterTx() []*transaction.Transaction {
+func (self *Engine) OnBlockSigReceived(blockHash string, chainID byte, blockSig string) {
 
-// }
+	return
+}
+
+func (self *Engine) OnInvalidBlockReceived(blockHash string, chainID byte, blockSig string) {
+
+	return
+}
 
 func New(Config *Config) *Engine {
 	return &Engine{

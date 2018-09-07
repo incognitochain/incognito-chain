@@ -3,6 +3,7 @@ package cashec
 import (
 	"bytes"
 	"errors"
+
 	"golang.org/x/crypto/ed25519"
 )
 

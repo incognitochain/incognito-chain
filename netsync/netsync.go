@@ -6,6 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/cashec"
+
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/mempool"
@@ -36,8 +38,10 @@ type NetSyncConfig struct {
 		UpdateChain(*blockchain.Block)
 	}
 	Consensus interface {
-		OnRequestSign(*blockchain.Block)
 		OnBlockReceived(*blockchain.Block)
+		OnRequestSign(*blockchain.Block)
+		OnBlockSigReceived(string, byte, string)
+		OnInvalidBlockReceived()
 	}
 }
 
@@ -101,7 +105,18 @@ out:
 					{
 						self.HandleMessageGetBlocks(msg)
 					}
-
+				case *wire.MessageSignedBlock:
+					{
+						self.HandleMessageSignedBlock(msg)
+					}
+				case *wire.MessageInvalidBlock:
+					{
+						self.HandleMessageInvalidBlock(msg)
+					}
+				case *wire.MessageRequestSign:
+					{
+						self.HandleMessageRequestSign(msg)
+					}
 				default:
 					Logger.log.Infof("Invalid message type in block "+"handler: %T", msg)
 				}
@@ -207,4 +222,31 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	// rw.Writer.WriteString(msgNewJSON)
 	// rw.Writer.Flush()
 	// self.syncPeer.flagMutex.Unlock()
+}
+
+func (self *NetSync) HandleMessageSignedBlock(msg *wire.MessageSignedBlock) {
+	Logger.log.Info("Handling new message signedblock")
+	senderKey := cashec.KeyPair{
+		PublicKey: []byte(msg.Validator),
+	}
+	msgByte, _ := msg.JsonSerialize()
+	isValid, _ := senderKey.Verify(msgByte, []byte(msg.ValidatorSig))
+	if isValid {
+		self.Config.Consensus.OnBlockSigReceived(msg.BlockHash, msg.ChainID, msg.BlockSig)
+	}
+}
+func (self *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
+	Logger.log.Info("Handling new message invalidblock")
+	senderKey := cashec.KeyPair{
+		PublicKey: []byte(msg.Validator),
+	}
+	msgByte, _ := msg.JsonSerialize()
+	isValid, _ := senderKey.Verify(msgByte, []byte(msg.ValidatorSig))
+	if isValid {
+		self.Config.Consensus.OnInvalidBlockReceived()
+	}
+}
+func (self *NetSync) HandleMessageRequestSign(msg *wire.MessageRequestSign) {
+	Logger.log.Info("Handling new message requestsign")
+	self.Config.Consensus.OnRequestSign(&msg.Block)
 }

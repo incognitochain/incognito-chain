@@ -36,7 +36,8 @@ type BlockHeader struct {
 	Candidates    []string          //
 
 	// Parallel PoS
-	ChainID byte
+	ChainID     byte
+	ChainHeight []int //height of 20 chain when this block is created
 }
 
 func (h *BlockChain) GetBlockByHash(hash common.Hash) *Block {
