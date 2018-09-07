@@ -238,7 +238,7 @@ func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 			continue
 		}
 		normalTx, _ := tx.(*transaction.Tx)
-		for _, desc := range normalTx.Desc {
+		for _, desc := range normalTx.Descs {
 			joinSplitDescType := desc.Type
 			feeMap[joinSplitDescType] += txDesc.Fee
 		}
@@ -317,9 +317,9 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	agentDataPoints := getLatestAgentDataPoints(chain, actionParamTxs)
 	rewardMap := calculateReward(agentDataPoints, feeMap)
 
-	coinbaseScript := []byte("1234567890123456789012") //@todo should be create function create basescript
+	_ = []byte("1234567890123456789012") //@todo should be create function create basescript
 
-	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, coinbaseScript, payToAddress, rewardMap)
+	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, nil, rewardMap, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -338,7 +338,7 @@ mempoolLoop:
 	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
 		//@todo need apply validate tx, logic check all referenced here
-		for _, desc := range tx.(*transaction.Tx).Desc {
+		for _, desc := range tx.(*transaction.Tx).Descs {
 			view, err := g.chain.FetchTxViewPoint(desc.Type)
 			_ = view
 			_ = err
