@@ -198,15 +198,23 @@ func (self *Peer) Start() error {
 	return nil
 }
 
-func (self *Peer) Pending(peer *Peer) {
+func (self *Peer) ConnPending(peer *Peer) {
 	self.PendingPeers[peer.PeerId] = peer
 }
 
-func (self *Peer) Established(peer *Peer) {
+func (self *Peer) ConnEstablished(peer *Peer) {
 	_, ok := self.PendingPeers[peer.PeerId]
 	if ok {
 		delete(self.PendingPeers, peer.PeerId)
 	}
+}
+
+func (self *Peer) ConnCanceled(peer *Peer) {
+	_, ok := self.PeerConns[peer.PeerId]
+	if ok {
+		delete(self.PeerConns, peer.PeerId)
+	}
+	self.PendingPeers[peer.PeerId] = peer
 }
 
 func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
@@ -218,7 +226,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	if ok && _peerConn.State() == ConnEstablished {
 		Logger.log.Infof("Existed PEER ID - %s", peer.PeerId.String())
 
-		self.Pending(peer)
+		self.ConnPending(peer)
 
 		self.outboundMutex.Unlock()
 		return nil, nil
@@ -234,7 +242,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	if len(self.PeerConns) >= self.MaxOutbound && !ok {
 		Logger.log.Infof("Max Peer Outbound Connection")
 
-		self.Pending(peer)
+		self.ConnPending(peer)
 
 		self.outboundMutex.Unlock()
 		return nil, nil
@@ -414,7 +422,7 @@ func (self *Peer) handleConnected(peerConn *PeerConn) {
 	peerConn.RetryCount = 0
 	peerConn.updateState(ConnEstablished)
 
-	self.Established(peerConn.Peer)
+	self.ConnEstablished(peerConn.Peer)
 
 	if self.HandleConnected != nil {
 		self.HandleConnected(peerConn)
@@ -429,10 +437,7 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 			go self.retryPeerConnection(peerConn)
 		}
 	} else {
-		_peerConn, ok := self.PeerConns[peerConn.PeerId]
-		if ok {
-			delete(self.PeerConns, _peerConn.PeerId)
-		}
+		self.ConnCanceled(peerConn.Peer)
 	}
 
 	if self.HandleDisconnected != nil {
@@ -443,10 +448,7 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 func (self *Peer) handleFailed(peerConn *PeerConn) {
 	Logger.log.Infof("handleFailed %s", peerConn.PeerId.String())
 
-	_peerConn, ok := self.PeerConns[peerConn.PeerId]
-	if ok {
-		delete(self.PeerConns, _peerConn.PeerId)
-	}
+	self.ConnCanceled(peerConn.Peer)
 
 	if self.HandleFailed != nil {
 		self.HandleFailed(peerConn)
@@ -466,12 +468,10 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 			}
 		} else {
 			peerConn.updateState(ConnCanceled)
-			_peerConn, ok := self.PeerConns[peerConn.PeerId]
-			if ok {
-				delete(self.PeerConns, _peerConn.PeerId)
-			}
+
+			self.ConnCanceled(peerConn.Peer)
 			self.newPeerConnection()
-			self.Pending(peerConn.Peer)
+			self.ConnPending(peerConn.Peer)
 		}
 	})
 }
