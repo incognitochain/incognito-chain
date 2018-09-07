@@ -552,8 +552,16 @@ func loadConfig() (*config, []string, error) {
 	// listener is all addresses on the listen port for the network
 	// we are to connect to.
 	if len(cfg.Listeners) == 0 {
-		cfg.Listeners = []string{
-			net.JoinHostPort("", activeNetParams.DefaultPort),
+		// remove later
+		externalAddress := os.Getenv("EXTERNAL_ADDRESS")
+		if externalAddress != "" {
+			cfg.Listeners = []string{
+				externalAddress,
+			}
+		} else {
+			cfg.Listeners = []string{
+				net.JoinHostPort("", activeNetParams.DefaultPort),
+			}
 		}
 	}
 
