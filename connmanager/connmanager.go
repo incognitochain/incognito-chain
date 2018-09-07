@@ -421,13 +421,10 @@ listen:
 				rawAddress := listener.RawAddress
 
 				externalAddress := os.Getenv("EXTERNAL_ADDRESS")
-				fmt.Println(externalAddress)
 				if externalAddress != "" {
 					host, _, err := net.SplitHostPort(externalAddress)
-					fmt.Println("Host", host)
-					if err == nil {
+					if err == nil && host != "" {
 						rawAddress = strings.Replace(rawAddress, "127.0.0.1", host, 1)
-						fmt.Println("NEW ADDRESS", rawAddress)
 					}
 				}
 
@@ -441,7 +438,6 @@ listen:
 
 					goto listen
 				}
-				Logger.log.Infof("Ping response", response)
 				for _, rawPeer := range response {
 					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerId.String()) {
 						_, exist := self.DiscoveredPeers[rawPeer.PublicKey]
@@ -472,9 +468,8 @@ listen:
 						}
 					}
 				}
-				Logger.log.Infof("Ping response Peers", self.DiscoveredPeers)
 			}
 		}
-		time.Sleep(time.Second * 2)
+		time.Sleep(time.Second * 5)
 	}
 }
