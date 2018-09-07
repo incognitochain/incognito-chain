@@ -95,7 +95,7 @@ public:
         const std::array<uint256, NumInputs>& macs,
         const std::array<uint256, NumInputs>& nullifiers,
         const std::array<uint256, NumOutputs>& commitments,
-        // uint64_t vpub_old,
+        uint64_t vpub_old,
         // uint64_t vpub_new,
         const uint256& rt,
         uint256 &h_sig
@@ -103,19 +103,17 @@ public:
         try {
             auto r1cs_proof = proof.to_libsnark_proof<r1cs_ppzksnark_proof<ppzksnark_ppT>>();
 
-            // auto witness = joinsplit_gadget<FieldT, NumInputs, NumOutputs>::witness_map(
-            //     rt,
-            //     h_sig,
-            //     macs,
-            //     nullifiers,
-            //     commitments,
-            //     0,
-            //     0
-            //     // vpub_old,
-            //     // vpub_new
-            // );
+            auto witness = joinsplit_gadget<FieldT, NumInputs, NumOutputs>::witness_map(
+                rt,
+                h_sig,
+                macs,
+                nullifiers,
+                commitments,
+                vpub_old,
+                0
+            );
 
-            // return r1cs_ppzksnark_online_verifier_strong_IC<alt_bn128_pp>(vk_precomp, witness, r1cs_proof);
+            return r1cs_ppzksnark_online_verifier_strong_IC<alt_bn128_pp>(vk_precomp, witness, r1cs_proof);
             return true;
         } catch (const std::exception &e) {
             std::cout << "Error: " << e.what() << '\n';
@@ -135,7 +133,7 @@ public:
         // std::array<uint256, NumInputs>& out_macs,
         // std::array<uint256, NumInputs>& out_nullifiers,
         // std::array<uint256, NumOutputs>& out_commitments,
-        // uint64_t vpub_old,
+        uint64_t vpub_old,
         // uint64_t vpub_new,
         const uint256& rt,
         uint256 &h_sig,
@@ -236,7 +234,7 @@ public:
                 h_sig,
                 inputs,
                 out_notes,
-                0,
+                vpub_old,
                 0
             );
             std::cout << "Done generate_r1cs_witness\n";

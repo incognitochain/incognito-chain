@@ -12,8 +12,9 @@ namespace libzcash {
 // Element in the base field
 class Fq {
 private:
-    base_blob<256> data;
+
 public:
+    base_blob<256> data;
     Fq() : data() { }
 
     template<typename libsnark_Fq>
@@ -57,8 +58,9 @@ public:
 // Element in the extension field
 class Fq2 {
 private:
-    base_blob<512> data;
+
 public:
+    base_blob<512> data;
     Fq2() : data() { }
 
     template<typename libsnark_Fq2>
@@ -114,19 +116,33 @@ public:
     template<typename libsnark_G1>
     libsnark_G1 to_libsnark_g1() const;
 
-    std::string to_string() {
+    void print() {
         char leadingByte[2] = {0};
         leadingByte[0] |= y_lsb;
-        return std::string(leadingByte) + x.to_string();  // TODO(@0xbunyip): check for endianness
+        printf("%d ", leadingByte[0]);
+        for (int i = 0; i < 32; ++i)
+            printf("%d ", x.data.begin()[i]);
+        printf("\n");
+    }
+
+    std::string to_string() {
+        unsigned char leadingByte = 0;
+        leadingByte |= y_lsb;
+        return std::string(1, leadingByte) + x.to_string();
     }
 
     bool from_string(const std::string &s) {
-        if (s.size() != 33)  // 32 bytes and y_lsb
+        if (s.size() != 33) { // 32 bytes and y_lsb
+            printf("s.size() != 33, %d\n", s.size());
             return false;
+        }
         const unsigned char *data_mem = (const unsigned char *)s.c_str();
-        char leadingByte = data_mem[0];
-        if (leadingByte & (~1) != 0)
+        unsigned char leadingByte = data_mem[0];
+        if (leadingByte > 1) {
+            printf("leadingByte & (~1) != 0: %d\n", leadingByte);
             return false;
+        }
+
         y_lsb = leadingByte & 1;
         std::string sub = s.substr(1);
         return x.from_string(sub);
@@ -182,19 +198,35 @@ public:
     template<typename libsnark_G2>
     libsnark_G2 to_libsnark_g2() const;
 
-    std::string to_string() {
-        char leadingByte[2] = {0};
+    void print() {
+        unsigned char leadingByte[2] = {0};
         leadingByte[0] |= y_gt;
-        return std::string(leadingByte) + x.to_string();  // TODO(@0xbunyip): check for endianness
+        printf("%d ", leadingByte[0]);
+        for (int i = 0; i < 64; ++i)
+            printf("%d ", x.data.begin()[i]);
+        printf("\n");
+    }
+
+    std::string to_string() {
+        unsigned char leadingByte = 0;
+        leadingByte |= y_gt;
+        std::string result = std::string(1, leadingByte) + x.to_string();
+        printf("Converting G2: %d %d\n", x.to_string().size(), result.size());
+        return result;
     }
 
     bool from_string(const std::string &s) {
-        if (s.size() != 65)  // 64 bytes and y_gt
+        if (s.size() != 65) { // 64 bytes and y_gt
+            printf("s.size() != 65, %d\n", s.size());
             return false;
+        }
         const unsigned char *data_mem = (const unsigned char *)s.c_str();
-        char leadingByte = data_mem[0];
-        if (leadingByte & (~1) != 0)
+        unsigned char leadingByte = data_mem[0];
+        if (leadingByte > 1) {
+            printf("leadingByte & (~1) != 0: %d\n", leadingByte);
             return false;
+        }
+
         y_gt = leadingByte & 1;
         std::string sub = s.substr(1);
         return x.from_string(sub);

@@ -24,3 +24,4 @@ cash-prototype
 /dev-env/nodes-data/node*/data
 # Build Directory
 /privacy/server/build
+*.o

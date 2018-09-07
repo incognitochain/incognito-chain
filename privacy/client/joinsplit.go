@@ -22,10 +22,22 @@ type JSOutput struct {
 	OutputNote *Note
 }
 
+func printProof(proof *zksnark.PHGRProof) {
+	fmt.Printf("G_A: %v\n", proof.G_A)
+	fmt.Printf("G_APrime: %v\n", proof.G_APrime)
+	fmt.Printf("G_B: %v\n", proof.G_B)
+	fmt.Printf("G_BPrime: %v\n", proof.G_BPrime)
+	fmt.Printf("G_C: %v\n", proof.G_C)
+	fmt.Printf("G_CPrime: %v\n", proof.G_CPrime)
+	fmt.Printf("G_K: %v\n", proof.G_K)
+	fmt.Printf("G_H: %v\n", proof.G_H)
+}
+
 // Prove calls libsnark's Prove and return the proof
 // inputs: WitnessPath and Key must be set; InputeNote's Value, Apk, R and Rho must also be set before calling this function
 // outputs: EncKey, OutputNote's Apk and Value must be set before calling this function
-func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) (*zksnark.PHGRProof, error) {
+// reward: for coinbase tx, this is the mining reward; for other tx, it must be 0
+func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte, reward uint64) (*zksnark.PHGRProof, error) {
 	// TODO: think how to implement vpub
 	// TODO: check for inputs (witness root & cm)
 
@@ -35,6 +47,7 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) (*z
 
 	// Check balance between input and output
 	var totalInput, totalOutput uint64
+	totalInput = reward
 	for _, input := range inputs {
 		totalInput += input.InputNote.Value
 	}
@@ -97,7 +110,7 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) (*z
 	defer conn.Close()
 
 	c := zksnark.NewZksnarkClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*180)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*240)
 	defer cancel()
 
 	var outNotes []*Note
@@ -109,7 +122,14 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) (*z
 	zkInputs := JSInputs2ZkInputs(inputs)
 	fmt.Printf("zkInputs[0].Note.R: %x\n", zkInputs[0].Note.R)
 	fmt.Printf("zkInputs[0].WitnessPath.AuthPath[0]: %x\n", zkInputs[0].WitnessPath.AuthPath[0].Hash)
-	var proveRequest = &zksnark.ProveRequest{Hsig: hSig, Phi: phi, Rt: rt, OutNotes: zkNotes, Inputs: zkInputs}
+	var proveRequest = &zksnark.ProveRequest{
+		Hsig:     hSig,
+		Phi:      phi,
+		Rt:       rt,
+		OutNotes: zkNotes,
+		Inputs:   zkInputs,
+		Reward:   reward,
+	}
 	// fmt.Printf("proveRequest: %v\n", proveRequest)
 	fmt.Printf("key: %x\n", proveRequest.Inputs[0].SpendingKey)
 	r, err := c.Prove(ctx, proveRequest)
@@ -117,11 +137,13 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte) (*z
 		log.Fatalf("fail to prove: %v", err)
 		return nil, errors.New("Fail to prove JoinSplit")
 	}
-	log.Printf("response: %v", r.Proof)
+	log.Printf("Prove response:\n")
+	printProof(r.Proof)
 	return r.Proof, nil
 }
 
-func Verify(proof *zksnark.PHGRProof, nf, cm *[][]byte, rt, hSig []byte) bool {
+// Verify checks if a zk-proof of a JSDesc is valid or not
+func Verify(proof *zksnark.PHGRProof, nf, cm *[][]byte, rt, hSig []byte, reward uint64) (bool, error) {
 	// Calling libsnark's verify
 	const address = "localhost:50052"
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
@@ -134,7 +156,14 @@ func Verify(proof *zksnark.PHGRProof, nf, cm *[][]byte, rt, hSig []byte) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
-	var verifyRequest = &zksnark.VerifyRequest{Proof: proof, Hsig: hSig, Rt: rt, Nullifiers: *nf, Commits: *cm}
+	var verifyRequest = &zksnark.VerifyRequest{
+		Proof:      proof,
+		Hsig:       hSig,
+		Rt:         rt,
+		Nullifiers: *nf,
+		Commits:    *cm,
+		Reward:     reward,
+	}
 	fmt.Printf("verifyRequest: %v\n", verifyRequest)
 	r, err := c.Verify(ctx, verifyRequest)
 	if err != nil {
@@ -142,7 +171,7 @@ func Verify(proof *zksnark.PHGRProof, nf, cm *[][]byte, rt, hSig []byte) bool {
 	}
 	log.Printf("response: %v", r.Valid)
 
-	return true
+	return r.Valid, err
 }
 
 func Note2ZksnarkNote(note *Note) *zksnark.Note {

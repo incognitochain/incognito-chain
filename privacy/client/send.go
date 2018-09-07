@@ -5,19 +5,93 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
 )
 
+// JoinSplitDesc stores the UTXO of a transaction
+// TODO(@0xbunyip): add randomSeed, MACs and epk
+type JoinSplitDesc struct {
+	Anchor        []byte             `json:"Anchor"`
+	Nullifiers    [][]byte           `json:"Nullifiers"`
+	Commitments   [][]byte           `json:"Commitments"`
+	Proof         *zksnark.PHGRProof `json:"Proof"`
+	EncryptedData []byte             `json:"EncryptedData"`
+	Type          string             `json:"Type"`
+	Reward        uint64             `json:"Reward"` // For coinbase tx
+}
+
+// Tx represents a coin-transfer-transaction stored in a block
+type Tx struct {
+	Version  int    `json:"Version"`
+	Type     string `json:"Type"` // NORMAL / ACTION_PARAMS
+	LockTime int    `json:"LockTime"`
+	Fee      uint64 `json:"Fee"`
+
+	Descs    []*JoinSplitDesc `json:"Descs"`
+	JSPubKey []byte           `json:"JSPubKey"` // 32 bytes
+	JSSig    []byte           `json:"JSSig"`    // 64 bytes
+}
+
+func (desc *JoinSplitDesc) toString() string {
+	s := string(desc.Anchor)
+	for _, nf := range desc.Nullifiers {
+		s += string(nf)
+	}
+	for _, cm := range desc.Commitments {
+		s += string(cm)
+	}
+	s += desc.Proof.String()
+	s += string(desc.EncryptedData)
+	return s
+}
+
+// Hash returns the hash of all fields of the transaction
+func (tx *Tx) Hash() *common.Hash {
+	record := strconv.Itoa(tx.Version)
+	record += tx.Type
+	record += strconv.Itoa(tx.LockTime)
+	record += strconv.Itoa(len(tx.Descs))
+	for _, desc := range tx.Descs {
+		record += desc.toString()
+	}
+	record += string(tx.JSPubKey)
+	record += string(tx.JSSig)
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+// ValidateTransaction returns true if transaction is valid:
+// - All data fields are well formed
+// - JSDescriptions are valid (zk-snark proof satisfied)
+// - Signature matches the signing public key
+// Note: This method doesn't check for double spending
+func (tx *Tx) ValidateTransaction() bool {
+	for _, desc := range tx.Descs {
+		if desc.Reward != 0 {
+			return false // Coinbase tx shouldn't be broadcasted across the network
+		}
+	}
+
+	// TODO(@0xbunyip): implement
+	return true
+}
+
+// GetType returns the type of the transaction
+func (tx *Tx) GetType() string {
+	return tx.Type
+}
+
 func collectUnspentNotes(ask *SpendingKey, valueWanted uint64) ([]*Note, error) {
 	return make([]*Note, 2), nil
 }
 
-// Send creates transaction with appropriate proof for a private payment
+// CreateTx creates transaction with appropriate proof for a private payment
 // value: total value of the coins to transfer
 // rt: root of the commitment merkle tree at current block (the latest block of the node creating this tx)
-func Send(senderKey *SpendingKey, receiverAddr *PaymentAddress, value uint64, rt []byte) (*Tx, error) {
+func CreateTx(senderKey *SpendingKey, receiverAddr *PaymentAddress, value uint64, rt []byte) (*Tx, error) {
 	inputNotes, err := collectUnspentNotes(senderKey, value)
 	if err != nil {
 		return nil, err
@@ -66,13 +140,35 @@ func Send(senderKey *SpendingKey, receiverAddr *PaymentAddress, value uint64, rt
 
 	// Shuffle output notes randomly (if necessary)
 
+	// Generate proof and sign tx
+	var reward uint64 // Zero reward for non-coinbase transaction
+	tx, err := generateProofAndSign(inputs, outputs, rt, reward)
+	return tx, err
+}
+
+func createDummyNote(randomKey *SpendingKey) *Note {
+	// TODO(@0xbunyip): create dummy note according to 4.7.1
+	return nil
+}
+
+func createRandomJSInput() *JSInput {
+	randomKey := RandSpendingKey()
+	input := new(JSInput)
+	input.InputNote = createDummyNote(&randomKey)
+	input.Key = &randomKey
+	input.WitnessPath = new(MerklePath) // TODO(@0xbunyip): create dummy path if necessary
+	return input
+}
+
+func generateProofAndSign(inputs []*JSInput, outputs []*JSOutput, rt []byte, reward uint64) (*Tx, error) {
 	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
 	keyBytes := []byte{} // TODO(0xbunyip): randomize seed?
 	keyPair, err := (&cashec.KeyPair{}).GenerateKey(keyBytes)
 	if err != nil {
 		return nil, err
 	}
-	proof, err := Prove(inputs, outputs, keyPair.PublicKey, rt)
+
+	proof, err := Prove(inputs, outputs, keyPair.PublicKey, rt, reward)
 	if err != nil {
 		return nil, err
 	}
@@ -85,13 +181,13 @@ func Send(senderKey *SpendingKey, receiverAddr *PaymentAddress, value uint64, rt
 		Anchor:      rt,
 		Nullifiers:  nullifiers,
 		Commitments: commitments,
+		Reward:      reward,
 	}}
 
 	tx := &Tx{
 		Version:  1,
 		Type:     common.TxNormalType,
-		NumDescs: 2,
-		Desc:     desc,
+		Descs:    desc,
 		JSPubKey: keyPair.PublicKey,
 		JSSig:    nil,
 	}
@@ -108,4 +204,44 @@ func Send(senderKey *SpendingKey, receiverAddr *PaymentAddress, value uint64, rt
 	tx.JSSig = jsSig
 
 	return tx, nil
+}
+
+func createCoinbaseTx(
+	params *blockchain.Params,
+	receiverAddr *PaymentAddress,
+	rewardMap map[string]uint64,
+	rt []byte,
+) (*Tx, error) {
+	// Create Proof for the joinsplit op
+	inputs := make([]*JSInput, 2)
+	inputs[0] = createRandomJSInput()
+	inputs[1] = createRandomJSInput()
+
+	// Get reward
+	// TODO(@0xbunyip): implement bonds reward
+	var reward uint64
+	for rewardType, rewardValue := range rewardMap {
+		if rewardValue <= 0 {
+			continue
+		}
+		if rewardType == "coins" {
+			reward = rewardValue
+		}
+	}
+
+	// Create new notes: first one is coinbase UTXO, second one has 0 value
+	outNote := &Note{Value: reward, Apk: receiverAddr.Apk}
+	placeHolderOutputNote := &Note{Value: 0, Apk: receiverAddr.Apk}
+
+	outputs := make([]*JSOutput, 2)
+	outputs[0].EncKey = receiverAddr.Pkenc
+	outputs[0].OutputNote = outNote
+	outputs[1].EncKey = receiverAddr.Pkenc
+	outputs[1].OutputNote = placeHolderOutputNote
+
+	// Shuffle output notes randomly (if necessary)
+
+	// Generate proof and sign tx
+	tx, err := generateProofAndSign(inputs, outputs, rt, reward)
+	return tx, err
 }

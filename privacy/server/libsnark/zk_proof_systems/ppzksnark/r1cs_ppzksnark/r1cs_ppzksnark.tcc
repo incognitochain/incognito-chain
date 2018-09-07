@@ -690,6 +690,7 @@ bool r1cs_ppzksnark_online_verifier_weak_IC(const r1cs_ppzksnark_processed_verif
     {
         return false;
     }
+    printf("Proof is well formed\n");
 
     G1_precomp<ppT> proof_g_A_g_precomp      = ppT::precompute_G1(proof.g_A.g);
     G1_precomp<ppT> proof_g_A_h_precomp = ppT::precompute_G1(proof.g_A.h);
@@ -700,6 +701,7 @@ bool r1cs_ppzksnark_online_verifier_weak_IC(const r1cs_ppzksnark_processed_verif
     {
         return false;
     }
+    printf("Done kc_A\n");
 
     G2_precomp<ppT> proof_g_B_g_precomp      = ppT::precompute_G2(proof.g_B.g);
     G1_precomp<ppT> proof_g_B_h_precomp = ppT::precompute_G1(proof.g_B.h);
@@ -710,6 +712,7 @@ bool r1cs_ppzksnark_online_verifier_weak_IC(const r1cs_ppzksnark_processed_verif
     {
         return false;
     }
+    printf("Done kc_B\n");
 
     G1_precomp<ppT> proof_g_C_g_precomp      = ppT::precompute_G1(proof.g_C.g);
     G1_precomp<ppT> proof_g_C_h_precomp = ppT::precompute_G1(proof.g_C.h);
@@ -720,6 +723,7 @@ bool r1cs_ppzksnark_online_verifier_weak_IC(const r1cs_ppzksnark_processed_verif
     {
         return false;
     }
+    printf("Done kc_C\n");
 
     // check that g^((A+acc)*B)=g^(H*\Prod(t-\sigma)+C)
     // equivalently, via pairings, that e(g^(A+acc), g^B) = e(g^H, g^Z) + e(g^C, g^1)
@@ -732,6 +736,7 @@ bool r1cs_ppzksnark_online_verifier_weak_IC(const r1cs_ppzksnark_processed_verif
     {
         return false;
     }
+    printf("Done QAP\n");
 
     G1_precomp<ppT> proof_g_K_precomp = ppT::precompute_G1(proof.g_K);
     G1_precomp<ppT> proof_g_A_g_acc_C_precomp = ppT::precompute_G1((proof.g_A.g + acc) + proof.g_C.g);
@@ -742,6 +747,7 @@ bool r1cs_ppzksnark_online_verifier_weak_IC(const r1cs_ppzksnark_processed_verif
     {
         return false;
     }
+    printf("Done K\n");
 
     return true;
 }

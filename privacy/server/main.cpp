@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <cstdint>
 
 #include <grpc/grpc.h>
 #include <grpcpp/server.h>
@@ -74,7 +75,10 @@ bool convert_note(const zksnark::Note &zk_note, libzcash::SproutNote &note)
 bool transform_prove_request(const ProveRequest *request,
                              ProveInputs &inputs,
                              ProveOutnotes &out_notes,
-                             uint256 &hsig, uint252 &phi, uint256 &rt)
+                             uint256 &hsig,
+                             uint252 &phi,
+                             uint256 &rt,
+                             uint64_t &reward)
 {
     if (request->inputs_size() != ZC_NUM_JS_INPUTS || request->outnotes_size() != ZC_NUM_JS_OUTPUTS)
         return false;
@@ -142,7 +146,31 @@ bool transform_prove_request(const ProveRequest *request,
     success &= string_to_uint256(request->rt(), rt);
     cout << "rt: " << rt.GetHex() << '\n';
 
+    // Convert reward
+    reward = request->reward();
+
     return success;
+}
+
+int print_proof(libzcash::PHGRProof &proof) {
+    printf("g_A: ");
+    proof.g_A.print();
+    printf("g_A_prime: ");
+    proof.g_A_prime.print();
+    printf("g_B: ");
+    proof.g_B.print();
+    printf("g_B_prime: ");
+    proof.g_B_prime.print();
+    printf("g_C: ");
+    proof.g_C.print();
+    printf("g_C_prime: ");
+    proof.g_C_prime.print();
+    printf("g_K: ");
+    proof.g_K.print();
+    printf("g_H: ");
+    proof.g_H.print();
+
+    return 0;
 }
 
 bool transform_prove_reply(libzcash::PHGRProof &proof, zksnark::PHGRProof &zk_proof)
@@ -163,20 +191,29 @@ bool transform_verify_request(const VerifyRequest *request,
                               NullifierArray &nullifiers,
                               CommitmentArray &commitments,
                               uint256 &hsig,
-                              uint256 &rt)
+                              uint256 &rt,
+                              uint64_t &reward)
 {
     if (request->nullifiers_size() != ZC_NUM_JS_INPUTS || request->commits_size() != ZC_NUM_JS_OUTPUTS)
         return false;
 
     cout << "Done check size\n";
     // Convert PHGRProof
+    printf("Checking: g_A\n");
     bool success = proof.g_A.from_string(request->proof().g_a());
+    printf("Checking: g_A_prime\n");
     success &= proof.g_A_prime.from_string(request->proof().g_a_prime());
+    printf("Checking: g_B\n");
     success &= proof.g_B.from_string(request->proof().g_b());
+    printf("Checking: g_B_prime\n");
     success &= proof.g_B_prime.from_string(request->proof().g_b_prime());
+    printf("Checking: g_C\n");
     success &= proof.g_C.from_string(request->proof().g_c());
+    printf("Checking: g_C_prime\n");
     success &= proof.g_C_prime.from_string(request->proof().g_c_prime());
+    printf("Checking: g_K\n");
     success &= proof.g_K.from_string(request->proof().g_k());
+    printf("Checking: g_H\n");
     success &= proof.g_H.from_string(request->proof().g_h());
     cout << "convert PHGRProof: " << success << '\n';
 
@@ -201,6 +238,10 @@ bool transform_verify_request(const VerifyRequest *request,
     // Convert rt
     success &= string_to_uint256(request->rt(), rt);
     cout << "rt: " << rt.GetHex() << '\n';
+
+    // Convert reward
+    reward = request->reward();
+
     return success;
 }
 
@@ -213,11 +254,14 @@ class ZksnarkImpl final : public Zksnark::Service
         ProveOutnotes out_notes;
         uint256 hsig, rt;
         uint252 phi;
-        bool success = transform_prove_request(request, inputs, out_notes, hsig, phi, rt);
+        uint64_t reward;
+        bool success = transform_prove_request(request, inputs, out_notes, hsig, phi, rt, reward);
         cout << "transform_prove_request status: " << success << '\n';
 
         bool compute_proof = true;
-        auto proof = js->prove(inputs, out_notes, rt, hsig, phi, compute_proof);
+        uint64_t vpub_old = reward;
+        auto proof = js->prove(inputs, out_notes, vpub_old, rt, hsig, phi, compute_proof);
+        print_proof(proof);
 
         zksnark::PHGRProof *zk_proof = new zksnark::PHGRProof();
         success = transform_prove_reply(proof, *zk_proof);
@@ -233,12 +277,15 @@ class ZksnarkImpl final : public Zksnark::Service
         uint256 hsig, rt;
         NullifierArray nullifiers;
         CommitmentArray commitments;
-        NullifierArray macs;
-        bool success = transform_verify_request(request, proof, nullifiers, commitments, hsig, rt);
+        NullifierArray macs; // TODO(@0xbunyip): add mac to successfully run js->verify
+        uint64_t reward;
+        bool success = transform_verify_request(request, proof, nullifiers, commitments, hsig, rt, reward);
         cout << "transform_verify_request status: " << success << '\n';
+
+        uint64_t vpub_old = reward;
         bool valid = false;
         if (success)
-            valid = js->verify(proof, macs, nullifiers, commitments, rt, hsig);
+            valid = js->verify(proof, macs, nullifiers, commitments, vpub_old, rt, hsig);
         reply->set_valid(valid);
         return Status::OK;
     }
@@ -247,8 +294,8 @@ class ZksnarkImpl final : public Zksnark::Service
 void RunServer()
 {
     // Creating zksnark circuit and load params
-    js = ZCJoinSplit::Prepared("./verifying.key",
-                               "./proving.key");
+    js = ZCJoinSplit::Prepared("/home/ubuntu/go/src/github.com/ninjadotorg/cash-prototype/privacy/server/build/verifying.key",
+                               "/home/ubuntu/go/src/github.com/ninjadotorg/cash-prototype/privacy/server/build/proving.key");
     cout << "Done preparing zksnark\n";
 
     // Run server
