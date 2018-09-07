@@ -445,6 +445,7 @@ func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string) (*TxViewPoint
 		return nil, err
 	}
 	view.listNullifiers[typeJoinSplitDesc] = nullifiers
+	view.SetBestHash(&self.BestState.BestBlockHash)
 	return view, nil
 }
 
