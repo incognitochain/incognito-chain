@@ -1,5 +1,7 @@
 package blockchain
 
+import "fmt"
+
 // maybeAcceptBlock potentially accepts a block into the block chain and, if
 // accepted, returns whether or not it is on the main chain.  It performs
 // several validation checks which depend on its position within the block chain
@@ -10,7 +12,7 @@ package blockchain
 // their documentation for how the flags modify their behavior.
 //
 // This function MUST be called with the chain state lock held (for writes).
-/*func (self *BlockChain) maybeAcceptBlock(block *Block) (bool, error) {
+func (self *BlockChain) maybeAcceptBlock(block *Block) (bool, error) {
 	// TODO
 	// The height of this block is one more than the referenced previous
 	// block.
@@ -38,11 +40,11 @@ package blockchain
 		return false, err
 	}
 
-	// fetch utxo from block and save
+	// fetch nullifiers and commitments(utxo) from block and save
 	isMainChain, err := self.connectBestChain(block)
 	if err != nil {
 		return false, err
 	}
 
 	return isMainChain, nil
-}*/
+}

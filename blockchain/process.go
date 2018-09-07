@@ -43,14 +43,14 @@ func (self *BlockChain) ProcessBlock(block *Block) (bool, bool, error) {
 
 	// The block has passed all context independent checks and appears sane
 	// enough to potentially accept it into the block chain.
-	//isMainChain, err := self.maybeAcceptBlock(block)
+	isMainChain, err := self.maybeAcceptBlock(block)
 	if err != nil {
 		return false, false, err
 	}
 
 	Logger.log.Infof("Accepted block %s", blockHash.String())
 
-	return true, false, nil
+	return isMainChain, false, nil
 }
 
 // blockExists determines whether a block with the given hash exists either in
