@@ -8,6 +8,7 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
@@ -107,60 +108,100 @@ func calculateReward(
 	}
 }
 
-/**
-// createCoinbaseTx returns a coinbase transaction paying an appropriate subsidy
-// based on the passed block height to the provided address.  When the address
-// is nil, the coinbase transaction will instead be redeemable by anyone.
-*/
 func createCoinbaseTx(
 	params *blockchain.Params,
-	coinbaseScript []byte,
-	addr string,
+	receiverAddr *client.PaymentAddress,
 	rewardMap map[string]uint64,
+	rt []byte,
 ) (*transaction.Tx, error) {
-	// Create the script to pay to the provided payment address if one was
-	// specified.  Otherwise create a script that allows the coinbase to be
-	// redeemable by anyone.
-	var pkScript []byte
-	_ = pkScript
+	// Create Proof for the joinsplit op
+	inputs := make([]*client.JSInput, 2)
+	inputs[0] = transaction.CreateRandomJSInput()
+	inputs[1] = transaction.CreateRandomJSInput()
 
-	pkScript = []byte(addr) //@todo add public key of the receiver where
-
-	//create new tx
-	tx := &transaction.Tx{
-		Version: 1,
-		Type:    common.TxNormalType,
-		//TxIn:    make([]transaction.TxIn, 0, 2),
-		//TxOut:   make([]transaction.TxOut, 0, 1),
-	}
-	//create outpoint
-	//outPoint := &transaction.OutPoint{
-	//	Hash: common.Hash{},
-	//	Vout: transaction.MaxPrevOutIndex,
-	//}
-
-	//txIn := *transaction.TxIn{}.NewTxIn(outPoint, coinbaseScript)
-	//tx.AddTxIn(txIn)
-	//@todo add value of tx out logic
+	// Get reward
+	// TODO(@0xbunyip): implement bonds reward
+	var reward uint64
 	for rewardType, rewardValue := range rewardMap {
 		if rewardValue <= 0 {
 			continue
 		}
-		txOutTypeMap := map[string]string{
-			"coins":       common.TxOutCoinType,
-			"bonds":       common.TxOutBondType,
-			"burnedCoins": common.TxOutCoinType,
+		if rewardType == "coins" {
+			reward = rewardValue
 		}
-		if rewardType == "burnedCoins" {
-			pkScript = []byte(DEFAULT_ADDRESS_FOR_BURNING)
-		}
-		_ = txOutTypeMap
-		//txOut := *transaction.TxOut{}.NewTxOut(rewardValue, pkScript, txOutTypeMap[rewardType])
-		//tx.AddTxOut(txOut)
 	}
 
-	return tx, nil
+	// Create new notes: first one is coinbase UTXO, second one has 0 value
+	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}
+	placeHolderOutputNote := &client.Note{Value: 0, Apk: receiverAddr.Apk}
+
+	outputs := make([]*client.JSOutput, 2)
+	outputs[0].EncKey = receiverAddr.Pkenc
+	outputs[0].OutputNote = outNote
+	outputs[1].EncKey = receiverAddr.Pkenc
+	outputs[1].OutputNote = placeHolderOutputNote
+
+	// Shuffle output notes randomly (if necessary)
+
+	// Generate proof and sign tx
+	tx, err := transaction.GenerateProofAndSign(inputs, outputs, rt, reward)
+	return tx, err
 }
+
+// /**
+// // createCoinbaseTx returns a coinbase transaction paying an appropriate subsidy
+// // based on the passed block height to the provided address.  When the address
+// // is nil, the coinbase transaction will instead be redeemable by anyone.
+// */
+// func createCoinbaseTx(
+// 	params *blockchain.Params,
+// 	coinbaseScript []byte,
+// 	addr string,
+// 	rewardMap map[string]uint64,
+// ) (*transaction.Tx, error) {
+// 	// Create the script to pay to the provided payment address if one was
+// 	// specified.  Otherwise create a script that allows the coinbase to be
+// 	// redeemable by anyone.
+// 	var pkScript []byte
+// 	_ = pkScript
+
+// 	pkScript = []byte(addr) //@todo add public key of the receiver where
+
+// 	//create new tx
+// 	tx := &transaction.Tx{
+// 		Version: 1,
+// 		Type:    common.TxNormalType,
+// 		//TxIn:    make([]transaction.TxIn, 0, 2),
+// 		//TxOut:   make([]transaction.TxOut, 0, 1),
+// 	}
+// 	//create outpoint
+// 	//outPoint := &transaction.OutPoint{
+// 	//	Hash: common.Hash{},
+// 	//	Vout: transaction.MaxPrevOutIndex,
+// 	//}
+
+// 	//txIn := *transaction.TxIn{}.NewTxIn(outPoint, coinbaseScript)
+// 	//tx.AddTxIn(txIn)
+// 	//@todo add value of tx out logic
+// 	for rewardType, rewardValue := range rewardMap {
+// 		if rewardValue <= 0 {
+// 			continue
+// 		}
+// 		txOutTypeMap := map[string]string{
+// 			"coins":       common.TxOutCoinType,
+// 			"bonds":       common.TxOutBondType,
+// 			"burnedCoins": common.TxOutCoinType,
+// 		}
+// 		if rewardType == "burnedCoins" {
+// 			pkScript = []byte(DEFAULT_ADDRESS_FOR_BURNING)
+// 		}
+// 		_ = txOutTypeMap
+// 		//txOut := *transaction.TxOut{}.NewTxOut(rewardValue, pkScript, txOutTypeMap[rewardType])
+// 		//tx.AddTxOut(txOut)
+// 	}
+
+// 	return tx, nil
+// }
 
 // spendTransaction updates the passed view by marking the inputs to the passed
 // transaction as spent.  It also adds all outputs in the passed transaction
@@ -305,44 +346,44 @@ mempoolLoop:
 		//_ = utxos
 		//_ = err
 		/*
-		if err != nil {
-			fmt.Print("Unable to fetch utxo view for tx %s: %v",
-				tx.Hash(), err)
-			continue
-		}
-		prioItem := &txPrioItem{tx: tx}
-		for _, txIn := range tx.TxIn {
-			originHash := &txIn.PreviousOutPoint.Hash
-			entry := utxos.LookupEntry(txIn.PreviousOutPoint)
-			if entry == nil || entry.IsSpent() {
-				if !TxPool.HaveTx(originHash) {
-					fmt.Print("Skipping tx %s because it "+
-						"references unspent output %s "+
-						"which is not available",
-						tx.Hash(), txIn.PreviousOutPoint)
-					continue mempoolLoop
-				}
-
-				// The transaction is referencing another
-				// transaction in the source pool, so setup an
-				// ordering dependency.
-				deps, exists := dependers[*originHash]
-				if !exists {
-					deps = make(map[common.Hash]*txPrioItem)
-					dependers[*originHash] = deps
-				}
-				deps[*prioItem.tx.Hash()] = prioItem
-				if prioItem.dependsOn == nil {
-					prioItem.dependsOn = make(
-						map[common.Hash]struct{})
-				}
-				prioItem.dependsOn[*originHash] = struct{}{}
-
-				// Skip the check below. We already know the
-				// referenced transaction is available.
+			if err != nil {
+				fmt.Print("Unable to fetch utxo view for tx %s: %v",
+					tx.Hash(), err)
 				continue
 			}
-		}*/
+			prioItem := &txPrioItem{tx: tx}
+			for _, txIn := range tx.TxIn {
+				originHash := &txIn.PreviousOutPoint.Hash
+				entry := utxos.LookupEntry(txIn.PreviousOutPoint)
+				if entry == nil || entry.IsSpent() {
+					if !TxPool.HaveTx(originHash) {
+						fmt.Print("Skipping tx %s because it "+
+							"references unspent output %s "+
+							"which is not available",
+							tx.Hash(), txIn.PreviousOutPoint)
+						continue mempoolLoop
+					}
+
+					// The transaction is referencing another
+					// transaction in the source pool, so setup an
+					// ordering dependency.
+					deps, exists := dependers[*originHash]
+					if !exists {
+						deps = make(map[common.Hash]*txPrioItem)
+						dependers[*originHash] = deps
+					}
+					deps[*prioItem.tx.Hash()] = prioItem
+					if prioItem.dependsOn == nil {
+						prioItem.dependsOn = make(
+							map[common.Hash]struct{})
+					}
+					prioItem.dependsOn[*originHash] = struct{}{}
+
+					// Skip the check below. We already know the
+					// referenced transaction is available.
+					continue
+				}
+			}*/
 		if !tx.ValidateTransaction() {
 			continue mempoolLoop
 		}

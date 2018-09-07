@@ -6,4 +6,6 @@ const (
 
 	TxOutCoinType = "TXOUT_COIN"
 	TxOutBondType = "TXOUT_BOND"
+
+	IncMerkleTreeHeight = 29
 )

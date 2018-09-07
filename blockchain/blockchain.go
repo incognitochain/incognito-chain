@@ -7,10 +7,11 @@ import (
 
 	"sync"
 
-	"github.com/ninjadotorg/cash-prototype/database"
-	"time"
 	"encoding/json"
+	"time"
+
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
@@ -43,7 +44,7 @@ type Config struct {
 	ChainParams *Params
 }
 
-func (self *BlockChain) Init(config *Config) (error) {
+func (self *BlockChain) Init(config *Config) error {
 	// Enforce required config fields.
 	if config.DataBase == nil {
 		return errors.New("blockchain.New database is nil")
@@ -61,7 +62,7 @@ func (self *BlockChain) Init(config *Config) (error) {
 		return err
 	}
 
-	Logger.log.Infof("BlockChain state (height %d, hash %v, totaltx %d)", self.BestState.Height, self.BestState.BestBlockHash.String(), self.BestState.TotalTxns, )
+	Logger.log.Infof("BlockChain state (height %d, hash %v, totaltx %d)", self.BestState.Height, self.BestState.BestBlockHash.String(), self.BestState.TotalTxns)
 
 	return nil
 }
@@ -161,21 +162,21 @@ func (self *BlockChain) createChainState() error {
 
 /**
 Get block index(height) of block
- */
+*/
 func (self *BlockChain) GetBlockHeightByBlockHash(hash *common.Hash) (int32, error) {
 	return self.Config.DataBase.GetIndexOfBlock(hash)
 }
 
 /**
 Get block hash by block index(height)
- */
+*/
 func (self *BlockChain) GetBlockHashByBlockHeight(height int32) (*common.Hash, error) {
 	return self.Config.DataBase.GetBlockByIndex(height)
 }
 
 /**
 Fetch DB and get block by index(height) of block
- */
+*/
 func (self *BlockChain) GetBlockByBlockHeight(height int32) (*Block, error) {
 	hashBlock, err := self.Config.DataBase.GetBlockByIndex(height)
 	if err != nil {
@@ -195,7 +196,7 @@ func (self *BlockChain) GetBlockByBlockHeight(height int32) (*Block, error) {
 
 /**
 Fetch DB and get block data by block hash
- */
+*/
 func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 	blockBytes, err := self.Config.DataBase.FetchBlock(hash)
 	if err != nil {
@@ -211,8 +212,8 @@ func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 
 /**
 Store best state of block(best block, num of tx, ...) into Database
- */
-func (self *BlockChain) StoreBestState() (error) {
+*/
+func (self *BlockChain) StoreBestState() error {
 	return self.Config.DataBase.StoreBestBlock(self.BestState)
 }
 
@@ -227,7 +228,7 @@ func (self *BlockChain) GetBestState() (*BestState, error) {
 
 /**
 Store block into Database
- */
+*/
 func (self *BlockChain) StoreBlock(block *Block) error {
 	return self.Config.DataBase.StoreBlock(block)
 }
@@ -236,7 +237,7 @@ func (self *BlockChain) StoreBlock(block *Block) error {
 Save index(height) of block by block hash
 and
 Save block hash by index(height) of block
- */
+*/
 func (self *BlockChain) StoreBlockIndex(block *Block) error {
 	return self.Config.DataBase.StoreBlockIndex(block.Hash(), block.Height)
 }
@@ -273,8 +274,8 @@ func (self *BlockChain) StoreBlockIndex(block *Block) error {
 /**
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
- */
-func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) (error) {
+*/
+func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
 	for typeJoinSplitDesc, item := range view.listNullifiers {
 		for _, item1 := range item {
 			err := self.Config.DataBase.StoreNullifiers(item1, typeJoinSplitDesc)
@@ -289,8 +290,8 @@ func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) (error)
 /**
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
- */
-func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) (error) {
+*/
+func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
 	for typeJoinSplitDesc, item := range view.listCommitments {
 		for _, item1 := range item {
 			err := self.Config.DataBase.StoreCommitments(item1, typeJoinSplitDesc)
@@ -305,8 +306,8 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) (error
 /**
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
- */
-func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, typeJoinSplitDesc string) (error) {
+*/
+func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, typeJoinSplitDesc string) error {
 	for _, nullifier := range nullifiers {
 		err := self.Config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc)
 		if err != nil {
@@ -319,8 +320,8 @@ func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, ty
 /**
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
- */
-func (self *BlockChain) StoreCommitmentsFromListNullifier(commitments [][]byte, typeJoinSplitDesc string) (error) {
+*/
+func (self *BlockChain) StoreCommitmentsFromListNullifier(commitments [][]byte, typeJoinSplitDesc string) error {
 	for _, item := range commitments {
 		err := self.Config.DataBase.StoreCommitments(item, typeJoinSplitDesc)
 		if err != nil {
@@ -333,9 +334,9 @@ func (self *BlockChain) StoreCommitmentsFromListNullifier(commitments [][]byte, 
 /**
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
- */
-func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx, typeJoinSplitDesc string) (error) {
-	for _, desc := range tx.Desc {
+*/
+func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx, typeJoinSplitDesc string) error {
+	for _, desc := range tx.Descs {
 		for _, nullifier := range desc.Nullifiers {
 			err := self.Config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc)
 			if err != nil {
@@ -349,9 +350,9 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx, typeJoinSplitD
 /**
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
- */
-func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx, typeJoinSplitDesc string) (error) {
-	for _, desc := range tx.Desc {
+*/
+func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx, typeJoinSplitDesc string) error {
+	for _, desc := range tx.Descs {
 		for _, item := range desc.Commitments {
 			err := self.Config.DataBase.StoreCommitments(item, typeJoinSplitDesc)
 			if err != nil {
@@ -365,7 +366,7 @@ func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx, typeJoinSplit
 /**
 Get all blocks in chain
 Return block array
- */
+*/
 func (self *BlockChain) GetAllBlocks() ([]*Block, error) {
 	result := make([]*Block, 0)
 	data, err := self.Config.DataBase.FetchAllBlocks()
@@ -391,7 +392,7 @@ func (self *BlockChain) GetAllBlocks() ([]*Block, error) {
 /**
 Get all hash of blocks in chain
 Return hashes array
- */
+*/
 func (self *BlockChain) GetAllHashBlocks() ([]*common.Hash, error) {
 	data, err := self.Config.DataBase.FetchAllBlocks()
 	if err != nil {

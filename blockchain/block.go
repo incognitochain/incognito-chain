@@ -3,10 +3,11 @@ package blockchain
 import (
 	"strconv"
 
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/transaction"
 	"encoding/json"
 	"errors"
+
+	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 const (
@@ -69,9 +70,9 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 			if ok && jSSig != nil {
 				txNormal.JSSig = []byte(jSSig.(string))
 			}
-			desc, ok := txTemp["Desc"]
+			desc, ok := txTemp["Descs"]
 			if ok && desc != nil {
-				txNormal.Desc = desc.([]*transaction.JoinSplitDesc)
+				txNormal.Descs = desc.([]*transaction.JoinSplitDesc)
 			}
 			self.Transactions = append(self.Transactions, txNormal)
 		} else if txTemp["Type"].(string) == common.TxActionParamsType {

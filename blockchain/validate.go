@@ -3,8 +3,8 @@ package blockchain
 import (
 	// "math"
 
-	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 var (
@@ -12,16 +12,16 @@ var (
 )
 
 /*func CountSigOps(tx *transaction.Tx) float64 {
-	totalSigOps := 0.0
-	*//*for _, txIn := range tx.TxIn {
-		//@todo need implement function calc value of input
-		fmt.Print(txIn.PreviousOutPoint)
-	}
+totalSigOps := 0.0
+*/ /*for _, txIn := range tx.TxIn {
+	//@todo need implement function calc value of input
+	fmt.Print(txIn.PreviousOutPoint)
+}
 
-	for _, txOut := range tx.TxOut {
+for _, txOut := range tx.TxOut {
 
-		totalSigOps -= txOut.Value
-	}*//*
+	totalSigOps -= txOut.Value
+}*/ /*
 
 	return totalSigOps
 }*/
@@ -36,7 +36,7 @@ func IsCoinBaseTx(tx transaction.Transaction) bool {
 		return false
 	}
 	// Check nullifiers in every Descs
-	descs := normalTx.Desc
+	descs := normalTx.Descs
 	for _, desc := range descs {
 		if len(desc.Nullifiers) > 0 {
 			return false
