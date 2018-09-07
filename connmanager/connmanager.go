@@ -421,10 +421,13 @@ listen:
 				rawAddress := listener.RawAddress
 
 				externalAddress := os.Getenv("EXTERNAL_ADDRESS")
+				fmt.Println(externalAddress)
 				if externalAddress != "" {
 					host, _, err := net.SplitHostPort(externalAddress)
-					if err != nil {
-						externalAddress = strings.Replace(externalAddress, "127.0.0.1", host, 1)
+					fmt.Println("Host", host)
+					if err == nil {
+						rawAddress = strings.Replace(rawAddress, "127.0.0.1", host, 1)
+						fmt.Println("NEW ADDRESS", rawAddress)
 					}
 				}
 
