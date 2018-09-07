@@ -8,6 +8,7 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common/base58"
+	"github.com/ninjadotorg/cash-prototype/privacy/client"
 )
 
 const (
@@ -174,18 +175,6 @@ func (key *Key) Base58CheckSerialize(private bool) string {
 	return base58.Base58Check{}.Encode(serializedKey, byte(0x00))
 }
 
-func (key *Key) ToAddress(private bool) string {
-	serializedKey, err := key.Serialize(private)
-	if err != nil {
-		return ""
-	}
-	//serializedKey, err = common.Hash160(serializedKey)
-	//if err != nil {
-	//	return ""
-	//}
-	return base58.Base58Check{}.Encode(serializedKey, byte(0x00))
-}
-
 // Deserialize a byte slice into a KeyPair
 func Deserialize(data []byte) (*Key, error) {
 	//if len(data) != 101 {
@@ -201,10 +190,9 @@ func Deserialize(data []byte) (*Key, error) {
 		copy(key.KeyPair.PrivateKey[:], data[39:39+keyLength])
 		// key.KeyPair.PrivateKey = data[39 : 39+keyLength]
 	} else {
-		data := make([]byte, keyLength)
-		copy(data, data[39:39+keyLength])
-		copy(key.KeyPair.PublicKey.Apk[:], data[:32])
-		copy(key.KeyPair.PublicKey.Pkenc[:], data[32:])
+		apkEndByte := 39 + client.SpendingAddressLength
+		copy(key.KeyPair.PublicKey.Apk[:], data[39:apkEndByte])
+		copy(key.KeyPair.PublicKey.Pkenc[:], data[apkEndByte:apkEndByte+(int(keyLength)-client.SpendingAddressLength)])
 		// key.KeyPair.PublicKey = data[39 : 39+keyLength]
 	}
 
