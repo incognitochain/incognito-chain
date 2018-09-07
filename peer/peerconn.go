@@ -196,7 +196,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 			self.disconnect <- struct{}{}
 
 			if self.HandleDisconnected != nil {
-				self.HandleDisconnected(self)
+				go self.HandleDisconnected(self)
 			}
 
 			break

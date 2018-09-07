@@ -28,7 +28,7 @@ const (
 	// inventory to a peer.
 	trickleTimeout = 10 * time.Second
 
-	maxRetryConn      = 10
+	maxRetryConn      = 1
 	retryConnDuration = 10 * time.Second
 )
 
@@ -60,7 +60,8 @@ type Peer struct {
 	Config        Config
 	MaxOutbound   int
 
-	PeerConns map[peer.ID]*PeerConn
+	PeerConns    map[peer.ID]*PeerConn
+	PendingPeers map[peer.ID]*Peer
 
 	Peers map[string]string
 
@@ -197,6 +198,17 @@ func (self *Peer) Start() error {
 	return nil
 }
 
+func (self *Peer) Pending(peer *Peer) {
+	self.PendingPeers[peer.PeerId] = peer
+}
+
+func (self *Peer) Established(peer *Peer) {
+	_, ok := self.PendingPeers[peer.PeerId]
+	if ok {
+		delete(self.PendingPeers, peer.PeerId)
+	}
+}
+
 func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER ID - %s \n", peer.PeerId.String())
 
@@ -205,6 +217,8 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	_peerConn, ok := self.PeerConns[peer.PeerId]
 	if ok && _peerConn.State() == ConnEstablished {
 		Logger.log.Infof("Existed PEER ID - %s", peer.PeerId.String())
+
+		self.Pending(peer)
 
 		self.outboundMutex.Unlock()
 		return nil, nil
@@ -217,8 +231,10 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		return nil, nil
 	}
 
-	if len(self.PeerConns) >= self.MaxOutbound {
+	if len(self.PeerConns) >= self.MaxOutbound && !ok {
 		Logger.log.Infof("Max Peer Outbound Connection")
+
+		self.Pending(peer)
 
 		self.outboundMutex.Unlock()
 		return nil, nil
@@ -246,6 +262,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		PeerId:             remotePeerId,
 		ReaderWriterStream: rw,
 		quit:               make(chan struct{}),
+		disconnect:         make(chan struct{}),
 		sendMessageQueue:   make(chan outMsg, 1),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,
@@ -298,6 +315,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		PeerId:             remotePeerId,
 		ReaderWriterStream: rw,
 		quit:               make(chan struct{}),
+		disconnect:         make(chan struct{}),
 		sendMessageQueue:   make(chan outMsg, 1),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,
@@ -381,45 +399,6 @@ func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- stru
 	}
 }
 
-// negotiateOutboundProtocol sends our version message then waits to receive a
-// version message from the peer.  If the events do not occur in that order then
-// it returns an error.
-//func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
-//	// Generate a unique nonce for this peer so self connections can be
-//	// detected.  This is accomplished by adding it to a size-limited map of
-//	// recently seen nonces.
-//	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
-//	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
-//	msg.(*wire.MessageVersion).LocalAddress = self.ListeningAddress
-//	msg.(*wire.MessageVersion).RawLocalAddress = self.RawAddress
-//	msg.(*wire.MessageVersion).LocalPeerId = self.PeerId
-//	msg.(*wire.MessageVersion).RemoteAddress = peer.ListeningAddress
-//	msg.(*wire.MessageVersion).RawRemoteAddress = peer.RawAddress
-//	msg.(*wire.MessageVersion).RemotePeerId = peer.PeerId
-//	msg.(*wire.MessageVersion).LastBlock = 0
-//	msg.(*wire.MessageVersion).ProtocolVersion = 1
-//	if err != nil {
-//		return err
-//	}
-//	msgVersion, err := msg.JsonSerialize()
-//	if err != nil {
-//		return err
-//	}
-//	header := make([]byte, wire.MessageHeaderSize)
-//	CmdType, _ := wire.GetCmdType(reflect.TypeOf(msg))
-//	copy(header[:], []byte(CmdType))
-//	msgVersion = append(msgVersion, header...)
-//	msgVersionStr := hex.EncodeToString(msgVersion)
-//	msgVersionStr += "\n"
-//	Logger.log.Infof("Send a msgVersion: %s", msgVersionStr)
-//	rw := self.PeerConns[peer.PeerId].ReaderWriterStream
-//	self.FlagMutex.Lock()
-//	rw.Writer.WriteString(msgVersionStr)
-//	rw.Writer.Flush()
-//	self.FlagMutex.Unlock()
-//	return nil
-//}
-
 func (self *Peer) Stop() {
 	Logger.log.Infof("PEER %s Stop", self.PeerId.String())
 
@@ -434,6 +413,8 @@ func (self *Peer) handleConnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleConnected %s", peerConn.PeerId.String())
 	peerConn.RetryCount = 0
 	peerConn.updateState(ConnEstablished)
+
+	self.Established(peerConn.Peer)
 
 	if self.HandleConnected != nil {
 		self.HandleConnected(peerConn)
@@ -489,6 +470,14 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 			if ok {
 				delete(self.PeerConns, _peerConn.PeerId)
 			}
+			self.newPeerConnection()
+			self.Pending(peerConn.Peer)
 		}
 	})
+}
+
+func (self *Peer) newPeerConnection() {
+	for _, peer := range self.PendingPeers {
+		go self.NewPeerConnection(peer)
+	}
 }
