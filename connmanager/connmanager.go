@@ -23,6 +23,7 @@ const (
 	// defaultTargetOutbound is the default number of outbound connections to
 	// maintain.
 	defaultTargetOutbound = uint32(8)
+	defaultTargetInbound  = uint32(8)
 )
 
 // ConnState represents the state of the requested connection.
@@ -82,6 +83,7 @@ type Config struct {
 	// TargetOutbound is the number of outbound network connections to
 	// maintain. Defaults to 8.
 	TargetOutbound uint32
+	TargetInbound  uint32
 }
 
 // parseListeners determines whether each listen address is IPv4 and IPv6 and
@@ -150,6 +152,9 @@ func (self ConnManager) New(cfg *Config) (*ConnManager, error) {
 	if cfg.TargetOutbound == 0 {
 		cfg.TargetOutbound = defaultTargetOutbound
 	}
+	if cfg.TargetOutbound == 0 {
+		cfg.TargetInbound = defaultTargetInbound
+	}
 	self.Config = *cfg
 	self.Quit = make(chan struct{})
 	self.Requests = make(chan interface{})
@@ -215,6 +220,7 @@ func (self *ConnManager) Connect(addr string) {
 
 	for _, listen := range self.Config.ListenerPeers {
 		listen.MaxOutbound = int(self.Config.TargetOutbound)
+		listen.MaxInbound = int(self.Config.TargetInbound)
 
 		listen.HandleConnected = self.handleConnected
 		listen.HandleDisconnected = self.handleDisconnected
