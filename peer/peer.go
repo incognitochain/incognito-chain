@@ -4,12 +4,10 @@ import (
 	"bufio"
 	"context"
 	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
 	mrand "math/rand"
-	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -57,16 +55,16 @@ type Peer struct {
 	RawAddress       string
 	ListeningAddress common.SimpleAddr
 
-	Seed      int64
-	FlagMutex sync.Mutex
-	Config    Config
+	Seed          int64
+	outboundMutex sync.Mutex
+	Config        Config
+	MaxOutbound   int
 
 	PeerConns map[peer.ID]*PeerConn
 
-	Peers []string
+	Peers map[string]string
 
-	quit           chan struct{}
-	disconnectPeer chan *PeerConn
+	quit chan struct{}
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -76,6 +74,7 @@ type Peer struct {
 // Config is the struct to hold configuration options useful to Peer.
 type Config struct {
 	MessageListeners MessageListeners
+	SealerPrvKey     string
 }
 
 type WrappedStream struct {
@@ -176,9 +175,10 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.Host = basicHost
 	self.TargetAddress = fullAddr
 	self.PeerId = peerid
-	//self.sendMessageQueue = make(chan outMsg, 1)
 	self.quit = make(chan struct{}, 1)
-	self.disconnectPeer = make(chan *PeerConn)
+	self.Peers = make(map[string]string)
+
+	self.outboundMutex = sync.Mutex{}
 
 	return &self, nil
 }
@@ -198,11 +198,37 @@ func (self *Peer) Start() error {
 }
 
 func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
-	Logger.log.Infof("Opening stream to PEER ID - %s \n", self.PeerId.String())
+	Logger.log.Infof("Opening stream to PEER ID - %s \n", peer.PeerId.String())
+
+	self.outboundMutex.Lock()
+
+	_peerConn, ok := self.PeerConns[peer.PeerId]
+	if ok && _peerConn.State() == ConnEstablished {
+		Logger.log.Infof("Existed PEER ID - %s", peer.PeerId.String())
+
+		self.outboundMutex.Unlock()
+		return nil, nil
+	}
+
+	if peer.PeerId.Pretty() == self.PeerId.Pretty() {
+		Logger.log.Infof("Myself PEER ID - %s", peer.PeerId.String())
+
+		self.outboundMutex.Unlock()
+		return nil, nil
+	}
+
+	if len(self.PeerConns) >= self.MaxOutbound {
+		Logger.log.Infof("Max Peer Outbound Connection")
+
+		self.outboundMutex.Unlock()
+		return nil, nil
+	}
 
 	stream, err := self.Host.NewStream(context.Background(), peer.PeerId, "/blockchain/1.0.0")
 	if err != nil {
 		Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", self.PeerId.String(), err.Error())
+
+		self.outboundMutex.Unlock()
 		return nil, err
 	}
 
@@ -236,13 +262,13 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 	go self.handleConnected(&peerConn)
 
+	self.outboundMutex.Unlock()
+
 	for {
 		select {
-		case peerConnT := <-self.disconnectPeer:
-			if &peerConn == peerConnT {
-				Logger.log.Infof("NewPeerConnection Close Stream")
-				break
-			}
+		case <-peerConn.disconnect:
+			Logger.log.Infof("NewPeerConnection Close Stream PEER ID %s", peerConn.PeerId.String())
+			break
 		}
 	}
 
@@ -251,7 +277,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 func (self *Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
-	//defer stream.Close()
+	defer stream.Close()
 
 	remotePeerId := stream.Conn().RemotePeer()
 	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID-%s", self.Host.ID().String(), remotePeerId.String())
@@ -290,11 +316,9 @@ func (self *Peer) HandleStream(stream net.Stream) {
 
 	for {
 		select {
-		case peerConnT := <-self.disconnectPeer:
-			if &peerConn == peerConnT {
-				Logger.log.Infof("HandleStream Close Stream")
-				break
-			}
+		case <-peerConn.disconnect:
+			Logger.log.Infof("HandleStream Close Stream PEER ID %s", peerConn.PeerId.String())
+			break
 		}
 	}
 }
@@ -308,15 +332,17 @@ func (self Peer) HandleExchangePeers() {
 	//	for {
 	//		Logger.log.Infof("Peers", self.Peers)
 	//		if client == nil {
-	//			client, err = rpc.Dial("tcp", "127.0.0.1:9339")
+	//			client, err = rpc.Dial("tcp", "35.199.177.89:9339")
 	//			if err != nil {
 	//				Logger.log.Error("[Exchange Peers] re-connect:", err)
 	//			}
 	//		}
 	//		if client != nil {
 	//			Logger.log.Infof("[Exchange Peers] Ping")
-	//			var response []string
-	//			err := client.Call("Handler.Ping", self.RawAddress, &response)
+	//			var response []server.RawPeer
+	//			args := &server.PingArgs{self.RawAddress, self.Config.SealerPrvKey}
+	//			Logger.log.Infof("[Exchange Peers] Ping", args)
+	//			err := client.Call("Handler.Ping", args, &response)
 	//			if err != nil {
 	//				Logger.log.Error("[Exchange Peers] Ping:", err)
 	//				client = nil
@@ -324,8 +350,20 @@ func (self Peer) HandleExchangePeers() {
 	//
 	//				goto listen
 	//			}
-	//			self.Peers = response
-	//			Logger.log.Infof("Ping Response", response)
+	//			Logger.log.Infof("Ping response", response)
+	//			for _, rawPeer := range response {
+	//				if rawPeer.SealerPrvKey != "" && !strings.Contains(rawPeer.RawAddress, self.PeerId.String()) {
+	//					keyPair := &cashec.KeyPair{}
+	//					keyPair.Import([]byte(rawPeer.SealerPrvKey))
+	//
+	//					_, exist := self.Peers[string(keyPair.PublicKey)]
+	//
+	//					if !exist {
+	//						self.Peers[string(keyPair.PublicKey)] = rawPeer.RawAddress
+	//					}
+	//				}
+	//			}
+	//			Logger.log.Infof("Ping response Peers", self.Peers)
 	//		}
 	//		time.Sleep(time.Second * 2)
 	//	}
@@ -346,41 +384,41 @@ func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- stru
 // negotiateOutboundProtocol sends our version message then waits to receive a
 // version message from the peer.  If the events do not occur in that order then
 // it returns an error.
-func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
-	// Generate a unique nonce for this peer so self connections can be
-	// detected.  This is accomplished by adding it to a size-limited map of
-	// recently seen nonces.
-	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
-	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
-	msg.(*wire.MessageVersion).LocalAddress = self.ListeningAddress
-	msg.(*wire.MessageVersion).RawLocalAddress = self.RawAddress
-	msg.(*wire.MessageVersion).LocalPeerId = self.PeerId
-	msg.(*wire.MessageVersion).RemoteAddress = peer.ListeningAddress
-	msg.(*wire.MessageVersion).RawRemoteAddress = peer.RawAddress
-	msg.(*wire.MessageVersion).RemotePeerId = peer.PeerId
-	msg.(*wire.MessageVersion).LastBlock = 0
-	msg.(*wire.MessageVersion).ProtocolVersion = 1
-	if err != nil {
-		return err
-	}
-	msgVersion, err := msg.JsonSerialize()
-	if err != nil {
-		return err
-	}
-	header := make([]byte, wire.MessageHeaderSize)
-	CmdType, _ := wire.GetCmdType(reflect.TypeOf(msg))
-	copy(header[:], []byte(CmdType))
-	msgVersion = append(msgVersion, header...)
-	msgVersionStr := hex.EncodeToString(msgVersion)
-	msgVersionStr += "\n"
-	Logger.log.Infof("Send a msgVersion: %s", msgVersionStr)
-	rw := self.PeerConns[peer.PeerId].ReaderWriterStream
-	self.FlagMutex.Lock()
-	rw.Writer.WriteString(msgVersionStr)
-	rw.Writer.Flush()
-	self.FlagMutex.Unlock()
-	return nil
-}
+//func (self *Peer) NegotiateOutboundProtocol(peer *Peer) error {
+//	// Generate a unique nonce for this peer so self connections can be
+//	// detected.  This is accomplished by adding it to a size-limited map of
+//	// recently seen nonces.
+//	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
+//	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
+//	msg.(*wire.MessageVersion).LocalAddress = self.ListeningAddress
+//	msg.(*wire.MessageVersion).RawLocalAddress = self.RawAddress
+//	msg.(*wire.MessageVersion).LocalPeerId = self.PeerId
+//	msg.(*wire.MessageVersion).RemoteAddress = peer.ListeningAddress
+//	msg.(*wire.MessageVersion).RawRemoteAddress = peer.RawAddress
+//	msg.(*wire.MessageVersion).RemotePeerId = peer.PeerId
+//	msg.(*wire.MessageVersion).LastBlock = 0
+//	msg.(*wire.MessageVersion).ProtocolVersion = 1
+//	if err != nil {
+//		return err
+//	}
+//	msgVersion, err := msg.JsonSerialize()
+//	if err != nil {
+//		return err
+//	}
+//	header := make([]byte, wire.MessageHeaderSize)
+//	CmdType, _ := wire.GetCmdType(reflect.TypeOf(msg))
+//	copy(header[:], []byte(CmdType))
+//	msgVersion = append(msgVersion, header...)
+//	msgVersionStr := hex.EncodeToString(msgVersion)
+//	msgVersionStr += "\n"
+//	Logger.log.Infof("Send a msgVersion: %s", msgVersionStr)
+//	rw := self.PeerConns[peer.PeerId].ReaderWriterStream
+//	self.FlagMutex.Lock()
+//	rw.Writer.WriteString(msgVersionStr)
+//	rw.Writer.Flush()
+//	self.FlagMutex.Unlock()
+//	return nil
+//}
 
 func (self *Peer) Stop() {
 	Logger.log.Infof("PEER %s Stop", self.PeerId.String())
@@ -404,8 +442,6 @@ func (self *Peer) handleConnected(peerConn *PeerConn) {
 
 func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.PeerId.String())
-
-	peerConn.ListenerPeer.disconnectPeer <- peerConn
 
 	if peerConn.IsOutbound {
 		if peerConn.State() != ConnCanceled {

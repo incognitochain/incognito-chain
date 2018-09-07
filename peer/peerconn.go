@@ -6,18 +6,17 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
-	"reflect"
-	"sync"
 	"github.com/libp2p/go-libp2p-peer"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/wire"
+	"log"
+	"reflect"
+	"sync"
 )
 
 type PeerConn struct {
 	connected  int32
-	disconnect int32
 
 	RetryCount int32
 	IsOutbound bool
@@ -37,9 +36,11 @@ type PeerConn struct {
 
 	sendMessageQueue chan outMsg
 	quit             chan struct{}
+	disconnect       chan struct{}
 
-	Peer         *Peer
-	ListenerPeer *Peer
+	Peer             *Peer
+	ValidatorAddress string
+	ListenerPeer     *Peer
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -61,22 +62,24 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			return
 		}
 
-		Logger.log.Infof("Received message: %s \n", str)
+		//Logger.log.Infof("Received message: %s \n", str)
 		if str != "\n" {
 
 			// Parse Message header
 			jsonDecodeString, _ := hex.DecodeString(str)
 			messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 
+			Logger.log.Infof("Received message: %s \n", jsonDecodeString)
+
 			commandInHeader := messageHeader[:12]
 			commandInHeader = bytes.Trim(messageHeader, "\x00")
-			Logger.log.Info("Message Type - " + string(commandInHeader))
+			Logger.log.Infof("Message Type - %s %s",  string(commandInHeader), self.PeerId)
 			commandType := string(messageHeader[:len(commandInHeader)])
 			var message, err = wire.MakeEmptyMessage(string(commandType))
 
 			// Parse Message body
 			messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
-			Logger.log.Info("Message Body - " + string(messageBody))
+			Logger.log.Infof("Message Body - %s %s", string(messageBody), self.PeerId)
 			if err != nil {
 				Logger.log.Error(err)
 				continue
@@ -127,8 +130,8 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				if self.Config.MessageListeners.OnVerAck != nil {
 					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnVerAck(self, message.(*wire.MessageVerAck))
-					self.flagMutex.Unlock()
 				}
+				self.flagMutex.Unlock()
 			case reflect.TypeOf(&wire.MessageGetAddr{}):
 				self.flagMutex.Lock()
 				self.verAckReceived = true
@@ -136,8 +139,17 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				if self.Config.MessageListeners.OnGetAddr != nil {
 					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnGetAddr(self, message.(*wire.MessageGetAddr))
-					self.flagMutex.Unlock()
 				}
+				self.flagMutex.Unlock()
+			case reflect.TypeOf(&wire.MessageAddr{}):
+				self.flagMutex.Lock()
+				self.verAckReceived = true
+				self.flagMutex.Unlock()
+				if self.Config.MessageListeners.OnGetAddr != nil {
+					self.flagMutex.Lock()
+					self.Config.MessageListeners.OnAddr(self, message.(*wire.MessageAddr))
+				}
+				self.flagMutex.Unlock()
 			default:
 				Logger.log.Warnf("Received unhandled message of type %v "+
 					"from %v", realType, self)
@@ -171,7 +183,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				messageByte = append(messageByte, header...)
 				message := hex.EncodeToString(messageByte)
 				message += "\n"
-				Logger.log.Infof("Send a message %s %s: %s", self.PeerId.String(), outMsg.msg.MessageType(), message)
+				Logger.log.Infof("Send a message %s %s: %s", self.PeerId.String(), outMsg.msg.MessageType(), string(messageByte))
 				rw.Writer.WriteString(message)
 				rw.Writer.Flush()
 
@@ -180,6 +192,8 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 			}
 		case <-self.quit:
 			Logger.log.Infof("PEER %s quit OUT message handler", self.PeerId)
+
+			self.disconnect <- struct{}{}
 
 			if self.HandleDisconnected != nil {
 				self.HandleDisconnected(self)

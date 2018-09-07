@@ -351,6 +351,7 @@ func loadConfig() (*config, []string, error) {
 		WalletDbName:         defaultWalletDbName,
 		DisableTLS:           deafaultDisableRpcTls,
 		RPCDisableAuth:       true,
+		SealerPrvKey:		  os.Getenv("SEALERPRVKEY"),
 	}
 
 	// Service options which are only added on Windows.
