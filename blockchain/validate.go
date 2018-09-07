@@ -11,9 +11,9 @@ var (
 	zeroHash common.Hash
 )
 
-func CountSigOps(tx *transaction.Tx) float64 {
+/*func CountSigOps(tx *transaction.Tx) float64 {
 	totalSigOps := 0.0
-	/*for _, txIn := range tx.TxIn {
+	*//*for _, txIn := range tx.TxIn {
 		//@todo need implement function calc value of input
 		fmt.Print(txIn.PreviousOutPoint)
 	}
@@ -21,10 +21,10 @@ func CountSigOps(tx *transaction.Tx) float64 {
 	for _, txOut := range tx.TxOut {
 
 		totalSigOps -= txOut.Value
-	}*/
+	}*//*
 
 	return totalSigOps
-}
+}*/
 
 /**
 IsCoinBaseTx determines whether or not a transaction is a coinbase.

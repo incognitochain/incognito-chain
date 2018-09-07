@@ -45,7 +45,6 @@ type Config struct {
 
 func (self *BlockChain) Init(config *Config) (error) {
 	// Enforce required config fields.
-	// TODO
 	if config.DataBase == nil {
 		return errors.New("blockchain.New database is nil")
 	}

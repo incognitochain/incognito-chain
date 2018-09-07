@@ -94,8 +94,8 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 		Desc: mining.TxDesc{
 			Tx:     tx,
 			Added:  time.Now(),
-			Height: height, //@todo we will apply calc function for height.
-			Fee:    fee,    //@todo we will apply calc function for fee.
+			Height: height,
+			Fee:    fee,
 		},
 		StartingPriority: 1, //@todo we will apply calc function for it.
 	}
