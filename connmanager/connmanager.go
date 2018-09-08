@@ -287,7 +287,6 @@ func (self *ConnManager) Connect(addr string) {
 		// we use the same /peer/1.0.0 protocol
 
 		go listen.NewPeerConnection(&peer)
-
 	}
 }
 
@@ -315,7 +314,7 @@ func (self *ConnManager) Start() {
 			self.ListeningPeers[listner.PeerId] = &listner
 		}
 
-		go self.DiscoverPeers()
+		//go self.DiscoverPeers()
 	}
 }
 

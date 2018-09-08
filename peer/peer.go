@@ -23,7 +23,9 @@ import (
 )
 
 const (
-	LOCAL_HOST = "127.0.0.1"
+	//LOCAL_HOST = "127.0.0.1"
+	// listen all interface
+	LOCAL_HOST = "0.0.0.0"
 	// trickleTimeout is the duration of the ticker which trickles down the
 	// inventory to a peer.
 	trickleTimeout = 10 * time.Second
@@ -140,6 +142,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	if len(ip) == 0 {
 		ip = LOCAL_HOST
 	}
+	Logger.log.Info(ip)
 	port := strings.Split(self.ListeningAddress.String(), ":")[1]
 	net := self.ListeningAddress.Network()
 	listeningAddressString := fmt.Sprintf("/%s/%s/tcp/%s", net, ip, port)
@@ -274,6 +277,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	}
 
 	stream, err := self.Host.NewStream(context.Background(), peer.PeerId, "/blockchain/1.0.0")
+	Logger.log.Info(peer)
 	if err != nil {
 		Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", self.PeerId.String(), err.Error())
 
@@ -326,6 +330,8 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 }
 
 func (self *Peer) HandleStream(stream net.Stream) {
+	fmt.Println("DEBUG", stream.Conn().RemoteMultiaddr(), stream.Conn().LocalMultiaddr())
+
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
