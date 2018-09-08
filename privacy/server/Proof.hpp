@@ -119,6 +119,10 @@ public:
     void print() {
         char leadingByte[2] = {0};
         leadingByte[0] |= y_lsb;
+        printf("%d ", leadingByte[0]);
+        for (int i = 0; i < 32; ++i)
+            printf("%d ", x.data.begin()[i]);
+        printf("\n");
     }
 
     std::string to_string() {
@@ -195,6 +199,10 @@ public:
     void print() {
         unsigned char leadingByte[2] = {0};
         leadingByte[0] |= y_gt;
+        printf("%d ", leadingByte[0]);
+        for (int i = 0; i < 64; ++i)
+            printf("%d ", x.data.begin()[i]);
+        printf("\n");
     }
 
     std::string to_string() {

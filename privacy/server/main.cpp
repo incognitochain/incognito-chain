@@ -83,7 +83,6 @@ bool convert_output_note(const zksnark::Note &zk_note, libzcash::SproutNote &not
     return success;
 }
 
-
 bool transform_prove_request(const ProveRequest *request,
                              ProveInputs &inputs,
                              ProveOutnotes &out_notes,
@@ -184,7 +183,8 @@ bool transform_prove_request(const ProveRequest *request,
     return success;
 }
 
-int print_proof(libzcash::PHGRProof &proof) {
+int print_proof(libzcash::PHGRProof &proof)
+{
     printf("g_A: ");
     proof.g_A.print();
     printf("g_A_prime: ");
@@ -277,11 +277,46 @@ bool transform_verify_request(const VerifyRequest *request,
     return success;
 }
 
+int print_proof_inputs(const std::array<libzcash::JSInput, ZC_NUM_JS_INPUTS> &inputs,
+                       std::array<libzcash::SproutNote, ZC_NUM_JS_OUTPUTS> &out_notes,
+                       uint64_t vpub_old,
+                       const uint256 &rt,
+                       uint256 &h_sig,
+                       uint252 &phi,
+                       bool computeProof)
+{
+    cout << "Printing Proof's input" << '\n';
+    for (auto &input: inputs) {
+        cout << "input.key: " << input.key.inner().GetHex() << '\n';
+        cout << "input.value: " << input.note.value() << '\n';
+        cout << "input.note.a_pk: " << input.note.a_pk.GetHex() << '\n';
+        cout << "input.note.r: " << input.note.r.GetHex() << '\n';
+        cout << "input.note.rho: " << input.note.rho.GetHex() << '\n';
+        cout << "input.note.cm: " << input.note.cm.GetHex() << '\n';
+        cout << "input.note.nf: " << input.note.nf.GetHex() << '\n';
+    }
+    for (auto &output: out_notes) {
+        cout << "output.value: " << output.value() << '\n';
+        cout << "output.a_pk: " << output.a_pk.GetHex() << '\n';
+        cout << "output.r: " << output.r.GetHex() << '\n';
+        cout << "output.rho: " << output.rho.GetHex() << '\n';
+        cout << "output.cm: " << output.cm.GetHex() << '\n';
+        cout << "output.nf: " << output.nf.GetHex() << '\n';
+    }
+
+    cout << "vpub_old: " << vpub_old << '\n';
+    cout << "rt: " << rt.GetHex() << '\n';
+    cout << "h_sig: " << h_sig.GetHex() << '\n';
+    cout << "phi: " << phi.inner().GetHex() << '\n';
+    cout << "computeProof: " << computeProof << '\n';
+    return 0;
+}
+
 class ZksnarkImpl final : public Zksnark::Service
 {
     Status Prove(ServerContext *context, const ProveRequest *request, ProveReply *reply) override
     {
-        cout << "Starting Prove, request->inputs_size(): " << request->inputs_size() << '\n';
+        cout << "\n\n[Starting Prove], request->inputs_size(): " << request->inputs_size() << "\n";
         ProveInputs inputs;
         ProveOutnotes out_notes;
         uint256 hsig, rt;
@@ -295,7 +330,9 @@ class ZksnarkImpl final : public Zksnark::Service
 
         bool compute_proof = true;
         uint64_t vpub_old = reward;
+        print_proof_inputs(inputs, out_notes, vpub_old, rt, hsig, phi, compute_proof);
         auto proof = js->prove(inputs, out_notes, vpub_old, rt, hsig, phi, compute_proof);
+        libzcash::PHGRProof proof;
         print_proof(proof);
 
         zksnark::PHGRProof *zk_proof = new zksnark::PHGRProof();
@@ -308,6 +345,7 @@ class ZksnarkImpl final : public Zksnark::Service
 
     Status Verify(ServerContext *context, const VerifyRequest *request, VerifyReply *reply) override
     {
+        cout << "\n\n[Starting Verify]\n\n";
         libzcash::PHGRProof proof;
         uint256 hsig, rt;
         NullifierArray nullifiers;

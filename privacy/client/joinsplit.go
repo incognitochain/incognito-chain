@@ -23,21 +23,21 @@ type JSOutput struct {
 }
 
 func printProof(proof *zksnark.PHGRProof) {
-	fmt.Printf("G_A: %v\n", proof.G_A)
-	fmt.Printf("G_APrime: %v\n", proof.G_APrime)
-	fmt.Printf("G_B: %v\n", proof.G_B)
-	fmt.Printf("G_BPrime: %v\n", proof.G_BPrime)
-	fmt.Printf("G_C: %v\n", proof.G_C)
-	fmt.Printf("G_CPrime: %v\n", proof.G_CPrime)
-	fmt.Printf("G_K: %v\n", proof.G_K)
-	fmt.Printf("G_H: %v\n", proof.G_H)
+	fmt.Printf("G_A: %x\n", proof.G_A)
+	fmt.Printf("G_APrime: %x\n", proof.G_APrime)
+	fmt.Printf("G_B: %x\n", proof.G_B)
+	fmt.Printf("G_BPrime: %x\n", proof.G_BPrime)
+	fmt.Printf("G_C: %x\n", proof.G_C)
+	fmt.Printf("G_CPrime: %x\n", proof.G_CPrime)
+	fmt.Printf("G_K: %x\n", proof.G_K)
+	fmt.Printf("G_H: %x\n", proof.G_H)
 }
 
 // Prove calls libsnark's Prove and return the proof
 // inputs: WitnessPath and Key must be set; InputeNote's Value, Apk, R and Rho must also be set before calling this function
 // outputs: EncKey, OutputNote's Apk and Value must be set before calling this function
 // reward: for coinbase tx, this is the mining reward; for other tx, it must be 0
-func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte, reward uint64, seed, phi []byte) (*zksnark.PHGRProof, error) {
+func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte, reward uint64, seed, phi []byte, outputR [][]byte) (*zksnark.PHGRProof, error) {
 	// TODO: check for inputs (witness root & cm)
 
 	if len(inputs) != 2 || len(outputs) != 2 {
@@ -68,25 +68,29 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte, rew
 		input.InputNote.Cm = GetCommitment(input.InputNote)
 	}
 
-	if seed == nil { // seed != nil only for the transaction is genesis block
+	if seed == nil { // seed != nil only for the transaction in genesis block
 		seed = RandBits(256)
 	}
-	// hSig := HSigCRH(seed, inputs[0].InputNote.Nf, inputs[1].InputNote.Nf, pubKey)
-	hSig := []byte{155, 31, 215, 9, 16, 242, 239, 233, 201, 109, 141, 58, 24, 239, 210, 117, 155, 17, 23, 188, 70, 125, 245, 85, 154, 42, 212, 0, 164, 221, 80, 94}
+	hSig := HSigCRH(seed, inputs[0].InputNote.Nf, inputs[1].InputNote.Nf, pubKey)
+	// hSig := []byte{155, 31, 215, 9, 16, 242, 239, 233, 201, 109, 141, 58, 24, 239, 210, 117, 155, 17, 23, 188, 70, 125, 245, 85, 154, 42, 212, 0, 164, 221, 80, 94}
 
 	// Generate rho and r for new notes
 	const phiLen = 252
-	if phi == nil {
+	if phi == nil { // phi != nil only for the transaction in genesis block
 		phi = RandBits(phiLen)
 	}
-	phi = []byte{80, 163, 129, 14, 224, 14, 22, 199, 9, 222, 152, 68, 97, 249, 132, 138, 69, 64, 195, 13, 46, 200, 79, 248, 16, 161, 73, 187, 200, 122, 235, 6}
+	// phi = []byte{80, 163, 129, 14, 224, 14, 22, 199, 9, 222, 152, 68, 97, 249, 132, 138, 69, 64, 195, 13, 46, 200, 79, 248, 16, 161, 73, 187, 200, 122, 235, 6}
 
 	for i, output := range outputs {
 		rho := PRF_rho(uint64(i), phi, hSig)
 		output.OutputNote.Rho = make([]byte, len(rho))
 		output.OutputNote.R = make([]byte, 32)
 		copy(output.OutputNote.Rho, rho)
-		copy(output.OutputNote.R, RandBits(256))
+		if outputR == nil {
+			copy(output.OutputNote.R, RandBits(256))
+		} else { // Genesis block only
+			copy(output.OutputNote.R, outputR[i])
+		}
 
 		// Compute cm for new notes to check for Note commitment integrity
 		output.OutputNote.Cm = GetCommitment(output.OutputNote)
@@ -110,7 +114,7 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte, rew
 	defer conn.Close()
 
 	c := zksnark.NewZksnarkClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*240)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*180)
 	defer cancel()
 
 	var outNotes []*Note
@@ -137,8 +141,14 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte, rew
 	}
 	// fmt.Printf("proveRequest: %v\n", proveRequest)
 	fmt.Printf("key: %x\n", proveRequest.Inputs[0].SpendingKey)
+	fmt.Printf("Anchor: %x\n", rt)
+	fmt.Printf("Input[0] nullifiers: %x\n", inputs[0].InputNote.Nf)
+	fmt.Printf("Input[1] nullifiers: %x\n", inputs[1].InputNote.Nf)
+	fmt.Printf("Output[0] commitments: %x\n", outputs[0].OutputNote.Cm)
+	fmt.Printf("Output[1] commitments: %x\n", outputs[1].OutputNote.Cm)
+
 	r, err := c.Prove(ctx, proveRequest)
-	if err != nil || r.Proof == nil {
+	if err != nil || r == nil || r.Proof == nil {
 		log.Fatalf("fail to prove: %v", err)
 		return nil, errors.New("Fail to prove JoinSplit")
 	}

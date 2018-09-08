@@ -1,10 +1,12 @@
 package blockchain
 
 import (
+	"encoding/hex"
 	"time"
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
+	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 )
@@ -69,11 +71,74 @@ func (self GenesisBlockGenerator) createGenesisTx(coinReward uint64) (*transacti
 
 	// Since input notes of genesis tx have 0 value, rt can be anything
 	rt := make([]byte, 32)
-	// TODO: move seed and phi of genesis block to constants.go
-	genesisBlockSeed := [32]byte{1}
-	genesisBlockPhi := [32]byte{2}
-	tx, err := transaction.GenerateProofAndSignForGenesisTx(inputs, outputs, rt, coinReward, genesisBlockSeed[:], genesisBlockPhi[:])
+	tx, err := transaction.GenerateProofForGenesisTx(
+		inputs,
+		outputs,
+		rt,
+		coinReward,
+		GENESIS_BLOCK_SEED[:],
+		GENESIS_BLOCK_PHI[:],
+		GENESIS_BLOCK_OUTPUT_R,
+	)
 	return tx, err
+}
+
+func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
+	gA, _ := hex.DecodeString(GENESIS_BLOCK_G_A)
+	gAPrime, _ := hex.DecodeString(GENESIS_BLOCK_G_APrime)
+	gB, _ := hex.DecodeString(GENESIS_BLOCK_G_B)
+	gBPrime, _ := hex.DecodeString(GENESIS_BLOCK_G_BPrime)
+	gC, _ := hex.DecodeString(GENESIS_BLOCK_G_C)
+	gCPrime, _ := hex.DecodeString(GENESIS_BLOCK_G_CPrime)
+	gK, _ := hex.DecodeString(GENESIS_BLOCK_G_K)
+	gH, _ := hex.DecodeString(GENESIS_BLOCK_G_H)
+	proof := &zksnark.PHGRProof{
+		G_A:      gA,
+		G_APrime: gAPrime,
+		G_B:      gB,
+		G_BPrime: gBPrime,
+		G_C:      gC,
+		G_CPrime: gCPrime,
+		G_K:      gK,
+		G_H:      gH,
+	}
+
+	nf1, err := hex.DecodeString(GENESIS_BLOCK_NULLIFIERS[0])
+	if err != nil {
+		panic(err)
+	}
+	nf2, err := hex.DecodeString(GENESIS_BLOCK_NULLIFIERS[1])
+	if err != nil {
+		panic(err)
+	}
+	nullfiers := [][]byte{nf1, nf2}
+
+	cm1, err := hex.DecodeString(GENESIS_BLOCK_COMMITMENTS[0])
+	if err != nil {
+		panic(err)
+	}
+	cm2, err := hex.DecodeString(GENESIS_BLOCK_COMMITMENTS[1])
+	if err != nil {
+		panic(err)
+	}
+	commitments := [][]byte{cm1, cm2}
+
+	desc := []*transaction.JoinSplitDesc{&transaction.JoinSplitDesc{
+		Proof:       proof,
+		Anchor:      GENESIS_BLOCK_ANCHOR[:],
+		Nullifiers:  nullfiers,
+		Commitments: commitments,
+		Reward:      GENESIS_BLOCK_REWARD,
+	}}
+
+	tx := &transaction.Tx{
+		Version:  1,
+		Type:     common.TxNormalType,
+		Descs:    desc,
+		JSPubKey: nil,
+		JSSig:    nil,
+	}
+	return tx, nil
 }
 
 func (self GenesisBlockGenerator) CreateGenesisBlock(
@@ -91,7 +156,8 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(
 	genesisBlock.Header.Difficulty = difficulty
 	genesisBlock.Header.Version = version
 
-	tx, err := self.createGenesisTx(genesisReward)
+	tx, err := self.getGenesisTx()
+	// tx, err := self.createGenesisTx(genesisReward)
 
 	if err != nil {
 		panic(err)

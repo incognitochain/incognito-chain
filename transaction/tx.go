@@ -170,13 +170,27 @@ func CreateRandomJSInput() *client.JSInput {
 	return input
 }
 
-func generateTxAndSign(
+func signTx(tx *Tx, keyPair *cashec.KeyPair) (*Tx, error) {
+	tx.JSPubKey = keyPair.PublicKey.Apk[:]
+	// Sign tx
+	dataToBeSigned, err := json.Marshal(tx)
+	if err != nil {
+		return nil, err
+	}
+	jsSig, err := keyPair.Sign(dataToBeSigned)
+	if err != nil {
+		return nil, err
+	}
+	tx.JSSig = jsSig
+	return tx, nil
+}
+
+func generateTx(
 	inputs []*client.JSInput,
 	outputs []*client.JSOutput,
 	proof *zksnark.PHGRProof,
 	rt []byte,
 	reward uint64,
-	keyPair *cashec.KeyPair,
 ) (*Tx, error) {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
@@ -195,24 +209,13 @@ func generateTxAndSign(
 		Version:  1,
 		Type:     common.TxNormalType,
 		Descs:    desc,
-		JSPubKey: keyPair.PublicKey.Apk[:],
+		JSPubKey: nil,
 		JSSig:    nil,
 	}
-
-	// Sign tx
-	dataToBeSigned, err := json.Marshal(tx)
-	if err != nil {
-		return nil, err
-	}
-	jsSig, err := keyPair.Sign(dataToBeSigned)
-	if err != nil {
-		return nil, err
-	}
-	tx.JSSig = jsSig
-
 	return tx, nil
 }
 
+// GenerateProofAndSign creates zk-proof, build the transaction and sign it using a random generated key pair
 func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) (*Tx, error) {
 	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
 	keyBytes := []byte{} // TODO(0xbunyip): randomize seed?
@@ -222,21 +225,27 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 	}
 
 	var seed, phi []byte
-	proof, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, seed, phi)
+	var outputR [][]byte
+	proof, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, seed, phi, outputR)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := generateTxAndSign(inputs, outputs, proof, rt, reward, keyPair)
-	return tx, err
+	tx, err := generateTx(inputs, outputs, proof, rt, reward)
+	if err != nil {
+		return nil, err
+	}
+	return signTx(tx, keyPair)
 }
 
-func GenerateProofAndSignForGenesisTx(
+// GenerateProofForGenesisTx creates zk-proof and build the transaction (without signing) for genesis block
+func GenerateProofForGenesisTx(
 	inputs []*client.JSInput,
 	outputs []*client.JSOutput,
 	rt []byte,
 	reward uint64,
 	seed, phi []byte,
+	outputR [][]byte,
 ) (*Tx, error) {
 	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
 	privateSignKey := [32]byte{1}
@@ -245,11 +254,10 @@ func GenerateProofAndSignForGenesisTx(
 		return nil, err
 	}
 
-	proof, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, seed, phi)
+	proof, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, seed, phi, outputR)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := generateTxAndSign(inputs, outputs, proof, rt, reward, keyPair)
-	return tx, err
+	return generateTx(inputs, outputs, proof, rt, reward)
 }
