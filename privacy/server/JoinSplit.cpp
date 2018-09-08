@@ -223,7 +223,6 @@ public:
 
         protoboard<FieldT> pb;
         {
-            // TODO(@0xbunyip): remove vpub_old and vpub_new in joinsplit_gadget if necessary
             std::cout << "Creating joinsplit_gadget\n";
             joinsplit_gadget<FieldT, NumInputs, NumOutputs> g(pb);
             g.generate_r1cs_constraints();

@@ -28,11 +28,12 @@ func (self GenesisBlockGenerator) CalcMerkleRoot(txns []transaction.Transaction)
 func createGenesisInputNote(spendingKey *client.SpendingKey, idx uint) *client.Note {
 	addr := client.GenSpendingAddress(*spendingKey)
 	rho := [32]byte{byte(idx)}
+	r := [32]byte{byte(idx)}
 	note := &client.Note{
 		Value: 0,
 		Apk:   addr,
 		Rho:   rho[:],
-		Nf:    client.GetNullifier(*spendingKey, rho),
+		R:     r[:],
 	}
 	return note
 }
@@ -42,7 +43,7 @@ func createGenesisJSInput(idx uint) *client.JSInput {
 	input := new(client.JSInput)
 	input.InputNote = createGenesisInputNote(spendingKey, idx)
 	input.Key = spendingKey
-	input.WitnessPath = new(client.MerklePath)
+	input.WitnessPath = (&client.MerklePath{}).CreateDummyPath()
 	return input
 }
 

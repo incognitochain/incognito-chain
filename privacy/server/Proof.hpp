@@ -119,10 +119,6 @@ public:
     void print() {
         char leadingByte[2] = {0};
         leadingByte[0] |= y_lsb;
-        printf("%d ", leadingByte[0]);
-        for (int i = 0; i < 32; ++i)
-            printf("%d ", x.data.begin()[i]);
-        printf("\n");
     }
 
     std::string to_string() {
@@ -133,13 +129,11 @@ public:
 
     bool from_string(const std::string &s) {
         if (s.size() != 33) { // 32 bytes and y_lsb
-            printf("s.size() != 33, %d\n", s.size());
             return false;
         }
         const unsigned char *data_mem = (const unsigned char *)s.c_str();
         unsigned char leadingByte = data_mem[0];
         if (leadingByte > 1) {
-            printf("leadingByte & (~1) != 0: %d\n", leadingByte);
             return false;
         }
 
@@ -201,29 +195,22 @@ public:
     void print() {
         unsigned char leadingByte[2] = {0};
         leadingByte[0] |= y_gt;
-        printf("%d ", leadingByte[0]);
-        for (int i = 0; i < 64; ++i)
-            printf("%d ", x.data.begin()[i]);
-        printf("\n");
     }
 
     std::string to_string() {
         unsigned char leadingByte = 0;
         leadingByte |= y_gt;
         std::string result = std::string(1, leadingByte) + x.to_string();
-        printf("Converting G2: %d %d\n", x.to_string().size(), result.size());
         return result;
     }
 
     bool from_string(const std::string &s) {
         if (s.size() != 65) { // 64 bytes and y_gt
-            printf("s.size() != 65, %d\n", s.size());
             return false;
         }
         const unsigned char *data_mem = (const unsigned char *)s.c_str();
         unsigned char leadingByte = data_mem[0];
         if (leadingByte > 1) {
-            printf("leadingByte & (~1) != 0: %d\n", leadingByte);
             return false;
         }
 

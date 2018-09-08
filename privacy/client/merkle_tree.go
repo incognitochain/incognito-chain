@@ -12,6 +12,16 @@ type MerklePath struct {
 	Index    []bool
 }
 
+// CreateDummyPath creates a dummy MerklePath with all 0s to act as a placeholder for merkle tree check
+func (mp *MerklePath) CreateDummyPath() *MerklePath {
+	mp.Index = make([]bool, common.IncMerkleTreeHeight)
+	for i := 0; i < common.IncMerkleTreeHeight; i++ {
+		hash := make(MerkleHash, 32)
+		mp.AuthPath = append(mp.AuthPath, &hash)
+	}
+	return mp
+}
+
 var UncommittedNodeHash = [32]byte{}
 var arrayPadding []MerkleHash
 

@@ -60,7 +60,7 @@ bool string_to_bools(const string &data, vector<bool> &result)
     return true;
 }
 
-bool convert_note(const zksnark::Note &zk_note, libzcash::SproutNote &note)
+bool convert_input_note(const zksnark::Note &zk_note, libzcash::SproutNote &note)
 {
     note.value_ = zk_note.value();
     bool success = true;
@@ -71,6 +71,18 @@ bool convert_note(const zksnark::Note &zk_note, libzcash::SproutNote &note)
     success &= string_to_uint256(zk_note.nf(), note.nf);
     return success;
 }
+
+bool convert_output_note(const zksnark::Note &zk_note, libzcash::SproutNote &note)
+{
+    note.value_ = zk_note.value();
+    bool success = true;
+    success &= string_to_uint256(zk_note.cm(), note.cm);
+    success &= string_to_uint256(zk_note.r(), note.r);
+    success &= string_to_uint256(zk_note.rho(), note.rho);
+    success &= string_to_uint256(zk_note.apk(), note.a_pk);
+    return success;
+}
+
 
 bool transform_prove_request(const ProveRequest *request,
                              ProveInputs &inputs,
@@ -99,6 +111,7 @@ bool transform_prove_request(const ProveRequest *request,
         // Witness' authentication path
         vector<vector<bool>> auth_path;
         auto auth_path_strs = input.witnesspath().authpath();
+        cout << "input.witnesspath().authpath().size():" << input.witnesspath().authpath().size() << '\n';
         for (auto &path_str : auth_path_strs)
         {
             vector<bool> path;
@@ -114,6 +127,7 @@ bool transform_prove_request(const ProveRequest *request,
         {
             index.push_back(idx);
         }
+        cout << "input.witnesspath().index().size():" << input.witnesspath().index().size() << '\n';
 
         // The length of the witness and merkle tree's depth must match
         if (auth_path.size() != index.size() || index.size() != INCREMENTAL_MERKLE_TREE_DEPTH)
@@ -122,17 +136,34 @@ bool transform_prove_request(const ProveRequest *request,
         inputs[i].witness = ZCIncrementalWitness(auth_path, index);
 
         // Convert note
-        success &= convert_note(input.note(), inputs[i].note);
+        success &= convert_input_note(input.note(), inputs[i].note);
+        cout << "inpnote: \n";
+        cout << "key: " << inputs[i].key.inner().GetHex() << '\n';
+        cout << "path_length: " << inputs[i].witness.path().index.size() << '\n';
+        cout << "note apk: " << inputs[i].note.a_pk.GetHex() << '\n';
+        cout << "note nf: " << inputs[i].note.nf.GetHex() << '\n';
+        cout << "note rho: " << inputs[i].note.rho.GetHex() << '\n';
+        cout << '\n';
+
         i++;
     }
+    cout << "success after input: " << success << '\n';
 
     // Convert outnotes
     i = 0;
     for (auto &outnote : request->outnotes())
     {
-        success &= convert_note(outnote, out_notes[i]);
+        success &= convert_output_note(outnote, out_notes[i]);
+        cout << "outnote: \n";
+        cout << "apk: " << out_notes[i].a_pk.GetHex() << '\n';
+        cout << "value: " << out_notes[i].value() << '\n';
+        cout << "rho: " << out_notes[i].rho.GetHex() << '\n';
+        cout << "r: " << out_notes[i].r.GetHex() << '\n';
+        cout << "cm: " << out_notes[i].cm.GetHex() << '\n';
+        cout << '\n';
         i++;
     }
+    cout << "success after output: " << success << '\n';
 
     // Convert hsig
     success &= string_to_uint256(request->hsig(), hsig);
@@ -140,7 +171,7 @@ bool transform_prove_request(const ProveRequest *request,
 
     // Convert phi
     success &= string_to_uint252(request->phi(), phi);
-    // cout << "phi: " << phi.GetHex() << '\n';
+    cout << "phi: " << phi.inner().GetHex() << '\n';
 
     // Convert rt
     success &= string_to_uint256(request->rt(), rt);
@@ -148,6 +179,7 @@ bool transform_prove_request(const ProveRequest *request,
 
     // Convert reward
     reward = request->reward();
+    cout << "reward: " << reward << '\n';
 
     return success;
 }
@@ -249,7 +281,7 @@ class ZksnarkImpl final : public Zksnark::Service
 {
     Status Prove(ServerContext *context, const ProveRequest *request, ProveReply *reply) override
     {
-        cout << request->inputs_size() << '\n';
+        cout << "Starting Prove, request->inputs_size(): " << request->inputs_size() << '\n';
         ProveInputs inputs;
         ProveOutnotes out_notes;
         uint256 hsig, rt;
@@ -257,6 +289,9 @@ class ZksnarkImpl final : public Zksnark::Service
         uint64_t reward;
         bool success = transform_prove_request(request, inputs, out_notes, hsig, phi, rt, reward);
         cout << "transform_prove_request status: " << success << '\n';
+
+        if (!success)
+            return Status::OK;
 
         bool compute_proof = true;
         uint64_t vpub_old = reward;
