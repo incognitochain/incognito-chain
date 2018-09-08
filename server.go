@@ -479,7 +479,6 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 			ListeningAddress: addr,
 			Config:           *self.NewPeerConfig(),
 			PeerConns:        make(map[peer2.ID]*peer.PeerConn),
-			PendingPeers:     make(map[peer2.ID]*peer.Peer),
 		}.NewPeer()
 		if err != nil {
 			return nil, err

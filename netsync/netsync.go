@@ -41,7 +41,7 @@ type NetSyncConfig struct {
 		OnBlockReceived(*blockchain.Block)
 		OnRequestSign(*blockchain.Block)
 		OnBlockSigReceived(string, byte, string)
-		OnInvalidBlockReceived()
+		OnInvalidBlockReceived(string, byte, string)
 	}
 }
 
@@ -243,7 +243,7 @@ func (self *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
 	msgByte, _ := msg.JsonSerialize()
 	isValid, _ := senderKey.Verify(msgByte, []byte(msg.ValidatorSig))
 	if isValid {
-		self.Config.Consensus.OnInvalidBlockReceived()
+		self.Config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.ChainID, msg.Reason)
 	}
 }
 func (self *NetSync) HandleMessageRequestSign(msg *wire.MessageRequestSign) {

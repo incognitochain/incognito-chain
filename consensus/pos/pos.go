@@ -22,12 +22,19 @@ type Engine struct {
 	wg      sync.WaitGroup
 	quit    chan struct{}
 
-	Config             Config
-	CurrentCommittee   []string
-	NextBlockCandidate []string
-	CurrentLeader      string
+	Config              Config
+	CurrentCommittee    []string
+	Candidates          []string
+	LastCommitteeChange []int
+	CurrentLeader       []string
+	validatorSigCh      chan blockSig
 }
 
+type blockSig struct {
+	BlockHash string
+	ChainID   byte
+	BlockSig  string
+}
 type Config struct {
 	BlockChain       *blockchain.BlockChain
 	ChainParams      *blockchain.Params
@@ -51,6 +58,7 @@ func (self *Engine) Start(sealerPrvKey []byte) error {
 		return errors.New("Consensus engine is already started")
 	}
 	self.quit = make(chan struct{})
+	self.validatorSigCh = make(chan blockSig)
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
 	_, err := self.Config.ValidatorKeyPair.Import(sealerPrvKey)
 	if err != nil {
@@ -71,14 +79,26 @@ func (self *Engine) Stop() error {
 	}
 
 	close(self.quit)
+	close(self.validatorSigCh)
 	// self.wg.Wait()
 	self.started = false
 	fmt.Print("Consensus engine stopped")
 	return nil
 }
 
+func (self *Engine) StartValidating() {
+	for {
+		// self.getMyChain
+		// self.createBlock()
+		for {
+			// validatorSig := <-self.validatorSigCh
+
+		}
+	}
+}
+
 func (self *Engine) createBlock(chainID byte) (*blockchain.Block, error) {
-	newblock, err := self.Config.BlockGen.NewBlockTemplate(self.CurrentLeader, self.Config.BlockChain, chainID)
+	newblock, err := self.Config.BlockGen.NewBlockTemplate(string(self.Config.ValidatorKeyPair.PublicKey), self.Config.BlockChain, chainID)
 	if err != nil {
 		return newblock.Block, err
 	}
@@ -98,7 +118,11 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 	return nil
 }
 
-func (self *Engine) GetChainValidators(chainID byte) ([]string, error) {
+func (self *Engine) getMyChain() byte {
+	return 20
+}
+
+func (self *Engine) getChainValidators(chainID byte) ([]string, error) {
 	var validators []string
 	for index := 1; index <= 11; index++ {
 		validatorID := math.Mod(float64(index+int(chainID)), 21)
@@ -110,7 +134,7 @@ func (self *Engine) GetChainValidators(chainID byte) ([]string, error) {
 	return nil, errors.New("can't get chain's validators")
 }
 
-func (self *Engine) GetSenderChain(senderLastByte byte) (byte, error) {
+func (self *Engine) GetTxSenderChain(senderLastByte byte) (byte, error) {
 	// addrBig := new(big.Int)
 	// addrBig.SetBytes([]byte{senderLastByte})
 
@@ -193,12 +217,16 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 	return
 }
 
-func (self *Engine) OnBlockSigReceived(blockHash string, chainID byte, blockSig string) {
-
+func (self *Engine) OnBlockSigReceived(blockHash string, chainID byte, sig string) {
+	self.validatorSigCh <- blockSig{
+		BlockHash: blockHash,
+		ChainID:   chainID,
+		BlockSig:  sig,
+	}
 	return
 }
 
-func (self *Engine) OnInvalidBlockReceived(blockHash string, chainID byte, blockSig string) {
+func (self *Engine) OnInvalidBlockReceived(blockHash string, chainID byte, reason string) {
 
 	return
 }
