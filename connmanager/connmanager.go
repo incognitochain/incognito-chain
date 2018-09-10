@@ -1,10 +1,15 @@
 package connmanager
 
 import (
+	"net/rpc"
+	"github.com/ninjadotorg/cash-prototype/bootnode/server"
+	"github.com/ninjadotorg/cash-prototype/cashec"
+	"os"
 	"sync"
 	"log"
 	"sync/atomic"
 	"fmt"
+	"time"
 
 	"github.com/ninjadotorg/cash-prototype/peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
@@ -46,6 +51,9 @@ type ConnManager struct {
 	// Connected Connection
 	Connected map[libpeer.ID]*peer.Peer
 
+	// Discover Peers
+	DiscoveredPeers map[string]*DiscoverPeerInfo
+
 	ListeningPeers map[libpeer.ID]*peer.Peer
 
 	WaitGroup sync.WaitGroup
@@ -85,6 +93,39 @@ type Config struct {
 	TargetOutbound uint32
 	TargetInbound  uint32
 }
+
+type DiscoverPeerInfo struct {
+	PublicKey string
+	RawAddress string
+	PeerId libpeer.ID
+}
+
+// registerPending is used to register a pending connection attempt. By
+// registering pending connection attempts we allow callers to cancel pending
+// connection attempts before their successful or in the case they're not
+// longer wanted.
+//type registerPending struct {
+//	connRequest *ConnReq
+//	done        chan struct{}
+//}
+//
+//// handleConnected is used to queue a successful connection.
+//type handleConnected struct {
+//	connRequest *ConnReq
+//	Peer        peer.Peer
+//}
+//
+//// handleDisconnected is used to remove a connection.
+//type handleDisconnected struct {
+//	id    uint64
+//	retry bool
+//}
+//
+//// handleFailed is used to remove a pending connection.
+//type handleFailed struct {
+//	c   *ConnReq
+//	err error
+//}
 
 // parseListeners determines whether each listen address is IPv4 and IPv6 and
 // returns a slice of appropriate net.Addrs to listen on with TCP. It also
@@ -158,6 +199,7 @@ func (self ConnManager) New(cfg *Config) (*ConnManager, error) {
 	self.Config = *cfg
 	self.Quit = make(chan struct{})
 	self.Requests = make(chan interface{})
+	self.DiscoveredPeers = make(map[string]*DiscoverPeerInfo)
 
 	self.Pending = map[libpeer.ID]*peer.Peer{}
 	self.Connected = map[libpeer.ID]*peer.Peer{}
@@ -245,7 +287,6 @@ func (self *ConnManager) Connect(addr string) {
 		// we use the same /peer/1.0.0 protocol
 
 		go listen.NewPeerConnection(&peer)
-
 	}
 }
 
@@ -272,6 +313,8 @@ func (self *ConnManager) Start() {
 
 			self.ListeningPeers[listner.PeerId] = &listner
 		}
+
+		//go self.DiscoverPeers()
 	}
 }
 
@@ -344,4 +387,88 @@ func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)
 		}
 	}
 	seedFn(addrs)
+}
+
+func (self *ConnManager) DiscoverPeers() {
+	Logger.log.Infof("Start Exchange Peers")
+	var client *rpc.Client
+	var err error
+
+listen:
+	for {
+		Logger.log.Infof("Peers", self.DiscoveredPeers)
+		if client == nil {
+			client, err = rpc.Dial("tcp", "35.199.177.89:9339")
+			if err != nil {
+				Logger.log.Error("[Exchange Peers] re-connect:", err)
+			}
+		}
+		if client != nil {
+			for _, listener := range self.Config.ListenerPeers {
+				Logger.log.Infof("[Exchange Peers] Ping")
+				var response []server.RawPeer
+
+				var publicKey string
+
+				if listener.Config.SealerPrvKey != "" {
+					keyPair := &cashec.KeyPair{}
+					keyPair.Import([]byte(listener.Config.SealerPrvKey))
+					publicKey = string(keyPair.PublicKey)
+				}
+
+				// remove later
+				rawAddress := listener.RawAddress
+
+				externalAddress := os.Getenv("EXTERNAL_ADDRESS")
+				if externalAddress != "" {
+					host, _, err := net.SplitHostPort(externalAddress)
+					if err == nil && host != "" {
+						rawAddress = strings.Replace(rawAddress, "127.0.0.1", host, 1)
+					}
+				}
+
+				args := &server.PingArgs{rawAddress, publicKey}
+				Logger.log.Infof("[Exchange Peers] Ping", args)
+				err := client.Call("Handler.Ping", args, &response)
+				if err != nil {
+					Logger.log.Error("[Exchange Peers] Ping:", err)
+					client = nil
+					time.Sleep(time.Second * 2)
+
+					goto listen
+				}
+				for _, rawPeer := range response {
+					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerId.String()) {
+						_, exist := self.DiscoveredPeers[rawPeer.PublicKey]
+
+						if !exist {
+							// The following code extracts target's peer ID from the
+							// given multiaddress
+							ipfsaddr, err := ma.NewMultiaddr(rawPeer.RawAddress)
+							if err != nil {
+								log.Print(err)
+								return
+							}
+
+							pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
+							if err != nil {
+								log.Print(err)
+								return
+							}
+
+							peerId, err := libpeer.IDB58Decode(pid)
+							if err != nil {
+								log.Print(err)
+								return
+							}
+
+							self.DiscoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
+							go self.Connect(rawPeer.RawAddress)
+						}
+					}
+				}
+			}
+		}
+		time.Sleep(time.Second * 5)
+	}
 }

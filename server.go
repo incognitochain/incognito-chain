@@ -670,6 +670,33 @@ func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId pe
 }
 
 /**
+PushBlockMessageWithPeerId broadcast block to specific connected peer
+ */
+func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block, validatorAddress string) error {
+	var dc chan<- struct{}
+	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+	msg.(*wire.MessageBlock).Block = *block
+	if err != nil {
+		return err
+	}
+
+	discoverdPeer, exist := self.ConnManager.DiscoveredPeers[validatorAddress]
+	if exist {
+		for _, listener := range self.ConnManager.Config.ListenerPeers {
+			peerConn, exist := listener.PeerConns[discoverdPeer.PeerId]
+
+			if exist {
+				peerConn.QueueMessageWithEncoding(msg, dc)
+			}
+		}
+	} else {
+		return errors.New(fmt.Sprintf("Can not found peer with validator address %s", validatorAddress))
+	}
+
+	return nil
+}
+
+/**
 PushBlockMessage broadcast block to connected peer
  */
 func (self *Server) PushBlockMessage(block *blockchain.Block) error {
