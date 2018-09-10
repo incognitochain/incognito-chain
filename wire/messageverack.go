@@ -10,7 +10,9 @@ import (
 // to negotiate parameters.  It implements the Message interface.
 //
 // This message has no payload.
-type MessageVerAck struct{}
+type MessageVerAck struct {
+	Valid bool
+}
 
 func (self MessageVerAck) MessageType() string {
 	return CmdVerack
