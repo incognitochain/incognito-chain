@@ -506,9 +506,11 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnAddr:      self.OnAddr,
 
 			//PoS
-			OnRequestSign:  self.OnRequestSign,
-			OnInvalidBlock: self.OnInvalidBlock,
-			OnSignedBlock:  self.OnSignedBlock,
+			OnRequestSign:   self.OnRequestSign,
+			OnInvalidBlock:  self.OnInvalidBlock,
+			OnSignedBlock:   self.OnSignedBlock,
+			OnGetChainState: self.OnGetChainState,
+			OnChainState:    self.OnChainState,
 		},
 		SealerPrvKey: cfg.SealerPrvKey,
 	}
@@ -668,15 +670,33 @@ func (self *Server) OnAddr(_ *peer.PeerConn, msg *wire.MessageAddr) {
 }
 
 func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageRequestSign) {
-
+	Logger.log.Info("Receive a requestsign")
+	var txProcessed chan struct{}
+	self.NetSync.QueueMessage(nil, msg, txProcessed)
 }
 
 func (self *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {
-
+	Logger.log.Info("Receive a invalidblock")
+	var txProcessed chan struct{}
+	self.NetSync.QueueMessage(nil, msg, txProcessed)
 }
 
 func (self *Server) OnSignedBlock(_ *peer.PeerConn, msg *wire.MessageSignedBlock) {
+	Logger.log.Info("Receive a signedblock")
+	var txProcessed chan struct{}
+	self.NetSync.QueueMessage(nil, msg, txProcessed)
+}
 
+func (self *Server) OnGetChainState(_ *peer.PeerConn, msg *wire.MessageGetChainState) {
+	Logger.log.Info("Receive a getchainstate")
+	var txProcessed chan struct{}
+	self.NetSync.QueueMessage(nil, msg, txProcessed)
+}
+
+func (self *Server) OnChainState(_ *peer.PeerConn, msg *wire.MessageChainState) {
+	Logger.log.Info("Receive a chainstate")
+	var txProcessed chan struct{}
+	self.NetSync.QueueMessage(nil, msg, txProcessed)
 }
 
 /**
@@ -711,7 +731,7 @@ func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId pe
 
 /**
 PushBlockMessageWithPeerId broadcast block to specific connected peer
- */
+*/
 func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block, validatorAddress string) error {
 	var dc chan<- struct{}
 	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
@@ -753,17 +773,7 @@ func (self *Server) PushBlockMessage(block *blockchain.Block) error {
 	return nil
 }
 
-func (self *Server) PushRequestSignBlock(block *blockchain.Block, validatorAddress string) error {
-	//TODO push block to specific peerID
-	msg, err := wire.MakeEmptyMessage(wire.CmdRequestSign)
-	if err != nil {
-		return err
-	}
-	msg.(*wire.MessageRequestSign).Block = *block
-	return nil
-}
-
-func (self *Server) PushBlockSignature(msg *wire.MessageSignedBlock) error {
+func (self *Server) PushMessageToAll(msg wire.Message) error {
 	var dc chan<- struct{}
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
 		listen.QueueMessageWithEncoding(msg, dc)
@@ -771,15 +781,17 @@ func (self *Server) PushBlockSignature(msg *wire.MessageSignedBlock) error {
 	return nil
 }
 
-/**
-PushBlockMessage broadcast invalid block message to connected peer
-*/
-func (self *Server) PushInvalidBlockMessage(msg *wire.MessageInvalidBlock) error {
+func (self *Server) PushMessageToPeerID(msg wire.Message, peerID peer2.ID) error {
 	var dc chan<- struct{}
-	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		listen.QueueMessageWithEncoding(msg, dc)
+	for _, listener := range self.ConnManager.Config.ListenerPeers {
+		peerConn, exist := listener.PeerConns[peerID]
+
+		if exist {
+			peerConn.QueueMessageWithEncoding(msg, dc)
+			return nil
+		}
 	}
-	return nil
+	return errors.New("Peer not found")
 }
 
 // handleDonePeerMsg deals with peers that have signalled they are done.  It is

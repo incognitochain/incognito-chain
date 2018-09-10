@@ -39,9 +39,11 @@ type NetSyncConfig struct {
 	}
 	Consensus interface {
 		OnBlockReceived(*blockchain.Block)
-		OnRequestSign(*blockchain.Block)
+		OnRequestSign(*wire.MessageRequestSign)
 		OnBlockSigReceived(string, byte, string)
 		OnInvalidBlockReceived(string, byte, string)
+		OnGetChainState(*wire.MessageGetChainState)
+		OnChainStateReceived(*wire.MessageChainState)
 	}
 }
 
@@ -117,6 +119,14 @@ out:
 					{
 						self.HandleMessageRequestSign(msg)
 					}
+				case *wire.MessageGetChainState:
+					{
+						self.HandleMessageGetChainState(msg)
+					}
+				case *wire.MessageChainState:
+					{
+						self.HandleMessageChainState(msg)
+					}
 				default:
 					Logger.log.Infof("Invalid message type in block "+"handler: %T", msg)
 				}
@@ -145,20 +155,6 @@ func (self *NetSync) QueueTx(_ *peer.Peer, msg *wire.MessageTx, done chan struct
 	self.msgChan <- msg
 }
 
-// handleTxMsg handles transaction messages from all peers.
-func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
-	Logger.log.Info("Handling new message tx")
-	// TODO get message tx and process, Tuan Anh
-	hash, txDesc, error := self.Config.MemPool.CanAcceptTransaction(msg.Transaction)
-
-	if error != nil {
-		fmt.Print(error)
-	} else {
-		fmt.Print("there is hash of transaction", hash)
-		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)
-	}
-}
-
 // QueueBlock adds the passed block message and peer to the block handling
 // queue. Responds to the done channel argument after the block message is
 // processed.
@@ -178,6 +174,29 @@ func (self *NetSync) QueueGetBlock(peer *peer.Peer, msg *wire.MessageGetBlocks, 
 		return
 	}
 	self.msgChan <- msg
+}
+
+func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan struct{}) {
+	// Don't accept more transactions if we're shutting down.
+	if atomic.LoadInt32(&self.shutdown) != 0 {
+		done <- struct{}{}
+		return
+	}
+	self.msgChan <- msg
+}
+
+// handleTxMsg handles transaction messages from all peers.
+func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
+	Logger.log.Info("Handling new message tx")
+	// TODO get message tx and process, Tuan Anh
+	hash, txDesc, error := self.Config.MemPool.CanAcceptTransaction(msg.Transaction)
+
+	if error != nil {
+		fmt.Print(error)
+	} else {
+		fmt.Print("there is hash of transaction", hash)
+		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)
+	}
 }
 
 func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
@@ -248,5 +267,15 @@ func (self *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
 }
 func (self *NetSync) HandleMessageRequestSign(msg *wire.MessageRequestSign) {
 	Logger.log.Info("Handling new message requestsign")
-	self.Config.Consensus.OnRequestSign(&msg.Block)
+	self.Config.Consensus.OnRequestSign(msg)
+}
+
+func (self *NetSync) HandleMessageGetChainState(msg *wire.MessageGetChainState) {
+	Logger.log.Info("Handling new message getchainstate")
+	self.Config.Consensus.OnGetChainState(msg)
+}
+
+func (self *NetSync) HandleMessageChainState(msg *wire.MessageChainState) {
+	Logger.log.Info("Handling new message chainstate")
+	self.Config.Consensus.OnChainStateReceived(msg)
 }

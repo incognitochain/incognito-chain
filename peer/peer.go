@@ -56,7 +56,7 @@ type Peer struct {
 	PeerId           peer.ID
 	RawAddress       string
 	ListeningAddress common.SimpleAddr
-	PublicKey		 string
+	PublicKey        string
 
 	Seed          int64
 	outboundMutex sync.Mutex
@@ -106,9 +106,11 @@ type MessageListeners struct {
 	OnAddr      func(p *PeerConn, msg *wire.MessageAddr)
 
 	//PoS
-	OnRequestSign  func(p *PeerConn, msg *wire.MessageRequestSign)
-	OnInvalidBlock func(p *PeerConn, msg *wire.MessageInvalidBlock)
-	OnSignedBlock  func(p *PeerConn, msg *wire.MessageSignedBlock)
+	OnRequestSign   func(p *PeerConn, msg *wire.MessageRequestSign)
+	OnInvalidBlock  func(p *PeerConn, msg *wire.MessageInvalidBlock)
+	OnSignedBlock   func(p *PeerConn, msg *wire.MessageSignedBlock)
+	OnGetChainState func(p *PeerConn, msg *wire.MessageGetChainState)
+	OnChainState    func(p *PeerConn, msg *wire.MessageChainState)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal

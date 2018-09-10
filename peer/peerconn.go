@@ -6,17 +6,18 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
+	"reflect"
+	"sync"
+
 	"github.com/libp2p/go-libp2p-peer"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/wire"
-	"log"
-	"reflect"
-	"sync"
 )
 
 type PeerConn struct {
-	connected  int32
+	connected int32
 
 	RetryCount int32
 	IsOutbound bool
@@ -73,7 +74,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 			commandInHeader := messageHeader[:12]
 			commandInHeader = bytes.Trim(messageHeader, "\x00")
-			Logger.log.Infof("Message Type - %s %s",  string(commandInHeader), self.PeerId)
+			Logger.log.Infof("Message Type - %s %s", string(commandInHeader), self.PeerId)
 			commandType := string(messageHeader[:len(commandInHeader)])
 			var message, err = wire.MakeEmptyMessage(string(commandType))
 
@@ -175,6 +176,24 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				if self.Config.MessageListeners.OnSignedBlock != nil {
 					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnSignedBlock(self, message.(*wire.MessageSignedBlock))
+					self.flagMutex.Unlock()
+				}
+			case reflect.TypeOf(&wire.MessageGetChainState{}):
+				self.flagMutex.Lock()
+				self.verAckReceived = true
+				self.flagMutex.Unlock()
+				if self.Config.MessageListeners.OnGetChainState != nil {
+					self.flagMutex.Lock()
+					self.Config.MessageListeners.OnGetChainState(self, message.(*wire.MessageGetChainState))
+					self.flagMutex.Unlock()
+				}
+			case reflect.TypeOf(&wire.MessageChainState{}):
+				self.flagMutex.Lock()
+				self.verAckReceived = true
+				self.flagMutex.Unlock()
+				if self.Config.MessageListeners.OnChainState != nil {
+					self.flagMutex.Lock()
+					self.Config.MessageListeners.OnChainState(self, message.(*wire.MessageChainState))
 					self.flagMutex.Unlock()
 				}
 			default:

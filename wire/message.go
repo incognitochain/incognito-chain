@@ -29,6 +29,8 @@ const (
 	CmdRequestSign   = "requestsign"
 	CmdInvalidBlock  = "invalidblock"
 	CmdSignedBlock   = "signedblock"
+	CmdGetChainState = "getchainstate"
+	CmdChainState    = "chainstate"
 )
 
 // Interface for message wire on P2P network
@@ -81,6 +83,10 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdInvalidBlock:
 		msg = &MessageInvalidBlock{}
 		break
+	case CmdGetChainState:
+		msg = &MessageGetChainState{}
+	case CmdChainState:
+		msg = &MessageChainState{}
 	// POS end
 	case CmdGetAddr:
 		msg = &MessageGetAddr{}
@@ -119,6 +125,10 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdVoteCandidate, nil
 	case reflect.TypeOf(&MessageInvalidBlock{}):
 		return CmdInvalidBlock, nil
+	case reflect.TypeOf(&MessageGetChainState{}):
+		return CmdGetChainState, nil
+	case reflect.TypeOf(&MessageChainState{}):
+		return CmdChainState, nil
 	// POS end
 	case reflect.TypeOf(&MessageGetAddr{}):
 		return CmdGetAddr, nil
