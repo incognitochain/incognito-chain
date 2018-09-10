@@ -76,8 +76,8 @@ func GenViewingKey(ask SpendingKey) ViewingKey {
 type TransmissionKey [32]byte
 
 type PaymentAddress struct {
-	Apk   SpendingAddress
-	Pkenc TransmissionKey
+	Apk   SpendingAddress // use to receive coin
+	Pkenc TransmissionKey // use to encrypt data
 }
 
 type PaymentInfo struct {

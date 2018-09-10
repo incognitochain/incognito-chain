@@ -217,15 +217,63 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 		return nil, err
 	}
 	return hex.EncodeToString(byteArrays), nil*/
+
+	// all params
+	arrayParams := common.InterfaceSlice(params)
+
+	// param #1: private key of sender
+	senderKeyParam := arrayParams[0]
 	senderKey := client.SpendingKey{}
+	copy(senderKey[:], []byte(senderKeyParam.(string)))
+
+	// param #2: list receiver
+	receiversParam := common.InterfaceSlice(arrayParams[1])
 	paymentInfos := make([]*client.PaymentInfo, 0)
-	paymentInfos = append(paymentInfos, &client.PaymentInfo{})
-	tx, err := transaction.CreateTx(&senderKey, paymentInfos, nil, nil, self.Config.BlockChain)
+	for _, receiver := range receiversParam {
+		temp := receiver.(map[string]interface{})
+		apk := client.SpendingAddress{}
+		copy(apk[:], []byte(temp["Apk"].(string)))
+		pkenc := client.TransmissionKey{}
+		copy(pkenc[:], []byte(temp["Pkenc"].(string)))
+		paymentInfo := &client.PaymentInfo{
+			Amount: uint64(receiver.(map[string]interface{})["Amount"].(float64)),
+			PaymentAddress: client.PaymentAddress{
+				Apk:   apk,
+				Pkenc: pkenc,
+			},
+		}
+		paymentInfos = append(paymentInfos, paymentInfo)
+	}
+
+	// param #3: list usable tx
+	usableTxs := make([]*transaction.UsableTx, 0)
+	txsParam := arrayParams[2].([]jsonrpc.ListUnspentResultItem)
+	for _, tx := range txsParam {
+		item := transaction.Tx{
+			Descs: make([]*transaction.JoinSplitDesc, 0),
+		}
+		for _, desc := range tx.JoinSplitDesc {
+			item.Descs = append(item.Descs, &transaction.JoinSplitDesc{
+				Anchor:      desc.Anchor,
+				Commitments: desc.Commitments,
+			})
+		}
+		usableTx := transaction.UsableTx{
+			TxId: tx.TxId,
+			Tx:   item,
+		}
+		usableTxs = append(usableTxs, &usableTx)
+	}
+	txViewPoint, err := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
+
+	// create a new tx
+	tx, err := transaction.CreateTx(&senderKey, paymentInfos, nil, usableTxs, txViewPoint.ListNullifiers(common.TxOutCoinType))
 	if err != nil {
 		return nil, err
 	}
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
+		// return hex for a new tx
 		return hex.EncodeToString(byteArrays), nil
 	}
 	return nil, err
