@@ -272,7 +272,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	}
 
 	stream, err := self.Host.NewStream(context.Background(), peer.PeerId, "/blockchain/1.0.0")
-	Logger.log.Info(peer)
+	Logger.log.Info(peer, stream, err)
 	if err != nil {
 		Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", self.PeerId.String(), err.Error())
 
