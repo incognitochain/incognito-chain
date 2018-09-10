@@ -18,7 +18,6 @@ type PingArgs struct {
 func (s Handler) Ping(args *PingArgs, peers *[]RawPeer) error {
 	fmt.Println("Ping", args)
 	s.server.AddOrUpdatePeer(args.RawAddress, args.PublicKey)
-
 	for _, p := range s.server.Peers {
 		*peers = append(*peers, RawPeer{p.RawAddress, p.PublicKey})
 	}
