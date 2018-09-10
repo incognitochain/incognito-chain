@@ -425,7 +425,7 @@ getaccount RPC returns the name of the account associated with the given address
 */
 func (self RpcServer) handleGetAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	for _, account := range self.Config.Wallet.MasterAccount.Child {
-		address := account.Key.ToAddress(false)
+		address := account.Key.Base58CheckSerialize(false)
 		if address == params.(string) {
 			return account.Name, nil
 		}
