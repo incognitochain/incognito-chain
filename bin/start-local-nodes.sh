@@ -31,6 +31,7 @@ KEY20="CAESYJefATvcGybItEwPo+x7xJ5dXE6Uw7lPpMTlsYrSJLxdC4bCGimi3M3FxnWKkEkiFPu9b
 if [ ! -f ./cash-prototype ]
 then
     go build
+    echo "Build cash-prototype success!"
 fi
 
 if [ ! -f ./bootnode/bootnode ]
@@ -38,6 +39,7 @@ then
     cd ./bootnode
     go build
     cd ../
+    echo "Build bootnode success!"
 fi
 
 tmux new -d -s cash-prototype
@@ -45,18 +47,25 @@ tmux new-window -d -n bootnode
 
 tmux send-keys -t cash-prototype:0.0 "cd $SRC && cd bootnode && ./bootnode" ENTER
 
-echo $TOTAL
-echo $SRC
-
 for ((i=1;i<=$TOTAL;i++));
 do
-    PORT=$((9333 + $i))
-
+    PORT=$((2333 + $i))
     eval KEY=\${KEY$i}
-    echo $PORT
-    echo $KEY
+    
+    # open new window in tmux
+    tmux new-window -d -n node$1 
 
-    tmux new-window -d -n node$1
-    tmux send-keys -t cash-prototype:$i.0 "cd $SRC && ./cash-prototype --norpc --listen 127.0.0.1:$PORT --datadir data$i --sealerprvkey $KEY1" ENTER
+    # remove data folder
+    rm -rf data$i
+
+    # build options to start node
+    opts="--listen 127.0.0.1:$PORT --datadir data$i --sealerprvkey $KEY"
+    if [ $i != 1 ]
+    then
+        opts="--norpc --listen 127.0.0.1:$PORT --datadir data$i --sealerprvkey $KEY"
+    fi
+    # send command to node window
+    tmux send-keys -t cash-prototype:$i.0 "cd $SRC && ./cash-prototype $opts" ENTER
+    echo "Start node with port $PORT, key $KEY and options $opts success"
 done
 
