@@ -128,7 +128,7 @@ func (self *BlockChain) createChainState() error {
 	}
 
 	// Spam random blocks
-	for index := 0; index < 0; index++ {
+	/*for index := 0; index < 0; index++ {
 		hashBestBlock := self.BestState.BestBlockHash
 		newSpamBlock := Block{
 			Header: BlockHeader{
@@ -154,7 +154,7 @@ func (self *BlockChain) createChainState() error {
 		if err != nil {
 			return err
 		}
-	}
+	}*/
 	// Spam random blocks
 
 	return err
