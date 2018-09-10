@@ -21,12 +21,12 @@ import (
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
 
 var RpcHandler = map[string]commandHandler{
-	"dosomething":                  RpcServer.handleDoSomething,
-	"getblockchaininfo":            RpcServer.handleGetBlockChainInfo,
-	"createtransaction":            RpcServer.handleCreateTransaction,
-	"listunspent":                  RpcServer.handleListUnSpent,
-	"createrawtransaction":         RpcServer.handleCreateRawTrasaction,
-	"signrawtransaction":           RpcServer.handleSignRawTransaction,
+	"dosomething":          RpcServer.handleDoSomething,
+	"getblockchaininfo":    RpcServer.handleGetBlockChainInfo,
+	"createtransaction":    RpcServer.handleCreateTransaction,
+	"listunspent":          RpcServer.handleListUnSpent,
+	"createrawtransaction": RpcServer.handleCreateRawTrasaction,
+	/*"signrawtransaction":           RpcServer.handleSignRawTransaction,*/
 	"sendrawtransaction":           RpcServer.handleSendRawTransaction,
 	"getNumberOfCoinsAndBonds":     RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createActionParamsTrasaction": RpcServer.handleCreateActionParamsTrasaction,
@@ -236,9 +236,9 @@ Parameter #3—private keys for signing
 Parameter #4—signature hash type
 Result—the transaction with any signatures made
 */
-func (self RpcServer) handleSignRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+/*func (self RpcServer) handleSignRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
-	/*arrayParams := common.InterfaceSlice(params)
+	*//*arrayParams := common.InterfaceSlice(params)
 	hexRawTx := arrayParams[0].(string)
 	rawTxBytes, err := hex.DecodeString(hexRawTx)
 
@@ -260,9 +260,9 @@ func (self RpcServer) handleSignRawTransaction(params interface{}, closeChan <-c
 		return nil, err
 	}
 	log.Println(string(byteArrays))
-	return hex.EncodeToString(byteArrays), nil*/
+	return hex.EncodeToString(byteArrays), nil*//*
 	return "", nil
-}
+}*/
 
 /**
 // handleSendRawTransaction implements the sendrawtransaction command.

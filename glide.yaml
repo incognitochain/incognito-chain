@@ -13,3 +13,5 @@ import:
   version: v1.0.0
   subpackages:
   - rotator
+- package: github.com/mitchellh/mapstructure
+  version: ^1.0.0

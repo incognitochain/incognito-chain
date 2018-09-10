@@ -94,7 +94,7 @@ func collectUnspentNotes(ask *client.SpendingKey, valueWanted uint64) ([]*client
 // CreateTx creates transaction with appropriate proof for a private payment
 // value: total value of the coins to transfer
 // rt: root of the commitment merkle tree at current block (the latest block of the node creating this tx)
-func CreateTx(senderKey *client.SpendingKey, receiverAddr *client.PaymentAddress, value uint64, rt []byte) (*Tx, error) {
+func CreateTx(senderKey *client.SpendingKey, receiverAddr *client.PaymentAddress, value uint64, rt []byte, usableTx []*Tx, nullifiers [][]byte) (*Tx, error) {
 	inputNotes, err := collectUnspentNotes(senderKey, value)
 	if err != nil {
 		return nil, err
