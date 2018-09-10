@@ -20,6 +20,12 @@ const (
 	PublicKeyCompressedLength = 33
 )
 
+const (
+	PriKeyType  = byte(0x0)
+	PubKeyType  = byte(0x1)
+	ReadKeyType = byte(0x2)
+)
+
 var (
 	// PrivateWalletVersion is the version flag for serialized private keys
 	//PrivateWalletVersion, _ = hex.DecodeString("0488ADE4")
@@ -136,22 +142,28 @@ func (key *Key) getIntermediary(childIdx uint32) ([]byte, error) {
 }
 
 // Serialize a KeyPair to a 78 byte byte slice
-func (key *Key) Serialize(privateKey bool) ([]byte, error) {
+func (key *Key) Serialize(keyType byte) ([]byte, error) {
 	// Write fields to buffer in order
 	buffer := new(bytes.Buffer)
-	buffer.WriteByte(key.Depth)
-	buffer.Write(key.ChildNumber)
-	buffer.Write(key.ChainCode)
-	if privateKey {
+	if keyType == PriKeyType {
+		buffer.WriteByte(key.Depth)
+		buffer.Write(key.ChildNumber)
+		buffer.Write(key.ChainCode)
+
 		// Private keys should be prepended with a single null byte
 		keyBytes := key.KeyPair.PrivateKey[:]
 		keyBytes = append([]byte{byte(len(key.KeyPair.PrivateKey))}, keyBytes...)
-		keyBytes = append([]byte{0x0}, keyBytes...)
+		keyBytes = append([]byte{keyType}, keyBytes...)
 		buffer.Write(keyBytes)
-	} else {
+	} else if keyType == PubKeyType {
 		keyBytes := append(key.KeyPair.PublicKey.Apk[:], key.KeyPair.PublicKey.Pkenc[:]...)
 		keyBytes = append([]byte{byte(len(key.KeyPair.PublicKey.Apk) + len(key.KeyPair.PublicKey.Pkenc))}, keyBytes...)
-		keyBytes = append([]byte{0x1}, keyBytes...)
+		keyBytes = append([]byte{keyType}, keyBytes...)
+		buffer.Write(keyBytes)
+	} else if keyType == ReadKeyType {
+		keyBytes := append(key.KeyPair.PublicKey.Apk[:], key.KeyPair.PublicKey.Pkenc[:]...)
+		keyBytes = append([]byte{byte(len(key.KeyPair.PublicKey.Apk) + len(key.KeyPair.PublicKey.Pkenc))}, keyBytes...)
+		keyBytes = append([]byte{keyType}, keyBytes...)
 		buffer.Write(keyBytes)
 	}
 
@@ -166,8 +178,8 @@ func (key *Key) Serialize(privateKey bool) ([]byte, error) {
 }
 
 // Base58CheckSerialize encodes the KeyPair in the standard Bitcoin base58 encoding
-func (key *Key) Base58CheckSerialize(private bool) string {
-	serializedKey, err := key.Serialize(private)
+func (key *Key) Base58CheckSerialize(keyType byte) string {
+	serializedKey, err := key.Serialize(keyType)
 	if err != nil {
 		return ""
 	}
@@ -197,7 +209,7 @@ func Deserialize(data []byte) (*Key, error) {
 	}
 
 	// validate checksum
-	cs1 := base58.ChecksumFirst4Bytes(data[0 : len(data)-4])
+	cs1 := base58.ChecksumFirst4Bytes(data[0: len(data)-4])
 	cs2 := data[len(data)-4:]
 	for i := range cs1 {
 		if cs1[i] != cs2[i] {

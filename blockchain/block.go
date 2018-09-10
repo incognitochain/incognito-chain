@@ -72,7 +72,16 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 			}
 			desc, ok := txTemp["Descs"]
 			if ok && desc != nil {
-				txNormal.Descs = desc.([]*transaction.JoinSplitDesc)
+				temps := desc.([]interface{})
+				for _, temp := range temps {
+					item := temp.(map[string]interface{})
+					txNormal.Descs = append(txNormal.Descs, &transaction.JoinSplitDesc{
+						Anchor: []byte(item["Anchor"].(string)),
+						Type:   item["Type"].(string),
+						Reward: uint64(item["Reward"].(float64)),
+						// TODO
+					})
+				}
 			}
 			self.Transactions = append(self.Transactions, txNormal)
 		} else if txTemp["Type"].(string) == common.TxActionParamsType {

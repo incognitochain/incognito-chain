@@ -74,7 +74,7 @@ func (self *Wallet) CreateNewAccount(accountName string) *Account {
 }
 
 func (self *Wallet) ExportAccount(childIndex uint32) string {
-	return self.MasterAccount.Child[childIndex].Key.Base58CheckSerialize(true)
+	return self.MasterAccount.Child[childIndex].Key.Base58CheckSerialize(PriKeyType)
 }
 
 func (self *Wallet) ImportAccount(privateKey string) {
@@ -129,11 +129,11 @@ func (self *Wallet) LoadWallet(password string) error {
 	return err
 }
 
-func (self *Wallet) DumpPrivkey(address string) (string, error) {
+func (self *Wallet) DumpPrivkey(addressP string) (string, error) {
 	for _, account := range self.MasterAccount.Child {
-		address := account.Key.Base58CheckSerialize(false)
-		if address == address {
-			return account.Key.Base58CheckSerialize(true), nil
+		address := account.Key.Base58CheckSerialize(PubKeyType)
+		if address == addressP {
+			return account.Key.Base58CheckSerialize(PriKeyType), nil
 		}
 	}
 	return "", nil
@@ -142,18 +142,18 @@ func (self *Wallet) DumpPrivkey(address string) (string, error) {
 func (self *Wallet) GetAccountAddress(accountParam string) (string, error) {
 	for _, account := range self.MasterAccount.Child {
 		if account.Name == accountParam {
-			return account.Key.Base58CheckSerialize(false), nil
+			return account.Key.Base58CheckSerialize(PubKeyType), nil
 		}
 	}
 	newAccount := self.CreateNewAccount(accountParam)
-	return newAccount.Key.Base58CheckSerialize(false), nil
+	return newAccount.Key.Base58CheckSerialize(PubKeyType), nil
 }
 
 func (self *Wallet) GetAddressesByAccount(accountParam string) ([]string, error) {
 	result := make([]string, 0)
 	for _, account := range self.MasterAccount.Child {
 		if account.Name == accountParam {
-			result = append(result, account.Key.Base58CheckSerialize(false))
+			result = append(result, account.Key.Base58CheckSerialize(PubKeyType))
 		}
 	}
 	return result, nil

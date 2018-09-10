@@ -14,6 +14,8 @@ import (
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"golang.org/x/crypto/ed25519"
+	"strings"
+	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -136,39 +138,40 @@ Parameter #3—the addresses an output must pay
 */
 func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
-	//paramsArray := common.InterfaceSlice(params)
-	//min := int(paramsArray[0].(float64))
-	//max := int(paramsArray[1].(float64))
-	//listAddresses := paramsArray[2].(string)
-	//_ = min
-	//_ = max
-	//var addresses []string
-	//addresses = strings.Fields(listAddresses)
-	//blocks, _ := self.Config.BlockChain.GetAllBlocks()
-	result := make([]jsonrpc.ListUnspentResult, 0)
-	//for _, block := range blocks {
-	//	if len(block.Transactions) > 0 {
-	//		for _, tx := range block.Transactions {
-	//			if tx.GetType() == common.TxActionParamsType {
-	//				continue
-	//			}
-	//			normalTx := tx.(*transaction.Tx)
-	//			if len(normalTx.TxOut) > 0 {
-	//				for index, txOut := range normalTx.TxOut {
-	//					if bytes.Compare(txOut.PkScript, []byte(addresses[0])) == 0 {
-	//						result = append(result, jsonrpc.ListUnspentResult{
-	//							Vout:      index,
-	//							TxID:      normalTx.Hash().String(),
-	//							Address:   string(txOut.PkScript),
-	//							Amount:    txOut.Value,
-	//							TxOutType: txOut.TxOutType,
-	//						})
-	//					}
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
+	result := jsonrpc.ListUnspentResult{
+		ListUnspentResultItems: make(map[string][]jsonrpc.ListUnspentResultItem),
+	}
+
+	// get params
+	paramsArray := common.InterfaceSlice(params)
+	min := int(paramsArray[0].(float64))
+	max := int(paramsArray[1].(float64))
+	_ = min
+	_ = max
+	listReadonlyKeys := paramsArray[2].(string)
+	var readonlyKeys []string
+	readonlyKeys = strings.Fields(listReadonlyKeys)
+	for _, readonlyKey := range readonlyKeys {
+		txs, err := self.Config.BlockChain.GetListTxByReadonlyKey([]byte(readonlyKey), common.TxOutCoinType)
+		if err != nil {
+			return nil, err
+		}
+		listTxs := make([]jsonrpc.ListUnspentResultItem, 0)
+		for _, tx := range txs {
+			item := jsonrpc.ListUnspentResultItem{
+				TxId:          tx.Hash().String(),
+				JoinSplitDesc: make([]jsonrpc.JoinSplitDesc, 0),
+			}
+			for _, desc := range tx.Descs {
+				item.JoinSplitDesc = append(item.JoinSplitDesc, jsonrpc.JoinSplitDesc{
+					Anchor:      desc.Anchor,
+					Commitments: desc.Commitments,
+					Amount:      0, // TODO
+				})
+			}
+		}
+		result.ListUnspentResultItems[readonlyKey] = listTxs
+	}
 	return result, nil
 }
 
@@ -425,7 +428,7 @@ getaccount RPC returns the name of the account associated with the given address
 */
 func (self RpcServer) handleGetAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	for _, account := range self.Config.Wallet.MasterAccount.Child {
-		address := account.Key.Base58CheckSerialize(false)
+		address := account.Key.Base58CheckSerialize(wallet.PubKeyType)
 		if address == params.(string) {
 			return account.Name, nil
 		}
