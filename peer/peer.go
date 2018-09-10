@@ -262,7 +262,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		return nil, nil
 	}
 
-	if self.NumOutbound() >= self.MaxOutbound && !ok {
+	if self.NumOutbound() >= self.MaxOutbound && self.MaxOutbound > 0 && !ok {
 		Logger.log.Infof("Max Peer Outbound Connection")
 
 		self.ConnPending(peer)
