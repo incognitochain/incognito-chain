@@ -16,6 +16,7 @@ import (
 	"golang.org/x/crypto/ed25519"
 	"strings"
 	"github.com/ninjadotorg/cash-prototype/wallet"
+	"github.com/ninjadotorg/cash-prototype/privacy/client"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -132,9 +133,9 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 // contained within it will be considered.  If we know nothing about a
 // transaction an empty array will be returned.
 // params:
- Parameter #1—the minimum number of confirmations an output must have
+Parameter #1—the minimum number of confirmations an output must have
 Parameter #2—the maximum number of confirmations an output may have
-Parameter #3—the addresses an output must pay
+Parameter #3—the list readonly which be used to view utxo
 */
 func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
@@ -216,7 +217,18 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 		return nil, err
 	}
 	return hex.EncodeToString(byteArrays), nil*/
-	return "", nil
+	senderKey := client.SpendingKey{}
+	paymentAddress := client.PaymentAddress{}
+	amount := uint64(0)
+	tx, err := transaction.CreateTx(&senderKey, &paymentAddress, amount, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		return hex.EncodeToString(byteArrays), nil
+	}
+	return nil, err
 }
 
 /**
