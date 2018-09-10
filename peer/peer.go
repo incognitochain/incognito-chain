@@ -330,7 +330,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
-	if self.NumInbound() >= self.MaxInbound {
+	if self.NumInbound() >= self.MaxInbound && self.MaxInbound > 0 {
 		Logger.log.Infof("Max Peer Inbound Connection")
 
 		return

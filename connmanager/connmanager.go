@@ -193,7 +193,7 @@ func (self ConnManager) New(cfg *Config) (*ConnManager, error) {
 	if cfg.TargetOutbound == 0 {
 		cfg.TargetOutbound = defaultTargetOutbound
 	}
-	if cfg.TargetOutbound == 0 {
+	if cfg.TargetInbound == 0 {
 		cfg.TargetInbound = defaultTargetInbound
 	}
 	self.Config = *cfg
