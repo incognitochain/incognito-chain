@@ -2,14 +2,21 @@ package client
 
 import (
 	"crypto/rand"
-
-	"golang.org/x/crypto/curve25519"
+	// "golang.org/x/crypto/curve25519"
+	"math/big"
+	"golang.org/x/crypto/openpgp/elgamal"
 )
 
 const (
 	SpendingKeyLength     = 32 // bytes
 	ReceivingKeyLength    = 32
 	SpendingAddressLength = 32
+
+	// This is the 1024-bit MODP group from RFC 5114, section 2.1:
+	// Parameter for Elgamal encryption
+	primeHex = "B10B8F96A080E01DDE92DE5EAE5D54EC52C99FBCFB06A3C69A6A9DCA52D23B616073E28675A23D189838EF1E2EE652C013ECB4AEA906112324975C3CD49B83BFACCBDD7D90C4BD7098488E9C219A73724EFFD6FAE5644738FAA31A4FF55BCCC0A151AF5F0DC8B4BD45BF37DF365C1A65E68CFDA76D4DA708DF1FB2BC2E4A4371"
+	generatorHex = "A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD6406CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A24C087A091F531DBF0A0169B6A28AD662A4D18E73AFA32D779D5918D08BC8858F4DCEF97C2A24855E6EEB22B3B2E5"
+	subgroupSizeHex = "F518AA8781A8DF278ABA4E7D64B7CB9D49462353"
 )
 
 type SpendingKey [SpendingKeyLength]byte
@@ -29,14 +36,34 @@ func RandBits(n int) []byte {
 // RandSpendingKey generates a random SpendingKey
 func RandSpendingKey() SpendingKey {
 	b := RandBits(SpendingKeyLength*8 - 4)
+	// b := make([]byte, SpendingKeyLength)
+	// rand.Read(b)
+	// b[SpendingKeyLength-1] &= 0x0F // First 4 bits are 0
 
 	ask := *new(SpendingKey)
 	copy(ask[:], b)
 	return ask
 }
 
-type ReceivingKey [ReceivingKeyLength]byte
+type ReceivingKey elgamal.PrivateKey
+type TransmissionKey elgamal.PublicKey
 
+func GenReceivingKey() ReceivingKey {
+	var skenc ReceivingKey
+	
+	skenc.X = RandBigInt(FromHexToBigInt(subgroupSizeHex))
+	skenc.PublicKey.G = generator
+	skenc.PublicKey.P = prime
+	skenc.PublicKey.Y = new(big.Int).Exp(generator, skenc.X, prime)
+	
+	return skenc
+}
+
+func GenTransmissionKey(skenc ReceivingKey) TransmissionKey {
+	return (TransmissionKey)(skenc.PublicKey)
+}
+
+/*
 func GenReceivingKey(ask SpendingKey) ReceivingKey {
 	data := PRF_addr_x(ask[:], 1)
 	clamped := clampCurve25519(data)
@@ -44,6 +71,7 @@ func GenReceivingKey(ask SpendingKey) ReceivingKey {
 	copy(skenc[:], clamped)
 	return skenc
 }
+*/
 
 func clampCurve25519(x []byte) []byte {
 	x[0] &= 0xF8  // Clear bit 0, 1, 2 of first byte
@@ -68,35 +96,19 @@ type ViewingKey struct {
 
 func GenViewingKey(ask SpendingKey) ViewingKey {
 	var ivk ViewingKey
+
 	ivk.Apk = GenSpendingAddress(ask)
-	ivk.Skenc = GenReceivingKey(ask)
+	ivk.Skenc = GenReceivingKey()
+
 	return ivk
 }
-
-type TransmissionKey [32]byte
 
 type PaymentAddress struct {
 	Apk   SpendingAddress
 	Pkenc TransmissionKey
 }
-
-// FromBytes converts a byte stream to PaymentAddress
-func (addr *PaymentAddress) FromBytes(data []byte) *PaymentAddress {
-	copy(addr.Apk[:], data[:32])   // First 32 bytes are Apk's
-	copy(addr.Pkenc[:], data[32:]) // Last 32 bytes are Pkenc's
-	return addr
-}
-
-// ToBytes converts a PaymentAddress to a byte slice
-func (addr *PaymentAddress) ToBytes() []byte {
-	result := make([]byte, 32)
-	pkenc := make([]byte, 32)
-	copy(result, addr.Apk[:32])
-	copy(pkenc, addr.Pkenc[:32])
-	result = append(result, pkenc...)
-	return result
-}
-
+//
+/*
 func GenTransmissionKey(skenc ReceivingKey) TransmissionKey {
 	// TODO: reduce copy
 	var x, y [32]byte
@@ -107,11 +119,15 @@ func GenTransmissionKey(skenc ReceivingKey) TransmissionKey {
 	copy(pkenc[:], x[:])
 	return pkenc
 }
+*/
+
 
 func GenPaymentAddress(ask SpendingKey) PaymentAddress {
 	var addr PaymentAddress
-	addr.Apk = GenSpendingAddress(ask)
-	addr.Pkenc = GenTransmissionKey(GenReceivingKey(ask))
+	
+	addr.apk = GenSpendingAddress(ask)
+	addr.pkenc = GenTransmissionKey(GenReceivingKey())
+
 	return addr
 }
 
