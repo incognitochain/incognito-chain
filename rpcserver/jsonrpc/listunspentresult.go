@@ -20,10 +20,33 @@ type ListUnspentResultItem struct {
 	JoinSplitDesc []JoinSplitDesc `json:"JoinSplitDesc"`
 }
 
+func (self *ListUnspentResultItem) Init(data interface{}) {
+	mapData := data.(map[string]interface{})
+	self.TxId = mapData["TxId"].(string)
+	self.JoinSplitDesc = make([]JoinSplitDesc, 0)
+	temps := mapData["JoinSplitDesc"].([]interface{})
+	for _, temp := range temps {
+		item := JoinSplitDesc{}
+		item.Init(temp)
+		self.JoinSplitDesc = append(self.JoinSplitDesc, item)
+	}
+}
+
 type JoinSplitDesc struct {
 	Commitments [][]byte `json:"Commitments"`
 	Amount      uint64   `json:"Amount"`
 	Anchor      []byte   `json:"Anchor"`
+}
+
+func (self *JoinSplitDesc) Init(data interface{}) {
+	mapData := data.(map[string]interface{})
+	self.Amount = uint64(mapData["Amount"].(float64))
+	self.Anchor = []byte(mapData["Anchor"].(string))
+	self.Commitments = make([][]byte, 0)
+	temps := mapData["Commitments"].([]interface{})
+	for _, temp := range temps {
+		self.Commitments = append(self.Commitments, []byte(temp.(string)))
+	}
 }
 
 // end

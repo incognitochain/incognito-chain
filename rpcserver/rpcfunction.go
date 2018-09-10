@@ -247,8 +247,10 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 
 	// param #3: list usable tx
 	usableTxs := make([]*transaction.UsableTx, 0)
-	txsParam := arrayParams[2].([]jsonrpc.ListUnspentResultItem)
-	for _, tx := range txsParam {
+	txsParam := arrayParams[2].([]interface{})
+	for _, txInterface := range txsParam {
+		tx := jsonrpc.ListUnspentResultItem{}
+		tx.Init(txInterface)
 		item := transaction.Tx{
 			Descs: make([]*transaction.JoinSplitDesc, 0),
 		}
