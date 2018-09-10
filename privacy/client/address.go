@@ -80,6 +80,11 @@ type PaymentAddress struct {
 	Pkenc TransmissionKey
 }
 
+type PaymentInfo struct {
+	PaymentAddress PaymentAddress
+	Amount         uint64
+}
+
 // FromBytes converts a byte stream to PaymentAddress
 func (addr *PaymentAddress) FromBytes(data []byte) *PaymentAddress {
 	copy(addr.Apk[:], data[:32])   // First 32 bytes are Apk's

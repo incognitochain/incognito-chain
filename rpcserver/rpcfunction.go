@@ -218,9 +218,9 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 	}
 	return hex.EncodeToString(byteArrays), nil*/
 	senderKey := client.SpendingKey{}
-	paymentAddress := client.PaymentAddress{}
-	amount := uint64(0)
-	tx, err := transaction.CreateTx(&senderKey, &paymentAddress, amount, nil, nil, nil)
+	paymentInfos := make([]*client.PaymentInfo, 0)
+	paymentInfos = append(paymentInfos, &client.PaymentInfo{})
+	tx, err := transaction.CreateTx(&senderKey, paymentInfos, nil, nil, self.Config.BlockChain)
 	if err != nil {
 		return nil, err
 	}
