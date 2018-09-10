@@ -95,9 +95,9 @@ type Config struct {
 }
 
 type DiscoverPeerInfo struct {
-	PublicKey string
+	PublicKey  string
 	RawAddress string
-	PeerId libpeer.ID
+	PeerId     libpeer.ID
 }
 
 // registerPending is used to register a pending connection attempt. By
@@ -413,7 +413,7 @@ listen:
 				if listener.Config.SealerPrvKey != "" {
 					keyPair := &cashec.KeyPair{}
 					keyPair.Import([]byte(listener.Config.SealerPrvKey))
-					publicKey = string(keyPair.PublicKey)
+					publicKey = string(keyPair.PublicKey.Apk[:]) + string(keyPair.PublicKey.Pkenc[:])
 				}
 
 				// remove later
