@@ -473,3 +473,15 @@ listen:
 		time.Sleep(time.Second * 5)
 	}
 }
+
+func (p *ConnManager) GetPeerConnsByPeerId(peerId libpeer.ID) []*peer.PeerConn {
+	results := []*peer.PeerConn{}
+	for _, listen := range p.ListeningPeers {
+		for _, peerConn :=range listen.PeerConns {
+			if peerConn.PeerId == peerId {
+				results = append(results, peerConn)
+			}
+		}
+	}
+	return results
+}
