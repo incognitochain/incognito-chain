@@ -19,7 +19,7 @@ type JoinSplitDesc struct {
 	Nullifiers    [][]byte           `json:"Nullifiers"`
 	Commitments   [][]byte           `json:"Commitments"`
 	Proof         *zksnark.PHGRProof `json:"Proof"`
-	EncryptedData []byte             `json:"EncryptedData"`
+	EncryptedData [][]byte           `json:"EncryptedData"`
 	Type          string             `json:"Type"`
 	Reward        uint64             `json:"Reward"` // For coinbase tx
 }
@@ -45,7 +45,9 @@ func (desc *JoinSplitDesc) toString() string {
 		s += string(cm)
 	}
 	s += desc.Proof.String()
-	s += string(desc.EncryptedData)
+	for _, data := range desc.EncryptedData {
+		s += string(data)
+	}
 	return s
 }
 
