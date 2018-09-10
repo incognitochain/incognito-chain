@@ -719,7 +719,6 @@ func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block,
 	if err != nil {
 		return err
 	}
-
 	discoverdPeer, exist := self.ConnManager.DiscoveredPeers[validatorAddress]
 	if exist {
 		for _, listener := range self.ConnManager.Config.ListenerPeers {
