@@ -8,7 +8,6 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common/base58"
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
 )
 
 const (
@@ -18,6 +17,12 @@ const (
 
 	// PublicKeyCompressedLength is the byte count of a compressed public Key
 	PublicKeyCompressedLength = 33
+)
+
+const (
+	PriKeyType      = byte(0x0)
+	PubKeyType      = byte(0x1)
+	ReadonlyKeyType = byte(0x2)
 )
 
 var (
@@ -136,22 +141,36 @@ func (key *Key) getIntermediary(childIdx uint32) ([]byte, error) {
 }
 
 // Serialize a KeyPair to a 78 byte byte slice
-func (key *Key) Serialize(privateKey bool) ([]byte, error) {
+func (key *Key) Serialize(keyType byte) ([]byte, error) {
 	// Write fields to buffer in order
 	buffer := new(bytes.Buffer)
-	buffer.WriteByte(key.Depth)
-	buffer.Write(key.ChildNumber)
-	buffer.Write(key.ChainCode)
-	if privateKey {
+	buffer.WriteByte(keyType)
+	if keyType == PriKeyType {
+
+		buffer.WriteByte(key.Depth)
+		buffer.Write(key.ChildNumber)
+		buffer.Write(key.ChainCode)
+
 		// Private keys should be prepended with a single null byte
-		keyBytes := key.KeyPair.PrivateKey[:]
-		keyBytes = append([]byte{byte(len(key.KeyPair.PrivateKey))}, keyBytes...)
-		keyBytes = append([]byte{0x0}, keyBytes...)
+		keyBytes := make([]byte, 0)
+		keyBytes = append(keyBytes, byte(len(key.KeyPair.PrivateKey))) // set length
+		keyBytes = append(keyBytes, key.KeyPair.PrivateKey[:]...)      // set pri-key
 		buffer.Write(keyBytes)
-	} else {
-		keyBytes := append(key.KeyPair.PublicKey.Apk[:], key.KeyPair.PublicKey.Pkenc[:]...)
-		keyBytes = append([]byte{byte(len(key.KeyPair.PublicKey.Apk) + len(key.KeyPair.PublicKey.Pkenc))}, keyBytes...)
-		keyBytes = append([]byte{0x1}, keyBytes...)
+	} else if keyType == PubKeyType {
+		keyBytes := make([]byte, 0)
+		keyBytes = append(keyBytes, byte(len(key.KeyPair.PublicKey.Apk))) // set length Apk
+		keyBytes = append(keyBytes, key.KeyPair.PublicKey.Apk[:]...)      // set Apk
+
+		keyBytes = append(keyBytes, byte(len(key.KeyPair.PublicKey.Pkenc))) // set length Pkenc
+		keyBytes = append(keyBytes, key.KeyPair.PublicKey.Pkenc[:]...)      // set Pkenc
+		buffer.Write(keyBytes)
+	} else if keyType == ReadonlyKeyType {
+		keyBytes := make([]byte, 0)
+		keyBytes = append(keyBytes, byte(len(key.KeyPair.ReadonlyKey.Apk))) // set length Apk
+		keyBytes = append(keyBytes, key.KeyPair.ReadonlyKey.Apk[:]...)      // set Apk
+
+		keyBytes = append(keyBytes, byte(len(key.KeyPair.ReadonlyKey.Skenc))) // set length Skenc
+		keyBytes = append(keyBytes, key.KeyPair.ReadonlyKey.Skenc[:]...)      // set Pkenc
 		buffer.Write(keyBytes)
 	}
 
@@ -166,8 +185,8 @@ func (key *Key) Serialize(privateKey bool) ([]byte, error) {
 }
 
 // Base58CheckSerialize encodes the KeyPair in the standard Bitcoin base58 encoding
-func (key *Key) Base58CheckSerialize(private bool) string {
-	serializedKey, err := key.Serialize(private)
+func (key *Key) Base58CheckSerialize(keyType byte) string {
+	serializedKey, err := key.Serialize(keyType)
 	if err != nil {
 		return ""
 	}
@@ -181,23 +200,28 @@ func Deserialize(data []byte) (*Key, error) {
 	//	return nil, ErrSerializedKeyWrongSize
 	//}
 	var key = &Key{}
-	key.Depth = data[0]
-	key.ChildNumber = data[1:5]
-	key.ChainCode = data[5:37]
-	keyType := data[37]
-	keyLength := data[38]
-	if keyType == byte(0) {
-		copy(key.KeyPair.PrivateKey[:], data[39:39+keyLength])
-		// key.KeyPair.PrivateKey = data[39 : 39+keyLength]
-	} else {
-		apkEndByte := 39 + client.SpendingAddressLength
-		copy(key.KeyPair.PublicKey.Apk[:], data[39:apkEndByte])
-		copy(key.KeyPair.PublicKey.Pkenc[:], data[apkEndByte:apkEndByte+(int(keyLength)-client.SpendingAddressLength)])
-		// key.KeyPair.PublicKey = data[39 : 39+keyLength]
+	keyType := data[0]
+	if keyType == PriKeyType {
+		key.Depth = data[1]
+		key.ChildNumber = data[2:6]
+		key.ChainCode = data[6:38]
+		keyLength := int(data[39])
+
+		copy(key.KeyPair.PrivateKey[:], data[40:40+keyLength])
+	} else if keyType == PubKeyType {
+		apkKeyLength := int(data[0])
+		copy(key.KeyPair.PublicKey.Apk[:], data[1:1+apkKeyLength])
+		pkencKeyLength := int(data[apkKeyLength+1])
+		copy(key.KeyPair.PublicKey.Pkenc[:], data[2+apkKeyLength: pkencKeyLength])
+	} else if keyType == ReadonlyKeyType {
+		apkKeyLength := int(data[0])
+		copy(key.KeyPair.ReadonlyKey.Apk[:], data[1:1+apkKeyLength])
+		skencKeyLength := int(data[apkKeyLength+1])
+		copy(key.KeyPair.ReadonlyKey.Skenc[:], data[2+apkKeyLength: skencKeyLength])
 	}
 
 	// validate checksum
-	cs1 := base58.ChecksumFirst4Bytes(data[0 : len(data)-4])
+	cs1 := base58.ChecksumFirst4Bytes(data[0: len(data)-4])
 	cs2 := data[len(data)-4:]
 	for i := range cs1 {
 		if cs1[i] != cs2[i] {

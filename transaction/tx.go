@@ -9,20 +9,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
-	//"encoding/json"
 )
-
-// JoinSplitDesc stores the UTXO of a transaction
-// TODO(@0xbunyip): add randomSeed, MACs and epk
-type JoinSplitDesc struct {
-	Anchor        []byte             `json:"Anchor"`
-	Nullifiers    [][]byte           `json:"Nullifiers"`
-	Commitments   [][]byte           `json:"Commitments"`
-	Proof         *zksnark.PHGRProof `json:"Proof"`
-	EncryptedData []byte             `json:"EncryptedData"`
-	Type          string             `json:"Type"`
-	Reward        uint64             `json:"Reward"` // For coinbase tx
-}
 
 // Tx represents a coin-transfer-transaction stored in a block
 type Tx struct {
@@ -36,17 +23,9 @@ type Tx struct {
 	JSSig    []byte           `json:"JSSig"`    // 64 bytes
 }
 
-func (desc *JoinSplitDesc) toString() string {
-	s := string(desc.Anchor)
-	for _, nf := range desc.Nullifiers {
-		s += string(nf)
-	}
-	for _, cm := range desc.Commitments {
-		s += string(cm)
-	}
-	s += desc.Proof.String()
-	s += string(desc.EncryptedData)
-	return s
+type UsableTx struct {
+	TxId string `json:"TxId"`
+	Tx
 }
 
 // Hash returns the hash of all fields of the transaction
@@ -92,7 +71,9 @@ func collectUnspentNotes(ask *client.SpendingKey, valueWanted uint64) ([]*client
 // CreateTx creates transaction with appropriate proof for a private payment
 // value: total value of the coins to transfer
 // rt: root of the commitment merkle tree at current block (the latest block of the node creating this tx)
-func CreateTx(senderKey *client.SpendingKey, receiverAddr *client.PaymentAddress, value uint64, rt []byte) (*Tx, error) {
+func CreateTx(senderKey *client.SpendingKey, paymentInfo []*client.PaymentInfo, rt []byte, usableTx []*UsableTx, nullifiers [][]byte) (*Tx, error) {
+	receiverAddr := paymentInfo[0].PaymentAddress
+	value := paymentInfo[0].Amount
 	inputNotes, err := collectUnspentNotes(senderKey, value)
 	if err != nil {
 		return nil, err
@@ -127,16 +108,17 @@ func CreateTx(senderKey *client.SpendingKey, receiverAddr *client.PaymentAddress
 		panic("Input value less than output value")
 	}
 
-	senderFullKey := senderKey.GenFullKey()
+	senderFullKey := cashec.KeyPair{}
+	senderFullKey.GetKeyFromPrivateKeyByte(senderKey[:])
 
 	// Create new notes: first one send `value` to receiverAddr, second one sends `change` back to sender
 	outNote := &client.Note{Value: value, Apk: receiverAddr.Apk}
-	changeNote := &client.Note{Value: sumInputValue - value, Apk: senderFullKey.Addr.Apk}
+	changeNote := &client.Note{Value: sumInputValue - value, Apk: senderFullKey.PublicKey.Apk}
 
 	outputs := make([]*client.JSOutput, 2)
 	outputs[0].EncKey = receiverAddr.Pkenc
 	outputs[0].OutputNote = outNote
-	outputs[1].EncKey = senderFullKey.Addr.Pkenc
+	outputs[1].EncKey = senderFullKey.PublicKey.Pkenc
 	outputs[1].OutputNote = changeNote
 
 	// Shuffle output notes randomly (if necessary)
@@ -194,14 +176,19 @@ func generateTx(
 ) (*Tx, error) {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
+	notes := [2]client.Note{*outputs[0].OutputNote, *outputs[1].OutputNote}
+	keys := [2]client.TransmissionKey{outputs[0].EncKey, outputs[1].EncKey}
+	ephemeralPubKey := client.EphemeralPubKey{} // TODO
+	noteciphers := client.EncryptNote(notes, keys, client.EphemeralPrivKey{}, ephemeralPubKey)
 
-	// TODO: add encrypted data
 	desc := []*JoinSplitDesc{&JoinSplitDesc{
-		Proof:       proof,
-		Anchor:      rt,
-		Nullifiers:  nullifiers,
-		Commitments: commitments,
-		Reward:      reward,
+		Proof:           proof,
+		Anchor:          rt,
+		Nullifiers:      nullifiers,
+		Commitments:     commitments,
+		Reward:          reward,
+		EncryptedData:   noteciphers,
+		EphemeralPubKey: ephemeralPubKey[:],
 	}}
 
 	// TODO(@0xbunyip): use Apk of PubKey temporarily, we should derive another scheme for signing tx later

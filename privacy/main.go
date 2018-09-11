@@ -145,5 +145,9 @@ func runProveThenVerify() {
 func main() {
 	// runProve()
 	// runVerify()
-	runProveThenVerify()
+	//runProveThenVerify()
+	fmt.Println("Hello")
+	client.TestEncrypt()
+	// client.TestEncrypt1()
+	// encrypt
 }

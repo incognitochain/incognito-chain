@@ -13,6 +13,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/privacy/client"
 )
 
 type BlockChain struct {
@@ -128,7 +129,7 @@ func (self *BlockChain) createChainState() error {
 	}
 
 	// Spam random blocks
-	for index := 0; index < 0; index++ {
+	/*for index := 0; index < 0; index++ {
 		hashBestBlock := self.BestState.BestBlockHash
 		newSpamBlock := Block{
 			Header: BlockHeader{
@@ -154,7 +155,7 @@ func (self *BlockChain) createChainState() error {
 		if err != nil {
 			return err
 		}
-	}
+	}*/
 	// Spam random blocks
 
 	return err
@@ -433,13 +434,17 @@ func (self *BlockChain) GetAllHashBlocks() ([]*common.Hash, error) {
 	return view, err
 }*/
 
+/**
+FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
+Param typeJoinSplitDesc - COIN or BOND
+ */
 func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string) (*TxViewPoint, error) {
 	view := NewTxViewPoint()
 	commitments, err := self.Config.DataBase.FetchCommitments(typeJoinSplitDesc)
 	if err != nil {
 		return nil, err
 	}
-	view.listNullifiers[typeJoinSplitDesc] = commitments
+	view.listCommitments[typeJoinSplitDesc] = commitments
 	nullifiers, err := self.Config.DataBase.FetchNullifiers(typeJoinSplitDesc)
 	if err != nil {
 		return nil, err
@@ -568,3 +573,85 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 	}
 	return numSpent
 }*/
+
+/**
+GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key
+ */
+func (self *BlockChain) GetListTxByReadonlyKey(skenc *client.ReceivingKey, pkenc *client.TransmissionKey, typeJoinSplitDesc string) ([]transaction.Tx, error) {
+	results := make([]transaction.Tx, 0)
+
+	// set default for params
+	if typeJoinSplitDesc == "" {
+		typeJoinSplitDesc = common.TxOutCoinType
+	}
+
+	// lock chain
+	self.chainLock.Lock()
+
+	// get best block
+	bestBlock := self.BestState.BestBlock
+	blockHeight := bestBlock.Height
+
+	for blockHeight > -1 {
+		txsInBlock := bestBlock.Transactions
+		txsInBlockAccepted := make([]transaction.Tx, 0)
+		for _, txInBlock := range txsInBlock {
+			if txInBlock.GetType() == common.TxNormalType {
+				tx := txInBlock.(*transaction.Tx)
+				copyTx := transaction.Tx{
+					Version:  tx.Version,
+					JSSig:    tx.JSSig,
+					JSPubKey: tx.JSPubKey,
+					Fee:      tx.Fee,
+					Type:     tx.Type,
+					LockTime: tx.LockTime,
+					Descs:    make([]*transaction.JoinSplitDesc, 0),
+				}
+				// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
+				listDesc := make([]*transaction.JoinSplitDesc, 0)
+				for _, desc := range tx.Descs {
+					copyDesc := &transaction.JoinSplitDesc{
+						Anchor:        desc.Anchor,
+						Commitments:   make([][]byte, 0),
+						EncryptedData: make([][]byte, 0),
+					}
+					for i, encData := range desc.EncryptedData {
+						var epk client.EphemeralPubKey
+						copy(epk[:], desc.EphemeralPubKey)
+						note, err := client.DecryptNote(encData, *skenc, *pkenc, epk)
+						if err == nil && note != nil {
+							copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
+							copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
+							copyDesc.SetNote(note)
+							listDesc = append(listDesc, copyDesc)
+						} else {
+							return nil, err
+						}
+					}
+				}
+				if len(listDesc) > 0 {
+					copyTx.Descs = listDesc
+				}
+				txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
+			}
+		}
+		// detected some tx can be accepted
+		if len(txsInBlockAccepted) > 0 {
+			// add to result
+			results = append(results, txsInBlockAccepted...)
+		}
+
+		// continue with previous block
+		blockHeight--
+		preBlockHash := bestBlock.Header.PrevBlockHash
+		bestBlock = self.GetBlockByHash(preBlockHash)
+		if blockHeight != bestBlock.Height {
+			// pre-block is not the same block-height with calculation -> invalid blockchain
+			return nil, errors.New("Invalid blockchain")
+		}
+	}
+
+	// unlock chain
+	self.chainLock.Unlock()
+	return results, nil
+}

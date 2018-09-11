@@ -23,7 +23,9 @@ import (
 )
 
 const (
-	LOCAL_HOST = "127.0.0.1"
+	//LOCAL_HOST = "127.0.0.1"
+	// listen all interface
+	LOCAL_HOST = "0.0.0.0"
 	// trickleTimeout is the duration of the ticker which trickles down the
 	// inventory to a peer.
 	trickleTimeout = 10 * time.Second
@@ -54,6 +56,7 @@ type Peer struct {
 	PeerId           peer.ID
 	RawAddress       string
 	ListeningAddress common.SimpleAddr
+	PublicKey		 string
 
 	Seed          int64
 	outboundMutex sync.Mutex
@@ -64,9 +67,8 @@ type Peer struct {
 	PeerConns    map[peer.ID]*PeerConn
 	PendingPeers map[peer.ID]*Peer
 
-	Peers map[string]string
-
-	quit chan struct{}
+	quit           chan struct{}
+	disconnectPeer chan *PeerConn
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -135,6 +137,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	if len(ip) == 0 {
 		ip = LOCAL_HOST
 	}
+	Logger.log.Info(ip)
 	port := strings.Split(self.ListeningAddress.String(), ":")[1]
 	net := self.ListeningAddress.Network()
 	listeningAddressString := fmt.Sprintf("/%s/%s/tcp/%s", net, ip, port)
@@ -178,7 +181,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.TargetAddress = fullAddr
 	self.PeerId = peerid
 	self.quit = make(chan struct{}, 1)
-	self.Peers = make(map[string]string)
+	self.disconnectPeer = make(chan *PeerConn)
 
 	self.outboundMutex = sync.Mutex{}
 
@@ -188,7 +191,6 @@ func (self Peer) NewPeer() (*Peer, error) {
 func (self *Peer) Start() error {
 	Logger.log.Info("Peer start")
 	// ping to bootnode for test env
-	go self.HandleExchangePeers()
 	Logger.log.Info("Set stream handler and wait for connection from other peer")
 	self.Host.SetStreamHandler("/blockchain/1.0.0", self.HandleStream)
 	select {
@@ -260,7 +262,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		return nil, nil
 	}
 
-	if self.NumOutbound() >= self.MaxOutbound && !ok {
+	if self.NumOutbound() >= self.MaxOutbound && self.MaxOutbound > 0 && !ok {
 		Logger.log.Infof("Max Peer Outbound Connection")
 
 		self.ConnPending(peer)
@@ -270,6 +272,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	}
 
 	stream, err := self.Host.NewStream(context.Background(), peer.PeerId, "/blockchain/1.0.0")
+	Logger.log.Info(peer, stream, err)
 	if err != nil {
 		Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", self.PeerId.String(), err.Error())
 
@@ -322,10 +325,12 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 }
 
 func (self *Peer) HandleStream(stream net.Stream) {
+	fmt.Println("DEBUG", stream.Conn().RemoteMultiaddr(), stream.Conn().LocalMultiaddr())
+
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
-	if self.NumInbound() >= self.MaxInbound {
+	if self.NumInbound() >= self.MaxInbound && self.MaxInbound > 0 {
 		Logger.log.Infof("Max Peer Inbound Connection")
 
 		return
@@ -374,52 +379,6 @@ func (self *Peer) HandleStream(stream net.Stream) {
 			break
 		}
 	}
-}
-
-func (self Peer) HandleExchangePeers() {
-	//	Logger.log.Infof("Start Exchange Peers")
-	//	var client *rpc.Client
-	//	var err error
-	//
-	//listen:
-	//	for {
-	//		Logger.log.Infof("Peers", self.Peers)
-	//		if client == nil {
-	//			client, err = rpc.Dial("tcp", "35.199.177.89:9339")
-	//			if err != nil {
-	//				Logger.log.Error("[Exchange Peers] re-connect:", err)
-	//			}
-	//		}
-	//		if client != nil {
-	//			Logger.log.Infof("[Exchange Peers] Ping")
-	//			var response []server.RawPeer
-	//			args := &server.PingArgs{self.RawAddress, self.Config.SealerPrvKey}
-	//			Logger.log.Infof("[Exchange Peers] Ping", args)
-	//			err := client.Call("Handler.Ping", args, &response)
-	//			if err != nil {
-	//				Logger.log.Error("[Exchange Peers] Ping:", err)
-	//				client = nil
-	//				time.Sleep(time.Second * 2)
-	//
-	//				goto listen
-	//			}
-	//			Logger.log.Infof("Ping response", response)
-	//			for _, rawPeer := range response {
-	//				if rawPeer.SealerPrvKey != "" && !strings.Contains(rawPeer.RawAddress, self.PeerId.String()) {
-	//					keyPair := &cashec.KeyPair{}
-	//					keyPair.Import([]byte(rawPeer.SealerPrvKey))
-	//
-	//					_, exist := self.Peers[string(keyPair.PublicKey)]
-	//
-	//					if !exist {
-	//						self.Peers[string(keyPair.PublicKey)] = rawPeer.RawAddress
-	//					}
-	//				}
-	//			}
-	//			Logger.log.Infof("Ping response Peers", self.Peers)
-	//		}
-	//		time.Sleep(time.Second * 2)
-	//	}
 }
 
 // QueueMessageWithEncoding adds the passed bitcoin message to the peer send

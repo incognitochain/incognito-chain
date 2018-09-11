@@ -6,14 +6,28 @@ import (
 )
 
 type KeyPair struct {
-	PrivateKey client.SpendingKey
-	PublicKey  client.PaymentAddress
+	PrivateKey  client.SpendingKey
+	PublicKey   client.PaymentAddress
+	ReadonlyKey client.ViewingKey
 }
 
 func (self *KeyPair) GenerateKey(seed []byte) (*KeyPair, error) {
 	copy(self.PrivateKey[:], common.HashB(seed))
 	self.PublicKey = client.GenPaymentAddress(self.PrivateKey)
+	self.ReadonlyKey = client.GenViewingKey(self.PrivateKey)
 	return self, nil
+}
+
+func (self *KeyPair) GetKeyFromPrivateKeyByte(privateKey []byte) {
+	copy(self.PrivateKey[:], privateKey)
+	self.PublicKey = client.GenPaymentAddress(self.PrivateKey)
+	self.ReadonlyKey = client.GenViewingKey(self.PrivateKey)
+}
+
+func (self *KeyPair) GetKeyFromPrivateKey(privateKey *client.SpendingKey) {
+	self.PrivateKey = *privateKey
+	self.PublicKey = client.GenPaymentAddress(self.PrivateKey)
+	self.ReadonlyKey = client.GenViewingKey(self.PrivateKey)
 }
 
 func (self *KeyPair) Import(privateKey []byte) (*KeyPair, error) {

@@ -14,17 +14,19 @@ import (
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"golang.org/x/crypto/ed25519"
+	"github.com/ninjadotorg/cash-prototype/wallet"
+	"github.com/ninjadotorg/cash-prototype/privacy/client"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
 
 var RpcHandler = map[string]commandHandler{
-	"dosomething":                  RpcServer.handleDoSomething,
-	"getblockchaininfo":            RpcServer.handleGetBlockChainInfo,
-	"createtransaction":            RpcServer.handleCreateTransaction,
-	"listunspent":                  RpcServer.handleListUnSpent,
-	"createrawtransaction":         RpcServer.handleCreateRawTrasaction,
-	"signrawtransaction":           RpcServer.handleSignRawTransaction,
+	"dosomething":          RpcServer.handleDoSomething,
+	"getblockchaininfo":    RpcServer.handleGetBlockChainInfo,
+	"createtransaction":    RpcServer.handleCreateTransaction,
+	"listunspent":          RpcServer.handleListUnSpent,
+	"createrawtransaction": RpcServer.handleCreateRawTrasaction,
+	/*"signrawtransaction":           RpcServer.handleSignRawTransaction,*/
 	"sendrawtransaction":           RpcServer.handleSendRawTransaction,
 	"getNumberOfCoinsAndBonds":     RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createActionParamsTrasaction": RpcServer.handleCreateActionParamsTrasaction,
@@ -40,8 +42,8 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// WALLET
-	"getaccount":            RpcServer.handleGetAccount,
 	"listaccounts":          RpcServer.handleListAccounts,
+	"getaccount":            RpcServer.handleGetAccount,
 	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
 	"getaccountaddress":     RpcServer.handleGetAccountAddress,
 	"dumpprivkey":           RpcServer.handleDumpPrivkey,
@@ -130,45 +132,61 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 // contained within it will be considered.  If we know nothing about a
 // transaction an empty array will be returned.
 // params:
- Parameter #1—the minimum number of confirmations an output must have
+Parameter #1—the minimum number of confirmations an output must have
 Parameter #2—the maximum number of confirmations an output may have
-Parameter #3—the addresses an output must pay
+Parameter #3—the list readonly which be used to view utxo
 */
 func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
-	//paramsArray := common.InterfaceSlice(params)
-	//min := int(paramsArray[0].(float64))
-	//max := int(paramsArray[1].(float64))
-	//listAddresses := paramsArray[2].(string)
-	//_ = min
-	//_ = max
-	//var addresses []string
-	//addresses = strings.Fields(listAddresses)
-	//blocks, _ := self.Config.BlockChain.GetAllBlocks()
-	result := make([]jsonrpc.ListUnspentResult, 0)
-	//for _, block := range blocks {
-	//	if len(block.Transactions) > 0 {
-	//		for _, tx := range block.Transactions {
-	//			if tx.GetType() == common.TxActionParamsType {
-	//				continue
-	//			}
-	//			normalTx := tx.(*transaction.Tx)
-	//			if len(normalTx.TxOut) > 0 {
-	//				for index, txOut := range normalTx.TxOut {
-	//					if bytes.Compare(txOut.PkScript, []byte(addresses[0])) == 0 {
-	//						result = append(result, jsonrpc.ListUnspentResult{
-	//							Vout:      index,
-	//							TxID:      normalTx.Hash().String(),
-	//							Address:   string(txOut.PkScript),
-	//							Amount:    txOut.Value,
-	//							TxOutType: txOut.TxOutType,
-	//						})
-	//					}
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
+	result := jsonrpc.ListUnspentResult{
+		ListUnspentResultItems: make(map[string][]jsonrpc.ListUnspentResultItem),
+	}
+
+	// get params
+	paramsArray := common.InterfaceSlice(params)
+	min := int(paramsArray[0].(float64))
+	max := int(paramsArray[1].(float64))
+	_ = min
+	_ = max
+	listKeyParams := common.InterfaceSlice(paramsArray[2])
+	for _, keyParam := range listKeyParams {
+		keys := keyParam.(map[string]interface{})
+
+		// get readonly key
+		readonlyKeyStr := keys["ReadonlyKey"].(string)
+		readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
+		if err != nil {
+			return nil, err
+		}
+		skenc := readonlyKey.KeyPair.ReadonlyKey.Skenc
+
+		pubKeyStr := keys["PublicKey"].(string)
+		pubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
+		if err != nil {
+			return nil, err
+		}
+		pkenc := pubKey.KeyPair.PublicKey.Pkenc
+
+		txs, err := self.Config.BlockChain.GetListTxByReadonlyKey(&skenc, &pkenc, common.TxOutCoinType)
+		if err != nil {
+			return nil, err
+		}
+		listTxs := make([]jsonrpc.ListUnspentResultItem, 0)
+		for _, tx := range txs {
+			item := jsonrpc.ListUnspentResultItem{
+				TxId:          tx.Hash().String(),
+				JoinSplitDesc: make([]jsonrpc.JoinSplitDesc, 0),
+			}
+			for _, desc := range tx.Descs {
+				item.JoinSplitDesc = append(item.JoinSplitDesc, jsonrpc.JoinSplitDesc{
+					Anchor:      desc.Anchor,
+					Commitments: desc.Commitments,
+					Amount:      desc.GetNote().Value,
+				})
+			}
+		}
+		result.ListUnspentResultItems[string(skenc[:])] = listTxs
+	}
 	return result, nil
 }
 
@@ -213,7 +231,68 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 		return nil, err
 	}
 	return hex.EncodeToString(byteArrays), nil*/
-	return "", nil
+
+	// all params
+	arrayParams := common.InterfaceSlice(params)
+
+	// param #1: private key of sender
+	senderKeyParam := arrayParams[0]
+	senderKey := client.SpendingKey{}
+	copy(senderKey[:], []byte(senderKeyParam.(string)))
+
+	// param #2: list receiver
+	receiversParam := common.InterfaceSlice(arrayParams[1])
+	paymentInfos := make([]*client.PaymentInfo, 0)
+	for _, receiver := range receiversParam {
+		temp := receiver.(map[string]interface{})
+		apk := client.SpendingAddress{}
+		copy(apk[:], []byte(temp["Apk"].(string)))
+		pkenc := client.TransmissionKey{}
+		copy(pkenc[:], []byte(temp["Pkenc"].(string)))
+		paymentInfo := &client.PaymentInfo{
+			Amount: uint64(receiver.(map[string]interface{})["Amount"].(float64)),
+			PaymentAddress: client.PaymentAddress{
+				Apk:   apk,
+				Pkenc: pkenc,
+			},
+		}
+		paymentInfos = append(paymentInfos, paymentInfo)
+	}
+
+	// param #3: list usable tx
+	usableTxs := make([]*transaction.UsableTx, 0)
+	txsParam := arrayParams[2].([]interface{})
+	for _, txInterface := range txsParam {
+		tx := jsonrpc.ListUnspentResultItem{}
+		tx.Init(txInterface)
+		item := transaction.Tx{
+			Descs: make([]*transaction.JoinSplitDesc, 0),
+		}
+		for _, desc := range tx.JoinSplitDesc {
+			item.Descs = append(item.Descs, &transaction.JoinSplitDesc{
+				Anchor:      desc.Anchor,
+				Commitments: desc.Commitments,
+			})
+		}
+		usableTx := transaction.UsableTx{
+			TxId: tx.TxId,
+			Tx:   item,
+		}
+		usableTxs = append(usableTxs, &usableTx)
+	}
+	txViewPoint, err := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
+
+	// create a new tx
+	tx, err := transaction.CreateTx(&senderKey, paymentInfos, nil, usableTxs, txViewPoint.ListNullifiers(common.TxOutCoinType))
+	if err != nil {
+		return nil, err
+	}
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		// return hex for a new tx
+		return hex.EncodeToString(byteArrays), nil
+	}
+	return nil, err
 }
 
 /**
@@ -233,9 +312,9 @@ Parameter #3—private keys for signing
 Parameter #4—signature hash type
 Result—the transaction with any signatures made
 */
-func (self RpcServer) handleSignRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+/*func (self RpcServer) handleSignRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
-	/*arrayParams := common.InterfaceSlice(params)
+	*//*arrayParams := common.InterfaceSlice(params)
 	hexRawTx := arrayParams[0].(string)
 	rawTxBytes, err := hex.DecodeString(hexRawTx)
 
@@ -257,9 +336,9 @@ func (self RpcServer) handleSignRawTransaction(params interface{}, closeChan <-c
 		return nil, err
 	}
 	log.Println(string(byteArrays))
-	return hex.EncodeToString(byteArrays), nil*/
+	return hex.EncodeToString(byteArrays), nil*//*
 	return "", nil
-}
+}*/
 
 /**
 // handleSendRawTransaction implements the sendrawtransaction command.
@@ -371,10 +450,7 @@ func assertEligibleAgentIDs(eligibleAgentIDs interface{}) []string {
 /**
 // handleCreateRawTransaction handles createrawtransaction commands.
 */
-func (self RpcServer) handleCreateActionParamsTrasaction(
-	params interface{},
-	closeChan <-chan struct{},
-) (interface{}, error) {
+func (self RpcServer) handleCreateActionParamsTrasaction(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
 	log.Println(params)
 	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.ActionParamTx{
@@ -420,20 +496,6 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 }
 
 /**
-getaccount RPC returns the name of the account associated with the given address.
-- Param #1: address
-*/
-func (self RpcServer) handleGetAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	for _, account := range self.Config.Wallet.MasterAccount.Child {
-		address := account.Key.ToAddress(false)
-		if address == params.(string) {
-			return account.Name, nil
-		}
-	}
-	return "", nil
-}
-
-/**
 listaccount RPC lists accounts and their balances.
 
 Parameter #1—the minimum number of confirmations a transaction must have
@@ -445,6 +507,20 @@ func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan st
 	result := jsonrpc.ListAccounts{}
 	result.Accounts = self.Config.Wallet.ListAccounts()
 	return result, nil
+}
+
+/**
+getaccount RPC returns the name of the account associated with the given address.
+- Param #1: address
+*/
+func (self RpcServer) handleGetAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	for _, account := range self.Config.Wallet.MasterAccount.Child {
+		address := account.Key.Base58CheckSerialize(wallet.PubKeyType)
+		if address == params.(string) {
+			return account.Name, nil
+		}
+	}
+	return "", nil
 }
 
 /**
@@ -479,6 +555,9 @@ func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan str
 	return self.Config.Wallet.DumpPrivkey(params.(string))
 }
 
+/**
+handleGetAllPeers - return all peers which this node connected
+ */
 func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
 	result := make(map[string]interface{})
