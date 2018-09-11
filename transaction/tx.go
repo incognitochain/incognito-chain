@@ -196,14 +196,17 @@ func generateTx(
 ) (*Tx, error) {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
-
-	// TODO: add encrypted data
+	notes := [2]client.Note{*outputs[0].OutputNote, *outputs[1].OutputNote}
+	keys := [2]client.TransmissionKey{outputs[0].EncKey, outputs[1].EncKey}
+	noteciphers := client.EncryptNote(notes, keys)
+	
 	desc := []*JoinSplitDesc{&JoinSplitDesc{
 		Proof:       proof,
 		Anchor:      rt,
 		Nullifiers:  nullifiers,
 		Commitments: commitments,
 		Reward:      reward,
+		EncryptedData: noteciphers,
 	}}
 
 	// TODO(@0xbunyip): use Apk of PubKey temporarily, we should derive another scheme for signing tx later

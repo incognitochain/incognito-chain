@@ -63,7 +63,7 @@ func runProve() (*ProveResult, error) {
 	pubKey := [32]byte{9}
 	rt := [32]byte{10}
 	var reward uint64 = 1
-	proof, err := client.Prove(inputs, outputs, pubKey[:], rt[:], reward, nil, nil)
+	proof, err := client.Prove(inputs, outputs, pubKey[:], rt[:], reward, nil, nil, nil)
 	// var proof *zksnark.PHGRProof
 	// var err error
 	// fmt.Println(pubKey, rt)
@@ -145,5 +145,9 @@ func runProveThenVerify() {
 func main() {
 	// runProve()
 	// runVerify()
-	runProveThenVerify()
+	//runProveThenVerify()
+	fmt.Println("Hello")
+	client.TestEncrypt()
+	// client.TestEncrypt1()
+	// encrypt
 }
