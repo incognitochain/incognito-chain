@@ -22,6 +22,31 @@ type JoinSplitDesc struct {
 	EphemeralKey  []byte             `json:"EphemeralKey"`
 	Type          string             `json:"Type"`
 	Reward        uint64             `json:"Reward"` // For coinbase tx
+
+	note *client.Note
+}
+
+func (desc *JoinSplitDesc) toString() string {
+	s := string(desc.Anchor)
+	for _, nf := range desc.Nullifiers {
+		s += string(nf)
+	}
+	for _, cm := range desc.Commitments {
+		s += string(cm)
+	}
+	s += desc.Proof.String()
+	for _, data := range desc.EncryptedData {
+		s += string(data)
+	}
+	return s
+}
+
+func (self *JoinSplitDesc) SetNote(note *client.Note) {
+	self.note = note
+}
+
+func (self *JoinSplitDesc) GetNote() *client.Note {
+	return self.note
 }
 
 // Tx represents a coin-transfer-transaction stored in a block
@@ -39,21 +64,6 @@ type Tx struct {
 type UsableTx struct {
 	TxId string `json:"TxId"`
 	Tx
-}
-
-func (desc *JoinSplitDesc) toString() string {
-	s := string(desc.Anchor)
-	for _, nf := range desc.Nullifiers {
-		s += string(nf)
-	}
-	for _, cm := range desc.Commitments {
-		s += string(cm)
-	}
-	s += desc.Proof.String()
-	for _, data := range desc.EncryptedData {
-		s += string(data)
-	}
-	return s
 }
 
 // Hash returns the hash of all fields of the transaction

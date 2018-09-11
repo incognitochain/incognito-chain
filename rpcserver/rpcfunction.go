@@ -14,7 +14,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"golang.org/x/crypto/ed25519"
-	"strings"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 )
@@ -149,11 +148,15 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 	max := int(paramsArray[1].(float64))
 	_ = min
 	_ = max
-	listReadonlyKeys := paramsArray[2].(string)
-	var readonlyKeys []string
-	readonlyKeys = strings.Fields(listReadonlyKeys)
-	for _, readonlyKey := range readonlyKeys {
-		txs, err := self.Config.BlockChain.GetListTxByReadonlyKey([]byte(readonlyKey), common.TxOutCoinType)
+	listKeyParams := common.InterfaceSlice(paramsArray[2])
+	for _, keyParam := range listKeyParams {
+		keys := keyParam.(map[string]interface{})
+		var skenc *client.ReceivingKey
+		copy(skenc[:], []byte(keys["Skenc"].(string)))
+		var pkenc *client.TransmissionKey
+		copy(pkenc[:], []byte(keys["Pkenc"].(string)))
+
+		txs, err := self.Config.BlockChain.GetListTxByReadonlyKey(skenc, pkenc, common.TxOutCoinType)
 		if err != nil {
 			return nil, err
 		}
