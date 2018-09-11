@@ -10,7 +10,7 @@ const (
 	ReceivingKeyLength    = 32
 	SpendingAddressLength = 32
 	TransmissionKeyLength = 32
-	EphemeralKeyLength 	  = 32
+	EphemeralKeyLength    = 32
 )
 
 type SpendingKey [SpendingKeyLength]byte
@@ -20,8 +20,8 @@ type ReceivingKey [ReceivingKeyLength]byte
 type EphemeralKey [EphemeralKeyLength]byte
 
 type ViewingKey struct {
-	Apk   SpendingAddress
-	Skenc ReceivingKey
+	Apk   SpendingAddress // use to receive coin
+	Skenc ReceivingKey    // use to decrypt data
 }
 
 type PaymentAddress struct {
@@ -117,16 +117,4 @@ func GenPaymentAddress(ask SpendingKey) PaymentAddress {
 	addr.Apk = GenSpendingAddress(ask)
 	addr.Pkenc = GenTransmissionKey(GenReceivingKey(ask))
 	return addr
-}
-
-// FullKey convenient struct storing all keys and addresses
-type FullKey struct {
-	Ask  SpendingKey
-	Ivk  ViewingKey
-	Addr PaymentAddress
-}
-
-// GenFullKey generates all needed keys from a single SpendingKey
-func (ask SpendingKey) GenFullKey() FullKey {
-	return FullKey{Ask: ask, Ivk: GenViewingKey(ask), Addr: GenPaymentAddress(ask)}
 }

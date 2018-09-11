@@ -1,31 +1,30 @@
 package client
 
-import ("github.com/ninjadotorg/cash-prototype/privacy/client/crypto/sha256"
-		"golang.org/x/crypto/blake2b"
-		"fmt"
-		"encoding/json"
-		"golang.org/x/crypto/curve25519"
-		"crypto/aes"
-		"crypto/cipher"
-		cryptorand "crypto/rand"
-		//"encoding/hex"
-		"io"
-		//"os"
-    	"encoding/base64"
-		"errors"
-		"strings"
-		"bytes"
-		mathrand "math/rand"
-
-
+import (
+	"github.com/ninjadotorg/cash-prototype/privacy/client/crypto/sha256"
+	"golang.org/x/crypto/blake2b"
+	"fmt"
+	"encoding/json"
+	"golang.org/x/crypto/curve25519"
+	"crypto/aes"
+	"crypto/cipher"
+	cryptorand "crypto/rand"
+	//"encoding/hex"
+	"io"
+	//"os"
+	"encoding/base64"
+	"errors"
+	"strings"
+	"bytes"
+	mathrand "math/rand"
 )
 
 const CMPreImageLength = 105 // bytes
 
 type Note struct {
-	Value          			uint64
-	Apk            			SpendingAddress
-	Rho, R, Nf, Cm, Memo 	[]byte
+	Value                uint64
+	Apk                  SpendingAddress
+	Rho, R, Nf, Cm, Memo []byte
 }
 
 func GetCommitment(note *Note) []byte {
@@ -48,8 +47,8 @@ func GetNullifier(ask SpendingKey, Rho [32]byte) []byte {
 
 func ParseNoteToJson(note *Note) []byte {
 	var tmpnote struct {
-		Value			uint64
-		Rho, R, Memo	[]byte
+		Value        uint64
+		Rho, R, Memo []byte
 	}
 	tmpnote.Value = note.Value
 	tmpnote.Rho = note.Rho
@@ -65,16 +64,16 @@ func ParseNoteToJson(note *Note) []byte {
 }
 
 func ParseJsonToNote(jsonnote []byte) Note {
-    var note Note
-    err := json.Unmarshal(jsonnote, &note)
-    if err != nil {
-        panic(err)
-    }
+	var note Note
+	err := json.Unmarshal(jsonnote, &note)
+	if err != nil {
+		panic(err)
+	}
 	// fmt.Println(note)
 	return note
 }
 
-func GenEphePubKey(esk EphemeralKey)EphemeralKey{
+func GenEphePubKey(esk EphemeralKey) EphemeralKey {
 	var x, y [32]byte
 	copy(y[:], esk[:])
 	curve25519.ScalarBaseMult(&x, &y)
@@ -85,11 +84,11 @@ func GenEphePubKey(esk EphemeralKey)EphemeralKey{
 }
 
 // TODO: add hsig param
-func EncryptNote(note [2]Note, pkenc [2]TransmissionKey)/*, hSig [32]byte)*/ [][]byte {
+func EncryptNote(note [2]Note, pkenc [2]TransmissionKey) /*, hSig [32]byte)*/ [][]byte {
 	// var noteJsons [][]byte
 	// noteJsons[0] = ParseNoteToJson(&note[0])
 	// noteJsons[1] = ParseNoteToJson(&note[0])
-	noteJsons := [][]byte {ParseNoteToJson(&note[0]), ParseNoteToJson(&note[1])}
+	noteJsons := [][]byte{ParseNoteToJson(&note[0]), ParseNoteToJson(&note[1])}
 
 	//Create the ephemeral keypair
 	esk_tmp := RandBits(256)
@@ -105,20 +104,20 @@ func EncryptNote(note [2]Note, pkenc [2]TransmissionKey)/*, hSig [32]byte)*/ [][
 	var sk [32]byte
 	copy(sk[:], esk[:])
 
-	var pk[2][32]byte
-	var sharedSecret[2][32]byte
+	var pk [2][32]byte
+	var sharedSecret [2][32]byte
 
 	var symKey [2][]byte
 	ciphernotes := make([][]byte, 3)
 	ciphernotes[0] = epk[:]
 
 	// fmt.Printf("ciphernote[0] = %v", ciphernotes[0][:])
-	
+
 	//Create symmetric key 128-bit
 	for i, _ := range pkenc {
 		copy(pk[i][:], pkenc[i][:])
 		sharedSecret[i] = KeyAgree(&pk[i], &sk)
-		symKey[i] = KDF(sharedSecret[i], epk, pk[i])//, hSig)
+		symKey[i] = KDF(sharedSecret[i], epk, pk[i]) //, hSig)
 		// fmt.Printf(">>>>>>> Encryption Key %v = %v", i, sharedSecret[i])
 		// symKey[i] = []byte("the-key-has-to-be-32-bytes-long!")
 		ciphernotes[i+1] = Encrypt(symKey[i], noteJsons[i][:])
@@ -127,14 +126,14 @@ func EncryptNote(note [2]Note, pkenc [2]TransmissionKey)/*, hSig [32]byte)*/ [][
 	return ciphernotes
 }
 
-func DecryptNote(ciphernotes [][]byte, skenc [2]ReceivingKey, 
-	pkenc [2]TransmissionKey/*, hSig [32]byte*/) []Note{
-	
-	var epk [32]byte
-	copy(epk[:], ciphernotes[0])
+func DecryptNote(ciphernotes []byte, skenc ReceivingKey,
+	pkenc TransmissionKey, epk EphemeralKey /*, hSig [32]byte*/) []Note {
+
+	//var epk [32]byte
+	//copy(epk[:], ciphernotes[0])
 	fmt.Printf("EPK = %v", ciphernotes[0][:])
-	
-	var sharedSecret[2][32]byte
+
+	var sharedSecret [2][32]byte
 	var symKey [2][]byte
 	var plaintexts [2][]byte
 
@@ -145,7 +144,7 @@ func DecryptNote(ciphernotes [][]byte, skenc [2]ReceivingKey,
 		copy(sk[i][:], skenc[i][:])
 		copy(pk[i][:], pkenc[i][:])
 		sharedSecret[i] = KeyAgree(&epk, &sk[i])
-		symKey[i] = KDF(sharedSecret[i], epk, pk[i])//, hSig)
+		symKey[i] = KDF(sharedSecret[i], epk, pk[i]) //, hSig)
 		// symKey[i] = []byte("the-key-has-to-be-32-bytes-long!")
 		// fmt.Printf(">>>>>> Decryption Key %v = %v", i, sharedSecret[i])
 		plaintexts[i] = Decrypt(symKey[i], ciphernotes[i+1])
@@ -163,10 +162,10 @@ func KeyAgree(pk *[32]byte, sk *[32]byte) [32]byte {
 
 // TODO: add hSig param
 func KDF(sharedSecret [32]byte, epk [32]byte,
-    pkenc [32]byte,
-    /*hSig [32]byte*/) []byte {
+	pkenc [32]byte,
+/*hSig [32]byte*/) []byte {
 	var data []byte
-	
+
 	//data = append(hSig[:], sharedSecret[:]...)
 	data = append(data[:], sharedSecret[:]...)
 	data = append(data[:], epk[:]...)
@@ -177,106 +176,106 @@ func KDF(sharedSecret [32]byte, epk [32]byte,
 
 // AES
 func addBase64Padding(value string) string {
-    m := len(value) % 4
-    if m != 0 {
-        value += strings.Repeat("=", 4-m)
-    }
+	m := len(value) % 4
+	if m != 0 {
+		value += strings.Repeat("=", 4-m)
+	}
 
-    return value
+	return value
 }
 
 func removeBase64Padding(value string) string {
-    return strings.Replace(value, "=", "", -1)
+	return strings.Replace(value, "=", "", -1)
 }
 
 func Pad(src []byte) []byte {
-    padding := aes.BlockSize - len(src)%aes.BlockSize
-    padtext := bytes.Repeat([]byte{byte(padding)}, padding)
-    return append(src, padtext...)
+	padding := aes.BlockSize - len(src)%aes.BlockSize
+	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
+	return append(src, padtext...)
 }
 
 func Unpad(src []byte) ([]byte, error) {
-    length := len(src)
-    unpadding := int(src[length-1])
+	length := len(src)
+	unpadding := int(src[length-1])
 
-    if unpadding > length {
-        return nil, errors.New("unpad error. This could happen when incorrect encryption key is used")
-    }
+	if unpadding > length {
+		return nil, errors.New("unpad error. This could happen when incorrect encryption key is used")
+	}
 
-    return src[:(length - unpadding)], nil
+	return src[:(length - unpadding)], nil
 }
 
 func Encrypt(key []byte, text []byte) []byte {
-    block, err := aes.NewCipher(key)
-    if err != nil {
-        panic(err)
-    }
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		panic(err)
+	}
 
-    msg := Pad([]byte(text))
-    ciphertext := make([]byte, aes.BlockSize+len(msg))
-    iv := ciphertext[:aes.BlockSize]
-    if _, err := io.ReadFull(cryptorand.Reader, iv); err != nil {
-        panic(err)
-    }
+	msg := Pad([]byte(text))
+	ciphertext := make([]byte, aes.BlockSize+len(msg))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(cryptorand.Reader, iv); err != nil {
+		panic(err)
+	}
 
-    cfb := cipher.NewCFBEncrypter(block, iv)
-    cfb.XORKeyStream(ciphertext[aes.BlockSize:], []byte(msg))
+	cfb := cipher.NewCFBEncrypter(block, iv)
+	cfb.XORKeyStream(ciphertext[aes.BlockSize:], []byte(msg))
 	finalMsg := removeBase64Padding(base64.URLEncoding.EncodeToString(ciphertext))
 
 	return []byte(finalMsg)
 }
 
 func Decrypt(key []byte, text []byte) []byte {
-    block, err := aes.NewCipher(key)
-    if err != nil {
-        panic(err)
-    }
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		panic(err)
+	}
 
-    decodedMsg, err := base64.URLEncoding.DecodeString(addBase64Padding(string(text[:])))
-    if err != nil {
-        panic(err)
-    }
+	decodedMsg, err := base64.URLEncoding.DecodeString(addBase64Padding(string(text[:])))
+	if err != nil {
+		panic(err)
+	}
 
-    if (len(decodedMsg) % aes.BlockSize) != 0 {
-        panic(errors.New("blocksize must be multipe of decoded message length"))
-    }
+	if (len(decodedMsg) % aes.BlockSize) != 0 {
+		panic(errors.New("blocksize must be multipe of decoded message length"))
+	}
 
-    iv := decodedMsg[:aes.BlockSize]
-    msg := decodedMsg[aes.BlockSize:]
+	iv := decodedMsg[:aes.BlockSize]
+	msg := decodedMsg[aes.BlockSize:]
 
-    cfb := cipher.NewCFBDecrypter(block, iv)
-    cfb.XORKeyStream(msg, msg)
+	cfb := cipher.NewCFBDecrypter(block, iv)
+	cfb.XORKeyStream(msg, msg)
 
-    unpadMsg, err := Unpad(msg)
-    if err != nil {
-        panic(err)
-    }
+	unpadMsg, err := Unpad(msg)
+	if err != nil {
+		panic(err)
+	}
 
-    return unpadMsg
+	return unpadMsg
 }
 
 func Uint64() uint64 {
-    return uint64(mathrand.Uint32())<<32 + uint64(mathrand.Uint32())
+	return uint64(mathrand.Uint32())<<32 + uint64(mathrand.Uint32())
 }
 
-func GenNote() *Note{
+func GenNote() *Note {
 	var note Note
-		
+
 	note.Value = Uint64()
 	note.Rho = RandBits(256)
 	note.R = RandBits(256)
 	note.Memo = []byte{}
-		
+
 	return &note
 }
 
-func TestEncrypt(){
+func TestEncrypt() {
 	var hSig [32]byte
 	tmp := RandBits(256)
 	copy(hSig[:], tmp[:])
 	//Generate note
 	note_temp := GenNote()
-	notes  := [2]Note{*note_temp, *note_temp}
+	notes := [2]Note{*note_temp, *note_temp}
 
 	fmt.Printf("\nPlain note: %+v\n", notes)
 
@@ -284,28 +283,28 @@ func TestEncrypt(){
 	ask := RandSpendingKey()
 	skenc := GenReceivingKey(ask)
 	pkenc := GenTransmissionKey(skenc)
-	
+
 	pkencs := [2]TransmissionKey{pkenc, pkenc}
 	skencs := [2]ReceivingKey{skenc, skenc}
 
-	ciphernotes := EncryptNote(notes, pkencs)//, hSig) 
-	fmt.Printf("\nCiphernotes: %+v\n", ciphernotes )
+	ciphernotes := EncryptNote(notes, pkencs) //, hSig)
+	fmt.Printf("\nCiphernotes: %+v\n", ciphernotes)
 
 	fmt.Printf("\nReceiving key: %+v\n", skenc)
 	fmt.Printf("\nTransmission key: %+v\n", pkenc)
 
-	decrypted_notes := DecryptNote(ciphernotes, skencs, pkencs)//, hSig)
-	fmt.Printf("\nPlaintext: %s\n",decrypted_notes[0].Memo)
+	decrypted_notes := DecryptNote(ciphernotes, skencs, pkencs) //, hSig)
+	fmt.Printf("\nPlaintext: %s\n", decrypted_notes[0].Memo)
 
 }
 
 func TestEncrypt1() {
 	text := []byte("My name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is Astaxie")
-    key := []byte("the-key-has-to-be-32-bytes-long!")
+	key := []byte("the-key-has-to-be-32-bytes-long!")
 
-    ciphertext := Encrypt(key, text)
-    fmt.Printf("%s => %x\n", text, ciphertext)
+	ciphertext := Encrypt(key, text)
+	fmt.Printf("%s => %x\n", text, ciphertext)
 
-    plaintext := Decrypt(key, ciphertext)
-    fmt.Printf("%x => %s\n", ciphertext, plaintext)
+	plaintext := Decrypt(key, ciphertext)
+	fmt.Printf("%x => %s\n", ciphertext, plaintext)
 }

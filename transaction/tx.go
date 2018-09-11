@@ -19,6 +19,7 @@ type JoinSplitDesc struct {
 	Commitments   [][]byte           `json:"Commitments"`
 	Proof         *zksnark.PHGRProof `json:"Proof"`
 	EncryptedData [][]byte           `json:"EncryptedData"`
+	EphemeralKey  []byte             `json:"EphemeralKey"`
 	Type          string             `json:"Type"`
 	Reward        uint64             `json:"Reward"` // For coinbase tx
 }
@@ -135,16 +136,17 @@ func CreateTx(senderKey *client.SpendingKey, paymentInfo []*client.PaymentInfo, 
 		panic("Input value less than output value")
 	}
 
-	senderFullKey := senderKey.GenFullKey()
+	senderFullKey := cashec.KeyPair{}
+	senderFullKey.GetKeyFromPrivateKeyByte(senderKey[:])
 
 	// Create new notes: first one send `value` to receiverAddr, second one sends `change` back to sender
 	outNote := &client.Note{Value: value, Apk: receiverAddr.Apk}
-	changeNote := &client.Note{Value: sumInputValue - value, Apk: senderFullKey.Addr.Apk}
+	changeNote := &client.Note{Value: sumInputValue - value, Apk: senderFullKey.PublicKey.Apk}
 
 	outputs := make([]*client.JSOutput, 2)
 	outputs[0].EncKey = receiverAddr.Pkenc
 	outputs[0].OutputNote = outNote
-	outputs[1].EncKey = senderFullKey.Addr.Pkenc
+	outputs[1].EncKey = senderFullKey.PublicKey.Pkenc
 	outputs[1].OutputNote = changeNote
 
 	// Shuffle output notes randomly (if necessary)
@@ -205,13 +207,13 @@ func generateTx(
 	notes := [2]client.Note{*outputs[0].OutputNote, *outputs[1].OutputNote}
 	keys := [2]client.TransmissionKey{outputs[0].EncKey, outputs[1].EncKey}
 	noteciphers := client.EncryptNote(notes, keys)
-	
+
 	desc := []*JoinSplitDesc{&JoinSplitDesc{
-		Proof:       proof,
-		Anchor:      rt,
-		Nullifiers:  nullifiers,
-		Commitments: commitments,
-		Reward:      reward,
+		Proof:         proof,
+		Anchor:        rt,
+		Nullifiers:    nullifiers,
+		Commitments:   commitments,
+		Reward:        reward,
 		EncryptedData: noteciphers,
 	}}
 
