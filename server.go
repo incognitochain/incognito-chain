@@ -581,6 +581,8 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	log.Printf("Receive verack message")
 
 	if msg.Valid {
+		peerConn.VerValid = true
+
 		self.AddrManager.Good(peerConn.Peer)
 
 		// send message for get addr
@@ -610,7 +612,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 			}
 		}
 	} else {
-		Logger.log.Infof("%s onack is invalid", peerConn.PeerId)
+		peerConn.VerValid = true
 	}
 
 }

@@ -16,7 +16,7 @@ import (
 )
 
 type PeerConn struct {
-	connected  int32
+	connected int32
 
 	RetryCount int32
 	IsOutbound bool
@@ -25,6 +25,7 @@ type PeerConn struct {
 
 	ReaderWriterStream *bufio.ReadWriter
 	verAckReceived     bool
+	VerValid           bool
 
 	TargetAddress    ma.Multiaddr
 	PeerId           peer.ID
@@ -73,7 +74,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 			commandInHeader := messageHeader[:12]
 			commandInHeader = bytes.Trim(messageHeader, "\x00")
-			Logger.log.Infof("Message Type - %s %s",  string(commandInHeader), self.PeerId)
+			Logger.log.Infof("Message Type - %s %s", string(commandInHeader), self.PeerId)
 			commandType := string(messageHeader[:len(commandInHeader)])
 			var message, err = wire.MakeEmptyMessage(string(commandType))
 
