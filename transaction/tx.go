@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/ninjadotorg/cash-prototype/cashec"
@@ -71,7 +72,13 @@ func collectUnspentNotes(ask *client.SpendingKey, valueWanted uint64) ([]*client
 // CreateTx creates transaction with appropriate proof for a private payment
 // value: total value of the coins to transfer
 // rt: root of the commitment merkle tree at current block (the latest block of the node creating this tx)
-func CreateTx(senderKey *client.SpendingKey, paymentInfo []*client.PaymentInfo, rt []byte, usableTx []*UsableTx, nullifiers [][]byte) (*Tx, error) {
+func CreateTx(
+	senderKey *client.SpendingKey,
+	paymentInfo []*client.PaymentInfo,
+	rt []byte,
+	usableTx []*UsableTx,
+	nullifiers [][]byte,
+) (*Tx, error) {
 	receiverAddr := paymentInfo[0].PaymentAddress
 	value := paymentInfo[0].Amount
 	inputNotes, err := collectUnspentNotes(senderKey, value)
@@ -174,23 +181,46 @@ func generateTx(
 	rt []byte,
 	reward uint64,
 	hSig []byte,
+	seed []byte,
+	ephemeralPrivKey *client.EphemeralPrivKey,
 ) (*Tx, error) {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
 	notes := [2]client.Note{*outputs[0].OutputNote, *outputs[1].OutputNote}
 	keys := [2]client.TransmissionKey{outputs[0].EncKey, outputs[1].EncKey}
-	ephemeralPubKey, ephemeralPrivKey := client.GenEphemeralKey()
-	noteciphers := client.EncryptNote(notes, keys, ephemeralPrivKey, ephemeralPubKey, hSig)
+
+	ephemeralPubKey := new(client.EphemeralPubKey)
+	if ephemeralPrivKey == nil {
+		ephemeralPrivKey = new(client.EphemeralPrivKey)
+		*ephemeralPubKey, *ephemeralPrivKey = client.GenEphemeralKey()
+	} else { // Genesis block only
+		ephemeralPrivKey.GenPubKey()
+		*ephemeralPubKey = ephemeralPrivKey.GenPubKey()
+	}
+	noteciphers := client.EncryptNote(notes, keys, *ephemeralPrivKey, *ephemeralPubKey, hSig)
 
 	desc := []*JoinSplitDesc{&JoinSplitDesc{
-		Proof:           proof,
 		Anchor:          rt,
 		Nullifiers:      nullifiers,
 		Commitments:     commitments,
-		Reward:          reward,
+		Proof:           proof,
 		EncryptedData:   noteciphers,
 		EphemeralPubKey: ephemeralPubKey[:],
+		HSigSeed:        seed,
+		Type:            "coins",
+		Reward:          reward,
 	}}
+
+	fmt.Println("desc[0]:")
+	fmt.Printf("Anchor: %x\n", desc[0].Anchor)
+	fmt.Printf("Nullifiers: %x\n", desc[0].Nullifiers)
+	fmt.Printf("Commitments: %x\n", desc[0].Commitments)
+	fmt.Printf("Proof: %x\n", desc[0].Proof)
+	fmt.Printf("EncryptedData: %x\n", desc[0].EncryptedData)
+	fmt.Printf("EphemeralPubKey: %x\n", desc[0].EphemeralPubKey)
+	fmt.Printf("HSigSeed: %x\n", desc[0].HSigSeed)
+	fmt.Printf("Type: %x\n", desc[0].Type)
+	fmt.Printf("Reward: %x\n", desc[0].Reward)
 
 	// TODO(@0xbunyip): use Apk of PubKey temporarily, we should derive another scheme for signing tx later
 	tx := &Tx{
@@ -212,14 +242,15 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 		return nil, err
 	}
 
-	var seed, phi []byte
+	var seed, phi *[]byte
 	var outputR [][]byte
 	proof, hSig, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, seed, phi, outputR)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig)
+	var ephemeralPrivKey *client.EphemeralPrivKey
+	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, *seed, ephemeralPrivKey)
 	if err != nil {
 		return nil, err
 	}
@@ -234,6 +265,7 @@ func GenerateProofForGenesisTx(
 	reward uint64,
 	seed, phi []byte,
 	outputR [][]byte,
+	ephemeralPrivKey client.EphemeralPrivKey,
 ) (*Tx, error) {
 	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
 	privateSignKey := [32]byte{1}
@@ -242,10 +274,10 @@ func GenerateProofForGenesisTx(
 		return nil, err
 	}
 
-	proof, hSig, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, seed, phi, outputR)
+	proof, hSig, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, &seed, &phi, outputR)
 	if err != nil {
 		return nil, err
 	}
 
-	return generateTx(inputs, outputs, proof, rt, reward)
+	return generateTx(inputs, outputs, proof, rt, reward, hSig, seed, &ephemeralPrivKey)
 }

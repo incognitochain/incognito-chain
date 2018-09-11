@@ -12,8 +12,8 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 type BlockChain struct {
@@ -437,7 +437,7 @@ func (self *BlockChain) GetAllHashBlocks() ([]*common.Hash, error) {
 /**
 FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
 Param typeJoinSplitDesc - COIN or BOND
- */
+*/
 func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string) (*TxViewPoint, error) {
 	view := NewTxViewPoint()
 	commitments, err := self.Config.DataBase.FetchCommitments(typeJoinSplitDesc)
@@ -576,7 +576,7 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 
 /**
 GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key
- */
+*/
 func (self *BlockChain) GetListTxByReadonlyKey(skenc *client.ReceivingKey, pkenc *client.TransmissionKey, typeJoinSplitDesc string) ([]transaction.Tx, error) {
 	results := make([]transaction.Tx, 0)
 
@@ -618,7 +618,8 @@ func (self *BlockChain) GetListTxByReadonlyKey(skenc *client.ReceivingKey, pkenc
 					for i, encData := range desc.EncryptedData {
 						var epk client.EphemeralPubKey
 						copy(epk[:], desc.EphemeralPubKey)
-						note, err := client.DecryptNote(encData, *skenc, *pkenc, epk)
+						var hSig []byte // TODO(@0xbunyip): save and get hSig
+						note, err := client.DecryptNote(encData, *skenc, *pkenc, epk, hSig)
 						if err == nil && note != nil {
 							copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
 							copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])

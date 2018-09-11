@@ -2,6 +2,7 @@ package client
 
 import (
 	"crypto/rand"
+
 	"golang.org/x/crypto/curve25519"
 )
 
@@ -120,20 +121,21 @@ func GenPaymentAddress(ask SpendingKey) PaymentAddress {
 	return addr
 }
 
-
-func GenEphemeralKey() (EphemeralPubKey, EphemeralPrivKey) {
-	var esk EphemeralPrivKey
-	var epk EphemeralPubKey
-	
-	esk_tmp := RandBits(256)
-	copy(esk[:], esk_tmp[:])
-
+func (esk EphemeralPrivKey) GenPubKey() EphemeralPubKey {
 	var x, y [32]byte
+	var epk EphemeralPubKey
+
 	copy(y[:], esk[:])
 	curve25519.ScalarBaseMult(&x, &y)
 	copy(epk[:], x[:])
-
-	return epk, esk
+	return epk
 }
 
+func GenEphemeralKey() (EphemeralPubKey, EphemeralPrivKey) {
+	var esk EphemeralPrivKey
 
+	esk_tmp := RandBits(256)
+	copy(esk[:], esk_tmp[:])
+
+	return esk.GenPubKey(), esk
+}

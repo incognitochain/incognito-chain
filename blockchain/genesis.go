@@ -51,7 +51,7 @@ func createGenesisJSInput(idx uint) *client.JSInput {
 
 /**
 Use to get hardcode for genesis block
- */
+*/
 func (self GenesisBlockGenerator) createGenesisTx(coinReward uint64) (*transaction.Tx, error) {
 	// Create deterministic inputs (note, receiver's address and rho)
 	var inputs []*client.JSInput
@@ -72,6 +72,10 @@ func (self GenesisBlockGenerator) createGenesisTx(coinReward uint64) (*transacti
 		&client.JSOutput{EncKey: key.KeyPair.PublicKey.Pkenc, OutputNote: placeHolderOutputNote},
 	}
 
+	// Wrap ephemeral private key
+	var ephemeralPrivKey client.EphemeralPrivKey
+	copy(ephemeralPrivKey[:], GENESIS_BLOCK_EPHEMERAL_PRIVKEY[:])
+
 	// Since input notes of genesis tx have 0 value, rt can be anything
 	rt := make([]byte, 32)
 	tx, err := transaction.GenerateProofForGenesisTx(
@@ -82,6 +86,7 @@ func (self GenesisBlockGenerator) createGenesisTx(coinReward uint64) (*transacti
 		GENESIS_BLOCK_SEED[:],
 		GENESIS_BLOCK_PHI[:],
 		GENESIS_BLOCK_OUTPUT_R,
+		ephemeralPrivKey,
 	)
 	return tx, err
 }
@@ -126,12 +131,30 @@ func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
 	}
 	commitments := [][]byte{cm1, cm2}
 
+	encData1, err := hex.DecodeString(GENESIS_BLOCK_ENCRYPTED_DATA[0])
+	if err != nil {
+		panic(err)
+	}
+	encData2, err := hex.DecodeString(GENESIS_BLOCK_ENCRYPTED_DATA[1])
+	if err != nil {
+		panic(err)
+	}
+	encryptedData := [][]byte{encData1, encData2}
+	ephemeralPubKey, err := hex.DecodeString(GENESIS_BLOCK_EPHEMERAL_PUBKEY)
+	if err != nil {
+		panic(err)
+	}
+
 	desc := []*transaction.JoinSplitDesc{&transaction.JoinSplitDesc{
-		Proof:       proof,
-		Anchor:      GENESIS_BLOCK_ANCHOR[:],
-		Nullifiers:  nullfiers,
-		Commitments: commitments,
-		Reward:      GENESIS_BLOCK_REWARD,
+		Anchor:          GENESIS_BLOCK_ANCHOR[:],
+		Nullifiers:      nullfiers,
+		Commitments:     commitments,
+		Proof:           proof,
+		EncryptedData:   encryptedData,
+		EphemeralPubKey: ephemeralPubKey,
+		HSigSeed:        GENESIS_BLOCK_SEED[:],
+		Type:            "coins",
+		Reward:          GENESIS_BLOCK_REWARD,
 	}}
 
 	tx := &transaction.Tx{
@@ -159,8 +182,8 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(
 	genesisBlock.Header.Difficulty = difficulty
 	genesisBlock.Header.Version = version
 
-	tx, err := self.getGenesisTx()
-	// tx, err := self.createGenesisTx(genesisReward)
+	// tx, err := self.getGenesisTx()
+	tx, err := self.createGenesisTx(genesisReward)
 
 	if err != nil {
 		panic(err)

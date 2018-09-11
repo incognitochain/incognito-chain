@@ -1,22 +1,24 @@
 package client
 
 import (
-	"github.com/ninjadotorg/cash-prototype/privacy/client/crypto/sha256"
-	"golang.org/x/crypto/blake2b"
-	"fmt"
-	"encoding/json"
-	"golang.org/x/crypto/curve25519"
 	"crypto/aes"
 	"crypto/cipher"
 	cryptorand "crypto/rand"
+	"encoding/json"
+	"fmt"
+
+	"github.com/ninjadotorg/cash-prototype/privacy/client/crypto/sha256"
+	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/curve25519"
+
 	//"encoding/hex"
 	"io"
 	//"os"
+	"bytes"
 	"encoding/base64"
 	"errors"
-	"strings"
-	"bytes"
 	mathrand "math/rand"
+	"strings"
 )
 
 const CMPreImageLength = 105 // bytes
@@ -74,7 +76,7 @@ func ParseJsonToNote(jsonnote []byte) (*Note, error) {
 }
 
 // TODO: add hsig param
-func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivKey, epk EphemeralPubKey, hSig [32]byte) [][]byte {
+func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivKey, epk EphemeralPubKey, hSig []byte) [][]byte {
 	noteJsons := [][]byte{ParseNoteToJson(&note[0]), ParseNoteToJson(&note[1])}
 
 	var sk [32]byte
@@ -102,7 +104,7 @@ func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivKey, e
 }
 
 func DecryptNote(ciphernote []byte, skenc ReceivingKey,
-	pkenc TransmissionKey, epk EphemeralPubKey, hSig [32]byte) (*Note, error) {
+	pkenc TransmissionKey, epk EphemeralPubKey, hSig []byte) (*Note, error) {
 
 	var epk1 [32]byte
 	copy(epk1[:], epk[:])
@@ -133,7 +135,7 @@ func KeyAgree(pk *[32]byte, sk *[32]byte) [32]byte {
 // TODO: add hSig param
 func KDF(sharedSecret [32]byte, epk [32]byte,
 	pkenc [32]byte,
-	hSig [32]byte) []byte {
+	hSig []byte) []byte {
 	var data []byte
 
 	data = append(hSig[:], sharedSecret[:]...)
@@ -260,13 +262,13 @@ func TestEncrypt() {
 	//Gen ephemeral key
 	epk, esk := GenEphemeralKey()
 
-	ciphernotes := EncryptNote(notes, pkencs, esk, epk, hSig)
+	ciphernotes := EncryptNote(notes, pkencs, esk, epk, hSig[:])
 	fmt.Printf("\nCiphernotes: %+v\n", ciphernotes)
 
 	fmt.Printf("\nReceiving key: %+v\n", skenc)
 	fmt.Printf("\nTransmission key: %+v\n", pkenc)
 
-	decrypted_notes, _ := DecryptNote(ciphernotes[0], skenc, pkenc, epk, hSig)
+	decrypted_notes, _ := DecryptNote(ciphernotes[0], skenc, pkenc, epk, hSig[:])
 	fmt.Printf("\nPlaintext: %s\n", decrypted_notes.Value)
 
 }

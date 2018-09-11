@@ -332,7 +332,7 @@ class ZksnarkImpl final : public Zksnark::Service
         uint64_t vpub_old = reward;
         print_proof_inputs(inputs, out_notes, vpub_old, rt, hsig, phi, compute_proof);
         auto proof = js->prove(inputs, out_notes, vpub_old, rt, hsig, phi, compute_proof);
-        libzcash::PHGRProof proof;
+        // libzcash::PHGRProof proof;
         print_proof(proof);
 
         zksnark::PHGRProof *zk_proof = new zksnark::PHGRProof();
@@ -383,8 +383,34 @@ void RunServer()
     server->Wait();
 }
 
+class A {
+    public:
+        A() {v.push_back(1);}
+        int length() { return v.size(); }
+        int add(int x) { v.push_back(x); }
+
+    private:
+        vector<int> v;
+};
+
+class B {
+    public:
+        B(A a_): a(a_) {}
+        int length() {return a.length();}
+
+    private:
+        A a;
+};
+
 int main(int argc, char const *argv[])
 {
+    // A a;
+    // B b(a);
+    // cout << b.length() << '\n';
+    // a.add(2);
+    // cout << a.length() << " " << b.length() << '\n';
+    // return 0;
+
     RunServer();
     return 0;
 }
