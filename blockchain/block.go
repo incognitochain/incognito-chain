@@ -77,9 +77,11 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				for _, descTemp := range descTemps {
 					item := descTemp.(map[string]interface{})
 					desc := &transaction.JoinSplitDesc{
-						Anchor: []byte(item["Anchor"].(string)),
-						Type:   item["Type"].(string),
-						Reward: uint64(item["Reward"].(float64)),
+						Anchor:          []byte(item["Anchor"].(string)),
+						Type:            item["Type"].(string),
+						Reward:          uint64(item["Reward"].(float64)),
+						EphemeralPubKey: []byte(item["EphemeralPubKey"].(string)),
+						HSigSeed:        []byte(item["HSigSeed"].(string)),
 					}
 					// proof
 					if ok := item["Proof"] != nil; ok {
@@ -117,7 +119,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 						desc.Commitments = commitments
 					}
 
-					// commitment
+					// encrypt data
 					if ok := item["EncryptedData"] != nil; ok {
 						datasTemp := item["EncryptedData"].([]interface{})
 						datas := make([][]byte, 0)
@@ -126,6 +128,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 						}
 						desc.EncryptedData = datas
 					}
+
 					txNormal.Descs = append(txNormal.Descs, desc)
 				}
 			}

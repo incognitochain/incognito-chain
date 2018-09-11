@@ -153,7 +153,7 @@ func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
 		EncryptedData:   encryptedData,
 		EphemeralPubKey: ephemeralPubKey,
 		HSigSeed:        GENESIS_BLOCK_SEED[:],
-		Type:            "coins",
+		Type:            common.TxOutCoinType,
 		Reward:          GENESIS_BLOCK_REWARD,
 	}}
 
@@ -182,8 +182,8 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(
 	genesisBlock.Header.Difficulty = difficulty
 	genesisBlock.Header.Version = version
 
-	// tx, err := self.getGenesisTx()
-	tx, err := self.createGenesisTx(genesisReward)
+	tx, err := self.getGenesisTx()
+	//tx, err := self.createGenesisTx(genesisReward)
 
 	if err != nil {
 		panic(err)
