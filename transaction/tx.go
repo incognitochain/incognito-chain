@@ -180,8 +180,7 @@ func generateTx(
 	proof *zksnark.PHGRProof,
 	rt []byte,
 	reward uint64,
-	hSig []byte,
-	seed []byte,
+	hSig, seed, jsPubKey []byte,
 	ephemeralPrivKey *client.EphemeralPrivKey,
 ) (*Tx, error) {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
@@ -197,6 +196,20 @@ func generateTx(
 		ephemeralPrivKey.GenPubKey()
 		*ephemeralPubKey = ephemeralPrivKey.GenPubKey()
 	}
+	fmt.Printf("hSig: %x\n", hSig)
+	fmt.Printf("jsPubKey: %x\n", jsPubKey)
+	fmt.Printf("ephemeralPrivKey: %x\n", *ephemeralPrivKey)
+	fmt.Printf("ephemeralPubKey: %x\n", *ephemeralPubKey)
+	fmt.Printf("tranmissionKey[0]: %x\n", keys[0])
+	fmt.Printf("tranmissionKey[1]: %x\n", keys[1])
+	fmt.Printf("notes[0].Value: %v\n", notes[0].Value)
+	fmt.Printf("notes[0].Rho: %x\n", notes[0].Rho)
+	fmt.Printf("notes[0].R: %x\n", notes[0].R)
+	fmt.Printf("notes[0].Memo: %v\n", notes[0].Memo)
+	fmt.Printf("notes[1].Value: %v\n", notes[1].Value)
+	fmt.Printf("notes[1].Rho: %x\n", notes[1].Rho)
+	fmt.Printf("notes[1].R: %x\n", notes[1].R)
+	fmt.Printf("notes[1].Memo: %v\n", notes[1].Memo)
 	noteciphers := client.EncryptNote(notes, keys, *ephemeralPrivKey, *ephemeralPubKey, hSig)
 
 	desc := []*JoinSplitDesc{&JoinSplitDesc{
@@ -227,7 +240,7 @@ func generateTx(
 		Version:  1,
 		Type:     common.TxNormalType,
 		Descs:    desc,
-		JSPubKey: nil,
+		JSPubKey: jsPubKey,
 		JSSig:    nil,
 	}
 	return tx, nil
@@ -250,7 +263,8 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 	}
 
 	var ephemeralPrivKey *client.EphemeralPrivKey
-	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, *seed, ephemeralPrivKey)
+	var jsPubKey []byte // We are going to save jsPubkey to transaction in signTx() below
+	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, *seed, jsPubKey, ephemeralPrivKey)
 	if err != nil {
 		return nil, err
 	}
@@ -279,5 +293,5 @@ func GenerateProofForGenesisTx(
 		return nil, err
 	}
 
-	return generateTx(inputs, outputs, proof, rt, reward, hSig, seed, &ephemeralPrivKey)
+	return generateTx(inputs, outputs, proof, rt, reward, hSig, seed, keyPair.PublicKey.Apk[:], &ephemeralPrivKey)
 }

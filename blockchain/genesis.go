@@ -157,11 +157,15 @@ func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
 		Reward:          GENESIS_BLOCK_REWARD,
 	}}
 
+	jsPubKey, err := hex.DecodeString(GENESIS_BLOCK_JSPUBKEY)
+	if err != nil {
+		panic(err)
+	}
 	tx := &transaction.Tx{
 		Version:  1,
 		Type:     common.TxNormalType,
 		Descs:    desc,
-		JSPubKey: nil,
+		JSPubKey: jsPubKey,
 		JSSig:    nil,
 	}
 	return tx, nil
@@ -183,7 +187,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(
 	genesisBlock.Header.Version = version
 
 	tx, err := self.getGenesisTx()
-	//tx, err := self.createGenesisTx(genesisReward)
+	// tx, err := self.createGenesisTx(genesisReward)
 
 	if err != nil {
 		panic(err)

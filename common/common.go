@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"net"
 	"fmt"
+	"encoding/base64"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -165,4 +166,9 @@ func ParseListeners(addrs []string, netType string) ([]SimpleAddr, error) {
 		}
 	}
 	return netAddrs, nil
+}
+
+func JsonUnmarshallByteArray(string string) []byte {
+	bytes, _ := base64.StdEncoding.DecodeString(string)
+	return bytes
 }

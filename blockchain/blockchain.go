@@ -14,6 +14,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/davecgh/go-spew/spew"
 )
 
 type BlockChain struct {
@@ -618,17 +619,22 @@ func (self *BlockChain) GetListTxByReadonlyKey(skenc *client.ReceivingKey, pkenc
 					for i, encData := range desc.EncryptedData {
 						var epk client.EphemeralPubKey
 						copy(epk[:], desc.EphemeralPubKey)
-						var hSig []byte
-						copy(hSig, desc.HSigSeed)
+						// var hSig []byte
+						// copy(hSig, desc.HSigSeed)
+						hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
+						note := new(client.Note)
 						note, err := client.DecryptNote(encData, *skenc, *pkenc, epk, hSig)
+						spew.Dump(note)
 						if err == nil && note != nil {
 							copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
+							copyDesc.AppendNote(note)
 							copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
-							copyDesc.SetNote(note)
-							listDesc = append(listDesc, copyDesc)
 						} else {
-							return nil, err
+							continue
 						}
+					}
+					if len(copyDesc.EncryptedData) > 0 {
+						listDesc = append(listDesc, copyDesc)
 					}
 				}
 				if len(listDesc) > 0 {
@@ -645,11 +651,14 @@ func (self *BlockChain) GetListTxByReadonlyKey(skenc *client.ReceivingKey, pkenc
 
 		// continue with previous block
 		blockHeight--
-		preBlockHash := bestBlock.Header.PrevBlockHash
-		bestBlock = self.GetBlockByHash(preBlockHash)
-		if blockHeight != bestBlock.Height {
-			// pre-block is not the same block-height with calculation -> invalid blockchain
-			return nil, errors.New("Invalid blockchain")
+		if blockHeight > -1 {
+			// not is genesis block
+			preBlockHash := bestBlock.Header.PrevBlockHash
+			bestBlock = self.GetBlockByHash(preBlockHash)
+			if blockHeight != bestBlock.Height {
+				// pre-block is not the same block-height with calculation -> invalid blockchain
+				return nil, errors.New("Invalid blockchain")
+			}
 		}
 	}
 
