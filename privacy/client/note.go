@@ -99,7 +99,10 @@ func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivKey, e
 		sharedSecret[i] = KeyAgree(&pk[i], &sk)
 		symKey[i] = KDF(sharedSecret[i], epk, pk[i], hSig)
 		ciphernotes[i] = Encrypt(symKey[i], noteJsons[i][:])
+		fmt.Printf("\nShare secret key: %v\n", sharedSecret[i])
 	}
+	fmt.Printf("\nCiphernote 1: %+v\n", ciphernotes[0])
+	fmt.Printf("\nCiphernote 2: %+v\n", ciphernotes[1])
 	return ciphernotes
 }
 
@@ -243,6 +246,7 @@ func GenNote() *Note {
 
 func TestEncrypt() {
 	var hSig [32]byte
+	copy(hSig[:], []byte("the-key-has-to-be-32-bytes-long!"))
 	tmp := RandBits(256)
 	copy(hSig[:], tmp[:])
 	//Generate note
@@ -263,13 +267,15 @@ func TestEncrypt() {
 	epk, esk := GenEphemeralKey()
 
 	ciphernotes := EncryptNote(notes, pkencs, esk, epk, hSig[:])
-	fmt.Printf("\nCiphernotes: %+v\n", ciphernotes)
+	fmt.Printf("\nCiphernotes: %s\n", ciphernotes)
 
 	fmt.Printf("\nReceiving key: %+v\n", skenc)
 	fmt.Printf("\nTransmission key: %+v\n", pkenc)
 
-	decrypted_notes, _ := DecryptNote(ciphernotes[0], skenc, pkenc, epk, hSig[:])
-	fmt.Printf("\nPlaintext: %s\n", decrypted_notes.Value)
+	decrypted_note0, _ := DecryptNote(ciphernotes[0], skenc, pkenc, epk, hSig[:])
+	decrypted_note1, _ := DecryptNote(ciphernotes[1], skenc, pkenc, epk, hSig[:])
+	fmt.Printf("\nPlaintext: %+v\n", decrypted_note0)
+	fmt.Printf("\nPlaintext: %+v\n", decrypted_note1)
 
 }
 
