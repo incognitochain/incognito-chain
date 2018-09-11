@@ -178,15 +178,17 @@ func generateTx(
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
 	notes := [2]client.Note{*outputs[0].OutputNote, *outputs[1].OutputNote}
 	keys := [2]client.TransmissionKey{outputs[0].EncKey, outputs[1].EncKey}
-	noteciphers := client.EncryptNote(notes, keys, client.EphemeralPrivKey{}, client.EphemeralPubKey{})
+	ephemeralPubKey := client.EphemeralPubKey{} // TODO
+	noteciphers := client.EncryptNote(notes, keys, client.EphemeralPrivKey{}, ephemeralPubKey)
 
 	desc := []*JoinSplitDesc{&JoinSplitDesc{
-		Proof:         proof,
-		Anchor:        rt,
-		Nullifiers:    nullifiers,
-		Commitments:   commitments,
-		Reward:        reward,
-		EncryptedData: noteciphers,
+		Proof:           proof,
+		Anchor:          rt,
+		Nullifiers:      nullifiers,
+		Commitments:     commitments,
+		Reward:          reward,
+		EncryptedData:   noteciphers,
+		EphemeralPubKey: ephemeralPubKey[:],
 	}}
 
 	// TODO(@0xbunyip): use Apk of PubKey temporarily, we should derive another scheme for signing tx later
