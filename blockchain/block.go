@@ -65,11 +65,11 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 			}
 			jSPubKey, ok := txTemp["JSPubKey"]
 			if ok && jSPubKey != nil {
-				txNormal.JSPubKey = []byte(jSPubKey.(string))
+				txNormal.JSPubKey = common.JsonUnmarshallByteArray(jSPubKey.(string))
 			}
 			jSSig, ok := txTemp["JSSig"]
 			if ok && jSSig != nil {
-				txNormal.JSSig = []byte(jSSig.(string))
+				txNormal.JSSig = common.JsonUnmarshallByteArray(jSSig.(string))
 			}
 			desc, ok := txTemp["Descs"]
 			if ok && desc != nil {
@@ -77,24 +77,24 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				for _, descTemp := range descTemps {
 					item := descTemp.(map[string]interface{})
 					desc := &transaction.JoinSplitDesc{
-						Anchor:          []byte(item["Anchor"].(string)),
+						Anchor:          common.JsonUnmarshallByteArray(item["Anchor"].(string)),
 						Type:            item["Type"].(string),
 						Reward:          uint64(item["Reward"].(float64)),
-						EphemeralPubKey: []byte(item["EphemeralPubKey"].(string)),
-						HSigSeed:        []byte(item["HSigSeed"].(string)),
+						EphemeralPubKey: common.JsonUnmarshallByteArray(item["EphemeralPubKey"].(string)),
+						HSigSeed:        common.JsonUnmarshallByteArray(item["HSigSeed"].(string)),
 					}
 					// proof
 					if ok := item["Proof"] != nil; ok {
 						proofTemp := item["Proof"].(map[string]interface{})
 						proof := &zksnark.PHGRProof{
-							G_A:      []byte(proofTemp["g_A"].(string)),
-							G_APrime: []byte(proofTemp["g_A_prime"].(string)),
-							G_B:      []byte(proofTemp["g_B"].(string)),
-							G_BPrime: []byte(proofTemp["g_B_prime"].(string)),
-							G_C:      []byte(proofTemp["g_C"].(string)),
-							G_CPrime: []byte(proofTemp["g_C_prime"].(string)),
-							G_K:      []byte(proofTemp["g_K"].(string)),
-							G_H:      []byte(proofTemp["g_H"].(string)),
+							G_A:      common.JsonUnmarshallByteArray(proofTemp["g_A"].(string)),
+							G_APrime: common.JsonUnmarshallByteArray(proofTemp["g_A_prime"].(string)),
+							G_B:      common.JsonUnmarshallByteArray(proofTemp["g_B"].(string)),
+							G_BPrime: common.JsonUnmarshallByteArray(proofTemp["g_B_prime"].(string)),
+							G_C:      common.JsonUnmarshallByteArray(proofTemp["g_C"].(string)),
+							G_CPrime: common.JsonUnmarshallByteArray(proofTemp["g_C_prime"].(string)),
+							G_K:      common.JsonUnmarshallByteArray(proofTemp["g_K"].(string)),
+							G_H:      common.JsonUnmarshallByteArray(proofTemp["g_H"].(string)),
 						}
 						desc.Proof = proof
 					}
@@ -104,7 +104,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 						nullifiersTemp := item["Nullifiers"].([]interface{})
 						nullifiers := make([][]byte, 0)
 						for _, n := range nullifiersTemp {
-							nullifiers = append(nullifiers, []byte(n.(string)))
+							nullifiers = append(nullifiers, common.JsonUnmarshallByteArray(n.(string)))
 						}
 						desc.Nullifiers = nullifiers
 					}
@@ -114,7 +114,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 						commitmentsTemp := item["Commitments"].([]interface{})
 						commitments := make([][]byte, 0)
 						for _, n := range commitmentsTemp {
-							commitments = append(commitments, []byte(n.(string)))
+							commitments = append(commitments, common.JsonUnmarshallByteArray(n.(string)))
 						}
 						desc.Commitments = commitments
 					}
@@ -124,7 +124,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 						datasTemp := item["EncryptedData"].([]interface{})
 						datas := make([][]byte, 0)
 						for _, n := range datasTemp {
-							datas = append(datas, []byte(n.(string)))
+							datas = append(datas, common.JsonUnmarshallByteArray(n.(string)))
 						}
 						desc.EncryptedData = datas
 					}
