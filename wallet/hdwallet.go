@@ -205,19 +205,19 @@ func Deserialize(data []byte) (*Key, error) {
 		key.Depth = data[1]
 		key.ChildNumber = data[2:6]
 		key.ChainCode = data[6:38]
-		keyLength := int(data[39])
+		keyLength := int(data[38])
 
-		copy(key.KeyPair.PrivateKey[:], data[40:40+keyLength])
+		copy(key.KeyPair.PrivateKey[:], data[39:39+keyLength])
 	} else if keyType == PubKeyType {
-		apkKeyLength := int(data[0])
-		copy(key.KeyPair.PublicKey.Apk[:], data[1:1+apkKeyLength])
-		pkencKeyLength := int(data[apkKeyLength+1])
-		copy(key.KeyPair.PublicKey.Pkenc[:], data[2+apkKeyLength: pkencKeyLength])
+		apkKeyLength := int(data[1])
+		copy(key.KeyPair.PublicKey.Apk[:], data[2:2+apkKeyLength])
+		pkencKeyLength := int(data[apkKeyLength+2])
+		copy(key.KeyPair.PublicKey.Pkenc[:], data[3+apkKeyLength: 3+apkKeyLength+pkencKeyLength])
 	} else if keyType == ReadonlyKeyType {
-		apkKeyLength := int(data[0])
-		copy(key.KeyPair.ReadonlyKey.Apk[:], data[1:1+apkKeyLength])
-		skencKeyLength := int(data[apkKeyLength+1])
-		copy(key.KeyPair.ReadonlyKey.Skenc[:], data[2+apkKeyLength: skencKeyLength])
+		apkKeyLength := int(data[1])
+		copy(key.KeyPair.ReadonlyKey.Apk[:], data[2:2+apkKeyLength])
+		skencKeyLength := int(data[apkKeyLength+2])
+		copy(key.KeyPair.ReadonlyKey.Skenc[:], data[3+apkKeyLength: 3+apkKeyLength+skencKeyLength])
 	}
 
 	// validate checksum
