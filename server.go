@@ -541,6 +541,11 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	}
 	self.newPeers <- remotePeer
 	// TODO check version message
+	valid := false
+
+	if msg.ProtocolVersion == 1 {
+		valid = true
+	}
 	//
 
 	// if version message is ok -> add to addManager
@@ -560,6 +565,9 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	if err != nil {
 		return
 	}
+
+	msgV.(*wire.MessageVerAck).Valid = valid
+
 	var dc chan<- struct{}
 	peerConn.QueueMessageWithEncoding(msgV, dc)
 
@@ -571,33 +579,38 @@ OnVerAck is invoked when a peer receives a version acknowlege message
 func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
 	log.Printf("Receive verack message")
-	self.AddrManager.Good(peerConn.Peer)
 
-	// send message for get addr
-	msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
-	if err != nil {
-		return
-	}
-	dc := make(chan struct{})
-	peerConn.QueueMessageWithEncoding(msgS, dc)
+	if msg.Valid {
+		self.AddrManager.Good(peerConn.Peer)
 
-	//	broadcast addr to all peer
-	for _, listen := range self.ConnManager.ListeningPeers {
-		msgS, err := wire.MakeEmptyMessage(wire.CmdAddr)
+		// send message for get addr
+		msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
 		if err != nil {
 			return
 		}
+		dc := make(chan struct{})
+		peerConn.QueueMessageWithEncoding(msgS, dc)
 
-		addresses := []string{}
-		peers := self.AddrManager.AddressCache()
-		for _, peer := range peers {
-			addresses = append(addresses, peer.RawAddress)
+		//	broadcast addr to all peer
+		for _, listen := range self.ConnManager.ListeningPeers {
+			msgS, err := wire.MakeEmptyMessage(wire.CmdAddr)
+			if err != nil {
+				return
+			}
+
+			addresses := []string{}
+			peers := self.AddrManager.AddressCache()
+			for _, peer := range peers {
+				addresses = append(addresses, peer.RawAddress)
+			}
+			msgS.(*wire.MessageAddr).RawAddresses = addresses
+			var doneChan chan<- struct{}
+			for _, _peerConn := range listen.PeerConns {
+				_peerConn.QueueMessageWithEncoding(msgS, doneChan)
+			}
 		}
-		msgS.(*wire.MessageAddr).RawAddresses = addresses
-		var doneChan chan<- struct{}
-		for _, _peerConn := range listen.PeerConns {
-			_peerConn.QueueMessageWithEncoding(msgS, doneChan)
-		}
+	} else {
+
 	}
 
 }

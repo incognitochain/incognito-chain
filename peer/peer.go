@@ -262,7 +262,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		return nil, nil
 	}
 
-	if self.NumOutbound() >= self.MaxOutbound && !ok {
+	if self.NumOutbound() >= self.MaxOutbound && self.MaxOutbound > 0 && !ok {
 		Logger.log.Infof("Max Peer Outbound Connection")
 
 		self.ConnPending(peer)
@@ -272,7 +272,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	}
 
 	stream, err := self.Host.NewStream(context.Background(), peer.PeerId, "/blockchain/1.0.0")
-	Logger.log.Info(peer)
+	Logger.log.Info(peer, stream, err)
 	if err != nil {
 		Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", self.PeerId.String(), err.Error())
 
@@ -330,7 +330,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
-	if self.NumInbound() >= self.MaxInbound {
+	if self.NumInbound() >= self.MaxInbound && self.MaxInbound > 0 {
 		Logger.log.Infof("Max Peer Inbound Connection")
 
 		return

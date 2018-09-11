@@ -2,7 +2,6 @@ package client
 
 import (
 	"crypto/rand"
-
 	"golang.org/x/crypto/curve25519"
 )
 
@@ -26,8 +25,13 @@ type ViewingKey struct {
 }
 
 type PaymentAddress struct {
-	Apk   SpendingAddress
-	Pkenc TransmissionKey
+	Apk   SpendingAddress // use to receive coin
+	Pkenc TransmissionKey // use to encrypt data
+}
+
+type PaymentInfo struct {
+	PaymentAddress PaymentAddress
+	Amount         uint64
 }
 
 // RandBits generates random bits and return as bytes; zero out redundant bits

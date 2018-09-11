@@ -11,7 +11,7 @@ var (
 
 func main() {
 	// Show version at startup.
-	log.Printf("Version %s", "1")
+	log.Printf("Version %s\n", "1")
 
 	// load config
 	tcfg, err := loadConfig()
@@ -30,6 +30,6 @@ func main() {
 		log.Println("Init bootnode error", err.Error())
 		return
 	}
-
+	log.Println("Start server")
 	server.Start()
 }

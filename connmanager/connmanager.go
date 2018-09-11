@@ -193,7 +193,7 @@ func (self ConnManager) New(cfg *Config) (*ConnManager, error) {
 	if cfg.TargetOutbound == 0 {
 		cfg.TargetOutbound = defaultTargetOutbound
 	}
-	if cfg.TargetOutbound == 0 {
+	if cfg.TargetInbound == 0 {
 		cfg.TargetInbound = defaultTargetInbound
 	}
 	self.Config = *cfg
@@ -281,7 +281,8 @@ func (self *ConnManager) Connect(addr string) {
 		}
 
 		listen.Host.Peerstore().AddAddr(peer.PeerId, peer.TargetAddress, pstore.PermanentAddrTTL)
-
+		Logger.log.Info("DEBUG Connect to Peer")
+		Logger.log.Info(listen.Host.Peerstore().Addrs(peer.PeerId))
 		// make a new stream from host B to host A
 		// it should be handled on host A by the handler we set above because
 		// we use the same /peer/1.0.0 protocol
@@ -314,7 +315,7 @@ func (self *ConnManager) Start() {
 			self.ListeningPeers[listner.PeerId] = &listner
 		}
 
-		//go self.DiscoverPeers()
+		go self.DiscovePeers()
 	}
 }
 
@@ -389,8 +390,8 @@ func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)
 	seedFn(addrs)
 }
 
-func (self *ConnManager) DiscoverPeers() {
-	Logger.log.Infof("Start Exchange Peers")
+func (self *ConnManager) DiscovePeers() {
+	Logger.log.Infof("Start Discove Peers")
 	var client *rpc.Client
 	var err error
 
@@ -398,7 +399,7 @@ listen:
 	for {
 		Logger.log.Infof("Peers", self.DiscoveredPeers)
 		if client == nil {
-			client, err = rpc.Dial("tcp", "35.199.177.89:9339")
+			client, err = rpc.Dial("tcp", "127.0.0.1:9889")
 			if err != nil {
 				Logger.log.Error("[Exchange Peers] re-connect:", err)
 			}

@@ -9,7 +9,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
-	//"encoding/json"
 )
 
 // JoinSplitDesc stores the UTXO of a transaction
@@ -34,6 +33,11 @@ type Tx struct {
 	Descs    []*JoinSplitDesc `json:"Descs"`
 	JSPubKey []byte           `json:"JSPubKey"` // 32 bytes
 	JSSig    []byte           `json:"JSSig"`    // 64 bytes
+}
+
+type UsableTx struct {
+	TxId string `json:"TxId"`
+	Tx
 }
 
 func (desc *JoinSplitDesc) toString() string {
@@ -94,7 +98,9 @@ func collectUnspentNotes(ask *client.SpendingKey, valueWanted uint64) ([]*client
 // CreateTx creates transaction with appropriate proof for a private payment
 // value: total value of the coins to transfer
 // rt: root of the commitment merkle tree at current block (the latest block of the node creating this tx)
-func CreateTx(senderKey *client.SpendingKey, receiverAddr *client.PaymentAddress, value uint64, rt []byte) (*Tx, error) {
+func CreateTx(senderKey *client.SpendingKey, paymentInfo []*client.PaymentInfo, rt []byte, usableTx []*UsableTx, nullifiers [][]byte) (*Tx, error) {
+	receiverAddr := paymentInfo[0].PaymentAddress
+	value := paymentInfo[0].Amount
 	inputNotes, err := collectUnspentNotes(senderKey, value)
 	if err != nil {
 		return nil, err

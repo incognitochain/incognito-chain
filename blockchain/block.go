@@ -8,6 +8,7 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
 )
 
 const (
@@ -72,15 +73,60 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 			}
 			desc, ok := txTemp["Descs"]
 			if ok && desc != nil {
-				temps := desc.([]interface{})
-				for _, temp := range temps {
-					item := temp.(map[string]interface{})
-					txNormal.Descs = append(txNormal.Descs, &transaction.JoinSplitDesc{
+				descTemps := desc.([]interface{})
+				for _, descTemp := range descTemps {
+					item := descTemp.(map[string]interface{})
+					desc := &transaction.JoinSplitDesc{
 						Anchor: []byte(item["Anchor"].(string)),
 						Type:   item["Type"].(string),
 						Reward: uint64(item["Reward"].(float64)),
-						// TODO
-					})
+					}
+					// proof
+					if ok := item["Proof"] != nil; ok {
+						proofTemp := item["Proof"].(map[string]interface{})
+						proof := &zksnark.PHGRProof{
+							G_A:      []byte(proofTemp["g_A"].(string)),
+							G_APrime: []byte(proofTemp["g_A_prime"].(string)),
+							G_B:      []byte(proofTemp["g_B"].(string)),
+							G_BPrime: []byte(proofTemp["g_B_prime"].(string)),
+							G_C:      []byte(proofTemp["g_C"].(string)),
+							G_CPrime: []byte(proofTemp["g_C_prime"].(string)),
+							G_K:      []byte(proofTemp["g_K"].(string)),
+							G_H:      []byte(proofTemp["g_H"].(string)),
+						}
+						desc.Proof = proof
+					}
+
+					// nullifier
+					if ok := item["Nullifiers"] != nil; ok {
+						nullifiersTemp := item["Nullifiers"].([]interface{})
+						nullifiers := make([][]byte, 0)
+						for _, n := range nullifiersTemp {
+							nullifiers = append(nullifiers, []byte(n.(string)))
+						}
+						desc.Nullifiers = nullifiers
+					}
+
+					// commitment
+					if ok := item["Commitments"] != nil; ok {
+						commitmentsTemp := item["Commitments"].([]interface{})
+						commitments := make([][]byte, 0)
+						for _, n := range commitmentsTemp {
+							commitments = append(commitments, []byte(n.(string)))
+						}
+						desc.Commitments = commitments
+					}
+
+					// commitment
+					if ok := item["EncryptedData"] != nil; ok {
+						datasTemp := item["EncryptedData"].([]interface{})
+						datas := make([][]byte, 0)
+						for _, n := range datasTemp {
+							datas = append(datas, []byte(n.(string)))
+						}
+						desc.EncryptedData = datas
+					}
+					txNormal.Descs = append(txNormal.Descs, desc)
 				}
 			}
 			self.Transactions = append(self.Transactions, txNormal)

@@ -33,8 +33,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"golang_org/x/crypto/cryptobyte"
-	cryptobyte_asn1 "golang_org/x/crypto/cryptobyte/asn1"
+	"golang.org/x/crypto/cryptobyte"
+	cryptobyte_asn1 "golang.org/x/crypto/cryptobyte/asn1"
 )
 
 // pkixPublicKey reflects a PKIX public key structure. See SubjectPublicKeyInfo
@@ -133,7 +133,7 @@ type certificate struct {
 
 type tbsCertificate struct {
 	Raw                asn1.RawContent
-	Version            int `asn1:"optional,explicit,default:0,tag:0"`
+	Version            int              `asn1:"optional,explicit,default:0,tag:0"`
 	SerialNumber       *big.Int
 	SignatureAlgorithm pkix.AlgorithmIdentifier
 	Issuer             asn1.RawValue
@@ -174,21 +174,21 @@ type SignatureAlgorithm int
 
 const (
 	UnknownSignatureAlgorithm SignatureAlgorithm = iota
-	MD2WithRSA
-	MD5WithRSA
-	SHA1WithRSA
-	SHA256WithRSA
-	SHA384WithRSA
-	SHA512WithRSA
-	DSAWithSHA1
-	DSAWithSHA256
-	ECDSAWithSHA1
-	ECDSAWithSHA256
-	ECDSAWithSHA384
-	ECDSAWithSHA512
-	SHA256WithRSAPSS
-	SHA384WithRSAPSS
-	SHA512WithRSAPSS
+	MD2WithRSA                
+	MD5WithRSA                
+	SHA1WithRSA               
+	SHA256WithRSA             
+	SHA384WithRSA             
+	SHA512WithRSA             
+	DSAWithSHA1               
+	DSAWithSHA256             
+	ECDSAWithSHA1             
+	ECDSAWithSHA256           
+	ECDSAWithSHA384           
+	ECDSAWithSHA512           
+	SHA256WithRSAPSS          
+	SHA384WithRSAPSS          
+	SHA512WithRSAPSS          
 )
 
 func (algo SignatureAlgorithm) isRSAPSS() bool {
@@ -213,9 +213,9 @@ type PublicKeyAlgorithm int
 
 const (
 	UnknownPublicKeyAlgorithm PublicKeyAlgorithm = iota
-	RSA
-	DSA
-	ECDSA
+	RSA                       
+	DSA                       
+	ECDSA                     
 )
 
 var publicKeyAlgoName = [...]string{
@@ -315,7 +315,7 @@ var signatureAlgorithmDetails = []struct {
 	pubKeyAlgo PublicKeyAlgorithm
 	hash       crypto.Hash
 }{
-	{MD2WithRSA, "MD2-RSA", oidSignatureMD2WithRSA, RSA, crypto.Hash(0) /* no value for MD2 */},
+	{MD2WithRSA, "MD2-RSA", oidSignatureMD2WithRSA, RSA, crypto.Hash(0) /* no value for MD2 */ },
 	{MD5WithRSA, "MD5-RSA", oidSignatureMD5WithRSA, RSA, crypto.MD5},
 	{SHA1WithRSA, "SHA1-RSA", oidSignatureSHA1WithRSA, RSA, crypto.SHA1},
 	{SHA1WithRSA, "SHA1-RSA", oidISOSignatureSHA1WithRSA, RSA, crypto.SHA1},
@@ -529,15 +529,15 @@ func oidFromNamedCurve(curve elliptic.Curve) (asn1.ObjectIdentifier, bool) {
 type KeyUsage int
 
 const (
-	KeyUsageDigitalSignature KeyUsage = 1 << iota
-	KeyUsageContentCommitment
-	KeyUsageKeyEncipherment
-	KeyUsageDataEncipherment
-	KeyUsageKeyAgreement
-	KeyUsageCertSign
-	KeyUsageCRLSign
-	KeyUsageEncipherOnly
-	KeyUsageDecipherOnly
+	KeyUsageDigitalSignature  KeyUsage = 1 << iota
+	KeyUsageContentCommitment 
+	KeyUsageKeyEncipherment   
+	KeyUsageDataEncipherment  
+	KeyUsageKeyAgreement      
+	KeyUsageCertSign          
+	KeyUsageCRLSign           
+	KeyUsageEncipherOnly      
+	KeyUsageDecipherOnly      
 )
 
 // RFC 5280, 4.2.1.12  Extended Key Usage
@@ -574,20 +574,20 @@ var (
 type ExtKeyUsage int
 
 const (
-	ExtKeyUsageAny ExtKeyUsage = iota
-	ExtKeyUsageServerAuth
-	ExtKeyUsageClientAuth
-	ExtKeyUsageCodeSigning
-	ExtKeyUsageEmailProtection
-	ExtKeyUsageIPSECEndSystem
-	ExtKeyUsageIPSECTunnel
-	ExtKeyUsageIPSECUser
-	ExtKeyUsageTimeStamping
-	ExtKeyUsageOCSPSigning
-	ExtKeyUsageMicrosoftServerGatedCrypto
-	ExtKeyUsageNetscapeServerGatedCrypto
-	ExtKeyUsageMicrosoftCommercialCodeSigning
-	ExtKeyUsageMicrosoftKernelCodeSigning
+	ExtKeyUsageAny                            ExtKeyUsage = iota
+	ExtKeyUsageServerAuth                     
+	ExtKeyUsageClientAuth                     
+	ExtKeyUsageCodeSigning                    
+	ExtKeyUsageEmailProtection                
+	ExtKeyUsageIPSECEndSystem                 
+	ExtKeyUsageIPSECTunnel                    
+	ExtKeyUsageIPSECUser                      
+	ExtKeyUsageTimeStamping                   
+	ExtKeyUsageOCSPSigning                    
+	ExtKeyUsageMicrosoftServerGatedCrypto     
+	ExtKeyUsageNetscapeServerGatedCrypto      
+	ExtKeyUsageMicrosoftCommercialCodeSigning 
+	ExtKeyUsageMicrosoftKernelCodeSigning     
 )
 
 // extKeyUsageOIDs contains the mapping between an ExtKeyUsage and its OID.
@@ -2543,7 +2543,7 @@ func ParseCertificateRequest(asn1Data []byte) (*CertificateRequest, error) {
 
 func parseCertificateRequest(in *certificateRequest) (*CertificateRequest, error) {
 	out := &CertificateRequest{
-		Raw: in.Raw,
+		Raw:                      in.Raw,
 		RawTBSCertificateRequest: in.TBSCSR.Raw,
 		RawSubjectPublicKeyInfo:  in.TBSCSR.PublicKey.Raw,
 		RawSubject:               in.TBSCSR.Subject.FullBytes,
