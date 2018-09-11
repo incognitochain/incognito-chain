@@ -75,7 +75,7 @@ func ParseJsonToNote(jsonnote []byte) Note {
 
 
 // TODO: add hsig param
-func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivateKey, epk EphemeralPublicKey) /*, hSig [32]byte)*/ [][]byte {
+func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivKey, epk EphemeralPubKey) /*, hSig [32]byte)*/ [][]byte {
 	noteJsons := [][]byte{ParseNoteToJson(&note[0]), ParseNoteToJson(&note[1])}
 
 	var sk [32]byte
@@ -104,7 +104,7 @@ func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivateKey
 }
 
 func DecryptNote(ciphernote []byte, skenc ReceivingKey,
-	pkenc TransmissionKey, epk EphemeralPublicKey /*, hSig [32]byte*/) Note {
+	pkenc TransmissionKey, epk EphemeralPubKey /*, hSig [32]byte*/) Note {
 
 	var epk1 [32]byte
 	copy(epk1[:], epk[:])
