@@ -63,16 +63,15 @@ func ParseNoteToJson(note *Note) []byte {
 	return noteJson
 }
 
-func ParseJsonToNote(jsonnote []byte) Note {
+func ParseJsonToNote(jsonnote []byte) (*Note, error) {
 	var note Note
 	err := json.Unmarshal(jsonnote, &note)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	// fmt.Println(note)
-	return note
+	return &note, nil
 }
-
 
 // TODO: add hsig param
 func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivKey, epk EphemeralPubKey) /*, hSig [32]byte)*/ [][]byte {
@@ -83,7 +82,6 @@ func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivKey, e
 
 	var epk1 [32]byte
 	copy(epk1[:], epk[:])
-
 
 	var pk [2][32]byte
 	var sharedSecret [2][32]byte
@@ -104,7 +102,7 @@ func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivKey, e
 }
 
 func DecryptNote(ciphernote []byte, skenc ReceivingKey,
-	pkenc TransmissionKey, epk EphemeralPubKey /*, hSig [32]byte*/) Note {
+	pkenc TransmissionKey, epk EphemeralPubKey /*, hSig [32]byte*/) (*Note, error) {
 
 	var epk1 [32]byte
 	copy(epk1[:], epk[:])
@@ -122,8 +120,8 @@ func DecryptNote(ciphernote []byte, skenc ReceivingKey,
 	symKey = KDF(sharedSecret, epk, pk) //, hSig)
 	plaintext = Decrypt(symKey, ciphernote)
 
-	note := ParseJsonToNote(plaintext)
-	return note
+	note, err := ParseJsonToNote(plaintext)
+	return note, err
 }
 
 func KeyAgree(pk *[32]byte, sk *[32]byte) [32]byte {
@@ -262,14 +260,13 @@ func TestEncrypt() {
 	//Gen ephemeral key
 	epk, esk := GenEphemeralKey()
 
-
 	ciphernotes := EncryptNote(notes, pkencs, esk, epk) //, hSig)
 	fmt.Printf("\nCiphernotes: %+v\n", ciphernotes)
 
 	fmt.Printf("\nReceiving key: %+v\n", skenc)
 	fmt.Printf("\nTransmission key: %+v\n", pkenc)
 
-	decrypted_notes := DecryptNote(ciphernotes[0], skenc, pkenc, epk) //, hSig)
+	decrypted_notes, _ := DecryptNote(ciphernotes[0], skenc, pkenc, epk) //, hSig)
 	fmt.Printf("\nPlaintext: %s\n", decrypted_notes.Value)
 
 }

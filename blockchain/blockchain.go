@@ -616,14 +616,16 @@ func (self *BlockChain) GetListTxByReadonlyKey(skenc *client.ReceivingKey, pkenc
 						EncryptedData: make([][]byte, 0),
 					}
 					for i, encData := range desc.EncryptedData {
-						var epk client.EphemeralKey
-						copy(epk[:], desc.EphemeralKey)
-						aaa := client.DecryptNote(encData, *skenc, *pkenc, epk)
-						if len(aaa) > 0 {
+						var epk client.EphemeralPubKey
+						copy(epk[:], desc.EphemeralPubKey)
+						note, err := client.DecryptNote(encData, *skenc, *pkenc, epk)
+						if err == nil && note != nil {
 							copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
 							copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
-							copyDesc.SetNote(&aaa[0])
+							copyDesc.SetNote(note)
 							listDesc = append(listDesc, copyDesc)
+						} else {
+							return nil, err
 						}
 					}
 				}
