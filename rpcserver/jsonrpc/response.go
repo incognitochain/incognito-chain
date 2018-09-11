@@ -6,6 +6,7 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
 // Response is the general form of a JSON-RPC response.  The type of the Result
@@ -100,5 +101,5 @@ type ListAccounts struct {
 }
 
 type GetAddressesByAccount struct {
-	Addresses [] string
+	Addresses [] wallet.KeySerializedData `json:"Addresses"`
 }

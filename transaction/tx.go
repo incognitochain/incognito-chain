@@ -11,19 +11,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
 )
 
-// JoinSplitDesc stores the UTXO of a transaction
-// TODO(@0xbunyip): add randomSeed, MACs and epk
-type JoinSplitDesc struct {
-	Anchor        []byte             `json:"Anchor"`
-	Nullifiers    [][]byte           `json:"Nullifiers"`
-	Commitments   [][]byte           `json:"Commitments"`
-	Proof         *zksnark.PHGRProof `json:"Proof"`
-	EncryptedData [][]byte           `json:"EncryptedData"`
-	EphemeralKey  []byte             `json:"EphemeralKey"`
-	Type          string             `json:"Type"`
-	Reward        uint64             `json:"Reward"` // For coinbase tx
-}
-
 // Tx represents a coin-transfer-transaction stored in a block
 type Tx struct {
 	Version  int    `json:"Version"`
@@ -39,21 +26,6 @@ type Tx struct {
 type UsableTx struct {
 	TxId string `json:"TxId"`
 	Tx
-}
-
-func (desc *JoinSplitDesc) toString() string {
-	s := string(desc.Anchor)
-	for _, nf := range desc.Nullifiers {
-		s += string(nf)
-	}
-	for _, cm := range desc.Commitments {
-		s += string(cm)
-	}
-	s += desc.Proof.String()
-	for _, data := range desc.EncryptedData {
-		s += string(data)
-	}
-	return s
 }
 
 // Hash returns the hash of all fields of the transaction

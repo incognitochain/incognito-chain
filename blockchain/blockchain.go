@@ -13,6 +13,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/privacy/client"
 )
 
 type BlockChain struct {
@@ -576,7 +577,7 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 /**
 GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key
  */
-func (self *BlockChain) GetListTxByReadonlyKey(readonlyKey []byte, typeJoinSplitDesc string) ([]transaction.Tx, error) {
+func (self *BlockChain) GetListTxByReadonlyKey(skenc *client.ReceivingKey, pkenc *client.TransmissionKey, typeJoinSplitDesc string) ([]transaction.Tx, error) {
 	results := make([]transaction.Tx, 0)
 
 	// set default for params
@@ -606,9 +607,29 @@ func (self *BlockChain) GetListTxByReadonlyKey(readonlyKey []byte, typeJoinSplit
 					LockTime: tx.LockTime,
 					Descs:    make([]*transaction.JoinSplitDesc, 0),
 				}
-				// try to decrypt tx with readonly Key and add to txsInBlockAccepted
-				_ = tx
-				// TODO
+				// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
+				listDesc := make([]*transaction.JoinSplitDesc, 0)
+				for _, desc := range tx.Descs {
+					copyDesc := &transaction.JoinSplitDesc{
+						Anchor:        desc.Anchor,
+						Commitments:   make([][]byte, 0),
+						EncryptedData: make([][]byte, 0),
+					}
+					for i, encData := range desc.EncryptedData {
+						var epk client.EphemeralKey
+						copy(epk[:], desc.EphemeralKey)
+						aaa := client.DecryptNote(encData, *skenc, *pkenc, epk)
+						if len(aaa) > 0 {
+							copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
+							copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
+							copyDesc.SetNote(&aaa[0])
+							listDesc = append(listDesc, copyDesc)
+						}
+					}
+				}
+				if len(listDesc) > 0 {
+					copyTx.Descs = listDesc
+				}
 				txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
 			}
 		}

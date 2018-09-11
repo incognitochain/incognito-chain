@@ -14,7 +14,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"golang.org/x/crypto/ed25519"
-	"strings"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 )
@@ -43,8 +42,8 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// WALLET
-	"getaccount":            RpcServer.handleGetAccount,
 	"listaccounts":          RpcServer.handleListAccounts,
+	"getaccount":            RpcServer.handleGetAccount,
 	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
 	"getaccountaddress":     RpcServer.handleGetAccountAddress,
 	"dumpprivkey":           RpcServer.handleDumpPrivkey,
@@ -149,11 +148,26 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 	max := int(paramsArray[1].(float64))
 	_ = min
 	_ = max
-	listReadonlyKeys := paramsArray[2].(string)
-	var readonlyKeys []string
-	readonlyKeys = strings.Fields(listReadonlyKeys)
-	for _, readonlyKey := range readonlyKeys {
-		txs, err := self.Config.BlockChain.GetListTxByReadonlyKey([]byte(readonlyKey), common.TxOutCoinType)
+	listKeyParams := common.InterfaceSlice(paramsArray[2])
+	for _, keyParam := range listKeyParams {
+		keys := keyParam.(map[string]interface{})
+
+		// get readonly key
+		readonlyKeyStr := keys["ReadonlyKey"].(string)
+		readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
+		if err != nil {
+			return nil, err
+		}
+		skenc := readonlyKey.KeyPair.ReadonlyKey.Skenc
+
+		pubKeyStr := keys["PublicKey"].(string)
+		pubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
+		if err != nil {
+			return nil, err
+		}
+		pkenc := pubKey.KeyPair.PublicKey.Pkenc
+
+		txs, err := self.Config.BlockChain.GetListTxByReadonlyKey(&skenc, &pkenc, common.TxOutCoinType)
 		if err != nil {
 			return nil, err
 		}
@@ -167,11 +181,11 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 				item.JoinSplitDesc = append(item.JoinSplitDesc, jsonrpc.JoinSplitDesc{
 					Anchor:      desc.Anchor,
 					Commitments: desc.Commitments,
-					Amount:      0, // TODO
+					Amount:      desc.GetNote().Value,
 				})
 			}
 		}
-		result.ListUnspentResultItems[readonlyKey] = listTxs
+		result.ListUnspentResultItems[string(skenc[:])] = listTxs
 	}
 	return result, nil
 }
@@ -436,10 +450,7 @@ func assertEligibleAgentIDs(eligibleAgentIDs interface{}) []string {
 /**
 // handleCreateRawTransaction handles createrawtransaction commands.
 */
-func (self RpcServer) handleCreateActionParamsTrasaction(
-	params interface{},
-	closeChan <-chan struct{},
-) (interface{}, error) {
+func (self RpcServer) handleCreateActionParamsTrasaction(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
 	log.Println(params)
 	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.ActionParamTx{
@@ -485,20 +496,6 @@ func (self RpcServer) handleCreateActionParamsTrasaction(
 }
 
 /**
-getaccount RPC returns the name of the account associated with the given address.
-- Param #1: address
-*/
-func (self RpcServer) handleGetAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	for _, account := range self.Config.Wallet.MasterAccount.Child {
-		address := account.Key.Base58CheckSerialize(wallet.PubKeyType)
-		if address == params.(string) {
-			return account.Name, nil
-		}
-	}
-	return "", nil
-}
-
-/**
 listaccount RPC lists accounts and their balances.
 
 Parameter #1—the minimum number of confirmations a transaction must have
@@ -510,6 +507,20 @@ func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan st
 	result := jsonrpc.ListAccounts{}
 	result.Accounts = self.Config.Wallet.ListAccounts()
 	return result, nil
+}
+
+/**
+getaccount RPC returns the name of the account associated with the given address.
+- Param #1: address
+*/
+func (self RpcServer) handleGetAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	for _, account := range self.Config.Wallet.MasterAccount.Child {
+		address := account.Key.Base58CheckSerialize(wallet.PubKeyType)
+		if address == params.(string) {
+			return account.Name, nil
+		}
+	}
+	return "", nil
 }
 
 /**
@@ -544,6 +555,9 @@ func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan str
 	return self.Config.Wallet.DumpPrivkey(params.(string))
 }
 
+/**
+handleGetAllPeers - return all peers which this node connected
+ */
 func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
 	result := make(map[string]interface{})
