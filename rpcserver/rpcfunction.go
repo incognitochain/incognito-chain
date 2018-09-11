@@ -174,7 +174,7 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 				})
 			}
 		}
-		result.ListUnspentResultItems[readonlyKey] = listTxs
+		result.ListUnspentResultItems[string(skenc[:])] = listTxs
 	}
 	return result, nil
 }
