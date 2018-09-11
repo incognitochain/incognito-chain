@@ -31,9 +31,8 @@ type BlockHeader struct {
 	Nonce int
 
 	// POS
-	CommitteeSigs map[string]string //Include validator signature
-	NextCommittee []string          //Voted committee for the next block
-	Candidates    []string          //
+	BlockCommitteeSigs []string //Include validator signature
+	NextCommittee      []string //Voted committee for the next block
 
 	// Parallel PoS
 	ChainID      byte

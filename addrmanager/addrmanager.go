@@ -1,16 +1,17 @@
 package addrmanager
 
 import (
-	"sync"
-	"github.com/ninjadotorg/cash-prototype/peer"
-	"os"
 	"encoding/json"
 	"fmt"
-	peer2 "github.com/libp2p/go-libp2p-peer"
+	"math/rand"
+	"os"
+	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"time"
-	"path/filepath"
-	"math/rand"
+
+	peer2 "github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/cash-prototype/peer"
 )
 
 const (

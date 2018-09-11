@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
+	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
@@ -28,4 +29,8 @@ func (self MessageTx) JsonDeserialize(jsonStr string) error {
 	jsonDecodeString, _ := hex.DecodeString(jsonStr)
 	err := json.Unmarshal([]byte(jsonDecodeString), self)
 	return err
+}
+
+func (self MessageTx) SetSenderID(senderID peer.ID) error {
+	return nil
 }

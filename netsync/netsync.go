@@ -78,7 +78,7 @@ func (self *NetSync) Stop() error {
 
 	Logger.log.Info("Sync manager shutting down")
 	close(self.quit)
-	self.waitgroup.Wait()
+	// self.waitgroup.Wait()
 	return nil
 }
 

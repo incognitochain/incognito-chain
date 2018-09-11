@@ -332,9 +332,7 @@ func (self Server) Stop() error {
 
 	// self.Miner.Stop()
 
-	if cfg.Generate == true && (len(cfg.SealerPrvKey) > 0) {
-		self.ConsensusEngine.Stop()
-	}
+	self.ConsensusEngine.Stop()
 
 	close(self.quit)
 	return nil
@@ -432,9 +430,9 @@ func (self Server) Start() {
 	// if cfg.Generate == true && (len(cfg.MiningAddrs) > 0) {
 	// 	self.Miner.Start()
 	// }
-
+	self.ConsensusEngine.Start()
 	if cfg.Generate == true && (len(cfg.SealerPrvKey) > 0) {
-		self.ConsensusEngine.Start([]byte(cfg.SealerPrvKey))
+		self.ConsensusEngine.StartSealer([]byte(cfg.SealerPrvKey))
 	}
 
 	// test, print length of chain
@@ -715,9 +713,6 @@ func (self Server) PushTxMessage(hashTx *common.Hash) {
 	}
 }
 
-/**
-PushBlockMessageWithPeerId broadcast block to specific connected peer
-*/
 func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId peer2.ID) error {
 	var dc chan<- struct{}
 	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
@@ -729,9 +724,6 @@ func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId pe
 	return nil
 }
 
-/**
-PushBlockMessageWithPeerId broadcast block to specific connected peer
-*/
 func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block, validatorAddress string) error {
 	var dc chan<- struct{}
 	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
@@ -775,8 +767,10 @@ func (self *Server) PushBlockMessage(block *blockchain.Block) error {
 
 func (self *Server) PushMessageToAll(msg wire.Message) error {
 	var dc chan<- struct{}
-	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		listen.QueueMessageWithEncoding(msg, dc)
+
+	for _, listener := range self.ConnManager.Config.ListenerPeers {
+		msg.SetSenderID(listener.PeerId)
+		listener.QueueMessageWithEncoding(msg, dc)
 	}
 	return nil
 }
@@ -785,8 +779,8 @@ func (self *Server) PushMessageToPeerID(msg wire.Message, peerID peer2.ID) error
 	var dc chan<- struct{}
 	for _, listener := range self.ConnManager.Config.ListenerPeers {
 		peerConn, exist := listener.PeerConns[peerID]
-
 		if exist {
+			msg.SetSenderID(listener.PeerId)
 			peerConn.QueueMessageWithEncoding(msg, dc)
 			return nil
 		}

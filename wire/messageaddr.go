@@ -2,6 +2,8 @@ package wire
 
 import (
 	"encoding/json"
+
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 type MessageAddr struct {
@@ -24,4 +26,8 @@ func (self MessageAddr) JsonSerialize() ([]byte, error) {
 func (self MessageAddr) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
+}
+
+func (self MessageAddr) SetSenderID(senderID peer.ID) error {
+	return nil
 }

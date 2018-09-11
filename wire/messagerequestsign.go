@@ -29,3 +29,8 @@ func (self MessageRequestSign) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }
+
+func (self MessageRequestSign) SetSenderID(senderID peer.ID) error {
+	self.SenderID = senderID
+	return nil
+}

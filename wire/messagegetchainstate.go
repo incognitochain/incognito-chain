@@ -27,3 +27,8 @@ func (self MessageGetChainState) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }
+
+func (self MessageGetChainState) SetSenderID(senderID peer.ID) error {
+	self.SenderID = senderID
+	return nil
+}

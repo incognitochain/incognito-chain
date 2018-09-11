@@ -29,3 +29,8 @@ func (self MessageGetBlocks) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }
+
+func (self MessageGetBlocks) SetSenderID(senderID peer.ID) error {
+	self.SenderID = senderID
+	return nil
+}

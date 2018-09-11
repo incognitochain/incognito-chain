@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
@@ -39,6 +40,7 @@ type Message interface {
 	MaxPayloadLength(int) int
 	JsonSerialize() ([]byte, error)
 	JsonDeserialize(string) error
+	SetSenderID(peer.ID) error
 }
 
 func MakeEmptyMessage(messageType string) (Message, error) {

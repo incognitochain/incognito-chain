@@ -29,8 +29,7 @@ type Engine struct {
 	Config              Config
 	CurrentCommittee    []string
 	UpComingCommittee   []string
-	Candidates          []string // FIFO order
-	LastCommitteeChange int      // Idea: Committee will change based on the longest chain
+	LastCommitteeChange int // Idea: Committee will change based on the longest chain
 	validatorSigCh      chan blockSig
 	waitForMyTurn       chan struct{}
 }
@@ -56,17 +55,13 @@ type blockSig struct {
 	BlockSig  string
 }
 
-func (self *Engine) Start(sealerPrvKey []byte) error {
+func (self *Engine) Start() error {
 	self.Lock()
 	if self.started {
 		self.Unlock()
 		return errors.New("Consensus engine is already started")
 	}
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
-	_, err := self.Config.ValidatorKeyPair.Import(sealerPrvKey)
-	if err != nil {
-		return errors.New("Can't import sealer's key!")
-	}
 	self.started = true
 	self.quit = make(chan struct{})
 	self.wg.Add(1)
@@ -106,9 +101,17 @@ func (self *Engine) StopSealer() {
 		self.sealerStarted = false
 	}
 }
-func (self *Engine) StartSealer() {
+func (self *Engine) StartSealer(sealerPrvKey []byte) {
 	if self.sealerStarted {
 		Logger.log.Error("Sealer already started")
+		return
+	}
+	if err := self.checkIsLatest(); err != nil {
+
+	}
+	_, err := self.Config.ValidatorKeyPair.Import(sealerPrvKey)
+	if err != nil {
+		Logger.log.Error("Can't import sealer's key!")
 		return
 	}
 	self.waitForMyTurn = make(chan struct{})
@@ -116,9 +119,6 @@ func (self *Engine) StartSealer() {
 	self.quitSealer = make(chan struct{})
 	self.sealerStarted = true
 	Logger.log.Info("Starting sealing...")
-	if err := self.checkIsLatest(); err != nil {
-
-	}
 	go func() {
 		for {
 			select {
@@ -129,26 +129,39 @@ func (self *Engine) StartSealer() {
 			}
 		}
 	}()
-	for {
-		select {
-		case <-self.quitSealer:
-			return
-			// case <-
+	go func() {
+		for {
+			select {
+			case <-self.quitSealer:
+				return
+				// case <-
+			}
 		}
-	}
+	}()
 }
 
-// Wait for signatures of other validators
 func (self *Engine) Finalize(block *blockchain.Block) {
 	select {
 	case <-self.quitSealer:
 		return
 	}
+	// request signature from other validators
+	for {
+
+	}
+	newMsg := &wire.MessageRequestSign{}
+	newMsg.Block = *block
 	// self.Config.Server.PushMessageToPeerID()
+	var finalBlock *blockchain.Block
+
+	// Wait for signatures of other validators
 	for {
 		// validatorSig := <-self.validatorSigCh
 
 	}
+
+	self.Config.Server.UpdateChain(finalBlock)
+	self.Config.Server.PushBlockMessage(finalBlock)
 }
 
 func (self *Engine) createBlock(chainID byte) (*blockchain.Block, error) {
@@ -157,7 +170,6 @@ func (self *Engine) createBlock(chainID byte) (*blockchain.Block, error) {
 		return newblock.Block, err
 	}
 	newblock.Block.Header.ChainID = chainID
-	newblock.Block.Header.Candidates = self.Candidates
 	return newblock.Block, nil
 }
 
@@ -170,18 +182,21 @@ func (self *Engine) signData(data []byte) (string, error) {
 }
 
 func (self *Engine) validateBlock(block *blockchain.Block) error {
-	// #TODO validate block size, transactions, committee
-	// validate steps: block size -> signature ->
+	// validate steps: block size -> sealer's sig of the final block -> sealer is belong to committee -> validate each committee member's sig
 	return nil
 }
 
+func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
+	// validate steps: block size -> sealer is belong to committee -> validate sealer's sig -> check chainsHeight of this block -> validate each transaction
+	return nil
+}
 func (self *Engine) checkIsLatest() error {
 
 	return nil
 }
 
+// get validator chainID and committee of that chainID
 func (self *Engine) getMyChain() (byte, []string) {
-	// get validator chainID and committee of that chainID
 	var myChainCommittee []string
 	var err error
 	for index := byte(0); index < 20; index++ {
@@ -220,7 +235,7 @@ func (self *Engine) GetTxSenderChain(senderLastByte byte) (byte, error) {
 
 func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 	block := &msgBlock.Block
-	err := self.validateBlock(block)
+	err := self.validatePreSignBlock(block)
 	if err != nil {
 		invalidBlockMsg := &wire.MessageInvalidBlock{
 			Reason:    err.Error(),

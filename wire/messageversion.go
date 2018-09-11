@@ -39,3 +39,7 @@ func (self MessageVersion) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonDecodeString), self)
 	return err
 }
+
+func (self MessageVersion) SetSenderID(senderID peer.ID) error {
+	return nil
+}
