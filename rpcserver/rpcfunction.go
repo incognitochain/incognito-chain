@@ -151,12 +151,23 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 	listKeyParams := common.InterfaceSlice(paramsArray[2])
 	for _, keyParam := range listKeyParams {
 		keys := keyParam.(map[string]interface{})
-		var skenc *client.ReceivingKey
-		copy(skenc[:], []byte(keys["Skenc"].(string)))
-		var pkenc *client.TransmissionKey
-		copy(pkenc[:], []byte(keys["Pkenc"].(string)))
 
-		txs, err := self.Config.BlockChain.GetListTxByReadonlyKey(skenc, pkenc, common.TxOutCoinType)
+		// get readonly key
+		readonlyKeyStr := keys["ReadonlyKey"].(string)
+		readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
+		if err != nil {
+			return nil, err
+		}
+		skenc := readonlyKey.KeyPair.ReadonlyKey.Skenc
+
+		pubKeyStr := keys["PublicKey"].(string)
+		pubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
+		if err != nil {
+			return nil, err
+		}
+		pkenc := pubKey.KeyPair.PublicKey.Pkenc
+
+		txs, err := self.Config.BlockChain.GetListTxByReadonlyKey(&skenc, &pkenc, common.TxOutCoinType)
 		if err != nil {
 			return nil, err
 		}
