@@ -74,7 +74,7 @@ func ParseJsonToNote(jsonnote []byte) (*Note, error) {
 }
 
 // TODO: add hsig param
-func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivKey, epk EphemeralPubKey) /*, hSig [32]byte)*/ [][]byte {
+func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivKey, epk EphemeralPubKey, hSig [32]byte) [][]byte {
 	noteJsons := [][]byte{ParseNoteToJson(&note[0]), ParseNoteToJson(&note[1])}
 
 	var sk [32]byte
@@ -95,14 +95,14 @@ func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivKey, e
 	for i, _ := range pkenc {
 		copy(pk[i][:], pkenc[i][:])
 		sharedSecret[i] = KeyAgree(&pk[i], &sk)
-		symKey[i] = KDF(sharedSecret[i], epk, pk[i]) //, hSig)
+		symKey[i] = KDF(sharedSecret[i], epk, pk[i], hSig)
 		ciphernotes[i] = Encrypt(symKey[i], noteJsons[i][:])
 	}
 	return ciphernotes
 }
 
 func DecryptNote(ciphernote []byte, skenc ReceivingKey,
-	pkenc TransmissionKey, epk EphemeralPubKey /*, hSig [32]byte*/) (*Note, error) {
+	pkenc TransmissionKey, epk EphemeralPubKey, hSig [32]byte) (*Note, error) {
 
 	var epk1 [32]byte
 	copy(epk1[:], epk[:])
@@ -117,7 +117,7 @@ func DecryptNote(ciphernote []byte, skenc ReceivingKey,
 	copy(sk[:], skenc[:])
 	copy(pk[:], pkenc[:])
 	sharedSecret = KeyAgree(&epk1, &sk)
-	symKey = KDF(sharedSecret, epk, pk) //, hSig)
+	symKey = KDF(sharedSecret, epk, pk, hSig)
 	plaintext = Decrypt(symKey, ciphernote)
 
 	note, err := ParseJsonToNote(plaintext)
@@ -133,10 +133,10 @@ func KeyAgree(pk *[32]byte, sk *[32]byte) [32]byte {
 // TODO: add hSig param
 func KDF(sharedSecret [32]byte, epk [32]byte,
 	pkenc [32]byte,
-/*hSig [32]byte*/) []byte {
+	hSig [32]byte) []byte {
 	var data []byte
 
-	//data = append(hSig[:], sharedSecret[:]...)
+	data = append(hSig[:], sharedSecret[:]...)
 	data = append(data[:], sharedSecret[:]...)
 	data = append(data[:], epk[:]...)
 	data = append(data[:], pkenc[:]...)
@@ -260,13 +260,13 @@ func TestEncrypt() {
 	//Gen ephemeral key
 	epk, esk := GenEphemeralKey()
 
-	ciphernotes := EncryptNote(notes, pkencs, esk, epk) //, hSig)
+	ciphernotes := EncryptNote(notes, pkencs, esk, epk, hSig)
 	fmt.Printf("\nCiphernotes: %+v\n", ciphernotes)
 
 	fmt.Printf("\nReceiving key: %+v\n", skenc)
 	fmt.Printf("\nTransmission key: %+v\n", pkenc)
 
-	decrypted_notes, _ := DecryptNote(ciphernotes[0], skenc, pkenc, epk) //, hSig)
+	decrypted_notes, _ := DecryptNote(ciphernotes[0], skenc, pkenc, epk, hSig)
 	fmt.Printf("\nPlaintext: %s\n", decrypted_notes.Value)
 
 }
