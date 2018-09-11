@@ -182,8 +182,8 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(
 	genesisBlock.Header.Difficulty = difficulty
 	genesisBlock.Header.Version = version
 
-	// tx, err := self.getGenesisTx()
-	tx, err := self.createGenesisTx(genesisReward)
+	tx, err := self.getGenesisTx()
+	//tx, err := self.createGenesisTx(genesisReward)
 
 	if err != nil {
 		panic(err)

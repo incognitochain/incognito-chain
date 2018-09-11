@@ -6,7 +6,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
-func main() {
+func main5() {
 	mnemonicGen := wallet.MnemonicGenerator{}
 	Entropy, _ := mnemonicGen.NewEntropy(128)
 	Mnemonic, _ := mnemonicGen.NewMnemonic(Entropy)
