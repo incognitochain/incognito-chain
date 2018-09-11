@@ -56,7 +56,7 @@ func HSigCRH(seed, nf1, nf2, pubKey []byte) []byte {
 	var data []byte
 	data = append(seed, nf1...)
 	data = append(data, nf2...)
-	data = append(seed, pubKey...)
+	data = append(data, pubKey...)
 	result := blake2b.Sum256(data)
 	return result[:]
 }

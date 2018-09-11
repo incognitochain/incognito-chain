@@ -37,7 +37,7 @@ func printProof(proof *zksnark.PHGRProof) {
 // inputs: WitnessPath and Key must be set; InputeNote's Value, Apk, R and Rho must also be set before calling this function
 // outputs: EncKey, OutputNote's Apk and Value must be set before calling this function
 // reward: for coinbase tx, this is the mining reward; for other tx, it must be 0
-func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte, reward uint64, seed, phi []byte, outputR [][]byte) (*zksnark.PHGRProof, error) {
+func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte, reward uint64, seed, phi []byte, outputR [][]byte) (proof *zksnark.PHGRProof, hSig []byte, err error) {
 	// TODO: check for inputs (witness root & cm)
 
 	if len(inputs) != 2 || len(outputs) != 2 {
@@ -71,7 +71,7 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte, rew
 	if seed == nil { // seed != nil only for the transaction in genesis block
 		seed = RandBits(256)
 	}
-	hSig := HSigCRH(seed, inputs[0].InputNote.Nf, inputs[1].InputNote.Nf, pubKey)
+	hSig = HSigCRH(seed, inputs[0].InputNote.Nf, inputs[1].InputNote.Nf, pubKey)
 	// hSig := []byte{155, 31, 215, 9, 16, 242, 239, 233, 201, 109, 141, 58, 24, 239, 210, 117, 155, 17, 23, 188, 70, 125, 245, 85, 154, 42, 212, 0, 164, 221, 80, 94}
 
 	// Generate rho and r for new notes
@@ -150,11 +150,11 @@ func Prove(inputs []*JSInput, outputs []*JSOutput, pubKey []byte, rt []byte, rew
 	r, err := c.Prove(ctx, proveRequest)
 	if err != nil || r == nil || r.Proof == nil {
 		log.Fatalf("fail to prove: %v", err)
-		return nil, errors.New("Fail to prove JoinSplit")
+		return nil, nil, errors.New("Fail to prove JoinSplit")
 	}
 	log.Printf("Prove response:\n")
 	printProof(r.Proof)
-	return r.Proof, nil
+	return r.Proof, hSig, nil
 }
 
 // Verify checks if a zk-proof of a JSDesc is valid or not

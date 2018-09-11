@@ -173,13 +173,14 @@ func generateTx(
 	proof *zksnark.PHGRProof,
 	rt []byte,
 	reward uint64,
+	hSig []byte,
 ) (*Tx, error) {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
 	notes := [2]client.Note{*outputs[0].OutputNote, *outputs[1].OutputNote}
 	keys := [2]client.TransmissionKey{outputs[0].EncKey, outputs[1].EncKey}
 	ephemeralPubKey, ephemeralPrivKey := client.GenEphemeralKey()
-	noteciphers := client.EncryptNote(notes, keys, ephemeralPrivKey, ephemeralPubKey)
+	noteciphers := client.EncryptNote(notes, keys, ephemeralPrivKey, ephemeralPubKey, hSig)
 
 	desc := []*JoinSplitDesc{&JoinSplitDesc{
 		Proof:           proof,
@@ -213,12 +214,12 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 
 	var seed, phi []byte
 	var outputR [][]byte
-	proof, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, seed, phi, outputR)
+	proof, hSig, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, seed, phi, outputR)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := generateTx(inputs, outputs, proof, rt, reward)
+	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +242,7 @@ func GenerateProofForGenesisTx(
 		return nil, err
 	}
 
-	proof, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, seed, phi, outputR)
+	proof, hSig, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, seed, phi, outputR)
 	if err != nil {
 		return nil, err
 	}
