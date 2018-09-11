@@ -170,7 +170,7 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 				item.JoinSplitDesc = append(item.JoinSplitDesc, jsonrpc.JoinSplitDesc{
 					Anchor:      desc.Anchor,
 					Commitments: desc.Commitments,
-					Amount:      0, // TODO
+					Amount:      desc.GetNote().Value,
 				})
 			}
 		}
