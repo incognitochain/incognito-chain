@@ -73,43 +73,23 @@ func ParseJsonToNote(jsonnote []byte) Note {
 	return note
 }
 
-func GenEphePubKey(esk EphemeralKey) EphemeralKey {
-	var x, y [32]byte
-	copy(y[:], esk[:])
-	curve25519.ScalarBaseMult(&x, &y)
-
-	var epk EphemeralKey
-	copy(epk[:], x[:])
-	return epk
-}
 
 // TODO: add hsig param
-func EncryptNote(note [2]Note, pkenc [2]TransmissionKey) /*, hSig [32]byte)*/ [][]byte {
-	// var noteJsons [][]byte
-	// noteJsons[0] = ParseNoteToJson(&note[0])
-	// noteJsons[1] = ParseNoteToJson(&note[0])
+func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivateKey, epk EphemeralPublicKey) /*, hSig [32]byte)*/ [][]byte {
 	noteJsons := [][]byte{ParseNoteToJson(&note[0]), ParseNoteToJson(&note[1])}
 
-	//Create the ephemeral keypair
-	esk_tmp := RandBits(256)
-	var esk EphemeralKey
-	copy(esk[:], esk_tmp[:])
-	epk_tmp := GenEphePubKey(esk)
-	var epk [32]byte
-	copy(epk[:], epk_tmp[:])
-	// fmt.Printf("EPK = %v", epk)
-	//epk := GenTransmissionKey()
-
-	//Create share secret key
 	var sk [32]byte
 	copy(sk[:], esk[:])
+
+	var epk1 [32]byte
+	copy(epk1[:], epk[:])
+
 
 	var pk [2][32]byte
 	var sharedSecret [2][32]byte
 
 	var symKey [2][]byte
-	ciphernotes := make([][]byte, 3)
-	ciphernotes[0] = epk[:]
+	ciphernotes := make([][]byte, 2)
 
 	// fmt.Printf("ciphernote[0] = %v", ciphernotes[0][:])
 
@@ -118,40 +98,32 @@ func EncryptNote(note [2]Note, pkenc [2]TransmissionKey) /*, hSig [32]byte)*/ []
 		copy(pk[i][:], pkenc[i][:])
 		sharedSecret[i] = KeyAgree(&pk[i], &sk)
 		symKey[i] = KDF(sharedSecret[i], epk, pk[i]) //, hSig)
-		// fmt.Printf(">>>>>>> Encryption Key %v = %v", i, sharedSecret[i])
-		// symKey[i] = []byte("the-key-has-to-be-32-bytes-long!")
-		ciphernotes[i+1] = Encrypt(symKey[i], noteJsons[i][:])
+		ciphernotes[i] = Encrypt(symKey[i], noteJsons[i][:])
 	}
-
 	return ciphernotes
 }
 
-func DecryptNote(ciphernotes []byte, skenc ReceivingKey,
-	pkenc TransmissionKey, epk EphemeralKey /*, hSig [32]byte*/) []Note {
+func DecryptNote(ciphernote []byte, skenc ReceivingKey,
+	pkenc TransmissionKey, epk EphemeralPublicKey /*, hSig [32]byte*/) Note {
 
-	//var epk [32]byte
-	//copy(epk[:], ciphernotes[0])
-	fmt.Printf("EPK = %v", ciphernotes[0][:])
+	var epk1 [32]byte
+	copy(epk1[:], epk[:])
 
-	var sharedSecret [2][32]byte
-	var symKey [2][]byte
-	var plaintexts [2][]byte
+	var sharedSecret [32]byte
+	var symKey []byte
+	var plaintext []byte
 
-	var sk, pk [2][32]byte
+	var sk, pk [32]byte
 
 	//Create symmetric key 128-bit
-	for i, _ := range pkenc {
-		copy(sk[i][:], skenc[i][:])
-		copy(pk[i][:], pkenc[i][:])
-		sharedSecret[i] = KeyAgree(&epk, &sk[i])
-		symKey[i] = KDF(sharedSecret[i], epk, pk[i]) //, hSig)
-		// symKey[i] = []byte("the-key-has-to-be-32-bytes-long!")
-		// fmt.Printf(">>>>>> Decryption Key %v = %v", i, sharedSecret[i])
-		plaintexts[i] = Decrypt(symKey[i], ciphernotes[i+1])
-	}
+	copy(sk[:], skenc[:])
+	copy(pk[:], pkenc[:])
+	sharedSecret = KeyAgree(&epk1, &sk)
+	symKey = KDF(sharedSecret, epk, pk) //, hSig)
+	plaintext = Decrypt(symKey, ciphernote)
 
-	notes := []Note{ParseJsonToNote(plaintexts[0]), ParseJsonToNote(plaintexts[1])}
-	return notes
+	note := ParseJsonToNote(plaintext)
+	return note
 }
 
 func KeyAgree(pk *[32]byte, sk *[32]byte) [32]byte {
@@ -285,16 +257,20 @@ func TestEncrypt() {
 	pkenc := GenTransmissionKey(skenc)
 
 	pkencs := [2]TransmissionKey{pkenc, pkenc}
-	skencs := [2]ReceivingKey{skenc, skenc}
+	// skencs := [2]ReceivingKey{skenc, skenc}
 
-	ciphernotes := EncryptNote(notes, pkencs) //, hSig)
+	//Gen ephemeral key
+	epk, esk := GenEphemeralKey()
+
+
+	ciphernotes := EncryptNote(notes, pkencs, esk, epk) //, hSig)
 	fmt.Printf("\nCiphernotes: %+v\n", ciphernotes)
 
 	fmt.Printf("\nReceiving key: %+v\n", skenc)
 	fmt.Printf("\nTransmission key: %+v\n", pkenc)
 
-	decrypted_notes := DecryptNote(ciphernotes, skencs, pkencs) //, hSig)
-	fmt.Printf("\nPlaintext: %s\n", decrypted_notes[0].Memo)
+	decrypted_notes := DecryptNote(ciphernotes[0], skenc, pkenc, epk) //, hSig)
+	fmt.Printf("\nPlaintext: %s\n", decrypted_notes.Value)
 
 }
 

@@ -17,7 +17,8 @@ type SpendingKey [SpendingKeyLength]byte
 type SpendingAddress [SpendingAddressLength]byte
 type TransmissionKey [TransmissionKeyLength]byte
 type ReceivingKey [ReceivingKeyLength]byte
-type EphemeralKey [EphemeralKeyLength]byte
+type EphemeralPublicKey [EphemeralKeyLength]byte
+type EphemeralPrivateKey [EphemeralKeyLength]byte
 
 type ViewingKey struct {
 	Apk   SpendingAddress // use to receive coin
@@ -118,3 +119,21 @@ func GenPaymentAddress(ask SpendingKey) PaymentAddress {
 	addr.Pkenc = GenTransmissionKey(GenReceivingKey(ask))
 	return addr
 }
+
+
+func GenEphemeralKey() (EphemeralPublicKey, EphemeralPrivateKey) {
+	var esk EphemeralPrivateKey
+	var epk EphemeralPublicKey
+	
+	esk_tmp := RandBits(256)
+	copy(esk[:], esk_tmp[:])
+
+	var x, y [32]byte
+	copy(y[:], esk[:])
+	curve25519.ScalarBaseMult(&x, &y)
+	copy(epk[:], x[:])
+
+	return epk, esk
+}
+
+
