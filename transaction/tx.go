@@ -178,8 +178,8 @@ func generateTx(
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
 	notes := [2]client.Note{*outputs[0].OutputNote, *outputs[1].OutputNote}
 	keys := [2]client.TransmissionKey{outputs[0].EncKey, outputs[1].EncKey}
-	ephemeralPubKey := client.EphemeralPubKey{} // TODO
-	noteciphers := client.EncryptNote(notes, keys, client.EphemeralPrivKey{}, ephemeralPubKey)
+	ephemeralPubKey, ephemeralPrivKey := client.GenEphemeralKey()
+	noteciphers := client.EncryptNote(notes, keys, ephemeralPrivKey, ephemeralPubKey)
 
 	desc := []*JoinSplitDesc{&JoinSplitDesc{
 		Proof:           proof,
