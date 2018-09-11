@@ -208,10 +208,7 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 }
 
 func (p *PeerConn) VerAckReceived() bool {
-	p.flagMutex.Lock()
 	verAckReceived := p.verAckReceived
-	p.flagMutex.Unlock()
-
 	return verAckReceived
 }
 

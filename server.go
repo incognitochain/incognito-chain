@@ -571,6 +571,24 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	var dc chan<- struct{}
 	peerConn.QueueMessageWithEncoding(msgV, dc)
 
+	//	push version message again
+	if !peerConn.VerAckReceived() {
+		msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
+		msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
+		msg.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.ListeningAddress
+		msg.(*wire.MessageVersion).RawLocalAddress = peerConn.ListenerPeer.RawAddress
+		msg.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerId
+		msg.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
+		msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
+		msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerId
+		msg.(*wire.MessageVersion).LastBlock = 0
+		msg.(*wire.MessageVersion).ProtocolVersion = 1
+		if err != nil {
+			return
+		}
+		dc1 := make(chan struct{})
+		peerConn.QueueMessageWithEncoding(msg, dc1)
+	}
 }
 
 /**
@@ -583,7 +601,9 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	if msg.Valid {
 		peerConn.VerValid = true
 
-		self.AddrManager.Good(peerConn.Peer)
+		if peerConn.IsOutbound {
+			self.AddrManager.Good(peerConn.Peer)
+		}
 
 		// send message for get addr
 		msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
