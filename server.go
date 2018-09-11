@@ -610,7 +610,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 			}
 		}
 	} else {
-
+		Logger.log.Infof("%s onack is invalid", peerConn.PeerId)
 	}
 
 }

@@ -127,21 +127,18 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				self.flagMutex.Lock()
 				self.verAckReceived = true
 				if self.Config.MessageListeners.OnVerAck != nil {
-					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnVerAck(self, message.(*wire.MessageVerAck))
 				}
 				self.flagMutex.Unlock()
 			case reflect.TypeOf(&wire.MessageGetAddr{}):
 				self.flagMutex.Lock()
 				if self.Config.MessageListeners.OnGetAddr != nil {
-					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnGetAddr(self, message.(*wire.MessageGetAddr))
 				}
 				self.flagMutex.Unlock()
 			case reflect.TypeOf(&wire.MessageAddr{}):
 				self.flagMutex.Lock()
 				if self.Config.MessageListeners.OnGetAddr != nil {
-					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnAddr(self, message.(*wire.MessageAddr))
 				}
 				self.flagMutex.Unlock()
