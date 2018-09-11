@@ -18,7 +18,7 @@ type JoinSplitDesc struct {
 	Type            string             `json:"Type"`
 	Reward          uint64             `json:"Reward"` // For coinbase tx
 
-	note *client.Note
+	note []*client.Note // decrypt data for EncryptedData
 }
 
 func (desc *JoinSplitDesc) toString() string {
@@ -36,10 +36,10 @@ func (desc *JoinSplitDesc) toString() string {
 	return s
 }
 
-func (self *JoinSplitDesc) SetNote(note *client.Note) {
-	self.note = note
+func (self *JoinSplitDesc) AppendNote(note *client.Note) {
+	self.note = append(self.note, note)
 }
 
-func (self *JoinSplitDesc) GetNote() *client.Note {
+func (self *JoinSplitDesc) GetNote() []*client.Note {
 	return self.note
 }

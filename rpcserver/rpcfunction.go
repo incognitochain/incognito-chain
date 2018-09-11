@@ -178,14 +178,20 @@ func (self RpcServer) handleListUnSpent(params interface{}, closeChan <-chan str
 				JoinSplitDesc: make([]jsonrpc.JoinSplitDesc, 0),
 			}
 			for _, desc := range tx.Descs {
+				notes := desc.GetNote()
+				amounts := make([]uint64, 0)
+				for _, note := range notes {
+					amounts = append(amounts, note.Value)
+				}
 				item.JoinSplitDesc = append(item.JoinSplitDesc, jsonrpc.JoinSplitDesc{
 					Anchor:      desc.Anchor,
 					Commitments: desc.Commitments,
-					Amount:      desc.GetNote().Value,
+					Amounts:     amounts,
 				})
 			}
+			listTxs = append(listTxs, item)
 		}
-		result.ListUnspentResultItems[string(skenc[:])] = listTxs
+		result.ListUnspentResultItems[readonlyKeyStr] = listTxs
 	}
 	return result, nil
 }

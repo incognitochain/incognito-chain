@@ -34,14 +34,20 @@ func (self *ListUnspentResultItem) Init(data interface{}) {
 
 type JoinSplitDesc struct {
 	Commitments [][]byte `json:"Commitments"`
-	Amount      uint64   `json:"Amount"`
+	Amounts     []uint64 `json:"Amounts"`
 	Anchor      []byte   `json:"Anchor"`
 }
 
 func (self *JoinSplitDesc) Init(data interface{}) {
 	mapData := data.(map[string]interface{})
-	self.Amount = uint64(mapData["Amount"].(float64))
+	self.Amounts = make([]uint64, 0)
+	tempsAmounts := mapData["Amounts"].([]interface{})
+	for _, temp := range tempsAmounts {
+		self.Amounts = append(self.Amounts, uint64(temp.(float64)))
+	}
+
 	self.Anchor = []byte(mapData["Anchor"].(string))
+
 	self.Commitments = make([][]byte, 0)
 	temps := mapData["Commitments"].([]interface{})
 	for _, temp := range temps {
