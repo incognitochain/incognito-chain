@@ -618,7 +618,8 @@ func (self *BlockChain) GetListTxByReadonlyKey(skenc *client.ReceivingKey, pkenc
 					for i, encData := range desc.EncryptedData {
 						var epk client.EphemeralPubKey
 						copy(epk[:], desc.EphemeralPubKey)
-						var hSig []byte // TODO(@0xbunyip): save and get hSig
+						var hSig []byte
+						copy(hSig, desc.HSigSeed)
 						note, err := client.DecryptNote(encData, *skenc, *pkenc, epk, hSig)
 						if err == nil && note != nil {
 							copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)

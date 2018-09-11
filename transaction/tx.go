@@ -207,7 +207,7 @@ func generateTx(
 		EncryptedData:   noteciphers,
 		EphemeralPubKey: ephemeralPubKey[:],
 		HSigSeed:        seed,
-		Type:            "coins",
+		Type:            common.TxOutCoinType,
 		Reward:          reward,
 	}}
 

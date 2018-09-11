@@ -12,6 +12,8 @@ const (
 	GENESIS_BLOCK_REWARD = 1000000000
 	//GENESIS_BLOCK_PUBKEY_ADDR  = "mgnUx4Ah4VBvtaL7U1VXkmRjKUk3h8pbst"
 	GENESIS_BLOCK_PAYMENT_ADDR = "12S2mXUdD37GbP6XqL3VyLFRn9BoouYKsF1gvBJC1gzcyLze9tvcHRv27mpEB77aoqArrVMSxb1xtKasNmgEgY8maJo3YwZg1ZoA7Tp"
+	// readonly-key 13heMgrXxqBfc6m1TQDrp2EMhsE11vXqyTDWB9xn6e7rtiw3YeD1GEnXaPdhK9VV9BaDcihdaQTpVgsdczsYB24bjDQGWFcu9MXEvq8
+	// pri-key 1111111f2rTmz8gBKi8bBs3NWkoq6dd4mN17CrURn3JoFcTtxeejgKcdGXtpA24MJXhUHWkiHNFUhRDP5Poa6FEcW62kmvsar198JLnqwX
 )
 
 // global variables for genesis blok
