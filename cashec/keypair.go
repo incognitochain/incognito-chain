@@ -42,7 +42,7 @@ func (self *KeyPair) Verify(data, signature []byte) (bool, error) {
 }
 
 func (self *KeyPair) Sign(data []byte) ([]byte, error) {
-	// TODO(@0xbunyip): implement signing using keypair
+	// TODO(@0xkraken): implement signing using keypair
 	result := [32]byte{1, 2, 3}
 	return result[:], nil
 }
