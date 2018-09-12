@@ -92,6 +92,8 @@ type Config struct {
 	// maintain. Defaults to 8.
 	TargetOutbound uint32
 	TargetInbound  uint32
+
+	DiscoverPeers bool
 }
 
 type DiscoverPeerInfo struct {
