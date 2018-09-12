@@ -335,8 +335,8 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 
 mempoolLoop:
-	for _, txDesc := range sourceTxns {
-		tx := txDesc.Tx
+	for _, txDesc := range blockTxns {
+		tx := txDesc
 		//@todo need apply validate tx, logic check all referenced here
 		for _, desc := range tx.(*transaction.Tx).Descs {
 			view, err := g.chain.FetchTxViewPoint(desc.Type)
@@ -395,13 +395,16 @@ mempoolLoop:
 	//time.Sleep(time.Second * 15)
 
 	block := blockchain.Block{}
+	//g.chain.StoreNullifiersFromListNullifier()// TODO 0xbunyip
+	//g.chain.StoreNullifiersFromListCommitment() // TODO 0xbunyip
 	block.Header = blockchain.BlockHeader{
-		Version:       1,
-		PrevBlockHash: *prevBlockHash,
-		MerkleRoot:    *merkleRoot,
-		Timestamp:     time.Now(),
-		Difficulty:    0, //@todo should be create Difficulty logic
-		Nonce:         0, //@todo should be create Nonce logic
+		Version:               1,
+		PrevBlockHash:         *prevBlockHash,
+		MerkleRoot:            *merkleRoot,
+		MerkleRootCommitments: nil, // TODO 0xbunyip
+		Timestamp:             time.Now(),
+		Difficulty:            0, //@todo should be create Difficulty logic
+		Nonce:                 0, //@todo should be create Nonce logic
 	}
 	for _, tx := range blockTxns {
 		if err := block.AddTransaction(tx); err != nil {
