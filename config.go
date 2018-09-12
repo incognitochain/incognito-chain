@@ -85,7 +85,7 @@ type config struct {
 	MaxPeers             int           `long:"maxpeers" description:"Max number of inbound and outbound peers"`
 	MaxOutPeers          int           `long:"maxoutpeers" description:"Max number of outbound peers"`
 	MaxInPeers           int           `long:"maxinpeers" description:"Max number of inbound peers"`
-	DiscoverPeers        int           `long:"discoverpeers" description:"Enable discover peers"`
+	DiscoverPeers        bool          `long:"discoverpeers" description:"Enable discover peers"`
 	DisableBanning       bool          `long:"nobanning" description:"Disable banning of misbehaving peers"`
 	BanDuration          time.Duration `long:"banduration" description:"How long to ban misbehaving peers.  Valid time units are {s, m, h}.  Minimum 1 second"`
 	BanThreshold         uint32        `long:"banthreshold" description:"Maximum allowed ban score before disconnecting and banning misbehaving peers."`
