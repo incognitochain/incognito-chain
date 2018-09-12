@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"github.com/pkg/errors"
 )
 
 type Account struct {
@@ -77,14 +78,34 @@ func (self *Wallet) ExportAccount(childIndex uint32) string {
 	return self.MasterAccount.Child[childIndex].Key.Base58CheckSerialize(PriKeyType)
 }
 
-func (self *Wallet) ImportAccount(privateKey string) {
-	key, _ := Base58CheckDeserialize(privateKey)
+func (self *Wallet) ImportAccount(privateKeyStr string, passPhrase string) (*Account, error) {
+	if passPhrase != self.PassPhrase {
+		return nil, errors.New("Wrong password phrase")
+	}
+
+	for _, account := range self.MasterAccount.Child {
+		if account.Key.Base58CheckSerialize(PriKeyType) == privateKeyStr {
+			return nil, errors.New("Existed account")
+		}
+	}
+
+	priKey, _ := Base58CheckDeserialize(privateKeyStr)
+	priKey.KeyPair.GetKeyFromPrivateKey(&priKey.KeyPair.PrivateKey)
+
+	Logger.log.Infof("Pub-key : %s", priKey.Base58CheckSerialize(PubKeyType))
+	Logger.log.Infof("Readonly-key : %s", priKey.Base58CheckSerialize(ReadonlyKeyType))
+
 	account := Account{
-		Key:        *key,
+		Key:        *priKey,
 		Child:      make([]Account, 0),
 		IsImported: true,
 	}
 	self.MasterAccount.Child = append(self.MasterAccount.Child, account)
+	err := self.Save(self.PassPhrase)
+	if err != nil {
+		return nil, err
+	}
+	return &account, nil
 }
 
 func (self *Wallet) Save(password string) error {

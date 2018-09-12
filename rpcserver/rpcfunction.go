@@ -47,6 +47,7 @@ var RpcLimited = map[string]commandHandler{
 	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
 	"getaccountaddress":     RpcServer.handleGetAccountAddress,
 	"dumpprivkey":           RpcServer.handleDumpPrivkey,
+	"importaccount":         RpcServer.handleImportAccount,
 }
 
 func (self RpcServer) handleDoSomething(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -543,7 +544,7 @@ func (self RpcServer) handleGetAddressesByAccount(params interface{}, closeChan 
 }
 
 /**
-getaccountaddress RPC returns the current Bitcoin address for receiving payments to this account. If the account doesn’t exist, it creates both the account and a new address for receiving payment. Once a payment has been received to an address, future calls to this RPC for the same account will return a different address.
+getaccountaddress RPC returns the current coin address for receiving payments to this account. If the account doesn’t exist, it creates both the account and a new address for receiving payment. Once a payment has been received to an address, future calls to this RPC for the same account will return a different address.
 Parameter #1—an account name
 Result—a bitcoin address
 */
@@ -559,6 +560,25 @@ Result—the private key
 */
 func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	return self.Config.Wallet.DumpPrivkey(params.(string))
+}
+
+/**
+handleImportAccount - import a new account by private-key
+- Param #1: private-key string
+- Param #2: passPhrase of wallet
+ */
+func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+	privateKey := arrayParams[0].(string)
+	passPhrase := arrayParams[1].(string)
+	account, err := self.Config.Wallet.ImportAccount(privateKey, passPhrase)
+	if err != nil {
+		return "", err
+	}
+	return wallet.KeySerializedData{
+		PublicKey:   account.Key.Base58CheckSerialize(wallet.PubKeyType),
+		ReadonlyKey: account.Key.Base58CheckSerialize(wallet.ReadonlyKeyType),
+	}, err
 }
 
 /**
