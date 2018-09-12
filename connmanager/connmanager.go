@@ -1,27 +1,27 @@
 package connmanager
 
 import (
-	"net/rpc"
+	"fmt"
 	"github.com/ninjadotorg/cash-prototype/bootnode/server"
 	"github.com/ninjadotorg/cash-prototype/cashec"
+	"log"
+	"net/rpc"
 	"os"
 	"sync"
-	"log"
 	"sync/atomic"
-	"fmt"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/peer"
+	"encoding/json"
+	libpeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
-	libpeer "github.com/libp2p/go-libp2p-peer"
-	"strings"
 	"github.com/ninjadotorg/cash-prototype/common"
-	"net"
-	"runtime"
-	"net/http"
+	"github.com/ninjadotorg/cash-prototype/peer"
 	"io/ioutil"
-	"encoding/json"
+	"net"
+	"net/http"
+	"runtime"
+	"strings"
 )
 
 const (
@@ -399,7 +399,9 @@ listen:
 	for {
 		//Logger.log.Infof("Peers", self.DiscoveredPeers)
 		if client == nil {
-			client, err = rpc.Dial("tcp", "127.0.0.1:9889")
+			// server bootnode 35.199.177.89:9339
+			// local bootnode 127.0.0.1:9889
+			client, err = rpc.Dial("tcp", "35.199.177.89:9339")
 			if err != nil {
 				Logger.log.Error("[Exchange Peers] re-connect:", err)
 			}
@@ -429,7 +431,7 @@ listen:
 				}
 
 				args := &server.PingArgs{rawAddress, publicKey}
-				//Logger.log.Infof("[Exchange Peers] Ping", args)
+				Logger.log.Infof("[Exchange Peers] Ping", args)
 				err := client.Call("Handler.Ping", args, &response)
 				if err != nil {
 					//Logger.log.Error("[Exchange Peers] Ping:", err)
@@ -438,6 +440,9 @@ listen:
 
 					goto listen
 				}
+
+				Logger.log.Info("Discover Peers", response)
+
 				for _, rawPeer := range response {
 					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerId.String()) {
 						_, exist := self.DiscoveredPeers[rawPeer.PublicKey]
@@ -467,10 +472,12 @@ listen:
 							go self.Connect(rawPeer.RawAddress)
 						}
 					}
+
+					time.Sleep(5 * time.Second)
 				}
 			}
 		}
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 30)
 	}
 }
 

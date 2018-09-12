@@ -31,7 +31,7 @@ const (
 	trickleTimeout = 10 * time.Second
 
 	maxRetryConn      = 25
-	retryConnDuration = 10 * time.Second
+	retryConnDuration = 30 * time.Second
 )
 
 // ConnState represents the state of the requested connection.
