@@ -1,10 +1,13 @@
 package pos
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/mempool"
@@ -13,6 +16,14 @@ import (
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/mining"
 	"github.com/ninjadotorg/cash-prototype/wire"
+)
+
+var (
+	errBlockSizeExceed     = errors.New("block size is too big")
+	errNotInCommittee      = errors.New("user not in committee")
+	errSigWrongOrNotExits  = errors.New("signature is wrong or not existed in block header")
+	errChainNotFullySynced = errors.New("chains are not fully synced")
+	errTxIsWrong           = errors.New("transaction is wrong")
 )
 
 // PoSEngine only need to start if node runner want to be a validator
@@ -188,6 +199,63 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 
 func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 	// validate steps: block size -> sealer is belong to committee -> validate sealer's sig -> check chainsHeight of this block -> validate each transaction
+
+	// 1. Check whether block size is greater than MAX_BLOCKSIZE or not.
+	blockBytes, err := json.Marshal(block)
+	if err != nil {
+		return err
+	}
+	if len(blockBytes) > MAX_BLOCKSIZE {
+		return errBlockSizeExceed
+	}
+
+	// 2. Check user is in current committee or not
+	for _, c := range self.CurrentCommittee {
+		if strings.Compare(c, block.ChainLeader) != 0 {
+			return errNotInCommittee
+		}
+		continue
+	}
+
+	// 3. Check signature of the block belongs to current committee or not.
+	k := cashec.KeyPair{
+		PublicKey: []byte(block.ChainLeader),
+	}
+	isValidSignature, err := k.Verify(block.Hash().CloneBytes(), []byte(block.ChainLeaderSig))
+	if err != nil {
+		return err
+	}
+	if isValidSignature == false {
+		return errSigWrongOrNotExits
+	}
+	for _, s := range block.Header.BlockCommitteeSigs {
+		if strings.Compare(s, block.ChainLeaderSig) != 0 {
+			return errSigWrongOrNotExits
+		}
+		continue
+	}
+
+	// 4. Check chains height of the block.
+	for i := 0; i < 20; i++ {
+		if int(self.Config.BlockChain.BestState[i].Height) < block.Header.ChainsHeight[i] {
+			timer := time.NewTimer(MAX_SYNC_CHAINS_TIME * time.Second)
+			<-timer.C
+			break
+		}
+	}
+	for i := 0; i < 20; i++ {
+		if int(self.Config.BlockChain.BestState[i].Height) < block.Header.ChainsHeight[i] {
+			return errChainNotFullySynced
+		}
+	}
+
+	// 5. Revalidate transactions in block.
+	for _, tx := range block.Transactions {
+		if tx.ValidateTransaction() == false {
+			return errTxIsWrong
+		}
+	}
+
 	return nil
 }
 func (self *Engine) checkIsLatest() error {
