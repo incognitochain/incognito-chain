@@ -191,12 +191,15 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		targetInbound = cfg.MaxInPeers
 	}
 
+	Logger.log.Info("DiscoverPeers", cfg.DiscoverPeers)
+
 	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
 		ListenerPeers:        peers,
 		TargetOutbound:       uint32(targetOutbound),
 		TargetInbound:        uint32(targetInbound),
+		DiscoverPeers:		  cfg.DiscoverPeers,
 	})
 	if err != nil {
 		return err
@@ -676,24 +679,24 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	}
 
 	//time.Sleep(3 * time.Second)
-	b := &blockchain.Block{
-		Height: 100,
-	}
-
-	var realPubKey string
-	peerId := peerConn.Peer.PeerId
-	Logger.log.Info(peerId.Pretty())
-	for pubKey, peerInfo := range self.ConnManager.DiscoveredPeers {
-		Logger.log.Info(pubKey, peerInfo.PeerId.Pretty())
-		if peerInfo.PeerId.Pretty() == peerId.Pretty() {
-			realPubKey = pubKey
-		}
-	}
-
-	if realPubKey != "" {
-		Logger.log.Info("Have public key", realPubKey)
-		self.PushBlockMessageWithValidatorAddress(b, realPubKey)
-	}
+	//b := &blockchain.Block{
+	//	Height: 100,
+	//}
+	//
+	//var realPubKey string
+	//peerId := peerConn.Peer.PeerId
+	//Logger.log.Info(peerId.Pretty())
+	//for pubKey, peerInfo := range self.ConnManager.DiscoveredPeers {
+	//	Logger.log.Info(pubKey, peerInfo.PeerId.Pretty())
+	//	if peerInfo.PeerId.Pretty() == peerId.Pretty() {
+	//		realPubKey = pubKey
+	//	}
+	//}
+	//
+	//if realPubKey != "" {
+	//	Logger.log.Info("Have public key", realPubKey)
+	//	self.PushBlockMessageWithValidatorAddress(b, realPubKey)
+	//}
 }
 
 /**
