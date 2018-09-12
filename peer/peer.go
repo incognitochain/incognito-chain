@@ -320,10 +320,23 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 	self.outboundMutex.Unlock()
 
+	timeOutVerAck := make(chan struct{})
+	time.AfterFunc(time.Second * 10, func() {
+		if !peerConn.VerAckReceived() {
+			Logger.log.Infof("NewPeerConnection timeoutVerack timeout PEER ID %s", peerConn.PeerId.String())
+			timeOutVerAck <- struct{}{}
+		} else {
+			Logger.log.Infof("NewPeerConnection timeoutVerack is not timeout PEER ID %s", peerConn.PeerId.String())
+		}
+	})
+
 	for {
 		select {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("NewPeerConnection Close Stream PEER ID %s", peerConn.PeerId.String())
+			break
+		case <-timeOutVerAck:
+			Logger.log.Infof("NewPeerConnection timeoutVerack PEER ID %s", peerConn.PeerId.String())
 			break
 		}
 	}
@@ -344,7 +357,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	}
 
 	remotePeerId := stream.Conn().RemotePeer()
-	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID-%s", self.Host.ID().String(), remotePeerId.String())
+	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID %s", self.Host.ID().String(), remotePeerId.String())
 
 	// TODO this code make EOF for libp2p
 	//if !atomic.CompareAndSwapInt32(&self.connected, 0, 1) {
@@ -379,10 +392,23 @@ func (self *Peer) HandleStream(stream net.Stream) {
 
 	go self.handleConnected(&peerConn)
 
+	timeOutVerAck := make(chan struct{})
+	time.AfterFunc(time.Second * 10, func() {
+		if !peerConn.VerAckReceived() {
+			Logger.log.Infof("HandleStream timeoutVerack timeout PEER ID %s", peerConn.PeerId.String())
+			timeOutVerAck <- struct{}{}
+		} else {
+			Logger.log.Infof("HandleStream timeoutVerack is not timeout PEER ID %s", peerConn.PeerId.String())
+		}
+	})
+
 	for {
 		select {
 		case <-peerConn.disconnect:
-			Logger.log.Infof("HandleStream Close Stream PEER ID %s", peerConn.PeerId.String())
+			Logger.log.Infof("HandleStream close stream PEER ID %s", peerConn.PeerId.String())
+			break
+		case <-timeOutVerAck:
+			Logger.log.Infof("HandleStream timeoutVerack PEER ID %s", peerConn.PeerId.String())
 			break
 		}
 	}
@@ -455,6 +481,7 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 
 		if peerConn.RetryCount < maxRetryConn {
 			peerConn.updateState(ConnPending)
+
 			_, err := peerConn.ListenerPeer.NewPeerConnection(peerConn.Peer)
 			if err != nil {
 				go self.retryPeerConnection(peerConn)
