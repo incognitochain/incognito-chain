@@ -598,6 +598,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
 	log.Printf("Receive verack message")
 
+
 	if msg.Valid {
 		peerConn.VerValid = true
 
@@ -660,7 +661,7 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 	peerConn.QueueMessageWithEncoding(msgS, dc)
 }
 
-func (self *Server) OnAddr(_ *peer.PeerConn, msg *wire.MessageAddr) {
+func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	// TODO for onaddr message
 	log.Printf("Receive addr message")
 	for _, addr := range msg.RawAddresses {
@@ -668,9 +669,30 @@ func (self *Server) OnAddr(_ *peer.PeerConn, msg *wire.MessageAddr) {
 			for _, _peerConn := range listen.PeerConns {
 				if _peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(addr) {
 					go self.ConnManager.Connect(addr)
+					time.Sleep(10 * time.Second)
 				}
 			}
 		}
+	}
+
+	//time.Sleep(3 * time.Second)
+	b := &blockchain.Block{
+		Height: 100,
+	}
+
+	var realPubKey string
+	peerId := peerConn.Peer.PeerId
+	Logger.log.Info(peerId.Pretty())
+	for pubKey, peerInfo := range self.ConnManager.DiscoveredPeers {
+		Logger.log.Info(pubKey, peerInfo.PeerId.Pretty())
+		if peerInfo.PeerId.Pretty() == peerId.Pretty() {
+			realPubKey = pubKey
+		}
+	}
+
+	if realPubKey != "" {
+		Logger.log.Info("Have public key", realPubKey)
+		self.PushBlockMessageWithValidatorAddress(b, realPubKey)
 	}
 }
 
@@ -708,6 +730,7 @@ func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId pe
 PushBlockMessageWithPeerId broadcast block to specific connected peer
  */
 func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block, validatorAddress string) error {
+	Logger.log.Info("PushBlockMessageWithValidatorAddress", block, validatorAddress)
 	var dc chan<- struct{}
 	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
 	msg.(*wire.MessageBlock).Block = *block
@@ -715,11 +738,14 @@ func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block,
 		return err
 	}
 	discoverdPeer, exist := self.ConnManager.DiscoveredPeers[validatorAddress]
+
+	Logger.log.Info("PushBlockMessageWithValidatorAddress 2", discoverdPeer, exist)
 	if exist {
 		for _, listener := range self.ConnManager.Config.ListenerPeers {
 			peerConn, exist := listener.PeerConns[discoverdPeer.PeerId]
-
+			Logger.log.Info("PushBlockMessageWithValidatorAddress 3", exist)
 			if exist {
+				Logger.log.Info("PushBlockMessageWithValidatorAddress 4", msg, peerConn)
 				peerConn.QueueMessageWithEncoding(msg, dc)
 			}
 		}

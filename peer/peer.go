@@ -31,7 +31,7 @@ const (
 	trickleTimeout = 10 * time.Second
 
 	maxRetryConn      = 25
-	retryConnDuration = 10 * time.Second
+	retryConnDuration = 30 * time.Second
 )
 
 // ConnState represents the state of the requested connection.
@@ -56,7 +56,7 @@ type Peer struct {
 	PeerId           peer.ID
 	RawAddress       string
 	ListeningAddress common.SimpleAddr
-	PublicKey		 string
+	PublicKey        string
 
 	Seed          int64
 	outboundMutex sync.Mutex
@@ -295,6 +295,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		ReaderWriterStream: rw,
 		quit:               make(chan struct{}),
 		disconnect:         make(chan struct{}),
+		timeoutVerack:      make(chan struct{}),
 		sendMessageQueue:   make(chan outMsg, 1),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,
@@ -313,10 +314,22 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 	self.outboundMutex.Unlock()
 
+	time.AfterFunc(time.Second * 10, func() {
+		if !peerConn.VerAckReceived() {
+			Logger.log.Infof("NewPeerConnection timeoutVerack timeout PEER ID %s", peerConn.PeerId.String())
+			peerConn.timeoutVerack <- struct{}{}
+		} else {
+			Logger.log.Infof("NewPeerConnection timeoutVerack is not timeout PEER ID %s", peerConn.PeerId.String())
+		}
+	})
+
 	for {
 		select {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("NewPeerConnection Close Stream PEER ID %s", peerConn.PeerId.String())
+			break
+		case <-peerConn.timeoutVerack:
+			Logger.log.Infof("NewPeerConnection timeoutVerack PEER ID %s", peerConn.PeerId.String())
 			break
 		}
 	}
@@ -356,6 +369,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		ReaderWriterStream: rw,
 		quit:               make(chan struct{}),
 		disconnect:         make(chan struct{}),
+		timeoutVerack:      make(chan struct{}),
 		sendMessageQueue:   make(chan outMsg, 1),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,
@@ -372,10 +386,22 @@ func (self *Peer) HandleStream(stream net.Stream) {
 
 	go self.handleConnected(&peerConn)
 
+	time.AfterFunc(time.Second * 10, func() {
+		if !peerConn.VerAckReceived() {
+			Logger.log.Infof("HandleStream timeoutVerack timeout PEER ID %s", peerConn.PeerId.String())
+			peerConn.timeoutVerack <- struct{}{}
+		} else {
+			Logger.log.Infof("HandleStream timeoutVerack is not timeout PEER ID %s", peerConn.PeerId.String())
+		}
+	})
+
 	for {
 		select {
 		case <-peerConn.disconnect:
-			Logger.log.Infof("HandleStream Close Stream PEER ID %s", peerConn.PeerId.String())
+			Logger.log.Infof("HandleStream close stream PEER ID %s", peerConn.PeerId.String())
+			break
+		case <-peerConn.timeoutVerack:
+			Logger.log.Infof("HandleStream timeoutVerack PEER ID %s", peerConn.PeerId.String())
 			break
 		}
 	}
