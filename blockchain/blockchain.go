@@ -688,7 +688,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 
 	// Get set of keys from private key
 	keys := cashec.KeySet{}
-	keys.GetKeyFromPrivateKey(privateKey)
+	keys.ImportFromPrivateKey(privateKey)
 
 	// set default for params
 	if typeJoinSplitDesc == "" {

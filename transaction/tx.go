@@ -117,7 +117,7 @@ func CreateTx(
 	}
 
 	senderFullKey := cashec.KeySet{}
-	senderFullKey.GetKeyFromPrivateKeyByte(senderKey[:])
+	senderFullKey.ImportFromPrivateKeyByte(senderKey[:])
 
 	// Create new notes: first one send `value` to receiverAddr, second one sends `change` back to sender
 	outNote := &client.Note{Value: value, Apk: receiverAddr.Apk}
@@ -282,7 +282,7 @@ func GenerateProofForGenesisTx(
 	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
 	privateSignKey := [32]byte{1}
 	keyPair := &cashec.KeySet{}
-	keyPair.GetKeyFromPrivateKeyByte(privateSignKey[:])
+	keyPair.ImportFromPrivateKeyByte(privateSignKey[:])
 
 	proof, hSig, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, &seed, &phi, outputR)
 	if err != nil {
