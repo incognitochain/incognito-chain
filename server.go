@@ -194,12 +194,15 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		targetInbound = cfg.MaxInPeers
 	}
 
+	Logger.log.Info("DiscoverPeers", cfg.DiscoverPeers)
+
 	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
 		ListenerPeers:        peers,
 		TargetOutbound:       uint32(targetOutbound),
 		TargetInbound:        uint32(targetInbound),
+		DiscoverPeers:        cfg.DiscoverPeers,
 	})
 	if err != nil {
 		return err
@@ -613,7 +616,6 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
 	log.Printf("Receive verack message")
 
-
 	if msg.Valid {
 		peerConn.VerValid = true
 
@@ -691,24 +693,24 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	}
 
 	//time.Sleep(3 * time.Second)
-	b := &blockchain.Block{
-		Height: 100,
-	}
-
-	var realPubKey string
-	peerId := peerConn.Peer.PeerId
-	Logger.log.Info(peerId.Pretty())
-	for pubKey, peerInfo := range self.ConnManager.DiscoveredPeers {
-		Logger.log.Info(pubKey, peerInfo.PeerId.Pretty())
-		if peerInfo.PeerId.Pretty() == peerId.Pretty() {
-			realPubKey = pubKey
-		}
-	}
-
-	if realPubKey != "" {
-		Logger.log.Info("Have public key", realPubKey)
-		self.PushBlockMessageWithValidatorAddress(b, realPubKey)
-	}
+	//b := &blockchain.Block{
+	//	Height: 100,
+	//}
+	//
+	//var realPubKey string
+	//peerId := peerConn.Peer.PeerId
+	//Logger.log.Info(peerId.Pretty())
+	//for pubKey, peerInfo := range self.ConnManager.DiscoveredPeers {
+	//	Logger.log.Info(pubKey, peerInfo.PeerId.Pretty())
+	//	if peerInfo.PeerId.Pretty() == peerId.Pretty() {
+	//		realPubKey = pubKey
+	//	}
+	//}
+	//
+	//if realPubKey != "" {
+	//	Logger.log.Info("Have public key", realPubKey)
+	//	self.PushBlockMessageWithValidatorAddress(b, realPubKey)
+	//}
 }
 
 func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageRequestSign) {
@@ -802,13 +804,13 @@ func (self *Server) PushBlockMessage(block *blockchain.Block) error {
 	// TODO push block message for connected peer
 	//@todo got error here
 	var dc chan<- struct{}
-	for _, listen := range self.ConnManager.Config.ListenerPeers {
+	for _, listener := range self.ConnManager.Config.ListenerPeers {
 		msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
 		if err != nil {
 			return err
 		}
 		msg.(*wire.MessageBlock).Block = *block
-		listen.QueueMessageWithEncoding(msg, dc)
+		listener.QueueMessageWithEncoding(msg, dc)
 	}
 	return nil
 }
@@ -870,4 +872,17 @@ func (self *Server) UpdateChain(block *blockchain.Block) {
 
 	// save index of block
 	self.BlockChain.StoreBlockIndex(block)
+}
+
+func (self *Server) GetChainState() error {
+	var dc chan<- struct{}
+	for _, listener := range self.ConnManager.Config.ListenerPeers {
+		msg, err := wire.MakeEmptyMessage(wire.CmdGetChainState)
+		if err != nil {
+			return err
+		}
+		msg.SetSenderID(listener.PeerId)
+		listener.QueueMessageWithEncoding(msg, dc)
+	}
+	return nil
 }

@@ -1,27 +1,26 @@
 package connmanager
 
 import (
-	"fmt"
-	"github.com/ninjadotorg/cash-prototype/bootnode/server"
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"log"
 	"net/rpc"
-	"os"
-	"sync"
-	"sync/atomic"
-	"time"
-
 	"encoding/json"
+	"fmt"
 	libpeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/ninjadotorg/cash-prototype/bootnode/server"
+	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
+	"os"
 	"runtime"
 	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
 )
 
 const (
@@ -92,6 +91,8 @@ type Config struct {
 	// maintain. Defaults to 8.
 	TargetOutbound uint32
 	TargetInbound  uint32
+
+	DiscoverPeers bool
 }
 
 type DiscoverPeerInfo struct {
@@ -315,7 +316,9 @@ func (self *ConnManager) Start() {
 			self.ListeningPeers[listner.PeerId] = &listner
 		}
 
-		go self.DiscoverPeers()
+		if self.Config.DiscoverPeers {
+			go self.DiscoverPeers()
+		}
 	}
 }
 
