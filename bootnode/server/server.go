@@ -11,7 +11,7 @@ import (
 
 const (
 	heartbeatInterval = 5
-	heartbeatTimeout = 30
+	heartbeatTimeout = 60
 )
 
 // timeZeroVal is simply the zero value for a time.Time and is used to avoid
