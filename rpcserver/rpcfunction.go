@@ -163,7 +163,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 		}
 
 		// create a key set
-		keySet := cashec.KeyPair{
+		keySet := cashec.KeySet{
 			ReadonlyKey: readonlyKey.KeyPair.ReadonlyKey,
 			PublicKey:   pubKey.KeyPair.PublicKey,
 		}

@@ -116,7 +116,7 @@ func CreateTx(
 		panic("Input value less than output value")
 	}
 
-	senderFullKey := cashec.KeyPair{}
+	senderFullKey := cashec.KeySet{}
 	senderFullKey.GetKeyFromPrivateKeyByte(senderKey[:])
 
 	// Create new notes: first one send `value` to receiverAddr, second one sends `change` back to sender
@@ -160,7 +160,7 @@ func CreateRandomJSInput() *client.JSInput {
 	return input
 }
 
-func signTx(tx *Tx, keyPair *cashec.KeyPair) (*Tx, error) {
+func signTx(tx *Tx, keyPair *cashec.KeySet) (*Tx, error) {
 	tx.JSPubKey = keyPair.PublicKey.Apk[:]
 	// Sign tx
 	dataToBeSigned, err := json.Marshal(tx)
@@ -251,10 +251,7 @@ func generateTx(
 func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) (*Tx, error) {
 	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
 	keyBytes := []byte{} // TODO(0xbunyip): randomize seed?
-	keyPair, err := (&cashec.KeyPair{}).GenerateKey(keyBytes)
-	if err != nil {
-		return nil, err
-	}
+	keyPair := (&cashec.KeySet{}).GenerateKey(keyBytes)
 
 	var seed, phi *[]byte
 	var outputR [][]byte
@@ -284,10 +281,8 @@ func GenerateProofForGenesisTx(
 ) (*Tx, error) {
 	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
 	privateSignKey := [32]byte{1}
-	keyPair, err := (&cashec.KeyPair{}).Import(privateSignKey[:])
-	if err != nil {
-		return nil, err
-	}
+	keyPair := &cashec.KeySet{}
+	keyPair.GetKeyFromPrivateKeyByte(privateSignKey[:])
 
 	proof, hSig, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, &seed, &phi, outputR)
 	if err != nil {

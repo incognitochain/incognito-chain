@@ -581,7 +581,7 @@ GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be 
 - Param #1: key - key set which contain readonly-key and pub-key
 - Param #2: typeJoinSplitDesc - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeyPair, typeJoinSplitDesc string) ([]transaction.Tx, error) {
+func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, typeJoinSplitDesc string) ([]transaction.Tx, error) {
 	results := make([]transaction.Tx, 0)
 
 	// set default for params
@@ -687,7 +687,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 	nullifiersInDb := txViewPoint.listNullifiers[typeJoinSplitDesc]
 
 	// Get set of keys from private key
-	keys := cashec.KeyPair{}
+	keys := cashec.KeySet{}
 	keys.GetKeyFromPrivateKey(privateKey)
 
 	// set default for params

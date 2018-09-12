@@ -412,8 +412,8 @@ listen:
 				var publicKey string
 
 				if listener.Config.SealerPrvKey != "" {
-					keyPair := &cashec.KeyPair{}
-					keyPair.Import([]byte(listener.Config.SealerPrvKey))
+					keyPair := &cashec.KeySet{}
+					keyPair.GetKeyFromPrivateKeyByte([]byte(listener.Config.SealerPrvKey))
 					publicKey = string(keyPair.PublicKey.Apk[:]) + string(keyPair.PublicKey.Pkenc[:])
 				}
 
