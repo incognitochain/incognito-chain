@@ -87,9 +87,9 @@ func (self *Engine) Start() error {
 		self.knownChainsHeight[chainID] = int(self.config.BlockChain.BestState[chainID].Height)
 	}
 	Logger.log.Info("Validating local blockchain...")
-	// for chainID := 0; chainID < 20; chainID++ {
-
-	// }
+	for chainID := 0; chainID < 20; chainID++ {
+		// self.config.BlockChain.
+	}
 	self.quit = make(chan struct{})
 	self.wg.Add(1)
 	self.Unlock()
