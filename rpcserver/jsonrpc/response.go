@@ -16,7 +16,7 @@ import (
 type Response struct {
 	Result json.RawMessage  `json:"Result"`
 	Error  *common.RPCError `json:"Error"`
-	ID     *interface{}     `json:"Id"`
+	Id     *interface{}     `json:"Id"`
 }
 
 // NewResponse returns a new JSON-RPC response object given the provided id,
@@ -35,7 +35,7 @@ func NewResponse(id interface{}, marshalledResult []byte, rpcErr *common.RPCErro
 	return &Response{
 		Result: marshalledResult,
 		Error:  rpcErr,
-		ID:     pid,
+		Id:     pid,
 	}, nil
 }
 
