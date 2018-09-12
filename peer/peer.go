@@ -56,7 +56,7 @@ type Peer struct {
 	PeerId           peer.ID
 	RawAddress       string
 	ListeningAddress common.SimpleAddr
-	PublicKey		 string
+	PublicKey        string
 
 	Seed          int64
 	outboundMutex sync.Mutex
@@ -295,6 +295,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		ReaderWriterStream: rw,
 		quit:               make(chan struct{}),
 		disconnect:         make(chan struct{}),
+		verack:             make(chan struct{}),
 		sendMessageQueue:   make(chan outMsg, 1),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,
@@ -318,6 +319,13 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("NewPeerConnection Close Stream PEER ID %s", peerConn.PeerId.String())
 			break
+		case <-peerConn.verack:
+			Logger.log.Infof("HandleStream verack PEER ID %s", peerConn.PeerId.String())
+		case <-time.After(time.Second * 10):
+			if !peerConn.VerAckReceived() {
+				Logger.log.Infof("HandleStream verack timeout PEER ID %s", peerConn.PeerId.String())
+				break
+			}
 		}
 	}
 
@@ -356,6 +364,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		ReaderWriterStream: rw,
 		quit:               make(chan struct{}),
 		disconnect:         make(chan struct{}),
+		verack:             make(chan struct{}),
 		sendMessageQueue:   make(chan outMsg, 1),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,
@@ -375,8 +384,15 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	for {
 		select {
 		case <-peerConn.disconnect:
-			Logger.log.Infof("HandleStream Close Stream PEER ID %s", peerConn.PeerId.String())
+			Logger.log.Infof("HandleStream close stream PEER ID %s", peerConn.PeerId.String())
 			break
+		case <-peerConn.verack:
+			Logger.log.Infof("HandleStream verack PEER ID %s", peerConn.PeerId.String())
+		case <-time.After(time.Second * 10):
+			if !peerConn.VerAckReceived() {
+				Logger.log.Infof("HandleStream verack timeout PEER ID %s", peerConn.PeerId.String())
+				break
+			}
 		}
 	}
 }
