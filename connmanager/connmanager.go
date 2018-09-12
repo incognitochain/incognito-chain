@@ -1,6 +1,7 @@
 package connmanager
 
 import (
+	"net/rpc"
 	"encoding/json"
 	"fmt"
 	libpeer "github.com/libp2p/go-libp2p-peer"
