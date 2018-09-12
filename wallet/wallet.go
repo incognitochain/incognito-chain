@@ -78,7 +78,7 @@ func (self *Wallet) ExportAccount(childIndex uint32) string {
 	return self.MasterAccount.Child[childIndex].Key.Base58CheckSerialize(PriKeyType)
 }
 
-func (self *Wallet) ImportAccount(privateKeyStr string, passPhrase string) (*Account, error) {
+func (self *Wallet) ImportAccount(privateKeyStr string, accountName string, passPhrase string) (*Account, error) {
 	if passPhrase != self.PassPhrase {
 		return nil, errors.New("Wrong password phrase")
 	}
@@ -86,6 +86,9 @@ func (self *Wallet) ImportAccount(privateKeyStr string, passPhrase string) (*Acc
 	for _, account := range self.MasterAccount.Child {
 		if account.Key.Base58CheckSerialize(PriKeyType) == privateKeyStr {
 			return nil, errors.New("Existed account")
+		}
+		if account.Name == accountName {
+			return nil, errors.New("Existed account name")
 		}
 	}
 
@@ -99,6 +102,7 @@ func (self *Wallet) ImportAccount(privateKeyStr string, passPhrase string) (*Acc
 		Key:        *priKey,
 		Child:      make([]Account, 0),
 		IsImported: true,
+		Name:       accountName,
 	}
 	self.MasterAccount.Child = append(self.MasterAccount.Child, account)
 	err := self.Save(self.PassPhrase)

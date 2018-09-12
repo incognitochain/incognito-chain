@@ -565,13 +565,15 @@ func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan str
 /**
 handleImportAccount - import a new account by private-key
 - Param #1: private-key string
-- Param #2: passPhrase of wallet
+- Param #2: account name
+- Param #3: passPhrase of wallet
  */
 func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	arrayParams := common.InterfaceSlice(params)
 	privateKey := arrayParams[0].(string)
-	passPhrase := arrayParams[1].(string)
-	account, err := self.Config.Wallet.ImportAccount(privateKey, passPhrase)
+	accountName := arrayParams[1].(string)
+	passPhrase := arrayParams[2].(string)
+	account, err := self.Config.Wallet.ImportAccount(privateKey, accountName, passPhrase)
 	if err != nil {
 		return "", err
 	}
