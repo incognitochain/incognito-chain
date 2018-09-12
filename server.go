@@ -598,7 +598,6 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
 	log.Printf("Receive verack message")
 
-
 	if msg.Valid {
 		peerConn.VerValid = true
 
@@ -676,7 +675,7 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	}
 
 	//time.Sleep(3 * time.Second)
-	b := &blockchain.Block{
+	/*b := &blockchain.Block{
 		Height: 100,
 	}
 
@@ -693,7 +692,7 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	if realPubKey != "" {
 		Logger.log.Info("Have public key", realPubKey)
 		self.PushBlockMessageWithValidatorAddress(b, realPubKey)
-	}
+	}*/
 }
 
 /**

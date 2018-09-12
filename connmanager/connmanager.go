@@ -315,7 +315,7 @@ func (self *ConnManager) Start() {
 			self.ListeningPeers[listner.PeerId] = &listner
 		}
 
-		go self.DiscoverPeers()
+		//go self.DiscoverPeers()
 	}
 }
 
