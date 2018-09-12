@@ -532,7 +532,7 @@ func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan st
 	}
 	accounts := self.Config.Wallet.ListAccounts()
 	for accountName, account := range accounts {
-		txs, err := self.Config.BlockChain.GetListTxByReadonlyKey(&account.Key.KeyPair, common.TxOutCoinType)
+		txs, err := self.Config.BlockChain.GetListTxByPrivateKey(&account.Key.KeyPair.PrivateKey, common.TxOutCoinType)
 		if err != nil {
 			continue
 		}
