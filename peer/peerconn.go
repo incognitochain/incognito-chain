@@ -16,7 +16,7 @@ import (
 )
 
 type PeerConn struct {
-	connected  int32
+	connected int32
 
 	RetryCount int32
 	IsOutbound bool
@@ -25,6 +25,7 @@ type PeerConn struct {
 
 	ReaderWriterStream *bufio.ReadWriter
 	verAckReceived     bool
+	VerValid           bool
 
 	TargetAddress    ma.Multiaddr
 	PeerId           peer.ID
@@ -73,7 +74,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 			commandInHeader := messageHeader[:12]
 			commandInHeader = bytes.Trim(messageHeader, "\x00")
-			Logger.log.Infof("Message Type - %s %s",  string(commandInHeader), self.PeerId)
+			Logger.log.Infof("Message Type - %s %s", string(commandInHeader), self.PeerId)
 			commandType := string(messageHeader[:len(commandInHeader)])
 			var message, err = wire.MakeEmptyMessage(string(commandType))
 
@@ -126,27 +127,19 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			case reflect.TypeOf(&wire.MessageVerAck{}):
 				self.flagMutex.Lock()
 				self.verAckReceived = true
-				self.flagMutex.Unlock()
 				if self.Config.MessageListeners.OnVerAck != nil {
-					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnVerAck(self, message.(*wire.MessageVerAck))
 				}
 				self.flagMutex.Unlock()
 			case reflect.TypeOf(&wire.MessageGetAddr{}):
 				self.flagMutex.Lock()
-				self.verAckReceived = true
-				self.flagMutex.Unlock()
 				if self.Config.MessageListeners.OnGetAddr != nil {
-					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnGetAddr(self, message.(*wire.MessageGetAddr))
 				}
 				self.flagMutex.Unlock()
 			case reflect.TypeOf(&wire.MessageAddr{}):
 				self.flagMutex.Lock()
-				self.verAckReceived = true
-				self.flagMutex.Unlock()
 				if self.Config.MessageListeners.OnGetAddr != nil {
-					self.flagMutex.Lock()
 					self.Config.MessageListeners.OnAddr(self, message.(*wire.MessageAddr))
 				}
 				self.flagMutex.Unlock()
@@ -219,10 +212,7 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 }
 
 func (p *PeerConn) VerAckReceived() bool {
-	p.flagMutex.Lock()
 	verAckReceived := p.verAckReceived
-	p.flagMutex.Unlock()
-
 	return verAckReceived
 }
 
