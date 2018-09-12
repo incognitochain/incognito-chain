@@ -199,10 +199,10 @@ func (self *Wallet) GetAddressesByAccount(accountParam string) ([]KeySerializedD
 	return result, nil
 }
 
-func (self *Wallet) ListAccounts() map[string]float64 {
-	result := make(map[string]float64)
+func (self *Wallet) ListAccounts() map[string]Account {
+	result := make(map[string]Account)
 	for _, account := range self.MasterAccount.Child {
-		result[account.Name] = 0.0
+		result[account.Name] = account
 	}
 	return result
 }

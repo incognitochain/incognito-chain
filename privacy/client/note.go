@@ -123,7 +123,10 @@ func DecryptNote(ciphernote []byte, skenc ReceivingKey,
 	copy(pk[:], pkenc[:])
 	sharedSecret = KeyAgree(&epk1, &sk)
 	symKey = KDF(sharedSecret, epk, pk, hSig)
-	plaintext = Decrypt(symKey, ciphernote)
+	plaintext, err := Decrypt(symKey, ciphernote)
+	if err != nil {
+		return nil, err
+	}
 
 	note, err := ParseJsonToNote(plaintext)
 	return note, err
@@ -200,15 +203,15 @@ func Encrypt(key []byte, text []byte) []byte {
 	return []byte(finalMsg)
 }
 
-func Decrypt(key []byte, text []byte) []byte {
+func Decrypt(key []byte, text []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	decodedMsg, err := base64.URLEncoding.DecodeString(addBase64Padding(string(text[:])))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	if (len(decodedMsg) % aes.BlockSize) != 0 {
@@ -223,10 +226,10 @@ func Decrypt(key []byte, text []byte) []byte {
 
 	unpadMsg, err := Unpad(msg)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return unpadMsg
+	return unpadMsg, nil
 }
 
 func Uint64() uint64 {
@@ -286,6 +289,6 @@ func TestEncrypt1() {
 	ciphertext := Encrypt(key, text)
 	fmt.Printf("%s => %x\n", text, ciphertext)
 
-	plaintext := Decrypt(key, ciphertext)
+	plaintext, _ := Decrypt(key, ciphertext)
 	fmt.Printf("%x => %s\n", ciphertext, plaintext)
 }

@@ -511,8 +511,27 @@ Result—a list of accounts and their balances
 
 */
 func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	result := jsonrpc.ListAccounts{}
-	result.Accounts = self.Config.Wallet.ListAccounts()
+	result := jsonrpc.ListAccounts{
+		Accounts: make(map[string]uint64),
+	}
+	accounts := self.Config.Wallet.ListAccounts()
+	for accountName, account := range accounts {
+		txs, err := self.Config.BlockChain.GetListTxByReadonlyKey(&account.Key.KeyPair.ReadonlyKey.Skenc, &account.Key.KeyPair.PublicKey.Pkenc, common.TxOutCoinType)
+		if err != nil {
+			continue
+		}
+		amount := uint64(0)
+		for _, tx := range txs {
+			for _, desc := range tx.Descs {
+				notes := desc.GetNote()
+				for _, note := range notes {
+					amount += note.Value
+				}
+			}
+		}
+		result.Accounts[accountName] = amount
+	}
+
 	return result, nil
 }
 

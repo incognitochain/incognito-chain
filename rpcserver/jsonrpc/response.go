@@ -14,9 +14,9 @@ import (
 // interface.  The ID field has to be a pointer for Go to put a null in it when
 // empty.
 type Response struct {
-	Result json.RawMessage  `json:"result"`
-	Error  *common.RPCError `json:"error"`
-	ID     *interface{}     `json:"id"`
+	Result json.RawMessage  `json:"Result"`
+	Error  *common.RPCError `json:"Error"`
+	ID     *interface{}     `json:"Id"`
 }
 
 // NewResponse returns a new JSON-RPC response object given the provided id,
@@ -97,7 +97,7 @@ type GetHeaderResult struct {
 }
 
 type ListAccounts struct {
-	Accounts map[string]float64 `json:"Accounts"`
+	Accounts map[string]uint64 `json:"Accounts"`
 }
 
 type GetAddressesByAccount struct {
