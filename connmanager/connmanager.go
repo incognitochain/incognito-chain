@@ -95,9 +95,9 @@ type Config struct {
 }
 
 type DiscoverPeerInfo struct {
-	PublicKey  string
+	PublicKey string
 	RawAddress string
-	PeerId     libpeer.ID
+	PeerId libpeer.ID
 }
 
 // registerPending is used to register a pending connection attempt. By
@@ -315,7 +315,7 @@ func (self *ConnManager) Start() {
 			self.ListeningPeers[listner.PeerId] = &listner
 		}
 
-		go self.DiscovePeers()
+		go self.DiscoverPeers()
 	}
 }
 
@@ -390,14 +390,14 @@ func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)
 	seedFn(addrs)
 }
 
-func (self *ConnManager) DiscovePeers() {
+func (self *ConnManager) DiscoverPeers() {
 	Logger.log.Infof("Start Discove Peers")
 	var client *rpc.Client
 	var err error
 
 listen:
 	for {
-		Logger.log.Infof("Peers", self.DiscoveredPeers)
+		//Logger.log.Infof("Peers", self.DiscoveredPeers)
 		if client == nil {
 			client, err = rpc.Dial("tcp", "127.0.0.1:9889")
 			if err != nil {
@@ -406,7 +406,7 @@ listen:
 		}
 		if client != nil {
 			for _, listener := range self.Config.ListenerPeers {
-				Logger.log.Infof("[Exchange Peers] Ping")
+				//Logger.log.Infof("[Exchange Peers] Ping")
 				var response []server.RawPeer
 
 				var publicKey string
@@ -414,7 +414,7 @@ listen:
 				if listener.Config.SealerPrvKey != "" {
 					keyPair := &cashec.KeyPair{}
 					keyPair.Import([]byte(listener.Config.SealerPrvKey))
-					publicKey = string(keyPair.PublicKey.Apk[:]) + string(keyPair.PublicKey.Pkenc[:])
+					publicKey = string(keyPair.PublicKey)
 				}
 
 				// remove later
@@ -429,10 +429,10 @@ listen:
 				}
 
 				args := &server.PingArgs{rawAddress, publicKey}
-				Logger.log.Infof("[Exchange Peers] Ping", args)
+				//Logger.log.Infof("[Exchange Peers] Ping", args)
 				err := client.Call("Handler.Ping", args, &response)
 				if err != nil {
-					Logger.log.Error("[Exchange Peers] Ping:", err)
+					//Logger.log.Error("[Exchange Peers] Ping:", err)
 					client = nil
 					time.Sleep(time.Second * 2)
 
@@ -447,19 +447,19 @@ listen:
 							// given multiaddress
 							ipfsaddr, err := ma.NewMultiaddr(rawPeer.RawAddress)
 							if err != nil {
-								log.Print(err)
+								Logger.log.Error(err)
 								return
 							}
 
 							pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
 							if err != nil {
-								log.Print(err)
+								Logger.log.Error(err)
 								return
 							}
 
 							peerId, err := libpeer.IDB58Decode(pid)
 							if err != nil {
-								log.Print(err)
+								Logger.log.Error(err)
 								return
 							}
 
@@ -472,4 +472,16 @@ listen:
 		}
 		time.Sleep(time.Second * 5)
 	}
+}
+
+func (p *ConnManager) GetPeerConnsByPeerId(peerId libpeer.ID) []*peer.PeerConn {
+	results := []*peer.PeerConn{}
+	for _, listen := range p.ListeningPeers {
+		for _, peerConn :=range listen.PeerConns {
+			if peerConn.PeerId == peerId {
+				results = append(results, peerConn)
+			}
+		}
+	}
+	return results
 }
