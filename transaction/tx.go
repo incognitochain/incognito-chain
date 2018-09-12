@@ -75,9 +75,10 @@ func collectUnspentNotes(ask *client.SpendingKey, valueWanted uint64) ([]*client
 func CreateTx(
 	senderKey *client.SpendingKey,
 	paymentInfo []*client.PaymentInfo,
-	rt []byte,
+	rt *common.Hash,
 	usableTx []*UsableTx,
 	nullifiers [][]byte,
+	commitments [][]byte,
 ) (*Tx, error) {
 	receiverAddr := paymentInfo[0].PaymentAddress
 	value := paymentInfo[0].Amount
@@ -132,7 +133,7 @@ func CreateTx(
 
 	// Generate proof and sign tx
 	var reward uint64 // Zero reward for non-coinbase transaction
-	tx, err := GenerateProofAndSign(inputs, outputs, rt, reward)
+	tx, err := GenerateProofAndSign(inputs, outputs, rt[:], reward)
 	return tx, err
 }
 

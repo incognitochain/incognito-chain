@@ -244,24 +244,22 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
-	senderKey := client.SpendingKey{}
-	copy(senderKey[:], []byte(senderKeyParam.(string)))
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, nil
+	}
 
 	// param #2: list receiver
-	receiversParam := common.InterfaceSlice(arrayParams[1])
+	receiversParam := arrayParams[1].(map[string]interface{})
 	paymentInfos := make([]*client.PaymentInfo, 0)
-	for _, receiver := range receiversParam {
-		temp := receiver.(map[string]interface{})
-		apk := client.SpendingAddress{}
-		copy(apk[:], []byte(temp["Apk"].(string)))
-		pkenc := client.TransmissionKey{}
-		copy(pkenc[:], []byte(temp["Pkenc"].(string)))
+	for pubKeyStr, amount := range receiversParam {
+		receiverPubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
+		if err != nil {
+			return nil, nil
+		}
 		paymentInfo := &client.PaymentInfo{
-			Amount: uint64(receiver.(map[string]interface{})["Amount"].(float64)),
-			PaymentAddress: client.PaymentAddress{
-				Apk:   apk,
-				Pkenc: pkenc,
-			},
+			Amount:         uint64(amount.(float64)),
+			PaymentAddress: receiverPubKey.KeyPair.PublicKey,
 		}
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
@@ -290,7 +288,7 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 	txViewPoint, err := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
 
 	// create a new tx
-	tx, err := transaction.CreateTx(&senderKey, paymentInfos, nil, usableTxs, txViewPoint.ListNullifiers(common.TxOutCoinType))
+	tx, err := transaction.CreateTx(&senderKey.KeyPair.PrivateKey, paymentInfos, &self.Config.BlockChain.BestState.BestBlock.Header.MerkleRootCommitments, usableTxs, txViewPoint.ListNullifiers(common.TxOutCoinType), txViewPoint.ListCommitments(common.TxOutCoinType))
 	if err != nil {
 		return nil, err
 	}
