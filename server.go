@@ -202,7 +202,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		ListenerPeers:        peers,
 		TargetOutbound:       uint32(targetOutbound),
 		TargetInbound:        uint32(targetInbound),
-		DiscoverPeers:		  cfg.DiscoverPeers,
+		DiscoverPeers:        cfg.DiscoverPeers,
 	})
 	if err != nil {
 		return err
@@ -616,7 +616,6 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
 	log.Printf("Receive verack message")
 
-
 	if msg.Valid {
 		peerConn.VerValid = true
 
@@ -805,13 +804,13 @@ func (self *Server) PushBlockMessage(block *blockchain.Block) error {
 	// TODO push block message for connected peer
 	//@todo got error here
 	var dc chan<- struct{}
-	for _, listen := range self.ConnManager.Config.ListenerPeers {
+	for _, listener := range self.ConnManager.Config.ListenerPeers {
 		msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
 		if err != nil {
 			return err
 		}
 		msg.(*wire.MessageBlock).Block = *block
-		listen.QueueMessageWithEncoding(msg, dc)
+		listener.QueueMessageWithEncoding(msg, dc)
 	}
 	return nil
 }
@@ -873,4 +872,17 @@ func (self *Server) UpdateChain(block *blockchain.Block) {
 
 	// save index of block
 	self.BlockChain.StoreBlockIndex(block)
+}
+
+func (self *Server) GetChainState() error {
+	var dc chan<- struct{}
+	for _, listener := range self.ConnManager.Config.ListenerPeers {
+		msg, err := wire.MakeEmptyMessage(wire.CmdGetChainState)
+		if err != nil {
+			return err
+		}
+		msg.SetSenderID(listener.PeerId)
+		listener.QueueMessageWithEncoding(msg, dc)
+	}
+	return nil
 }

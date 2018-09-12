@@ -31,7 +31,7 @@ type BlockHeader struct {
 	Nonce int
 
 	// POS
-	BlockCommitteeSigs []string //Include validator signature
+	BlockCommitteeSigs []string //Include sealer and validators signature
 	NextCommittee      []string //Voted committee for the next block
 
 	// Parallel PoS
