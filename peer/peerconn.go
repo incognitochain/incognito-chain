@@ -169,14 +169,17 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		select {
 		case outMsg := <-self.sendMessageQueue:
 			{
+				Logger.log.Info("Process msg", outMsg, outMsg.msg, self.flagMutex)
 				self.flagMutex.Lock()
 				// TODO
 				// send message
 				messageByte, err := outMsg.msg.JsonSerialize()
+				Logger.log.Info("Process msg 2", messageByte, err)
 				if err != nil {
 					fmt.Println(err)
 					continue
 				}
+				Logger.log.Info("Process msg 3", messageByte)
 				header := make([]byte, wire.MessageHeaderSize)
 				CmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.msg))
 				copy(header[:], []byte(CmdType))
@@ -211,6 +214,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 //
 // This function is safe for concurrent access.
 func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
+	//Logger.log.Info("QueueMessageWithEncoding peer", msg)
 	self.sendMessageQueue <- outMsg{msg: msg, doneChan: doneChan}
 }
 
