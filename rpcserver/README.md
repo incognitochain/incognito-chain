@@ -9,7 +9,7 @@ Http client --(http request post)--> RPC http server
 ```json
 {
     "jsonrpc": "1.0",
-    "method": "__method_name__",
+    "method": "__command_name__",
     "params": __json_data_format__,
     "id": __integer_number__
 }
@@ -27,3 +27,5 @@ Http client --(http request post)--> RPC http server
 }
 ```
 
+- List rpc command:
++ "getblockchaininfo"
