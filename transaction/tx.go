@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strconv"
 	"crypto/rand"
-	"crypto/sha256"
-	"math/big"
+	// "crypto/sha256"
+	// "math/big"
 
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -168,49 +168,33 @@ func CreateRandomJSInput() *client.JSInput {
 	return input
 }
 
-type JSSig struct {
-	R, S *big.Int
-}
-
-func SignTx(tx *Tx) (*Tx, error) {
+func SignTx(tx *Tx, privKey *client.PrivateKey) (*Tx, error) {
 	//Check input transaction
 	if tx.JSSig != nil || tx.JSPubKey != nil {
 		return nil, errors.New("Input transaction must be an unsigned one!")
 	}
 
 	// Hash transaction
-	dataToBeSigned, err := json.Marshal(tx)
-	if err != nil {
-		return nil, err
-	}
-	hash := sha256.Sum256([]byte(dataToBeSigned))
-
-	// Generate signing key
-	privKey, err := client.GenerateKey(rand.Reader)
-	if err != nil {
-		return nil, err
-	}
-
-	// Verification key
-	tx.JSPubKey, err = json.Marshal(privKey.PublicKey)
-	fmt.Printf("\nPubKey:%s\n", tx.JSPubKey)
-	if err != nil {
-		return nil, err
-	}
+	hash := tx.GetTxId()
+	data := make([]byte, common.HashSize)
+	copy(data, hash[:])
+	// dataToBeSigned, err := json.Marshal(tx)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// hash := sha256.Sum256([]byte(dataToBeSigned))
 
 	// Sign
-	jsSig := *new(JSSig)
-	jsSig.R, jsSig.S, err = client.Sign(rand.Reader, privKey, hash[:])
-	if err != nil {
-		return nil, err
-	}
+	ecdsaSignature := *new(client.EcdsaSignature)
+	ecdsaSignature.R, ecdsaSignature.S, _ = client.Sign(rand.Reader, privKey, data[:])
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	// fmt.Printf("jsSig.R: %+v\n", *jsSig.R)
-	// fmt.Printf("jsSig.S: %+v\n", *jsSig.S)
-	tx.JSSig, err = json.Marshal(jsSig)
-	if err != nil {
-		return nil, err
-	}
+	tx.JSSig, _ = json.Marshal(ecdsaSignature)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	return tx, nil
 }
@@ -228,29 +212,20 @@ func VerifySign(tx *Tx) (bool, error) {
 	}
 	// fmt.Printf("Pub key: %+v\n", *pubKey)
 
-	// UnParse JSSig
-	jsSig := new(JSSig)
-	err = json.Unmarshal(tx.JSSig, jsSig)
+	// UnParse ECDSA signature
+	ecdsaSignature := new(client.EcdsaSignature)
+	err = json.Unmarshal(tx.JSSig, ecdsaSignature)
 	if err != nil {
 		return false, err
 	}
 	// fmt.Printf("JSsig : %+v\n", jsSig)
 
 	// Hash origin transaction
-	JSSig_temp := tx.JSSig
-	JSPubKey_temp := tx.JSPubKey
-	tx.JSSig = nil
-	tx.JSPubKey = nil
-
-	txjson, err := json.Marshal(tx)
-	if err != nil {
-		return false, err
-	}
-	hash := sha256.Sum256([]byte(txjson))
-	tx.JSSig = JSSig_temp
-	tx.JSPubKey = JSPubKey_temp
-
-	valid := client.VerifySign(pubKey, hash[:], jsSig.R, jsSig.S)
+	hash := tx.GetTxId()
+	data := make([]byte, common.HashSize)
+	copy(data, hash[:])
+	
+	valid := client.VerifySign(pubKey, data[:], ecdsaSignature.R, ecdsaSignature.S)
 	return valid, nil
 }
 
@@ -340,12 +315,39 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 	}
 
 	var ephemeralPrivKey *client.EphemeralPrivKey
-	var jsPubKey []byte // We are going to save jsPubkey to transaction in signTx() below
-	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, *seed, jsPubKey, ephemeralPrivKey)
+
+	//Generate signing key
+	sigPrivKey, err := client.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, err
 	}
-	return SignTx(tx)
+	// Verification key
+	sigPubKey, err := json.Marshal(sigPrivKey.PublicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, *seed, sigPubKey, ephemeralPrivKey)
+	if err != nil {
+		return nil, err
+	}
+	tx, err = SignTx(tx, sigPrivKey)
+	if err != nil{
+		return tx, err
+	}
+	//Calculate vmacs to prove this transaction is signed by this user
+
+	//nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
+
+	vmacs := make([][]byte, 2)
+	for i, _ := range inputs{
+		var ask []byte
+		copy(ask[:], inputs[i].Key[:])
+		vmacs[i] = client.PRF_pk(uint64(i), ask, hSig)
+	}
+	tx.Descs[0].Vmacs = vmacs
+
+	return tx, nil
 }
 
 // GenerateProofForGenesisTx creates zk-proof and build the transaction (without signing) for genesis block

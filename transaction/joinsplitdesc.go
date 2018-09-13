@@ -17,6 +17,7 @@ type JoinSplitDesc struct {
 	HSigSeed        []byte             `json:"HSigSeed"`
 	Type            string             `json:"Type"`   // unit type (coin or bond) which used in tx
 	Reward          uint64             `json:"Reward"` // For coinbase tx
+	Vmacs 			[][]byte
 
 	note []*client.Note // decrypt data for EncryptedData
 }

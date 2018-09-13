@@ -56,7 +56,7 @@ type PrivateKey struct {
 	D *big.Int
 }
 
-type ecdsaSignature struct {
+type EcdsaSignature struct {
 	R, S *big.Int
 }
 
@@ -78,7 +78,7 @@ func (priv *PrivateKey) Sign(rand io.Reader, digest []byte, opts crypto.SignerOp
 		return nil, err
 	}
 
-	return asn1.Marshal(ecdsaSignature{r, s})
+	return asn1.Marshal(EcdsaSignature{r, s})
 }
 
 var one = new(big.Int).SetInt64(1)

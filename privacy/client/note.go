@@ -75,7 +75,7 @@ func ParseJsonToNote(jsonnote []byte) (*Note, error) {
 
 func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, 
 	esk EphemeralPrivKey, epk EphemeralPubKey, hSig []byte) [][]byte {
-		
+
 	noteJsons := [][]byte{ParseNoteToJson(&note[0]), ParseNoteToJson(&note[1])}
 
 	var sk [32]byte
@@ -145,7 +145,7 @@ func KDF(sharedSecret [32]byte, epk [32]byte, pkenc [32]byte, hSig []byte) []byt
 	data = append(data[:], sharedSecret[:]...)
 	data = append(data[:], epk[:]...)
 	data = append(data[:], pkenc[:]...)
-	data = append(data[:], hsig[:]...)
+	data = append(data[:], hSig[:]...)
 	result := blake2b.Sum256(data)
 	return result[:]
 }

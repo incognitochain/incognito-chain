@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"crypto/rand"
+	"encoding/json"
 
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
@@ -146,18 +148,30 @@ func runProveThenVerify() {
 func main() {
 	// runProve()
 	// runVerify()
-	runProveThenVerify()
+	//runProveThenVerify()
 	// client.TestEncrypt()
 
-	// Test transaction signing
+	//  privKey, _ := client.GenerateKey(rand.Reader)
+
+	// // Test transaction signing
 	// tx := new(transaction.Tx)
 	// tx.Version = 1
 	// tx.Type = "Normal"
 	// tx.LockTime = 123
 	// tx.Fee = 1234
-	// signed_tx, _ := transaction.SignTx(tx)
+	// tx.SetTxId(tx.Hash())
 
+	// fmt.Printf("Hash tx: %s\n", tx.GetTxId())
+	// signed_tx, err := transaction.SignTx(tx, privKey)
+	// if err != nil {
+	// 	fmt.Printf("Error: %s", err)
+	// }
+	// signed_tx.JSPubKey , _= json.Marshal(privKey.PublicKey)
+
+	// fmt.Printf("Hash tx: %s\n", signed_tx.GetTxId())
 	// res, _ := transaction.VerifySign(signed_tx)
+
+
 
 	// fmt.Println(res)
 
