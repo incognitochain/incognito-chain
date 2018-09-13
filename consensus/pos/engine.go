@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/cash-prototype/peer"
 	"math"
 	"strings"
 	"sync"
@@ -64,7 +63,7 @@ type Config struct {
 	ValidatorKeyPair cashec.KeyPair
 	Server           interface {
 		// list functions callback which are assigned from Server struct
-		GetPeerFromPublicKey(string) *peer.Peer
+		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
 		PushMessageToPeer(wire.Message, peer2.ID) error
 		GetChainState() error

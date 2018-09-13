@@ -798,17 +798,27 @@ func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block,
 	return nil
 }
 
-func (self Server) GetPeerFromPublicKey(pubKey string) *peer.Peer {
-	discoverdPeer, exist := self.ConnManager.DiscoveredPeers[pubKey]
-	if exist {
-		for _, listener := range self.ConnManager.Config.ListenerPeers {
-			peerConn, exist := listener.PeerConns[discoverdPeer.PeerId]
-			if exist {
-				return peerConn.Peer
+func (self Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {
+	result := []peer2.ID{}
+
+	for _, listener := range self.ConnManager.Config.ListenerPeers {
+		for _, peerConn := range listener.PeerConns {
+			if peerConn.Peer.PublicKey == pubKey {
+				exist := false
+				for _, item := range result {
+					if item.Pretty() == peerConn.Peer.PeerId.Pretty() {
+						exist = true
+					}
+				}
+
+				if !exist {
+					result = append(result, peerConn.Peer.PeerId)
+				}
 			}
 		}
 	}
-	return nil
+
+	return result
 }
 
 /**
