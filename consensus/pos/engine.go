@@ -204,17 +204,20 @@ func (self *Engine) Finalize(block *blockchain.Block) {
 	validateSigList := make(chan []string)
 	// Wait for signatures of other validators
 	go func() {
-		//var reslist []string
-		//for {
-		//	validatorSig := <-self.validatorSigCh
-		//	if block.Hash().String() != validatorSig.BlockHash {
-		//
-		//	}
-		//	reslist = appp
-		//
-		//	if
-		//}
+		var reslist []string
+		for {
+			validatorSig := <-self.validatorSigCh
+			if block.Hash().String() != validatorSig.BlockHash {
 
+			}
+			validatorKp := cashec.KeyPair{
+				PublicKey: []byte(validatorSig.Validator),
+			}
+			isValid, _ := validatorKp.Verify(block.Hash().CloneBytes(), []byte(validatorSig.ValidatorSig))
+			if isValid {
+				reslist = append(reslist, validatorSig.ValidatorSig)
+			}
+		}
 	}()
 
 	go func() {
