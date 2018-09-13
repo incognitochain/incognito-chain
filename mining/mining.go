@@ -12,7 +12,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
-type txPrioItem struct {
+/*type txPrioItem struct {
 	tx       transaction.Transaction
 	fee      int64
 	priority float64
@@ -30,7 +30,7 @@ func filterActionParamsTxs(block *blockchain.Block) []*transaction.ActionParamTx
 		}
 	}
 	return actionParamTxs
-}
+}*/
 
 func getMedians(agentDataPoints []*blockchain.AgentDataPoint) (
 	float64, float64, float64,
@@ -450,7 +450,7 @@ Note mempool(tx pool) is a TxSource
 type TxSource interface {
 	// LastUpdated returns the last time a transaction was added to or
 	// removed from the source pool.
-	//LastUpdated() time.Time
+	LastUpdated() time.Time
 
 	// MiningDescs returns a slice of mining descriptors for all the
 	// transactions in the source pool.
@@ -458,7 +458,7 @@ type TxSource interface {
 
 	// HaveTransaction returns whether or not the passed transaction hash
 	// exists in the source pool.
-	//HaveTransaction(hash *common.Hash) bool
+	HaveTransaction(hash *common.Hash) bool
 
 	// RemoveTx remove tx from tx resource
 	RemoveTx(tx *transaction.Transaction) error

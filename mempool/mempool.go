@@ -77,16 +77,6 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	return false
 }
 
-// HaveTx check existed transaction
-func (tp *TxPool) HaveTx(hash *common.Hash) bool {
-	// Protect concurrent access.
-	tp.mtx.RLock()
-	haveTx := tp.isTxInPool(hash)
-	tp.mtx.RUnlock()
-
-	return haveTx
-}
-
 /**
 // add transaction into pool
 */
@@ -127,7 +117,7 @@ func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash
 		return nil, nil, err
 	}
 
-	if !tp.HaveTx(tx.Hash()) {
+	if !tp.HaveTransaction(tx.Hash()) {
 		txD := tp.addTx(tx, bestHeight, txFee)
 		return tx.Hash(), txD, nil
 	}
@@ -189,6 +179,27 @@ func (tp *TxPool) Count() int {
 	tp.mtx.RUnlock()
 
 	return count
+}
+
+/**
+// LastUpdated returns the last time a transaction was added to or
+	// removed from the source pool.
+ */
+func (tp *TxPool) LastUpdated() time.Time {
+	return time.Unix(tp.lastUpdated, 0)
+}
+
+/**
+// HaveTransaction returns whether or not the passed transaction hash
+	// exists in the source pool.
+ */
+func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
+	// Protect concurrent access.
+	tp.mtx.RLock()
+	haveTx := tp.isTxInPool(hash)
+	tp.mtx.RUnlock()
+
+	return haveTx
 }
 
 // New returns a new memory pool for validating and storing standalone
