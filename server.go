@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/cash-prototype/cashec"
 	"log"
 	"net"
 	"path/filepath"
@@ -11,9 +10,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/cashec"
+
 	"crypto/tls"
 	"os"
 	"strconv"
+
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/addrmanager"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
@@ -32,7 +34,7 @@ import (
 
 const (
 	defaultNumberOfTargetOutbound = 8
-	defaultNumberOfTargetInbound = 8
+	defaultNumberOfTargetInbound  = 8
 )
 
 // onionAddr implements the net.Addr interface and represents a tor address.
@@ -562,7 +564,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
 		PeerId:           msg.LocalPeerId,
-		PublicKey:		  msg.PublicKey,
+		PublicKey:        msg.PublicKey,
 	}
 
 	self.newPeers <- remotePeer
@@ -813,23 +815,23 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 	return true
 }
 
-/**
-UpdateChain - Update chain with received block
-*/
-func (self *Server) UpdateChain(block *blockchain.Block) {
-	// save block
-	self.BlockChain.StoreBlock(block)
+// /**
+// UpdateChain - Update chain with received block
+// */
+// func (self *Server) UpdateChain(block *blockchain.Block) {
+// 	// save block
+// 	self.BlockChain.StoreBlock(block)
 
-	// save best state
-	newBestState := &blockchain.BestState{}
-	numTxns := uint64(len(block.Transactions))
-	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0))
-	self.BlockChain.BestState[block.Header.ChainID] = newBestState
-	self.BlockChain.StoreBestState(block.Header.ChainID)
+// 	// save best state
+// 	newBestState := &blockchain.BestState{}
+// 	numTxns := uint64(len(block.Transactions))
+// 	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0))
+// 	self.BlockChain.BestState[block.Header.ChainID] = newBestState
+// 	self.BlockChain.StoreBestState(block.Header.ChainID)
 
-	// save index of block
-	self.BlockChain.StoreBlockIndex(block)
-}
+// 	// save index of block
+// 	self.BlockChain.StoreBlockIndex(block)
+// }
 
 func (self *Server) GetChainState() error {
 	var dc chan<- struct{}

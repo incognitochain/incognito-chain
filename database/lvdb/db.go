@@ -179,7 +179,7 @@ func (db *db) GetIndexOfBlock(h *common.Hash) (int32, byte, error) {
 func (db *db) GetBlockByIndex(idx int32, chainID byte) (*common.Hash, error) {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint32(buf, uint32(idx))
-	binary.LittleEndian.PutUint32(buf[4:], uint32(chainID))
+	buf[4] = chainID
 
 	b, err := db.lvdb.Get(buf, nil)
 	if err != nil {

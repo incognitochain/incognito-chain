@@ -144,7 +144,9 @@ func (self *BlockChain) createChainState(chainID byte) error {
 
 	// store block hash by index and index by block hash
 	err = self.StoreBlockIndex(initBlock)
-
+	if err != nil {
+		return err
+	}
 	// store best state
 	err = self.StoreBestState(chainID)
 	if err != nil {
