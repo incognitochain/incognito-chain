@@ -221,6 +221,61 @@ func (self *Engine) signData(data []byte) (string, error) {
 
 func (self *Engine) validateBlock(block *blockchain.Block) error {
 	// validate steps: block size -> sealer's sig of the final block -> sealer is belong to committee -> validate each committee member's sig
+
+	// 1. Check blocksize
+	blockBytes, err := json.Marshal(block)
+	if err != nil {
+		return err
+	}
+	if len(blockBytes) > MAX_BLOCKSIZE {
+		return errBlockSizeExceed
+	}
+
+	// 2. Check whether signature of the block belongs to chain leader or not.
+	k := cashec.KeyPair{
+		PublicKey: []byte(block.ChainLeader),
+	}
+	isValidSignature, err := k.Verify(block.Hash().CloneBytes(), []byte(block.ChainLeaderSig))
+	if err != nil {
+		return err
+	}
+	if isValidSignature == false {
+		return errSigWrongOrNotExits
+	}
+	for _, s := range block.Header.BlockCommitteeSigs {
+		if strings.Compare(s, block.ChainLeaderSig) != 0 {
+			return errSigWrongOrNotExits
+		}
+	}
+
+	// 3. Check whether sealer of the block belongs to committee or not.
+	for _, c := range self.currentCommittee {
+		if strings.Compare(c, block.ChainLeader) != 0 {
+			return errNotInCommittee
+		}
+	}
+
+	// 4. Validate committee signatures
+	for i, sig := range block.Header.BlockCommitteeSigs {
+		k := cashec.KeyPair{
+			PublicKey: []byte(self.currentCommittee[i]),
+		}
+		isValidSignature, err := k.Verify(block.Hash().CloneBytes(), []byte(sig))
+		if err != nil {
+			return err
+		}
+		if isValidSignature == false {
+			return errSigWrongOrNotExits
+		}
+	}
+
+	// 5. Revalidata transactions again @@
+	for _, tx := range block.Transactions {
+		if tx.ValidateTransaction() == false {
+			return errTxIsWrong
+		}
+	}
+
 	return nil
 }
 
@@ -237,11 +292,10 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 	}
 
 	// 2. Check user is in current committee or not
-	for _, c := range self.CurrentCommittee {
+	for _, c := range self.currentCommittee {
 		if strings.Compare(c, block.ChainLeader) != 0 {
 			return errNotInCommittee
 		}
-		continue
 	}
 
 	// 3. Check signature of the block belongs to current committee or not.
@@ -259,19 +313,18 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 		if strings.Compare(s, block.ChainLeaderSig) != 0 {
 			return errSigWrongOrNotExits
 		}
-		continue
 	}
 
 	// 4. Check chains height of the block.
 	for i := 0; i < 20; i++ {
-		if int(self.Config.BlockChain.BestState[i].Height) < block.Header.ChainsHeight[i] {
+		if int(self.config.BlockChain.BestState[i].Height) < block.Header.ChainsHeight[i] {
 			timer := time.NewTimer(MAX_SYNC_CHAINS_TIME * time.Second)
 			<-timer.C
 			break
 		}
 	}
 	for i := 0; i < 20; i++ {
-		if int(self.Config.BlockChain.BestState[i].Height) < block.Header.ChainsHeight[i] {
+		if int(self.config.BlockChain.BestState[i].Height) < block.Header.ChainsHeight[i] {
 			return errChainNotFullySynced
 		}
 	}
