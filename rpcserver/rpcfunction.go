@@ -23,12 +23,12 @@ import (
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
 
 var RpcHandler = map[string]commandHandler{
-	"dosomething":                  RpcServer.handleDoSomething,
-	"getblockchaininfo":            RpcServer.handleGetBlockChainInfo,
-	"listtransactions":             RpcServer.handleListTransactions,
-	"createrawtransaction":         RpcServer.handleCreateRawTrasaction,
-	"sendrawtransaction":           RpcServer.handleSendRawTransaction,
-	"getNumberOfCoinsAndBonds":     RpcServer.handleGetNumberOfCoinsAndBonds,
+	"dosomething":                   RpcServer.handleDoSomething,
+	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
+	"listtransactions":              RpcServer.handleListTransactions,
+	"createrawtransaction":          RpcServer.handleCreateRawTrasaction,
+	"sendrawtransaction":            RpcServer.handleSendRawTransaction,
+	"getnumberofcoinsandbonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createActionParamsTransaction": RpcServer.handleCreateActionParamsTransaction,
 
 	//POS
@@ -421,52 +421,9 @@ func isExisted(item int, arr []int) bool {
  * handleGetNumberOfCoins handles getNumberOfCoins commands.
  */
 func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	// return 1000, nil
 	log.Println(params)
-	/*blocks, _ := self.Config.BlockChain.GetAllBlocks()
-	txInsMap := map[string][]int{}
-	txOuts := []jsonrpc.ListUnspentResult{}
-	for _, block := range blocks {
-		for _, tx := range block.Transactions {
-			if tx.GetType() == common.TxActionParamsType {
-				continue
-			}
-			normalTx := tx.(*transaction.Tx)
-			for _, txIn := range normalTx.TxIn {
-				txInKey := txIn.PreviousOutPoint.Hash.String()
-				idx := txIn.PreviousOutPoint.Vout
-				txInsMap[txInKey] = append(txInsMap[txInKey], int(idx))
-			}
-
-			for index, txOut := range normalTx.TxOut {
-				txOuts = append(txOuts, jsonrpc.ListUnspentResult{
-					Vout:      index,
-					TxID:      normalTx.Hash().String(),
-					Address:   string(txOut.PkScript),
-					Amount:    txOut.Value,
-					TxOutType: txOut.TxOutType,
-				})
-			}
-		}
-	}
-
-	result := map[string]float64{
-		common.TxOutCoinType: 0,
-		common.TxOutBondType: 0,
-	}
-	for _, txOut := range txOuts {
-		idxs, ok := txInsMap[txOut.TxID]
-		if !ok { // not existing -> not used yet
-			result[txOut.TxOutType] += txOut.Amount
-			continue
-		}
-		// existing in txIns -> check Vout index
-		if !isExisted(txOut.Vout, idxs) {
-			result[txOut.TxOutType] += txOut.Amount
-		}
-	}
-	return result, nil*/
-	return "", nil
+	result, err := self.Config.BlockChain.GetAllUnitCoinSupplier()
+	return result, err
 }
 
 func assertEligibleAgentIDs(eligibleAgentIDs interface{}) []string {
