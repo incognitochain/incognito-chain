@@ -111,12 +111,15 @@ func (self *Engine) Start() error {
 	self.wg.Add(1)
 	self.Unlock()
 
-	go func(){
-		for {
-
-			self.config.Server.GetPeerIdsFromPublicKey()
-		}
-	}()
+	// Test GetPeerIdsFromPublicKey
+	//go func(){
+	//	for {
+	//		realPubKey := "vHX/aAVJsH4sHpYAHR3i1guLSE07QV3l"
+	//		peerIds := self.config.Server.GetPeerIdsFromPublicKey(realPubKey)
+	//		Logger.log.Info("DEBUG GetPeerIdsFromPublicKey", peerIds)
+	//		time.Sleep(5 * time.Second)
+	//	}
+	//}()
 	return nil
 }
 
