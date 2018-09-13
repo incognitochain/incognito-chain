@@ -5,6 +5,9 @@ import (
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
+/**
+ TxDesc is the object which is used to saved into mempool for mining processing
+ */
 type TxDesc struct {
 	// Tx is the transaction associated with the entry.
 	Tx transaction.Transaction

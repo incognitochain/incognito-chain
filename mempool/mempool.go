@@ -135,19 +135,23 @@ func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash
 }
 
 // remove transaction for pool
-func (tp *TxPool) removeTx(tx transaction.Tx) {
-	Logger.log.Infof(tx.Hash().String())
-	if _, exists := tp.pool[*tx.Hash()]; exists {
-		delete(tp.pool, *tx.Hash())
+func (tp *TxPool) removeTx(tx *transaction.Transaction) error {
+	Logger.log.Infof((*tx).Hash().String())
+	if _, exists := tp.pool[*(*tx).Hash()]; exists {
+		delete(tp.pool, *(*tx).Hash())
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
+		return nil
+	} else {
+		return errors.New("Not exist tx in pool")
 	}
 }
 
 // RemoveTx safe remove transaction for pool
-func (tp *TxPool) RemoveTx(tx transaction.Tx) {
+func (tp *TxPool) RemoveTx(tx *transaction.Transaction) error {
 	tp.mtx.Lock()
-	tp.removeTx(tx)
+	err := tp.removeTx(tx)
 	tp.mtx.Unlock()
+	return err
 }
 
 // GetTx get transaction info by hash
@@ -185,11 +189,6 @@ func (tp *TxPool) Count() int {
 	tp.mtx.RUnlock()
 
 	return count
-}
-
-// Clear
-func (tp *TxPool) Clear() {
-	tp.pool = make(map[common.Hash]*TxDesc)
 }
 
 // New returns a new memory pool for validating and storing standalone

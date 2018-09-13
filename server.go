@@ -32,7 +32,7 @@ import (
 
 const (
 	defaultNumberOfTargetOutbound = 8
-	defaultNumberOfTargetInbound = 8
+	defaultNumberOfTargetInbound  = 8
 )
 
 // onionAddr implements the net.Addr interface and represents a tor address.
@@ -145,8 +145,8 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	self.AddrManager = addrmanager.New(cfg.DataDir, nil)
 
-	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.BlockChain)
-
+	// create a miner with mempool is a tx resource
+	blockTemplateGenerator := mining.NewBlkTmplGeneratorByMempool(self.MemPool, self.BlockChain)
 	self.Miner = miner.New(&miner.Config{
 		ChainParams:            self.chainParams,
 		BlockTemplateGenerator: blockTemplateGenerator,
@@ -198,7 +198,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		ListenerPeers:        peers,
 		TargetOutbound:       uint32(targetOutbound),
 		TargetInbound:        uint32(targetInbound),
-		DiscoverPeers:		  cfg.DiscoverPeers,
+		DiscoverPeers:        cfg.DiscoverPeers,
 	})
 	if err != nil {
 		return err
@@ -423,18 +423,14 @@ func (self Server) Start() {
 		self.RpcServer.Start()
 	}
 
-	//creat mining
+	// Start mining
 	if cfg.Generate == true && (len(cfg.MiningAddrs) > 0) {
-		self.Miner.Start()
-	}
-
-	// test, print length of chain
-	/*go func(server Server) {
-		for {
-			time.Sleep(time.Second * 3)
-			log.Printf("\n --- BlockChain length: %d ---- \n", len(server.BlockChain.Blocks))
+		if self.Miner != nil {
+			self.Miner.Start()
+		} else {
+			Logger.log.Info("We don't have any miner to make mining")
 		}
-	}(self)*/
+	}
 }
 
 // initListeners initializes the configured net listeners and adds any bound
