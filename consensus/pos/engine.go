@@ -191,24 +191,29 @@ func (self *Engine) Finalize(block *blockchain.Block) {
 	case <-self.quitSealer:
 		return
 	}
-	// request signature from other validators
-	for {
-
-	}
-	newMsg := &wire.MessageRequestSign{}
-	newMsg.Block = *block
-
-	// self.Config.Server.PushMessageToPeer()
 	finalBlock := block
 	validateSigList := make(chan []string)
 	// Wait for signatures of other validators
 	go func() {
+		var reslist []string
 		for {
 			validatorSig := <-self.validatorSigCh
 			if block.Hash().String() != validatorSig.BlockHash {
 
 			}
+			reslist = appp
+			
+			if 
 		}
+
+	}()
+
+	go func() {
+		newMsg := &wire.MessageRequestSign{}
+		newMsg.Block = *block
+		// for index := 0; index < count; index++ {
+		// 	self.Config.Server.PushMessageToPeer()
+		// }
 	}()
 
 	select {
