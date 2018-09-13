@@ -5,6 +5,7 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 type ProveResult struct {
@@ -145,9 +146,19 @@ func runProveThenVerify() {
 func main() {
 	// runProve()
 	// runVerify()
-	//runProveThenVerify()
-	fmt.Println("Hello")
-	client.TestEncrypt()
-	// client.TestEncrypt1()
-	// encrypt
+	runProveThenVerify()
+	// client.TestEncrypt()
+
+	// Test transaction signing
+	// tx := new(transaction.Tx)
+	// tx.Version = 1
+	// tx.Type = "Normal"
+	// tx.LockTime = 123
+	// tx.Fee = 1234
+	// signed_tx, _ := transaction.SignTx(tx)
+
+	// res, _ := transaction.VerifySign(signed_tx)
+
+	// fmt.Println(res)
+
 }

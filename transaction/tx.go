@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"crypto/rand"
+	"crypto/sha256"
+	"math/big"
 
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -20,8 +23,8 @@ type Tx struct {
 	Fee      uint64 `json:"Fee"`
 
 	Descs    []*JoinSplitDesc `json:"Descs"`
-	JSPubKey []byte           `json:"JSPubKey"` // 32 bytes
-	JSSig    []byte           `json:"JSSig"`    // 64 bytes
+	JSPubKey []byte           `json:"JSPubKey,omitempty"` // 32 bytes
+	JSSig    []byte           `json:"JSSig,omitempty"`    // 64 bytes
 }
 
 type UsableTx struct {
@@ -160,19 +163,91 @@ func CreateRandomJSInput() *client.JSInput {
 	return input
 }
 
-func signTx(tx *Tx, keyPair *cashec.KeyPair) (*Tx, error) {
-	tx.JSPubKey = keyPair.PublicKey.Apk[:]
-	// Sign tx
+
+type JSSig struct {
+	R, S *big.Int
+}
+
+func SignTx(tx *Tx) (*Tx, error) {
+	//Check input transaction
+	if tx.JSSig != nil || tx.JSPubKey != nil {
+		return nil, errors.New("Input transaction must be an unsigned one!")
+	}
+
+	// Hash transaction
 	dataToBeSigned, err := json.Marshal(tx)
 	if err != nil {
 		return nil, err
 	}
-	jsSig, err := keyPair.Sign(dataToBeSigned)
+	hash := sha256.Sum256([]byte(dataToBeSigned))
+
+	// Generate signing key
+	privKey, err := client.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, err
 	}
-	tx.JSSig = jsSig
+	
+	// Verification key
+	tx.JSPubKey, err = json.Marshal(privKey.PublicKey)
+	fmt.Printf("\nPubKey:%s\n", tx.JSPubKey)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Sign
+	jsSig := *new(JSSig)
+	jsSig.R, jsSig.S, err = client.Sign(rand.Reader, privKey, hash[:])
+	if err != nil {
+		return nil, err
+	}
+
+	// fmt.Printf("jsSig.R: %+v\n", *jsSig.R)
+	// fmt.Printf("jsSig.S: %+v\n", *jsSig.S)
+	tx.JSSig, err = json.Marshal(jsSig)
+	if err != nil {
+		return nil, err
+	}
+ 
 	return tx, nil
+}
+
+func VerifySign(tx *Tx) (bool, error){
+	//Check input transaction
+	if tx.JSSig == nil || tx.JSPubKey == nil {
+		return false, errors.New("Input transaction must be an signed one!")
+	}
+	// UnParse Public key
+	pubKey := new(client.PublicKey)
+	err := json.Unmarshal(tx.JSPubKey, pubKey)
+	if  err != nil {
+		return false, err
+	}
+	// fmt.Printf("Pub key: %+v\n", *pubKey)
+
+	// UnParse JSSig
+	jsSig := new(JSSig)
+	err = json.Unmarshal(tx.JSSig, jsSig)
+	if  err != nil {
+		return false, err
+	}
+	// fmt.Printf("JSsig : %+v\n", jsSig)
+
+	// Hash origin transaction
+	JSSig_temp := tx.JSSig
+	JSPubKey_temp := tx.JSPubKey
+	tx.JSSig = nil
+	tx.JSPubKey = nil
+
+	txjson, err := json.Marshal(tx)
+	if err != nil {
+		return false, err
+	}
+	hash := sha256.Sum256([]byte(txjson))
+	tx.JSSig = JSSig_temp
+	tx.JSPubKey = JSPubKey_temp
+
+	valid := client.VerifySign(pubKey, hash[:], jsSig.R, jsSig.S)
+	return valid, nil
 }
 
 func generateTx(
@@ -269,7 +344,7 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 	if err != nil {
 		return nil, err
 	}
-	return signTx(tx, keyPair)
+	return SignTx(tx)
 }
 
 // GenerateProofForGenesisTx creates zk-proof and build the transaction (without signing) for genesis block
