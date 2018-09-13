@@ -774,36 +774,18 @@ func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block,
 	return nil
 }
 
-/**
-PushBlockMessageWithPeerId broadcast block to specific connected peer
- */
-//func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block, validatorAddress string) error {
-//	Logger.log.Info("PushBlockMessageWithValidatorAddress", block, validatorAddress)
-//	var dc chan<- struct{}
-//	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
-//	msg.(*wire.MessageBlock).Block = *block
-//	if err != nil {
-//		return err
-//	}
-//	discoverdPeer, exist := self.ConnManager.DiscoveredPeers[validatorAddress]
-//
-//	Logger.log.Info("PushBlockMessageWithValidatorAddress 2", discoverdPeer, exist)
-//	if exist {
-//		for _, listener := range self.ConnManager.Config.ListenerPeers {
-//			peerConn, exist := listener.PeerConns[discoverdPeer.PeerId]
-//			Logger.log.Info("Connected to peers", listener.PeerConns)
-//			Logger.log.Info("PushBlockMessageWithValidatorAddress 3", exist)
-//			if exist {
-//				Logger.log.Info("PushBlockMessageWithValidatorAddress 4", msg, peerConn)
-//				peerConn.QueueMessageWithEncoding(msg, dc)
-//			}
-//		}
-//	} else {
-//		return errors.New(fmt.Sprintf("Can not found peer with validator address %s", validatorAddress))
-//	}
-//
-//	return nil
-//}
+func (self Server) GetPeerFromPublicKey(pubKey string) *peer.Peer {
+	discoverdPeer, exist := self.ConnManager.DiscoveredPeers[pubKey]
+	if exist {
+		for _, listener := range self.ConnManager.Config.ListenerPeers {
+			peerConn, exist := listener.PeerConns[discoverdPeer.PeerId]
+			if exist {
+				return peerConn.Peer
+			}
+		}
+	}
+	return nil
+}
 
 /**
 PushMessageToAll broadcast msg
