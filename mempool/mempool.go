@@ -3,7 +3,6 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -88,7 +87,9 @@ func (tp *TxPool) HaveTx(hash *common.Hash) bool {
 	return haveTx
 }
 
+/**
 // add transaction into pool
+*/
 func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *TxDesc {
 	txD := &TxDesc{
 		Desc: mining.TxDesc{
@@ -99,13 +100,15 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 		},
 		StartingPriority: 1, //@todo we will apply calc function for it.
 	}
-	log.Printf(tx.Hash().String())
+	Logger.log.Infof(tx.Hash().String())
 	tp.pool[*tx.Hash()] = txD
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	return txD
 }
 
+/**
 // CanAcceptTransaction validate transaction is valid and can add to pool
+*/
 func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
 	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
@@ -124,7 +127,7 @@ func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash
 		return nil, nil, err
 	}
 
-	if tp.HaveTx(tx.Hash()) != true {
+	if !tp.HaveTx(tx.Hash()) {
 		txD := tp.addTx(tx, bestHeight, txFee)
 		return tx.Hash(), txD, nil
 	}
@@ -133,7 +136,7 @@ func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash
 
 // remove transaction for pool
 func (tp *TxPool) removeTx(tx transaction.Tx) {
-	log.Printf(tx.Hash().String())
+	Logger.log.Infof(tx.Hash().String())
 	if _, exists := tp.pool[*tx.Hash()]; exists {
 		delete(tp.pool, *tx.Hash())
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
@@ -150,7 +153,7 @@ func (tp *TxPool) RemoveTx(tx transaction.Tx) {
 // GetTx get transaction info by hash
 func (tp *TxPool) GetTx(txHash *common.Hash) (transaction.Transaction, error) {
 	tp.mtx.Lock()
-	log.Println(txHash.String())
+	Logger.log.Info(txHash.String())
 	txDesc, exists := tp.pool[*txHash]
 	tp.mtx.Unlock()
 	if exists {

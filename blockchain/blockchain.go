@@ -471,7 +471,7 @@ func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string) (*TxViewPoint
 	return 0, nil
 }*/
 
-func (self *BlockChain) CheckTransactionData(tx transaction.Transaction, nextBlockHeigt int32, txViewPoint *TxViewPoint, chainParams *Params) (uint64, error) {
+func (self *BlockChain) CheckTransactionData(tx transaction.Transaction, nextBlockHeight int32, txViewPoint *TxViewPoint, chainParams *Params) (uint64, error) {
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		normalTx := tx.(*transaction.Tx)

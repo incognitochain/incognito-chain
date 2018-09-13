@@ -25,8 +25,8 @@ type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, 
 var RpcHandler = map[string]commandHandler{
 	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
 	"listtransactions":              RpcServer.handleListTransactions,
-	"createrawtransaction":          RpcServer.handleCreateRawTrasaction,
-	"sendtransaction":               RpcServer.handleSendRawTransaction,
+	"createtransaction":             RpcServer.handleCreateTrasaction,
+	"sendtransaction":               RpcServer.handleSendTransaction,
 	"getnumberofcoinsandbonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createactionparamstransaction": RpcServer.handleCreateActionParamsTransaction,
 
@@ -254,9 +254,9 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 }
 
 /**
-// handleCreateRawTransaction handles createrawtransaction commands.
+// handleCreateTransaction handles createtransaction commands.
 */
-func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateTrasaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
 	/*arrayParams := common.InterfaceSlice(params)
 	tx := transaction.Tx{
@@ -358,12 +358,12 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 }
 
 /**
-// handleSendRawTransaction implements the sendrawtransaction command.
+// handleSendTransaction implements the sendtransaction command.
 Parameter #1—a serialized transaction to broadcast
 Parameter #2–whether to allow high fees
 Result—a TXID or error message
 */
-func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
 	arrayParams := common.InterfaceSlice(params)
 	hexRawTx := arrayParams[0].(string)
@@ -384,9 +384,8 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 		return nil, err
 	}
 
-	fmt.Printf("there is hash of transaction: %s", hash.String())
-	fmt.Println()
-	fmt.Printf("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+	Logger.log.Info("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
