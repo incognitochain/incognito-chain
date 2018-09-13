@@ -15,7 +15,7 @@ type JoinSplitDesc struct {
 	EncryptedData   [][]byte           `json:"EncryptedData"`
 	EphemeralPubKey []byte             `json:"EphemeralPubKey"`
 	HSigSeed        []byte             `json:"HSigSeed"`
-	Type            string             `json:"Type"`
+	Type            string             `json:"Type"`   // unit type (coin or bond) which used in tx
 	Reward          uint64             `json:"Reward"` // For coinbase tx
 
 	note []*client.Note // decrypt data for EncryptedData
