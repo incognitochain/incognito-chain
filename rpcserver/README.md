@@ -5,7 +5,7 @@ Http client --(http request post)--> RPC http server
        <-----(json http response) --
 
 
-Post body request:
+- Post body request:
 ```json
 {
     "jsonrpc": "1.0",
@@ -15,7 +15,7 @@ Post body request:
 }
 ```
 
-Response format:
+- Response format:
 ```json
 {
     "Result": __json_data_format,
