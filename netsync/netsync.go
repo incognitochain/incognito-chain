@@ -40,7 +40,7 @@ type NetSyncConfig struct {
 	Consensus interface {
 		OnBlockReceived(*blockchain.Block)
 		OnRequestSign(*wire.MessageRequestSign)
-		OnBlockSigReceived(string, byte, string)
+		OnBlockSigReceived(string, string, string)
 		OnInvalidBlockReceived(string, byte, string)
 		OnGetChainState(*wire.MessageGetChainState)
 		OnChainStateReceived(*wire.MessageChainState)
@@ -107,9 +107,9 @@ out:
 					{
 						self.HandleMessageGetBlocks(msg)
 					}
-				case *wire.MessageSignedBlock:
+				case *wire.MessageBlockSig:
 					{
-						self.HandleMessageSignedBlock(msg)
+						self.HandleMessageBlockSig(msg)
 					}
 				case *wire.MessageInvalidBlock:
 					{
@@ -251,16 +251,9 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	// self.syncPeer.flagMutex.Unlock()
 }
 
-func (self *NetSync) HandleMessageSignedBlock(msg *wire.MessageSignedBlock) {
-	Logger.log.Info("Handling new message signedblock")
-	senderKey := cashec.KeyPair{
-		PublicKey: []byte(msg.Validator),
-	}
-	msgByte, _ := msg.JsonSerialize()
-	isValid, _ := senderKey.Verify(msgByte, []byte(msg.ValidatorSig))
-	if isValid {
-		self.Config.Consensus.OnBlockSigReceived(msg.BlockHash, msg.ChainID, msg.BlockSig)
-	}
+func (self *NetSync) HandleMessageBlockSig(msg *wire.MessageBlockSig) {
+	Logger.log.Info("Handling new message BlockSig")
+	self.Config.Consensus.OnBlockSigReceived(msg.BlockHash, msg.Validator, msg.ValidatorSig)
 }
 func (self *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
 	Logger.log.Info("Handling new message invalidblock")

@@ -6,32 +6,30 @@ import (
 	peer "github.com/libp2p/go-libp2p-peer"
 )
 
-type MessageSignedBlock struct {
+type MessageBlockSig struct {
 	BlockHash    string
-	ChainID      byte
 	Validator    string
 	ValidatorSig string
-	BlockSig     string
 }
 
-func (self MessageSignedBlock) MessageType() string {
-	return CmdSignedBlock
+func (self MessageBlockSig) MessageType() string {
+	return CmdBlockSig
 }
 
-func (self MessageSignedBlock) MaxPayloadLength(pver int) int {
+func (self MessageBlockSig) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self MessageSignedBlock) JsonSerialize() ([]byte, error) {
+func (self MessageBlockSig) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessageSignedBlock) JsonDeserialize(jsonStr string) error {
+func (self MessageBlockSig) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }
 
-func (self MessageSignedBlock) SetSenderID(senderID peer.ID) error {
+func (self MessageBlockSig) SetSenderID(senderID peer.ID) error {
 	return nil
 }

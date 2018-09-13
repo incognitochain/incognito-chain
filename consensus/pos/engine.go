@@ -24,6 +24,7 @@ var (
 	errSigWrongOrNotExits  = errors.New("signature is wrong or not existed in block header")
 	errChainNotFullySynced = errors.New("chains are not fully synced")
 	errTxIsWrong           = errors.New("transaction is wrong")
+	errNotEnoughChainData  = errors.New("not enough chain data")
 )
 
 // PoSEngine only need to start if node runner want to be a validator
@@ -49,6 +50,11 @@ type Engine struct {
 	waitForMyTurn  chan struct{}
 }
 
+type ChainInfo struct {
+	CurrentCommittee  []string
+	UpComingCommittee []string
+	ChainsHeight      []int
+}
 type Config struct {
 	BlockChain       *blockchain.BlockChain
 	ChainParams      *blockchain.Params
@@ -65,9 +71,9 @@ type Config struct {
 }
 
 type blockSig struct {
-	BlockHash string
-	ChainID   byte
-	BlockSig  string
+	BlockHash    string
+	Validator    string
+	ValidatorSig string
 }
 
 func (self *Engine) Start() error {
@@ -85,10 +91,21 @@ func (self *Engine) Start() error {
 	for chainID := 0; chainID < 20; chainID++ {
 		self.knownChainsHeight[chainID] = int(self.config.BlockChain.BestState[chainID].Height)
 	}
+
 	Logger.log.Info("Validating local blockchain...")
-	for chainID := 0; chainID < 20; chainID++ {
-		// self.config.BlockChain.
+	for chainID := byte(0); chainID < 20; chainID++ {
+		for blockIdx := 0; blockIdx < self.knownChainsHeight[chainID]; blockIdx++ {
+			blockHash, err := self.config.BlockChain.GetBlockHashByBlockHeight(int32(blockIdx), chainID)
+			if err != nil {
+				return err
+			}
+			err = self.validateBlock(self.config.BlockChain.GetBlockByHash(*blockHash))
+			if err != nil {
+				return err
+			}
+		}
 	}
+
 	self.quit = make(chan struct{})
 	self.wg.Add(1)
 	self.Unlock()
@@ -128,9 +145,6 @@ func (self *Engine) StartSealer(sealerPrvKey []byte) {
 	if self.sealerStarted {
 		Logger.log.Error("Sealer already started")
 		return
-	}
-	if err := self.checkIsLatest(); err != nil {
-
 	}
 	_, err := self.config.ValidatorKeyPair.Import(sealerPrvKey)
 	if err != nil {
@@ -183,12 +197,24 @@ func (self *Engine) Finalize(block *blockchain.Block) {
 	newMsg.Block = *block
 
 	// self.Config.Server.PushMessageToPeer()
-	var finalBlock *blockchain.Block
-
+	finalBlock := block
+	validateSigList := make(chan []string)
 	// Wait for signatures of other validators
-	for {
-		// validatorSig := <-self.validatorSigCh
+	go func() {
+		for {
+			validatorSig := <-self.validatorSigCh
+			if block.Hash().String() != validatorSig.BlockHash {
 
+			}
+		}
+	}()
+
+	select {
+	case resList := <-validateSigList:
+		fmt.Println(resList)
+	case <-time.After(5 * time.Second):
+		Logger.log.Critical()
+		return
 	}
 
 	self.config.Server.UpdateChain(finalBlock)
@@ -338,10 +364,6 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 
 	return nil
 }
-func (self *Engine) checkIsLatest() error {
-
-	return nil
-}
 
 // get validator chainID and committee of that chainID
 func (self *Engine) getMyChain() (byte, []string) {
@@ -411,20 +433,13 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 		// ??? something went terribly wrong
 		return
 	}
-	signedBlockMsg := &wire.MessageSignedBlock{
-		BlockHash: block.Hash().String(),
-		ChainID:   block.Header.ChainID,
-		Validator: string(self.config.ValidatorKeyPair.PublicKey),
-		BlockSig:  string(sig),
-	}
-	dataByte, _ := signedBlockMsg.JsonSerialize()
-	signedBlockMsg.ValidatorSig, err = self.signData(dataByte)
-	if err != nil {
-		Logger.log.Error(err)
-		return
+	blockSigMsg := &wire.MessageBlockSig{
+		BlockHash:    block.Hash().String(),
+		Validator:    string(self.config.ValidatorKeyPair.PublicKey),
+		ValidatorSig: string(sig),
 	}
 
-	err = self.config.Server.PushMessageToPeer(signedBlockMsg, msgBlock.SenderID)
+	err = self.config.Server.PushMessageToPeer(blockSigMsg, msgBlock.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -440,28 +455,36 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 	return
 }
 
-func (self *Engine) OnBlockSigReceived(blockHash string, chainID byte, sig string) {
+func (self *Engine) OnBlockSigReceived(blockHash string, validator string, sig string) {
 	self.validatorSigCh <- blockSig{
-		BlockHash: blockHash,
-		ChainID:   chainID,
-		BlockSig:  sig,
+		BlockHash:    blockHash,
+		Validator:    validator,
+		ValidatorSig: sig,
 	}
 	return
 }
 
 func (self *Engine) OnInvalidBlockReceived(blockHash string, chainID byte, reason string) {
+
 	return
 }
 
-func (self *Engine) OnChainStateReceived(*wire.MessageChainState) {
+func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
+
 	return
 }
 
-func (self *Engine) OnGetChainState(*wire.MessageGetChainState) {
+func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
+	chainInfo := ChainInfo{
+		CurrentCommittee:  self.currentCommittee,
+		UpComingCommittee: self.upComingCommittee,
+		ChainsHeight:      self.knownChainsHeight,
+	}
+	newMsg, err := wire.MakeEmptyMessage(wire.CmdChainState)
+	if err != nil {
+		return
+	}
+	newMsg.(*wire.MessageChainState).ChainInfo = chainInfo
+	self.config.Server.PushMessageToPeer(newMsg, msg.SenderID)
 	return
-}
-
-func (self *Engine) RequestChainState() []int {
-
-	return nil
 }

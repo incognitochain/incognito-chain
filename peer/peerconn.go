@@ -162,13 +162,13 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					self.Config.MessageListeners.OnInvalidBlock(self, message.(*wire.MessageInvalidBlock))
 					self.flagMutex.Unlock()
 				}
-			case reflect.TypeOf(&wire.MessageSignedBlock{}):
+			case reflect.TypeOf(&wire.MessageBlockSig{}):
 				self.flagMutex.Lock()
 				self.verAckReceived = true
 				self.flagMutex.Unlock()
-				if self.Config.MessageListeners.OnSignedBlock != nil {
+				if self.Config.MessageListeners.OnBlockSig != nil {
 					self.flagMutex.Lock()
-					self.Config.MessageListeners.OnSignedBlock(self, message.(*wire.MessageSignedBlock))
+					self.Config.MessageListeners.OnBlockSig(self, message.(*wire.MessageBlockSig))
 					self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageGetChainState{}):

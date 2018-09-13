@@ -507,7 +507,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			//PoS
 			OnRequestSign:   self.OnRequestSign,
 			OnInvalidBlock:  self.OnInvalidBlock,
-			OnSignedBlock:   self.OnSignedBlock,
+			OnBlockSig:      self.OnBlockSig,
 			OnGetChainState: self.OnGetChainState,
 			OnChainState:    self.OnChainState,
 		},
@@ -702,8 +702,8 @@ func (self *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlo
 	self.NetSync.QueueMessage(nil, msg, txProcessed)
 }
 
-func (self *Server) OnSignedBlock(_ *peer.PeerConn, msg *wire.MessageSignedBlock) {
-	Logger.log.Info("Receive a signedblock")
+func (self *Server) OnBlockSig(_ *peer.PeerConn, msg *wire.MessageBlockSig) {
+	Logger.log.Info("Receive a BlockSig")
 	var txProcessed chan struct{}
 	self.NetSync.QueueMessage(nil, msg, txProcessed)
 }
@@ -776,7 +776,7 @@ func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block,
 
 /**
 PushBlockMessageWithPeerId broadcast block to specific connected peer
- */
+*/
 //func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block, validatorAddress string) error {
 //	Logger.log.Info("PushBlockMessageWithValidatorAddress", block, validatorAddress)
 //	var dc chan<- struct{}
@@ -807,7 +807,7 @@ PushBlockMessageWithPeerId broadcast block to specific connected peer
 
 /**
 PushMessageToAll broadcast msg
- */
+*/
 func (self Server) PushMessageToAll(msg wire.Message) error {
 	var dc chan<- struct{}
 	for _, listener := range self.ConnManager.Config.ListenerPeers {
@@ -819,7 +819,7 @@ func (self Server) PushMessageToAll(msg wire.Message) error {
 
 /**
 PushMessageToPeer push msg to peer
- */
+*/
 func (self Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 	var dc chan<- struct{}
 	for _, listener := range self.ConnManager.Config.ListenerPeers {

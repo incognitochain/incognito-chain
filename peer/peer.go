@@ -108,7 +108,7 @@ type MessageListeners struct {
 	//PoS
 	OnRequestSign   func(p *PeerConn, msg *wire.MessageRequestSign)
 	OnInvalidBlock  func(p *PeerConn, msg *wire.MessageInvalidBlock)
-	OnSignedBlock   func(p *PeerConn, msg *wire.MessageSignedBlock)
+	OnBlockSig      func(p *PeerConn, msg *wire.MessageBlockSig)
 	OnGetChainState func(p *PeerConn, msg *wire.MessageGetChainState)
 	OnChainState    func(p *PeerConn, msg *wire.MessageChainState)
 }
@@ -320,7 +320,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	self.outboundMutex.Unlock()
 
 	timeOutVerAck := make(chan struct{})
-	time.AfterFunc(time.Second * 10, func() {
+	time.AfterFunc(time.Second*10, func() {
 		if !peerConn.VerAckReceived() {
 			Logger.log.Infof("NewPeerConnection timeoutVerack timeout PEER ID %s", peerConn.PeerId.String())
 			timeOutVerAck <- struct{}{}
@@ -392,7 +392,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	go self.handleConnected(&peerConn)
 
 	timeOutVerAck := make(chan struct{})
-	time.AfterFunc(time.Second * 10, func() {
+	time.AfterFunc(time.Second*10, func() {
 		if !peerConn.VerAckReceived() {
 			Logger.log.Infof("HandleStream timeoutVerack timeout PEER ID %s", peerConn.PeerId.String())
 			timeOutVerAck <- struct{}{}
