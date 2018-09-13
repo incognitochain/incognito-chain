@@ -59,10 +59,10 @@ do
     rm -rf data$i
 
     # build options to start node
-    opts="--listen 127.0.0.1:$PORT --datadir data$i --sealerprvkey $KEY"
+    opts="--listen 127.0.0.1:$PORT --discoverpeers --datadir data$i --sealerprvkey $KEY"
     if [ $i != 1 ]
     then
-        opts="--norpc --listen 127.0.0.1:$PORT --datadir data$i --sealerprvkey $KEY"
+        opts="--norpc --listen 127.0.0.1:$PORT --discoverpeers --datadir data$i --sealerprvkey $KEY"
     fi
     # send command to node window
     tmux send-keys -t cash-prototype:$i.0 "cd $SRC && ./cash-prototype $opts" ENTER

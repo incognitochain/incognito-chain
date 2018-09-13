@@ -1,1 +1,1 @@
-tmux kill-session cash-prototype
+tmux kill-session -t cash-prototype

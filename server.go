@@ -191,8 +191,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		targetInbound = cfg.MaxInPeers
 	}
 
-	Logger.log.Info("DiscoverPeers", cfg.DiscoverPeers)
-
 	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
@@ -672,7 +670,6 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 			for _, _peerConn := range listen.PeerConns {
 				if _peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(addr) {
 					go self.ConnManager.Connect(addr)
-					time.Sleep(10 * time.Second)
 				}
 			}
 		}
@@ -684,8 +681,7 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	//}
 	//
 	//var realPubKey string
-	//peerId := peerConn.Peer.PeerId
-	//Logger.log.Info(peerId.Pretty())
+	//peerId := peerConn.PeerId
 	//for pubKey, peerInfo := range self.ConnManager.DiscoveredPeers {
 	//	Logger.log.Info(pubKey, peerInfo.PeerId.Pretty())
 	//	if peerInfo.PeerId.Pretty() == peerId.Pretty() {
@@ -746,6 +742,7 @@ func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block,
 	if exist {
 		for _, listener := range self.ConnManager.Config.ListenerPeers {
 			peerConn, exist := listener.PeerConns[discoverdPeer.PeerId]
+			Logger.log.Info("Connected to peers", listener.PeerConns)
 			Logger.log.Info("PushBlockMessageWithValidatorAddress 3", exist)
 			if exist {
 				Logger.log.Info("PushBlockMessageWithValidatorAddress 4", msg, peerConn)

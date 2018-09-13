@@ -444,12 +444,10 @@ listen:
 					goto listen
 				}
 
-				Logger.log.Info("Discover Peers", response)
-
 				for _, rawPeer := range response {
 					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerId.String()) {
 						_, exist := self.DiscoveredPeers[rawPeer.PublicKey]
-
+						//Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
 						if !exist {
 							// The following code extracts target's peer ID from the
 							// given multiaddress
@@ -472,11 +470,10 @@ listen:
 							}
 
 							self.DiscoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
+							//Logger.log.Info("Start connect to peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
 							go self.Connect(rawPeer.RawAddress)
 						}
 					}
-
-					time.Sleep(5 * time.Second)
 				}
 			}
 		}
