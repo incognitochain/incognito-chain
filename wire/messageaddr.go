@@ -7,7 +7,7 @@ import (
 )
 
 type MessageAddr struct {
-	RawAddresses []string
+	RawPeers []RawPeer
 }
 
 func (self MessageAddr) MessageType() string {

@@ -195,16 +195,16 @@ func (self *Engine) Finalize(block *blockchain.Block) {
 	validateSigList := make(chan []string)
 	// Wait for signatures of other validators
 	go func() {
-		var reslist []string
-		for {
-			validatorSig := <-self.validatorSigCh
-			if block.Hash().String() != validatorSig.BlockHash {
-
-			}
-			reslist = appp
-			
-			if 
-		}
+		//var reslist []string
+		//for {
+		//	validatorSig := <-self.validatorSigCh
+		//	if block.Hash().String() != validatorSig.BlockHash {
+		//
+		//	}
+		//	reslist = appp
+		//
+		//	if
+		//}
 
 	}()
 

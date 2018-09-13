@@ -254,21 +254,21 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 	_peerConn, ok := self.PeerConns[peer.PeerId]
 	if ok && _peerConn.State() == ConnEstablished {
-		Logger.log.Infof("Existed PEER ID - %s", peer.PeerId.String())
+		Logger.log.Infof("Checked Existed PEER ID - %s", peer.PeerId.String())
 
 		self.outboundMutex.Unlock()
 		return nil, nil
 	}
 
 	if peer.PeerId.Pretty() == self.PeerId.Pretty() {
-		Logger.log.Infof("Myself PEER ID - %s", peer.PeerId.String())
+		Logger.log.Infof("Checked Myself PEER ID - %s", peer.PeerId.String())
 
 		self.outboundMutex.Unlock()
 		return nil, nil
 	}
 
 	if self.NumOutbound() >= self.MaxOutbound && self.MaxOutbound > 0 && !ok {
-		Logger.log.Infof("Max Peer Outbound Connection")
+		Logger.log.Infof("Checked Max Outbound Connection PEER ID - %s", peer.PeerId.String())
 
 		//push to pending peers
 		self.ConnPending(peer)
@@ -324,8 +324,6 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		if !peerConn.VerAckReceived() {
 			Logger.log.Infof("NewPeerConnection timeoutVerack timeout PEER ID %s", peerConn.PeerId.String())
 			timeOutVerAck <- struct{}{}
-		} else {
-			Logger.log.Infof("NewPeerConnection timeoutVerack is not timeout PEER ID %s", peerConn.PeerId.String())
 		}
 	})
 
@@ -396,8 +394,6 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		if !peerConn.VerAckReceived() {
 			Logger.log.Infof("HandleStream timeoutVerack timeout PEER ID %s", peerConn.PeerId.String())
 			timeOutVerAck <- struct{}{}
-		} else {
-			Logger.log.Infof("HandleStream timeoutVerack is not timeout PEER ID %s", peerConn.PeerId.String())
 		}
 	})
 

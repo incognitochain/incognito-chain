@@ -19,6 +19,7 @@ type MessageVersion struct {
 	RawLocalAddress  string
 	LocalPeerId      peer.ID
 	LastBlock        int
+	PublicKey		 string
 }
 
 func (self MessageVersion) MessageType() string {

@@ -58,6 +58,7 @@ type AddrManager struct {
 type serializedKnownAddress struct {
 	Addr        string
 	Src         string
+	PublicKey	string
 	Attempts    int
 	TimeStamp   int64
 	LastAttempt int64
@@ -106,6 +107,7 @@ func (self *AddrManager) savePeers() {
 		ska := new(serializedKnownAddress)
 		ska.Addr = k
 		ska.Src = v.PeerId.String()
+		ska.PublicKey = v.PublicKey
 
 		sam.Addresses[i] = ska
 		i++
@@ -186,6 +188,8 @@ func (self *AddrManager) deserializePeers(filePath string) error {
 		peer := new(peer.Peer)
 		peer.PeerId = peer2.ID(v.Src)
 		peer.RawAddress = v.Addr
+		peer.PublicKey = v.PublicKey
+
 		self.addrIndex[peer.RawAddress] = peer
 	}
 	return nil
