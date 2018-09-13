@@ -328,7 +328,7 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 	}
 
 	// param #3: list usable tx
-	usableTxs := make([]*transaction.UsableTx, 0)
+	usableTxs := make([]*transaction.Tx, 0)
 	txsParam := arrayParams[2].([]interface{})
 	for _, txInterface := range txsParam {
 		tx := jsonrpc.ListUnspentResultItem{}
@@ -342,10 +342,11 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 				Commitments: desc.Commitments,
 			})
 		}
-		usableTx := transaction.UsableTx{
-			TxId: tx.TxId,
-			Tx:   item,
+		usableTx := transaction.Tx{
+			Descs: item.Descs,
 		}
+		txId, _ := common.Hash{}.NewHashFromStr(tx.TxId)
+		usableTx.SetTxId(txId)
 		usableTxs = append(usableTxs, &usableTx)
 	}
 	txViewPoint, err := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
