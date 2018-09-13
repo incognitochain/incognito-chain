@@ -73,7 +73,7 @@ func ParseJsonToNote(jsonnote []byte) (*Note, error) {
 	return &note, nil
 }
 
-func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, 
+func EncryptNote(note [2]Note, pkenc [2]TransmissionKey,
 	esk EphemeralPrivKey, epk EphemeralPubKey, hSig []byte) [][]byte {
 
 	noteJsons := [][]byte{ParseNoteToJson(&note[0]), ParseNoteToJson(&note[1])}
@@ -141,7 +141,7 @@ func KeyAgree(pk *[32]byte, sk *[32]byte) [32]byte {
 func KDF(sharedSecret [32]byte, epk [32]byte, pkenc [32]byte, hSig []byte) []byte {
 	var data []byte
 
-	data = append(hSig[:], sharedSecret[:]...)
+	//data = append(hSig[:], sharedSecret[:]...)
 	data = append(data[:], sharedSecret[:]...)
 	data = append(data[:], epk[:]...)
 	data = append(data[:], pkenc[:]...)

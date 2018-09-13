@@ -471,7 +471,7 @@ func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string) (*TxViewPoint
 	return 0, nil
 }*/
 
-func (self *BlockChain) CheckTransactionData(tx transaction.Transaction, nextBlockHeigt int32, txViewPoint *TxViewPoint, chainParams *Params) (uint64, error) {
+func (self *BlockChain) CheckTransactionData(tx transaction.Transaction, nextBlockHeight int32, txViewPoint *TxViewPoint, chainParams *Params) (uint64, error) {
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		normalTx := tx.(*transaction.Tx)
@@ -787,4 +787,60 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 	// unlock chain
 	self.chainLock.Unlock()
 	return results, nil
+}
+
+func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
+	result := make(map[string]uint64)
+	result[common.TxOutCoinType] = uint64(0)
+	result[common.TxOutBondType] = uint64(0)
+
+	// lock chain
+	self.chainLock.Lock()
+
+	// get best block
+	bestBlock := self.BestState.BestBlock
+	blockHeight := bestBlock.Height
+
+	for blockHeight > -1 {
+
+		txsInBlock := bestBlock.Transactions
+		totalFeeInBlock := uint64(0)
+		for _, txInBlock := range txsInBlock {
+			tx := txInBlock.(*transaction.Tx)
+			fee := tx.Fee
+			totalFeeInBlock += fee
+		}
+
+		coinbaseTx := txsInBlock[0].(*transaction.Tx)
+		rewardBond := uint64(0)
+		rewardCoin := uint64(0)
+		for _, desc := range coinbaseTx.Descs {
+			unitType := desc.Type
+			switch unitType {
+			case common.TxOutCoinType:
+				rewardCoin += desc.Reward
+			case common.TxOutBondType:
+				rewardBond += desc.Reward
+			}
+		}
+		rewardCoin -= totalFeeInBlock
+		result[common.TxOutCoinType] += rewardCoin
+		result[common.TxOutBondType] += rewardBond
+
+		// continue with previous block
+		blockHeight--
+		if blockHeight > -1 {
+			// not is genesis block
+			preBlockHash := bestBlock.Header.PrevBlockHash
+			bestBlock = self.GetBlockByHash(preBlockHash)
+			if blockHeight != bestBlock.Height {
+				// pre-block is not the same block-height with calculation -> invalid blockchain
+				return nil, errors.New("Invalid blockchain")
+			}
+		}
+	}
+
+	// unlock chain
+	self.chainLock.Unlock()
+	return result, nil
 }
