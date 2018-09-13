@@ -6,14 +6,17 @@ Http client --(http request post)--> RPC http server
 
 
 Post body request:
+```json
 {
     "jsonrpc": "1.0",
     "method": "__method_name__",
     "params": __json_data_format__,
     "id": __integer_number__
 }
+```
 
 Response format:
+```json
 {
     "Result": __json_data_format,
     "Error": {
@@ -22,5 +25,5 @@ Response format:
     },
     "Id": __integer_number__
 }
-
+```
 
