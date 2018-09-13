@@ -32,6 +32,7 @@ import (
 
 const (
 	defaultNumberOfTargetOutbound = 8
+	defaultNumberOfTargetInbound = 8
 )
 
 // onionAddr implements the net.Addr interface and represents a tor address.
@@ -183,11 +184,11 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	// Create a connection manager.
 	targetOutbound := defaultNumberOfTargetOutbound
-	if cfg.MaxOutPeers < targetOutbound {
+	if cfg.MaxOutPeers > targetOutbound {
 		targetOutbound = cfg.MaxOutPeers
 	}
-	targetInbound := defaultNumberOfTargetOutbound
-	if cfg.MaxInPeers < targetOutbound {
+	targetInbound := defaultNumberOfTargetInbound
+	if cfg.MaxInPeers > targetInbound {
 		targetInbound = cfg.MaxInPeers
 	}
 
