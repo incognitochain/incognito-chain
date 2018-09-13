@@ -11,7 +11,7 @@ import (
 type MerkleHash []byte
 
 type MerklePath struct {
-	AuthPath []*MerkleHash
+	AuthPath []MerkleHash
 	Index    []bool
 }
 
@@ -20,7 +20,7 @@ func (mp *MerklePath) CreateDummyPath() *MerklePath {
 	mp.Index = make([]bool, common.IncMerkleTreeHeight)
 	for i := 0; i < common.IncMerkleTreeHeight; i++ {
 		hash := make(MerkleHash, 32)
-		mp.AuthPath = append(mp.AuthPath, &hash)
+		mp.AuthPath = append(mp.AuthPath, hash)
 	}
 	return mp
 }
@@ -38,7 +38,7 @@ type IncMerkleTree struct {
 type IncMerkleWitness struct {
 	snapshot, tmpTree *IncMerkleTree
 	uncles            []MerkleHash
-	nextDepth         int
+	uId, nextDepth    int
 }
 
 // TakeSnapshot takes a snapshot of a merkle tree to start building merkle path for the right most leaf
@@ -66,6 +66,7 @@ func (tree *IncMerkleTree) TakeSnapshot() *IncMerkleWitness {
 		tmpTree:   nil,
 		uncles:    nil,
 		nextDepth: 0,
+		uId:       0,
 	}
 	return witness
 }
@@ -129,16 +130,25 @@ func (tree *IncMerkleTree) AddNewNode(hash MerkleHash) {
 
 // GetRoot returns the merkle root of an unfinished tree; empty nodes are padded with default values
 func (tree *IncMerkleTree) GetRoot(d int) MerkleHash {
+	fmt.Printf("get root at depth %d\n", d)
+	if d >= common.IncMerkleTreeHeight {
+		d = common.IncMerkleTreeHeight - 1 // Maximum height of the tree to get root
+	}
+
 	left := uncommittedNodeHash
 	right := uncommittedNodeHash
 	if tree.right != nil {
+		fmt.Printf("have tree.right != nil\n")
 		if d == 0 {
+			fmt.Printf("d == 0, return tree.right\n")
 			return tree.right
 		}
 		right = tree.right
 	}
 	if tree.left != nil {
+		fmt.Printf("have tree.left != nil\n")
 		if d == 0 {
+			fmt.Printf("d == 0, return tree.left\n")
 			return tree.left
 		}
 		left = tree.left[:]
@@ -148,9 +158,13 @@ func (tree *IncMerkleTree) GetRoot(d int) MerkleHash {
 	for i := 0; i < d-1; i++ {
 		var data []byte
 		if i >= len(tree.nodes) || tree.nodes[i] == nil {
-			data = append(prevHash[:], getPaddingAtDepth(i)[:]...) // Previous hash is the left child, right child doesn't exist
+			fmt.Printf("getroot depth %d: getPadding\n", i)
+			// Previous hash is the left child, right child doesn't exist
+			data = append(prevHash[:], getPaddingAtDepth(i + 1)[:]...)
 		} else {
-			data = append(tree.nodes[i], prevHash[:]...) // Previous hash is the right child
+			fmt.Printf("getroot depth %d: combine hash\n", i)
+			// Previous hash is the right child
+			data = append(tree.nodes[i], prevHash[:]...)
 		}
 		prevHash = sha256.Sum256NoPad(data)
 	}
@@ -205,19 +219,75 @@ func (w *IncMerkleWitness) addNewNode(hash MerkleHash) {
 	if w.tmpTree == nil {
 		w.nextDepth = w.snapshot.getNextUncleDepth(len(w.uncles))
 		w.tmpTree = new(IncMerkleTree)
+		fmt.Printf("tmpTree is nil, nextDepth: %d\n", w.nextDepth)
 	}
 
 	w.tmpTree.AddNewNode(hash)
 	if w.tmpTree.finishedDepth(w.nextDepth) {
+		fmt.Printf("tmpTree finished\n")
 		rt := w.tmpTree.GetRoot(w.nextDepth)
 		w.uncles = append(w.uncles, rt)
 		w.tmpTree = nil
 	}
 }
 
+func (w *IncMerkleWitness) getUncle(d int) MerkleHash {
+	if w.uId >= len(w.uncles) {
+		fmt.Printf("no more uncles to take, get empty rt at depth %d\n", d)
+		return (&IncMerkleTree{}).GetRoot(d)
+	}
+	fmt.Printf("return uncle with id %d at depth %d\n", w.uId, d)
+	hash := w.uncles[w.uId]
+	w.uId++
+	return hash
+}
+
 // getWitnessPath builds the path from the right most leaf of an IncMerkleWitness to the newest root
+// Note: this should only be called once for a IncMerkleWitness; after the newest commitment
+// had already been added to it
 func (w *IncMerkleWitness) getWitnessPath() *MerklePath {
-	return nil
+	path := &MerklePath{}
+	if w.snapshot.left == nil { // Empty merkle tree, return dummy path
+		return (&MerklePath{}).CreateDummyPath()
+	}
+
+	// Build the last uncle if the temporary tree is not finished
+	if w.tmpTree != nil {
+		fmt.Printf("tmpTree != nil\n")
+		rt := w.tmpTree.GetRoot(w.nextDepth)
+		w.uncles = append(w.uncles, rt)
+		w.tmpTree = nil
+	}
+	w.uId = 0
+
+	if w.snapshot.right != nil { // Right most leaf (witnessing commitment) is the right child
+		fmt.Printf("witness is the right child\n")
+		hash := make([]byte, 32)
+		copy(hash, w.snapshot.left[:])
+		path.AuthPath = append(path.AuthPath, w.snapshot.left)
+		path.Index = append(path.Index, true)
+	} else { // Right most leaf is the left child
+		fmt.Printf("witness is the left child\n")
+		hash := w.getUncle(0)
+		path.AuthPath = append(path.AuthPath, hash)
+		path.Index = append(path.Index, false)
+	}
+
+	for d := 0; d < common.IncMerkleTreeHeight-1; d++ {
+		if d >= len(w.snapshot.nodes) || w.snapshot.nodes[d] == nil {
+			fmt.Printf("getWitnessPath at depth %d: need newer nodes\n", d)
+			// Need a node newer than the witnessing commitment
+			path.AuthPath = append(path.AuthPath, w.getUncle(d+1))
+			path.Index = append(path.Index, false)
+		} else {
+			fmt.Printf("getWitnessPath at depth %d: already have uncle\n", d)
+			// Need a node older than the witnessing commitment
+			// The node is stored in the snapshot tree at height d (from the bottom, ignore leaves)
+			path.AuthPath = append(path.AuthPath, w.snapshot.nodes[d])
+			path.Index = append(path.Index, true)
+		}
+	}
+	return path
 }
 
 // BuildWitnessPath builds commitments merkle path for all given notes
@@ -228,18 +298,21 @@ func BuildWitnessPath(notes []*JSInput, commitments [][]byte) error {
 	for _, cm := range commitments {
 		tree.AddNewNode(cm)
 
+		// Add "newer" nodes to witness' merkle tree to build merkle path of the latest merkle root
+		for _, witness := range witnesses {
+			if witness != nil {
+				fmt.Printf("add new node to witness: %x\n", cm)
+				witness.addNewNode(cm)
+			}
+		}
+
+		// If we find a needed commitment, take a snapshot of the tree whose right most leaf is the commitment
 		for i, note := range notes {
 			if bytes.Equal(cm, note.InputNote.Cm) {
 				if witnesses[i] != nil {
 					return fmt.Errorf("Duplicate commitments for input notes")
 				}
 				witnesses[i] = tree.TakeSnapshot()
-			}
-		}
-
-		for _, witness := range witnesses {
-			if witness != nil {
-				witness.addNewNode(cm)
 			}
 		}
 	}
@@ -251,6 +324,7 @@ func BuildWitnessPath(notes []*JSInput, commitments [][]byte) error {
 		}
 	}
 
+	fmt.Printf("getWitnessPath\n")
 	// Get the path to the merkle tree root of each witness's tree
 	for i, note := range notes {
 		note.WitnessPath = witnesses[i].getWitnessPath()
