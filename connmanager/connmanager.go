@@ -1,27 +1,26 @@
 package connmanager
 
 import (
-	"fmt"
-	"github.com/ninjadotorg/cash-prototype/bootnode/server"
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"log"
 	"net/rpc"
-	"os"
-	"sync"
-	"sync/atomic"
-	"time"
-
 	"encoding/json"
+	"fmt"
 	libpeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/ninjadotorg/cash-prototype/bootnode/server"
+	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
+	"os"
 	"runtime"
 	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
 )
 
 const (
@@ -92,6 +91,8 @@ type Config struct {
 	// maintain. Defaults to 8.
 	TargetOutbound uint32
 	TargetInbound  uint32
+
+	DiscoverPeers bool
 }
 
 type DiscoverPeerInfo struct {
@@ -315,7 +316,9 @@ func (self *ConnManager) Start() {
 			self.ListeningPeers[listner.PeerId] = &listner
 		}
 
-		//go self.DiscoverPeers()
+		if self.Config.DiscoverPeers {
+			go self.DiscoverPeers()
+		}
 	}
 }
 
@@ -441,12 +444,10 @@ listen:
 					goto listen
 				}
 
-				Logger.log.Info("Discover Peers", response)
-
 				for _, rawPeer := range response {
 					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerId.String()) {
 						_, exist := self.DiscoveredPeers[rawPeer.PublicKey]
-
+						//Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
 						if !exist {
 							// The following code extracts target's peer ID from the
 							// given multiaddress
@@ -469,11 +470,10 @@ listen:
 							}
 
 							self.DiscoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
+							//Logger.log.Info("Start connect to peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
 							go self.Connect(rawPeer.RawAddress)
 						}
 					}
-
-					time.Sleep(5 * time.Second)
 				}
 			}
 		}

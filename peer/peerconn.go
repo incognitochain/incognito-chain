@@ -38,7 +38,6 @@ type PeerConn struct {
 	sendMessageQueue chan outMsg
 	quit             chan struct{}
 	disconnect       chan struct{}
-	timeoutVerack    chan struct{}
 
 	Peer             *Peer
 	ValidatorAddress string
