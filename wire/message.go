@@ -29,7 +29,7 @@ const (
 	CmdVoteCandidate = "votecandidate"
 	CmdRequestSign   = "requestsign"
 	CmdInvalidBlock  = "invalidblock"
-	CmdSignedBlock   = "signedblock"
+	CmdBlockSig      = "blocksig"
 	CmdGetChainState = "getchainstate"
 	CmdChainState    = "chainstate"
 )
@@ -73,8 +73,8 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdBlockHeader:
 		msg = &MessageBlockHeader{}
 	// POS start
-	case CmdSignedBlock:
-		msg = &MessageSignedBlock{}
+	case CmdBlockSig:
+		msg = &MessageBlockSig{}
 		break
 	case CmdRequestSign:
 		msg = &MessageRequestSign{}
@@ -119,8 +119,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 	case reflect.TypeOf(&MessageBlockHeader{}):
 		return CmdBlockHeader, nil
 	// POS start
-	case reflect.TypeOf(&MessageSignedBlock{}):
-		return CmdSignedBlock, nil
+	case reflect.TypeOf(&MessageBlockSig{}):
+		return CmdBlockSig, nil
 	case reflect.TypeOf(&MessageRequestSign{}):
 		return CmdRequestSign, nil
 	case reflect.TypeOf(&MessageVoteCandidate{}):
