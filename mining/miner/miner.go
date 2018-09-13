@@ -3,6 +3,8 @@ package miner
 import (
 	"errors"
 	"fmt"
+	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/cash-prototype/wire"
 	"math/rand"
 	"sync"
 
@@ -25,7 +27,8 @@ type Config struct {
 	MiningAddrs []string
 
 	Server interface {
-		PushBlockMessage(*blockchain.Block) error
+		PushMessageToAll(wire.Message) error
+		PushMessageToPeer(wire.Message, peer.ID) error
 		UpdateChain(*blockchain.Block)
 	}
 }
@@ -88,10 +91,17 @@ func (m *Miner) GenerateBlock(n uint32) ([]*common.Hash, error) {
 func (m *Miner) commitBlock(block *blockchain.Block) (bool, error) {
 	m.submitBlockLock.Lock()
 	defer m.submitBlockLock.Unlock()
-	err := m.cfg.Server.PushBlockMessage(block)
+
+	blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
 	if err != nil {
+		return false, err
+	}
+	blockMsg.(*wire.MessageBlock).Block = *block
+
+	pushErr := m.cfg.Server.PushMessageToAll(blockMsg)
+	if pushErr != nil {
 		fmt.Print("sending error...........")
-		return false, nil
+		return false, pushErr
 	}
 	m.cfg.Server.UpdateChain(block)
 	return true, nil

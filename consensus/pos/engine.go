@@ -57,9 +57,8 @@ type Config struct {
 	ValidatorKeyPair cashec.KeyPair
 	Server           interface {
 		// list functions callback which are assigned from Server struct
-		PushBlockMessage(*blockchain.Block) error
 		PushMessageToAll(wire.Message) error
-		PushMessageToPeerID(wire.Message, peer2.ID) error
+		PushMessageToPeer(wire.Message, peer2.ID) error
 		GetChainState() error
 		UpdateChain(*blockchain.Block)
 	}
@@ -183,7 +182,7 @@ func (self *Engine) Finalize(block *blockchain.Block) {
 	newMsg := &wire.MessageRequestSign{}
 	newMsg.Block = *block
 
-	// self.Config.Server.PushMessageToPeerID()
+	// self.Config.Server.PushMessageToPeer()
 	var finalBlock *blockchain.Block
 
 	// Wait for signatures of other validators
@@ -193,7 +192,8 @@ func (self *Engine) Finalize(block *blockchain.Block) {
 	}
 
 	self.config.Server.UpdateChain(finalBlock)
-	self.config.Server.PushBlockMessage(finalBlock)
+	// todo refactor PushBlockMessage to PushMessageToAll
+	//self.config.Server.PushBlockMessage(finalBlock)
 }
 
 func (self *Engine) SwitchMember() {
@@ -424,7 +424,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 		return
 	}
 
-	err = self.config.Server.PushMessageToPeerID(signedBlockMsg, msgBlock.SenderID)
+	err = self.config.Server.PushMessageToPeer(signedBlockMsg, msgBlock.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
 	}

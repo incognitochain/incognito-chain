@@ -34,7 +34,7 @@ type NetSyncConfig struct {
 	MemPool    *mempool.TxPool
 	Server     interface {
 		// list functions callback which are assigned from Server struct
-		PushBlockMessageWithPeerId(*blockchain.Block, peer2.ID) error
+		PushMessageToPeer(wire.Message, peer2.ID) error
 		UpdateChain(*blockchain.Block)
 	}
 	Consensus interface {
@@ -229,7 +229,15 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 			for index := int(senderBlockHeaderIndex) + 1; index < len(chainBlocks); index++ {
 				block, _ := self.Config.BlockChain.GetBlockByBlockHeight(int32(index), chainID)
 				fmt.Printf("Send block %x \n", *block.Hash())
-				self.Config.Server.PushBlockMessageWithPeerId(block, msg.SenderID)
+
+				blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+				if err != nil {
+					break
+				}
+
+				blockMsg.(*wire.MessageBlock).Block = *block
+
+				self.Config.Server.PushMessageToPeer(blockMsg, msg.SenderID)
 				time.Sleep(time.Second * 3)
 			}
 		}

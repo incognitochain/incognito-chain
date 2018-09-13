@@ -194,8 +194,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		targetInbound = cfg.MaxInPeers
 	}
 
-	Logger.log.Info("DiscoverPeers", cfg.DiscoverPeers)
-
 	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
@@ -686,31 +684,10 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 			for _, _peerConn := range listen.PeerConns {
 				if _peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(addr) {
 					go self.ConnManager.Connect(addr)
-					time.Sleep(10 * time.Second)
 				}
 			}
 		}
 	}
-
-	//time.Sleep(3 * time.Second)
-	//b := &blockchain.Block{
-	//	Height: 100,
-	//}
-	//
-	//var realPubKey string
-	//peerId := peerConn.Peer.PeerId
-	//Logger.log.Info(peerId.Pretty())
-	//for pubKey, peerInfo := range self.ConnManager.DiscoveredPeers {
-	//	Logger.log.Info(pubKey, peerInfo.PeerId.Pretty())
-	//	if peerInfo.PeerId.Pretty() == peerId.Pretty() {
-	//		realPubKey = pubKey
-	//	}
-	//}
-	//
-	//if realPubKey != "" {
-	//	Logger.log.Info("Have public key", realPubKey)
-	//	self.PushBlockMessageWithValidatorAddress(b, realPubKey)
-	//}
 }
 
 func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageRequestSign) {
@@ -798,26 +775,41 @@ func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block,
 }
 
 /**
-PushBlockMessage broadcast block to connected peer
-*/
-func (self *Server) PushBlockMessage(block *blockchain.Block) error {
-	// TODO push block message for connected peer
-	//@todo got error here
-	var dc chan<- struct{}
-	for _, listener := range self.ConnManager.Config.ListenerPeers {
-		msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
-		if err != nil {
-			return err
-		}
-		msg.(*wire.MessageBlock).Block = *block
-		listener.QueueMessageWithEncoding(msg, dc)
-	}
-	return nil
-}
+PushBlockMessageWithPeerId broadcast block to specific connected peer
+ */
+//func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block, validatorAddress string) error {
+//	Logger.log.Info("PushBlockMessageWithValidatorAddress", block, validatorAddress)
+//	var dc chan<- struct{}
+//	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+//	msg.(*wire.MessageBlock).Block = *block
+//	if err != nil {
+//		return err
+//	}
+//	discoverdPeer, exist := self.ConnManager.DiscoveredPeers[validatorAddress]
+//
+//	Logger.log.Info("PushBlockMessageWithValidatorAddress 2", discoverdPeer, exist)
+//	if exist {
+//		for _, listener := range self.ConnManager.Config.ListenerPeers {
+//			peerConn, exist := listener.PeerConns[discoverdPeer.PeerId]
+//			Logger.log.Info("Connected to peers", listener.PeerConns)
+//			Logger.log.Info("PushBlockMessageWithValidatorAddress 3", exist)
+//			if exist {
+//				Logger.log.Info("PushBlockMessageWithValidatorAddress 4", msg, peerConn)
+//				peerConn.QueueMessageWithEncoding(msg, dc)
+//			}
+//		}
+//	} else {
+//		return errors.New(fmt.Sprintf("Can not found peer with validator address %s", validatorAddress))
+//	}
+//
+//	return nil
+//}
 
-func (self *Server) PushMessageToAll(msg wire.Message) error {
+/**
+PushMessageToAll broadcast msg
+ */
+func (self Server) PushMessageToAll(msg wire.Message) error {
 	var dc chan<- struct{}
-
 	for _, listener := range self.ConnManager.Config.ListenerPeers {
 		msg.SetSenderID(listener.PeerId)
 		listener.QueueMessageWithEncoding(msg, dc)
@@ -825,10 +817,13 @@ func (self *Server) PushMessageToAll(msg wire.Message) error {
 	return nil
 }
 
-func (self *Server) PushMessageToPeerID(msg wire.Message, peerID peer2.ID) error {
+/**
+PushMessageToPeer push msg to peer
+ */
+func (self Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 	var dc chan<- struct{}
 	for _, listener := range self.ConnManager.Config.ListenerPeers {
-		peerConn, exist := listener.PeerConns[peerID]
+		peerConn, exist := listener.PeerConns[peerId]
 		if exist {
 			msg.SetSenderID(listener.PeerId)
 			peerConn.QueueMessageWithEncoding(msg, dc)

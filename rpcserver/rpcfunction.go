@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ninjadotorg/cash-prototype/wire"
 	"log"
 	"strconv"
 	"strings"
@@ -29,7 +30,7 @@ var RpcHandler = map[string]commandHandler{
 	"signrawtransaction":           RpcServer.handleSignRawTransaction,
 	"sendrawtransaction":           RpcServer.handleSendRawTransaction,
 	"getNumberOfCoinsAndBonds":     RpcServer.handleGetNumberOfCoinsAndBonds,
-	"createActionParamsTrasaction": RpcServer.handleCreateActionParamsTrasaction,
+	"createActionParamsTransaction": RpcServer.handleCreateActionParamsTransaction,
 
 	//POS
 	"votecandidate": RpcServer.handleVoteCandidate,
@@ -298,7 +299,13 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 	fmt.Printf("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 	// broadcast message
-	self.Config.Server.PushTxMessage(hash)
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg.(*wire.MessageTx).Transaction = &tx
+	self.Config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil
 }
@@ -375,7 +382,7 @@ func assertEligibleAgentIDs(eligibleAgentIDs interface{}) []string {
 /**
 // handleCreateRawTransaction handles createrawtransaction commands.
 */
-func (self RpcServer) handleCreateActionParamsTrasaction(
+func (self RpcServer) handleCreateActionParamsTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, error) {

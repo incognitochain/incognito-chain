@@ -30,7 +30,7 @@ const (
 	// inventory to a peer.
 	trickleTimeout = 10 * time.Second
 
-	maxRetryConn      = 25
+	maxRetryConn      = 5
 	retryConnDuration = 30 * time.Second
 )
 
@@ -256,8 +256,6 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	if ok && _peerConn.State() == ConnEstablished {
 		Logger.log.Infof("Existed PEER ID - %s", peer.PeerId.String())
 
-		self.ConnPending(peer)
-
 		self.outboundMutex.Unlock()
 		return nil, nil
 	}
@@ -272,6 +270,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	if self.NumOutbound() >= self.MaxOutbound && self.MaxOutbound > 0 && !ok {
 		Logger.log.Infof("Max Peer Outbound Connection")
 
+		//push to pending peers
 		self.ConnPending(peer)
 
 		self.outboundMutex.Unlock()
