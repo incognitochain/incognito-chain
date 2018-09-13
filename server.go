@@ -3,12 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/ninjadotorg/cash-prototype/cashec"
 	"log"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"crypto/tls"
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/addrmanager"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
@@ -22,12 +24,11 @@ import (
 	"github.com/ninjadotorg/cash-prototype/netsync"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/rpcserver"
-	"github.com/ninjadotorg/cash-prototype/wire"
 	"github.com/ninjadotorg/cash-prototype/wallet"
-	"path/filepath"
+	"github.com/ninjadotorg/cash-prototype/wire"
 	"os"
+	"path/filepath"
 	"strconv"
-	"crypto/tls"
 )
 
 const (
@@ -212,7 +213,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	}
 
 	for _, addr := range permanentPeers {
-		go self.ConnManager.Connect(addr)
+		go self.ConnManager.Connect(addr, "")
 	}
 
 	if !cfg.DisableRPC {
@@ -300,6 +301,13 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerId
 	msg.(*wire.MessageVersion).LastBlock = 0
 	msg.(*wire.MessageVersion).ProtocolVersion = 1
+	// Validate Public Key from SealerPrvKey
+	if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
+		keyPair := &cashec.KeyPair{}
+		keyPair.Import([]byte(peerConn.ListenerPeer.Config.SealerPrvKey))
+		msg.(*wire.MessageVersion).PublicKey = string(keyPair.PublicKey)
+	}
+
 	if err != nil {
 		return
 	}
@@ -367,7 +375,7 @@ func (self Server) peerHandler() {
 	if len(cfg.ConnectPeers) == 0 {
 		// TODO connect with peer in file
 		for _, addr := range self.AddrManager.AddressCache() {
-			go self.ConnManager.Connect(addr.RawAddress)
+			go self.ConnManager.Connect(addr.RawAddress, addr.PublicKey)
 		}
 	}
 
@@ -540,7 +548,9 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
 		PeerId:           msg.LocalPeerId,
+		PublicKey:		  msg.PublicKey,
 	}
+
 	self.newPeers <- remotePeer
 	// TODO check version message
 	valid := false
@@ -585,6 +595,12 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerId
 		msg.(*wire.MessageVersion).LastBlock = 0
 		msg.(*wire.MessageVersion).ProtocolVersion = 1
+		// Validate Public Key from SealerPrvKey
+		if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
+			keyPair := &cashec.KeyPair{}
+			keyPair.Import([]byte(peerConn.ListenerPeer.Config.SealerPrvKey))
+			msg.(*wire.MessageVersion).PublicKey = string(keyPair.PublicKey)
+		}
 		if err != nil {
 			return
 		}
@@ -623,12 +639,14 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 				return
 			}
 
-			addresses := []string{}
+			rawPeers := []wire.RawPeer{}
 			peers := self.AddrManager.AddressCache()
 			for _, peer := range peers {
-				addresses = append(addresses, peer.RawAddress)
+				if peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+					rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
+				}
 			}
-			msgS.(*wire.MessageAddr).RawAddresses = addresses
+			msgS.(*wire.MessageAddr).RawPeers = rawPeers
 			var doneChan chan<- struct{}
 			for _, _peerConn := range listen.PeerConns {
 				_peerConn.QueueMessageWithEncoding(msgS, doneChan)
@@ -658,7 +676,13 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 		}
 	}
 
-	msgS.(*wire.MessageAddr).RawAddresses = addresses
+	rawPeers := []wire.RawPeer{}
+	for _, peer := range peers {
+		if peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+			rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
+		}
+	}
+	msgS.(*wire.MessageAddr).RawPeers = rawPeers
 	var dc chan<- struct{}
 	peerConn.QueueMessageWithEncoding(msgS, dc)
 }
@@ -666,11 +690,11 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	// TODO for onaddr message
 	log.Printf("Receive addr message")
-	for _, addr := range msg.RawAddresses {
+	for _, rawPeer := range msg.RawPeers {
 		for _, listen := range self.ConnManager.ListeningPeers {
 			for _, _peerConn := range listen.PeerConns {
-				if _peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(addr) {
-					go self.ConnManager.Connect(addr)
+				if _peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(rawPeer.RawAddress) {
+					go self.ConnManager.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
 				}
 			}
 		}
