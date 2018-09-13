@@ -23,7 +23,6 @@ import (
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
 
 var RpcHandler = map[string]commandHandler{
-	"dosomething":                   RpcServer.handleDoSomething,
 	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
 	"listtransactions":              RpcServer.handleListTransactions,
 	"createrawtransaction":          RpcServer.handleCreateRawTrasaction,
@@ -49,13 +48,6 @@ var RpcLimited = map[string]commandHandler{
 	"dumpprivkey":           RpcServer.handleDumpPrivkey,
 	"importaccount":         RpcServer.handleImportAccount,
 	"listunspent":           RpcServer.handleListUnspent,
-}
-
-func (self RpcServer) handleDoSomething(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
-	result := make(map[string]string)
-	result["param"] = string(params.([]json.RawMessage)[0])
-	return result, nil
 }
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
