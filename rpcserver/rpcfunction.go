@@ -26,9 +26,9 @@ var RpcHandler = map[string]commandHandler{
 	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
 	"listtransactions":              RpcServer.handleListTransactions,
 	"createrawtransaction":          RpcServer.handleCreateRawTrasaction,
-	"sendrawtransaction":            RpcServer.handleSendRawTransaction,
+	"sendtransaction":               RpcServer.handleSendRawTransaction,
 	"getnumberofcoinsandbonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
-	"createActionParamsTransaction": RpcServer.handleCreateActionParamsTransaction,
+	"createactionparamstransaction": RpcServer.handleCreateActionParamsTransaction,
 
 	//POS
 	"votecandidate": RpcServer.handleVoteCandidate,
@@ -398,15 +398,6 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 	self.Config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil
-}
-
-func isExisted(item int, arr []int) bool {
-	for _, i := range arr {
-		if item == i {
-			return true
-		}
-	}
-	return false
 }
 
 /**
