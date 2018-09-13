@@ -30,7 +30,7 @@ const (
 	// inventory to a peer.
 	trickleTimeout = 10 * time.Second
 
-	maxRetryConn      = 25
+	maxRetryConn      = 5
 	retryConnDuration = 30 * time.Second
 )
 

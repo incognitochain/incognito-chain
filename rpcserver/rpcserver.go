@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/cash-prototype/wire"
 	"io"
 	"io/ioutil"
 	"log"
@@ -69,7 +71,8 @@ type RpcServerConfig struct {
 	AddrMgr     *addrmanager.AddrManager
 	Server interface {
 		// Push Tx message
-		PushTxMessage(*common.Hash)
+		PushMessageToAll(message wire.Message) error
+		PushMessageToPeer(message wire.Message, id peer.ID) error
 	}
 
 	TxMemPool     *mempool.TxPool

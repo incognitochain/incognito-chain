@@ -192,8 +192,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		targetInbound = cfg.MaxInPeers
 	}
 
-	Logger.log.Info("DiscoverPeers", cfg.DiscoverPeers)
-
 	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
@@ -673,118 +671,64 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 			for _, _peerConn := range listen.PeerConns {
 				if _peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(addr) {
 					go self.ConnManager.Connect(addr)
-					time.Sleep(10 * time.Second)
 				}
 			}
 		}
 	}
-
-	//time.Sleep(3 * time.Second)
-	//b := &blockchain.Block{
-	//	Height: 100,
-	//}
-	//
-	//var realPubKey string
-	//peerId := peerConn.Peer.PeerId
-	//Logger.log.Info(peerId.Pretty())
-	//for pubKey, peerInfo := range self.ConnManager.DiscoveredPeers {
-	//	Logger.log.Info(pubKey, peerInfo.PeerId.Pretty())
-	//	if peerInfo.PeerId.Pretty() == peerId.Pretty() {
-	//		realPubKey = pubKey
-	//	}
-	//}
-	//
-	//if realPubKey != "" {
-	//	Logger.log.Info("Have public key", realPubKey)
-	//	self.PushBlockMessageWithValidatorAddress(b, realPubKey)
-	//}
-}
-
-/**
-PushTxMessage broadcast tx for connected peers
- */
-func (self Server) PushTxMessage(hashTx *common.Hash) {
-	var dc chan<- struct{}
-	tx, _ := self.MemPool.GetTx(hashTx)
-	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		msg, err := wire.MakeEmptyMessage(wire.CmdTx)
-		if err != nil {
-			return
-		}
-		msg.(*wire.MessageTx).Transaction = tx
-		listen.QueueMessageWithEncoding(msg, dc)
-	}
 }
 
 /**
 PushBlockMessageWithPeerId broadcast block to specific connected peer
  */
-func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId peer2.ID) error {
-	var dc chan<- struct{}
-	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
-	msg.(*wire.MessageBlock).Block = *block
-	if err != nil {
-		return err
-	}
-	self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msg, dc)
-	return nil
-}
+//func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block, validatorAddress string) error {
+//	Logger.log.Info("PushBlockMessageWithValidatorAddress", block, validatorAddress)
+//	var dc chan<- struct{}
+//	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+//	msg.(*wire.MessageBlock).Block = *block
+//	if err != nil {
+//		return err
+//	}
+//	discoverdPeer, exist := self.ConnManager.DiscoveredPeers[validatorAddress]
+//
+//	Logger.log.Info("PushBlockMessageWithValidatorAddress 2", discoverdPeer, exist)
+//	if exist {
+//		for _, listener := range self.ConnManager.Config.ListenerPeers {
+//			peerConn, exist := listener.PeerConns[discoverdPeer.PeerId]
+//			Logger.log.Info("Connected to peers", listener.PeerConns)
+//			Logger.log.Info("PushBlockMessageWithValidatorAddress 3", exist)
+//			if exist {
+//				Logger.log.Info("PushBlockMessageWithValidatorAddress 4", msg, peerConn)
+//				peerConn.QueueMessageWithEncoding(msg, dc)
+//			}
+//		}
+//	} else {
+//		return errors.New(fmt.Sprintf("Can not found peer with validator address %s", validatorAddress))
+//	}
+//
+//	return nil
+//}
 
 /**
-PushBlockMessageWithPeerId broadcast block to specific connected peer
+PushMessageToAll broadcast msg
  */
-func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block, validatorAddress string) error {
-	Logger.log.Info("PushBlockMessageWithValidatorAddress", block, validatorAddress)
-	var dc chan<- struct{}
-	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
-	msg.(*wire.MessageBlock).Block = *block
-	if err != nil {
-		return err
-	}
-	discoverdPeer, exist := self.ConnManager.DiscoveredPeers[validatorAddress]
-
-	Logger.log.Info("PushBlockMessageWithValidatorAddress 2", discoverdPeer, exist)
-	if exist {
-		for _, listener := range self.ConnManager.Config.ListenerPeers {
-			peerConn, exist := listener.PeerConns[discoverdPeer.PeerId]
-			Logger.log.Info("PushBlockMessageWithValidatorAddress 3", exist)
-			if exist {
-				Logger.log.Info("PushBlockMessageWithValidatorAddress 4", msg, peerConn)
-				peerConn.QueueMessageWithEncoding(msg, dc)
-			}
-		}
-	} else {
-		return errors.New(fmt.Sprintf("Can not found peer with validator address %s", validatorAddress))
-	}
-
-	return nil
-}
-
-/**
-PushBlockMessage broadcast block to connected peer
- */
-func (self *Server) PushBlockMessage(block *blockchain.Block) error {
-	// TODO push block message for connected peer
-	//@todo got error here
-	var dc chan<- struct{}
-	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
-		if err != nil {
-			return err
-		}
-		msg.(*wire.MessageBlock).Block = *block
-		listen.QueueMessageWithEncoding(msg, dc)
-	}
-	return nil
-}
-
-/**
-PushBlockMessage broadcast invalid block message to connected peer
- */
-func (self *Server) PushInvalidBlockMessage(msg *wire.MessageInvalidBlock) error {
+func (self Server) PushMessageToAll(msg wire.Message) error {
 	var dc chan<- struct{}
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
 		listen.QueueMessageWithEncoding(msg, dc)
+	}
+	return nil
+}
+
+/**
+PushMessageToPeer push msg to peer
+ */
+func (self Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
+	var dc chan<- struct{}
+	for _, listener := range self.ConnManager.Config.ListenerPeers {
+		peerConn, exist := listener.PeerConns[peerId]
+		if exist {
+			peerConn.QueueMessageWithEncoding(msg, dc)
+		}
 	}
 	return nil
 }
