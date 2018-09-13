@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"crypto/rand"
-	"encoding/json"
+	// "crypto/rand"
+	// "encoding/json"
 
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
-	"github.com/ninjadotorg/cash-prototype/transaction"
+	// "github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 type ProveResult struct {
