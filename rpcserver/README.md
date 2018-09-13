@@ -27,5 +27,21 @@ Http client --(http request post)--> RPC http server
 }
 ```
 
-- List rpc command:
-+ "getblockchaininfo"
+- List common rpc command, client doesn't need to provide limited username/password to call:
+  - getblockchaininfo
+  - listtransactions
+  - createrawtransaction
+  - sendtransaction
+  - getnumberofcoinsandbonds
+  - createactionparamstransaction
+  - votecandidate
+  - getheader
+  
+- List limited rpc command:
+  - listaccounts
+  - getaccount
+  - getaddressesbyaccount
+  - getaccountaddress
+  - dumpprivkey
+  - importaccount
+  - listunspent
