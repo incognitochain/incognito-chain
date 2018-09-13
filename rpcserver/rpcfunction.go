@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ninjadotorg/cash-prototype/wire"
 	"log"
 	"strconv"
 	"time"
@@ -28,7 +29,7 @@ var RpcHandler = map[string]commandHandler{
 	"createrawtransaction":         RpcServer.handleCreateRawTrasaction,
 	"sendrawtransaction":           RpcServer.handleSendRawTransaction,
 	"getNumberOfCoinsAndBonds":     RpcServer.handleGetNumberOfCoinsAndBonds,
-	"createActionParamsTrasaction": RpcServer.handleCreateActionParamsTrasaction,
+	"createActionParamsTransaction": RpcServer.handleCreateActionParamsTransaction,
 
 	//POS
 	"votecandidate": RpcServer.handleVoteCandidate,
@@ -328,7 +329,7 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 	}
 
 	// param #3: list usable tx
-	usableTxs := make([]*transaction.UsableTx, 0)
+	usableTxs := make([]*transaction.Tx, 0)
 	txsParam := arrayParams[2].([]interface{})
 	for _, txInterface := range txsParam {
 		tx := jsonrpc.ListUnspentResultItem{}
@@ -342,10 +343,11 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 				Commitments: desc.Commitments,
 			})
 		}
-		usableTx := transaction.UsableTx{
-			TxId: tx.TxId,
-			Tx:   item,
+		usableTx := transaction.Tx{
+			Descs: item.Descs,
 		}
+		txId, _ := common.Hash{}.NewHashFromStr(tx.TxId)
+		usableTx.SetTxId(txId)
 		usableTxs = append(usableTxs, &usableTx)
 	}
 	txViewPoint, err := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
@@ -395,7 +397,13 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 	fmt.Printf("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 	// broadcast message
-	self.Config.Server.PushTxMessage(hash)
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg.(*wire.MessageTx).Transaction = &tx
+	self.Config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil
 }
@@ -473,7 +481,10 @@ func assertEligibleAgentIDs(eligibleAgentIDs interface{}) []string {
 /**
 // handleCreateRawTransaction handles createrawtransaction commands.
 */
-func (self RpcServer) handleCreateActionParamsTrasaction(params interface{}, closeChan <-chan struct{}, ) (interface{}, error) {
+func (self RpcServer) handleCreateActionParamsTransaction(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, error) {
 	log.Println(params)
 	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.ActionParamTx{

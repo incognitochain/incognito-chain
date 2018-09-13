@@ -30,7 +30,7 @@ const (
 	// inventory to a peer.
 	trickleTimeout = 10 * time.Second
 
-	maxRetryConn      = 25
+	maxRetryConn      = 5
 	retryConnDuration = 30 * time.Second
 )
 
@@ -247,24 +247,23 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 	_peerConn, ok := self.PeerConns[peer.PeerId]
 	if ok && _peerConn.State() == ConnEstablished {
-		Logger.log.Infof("Existed PEER ID - %s", peer.PeerId.String())
-
-		self.ConnPending(peer)
+		Logger.log.Infof("Checked Existed PEER ID - %s", peer.PeerId.String())
 
 		self.outboundMutex.Unlock()
 		return nil, nil
 	}
 
 	if peer.PeerId.Pretty() == self.PeerId.Pretty() {
-		Logger.log.Infof("Myself PEER ID - %s", peer.PeerId.String())
+		Logger.log.Infof("Checked Myself PEER ID - %s", peer.PeerId.String())
 
 		self.outboundMutex.Unlock()
 		return nil, nil
 	}
 
 	if self.NumOutbound() >= self.MaxOutbound && self.MaxOutbound > 0 && !ok {
-		Logger.log.Infof("Max Peer Outbound Connection")
+		Logger.log.Infof("Checked Max Outbound Connection PEER ID - %s", peer.PeerId.String())
 
+		//push to pending peers
 		self.ConnPending(peer)
 
 		self.outboundMutex.Unlock()
@@ -295,7 +294,6 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		ReaderWriterStream: rw,
 		quit:               make(chan struct{}),
 		disconnect:         make(chan struct{}),
-		timeoutVerack:      make(chan struct{}),
 		sendMessageQueue:   make(chan outMsg, 1),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,
@@ -314,12 +312,11 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 	self.outboundMutex.Unlock()
 
+	timeOutVerAck := make(chan struct{})
 	time.AfterFunc(time.Second * 10, func() {
 		if !peerConn.VerAckReceived() {
 			Logger.log.Infof("NewPeerConnection timeoutVerack timeout PEER ID %s", peerConn.PeerId.String())
-			peerConn.timeoutVerack <- struct{}{}
-		} else {
-			Logger.log.Infof("NewPeerConnection timeoutVerack is not timeout PEER ID %s", peerConn.PeerId.String())
+			timeOutVerAck <- struct{}{}
 		}
 	})
 
@@ -328,7 +325,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("NewPeerConnection Close Stream PEER ID %s", peerConn.PeerId.String())
 			break
-		case <-peerConn.timeoutVerack:
+		case <-timeOutVerAck:
 			Logger.log.Infof("NewPeerConnection timeoutVerack PEER ID %s", peerConn.PeerId.String())
 			break
 		}
@@ -350,7 +347,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	}
 
 	remotePeerId := stream.Conn().RemotePeer()
-	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID-%s", self.Host.ID().String(), remotePeerId.String())
+	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID %s", self.Host.ID().String(), remotePeerId.String())
 
 	// TODO this code make EOF for libp2p
 	//if !atomic.CompareAndSwapInt32(&self.connected, 0, 1) {
@@ -369,7 +366,6 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		ReaderWriterStream: rw,
 		quit:               make(chan struct{}),
 		disconnect:         make(chan struct{}),
-		timeoutVerack:      make(chan struct{}),
 		sendMessageQueue:   make(chan outMsg, 1),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,
@@ -386,12 +382,11 @@ func (self *Peer) HandleStream(stream net.Stream) {
 
 	go self.handleConnected(&peerConn)
 
+	timeOutVerAck := make(chan struct{})
 	time.AfterFunc(time.Second * 10, func() {
 		if !peerConn.VerAckReceived() {
 			Logger.log.Infof("HandleStream timeoutVerack timeout PEER ID %s", peerConn.PeerId.String())
-			peerConn.timeoutVerack <- struct{}{}
-		} else {
-			Logger.log.Infof("HandleStream timeoutVerack is not timeout PEER ID %s", peerConn.PeerId.String())
+			timeOutVerAck <- struct{}{}
 		}
 	})
 
@@ -400,7 +395,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("HandleStream close stream PEER ID %s", peerConn.PeerId.String())
 			break
-		case <-peerConn.timeoutVerack:
+		case <-timeOutVerAck:
 			Logger.log.Infof("HandleStream timeoutVerack PEER ID %s", peerConn.PeerId.String())
 			break
 		}
@@ -474,6 +469,7 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 
 		if peerConn.RetryCount < maxRetryConn {
 			peerConn.updateState(ConnPending)
+
 			_, err := peerConn.ListenerPeer.NewPeerConnection(peerConn.Peer)
 			if err != nil {
 				go self.retryPeerConnection(peerConn)

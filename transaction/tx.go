@@ -25,11 +25,16 @@ type Tx struct {
 	Descs    []*JoinSplitDesc `json:"Descs"`
 	JSPubKey []byte           `json:"JSPubKey,omitempty"` // 32 bytes
 	JSSig    []byte           `json:"JSSig,omitempty"`    // 64 bytes
+
+	txId *common.Hash
 }
 
-type UsableTx struct {
-	TxId string `json:"TxId"`
-	Tx
+func (tx *Tx) SetTxId(txId *common.Hash) {
+	tx.txId = txId
+}
+
+func (tx *Tx) GetTxId() (*common.Hash) {
+	return tx.txId
 }
 
 // Hash returns the hash of all fields of the transaction
@@ -79,7 +84,7 @@ func CreateTx(
 	senderKey *client.SpendingKey,
 	paymentInfo []*client.PaymentInfo,
 	rt *common.Hash,
-	usableTx []*UsableTx,
+	usableTx []*Tx,
 	nullifiers [][]byte,
 	commitments [][]byte,
 ) (*Tx, error) {
@@ -185,14 +190,14 @@ func SignTx(tx *Tx) (*Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Verification key
 	tx.JSPubKey, err = json.Marshal(privKey.PublicKey)
 	fmt.Printf("\nPubKey:%s\n", tx.JSPubKey)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Sign
 	jsSig := *new(JSSig)
 	jsSig.R, jsSig.S, err = client.Sign(rand.Reader, privKey, hash[:])
@@ -206,11 +211,11 @@ func SignTx(tx *Tx) (*Tx, error) {
 	if err != nil {
 		return nil, err
 	}
- 
+
 	return tx, nil
 }
 
-func VerifySign(tx *Tx) (bool, error){
+func VerifySign(tx *Tx) (bool, error) {
 	//Check input transaction
 	if tx.JSSig == nil || tx.JSPubKey == nil {
 		return false, errors.New("Input transaction must be an signed one!")
@@ -218,7 +223,7 @@ func VerifySign(tx *Tx) (bool, error){
 	// UnParse Public key
 	pubKey := new(client.PublicKey)
 	err := json.Unmarshal(tx.JSPubKey, pubKey)
-	if  err != nil {
+	if err != nil {
 		return false, err
 	}
 	// fmt.Printf("Pub key: %+v\n", *pubKey)
@@ -226,7 +231,7 @@ func VerifySign(tx *Tx) (bool, error){
 	// UnParse JSSig
 	jsSig := new(JSSig)
 	err = json.Unmarshal(tx.JSSig, jsSig)
-	if  err != nil {
+	if err != nil {
 		return false, err
 	}
 	// fmt.Printf("JSsig : %+v\n", jsSig)

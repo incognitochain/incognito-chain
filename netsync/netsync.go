@@ -32,7 +32,7 @@ type NetSyncConfig struct {
 	MemPool    *mempool.TxPool
 	Server interface {
 		// list functions callback which are assigned from Server struct
-		PushBlockMessageWithPeerId(*blockchain.Block, peer2.ID) error
+		PushMessageToPeer(wire.Message, peer2.ID) error
 		UpdateChain(*blockchain.Block)
 	}
 }
@@ -129,7 +129,7 @@ func (self *NetSync) QueueTx(_ *peer.Peer, msg *wire.MessageTx, done chan struct
 // handleTxMsg handles transaction messages from all peers.
 func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 	Logger.log.Info("Handling new message tx")
-	// TODO get message tx and process, Tuan Anh
+	// TODO get message tx and process
 	hash, txDesc, error := self.Config.MemPool.CanAcceptTransaction(msg.Transaction)
 
 	if error != nil {
@@ -190,7 +190,15 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 			for index := int(senderBlockHeaderIndex) + 1; index < len(allBlocks); index++ {
 				block, _ := self.Config.BlockChain.GetBlockByBlockHeight(int32(index))
 				fmt.Printf("Send block %x \n", *block.Hash())
-				self.Config.Server.PushBlockMessageWithPeerId(block, msg.SenderID)
+
+				blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+				if err != nil {
+					break
+				}
+
+				blockMsg.(*wire.MessageBlock).Block = *block
+
+				self.Config.Server.PushMessageToPeer(blockMsg, msg.SenderID)
 				time.Sleep(time.Second * 3)
 			}
 		}
