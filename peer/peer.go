@@ -247,21 +247,21 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 	_peerConn, ok := self.PeerConns[peer.PeerId]
 	if ok && _peerConn.State() == ConnEstablished {
-		Logger.log.Infof("Existed PEER ID - %s", peer.PeerId.String())
+		Logger.log.Infof("Checked Existed PEER ID - %s", peer.PeerId.String())
 
 		self.outboundMutex.Unlock()
 		return nil, nil
 	}
 
 	if peer.PeerId.Pretty() == self.PeerId.Pretty() {
-		Logger.log.Infof("Myself PEER ID - %s", peer.PeerId.String())
+		Logger.log.Infof("Checked Myself PEER ID - %s", peer.PeerId.String())
 
 		self.outboundMutex.Unlock()
 		return nil, nil
 	}
 
 	if self.NumOutbound() >= self.MaxOutbound && self.MaxOutbound > 0 && !ok {
-		Logger.log.Infof("Max Peer Outbound Connection %d %d", self.NumOutbound(), self.MaxOutbound)
+		Logger.log.Infof("Checked Max Outbound Connection PEER ID - %s", peer.PeerId.String())
 
 		//push to pending peers
 		self.ConnPending(peer)
