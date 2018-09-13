@@ -119,8 +119,8 @@ func CreateTx(
 		panic("Input value less than output value")
 	}
 
-	senderFullKey := cashec.KeyPair{}
-	senderFullKey.GetKeyFromPrivateKeyByte(senderKey[:])
+	senderFullKey := cashec.KeySet{}
+	senderFullKey.ImportFromPrivateKeyByte(senderKey[:])
 
 	// Create new notes: first one send `value` to receiverAddr, second one sends `change` back to sender
 	outNote := &client.Note{Value: value, Apk: receiverAddr.Apk}
@@ -162,7 +162,6 @@ func CreateRandomJSInput() *client.JSInput {
 	input.WitnessPath = new(client.MerklePath) // TODO(@0xbunyip): create dummy path if necessary
 	return input
 }
-
 
 type JSSig struct {
 	R, S *big.Int
@@ -326,10 +325,7 @@ func generateTx(
 func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) (*Tx, error) {
 	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
 	keyBytes := []byte{} // TODO(0xbunyip): randomize seed?
-	keyPair, err := (&cashec.KeyPair{}).GenerateKey(keyBytes)
-	if err != nil {
-		return nil, err
-	}
+	keyPair := (&cashec.KeySet{}).GenerateKey(keyBytes)
 
 	var seed, phi *[]byte
 	var outputR [][]byte
@@ -359,10 +355,8 @@ func GenerateProofForGenesisTx(
 ) (*Tx, error) {
 	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
 	privateSignKey := [32]byte{1}
-	keyPair, err := (&cashec.KeyPair{}).Import(privateSignKey[:])
-	if err != nil {
-		return nil, err
-	}
+	keyPair := &cashec.KeySet{}
+	keyPair.ImportFromPrivateKeyByte(privateSignKey[:])
 
 	proof, hSig, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, &seed, &phi, outputR)
 	if err != nil {
