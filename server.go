@@ -744,60 +744,6 @@ func (self *Server) OnChainState(_ *peer.PeerConn, msg *wire.MessageChainState) 
 	self.NetSync.QueueMessage(nil, msg, txProcessed)
 }
 
-/**
-PushTxMessage broadcast tx for connected peers
-*/
-func (self Server) PushTxMessage(hashTx *common.Hash) {
-	var dc chan<- struct{}
-	tx, _ := self.MemPool.GetTx(hashTx)
-	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		msg, err := wire.MakeEmptyMessage(wire.CmdTx)
-		if err != nil {
-			return
-		}
-		msg.(*wire.MessageTx).Transaction = tx
-		listen.QueueMessageWithEncoding(msg, dc)
-	}
-}
-
-func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId peer2.ID) error {
-	var dc chan<- struct{}
-	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
-	msg.(*wire.MessageBlock).Block = *block
-	if err != nil {
-		return err
-	}
-	self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msg, dc)
-	return nil
-}
-
-func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block, validatorAddress string) error {
-	Logger.log.Info("PushBlockMessageWithValidatorAddress", block, validatorAddress)
-	var dc chan<- struct{}
-	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
-	msg.(*wire.MessageBlock).Block = *block
-	if err != nil {
-		return err
-	}
-	discoverdPeer, exist := self.ConnManager.DiscoveredPeers[validatorAddress]
-
-	Logger.log.Info("PushBlockMessageWithValidatorAddress 2", discoverdPeer, exist)
-	if exist {
-		for _, listener := range self.ConnManager.Config.ListenerPeers {
-			peerConn, exist := listener.PeerConns[discoverdPeer.PeerId]
-			Logger.log.Info("PushBlockMessageWithValidatorAddress 3", exist)
-			if exist {
-				Logger.log.Info("PushBlockMessageWithValidatorAddress 4", msg, peerConn)
-				peerConn.QueueMessageWithEncoding(msg, dc)
-			}
-		}
-	} else {
-		return errors.New(fmt.Sprintf("Can not found peer with validator address %s", validatorAddress))
-	}
-
-	return nil
-}
-
 func (self Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {
 	result := []peer2.ID{}
 

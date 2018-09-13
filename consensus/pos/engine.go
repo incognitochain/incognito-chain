@@ -110,6 +110,13 @@ func (self *Engine) Start() error {
 	self.quit = make(chan struct{})
 	self.wg.Add(1)
 	self.Unlock()
+
+	go func(){
+		for {
+
+			self.config.Server.GetPeerIdsFromPublicKey()
+		}
+	}()
 	return nil
 }
 
