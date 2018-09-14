@@ -83,7 +83,7 @@ func (self *Engine) Start() error {
 		self.Unlock()
 		return errors.New("Consensus engine is already started")
 	}
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
 	self.started = true
 	self.knownChainsHeight.Heights = make([]int, TOTAL_VALIDATORS)
@@ -111,7 +111,13 @@ func (self *Engine) Start() error {
 		}
 	}
 	self.validatedChainsHeight.Heights = self.knownChainsHeight.Heights
-
+	time.Sleep(2 * time.Second)
+	go func() {
+		for {
+			self.config.Server.GetChainState()
+			time.Sleep(10 * time.Second)
+		}
+	}()
 	self.quit = make(chan struct{})
 	self.wg.Add(1)
 

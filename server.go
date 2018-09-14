@@ -834,6 +834,7 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 // }
 
 func (self *Server) GetChainState() error {
+	Logger.log.Info("Send a GetChainState")
 	var dc chan<- struct{}
 	for _, listener := range self.ConnManager.Config.ListenerPeers {
 		msg, err := wire.MakeEmptyMessage(wire.CmdGetChainState)
