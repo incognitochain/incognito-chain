@@ -147,14 +147,35 @@ type Params struct {
 	HDCoinType uint32
 }
 
-var pposValidators = []string{""}
+var pposValidators = []string{
+	"CAESIAuGwhopotzNxcZ1ipBJIhT7vW3NeVao/3zulpOhcJ8e",
+	"CAESINT4F5KxQfg+L+oa60J0KmJcDZMw/0fY4ZnlpxqtCD8o",
+	"CAESIKTkfS4H9QuQcFOT2wYJj4BkUEea6O3PCyhNyCq46Sw2",
+	"CAESIMgTNOUJNYeqGBNCvr6KoU9XBMenoA6Iv3AiITv5WKbn",
+	"CAESINzVdiiexhNYtm2cnNoGMk7RHZWJYYwzK6y5cKEhpSha",
+	"CAESIJxdsG4L5gUeR+9hdNuZAezdwCS2JSXwq2utYdi6i35U",
+	"CAESIEvAtt1WDWSYO/qibwXyzX73bw/4eR4RaeXudkMHW7ig",
+	"CAESIDkYCo+KxAzxaOX5Ees4HaVISyhS2JtUpQOPJRWBnUFC",
+	"CAESILHnt/yNq0zmC94uUHYpLEVZEvE5BbSiQZ2uhvzogvmP",
+	"CAESIBQUCI1ONE+P9yXasAn7deudkojA2AdmK19pxkc/ZLzP",
+	"CAESIPCCDerW2/LTi8h2B6mtAFlbpa5aB+bKJ0AAc3cfYRhp",
+	"CAESIB0d4tYLi0hNO0Fd5bpokyseUwjUjCoSUvj2ddnqrGSd",
+	"CAESIHxm9Wc+KLwMIVWi8JasuW/xfqlRSya3TXqzHqh3Vtvq",
+	"CAESIN/cNUef3rXR7OB9zmJ2nqRMgHDvkj+TiD2F40DWX1i2",
+	"CAESIICJ+PEtgEjqVH8kB34T2mbUN4mbRClLIUbQ0dNqw14h",
+	"CAESIGrAVEqYDZFa/5oANDtsJR/VFeeQaTQpcFl28s71c41D",
+	"CAESICvLduU4slOYsi4DjX5RN14pvwjYmXZj4Ew1+k92ollX",
+	"CAESIKVF7F+BHibdWEB4feQkGtglm0jL7w4pMOhwK16cAg34",
+	"CAESIFxy0R11bwP7D6y3TaDzpyf0IFjHjxRuzPVDzaLTQkCd",
+	"CAESIAkpBzX+RwQDett0AT2fMIsNdYxOfCWattiPYuL7LRVp",
+}
 
 // MainNetParams defines the network parameters for the main coin network.
 var MainNetParams = Params{
 	Name:        MAINNET_NAME,
 	Net:         MAINNET,
 	DefaultPort: MAINET_DEFAULT_PORT,
-	DNSSeeds: []string{
+	DNSSeeds:    []string{
 		/*{"seed.coin.sipa.be", true},
 		{"dnsseed.bluematt.me", true},
 		{"dnsseed.coin.dashjr.org", false},
