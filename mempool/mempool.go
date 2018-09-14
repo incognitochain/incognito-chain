@@ -166,7 +166,9 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	// sanity data
 	// TODO
 	if !tp.ValidateSansityData(tx) {
-		err := TxRuleError{}.Init(SansityInvalidTx, fmt.Sprintf("transaction's sansity %v is invalid", txHash.String()))
+		str := fmt.Sprintf("transaction's sansity %v is invalid", txHash.String())
+		err := TxRuleError{}
+		err.Init(SansityInvalidTx, str)
 		return nil, nil, err
 	}
 
@@ -279,6 +281,20 @@ func (tp *TxPool) ValidateSansityData(tx transaction.Transaction) bool {
 			return false
 		}
 		//check Descs
+
+		// get list nullifiers from db to check spending
+		txViewPointTxOutBond, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutBondType)
+		if err != nil {
+			return false
+		}
+		nullifiersInDbTxOutBond := txViewPointTxOutBond.ListNullifiers(common.TxOutBondType)
+
+		txViewPointTxOutCoin, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
+		if err != nil {
+			return false
+		}
+		nullifiersInDbTxOutCoin := txViewPointTxOutCoin.ListNullifiers(common.TxOutCoinType)
+
 		for _, desc := range txN.Descs {
 			if len(desc.Anchor) != 32 {
 				return false
@@ -291,6 +307,79 @@ func (tp *TxPool) ValidateSansityData(tx transaction.Transaction) bool {
 			}
 			if desc.Type != common.TxOutBondType || desc.Type != common.TxOutCoinType {
 				return false
+			}
+			//
+			if len(desc.Nullifiers) != 2 {
+				return false
+			}
+			if len(desc.Nullifiers[0]) != 32 {
+				return false
+			}
+			if len(desc.Nullifiers[1]) != 32 {
+				return false
+			}
+			//
+			if len(desc.Commitments) != 2 {
+				return false
+			}
+			if len(desc.Commitments[0]) != 32 {
+				return false
+			}
+			if len(desc.Commitments[1]) != 32 {
+				return false
+			}
+			//
+			if len(desc.Vmacs) != 2 {
+				return false
+			}
+			if len(desc.Vmacs[0]) != 32 {
+				return false
+			}
+			if len(desc.Vmacs[1]) != 32 {
+				return false
+			}
+			//
+			if desc.Proof == nil {
+				return false
+			}
+			//
+			if len(desc.Proof.G_A) != 33 ||
+				len(desc.Proof.G_APrime) != 33 ||
+				len(desc.Proof.G_B) != 33 ||
+				len(desc.Proof.G_BPrime) != 65 ||
+				len(desc.Proof.G_C) != 33 ||
+				len(desc.Proof.G_CPrime) != 33 ||
+				len(desc.Proof.G_K) != 33 ||
+				len(desc.Proof.G_H) != 33 {
+				return false
+			}
+			//
+			if len(desc.EncryptedData) != 2 {
+				return false
+			}
+			if desc.Type == common.TxOutBondType {
+				checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[0])
+				if err != nil || checkCandiateNullifier == true {
+					// candidate nullifier is not existed in db
+					return false
+				}
+				checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[1])
+				if err != nil || checkCandiateNullifier == true {
+					// candidate nullifier is not existed in db
+					return false
+				}
+			}
+			if desc.Type == common.TxOutBondType {
+				checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[0])
+				if err != nil || checkCandiateNullifier == true {
+					// candidate nullifier is not existed in db
+					return false
+				}
+				checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[1])
+				if err != nil || checkCandiateNullifier == true {
+					// candidate nullifier is not existed in db
+					return false
+				}
 			}
 		}
 
