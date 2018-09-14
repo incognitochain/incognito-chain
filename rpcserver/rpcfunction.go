@@ -379,7 +379,7 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 		return nil, err
 	}
 
-	hash, txDesc, err := self.Config.TxMemPool.CanAcceptTransaction(&tx)
+	hash, txDesc, err := self.Config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
 		return nil, err
 	}
@@ -457,7 +457,7 @@ func (self RpcServer) handleCreateActionParamsTransaction(
 	isValid := ed25519.Verify(pubKeyInBytes, messageInBytes, sigInBytes)
 	fmt.Println("isValid: ", isValid)
 
-	_, _, err := self.Config.TxMemPool.CanAcceptTransaction(&tx)
+	_, _, err := self.Config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
 		return nil, err
 	}

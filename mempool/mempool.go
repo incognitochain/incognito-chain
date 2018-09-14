@@ -105,10 +105,32 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 	return txD
 }
 
+// MaybeAcceptTransaction is the main workhorse for handling insertion of new
+// free-standing transactions into a memory pool.  It includes functionality
+// such as rejecting duplicate transactions, ensuring transactions follow all
+// rules, detecting orphan transactions, and insertion into the memory pool.
+//
+// If the transaction is an orphan (missing parent transactions), the
+// transaction is NOT added to the orphan pool, but each unknown referenced
+// parent is returned.  Use ProcessTransaction instead if new orphans should
+// be added to the orphan pool.
+//
+// This function is safe for concurrent access.
+func (tp *TxPool) MaybeAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
+	tp.mtx.Lock()
+	hash, txDesc, err := tp.maybeAcceptTransaction(tx)
+	tp.mtx.Unlock()
+	return hash, txDesc, err
+}
+
 /**
-// CanAcceptTransaction validate transaction is valid and can add to pool
+// maybeAcceptTransaction is the internal function which implements the public
+// MaybeAcceptTransaction.  See the comment for MaybeAcceptTransaction for
+// more details.
+//
+// This function MUST be called with the mempool lock held (for writes).
 */
-func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
+func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
 	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
 	bestHeight := tp.config.BlockChain.BestState.BestBlock.Height
