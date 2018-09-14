@@ -153,8 +153,13 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	// Don't accept the transaction if it already exists in the pool.
 	if tp.isTxInPool(txHash) {
 		str := fmt.Sprintf("already have transaction %v", txHash.String())
-		err := TxRuleError{}.Init(RejectDuplicateTx, str)
+		err := TxRuleError{}
+		err.Init(RejectDuplicateTx, str)
 		return nil, nil, err
+	}
+
+	if blockchain.IsCoinBaseTx(tx) {
+
 	}
 
 	// sanity data
@@ -163,7 +168,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	// Validate tx by it self
 	validate := tx.ValidateTransaction()
 	if !validate {
-		err := TxRuleError{}.Init(RejectInvalidTx, "Invalid tx")
+		err := TxRuleError{}
+		err.Init(RejectInvalidTx, "Invalid tx")
 		return nil, nil, err
 	}
 

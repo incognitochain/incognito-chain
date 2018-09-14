@@ -13,7 +13,7 @@ var (
 
 /*func CountSigOps(tx *transaction.Tx) float64 {
 totalSigOps := 0.0
-*/ /*for _, txIn := range tx.TxIn {
+*//*for _, txIn := range tx.TxIn {
 	//@todo need implement function calc value of input
 	fmt.Print(txIn.PreviousOutPoint)
 }
@@ -21,7 +21,7 @@ totalSigOps := 0.0
 for _, txOut := range tx.TxOut {
 
 	totalSigOps -= txOut.Value
-}*/ /*
+}*//*
 
 	return totalSigOps
 }*/
@@ -31,6 +31,9 @@ IsCoinBaseTx determines whether or not a transaction is a coinbase.
 */
 func IsCoinBaseTx(tx transaction.Transaction) bool {
 	// Check normal tx(not an action tx)
+	if tx.GetType() == common.TxActionParamsType {
+		return true
+	}
 	normalTx, ok := tx.(*transaction.Tx)
 	if !ok {
 		return false

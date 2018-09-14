@@ -258,42 +258,6 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 */
 func (self RpcServer) handleCreateTrasaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
-	/*arrayParams := common.InterfaceSlice(params)
-	tx := transaction.Tx{
-		Version: 1,
-		Type:    common.TxNormalType,
-	}
-	txIns := common.InterfaceSlice(arrayParams[0])
-	for _, txIn := range txIns {
-		temp := txIn.(map[string]interface{})
-		txId := temp["txid"].(string)
-		hashTxId, err := common.Hash{}.NewHashFromStr(txId)
-		if err != nil {
-			return nil, err
-		}
-		item := transaction.TxIn{
-			PreviousOutPoint: transaction.OutPoint{
-				Hash: *hashTxId,
-				Vout: uint32(temp["vout"].(float64)),
-			},
-		}
-		tx.AddTxIn(item)
-	}
-	// txOut := arrayParams[1].(map[string]interface{})
-	txOuts := common.InterfaceSlice(arrayParams[1])
-	for _, txOut := range txOuts {
-		temp := txOut.(map[string]interface{})
-		tx.AddTxOut(transaction.TxOut{
-			PkScript:  []byte(temp["pkScript"].(string)),
-			Value:     temp["value"].(float64),
-			TxOutType: temp["txOutType"].(string),
-		})
-	}
-	byteArrays, err := json.Marshal(tx)
-	if err != nil {
-		return nil, err
-	}
-	return hex.EncodeToString(byteArrays), nil*/
 
 	// all params
 	arrayParams := common.InterfaceSlice(params)
@@ -306,6 +270,7 @@ func (self RpcServer) handleCreateTrasaction(params interface{}, closeChan <-cha
 	}
 
 	// param #2: list receiver
+	totalAmmount := uint64(0)
 	receiversParam := arrayParams[1].(map[string]interface{})
 	paymentInfos := make([]*client.PaymentInfo, 0)
 	for pubKeyStr, amount := range receiversParam {
@@ -317,35 +282,30 @@ func (self RpcServer) handleCreateTrasaction(params interface{}, closeChan <-cha
 			Amount:         uint64(amount.(float64)),
 			PaymentAddress: receiverPubKey.KeyPair.PublicKey,
 		}
+		totalAmmount += paymentInfo.Amount
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
 
-	// param #3: list usable tx
-	usableTxs := make([]*transaction.Tx, 0)
-	txsParam := arrayParams[2].([]interface{})
-	for _, txInterface := range txsParam {
-		tx := jsonrpc.ListUnspentResultItem{}
-		tx.Init(txInterface)
-		item := transaction.Tx{
-			Descs: make([]*transaction.JoinSplitDesc, 0),
+	// list unspent tx
+	usableTxs, _ := self.Config.BlockChain.GetListTxByPrivateKey(&senderKey.KeyPair.PrivateKey, common.TxOutCoinType)
+	candidateTxs := make([]*transaction.Tx, 0)
+	for _, temp := range usableTxs {
+		for _, desc := range temp.Descs {
+			for _, note := range desc.GetNote() {
+				amount := note.Value
+				totalAmmount -= amount
+			}
 		}
-		for _, desc := range tx.JoinSplitDesc {
-			item.Descs = append(item.Descs, &transaction.JoinSplitDesc{
-				Anchor:      desc.Anchor,
-				Commitments: desc.Commitments,
-			})
+		candidateTxs = append(candidateTxs, &temp)
+		if totalAmmount <= 0 {
+			break
 		}
-		usableTx := transaction.Tx{
-			Descs: item.Descs,
-		}
-		txId, _ := common.Hash{}.NewHashFromStr(tx.TxId)
-		usableTx.SetTxId(txId)
-		usableTxs = append(usableTxs, &usableTx)
 	}
-	txViewPoint, err := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
 
+	// get tx view point
+	txViewPoint, err := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
 	// create a new tx
-	tx, err := transaction.CreateTx(&senderKey.KeyPair.PrivateKey, paymentInfos, &self.Config.BlockChain.BestState.BestBlock.Header.MerkleRootCommitments, usableTxs, txViewPoint.ListNullifiers(common.TxOutCoinType), txViewPoint.ListCommitments(common.TxOutCoinType))
+	tx, err := transaction.CreateTx(&senderKey.KeyPair.PrivateKey, paymentInfos, &self.Config.BlockChain.BestState.BestBlock.Header.MerkleRootCommitments, candidateTxs, txViewPoint.ListNullifiers(common.TxOutCoinType), txViewPoint.ListCommitments(common.TxOutCoinType))
 	if err != nil {
 		return nil, err
 	}
