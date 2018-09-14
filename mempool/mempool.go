@@ -131,6 +131,8 @@ func (tp *TxPool) MaybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 // This function MUST be called with the mempool lock held (for writes).
 */
 func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
+	txHash := tx.Hash()
+
 	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
 	bestHeight := tp.config.BlockChain.BestState.BestBlock.Height
@@ -148,11 +150,14 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 		return nil, nil, err
 	}
 
-	if !tp.HaveTransaction(tx.Hash()) {
-		txD := tp.addTx(tx, bestHeight, txFee)
-		return tx.Hash(), txD, nil
+	if tp.isTxInPool(txHash) {
+		str := fmt.Sprintf("already have transaction %v", txHash.String())
+		err := TxRuleError{}
+		err.Init(RejectDuplicate, str)
+		return nil, nil, err
 	}
-	return nil, nil, errors.New("Exist this tx in pool")
+	txD := tp.addTx(tx, bestHeight, txFee)
+	return tx.Hash(), txD, nil
 }
 
 // remove transaction for pool
