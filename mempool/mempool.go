@@ -161,9 +161,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	// sansity data
 	// TODO
 	if !tp.ValidateSansityData(tx) {
-		str := fmt.Sprintf("transaction's sansity %v is invalid", txHash.String())
-		err := TxRuleError{}
-		err.Init(SansityInvalidTx, str)
+		err := TxRuleError{}.Init(SansityInvalidTx, fmt.Sprintf("transaction's sansity %v is invalid", txHash.String()))
 		return nil, nil, err
 	}
 
