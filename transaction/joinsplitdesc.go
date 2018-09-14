@@ -6,18 +6,17 @@ import (
 )
 
 // JoinSplitDesc stores the UTXO of a transaction
-// TODO(@0xbunyip): add randomSeed, MACs and epk
 type JoinSplitDesc struct {
-	Anchor          []byte             `json:"Anchor"`
-	Nullifiers      [][]byte           `json:"Nullifiers"`
-	Commitments     [][]byte           `json:"Commitments"`
-	Proof           *zksnark.PHGRProof `json:"Proof"`
-	EncryptedData   [][]byte           `json:"EncryptedData"`
-	EphemeralPubKey []byte             `json:"EphemeralPubKey"`
-	HSigSeed        []byte             `json:"HSigSeed"`
-	Type            string             `json:"Type"`   // unit type (coin or bond) which used in tx
-	Reward          uint64             `json:"Reward"` // For coinbase tx
-	Vmacs           [][]byte
+	Anchor          []byte             `json:"Anchor"`          // 32 bytes
+	Nullifiers      [][]byte           `json:"Nullifiers"`      // len == 2, 32 bytes each element
+	Commitments     [][]byte           `json:"Commitments"`     // len == 2, 32 bytes each element
+	Proof           *zksnark.PHGRProof `json:"Proof"`           // G_A, G_APrime, G_B, G_C, G_CPrime, G_K, G_H == 33 bytes each, G_BPrime 65 bytes
+	EncryptedData   [][]byte           `json:"EncryptedData"`   // len == 2
+	EphemeralPubKey []byte             `json:"EphemeralPubKey"` // 32 bytes
+	HSigSeed        []byte             `json:"HSigSeed"`        // 32 bytes
+	Type            string             `json:"Type"`            // unit type (coin or bond) which used in tx
+	Reward          uint64             `json:"Reward"`          // For coinbase tx
+	Vmacs           [][]byte           `json:"Vmacs"`           // len == 2, 32 bytes
 
 	note []*client.Note // decrypt data for EncryptedData
 }
