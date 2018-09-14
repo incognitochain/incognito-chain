@@ -17,9 +17,10 @@ func (e TxRuleError) Error() string {
 
 // txRuleError creates an underlying TxRuleError with the given a set of
 // arguments and returns a RuleError that encapsulates it.
-func (e *TxRuleError) Init(code TxErrCode, desc string) {
+func (e *TxRuleError) Init(code TxErrCode, desc string) (*TxRuleError) {
 	e.rejectCode = code
 	e.description = desc
+	return e
 }
 
 // rejectCode represents a numeric value by which a remote peer indicates
@@ -29,4 +30,5 @@ type TxErrCode uint8
 // These constants define the various supported reject codes.
 const (
 	RejectDuplicateTx TxErrCode = 1
+	RejectInvalidTx   TxErrCode = 2
 )
