@@ -383,6 +383,9 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) bool {
 					return false
 				}
 			}
+			if desc.Reward != 0 {
+				return false
+			}
 		}
 
 		_ = txN
