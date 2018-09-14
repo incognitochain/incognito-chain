@@ -29,4 +29,5 @@ type TxErrCode uint8
 // These constants define the various supported reject codes.
 const (
 	RejectDuplicateTx TxErrCode = 1
+	SansityInvalidTx  TxErrCode = 2
 )
