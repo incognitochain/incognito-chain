@@ -157,7 +157,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 		return nil, nil, err
 	}
 
-	// sansity data
+	// sanity data
 	// TODO
 
 	// Validate tx by it self
