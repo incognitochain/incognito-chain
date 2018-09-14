@@ -456,36 +456,6 @@ func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string) (*TxViewPoint
 	return view, nil
 }
 
-// CheckTransactionInputs performs a series of checks on the inputs to a
-// transaction to ensure they are valid.  An example of some of the checks
-// include verifying all inputs exist, ensuring the coinbase seasoning
-// requirements are met, detecting double spends, validating all values and fees
-// are in the legal range and the total output amount doesn't exceed the input
-// amount, and verifying the signatures to prove the spender was the owner of
-// the bitcoins and therefore allowed to spend them.  As it checks the inputs,
-// it also calculates the total fees for the transaction and returns that value.
-//
-// NOTE: The transaction MUST have already been sanity checked with the
-// CheckTransactionSanity function prior to calling this function.
-/*func (self *BlockChain) CheckTransactionInputs(tx *transaction.Transaction, txHeight int32, utxoView *UtxoViewpoint, chainParams *Params) (float64, error) {
-	return 0, nil
-}*/
-
-func (self *BlockChain) CheckTransactionData(tx transaction.Transaction, nextBlockHeight int32, txViewPoint *TxViewPoint, chainParams *Params) (uint64, error) {
-	txType := tx.GetType()
-	if txType == common.TxNormalType {
-		normalTx := tx.(*transaction.Tx)
-		fee := normalTx.Fee
-		// TODO validate
-		return fee, nil
-	} else if txType == common.TxActionParamsType {
-		// TODO validate
-		return 0, nil
-	} else {
-		return 0, errors.New("Wrong tx type")
-	}
-}
-
 // connectBestChain handles connecting the passed block to the chain while
 // respecting proper chain selection according to the chain with the most
 // proof of work.  In the typical case, the new block simply extends the main

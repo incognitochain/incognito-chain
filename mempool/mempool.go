@@ -134,22 +134,24 @@ func (tp *TxPool) MaybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
 	txHash := tx.Hash()
 
-	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
 	bestHeight := tp.config.BlockChain.BestState.BestBlock.Height
-	nextBlockHeight := bestHeight + 1
 
-	// Perform several checks on the transaction data using the invariant
-	// rules in blockchain for what transactions are allowed into blocks.
-	// Also returns the fees associated with the transaction which will be
-	// used later.
-	txFee, err := tp.config.BlockChain.CheckTransactionData(tx, nextBlockHeight, nil, tp.config.ChainParams)
-	if err != nil {
-		//if cerr, ok := err.(blockchain.RuleError); ok {
-		//	return nil, nil, chainRuleError(cerr)
-		//}
+	// Check tx with policy
+	// check version
+	ok := tp.config.Policy.CheckTxVersion(&tx)
+	if !ok {
+		err := TxRuleError{}
+		err.Init(RejectVersion, fmt.Sprintf("%v's version is invalid", txHash.String()))
 		return nil, nil, err
 	}
+
+	// check fee of tx
+	txFee, err := tp.CheckTransactionFee(tx)
+	if err != nil {
+		return nil, nil, err
+	}
+	// end check with policy
 
 	// Don't accept the transaction if it already exists in the pool.
 	if tp.isTxInPool(txHash) {
@@ -264,6 +266,33 @@ func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
 	return haveTx
 }
 
+/**
+CheckTransactionFee - check fee of tx
+ */
+func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error) {
+	// Coinbase transactions have no inputs.
+	if blockchain.IsCoinBaseTx(tx) {
+		return 0, nil
+	}
+
+	txType := tx.GetType()
+	switch txType {
+	case common.TxNormalType:
+		{
+			normalTx := tx.(*transaction.Tx)
+			err := tp.config.Policy.CheckTransactionFee(normalTx)
+			return normalTx.Fee, err
+		}
+	case common.TxActionParamsType:
+		{
+			return 0, nil
+		}
+	default:
+		{
+			return 0, errors.New("Wrong tx type")
+		}
+	}
+}
 func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) bool {
 	if tx.GetType() == common.TxNormalType {
 		txN := tx.(*transaction.Tx)
