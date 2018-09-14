@@ -1,10 +1,20 @@
 package connmanager
 
 import (
-	"github.com/ninjadotorg/cash-prototype/wire"
-	"net/rpc"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"net"
+	"net/http"
+	"net/rpc"
+	"os"
+	"runtime"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	libpeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
@@ -12,16 +22,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/peer"
-	"io/ioutil"
-	"log"
-	"net"
-	"net/http"
-	"os"
-	"runtime"
-	"strings"
-	"sync"
-	"sync/atomic"
-	"time"
+	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
 const (
@@ -97,9 +98,9 @@ type Config struct {
 }
 
 type DiscoverPeerInfo struct {
-	PublicKey string
+	PublicKey  string
 	RawAddress string
-	PeerId libpeer.ID
+	PeerId     libpeer.ID
 }
 
 // registerPending is used to register a pending connection attempt. By
@@ -423,7 +424,7 @@ listen:
 
 				if listener.Config.SealerPrvKey != "" {
 					keyPair := &cashec.KeyPair{}
-					keyPair.Import([]byte(listener.Config.SealerPrvKey))
+					keyPair.Import(listener.Config.SealerPrvKey)
 					publicKey = string(keyPair.PublicKey)
 				}
 
@@ -489,7 +490,7 @@ listen:
 func (p *ConnManager) GetPeerConnsByPeerId(peerId libpeer.ID) []*peer.PeerConn {
 	results := []*peer.PeerConn{}
 	for _, listen := range p.ListeningPeers {
-		for _, peerConn :=range listen.PeerConns {
+		for _, peerConn := range listen.PeerConns {
 			if peerConn.PeerId == peerId {
 				results = append(results, peerConn)
 			}

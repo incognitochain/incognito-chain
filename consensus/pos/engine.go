@@ -1,6 +1,7 @@
 package pos
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -83,7 +84,7 @@ func (self *Engine) Start() error {
 		self.Unlock()
 		return errors.New("Consensus engine is already started")
 	}
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
 	self.started = true
 	self.knownChainsHeight.Heights = make([]int, TOTAL_VALIDATORS)
@@ -111,7 +112,13 @@ func (self *Engine) Start() error {
 		}
 	}
 	self.validatedChainsHeight.Heights = self.knownChainsHeight.Heights
-
+	time.Sleep(2 * time.Second)
+	go func() {
+		for {
+			self.config.Server.GetChainState()
+			time.Sleep(10 * time.Second)
+		}
+	}()
 	self.quit = make(chan struct{})
 	self.wg.Add(1)
 
@@ -157,11 +164,12 @@ func (self *Engine) StopSealer() {
 		self.sealerStarted = false
 	}
 }
-func (self *Engine) StartSealer(sealerPrvKey []byte) {
+func (self *Engine) StartSealer(sealerPrvKey string) {
 	if self.sealerStarted {
 		Logger.log.Error("Sealer already started")
 		return
 	}
+
 	_, err := self.config.ValidatorKeyPair.Import(sealerPrvKey)
 	if err != nil {
 		Logger.log.Error("Can't import sealer's key!")
@@ -170,7 +178,7 @@ func (self *Engine) StartSealer(sealerPrvKey []byte) {
 	self.validatorSigCh = make(chan blockSig)
 	self.quitSealer = make(chan struct{})
 	self.sealerStarted = true
-	Logger.log.Info("Starting sealer...")
+	Logger.log.Info("Starting sealer with public key: " + base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey))
 
 	go func() {
 		tempChainsHeight := make([]int, TOTAL_VALIDATORS)
