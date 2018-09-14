@@ -31,11 +31,11 @@ type Config struct {
 // orphanTx is normal transaction that references an ancestor transaction
 // that is not yet available.  It also contains additional information related
 // to it such as an expiration time to help prevent caching the orphan forever.
-type orphanTx struct {
+/*type orphanTx struct {
 	tx         *transaction.Tx
 	id         ID
 	expiration time.Time
-}
+}*/
 
 // TxDesc is transaction description in mempool
 type TxDesc struct {
@@ -53,7 +53,7 @@ type TxPool struct {
 	lastUpdated int64 // last time pool was updated
 
 	mtx    sync.RWMutex
-	Config Config
+	config Config
 	pool   map[common.Hash]*TxDesc
 	//orphans       map[chainhash.Hash]*orphanTx
 	//orphansByPrev map[wire.OutPoint]map[common.Hash]*Tx
@@ -66,6 +66,15 @@ type TxPool struct {
 	// the scan will only run when an orphan is added to the pool as opposed
 	// to on an unconditional timer.
 	nextExpireScan time.Time
+}
+
+/**
+Init Txpool from config
+*/
+func (tp *TxPool) Init(cfg *Config) {
+	tp.config = *cfg
+	tp.pool = make(map[common.Hash]*TxDesc)
+	tp.nextExpireScan = time.Now().Add(orphanExpireScanInterval)
 }
 
 // check transaction in pool
@@ -102,14 +111,14 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
 	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
-	bestHeight := tp.Config.BlockChain.BestState.BestBlock.Height
+	bestHeight := tp.config.BlockChain.BestState.BestBlock.Height
 	nextBlockHeight := bestHeight + 1
 
 	// Perform several checks on the transaction data using the invariant
 	// rules in blockchain for what transactions are allowed into blocks.
 	// Also returns the fees associated with the transaction which will be
 	// used later.
-	txFee, err := tp.Config.BlockChain.CheckTransactionData(tx, nextBlockHeight, nil, tp.Config.ChainParams)
+	txFee, err := tp.config.BlockChain.CheckTransactionData(tx, nextBlockHeight, nil, tp.config.ChainParams)
 	if err != nil {
 		//if cerr, ok := err.(blockchain.RuleError); ok {
 		//	return nil, nil, chainRuleError(cerr)
@@ -200,14 +209,4 @@ func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
 	tp.mtx.RUnlock()
 
 	return haveTx
-}
-
-// New returns a new memory pool for validating and storing standalone
-// transactions until they are mined into a block.
-func New(cfg *Config) *TxPool {
-	return &TxPool{
-		Config:         *cfg,
-		pool:           make(map[common.Hash]*TxDesc),
-		nextExpireScan: time.Now().Add(orphanExpireScanInterval),
-	}
 }

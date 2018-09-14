@@ -139,7 +139,9 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		return err
 	}
 
-	self.MemPool = mempool.New(&mempool.Config{
+	// create mempool tx
+	self.MemPool = &mempool.TxPool{}
+	self.MemPool.Init(&mempool.Config{
 		Policy: mempool.Policy{
 			MaxTxVersion: transaction.TxVersion + 1,
 		},
