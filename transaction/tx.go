@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"crypto/rand"
+	// "crypto/sha256"
+	// "math/big"
 
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -15,18 +18,23 @@ import (
 // Tx represents a coin-transfer-transaction stored in a block
 type Tx struct {
 	Version  int    `json:"Version"`
-	Type     string `json:"Type"` // NORMAL / ACTION_PARAMS
+	Type     string `json:"Type"` // n
 	LockTime int    `json:"LockTime"`
 	Fee      uint64 `json:"Fee"`
 
 	Descs    []*JoinSplitDesc `json:"Descs"`
-	JSPubKey []byte           `json:"JSPubKey"` // 32 bytes
-	JSSig    []byte           `json:"JSSig"`    // 64 bytes
+	JSPubKey []byte           `json:"JSPubKey,omitempty"` // 32 bytes
+	JSSig    []byte           `json:"JSSig,omitempty"`    // 64 bytes
+
+	txId *common.Hash
 }
 
-type UsableTx struct {
-	TxId string `json:"TxId"`
-	Tx
+func (tx *Tx) SetTxId(txId *common.Hash) {
+	tx.txId = txId
+}
+
+func (tx *Tx) GetTxId() (*common.Hash) {
+	return tx.txId
 }
 
 // Hash returns the hash of all fields of the transaction
@@ -45,7 +53,6 @@ func (tx *Tx) Hash() *common.Hash {
 }
 
 // ValidateTransaction returns true if transaction is valid:
-// - All data fields are well formed
 // - JSDescriptions are valid (zk-snark proof satisfied)
 // - Signature matches the signing public key
 // Note: This method doesn't check for double spending
@@ -76,7 +83,7 @@ func CreateTx(
 	senderKey *client.SpendingKey,
 	paymentInfo []*client.PaymentInfo,
 	rt *common.Hash,
-	usableTx []*UsableTx,
+	usableTx []*Tx,
 	nullifiers [][]byte,
 	commitments [][]byte,
 ) (*Tx, error) {
@@ -125,8 +132,8 @@ func CreateTx(
 		panic("Input value less than output value")
 	}
 
-	senderFullKey := cashec.KeyPair{}
-	senderFullKey.GetKeyFromPrivateKeyByte(senderKey[:])
+	senderFullKey := cashec.KeySet{}
+	senderFullKey.ImportFromPrivateKeyByte(senderKey[:])
 
 	// Create new notes: first one send `value` to receiverAddr, second one sends `change` back to sender
 	outNote := &client.Note{Value: value, Apk: receiverAddr.Apk}
@@ -169,19 +176,65 @@ func CreateRandomJSInput() *client.JSInput {
 	return input
 }
 
-func signTx(tx *Tx, keyPair *cashec.KeyPair) (*Tx, error) {
-	tx.JSPubKey = keyPair.PublicKey.Apk[:]
-	// Sign tx
-	dataToBeSigned, err := json.Marshal(tx)
-	if err != nil {
-		return nil, err
+func SignTx(tx *Tx, privKey *client.PrivateKey) (*Tx, error) {
+	//Check input transaction
+	if tx.JSSig != nil || tx.JSPubKey != nil {
+		return nil, errors.New("Input transaction must be an unsigned one!")
 	}
-	jsSig, err := keyPair.Sign(dataToBeSigned)
-	if err != nil {
-		return nil, err
-	}
-	tx.JSSig = jsSig
+
+	// Hash transaction
+	hash := tx.GetTxId()
+	data := make([]byte, common.HashSize)
+	copy(data, hash[:])
+	// dataToBeSigned, err := json.Marshal(tx)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// hash := sha256.Sum256([]byte(dataToBeSigned))
+
+	// Sign
+	ecdsaSignature := *new(client.EcdsaSignature)
+	ecdsaSignature.R, ecdsaSignature.S, _ = client.Sign(rand.Reader, privKey, data[:])
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	tx.JSSig, _ = json.Marshal(ecdsaSignature)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
 	return tx, nil
+}
+
+func VerifySign(tx *Tx) (bool, error) {
+	//Check input transaction
+	if tx.JSSig == nil || tx.JSPubKey == nil {
+		return false, errors.New("Input transaction must be an signed one!")
+	}
+	// UnParse Public key
+	pubKey := new(client.PublicKey)
+	err := json.Unmarshal(tx.JSPubKey, pubKey)
+	if err != nil {
+		return false, err
+	}
+	// fmt.Printf("Pub key: %+v\n", *pubKey)
+
+	// UnParse ECDSA signature
+	ecdsaSignature := new(client.EcdsaSignature)
+	err = json.Unmarshal(tx.JSSig, ecdsaSignature)
+	if err != nil {
+		return false, err
+	}
+	// fmt.Printf("JSsig : %+v\n", jsSig)
+
+	// Hash origin transaction
+	hash := tx.GetTxId()
+	data := make([]byte, common.HashSize)
+	copy(data, hash[:])
+
+	valid := client.VerifySign(pubKey, data[:], ecdsaSignature.R, ecdsaSignature.S)
+	return valid, nil
 }
 
 func generateTx(
@@ -247,7 +300,7 @@ func generateTx(
 
 	// TODO(@0xbunyip): use Apk of PubKey temporarily, we should derive another scheme for signing tx later
 	tx := &Tx{
-		Version:  1,
+		Version:  TxVersion,
 		Type:     common.TxNormalType,
 		Descs:    desc,
 		JSPubKey: jsPubKey,
@@ -260,10 +313,7 @@ func generateTx(
 func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) (*Tx, error) {
 	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
 	keyBytes := []byte{} // TODO(0xbunyip): randomize seed?
-	keyPair, err := (&cashec.KeyPair{}).GenerateKey(keyBytes)
-	if err != nil {
-		return nil, err
-	}
+	keyPair := (&cashec.KeySet{}).GenerateKey(keyBytes)
 
 	var seed, phi *[]byte
 	var outputR [][]byte
@@ -273,12 +323,39 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 	}
 
 	var ephemeralPrivKey *client.EphemeralPrivKey
-	var jsPubKey []byte // We are going to save jsPubkey to transaction in signTx() below
-	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, *seed, jsPubKey, ephemeralPrivKey)
+
+	//Generate signing key
+	sigPrivKey, err := client.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, err
 	}
-	return signTx(tx, keyPair)
+	// Verification key
+	sigPubKey, err := json.Marshal(sigPrivKey.PublicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, *seed, sigPubKey, ephemeralPrivKey)
+	if err != nil {
+		return nil, err
+	}
+	tx, err = SignTx(tx, sigPrivKey)
+	if err != nil {
+		return tx, err
+	}
+	//Calculate vmacs to prove this transaction is signed by this user
+
+	//nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
+
+	vmacs := make([][]byte, 2)
+	for i, _ := range inputs {
+		var ask []byte
+		copy(ask[:], inputs[i].Key[:])
+		vmacs[i] = client.PRF_pk(uint64(i), ask, hSig)
+	}
+	tx.Descs[0].Vmacs = vmacs
+
+	return tx, nil
 }
 
 // GenerateProofForGenesisTx creates zk-proof and build the transaction (without signing) for genesis block
@@ -293,10 +370,8 @@ func GenerateProofForGenesisTx(
 ) (*Tx, error) {
 	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
 	privateSignKey := [32]byte{1}
-	keyPair, err := (&cashec.KeyPair{}).Import(privateSignKey[:])
-	if err != nil {
-		return nil, err
-	}
+	keyPair := &cashec.KeySet{}
+	keyPair.ImportFromPrivateKeyByte(privateSignKey[:])
 
 	proof, hSig, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, &seed, &phi, outputR)
 	if err != nil {

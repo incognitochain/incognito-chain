@@ -93,7 +93,7 @@ func (self *Wallet) ImportAccount(privateKeyStr string, accountName string, pass
 	}
 
 	priKey, _ := Base58CheckDeserialize(privateKeyStr)
-	priKey.KeyPair.GetKeyFromPrivateKey(&priKey.KeyPair.PrivateKey)
+	priKey.KeyPair.ImportFromPrivateKey(&priKey.KeyPair.PrivateKey)
 
 	Logger.log.Infof("Pub-key : %s", priKey.Base58CheckSerialize(PubKeyType))
 	Logger.log.Infof("Readonly-key : %s", priKey.Base58CheckSerialize(ReadonlyKeyType))

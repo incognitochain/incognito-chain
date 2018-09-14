@@ -11,9 +11,7 @@ import (
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/curve25519"
 
-	//"encoding/hex"
 	"io"
-	//"os"
 	"bytes"
 	"encoding/base64"
 	"errors"
@@ -75,8 +73,9 @@ func ParseJsonToNote(jsonnote []byte) (*Note, error) {
 	return &note, nil
 }
 
-// TODO: add hsig param
-func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivKey, epk EphemeralPubKey, hSig []byte) [][]byte {
+func EncryptNote(note [2]Note, pkenc [2]TransmissionKey,
+	esk EphemeralPrivKey, epk EphemeralPubKey, hSig []byte) [][]byte {
+
 	noteJsons := [][]byte{ParseNoteToJson(&note[0]), ParseNoteToJson(&note[1])}
 
 	var sk [32]byte
@@ -93,7 +92,7 @@ func EncryptNote(note [2]Note, pkenc [2]TransmissionKey, esk EphemeralPrivKey, e
 
 	// fmt.Printf("ciphernote[0] = %v", ciphernotes[0][:])
 
-	//Create symmetric key 128-bit
+	//Create symmetric key 256-bit
 	for i, _ := range pkenc {
 		copy(pk[i][:], pkenc[i][:])
 		sharedSecret[i] = KeyAgree(&pk[i], &sk)
@@ -118,7 +117,6 @@ func DecryptNote(ciphernote []byte, skenc ReceivingKey,
 
 	var sk, pk [32]byte
 
-	//Create symmetric key 128-bit
 	copy(sk[:], skenc[:])
 	copy(pk[:], pkenc[:])
 	sharedSecret = KeyAgree(&epk1, &sk)
@@ -132,22 +130,22 @@ func DecryptNote(ciphernote []byte, skenc ReceivingKey,
 	return note, err
 }
 
+// Create share secret key
 func KeyAgree(pk *[32]byte, sk *[32]byte) [32]byte {
 	var result [32]byte
 	curve25519.ScalarMult(&result, sk, pk)
 	return result
 }
 
-// TODO: add hSig param
-func KDF(sharedSecret [32]byte, epk [32]byte,
-	pkenc [32]byte,
-	hSig []byte) []byte {
+// Create symmetric key 256-bit
+func KDF(sharedSecret [32]byte, epk [32]byte, pkenc [32]byte, hSig []byte) []byte {
 	var data []byte
 
-	data = append(hSig[:], sharedSecret[:]...)
+	//data = append(hSig[:], sharedSecret[:]...)
 	data = append(data[:], sharedSecret[:]...)
 	data = append(data[:], epk[:]...)
 	data = append(data[:], pkenc[:]...)
+	data = append(data[:], hSig[:]...)
 	result := blake2b.Sum256(data)
 	return result[:]
 }

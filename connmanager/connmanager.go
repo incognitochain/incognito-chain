@@ -1,27 +1,27 @@
 package connmanager
 
 import (
+	"github.com/ninjadotorg/cash-prototype/wire"
 	"net/rpc"
-	"github.com/ninjadotorg/cash-prototype/bootnode/server"
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"os"
-	"sync"
-	"log"
-	"sync/atomic"
+	"encoding/json"
 	"fmt"
-	"time"
-
-	"github.com/ninjadotorg/cash-prototype/peer"
+	libpeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
-	libpeer "github.com/libp2p/go-libp2p-peer"
-	"strings"
+	"github.com/ninjadotorg/cash-prototype/bootnode/server"
+	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
-	"net"
-	"runtime"
-	"net/http"
+	"github.com/ninjadotorg/cash-prototype/peer"
 	"io/ioutil"
-	"encoding/json"
+	"log"
+	"net"
+	"net/http"
+	"os"
+	"runtime"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
 )
 
 const (
@@ -92,6 +92,8 @@ type Config struct {
 	// maintain. Defaults to 8.
 	TargetOutbound uint32
 	TargetInbound  uint32
+
+	DiscoverPeers bool
 }
 
 type DiscoverPeerInfo struct {
@@ -229,7 +231,7 @@ func (self ConnManager) GetPeerId(addr string) string {
 
 // Connect assigns an id and dials a connection to the address of the
 // connection request.
-func (self *ConnManager) Connect(addr string) {
+func (self *ConnManager) Connect(addr string, pubKey string) {
 	if atomic.LoadInt32(&self.stop) != 0 {
 		return
 	}
@@ -280,6 +282,10 @@ func (self *ConnManager) Connect(addr string) {
 			HandleFailed:       self.handleFailed,
 		}
 
+		if pubKey != "" {
+			peer.PublicKey = pubKey
+		}
+
 		listen.Host.Peerstore().AddAddr(peer.PeerId, peer.TargetAddress, pstore.PermanentAddrTTL)
 		Logger.log.Info("DEBUG Connect to Peer")
 		Logger.log.Info(listen.Host.Peerstore().Addrs(peer.PeerId))
@@ -315,7 +321,9 @@ func (self *ConnManager) Start() {
 			self.ListeningPeers[listner.PeerId] = &listner
 		}
 
-		go self.DiscoverPeers()
+		if self.Config.DiscoverPeers {
+			go self.DiscoverPeers()
+		}
 	}
 }
 
@@ -399,7 +407,9 @@ listen:
 	for {
 		//Logger.log.Infof("Peers", self.DiscoveredPeers)
 		if client == nil {
-			client, err = rpc.Dial("tcp", "127.0.0.1:9889")
+			// server bootnode 35.199.177.89:9339
+			// local bootnode 127.0.0.1:9889
+			client, err = rpc.Dial("tcp", "35.199.177.89:9339")
 			if err != nil {
 				Logger.log.Error("[Exchange Peers] re-connect:", err)
 			}
@@ -407,14 +417,14 @@ listen:
 		if client != nil {
 			for _, listener := range self.Config.ListenerPeers {
 				//Logger.log.Infof("[Exchange Peers] Ping")
-				var response []server.RawPeer
+				var response []wire.RawPeer
 
 				var publicKey string
 
 				if listener.Config.SealerPrvKey != "" {
 					keyPair := &cashec.KeyPair{}
 					keyPair.Import([]byte(listener.Config.SealerPrvKey))
-					publicKey = string(keyPair.PublicKey.Apk[:]) + string(keyPair.PublicKey.Pkenc[:])
+					publicKey = string(keyPair.PublicKey)
 				}
 
 				// remove later
@@ -429,7 +439,7 @@ listen:
 				}
 
 				args := &server.PingArgs{rawAddress, publicKey}
-				//Logger.log.Infof("[Exchange Peers] Ping", args)
+				Logger.log.Infof("[Exchange Peers] Ping", args)
 				err := client.Call("Handler.Ping", args, &response)
 				if err != nil {
 					//Logger.log.Error("[Exchange Peers] Ping:", err)
@@ -438,10 +448,11 @@ listen:
 
 					goto listen
 				}
+
 				for _, rawPeer := range response {
 					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerId.String()) {
 						_, exist := self.DiscoveredPeers[rawPeer.PublicKey]
-
+						//Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
 						if !exist {
 							// The following code extracts target's peer ID from the
 							// given multiaddress
@@ -464,13 +475,14 @@ listen:
 							}
 
 							self.DiscoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
-							go self.Connect(rawPeer.RawAddress)
+							//Logger.log.Info("Start connect to peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
+							go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
 						}
 					}
 				}
 			}
 		}
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 30)
 	}
 }
 

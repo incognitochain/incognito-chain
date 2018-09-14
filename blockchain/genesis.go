@@ -162,7 +162,7 @@ func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
 		panic(err)
 	}
 	tx := &transaction.Tx{
-		Version:  1,
+		Version:  transaction.TxVersion,
 		Type:     common.TxNormalType,
 		Descs:    desc,
 		JSPubKey: jsPubKey,

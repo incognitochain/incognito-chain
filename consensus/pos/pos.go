@@ -1,6 +1,7 @@
 package pos
 
 import (
+	"github.com/libp2p/go-libp2p-peer"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -30,8 +31,8 @@ type Config struct {
 	BlockGen    *mining.BlkTmplGenerator
 	Server      interface {
 		// list functions callback which are assigned from Server struct
-		PushBlockMessage(*blockchain.Block) error
-		PushInvalidBlockMessage(*wire.MessageInvalidBlock) error
+		PushMessageToAll(wire.Message) error
+		PushMessageToPeer(wire.Message, peer.ID) error
 		UpdateChain(*blockchain.Block)
 	}
 }

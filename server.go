@@ -3,12 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/ninjadotorg/cash-prototype/cashec"
 	"log"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"crypto/tls"
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/addrmanager"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
@@ -22,16 +24,17 @@ import (
 	"github.com/ninjadotorg/cash-prototype/netsync"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/rpcserver"
-	"github.com/ninjadotorg/cash-prototype/wire"
 	"github.com/ninjadotorg/cash-prototype/wallet"
-	"path/filepath"
+	"github.com/ninjadotorg/cash-prototype/wire"
 	"os"
+	"path/filepath"
 	"strconv"
-	"crypto/tls"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 const (
 	defaultNumberOfTargetOutbound = 8
+	defaultNumberOfTargetInbound  = 8
 )
 
 // onionAddr implements the net.Addr interface and represents a tor address.
@@ -136,16 +139,20 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		return err
 	}
 
-	self.MemPool = mempool.New(&mempool.Config{
-		Policy:      mempool.Policy{},
+	// create mempool tx
+	self.MemPool = &mempool.TxPool{}
+	self.MemPool.Init(&mempool.Config{
+		Policy: mempool.Policy{
+			MaxTxVersion: transaction.TxVersion + 1,
+		},
 		BlockChain:  self.BlockChain,
 		ChainParams: chainParams,
 	})
 
 	self.AddrManager = addrmanager.New(cfg.DataDir, nil)
 
-	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.BlockChain)
-
+	// create a miner with mempool is a tx resource
+	blockTemplateGenerator := mining.NewBlkTmplGeneratorByMempool(self.MemPool, self.BlockChain)
 	self.Miner = miner.New(&miner.Config{
 		ChainParams:            self.chainParams,
 		BlockTemplateGenerator: blockTemplateGenerator,
@@ -183,11 +190,11 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	// Create a connection manager.
 	targetOutbound := defaultNumberOfTargetOutbound
-	if cfg.MaxOutPeers < targetOutbound {
+	if cfg.MaxOutPeers > targetOutbound {
 		targetOutbound = cfg.MaxOutPeers
 	}
-	targetInbound := defaultNumberOfTargetOutbound
-	if cfg.MaxInPeers < targetOutbound {
+	targetInbound := defaultNumberOfTargetInbound
+	if cfg.MaxInPeers > targetInbound {
 		targetInbound = cfg.MaxInPeers
 	}
 
@@ -197,6 +204,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		ListenerPeers:        peers,
 		TargetOutbound:       uint32(targetOutbound),
 		TargetInbound:        uint32(targetInbound),
+		DiscoverPeers:        cfg.DiscoverPeers,
 	})
 	if err != nil {
 		return err
@@ -210,7 +218,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	}
 
 	for _, addr := range permanentPeers {
-		go self.ConnManager.Connect(addr)
+		go self.ConnManager.Connect(addr, "")
 	}
 
 	if !cfg.DisableRPC {
@@ -298,6 +306,13 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerId
 	msg.(*wire.MessageVersion).LastBlock = 0
 	msg.(*wire.MessageVersion).ProtocolVersion = 1
+	// Validate Public Key from SealerPrvKey
+	if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
+		keyPair := &cashec.KeyPair{}
+		keyPair.Import([]byte(peerConn.ListenerPeer.Config.SealerPrvKey))
+		msg.(*wire.MessageVersion).PublicKey = string(keyPair.PublicKey)
+	}
+
 	if err != nil {
 		return
 	}
@@ -365,7 +380,7 @@ func (self Server) peerHandler() {
 	if len(cfg.ConnectPeers) == 0 {
 		// TODO connect with peer in file
 		for _, addr := range self.AddrManager.AddressCache() {
-			go self.ConnManager.Connect(addr.RawAddress)
+			go self.ConnManager.Connect(addr.RawAddress, addr.PublicKey)
 		}
 	}
 
@@ -421,18 +436,14 @@ func (self Server) Start() {
 		self.RpcServer.Start()
 	}
 
-	//creat mining
+	// Start mining
 	if cfg.Generate == true && (len(cfg.MiningAddrs) > 0) {
-		self.Miner.Start()
-	}
-
-	// test, print length of chain
-	/*go func(server Server) {
-		for {
-			time.Sleep(time.Second * 3)
-			log.Printf("\n --- BlockChain length: %d ---- \n", len(server.BlockChain.Blocks))
+		if self.Miner != nil {
+			self.Miner.Start()
+		} else {
+			Logger.log.Info("We don't have any miner to make mining")
 		}
-	}(self)*/
+	}
 }
 
 // initListeners initializes the configured net listeners and adds any bound
@@ -538,7 +549,9 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
 		PeerId:           msg.LocalPeerId,
+		PublicKey:        msg.PublicKey,
 	}
+
 	self.newPeers <- remotePeer
 	// TODO check version message
 	valid := false
@@ -583,6 +596,12 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerId
 		msg.(*wire.MessageVersion).LastBlock = 0
 		msg.(*wire.MessageVersion).ProtocolVersion = 1
+		// Validate Public Key from SealerPrvKey
+		if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
+			keyPair := &cashec.KeyPair{}
+			keyPair.Import([]byte(peerConn.ListenerPeer.Config.SealerPrvKey))
+			msg.(*wire.MessageVersion).PublicKey = string(keyPair.PublicKey)
+		}
 		if err != nil {
 			return
 		}
@@ -620,12 +639,14 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 				return
 			}
 
-			addresses := []string{}
+			rawPeers := []wire.RawPeer{}
 			peers := self.AddrManager.AddressCache()
 			for _, peer := range peers {
-				addresses = append(addresses, peer.RawAddress)
+				if peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+					rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
+				}
 			}
-			msgS.(*wire.MessageAddr).RawAddresses = addresses
+			msgS.(*wire.MessageAddr).RawPeers = rawPeers
 			var doneChan chan<- struct{}
 			for _, _peerConn := range listen.PeerConns {
 				_peerConn.QueueMessageWithEncoding(msgS, doneChan)
@@ -655,19 +676,25 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 		}
 	}
 
-	msgS.(*wire.MessageAddr).RawAddresses = addresses
+	rawPeers := []wire.RawPeer{}
+	for _, peer := range peers {
+		if peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+			rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
+		}
+	}
+	msgS.(*wire.MessageAddr).RawPeers = rawPeers
 	var dc chan<- struct{}
 	peerConn.QueueMessageWithEncoding(msgS, dc)
 }
 
-func (self *Server) OnAddr(_ *peer.PeerConn, msg *wire.MessageAddr) {
+func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	// TODO for onaddr message
 	log.Printf("Receive addr message")
-	for _, addr := range msg.RawAddresses {
+	for _, rawPeer := range msg.RawPeers {
 		for _, listen := range self.ConnManager.ListeningPeers {
 			for _, _peerConn := range listen.PeerConns {
-				if _peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(addr) {
-					go self.ConnManager.Connect(addr)
+				if _peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(rawPeer.RawAddress) {
+					go self.ConnManager.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
 				}
 			}
 		}
@@ -675,86 +702,57 @@ func (self *Server) OnAddr(_ *peer.PeerConn, msg *wire.MessageAddr) {
 }
 
 /**
-PushTxMessage broadcast tx for connected peers
- */
-func (self Server) PushTxMessage(hashTx *common.Hash) {
-	var dc chan<- struct{}
-	tx, _ := self.MemPool.GetTx(hashTx)
-	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		msg, err := wire.MakeEmptyMessage(wire.CmdTx)
-		if err != nil {
-			return
-		}
-		msg.(*wire.MessageTx).Transaction = tx
-		listen.QueueMessageWithEncoding(msg, dc)
-	}
-}
-
-/**
 PushBlockMessageWithPeerId broadcast block to specific connected peer
  */
-func (self Server) PushBlockMessageWithPeerId(block *blockchain.Block, peerId peer2.ID) error {
-	var dc chan<- struct{}
-	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
-	msg.(*wire.MessageBlock).Block = *block
-	if err != nil {
-		return err
-	}
-	self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msg, dc)
-	return nil
-}
+//func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block, validatorAddress string) error {
+//	Logger.log.Info("PushBlockMessageWithValidatorAddress", block, validatorAddress)
+//	var dc chan<- struct{}
+//	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+//	msg.(*wire.MessageBlock).Block = *block
+//	if err != nil {
+//		return err
+//	}
+//	discoverdPeer, exist := self.ConnManager.DiscoveredPeers[validatorAddress]
+//
+//	Logger.log.Info("PushBlockMessageWithValidatorAddress 2", discoverdPeer, exist)
+//	if exist {
+//		for _, listener := range self.ConnManager.Config.ListenerPeers {
+//			peerConn, exist := listener.PeerConns[discoverdPeer.PeerId]
+//			Logger.log.Info("Connected to peers", listener.PeerConns)
+//			Logger.log.Info("PushBlockMessageWithValidatorAddress 3", exist)
+//			if exist {
+//				Logger.log.Info("PushBlockMessageWithValidatorAddress 4", msg, peerConn)
+//				peerConn.QueueMessageWithEncoding(msg, dc)
+//			}
+//		}
+//	} else {
+//		return errors.New(fmt.Sprintf("Can not found peer with validator address %s", validatorAddress))
+//	}
+//
+//	return nil
+//}
 
 /**
-PushBlockMessageWithPeerId broadcast block to specific connected peer
+PushMessageToAll broadcast msg
  */
-func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block, validatorAddress string) error {
-	var dc chan<- struct{}
-	msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
-	msg.(*wire.MessageBlock).Block = *block
-	if err != nil {
-		return err
-	}
-	discoverdPeer, exist := self.ConnManager.DiscoveredPeers[validatorAddress]
-	if exist {
-		for _, listener := range self.ConnManager.Config.ListenerPeers {
-			peerConn, exist := listener.PeerConns[discoverdPeer.PeerId]
-
-			if exist {
-				peerConn.QueueMessageWithEncoding(msg, dc)
-			}
-		}
-	} else {
-		return errors.New(fmt.Sprintf("Can not found peer with validator address %s", validatorAddress))
-	}
-
-	return nil
-}
-
-/**
-PushBlockMessage broadcast block to connected peer
- */
-func (self *Server) PushBlockMessage(block *blockchain.Block) error {
-	// TODO push block message for connected peer
-	//@todo got error here
-	var dc chan<- struct{}
-	for _, listen := range self.ConnManager.Config.ListenerPeers {
-		msg, err := wire.MakeEmptyMessage(wire.CmdBlock)
-		if err != nil {
-			return err
-		}
-		msg.(*wire.MessageBlock).Block = *block
-		listen.QueueMessageWithEncoding(msg, dc)
-	}
-	return nil
-}
-
-/**
-PushBlockMessage broadcast invalid block message to connected peer
- */
-func (self *Server) PushInvalidBlockMessage(msg *wire.MessageInvalidBlock) error {
+func (self Server) PushMessageToAll(msg wire.Message) error {
 	var dc chan<- struct{}
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
 		listen.QueueMessageWithEncoding(msg, dc)
+	}
+	return nil
+}
+
+/**
+PushMessageToPeer push msg to peer
+ */
+func (self Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
+	var dc chan<- struct{}
+	for _, listener := range self.ConnManager.Config.ListenerPeers {
+		peerConn, exist := listener.PeerConns[peerId]
+		if exist {
+			peerConn.QueueMessageWithEncoding(msg, dc)
+		}
 	}
 	return nil
 }

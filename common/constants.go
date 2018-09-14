@@ -1,11 +1,13 @@
 package common
 
 const (
-	TxNormalType       = "NORMAL"
-	TxActionParamsType = "ACTION_PARAMS"
-
-	TxOutCoinType = "TXOUT_COIN"
-	TxOutBondType = "TXOUT_BOND"
-
+	TxNormalType        = "n" // normal tx(send and receive coin)
+	TxActionParamsType  = "a" // action tx to edit params
 	IncMerkleTreeHeight = 29
+)
+
+// unit type use in tx
+const (
+	TxOutCoinType = "c" // coin
+	TxOutBondType = "b" // bond
 )

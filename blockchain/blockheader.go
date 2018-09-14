@@ -40,7 +40,3 @@ type BlockHeader struct {
 	NextCommittee []string          //Voted committee for the next block
 	Candidates    []string
 }
-
-func (h *BlockChain) GetBlockByHash(hash common.Hash) *Block {
-	return nil
-}

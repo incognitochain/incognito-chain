@@ -51,12 +51,12 @@ var (
 	ErrInvalidPublicKey = errors.New("Invalid public Key")
 )
 
-// KeyPair represents a bip32 extended Key
+// KeySet represents a bip32 extended Key
 type Key struct {
 	Depth       byte   // 1 bytes
 	ChildNumber []byte // 4 bytes
 	ChainCode   []byte // 32 bytes
-	KeyPair     cashec.KeyPair
+	KeyPair     cashec.KeySet
 }
 
 // NewMasterKey creates a new master extended Key from a Seed
@@ -80,11 +80,7 @@ func NewMasterKey(seed []byte) (*Key, error) {
 		return nil, err
 	}*/
 
-	keyPair, err := (&cashec.KeyPair{}).GenerateKey(keyBytes)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, err
-	}
+	keyPair := (&cashec.KeySet{}).GenerateKey(keyBytes)
 
 	// Create the Key struct
 	key := &Key{
@@ -106,8 +102,8 @@ func (key *Key) NewChildKey(childIdx uint32) (*Key, error) {
 
 	newSeed := []byte{}
 	newSeed = append(newSeed[:], intermediary[:32]...)
-	newKeypair, err := (&cashec.KeyPair{}).GenerateKey(newSeed)
-	// Create Child KeyPair with data common to all both scenarios
+	newKeypair := (&cashec.KeySet{}).GenerateKey(newSeed)
+	// Create Child KeySet with data common to all both scenarios
 	childKey := &Key{
 		ChildNumber: uint32Bytes(childIdx),
 		ChainCode:   intermediary[32:],
@@ -126,9 +122,9 @@ func (key *Key) getIntermediary(childIdx uint32) ([]byte, error) {
 
 	var data []byte
 	//if childIdx >= FirstHardenedChild {
-	//	data = append([]byte{0x0}, Key.KeyPair.PrivateKey...)
+	//	data = append([]byte{0x0}, Key.KeySet.PrivateKey...)
 	//} else {
-	// data = key.KeyPair.PublicKey
+	// data = key.KeySet.PublicKey
 	//}
 	data = append(data, childIndexBytes...)
 
@@ -140,7 +136,7 @@ func (key *Key) getIntermediary(childIdx uint32) ([]byte, error) {
 	return hmac.Sum(nil), nil
 }
 
-// Serialize a KeyPair to a 78 byte byte slice
+// Serialize a KeySet to a 78 byte byte slice
 func (key *Key) Serialize(keyType byte) ([]byte, error) {
 	// Write fields to buffer in order
 	buffer := new(bytes.Buffer)
@@ -184,7 +180,7 @@ func (key *Key) Serialize(keyType byte) ([]byte, error) {
 	return serializedKey, nil
 }
 
-// Base58CheckSerialize encodes the KeyPair in the standard Bitcoin base58 encoding
+// Base58CheckSerialize encodes the KeySet in the standard Bitcoin base58 encoding
 func (key *Key) Base58CheckSerialize(keyType byte) string {
 	serializedKey, err := key.Serialize(keyType)
 	if err != nil {
@@ -194,7 +190,7 @@ func (key *Key) Base58CheckSerialize(keyType byte) string {
 	return base58.Base58Check{}.Encode(serializedKey, byte(0x00))
 }
 
-// Deserialize a byte slice into a KeyPair
+// Deserialize a byte slice into a KeySet
 func Deserialize(data []byte) (*Key, error) {
 	//if len(data) != 101 {
 	//	return nil, ErrSerializedKeyWrongSize
@@ -231,7 +227,7 @@ func Deserialize(data []byte) (*Key, error) {
 	return key, nil
 }
 
-// Base58CheckDeserialize deserializes a KeyPair encoded in base58 encoding
+// Base58CheckDeserialize deserializes a KeySet encoded in base58 encoding
 func Base58CheckDeserialize(data string) (*Key, error) {
 	b, _, err := base58.Base58Check{}.Decode(data)
 	if err != nil {

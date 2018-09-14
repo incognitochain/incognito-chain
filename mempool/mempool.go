@@ -3,7 +3,6 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -32,11 +31,11 @@ type Config struct {
 // orphanTx is normal transaction that references an ancestor transaction
 // that is not yet available.  It also contains additional information related
 // to it such as an expiration time to help prevent caching the orphan forever.
-type orphanTx struct {
+/*type orphanTx struct {
 	tx         *transaction.Tx
 	id         ID
 	expiration time.Time
-}
+}*/
 
 // TxDesc is transaction description in mempool
 type TxDesc struct {
@@ -54,7 +53,7 @@ type TxPool struct {
 	lastUpdated int64 // last time pool was updated
 
 	mtx    sync.RWMutex
-	Config Config
+	config Config
 	pool   map[common.Hash]*TxDesc
 	//orphans       map[chainhash.Hash]*orphanTx
 	//orphansByPrev map[wire.OutPoint]map[common.Hash]*Tx
@@ -69,6 +68,15 @@ type TxPool struct {
 	nextExpireScan time.Time
 }
 
+/**
+Init Txpool from config
+*/
+func (tp *TxPool) Init(cfg *Config) {
+	tp.config = *cfg
+	tp.pool = make(map[common.Hash]*TxDesc)
+	tp.nextExpireScan = time.Now().Add(orphanExpireScanInterval)
+}
+
 // check transaction in pool
 func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	if _, exists := tp.pool[*hash]; exists {
@@ -78,17 +86,9 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	return false
 }
 
-// HaveTx check existed transaction
-func (tp *TxPool) HaveTx(hash *common.Hash) bool {
-	// Protect concurrent access.
-	tp.mtx.RLock()
-	haveTx := tp.isTxInPool(hash)
-	tp.mtx.RUnlock()
-
-	return haveTx
-}
-
+/**
 // add transaction into pool
+*/
 func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *TxDesc {
 	txD := &TxDesc{
 		Desc: mining.TxDesc{
@@ -99,24 +99,50 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 		},
 		StartingPriority: 1, //@todo we will apply calc function for it.
 	}
-	log.Printf(tx.Hash().String())
+	Logger.log.Infof(tx.Hash().String())
 	tp.pool[*tx.Hash()] = txD
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	return txD
 }
 
-// CanAcceptTransaction validate transaction is valid and can add to pool
-func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
+// MaybeAcceptTransaction is the main workhorse for handling insertion of new
+// free-standing transactions into a memory pool.  It includes functionality
+// such as rejecting duplicate transactions, ensuring transactions follow all
+// rules, detecting orphan transactions, and insertion into the memory pool.
+//
+// If the transaction is an orphan (missing parent transactions), the
+// transaction is NOT added to the orphan pool, but each unknown referenced
+// parent is returned.  Use ProcessTransaction instead if new orphans should
+// be added to the orphan pool.
+//
+// This function is safe for concurrent access.
+func (tp *TxPool) MaybeAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
+	tp.mtx.Lock()
+	hash, txDesc, err := tp.maybeAcceptTransaction(tx)
+	tp.mtx.Unlock()
+	return hash, txDesc, err
+}
+
+/**
+// maybeAcceptTransaction is the internal function which implements the public
+// MaybeAcceptTransaction.  See the comment for MaybeAcceptTransaction for
+// more details.
+//
+// This function MUST be called with the mempool lock held (for writes).
+*/
+func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
+	txHash := tx.Hash()
+
 	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
-	bestHeight := tp.Config.BlockChain.BestState.BestBlock.Height
+	bestHeight := tp.config.BlockChain.BestState.BestBlock.Height
 	nextBlockHeight := bestHeight + 1
 
 	// Perform several checks on the transaction data using the invariant
 	// rules in blockchain for what transactions are allowed into blocks.
 	// Also returns the fees associated with the transaction which will be
 	// used later.
-	txFee, err := tp.Config.BlockChain.CheckTransactionData(tx, nextBlockHeight, nil, tp.Config.ChainParams)
+	txFee, err := tp.config.BlockChain.CheckTransactionData(tx, nextBlockHeight, nil, tp.config.ChainParams)
 	if err != nil {
 		//if cerr, ok := err.(blockchain.RuleError); ok {
 		//	return nil, nil, chainRuleError(cerr)
@@ -124,33 +150,51 @@ func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash
 		return nil, nil, err
 	}
 
-	if tp.HaveTx(tx.Hash()) != true {
-		txD := tp.addTx(tx, bestHeight, txFee)
-		return tx.Hash(), txD, nil
+	// Don't accept the transaction if it already exists in the pool.
+	if tp.isTxInPool(txHash) {
+		str := fmt.Sprintf("already have transaction %v", txHash.String())
+		err := TxRuleError{}.Init(RejectDuplicateTx, str)
+		return nil, nil, err
 	}
-	return nil, nil, errors.New("Exist this tx in pool")
+
+	// sansity data
+	// TODO
+
+	// Validate tx by it self
+	validate := tx.ValidateTransaction()
+	if !validate {
+		err := TxRuleError{}.Init(RejectInvalidTx, "Invalid tx")
+		return nil, nil, err
+	}
+
+	txD := tp.addTx(tx, bestHeight, txFee)
+	return tx.Hash(), txD, nil
 }
 
 // remove transaction for pool
-func (tp *TxPool) removeTx(tx transaction.Tx) {
-	log.Printf(tx.Hash().String())
-	if _, exists := tp.pool[*tx.Hash()]; exists {
-		delete(tp.pool, *tx.Hash())
+func (tp *TxPool) removeTx(tx *transaction.Transaction) error {
+	Logger.log.Infof((*tx).Hash().String())
+	if _, exists := tp.pool[*(*tx).Hash()]; exists {
+		delete(tp.pool, *(*tx).Hash())
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
+		return nil
+	} else {
+		return errors.New("Not exist tx in pool")
 	}
 }
 
 // RemoveTx safe remove transaction for pool
-func (tp *TxPool) RemoveTx(tx transaction.Tx) {
+func (tp *TxPool) RemoveTx(tx *transaction.Transaction) error {
 	tp.mtx.Lock()
-	tp.removeTx(tx)
+	err := tp.removeTx(tx)
 	tp.mtx.Unlock()
+	return err
 }
 
 // GetTx get transaction info by hash
 func (tp *TxPool) GetTx(txHash *common.Hash) (transaction.Transaction, error) {
 	tp.mtx.Lock()
-	log.Println(txHash.String())
+	Logger.log.Info(txHash.String())
 	txDesc, exists := tp.pool[*txHash]
 	tp.mtx.Unlock()
 	if exists {
@@ -184,17 +228,23 @@ func (tp *TxPool) Count() int {
 	return count
 }
 
-// Clear
-func (tp *TxPool) Clear() {
-	tp.pool = make(map[common.Hash]*TxDesc)
+/**
+// LastUpdated returns the last time a transaction was added to or
+	// removed from the source pool.
+ */
+func (tp *TxPool) LastUpdated() time.Time {
+	return time.Unix(tp.lastUpdated, 0)
 }
 
-// New returns a new memory pool for validating and storing standalone
-// transactions until they are mined into a block.
-func New(cfg *Config) *TxPool {
-	return &TxPool{
-		Config:         *cfg,
-		pool:           make(map[common.Hash]*TxDesc),
-		nextExpireScan: time.Now().Add(orphanExpireScanInterval),
-	}
+/**
+// HaveTransaction returns whether or not the passed transaction hash
+	// exists in the source pool.
+ */
+func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
+	// Protect concurrent access.
+	tp.mtx.RLock()
+	haveTx := tp.isTxInPool(hash)
+	tp.mtx.RUnlock()
+
+	return haveTx
 }

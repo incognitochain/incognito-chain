@@ -23,6 +23,14 @@ func PRF_rho(index uint64, phi, hsig []byte) []byte {
 	return PRF(false, bit, true, false, phi, hsig)
 }
 
+func PRF_pk(index uint64, ask, hsig []byte) []byte {
+	bit := false
+	if index > 0 {
+		bit = true
+	}
+	return PRF(false, bit, false, false, ask, hsig)
+}
+
 func PRF(a, b, c, d bool, x, y []byte) []byte {
 	// TODO: check for x, y length
 	xc := make([]byte, len(x))

@@ -39,7 +39,7 @@ type Param struct {
 
 type ActionParamTx struct {
 	Version  int    `json:"Version"`
-	Type     string `json:"Type"` // NORMAL / ACTION_PARAMS
+	Type     string `json:"Type"` // a
 	Param    *Param `json:"Param"`
 	LockTime int64  `json:"LockTime"`
 }

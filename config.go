@@ -51,7 +51,7 @@ const (
 	sampleConfigFilename         = "sample-config.conf"
 	defaultTxIndex               = false
 	defaultAddrIndex             = false
-	deafaultDisableRpcTls        = true
+	defaultDisableRpcTls         = true
 
 	// For wallet
 	defaultWalletDbName = "wallet.db"
@@ -85,6 +85,7 @@ type config struct {
 	MaxPeers             int           `long:"maxpeers" description:"Max number of inbound and outbound peers"`
 	MaxOutPeers          int           `long:"maxoutpeers" description:"Max number of outbound peers"`
 	MaxInPeers           int           `long:"maxinpeers" description:"Max number of inbound peers"`
+	DiscoverPeers        bool          `long:"discoverpeers" description:"Enable discover peers"`
 	DisableBanning       bool          `long:"nobanning" description:"Disable banning of misbehaving peers"`
 	BanDuration          time.Duration `long:"banduration" description:"How long to ban misbehaving peers.  Valid time units are {s, m, h}.  Minimum 1 second"`
 	BanThreshold         uint32        `long:"banthreshold" description:"Maximum allowed ban score before disconnecting and banning misbehaving peers."`
@@ -341,21 +342,21 @@ func loadConfig() (*config, []string, error) {
 		RPCKey:               defaultRPCKeyFile,
 		RPCCert:              defaultRPCCertFile,
 		//MinRelayTxFee:        common.DefaultMinRelayTxFee.ToBTC(),
-		FreeTxRelayLimit:     defaultFreeTxRelayLimit,
-		BlockMinSize:         defaultBlockMinSize,
-		BlockMaxSize:         defaultBlockMaxSize,
-		BlockMinWeight:       defaultBlockMinWeight,
-		BlockMaxWeight:       defaultBlockMaxWeight,
-		BlockPrioritySize:    mempool.DefaultBlockPrioritySize,
-		MaxOrphanTxs:         defaultMaxOrphanTransactions,
-		SigCacheMaxSize:      defaultSigCacheMaxSize,
-		Generate:             defaultGenerate,
-		TxIndex:              defaultTxIndex,
-		AddrIndex:            defaultAddrIndex,
-		WalletDbName:         defaultWalletDbName,
-		DisableTLS:           deafaultDisableRpcTls,
-		RPCDisableAuth:       true,
-		SealerPrvKey:         os.Getenv("SEALERPRVKEY"),
+		FreeTxRelayLimit:  defaultFreeTxRelayLimit,
+		BlockMinSize:      defaultBlockMinSize,
+		BlockMaxSize:      defaultBlockMaxSize,
+		BlockMinWeight:    defaultBlockMinWeight,
+		BlockMaxWeight:    defaultBlockMaxWeight,
+		BlockPrioritySize: mempool.DefaultBlockPrioritySize,
+		MaxOrphanTxs:      defaultMaxOrphanTransactions,
+		SigCacheMaxSize:   defaultSigCacheMaxSize,
+		Generate:          defaultGenerate,
+		TxIndex:           defaultTxIndex,
+		AddrIndex:         defaultAddrIndex,
+		WalletDbName:      defaultWalletDbName,
+		DisableTLS:        defaultDisableRpcTls,
+		RPCDisableAuth:    false,
+		SealerPrvKey:      os.Getenv("SEALERPRVKEY"),
 	}
 
 	// Service options which are only added on Windows.

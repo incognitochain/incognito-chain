@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/cash-prototype/wire"
 	"io"
 	"io/ioutil"
 	"log"
@@ -69,7 +71,8 @@ type RpcServerConfig struct {
 	AddrMgr     *addrmanager.AddrManager
 	Server interface {
 		// Push Tx message
-		PushTxMessage(*common.Hash)
+		PushMessageToAll(message wire.Message) error
+		PushMessageToPeer(message wire.Message, id peer.ID) error
 	}
 
 	TxMemPool     *mempool.TxPool
@@ -229,13 +232,13 @@ func (self RpcServer) checkAuth(r *http.Request, require bool) (bool, bool, erro
 	// are probably expected to have a higher volume of calls
 	limitcmp := subtle.ConstantTimeCompare(authsha[:], self.limitauthsha[:])
 	if limitcmp == 1 {
-		return true, false, nil
+		return true, true, nil
 	}
 
 	// Check for admin-level auth
 	cmp := subtle.ConstantTimeCompare(authsha[:], self.authsha[:])
 	if cmp == 1 {
-		return true, true, nil
+		return true, false, nil
 	}
 
 	// Request's auth doesn't match either user
@@ -361,7 +364,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 
 		// Check if the user is limited and set error if method unauthorized
 		if !isLimitedUser {
-			if _, ok := RpcLimited[request.Method]; !ok {
+			if _, ok := RpcLimited[request.Method]; ok {
 				jsonErr = &common.RPCError{
 					Code:    common.ErrRPCInvalidParams.Code,
 					Message: "limited user not authorized for this method",
@@ -373,9 +376,19 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 			// command.
 			command := RpcHandler[request.Method]
 			if command == nil {
-				command = RpcLimited[request.Method]
+				if isLimitedUser {
+					command = RpcLimited[request.Method]
+				} else {
+					result = nil
+					jsonErr = &common.RPCError{
+						Code:    common.ErrRPCInvalidParams.Code,
+						Message: "limited user not authorized for this method",
+					}
+				}
 			}
-			result, jsonErr = command(self, request.Params, closeChan)
+			if command != nil {
+				result, jsonErr = command(self, request.Params, closeChan)
+			}
 		}
 	}
 	// Marshal the response.
