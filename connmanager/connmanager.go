@@ -1,6 +1,7 @@
 package connmanager
 
 import (
+	"github.com/ninjadotorg/cash-prototype/wire"
 	"net/rpc"
 	"encoding/json"
 	"fmt"
@@ -230,7 +231,7 @@ func (self ConnManager) GetPeerId(addr string) string {
 
 // Connect assigns an id and dials a connection to the address of the
 // connection request.
-func (self *ConnManager) Connect(addr string) {
+func (self *ConnManager) Connect(addr string, pubKey string) {
 	if atomic.LoadInt32(&self.stop) != 0 {
 		return
 	}
@@ -279,6 +280,10 @@ func (self *ConnManager) Connect(addr string) {
 			HandleConnected:    self.handleConnected,
 			HandleDisconnected: self.handleDisconnected,
 			HandleFailed:       self.handleFailed,
+		}
+
+		if pubKey != "" {
+			peer.PublicKey = pubKey
 		}
 
 		listen.Host.Peerstore().AddAddr(peer.PeerId, peer.TargetAddress, pstore.PermanentAddrTTL)
@@ -412,7 +417,7 @@ listen:
 		if client != nil {
 			for _, listener := range self.Config.ListenerPeers {
 				//Logger.log.Infof("[Exchange Peers] Ping")
-				var response []server.RawPeer
+				var response []wire.RawPeer
 
 				var publicKey string
 
@@ -471,7 +476,7 @@ listen:
 
 							self.DiscoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
 							//Logger.log.Info("Start connect to peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
-							go self.Connect(rawPeer.RawAddress)
+							go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
 						}
 					}
 				}

@@ -259,7 +259,7 @@ func (db *db) GetBlockByIndex(idx int32) (*common.Hash, error) {
 		return nil, errors.Wrap(err, "db.ldb.Get")
 	}
 	h := new(common.Hash)
-	_ = h.SetBytes(b[len(blockKeyIdxPrefix):])
+	_ = h.SetBytes(b[:])
 	return h, nil
 }
 
