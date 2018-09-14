@@ -99,20 +99,29 @@ func CreateTx(
 	}
 
 	// Create Proof for the joinsplit op
+	var inputsToBuildWitness []*client.JSInput
 	inputs := make([]*client.JSInput, 2)
 	inputs[0].InputNote = inputNotes[0]
 	inputs[0].Key = senderKey
-	inputs[0].WitnessPath = new(client.MerklePath) // TODO: get path
+	inputs[0].WitnessPath = new(client.MerklePath)
+	inputsToBuildWitness = append(inputsToBuildWitness, inputs[0])
 
 	if len(inputNotes) <= 1 {
-		// Create dummy note
+		inputs[1].InputNote = createDummyNote(senderKey)
+		inputs[1].Key = senderKey
+		inputs[1].WitnessPath = (&client.MerklePath{}).CreateDummyPath() // No need to build commitment merkle path for dummy note
 	} else if len(inputNotes) <= 2 {
 		inputs[1].InputNote = inputNotes[1]
 		inputs[1].Key = senderKey
 		inputs[1].WitnessPath = new(client.MerklePath)
+		inputsToBuildWitness = append(inputsToBuildWitness, inputs[1])
 	} else {
 		return nil, errors.New("More than 2 notes for input is not supported")
 	}
+
+	// Get commitments of input notes and build witness path
+	// TODO: calculate cm and check if it's in commitments list
+	client.BuildWitnessPath(inputsToBuildWitness, commitments)
 
 	// Left side value
 	var sumInputValue uint64

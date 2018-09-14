@@ -228,7 +228,7 @@ func JSInputs2ZkInputs(inputs []*JSInput) []*zksnark.JSInput {
 		zkinput.WitnessPath = &zksnark.MerklePath{Index: make([]bool, len(input.WitnessPath.Index))}
 		copy(zkinput.WitnessPath.Index, input.WitnessPath.Index)
 		for _, hash := range input.WitnessPath.AuthPath {
-			zkinput.WitnessPath.AuthPath = append(zkinput.WitnessPath.AuthPath, &zksnark.MerkleHash{Hash: *hash})
+			zkinput.WitnessPath.AuthPath = append(zkinput.WitnessPath.AuthPath, &zksnark.MerkleHash{Hash: hash})
 		}
 		copy(zkinput.SpendingKey, input.Key[:])
 		// fmt.Printf("zkinput.SpendingKey: %x %x\n", zkinput.SpendingKey, input.Key)
