@@ -153,7 +153,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	if tp.isTxInPool(txHash) {
 		str := fmt.Sprintf("already have transaction %v", txHash.String())
 		err := TxRuleError{}
-		err.Init(RejectDuplicate, str)
+		err.Init(RejectDuplicateTx, str)
 		return nil, nil, err
 	}
 	txD := tp.addTx(tx, bestHeight, txFee)
