@@ -58,7 +58,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 		if txTemp["Type"].(string) == common.TxNormalType {
 			// init a tx
 			txNormal := &transaction.Tx{
-				Version:  int(txTemp["Version"].(float64)),
+				Version:  int8(txTemp["Version"].(float64)),
 				Type:     txTemp["Type"].(string),
 				LockTime: int(txTemp["LockTime"].(float64)),
 				Fee:      uint64(txTemp["Fee"].(float64)),
@@ -146,7 +146,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 			txAction := transaction.ActionParamTx{
 				LockTime: int64(txTemp["LockTime"].(float64)),
 				Type:     txTemp["Type"].(string),
-				Version:  int(txTemp["Version"].(float64)),
+				Version:  int8(txTemp["Version"].(float64)),
 				Param:    &param,
 			}
 			self.Transactions = append(self.Transactions, &txAction)

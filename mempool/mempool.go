@@ -159,6 +159,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 		return nil, nil, err
 	}
 
+	// A standalone transaction must not be a coinbase transaction.
 	if blockchain.IsCoinBaseTx(tx) {
 		err := TxRuleError{}
 		err.Init(RejectCoinbaseTx, fmt.Sprintf("%v is coinbase tx", txHash.String()))
@@ -166,8 +167,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	}
 
 	// sanity data
-	// TODO
-	if !tp.ValidateSansityData(tx) {
+	if !tp.ValidateSanityData(tx) {
 		str := fmt.Sprintf("transaction's sansity %v is invalid", txHash.String())
 		err := TxRuleError{}
 		err.Init(SansityInvalidTx, str)
@@ -264,7 +264,7 @@ func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
 	return haveTx
 }
 
-func (tp *TxPool) ValidateSansityData(tx transaction.Transaction) bool {
+func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) bool {
 	if tx.GetType() == common.TxNormalType {
 		txN := tx.(*transaction.Tx)
 		//check version

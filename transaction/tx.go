@@ -17,7 +17,7 @@ import (
 
 // Tx represents a coin-transfer-transaction stored in a block
 type Tx struct {
-	Version  int    `json:"Version"`
+	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // n
 	LockTime int    `json:"LockTime"`
 	Fee      uint64 `json:"Fee"`
@@ -39,7 +39,7 @@ func (tx *Tx) GetTxId() (*common.Hash) {
 
 // Hash returns the hash of all fields of the transaction
 func (tx *Tx) Hash() *common.Hash {
-	record := strconv.Itoa(tx.Version)
+	record := strconv.Itoa(int(tx.Version))
 	record += tx.Type
 	record += strconv.Itoa(tx.LockTime)
 	record += strconv.Itoa(len(tx.Descs))
