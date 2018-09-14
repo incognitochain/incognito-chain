@@ -17,7 +17,7 @@ import (
 func (self *BlockChain) maybeAcceptBlock(block *Block) (bool, error) {
 	// TODO
 	// The height of this block is one more than the referenced previous
-	// block.
+	// block.s
 	prevHash := &block.Header.PrevBlockHash
 	prevNode, _ := self.GetBlockByBlockHash(prevHash)
 	if prevNode == nil {
