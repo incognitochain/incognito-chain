@@ -74,10 +74,6 @@ func (tx *Tx) GetType() string {
 	return tx.Type
 }
 
-func collectUnspentNotes(ask *client.SpendingKey, valueWanted uint64) ([]*client.Note, error) {
-	return make([]*client.Note, 2), nil
-}
-
 // CreateTx creates transaction with appropriate proof for a private payment
 // value: total value of the coins to transfer
 // rt: root of the commitment merkle tree at current block (the latest block of the node creating this tx)
@@ -91,13 +87,27 @@ func CreateTx(
 ) (*Tx, error) {
 	receiverAddr := paymentInfo[0].PaymentAddress
 	value := paymentInfo[0].Amount
-	inputNotes, err := collectUnspentNotes(senderKey, value)
-	if err != nil {
-		return nil, err
-	}
 
+	// Get list of notes to use
+	var inputNotes []*client.Note
+	for _, tx := range usableTx {
+		for _, desc := range tx.Descs {
+			for _, note := range desc.note {
+				inputNotes = append(inputNotes, note)
+			}
+		}
+	}
 	if len(inputNotes) == 0 {
 		return nil, errors.New("Cannot find notes with sufficient fund")
+	}
+
+	// Left side value
+	var sumInputValue uint64
+	for _, note := range inputNotes {
+		sumInputValue += note.Value
+	}
+	if sumInputValue < value {
+		return nil, fmt.Errorf("Input value less than output value")
 	}
 
 	// Create Proof for the joinsplit op
@@ -105,7 +115,6 @@ func CreateTx(
 	inputs := make([]*client.JSInput, 2)
 	inputs[0].InputNote = inputNotes[0]
 	inputs[0].Key = senderKey
-	inputs[0].WitnessPath = new(client.MerklePath)
 	inputsToBuildWitness = append(inputsToBuildWitness, inputs[0])
 
 	if len(inputNotes) <= 1 {
@@ -115,7 +124,6 @@ func CreateTx(
 	} else if len(inputNotes) <= 2 {
 		inputs[1].InputNote = inputNotes[1]
 		inputs[1].Key = senderKey
-		inputs[1].WitnessPath = new(client.MerklePath)
 		inputsToBuildWitness = append(inputsToBuildWitness, inputs[1])
 	} else {
 		return nil, errors.New("More than 2 notes for input is not supported")
@@ -136,18 +144,9 @@ func CreateTx(
 	}
 
 	// Build witness path for the input notes
-	err = client.BuildWitnessPath(inputsToBuildWitness, commitments)
+	err := client.BuildWitnessPath(inputsToBuildWitness, commitments)
 	if err != nil {
 		return nil, err
-	}
-
-	// Left side value
-	var sumInputValue uint64
-	for _, input := range inputs {
-		sumInputValue += input.InputNote.Value
-	}
-	if sumInputValue < value {
-		panic("Input value less than output value")
 	}
 
 	senderFullKey := cashec.KeySet{}
@@ -163,7 +162,7 @@ func CreateTx(
 	outputs[1].EncKey = senderFullKey.PublicKey.Pkenc
 	outputs[1].OutputNote = changeNote
 
-	// Shuffle output notes randomly (if necessary)
+	// TODO: Shuffle output notes randomly (if necessary)
 
 	// Generate proof and sign tx
 	var reward uint64 // Zero reward for non-coinbase transaction
