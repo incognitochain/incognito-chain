@@ -10,6 +10,16 @@ import (
 
 type MerkleHash []byte
 
+func (h MerkleHash) String() string {
+	return fmt.Sprintf("%s", []byte(h[:2]))
+}
+
+func combineAndHash(left, right []byte) MerkleHash {
+	data := append(left, right...)
+	hash := sha256.Sum256NoPad(data)
+	return hash[:]
+}
+
 type MerklePath struct {
 	AuthPath []MerkleHash
 	Index    []bool
@@ -38,7 +48,7 @@ type IncMerkleTree struct {
 type IncMerkleWitness struct {
 	snapshot, tmpTree *IncMerkleTree
 	uncles            []MerkleHash
-	uId, nextDepth    int
+	uID, nextDepth    int
 }
 
 // TakeSnapshot takes a snapshot of a merkle tree to start building merkle path for the right most leaf
@@ -66,7 +76,7 @@ func (tree *IncMerkleTree) TakeSnapshot() *IncMerkleWitness {
 		tmpTree:   nil,
 		uncles:    nil,
 		nextDepth: 0,
-		uId:       0,
+		uID:       0,
 	}
 	return witness
 }
@@ -78,10 +88,9 @@ func getPaddingAtDepth(d int) MerkleHash {
 	var paddings []MerkleHash
 	paddings = append(paddings, uncommittedNodeHash[:])
 	lastHash := uncommittedNodeHash
-	for i := 1; i < common.IncMerkleTreeHeight; i++ {
-		data := append(lastHash[:], lastHash[:]...)
-		lastHash := sha256.Sum256NoPad(data)
-		paddings = append(paddings, lastHash[:])
+	for i := 1; i <= common.IncMerkleTreeHeight; i++ {
+		paddings = append(paddings, combineAndHash(lastHash[:], lastHash[:]))
+		lastHash = paddings[len(paddings)-1]
 	}
 	arrayPadding = paddings
 	return arrayPadding[d]
@@ -97,9 +106,7 @@ func (tree *IncMerkleTree) AddNewNode(hash MerkleHash) {
 		tree.right = hashCopy
 	} else {
 		// Combine previous 2 leaves' hash to get parent hash
-		data := append(tree.left, tree.right...)
-		merged := sha256.Sum256NoPad(data)
-		prevHash := merged[:]
+		prevHash := combineAndHash(tree.left, tree.right)
 
 		// Save the new hash to new leafs
 		tree.left = hashCopy
@@ -113,11 +120,8 @@ func (tree *IncMerkleTree) AddNewNode(hash MerkleHash) {
 				break
 			}
 
-			data := append(node, prevHash...)
+			prevHash = combineAndHash(node, prevHash)
 			tree.nodes[d] = nil // Clear data at current depth for next hashes
-			newHash := sha256.Sum256NoPad(data)
-			prevHash = newHash[:]
-
 		}
 		if leftOverHash {
 			if len(tree.nodes) >= common.IncMerkleTreeHeight-1 {
@@ -131,8 +135,8 @@ func (tree *IncMerkleTree) AddNewNode(hash MerkleHash) {
 // GetRoot returns the merkle root of an unfinished tree; empty nodes are padded with default values
 func (tree *IncMerkleTree) GetRoot(d int) MerkleHash {
 	fmt.Printf("get root at depth %d\n", d)
-	if d >= common.IncMerkleTreeHeight {
-		d = common.IncMerkleTreeHeight - 1 // Maximum height of the tree to get root
+	if d > common.IncMerkleTreeHeight {
+		d = common.IncMerkleTreeHeight // Maximum height of the tree to get root
 	}
 
 	left := uncommittedNodeHash
@@ -153,22 +157,19 @@ func (tree *IncMerkleTree) GetRoot(d int) MerkleHash {
 		}
 		left = tree.left[:]
 	}
-	combined := append(left, right...)
-	prevHash := sha256.Sum256NoPad(combined)
+	prevHash := combineAndHash(left, right)
 	for i := 0; i < d-1; i++ {
-		var data []byte
 		if i >= len(tree.nodes) || tree.nodes[i] == nil {
-			fmt.Printf("getroot depth %d: getPadding\n", i)
+			// fmt.Printf("getroot depth %d: getPadding\n", i)
 			// Previous hash is the left child, right child doesn't exist
-			data = append(prevHash[:], getPaddingAtDepth(i + 1)[:]...)
+			prevHash = combineAndHash(prevHash[:], getPaddingAtDepth(i+1))
 		} else {
-			fmt.Printf("getroot depth %d: combine hash\n", i)
 			// Previous hash is the right child
-			data = append(tree.nodes[i], prevHash[:]...)
+			prevHash = combineAndHash(tree.nodes[i], prevHash)
+			fmt.Printf("getroot depth %d: combine hash %x\n", i, prevHash)
 		}
-		prevHash = sha256.Sum256NoPad(data)
 	}
-	return MerkleHash(prevHash[:])
+	return prevHash
 }
 
 // finishedDepth checks if a merkle tree of depth d is exactly full (cannot be higher or lower)
@@ -232,13 +233,13 @@ func (w *IncMerkleWitness) addNewNode(hash MerkleHash) {
 }
 
 func (w *IncMerkleWitness) getUncle(d int) MerkleHash {
-	if w.uId >= len(w.uncles) {
+	if w.uID >= len(w.uncles) {
 		fmt.Printf("no more uncles to take, get empty rt at depth %d\n", d)
 		return (&IncMerkleTree{}).GetRoot(d)
 	}
-	fmt.Printf("return uncle with id %d at depth %d\n", w.uId, d)
-	hash := w.uncles[w.uId]
-	w.uId++
+	fmt.Printf("return uncle with id %d at depth %d\n", w.uID, d)
+	hash := w.uncles[w.uID]
+	w.uID++
 	return hash
 }
 
@@ -258,7 +259,7 @@ func (w *IncMerkleWitness) getWitnessPath() *MerklePath {
 		w.uncles = append(w.uncles, rt)
 		w.tmpTree = nil
 	}
-	w.uId = 0
+	w.uID = 0
 
 	if w.snapshot.right != nil { // Right most leaf (witnessing commitment) is the right child
 		fmt.Printf("witness is the right child\n")
@@ -280,7 +281,7 @@ func (w *IncMerkleWitness) getWitnessPath() *MerklePath {
 			path.AuthPath = append(path.AuthPath, w.getUncle(d+1))
 			path.Index = append(path.Index, false)
 		} else {
-			fmt.Printf("getWitnessPath at depth %d: already have uncle\n", d)
+			fmt.Printf("getWitnessPath at depth %d: already have uncle in snapshot\n", d)
 			// Need a node older than the witnessing commitment
 			// The node is stored in the snapshot tree at height d (from the bottom, ignore leaves)
 			path.AuthPath = append(path.AuthPath, w.snapshot.nodes[d])
@@ -324,11 +325,19 @@ func BuildWitnessPath(notes []*JSInput, commitments [][]byte) error {
 		}
 	}
 
-	fmt.Printf("getWitnessPath\n")
+	fmt.Printf("\ngetWitnessPath\n")
 	// Get the path to the merkle tree root of each witness's tree
 	for i, note := range notes {
 		note.WitnessPath = witnesses[i].getWitnessPath()
 	}
+
+	fmt.Printf("\ngetting tree root of newest tree\n")
+	fmt.Printf("newest tree root: %x\n", tree.GetRoot(common.IncMerkleTreeHeight))
+	fmt.Printf("new@28: %x\n", tree.GetRoot(28))
+	fmt.Printf("witness@29: %x\n", notes[0].WitnessPath.AuthPath[28])
+	fmt.Printf("new@28+witness@29: %x\n", combineAndHash(tree.GetRoot(28), notes[0].WitnessPath.AuthPath[28]))
+	fmt.Printf("new@29: %x\n", tree.GetRoot(29))
+	// fmt.Printf("anchor: %x\n", notes[0].WitnessPath.AuthPath[len(notes[0].WitnessPath.AuthPath)-1])
 
 	return nil
 }

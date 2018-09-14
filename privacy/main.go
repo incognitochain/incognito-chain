@@ -28,22 +28,22 @@ func runProve() (*ProveResult, error) {
 
 	const merkleTreeDepth = 29
 	hash1 := [32]byte{3}
-	mhash1 := [merkleTreeDepth]*client.MerkleHash{}
+	mhash1 := [merkleTreeDepth]client.MerkleHash{}
 	for i := 0; i < merkleTreeDepth; i++ {
 		mh := client.MerkleHash{}
 		mh = make([]byte, len(hash1))
 		copy(mh[:], hash1[:])
-		mhash1[i] = &mh
+		mhash1[i] = mh
 	}
 	index1 := [merkleTreeDepth]bool{true}
 	mpath1 := client.MerklePath{AuthPath: mhash1[:], Index: index1[:]}
 	hash2 := [32]byte{4}
-	mhash2 := [merkleTreeDepth]*client.MerkleHash{}
+	mhash2 := [merkleTreeDepth]client.MerkleHash{}
 	for i := 0; i < merkleTreeDepth; i++ {
 		mh := client.MerkleHash{}
 		mh = make([]byte, len(hash2))
 		copy(mh[:], hash2[:])
-		mhash2[i] = &mh
+		mhash2[i] = mh
 	}
 	index2 := [merkleTreeDepth]bool{true}
 	mpath2 := client.MerklePath{AuthPath: mhash2[:], Index: index2[:]}
