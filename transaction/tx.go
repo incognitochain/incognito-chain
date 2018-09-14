@@ -1,11 +1,13 @@
 package transaction
 
 import (
+	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
-	"crypto/rand"
+
 	// "crypto/sha256"
 	// "math/big"
 
@@ -33,7 +35,7 @@ func (tx *Tx) SetTxId(txId *common.Hash) {
 	tx.txId = txId
 }
 
-func (tx *Tx) GetTxId() (*common.Hash) {
+func (tx *Tx) GetTxId() *common.Hash {
 	return tx.txId
 }
 
@@ -119,9 +121,25 @@ func CreateTx(
 		return nil, errors.New("More than 2 notes for input is not supported")
 	}
 
-	// Get commitments of input notes and build witness path
-	// TODO: calculate cm and check if it's in commitments list
-	client.BuildWitnessPath(inputsToBuildWitness, commitments)
+	// Check if input note's cm is in commitments list
+	for _, input := range inputsToBuildWitness {
+		cm := client.GetCommitment(input.InputNote)
+		found := false
+		for _, c := range commitments {
+			if bytes.Equal(c, cm) {
+				found = true
+			}
+		}
+		if found == false {
+			return nil, fmt.Errorf("Commitment of input note %x isn't in commitments list", cm)
+		}
+	}
+
+	// Build witness path for the input notes
+	err = client.BuildWitnessPath(inputsToBuildWitness, commitments)
+	if err != nil {
+		return nil, err
+	}
 
 	// Left side value
 	var sumInputValue uint64
