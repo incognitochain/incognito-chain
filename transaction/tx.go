@@ -18,7 +18,7 @@ import (
 // Tx represents a coin-transfer-transaction stored in a block
 type Tx struct {
 	Version  int    `json:"Version"`
-	Type     string `json:"Type"` // NORMAL / ACTION_PARAMS
+	Type     string `json:"Type"` // n
 	LockTime int    `json:"LockTime"`
 	Fee      uint64 `json:"Fee"`
 

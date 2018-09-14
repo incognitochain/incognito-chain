@@ -158,6 +158,12 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 		return nil, nil, err
 	}
 
+	// sansity data
+	// TODO
+
+	//
+	tx.ValidateTransaction()
+
 	txD := tp.addTx(tx, bestHeight, txFee)
 	return tx.Hash(), txD, nil
 }
