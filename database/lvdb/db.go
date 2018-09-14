@@ -56,8 +56,7 @@ func (db *db) StoreBlock(v interface{}, chainID byte) error {
 	}
 	var (
 		hash = h.Hash()
-		key  = append(append(chainIDPrefix, chainID), append(blockKeyPrefix, hash[:]...)...)
-		// key should look like this c10b-blockhash
+		key  = append(blockKeyPrefix, hash[:]...)
 	)
 	if db.hasBlock(key) {
 		return errors.Errorf("block %s already exists", hash.String())
@@ -170,14 +169,14 @@ func (db *db) GetIndexOfBlock(h *common.Hash) (int32, byte, error) {
 	if err := binary.Read(bytes.NewReader(b[:3]), binary.LittleEndian, &idx); err != nil {
 		return 0, 0, errors.Wrap(err, "binary.Read")
 	}
-	if err = binary.Read(bytes.NewReader(b[4:7]), binary.LittleEndian, &chainID); err != nil {
+	if err = binary.Read(bytes.NewReader(b[4:]), binary.LittleEndian, &chainID); err != nil {
 		return 0, 0, errors.Wrap(err, "binary.Read")
 	}
 	return idx, chainID, nil
 }
 
 func (db *db) GetBlockByIndex(idx int32, chainID byte) (*common.Hash, error) {
-	buf := make([]byte, 8)
+	buf := make([]byte, 5)
 	binary.LittleEndian.PutUint32(buf, uint32(idx))
 	buf[4] = chainID
 
@@ -186,7 +185,7 @@ func (db *db) GetBlockByIndex(idx int32, chainID byte) (*common.Hash, error) {
 		return nil, errors.Wrap(err, "db.lvdb.Get")
 	}
 	h := new(common.Hash)
-	_ = h.SetBytes(b[len(blockKeyIdxPrefix):])
+	_ = h.SetBytes(b[:])
 	return h, nil
 }
 

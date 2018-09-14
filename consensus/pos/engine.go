@@ -95,14 +95,15 @@ func (self *Engine) Start() error {
 	}
 
 	Logger.log.Info("Validating local blockchain...")
-	for chainID := byte(0); chainID < byte(TOTAL_VALIDATORS); chainID++ {
-		for blockIdx := 0; blockIdx < self.knownChainsHeight.Heights[chainID]; blockIdx++ {
-			blockHash, err := self.config.BlockChain.GetBlockHashByBlockHeight(int32(blockIdx), chainID)
+	for chainID := 0; chainID < TOTAL_VALIDATORS; chainID++ {
+		//Don't validate genesis block
+		for blockIdx := 1; blockIdx < self.knownChainsHeight.Heights[chainID]; blockIdx++ {
+			block, err := self.config.BlockChain.GetBlockByBlockHeight(int32(blockIdx), byte(chainID))
 			if err != nil {
 				Logger.log.Error(err)
 				return err
 			}
-			err = self.validateBlock(self.config.BlockChain.GetBlockByHash(*blockHash))
+			err = self.validateBlock(block)
 			if err != nil {
 				Logger.log.Error(err)
 				return err
