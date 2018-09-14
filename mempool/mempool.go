@@ -11,6 +11,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/mining"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/privacy/client"
 )
 
 // ID is Peer Ids, so that orphans can be identified by which peer first re-payed them.
@@ -164,6 +165,10 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 	// sanity data
 	// TODO
+	if !tp.ValidateSansityData(tx) {
+		err := TxRuleError{}.Init(SansityInvalidTx, fmt.Sprintf("transaction's sansity %v is invalid", txHash.String()))
+		return nil, nil, err
+	}
 
 	// Validate tx by it self
 	validate := tx.ValidateTransaction()
@@ -253,4 +258,50 @@ func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
 	tp.mtx.RUnlock()
 
 	return haveTx
+}
+
+func (tp *TxPool) ValidateSansityData(tx transaction.Transaction) bool {
+	if tx.GetType() == common.TxNormalType {
+		txN := tx.(*transaction.Tx)
+		//check version
+		if txN.Version > transaction.TxVersion {
+			return false
+		}
+		//check locktime
+		if int64(txN.LockTime) > time.Now().Unix() {
+			return false
+		}
+
+		if len(txN.JSPubKey) != 32 {
+			return false
+		}
+		if len(txN.JSSig) != 64 {
+			return false
+		}
+		//check Descs
+		for _, desc := range txN.Descs {
+			if len(desc.Anchor) != 32 {
+				return false
+			}
+			if len(desc.EphemeralPubKey) != client.EphemeralKeyLength {
+				return false
+			}
+			if len(desc.HSigSeed) != 32 {
+				return false
+			}
+			if desc.Type != common.TxOutBondType || desc.Type != common.TxOutCoinType {
+				return false
+			}
+		}
+
+		_ = txN
+	} else if tx.GetType() == common.TxActionParamsType {
+		txA := tx.(*transaction.ActionParamTx)
+
+		_ = txA
+	} else {
+		return false
+	}
+
+	return true
 }
