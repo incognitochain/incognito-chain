@@ -2,6 +2,7 @@ package cashec
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 
 	"golang.org/x/crypto/ed25519"
@@ -30,16 +31,19 @@ func (self *KeyPair) GenerateKey(seed []byte) (*KeyPair, error) {
 	return self, nil
 }
 
-func (self *KeyPair) Import(privateKey []byte) (*KeyPair, error) {
+func (self *KeyPair) Import(privateKey string) (*KeyPair, error) {
 	if self.Curve == "" {
 		self.Curve = "ed25519"
 	}
 	switch self.Curve {
 	case "ed25519":
-		newKey := ed25519.PrivateKey{}
-		newKey = privateKey
-		self.PublicKey = newKey.Public().(ed25519.PublicKey)
-		self.PrivateKey = privateKey
+		key := ed25519.PrivateKey{}
+		key, err := base64.StdEncoding.DecodeString(privateKey)
+		if err != nil {
+			return self, err
+		}
+		self.PublicKey = key.Public().(ed25519.PublicKey)
+		self.PrivateKey = key
 	default:
 		return self, errors.New("this curve isn't supported")
 	}

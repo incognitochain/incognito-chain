@@ -308,7 +308,7 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 	// Validate Public Key from SealerPrvKey
 	if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
 		keyPair := &cashec.KeyPair{}
-		keyPair.Import([]byte(peerConn.ListenerPeer.Config.SealerPrvKey))
+		keyPair.Import(peerConn.ListenerPeer.Config.SealerPrvKey)
 		msg.(*wire.MessageVersion).PublicKey = string(keyPair.PublicKey)
 	}
 
@@ -443,7 +443,7 @@ func (self Server) Start() {
 	// }
 	self.ConsensusEngine.Start()
 	if cfg.Generate == true && (len(cfg.SealerPrvKey) > 0) {
-		self.ConsensusEngine.StartSealer([]byte(cfg.SealerPrvKey))
+		self.ConsensusEngine.StartSealer(cfg.SealerPrvKey)
 	}
 
 	// test, print length of chain
@@ -614,7 +614,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		// Validate Public Key from SealerPrvKey
 		if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
 			keyPair := &cashec.KeyPair{}
-			keyPair.Import([]byte(peerConn.ListenerPeer.Config.SealerPrvKey))
+			keyPair.Import(peerConn.ListenerPeer.Config.SealerPrvKey)
 			msg.(*wire.MessageVersion).PublicKey = string(keyPair.PublicKey)
 		}
 		if err != nil {

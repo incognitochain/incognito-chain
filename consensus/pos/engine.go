@@ -1,6 +1,7 @@
 package pos
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -163,11 +164,12 @@ func (self *Engine) StopSealer() {
 		self.sealerStarted = false
 	}
 }
-func (self *Engine) StartSealer(sealerPrvKey []byte) {
+func (self *Engine) StartSealer(sealerPrvKey string) {
 	if self.sealerStarted {
 		Logger.log.Error("Sealer already started")
 		return
 	}
+
 	_, err := self.config.ValidatorKeyPair.Import(sealerPrvKey)
 	if err != nil {
 		Logger.log.Error("Can't import sealer's key!")
@@ -176,7 +178,7 @@ func (self *Engine) StartSealer(sealerPrvKey []byte) {
 	self.validatorSigCh = make(chan blockSig)
 	self.quitSealer = make(chan struct{})
 	self.sealerStarted = true
-	Logger.log.Info("Starting sealer...")
+	Logger.log.Info("Starting sealer with public key: " + base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey))
 
 	go func() {
 		tempChainsHeight := make([]int, TOTAL_VALIDATORS)
