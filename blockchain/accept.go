@@ -19,7 +19,7 @@ func (self *BlockChain) maybeAcceptBlock(block *Block) (bool, error) {
 	// The height of this block is one more than the referenced previous
 	// block.
 	prevHash := &block.Header.PrevBlockHash
-	prevNode := self.GetBlockByHash(*prevHash)
+	prevNode, _ := self.GetBlockByBlockHash(prevHash)
 	if prevNode == nil {
 		str := fmt.Sprintf("previous block %s is unknown", prevHash)
 		return false, ruleError(ErrPreviousBlockUnknown, str)
