@@ -28,7 +28,6 @@ type JoinSplitDesc struct {
 	Commitments [][]byte `json:"Commitments"`
 	Amounts     []uint64 `json:"Amounts"`
 	Anchor      []byte   `json:"Anchor"`
-	//Note        []Note   `json:"Note"`
 }
 
 func (self *JoinSplitDesc) Init(data interface{}) {
@@ -47,18 +46,5 @@ func (self *JoinSplitDesc) Init(data interface{}) {
 		self.Commitments = append(self.Commitments, []byte(temp.(string)))
 	}
 }
-
-/*
-type Note struct {
-	Value  uint64
-	Apk    []byte
-	Rho, R []byte
-}
-
-func (self *Note) Init(data interface{}) {
-	mapData := data.(map[string]interface{})
-	self. = common.JsonUnmarshallByteArray(mapData["Anchor"].(string))
-}
-*/
 
 // end
