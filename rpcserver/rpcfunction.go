@@ -7,11 +7,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/cash-prototype/wire"
 	"log"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ninjadotorg/cash-prototype/wire"
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
@@ -22,14 +23,14 @@ import (
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
 
 var RpcHandler = map[string]commandHandler{
-	"dosomething":                  RpcServer.handleDoSomething,
-	"getblockchaininfo":            RpcServer.handleGetBlockChainInfo,
-	"createtransaction":            RpcServer.handleCreateTransaction,
-	"listunspent":                  RpcServer.handleListUnSpent,
-	"createrawtransaction":         RpcServer.handleCreateRawTrasaction,
-	"signrawtransaction":           RpcServer.handleSignRawTransaction,
-	"sendrawtransaction":           RpcServer.handleSendRawTransaction,
-	"getNumberOfCoinsAndBonds":     RpcServer.handleGetNumberOfCoinsAndBonds,
+	"dosomething":                   RpcServer.handleDoSomething,
+	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
+	"createtransaction":             RpcServer.handleCreateTransaction,
+	"listunspent":                   RpcServer.handleListUnSpent,
+	"createrawtransaction":          RpcServer.handleCreateRawTrasaction,
+	"signrawtransaction":            RpcServer.handleSignRawTransaction,
+	"sendrawtransaction":            RpcServer.handleSendRawTransaction,
+	"getNumberOfCoinsAndBonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createActionParamsTransaction": RpcServer.handleCreateActionParamsTransaction,
 
 	//POS
@@ -63,7 +64,7 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 	log.Println(arrayParams)
 	getBy := arrayParams[0].(string)
 	block := arrayParams[1].(string)
-	chainID := arrayParams[2].(byte)
+	chainID := arrayParams[2].(float64)
 	switch getBy {
 	case "blockhash":
 		bhash := common.Hash{}
@@ -72,28 +73,27 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 		if err != nil {
 			return nil, errors.New("Invalid blockhash format")
 		}
-		bnum, chainID, err := self.Config.BlockChain.GetBlockHeightByBlockHash(&bhash)
 		block, err := self.Config.BlockChain.GetBlockByBlockHash(&bhash)
 		if err != nil {
 			return nil, errors.New("Block not exist")
 		}
 		result.Header = block.Header
-		result.BlockNum = int(bnum) + 1
-		result.ChainID = chainID
+		result.BlockNum = int(block.Height) + 1
+		result.ChainID = uint8(chainID)
 		result.BlockHash = bhash.String()
 	case "blocknum":
 		bnum, err := strconv.Atoi(block)
 		if err != nil {
 			return nil, errors.New("Invalid blocknum format")
 		}
-		allHashBlocks, _ := self.Config.BlockChain.GetAllHashBlocks()
-		if len(allHashBlocks) < bnum || bnum <= 0 {
+		fmt.Println(chainID)
+		if int32(bnum-1) > self.Config.BlockChain.BestState[uint8(chainID)].Height || bnum <= 0 {
 			return nil, errors.New("Block not exist")
 		}
-		block, _ := self.Config.BlockChain.GetBlockByBlockHeight(int32(bnum-1), chainID)
+		block, _ := self.Config.BlockChain.GetBlockByBlockHeight(int32(bnum-1), uint8(chainID))
 		result.Header = block.Header
 		result.BlockNum = bnum
-		result.ChainID = chainID
+		result.ChainID = uint8(chainID)
 		result.BlockHash = block.Hash().String()
 	default:
 		return nil, errors.New("Wrong request format")

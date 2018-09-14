@@ -10,12 +10,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/transaction"
+
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/mining"
 	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
@@ -26,6 +27,7 @@ var (
 	errChainNotFullySynced = errors.New("chains are not fully synced")
 	errTxIsWrong           = errors.New("transaction is wrong")
 	errNotEnoughChainData  = errors.New("not enough chain data")
+	errCantFinalizeBlock   = errors.New("can't finalize block")
 )
 
 // PoSEngine only need to start if node runner want to be a validator
@@ -59,7 +61,7 @@ type chainsHeight struct {
 type Config struct {
 	BlockChain       *blockchain.BlockChain
 	ChainParams      *blockchain.Params
-	BlockGen         *mining.BlkTmplGenerator
+	blockGen         *BlkTmplGenerator
 	MemPool          *mempool.TxPool
 	ValidatorKeyPair cashec.KeyPair
 	Server           interface {
@@ -112,6 +114,8 @@ func (self *Engine) Start() error {
 		}
 	}
 	self.validatedChainsHeight.Heights = self.knownChainsHeight.Heights
+	self.currentCommittee = self.config.BlockChain.BestState[0].BestBlock.Header.NextCommittee
+
 	time.Sleep(2 * time.Second)
 	go func() {
 		for {
@@ -151,6 +155,7 @@ func (self *Engine) Stop() error {
 }
 
 func New(Config *Config) *Engine {
+	Config.blockGen = NewBlkTmplGenerator(Config.MemPool, Config.BlockChain)
 	return &Engine{
 		config: *Config,
 	}
@@ -193,9 +198,14 @@ func (self *Engine) StartSealer(sealerPrvKey string) {
 						Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
 						newBlock, err := self.createBlock()
 						if err != nil {
-							Logger.log.Critical(err)
+							Logger.log.Error(err)
+							continue
 						}
-						self.Finalize(newBlock, validators)
+						err = self.Finalize(newBlock, validators)
+						if err != nil {
+							Logger.log.Critical(err)
+							continue
+						}
 						tempChainsHeight = self.knownChainsHeight.Heights
 					}
 				}
@@ -204,7 +214,7 @@ func (self *Engine) StartSealer(sealerPrvKey string) {
 	}()
 }
 
-func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) {
+func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) error {
 	finalBlock := block
 	validateSigList := make(chan []string)
 	timeout := time.After(5 * time.Second)
@@ -252,28 +262,23 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 	case resList := <-validateSigList:
 		fmt.Println(resList)
 	case <-timeout:
-		Logger.log.Critical("oopss... Can't finalize block")
-		return
+		return errCantFinalizeBlock
 	}
 
 	self.UpdateChain(finalBlock)
 	blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
 	if err != nil {
-		return
+		return err
 	}
 	self.config.Server.PushMessageToAll(blockMsg)
-}
-
-func (self *Engine) SwitchMember() {
-
+	return nil
 }
 
 func (self *Engine) createBlock() (*blockchain.Block, error) {
-	myChainID, myChainCommittee := self.getMyChain()
-	fmt.Println(myChainID, myChainCommittee)
-	newblock, err := self.config.BlockGen.NewBlockTemplate(string(self.config.ValidatorKeyPair.PublicKey), self.config.BlockChain, myChainID)
+	myChainID, _ := self.getMyChain()
+	newblock, err := self.config.blockGen.NewBlockTemplate(string(self.config.ValidatorKeyPair.PublicKey), self.config.BlockChain, myChainID)
 	if err != nil {
-		return newblock.Block, err
+		return &blockchain.Block{}, err
 	}
 	newblock.Block.Header.ChainID = myChainID
 	return newblock.Block, nil
@@ -416,7 +421,7 @@ func (self *Engine) getMyChain() (byte, []string) {
 		if err != nil {
 			return TOTAL_VALIDATORS, []string{}
 		}
-		if string(self.config.ValidatorKeyPair.PublicKey) == myChainCommittee[0] {
+		if base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey) == myChainCommittee[0] {
 			return idx, myChainCommittee
 		}
 	}
@@ -539,6 +544,9 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	// save best state
 	newBestState := &blockchain.BestState{}
 	numTxns := uint64(len(block.Transactions))
+	for _, tx := range block.Transactions {
+		self.config.MemPool.RemoveTx(*tx.(*transaction.Tx))
+	}
 	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0))
 	self.config.BlockChain.BestState[block.Header.ChainID] = newBestState
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)

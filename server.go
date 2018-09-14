@@ -24,7 +24,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/consensus/pos"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/mempool"
-	"github.com/ninjadotorg/cash-prototype/mining"
 	"github.com/ninjadotorg/cash-prototype/netsync"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/rpcserver"
@@ -147,7 +146,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	self.AddrManager = addrmanager.New(cfg.DataDir, nil)
 
-	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.BlockChain)
+	// blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.BlockChain)
 
 	// self.Miner = miner.New(&miner.Config{
 	// 	ChainParams:            self.chainParams,
@@ -161,7 +160,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		ChainParams: self.chainParams,
 		BlockChain:  self.BlockChain,
 		MemPool:     self.MemPool,
-		BlockGen:    blockTemplateGenerator,
 		Server:      self,
 	})
 
