@@ -150,12 +150,14 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 		return nil, nil, err
 	}
 
+	// Don't accept the transaction if it already exists in the pool.
 	if tp.isTxInPool(txHash) {
 		str := fmt.Sprintf("already have transaction %v", txHash.String())
 		err := TxRuleError{}
 		err.Init(RejectDuplicateTx, str)
 		return nil, nil, err
 	}
+
 	txD := tp.addTx(tx, bestHeight, txFee)
 	return tx.Hash(), txD, nil
 }

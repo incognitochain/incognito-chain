@@ -53,7 +53,6 @@ func (tx *Tx) Hash() *common.Hash {
 }
 
 // ValidateTransaction returns true if transaction is valid:
-// - All data fields are well formed
 // - JSDescriptions are valid (zk-snark proof satisfied)
 // - Signature matches the signing public key
 // Note: This method doesn't check for double spending
