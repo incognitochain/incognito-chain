@@ -29,6 +29,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 const (
@@ -139,7 +140,9 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	}
 
 	self.MemPool = mempool.New(&mempool.Config{
-		Policy:      mempool.Policy{},
+		Policy: mempool.Policy{
+			MaxTxVersion: transaction.TxVersion + 1,
+		},
 		BlockChain:  self.BlockChain,
 		ChainParams: chainParams,
 	})
@@ -544,7 +547,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
 		PeerId:           msg.LocalPeerId,
-		PublicKey:		  msg.PublicKey,
+		PublicKey:        msg.PublicKey,
 	}
 
 	self.newPeers <- remotePeer
