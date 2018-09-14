@@ -160,7 +160,9 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	}
 
 	if blockchain.IsCoinBaseTx(tx) {
-
+		err := TxRuleError{}
+		err.Init(RejectCoinbaseTx, fmt.Sprintf("%v is coinbase tx", txHash.String()))
+		return nil, nil, err
 	}
 
 	// sanity data

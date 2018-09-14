@@ -31,4 +31,5 @@ const (
 	RejectDuplicateTx TxErrCode = 1
 	RejectInvalidTx   TxErrCode = 2
 	SansityInvalidTx  TxErrCode = 3
+	RejectCoinbaseTx  TxErrCode = 4
 )
