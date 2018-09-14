@@ -224,7 +224,7 @@ func VerifySign(tx *Tx) (bool, error) {
 	hash := tx.GetTxId()
 	data := make([]byte, common.HashSize)
 	copy(data, hash[:])
-	
+
 	valid := client.VerifySign(pubKey, data[:], ecdsaSignature.R, ecdsaSignature.S)
 	return valid, nil
 }
@@ -292,7 +292,7 @@ func generateTx(
 
 	// TODO(@0xbunyip): use Apk of PubKey temporarily, we should derive another scheme for signing tx later
 	tx := &Tx{
-		Version:  1,
+		Version:  TxVersion,
 		Type:     common.TxNormalType,
 		Descs:    desc,
 		JSPubKey: jsPubKey,
@@ -332,7 +332,7 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 		return nil, err
 	}
 	tx, err = SignTx(tx, sigPrivKey)
-	if err != nil{
+	if err != nil {
 		return tx, err
 	}
 	//Calculate vmacs to prove this transaction is signed by this user
@@ -340,7 +340,7 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 	//nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
 
 	vmacs := make([][]byte, 2)
-	for i, _ := range inputs{
+	for i, _ := range inputs {
 		var ask []byte
 		copy(ask[:], inputs[i].Key[:])
 		vmacs[i] = client.PRF_pk(uint64(i), ask, hSig)
