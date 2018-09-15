@@ -134,41 +134,53 @@ func (tp *TxPool) MaybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
 	txHash := tx.Hash()
 
-	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
 	bestHeight := tp.config.BlockChain.BestState.BestBlock.Height
-	nextBlockHeight := bestHeight + 1
 
-	// Perform several checks on the transaction data using the invariant
-	// rules in blockchain for what transactions are allowed into blocks.
-	// Also returns the fees associated with the transaction which will be
-	// used later.
-	txFee, err := tp.config.BlockChain.CheckTransactionData(tx, nextBlockHeight, nil, tp.config.ChainParams)
-	if err != nil {
-		//if cerr, ok := err.(blockchain.RuleError); ok {
-		//	return nil, nil, chainRuleError(cerr)
-		//}
+	// Check tx with policy
+	// check version
+	ok := tp.config.Policy.CheckTxVersion(&tx)
+	if !ok {
+		err := TxRuleError{}
+		err.Init(RejectVersion, fmt.Sprintf("%v's version is invalid", txHash.String()))
 		return nil, nil, err
 	}
+
+	// check fee of tx
+	txFee, err := tp.CheckTransactionFee(tx)
+	if err != nil {
+		return nil, nil, err
+	}
+	// end check with policy
 
 	// Don't accept the transaction if it already exists in the pool.
 	if tp.isTxInPool(txHash) {
 		str := fmt.Sprintf("already have transaction %v", txHash.String())
-		err := TxRuleError{}.Init(RejectDuplicateTx, str)
+		err := TxRuleError{}
+		err.Init(RejectDuplicateTx, str)
 		return nil, nil, err
 	}
 
-	// sansity data
-	// TODO
-	if !tp.ValidateSansityData(tx) {
-		err := TxRuleError{}.Init(SansityInvalidTx, fmt.Sprintf("transaction's sansity %v is invalid", txHash.String()))
+	// A standalone transaction must not be a coinbase transaction.
+	if blockchain.IsCoinBaseTx(tx) {
+		err := TxRuleError{}
+		err.Init(RejectCoinbaseTx, fmt.Sprintf("%v is coinbase tx", txHash.String()))
+		return nil, nil, err
+	}
+
+	// sanity data
+	if !tp.ValidateSanityData(tx) {
+		str := fmt.Sprintf("transaction's sansity %v is invalid", txHash.String())
+		err := TxRuleError{}
+		err.Init(SansityInvalidTx, str)
 		return nil, nil, err
 	}
 
 	// Validate tx by it self
 	validate := tx.ValidateTransaction()
 	if !validate {
-		err := TxRuleError{}.Init(RejectInvalidTx, "Invalid tx")
+		err := TxRuleError{}
+		err.Init(RejectInvalidTx, "Invalid tx")
 		return nil, nil, err
 	}
 
@@ -254,7 +266,34 @@ func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
 	return haveTx
 }
 
-func (tp *TxPool) ValidateSansityData(tx transaction.Transaction) bool {
+/**
+CheckTransactionFee - check fee of tx
+ */
+func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error) {
+	// Coinbase transactions have no inputs.
+	if blockchain.IsCoinBaseTx(tx) {
+		return 0, nil
+	}
+
+	txType := tx.GetType()
+	switch txType {
+	case common.TxNormalType:
+		{
+			normalTx := tx.(*transaction.Tx)
+			err := tp.config.Policy.CheckTransactionFee(normalTx)
+			return normalTx.Fee, err
+		}
+	case common.TxActionParamsType:
+		{
+			return 0, nil
+		}
+	default:
+		{
+			return 0, errors.New("Wrong tx type")
+		}
+	}
+}
+func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) bool {
 	if tx.GetType() == common.TxNormalType {
 		txN := tx.(*transaction.Tx)
 		//check version
@@ -273,6 +312,20 @@ func (tp *TxPool) ValidateSansityData(tx transaction.Transaction) bool {
 			return false
 		}
 		//check Descs
+
+		// get list nullifiers from db to check spending
+		txViewPointTxOutBond, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutBondType)
+		if err != nil {
+			return false
+		}
+		nullifiersInDbTxOutBond := txViewPointTxOutBond.ListNullifiers(common.TxOutBondType)
+
+		txViewPointTxOutCoin, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
+		if err != nil {
+			return false
+		}
+		nullifiersInDbTxOutCoin := txViewPointTxOutCoin.ListNullifiers(common.TxOutCoinType)
+
 		for _, desc := range txN.Descs {
 			if len(desc.Anchor) != 32 {
 				return false
@@ -284,6 +337,82 @@ func (tp *TxPool) ValidateSansityData(tx transaction.Transaction) bool {
 				return false
 			}
 			if desc.Type != common.TxOutBondType || desc.Type != common.TxOutCoinType {
+				return false
+			}
+			//
+			if len(desc.Nullifiers) != 2 {
+				return false
+			}
+			if len(desc.Nullifiers[0]) != 32 {
+				return false
+			}
+			if len(desc.Nullifiers[1]) != 32 {
+				return false
+			}
+			//
+			if len(desc.Commitments) != 2 {
+				return false
+			}
+			if len(desc.Commitments[0]) != 32 {
+				return false
+			}
+			if len(desc.Commitments[1]) != 32 {
+				return false
+			}
+			//
+			if len(desc.Vmacs) != 2 {
+				return false
+			}
+			if len(desc.Vmacs[0]) != 32 {
+				return false
+			}
+			if len(desc.Vmacs[1]) != 32 {
+				return false
+			}
+			//
+			if desc.Proof == nil {
+				return false
+			}
+			//
+			if len(desc.Proof.G_A) != 33 ||
+				len(desc.Proof.G_APrime) != 33 ||
+				len(desc.Proof.G_B) != 33 ||
+				len(desc.Proof.G_BPrime) != 65 ||
+				len(desc.Proof.G_C) != 33 ||
+				len(desc.Proof.G_CPrime) != 33 ||
+				len(desc.Proof.G_K) != 33 ||
+				len(desc.Proof.G_H) != 33 {
+				return false
+			}
+			//
+			if len(desc.EncryptedData) != 2 {
+				return false
+			}
+			if desc.Type == common.TxOutBondType {
+				checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[0])
+				if err != nil || checkCandiateNullifier == true {
+					// candidate nullifier is not existed in db
+					return false
+				}
+				checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[1])
+				if err != nil || checkCandiateNullifier == true {
+					// candidate nullifier is not existed in db
+					return false
+				}
+			}
+			if desc.Type == common.TxOutBondType {
+				checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[0])
+				if err != nil || checkCandiateNullifier == true {
+					// candidate nullifier is not existed in db
+					return false
+				}
+				checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[1])
+				if err != nil || checkCandiateNullifier == true {
+					// candidate nullifier is not existed in db
+					return false
+				}
+			}
+			if desc.Reward != 0 {
 				return false
 			}
 		}

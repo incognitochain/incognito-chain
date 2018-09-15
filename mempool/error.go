@@ -17,10 +17,9 @@ func (e TxRuleError) Error() string {
 
 // txRuleError creates an underlying TxRuleError with the given a set of
 // arguments and returns a RuleError that encapsulates it.
-func (e *TxRuleError) Init(code TxErrCode, desc string) (*TxRuleError) {
+func (e *TxRuleError) Init(code TxErrCode, desc string) {
 	e.rejectCode = code
 	e.description = desc
-	return e
 }
 
 // rejectCode represents a numeric value by which a remote peer indicates
@@ -32,4 +31,7 @@ const (
 	RejectDuplicateTx TxErrCode = 1
 	RejectInvalidTx   TxErrCode = 2
 	SansityInvalidTx  TxErrCode = 3
+	RejectCoinbaseTx  TxErrCode = 4
+	RejectVersion     TxErrCode = 5
+	RejectInvalidFee  TxErrCode = 6
 )

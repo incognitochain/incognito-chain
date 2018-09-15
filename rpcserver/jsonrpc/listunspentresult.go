@@ -4,16 +4,6 @@ import "github.com/ninjadotorg/cash-prototype/common"
 
 // ListUnspentResult models a successful response from the listunspent request.
 type ListUnspentResult struct {
-	/*TxID          string  `json:"TxID"`
-	Vout          int     `json:"Vout"`
-	Address       string  `json:"Address"`
-	Account       string  `json:"Account"`
-	ScriptPubKey  string  `json:"ScriptPubKey"`
-	RedeemScript  string  `json:"RedeemScript,omitempty"`
-	Amount        float64 `json:"Amount"`
-	Confirmations int64   `json:"Confirmations"`
-	Spendable     bool    `json:"Spendable"`
-	TxOutType     string  `json:"TxOutType"`*/
 	ListUnspentResultItems map[string][]ListUnspentResultItem `json:"ListUnspentResultItems"`
 }
 
