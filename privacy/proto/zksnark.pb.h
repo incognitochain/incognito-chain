@@ -1242,6 +1242,28 @@ class VerifyRequest : public ::google::protobuf::Message /* @@protoc_insertion_p
   const ::google::protobuf::RepeatedPtrField< ::std::string>& commits() const;
   ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_commits();
 
+  // repeated bytes macs = 6;
+  int macs_size() const;
+  void clear_macs();
+  static const int kMacsFieldNumber = 6;
+  const ::std::string& macs(int index) const;
+  ::std::string* mutable_macs(int index);
+  void set_macs(int index, const ::std::string& value);
+  #if LANG_CXX11
+  void set_macs(int index, ::std::string&& value);
+  #endif
+  void set_macs(int index, const char* value);
+  void set_macs(int index, const void* value, size_t size);
+  ::std::string* add_macs();
+  void add_macs(const ::std::string& value);
+  #if LANG_CXX11
+  void add_macs(::std::string&& value);
+  #endif
+  void add_macs(const char* value);
+  void add_macs(const void* value, size_t size);
+  const ::google::protobuf::RepeatedPtrField< ::std::string>& macs() const;
+  ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_macs();
+
   // bytes hsig = 2;
   void clear_hsig();
   static const int kHsigFieldNumber = 2;
@@ -1279,9 +1301,9 @@ class VerifyRequest : public ::google::protobuf::Message /* @@protoc_insertion_p
   ::zksnark::PHGRProof* mutable_proof();
   void set_allocated_proof(::zksnark::PHGRProof* proof);
 
-  // uint64 reward = 6;
+  // uint64 reward = 7;
   void clear_reward();
-  static const int kRewardFieldNumber = 6;
+  static const int kRewardFieldNumber = 7;
   ::google::protobuf::uint64 reward() const;
   void set_reward(::google::protobuf::uint64 value);
 
@@ -1291,6 +1313,7 @@ class VerifyRequest : public ::google::protobuf::Message /* @@protoc_insertion_p
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::RepeatedPtrField< ::std::string> nullifiers_;
   ::google::protobuf::RepeatedPtrField< ::std::string> commits_;
+  ::google::protobuf::RepeatedPtrField< ::std::string> macs_;
   ::google::protobuf::internal::ArenaStringPtr hsig_;
   ::google::protobuf::internal::ArenaStringPtr rt_;
   ::zksnark::PHGRProof* proof_;
@@ -2983,7 +3006,76 @@ VerifyRequest::mutable_commits() {
   return &commits_;
 }
 
-// uint64 reward = 6;
+// repeated bytes macs = 6;
+inline int VerifyRequest::macs_size() const {
+  return macs_.size();
+}
+inline void VerifyRequest::clear_macs() {
+  macs_.Clear();
+}
+inline const ::std::string& VerifyRequest::macs(int index) const {
+  // @@protoc_insertion_point(field_get:zksnark.VerifyRequest.macs)
+  return macs_.Get(index);
+}
+inline ::std::string* VerifyRequest::mutable_macs(int index) {
+  // @@protoc_insertion_point(field_mutable:zksnark.VerifyRequest.macs)
+  return macs_.Mutable(index);
+}
+inline void VerifyRequest::set_macs(int index, const ::std::string& value) {
+  // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.macs)
+  macs_.Mutable(index)->assign(value);
+}
+#if LANG_CXX11
+inline void VerifyRequest::set_macs(int index, ::std::string&& value) {
+  // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.macs)
+  macs_.Mutable(index)->assign(std::move(value));
+}
+#endif
+inline void VerifyRequest::set_macs(int index, const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  macs_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:zksnark.VerifyRequest.macs)
+}
+inline void VerifyRequest::set_macs(int index, const void* value, size_t size) {
+  macs_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:zksnark.VerifyRequest.macs)
+}
+inline ::std::string* VerifyRequest::add_macs() {
+  // @@protoc_insertion_point(field_add_mutable:zksnark.VerifyRequest.macs)
+  return macs_.Add();
+}
+inline void VerifyRequest::add_macs(const ::std::string& value) {
+  macs_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:zksnark.VerifyRequest.macs)
+}
+#if LANG_CXX11
+inline void VerifyRequest::add_macs(::std::string&& value) {
+  macs_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:zksnark.VerifyRequest.macs)
+}
+#endif
+inline void VerifyRequest::add_macs(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  macs_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:zksnark.VerifyRequest.macs)
+}
+inline void VerifyRequest::add_macs(const void* value, size_t size) {
+  macs_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:zksnark.VerifyRequest.macs)
+}
+inline const ::google::protobuf::RepeatedPtrField< ::std::string>&
+VerifyRequest::macs() const {
+  // @@protoc_insertion_point(field_list:zksnark.VerifyRequest.macs)
+  return macs_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::std::string>*
+VerifyRequest::mutable_macs() {
+  // @@protoc_insertion_point(field_mutable_list:zksnark.VerifyRequest.macs)
+  return &macs_;
+}
+
+// uint64 reward = 7;
 inline void VerifyRequest::clear_reward() {
   reward_ = GOOGLE_ULONGLONG(0);
 }

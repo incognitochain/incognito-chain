@@ -64,7 +64,8 @@ message VerifyRequest {
     bytes rt = 3;
     repeated bytes nullifiers = 4;
     repeated bytes commits = 5;
-    uint64 reward = 6;
+    repeated bytes macs = 6;
+    uint64 reward = 7;
 }
 
 message VerifyReply {

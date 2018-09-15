@@ -28,6 +28,7 @@ typedef std::array<libzcash::JSInput, ZC_NUM_JS_INPUTS> ProveInputs;
 typedef std::array<libzcash::SproutNote, ZC_NUM_JS_OUTPUTS> ProveOutnotes;
 
 typedef std::array<uint256, ZC_NUM_JS_INPUTS> NullifierArray;
+typedef std::array<uint256, ZC_NUM_JS_INPUTS> MacArray;
 typedef std::array<uint256, ZC_NUM_JS_OUTPUTS> CommitmentArray;
 
 bool string_to_uint256(const string &data, uint256 &result)
@@ -222,6 +223,7 @@ bool transform_verify_request(const VerifyRequest *request,
                               libzcash::PHGRProof &proof,
                               NullifierArray &nullifiers,
                               CommitmentArray &commitments,
+                              MacArray &macs,
                               uint256 &hsig,
                               uint256 &rt,
                               uint64_t &reward)
@@ -261,6 +263,13 @@ bool transform_verify_request(const VerifyRequest *request,
     {
         auto cm = request->commits(i);
         string_to_uint256(cm, commitments[i]);
+    }
+
+    // Convert macs
+    for (int i = 0; i < request->macs_size(); ++i)
+    {
+        auto mac = request->macs(i);
+        string_to_uint256(mac, macs[i]);
     }
 
     // Convert hsig
@@ -350,9 +359,9 @@ class ZksnarkImpl final : public Zksnark::Service
         uint256 hsig, rt;
         NullifierArray nullifiers;
         CommitmentArray commitments;
-        NullifierArray macs; // TODO(@0xbunyip): add mac to successfully run js->verify
+        NullifierArray macs;
         uint64_t reward;
-        bool success = transform_verify_request(request, proof, nullifiers, commitments, hsig, rt, reward);
+        bool success = transform_verify_request(request, proof, nullifiers, commitments, macs, hsig, rt, reward);
         cout << "transform_verify_request status: " << success << '\n';
 
         uint64_t vpub_old = reward;

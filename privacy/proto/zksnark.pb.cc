@@ -338,6 +338,7 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyRequest, rt_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyRequest, nullifiers_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyRequest, commits_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyRequest, macs_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyRequest, reward_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyReply, _internal_metadata_),
@@ -355,7 +356,7 @@ static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROT
   { 43, -1, sizeof(::zksnark::PHGRProof)},
   { 56, -1, sizeof(::zksnark::ProveReply)},
   { 62, -1, sizeof(::zksnark::VerifyRequest)},
-  { 73, -1, sizeof(::zksnark::VerifyReply)},
+  { 74, -1, sizeof(::zksnark::VerifyReply)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -407,18 +408,18 @@ void AddDescriptorsImpl() {
       "_prime\030\002 \001(\014\022\013\n\003g_B\030\003 \001(\014\022\021\n\tg_B_prime\030\004"
       " \001(\014\022\013\n\003g_C\030\005 \001(\014\022\021\n\tg_C_prime\030\006 \001(\014\022\013\n\003"
       "g_K\030\007 \001(\014\022\013\n\003g_H\030\010 \001(\014\"/\n\nProveReply\022!\n\005"
-      "proof\030\001 \001(\0132\022.zksnark.PHGRProof\"\201\001\n\rVeri"
+      "proof\030\001 \001(\0132\022.zksnark.PHGRProof\"\217\001\n\rVeri"
       "fyRequest\022!\n\005proof\030\001 \001(\0132\022.zksnark.PHGRP"
       "roof\022\014\n\004hsig\030\002 \001(\014\022\n\n\002rt\030\003 \001(\014\022\022\n\nnullif"
-      "iers\030\004 \003(\014\022\017\n\007commits\030\005 \003(\014\022\016\n\006reward\030\006 "
-      "\001(\004\"\034\n\013VerifyReply\022\r\n\005valid\030\001 \001(\0102z\n\007Zks"
-      "nark\0225\n\005Prove\022\025.zksnark.ProveRequest\032\023.z"
-      "ksnark.ProveReply\"\000\0228\n\006Verify\022\026.zksnark."
-      "VerifyRequest\032\024.zksnark.VerifyReply\"\000b\006p"
-      "roto3"
+      "iers\030\004 \003(\014\022\017\n\007commits\030\005 \003(\014\022\014\n\004macs\030\006 \003("
+      "\014\022\016\n\006reward\030\007 \001(\004\"\034\n\013VerifyReply\022\r\n\005vali"
+      "d\030\001 \001(\0102z\n\007Zksnark\0225\n\005Prove\022\025.zksnark.Pr"
+      "oveRequest\032\023.zksnark.ProveReply\"\000\0228\n\006Ver"
+      "ify\022\026.zksnark.VerifyRequest\032\024.zksnark.Ve"
+      "rifyReply\"\000b\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 925);
+      descriptor, 939);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "zksnark.proto", &protobuf_RegisterTypes);
 }
@@ -3068,6 +3069,7 @@ const int VerifyRequest::kHsigFieldNumber;
 const int VerifyRequest::kRtFieldNumber;
 const int VerifyRequest::kNullifiersFieldNumber;
 const int VerifyRequest::kCommitsFieldNumber;
+const int VerifyRequest::kMacsFieldNumber;
 const int VerifyRequest::kRewardFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
@@ -3084,6 +3086,7 @@ VerifyRequest::VerifyRequest(const VerifyRequest& from)
       _internal_metadata_(NULL),
       nullifiers_(from.nullifiers_),
       commits_(from.commits_),
+      macs_(from.macs_),
       _cached_size_(0) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
   hsig_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
@@ -3154,6 +3157,7 @@ void VerifyRequest::Clear() {
 
   nullifiers_.Clear();
   commits_.Clear();
+  macs_.Clear();
   hsig_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   rt_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   if (GetArenaNoVirtual() == NULL && proof_ != NULL) {
@@ -3234,10 +3238,22 @@ bool VerifyRequest::MergePartialFromCodedStream(
         break;
       }
 
-      // uint64 reward = 6;
+      // repeated bytes macs = 6;
       case 6: {
         if (static_cast< ::google::protobuf::uint8>(tag) ==
-            static_cast< ::google::protobuf::uint8>(48u /* 48 & 0xFF */)) {
+            static_cast< ::google::protobuf::uint8>(50u /* 50 & 0xFF */)) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
+                input, this->add_macs()));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // uint64 reward = 7;
+      case 7: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(56u /* 56 & 0xFF */)) {
 
           DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
                    ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
@@ -3304,9 +3320,15 @@ void VerifyRequest::SerializeWithCachedSizes(
       5, this->commits(i), output);
   }
 
-  // uint64 reward = 6;
+  // repeated bytes macs = 6;
+  for (int i = 0, n = this->macs_size(); i < n; i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteBytes(
+      6, this->macs(i), output);
+  }
+
+  // uint64 reward = 7;
   if (this->reward() != 0) {
-    ::google::protobuf::internal::WireFormatLite::WriteUInt64(6, this->reward(), output);
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(7, this->reward(), output);
   }
 
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
@@ -3356,9 +3378,15 @@ void VerifyRequest::SerializeWithCachedSizes(
       WriteBytesToArray(5, this->commits(i), target);
   }
 
-  // uint64 reward = 6;
+  // repeated bytes macs = 6;
+  for (int i = 0, n = this->macs_size(); i < n; i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteBytesToArray(6, this->macs(i), target);
+  }
+
+  // uint64 reward = 7;
   if (this->reward() != 0) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(6, this->reward(), target);
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(7, this->reward(), target);
   }
 
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
@@ -3394,6 +3422,14 @@ size_t VerifyRequest::ByteSizeLong() const {
       this->commits(i));
   }
 
+  // repeated bytes macs = 6;
+  total_size += 1 *
+      ::google::protobuf::internal::FromIntSize(this->macs_size());
+  for (int i = 0, n = this->macs_size(); i < n; i++) {
+    total_size += ::google::protobuf::internal::WireFormatLite::BytesSize(
+      this->macs(i));
+  }
+
   // bytes hsig = 2;
   if (this->hsig().size() > 0) {
     total_size += 1 +
@@ -3415,7 +3451,7 @@ size_t VerifyRequest::ByteSizeLong() const {
         *this->proof_);
   }
 
-  // uint64 reward = 6;
+  // uint64 reward = 7;
   if (this->reward() != 0) {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::UInt64Size(
@@ -3453,6 +3489,7 @@ void VerifyRequest::MergeFrom(const VerifyRequest& from) {
 
   nullifiers_.MergeFrom(from.nullifiers_);
   commits_.MergeFrom(from.commits_);
+  macs_.MergeFrom(from.macs_);
   if (from.hsig().size() > 0) {
 
     hsig_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.hsig_);
@@ -3495,6 +3532,7 @@ void VerifyRequest::InternalSwap(VerifyRequest* other) {
   using std::swap;
   nullifiers_.InternalSwap(&other->nullifiers_);
   commits_.InternalSwap(&other->commits_);
+  macs_.InternalSwap(&other->macs_);
   hsig_.Swap(&other->hsig_);
   rt_.Swap(&other->rt_);
   swap(proof_, other->proof_);
