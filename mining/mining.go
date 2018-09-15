@@ -397,9 +397,33 @@ mempoolLoop:
 	// TODO PoW
 	//time.Sleep(time.Second * 15)
 
+	// Store commitments and nullifiers in database
+	var descType string
+	commitments := [][]byte{}
+	nullifiers := [][]byte{}
+	for _, blockTx := range blockTxns {
+		tx, ok := blockTx.(*transaction.Tx)
+		if ok == false {
+			return nil, fmt.Errorf("Transaction not recognized to store in database")
+		}
+
+		for _, desc := range tx.Descs {
+			for _, cm := range desc.Commitments {
+				commitments = append(commitments, cm)
+			}
+
+			for _, nf := range desc.Nullifiers {
+				nullifiers = append(nullifiers, nf)
+			}
+			descType = desc.Type
+		}
+	}
+	// TODO(@0xsirrush): check if cm and nf should be saved here (when generate block template)
+	// or when UpdateBestState
+	g.chain.StoreCommitmentsFromListCommitment(commitments, descType)
+	g.chain.StoreNullifiersFromListNullifier(nullifiers, descType)
+
 	block := blockchain.Block{}
-	//g.chain.StoreNullifiersFromListNullifier()// TODO 0xbunyip
-	//g.chain.StoreNullifiersFromListCommitment() // TODO 0xbunyip
 	block.Header = blockchain.BlockHeader{
 		Version:               1,
 		PrevBlockHash:         *prevBlockHash,
@@ -414,6 +438,12 @@ mempoolLoop:
 			return nil, err
 		}
 	}
+
+	// Add new commitments to merkle tree and save the root
+	newTree := g.chain.BestState.CmTree.MakeCopy()
+	blockchain.UpdateMerkleTreeForBlock(newTree, &block)
+	rt := newTree.GetRoot(common.IncMerkleTreeHeight)
+	copy(block.Header.MerkleRootCommitments[:], rt)
 
 	//update the latest AgentDataPoints to block
 	block.AgentDataPoints = agentDataPoints
@@ -466,7 +496,7 @@ type TxSource interface {
 
 /**
 NewBlkTmplGenerator - create a block template generator from mempool package
- */
+*/
 func NewBlkTmplGeneratorByMempool(mempool TxSource, chain *blockchain.BlockChain) *BlkTmplGenerator {
 	return &BlkTmplGenerator{
 		txSource: mempool,

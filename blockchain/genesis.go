@@ -92,6 +92,7 @@ func (self GenesisBlockGenerator) createGenesisTx(coinReward uint64) (*transacti
 }
 
 func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
+	// Convert zk-proof from hex string to byte array
 	gA, _ := hex.DecodeString(GENESIS_BLOCK_G_A)
 	gAPrime, _ := hex.DecodeString(GENESIS_BLOCK_G_APrime)
 	gB, _ := hex.DecodeString(GENESIS_BLOCK_G_B)
@@ -111,6 +112,7 @@ func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
 		G_H:      gH,
 	}
 
+	// Convert nullifiers from hex string to byte array
 	nf1, err := hex.DecodeString(GENESIS_BLOCK_NULLIFIERS[0])
 	if err != nil {
 		panic(err)
@@ -121,6 +123,7 @@ func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
 	}
 	nullfiers := [][]byte{nf1, nf2}
 
+	// Convert commitments from hex string to byte array
 	cm1, err := hex.DecodeString(GENESIS_BLOCK_COMMITMENTS[0])
 	if err != nil {
 		panic(err)
@@ -131,6 +134,7 @@ func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
 	}
 	commitments := [][]byte{cm1, cm2}
 
+	// Convert encrypted data from hex string to byte array
 	encData1, err := hex.DecodeString(GENESIS_BLOCK_ENCRYPTED_DATA[0])
 	if err != nil {
 		panic(err)
@@ -140,10 +144,23 @@ func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
 		panic(err)
 	}
 	encryptedData := [][]byte{encData1, encData2}
+
+	// Convert ephemeral public key from hex string to byte array
 	ephemeralPubKey, err := hex.DecodeString(GENESIS_BLOCK_EPHEMERAL_PUBKEY)
 	if err != nil {
 		panic(err)
 	}
+
+	// Convert vmacs from hex string to byte array
+	vmacs1, err := hex.DecodeString(GENESIS_BLOCK_VMACS[0])
+	if err != nil {
+		panic(err)
+	}
+	vmacs2, err := hex.DecodeString(GENESIS_BLOCK_VMACS[1])
+	if err != nil {
+		panic(err)
+	}
+	vmacs := [][]byte{vmacs1, vmacs2}
 
 	desc := []*transaction.JoinSplitDesc{&transaction.JoinSplitDesc{
 		Anchor:          GENESIS_BLOCK_ANCHOR[:],
@@ -155,6 +172,7 @@ func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
 		HSigSeed:        GENESIS_BLOCK_SEED[:],
 		Type:            common.TxOutCoinType,
 		Reward:          GENESIS_BLOCK_REWARD,
+		Vmacs:           vmacs,
 	}}
 
 	jsPubKey, err := hex.DecodeString(GENESIS_BLOCK_JSPUBKEY)
@@ -164,11 +182,27 @@ func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
 	tx := &transaction.Tx{
 		Version:  transaction.TxVersion,
 		Type:     common.TxNormalType,
+		LockTime: 0,
+		Fee:      0,
 		Descs:    desc,
 		JSPubKey: jsPubKey,
 		JSSig:    nil,
 	}
 	return tx, nil
+}
+
+func (self GenesisBlockGenerator) calcCommitmentMerkleRoot(tx *transaction.Tx) common.Hash {
+	tree := new(client.IncMerkleTree)
+	for _, desc := range tx.Descs {
+		for _, cm := range desc.Commitments {
+			tree.AddNewNode(cm[:])
+		}
+	}
+
+	rt := tree.GetRoot(common.IncMerkleTreeHeight)
+	hash := common.Hash{}
+	copy(hash[:], rt[:])
+	return hash
 }
 
 func (self GenesisBlockGenerator) CreateGenesisBlock(
@@ -186,14 +220,16 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(
 	genesisBlock.Header.Difficulty = difficulty
 	genesisBlock.Header.Version = version
 
-	tx, err := self.getGenesisTx()
-	// tx, err := self.createGenesisTx(genesisReward)
+	// tx, err := self.getGenesisTx()
+	tx, err := self.createGenesisTx(genesisReward)
 
 	if err != nil {
 		panic(err)
 	}
 
-	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
+	genesisBlock.Header.MerkleRootCommitments = self.calcCommitmentMerkleRoot(tx)
+
 	genesisBlock.Transactions = append(genesisBlock.Transactions, tx)
+	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
 	return &genesisBlock
 }

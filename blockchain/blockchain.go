@@ -2,6 +2,8 @@ package blockchain
 
 import (
 	"errors"
+	"fmt"
+
 	//"fmt"
 	//"time"
 
@@ -10,12 +12,12 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/transaction"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/ninjadotorg/cash-prototype/cashec"
 )
 
 type BlockChain struct {
@@ -99,6 +101,23 @@ func (self *BlockChain) initChainState() error {
 	return nil
 }
 
+// UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
+func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
+	for _, blockTx := range block.Transactions {
+		tx, ok := blockTx.(*transaction.Tx)
+		if ok == false {
+			return fmt.Errorf("Genesis transaction invalid")
+		}
+
+		for _, desc := range tx.Descs {
+			for _, cm := range desc.Commitments {
+				tree.AddNewNode(cm[:])
+			}
+		}
+	}
+	return nil
+}
+
 // createChainState initializes both the database and the chain state to the
 // genesis block.  This includes creating the necessary buckets and inserting
 // the genesis block, so it must only be called on an uninitialized database.
@@ -112,8 +131,14 @@ func (self *BlockChain) createChainState() error {
 	numTxns := uint64(len(genesisBlock.Transactions))
 	//blockSize := uint64(genesisBlock.SerializeSize())
 	//blockWeight := uint64(GetBlockWeight(genesisBlock))
+
+	tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
+	if err := UpdateMerkleTreeForBlock(tree, genesisBlock); err != nil {
+		return err
+	}
+
 	self.BestState = &BestState{}
-	self.BestState.Init(genesisBlock, 0, 0, numTxns, numTxns, time.Unix(genesisBlock.Header.Timestamp.Unix(), 0))
+	self.BestState.Init(genesisBlock, 0, 0, numTxns, numTxns, time.Unix(genesisBlock.Header.Timestamp.Unix(), 0), tree)
 
 	// store block genesis
 	err := self.StoreBlock(genesisBlock)
@@ -324,7 +349,7 @@ func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, ty
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
 */
-func (self *BlockChain) StoreCommitmentsFromListNullifier(commitments [][]byte, typeJoinSplitDesc string) error {
+func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, typeJoinSplitDesc string) error {
 	for _, item := range commitments {
 		err := self.Config.DataBase.StoreCommitments(item, typeJoinSplitDesc)
 		if err != nil {

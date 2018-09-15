@@ -44,6 +44,25 @@ type IncMerkleTree struct {
 	left, right MerkleHash   // Leaf nodes
 }
 
+// MakeCopy creates a new merkle tree and copies data from the old one to it
+func (tree *IncMerkleTree) MakeCopy() *IncMerkleTree {
+	newTree := &IncMerkleTree{
+		nodes: make([]MerkleHash, len(tree.nodes)),
+		left:  make([]byte, 32),
+		right: make([]byte, 32),
+	}
+
+	copy(newTree.left, tree.left)
+	copy(newTree.right, tree.right)
+	for _, node := range tree.nodes {
+		copyNode := make([]byte, 32)
+		copy(copyNode, node)
+		newTree.nodes = append(newTree.nodes, copyNode)
+	}
+
+	return newTree
+}
+
 // IncMerkleWitness stores the data for the process of building the merkle tree path
 type IncMerkleWitness struct {
 	snapshot, tmpTree *IncMerkleTree

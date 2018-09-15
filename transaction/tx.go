@@ -292,6 +292,14 @@ func generateTx(
 	fmt.Printf("notes[1].Memo: %v\n", notes[1].Memo)
 	noteciphers := client.EncryptNote(notes, keys, *ephemeralPrivKey, *ephemeralPubKey, hSig)
 
+	//Calculate vmacs to prove this transaction is signed by this user
+	vmacs := make([][]byte, 2)
+	for i := range inputs {
+		ask := make([]byte, 32)
+		copy(ask[:], inputs[i].Key[:])
+		vmacs[i] = client.PRF_pk(uint64(i), ask, hSig)
+	}
+
 	desc := []*JoinSplitDesc{&JoinSplitDesc{
 		Anchor:          rt,
 		Nullifiers:      nullifiers,
@@ -302,6 +310,7 @@ func generateTx(
 		HSigSeed:        seed,
 		Type:            common.TxOutCoinType,
 		Reward:          reward,
+		Vmacs:           vmacs,
 	}}
 
 	fmt.Println("desc[0]:")
@@ -312,10 +321,10 @@ func generateTx(
 	fmt.Printf("EncryptedData: %x\n", desc[0].EncryptedData)
 	fmt.Printf("EphemeralPubKey: %x\n", desc[0].EphemeralPubKey)
 	fmt.Printf("HSigSeed: %x\n", desc[0].HSigSeed)
-	fmt.Printf("Type: %x\n", desc[0].Type)
-	fmt.Printf("Reward: %x\n", desc[0].Reward)
+	fmt.Printf("Type: %v\n", desc[0].Type)
+	fmt.Printf("Reward: %v\n", desc[0].Reward)
+	fmt.Printf("Vmacs: %x %x\n", desc[0].Vmacs[0], desc[0].Vmacs[1])
 
-	// TODO(@0xbunyip): use Apk of PubKey temporarily, we should derive another scheme for signing tx later
 	tx := &Tx{
 		Version:  TxVersion,
 		Type:     common.TxNormalType,
@@ -328,19 +337,6 @@ func generateTx(
 
 // GenerateProofAndSign creates zk-proof, build the transaction and sign it using a random generated key pair
 func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) (*Tx, error) {
-	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
-	keyBytes := []byte{} // TODO(0xbunyip): randomize seed?
-	keyPair := (&cashec.KeySet{}).GenerateKey(keyBytes)
-
-	var seed, phi *[]byte
-	var outputR [][]byte
-	proof, hSig, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, seed, phi, outputR)
-	if err != nil {
-		return nil, err
-	}
-
-	var ephemeralPrivKey *client.EphemeralPrivKey
-
 	//Generate signing key
 	sigPrivKey, err := client.GenerateKey(rand.Reader)
 	if err != nil {
@@ -352,6 +348,14 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 		return nil, err
 	}
 
+	var seed, phi *[]byte
+	var outputR [][]byte
+	proof, hSig, err := client.Prove(inputs, outputs, sigPubKey, rt, reward, seed, phi, outputR)
+	if err != nil {
+		return nil, err
+	}
+
+	var ephemeralPrivKey *client.EphemeralPrivKey
 	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, *seed, sigPubKey, ephemeralPrivKey)
 	if err != nil {
 		return nil, err
@@ -360,18 +364,6 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 	if err != nil {
 		return tx, err
 	}
-	//Calculate vmacs to prove this transaction is signed by this user
-
-	//nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
-
-	vmacs := make([][]byte, 2)
-	for i, _ := range inputs {
-		var ask []byte
-		copy(ask[:], inputs[i].Key[:])
-		vmacs[i] = client.PRF_pk(uint64(i), ask, hSig)
-	}
-	tx.Descs[0].Vmacs = vmacs
-
 	return tx, nil
 }
 

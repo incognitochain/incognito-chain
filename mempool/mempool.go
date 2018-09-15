@@ -7,11 +7,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/mining"
-	"github.com/ninjadotorg/cash-prototype/transaction"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 // ID is Peer Ids, so that orphans can be identified by which peer first re-payed them.
@@ -248,7 +248,7 @@ func (tp *TxPool) Count() int {
 /**
 // LastUpdated returns the last time a transaction was added to or
 	// removed from the source pool.
- */
+*/
 func (tp *TxPool) LastUpdated() time.Time {
 	return time.Unix(tp.lastUpdated, 0)
 }
@@ -256,7 +256,7 @@ func (tp *TxPool) LastUpdated() time.Time {
 /**
 // HaveTransaction returns whether or not the passed transaction hash
 	// exists in the source pool.
- */
+*/
 func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
 	// Protect concurrent access.
 	tp.mtx.RLock()
@@ -268,7 +268,7 @@ func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
 
 /**
 CheckTransactionFee - check fee of tx
- */
+*/
 func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error) {
 	// Coinbase transactions have no inputs.
 	if blockchain.IsCoinBaseTx(tx) {

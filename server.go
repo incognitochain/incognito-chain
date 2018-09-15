@@ -3,14 +3,19 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/cash-prototype/cashec"
 	"log"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/cashec"
+
 	"crypto/tls"
+	"os"
+	"path/filepath"
+	"strconv"
+
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/addrmanager"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
@@ -24,12 +29,9 @@ import (
 	"github.com/ninjadotorg/cash-prototype/netsync"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/rpcserver"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"github.com/ninjadotorg/cash-prototype/wire"
-	"os"
-	"path/filepath"
-	"strconv"
-	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 const (
@@ -117,7 +119,7 @@ func (self Server) setupRPCListeners() ([]net.Listener, error) {
 	return listeners, nil
 }
 
-func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams *blockchain.Params, interrupt <-chan struct{}) (error) {
+func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams *blockchain.Params, interrupt <-chan struct{}) error {
 
 	// Init data for Server
 	self.chainParams = chainParams
@@ -612,7 +614,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 
 /**
 OnVerAck is invoked when a peer receives a version acknowlege message
- */
+*/
 func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
 	log.Printf("Receive verack message")
@@ -703,7 +705,7 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 
 /**
 PushBlockMessageWithPeerId broadcast block to specific connected peer
- */
+*/
 //func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block, validatorAddress string) error {
 //	Logger.log.Info("PushBlockMessageWithValidatorAddress", block, validatorAddress)
 //	var dc chan<- struct{}
@@ -734,7 +736,7 @@ PushBlockMessageWithPeerId broadcast block to specific connected peer
 
 /**
 PushMessageToAll broadcast msg
- */
+*/
 func (self Server) PushMessageToAll(msg wire.Message) error {
 	var dc chan<- struct{}
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
@@ -745,7 +747,7 @@ func (self Server) PushMessageToAll(msg wire.Message) error {
 
 /**
 PushMessageToPeer push msg to peer
- */
+*/
 func (self Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 	var dc chan<- struct{}
 	for _, listener := range self.ConnManager.Config.ListenerPeers {
@@ -777,15 +779,19 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 
 /**
 UpdateChain - Update chain with received block
- */
+*/
 func (self *Server) UpdateChain(block *blockchain.Block) {
 	// save block
 	self.BlockChain.StoreBlock(block)
 
+	// Update commitments merkle tree
+	tree := self.BlockChain.BestState.CmTree
+	blockchain.UpdateMerkleTreeForBlock(tree, block)
+
 	// save best state
 	newBestState := &blockchain.BestState{}
 	numTxns := uint64(len(block.Transactions))
-	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0))
+	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0), tree)
 	self.BlockChain.BestState = newBestState
 	self.BlockChain.StoreBestState()
 
