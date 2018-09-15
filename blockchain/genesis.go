@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/hex"
+	"fmt"
 	"time"
 
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -228,6 +229,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(
 	}
 
 	genesisBlock.Header.MerkleRootCommitments = self.calcCommitmentMerkleRoot(tx)
+	fmt.Printf("Anchor: %x\n", genesisBlock.Header.MerkleRootCommitments[:])
 
 	genesisBlock.Transactions = append(genesisBlock.Transactions, tx)
 	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)

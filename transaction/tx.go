@@ -112,7 +112,7 @@ func CreateTx(
 
 	// Create Proof for the joinsplit op
 	var inputsToBuildWitness []*client.JSInput
-	inputs := make([]*client.JSInput, 2)
+	inputs := []*client.JSInput{new(client.JSInput), new(client.JSInput)}
 	inputs[0].InputNote = inputNotes[0]
 	inputs[0].Key = senderKey
 	inputsToBuildWitness = append(inputsToBuildWitness, inputs[0])
@@ -131,15 +131,16 @@ func CreateTx(
 
 	// Check if input note's cm is in commitments list
 	for _, input := range inputsToBuildWitness {
-		cm := client.GetCommitment(input.InputNote)
+		input.InputNote.Cm = client.GetCommitment(input.InputNote)
+
 		found := false
 		for _, c := range commitments {
-			if bytes.Equal(c, cm) {
+			if bytes.Equal(c, input.InputNote.Cm) {
 				found = true
 			}
 		}
 		if found == false {
-			return nil, fmt.Errorf("Commitment of input note %x isn't in commitments list", cm)
+			return nil, fmt.Errorf("Commitment of input note %x isn't in commitments list", input.InputNote.Cm)
 		}
 	}
 
@@ -156,7 +157,7 @@ func CreateTx(
 	outNote := &client.Note{Value: value, Apk: receiverAddr.Apk}
 	changeNote := &client.Note{Value: sumInputValue - value, Apk: senderFullKey.PublicKey.Apk}
 
-	outputs := make([]*client.JSOutput, 2)
+	outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
 	outputs[0].EncKey = receiverAddr.Pkenc
 	outputs[0].OutputNote = outNote
 	outputs[1].EncKey = senderFullKey.PublicKey.Pkenc
@@ -354,6 +355,8 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("seed and phi after Prove: %x %x\n", *seed, *phi)
 
 	var ephemeralPrivKey *client.EphemeralPrivKey
 	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, *seed, sigPubKey, ephemeralPrivKey)

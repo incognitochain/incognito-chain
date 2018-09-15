@@ -11,13 +11,13 @@ type KeySet struct {
 	ReadonlyKey client.ViewingKey
 }
 
-
-
 /**
 GenerateKey - generate key set from seed byte[]
- */
-func (self *KeySet) GenerateKey(seed []byte) (*KeySet) {
-	copy(self.PrivateKey[:], common.HashB(seed))
+*/
+func (self *KeySet) GenerateKey(seed []byte) *KeySet {
+	hash := common.HashB(seed)
+	hash[len(hash)-1] &= 0x0F // Private key only has 252 bits
+	copy(self.PrivateKey[:], hash)
 	self.PublicKey = client.GenPaymentAddress(self.PrivateKey)
 	self.ReadonlyKey = client.GenViewingKey(self.PrivateKey)
 	return self
@@ -25,7 +25,7 @@ func (self *KeySet) GenerateKey(seed []byte) (*KeySet) {
 
 /**
 ImportFromPrivateKeyByte - from private-key byte[], regenerate pub-key and readonly-key
- */
+*/
 func (self *KeySet) ImportFromPrivateKeyByte(privateKey []byte) {
 	copy(self.PrivateKey[:], privateKey)
 	self.PublicKey = client.GenPaymentAddress(self.PrivateKey)
@@ -34,7 +34,7 @@ func (self *KeySet) ImportFromPrivateKeyByte(privateKey []byte) {
 
 /**
 ImportFromPrivateKeyByte - from private-key data, regenerate pub-key and readonly-key
- */
+*/
 func (self *KeySet) ImportFromPrivateKey(privateKey *client.SpendingKey) {
 	self.PrivateKey = *privateKey
 	self.PublicKey = client.GenPaymentAddress(self.PrivateKey)

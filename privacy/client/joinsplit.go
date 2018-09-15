@@ -76,7 +76,8 @@ func Prove(inputs []*JSInput,
 	}
 
 	if seed == nil { // seed != nil only for the transaction in genesis block
-		*seed = RandBits(256)
+		s := RandBits(256)
+		seed = &s
 	}
 	hSig = HSigCRH(*seed, inputs[0].InputNote.Nf, inputs[1].InputNote.Nf, pubKey)
 	// hSig := []byte{155, 31, 215, 9, 16, 242, 239, 233, 201, 109, 141, 58, 24, 239, 210, 117, 155, 17, 23, 188, 70, 125, 245, 85, 154, 42, 212, 0, 164, 221, 80, 94}
@@ -84,7 +85,8 @@ func Prove(inputs []*JSInput,
 	// Generate rho and r for new notes
 	const phiLen = 252
 	if phi == nil { // phi != nil only for the transaction in genesis block
-		*phi = RandBits(phiLen)
+		p := RandBits(phiLen)
+		phi = &p
 	}
 	// phi = []byte{80, 163, 129, 14, 224, 14, 22, 199, 9, 222, 152, 68, 97, 249, 132, 138, 69, 64, 195, 13, 46, 200, 79, 248, 16, 161, 73, 187, 200, 122, 235, 6}
 

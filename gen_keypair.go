@@ -24,16 +24,23 @@ func main5() {
 
 	pubAddr := key.Base58CheckSerialize(wallet.PubKeyType)
 	privAddr := key.Base58CheckSerialize(wallet.PriKeyType)
+	readAddr := key.Base58CheckSerialize(wallet.ReadonlyKeyType)
 	fmt.Printf("pubAddr: %v\n", pubAddr)
 	fmt.Printf("pubAddr: %x\n\n", pubAddr)
 	fmt.Printf("privAddr: %v\n", privAddr)
 	fmt.Printf("privAddr: %x\n\n", privAddr)
+	fmt.Printf("readAddr: %v\n", readAddr)
+	fmt.Printf("readAddr: %x\n\n", readAddr)
 
 	newKey, _ := wallet.Base58CheckDeserialize(pubAddr)
-	fmt.Printf("NewKey: %v\n", *newKey)
-	fmt.Printf("NewKey: %x\n\n", *newKey)
+	fmt.Printf("NewKey: %+v\n", *newKey)
+	fmt.Printf("NewKey: %+x\n\n", *newKey)
 
 	newKeyPriv, _ := wallet.Base58CheckDeserialize(privAddr)
-	fmt.Printf("NewKeyPriv: %v\n", *newKeyPriv)
-	fmt.Printf("NewKeyPriv: %x\n", *newKeyPriv)
+	fmt.Printf("NewKeyPriv: %+v\n", *newKeyPriv)
+	fmt.Printf("NewKeyPriv: %+x\n\n", *newKeyPriv)
+
+	newKeyReadonly, _ := wallet.Base58CheckDeserialize(readAddr)
+	fmt.Printf("NewKeyReadonly: %+v\n", *newKeyReadonly)
+	fmt.Printf("NewKeyReadonly: %+x\n", *newKeyReadonly)
 }

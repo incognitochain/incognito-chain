@@ -66,10 +66,20 @@ bool convert_input_note(const zksnark::Note &zk_note, libzcash::SproutNote &note
     note.value_ = zk_note.value();
     bool success = true;
     success &= string_to_uint256(zk_note.cm(), note.cm);
+    if (!success)
+        cout << "convert_input_note: fail to convert cm\n";
     success &= string_to_uint256(zk_note.r(), note.r);
+    if (!success)
+        cout << "convert_input_note: fail to convert r\n";
     success &= string_to_uint256(zk_note.rho(), note.rho);
+    if (!success)
+        cout << "convert_input_note: fail to convert rho\n";
     success &= string_to_uint256(zk_note.apk(), note.a_pk);
+    if (!success)
+        cout << "convert_input_note: fail to convert apk\n";
     success &= string_to_uint256(zk_note.nf(), note.nf);
+    if (!success)
+        cout << "convert_input_note: fail to convert nf\n";
     return success;
 }
 
