@@ -204,6 +204,7 @@ func SignTx(tx *Tx, privKey *client.PrivateKey) (*Tx, error) {
 	}
 
 	// Hash transaction
+	tx.SetTxId(tx.Hash())
 	hash := tx.GetTxId()
 	data := make([]byte, common.HashSize)
 	copy(data, hash[:])
@@ -264,7 +265,7 @@ func generateTx(
 	proof *zksnark.PHGRProof,
 	rt []byte,
 	reward uint64,
-	hSig, seed, jsPubKey []byte,
+	hSig, seed []byte,
 	ephemeralPrivKey *client.EphemeralPrivKey,
 ) (*Tx, error) {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
@@ -281,7 +282,6 @@ func generateTx(
 		*ephemeralPubKey = ephemeralPrivKey.GenPubKey()
 	}
 	fmt.Printf("hSig: %x\n", hSig)
-	fmt.Printf("jsPubKey: %x\n", jsPubKey)
 	fmt.Printf("ephemeralPrivKey: %x\n", *ephemeralPrivKey)
 	fmt.Printf("ephemeralPubKey: %x\n", *ephemeralPubKey)
 	fmt.Printf("tranmissionKey[0]: %x\n", keys[0])
@@ -333,7 +333,7 @@ func generateTx(
 		Version:  TxVersion,
 		Type:     common.TxNormalType,
 		Descs:    desc,
-		JSPubKey: jsPubKey,
+		JSPubKey: nil,
 		JSSig:    nil,
 	}
 	return tx, nil
@@ -352,9 +352,9 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 		return nil, err
 	}
 
-	var seed, phi *[]byte
+	var seed, phi []byte
 	var outputR [][]byte
-	proof, hSig, err := client.Prove(inputs, outputs, sigPubKey, rt, reward, seed, phi, outputR)
+	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, sigPubKey, rt, reward, seed, phi, outputR)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +362,7 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 	fmt.Printf("seed and phi after Prove: %x %x\n", seed, phi)
 
 	var ephemeralPrivKey *client.EphemeralPrivKey
-	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, *seed, sigPubKey, ephemeralPrivKey)
+	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, seed, ephemeralPrivKey)
 	if err != nil {
 		return nil, err
 	}
@@ -387,11 +387,16 @@ func GenerateProofForGenesisTx(
 	privateSignKey := [32]byte{1}
 	keyPair := &cashec.KeySet{}
 	keyPair.ImportFromPrivateKeyByte(privateSignKey[:])
+	jsPubKey := keyPair.PublicKey.Apk[:]
 
-	proof, hSig, err := client.Prove(inputs, outputs, keyPair.PublicKey.Apk[:], rt, reward, &seed, &phi, outputR)
+	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, jsPubKey, rt, reward, seed, phi, outputR)
 	if err != nil {
 		return nil, err
 	}
 
-	return generateTx(inputs, outputs, proof, rt, reward, hSig, seed, keyPair.PublicKey.Apk[:], &ephemeralPrivKey)
+	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, seed, &ephemeralPrivKey)
+	if err == nil {
+		tx.JSPubKey = jsPubKey // Save jsPubKey but don't sign tx for genesis transaction
+	}
+	return tx, err
 }

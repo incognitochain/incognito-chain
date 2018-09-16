@@ -66,7 +66,7 @@ func runProve() (*ProveResult, error) {
 	pubKey := [32]byte{9}
 	rt := [32]byte{10}
 	var reward uint64 = 1
-	proof, _, err := client.Prove(inputs, outputs, pubKey[:], rt[:], reward, nil, nil, nil)
+	proof, _, _, _, err := client.Prove(inputs, outputs, pubKey[:], rt[:], reward, nil, nil, nil)
 	// var proof *zksnark.PHGRProof
 	// var err error
 	// fmt.Println(pubKey, rt)
@@ -170,8 +170,6 @@ func main() {
 
 	// fmt.Printf("Hash tx: %s\n", signed_tx.GetTxId())
 	// res, _ := transaction.VerifySign(signed_tx)
-
-
 
 	// fmt.Println(res)
 

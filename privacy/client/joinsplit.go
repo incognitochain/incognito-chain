@@ -42,9 +42,9 @@ func Prove(inputs []*JSInput,
 	pubKey []byte,
 	rt []byte,
 	reward uint64,
-	seed, phi *[]byte,
+	seed, phi []byte,
 	outputR [][]byte,
-) (proof *zksnark.PHGRProof, hSig []byte, err error) {
+) (proof *zksnark.PHGRProof, hSig, newSeed, newPhi []byte, err error) {
 	// TODO: check for inputs (witness root & cm)
 
 	if len(inputs) != 2 || len(outputs) != 2 {
@@ -75,23 +75,23 @@ func Prove(inputs []*JSInput,
 		input.InputNote.Cm = GetCommitment(input.InputNote)
 	}
 
-	if seed == nil { // seed != nil only for the transaction in genesis block
-		s := RandBits(256)
-		seed = &s
+	newSeed = seed
+	if seed == nil { // Only for the transaction in genesis block
+		newSeed = RandBits(256)
 	}
-	hSig = HSigCRH(*seed, inputs[0].InputNote.Nf, inputs[1].InputNote.Nf, pubKey)
+	hSig = HSigCRH(newSeed, inputs[0].InputNote.Nf, inputs[1].InputNote.Nf, pubKey)
 	// hSig := []byte{155, 31, 215, 9, 16, 242, 239, 233, 201, 109, 141, 58, 24, 239, 210, 117, 155, 17, 23, 188, 70, 125, 245, 85, 154, 42, 212, 0, 164, 221, 80, 94}
 
 	// Generate rho and r for new notes
 	const phiLen = 252
-	if phi == nil { // phi != nil only for the transaction in genesis block
-		p := RandBits(phiLen)
-		phi = &p
+	newPhi = phi
+	if phi == nil { // Only for the transaction in genesis block
+		newPhi = RandBits(phiLen)
 	}
 	// phi = []byte{80, 163, 129, 14, 224, 14, 22, 199, 9, 222, 152, 68, 97, 249, 132, 138, 69, 64, 195, 13, 46, 200, 79, 248, 16, 161, 73, 187, 200, 122, 235, 6}
 
 	for i, output := range outputs {
-		rho := PRF_rho(uint64(i), *phi, hSig)
+		rho := PRF_rho(uint64(i), newPhi, hSig)
 		output.OutputNote.Rho = make([]byte, len(rho))
 		output.OutputNote.R = make([]byte, 32)
 		copy(output.OutputNote.Rho, rho)
@@ -137,7 +137,7 @@ func Prove(inputs []*JSInput,
 	// fmt.Printf("zkInputs[1].WitnessPath.Index: %v\n", zkInputs[1].WitnessPath.Index)
 	var proveRequest = &zksnark.ProveRequest{
 		Hsig:     hSig,
-		Phi:      *phi,
+		Phi:      newPhi,
 		Rt:       rt,
 		OutNotes: zkNotes,
 		Inputs:   zkInputs,
@@ -168,11 +168,11 @@ func Prove(inputs []*JSInput,
 	r, err := c.Prove(ctx, proveRequest)
 	if err != nil || r == nil || r.Proof == nil {
 		log.Fatalf("fail to prove: %v", err)
-		return nil, nil, errors.New("Fail to prove JoinSplit")
+		return nil, nil, nil, nil, errors.New("Fail to prove JoinSplit")
 	}
 	log.Printf("Prove response:\n")
 	printProof(r.Proof)
-	return r.Proof, hSig, nil
+	return r.Proof, hSig, newSeed, newPhi, nil
 }
 
 // Verify checks if a zk-proof of a JSDesc is valid or not
