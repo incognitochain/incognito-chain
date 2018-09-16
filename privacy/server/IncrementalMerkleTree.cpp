@@ -9,24 +9,6 @@
 
 namespace libzcash {
 
-// PedersenHash PedersenHash::combine(
-//     const PedersenHash& a,
-//     const PedersenHash& b,
-//     size_t depth
-// )
-// {
-//     PedersenHash res = PedersenHash();
-
-//     librustzcash_merkle_hash(
-//         depth,
-//         a.begin(),
-//         b.begin(),
-//         res.begin()
-//     );
-
-//     return res;
-// }
-
 // PedersenHash PedersenHash::uncommitted() {
 //     PedersenHash res = PedersenHash();
 

@@ -173,12 +173,15 @@ func CreateTx(
 
 func createDummyNote(randomKey *client.SpendingKey) *client.Note {
 	addr := client.GenSpendingAddress(*randomKey)
-	var rho [32]byte
+	var rho, r [32]byte
 	copy(rho[:], client.RandBits(32*8))
+	copy(r[:], client.RandBits(32*8))
+
 	note := &client.Note{
 		Value: 0,
 		Apk:   addr,
 		Rho:   rho[:],
+		R:     r[:],
 		Nf:    client.GetNullifier(*randomKey, rho),
 	}
 	return note
@@ -356,7 +359,7 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 		return nil, err
 	}
 
-	fmt.Printf("seed and phi after Prove: %x %x\n", *seed, *phi)
+	fmt.Printf("seed and phi after Prove: %x %x\n", seed, phi)
 
 	var ephemeralPrivKey *client.EphemeralPrivKey
 	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, *seed, sigPubKey, ephemeralPrivKey)

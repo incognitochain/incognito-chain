@@ -7,6 +7,8 @@
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
 
+#include "IncrementalMerkleTree.hpp"
+
 #include "JoinSplit.hpp"
 #include "Address.hpp"
 #include "../proto/zksnark.grpc.pb.h"
@@ -51,13 +53,13 @@ bool string_to_uint252(const string &data, uint252 &result)
     return true;
 }
 
-bool string_to_bools(const string &data, vector<bool> &result)
+bool path_string_to_bools(const string &data, vector<bool> &result)
 {
     const unsigned char *data_mem = (const unsigned char *)data.c_str();
     result.resize(data.size() * 8);
     for (int i = 0; i < data.size(); ++i)
         for (int j = 0; j < 8; ++j)
-            result[i * 8 + j] = bool((data_mem[i] >> j) & 1);
+            result[i * 8 + j] = bool((data_mem[i] >> (7-j)) & 1); // 7-j since each byte must be convert to MSB
     return true;
 }
 
@@ -94,6 +96,33 @@ bool convert_output_note(const zksnark::Note &zk_note, libzcash::SproutNote &not
     return success;
 }
 
+bool convert_witness(const zksnark::MerklePath &paths, ZCIncrementalWitness &witness)
+{
+    vector<vector<bool>> auth_path;
+    for (auto &path_hash : paths.authpath())
+    {
+        vector<bool> path;
+        bool s = path_string_to_bools(path_hash.hash(), path);
+        if (!s)
+            return false;
+        auth_path.push_back(path);
+    }
+
+    // Witness' index
+    vector<bool> index;
+    for (auto &idx : paths.index())
+        index.push_back(idx);
+
+    // The length of the witness and merkle tree's depth must match
+    if (auth_path.size() != index.size() || index.size() != INCREMENTAL_MERKLE_TREE_DEPTH)
+        return false;
+
+    reverse(auth_path.begin(), auth_path.end()); // Reverse path for libsnark
+    reverse(index.begin(), index.end());
+    witness = ZCIncrementalWitness(auth_path, index);
+    return true;
+}
+
 bool transform_prove_request(const ProveRequest *request,
                              ProveInputs &inputs,
                              ProveOutnotes &out_notes,
@@ -119,31 +148,12 @@ bool transform_prove_request(const ProveRequest *request,
 
         // Convert witness
         // Witness' authentication path
-        vector<vector<bool>> auth_path;
-        auto auth_path_strs = input.witnesspath().authpath();
-        cout << "input.witnesspath().authpath().size():" << input.witnesspath().authpath().size() << '\n';
-        for (auto &path_str : auth_path_strs)
-        {
-            vector<bool> path;
-            s &= string_to_bools(path_str.hash(), path);
-            if (!s)
-                return false;
-            auth_path.push_back(path);
-        }
-
-        // Witness' index
-        vector<bool> index;
-        for (auto &idx : input.witnesspath().index())
-        {
-            index.push_back(idx);
-        }
-        cout << "input.witnesspath().index().size():" << input.witnesspath().index().size() << '\n';
-
-        // The length of the witness and merkle tree's depth must match
-        if (auth_path.size() != index.size() || index.size() != INCREMENTAL_MERKLE_TREE_DEPTH)
+        ZCIncrementalWitness witness;
+        s = convert_witness(input.witnesspath(), witness);
+        if (!s)
             return false;
 
-        inputs[i].witness = ZCIncrementalWitness(auth_path, index);
+        inputs[i].witness = witness;
 
         // Convert note
         success &= convert_input_note(input.note(), inputs[i].note);
@@ -402,34 +412,28 @@ void RunServer()
     server->Wait();
 }
 
-class A {
-    public:
-        A() {v.push_back(1);}
-        int length() { return v.size(); }
-        int add(int x) { v.push_back(x); }
+int test_merkle_tree() {
+    uint256 x, y;
+    bool ok = string_to_uint256("d26356e6f726dfb4c0a395f3af134851139ce1c64cfed3becc3530c8c8ad5660", x);
+    ok &= string_to_uint256("5aaf71f995db014006d630dedf7ffcbfa8854055e6a8cc9ef153629e3045b7e1", y);
+    if (!ok) {
+        cout << "Fail to parse hash\n";
+        return 0;
+    }
+    libzcash::SHA256Compress h1(x), h2(y);
 
-    private:
-        vector<int> v;
-};
-
-class B {
-    public:
-        B(A a_): a(a_) {}
-        int length() {return a.length();}
-
-    private:
-        A a;
-};
+    ZCIncrementalMerkleTree tree;
+    // tree.append(h1);
+    // tree.append(h2);
+    std::deque<libzcash::SHA256Compress> filler_hash;
+    auto rt = tree.root();
+    cout << rt.GetHex() << '\n';
+    return 0;
+}
 
 int main(int argc, char const *argv[])
 {
-    // A a;
-    // B b(a);
-    // cout << b.length() << '\n';
-    // a.add(2);
-    // cout << a.length() << " " << b.length() << '\n';
-    // return 0;
-
+    // test_merkle_tree();
     RunServer();
     return 0;
 }

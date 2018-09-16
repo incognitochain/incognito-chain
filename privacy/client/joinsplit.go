@@ -108,8 +108,6 @@ func Prove(inputs []*JSInput,
 	fmt.Printf("hsig: %x\n", hSig)
 	fmt.Printf("phi: %x\n", phi)
 	fmt.Printf("rt: %x\n", rt)
-	fmt.Printf("output rho0: %x\n", outputs[0].OutputNote.Rho)
-	fmt.Printf("output rho1: %x\n", outputs[1].OutputNote.Rho)
 
 	// TODO: encrypt note's data
 	// TODO: malleability
@@ -133,9 +131,6 @@ func Prove(inputs []*JSInput,
 
 	zkNotes := Notes2ZksnarkNotes(outNotes)
 	zkInputs := JSInputs2ZkInputs(inputs)
-	fmt.Printf("outNotes[1]: %v\n", *outNotes[1])
-	fmt.Printf("zkInputs[1].Note.R: %x\n", zkInputs[1].Note.R)
-	fmt.Printf("zkInputs[1].Note.Rho: %x\n", zkInputs[1].Note.Rho)
 	// fmt.Printf("zkInputs[0].WitnessPath.AuthPath[0]: %x\n", zkInputs[0].WitnessPath.AuthPath[0].Hash)
 	// fmt.Printf("zkInputs[0].WitnessPath.Index: %v\n", zkInputs[0].WitnessPath.Index)
 	// fmt.Printf("zkInputs[1].WitnessPath.AuthPath[0]: %x\n", zkInputs[1].WitnessPath.AuthPath[0].Hash)
@@ -151,10 +146,24 @@ func Prove(inputs []*JSInput,
 	// fmt.Printf("proveRequest: %v\n", proveRequest)
 	fmt.Printf("key: %x\n", proveRequest.Inputs[0].SpendingKey)
 	fmt.Printf("Anchor: %x\n", rt)
-	fmt.Printf("Input[0] nullifiers: %x\n", inputs[0].InputNote.Nf)
-	fmt.Printf("Input[1] nullifiers: %x\n", inputs[1].InputNote.Nf)
-	fmt.Printf("Output[0] commitments: %x\n", outputs[0].OutputNote.Cm)
-	fmt.Printf("Output[1] commitments: %x\n", outputs[1].OutputNote.Cm)
+	for i, zkinput := range zkInputs {
+		fmt.Printf("zkInputs[%d].SpendingKey: %x\n", i, zkinput.SpendingKey)
+		fmt.Printf("zkInputs[%d].Note.Value: %v\n", i, zkinput.Note.Value)
+		fmt.Printf("zkInputs[%d].Note.Cm: %x\n", i, zkinput.Note.Cm)
+		fmt.Printf("zkInputs[%d].Note.R: %x\n", i, zkinput.Note.R)
+		fmt.Printf("zkInputs[%d].Note.Nf: %x\n", i, zkinput.Note.Nf)
+		fmt.Printf("zkInputs[%d].Note.Rho: %x\n", i, zkinput.Note.Rho)
+		fmt.Printf("zkInputs[%d].Note.Apk: %x\n", i, zkinput.Note.Apk)
+	}
+
+	for i, zkout := range zkNotes {
+		fmt.Printf("zkNotes[%d].Note.Value: %v\n", i, zkout.Value)
+		fmt.Printf("zkNotes[%d].Note.Cm: %x\n", i, zkout.Cm)
+		fmt.Printf("zkNotes[%d].Note.R: %x\n", i, zkout.R)
+		fmt.Printf("zkNotes[%d].Note.Nf: %x\n", i, zkout.Nf)
+		fmt.Printf("zkNotes[%d].Note.Rho: %x\n", i, zkout.Rho)
+		fmt.Printf("zkNotes[%d].Note.Apk: %x\n", i, zkout.Apk)
+	}
 
 	r, err := c.Prove(ctx, proveRequest)
 	if err != nil || r == nil || r.Proof == nil {

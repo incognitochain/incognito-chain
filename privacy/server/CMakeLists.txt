@@ -30,7 +30,23 @@ add_definitions(-DDEBUG)
 set(LS_PATH "./libsnark")
 set(CURVE_PATH "${LS_PATH}/algebra/curves/alt_bn128/")
 
-add_executable(main main.cpp JoinSplit.cpp Proof.cpp IncrementalMerkleTree.cpp Note.cpp NoteEncryption.cpp uint256.cpp util.cpp
-               ${CURVE_PATH}/alt_bn128_init.cpp ${CURVE_PATH}/alt_bn128_pp.cpp ${CURVE_PATH}/alt_bn128_g1.cpp  ${CURVE_PATH}/alt_bn128_g2.cpp ${CURVE_PATH}/alt_bn128_pairing.cpp
-               ${LS_PATH}/common/profiling.cpp ${LS_PATH}/common/utils.cpp ../proto/zksnark.grpc.pb.cc ../proto/zksnark.pb.cc)
+add_executable(main
+               main.cpp
+               JoinSplit.cpp
+               Proof.cpp
+               IncrementalMerkleTree.cpp
+               Note.cpp
+               NoteEncryption.cpp
+               uint256.cpp
+               util.cpp
+               Address.cpp
+               ${CURVE_PATH}/alt_bn128_init.cpp
+               ${CURVE_PATH}/alt_bn128_pp.cpp
+               ${CURVE_PATH}/alt_bn128_g1.cpp
+               ${CURVE_PATH}/alt_bn128_g2.cpp
+               ${CURVE_PATH}/alt_bn128_pairing.cpp
+               ${LS_PATH}/common/profiling.cpp
+               ${LS_PATH}/common/utils.cpp
+               ../proto/zksnark.grpc.pb.cc
+               ../proto/zksnark.pb.cc)
 target_link_libraries(main ${EXTRA_LIBS})

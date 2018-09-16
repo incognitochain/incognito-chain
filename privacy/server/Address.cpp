@@ -95,3 +95,4 @@ uint256 ReceivingKey::pk_enc() const {
 // bool IsValidSpendingKey(const libzcash::SproutSpendingKey& zkey) {
 //     return zkey.which() != 0;
 // }
+}
