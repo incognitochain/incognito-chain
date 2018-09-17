@@ -51,6 +51,8 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(blockTxns)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 
+	var txsToAdd []transaction.Transaction
+
 	var txToRemove []*transaction.Tx
 mempoolLoop:
 	for _, txDesc := range sourceTxns {
@@ -108,6 +110,7 @@ mempoolLoop:
 			txToRemove = append(txToRemove, tx.(*transaction.Tx))
 			continue mempoolLoop
 		}
+		txsToAdd = append(txsToAdd, tx)
 		// g.txSource.Clear()
 	}
 
@@ -116,7 +119,7 @@ mempoolLoop:
 	}
 	// TODO PoW
 	//time.Sleep(time.Second * 15)
-	if len(blockTxns) == 0 {
+	if len(txsToAdd) == 0 {
 		return nil, errors.New("no transaction available for this chain")
 	}
 	block := blockchain.Block{}
@@ -128,7 +131,7 @@ mempoolLoop:
 		Difficulty:    0, //@todo should be create Difficulty logic
 		Nonce:         0, //@todo should be create Nonce logic
 	}
-	for _, tx := range blockTxns {
+	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
 		}

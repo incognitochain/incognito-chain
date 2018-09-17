@@ -29,8 +29,8 @@ import (
 const (
 	// defaultTargetOutbound is the default number of outbound connections to
 	// maintain.
-	defaultTargetOutbound = uint32(8)
-	defaultTargetInbound  = uint32(8)
+	defaultTargetOutbound = uint32(20)
+	defaultTargetInbound  = uint32(20)
 )
 
 // ConnState represents the state of the requested connection.

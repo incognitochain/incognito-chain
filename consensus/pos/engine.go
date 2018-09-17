@@ -218,6 +218,18 @@ func (self *Engine) StartSealer(sealerPrvKey string) {
 	}()
 }
 
+func (self *Engine) createBlock() (*blockchain.Block, error) {
+	myChainID, _ := self.getMyChain()
+	newblock, err := self.config.blockGen.NewBlockTemplate(string(self.config.ValidatorKeyPair.PublicKey), self.config.BlockChain, myChainID)
+	if err != nil {
+		return &blockchain.Block{}, err
+	}
+	newblock.Block.Header.ChainsHeight = self.validatedChainsHeight.Heights
+	newblock.Block.Header.ChainID = myChainID
+	newblock.Block.ChainLeader = base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey)
+	return newblock.Block, nil
+}
+
 func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) error {
 	finalBlock := block
 	validateSigList := make(chan []string)
@@ -290,19 +302,7 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 	}
 	blockMsg.(*wire.MessageBlock).Block = *finalBlock
 	self.config.Server.PushMessageToAll(blockMsg)
-	self.UpdateChain(finalBlock)
 	return nil
-}
-
-func (self *Engine) createBlock() (*blockchain.Block, error) {
-	myChainID, _ := self.getMyChain()
-	newblock, err := self.config.blockGen.NewBlockTemplate(string(self.config.ValidatorKeyPair.PublicKey), self.config.BlockChain, myChainID)
-	if err != nil {
-		return &blockchain.Block{}, err
-	}
-	newblock.Block.Header.ChainID = myChainID
-	newblock.Block.ChainLeader = string(self.config.ValidatorKeyPair.PublicKey)
-	return newblock.Block, nil
 }
 
 func (self *Engine) signData(data []byte) (string, error) {
@@ -466,6 +466,8 @@ func (self *Engine) GetTxSenderChain(senderLastByte byte) (byte, error) {
 	for index := byte(0); index < 5; index++ {
 		if (modResult-index)%5 == 0 {
 			// result := byte((modResult - index) / 5)
+			fmt.Println("TxSender Chain\n", byte((modResult-index)/5))
+			fmt.Println()
 			return byte((modResult - index) / 5), nil
 		}
 	}
@@ -480,7 +482,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 			Reason:    err.Error(),
 			BlockHash: block.Hash().String(),
 			ChainID:   block.Header.ChainID,
-			Validator: string(self.config.ValidatorKeyPair.PublicKey),
+			Validator: base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey),
 		}
 		dataByte, _ := invalidBlockMsg.JsonSerialize()
 		invalidBlockMsg.ValidatorSig, err = self.signData(dataByte)
@@ -504,7 +506,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 	}
 	blockSigMsg := &wire.MessageBlockSig{
 		BlockHash:    block.Hash().String(),
-		Validator:    string(self.config.ValidatorKeyPair.PublicKey),
+		Validator:    base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey),
 		ValidatorSig: string(sig),
 	}
 	peerID, _ := peer2.IDFromString(msgBlock.SenderID)
