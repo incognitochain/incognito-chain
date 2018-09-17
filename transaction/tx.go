@@ -336,13 +336,7 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 		return nil, err
 	}
 	// Verification key 64 bytes
-	
-	sigPubKey, err := json.Marshal(sigPrivKey.PublicKey)
-
-	
-	if err != nil {
-		return nil, err
-	}
+	sigPubKey := PubKeyToByteArray(&sigPrivKey.PublicKey)
 
 	var seed, phi []byte
 	var outputR [][]byte
