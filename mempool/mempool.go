@@ -308,6 +308,10 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) bool {
 		if int64(txN.LockTime) > time.Now().Unix() {
 			return false
 		}
+		// check Type equal "n"
+		if txN.Type != common.TxNormalType {
+			return false
+		}
 		// check length of JSPubKey
 		if len(txN.JSPubKey) != 32 {
 			return false
