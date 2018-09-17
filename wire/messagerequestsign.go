@@ -9,28 +9,28 @@ import (
 
 type MessageRequestSign struct {
 	Block    blockchain.Block
-	SenderID peer.ID
+	SenderID string
 }
 
-func (self MessageRequestSign) MessageType() string {
+func (self *MessageRequestSign) MessageType() string {
 	return CmdRequestSign
 }
 
-func (self MessageRequestSign) MaxPayloadLength(pver int) int {
+func (self *MessageRequestSign) MaxPayloadLength(pver int) int {
 	return MaxHeaderPayload
 }
 
-func (self MessageRequestSign) JsonSerialize() ([]byte, error) {
+func (self *MessageRequestSign) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessageRequestSign) JsonDeserialize(jsonStr string) error {
+func (self *MessageRequestSign) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }
 
-func (self MessageRequestSign) SetSenderID(senderID peer.ID) error {
-	self.SenderID = senderID
+func (self *MessageRequestSign) SetSenderID(senderID peer.ID) error {
+	self.SenderID = senderID.Pretty()
 	return nil
 }

@@ -224,6 +224,7 @@ func (self *Peer) ConnCanceled(peer *Peer) {
 	if ok {
 		delete(self.PeerConns, peer.PeerId)
 	}
+	Logger.log.Info("sdgdfgdfgdfg", self.PendingPeers, peer)
 	self.PendingPeers[peer.PeerId] = peer
 }
 

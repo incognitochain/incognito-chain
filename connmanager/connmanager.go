@@ -452,6 +452,7 @@ listen:
 
 				for _, rawPeer := range response {
 					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerId.String()) {
+						Logger.log.Info("Peer - ", rawPeer.PublicKey)
 						_, exist := self.DiscoveredPeers[rawPeer.PublicKey]
 						//Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
 						if !exist {
@@ -476,7 +477,7 @@ listen:
 							}
 
 							self.DiscoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
-							Logger.log.Info("Start connect to peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
+							// Logger.log.Info("Start connect to peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
 							go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
 						}
 					}
