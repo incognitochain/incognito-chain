@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
@@ -307,7 +308,7 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 	if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
 		keyPair := &cashec.KeyPair{}
 		keyPair.Import(peerConn.ListenerPeer.Config.SealerPrvKey)
-		msg.(*wire.MessageVersion).PublicKey = string(keyPair.PublicKey)
+		msg.(*wire.MessageVersion).PublicKey = base64.StdEncoding.EncodeToString(keyPair.PublicKey)
 	}
 
 	if err != nil {
@@ -566,6 +567,10 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		PublicKey:        msg.PublicKey,
 	}
 
+	if msg.PublicKey != "" {
+		peerConn.Peer.PublicKey = msg.PublicKey
+	}
+
 	self.newPeers <- remotePeer
 	// TODO check version message
 	valid := false
@@ -614,7 +619,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
 			keyPair := &cashec.KeyPair{}
 			keyPair.Import(peerConn.ListenerPeer.Config.SealerPrvKey)
-			msg.(*wire.MessageVersion).PublicKey = string(keyPair.PublicKey)
+			msg.(*wire.MessageVersion).PublicKey = base64.StdEncoding.EncodeToString(keyPair.PublicKey)
 		}
 		if err != nil {
 			return

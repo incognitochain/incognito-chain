@@ -368,7 +368,9 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	peerConn := PeerConn{
 		IsOutbound:         false,
 		ListenerPeer:       self,
-		Peer:               self,
+		Peer:               &Peer{
+			PeerId: remotePeerId,
+		},
 		Config:             self.Config,
 		PeerId:             remotePeerId,
 		ReaderWriterStream: rw,

@@ -289,7 +289,7 @@ func (self *ConnManager) Connect(addr string, pubKey string) {
 		}
 
 		listen.Host.Peerstore().AddAddr(peer.PeerId, peer.TargetAddress, pstore.PermanentAddrTTL)
-		Logger.log.Info("DEBUG Connect to Peer")
+		Logger.log.Info("DEBUG Connect to Peer", peer.PublicKey)
 		Logger.log.Info(listen.Host.Peerstore().Addrs(peer.PeerId))
 		// make a new stream from host B to host A
 		// it should be handled on host A by the handler we set above because
@@ -401,7 +401,7 @@ func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)
 }
 
 func (self *ConnManager) DiscoverPeers() {
-	Logger.log.Infof("Start Discove Peers")
+	Logger.log.Infof("Start Discover Peers")
 	var client *rpc.Client
 	var err error
 
@@ -445,8 +445,13 @@ listen:
 
 				Logger.log.Info("Dump PeerConns", len(listener.PeerConns))
 				for pubK, info := range self.DiscoveredPeers {
-					_, exist := listener.PeerConns[info.PeerId]
-					Logger.log.Info("Public Key", pubK, info.PeerId.Pretty(), exist)
+					var result []string
+					for _, peerConn := range listener.PeerConns {
+						if peerConn.Peer.PublicKey == pubK {
+							result = append(result, peerConn.Peer.PeerId.Pretty())
+						}
+					}
+					Logger.log.Info("Public Key", pubK, info.PeerId.Pretty(), result)
 				}
 
 				err := client.Call("Handler.Ping", args, &response)
@@ -461,7 +466,7 @@ listen:
 				for _, rawPeer := range response {
 					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerId.String()) {
 						_, exist := self.DiscoveredPeers[rawPeer.PublicKey]
-						Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
+						//Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
 						if !exist {
 							// The following code extracts target's peer ID from the
 							// given multiaddress
