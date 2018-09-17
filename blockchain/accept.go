@@ -19,7 +19,7 @@ func (self *BlockChain) maybeAcceptBlock(block *Block) (bool, error) {
 	// The height of this block is one more than the referenced previous
 	// block.
 	prevHash := &block.Header.PrevBlockHash
-	prevNode := self.GetBlockByHash(*prevHash)
+	prevNode, err := self.GetBlockByBlockHash(prevHash)
 	if prevNode == nil {
 		str := fmt.Sprintf("previous block %s is unknown", prevHash)
 		return false, ruleError(ErrPreviousBlockUnknown, str)
@@ -37,7 +37,7 @@ func (self *BlockChain) maybeAcceptBlock(block *Block) (bool, error) {
 	// expensive connection logic.  It also has some other nice properties
 	// such as making blocks that never become part of the main chain or
 	// blocks that fail to connect available for further analysis.
-	err := self.StoreBlock(block)
+	err = self.StoreBlock(block)
 	if err != nil {
 		return false, err
 	}

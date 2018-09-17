@@ -35,7 +35,6 @@ type NetSyncConfig struct {
 	Server     interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, peer2.ID) error
-		UpdateChain(*blockchain.Block)
 	}
 	Consensus interface {
 		OnBlockReceived(*blockchain.Block)

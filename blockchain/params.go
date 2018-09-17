@@ -147,14 +147,35 @@ type Params struct {
 	HDCoinType uint32
 }
 
-var pposValidators = []string{""}
+var pposValidators = []string{
+	"bibqG4qhHBSvoWjTDJ4SUSHsxR1yrzL5Cq63CVAokfA=",
+	"gOUNRnLIfZrk277zA46gYC99iM5y0U4y0deCWwycFag=",
+	"CuIsMnls26Th8TajOimsNs+yTGawtb/3pVQM1xxvXgE=",
+	"Sii/5l/rTabKHE9rj9NnAySNqrp1RzTa9uFP2dGG8ow=",
+	"gHg6jPFCrdGG5klnbV3LA4utDINJlSJ9DurvywAdGZU=",
+	"AbQii9GKwDJSe6s9w/Mlv2h4VkGmtwZ3CPJBjwxdW4A=",
+	"DAMnkqVd0PX7Q+E5r2owGQlGVjdk0bG/M87ffqnvULA=",
+	"KpYlKd7UmsZ9iaE/qY6u/7MmhCEAW3CVoHbKR2ZmhWM=",
+	"y1oFkksv9qIPxdeomroU31VxqSfKe1Gre97k0BSOQZU=",
+	"aZsJNkBlp3IOCBjS4t79rSeojlsnnMFyeAJQgtGhWko=",
+	"RUBAsgpgxpQw1zADW5ZnzqJQPatDgaXbNRm1NNM92Ss=",
+	"clAV3X7SuDS58Zkud4fySEsaj+BSdB8P9SeHt5N5AY8=",
+	"GzYpI8XPUHmI+0zfiWufbn/hilpd2DEz+Wn9n+R5/4c=",
+	"9JH5TjwrL1IdgKUa1a4n2KqkCblr8Fg75qUUDB+hbYg=",
+	"AFEYlD3onHq0PUpKq/1Ib4AYvabzaCCSa/eyVLqqJXc=",
+	"ZoE1MbR4QFq6HhCA3nrgIbOSLHVZBEzFNy6XNYOpqaM=",
+	"tEHomcoX3Zv4wyM3QJ43Epv7Mhc/PBsb4Hcm0t1AMBc=",
+	"mDZGD/hH3Qe3J/TFvp47ehNu+ZT2WHhpitUjR9/VQCs=",
+	"89AbTl86qYLXq5d/5s+tCMq6RYmZdAuGBW4oiTShz2E=",
+	"IOgarHxmJzVKLYDb/vciPlPx4MuadMAl+Yj0aDRbU/U=",
+}
 
 // MainNetParams defines the network parameters for the main coin network.
 var MainNetParams = Params{
 	Name:        MAINNET_NAME,
 	Net:         MAINNET,
 	DefaultPort: MAINET_DEFAULT_PORT,
-	DNSSeeds: []string{
+	DNSSeeds:    []string{
 		/*{"seed.coin.sipa.be", true},
 		{"dnsseed.bluematt.me", true},
 		{"dnsseed.coin.dashjr.org", false},

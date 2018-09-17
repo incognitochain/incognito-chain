@@ -262,7 +262,6 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	prevBlock := chain.BestState[chainID].BestBlock
 	prevBlockHash := chain.BestState[chainID].BestBlock.Hash()
 	sourceTxns := g.txSource.MiningDescs()
-
 	if len(sourceTxns) == 0 {
 		return nil, errors.New("No Tx")
 	}

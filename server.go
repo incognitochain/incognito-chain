@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/cash-prototype/cashec"
 	"log"
 	"net"
 	"path/filepath"
@@ -11,9 +10,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/cashec"
+
 	"crypto/tls"
 	"os"
 	"strconv"
+
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/addrmanager"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
@@ -22,7 +24,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/consensus/pos"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/mempool"
-	"github.com/ninjadotorg/cash-prototype/mining"
 	"github.com/ninjadotorg/cash-prototype/netsync"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/rpcserver"
@@ -32,7 +33,7 @@ import (
 
 const (
 	defaultNumberOfTargetOutbound = 8
-	defaultNumberOfTargetInbound = 8
+	defaultNumberOfTargetInbound  = 8
 )
 
 // onionAddr implements the net.Addr interface and represents a tor address.
@@ -145,7 +146,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	self.AddrManager = addrmanager.New(cfg.DataDir, nil)
 
-	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.BlockChain)
+	// blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.BlockChain)
 
 	// self.Miner = miner.New(&miner.Config{
 	// 	ChainParams:            self.chainParams,
@@ -159,7 +160,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		ChainParams: self.chainParams,
 		BlockChain:  self.BlockChain,
 		MemPool:     self.MemPool,
-		BlockGen:    blockTemplateGenerator,
 		Server:      self,
 	})
 
@@ -306,7 +306,7 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 	// Validate Public Key from SealerPrvKey
 	if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
 		keyPair := &cashec.KeyPair{}
-		keyPair.Import([]byte(peerConn.ListenerPeer.Config.SealerPrvKey))
+		keyPair.Import(peerConn.ListenerPeer.Config.SealerPrvKey)
 		msg.(*wire.MessageVersion).PublicKey = string(keyPair.PublicKey)
 	}
 
@@ -441,7 +441,7 @@ func (self Server) Start() {
 	// }
 	self.ConsensusEngine.Start()
 	if cfg.Generate == true && (len(cfg.SealerPrvKey) > 0) {
-		self.ConsensusEngine.StartSealer([]byte(cfg.SealerPrvKey))
+		self.ConsensusEngine.StartSealer(cfg.SealerPrvKey)
 	}
 
 	// test, print length of chain
@@ -562,7 +562,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
 		PeerId:           msg.LocalPeerId,
-		PublicKey:		  msg.PublicKey,
+		PublicKey:        msg.PublicKey,
 	}
 
 	self.newPeers <- remotePeer
@@ -612,7 +612,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		// Validate Public Key from SealerPrvKey
 		if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
 			keyPair := &cashec.KeyPair{}
-			keyPair.Import([]byte(peerConn.ListenerPeer.Config.SealerPrvKey))
+			keyPair.Import(peerConn.ListenerPeer.Config.SealerPrvKey)
 			msg.(*wire.MessageVersion).PublicKey = string(keyPair.PublicKey)
 		}
 		if err != nil {
@@ -813,25 +813,26 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 	return true
 }
 
-/**
-UpdateChain - Update chain with received block
-*/
-func (self *Server) UpdateChain(block *blockchain.Block) {
-	// save block
-	self.BlockChain.StoreBlock(block)
+// /**
+// UpdateChain - Update chain with received block
+// */
+// func (self *Server) UpdateChain(block *blockchain.Block) {
+// 	// save block
+// 	self.BlockChain.StoreBlock(block)
 
-	// save best state
-	newBestState := &blockchain.BestState{}
-	numTxns := uint64(len(block.Transactions))
-	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0))
-	self.BlockChain.BestState[block.Header.ChainID] = newBestState
-	self.BlockChain.StoreBestState(block.Header.ChainID)
+// 	// save best state
+// 	newBestState := &blockchain.BestState{}
+// 	numTxns := uint64(len(block.Transactions))
+// 	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0))
+// 	self.BlockChain.BestState[block.Header.ChainID] = newBestState
+// 	self.BlockChain.StoreBestState(block.Header.ChainID)
 
-	// save index of block
-	self.BlockChain.StoreBlockIndex(block)
-}
+// 	// save index of block
+// 	self.BlockChain.StoreBlockIndex(block)
+// }
 
 func (self *Server) GetChainState() error {
+	Logger.log.Info("Send a GetChainState")
 	var dc chan<- struct{}
 	for _, listener := range self.ConnManager.Config.ListenerPeers {
 		msg, err := wire.MakeEmptyMessage(wire.CmdGetChainState)

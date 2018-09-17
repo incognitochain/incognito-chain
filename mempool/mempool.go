@@ -10,7 +10,6 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/mining"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
@@ -41,7 +40,7 @@ type orphanTx struct {
 // TxDesc is transaction description in mempool
 type TxDesc struct {
 	// transaction details
-	Desc mining.TxDesc
+	Desc transaction.TxDesc
 
 	// StartingPriority is the priority of the transaction when it was added
 	// to the pool.
@@ -91,7 +90,7 @@ func (tp *TxPool) HaveTx(hash *common.Hash) bool {
 // add transaction into pool
 func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee float64) *TxDesc {
 	txD := &TxDesc{
-		Desc: mining.TxDesc{
+		Desc: transaction.TxDesc{
 			Tx:     tx,
 			Added:  time.Now(),
 			Height: height, //@todo we will apply calc function for height.
@@ -165,11 +164,11 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (transaction.Transaction, error) {
 	return nil, fmt.Errorf("transaction is not in the pool")
 }
 
-// MiningDescs returns a slice of mining descriptors for all the transactions
-// in the pool.
-func (tp *TxPool) MiningDescs() []*mining.TxDesc {
+// // MiningDescs returns a slice of mining descriptors for all the transactions
+// // in the pool.
+func (tp *TxPool) MiningDescs() []*transaction.TxDesc {
 	tp.mtx.RLock()
-	descs := make([]*mining.TxDesc, len(tp.pool))
+	descs := make([]*transaction.TxDesc, len(tp.pool))
 	i := 0
 	for _, desc := range tp.pool {
 		descs[i] = &desc.Desc

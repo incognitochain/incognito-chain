@@ -1,6 +1,7 @@
 package pos
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,12 +10,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/transaction"
+
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/mining"
 	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
@@ -25,6 +27,7 @@ var (
 	errChainNotFullySynced = errors.New("chains are not fully synced")
 	errTxIsWrong           = errors.New("transaction is wrong")
 	errNotEnoughChainData  = errors.New("not enough chain data")
+	errCantFinalizeBlock   = errors.New("can't finalize block")
 )
 
 // PoSEngine only need to start if node runner want to be a validator
@@ -41,13 +44,9 @@ type Engine struct {
 	config                Config
 	currentCommittee      []string
 	upComingCommittee     []string
-	knownChainsHeight     []int
-	validatedChainsHeight struct {
-		Heights []int
-		sync.Mutex
-	}
-	validatorSigCh chan blockSig
-	waitForMyTurn  chan struct{}
+	knownChainsHeight     chainsHeight
+	validatedChainsHeight chainsHeight
+	validatorSigCh        chan blockSig
 }
 
 type ChainInfo struct {
@@ -55,10 +54,14 @@ type ChainInfo struct {
 	UpComingCommittee []string
 	ChainsHeight      []int
 }
+type chainsHeight struct {
+	Heights []int
+	sync.Mutex
+}
 type Config struct {
 	BlockChain       *blockchain.BlockChain
 	ChainParams      *blockchain.Params
-	BlockGen         *mining.BlkTmplGenerator
+	blockGen         *BlkTmplGenerator
 	MemPool          *mempool.TxPool
 	ValidatorKeyPair cashec.KeyPair
 	Server           interface {
@@ -67,7 +70,6 @@ type Config struct {
 		PushMessageToAll(wire.Message) error
 		PushMessageToPeer(wire.Message, peer2.ID) error
 		GetChainState() error
-		UpdateChain(*blockchain.Block)
 	}
 }
 
@@ -79,37 +81,50 @@ type blockSig struct {
 
 func (self *Engine) Start() error {
 	self.Lock()
+	defer self.Unlock()
 	if self.started {
 		self.Unlock()
 		return errors.New("Consensus engine is already started")
 	}
+	time.Sleep(1 * time.Second)
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
 	self.started = true
-	self.knownChainsHeight = make([]int, 20)
-	self.currentCommittee = make([]string, 21)
-	self.validatedChainsHeight.Heights = make([]int, 20)
+	self.knownChainsHeight.Heights = make([]int, TOTAL_VALIDATORS)
+	self.currentCommittee = make([]string, TOTAL_VALIDATORS)
+	self.validatedChainsHeight.Heights = make([]int, TOTAL_VALIDATORS)
 
-	for chainID := 0; chainID < 20; chainID++ {
-		self.knownChainsHeight[chainID] = int(self.config.BlockChain.BestState[chainID].Height)
+	for chainID := 0; chainID < TOTAL_VALIDATORS; chainID++ {
+		self.knownChainsHeight.Heights[chainID] = int(self.config.BlockChain.BestState[chainID].Height + 1)
 	}
 
 	Logger.log.Info("Validating local blockchain...")
-	for chainID := byte(0); chainID < 20; chainID++ {
-		for blockIdx := 0; blockIdx < self.knownChainsHeight[chainID]; blockIdx++ {
-			blockHash, err := self.config.BlockChain.GetBlockHashByBlockHeight(int32(blockIdx), chainID)
+	for chainID := 0; chainID < TOTAL_VALIDATORS; chainID++ {
+		//Don't validate genesis block
+		for blockIdx := 1; blockIdx < self.knownChainsHeight.Heights[chainID]; blockIdx++ {
+			block, err := self.config.BlockChain.GetBlockByBlockHeight(int32(blockIdx), byte(chainID))
 			if err != nil {
+				Logger.log.Error(err)
 				return err
 			}
-			err = self.validateBlock(self.config.BlockChain.GetBlockByHash(*blockHash))
+			err = self.validateBlock(block)
 			if err != nil {
+				Logger.log.Error(err)
 				return err
 			}
 		}
 	}
+	self.validatedChainsHeight.Heights = self.knownChainsHeight.Heights
+	self.currentCommittee = self.config.BlockChain.BestState[0].BestBlock.Header.NextCommittee
 
+	time.Sleep(2 * time.Second)
+	go func() {
+		for {
+			self.config.Server.GetChainState()
+			time.Sleep(10 * time.Second)
+		}
+	}()
 	self.quit = make(chan struct{})
 	self.wg.Add(1)
-	self.Unlock()
 
 	// Test GetPeerIdsFromPublicKey
 	//go func(){
@@ -124,21 +139,23 @@ func (self *Engine) Start() error {
 }
 
 func (self *Engine) Stop() error {
+	Logger.log.Info("Stopping Consensus engine...")
 	self.Lock()
 	defer self.Unlock()
 
 	if !self.started {
 		return errors.New("Consensus engine isn't running")
 	}
-	close(self.quit)
 	self.StopSealer()
+	close(self.quit)
 	// self.wg.Wait()
 	self.started = false
-	fmt.Print("Consensus engine stopped")
+	Logger.log.Info("Consensus engine stopped")
 	return nil
 }
 
 func New(Config *Config) *Engine {
+	Config.blockGen = NewBlkTmplGenerator(Config.MemPool, Config.BlockChain)
 	return &Engine{
 		config: *Config,
 	}
@@ -146,108 +163,122 @@ func New(Config *Config) *Engine {
 
 func (self *Engine) StopSealer() {
 	if self.sealerStarted {
+		Logger.log.Info("Stopping Sealer...")
 		close(self.quitSealer)
-		close(self.waitForMyTurn)
 		close(self.validatorSigCh)
 		self.sealerStarted = false
 	}
 }
-func (self *Engine) StartSealer(sealerPrvKey []byte) {
+func (self *Engine) StartSealer(sealerPrvKey string) {
 	if self.sealerStarted {
 		Logger.log.Error("Sealer already started")
 		return
 	}
+
 	_, err := self.config.ValidatorKeyPair.Import(sealerPrvKey)
 	if err != nil {
 		Logger.log.Error("Can't import sealer's key!")
 		return
 	}
-	self.waitForMyTurn = make(chan struct{})
 	self.validatorSigCh = make(chan blockSig)
 	self.quitSealer = make(chan struct{})
 	self.sealerStarted = true
-	Logger.log.Info("Starting sealing...")
-	go func() {
-		for {
-			select {
-			case <-self.quitSealer:
-				return
-			case <-self.waitForMyTurn:
-				newBlock, err := self.createBlock()
-				if err != nil {
-					Logger.log.Critical(err)
-				}
-				self.Finalize(newBlock)
-			}
-		}
-	}()
+	Logger.log.Info("Starting sealer with public key: " + base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey))
 
 	go func() {
-		// tempChainsHeight := make([]int, 20)
+		tempChainsHeight := make([]int, TOTAL_VALIDATORS)
 		for {
 			select {
 			case <-self.quitSealer:
 				return
 			default:
-
+				if !intArrayEquals(tempChainsHeight, self.validatedChainsHeight.Heights) {
+					chainID, validators := self.getMyChain()
+					if chainID < TOTAL_VALIDATORS {
+						Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
+						newBlock, err := self.createBlock()
+						if err != nil {
+							Logger.log.Error(err)
+							continue
+						}
+						err = self.Finalize(newBlock, validators)
+						if err != nil {
+							Logger.log.Critical(err)
+							continue
+						}
+						tempChainsHeight = self.knownChainsHeight.Heights
+					}
+				}
 			}
 		}
 	}()
 }
 
-func (self *Engine) Finalize(block *blockchain.Block) {
-	select {
-	case <-self.quitSealer:
-		return
-	}
+func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) error {
 	finalBlock := block
 	validateSigList := make(chan []string)
-	// Wait for signatures of other validators
-	go func() {
-		//var reslist []string
-		//for {
-		//	validatorSig := <-self.validatorSigCh
-		//	if block.Hash().String() != validatorSig.BlockHash {
-		//
-		//	}
-		//	reslist = appp
-		//
-		//	if
-		//}
+	timeout := time.After(5 * time.Second)
 
+	// Collect signatures of other validators
+	go func() {
+		var reslist []string
+		for {
+			select {
+			case <-timeout:
+				Logger.log.Critical("oopss... Can't finalize block")
+				return
+			default:
+				validatorSig := <-self.validatorSigCh
+				if block.Hash().String() != validatorSig.BlockHash {
+					Logger.log.Critical("(o_O)!")
+					continue
+				}
+				validatorKp := cashec.KeyPair{
+					PublicKey: []byte(validatorSig.Validator),
+				}
+				isValid, _ := validatorKp.Verify(block.Hash().CloneBytes(), []byte(validatorSig.ValidatorSig))
+				if isValid {
+					reslist = append(reslist, validatorSig.ValidatorSig)
+				}
+				if len(reslist) == 10 {
+					validateSigList <- reslist
+					return
+				}
+			}
+		}
 	}()
 
+	//Request for signatures of other validators
 	go func() {
 		newMsg := &wire.MessageRequestSign{}
 		newMsg.Block = *block
-		// for index := 0; index < count; index++ {
-		// 	self.Config.Server.PushMessageToPeer()
-		// }
+		for idx := 0; idx < CHAIN_VALIDATORS_LENGTH; idx++ {
+			self.config.Server.GetPeerIdsFromPublicKey(chainValidators[idx])
+		}
 	}()
 
+	// Wait for signatures of other validators
 	select {
 	case resList := <-validateSigList:
 		fmt.Println(resList)
-	case <-time.After(5 * time.Second):
-		Logger.log.Critical()
-		return
+	case <-timeout:
+		return errCantFinalizeBlock
 	}
 
-	self.config.Server.UpdateChain(finalBlock)
-	// todo refactor PushBlockMessage to PushMessageToAll
-	//self.config.Server.PushBlockMessage(finalBlock)
-}
-
-func (self *Engine) SwitchMember() {
-
+	self.UpdateChain(finalBlock)
+	blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+	if err != nil {
+		return err
+	}
+	self.config.Server.PushMessageToAll(blockMsg)
+	return nil
 }
 
 func (self *Engine) createBlock() (*blockchain.Block, error) {
-	myChainID, myChainCommittee := self.getMyChain()
-	fmt.Println(myChainID, myChainCommittee)
-	newblock, err := self.config.BlockGen.NewBlockTemplate(string(self.config.ValidatorKeyPair.PublicKey), self.config.BlockChain, myChainID)
+	myChainID, _ := self.getMyChain()
+	newblock, err := self.config.blockGen.NewBlockTemplate(string(self.config.ValidatorKeyPair.PublicKey), self.config.BlockChain, myChainID)
 	if err != nil {
-		return newblock.Block, err
+		return &blockchain.Block{}, err
 	}
 	newblock.Block.Header.ChainID = myChainID
 	return newblock.Block, nil
@@ -358,14 +389,14 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 	}
 
 	// 4. Check chains height of the block.
-	for i := 0; i < 20; i++ {
+	for i := 0; i < TOTAL_VALIDATORS; i++ {
 		if int(self.config.BlockChain.BestState[i].Height) < block.Header.ChainsHeight[i] {
 			timer := time.NewTimer(MAX_SYNC_CHAINS_TIME * time.Second)
 			<-timer.C
 			break
 		}
 	}
-	for i := 0; i < 20; i++ {
+	for i := 0; i < TOTAL_VALIDATORS; i++ {
 		if int(self.config.BlockChain.BestState[i].Height) < block.Header.ChainsHeight[i] {
 			return errChainNotFullySynced
 		}
@@ -385,25 +416,25 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 func (self *Engine) getMyChain() (byte, []string) {
 	var myChainCommittee []string
 	var err error
-	for index := byte(0); index < 20; index++ {
-		myChainCommittee, err = self.getChainValidators(index)
+	for idx := byte(0); idx < byte(TOTAL_VALIDATORS); idx++ {
+		myChainCommittee, err = self.getChainValidators(idx)
 		if err != nil {
-			return 20, []string{}
+			return TOTAL_VALIDATORS, []string{}
 		}
-		if string(self.config.ValidatorKeyPair.PublicKey) == myChainCommittee[0] {
-			return index, myChainCommittee
+		if base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey) == myChainCommittee[0] {
+			return idx, myChainCommittee
 		}
 	}
-	return 20, []string{} // the math wrong some where 😭
+	return TOTAL_VALIDATORS, []string{} // nope, you're not in the committee
 }
 
 func (self *Engine) getChainValidators(chainID byte) ([]string, error) {
 	var validators []string
-	for index := 1; index <= 11; index++ {
-		validatorID := math.Mod(float64(index+int(chainID)), 21)
+	for index := 1; index <= CHAIN_VALIDATORS_LENGTH; index++ {
+		validatorID := math.Mod(float64(index+int(chainID)), 20)
 		validators = append(validators, self.currentCommittee[int(validatorID)])
 	}
-	if len(validators) == 11 {
+	if len(validators) == CHAIN_VALIDATORS_LENGTH {
 		return validators, nil
 	}
 	return nil, errors.New("can't get chain's validators")
@@ -467,7 +498,7 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 	if err != nil {
 		return
 	}
-	self.config.Server.UpdateChain(block)
+	self.UpdateChain(block)
 	return
 }
 
@@ -481,12 +512,13 @@ func (self *Engine) OnBlockSigReceived(blockHash string, validator string, sig s
 }
 
 func (self *Engine) OnInvalidBlockReceived(blockHash string, chainID byte, reason string) {
-
+	// leave empty for now
 	return
 }
 
 func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
-
+	chainInfo := msg.ChainInfo.(ChainInfo)
+	self.knownChainsHeight.Heights = chainInfo.ChainsHeight
 	return
 }
 
@@ -494,7 +526,7 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 	chainInfo := ChainInfo{
 		CurrentCommittee:  self.currentCommittee,
 		UpComingCommittee: self.upComingCommittee,
-		ChainsHeight:      self.knownChainsHeight,
+		ChainsHeight:      self.validatedChainsHeight.Heights,
 	}
 	newMsg, err := wire.MakeEmptyMessage(wire.CmdChainState)
 	if err != nil {
@@ -503,4 +535,40 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 	newMsg.(*wire.MessageChainState).ChainInfo = chainInfo
 	self.config.Server.PushMessageToPeer(newMsg, msg.SenderID)
 	return
+}
+
+func (self *Engine) UpdateChain(block *blockchain.Block) {
+	// save block
+	self.config.BlockChain.StoreBlock(block)
+
+	// save best state
+	newBestState := &blockchain.BestState{}
+	numTxns := uint64(len(block.Transactions))
+	for _, tx := range block.Transactions {
+		self.config.MemPool.RemoveTx(*tx.(*transaction.Tx))
+	}
+	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0))
+	self.config.BlockChain.BestState[block.Header.ChainID] = newBestState
+	self.config.BlockChain.StoreBestState(block.Header.ChainID)
+
+	// save index of block
+	self.config.BlockChain.StoreBlockIndex(block)
+	self.validatedChainsHeight.Lock()
+	self.knownChainsHeight.Lock()
+	self.validatedChainsHeight.Heights[block.Header.ChainID]++
+	self.knownChainsHeight.Heights[block.Header.ChainID]++
+	self.knownChainsHeight.Unlock()
+	self.validatedChainsHeight.Unlock()
+}
+
+func intArrayEquals(a []int, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
 }

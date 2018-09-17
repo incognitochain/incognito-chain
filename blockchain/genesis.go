@@ -66,6 +66,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(time time.Time, 
 	genesisBlock.Header.Difficulty = difficulty
 	genesisBlock.Header.Version = version
 	genesisBlock.Header.NextCommittee = preSelectValidators
+	genesisBlock.Height = 0
 	tx := transaction.Tx{
 		Version: 1,
 		TxIn: []transaction.TxIn{
