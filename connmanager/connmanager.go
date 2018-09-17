@@ -429,8 +429,6 @@ listen:
 					publicKey = base64.StdEncoding.EncodeToString(keyPair.PublicKey)
 				}
 
-				Logger.log.Info("PublicKey", publicKey)
-
 				// remove later
 				rawAddress := listener.RawAddress
 
@@ -444,6 +442,12 @@ listen:
 
 				args := &server.PingArgs{rawAddress, publicKey}
 				Logger.log.Infof("[Exchange Peers] Ping", args)
+
+				Logger.log.Info("Dump PeerConns", len(listener.PeerConns))
+				for pubK, info := range self.DiscoveredPeers {
+					Logger.log.Info("Public Key", pubK, info.PeerId.Pretty())
+				}
+
 				err := client.Call("Handler.Ping", args, &response)
 				if err != nil {
 					//Logger.log.Error("[Exchange Peers] Ping:", err)
@@ -455,7 +459,6 @@ listen:
 
 				for _, rawPeer := range response {
 					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerId.String()) {
-						Logger.log.Info("Peer - ", rawPeer.PublicKey)
 						_, exist := self.DiscoveredPeers[rawPeer.PublicKey]
 						Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
 						if !exist {
@@ -487,7 +490,7 @@ listen:
 				}
 			}
 		}
-		time.Sleep(time.Second * 30)
+		time.Sleep(time.Second * 10)
 	}
 }
 
