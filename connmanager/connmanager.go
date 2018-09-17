@@ -1,6 +1,7 @@
 package connmanager
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -425,8 +426,10 @@ listen:
 				if listener.Config.SealerPrvKey != "" {
 					keyPair := &cashec.KeyPair{}
 					keyPair.Import(listener.Config.SealerPrvKey)
-					publicKey = string(keyPair.PublicKey)
+					publicKey = base64.StdEncoding.EncodeToString(keyPair.PublicKey)
 				}
+
+				Logger.log.Info("PublicKey", publicKey)
 
 				// remove later
 				rawAddress := listener.RawAddress
@@ -453,7 +456,7 @@ listen:
 				for _, rawPeer := range response {
 					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerId.String()) {
 						_, exist := self.DiscoveredPeers[rawPeer.PublicKey]
-						//Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
+						Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
 						if !exist {
 							// The following code extracts target's peer ID from the
 							// given multiaddress
@@ -476,7 +479,7 @@ listen:
 							}
 
 							self.DiscoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
-							Logger.log.Info("Start connect to peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
+							//Logger.log.Info("Start connect to peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
 							go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
 						}
 					}
