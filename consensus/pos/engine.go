@@ -192,7 +192,7 @@ func (self *Engine) StartSealer(sealerPrvKey string) {
 			case <-self.quitSealer:
 				return
 			default:
-				if !intArrayEquals(tempChainsHeight, self.knownChainsHeight.Heights) {
+				if !intArrayEquals(tempChainsHeight, self.validatedChainsHeight.Heights) {
 					chainID, validators := self.getMyChain()
 					if chainID < TOTAL_VALIDATORS {
 						Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
@@ -526,7 +526,7 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 	chainInfo := ChainInfo{
 		CurrentCommittee:  self.currentCommittee,
 		UpComingCommittee: self.upComingCommittee,
-		ChainsHeight:      self.knownChainsHeight.Heights,
+		ChainsHeight:      self.validatedChainsHeight.Heights,
 	}
 	newMsg, err := wire.MakeEmptyMessage(wire.CmdChainState)
 	if err != nil {
