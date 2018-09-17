@@ -4,6 +4,9 @@ import (
 	"fmt"
 	// "crypto/rand"
 	// "encoding/json"
+	// "math/big"
+	// "unsafe"
+
 
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
@@ -151,9 +154,8 @@ func main() {
 	//runProveThenVerify()
 	// client.TestEncrypt()
 
-	//  privKey, _ := client.GenerateKey(rand.Reader)
-
-	// // Test transaction signing
+	// Test transaction signing
+	// privKey, _ := client.GenerateKey(rand.Reader)
 	// tx := new(transaction.Tx)
 	// tx.Version = 1
 	// tx.Type = "Normal"
@@ -166,11 +168,17 @@ func main() {
 	// if err != nil {
 	// 	fmt.Printf("Error: %s", err)
 	// }
-	// signed_tx.JSPubKey , _= json.Marshal(privKey.PublicKey)
+
+	// pub := transaction.PubKeyToByteArray(&privKey.PublicKey)
+	// signed_tx.JSPubKey = pub
+	// fmt.Printf("Pub key: %v\n",signed_tx.JSPubKey)
+	// fmt.Printf("Size of pub key: %d\n", len(signed_tx.JSPubKey))
+
+	// fmt.Printf("Signature: %v\n", signed_tx.JSSig)
+	// fmt.Printf("Size of signature: %d\n", len(signed_tx.JSSig))
 
 	// fmt.Printf("Hash tx: %s\n", signed_tx.GetTxId())
 	// res, _ := transaction.VerifySign(signed_tx)
 
 	// fmt.Println(res)
-
 }
