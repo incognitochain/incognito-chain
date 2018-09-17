@@ -167,7 +167,7 @@ func Prove(inputs []*JSInput,
 
 	r, err := c.Prove(ctx, proveRequest)
 	if err != nil || r == nil || r.Proof == nil {
-		log.Fatalf("fail to prove: %v", err)
+		log.Printf("fail to prove: %v", err)
 		return nil, nil, nil, nil, errors.New("Fail to prove JoinSplit")
 	}
 	log.Printf("Prove response:\n")
