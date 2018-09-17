@@ -199,7 +199,7 @@ func CreateRandomJSInput() *client.JSInput {
 
 func SignTx(tx *Tx, privKey *client.PrivateKey) (*Tx, error) {
 	//Check input transaction
-	if tx.JSSig != nil || tx.JSPubKey != nil {
+	if tx.JSSig != nil {
 		return nil, errors.New("Input transaction must be an unsigned one!")
 	}
 
@@ -265,7 +265,7 @@ func generateTx(
 	proof *zksnark.PHGRProof,
 	rt []byte,
 	reward uint64,
-	hSig, seed []byte,
+	hSig, seed, sigPubKey []byte,
 	ephemeralPrivKey *client.EphemeralPrivKey,
 ) (*Tx, error) {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
@@ -333,7 +333,7 @@ func generateTx(
 		Version:  TxVersion,
 		Type:     common.TxNormalType,
 		Descs:    desc,
-		JSPubKey: nil,
+		JSPubKey: sigPubKey,
 		JSSig:    nil,
 	}
 	return tx, nil
@@ -362,7 +362,7 @@ func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, 
 	fmt.Printf("seed and phi after Prove: %x %x\n", seed, phi)
 
 	var ephemeralPrivKey *client.EphemeralPrivKey
-	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, seed, ephemeralPrivKey)
+	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, seed, sigPubKey, ephemeralPrivKey)
 	if err != nil {
 		return nil, err
 	}
@@ -387,16 +387,13 @@ func GenerateProofForGenesisTx(
 	privateSignKey := [32]byte{1}
 	keyPair := &cashec.KeySet{}
 	keyPair.ImportFromPrivateKeyByte(privateSignKey[:])
-	jsPubKey := keyPair.PublicKey.Apk[:]
+	sigPubKey := keyPair.PublicKey.Apk[:]
 
-	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, jsPubKey, rt, reward, seed, phi, outputR)
+	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, sigPubKey, rt, reward, seed, phi, outputR)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, seed, &ephemeralPrivKey)
-	if err == nil {
-		tx.JSPubKey = jsPubKey // Save jsPubKey but don't sign tx for genesis transaction
-	}
+	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, seed, sigPubKey, &ephemeralPrivKey)
 	return tx, err
 }
