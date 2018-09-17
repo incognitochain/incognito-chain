@@ -304,13 +304,16 @@ func (self RpcServer) handleCreateTrasaction(params interface{}, closeChan <-cha
 
 	// get tx view point
 	txViewPoint, err := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
+	for _, c := range txViewPoint.ListCommitments(common.TxOutCoinType) {
+		println(hex.EncodeToString(c))
+	}
 	// create a new tx
 	tx, err := transaction.CreateTx(&senderKey.KeyPair.PrivateKey, paymentInfos, &self.Config.BlockChain.BestState.BestBlock.Header.MerkleRootCommitments, candidateTxs, txViewPoint.ListNullifiers(common.TxOutCoinType), txViewPoint.ListCommitments(common.TxOutCoinType))
 	if err != nil {
 		return nil, err
 	}
 	byteArrays, err := json.Marshal(tx)
-	if err != nil {
+	if err == nil {
 		// return hex for a new tx
 		return hex.EncodeToString(byteArrays), nil
 	}
@@ -345,7 +348,7 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
-	Logger.log.Info("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
