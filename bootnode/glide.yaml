@@ -1,0 +1,7 @@
+package: github.com/ninjadotorg/cash-prototype/bootnode
+import:
+- package: github.com/jessevdk/go-flags
+  version: v1.4.0
+- package: github.com/ninjadotorg/cash-prototype
+  subpackages:
+  - wire
