@@ -445,6 +445,10 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 		}
 	} else {
 		peerConn.updateState(ConnCanceled)
+		_, ok := self.PeerConns[peerConn.PeerId]
+		if ok {
+			delete(self.PeerConns, peerConn.PeerId)
+		}
 	}
 
 	if self.HandleDisconnected != nil {
