@@ -121,7 +121,7 @@ func Prove(inputs []*JSInput,
 	defer conn.Close()
 
 	c := zksnark.NewZksnarkClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*180)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*500)
 	defer cancel()
 
 	var outNotes []*Note

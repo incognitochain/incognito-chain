@@ -311,14 +311,14 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		if txN.Type != common.TxNormalType {
 			return false, errors.New("Wrong tx type")
 		}
-		// check length of JSPubKey
+		/*// check length of JSPubKey
 		if len(txN.JSPubKey) != 32 {
 			return false, errors.New("Wrong tx jspubkey")
 		}
 		// check length of JSSig
 		if len(txN.JSSig) != 64 {
 			return false, errors.New("Wrong tx jssig")
-		}
+		}*/
 		//check Descs
 
 		// get list nullifiers from db to check spending
@@ -348,7 +348,7 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 				return false, errors.New("Wrong tx desc's hsigseed")
 			}
 			// check value of Type
-			if desc.Type != common.TxOutBondType || desc.Type != common.TxOutCoinType {
+			if desc.Type != common.TxOutBondType && desc.Type != common.TxOutCoinType {
 				return false, errors.New("Wrong tx desc's type")
 			}
 			// check length of Nullifiers
@@ -388,8 +388,8 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 			// check length of Proof
 			if len(desc.Proof.G_A) != 33 ||
 				len(desc.Proof.G_APrime) != 33 ||
-				len(desc.Proof.G_B) != 33 ||
-				len(desc.Proof.G_BPrime) != 65 ||
+				len(desc.Proof.G_B) != 65 ||
+				len(desc.Proof.G_BPrime) != 33 ||
 				len(desc.Proof.G_C) != 33 ||
 				len(desc.Proof.G_CPrime) != 33 ||
 				len(desc.Proof.G_K) != 33 ||

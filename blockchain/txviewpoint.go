@@ -43,7 +43,7 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DB, block *Block) error {
 	// Loop through all of the transaction descs (except for the coinbase tx)
 	acceptedNullifiers := make(map[string][][]byte)
 	acceptedCommitments := make(map[string][][]byte)
-	for _, tx := range transactions[1:] {
+	for _, tx := range transactions {
 		for _, desc := range tx.(*transaction.Tx).Descs {
 			for _, item := range desc.Nullifiers {
 				temp, err := db.HasNullifier(item, desc.Type)

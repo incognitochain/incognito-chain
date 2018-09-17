@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"encoding/base64"
 	"github.com/pkg/errors"
+	"bytes"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -185,7 +186,25 @@ func SliceExists(slice interface{}, item interface{}) (bool, error) {
 	}
 
 	for i := 0; i < s.Len(); i++ {
-		if s.Index(i).Interface() == item {
+		interfacea := s.Index(i).Interface()
+		if interfacea == item {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func SliceBytesExists(slice interface{}, item interface{}) (bool, error) {
+	s := reflect.ValueOf(slice)
+
+	if s.Kind() != reflect.Slice {
+		return false, errors.New("SliceBytesExists() given a non-slice type")
+	}
+
+	for i := 0; i < s.Len(); i++ {
+		interfacea := s.Index(i).Interface()
+		if bytes.Equal(interfacea.([]byte), item.([]byte)) {
 			return true, nil
 		}
 	}
