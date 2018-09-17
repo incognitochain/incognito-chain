@@ -3,6 +3,9 @@ project("spscoin")
 
 set (CMAKE_CXX_STANDARD 11)
 
+# Add custom CMAKE_MODULE_PATH
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/")
+
 include_directories("./")
 include_directories("./libsnark")
 
