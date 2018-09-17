@@ -702,16 +702,16 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 
 func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	// TODO for onaddr message
-	log.Printf("Receive addr message")
-	for _, rawPeer := range msg.RawPeers {
-		for _, listen := range self.ConnManager.ListeningPeers {
-			for _, _peerConn := range listen.PeerConns {
-				if _peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(rawPeer.RawAddress) {
-					go self.ConnManager.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
-				}
-			}
-		}
-	}
+	log.Printf("Receive addr message", msg.RawPeers)
+	//for _, rawPeer := range msg.RawPeers {
+	//	for _, listen := range self.ConnManager.ListeningPeers {
+	//		for _, _peerConn := range listen.PeerConns {
+	//			if _peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(rawPeer.RawAddress) {
+	//				go self.ConnManager.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
+	//			}
+	//		}
+	//	}
+	//}
 }
 
 func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageRequestSign) {
