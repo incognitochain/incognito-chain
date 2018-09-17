@@ -396,8 +396,8 @@ class ZksnarkImpl final : public Zksnark::Service
 void RunServer()
 {
     // Creating zksnark circuit and load params
-    js = ZCJoinSplit::Prepared("/home/ubuntu/go/src/github.com/ninjadotorg/cash-prototype/privacy/server/build/verifying.key",
-                               "/home/ubuntu/go/src/github.com/ninjadotorg/cash-prototype/privacy/server/build/proving.key");
+    js = ZCJoinSplit::Prepared("./verifying.key",
+                               "./proving.key");
     cout << "Done preparing zksnark\n";
 
     // Run server
