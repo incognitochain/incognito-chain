@@ -129,6 +129,15 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 						desc.EncryptedData = datas
 					}
 
+					// vmac
+					if ok := item["Vmacs"] != nil; ok {
+						vmacsTemp := item["Vmacs"].([]interface{})
+						vmacs := make([][]byte, 0)
+						for _, n := range vmacsTemp {
+							vmacs = append(vmacs, common.JsonUnmarshallByteArray(n.(string)))
+						}
+						desc.Vmacs = vmacs
+					}
 					txNormal.Descs = append(txNormal.Descs, desc)
 				}
 			}

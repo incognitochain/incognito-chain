@@ -62,7 +62,7 @@ func (self GenesisBlockGenerator) createGenesisTx(coinReward uint64) (*transacti
 	// Create new notes: first one is a coinbase UTXO, second one has 0 value
 	key, err := wallet.Base58CheckDeserialize(GENESIS_BLOCK_PAYMENT_ADDR)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	outNote := &client.Note{Value: coinReward, Apk: key.KeyPair.PublicKey.Apk}
 	placeHolderOutputNote := &client.Note{Value: 0, Apk: key.KeyPair.PublicKey.Apk}
@@ -116,50 +116,50 @@ func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
 	// Convert nullifiers from hex string to byte array
 	nf1, err := hex.DecodeString(GENESIS_BLOCK_NULLIFIERS[0])
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	nf2, err := hex.DecodeString(GENESIS_BLOCK_NULLIFIERS[1])
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	nullfiers := [][]byte{nf1, nf2}
 
 	// Convert commitments from hex string to byte array
 	cm1, err := hex.DecodeString(GENESIS_BLOCK_COMMITMENTS[0])
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	cm2, err := hex.DecodeString(GENESIS_BLOCK_COMMITMENTS[1])
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	commitments := [][]byte{cm1, cm2}
 
 	// Convert encrypted data from hex string to byte array
 	encData1, err := hex.DecodeString(GENESIS_BLOCK_ENCRYPTED_DATA[0])
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	encData2, err := hex.DecodeString(GENESIS_BLOCK_ENCRYPTED_DATA[1])
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	encryptedData := [][]byte{encData1, encData2}
 
 	// Convert ephemeral public key from hex string to byte array
 	ephemeralPubKey, err := hex.DecodeString(GENESIS_BLOCK_EPHEMERAL_PUBKEY)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// Convert vmacs from hex string to byte array
 	vmacs1, err := hex.DecodeString(GENESIS_BLOCK_VMACS[0])
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	vmacs2, err := hex.DecodeString(GENESIS_BLOCK_VMACS[1])
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	vmacs := [][]byte{vmacs1, vmacs2}
 
@@ -178,7 +178,7 @@ func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
 
 	jsPubKey, err := hex.DecodeString(GENESIS_BLOCK_JSPUBKEY)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	tx := &transaction.Tx{
 		Version:  transaction.TxVersion,
@@ -212,7 +212,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(
 	difficulty uint32,
 	version int,
 	genesisReward uint64,
-) *Block {
+) (*Block) {
 	genesisBlock := Block{}
 	// update default genesis block
 	genesisBlock.Header.Timestamp = time
@@ -221,11 +221,12 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(
 	genesisBlock.Header.Difficulty = difficulty
 	genesisBlock.Header.Version = version
 
-	// tx, err := self.getGenesisTx()
-	tx, err := self.createGenesisTx(genesisReward)
+	tx, err := self.getGenesisTx()
+	//tx, err := self.createGenesisTx(genesisReward)
 
 	if err != nil {
-		panic(err)
+		Logger.log.Error(err)
+		return nil
 	}
 
 	genesisBlock.Header.MerkleRootCommitments = self.calcCommitmentMerkleRoot(tx)

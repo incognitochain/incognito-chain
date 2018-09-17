@@ -293,6 +293,10 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 		}
 	}
 }
+
+/**
+ValidateSanityData - validate sansity data of tx
+*/
 func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) bool {
 	if tx.GetType() == common.TxNormalType {
 		txN := tx.(*transaction.Tx)
@@ -300,14 +304,15 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) bool {
 		if txN.Version > transaction.TxVersion {
 			return false
 		}
-		//check locktime
+		// check LockTime before now
 		if int64(txN.LockTime) > time.Now().Unix() {
 			return false
 		}
-
+		// check length of JSPubKey
 		if len(txN.JSPubKey) != 32 {
 			return false
 		}
+		// check length of JSSig
 		if len(txN.JSSig) != 64 {
 			return false
 		}
@@ -327,19 +332,23 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) bool {
 		nullifiersInDbTxOutCoin := txViewPointTxOutCoin.ListNullifiers(common.TxOutCoinType)
 
 		for _, desc := range txN.Descs {
+			// check length of Anchor
 			if len(desc.Anchor) != 32 {
 				return false
 			}
+			// check length of EphemeralPubKey
 			if len(desc.EphemeralPubKey) != client.EphemeralKeyLength {
 				return false
 			}
+			// check length of HSigSeed
 			if len(desc.HSigSeed) != 32 {
 				return false
 			}
+			// check value of Type
 			if desc.Type != common.TxOutBondType || desc.Type != common.TxOutCoinType {
 				return false
 			}
-			//
+			// check length of Nullifiers
 			if len(desc.Nullifiers) != 2 {
 				return false
 			}
@@ -349,7 +358,7 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) bool {
 			if len(desc.Nullifiers[1]) != 32 {
 				return false
 			}
-			//
+			// check length of Commitments
 			if len(desc.Commitments) != 2 {
 				return false
 			}
@@ -359,7 +368,7 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) bool {
 			if len(desc.Commitments[1]) != 32 {
 				return false
 			}
-			//
+			// check length of Vmacs
 			if len(desc.Vmacs) != 2 {
 				return false
 			}
@@ -373,7 +382,7 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) bool {
 			if desc.Proof == nil {
 				return false
 			}
-			//
+			// check length of Proof
 			if len(desc.Proof.G_A) != 33 ||
 				len(desc.Proof.G_APrime) != 33 ||
 				len(desc.Proof.G_B) != 33 ||
@@ -388,27 +397,28 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) bool {
 			if len(desc.EncryptedData) != 2 {
 				return false
 			}
+			// check nulltifier is existed in DB
 			if desc.Type == common.TxOutBondType {
 				checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[0])
 				if err != nil || checkCandiateNullifier == true {
-					// candidate nullifier is not existed in db
+					// candidate nullifier is existed in db
 					return false
 				}
 				checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[1])
 				if err != nil || checkCandiateNullifier == true {
-					// candidate nullifier is not existed in db
+					// candidate nullifier is existed in db
 					return false
 				}
 			}
 			if desc.Type == common.TxOutBondType {
 				checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[0])
 				if err != nil || checkCandiateNullifier == true {
-					// candidate nullifier is not existed in db
+					// candidate nullifier is existed in db
 					return false
 				}
 				checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[1])
 				if err != nil || checkCandiateNullifier == true {
-					// candidate nullifier is not existed in db
+					// candidate nullifier is existed in db
 					return false
 				}
 			}
@@ -416,12 +426,20 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) bool {
 				return false
 			}
 		}
-
-		_ = txN
 	} else if tx.GetType() == common.TxActionParamsType {
 		txA := tx.(*transaction.ActionParamTx)
-
-		_ = txA
+		// check Version
+		if txA.Version > transaction.TxVersion {
+			return false
+		}
+		// check LockTime before now
+		if int64(txA.LockTime) > time.Now().Unix() {
+			return false
+		}
+		// check Type equal "a"
+		if txA.Type != common.TxActionParamsType {
+			return false
+		}
 	} else {
 		return false
 	}
