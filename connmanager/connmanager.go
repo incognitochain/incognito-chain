@@ -445,7 +445,8 @@ listen:
 
 				Logger.log.Info("Dump PeerConns", len(listener.PeerConns))
 				for pubK, info := range self.DiscoveredPeers {
-					Logger.log.Info("Public Key", pubK, info.PeerId.Pretty())
+					_, exist := listener.PeerConns[info.PeerId]
+					Logger.log.Info("Public Key", pubK, info.PeerId.Pretty(), listener.PeerConns[info.PeerId], exist)
 				}
 
 				err := client.Call("Handler.Ping", args, &response)
