@@ -169,10 +169,9 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	}
 
 	// sanity data
-	if validate, err := tp.ValidateSanityData(tx); !validate {
-		str := fmt.Sprintf("transaction's sansity %v is error %s", txHash.String(), err.Error())
+	if validate, errS := tp.ValidateSanityData(tx); !validate {
 		err := TxRuleError{}
-		err.Init(RejectSansityTx, str)
+		err.Init(RejectSansityTx, fmt.Sprintf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
 		return nil, nil, err
 	}
 
