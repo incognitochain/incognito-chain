@@ -444,7 +444,7 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 			go self.retryPeerConnection(peerConn)
 		}
 	} else {
-		self.ConnCanceled(peerConn.Peer)
+		peerConn.updateState(ConnCanceled)
 	}
 
 	if self.HandleDisconnected != nil {
