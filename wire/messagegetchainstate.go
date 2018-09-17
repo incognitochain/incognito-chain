@@ -7,28 +7,28 @@ import (
 )
 
 type MessageGetChainState struct {
-	SenderID peer.ID
+	SenderID string
 }
 
-func (self MessageGetChainState) MessageType() string {
+func (self *MessageGetChainState) MessageType() string {
 	return CmdGetChainState
 }
 
-func (self MessageGetChainState) MaxPayloadLength(pver int) int {
+func (self *MessageGetChainState) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self MessageGetChainState) JsonSerialize() ([]byte, error) {
+func (self *MessageGetChainState) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessageGetChainState) JsonDeserialize(jsonStr string) error {
+func (self *MessageGetChainState) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }
 
-func (self MessageGetChainState) SetSenderID(senderID peer.ID) error {
-	self.SenderID = senderID
+func (self *MessageGetChainState) SetSenderID(senderID peer.ID) error {
+	self.SenderID = senderID.Pretty()
 	return nil
 }

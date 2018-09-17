@@ -750,6 +750,7 @@ func (self Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {
 
 	for _, listener := range self.ConnManager.Config.ListenerPeers {
 		for _, peerConn := range listener.PeerConns {
+			// Logger.log.Info("Test PeerConn", peerConn.Peer.PublicKey)
 			if peerConn.Peer.PublicKey == pubKey {
 				exist := false
 				for _, item := range result {
@@ -841,6 +842,7 @@ func (self *Server) GetChainState() error {
 			return err
 		}
 		msg.SetSenderID(listener.PeerId)
+		Logger.log.Info("Send a GetChainState ", msg)
 		listener.QueueMessageWithEncoding(msg, dc)
 	}
 	return nil

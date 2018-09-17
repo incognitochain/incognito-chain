@@ -196,6 +196,10 @@ func (self *Engine) StartSealer(sealerPrvKey string) {
 					chainID, validators := self.getMyChain()
 					if chainID < TOTAL_VALIDATORS {
 						Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
+						Logger.log.Info("Current chainsHeight")
+						fmt.Println(self.validatedChainsHeight.Heights)
+						fmt.Println(chainID, validators)
+
 						newBlock, err := self.createBlock()
 						if err != nil {
 							Logger.log.Error(err)
@@ -250,10 +254,17 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 
 	//Request for signatures of other validators
 	go func() {
-		newMsg := &wire.MessageRequestSign{}
-		newMsg.Block = *block
-		for idx := 0; idx < CHAIN_VALIDATORS_LENGTH; idx++ {
-			self.config.Server.GetPeerIdsFromPublicKey(chainValidators[idx])
+		reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestSign)
+		reqSigMsg.(*wire.MessageRequestSign).Block = *block
+		// varretryValidators
+		for idx := 1; idx < CHAIN_VALIDATORS_LENGTH; idx++ {
+			peerIDs := self.config.Server.GetPeerIdsFromPublicKey(chainValidators[idx])
+			if len(peerIDs) != 0 {
+				Logger.log.Info("Request signaure from "+peerIDs[0], chainValidators[idx])
+				self.config.Server.PushMessageToPeer(reqSigMsg, peerIDs[0])
+			} else {
+				fmt.Println("Ahihi", chainValidators[idx])
+			}
 		}
 	}()
 
@@ -261,16 +272,25 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 	select {
 	case resList := <-validateSigList:
 		fmt.Println(resList)
+		finalBlock.Header.BlockCommitteeSigs = resList
+		finalBlock.Header.NextCommittee = self.currentCommittee
 	case <-timeout:
 		return errCantFinalizeBlock
 	}
 
+	sigBytes, err := self.config.ValidatorKeyPair.Sign(block.Hash().CloneBytes())
+	if err != nil {
+		return err
+	}
+	finalBlock.ChainLeaderSig = string(sigBytes)
 	self.UpdateChain(finalBlock)
 	blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
 	if err != nil {
 		return err
 	}
+	blockMsg.(*wire.MessageBlock).Block = *finalBlock
 	self.config.Server.PushMessageToAll(blockMsg)
+	self.UpdateChain(finalBlock)
 	return nil
 }
 
@@ -281,6 +301,7 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 		return &blockchain.Block{}, err
 	}
 	newblock.Block.Header.ChainID = myChainID
+	newblock.Block.ChainLeader = string(self.config.ValidatorKeyPair.PublicKey)
 	return newblock.Block, nil
 }
 
@@ -444,6 +465,7 @@ func (self *Engine) GetTxSenderChain(senderLastByte byte) (byte, error) {
 	modResult := senderLastByte % 100
 	for index := byte(0); index < 5; index++ {
 		if (modResult-index)%5 == 0 {
+			// result := byte((modResult - index) / 5)
 			return byte((modResult - index) / 5), nil
 		}
 	}
@@ -485,8 +507,8 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 		Validator:    string(self.config.ValidatorKeyPair.PublicKey),
 		ValidatorSig: string(sig),
 	}
-
-	err = self.config.Server.PushMessageToPeer(blockSigMsg, msgBlock.SenderID)
+	peerID, _ := peer2.IDFromString(msgBlock.SenderID)
+	err = self.config.Server.PushMessageToPeer(blockSigMsg, peerID)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -503,6 +525,7 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 }
 
 func (self *Engine) OnBlockSigReceived(blockHash string, validator string, sig string) {
+	Logger.log.Info("Received a block signature")
 	self.validatorSigCh <- blockSig{
 		BlockHash:    blockHash,
 		Validator:    validator,
@@ -533,7 +556,8 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 		return
 	}
 	newMsg.(*wire.MessageChainState).ChainInfo = chainInfo
-	self.config.Server.PushMessageToPeer(newMsg, msg.SenderID)
+	peerID, _ := peer2.IDFromString(msg.SenderID)
+	self.config.Server.PushMessageToPeer(newMsg, peerID)
 	return
 }
 

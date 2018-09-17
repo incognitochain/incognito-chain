@@ -57,6 +57,11 @@ mempoolLoop:
 		tx := txDesc.Tx
 		//@todo need apply validate tx, logic check all referenced here
 		// call function spendTransaction to mark utxo
+
+		txChainID, _ := g.GetTxSenderChain(tx.(*transaction.Tx).AddressHash)
+		if txChainID != chainID {
+			continue
+		}
 		utxos, err := g.chain.FetchUtxoView(*tx.(*transaction.Tx))
 		_ = utxos
 		_ = err
@@ -103,7 +108,6 @@ mempoolLoop:
 			txToRemove = append(txToRemove, tx.(*transaction.Tx))
 			continue mempoolLoop
 		}
-
 		// g.txSource.Clear()
 	}
 
@@ -112,7 +116,9 @@ mempoolLoop:
 	}
 	// TODO PoW
 	//time.Sleep(time.Second * 15)
-
+	if len(blockTxns) == 0 {
+		return nil, errors.New("no transaction available for this chain")
+	}
 	block := blockchain.Block{}
 	block.Header = blockchain.BlockHeader{
 		Version:       1,
@@ -137,6 +143,17 @@ mempoolLoop:
 		Block: &block,
 	}
 	return blockTemp, nil
+}
+
+func (g *BlkTmplGenerator) GetTxSenderChain(senderLastByte byte) (byte, error) {
+	modResult := senderLastByte % 100
+	for index := byte(0); index < 5; index++ {
+		if (modResult-index)%5 == 0 {
+			// result := byte((modResult - index) / 5)
+			return byte((modResult - index) / 5), nil
+		}
+	}
+	return 0, errors.New("can't get sender's chainID")
 }
 
 type BlkTmplGenerator struct {
