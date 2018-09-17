@@ -337,53 +337,53 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		for _, desc := range txN.Descs {
 			// check length of Anchor
 			if len(desc.Anchor) != 32 {
-				return false, errors.New("Wrong anchor")
+				return false, errors.New("Wrong desc's anchor")
 			}
 			// check length of EphemeralPubKey
 			if len(desc.EphemeralPubKey) != client.EphemeralKeyLength {
-				return false, errors.New("Wrong ephemeralpubkey")
+				return false, errors.New("Wrong desc's ephemeralpubkey")
 			}
 			// check length of HSigSeed
 			if len(desc.HSigSeed) != 32 {
-				return false, errors.New("Wrong hsigseed")
+				return false, errors.New("Wrong desc's hsigseed")
 			}
 			// check value of Type
 			if desc.Type != common.TxOutBondType || desc.Type != common.TxOutCoinType {
-				return false, errors.New("Wrong type")
+				return false, errors.New("Wrong desc's type")
 			}
 			// check length of Nullifiers
 			if len(desc.Nullifiers) != 2 {
-				return false, errors.New("Wrong nullifiers")
+				return false, errors.New("Wrong desc's nullifiers")
 			}
 			if len(desc.Nullifiers[0]) != 32 {
-				return false, errors.New("Wrong nullifiers")
+				return false, errors.New("Wrong desc's nullifiers")
 			}
 			if len(desc.Nullifiers[1]) != 32 {
-				return false, errors.New("Wrong nullifiers")
+				return false, errors.New("Wrong desc's nullifiers")
 			}
 			// check length of Commitments
 			if len(desc.Commitments) != 2 {
-				return false, errors.New("Wrong commitments")
+				return false, errors.New("Wrong desc's commitments")
 			}
 			if len(desc.Commitments[0]) != 32 {
-				return false, errors.New("Wrong commitments")
+				return false, errors.New("Wrong desc's commitments")
 			}
 			if len(desc.Commitments[1]) != 32 {
-				return false, errors.New("Wrong commitments")
+				return false, errors.New("Wrong desc's commitments")
 			}
 			// check length of Vmacs
 			if len(desc.Vmacs) != 2 {
-				return false, errors.New("Wrong vmacs")
+				return false, errors.New("Wrong desc's vmacs")
 			}
 			if len(desc.Vmacs[0]) != 32 {
-				return false, errors.New("Wrong vmacs")
+				return false, errors.New("Wrong desc's vmacs")
 			}
 			if len(desc.Vmacs[1]) != 32 {
-				return false, errors.New("Wrong vmacs")
+				return false, errors.New("Wrong desc's vmacs")
 			}
 			//
 			if desc.Proof == nil {
-				return false, errors.New("Wrong proof")
+				return false, errors.New("Wrong desc's proof")
 			}
 			// check length of Proof
 			if len(desc.Proof.G_A) != 33 ||
@@ -394,39 +394,39 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 				len(desc.Proof.G_CPrime) != 33 ||
 				len(desc.Proof.G_K) != 33 ||
 				len(desc.Proof.G_H) != 33 {
-				return false, errors.New("Wrong proof")
+				return false, errors.New("Wrong desc's proof")
 			}
 			//
 			if len(desc.EncryptedData) != 2 {
-				return false, errors.New("Wrong encryptedData")
+				return false, errors.New("Wrong desc's encryptedData")
 			}
 			// check nulltifier is existed in DB
 			if desc.Type == common.TxOutBondType {
 				checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[0])
 				if err != nil || checkCandiateNullifier == true {
 					// candidate nullifier is existed in db
-					return false, errors.New("Wrong nullifier")
+					return false, errors.New("Wrong desc's nullifier")
 				}
 				checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[1])
 				if err != nil || checkCandiateNullifier == true {
 					// candidate nullifier is existed in db
-					return false, errors.New("Wrong nullifier")
+					return false, errors.New("Wrong desc's nullifier")
 				}
 			}
 			if desc.Type == common.TxOutBondType {
 				checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[0])
 				if err != nil || checkCandiateNullifier == true {
 					// candidate nullifier is existed in db
-					return false, errors.New("Wrong nullifier")
+					return false, errors.New("Wrong desc's nullifier")
 				}
 				checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[1])
 				if err != nil || checkCandiateNullifier == true {
 					// candidate nullifier is existed in db
-					return false, errors.New("Wrong nullifier")
+					return false, errors.New("Wrong desc's nullifier")
 				}
 			}
 			if desc.Reward != 0 {
-				return false, errors.New("Wrong reward")
+				return false, errors.New("Wrong desc's reward")
 			}
 		}
 	} else if tx.GetType() == common.TxActionParamsType {
