@@ -169,10 +169,9 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	}
 
 	// sanity data
-	if !tp.ValidateSanityData(tx) {
-		str := fmt.Sprintf("transaction's sansity %v is invalid", txHash.String())
+	if validate, errS := tp.ValidateSanityData(tx); !validate {
 		err := TxRuleError{}
-		err.Init(SansityInvalidTx, str)
+		err.Init(RejectSansityTx, fmt.Sprintf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
 		return nil, nil, err
 	}
 
@@ -297,90 +296,94 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 /**
 ValidateSanityData - validate sansity data of tx
 */
-func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) bool {
+func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 	if tx.GetType() == common.TxNormalType {
 		txN := tx.(*transaction.Tx)
 		//check version
 		if txN.Version > transaction.TxVersion {
-			return false
+			return false, errors.New("Wrong tx version")
 		}
 		// check LockTime before now
 		if int64(txN.LockTime) > time.Now().Unix() {
-			return false
+			return false, errors.New("Wrong tx locktime")
+		}
+		// check Type equal "n"
+		if txN.Type != common.TxNormalType {
+			return false, errors.New("Wrong tx type")
 		}
 		// check length of JSPubKey
 		if len(txN.JSPubKey) != 32 {
-			return false
+			return false, errors.New("Wrong tx jspubkey")
 		}
 		// check length of JSSig
 		if len(txN.JSSig) != 64 {
-			return false
+			return false, errors.New("Wrong tx jssig")
 		}
 		//check Descs
 
 		// get list nullifiers from db to check spending
 		txViewPointTxOutBond, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutBondType)
 		if err != nil {
-			return false
+			return false, errors.New("Wrong tx nultifier")
 		}
 		nullifiersInDbTxOutBond := txViewPointTxOutBond.ListNullifiers(common.TxOutBondType)
 
 		txViewPointTxOutCoin, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
 		if err != nil {
-			return false
+			return false, errors.New("Wrong tx nultifier")
 		}
 		nullifiersInDbTxOutCoin := txViewPointTxOutCoin.ListNullifiers(common.TxOutCoinType)
 
 		for _, desc := range txN.Descs {
 			// check length of Anchor
 			if len(desc.Anchor) != 32 {
-				return false
+				return false, errors.New("Wrong tx desc's anchor")
 			}
 			// check length of EphemeralPubKey
 			if len(desc.EphemeralPubKey) != client.EphemeralKeyLength {
-				return false
+				return false, errors.New("Wrong tx desc's ephemeralpubkey")
 			}
 			// check length of HSigSeed
 			if len(desc.HSigSeed) != 32 {
-				return false
+				return false, errors.New("Wrong tx desc's hsigseed")
 			}
 			// check value of Type
 			if desc.Type != common.TxOutBondType || desc.Type != common.TxOutCoinType {
-				return false
+				return false, errors.New("Wrong tx desc's type")
 			}
 			// check length of Nullifiers
 			if len(desc.Nullifiers) != 2 {
-				return false
+				return false, errors.New("Wrong tx desc's nullifiers")
 			}
 			if len(desc.Nullifiers[0]) != 32 {
-				return false
+				return false, errors.New("Wrong tx desc's nullifiers")
 			}
 			if len(desc.Nullifiers[1]) != 32 {
-				return false
+				return false, errors.New("Wrong tx desc's nullifiers")
 			}
 			// check length of Commitments
 			if len(desc.Commitments) != 2 {
-				return false
+				return false, errors.New("Wrong tx desc's commitments")
 			}
 			if len(desc.Commitments[0]) != 32 {
-				return false
+				return false, errors.New("Wrong tx desc's commitments")
 			}
 			if len(desc.Commitments[1]) != 32 {
-				return false
+				return false, errors.New("Wrong tx desc's commitments")
 			}
 			// check length of Vmacs
 			if len(desc.Vmacs) != 2 {
-				return false
+				return false, errors.New("Wrong tx desc's vmacs")
 			}
 			if len(desc.Vmacs[0]) != 32 {
-				return false
+				return false, errors.New("Wrong tx desc's vmacs")
 			}
 			if len(desc.Vmacs[1]) != 32 {
-				return false
+				return false, errors.New("Wrong tx desc's vmacs")
 			}
 			//
 			if desc.Proof == nil {
-				return false
+				return false, errors.New("Wrong tx desc's proof")
 			}
 			// check length of Proof
 			if len(desc.Proof.G_A) != 33 ||
@@ -391,58 +394,58 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) bool {
 				len(desc.Proof.G_CPrime) != 33 ||
 				len(desc.Proof.G_K) != 33 ||
 				len(desc.Proof.G_H) != 33 {
-				return false
+				return false, errors.New("Wrong tx desc's proof")
 			}
 			//
 			if len(desc.EncryptedData) != 2 {
-				return false
+				return false, errors.New("Wrong tx desc's encryptedData")
 			}
 			// check nulltifier is existed in DB
 			if desc.Type == common.TxOutBondType {
 				checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[0])
 				if err != nil || checkCandiateNullifier == true {
 					// candidate nullifier is existed in db
-					return false
+					return false, errors.New("Wrong tx desc's nullifier")
 				}
 				checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[1])
 				if err != nil || checkCandiateNullifier == true {
 					// candidate nullifier is existed in db
-					return false
+					return false, errors.New("Wrong tx desc's nullifier")
 				}
 			}
 			if desc.Type == common.TxOutBondType {
 				checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[0])
 				if err != nil || checkCandiateNullifier == true {
 					// candidate nullifier is existed in db
-					return false
+					return false, errors.New("Wrong tx desc's nullifier")
 				}
 				checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[1])
 				if err != nil || checkCandiateNullifier == true {
 					// candidate nullifier is existed in db
-					return false
+					return false, errors.New("Wrong tx desc's nullifier")
 				}
 			}
 			if desc.Reward != 0 {
-				return false
+				return false, errors.New("Wrong tx desc's reward")
 			}
 		}
 	} else if tx.GetType() == common.TxActionParamsType {
 		txA := tx.(*transaction.ActionParamTx)
 		// check Version
 		if txA.Version > transaction.TxVersion {
-			return false
+			return false, errors.New("Wrong tx version")
 		}
 		// check LockTime before now
 		if int64(txA.LockTime) > time.Now().Unix() {
-			return false
+			return false, errors.New("Wrong tx lockTime")
 		}
 		// check Type equal "a"
 		if txA.Type != common.TxActionParamsType {
-			return false
+			return false, errors.New("Wrong tx type")
 		}
 	} else {
-		return false
+		return false, errors.New("Wrong tx type")
 	}
 
-	return true
+	return true, nil
 }

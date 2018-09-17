@@ -30,7 +30,7 @@ type TxErrCode uint8
 const (
 	RejectDuplicateTx TxErrCode = 1
 	RejectInvalidTx   TxErrCode = 2
-	SansityInvalidTx  TxErrCode = 3
+	RejectSansityTx   TxErrCode = 3
 	RejectCoinbaseTx  TxErrCode = 4
 	RejectVersion     TxErrCode = 5
 	RejectInvalidFee  TxErrCode = 6
