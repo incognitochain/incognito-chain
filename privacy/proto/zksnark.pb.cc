@@ -7,7 +7,6 @@
 
 #include <google/protobuf/stubs/common.h>
 #include <google/protobuf/stubs/port.h>
-#include <google/protobuf/stubs/once.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/wire_format_lite_inl.h>
 #include <google/protobuf/descriptor.h>
@@ -19,6 +18,14 @@
 #include "third_party/protobuf/version.h"
 #endif
 // @@protoc_insertion_point(includes)
+
+namespace protobuf_zksnark_2eproto {
+extern PROTOBUF_INTERNAL_EXPORT_protobuf_zksnark_2eproto ::google::protobuf::internal::SCCInfo<0> scc_info_MerkleHash;
+extern PROTOBUF_INTERNAL_EXPORT_protobuf_zksnark_2eproto ::google::protobuf::internal::SCCInfo<0> scc_info_Note;
+extern PROTOBUF_INTERNAL_EXPORT_protobuf_zksnark_2eproto ::google::protobuf::internal::SCCInfo<0> scc_info_PHGRProof;
+extern PROTOBUF_INTERNAL_EXPORT_protobuf_zksnark_2eproto ::google::protobuf::internal::SCCInfo<1> scc_info_MerklePath;
+extern PROTOBUF_INTERNAL_EXPORT_protobuf_zksnark_2eproto ::google::protobuf::internal::SCCInfo<2> scc_info_JSInput;
+}  // namespace protobuf_zksnark_2eproto
 namespace zksnark {
 class MerkleHashDefaultTypeInternal {
  public:
@@ -67,14 +74,9 @@ class VerifyReplyDefaultTypeInternal {
 } _VerifyReply_default_instance_;
 }  // namespace zksnark
 namespace protobuf_zksnark_2eproto {
-void InitDefaultsMerkleHashImpl() {
+static void InitDefaultsMerkleHash() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
-#else
-  ::google::protobuf::internal::InitProtobufDefaults();
-#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
   {
     void* ptr = &::zksnark::_MerkleHash_default_instance_;
     new (ptr) ::zksnark::MerkleHash();
@@ -83,20 +85,12 @@ void InitDefaultsMerkleHashImpl() {
   ::zksnark::MerkleHash::InitAsDefaultInstance();
 }
 
-void InitDefaultsMerkleHash() {
-  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
-  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsMerkleHashImpl);
-}
+::google::protobuf::internal::SCCInfo<0> scc_info_MerkleHash =
+    {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 0, InitDefaultsMerkleHash}, {}};
 
-void InitDefaultsMerklePathImpl() {
+static void InitDefaultsMerklePath() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
-#else
-  ::google::protobuf::internal::InitProtobufDefaults();
-#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  protobuf_zksnark_2eproto::InitDefaultsMerkleHash();
   {
     void* ptr = &::zksnark::_MerklePath_default_instance_;
     new (ptr) ::zksnark::MerklePath();
@@ -105,19 +99,13 @@ void InitDefaultsMerklePathImpl() {
   ::zksnark::MerklePath::InitAsDefaultInstance();
 }
 
-void InitDefaultsMerklePath() {
-  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
-  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsMerklePathImpl);
-}
+::google::protobuf::internal::SCCInfo<1> scc_info_MerklePath =
+    {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 1, InitDefaultsMerklePath}, {
+      &protobuf_zksnark_2eproto::scc_info_MerkleHash.base,}};
 
-void InitDefaultsNoteImpl() {
+static void InitDefaultsNote() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
-#else
-  ::google::protobuf::internal::InitProtobufDefaults();
-#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
   {
     void* ptr = &::zksnark::_Note_default_instance_;
     new (ptr) ::zksnark::Note();
@@ -126,21 +114,12 @@ void InitDefaultsNoteImpl() {
   ::zksnark::Note::InitAsDefaultInstance();
 }
 
-void InitDefaultsNote() {
-  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
-  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsNoteImpl);
-}
+::google::protobuf::internal::SCCInfo<0> scc_info_Note =
+    {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 0, InitDefaultsNote}, {}};
 
-void InitDefaultsJSInputImpl() {
+static void InitDefaultsJSInput() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
-#else
-  ::google::protobuf::internal::InitProtobufDefaults();
-#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  protobuf_zksnark_2eproto::InitDefaultsMerklePath();
-  protobuf_zksnark_2eproto::InitDefaultsNote();
   {
     void* ptr = &::zksnark::_JSInput_default_instance_;
     new (ptr) ::zksnark::JSInput();
@@ -149,21 +128,14 @@ void InitDefaultsJSInputImpl() {
   ::zksnark::JSInput::InitAsDefaultInstance();
 }
 
-void InitDefaultsJSInput() {
-  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
-  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsJSInputImpl);
-}
+::google::protobuf::internal::SCCInfo<2> scc_info_JSInput =
+    {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 2, InitDefaultsJSInput}, {
+      &protobuf_zksnark_2eproto::scc_info_MerklePath.base,
+      &protobuf_zksnark_2eproto::scc_info_Note.base,}};
 
-void InitDefaultsProveRequestImpl() {
+static void InitDefaultsProveRequest() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
-#else
-  ::google::protobuf::internal::InitProtobufDefaults();
-#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  protobuf_zksnark_2eproto::InitDefaultsJSInput();
-  protobuf_zksnark_2eproto::InitDefaultsNote();
   {
     void* ptr = &::zksnark::_ProveRequest_default_instance_;
     new (ptr) ::zksnark::ProveRequest();
@@ -172,19 +144,14 @@ void InitDefaultsProveRequestImpl() {
   ::zksnark::ProveRequest::InitAsDefaultInstance();
 }
 
-void InitDefaultsProveRequest() {
-  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
-  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsProveRequestImpl);
-}
+::google::protobuf::internal::SCCInfo<2> scc_info_ProveRequest =
+    {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 2, InitDefaultsProveRequest}, {
+      &protobuf_zksnark_2eproto::scc_info_JSInput.base,
+      &protobuf_zksnark_2eproto::scc_info_Note.base,}};
 
-void InitDefaultsPHGRProofImpl() {
+static void InitDefaultsPHGRProof() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
-#else
-  ::google::protobuf::internal::InitProtobufDefaults();
-#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
   {
     void* ptr = &::zksnark::_PHGRProof_default_instance_;
     new (ptr) ::zksnark::PHGRProof();
@@ -193,20 +160,12 @@ void InitDefaultsPHGRProofImpl() {
   ::zksnark::PHGRProof::InitAsDefaultInstance();
 }
 
-void InitDefaultsPHGRProof() {
-  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
-  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsPHGRProofImpl);
-}
+::google::protobuf::internal::SCCInfo<0> scc_info_PHGRProof =
+    {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 0, InitDefaultsPHGRProof}, {}};
 
-void InitDefaultsProveReplyImpl() {
+static void InitDefaultsProveReply() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
-#else
-  ::google::protobuf::internal::InitProtobufDefaults();
-#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  protobuf_zksnark_2eproto::InitDefaultsPHGRProof();
   {
     void* ptr = &::zksnark::_ProveReply_default_instance_;
     new (ptr) ::zksnark::ProveReply();
@@ -215,20 +174,13 @@ void InitDefaultsProveReplyImpl() {
   ::zksnark::ProveReply::InitAsDefaultInstance();
 }
 
-void InitDefaultsProveReply() {
-  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
-  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsProveReplyImpl);
-}
+::google::protobuf::internal::SCCInfo<1> scc_info_ProveReply =
+    {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 1, InitDefaultsProveReply}, {
+      &protobuf_zksnark_2eproto::scc_info_PHGRProof.base,}};
 
-void InitDefaultsVerifyRequestImpl() {
+static void InitDefaultsVerifyRequest() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
-#else
-  ::google::protobuf::internal::InitProtobufDefaults();
-#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  protobuf_zksnark_2eproto::InitDefaultsPHGRProof();
   {
     void* ptr = &::zksnark::_VerifyRequest_default_instance_;
     new (ptr) ::zksnark::VerifyRequest();
@@ -237,19 +189,13 @@ void InitDefaultsVerifyRequestImpl() {
   ::zksnark::VerifyRequest::InitAsDefaultInstance();
 }
 
-void InitDefaultsVerifyRequest() {
-  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
-  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsVerifyRequestImpl);
-}
+::google::protobuf::internal::SCCInfo<1> scc_info_VerifyRequest =
+    {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 1, InitDefaultsVerifyRequest}, {
+      &protobuf_zksnark_2eproto::scc_info_PHGRProof.base,}};
 
-void InitDefaultsVerifyReplyImpl() {
+static void InitDefaultsVerifyReply() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-#ifdef GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
-  ::google::protobuf::internal::InitProtobufDefaultsForceUnique();
-#else
-  ::google::protobuf::internal::InitProtobufDefaults();
-#endif  // GOOGLE_PROTOBUF_ENFORCE_UNIQUENESS
   {
     void* ptr = &::zksnark::_VerifyReply_default_instance_;
     new (ptr) ::zksnark::VerifyReply();
@@ -258,9 +204,19 @@ void InitDefaultsVerifyReplyImpl() {
   ::zksnark::VerifyReply::InitAsDefaultInstance();
 }
 
-void InitDefaultsVerifyReply() {
-  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
-  ::google::protobuf::GoogleOnceInit(&once, &InitDefaultsVerifyReplyImpl);
+::google::protobuf::internal::SCCInfo<0> scc_info_VerifyReply =
+    {{ATOMIC_VAR_INIT(::google::protobuf::internal::SCCInfoBase::kUninitialized), 0, InitDefaultsVerifyReply}, {}};
+
+void InitDefaults() {
+  ::google::protobuf::internal::InitSCC(&scc_info_MerkleHash.base);
+  ::google::protobuf::internal::InitSCC(&scc_info_MerklePath.base);
+  ::google::protobuf::internal::InitSCC(&scc_info_Note.base);
+  ::google::protobuf::internal::InitSCC(&scc_info_JSInput.base);
+  ::google::protobuf::internal::InitSCC(&scc_info_ProveRequest.base);
+  ::google::protobuf::internal::InitSCC(&scc_info_PHGRProof.base);
+  ::google::protobuf::internal::InitSCC(&scc_info_ProveReply.base);
+  ::google::protobuf::internal::InitSCC(&scc_info_VerifyRequest.base);
+  ::google::protobuf::internal::InitSCC(&scc_info_VerifyReply.base);
 }
 
 ::google::protobuf::Metadata file_level_metadata[9];
@@ -373,15 +329,14 @@ static ::google::protobuf::Message const * const file_default_instances[] = {
 
 void protobuf_AssignDescriptors() {
   AddDescriptors();
-  ::google::protobuf::MessageFactory* factory = NULL;
   AssignDescriptors(
-      "zksnark.proto", schemas, file_default_instances, TableStruct::offsets, factory,
+      "zksnark.proto", schemas, file_default_instances, TableStruct::offsets,
       file_level_metadata, NULL, NULL);
 }
 
 void protobuf_AssignDescriptorsOnce() {
-  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
-  ::google::protobuf::GoogleOnceInit(&once, &protobuf_AssignDescriptors);
+  static ::google::protobuf::internal::once_flag once;
+  ::google::protobuf::internal::call_once(once, protobuf_AssignDescriptors);
 }
 
 void protobuf_RegisterTypes(const ::std::string&) GOOGLE_PROTOBUF_ATTRIBUTE_COLD;
@@ -425,8 +380,8 @@ void AddDescriptorsImpl() {
 }
 
 void AddDescriptors() {
-  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
-  ::google::protobuf::GoogleOnceInit(&once, &AddDescriptorsImpl);
+  static ::google::protobuf::internal::once_flag once;
+  ::google::protobuf::internal::call_once(once, AddDescriptorsImpl);
 }
 // Force AddDescriptors() to be called at dynamic initialization time.
 struct StaticDescriptorInitializer {
@@ -447,16 +402,14 @@ const int MerkleHash::kHashFieldNumber;
 
 MerkleHash::MerkleHash()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
-  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
-    ::protobuf_zksnark_2eproto::InitDefaultsMerkleHash();
-  }
+  ::google::protobuf::internal::InitSCC(
+      &protobuf_zksnark_2eproto::scc_info_MerkleHash.base);
   SharedCtor();
   // @@protoc_insertion_point(constructor:zksnark.MerkleHash)
 }
 MerkleHash::MerkleHash(const MerkleHash& from)
   : ::google::protobuf::Message(),
-      _internal_metadata_(NULL),
-      _cached_size_(0) {
+      _internal_metadata_(NULL) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
   hash_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   if (from.hash().size() > 0) {
@@ -467,7 +420,6 @@ MerkleHash::MerkleHash(const MerkleHash& from)
 
 void MerkleHash::SharedCtor() {
   hash_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  _cached_size_ = 0;
 }
 
 MerkleHash::~MerkleHash() {
@@ -480,9 +432,7 @@ void MerkleHash::SharedDtor() {
 }
 
 void MerkleHash::SetCachedSize(int size) const {
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  _cached_size_.Set(size);
 }
 const ::google::protobuf::Descriptor* MerkleHash::descriptor() {
   ::protobuf_zksnark_2eproto::protobuf_AssignDescriptorsOnce();
@@ -490,17 +440,10 @@ const ::google::protobuf::Descriptor* MerkleHash::descriptor() {
 }
 
 const MerkleHash& MerkleHash::default_instance() {
-  ::protobuf_zksnark_2eproto::InitDefaultsMerkleHash();
+  ::google::protobuf::internal::InitSCC(&protobuf_zksnark_2eproto::scc_info_MerkleHash.base);
   return *internal_default_instance();
 }
 
-MerkleHash* MerkleHash::New(::google::protobuf::Arena* arena) const {
-  MerkleHash* n = new MerkleHash;
-  if (arena != NULL) {
-    arena->Own(n);
-  }
-  return n;
-}
 
 void MerkleHash::Clear() {
 // @@protoc_insertion_point(message_clear_start:zksnark.MerkleHash)
@@ -518,7 +461,7 @@ bool MerkleHash::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:zksnark.MerkleHash)
   for (;;) {
-    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    ::std::pair<::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
@@ -612,9 +555,7 @@ size_t MerkleHash::ByteSizeLong() const {
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = cached_size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  SetCachedSize(cached_size);
   return total_size;
 }
 
@@ -670,9 +611,9 @@ void MerkleHash::Swap(MerkleHash* other) {
 }
 void MerkleHash::InternalSwap(MerkleHash* other) {
   using std::swap;
-  hash_.Swap(&other->hash_);
+  hash_.Swap(&other->hash_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
   _internal_metadata_.Swap(&other->_internal_metadata_);
-  swap(_cached_size_, other->_cached_size_);
 }
 
 ::google::protobuf::Metadata MerkleHash::GetMetadata() const {
@@ -692,9 +633,8 @@ const int MerklePath::kIndexFieldNumber;
 
 MerklePath::MerklePath()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
-  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
-    ::protobuf_zksnark_2eproto::InitDefaultsMerklePath();
-  }
+  ::google::protobuf::internal::InitSCC(
+      &protobuf_zksnark_2eproto::scc_info_MerklePath.base);
   SharedCtor();
   // @@protoc_insertion_point(constructor:zksnark.MerklePath)
 }
@@ -702,14 +642,12 @@ MerklePath::MerklePath(const MerklePath& from)
   : ::google::protobuf::Message(),
       _internal_metadata_(NULL),
       authpath_(from.authpath_),
-      index_(from.index_),
-      _cached_size_(0) {
+      index_(from.index_) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
   // @@protoc_insertion_point(copy_constructor:zksnark.MerklePath)
 }
 
 void MerklePath::SharedCtor() {
-  _cached_size_ = 0;
 }
 
 MerklePath::~MerklePath() {
@@ -721,9 +659,7 @@ void MerklePath::SharedDtor() {
 }
 
 void MerklePath::SetCachedSize(int size) const {
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  _cached_size_.Set(size);
 }
 const ::google::protobuf::Descriptor* MerklePath::descriptor() {
   ::protobuf_zksnark_2eproto::protobuf_AssignDescriptorsOnce();
@@ -731,17 +667,10 @@ const ::google::protobuf::Descriptor* MerklePath::descriptor() {
 }
 
 const MerklePath& MerklePath::default_instance() {
-  ::protobuf_zksnark_2eproto::InitDefaultsMerklePath();
+  ::google::protobuf::internal::InitSCC(&protobuf_zksnark_2eproto::scc_info_MerklePath.base);
   return *internal_default_instance();
 }
 
-MerklePath* MerklePath::New(::google::protobuf::Arena* arena) const {
-  MerklePath* n = new MerklePath;
-  if (arena != NULL) {
-    arena->Own(n);
-  }
-  return n;
-}
 
 void MerklePath::Clear() {
 // @@protoc_insertion_point(message_clear_start:zksnark.MerklePath)
@@ -760,7 +689,7 @@ bool MerklePath::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:zksnark.MerklePath)
   for (;;) {
-    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    ::std::pair<::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
@@ -768,7 +697,8 @@ bool MerklePath::MergePartialFromCodedStream(
       case 1: {
         if (static_cast< ::google::protobuf::uint8>(tag) ==
             static_cast< ::google::protobuf::uint8>(10u /* 10 & 0xFF */)) {
-          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(input, add_authpath()));
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+                input, add_authpath()));
         } else {
           goto handle_unusual;
         }
@@ -824,7 +754,9 @@ void MerklePath::SerializeWithCachedSizes(
   for (unsigned int i = 0,
       n = static_cast<unsigned int>(this->authpath_size()); i < n; i++) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      1, this->authpath(static_cast<int>(i)), output);
+      1,
+      this->authpath(static_cast<int>(i)),
+      output);
   }
 
   // repeated bool index = 2;
@@ -916,9 +848,7 @@ size_t MerklePath::ByteSizeLong() const {
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = cached_size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  SetCachedSize(cached_size);
   return total_size;
 }
 
@@ -972,10 +902,9 @@ void MerklePath::Swap(MerklePath* other) {
 }
 void MerklePath::InternalSwap(MerklePath* other) {
   using std::swap;
-  authpath_.InternalSwap(&other->authpath_);
+  CastToBase(&authpath_)->InternalSwap(CastToBase(&other->authpath_));
   index_.InternalSwap(&other->index_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
-  swap(_cached_size_, other->_cached_size_);
 }
 
 ::google::protobuf::Metadata MerklePath::GetMetadata() const {
@@ -999,16 +928,14 @@ const int Note::kNfFieldNumber;
 
 Note::Note()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
-  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
-    ::protobuf_zksnark_2eproto::InitDefaultsNote();
-  }
+  ::google::protobuf::internal::InitSCC(
+      &protobuf_zksnark_2eproto::scc_info_Note.base);
   SharedCtor();
   // @@protoc_insertion_point(constructor:zksnark.Note)
 }
 Note::Note(const Note& from)
   : ::google::protobuf::Message(),
-      _internal_metadata_(NULL),
-      _cached_size_(0) {
+      _internal_metadata_(NULL) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
   cm_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   if (from.cm().size() > 0) {
@@ -1041,7 +968,6 @@ void Note::SharedCtor() {
   apk_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   nf_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   value_ = GOOGLE_ULONGLONG(0);
-  _cached_size_ = 0;
 }
 
 Note::~Note() {
@@ -1058,9 +984,7 @@ void Note::SharedDtor() {
 }
 
 void Note::SetCachedSize(int size) const {
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  _cached_size_.Set(size);
 }
 const ::google::protobuf::Descriptor* Note::descriptor() {
   ::protobuf_zksnark_2eproto::protobuf_AssignDescriptorsOnce();
@@ -1068,17 +992,10 @@ const ::google::protobuf::Descriptor* Note::descriptor() {
 }
 
 const Note& Note::default_instance() {
-  ::protobuf_zksnark_2eproto::InitDefaultsNote();
+  ::google::protobuf::internal::InitSCC(&protobuf_zksnark_2eproto::scc_info_Note.base);
   return *internal_default_instance();
 }
 
-Note* Note::New(::google::protobuf::Arena* arena) const {
-  Note* n = new Note;
-  if (arena != NULL) {
-    arena->Own(n);
-  }
-  return n;
-}
 
 void Note::Clear() {
 // @@protoc_insertion_point(message_clear_start:zksnark.Note)
@@ -1101,7 +1018,7 @@ bool Note::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:zksnark.Note)
   for (;;) {
-    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    ::std::pair<::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
@@ -1354,9 +1271,7 @@ size_t Note::ByteSizeLong() const {
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = cached_size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  SetCachedSize(cached_size);
   return total_size;
 }
 
@@ -1431,14 +1346,18 @@ void Note::Swap(Note* other) {
 }
 void Note::InternalSwap(Note* other) {
   using std::swap;
-  cm_.Swap(&other->cm_);
-  r_.Swap(&other->r_);
-  rho_.Swap(&other->rho_);
-  apk_.Swap(&other->apk_);
-  nf_.Swap(&other->nf_);
+  cm_.Swap(&other->cm_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  r_.Swap(&other->r_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  rho_.Swap(&other->rho_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  apk_.Swap(&other->apk_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  nf_.Swap(&other->nf_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
   swap(value_, other->value_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
-  swap(_cached_size_, other->_cached_size_);
 }
 
 ::google::protobuf::Metadata Note::GetMetadata() const {
@@ -1463,16 +1382,14 @@ const int JSInput::kNoteFieldNumber;
 
 JSInput::JSInput()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
-  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
-    ::protobuf_zksnark_2eproto::InitDefaultsJSInput();
-  }
+  ::google::protobuf::internal::InitSCC(
+      &protobuf_zksnark_2eproto::scc_info_JSInput.base);
   SharedCtor();
   // @@protoc_insertion_point(constructor:zksnark.JSInput)
 }
 JSInput::JSInput(const JSInput& from)
   : ::google::protobuf::Message(),
-      _internal_metadata_(NULL),
-      _cached_size_(0) {
+      _internal_metadata_(NULL) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
   spendingkey_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   if (from.spendingkey().size() > 0) {
@@ -1496,7 +1413,6 @@ void JSInput::SharedCtor() {
   ::memset(&witnesspath_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&note_) -
       reinterpret_cast<char*>(&witnesspath_)) + sizeof(note_));
-  _cached_size_ = 0;
 }
 
 JSInput::~JSInput() {
@@ -1511,9 +1427,7 @@ void JSInput::SharedDtor() {
 }
 
 void JSInput::SetCachedSize(int size) const {
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  _cached_size_.Set(size);
 }
 const ::google::protobuf::Descriptor* JSInput::descriptor() {
   ::protobuf_zksnark_2eproto::protobuf_AssignDescriptorsOnce();
@@ -1521,17 +1435,10 @@ const ::google::protobuf::Descriptor* JSInput::descriptor() {
 }
 
 const JSInput& JSInput::default_instance() {
-  ::protobuf_zksnark_2eproto::InitDefaultsJSInput();
+  ::google::protobuf::internal::InitSCC(&protobuf_zksnark_2eproto::scc_info_JSInput.base);
   return *internal_default_instance();
 }
 
-JSInput* JSInput::New(::google::protobuf::Arena* arena) const {
-  JSInput* n = new JSInput;
-  if (arena != NULL) {
-    arena->Own(n);
-  }
-  return n;
-}
 
 void JSInput::Clear() {
 // @@protoc_insertion_point(message_clear_start:zksnark.JSInput)
@@ -1557,7 +1464,7 @@ bool JSInput::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:zksnark.JSInput)
   for (;;) {
-    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    ::std::pair<::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
@@ -1626,7 +1533,7 @@ void JSInput::SerializeWithCachedSizes(
   // .zksnark.MerklePath witnessPath = 1;
   if (this->has_witnesspath()) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      1, *this->witnesspath_, output);
+      1, this->_internal_witnesspath(), output);
   }
 
   // bytes spendingKey = 2;
@@ -1638,7 +1545,7 @@ void JSInput::SerializeWithCachedSizes(
   // .zksnark.Note note = 3;
   if (this->has_note()) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      3, *this->note_, output);
+      3, this->_internal_note(), output);
   }
 
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
@@ -1659,7 +1566,7 @@ void JSInput::SerializeWithCachedSizes(
   if (this->has_witnesspath()) {
     target = ::google::protobuf::internal::WireFormatLite::
       InternalWriteMessageToArray(
-        1, *this->witnesspath_, deterministic, target);
+        1, this->_internal_witnesspath(), deterministic, target);
   }
 
   // bytes spendingKey = 2;
@@ -1673,7 +1580,7 @@ void JSInput::SerializeWithCachedSizes(
   if (this->has_note()) {
     target = ::google::protobuf::internal::WireFormatLite::
       InternalWriteMessageToArray(
-        3, *this->note_, deterministic, target);
+        3, this->_internal_note(), deterministic, target);
   }
 
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
@@ -1704,20 +1611,18 @@ size_t JSInput::ByteSizeLong() const {
   if (this->has_witnesspath()) {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::MessageSize(
-        *this->witnesspath_);
+        *witnesspath_);
   }
 
   // .zksnark.Note note = 3;
   if (this->has_note()) {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::MessageSize(
-        *this->note_);
+        *note_);
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = cached_size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  SetCachedSize(cached_size);
   return total_size;
 }
 
@@ -1779,11 +1684,11 @@ void JSInput::Swap(JSInput* other) {
 }
 void JSInput::InternalSwap(JSInput* other) {
   using std::swap;
-  spendingkey_.Swap(&other->spendingkey_);
+  spendingkey_.Swap(&other->spendingkey_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
   swap(witnesspath_, other->witnesspath_);
   swap(note_, other->note_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
-  swap(_cached_size_, other->_cached_size_);
 }
 
 ::google::protobuf::Metadata JSInput::GetMetadata() const {
@@ -1807,9 +1712,8 @@ const int ProveRequest::kRewardFieldNumber;
 
 ProveRequest::ProveRequest()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
-  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
-    ::protobuf_zksnark_2eproto::InitDefaultsProveRequest();
-  }
+  ::google::protobuf::internal::InitSCC(
+      &protobuf_zksnark_2eproto::scc_info_ProveRequest.base);
   SharedCtor();
   // @@protoc_insertion_point(constructor:zksnark.ProveRequest)
 }
@@ -1817,8 +1721,7 @@ ProveRequest::ProveRequest(const ProveRequest& from)
   : ::google::protobuf::Message(),
       _internal_metadata_(NULL),
       inputs_(from.inputs_),
-      outnotes_(from.outnotes_),
-      _cached_size_(0) {
+      outnotes_(from.outnotes_) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
   hsig_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   if (from.hsig().size() > 0) {
@@ -1841,7 +1744,6 @@ void ProveRequest::SharedCtor() {
   phi_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   rt_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   reward_ = GOOGLE_ULONGLONG(0);
-  _cached_size_ = 0;
 }
 
 ProveRequest::~ProveRequest() {
@@ -1856,9 +1758,7 @@ void ProveRequest::SharedDtor() {
 }
 
 void ProveRequest::SetCachedSize(int size) const {
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  _cached_size_.Set(size);
 }
 const ::google::protobuf::Descriptor* ProveRequest::descriptor() {
   ::protobuf_zksnark_2eproto::protobuf_AssignDescriptorsOnce();
@@ -1866,17 +1766,10 @@ const ::google::protobuf::Descriptor* ProveRequest::descriptor() {
 }
 
 const ProveRequest& ProveRequest::default_instance() {
-  ::protobuf_zksnark_2eproto::InitDefaultsProveRequest();
+  ::google::protobuf::internal::InitSCC(&protobuf_zksnark_2eproto::scc_info_ProveRequest.base);
   return *internal_default_instance();
 }
 
-ProveRequest* ProveRequest::New(::google::protobuf::Arena* arena) const {
-  ProveRequest* n = new ProveRequest;
-  if (arena != NULL) {
-    arena->Own(n);
-  }
-  return n;
-}
 
 void ProveRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:zksnark.ProveRequest)
@@ -1899,7 +1792,7 @@ bool ProveRequest::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:zksnark.ProveRequest)
   for (;;) {
-    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    ::std::pair<::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
@@ -1907,7 +1800,8 @@ bool ProveRequest::MergePartialFromCodedStream(
       case 1: {
         if (static_cast< ::google::protobuf::uint8>(tag) ==
             static_cast< ::google::protobuf::uint8>(10u /* 10 & 0xFF */)) {
-          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(input, add_inputs()));
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+                input, add_inputs()));
         } else {
           goto handle_unusual;
         }
@@ -1918,7 +1812,8 @@ bool ProveRequest::MergePartialFromCodedStream(
       case 2: {
         if (static_cast< ::google::protobuf::uint8>(tag) ==
             static_cast< ::google::protobuf::uint8>(18u /* 18 & 0xFF */)) {
-          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(input, add_outnotes()));
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessage(
+                input, add_outnotes()));
         } else {
           goto handle_unusual;
         }
@@ -2005,14 +1900,18 @@ void ProveRequest::SerializeWithCachedSizes(
   for (unsigned int i = 0,
       n = static_cast<unsigned int>(this->inputs_size()); i < n; i++) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      1, this->inputs(static_cast<int>(i)), output);
+      1,
+      this->inputs(static_cast<int>(i)),
+      output);
   }
 
   // repeated .zksnark.Note outNotes = 2;
   for (unsigned int i = 0,
       n = static_cast<unsigned int>(this->outnotes_size()); i < n; i++) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      2, this->outnotes(static_cast<int>(i)), output);
+      2,
+      this->outnotes(static_cast<int>(i)),
+      output);
   }
 
   // bytes hsig = 3;
@@ -2162,9 +2061,7 @@ size_t ProveRequest::ByteSizeLong() const {
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = cached_size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  SetCachedSize(cached_size);
   return total_size;
 }
 
@@ -2233,14 +2130,16 @@ void ProveRequest::Swap(ProveRequest* other) {
 }
 void ProveRequest::InternalSwap(ProveRequest* other) {
   using std::swap;
-  inputs_.InternalSwap(&other->inputs_);
-  outnotes_.InternalSwap(&other->outnotes_);
-  hsig_.Swap(&other->hsig_);
-  phi_.Swap(&other->phi_);
-  rt_.Swap(&other->rt_);
+  CastToBase(&inputs_)->InternalSwap(CastToBase(&other->inputs_));
+  CastToBase(&outnotes_)->InternalSwap(CastToBase(&other->outnotes_));
+  hsig_.Swap(&other->hsig_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  phi_.Swap(&other->phi_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  rt_.Swap(&other->rt_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
   swap(reward_, other->reward_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
-  swap(_cached_size_, other->_cached_size_);
 }
 
 ::google::protobuf::Metadata ProveRequest::GetMetadata() const {
@@ -2266,16 +2165,14 @@ const int PHGRProof::kGHFieldNumber;
 
 PHGRProof::PHGRProof()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
-  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
-    ::protobuf_zksnark_2eproto::InitDefaultsPHGRProof();
-  }
+  ::google::protobuf::internal::InitSCC(
+      &protobuf_zksnark_2eproto::scc_info_PHGRProof.base);
   SharedCtor();
   // @@protoc_insertion_point(constructor:zksnark.PHGRProof)
 }
 PHGRProof::PHGRProof(const PHGRProof& from)
   : ::google::protobuf::Message(),
-      _internal_metadata_(NULL),
-      _cached_size_(0) {
+      _internal_metadata_(NULL) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
   g_a_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   if (from.g_a().size() > 0) {
@@ -2321,7 +2218,6 @@ void PHGRProof::SharedCtor() {
   g_c_prime_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   g_k_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   g_h_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  _cached_size_ = 0;
 }
 
 PHGRProof::~PHGRProof() {
@@ -2341,9 +2237,7 @@ void PHGRProof::SharedDtor() {
 }
 
 void PHGRProof::SetCachedSize(int size) const {
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  _cached_size_.Set(size);
 }
 const ::google::protobuf::Descriptor* PHGRProof::descriptor() {
   ::protobuf_zksnark_2eproto::protobuf_AssignDescriptorsOnce();
@@ -2351,17 +2245,10 @@ const ::google::protobuf::Descriptor* PHGRProof::descriptor() {
 }
 
 const PHGRProof& PHGRProof::default_instance() {
-  ::protobuf_zksnark_2eproto::InitDefaultsPHGRProof();
+  ::google::protobuf::internal::InitSCC(&protobuf_zksnark_2eproto::scc_info_PHGRProof.base);
   return *internal_default_instance();
 }
 
-PHGRProof* PHGRProof::New(::google::protobuf::Arena* arena) const {
-  PHGRProof* n = new PHGRProof;
-  if (arena != NULL) {
-    arena->Own(n);
-  }
-  return n;
-}
 
 void PHGRProof::Clear() {
 // @@protoc_insertion_point(message_clear_start:zksnark.PHGRProof)
@@ -2386,7 +2273,7 @@ bool PHGRProof::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:zksnark.PHGRProof)
   for (;;) {
-    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    ::std::pair<::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
@@ -2704,9 +2591,7 @@ size_t PHGRProof::ByteSizeLong() const {
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = cached_size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  SetCachedSize(cached_size);
   return total_size;
 }
 
@@ -2790,16 +2675,23 @@ void PHGRProof::Swap(PHGRProof* other) {
 }
 void PHGRProof::InternalSwap(PHGRProof* other) {
   using std::swap;
-  g_a_.Swap(&other->g_a_);
-  g_a_prime_.Swap(&other->g_a_prime_);
-  g_b_.Swap(&other->g_b_);
-  g_b_prime_.Swap(&other->g_b_prime_);
-  g_c_.Swap(&other->g_c_);
-  g_c_prime_.Swap(&other->g_c_prime_);
-  g_k_.Swap(&other->g_k_);
-  g_h_.Swap(&other->g_h_);
+  g_a_.Swap(&other->g_a_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  g_a_prime_.Swap(&other->g_a_prime_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  g_b_.Swap(&other->g_b_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  g_b_prime_.Swap(&other->g_b_prime_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  g_c_.Swap(&other->g_c_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  g_c_prime_.Swap(&other->g_c_prime_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  g_k_.Swap(&other->g_k_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  g_h_.Swap(&other->g_h_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
   _internal_metadata_.Swap(&other->_internal_metadata_);
-  swap(_cached_size_, other->_cached_size_);
 }
 
 ::google::protobuf::Metadata PHGRProof::GetMetadata() const {
@@ -2820,16 +2712,14 @@ const int ProveReply::kProofFieldNumber;
 
 ProveReply::ProveReply()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
-  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
-    ::protobuf_zksnark_2eproto::InitDefaultsProveReply();
-  }
+  ::google::protobuf::internal::InitSCC(
+      &protobuf_zksnark_2eproto::scc_info_ProveReply.base);
   SharedCtor();
   // @@protoc_insertion_point(constructor:zksnark.ProveReply)
 }
 ProveReply::ProveReply(const ProveReply& from)
   : ::google::protobuf::Message(),
-      _internal_metadata_(NULL),
-      _cached_size_(0) {
+      _internal_metadata_(NULL) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
   if (from.has_proof()) {
     proof_ = new ::zksnark::PHGRProof(*from.proof_);
@@ -2841,7 +2731,6 @@ ProveReply::ProveReply(const ProveReply& from)
 
 void ProveReply::SharedCtor() {
   proof_ = NULL;
-  _cached_size_ = 0;
 }
 
 ProveReply::~ProveReply() {
@@ -2854,9 +2743,7 @@ void ProveReply::SharedDtor() {
 }
 
 void ProveReply::SetCachedSize(int size) const {
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  _cached_size_.Set(size);
 }
 const ::google::protobuf::Descriptor* ProveReply::descriptor() {
   ::protobuf_zksnark_2eproto::protobuf_AssignDescriptorsOnce();
@@ -2864,17 +2751,10 @@ const ::google::protobuf::Descriptor* ProveReply::descriptor() {
 }
 
 const ProveReply& ProveReply::default_instance() {
-  ::protobuf_zksnark_2eproto::InitDefaultsProveReply();
+  ::google::protobuf::internal::InitSCC(&protobuf_zksnark_2eproto::scc_info_ProveReply.base);
   return *internal_default_instance();
 }
 
-ProveReply* ProveReply::New(::google::protobuf::Arena* arena) const {
-  ProveReply* n = new ProveReply;
-  if (arena != NULL) {
-    arena->Own(n);
-  }
-  return n;
-}
 
 void ProveReply::Clear() {
 // @@protoc_insertion_point(message_clear_start:zksnark.ProveReply)
@@ -2895,7 +2775,7 @@ bool ProveReply::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:zksnark.ProveReply)
   for (;;) {
-    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    ::std::pair<::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
@@ -2940,7 +2820,7 @@ void ProveReply::SerializeWithCachedSizes(
   // .zksnark.PHGRProof proof = 1;
   if (this->has_proof()) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      1, *this->proof_, output);
+      1, this->_internal_proof(), output);
   }
 
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
@@ -2961,7 +2841,7 @@ void ProveReply::SerializeWithCachedSizes(
   if (this->has_proof()) {
     target = ::google::protobuf::internal::WireFormatLite::
       InternalWriteMessageToArray(
-        1, *this->proof_, deterministic, target);
+        1, this->_internal_proof(), deterministic, target);
   }
 
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
@@ -2985,13 +2865,11 @@ size_t ProveReply::ByteSizeLong() const {
   if (this->has_proof()) {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::MessageSize(
-        *this->proof_);
+        *proof_);
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = cached_size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  SetCachedSize(cached_size);
   return total_size;
 }
 
@@ -3048,7 +2926,6 @@ void ProveReply::InternalSwap(ProveReply* other) {
   using std::swap;
   swap(proof_, other->proof_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
-  swap(_cached_size_, other->_cached_size_);
 }
 
 ::google::protobuf::Metadata ProveReply::GetMetadata() const {
@@ -3075,9 +2952,8 @@ const int VerifyRequest::kRewardFieldNumber;
 
 VerifyRequest::VerifyRequest()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
-  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
-    ::protobuf_zksnark_2eproto::InitDefaultsVerifyRequest();
-  }
+  ::google::protobuf::internal::InitSCC(
+      &protobuf_zksnark_2eproto::scc_info_VerifyRequest.base);
   SharedCtor();
   // @@protoc_insertion_point(constructor:zksnark.VerifyRequest)
 }
@@ -3086,8 +2962,7 @@ VerifyRequest::VerifyRequest(const VerifyRequest& from)
       _internal_metadata_(NULL),
       nullifiers_(from.nullifiers_),
       commits_(from.commits_),
-      macs_(from.macs_),
-      _cached_size_(0) {
+      macs_(from.macs_) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
   hsig_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   if (from.hsig().size() > 0) {
@@ -3112,7 +2987,6 @@ void VerifyRequest::SharedCtor() {
   ::memset(&proof_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&reward_) -
       reinterpret_cast<char*>(&proof_)) + sizeof(reward_));
-  _cached_size_ = 0;
 }
 
 VerifyRequest::~VerifyRequest() {
@@ -3127,9 +3001,7 @@ void VerifyRequest::SharedDtor() {
 }
 
 void VerifyRequest::SetCachedSize(int size) const {
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  _cached_size_.Set(size);
 }
 const ::google::protobuf::Descriptor* VerifyRequest::descriptor() {
   ::protobuf_zksnark_2eproto::protobuf_AssignDescriptorsOnce();
@@ -3137,17 +3009,10 @@ const ::google::protobuf::Descriptor* VerifyRequest::descriptor() {
 }
 
 const VerifyRequest& VerifyRequest::default_instance() {
-  ::protobuf_zksnark_2eproto::InitDefaultsVerifyRequest();
+  ::google::protobuf::internal::InitSCC(&protobuf_zksnark_2eproto::scc_info_VerifyRequest.base);
   return *internal_default_instance();
 }
 
-VerifyRequest* VerifyRequest::New(::google::protobuf::Arena* arena) const {
-  VerifyRequest* n = new VerifyRequest;
-  if (arena != NULL) {
-    arena->Own(n);
-  }
-  return n;
-}
 
 void VerifyRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:zksnark.VerifyRequest)
@@ -3174,7 +3039,7 @@ bool VerifyRequest::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:zksnark.VerifyRequest)
   for (;;) {
-    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    ::std::pair<::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
@@ -3293,7 +3158,7 @@ void VerifyRequest::SerializeWithCachedSizes(
   // .zksnark.PHGRProof proof = 1;
   if (this->has_proof()) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      1, *this->proof_, output);
+      1, this->_internal_proof(), output);
   }
 
   // bytes hsig = 2;
@@ -3349,7 +3214,7 @@ void VerifyRequest::SerializeWithCachedSizes(
   if (this->has_proof()) {
     target = ::google::protobuf::internal::WireFormatLite::
       InternalWriteMessageToArray(
-        1, *this->proof_, deterministic, target);
+        1, this->_internal_proof(), deterministic, target);
   }
 
   // bytes hsig = 2;
@@ -3448,7 +3313,7 @@ size_t VerifyRequest::ByteSizeLong() const {
   if (this->has_proof()) {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::MessageSize(
-        *this->proof_);
+        *proof_);
   }
 
   // uint64 reward = 7;
@@ -3459,9 +3324,7 @@ size_t VerifyRequest::ByteSizeLong() const {
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = cached_size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  SetCachedSize(cached_size);
   return total_size;
 }
 
@@ -3530,15 +3393,16 @@ void VerifyRequest::Swap(VerifyRequest* other) {
 }
 void VerifyRequest::InternalSwap(VerifyRequest* other) {
   using std::swap;
-  nullifiers_.InternalSwap(&other->nullifiers_);
-  commits_.InternalSwap(&other->commits_);
-  macs_.InternalSwap(&other->macs_);
-  hsig_.Swap(&other->hsig_);
-  rt_.Swap(&other->rt_);
+  nullifiers_.InternalSwap(CastToBase(&other->nullifiers_));
+  commits_.InternalSwap(CastToBase(&other->commits_));
+  macs_.InternalSwap(CastToBase(&other->macs_));
+  hsig_.Swap(&other->hsig_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  rt_.Swap(&other->rt_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
   swap(proof_, other->proof_);
   swap(reward_, other->reward_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
-  swap(_cached_size_, other->_cached_size_);
 }
 
 ::google::protobuf::Metadata VerifyRequest::GetMetadata() const {
@@ -3557,16 +3421,14 @@ const int VerifyReply::kValidFieldNumber;
 
 VerifyReply::VerifyReply()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
-  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
-    ::protobuf_zksnark_2eproto::InitDefaultsVerifyReply();
-  }
+  ::google::protobuf::internal::InitSCC(
+      &protobuf_zksnark_2eproto::scc_info_VerifyReply.base);
   SharedCtor();
   // @@protoc_insertion_point(constructor:zksnark.VerifyReply)
 }
 VerifyReply::VerifyReply(const VerifyReply& from)
   : ::google::protobuf::Message(),
-      _internal_metadata_(NULL),
-      _cached_size_(0) {
+      _internal_metadata_(NULL) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
   valid_ = from.valid_;
   // @@protoc_insertion_point(copy_constructor:zksnark.VerifyReply)
@@ -3574,7 +3436,6 @@ VerifyReply::VerifyReply(const VerifyReply& from)
 
 void VerifyReply::SharedCtor() {
   valid_ = false;
-  _cached_size_ = 0;
 }
 
 VerifyReply::~VerifyReply() {
@@ -3586,9 +3447,7 @@ void VerifyReply::SharedDtor() {
 }
 
 void VerifyReply::SetCachedSize(int size) const {
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  _cached_size_.Set(size);
 }
 const ::google::protobuf::Descriptor* VerifyReply::descriptor() {
   ::protobuf_zksnark_2eproto::protobuf_AssignDescriptorsOnce();
@@ -3596,17 +3455,10 @@ const ::google::protobuf::Descriptor* VerifyReply::descriptor() {
 }
 
 const VerifyReply& VerifyReply::default_instance() {
-  ::protobuf_zksnark_2eproto::InitDefaultsVerifyReply();
+  ::google::protobuf::internal::InitSCC(&protobuf_zksnark_2eproto::scc_info_VerifyReply.base);
   return *internal_default_instance();
 }
 
-VerifyReply* VerifyReply::New(::google::protobuf::Arena* arena) const {
-  VerifyReply* n = new VerifyReply;
-  if (arena != NULL) {
-    arena->Own(n);
-  }
-  return n;
-}
 
 void VerifyReply::Clear() {
 // @@protoc_insertion_point(message_clear_start:zksnark.VerifyReply)
@@ -3624,7 +3476,7 @@ bool VerifyReply::MergePartialFromCodedStream(
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:zksnark.VerifyReply)
   for (;;) {
-    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
+    ::std::pair<::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
@@ -3715,9 +3567,7 @@ size_t VerifyReply::ByteSizeLong() const {
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
-  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = cached_size;
-  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  SetCachedSize(cached_size);
   return total_size;
 }
 
@@ -3774,7 +3624,6 @@ void VerifyReply::InternalSwap(VerifyReply* other) {
   using std::swap;
   swap(valid_, other->valid_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
-  swap(_cached_size_, other->_cached_size_);
 }
 
 ::google::protobuf::Metadata VerifyReply::GetMetadata() const {
@@ -3785,5 +3634,36 @@ void VerifyReply::InternalSwap(VerifyReply* other) {
 
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace zksnark
+namespace google {
+namespace protobuf {
+template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::zksnark::MerkleHash* Arena::CreateMaybeMessage< ::zksnark::MerkleHash >(Arena* arena) {
+  return Arena::CreateInternal< ::zksnark::MerkleHash >(arena);
+}
+template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::zksnark::MerklePath* Arena::CreateMaybeMessage< ::zksnark::MerklePath >(Arena* arena) {
+  return Arena::CreateInternal< ::zksnark::MerklePath >(arena);
+}
+template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::zksnark::Note* Arena::CreateMaybeMessage< ::zksnark::Note >(Arena* arena) {
+  return Arena::CreateInternal< ::zksnark::Note >(arena);
+}
+template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::zksnark::JSInput* Arena::CreateMaybeMessage< ::zksnark::JSInput >(Arena* arena) {
+  return Arena::CreateInternal< ::zksnark::JSInput >(arena);
+}
+template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::zksnark::ProveRequest* Arena::CreateMaybeMessage< ::zksnark::ProveRequest >(Arena* arena) {
+  return Arena::CreateInternal< ::zksnark::ProveRequest >(arena);
+}
+template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::zksnark::PHGRProof* Arena::CreateMaybeMessage< ::zksnark::PHGRProof >(Arena* arena) {
+  return Arena::CreateInternal< ::zksnark::PHGRProof >(arena);
+}
+template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::zksnark::ProveReply* Arena::CreateMaybeMessage< ::zksnark::ProveReply >(Arena* arena) {
+  return Arena::CreateInternal< ::zksnark::ProveReply >(arena);
+}
+template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::zksnark::VerifyRequest* Arena::CreateMaybeMessage< ::zksnark::VerifyRequest >(Arena* arena) {
+  return Arena::CreateInternal< ::zksnark::VerifyRequest >(arena);
+}
+template<> GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE ::zksnark::VerifyReply* Arena::CreateMaybeMessage< ::zksnark::VerifyReply >(Arena* arena) {
+  return Arena::CreateInternal< ::zksnark::VerifyReply >(arena);
+}
+}  // namespace protobuf
+}  // namespace google
 
 // @@protoc_insertion_point(global_scope)
