@@ -187,8 +187,9 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 	log.Println(params)
 	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.Tx{
-		Version: 1,
-		Type:    common.TxNormalType,
+		Version:     1,
+		Type:        common.TxNormalType,
+		AddressHash: 0,
 	}
 	txIns := common.InterfaceSlice(arrayParams[0])
 	for _, txIn := range txIns {
