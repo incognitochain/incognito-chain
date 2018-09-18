@@ -396,7 +396,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	time.AfterFunc(time.Second*10, func() {
 		if !peerConn.VerAckReceived() {
 			Logger.log.Infof("HandleStream timeoutVerack timeout PEER ID %s", peerConn.PeerId.String())
-			timeOutVerAck <- struct{}{}
+			close(timeOutVerAck)
 		}
 	})
 
@@ -431,7 +431,7 @@ func (self *Peer) Stop() {
 	for _, peerConn := range self.PeerConns {
 		peerConn.updateState(ConnCanceled)
 	}
-	self.quit <- struct{}{}
+	close(self.quit)
 }
 
 func (self *Peer) handleConnected(peerConn *PeerConn) {
