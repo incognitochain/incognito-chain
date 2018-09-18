@@ -10,11 +10,12 @@ import (
 	// "crypto/sha256"
 	"math/big"
 
+	"time"
+
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
-	"time"
 )
 
 // Tx represents a coin-transfer-transaction stored in a block
@@ -168,6 +169,8 @@ func CreateTx(
 	// Generate proof and sign tx
 	var reward uint64 // Zero reward for non-coinbase transaction
 	tx, err := GenerateProofAndSign(inputs, outputs, rt[:], reward)
+	fmt.Printf("jspubkey size: %v\n", len(tx.JSPubKey))
+	fmt.Printf("jssig size: %v\n", len(tx.JSSig))
 	if err == nil {
 		tx.LockTime = time.Now().Unix()
 	}
