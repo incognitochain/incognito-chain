@@ -60,6 +60,7 @@ type Peer struct {
 
 	Seed          int64
 	outboundMutex sync.Mutex
+	inboundMutex sync.Mutex
 	Config        Config
 	MaxOutbound   int
 	MaxInbound    int
@@ -191,6 +192,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.disconnectPeer = make(chan *PeerConn)
 
 	self.outboundMutex = sync.Mutex{}
+	self.inboundMutex = sync.Mutex{}
 
 	return &self, nil
 }
@@ -354,6 +356,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		return
 	}
 
+	self.inboundMutex.Lock()
 	remotePeerId := stream.Conn().RemotePeer()
 	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID %s", self.Host.ID().String(), remotePeerId.String())
 
@@ -392,6 +395,8 @@ func (self *Peer) HandleStream(stream net.Stream) {
 
 	go self.handleConnected(&peerConn)
 
+	self.inboundMutex.Unlock()
+
 	timeOutVerAck := make(chan struct{})
 	time.AfterFunc(time.Second*10, func() {
 		if !peerConn.VerAckReceived() {
@@ -421,6 +426,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
 	for _, peerConnection := range self.PeerConns {
 		peerConnection.QueueMessageWithEncoding(msg, doneChan)
+		Logger.log.Info("Queued msg", peerConnection.PeerId.Pretty(), peerConnection.ListenerPeer.PeerId.Pretty())
 	}
 }
 

@@ -778,6 +778,7 @@ func (self Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {
 PushMessageToAll broadcast msg
 */
 func (self Server) PushMessageToAll(msg wire.Message) error {
+	Logger.log.Info("PushMessageToAll", msg)
 	var dc chan<- struct{}
 	for _, listener := range self.ConnManager.Config.ListenerPeers {
 		msg.SetSenderID(listener.PeerId)
