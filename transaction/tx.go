@@ -168,6 +168,8 @@ func CreateTx(
 	// Generate proof and sign tx
 	var reward uint64 // Zero reward for non-coinbase transaction
 	tx, err := GenerateProofAndSign(inputs, outputs, rt[:], reward)
+	fmt.Printf("jspubkey size: %v\n", len(tx.JSPubKey))
+	fmt.Printf("jssig size: %v\n", len(tx.JSSig))
 	return tx, err
 }
 
