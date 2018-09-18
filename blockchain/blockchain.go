@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"encoding/json"
-	"time"
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
@@ -126,7 +125,7 @@ func (self *BlockChain) createChainState(chainID byte) error {
 		initBlock.Header.Timestamp = self.Config.ChainParams.GenesisBlock.Header.Timestamp
 		initBlock.Header.NextCommittee = self.Config.ChainParams.GenesisBlock.Header.NextCommittee
 	}
-	initBlock.Height = 0
+	initBlock.Height = 1
 
 	// Initialize the state related to the best block.  Since it is the
 	// genesis block, use its timestamp for the median time.
@@ -134,7 +133,7 @@ func (self *BlockChain) createChainState(chainID byte) error {
 	//blockSize := uint64(initBlock.SerializeSize())
 	//blockWeight := uint64(GetBlockWeight(initBlock))
 	self.BestState[chainID] = &BestState{}
-	self.BestState[chainID].Init(initBlock, 0, 0, numTxns, numTxns, time.Unix(initBlock.Header.Timestamp.Unix(), 0))
+	self.BestState[chainID].Init(initBlock, 0, 0, numTxns, numTxns, initBlock.Header.Timestamp)
 
 	// store block genesis
 	err := self.StoreBlock(initBlock)

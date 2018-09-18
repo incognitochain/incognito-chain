@@ -127,7 +127,7 @@ mempoolLoop:
 		Version:            1,
 		PrevBlockHash:      *prevBlockHash,
 		MerkleRoot:         *merkleRoot,
-		Timestamp:          time.Now(),
+		Timestamp:          time.Now().Unix(),
 		Difficulty:         0, //@todo should be create Difficulty logic
 		Nonce:              0, //@todo should be create Nonce logic
 		BlockCommitteeSigs: make([]string, 11),

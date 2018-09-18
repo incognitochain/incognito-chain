@@ -28,7 +28,7 @@ type BestState struct {
 	MedianTime  time.Time // Median time as per CalcPastMedianTime.
 }
 
-func (self *BestState) Init(block *Block, blocksize, blockweight, numTxts, totalTxns uint64, medianTime time.Time) {
+func (self *BestState) Init(block *Block, blocksize, blockweight, numTxts, totalTxns uint64, medianTime int64) {
 	self.BestBlock = block
 	self.BestBlockHash = *self.BestBlock.Hash()
 

@@ -93,14 +93,14 @@ func (self *Engine) Start() error {
 	self.validatedChainsHeight.Heights = make([]int, TOTAL_VALIDATORS)
 
 	for chainID := 0; chainID < TOTAL_VALIDATORS; chainID++ {
-		self.knownChainsHeight.Heights[chainID] = int(self.config.BlockChain.BestState[chainID].Height + 1)
+		self.knownChainsHeight.Heights[chainID] = int(self.config.BlockChain.BestState[chainID].Height)
 	}
 
 	Logger.log.Info("Validating local blockchain...")
 	for chainID := 0; chainID < TOTAL_VALIDATORS; chainID++ {
-		//Don't validate genesis block
-		for blockIdx := 1; blockIdx < self.knownChainsHeight.Heights[chainID]; blockIdx++ {
-			block, err := self.config.BlockChain.GetBlockByBlockHeight(int32(blockIdx), byte(chainID))
+		//Don't validate genesis block (blockHeight = 1)
+		for blockHeight := 2; blockHeight < self.knownChainsHeight.Heights[chainID]; blockHeight++ {
+			block, err := self.config.BlockChain.GetBlockByBlockHeight(int32(blockHeight), byte(chainID))
 			if err != nil {
 				Logger.log.Error(err)
 				return err
@@ -220,7 +220,7 @@ func (self *Engine) StartSealer(sealerPrvKey string) {
 func (self *Engine) createBlock() (*blockchain.Block, error) {
 	Logger.log.Info("Start creating block...")
 	myChainID, _ := self.getMyChain()
-	newblock, err := self.config.blockGen.NewBlockTemplate(string(self.config.ValidatorKeyPair.PublicKey), self.config.BlockChain, myChainID)
+	newblock, err := self.config.blockGen.NewBlockTemplate(base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey), self.config.BlockChain, myChainID)
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
@@ -228,11 +228,11 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	newblock.Block.Header.ChainID = myChainID
 	newblock.Block.ChainLeader = base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey)
 	newblock.Block.Header.NextCommittee = self.upComingCommittee
-	sig, err := self.config.ValidatorKeyPair.Sign([]byte(newblock.Block.Hash().String()))
+	sig, err := self.signData([]byte(newblock.Block.Hash().String()))
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
-	newblock.Block.Header.BlockCommitteeSigs[0] = base64.StdEncoding.EncodeToString(sig)
+	newblock.Block.Header.BlockCommitteeSigs[0] = sig
 	return newblock.Block, nil
 }
 
@@ -297,23 +297,23 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 	case resList := <-validateSigList:
 		fmt.Println(resList)
 		finalBlock.Header.BlockCommitteeSigs = append(finalBlock.Header.BlockCommitteeSigs, resList...)
-		finalBlock.Header.NextCommittee = self.currentCommittee
 	case <-timeout:
 		return errCantFinalizeBlock
 	}
 
-	sigBytes, err := self.config.ValidatorKeyPair.Sign([]byte(block.Hash().String()))
+	sig, err := self.signData([]byte(finalBlock.Hash().String()))
 	if err != nil {
 		return err
 	}
-	finalBlock.ChainLeaderSig = string(sigBytes)
+	finalBlock.ChainLeaderSig = sig
 	self.UpdateChain(finalBlock)
 	blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
 	if err != nil {
 		return err
 	}
 	blockMsg.(*wire.MessageBlock).Block = *finalBlock
-	go self.config.Server.PushMessageToAll(blockMsg)
+	self.config.Server.PushMessageToAll(blockMsg)
+	fmt.Println(self.validatedChainsHeight.Heights)
 	return nil
 }
 
@@ -409,29 +409,29 @@ func (self *Engine) validatePreSignBlock(block blockchain.Block) error {
 	// }
 
 	// 3. Check signature of the block belongs to current committee or not.
-	// decPubkey, _ := base64.StdEncoding.DecodeString(block.ChainLeader)
-	// k := cashec.KeyPair{
-	// 	PublicKey: decPubkey,
-	// }
-	// decSig, _ := base64.StdEncoding.DecodeString(block.Header.BlockCommitteeSigs[0])
-	// isValidSignature, err := k.Verify([]byte(block.Hash().String()), decSig)
-	// if err != nil {
-	// 	return err
-	// }
-	// if isValidSignature == false {
-	// 	return errSigWrongOrNotExits
-	// }
+	decPubkey, _ := base64.StdEncoding.DecodeString(block.ChainLeader)
+	k := cashec.KeyPair{
+		PublicKey: decPubkey,
+	}
+	decSig, _ := base64.StdEncoding.DecodeString(block.Header.BlockCommitteeSigs[0])
+	isValidSignature, err := k.Verify([]byte(block.Hash().String()), decSig)
+	if err != nil {
+		return err
+	}
+	if isValidSignature == false {
+		return errSigWrongOrNotExits
+	}
 
 	// 4. Check chains height of the block.
 	for i := 0; i < TOTAL_VALIDATORS; i++ {
-		if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i] - 1) {
+		if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) {
 			timer := time.NewTimer(MAX_SYNC_CHAINS_TIME * time.Second)
 			<-timer.C
 			break
 		}
 	}
 	for i := 0; i < TOTAL_VALIDATORS; i++ {
-		if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i] - 1) {
+		if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) {
 			return errChainNotFullySynced
 		}
 	}
@@ -512,7 +512,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 		return
 	}
 
-	sig, err := self.config.ValidatorKeyPair.Sign([]byte(block.Hash().String()))
+	sig, err := self.signData([]byte(block.Hash().String()))
 	if err != nil {
 		// ??? something went terribly wrong
 		return
@@ -520,7 +520,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 	blockSigMsg := &wire.MessageBlockSig{
 		BlockHash:    block.Hash().String(),
 		Validator:    base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey),
-		ValidatorSig: base64.StdEncoding.EncodeToString(sig),
+		ValidatorSig: sig,
 	}
 	peerID, err := peer2.IDB58Decode(msgBlock.SenderID)
 	if err != nil {
@@ -590,7 +590,7 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	for _, tx := range block.Transactions {
 		self.config.MemPool.RemoveTx(*tx.(*transaction.Tx))
 	}
-	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0))
+	newBestState.Init(block, 0, 0, numTxns, numTxns, block.Header.Timestamp)
 	self.config.BlockChain.BestState[block.Header.ChainID] = newBestState
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)
 
@@ -598,8 +598,8 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.config.BlockChain.StoreBlockIndex(block)
 	self.validatedChainsHeight.Lock()
 	self.knownChainsHeight.Lock()
-	self.validatedChainsHeight.Heights[block.Header.ChainID]++
-	self.knownChainsHeight.Heights[block.Header.ChainID]++
+	self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
+	self.knownChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
 	self.knownChainsHeight.Unlock()
 	self.validatedChainsHeight.Unlock()
 }
