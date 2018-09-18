@@ -690,7 +690,7 @@ With private-key, we can check unspent tx by check nullifiers from database
 - Param #1: privateKey - byte[] of privatekey
 - Param #2: typeJoinSplitDesc - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, typeJoinSplitDesc string) ([]transaction.Tx, error) {
+func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, typeJoinSplitDesc string, sortType int, sortAsc bool) ([]transaction.Tx, error) {
 	results := make([]transaction.Tx, 0)
 
 	// get list nullifiers from db to check spending
@@ -806,6 +806,10 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 
 	// unlock chain
 	self.chainLock.Unlock()
+
+	// sort txs
+	transaction.SortArrayTxs(results, sortType, sortAsc)
+
 	return results, nil
 }
 

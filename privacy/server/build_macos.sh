@@ -16,9 +16,14 @@ echo "install gmp ... "
 echo "brew install gmp"
 brew install gmp
 
+# install lib protobuf
+echo "install protobuf ... "
+echo "brew install protobuf"
+brew install protobuf
+
 # install lib protobuf-c
 echo "install protobuf-c ... "
-echo "brew install protobuf-c"
+echo "brew install protobuf-c version"
 brew install protobuf-c
 
 # install grpc
@@ -34,4 +39,22 @@ fi
 cd build
 
 cmake ..
-make .
+make
+
+file="./proving.key"
+if [ -f "$file" ]
+then
+	echo "$file found."
+else
+	wget https://github.com/ninjadotorg/cash-prototype/releases/download/zkpp-v0.0.1/proving.key
+fi
+
+file="./verifying.key"
+if [ -f "$file" ]
+then
+	echo "$file found."
+else
+	wget https://github.com/ninjadotorg/cash-prototype/releases/download/zkpp-v0.0.1/verifying.key
+fi
+
+./main

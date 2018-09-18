@@ -16,6 +16,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
+	"sort"
 )
 
 // Tx represents a coin-transfer-transaction stored in a block
@@ -406,4 +407,40 @@ func JSSigToByteArray(jsSig *client.EcdsaSignature) []byte {
 	jssig = append(jssig, r...)
 	jssig = append(jssig, s...)
 	return jssig
+}
+
+func SortArrayTxs(data []Tx, sortType int, sortAsc bool) {
+	if len(data) == 0 {
+		return
+	}
+	switch sortType {
+	case NoSort:
+		{
+			// do nothing
+		}
+	case SortByAmount:
+		{
+			sort.Slice(data, func(i, j int) bool {
+				desc1 := data[i].Descs
+				amount1 := uint64(0)
+				for _, desc := range desc1 {
+					for _, note := range desc.GetNote() {
+						amount1 += note.Value
+					}
+				}
+				desc2 := data[j].Descs
+				amount2 := uint64(0)
+				for _, desc := range desc2 {
+					for _, note := range desc.GetNote() {
+						amount2 += note.Value
+					}
+				}
+				return amount1 > amount2 && sortAsc
+			})
+		}
+	default:
+		{
+			// do nothing
+		}
+	}
 }
