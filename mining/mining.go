@@ -10,6 +10,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
 /*type txPrioItem struct {
@@ -135,7 +136,7 @@ func createCoinbaseTx(
 	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}
 	placeHolderOutputNote := &client.Note{Value: 0, Apk: receiverAddr.Apk}
 
-	outputs := make([]*client.JSOutput, 2)
+	outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
 	outputs[0].EncKey = receiverAddr.Pkenc
 	outputs[0].OutputNote = outNote
 	outputs[1].EncKey = receiverAddr.Pkenc
@@ -319,7 +320,8 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 
 	_ = []byte("1234567890123456789012") //@todo should be create function create basescript
 
-	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, nil, rewardMap, nil)
+	receiverKeyset, _ := wallet.Base58CheckDeserialize(payToAddress)
+	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, &receiverKeyset.KeyPair.PublicKey, rewardMap, g.chain.BestState.BestBlock.Header.MerkleRootCommitments.CloneBytes())
 	if err != nil {
 		return nil, err
 	}

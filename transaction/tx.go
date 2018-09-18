@@ -3,13 +3,14 @@ package transaction
 import (
 	"bytes"
 	"crypto/rand"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 
 	// "crypto/sha256"
-	// "math/big"
+	"math/big"
+
+	"time"
 
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -21,11 +22,11 @@ import (
 type Tx struct {
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // n
-	LockTime int    `json:"LockTime"`
+	LockTime int64  `json:"LockTime"`
 	Fee      uint64 `json:"Fee"`
 
 	Descs    []*JoinSplitDesc `json:"Descs"`
-	JSPubKey []byte           `json:"JSPubKey,omitempty"` // 32 bytes
+	JSPubKey []byte           `json:"JSPubKey,omitempty"` // 64 bytes
 	JSSig    []byte           `json:"JSSig,omitempty"`    // 64 bytes
 
 	txId *common.Hash
@@ -43,7 +44,7 @@ func (tx *Tx) GetTxId() *common.Hash {
 func (tx *Tx) Hash() *common.Hash {
 	record := strconv.Itoa(int(tx.Version))
 	record += tx.Type
-	record += strconv.Itoa(tx.LockTime)
+	record += strconv.Itoa(int(tx.LockTime))
 	record += strconv.Itoa(len(tx.Descs))
 	for _, desc := range tx.Descs {
 		record += desc.toString()
@@ -170,6 +171,9 @@ func CreateTx(
 	tx, err := GenerateProofAndSign(inputs, outputs, rt[:], reward)
 	fmt.Printf("jspubkey size: %v\n", len(tx.JSPubKey))
 	fmt.Printf("jssig size: %v\n", len(tx.JSSig))
+	if err == nil {
+		tx.LockTime = time.Now().Unix()
+	}
 	return tx, err
 }
 
@@ -195,7 +199,7 @@ func CreateRandomJSInput() *client.JSInput {
 	input := new(client.JSInput)
 	input.InputNote = createDummyNote(&randomKey)
 	input.Key = &randomKey
-	input.WitnessPath = new(client.MerklePath) // TODO(@0xbunyip): create dummy path if necessary
+	input.WitnessPath = (&client.MerklePath{}).CreateDummyPath()
 	return input
 }
 
@@ -210,23 +214,17 @@ func SignTx(tx *Tx, privKey *client.PrivateKey) (*Tx, error) {
 	hash := tx.GetTxId()
 	data := make([]byte, common.HashSize)
 	copy(data, hash[:])
-	// dataToBeSigned, err := json.Marshal(tx)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// hash := sha256.Sum256([]byte(dataToBeSigned))
 
 	// Sign
-	ecdsaSignature := *new(client.EcdsaSignature)
-	ecdsaSignature.R, ecdsaSignature.S, _ = client.Sign(rand.Reader, privKey, data[:])
-	// if err != nil {
-	// 	return nil, err
-	// }
+	ecdsaSignature := new(client.EcdsaSignature)
+	var err error
+	ecdsaSignature.R, ecdsaSignature.S, err = client.Sign(rand.Reader, privKey, data[:])
+	if err != nil {
+		return nil, err
+	}
 
-	tx.JSSig, _ = json.Marshal(ecdsaSignature)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	//Signature 64 bytes
+	tx.JSSig = JSSigToByteArray(ecdsaSignature)
 
 	return tx, nil
 }
@@ -236,21 +234,16 @@ func VerifySign(tx *Tx) (bool, error) {
 	if tx.JSSig == nil || tx.JSPubKey == nil {
 		return false, errors.New("Input transaction must be an signed one!")
 	}
+
 	// UnParse Public key
 	pubKey := new(client.PublicKey)
-	err := json.Unmarshal(tx.JSPubKey, pubKey)
-	if err != nil {
-		return false, err
-	}
-	// fmt.Printf("Pub key: %+v\n", *pubKey)
+	pubKey.X = new(big.Int).SetBytes(tx.JSPubKey[0:32])
+	pubKey.Y = new(big.Int).SetBytes(tx.JSPubKey[32:64])
 
 	// UnParse ECDSA signature
 	ecdsaSignature := new(client.EcdsaSignature)
-	err = json.Unmarshal(tx.JSSig, ecdsaSignature)
-	if err != nil {
-		return false, err
-	}
-	// fmt.Printf("JSsig : %+v\n", jsSig)
+	ecdsaSignature.R = new(big.Int).SetBytes(tx.JSSig[0:32])
+	ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])
 
 	// Hash origin transaction
 	hash := tx.GetTxId()
@@ -343,16 +336,13 @@ func generateTx(
 
 // GenerateProofAndSign creates zk-proof, build the transaction and sign it using a random generated key pair
 func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) (*Tx, error) {
-	//Generate signing key
+	//Generate signing key 96 bytes
 	sigPrivKey, err := client.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, err
 	}
-	// Verification key
-	sigPubKey, err := json.Marshal(sigPrivKey.PublicKey)
-	if err != nil {
-		return nil, err
-	}
+	// Verification key 64 bytes
+	sigPubKey := PubKeyToByteArray(&sigPrivKey.PublicKey)
 
 	var seed, phi []byte
 	var outputR [][]byte
@@ -398,4 +388,22 @@ func GenerateProofForGenesisTx(
 
 	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, seed, sigPubKey, &ephemeralPrivKey)
 	return tx, err
+}
+
+func PubKeyToByteArray(pubKey *client.PublicKey) []byte {
+	var pub []byte
+	pubX := pubKey.X.Bytes()
+	pubY := pubKey.Y.Bytes()
+	pub = append(pub, pubX...)
+	pub = append(pub, pubY...)
+	return pub
+}
+
+func JSSigToByteArray(jsSig *client.EcdsaSignature) []byte {
+	var jssig []byte
+	r := jsSig.R.Bytes()
+	s := jsSig.S.Bytes()
+	jssig = append(jssig, r...)
+	jssig = append(jssig, s...)
+	return jssig
 }

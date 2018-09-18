@@ -140,8 +140,27 @@ func (self *BlockChain) createChainState() error {
 	self.BestState = &BestState{}
 	self.BestState.Init(genesisBlock, 0, 0, numTxns, numTxns, time.Unix(genesisBlock.Header.Timestamp.Unix(), 0), tree)
 
+	// save nullifiers and commitments from genesisblock
+	view := NewTxViewPoint()
+	err := view.fetchTxViewPoint(self.Config.DataBase, genesisBlock)
+	if err != nil {
+		return err
+	}
+	view.SetBestHash(genesisBlock.Hash())
+	// Update the list nullifiers and commitment set using the state of the used tx view point. This
+	// entails adding the new
+	// ones created by the block.
+	err = self.StoreNullifiersFromTxViewPoint(*view)
+	if err != nil {
+		return err
+	}
+	err = self.StoreCommitmentsFromTxViewPoint(*view)
+	if err != nil {
+		return err
+	}
+
 	// store block genesis
-	err := self.StoreBlock(genesisBlock)
+	err = self.StoreBlock(genesisBlock)
 	if err != nil {
 		return err
 	}
@@ -737,7 +756,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 								if len(candidateNullifier) == 0 {
 									continue
 								}
-								checkCandiateNullifier, err := common.SliceExists(nullifiersInDb, candidateNullifier)
+								checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
 								if err != nil || checkCandiateNullifier == true {
 									// candidate nullifier is not existed in db
 									continue
@@ -745,6 +764,8 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 							}
 							copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
 							copyDesc.AppendNote(note)
+							note.Cm = candidateCommitment
+							note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
 							copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
 						} else {
 							continue
@@ -757,7 +778,9 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 				if len(listDesc) > 0 {
 					copyTx.Descs = listDesc
 				}
-				txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
+				if len(copyTx.Descs) > 0 {
+					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
+				}
 			}
 		}
 		// detected some tx can be accepted
@@ -771,11 +794,12 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 		if blockHeight > -1 {
 			// not is genesis block
 			preBlockHash := bestBlock.Header.PrevBlockHash
-			bestBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-			if blockHeight != bestBlock.Height || err != nil {
+			preBlock, err := self.GetBlockByBlockHash(&preBlockHash)
+			if blockHeight != preBlock.Height || err != nil {
 				// pre-block is not the same block-height with calculation -> invalid blockchain
 				return nil, errors.New("Invalid blockchain")
 			}
+			bestBlock = preBlock
 		}
 	}
 

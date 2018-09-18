@@ -117,7 +117,7 @@ func (db *db) StoreNullifiers(nullifier []byte, typeJoinSplitDesc string) error 
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
 	}
-	if err := db.ldb.Put(usedTxKey, b, nil); err != nil {
+	if err := db.ldb.Put(append(usedTxKey, []byte(typeJoinSplitDesc)...), b, nil); err != nil {
 		return err
 	}
 	return nil
@@ -140,7 +140,7 @@ func (db *db) StoreCommitments(nullifier []byte, typeJoinSplitDesc string) error
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
 	}
-	if err := db.ldb.Put(usedTxKey, b, nil); err != nil {
+	if err := db.ldb.Put(append(notUsedTxKey, []byte(typeJoinSplitDesc)...), b, nil); err != nil {
 		return err
 	}
 	return nil
