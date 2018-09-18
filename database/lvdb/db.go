@@ -123,7 +123,7 @@ func (db *db) StoreNullifiers(nullifier []byte, typeJoinSplitDesc string) error 
 	return nil
 }
 
-func (db *db) StoreCommitments(nullifier []byte, typeJoinSplitDesc string) error {
+func (db *db) StoreCommitments(commitments []byte, typeJoinSplitDesc string) error {
 	res, err := db.ldb.Get(append(notUsedTxKey, []byte(typeJoinSplitDesc)...), nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return errors.Wrap(err, "db.ldb.Get")
@@ -135,7 +135,7 @@ func (db *db) StoreCommitments(nullifier []byte, typeJoinSplitDesc string) error
 			return errors.Wrap(err, "json.Unmarshal")
 		}
 	}
-	txs = append(txs, nullifier)
+	txs = append(txs, commitments)
 	b, err := json.Marshal(txs)
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")

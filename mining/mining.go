@@ -430,7 +430,7 @@ mempoolLoop:
 		Version:               1,
 		PrevBlockHash:         *prevBlockHash,
 		MerkleRoot:            *merkleRoot,
-		MerkleRootCommitments: common.Hash{}, // TODO 0xbunyip
+		MerkleRootCommitments: common.Hash{},
 		Timestamp:             time.Now(),
 		Difficulty:            0, //@todo should be create Difficulty logic
 		Nonce:                 0, //@todo should be create Nonce logic
