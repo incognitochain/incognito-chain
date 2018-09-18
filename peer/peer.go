@@ -323,10 +323,10 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	self.outboundMutex.Unlock()
 
 	timeOutVerAck := make(chan struct{})
-	time.AfterFunc(time.Second*10, func() {
+	time.AfterFunc(time.Second*15, func() {
 		if !peerConn.VerAckReceived() {
 			Logger.log.Infof("NewPeerConnection timeoutVerack timeout PEER ID %s", peerConn.PeerId.String())
-			timeOutVerAck <- struct{}{}
+			close(timeOutVerAck)
 		}
 	})
 
