@@ -3,7 +3,6 @@ package transaction
 import (
 	"bytes"
 	"crypto/rand"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -384,19 +383,18 @@ func GenerateProofForGenesisTx(
 	return tx, err
 }
 
-
-func PubKeyToByteArray(pubKey *client.PublicKey) []byte{
+func PubKeyToByteArray(pubKey *client.PublicKey) []byte {
 	var pub []byte
-	pubX :=  pubKey.X.Bytes()
+	pubX := pubKey.X.Bytes()
 	pubY := pubKey.Y.Bytes()
 	pub = append(pub, pubX...)
 	pub = append(pub, pubY...)
 	return pub
 }
 
-func JSSigToByteArray(jsSig * client.EcdsaSignature) []byte{
+func JSSigToByteArray(jsSig *client.EcdsaSignature) []byte {
 	var jssig []byte
-	r :=  jsSig.R.Bytes()
+	r := jsSig.R.Bytes()
 	s := jsSig.S.Bytes()
 	jssig = append(jssig, r...)
 	jssig = append(jssig, s...)

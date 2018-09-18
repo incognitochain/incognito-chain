@@ -794,11 +794,12 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 		if blockHeight > -1 {
 			// not is genesis block
 			preBlockHash := bestBlock.Header.PrevBlockHash
-			bestBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-			if blockHeight != bestBlock.Height || err != nil {
+			preBlock, err := self.GetBlockByBlockHash(&preBlockHash)
+			if blockHeight != preBlock.Height || err != nil {
 				// pre-block is not the same block-height with calculation -> invalid blockchain
 				return nil, errors.New("Invalid blockchain")
 			}
+			bestBlock = preBlock
 		}
 	}
 
