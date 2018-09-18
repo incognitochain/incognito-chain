@@ -28,10 +28,11 @@ type TxErrCode uint8
 
 // These constants define the various supported reject codes.
 const (
-	RejectDuplicateTx TxErrCode = 1
-	RejectInvalidTx   TxErrCode = 2
-	RejectSansityTx   TxErrCode = 3
-	RejectCoinbaseTx  TxErrCode = 4
-	RejectVersion     TxErrCode = 5
-	RejectInvalidFee  TxErrCode = 6
+	RejectDuplicateTx      TxErrCode = 1
+	RejectInvalidTx        TxErrCode = 2
+	RejectSansityTx        TxErrCode = 3
+	RejectCoinbaseTx       TxErrCode = 4
+	RejectVersion          TxErrCode = 5
+	RejectInvalidFee       TxErrCode = 6
+	CanNotCheckDoubleSpend TxErrCode = 7
 )

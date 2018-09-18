@@ -153,6 +153,35 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	}
 	// end check with policy
 
+	// validate double spend for normal tx
+	if tx.GetType() == common.TxNormalType {
+		txViewPoint, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
+		if err != nil {
+			str := fmt.Sprintf("Can not check double spend for tx")
+			err := TxRuleError{}
+			err.Init(CanNotCheckDoubleSpend, str)
+			return nil, nil, err
+		}
+		nullifierDb := txViewPoint.ListNullifiers(common.TxOutCoinType)
+		for _, desc := range tx.(*transaction.Tx).Descs {
+			for _, nullifer := range desc.Nullifiers {
+				existed, err := common.SliceBytesExists(nullifierDb, nullifer)
+				if err != nil {
+					str := fmt.Sprintf("Can not check double spend for tx")
+					err := TxRuleError{}
+					err.Init(CanNotCheckDoubleSpend, str)
+					return nil, nil, err
+				}
+				if existed {
+					str := fmt.Sprintf("Nullifiers of transaction %v already existed", txHash.String())
+					err := TxRuleError{}
+					err.Init(RejectDuplicateTx, str)
+					return nil, nil, err
+				}
+			}
+		}
+	}
+
 	// Don't accept the transaction if it already exists in the pool.
 	if tp.isTxInPool(txHash) {
 		str := fmt.Sprintf("already have transaction %v", txHash.String())
