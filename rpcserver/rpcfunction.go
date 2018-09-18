@@ -202,7 +202,7 @@ Parameter #2—the maximum number of confirmations an output may have
 Parameter #3—the list readonly which be used to view utxo
 */
 func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 	result := jsonrpc.ListUnspentResult{
 		ListUnspentResultItems: make(map[string][]jsonrpc.ListUnspentResultItem),
 	}
@@ -224,7 +224,7 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 			return nil, err
 		}
 
-		txs, err := self.Config.BlockChain.GetListTxByPrivateKey(&readonlyKey.KeyPair.PrivateKey, common.TxOutCoinType)
+		txs, err := self.Config.BlockChain.GetListTxByPrivateKey(&readonlyKey.KeyPair.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
 		if err != nil {
 			return nil, err
 		}
@@ -257,7 +257,7 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 // handleCreateTransaction handles createtransaction commands.
 */
 func (self RpcServer) handleCreateTrasaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 
 	// all params
 	arrayParams := common.InterfaceSlice(params)
@@ -287,7 +287,7 @@ func (self RpcServer) handleCreateTrasaction(params interface{}, closeChan <-cha
 	}
 
 	// list unspent tx
-	usableTxs, _ := self.Config.BlockChain.GetListTxByPrivateKey(&senderKey.KeyPair.PrivateKey, common.TxOutCoinType)
+	usableTxs, _ := self.Config.BlockChain.GetListTxByPrivateKey(&senderKey.KeyPair.PrivateKey, common.TxOutCoinType, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	for _, temp := range usableTxs {
 		for _, desc := range temp.Descs {
@@ -446,7 +446,7 @@ func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan st
 	}
 	accounts := self.Config.Wallet.ListAccounts()
 	for accountName, account := range accounts {
-		txs, err := self.Config.BlockChain.GetListTxByPrivateKey(&account.Key.KeyPair.PrivateKey, common.TxOutCoinType)
+		txs, err := self.Config.BlockChain.GetListTxByPrivateKey(&account.Key.KeyPair.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
 		if err != nil {
 			return nil, err
 		}
