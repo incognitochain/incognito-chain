@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 
 	// "crypto/sha256"
@@ -66,7 +67,7 @@ func (tx *Tx) ValidateTransaction() bool {
 		}
 	}
 
-	// TODO(@0xbunyip): implement
+	// TODO: implement
 	return true
 }
 
@@ -86,8 +87,11 @@ func CreateTx(
 	nullifiers [][]byte,
 	commitments [][]byte,
 ) (*Tx, error) {
-	receiverAddr := paymentInfo[0].PaymentAddress
-	value := paymentInfo[0].Amount
+	var value uint64
+	for _, p := range paymentInfo {
+		value += p.Amount
+		fmt.Printf("[CreateTx] paymentInfo.Value: %v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Apk)
+	}
 
 	// Get list of notes to use
 	var inputNotes []*client.Note
@@ -95,11 +99,9 @@ func CreateTx(
 		for _, desc := range tx.Descs {
 			for _, note := range desc.note {
 				inputNotes = append(inputNotes, note)
+				fmt.Printf("[CreateTx] inputNote.Value: %v\n", note.Value)
 			}
 		}
-	}
-	if len(inputNotes) == 0 {
-		return nil, errors.New("Cannot find notes with sufficient fund")
 	}
 
 	// Left side value
@@ -111,69 +113,130 @@ func CreateTx(
 		return nil, fmt.Errorf("Input value less than output value")
 	}
 
-	// Create Proof for the joinsplit op
-	var inputsToBuildWitness []*client.JSInput
-	inputs := []*client.JSInput{new(client.JSInput), new(client.JSInput)}
-	inputs[0].InputNote = inputNotes[0]
-	inputs[0].Key = senderKey
-	inputsToBuildWitness = append(inputsToBuildWitness, inputs[0])
-
-	if len(inputNotes) <= 1 {
-		inputs[1].InputNote = createDummyNote(senderKey)
-		inputs[1].Key = senderKey
-		inputs[1].WitnessPath = (&client.MerklePath{}).CreateDummyPath() // No need to build commitment merkle path for dummy note
-	} else if len(inputNotes) <= 2 {
-		inputs[1].InputNote = inputNotes[1]
-		inputs[1].Key = senderKey
-		inputsToBuildWitness = append(inputsToBuildWitness, inputs[1])
-	} else {
-		return nil, errors.New("More than 2 notes for input is not supported")
-	}
-
-	// Check if input note's cm is in commitments list
-	for _, input := range inputsToBuildWitness {
-		input.InputNote.Cm = client.GetCommitment(input.InputNote)
-
-		found := false
-		for _, c := range commitments {
-			if bytes.Equal(c, input.InputNote.Cm) {
-				found = true
-			}
-		}
-		if found == false {
-			return nil, fmt.Errorf("Commitment of input note %x isn't in commitments list", input.InputNote.Cm)
-		}
-	}
-
-	// Build witness path for the input notes
-	err := client.BuildWitnessPath(inputsToBuildWitness, commitments)
-	if err != nil {
-		return nil, err
-	}
+	// Sort input and output notes ascending by value to start building js descs
+	sort.Slice(inputNotes, func(i, j int) bool {
+		return inputNotes[i].Value < inputNotes[j].Value
+	})
+	sort.Slice(paymentInfo, func(i, j int) bool {
+		return paymentInfo[i].Amount < paymentInfo[j].Amount
+	})
 
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte(senderKey[:])
+	for len(inputNotes) > 0 || len(paymentInfo) > 0 {
+		// Choose inputs to build js desc
+		var inputsToBuildWitness []*client.JSInput
+		var inputValue uint64
+		for len(inputNotes) > 0 && len(inputsToBuildWitness) < NumDescInputs {
+			input := &client.JSInput{}
+			input.InputNote = inputNotes[len(inputNotes)-1] // Get note with largest value
+			input.Key = senderKey
+			inputsToBuildWitness = append(inputsToBuildWitness, input)
+			inputValue += input.InputNote.Value
 
-	// Create new notes: first one send `value` to receiverAddr, second one sends `change` back to sender
-	outNote := &client.Note{Value: value, Apk: receiverAddr.Apk}
-	changeNote := &client.Note{Value: sumInputValue - value, Apk: senderFullKey.PublicKey.Apk}
+			inputNotes = inputNotes[:len(inputNotes)]
+		}
 
-	outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
-	outputs[0].EncKey = receiverAddr.Pkenc
-	outputs[0].OutputNote = outNote
-	outputs[1].EncKey = senderFullKey.PublicKey.Pkenc
-	outputs[1].OutputNote = changeNote
+		// Add dummy input note if necessary
+		for len(inputsToBuildWitness) < NumDescInputs {
+			input := &client.JSInput{}
+			input.InputNote = createDummyNote(senderKey)
+			input.Key = senderKey
+			input.WitnessPath = (&client.MerklePath{}).CreateDummyPath() // No need to build commitment merkle path for dummy note
+			inputsToBuildWitness = append(inputsToBuildWitness, input)
+		}
 
-	// TODO: Shuffle output notes randomly (if necessary)
+		// Check if input note's cm is in commitments list
+		for _, input := range inputsToBuildWitness {
+			input.InputNote.Cm = client.GetCommitment(input.InputNote)
 
-	// Generate proof and sign tx
-	var reward uint64 // Zero reward for non-coinbase transaction
-	tx, err := GenerateProofAndSign(inputs, outputs, rt[:], reward)
+			found := false
+			for _, c := range commitments {
+				if bytes.Equal(c, input.InputNote.Cm) {
+					found = true
+				}
+			}
+			if found == false {
+				return nil, fmt.Errorf("Commitment %x of input note isn't in commitments list", input.InputNote.Cm)
+			}
+		}
+
+		// Build witness path for the input notes
+		err := client.BuildWitnessPath(inputsToBuildWitness, commitments)
+		if err != nil {
+			return nil, err
+		}
+
+		// Choose output notes for the js desc
+		outputs := []*client.JSOutput{}
+		for len(paymentInfo) > 0 && len(outputs) < NumDescOutputs-1 && inputValue > 0 { // Leave out 1 output note for change
+			p := paymentInfo[len(paymentInfo)-1]
+			var outNote *client.Note
+			var encKey client.TransmissionKey
+			if p.Amount <= inputValue { // Enough for one more output note, include it
+				outNote = &client.Note{Value: p.Amount, Apk: p.PaymentAddress.Apk}
+				encKey = p.PaymentAddress.Pkenc
+				inputValue -= p.Amount
+				paymentInfo = paymentInfo[:len(paymentInfo)]
+			} else { // Not enough for this note, send some and save the rest for next js desc
+				outNote = &client.Note{Value: inputValue, Apk: p.PaymentAddress.Apk}
+				encKey = p.PaymentAddress.Pkenc
+				paymentInfo[len(paymentInfo)-1].Amount = p.Amount - inputValue
+				inputValue = 0
+			}
+
+			// changeNote := &client.Note{Value: sumInputValue - value, Apk: senderFullKey.PublicKey.Apk}
+			output := &client.JSOutput{EncKey: encKey, OutputNote: outNote}
+			outputs = append(outputs, output)
+		}
+
+		if inputValue > 0 {
+			// Still has some room left, check if one more output note is possible to add
+			p := paymentInfo[len(paymentInfo)-1]
+			if p.Amount == inputValue {
+				// Exactly equal, add this output note to js desc
+				outNote := &client.Note{Value: p.Amount, Apk: p.PaymentAddress.Apk}
+				output := &client.JSOutput{EncKey: p.PaymentAddress.Pkenc, OutputNote: outNote}
+				outputs = append(outputs, output)
+				paymentInfo = paymentInfo[:len(paymentInfo)]
+				inputValue = 0
+			} else {
+				// Cannot put the output note into this js desc, create a change note instead
+				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PublicKey.Apk}
+				output := &client.JSOutput{EncKey: senderFullKey.PublicKey.Pkenc, OutputNote: outNote}
+				outputs = append(outputs, output)
+			}
+		}
+
+		// Add dummy output note if necessary
+		for len(outputs) < NumDescOutputs {
+			input := &client.JSInput{}
+			input.InputNote = createDummyNote(senderKey)
+			input.Key = senderKey
+			input.WitnessPath = (&client.MerklePath{}).CreateDummyPath() // No need to build commitment merkle path for dummy note
+			inputsToBuildWitness = append(inputsToBuildWitness, input)
+		}
+
+		// Resort paymentInfo for next js desc
+		sort.Slice(paymentInfo, func(i, j int) bool {
+			return paymentInfo[i].Amount < paymentInfo[j].Amount
+		})
+
+		// TODO: Shuffle output notes randomly (if necessary)
+
+		// Generate proof and sign tx
+		var reward uint64 // Zero reward for non-coinbase transaction
+		tx, err := GenerateProofAndSign(inputs, outputs, rt[:], reward)
+
+		// Add new commitments to list to use in next js desc if needed
+	}
+
 	fmt.Printf("jspubkey size: %v\n", len(tx.JSPubKey))
 	fmt.Printf("jssig size: %v\n", len(tx.JSSig))
 	if err == nil {
 		tx.LockTime = time.Now().Unix()
 	}
+
 	return tx, err
 }
 
@@ -193,7 +256,7 @@ func createDummyNote(randomKey *client.SpendingKey) *client.Note {
 	return note
 }
 
-// CreateRandomJSInput creates a dummy input with 0 value note that is sended to a random address
+// CreateRandomJSInput creates a dummy input with 0 value note that belongs to a random address
 func CreateRandomJSInput() *client.JSInput {
 	randomKey := client.RandSpendingKey()
 	input := new(client.JSInput)
@@ -203,10 +266,15 @@ func CreateRandomJSInput() *client.JSInput {
 	return input
 }
 
+// CreateRandomJSOutput creates a dummy output with 0 value note that is sended to
+func CreateRandomJSOutput() *client.JSOutput {
+
+}
+
 func SignTx(tx *Tx, privKey *client.PrivateKey) (*Tx, error) {
 	//Check input transaction
 	if tx.JSSig != nil {
-		return nil, errors.New("Input transaction must be an unsigned one!")
+		return nil, errors.New("Input transaction must be an unsigned one")
 	}
 
 	// Hash transaction
