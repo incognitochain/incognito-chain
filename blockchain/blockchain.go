@@ -778,7 +778,9 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 				if len(listDesc) > 0 {
 					copyTx.Descs = listDesc
 				}
-				txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
+				if len(copyTx.Descs) > 0 {
+					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
+				}
 			}
 		}
 		// detected some tx can be accepted

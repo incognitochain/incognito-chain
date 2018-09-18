@@ -193,7 +193,7 @@ func CreateRandomJSInput() *client.JSInput {
 	input := new(client.JSInput)
 	input.InputNote = createDummyNote(&randomKey)
 	input.Key = &randomKey
-	input.WitnessPath = new(client.MerklePath) // TODO(@0xbunyip): create dummy path if necessary
+	input.WitnessPath = (&client.MerklePath{}).CreateDummyPath()
 	return input
 }
 
