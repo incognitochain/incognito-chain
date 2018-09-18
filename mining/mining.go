@@ -408,7 +408,7 @@ mempoolLoop:
 	commitments := [][]byte{}
 	nullifiers := [][]byte{}
 	for _, blockTx := range blockTxns {
-		if (blockTx.GetType() == common.TxOutCoinType) {
+		if (blockTx.GetType() == common.TxNormalType) {
 			tx, ok := blockTx.(*transaction.Tx)
 			if ok == false {
 				return nil, fmt.Errorf("Transaction not recognized to store in database")
