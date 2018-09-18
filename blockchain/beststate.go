@@ -17,8 +17,8 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 type BestState struct {
-	BestBlockHash common.Hash // The hash of the block.
-	BestBlock     *Block      // The hash of the block.
+	BestBlockHash *common.Hash // The hash of the block.
+	BestBlock     *Block       // The hash of the block.
 
 	CmTree *client.IncMerkleTree // The commitments merkle tree of the best block
 
@@ -32,8 +32,10 @@ type BestState struct {
 }
 
 func (self *BestState) Init(block *Block, blocksize, blockweigh, numTxts, totalTxns uint64, medianTime time.Time, tree *client.IncMerkleTree) {
+	println(block.Hash().String())
 	self.BestBlock = block
-	self.BestBlockHash = *self.BestBlock.Hash()
+	println(self.BestBlock.Hash().String())
+	self.BestBlockHash = self.BestBlock.Hash()
 	self.CmTree = tree
 
 	self.TotalTxns = totalTxns

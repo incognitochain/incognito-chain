@@ -305,7 +305,7 @@ func getLatestAgentDataPoints(
 func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain) (*BlockTemplate, error) {
 
 	prevBlock := chain.BestState.BestBlock
-	prevBlockHash := chain.BestState.BestBlock.Hash()
+	prevBlockHash := chain.BestState.BestBlockHash
 	sourceTxns := g.txSource.MiningDescs()
 
 	if len(sourceTxns) == 0 {

@@ -87,6 +87,8 @@ func (self *BlockChain) initChainState() error {
 			initialized = false
 		} else {
 			initialized = true
+			println(self.BestState.BestBlock.Hash().String())
+			println(self.BestState.BestBlockHash.String())
 		}
 	} else {
 		initialized = false
@@ -496,7 +498,7 @@ func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string) (*TxViewPoint
 		return nil, err
 	}
 	view.listNullifiers[typeJoinSplitDesc] = nullifiers
-	view.SetBestHash(&self.BestState.BestBlockHash)
+	view.SetBestHash(self.BestState.BestBlockHash)
 	return view, nil
 }
 
@@ -549,7 +551,7 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 	// We are extending the main (best) chain with a new block.  This is the
 	// most common case.
 	parentHash := &block.Header.PrevBlockHash
-	if parentHash.IsEqual(&b.BestState.BestBlockHash) {
+	if parentHash.IsEqual(b.BestState.BestBlockHash) {
 		view := NewTxViewPoint()
 
 		err := view.fetchTxViewPoint(b.Config.DataBase, block)
