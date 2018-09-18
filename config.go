@@ -355,7 +355,7 @@ func loadConfig() (*config, []string, error) {
 		AddrIndex:         defaultAddrIndex,
 		WalletDbName:      defaultWalletDbName,
 		DisableTLS:        defaultDisableRpcTls,
-		RPCDisableAuth:    false,
+		RPCDisableAuth:    true,
 		SealerPrvKey:      os.Getenv("SEALERPRVKEY"),
 	}
 
