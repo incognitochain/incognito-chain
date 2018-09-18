@@ -79,7 +79,7 @@ type Config struct {
 	// This field will not have any effect if the OnAccept field is not
 	// also specified.  It may be nil if the caller does not wish to listen
 	// for incoming connections.
-	ListenerPeers []peer.Peer
+	ListenerPeers []*peer.Peer
 
 	// OnInboundAccept is a callback that is fired when an inbound connection is accepted
 	OnInboundAccept func(peerConn *peer.PeerConn)
@@ -320,7 +320,7 @@ func (self *ConnManager) Start() {
 			listner.HandleFailed = self.handleFailed
 			go self.listenHandler(listner)
 
-			self.ListeningPeers[listner.PeerId] = &listner
+			self.ListeningPeers[listner.PeerId] = listner
 		}
 
 		if self.Config.DiscoverPeers {
@@ -331,7 +331,7 @@ func (self *ConnManager) Start() {
 
 // listenHandler accepts incoming connections on a given listener.  It must be
 // run as a goroutine.
-func (self *ConnManager) listenHandler(listen peer.Peer) {
+func (self *ConnManager) listenHandler(listen *peer.Peer) {
 	listen.Start()
 }
 

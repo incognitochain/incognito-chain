@@ -124,12 +124,14 @@ mempoolLoop:
 	}
 	block := blockchain.Block{}
 	block.Header = blockchain.BlockHeader{
-		Version:       1,
-		PrevBlockHash: *prevBlockHash,
-		MerkleRoot:    *merkleRoot,
-		Timestamp:     time.Now(),
-		Difficulty:    0, //@todo should be create Difficulty logic
-		Nonce:         0, //@todo should be create Nonce logic
+		Version:            1,
+		PrevBlockHash:      *prevBlockHash,
+		MerkleRoot:         *merkleRoot,
+		Timestamp:          time.Now(),
+		Difficulty:         0, //@todo should be create Difficulty logic
+		Nonce:              0, //@todo should be create Nonce logic
+		BlockCommitteeSigs: make([]string, 11),
+		NextCommittee:      make([]string, 20),
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {

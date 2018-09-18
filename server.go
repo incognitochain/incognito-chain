@@ -177,7 +177,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		return err
 	}
 
-	var peers []peer.Peer
+	var peers []*peer.Peer
 	if !cfg.DisableListen {
 		var err error
 		peers, err = self.InitListenerPeers(self.AddrManager, listenAddrs)
@@ -457,7 +457,7 @@ func (self Server) Start() {
 // initListeners initializes the configured net listeners and adds any bound
 // addresses to the address manager. Returns the listeners and a NAT interface,
 // which is non-nil if UPnP is in use.
-func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string) ([]peer.Peer, error) {
+func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string) ([]*peer.Peer, error) {
 	netAddrs, err := common.ParseListeners(listenAddrs, "ip")
 	if err != nil {
 		return nil, err
@@ -466,7 +466,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 	kc := KeyCache{}
 	kc.Load(filepath.Join(cfg.DataDir, "kc.json"))
 
-	peers := make([]peer.Peer, 0, len(netAddrs))
+	peers := make([]*peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
 		seed := int64(0)
 		seedC, _ := strconv.ParseInt(os.Getenv("NODE_SEED"), 10, 64)
@@ -492,7 +492,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 		if err != nil {
 			return nil, err
 		}
-		peers = append(peers, *peer)
+		peers = append(peers, peer)
 	}
 
 	kc.Save()
@@ -750,7 +750,7 @@ func (self *Server) OnChainState(_ *peer.PeerConn, msg *wire.MessageChainState) 
 	self.NetSync.QueueMessage(nil, msg, txProcessed)
 }
 
-func (self Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {
+func (self *Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {
 	result := []peer2.ID{}
 
 	for _, listener := range self.ConnManager.Config.ListenerPeers {
@@ -777,13 +777,15 @@ func (self Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {
 /**
 PushMessageToAll broadcast msg
 */
-func (self Server) PushMessageToAll(msg wire.Message) error {
+func (self *Server) PushMessageToAll(msg wire.Message) error {
 	Logger.log.Info("Push msg to all")
 	var dc chan<- struct{}
 	for index := 0; index < len(self.ConnManager.Config.ListenerPeers); index++ {
+		Logger.log.Info("Pushed 1")
 		msg.SetSenderID(self.ConnManager.Config.ListenerPeers[index].PeerId)
+		Logger.log.Info("Pushed 2")
 		self.ConnManager.Config.ListenerPeers[index].QueueMessageWithEncoding(msg, dc)
-		Logger.log.Info("Pushed")
+		Logger.log.Info("Pushed 3")
 	}
 	return nil
 }
@@ -791,7 +793,7 @@ func (self Server) PushMessageToAll(msg wire.Message) error {
 /**
 PushMessageToPeer push msg to peer
 */
-func (self Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
+func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 	Logger.log.Info("Push msg to ", peerId)
 	var dc chan<- struct{}
 	for index := 0; index < len(self.ConnManager.Config.ListenerPeers); index++ {

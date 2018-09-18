@@ -302,7 +302,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		ReaderWriterStream: rw,
 		quit:               make(chan struct{}),
 		disconnect:         make(chan struct{}),
-		sendMessageQueue:   make(chan outMsg, 1),
+		sendMessageQueue:   make(chan outMsg),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,
 		HandleFailed:       self.handleFailed,
@@ -366,9 +366,9 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 	peerConn := PeerConn{
-		IsOutbound:         false,
-		ListenerPeer:       self,
-		Peer:               &Peer{
+		IsOutbound:   false,
+		ListenerPeer: self,
+		Peer: &Peer{
 			PeerId: remotePeerId,
 		},
 		Config:             self.Config,
@@ -376,7 +376,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		ReaderWriterStream: rw,
 		quit:               make(chan struct{}),
 		disconnect:         make(chan struct{}),
-		sendMessageQueue:   make(chan outMsg, 1),
+		sendMessageQueue:   make(chan outMsg),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,
 		HandleFailed:       self.handleFailed,
@@ -418,9 +418,11 @@ func (self *Peer) HandleStream(stream net.Stream) {
 // encoding/decoding blocks and transactions.
 //
 // This function is safe for concurrent access.
-func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
+func (self *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
 	for _, peerConnection := range self.PeerConns {
+		Logger.log.Info("PEER %s QueueMessageWithEncoding START", peerConnection.PeerId)
 		peerConnection.QueueMessageWithEncoding(msg, doneChan)
+		Logger.log.Info("PEER %s QueueMessageWithEncoding END", peerConnection.PeerId)
 	}
 }
 

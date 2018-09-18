@@ -208,12 +208,13 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		select {
 		case outMsg := <-self.sendMessageQueue:
 			{
-				self.flagMutex.Lock()
+				// self.flagMutex.Lock()
 				// TODO
 				// send message
 				messageByte, err := outMsg.msg.JsonSerialize()
 				if err != nil {
 					fmt.Println(err)
+					// self.flagMutex.Unlock()
 					continue
 				}
 				header := make([]byte, wire.MessageHeaderSize)
@@ -226,7 +227,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				rw.Writer.WriteString(message)
 				rw.Writer.Flush()
 
-				self.flagMutex.Unlock()
+				// self.flagMutex.Unlock()
 
 			}
 		case <-self.quit:
