@@ -778,11 +778,12 @@ func (self Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {
 PushMessageToAll broadcast msg
 */
 func (self Server) PushMessageToAll(msg wire.Message) error {
-	Logger.log.Info("PushMessageToAll", msg)
+	Logger.log.Info("Push msg to all")
 	var dc chan<- struct{}
-	for _, listener := range self.ConnManager.Config.ListenerPeers {
-		msg.SetSenderID(listener.PeerId)
-		listener.QueueMessageWithEncoding(msg, dc)
+	for index := 0; index < len(self.ConnManager.Config.ListenerPeers); index++ {
+		msg.SetSenderID(self.ConnManager.Config.ListenerPeers[index].PeerId)
+		self.ConnManager.Config.ListenerPeers[index].QueueMessageWithEncoding(msg, dc)
+		Logger.log.Info("Pushed")
 	}
 	return nil
 }
@@ -791,12 +792,14 @@ func (self Server) PushMessageToAll(msg wire.Message) error {
 PushMessageToPeer push msg to peer
 */
 func (self Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
+	Logger.log.Info("Push msg to ", peerId)
 	var dc chan<- struct{}
-	for _, listener := range self.ConnManager.Config.ListenerPeers {
-		peerConn, exist := listener.PeerConns[peerId]
+	for index := 0; index < len(self.ConnManager.Config.ListenerPeers); index++ {
+		peerConn, exist := self.ConnManager.Config.ListenerPeers[index].PeerConns[peerId]
 		if exist {
-			msg.SetSenderID(listener.PeerId)
+			msg.SetSenderID(self.ConnManager.Config.ListenerPeers[index].PeerId)
 			peerConn.QueueMessageWithEncoding(msg, dc)
+			Logger.log.Info("Pushed")
 			return nil
 		}
 	}

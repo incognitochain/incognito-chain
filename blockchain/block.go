@@ -75,8 +75,8 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 					Vout: uint32(tempOutPoint["Vout"].(float64)),
 				}
 				t := transaction.TxIn{
-					Sequence:         int(v["Sequence"].(float64)),
-					SignatureScript:  []byte(v["SignatureScript"].(string)),
+					Sequence: int(v["Sequence"].(float64)),
+					// SignatureScript:  []byte(v["SignatureScript"].(string)),
 					PreviousOutPoint: pOutPoint,
 				}
 				txIn = append(txIn, t)

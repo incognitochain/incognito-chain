@@ -1,6 +1,7 @@
 package netsync
 
 import (
+	"encoding/base64"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -256,8 +257,13 @@ func (self *NetSync) HandleMessageBlockSig(msg *wire.MessageBlockSig) {
 }
 func (self *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
 	Logger.log.Info("Handling new message invalidblock")
+	decPubkey, err := base64.StdEncoding.DecodeString(msg.Validator)
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
 	senderKey := cashec.KeyPair{
-		PublicKey: []byte(msg.Validator),
+		PublicKey: decPubkey,
 	}
 	msgByte, _ := msg.JsonSerialize()
 	isValid, _ := senderKey.Verify(msgByte, []byte(msg.ValidatorSig))

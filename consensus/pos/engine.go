@@ -219,6 +219,7 @@ func (self *Engine) StartSealer(sealerPrvKey string) {
 }
 
 func (self *Engine) createBlock() (*blockchain.Block, error) {
+	Logger.log.Info("Start creating block...")
 	myChainID, _ := self.getMyChain()
 	newblock, err := self.config.blockGen.NewBlockTemplate(string(self.config.ValidatorKeyPair.PublicKey), self.config.BlockChain, myChainID)
 	if err != nil {
@@ -231,6 +232,7 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 }
 
 func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) error {
+	Logger.log.Info("Start finalizing block...")
 	finalBlock := block
 	validateSigList := make(chan []string)
 	timeout := time.After(5 * time.Second)
@@ -249,14 +251,15 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 					Logger.log.Critical("(o_O)!")
 					continue
 				}
+				decPubkey, _ := base64.StdEncoding.DecodeString(validatorSig.Validator)
 				validatorKp := cashec.KeyPair{
-					PublicKey: []byte(validatorSig.Validator),
+					PublicKey: decPubkey,
 				}
 				isValid, _ := validatorKp.Verify(block.Hash().CloneBytes(), []byte(validatorSig.ValidatorSig))
 				if isValid {
 					reslist = append(reslist, validatorSig.ValidatorSig)
 				}
-				if len(reslist) == 10 {
+				if len(reslist) == (CHAIN_VALIDATORS_LENGTH - 1) {
 					validateSigList <- reslist
 					return
 				}
@@ -326,8 +329,9 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 	}
 
 	// 2. Check whether signature of the block belongs to chain leader or not.
+	decPubkey, _ := base64.StdEncoding.DecodeString(block.ChainLeader)
 	k := cashec.KeyPair{
-		PublicKey: []byte(block.ChainLeader),
+		PublicKey: decPubkey,
 	}
 	isValidSignature, err := k.Verify(block.Hash().CloneBytes(), []byte(block.ChainLeaderSig))
 	if err != nil {
@@ -393,8 +397,9 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 	}
 
 	// 3. Check signature of the block belongs to current committee or not.
+	decPubkey, _ := base64.StdEncoding.DecodeString(block.ChainLeader)
 	k := cashec.KeyPair{
-		PublicKey: []byte(block.ChainLeader),
+		PublicKey: decPubkey,
 	}
 	isValidSignature, err := k.Verify(block.Hash().CloneBytes(), []byte(block.ChainLeaderSig))
 	if err != nil {
