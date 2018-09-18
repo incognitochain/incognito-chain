@@ -59,13 +59,12 @@ type Peer struct {
 	PublicKey        string
 
 	Seed          int64
-	outboundMutex sync.Mutex
-	inboundMutex sync.Mutex
 	Config        Config
 	MaxOutbound   int
 	MaxInbound    int
 
 	PeerConns    map[peer.ID]*PeerConn
+	peerConnsMutex sync.Mutex
 	PendingPeers map[peer.ID]*Peer
 
 	quit           chan struct{}
@@ -191,9 +190,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.quit = make(chan struct{}, 1)
 	self.disconnectPeer = make(chan *PeerConn)
 
-	self.outboundMutex = sync.Mutex{}
-	self.inboundMutex = sync.Mutex{}
-
+	self.peerConnsMutex = sync.Mutex{}
 	return &self, nil
 }
 
@@ -253,20 +250,16 @@ func (self *Peer) NumOutbound() int {
 func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER ID - %s \n", peer.PeerId.String())
 
-	self.outboundMutex.Lock()
-
+	self.peerConnsMutex.Lock()
 	_peerConn, ok := self.PeerConns[peer.PeerId]
+	self.peerConnsMutex.Unlock()
 	if ok && _peerConn.State() == ConnEstablished {
 		Logger.log.Infof("Checked Existed PEER ID - %s", peer.PeerId.String())
-
-		self.outboundMutex.Unlock()
 		return nil, nil
 	}
 
 	if peer.PeerId.Pretty() == self.PeerId.Pretty() {
 		Logger.log.Infof("Checked Myself PEER ID - %s", peer.PeerId.String())
-
-		self.outboundMutex.Unlock()
 		return nil, nil
 	}
 
@@ -275,8 +268,6 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 		//push to pending peers
 		self.ConnPending(peer)
-
-		self.outboundMutex.Unlock()
 		return nil, nil
 	}
 
@@ -284,8 +275,6 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	Logger.log.Info(peer, stream, err)
 	if err != nil {
 		Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", self.PeerId.String(), err.Error())
-
-		self.outboundMutex.Unlock()
 		return nil, err
 	}
 
@@ -310,7 +299,9 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		HandleFailed:       self.handleFailed,
 	}
 
+	self.peerConnsMutex.Lock()
 	self.PeerConns[peerConn.PeerId] = &peerConn
+	self.peerConnsMutex.Unlock()
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
@@ -319,8 +310,6 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	peerConn.updateState(ConnEstablished)
 
 	go self.handleConnected(&peerConn)
-
-	self.outboundMutex.Unlock()
 
 	timeOutVerAck := make(chan struct{})
 	time.AfterFunc(time.Second*10, func() {
@@ -356,7 +345,6 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		return
 	}
 
-	self.inboundMutex.Lock()
 	remotePeerId := stream.Conn().RemotePeer()
 	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID %s", self.Host.ID().String(), remotePeerId.String())
 
@@ -385,7 +373,9 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		HandleFailed:       self.handleFailed,
 	}
 
+	self.peerConnsMutex.Lock()
 	self.PeerConns[peerConn.PeerId] = &peerConn
+	self.peerConnsMutex.Unlock()
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
@@ -394,8 +384,6 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	peerConn.updateState(ConnEstablished)
 
 	go self.handleConnected(&peerConn)
-
-	self.inboundMutex.Unlock()
 
 	timeOutVerAck := make(chan struct{})
 	time.AfterFunc(time.Second*10, func() {
@@ -424,19 +412,23 @@ func (self *Peer) HandleStream(stream net.Stream) {
 //
 // This function is safe for concurrent access.
 func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
+	self.peerConnsMutex.Lock()
 	for _, peerConnection := range self.PeerConns {
 		peerConnection.QueueMessageWithEncoding(msg, doneChan)
 		Logger.log.Info("Queued msg", peerConnection.PeerId.Pretty(), peerConnection.ListenerPeer.PeerId.Pretty())
 	}
+	self.peerConnsMutex.Unlock()
 }
 
 func (self *Peer) Stop() {
 	Logger.log.Infof("PEER %s Stop", self.PeerId.String())
 
 	self.Host.Close()
+	self.peerConnsMutex.Lock()
 	for _, peerConn := range self.PeerConns {
 		peerConn.updateState(ConnCanceled)
 	}
+	self.peerConnsMutex.Unlock()
 	self.quit <- struct{}{}
 }
 
@@ -461,10 +453,12 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 		}
 	} else {
 		peerConn.updateState(ConnCanceled)
+		self.peerConnsMutex.Lock()
 		_, ok := self.PeerConns[peerConn.PeerId]
 		if ok {
 			delete(self.PeerConns, peerConn.PeerId)
 		}
+		self.peerConnsMutex.Unlock()
 	}
 
 	if self.HandleDisconnected != nil {
