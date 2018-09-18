@@ -16,7 +16,6 @@ import (
 	"path/filepath"
 	"strconv"
 
-	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/addrmanager"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -480,8 +479,8 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 			Seed:             seed,
 			ListeningAddress: addr,
 			Config:           *self.NewPeerConfig(),
-			PeerConns:        make(map[peer2.ID]*peer.PeerConn),
-			PendingPeers:     make(map[peer2.ID]*peer.Peer),
+			PeerConns:        make(map[string]*peer.PeerConn),
+			PendingPeers:     make(map[string]*peer.Peer),
 		}.NewPeer()
 		if err != nil {
 			return nil, err
@@ -656,9 +655,11 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 		}
 
 		// send message get blocks
+
 		msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
 		msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.BlockChain.BestState.BestBlockHash
-		msgNew.(*wire.MessageGetBlocks).SenderID = peerConn.PeerId
+		println(peerConn.ListenerPeer.PeerId.String())
+		msgNew.(*wire.MessageGetBlocks).SenderID = peerConn.ListenerPeer.PeerId.String()
 		if err != nil {
 			return
 		}
@@ -757,12 +758,14 @@ func (self Server) PushMessageToAll(msg wire.Message) error {
 /**
 PushMessageToPeer push msg to peer
 */
-func (self Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
+func (self Server) PushMessageToPeer(msg wire.Message, peerId string) error {
 	var dc chan<- struct{}
 	for _, listener := range self.ConnManager.Config.ListenerPeers {
 		peerConn, exist := listener.PeerConns[peerId]
 		if exist {
 			peerConn.QueueMessageWithEncoding(msg, dc)
+		} else {
+			Logger.log.Errorf("Not exist peerID %s in connection", peerId)
 		}
 	}
 	return nil

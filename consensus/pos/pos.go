@@ -1,7 +1,6 @@
 package pos
 
 import (
-	"github.com/libp2p/go-libp2p-peer"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -29,10 +28,10 @@ type Config struct {
 	Chain       *blockchain.BlockChain
 	ChainParams *blockchain.Params
 	BlockGen    *mining.BlkTmplGenerator
-	Server      interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToAll(wire.Message) error
-		PushMessageToPeer(wire.Message, peer.ID) error
+		PushMessageToPeer(wire.Message, string) error
 		UpdateChain(*blockchain.Block)
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/ninjadotorg/cash-prototype/peer"
@@ -32,7 +31,7 @@ type NetSyncConfig struct {
 	MemPool    *mempool.TxPool
 	Server interface {
 		// list functions callback which are assigned from Server struct
-		PushMessageToPeer(wire.Message, peer2.ID) error
+		PushMessageToPeer(wire.Message, string) error
 		UpdateChain(*blockchain.Block)
 	}
 }
@@ -182,7 +181,7 @@ func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 }
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
-	Logger.log.Info("Handling new message getblock")
+	Logger.log.Info("Handling new message getblocks message")
 	if senderBlockHeaderIndex, err := self.Config.BlockChain.GetBlockHeightByBlockHash(&msg.LastBlockHash); err == nil {
 		if self.Config.BlockChain.BestState.BestBlock.Hash() != &msg.LastBlockHash {
 			// Send Blocks back to requestor
@@ -202,6 +201,8 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 				time.Sleep(time.Second * 3)
 			}
 		}
+	} else {
+		Logger.log.Info("No new blocks to return")
 	}
 
 	// Logger.log.Infof("Send a msgVersion: %s", msgNewJSON)

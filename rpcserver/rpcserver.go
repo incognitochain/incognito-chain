@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/wire"
 	"io"
 	"io/ioutil"
@@ -72,7 +71,7 @@ type RpcServerConfig struct {
 	Server interface {
 		// Push Tx message
 		PushMessageToAll(message wire.Message) error
-		PushMessageToPeer(message wire.Message, id peer.ID) error
+		PushMessageToPeer(message wire.Message, id string) error
 	}
 
 	TxMemPool     *mempool.TxPool

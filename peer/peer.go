@@ -65,8 +65,8 @@ type Peer struct {
 	MaxInbound    int
 
 	connMutex    sync.Mutex
-	PeerConns    map[peer.ID]*PeerConn
-	PendingPeers map[peer.ID]*Peer
+	PeerConns    map[string]*PeerConn
+	PendingPeers map[string]*Peer
 
 	quit           chan struct{}
 	disconnectPeer chan *PeerConn
@@ -205,26 +205,26 @@ func (self *Peer) Start() error {
 
 func (self *Peer) ConnPending(peer *Peer) {
 	self.connMutex.Lock()
-	self.PendingPeers[peer.PeerId] = peer
+	self.PendingPeers[peer.PeerId.String()] = peer
 	self.connMutex.Unlock()
 }
 
 func (self *Peer) ConnEstablished(peer *Peer) {
 	self.connMutex.Lock()
-	_, ok := self.PendingPeers[peer.PeerId]
+	_, ok := self.PendingPeers[peer.PeerId.String()]
 	if ok {
-		delete(self.PendingPeers, peer.PeerId)
+		delete(self.PendingPeers, peer.PeerId.String())
 	}
 	self.connMutex.Unlock()
 }
 
 func (self *Peer) ConnCanceled(peer *Peer) {
 	self.connMutex.Lock()
-	peerConn, ok := self.PeerConns[peer.PeerId]
+	peerConn, ok := self.PeerConns[peer.PeerId.String()]
 	if ok {
-		delete(self.PeerConns, peer.PeerId)
+		delete(self.PeerConns, peer.PeerId.String())
 		if peerConn.IsOutbound {
-			self.PendingPeers[peer.PeerId] = peer
+			self.PendingPeers[peer.PeerId.String()] = peer
 		}
 	}
 	self.connMutex.Unlock()
@@ -255,7 +255,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 	self.outboundMutex.Lock()
 
-	_peerConn, ok := self.PeerConns[peer.PeerId]
+	_peerConn, ok := self.PeerConns[peer.PeerId.String()]
 	if ok && _peerConn.State() == ConnEstablished {
 		Logger.log.Infof("Checked Existed PEER ID - %s", peer.PeerId.String())
 
@@ -310,7 +310,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		HandleFailed:       self.handleFailed,
 	}
 
-	self.PeerConns[peerConn.PeerId] = &peerConn
+	self.PeerConns[peerConn.PeerId.String()] = &peerConn
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
@@ -382,7 +382,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		HandleFailed:       self.handleFailed,
 	}
 
-	self.PeerConns[peerConn.PeerId] = &peerConn
+	self.PeerConns[peerConn.PeerId.String()] = &peerConn
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
