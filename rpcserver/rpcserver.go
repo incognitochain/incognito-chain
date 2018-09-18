@@ -232,13 +232,13 @@ func (self RpcServer) checkAuth(r *http.Request, require bool) (bool, bool, erro
 	// are probably expected to have a higher volume of calls
 	limitcmp := subtle.ConstantTimeCompare(authsha[:], self.limitauthsha[:])
 	if limitcmp == 1 {
-		return true, false, nil
+		return true, true, nil
 	}
 
 	// Check for admin-level auth
 	cmp := subtle.ConstantTimeCompare(authsha[:], self.authsha[:])
 	if cmp == 1 {
-		return true, true, nil
+		return true, false, nil
 	}
 
 	// Request's auth doesn't match either user
@@ -364,7 +364,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 
 		// Check if the user is limited and set error if method unauthorized
 		if !isLimitedUser {
-			if _, ok := RpcLimited[request.Method]; !ok {
+			if _, ok := RpcLimited[request.Method]; ok {
 				jsonErr = &common.RPCError{
 					Code:    common.ErrRPCInvalidParams.Code,
 					Message: "limited user not authorized for this method",
@@ -375,7 +375,20 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 			// Attempt to parse the JSON-RPC request into a known concrete
 			// command.
 			command := RpcHandler[request.Method]
-			result, jsonErr = command(self, request.Params, closeChan)
+			if command == nil {
+				if isLimitedUser {
+					command = RpcLimited[request.Method]
+				} else {
+					result = nil
+					jsonErr = &common.RPCError{
+						Code:    common.ErrRPCInvalidParams.Code,
+						Message: "limited user not authorized for this method",
+					}
+				}
+			}
+			if command != nil {
+				result, jsonErr = command(self, request.Params, closeChan)
+			}
 		}
 	}
 	// Marshal the response.

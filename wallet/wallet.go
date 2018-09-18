@@ -1,9 +1,10 @@
 package wallet
 
 import (
-	"io/ioutil"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"github.com/pkg/errors"
 )
 
 type Account struct {
@@ -73,21 +74,45 @@ func (self *Wallet) CreateNewAccount(accountName string) *Account {
 	return &account
 }
 
-func (self *Wallet) ExportAccount(childIndex uint32) (string) {
-	return self.MasterAccount.Child[childIndex].Key.Base58CheckSerialize(true)
+func (self *Wallet) ExportAccount(childIndex uint32) string {
+	return self.MasterAccount.Child[childIndex].Key.Base58CheckSerialize(PriKeyType)
 }
 
-func (self *Wallet) ImportAccount(privateKey string) {
-	key, _ := Base58CheckDeserialize(privateKey)
+func (self *Wallet) ImportAccount(privateKeyStr string, accountName string, passPhrase string) (*Account, error) {
+	if passPhrase != self.PassPhrase {
+		return nil, errors.New("Wrong password phrase")
+	}
+
+	for _, account := range self.MasterAccount.Child {
+		if account.Key.Base58CheckSerialize(PriKeyType) == privateKeyStr {
+			return nil, errors.New("Existed account")
+		}
+		if account.Name == accountName {
+			return nil, errors.New("Existed account name")
+		}
+	}
+
+	priKey, _ := Base58CheckDeserialize(privateKeyStr)
+	priKey.KeyPair.ImportFromPrivateKey(&priKey.KeyPair.PrivateKey)
+
+	Logger.log.Infof("Pub-key : %s", priKey.Base58CheckSerialize(PubKeyType))
+	Logger.log.Infof("Readonly-key : %s", priKey.Base58CheckSerialize(ReadonlyKeyType))
+
 	account := Account{
-		Key:        *key,
+		Key:        *priKey,
 		Child:      make([]Account, 0),
 		IsImported: true,
+		Name:       accountName,
 	}
 	self.MasterAccount.Child = append(self.MasterAccount.Child, account)
+	err := self.Save(self.PassPhrase)
+	if err != nil {
+		return nil, err
+	}
+	return &account, nil
 }
 
-func (self *Wallet) Save(password string) (error) {
+func (self *Wallet) Save(password string) error {
 	if password == "" {
 		password = self.PassPhrase
 	}
@@ -111,7 +136,7 @@ func (self *Wallet) Save(password string) (error) {
 	return err
 }
 
-func (self *Wallet) LoadWallet(password string) (error) {
+func (self *Wallet) LoadWallet(password string) error {
 	// read file and decrypt
 	bytesData, err := ioutil.ReadFile(self.Config.DataPath)
 	if err != nil {
@@ -129,40 +154,55 @@ func (self *Wallet) LoadWallet(password string) (error) {
 	return err
 }
 
-func (self *Wallet) DumpPrivkey(address string) (string, error) {
+func (self *Wallet) DumpPrivkey(addressP string) (KeySerializedData, error) {
 	for _, account := range self.MasterAccount.Child {
-		address := account.Key.ToAddress(false)
-		if address == address {
-			return account.Key.Base58CheckSerialize(true), nil
+		address := account.Key.Base58CheckSerialize(PubKeyType)
+		if address == addressP {
+			key := KeySerializedData{
+				PrivateKey: account.Key.Base58CheckSerialize(PriKeyType),
+			}
+			return key, nil
 		}
 	}
-	return "", nil
+	return KeySerializedData{}, nil
 }
 
-func (self *Wallet) GetAccountAddress(accountParam string) (string, error) {
+func (self *Wallet) GetAccountAddress(accountParam string) (KeySerializedData, error) {
 	for _, account := range self.MasterAccount.Child {
 		if account.Name == accountParam {
-			return account.Key.ToAddress(false), nil
+			key := KeySerializedData{
+				PublicKey:   account.Key.Base58CheckSerialize(PubKeyType),
+				ReadonlyKey: account.Key.Base58CheckSerialize(ReadonlyKeyType),
+			}
+			return key, nil
 		}
 	}
 	newAccount := self.CreateNewAccount(accountParam)
-	return newAccount.Key.ToAddress(false), nil
+	key := KeySerializedData{
+		PublicKey:   newAccount.Key.Base58CheckSerialize(PubKeyType),
+		ReadonlyKey: newAccount.Key.Base58CheckSerialize(ReadonlyKeyType),
+	}
+	return key, nil
 }
 
-func (self *Wallet) GetAddressesByAccount(accountParam string) ([]string, error) {
-	result := make([]string, 0)
+func (self *Wallet) GetAddressesByAccount(accountParam string) ([]KeySerializedData, error) {
+	result := make([]KeySerializedData, 0)
 	for _, account := range self.MasterAccount.Child {
 		if account.Name == accountParam {
-			result = append(result, account.Key.ToAddress(false))
+			item := KeySerializedData{
+				PublicKey:   account.Key.Base58CheckSerialize(PubKeyType),
+				ReadonlyKey: account.Key.Base58CheckSerialize(ReadonlyKeyType),
+			}
+			result = append(result, item)
 		}
 	}
 	return result, nil
 }
 
-func (self *Wallet) ListAccounts() (map[string]float64) {
-	result := make(map[string]float64)
+func (self *Wallet) ListAccounts() map[string]Account {
+	result := make(map[string]Account)
 	for _, account := range self.MasterAccount.Child {
-		result[account.Name] = 0.0
+		result[account.Name] = account
 	}
 	return result
 }

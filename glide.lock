@@ -1,5 +1,5 @@
-hash: b7763aa5e93a08ee0a2bff4221ae2205d941f923dd6466ba13941dc5f70c7035
-updated: 2018-08-24T17:42:40.427993+07:00
+hash: a1406387dcfb4d5e3cfffb5f1e0feb2731b07b74aed7931b889f7e58c332194a
+updated: 2018-09-10T14:48:40.128814+07:00
 imports:
 - name: github.com/agl/ed25519
   version: 5312a61534124124185d41f09206b9fef1d88403
@@ -25,6 +25,14 @@ imports:
   subpackages:
   - io
   - proto
+- name: github.com/golang/protobuf
+  version: b4deda0973fb4c70b50d226b1af49f3da59f5265
+  subpackages:
+  - proto
+  - ptypes
+  - ptypes/any
+  - ptypes/duration
+  - ptypes/timestamp
 - name: github.com/golang/snappy
   version: 2e65f85255dbc3072edf28d6b5b8efc472979f5a
 - name: github.com/google/uuid
@@ -83,7 +91,7 @@ imports:
 - name: github.com/libp2p/go-flow-metrics
   version: 3b3bcfcf78f2dc0e85be13ef3c3adc64cc5a9347
 - name: github.com/libp2p/go-libp2p
-  version: ab978fcf9dcf614300807c9f9003ce2fa7d504a3
+  version: 7dffae8a14e99b5042872ba790fd89c57593ef50
   subpackages:
   - config
   - p2p/host/basic
@@ -160,6 +168,8 @@ imports:
   version: 3f5f724cb5b182a5c278d6d3d55b40e7f8c2efb4
 - name: github.com/minio/sha256-simd
   version: ad98a36ba0da87206e3378c556abbfeaeaa98668
+- name: github.com/mitchellh/mapstructure
+  version: fa473d140ef3c6adf42d6b391fe76707f1f243c8
 - name: github.com/mr-tron/base58
   version: 4df4dc6e86a912614d09719d10cad427b087cbfb
   subpackages:
@@ -224,15 +234,33 @@ imports:
 - name: golang.org/x/crypto
   version: 9419663f5a44be8b34ca85f08abc5fe1be11f8a3
   subpackages:
+  - blake2b
   - blake2s
   - blowfish
+  - chacha20poly1305
+  - chacha20poly1305/internal/chacha20
+  - cryptobyte
+  - cryptobyte/asn1
+  - curve25519
+  - ed25519
+  - ed25519/internal/edwards25519
+  - pbkdf2
+  - poly1305
+  - ripemd160
   - sha3
 - name: golang.org/x/net
   version: d0887baf81f4598189d4e12a37c6da86f0bba4d0
   subpackages:
+  - context
   - html
   - html/atom
   - html/charset
+  - http/httpguts
+  - http2
+  - http2/hpack
+  - idna
+  - internal/timeseries
+  - trace
 - name: golang.org/x/sys
   version: ac767d655b305d4e9612f5f6e33120b9176c4ad4
   subpackages:
@@ -257,7 +285,42 @@ imports:
   - internal/utf8internal
   - language
   - runes
+  - secure/bidirule
   - transform
+  - unicode/bidi
+  - unicode/norm
+- name: google.golang.org/genproto
+  version: 2731d4fa720b67f9fe38e9051a2a9b38e4609260
+  subpackages:
+  - googleapis/rpc/status
+- name: google.golang.org/grpc
+  version: 32fb0ac620c32ba40a4626ddf94d90d12cce3455
+  subpackages:
+  - balancer
+  - balancer/base
+  - balancer/roundrobin
+  - codes
+  - connectivity
+  - credentials
+  - encoding
+  - encoding/proto
+  - grpclog
+  - internal
+  - internal/backoff
+  - internal/channelz
+  - internal/envconfig
+  - internal/grpcrand
+  - internal/transport
+  - keepalive
+  - metadata
+  - naming
+  - peer
+  - resolver
+  - resolver/dns
+  - resolver/passthrough
+  - stats
+  - status
+  - tap
 testImports:
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2

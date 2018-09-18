@@ -5,8 +5,9 @@
 package base58
 
 import (
-	"errors"
 	"bytes"
+	"errors"
+
 	"github.com/ninjadotorg/cash-prototype/common"
 )
 
@@ -19,6 +20,7 @@ var ErrInvalidFormat = errors.New("invalid format: version and/or checksum bytes
 
 // checksum: first four bytes of sha256^2
 func ChecksumFirst4Bytes(input []byte) (cksum []byte) {
+	cksum = make([]byte, 4)
 	h2 := common.DoubleHashB(input)
 	copy(cksum[:], h2[:4])
 	return
@@ -44,12 +46,13 @@ func (self Base58Check) Decode(input string) (result []byte, version byte, err e
 		return nil, 0, ErrInvalidFormat
 	}
 	version = decoded[0]
-	var cksum []byte
+	// var cksum []byte
+	cksum := make([]byte, 4)
 	copy(cksum[:], decoded[len(decoded)-4:])
 	if bytes.Compare(ChecksumFirst4Bytes(decoded[:len(decoded)-4]), cksum) != 0 {
 		return nil, 0, ErrChecksum
 	}
-	payload := decoded[1: len(decoded)-4]
+	payload := decoded[1 : len(decoded)-4]
 	result = append(result, payload...)
 	return
 }

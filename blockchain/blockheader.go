@@ -1,8 +1,6 @@
 package blockchain
 
 import (
-	"time"
-
 	"github.com/ninjadotorg/cash-prototype/common"
 )
 
@@ -22,9 +20,12 @@ type BlockHeader struct {
 	// Merkle tree reference to hash of all transactions for the block.
 	MerkleRoot common.Hash
 
+	// Merkle tree reference to hash of all commitments to the current block.
+	MerkleRootCommitments common.Hash
+
 	// Time the block was created.  This is, unfortunately, encoded as a
-	// uint32 on the wire and therefore is limited to 2106.
-	Timestamp time.Time
+	// uint64 on the wire and therefore is limited to 2106.
+	Timestamp int64
 
 	// Difficulty target for the block.
 	Difficulty uint32

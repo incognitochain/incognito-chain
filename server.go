@@ -3,14 +3,19 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/cash-prototype/cashec"
 	"log"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/cashec"
+
 	"crypto/tls"
+	"os"
+	"path/filepath"
+	"strconv"
+
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/addrmanager"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
@@ -24,16 +29,14 @@ import (
 	"github.com/ninjadotorg/cash-prototype/netsync"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/rpcserver"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"github.com/ninjadotorg/cash-prototype/wire"
-	"os"
-	"path/filepath"
-	"strconv"
 )
 
 const (
 	defaultNumberOfTargetOutbound = 8
-	defaultNumberOfTargetInbound = 8
+	defaultNumberOfTargetInbound  = 8
 )
 
 // onionAddr implements the net.Addr interface and represents a tor address.
@@ -116,7 +119,7 @@ func (self Server) setupRPCListeners() ([]net.Listener, error) {
 	return listeners, nil
 }
 
-func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams *blockchain.Params, interrupt <-chan struct{}) (error) {
+func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams *blockchain.Params, interrupt <-chan struct{}) error {
 
 	// Init data for Server
 	self.chainParams = chainParams
@@ -138,16 +141,20 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		return err
 	}
 
-	self.MemPool = mempool.New(&mempool.Config{
-		Policy:      mempool.Policy{},
+	// create mempool tx
+	self.MemPool = &mempool.TxPool{}
+	self.MemPool.Init(&mempool.Config{
+		Policy: mempool.Policy{
+			MaxTxVersion: transaction.TxVersion + 1,
+		},
 		BlockChain:  self.BlockChain,
 		ChainParams: chainParams,
 	})
 
 	self.AddrManager = addrmanager.New(cfg.DataDir, nil)
 
-	blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.BlockChain)
-
+	// create a miner with mempool is a tx resource
+	blockTemplateGenerator := mining.NewBlkTmplGeneratorByMempool(self.MemPool, self.BlockChain)
 	self.Miner = miner.New(&miner.Config{
 		ChainParams:            self.chainParams,
 		BlockTemplateGenerator: blockTemplateGenerator,
@@ -199,7 +206,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		ListenerPeers:        peers,
 		TargetOutbound:       uint32(targetOutbound),
 		TargetInbound:        uint32(targetInbound),
-		DiscoverPeers:		  cfg.DiscoverPeers,
+		DiscoverPeers:        cfg.DiscoverPeers,
 	})
 	if err != nil {
 		return err
@@ -431,18 +438,14 @@ func (self Server) Start() {
 		self.RpcServer.Start()
 	}
 
-	//creat mining
+	// Start mining
 	if cfg.Generate == true && (len(cfg.MiningAddrs) > 0) {
-		self.Miner.Start()
-	}
-
-	// test, print length of chain
-	/*go func(server Server) {
-		for {
-			time.Sleep(time.Second * 3)
-			log.Printf("\n --- BlockChain length: %d ---- \n", len(server.BlockChain.Blocks))
+		if self.Miner != nil {
+			self.Miner.Start()
+		} else {
+			Logger.log.Info("We don't have any miner to make mining")
 		}
-	}(self)*/
+	}
 }
 
 // initListeners initializes the configured net listeners and adds any bound
@@ -548,7 +551,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
 		PeerId:           msg.LocalPeerId,
-		PublicKey:		  msg.PublicKey,
+		PublicKey:        msg.PublicKey,
 	}
 
 	self.newPeers <- remotePeer
@@ -611,11 +614,10 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 
 /**
 OnVerAck is invoked when a peer receives a version acknowlege message
- */
+*/
 func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
 	log.Printf("Receive verack message")
-
 
 	if msg.Valid {
 		peerConn.VerValid = true
@@ -703,7 +705,7 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 
 /**
 PushBlockMessageWithPeerId broadcast block to specific connected peer
- */
+*/
 //func (self Server) PushBlockMessageWithValidatorAddress(block *blockchain.Block, validatorAddress string) error {
 //	Logger.log.Info("PushBlockMessageWithValidatorAddress", block, validatorAddress)
 //	var dc chan<- struct{}
@@ -734,7 +736,7 @@ PushBlockMessageWithPeerId broadcast block to specific connected peer
 
 /**
 PushMessageToAll broadcast msg
- */
+*/
 func (self Server) PushMessageToAll(msg wire.Message) error {
 	var dc chan<- struct{}
 	for _, listen := range self.ConnManager.Config.ListenerPeers {
@@ -745,7 +747,7 @@ func (self Server) PushMessageToAll(msg wire.Message) error {
 
 /**
 PushMessageToPeer push msg to peer
- */
+*/
 func (self Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 	var dc chan<- struct{}
 	for _, listener := range self.ConnManager.Config.ListenerPeers {
@@ -777,15 +779,20 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 
 /**
 UpdateChain - Update chain with received block
- */
+*/
 func (self *Server) UpdateChain(block *blockchain.Block) {
 	// save block
 	self.BlockChain.StoreBlock(block)
 
+	// Update commitments merkle tree
+	tree := self.BlockChain.BestState.CmTree
+	blockchain.UpdateMerkleTreeForBlock(tree, block)
+
 	// save best state
-	newBestState := &blockchain.BestState{}
 	numTxns := uint64(len(block.Transactions))
-	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0))
+	totalTxns := self.BlockChain.BestState.TotalTxns + numTxns
+	newBestState := &blockchain.BestState{}
+	newBestState.Init(block, 0, 0, numTxns, totalTxns, time.Unix(block.Header.Timestamp, 0), tree)
 	self.BlockChain.BestState = newBestState
 	self.BlockChain.StoreBestState()
 

@@ -2,7 +2,9 @@ package blockchain
 
 import (
 	"time"
+
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/privacy/client"
 )
 
 // BestState houses information about the current best block and other info
@@ -15,8 +17,10 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 type BestState struct {
-	BestBlockHash common.Hash // The hash of the block.
-	BestBlock     *Block      // The hash of the block.
+	BestBlockHash *common.Hash // The hash of the block.
+	BestBlock     *Block       // The hash of the block.
+
+	CmTree *client.IncMerkleTree // The commitments merkle tree of the best block
 
 	Height      int32     // The height of the block.
 	Difficulty  uint32    // The difficulty bits of the block.
@@ -27,9 +31,11 @@ type BestState struct {
 	MedianTime  time.Time // Median time as per CalcPastMedianTime.
 }
 
-func (self *BestState) Init(block *Block, blocksize, blockweigh, numTxts, totalTxns uint64, medianTime time.Time) {
+func (self *BestState) Init(block *Block, blocksize, blockweigh, numTxts, totalTxns uint64, medianTime time.Time, tree *client.IncMerkleTree) {
+	bestBlockHash := block.Hash()
 	self.BestBlock = block
-	self.BestBlockHash = *self.BestBlock.Hash()
+	self.BestBlockHash = bestBlockHash
+	self.CmTree = tree
 
 	self.TotalTxns = totalTxns
 	self.NumTxns = numTxts

@@ -38,14 +38,14 @@ type Param struct {
 //}
 
 type ActionParamTx struct {
-	Version  int    `json:"Version"`
-	Type     string `json:"Type"` // NORMAL / ACTION_PARAMS
+	Version  int8   `json:"Version"`
+	Type     string `json:"Type"` // a
 	Param    *Param `json:"Param"`
 	LockTime int64  `json:"LockTime"`
 }
 
-func (self *ActionParamTx) Hash() *common.Hash {
-	record := strconv.Itoa(self.Version) + strconv.Itoa(self.Version)
+func (self ActionParamTx) Hash() *common.Hash {
+	record := strconv.Itoa(int(self.Version))
 	record += self.Type
 	record += self.Param.AgentID
 	record += string(self.Param.AgentSig)

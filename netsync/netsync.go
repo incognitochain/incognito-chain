@@ -129,8 +129,8 @@ func (self *NetSync) QueueTx(_ *peer.Peer, msg *wire.MessageTx, done chan struct
 // handleTxMsg handles transaction messages from all peers.
 func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 	Logger.log.Info("Handling new message tx")
-	// TODO get message tx and process, Tuan Anh
-	hash, txDesc, error := self.Config.MemPool.CanAcceptTransaction(msg.Transaction)
+	// TODO get message tx and process
+	hash, txDesc, error := self.Config.MemPool.MaybeAcceptTransaction(msg.Transaction)
 
 	if error != nil {
 		fmt.Print(error)

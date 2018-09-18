@@ -8,10 +8,12 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
-type txPrioItem struct {
+/*type txPrioItem struct {
 	tx       transaction.Transaction
 	fee      int64
 	priority float64
@@ -29,7 +31,7 @@ func filterActionParamsTxs(block *blockchain.Block) []*transaction.ActionParamTx
 		}
 	}
 	return actionParamTxs
-}
+}*/
 
 func getMedians(agentDataPoints []*blockchain.AgentDataPoint) (
 	float64, float64, float64,
@@ -51,10 +53,10 @@ func getMedians(agentDataPoints []*blockchain.AgentDataPoint) (
 
 func calculateReward(
 	agentDataPoints map[string]*blockchain.AgentDataPoint,
-	feeMap map[string]float64,
-) map[string]float64 {
+	feeMap map[string]uint64,
+) map[string]uint64 {
 	if len(agentDataPoints) < NUMBER_OF_MAKING_DECISION_AGENTS {
-		return map[string]float64{
+		return map[string]uint64{
 			"coins": DEFAULT_COINS + feeMap[common.TxOutCoinType],
 			"bonds": DEFAULT_BONDS + feeMap[common.TxOutBondType],
 		}
@@ -74,14 +76,14 @@ func calculateReward(
 		contractingCoinsActions = append(contractingCoinsActions, dataPoint)
 	}
 	if math.Max(float64(len(issuingCoinsActions)), float64(len(contractingCoinsActions))) < (math.Floor(float64(len(agentDataPoints)/2)) + 1) {
-		return map[string]float64{
+		return map[string]uint64{
 			"coins": DEFAULT_COINS + feeMap[common.TxOutCoinType],
 			"bonds": DEFAULT_BONDS + feeMap[common.TxOutBondType],
 		}
 	}
 
 	if len(issuingCoinsActions) == len(contractingCoinsActions) {
-		return map[string]float64{
+		return map[string]uint64{
 			"coins": DEFAULT_COINS + feeMap[common.TxOutCoinType],
 			"bonds": DEFAULT_BONDS + feeMap[common.TxOutBondType],
 		}
@@ -89,10 +91,10 @@ func calculateReward(
 
 	if len(issuingCoinsActions) < len(contractingCoinsActions) {
 		_, medianBond, medianTax := getMedians(contractingCoinsActions)
-		coins := (100 - medianTax) * 0.01 * feeMap[common.TxOutCoinType]
+		coins := uint64(math.Floor((100 - medianTax) * 0.01 * float64(feeMap[common.TxOutCoinType])))
 		burnedCoins := feeMap[common.TxOutCoinType] - coins
-		bonds := medianBond + feeMap[common.TxOutBondType] + burnedCoins
-		return map[string]float64{
+		bonds := uint64(math.Floor(medianBond)) + feeMap[common.TxOutBondType] + burnedCoins
+		return map[string]uint64{
 			"coins":       coins,
 			"bonds":       bonds,
 			"burnedCoins": burnedCoins,
@@ -101,68 +103,114 @@ func calculateReward(
 	// issuing coins
 	medianCoin, _, _ := getMedians(issuingCoinsActions)
 
-	return map[string]float64{
-		"coins": medianCoin + feeMap[common.TxOutCoinType],
+	return map[string]uint64{
+		"coins": uint64(math.Floor(medianCoin)) + feeMap[common.TxOutCoinType],
 		"bonds": feeMap[common.TxOutBondType],
 	}
 }
 
-// createCoinbaseTx returns a coinbase transaction paying an appropriate subsidy
-// based on the passed block height to the provided address.  When the address
-// is nil, the coinbase transaction will instead be redeemable by anyone.
-
 func createCoinbaseTx(
 	params *blockchain.Params,
-	coinbaseScript []byte,
-	addr string,
-	rewardMap map[string]float64,
+	receiverAddr *client.PaymentAddress,
+	rewardMap map[string]uint64,
+	rt []byte,
 ) (*transaction.Tx, error) {
-	// Create the script to pay to the provided payment address if one was
-	// specified.  Otherwise create a script that allows the coinbase to be
-	// redeemable by anyone.
-	var pkScript []byte
+	// Create Proof for the joinsplit op
+	inputs := make([]*client.JSInput, 2)
+	inputs[0] = transaction.CreateRandomJSInput()
+	inputs[1] = transaction.CreateRandomJSInput()
 
-	pkScript = []byte(addr) //@todo add public key of the receiver where
-
-	//create new tx
-	tx := &transaction.Tx{
-		Version: 1,
-		Type:    common.TxNormalType,
-		TxIn:    make([]transaction.TxIn, 0, 2),
-		TxOut:   make([]transaction.TxOut, 0, 1),
-	}
-	//create outpoint
-	outPoint := &transaction.OutPoint{
-		Hash: common.Hash{},
-		Vout: transaction.MaxPrevOutIndex,
-	}
-
-	txIn := *transaction.TxIn{}.NewTxIn(outPoint, coinbaseScript)
-	tx.AddTxIn(txIn)
-	//@todo add value of tx out logic
+	// Get reward
+	// TODO(@0xbunyip): implement bonds reward
+	var reward uint64
 	for rewardType, rewardValue := range rewardMap {
 		if rewardValue <= 0 {
 			continue
 		}
-		txOutTypeMap := map[string]string{
-			"coins":       common.TxOutCoinType,
-			"bonds":       common.TxOutBondType,
-			"burnedCoins": common.TxOutCoinType,
+		if rewardType == "coins" {
+			reward = rewardValue
 		}
-		if rewardType == "burnedCoins" {
-			pkScript = []byte(DEFAULT_ADDRESS_FOR_BURNING)
-		}
-		txOut := *transaction.TxOut{}.NewTxOut(rewardValue, pkScript, txOutTypeMap[rewardType])
-		tx.AddTxOut(txOut)
 	}
 
-	return tx, nil
+	// Create new notes: first one is coinbase UTXO, second one has 0 value
+	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}
+	placeHolderOutputNote := &client.Note{Value: 0, Apk: receiverAddr.Apk}
+
+	outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
+	outputs[0].EncKey = receiverAddr.Pkenc
+	outputs[0].OutputNote = outNote
+	outputs[1].EncKey = receiverAddr.Pkenc
+	outputs[1].OutputNote = placeHolderOutputNote
+
+	// Shuffle output notes randomly (if necessary)
+
+	// Generate proof and sign tx
+	tx, err := transaction.GenerateProofAndSign(inputs, outputs, rt, reward)
+	if err != nil {
+		tx.LockTime = time.Now().Unix()
+	}
+	return tx, err
 }
+
+// /**
+// // createCoinbaseTx returns a coinbase transaction paying an appropriate subsidy
+// // based on the passed block height to the provided address.  When the address
+// // is nil, the coinbase transaction will instead be redeemable by anyone.
+// */
+// func createCoinbaseTx(
+// 	params *blockchain.Params,
+// 	coinbaseScript []byte,
+// 	addr string,
+// 	rewardMap map[string]uint64,
+// ) (*transaction.Tx, error) {
+// 	// Create the script to pay to the provided payment address if one was
+// 	// specified.  Otherwise create a script that allows the coinbase to be
+// 	// redeemable by anyone.
+// 	var pkScript []byte
+// 	_ = pkScript
+
+// 	pkScript = []byte(addr) //@todo add public key of the receiver where
+
+// 	//create new tx
+// 	tx := &transaction.Tx{
+// 		Version: 1,
+// 		Type:    common.TxNormalType,
+// 		//TxIn:    make([]transaction.TxIn, 0, 2),
+// 		//TxOut:   make([]transaction.TxOut, 0, 1),
+// 	}
+// 	//create outpoint
+// 	//outPoint := &transaction.OutPoint{
+// 	//	Hash: common.Hash{},
+// 	//	Vout: transaction.MaxPrevOutIndex,
+// 	//}
+
+// 	//txIn := *transaction.TxIn{}.NewTxIn(outPoint, coinbaseScript)
+// 	//tx.AddTxIn(txIn)
+// 	//@todo add value of tx out logic
+// 	for rewardType, rewardValue := range rewardMap {
+// 		if rewardValue <= 0 {
+// 			continue
+// 		}
+// 		txOutTypeMap := map[string]string{
+// 			"coins":       common.TxOutCoinType,
+// 			"bonds":       common.TxOutBondType,
+// 			"burnedCoins": common.TxOutCoinType,
+// 		}
+// 		if rewardType == "burnedCoins" {
+// 			pkScript = []byte(DEFAULT_ADDRESS_FOR_BURNING)
+// 		}
+// 		_ = txOutTypeMap
+// 		//txOut := *transaction.TxOut{}.NewTxOut(rewardValue, pkScript, txOutTypeMap[rewardType])
+// 		//tx.AddTxOut(txOut)
+// 	}
+
+// 	return tx, nil
+// }
 
 // spendTransaction updates the passed view by marking the inputs to the passed
 // transaction as spent.  It also adds all outputs in the passed transaction
 // which are not provably unspendable as available unspent transaction outputs.
-func spendTransaction(utxoView *blockchain.UtxoViewpoint, tx *transaction.Tx, height int32) error {
+/*func spendTransaction(utxoView *blockchain.UtxoViewpoint, tx *transaction.Tx, height int32) error {
 	for _, txIn := range tx.TxIn {
 		entry := utxoView.LookupEntry(txIn.PreviousOutPoint)
 		if entry != nil {
@@ -172,16 +220,16 @@ func spendTransaction(utxoView *blockchain.UtxoViewpoint, tx *transaction.Tx, he
 
 	utxoView.AddTxOuts(tx, height)
 	return nil
-}
+}*/
 
 func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 	[]transaction.Transaction,
 	[]*transaction.ActionParamTx,
-	map[string]float64,
+	map[string]uint64,
 ) {
 	var txs []transaction.Transaction
 	var actionParamTxs []*transaction.ActionParamTx
-	var feeMap = map[string]float64{
+	var feeMap = map[string]uint64{
 		fmt.Sprintf(common.TxOutCoinType): 0,
 		fmt.Sprintf(common.TxOutBondType): 0,
 	}
@@ -194,12 +242,9 @@ func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 			continue
 		}
 		normalTx, _ := tx.(*transaction.Tx)
-		if len(normalTx.TxOut) > 0 {
-			txOutType := normalTx.TxOut[0].TxOutType
-			if txOutType == "" {
-				txOutType = common.TxOutCoinType
-			}
-			feeMap[txOutType] += txDesc.Fee
+		for _, desc := range normalTx.Descs {
+			joinSplitDescType := desc.Type
+			feeMap[joinSplitDescType] += txDesc.Fee
 		}
 	}
 	return txs, actionParamTxs, feeMap
@@ -261,9 +306,10 @@ func getLatestAgentDataPoints(
 }
 
 func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain) (*BlockTemplate, error) {
-
+	// get prevblock
 	prevBlock := chain.BestState.BestBlock
-	prevBlockHash := chain.BestState.BestBlock.Hash()
+	prevBlockHash := chain.BestState.BestBlockHash
+
 	sourceTxns := g.txSource.MiningDescs()
 
 	if len(sourceTxns) == 0 {
@@ -276,9 +322,10 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	agentDataPoints := getLatestAgentDataPoints(chain, actionParamTxs)
 	rewardMap := calculateReward(agentDataPoints, feeMap)
 
-	coinbaseScript := []byte("1234567890123456789012") //@todo should be create function create basescript
+	_ = []byte("1234567890123456789012") //@todo should be create function create basescript
 
-	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, coinbaseScript, payToAddress, rewardMap)
+	receiverKeyset, _ := wallet.Base58CheckDeserialize(payToAddress)
+	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, &receiverKeyset.KeyPair.PublicKey, rewardMap, g.chain.BestState.BestBlock.Header.MerkleRootCommitments.CloneBytes())
 	if err != nil {
 		return nil, err
 	}
@@ -294,76 +341,117 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 
 mempoolLoop:
-	for _, txDesc := range sourceTxns {
-		tx := txDesc.Tx
+	for _, txDesc := range blockTxns {
+		tx := txDesc
 		//@todo need apply validate tx, logic check all referenced here
-		// call function spendTransaction to mark utxo
-		utxos, err := g.chain.FetchUtxoView(*tx.(*transaction.Tx))
-		_ = utxos
-		_ = err
-		/*
-		if err != nil {
-			fmt.Print("Unable to fetch utxo view for tx %s: %v",
-				tx.Hash(), err)
-			continue
+		for _, desc := range tx.(*transaction.Tx).Descs {
+			view, err := g.chain.FetchTxViewPoint(desc.Type)
+			_ = view
+			_ = err
 		}
-		prioItem := &txPrioItem{tx: tx}
-		for _, txIn := range tx.TxIn {
-			originHash := &txIn.PreviousOutPoint.Hash
-			entry := utxos.LookupEntry(txIn.PreviousOutPoint)
-			if entry == nil || entry.IsSpent() {
-				if !TxPool.HaveTx(originHash) {
-					fmt.Print("Skipping tx %s because it "+
-						"references unspent output %s "+
-						"which is not available",
-						tx.Hash(), txIn.PreviousOutPoint)
-					continue mempoolLoop
-				}
-
-				// The transaction is referencing another
-				// transaction in the source pool, so setup an
-				// ordering dependency.
-				deps, exists := dependers[*originHash]
-				if !exists {
-					deps = make(map[common.Hash]*txPrioItem)
-					dependers[*originHash] = deps
-				}
-				deps[*prioItem.tx.Hash()] = prioItem
-				if prioItem.dependsOn == nil {
-					prioItem.dependsOn = make(
-						map[common.Hash]struct{})
-				}
-				prioItem.dependsOn[*originHash] = struct{}{}
-
-				// Skip the check below. We already know the
-				// referenced transaction is available.
+		//_ = utxos
+		//_ = err
+		/*
+			if err != nil {
+				fmt.Print("Unable to fetch utxo view for tx %s: %v",
+					tx.Hash(), err)
 				continue
 			}
-		}*/
+			prioItem := &txPrioItem{tx: tx}
+			for _, txIn := range tx.TxIn {
+				originHash := &txIn.PreviousOutPoint.Hash
+				entry := utxos.LookupEntry(txIn.PreviousOutPoint)
+				if entry == nil || entry.IsSpent() {
+					if !TxPool.HaveTx(originHash) {
+						fmt.Print("Skipping tx %s because it "+
+							"references unspent output %s "+
+							"which is not available",
+							tx.Hash(), txIn.PreviousOutPoint)
+						continue mempoolLoop
+					}
+
+					// The transaction is referencing another
+					// transaction in the source pool, so setup an
+					// ordering dependency.
+					deps, exists := dependers[*originHash]
+					if !exists {
+						deps = make(map[common.Hash]*txPrioItem)
+						dependers[*originHash] = deps
+					}
+					deps[*prioItem.tx.Hash()] = prioItem
+					if prioItem.dependsOn == nil {
+						prioItem.dependsOn = make(
+							map[common.Hash]struct{})
+					}
+					prioItem.dependsOn[*originHash] = struct{}{}
+
+					// Skip the check below. We already know the
+					// referenced transaction is available.
+					continue
+				}
+			}*/
 		if !tx.ValidateTransaction() {
 			continue mempoolLoop
 		}
 
-		g.txSource.Clear()
+		err := g.txSource.RemoveTx(&tx)
+		if err != nil {
+			Logger.log.Error(err)
+		}
 	}
 
 	// TODO PoW
 	//time.Sleep(time.Second * 15)
 
+	// Store commitments and nullifiers in database
+	var descType string
+	commitments := [][]byte{}
+	nullifiers := [][]byte{}
+	for _, blockTx := range blockTxns {
+		if (blockTx.GetType() == common.TxOutCoinType) {
+			tx, ok := blockTx.(*transaction.Tx)
+			if ok == false {
+				return nil, fmt.Errorf("Transaction not recognized to store in database")
+			}
+
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					commitments = append(commitments, cm)
+				}
+
+				for _, nf := range desc.Nullifiers {
+					nullifiers = append(nullifiers, nf)
+				}
+				descType = desc.Type
+			}
+		}
+	}
+	// TODO(@0xsirrush): check if cm and nf should be saved here (when generate block template)
+	// or when UpdateBestState
+	g.chain.StoreCommitmentsFromListCommitment(commitments, descType)
+	g.chain.StoreNullifiersFromListNullifier(nullifiers, descType)
+
 	block := blockchain.Block{}
 	block.Header = blockchain.BlockHeader{
-		Version:       1,
-		PrevBlockHash: *prevBlockHash,
-		MerkleRoot:    *merkleRoot,
-		Timestamp:     time.Now(),
-		Difficulty:    0, //@todo should be create Difficulty logic
-		Nonce:         0, //@todo should be create Nonce logic
+		Version:               1,
+		PrevBlockHash:         *prevBlockHash,
+		MerkleRoot:            *merkleRoot,
+		MerkleRootCommitments: common.Hash{},
+		Timestamp:             time.Now().Unix(),
+		Difficulty:            0, //@todo should be create Difficulty logic
+		Nonce:                 0, //@todo should be create Nonce logic
 	}
 	for _, tx := range blockTxns {
 		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
 		}
 	}
+
+	// Add new commitments to merkle tree and save the root
+	newTree := g.chain.BestState.CmTree.MakeCopy()
+	blockchain.UpdateMerkleTreeForBlock(newTree, &block)
+	rt := newTree.GetRoot(common.IncMerkleTreeHeight)
+	copy(block.Header.MerkleRootCommitments[:], rt)
 
 	//update the latest AgentDataPoints to block
 	block.AgentDataPoints = agentDataPoints
@@ -389,15 +477,18 @@ type BlockTemplate struct {
 	// Fees []float64
 }
 
+/**
 // TxSource represents a source of transactions to consider for inclusion in
 // new blocks.
 //
 // The interface contract requires that all of these methods are safe for
 // concurrent access with respect to the source.
+Note mempool(tx pool) is a TxSource
+*/
 type TxSource interface {
 	// LastUpdated returns the last time a transaction was added to or
 	// removed from the source pool.
-	//LastUpdated() time.Time
+	LastUpdated() time.Time
 
 	// MiningDescs returns a slice of mining descriptors for all the
 	// transactions in the source pool.
@@ -405,17 +496,18 @@ type TxSource interface {
 
 	// HaveTransaction returns whether or not the passed transaction hash
 	// exists in the source pool.
-	//HaveTransaction(hash *common.Hash) bool
+	HaveTransaction(hash *common.Hash) bool
 
-	RemoveTx(tx transaction.Tx)
-
-	// TODO using when demo
-	Clear()
+	// RemoveTx remove tx from tx resource
+	RemoveTx(tx *transaction.Transaction) error
 }
 
-func NewBlkTmplGenerator(txSource TxSource, chain *blockchain.BlockChain) *BlkTmplGenerator {
+/**
+NewBlkTmplGenerator - create a block template generator from mempool package
+*/
+func NewBlkTmplGeneratorByMempool(mempool TxSource, chain *blockchain.BlockChain) *BlkTmplGenerator {
 	return &BlkTmplGenerator{
-		txSource: txSource,
+		txSource: mempool,
 		chain:    chain,
 	}
 }

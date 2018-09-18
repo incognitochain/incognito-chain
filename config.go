@@ -51,7 +51,7 @@ const (
 	sampleConfigFilename         = "sample-config.conf"
 	defaultTxIndex               = false
 	defaultAddrIndex             = false
-	deafaultDisableRpcTls        = true
+	defaultDisableRpcTls         = true
 
 	// For wallet
 	defaultWalletDbName = "wallet.db"
@@ -341,22 +341,22 @@ func loadConfig() (*config, []string, error) {
 		DbType:               defaultDbType,
 		RPCKey:               defaultRPCKeyFile,
 		RPCCert:              defaultRPCCertFile,
-		MinRelayTxFee:        common.DefaultMinRelayTxFee.ToBTC(),
-		FreeTxRelayLimit:     defaultFreeTxRelayLimit,
-		BlockMinSize:         defaultBlockMinSize,
-		BlockMaxSize:         defaultBlockMaxSize,
-		BlockMinWeight:       defaultBlockMinWeight,
-		BlockMaxWeight:       defaultBlockMaxWeight,
-		BlockPrioritySize:    mempool.DefaultBlockPrioritySize,
-		MaxOrphanTxs:         defaultMaxOrphanTransactions,
-		SigCacheMaxSize:      defaultSigCacheMaxSize,
-		Generate:             defaultGenerate,
-		TxIndex:              defaultTxIndex,
-		AddrIndex:            defaultAddrIndex,
-		WalletDbName:         defaultWalletDbName,
-		DisableTLS:           deafaultDisableRpcTls,
-		RPCDisableAuth:       true,
-		SealerPrvKey:         os.Getenv("SEALERPRVKEY"),
+		//MinRelayTxFee:        common.DefaultMinRelayTxFee.ToBTC(),
+		FreeTxRelayLimit:  defaultFreeTxRelayLimit,
+		BlockMinSize:      defaultBlockMinSize,
+		BlockMaxSize:      defaultBlockMaxSize,
+		BlockMinWeight:    defaultBlockMinWeight,
+		BlockMaxWeight:    defaultBlockMaxWeight,
+		BlockPrioritySize: mempool.DefaultBlockPrioritySize,
+		MaxOrphanTxs:      defaultMaxOrphanTransactions,
+		SigCacheMaxSize:   defaultSigCacheMaxSize,
+		Generate:          defaultGenerate,
+		TxIndex:           defaultTxIndex,
+		AddrIndex:         defaultAddrIndex,
+		WalletDbName:      defaultWalletDbName,
+		DisableTLS:        defaultDisableRpcTls,
+		RPCDisableAuth:    false,
+		SealerPrvKey:      os.Getenv("SEALERPRVKEY"),
 	}
 
 	// Service options which are only added on Windows.

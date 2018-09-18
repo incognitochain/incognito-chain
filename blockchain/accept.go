@@ -1,8 +1,6 @@
 package blockchain
 
-import (
-	"fmt"
-)
+import "fmt"
 
 // maybeAcceptBlock potentially accepts a block into the block chain and, if
 // accepted, returns whether or not it is on the main chain.  It performs
@@ -42,7 +40,7 @@ func (self *BlockChain) maybeAcceptBlock(block *Block) (bool, error) {
 		return false, err
 	}
 
-	// fetch utxo from block and save
+	// fetch nullifiers and commitments(utxo) from block and save
 	isMainChain, err := self.connectBestChain(block)
 	if err != nil {
 		return false, err

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -14,13 +13,15 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 var (
 	blockKeyPrefix    = []byte("b-")
 	blockKeyIdxPrefix = []byte("i-")
 	usedTxKey         = []byte("usedTx")
+	notUsedTxKey      = []byte("notusedTx")
+	usedTxBondKey     = []byte("usedTxBond")
+	notUsedBondTxKey  = []byte("notusedTxBond")
 	bestBlockKey      = []byte("bestBlock")
 )
 
@@ -99,8 +100,8 @@ func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
 	return ret, nil
 }
 
-func (db *db) StoreTx(tx []byte) error {
-	res, err := db.ldb.Get(usedTxKey, nil)
+func (db *db) StoreNullifiers(nullifier []byte, typeJoinSplitDesc string) error {
+	res, err := db.ldb.Get(append(usedTxKey, []byte(typeJoinSplitDesc)...), nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return errors.Wrap(err, "db.ldb.Get")
 	}
@@ -111,15 +112,94 @@ func (db *db) StoreTx(tx []byte) error {
 			return errors.Wrap(err, "json.Unmarshal")
 		}
 	}
-	txs = append(txs, tx)
+	txs = append(txs, nullifier)
 	b, err := json.Marshal(txs)
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
 	}
-	if err := db.ldb.Put(usedTxKey, b, nil); err != nil {
+	if err := db.ldb.Put(append(usedTxKey, []byte(typeJoinSplitDesc)...), b, nil); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (db *db) StoreCommitments(commitments []byte, typeJoinSplitDesc string) error {
+	res, err := db.ldb.Get(append(notUsedTxKey, []byte(typeJoinSplitDesc)...), nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return errors.Wrap(err, "db.ldb.Get")
+	}
+
+	var txs [][]byte
+	if len(res) > 0 {
+		if err := json.Unmarshal(res, &txs); err != nil {
+			return errors.Wrap(err, "json.Unmarshal")
+		}
+	}
+	txs = append(txs, commitments)
+	b, err := json.Marshal(txs)
+	if err != nil {
+		return errors.Wrap(err, "json.Marshal")
+	}
+	if err := db.ldb.Put(append(notUsedTxKey, []byte(typeJoinSplitDesc)...), b, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *db) FetchNullifiers(typeJoinSplitDesc string) ([][]byte, error) {
+	res, err := db.ldb.Get(append(usedTxKey, []byte(typeJoinSplitDesc)...), nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return make([][]byte, 0), errors.Wrap(err, "db.ldb.Get")
+	}
+
+	var txs [][]byte
+	if len(res) > 0 {
+		if err := json.Unmarshal(res, &txs); err != nil {
+			return make([][]byte, 0), errors.Wrap(err, "json.Unmarshal")
+		}
+	}
+	return txs, nil
+}
+
+func (db *db) FetchCommitments(typeJoinSplitDesc string) ([][]byte, error) {
+	res, err := db.ldb.Get(append(notUsedTxKey, []byte(typeJoinSplitDesc)...), nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return make([][]byte, 0), errors.Wrap(err, "db.ldb.Get")
+	}
+
+	var txs [][]byte
+	if len(res) > 0 {
+		if err := json.Unmarshal(res, &txs); err != nil {
+			return make([][]byte, 0), errors.Wrap(err, "json.Unmarshal")
+		}
+	}
+	return txs, nil
+}
+
+func (db *db) HasNullifier(nullifier []byte, typeJoinSplitDesc string) (bool, error) {
+	listNullifiers, err := db.FetchNullifiers(typeJoinSplitDesc)
+	if err != nil {
+		return false, err
+	}
+	for _, item := range listNullifiers {
+		if bytes.Equal(item, nullifier) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (db *db) HasCommitment(commitment []byte, typeJoinSplitDesc string) (bool, error) {
+	listCommitments, err := db.FetchCommitments(typeJoinSplitDesc)
+	if err != nil {
+		return false, err
+	}
+	for _, item := range listCommitments {
+		if bytes.Equal(item, commitment) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (db *db) StoreBestBlock(v interface{}) error {
@@ -210,7 +290,7 @@ func (db *db) getKeyIdx(h *common.Hash) []byte {
 	return key
 }
 
-func (db *db) StoreUtxoEntry(op *transaction.OutPoint, v interface{}) error {
+/*func (db *db) StoreUtxoEntry(op *transaction.OutPoint, v interface{}) error {
 	val, err := json.Marshal(v)
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
@@ -238,4 +318,4 @@ func (db *db) DeleteUtxoEntry(op *transaction.OutPoint) error {
 
 func (db *db) getUtxoKey(op *transaction.OutPoint) string {
 	return fmt.Sprintf("%s%d", op.Hash.String(), op.Vout)
-}
+}*/
