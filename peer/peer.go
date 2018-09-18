@@ -64,6 +64,7 @@ type Peer struct {
 	MaxOutbound   int
 	MaxInbound    int
 
+	connMutex    sync.Mutex
 	PeerConns    map[peer.ID]*PeerConn
 	PendingPeers map[peer.ID]*Peer
 
@@ -184,6 +185,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.disconnectPeer = make(chan *PeerConn)
 
 	self.outboundMutex = sync.Mutex{}
+	self.connMutex = sync.Mutex{}
 
 	return &self, nil
 }
@@ -202,22 +204,30 @@ func (self *Peer) Start() error {
 }
 
 func (self *Peer) ConnPending(peer *Peer) {
+	self.connMutex.Lock()
 	self.PendingPeers[peer.PeerId] = peer
+	self.connMutex.Unlock()
 }
 
 func (self *Peer) ConnEstablished(peer *Peer) {
+	self.connMutex.Lock()
 	_, ok := self.PendingPeers[peer.PeerId]
 	if ok {
 		delete(self.PendingPeers, peer.PeerId)
 	}
+	self.connMutex.Unlock()
 }
 
 func (self *Peer) ConnCanceled(peer *Peer) {
-	_, ok := self.PeerConns[peer.PeerId]
+	self.connMutex.Lock()
+	peerConn, ok := self.PeerConns[peer.PeerId]
 	if ok {
 		delete(self.PeerConns, peer.PeerId)
+		if peerConn.IsOutbound {
+			self.PendingPeers[peer.PeerId] = peer
+		}
 	}
-	self.PendingPeers[peer.PeerId] = peer
+	self.connMutex.Unlock()
 }
 
 func (self *Peer) NumInbound() int {
@@ -313,10 +323,10 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	self.outboundMutex.Unlock()
 
 	timeOutVerAck := make(chan struct{})
-	time.AfterFunc(time.Second * 10, func() {
+	time.AfterFunc(time.Second*15, func() {
 		if !peerConn.VerAckReceived() {
 			Logger.log.Infof("NewPeerConnection timeoutVerack timeout PEER ID %s", peerConn.PeerId.String())
-			timeOutVerAck <- struct{}{}
+			close(timeOutVerAck)
 		}
 	})
 
@@ -324,10 +334,10 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		select {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("NewPeerConnection Close Stream PEER ID %s", peerConn.PeerId.String())
-			break
+			return &peerConn, nil
 		case <-timeOutVerAck:
 			Logger.log.Infof("NewPeerConnection timeoutVerack PEER ID %s", peerConn.PeerId.String())
-			break
+			return &peerConn, nil
 		}
 	}
 
@@ -383,7 +393,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	go self.handleConnected(&peerConn)
 
 	timeOutVerAck := make(chan struct{})
-	time.AfterFunc(time.Second * 10, func() {
+	time.AfterFunc(time.Second*10, func() {
 		if !peerConn.VerAckReceived() {
 			Logger.log.Infof("HandleStream timeoutVerack timeout PEER ID %s", peerConn.PeerId.String())
 			timeOutVerAck <- struct{}{}
@@ -394,10 +404,10 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		select {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("HandleStream close stream PEER ID %s", peerConn.PeerId.String())
-			break
+			return
 		case <-timeOutVerAck:
 			Logger.log.Infof("HandleStream timeoutVerack PEER ID %s", peerConn.PeerId.String())
-			break
+			return
 		}
 	}
 }
@@ -408,7 +418,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 // encoding/decoding blocks and transactions.
 //
 // This function is safe for concurrent access.
-func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
+func (self *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
 	for _, peerConnection := range self.PeerConns {
 		peerConnection.QueueMessageWithEncoding(msg, doneChan)
 	}
@@ -445,10 +455,7 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 		}
 	} else {
 		peerConn.updateState(ConnCanceled)
-		_, ok := self.PeerConns[peerConn.PeerId]
-		if ok {
-			delete(self.PeerConns, peerConn.PeerId)
-		}
+		self.ConnCanceled(peerConn.Peer)
 	}
 
 	if self.HandleDisconnected != nil {
