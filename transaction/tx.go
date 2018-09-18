@@ -41,7 +41,7 @@ func (tx *Tx) GetTxId() *common.Hash {
 }
 
 // Hash returns the hash of all fields of the transaction
-func (tx *Tx) Hash() *common.Hash {
+func (tx Tx) Hash() *common.Hash {
 	record := strconv.Itoa(int(tx.Version))
 	record += tx.Type
 	record += strconv.Itoa(int(tx.LockTime))

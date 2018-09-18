@@ -146,6 +146,9 @@ func createCoinbaseTx(
 
 	// Generate proof and sign tx
 	tx, err := transaction.GenerateProofAndSign(inputs, outputs, rt, reward)
+	if err != nil {
+		tx.LockTime = time.Now().Unix()
+	}
 	return tx, err
 }
 
@@ -432,7 +435,7 @@ mempoolLoop:
 		PrevBlockHash:         *prevBlockHash,
 		MerkleRoot:            *merkleRoot,
 		MerkleRootCommitments: common.Hash{},
-		Timestamp:             time.Now(),
+		Timestamp:             time.Now().Unix(),
 		Difficulty:            0, //@todo should be create Difficulty logic
 		Nonce:                 0, //@todo should be create Nonce logic
 	}

@@ -87,8 +87,6 @@ func (self *BlockChain) initChainState() error {
 			initialized = false
 		} else {
 			initialized = true
-			println(self.BestState.BestBlock.Hash().String())
-			println(self.BestState.BestBlockHash.String())
 		}
 	} else {
 		initialized = false
@@ -140,7 +138,7 @@ func (self *BlockChain) createChainState() error {
 	}
 
 	self.BestState = &BestState{}
-	self.BestState.Init(genesisBlock, 0, 0, numTxns, numTxns, time.Unix(genesisBlock.Header.Timestamp.Unix(), 0), tree)
+	self.BestState.Init(genesisBlock, 0, 0, numTxns, numTxns, time.Unix(genesisBlock.Header.Timestamp, 0), tree)
 
 	// save nullifiers and commitments from genesisblock
 	view := NewTxViewPoint()

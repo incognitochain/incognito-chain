@@ -792,7 +792,7 @@ func (self *Server) UpdateChain(block *blockchain.Block) {
 	numTxns := uint64(len(block.Transactions))
 	totalTxns := self.BlockChain.BestState.TotalTxns + numTxns
 	newBestState := &blockchain.BestState{}
-	newBestState.Init(block, 0, 0, numTxns, totalTxns, time.Unix(block.Header.Timestamp.Unix(), 0), tree)
+	newBestState.Init(block, 0, 0, numTxns, totalTxns, time.Unix(block.Header.Timestamp, 0), tree)
 	self.BlockChain.BestState = newBestState
 	self.BlockChain.StoreBestState()
 

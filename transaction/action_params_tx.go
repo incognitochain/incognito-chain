@@ -44,8 +44,8 @@ type ActionParamTx struct {
 	LockTime int64  `json:"LockTime"`
 }
 
-func (self *ActionParamTx) Hash() *common.Hash {
-	record := strconv.Itoa(int(self.Version)) + strconv.Itoa(int(self.Version))
+func (self ActionParamTx) Hash() *common.Hash {
+	record := strconv.Itoa(int(self.Version))
 	record += self.Type
 	record += self.Param.AgentID
 	record += string(self.Param.AgentSig)

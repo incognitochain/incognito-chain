@@ -32,9 +32,9 @@ type BestState struct {
 }
 
 func (self *BestState) Init(block *Block, blocksize, blockweigh, numTxts, totalTxns uint64, medianTime time.Time, tree *client.IncMerkleTree) {
-	Logger.log.Infof("New best block hash: %s", block.Hash().String())
+	bestBlockHash := block.Hash()
 	self.BestBlock = block
-	self.BestBlockHash = self.BestBlock.Hash()
+	self.BestBlockHash = bestBlockHash
 	self.CmTree = tree
 
 	self.TotalTxns = totalTxns

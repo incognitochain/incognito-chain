@@ -215,7 +215,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(
 ) (*Block) {
 	genesisBlock := Block{}
 	// update default genesis block
-	genesisBlock.Header.Timestamp = time
+	genesisBlock.Header.Timestamp = time.Unix()
 	//genesisBlock.Header.PrevBlockHash = (&common.Hash{}).String()
 	genesisBlock.Header.Nonce = nonce
 	genesisBlock.Header.Difficulty = difficulty
