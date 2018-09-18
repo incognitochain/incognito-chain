@@ -296,7 +296,8 @@ func (self RpcServer) handleCreateTrasaction(params interface{}, closeChan <-cha
 				totalAmmount -= amount
 			}
 		}
-		candidateTxs = append(candidateTxs, &temp)
+		txData := temp
+		candidateTxs = append(candidateTxs, &txData)
 		if totalAmmount <= 0 {
 			break
 		}
@@ -447,7 +448,7 @@ func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan st
 	for accountName, account := range accounts {
 		txs, err := self.Config.BlockChain.GetListTxByPrivateKey(&account.Key.KeyPair.PrivateKey, common.TxOutCoinType)
 		if err != nil {
-			continue
+			return nil, err
 		}
 		amount := uint64(0)
 		for _, tx := range txs {

@@ -745,7 +745,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 						hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
 						note := new(client.Note)
 						note, err := client.DecryptNote(encData, keys.ReadonlyKey.Skenc, keys.PublicKey.Pkenc, epk, hSig)
-						if err == nil && note != nil {
+						if err == nil && note != nil && note.Value > 0 {
 							// can decrypt data -> got candidate commitment
 							candidateCommitment := desc.Commitments[i]
 							if len(nullifiersInDb) > 0 {
@@ -795,8 +795,9 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 			// not is genesis block
 			preBlockHash := bestBlock.Header.PrevBlockHash
 			preBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-			if blockHeight != preBlock.Height || err != nil {
+			if err != nil || blockHeight != preBlock.Height {
 				// pre-block is not the same block-height with calculation -> invalid blockchain
+				self.chainLock.Unlock()
 				return nil, errors.New("Invalid blockchain")
 			}
 			bestBlock = preBlock

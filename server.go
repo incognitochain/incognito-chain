@@ -789,9 +789,10 @@ func (self *Server) UpdateChain(block *blockchain.Block) {
 	blockchain.UpdateMerkleTreeForBlock(tree, block)
 
 	// save best state
-	newBestState := &blockchain.BestState{}
 	numTxns := uint64(len(block.Transactions))
-	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0), tree)
+	totalTxns := self.BlockChain.BestState.TotalTxns + numTxns
+	newBestState := &blockchain.BestState{}
+	newBestState.Init(block, 0, 0, numTxns, totalTxns, time.Unix(block.Header.Timestamp.Unix(), 0), tree)
 	self.BlockChain.BestState = newBestState
 	self.BlockChain.StoreBestState()
 
