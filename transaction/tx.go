@@ -14,13 +14,14 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
+	"time"
 )
 
 // Tx represents a coin-transfer-transaction stored in a block
 type Tx struct {
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // n
-	LockTime int    `json:"LockTime"`
+	LockTime int64  `json:"LockTime"`
 	Fee      uint64 `json:"Fee"`
 
 	Descs    []*JoinSplitDesc `json:"Descs"`
@@ -42,7 +43,7 @@ func (tx *Tx) GetTxId() *common.Hash {
 func (tx *Tx) Hash() *common.Hash {
 	record := strconv.Itoa(int(tx.Version))
 	record += tx.Type
-	record += strconv.Itoa(tx.LockTime)
+	record += strconv.Itoa(int(tx.LockTime))
 	record += strconv.Itoa(len(tx.Descs))
 	for _, desc := range tx.Descs {
 		record += desc.toString()
@@ -167,6 +168,9 @@ func CreateTx(
 	// Generate proof and sign tx
 	var reward uint64 // Zero reward for non-coinbase transaction
 	tx, err := GenerateProofAndSign(inputs, outputs, rt[:], reward)
+	if err == nil {
+		tx.LockTime = time.Now().Unix()
+	}
 	return tx, err
 }
 

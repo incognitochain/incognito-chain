@@ -60,7 +60,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 			txNormal := &transaction.Tx{
 				Version:  int8(txTemp["Version"].(float64)),
 				Type:     txTemp["Type"].(string),
-				LockTime: int(txTemp["LockTime"].(float64)),
+				LockTime: int64(txTemp["LockTime"].(float64)),
 				Fee:      uint64(txTemp["Fee"].(float64)),
 			}
 			jSPubKey, ok := txTemp["JSPubKey"]

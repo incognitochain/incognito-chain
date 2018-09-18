@@ -311,14 +311,14 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		if txN.Type != common.TxNormalType {
 			return false, errors.New("Wrong tx type")
 		}
-		/*// check length of JSPubKey
-		if len(txN.JSPubKey) != 32 {
+		// check length of JSPubKey
+		if len(txN.JSPubKey) != 64 {
 			return false, errors.New("Wrong tx jspubkey")
 		}
 		// check length of JSSig
 		if len(txN.JSSig) != 64 {
 			return false, errors.New("Wrong tx jssig")
-		}*/
+		}
 		//check Descs
 
 		// get list nullifiers from db to check spending
