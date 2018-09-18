@@ -16,9 +16,14 @@ echo "install gmp ... "
 echo "brew install gmp"
 brew install gmp
 
+# install lib protobuf
+echo "install protobuf ... "
+echo "brew install protobuf"
+brew install protobuf
+
 # install lib protobuf-c
 echo "install protobuf-c ... "
-echo "brew install protobuf-c version 3.6.1"
+echo "brew install protobuf-c version"
 brew install protobuf-c
 
 # install grpc
