@@ -186,7 +186,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		case <-self.quit:
 			Logger.log.Infof("PEER %s quit OUT message handler", self.PeerId)
 
-			self.disconnect <- struct{}{}
+			close(self.disconnect)
 
 			if self.HandleDisconnected != nil {
 				go self.HandleDisconnected(self)

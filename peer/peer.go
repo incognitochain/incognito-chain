@@ -334,10 +334,10 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		select {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("NewPeerConnection Close Stream PEER ID %s", peerConn.PeerId.String())
-			break
+			return &peerConn, nil
 		case <-timeOutVerAck:
 			Logger.log.Infof("NewPeerConnection timeoutVerack PEER ID %s", peerConn.PeerId.String())
-			break
+			return &peerConn, nil
 		}
 	}
 
@@ -404,10 +404,10 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		select {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("HandleStream close stream PEER ID %s", peerConn.PeerId.String())
-			break
+			return
 		case <-timeOutVerAck:
 			Logger.log.Infof("HandleStream timeoutVerack PEER ID %s", peerConn.PeerId.String())
-			break
+			return
 		}
 	}
 }
