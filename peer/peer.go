@@ -66,6 +66,7 @@ type Peer struct {
 	PeerConns    map[peer.ID]*PeerConn
 	peerConnsMutex sync.Mutex
 	PendingPeers map[peer.ID]*Peer
+	pendingPeersMutex sync.Mutex
 
 	quit           chan struct{}
 	disconnectPeer chan *PeerConn
@@ -208,14 +209,18 @@ func (self *Peer) Start() error {
 }
 
 func (self *Peer) ConnPending(peer *Peer) {
+	self.pendingPeersMutex.Lock()
 	self.PendingPeers[peer.PeerId] = peer
+	self.pendingPeersMutex.Unlock()
 }
 
 func (self *Peer) ConnEstablished(peer *Peer) {
+	self.pendingPeersMutex.Lock()
 	_, ok := self.PendingPeers[peer.PeerId]
 	if ok {
 		delete(self.PendingPeers, peer.PeerId)
 	}
+	self.pendingPeersMutex.Unlock()
 }
 
 func (self *Peer) ConnCanceled(peer *Peer) {
@@ -224,7 +229,9 @@ func (self *Peer) ConnCanceled(peer *Peer) {
 		delete(self.PeerConns, peer.PeerId)
 	}
 	Logger.log.Info("sdgdfgdfgdfg", self.PendingPeers, peer)
+	self.pendingPeersMutex.Lock()
 	self.PendingPeers[peer.PeerId] = peer
+	self.pendingPeersMutex.Unlock()
 }
 
 func (self *Peer) NumInbound() int {
@@ -499,7 +506,9 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 }
 
 func (self *Peer) newPeerConnection() {
+	self.pendingPeersMutex.Lock()
 	for _, peer := range self.PendingPeers {
 		go self.NewPeerConnection(peer)
 	}
+	self.pendingPeersMutex.Unlock()
 }
