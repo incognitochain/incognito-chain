@@ -192,7 +192,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				go self.HandleDisconnected(self)
 			}
 
-			break
+			return
 		}
 	}
 }
