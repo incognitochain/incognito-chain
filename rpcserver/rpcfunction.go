@@ -32,6 +32,7 @@ var RpcHandler = map[string]commandHandler{
 	"listtransactions":              RpcServer.handleListTransactions,
 	"createtransaction":             RpcServer.handleCreateTrasaction,
 	"sendtransaction":               RpcServer.handleSendTransaction,
+	"sendmany":                      RpcServer.handleSendMany,
 	"getnumberofcoinsandbonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createactionparamstransaction": RpcServer.handleCreateActionParamsTransaction,
 	"getconnectioncount":            RpcServer.handleGetConnectionCount,
@@ -567,6 +568,20 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 	self.Config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil
+}
+
+/**
+handleSendMany - RPC creates transaction and send to network
+ */
+func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	hexStrOfTx, err := self.handleCreateTrasaction(params, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, hexStrOfTx)
+	txId, err := self.handleSendTransaction(newParam, closeChan)
+	return txId, err
 }
 
 /**
