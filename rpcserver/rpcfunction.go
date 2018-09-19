@@ -23,6 +23,7 @@ import (
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
 
 var RpcHandler = map[string]commandHandler{
+	"getblock":                      RpcServer.handleGetBlock,
 	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
 	"getblockcount":                 RpcServer.handleGetBlockCount,
 	"getblockhash":                  RpcServer.handleGetBlockHash,
@@ -104,6 +105,50 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 
 	return "", nil
+}
+
+/**
+getblockcount RPC return information fo blockchain node
+*/
+func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	paramsT, ok := params.([]interface{})
+	if ok && len(paramsT) >= 1 {
+		hashString := paramsT[0].(string)
+		hash, errH := common.Hash{}.NewHashFromStr(hashString)
+		if errH != nil {
+			return nil, errH
+		}
+		block, errD := self.Config.BlockChain.GetBlockByBlockHash(hash)
+		if errD != nil {
+			return nil, errD
+		}
+		result := map[string]interface{}{}
+
+		result["hash"] = block.Hash().String()
+		result["confirmations"] = -1
+		result["size"] = -1
+		result["strippedsize"] = -1
+		result["weight"] = -1
+		result["height"] = block.Height
+		result["version"] = block.Header.Version
+		result["versionHex"] = fmt.Sprintf("%x", block.Header.Version)
+		result["merkleroot"] = block.Header.MerkleRoot.String()
+		result["time"] = block.Header.Timestamp
+		result["mediantime"] = 0
+		result["nonce"] = block.Header.Nonce
+		result["bits"] = ""
+		result["difficulty"] = block.Header.Difficulty
+		result["chainwork"] = block.Header.ChainID
+		result["previousblockhash"] = block.Header.PrevBlockHash.String()
+		result["nextblockhash"] = nil
+		result["tx"] = []string{}
+		for _, tx := range block.Transactions {
+			result["tx"] = append(result["tx"].([]string), tx.Hash().String())
+		}
+
+		return result, nil
+	}
+	return nil, errors.New("Wrong request format")
 }
 
 /**
