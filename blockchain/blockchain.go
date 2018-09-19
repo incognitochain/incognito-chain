@@ -736,6 +736,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 				for _, desc := range tx.Descs {
 					copyDesc := &transaction.JoinSplitDesc{
 						Anchor:        desc.Anchor,
+						Reward:        desc.Reward,
 						Commitments:   make([][]byte, 0),
 						EncryptedData: make([][]byte, 0),
 					}

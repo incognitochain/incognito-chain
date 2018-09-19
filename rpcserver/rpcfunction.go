@@ -18,6 +18,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/cashec"
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -36,6 +37,8 @@ var RpcHandler = map[string]commandHandler{
 	"getgenerate":                   RpcServer.handleGetGenerate,
 	"getmempoolinfo":                RpcServer.handleGetMempoolInfo,
 	"getmininginfo":                 RpcServer.handleGetMiningInfo,
+	"getrawmempool":                 RpcServer.handleGetRawMempool,
+	"getmempoolentry":               RpcServer.handleMempoolEntry,
 
 	//POS
 	"votecandidate": RpcServer.handleVoteCandidate,
@@ -56,6 +59,7 @@ var RpcLimited = map[string]commandHandler{
 	"importaccount":         RpcServer.handleImportAccount,
 	"listunspent":           RpcServer.handleListUnspent,
 	"getbalance":            RpcServer.handleGetBalance,
+	"getreceivedbyaccount":  RpcServer.handleGetReceivedByAccount,
 }
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -712,6 +716,60 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 }
 
 /**
+handleGetReceivedByAccount -  RPC returns the total amount received by addresses in a particular account from transactions with the specified number of confirmations. It does not count coinbase transactions.
+ */
+func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	balance := uint64(0)
+
+	if self.Config.Wallet == nil {
+		return balance, errors.New("Wallet is not existed")
+	}
+	if len(self.Config.Wallet.MasterAccount.Child) == 0 {
+		return balance, errors.New("No account is existed")
+	}
+
+	// convert params to array
+	arrayParams := common.InterfaceSlice(params)
+
+	// Param #1: account "*" for all or a particular account
+	accountName := arrayParams[0].(string)
+
+	// Param #2: the minimum number of confirmations an output must have
+	min := int(arrayParams[1].(float64))
+	_ = min
+
+	// Param #3: passphrase to access local wallet of node
+	passPhrase := arrayParams[2].(string)
+
+	if passPhrase != self.Config.Wallet.PassPhrase {
+		return balance, errors.New("Password phrase is wrong for local wallet")
+	}
+
+	for _, account := range self.Config.Wallet.MasterAccount.Child {
+		if account.Name == accountName {
+			// get balance for accountName in wallet
+			txs, err := self.Config.BlockChain.GetListTxByPrivateKey(&account.Key.KeyPair.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
+			if err != nil {
+				return nil, err
+			}
+			for _, tx := range txs {
+				if blockchain.IsCoinBaseTx(&tx) {
+					continue
+				}
+				for _, desc := range tx.Descs {
+					notes := desc.GetNote()
+					for _, note := range notes {
+						balance += note.Value
+					}
+				}
+			}
+			break
+		}
+	}
+	return balance, nil
+}
+
+/**
 handleGetConnectionCount - RPC returns the number of connections to other nodes.
  */
 func (self RpcServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -756,4 +814,27 @@ func (self RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan s
 	result.Chain = self.Config.ChainParams.Name
 	result.CurrentBlockTx = len(self.Config.BlockChain.BestState.BestBlock.Transactions)
 	return result, nil
+}
+
+/**
+handleGetRawMempool - RPC returns all transaction ids in memory pool as a json array of string transaction ids
+Hint: use getmempoolentry to fetch a specific transaction from the mempool.
+ */
+func (self RpcServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	txIds := self.Config.TxMemPool.ListTxs()
+	return txIds, nil
+}
+
+/**
+handleMempoolEntry - RPC fetch a specific transaction from the mempool
+ */
+func (self RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// Param #1: hash string of tx(tx id)
+	txId, err := common.Hash{}.NewHashFromStr(params.(string))
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := self.Config.TxMemPool.GetTx(txId)
+	return tx, err
 }

@@ -40,10 +40,12 @@ func IsCoinBaseTx(tx transaction.Transaction) bool {
 	}
 	// Check nullifiers in every Descs
 	descs := normalTx.Descs
-	for _, desc := range descs {
-		if len(desc.Nullifiers) > 0 {
-			return false
+	if len(descs) != 1 {
+		return false
+	} else {
+		if descs[0].Reward > 0 {
+			return true
 		}
 	}
-	return true
+	return false
 }

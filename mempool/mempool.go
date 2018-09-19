@@ -508,3 +508,14 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 
 	return true, nil
 }
+
+/**
+List all tx ids in mempool
+ */
+func (tp *TxPool) ListTxs() ([]string) {
+	result := make([]string, 0)
+	for _, tx := range tp.pool {
+		result = append(result, tx.Desc.Tx.Hash().String())
+	}
+	return result
+}
