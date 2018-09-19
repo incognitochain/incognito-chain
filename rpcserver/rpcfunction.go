@@ -31,6 +31,7 @@ var RpcHandler = map[string]commandHandler{
 	"sendtransaction":               RpcServer.handleSendTransaction,
 	"getnumberofcoinsandbonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createactionparamstransaction": RpcServer.handleCreateActionParamsTransaction,
+	"getconnectioncount":            RpcServer.handleGetConnectionCount,
 
 	//POS
 	"votecandidate": RpcServer.handleVoteCandidate,
@@ -648,4 +649,18 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 	}
 
 	return balance, nil
+}
+
+/**
+handleGetConnectionCount - RPC returns the number of connections to other nodes.
+ */
+func (self RpcServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	if self.Config.ConnMgr == nil || len(self.Config.ConnMgr.ListeningPeers) == 0 {
+		return 0, nil
+	}
+	result := 0
+	for _, listeningPeer := range self.Config.ConnMgr.ListeningPeers {
+		result += len(listeningPeer.PeerConns)
+	}
+	return result, nil
 }
