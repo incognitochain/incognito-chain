@@ -32,6 +32,7 @@ var RpcHandler = map[string]commandHandler{
 	"listtransactions":              RpcServer.handleListTransactions,
 	"createtransaction":             RpcServer.handleCreateTrasaction,
 	"sendtransaction":               RpcServer.handleSendTransaction,
+	"sendmany":                      RpcServer.handleSendMany,
 	"getnumberofcoinsandbonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createactionparamstransaction": RpcServer.handleCreateActionParamsTransaction,
 	"getconnectioncount":            RpcServer.handleGetConnectionCount,
@@ -530,7 +531,7 @@ func (self RpcServer) handleCreateTrasaction(params interface{}, closeChan <-cha
 	}
 
 	// param #2: list receiver
-	totalAmmount := uint64(0)
+	totalAmmount := int64(0)
 	receiversParam := arrayParams[1].(map[string]interface{})
 	paymentInfos := make([]*client.PaymentInfo, 0)
 	for pubKeyStr, amount := range receiversParam {
@@ -542,7 +543,7 @@ func (self RpcServer) handleCreateTrasaction(params interface{}, closeChan <-cha
 			Amount:         uint64(amount.(float64)),
 			PaymentAddress: receiverPubKey.KeyPair.PublicKey,
 		}
-		totalAmmount += paymentInfo.Amount
+		totalAmmount += int64(paymentInfo.Amount)
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
 
@@ -553,7 +554,7 @@ func (self RpcServer) handleCreateTrasaction(params interface{}, closeChan <-cha
 		for _, desc := range temp.Descs {
 			for _, note := range desc.GetNote() {
 				amount := note.Value
-				totalAmmount -= amount
+				totalAmmount -= int64(amount)
 			}
 		}
 		txData := temp
@@ -621,6 +622,20 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 	self.Config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil
+}
+
+/**
+handleSendMany - RPC creates transaction and send to network
+ */
+func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	hexStrOfTx, err := self.handleCreateTrasaction(params, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, hexStrOfTx)
+	txId, err := self.handleSendTransaction(newParam, closeChan)
+	return txId, err
 }
 
 /**
