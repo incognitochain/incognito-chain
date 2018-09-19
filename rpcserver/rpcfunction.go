@@ -24,6 +24,7 @@ import (
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
 
 var RpcHandler = map[string]commandHandler{
+	"getblock":                      RpcServer.handleGetBlock,
 	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
 	"getblockcount":                 RpcServer.handleGetBlockCount,
 	"getblockhash":                  RpcServer.handleGetBlockHash,
@@ -110,6 +111,117 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 
 	return "", nil
+}
+
+/**
+getblockcount RPC return information fo blockchain node
+*/
+func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	paramsT, ok := params.([]interface{})
+	if ok && len(paramsT) >= 1 {
+		hashString := paramsT[0].(string)
+		hash, errH := common.Hash{}.NewHashFromStr(hashString)
+		if errH != nil {
+			return nil, errH
+		}
+		block, errD := self.Config.BlockChain.GetBlockByBlockHash(hash)
+		if errD != nil {
+			return nil, errD
+		}
+		result := map[string]interface{}{}
+
+		verbosity := "1"
+		if len(paramsT) >= 2 {
+			verbosity = paramsT[1].(string)
+		}
+
+		if verbosity == "0" {
+			data, err := json.Marshal(block)
+			if err != nil {
+				return nil, err
+			}
+			result["data"] = hex.EncodeToString(data)
+		} else if verbosity == "1" {
+			result["hash"] = block.Hash().String()
+			result["confirmations"] = -1
+			result["size"] = -1
+			result["strippedsize"] = -1
+			result["weight"] = -1
+			result["height"] = block.Height
+			result["version"] = block.Header.Version
+			result["versionHex"] = fmt.Sprintf("%x", block.Header.Version)
+			result["merkleroot"] = block.Header.MerkleRoot.String()
+			result["time"] = block.Header.Timestamp
+			result["mediantime"] = 0
+			result["nonce"] = block.Header.Nonce
+			result["bits"] = ""
+			result["difficulty"] = block.Header.Difficulty
+			result["chainwork"] = block.Header.ChainID
+			result["previousblockhash"] = block.Header.PrevBlockHash.String()
+			result["nextblockhash"] = nil
+			result["tx"] = []string{}
+			for _, tx := range block.Transactions {
+				result["tx"] = append(result["tx"].([]string), tx.Hash().String())
+			}
+		} else if verbosity == "2" {
+			result["hash"] = block.Hash().String()
+			result["confirmations"] = -1
+			result["size"] = -1
+			result["strippedsize"] = -1
+			result["weight"] = -1
+			result["height"] = block.Height
+			result["version"] = block.Header.Version
+			result["versionHex"] = fmt.Sprintf("%x", block.Header.Version)
+			result["merkleroot"] = block.Header.MerkleRoot.String()
+			result["time"] = block.Header.Timestamp
+			result["mediantime"] = 0
+			result["nonce"] = block.Header.Nonce
+			result["bits"] = ""
+			result["difficulty"] = block.Header.Difficulty
+			result["chainwork"] = block.Header.ChainID
+			result["previousblockhash"] = block.Header.PrevBlockHash.String()
+			result["nextblockhash"] = nil
+			result["tx"] = []map[string]interface{}{}
+			for _, tx := range block.Transactions {
+				transactionT := map[string]interface{}{}
+
+				transactionT["version"] = block.Header.Version
+				transactionT["size"] = -1
+				transactionT["vsize"] = -1
+				transactionT["hex"] = nil
+				transactionT["txid"] = tx.Hash().String()
+				transactionT["hash"] = tx.Hash().String()
+
+				if tx.GetType() == common.TxNormalType {
+					txN := tx.(*transaction.Tx)
+					data, err := json.Marshal(txN)
+					if err != nil {
+						return nil, err
+					}
+					transactionT["hex"] = hex.EncodeToString(data)
+					transactionT["locktime"] = txN.LockTime
+				} else if tx.GetType() == common.TxActionParamsType {
+					txA := tx.(*transaction.ActionParamTx)
+					data, err := json.Marshal(txA)
+					if err != nil {
+						return nil, err
+					}
+					transactionT["hex"] = hex.EncodeToString(data)
+					transactionT["locktime"] = txA.LockTime
+				}
+
+				transactionT["blockhash"] = block.Hash().String()
+				transactionT["confirmations"] = 0
+				transactionT["time"] = block.Header.Timestamp
+				transactionT["blocktime"] = block.Header.Timestamp
+
+				result["tx"] = append(result["tx"].([]map[string]interface{}), transactionT)
+			}
+		}
+
+		return result, nil
+	}
+	return nil, errors.New("Wrong request format")
 }
 
 /**
