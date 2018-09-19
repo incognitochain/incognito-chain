@@ -32,6 +32,8 @@ var RpcHandler = map[string]commandHandler{
 	"sendtransaction":               RpcServer.handleSendTransaction,
 	"getnumberofcoinsandbonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createactionparamstransaction": RpcServer.handleCreateActionParamsTransaction,
+	"getconnectioncount":            RpcServer.handleGetConnectionCount,
+	"getgenerate":                   RpcServer.handleGetGenerate,
 
 	//POS
 	"votecandidate": RpcServer.handleVoteCandidate,
@@ -51,6 +53,7 @@ var RpcLimited = map[string]commandHandler{
 	"dumpprivkey":           RpcServer.handleDumpPrivkey,
 	"importaccount":         RpcServer.handleImportAccount,
 	"listunspent":           RpcServer.handleListUnspent,
+	"getbalance":            RpcServer.handleGetBalance,
 }
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -634,4 +637,95 @@ func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan str
 	result["peers"] = peersMap
 
 	return result, nil
+}
+
+/**
+handleGetBalance - RPC gets the balances in decimal
+ */
+func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	balance := uint64(0)
+
+	if self.Config.Wallet == nil {
+		return balance, errors.New("Wallet is not existed")
+	}
+	if len(self.Config.Wallet.MasterAccount.Child) == 0 {
+		return balance, errors.New("No account is existed")
+	}
+
+	// convert params to array
+	arrayParams := common.InterfaceSlice(params)
+
+	// Param #1: account "*" for all or a particular account
+	accountName := arrayParams[0].(string)
+
+	// Param #2: the minimum number of confirmations an output must have
+	min := int(arrayParams[1].(float64))
+	_ = min
+
+	// Param #3: passphrase to access local wallet of node
+	passPhrase := arrayParams[2].(string)
+
+	if passPhrase != self.Config.Wallet.PassPhrase {
+		return balance, errors.New("Password phrase is wrong for local wallet")
+	}
+
+	if accountName == "*" {
+		// get balance for all accounts in wallet
+		for _, account := range self.Config.Wallet.MasterAccount.Child {
+			txs, err := self.Config.BlockChain.GetListTxByPrivateKey(&account.Key.KeyPair.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
+			if err != nil {
+				return nil, err
+			}
+			for _, tx := range txs {
+				for _, desc := range tx.Descs {
+					notes := desc.GetNote()
+					for _, note := range notes {
+						balance += note.Value
+					}
+				}
+			}
+		}
+	} else {
+		for _, account := range self.Config.Wallet.MasterAccount.Child {
+			if account.Name == accountName {
+				// get balance for accountName in wallet
+				txs, err := self.Config.BlockChain.GetListTxByPrivateKey(&account.Key.KeyPair.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
+				if err != nil {
+					return nil, err
+				}
+				for _, tx := range txs {
+					for _, desc := range tx.Descs {
+						notes := desc.GetNote()
+						for _, note := range notes {
+							balance += note.Value
+						}
+					}
+				}
+				break
+			}
+		}
+	}
+
+	return balance, nil
+}
+
+/**
+handleGetConnectionCount - RPC returns the number of connections to other nodes.
+ */
+func (self RpcServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	if self.Config.ConnMgr == nil || len(self.Config.ConnMgr.ListeningPeers) == 0 {
+		return 0, nil
+	}
+	result := 0
+	for _, listeningPeer := range self.Config.ConnMgr.ListeningPeers {
+		result += len(listeningPeer.PeerConns)
+	}
+	return result, nil
+}
+
+/**
+handleGetGenerate - RPC returns true if the node is set to generate blocks using its CPU
+ */
+func (self RpcServer) handleGetGenerate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return self.Config.IsGenerateNode, nil
 }

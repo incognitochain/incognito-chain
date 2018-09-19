@@ -84,6 +84,8 @@ type RpcServerConfig struct {
 	RPCLimitUser string
 	RPCLimitPass string
 	DisableAuth  bool
+
+	IsGenerateNode bool
 }
 
 func (self *RpcServer) Init(config *RpcServerConfig) (error) {
