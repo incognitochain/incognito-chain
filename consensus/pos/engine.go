@@ -116,12 +116,12 @@ func (self *Engine) Start() error {
 	self.currentCommittee = self.config.BlockChain.BestState[0].BestBlock.Header.NextCommittee
 
 	time.Sleep(2 * time.Second)
-	// go func() {
-	// 	for {
-	// 		self.config.Server.GetChainState()
-	// 		time.Sleep(10 * time.Second)
-	// 	}
-	// }()
+	go func() {
+		for {
+			self.config.Server.GetChainState()
+			time.Sleep(10 * time.Second)
+		}
+	}()
 	self.quit = make(chan struct{})
 	self.wg.Add(1)
 
@@ -282,13 +282,15 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 		reqSigMsg.(*wire.MessageRequestSign).Block = *block
 		// varretryValidators
 		for idx := 1; idx < CHAIN_VALIDATORS_LENGTH; idx++ {
-			peerIDs := self.config.Server.GetPeerIdsFromPublicKey(chainValidators[idx])
-			if len(peerIDs) != 0 {
-				Logger.log.Info("Request signaure from "+peerIDs[0], chainValidators[idx])
-				self.config.Server.PushMessageToPeer(reqSigMsg, peerIDs[0])
-			} else {
-				fmt.Println("Ahihi", chainValidators[idx])
-			}
+			go func(validator string) {
+				peerIDs := self.config.Server.GetPeerIdsFromPublicKey(validator)
+				if len(peerIDs) != 0 {
+					Logger.log.Info("Request signaure from "+peerIDs[0], chainValidators[idx])
+					self.config.Server.PushMessageToPeer(reqSigMsg, peerIDs[0])
+				} else {
+					fmt.Println("Ahihi", chainValidators[idx])
+				}
+			}(chainValidators[idx])
 		}
 	}()
 
@@ -478,9 +480,6 @@ func (self *Engine) GetTxSenderChain(senderLastByte byte) (byte, error) {
 	modResult := senderLastByte % 100
 	for index := byte(0); index < 5; index++ {
 		if (modResult-index)%5 == 0 {
-			// result := byte((modResult - index) / 5)
-			fmt.Println("TxSender Chain\n", byte((modResult-index)/5))
-			fmt.Println()
 			return byte((modResult - index) / 5), nil
 		}
 	}

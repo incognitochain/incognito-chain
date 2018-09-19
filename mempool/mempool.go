@@ -109,7 +109,6 @@ func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash
 	//@todo we will apply policy here
 	// that make sure transaction is accepted when passed any rules
 	txInfo := tx.(*transaction.Tx)
-
 	chainID, err := tp.Config.Policy.Consensus.GetTxSenderChain(txInfo.AddressHash)
 	if err != nil {
 		return nil, nil, err

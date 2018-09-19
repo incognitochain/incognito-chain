@@ -187,27 +187,28 @@ func (self RpcServer) handleCreateRawTrasaction(params interface{}, closeChan <-
 	log.Println(params)
 	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.Tx{
-		Version: 1,
-		Type:    common.TxNormalType,
+		Version:     1,
+		Type:        common.TxNormalType,
+		AddressHash: byte(arrayParams[0].(map[string]interface{})["address_hash"].(float64)),
 	}
-	txIns := common.InterfaceSlice(arrayParams[0])
+
+	txIns := common.InterfaceSlice(arrayParams[1])
 	for _, txIn := range txIns {
 		temp := txIn.(map[string]interface{})
-		txId := temp["txid"].(string)
-		hashTxId, err := common.Hash{}.NewHashFromStr(txId)
+		txID := temp["txid"].(string)
+		hashTxID, err := common.Hash{}.NewHashFromStr(txID)
 		if err != nil {
 			return nil, err
 		}
 		item := transaction.TxIn{
 			PreviousOutPoint: transaction.OutPoint{
-				Hash: *hashTxId,
+				Hash: *hashTxID,
 				Vout: uint32(temp["vout"].(float64)),
 			},
 		}
 		tx.AddTxIn(item)
 	}
-	// txOut := arrayParams[1].(map[string]interface{})
-	txOuts := common.InterfaceSlice(arrayParams[1])
+	txOuts := common.InterfaceSlice(arrayParams[2])
 	for _, txOut := range txOuts {
 		temp := txOut.(map[string]interface{})
 		tx.AddTxOut(transaction.TxOut{
