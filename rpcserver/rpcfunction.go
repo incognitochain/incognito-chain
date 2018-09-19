@@ -46,7 +46,7 @@ var RpcHandler = map[string]commandHandler{
 	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 
 	//
-	"getallpeers": RpcServer.handleGetAllPeers,
+	//"getallpeers": RpcServer.handleGetAllPeers,
 }
 
 // Commands that are available to a limited user
@@ -738,24 +738,24 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 	}, err
 }
 
-/**
-handleGetAllPeers - return all peers which this node connected
- */
-func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
-	result := make(map[string]interface{})
-
-	peersMap := []string{}
-
-	peers := self.Config.AddrMgr.AddressCache()
-	for _, peer := range peers {
-		peersMap = append(peersMap, peer.RawAddress)
-	}
-
-	result["peers"] = peersMap
-
-	return result, nil
-}
+///**
+//handleGetAllPeers - return all peers which this node connected
+// */
+//func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+//	log.Println(params)
+//	result := make(map[string]interface{})
+//
+//	peersMap := []string{}
+//
+//	peers := self.Config.AddrMgr.AddressCache()
+//	for _, peer := range peers {
+//		peersMap = append(peersMap, peer.RawAddress)
+//	}
+//
+//	result["peers"] = peersMap
+//
+//	return result, nil
+//}
 
 /**
 handleGetBalance - RPC gets the balances in decimal
