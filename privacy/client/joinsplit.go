@@ -33,6 +33,8 @@ func printProof(proof *zksnark.PHGRProof) {
 	fmt.Printf("G_H: %x\n", proof.G_H)
 }
 
+var incrementer uint64
+
 // Prove calls libsnark's Prove and return the proof
 // inputs: WitnessPath and Key must be set; InputeNote's Value, Apk, R and Rho must also be set before calling this function
 // outputs: EncKey, OutputNote's Apk and Value must be set before calling this function
@@ -77,7 +79,10 @@ func Prove(inputs []*JSInput,
 
 	newSeed = seed
 	if seed == nil { // Only for the transaction in genesis block
-		newSeed = RandBits(256)
+		// TODO: debug
+		// newSeed = RandBits(256)
+		newSeed = make([]byte, 32)
+		newSeed[0] = byte(incrementer)
 	}
 	hSig = HSigCRH(newSeed, inputs[0].InputNote.Nf, inputs[1].InputNote.Nf, pubKey)
 	// hSig := []byte{155, 31, 215, 9, 16, 242, 239, 233, 201, 109, 141, 58, 24, 239, 210, 117, 155, 17, 23, 188, 70, 125, 245, 85, 154, 42, 212, 0, 164, 221, 80, 94}
@@ -86,7 +91,10 @@ func Prove(inputs []*JSInput,
 	const phiLen = 252
 	newPhi = phi
 	if phi == nil { // Only for the transaction in genesis block
-		newPhi = RandBits(phiLen)
+		// TODO: debug
+		// newPhi = RandBits(phiLen)
+		newPhi = make([]byte, 32)
+		newPhi[0] = byte(incrementer)
 	}
 	// phi = []byte{80, 163, 129, 14, 224, 14, 22, 199, 9, 222, 152, 68, 97, 249, 132, 138, 69, 64, 195, 13, 46, 200, 79, 248, 16, 161, 73, 187, 200, 122, 235, 6}
 
@@ -96,21 +104,25 @@ func Prove(inputs []*JSInput,
 		output.OutputNote.R = make([]byte, 32)
 		copy(output.OutputNote.Rho, rho)
 		if outputR == nil {
-			copy(output.OutputNote.R, RandBits(256))
+			// TODO: debug
+			// copy(output.OutputNote.R, RandBits(256))
+			output.OutputNote.R[0] = byte(incrementer)
+			incrementer++
 		} else { // Genesis block only
 			copy(output.OutputNote.R, outputR[i])
 		}
 
 		// Compute cm for new notes to check for Note commitment integrity
+		fmt.Printf("Getting commitment for output note\n")
+		fmt.Printf("Apk: %x\n", output.OutputNote.Apk)
+		fmt.Printf("Rho: %x\n", output.OutputNote.Rho)
+		fmt.Printf("R: %x\n", output.OutputNote.R)
 		output.OutputNote.Cm = GetCommitment(output.OutputNote)
 	}
 
 	fmt.Printf("hsig: %x\n", hSig)
 	fmt.Printf("phi: %x\n", phi)
 	fmt.Printf("rt: %x\n", rt)
-
-	// TODO: encrypt note's data
-	// TODO: malleability
 
 	// Calling libsnark's prove
 	const address = "localhost:50052"

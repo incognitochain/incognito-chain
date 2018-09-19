@@ -11,10 +11,10 @@ import (
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/curve25519"
 
-	"io"
 	"bytes"
 	"encoding/base64"
 	"errors"
+	"io"
 	mathrand "math/rand"
 	"strings"
 )
@@ -98,10 +98,10 @@ func EncryptNote(note [2]Note, pkenc [2]TransmissionKey,
 		sharedSecret[i] = KeyAgree(&pk[i], &sk)
 		symKey[i] = KDF(sharedSecret[i], epk, pk[i], hSig)
 		ciphernotes[i] = Encrypt(symKey[i], noteJsons[i][:])
-		fmt.Printf("\nShare secret key: %v\n", sharedSecret[i])
+		// fmt.Printf("\nShare secret key: %v\n", sharedSecret[i])
 	}
-	fmt.Printf("\nCiphernote 1: %+v\n", ciphernotes[0])
-	fmt.Printf("\nCiphernote 2: %+v\n", ciphernotes[1])
+	// fmt.Printf("\nCiphernote 1: %+v\n", ciphernotes[0])
+	// fmt.Printf("\nCiphernote 2: %+v\n", ciphernotes[1])
 	return ciphernotes
 }
 

@@ -6,19 +6,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/cash-prototype/wire"
 	"log"
 	"strconv"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/wire"
+
+	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/transaction"
-	"golang.org/x/crypto/ed25519"
 	"github.com/ninjadotorg/cash-prototype/wallet"
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"golang.org/x/crypto/ed25519"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -381,7 +382,6 @@ addnode RPC return information fo blockchain node
 */
 func (self RpcServer) handleAddNode(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 
-
 	return nil, nil
 }
 
@@ -576,9 +576,9 @@ func (self RpcServer) handleCreateTrasaction(params interface{}, closeChan <-cha
 
 	// get tx view point
 	txViewPoint, err := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
-	for _, c := range txViewPoint.ListCommitments(common.TxOutCoinType) {
-		println(hex.EncodeToString(c))
-	}
+	// for _, c := range txViewPoint.ListCommitments(common.TxOutCoinType) {
+	// 	println(hex.EncodeToString(c))
+	// }
 	// create a new tx
 	tx, err := transaction.CreateTx(&senderKey.KeyPair.PrivateKey, paymentInfos, &self.Config.BlockChain.BestState.BestBlock.Header.MerkleRootCommitments, candidateTxs, txViewPoint.ListNullifiers(common.TxOutCoinType), txViewPoint.ListCommitments(common.TxOutCoinType))
 	if err != nil {
@@ -636,7 +636,7 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 
 /**
 handleSendMany - RPC creates transaction and send to network
- */
+*/
 func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	hexStrOfTx, err := self.handleCreateTrasaction(params, closeChan)
 	if err != nil {
@@ -801,7 +801,7 @@ handleImportAccount - import a new account by private-key
 - Param #1: private-key string
 - Param #2: account name
 - Param #3: passPhrase of wallet
- */
+*/
 func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	arrayParams := common.InterfaceSlice(params)
 	privateKey := arrayParams[0].(string)
@@ -838,7 +838,7 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 
 /**
 handleGetBalance - RPC gets the balances in decimal
- */
+*/
 func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	balance := uint64(0)
 
@@ -908,7 +908,7 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 
 /**
 handleGetReceivedByAccount -  RPC returns the total amount received by addresses in a particular account from transactions with the specified number of confirmations. It does not count coinbase transactions.
- */
+*/
 func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	balance := uint64(0)
 
@@ -962,7 +962,7 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 
 /**
 handleGetConnectionCount - RPC returns the number of connections to other nodes.
- */
+*/
 func (self RpcServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	if self.Config.ConnMgr == nil || len(self.Config.ConnMgr.ListeningPeers) == 0 {
 		return 0, nil
@@ -976,14 +976,14 @@ func (self RpcServer) handleGetConnectionCount(params interface{}, closeChan <-c
 
 /**
 handleGetGenerate - RPC returns true if the node is set to generate blocks using its CPU
- */
+*/
 func (self RpcServer) handleGetGenerate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	return self.Config.IsGenerateNode, nil
 }
 
 /**
 handleGetMempoolInfo - RPC returns information about the node's current txs memory pool
- */
+*/
 func (self RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	result := jsonrpc.GetMempoolInfo{}
 	result.Size = self.Config.TxMemPool.Count()
@@ -994,7 +994,7 @@ func (self RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-chan 
 
 /**
 handleGetMiningInfo - RPC returns various mining-related info
- */
+*/
 func (self RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	if !self.Config.IsGenerateNode {
 		return nil, errors.New("Not mining")
@@ -1010,7 +1010,7 @@ func (self RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan s
 /**
 handleGetRawMempool - RPC returns all transaction ids in memory pool as a json array of string transaction ids
 Hint: use getmempoolentry to fetch a specific transaction from the mempool.
- */
+*/
 func (self RpcServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	txIds := self.Config.TxMemPool.ListTxs()
 	return txIds, nil
@@ -1018,7 +1018,7 @@ func (self RpcServer) handleGetRawMempool(params interface{}, closeChan <-chan s
 
 /**
 handleMempoolEntry - RPC fetch a specific transaction from the mempool
- */
+*/
 func (self RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// Param #1: hash string of tx(tx id)
 	txId, err := common.Hash{}.NewHashFromStr(params.(string))

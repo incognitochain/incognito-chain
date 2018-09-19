@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"bytes"
+	"crypto/elliptic"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -12,11 +13,12 @@ import (
 
 	"time"
 
+	"sort"
+
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
-	"sort"
 )
 
 // Tx represents a coin-transfer-transaction stored in a block
@@ -131,6 +133,11 @@ func CreateTx(
 		return nil, errors.New("More than 2 notes for input is not supported")
 	}
 
+	fmt.Printf("List of all commitments before building tx:\n")
+	for _, cm := range commitments {
+		fmt.Printf("%x\n", cm)
+	}
+
 	// Check if input note's cm is in commitments list
 	for _, input := range inputsToBuildWitness {
 		input.InputNote.Cm = client.GetCommitment(input.InputNote)
@@ -178,25 +185,33 @@ func CreateTx(
 	return tx, err
 }
 
-func createDummyNote(randomKey *client.SpendingKey) *client.Note {
-	addr := client.GenSpendingAddress(*randomKey)
+var incrementer uint64
+
+func createDummyNote(spendingKey *client.SpendingKey) *client.Note {
+	addr := client.GenSpendingAddress(*spendingKey)
 	var rho, r [32]byte
-	copy(rho[:], client.RandBits(32*8))
-	copy(r[:], client.RandBits(32*8))
+	// TODO: debug
+	// copy(rho[:], client.RandBits(32*8))
+	// copy(r[:], client.RandBits(32*8))
+	rho[0] = byte(incrementer)
+	r[0] = byte(incrementer)
+	incrementer++
 
 	note := &client.Note{
 		Value: 0,
 		Apk:   addr,
 		Rho:   rho[:],
 		R:     r[:],
-		Nf:    client.GetNullifier(*randomKey, rho),
+		Nf:    client.GetNullifier(*spendingKey, rho),
 	}
 	return note
 }
 
 // CreateRandomJSInput creates a dummy input with 0 value note that is sended to a random address
 func CreateRandomJSInput() *client.JSInput {
-	randomKey := client.RandSpendingKey()
+	// TODO: debug
+	// randomKey := client.RandSpendingKey()
+	randomKey := client.SpendingKey{}
 	input := new(client.JSInput)
 	input.InputNote = createDummyNote(&randomKey)
 	input.Key = &randomKey
@@ -317,7 +332,7 @@ func generateTx(
 	fmt.Printf("Anchor: %x\n", desc[0].Anchor)
 	fmt.Printf("Nullifiers: %x\n", desc[0].Nullifiers)
 	fmt.Printf("Commitments: %x\n", desc[0].Commitments)
-	fmt.Printf("Proof: %x\n", desc[0].Proof)
+	// fmt.Printf("Proof: %x\n", desc[0].Proof)
 	fmt.Printf("EncryptedData: %x\n", desc[0].EncryptedData)
 	fmt.Printf("EphemeralPubKey: %x\n", desc[0].EphemeralPubKey)
 	fmt.Printf("HSigSeed: %x\n", desc[0].HSigSeed)
@@ -338,10 +353,16 @@ func generateTx(
 // GenerateProofAndSign creates zk-proof, build the transaction and sign it using a random generated key pair
 func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) (*Tx, error) {
 	//Generate signing key 96 bytes
-	sigPrivKey, err := client.GenerateKey(rand.Reader)
-	if err != nil {
-		return nil, err
-	}
+	// TODO: debug
+	// sigPrivKey, err := client.GenerateKey(rand.Reader)
+	k := big.NewInt(123)
+	sigPrivKey := &client.PrivateKey{}
+	sigPrivKey.D = k
+	sigPrivKey.PublicKey.X, sigPrivKey.PublicKey.Y = elliptic.P256().ScalarBaseMult(k.Bytes())
+
+	// if err != nil {
+	// 	return nil, err
+	// }
 	// Verification key 64 bytes
 	sigPubKey := PubKeyToByteArray(&sigPrivKey.PublicKey)
 

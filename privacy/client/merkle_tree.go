@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"fmt"
 
+	"encoding/base64"
+	"encoding/json"
+
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client/crypto/sha256"
-	"encoding/json"
-	"encoding/base64"
 )
 
 type MerkleHash []byte
@@ -17,7 +18,7 @@ func (hash MerkleHash) MarshalJSON() ([]byte, error) {
 	return json.Marshal(hashString)
 }
 
-func (hash *MerkleHash) UnmarshalJSON(data []byte) (error) {
+func (hash *MerkleHash) UnmarshalJSON(data []byte) error {
 	hashString := ""
 	_ = json.Unmarshal(data, &hashString)
 	data, _ = base64.StdEncoding.DecodeString(hashString)
@@ -25,9 +26,9 @@ func (hash *MerkleHash) UnmarshalJSON(data []byte) (error) {
 	return nil
 }
 
-//func (h MerkleHash) String() string {
-//	return fmt.Sprintf("%s", []byte(h[:2]))
-//}
+func (h MerkleHash) String() string {
+	return fmt.Sprintf("%s", []byte(h[:2]))
+}
 
 func combineAndHash(left, right []byte) MerkleHash {
 	data := append(left, right...)
