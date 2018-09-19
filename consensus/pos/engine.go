@@ -185,13 +185,13 @@ func (self *Engine) StartSealer(sealerPrvKey string) {
 	Logger.log.Info("Starting sealer with public key: " + base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey))
 
 	go func() {
-		tempChainsHeight := make([]int, TOTAL_VALIDATORS)
+		// tempChainsHeight := make([]int, TOTAL_VALIDATORS)
 		for {
 			select {
 			case <-self.quitSealer:
 				return
 			default:
-				if !intArrayEquals(tempChainsHeight, self.validatedChainsHeight.Heights) {
+				if intArrayEquals(self.knownChainsHeight.Heights, self.validatedChainsHeight.Heights) {
 					chainID, validators := self.getMyChain()
 					if chainID < TOTAL_VALIDATORS {
 						Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
@@ -209,7 +209,7 @@ func (self *Engine) StartSealer(sealerPrvKey string) {
 							Logger.log.Critical(err)
 							continue
 						}
-						tempChainsHeight = self.knownChainsHeight.Heights
+						// tempChainsHeight = self.knownChainsHeight.Heights
 					}
 				}
 			}
@@ -282,13 +282,14 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 		reqSigMsg.(*wire.MessageRequestSign).Block = *block
 		// varretryValidators
 		for idx := 1; idx < CHAIN_VALIDATORS_LENGTH; idx++ {
+			//@TODO: retry on failed validators
 			go func(validator string) {
 				peerIDs := self.config.Server.GetPeerIdsFromPublicKey(validator)
 				if len(peerIDs) != 0 {
-					Logger.log.Info("Request signaure from "+peerIDs[0], chainValidators[idx])
+					Logger.log.Info("Request signaure from "+peerIDs[0], validator)
 					self.config.Server.PushMessageToPeer(reqSigMsg, peerIDs[0])
 				} else {
-					fmt.Println("Ahihi", chainValidators[idx])
+					fmt.Println("Ahihi", validator)
 				}
 			}(chainValidators[idx])
 		}
@@ -391,7 +392,7 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 	return nil
 }
 
-func (self *Engine) validatePreSignBlock(block blockchain.Block) error {
+func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 	// validate steps: block size -> sealer is belong to committee -> validate sealer's sig -> check chainsHeight of this block -> validate each transaction
 
 	// 1. Check whether block size is greater than MAX_BLOCKSIZE or not.
@@ -488,7 +489,7 @@ func (self *Engine) GetTxSenderChain(senderLastByte byte) (byte, error) {
 
 func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 	block := &msgBlock.Block
-	err := self.validatePreSignBlock(*block)
+	err := self.validatePreSignBlock(block)
 	if err != nil {
 		invalidBlockMsg := &wire.MessageInvalidBlock{
 			Reason:    err.Error(),
@@ -533,6 +534,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 }
 
 func (self *Engine) OnBlockReceived(block *blockchain.Block) {
+	Logger.log.Info("New block received...")
 	err := self.validateBlock(block)
 	if err != nil {
 		return
