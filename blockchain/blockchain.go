@@ -104,14 +104,16 @@ func (self *BlockChain) initChainState() error {
 // UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
 func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 	for _, blockTx := range block.Transactions {
-		tx, ok := blockTx.(*transaction.Tx)
-		if ok == false {
-			return fmt.Errorf("Transaction in block not valid")
-		}
+		if blockTx.GetType() == common.TxNormalType {
+			tx, ok := blockTx.(*transaction.Tx)
+			if ok == false {
+				return fmt.Errorf("Transaction in block not valid")
+			}
 
-		for _, desc := range tx.Descs {
-			for _, cm := range desc.Commitments {
-				tree.AddNewNode(cm[:])
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					tree.AddNewNode(cm[:])
+				}
 			}
 		}
 	}
