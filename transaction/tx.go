@@ -30,7 +30,8 @@ type Tx struct {
 	JSPubKey []byte           `json:"JSPubKey,omitempty"` // 64 bytes
 	JSSig    []byte           `json:"JSSig,omitempty"`    // 64 bytes
 
-	txId *common.Hash
+	txId       *common.Hash
+	sigPrivKey *client.PrivateKey
 }
 
 func (tx *Tx) SetTxId(txId *common.Hash) {
@@ -113,24 +114,29 @@ func CreateTx(
 		return nil, fmt.Errorf("Input value less than output value")
 	}
 
-	// Sort input and output notes ascending by value to start building js descs
-	sort.Slice(inputNotes, func(i, j int) bool {
-		return inputNotes[i].Value < inputNotes[j].Value
-	})
-	sort.Slice(paymentInfo, func(i, j int) bool {
-		return paymentInfo[i].Amount < paymentInfo[j].Amount
-	})
-
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte(senderKey[:])
+
+	// Create tx before adding js descs
+	tx := NewTxTemplate()
+
 	for len(inputNotes) > 0 || len(paymentInfo) > 0 {
+		// Sort input and output notes ascending by value to start building js descs
+		sort.Slice(inputNotes, func(i, j int) bool {
+			return inputNotes[i].Value < inputNotes[j].Value
+		})
+		sort.Slice(paymentInfo, func(i, j int) bool {
+			return paymentInfo[i].Amount < paymentInfo[j].Amount
+		})
+
 		// Choose inputs to build js desc
-		var inputsToBuildWitness []*client.JSInput
+		var inputsToBuildWitness, inputs []*client.JSInput
 		var inputValue uint64
-		for len(inputNotes) > 0 && len(inputsToBuildWitness) < NumDescInputs {
+		for len(inputNotes) > 0 && len(inputs) < NumDescInputs {
 			input := &client.JSInput{}
 			input.InputNote = inputNotes[len(inputNotes)-1] // Get note with largest value
 			input.Key = senderKey
+			inputs = append(inputs, input)
 			inputsToBuildWitness = append(inputsToBuildWitness, input)
 			inputValue += input.InputNote.Value
 
@@ -138,12 +144,12 @@ func CreateTx(
 		}
 
 		// Add dummy input note if necessary
-		for len(inputsToBuildWitness) < NumDescInputs {
+		for len(inputs) < NumDescInputs {
 			input := &client.JSInput{}
 			input.InputNote = createDummyNote(senderKey)
 			input.Key = senderKey
 			input.WitnessPath = (&client.MerklePath{}).CreateDummyPath() // No need to build commitment merkle path for dummy note
-			inputsToBuildWitness = append(inputsToBuildWitness, input)
+			inputs = append(inputs, input)
 		}
 
 		// Check if input note's cm is in commitments list
@@ -192,52 +198,84 @@ func CreateTx(
 
 		if inputValue > 0 {
 			// Still has some room left, check if one more output note is possible to add
-			p := paymentInfo[len(paymentInfo)-1]
-			if p.Amount == inputValue {
+			var p *client.PaymentInfo
+			if len(paymentInfo) > 0 {
+				p = paymentInfo[len(paymentInfo)-1]
+			}
+
+			if p != nil && p.Amount == inputValue {
 				// Exactly equal, add this output note to js desc
 				outNote := &client.Note{Value: p.Amount, Apk: p.PaymentAddress.Apk}
 				output := &client.JSOutput{EncKey: p.PaymentAddress.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
 				paymentInfo = paymentInfo[:len(paymentInfo)]
-				inputValue = 0
 			} else {
 				// Cannot put the output note into this js desc, create a change note instead
 				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PublicKey.Apk}
 				output := &client.JSOutput{EncKey: senderFullKey.PublicKey.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
+
+				// Use the change note to continually send to receivers if needed
+				if len(paymentInfo) > 0 {
+					// outNote data (R and Rho) will be updated when building zk-proof
+					inputNotes = append(inputNotes, outNote)
+				}
 			}
+			inputValue = 0
 		}
 
 		// Add dummy output note if necessary
 		for len(outputs) < NumDescOutputs {
-			input := &client.JSInput{}
-			input.InputNote = createDummyNote(senderKey)
-			input.Key = senderKey
-			input.WitnessPath = (&client.MerklePath{}).CreateDummyPath() // No need to build commitment merkle path for dummy note
-			inputsToBuildWitness = append(inputsToBuildWitness, input)
+			outputs = append(outputs, CreateRandomJSOutput())
 		}
-
-		// Resort paymentInfo for next js desc
-		sort.Slice(paymentInfo, func(i, j int) bool {
-			return paymentInfo[i].Amount < paymentInfo[j].Amount
-		})
 
 		// TODO: Shuffle output notes randomly (if necessary)
 
 		// Generate proof and sign tx
 		var reward uint64 // Zero reward for non-coinbase transaction
-		tx, err := GenerateProofAndSign(inputs, outputs, rt[:], reward)
+		err = tx.buildNewJSDesc(inputs, outputs, rt[:], reward)
+		if err != nil {
+			return nil, err
+		}
 
 		// Add new commitments to list to use in next js desc if needed
+		for _, output := range outputs {
+			fmt.Printf("Add new output cm to list: %x\n", output.OutputNote.Cm)
+			commitments = append(commitments, output.OutputNote.Cm)
+		}
+	}
+
+	// Sign tx
+	tx, err := SignTx(tx, tx.sigPrivKey)
+	if err != nil {
+		return nil, err
 	}
 
 	fmt.Printf("jspubkey size: %v\n", len(tx.JSPubKey))
 	fmt.Printf("jssig size: %v\n", len(tx.JSSig))
-	if err == nil {
-		tx.LockTime = time.Now().Unix()
-	}
+	return tx, nil
+}
 
-	return tx, err
+// NewTxTemplate returns a new Tx initialized with default data
+func NewTxTemplate() *Tx {
+	//Generate signing key 96 bytes
+	sigPrivKey, err := client.GenerateKey(rand.Reader)
+	// Verification key 64 bytes
+	sigPubKey := PubKeyToByteArray(&sigPrivKey.PublicKey)
+
+	tx := &Tx{
+		Version:  TxVersion,
+		Type:     common.TxNormalType,
+		LockTime: time.Now().Unix(),
+		Fee:      0,
+		Descs:    nil,
+		JSPubKey: sigPubKey,
+		JSSig:    nil,
+
+		txId:       nil,
+		sigPrivKey: sigPrivKey,
+	}
+	return tx
 }
 
 func createDummyNote(randomKey *client.SpendingKey) *client.Note {
@@ -266,9 +304,14 @@ func CreateRandomJSInput() *client.JSInput {
 	return input
 }
 
-// CreateRandomJSOutput creates a dummy output with 0 value note that is sended to
+// CreateRandomJSOutput creates a dummy output with 0 value note that is sended to a random address
 func CreateRandomJSOutput() *client.JSOutput {
-
+	randomKey := client.RandSpendingKey()
+	output := new(client.JSOutput)
+	output.OutputNote = createDummyNote(&randomKey)
+	paymentAddr := client.GenPaymentAddress(randomKey)
+	output.EncKey = paymentAddr.Pkenc
+	return output
 }
 
 func SignTx(tx *Tx, privKey *client.PrivateKey) (*Tx, error) {
@@ -322,7 +365,7 @@ func VerifySign(tx *Tx) (bool, error) {
 	return valid, nil
 }
 
-func generateTx(
+func (tx *Tx) buildJSDescAndEncrypt(
 	inputs []*client.JSInput,
 	outputs []*client.JSOutput,
 	proof *zksnark.PHGRProof,
@@ -330,7 +373,7 @@ func generateTx(
 	reward uint64,
 	hSig, seed, sigPubKey []byte,
 	ephemeralPrivKey *client.EphemeralPrivKey,
-) (*Tx, error) {
+) error {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
 	notes := [2]client.Note{*outputs[0].OutputNote, *outputs[1].OutputNote}
@@ -367,7 +410,7 @@ func generateTx(
 		vmacs[i] = client.PRF_pk(uint64(i), ask, hSig)
 	}
 
-	desc := []*JoinSplitDesc{&JoinSplitDesc{
+	desc := &JoinSplitDesc{
 		Anchor:          rt,
 		Nullifiers:      nullifiers,
 		Commitments:     commitments,
@@ -378,59 +421,38 @@ func generateTx(
 		Type:            common.TxOutCoinType,
 		Reward:          reward,
 		Vmacs:           vmacs,
-	}}
-
-	fmt.Println("desc[0]:")
-	fmt.Printf("Anchor: %x\n", desc[0].Anchor)
-	fmt.Printf("Nullifiers: %x\n", desc[0].Nullifiers)
-	fmt.Printf("Commitments: %x\n", desc[0].Commitments)
-	fmt.Printf("Proof: %x\n", desc[0].Proof)
-	fmt.Printf("EncryptedData: %x\n", desc[0].EncryptedData)
-	fmt.Printf("EphemeralPubKey: %x\n", desc[0].EphemeralPubKey)
-	fmt.Printf("HSigSeed: %x\n", desc[0].HSigSeed)
-	fmt.Printf("Type: %v\n", desc[0].Type)
-	fmt.Printf("Reward: %v\n", desc[0].Reward)
-	fmt.Printf("Vmacs: %x %x\n", desc[0].Vmacs[0], desc[0].Vmacs[1])
-
-	tx := &Tx{
-		Version:  TxVersion,
-		Type:     common.TxNormalType,
-		Descs:    desc,
-		JSPubKey: sigPubKey,
-		JSSig:    nil,
 	}
-	return tx, nil
+	tx.Descs = append(tx.Descs, desc)
+
+	fmt.Println("desc:")
+	fmt.Printf("Anchor: %x\n", desc.Anchor)
+	fmt.Printf("Nullifiers: %x\n", desc.Nullifiers)
+	fmt.Printf("Commitments: %x\n", desc.Commitments)
+	fmt.Printf("Proof: %x\n", desc.Proof)
+	fmt.Printf("EncryptedData: %x\n", desc.EncryptedData)
+	fmt.Printf("EphemeralPubKey: %x\n", desc.EphemeralPubKey)
+	fmt.Printf("HSigSeed: %x\n", desc.HSigSeed)
+	fmt.Printf("Type: %v\n", desc.Type)
+	fmt.Printf("Reward: %v\n", desc.Reward)
+	fmt.Printf("Vmacs: %x %x\n", desc.Vmacs[0], desc.Vmacs[1])
+	return nil
 }
 
-// GenerateProofAndSign creates zk-proof, build the transaction and sign it using a random generated key pair
-func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) (*Tx, error) {
-	//Generate signing key 96 bytes
-	sigPrivKey, err := client.GenerateKey(rand.Reader)
-	if err != nil {
-		return nil, err
-	}
-	// Verification key 64 bytes
-	sigPubKey := PubKeyToByteArray(&sigPrivKey.PublicKey)
-
+// buildNewJSDesc creates zk-proof for a js desc and add it to the transaction
+func (tx *Tx) buildNewJSDesc(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) error {
 	var seed, phi []byte
 	var outputR [][]byte
-	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, sigPubKey, rt, reward, seed, phi, outputR)
+	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rt, reward, seed, phi, outputR)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	fmt.Printf("seed and phi after Prove: %x %x\n", seed, phi)
-
-	var ephemeralPrivKey *client.EphemeralPrivKey
-	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, seed, sigPubKey, ephemeralPrivKey)
+	var ephemeralPrivKey *client.EphemeralPrivKey // nil ephemeral key, will be randomly created later
+	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rt, reward, hSig, seed, tx.JSPubKey, ephemeralPrivKey)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	tx, err = SignTx(tx, sigPrivKey)
-	if err != nil {
-		return tx, err
-	}
-	return tx, nil
+	return nil
 }
 
 // GenerateProofForGenesisTx creates zk-proof and build the transaction (without signing) for genesis block

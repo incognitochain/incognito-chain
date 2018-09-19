@@ -37,6 +37,7 @@ func printProof(proof *zksnark.PHGRProof) {
 // inputs: WitnessPath and Key must be set; InputeNote's Value, Apk, R and Rho must also be set before calling this function
 // outputs: EncKey, OutputNote's Apk and Value must be set before calling this function
 // reward: for coinbase tx, this is the mining reward; for other tx, it must be 0
+// After this function, outputs' Rho and R and Cm will be updated
 func Prove(inputs []*JSInput,
 	outputs []*JSOutput,
 	pubKey []byte,
