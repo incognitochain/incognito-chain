@@ -24,6 +24,8 @@ type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, 
 
 var RpcHandler = map[string]commandHandler{
 	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
+	"getblockcount":                 RpcServer.handleGetBlockCount,
+	"getblockhash":                  RpcServer.handleGetBlockHash,
 	"listtransactions":              RpcServer.handleListTransactions,
 	"createtransaction":             RpcServer.handleCreateTrasaction,
 	"sendtransaction":               RpcServer.handleSendTransaction,
@@ -113,6 +115,32 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 		Difficulty:    self.Config.BlockChain.BestState.Difficulty,
 	}
 	return result, nil
+}
+
+/**
+getblockcount RPC return information fo blockchain node
+*/
+func (self RpcServer) handleGetBlockCount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	if self.Config.BlockChain.BestState != nil && self.Config.BlockChain.BestState.BestBlock != nil {
+		return self.Config.BlockChain.BestState.BestBlock.Height + 1, nil
+	}
+	return 0, nil
+}
+
+/**
+getblockhash RPC return information fo blockchain node
+*/
+func (self RpcServer) handleGetBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	heights, ok := params.([]interface{})
+	if ok && len(heights) >= 1 {
+		height := int32(heights[0].(float64))
+		hash, err := self.Config.BlockChain.GetBlockByBlockHeight(height)
+		if err != nil {
+			return nil, err
+		}
+		return hash.Hash().String(), nil
+	}
+	return nil, errors.New("Wrong request format")
 }
 
 /**

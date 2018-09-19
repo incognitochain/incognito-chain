@@ -8,7 +8,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 - Install glide by https://github.com/Masterminds/glide
 - Install privacy server
--- On Mac-os, run file /privacy/server/build_macos.sh
+    - On Mac-os, run file path_proj/privacy/server/build_macos.sh
 
 ### Run node
 
