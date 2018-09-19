@@ -13,16 +13,22 @@ These instructions will get you a copy of the project up and running on your loc
 ### Run node
 
 - Clone Project
-- to install dependencies Run command-line below 
+- Pre-install like "Prerequisites"
+- Run privacy-server
+    ```
+    cd path_proj/privacy/server/build
+    ./main
+    ```
+- To install dependencies Run command-line below
     ```
     $glide install
     $go build ./
     ```
-- get first node up 
+- Get first node up
     ```
     $./cash-prototype
     ```
-- get node `n` up
+- Get node `n` up
     ```
     $./cash-prototype -listen “127.0.0.1:9555” --norpc --datadir “data1" --connect “/ip4/127.0.0.1/tcp/9333/ipfs/QmawrS2w63oXTq9dS8sFYk6ebttLPpdKm7eosTUPx4YGu8” --generate --miningaddr “mgnUx4Ah4VBvtaL7U1VXkmRjKUk3h8pbst”
     ```
