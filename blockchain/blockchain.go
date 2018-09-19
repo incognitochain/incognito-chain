@@ -106,7 +106,7 @@ func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 	for _, blockTx := range block.Transactions {
 		tx, ok := blockTx.(*transaction.Tx)
 		if ok == false {
-			return fmt.Errorf("Genesis transaction invalid")
+			return fmt.Errorf("Transaction in block not valid")
 		}
 
 		for _, desc := range tx.Descs {
