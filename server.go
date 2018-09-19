@@ -234,21 +234,22 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		}
 
 		rpcConfig := rpcserver.RpcServerConfig{
-			Listenters:    rpcListeners,
-			RPCQuirks:     cfg.RPCQuirks,
-			RPCMaxClients: cfg.RPCMaxClients,
-			ChainParams:   chainParams,
-			BlockChain:    self.BlockChain,
-			TxMemPool:     self.MemPool,
-			Server:        self,
-			Wallet:        self.Wallet,
-			ConnMgr:       self.ConnManager,
-			AddrMgr:       self.AddrManager,
-			RPCUser:       cfg.RPCUser,
-			RPCPass:       cfg.RPCPass,
-			RPCLimitUser:  cfg.RPCLimitUser,
-			RPCLimitPass:  cfg.RPCLimitPass,
-			DisableAuth:   cfg.RPCDisableAuth,
+			Listenters:     rpcListeners,
+			RPCQuirks:      cfg.RPCQuirks,
+			RPCMaxClients:  cfg.RPCMaxClients,
+			ChainParams:    chainParams,
+			BlockChain:     self.BlockChain,
+			TxMemPool:      self.MemPool,
+			Server:         self,
+			Wallet:         self.Wallet,
+			ConnMgr:        self.ConnManager,
+			AddrMgr:        self.AddrManager,
+			RPCUser:        cfg.RPCUser,
+			RPCPass:        cfg.RPCPass,
+			RPCLimitUser:   cfg.RPCLimitUser,
+			RPCLimitPass:   cfg.RPCLimitPass,
+			DisableAuth:    cfg.RPCDisableAuth,
+			IsGenerateNode: cfg.Generate,
 		}
 		self.RpcServer = &rpcserver.RpcServer{}
 		err = self.RpcServer.Init(&rpcConfig)

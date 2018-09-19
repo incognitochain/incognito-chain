@@ -32,6 +32,7 @@ var RpcHandler = map[string]commandHandler{
 	"getnumberofcoinsandbonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createactionparamstransaction": RpcServer.handleCreateActionParamsTransaction,
 	"getconnectioncount":            RpcServer.handleGetConnectionCount,
+	"getgenerate":                   RpcServer.handleGetGenerate,
 
 	//POS
 	"votecandidate": RpcServer.handleVoteCandidate,
@@ -663,4 +664,11 @@ func (self RpcServer) handleGetConnectionCount(params interface{}, closeChan <-c
 		result += len(listeningPeer.PeerConns)
 	}
 	return result, nil
+}
+
+/**
+handleGetGenerate - RPC returns true if the node is set to generate blocks using its CPU
+ */
+func (self RpcServer) handleGetGenerate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return self.Config.IsGenerateNode, nil
 }
