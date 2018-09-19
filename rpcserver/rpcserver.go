@@ -62,12 +62,13 @@ type RpcServer struct {
 type RpcServerConfig struct {
 	Listenters []net.Listener
 
-	ChainParams *blockchain.Params
-	BlockChain  *blockchain.BlockChain
-	Db          *database.DB
-	Wallet      *wallet.Wallet
-	ConnMgr     *connmanager.ConnManager
-	AddrMgr     *addrmanager.AddrManager
+	ChainParams    *blockchain.Params
+	BlockChain     *blockchain.BlockChain
+	Db             *database.DB
+	Wallet         *wallet.Wallet
+	ConnMgr        *connmanager.ConnManager
+	AddrMgr        *addrmanager.AddrManager
+	IsGenerateNode bool
 	Server interface {
 		// Push Tx message
 		PushMessageToAll(message wire.Message) error
@@ -84,8 +85,6 @@ type RpcServerConfig struct {
 	RPCLimitUser string
 	RPCLimitPass string
 	DisableAuth  bool
-
-	IsGenerateNode bool
 }
 
 func (self *RpcServer) Init(config *RpcServerConfig) (error) {
