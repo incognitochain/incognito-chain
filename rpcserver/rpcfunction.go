@@ -24,7 +24,6 @@ import (
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
 
 var RpcHandler = map[string]commandHandler{
-	"getaddednodeinfo":              RpcServer.handleGetAddedNodeInfo,
 	"getblock":                      RpcServer.handleGetBlock,
 	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
 	"getblockcount":                 RpcServer.handleGetBlockCount,
@@ -53,6 +52,7 @@ var RpcHandler = map[string]commandHandler{
 
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
+	"getaddednodeinfo": RpcServer.handleGetAddedNodeInfo,
 	// WALLET
 	"listaccounts":          RpcServer.handleListAccounts,
 	"getaccount":            RpcServer.handleGetAccount,
@@ -323,7 +323,7 @@ func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-cha
 }
 
 /**
-getblockcount RPC return information fo blockchain node
+getaddednodeinfo RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetAddedNodeInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// get params
@@ -374,6 +374,15 @@ func (self RpcServer) handleGetAddedNodeInfo(params interface{}, closeChan <-cha
 	}
 
 	return nodes, nil
+}
+
+/**
+addnode RPC return information fo blockchain node
+*/
+func (self RpcServer) handleAddNode(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+
+
+	return nil, nil
 }
 
 /**
