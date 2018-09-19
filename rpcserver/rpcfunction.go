@@ -35,6 +35,8 @@ var RpcHandler = map[string]commandHandler{
 	"createactionparamstransaction": RpcServer.handleCreateActionParamsTransaction,
 	"getconnectioncount":            RpcServer.handleGetConnectionCount,
 	"getgenerate":                   RpcServer.handleGetGenerate,
+	"getmempoolinfo":                RpcServer.handleGetMempoolInfo,
+	"getmininginfo":                 RpcServer.handleGetMiningInfo,
 
 	//POS
 	"votecandidate": RpcServer.handleVoteCandidate,
@@ -773,4 +775,30 @@ handleGetGenerate - RPC returns true if the node is set to generate blocks using
  */
 func (self RpcServer) handleGetGenerate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	return self.Config.IsGenerateNode, nil
+}
+
+/**
+handleGetMempoolInfo - RPC returns information about the node's current txs memory pool
+ */
+func (self RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	result := jsonrpc.GetMempoolInfo{}
+	result.Size = self.Config.TxMemPool.Count()
+	result.Bytes = self.Config.TxMemPool.Size()
+	result.MempoolMaxFee = self.Config.TxMemPool.MaxFee()
+	return result, nil
+}
+
+/**
+handleGetMiningInfo - RPC returns various mining-related info
+ */
+func (self RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	if !self.Config.IsGenerateNode {
+		return nil, errors.New("Not mining")
+	}
+	result := jsonrpc.GetMiningInfoResult{}
+	result.Blocks = uint64(self.Config.BlockChain.BestState.BestBlock.Height + 1)
+	result.PoolSize = self.Config.TxMemPool.Count()
+	result.Chain = self.Config.ChainParams.Name
+	result.CurrentBlockTx = len(self.Config.BlockChain.BestState.BestBlock.Transactions)
+	return result, nil
 }
