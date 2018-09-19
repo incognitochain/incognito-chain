@@ -24,6 +24,7 @@ import (
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
 
 var RpcHandler = map[string]commandHandler{
+	"getaddednodeinfo":              RpcServer.handleGetAddedNodeInfo,
 	"getblock":                      RpcServer.handleGetBlock,
 	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
 	"getblockcount":                 RpcServer.handleGetBlockCount,
