@@ -420,7 +420,7 @@ func SortArrayTxs(data []Tx, sortType int, sortAsc bool) {
 		}
 	case SortByAmount:
 		{
-			sort.Slice(data, func(i, j int) bool {
+			sort.SliceStable(data, func(i, j int) bool {
 				desc1 := data[i].Descs
 				amount1 := uint64(0)
 				for _, desc := range desc1 {
@@ -435,7 +435,11 @@ func SortArrayTxs(data []Tx, sortType int, sortAsc bool) {
 						amount2 += note.Value
 					}
 				}
-				return amount1 > amount2 && sortAsc
+				if !sortAsc {
+					return amount1 > amount2
+				} else {
+					return amount1 <= amount2
+				}
 			})
 		}
 	default:
