@@ -52,6 +52,7 @@ var RpcHandler = map[string]commandHandler{
 
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
+	"getaddednodeinfo": RpcServer.handleGetAddedNodeInfo,
 	// WALLET
 	"listaccounts":          RpcServer.handleListAccounts,
 	"getaccount":            RpcServer.handleGetAccount,
@@ -319,6 +320,69 @@ func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-cha
 		return result, nil
 	}
 	return nil, errors.New("Wrong data")
+}
+
+/**
+getaddednodeinfo RPC return information fo blockchain node
+*/
+func (self RpcServer) handleGetAddedNodeInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// get params
+	paramsArray := common.InterfaceSlice(params)
+	nodes := []map[string]interface{}{}
+	for _, nodeAddrI := range paramsArray {
+		if nodeAddr, ok := nodeAddrI.(string); ok {
+			for _, listen := range self.Config.ConnMgr.ListeningPeers {
+				peerIDstr := self.Config.ConnMgr.GetPeerIDStr(nodeAddr)
+
+				peerConn, existed := listen.PeerConns[peerIDstr]
+				if existed {
+					node := map[string]interface{}{}
+
+					node["addednode"] = peerConn.Peer.RawAddress
+					node["connected"] = true
+					connected := "inbound"
+					if peerConn.IsOutbound {
+						connected = "outbound"
+					}
+					node["addresses"] = []map[string]interface{}{
+						map[string]interface{}{
+							"address":   peerConn.Peer.RawAddress,
+							"connected": connected,
+						},
+					}
+
+					nodes = append(nodes, node)
+				} else {
+					peer, existed := listen.PendingPeers[peerIDstr]
+					if existed {
+						node := map[string]interface{}{}
+
+						node["addednode"] = peer.RawAddress
+						node["connected"] = false
+						node["addresses"] = []map[string]interface{}{
+							map[string]interface{}{
+								"address":   peer.RawAddress,
+								"connected": "outbound",
+							},
+						}
+
+						nodes = append(nodes, node)
+					}
+				}
+			}
+		}
+	}
+
+	return nodes, nil
+}
+
+/**
+addnode RPC return information fo blockchain node
+*/
+func (self RpcServer) handleAddNode(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+
+
+	return nil, nil
 }
 
 /**
