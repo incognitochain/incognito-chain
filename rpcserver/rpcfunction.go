@@ -26,6 +26,7 @@ var RpcHandler = map[string]commandHandler{
 	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
 	"getblockcount":                 RpcServer.handleGetBlockCount,
 	"getblockhash":                  RpcServer.handleGetBlockHash,
+	"getblocktemplate":              RpcServer.handleGetBlockTemplate,
 	"listtransactions":              RpcServer.handleListTransactions,
 	"createtransaction":             RpcServer.handleCreateTrasaction,
 	"sendtransaction":               RpcServer.handleSendTransaction,
@@ -123,7 +124,7 @@ func (self RpcServer) handleGetBlockCount(params interface{}, closeChan <-chan s
 	if self.Config.BlockChain.BestState != nil && self.Config.BlockChain.BestState.BestBlock != nil {
 		return self.Config.BlockChain.BestState.BestBlock.Height + 1, nil
 	}
-	return 0, nil
+	return nil, errors.New("Wrong data")
 }
 
 /**
@@ -140,6 +141,62 @@ func (self RpcServer) handleGetBlockHash(params interface{}, closeChan <-chan st
 		return hash.Hash().String(), nil
 	}
 	return nil, errors.New("Wrong request format")
+}
+
+/**
+getblocktemplate RPC return information fo blockchain node
+*/
+func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	if self.Config.BlockChain.BestState != nil && self.Config.BlockChain.BestState.BestBlock != nil {
+		block := self.Config.BlockChain.BestState.BestBlock
+		result := map[string]interface{}{}
+		result["capabilities"] = []string{"proposal"}
+		result["version"] = block.Header.Version
+		result["rules"] = []string{"csv", "segwit"}
+		result["vbavailable"] = []string{}
+		result["vbrequired"] = 0
+		result["previousblockhash"] = block.Header.PrevBlockHash.String()
+
+		transactions := []map[string]interface{}{}
+		for _, tx := range block.Transactions {
+			transactionT := map[string]interface{}{}
+
+			transactionT["data"] = nil
+			transactionT["txid"] = tx.Hash().String()
+			transactionT["hash"] = tx.Hash().String()
+			transactionT["depends"] = []string{}
+
+			if tx.GetType() == common.TxNormalType {
+				txN := tx.(*transaction.Tx)
+				transactionT["fee"] = txN.Fee
+				data, err := json.Marshal(txN)
+				if err != nil {
+					return nil, err
+				}
+				transactionT["data"] = hex.EncodeToString(data)
+
+			} else if tx.GetType() == common.TxActionParamsType {
+				txA := tx.(*transaction.ActionParamTx)
+				transactionT["fee"] = 0
+				data, err := json.Marshal(txA)
+				if err != nil {
+					return nil, err
+				}
+				transactionT["data"] = hex.EncodeToString(data)
+			} else {
+				transactionT["fee"] = 0
+			}
+
+			transactionT["sigops"] = 0
+			transactionT["weight"] = 0
+
+			transactions = append(transactions, transactionT)
+		}
+		result["transactions"] = transactions
+
+		return result, nil
+	}
+	return nil, errors.New("Wrong data")
 }
 
 /**
