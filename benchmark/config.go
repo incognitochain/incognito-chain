@@ -9,7 +9,7 @@ import (
 const (
 	defaultStrategy = 1
 	defaultTotalTxs = 1000000
-	defaultRPCAddress = "127.0.0.1:9334"
+	defaultRPCAddress = "http://127.0.0.1:9334"
 )
 
 // See loadConfig for details on the configuration load process.

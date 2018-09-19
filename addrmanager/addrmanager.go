@@ -156,11 +156,13 @@ func (a *AddrManager) numAddresses() int {
 // reset resets the address manager by reinitialising the random source
 // and allocating fresh empty bucket storage.
 func (self *AddrManager) reset() {
+	self.mtx.Lock()
+	defer self.mtx.Unlock()
+
 	self.addrIndex = make(map[string]*peer.Peer)
 }
 
 func (self *AddrManager) deserializePeers(filePath string) error {
-
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
 		return nil
@@ -190,7 +192,9 @@ func (self *AddrManager) deserializePeers(filePath string) error {
 		peer.RawAddress = v.Addr
 		peer.PublicKey = v.PublicKey
 
+		self.mtx.Lock()
 		self.addrIndex[peer.RawAddress] = peer
+		self.mtx.Unlock()
 	}
 	return nil
 }
@@ -261,16 +265,25 @@ func (a *AddrManager) Connected(peer *peer.Peer) {
 // connection and version exchange.  If the address is unknown to the address
 // manager it will be ignored.
 func (self *AddrManager) Good(addr *peer.Peer) {
+	self.mtx.Lock()
+	defer self.mtx.Unlock()
+
 	self.addrIndex[addr.RawAddress] = addr
 }
 
 func (self *AddrManager) AddAddresses(addr []*peer.Peer) {
+	self.mtx.Lock()
+	defer self.mtx.Unlock()
+
 	for _, peer := range addr {
 		self.addrIndex[peer.RawAddress] = peer
 	}
 }
 
 func (self *AddrManager) AddAddressesStr(addrs []string) {
+	self.mtx.Lock()
+	defer self.mtx.Unlock()
+
 	for _, addr := range addrs {
 		peer := peer.Peer{
 			RawAddress: addr,
@@ -282,6 +295,9 @@ func (self *AddrManager) AddAddressesStr(addrs []string) {
 // AddressCache returns the current address cache.  It must be treated as
 // read-only (but since it is a copy now, this is not as dangerous).
 func (self *AddrManager) AddressCache() []*peer.Peer {
+	self.mtx.Lock()
+	defer self.mtx.Unlock()
+
 	addrIndexLen := len(self.addrIndex)
 	if addrIndexLen == 0 {
 		return nil
@@ -295,6 +311,9 @@ func (self *AddrManager) AddressCache() []*peer.Peer {
 }
 
 func (self *AddrManager) ExistedAddr(addr string) bool {
+	self.mtx.Lock()
+	defer self.mtx.Unlock()
+
 	_, ok := self.addrIndex[addr]
 	return ok
 }

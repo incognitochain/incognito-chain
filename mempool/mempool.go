@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -70,20 +69,18 @@ type TxPool struct {
 
 // check transaction in pool
 func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
+	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
 	if _, exists := tp.pool[*hash]; exists {
 		return true
 	}
-
 	return false
 }
 
 // HaveTx check existed transaction
 func (tp *TxPool) HaveTx(hash *common.Hash) bool {
 	// Protect concurrent access.
-	tp.mtx.RLock()
 	haveTx := tp.isTxInPool(hash)
-	tp.mtx.RUnlock()
-
 	return haveTx
 }
 
@@ -99,7 +96,9 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee float64) *
 		StartingPriority: 1, //@todo we will apply calc function for it.
 	}
 	log.Printf(tx.Hash().String())
+	tp.mtx.Lock()
 	tp.pool[*tx.Hash()] = txD
+	tp.mtx.Unlock()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	return txD
 }
@@ -127,27 +126,27 @@ func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash
 		return nil, nil, err
 	}
 
-	if tp.HaveTx(tx.Hash()) != true {
-		txD := tp.addTx(tx, bestHeight, txFee)
-		return tx.Hash(), txD, nil
-	}
-	return nil, nil, errors.New("Exist this tx in pool")
+	//if tp.HaveTx(tx.Hash()) != true {
+	txD := tp.addTx(tx, bestHeight, txFee)
+	return tx.Hash(), txD, nil
+	//}
+	//return nil, nil, errors.New("Exist this tx in pool")
 }
 
 // remove transaction for pool
 func (tp *TxPool) removeTx(tx transaction.Tx) {
 	log.Printf(tx.Hash().String())
+	tp.mtx.Lock()
 	if _, exists := tp.pool[*tx.Hash()]; exists {
 		delete(tp.pool, *tx.Hash())
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	}
+	tp.mtx.Unlock()
 }
 
 // RemoveTx safe remove transaction for pool
 func (tp *TxPool) RemoveTx(tx transaction.Tx) {
-	tp.mtx.Lock()
 	tp.removeTx(tx)
-	tp.mtx.Unlock()
 }
 
 // GetTx get transaction info by hash
@@ -166,23 +165,21 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (transaction.Transaction, error) {
 // // MiningDescs returns a slice of mining descriptors for all the transactions
 // // in the pool.
 func (tp *TxPool) MiningDescs() []*transaction.TxDesc {
-	tp.mtx.RLock()
-	descs := make([]*transaction.TxDesc, len(tp.pool))
-	i := 0
+	descs := []*transaction.TxDesc{}
+	tp.mtx.Lock()
 	for _, desc := range tp.pool {
-		descs[i] = &desc.Desc
-		i++
+		descs = append(descs, &desc.Desc)
 	}
-	tp.mtx.RUnlock()
+	tp.mtx.Unlock()
 
 	return descs
 }
 
 // Count return len of transaction pool
 func (tp *TxPool) Count() int {
-	tp.mtx.RLock()
+	tp.mtx.Lock()
 	count := len(tp.pool)
-	tp.mtx.RUnlock()
+	tp.mtx.Unlock()
 
 	return count
 }

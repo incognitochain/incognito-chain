@@ -42,6 +42,16 @@ then
     echo "Build bootnode success!"
 fi
 
+if [ ! -f ./benchmark/benchmark ]
+then
+    cd ./benchmark
+    go build
+    cd ../
+    echo "Build benchmark success!"
+fi
+
+
+
 tmux new -d -s cash-prototype
 tmux new-window -d -n bootnode
 
