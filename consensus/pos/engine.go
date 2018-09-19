@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"sync"
 	"time"
 
@@ -232,7 +233,7 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
-	newblock.Block.Header.BlockCommitteeSigs[0] = sig
+	newblock.Block.Header.BlockCommitteeSigs = append([]string{}, sig)
 	return newblock.Block, nil
 }
 
@@ -243,7 +244,7 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 	timeout := time.After(5 * time.Second)
 
 	// Collect signatures of other validators
-	go func() {
+	go func(blockHash string) {
 		var reslist []string
 		for {
 			select {
@@ -251,9 +252,9 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 				Logger.log.Critical("oopss... Can't finalize block")
 				return
 			case validatorSig := <-self.validatorSigCh:
-				Logger.log.Info("Validator's signature received")
-				if block.Hash().String() != validatorSig.BlockHash {
-					Logger.log.Critical("(o_O)!", block.Hash().String(), validatorSig.BlockHash)
+				Logger.log.Info("Validator's signature received", len(reslist))
+				if blockHash != validatorSig.BlockHash {
+					Logger.log.Critical("(o_O)!", blockHash, validatorSig.BlockHash)
 					continue
 				}
 				decPubkey, _ := base64.StdEncoding.DecodeString(validatorSig.Validator)
@@ -264,23 +265,21 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 				decSig, _ := base64.StdEncoding.DecodeString(validatorSig.ValidatorSig)
 				isValid, _ := validatorKp.Verify([]byte(block.Hash().String()), decSig)
 				if isValid {
+					reslist = append(reslist, validatorSig.ValidatorSig)
 				} else {
 					Logger.log.Error("Invalid validator's signature")
 				}
-				reslist = append(reslist, validatorSig.ValidatorSig)
 				if len(reslist) == (CHAIN_VALIDATORS_LENGTH - 1) {
 					validateSigList <- reslist
 					return
 				}
 			}
 		}
-	}()
-
+	}(block.Hash().String())
 	//Request for signatures of other validators
 	go func() {
 		reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestSign)
 		reqSigMsg.(*wire.MessageRequestSign).Block = *block
-		// varretryValidators
 		for idx := 1; idx < CHAIN_VALIDATORS_LENGTH; idx++ {
 			//@TODO: retry on failed validators
 			go func(validator string) {
@@ -304,7 +303,7 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 		return errCantFinalizeBlock
 	}
 
-	sig, err := self.signData([]byte(finalBlock.Hash().String()))
+	sig, err := self.signData([]byte(strings.Join(finalBlock.Header.BlockCommitteeSigs, "")))
 	if err != nil {
 		return err
 	}
@@ -346,7 +345,7 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 		PublicKey: decPubkey,
 	}
 	decSig, _ := base64.StdEncoding.DecodeString(block.ChainLeaderSig)
-	isValidSignature, err := k.Verify([]byte(block.Hash().String()), decSig)
+	isValidSignature, err := k.Verify([]byte(strings.Join(block.Header.BlockCommitteeSigs, "")), decSig)
 	if err != nil {
 		return err
 	}
@@ -534,9 +533,9 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 }
 
 func (self *Engine) OnBlockReceived(block *blockchain.Block) {
-	Logger.log.Info("New block received...")
 	err := self.validateBlock(block)
 	if err != nil {
+		Logger.log.Error(err)
 		return
 	}
 	self.UpdateChain(block)

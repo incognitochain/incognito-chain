@@ -111,6 +111,9 @@ mempoolLoop:
 			continue mempoolLoop
 		}
 		txsToAdd = append(txsToAdd, tx)
+		if len(txsToAdd) == MAX_TXs_IN_BLOCK {
+			break
+		}
 		// g.txSource.Clear()
 	}
 
@@ -130,8 +133,8 @@ mempoolLoop:
 		Timestamp:          time.Now().Unix(),
 		Difficulty:         0, //@todo should be create Difficulty logic
 		Nonce:              0, //@todo should be create Nonce logic
-		BlockCommitteeSigs: make([]string, 11),
-		NextCommittee:      make([]string, 20),
+		BlockCommitteeSigs: []string{},
+		NextCommittee:      []string{},
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
