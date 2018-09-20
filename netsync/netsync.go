@@ -34,6 +34,7 @@ type NetSyncConfig struct {
 		PushMessageToPeer(wire.Message, string) error
 		UpdateChain(*blockchain.Block)
 	}
+	FeeEstimator *mempool.FeeEstimator
 }
 
 func (self NetSync) New(cfg *NetSyncConfig) (*NetSync, error) {
@@ -178,6 +179,10 @@ func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 	//if msg.Block.Header.PrevBlockHash == a {
 	self.Config.Server.UpdateChain(&newBlock)
 	//}
+	err = self.Config.FeeEstimator.RegisterBlock(&newBlock)
+	if err != nil {
+		Logger.log.Error(err)
+	}
 }
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {

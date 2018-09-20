@@ -63,6 +63,10 @@ type Server struct {
 	AddrManager *addrmanager.AddrManager
 	Wallet      *wallet.Wallet
 
+	// The fee estimator keeps track of how long transactions are left in
+	// the mempool before they are mined into blocks.
+	FeeEstimator *mempool.FeeEstimator
+
 	ConsensusEngine *pos.Engine
 }
 
@@ -140,14 +144,23 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		return err
 	}
 
+	// If no feeEstimator has been found, or if the one that has been found
+	// is behind somehow, create a new one and start over.
+	if self.FeeEstimator == nil || self.FeeEstimator.LastKnownHeight() != self.BlockChain.BestState.BestBlock.Height {
+		self.FeeEstimator = mempool.NewFeeEstimator(
+			mempool.DefaultEstimateFeeMaxRollback,
+			mempool.DefaultEstimateFeeMinRegisteredBlocks)
+	}
+
 	// create mempool tx
 	self.MemPool = &mempool.TxPool{}
 	self.MemPool.Init(&mempool.Config{
 		Policy: mempool.Policy{
 			MaxTxVersion: transaction.TxVersion + 1,
 		},
-		BlockChain:  self.BlockChain,
-		ChainParams: chainParams,
+		BlockChain:   self.BlockChain,
+		ChainParams:  chainParams,
+		FeeEstimator: self.FeeEstimator,
 	})
 
 	self.AddrManager = addrmanager.New(cfg.DataDir, nil)
@@ -171,10 +184,11 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	// Init Net Sync manager to process messages
 	self.NetSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
-		BlockChain: self.BlockChain,
-		ChainParam: chainParams,
-		MemPool:    self.MemPool,
-		Server:     self,
+		BlockChain:   self.BlockChain,
+		ChainParam:   chainParams,
+		MemPool:      self.MemPool,
+		Server:       self,
+		FeeEstimator: self.FeeEstimator,
 	})
 	if err != nil {
 		return err
@@ -250,6 +264,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 			RPCLimitPass:   cfg.RPCLimitPass,
 			DisableAuth:    cfg.RPCDisableAuth,
 			IsGenerateNode: cfg.Generate,
+			FeeEstimator:   self.FeeEstimator,
 		}
 		self.RpcServer = &rpcserver.RpcServer{}
 		err = self.RpcServer.Init(&rpcConfig)

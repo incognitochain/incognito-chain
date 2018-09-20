@@ -28,6 +28,8 @@ type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, 
 
 var RpcHandler = map[string]commandHandler{
 	"getnetworkinfo":                RpcServer.handleGetNetWorkInfo,
+	"getbestblock":                  RpcServer.handleGetBestBlock,
+	"getbestblockhash":              RpcServer.handleGetBestBlockHash,
 	"getblock":                      RpcServer.handleGetBlock,
 	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
 	"getblockcount":                 RpcServer.handleGetBlockCount,
@@ -45,6 +47,7 @@ var RpcHandler = map[string]commandHandler{
 	"getmininginfo":                 RpcServer.handleGetMiningInfo,
 	"getrawmempool":                 RpcServer.handleGetRawMempool,
 	"getmempoolentry":               RpcServer.handleMempoolEntry,
+	"estimatefee":                   RpcServer.handleEstimateFee,
 
 	//POS
 	"votecandidate": RpcServer.handleVoteCandidate,
@@ -56,6 +59,7 @@ var RpcHandler = map[string]commandHandler{
 
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
+	"addnode":          RpcServer.handleAddNode,
 	"getaddednodeinfo": RpcServer.handleGetAddedNodeInfo,
 	// WALLET
 	"listaccounts":          RpcServer.handleListAccounts,
@@ -148,11 +152,17 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 		for _, addr := range addrs {
 			network := map[string]interface{}{}
 
-			network["name"] = addr.String()
+			network["name"] = "ipv4"
 			network["limited"] = false
 			network["reachable"] = true
 			network["proxy"] = ""
 			network["proxy_randomize_credentials"] = false
+
+			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+				if ipnet.IP.To16() != nil {
+					network["name"] = "ipv6"
+				}
+			}
 
 			networks = append(networks, network)
 		}
@@ -160,11 +170,35 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 
 	result["networks"] = networks
 
+	result["localaddresses"] = []string{}
+
 	result["relayfee"] = 0
 	result["incrementalfee"] = 0
 	result["warnings"] = ""
 
 	return result, nil
+}
+
+// handleGetBestBlock implements the getbestblock command.
+func (self RpcServer) handleGetBestBlock(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// All other "get block" commands give either the height, the
+	// hash, or both but require the block SHA.  This gets both for
+	// the best block.
+	best := self.Config.BlockChain.BestState
+	result := map[string]interface{}{
+		"hash":   best.BestBlockHash.String(),
+		"height": best.Height,
+	}
+	return result, nil
+}
+
+// handleGetBestBlock implements the getbestblock command.
+func (self RpcServer) handleGetBestBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// All other "get block" commands give either the height, the
+	// hash, or both but require the block SHA.  This gets both for
+	// the best block.
+	best := self.Config.BlockChain.BestState
+	return best.BestBlockHash.String(), nil
 }
 
 /**
@@ -196,8 +230,21 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			}
 			result["data"] = hex.EncodeToString(data)
 		} else if verbosity == "1" {
+			best := self.Config.BlockChain.BestState
+
+			blockHeight := block.Height
+			// Get next block hash unless there are none.
+			var nextHashString string
+			if blockHeight < best.Height {
+				nextHash, err := self.Config.BlockChain.GetBlockByBlockHeight(blockHeight + 1)
+				if err != nil {
+					return nil, err
+				}
+				nextHashString = nextHash.Hash().String()
+			}
+
 			result["hash"] = block.Hash().String()
-			result["confirmations"] = -1
+			result["confirmations"] = int64(1 + best.Height - blockHeight)
 			result["size"] = -1
 			result["strippedsize"] = -1
 			result["weight"] = -1
@@ -212,14 +259,27 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			result["difficulty"] = block.Header.Difficulty
 			result["chainwork"] = block.Header.ChainID
 			result["previousblockhash"] = block.Header.PrevBlockHash.String()
-			result["nextblockhash"] = nil
+			result["nextblockhash"] = nextHashString
 			result["tx"] = []string{}
 			for _, tx := range block.Transactions {
 				result["tx"] = append(result["tx"].([]string), tx.Hash().String())
 			}
 		} else if verbosity == "2" {
+			best := self.Config.BlockChain.BestState
+
+			blockHeight := block.Height
+			// Get next block hash unless there are none.
+			var nextHashString string
+			if blockHeight < best.Height {
+				nextHash, err := self.Config.BlockChain.GetBlockByBlockHeight(blockHeight + 1)
+				if err != nil {
+					return nil, err
+				}
+				nextHashString = nextHash.Hash().String()
+			}
+
 			result["hash"] = block.Hash().String()
-			result["confirmations"] = -1
+			result["confirmations"] = int64(1 + best.Height - blockHeight)
 			result["size"] = -1
 			result["strippedsize"] = -1
 			result["weight"] = -1
@@ -234,7 +294,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			result["difficulty"] = block.Header.Difficulty
 			result["chainwork"] = block.Header.ChainID
 			result["previousblockhash"] = block.Header.PrevBlockHash.String()
-			result["nextblockhash"] = nil
+			result["nextblockhash"] = nextHashString
 			result["tx"] = []map[string]interface{}{}
 			for _, tx := range block.Transactions {
 				transactionT := map[string]interface{}{}
@@ -1097,4 +1157,16 @@ func (self RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan st
 
 	tx, err := self.Config.TxMemPool.GetTx(txId)
 	return tx, err
+}
+
+/**
+handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to be paid for a transaction to be included within a certain number of blocks.
+*/
+func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// Param #1: —how many blocks the transaction may wait before being included
+	feeRate, err := self.Config.FeeEstimator.EstimateFee(uint32(params.(float64)))
+	if err != nil {
+		return -1, err
+	}
+	return uint64(feeRate), nil
 }
