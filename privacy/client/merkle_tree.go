@@ -316,7 +316,7 @@ func (w *IncMerkleWitness) getWitnessPath() *MerklePath {
 }
 
 // BuildWitnessPath builds commitments merkle path for all given notes
-func BuildWitnessPath(notes []*JSInput, commitments [][]byte) error {
+func BuildWitnessPath(notes []*JSInput, commitments [][]byte) ([]byte, error) {
 	tree := IncMerkleTree{}
 	witnesses := make([]*IncMerkleWitness, len(notes))
 
@@ -335,7 +335,7 @@ func BuildWitnessPath(notes []*JSInput, commitments [][]byte) error {
 		for i, note := range notes {
 			if bytes.Equal(cm, note.InputNote.Cm) {
 				if witnesses[i] != nil {
-					return fmt.Errorf("Duplicate commitments for input notes")
+					return nil, fmt.Errorf("Duplicate commitments for input notes")
 				}
 				witnesses[i] = tree.TakeSnapshot()
 			}
@@ -345,7 +345,7 @@ func BuildWitnessPath(notes []*JSInput, commitments [][]byte) error {
 	// Check if all notes have witnesses
 	for i, witness := range witnesses {
 		if witness == nil {
-			return fmt.Errorf("Input note with commitment %x not existed in commitment list", notes[i].InputNote.Cm)
+			return nil, fmt.Errorf("Input note with commitment %x not existed in commitment list", notes[i].InputNote.Cm)
 		}
 	}
 
@@ -362,6 +362,6 @@ func BuildWitnessPath(notes []*JSInput, commitments [][]byte) error {
 	fmt.Printf("new@28+witness@29: %x\n", combineAndHash(tree.GetRoot(28), notes[0].WitnessPath.AuthPath[28]))
 	fmt.Printf("new@29: %x\n", tree.GetRoot(29))
 	// fmt.Printf("anchor: %x\n", notes[0].WitnessPath.AuthPath[len(notes[0].WitnessPath.AuthPath)-1])
-
-	return nil
+	newRt := tree.GetRoot(common.IncMerkleTreeHeight)
+	return newRt, nil
 }

@@ -12,6 +12,8 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/wire"
 
+	"net"
+
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -19,14 +21,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
-<<<<<<< HEAD
 	"golang.org/x/crypto/ed25519"
-=======
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"net"
->>>>>>> 3461b1d2b4f6861711251e4e424638de965707f4
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)

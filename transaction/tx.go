@@ -157,6 +157,7 @@ func CreateTx(
 
 	// Create tx before adding js descs
 	tx := NewTxTemplate()
+	latestAnchor := []byte{}
 
 	for len(inputNotes) > 0 || len(paymentInfo) > 0 {
 		// Sort input and output notes ascending by value to start building js descs
@@ -178,7 +179,8 @@ func CreateTx(
 			inputsToBuildWitness = append(inputsToBuildWitness, input)
 			inputValue += input.InputNote.Value
 
-			inputNotes = inputNotes[:len(inputNotes)]
+			inputNotes = inputNotes[:len(inputNotes)-1]
+			fmt.Printf("Choose input note with value %v and cm %x\n", input.InputNote.Value, input.InputNote.Cm)
 		}
 
 		// Add dummy input note if necessary
@@ -188,6 +190,7 @@ func CreateTx(
 			input.Key = senderKey
 			input.WitnessPath = (&client.MerklePath{}).CreateDummyPath() // No need to build commitment merkle path for dummy note
 			inputs = append(inputs, input)
+			fmt.Printf("Add dummy input note\n")
 		}
 
 		// Check if input note's cm is in commitments list
@@ -206,10 +209,18 @@ func CreateTx(
 		}
 
 		// Build witness path for the input notes
-		err := client.BuildWitnessPath(inputsToBuildWitness, commitments)
+		newRt, err := client.BuildWitnessPath(inputsToBuildWitness, commitments)
 		if err != nil {
 			return nil, err
 		}
+
+		// For first js desc, check if provided Rt is the root of the merkle tree contains all commitments
+		if latestAnchor == nil {
+			if !bytes.Equal(newRt, rt[:]) {
+				return nil, fmt.Errorf("Provided anchor doesn't match commitments list")
+			}
+		}
+		latestAnchor = newRt
 
 		// Choose output notes for the js desc
 		outputs := []*client.JSOutput{}
@@ -221,15 +232,16 @@ func CreateTx(
 				outNote = &client.Note{Value: p.Amount, Apk: p.PaymentAddress.Apk}
 				encKey = p.PaymentAddress.Pkenc
 				inputValue -= p.Amount
-				paymentInfo = paymentInfo[:len(paymentInfo)]
+				paymentInfo = paymentInfo[:len(paymentInfo)-1]
+				fmt.Printf("Use output value %v => %x\n", outNote.Value, outNote.Apk)
 			} else { // Not enough for this note, send some and save the rest for next js desc
 				outNote = &client.Note{Value: inputValue, Apk: p.PaymentAddress.Apk}
 				encKey = p.PaymentAddress.Pkenc
 				paymentInfo[len(paymentInfo)-1].Amount = p.Amount - inputValue
 				inputValue = 0
+				fmt.Printf("Partially send %v to %x\n", outNote.Value, outNote.Apk)
 			}
 
-			// changeNote := &client.Note{Value: sumInputValue - value, Apk: senderFullKey.PublicKey.Apk}
 			output := &client.JSOutput{EncKey: encKey, OutputNote: outNote}
 			outputs = append(outputs, output)
 		}
@@ -246,17 +258,20 @@ func CreateTx(
 				outNote := &client.Note{Value: p.Amount, Apk: p.PaymentAddress.Apk}
 				output := &client.JSOutput{EncKey: p.PaymentAddress.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
-				paymentInfo = paymentInfo[:len(paymentInfo)]
+				paymentInfo = paymentInfo[:len(paymentInfo)-1]
+				fmt.Printf("Exactly enough, include 1 more output %v, %x\n", outNote.Value, outNote.Apk)
 			} else {
 				// Cannot put the output note into this js desc, create a change note instead
 				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PublicKey.Apk}
 				output := &client.JSOutput{EncKey: senderFullKey.PublicKey.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
+				fmt.Printf("Create change outnote %v, %x\n", outNote.Value, outNote.Apk)
 
 				// Use the change note to continually send to receivers if needed
 				if len(paymentInfo) > 0 {
 					// outNote data (R and Rho) will be updated when building zk-proof
 					inputNotes = append(inputNotes, outNote)
+					fmt.Printf("Reuse change note later\n")
 				}
 			}
 			inputValue = 0
@@ -265,13 +280,14 @@ func CreateTx(
 		// Add dummy output note if necessary
 		for len(outputs) < NumDescOutputs {
 			outputs = append(outputs, CreateRandomJSOutput())
+			fmt.Printf("Create dummy output note\n")
 		}
 
 		// TODO: Shuffle output notes randomly (if necessary)
 
 		// Generate proof and sign tx
 		var reward uint64 // Zero reward for non-coinbase transaction
-		err = tx.buildNewJSDesc(inputs, outputs, rt[:], reward)
+		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward)
 		if err != nil {
 			return nil, err
 		}
@@ -281,10 +297,12 @@ func CreateTx(
 			fmt.Printf("Add new output cm to list: %x\n", output.OutputNote.Cm)
 			commitments = append(commitments, output.OutputNote.Cm)
 		}
+
+		fmt.Printf("Len input and info: %v %v\n", len(inputNotes), len(paymentInfo))
 	}
 
 	// Sign tx
-	tx, err := SignTx(tx, tx.sigPrivKey)
+	tx, err := SignTx(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -294,8 +312,8 @@ func CreateTx(
 	return tx, nil
 }
 
-// buildNewJSDesc creates zk-proof for a js desc and add it to the transaction
-func (tx *Tx) buildNewJSDesc(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) error {
+// BuildNewJSDesc creates zk-proof for a js desc and add it to the transaction
+func (tx *Tx) BuildNewJSDesc(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) error {
 	var seed, phi []byte
 	var outputR [][]byte
 	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rt, reward, seed, phi, outputR)
@@ -420,7 +438,7 @@ func createDummyNote(spendingKey *client.SpendingKey) *client.Note {
 	return note
 }
 
-func SignTx(tx *Tx, privKey *client.PrivateKey) (*Tx, error) {
+func SignTx(tx *Tx) (*Tx, error) {
 	//Check input transaction
 	if tx.JSSig != nil {
 		return nil, errors.New("Input transaction must be an unsigned one")
@@ -435,7 +453,7 @@ func SignTx(tx *Tx, privKey *client.PrivateKey) (*Tx, error) {
 	// Sign
 	ecdsaSignature := new(client.EcdsaSignature)
 	var err error
-	ecdsaSignature.R, ecdsaSignature.S, err = client.Sign(rand.Reader, privKey, data[:])
+	ecdsaSignature.R, ecdsaSignature.S, err = client.Sign(rand.Reader, tx.sigPrivKey, data[:])
 	if err != nil {
 		return nil, err
 	}

@@ -145,9 +145,14 @@ func createCoinbaseTx(
 	// Shuffle output notes randomly (if necessary)
 
 	// Generate proof and sign tx
-	tx, err := transaction.GenerateProofAndSign(inputs, outputs, rt, reward)
+	tx := transaction.NewTxTemplate()
+	err := tx.BuildNewJSDesc(inputs, outputs, rt, reward)
 	if err != nil {
-		tx.LockTime = time.Now().Unix()
+		return nil, err
+	}
+	tx, err = transaction.SignTx(tx)
+	if err != nil {
+		return nil, err
 	}
 	return tx, err
 }
