@@ -590,10 +590,19 @@ func loadConfig() (*config, []string, error) {
 
 	// Default RPC to listen on localhost only.
 	if !cfg.DisableRPC && len(cfg.RPCListeners) == 0 {
-		addrs, err := net.LookupHost("0.0.0.0")
+		addrs, err := net.LookupHost("127.0.0.1")
 		if err != nil {
 			return nil, nil, err
 		}
+		// Get address from env
+		externalAddress := os.Getenv("EXTERNAL_ADDRESS")
+		if externalAddress != "" {
+			host, _, err := net.SplitHostPort(externalAddress)
+			if err == nil && host != "" {
+				addrs = []string{host}
+			}
+		}
+
 		cfg.RPCListeners = make([]string, 0, len(addrs))
 		for _, addr := range addrs {
 			addr = net.JoinHostPort(addr, activeNetParams.rpcPort)
