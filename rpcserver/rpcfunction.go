@@ -146,17 +146,25 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 		for _, addr := range addrs {
 			network := map[string]interface{}{}
 
-			network["name"] = addr.String()
+			network["name"] = "ipv4"
 			network["limited"] = false
 			network["reachable"] = true
 			network["proxy"] = ""
 			network["proxy_randomize_credentials"] = false
+
+			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+				if ipnet.IP.To16() != nil {
+					network["name"] = "ipv6"
+				}
+			}
 
 			networks = append(networks, network)
 		}
 	}
 
 	result["networks"] = networks
+
+	result["localaddresses"] = []string{}
 
 	result["relayfee"] = 0
 	result["incrementalfee"] = 0
