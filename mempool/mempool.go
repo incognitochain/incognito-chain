@@ -27,6 +27,10 @@ type Config struct {
 	BlockChain *blockchain.BlockChain
 
 	ChainParams *blockchain.Params
+
+	// FeeEstimatator provides a feeEstimator. If it is not nil, the mempool
+	// records all new transactions it observes into the feeEstimator.
+	FeeEstimator *FeeEstimator
 }
 
 // orphanTx is normal transaction that references an ancestor transaction
@@ -103,6 +107,12 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 	Logger.log.Infof(tx.Hash().String())
 	tp.pool[*tx.Hash()] = txD
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
+
+	// Record this tx for fee estimation if enabled.
+	if tp.config.FeeEstimator != nil {
+		tp.config.FeeEstimator.ObserveTransaction(txD)
+	}
+
 	return txD
 }
 

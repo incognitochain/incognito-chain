@@ -158,8 +158,9 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		Policy: mempool.Policy{
 			MaxTxVersion: transaction.TxVersion + 1,
 		},
-		BlockChain:  self.BlockChain,
-		ChainParams: chainParams,
+		BlockChain:   self.BlockChain,
+		ChainParams:  chainParams,
+		FeeEstimator: self.FeeEstimator,
 	})
 
 	self.AddrManager = addrmanager.New(cfg.DataDir, nil)
