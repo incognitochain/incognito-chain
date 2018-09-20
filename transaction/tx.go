@@ -14,6 +14,8 @@ import (
 
 	"sort"
 
+	"unsafe"
+
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
@@ -75,6 +77,11 @@ func (tx *Tx) ValidateTransaction() bool {
 // GetType returns the type of the transaction
 func (tx *Tx) GetType() string {
 	return tx.Type
+}
+
+// GetTxVirtualSize computes the virtual size of a given transaction
+func (tx *Tx) GetTxVirtualSize() uint64 {
+	return uint64(unsafe.Sizeof(tx))
 }
 
 // CreateTx creates transaction with appropriate proof for a private payment

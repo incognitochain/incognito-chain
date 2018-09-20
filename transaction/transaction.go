@@ -8,4 +8,5 @@ type Transaction interface {
 	Hash() (*common.Hash)
 	ValidateTransaction() (bool)
 	GetType() (string)
+	GetTxVirtualSize() (uint64)
 }
