@@ -40,8 +40,14 @@ Strategy 1: send out 1k transactions per second by n transactions
 func strategy1() {
 	totalSendOut := 0
 	stepSendout := 100
+
+	if stepSendout > cfg.TotalTxs {
+		stepSendout = cfg.TotalTxs
+	}
+
 	for {
 		if totalSendOut >= cfg.TotalTxs {
+			log.Println("totalSendout", totalSendOut, "cfg.TotalTxs", cfg.TotalTxs, stepSendout)
 			break
 		}
 

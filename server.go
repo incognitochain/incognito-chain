@@ -668,7 +668,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 			msgS.(*wire.MessageAddr).RawPeers = rawPeers
 			var doneChan chan<- struct{}
 			for _, _peerConn := range listen.PeerConns {
-				_peerConn.QueueMessageWithEncoding(msgS, doneChan)
+				go _peerConn.QueueMessageWithEncoding(msgS, doneChan)
 			}
 		}
 	} else {

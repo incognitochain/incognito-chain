@@ -71,17 +71,17 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			jsonDecodeString, _ := hex.DecodeString(str)
 			messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 
-			Logger.log.Infof("Received message: %s \n", jsonDecodeString)
+			//Logger.log.Infof("Received message: %s \n", jsonDecodeString)
 
 			commandInHeader := messageHeader[:12]
 			commandInHeader = bytes.Trim(messageHeader, "\x00")
-			Logger.log.Infof("Message Type - %s %s", string(commandInHeader), self.PeerId)
+			Logger.log.Infof("Received message Type - %s %s", string(commandInHeader), self.PeerId)
 			commandType := string(messageHeader[:len(commandInHeader)])
 			var message, err = wire.MakeEmptyMessage(string(commandType))
 
 			// Parse Message body
 			messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
-			Logger.log.Infof("Message Body - %s %s", string(messageBody), self.PeerId)
+			//Logger.log.Infof("Message Body - %s %s", string(messageBody), self.PeerId)
 			if err != nil {
 				Logger.log.Error(err)
 				continue
@@ -223,7 +223,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				messageByte = append(messageByte, header...)
 				message := hex.EncodeToString(messageByte)
 				message += "\n"
-				Logger.log.Infof("Send a message %s %s: %s", self.PeerId.String(), outMsg.msg.MessageType(), string(messageByte))
+				Logger.log.Infof("Send a message %s %s", self.PeerId.String(), outMsg.msg.MessageType()) // , string(messageByte)
 				rw.Writer.WriteString(message)
 				rw.Writer.Flush()
 
