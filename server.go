@@ -183,10 +183,11 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	// Init Net Sync manager to process messages
 	self.NetSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
-		BlockChain: self.BlockChain,
-		ChainParam: chainParams,
-		MemPool:    self.MemPool,
-		Server:     self,
+		BlockChain:   self.BlockChain,
+		ChainParam:   chainParams,
+		MemPool:      self.MemPool,
+		Server:       self,
+		FeeEstimator: self.FeeEstimator,
 	})
 	if err != nil {
 		return err
