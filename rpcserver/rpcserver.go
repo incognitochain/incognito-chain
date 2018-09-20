@@ -85,6 +85,10 @@ type RpcServerConfig struct {
 	RPCLimitUser string
 	RPCLimitPass string
 	DisableAuth  bool
+
+	// The fee estimator keeps track of how long transactions are left in
+	// the mempool before they are mined into blocks.
+	FeeEstimator *mempool.FeeEstimator
 }
 
 func (self *RpcServer) Init(config *RpcServerConfig) (error) {
