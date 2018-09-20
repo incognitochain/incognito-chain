@@ -6,6 +6,7 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	//"encoding/json"
+	"unsafe"
 )
 
 type Param struct {
@@ -63,4 +64,9 @@ func (self *ActionParamTx) ValidateTransaction() bool {
 
 func (self *ActionParamTx) GetType() string {
 	return self.Type
+}
+
+// GetTxVirtualSize computes the virtual size of a given transaction
+func (tx *ActionParamTx) GetTxVirtualSize() uint64 {
+	return uint64(unsafe.Sizeof(tx))
 }
