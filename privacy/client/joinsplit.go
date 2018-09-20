@@ -103,15 +103,16 @@ func Prove(inputs []*JSInput,
 		}
 
 		// Compute cm for new notes to check for Note commitment integrity
+		fmt.Printf("Getting commitment for output note\n")
+		fmt.Printf("Apk: %x\n", output.OutputNote.Apk)
+		fmt.Printf("Rho: %x\n", output.OutputNote.Rho)
+		fmt.Printf("R: %x\n", output.OutputNote.R)
 		output.OutputNote.Cm = GetCommitment(output.OutputNote)
 	}
 
 	fmt.Printf("hsig: %x\n", hSig)
 	fmt.Printf("phi: %x\n", phi)
 	fmt.Printf("rt: %x\n", rt)
-
-	// TODO: encrypt note's data
-	// TODO: malleability
 
 	// Calling libsnark's prove
 	const address = "localhost:50052"

@@ -13,6 +13,8 @@ import (
 
 	"time"
 
+	"unsafe"
+
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
@@ -77,6 +79,11 @@ func (tx *Tx) GetType() string {
 	return tx.Type
 }
 
+// GetTxVirtualSize computes the virtual size of a given transaction
+func (tx *Tx) GetTxVirtualSize() uint64 {
+	return uint64(unsafe.Sizeof(tx))
+}
+
 // CreateTx creates transaction with appropriate proof for a private payment
 // value: total value of the coins to transfer
 // rt: root of the commitment merkle tree at current block (the latest block of the node creating this tx)
@@ -88,6 +95,11 @@ func CreateTx(
 	nullifiers [][]byte,
 	commitments [][]byte,
 ) (*Tx, error) {
+	fmt.Printf("List of all commitments before building tx:\n")
+	for _, cm := range commitments {
+		fmt.Printf("%x\n", cm)
+	}
+
 	var value uint64
 	for _, p := range paymentInfo {
 		value += p.Amount
@@ -278,8 +290,8 @@ func NewTxTemplate() *Tx {
 	return tx
 }
 
-func createDummyNote(randomKey *client.SpendingKey) *client.Note {
-	addr := client.GenSpendingAddress(*randomKey)
+func createDummyNote(spendingKey *client.SpendingKey) *client.Note {
+	addr := client.GenSpendingAddress(*spendingKey)
 	var rho, r [32]byte
 	copy(rho[:], client.RandBits(32*8))
 	copy(r[:], client.RandBits(32*8))
@@ -289,7 +301,7 @@ func createDummyNote(randomKey *client.SpendingKey) *client.Note {
 		Apk:   addr,
 		Rho:   rho[:],
 		R:     r[:],
-		Nf:    client.GetNullifier(*randomKey, rho),
+		Nf:    client.GetNullifier(*spendingKey, rho),
 	}
 	return note
 }
@@ -496,4 +508,44 @@ func JSSigToByteArray(jsSig *client.EcdsaSignature) []byte {
 	jssig = append(jssig, r...)
 	jssig = append(jssig, s...)
 	return jssig
+}
+
+func SortArrayTxs(data []Tx, sortType int, sortAsc bool) {
+	if len(data) == 0 {
+		return
+	}
+	switch sortType {
+	case NoSort:
+		{
+			// do nothing
+		}
+	case SortByAmount:
+		{
+			sort.SliceStable(data, func(i, j int) bool {
+				desc1 := data[i].Descs
+				amount1 := uint64(0)
+				for _, desc := range desc1 {
+					for _, note := range desc.GetNote() {
+						amount1 += note.Value
+					}
+				}
+				desc2 := data[j].Descs
+				amount2 := uint64(0)
+				for _, desc := range desc2 {
+					for _, note := range desc.GetNote() {
+						amount2 += note.Value
+					}
+				}
+				if !sortAsc {
+					return amount1 > amount2
+				} else {
+					return amount1 <= amount2
+				}
+			})
+		}
+	default:
+		{
+			// do nothing
+		}
+	}
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/wire"
 	"io"
 	"io/ioutil"
@@ -63,16 +62,17 @@ type RpcServer struct {
 type RpcServerConfig struct {
 	Listenters []net.Listener
 
-	ChainParams *blockchain.Params
-	BlockChain  *blockchain.BlockChain
-	Db          *database.DB
-	Wallet      *wallet.Wallet
-	ConnMgr     *connmanager.ConnManager
-	AddrMgr     *addrmanager.AddrManager
+	ChainParams    *blockchain.Params
+	BlockChain     *blockchain.BlockChain
+	Db             *database.DB
+	Wallet         *wallet.Wallet
+	ConnMgr        *connmanager.ConnManager
+	AddrMgr        *addrmanager.AddrManager
+	IsGenerateNode bool
 	Server interface {
 		// Push Tx message
 		PushMessageToAll(message wire.Message) error
-		PushMessageToPeer(message wire.Message, id peer.ID) error
+		PushMessageToPeer(message wire.Message, id string) error
 	}
 
 	TxMemPool     *mempool.TxPool

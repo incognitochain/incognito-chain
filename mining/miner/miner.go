@@ -3,7 +3,6 @@ package miner
 import (
 	"errors"
 	"fmt"
-	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/wire"
 	"math/rand"
 	"sync"
@@ -28,7 +27,7 @@ type Config struct {
 
 	Server interface {
 		PushMessageToAll(wire.Message) error
-		PushMessageToPeer(wire.Message, peer.ID) error
+		PushMessageToPeer(wire.Message, string) error
 		UpdateChain(*blockchain.Block)
 	}
 }

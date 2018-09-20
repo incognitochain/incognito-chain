@@ -10,3 +10,9 @@ const (
 	// NumDescOutputs max number of output notes in a JSDesc
 	NumDescOutputs = 2 // b
 )
+
+const (
+	NoSort            = iota
+	SortByAmount
+	SortByCreatedTime
+)

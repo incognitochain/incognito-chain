@@ -274,6 +274,35 @@ func (tp *TxPool) Count() int {
 }
 
 /**
+Sum of all transactions sizes
+ */
+func (tp *TxPool) Size() uint64 {
+	tp.mtx.RLock()
+	size := uint64(0)
+	for _, tx := range tp.pool {
+		// TODO: need to implement size func in each type of transactions
+		// https://stackoverflow.com/questions/31496804/how-to-get-the-size-of-struct-and-its-contents-in-bytes-in-golang?rq=1
+		size += tx.Desc.Tx.GetTxVirtualSize()
+	}
+	tp.mtx.RUnlock()
+
+	return size
+}
+
+func (tp *TxPool) MaxFee() uint64 {
+	tp.mtx.RLock()
+	fee := uint64(0)
+	for _, tx := range tp.pool {
+		if tx.Desc.Fee > fee {
+			fee = tx.Desc.Fee
+		}
+	}
+	tp.mtx.RUnlock()
+
+	return fee
+}
+
+/**
 // LastUpdated returns the last time a transaction was added to or
 	// removed from the source pool.
 */
@@ -477,4 +506,15 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 	}
 
 	return true, nil
+}
+
+/**
+List all tx ids in mempool
+ */
+func (tp *TxPool) ListTxs() ([]string) {
+	result := make([]string, 0)
+	for _, tx := range tp.pool {
+		result = append(result, tx.Desc.Tx.Hash().String())
+	}
+	return result
 }

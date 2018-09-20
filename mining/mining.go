@@ -408,20 +408,22 @@ mempoolLoop:
 	commitments := [][]byte{}
 	nullifiers := [][]byte{}
 	for _, blockTx := range blockTxns {
-		tx, ok := blockTx.(*transaction.Tx)
-		if ok == false {
-			return nil, fmt.Errorf("Transaction not recognized to store in database")
-		}
-
-		for _, desc := range tx.Descs {
-			for _, cm := range desc.Commitments {
-				commitments = append(commitments, cm)
+		if blockTx.GetType() == common.TxNormalType {
+			tx, ok := blockTx.(*transaction.Tx)
+			if ok == false {
+				return nil, fmt.Errorf("Transaction not recognized to store in database")
 			}
 
-			for _, nf := range desc.Nullifiers {
-				nullifiers = append(nullifiers, nf)
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					commitments = append(commitments, cm)
+				}
+
+				for _, nf := range desc.Nullifiers {
+					nullifiers = append(nullifiers, nf)
+				}
+				descType = desc.Type
 			}
-			descType = desc.Type
 		}
 	}
 	// TODO(@0xsirrush): check if cm and nf should be saved here (when generate block template)
@@ -447,8 +449,10 @@ mempoolLoop:
 
 	// Add new commitments to merkle tree and save the root
 	newTree := g.chain.BestState.CmTree.MakeCopy()
+	fmt.Printf("[newBlockTemplate] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
 	blockchain.UpdateMerkleTreeForBlock(newTree, &block)
 	rt := newTree.GetRoot(common.IncMerkleTreeHeight)
+	fmt.Printf("[newBlockTemplate] updated tree rt: %x\n", rt)
 	copy(block.Header.MerkleRootCommitments[:], rt)
 
 	//update the latest AgentDataPoints to block

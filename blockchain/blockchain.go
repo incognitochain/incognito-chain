@@ -104,14 +104,16 @@ func (self *BlockChain) initChainState() error {
 // UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
 func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 	for _, blockTx := range block.Transactions {
-		tx, ok := blockTx.(*transaction.Tx)
-		if ok == false {
-			return fmt.Errorf("Genesis transaction invalid")
-		}
+		if blockTx.GetType() == common.TxNormalType {
+			tx, ok := blockTx.(*transaction.Tx)
+			if ok == false {
+				return fmt.Errorf("Transaction in block not valid")
+			}
 
-		for _, desc := range tx.Descs {
-			for _, cm := range desc.Commitments {
-				tree.AddNewNode(cm[:])
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					tree.AddNewNode(cm[:])
+				}
 			}
 		}
 	}
@@ -690,7 +692,7 @@ With private-key, we can check unspent tx by check nullifiers from database
 - Param #1: privateKey - byte[] of privatekey
 - Param #2: typeJoinSplitDesc - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, typeJoinSplitDesc string) ([]transaction.Tx, error) {
+func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, typeJoinSplitDesc string, sortType int, sortAsc bool) ([]transaction.Tx, error) {
 	results := make([]transaction.Tx, 0)
 
 	// get list nullifiers from db to check spending
@@ -736,6 +738,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 				for _, desc := range tx.Descs {
 					copyDesc := &transaction.JoinSplitDesc{
 						Anchor:        desc.Anchor,
+						Reward:        desc.Reward,
 						Commitments:   make([][]byte, 0),
 						EncryptedData: make([][]byte, 0),
 					}
@@ -806,6 +809,10 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 
 	// unlock chain
 	self.chainLock.Unlock()
+
+	// sort txs
+	transaction.SortArrayTxs(results, sortType, sortAsc)
+
 	return results, nil
 }
 
