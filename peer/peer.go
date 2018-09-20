@@ -251,7 +251,7 @@ func (self *Peer) NumOutbound() int {
 	self.peerConnsMutex.Lock()
 	for _, peerConn := range self.PeerConns {
 		if peerConn.IsOutbound {
-			ret1++
+			ret++
 		}
 	}
 	self.peerConnsMutex.Unlock()
