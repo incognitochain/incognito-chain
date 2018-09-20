@@ -27,6 +27,8 @@ type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, 
 
 var RpcHandler = map[string]commandHandler{
 	"getnetworkinfo":                RpcServer.handleGetNetWorkInfo,
+	"getbestblock":                  RpcServer.handleGetBestBlock,
+	"getbestblockhash":              RpcServer.handleGetBestBlockHash,
 	"getblock":                      RpcServer.handleGetBlock,
 	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
 	"getblockcount":                 RpcServer.handleGetBlockCount,
@@ -172,6 +174,28 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 	result["warnings"] = ""
 
 	return result, nil
+}
+
+// handleGetBestBlock implements the getbestblock command.
+func (self RpcServer) handleGetBestBlock(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// All other "get block" commands give either the height, the
+	// hash, or both but require the block SHA.  This gets both for
+	// the best block.
+	best := self.Config.BlockChain.BestState
+	result := map[string]interface{}{
+		"hash":   best.BestBlockHash.String(),
+		"height": best.Height,
+	}
+	return result, nil
+}
+
+// handleGetBestBlock implements the getbestblock command.
+func (self RpcServer) handleGetBestBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// All other "get block" commands give either the height, the
+	// hash, or both but require the block SHA.  This gets both for
+	// the best block.
+	best := self.Config.BlockChain.BestState
+	return best.BestBlockHash.String(), nil
 }
 
 /**
