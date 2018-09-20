@@ -84,6 +84,32 @@ func (tx *Tx) GetTxVirtualSize() uint64 {
 	return uint64(unsafe.Sizeof(tx))
 }
 
+// NewTxTemplate returns a new Tx initialized with default data
+func NewTxTemplate() *Tx {
+	//Generate signing key 96 bytes
+	sigPrivKey, err := client.GenerateKey(rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+
+	// Verification key 64 bytes
+	sigPubKey := PubKeyToByteArray(&sigPrivKey.PublicKey)
+
+	tx := &Tx{
+		Version:  TxVersion,
+		Type:     common.TxNormalType,
+		LockTime: time.Now().Unix(),
+		Fee:      0,
+		Descs:    nil,
+		JSPubKey: sigPubKey,
+		JSSig:    nil,
+
+		txId:       nil,
+		sigPrivKey: sigPrivKey,
+	}
+	return tx
+}
+
 // CreateTx creates transaction with appropriate proof for a private payment
 // value: total value of the coins to transfer
 // rt: root of the commitment merkle tree at current block (the latest block of the node creating this tx)
@@ -268,113 +294,21 @@ func CreateTx(
 	return tx, nil
 }
 
-// NewTxTemplate returns a new Tx initialized with default data
-func NewTxTemplate() *Tx {
-	//Generate signing key 96 bytes
-	sigPrivKey, err := client.GenerateKey(rand.Reader)
-	// Verification key 64 bytes
-	sigPubKey := PubKeyToByteArray(&sigPrivKey.PublicKey)
-
-	tx := &Tx{
-		Version:  TxVersion,
-		Type:     common.TxNormalType,
-		LockTime: time.Now().Unix(),
-		Fee:      0,
-		Descs:    nil,
-		JSPubKey: sigPubKey,
-		JSSig:    nil,
-
-		txId:       nil,
-		sigPrivKey: sigPrivKey,
-	}
-	return tx
-}
-
-func createDummyNote(spendingKey *client.SpendingKey) *client.Note {
-	addr := client.GenSpendingAddress(*spendingKey)
-	var rho, r [32]byte
-	copy(rho[:], client.RandBits(32*8))
-	copy(r[:], client.RandBits(32*8))
-
-	note := &client.Note{
-		Value: 0,
-		Apk:   addr,
-		Rho:   rho[:],
-		R:     r[:],
-		Nf:    client.GetNullifier(*spendingKey, rho),
-	}
-	return note
-}
-
-// CreateRandomJSInput creates a dummy input with 0 value note that belongs to a random address
-func CreateRandomJSInput() *client.JSInput {
-	randomKey := client.RandSpendingKey()
-	input := new(client.JSInput)
-	input.InputNote = createDummyNote(&randomKey)
-	input.Key = &randomKey
-	input.WitnessPath = (&client.MerklePath{}).CreateDummyPath()
-	return input
-}
-
-// CreateRandomJSOutput creates a dummy output with 0 value note that is sended to a random address
-func CreateRandomJSOutput() *client.JSOutput {
-	randomKey := client.RandSpendingKey()
-	output := new(client.JSOutput)
-	output.OutputNote = createDummyNote(&randomKey)
-	paymentAddr := client.GenPaymentAddress(randomKey)
-	output.EncKey = paymentAddr.Pkenc
-	return output
-}
-
-func SignTx(tx *Tx, privKey *client.PrivateKey) (*Tx, error) {
-	//Check input transaction
-	if tx.JSSig != nil {
-		return nil, errors.New("Input transaction must be an unsigned one")
-	}
-
-	// Hash transaction
-	tx.SetTxId(tx.Hash())
-	hash := tx.GetTxId()
-	data := make([]byte, common.HashSize)
-	copy(data, hash[:])
-
-	// Sign
-	ecdsaSignature := new(client.EcdsaSignature)
-	var err error
-	ecdsaSignature.R, ecdsaSignature.S, err = client.Sign(rand.Reader, privKey, data[:])
+// buildNewJSDesc creates zk-proof for a js desc and add it to the transaction
+func (tx *Tx) buildNewJSDesc(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) error {
+	var seed, phi []byte
+	var outputR [][]byte
+	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rt, reward, seed, phi, outputR)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	//Signature 64 bytes
-	tx.JSSig = JSSigToByteArray(ecdsaSignature)
-
-	return tx, nil
-}
-
-func VerifySign(tx *Tx) (bool, error) {
-	//Check input transaction
-	if tx.JSSig == nil || tx.JSPubKey == nil {
-		return false, errors.New("Input transaction must be an signed one!")
+	var ephemeralPrivKey *client.EphemeralPrivKey // nil ephemeral key, will be randomly created later
+	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rt, reward, hSig, seed, tx.JSPubKey, ephemeralPrivKey)
+	if err != nil {
+		return err
 	}
-
-	// UnParse Public key
-	pubKey := new(client.PublicKey)
-	pubKey.X = new(big.Int).SetBytes(tx.JSPubKey[0:32])
-	pubKey.Y = new(big.Int).SetBytes(tx.JSPubKey[32:64])
-
-	// UnParse ECDSA signature
-	ecdsaSignature := new(client.EcdsaSignature)
-	ecdsaSignature.R = new(big.Int).SetBytes(tx.JSSig[0:32])
-	ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])
-
-	// Hash origin transaction
-	hash := tx.GetTxId()
-	data := make([]byte, common.HashSize)
-	copy(data, hash[:])
-
-	valid := client.VerifySign(pubKey, data[:], ecdsaSignature.R, ecdsaSignature.S)
-	return valid, nil
+	return nil
 }
 
 func (tx *Tx) buildJSDescAndEncrypt(
@@ -450,21 +384,91 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	return nil
 }
 
-// buildNewJSDesc creates zk-proof for a js desc and add it to the transaction
-func (tx *Tx) buildNewJSDesc(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) error {
-	var seed, phi []byte
-	var outputR [][]byte
-	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rt, reward, seed, phi, outputR)
-	if err != nil {
-		return err
+// CreateRandomJSInput creates a dummy input with 0 value note that belongs to a random address
+func CreateRandomJSInput() *client.JSInput {
+	randomKey := client.RandSpendingKey()
+	input := new(client.JSInput)
+	input.InputNote = createDummyNote(&randomKey)
+	input.Key = &randomKey
+	input.WitnessPath = (&client.MerklePath{}).CreateDummyPath()
+	return input
+}
+
+// CreateRandomJSOutput creates a dummy output with 0 value note that is sended to a random address
+func CreateRandomJSOutput() *client.JSOutput {
+	randomKey := client.RandSpendingKey()
+	output := new(client.JSOutput)
+	output.OutputNote = createDummyNote(&randomKey)
+	paymentAddr := client.GenPaymentAddress(randomKey)
+	output.EncKey = paymentAddr.Pkenc
+	return output
+}
+
+func createDummyNote(spendingKey *client.SpendingKey) *client.Note {
+	addr := client.GenSpendingAddress(*spendingKey)
+	var rho, r [32]byte
+	copy(rho[:], client.RandBits(32*8))
+	copy(r[:], client.RandBits(32*8))
+
+	note := &client.Note{
+		Value: 0,
+		Apk:   addr,
+		Rho:   rho[:],
+		R:     r[:],
+		Nf:    client.GetNullifier(*spendingKey, rho),
+	}
+	return note
+}
+
+func SignTx(tx *Tx, privKey *client.PrivateKey) (*Tx, error) {
+	//Check input transaction
+	if tx.JSSig != nil {
+		return nil, errors.New("Input transaction must be an unsigned one")
 	}
 
-	var ephemeralPrivKey *client.EphemeralPrivKey // nil ephemeral key, will be randomly created later
-	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rt, reward, hSig, seed, tx.JSPubKey, ephemeralPrivKey)
+	// Hash transaction
+	tx.SetTxId(tx.Hash())
+	hash := tx.GetTxId()
+	data := make([]byte, common.HashSize)
+	copy(data, hash[:])
+
+	// Sign
+	ecdsaSignature := new(client.EcdsaSignature)
+	var err error
+	ecdsaSignature.R, ecdsaSignature.S, err = client.Sign(rand.Reader, privKey, data[:])
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+
+	//Signature 64 bytes
+	tx.JSSig = JSSigToByteArray(ecdsaSignature)
+
+	return tx, nil
+}
+
+func VerifySign(tx *Tx) (bool, error) {
+	//Check input transaction
+	if tx.JSSig == nil || tx.JSPubKey == nil {
+		return false, errors.New("Input transaction must be an signed one!")
+	}
+
+	// UnParse Public key
+	pubKey := new(client.PublicKey)
+	pubKey.X = new(big.Int).SetBytes(tx.JSPubKey[0:32])
+	pubKey.Y = new(big.Int).SetBytes(tx.JSPubKey[32:64])
+
+	// UnParse ECDSA signature
+	ecdsaSignature := new(client.EcdsaSignature)
+	ecdsaSignature.R = new(big.Int).SetBytes(tx.JSSig[0:32])
+	ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])
+
+	// Hash origin transaction
+	hash := tx.GetTxId()
+	data := make([]byte, common.HashSize)
+	copy(data, hash[:])
+
+	valid := client.VerifySign(pubKey, data[:], ecdsaSignature.R, ecdsaSignature.S)
+	return valid, nil
 }
 
 // GenerateProofForGenesisTx creates zk-proof and build the transaction (without signing) for genesis block
@@ -477,18 +481,21 @@ func GenerateProofForGenesisTx(
 	outputR [][]byte,
 	ephemeralPrivKey client.EphemeralPrivKey,
 ) (*Tx, error) {
-	// Generate JoinSplit key pair and sign the tx to prevent tx malleability
+	// Generate JoinSplit key pair to act as a dummy key (since we don't sign genesis tx)
 	privateSignKey := [32]byte{1}
 	keyPair := &cashec.KeySet{}
 	keyPair.ImportFromPrivateKeyByte(privateSignKey[:])
 	sigPubKey := keyPair.PublicKey.Apk[:]
 
-	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, sigPubKey, rt, reward, seed, phi, outputR)
+	tx := NewTxTemplate()
+	tx.JSPubKey = sigPubKey
+
+	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rt, reward, seed, phi, outputR)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := generateTx(inputs, outputs, proof, rt, reward, hSig, seed, sigPubKey, &ephemeralPrivKey)
+	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rt, reward, hSig, seed, tx.JSPubKey, &ephemeralPrivKey)
 	return tx, err
 }
 
