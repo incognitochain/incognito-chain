@@ -580,6 +580,7 @@ func (self RpcServer) handleCreateTrasaction(params interface{}, closeChan <-cha
 	// 	println(hex.EncodeToString(c))
 	// }
 	// create a new tx
+	fmt.Printf("[handleCreateTransaction] MerkleRootCommitments: %x\n", self.Config.BlockChain.BestState.BestBlock.Header.MerkleRootCommitments[:])
 	tx, err := transaction.CreateTx(&senderKey.KeyPair.PrivateKey, paymentInfos, &self.Config.BlockChain.BestState.BestBlock.Header.MerkleRootCommitments, candidateTxs, txViewPoint.ListNullifiers(common.TxOutCoinType), txViewPoint.ListCommitments(common.TxOutCoinType))
 	if err != nil {
 		return nil, err

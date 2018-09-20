@@ -62,18 +62,25 @@ type IncMerkleTree struct {
 
 // MakeCopy creates a new merkle tree and copies data from the old one to it
 func (tree *IncMerkleTree) MakeCopy() *IncMerkleTree {
-	newTree := &IncMerkleTree{
-		nodes: make([]MerkleHash, len(tree.nodes)),
-		left:  make([]byte, 32),
-		right: make([]byte, 32),
+	newTree := &IncMerkleTree{}
+
+	if tree.left != nil {
+		newTree.left = make([]byte, 32)
+		copy(newTree.left, tree.left)
 	}
 
-	copy(newTree.left, tree.left)
-	copy(newTree.right, tree.right)
+	if tree.right != nil {
+		newTree.right = make([]byte, 32)
+		copy(newTree.right, tree.right)
+	}
+
 	for _, node := range tree.nodes {
-		copyNode := make([]byte, 32)
-		copy(copyNode, node)
-		newTree.nodes = append(newTree.nodes, copyNode)
+		var nodeCopy MerkleHash
+		if node != nil {
+			nodeCopy = make([]byte, 32)
+			copy(nodeCopy, node)
+		}
+		newTree.nodes = append(newTree.nodes, nodeCopy)
 	}
 
 	return newTree
@@ -88,26 +95,8 @@ type IncMerkleWitness struct {
 
 // TakeSnapshot takes a snapshot of a merkle tree to start building merkle path for the right most leaf
 func (tree *IncMerkleTree) TakeSnapshot() *IncMerkleWitness {
-	treeCopy := &IncMerkleTree{}
-	if tree.left != nil {
-		treeCopy.left = make([]byte, 32)
-		copy(treeCopy.left, tree.left)
-	}
-	if tree.right != nil {
-		treeCopy.right = make([]byte, 32)
-		copy(treeCopy.right, tree.right)
-	}
-	for _, node := range tree.nodes {
-		var nodeCopy MerkleHash
-		if node != nil {
-			nodeCopy = make([]byte, 32)
-			copy(nodeCopy, node)
-		}
-		treeCopy.nodes = append(treeCopy.nodes, nodeCopy)
-	}
-
 	witness := &IncMerkleWitness{
-		snapshot:  treeCopy,
+		snapshot:  tree.MakeCopy(),
 		tmpTree:   nil,
 		uncles:    nil,
 		nextDepth: 0,
