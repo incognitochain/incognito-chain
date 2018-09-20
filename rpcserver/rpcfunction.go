@@ -30,7 +30,7 @@ var RpcHandler = map[string]commandHandler{
 	"getblockhash":                  RpcServer.handleGetBlockHash,
 	"getblocktemplate":              RpcServer.handleGetBlockTemplate,
 	"listtransactions":              RpcServer.handleListTransactions,
-	"createtransaction":             RpcServer.handleCreateTrasaction,
+	"createtransaction":             RpcServer.handleCreateTransaction,
 	"sendtransaction":               RpcServer.handleSendTransaction,
 	"sendmany":                      RpcServer.handleSendMany,
 	"getnumberofcoinsandbonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
@@ -380,7 +380,23 @@ func (self RpcServer) handleGetAddedNodeInfo(params interface{}, closeChan <-cha
 addnode RPC return information fo blockchain node
 */
 func (self RpcServer) handleAddNode(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-
+	paramsArray := common.InterfaceSlice(params)
+	for _, nodeAddrI := range paramsArray {
+		if nodeAddr, ok := nodeAddrI.(string); ok {
+			for _, listen := range self.Config.ConnMgr.ListeningPeers {
+				peerIDstr := self.Config.ConnMgr.GetPeerIDStr(nodeAddr)
+				_, existed := listen.PeerConns[peerIDstr]
+				if existed {
+				} else {
+					_, existed := listen.PendingPeers[peerIDstr]
+					if existed {
+					} else {
+						// TODO
+					}
+				}
+			}
+		}
+	}
 
 	return nil, nil
 }
@@ -527,7 +543,7 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 /**
 // handleCreateTransaction handles createtransaction commands.
 */
-func (self RpcServer) handleCreateTrasaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 
 	// all params
