@@ -21,9 +21,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/mining"
 )
 
-// TODO incorporate Alex Morcos' modifications to Gavin's initial model
-// https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2014-October/006824.html
-
 const (
 	// estimateFeeDepth is the maximum number of blocks before a transaction
 	// is confirmed that we want to track.
@@ -54,15 +51,15 @@ var (
 	EstimateFeeDatabaseKey = []byte("estimatefee")
 )
 
-// CoinPerByte is number with units of satoshis per byte.
+// CoinPerByte is number with units of coins per byte.
 type CoinPerByte uint64
 
-// CoinPerKilobyte is number with units of bitcoins per kilobyte.
+// CoinPerKilobyte is number with units of coins per kilobyte.
 type CoinPerKilobyte uint64
 
-// ToBtcPerKb returns a float value that represents the given
-// CoinPerByte converted to satoshis per kb.
-func (rate CoinPerByte) ToBtcPerKb() CoinPerKilobyte {
+// ToCoinPerKb returns a float value that represents the given
+// CoinPerByte converted to coins per kb.
+func (rate CoinPerByte) ToCoinPerKb() CoinPerKilobyte {
 	// If our rate is the error value, return that.
 	if rate == CoinPerByte(0) {
 		return 0
@@ -82,9 +79,9 @@ func (rate CoinPerByte) Fee(size uint32) uint64 {
 	return uint64(rate) * uint64(size)
 }
 
-// NewSatoshiPerByte creates a CoinPerByte from an Amount and a
+// NewCoinPerByte creates a CoinPerByte from an Amount and a
 // size in bytes.
-func NewSatoshiPerByte(fee uint64, size uint64) CoinPerByte {
+func NewCoinPerByte(fee uint64, size uint64) CoinPerByte {
 	return CoinPerByte(float64(fee) / float64(size))
 }
 
@@ -94,7 +91,7 @@ type observedTransaction struct {
 	// A transaction hash.
 	hash common.Hash
 
-	// The fee per byte of the transaction in satoshis.
+	// The fee per byte of the transaction in coins.
 	feeRate CoinPerByte
 
 	// The block height when it was observed.
@@ -210,7 +207,7 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 
 		ef.observed[hash] = &observedTransaction{
 			hash:     hash,
-			feeRate:  NewSatoshiPerByte(uint64(t.Desc.Fee), size),
+			feeRate:  NewCoinPerByte(uint64(t.Desc.Fee), size),
 			observed: t.Desc.Height,
 			mined:    mining.UnminedHeight,
 		}
@@ -571,7 +568,7 @@ func (ef *FeeEstimator) EstimateFee(numBlocks uint32) (CoinPerKilobyte, error) {
 		ef.cached = ef.estimates()
 	}
 
-	return ef.cached[int(numBlocks)-1].ToBtcPerKb(), nil
+	return ef.cached[int(numBlocks)-1].ToCoinPerKb(), nil
 }
 
 // In case the format for the serialized version of the FeeEstimator changes,
