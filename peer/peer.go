@@ -236,21 +236,25 @@ func (self *Peer) ConnCanceled(peer *Peer) {
 
 func (self *Peer) NumInbound() int {
 	ret := int(0)
+	self.peerConnsMutex.Lock()
 	for _, peerConn := range self.PeerConns {
 		if !peerConn.IsOutbound {
-			ret += 1
+			ret++
 		}
 	}
+	self.peerConnsMutex.Unlock()
 	return ret
 }
 
 func (self *Peer) NumOutbound() int {
 	ret := int(0)
+	self.peerConnsMutex.Lock()
 	for _, peerConn := range self.PeerConns {
 		if peerConn.IsOutbound {
-			ret += 1
+			ret1++
 		}
 	}
+	self.peerConnsMutex.Unlock()
 	return ret
 }
 
