@@ -594,6 +594,15 @@ func loadConfig() (*config, []string, error) {
 		if err != nil {
 			return nil, nil, err
 		}
+		// Get address from env
+		externalAddress := os.Getenv("EXTERNAL_ADDRESS")
+		if externalAddress != "" {
+			host, _, err := net.SplitHostPort(externalAddress)
+			if err == nil && host != "" {
+				addrs = []string{host}
+			}
+		}
+
 		cfg.RPCListeners = make([]string, 0, len(addrs))
 		for _, addr := range addrs {
 			addr = net.JoinHostPort(addr, activeNetParams.rpcPort)
