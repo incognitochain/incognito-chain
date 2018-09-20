@@ -284,7 +284,7 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 		return nil, err
 	}
 	var tx transaction.Tx
-	log.Println(string(rawTxBytes))
+	// log.Println(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		return nil, err

@@ -58,14 +58,14 @@ type Peer struct {
 	ListeningAddress common.SimpleAddr
 	PublicKey        string
 
-	Seed          int64
-	Config        Config
-	MaxOutbound   int
-	MaxInbound    int
+	Seed        int64
+	Config      Config
+	MaxOutbound int
+	MaxInbound  int
 
-	PeerConns    map[peer.ID]*PeerConn
-	peerConnsMutex sync.Mutex
-	PendingPeers map[peer.ID]*Peer
+	PeerConns         map[peer.ID]*PeerConn
+	peerConnsMutex    sync.Mutex
+	PendingPeers      map[peer.ID]*Peer
 	pendingPeersMutex sync.Mutex
 
 	quit           chan struct{}
@@ -418,15 +418,13 @@ func (self *Peer) HandleStream(stream net.Stream) {
 // encoding/decoding blocks and transactions.
 //
 // This function is safe for concurrent access.
-func (self Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
-	self.peerConnsMutex.Lock()
+func (self *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
 	for _, peerConnection := range self.PeerConns {
-		Logger.log.Info("PEER %s QueueMessageWithEncoding START", peerConnection.PeerId)
-		peerConnection.QueueMessageWithEncoding(msg, doneChan)
-		Logger.log.Info("PEER %s QueueMessageWithEncoding END", peerConnection.PeerId)
-		Logger.log.Info("Queued msg", peerConnection.PeerId.Pretty(), peerConnection.ListenerPeer.PeerId.Pretty())
+		// Logger.log.Info("PEER %s QueueMessageWithEncoding START", peerConnection.PeerId)
+		go peerConnection.QueueMessageWithEncoding(msg, doneChan)
+		// Logger.log.Info("PEER %s QueueMessageWithEncoding END", peerConnection.PeerId)
+		// Logger.log.Info("Queued msg", peerConnection.PeerId.Pretty(), peerConnection.ListenerPeer.PeerId.Pretty())
 	}
-	self.peerConnsMutex.Unlock()
 }
 
 func (self *Peer) Stop() {

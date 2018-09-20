@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -69,8 +70,8 @@ type TxPool struct {
 
 // check transaction in pool
 func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
-	tp.mtx.Lock()
-	defer tp.mtx.Unlock()
+	// tp.mtx.Lock()
+	// defer tp.mtx.Unlock()
 	if _, exists := tp.pool[*hash]; exists {
 		return true
 	}
@@ -96,9 +97,9 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee float64) *
 		StartingPriority: 1, //@todo we will apply calc function for it.
 	}
 	log.Printf(tx.Hash().String())
-	tp.mtx.Lock()
+	tp.mtx.RLock()
 	tp.pool[*tx.Hash()] = txD
-	tp.mtx.Unlock()
+	tp.mtx.RUnlock()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	return txD
 }
@@ -126,22 +127,22 @@ func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash
 		return nil, nil, err
 	}
 
-	//if tp.HaveTx(tx.Hash()) != true {
-	txD := tp.addTx(tx, bestHeight, txFee)
-	return tx.Hash(), txD, nil
-	//}
-	//return nil, nil, errors.New("Exist this tx in pool")
+	if tp.HaveTx(tx.Hash()) != true {
+		txD := tp.addTx(tx, bestHeight, txFee)
+		return tx.Hash(), txD, nil
+	}
+	return nil, nil, errors.New("Exist this tx in pool")
 }
 
 // remove transaction for pool
 func (tp *TxPool) removeTx(tx transaction.Tx) {
 	log.Printf(tx.Hash().String())
-	tp.mtx.Lock()
 	if _, exists := tp.pool[*tx.Hash()]; exists {
+		tp.mtx.Lock()
 		delete(tp.pool, *tx.Hash())
+		tp.mtx.Unlock()
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	}
-	tp.mtx.Unlock()
 }
 
 // RemoveTx safe remove transaction for pool
@@ -177,10 +178,7 @@ func (tp *TxPool) MiningDescs() []*transaction.TxDesc {
 
 // Count return len of transaction pool
 func (tp *TxPool) Count() int {
-	tp.mtx.Lock()
 	count := len(tp.pool)
-	tp.mtx.Unlock()
-
 	return count
 }
 
