@@ -21,5 +21,6 @@ type TxDesc struct {
 	// Fee is the total fee the transaction associated with the entry pays.
 	Fee uint64
 
-	//@todo add more properties to TxDesc if we need more laster
+	// FeePerKB is the fee the transaction pays in coin per 1000 bytes.
+	FeePerKB int32
 }
