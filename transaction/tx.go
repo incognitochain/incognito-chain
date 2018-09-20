@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"bytes"
-	"crypto/elliptic"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -185,17 +184,11 @@ func CreateTx(
 	return tx, err
 }
 
-var incrementer uint64
-
 func createDummyNote(spendingKey *client.SpendingKey) *client.Note {
 	addr := client.GenSpendingAddress(*spendingKey)
 	var rho, r [32]byte
-	// TODO: debug
-	// copy(rho[:], client.RandBits(32*8))
-	// copy(r[:], client.RandBits(32*8))
-	rho[0] = byte(incrementer)
-	r[0] = byte(incrementer)
-	incrementer++
+	copy(rho[:], client.RandBits(32*8))
+	copy(r[:], client.RandBits(32*8))
 
 	note := &client.Note{
 		Value: 0,
@@ -209,9 +202,7 @@ func createDummyNote(spendingKey *client.SpendingKey) *client.Note {
 
 // CreateRandomJSInput creates a dummy input with 0 value note that is sended to a random address
 func CreateRandomJSInput() *client.JSInput {
-	// TODO: debug
-	// randomKey := client.RandSpendingKey()
-	randomKey := client.SpendingKey{}
+	randomKey := client.RandSpendingKey()
 	input := new(client.JSInput)
 	input.InputNote = createDummyNote(&randomKey)
 	input.Key = &randomKey
@@ -353,12 +344,7 @@ func generateTx(
 // GenerateProofAndSign creates zk-proof, build the transaction and sign it using a random generated key pair
 func GenerateProofAndSign(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) (*Tx, error) {
 	//Generate signing key 96 bytes
-	// TODO: debug
-	// sigPrivKey, err := client.GenerateKey(rand.Reader)
-	k := big.NewInt(123)
-	sigPrivKey := &client.PrivateKey{}
-	sigPrivKey.D = k
-	sigPrivKey.PublicKey.X, sigPrivKey.PublicKey.Y = elliptic.P256().ScalarBaseMult(k.Bytes())
+	sigPrivKey, err := client.GenerateKey(rand.Reader)
 
 	// if err != nil {
 	// 	return nil, err
