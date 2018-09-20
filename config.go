@@ -590,20 +590,20 @@ func loadConfig() (*config, []string, error) {
 
 	// Default RPC to listen on localhost only.
 	if !cfg.DisableRPC && len(cfg.RPCListeners) == 0 {
-		addrs, err := net.LookupHost("127.0.0.1")
+		addrs, err := net.LookupHost("0.0.0.0")
 		if err != nil {
 			return nil, nil, err
 		}
 		// Get address from env
-		externalAddress := os.Getenv("EXTERNAL_ADDRESS")
-		if externalAddress != "" {
-			host, _, err := net.SplitHostPort(externalAddress)
-			if err == nil && host != "" {
-				addrs = []string{host}
-			}
-		}
+		//externalAddress := os.Getenv("EXTERNAL_ADDRESS")
+		//if externalAddress != "" {
+		//	host, _, err := net.SplitHostPort(externalAddress)
+		//	if err == nil && host != "" {
+		//		addrs = []string{host}
+		//	}
+		//}
 
-		Logger.log.Info(externalAddress, addrs)
+		//Logger.log.Info(externalAddress, addrs)
 
 		cfg.RPCListeners = make([]string, 0, len(addrs))
 		for _, addr := range addrs {
@@ -729,15 +729,7 @@ func loadConfig() (*config, []string, error) {
 			"localhost": {},
 			"127.0.0.1": {},
 			"::1":       {},
-		}
-
-		// Get address from env
-		externalAddress := os.Getenv("EXTERNAL_ADDRESS")
-		if externalAddress != "" {
-			host, _, err := net.SplitHostPort(externalAddress)
-			if err == nil && host != "" {
-				allowedTLSListeners[host] = struct{}{}
-			}
+			"0.0.0.0":	 {},
 		}
 
 		for _, addr := range cfg.RPCListeners {
