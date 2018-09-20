@@ -57,6 +57,7 @@ var RpcHandler = map[string]commandHandler{
 
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
+	"addnode":          RpcServer.handleAddNode,
 	"getaddednodeinfo": RpcServer.handleGetAddedNodeInfo,
 	// WALLET
 	"listaccounts":          RpcServer.handleListAccounts,
