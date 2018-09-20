@@ -58,6 +58,7 @@ var RpcHandler = map[string]commandHandler{
 
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
+	"addnode":          RpcServer.handleAddNode,
 	"getaddednodeinfo": RpcServer.handleGetAddedNodeInfo,
 	// WALLET
 	"listaccounts":          RpcServer.handleListAccounts,
@@ -228,8 +229,21 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			}
 			result["data"] = hex.EncodeToString(data)
 		} else if verbosity == "1" {
+			best := self.Config.BlockChain.BestState
+
+			blockHeight := block.Height
+			// Get next block hash unless there are none.
+			var nextHashString string
+			if blockHeight < best.Height {
+				nextHash, err := self.Config.BlockChain.GetBlockByBlockHeight(blockHeight + 1)
+				if err != nil {
+					return nil, err
+				}
+				nextHashString = nextHash.Hash().String()
+			}
+
 			result["hash"] = block.Hash().String()
-			result["confirmations"] = -1
+			result["confirmations"] = int64(1 + best.Height - blockHeight)
 			result["size"] = -1
 			result["strippedsize"] = -1
 			result["weight"] = -1
@@ -244,14 +258,27 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			result["difficulty"] = block.Header.Difficulty
 			result["chainwork"] = block.Header.ChainID
 			result["previousblockhash"] = block.Header.PrevBlockHash.String()
-			result["nextblockhash"] = nil
+			result["nextblockhash"] = nextHashString
 			result["tx"] = []string{}
 			for _, tx := range block.Transactions {
 				result["tx"] = append(result["tx"].([]string), tx.Hash().String())
 			}
 		} else if verbosity == "2" {
+			best := self.Config.BlockChain.BestState
+
+			blockHeight := block.Height
+			// Get next block hash unless there are none.
+			var nextHashString string
+			if blockHeight < best.Height {
+				nextHash, err := self.Config.BlockChain.GetBlockByBlockHeight(blockHeight + 1)
+				if err != nil {
+					return nil, err
+				}
+				nextHashString = nextHash.Hash().String()
+			}
+
 			result["hash"] = block.Hash().String()
-			result["confirmations"] = -1
+			result["confirmations"] = int64(1 + best.Height - blockHeight)
 			result["size"] = -1
 			result["strippedsize"] = -1
 			result["weight"] = -1
@@ -266,7 +293,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			result["difficulty"] = block.Header.Difficulty
 			result["chainwork"] = block.Header.ChainID
 			result["previousblockhash"] = block.Header.PrevBlockHash.String()
-			result["nextblockhash"] = nil
+			result["nextblockhash"] = nextHashString
 			result["tx"] = []map[string]interface{}{}
 			for _, tx := range block.Transactions {
 				transactionT := map[string]interface{}{}
