@@ -603,6 +603,8 @@ func loadConfig() (*config, []string, error) {
 			}
 		}
 
+		Logger.log.Info(externalAddress, addrs)
+
 		cfg.RPCListeners = make([]string, 0, len(addrs))
 		for _, addr := range addrs {
 			addr = net.JoinHostPort(addr, activeNetParams.rpcPort)
@@ -728,6 +730,16 @@ func loadConfig() (*config, []string, error) {
 			"127.0.0.1": {},
 			"::1":       {},
 		}
+
+		// Get address from env
+		externalAddress := os.Getenv("EXTERNAL_ADDRESS")
+		if externalAddress != "" {
+			host, _, err := net.SplitHostPort(externalAddress)
+			if err == nil && host != "" {
+				allowedTLSListeners[host] = struct{}{}
+			}
+		}
+
 		for _, addr := range cfg.RPCListeners {
 			host, _, err := net.SplitHostPort(addr)
 			if err != nil {
