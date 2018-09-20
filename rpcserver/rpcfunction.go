@@ -19,18 +19,20 @@ import (
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"net"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
 
 var RpcHandler = map[string]commandHandler{
+	"getnetworkinfo":                RpcServer.handleGetNetWorkInfo,
 	"getblock":                      RpcServer.handleGetBlock,
 	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
 	"getblockcount":                 RpcServer.handleGetBlockCount,
 	"getblockhash":                  RpcServer.handleGetBlockHash,
 	"getblocktemplate":              RpcServer.handleGetBlockTemplate,
 	"listtransactions":              RpcServer.handleListTransactions,
-	"createtransaction":             RpcServer.handleCreateTrasaction,
+	"createtransaction":             RpcServer.handleCreateTransaction,
 	"sendtransaction":               RpcServer.handleSendTransaction,
 	"sendmany":                      RpcServer.handleSendMany,
 	"getnumberofcoinsandbonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
@@ -113,6 +115,54 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 
 	return "", nil
+}
+
+/**
+getblockcount RPC return information fo blockchain node
+*/
+func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	result := map[string]interface{}{}
+
+	result["version"] = 1
+	result["subversion"] = ""
+	result["protocolversion"] = 0
+	result["localservices"] = ""
+	result["localrelay"] = true
+	result["timeoffset"] = 0
+	result["networkactive"] = true
+	result["connections"] = 0
+
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	networks := []map[string]interface{}{}
+	for _, i := range ifaces {
+		addrs, err := i.Addrs()
+		if err != nil {
+			return nil, err
+		}
+		for _, addr := range addrs {
+			network := map[string]interface{}{}
+
+			network["name"] = addr.String()
+			network["limited"] = false
+			network["reachable"] = true
+			network["proxy"] = ""
+			network["proxy_randomize_credentials"] = false
+
+			networks = append(networks, network)
+		}
+	}
+
+	result["networks"] = networks
+
+	result["relayfee"] = 0
+	result["incrementalfee"] = 0
+	result["warnings"] = ""
+
+	return result, nil
 }
 
 /**
@@ -380,7 +430,23 @@ func (self RpcServer) handleGetAddedNodeInfo(params interface{}, closeChan <-cha
 addnode RPC return information fo blockchain node
 */
 func (self RpcServer) handleAddNode(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-
+	paramsArray := common.InterfaceSlice(params)
+	for _, nodeAddrI := range paramsArray {
+		if nodeAddr, ok := nodeAddrI.(string); ok {
+			for _, listen := range self.Config.ConnMgr.ListeningPeers {
+				peerIDstr := self.Config.ConnMgr.GetPeerIDStr(nodeAddr)
+				_, existed := listen.PeerConns[peerIDstr]
+				if existed {
+				} else {
+					_, existed := listen.PendingPeers[peerIDstr]
+					if existed {
+					} else {
+						// TODO
+					}
+				}
+			}
+		}
+	}
 
 	return nil, nil
 }
@@ -527,7 +593,7 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 /**
 // handleCreateTransaction handles createtransaction commands.
 */
-func (self RpcServer) handleCreateTrasaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 
 	// all params
@@ -638,7 +704,7 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 handleSendMany - RPC creates transaction and send to network
  */
 func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	hexStrOfTx, err := self.handleCreateTrasaction(params, closeChan)
+	hexStrOfTx, err := self.handleCreateTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
