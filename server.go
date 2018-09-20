@@ -63,6 +63,10 @@ type Server struct {
 	AddrManager *addrmanager.AddrManager
 	Wallet      *wallet.Wallet
 
+	// The fee estimator keeps track of how long transactions are left in
+	// the mempool before they are mined into blocks.
+	FeeEstimator *mempool.FeeEstimator
+
 	ConsensusEngine *pos.Engine
 }
 
@@ -138,6 +142,14 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	})
 	if err != nil {
 		return err
+	}
+
+	// If no feeEstimator has been found, or if the one that has been found
+	// is behind somehow, create a new one and start over.
+	if self.FeeEstimator == nil || self.FeeEstimator.LastKnownHeight() != self.BlockChain.BestState.BestBlock.Height {
+		self.FeeEstimator = mempool.NewFeeEstimator(
+			mempool.DefaultEstimateFeeMaxRollback,
+			mempool.DefaultEstimateFeeMinRegisteredBlocks)
 	}
 
 	// create mempool tx
@@ -250,6 +262,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 			RPCLimitPass:   cfg.RPCLimitPass,
 			DisableAuth:    cfg.RPCDisableAuth,
 			IsGenerateNode: cfg.Generate,
+			FeeEstimator:   self.FeeEstimator,
 		}
 		self.RpcServer = &rpcserver.RpcServer{}
 		err = self.RpcServer.Init(&rpcConfig)

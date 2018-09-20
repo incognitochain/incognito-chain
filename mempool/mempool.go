@@ -12,7 +12,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/mining"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/transaction"
-	"unsafe"
 )
 
 // ID is Peer Ids, so that orphans can be identified by which peer first re-payed them.
@@ -283,7 +282,7 @@ func (tp *TxPool) Size() uint64 {
 	for _, tx := range tp.pool {
 		// TODO: need to implement size func in each type of transactions
 		// https://stackoverflow.com/questions/31496804/how-to-get-the-size-of-struct-and-its-contents-in-bytes-in-golang?rq=1
-		size += uint64(unsafe.Sizeof(tx))
+		size += tx.Desc.Tx.GetTxVirtualSize()
 	}
 	tp.mtx.RUnlock()
 
