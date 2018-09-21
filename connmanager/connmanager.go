@@ -101,7 +101,7 @@ type Config struct {
 type DiscoverPeerInfo struct {
 	PublicKey  string
 	RawAddress string
-	PeerId     libpeer.ID
+	PeerID     libpeer.ID
 }
 
 // registerPending is used to register a pending connection attempt. By
@@ -274,7 +274,7 @@ func (self *ConnManager) Connect(addr string, pubKey string) {
 
 		peer := peer.Peer{
 			TargetAddress:      targetAddr,
-			PeerId:             peerId,
+			PeerID:             peerId,
 			RawAddress:         addr,
 			Config:             listen.Config,
 			PeerConns:          make(map[string]*peer.PeerConn),
@@ -288,9 +288,9 @@ func (self *ConnManager) Connect(addr string, pubKey string) {
 			peer.PublicKey = pubKey
 		}
 
-		listen.Host.Peerstore().AddAddr(peer.PeerId, peer.TargetAddress, pstore.PermanentAddrTTL)
+		listen.Host.Peerstore().AddAddr(peer.PeerID, peer.TargetAddress, pstore.PermanentAddrTTL)
 		Logger.log.Info("DEBUG Connect to Peer", peer.PublicKey)
-		Logger.log.Info(listen.Host.Peerstore().Addrs(peer.PeerId))
+		Logger.log.Info(listen.Host.Peerstore().Addrs(peer.PeerID))
 		// make a new stream from host B to host A
 		// it should be handled on host A by the handler we set above because
 		// we use the same /peer/1.0.0 protocol
@@ -320,7 +320,7 @@ func (self *ConnManager) Start() {
 			listner.HandleFailed = self.handleFailed
 			go self.listenHandler(listner)
 
-			self.ListeningPeers[listner.PeerId] = listner
+			self.ListeningPeers[listner.PeerID] = listner
 		}
 
 		if self.Config.DiscoverPeers {
@@ -336,25 +336,25 @@ func (self *ConnManager) listenHandler(listen *peer.Peer) {
 }
 
 func (self *ConnManager) handleConnected(peerConn *peer.PeerConn) {
-	Logger.log.Infof("handleConnected %s", peerConn.PeerId.String())
+	Logger.log.Infof("handleConnected %s", peerConn.PeerID.String())
 	if peerConn.IsOutbound {
-		Logger.log.Infof("handleConnected OUTBOUND %s", peerConn.PeerId.String())
+		Logger.log.Infof("handleConnected OUTBOUND %s", peerConn.PeerID.String())
 
 		if self.Config.OnOutboundConnection != nil {
 			self.Config.OnOutboundConnection(peerConn)
 		}
 
 	} else {
-		Logger.log.Infof("handleConnected INBOUND %s", peerConn.PeerId.String())
+		Logger.log.Infof("handleConnected INBOUND %s", peerConn.PeerID.String())
 	}
 }
 
 func (p *ConnManager) handleDisconnected(peerConn *peer.PeerConn) {
-	Logger.log.Infof("handleDisconnected %s", peerConn.PeerId.String())
+	Logger.log.Infof("handleDisconnected %s", peerConn.PeerID.String())
 }
 
 func (self *ConnManager) handleFailed(peerConn *peer.PeerConn) {
-	Logger.log.Infof("handleFailed %s", peerConn.PeerId.String())
+	Logger.log.Infof("handleFailed %s", peerConn.PeerID.String())
 }
 
 func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)) {
@@ -448,10 +448,10 @@ listen:
 					var result []string
 					for _, peerConn := range listener.PeerConns {
 						if peerConn.Peer.PublicKey == pubK {
-							result = append(result, peerConn.Peer.PeerId.Pretty())
+							result = append(result, peerConn.Peer.PeerID.Pretty())
 						}
 					}
-					Logger.log.Info("Public Key", pubK, info.PeerId.Pretty(), result)
+					Logger.log.Info("Public Key", pubK, info.PeerID.Pretty(), result)
 				}
 
 				err := client.Call("Handler.Ping", args, &response)
@@ -464,7 +464,7 @@ listen:
 				}
 
 				for _, rawPeer := range response {
-					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerId.String()) {
+					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerID.String()) {
 						_, exist := self.DiscoveredPeers[rawPeer.PublicKey]
 						//Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
 						if !exist {
@@ -504,7 +504,7 @@ func (p *ConnManager) GetPeerConnsByPeerId(peerId libpeer.ID) []*peer.PeerConn {
 	results := []*peer.PeerConn{}
 	for _, listen := range p.ListeningPeers {
 		for _, peerConn := range listen.PeerConns {
-			if peerConn.PeerId == peerId {
+			if peerConn.PeerID == peerId {
 				results = append(results, peerConn)
 			}
 		}

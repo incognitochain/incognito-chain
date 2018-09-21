@@ -276,7 +276,7 @@ func (self *Server) InboundPeerConnected(peerConn *peer.PeerConn) {
 // request instance and the connection itself, and finally notifies the address
 // manager of the attempt.
 func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
-	Logger.log.Info("Outbound PEER connected with PEER ID - " + peerConn.PeerId.String())
+	Logger.log.Info("Outbound PEER connected with PEER ID - " + peerConn.PeerID.String())
 	// TODO:
 	// call address manager to process new outbound peer
 	// push message version
@@ -288,7 +288,7 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 	//
 	//msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
 	//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.BlockChain.BestState.BestBlock.Hash()
-	//msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerId
+	//msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerID
 	//if err != nil {
 	//	return
 	//}
@@ -299,10 +299,10 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
 	msg.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.ListeningAddress
 	msg.(*wire.MessageVersion).RawLocalAddress = peerConn.ListenerPeer.RawAddress
-	msg.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerId
+	msg.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerID
 	msg.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
 	msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
-	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerId
+	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
 	msg.(*wire.MessageVersion).LastBlock = 0
 	msg.(*wire.MessageVersion).ProtocolVersion = 1
 	// Validate Public Key from SealerPrvKey
@@ -564,7 +564,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	remotePeer := &peer.Peer{
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
-		PeerId:           msg.LocalPeerId,
+		PeerID:           msg.LocalPeerId,
 		PublicKey:        msg.PublicKey,
 	}
 
@@ -610,10 +610,10 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
 		msg.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.ListeningAddress
 		msg.(*wire.MessageVersion).RawLocalAddress = peerConn.ListenerPeer.RawAddress
-		msg.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerId
+		msg.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerID
 		msg.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
 		msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
-		msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerId
+		msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
 		msg.(*wire.MessageVersion).LastBlock = 0
 		msg.(*wire.MessageVersion).ProtocolVersion = 1
 		// Validate Public Key from SealerPrvKey
@@ -662,7 +662,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 			rawPeers := []wire.RawPeer{}
 			peers := self.AddrManager.AddressCache()
 			for _, peer := range peers {
-				if peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+				if peerConn.PeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
 					rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
 				}
 			}
@@ -691,14 +691,14 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 	addresses := []string{}
 	peers := self.AddrManager.AddressCache()
 	for _, peer := range peers {
-		if peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+		if peerConn.PeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
 			addresses = append(addresses, peer.RawAddress)
 		}
 	}
 
 	rawPeers := []wire.RawPeer{}
 	for _, peer := range peers {
-		if peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+		if peerConn.PeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
 			rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
 		}
 	}
@@ -713,7 +713,7 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	//for _, rawPeer := range msg.RawPeers {
 	//	for _, listen := range self.ConnManager.ListeningPeers {
 	//		for _, _peerConn := range listen.PeerConns {
-	//			if _peerConn.PeerId.Pretty() != self.ConnManager.GetPeerId(rawPeer.RawAddress) {
+	//			if _peerConn.PeerID.Pretty() != self.ConnManager.GetPeerId(rawPeer.RawAddress) {
 	//				go self.ConnManager.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
 	//			}
 	//		}
@@ -760,13 +760,13 @@ func (self *Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {
 			if peerConn.Peer.PublicKey == pubKey {
 				exist := false
 				for _, item := range result {
-					if item.Pretty() == peerConn.Peer.PeerId.Pretty() {
+					if item.Pretty() == peerConn.Peer.PeerID.Pretty() {
 						exist = true
 					}
 				}
 
 				if !exist {
-					result = append(result, peerConn.Peer.PeerId)
+					result = append(result, peerConn.Peer.PeerID)
 				}
 			}
 		}
@@ -783,7 +783,7 @@ func (self *Server) PushMessageToAll(msg wire.Message) error {
 	var dc chan<- struct{}
 	for index := 0; index < len(self.ConnManager.Config.ListenerPeers); index++ {
 		Logger.log.Info("Pushed 1")
-		msg.SetSenderID(self.ConnManager.Config.ListenerPeers[index].PeerId)
+		msg.SetSenderID(self.ConnManager.Config.ListenerPeers[index].PeerID)
 		Logger.log.Info("Pushed 2")
 		self.ConnManager.Config.ListenerPeers[index].QueueMessageWithEncoding(msg, dc)
 		Logger.log.Info("Pushed 3")
@@ -800,7 +800,7 @@ func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 	for index := 0; index < len(self.ConnManager.Config.ListenerPeers); index++ {
 		peerConn, exist := self.ConnManager.Config.ListenerPeers[index].PeerConns[peerId.String()]
 		if exist {
-			msg.SetSenderID(self.ConnManager.Config.ListenerPeers[index].PeerId)
+			msg.SetSenderID(self.ConnManager.Config.ListenerPeers[index].PeerID)
 			peerConn.QueueMessageWithEncoding(msg, dc)
 			Logger.log.Info("Pushed")
 			return nil
@@ -857,7 +857,7 @@ func (self *Server) GetChainState() error {
 		if err != nil {
 			return err
 		}
-		msg.SetSenderID(listener.PeerId)
+		msg.SetSenderID(listener.PeerID)
 		Logger.log.Info("Send a GetChainState ", msg)
 		listener.QueueMessageWithEncoding(msg, dc)
 	}

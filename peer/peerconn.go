@@ -29,12 +29,12 @@ type PeerConn struct {
 	VerValid           bool
 
 	TargetAddress    ma.Multiaddr
-	PeerId           peer.ID
+	PeerID           peer.ID
 	RawAddress       string
 	ListeningAddress common.SimpleAddr
 
-	flagMutex sync.Mutex
-	Config    Config
+	// flagMutex sync.Mutex
+	Config Config
 
 	sendMessageQueue chan outMsg
 	quit             chan struct{}
@@ -54,12 +54,12 @@ Handle all in message
 */
 func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	for {
-		Logger.log.Infof("PEER %s Reading stream", self.PeerId.String())
+		Logger.log.Infof("PEER %s Reading stream", self.PeerID.String())
 		str, err := rw.ReadString('\n')
 		if err != nil {
 			Logger.log.Error(err)
 
-			Logger.log.Infof("PEER %s quit IN message handler", self.PeerId)
+			Logger.log.Infof("PEER %s quit IN message handler", self.PeerID)
 			self.quit <- struct{}{}
 			return
 		}
@@ -75,13 +75,13 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 			commandInHeader := messageHeader[:12]
 			commandInHeader = bytes.Trim(messageHeader, "\x00")
-			Logger.log.Infof("Received message Type - %s %s", string(commandInHeader), self.PeerId)
+			Logger.log.Infof("Received message Type - %s %s", string(commandInHeader), self.PeerID)
 			commandType := string(messageHeader[:len(commandInHeader)])
 			var message, err = wire.MakeEmptyMessage(string(commandType))
 
 			// Parse Message body
 			messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
-			//Logger.log.Infof("Message Body - %s %s", string(messageBody), self.PeerId)
+			//Logger.log.Infof("Message Body - %s %s", string(messageBody), self.PeerID)
 			if err != nil {
 				Logger.log.Error(err)
 				continue
@@ -193,13 +193,13 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		select {
 		case outMsg := <-self.sendMessageQueue:
 			{
-				self.flagMutex.Lock()
+				// self.flagMutex.Lock()
 				// TODO
 				// send message
 				messageByte, err := outMsg.msg.JsonSerialize()
 				if err != nil {
 					fmt.Println(err)
-					self.flagMutex.Unlock()
+					// self.flagMutex.Unlock()
 					continue
 				}
 				header := make([]byte, wire.MessageHeaderSize)
@@ -213,20 +213,20 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				_, err = rw.Writer.WriteString(message)
 				if err != nil {
 					Logger.log.Critical("DM ERROR", err)
-					self.flagMutex.Unlock()
+					// self.flagMutex.Unlock()
 					return
 				}
 				err = rw.Writer.Flush()
 				if err != nil {
 					Logger.log.Critical("DM ERROR", err)
-					self.flagMutex.Unlock()
+					// self.flagMutex.Unlock()
 					return
 				}
-				self.flagMutex.Unlock()
+				// self.flagMutex.Unlock()
 
 			}
 		case <-self.quit:
-			Logger.log.Infof("PEER %s quit OUT message handler", self.PeerId)
+			Logger.log.Infof("PEER %s quit OUT message handler", self.PeerID)
 
 			self.disconnect <- struct{}{}
 
