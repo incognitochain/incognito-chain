@@ -410,8 +410,8 @@ listen:
 		//Logger.log.Infof("Peers", self.DiscoveredPeers)
 		if client == nil {
 			// server bootnode 35.199.177.89:9339
-			// local bootnode 127.0.0.1:9889
-			client, err = rpc.Dial("tcp", "127.0.0.1:9889")
+			// local bootnode 127.0.0.1:9339
+			client, err = rpc.Dial("tcp", "127.0.0.1:9339")
 			if err != nil {
 				Logger.log.Error("[Exchange Peers] re-connect:", err)
 			}
