@@ -52,10 +52,12 @@ func strategy1() {
 		}
 
 		for i := 0; i < stepSendout; i++ {
-			isSuccess, hash := sendRandomTransaction(-1)
-			if isSuccess {
-				log.Printf("Send a transaction success: %s", hash)
-			}
+			go func(){
+				isSuccess, hash := sendRandomTransaction(-1)
+				if isSuccess {
+					log.Printf("Send a transaction success: %s", hash)
+				}
+			}()
 		}
 
 		totalSendOut += stepSendout

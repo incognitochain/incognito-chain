@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	defaultRPCPort = 9889
+	defaultRPCPort = 9339
 )
 
 // See loadConfig for details on the configuration load process.
