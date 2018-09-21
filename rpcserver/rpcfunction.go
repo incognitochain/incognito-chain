@@ -12,6 +12,8 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/wire"
 
+	"net"
+
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -19,7 +21,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
-	"net"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -46,6 +47,7 @@ var RpcHandler = map[string]commandHandler{
 	"getmininginfo":                 RpcServer.handleGetMiningInfo,
 	"getrawmempool":                 RpcServer.handleGetRawMempool,
 	"getmempoolentry":               RpcServer.handleMempoolEntry,
+	"estimatefee":                   RpcServer.handleEstimateFee,
 
 	//POS
 	"votecandidate": RpcServer.handleVoteCandidate,
@@ -1155,4 +1157,16 @@ func (self RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan st
 
 	tx, err := self.Config.TxMemPool.GetTx(txId)
 	return tx, err
+}
+
+/**
+handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to be paid for a transaction to be included within a certain number of blocks.
+*/
+func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// Param #1: —how many blocks the transaction may wait before being included
+	feeRate, err := self.Config.FeeEstimator.EstimateFee(uint32(params.(float64)))
+	if err != nil {
+		return -1, err
+	}
+	return uint64(feeRate), nil
 }
