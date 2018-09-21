@@ -70,8 +70,8 @@ type TxPool struct {
 
 // check transaction in pool
 func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
-	// tp.mtx.Lock()
-	// defer tp.mtx.Unlock()
+	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
 	if _, exists := tp.pool[*hash]; exists {
 		return true
 	}
@@ -97,9 +97,9 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee float64) *
 		StartingPriority: 1, //@todo we will apply calc function for it.
 	}
 	log.Printf(tx.Hash().String())
-	tp.mtx.RLock()
+	tp.mtx.Lock()
 	tp.pool[*tx.Hash()] = txD
-	tp.mtx.RUnlock()
+	tp.mtx.Unlock()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	return txD
 }
@@ -137,12 +137,12 @@ func (tp *TxPool) CanAcceptTransaction(tx transaction.Transaction) (*common.Hash
 // remove transaction for pool
 func (tp *TxPool) removeTx(tx transaction.Tx) {
 	log.Printf(tx.Hash().String())
+	tp.mtx.Lock()
 	if _, exists := tp.pool[*tx.Hash()]; exists {
-		tp.mtx.Lock()
 		delete(tp.pool, *tx.Hash())
-		tp.mtx.Unlock()
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	}
+	tp.mtx.Unlock()
 }
 
 // RemoveTx safe remove transaction for pool
