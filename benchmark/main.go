@@ -39,7 +39,7 @@ Strategy 1: send out 1k transactions per second by n transactions
  */
 func strategy1() {
 	totalSendOut := 0
-	stepSendout := 100
+	stepSendout := 10
 
 	if stepSendout > cfg.TotalTxs {
 		stepSendout = cfg.TotalTxs
@@ -120,6 +120,15 @@ func sendRandomTransaction(ah int) (bool, interface{}) {
 	params := buildCreateParams(addressHash, txId, pkScript, value, id)
 	//jsonValue, _ := json.Marshal(params)
 	//log.Println("Create transaction params", string(jsonValue))
+
+	var endpoint string
+
+	if len(cfg.RPCAddress) == 1 {
+		endpoint = cfg.RPCAddress[0]
+	} else {
+		randEndpointIdx := randomInt(0, len(cfg.RPCAddress) - 1)
+		endpoint = cfg.RPCAddress[randEndpointIdx]
+	}
 
 	err, tx := api.Get(cfg.RPCAddress, params)
 

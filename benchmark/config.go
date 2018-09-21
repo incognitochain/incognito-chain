@@ -16,14 +16,14 @@ const (
 type config struct {
 	Strategy	int		`long:"strategy" short:"s" description:"Strategy ID"`
 	TotalTxs	int		`long:"txs" short:"t" description:"Total transactions to test"`
-	RPCAddress	string	`long:"rpcaddress" short:"r" description:"RPC address of any node"`
+	RPCAddress	[]string	`long:"rpcaddress" short:"r" description:"RPC address of any node"`
 }
 
 func loadConfig() (*config, error) {
 	cfg := config{
 		Strategy: defaultStrategy,
 		TotalTxs: defaultTotalTxs,
-		RPCAddress: defaultRPCAddress,
+		RPCAddress: []string{defaultRPCAddress},
 	}
 
 	preParser := flags.NewParser(&cfg, flags.Default)
