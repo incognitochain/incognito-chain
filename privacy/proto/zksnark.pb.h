@@ -799,6 +799,12 @@ class ProveRequest : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::google::protobuf::uint64 reward() const;
   void set_reward(::google::protobuf::uint64 value);
 
+  // uint64 fee = 7;
+  void clear_fee();
+  static const int kFeeFieldNumber = 7;
+  ::google::protobuf::uint64 fee() const;
+  void set_fee(::google::protobuf::uint64 value);
+
   // @@protoc_insertion_point(class_scope:zksnark.ProveRequest)
  private:
 
@@ -809,6 +815,7 @@ class ProveRequest : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::google::protobuf::internal::ArenaStringPtr phi_;
   ::google::protobuf::internal::ArenaStringPtr rt_;
   ::google::protobuf::uint64 reward_;
+  ::google::protobuf::uint64 fee_;
   mutable ::google::protobuf::internal::CachedSize _cached_size_;
   friend struct ::protobuf_zksnark_2eproto::TableStruct;
 };
@@ -1338,6 +1345,12 @@ class VerifyRequest : public ::google::protobuf::Message /* @@protoc_insertion_p
   ::google::protobuf::uint64 reward() const;
   void set_reward(::google::protobuf::uint64 value);
 
+  // uint64 fee = 8;
+  void clear_fee();
+  static const int kFeeFieldNumber = 8;
+  ::google::protobuf::uint64 fee() const;
+  void set_fee(::google::protobuf::uint64 value);
+
   // @@protoc_insertion_point(class_scope:zksnark.VerifyRequest)
  private:
 
@@ -1349,6 +1362,7 @@ class VerifyRequest : public ::google::protobuf::Message /* @@protoc_insertion_p
   ::google::protobuf::internal::ArenaStringPtr rt_;
   ::zksnark::PHGRProof* proof_;
   ::google::protobuf::uint64 reward_;
+  ::google::protobuf::uint64 fee_;
   mutable ::google::protobuf::internal::CachedSize _cached_size_;
   friend struct ::protobuf_zksnark_2eproto::TableStruct;
 };
@@ -2268,6 +2282,20 @@ inline void ProveRequest::set_reward(::google::protobuf::uint64 value) {
   // @@protoc_insertion_point(field_set:zksnark.ProveRequest.reward)
 }
 
+// uint64 fee = 7;
+inline void ProveRequest::clear_fee() {
+  fee_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 ProveRequest::fee() const {
+  // @@protoc_insertion_point(field_get:zksnark.ProveRequest.fee)
+  return fee_;
+}
+inline void ProveRequest::set_fee(::google::protobuf::uint64 value) {
+  
+  fee_ = value;
+  // @@protoc_insertion_point(field_set:zksnark.ProveRequest.fee)
+}
+
 // -------------------------------------------------------------------
 
 // PHGRProof
@@ -3137,6 +3165,20 @@ inline void VerifyRequest::set_reward(::google::protobuf::uint64 value) {
   
   reward_ = value;
   // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.reward)
+}
+
+// uint64 fee = 8;
+inline void VerifyRequest::clear_fee() {
+  fee_ = GOOGLE_ULONGLONG(0);
+}
+inline ::google::protobuf::uint64 VerifyRequest::fee() const {
+  // @@protoc_insertion_point(field_get:zksnark.VerifyRequest.fee)
+  return fee_;
+}
+inline void VerifyRequest::set_fee(::google::protobuf::uint64 value) {
+  
+  fee_ = value;
+  // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.fee)
 }
 
 // -------------------------------------------------------------------

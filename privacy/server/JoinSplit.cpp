@@ -96,7 +96,7 @@ public:
         const std::array<uint256, NumInputs>& nullifiers,
         const std::array<uint256, NumOutputs>& commitments,
         uint64_t vpub_old,
-        // uint64_t vpub_new,
+        uint64_t vpub_new,
         const uint256& rt,
         uint256 &h_sig
     ) {
@@ -110,7 +110,7 @@ public:
                 nullifiers,
                 commitments,
                 vpub_old,
-                0
+                vpub_new
             );
 
             return r1cs_ppzksnark_online_verifier_strong_IC<alt_bn128_pp>(vk_precomp, witness, r1cs_proof);
@@ -134,7 +134,7 @@ public:
         // std::array<uint256, NumInputs>& out_nullifiers,
         // std::array<uint256, NumOutputs>& out_commitments,
         uint64_t vpub_old,
-        // uint64_t vpub_new,
+        uint64_t vpub_new,
         const uint256& rt,
         uint256 &h_sig,
         uint252 &phi,
@@ -234,7 +234,7 @@ public:
                 inputs,
                 out_notes,
                 vpub_old,
-                0
+                vpub_new
             );
             std::cout << "Done generate_r1cs_witness\n";
         }

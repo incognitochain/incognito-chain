@@ -1,9 +1,10 @@
 package mempool
 
 import (
-	"github.com/ninjadotorg/cash-prototype/transaction"
-	"github.com/ninjadotorg/cash-prototype/common"
 	"fmt"
+
+	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 // Policy houses the policy (configuration parameters) which is used to control the mempool.
@@ -47,9 +48,9 @@ func (self *Policy) calcMinFeeTxAccepted(tx *transaction.Tx) uint64 {
 /**
 
  */
-func (self *Policy) CheckTransactionFee(tx *transaction.Tx) (error) {
+func (self *Policy) CheckTransactionFee(tx *transaction.Tx) error {
 	minFee := self.calcMinFeeTxAccepted(tx)
-	if minFee < tx.Fee {
+	if tx.Fee < minFee {
 		str := fmt.Sprintf("transaction %v has %d fees which is under "+
 			"the required amount of %d", tx.Hash().String(), tx.Fee,
 			minFee)

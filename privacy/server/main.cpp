@@ -129,7 +129,8 @@ bool transform_prove_request(const ProveRequest *request,
                              uint256 &hsig,
                              uint252 &phi,
                              uint256 &rt,
-                             uint64_t &reward)
+                             uint64_t &reward,
+                             uint64_t &fee)
 {
     if (request->inputs_size() != ZC_NUM_JS_INPUTS || request->outnotes_size() != ZC_NUM_JS_OUTPUTS)
         return false;
@@ -201,6 +202,10 @@ bool transform_prove_request(const ProveRequest *request,
     reward = request->reward();
     cout << "reward: " << reward << '\n';
 
+    // Convert fee
+    fee = request->fee();
+    cout << "fee: " << fee << '\n';
+
     return success;
 }
 
@@ -246,7 +251,8 @@ bool transform_verify_request(const VerifyRequest *request,
                               MacArray &macs,
                               uint256 &hsig,
                               uint256 &rt,
-                              uint64_t &reward)
+                              uint64_t &reward,
+                              uint64_t &fee)
 {
     if (request->nullifiers_size() != ZC_NUM_JS_INPUTS || request->commits_size() != ZC_NUM_JS_OUTPUTS)
         return false;
@@ -303,12 +309,16 @@ bool transform_verify_request(const VerifyRequest *request,
     // Convert reward
     reward = request->reward();
 
+    // Convert fee
+    fee = request->fee();
+
     return success;
 }
 
 int print_proof_inputs(const std::array<libzcash::JSInput, ZC_NUM_JS_INPUTS> &inputs,
                        std::array<libzcash::SproutNote, ZC_NUM_JS_OUTPUTS> &out_notes,
                        uint64_t vpub_old,
+                       uint64_t vpub_new,
                        const uint256 &rt,
                        uint256 &h_sig,
                        uint252 &phi,
@@ -334,6 +344,7 @@ int print_proof_inputs(const std::array<libzcash::JSInput, ZC_NUM_JS_INPUTS> &in
     }
 
     cout << "vpub_old: " << vpub_old << '\n';
+    cout << "vpub_new: " << vpub_new << '\n';
     cout << "rt: " << rt.GetHex() << '\n';
     cout << "h_sig: " << h_sig.GetHex() << '\n';
     cout << "phi: " << phi.inner().GetHex() << '\n';
@@ -350,8 +361,8 @@ class ZksnarkImpl final : public Zksnark::Service
         ProveOutnotes out_notes;
         uint256 hsig, rt;
         uint252 phi;
-        uint64_t reward;
-        bool success = transform_prove_request(request, inputs, out_notes, hsig, phi, rt, reward);
+        uint64_t reward, fee;
+        bool success = transform_prove_request(request, inputs, out_notes, hsig, phi, rt, reward, fee);
         cout << "transform_prove_request status: " << success << '\n';
 
         if (!success)
@@ -359,8 +370,9 @@ class ZksnarkImpl final : public Zksnark::Service
 
         bool compute_proof = true;
         uint64_t vpub_old = reward;
-        print_proof_inputs(inputs, out_notes, vpub_old, rt, hsig, phi, compute_proof);
-        auto proof = js->prove(inputs, out_notes, vpub_old, rt, hsig, phi, compute_proof);
+        uint64_t vpub_new = fee;
+        print_proof_inputs(inputs, out_notes, vpub_old, vpub_new, rt, hsig, phi, compute_proof);
+        auto proof = js->prove(inputs, out_notes, vpub_old, vpub_new, rt, hsig, phi, compute_proof);
         // libzcash::PHGRProof proof;
         print_proof(proof);
 
@@ -380,14 +392,15 @@ class ZksnarkImpl final : public Zksnark::Service
         NullifierArray nullifiers;
         CommitmentArray commitments;
         NullifierArray macs;
-        uint64_t reward;
-        bool success = transform_verify_request(request, proof, nullifiers, commitments, macs, hsig, rt, reward);
+        uint64_t reward, fee;
+        bool success = transform_verify_request(request, proof, nullifiers, commitments, macs, hsig, rt, reward, fee);
         cout << "transform_verify_request status: " << success << '\n';
 
         uint64_t vpub_old = reward;
+        uint64_t vpub_new = fee;
         bool valid = false;
         if (success)
-            valid = js->verify(proof, macs, nullifiers, commitments, vpub_old, rt, hsig);
+            valid = js->verify(proof, macs, nullifiers, commitments, vpub_old, vpub_new, rt, hsig);
         reply->set_valid(valid);
         return Status::OK;
     }

@@ -41,6 +41,7 @@ message ProveRequest {
     bytes phi = 4;
     bytes rt = 5;
     uint64 reward = 6;
+    uint64 fee = 7;
 }
 
 message PHGRProof {
@@ -66,6 +67,7 @@ message VerifyRequest {
     repeated bytes commits = 5;
     repeated bytes macs = 6;
     uint64 reward = 7;
+    uint64 fee = 8;
 }
 
 message VerifyReply {

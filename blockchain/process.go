@@ -35,6 +35,11 @@ func (self *BlockChain) ProcessBlock(block *Block) (bool, bool, error) {
 		return false, false, nil
 	}
 
+	// TODO: privacy consensus checks:
+	// - Only first tx is coinbase (only one desc and reward >= 0)
+	// - All js desc's proofs are valid
+	// - Coinbase reward == block reward + sum(fee of all tx)
+
 	// TODO check more
 	// check orphan blocks
 	// check checkpoint if using checkpoint to prevent sidechain

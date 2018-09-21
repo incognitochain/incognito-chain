@@ -42,7 +42,7 @@ func Prove(inputs []*JSInput,
 	outputs []*JSOutput,
 	pubKey []byte,
 	rt []byte,
-	reward uint64,
+	reward, fee uint64,
 	seed, phi []byte,
 	outputR [][]byte,
 ) (proof *zksnark.PHGRProof, hSig, newSeed, newPhi []byte, err error) {
@@ -53,8 +53,8 @@ func Prove(inputs []*JSInput,
 	}
 
 	// Check balance between input and output
-	var totalInput, totalOutput uint64
-	totalInput = reward
+	totalInput := reward
+	totalOutput := fee
 	for _, input := range inputs {
 		totalInput += input.InputNote.Value
 	}
@@ -62,7 +62,7 @@ func Prove(inputs []*JSInput,
 		totalOutput += output.OutputNote.Value
 	}
 	if totalInput != totalOutput {
-		panic("Input and output value are not equal")
+		panic(fmt.Sprintf("Input and output value are not equal: %v and %v", totalInput, totalOutput))
 	}
 
 	// Generate hSig
@@ -133,10 +133,6 @@ func Prove(inputs []*JSInput,
 
 	zkNotes := Notes2ZksnarkNotes(outNotes)
 	zkInputs := JSInputs2ZkInputs(inputs)
-	// fmt.Printf("zkInputs[0].WitnessPath.AuthPath[0]: %x\n", zkInputs[0].WitnessPath.AuthPath[0].Hash)
-	// fmt.Printf("zkInputs[0].WitnessPath.Index: %v\n", zkInputs[0].WitnessPath.Index)
-	// fmt.Printf("zkInputs[1].WitnessPath.AuthPath[0]: %x\n", zkInputs[1].WitnessPath.AuthPath[0].Hash)
-	// fmt.Printf("zkInputs[1].WitnessPath.Index: %v\n", zkInputs[1].WitnessPath.Index)
 	var proveRequest = &zksnark.ProveRequest{
 		Hsig:     hSig,
 		Phi:      newPhi,
@@ -144,10 +140,13 @@ func Prove(inputs []*JSInput,
 		OutNotes: zkNotes,
 		Inputs:   zkInputs,
 		Reward:   reward,
+		Fee:      fee,
 	}
 	// fmt.Printf("proveRequest: %v\n", proveRequest)
 	fmt.Printf("key: %x\n", proveRequest.Inputs[0].SpendingKey)
 	fmt.Printf("Anchor: %x\n", rt)
+	fmt.Printf("reward: %v\n", reward)
+	fmt.Printf("fee: %v\n", fee)
 	for i, zkinput := range zkInputs {
 		fmt.Printf("zkInputs[%d].SpendingKey: %x\n", i, zkinput.SpendingKey)
 		fmt.Printf("zkInputs[%d].Note.Value: %v\n", i, zkinput.Note.Value)

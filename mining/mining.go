@@ -122,13 +122,14 @@ func createCoinbaseTx(
 
 	// Get reward
 	// TODO(@0xbunyip): implement bonds reward
+	fmt.Printf("reward map: %+v\n", rewardMap)
 	var reward uint64
 	for rewardType, rewardValue := range rewardMap {
 		if rewardValue <= 0 {
 			continue
 		}
 		if rewardType == "coins" {
-			reward = rewardValue
+			reward += rewardValue
 		}
 	}
 
@@ -146,7 +147,8 @@ func createCoinbaseTx(
 
 	// Generate proof and sign tx
 	tx := transaction.NewTxTemplate()
-	err := tx.BuildNewJSDesc(inputs, outputs, rt, reward)
+	var coinbaseTxFee uint64 // Zero fee for coinbase tx
+	err := tx.BuildNewJSDesc(inputs, outputs, rt, reward, coinbaseTxFee)
 	if err != nil {
 		return nil, err
 	}
@@ -247,10 +249,7 @@ func extractTxsAndComputeInitialFees(txDescs []*TxDesc) (
 			continue
 		}
 		normalTx, _ := tx.(*transaction.Tx)
-		for _, desc := range normalTx.Descs {
-			joinSplitDescType := desc.Type
-			feeMap[joinSplitDescType] += txDesc.Fee
-		}
+		feeMap[normalTx.Descs[0].Type] += txDesc.Fee
 	}
 	return txs, actionParamTxs, feeMap
 }
@@ -330,26 +329,25 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	_ = []byte("1234567890123456789012") //@todo should be create function create basescript
 
 	receiverKeyset, _ := wallet.Base58CheckDeserialize(payToAddress)
-	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, &receiverKeyset.KeyPair.PublicKey, rewardMap, g.chain.BestState.BestBlock.Header.MerkleRootCommitments.CloneBytes())
-	if err != nil {
-		return nil, err
-	}
 
 	// dependers := make(map[common.Hash]map[common.Hash]*txPrioItem)
 
 	// blockTxns := make([]transaction.Transaction, 0, len(sourceTxns))
 	// blockTxns = append(blockTxns, coinbaseTx)
-
-	blockTxns := append([]transaction.Transaction{coinbaseTx}, txs...)
+	blockTxns := txs
 
 	merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(blockTxns)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 
 mempoolLoop:
-	for _, txDesc := range blockTxns {
-		tx := txDesc
+	for _, blockTx := range blockTxns {
+		tx, ok := blockTx.(*transaction.Tx)
+		if !ok {
+			return nil, fmt.Errorf("Transaction in block not recognized")
+		}
+
 		//@todo need apply validate tx, logic check all referenced here
-		for _, desc := range tx.(*transaction.Tx).Descs {
+		for _, desc := range tx.Descs {
 			view, err := g.chain.FetchTxViewPoint(desc.Type)
 			_ = view
 			_ = err
@@ -399,11 +397,17 @@ mempoolLoop:
 			continue mempoolLoop
 		}
 
-		err := g.txSource.RemoveTx(&tx)
+		err := g.txSource.RemoveTx(&blockTx)
 		if err != nil {
 			Logger.log.Error(err)
 		}
 	}
+
+	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, &receiverKeyset.KeyPair.PublicKey, rewardMap, g.chain.BestState.BestBlock.Header.MerkleRootCommitments.CloneBytes())
+	if err != nil {
+		return nil, err
+	}
+	blockTxns = append([]transaction.Transaction{coinbaseTx}, blockTxns...)
 
 	// TODO PoW
 	//time.Sleep(time.Second * 15)

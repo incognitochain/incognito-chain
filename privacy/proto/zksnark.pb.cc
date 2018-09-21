@@ -265,6 +265,7 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::ProveRequest, phi_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::ProveRequest, rt_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::ProveRequest, reward_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::ProveRequest, fee_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::PHGRProof, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -296,6 +297,7 @@ const ::google::protobuf::uint32 TableStruct::offsets[] GOOGLE_PROTOBUF_ATTRIBUT
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyRequest, commits_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyRequest, macs_),
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyRequest, reward_),
+  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyRequest, fee_),
   ~0u,  // no _has_bits_
   GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(::zksnark::VerifyReply, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -309,10 +311,10 @@ static const ::google::protobuf::internal::MigrationSchema schemas[] GOOGLE_PROT
   { 13, -1, sizeof(::zksnark::Note)},
   { 24, -1, sizeof(::zksnark::JSInput)},
   { 32, -1, sizeof(::zksnark::ProveRequest)},
-  { 43, -1, sizeof(::zksnark::PHGRProof)},
-  { 56, -1, sizeof(::zksnark::ProveReply)},
-  { 62, -1, sizeof(::zksnark::VerifyRequest)},
-  { 74, -1, sizeof(::zksnark::VerifyReply)},
+  { 44, -1, sizeof(::zksnark::PHGRProof)},
+  { 57, -1, sizeof(::zksnark::ProveReply)},
+  { 63, -1, sizeof(::zksnark::VerifyRequest)},
+  { 76, -1, sizeof(::zksnark::VerifyReply)},
 };
 
 static ::google::protobuf::Message const * const file_default_instances[] = {
@@ -355,26 +357,27 @@ void AddDescriptorsImpl() {
       "\030\003 \001(\014\022\013\n\003rho\030\004 \001(\014\022\013\n\003apk\030\005 \001(\014\022\n\n\002nf\030\006"
       " \001(\014\"e\n\007JSInput\022(\n\013witnessPath\030\001 \001(\0132\023.z"
       "ksnark.MerklePath\022\023\n\013spendingKey\030\002 \001(\014\022\033"
-      "\n\004note\030\003 \001(\0132\r.zksnark.Note\"\210\001\n\014ProveReq"
+      "\n\004note\030\003 \001(\0132\r.zksnark.Note\"\225\001\n\014ProveReq"
       "uest\022 \n\006inputs\030\001 \003(\0132\020.zksnark.JSInput\022\037"
       "\n\010outNotes\030\002 \003(\0132\r.zksnark.Note\022\014\n\004hsig\030"
       "\003 \001(\014\022\013\n\003phi\030\004 \001(\014\022\n\n\002rt\030\005 \001(\014\022\016\n\006reward"
-      "\030\006 \001(\004\"\205\001\n\tPHGRProof\022\013\n\003g_A\030\001 \001(\014\022\021\n\tg_A"
-      "_prime\030\002 \001(\014\022\013\n\003g_B\030\003 \001(\014\022\021\n\tg_B_prime\030\004"
-      " \001(\014\022\013\n\003g_C\030\005 \001(\014\022\021\n\tg_C_prime\030\006 \001(\014\022\013\n\003"
-      "g_K\030\007 \001(\014\022\013\n\003g_H\030\010 \001(\014\"/\n\nProveReply\022!\n\005"
-      "proof\030\001 \001(\0132\022.zksnark.PHGRProof\"\217\001\n\rVeri"
-      "fyRequest\022!\n\005proof\030\001 \001(\0132\022.zksnark.PHGRP"
-      "roof\022\014\n\004hsig\030\002 \001(\014\022\n\n\002rt\030\003 \001(\014\022\022\n\nnullif"
-      "iers\030\004 \003(\014\022\017\n\007commits\030\005 \003(\014\022\014\n\004macs\030\006 \003("
-      "\014\022\016\n\006reward\030\007 \001(\004\"\034\n\013VerifyReply\022\r\n\005vali"
-      "d\030\001 \001(\0102z\n\007Zksnark\0225\n\005Prove\022\025.zksnark.Pr"
-      "oveRequest\032\023.zksnark.ProveReply\"\000\0228\n\006Ver"
-      "ify\022\026.zksnark.VerifyRequest\032\024.zksnark.Ve"
-      "rifyReply\"\000b\006proto3"
+      "\030\006 \001(\004\022\013\n\003fee\030\007 \001(\004\"\205\001\n\tPHGRProof\022\013\n\003g_A"
+      "\030\001 \001(\014\022\021\n\tg_A_prime\030\002 \001(\014\022\013\n\003g_B\030\003 \001(\014\022\021"
+      "\n\tg_B_prime\030\004 \001(\014\022\013\n\003g_C\030\005 \001(\014\022\021\n\tg_C_pr"
+      "ime\030\006 \001(\014\022\013\n\003g_K\030\007 \001(\014\022\013\n\003g_H\030\010 \001(\014\"/\n\nP"
+      "roveReply\022!\n\005proof\030\001 \001(\0132\022.zksnark.PHGRP"
+      "roof\"\234\001\n\rVerifyRequest\022!\n\005proof\030\001 \001(\0132\022."
+      "zksnark.PHGRProof\022\014\n\004hsig\030\002 \001(\014\022\n\n\002rt\030\003 "
+      "\001(\014\022\022\n\nnullifiers\030\004 \003(\014\022\017\n\007commits\030\005 \003(\014"
+      "\022\014\n\004macs\030\006 \003(\014\022\016\n\006reward\030\007 \001(\004\022\013\n\003fee\030\010 "
+      "\001(\004\"\034\n\013VerifyReply\022\r\n\005valid\030\001 \001(\0102z\n\007Zks"
+      "nark\0225\n\005Prove\022\025.zksnark.ProveRequest\032\023.z"
+      "ksnark.ProveReply\"\000\0228\n\006Verify\022\026.zksnark."
+      "VerifyRequest\032\024.zksnark.VerifyReply\"\000b\006p"
+      "roto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 939);
+      descriptor, 965);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "zksnark.proto", &protobuf_RegisterTypes);
 }
@@ -1708,6 +1711,7 @@ const int ProveRequest::kHsigFieldNumber;
 const int ProveRequest::kPhiFieldNumber;
 const int ProveRequest::kRtFieldNumber;
 const int ProveRequest::kRewardFieldNumber;
+const int ProveRequest::kFeeFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 ProveRequest::ProveRequest()
@@ -1735,7 +1739,9 @@ ProveRequest::ProveRequest(const ProveRequest& from)
   if (from.rt().size() > 0) {
     rt_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.rt_);
   }
-  reward_ = from.reward_;
+  ::memcpy(&reward_, &from.reward_,
+    static_cast<size_t>(reinterpret_cast<char*>(&fee_) -
+    reinterpret_cast<char*>(&reward_)) + sizeof(fee_));
   // @@protoc_insertion_point(copy_constructor:zksnark.ProveRequest)
 }
 
@@ -1743,7 +1749,9 @@ void ProveRequest::SharedCtor() {
   hsig_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   phi_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   rt_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  reward_ = GOOGLE_ULONGLONG(0);
+  ::memset(&reward_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&fee_) -
+      reinterpret_cast<char*>(&reward_)) + sizeof(fee_));
 }
 
 ProveRequest::~ProveRequest() {
@@ -1782,7 +1790,9 @@ void ProveRequest::Clear() {
   hsig_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   phi_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   rt_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  reward_ = GOOGLE_ULONGLONG(0);
+  ::memset(&reward_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&fee_) -
+      reinterpret_cast<char*>(&reward_)) + sizeof(fee_));
   _internal_metadata_.Clear();
 }
 
@@ -1870,6 +1880,20 @@ bool ProveRequest::MergePartialFromCodedStream(
         break;
       }
 
+      // uint64 fee = 7;
+      case 7: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(56u /* 56 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &fee_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -1937,6 +1961,11 @@ void ProveRequest::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteUInt64(6, this->reward(), output);
   }
 
+  // uint64 fee = 7;
+  if (this->fee() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(7, this->fee(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -1991,6 +2020,11 @@ void ProveRequest::SerializeWithCachedSizes(
   // uint64 reward = 6;
   if (this->reward() != 0) {
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(6, this->reward(), target);
+  }
+
+  // uint64 fee = 7;
+  if (this->fee() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(7, this->fee(), target);
   }
 
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
@@ -2060,6 +2094,13 @@ size_t ProveRequest::ByteSizeLong() const {
         this->reward());
   }
 
+  // uint64 fee = 7;
+  if (this->fee() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->fee());
+  }
+
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
   SetCachedSize(cached_size);
   return total_size;
@@ -2104,6 +2145,9 @@ void ProveRequest::MergeFrom(const ProveRequest& from) {
   if (from.reward() != 0) {
     set_reward(from.reward());
   }
+  if (from.fee() != 0) {
+    set_fee(from.fee());
+  }
 }
 
 void ProveRequest::CopyFrom(const ::google::protobuf::Message& from) {
@@ -2139,6 +2183,7 @@ void ProveRequest::InternalSwap(ProveRequest* other) {
   rt_.Swap(&other->rt_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
     GetArenaNoVirtual());
   swap(reward_, other->reward_);
+  swap(fee_, other->fee_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
 }
 
@@ -2948,6 +2993,7 @@ const int VerifyRequest::kNullifiersFieldNumber;
 const int VerifyRequest::kCommitsFieldNumber;
 const int VerifyRequest::kMacsFieldNumber;
 const int VerifyRequest::kRewardFieldNumber;
+const int VerifyRequest::kFeeFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 VerifyRequest::VerifyRequest()
@@ -2977,7 +3023,9 @@ VerifyRequest::VerifyRequest(const VerifyRequest& from)
   } else {
     proof_ = NULL;
   }
-  reward_ = from.reward_;
+  ::memcpy(&reward_, &from.reward_,
+    static_cast<size_t>(reinterpret_cast<char*>(&fee_) -
+    reinterpret_cast<char*>(&reward_)) + sizeof(fee_));
   // @@protoc_insertion_point(copy_constructor:zksnark.VerifyRequest)
 }
 
@@ -2985,8 +3033,8 @@ void VerifyRequest::SharedCtor() {
   hsig_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   rt_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(&proof_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&reward_) -
-      reinterpret_cast<char*>(&proof_)) + sizeof(reward_));
+      reinterpret_cast<char*>(&fee_) -
+      reinterpret_cast<char*>(&proof_)) + sizeof(fee_));
 }
 
 VerifyRequest::~VerifyRequest() {
@@ -3029,7 +3077,9 @@ void VerifyRequest::Clear() {
     delete proof_;
   }
   proof_ = NULL;
-  reward_ = GOOGLE_ULONGLONG(0);
+  ::memset(&reward_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&fee_) -
+      reinterpret_cast<char*>(&reward_)) + sizeof(fee_));
   _internal_metadata_.Clear();
 }
 
@@ -3129,6 +3179,20 @@ bool VerifyRequest::MergePartialFromCodedStream(
         break;
       }
 
+      // uint64 fee = 8;
+      case 8: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(64u /* 64 & 0xFF */)) {
+
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
+                 input, &fee_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -3196,6 +3260,11 @@ void VerifyRequest::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteUInt64(7, this->reward(), output);
   }
 
+  // uint64 fee = 8;
+  if (this->fee() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt64(8, this->fee(), output);
+  }
+
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         (::google::protobuf::internal::GetProto3PreserveUnknownsDefault()   ? _internal_metadata_.unknown_fields()   : _internal_metadata_.default_instance()), output);
@@ -3252,6 +3321,11 @@ void VerifyRequest::SerializeWithCachedSizes(
   // uint64 reward = 7;
   if (this->reward() != 0) {
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(7, this->reward(), target);
+  }
+
+  // uint64 fee = 8;
+  if (this->fee() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(8, this->fee(), target);
   }
 
   if ((_internal_metadata_.have_unknown_fields() &&  ::google::protobuf::internal::GetProto3PreserveUnknownsDefault())) {
@@ -3323,6 +3397,13 @@ size_t VerifyRequest::ByteSizeLong() const {
         this->reward());
   }
 
+  // uint64 fee = 8;
+  if (this->fee() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->fee());
+  }
+
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
   SetCachedSize(cached_size);
   return total_size;
@@ -3367,6 +3448,9 @@ void VerifyRequest::MergeFrom(const VerifyRequest& from) {
   if (from.reward() != 0) {
     set_reward(from.reward());
   }
+  if (from.fee() != 0) {
+    set_fee(from.fee());
+  }
 }
 
 void VerifyRequest::CopyFrom(const ::google::protobuf::Message& from) {
@@ -3402,6 +3486,7 @@ void VerifyRequest::InternalSwap(VerifyRequest* other) {
     GetArenaNoVirtual());
   swap(proof_, other->proof_);
   swap(reward_, other->reward_);
+  swap(fee_, other->fee_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
 }
 

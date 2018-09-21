@@ -26,7 +26,7 @@ type Tx struct {
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // n
 	LockTime int64  `json:"LockTime"`
-	Fee      uint64 `json:"Fee"`
+	Fee      uint64 `json:"Fee"` // Fee applies to first js desc
 
 	Descs    []*JoinSplitDesc `json:"Descs"`
 	JSPubKey []byte           `json:"JSPubKey,omitempty"` // 64 bytes
@@ -120,6 +120,7 @@ func CreateTx(
 	usableTx []*Tx,
 	nullifiers [][]byte,
 	commitments [][]byte,
+	fee uint64,
 ) (*Tx, error) {
 	fmt.Printf("List of all commitments before building tx:\n")
 	for _, cm := range commitments {
@@ -148,7 +149,7 @@ func CreateTx(
 	for _, note := range inputNotes {
 		sumInputValue += note.Value
 	}
-	if sumInputValue < value {
+	if sumInputValue < value+fee {
 		return nil, fmt.Errorf("Input value less than output value")
 	}
 
@@ -181,6 +182,19 @@ func CreateTx(
 
 			inputNotes = inputNotes[:len(inputNotes)-1]
 			fmt.Printf("Choose input note with value %v and cm %x\n", input.InputNote.Value, input.InputNote.Cm)
+		}
+
+		var feeApply uint64 // Zero fee for js descs other than the first one
+		if len(tx.Descs) == 0 {
+			// First js desc, applies fee
+			feeApply = fee
+			tx.Fee = fee
+		}
+		if len(tx.Descs) == 0 {
+			if inputValue < feeApply {
+				return nil, fmt.Errorf("Input note values too small to pay fee")
+			}
+			inputValue -= feeApply
 		}
 
 		// Add dummy input note if necessary
@@ -287,7 +301,7 @@ func CreateTx(
 
 		// Generate proof and sign tx
 		var reward uint64 // Zero reward for non-coinbase transaction
-		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward)
+		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply)
 		if err != nil {
 			return nil, err
 		}
@@ -313,10 +327,10 @@ func CreateTx(
 }
 
 // BuildNewJSDesc creates zk-proof for a js desc and add it to the transaction
-func (tx *Tx) BuildNewJSDesc(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward uint64) error {
+func (tx *Tx) BuildNewJSDesc(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward, fee uint64) error {
 	var seed, phi []byte
 	var outputR [][]byte
-	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rt, reward, seed, phi, outputR)
+	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rt, reward, fee, seed, phi, outputR)
 	if err != nil {
 		return err
 	}
@@ -508,7 +522,8 @@ func GenerateProofForGenesisTx(
 	tx := NewTxTemplate()
 	tx.JSPubKey = sigPubKey
 
-	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rt, reward, seed, phi, outputR)
+	var fee uint64 // Zero fee for genesis tx
+	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rt, reward, fee, seed, phi, outputR)
 	if err != nil {
 		return nil, err
 	}
