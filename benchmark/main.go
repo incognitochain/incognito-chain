@@ -13,6 +13,10 @@ var (
 	cfg *config
 )
 
+/**
+-r http://35.197.54.6:9334 -r http://35.199.184.12:9334 -r http://35.197.11.153:9334 -r http://35.233.184.32:9334 -r http://35.199.161.129:9334 -r http://104.196.241.178:9334 -r http://35.233.169.216:9334 -r http://35.233.193.14:9334 -r http://35.197.35.147:9334 -r http://35.230.45.84:9334 -r http://104.199.123.169:9334 -r http://35.233.225.60:9334 -r http://35.199.152.203:9334 -r http://35.233.195.5:9334 -r http://35.230.124.92:9334 -r http://35.233.215.171:9334 -r http://35.185.215.171:9334 -r http://35.230.96.189:9334 -r http://35.233.155.157:9334 -r http://35.197.116.165:9334
+ */
+
 func main() {
 	// Show version at startup.
 	log.Printf("Version %s\n", "1")
@@ -39,7 +43,7 @@ Strategy 1: send out 1k transactions per second by n transactions
  */
 func strategy1() {
 	totalSendOut := 0
-	stepSendout := 10
+	stepSendout := 100
 
 	if stepSendout > cfg.TotalTxs {
 		stepSendout = cfg.TotalTxs
@@ -130,7 +134,7 @@ func sendRandomTransaction(ah int) (bool, interface{}) {
 		endpoint = cfg.RPCAddress[randEndpointIdx]
 	}
 
-	err, tx := api.Get(cfg.RPCAddress, params)
+	err, tx := api.Get(endpoint, params)
 
 	//log.Println("CREATE transaction params response", tx)
 
@@ -143,7 +147,7 @@ func sendRandomTransaction(ah int) (bool, interface{}) {
 	//jsonValue2, _ := json.Marshal(sendParams)
 	//log.Println("Send transaction params", string(jsonValue2))
 
-	err, response := api.Get(cfg.RPCAddress, sendParams)
+	err, response := api.Get(endpoint, sendParams)
 
 	//log.Println("Send transaction params response", response)
 

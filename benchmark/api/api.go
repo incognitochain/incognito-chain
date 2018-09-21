@@ -9,9 +9,7 @@ import (
 
 func processRequest(method string, endpoint string, mapData map[string]interface{}) (error, map[string]interface{}) {
 	jsonValue, _ := json.Marshal(mapData)
-
 	request, err := http.NewRequest(method, endpoint, bytes.NewBuffer(jsonValue))
-
 	request.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
