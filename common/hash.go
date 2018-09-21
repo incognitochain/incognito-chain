@@ -1,9 +1,9 @@
 package common
 
 import (
-	"fmt"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 )
 
 const HashSize = 32
@@ -14,12 +14,12 @@ var ErrHashStrSize = fmt.Errorf("max hash string length is %v bytes", MaxHashStr
 
 type Hash [HashSize]byte
 
-func (hash Hash) MarshalJSON() ([]byte, error) {
+func (hash *Hash) MarshalJSON() ([]byte, error) {
 	hashString := hash.String()
 	return json.Marshal(hashString)
 }
 
-func (hash *Hash) UnmarshalJSON(data []byte) (error) {
+func (hash *Hash) UnmarshalJSON(data []byte) error {
 	hashString := ""
 	_ = json.Unmarshal(data, &hashString)
 	hash.Decode(hash, hashString)
@@ -29,19 +29,20 @@ func (hash *Hash) UnmarshalJSON(data []byte) (error) {
 /**
 String returns the Hash as the hexadecimal string of the byte-reversed
  hash.
- */
-func (hash Hash) String() string {
+*/
+func (hash *Hash) String() string {
+	tempHash := *hash
 	for i := 0; i < HashSize/2; i++ {
-		hash[i], hash[HashSize-1-i] = hash[HashSize-1-i], hash[i]
+		tempHash[i], tempHash[HashSize-1-i] = hash[HashSize-1-i], hash[i]
 	}
-	return hex.EncodeToString(hash[:])
+	return hex.EncodeToString(tempHash[:])
 }
 
 /**
 CloneBytes returns a copy of the bytes which represent the hash as a byte
 slice.
 NOTE: It is generally cheaper to just slice the hash directly thereby reusing the same bytes rather than calling this method.
- */
+*/
 func (hash *Hash) CloneBytes() []byte {
 	newHash := make([]byte, HashSize)
 	copy(newHash, hash[:])
@@ -51,7 +52,7 @@ func (hash *Hash) CloneBytes() []byte {
 
 /**
 SetBytes sets the bytes which represent the hash.  An error is returned if the number of bytes passed in is not HashSize.
- */
+*/
 func (hash *Hash) SetBytes(newHash []byte) error {
 	nhlen := len(newHash)
 	if nhlen != HashSize {
@@ -72,7 +73,7 @@ func (hash *Hash) BytesToHash(b []byte) Hash {
 
 /**
 IsEqual returns true if target is the same as hash.
- */
+*/
 func (hash *Hash) IsEqual(target *Hash) bool {
 	if &hash == nil && target == nil {
 		return true
@@ -85,7 +86,7 @@ func (hash *Hash) IsEqual(target *Hash) bool {
 
 /**
 NewHash returns a new Hash from a byte slice.  An error is returned if the number of bytes passed in is not HashSize.
- */
+*/
 func (hash Hash) NewHash(newHash []byte) (*Hash, error) {
 	err := hash.SetBytes(newHash)
 	if err != nil {
@@ -98,7 +99,7 @@ func (hash Hash) NewHash(newHash []byte) (*Hash, error) {
 // NewHashFromStr creates a Hash from a hash string.  The string should be
 // the hexadecimal string of a byte-reversed hash, but any missing characters
 // result in zero padding at the end of the Hash.
- */
+*/
 func (self Hash) NewHashFromStr(hash string) (*Hash, error) {
 	err := self.Decode(&self, hash)
 	if err != nil {
@@ -110,7 +111,7 @@ func (self Hash) NewHashFromStr(hash string) (*Hash, error) {
 /**
 // Decode decodes the byte-reversed hexadecimal string encoding of a Hash to a
 // destination.
- */
+*/
 func (self *Hash) Decode(dst *Hash, src string) error {
 	// Return error if hash string is too long.
 	if len(src) > MaxHashStringSize {

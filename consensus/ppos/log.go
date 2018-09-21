@@ -1,4 +1,4 @@
-package pos
+package ppos
 
 import "github.com/ninjadotorg/cash-prototype/common"
 

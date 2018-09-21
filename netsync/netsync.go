@@ -1,13 +1,10 @@
 package netsync
 
 import (
-	"encoding/base64"
 	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/ninjadotorg/cash-prototype/cashec"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
@@ -257,19 +254,7 @@ func (self *NetSync) HandleMessageBlockSig(msg *wire.MessageBlockSig) {
 }
 func (self *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
 	Logger.log.Info("Handling new message invalidblock")
-	decPubkey, err := base64.StdEncoding.DecodeString(msg.Validator)
-	if err != nil {
-		Logger.log.Error(err)
-		return
-	}
-	senderKey := cashec.KeyPair{
-		PublicKey: decPubkey,
-	}
-	msgByte, _ := msg.JsonSerialize()
-	isValid, _ := senderKey.Verify(msgByte, []byte(msg.ValidatorSig))
-	if isValid {
-		self.Config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.ChainID, msg.Reason)
-	}
+	self.Config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.ChainID, msg.Reason)
 }
 func (self *NetSync) HandleMessageRequestSign(msg *wire.MessageRequestSign) {
 	Logger.log.Info("Handling new message requestsign")

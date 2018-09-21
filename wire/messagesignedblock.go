@@ -12,24 +12,24 @@ type MessageBlockSig struct {
 	ValidatorSig string
 }
 
-func (self MessageBlockSig) MessageType() string {
+func (self *MessageBlockSig) MessageType() string {
 	return CmdBlockSig
 }
 
-func (self MessageBlockSig) MaxPayloadLength(pver int) int {
+func (self *MessageBlockSig) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self MessageBlockSig) JsonSerialize() ([]byte, error) {
+func (self *MessageBlockSig) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessageBlockSig) JsonDeserialize(jsonStr string) error {
+func (self *MessageBlockSig) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }
 
-func (self MessageBlockSig) SetSenderID(senderID peer.ID) error {
+func (self *MessageBlockSig) SetSenderID(senderID peer.ID) error {
 	return nil
 }

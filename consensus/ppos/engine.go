@@ -1,4 +1,4 @@
-package pos
+package ppos
 
 import (
 	"encoding/base64"
@@ -161,14 +161,6 @@ func New(Config *Config) *Engine {
 	}
 }
 
-func (self *Engine) StopSealer() {
-	if self.sealerStarted {
-		Logger.log.Info("Stopping Sealer...")
-		close(self.quitSealer)
-		close(self.validatorSigCh)
-		self.sealerStarted = false
-	}
-}
 func (self *Engine) StartSealer(sealerPrvKey string) {
 	if self.sealerStarted {
 		Logger.log.Error("Sealer already started")
@@ -180,8 +172,8 @@ func (self *Engine) StartSealer(sealerPrvKey string) {
 		Logger.log.Error("Can't import sealer's key!")
 		return
 	}
-	self.validatorSigCh = make(chan blockSig)
 	self.quitSealer = make(chan struct{})
+	self.validatorSigCh = make(chan blockSig)
 	self.sealerStarted = true
 	Logger.log.Info("Starting sealer with public key: " + base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey))
 
@@ -218,6 +210,15 @@ func (self *Engine) StartSealer(sealerPrvKey string) {
 	}()
 }
 
+func (self *Engine) StopSealer() {
+	if self.sealerStarted {
+		Logger.log.Info("Stopping Sealer...")
+		close(self.quitSealer)
+		close(self.validatorSigCh)
+		self.sealerStarted = false
+	}
+}
+
 func (self *Engine) createBlock() (*blockchain.Block, error) {
 	Logger.log.Info("Start creating block...")
 	myChainID, _ := self.getMyChain()
@@ -228,12 +229,12 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	newblock.Block.Header.ChainsHeight = self.validatedChainsHeight.Heights
 	newblock.Block.Header.ChainID = myChainID
 	newblock.Block.ChainLeader = base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey)
-	newblock.Block.Header.NextCommittee = self.upComingCommittee
+	newblock.Block.Header.NextCommittee = self.currentCommittee
 	sig, err := self.signData([]byte(newblock.Block.Hash().String()))
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
-	newblock.Block.Header.BlockCommitteeSigs = append([]string{}, sig)
+	newblock.Block.Header.BlockCommitteeSigs = []string{sig}
 	return newblock.Block, nil
 }
 
@@ -241,20 +242,24 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 	Logger.log.Info("Start finalizing block...")
 	finalBlock := block
 	validateSigList := make(chan []string)
-	timeout := time.After(5 * time.Second)
+	cancel := make(chan struct{})
+	defer func() {
+		close(cancel)
+		close(validateSigList)
+	}()
 
 	// Collect signatures of other validators
 	go func(blockHash string) {
 		var reslist []string
 		for {
 			select {
-			case <-timeout:
-				Logger.log.Critical("oopss... Can't finalize block")
+			case <-cancel:
 				return
 			case validatorSig := <-self.validatorSigCh:
 				Logger.log.Info("Validator's signature received", len(reslist))
+
 				if blockHash != validatorSig.BlockHash {
-					Logger.log.Critical("(o_O)!", blockHash, validatorSig.BlockHash)
+					Logger.log.Critical("(o_O)!", validatorSig, "this block", blockHash)
 					continue
 				}
 				decPubkey, _ := base64.StdEncoding.DecodeString(validatorSig.Validator)
@@ -288,7 +293,7 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 					Logger.log.Info("Request signaure from "+peerIDs[0], validator)
 					self.config.Server.PushMessageToPeer(reqSigMsg, peerIDs[0])
 				} else {
-					fmt.Println("Ahihi", validator)
+					fmt.Println("Validator's peer not found!", validator)
 				}
 			}(chainValidators[idx])
 		}
@@ -297,9 +302,9 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 	// Wait for signatures of other validators
 	select {
 	case resList := <-validateSigList:
-		fmt.Println(resList)
+		Logger.log.Info("Validator sigs: ", resList)
 		finalBlock.Header.BlockCommitteeSigs = append(finalBlock.Header.BlockCommitteeSigs, resList...)
-	case <-timeout:
+	case <-time.After(5 * time.Second):
 		return errCantFinalizeBlock
 	}
 
@@ -315,7 +320,6 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 	}
 	blockMsg.(*wire.MessageBlock).Block = *finalBlock
 	self.config.Server.PushMessageToAll(blockMsg)
-	fmt.Println(self.validatedChainsHeight.Heights)
 	return nil
 }
 
@@ -352,18 +356,34 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 	if isValidSignature == false {
 		return errSigWrongOrNotExits
 	}
-	// for _, s := range block.Header.BlockCommitteeSigs {
-	// 	if strings.Compare(s, block.ChainLeaderSig) != 0 {
-	// 		return errSigWrongOrNotExits
-	// 	}
-	// }
 
-	// 3. Check whether sealer of the block belongs to committee or not.
-	// for _, c := range self.currentCommittee {
-	// 	if strings.Compare(c, block.ChainLeader) != 0 {
-	// 		return errNotInCommittee
-	// 	}
-	// }
+	if self.config.BlockChain.BestState[block.Header.ChainID].Height == (block.Height - 1) {
+		notFullySync := false
+		for i := 0; i < TOTAL_VALIDATORS; i++ {
+			if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
+				notFullySync = true
+				getBlkMsg := &wire.MessageGetBlocks{
+					LastBlockHash: *self.config.BlockChain.BestState[i].BestBlock.Hash(),
+				}
+				peerIDs := self.config.Server.GetPeerIdsFromPublicKey(block.ChainLeader)
+				if len(peerIDs) != 0 {
+					Logger.log.Info("Send getblock to "+peerIDs[0], block.ChainLeader)
+					self.config.Server.PushMessageToPeer(getBlkMsg, peerIDs[0])
+				} else {
+					fmt.Println("Validator's peer not found!", block.ChainLeader)
+				}
+			}
+		}
+		if notFullySync {
+			timer := time.NewTimer(MAX_SYNC_CHAINS_TIME * time.Second)
+			<-timer.C
+			for i := 0; i < TOTAL_VALIDATORS; i++ {
+				if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
+					return errChainNotFullySynced
+				}
+			}
+		}
+	}
 
 	// 4. Validate committee signatures
 	// for i, sig := range block.Header.BlockCommitteeSigs {
@@ -372,7 +392,7 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 	// 		PublicKey: decPubkey,
 	// 	}
 	// 	decSig, _ := base64.StdEncoding.DecodeString(sig)
-	// 	isValidSignature, err := k.Verify(block.Hash().CloneBytes(), decSig)
+	// 	isValidSignature, err := k.Verify([]byte(block.Hash().String()), decSig)
 	// 	if err != nil {
 	// 		return err
 	// 	}
@@ -395,7 +415,7 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 	// validate steps: block size -> sealer is belong to committee -> validate sealer's sig -> check chainsHeight of this block -> validate each transaction
 
 	// 1. Check whether block size is greater than MAX_BLOCKSIZE or not.
-	blockBytes, err := json.Marshal(block)
+	blockBytes, err := json.Marshal(*block)
 	if err != nil {
 		return err
 	}
@@ -411,30 +431,45 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 	// }
 
 	// 3. Check signature of the block belongs to current committee or not.
-	decPubkey, _ := base64.StdEncoding.DecodeString(block.ChainLeader)
-	k := cashec.KeyPair{
-		PublicKey: decPubkey,
-	}
-	decSig, _ := base64.StdEncoding.DecodeString(block.Header.BlockCommitteeSigs[0])
-	isValidSignature, err := k.Verify([]byte(block.Hash().String()), decSig)
-	if err != nil {
-		return err
-	}
-	if isValidSignature == false {
-		return errSigWrongOrNotExits
-	}
+	// decPubkey, _ := base64.StdEncoding.DecodeString(block.ChainLeader)
+	// k := cashec.KeyPair{
+	// 	PublicKey: decPubkey,
+	// }
+	// decSig, _ := base64.StdEncoding.DecodeString(block.Header.BlockCommitteeSigs[0])
+	// isValidSignature, err := k.Verify([]byte(block.Hash().String()), decSig)
+	// if err != nil {
+	// 	return err
+	// }
+	// if isValidSignature == false {
+	// 	return errSigWrongOrNotExits
+	// }
 
 	// 4. Check chains height of the block.
-	for i := 0; i < TOTAL_VALIDATORS; i++ {
-		if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) {
+	if self.config.BlockChain.BestState[block.Header.ChainID].Height == (block.Height - 1) {
+		notFullySync := false
+		for i := 0; i < TOTAL_VALIDATORS; i++ {
+			if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
+				notFullySync = true
+				getBlkMsg := &wire.MessageGetBlocks{
+					LastBlockHash: *self.config.BlockChain.BestState[i].BestBlock.Hash(),
+				}
+				peerIDs := self.config.Server.GetPeerIdsFromPublicKey(block.ChainLeader)
+				if len(peerIDs) != 0 {
+					Logger.log.Info("Request signature from "+peerIDs[0], block.ChainLeader)
+					self.config.Server.PushMessageToPeer(getBlkMsg, peerIDs[0])
+				} else {
+					fmt.Println("Validator's peer not found!", block.ChainLeader)
+				}
+			}
+		}
+		if notFullySync {
 			timer := time.NewTimer(MAX_SYNC_CHAINS_TIME * time.Second)
 			<-timer.C
-			break
-		}
-	}
-	for i := 0; i < TOTAL_VALIDATORS; i++ {
-		if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) {
-			return errChainNotFullySynced
+			for i := 0; i < TOTAL_VALIDATORS; i++ {
+				if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
+					return errChainNotFullySynced
+				}
+			}
 		}
 	}
 
@@ -502,7 +537,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 			Logger.log.Error(err)
 			return
 		}
-
+		Logger.log.Critical("Invalid block msg", invalidBlockMsg)
 		err = self.config.Server.PushMessageToAll(invalidBlockMsg)
 		if err != nil {
 			Logger.log.Error(err)
@@ -513,10 +548,11 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 
 	sig, err := self.signData([]byte(block.Hash().String()))
 	if err != nil {
+		Logger.log.Critical("OHSHITT", err)
 		// ??? something went terribly wrong
 		return
 	}
-	blockSigMsg := &wire.MessageBlockSig{
+	blockSigMsg := wire.MessageBlockSig{
 		BlockHash:    block.Hash().String(),
 		Validator:    base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey),
 		ValidatorSig: sig,
@@ -525,7 +561,8 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 	if err != nil {
 		Logger.log.Error("ERRORR", msgBlock.SenderID, peerID, err)
 	}
-	err = self.config.Server.PushMessageToPeer(blockSigMsg, peerID)
+	Logger.log.Info(block.Hash().String(), blockSigMsg)
+	err = self.config.Server.PushMessageToPeer(&blockSigMsg, peerID)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -554,6 +591,7 @@ func (self *Engine) OnBlockSigReceived(blockHash string, validator string, sig s
 
 func (self *Engine) OnInvalidBlockReceived(blockHash string, chainID byte, reason string) {
 	// leave empty for now
+	Logger.log.Error(blockHash, chainID, reason)
 	return
 }
 
@@ -606,10 +644,7 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	// save index of block
 	self.config.BlockChain.StoreBlockIndex(block)
 	self.validatedChainsHeight.Lock()
-	self.knownChainsHeight.Lock()
 	self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
-	self.knownChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
-	self.knownChainsHeight.Unlock()
 	self.validatedChainsHeight.Unlock()
 }
 

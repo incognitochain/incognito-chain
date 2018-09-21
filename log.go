@@ -10,7 +10,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/connmanager"
-	"github.com/ninjadotorg/cash-prototype/consensus/pos"
+	"github.com/ninjadotorg/cash-prototype/consensus/ppos"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/netsync"
 	"github.com/ninjadotorg/cash-prototype/peer"
@@ -59,7 +59,7 @@ func init() {
 	database.Logger.Init(dbLogger)
 	wallet.Logger.Init(walletLogger)
 	blockchain.Logger.Init(blockchainLogger)
-	pos.Logger.Init(consensusLogger)
+	ppos.Logger.Init(consensusLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.

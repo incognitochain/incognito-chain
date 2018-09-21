@@ -1,4 +1,4 @@
-package pos
+package ppos
 
 const (
 	MAX_BLOCKSIZE           = 1000000 //byte

@@ -11,6 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/consensus/ppos"
+
 	"github.com/ninjadotorg/cash-prototype/cashec"
 
 	"crypto/tls"
@@ -22,7 +24,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/connmanager"
-	"github.com/ninjadotorg/cash-prototype/consensus/pos"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/ninjadotorg/cash-prototype/netsync"
@@ -62,7 +63,7 @@ type Server struct {
 	AddrManager *addrmanager.AddrManager
 	Wallet      *wallet.Wallet
 
-	ConsensusEngine *pos.Engine
+	ConsensusEngine *ppos.Engine
 }
 
 // setupRPCListeners returns a slice of listeners that are configured for use
@@ -157,7 +158,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	// 	Server:                 self,
 	// })
 
-	self.ConsensusEngine = pos.New(&pos.Config{
+	self.ConsensusEngine = ppos.New(&ppos.Config{
 		ChainParams: self.chainParams,
 		BlockChain:  self.BlockChain,
 		MemPool:     self.MemPool,
@@ -514,7 +515,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnGetAddr:   self.OnGetAddr,
 			OnAddr:      self.OnAddr,
 
-			//PoS
+			//ppos
 			OnRequestSign:   self.OnRequestSign,
 			OnInvalidBlock:  self.OnInvalidBlock,
 			OnBlockSig:      self.OnBlockSig,
@@ -727,7 +728,7 @@ func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageRequestSign
 }
 
 func (self *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {
-	Logger.log.Info("Receive a invalidblock")
+	Logger.log.Info("Receive a invalidblock", msg)
 	var txProcessed chan struct{}
 	self.NetSync.QueueMessage(nil, msg, txProcessed)
 }

@@ -14,24 +14,24 @@ type MessageInvalidBlock struct {
 	ValidatorSig string
 }
 
-func (self MessageInvalidBlock) MessageType() string {
+func (self *MessageInvalidBlock) MessageType() string {
 	return CmdInvalidBlock
 }
 
-func (self MessageInvalidBlock) MaxPayloadLength(pver int) int {
+func (self *MessageInvalidBlock) MaxPayloadLength(pver int) int {
 	return MaxBlockPayload
 }
 
-func (self MessageInvalidBlock) JsonSerialize() ([]byte, error) {
+func (self *MessageInvalidBlock) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessageInvalidBlock) JsonDeserialize(jsonStr string) error {
+func (self *MessageInvalidBlock) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }
 
-func (self MessageInvalidBlock) SetSenderID(senderID peer.ID) error {
+func (self *MessageInvalidBlock) SetSenderID(senderID peer.ID) error {
 	return nil
 }
