@@ -119,7 +119,7 @@ type MessageListeners struct {
 // shutdown)
 type outMsg struct {
 	msg      wire.Message
-	doneChan *chan<- struct{}
+	doneChan chan<- struct{}
 	//encoding wire.MessageEncoding
 }
 
@@ -429,7 +429,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 // encoding/decoding blocks and transactions.
 //
 // This function is safe for concurrent access.
-func (self *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan *chan<- struct{}) {
+func (self *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
 	// self.peerConnsMutex.Lock()
 	for _, peerConnection := range self.PeerConns {
 		// Logger.log.Info("PEER %s QueueMessageWithEncoding START", peerConnection.PeerId)

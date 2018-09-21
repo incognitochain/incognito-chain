@@ -316,7 +316,7 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 		return
 	}
 	var dc chan<- struct{}
-	peerConn.QueueMessageWithEncoding(msg, &dc)
+	peerConn.QueueMessageWithEncoding(msg, dc)
 }
 
 // peerDoneHandler handles peer disconnects by notifiying the server that it's
@@ -602,7 +602,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	msgV.(*wire.MessageVerAck).Valid = valid
 
 	var dc chan<- struct{}
-	peerConn.QueueMessageWithEncoding(msgV, &dc)
+	peerConn.QueueMessageWithEncoding(msgV, dc)
 
 	//	push version message again
 	if !peerConn.VerAckReceived() {
@@ -626,7 +626,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 			return
 		}
 		var dc1 chan<- struct{}
-		peerConn.QueueMessageWithEncoding(msg, &dc1)
+		peerConn.QueueMessageWithEncoding(msg, dc1)
 	}
 }
 
@@ -650,7 +650,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 			return
 		}
 		var dc chan<- struct{}
-		peerConn.QueueMessageWithEncoding(msgS, &dc)
+		peerConn.QueueMessageWithEncoding(msgS, dc)
 
 		//	broadcast addr to all peer
 		for _, listen := range self.ConnManager.ListeningPeers {
@@ -669,7 +669,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 			msgS.(*wire.MessageAddr).RawPeers = rawPeers
 			var doneChan chan<- struct{}
 			for _, _peerConn := range listen.PeerConns {
-				go _peerConn.QueueMessageWithEncoding(msgS, &doneChan)
+				go _peerConn.QueueMessageWithEncoding(msgS, doneChan)
 			}
 		}
 	} else {
@@ -704,7 +704,7 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 	}
 	msgS.(*wire.MessageAddr).RawPeers = rawPeers
 	var dc chan<- struct{}
-	peerConn.QueueMessageWithEncoding(msgS, &dc)
+	peerConn.QueueMessageWithEncoding(msgS, dc)
 }
 
 func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
@@ -785,7 +785,7 @@ func (self *Server) PushMessageToAll(msg wire.Message) error {
 		Logger.log.Info("Pushed 1")
 		msg.SetSenderID(self.ConnManager.Config.ListenerPeers[index].PeerId)
 		Logger.log.Info("Pushed 2")
-		self.ConnManager.Config.ListenerPeers[index].QueueMessageWithEncoding(msg, &dc)
+		self.ConnManager.Config.ListenerPeers[index].QueueMessageWithEncoding(msg, dc)
 		Logger.log.Info("Pushed 3")
 	}
 	return nil
@@ -801,7 +801,7 @@ func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 		peerConn, exist := self.ConnManager.Config.ListenerPeers[index].PeerConns[peerId.String()]
 		if exist {
 			msg.SetSenderID(self.ConnManager.Config.ListenerPeers[index].PeerId)
-			peerConn.QueueMessageWithEncoding(msg, &dc)
+			peerConn.QueueMessageWithEncoding(msg, dc)
 			Logger.log.Info("Pushed")
 			return nil
 		} else {
@@ -859,7 +859,7 @@ func (self *Server) GetChainState() error {
 		}
 		msg.SetSenderID(listener.PeerId)
 		Logger.log.Info("Send a GetChainState ", msg)
-		listener.QueueMessageWithEncoding(msg, &dc)
+		listener.QueueMessageWithEncoding(msg, dc)
 	}
 	return nil
 }
