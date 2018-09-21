@@ -304,7 +304,7 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 	case resList := <-validateSigList:
 		Logger.log.Info("Validator sigs: ", resList)
 		finalBlock.Header.BlockCommitteeSigs = append(finalBlock.Header.BlockCommitteeSigs, resList...)
-	case <-time.After(10 * time.Second):
+	case <-time.After(30 * time.Second):
 		return errCantFinalizeBlock
 	}
 
