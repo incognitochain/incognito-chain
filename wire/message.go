@@ -21,6 +21,7 @@ const (
 	CmdVerack    = "verack"
 	CmdGetAddr   = "getaddr"
 	CmdAddr      = "addr"
+	CmdPing      = "ping"
 
 	// POS Cmd
 	CmdGetBlockHeader = "getheader"
@@ -88,6 +89,9 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdAddr:
 		msg = &MessageAddr{}
 		break
+	case CmdPing:
+		msg = &MessagePing{}
+		break
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}
@@ -123,6 +127,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdGetAddr, nil
 	case reflect.TypeOf(&MessageAddr{}):
 		return CmdAddr, nil
+	case reflect.TypeOf(&MessagePing{}):
+		return CmdPing, nil
 	default:
 		return "", fmt.Errorf("unhandled this message type [%s]", msgType)
 	}

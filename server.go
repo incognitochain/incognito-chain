@@ -192,7 +192,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		return err
 	}
 
-	var peers []peer.Peer
+	var peers []*peer.Peer
 	if !cfg.DisableListen {
 		var err error
 		peers, err = self.InitListenerPeers(self.AddrManager, listenAddrs)
@@ -464,7 +464,7 @@ func (self Server) Start() {
 // initListeners initializes the configured net listeners and adds any bound
 // addresses to the address manager. Returns the listeners and a NAT interface,
 // which is non-nil if UPnP is in use.
-func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string) ([]peer.Peer, error) {
+func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string) ([]*peer.Peer, error) {
 	netAddrs, err := common.ParseListeners(listenAddrs, "ip")
 	if err != nil {
 		return nil, err
@@ -473,7 +473,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 	kc := KeyCache{}
 	kc.Load(filepath.Join(cfg.DataDir, "kc.json"))
 
-	peers := make([]peer.Peer, 0, len(netAddrs))
+	peers := make([]*peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
 		seed := int64(0)
 		seedC, _ := strconv.ParseInt(os.Getenv("NODE_SEED"), 10, 64)
@@ -499,7 +499,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 		if err != nil {
 			return nil, err
 		}
-		peers = append(peers, *peer)
+		peers = append(peers, peer)
 	}
 
 	kc.Save()
@@ -596,32 +596,30 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 
 	msgV.(*wire.MessageVerAck).Valid = valid
 
-	var dc chan<- struct{}
-	peerConn.QueueMessageWithEncoding(msgV, dc)
+	peerConn.QueueMessageWithEncoding(msgV, nil)
 
 	//	push version message again
 	if !peerConn.VerAckReceived() {
-		msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
-		msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
-		msg.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.ListeningAddress
-		msg.(*wire.MessageVersion).RawLocalAddress = peerConn.ListenerPeer.RawAddress
-		msg.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerId
-		msg.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
-		msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
-		msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerId
-		msg.(*wire.MessageVersion).LastBlock = 0
-		msg.(*wire.MessageVersion).ProtocolVersion = 1
+		msgS, err := wire.MakeEmptyMessage(wire.CmdVersion)
+		msgS.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
+		msgS.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.ListeningAddress
+		msgS.(*wire.MessageVersion).RawLocalAddress = peerConn.ListenerPeer.RawAddress
+		msgS.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerId
+		msgS.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
+		msgS.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
+		msgS.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerId
+		msgS.(*wire.MessageVersion).LastBlock = 0
+		msgS.(*wire.MessageVersion).ProtocolVersion = 1
 		// Validate Public Key from SealerPrvKey
 		if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
 			keyPair := &cashec.KeyPair{}
 			keyPair.Import([]byte(peerConn.ListenerPeer.Config.SealerPrvKey))
-			msg.(*wire.MessageVersion).PublicKey = string(keyPair.PublicKey)
+			msgS.(*wire.MessageVersion).PublicKey = string(keyPair.PublicKey)
 		}
 		if err != nil {
 			return
 		}
-		dc1 := make(chan struct{})
-		peerConn.QueueMessageWithEncoding(msg, dc1)
+		peerConn.QueueMessageWithEncoding(msgS, nil)
 	}
 }
 
@@ -670,14 +668,14 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 
 		// send message get blocks
 
-		msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
-		msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.BlockChain.BestState.BestBlockHash
-		println(peerConn.ListenerPeer.PeerId.String())
-		msgNew.(*wire.MessageGetBlocks).SenderID = peerConn.ListenerPeer.PeerId.String()
-		if err != nil {
-			return
-		}
-		peerConn.QueueMessageWithEncoding(msgNew, nil)
+		//msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
+		//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.BlockChain.BestState.BestBlockHash
+		//println(peerConn.ListenerPeer.PeerId.String())
+		//msgNew.(*wire.MessageGetBlocks).SenderID = peerConn.ListenerPeer.PeerId.String()
+		//if err != nil {
+		//	return
+		//}
+		//peerConn.QueueMessageWithEncoding(msgNew, nil)
 	} else {
 		peerConn.VerValid = true
 	}
