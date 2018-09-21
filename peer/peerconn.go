@@ -53,11 +53,11 @@ Handle all in message
 */
 func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	for {
-		Logger.log.Infof("PEER %s Reading stream", self.PeerId.String())
+		Logger.log.Infof("InMessageHandler PEER %s Reading stream", self.PeerId.String())
 		str, err := rw.ReadString('\n')
 		if err != nil {
 			Logger.log.Error(err)
-			Logger.log.Infof("PEER %s quit IN message handler", self.PeerId)
+			Logger.log.Infof("InMessageHandler PEER %s quit IN message handler", self.PeerId)
 
 			close(self.quit)
 
@@ -71,17 +71,17 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			jsonDecodeString, _ := hex.DecodeString(str)
 			messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 
-			Logger.log.Infof("Received message: %s \n", jsonDecodeString)
+			Logger.log.Infof("InMessageHandler PEER %s Received message: %s \n", self.PeerId, jsonDecodeString)
 
 			commandInHeader := messageHeader[:12]
 			commandInHeader = bytes.Trim(messageHeader, "\x00")
-			Logger.log.Infof("Message Type - %s %s", string(commandInHeader), self.PeerId)
+			Logger.log.Infof("InMessageHandler PEER %s Message Type - %s", self.PeerId, string(commandInHeader))
 			commandType := string(messageHeader[:len(commandInHeader)])
 			var message, err = wire.MakeEmptyMessage(string(commandType))
 
 			// Parse Message body
 			messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
-			Logger.log.Infof("Message Body - %s %s", string(messageBody), self.PeerId)
+			Logger.log.Infof("InMessageHandler PEER %s Message Body - %s", self.PeerId, string(messageBody))
 			if err != nil {
 				Logger.log.Error(err)
 				continue
@@ -144,8 +144,11 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					self.Config.MessageListeners.OnAddr(self, message.(*wire.MessageAddr))
 				}
 				self.flagMutex.Unlock()
+			case reflect.TypeOf(&wire.MessagePing{}):
+				self.flagMutex.Lock()
+				self.flagMutex.Unlock()
 			default:
-				Logger.log.Warnf("Received unhandled message of type %v "+
+				Logger.log.Warnf("InMessageHandler Received unhandled message of type %v "+
 					"from %v", realType, self)
 			}
 		}
@@ -177,7 +180,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				messageByte = append(messageByte, header...)
 				message := hex.EncodeToString(messageByte)
 				message += "\n"
-				Logger.log.Infof("Send a message %s %s: %s", self.PeerId.String(), outMsg.msg.MessageType(), string(messageByte))
+				Logger.log.Infof("OutMessageHandler PEER %s Send a message %s: %s", self.PeerId.String(), outMsg.msg.MessageType(), string(messageByte))
 				rw.Writer.WriteString(message)
 				rw.Writer.Flush()
 
@@ -185,7 +188,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 
 			}
 		case <-self.quit:
-			Logger.log.Infof("PEER %s quit OUT message handler", self.PeerId)
+			Logger.log.Infof("OutMessageHandler PEER %s quit OUT message handler", self.PeerId)
 
 			close(self.disconnect)
 
@@ -205,7 +208,10 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 //
 // This function is safe for concurrent access.
 func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
-	self.sendMessageQueue <- outMsg{msg: msg, doneChan: doneChan}
+	if self.state == ConnEstablished {
+		Logger.log.Infof("QueueMessageWithEncoding PEER %s", self.PeerId)
+		self.sendMessageQueue <- outMsg{msg: msg, doneChan: doneChan}
+	}
 }
 
 func (p *PeerConn) VerAckReceived() bool {
