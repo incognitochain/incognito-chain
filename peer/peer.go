@@ -63,9 +63,9 @@ type Peer struct {
 	MaxOutbound int
 	MaxInbound  int
 
-	PeerConns         map[peer.ID]*PeerConn
+	PeerConns         map[string]*PeerConn
 	peerConnsMutex    sync.Mutex
-	PendingPeers      map[peer.ID]*Peer
+	PendingPeers      map[string]*Peer
 	pendingPeersMutex sync.Mutex
 
 	quit           chan struct{}
@@ -210,27 +210,27 @@ func (self *Peer) Start() error {
 
 func (self *Peer) ConnPending(peer *Peer) {
 	self.pendingPeersMutex.Lock()
-	self.PendingPeers[peer.PeerId] = peer
+	self.PendingPeers[peer.PeerId.String()] = peer
 	self.pendingPeersMutex.Unlock()
 }
 
 func (self *Peer) ConnEstablished(peer *Peer) {
 	self.pendingPeersMutex.Lock()
-	_, ok := self.PendingPeers[peer.PeerId]
+	_, ok := self.PendingPeers[peer.PeerId.String()]
 	if ok {
-		delete(self.PendingPeers, peer.PeerId)
+		delete(self.PendingPeers, peer.PeerId.String())
 	}
 	self.pendingPeersMutex.Unlock()
 }
 
 func (self *Peer) ConnCanceled(peer *Peer) {
-	_, ok := self.PeerConns[peer.PeerId]
+	_, ok := self.PeerConns[peer.PeerId.String()]
 	if ok {
-		delete(self.PeerConns, peer.PeerId)
+		delete(self.PeerConns, peer.PeerId.String())
 	}
 	Logger.log.Info("sdgdfgdfgdfg", self.PendingPeers, peer)
 	self.pendingPeersMutex.Lock()
-	self.PendingPeers[peer.PeerId] = peer
+	self.PendingPeers[peer.PeerId.String()] = peer
 	self.pendingPeersMutex.Unlock()
 }
 
@@ -262,7 +262,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER ID - %s \n", peer.PeerId.String())
 
 	self.peerConnsMutex.Lock()
-	_peerConn, ok := self.PeerConns[peer.PeerId]
+	_peerConn, ok := self.PeerConns[peer.PeerId.String()]
 	self.peerConnsMutex.Unlock()
 	if ok && _peerConn.State() == ConnEstablished {
 		Logger.log.Infof("Checked Existed PEER ID - %s", peer.PeerId.String())
@@ -311,7 +311,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	}
 
 	self.peerConnsMutex.Lock()
-	self.PeerConns[peerConn.PeerId] = &peerConn
+	self.PeerConns[peerConn.PeerId.String()] = &peerConn
 	self.peerConnsMutex.Unlock()
 
 	go peerConn.InMessageHandler(rw)
@@ -359,6 +359,13 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	remotePeerId := stream.Conn().RemotePeer()
 	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID %s", self.Host.ID().String(), remotePeerId.String())
 
+	_peerConn, ok := self.PeerConns[remotePeerId.String()]
+	if ok && _peerConn.State() == ConnEstablished {
+		Logger.log.Infof("Received a new stream existed PEER ID - %s", remotePeerId)
+
+		return
+	}
+
 	// TODO this code make EOF for libp2p
 	//if !atomic.CompareAndSwapInt32(&self.connected, 0, 1) {
 	//	return
@@ -385,7 +392,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	}
 
 	self.peerConnsMutex.Lock()
-	self.PeerConns[peerConn.PeerId] = &peerConn
+	self.PeerConns[peerConn.PeerId.String()] = &peerConn
 	self.peerConnsMutex.Unlock()
 
 	go peerConn.InMessageHandler(rw)
@@ -460,14 +467,16 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 
 	if peerConn.IsOutbound {
 		if peerConn.State() != ConnCanceled {
+
+			peerConn.updateState(ConnPending)
 			go self.retryPeerConnection(peerConn)
 		}
 	} else {
 		peerConn.updateState(ConnCanceled)
 		self.peerConnsMutex.Lock()
-		_, ok := self.PeerConns[peerConn.PeerId]
+		_, ok := self.PeerConns[peerConn.PeerId.String()]
 		if ok {
-			delete(self.PeerConns, peerConn.PeerId)
+			delete(self.PeerConns, peerConn.PeerId.String())
 		}
 		self.peerConnsMutex.Unlock()
 	}

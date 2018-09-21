@@ -487,8 +487,8 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 			Seed:             seed,
 			ListeningAddress: addr,
 			Config:           *self.NewPeerConfig(),
-			PeerConns:        make(map[peer2.ID]*peer.PeerConn),
-			PendingPeers:     make(map[peer2.ID]*peer.Peer),
+			PeerConns:        make(map[string]*peer.PeerConn),
+			PendingPeers:     make(map[string]*peer.Peer),
 		}.NewPeer()
 		if err != nil {
 			return nil, err
@@ -798,7 +798,7 @@ func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 	Logger.log.Info("Push msg to ", peerId)
 	var dc chan<- struct{}
 	for index := 0; index < len(self.ConnManager.Config.ListenerPeers); index++ {
-		peerConn, exist := self.ConnManager.Config.ListenerPeers[index].PeerConns[peerId]
+		peerConn, exist := self.ConnManager.Config.ListenerPeers[index].PeerConns[peerId.String()]
 		if exist {
 			msg.SetSenderID(self.ConnManager.Config.ListenerPeers[index].PeerId)
 			peerConn.QueueMessageWithEncoding(msg, dc)
