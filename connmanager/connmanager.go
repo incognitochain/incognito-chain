@@ -491,6 +491,11 @@ listen:
 							self.DiscoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
 							//Logger.log.Info("Start connect to peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
 							go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
+						} else {
+							peerIds := self.getPeerIdsFromPublicKey(rawPeer.PublicKey)
+							if len(peerIds) == 0 {
+								go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
+							}
 						}
 					}
 				}
@@ -498,6 +503,30 @@ listen:
 		}
 		time.Sleep(time.Second * 10)
 	}
+}
+
+func (self *ConnManager) getPeerIdsFromPublicKey(pubKey string) []libpeer.ID {
+	result := []libpeer.ID{}
+
+	for _, listener := range self.Config.ListenerPeers {
+		for _, peerConn := range listener.PeerConns {
+			// Logger.log.Info("Test PeerConn", peerConn.Peer.PublicKey)
+			if peerConn.Peer.PublicKey == pubKey {
+				exist := false
+				for _, item := range result {
+					if item.Pretty() == peerConn.Peer.PeerID.Pretty() {
+						exist = true
+					}
+				}
+
+				if !exist {
+					result = append(result, peerConn.Peer.PeerID)
+				}
+			}
+		}
+	}
+
+	return result
 }
 
 func (p *ConnManager) GetPeerConnsByPeerId(peerId libpeer.ID) []*peer.PeerConn {
