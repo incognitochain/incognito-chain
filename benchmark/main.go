@@ -1,13 +1,13 @@
 package main
 
 import (
-	"github.com/ninjadotorg/cash-prototype/benchmark/api"
 	"log"
 	"math/rand"
 	"strconv"
 	"time"
-)
 
+	"github.com/ninjadotorg/cash-prototype/benchmark/api"
+)
 
 var (
 	cfg *config
@@ -36,7 +36,7 @@ func main() {
 
 /**
 Strategy 1: send out 1k transactions per second by n transactions
- */
+*/
 func strategy1() {
 	totalSendOut := 0
 	stepSendout := 10
@@ -52,7 +52,7 @@ func strategy1() {
 		}
 
 		for i := 0; i < stepSendout; i++ {
-			go func(){
+			go func() {
 				isSuccess, hash := sendRandomTransaction(-1)
 				if isSuccess {
 					log.Printf("Send a transaction success: %s", hash)
@@ -69,7 +69,7 @@ func strategy1() {
 
 /**
 Strategy 2: send out n transactions
- */
+*/
 func strategy2() {
 	totalSendOut := 0
 
@@ -86,7 +86,7 @@ func strategy2() {
 
 /**
 Strategy 3: send out n transactions to 1 node only
- */
+*/
 func strategy3() {
 	totalSendOut := 0
 
@@ -103,7 +103,7 @@ func strategy3() {
 
 func randomInt(min, max int) int {
 	rand.Seed(time.Now().UnixNano())
-	return rand.Intn(max - min) + min
+	return rand.Intn(max-min) + min
 }
 
 func sendRandomTransaction(ah int) (bool, interface{}) {
@@ -113,9 +113,9 @@ func sendRandomTransaction(ah int) (bool, interface{}) {
 		addressHash = randomInt(0, 255)
 	}
 
-	txId := strconv.Itoa(randomInt(10000000000, 20000000000)) // random hash
+	txId := strconv.Itoa(randomInt(10000000000, 20000000000))     // random hash
 	pkScript := strconv.Itoa(randomInt(20000000000, 30000000000)) // random hash
-	value := randomInt(1, 10000000) // random number 1 - 10000000
+	value := randomInt(1, 10000000)                               // random number 1 - 10000000
 
 	params := buildCreateParams(addressHash, txId, pkScript, value, id)
 	//jsonValue, _ := json.Marshal(params)
@@ -126,11 +126,11 @@ func sendRandomTransaction(ah int) (bool, interface{}) {
 	if len(cfg.RPCAddress) == 1 {
 		endpoint = cfg.RPCAddress[0]
 	} else {
-		randEndpointIdx := randomInt(0, len(cfg.RPCAddress) - 1)
+		randEndpointIdx := randomInt(0, len(cfg.RPCAddress)-1)
 		endpoint = cfg.RPCAddress[randEndpointIdx]
 	}
 
-	err, tx := api.Get(cfg.RPCAddress, params)
+	err, tx := api.Get(endpoint, params)
 
 	//log.Println("CREATE transaction params response", tx)
 
@@ -143,7 +143,7 @@ func sendRandomTransaction(ah int) (bool, interface{}) {
 	//jsonValue2, _ := json.Marshal(sendParams)
 	//log.Println("Send transaction params", string(jsonValue2))
 
-	err, response := api.Get(cfg.RPCAddress, sendParams)
+	err, response := api.Get(endpoint, sendParams)
 
 	//log.Println("Send transaction params response", response)
 
@@ -170,8 +170,8 @@ func buildCreateParams(addressHash int, txId string, pkScript string, value int,
 	params = append(params, inTxs)
 	outTxs := []map[string]interface{}{}
 	outTxs = append(outTxs, map[string]interface{}{
-		"pkScript": pkScript,
-		"value": value,
+		"pkScript":  pkScript,
+		"value":     value,
 		"txOutType": "TXOUT_COIN",
 	})
 	params = append(params, outTxs)

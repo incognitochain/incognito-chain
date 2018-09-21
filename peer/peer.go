@@ -358,8 +358,9 @@ func (self *Peer) HandleStream(stream net.Stream) {
 
 	remotePeerID := stream.Conn().RemotePeer()
 	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID %s", self.Host.ID().String(), remotePeerID.String())
-
+	self.peerConnsMutex.Lock()
 	_peerConn, ok := self.PeerConns[remotePeerID.String()]
+	self.peerConnsMutex.Unlock()
 	if ok && _peerConn.State() == ConnEstablished {
 		Logger.log.Infof("Received a new stream existed PEER ID - %s", remotePeerID)
 

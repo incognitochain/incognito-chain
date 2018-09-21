@@ -30,7 +30,7 @@ type BestState struct {
 
 func (self *BestState) Init(block *Block, blocksize, blockweight, numTxts, totalTxns uint64, medianTime int64) {
 	self.BestBlock = block
-	self.BestBlockHash = *self.BestBlock.Hash()
+	self.BestBlockHash = *block.Hash()
 
 	self.TotalTxns = totalTxns
 	self.NumTxns = numTxts

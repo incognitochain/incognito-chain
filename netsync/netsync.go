@@ -235,7 +235,6 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 				blockMsg.(*wire.MessageBlock).Block = *block
 				peerID, _ := peer2.IDFromString(msg.SenderID)
 				self.Config.Server.PushMessageToPeer(blockMsg, peerID)
-				time.Sleep(time.Second * 3)
 			}
 		}
 	}
