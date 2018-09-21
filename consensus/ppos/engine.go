@@ -304,7 +304,7 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 	case resList := <-validateSigList:
 		Logger.log.Info("Validator sigs: ", resList)
 		finalBlock.Header.BlockCommitteeSigs = append(finalBlock.Header.BlockCommitteeSigs, resList...)
-	case <-time.After(5 * time.Second):
+	case <-time.After(10 * time.Second):
 		return errCantFinalizeBlock
 	}
 
@@ -357,13 +357,13 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 		return errSigWrongOrNotExits
 	}
 
-	if self.config.BlockChain.BestState[block.Header.ChainID].Height == (block.Height - 1) {
+	if self.validatedChainsHeight.Heights[block.Header.ChainID] == (int(block.Height) - 1) {
 		notFullySync := false
 		for i := 0; i < TOTAL_VALIDATORS; i++ {
-			if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
+			if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
 				notFullySync = true
 				getBlkMsg := &wire.MessageGetBlocks{
-					LastBlockHash: *self.config.BlockChain.BestState[i].BestBlock.Hash(),
+					LastBlockHash: self.config.BlockChain.BestState[i].BestBlockHash,
 				}
 				peerIDs := self.config.Server.GetPeerIdsFromPublicKey(block.ChainLeader)
 				if len(peerIDs) != 0 {
@@ -445,17 +445,17 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 	// }
 
 	// 4. Check chains height of the block.
-	if self.config.BlockChain.BestState[block.Header.ChainID].Height == (block.Height - 1) {
+	if self.validatedChainsHeight.Heights[block.Header.ChainID] == (int(block.Height) - 1) {
 		notFullySync := false
 		for i := 0; i < TOTAL_VALIDATORS; i++ {
-			if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
+			if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
 				notFullySync = true
 				getBlkMsg := &wire.MessageGetBlocks{
-					LastBlockHash: *self.config.BlockChain.BestState[i].BestBlock.Hash(),
+					LastBlockHash: self.config.BlockChain.BestState[i].BestBlockHash,
 				}
 				peerIDs := self.config.Server.GetPeerIdsFromPublicKey(block.ChainLeader)
 				if len(peerIDs) != 0 {
-					Logger.log.Info("Request signature from "+peerIDs[0], block.ChainLeader)
+					Logger.log.Info("Send getblock to "+peerIDs[0], block.ChainLeader)
 					self.config.Server.PushMessageToPeer(getBlkMsg, peerIDs[0])
 				} else {
 					fmt.Println("Validator's peer not found!", block.ChainLeader)
@@ -570,12 +570,18 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 }
 
 func (self *Engine) OnBlockReceived(block *blockchain.Block) {
-	err := self.validateBlock(block)
-	if err != nil {
-		Logger.log.Error(err)
-		return
+	if self.config.BlockChain.BestState[block.Header.ChainID].Height < block.Height {
+		if _, _, err := self.config.BlockChain.GetBlockHeightByBlockHash(block.Hash()); err != nil {
+			err := self.validateBlock(block)
+			if err != nil {
+				Logger.log.Error(err)
+				return
+			}
+			self.UpdateChain(block)
+		}
+	} else {
+		//save block to cache
 	}
-	self.UpdateChain(block)
 	return
 }
 
@@ -603,6 +609,15 @@ func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
 			if v < int(chainInfo["ChainsHeight"].([]interface{})[i].(float64)) {
 				self.knownChainsHeight.Heights[i] = int(chainInfo["ChainsHeight"].([]interface{})[i].(float64))
 
+				getBlkMsg := &wire.MessageGetBlocks{
+					LastBlockHash: self.config.BlockChain.BestState[i].BestBlockHash,
+				}
+				Logger.log.Info("Send getblock to " + msg.SenderID)
+				peerID, err := peer2.IDB58Decode(msg.SenderID)
+				if err != nil {
+					continue
+				}
+				self.config.Server.PushMessageToPeer(getBlkMsg, peerID)
 			} else {
 
 			}
