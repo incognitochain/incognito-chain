@@ -138,7 +138,7 @@ func (self *Block) Hash() *common.Hash {
 	//	return self.blockHash
 	//}
 	record := strconv.Itoa(self.Header.Version) + self.Header.MerkleRoot.String() + self.Header.PrevBlockHash.String() + strconv.Itoa(self.Header.Nonce) + strconv.Itoa(len(self.Transactions)) + string(self.Header.ChainID) + fmt.Sprint(self.Header.ChainsHeight) + strings.Join(self.Header.NextCommittee, "")
-	hash := common.HashH([]byte(record))
+	hash := common.DoubleHashH([]byte(record))
 	//self.blockHash = &hash
 	//return self.blockHash
 	return &hash
