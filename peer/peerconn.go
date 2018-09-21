@@ -236,7 +236,9 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 //
 // This function is safe for concurrent access.
 func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
-	self.sendMessageQueue <- outMsg{msg: msg, doneChan: doneChan}
+	if self.state == ConnEstablished {
+		self.sendMessageQueue <- outMsg{msg: msg, doneChan: doneChan}
+	}
 }
 
 func (p *PeerConn) VerAckReceived() bool {
