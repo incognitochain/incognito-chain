@@ -103,75 +103,75 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			case reflect.TypeOf(&wire.MessageTx{}):
 				if self.Config.MessageListeners.OnTx != nil {
 					//self.flagMutex.Lock()
-					self.Config.MessageListeners.OnTx(self, message.(*wire.MessageTx))
+					go self.Config.MessageListeners.OnTx(self, message.(*wire.MessageTx))
 					//self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageBlock{}):
 				if self.Config.MessageListeners.OnBlock != nil {
 					//self.flagMutex.Lock()
-					self.Config.MessageListeners.OnBlock(self, message.(*wire.MessageBlock))
+					go self.Config.MessageListeners.OnBlock(self, message.(*wire.MessageBlock))
 					//self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageGetBlocks{}):
 				if self.Config.MessageListeners.OnGetBlocks != nil {
 					//self.flagMutex.Lock()
-					self.Config.MessageListeners.OnGetBlocks(self, message.(*wire.MessageGetBlocks))
+					go self.Config.MessageListeners.OnGetBlocks(self, message.(*wire.MessageGetBlocks))
 					//self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageVersion{}):
 				if self.Config.MessageListeners.OnVersion != nil {
 					//self.flagMutex.Lock()
 					versionMessage := message.(*wire.MessageVersion)
-					self.Config.MessageListeners.OnVersion(self, versionMessage)
+					go self.Config.MessageListeners.OnVersion(self, versionMessage)
 					//self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageVerAck{}):
 				//self.flagMutex.Lock()
 				self.verAckReceived = true
 				if self.Config.MessageListeners.OnVerAck != nil {
-					self.Config.MessageListeners.OnVerAck(self, message.(*wire.MessageVerAck))
+					go self.Config.MessageListeners.OnVerAck(self, message.(*wire.MessageVerAck))
 				}
 				//self.flagMutex.Unlock()
 			case reflect.TypeOf(&wire.MessageGetAddr{}):
 				//self.flagMutex.Lock()
 				if self.Config.MessageListeners.OnGetAddr != nil {
-					self.Config.MessageListeners.OnGetAddr(self, message.(*wire.MessageGetAddr))
+					go self.Config.MessageListeners.OnGetAddr(self, message.(*wire.MessageGetAddr))
 				}
 				//self.flagMutex.Unlock()
 			case reflect.TypeOf(&wire.MessageAddr{}):
 				//self.flagMutex.Lock()
 				if self.Config.MessageListeners.OnGetAddr != nil {
-					self.Config.MessageListeners.OnAddr(self, message.(*wire.MessageAddr))
+					go self.Config.MessageListeners.OnAddr(self, message.(*wire.MessageAddr))
 				}
 				//self.flagMutex.Unlock()
 			case reflect.TypeOf(&wire.MessageRequestSign{}):
 				if self.Config.MessageListeners.OnRequestSign != nil {
 					//self.flagMutex.Lock()
-					self.Config.MessageListeners.OnRequestSign(self, message.(*wire.MessageRequestSign))
+					go self.Config.MessageListeners.OnRequestSign(self, message.(*wire.MessageRequestSign))
 					//self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageInvalidBlock{}):
 				if self.Config.MessageListeners.OnInvalidBlock != nil {
 					//self.flagMutex.Lock()
-					self.Config.MessageListeners.OnInvalidBlock(self, message.(*wire.MessageInvalidBlock))
+					go self.Config.MessageListeners.OnInvalidBlock(self, message.(*wire.MessageInvalidBlock))
 					//self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageBlockSig{}):
 				if self.Config.MessageListeners.OnBlockSig != nil {
 					//self.flagMutex.Lock()
-					self.Config.MessageListeners.OnBlockSig(self, message.(*wire.MessageBlockSig))
+					go self.Config.MessageListeners.OnBlockSig(self, message.(*wire.MessageBlockSig))
 					//self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageGetChainState{}):
 				if self.Config.MessageListeners.OnGetChainState != nil {
 					//self.flagMutex.Lock()
-					self.Config.MessageListeners.OnGetChainState(self, message.(*wire.MessageGetChainState))
+					go self.Config.MessageListeners.OnGetChainState(self, message.(*wire.MessageGetChainState))
 					//self.flagMutex.Unlock()
 				}
 			case reflect.TypeOf(&wire.MessageChainState{}):
 				if self.Config.MessageListeners.OnChainState != nil {
 					//self.flagMutex.Lock()
-					self.Config.MessageListeners.OnChainState(self, message.(*wire.MessageChainState))
+					go self.Config.MessageListeners.OnChainState(self, message.(*wire.MessageChainState))
 					//self.flagMutex.Unlock()
 				}
 			default:
