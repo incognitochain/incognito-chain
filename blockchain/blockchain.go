@@ -154,25 +154,25 @@ func (self *BlockChain) createChainState(chainID byte) error {
 
 	// Initialize the state related to the best block.  Since it is the
 	// genesis block, use its timestamp for the median time.
-	numTxns := uint64(len(genesisBlock.Transactions))
+	numTxns := uint64(len(initBlock.Transactions))
 	//blockSize := uint64(genesisBlock.SerializeSize())
 	//blockWeight := uint64(GetBlockWeight(genesisBlock))
 
 	tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
-	if err := UpdateMerkleTreeForBlock(tree, genesisBlock); err != nil {
+	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
 		return err
 	}
 
-	self.BestState = &BestState{}
-	self.BestState.Init(genesisBlock, 0, 0, numTxns, numTxns, time.Unix(genesisBlock.Header.Timestamp, 0), tree)
+	self.BestState[chainID] = &BestState{}
+	self.BestState[chainID].Init(initBlock, 0, 0, numTxns, numTxns, time.Unix(initBlock.Header.Timestamp, 0), tree)
 
 	// save nullifiers and commitments from genesisblock
 	view := NewTxViewPoint()
-	err := view.fetchTxViewPoint(self.Config.DataBase, genesisBlock)
+	err := view.fetchTxViewPoint(self.Config.DataBase, initBlock)
 	if err != nil {
 		return err
 	}
-	view.SetBestHash(genesisBlock.Hash())
+	view.SetBestHash(initBlock.Hash())
 	// Update the list nullifiers and commitment set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.
@@ -186,7 +186,7 @@ func (self *BlockChain) createChainState(chainID byte) error {
 	}
 
 	// store block genesis
-	err = self.StoreBlock(genesisBlock)
+	err = self.StoreBlock(initBlock)
 	if err != nil {
 		return err
 	}
@@ -605,7 +605,7 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 	// We are extending the main (best) chain with a new block.  This is the
 	// most common case.
 	parentHash := &block.Header.PrevBlockHash
-	if parentHash.IsEqual(b.BestState.BestBlockHash) {
+	if parentHash.IsEqual(b.BestState[block.Header.ChainID].BestBlockHash) {
 		view := NewTxViewPoint()
 
 		err := view.fetchTxViewPoint(b.Config.DataBase, block)

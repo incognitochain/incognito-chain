@@ -29,7 +29,7 @@ var (
 func open(dbPath string) (database.DB, error) {
 	lvdb, err := leveldb.OpenFile(filepath.Join(dbPath, "db"), nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "leveldb.OpenFile %s", dbPath)
+		return nil, errors.Wrapf(err, "levelvdb.OpenFile %s", dbPath)
 	}
 	return &db{lvdb: lvdb}, nil
 }
@@ -102,7 +102,7 @@ func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
 }
 
 func (db *db) StoreNullifiers(nullifier []byte, typeJoinSplitDesc string) error {
-	res, err := db.ldb.Get(append(usedTxKey, []byte(typeJoinSplitDesc)...), nil)
+	res, err := db.lvdb.Get(append(usedTxKey, []byte(typeJoinSplitDesc)...), nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return errors.Wrap(err, "db.lvdb.Get")
 	}
@@ -118,16 +118,16 @@ func (db *db) StoreNullifiers(nullifier []byte, typeJoinSplitDesc string) error 
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
 	}
-	if err := db.ldb.Put(append(usedTxKey, []byte(typeJoinSplitDesc)...), b, nil); err != nil {
+	if err := db.lvdb.Put(append(usedTxKey, []byte(typeJoinSplitDesc)...), b, nil); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (db *db) StoreCommitments(commitments []byte, typeJoinSplitDesc string) error {
-	res, err := db.ldb.Get(append(notUsedTxKey, []byte(typeJoinSplitDesc)...), nil)
+	res, err := db.lvdb.Get(append(notUsedTxKey, []byte(typeJoinSplitDesc)...), nil)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return errors.Wrap(err, "db.ldb.Get")
+		return errors.Wrap(err, "db.lvdb.Get")
 	}
 
 	var txs [][]byte
@@ -141,16 +141,16 @@ func (db *db) StoreCommitments(commitments []byte, typeJoinSplitDesc string) err
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
 	}
-	if err := db.ldb.Put(append(notUsedTxKey, []byte(typeJoinSplitDesc)...), b, nil); err != nil {
+	if err := db.lvdb.Put(append(notUsedTxKey, []byte(typeJoinSplitDesc)...), b, nil); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (db *db) FetchNullifiers(typeJoinSplitDesc string) ([][]byte, error) {
-	res, err := db.ldb.Get(append(usedTxKey, []byte(typeJoinSplitDesc)...), nil)
+	res, err := db.lvdb.Get(append(usedTxKey, []byte(typeJoinSplitDesc)...), nil)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return make([][]byte, 0), errors.Wrap(err, "db.ldb.Get")
+		return make([][]byte, 0), errors.Wrap(err, "db.lvdb.Get")
 	}
 
 	var txs [][]byte
@@ -163,9 +163,9 @@ func (db *db) FetchNullifiers(typeJoinSplitDesc string) ([][]byte, error) {
 }
 
 func (db *db) FetchCommitments(typeJoinSplitDesc string) ([][]byte, error) {
-	res, err := db.ldb.Get(append(notUsedTxKey, []byte(typeJoinSplitDesc)...), nil)
+	res, err := db.lvdb.Get(append(notUsedTxKey, []byte(typeJoinSplitDesc)...), nil)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return make([][]byte, 0), errors.Wrap(err, "db.ldb.Get")
+		return make([][]byte, 0), errors.Wrap(err, "db.lvdb.Get")
 	}
 
 	var txs [][]byte

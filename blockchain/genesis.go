@@ -212,7 +212,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(
 	difficulty uint32,
 	version int,
 	genesisReward uint64,
-) (*Block) {
+) *Block {
 	genesisBlock := Block{}
 	// update default genesis block
 	genesisBlock.Header.Timestamp = time.Unix()
@@ -247,27 +247,17 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(time time.Time, 
 	genesisBlock.Header.Version = version
 	genesisBlock.Header.NextCommittee = preSelectValidators
 	genesisBlock.Height = 1
-	tx := transaction.Tx{
-		Version: 1,
-		TxIn: []transaction.TxIn{
-			{
-				Sequence:        0xffffffff,
-				SignatureScript: []byte{},
-				PreviousOutPoint: transaction.OutPoint{
-					Hash: common.Hash{},
-				},
-			},
-		},
-		TxOut: []transaction.TxOut{
-			{
-				Value:     initialCoin,
-				PkScript:  []byte(GENESIS_BLOCK_PUBKEY_ADDR),
-				TxOutType: common.TxOutCoinType,
-			},
-		},
-		Type: common.TxNormalType,
+	tx, err := self.getGenesisTx()
+	//tx, err := self.createGenesisTx(genesisReward)
+
+	if err != nil {
+		Logger.log.Error(err)
+		return nil
 	}
+	genesisBlock.Header.MerkleRootCommitments = self.calcCommitmentMerkleRoot(tx)
+	fmt.Printf("Anchor: %x\n", genesisBlock.Header.MerkleRootCommitments[:])
+
+	genesisBlock.Transactions = append(genesisBlock.Transactions, tx)
 	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
-	genesisBlock.Transactions = append(genesisBlock.Transactions, &tx)
 	return &genesisBlock
 }

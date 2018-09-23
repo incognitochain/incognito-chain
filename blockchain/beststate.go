@@ -31,7 +31,7 @@ type BestState struct {
 	MedianTime  time.Time // Median time as per CalcPastMedianTime.
 }
 
-func (self *BestState) Init(block *Block, blocksize, blockweigh, numTxts, totalTxns uint64, medianTime time.Time, tree *client.IncMerkleTree) {
+func (self *BestState) Init(block *Block, blocksize, blockweight, numTxts, totalTxns uint64, medianTime time.Time, tree *client.IncMerkleTree) {
 	bestBlockHash := block.Hash()
 	self.BestBlock = block
 	self.BestBlockHash = bestBlockHash

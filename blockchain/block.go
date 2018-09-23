@@ -5,12 +5,10 @@ import (
 
 	"encoding/json"
 	"errors"
-	"fmt"
-	"strings"
 
 	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 const (
