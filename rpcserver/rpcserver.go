@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/wire"
 	"io"
 	"io/ioutil"
@@ -63,16 +62,17 @@ type RpcServer struct {
 type RpcServerConfig struct {
 	Listenters []net.Listener
 
-	ChainParams *blockchain.Params
-	BlockChain  *blockchain.BlockChain
-	Db          *database.DB
-	Wallet      *wallet.Wallet
-	ConnMgr     *connmanager.ConnManager
-	AddrMgr     *addrmanager.AddrManager
+	ChainParams    *blockchain.Params
+	BlockChain     *blockchain.BlockChain
+	Db             *database.DB
+	Wallet         *wallet.Wallet
+	ConnMgr        *connmanager.ConnManager
+	AddrMgr        *addrmanager.AddrManager
+	IsGenerateNode bool
 	Server interface {
 		// Push Tx message
 		PushMessageToAll(message wire.Message) error
-		PushMessageToPeer(message wire.Message, id peer.ID) error
+		PushMessageToPeer(message wire.Message, id string) error
 	}
 
 	TxMemPool     *mempool.TxPool
@@ -85,6 +85,10 @@ type RpcServerConfig struct {
 	RPCLimitUser string
 	RPCLimitPass string
 	DisableAuth  bool
+
+	// The fee estimator keeps track of how long transactions are left in
+	// the mempool before they are mined into blocks.
+	FeeEstimator *mempool.FeeEstimator
 }
 
 func (self *RpcServer) Init(config *RpcServerConfig) (error) {
@@ -232,13 +236,13 @@ func (self RpcServer) checkAuth(r *http.Request, require bool) (bool, bool, erro
 	// are probably expected to have a higher volume of calls
 	limitcmp := subtle.ConstantTimeCompare(authsha[:], self.limitauthsha[:])
 	if limitcmp == 1 {
-		return true, false, nil
+		return true, true, nil
 	}
 
 	// Check for admin-level auth
 	cmp := subtle.ConstantTimeCompare(authsha[:], self.authsha[:])
 	if cmp == 1 {
-		return true, true, nil
+		return true, false, nil
 	}
 
 	// Request's auth doesn't match either user
@@ -364,7 +368,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 
 		// Check if the user is limited and set error if method unauthorized
 		if !isLimitedUser {
-			if _, ok := RpcLimited[request.Method]; !ok {
+			if _, ok := RpcLimited[request.Method]; ok {
 				jsonErr = &common.RPCError{
 					Code:    common.ErrRPCInvalidParams.Code,
 					Message: "limited user not authorized for this method",
@@ -375,7 +379,20 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 			// Attempt to parse the JSON-RPC request into a known concrete
 			// command.
 			command := RpcHandler[request.Method]
-			result, jsonErr = command(self, request.Params, closeChan)
+			if command == nil {
+				if isLimitedUser {
+					command = RpcLimited[request.Method]
+				} else {
+					result = nil
+					jsonErr = &common.RPCError{
+						Code:    common.ErrRPCInvalidParams.Code,
+						Message: "limited user not authorized for this method",
+					}
+				}
+			}
+			if command != nil {
+				result, jsonErr = command(self, request.Params, closeChan)
+			}
 		}
 	}
 	// Marshal the response.

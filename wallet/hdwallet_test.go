@@ -28,7 +28,7 @@ func TestNewMasterkey(t *testing.T) {
 	fmt.Printf("Address of public Key: %s\n", masterKey.ToAddress(false))
 
 	//Private, _ := Base58CheckDeserialize(b58privateKey)
-	//log.Print(hex.EncodeToString(Private.KeyPair.PrivateKey))
+	//log.Print(hex.EncodeToString(Private.KeySet.PrivateKey))
 
 	Public, _ := Base58CheckDeserialize(b58publicKey)
 	log.Print(hex.EncodeToString(Public.KeyPair.PublicKey))

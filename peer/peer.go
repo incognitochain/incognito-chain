@@ -227,6 +227,7 @@ func (self *Peer) ConnCanceled(peer *Peer) {
 	_, ok := self.PeerConns[peer.PeerID.String()]
 	if ok {
 		delete(self.PeerConns, peer.PeerID.String())
+			self.PendingPeers[peer.PeerID.String()] = peer
 	}
 	Logger.log.Info("sdgdfgdfgdfg", self.PendingPeers, peer)
 	self.pendingPeersMutex.Lock()
@@ -334,10 +335,10 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		select {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("NewPeerConnection Close Stream PEER ID %s", peerConn.PeerID.String())
-			break
+			return &peerConn, nil
 		case <-timeOutVerAck:
 			Logger.log.Infof("NewPeerConnection timeoutVerack PEER ID %s", peerConn.PeerID.String())
-			break
+			return &peerConn, nil
 		}
 	}
 
@@ -416,10 +417,10 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		select {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("HandleStream close stream PEER ID %s", peerConn.PeerID.String())
-			break
+			return
 		case <-timeOutVerAck:
 			Logger.log.Infof("HandleStream timeoutVerack PEER ID %s", peerConn.PeerID.String())
-			break
+			return
 		}
 	}
 }
@@ -505,6 +506,8 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 		peerConn.RetryCount += 1
 
 		if peerConn.RetryCount < maxRetryConn {
+			Logger.log.Infof("Retry New Peer Connection 1 %s", peerConn.Peer.PeerId)
+
 			peerConn.updateState(ConnPending)
 
 			_, err := peerConn.ListenerPeer.NewPeerConnection(peerConn.Peer)
@@ -512,6 +515,8 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 				go self.retryPeerConnection(peerConn)
 			}
 		} else {
+			Logger.log.Infof("Retry New Peer Connection 2 %s", peerConn.Peer.PeerId)
+
 			peerConn.updateState(ConnCanceled)
 
 			self.ConnCanceled(peerConn.Peer)

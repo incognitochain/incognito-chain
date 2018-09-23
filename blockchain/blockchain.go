@@ -4,12 +4,19 @@ import (
 	"errors"
 	"fmt"
 
+	//"fmt"
+	//"time"
+
 	"sync"
 
 	"encoding/json"
+	"time"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
@@ -49,7 +56,6 @@ type Config struct {
 
 func (self *BlockChain) Init(config *Config) error {
 	// Enforce required config fields.
-	// TODO
 	if config.DataBase == nil {
 		return errors.New("blockchain.New database is nil")
 	}
@@ -111,6 +117,25 @@ func (self *BlockChain) initChainState() error {
 	return nil
 }
 
+// UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
+func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
+	for _, blockTx := range block.Transactions {
+		if blockTx.GetType() == common.TxNormalType {
+			tx, ok := blockTx.(*transaction.Tx)
+			if ok == false {
+				return fmt.Errorf("Transaction in block not valid")
+			}
+
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					tree.AddNewNode(cm[:])
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // createChainState initializes both the database and the chain state to the
 // genesis block.  This includes creating the necessary buckets and inserting
 // the genesis block, so it must only be called on an uninitialized database.
@@ -129,14 +154,39 @@ func (self *BlockChain) createChainState(chainID byte) error {
 
 	// Initialize the state related to the best block.  Since it is the
 	// genesis block, use its timestamp for the median time.
-	numTxns := uint64(len(initBlock.Transactions))
-	//blockSize := uint64(initBlock.SerializeSize())
-	//blockWeight := uint64(GetBlockWeight(initBlock))
-	self.BestState[chainID] = &BestState{}
-	self.BestState[chainID].Init(initBlock, 0, 0, numTxns, numTxns, initBlock.Header.Timestamp)
+	numTxns := uint64(len(genesisBlock.Transactions))
+	//blockSize := uint64(genesisBlock.SerializeSize())
+	//blockWeight := uint64(GetBlockWeight(genesisBlock))
+
+	tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
+	if err := UpdateMerkleTreeForBlock(tree, genesisBlock); err != nil {
+		return err
+	}
+
+	self.BestState = &BestState{}
+	self.BestState.Init(genesisBlock, 0, 0, numTxns, numTxns, time.Unix(genesisBlock.Header.Timestamp, 0), tree)
+
+	// save nullifiers and commitments from genesisblock
+	view := NewTxViewPoint()
+	err := view.fetchTxViewPoint(self.Config.DataBase, genesisBlock)
+	if err != nil {
+		return err
+	}
+	view.SetBestHash(genesisBlock.Hash())
+	// Update the list nullifiers and commitment set using the state of the used tx view point. This
+	// entails adding the new
+	// ones created by the block.
+	err = self.StoreNullifiersFromTxViewPoint(*view)
+	if err != nil {
+		return err
+	}
+	err = self.StoreCommitmentsFromTxViewPoint(*view)
+	if err != nil {
+		return err
+	}
 
 	// store block genesis
-	err := self.StoreBlock(initBlock)
+	err = self.StoreBlock(genesisBlock)
 	if err != nil {
 		return err
 	}
@@ -273,7 +323,7 @@ func (self *BlockChain) StoreBlockIndex(block *Block) error {
 // in the database based on the provided utxo view contents and state.  In
 // particular, only the entries that have been marked as modified are written
 // to the database.
-func (self *BlockChain) StoreUtxoView(view *UtxoViewpoint) error {
+/*func (self *BlockChain) StoreUtxoView(view *UtxoViewpoint) error {
 	for outpoint, entry := range view.entries {
 		// No need to update the database if the entry was not modified.
 		if entry == nil || !entry.isModified() {
@@ -293,6 +343,98 @@ func (self *BlockChain) StoreUtxoView(view *UtxoViewpoint) error {
 		err := self.Config.DataBase.StoreUtxoEntry(&outpoint, entry)
 		if err != nil {
 			return err
+		}
+	}
+	return nil
+}*/
+
+/**
+Uses an existing database to update the set of used tx by saving list nullifier of privacy,
+this is a list tx-out which are used by a new tx
+*/
+func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
+	for typeJoinSplitDesc, item := range view.listNullifiers {
+		for _, item1 := range item {
+			err := self.Config.DataBase.StoreNullifiers(item1, typeJoinSplitDesc)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+/**
+Uses an existing database to update the set of not used tx by saving list commitments of privacy,
+this is a list tx-in which are used by a new tx
+*/
+func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
+	for typeJoinSplitDesc, item := range view.listCommitments {
+		for _, item1 := range item {
+			err := self.Config.DataBase.StoreCommitments(item1, typeJoinSplitDesc)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+/**
+Uses an existing database to update the set of used tx by saving list nullifier of privacy,
+this is a list tx-out which are used by a new tx
+*/
+func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, typeJoinSplitDesc string) error {
+	for _, nullifier := range nullifiers {
+		err := self.Config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+/**
+Uses an existing database to update the set of not used tx by saving list commitments of privacy,
+this is a list tx-in which are used by a new tx
+*/
+func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, typeJoinSplitDesc string) error {
+	for _, item := range commitments {
+		err := self.Config.DataBase.StoreCommitments(item, typeJoinSplitDesc)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+/**
+Uses an existing database to update the set of used tx by saving list nullifier of privacy,
+this is a list tx-out which are used by a new tx
+*/
+func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx, typeJoinSplitDesc string) error {
+	for _, desc := range tx.Descs {
+		for _, nullifier := range desc.Nullifiers {
+			err := self.Config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+/**
+Uses an existing database to update the set of not used tx by saving list commitments of privacy,
+this is a list tx-in which are used by a new tx
+*/
+func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx, typeJoinSplitDesc string) error {
+	for _, desc := range tx.Descs {
+		for _, item := range desc.Commitments {
+			err := self.Config.DataBase.StoreCommitments(item, typeJoinSplitDesc)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -368,7 +510,7 @@ func (self *BlockChain) GetAllHashBlocks() ([][]*common.Hash, error) {
 // so the returned view can be examined for duplicate transactions.
 //
 // This function is safe for concurrent access however the returned view is NOT.
-func (b *BlockChain) FetchUtxoView(tx transaction.Tx) (*UtxoViewpoint, error) {
+/*func (b *BlockChain) FetchUtxoView(tx transaction.Tx) (*UtxoViewpoint, error) {
 	neededSet := make(map[transaction.OutPoint]struct{})
 
 	// create outpoint map for txout of tx by itself hash
@@ -392,21 +534,26 @@ func (b *BlockChain) FetchUtxoView(tx transaction.Tx) (*UtxoViewpoint, error) {
 	err := view.fetchUtxosMain(b.Config.DataBase, neededSet)
 	b.chainLock.RUnlock()
 	return view, err
-}
+}*/
 
-// CheckTransactionInputs performs a series of checks on the inputs to a
-// transaction to ensure they are valid.  An example of some of the checks
-// include verifying all inputs exist, ensuring the coinbase seasoning
-// requirements are met, detecting double spends, validating all values and fees
-// are in the legal range and the total output amount doesn't exceed the input
-// amount, and verifying the signatures to prove the spender was the owner of
-// the bitcoins and therefore allowed to spend them.  As it checks the inputs,
-// it also calculates the total fees for the transaction and returns that value.
-//
-// NOTE: The transaction MUST have already been sanity checked with the
-// CheckTransactionSanity function prior to calling this function.
-func (self *BlockChain) CheckTransactionInputs(tx *transaction.Transaction, txHeight int32, utxoView *UtxoViewpoint, chainParams *Params) (float64, error) {
-	return 0, nil
+/**
+FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
+Param typeJoinSplitDesc - COIN or BOND
+*/
+func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string) (*TxViewPoint, error) {
+	view := NewTxViewPoint()
+	commitments, err := self.Config.DataBase.FetchCommitments(typeJoinSplitDesc)
+	if err != nil {
+		return nil, err
+	}
+	view.listCommitments[typeJoinSplitDesc] = commitments
+	nullifiers, err := self.Config.DataBase.FetchNullifiers(typeJoinSplitDesc)
+	if err != nil {
+		return nil, err
+	}
+	view.listNullifiers[typeJoinSplitDesc] = nullifiers
+	view.SetBestHash(self.BestState.BestBlockHash)
+	return view, nil
 }
 
 // connectBestChain handles connecting the passed block to the chain while
@@ -417,7 +564,7 @@ func (self *BlockChain) CheckTransactionInputs(tx *transaction.Transaction, txHe
 // cumulatively has the most proof of work.  It returns whether or not the block
 // ended up on the main chain (either due to extending the main chain or causing
 // a reorganization to become the main chain).
-func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
+/*func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 	// We are extending the main (best) chain with a new block.  This is the
 	// most common case.
 	parentHash := &block.Header.PrevBlockHash
@@ -453,10 +600,42 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 		// we in sub chain
 		return false, nil
 	}
+}*/
+func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
+	// We are extending the main (best) chain with a new block.  This is the
+	// most common case.
+	parentHash := &block.Header.PrevBlockHash
+	if parentHash.IsEqual(b.BestState.BestBlockHash) {
+		view := NewTxViewPoint()
+
+		err := view.fetchTxViewPoint(b.Config.DataBase, block)
+		if err != nil {
+			return false, err
+		}
+
+		view.SetBestHash(block.Hash())
+		// Update the list nullifiers and commitment set using the state of the used tx view point. This
+		// entails adding the new
+		// ones created by the block.
+		err = b.StoreNullifiersFromTxViewPoint(*view)
+		if err != nil {
+			return false, err
+		}
+
+		err = b.StoreCommitmentsFromTxViewPoint(*view)
+		if err != nil {
+			return false, err
+		}
+
+		return true, nil
+	} else {
+		// we in sub chain
+		return false, nil
+	}
 }
 
 // countSpentOutputs returns the number of utxos the passed block spends.
-func countSpentOutputs(block *Block) int {
+/*func countSpentOutputs(block *Block) int {
 	// Exclude the coinbase transaction since it can't spend anything.
 	var numSpent int
 	for _, tx := range block.Transactions[1:] {
@@ -465,4 +644,284 @@ func countSpentOutputs(block *Block) int {
 		}
 	}
 	return numSpent
+}*/
+
+/**
+GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key
+- Param #1: key - key set which contain readonly-key and pub-key
+- Param #2: typeJoinSplitDesc - which type of joinsplitdesc(COIN or BOND)
+*/
+func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, typeJoinSplitDesc string) ([]transaction.Tx, error) {
+	results := make([]transaction.Tx, 0)
+
+	// set default for params
+	if typeJoinSplitDesc == "" {
+		typeJoinSplitDesc = common.TxOutCoinType
+	}
+
+	// lock chain
+	self.chainLock.Lock()
+
+	// get best block
+	bestBlock := self.BestState.BestBlock
+	blockHeight := bestBlock.Height
+
+	for blockHeight > -1 {
+		txsInBlock := bestBlock.Transactions
+		txsInBlockAccepted := make([]transaction.Tx, 0)
+		for _, txInBlock := range txsInBlock {
+			if txInBlock.GetType() == common.TxNormalType {
+				tx := txInBlock.(*transaction.Tx)
+				copyTx := transaction.Tx{
+					Version:  tx.Version,
+					JSSig:    tx.JSSig,
+					JSPubKey: tx.JSPubKey,
+					Fee:      tx.Fee,
+					Type:     tx.Type,
+					LockTime: tx.LockTime,
+					Descs:    make([]*transaction.JoinSplitDesc, 0),
+				}
+				// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
+				listDesc := make([]*transaction.JoinSplitDesc, 0)
+				for _, desc := range tx.Descs {
+					copyDesc := &transaction.JoinSplitDesc{
+						Anchor:        desc.Anchor,
+						Commitments:   make([][]byte, 0),
+						EncryptedData: make([][]byte, 0),
+					}
+					for i, encData := range desc.EncryptedData {
+						var epk client.EphemeralPubKey
+						copy(epk[:], desc.EphemeralPubKey)
+						// var hSig []byte
+						// copy(hSig, desc.HSigSeed)
+						hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
+						note := new(client.Note)
+						note, err := client.DecryptNote(encData, keySet.ReadonlyKey.Skenc, keySet.PublicKey.Pkenc, epk, hSig)
+						spew.Dump(note)
+						if err == nil && note != nil {
+							copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
+							copyDesc.AppendNote(note)
+							copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
+						} else {
+							continue
+						}
+					}
+					if len(copyDesc.EncryptedData) > 0 {
+						listDesc = append(listDesc, copyDesc)
+					}
+				}
+				if len(listDesc) > 0 {
+					copyTx.Descs = listDesc
+				}
+				txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
+			}
+		}
+		// detected some tx can be accepted
+		if len(txsInBlockAccepted) > 0 {
+			// add to result
+			results = append(results, txsInBlockAccepted...)
+		}
+
+		// continue with previous block
+		blockHeight--
+		if blockHeight > -1 {
+			// not is genesis block
+			preBlockHash := bestBlock.Header.PrevBlockHash
+			bestBlock, err := self.GetBlockByBlockHash(&preBlockHash)
+			if blockHeight != bestBlock.Height || err != nil {
+				// pre-block is not the same block-height with calculation -> invalid blockchain
+				return nil, errors.New("Invalid blockchain")
+			}
+		}
+	}
+
+	// unlock chain
+	self.chainLock.Unlock()
+	return results, nil
+}
+
+/**
+GetListTxByPrivateKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
+With private-key, we can check unspent tx by check nullifiers from database
+- Param #1: privateKey - byte[] of privatekey
+- Param #2: typeJoinSplitDesc - which type of joinsplitdesc(COIN or BOND)
+*/
+func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, typeJoinSplitDesc string, sortType int, sortAsc bool) ([]transaction.Tx, error) {
+	results := make([]transaction.Tx, 0)
+
+	// get list nullifiers from db to check spending
+	txViewPoint, err := self.FetchTxViewPoint(typeJoinSplitDesc)
+	if err != nil {
+		return nil, err
+	}
+	nullifiersInDb := txViewPoint.listNullifiers[typeJoinSplitDesc]
+
+	// Get set of keys from private key
+	keys := cashec.KeySet{}
+	keys.ImportFromPrivateKey(privateKey)
+
+	// set default for params
+	if typeJoinSplitDesc == "" {
+		typeJoinSplitDesc = common.TxOutCoinType
+	}
+
+	// lock chain
+	self.chainLock.Lock()
+
+	// get best block
+	bestBlock := self.BestState.BestBlock
+	blockHeight := bestBlock.Height
+
+	for blockHeight > -1 {
+		txsInBlock := bestBlock.Transactions
+		txsInBlockAccepted := make([]transaction.Tx, 0)
+		for _, txInBlock := range txsInBlock {
+			if txInBlock.GetType() == common.TxNormalType {
+				tx := txInBlock.(*transaction.Tx)
+				copyTx := transaction.Tx{
+					Version:  tx.Version,
+					JSSig:    tx.JSSig,
+					JSPubKey: tx.JSPubKey,
+					Fee:      tx.Fee,
+					Type:     tx.Type,
+					LockTime: tx.LockTime,
+					Descs:    make([]*transaction.JoinSplitDesc, 0),
+				}
+				// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
+				listDesc := make([]*transaction.JoinSplitDesc, 0)
+				for _, desc := range tx.Descs {
+					copyDesc := &transaction.JoinSplitDesc{
+						Anchor:        desc.Anchor,
+						Reward:        desc.Reward,
+						Commitments:   make([][]byte, 0),
+						EncryptedData: make([][]byte, 0),
+					}
+					for i, encData := range desc.EncryptedData {
+						var epk client.EphemeralPubKey
+						copy(epk[:], desc.EphemeralPubKey)
+						hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
+						note := new(client.Note)
+						note, err := client.DecryptNote(encData, keys.ReadonlyKey.Skenc, keys.PublicKey.Pkenc, epk, hSig)
+						if err == nil && note != nil && note.Value > 0 {
+							// can decrypt data -> got candidate commitment
+							candidateCommitment := desc.Commitments[i]
+							if len(nullifiersInDb) > 0 {
+								// -> check commitment with db nullifiers
+								var rho [32]byte
+								copy(rho[:], note.Rho)
+								candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
+								if len(candidateNullifier) == 0 {
+									continue
+								}
+								checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
+								if err != nil || checkCandiateNullifier == true {
+									// candidate nullifier is not existed in db
+									continue
+								}
+							}
+							copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
+							copyDesc.AppendNote(note)
+							note.Cm = candidateCommitment
+							note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
+							copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
+						} else {
+							continue
+						}
+					}
+					if len(copyDesc.EncryptedData) > 0 {
+						listDesc = append(listDesc, copyDesc)
+					}
+				}
+				if len(listDesc) > 0 {
+					copyTx.Descs = listDesc
+				}
+				if len(copyTx.Descs) > 0 {
+					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
+				}
+			}
+		}
+		// detected some tx can be accepted
+		if len(txsInBlockAccepted) > 0 {
+			// add to result
+			results = append(results, txsInBlockAccepted...)
+		}
+
+		// continue with previous block
+		blockHeight--
+		if blockHeight > -1 {
+			// not is genesis block
+			preBlockHash := bestBlock.Header.PrevBlockHash
+			preBlock, err := self.GetBlockByBlockHash(&preBlockHash)
+			if err != nil || blockHeight != preBlock.Height {
+				// pre-block is not the same block-height with calculation -> invalid blockchain
+				self.chainLock.Unlock()
+				return nil, errors.New("Invalid blockchain")
+			}
+			bestBlock = preBlock
+		}
+	}
+
+	// unlock chain
+	self.chainLock.Unlock()
+
+	// sort txs
+	transaction.SortArrayTxs(results, sortType, sortAsc)
+
+	return results, nil
+}
+
+func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
+	result := make(map[string]uint64)
+	result[common.TxOutCoinType] = uint64(0)
+	result[common.TxOutBondType] = uint64(0)
+
+	// lock chain
+	self.chainLock.Lock()
+
+	// get best block
+	bestBlock := self.BestState.BestBlock
+	blockHeight := bestBlock.Height
+
+	for blockHeight > -1 {
+
+		txsInBlock := bestBlock.Transactions
+		totalFeeInBlock := uint64(0)
+		for _, txInBlock := range txsInBlock {
+			tx := txInBlock.(*transaction.Tx)
+			fee := tx.Fee
+			totalFeeInBlock += fee
+		}
+
+		coinbaseTx := txsInBlock[0].(*transaction.Tx)
+		rewardBond := uint64(0)
+		rewardCoin := uint64(0)
+		for _, desc := range coinbaseTx.Descs {
+			unitType := desc.Type
+			switch unitType {
+			case common.TxOutCoinType:
+				rewardCoin += desc.Reward
+			case common.TxOutBondType:
+				rewardBond += desc.Reward
+			}
+		}
+		rewardCoin -= totalFeeInBlock
+		result[common.TxOutCoinType] += rewardCoin
+		result[common.TxOutBondType] += rewardBond
+
+		// continue with previous block
+		blockHeight--
+		if blockHeight > -1 {
+			// not is genesis block
+			preBlockHash := bestBlock.Header.PrevBlockHash
+			bestBlock, err := self.GetBlockByBlockHash(&preBlockHash)
+			if blockHeight != bestBlock.Height || err != nil {
+				// pre-block is not the same block-height with calculation -> invalid blockchain
+				return nil, errors.New("Invalid blockchain")
+			}
+		}
+	}
+
+	// unlock chain
+	self.chainLock.Unlock()
+	return result, nil
 }

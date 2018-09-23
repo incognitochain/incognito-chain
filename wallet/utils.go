@@ -1,9 +1,10 @@
 package wallet
 
 import (
+	"bytes"
 	"encoding/binary"
 	"math/big"
-	"bytes"
+
 	"github.com/ninjadotorg/cash-prototype/common/base58"
 )
 
@@ -83,7 +84,7 @@ func compressPublicKey(x *big.Int, y *big.Int) []byte {
 
 /**
 Numerical
- */
+*/
 func uint32Bytes(i uint32) []byte {
 	bytes := make([]byte, 4)
 	binary.BigEndian.PutUint32(bytes, i)

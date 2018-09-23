@@ -6,7 +6,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/ninjadotorg/cash-prototype/peer"
@@ -42,6 +41,7 @@ type NetSyncConfig struct {
 		OnGetChainState(*wire.MessageGetChainState)
 		OnChainStateReceived(*wire.MessageChainState)
 	}
+	FeeEstimator *mempool.FeeEstimator
 }
 
 func (self NetSync) New(cfg *NetSyncConfig) (*NetSync, error) {
@@ -152,6 +152,20 @@ func (self *NetSync) QueueTx(_ *peer.Peer, msg *wire.MessageTx, done chan struct
 	self.msgChan <- msg
 }
 
+// handleTxMsg handles transaction messages from all peers.
+func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
+	Logger.log.Info("Handling new message tx")
+	// TODO get message tx and process
+	hash, txDesc, error := self.Config.MemPool.MaybeAcceptTransaction(msg.Transaction)
+
+	if error != nil {
+		fmt.Print(error)
+	} else {
+		fmt.Print("there is hash of transaction", hash)
+		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)
+	}
+}
+
 // QueueBlock adds the passed block message and peer to the block handling
 // queue. Responds to the done channel argument after the block message is
 // processed.
@@ -209,16 +223,19 @@ func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 	// _ = isOrphanBlock
 	// _ = err
 
-	// a := self.Config.BlockChain.BestState.BestBlock.Hash().String()
-	// Logger.log.Infof(a)
-	// //if msg.Block.Header.PrevBlockHash == a {
-	// self.Config.Server.UpdateChain(&newBlock)
-	// //}
-	self.Config.Consensus.OnBlockReceived(&newBlock)
+	a := self.Config.BlockChain.BestState.BestBlock.Hash().String()
+	Logger.log.Infof(a)
+	//if msg.Block.Header.PrevBlockHash == a {
+	self.Config.Server.UpdateChain(&newBlock)
+	//}
+	err = self.Config.FeeEstimator.RegisterBlock(&newBlock)
+	if err != nil {
+		Logger.log.Error(err)
+	}
 }
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
-	Logger.log.Info("Handling new message getblock")
+	Logger.log.Info("Handling new message getblocks message")
 	if senderBlockHeaderIndex, chainID, err := self.Config.BlockChain.GetBlockHeightByBlockHash(&msg.LastBlockHash); err == nil {
 		if self.Config.BlockChain.BestState[chainID].BestBlock.Hash() != &msg.LastBlockHash {
 			// Send Blocks back to requestor
@@ -237,6 +254,8 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 				self.Config.Server.PushMessageToPeer(blockMsg, peerID)
 			}
 		}
+	} else {
+		Logger.log.Info("No new blocks to return")
 	}
 
 	// Logger.log.Infof("Send a msgVersion: %s", msgNewJSON)

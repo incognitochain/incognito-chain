@@ -1,10 +1,6 @@
 package transaction
 
-import (
-	"github.com/ninjadotorg/cash-prototype/common"
-)
-
-const (
+/*const (
 	MaxTxInSequenceNum int = 0xffffffff
 
 	// MaxPrevOutIndex is the maximum index the index field of a previous
@@ -34,4 +30,4 @@ func (self TxIn) NewTxIn(prevOut *OutPoint, signatureScript []byte) *TxIn {
 		Sequence:         MaxTxInSequenceNum,
 	}
 	return &self
-}
+}*/

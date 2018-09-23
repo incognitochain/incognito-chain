@@ -1,13 +1,13 @@
 package wallet
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha512"
 	"errors"
+
 	"github.com/ninjadotorg/cash-prototype/cashec"
-	"bytes"
 	"github.com/ninjadotorg/cash-prototype/common/base58"
-	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 const (
@@ -17,6 +17,12 @@ const (
 
 	// PublicKeyCompressedLength is the byte count of a compressed public Key
 	PublicKeyCompressedLength = 33
+)
+
+const (
+	PriKeyType      = byte(0x0)
+	PubKeyType      = byte(0x1)
+	ReadonlyKeyType = byte(0x2)
 )
 
 var (
@@ -45,12 +51,12 @@ var (
 	ErrInvalidPublicKey = errors.New("Invalid public Key")
 )
 
-// KeyPair represents a bip32 extended Key
+// KeySet represents a bip32 extended Key
 type Key struct {
 	Depth       byte   // 1 bytes
 	ChildNumber []byte // 4 bytes
 	ChainCode   []byte // 32 bytes
-	KeyPair     cashec.KeyPair
+	KeyPair     cashec.KeySet
 }
 
 // NewMasterKey creates a new master extended Key from a Seed
@@ -74,11 +80,7 @@ func NewMasterKey(seed []byte) (*Key, error) {
 		return nil, err
 	}*/
 
-	keyPair, err := (&cashec.KeyPair{}).GenerateKey(keyBytes)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, err
-	}
+	keyPair := (&cashec.KeySet{}).GenerateKey(keyBytes)
 
 	// Create the Key struct
 	key := &Key{
@@ -98,10 +100,10 @@ func (key *Key) NewChildKey(childIdx uint32) (*Key, error) {
 		return nil, err
 	}
 
-	newSeed := key.KeyPair.PrivateKey
-	newSeed = append(newSeed, intermediary[:32]...)
-	newKeypair, err := (&cashec.KeyPair{}).GenerateKey(newSeed)
-	// Create Child KeyPair with data common to all both scenarios
+	newSeed := []byte{}
+	newSeed = append(newSeed[:], intermediary[:32]...)
+	newKeypair := (&cashec.KeySet{}).GenerateKey(newSeed)
+	// Create Child KeySet with data common to all both scenarios
 	childKey := &Key{
 		ChildNumber: uint32Bytes(childIdx),
 		ChainCode:   intermediary[32:],
@@ -120,9 +122,9 @@ func (key *Key) getIntermediary(childIdx uint32) ([]byte, error) {
 
 	var data []byte
 	//if childIdx >= FirstHardenedChild {
-	//	data = append([]byte{0x0}, Key.KeyPair.PrivateKey...)
+	//	data = append([]byte{0x0}, Key.KeySet.PrivateKey...)
 	//} else {
-	data = key.KeyPair.PublicKey
+	// data = key.KeySet.PublicKey
 	//}
 	data = append(data, childIndexBytes...)
 
@@ -134,23 +136,37 @@ func (key *Key) getIntermediary(childIdx uint32) ([]byte, error) {
 	return hmac.Sum(nil), nil
 }
 
-// Serialize a KeyPair to a 78 byte byte slice
-func (key *Key) Serialize(privateKey bool) ([]byte, error) {
+// Serialize a KeySet to a 78 byte byte slice
+func (key *Key) Serialize(keyType byte) ([]byte, error) {
 	// Write fields to buffer in order
 	buffer := new(bytes.Buffer)
-	buffer.WriteByte(key.Depth)
-	buffer.Write(key.ChildNumber)
-	buffer.Write(key.ChainCode)
-	if privateKey {
+	buffer.WriteByte(keyType)
+	if keyType == PriKeyType {
+
+		buffer.WriteByte(key.Depth)
+		buffer.Write(key.ChildNumber)
+		buffer.Write(key.ChainCode)
+
 		// Private keys should be prepended with a single null byte
-		keyBytes := key.KeyPair.PrivateKey
-		keyBytes = append([]byte{byte(len(key.KeyPair.PrivateKey))}, keyBytes...)
-		keyBytes = append([]byte{0x0}, keyBytes...)
+		keyBytes := make([]byte, 0)
+		keyBytes = append(keyBytes, byte(len(key.KeyPair.PrivateKey))) // set length
+		keyBytes = append(keyBytes, key.KeyPair.PrivateKey[:]...)      // set pri-key
 		buffer.Write(keyBytes)
-	} else {
-		keyBytes := key.KeyPair.PublicKey
-		keyBytes = append([]byte{byte(len(key.KeyPair.PublicKey))}, keyBytes...)
-		keyBytes = append([]byte{0x1}, keyBytes...)
+	} else if keyType == PubKeyType {
+		keyBytes := make([]byte, 0)
+		keyBytes = append(keyBytes, byte(len(key.KeyPair.PublicKey.Apk))) // set length Apk
+		keyBytes = append(keyBytes, key.KeyPair.PublicKey.Apk[:]...)      // set Apk
+
+		keyBytes = append(keyBytes, byte(len(key.KeyPair.PublicKey.Pkenc))) // set length Pkenc
+		keyBytes = append(keyBytes, key.KeyPair.PublicKey.Pkenc[:]...)      // set Pkenc
+		buffer.Write(keyBytes)
+	} else if keyType == ReadonlyKeyType {
+		keyBytes := make([]byte, 0)
+		keyBytes = append(keyBytes, byte(len(key.KeyPair.ReadonlyKey.Apk))) // set length Apk
+		keyBytes = append(keyBytes, key.KeyPair.ReadonlyKey.Apk[:]...)      // set Apk
+
+		keyBytes = append(keyBytes, byte(len(key.KeyPair.ReadonlyKey.Skenc))) // set length Skenc
+		keyBytes = append(keyBytes, key.KeyPair.ReadonlyKey.Skenc[:]...)      // set Pkenc
 		buffer.Write(keyBytes)
 	}
 
@@ -164,9 +180,9 @@ func (key *Key) Serialize(privateKey bool) ([]byte, error) {
 	return serializedKey, nil
 }
 
-// Base58CheckSerialize encodes the KeyPair in the standard Bitcoin base58 encoding
-func (key *Key) Base58CheckSerialize(private bool) string {
-	serializedKey, err := key.Serialize(private)
+// Base58CheckSerialize encodes the KeySet in the standard Bitcoin base58 encoding
+func (key *Key) Base58CheckSerialize(keyType byte) string {
+	serializedKey, err := key.Serialize(keyType)
 	if err != nil {
 		return ""
 	}
@@ -174,33 +190,30 @@ func (key *Key) Base58CheckSerialize(private bool) string {
 	return base58.Base58Check{}.Encode(serializedKey, byte(0x00))
 }
 
-func (key *Key) ToAddress(private bool) string {
-	serializedKey, err := key.Serialize(private)
-	if err != nil {
-		return ""
-	}
-	serializedKey, err = common.Hash160(serializedKey)
-	if err != nil {
-		return ""
-	}
-	return base58.Base58Check{}.Encode(serializedKey, byte(0x00))
-}
-
-// Deserialize a byte slice into a KeyPair
+// Deserialize a byte slice into a KeySet
 func Deserialize(data []byte) (*Key, error) {
 	//if len(data) != 101 {
 	//	return nil, ErrSerializedKeyWrongSize
 	//}
 	var key = &Key{}
-	key.Depth = data[0]
-	key.ChildNumber = data[1:5]
-	key.ChainCode = data[5:37]
-	keyType := data[37]
-	keyLength := data[38]
-	if keyType == byte(0) {
-		key.KeyPair.PrivateKey = data[39:39+keyLength ]
-	} else {
-		key.KeyPair.PublicKey = data[39:39+keyLength]
+	keyType := data[0]
+	if keyType == PriKeyType {
+		key.Depth = data[1]
+		key.ChildNumber = data[2:6]
+		key.ChainCode = data[6:38]
+		keyLength := int(data[38])
+
+		copy(key.KeyPair.PrivateKey[:], data[39:39+keyLength])
+	} else if keyType == PubKeyType {
+		apkKeyLength := int(data[1])
+		copy(key.KeyPair.PublicKey.Apk[:], data[2:2+apkKeyLength])
+		pkencKeyLength := int(data[apkKeyLength+2])
+		copy(key.KeyPair.PublicKey.Pkenc[:], data[3+apkKeyLength: 3+apkKeyLength+pkencKeyLength])
+	} else if keyType == ReadonlyKeyType {
+		apkKeyLength := int(data[1])
+		copy(key.KeyPair.ReadonlyKey.Apk[:], data[2:2+apkKeyLength])
+		skencKeyLength := int(data[apkKeyLength+2])
+		copy(key.KeyPair.ReadonlyKey.Skenc[:], data[3+apkKeyLength: 3+apkKeyLength+skencKeyLength])
 	}
 
 	// validate checksum
@@ -214,7 +227,7 @@ func Deserialize(data []byte) (*Key, error) {
 	return key, nil
 }
 
-// Base58CheckDeserialize deserializes a KeyPair encoded in base58 encoding
+// Base58CheckDeserialize deserializes a KeySet encoded in base58 encoding
 func Base58CheckDeserialize(data string) (*Key, error) {
 	b, _, err := base58.Base58Check{}.Decode(data)
 	if err != nil {

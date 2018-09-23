@@ -10,6 +10,9 @@ import (
 	"reflect"
 	"net"
 	"fmt"
+	"encoding/base64"
+	"github.com/pkg/errors"
+	"bytes"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -165,4 +168,46 @@ func ParseListeners(addrs []string, netType string) ([]SimpleAddr, error) {
 		}
 	}
 	return netAddrs, nil
+}
+
+func JsonUnmarshallByteArray(string string) []byte {
+	bytes, _ := base64.StdEncoding.DecodeString(string)
+	return bytes
+}
+
+/**
+SliceExists - Check slice contain item
+ */
+func SliceExists(slice interface{}, item interface{}) (bool, error) {
+	s := reflect.ValueOf(slice)
+
+	if s.Kind() != reflect.Slice {
+		return false, errors.New("SliceExists() given a non-slice type")
+	}
+
+	for i := 0; i < s.Len(); i++ {
+		interfacea := s.Index(i).Interface()
+		if interfacea == item {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func SliceBytesExists(slice interface{}, item interface{}) (bool, error) {
+	s := reflect.ValueOf(slice)
+
+	if s.Kind() != reflect.Slice {
+		return false, errors.New("SliceBytesExists() given a non-slice type")
+	}
+
+	for i := 0; i < s.Len(); i++ {
+		interfacea := s.Index(i).Interface()
+		if bytes.Equal(interfacea.([]byte), item.([]byte)) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

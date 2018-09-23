@@ -6,6 +6,7 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	//"encoding/json"
+	"unsafe"
 )
 
 type Param struct {
@@ -38,14 +39,14 @@ type Param struct {
 //}
 
 type ActionParamTx struct {
-	Version  int    `json:"Version"`
-	Type     string `json:"Type"` // NORMAL / ACTION_PARAMS
+	Version  int8   `json:"Version"`
+	Type     string `json:"Type"` // a
 	Param    *Param `json:"Param"`
 	LockTime int64  `json:"LockTime"`
 }
 
-func (self *ActionParamTx) Hash() *common.Hash {
-	record := strconv.Itoa(self.Version) + strconv.Itoa(self.Version)
+func (self ActionParamTx) Hash() *common.Hash {
+	record := strconv.Itoa(int(self.Version))
 	record += self.Type
 	record += self.Param.AgentID
 	record += string(self.Param.AgentSig)
@@ -63,4 +64,9 @@ func (self *ActionParamTx) ValidateTransaction() bool {
 
 func (self *ActionParamTx) GetType() string {
 	return self.Type
+}
+
+// GetTxVirtualSize computes the virtual size of a given transaction
+func (tx *ActionParamTx) GetTxVirtualSize() uint64 {
+	return uint64(unsafe.Sizeof(tx))
 }

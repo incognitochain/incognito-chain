@@ -1,23 +1,39 @@
-# prototype
+# Cash-prototype
+One prototype version for a new type of crypto curency
 
-Pre: install glide https://github.com/Masterminds/glide
+## Getting Started
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+
+### Prerequisites
+
+- Install glide by https://github.com/Masterminds/glide
+- Install privacy server
+    - On Mac-os, run file path_proj/privacy/server/build_macos.sh
+
+### Run node
 
 - Clone Project
-- to install dependencies Run command-line below 
+- Pre-install like "Prerequisites"
+- Run privacy-server
+    ```
+    cd path_proj/privacy/server/build
+    ./main
+    ```
+- To install dependencies Run command-line below
     ```
     $glide install
     $go build ./
     ```
-- get first node up 
+- Get first node up
     ```
     $./cash-prototype
     ```
-- get node `n` up
+- Get node `n` up
     ```
     $./cash-prototype -listen “127.0.0.1:9555” --norpc --datadir “data1" --connect “/ip4/127.0.0.1/tcp/9333/ipfs/QmawrS2w63oXTq9dS8sFYk6ebttLPpdKm7eosTUPx4YGu8” --generate --miningaddr “mgnUx4Ah4VBvtaL7U1VXkmRjKUk3h8pbst”
     ```
 
-## run with docker-compose
+### Run with docker-compose
 * To start dev container
     ```
     $docker-compose -p cashdev -f dev-env/docker-compose.yaml up -d

@@ -58,6 +58,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 		str, err := rw.ReadString('\n')
 		if err != nil {
 			Logger.log.Error(err)
+			Logger.log.Infof("InMessageHandler PEER %s quit IN message handler", self.PeerId)
 
 			Logger.log.Infof("PEER %s quit IN message handler", self.PeerID)
 			self.quit <- struct{}{}
@@ -175,7 +176,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					//self.flagMutex.Unlock()
 				}
 			default:
-				Logger.log.Warnf("Received unhandled message of type %v "+
+				Logger.log.Warnf("InMessageHandler Received unhandled message of type %v "+
 					"from %v", realType, self)
 			}
 		}
@@ -228,7 +229,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		case <-self.quit:
 			Logger.log.Infof("PEER %s quit OUT message handler", self.PeerID)
 
-			self.disconnect <- struct{}{}
+			close(self.disconnect)
 
 			if self.HandleDisconnected != nil {
 				go self.HandleDisconnected(self)

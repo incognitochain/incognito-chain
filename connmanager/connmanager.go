@@ -231,6 +231,25 @@ func (self ConnManager) GetPeerId(addr string) string {
 	return peerId.Pretty()
 }
 
+func (self ConnManager) GetPeerIDStr(addr string) string {
+	ipfsaddr, err := ma.NewMultiaddr(addr)
+	if err != nil {
+		log.Print(err)
+		return ""
+	}
+	pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
+	if err != nil {
+		log.Print(err)
+		return ""
+	}
+	peerId, err := libpeer.IDB58Decode(pid)
+	if err != nil {
+		log.Print(err)
+		return ""
+	}
+	return peerId.String()
+}
+
 // Connect assigns an id and dials a connection to the address of the
 // connection request.
 func (self *ConnManager) Connect(addr string, pubKey string) {

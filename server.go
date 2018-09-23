@@ -29,6 +29,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/netsync"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/rpcserver"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"github.com/ninjadotorg/cash-prototype/wire"
 )
@@ -62,6 +63,10 @@ type Server struct {
 	NetSync     *netsync.NetSync
 	AddrManager *addrmanager.AddrManager
 	Wallet      *wallet.Wallet
+
+	// The fee estimator keeps track of how long transactions are left in
+	// the mempool before they are mined into blocks.
+	FeeEstimator *mempool.FeeEstimator
 
 	ConsensusEngine *ppos.Engine
 }
@@ -140,10 +145,23 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		return err
 	}
 
-	self.MemPool = mempool.New(&mempool.Config{
-		Policy:      mempool.Policy{},
-		BlockChain:  self.BlockChain,
-		ChainParams: chainParams,
+	// If no feeEstimator has been found, or if the one that has been found
+	// is behind somehow, create a new one and start over.
+	if self.FeeEstimator == nil || self.FeeEstimator.LastKnownHeight() != self.BlockChain.BestState.BestBlock.Height {
+		self.FeeEstimator = mempool.NewFeeEstimator(
+			mempool.DefaultEstimateFeeMaxRollback,
+			mempool.DefaultEstimateFeeMinRegisteredBlocks)
+	}
+
+	// create mempool tx
+	self.MemPool = &mempool.TxPool{}
+	self.MemPool.Init(&mempool.Config{
+		Policy: mempool.Policy{
+			MaxTxVersion: transaction.TxVersion + 1,
+		},
+		BlockChain:   self.BlockChain,
+		ChainParams:  chainParams,
+		FeeEstimator: self.FeeEstimator,
 	})
 
 	self.AddrManager = addrmanager.New(cfg.DataDir, nil)
@@ -173,6 +191,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		MemPool:    self.MemPool,
 		Server:     self,
 		Consensus:  self.ConsensusEngine,
+		FeeEstimator: self.FeeEstimator,
 	})
 	if err != nil {
 		return err
@@ -232,21 +251,23 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		}
 
 		rpcConfig := rpcserver.RpcServerConfig{
-			Listenters:    rpcListeners,
-			RPCQuirks:     cfg.RPCQuirks,
-			RPCMaxClients: cfg.RPCMaxClients,
-			ChainParams:   chainParams,
-			BlockChain:    self.BlockChain,
-			TxMemPool:     self.MemPool,
-			Server:        self,
-			Wallet:        self.Wallet,
-			ConnMgr:       self.ConnManager,
-			AddrMgr:       self.AddrManager,
-			RPCUser:       cfg.RPCUser,
-			RPCPass:       cfg.RPCPass,
-			RPCLimitUser:  cfg.RPCLimitUser,
-			RPCLimitPass:  cfg.RPCLimitPass,
-			DisableAuth:   cfg.RPCDisableAuth,
+			Listenters:     rpcListeners,
+			RPCQuirks:      cfg.RPCQuirks,
+			RPCMaxClients:  cfg.RPCMaxClients,
+			ChainParams:    chainParams,
+			BlockChain:     self.BlockChain,
+			TxMemPool:      self.MemPool,
+			Server:         self,
+			Wallet:         self.Wallet,
+			ConnMgr:        self.ConnManager,
+			AddrMgr:        self.AddrManager,
+			RPCUser:        cfg.RPCUser,
+			RPCPass:        cfg.RPCPass,
+			RPCLimitUser:   cfg.RPCLimitUser,
+			RPCLimitPass:   cfg.RPCLimitPass,
+			DisableAuth:    cfg.RPCDisableAuth,
+			IsGenerateNode: cfg.Generate,
+			FeeEstimator:   self.FeeEstimator,
 		}
 		self.RpcServer = &rpcserver.RpcServer{}
 		err = self.RpcServer.Init(&rpcConfig)
@@ -445,14 +466,6 @@ func (self Server) Start() {
 	if cfg.Generate == true && (len(cfg.SealerPrvKey) > 0) {
 		self.ConsensusEngine.StartSealer(cfg.SealerPrvKey)
 	}
-
-	// test, print length of chain
-	/*go func(server Server) {
-		for {
-			time.Sleep(time.Second * 3)
-			log.Printf("\n --- BlockChain length: %d ---- \n", len(server.BlockChain.Blocks))
-		}
-	}(self)*/
 }
 
 // initListeners initializes the configured net listeners and adds any bound
@@ -601,32 +614,30 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 
 	msgV.(*wire.MessageVerAck).Valid = valid
 
-	var dc chan<- struct{}
-	peerConn.QueueMessageWithEncoding(msgV, dc)
+	peerConn.QueueMessageWithEncoding(msgV, nil)
 
 	//	push version message again
 	if !peerConn.VerAckReceived() {
-		msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
-		msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
-		msg.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.ListeningAddress
-		msg.(*wire.MessageVersion).RawLocalAddress = peerConn.ListenerPeer.RawAddress
-		msg.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerID
-		msg.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
-		msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
-		msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
-		msg.(*wire.MessageVersion).LastBlock = 0
-		msg.(*wire.MessageVersion).ProtocolVersion = 1
+		msgS, err := wire.MakeEmptyMessage(wire.CmdVersion)
+		msgS.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
+		msgS.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.ListeningAddress
+		msgS.(*wire.MessageVersion).RawLocalAddress = peerConn.ListenerPeer.RawAddress
+		msgS.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerId
+		msgS.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
+		msgS.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
+		msgS.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerId
+		msgS.(*wire.MessageVersion).LastBlock = 0
+		msgS.(*wire.MessageVersion).ProtocolVersion = 1
 		// Validate Public Key from SealerPrvKey
 		if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
 			keyPair := &cashec.KeyPair{}
-			keyPair.Import(peerConn.ListenerPeer.Config.SealerPrvKey)
-			msg.(*wire.MessageVersion).PublicKey = base64.StdEncoding.EncodeToString(keyPair.PublicKey)
+			keyPair.Import([]byte(peerConn.ListenerPeer.Config.SealerPrvKey))
+			msgS.(*wire.MessageVersion).PublicKey = string(keyPair.PublicKey)
 		}
 		if err != nil {
 			return
 		}
-		var dc1 chan<- struct{}
-		peerConn.QueueMessageWithEncoding(msg, dc1)
+		peerConn.QueueMessageWithEncoding(msgS, nil)
 	}
 }
 
@@ -672,6 +683,17 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 				go _peerConn.QueueMessageWithEncoding(msgS, doneChan)
 			}
 		}
+
+		// send message get blocks
+
+		//msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
+		//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.BlockChain.BestState.BestBlockHash
+		//println(peerConn.ListenerPeer.PeerId.String())
+		//msgNew.(*wire.MessageGetBlocks).SenderID = peerConn.ListenerPeer.PeerId.String()
+		//if err != nil {
+		//	return
+		//}
+		//peerConn.QueueMessageWithEncoding(msgNew, nil)
 	} else {
 		peerConn.VerValid = true
 	}

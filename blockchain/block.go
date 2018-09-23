@@ -1,14 +1,16 @@
 package blockchain
 
 import (
+	"strconv"
+
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
 )
 
 const (
@@ -59,44 +61,89 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 		if txTemp["Type"].(string) == common.TxNormalType {
 			// init a tx
 			txNormal := &transaction.Tx{
-				Version:  int(txTemp["Version"].(float64)),
+				Version:  int8(txTemp["Version"].(float64)),
 				Type:     txTemp["Type"].(string),
-				LockTime: int(txTemp["LockTime"].(float64)),
+				LockTime: int64(txTemp["LockTime"].(float64)),
+				Fee:      uint64(txTemp["Fee"].(float64)),
 			}
-			// process for txin
-			txTempTxIn := txTemp["TxIn"].([]interface{})
-			txIn := make([]transaction.TxIn, 0)
-			for _, k := range txTempTxIn {
-				v := k.(map[string]interface{})
-				tempOutPoint := v["PreviousOutPoint"].(map[string]interface{})
-				preHash, _ := common.Hash{}.NewHashFromStr(tempOutPoint["Hash"].(string))
-				pOutPoint := transaction.OutPoint{
-					Hash: *preHash,
-					Vout: uint32(tempOutPoint["Vout"].(float64)),
-				}
-				t := transaction.TxIn{
-					Sequence: int(v["Sequence"].(float64)),
-					// SignatureScript:  []byte(v["SignatureScript"].(string)),
-					PreviousOutPoint: pOutPoint,
-				}
-				txIn = append(txIn, t)
+			jSPubKey, ok := txTemp["JSPubKey"]
+			if ok && jSPubKey != nil {
+				txNormal.JSPubKey = common.JsonUnmarshallByteArray(jSPubKey.(string))
 			}
-			txNormal.TxIn = txIn
+			jSSig, ok := txTemp["JSSig"]
+			if ok && jSSig != nil {
+				txNormal.JSSig = common.JsonUnmarshallByteArray(jSSig.(string))
+			}
+			desc, ok := txTemp["Descs"]
+			if ok && desc != nil {
+				descTemps := desc.([]interface{})
+				for _, descTemp := range descTemps {
+					item := descTemp.(map[string]interface{})
+					desc := &transaction.JoinSplitDesc{
+						Anchor:          common.JsonUnmarshallByteArray(item["Anchor"].(string)),
+						Type:            item["Type"].(string),
+						Reward:          uint64(item["Reward"].(float64)),
+						EphemeralPubKey: common.JsonUnmarshallByteArray(item["EphemeralPubKey"].(string)),
+						HSigSeed:        common.JsonUnmarshallByteArray(item["HSigSeed"].(string)),
+					}
+					// proof
+					if ok := item["Proof"] != nil; ok {
+						proofTemp := item["Proof"].(map[string]interface{})
+						proof := &zksnark.PHGRProof{
+							G_A:      common.JsonUnmarshallByteArray(proofTemp["g_A"].(string)),
+							G_APrime: common.JsonUnmarshallByteArray(proofTemp["g_A_prime"].(string)),
+							G_B:      common.JsonUnmarshallByteArray(proofTemp["g_B"].(string)),
+							G_BPrime: common.JsonUnmarshallByteArray(proofTemp["g_B_prime"].(string)),
+							G_C:      common.JsonUnmarshallByteArray(proofTemp["g_C"].(string)),
+							G_CPrime: common.JsonUnmarshallByteArray(proofTemp["g_C_prime"].(string)),
+							G_K:      common.JsonUnmarshallByteArray(proofTemp["g_K"].(string)),
+							G_H:      common.JsonUnmarshallByteArray(proofTemp["g_H"].(string)),
+						}
+						desc.Proof = proof
+					}
 
-			// process for txout
-			txTempTxOut := txTemp["TxOut"].([]interface{})
-			txOut := make([]transaction.TxOut, 0)
-			for _, k := range txTempTxOut {
-				v := k.(map[string]interface{})
-				t := transaction.TxOut{
-					TxOutType: v["TxOutType"].(string),
-					Value:     v["Value"].(float64),
-					PkScript:  []byte(v["PkScript"].(string)),
-				}
-				txOut = append(txOut, t)
-			}
-			txNormal.TxOut = txOut
+					// nullifier
+					if ok := item["Nullifiers"] != nil; ok {
+						nullifiersTemp := item["Nullifiers"].([]interface{})
+						nullifiers := make([][]byte, 0)
+						for _, n := range nullifiersTemp {
+							nullifiers = append(nullifiers, common.JsonUnmarshallByteArray(n.(string)))
+						}
+						desc.Nullifiers = nullifiers
+					}
 
+					// commitment
+					if ok := item["Commitments"] != nil; ok {
+						commitmentsTemp := item["Commitments"].([]interface{})
+						commitments := make([][]byte, 0)
+						for _, n := range commitmentsTemp {
+							commitments = append(commitments, common.JsonUnmarshallByteArray(n.(string)))
+						}
+						desc.Commitments = commitments
+					}
+
+					// encrypt data
+					if ok := item["EncryptedData"] != nil; ok {
+						datasTemp := item["EncryptedData"].([]interface{})
+						datas := make([][]byte, 0)
+						for _, n := range datasTemp {
+							datas = append(datas, common.JsonUnmarshallByteArray(n.(string)))
+						}
+						desc.EncryptedData = datas
+					}
+
+					// vmac
+					if ok := item["Vmacs"] != nil; ok {
+						vmacsTemp := item["Vmacs"].([]interface{})
+						vmacs := make([][]byte, 0)
+						for _, n := range vmacsTemp {
+							vmacs = append(vmacs, common.JsonUnmarshallByteArray(n.(string)))
+						}
+						desc.Vmacs = vmacs
+					}
+					txNormal.Descs = append(txNormal.Descs, desc)
+				}
+			}
 			self.Transactions = append(self.Transactions, txNormal)
 		} else if txTemp["Type"].(string) == common.TxActionParamsType {
 			// init a tx
@@ -111,7 +158,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 			txAction := transaction.ActionParamTx{
 				LockTime: int64(txTemp["LockTime"].(float64)),
 				Type:     txTemp["Type"].(string),
-				Version:  int(txTemp["Version"].(float64)),
+				Version:  int8(txTemp["Version"].(float64)),
 				Param:    &param,
 			}
 			self.Transactions = append(self.Transactions, &txAction)
@@ -133,11 +180,17 @@ func (self *Block) ClearTransactions() {
 	self.Transactions = make([]transaction.Transaction, 0, defaultTransactionAlloc)
 }
 
-func (self *Block) Hash() *common.Hash {
+func (self Block) Hash() *common.Hash {
 	//if self.blockHash != nil {
 	//	return self.blockHash
 	//}
-	record := strconv.Itoa(self.Header.Version) + self.Header.MerkleRoot.String() + self.Header.PrevBlockHash.String() + strconv.Itoa(self.Header.Nonce) + strconv.Itoa(len(self.Transactions)) + string(self.Header.ChainID) + fmt.Sprint(self.Header.ChainsHeight) + strings.Join(self.Header.NextCommittee, "")
+	record := strconv.Itoa(self.Header.Version) +
+		self.Header.MerkleRoot.String() +
+		self.Header.MerkleRootCommitments.String() +
+		strconv.FormatInt(self.Header.Timestamp, 10) +
+		self.Header.PrevBlockHash.String() +
+		strconv.Itoa(self.Header.Nonce) +
+		strconv.Itoa(len(self.Transactions))
 	hash := common.DoubleHashH([]byte(record))
 	//self.blockHash = &hash
 	//return self.blockHash
