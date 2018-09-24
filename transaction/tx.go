@@ -99,7 +99,7 @@ func max(x, y int) int {
 }
 
 // EstimateTxSize returns the estimated size of the tx in kilobyte
-func EstimateTxSize(usableTx []Tx, payments []*client.PaymentInfo) uint64 {
+func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 	var sizeVersion uint64 = 1  // int8
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64

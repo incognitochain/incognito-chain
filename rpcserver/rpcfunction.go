@@ -71,6 +71,7 @@ var RpcLimited = map[string]commandHandler{
 	"listunspent":           RpcServer.handleListUnspent,
 	"getbalance":            RpcServer.handleGetBalance,
 	"getreceivedbyaccount":  RpcServer.handleGetReceivedByAccount,
+	"settxfee":              RpcServer.handleSetTxFee,
 }
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -712,10 +713,8 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		temp, _ := self.Config.FeeEstimator.EstimateFee(3)
 		estimateFeeCoinPerKb = int64(temp)
 	}
-	if int64(estimateFeeCoinPerKb) == 0 {
-		estimateFeeCoinPerKb += 1
-	}
-	estimateTxSizeInKb := transaction.EstimateTxSize(usableTxs, paymentInfos)
+	estimateFeeCoinPerKb += int64(self.Config.Wallet.Config.PayTxFee)
+	estimateTxSizeInKb := transaction.EstimateTxSize(candidateTxs, paymentInfos)
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 
 	// list unspent tx for create tx
@@ -1201,4 +1200,13 @@ func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan str
 		return -1, err
 	}
 	return uint64(feeRate), nil
+}
+
+/**
+handleSetTxFee - RPC sets the transaction fee per kilobyte paid more by transactions created by this wallet. default is 1 coin per 1 kb
+ */
+func (self RpcServer) handleSetTxFee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	self.Config.Wallet.Config.PayTxFee = uint64(params.(float64))
+	err := self.Config.Wallet.Save(self.Config.Wallet.PassPhrase)
+	return err == nil, err
 }
