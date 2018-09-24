@@ -689,6 +689,9 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	// param #3: estimation fee coin per kb
 	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
 
+	// param #4: estimation fee coin per kb
+	numBlock := uint32(arrayParams[3].(float64))
+
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
 	usableTxs, _ := self.Config.BlockChain.GetListTxByPrivateKey(&senderKey.KeyPair.PrivateKey, common.TxOutCoinType, transaction.SortByAmount, false)
@@ -710,7 +713,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	// check real fee per Tx
 	var realFee uint64
 	if int64(estimateFeeCoinPerKb) == -1 {
-		temp, _ := self.Config.FeeEstimator.EstimateFee(3)
+		temp, _ := self.Config.FeeEstimator.EstimateFee(numBlock)
 		estimateFeeCoinPerKb = int64(temp)
 	}
 	estimateFeeCoinPerKb += int64(self.Config.Wallet.Config.PayTxFee)
