@@ -84,6 +84,25 @@ func (tx *Tx) GetTxVirtualSize() uint64 {
 	return uint64(unsafe.Sizeof(tx))
 }
 
+func max(x, y int) int {
+	if x > y {
+		return x
+	}
+	return y
+}
+
+// EstimateTxSize returns the estimated size of the tx in bytes
+func EstimateTxSize(usableTx []Tx, payments []*client.PaymentInfo) uint64 {
+	var sizeVersion uint64 = 1  // int8
+	var sizeType uint64 = 8     // string
+	var sizeLockTime uint64 = 8 // int64
+	var sizeFee uint64 = 8      // uint64
+	var sizeDescs = uint64(max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
+	var sizejSPubKey uint64 = 64 // [64]byte
+	var sizejSSig uint64 = 64    // [64]byte
+	return sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
+}
+
 // NewTxTemplate returns a new Tx initialized with default data
 func NewTxTemplate() *Tx {
 	//Generate signing key 96 bytes

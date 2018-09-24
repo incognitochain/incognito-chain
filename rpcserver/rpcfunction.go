@@ -703,15 +703,12 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	}
 
 	estimateFeeCoinPerByte, err := self.Config.FeeEstimator.EstimateFee(3)
-	// TODO estimdate real fee
-	realFee := estimateFeeCoinPerByte * 1000
+	fee := uint64(estimateFeeCoinPerByte) * transaction.EstimateTxSize(usableTxs, paymentInfos)
 
 	// get tx view point
 	txViewPoint, err := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
 	// create a new tx
 	fmt.Printf("[handleCreateTransaction] MerkleRootCommitments: %x\n", self.Config.BlockChain.BestState.BestBlock.Header.MerkleRootCommitments[:])
-	var fee uint64 // TODO(@sirrush): provide correct value
-	fee = uint64(realFee)
 	tx, err := transaction.CreateTx(&senderKey.KeyPair.PrivateKey, paymentInfos, &self.Config.BlockChain.BestState.BestBlock.Header.MerkleRootCommitments, candidateTxs, txViewPoint.ListNullifiers(common.TxOutCoinType), txViewPoint.ListCommitments(common.TxOutCoinType), fee)
 	if err != nil {
 		return nil, err
