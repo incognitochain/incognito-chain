@@ -713,7 +713,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		estimateFeeCoinPerByte, err = self.Config.FeeEstimator.EstimateFee(3)
 	}
 	// TODO estimdate real fee
-	realFee = uint64(estimateFeeCoinPerByte) * 1000
+	realFee = uint64(estimateFeeCoinPerByte) * transaction.EstimateTxSize(usableTxs, paymentInfos)
 
 	// list unspent tx for create tx
 	totalAmmount += int64(realFee)
