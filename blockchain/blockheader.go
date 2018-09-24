@@ -16,7 +16,7 @@ type BlockHeader struct {
 	PrevBlockHash common.Hash
 
 	// Merkle tree reference to hash of all transactions for the block.
-	//MerkleRoot common.Hash
+	MerkleRoot common.Hash
 
 	// Merkle tree reference to hash of all commitments to the current block.
 	MerkleRootCommitments common.Hash

@@ -441,9 +441,9 @@ mempoolLoop:
 
 	block := blockchain.Block{}
 	block.Header = blockchain.BlockHeader{
-		Version:       1,
-		PrevBlockHash: *prevBlockHash,
-		//MerkleRoot:            *merkleRoot,
+		Version:               1,
+		PrevBlockHash:         *prevBlockHash,
+		MerkleRoot:            *merkleRoot,
 		MerkleRootCommitments: common.Hash{},
 		Timestamp:             time.Now().Unix(),
 		Difficulty:            0, //@todo should be create Difficulty logic

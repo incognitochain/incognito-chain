@@ -312,7 +312,7 @@ func (db *db) StoreFeeEstimator(val []byte) error {
 }
 
 func (db *db) GetFeeEstimator() ([]byte, error) {
-	b, err := db.ldb.Get(feeEstimator, nil)
+	b, err := db.lvdb.Get(feeEstimator, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "db.ldb.Get")
 	}

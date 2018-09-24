@@ -253,7 +253,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			result["height"] = block.Height
 			result["version"] = block.Header.Version
 			result["versionHex"] = fmt.Sprintf("%x", block.Header.Version)
-			//result["merkleroot"] = block.Header.MerkleRoot.String()
+			result["merkleroot"] = block.Header.MerkleRoot.String()
 			result["time"] = block.Header.Timestamp
 			result["mediantime"] = 0
 			result["nonce"] = block.Header.Nonce
@@ -288,7 +288,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			result["height"] = block.Height
 			result["version"] = block.Header.Version
 			result["versionHex"] = fmt.Sprintf("%x", block.Header.Version)
-			//result["merkleroot"] = block.Header.MerkleRoot.String()
+			result["merkleroot"] = block.Header.MerkleRoot.String()
 			result["time"] = block.Header.Timestamp
 			result["mediantime"] = 0
 			result["nonce"] = block.Header.Nonce
@@ -1211,7 +1211,7 @@ func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan str
 
 /**
 handleSetTxFee - RPC sets the transaction fee per kilobyte paid more by transactions created by this wallet. default is 1 coin per 1 kb
- */
+*/
 func (self RpcServer) handleSetTxFee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	self.Config.Wallet.Config.PayTxFee = uint64(params.(float64))
 	err := self.Config.Wallet.Save(self.Config.Wallet.PassPhrase)
