@@ -650,7 +650,10 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	for _, tx := range block.Transactions {
 		self.config.MemPool.RemoveTx(tx)
 	}
-	newBestState.Init(block, self.config.BlockChain.BestState[block.Header.ChainID].CmTree)
+	tree := self.config.BlockChain.BestState[block.Header.ChainID].CmTree
+	blockchain.UpdateMerkleTreeForBlock(tree, block)
+
+	newBestState.Init(block, tree)
 	self.config.BlockChain.BestState[block.Header.ChainID] = newBestState
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)
 
