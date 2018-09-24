@@ -21,6 +21,23 @@ type JoinSplitDesc struct {
 	note []*client.Note // decrypt data for EncryptedData
 }
 
+// EstimateJSDescSize returns the estimated size of a JoinSplitDesc in bytes
+func EstimateJSDescSize() uint64 {
+	var sizeAnchor uint64 = 32                                 // [32]byte
+	var sizeNullifiers uint64 = 64                             // [2][32]byte
+	var sizeCommitments uint64 = 64                            // [2][32]byte
+	var sizeProof uint64 = 33*7 + 65                           // zksnark.PHGRProof
+	var sizeEncryptedData uint64 = 2 * (8 + 32 + 32)           // [2][]byte, ignore memo
+	var sizeEphemeralPubKey uint64 = client.EphemeralKeyLength // [32]byte
+	var sizeHSigSeed uint64 = 32                               // [32]byte
+	var sizeType uint64 = 8                                    // string
+	var sizeReward uint64 = 8                                  // uint64
+	var sizeVmacs uint64 = 64                                  // [2][32]byte
+	return sizeAnchor + sizeNullifiers + sizeCommitments + sizeProof +
+		sizeEncryptedData + sizeEphemeralPubKey + sizeHSigSeed + sizeType +
+		sizeReward + sizeVmacs
+}
+
 func (desc *JoinSplitDesc) toString() string {
 	s := string(desc.Anchor)
 	for _, nf := range desc.Nullifiers {

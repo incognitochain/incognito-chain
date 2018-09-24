@@ -107,7 +107,7 @@ func (m *Miner) commitBlock(block *blockchain.Block) (bool, error) {
 }
 
 func (m *Miner) generateBlocks(quit chan struct{}) {
-	fmt.Print("Starting generate blocks worker")
+	fmt.Print("Starting generate blocks worker\n")
 out:
 	for {
 		select {
@@ -200,7 +200,7 @@ func (m *Miner) Start() {
 	go m.workerController()
 
 	m.started = true
-	fmt.Print("CPU miner started")
+	fmt.Print("CPU miner started\n")
 }
 
 func (m *Miner) Stop() {

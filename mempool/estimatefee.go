@@ -51,38 +51,13 @@ var (
 	EstimateFeeDatabaseKey = []byte("estimatefee")
 )
 
-// CoinPerByte is number with units of coins per byte.
-type CoinPerByte uint64
-
 // CoinPerKilobyte is number with units of coins per kilobyte.
 type CoinPerKilobyte uint64
 
-// ToCoinPerKb returns a float value that represents the given
-// CoinPerByte converted to coins per kb.
-func (rate CoinPerByte) ToCoinPerKb() CoinPerKilobyte {
-	// If our rate is the error value, return that.
-	if rate == CoinPerByte(0) {
-		return 0
-	}
-
-	return CoinPerKilobyte(float64(rate) * bytePerKb)
-}
-
-// Fee returns the fee for a transaction of a given size for
-// the given fee rate.
-func (rate CoinPerByte) Fee(size uint32) uint64 {
-	// If our rate is the error value, return that.
-	if rate == CoinPerByte(0) {
-		return 0
-	}
-
-	return uint64(rate) * uint64(size)
-}
-
-// NewCoinPerByte creates a CoinPerByte from an Amount and a
+// NewCoinPerKilobyte creates a CoinPerByte from an Amount and a
 // size in bytes.
-func NewCoinPerByte(fee uint64, size uint64) CoinPerByte {
-	return CoinPerByte(float64(fee) / float64(size))
+func NewCoinPerKilobyte(fee uint64, size uint64) CoinPerKilobyte {
+	return CoinPerKilobyte(float64(fee) / float64(size))
 }
 
 // observedTransaction represents an observed transaction and some
@@ -92,7 +67,7 @@ type observedTransaction struct {
 	hash common.Hash
 
 	// The fee per byte of the transaction in coins.
-	feeRate CoinPerByte
+	feeRate CoinPerKilobyte
 
 	// The block height when it was observed.
 	observed int32
@@ -168,7 +143,7 @@ type FeeEstimator struct {
 	bin      [estimateFeeDepth][]*observedTransaction
 
 	// The cached estimates.
-	cached []CoinPerByte
+	cached []CoinPerKilobyte
 
 	// Transactions that have been removed from the bins. This allows us to
 	// revert in case of an orphaned block.
@@ -204,10 +179,9 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 	hash := *t.Desc.Tx.Hash()
 	if _, ok := ef.observed[hash]; !ok {
 		size := t.Desc.Tx.GetTxVirtualSize()
-
 		ef.observed[hash] = &observedTransaction{
 			hash:     hash,
-			feeRate:  NewCoinPerByte(uint64(t.Desc.Fee), size),
+			feeRate:  NewCoinPerKilobyte(uint64(t.Desc.Fee), size),
 			observed: t.Desc.Height,
 			mined:    UnminedHeight,
 		}
@@ -453,7 +427,7 @@ func (ef *FeeEstimator) rollback() {
 // estimateFeeSet is a set of txs that can that is sorted
 // by the fee per kb rate.
 type estimateFeeSet struct {
-	feeRate []CoinPerByte
+	feeRate []CoinPerKilobyte
 	bin     [estimateFeeDepth]uint32
 }
 
@@ -470,9 +444,9 @@ func (b *estimateFeeSet) Swap(i, j int) {
 // estimateFee returns the estimated fee for a transaction
 // to confirm in confirmations blocks from now, given
 // the data set we have collected.
-func (b *estimateFeeSet) estimateFee(confirmations int) CoinPerByte {
+func (b *estimateFeeSet) estimateFee(confirmations int) CoinPerKilobyte {
 	if confirmations <= 0 {
-		return CoinPerByte(math.Inf(1))
+		return CoinPerKilobyte(math.Inf(1))
 	}
 
 	if confirmations > estimateFeeDepth {
@@ -513,7 +487,7 @@ func (ef *FeeEstimator) newEstimateFeeSet() *estimateFeeSet {
 		capacity += l
 	}
 
-	set.feeRate = make([]CoinPerByte, capacity)
+	set.feeRate = make([]CoinPerKilobyte, capacity)
 
 	i := 0
 	for _, b := range ef.bin {
@@ -530,10 +504,10 @@ func (ef *FeeEstimator) newEstimateFeeSet() *estimateFeeSet {
 
 // estimates returns the set of all fee estimates from 1 to estimateFeeDepth
 // confirmations from now.
-func (ef *FeeEstimator) estimates() []CoinPerByte {
+func (ef *FeeEstimator) estimates() []CoinPerKilobyte {
 	set := ef.newEstimateFeeSet()
 
-	estimates := make([]CoinPerByte, estimateFeeDepth)
+	estimates := make([]CoinPerKilobyte, estimateFeeDepth)
 	for i := 0; i < estimateFeeDepth; i++ {
 		estimates[i] = set.estimateFee(i + 1)
 	}
@@ -568,7 +542,7 @@ func (ef *FeeEstimator) EstimateFee(numBlocks uint32) (CoinPerKilobyte, error) {
 		ef.cached = ef.estimates()
 	}
 
-	return ef.cached[int(numBlocks)-1].ToCoinPerKb(), nil
+	return ef.cached[int(numBlocks)-1], nil
 }
 
 // In case the format for the serialized version of the FeeEstimator changes,

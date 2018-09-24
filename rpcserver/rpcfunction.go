@@ -71,6 +71,7 @@ var RpcLimited = map[string]commandHandler{
 	"listunspent":           RpcServer.handleListUnspent,
 	"getbalance":            RpcServer.handleGetBalance,
 	"getreceivedbyaccount":  RpcServer.handleGetReceivedByAccount,
+	"settxfee":              RpcServer.handleSetTxFee,
 }
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -252,7 +253,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			result["height"] = block.Height
 			result["version"] = block.Header.Version
 			result["versionHex"] = fmt.Sprintf("%x", block.Header.Version)
-			result["merkleroot"] = block.Header.MerkleRoot.String()
+			//result["merkleroot"] = block.Header.MerkleRoot.String()
 			result["time"] = block.Header.Timestamp
 			result["mediantime"] = 0
 			result["nonce"] = block.Header.Nonce
@@ -287,7 +288,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			result["height"] = block.Height
 			result["version"] = block.Header.Version
 			result["versionHex"] = fmt.Sprintf("%x", block.Header.Version)
-			result["merkleroot"] = block.Header.MerkleRoot.String()
+			//result["merkleroot"] = block.Header.MerkleRoot.String()
 			result["time"] = block.Header.Timestamp
 			result["mediantime"] = 0
 			result["nonce"] = block.Header.Nonce
@@ -689,31 +690,63 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
 
-	// list unspent tx
+	// param #3: estimation fee coin per kb
+	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
+
+	// param #4: estimation fee coin per kb
+	numBlock := uint32(arrayParams[3].(float64))
+
+	// list unspent tx for estimation fee
+	estimateTotalAmount := totalAmmount
 	usableTxs, _ := self.Config.BlockChain.GetListTxByPrivateKey(&senderKey.KeyPair.PrivateKey, common.TxOutCoinType, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	for _, temp := range usableTxs {
 		for _, desc := range temp.Descs {
 			for _, note := range desc.GetNote() {
 				amount := note.Value
-				totalAmmount -= int64(amount)
+				estimateTotalAmount -= int64(amount)
 			}
 		}
 		txData := temp
 		candidateTxs = append(candidateTxs, &txData)
-		if totalAmmount <= 0 {
+		if estimateTotalAmount <= 0 {
+			break
+		}
+	}
+
+	// check real fee per Tx
+	var realFee uint64
+	if int64(estimateFeeCoinPerKb) == -1 {
+		temp, _ := self.Config.FeeEstimator.EstimateFee(numBlock)
+		estimateFeeCoinPerKb = int64(temp)
+	}
+	estimateFeeCoinPerKb += int64(self.Config.Wallet.Config.PayTxFee)
+	estimateTxSizeInKb := transaction.EstimateTxSize(candidateTxs, paymentInfos)
+	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
+
+	// list unspent tx for create tx
+	totalAmmount += int64(realFee)
+	candidateTxs = make([]*transaction.Tx, 0)
+	for _, temp := range usableTxs {
+		for _, desc := range temp.Descs {
+			for _, note := range desc.GetNote() {
+				amount := note.Value
+				estimateTotalAmount -= int64(amount)
+			}
+		}
+		txData := temp
+		candidateTxs = append(candidateTxs, &txData)
+		if estimateTotalAmount <= 0 {
 			break
 		}
 	}
 
 	// get tx view point
 	txViewPoint, err := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
-	// for _, c := range txViewPoint.ListCommitments(common.TxOutCoinType) {
-	// 	println(hex.EncodeToString(c))
-	// }
 	// create a new tx
 	fmt.Printf("[handleCreateTransaction] MerkleRootCommitments: %x\n", self.Config.BlockChain.BestState.BestBlock.Header.MerkleRootCommitments[:])
 	var fee uint64 // TODO(@sirrush): provide correct value
+	fee = realFee
 	tx, err := transaction.CreateTx(&senderKey.KeyPair.PrivateKey, paymentInfos, &self.Config.BlockChain.BestState.BestBlock.Header.MerkleRootCommitments, candidateTxs, txViewPoint.ListNullifiers(common.TxOutCoinType), txViewPoint.ListCommitments(common.TxOutCoinType), fee)
 	if err != nil {
 		return nil, err
@@ -1174,4 +1207,13 @@ func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan str
 		return -1, err
 	}
 	return uint64(feeRate), nil
+}
+
+/**
+handleSetTxFee - RPC sets the transaction fee per kilobyte paid more by transactions created by this wallet. default is 1 coin per 1 kb
+ */
+func (self RpcServer) handleSetTxFee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	self.Config.Wallet.Config.PayTxFee = uint64(params.(float64))
+	err := self.Config.Wallet.Save(self.Config.Wallet.PassPhrase)
+	return err == nil, err
 }
