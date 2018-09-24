@@ -459,7 +459,10 @@ mempoolLoop:
 	// Add new commitments to merkle tree and save the root
 	newTree := g.chain.BestState.CmTree.MakeCopy()
 	fmt.Printf("[newBlockTemplate] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
-	blockchain.UpdateMerkleTreeForBlock(newTree, &block)
+	err = blockchain.UpdateMerkleTreeForBlock(newTree, &block)
+	if err != nil {
+		return nil, fmt.Errorf("Transaction in block invalid")
+	}
 	rt := newTree.GetRoot(common.IncMerkleTreeHeight)
 	fmt.Printf("[newBlockTemplate] updated tree rt: %x\n", rt)
 	copy(block.Header.MerkleRootCommitments[:], rt)
