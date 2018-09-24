@@ -829,6 +829,7 @@ UpdateChain - Update chain with received block
 func (self *Server) UpdateChain(block *blockchain.Block) {
 	// save block
 	self.BlockChain.StoreBlock(block)
+	self.FeeEstimator.RegisterBlock(block)
 
 	// Update commitments merkle tree
 	tree := self.BlockChain.BestState.CmTree
