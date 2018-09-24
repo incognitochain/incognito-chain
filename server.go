@@ -369,16 +369,18 @@ func (self Server) Stop() error {
 		self.RpcServer.Stop()
 	}
 
-	self.Miner.Stop()
-
 	// Save fee estimator in the db
 	feeEstimatorData := self.FeeEstimator.Save()
 	if len(feeEstimatorData) > 0 {
 		err := self.Db.StoreFeeEstimator(feeEstimatorData)
 		if err != nil {
 			Logger.log.Errorf("Can't save fee estimator data: %v", err)
+		} else {
+			Logger.log.Info("Save fee estimator data")
 		}
 	}
+
+	self.Miner.Stop()
 
 	// Signal the remaining goroutines to quit.
 	close(self.quit)
