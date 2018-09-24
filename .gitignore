@@ -25,3 +25,7 @@ cash-prototype
 # Build Directory
 /privacy/server/build
 *.o
+
+privacy/server/proving\.key
+
+privacy/server/verifying\.key

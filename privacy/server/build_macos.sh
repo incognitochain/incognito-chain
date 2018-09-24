@@ -15,6 +15,7 @@ brew install libsodium
 echo "install gmp ... "
 echo "brew install gmp"
 brew install gmp
+brew link gmp
 
 # install lib protobuf
 echo "install protobuf ... "
@@ -31,8 +32,13 @@ echo "install grpc ... "
 echo "brew install grpc"
 brew install grpc
 
-$BUILD_DIR = "build"
-if [ -d "$BUILD_DIR" ]; then
+# install lib cmake
+echo "install cmake ... "
+echo "brew install cmake"
+brew install cmake
+
+BUILD_DIR="build"
+if [ ! -d "$BUILD_DIR" ]; then
   mkdir build
 fi
 
