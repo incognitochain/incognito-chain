@@ -145,6 +145,16 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		return err
 	}
 
+	// Search for a FeeEstimator state in the database. If none can be found
+	// or if it cannot be loaded, create a new one.
+	feeEstimatorData, err := self.Db.GetFeeEstimator()
+	if err == nil && len(feeEstimatorData) > 0 {
+		self.FeeEstimator, err = mempool.RestoreFeeEstimator(feeEstimatorData)
+		if err != nil {
+			Logger.log.Errorf("Failed to restore fee estimator %v", err)
+		}
+	}
+
 	// If no feeEstimator has been found, or if the one that has been found
 	// is behind somehow, create a new one and start over.
 	if self.FeeEstimator == nil || self.FeeEstimator.LastKnownHeight() != self.BlockChain.BestState.BestBlock.Height {
@@ -367,10 +377,22 @@ func (self Server) Stop() error {
 		self.RpcServer.Stop()
 	}
 
+	// Save fee estimator in the db
+	feeEstimatorData := self.FeeEstimator.Save()
+	if len(feeEstimatorData) > 0 {
+		err := self.Db.StoreFeeEstimator(feeEstimatorData)
+		if err != nil {
+			Logger.log.Errorf("Can't save fee estimator data: %v", err)
+		} else {
+			Logger.log.Info("Save fee estimator data")
+		}
+	}
+
 	// self.Miner.Stop()
 
 	self.ConsensusEngine.Stop()
 
+	// Signal the remaining goroutines to quit.
 	close(self.quit)
 	return nil
 }
@@ -864,13 +886,19 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 // func (self *Server) UpdateChain(block *blockchain.Block) {
 // 	// save block
 // 	self.BlockChain.StoreBlock(block)
+// 	self.FeeEstimator.RegisterBlock(block)
+
+// 	// Update commitments merkle tree
+// 	tree := self.BlockChain.BestState.CmTree
+// 	blockchain.UpdateMerkleTreeForBlock(tree, block)
 
 // 	// save best state
+//  	numTxns := uint64(len(block.Transactions))
+// 	totalTxns := self.BlockChain.BestState.TotalTxns + numTxns
 // 	newBestState := &blockchain.BestState{}
-// 	numTxns := uint64(len(block.Transactions))
-// 	newBestState.Init(block, 0, 0, numTxns, numTxns, time.Unix(block.Header.Timestamp.Unix(), 0))
-// 	self.BlockChain.BestState[block.Header.ChainID] = newBestState
-// 	self.BlockChain.StoreBestState(block.Header.ChainID)
+// 	newBestState.Init(block, 0, 0, numTxns, totalTxns, time.Unix(block.Header.Timestamp, 0), tree)
+// 	self.BlockChain.BestState = newBestState
+// 	self.BlockChain.StoreBestState()
 
 // 	// save index of block
 // 	self.BlockChain.StoreBlockIndex(block)

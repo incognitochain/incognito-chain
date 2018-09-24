@@ -30,5 +30,8 @@ type DB interface {
 	//FetchUtxoEntry(*transaction.OutPoint) ([]byte, error)
 	//DeleteUtxoEntry(*transaction.OutPoint) error
 
+	StoreFeeEstimator([]byte) error
+	GetFeeEstimator() ([]byte, error)
+
 	Close() error
 }

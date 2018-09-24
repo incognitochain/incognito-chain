@@ -183,7 +183,7 @@ func (self Block) Hash() *common.Hash {
 	//	return self.blockHash
 	//}
 	record := strconv.Itoa(self.Header.Version) +
-		self.Header.MerkleRoot.String() +
+	//self.Header.MerkleRoot.String() +
 		self.Header.MerkleRootCommitments.String() +
 		strconv.FormatInt(self.Header.Timestamp, 10) +
 		self.Header.PrevBlockHash.String() +

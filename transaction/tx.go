@@ -13,12 +13,11 @@ import (
 
 	"time"
 
-	"unsafe"
-
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
+	"math"
 )
 
 // Tx represents a coin-transfer-transaction stored in a block
@@ -83,7 +82,35 @@ func (tx *Tx) GetType() string {
 
 // GetTxVirtualSize computes the virtual size of a given transaction
 func (tx *Tx) GetTxVirtualSize() uint64 {
-	return uint64(unsafe.Sizeof(tx))
+	var sizeVersion uint64 = 1  // int8
+	var sizeType uint64 = 8     // string
+	var sizeLockTime uint64 = 8 // int64
+	var sizeFee uint64 = 8      // uint64
+	var sizeDescs = uint64(max(1, len(tx.Descs))) * EstimateJSDescSize()
+	var sizejSPubKey uint64 = 64 // [64]byte
+	var sizejSSig uint64 = 64    // [64]byte
+	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
+	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
+}
+
+func max(x, y int) int {
+	if x > y {
+		return x
+	}
+	return y
+}
+
+// EstimateTxSize returns the estimated size of the tx in kilobyte
+func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
+	var sizeVersion uint64 = 1  // int8
+	var sizeType uint64 = 8     // string
+	var sizeLockTime uint64 = 8 // int64
+	var sizeFee uint64 = 8      // uint64
+	var sizeDescs = uint64(max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+	var sizejSPubKey uint64 = 64 // [64]byte
+	var sizejSSig uint64 = 64    // [64]byte
+	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
+	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }
 
 func (tx *Tx) GetSenderAddrLastByte() byte {

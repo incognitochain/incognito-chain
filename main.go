@@ -109,6 +109,7 @@ func mainMaster(serverChan chan<- *Server) error {
 			DataDir:  cfg.DataDir,
 			DataFile: cfg.WalletDbName,
 			DataPath: filepath.Join(cfg.DataDir, cfg.WalletDbName),
+			PayTxFee: 1,
 		}
 		err = wallet.LoadWallet(cfg.WalletPassphrase)
 		if err != nil {
