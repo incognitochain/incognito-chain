@@ -22,6 +22,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"golang.org/x/crypto/ed25519"
+	"github.com/ninjadotorg/cash-prototype/mempool"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -685,33 +686,58 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
 
-	// list unspent tx
+	// param #3: estimation fee coin per kb
+	estimateFeeCoinPerByte := mempool.CoinPerKilobyte(arrayParams[2].(float64))
+
+	// list unspent tx for estimation fee
+	estimateTotalAmount := totalAmmount
 	usableTxs, _ := self.Config.BlockChain.GetListTxByPrivateKey(&senderKey.KeyPair.PrivateKey, common.TxOutCoinType, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	for _, temp := range usableTxs {
 		for _, desc := range temp.Descs {
 			for _, note := range desc.GetNote() {
 				amount := note.Value
-				totalAmmount -= int64(amount)
+				estimateTotalAmount -= int64(amount)
 			}
 		}
 		txData := temp
 		candidateTxs = append(candidateTxs, &txData)
-		if totalAmmount <= 0 {
+		if estimateTotalAmount <= 0 {
 			break
 		}
 	}
 
-	estimateFeeCoinPerByte, err := self.Config.FeeEstimator.EstimateFee(3)
+	// check fee
+	var realFee uint64
+	if int64(estimateFeeCoinPerByte) == -1 {
+		estimateFeeCoinPerByte, err = self.Config.FeeEstimator.EstimateFee(3)
+	}
 	// TODO estimdate real fee
-	realFee := estimateFeeCoinPerByte * 1000
+	realFee = uint64(estimateFeeCoinPerByte) * 1000
+
+	// list unspent tx for create tx
+	totalAmmount += int64(realFee)
+	candidateTxs = make([]*transaction.Tx, 0)
+	for _, temp := range usableTxs {
+		for _, desc := range temp.Descs {
+			for _, note := range desc.GetNote() {
+				amount := note.Value
+				estimateTotalAmount -= int64(amount)
+			}
+		}
+		txData := temp
+		candidateTxs = append(candidateTxs, &txData)
+		if estimateTotalAmount <= 0 {
+			break
+		}
+	}
 
 	// get tx view point
 	txViewPoint, err := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
 	// create a new tx
 	fmt.Printf("[handleCreateTransaction] MerkleRootCommitments: %x\n", self.Config.BlockChain.BestState.BestBlock.Header.MerkleRootCommitments[:])
 	var fee uint64 // TODO(@sirrush): provide correct value
-	fee = uint64(realFee)
+	fee = realFee
 	tx, err := transaction.CreateTx(&senderKey.KeyPair.PrivateKey, paymentInfos, &self.Config.BlockChain.BestState.BestBlock.Header.MerkleRootCommitments, candidateTxs, txViewPoint.ListNullifiers(common.TxOutCoinType), txViewPoint.ListCommitments(common.TxOutCoinType), fee)
 	if err != nil {
 		return nil, err
