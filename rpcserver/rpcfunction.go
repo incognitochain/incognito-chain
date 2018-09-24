@@ -22,7 +22,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"golang.org/x/crypto/ed25519"
-	"github.com/ninjadotorg/cash-prototype/mempool"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -252,7 +251,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			result["height"] = block.Height
 			result["version"] = block.Header.Version
 			result["versionHex"] = fmt.Sprintf("%x", block.Header.Version)
-			result["merkleroot"] = block.Header.MerkleRoot.String()
+			//result["merkleroot"] = block.Header.MerkleRoot.String()
 			result["time"] = block.Header.Timestamp
 			result["mediantime"] = 0
 			result["nonce"] = block.Header.Nonce
@@ -287,7 +286,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			result["height"] = block.Height
 			result["version"] = block.Header.Version
 			result["versionHex"] = fmt.Sprintf("%x", block.Header.Version)
-			result["merkleroot"] = block.Header.MerkleRoot.String()
+			//result["merkleroot"] = block.Header.MerkleRoot.String()
 			result["time"] = block.Header.Timestamp
 			result["mediantime"] = 0
 			result["nonce"] = block.Header.Nonce
@@ -687,7 +686,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	}
 
 	// param #3: estimation fee coin per kb
-	estimateFeeCoinPerByte := mempool.CoinPerKilobyte(arrayParams[2].(float64))
+	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
@@ -707,13 +706,17 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		}
 	}
 
-	// check fee
+	// check real fee per Tx
 	var realFee uint64
-	if int64(estimateFeeCoinPerByte) == -1 {
-		estimateFeeCoinPerByte, err = self.Config.FeeEstimator.EstimateFee(3)
+	if int64(estimateFeeCoinPerKb) == -1 {
+		temp, _ := self.Config.FeeEstimator.EstimateFee(3)
+		estimateFeeCoinPerKb = int64(temp)
 	}
-	// TODO estimdate real fee
-	realFee = uint64(estimateFeeCoinPerByte) * transaction.EstimateTxSize(usableTxs, paymentInfos)
+	if int64(estimateFeeCoinPerKb) == 0 {
+		estimateFeeCoinPerKb += 1
+	}
+	estimateTxSizeInKb := transaction.EstimateTxSize(usableTxs, paymentInfos)
+	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 
 	// list unspent tx for create tx
 	totalAmmount += int64(realFee)

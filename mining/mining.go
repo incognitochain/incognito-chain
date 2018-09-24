@@ -336,8 +336,8 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	// blockTxns = append(blockTxns, coinbaseTx)
 	blockTxns := txs
 
-	merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(blockTxns)
-	merkleRoot := merkleRoots[len(merkleRoots)-1]
+	//merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(blockTxns)
+	//merkleRoot := merkleRoots[len(merkleRoots)-1]
 
 mempoolLoop:
 	for _, blockTx := range blockTxns {
@@ -442,9 +442,9 @@ mempoolLoop:
 
 	block := blockchain.Block{}
 	block.Header = blockchain.BlockHeader{
-		Version:               1,
-		PrevBlockHash:         *prevBlockHash,
-		MerkleRoot:            *merkleRoot,
+		Version:       1,
+		PrevBlockHash: *prevBlockHash,
+		//MerkleRoot:            *merkleRoot,
 		MerkleRootCommitments: common.Hash{},
 		Timestamp:             time.Now().Unix(),
 		Difficulty:            0, //@todo should be create Difficulty logic
