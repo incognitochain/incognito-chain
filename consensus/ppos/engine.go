@@ -10,8 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/transaction"
-
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 
@@ -363,7 +361,7 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 			if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
 				notFullySync = true
 				getBlkMsg := &wire.MessageGetBlocks{
-					LastBlockHash: self.config.BlockChain.BestState[i].BestBlockHash,
+					LastBlockHash: *self.config.BlockChain.BestState[i].BestBlockHash,
 				}
 				peerIDs := self.config.Server.GetPeerIdsFromPublicKey(block.ChainLeader)
 				if len(peerIDs) != 0 {
@@ -451,7 +449,7 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 			if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
 				notFullySync = true
 				getBlkMsg := &wire.MessageGetBlocks{
-					LastBlockHash: self.config.BlockChain.BestState[i].BestBlockHash,
+					LastBlockHash: *self.config.BlockChain.BestState[i].BestBlockHash,
 				}
 				peerIDs := self.config.Server.GetPeerIdsFromPublicKey(block.ChainLeader)
 				if len(peerIDs) != 0 {
@@ -610,7 +608,7 @@ func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
 				self.knownChainsHeight.Heights[i] = int(chainInfo["ChainsHeight"].([]interface{})[i].(float64))
 
 				getBlkMsg := &wire.MessageGetBlocks{
-					LastBlockHash: self.config.BlockChain.BestState[i].BestBlockHash,
+					LastBlockHash: *self.config.BlockChain.BestState[i].BestBlockHash,
 				}
 				Logger.log.Info("Send getblock to " + msg.SenderID)
 				peerID, err := peer2.IDB58Decode(msg.SenderID)
@@ -648,11 +646,11 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 
 	// save best state
 	newBestState := &blockchain.BestState{}
-	numTxns := uint64(len(block.Transactions))
+	// numTxns := uint64(len(block.Transactions))
 	for _, tx := range block.Transactions {
-		self.config.MemPool.RemoveTx(*tx.(*transaction.Tx))
+		self.config.MemPool.RemoveTx(tx)
 	}
-	newBestState.Init(block, 0, 0, numTxns, numTxns, block.Header.Timestamp)
+	newBestState.Init(block, self.config.BlockChain.BestState[block.Header.ChainID].CmTree)
 	self.config.BlockChain.BestState[block.Header.ChainID] = newBestState
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)
 

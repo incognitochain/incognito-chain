@@ -56,7 +56,7 @@ type Key struct {
 	Depth       byte   // 1 bytes
 	ChildNumber []byte // 4 bytes
 	ChainCode   []byte // 32 bytes
-	KeyPair     cashec.KeySet
+	KeySet      cashec.KeySet
 }
 
 // NewMasterKey creates a new master extended Key from a Seed
@@ -80,12 +80,12 @@ func NewMasterKey(seed []byte) (*Key, error) {
 		return nil, err
 	}*/
 
-	keyPair := (&cashec.KeySet{}).GenerateKey(keyBytes)
+	keySet := (&cashec.KeySet{}).GenerateKey(keyBytes)
 
 	// Create the Key struct
 	key := &Key{
 		ChainCode:   chainCode,
-		KeyPair:     *keyPair,
+		KeySet:      *keySet,
 		Depth:       0x00,
 		ChildNumber: []byte{0x00, 0x00, 0x00, 0x00},
 	}
@@ -102,13 +102,13 @@ func (key *Key) NewChildKey(childIdx uint32) (*Key, error) {
 
 	newSeed := []byte{}
 	newSeed = append(newSeed[:], intermediary[:32]...)
-	newKeypair := (&cashec.KeySet{}).GenerateKey(newSeed)
+	newKeyset := (&cashec.KeySet{}).GenerateKey(newSeed)
 	// Create Child KeySet with data common to all both scenarios
 	childKey := &Key{
 		ChildNumber: uint32Bytes(childIdx),
 		ChainCode:   intermediary[32:],
 		Depth:       key.Depth + 1,
-		KeyPair:     *newKeypair,
+		KeySet:      *newKeyset,
 	}
 
 	return childKey, nil
@@ -149,24 +149,24 @@ func (key *Key) Serialize(keyType byte) ([]byte, error) {
 
 		// Private keys should be prepended with a single null byte
 		keyBytes := make([]byte, 0)
-		keyBytes = append(keyBytes, byte(len(key.KeyPair.PrivateKey))) // set length
-		keyBytes = append(keyBytes, key.KeyPair.PrivateKey[:]...)      // set pri-key
+		keyBytes = append(keyBytes, byte(len(key.KeySet.PrivateKey))) // set length
+		keyBytes = append(keyBytes, key.KeySet.PrivateKey[:]...)      // set pri-key
 		buffer.Write(keyBytes)
 	} else if keyType == PubKeyType {
 		keyBytes := make([]byte, 0)
-		keyBytes = append(keyBytes, byte(len(key.KeyPair.PublicKey.Apk))) // set length Apk
-		keyBytes = append(keyBytes, key.KeyPair.PublicKey.Apk[:]...)      // set Apk
+		keyBytes = append(keyBytes, byte(len(key.KeySet.PublicKey.Apk))) // set length Apk
+		keyBytes = append(keyBytes, key.KeySet.PublicKey.Apk[:]...)      // set Apk
 
-		keyBytes = append(keyBytes, byte(len(key.KeyPair.PublicKey.Pkenc))) // set length Pkenc
-		keyBytes = append(keyBytes, key.KeyPair.PublicKey.Pkenc[:]...)      // set Pkenc
+		keyBytes = append(keyBytes, byte(len(key.KeySet.PublicKey.Pkenc))) // set length Pkenc
+		keyBytes = append(keyBytes, key.KeySet.PublicKey.Pkenc[:]...)      // set Pkenc
 		buffer.Write(keyBytes)
 	} else if keyType == ReadonlyKeyType {
 		keyBytes := make([]byte, 0)
-		keyBytes = append(keyBytes, byte(len(key.KeyPair.ReadonlyKey.Apk))) // set length Apk
-		keyBytes = append(keyBytes, key.KeyPair.ReadonlyKey.Apk[:]...)      // set Apk
+		keyBytes = append(keyBytes, byte(len(key.KeySet.ReadonlyKey.Apk))) // set length Apk
+		keyBytes = append(keyBytes, key.KeySet.ReadonlyKey.Apk[:]...)      // set Apk
 
-		keyBytes = append(keyBytes, byte(len(key.KeyPair.ReadonlyKey.Skenc))) // set length Skenc
-		keyBytes = append(keyBytes, key.KeyPair.ReadonlyKey.Skenc[:]...)      // set Pkenc
+		keyBytes = append(keyBytes, byte(len(key.KeySet.ReadonlyKey.Skenc))) // set length Skenc
+		keyBytes = append(keyBytes, key.KeySet.ReadonlyKey.Skenc[:]...)      // set Pkenc
 		buffer.Write(keyBytes)
 	}
 
@@ -203,21 +203,21 @@ func Deserialize(data []byte) (*Key, error) {
 		key.ChainCode = data[6:38]
 		keyLength := int(data[38])
 
-		copy(key.KeyPair.PrivateKey[:], data[39:39+keyLength])
+		copy(key.KeySet.PrivateKey[:], data[39:39+keyLength])
 	} else if keyType == PubKeyType {
 		apkKeyLength := int(data[1])
-		copy(key.KeyPair.PublicKey.Apk[:], data[2:2+apkKeyLength])
+		copy(key.KeySet.PublicKey.Apk[:], data[2:2+apkKeyLength])
 		pkencKeyLength := int(data[apkKeyLength+2])
-		copy(key.KeyPair.PublicKey.Pkenc[:], data[3+apkKeyLength: 3+apkKeyLength+pkencKeyLength])
+		copy(key.KeySet.PublicKey.Pkenc[:], data[3+apkKeyLength:3+apkKeyLength+pkencKeyLength])
 	} else if keyType == ReadonlyKeyType {
 		apkKeyLength := int(data[1])
-		copy(key.KeyPair.ReadonlyKey.Apk[:], data[2:2+apkKeyLength])
+		copy(key.KeySet.ReadonlyKey.Apk[:], data[2:2+apkKeyLength])
 		skencKeyLength := int(data[apkKeyLength+2])
-		copy(key.KeyPair.ReadonlyKey.Skenc[:], data[3+apkKeyLength: 3+apkKeyLength+skencKeyLength])
+		copy(key.KeySet.ReadonlyKey.Skenc[:], data[3+apkKeyLength:3+apkKeyLength+skencKeyLength])
 	}
 
 	// validate checksum
-	cs1 := base58.ChecksumFirst4Bytes(data[0: len(data)-4])
+	cs1 := base58.ChecksumFirst4Bytes(data[0 : len(data)-4])
 	cs2 := data[len(data)-4:]
 	for i := range cs1 {
 		if cs1[i] != cs2[i] {

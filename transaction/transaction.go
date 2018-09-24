@@ -13,7 +13,6 @@ type Transaction interface {
 	GetTxVirtualSize() uint64
 	GetSenderAddrLastByte() byte
 }
-
 type TxDesc struct {
 	// Tx is the transaction associated with the entry.
 	Tx Transaction
@@ -21,11 +20,12 @@ type TxDesc struct {
 	// Added is the time when the entry was added to the source pool.
 	Added time.Time
 
-	// Height is the block height when the entry was added to the the source pool.
+	// Height is the best block's height when the entry was added to the the source pool.
 	Height int32
 
 	// Fee is the total fee the transaction associated with the entry pays.
-	Fee float64
+	Fee uint64
 
-	//@todo add more properties to TxDesc if we need more laster
+	// FeePerKB is the fee the transaction pays in coin per 1000 bytes.
+	FeePerKB int32
 }

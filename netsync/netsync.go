@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/ninjadotorg/cash-prototype/peer"
@@ -196,43 +197,29 @@ func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan s
 	self.msgChan <- msg
 }
 
-// handleTxMsg handles transaction messages from all peers.
-func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
-	Logger.log.Info("Handling new message tx")
-	// TODO get message tx and process, Tuan Anh
-	hash, txDesc, error := self.Config.MemPool.CanAcceptTransaction(msg.Transaction)
+// func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
+// 	Logger.log.Info("Handling new message block")
+// 	// TODO get message block and process
+// 	newBlock := msg.Block
 
-	if error != nil {
-		fmt.Print(error)
-	} else {
-		fmt.Print("there is hash of transaction", hash)
-		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)
-	}
-}
+// 	// // Skip verify and insert directly to local blockchain
+// 	// // There should be a method in blockchain.go to insert block to prevent data-race if we read from memory
 
-func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
-	Logger.log.Info("Handling new message block")
-	// TODO get message block and process
-	newBlock := msg.Block
+// 	// isMainChain, isOrphanBlock, err := self.Config.BlockChain.ProcessBlock(&newBlock)
+// 	// _ = isMainChain
+// 	// _ = isOrphanBlock
+// 	// _ = err
 
-	// // Skip verify and insert directly to local blockchain
-	// // There should be a method in blockchain.go to insert block to prevent data-race if we read from memory
-
-	// isMainChain, isOrphanBlock, err := self.Config.BlockChain.ProcessBlock(&newBlock)
-	// _ = isMainChain
-	// _ = isOrphanBlock
-	// _ = err
-
-	a := self.Config.BlockChain.BestState.BestBlock.Hash().String()
-	Logger.log.Infof(a)
-	//if msg.Block.Header.PrevBlockHash == a {
-	self.Config.Server.UpdateChain(&newBlock)
-	//}
-	err = self.Config.FeeEstimator.RegisterBlock(&newBlock)
-	if err != nil {
-		Logger.log.Error(err)
-	}
-}
+// 	a := self.Config.BlockChain.BestState.BestBlock.Hash().String()
+// 	Logger.log.Infof(a)
+// 	//if msg.Block.Header.PrevBlockHash == a {
+// 	self.Config.Server.UpdateChain(&newBlock)
+// 	//}
+// 	err = self.Config.FeeEstimator.RegisterBlock(&newBlock)
+// 	if err != nil {
+// 		Logger.log.Error(err)
+// 	}
+// }
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Handling new message getblocks message")
@@ -264,6 +251,11 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	// rw.Writer.WriteString(msgNewJSON)
 	// rw.Writer.Flush()
 	// self.syncPeer.flagMutex.Unlock()
+}
+
+func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
+	Logger.log.Info("Handling new message BlockSig")
+	self.Config.Consensus.OnBlockReceived(&msg.Block)
 }
 
 func (self *NetSync) HandleMessageBlockSig(msg *wire.MessageBlockSig) {

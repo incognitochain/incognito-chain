@@ -7,14 +7,16 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
 // TODO: create block template (move block template from mining to here)
 
 func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain, chainID byte) (*BlockTemplate, error) {
 
-	prevBlock := chain.BestState[chainID].BestBlock
+	prevBlock := chain.BestState[chainID]
 	prevBlockHash := chain.BestState[chainID].BestBlock.Hash()
 	sourceTxns := g.txSource.MiningDescs()
 	if len(sourceTxns) < MIN_TXs {
@@ -47,26 +49,29 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	// blockTxns = append(blockTxns, coinbaseTx)
 
 	// blockTxns := append([]transaction.Transaction{coinbaseTx}, txs...)
-	blockTxns := txs
-	merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(blockTxns)
-	merkleRoot := merkleRoots[len(merkleRoots)-1]
+	receiverKeyset, _ := wallet.Base58CheckDeserialize(payToAddress)
 
 	var txsToAdd []transaction.Transaction
 
-	var txToRemove []*transaction.Tx
-mempoolLoop:
-	for _, txDesc := range sourceTxns {
-		tx := txDesc.Tx
+	var txToRemove []transaction.Transaction
+	// mempoolLoop:
+	for _, txDesc := range txs {
+		tx, ok := txDesc.(*transaction.Tx)
+		if !ok {
+			return nil, fmt.Errorf("Transaction in block not recognized")
+		}
 		//@todo need apply validate tx, logic check all referenced here
 		// call function spendTransaction to mark utxo
 
-		txChainID, _ := g.GetTxSenderChain(tx.(*transaction.Tx).AddressHash)
+		txChainID, _ := g.GetTxSenderChain(tx.AddressLastByte)
 		if txChainID != chainID {
 			continue
 		}
-		utxos, err := g.chain.FetchUtxoView(*tx.(*transaction.Tx))
-		_ = utxos
-		_ = err
+		for _, desc := range tx.Descs {
+			view, err := g.chain.FetchTxViewPoint(desc.Type)
+			_ = view
+			_ = err
+		}
 		/*
 			if err != nil {
 				fmt.Print("Unable to fetch utxo view for tx %s: %v",
@@ -107,8 +112,7 @@ mempoolLoop:
 				}
 			}*/
 		if !tx.ValidateTransaction() {
-			txToRemove = append(txToRemove, tx.(*transaction.Tx))
-			continue mempoolLoop
+			txToRemove = append(txToRemove, transaction.Transaction(tx))
 		}
 		txsToAdd = append(txsToAdd, tx)
 		if len(txsToAdd) == MAX_TXs_IN_BLOCK {
@@ -118,29 +122,79 @@ mempoolLoop:
 	}
 
 	for _, tx := range txToRemove {
-		g.txSource.RemoveTx(*tx)
+		g.txSource.RemoveTx(tx)
 	}
 	// TODO PoW
 	//time.Sleep(time.Second * 15)
 	if len(txsToAdd) == 0 {
 		return nil, errors.New("no transaction available for this chain")
 	}
+
+	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, &receiverKeyset.KeySet.PublicKey, map[string]uint64{}, g.chain.BestState[chainID].BestBlock.Header.MerkleRootCommitments.CloneBytes())
+	if err != nil {
+		return nil, err
+	}
+	// the 1st tx will be coinbaseTx
+	txsToAdd = append([]transaction.Transaction{coinbaseTx}, txsToAdd...)
+
+	merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(txsToAdd)
+	merkleRoot := merkleRoots[len(merkleRoots)-1]
+	// TODO PoW
+	//time.Sleep(time.Second * 15)
+
+	// Store commitments and nullifiers in database
+	var descType string
+	commitments := [][]byte{}
+	nullifiers := [][]byte{}
+	for _, blockTx := range txsToAdd {
+		if blockTx.GetType() == common.TxNormalType {
+			tx, ok := blockTx.(*transaction.Tx)
+			if !ok {
+				Logger.log.Error("Transaction not recognized to store in database")
+				continue
+			}
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					commitments = append(commitments, cm)
+				}
+
+				for _, nf := range desc.Nullifiers {
+					nullifiers = append(nullifiers, nf)
+				}
+				descType = desc.Type
+			}
+		}
+	}
+	// TODO(@0xsirrush): check if cm and nf should be saved here (when generate block template)
+	// or when UpdateBestState
+	g.chain.StoreCommitmentsFromListCommitment(commitments, descType)
+	g.chain.StoreNullifiersFromListNullifier(nullifiers, descType)
+
 	block := blockchain.Block{}
 	block.Header = blockchain.BlockHeader{
-		Version:            1,
-		PrevBlockHash:      *prevBlockHash,
-		MerkleRoot:         *merkleRoot,
-		Timestamp:          time.Now().Unix(),
-		Difficulty:         0, //@todo should be create Difficulty logic
-		Nonce:              0, //@todo should be create Nonce logic
-		BlockCommitteeSigs: []string{},
-		NextCommittee:      []string{},
+		Version:               1,
+		PrevBlockHash:         *prevBlockHash,
+		MerkleRoot:            *merkleRoot,
+		MerkleRootCommitments: common.Hash{},
+		Timestamp:             time.Now().Unix(),
+		Difficulty:            0, //@todo should be create Difficulty logic
+		Nonce:                 0, //@todo should be create Nonce logic
+		BlockCommitteeSigs:    []string{},
+		NextCommittee:         []string{},
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
 		}
 	}
+
+	// Add new commitments to merkle tree and save the root
+	newTree := g.chain.BestState[chainID].CmTree.MakeCopy()
+	fmt.Printf("[newBlockTemplate] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
+	blockchain.UpdateMerkleTreeForBlock(newTree, &block)
+	rt := newTree.GetRoot(common.IncMerkleTreeHeight)
+	fmt.Printf("[newBlockTemplate] updated tree rt: %x\n", rt)
+	copy(block.Header.MerkleRootCommitments[:], rt)
 
 	//update the latest AgentDataPoints to block
 	// block.AgentDataPoints = agentDataPoints
@@ -185,7 +239,7 @@ type BlockTemplate struct {
 type TxSource interface {
 	// LastUpdated returns the last time a transaction was added to or
 	// removed from the source pool.
-	//LastUpdated() time.Time
+	LastUpdated() time.Time
 
 	// MiningDescs returns a slice of mining descriptors for all the
 	// transactions in the source pool.
@@ -193,12 +247,10 @@ type TxSource interface {
 
 	// HaveTransaction returns whether or not the passed transaction hash
 	// exists in the source pool.
-	//HaveTransaction(hash *common.Hash) bool
+	HaveTransaction(hash *common.Hash) bool
 
-	RemoveTx(tx transaction.Tx)
-
-	// TODO using when demo
-	Clear()
+	// RemoveTx remove tx from tx resource
+	RemoveTx(tx transaction.Transaction) error
 }
 
 func NewBlkTmplGenerator(txSource TxSource, chain *blockchain.BlockChain) *BlkTmplGenerator {
@@ -211,11 +263,11 @@ func NewBlkTmplGenerator(txSource TxSource, chain *blockchain.BlockChain) *BlkTm
 func extractTxsAndComputeInitialFees(txDescs []*transaction.TxDesc) (
 	[]transaction.Transaction,
 	[]*transaction.ActionParamTx,
-	map[string]float64,
+	map[string]uint64,
 ) {
 	var txs []transaction.Transaction
 	var actionParamTxs []*transaction.ActionParamTx
-	var feeMap = map[string]float64{
+	var feeMap = map[string]uint64{
 		fmt.Sprintf(common.TxOutCoinType): 0,
 		fmt.Sprintf(common.TxOutBondType): 0,
 	}
@@ -228,13 +280,57 @@ func extractTxsAndComputeInitialFees(txDescs []*transaction.TxDesc) (
 			continue
 		}
 		normalTx, _ := tx.(*transaction.Tx)
-		if len(normalTx.TxOut) > 0 {
-			txOutType := normalTx.TxOut[0].TxOutType
-			if txOutType == "" {
-				txOutType = common.TxOutCoinType
-			}
-			feeMap[txOutType] += txDesc.Fee
-		}
+		feeMap[normalTx.Descs[0].Type] += txDesc.Fee
 	}
 	return txs, actionParamTxs, feeMap
+}
+
+func createCoinbaseTx(
+	params *blockchain.Params,
+	receiverAddr *client.PaymentAddress,
+	rewardMap map[string]uint64,
+	rt []byte,
+) (*transaction.Tx, error) {
+	// Create Proof for the joinsplit op
+	inputs := make([]*client.JSInput, 2)
+	inputs[0] = transaction.CreateRandomJSInput()
+	inputs[1] = transaction.CreateRandomJSInput()
+
+	// Get reward
+	// TODO(@0xbunyip): implement bonds reward
+	fmt.Printf("reward map: %+v\n", rewardMap)
+	var reward uint64
+	for rewardType, rewardValue := range rewardMap {
+		if rewardValue <= 0 {
+			continue
+		}
+		if rewardType == "coins" {
+			reward += rewardValue
+		}
+	}
+
+	// Create new notes: first one is coinbase UTXO, second one has 0 value
+	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}
+	placeHolderOutputNote := &client.Note{Value: 0, Apk: receiverAddr.Apk}
+
+	outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
+	outputs[0].EncKey = receiverAddr.Pkenc
+	outputs[0].OutputNote = outNote
+	outputs[1].EncKey = receiverAddr.Pkenc
+	outputs[1].OutputNote = placeHolderOutputNote
+
+	// Shuffle output notes randomly (if necessary)
+
+	// Generate proof and sign tx
+	tx := transaction.NewTxTemplate()
+	var coinbaseTxFee uint64 // Zero fee for coinbase tx
+	err := tx.BuildNewJSDesc(inputs, outputs, rt, reward, coinbaseTxFee)
+	if err != nil {
+		return nil, err
+	}
+	tx, err = transaction.SignTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	return tx, err
 }

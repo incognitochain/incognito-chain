@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"encoding/json"
-	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ninjadotorg/cash-prototype/cashec"
@@ -154,7 +153,7 @@ func (self *BlockChain) createChainState(chainID byte) error {
 
 	// Initialize the state related to the best block.  Since it is the
 	// genesis block, use its timestamp for the median time.
-	numTxns := uint64(len(initBlock.Transactions))
+	// numTxns := uint64(len(initBlock.Transactions))
 	//blockSize := uint64(genesisBlock.SerializeSize())
 	//blockWeight := uint64(GetBlockWeight(genesisBlock))
 
@@ -164,7 +163,7 @@ func (self *BlockChain) createChainState(chainID byte) error {
 	}
 
 	self.BestState[chainID] = &BestState{}
-	self.BestState[chainID].Init(initBlock, 0, 0, numTxns, numTxns, time.Unix(initBlock.Header.Timestamp, 0), tree)
+	self.BestState[chainID].Init(initBlock, tree)
 
 	// save nullifiers and commitments from genesisblock
 	view := NewTxViewPoint()

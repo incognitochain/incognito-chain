@@ -1,7 +1,7 @@
 package blockchain
 
 import (
-	"time"
+	"sync"
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
@@ -22,24 +22,23 @@ type BestState struct {
 
 	CmTree *client.IncMerkleTree // The commitments merkle tree of the best block
 
-	Height      int32     // The height of the block.
-	Difficulty  uint32    // The difficulty bits of the block.
-	BlockSize   uint64    // The size of the block.
-	BlockWeight uint64    // The weight of the block.
-	NumTxns     uint64    // The number of txns in the block.
-	TotalTxns   uint64    // The total number of txns in the chain.
-	MedianTime  time.Time // Median time as per CalcPastMedianTime.
+	Height int32 // The height of the block.
+	// Difficulty  []uint32  // The difficulty bits of the block.
+	BlockSize uint64 // The size of the block.
+	// BlockWeight []uint64  // The weight of the block.
+	NumTxns   uint64 // The number of txns in the block.
+	TotalTxns uint64 // The total number of txns in the chain.
+	// MedianTime time.Time // Median time as per CalcPastMedianTime.
+	sync.Mutex
 }
 
-func (self *BestState) Init(block *Block, blocksize, blockweight, numTxts, totalTxns uint64, medianTime time.Time, tree *client.IncMerkleTree) {
+func (self *BestState) Init(block *Block, tree *client.IncMerkleTree) {
 	bestBlockHash := block.Hash()
 	self.BestBlock = block
 	self.BestBlockHash = bestBlockHash
 	self.CmTree = tree
 
-	self.TotalTxns = totalTxns
-	self.NumTxns = numTxts
+	self.TotalTxns += uint64(len(block.Transactions))
+	self.NumTxns = uint64(len(block.Transactions))
 	self.Height = block.Height
-	self.Difficulty = block.Header.Difficulty
-	self.BlockWeight = blockweight
 }

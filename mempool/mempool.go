@@ -3,6 +3,7 @@ package mempool
 import (
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
-	"github.com/ninjadotorg/cash-prototype/mining"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
@@ -149,12 +149,12 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 	// that make sure transaction is accepted when passed any rules
 	txInfo := tx.(*transaction.Tx)
-	chainID, err := tp.Config.Policy.Consensus.GetTxSenderChain(txInfo.AddressHash)
+	chainID, err := tp.config.Policy.Consensus.GetTxSenderChain(txInfo.AddressLastByte)
 	if err != nil {
 		return nil, nil, err
 	}
-	bestHeight := tp.Config.BlockChain.BestState[chainID].BestBlock.Height
-	nextBlockHeight := bestHeight + 1
+	bestHeight := tp.config.BlockChain.BestState[chainID].BestBlock.Height
+	// nextBlockHeight := bestHeight + 1
 	// Check tx with policy
 	// check version
 	ok := tp.config.Policy.CheckTxVersion(&tx)
@@ -245,12 +245,13 @@ func (tp *TxPool) removeTx(tx *transaction.Transaction) error {
 		return errors.New("Not exist tx in pool")
 	}
 	tp.mtx.Unlock()
+	return nil
 }
 
 // RemoveTx safe remove transaction for pool
-func (tp *TxPool) RemoveTx(tx *transaction.Transaction) error {
+func (tp *TxPool) RemoveTx(tx transaction.Transaction) error {
 	tp.mtx.Lock()
-	err := tp.removeTx(tx)
+	err := tp.removeTx(&tx)
 	tp.mtx.Unlock()
 	return err
 }
@@ -289,7 +290,7 @@ func (tp *TxPool) Count() int {
 
 /**
 Sum of all transactions sizes
- */
+*/
 func (tp *TxPool) Size() uint64 {
 	tp.mtx.RLock()
 	size := uint64(0)
@@ -524,8 +525,8 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 
 /**
 List all tx ids in mempool
- */
-func (tp *TxPool) ListTxs() ([]string) {
+*/
+func (tp *TxPool) ListTxs() []string {
 	result := make([]string, 0)
 	for _, tx := range tp.pool {
 		result = append(result, tx.Desc.Tx.Hash().String())

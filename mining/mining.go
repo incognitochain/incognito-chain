@@ -401,7 +401,7 @@ mempoolLoop:
 		}
 	}
 
-	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, &receiverKeyset.KeyPair.PublicKey, rewardMap, g.chain.BestState.BestBlock.Header.MerkleRootCommitments.CloneBytes())
+	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, &receiverKeyset.KeySet.PublicKey, rewardMap, g.chain.BestState.BestBlock.Header.MerkleRootCommitments.CloneBytes())
 	if err != nil {
 		return nil, err
 	}
@@ -418,7 +418,8 @@ mempoolLoop:
 		if blockTx.GetType() == common.TxNormalType {
 			tx, ok := blockTx.(*transaction.Tx)
 			if ok == false {
-				return nil, fmt.Errorf("Transaction not recognized to store in database")
+				Logger.log.Error("Transaction not recognized to store in database")
+				continue
 			}
 
 			for _, desc := range tx.Descs {

@@ -2,8 +2,9 @@ package blockchain
 
 import (
 	"math"
-	"github.com/ninjadotorg/cash-prototype/transaction"
+
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 type Merkle struct {
@@ -42,7 +43,7 @@ type Merkle struct {
 // using witness transaction id's rather than regular transaction id's. This
 // also presents an additional case wherein the wtxid of the coinbase transaction
 // is the zeroHash.
-func (self Merkle) BuildMerkleTreeStore(transactions []transaction.Transaction) ([]*common.Hash) {
+func (self Merkle) BuildMerkleTreeStore(transactions []transaction.Transaction) []*common.Hash {
 	// Calculate how many entries are required to hold the binary merkle
 	// tree as a linear array and create an array of that size.
 	nextPoT := self.nextPowerOfTwo(len(transactions))

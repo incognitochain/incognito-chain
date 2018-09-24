@@ -17,4 +17,8 @@ const (
 	// orphanExpireScanInterval is the minimum amount of time in between
 	// scans of the orphan pool to evict expired transactions.
 	orphanExpireScanInterval = time.Minute * 5
+	// UnminedHeight is the height used for the "block" height field of the
+	// contextual transaction information provided in a transaction store
+	// when it has not yet been mined into a block.
+	UnminedHeight = 0x7fffffff
 )

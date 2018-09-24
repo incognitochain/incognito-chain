@@ -64,13 +64,13 @@ func (self GenesisBlockGenerator) createGenesisTx(coinReward uint64) (*transacti
 	if err != nil {
 		return nil, err
 	}
-	outNote := &client.Note{Value: coinReward, Apk: key.KeyPair.PublicKey.Apk}
-	placeHolderOutputNote := &client.Note{Value: 0, Apk: key.KeyPair.PublicKey.Apk}
+	outNote := &client.Note{Value: coinReward, Apk: key.KeySet.PublicKey.Apk}
+	placeHolderOutputNote := &client.Note{Value: 0, Apk: key.KeySet.PublicKey.Apk}
 
 	// Create deterministic outputs
 	outputs := []*client.JSOutput{
-		&client.JSOutput{EncKey: key.KeyPair.PublicKey.Pkenc, OutputNote: outNote},
-		&client.JSOutput{EncKey: key.KeyPair.PublicKey.Pkenc, OutputNote: placeHolderOutputNote},
+		&client.JSOutput{EncKey: key.KeySet.PublicKey.Pkenc, OutputNote: outNote},
+		&client.JSOutput{EncKey: key.KeySet.PublicKey.Pkenc, OutputNote: placeHolderOutputNote},
 	}
 
 	// Wrap ephemeral private key

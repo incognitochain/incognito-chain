@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+
 	"github.com/pkg/errors"
 )
 
@@ -93,7 +94,7 @@ func (self *Wallet) ImportAccount(privateKeyStr string, accountName string, pass
 	}
 
 	priKey, _ := Base58CheckDeserialize(privateKeyStr)
-	priKey.KeyPair.ImportFromPrivateKey(&priKey.KeyPair.PrivateKey)
+	priKey.KeySet.ImportFromPrivateKey(&priKey.KeySet.PrivateKey)
 
 	Logger.log.Infof("Pub-key : %s", priKey.Base58CheckSerialize(PubKeyType))
 	Logger.log.Infof("Readonly-key : %s", priKey.Base58CheckSerialize(ReadonlyKeyType))
