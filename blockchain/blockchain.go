@@ -552,7 +552,7 @@ func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string) (*TxViewPoint
 		return nil, err
 	}
 	view.listNullifiers[typeJoinSplitDesc] = nullifiers
-	view.SetBestHash(self.BestState.BestBlockHash)
+	// view.SetBestHash(self.BestState.BestBlockHash)
 	return view, nil
 }
 
@@ -662,75 +662,77 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, typeJoinSp
 	// lock chain
 	self.chainLock.Lock()
 
-	// get best block
-	bestBlock := self.BestState.BestBlock
-	blockHeight := bestBlock.Height
+	for chainID := 0; chainID < 20; chainID++ {
+		// get best block
+		bestBlock := self.BestState[chainID].BestBlock
+		blockHeight := bestBlock.Height
 
-	for blockHeight > -1 {
-		txsInBlock := bestBlock.Transactions
-		txsInBlockAccepted := make([]transaction.Tx, 0)
-		for _, txInBlock := range txsInBlock {
-			if txInBlock.GetType() == common.TxNormalType {
-				tx := txInBlock.(*transaction.Tx)
-				copyTx := transaction.Tx{
-					Version:  tx.Version,
-					JSSig:    tx.JSSig,
-					JSPubKey: tx.JSPubKey,
-					Fee:      tx.Fee,
-					Type:     tx.Type,
-					LockTime: tx.LockTime,
-					Descs:    make([]*transaction.JoinSplitDesc, 0),
-				}
-				// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
-				listDesc := make([]*transaction.JoinSplitDesc, 0)
-				for _, desc := range tx.Descs {
-					copyDesc := &transaction.JoinSplitDesc{
-						Anchor:        desc.Anchor,
-						Commitments:   make([][]byte, 0),
-						EncryptedData: make([][]byte, 0),
+		for blockHeight > 0 {
+			txsInBlock := bestBlock.Transactions
+			txsInBlockAccepted := make([]transaction.Tx, 0)
+			for _, txInBlock := range txsInBlock {
+				if txInBlock.GetType() == common.TxNormalType {
+					tx := txInBlock.(*transaction.Tx)
+					copyTx := transaction.Tx{
+						Version:  tx.Version,
+						JSSig:    tx.JSSig,
+						JSPubKey: tx.JSPubKey,
+						Fee:      tx.Fee,
+						Type:     tx.Type,
+						LockTime: tx.LockTime,
+						Descs:    make([]*transaction.JoinSplitDesc, 0),
 					}
-					for i, encData := range desc.EncryptedData {
-						var epk client.EphemeralPubKey
-						copy(epk[:], desc.EphemeralPubKey)
-						// var hSig []byte
-						// copy(hSig, desc.HSigSeed)
-						hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
-						note := new(client.Note)
-						note, err := client.DecryptNote(encData, keySet.ReadonlyKey.Skenc, keySet.PublicKey.Pkenc, epk, hSig)
-						spew.Dump(note)
-						if err == nil && note != nil {
-							copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
-							copyDesc.AppendNote(note)
-							copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
-						} else {
-							continue
+					// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
+					listDesc := make([]*transaction.JoinSplitDesc, 0)
+					for _, desc := range tx.Descs {
+						copyDesc := &transaction.JoinSplitDesc{
+							Anchor:        desc.Anchor,
+							Commitments:   make([][]byte, 0),
+							EncryptedData: make([][]byte, 0),
+						}
+						for i, encData := range desc.EncryptedData {
+							var epk client.EphemeralPubKey
+							copy(epk[:], desc.EphemeralPubKey)
+							// var hSig []byte
+							// copy(hSig, desc.HSigSeed)
+							hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
+							note := new(client.Note)
+							note, err := client.DecryptNote(encData, keySet.ReadonlyKey.Skenc, keySet.PublicKey.Pkenc, epk, hSig)
+							spew.Dump(note)
+							if err == nil && note != nil {
+								copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
+								copyDesc.AppendNote(note)
+								copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
+							} else {
+								continue
+							}
+						}
+						if len(copyDesc.EncryptedData) > 0 {
+							listDesc = append(listDesc, copyDesc)
 						}
 					}
-					if len(copyDesc.EncryptedData) > 0 {
-						listDesc = append(listDesc, copyDesc)
+					if len(listDesc) > 0 {
+						copyTx.Descs = listDesc
 					}
+					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
 				}
-				if len(listDesc) > 0 {
-					copyTx.Descs = listDesc
-				}
-				txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
 			}
-		}
-		// detected some tx can be accepted
-		if len(txsInBlockAccepted) > 0 {
-			// add to result
-			results = append(results, txsInBlockAccepted...)
-		}
+			// detected some tx can be accepted
+			if len(txsInBlockAccepted) > 0 {
+				// add to result
+				results = append(results, txsInBlockAccepted...)
+			}
 
-		// continue with previous block
-		blockHeight--
-		if blockHeight > -1 {
-			// not is genesis block
-			preBlockHash := bestBlock.Header.PrevBlockHash
-			bestBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-			if blockHeight != bestBlock.Height || err != nil {
-				// pre-block is not the same block-height with calculation -> invalid blockchain
-				return nil, errors.New("Invalid blockchain")
+			// continue with previous block
+			blockHeight--
+			if blockHeight > 0 {
+				// not is genesis block
+				preBlockHash := bestBlock.Header.PrevBlockHash
+				bestBlock, err := self.GetBlockByBlockHash(&preBlockHash)
+				if blockHeight != bestBlock.Height || err != nil {
+					// pre-block is not the same block-height with calculation -> invalid blockchain
+					return nil, errors.New("Invalid blockchain")
+				}
 			}
 		}
 	}
@@ -768,96 +770,98 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 	// lock chain
 	self.chainLock.Lock()
 
-	// get best block
-	bestBlock := self.BestState.BestBlock
-	blockHeight := bestBlock.Height
+	for chainID := 0; chainID < 20; chainID++ {
+		// get best block
+		bestBlock := self.BestState[chainID].BestBlock
+		blockHeight := bestBlock.Height
 
-	for blockHeight > -1 {
-		txsInBlock := bestBlock.Transactions
-		txsInBlockAccepted := make([]transaction.Tx, 0)
-		for _, txInBlock := range txsInBlock {
-			if txInBlock.GetType() == common.TxNormalType {
-				tx := txInBlock.(*transaction.Tx)
-				copyTx := transaction.Tx{
-					Version:  tx.Version,
-					JSSig:    tx.JSSig,
-					JSPubKey: tx.JSPubKey,
-					Fee:      tx.Fee,
-					Type:     tx.Type,
-					LockTime: tx.LockTime,
-					Descs:    make([]*transaction.JoinSplitDesc, 0),
-				}
-				// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
-				listDesc := make([]*transaction.JoinSplitDesc, 0)
-				for _, desc := range tx.Descs {
-					copyDesc := &transaction.JoinSplitDesc{
-						Anchor:        desc.Anchor,
-						Reward:        desc.Reward,
-						Commitments:   make([][]byte, 0),
-						EncryptedData: make([][]byte, 0),
+		for blockHeight > 0 {
+			txsInBlock := bestBlock.Transactions
+			txsInBlockAccepted := make([]transaction.Tx, 0)
+			for _, txInBlock := range txsInBlock {
+				if txInBlock.GetType() == common.TxNormalType {
+					tx := txInBlock.(*transaction.Tx)
+					copyTx := transaction.Tx{
+						Version:  tx.Version,
+						JSSig:    tx.JSSig,
+						JSPubKey: tx.JSPubKey,
+						Fee:      tx.Fee,
+						Type:     tx.Type,
+						LockTime: tx.LockTime,
+						Descs:    make([]*transaction.JoinSplitDesc, 0),
 					}
-					for i, encData := range desc.EncryptedData {
-						var epk client.EphemeralPubKey
-						copy(epk[:], desc.EphemeralPubKey)
-						hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
-						note := new(client.Note)
-						note, err := client.DecryptNote(encData, keys.ReadonlyKey.Skenc, keys.PublicKey.Pkenc, epk, hSig)
-						if err == nil && note != nil && note.Value > 0 {
-							// can decrypt data -> got candidate commitment
-							candidateCommitment := desc.Commitments[i]
-							if len(nullifiersInDb) > 0 {
-								// -> check commitment with db nullifiers
-								var rho [32]byte
-								copy(rho[:], note.Rho)
-								candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
-								if len(candidateNullifier) == 0 {
-									continue
+					// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
+					listDesc := make([]*transaction.JoinSplitDesc, 0)
+					for _, desc := range tx.Descs {
+						copyDesc := &transaction.JoinSplitDesc{
+							Anchor:        desc.Anchor,
+							Reward:        desc.Reward,
+							Commitments:   make([][]byte, 0),
+							EncryptedData: make([][]byte, 0),
+						}
+						for i, encData := range desc.EncryptedData {
+							var epk client.EphemeralPubKey
+							copy(epk[:], desc.EphemeralPubKey)
+							hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
+							note := new(client.Note)
+							note, err := client.DecryptNote(encData, keys.ReadonlyKey.Skenc, keys.PublicKey.Pkenc, epk, hSig)
+							if err == nil && note != nil && note.Value > 0 {
+								// can decrypt data -> got candidate commitment
+								candidateCommitment := desc.Commitments[i]
+								if len(nullifiersInDb) > 0 {
+									// -> check commitment with db nullifiers
+									var rho [32]byte
+									copy(rho[:], note.Rho)
+									candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
+									if len(candidateNullifier) == 0 {
+										continue
+									}
+									checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
+									if err != nil || checkCandiateNullifier == true {
+										// candidate nullifier is not existed in db
+										continue
+									}
 								}
-								checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
-								if err != nil || checkCandiateNullifier == true {
-									// candidate nullifier is not existed in db
-									continue
-								}
+								copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
+								copyDesc.AppendNote(note)
+								note.Cm = candidateCommitment
+								note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
+								copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
+							} else {
+								continue
 							}
-							copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
-							copyDesc.AppendNote(note)
-							note.Cm = candidateCommitment
-							note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
-							copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
-						} else {
-							continue
+						}
+						if len(copyDesc.EncryptedData) > 0 {
+							listDesc = append(listDesc, copyDesc)
 						}
 					}
-					if len(copyDesc.EncryptedData) > 0 {
-						listDesc = append(listDesc, copyDesc)
+					if len(listDesc) > 0 {
+						copyTx.Descs = listDesc
+					}
+					if len(copyTx.Descs) > 0 {
+						txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
 					}
 				}
-				if len(listDesc) > 0 {
-					copyTx.Descs = listDesc
-				}
-				if len(copyTx.Descs) > 0 {
-					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
-				}
 			}
-		}
-		// detected some tx can be accepted
-		if len(txsInBlockAccepted) > 0 {
-			// add to result
-			results = append(results, txsInBlockAccepted...)
-		}
+			// detected some tx can be accepted
+			if len(txsInBlockAccepted) > 0 {
+				// add to result
+				results = append(results, txsInBlockAccepted...)
+			}
 
-		// continue with previous block
-		blockHeight--
-		if blockHeight > -1 {
-			// not is genesis block
-			preBlockHash := bestBlock.Header.PrevBlockHash
-			preBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-			if err != nil || blockHeight != preBlock.Height {
-				// pre-block is not the same block-height with calculation -> invalid blockchain
-				self.chainLock.Unlock()
-				return nil, errors.New("Invalid blockchain")
+			// continue with previous block
+			blockHeight--
+			if blockHeight > 0 {
+				// not is genesis block
+				preBlockHash := bestBlock.Header.PrevBlockHash
+				preBlock, err := self.GetBlockByBlockHash(&preBlockHash)
+				if err != nil || blockHeight != preBlock.Height {
+					// pre-block is not the same block-height with calculation -> invalid blockchain
+					self.chainLock.Unlock()
+					return nil, errors.New("Invalid blockchain")
+				}
+				bestBlock = preBlock
 			}
-			bestBlock = preBlock
 		}
 	}
 
@@ -878,49 +882,50 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 	// lock chain
 	self.chainLock.Lock()
 
-	// get best block
-	bestBlock := self.BestState.BestBlock
-	blockHeight := bestBlock.Height
+	for chainID := 0; chainID < 20; chainID++ {
+		// get best block
+		bestBlock := self.BestState[chainID].BestBlock
+		blockHeight := bestBlock.Height
 
-	for blockHeight > -1 {
+		for blockHeight > 0 {
 
-		txsInBlock := bestBlock.Transactions
-		totalFeeInBlock := uint64(0)
-		for _, txInBlock := range txsInBlock {
-			tx := txInBlock.(*transaction.Tx)
-			fee := tx.Fee
-			totalFeeInBlock += fee
-		}
-
-		coinbaseTx := txsInBlock[0].(*transaction.Tx)
-		rewardBond := uint64(0)
-		rewardCoin := uint64(0)
-		for _, desc := range coinbaseTx.Descs {
-			unitType := desc.Type
-			switch unitType {
-			case common.TxOutCoinType:
-				rewardCoin += desc.Reward
-			case common.TxOutBondType:
-				rewardBond += desc.Reward
+			txsInBlock := bestBlock.Transactions
+			totalFeeInBlock := uint64(0)
+			for _, txInBlock := range txsInBlock {
+				tx := txInBlock.(*transaction.Tx)
+				fee := tx.Fee
+				totalFeeInBlock += fee
 			}
-		}
-		rewardCoin -= totalFeeInBlock
-		result[common.TxOutCoinType] += rewardCoin
-		result[common.TxOutBondType] += rewardBond
 
-		// continue with previous block
-		blockHeight--
-		if blockHeight > -1 {
-			// not is genesis block
-			preBlockHash := bestBlock.Header.PrevBlockHash
-			bestBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-			if blockHeight != bestBlock.Height || err != nil {
-				// pre-block is not the same block-height with calculation -> invalid blockchain
-				return nil, errors.New("Invalid blockchain")
+			coinbaseTx := txsInBlock[0].(*transaction.Tx)
+			rewardBond := uint64(0)
+			rewardCoin := uint64(0)
+			for _, desc := range coinbaseTx.Descs {
+				unitType := desc.Type
+				switch unitType {
+				case common.TxOutCoinType:
+					rewardCoin += desc.Reward
+				case common.TxOutBondType:
+					rewardBond += desc.Reward
+				}
+			}
+			rewardCoin -= totalFeeInBlock
+			result[common.TxOutCoinType] += rewardCoin
+			result[common.TxOutBondType] += rewardBond
+
+			// continue with previous block
+			blockHeight--
+			if blockHeight > 0 {
+				// not is genesis block
+				preBlockHash := bestBlock.Header.PrevBlockHash
+				bestBlock, err := self.GetBlockByBlockHash(&preBlockHash)
+				if blockHeight != bestBlock.Height || err != nil {
+					// pre-block is not the same block-height with calculation -> invalid blockchain
+					return nil, errors.New("Invalid blockchain")
+				}
 			}
 		}
 	}
-
 	// unlock chain
 	self.chainLock.Unlock()
 	return result, nil

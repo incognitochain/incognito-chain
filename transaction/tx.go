@@ -32,6 +32,8 @@ type Tx struct {
 	JSPubKey []byte           `json:"JSPubKey,omitempty"` // 64 bytes
 	JSSig    []byte           `json:"JSSig,omitempty"`    // 64 bytes
 
+	AddressLastByte byte
+
 	txId       *common.Hash
 	sigPrivKey *client.PrivateKey
 }
@@ -82,6 +84,10 @@ func (tx *Tx) GetType() string {
 // GetTxVirtualSize computes the virtual size of a given transaction
 func (tx *Tx) GetTxVirtualSize() uint64 {
 	return uint64(unsafe.Sizeof(tx))
+}
+
+func (tx *Tx) GetSenderAddrLastByte() byte {
+	return tx.AddressLastByte
 }
 
 // NewTxTemplate returns a new Tx initialized with default data

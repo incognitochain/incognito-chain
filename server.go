@@ -186,11 +186,11 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	self.MemPool.Config.Policy.Consensus = self.ConsensusEngine
 	// Init Net Sync manager to process messages
 	self.NetSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
-		BlockChain: self.BlockChain,
-		ChainParam: chainParams,
-		MemPool:    self.MemPool,
-		Server:     self,
-		Consensus:  self.ConsensusEngine,
+		BlockChain:   self.BlockChain,
+		ChainParam:   chainParams,
+		MemPool:      self.MemPool,
+		Server:       self,
+		Consensus:    self.ConsensusEngine,
 		FeeEstimator: self.FeeEstimator,
 	})
 	if err != nil {
@@ -328,9 +328,14 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 	msg.(*wire.MessageVersion).ProtocolVersion = 1
 	// Validate Public Key from SealerPrvKey
 	if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
-		keyPair := &cashec.KeyPair{}
-		keyPair.Import(peerConn.ListenerPeer.Config.SealerPrvKey)
-		msg.(*wire.MessageVersion).PublicKey = base64.StdEncoding.EncodeToString(keyPair.PublicKey)
+		sealKey, err := base64.StdEncoding.DecodeString(peerConn.ListenerPeer.Config.SealerPrvKey)
+		if err != nil {
+			Logger.log.Critical("Invalid sealer's private key")
+			return
+		}
+		keySet := &cashec.KeySet{}
+		keySet.ImportFromPrivateKeyByte(sealKey)
+		msg.(*wire.MessageVersion).PublicKey = base64.StdEncoding.EncodeToString(keySet.SealerKeyPair.PublicKey)
 	}
 
 	if err != nil {

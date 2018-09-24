@@ -70,3 +70,8 @@ func (self *ActionParamTx) GetType() string {
 func (tx *ActionParamTx) GetTxVirtualSize() uint64 {
 	return uint64(unsafe.Sizeof(tx))
 }
+
+func (tx *ActionParamTx) GetSenderAddrLastByte() byte {
+	agentIDBytes := []byte(tx.Param.AgentID)
+	return agentIDBytes[len(agentIDBytes)-1]
+}

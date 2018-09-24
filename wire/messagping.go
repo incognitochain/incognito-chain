@@ -3,6 +3,8 @@ package wire
 import (
 	"encoding/hex"
 	"encoding/json"
+
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 // MsgVerAck defines a bitcoin verack message which is used for a peer to
@@ -30,4 +32,7 @@ func (self MessagePing) JsonDeserialize(jsonStr string) error {
 	jsonDecodeString, _ := hex.DecodeString(jsonStr)
 	err := json.Unmarshal([]byte(jsonDecodeString), self)
 	return err
+}
+func (self MessagePing) SetSenderID(senderID peer.ID) error {
+	return nil
 }

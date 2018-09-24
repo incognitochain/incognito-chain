@@ -151,8 +151,7 @@ type config struct {
 	//whitelists           []*net.IPNet
 
 	// PoS config
-	SealerPrvKey  string `long:"sealerprvkey" description:"Private key of the block sealer used to seal block"`
-	RewardAddress string `long:"rewardaddr" description:"Address of the owner of sealer key"`
+	SealerPrvKey string `long:"sealerprvkey" description:"Private key of the block sealer used to seal block"`
 
 	// For Wallet
 	Wallet           bool   `long:"wallet" description:"Use wallet"`
@@ -729,7 +728,7 @@ func loadConfig() (*config, []string, error) {
 			"localhost": {},
 			"127.0.0.1": {},
 			"::1":       {},
-			"0.0.0.0":	 {},
+			"0.0.0.0":   {},
 		}
 
 		for _, addr := range cfg.RPCListeners {

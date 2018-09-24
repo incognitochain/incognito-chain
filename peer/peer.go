@@ -227,7 +227,7 @@ func (self *Peer) ConnCanceled(peer *Peer) {
 	_, ok := self.PeerConns[peer.PeerID.String()]
 	if ok {
 		delete(self.PeerConns, peer.PeerID.String())
-			self.PendingPeers[peer.PeerID.String()] = peer
+		self.PendingPeers[peer.PeerID.String()] = peer
 	}
 	Logger.log.Info("sdgdfgdfgdfg", self.PendingPeers, peer)
 	self.pendingPeersMutex.Lock()
@@ -506,7 +506,7 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 		peerConn.RetryCount += 1
 
 		if peerConn.RetryCount < maxRetryConn {
-			Logger.log.Infof("Retry New Peer Connection 1 %s", peerConn.Peer.PeerId)
+			Logger.log.Infof("Retry New Peer Connection 1 %s", peerConn.Peer.PeerID)
 
 			peerConn.updateState(ConnPending)
 
@@ -515,7 +515,7 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 				go self.retryPeerConnection(peerConn)
 			}
 		} else {
-			Logger.log.Infof("Retry New Peer Connection 2 %s", peerConn.Peer.PeerId)
+			Logger.log.Infof("Retry New Peer Connection 2 %s", peerConn.Peer.PeerID)
 
 			peerConn.updateState(ConnCanceled)
 

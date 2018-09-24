@@ -206,36 +206,36 @@ func (self GenesisBlockGenerator) calcCommitmentMerkleRoot(tx *transaction.Tx) c
 	return hash
 }
 
-func (self GenesisBlockGenerator) CreateGenesisBlock(
-	time time.Time,
-	nonce int,
-	difficulty uint32,
-	version int,
-	genesisReward uint64,
-) *Block {
-	genesisBlock := Block{}
-	// update default genesis block
-	genesisBlock.Header.Timestamp = time.Unix()
-	//genesisBlock.Header.PrevBlockHash = (&common.Hash{}).String()
-	genesisBlock.Header.Nonce = nonce
-	genesisBlock.Header.Difficulty = difficulty
-	genesisBlock.Header.Version = version
+// func (self GenesisBlockGenerator) CreateGenesisBlock(
+// 	time time.Time,
+// 	nonce int,
+// 	difficulty uint32,
+// 	version int,
+// 	genesisReward uint64,
+// ) *Block {
+// 	genesisBlock := Block{}
+// 	// update default genesis block
+// 	genesisBlock.Header.Timestamp = time.Unix()
+// 	//genesisBlock.Header.PrevBlockHash = (&common.Hash{}).String()
+// 	genesisBlock.Header.Nonce = nonce
+// 	genesisBlock.Header.Difficulty = difficulty
+// 	genesisBlock.Header.Version = version
 
-	tx, err := self.getGenesisTx()
-	//tx, err := self.createGenesisTx(genesisReward)
+// 	tx, err := self.getGenesisTx()
+// 	//tx, err := self.createGenesisTx(genesisReward)
 
-	if err != nil {
-		Logger.log.Error(err)
-		return nil
-	}
+// 	if err != nil {
+// 		Logger.log.Error(err)
+// 		return nil
+// 	}
 
-	genesisBlock.Header.MerkleRootCommitments = self.calcCommitmentMerkleRoot(tx)
-	fmt.Printf("Anchor: %x\n", genesisBlock.Header.MerkleRootCommitments[:])
+// 	genesisBlock.Header.MerkleRootCommitments = self.calcCommitmentMerkleRoot(tx)
+// 	fmt.Printf("Anchor: %x\n", genesisBlock.Header.MerkleRootCommitments[:])
 
-	genesisBlock.Transactions = append(genesisBlock.Transactions, tx)
-	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
-	return &genesisBlock
-}
+// 	genesisBlock.Transactions = append(genesisBlock.Transactions, tx)
+// 	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
+// 	return &genesisBlock
+// }
 
 func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(time time.Time, nonce int, difficulty uint32, version int, initialCoin float64, preSelectValidators []string) *Block {
 	genesisBlock := Block{}

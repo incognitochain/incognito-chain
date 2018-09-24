@@ -6,9 +6,10 @@ import (
 )
 
 type KeySet struct {
-	PrivateKey  client.SpendingKey
-	PublicKey   client.PaymentAddress
-	ReadonlyKey client.ViewingKey
+	SealerKeyPair KeyPair
+	PrivateKey    client.SpendingKey
+	PublicKey     client.PaymentAddress
+	ReadonlyKey   client.ViewingKey
 }
 
 /**
@@ -20,6 +21,7 @@ func (self *KeySet) GenerateKey(seed []byte) *KeySet {
 	copy(self.PrivateKey[:], hash)
 	self.PublicKey = client.GenPaymentAddress(self.PrivateKey)
 	self.ReadonlyKey = client.GenViewingKey(self.PrivateKey)
+	self.SealerKeyPair.GenerateKey(self.PrivateKey[:])
 	return self
 }
 
@@ -30,6 +32,7 @@ func (self *KeySet) ImportFromPrivateKeyByte(privateKey []byte) {
 	copy(self.PrivateKey[:], privateKey)
 	self.PublicKey = client.GenPaymentAddress(self.PrivateKey)
 	self.ReadonlyKey = client.GenViewingKey(self.PrivateKey)
+	self.SealerKeyPair.GenerateKey(self.PrivateKey[:])
 }
 
 /**
@@ -39,6 +42,7 @@ func (self *KeySet) ImportFromPrivateKey(privateKey *client.SpendingKey) {
 	self.PrivateKey = *privateKey
 	self.PublicKey = client.GenPaymentAddress(self.PrivateKey)
 	self.ReadonlyKey = client.GenViewingKey(self.PrivateKey)
+	self.SealerKeyPair.GenerateKey(self.PrivateKey[:])
 }
 
 // func (self *KeySet) GenerateSignKey() (client.PrivateKey, error){
