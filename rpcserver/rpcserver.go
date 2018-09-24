@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/cash-prototype/wire"
 	"io"
 	"io/ioutil"
 	"log"
@@ -15,17 +14,21 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/wire"
+
+	"crypto/sha256"
+	"crypto/subtle"
+	"encoding/base64"
+
+	peer2 "github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/cash-prototype/addrmanager"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/connmanager"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/wallet"
-	"github.com/ninjadotorg/cash-prototype/connmanager"
-	"github.com/ninjadotorg/cash-prototype/addrmanager"
-	"crypto/sha256"
-	"encoding/base64"
-	"crypto/subtle"
 )
 
 const (
@@ -69,10 +72,10 @@ type RpcServerConfig struct {
 	ConnMgr        *connmanager.ConnManager
 	AddrMgr        *addrmanager.AddrManager
 	IsGenerateNode bool
-	Server interface {
+	Server         interface {
 		// Push Tx message
 		PushMessageToAll(message wire.Message) error
-		PushMessageToPeer(message wire.Message, id string) error
+		PushMessageToPeer(message wire.Message, id peer2.ID) error
 	}
 
 	TxMemPool     *mempool.TxPool
@@ -91,7 +94,7 @@ type RpcServerConfig struct {
 	FeeEstimator *mempool.FeeEstimator
 }
 
-func (self *RpcServer) Init(config *RpcServerConfig) (error) {
+func (self *RpcServer) Init(config *RpcServerConfig) error {
 	self.Config = *config
 	self.statusLines = make(map[int]string)
 	if config.RPCUser != "" && config.RPCPass != "" {
@@ -180,7 +183,7 @@ func (self RpcServer) Stop() error {
 
 /**
 Handle all request to rpcserver
- */
+*/
 func (self RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "close")
 	w.Header().Set("Content-Type", "application/json")

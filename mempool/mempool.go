@@ -58,7 +58,7 @@ type TxPool struct {
 	lastUpdated int64 // last time pool was updated
 
 	mtx    sync.RWMutex
-	config Config
+	Config Config
 	pool   map[common.Hash]*TxDesc
 	//orphans       map[chainhash.Hash]*orphanTx
 	//orphansByPrev map[wire.OutPoint]map[common.Hash]*Tx
@@ -77,7 +77,7 @@ type TxPool struct {
 Init Txpool from config
 */
 func (tp *TxPool) Init(cfg *Config) {
-	tp.config = *cfg
+	tp.Config = *cfg
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.nextExpireScan = time.Now().Add(orphanExpireScanInterval)
 }
@@ -112,8 +112,8 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 
 	// Record this tx for fee estimation if enabled.
-	if tp.config.FeeEstimator != nil {
-		tp.config.FeeEstimator.ObserveTransaction(txD)
+	if tp.Config.FeeEstimator != nil {
+		tp.Config.FeeEstimator.ObserveTransaction(txD)
 	}
 
 	return txD
@@ -149,15 +149,15 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 	// that make sure transaction is accepted when passed any rules
 	txInfo := tx.(*transaction.Tx)
-	chainID, err := tp.config.Policy.Consensus.GetTxSenderChain(txInfo.AddressLastByte)
+	chainID, err := tp.Config.Policy.Consensus.GetTxSenderChain(txInfo.AddressLastByte)
 	if err != nil {
 		return nil, nil, err
 	}
-	bestHeight := tp.config.BlockChain.BestState[chainID].BestBlock.Height
+	bestHeight := tp.Config.BlockChain.BestState[chainID].BestBlock.Height
 	// nextBlockHeight := bestHeight + 1
 	// Check tx with policy
 	// check version
-	ok := tp.config.Policy.CheckTxVersion(&tx)
+	ok := tp.Config.Policy.CheckTxVersion(&tx)
 	if !ok {
 		err := TxRuleError{}
 		err.Init(RejectVersion, fmt.Sprintf("%v's version is invalid", txHash.String()))
@@ -173,7 +173,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 	// validate double spend for normal tx
 	if tx.GetType() == common.TxNormalType {
-		txViewPoint, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
+		txViewPoint, err := tp.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
 		if err != nil {
 			str := fmt.Sprintf("Can not check double spend for tx")
 			err := TxRuleError{}
@@ -352,7 +352,7 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 	case common.TxNormalType:
 		{
 			normalTx := tx.(*transaction.Tx)
-			err := tp.config.Policy.CheckTransactionFee(normalTx)
+			err := tp.Config.Policy.CheckTransactionFee(normalTx)
 			return normalTx.Fee, err
 		}
 	case common.TxActionParamsType:
@@ -395,13 +395,13 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		//check Descs
 
 		// get list nullifiers from db to check spending
-		txViewPointTxOutBond, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutBondType)
+		txViewPointTxOutBond, err := tp.Config.BlockChain.FetchTxViewPoint(common.TxOutBondType)
 		if err != nil {
 			return false, errors.New("Wrong tx nultifier")
 		}
 		nullifiersInDbTxOutBond := txViewPointTxOutBond.ListNullifiers(common.TxOutBondType)
 
-		txViewPointTxOutCoin, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
+		txViewPointTxOutCoin, err := tp.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
 		if err != nil {
 			return false, errors.New("Wrong tx nultifier")
 		}

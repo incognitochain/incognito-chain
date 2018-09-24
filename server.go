@@ -157,7 +157,8 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	// If no feeEstimator has been found, or if the one that has been found
 	// is behind somehow, create a new one and start over.
-	if self.FeeEstimator == nil || self.FeeEstimator.LastKnownHeight() != self.BlockChain.BestState.BestBlock.Height {
+	// if self.FeeEstimator == nil || self.FeeEstimator.LastKnownHeight() != self.BlockChain.BestState.BestBlock.Height {
+	if self.FeeEstimator == nil {
 		self.FeeEstimator = mempool.NewFeeEstimator(
 			mempool.DefaultEstimateFeeMaxRollback,
 			mempool.DefaultEstimateFeeMinRegisteredBlocks)
@@ -649,16 +650,16 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		msgS.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
 		msgS.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.ListeningAddress
 		msgS.(*wire.MessageVersion).RawLocalAddress = peerConn.ListenerPeer.RawAddress
-		msgS.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerId
+		msgS.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerID
 		msgS.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
 		msgS.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
-		msgS.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerId
+		msgS.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
 		msgS.(*wire.MessageVersion).LastBlock = 0
 		msgS.(*wire.MessageVersion).ProtocolVersion = 1
 		// Validate Public Key from SealerPrvKey
 		if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
 			keyPair := &cashec.KeyPair{}
-			keyPair.Import([]byte(peerConn.ListenerPeer.Config.SealerPrvKey))
+			keyPair.Import(peerConn.ListenerPeer.Config.SealerPrvKey)
 			msgS.(*wire.MessageVersion).PublicKey = string(keyPair.PublicKey)
 		}
 		if err != nil {
