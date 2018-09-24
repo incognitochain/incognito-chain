@@ -144,6 +144,16 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		return err
 	}
 
+	// Search for a FeeEstimator state in the database. If none can be found
+	// or if it cannot be loaded, create a new one.
+	feeEstimatorData, err := self.Db.GetFeeEstimator()
+	if err == nil && len(feeEstimatorData) > 0 {
+		self.FeeEstimator, err = mempool.RestoreFeeEstimator(feeEstimatorData)
+		if err != nil {
+			Logger.log.Errorf("Failed to restore fee estimator %v", err)
+		}
+	}
+
 	// If no feeEstimator has been found, or if the one that has been found
 	// is behind somehow, create a new one and start over.
 	if self.FeeEstimator == nil || self.FeeEstimator.LastKnownHeight() != self.BlockChain.BestState.BestBlock.Height {
@@ -361,6 +371,16 @@ func (self Server) Stop() error {
 
 	self.Miner.Stop()
 
+	// Save fee estimator in the db
+	feeEstimatorData := self.FeeEstimator.Save()
+	if len(feeEstimatorData) > 0 {
+		err := self.Db.StoreFeeEstimator(feeEstimatorData)
+		if err != nil {
+			Logger.log.Errorf("Can't save fee estimator data: %v", err)
+		}
+	}
+
+	// Signal the remaining goroutines to quit.
 	close(self.quit)
 	return nil
 }
