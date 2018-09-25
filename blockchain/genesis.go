@@ -233,6 +233,6 @@ func (self GenesisBlockGenerator) CreateGenesisBlock(
 	fmt.Printf("Anchor: %x\n", genesisBlock.Header.MerkleRootCommitments[:])
 
 	genesisBlock.Transactions = append(genesisBlock.Transactions, tx)
-	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
+	//genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
 	return &genesisBlock
 }

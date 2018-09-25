@@ -23,6 +23,7 @@ var (
 	usedTxBondKey     = []byte("usedTxBond")
 	notUsedBondTxKey  = []byte("notusedTxBond")
 	bestBlockKey      = []byte("bestBlock")
+	feeEstimator      = []byte("feeEstimator")
 )
 
 func open(dbPath string) (database.DB, error) {
@@ -276,6 +277,21 @@ func (db *db) FetchAllBlocks() ([]*common.Hash, error) {
 		return nil, errors.Wrap(err, "iter.Error")
 	}
 	return keys, nil
+}
+
+func (db *db) StoreFeeEstimator(val []byte) error {
+	if err := db.put(feeEstimator, val); err != nil {
+		return errors.Wrap(err, "db.Put")
+	}
+	return nil
+}
+
+func (db *db) GetFeeEstimator() ([]byte, error) {
+	b, err := db.ldb.Get(feeEstimator, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "db.ldb.Get")
+	}
+	return b, err
 }
 
 func (db *db) getKey(h *common.Hash) []byte {
