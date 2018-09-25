@@ -170,7 +170,7 @@ func (self *BlockChain) createChainState(chainID byte) error {
 	self.BestState[chainID].Init(initBlock, tree)
 
 	// save nullifiers and commitments from genesisblock
-	view := NewTxViewPoint()
+	view := NewTxViewPoint(chainID)
 	err := view.fetchTxViewPoint(self.Config.DataBase, initBlock)
 	if err != nil {
 		return err
@@ -358,7 +358,7 @@ this is a list tx-out which are used by a new tx
 func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
 	for typeJoinSplitDesc, item := range view.listNullifiers {
 		for _, item1 := range item {
-			err := self.Config.DataBase.StoreNullifiers(item1, typeJoinSplitDesc)
+			err := self.Config.DataBase.StoreNullifiers(item1, typeJoinSplitDesc, view.chainId)
 			if err != nil {
 				return err
 			}
@@ -374,7 +374,7 @@ this is a list tx-in which are used by a new tx
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
 	for typeJoinSplitDesc, item := range view.listCommitments {
 		for _, item1 := range item {
-			err := self.Config.DataBase.StoreCommitments(item1, typeJoinSplitDesc)
+			err := self.Config.DataBase.StoreCommitments(item1, typeJoinSplitDesc, view.chainId)
 			if err != nil {
 				return err
 			}
@@ -387,9 +387,9 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
 */
-func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, typeJoinSplitDesc string) error {
+func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, typeJoinSplitDesc string, chainId byte) error {
 	for _, nullifier := range nullifiers {
-		err := self.Config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc)
+		err := self.Config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc, chainId)
 		if err != nil {
 			return err
 		}
@@ -401,9 +401,9 @@ func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, ty
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
 */
-func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, typeJoinSplitDesc string) error {
+func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, typeJoinSplitDesc string, chainId byte) error {
 	for _, item := range commitments {
-		err := self.Config.DataBase.StoreCommitments(item, typeJoinSplitDesc)
+		err := self.Config.DataBase.StoreCommitments(item, typeJoinSplitDesc, chainId)
 		if err != nil {
 			return err
 		}
@@ -418,7 +418,11 @@ this is a list tx-out which are used by a new tx
 func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx, typeJoinSplitDesc string) error {
 	for _, desc := range tx.Descs {
 		for _, nullifier := range desc.Nullifiers {
-			err := self.Config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc)
+			chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
+			if err != nil {
+				return err
+			}
+			err = self.Config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc, chainId)
 			if err != nil {
 				return err
 			}
@@ -434,7 +438,11 @@ this is a list tx-in which are used by a new tx
 func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx, typeJoinSplitDesc string) error {
 	for _, desc := range tx.Descs {
 		for _, item := range desc.Commitments {
-			err := self.Config.DataBase.StoreCommitments(item, typeJoinSplitDesc)
+			chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
+			if err != nil {
+				return err
+			}
+			err = self.Config.DataBase.StoreCommitments(item, typeJoinSplitDesc, chainId)
 			if err != nil {
 				return err
 			}
@@ -543,14 +551,14 @@ func (self *BlockChain) GetAllHashBlocks() ([][]*common.Hash, error) {
 FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
 Param typeJoinSplitDesc - COIN or BOND
 */
-func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string) (*TxViewPoint, error) {
-	view := NewTxViewPoint()
-	commitments, err := self.Config.DataBase.FetchCommitments(typeJoinSplitDesc)
+func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string, chainId byte) (*TxViewPoint, error) {
+	view := NewTxViewPoint(chainId)
+	commitments, err := self.Config.DataBase.FetchCommitments(typeJoinSplitDesc, chainId)
 	if err != nil {
 		return nil, err
 	}
 	view.listCommitments[typeJoinSplitDesc] = commitments
-	nullifiers, err := self.Config.DataBase.FetchNullifiers(typeJoinSplitDesc)
+	nullifiers, err := self.Config.DataBase.FetchNullifiers(typeJoinSplitDesc, chainId)
 	if err != nil {
 		return nil, err
 	}
@@ -609,7 +617,7 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 	// most common case.
 	parentHash := &block.Header.PrevBlockHash
 	if parentHash.IsEqual(b.BestState[block.Header.ChainID].BestBlockHash) {
-		view := NewTxViewPoint()
+		view := NewTxViewPoint(block.Header.ChainID)
 
 		err := view.fetchTxViewPoint(b.Config.DataBase, block)
 		if err != nil {
@@ -654,8 +662,8 @@ GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be 
 - Param #1: key - key set which contain readonly-key and pub-key
 - Param #2: typeJoinSplitDesc - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, typeJoinSplitDesc string) ([]transaction.Tx, error) {
-	results := make([]transaction.Tx, 0)
+func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, typeJoinSplitDesc string) (map[byte][]transaction.Tx, error) {
+	results := make(map[byte][]transaction.Tx, 0)
 
 	// set default for params
 	if typeJoinSplitDesc == "" {
@@ -665,9 +673,10 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, typeJoinSp
 	// lock chain
 	self.chainLock.Lock()
 
-	for chainID := 0; chainID < 20; chainID++ {
+	for _, bestState := range self.BestState {
 		// get best block
-		bestBlock := self.BestState[chainID].BestBlock
+		bestBlock := bestState.BestBlock
+		chainId := bestState.BestBlock.Header.ChainID
 		blockHeight := bestBlock.Height
 
 		for blockHeight > 0 {
@@ -723,7 +732,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, typeJoinSp
 			// detected some tx can be accepted
 			if len(txsInBlockAccepted) > 0 {
 				// add to result
-				results = append(results, txsInBlockAccepted...)
+				results[chainId] = append(results[chainId], txsInBlockAccepted...)
 			}
 
 			// continue with previous block
@@ -751,17 +760,10 @@ With private-key, we can check unspent tx by check nullifiers from database
 - Param #1: privateKey - byte[] of privatekey
 - Param #2: typeJoinSplitDesc - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, typeJoinSplitDesc string, sortType int, sortAsc bool) ([]transaction.Tx, error) {
-	results := make([]transaction.Tx, 0)
+func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, typeJoinSplitDesc string, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
+	results := make(map[byte][]transaction.Tx)
 
-	// get list nullifiers from db to check spending
-	txViewPoint, err := self.FetchTxViewPoint(typeJoinSplitDesc)
-	if err != nil {
-		return nil, err
-	}
-	nullifiersInDb := txViewPoint.listNullifiers[typeJoinSplitDesc]
-
-	// Get set of keys from private key
+	// Get set of keys from private keybyte
 	keys := cashec.KeySet{}
 	keys.ImportFromPrivateKey(privateKey)
 
@@ -773,10 +775,19 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 	// lock chain
 	self.chainLock.Lock()
 
-	for chainID := 0; chainID < 20; chainID++ {
-		// get best block
-		bestBlock := self.BestState[chainID].BestBlock
+	for _, bestState := range self.BestState {
+		// get best blockFs
+		bestBlock := bestState.BestBlock
+		chainId := bestBlock.Header.ChainID
+		results[chainId] = make([]transaction.Tx, 0)
 		blockHeight := bestBlock.Height
+
+		// get list nullifiers from db to check spending
+		txViewPoint, err := self.FetchTxViewPoint(typeJoinSplitDesc, chainId)
+		if err != nil {
+			return nil, err
+		}
+		nullifiersInDb := txViewPoint.listNullifiers[typeJoinSplitDesc]
 
 		for blockHeight > 0 {
 			txsInBlock := bestBlock.Transactions
@@ -849,7 +860,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 			// detected some tx can be accepted
 			if len(txsInBlockAccepted) > 0 {
 				// add to result
-				results = append(results, txsInBlockAccepted...)
+				results[chainId] = append(results[chainId], txsInBlockAccepted...)
 			}
 
 			// continue with previous block
@@ -866,13 +877,12 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 				bestBlock = preBlock
 			}
 		}
+		// sort txs
+		transaction.SortArrayTxs(results[chainId], sortType, sortAsc)
 	}
 
 	// unlock chain
 	self.chainLock.Unlock()
-
-	// sort txs
-	transaction.SortArrayTxs(results, sortType, sortAsc)
 
 	return results, nil
 }
