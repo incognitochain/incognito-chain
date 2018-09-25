@@ -1,7 +1,5 @@
 package jsonrpc
 
-import "github.com/ninjadotorg/cash-prototype/common"
-
 // ListUnspentResult models a successful response from the listunspent request.
 type ListUnspentResult struct {
 	ListUnspentResultItems map[string]map[byte][]ListUnspentResultItem `json:"ListUnspentResultItems"`
@@ -27,7 +25,7 @@ func (self *ListUnspentResultItem) Init(data interface{}) {
 type JoinSplitDesc struct {
 	Commitments [][]byte `json:"Commitments"`
 	Amounts     []uint64 `json:"Amounts"`
-	Anchor      []byte   `json:"Anchor"`
+	Anchors     [][]byte `json:"Anchors"`
 }
 
 func (self *JoinSplitDesc) Init(data interface{}) {
@@ -38,10 +36,14 @@ func (self *JoinSplitDesc) Init(data interface{}) {
 		self.Amounts = append(self.Amounts, uint64(temp.(float64)))
 	}
 
-	self.Anchor = common.JsonUnmarshallByteArray(mapData["Anchor"].(string))
+	self.Anchors = make([][]byte, 0)
+	temps := mapData["Anchor"].([]interface{})
+	for _, temp := range temps {
+		self.Anchors = append(self.Anchors, []byte(temp.(string)))
+	}
 
 	self.Commitments = make([][]byte, 0)
-	temps := mapData["Commitments"].([]interface{})
+	temps = mapData["Commitments"].([]interface{})
 	for _, temp := range temps {
 		self.Commitments = append(self.Commitments, []byte(temp.(string)))
 	}

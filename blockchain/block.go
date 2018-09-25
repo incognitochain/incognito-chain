@@ -59,10 +59,11 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 		if txTemp["Type"].(string) == common.TxNormalType {
 			// init a tx
 			txNormal := &transaction.Tx{
-				Version:  int8(txTemp["Version"].(float64)),
-				Type:     txTemp["Type"].(string),
-				LockTime: int64(txTemp["LockTime"].(float64)),
-				Fee:      uint64(txTemp["Fee"].(float64)),
+				Version:         int8(txTemp["Version"].(float64)),
+				Type:            txTemp["Type"].(string),
+				LockTime:        int64(txTemp["LockTime"].(float64)),
+				Fee:             uint64(txTemp["Fee"].(float64)),
+				AddressLastByte: txTemp["Fee"].(byte),
 			}
 			jSPubKey, ok := txTemp["JSPubKey"]
 			if ok && jSPubKey != nil {
@@ -78,7 +79,6 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				for _, descTemp := range descTemps {
 					item := descTemp.(map[string]interface{})
 					desc := &transaction.JoinSplitDesc{
-						Anchor:          common.JsonUnmarshallByteArray(item["Anchor"].(string)),
 						Type:            item["Type"].(string),
 						Reward:          uint64(item["Reward"].(float64)),
 						EphemeralPubKey: common.JsonUnmarshallByteArray(item["EphemeralPubKey"].(string)),
@@ -98,6 +98,16 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 							G_H:      common.JsonUnmarshallByteArray(proofTemp["g_H"].(string)),
 						}
 						desc.Proof = proof
+					}
+
+					// anchor
+					if ok := item["Anchor"] != nil; ok {
+						anchorsTemp := item["Anchor"].([]interface{})
+						anchors := make([][]byte, 0)
+						for _, n := range anchorsTemp {
+							anchors = append(anchors, common.JsonUnmarshallByteArray(n.(string)))
+						}
+						desc.Anchor = anchors
 					}
 
 					// nullifier

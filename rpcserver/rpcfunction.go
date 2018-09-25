@@ -585,7 +585,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 						amounts = append(amounts, note.Value)
 					}
 					item.JoinSplitDesc = append(item.JoinSplitDesc, jsonrpc.JoinSplitDesc{
-						Anchor:      desc.Anchor,
+						Anchors:     desc.Anchor,
 						Commitments: desc.Commitments,
 						Amounts:     amounts,
 					})
@@ -651,7 +651,7 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 						amounts = append(amounts, note.Value)
 					}
 					item.JoinSplitDesc = append(item.JoinSplitDesc, jsonrpc.JoinSplitDesc{
-						Anchor:      desc.Anchor,
+						Anchors:     desc.Anchor,
 						Commitments: desc.Commitments,
 						Amounts:     amounts,
 					})
@@ -777,7 +777,8 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		candidateTxsMap,
 		nullifiersDb,
 		commitmentsDb,
-		realFee)
+		realFee,
+		chainID)
 	if err != nil {
 		return nil, err
 	}
