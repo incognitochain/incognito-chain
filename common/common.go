@@ -1,18 +1,19 @@
 package common
 
 import (
+	"bytes"
+	"encoding/base64"
+	"fmt"
+	"net"
 	"os"
 	"os/user"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"unicode"
-	"reflect"
-	"net"
-	"fmt"
-	"encoding/base64"
+
 	"github.com/pkg/errors"
-	"bytes"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -108,7 +109,7 @@ func AppDataDir(appName string, roaming bool) string {
 
 /**
 Convert interface of slice to slice
- */
+*/
 func InterfaceSlice(slice interface{}) []interface{} {
 	s := reflect.ValueOf(slice)
 	if s.Kind() != reflect.Slice {
@@ -177,7 +178,7 @@ func JsonUnmarshallByteArray(string string) []byte {
 
 /**
 SliceExists - Check slice contain item
- */
+*/
 func SliceExists(slice interface{}, item interface{}) (bool, error) {
 	s := reflect.ValueOf(slice)
 
@@ -220,4 +221,16 @@ func GetTxSenderChain(senderLastByte byte) (byte, error) {
 		}
 	}
 	return 0, errors.New("can't get sender's chainID")
+}
+
+func IntArrayEquals(a []int, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
 }

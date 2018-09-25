@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/cash-prototype/cashec"
+	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
@@ -62,7 +63,7 @@ type Config struct {
 	blockGen         *BlkTmplGenerator
 	MemPool          *mempool.TxPool
 	ValidatorKeyPair cashec.KeyPair
-	Server interface {
+	Server           interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -182,7 +183,7 @@ func (self *Engine) StartSealer(sealerPrvKey string) {
 			case <-self.quitSealer:
 				return
 			default:
-				if intArrayEquals(self.knownChainsHeight.Heights, self.validatedChainsHeight.Heights) {
+				if common.IntArrayEquals(self.knownChainsHeight.Heights, self.validatedChainsHeight.Heights) {
 					chainID, validators := self.getMyChain()
 					if chainID < TOTAL_VALIDATORS {
 						Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
@@ -652,16 +653,4 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.validatedChainsHeight.Lock()
 	self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
 	self.validatedChainsHeight.Unlock()
-}
-
-func intArrayEquals(a []int, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i, v := range a {
-		if v != b[i] {
-			return false
-		}
-	}
-	return true
 }
