@@ -455,9 +455,13 @@ int test_merkle_tree() {
     return 0;
 }
 
+int generate_params() {
+    ZCJoinSplit::Generate("/tmp/r1cs.params", "/tmp/verifying.key", "/tmp/proving.key");
+}
+
 int main(int argc, char const *argv[])
 {
-    // test_merkle_tree();
-    RunServer();
+    generate_params();
+    // RunServer();
     return 0;
 }
