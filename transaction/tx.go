@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"bytes"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -155,7 +154,7 @@ func CreateTx(
 	commitments map[byte]([][]byte),
 	fee uint64,
 ) (*Tx, error) {
-	fmt.Printf("List of all commitments before building tx:\n")
+	/*fmt.Printf("List of all commitments before building tx:\n")
 	for _, cm := range commitments {
 		fmt.Printf("%x\n", cm)
 	}
@@ -356,7 +355,8 @@ func CreateTx(
 
 	fmt.Printf("jspubkey size: %v\n", len(tx.JSPubKey))
 	fmt.Printf("jssig size: %v\n", len(tx.JSSig))
-	return tx, nil
+	return tx, nil*/
+	return nil, nil
 }
 
 // BuildNewJSDesc creates zk-proof for a js desc and add it to the transaction

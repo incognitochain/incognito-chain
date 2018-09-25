@@ -180,7 +180,14 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 	// validate double spend for normal tx
 	if tx.GetType() == common.TxNormalType {
-		txViewPoint, err := tp.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
+		chainId, err := common.GetTxSenderChain(tx.(*transaction.Tx).AddressLastByte)
+		if err != nil {
+			str := fmt.Sprintf("Can not check double spend for tx")
+			err := TxRuleError{}
+			err.Init(CanNotCheckDoubleSpend, str)
+			return nil, nil, err
+		}
+		txViewPoint, err := tp.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainId)
 		if err != nil {
 			str := fmt.Sprintf("Can not check double spend for tx")
 			err := TxRuleError{}
@@ -378,6 +385,13 @@ ValidateSanityData - validate sansity data of tx
 */
 func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 	if tx.GetType() == common.TxNormalType {
+		chainId, err := common.GetTxSenderChain(tx.(*transaction.Tx).AddressLastByte)
+		if err != nil {
+			str := fmt.Sprintf("Can not check double spend for tx")
+			err := TxRuleError{}
+			err.Init(CanNotCheckDoubleSpend, str)
+			return false, err
+		}
 		txN := tx.(*transaction.Tx)
 		//check version
 		if txN.Version > transaction.TxVersion {
@@ -402,13 +416,13 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		//check Descs
 
 		// get list nullifiers from db to check spending
-		txViewPointTxOutBond, err := tp.Config.BlockChain.FetchTxViewPoint(common.TxOutBondType)
+		txViewPointTxOutBond, err := tp.Config.BlockChain.FetchTxViewPoint(common.TxOutBondType, chainId)
 		if err != nil {
 			return false, errors.New("Wrong tx nultifier")
 		}
 		nullifiersInDbTxOutBond := txViewPointTxOutBond.ListNullifiers(common.TxOutBondType)
 
-		txViewPointTxOutCoin, err := tp.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
+		txViewPointTxOutCoin, err := tp.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainId)
 		if err != nil {
 			return false, errors.New("Wrong tx nultifier")
 		}

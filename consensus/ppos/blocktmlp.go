@@ -67,11 +67,11 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 		if txChainID != chainID {
 			continue
 		}
-		for _, desc := range tx.Descs {
+		/*for _, desc := range tx.Descs {
 			view, err := g.chain.FetchTxViewPoint(desc.Type)
 			_ = view
 			_ = err
-		}
+		}*/
 		/*
 			if err != nil {
 				fmt.Print("Unable to fetch utxo view for tx %s: %v",
@@ -167,8 +167,8 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	}
 	// TODO(@0xsirrush): check if cm and nf should be saved here (when generate block template)
 	// or when UpdateBestState
-	g.chain.StoreCommitmentsFromListCommitment(commitments, descType)
-	g.chain.StoreNullifiersFromListNullifier(nullifiers, descType)
+	g.chain.StoreCommitmentsFromListCommitment(commitments, descType, chainID)
+	g.chain.StoreNullifiersFromListNullifier(nullifiers, descType, chainID)
 
 	block := blockchain.Block{}
 	block.Header = blockchain.BlockHeader{
@@ -181,6 +181,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 		Nonce:                 0, //@todo should be create Nonce logic
 		BlockCommitteeSigs:    []string{},
 		NextCommittee:         []string{},
+		ChainID:               chainID,
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
