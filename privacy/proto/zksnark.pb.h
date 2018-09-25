@@ -751,6 +751,28 @@ class ProveRequest : public ::google::protobuf::Message /* @@protoc_insertion_po
   const ::google::protobuf::RepeatedPtrField< ::zksnark::Note >&
       outnotes() const;
 
+  // repeated bytes rts = 5;
+  int rts_size() const;
+  void clear_rts();
+  static const int kRtsFieldNumber = 5;
+  const ::std::string& rts(int index) const;
+  ::std::string* mutable_rts(int index);
+  void set_rts(int index, const ::std::string& value);
+  #if LANG_CXX11
+  void set_rts(int index, ::std::string&& value);
+  #endif
+  void set_rts(int index, const char* value);
+  void set_rts(int index, const void* value, size_t size);
+  ::std::string* add_rts();
+  void add_rts(const ::std::string& value);
+  #if LANG_CXX11
+  void add_rts(::std::string&& value);
+  #endif
+  void add_rts(const char* value);
+  void add_rts(const void* value, size_t size);
+  const ::google::protobuf::RepeatedPtrField< ::std::string>& rts() const;
+  ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_rts();
+
   // bytes hsig = 3;
   void clear_hsig();
   static const int kHsigFieldNumber = 3;
@@ -779,20 +801,6 @@ class ProveRequest : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::std::string* release_phi();
   void set_allocated_phi(::std::string* phi);
 
-  // bytes rt = 5;
-  void clear_rt();
-  static const int kRtFieldNumber = 5;
-  const ::std::string& rt() const;
-  void set_rt(const ::std::string& value);
-  #if LANG_CXX11
-  void set_rt(::std::string&& value);
-  #endif
-  void set_rt(const char* value);
-  void set_rt(const void* value, size_t size);
-  ::std::string* mutable_rt();
-  ::std::string* release_rt();
-  void set_allocated_rt(::std::string* rt);
-
   // uint64 reward = 6;
   void clear_reward();
   static const int kRewardFieldNumber = 6;
@@ -811,9 +819,9 @@ class ProveRequest : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::RepeatedPtrField< ::zksnark::JSInput > inputs_;
   ::google::protobuf::RepeatedPtrField< ::zksnark::Note > outnotes_;
+  ::google::protobuf::RepeatedPtrField< ::std::string> rts_;
   ::google::protobuf::internal::ArenaStringPtr hsig_;
   ::google::protobuf::internal::ArenaStringPtr phi_;
-  ::google::protobuf::internal::ArenaStringPtr rt_;
   ::google::protobuf::uint64 reward_;
   ::google::protobuf::uint64 fee_;
   mutable ::google::protobuf::internal::CachedSize _cached_size_;
@@ -1233,6 +1241,28 @@ class VerifyRequest : public ::google::protobuf::Message /* @@protoc_insertion_p
 
   // accessors -------------------------------------------------------
 
+  // repeated bytes rts = 3;
+  int rts_size() const;
+  void clear_rts();
+  static const int kRtsFieldNumber = 3;
+  const ::std::string& rts(int index) const;
+  ::std::string* mutable_rts(int index);
+  void set_rts(int index, const ::std::string& value);
+  #if LANG_CXX11
+  void set_rts(int index, ::std::string&& value);
+  #endif
+  void set_rts(int index, const char* value);
+  void set_rts(int index, const void* value, size_t size);
+  ::std::string* add_rts();
+  void add_rts(const ::std::string& value);
+  #if LANG_CXX11
+  void add_rts(::std::string&& value);
+  #endif
+  void add_rts(const char* value);
+  void add_rts(const void* value, size_t size);
+  const ::google::protobuf::RepeatedPtrField< ::std::string>& rts() const;
+  ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_rts();
+
   // repeated bytes nullifiers = 4;
   int nullifiers_size() const;
   void clear_nullifiers();
@@ -1313,20 +1343,6 @@ class VerifyRequest : public ::google::protobuf::Message /* @@protoc_insertion_p
   ::std::string* release_hsig();
   void set_allocated_hsig(::std::string* hsig);
 
-  // bytes rt = 3;
-  void clear_rt();
-  static const int kRtFieldNumber = 3;
-  const ::std::string& rt() const;
-  void set_rt(const ::std::string& value);
-  #if LANG_CXX11
-  void set_rt(::std::string&& value);
-  #endif
-  void set_rt(const char* value);
-  void set_rt(const void* value, size_t size);
-  ::std::string* mutable_rt();
-  ::std::string* release_rt();
-  void set_allocated_rt(::std::string* rt);
-
   // .zksnark.PHGRProof proof = 1;
   bool has_proof() const;
   void clear_proof();
@@ -1355,11 +1371,11 @@ class VerifyRequest : public ::google::protobuf::Message /* @@protoc_insertion_p
  private:
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::RepeatedPtrField< ::std::string> rts_;
   ::google::protobuf::RepeatedPtrField< ::std::string> nullifiers_;
   ::google::protobuf::RepeatedPtrField< ::std::string> commits_;
   ::google::protobuf::RepeatedPtrField< ::std::string> macs_;
   ::google::protobuf::internal::ArenaStringPtr hsig_;
-  ::google::protobuf::internal::ArenaStringPtr rt_;
   ::zksnark::PHGRProof* proof_;
   ::google::protobuf::uint64 reward_;
   ::google::protobuf::uint64 fee_;
@@ -2215,57 +2231,73 @@ inline void ProveRequest::set_allocated_phi(::std::string* phi) {
   // @@protoc_insertion_point(field_set_allocated:zksnark.ProveRequest.phi)
 }
 
-// bytes rt = 5;
-inline void ProveRequest::clear_rt() {
-  rt_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+// repeated bytes rts = 5;
+inline int ProveRequest::rts_size() const {
+  return rts_.size();
 }
-inline const ::std::string& ProveRequest::rt() const {
-  // @@protoc_insertion_point(field_get:zksnark.ProveRequest.rt)
-  return rt_.GetNoArena();
+inline void ProveRequest::clear_rts() {
+  rts_.Clear();
 }
-inline void ProveRequest::set_rt(const ::std::string& value) {
-  
-  rt_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
-  // @@protoc_insertion_point(field_set:zksnark.ProveRequest.rt)
+inline const ::std::string& ProveRequest::rts(int index) const {
+  // @@protoc_insertion_point(field_get:zksnark.ProveRequest.rts)
+  return rts_.Get(index);
+}
+inline ::std::string* ProveRequest::mutable_rts(int index) {
+  // @@protoc_insertion_point(field_mutable:zksnark.ProveRequest.rts)
+  return rts_.Mutable(index);
+}
+inline void ProveRequest::set_rts(int index, const ::std::string& value) {
+  // @@protoc_insertion_point(field_set:zksnark.ProveRequest.rts)
+  rts_.Mutable(index)->assign(value);
 }
 #if LANG_CXX11
-inline void ProveRequest::set_rt(::std::string&& value) {
-  
-  rt_.SetNoArena(
-    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
-  // @@protoc_insertion_point(field_set_rvalue:zksnark.ProveRequest.rt)
+inline void ProveRequest::set_rts(int index, ::std::string&& value) {
+  // @@protoc_insertion_point(field_set:zksnark.ProveRequest.rts)
+  rts_.Mutable(index)->assign(std::move(value));
 }
 #endif
-inline void ProveRequest::set_rt(const char* value) {
+inline void ProveRequest::set_rts(int index, const char* value) {
   GOOGLE_DCHECK(value != NULL);
-  
-  rt_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
-  // @@protoc_insertion_point(field_set_char:zksnark.ProveRequest.rt)
+  rts_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:zksnark.ProveRequest.rts)
 }
-inline void ProveRequest::set_rt(const void* value, size_t size) {
-  
-  rt_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
-      ::std::string(reinterpret_cast<const char*>(value), size));
-  // @@protoc_insertion_point(field_set_pointer:zksnark.ProveRequest.rt)
+inline void ProveRequest::set_rts(int index, const void* value, size_t size) {
+  rts_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:zksnark.ProveRequest.rts)
 }
-inline ::std::string* ProveRequest::mutable_rt() {
-  
-  // @@protoc_insertion_point(field_mutable:zksnark.ProveRequest.rt)
-  return rt_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+inline ::std::string* ProveRequest::add_rts() {
+  // @@protoc_insertion_point(field_add_mutable:zksnark.ProveRequest.rts)
+  return rts_.Add();
 }
-inline ::std::string* ProveRequest::release_rt() {
-  // @@protoc_insertion_point(field_release:zksnark.ProveRequest.rt)
-  
-  return rt_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+inline void ProveRequest::add_rts(const ::std::string& value) {
+  rts_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:zksnark.ProveRequest.rts)
 }
-inline void ProveRequest::set_allocated_rt(::std::string* rt) {
-  if (rt != NULL) {
-    
-  } else {
-    
-  }
-  rt_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), rt);
-  // @@protoc_insertion_point(field_set_allocated:zksnark.ProveRequest.rt)
+#if LANG_CXX11
+inline void ProveRequest::add_rts(::std::string&& value) {
+  rts_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:zksnark.ProveRequest.rts)
+}
+#endif
+inline void ProveRequest::add_rts(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  rts_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:zksnark.ProveRequest.rts)
+}
+inline void ProveRequest::add_rts(const void* value, size_t size) {
+  rts_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:zksnark.ProveRequest.rts)
+}
+inline const ::google::protobuf::RepeatedPtrField< ::std::string>&
+ProveRequest::rts() const {
+  // @@protoc_insertion_point(field_list:zksnark.ProveRequest.rts)
+  return rts_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::std::string>*
+ProveRequest::mutable_rts() {
+  // @@protoc_insertion_point(field_mutable_list:zksnark.ProveRequest.rts)
+  return &rts_;
 }
 
 // uint64 reward = 6;
@@ -2893,57 +2925,73 @@ inline void VerifyRequest::set_allocated_hsig(::std::string* hsig) {
   // @@protoc_insertion_point(field_set_allocated:zksnark.VerifyRequest.hsig)
 }
 
-// bytes rt = 3;
-inline void VerifyRequest::clear_rt() {
-  rt_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+// repeated bytes rts = 3;
+inline int VerifyRequest::rts_size() const {
+  return rts_.size();
 }
-inline const ::std::string& VerifyRequest::rt() const {
-  // @@protoc_insertion_point(field_get:zksnark.VerifyRequest.rt)
-  return rt_.GetNoArena();
+inline void VerifyRequest::clear_rts() {
+  rts_.Clear();
 }
-inline void VerifyRequest::set_rt(const ::std::string& value) {
-  
-  rt_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
-  // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.rt)
+inline const ::std::string& VerifyRequest::rts(int index) const {
+  // @@protoc_insertion_point(field_get:zksnark.VerifyRequest.rts)
+  return rts_.Get(index);
+}
+inline ::std::string* VerifyRequest::mutable_rts(int index) {
+  // @@protoc_insertion_point(field_mutable:zksnark.VerifyRequest.rts)
+  return rts_.Mutable(index);
+}
+inline void VerifyRequest::set_rts(int index, const ::std::string& value) {
+  // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.rts)
+  rts_.Mutable(index)->assign(value);
 }
 #if LANG_CXX11
-inline void VerifyRequest::set_rt(::std::string&& value) {
-  
-  rt_.SetNoArena(
-    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
-  // @@protoc_insertion_point(field_set_rvalue:zksnark.VerifyRequest.rt)
+inline void VerifyRequest::set_rts(int index, ::std::string&& value) {
+  // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.rts)
+  rts_.Mutable(index)->assign(std::move(value));
 }
 #endif
-inline void VerifyRequest::set_rt(const char* value) {
+inline void VerifyRequest::set_rts(int index, const char* value) {
   GOOGLE_DCHECK(value != NULL);
-  
-  rt_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
-  // @@protoc_insertion_point(field_set_char:zksnark.VerifyRequest.rt)
+  rts_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:zksnark.VerifyRequest.rts)
 }
-inline void VerifyRequest::set_rt(const void* value, size_t size) {
-  
-  rt_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
-      ::std::string(reinterpret_cast<const char*>(value), size));
-  // @@protoc_insertion_point(field_set_pointer:zksnark.VerifyRequest.rt)
+inline void VerifyRequest::set_rts(int index, const void* value, size_t size) {
+  rts_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:zksnark.VerifyRequest.rts)
 }
-inline ::std::string* VerifyRequest::mutable_rt() {
-  
-  // @@protoc_insertion_point(field_mutable:zksnark.VerifyRequest.rt)
-  return rt_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+inline ::std::string* VerifyRequest::add_rts() {
+  // @@protoc_insertion_point(field_add_mutable:zksnark.VerifyRequest.rts)
+  return rts_.Add();
 }
-inline ::std::string* VerifyRequest::release_rt() {
-  // @@protoc_insertion_point(field_release:zksnark.VerifyRequest.rt)
-  
-  return rt_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+inline void VerifyRequest::add_rts(const ::std::string& value) {
+  rts_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:zksnark.VerifyRequest.rts)
 }
-inline void VerifyRequest::set_allocated_rt(::std::string* rt) {
-  if (rt != NULL) {
-    
-  } else {
-    
-  }
-  rt_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), rt);
-  // @@protoc_insertion_point(field_set_allocated:zksnark.VerifyRequest.rt)
+#if LANG_CXX11
+inline void VerifyRequest::add_rts(::std::string&& value) {
+  rts_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:zksnark.VerifyRequest.rts)
+}
+#endif
+inline void VerifyRequest::add_rts(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  rts_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:zksnark.VerifyRequest.rts)
+}
+inline void VerifyRequest::add_rts(const void* value, size_t size) {
+  rts_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:zksnark.VerifyRequest.rts)
+}
+inline const ::google::protobuf::RepeatedPtrField< ::std::string>&
+VerifyRequest::rts() const {
+  // @@protoc_insertion_point(field_list:zksnark.VerifyRequest.rts)
+  return rts_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::std::string>*
+VerifyRequest::mutable_rts() {
+  // @@protoc_insertion_point(field_mutable_list:zksnark.VerifyRequest.rts)
+  return &rts_;
 }
 
 // repeated bytes nullifiers = 4;

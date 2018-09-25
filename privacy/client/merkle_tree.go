@@ -365,3 +365,8 @@ func BuildWitnessPath(notes []*JSInput, commitments [][]byte) ([]byte, error) {
 	newRt := tree.GetRoot(common.IncMerkleTreeHeight)
 	return newRt, nil
 }
+
+// BuildWitnessPathMultiChain builds witness path for multiple input notes from different chains
+func BuildWitnessPathMultiChain(inputs map[byte][]*JSInput, commitments map[byte][][]byte) (map[byte][]byte, error) {
+	return nil, nil
+}

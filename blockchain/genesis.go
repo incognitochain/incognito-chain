@@ -78,11 +78,11 @@ func (self GenesisBlockGenerator) createGenesisTx(coinReward uint64) (*transacti
 	copy(ephemeralPrivKey[:], GENESIS_BLOCK_EPHEMERAL_PRIVKEY[:])
 
 	// Since input notes of genesis tx have 0 value, rt can be anything
-	rt := make([]byte, 32)
+	rts := [][]byte{make([]byte, 32), make([]byte, 32)}
 	tx, err := transaction.GenerateProofForGenesisTx(
 		inputs,
 		outputs,
-		rt,
+		rts,
 		coinReward,
 		GENESIS_BLOCK_SEED[:],
 		GENESIS_BLOCK_PHI[:],
@@ -163,8 +163,11 @@ func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
 	}
 	vmacs := [][]byte{vmacs1, vmacs2}
 
+	anchors := [][]byte{make([]byte, 32), make([]byte, 32)}
+	copy(anchors[0], GENESIS_BLOCK_ANCHORS[0][:])
+	copy(anchors[1], GENESIS_BLOCK_ANCHORS[1][:])
 	desc := []*transaction.JoinSplitDesc{&transaction.JoinSplitDesc{
-		Anchor:          GENESIS_BLOCK_ANCHOR[:],
+		Anchor:          anchors,
 		Nullifiers:      nullfiers,
 		Commitments:     commitments,
 		Proof:           proof,

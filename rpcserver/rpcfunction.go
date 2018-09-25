@@ -15,13 +15,13 @@ import (
 	"net"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"golang.org/x/crypto/ed25519"
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
-	"github.com/ninjadotorg/cash-prototype/cashec"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -754,7 +754,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	txViewPoint, err := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
 	// create a new tx
 	fmt.Printf("[handleCreateTransaction] MerkleRootCommitments: %x\n", self.Config.BlockChain.BestState[chainID].BestBlock.Header.MerkleRootCommitments[:])
-	tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos, &self.Config.BlockChain.BestState[chainID].BestBlock.Header.MerkleRootCommitments, candidateTxs, txViewPoint.ListNullifiers(common.TxOutCoinType), txViewPoint.ListCommitments(common.TxOutCoinType), realFee)
+	tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos, &self.Config.BlockChain.BestState[chainID].BestBlock.Header.MerkleRootCommitments, candidateTxs, txViewPoint.ListNullifiers(common.TxOutCoinType), txViewPoint.ListCommitments(common.TxOutCoinType), realFee, chainID)
 	if err != nil {
 		return nil, err
 	}

@@ -18,7 +18,7 @@ const (
 
 // global variables for genesis blok
 var (
-	GENESIS_BLOCK_ANCHOR            = [32]byte{1}
+	GENESIS_BLOCK_ANCHORS           = [][32]byte{[32]byte{1}, [32]byte{2}}
 	GENESIS_BLOCK_NULLIFIERS        = []string{"88d35350b1846ecc34d6d04a10355ad9a8e1252e9d7f3af130186b4faf1a9832", "286b563fc45b7d5b9f929fb2c2766382a9126483d8d64c9b0197d049d4e89bf7"}
 	GENESIS_BLOCK_COMMITMENTS       = []string{"d26356e6f726dfb4c0a395f3af134851139ce1c64cfed3becc3530c8c8ad5660", "5aaf71f995db014006d630dedf7ffcbfa8854055e6a8cc9ef153629e3045b7e1"}
 	GENESIS_BLOCK_OUTPUT_R1         = [32]byte{1}

@@ -41,17 +41,11 @@ func printProof(proof *zksnark.PHGRProof) {
 func Prove(inputs []*JSInput,
 	outputs []*JSOutput,
 	pubKey []byte,
-	rt []byte,
+	rts [][]byte,
 	reward, fee uint64,
 	seed, phi []byte,
 	outputR [][]byte,
 ) (proof *zksnark.PHGRProof, hSig, newSeed, newPhi []byte, err error) {
-	// TODO: check for inputs (witness root & cm)
-
-	if len(inputs) != 2 || len(outputs) != 2 {
-		panic("Number of inputs/outputs to Prove is incorrect")
-	}
-
 	// Check balance between input and output
 	totalInput := reward
 	totalOutput := fee
@@ -81,7 +75,6 @@ func Prove(inputs []*JSInput,
 		newSeed = RandBits(256)
 	}
 	hSig = HSigCRH(newSeed, inputs[0].InputNote.Nf, inputs[1].InputNote.Nf, pubKey)
-	// hSig := []byte{155, 31, 215, 9, 16, 242, 239, 233, 201, 109, 141, 58, 24, 239, 210, 117, 155, 17, 23, 188, 70, 125, 245, 85, 154, 42, 212, 0, 164, 221, 80, 94}
 
 	// Generate rho and r for new notes
 	const phiLen = 252
@@ -89,7 +82,6 @@ func Prove(inputs []*JSInput,
 	if phi == nil { // Only for the transaction in genesis block
 		newPhi = RandBits(phiLen)
 	}
-	// phi = []byte{80, 163, 129, 14, 224, 14, 22, 199, 9, 222, 152, 68, 97, 249, 132, 138, 69, 64, 195, 13, 46, 200, 79, 248, 16, 161, 73, 187, 200, 122, 235, 6}
 
 	for i, output := range outputs {
 		rho := PRF_rho(uint64(i), newPhi, hSig)
@@ -112,7 +104,6 @@ func Prove(inputs []*JSInput,
 
 	fmt.Printf("hsig: %x\n", hSig)
 	fmt.Printf("phi: %x\n", phi)
-	fmt.Printf("rt: %x\n", rt)
 
 	// Calling libsnark's prove
 	const address = "localhost:50052"
@@ -136,7 +127,7 @@ func Prove(inputs []*JSInput,
 	var proveRequest = &zksnark.ProveRequest{
 		Hsig:     hSig,
 		Phi:      newPhi,
-		Rt:       rt,
+		Rts:      rts,
 		OutNotes: zkNotes,
 		Inputs:   zkInputs,
 		Reward:   reward,
@@ -144,7 +135,7 @@ func Prove(inputs []*JSInput,
 	}
 	// fmt.Printf("proveRequest: %v\n", proveRequest)
 	fmt.Printf("key: %x\n", proveRequest.Inputs[0].SpendingKey)
-	fmt.Printf("Anchor: %x\n", rt)
+	fmt.Printf("Anchor: %x\n", rts)
 	fmt.Printf("reward: %v\n", reward)
 	fmt.Printf("fee: %v\n", fee)
 	for i, zkinput := range zkInputs {
@@ -177,7 +168,7 @@ func Prove(inputs []*JSInput,
 }
 
 // Verify checks if a zk-proof of a JSDesc is valid or not
-func Verify(proof *zksnark.PHGRProof, nf, cm *[][]byte, rt, hSig []byte, reward uint64) (bool, error) {
+func Verify(proof *zksnark.PHGRProof, nf, cm *[][]byte, rts [][]byte, hSig []byte, reward uint64) (bool, error) {
 	// Calling libsnark's verify
 	const address = "localhost:50052"
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
@@ -193,7 +184,7 @@ func Verify(proof *zksnark.PHGRProof, nf, cm *[][]byte, rt, hSig []byte, reward 
 	var verifyRequest = &zksnark.VerifyRequest{
 		Proof:      proof,
 		Hsig:       hSig,
-		Rt:         rt,
+		Rts:        rts,
 		Nullifiers: *nf,
 		Commits:    *cm,
 		Reward:     reward,

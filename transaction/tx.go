@@ -13,11 +13,12 @@ import (
 
 	"time"
 
+	"math"
+
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
-	"math"
 )
 
 // Tx represents a coin-transfer-transaction stored in a block
@@ -106,7 +107,7 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
 	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+	var sizeDescs = uint64(max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
 	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
@@ -144,16 +145,17 @@ func NewTxTemplate() *Tx {
 }
 
 // CreateTx creates transaction with appropriate proof for a private payment
-// value: total value of the coins to transfer
-// rt: root of the commitment merkle tree at current block (the latest block of the node creating this tx)
+// rts: mapping from the chainID to the root of the commitment merkle tree at current block
+// 		(the latest block of the node creating this tx)
 func CreateTx(
 	senderKey *client.SpendingKey,
 	paymentInfo []*client.PaymentInfo,
-	rt map[byte]*common.Hash,
+	rts map[byte]*common.Hash,
 	usableTx map[byte][]*Tx,
 	nullifiers map[byte]([][]byte),
 	commitments map[byte]([][]byte),
 	fee uint64,
+	senderChainID byte,
 ) (*Tx, error) {
 	fmt.Printf("List of all commitments before building tx:\n")
 	for _, cm := range commitments {
@@ -166,21 +168,29 @@ func CreateTx(
 		fmt.Printf("[CreateTx] paymentInfo.Value: %v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Apk)
 	}
 
+	type ChainNote struct {
+		note    *client.Note
+		chainID byte
+	}
+
 	// Get list of notes to use
-	var inputNotes []*client.Note
-	for _, tx := range usableTx {
-		for _, desc := range tx.Descs {
-			for _, note := range desc.note {
-				inputNotes = append(inputNotes, note)
-				fmt.Printf("[CreateTx] inputNote.Value: %v\n", note.Value)
+	var inputNotes []*ChainNote
+	for chainID, chainTxs := range usableTx {
+		for _, tx := range chainTxs {
+			for _, desc := range tx.Descs {
+				for _, note := range desc.note {
+					chainNote := &ChainNote{note: note, chainID: chainID}
+					inputNotes = append(inputNotes, chainNote)
+					fmt.Printf("[CreateTx] inputNote.Value: %v\n", note.Value)
+				}
 			}
 		}
 	}
 
 	// Left side value
 	var sumInputValue uint64
-	for _, note := range inputNotes {
-		sumInputValue += note.Value
+	for _, chainNote := range inputNotes {
+		sumInputValue += chainNote.note.Value
 	}
 	if sumInputValue < value+fee {
 		return nil, fmt.Errorf("Input value less than output value")
@@ -191,29 +201,33 @@ func CreateTx(
 
 	// Create tx before adding js descs
 	tx := NewTxTemplate()
-	latestAnchor := []byte{}
+	var latestAnchor map[byte][]byte
 
 	for len(inputNotes) > 0 || len(paymentInfo) > 0 {
 		// Sort input and output notes ascending by value to start building js descs
 		sort.Slice(inputNotes, func(i, j int) bool {
-			return inputNotes[i].Value < inputNotes[j].Value
+			return inputNotes[i].note.Value < inputNotes[j].note.Value
 		})
 		sort.Slice(paymentInfo, func(i, j int) bool {
 			return paymentInfo[i].Amount < paymentInfo[j].Amount
 		})
 
 		// Choose inputs to build js desc
-		var inputsToBuildWitness, inputs []*client.JSInput
+		// var inputsToBuildWitness, inputs []*client.JSInput
+		var inputsToBuildWitness, inputs map[byte][]*client.JSInput
 		var inputValue uint64
+		numInputNotes := 0
 		for len(inputNotes) > 0 && len(inputs) < NumDescInputs {
 			input := &client.JSInput{}
-			input.InputNote = inputNotes[len(inputNotes)-1] // Get note with largest value
+			chainNote := inputNotes[len(inputNotes)-1] // Get note with largest value
+			input.InputNote = chainNote.note
 			input.Key = senderKey
-			inputs = append(inputs, input)
-			inputsToBuildWitness = append(inputsToBuildWitness, input)
+			inputs[chainNote.chainID] = append(inputs[chainNote.chainID], input)
+			inputsToBuildWitness[chainNote.chainID] = append(inputsToBuildWitness[chainNote.chainID], input)
 			inputValue += input.InputNote.Value
 
 			inputNotes = inputNotes[:len(inputNotes)-1]
+			numInputNotes++
 			fmt.Printf("Choose input note with value %v and cm %x\n", input.InputNote.Value, input.InputNote.Cm)
 		}
 
@@ -231,43 +245,49 @@ func CreateTx(
 		}
 
 		// Add dummy input note if necessary
-		for len(inputs) < NumDescInputs {
+		for numInputNotes < NumDescInputs {
 			input := &client.JSInput{}
 			input.InputNote = createDummyNote(senderKey)
 			input.Key = senderKey
 			input.WitnessPath = (&client.MerklePath{}).CreateDummyPath() // No need to build commitment merkle path for dummy note
-			inputs = append(inputs, input)
+			dummyNoteChainID := byte(0)                                  // Default chain for dummy note
+			inputs[dummyNoteChainID] = append(inputs[dummyNoteChainID], input)
+			numInputNotes++
 			fmt.Printf("Add dummy input note\n")
 		}
 
 		// Check if input note's cm is in commitments list
-		for _, input := range inputsToBuildWitness {
-			input.InputNote.Cm = client.GetCommitment(input.InputNote)
+		for chainID, chainInputs := range inputsToBuildWitness {
+			for _, input := range chainInputs {
+				input.InputNote.Cm = client.GetCommitment(input.InputNote)
 
-			found := false
-			for _, c := range commitments {
-				if bytes.Equal(c, input.InputNote.Cm) {
-					found = true
+				found := false
+				for _, c := range commitments[chainID] {
+					if bytes.Equal(c, input.InputNote.Cm) {
+						found = true
+					}
 				}
-			}
-			if found == false {
-				return nil, fmt.Errorf("Commitment %x of input note isn't in commitments list", input.InputNote.Cm)
+				if found == false {
+					return nil, fmt.Errorf("Commitment %x of input note isn't in commitments list of chain %d", input.InputNote.Cm, chainID)
+				}
 			}
 		}
 
 		// Build witness path for the input notes
-		newRt, err := client.BuildWitnessPath(inputsToBuildWitness, commitments)
+		newRts, err := client.BuildWitnessPathMultiChain(inputsToBuildWitness, commitments)
 		if err != nil {
 			return nil, err
 		}
 
 		// For first js desc, check if provided Rt is the root of the merkle tree contains all commitments
 		if latestAnchor == nil {
-			if !bytes.Equal(newRt, rt[:]) {
-				return nil, fmt.Errorf("Provided anchor doesn't match commitments list")
+			for chainID, rt := range newRts {
+				if !bytes.Equal(rt, rts[chainID][:]) {
+					return nil, fmt.Errorf("Provided anchor doesn't match commitments list")
+				}
 			}
 		}
-		latestAnchor = newRt
+		latestAnchor = newRts
 
 		// Choose output notes for the js desc
 		outputs := []*client.JSOutput{}
@@ -317,7 +337,8 @@ func CreateTx(
 				// Use the change note to continually send to receivers if needed
 				if len(paymentInfo) > 0 {
 					// outNote data (R and Rho) will be updated when building zk-proof
-					inputNotes = append(inputNotes, outNote)
+					chainNote := &ChainNote{note: outNote, chainID: senderChainID}
+					inputNotes = append(inputNotes, chainNote)
 					fmt.Printf("Reuse change note later\n")
 				}
 			}
@@ -342,7 +363,7 @@ func CreateTx(
 		// Add new commitments to list to use in next js desc if needed
 		for _, output := range outputs {
 			fmt.Printf("Add new output cm to list: %x\n", output.OutputNote.Cm)
-			commitments = append(commitments, output.OutputNote.Cm)
+			commitments[senderChainID] = append(commitments[senderChainID], output.OutputNote.Cm)
 		}
 
 		fmt.Printf("Len input and info: %v %v\n", len(inputNotes), len(paymentInfo))
@@ -360,16 +381,38 @@ func CreateTx(
 }
 
 // BuildNewJSDesc creates zk-proof for a js desc and add it to the transaction
-func (tx *Tx) BuildNewJSDesc(inputs []*client.JSInput, outputs []*client.JSOutput, rt []byte, reward, fee uint64) error {
+func (tx *Tx) BuildNewJSDesc(
+	inputMap map[byte][]*client.JSInput,
+	outputs []*client.JSOutput,
+	rtMap map[byte][]byte,
+	reward, fee uint64,
+) error {
+	// Gather inputs from different chains
+	inputs := []*client.JSInput{}
+	rts := [][]byte{}
+	for chainID, inputList := range inputMap {
+		for _, input := range inputList {
+			inputs = append(inputs, input)
+			rt, ok := rtMap[chainID]
+			if !ok {
+				return fmt.Errorf("Commitments merkle root not found for chain %d", chainID)
+			}
+			rts = append(rts, rt) // Input's corresponding merkle root
+		}
+	}
+	if len(inputs) != NumDescInputs || len(outputs) != NumDescOutputs {
+		return fmt.Errorf("Cannot build JSDesc with %d inputs and %d outputs", len(inputs), len(outputs))
+	}
+
 	var seed, phi []byte
 	var outputR [][]byte
-	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rt, reward, fee, seed, phi, outputR)
+	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rts, reward, fee, seed, phi, outputR)
 	if err != nil {
 		return err
 	}
 
 	var ephemeralPrivKey *client.EphemeralPrivKey // nil ephemeral key, will be randomly created later
-	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rt, reward, hSig, seed, tx.JSPubKey, ephemeralPrivKey)
+	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, tx.JSPubKey, ephemeralPrivKey)
 	if err != nil {
 		return err
 	}
@@ -380,7 +423,7 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	inputs []*client.JSInput,
 	outputs []*client.JSOutput,
 	proof *zksnark.PHGRProof,
-	rt []byte,
+	rts [][]byte,
 	reward uint64,
 	hSig, seed, sigPubKey []byte,
 	ephemeralPrivKey *client.EphemeralPrivKey,
@@ -422,7 +465,7 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	}
 
 	desc := &JoinSplitDesc{
-		Anchor:          rt,
+		Anchor:          rts,
 		Nullifiers:      nullifiers,
 		Commitments:     commitments,
 		Proof:           proof,
@@ -540,7 +583,7 @@ func VerifySign(tx *Tx) (bool, error) {
 func GenerateProofForGenesisTx(
 	inputs []*client.JSInput,
 	outputs []*client.JSOutput,
-	rt []byte,
+	rts [][]byte,
 	reward uint64,
 	seed, phi []byte,
 	outputR [][]byte,
@@ -556,12 +599,12 @@ func GenerateProofForGenesisTx(
 	tx.JSPubKey = sigPubKey
 
 	var fee uint64 // Zero fee for genesis tx
-	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rt, reward, fee, seed, phi, outputR)
+	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rts, reward, fee, seed, phi, outputR)
 	if err != nil {
 		return nil, err
 	}
 
-	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rt, reward, hSig, seed, tx.JSPubKey, &ephemeralPrivKey)
+	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, tx.JSPubKey, &ephemeralPrivKey)
 	return tx, err
 }
 

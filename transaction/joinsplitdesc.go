@@ -7,9 +7,9 @@ import (
 
 // JoinSplitDesc stores the UTXO of a transaction
 type JoinSplitDesc struct {
-	Anchor          []byte             `json:"Anchor"`          // 32 bytes
-	Nullifiers      [][]byte           `json:"Nullifiers"`      // len == 2, 32 bytes each element
-	Commitments     [][]byte           `json:"Commitments"`     // len == 2, 32 bytes each element
+	Anchor          [][]byte           `json:"Anchor"`          // len == 2, 32 bytes each
+	Nullifiers      [][]byte           `json:"Nullifiers"`      // len == 2, 32 bytes each
+	Commitments     [][]byte           `json:"Commitments"`     // len == 2, 32 bytes each
 	Proof           *zksnark.PHGRProof `json:"Proof"`           // G_A, G_APrime, G_B, G_C, G_CPrime, G_K, G_H == 33 bytes each, G_BPrime 65 bytes
 	EncryptedData   [][]byte           `json:"EncryptedData"`   // len == 2
 	EphemeralPubKey []byte             `json:"EphemeralPubKey"` // 32 bytes
@@ -39,7 +39,10 @@ func EstimateJSDescSize() uint64 {
 }
 
 func (desc *JoinSplitDesc) toString() string {
-	s := string(desc.Anchor)
+	var s string
+	for _, anchor := range desc.Anchor {
+		s += string(anchor)
+	}
 	for _, nf := range desc.Nullifiers {
 		s += string(nf)
 	}
