@@ -894,10 +894,9 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 
 	// lock chain
 	self.chainLock.Lock()
-
-	for chainID := 0; chainID < 20; chainID++ {
-		// get best block
-		bestBlock := self.BestState[chainID].BestBlock
+	for _, bestState := range self.BestState {
+		// get best block of each chain
+		bestBlock := bestState.BestBlock
 		blockHeight := bestBlock.Height
 
 		for blockHeight > 0 {
