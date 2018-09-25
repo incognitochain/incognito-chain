@@ -149,10 +149,10 @@ func NewTxTemplate() *Tx {
 func CreateTx(
 	senderKey *client.SpendingKey,
 	paymentInfo []*client.PaymentInfo,
-	rt *common.Hash,
-	usableTx []*Tx,
-	nullifiers [][]byte,
-	commitments [][]byte,
+	rt map[byte]*common.Hash,
+	usableTx map[byte][]*Tx,
+	nullifiers map[byte]([][]byte),
+	commitments map[byte]([][]byte),
 	fee uint64,
 ) (*Tx, error) {
 	fmt.Printf("List of all commitments before building tx:\n")
