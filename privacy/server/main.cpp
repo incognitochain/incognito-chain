@@ -461,7 +461,7 @@ int generate_params() {
 
 int main(int argc, char const *argv[])
 {
-    generate_params();
-    // RunServer();
+    // generate_params();
+    RunServer();
     return 0;
 }
