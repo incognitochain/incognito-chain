@@ -322,22 +322,22 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 	go self.handleConnected(&peerConn)
 
-	timeOutVerAck := make(chan struct{})
-	time.AfterFunc(time.Second*10, func() {
-		if !peerConn.VerAckReceived() {
-			Logger.log.Infof("NewPeerConnection timeoutVerack timeout PEER ID %s", peerConn.PeerID.String())
-			timeOutVerAck <- struct{}{}
-		}
-	})
+	//timeOutVerAck := make(chan struct{})
+	//time.AfterFunc(time.Second*10, func() {
+	//	if !peerConn.VerAckReceived() {
+	//		Logger.log.Infof("NewPeerConnection timeoutVerack timeout PEER ID %s", peerConn.PeerID.String())
+	//		timeOutVerAck <- struct{}{}
+	//	}
+	//})
 
 	for {
 		select {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("NewPeerConnection Close Stream PEER ID %s", peerConn.PeerID.String())
-			break
-		case <-timeOutVerAck:
-			Logger.log.Infof("NewPeerConnection timeoutVerack PEER ID %s", peerConn.PeerID.String())
-			break
+			return &peerConn, nil
+		//case <-timeOutVerAck:
+		//	Logger.log.Infof("NewPeerConnection timeoutVerack PEER ID %s", peerConn.PeerID.String())
+		//	break
 		}
 	}
 
@@ -404,22 +404,22 @@ func (self *Peer) HandleStream(stream net.Stream) {
 
 	go self.handleConnected(&peerConn)
 
-	timeOutVerAck := make(chan struct{})
-	time.AfterFunc(time.Second*10, func() {
-		if !peerConn.VerAckReceived() {
-			Logger.log.Infof("HandleStream timeoutVerack timeout PEER ID %s", peerConn.PeerID.String())
-			timeOutVerAck <- struct{}{}
-		}
-	})
+	//timeOutVerAck := make(chan struct{})
+	//time.AfterFunc(time.Second*10, func() {
+	//	if !peerConn.VerAckReceived() {
+	//		Logger.log.Infof("HandleStream timeoutVerack timeout PEER ID %s", peerConn.PeerID.String())
+	//		timeOutVerAck <- struct{}{}
+	//	}
+	//})
 
 	for {
 		select {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("HandleStream close stream PEER ID %s", peerConn.PeerID.String())
-			break
-		case <-timeOutVerAck:
-			Logger.log.Infof("HandleStream timeoutVerack PEER ID %s", peerConn.PeerID.String())
-			break
+			return
+		//case <-timeOutVerAck:
+		//	Logger.log.Infof("HandleStream timeoutVerack PEER ID %s", peerConn.PeerID.String())
+		//	break
 		}
 	}
 }
