@@ -32,7 +32,7 @@ type Tx struct {
 	JSPubKey []byte           `json:"JSPubKey,omitempty"` // 64 bytes
 	JSSig    []byte           `json:"JSSig,omitempty"`    // 64 bytes
 
-	AddressLastByte byte
+	AddressLastByte byte `json:"AddressLastByte"`
 
 	txId       *common.Hash
 	sigPrivKey *client.PrivateKey
@@ -109,7 +109,7 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
 	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
+	var sizeDescs = uint64(max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
 	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
