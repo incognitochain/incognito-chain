@@ -26,8 +26,8 @@ type DB interface {
 	GetIndexOfBlock(*common.Hash) (int32, byte, error)
 	GetBlockByIndex(int32, byte) (*common.Hash, error)
 
-	StoreFeeEstimator([]byte) error
-	GetFeeEstimator() ([]byte, error)
+	StoreFeeEstimator([]byte, byte) error
+	GetFeeEstimator(byte) ([]byte, error)
 
 	Close() error
 }

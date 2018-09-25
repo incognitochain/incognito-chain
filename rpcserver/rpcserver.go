@@ -72,7 +72,7 @@ type RpcServerConfig struct {
 	ConnMgr        *connmanager.ConnManager
 	AddrMgr        *addrmanager.AddrManager
 	IsGenerateNode bool
-	Server         interface {
+	Server interface {
 		// Push Tx message
 		PushMessageToAll(message wire.Message) error
 		PushMessageToPeer(message wire.Message, id peer2.ID) error
@@ -91,7 +91,7 @@ type RpcServerConfig struct {
 
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
-	FeeEstimator *mempool.FeeEstimator
+	FeeEstimator map[byte]*mempool.FeeEstimator
 }
 
 func (self *RpcServer) Init(config *RpcServerConfig) error {

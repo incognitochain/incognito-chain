@@ -62,7 +62,7 @@ type Config struct {
 	blockGen         *BlkTmplGenerator
 	MemPool          *mempool.TxPool
 	ValidatorKeyPair cashec.KeyPair
-	Server           interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -507,16 +507,6 @@ func (self *Engine) getChainValidators(chainID byte) ([]string, error) {
 		return validators, nil
 	}
 	return nil, errors.New("can't get chain's validators")
-}
-
-func (self *Engine) GetTxSenderChain(senderLastByte byte) (byte, error) {
-	modResult := senderLastByte % 100
-	for index := byte(0); index < 5; index++ {
-		if (modResult-index)%5 == 0 {
-			return byte((modResult - index) / 5), nil
-		}
-	}
-	return 0, errors.New("can't get sender's chainID")
 }
 
 func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {

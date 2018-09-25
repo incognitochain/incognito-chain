@@ -30,7 +30,7 @@ type Config struct {
 
 	// FeeEstimatator provides a feeEstimator. If it is not nil, the mempool
 	// records all new transactions it observes into the feeEstimator.
-	FeeEstimator *FeeEstimator
+	FeeEstimator map[byte]*FeeEstimator
 }
 
 // orphanTx is normal transaction that references an ancestor transaction
@@ -111,9 +111,16 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 	tp.mtx.Unlock()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 
-	// Record this tx for fee estimation if enabled.
-	if tp.Config.FeeEstimator != nil {
-		tp.Config.FeeEstimator.ObserveTransaction(txD)
+	// Record this tx for fee estimation if enabled. only apply for normal tx
+	if tx.GetType() == common.TxNormalType {
+		if tp.Config.FeeEstimator != nil {
+			chainId, err := common.GetTxSenderChain(tx.(*transaction.Tx).AddressLastByte)
+			if err == nil {
+				tp.Config.FeeEstimator[chainId].ObserveTransaction(txD)
+			} else {
+				Logger.log.Error(err)
+			}
+		}
 	}
 
 	return txD
@@ -149,7 +156,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 	// that make sure transaction is accepted when passed any rules
 	txInfo := tx.(*transaction.Tx)
-	chainID, err := tp.Config.Policy.Consensus.GetTxSenderChain(txInfo.AddressLastByte)
+	chainID, err := common.GetTxSenderChain(txInfo.AddressLastByte)
 	if err != nil {
 		return nil, nil, err
 	}

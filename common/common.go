@@ -211,3 +211,13 @@ func SliceBytesExists(slice interface{}, item interface{}) (bool, error) {
 
 	return false, nil
 }
+
+func GetTxSenderChain(senderLastByte byte) (byte, error) {
+	modResult := senderLastByte % 100
+	for index := byte(0); index < 5; index++ {
+		if (modResult-index)%5 == 0 {
+			return byte((modResult - index) / 5), nil
+		}
+	}
+	return 0, errors.New("can't get sender's chainID")
+}

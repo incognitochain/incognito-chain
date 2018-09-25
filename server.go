@@ -66,7 +66,7 @@ type Server struct {
 
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
-	FeeEstimator *mempool.FeeEstimator
+	FeeEstimator map[byte]*mempool.FeeEstimator
 
 	ConsensusEngine *ppos.Engine
 }
@@ -147,21 +147,30 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	// Search for a FeeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
-	feeEstimatorData, err := self.Db.GetFeeEstimator()
-	if err == nil && len(feeEstimatorData) > 0 {
-		self.FeeEstimator, err = mempool.RestoreFeeEstimator(feeEstimatorData)
-		if err != nil {
-			Logger.log.Errorf("Failed to restore fee estimator %v", err)
+	self.FeeEstimator = make(map[byte]*mempool.FeeEstimator)
+	for _, bestState := range self.BlockChain.BestState {
+		chainId := bestState.BestBlock.Header.ChainID
+		feeEstimatorData, err := self.Db.GetFeeEstimator(chainId)
+		if err == nil && len(feeEstimatorData) > 0 {
+			feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
+			if err != nil {
+				Logger.log.Errorf("Failed to restore fee estimator %v", err)
+			} else {
+				self.FeeEstimator[chainId] = feeEstimator
+			}
 		}
 	}
 
 	// If no feeEstimator has been found, or if the one that has been found
 	// is behind somehow, create a new one and start over.
 	// if self.FeeEstimator == nil || self.FeeEstimator.LastKnownHeight() != self.BlockChain.BestState.BestBlock.Height {
-	if self.FeeEstimator == nil {
-		self.FeeEstimator = mempool.NewFeeEstimator(
-			mempool.DefaultEstimateFeeMaxRollback,
-			mempool.DefaultEstimateFeeMinRegisteredBlocks)
+	for _, bestState := range self.BlockChain.BestState {
+		chainId := bestState.BestBlock.Header.ChainID
+		if self.FeeEstimator[chainId] == nil {
+			self.FeeEstimator[chainId] = mempool.NewFeeEstimator(
+				mempool.DefaultEstimateFeeMaxRollback,
+				mempool.DefaultEstimateFeeMinRegisteredBlocks)
+		}
 	}
 
 	// create mempool tx
@@ -194,7 +203,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		Server:      self,
 	})
 
-	self.MemPool.Config.Policy.Consensus = self.ConsensusEngine
 	// Init Net Sync manager to process messages
 	self.NetSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
 		BlockChain:   self.BlockChain,
@@ -379,13 +387,15 @@ func (self Server) Stop() error {
 	}
 
 	// Save fee estimator in the db
-	feeEstimatorData := self.FeeEstimator.Save()
-	if len(feeEstimatorData) > 0 {
-		err := self.Db.StoreFeeEstimator(feeEstimatorData)
-		if err != nil {
-			Logger.log.Errorf("Can't save fee estimator data: %v", err)
-		} else {
-			Logger.log.Info("Save fee estimator data")
+	for chainId, feeEstimator := range self.FeeEstimator {
+		feeEstimatorData := feeEstimator.Save()
+		if len(feeEstimatorData) > 0 {
+			err := self.Db.StoreFeeEstimator(feeEstimatorData, chainId)
+			if err != nil {
+				Logger.log.Errorf("Can't save fee estimator data: %v", err)
+			} else {
+				Logger.log.Info("Save fee estimator data")
+			}
 		}
 	}
 

@@ -304,15 +304,15 @@ func (db *db) FetchChainBlocks(chainID byte) ([]*common.Hash, error) {
 	return keys, nil
 }
 
-func (db *db) StoreFeeEstimator(val []byte) error {
-	if err := db.put(feeEstimator, val); err != nil {
+func (db *db) StoreFeeEstimator(val []byte, chainId byte) error {
+	if err := db.put(append(feeEstimator, chainId), val); err != nil {
 		return errors.Wrap(err, "db.Put")
 	}
 	return nil
 }
 
-func (db *db) GetFeeEstimator() ([]byte, error) {
-	b, err := db.lvdb.Get(feeEstimator, nil)
+func (db *db) GetFeeEstimator(chainId byte) ([]byte, error) {
+	b, err := db.lvdb.Get(append(feeEstimator, chainId), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "db.ldb.Get")
 	}

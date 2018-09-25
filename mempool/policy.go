@@ -13,10 +13,6 @@ type Policy struct {
 	// accept.  All transactions above this version are rejected as
 	// non-standard.
 	MaxTxVersion int8
-	//@todo we are defining for them
-	Consensus interface {
-		GetTxSenderChain(byte) (byte, error)
-	}
 }
 
 /**

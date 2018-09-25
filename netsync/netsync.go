@@ -30,7 +30,7 @@ type NetSyncConfig struct {
 	BlockChain *blockchain.BlockChain
 	ChainParam *blockchain.Params
 	MemPool    *mempool.TxPool
-	Server     interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, peer2.ID) error
 	}
@@ -42,7 +42,7 @@ type NetSyncConfig struct {
 		OnGetChainState(*wire.MessageGetChainState)
 		OnChainStateReceived(*wire.MessageChainState)
 	}
-	FeeEstimator *mempool.FeeEstimator
+	FeeEstimator map[byte]*mempool.FeeEstimator
 }
 
 func (self NetSync) New(cfg *NetSyncConfig) (*NetSync, error) {

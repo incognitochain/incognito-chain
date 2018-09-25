@@ -19,6 +19,10 @@ import (
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
+const (
+	CHAIN_COUNT = 20
+)
+
 type BlockChain struct {
 	Config    Config
 	BestState []*BestState //BestState of 20 chain.
@@ -84,8 +88,8 @@ func (self *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	var initialized bool
-	self.BestState = make([]*BestState, 20)
-	for chainID := byte(0); chainID < 20; chainID++ {
+	self.BestState = make([]*BestState, CHAIN_COUNT)
+	for chainID := byte(0); chainID < CHAIN_COUNT; chainID++ {
 		bestStateBytes, err := self.Config.DataBase.FetchBestState(chainID)
 		if err == nil {
 			err = json.Unmarshal(bestStateBytes, &self.BestState[chainID])
