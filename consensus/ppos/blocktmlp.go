@@ -130,7 +130,8 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 		return nil, errors.New("no transaction available for this chain")
 	}
 
-	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, &receiverKeyset.KeySet.PublicKey, map[string]uint64{}, g.chain.BestState[chainID].BestBlock.Header.MerkleRootCommitments.CloneBytes())
+	rt := g.chain.BestState[chainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
+	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, &receiverKeyset.KeySet.PublicKey, map[string]uint64{}, rt, chainID)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +194,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	newTree := g.chain.BestState[chainID].CmTree.MakeCopy()
 	fmt.Printf("[newBlockTemplate] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
 	blockchain.UpdateMerkleTreeForBlock(newTree, &block)
-	rt := newTree.GetRoot(common.IncMerkleTreeHeight)
+	rt = newTree.GetRoot(common.IncMerkleTreeHeight)
 	fmt.Printf("[newBlockTemplate] updated tree rt: %x\n", rt)
 	copy(block.Header.MerkleRootCommitments[:], rt)
 
@@ -291,6 +292,7 @@ func createCoinbaseTx(
 	receiverAddr *client.PaymentAddress,
 	rewardMap map[string]uint64,
 	rt []byte,
+	chainID byte,
 ) (*transaction.Tx, error) {
 	// Create Proof for the joinsplit op
 	inputs := make([]*client.JSInput, 2)
@@ -325,7 +327,9 @@ func createCoinbaseTx(
 	// Generate proof and sign tx
 	tx := transaction.NewTxTemplate()
 	var coinbaseTxFee uint64 // Zero fee for coinbase tx
-	err := tx.BuildNewJSDesc(inputs, outputs, rt, reward, coinbaseTxFee)
+	rtMap := map[byte][]byte{chainID: rt}
+	inputMap := map[byte][]*client.JSInput{chainID: inputs}
+	err := tx.BuildNewJSDesc(inputMap, outputs, rtMap, reward, coinbaseTxFee)
 	if err != nil {
 		return nil, err
 	}

@@ -81,7 +81,7 @@ public:
         // std::array<uint256, NumOutputs>& out_commitments,
         uint64_t vpub_old,
         uint64_t vpub_new,
-        const uint256& rt,
+        const std::array<uint256, NumInputs>& rt,
         uint256 &h_sig,
         uint252 &phi,
         bool computeProof = true
@@ -101,7 +101,7 @@ public:
         const std::array<uint256, NumOutputs>& commitments,
         uint64_t vpub_old,
         uint64_t vpub_new,
-        const uint256& rt,
+        const std::array<uint256, NumInputs>& rt,
         uint256 &h_sig
     ) = 0;
 

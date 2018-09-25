@@ -240,7 +240,7 @@ func (self GenesisBlockGenerator) calcCommitmentMerkleRoot(tx *transaction.Tx) c
 // 	return &genesisBlock
 // }
 
-func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(time time.Time, nonce int, difficulty uint32, version int, initialCoin float64, preSelectValidators []string) *Block {
+func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(time time.Time, nonce int, difficulty uint32, version int, initialCoin uint64, preSelectValidators []string) *Block {
 	genesisBlock := Block{}
 	// update default genesis block
 	genesisBlock.Header.Timestamp = time.Unix()
@@ -251,7 +251,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(time time.Time, 
 	genesisBlock.Header.NextCommittee = preSelectValidators
 	genesisBlock.Height = 1
 	tx, err := self.getGenesisTx()
-	//tx, err := self.createGenesisTx(genesisReward)
+	// tx, err := self.createGenesisTx(initialCoin)
 
 	if err != nil {
 		Logger.log.Error(err)
