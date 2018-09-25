@@ -288,6 +288,7 @@ func CreateTx(
 			}
 		}
 		latestAnchor = newRts
+		// TODO: add dummy anchor for dummy note
 
 		// Choose output notes for the js desc
 		outputs := []*client.JSOutput{}
