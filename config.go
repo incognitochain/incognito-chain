@@ -151,8 +151,8 @@ type config struct {
 	//whitelists           []*net.IPNet
 
 	// PoS config
-	SealerPrvKey string `long:"sealerprvkey" description:"Private key of the block sealer used to seal block"`
-
+	SealerSpendingKey string `long:"sealerspendingkey" description:"!!!WARNING Leave this if you don't know what this is"`
+	SealerKeySet      string `long:"sealerkeyset" description:"Key-set of the block sealer used to seal block`
 	// For Wallet
 	Wallet           bool   `long:"wallet" description:"Use wallet"`
 	WalletDbName     string `long:"walletdbname" description:"Wallet Database Name file, default is wallet.db"`
@@ -355,7 +355,8 @@ func loadConfig() (*config, []string, error) {
 		WalletDbName:      defaultWalletDbName,
 		DisableTLS:        defaultDisableRpcTls,
 		RPCDisableAuth:    true,
-		SealerPrvKey:      os.Getenv("SEALERPRVKEY"),
+		SealerSpendingKey: os.Getenv("SEALERPRVKEY"),
+		SealerKeySet:      os.Getenv("SEALERKEYSET"),
 	}
 
 	// Service options which are only added on Windows.
