@@ -330,33 +330,3 @@ func (db *db) getKeyIdx(h *common.Hash) []byte {
 	key = append(blockKeyIdxPrefix, h[:]...)
 	return key
 }
-
-/*func (db *db) StoreUtxoEntry(op *transaction.OutPoint, v interface{}) error {
-	val, err := json.Marshal(v)
-	if err != nil {
-		return errors.Wrap(err, "json.Marshal")
-	}
-	if err := db.lvdb.Put([]byte(db.getUtxoKey(op)), val, nil); err != nil {
-		return errors.Wrap(err, "db.lvdb.Put")
-	}
-	return nil
-}
-
-func (db *db) FetchUtxoEntry(op *transaction.OutPoint) ([]byte, error) {
-	b, err := db.lvdb.Get([]byte(db.getUtxoKey(op)), nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "db.lvdb.Get")
-	}
-	return b, nil
-}
-
-func (db *db) DeleteUtxoEntry(op *transaction.OutPoint) error {
-	if err := db.lvdb.Delete([]byte(db.getUtxoKey(op)), nil); err != nil {
-		return errors.Wrap(err, "db.lvdb.Delete")
-	}
-	return nil
-}
-
-func (db *db) getUtxoKey(op *transaction.OutPoint) string {
-	return fmt.Sprintf("%s%d", op.Hash.String(), op.Vout)
-}*/
