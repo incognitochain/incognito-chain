@@ -102,8 +102,10 @@ func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
 	return ret, nil
 }
 
-func (db *db) StoreNullifiers(nullifier []byte, typeJoinSplitDesc string) error {
-	res, err := db.lvdb.Get(append(usedTxKey, []byte(typeJoinSplitDesc)...), nil)
+func (db *db) StoreNullifiers(nullifier []byte, typeJoinSplitDesc string, chainId byte) error {
+	key := append(usedTxKey, []byte(typeJoinSplitDesc)...)
+	key = append(key, chainId)
+	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return errors.Wrap(err, "db.lvdb.Get")
 	}
@@ -119,14 +121,16 @@ func (db *db) StoreNullifiers(nullifier []byte, typeJoinSplitDesc string) error 
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
 	}
-	if err := db.lvdb.Put(append(usedTxKey, []byte(typeJoinSplitDesc)...), b, nil); err != nil {
+	if err := db.lvdb.Put(key, b, nil); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (db *db) StoreCommitments(commitments []byte, typeJoinSplitDesc string) error {
-	res, err := db.lvdb.Get(append(notUsedTxKey, []byte(typeJoinSplitDesc)...), nil)
+func (db *db) StoreCommitments(commitments []byte, typeJoinSplitDesc string, chainId byte) error {
+	key := append(notUsedTxKey, []byte(typeJoinSplitDesc)...)
+	key = append(key, chainId)
+	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return errors.Wrap(err, "db.lvdb.Get")
 	}
@@ -142,14 +146,16 @@ func (db *db) StoreCommitments(commitments []byte, typeJoinSplitDesc string) err
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
 	}
-	if err := db.lvdb.Put(append(notUsedTxKey, []byte(typeJoinSplitDesc)...), b, nil); err != nil {
+	if err := db.lvdb.Put(key, b, nil); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (db *db) FetchNullifiers(typeJoinSplitDesc string) ([][]byte, error) {
-	res, err := db.lvdb.Get(append(usedTxKey, []byte(typeJoinSplitDesc)...), nil)
+func (db *db) FetchNullifiers(typeJoinSplitDesc string, chainId byte) ([][]byte, error) {
+	key := append(usedTxKey, []byte(typeJoinSplitDesc)...)
+	key = append(key, chainId)
+	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return make([][]byte, 0), errors.Wrap(err, "db.lvdb.Get")
 	}
@@ -163,8 +169,10 @@ func (db *db) FetchNullifiers(typeJoinSplitDesc string) ([][]byte, error) {
 	return txs, nil
 }
 
-func (db *db) FetchCommitments(typeJoinSplitDesc string) ([][]byte, error) {
-	res, err := db.lvdb.Get(append(notUsedTxKey, []byte(typeJoinSplitDesc)...), nil)
+func (db *db) FetchCommitments(typeJoinSplitDesc string, chainId byte) ([][]byte, error) {
+	key := append(notUsedTxKey, []byte(typeJoinSplitDesc)...)
+	key = append(key, chainId)
+	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return make([][]byte, 0), errors.Wrap(err, "db.lvdb.Get")
 	}
@@ -178,8 +186,8 @@ func (db *db) FetchCommitments(typeJoinSplitDesc string) ([][]byte, error) {
 	return txs, nil
 }
 
-func (db *db) HasNullifier(nullifier []byte, typeJoinSplitDesc string) (bool, error) {
-	listNullifiers, err := db.FetchNullifiers(typeJoinSplitDesc)
+func (db *db) HasNullifier(nullifier []byte, typeJoinSplitDesc string, chainId byte) (bool, error) {
+	listNullifiers, err := db.FetchNullifiers(typeJoinSplitDesc, chainId)
 	if err != nil {
 		return false, err
 	}
@@ -191,8 +199,8 @@ func (db *db) HasNullifier(nullifier []byte, typeJoinSplitDesc string) (bool, er
 	return false, nil
 }
 
-func (db *db) HasCommitment(commitment []byte, typeJoinSplitDesc string) (bool, error) {
-	listCommitments, err := db.FetchCommitments(typeJoinSplitDesc)
+func (db *db) HasCommitment(commitment []byte, typeJoinSplitDesc string, chainId byte) (bool, error) {
+	listCommitments, err := db.FetchCommitments(typeJoinSplitDesc, chainId)
 	if err != nil {
 		return false, err
 	}

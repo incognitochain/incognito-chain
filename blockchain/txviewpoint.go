@@ -7,6 +7,7 @@ import (
 )
 
 type TxViewPoint struct {
+	chainId         byte
 	listNullifiers  map[string]([][]byte)
 	listCommitments map[string]([][]byte)
 
@@ -46,7 +47,7 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DB, block *Block) error {
 	for _, tx := range transactions {
 		for _, desc := range tx.(*transaction.Tx).Descs {
 			for _, item := range desc.Nullifiers {
-				temp, err := db.HasNullifier(item, desc.Type)
+				temp, err := db.HasNullifier(item, desc.Type, block.Header.ChainID)
 				if err != nil {
 					return err
 				}
@@ -55,7 +56,7 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DB, block *Block) error {
 				}
 			}
 			for _, item := range desc.Commitments {
-				temp, err := db.HasCommitment(item, desc.Type)
+				temp, err := db.HasCommitment(item, desc.Type, block.Header.ChainID)
 				if err != nil {
 					return err
 				}
@@ -77,8 +78,9 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DB, block *Block) error {
 	return nil
 }
 
-func NewTxViewPoint() *TxViewPoint {
+func NewTxViewPoint(chainId byte) *TxViewPoint {
 	return &TxViewPoint{
+		chainId:         chainId,
 		listNullifiers:  make(map[string]([][]byte)),
 		listCommitments: make(map[string]([][]byte)),
 	}

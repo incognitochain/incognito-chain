@@ -4,7 +4,7 @@ import "github.com/ninjadotorg/cash-prototype/common"
 
 // ListUnspentResult models a successful response from the listunspent request.
 type ListUnspentResult struct {
-	ListUnspentResultItems map[string][]ListUnspentResultItem `json:"ListUnspentResultItems"`
+	ListUnspentResultItems map[string]map[byte][]ListUnspentResultItem `json:"ListUnspentResultItems"`
 }
 
 type ListUnspentResultItem struct {

@@ -15,12 +15,12 @@ type DB interface {
 	StoreBestBlock(interface{}, byte) error
 	FetchBestState(byte) ([]byte, error)
 
-	StoreNullifiers([]byte, string) error
-	FetchNullifiers(string) ([][]byte, error)
-	HasNullifier([]byte, string) (bool, error)
-	StoreCommitments([]byte, string) error
-	FetchCommitments(string) ([][]byte, error)
-	HasCommitment([]byte, string) (bool, error)
+	StoreNullifiers([]byte, string, byte) error
+	FetchNullifiers(string, byte) ([][]byte, error)
+	HasNullifier([]byte, string, byte) (bool, error)
+	StoreCommitments([]byte, string, byte) error
+	FetchCommitments(string, byte) ([][]byte, error)
+	HasCommitment([]byte, string, byte) (bool, error)
 
 	StoreBlockIndex(*common.Hash, int32, byte) error
 	GetIndexOfBlock(*common.Hash) (int32, byte, error)

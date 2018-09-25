@@ -534,7 +534,7 @@ Parameter #3—the list readonly which be used to view utxo
 func (self RpcServer) handleListTransactions(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
 	result := jsonrpc.ListUnspentResult{
-		ListUnspentResultItems: make(map[string][]jsonrpc.ListUnspentResultItem),
+		ListUnspentResultItems: make(map[string]map[byte][]jsonrpc.ListUnspentResultItem),
 	}
 
 	// get params
@@ -567,31 +567,33 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 			PublicKey:   pubKey.KeySet.PublicKey,
 		}
 
-		txs, err := self.Config.BlockChain.GetListTxByReadonlyKey(&keySet, common.TxOutCoinType)
+		txsMap, err := self.Config.BlockChain.GetListTxByReadonlyKey(&keySet, common.TxOutCoinType)
 		if err != nil {
 			return nil, err
 		}
 		listTxs := make([]jsonrpc.ListUnspentResultItem, 0)
-		for _, tx := range txs {
-			item := jsonrpc.ListUnspentResultItem{
-				TxId:          tx.Hash().String(),
-				JoinSplitDesc: make([]jsonrpc.JoinSplitDesc, 0),
-			}
-			for _, desc := range tx.Descs {
-				notes := desc.GetNote()
-				amounts := make([]uint64, 0)
-				for _, note := range notes {
-					amounts = append(amounts, note.Value)
+		for chainId, txs := range txsMap {
+			for _, tx := range txs {
+				item := jsonrpc.ListUnspentResultItem{
+					TxId:          tx.Hash().String(),
+					JoinSplitDesc: make([]jsonrpc.JoinSplitDesc, 0),
 				}
-				item.JoinSplitDesc = append(item.JoinSplitDesc, jsonrpc.JoinSplitDesc{
-					Anchor:      desc.Anchor,
-					Commitments: desc.Commitments,
-					Amounts:     amounts,
-				})
+				for _, desc := range tx.Descs {
+					notes := desc.GetNote()
+					amounts := make([]uint64, 0)
+					for _, note := range notes {
+						amounts = append(amounts, note.Value)
+					}
+					item.JoinSplitDesc = append(item.JoinSplitDesc, jsonrpc.JoinSplitDesc{
+						Anchor:      desc.Anchor,
+						Commitments: desc.Commitments,
+						Amounts:     amounts,
+					})
+				}
+				listTxs = append(listTxs, item)
 			}
-			listTxs = append(listTxs, item)
+			result.ListUnspentResultItems[readonlyKeyStr][chainId] = listTxs
 		}
-		result.ListUnspentResultItems[readonlyKeyStr] = listTxs
 	}
 
 	return result, nil
@@ -611,7 +613,7 @@ Parameter #3—the list readonly which be used to view utxo
 func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	result := jsonrpc.ListUnspentResult{
-		ListUnspentResultItems: make(map[string][]jsonrpc.ListUnspentResultItem),
+		ListUnspentResultItems: make(map[string]map[byte][]jsonrpc.ListUnspentResultItem),
 	}
 
 	// get params
@@ -631,31 +633,33 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 			return nil, err
 		}
 
-		txs, err := self.Config.BlockChain.GetListTxByPrivateKey(&readonlyKey.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
+		txsMap, err := self.Config.BlockChain.GetListTxByPrivateKey(&readonlyKey.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
 		if err != nil {
 			return nil, err
 		}
 		listTxs := make([]jsonrpc.ListUnspentResultItem, 0)
-		for _, tx := range txs {
-			item := jsonrpc.ListUnspentResultItem{
-				TxId:          tx.Hash().String(),
-				JoinSplitDesc: make([]jsonrpc.JoinSplitDesc, 0),
-			}
-			for _, desc := range tx.Descs {
-				notes := desc.GetNote()
-				amounts := make([]uint64, 0)
-				for _, note := range notes {
-					amounts = append(amounts, note.Value)
+		for chainId, txs := range txsMap {
+			for _, tx := range txs {
+				item := jsonrpc.ListUnspentResultItem{
+					TxId:          tx.Hash().String(),
+					JoinSplitDesc: make([]jsonrpc.JoinSplitDesc, 0),
 				}
-				item.JoinSplitDesc = append(item.JoinSplitDesc, jsonrpc.JoinSplitDesc{
-					Anchor:      desc.Anchor,
-					Commitments: desc.Commitments,
-					Amounts:     amounts,
-				})
+				for _, desc := range tx.Descs {
+					notes := desc.GetNote()
+					amounts := make([]uint64, 0)
+					for _, note := range notes {
+						amounts = append(amounts, note.Value)
+					}
+					item.JoinSplitDesc = append(item.JoinSplitDesc, jsonrpc.JoinSplitDesc{
+						Anchor:      desc.Anchor,
+						Commitments: desc.Commitments,
+						Amounts:     amounts,
+					})
+				}
+				listTxs = append(listTxs, item)
 			}
-			listTxs = append(listTxs, item)
+			result.ListUnspentResultItems[priKeyStr][chainId] = listTxs
 		}
-		result.ListUnspentResultItems[priKeyStr] = listTxs
 	}
 	return result, nil
 }
@@ -707,19 +711,23 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	usableTxs, _ := self.Config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, common.TxOutCoinType, transaction.SortByAmount, false)
+	usableTxsMap, _ := self.Config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, common.TxOutCoinType, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
-	for _, temp := range usableTxs {
-		for _, desc := range temp.Descs {
-			for _, note := range desc.GetNote() {
-				amount := note.Value
-				estimateTotalAmount -= int64(amount)
+	candidateTxsMap := make(map[byte][]*transaction.Tx)
+	for chainId, usableTxs := range usableTxsMap {
+		for _, temp := range usableTxs {
+			for _, desc := range temp.Descs {
+				for _, note := range desc.GetNote() {
+					amount := note.Value
+					estimateTotalAmount -= int64(amount)
+				}
 			}
-		}
-		txData := temp
-		candidateTxs = append(candidateTxs, &txData)
-		if estimateTotalAmount <= 0 {
-			break
+			txData := temp
+			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
+			candidateTxs = append(candidateTxs, &txData)
+			if estimateTotalAmount <= 0 {
+				break
+			}
 		}
 	}
 
@@ -735,26 +743,41 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 
 	// list unspent tx for create tx
 	totalAmmount += int64(realFee)
-	candidateTxs = make([]*transaction.Tx, 0)
-	for _, temp := range usableTxs {
-		for _, desc := range temp.Descs {
-			for _, note := range desc.GetNote() {
-				amount := note.Value
-				estimateTotalAmount -= int64(amount)
+	candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
+	for chainId, usableTxs := range usableTxsMap {
+		for _, temp := range usableTxs {
+			for _, desc := range temp.Descs {
+				for _, note := range desc.GetNote() {
+					amount := note.Value
+					estimateTotalAmount -= int64(amount)
+				}
 			}
-		}
-		txData := temp
-		candidateTxs = append(candidateTxs, &txData)
-		if estimateTotalAmount <= 0 {
-			break
+			txData := temp
+			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
+			if estimateTotalAmount <= 0 {
+				break
+			}
 		}
 	}
 
-	// get tx view point
-	txViewPoint, err := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType)
-	// create a new tx
-	fmt.Printf("[handleCreateTransaction] MerkleRootCommitments: %x\n", self.Config.BlockChain.BestState[chainID].BestBlock.Header.MerkleRootCommitments[:])
-	tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos, &self.Config.BlockChain.BestState[chainID].BestBlock.Header.MerkleRootCommitments, candidateTxs, txViewPoint.ListNullifiers(common.TxOutCoinType), txViewPoint.ListCommitments(common.TxOutCoinType), realFee, chainID)
+	// get merkleroot commitments, nullifers db, commitments db for every chain
+	nullifiersDb := make(map[byte]([][]byte))
+	commitmentsDb := make(map[byte]([][]byte))
+	merkleRootCommitments := make(map[byte]*common.Hash)
+	for chainId, _ := range candidateTxsMap {
+		merkleRootCommitments[chainId] = &self.Config.BlockChain.BestState[chainID].BestBlock.Header.MerkleRootCommitments
+		// get tx view point
+		txViewPoint, _ := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainId)
+		nullifiersDb[chainId] = txViewPoint.ListNullifiers(common.TxOutCoinType)
+		commitmentsDb[chainId] = txViewPoint.ListCommitments(common.TxOutCoinType)
+	}
+
+	tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos,
+		merkleRootCommitments,
+		candidateTxsMap,
+		nullifiersDb,
+		commitmentsDb,
+		realFee)
 	if err != nil {
 		return nil, err
 	}
@@ -905,16 +928,18 @@ func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan st
 	}
 	accounts := self.Config.Wallet.ListAccounts()
 	for accountName, account := range accounts {
-		txs, err := self.Config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
+		txsMap, err := self.Config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
 		if err != nil {
 			return nil, err
 		}
 		amount := uint64(0)
-		for _, tx := range txs {
-			for _, desc := range tx.Descs {
-				notes := desc.GetNote()
-				for _, note := range notes {
-					amount += note.Value
+		for _, txs := range txsMap {
+			for _, tx := range txs {
+				for _, desc := range tx.Descs {
+					notes := desc.GetNote()
+					for _, note := range notes {
+						amount += note.Value
+					}
 				}
 			}
 		}
@@ -1043,15 +1068,17 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 	if accountName == "*" {
 		// get balance for all accounts in wallet
 		for _, account := range self.Config.Wallet.MasterAccount.Child {
-			txs, err := self.Config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
+			txsMap, err := self.Config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
 			if err != nil {
 				return nil, err
 			}
-			for _, tx := range txs {
-				for _, desc := range tx.Descs {
-					notes := desc.GetNote()
-					for _, note := range notes {
-						balance += note.Value
+			for _, txs := range txsMap {
+				for _, tx := range txs {
+					for _, desc := range tx.Descs {
+						notes := desc.GetNote()
+						for _, note := range notes {
+							balance += note.Value
+						}
 					}
 				}
 			}
@@ -1060,15 +1087,17 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 		for _, account := range self.Config.Wallet.MasterAccount.Child {
 			if account.Name == accountName {
 				// get balance for accountName in wallet
-				txs, err := self.Config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
+				txsMap, err := self.Config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
 				if err != nil {
 					return nil, err
 				}
-				for _, tx := range txs {
-					for _, desc := range tx.Descs {
-						notes := desc.GetNote()
-						for _, note := range notes {
-							balance += note.Value
+				for _, txs := range txsMap {
+					for _, tx := range txs {
+						for _, desc := range tx.Descs {
+							notes := desc.GetNote()
+							for _, note := range notes {
+								balance += note.Value
+							}
 						}
 					}
 				}
@@ -1113,18 +1142,20 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 	for _, account := range self.Config.Wallet.MasterAccount.Child {
 		if account.Name == accountName {
 			// get balance for accountName in wallet
-			txs, err := self.Config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
+			txsMap, err := self.Config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
 			if err != nil {
 				return nil, err
 			}
-			for _, tx := range txs {
-				if blockchain.IsCoinBaseTx(&tx) {
-					continue
-				}
-				for _, desc := range tx.Descs {
-					notes := desc.GetNote()
-					for _, note := range notes {
-						balance += note.Value
+			for _, txs := range txsMap {
+				for _, tx := range txs {
+					if blockchain.IsCoinBaseTx(&tx) {
+						continue
+					}
+					for _, desc := range tx.Descs {
+						notes := desc.GetNote()
+						for _, note := range notes {
+							balance += note.Value
+						}
 					}
 				}
 			}
