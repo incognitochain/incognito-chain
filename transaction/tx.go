@@ -17,6 +17,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
 	"math"
+	"bytes"
 )
 
 // Tx represents a coin-transfer-transaction stored in a block
@@ -154,7 +155,7 @@ func CreateTx(
 	commitments map[byte]([][]byte),
 	fee uint64,
 ) (*Tx, error) {
-	/*fmt.Printf("List of all commitments before building tx:\n")
+	fmt.Printf("List of all commitments before building tx:\n")
 	for _, cm := range commitments {
 		fmt.Printf("%x\n", cm)
 	}
@@ -355,8 +356,7 @@ func CreateTx(
 
 	fmt.Printf("jspubkey size: %v\n", len(tx.JSPubKey))
 	fmt.Printf("jssig size: %v\n", len(tx.JSSig))
-	return tx, nil*/
-	return nil, nil
+	return tx, nil
 }
 
 // BuildNewJSDesc creates zk-proof for a js desc and add it to the transaction
