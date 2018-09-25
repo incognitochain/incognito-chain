@@ -50,13 +50,15 @@ func (tx *Tx) GetTxId() *common.Hash {
 func (tx Tx) Hash() *common.Hash {
 	record := strconv.Itoa(int(tx.Version))
 	record += tx.Type
-	record += strconv.Itoa(int(tx.LockTime))
+	record += strconv.FormatInt(tx.LockTime, 10)
+	record += strconv.FormatUint(tx.Fee, 10)
 	record += strconv.Itoa(len(tx.Descs))
 	for _, desc := range tx.Descs {
 		record += desc.toString()
 	}
 	record += string(tx.JSPubKey)
 	record += string(tx.JSSig)
+	record += string(tx.AddressLastByte)
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -130,13 +132,14 @@ func NewTxTemplate() *Tx {
 	sigPubKey := PubKeyToByteArray(&sigPrivKey.PublicKey)
 
 	tx := &Tx{
-		Version:  TxVersion,
-		Type:     common.TxNormalType,
-		LockTime: time.Now().Unix(),
-		Fee:      0,
-		Descs:    nil,
-		JSPubKey: sigPubKey,
-		JSSig:    nil,
+		Version:         TxVersion,
+		Type:            common.TxNormalType,
+		LockTime:        time.Now().Unix(),
+		Fee:             0,
+		Descs:           nil,
+		JSPubKey:        sigPubKey,
+		JSSig:           nil,
+		AddressLastByte: 0,
 
 		txId:       nil,
 		sigPrivKey: sigPrivKey,
@@ -201,6 +204,7 @@ func CreateTx(
 
 	// Create tx before adding js descs
 	tx := NewTxTemplate()
+	tx.AddressLastByte = senderChainID
 	var latestAnchor map[byte][]byte
 
 	for len(inputNotes) > 0 || len(paymentInfo) > 0 {
