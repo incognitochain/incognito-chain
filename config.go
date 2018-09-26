@@ -858,7 +858,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 }
 
 func (self *config) GetSealerKeySet() (*cashec.KeySetSealer, error) {
-	var keysetSealer *cashec.KeySetSealer
+	keysetSealer := &cashec.KeySetSealer{}
 	if len(self.SealerSpendingKey) != 0 {
 		Logger.log.Warn("!!NOT RECOMMENDED TO USE SPENDING KEY!!")
 		keySetUser := cashec.KeySet{}
