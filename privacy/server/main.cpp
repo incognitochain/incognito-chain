@@ -32,6 +32,7 @@ typedef std::array<libzcash::SproutNote, ZC_NUM_JS_OUTPUTS> ProveOutnotes;
 typedef std::array<uint256, ZC_NUM_JS_INPUTS> NullifierArray;
 typedef std::array<uint256, ZC_NUM_JS_INPUTS> MacArray;
 typedef std::array<uint256, ZC_NUM_JS_OUTPUTS> CommitmentArray;
+typedef std::array<uint256, ZC_NUM_JS_INPUTS> RtArray;
 
 bool string_to_uint256(const string &data, uint256 &result)
 {
@@ -128,7 +129,7 @@ bool transform_prove_request(const ProveRequest *request,
                              ProveOutnotes &out_notes,
                              uint256 &hsig,
                              uint252 &phi,
-                             uint256 &rt,
+                             RtArray &rts,
                              uint64_t &reward,
                              uint64_t &fee)
 {
@@ -195,8 +196,11 @@ bool transform_prove_request(const ProveRequest *request,
     cout << "phi: " << phi.inner().GetHex() << '\n';
 
     // Convert rt
-    success &= string_to_uint256(request->rt(), rt);
-    cout << "rt: " << rt.GetHex() << '\n';
+    i = 0;
+    for (auto &rt: request->rts()) {
+        success &= string_to_uint256(rt, rts[i++]);
+        cout << "rt: " << rts[i].GetHex() << '\n';
+    }
 
     // Convert reward
     reward = request->reward();
@@ -250,7 +254,7 @@ bool transform_verify_request(const VerifyRequest *request,
                               CommitmentArray &commitments,
                               MacArray &macs,
                               uint256 &hsig,
-                              uint256 &rt,
+                              RtArray &rts,
                               uint64_t &reward,
                               uint64_t &fee)
 {
@@ -303,8 +307,11 @@ bool transform_verify_request(const VerifyRequest *request,
     cout << "hsig: " << hsig.GetHex() << '\n';
 
     // Convert rt
-    success &= string_to_uint256(request->rt(), rt);
-    cout << "rt: " << rt.GetHex() << '\n';
+    int i = 0;
+    for (auto &rt: request->rts()) {
+        success &= string_to_uint256(rt, rts[i++]);
+        cout << "rt: " << rts[i].GetHex() << '\n';
+    }
 
     // Convert reward
     reward = request->reward();
@@ -319,7 +326,7 @@ int print_proof_inputs(const std::array<libzcash::JSInput, ZC_NUM_JS_INPUTS> &in
                        std::array<libzcash::SproutNote, ZC_NUM_JS_OUTPUTS> &out_notes,
                        uint64_t vpub_old,
                        uint64_t vpub_new,
-                       const uint256 &rt,
+                       const RtArray &rts,
                        uint256 &h_sig,
                        uint252 &phi,
                        bool computeProof)
@@ -342,10 +349,12 @@ int print_proof_inputs(const std::array<libzcash::JSInput, ZC_NUM_JS_INPUTS> &in
         cout << "output.cm: " << output.cm.GetHex() << '\n';
         cout << "output.nf: " << output.nf.GetHex() << '\n';
     }
+    for (auto &rt: rts) {
+        cout << "rt: " << rt.GetHex() << '\n';
+    }
 
     cout << "vpub_old: " << vpub_old << '\n';
     cout << "vpub_new: " << vpub_new << '\n';
-    cout << "rt: " << rt.GetHex() << '\n';
     cout << "h_sig: " << h_sig.GetHex() << '\n';
     cout << "phi: " << phi.inner().GetHex() << '\n';
     cout << "computeProof: " << computeProof << '\n';
@@ -359,10 +368,11 @@ class ZksnarkImpl final : public Zksnark::Service
         cout << "\n\n[Starting Prove], request->inputs_size(): " << request->inputs_size() << "\n";
         ProveInputs inputs;
         ProveOutnotes out_notes;
-        uint256 hsig, rt;
+        uint256 hsig;
         uint252 phi;
+        RtArray rts;
         uint64_t reward, fee;
-        bool success = transform_prove_request(request, inputs, out_notes, hsig, phi, rt, reward, fee);
+        bool success = transform_prove_request(request, inputs, out_notes, hsig, phi, rts, reward, fee);
         cout << "transform_prove_request status: " << success << '\n';
 
         if (!success)
@@ -371,8 +381,8 @@ class ZksnarkImpl final : public Zksnark::Service
         bool compute_proof = true;
         uint64_t vpub_old = reward;
         uint64_t vpub_new = fee;
-        print_proof_inputs(inputs, out_notes, vpub_old, vpub_new, rt, hsig, phi, compute_proof);
-        auto proof = js->prove(inputs, out_notes, vpub_old, vpub_new, rt, hsig, phi, compute_proof);
+        print_proof_inputs(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, compute_proof);
+        auto proof = js->prove(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, compute_proof);
         // libzcash::PHGRProof proof;
         print_proof(proof);
 
@@ -388,19 +398,20 @@ class ZksnarkImpl final : public Zksnark::Service
     {
         cout << "\n\n[Starting Verify]\n\n";
         libzcash::PHGRProof proof;
-        uint256 hsig, rt;
+        uint256 hsig;
+        RtArray rts;
         NullifierArray nullifiers;
         CommitmentArray commitments;
         NullifierArray macs;
         uint64_t reward, fee;
-        bool success = transform_verify_request(request, proof, nullifiers, commitments, macs, hsig, rt, reward, fee);
+        bool success = transform_verify_request(request, proof, nullifiers, commitments, macs, hsig, rts, reward, fee);
         cout << "transform_verify_request status: " << success << '\n';
 
         uint64_t vpub_old = reward;
         uint64_t vpub_new = fee;
         bool valid = false;
         if (success)
-            valid = js->verify(proof, macs, nullifiers, commitments, vpub_old, vpub_new, rt, hsig);
+            valid = js->verify(proof, macs, nullifiers, commitments, vpub_old, vpub_new, rts, hsig);
         reply->set_valid(valid);
         return Status::OK;
     }
@@ -444,9 +455,13 @@ int test_merkle_tree() {
     return 0;
 }
 
+int generate_params() {
+    ZCJoinSplit::Generate("/tmp/r1cs.params", "/tmp/verifying.key", "/tmp/proving.key");
+}
+
 int main(int argc, char const *argv[])
 {
-    // test_merkle_tree();
+    // generate_params();
     RunServer();
     return 0;
 }

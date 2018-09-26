@@ -796,13 +796,14 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 				if txInBlock.GetType() == common.TxNormalType {
 					tx := txInBlock.(*transaction.Tx)
 					copyTx := transaction.Tx{
-						Version:  tx.Version,
-						JSSig:    tx.JSSig,
-						JSPubKey: tx.JSPubKey,
-						Fee:      tx.Fee,
-						Type:     tx.Type,
-						LockTime: tx.LockTime,
-						Descs:    make([]*transaction.JoinSplitDesc, 0),
+						Version:         tx.Version,
+						JSSig:           tx.JSSig,
+						JSPubKey:        tx.JSPubKey,
+						Fee:             tx.Fee,
+						Type:            tx.Type,
+						LockTime:        tx.LockTime,
+						Descs:           make([]*transaction.JoinSplitDesc, 0),
+						AddressLastByte: tx.AddressLastByte,
 					}
 					// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
 					listDesc := make([]*transaction.JoinSplitDesc, 0)

@@ -63,7 +63,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				Type:            txTemp["Type"].(string),
 				LockTime:        int64(txTemp["LockTime"].(float64)),
 				Fee:             uint64(txTemp["Fee"].(float64)),
-				AddressLastByte: txTemp["Fee"].(byte),
+				AddressLastByte: byte(txTemp["AddressLastByte"].(float64)),
 			}
 			jSPubKey, ok := txTemp["JSPubKey"]
 			if ok && jSPubKey != nil {
@@ -193,6 +193,7 @@ func (self Block) Hash() *common.Hash {
 	//	return self.blockHash
 	//}
 	record := strconv.Itoa(self.Header.Version) +
+		string(self.Header.ChainID) +
 		self.Header.MerkleRoot.String() +
 		self.Header.MerkleRootCommitments.String() +
 		strconv.FormatInt(self.Header.Timestamp, 10) +

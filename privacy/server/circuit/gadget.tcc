@@ -15,7 +15,7 @@ private:
     pb_variable_array<FieldT> zk_unpacked_inputs;
     std::shared_ptr<multipacking_gadget<FieldT>> unpacker;
 
-    std::shared_ptr<digest_variable<FieldT>> zk_merkle_root;
+    std::array<std::shared_ptr<digest_variable<FieldT>>, NumInputs> zk_merkle_roots;
     std::shared_ptr<digest_variable<FieldT>> zk_h_sig;
     std::array<std::shared_ptr<digest_variable<FieldT>>, NumInputs> zk_input_nullifiers;
     std::array<std::shared_ptr<digest_variable<FieldT>>, NumInputs> zk_input_macs;
@@ -57,10 +57,10 @@ public:
             zk_packed_inputs.allocate(pb, verifying_field_element_size());
             pb.set_input_sizes(verifying_field_element_size());
 
-            alloc_uint256(zk_unpacked_inputs, zk_merkle_root);
             alloc_uint256(zk_unpacked_inputs, zk_h_sig);
 
             for (size_t i = 0; i < NumInputs; i++) {
+                alloc_uint256(zk_unpacked_inputs, zk_merkle_roots[i]);
                 alloc_uint256(zk_unpacked_inputs, zk_input_nullifiers[i]);
                 alloc_uint256(zk_unpacked_inputs, zk_input_macs[i]);
             }
@@ -106,7 +106,7 @@ public:
                 pb,
                 ZERO,
                 zk_input_nullifiers[i],
-                *zk_merkle_root
+                *zk_merkle_roots[i]
             ));
 
             // The input keys authenticate h_sig to prevent
@@ -198,7 +198,7 @@ public:
 
     void generate_r1cs_witness(
         const uint252& phi,
-        const uint256& rt,
+        const std::array<uint256, NumInputs> &rts,
         const uint256& h_sig,
         const std::array<JSInput, NumInputs>& inputs,
         const std::array<SproutNote, NumOutputs>& outputs,
@@ -213,10 +213,13 @@ public:
         // This ensures the read gadget constrains
         // the intended root in the event that
         // both inputs are zero-valued.
-        zk_merkle_root->bits.fill_with_bits(
-            this->pb,
-            uint256_to_bool_vector(rt)
-        );
+        for (size_t i = 0; i < NumInputs; i++) {
+            zk_merkle_roots[i]->bits.fill_with_bits(
+                this->pb,
+                uint256_to_bool_vector(rts[i])
+            );
+        }
+
         std::cout << "Done fill zk_merkle_root\n";
 
         // Witness public balance values
@@ -284,10 +287,12 @@ public:
         // fail instead of the verifier, in the event that
         // the roots of the inputs do not match the
         // treestate provided to the proving API.
-        zk_merkle_root->bits.fill_with_bits(
-            this->pb,
-            uint256_to_bool_vector(rt)
-        );
+        for (size_t i = 0; i < NumInputs; i++) {
+            zk_merkle_roots[i]->bits.fill_with_bits(
+                this->pb,
+                uint256_to_bool_vector(rts[i])
+            );
+        }
 
         // This happens last, because only by now are all the
         // verifier inputs resolved.
@@ -295,7 +300,7 @@ public:
     }
 
     static r1cs_primary_input<FieldT> witness_map(
-        const uint256& rt,
+        const std::array<uint256, NumInputs>& rts,
         const uint256& h_sig,
         const std::array<uint256, NumInputs>& macs,
         const std::array<uint256, NumInputs>& nullifiers,
@@ -305,10 +310,10 @@ public:
     ) {
         std::vector<bool> verify_inputs;
 
-        insert_uint256(verify_inputs, rt);
         insert_uint256(verify_inputs, h_sig);
 
         for (size_t i = 0; i < NumInputs; i++) {
+            insert_uint256(verify_inputs, rts[i]);
             insert_uint256(verify_inputs, nullifiers[i]);
             insert_uint256(verify_inputs, macs[i]);
         }
@@ -329,7 +334,7 @@ public:
     static size_t verifying_input_bit_size() {
         size_t acc = 0;
 
-        acc += 256; // the merkle root (anchor)
+        acc += 256 * NumInputs; // the merkle root (anchor)
         acc += 256; // h_sig
         for (size_t i = 0; i < NumInputs; i++) {
             acc += 256; // nullifier

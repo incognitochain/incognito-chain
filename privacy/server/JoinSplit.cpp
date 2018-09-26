@@ -97,14 +97,14 @@ public:
         const std::array<uint256, NumOutputs>& commitments,
         uint64_t vpub_old,
         uint64_t vpub_new,
-        const uint256& rt,
+        const std::array<uint256, NumInputs>& rts,
         uint256 &h_sig
     ) {
         try {
             auto r1cs_proof = proof.to_libsnark_proof<r1cs_ppzksnark_proof<ppzksnark_ppT>>();
 
             auto witness = joinsplit_gadget<FieldT, NumInputs, NumOutputs>::witness_map(
-                rt,
+                rts,
                 h_sig,
                 macs,
                 nullifiers,
@@ -135,88 +135,12 @@ public:
         // std::array<uint256, NumOutputs>& out_commitments,
         uint64_t vpub_old,
         uint64_t vpub_new,
-        const uint256& rt,
+        const std::array<uint256, NumInputs>& rts,
         uint256 &h_sig,
         uint252 &phi,
         bool computeProof
         // uint256 *out_esk // Payment disclosure
     ) {
-        // // Encrypt the ciphertexts containing the note
-        // // plaintexts to the recipients of the value.
-        // {
-        //     ZCNoteEncryption encryptor(h_sig);
-
-        //     for (size_t i = 0; i < NumOutputs; i++) {
-        //         SproutNotePlaintext pt(out_notes[i], outputs[i].memo);
-
-        //         out_ciphertexts[i] = pt.encrypt(encryptor, outputs[i].addr.pk_enc);
-        //     }
-
-        //     out_ephemeralKey = encryptor.get_epk();
-
-        //     // !!! Payment disclosure START
-        //     if (out_esk != nullptr) {
-        //         *out_esk = encryptor.get_esk();
-        //     }
-        //     // !!! Payment disclosure END
-        // }
-
-        // // Authenticate h_sig with each of the input
-        // // spending keys, producing macs which protect
-        // // against malleability.
-        // for (size_t i = 0; i < NumInputs; i++) {
-        //     out_macs[i] = PRF_pk(inputs[i].key, i, h_sig);
-        // }
-
-        // if (makeGrothProof) {
-        //     if (!computeProof) {
-        //         return GrothProof();
-        //     }
-
-        //     GrothProof proof;
-
-        //     CDataStream ss1(SER_NETWORK, PROTOCOL_VERSION);
-        //     ss1 << inputs[0].witness.path();
-        //     std::vector<unsigned char> auth1(ss1.begin(), ss1.end());
-
-        //     CDataStream ss2(SER_NETWORK, PROTOCOL_VERSION);
-        //     ss2 << inputs[1].witness.path();
-        //     std::vector<unsigned char> auth2(ss2.begin(), ss2.end());
-
-        //     librustzcash_sprout_prove(
-        //         proof.begin(),
-
-        //         phi.begin(),
-        //         rt.begin(),
-        //         h_sig.begin(),
-
-        //         inputs[0].key.begin(),
-        //         inputs[0].note.value(),
-        //         inputs[0].note.rho.begin(),
-        //         inputs[0].note.r.begin(),
-        //         auth1.data(),
-
-        //         inputs[1].key.begin(),
-        //         inputs[1].note.value(),
-        //         inputs[1].note.rho.begin(),
-        //         inputs[1].note.r.begin(),
-        //         auth2.data(),
-
-        //         out_notes[0].a_pk.begin(),
-        //         out_notes[0].value(),
-        //         out_notes[0].r.begin(),
-
-        //         out_notes[1].a_pk.begin(),
-        //         out_notes[1].value(),
-        //         out_notes[1].r.begin(),
-
-        //         vpub_old,
-        //         vpub_new
-        //     );
-
-        //     return proof;
-        // }
-
         if (!computeProof) {
             return PHGRProof();
         }
@@ -229,7 +153,7 @@ public:
             std::cout << "Done generate_r1cs_constraints\n";
             g.generate_r1cs_witness(
                 phi,
-                rt,
+                rts,
                 h_sig,
                 inputs,
                 out_notes,
