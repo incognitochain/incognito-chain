@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/cashec"
-
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jessevdk/go-flags"
+	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 )
 
@@ -154,7 +154,7 @@ type config struct {
 
 	// PoS config
 	SealerSpendingKey string `long:"sealerspendingkey" description:"!!!WARNING Leave this if you don't know what this is"`
-	SealerKeySet      string `long:"sealerkeyset" description:"Key-set of the block sealer used to seal block`
+	SealerKeySet      string `long:"sealerkeyset" description:"Key-set of the block sealer used to seal block"`
 	// For Wallet
 	Wallet           bool   `long:"wallet" description:"Use wallet"`
 	WalletDbName     string `long:"walletdbname" description:"Wallet Database Name file, default is wallet.db"`
@@ -862,7 +862,8 @@ func (self *config) GetSealerKeySet() (*cashec.KeySetSealer, error) {
 	if len(self.SealerSpendingKey) != 0 {
 		Logger.log.Warn("!!NOT RECOMMENDED TO USE SPENDING KEY!!")
 		keySetUser := cashec.KeySet{}
-		spendingKeyByte, err := base64.StdEncoding.DecodeString(self.SealerSpendingKey)
+		base85C := base58.Base58Check{}
+		spendingKeyByte, _, err := base85C.Decode(self.SealerSpendingKey)
 		if err != nil {
 			return keysetSealer, err
 		}
