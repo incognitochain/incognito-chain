@@ -64,9 +64,15 @@ func (self *KeySetSealer) DecodeToKeySet(keystring string) (*KeySetSealer, error
 }
 
 func (self *KeySetSealer) GetPaymentAddress() (client.PaymentAddress, error) {
-
+	var paymentAddr client.PaymentAddress
+	paymentAddr.Apk = self.SpendingAddress
+	paymentAddr.Pkenc = self.TransmissionKey
+	return paymentAddr, nil
 }
 
 func (self *KeySetSealer) GetViewingKey() (client.ViewingKey, error) {
-
+	var viewingKey client.ViewingKey
+	viewingKey.Apk = self.SpendingAddress
+	viewingKey.Skenc = self.ReceivingKey
+	return viewingKey, nil
 }

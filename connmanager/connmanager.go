@@ -443,9 +443,9 @@ listen:
 				var publicKey string
 
 				if listener.Config.SealerPrvKey != "" {
-					keyPair := &cashec.KeyPair{}
-					keyPair.Import(listener.Config.SealerPrvKey)
-					publicKey = base64.StdEncoding.EncodeToString(keyPair.PublicKey)
+					keySet := &cashec.KeySetSealer{}
+					keySet.Import(listener.Config.SealerPrvKey)
+					publicKey = base64.StdEncoding.EncodeToString(keySet.SpublicKey)
 				}
 
 				// remove later

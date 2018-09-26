@@ -13,8 +13,6 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/consensus/ppos"
 
-	"github.com/ninjadotorg/cash-prototype/cashec"
-
 	"crypto/tls"
 	"os"
 	"strconv"
@@ -347,14 +345,12 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 	msg.(*wire.MessageVersion).ProtocolVersion = 1
 	// Validate Public Key from SealerPrvKey
 	if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
-		sealKey, err := base64.StdEncoding.DecodeString(peerConn.ListenerPeer.Config.SealerPrvKey)
+		keySet, err := cfg.GetSealerKeySet()
 		if err != nil {
 			Logger.log.Critical("Invalid sealer's private key")
 			return
 		}
-		keySet := &cashec.KeySet{}
-		keySet.ImportFromPrivateKeyByte(sealKey)
-		msg.(*wire.MessageVersion).PublicKey = base64.StdEncoding.EncodeToString(keySet.SealerKeyPair.PublicKey)
+		msg.(*wire.MessageVersion).PublicKey = base64.StdEncoding.EncodeToString(keySet.SpublicKey)
 	}
 
 	if err != nil {
@@ -501,8 +497,13 @@ func (self Server) Start() {
 	// 	self.Miner.Start()
 	// }
 	self.ConsensusEngine.Start()
-	if cfg.Generate == true && (len(cfg.SealerPrvKey) > 0) {
-		self.ConsensusEngine.StartSealer(cfg.SealerPrvKey)
+	if cfg.Generate == true && (len(cfg.SealerSpendingKey) > 0 || len(cfg.SealerKeySet) > 0) {
+		sealerKeySet, err := cfg.GetSealerKeySet()
+		if err != nil {
+			Logger.log.Critical(err)
+			return
+		}
+		self.ConsensusEngine.StartSealer(*sealerKeySet)
 	}
 }
 
@@ -556,6 +557,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 // newPeerConfig returns the configuration for the listening Peer.
 */
 func (self *Server) NewPeerConfig() *peer.Config {
+	keysetSealer, _ := cfg.GetSealerKeySet()
 	return &peer.Config{
 		MessageListeners: peer.MessageListeners{
 			OnBlock:     self.OnBlock,
@@ -573,7 +575,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnGetChainState: self.OnGetChainState,
 			OnChainState:    self.OnChainState,
 		},
-		SealerPrvKey: cfg.SealerPrvKey,
+		SealerPrvKey: base64.StdEncoding.EncodeToString(keysetSealer.SprivateKey),
 	}
 }
 
@@ -668,9 +670,12 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		msgS.(*wire.MessageVersion).ProtocolVersion = 1
 		// Validate Public Key from SealerPrvKey
 		if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
-			keyPair := &cashec.KeyPair{}
-			keyPair.Import(peerConn.ListenerPeer.Config.SealerPrvKey)
-			msgS.(*wire.MessageVersion).PublicKey = string(keyPair.PublicKey)
+			keySet, err := cfg.GetSealerKeySet()
+			if err != nil {
+				Logger.log.Critical("Invalid sealer's private key")
+				return
+			}
+			msgS.(*wire.MessageVersion).PublicKey = base64.StdEncoding.EncodeToString(keySet.SpublicKey)
 		}
 		if err != nil {
 			return
