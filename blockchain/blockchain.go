@@ -145,6 +145,7 @@ func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 func (self *BlockChain) createChainState(chainID byte) error {
 	// Create a new block from genesis block and set it as best block of chain
 	var initBlock *Block
+	//genesisChainID, _ := common.GetTxSenderChain(self.Config.ChainParams.GenesisBlock.Transactions[0].(*transaction.Tx).AddressLastByte)
 	if chainID == 0 {
 		initBlock = self.Config.ChainParams.GenesisBlock
 	} else {
