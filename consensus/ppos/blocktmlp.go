@@ -181,7 +181,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 		Difficulty:            0, //@todo should be create Difficulty logic
 		Nonce:                 0, //@todo should be create Nonce logic
 		BlockCommitteeSigs:    []string{},
-		NextCommittee:         []string{},
+		Committee:             []string{},
 		ChainID:               chainID,
 	}
 	for _, tx := range txsToAdd {

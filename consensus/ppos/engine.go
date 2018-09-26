@@ -42,7 +42,7 @@ type Engine struct {
 
 	config                Config
 	currentCommittee      []string
-	upComingCommittee     []string
+	candidates            []string
 	knownChainsHeight     chainsHeight
 	validatedChainsHeight chainsHeight
 	validatorSigCh        chan blockSig
@@ -50,7 +50,7 @@ type Engine struct {
 
 type ChainInfo struct {
 	CurrentCommittee  []string
-	UpComingCommittee []string
+	CandidateListHash string
 	ChainsHeight      []int
 }
 type chainsHeight struct {
@@ -113,7 +113,7 @@ func (self *Engine) Start() error {
 		}
 	}
 	self.validatedChainsHeight.Heights = self.knownChainsHeight.Heights
-	self.currentCommittee = self.config.BlockChain.BestState[0].BestBlock.Header.NextCommittee
+	self.currentCommittee = self.config.BlockChain.BestState[0].BestBlock.Header.Committee
 
 	time.Sleep(2 * time.Second)
 	go func() {
@@ -224,7 +224,7 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	newblock.Block.Header.ChainsHeight = self.validatedChainsHeight.Heights
 	newblock.Block.Header.ChainID = myChainID
 	newblock.Block.ChainLeader = base64.StdEncoding.EncodeToString(self.config.ValidatorKeySet.SpublicKey)
-	newblock.Block.Header.NextCommittee = self.currentCommittee
+	newblock.Block.Header.Committee = self.GetNextCommittee()
 	sig, err := self.signData([]byte(newblock.Block.Hash().String()))
 	if err != nil {
 		return &blockchain.Block{}, err
@@ -614,7 +614,7 @@ func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
 func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 	chainInfo := ChainInfo{
 		CurrentCommittee:  self.currentCommittee,
-		UpComingCommittee: self.upComingCommittee,
+		CandidateListHash: "",
 		ChainsHeight:      self.validatedChainsHeight.Heights,
 	}
 	newMsg, err := wire.MakeEmptyMessage(wire.CmdChainState)

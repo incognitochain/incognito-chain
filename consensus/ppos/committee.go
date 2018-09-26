@@ -4,6 +4,6 @@ func (self *Engine) SwitchMember() {
 
 }
 
-func (self *Engine) GetNextCommittee() {
-
+func (self *Engine) GetNextCommittee() []string {
+	return self.currentCommittee
 }

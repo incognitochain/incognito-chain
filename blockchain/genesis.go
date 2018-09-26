@@ -257,7 +257,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(time time.Time, 
 	genesisBlock.Header.Nonce = nonce
 	genesisBlock.Header.Difficulty = difficulty
 	genesisBlock.Header.Version = version
-	genesisBlock.Header.NextCommittee = preSelectValidators
+	genesisBlock.Header.Committee = preSelectValidators
 	genesisBlock.Height = 1
 	tx, err := self.getGenesisTx()
 	// tx, err := self.createGenesisTx(initialCoin)
