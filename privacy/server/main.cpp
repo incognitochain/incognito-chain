@@ -383,7 +383,7 @@ class ZksnarkImpl final : public Zksnark::Service
         uint64_t vpub_new = fee;
         print_proof_inputs(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, compute_proof);
         auto proof = js->prove(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, compute_proof);
-        // libzcash::PHGRProof proof;
+//         libzcash::PHGRProof proof;
         print_proof(proof);
 
         zksnark::PHGRProof *zk_proof = new zksnark::PHGRProof();
