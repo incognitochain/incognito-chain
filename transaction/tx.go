@@ -161,6 +161,7 @@ func CreateTx(
 	senderChainID byte,
 ) (*Tx, error) {
 	fmt.Printf("List of all commitments before building tx:\n")
+	fmt.Printf("rts: %v\n", rts)
 	for _, cm := range commitments {
 		fmt.Printf("%x\n", cm)
 	}
@@ -288,7 +289,7 @@ func CreateTx(
 		if latestAnchor == nil {
 			for chainID, rt := range newRts {
 				if !bytes.Equal(rt, rts[chainID][:]) {
-					return nil, fmt.Errorf("Provided anchor doesn't match commitments list")
+					return nil, fmt.Errorf("Provided anchor doesn't match commitments list: %d %x %x", chainID, rt, rts[chainID][:])
 				}
 			}
 		}
