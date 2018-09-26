@@ -681,7 +681,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	lastByte := senderKey.KeySet.PublicKey.Apk[len(senderKey.KeySet.PublicKey.Apk)-1]
-	chainID, err := common.GetTxSenderChain(lastByte)
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
 	if err != nil {
 		return nil, nil
 	}
@@ -734,7 +734,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	// check real fee per Tx
 	var realFee uint64
 	if int64(estimateFeeCoinPerKb) == -1 {
-		temp, _ := self.Config.FeeEstimator[chainID].EstimateFee(numBlock)
+		temp, _ := self.Config.FeeEstimator[chainIdSender].EstimateFee(numBlock)
 		estimateFeeCoinPerKb = int64(temp)
 	}
 	estimateFeeCoinPerKb += int64(self.Config.Wallet.Config.PayTxFee)
@@ -765,7 +765,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	commitmentsDb := make(map[byte]([][]byte))
 	merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
-		merkleRootCommitments[chainId] = &self.Config.BlockChain.BestState[chainID].BestBlock.Header.MerkleRootCommitments
+		merkleRootCommitments[chainId] = &self.Config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
 		// get tx view point
 		txViewPoint, _ := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainId)
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers(common.TxOutCoinType)
@@ -778,7 +778,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		nullifiersDb,
 		commitmentsDb,
 		realFee,
-		chainID)
+		chainIdSender)
 	if err != nil {
 		return nil, err
 	}

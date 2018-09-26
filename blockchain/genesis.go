@@ -187,6 +187,10 @@ func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	//tempKeySet, _ := wallet.Base58CheckDeserialize(GENESIS_BLOCK_PAYMENT_ADDR)
+	//lastByte := tempKeySet.KeySet.PublicKey.Apk[len(tempKeySet.KeySet.PublicKey.Apk)-1]
+
 	tx := &transaction.Tx{
 		Version:  transaction.TxVersion,
 		Type:     common.TxNormalType,
@@ -195,6 +199,7 @@ func (self GenesisBlockGenerator) getGenesisTx() (*transaction.Tx, error) {
 		Descs:    desc,
 		JSPubKey: jsPubKey,
 		JSSig:    nil,
+		//AddressLastByte: lastByte,
 	}
 	return tx, nil
 }
