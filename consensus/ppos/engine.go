@@ -173,7 +173,6 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 	Logger.log.Info("Starting sealer with public key: " + base64.StdEncoding.EncodeToString(self.config.ValidatorKeySet.SpublicKey))
 
 	go func() {
-		// tempChainsHeight := make([]int, TOTAL_VALIDATORS)
 		for {
 			select {
 			case <-self.quitSealer:
@@ -197,7 +196,6 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 							Logger.log.Critical(err)
 							continue
 						}
-						// tempChainsHeight = self.knownChainsHeight.Heights
 					}
 				}
 			}

@@ -13,26 +13,27 @@ import (
 const (
 	MessageHeaderSize = 24
 
-	CmdBlock     = "block"
-	CmdTx        = "tx"
-	CmdGetBlocks = "getblocks"
-	CmdInv       = "inv"
-	CmdGetData   = "getdata"
-	CmdVersion   = "version"
-	CmdVerack    = "verack"
-	CmdGetAddr   = "getaddr"
-	CmdAddr      = "addr"
-	CmdPing      = "ping"
+	CmdBlock          = "block"
+	CmdTx             = "tx"
+	CmdGetBlocks      = "getblocks"
+	CmdInv            = "inv"
+	CmdGetData        = "getdata"
+	CmdVersion        = "version"
+	CmdVerack         = "verack"
+	CmdGetAddr        = "getaddr"
+	CmdAddr           = "addr"
+	CmdPing           = "ping"
 	CmdGetBlockHeader = "getheader"
 	CmdBlockHeader    = "header"
 
 	// POS Cmd
-	CmdVoteCandidate = "votecandidate"
-	CmdRequestSign   = "requestsign"
-	CmdInvalidBlock  = "invalidblock"
-	CmdBlockSig      = "blocksig"
-	CmdGetChainState = "getchainstate"
-	CmdChainState    = "chainstate"
+	CmdRequestSign       = "requestsign"
+	CmdInvalidBlock      = "invalidblock"
+	CmdBlockSig          = "blocksig"
+	CmdGetChainState     = "getchainstate"
+	CmdChainState        = "chainstate"
+	CmdCandidateProposal = "candidateproposal"
+	CmdCandidateVote     = "candidatevote"
 )
 
 // Interface for message wire on P2P network
@@ -80,9 +81,6 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdRequestSign:
 		msg = &MessageRequestSign{}
 		break
-	case CmdVoteCandidate:
-		msg = &MessageVoteCandidate{}
-		break
 	case CmdInvalidBlock:
 		msg = &MessageInvalidBlock{}
 		break
@@ -90,6 +88,11 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageGetChainState{}
 	case CmdChainState:
 		msg = &MessageChainState{}
+	case CmdCandidateVote:
+		msg = &MessageCandidateVote{}
+		break
+	case CmdCandidateProposal:
+		msg = &MessageCandidateProposal{}
 	// POS end
 	case CmdGetAddr:
 		msg = &MessageGetAddr{}
@@ -127,8 +130,10 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdBlockSig, nil
 	case reflect.TypeOf(&MessageRequestSign{}):
 		return CmdRequestSign, nil
-	case reflect.TypeOf(&MessageVoteCandidate{}):
-		return CmdVoteCandidate, nil
+	case reflect.TypeOf(&MessageCandidateVote{}):
+		return CmdCandidateVote, nil
+	case reflect.TypeOf(&MessageCandidateProposal{}):
+		return CmdCandidateProposal, nil
 	case reflect.TypeOf(&MessageInvalidBlock{}):
 		return CmdInvalidBlock, nil
 	case reflect.TypeOf(&MessageGetChainState{}):
