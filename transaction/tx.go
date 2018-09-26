@@ -109,7 +109,7 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
 	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
+	var sizeDescs = uint64(max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
 	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
@@ -205,7 +205,10 @@ func CreateTx(
 
 	// Create tx before adding js descs
 	tx := NewTxTemplate()
-	tx.AddressLastByte = senderChainID
+	tempKeySet := cashec.KeySet{}
+	tempKeySet.ImportFromPrivateKey(senderKey)
+	lastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
+	tx.AddressLastByte = lastByte
 	var latestAnchor map[byte][]byte
 
 	for len(inputNotes) > 0 || len(paymentInfo) > 0 {

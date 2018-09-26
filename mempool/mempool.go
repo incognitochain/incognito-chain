@@ -84,8 +84,6 @@ func (tp *TxPool) Init(cfg *Config) {
 
 // check transaction in pool
 func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
-	tp.mtx.Lock()
-	defer tp.mtx.Unlock()
 	if _, exists := tp.pool[*hash]; exists {
 		return true
 	}
@@ -105,10 +103,8 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 		},
 		StartingPriority: 1, //@todo we will apply calc function for it.
 	}
-	tp.mtx.Lock()
 	log.Printf(tx.Hash().String())
 	tp.pool[*tx.Hash()] = txD
-	tp.mtx.Unlock()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 
 	// Record this tx for fee estimation if enabled. only apply for normal tx
@@ -180,14 +176,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 	// validate double spend for normal tx
 	if tx.GetType() == common.TxNormalType {
-		chainId, err := common.GetTxSenderChain(tx.(*transaction.Tx).AddressLastByte)
-		if err != nil {
-			str := fmt.Sprintf("Can not check double spend for tx")
-			err := TxRuleError{}
-			err.Init(CanNotCheckDoubleSpend, str)
-			return nil, nil, err
-		}
-		txViewPoint, err := tp.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainId)
+		txViewPoint, err := tp.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainID)
 		if err != nil {
 			str := fmt.Sprintf("Can not check double spend for tx")
 			err := TxRuleError{}
@@ -251,6 +240,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 // remove transaction for pool
 func (tp *TxPool) removeTx(tx *transaction.Transaction) error {
 	Logger.log.Infof((*tx).Hash().String())
+	tp.mtx.Lock()
 	if _, exists := tp.pool[*(*tx).Hash()]; exists {
 		delete(tp.pool, *(*tx).Hash())
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
@@ -430,7 +420,7 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 
 		for _, desc := range txN.Descs {
 			// check length of Anchor
-			if len(desc.Anchor) != 32 {
+			if len(desc.Anchor) != 2 {
 				return false, errors.New("Wrong tx desc's anchor")
 			}
 			// check length of EphemeralPubKey
