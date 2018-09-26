@@ -50,13 +50,15 @@ func (tx *Tx) GetTxId() *common.Hash {
 func (tx Tx) Hash() *common.Hash {
 	record := strconv.Itoa(int(tx.Version))
 	record += tx.Type
-	record += strconv.Itoa(int(tx.LockTime))
+	record += strconv.FormatInt(tx.LockTime, 10)
+	record += strconv.FormatUint(tx.Fee, 10)
 	record += strconv.Itoa(len(tx.Descs))
 	for _, desc := range tx.Descs {
 		record += desc.toString()
 	}
 	record += string(tx.JSPubKey)
 	record += string(tx.JSSig)
+	record += string(tx.AddressLastByte)
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -107,7 +109,7 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
 	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+	var sizeDescs = uint64(max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
 	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
@@ -130,13 +132,14 @@ func NewTxTemplate() *Tx {
 	sigPubKey := PubKeyToByteArray(&sigPrivKey.PublicKey)
 
 	tx := &Tx{
-		Version:  TxVersion,
-		Type:     common.TxNormalType,
-		LockTime: time.Now().Unix(),
-		Fee:      0,
-		Descs:    nil,
-		JSPubKey: sigPubKey,
-		JSSig:    nil,
+		Version:         TxVersion,
+		Type:            common.TxNormalType,
+		LockTime:        time.Now().Unix(),
+		Fee:             0,
+		Descs:           nil,
+		JSPubKey:        sigPubKey,
+		JSSig:           nil,
+		AddressLastByte: 0,
 
 		txId:       nil,
 		sigPrivKey: sigPrivKey,
@@ -158,6 +161,7 @@ func CreateTx(
 	senderChainID byte,
 ) (*Tx, error) {
 	fmt.Printf("List of all commitments before building tx:\n")
+	fmt.Printf("rts: %v\n", rts)
 	for _, cm := range commitments {
 		fmt.Printf("%x\n", cm)
 	}
@@ -201,6 +205,7 @@ func CreateTx(
 
 	// Create tx before adding js descs
 	tx := NewTxTemplate()
+	tx.AddressLastByte = senderChainID
 	var latestAnchor map[byte][]byte
 
 	for len(inputNotes) > 0 || len(paymentInfo) > 0 {
@@ -284,7 +289,7 @@ func CreateTx(
 		if latestAnchor == nil {
 			for chainID, rt := range newRts {
 				if !bytes.Equal(rt, rts[chainID][:]) {
-					return nil, fmt.Errorf("Provided anchor doesn't match commitments list")
+					return nil, fmt.Errorf("Provided anchor doesn't match commitments list: %d %x %x", chainID, rt, rts[chainID][:])
 				}
 			}
 		}
@@ -377,8 +382,8 @@ func CreateTx(
 		return nil, err
 	}
 
-	fmt.Printf("jspubkey size: %v\n", len(tx.JSPubKey))
-	fmt.Printf("jssig size: %v\n", len(tx.JSSig))
+	fmt.Printf("jspubkey: %x\n", tx.JSPubKey)
+	fmt.Printf("jssig: %x\n", tx.JSSig)
 	return tx, nil
 }
 
@@ -414,10 +419,12 @@ func (tx *Tx) BuildNewJSDesc(
 	}
 
 	var ephemeralPrivKey *client.EphemeralPrivKey // nil ephemeral key, will be randomly created later
-	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, tx.JSPubKey, ephemeralPrivKey)
+	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, ephemeralPrivKey)
 	if err != nil {
 		return err
 	}
+	fmt.Printf("jsPubKey: %x\n", tx.JSPubKey)
+	fmt.Printf("jsSig: %x\n", tx.JSSig)
 	return nil
 }
 
@@ -427,7 +434,7 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	proof *zksnark.PHGRProof,
 	rts [][]byte,
 	reward uint64,
-	hSig, seed, sigPubKey []byte,
+	hSig, seed []byte,
 	ephemeralPrivKey *client.EphemeralPrivKey,
 ) error {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
@@ -599,6 +606,7 @@ func GenerateProofForGenesisTx(
 
 	tx := NewTxTemplate()
 	tx.JSPubKey = sigPubKey
+	fmt.Printf("JSPubKey: %x\n", tx.JSPubKey)
 
 	var fee uint64 // Zero fee for genesis tx
 	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rts, reward, fee, seed, phi, outputR)
@@ -606,7 +614,7 @@ func GenerateProofForGenesisTx(
 		return nil, err
 	}
 
-	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, tx.JSPubKey, &ephemeralPrivKey)
+	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, &ephemeralPrivKey)
 	return tx, err
 }
 

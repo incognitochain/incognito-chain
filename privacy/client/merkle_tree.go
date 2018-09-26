@@ -368,5 +368,13 @@ func BuildWitnessPath(notes []*JSInput, commitments [][]byte) ([]byte, error) {
 
 // BuildWitnessPathMultiChain builds witness path for multiple input notes from different chains
 func BuildWitnessPathMultiChain(inputs map[byte][]*JSInput, commitments map[byte][][]byte) (map[byte][]byte, error) {
-	return nil, nil
+	mapRt := make(map[byte][]byte)
+	for chainID, inputList := range inputs {
+		rt, err := BuildWitnessPath(inputList, commitments[chainID])
+		if err != nil {
+			return nil, err
+		}
+		mapRt[chainID] = rt
+	}
+	return mapRt, nil
 }

@@ -67,6 +67,10 @@ func (self GenesisBlockGenerator) createGenesisTx(coinReward uint64) (*transacti
 	outNote := &client.Note{Value: coinReward, Apk: key.KeySet.PublicKey.Apk}
 	placeHolderOutputNote := &client.Note{Value: 0, Apk: key.KeySet.PublicKey.Apk}
 
+	fmt.Printf("EncKey: %x\n", key.KeySet.PublicKey.Pkenc)
+
+	return nil, nil
+
 	// Create deterministic outputs
 	outputs := []*client.JSOutput{
 		&client.JSOutput{EncKey: key.KeySet.PublicKey.Pkenc, OutputNote: outNote},
