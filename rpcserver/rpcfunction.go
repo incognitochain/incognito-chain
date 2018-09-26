@@ -72,6 +72,7 @@ var RpcLimited = map[string]commandHandler{
 	"getbalance":            RpcServer.handleGetBalance,
 	"getreceivedbyaccount":  RpcServer.handleGetReceivedByAccount,
 	"settxfee":              RpcServer.handleSetTxFee,
+	"createsealerkeyset":    RpcServer.handleCreateSealerKeySet,
 }
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -1261,4 +1262,18 @@ func (self RpcServer) handleSetTxFee(params interface{}, closeChan <-chan struct
 	self.Config.Wallet.Config.PayTxFee = uint64(params.(float64))
 	err := self.Config.Wallet.Save(self.Config.Wallet.PassPhrase)
 	return err == nil, err
+}
+
+func (self RpcServer) handleCreateSealerKeySet(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// param #1: private key of sender
+	senderKey, err := wallet.Base58CheckDeserialize(params.(string))
+	if err != nil {
+		return nil, nil
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	sealerKeySet, err := senderKey.KeySet.CreateSealerKeySet()
+	if err != nil {
+		return nil, err
+	}
+	return sealerKeySet.EncodeToString(), nil
 }
