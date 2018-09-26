@@ -214,8 +214,9 @@ func CreateTx(
 
 		// Choose inputs to build js desc
 		// var inputsToBuildWitness, inputs []*client.JSInput
-		var inputsToBuildWitness, inputs map[byte][]*client.JSInput
-		var inputValue uint64
+		inputsToBuildWitness := make(map[byte][]*client.JSInput)
+		inputs := make(map[byte][]*client.JSInput)
+		inputValue := uint64(0)
 		numInputNotes := 0
 		for len(inputNotes) > 0 && len(inputs) < NumDescInputs {
 			input := &client.JSInput{}
