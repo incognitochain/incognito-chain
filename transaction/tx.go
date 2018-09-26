@@ -295,6 +295,9 @@ func CreateTx(
 		}
 		latestAnchor = newRts
 		// TODO: add dummy anchor for dummy note
+		if len(latestAnchor[byte(0)]) == 0 {
+			latestAnchor[byte(0)] = make([]byte, 32)
+		}
 
 		// Choose output notes for the js desc
 		outputs := []*client.JSOutput{}
