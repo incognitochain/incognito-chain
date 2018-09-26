@@ -90,8 +90,8 @@ func New(dataDir string, lookupFunc func(string) ([]string, error)) *AddrManager
 // savePeers saves all the known addresses to a file so they can be read back
 // in at next run.
 func (self *AddrManager) savePeers() {
-	self.mtx.Lock()
-	defer self.mtx.Unlock()
+	//self.mtx.Lock()
+	//defer self.mtx.Unlock()
 
 	if len(self.addrIndex) == 0 {
 		return
@@ -130,8 +130,8 @@ func (self *AddrManager) savePeers() {
 // loadPeers loads the known address from the saved file.  If empty, missing, or
 // malformed file, just don't load anything and start fresh
 func (self *AddrManager) loadPeers() {
-	self.mtx.Lock()
-	defer self.mtx.Unlock()
+	//self.mtx.Lock()
+	//defer self.mtx.Unlock()
 
 	err := self.deserializePeers(self.peersFile)
 	if err != nil {
@@ -157,13 +157,16 @@ func (a *AddrManager) numAddresses() int {
 // reset resets the address manager by reinitialising the random source
 // and allocating fresh empty bucket storage.
 func (self *AddrManager) reset() {
-	self.mtx.Lock()
-	defer self.mtx.Unlock()
+	//self.mtx.Lock()
+	//defer self.mtx.Unlock()
 
 	self.addrIndex = make(map[string]*peer.Peer)
 }
 
 func (self *AddrManager) deserializePeers(filePath string) error {
+	//self.mtx.Lock()
+	//defer self.mtx.Unlock()
+
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
 		return nil
@@ -193,9 +196,8 @@ func (self *AddrManager) deserializePeers(filePath string) error {
 		peer.RawAddress = v.Addr
 		peer.PublicKey = v.PublicKey
 
-		self.mtx.Lock()
 		self.addrIndex[peer.RawAddress] = peer
-		self.mtx.Unlock()
+
 	}
 	return nil
 }
@@ -256,8 +258,8 @@ out:
 // current time.  The address must already be known to AddrManager else it will
 // be ignored.
 func (a *AddrManager) Connected(peer *peer.Peer) {
-	a.mtx.Lock()
-	defer a.mtx.Unlock()
+	//a.mtx.Lock()
+	//defer a.mtx.Unlock()
 
 	// TODO
 }
@@ -266,16 +268,10 @@ func (a *AddrManager) Connected(peer *peer.Peer) {
 // connection and version exchange.  If the address is unknown to the address
 // manager it will be ignored.
 func (self *AddrManager) Good(addr *peer.Peer) {
-	Logger.log.Infof("AddrManager Good START")
-
 	self.mtx.Lock()
-	//defer self.mtx.Unlock()
+	defer self.mtx.Unlock()
 
 	self.addrIndex[addr.RawAddress] = addr
-
-	self.mtx.Unlock()
-
-	Logger.log.Infof("AddrManager Good END")
 }
 
 func (self *AddrManager) AddAddresses(addr []*peer.Peer) {

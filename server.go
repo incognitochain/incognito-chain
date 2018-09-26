@@ -648,15 +648,12 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	Logger.log.Info("Receive verack message START")
 
 	if msg.Valid {
-		Logger.log.Info("Receive verack message START 0")
 
 		peerConn.VerValid = true
 
 		if peerConn.IsOutbound {
 			self.AddrManager.Good(peerConn.Peer)
 		}
-
-		Logger.log.Info("Receive verack message START 1")
 
 		// send message for get addr
 		msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
@@ -665,8 +662,6 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 		}
 		var dc chan<- struct{}
 		peerConn.QueueMessageWithEncoding(msgS, dc)
-
-		Logger.log.Info("Receive verack message START 2")
 
 		//	broadcast addr to all peer
 		for _, listen := range self.ConnManager.ListeningPeers {
@@ -689,7 +684,6 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 			}
 		}
 
-		Logger.log.Info("Receive verack message START 3")
 	} else {
 		peerConn.VerValid = true
 	}
