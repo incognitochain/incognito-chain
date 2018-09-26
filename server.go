@@ -530,29 +530,35 @@ func (self *Server) NewPeerConfig() *peer.Config {
 // blocks until the coin block has been fully processed.
 func (self *Server) OnBlock(p *peer.PeerConn,
 	msg *wire.MessageBlock) {
-	Logger.log.Info("Receive a new block")
+	Logger.log.Info("Receive a new block START")
+
 	var txProcessed chan struct{}
 	self.NetSync.QueueBlock(nil, msg, txProcessed)
 	//<-txProcessed
+
+	Logger.log.Info("Receive a new block END")
 }
 
 func (self *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
-	Logger.log.Info("Receive a get-block message")
+	Logger.log.Info("Receive a get-block message START")
 	var txProcessed chan struct{}
 	self.NetSync.QueueGetBlock(nil, msg, txProcessed)
 	//<-txProcessed
+
+	Logger.log.Info("Receive a get-block message END")
 }
 
 // OnTx is invoked when a peer receives a tx message.  It blocks
 // until the transaction has been fully processed.  Unlock the block
 // handler this does not serialize all transactions through a single thread
 // transactions don't rely on the previous one in a linear fashion like blocks.
-func (self Server) OnTx(peer *peer.PeerConn,
-	msg *wire.MessageTx) {
-	Logger.log.Info("Receive a new transaction")
+func (self Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
+	Logger.log.Info("Receive a new transaction START")
 	var txProcessed chan struct{}
 	self.NetSync.QueueTx(nil, msg, txProcessed)
 	//<-txProcessed
+
+	Logger.log.Info("Receive a new transaction END")
 }
 
 /**
@@ -561,6 +567,8 @@ func (self Server) OnTx(peer *peer.PeerConn,
 // the communications.
 */
 func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion) {
+	Logger.log.Info("Receive version message START")
+
 	remotePeer := &peer.Peer{
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
@@ -628,6 +636,8 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		var dc1 chan<- struct{}
 		peerConn.QueueMessageWithEncoding(msg, dc1)
 	}
+
+	Logger.log.Info("Receive version message END")
 }
 
 /**
@@ -635,14 +645,18 @@ OnVerAck is invoked when a peer receives a version acknowlege message
 */
 func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 	// TODO for onverack message
-	log.Printf("Receive verack message")
+	Logger.log.Info("Receive verack message START")
 
 	if msg.Valid {
+		Logger.log.Info("Receive verack message START 0")
+
 		peerConn.VerValid = true
 
 		if peerConn.IsOutbound {
 			self.AddrManager.Good(peerConn.Peer)
 		}
+
+		Logger.log.Info("Receive verack message START 1")
 
 		// send message for get addr
 		msgS, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
@@ -651,6 +665,8 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 		}
 		var dc chan<- struct{}
 		peerConn.QueueMessageWithEncoding(msgS, dc)
+
+		Logger.log.Info("Receive verack message START 2")
 
 		//	broadcast addr to all peer
 		for _, listen := range self.ConnManager.ListeningPeers {
@@ -672,15 +688,18 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 				go _peerConn.QueueMessageWithEncoding(msgS, doneChan)
 			}
 		}
+
+		Logger.log.Info("Receive verack message START 3")
 	} else {
 		peerConn.VerValid = true
 	}
 
+	Logger.log.Info("Receive verack message END")
 }
 
 func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr) {
 	// TODO for ongetaddr message
-	log.Printf("Receive getaddr message")
+	Logger.log.Info("Receive getaddr message START")
 
 	// send message for addr
 	msgS, err := wire.MakeEmptyMessage(wire.CmdAddr)
@@ -705,6 +724,8 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 	msgS.(*wire.MessageAddr).RawPeers = rawPeers
 	var dc chan<- struct{}
 	peerConn.QueueMessageWithEncoding(msgS, dc)
+
+	Logger.log.Info("Receive getaddr message END")
 }
 
 func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
@@ -722,15 +743,17 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 }
 
 func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageRequestSign) {
-	Logger.log.Info("Receive a requestsign")
+	Logger.log.Info("Receive a requestsign START")
 	var txProcessed chan struct{}
 	self.NetSync.QueueMessage(nil, msg, txProcessed)
+	Logger.log.Info("Receive a requestsign END")
 }
 
 func (self *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {
-	Logger.log.Info("Receive a invalidblock", msg)
+	Logger.log.Info("Receive a invalidblock START", msg)
 	var txProcessed chan struct{}
 	self.NetSync.QueueMessage(nil, msg, txProcessed)
+	Logger.log.Info("Receive a invalidblock END", msg)
 }
 
 func (self *Server) OnBlockSig(_ *peer.PeerConn, msg *wire.MessageBlockSig) {
@@ -740,15 +763,17 @@ func (self *Server) OnBlockSig(_ *peer.PeerConn, msg *wire.MessageBlockSig) {
 }
 
 func (self *Server) OnGetChainState(_ *peer.PeerConn, msg *wire.MessageGetChainState) {
-	Logger.log.Info("Receive a getchainstate")
+	Logger.log.Info("Receive a getchainstate START")
 	var txProcessed chan struct{}
 	self.NetSync.QueueMessage(nil, msg, txProcessed)
+	Logger.log.Info("Receive a getchainstate END")
 }
 
 func (self *Server) OnChainState(_ *peer.PeerConn, msg *wire.MessageChainState) {
-	Logger.log.Info("Receive a chainstate")
+	Logger.log.Info("Receive a chainstate START")
 	var txProcessed chan struct{}
 	self.NetSync.QueueMessage(nil, msg, txProcessed)
+	Logger.log.Info("Receive a chainstate END")
 }
 
 func (self *Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {

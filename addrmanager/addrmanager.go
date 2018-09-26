@@ -81,6 +81,7 @@ func New(dataDir string, lookupFunc func(string) ([]string, error)) *AddrManager
 		rand:           rand.New(rand.NewSource(time.Now().UnixNano())),
 		quit:           make(chan struct{}),
 		localAddresses: make(map[string]*localAddress),
+		mtx:            sync.Mutex{},
 	}
 	addrManager.reset()
 	return &addrManager
@@ -265,10 +266,16 @@ func (a *AddrManager) Connected(peer *peer.Peer) {
 // connection and version exchange.  If the address is unknown to the address
 // manager it will be ignored.
 func (self *AddrManager) Good(addr *peer.Peer) {
+	Logger.log.Infof("AddrManager Good START")
+
 	self.mtx.Lock()
-	defer self.mtx.Unlock()
+	//defer self.mtx.Unlock()
 
 	self.addrIndex[addr.RawAddress] = addr
+
+	self.mtx.Unlock()
+
+	Logger.log.Infof("AddrManager Good END")
 }
 
 func (self *AddrManager) AddAddresses(addr []*peer.Peer) {
