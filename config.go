@@ -16,7 +16,9 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jessevdk/go-flags"
+	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 )
 
@@ -151,8 +153,8 @@ type config struct {
 	//whitelists           []*net.IPNet
 
 	// PoS config
-	SealerPrvKey string `long:"sealerprvkey" description:"Private key of the block sealer used to seal block"`
-
+	SealerSpendingKey string `long:"sealerspendingkey" description:"!!!WARNING Leave this if you don't know what this is"`
+	SealerKeySet      string `long:"sealerkeyset" description:"Key-set of the block sealer used to seal block"`
 	// For Wallet
 	Wallet           bool   `long:"wallet" description:"Use wallet"`
 	WalletDbName     string `long:"walletdbname" description:"Wallet Database Name file, default is wallet.db"`
@@ -355,7 +357,8 @@ func loadConfig() (*config, []string, error) {
 		WalletDbName:      defaultWalletDbName,
 		DisableTLS:        defaultDisableRpcTls,
 		RPCDisableAuth:    true,
-		SealerPrvKey:      os.Getenv("SEALERPRVKEY"),
+		SealerSpendingKey: os.Getenv("SEALERPRVKEY"),
+		SealerKeySet:      os.Getenv("SEALERKEYSET"),
 	}
 
 	// Service options which are only added on Windows.
@@ -702,7 +705,7 @@ func loadConfig() (*config, []string, error) {
 
 	// Ensure there is at least one mining address when the generate flag is
 	// set.
-	if cfg.Generate && len(cfg.SealerPrvKey) == 0 {
+	if cfg.Generate && len(cfg.SealerKeySet) == 0 && len(cfg.SealerKeySet) == 0 {
 		str := "%s: the generate flag is set, but there are no sealer's key " +
 			"specified "
 		err := fmt.Errorf(str, funcName)
@@ -852,4 +855,22 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	}
 
 	return nil
+}
+
+func (self *config) GetSealerKeySet() (*cashec.KeySetSealer, error) {
+	var keysetSealer *cashec.KeySetSealer
+	if len(self.SealerSpendingKey) != 0 {
+		Logger.log.Warn("!!NOT RECOMMENDED TO USE SPENDING KEY!!")
+		keySetUser := cashec.KeySet{}
+		base85C := base58.Base58Check{}
+		spendingKeyByte, _, err := base85C.Decode(self.SealerSpendingKey)
+		if err != nil {
+			return keysetSealer, err
+		}
+		keySetUser.ImportFromPrivateKeyByte(spendingKeyByte)
+		keysetSealer, _ = keySetUser.CreateSealerKeySet()
+		return keysetSealer, nil
+	} else {
+		return keysetSealer.DecodeToKeySet(self.SealerKeySet)
+	}
 }

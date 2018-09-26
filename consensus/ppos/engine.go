@@ -58,12 +58,12 @@ type chainsHeight struct {
 	sync.Mutex
 }
 type Config struct {
-	BlockChain       *blockchain.BlockChain
-	ChainParams      *blockchain.Params
-	blockGen         *BlkTmplGenerator
-	MemPool          *mempool.TxPool
-	ValidatorKeyPair cashec.KeyPair
-	Server           interface {
+	BlockChain      *blockchain.BlockChain
+	ChainParams     *blockchain.Params
+	blockGen        *BlkTmplGenerator
+	MemPool         *mempool.TxPool
+	ValidatorKeySet cashec.KeySetSealer
+	Server          interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -160,21 +160,17 @@ func New(Config *Config) *Engine {
 	}
 }
 
-func (self *Engine) StartSealer(sealerPrvKey string) {
+func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 	if self.sealerStarted {
 		Logger.log.Error("Sealer already started")
 		return
 	}
+	self.config.ValidatorKeySet = sealerKeySet
 
-	_, err := self.config.ValidatorKeyPair.Import(sealerPrvKey)
-	if err != nil {
-		Logger.log.Error("Can't import sealer's key!")
-		return
-	}
 	self.quitSealer = make(chan struct{})
 	self.validatorSigCh = make(chan blockSig)
 	self.sealerStarted = true
-	Logger.log.Info("Starting sealer with public key: " + base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey))
+	Logger.log.Info("Starting sealer with public key: " + base64.StdEncoding.EncodeToString(self.config.ValidatorKeySet.SpublicKey))
 
 	go func() {
 		// tempChainsHeight := make([]int, TOTAL_VALIDATORS)
@@ -221,13 +217,13 @@ func (self *Engine) StopSealer() {
 func (self *Engine) createBlock() (*blockchain.Block, error) {
 	Logger.log.Info("Start creating block...")
 	myChainID, _ := self.getMyChain()
-	newblock, err := self.config.blockGen.NewBlockTemplate(base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey), self.config.BlockChain, myChainID)
+	newblock, err := self.config.blockGen.NewBlockTemplate(base64.StdEncoding.EncodeToString(self.config.ValidatorKeySet.SpublicKey), self.config.BlockChain, myChainID)
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
 	newblock.Block.Header.ChainsHeight = self.validatedChainsHeight.Heights
 	newblock.Block.Header.ChainID = myChainID
-	newblock.Block.ChainLeader = base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey)
+	newblock.Block.ChainLeader = base64.StdEncoding.EncodeToString(self.config.ValidatorKeySet.SpublicKey)
 	newblock.Block.Header.NextCommittee = self.currentCommittee
 	sig, err := self.signData([]byte(newblock.Block.Hash().String()))
 	if err != nil {
@@ -262,8 +258,8 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 					continue
 				}
 				decPubkey, _ := base64.StdEncoding.DecodeString(validatorSig.Validator)
-				validatorKp := cashec.KeyPair{
-					PublicKey: decPubkey,
+				validatorKp := cashec.KeySetSealer{
+					SpublicKey: decPubkey,
 				}
 
 				decSig, _ := base64.StdEncoding.DecodeString(validatorSig.ValidatorSig)
@@ -323,7 +319,7 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 }
 
 func (self *Engine) signData(data []byte) (string, error) {
-	signatureByte, err := self.config.ValidatorKeyPair.Sign(data)
+	signatureByte, err := self.config.ValidatorKeySet.Sign(data)
 	if err != nil {
 		return "", errors.New("Can't sign data. " + err.Error())
 	}
@@ -344,8 +340,8 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 
 	// 2. Check whether signature of the block belongs to chain leader or not.
 	decPubkey, _ := base64.StdEncoding.DecodeString(block.ChainLeader)
-	k := cashec.KeyPair{
-		PublicKey: decPubkey,
+	k := cashec.KeySetSealer{
+		SpublicKey: decPubkey,
 	}
 	decSig, _ := base64.StdEncoding.DecodeString(block.ChainLeaderSig)
 	isValidSignature, err := k.Verify([]byte(strings.Join(block.Header.BlockCommitteeSigs, "")), decSig)
@@ -491,7 +487,7 @@ func (self *Engine) getMyChain() (byte, []string) {
 		if err != nil {
 			return TOTAL_VALIDATORS, []string{}
 		}
-		if base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey) == myChainCommittee[0] {
+		if base64.StdEncoding.EncodeToString(self.config.ValidatorKeySet.SpublicKey) == myChainCommittee[0] {
 			return idx, myChainCommittee
 		}
 	}
@@ -518,7 +514,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 			Reason:    err.Error(),
 			BlockHash: block.Hash().String(),
 			ChainID:   block.Header.ChainID,
-			Validator: base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey),
+			Validator: base64.StdEncoding.EncodeToString(self.config.ValidatorKeySet.SpublicKey),
 		}
 		dataByte, _ := invalidBlockMsg.JsonSerialize()
 		invalidBlockMsg.ValidatorSig, err = self.signData(dataByte)
@@ -543,7 +539,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 	}
 	blockSigMsg := wire.MessageBlockSig{
 		BlockHash:    block.Hash().String(),
-		Validator:    base64.StdEncoding.EncodeToString(self.config.ValidatorKeyPair.PublicKey),
+		Validator:    base64.StdEncoding.EncodeToString(self.config.ValidatorKeySet.SpublicKey),
 		ValidatorSig: sig,
 	}
 	peerID, err := peer2.IDB58Decode(msgBlock.SenderID)

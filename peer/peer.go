@@ -227,7 +227,6 @@ func (self *Peer) ConnCanceled(peer *Peer) {
 	_, ok := self.PeerConns[peer.PeerID.String()]
 	if ok {
 		delete(self.PeerConns, peer.PeerID.String())
-		self.PendingPeers[peer.PeerID.String()] = peer
 	}
 	Logger.log.Info("sdgdfgdfgdfg", self.PendingPeers, peer)
 	self.pendingPeersMutex.Lock()
@@ -323,22 +322,22 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 	go self.handleConnected(&peerConn)
 
-	timeOutVerAck := make(chan struct{})
-	time.AfterFunc(time.Second*10, func() {
-		if !peerConn.VerAckReceived() {
-			Logger.log.Infof("NewPeerConnection timeoutVerack timeout PEER ID %s", peerConn.PeerID.String())
-			timeOutVerAck <- struct{}{}
-		}
-	})
+	//timeOutVerAck := make(chan struct{})
+	//time.AfterFunc(time.Second*10, func() {
+	//	if !peerConn.VerAckReceived() {
+	//		Logger.log.Infof("NewPeerConnection timeoutVerack timeout PEER ID %s", peerConn.PeerID.String())
+	//		timeOutVerAck <- struct{}{}
+	//	}
+	//})
 
 	for {
 		select {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("NewPeerConnection Close Stream PEER ID %s", peerConn.PeerID.String())
 			return &peerConn, nil
-		case <-timeOutVerAck:
-			Logger.log.Infof("NewPeerConnection timeoutVerack PEER ID %s", peerConn.PeerID.String())
-			return &peerConn, nil
+		//case <-timeOutVerAck:
+		//	Logger.log.Infof("NewPeerConnection timeoutVerack PEER ID %s", peerConn.PeerID.String())
+		//	break
 		}
 	}
 
@@ -405,22 +404,22 @@ func (self *Peer) HandleStream(stream net.Stream) {
 
 	go self.handleConnected(&peerConn)
 
-	timeOutVerAck := make(chan struct{})
-	time.AfterFunc(time.Second*10, func() {
-		if !peerConn.VerAckReceived() {
-			Logger.log.Infof("HandleStream timeoutVerack timeout PEER ID %s", peerConn.PeerID.String())
-			timeOutVerAck <- struct{}{}
-		}
-	})
+	//timeOutVerAck := make(chan struct{})
+	//time.AfterFunc(time.Second*10, func() {
+	//	if !peerConn.VerAckReceived() {
+	//		Logger.log.Infof("HandleStream timeoutVerack timeout PEER ID %s", peerConn.PeerID.String())
+	//		timeOutVerAck <- struct{}{}
+	//	}
+	//})
 
 	for {
 		select {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("HandleStream close stream PEER ID %s", peerConn.PeerID.String())
 			return
-		case <-timeOutVerAck:
-			Logger.log.Infof("HandleStream timeoutVerack PEER ID %s", peerConn.PeerID.String())
-			return
+		//case <-timeOutVerAck:
+		//	Logger.log.Infof("HandleStream timeoutVerack PEER ID %s", peerConn.PeerID.String())
+		//	break
 		}
 	}
 }
@@ -506,8 +505,6 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 		peerConn.RetryCount += 1
 
 		if peerConn.RetryCount < maxRetryConn {
-			Logger.log.Infof("Retry New Peer Connection 1 %s", peerConn.Peer.PeerID)
-
 			peerConn.updateState(ConnPending)
 
 			_, err := peerConn.ListenerPeer.NewPeerConnection(peerConn.Peer)
@@ -515,8 +512,6 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 				go self.retryPeerConnection(peerConn)
 			}
 		} else {
-			Logger.log.Infof("Retry New Peer Connection 2 %s", peerConn.Peer.PeerID)
-
 			peerConn.updateState(ConnCanceled)
 
 			self.ConnCanceled(peerConn.Peer)
