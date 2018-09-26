@@ -109,7 +109,7 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
 	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+	var sizeDescs = uint64(max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
 	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
@@ -606,9 +606,9 @@ func GenerateProofForGenesisTx(
 ) (*Tx, error) {
 	// Generate JoinSplit key pair to act as a dummy key (since we don't sign genesis tx)
 	privateSignKey := [32]byte{1}
-	keyPair := &cashec.KeySet{}
-	keyPair.ImportFromPrivateKeyByte(privateSignKey[:])
-	sigPubKey := keyPair.PublicKey.Apk[:]
+	keySet := &cashec.KeySet{}
+	keySet.ImportFromPrivateKeyByte(privateSignKey[:])
+	sigPubKey := keySet.PublicKey.Apk[:]
 
 	tx := NewTxTemplate()
 	tx.JSPubKey = sigPubKey
