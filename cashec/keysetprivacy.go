@@ -45,13 +45,13 @@ func (self *KeySet) ImportFromPrivateKey(privateKey *client.SpendingKey) {
 	// self.SealerKeyPair.GenerateKey(self.PrivateKey[:])
 }
 
-func (self *KeySet) CreateSealerKeySet() (KeySetSealer, error) {
+func (self *KeySet) CreateSealerKeySet() (*KeySetSealer, error) {
 	var sealerKeySet KeySetSealer
 	sealerKeySet.GenerateKey(self.PrivateKey[:])
 	sealerKeySet.SpendingAddress = self.PublicKey.Apk
 	sealerKeySet.TransmissionKey = self.PublicKey.Pkenc
 	sealerKeySet.ReceivingKey = self.ReadonlyKey.Skenc
-	return sealerKeySet, nil
+	return &sealerKeySet, nil
 }
 
 // func (self *KeySet) GenerateSignKey() (client.PrivateKey, error){

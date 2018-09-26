@@ -868,6 +868,7 @@ func (self *config) GetSealerKeySet() (*cashec.KeySetSealer, error) {
 			return keysetSealer, err
 		}
 		keySetUser.ImportFromPrivateKeyByte(spendingKeyByte)
+		keysetSealer, _ = keySetUser.CreateSealerKeySet()
 		return keysetSealer, nil
 	} else {
 		return keysetSealer.DecodeToKeySet(self.SealerKeySet)
