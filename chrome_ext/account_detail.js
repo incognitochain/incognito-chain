@@ -1,3 +1,7 @@
+function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 window.onload = function () {
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
     xhr.open("POST", api_url);
@@ -71,7 +75,7 @@ function getbalance() {
             console.log(this.responseText.toString());
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null) {
-                document.getElementById("lb_balance").innerText = response.Result;
+                document.getElementById("lb_balance").innerText = numberWithCommas(response.Result);
             } else {
 
             }
