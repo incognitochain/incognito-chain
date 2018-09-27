@@ -70,6 +70,7 @@ type Config struct {
 		PushMessageToPeer(wire.Message, peer2.ID) error
 		GetChainState() error
 	}
+	FeeEstimator map[byte]*mempool.FeeEstimator
 }
 
 type blockSig struct {
@@ -570,10 +571,10 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 				return
 			}
 			self.UpdateChain(block)
-			//err = self.config.FeeEstimator.RegisterBlock(&block)
-			//if err != nil {
-			//	Logger.log.Error(err)
-			//}
+			err = self.config.FeeEstimator[block.Header.ChainID].RegisterBlock(block)
+			if err != nil {
+				Logger.log.Error(err)
+			}
 		}
 	} else {
 		//save block to cache
