@@ -553,7 +553,6 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 }
 
 func (self *Engine) OnBlockReceived(block *blockchain.Block) {
-	self.config.BlockChain.ProcessBlock(block)
 	if self.config.BlockChain.BestState[block.Header.ChainID].Height < block.Height {
 		if _, _, err := self.config.BlockChain.GetBlockHeightByBlockHash(block.Hash()); err != nil {
 			err := self.validateBlock(block)
@@ -561,7 +560,12 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 				Logger.log.Error(err)
 				return
 			}
+			self.config.BlockChain.ProcessBlock(block)
 			self.UpdateChain(block)
+			//err = self.config.FeeEstimator.RegisterBlock(&block)
+			//if err != nil {
+			//	Logger.log.Error(err)
+			//}
 		}
 	} else {
 		//save block to cache
@@ -628,7 +632,7 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 
 func (self *Engine) UpdateChain(block *blockchain.Block) {
 	// save block
-	self.config.BlockChain.StoreBlock(block)
+	//self.config.BlockChain.StoreBlock(block)
 	//self.FeeEstimator.RegisterBlock(block)
 
 	// save best state
