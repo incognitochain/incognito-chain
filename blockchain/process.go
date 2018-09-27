@@ -23,18 +23,17 @@ func (self *BlockChain) ProcessBlock(block *Block) (bool, bool, error) {
 	defer self.chainLock.Unlock()
 
 	blockHash := block.Hash()
-	Logger.log.Tracef("Processing block %v", blockHash)
+	Logger.log.Infof("Processing block %v", blockHash)
 
 	// The block must not already exist in the main chain or side chains.
 	exists, err := self.blockExists(blockHash)
-	if err != nil {
-		return false, false, err
-	}
+	//if err != nil {
+	//	return false, false, err
+	//}
 	if exists {
 		Logger.log.Infof("already have block %v", blockHash)
 		return false, false, nil
 	}
-
 	// TODO: privacy consensus checks:
 	// - Only first tx is coinbase (only one desc and reward >= 0)
 	// - All js desc's proofs are valid

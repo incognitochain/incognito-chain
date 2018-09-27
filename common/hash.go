@@ -30,12 +30,12 @@ func (hash *Hash) UnmarshalJSON(data []byte) error {
 String returns the Hash as the hexadecimal string of the byte-reversed
  hash.
 */
-func (hash *Hash) String() string {
-	tempHash := *hash
+func (hash Hash) String() string {
+	//tempHash := *hash
 	for i := 0; i < HashSize/2; i++ {
-		tempHash[i], tempHash[HashSize-1-i] = hash[HashSize-1-i], hash[i]
+		hash[i], hash[HashSize-1-i] = hash[HashSize-1-i], hash[i]
 	}
-	return hex.EncodeToString(tempHash[:])
+	return hex.EncodeToString(hash[:])
 }
 
 /**
@@ -81,7 +81,7 @@ func (hash *Hash) IsEqual(target *Hash) bool {
 	if &hash == nil || target == nil {
 		return false
 	}
-	return *hash == *target
+	return hash.String() == target.String()
 }
 
 /**

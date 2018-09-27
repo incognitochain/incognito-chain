@@ -616,34 +616,38 @@ func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string, chainId byte)
 func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 	// We are extending the main (best) chain with a new block.  This is the
 	// most common case.
-	parentHash := &block.Header.PrevBlockHash
-	if parentHash.IsEqual(b.BestState[block.Header.ChainID].BestBlockHash) {
-		view := NewTxViewPoint(block.Header.ChainID)
+	//parentHash := &block.Header.PrevBlockHash
+	Logger.log.Info("111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111")
+	//if parentHash.IsEqual(b.BestState[block.Header.ChainID].BestBlockHash) {
+	view := NewTxViewPoint(block.Header.ChainID)
 
-		err := view.fetchTxViewPoint(b.Config.DataBase, block)
-		if err != nil {
-			return false, err
-		}
-
-		view.SetBestHash(block.Hash())
-		// Update the list nullifiers and commitment set using the state of the used tx view point. This
-		// entails adding the new
-		// ones created by the block.
-		err = b.StoreNullifiersFromTxViewPoint(*view)
-		if err != nil {
-			return false, err
-		}
-
-		err = b.StoreCommitmentsFromTxViewPoint(*view)
-		if err != nil {
-			return false, err
-		}
-
-		return true, nil
-	} else {
-		// we in sub chain
-		return false, nil
+	err := view.fetchTxViewPoint(b.Config.DataBase, block)
+	if err != nil {
+		return false, err
 	}
+
+	view.SetBestHash(block.Hash())
+	// Update the list nullifiers and commitment set using the state of the used tx view point. This
+	// entails adding the new
+	// ones created by the block.
+	Logger.log.Info("444444444444444444444444444444444444444444444444444444444444444444")
+	err = b.StoreNullifiersFromTxViewPoint(*view)
+	if err != nil {
+		return false, err
+	}
+
+	Logger.log.Info("5555555555555555555555555555555555555555555555555555555555555555555555")
+	err = b.StoreCommitmentsFromTxViewPoint(*view)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+	//} else {
+	//	Logger.log.Info("222222222222222222222222222222222222222222222222222222222222")
+	//	// we in sub chain
+	//	return false, nil
+	//}
 }
 
 // countSpentOutputs returns the number of utxos the passed block spends.

@@ -560,7 +560,15 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 				Logger.log.Error(err)
 				return
 			}
-			self.config.BlockChain.ProcessBlock(block)
+			isMainChain, ok, err := self.config.BlockChain.ProcessBlock(block)
+			_ = isMainChain
+			_ = ok
+			if err != nil {
+				Logger.log.Info("---------------------------------------------------------------------------------------------------------")
+				Logger.log.Error(err)
+				Logger.log.Info("---------------------------------------------------------------------------------------------------------")
+				return
+			}
 			self.UpdateChain(block)
 			//err = self.config.FeeEstimator.RegisterBlock(&block)
 			//if err != nil {

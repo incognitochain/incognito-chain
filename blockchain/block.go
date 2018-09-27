@@ -196,7 +196,7 @@ func (self Block) Hash() *common.Hash {
 		string(self.Header.ChainID) +
 		self.Header.MerkleRoot.String() +
 		self.Header.MerkleRootCommitments.String() +
-		strconv.FormatInt(self.Header.Timestamp, 10) +
+	//strconv.FormatInt(self.Header.Timestamp, 10) +
 		self.Header.PrevBlockHash.String() +
 		strconv.Itoa(self.Header.Nonce) +
 		strconv.Itoa(len(self.Transactions))
