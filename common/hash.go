@@ -14,7 +14,7 @@ var ErrHashStrSize = fmt.Errorf("max hash string length is %v bytes", MaxHashStr
 
 type Hash [HashSize]byte
 
-func (hash *Hash) MarshalJSON() ([]byte, error) {
+func (hash Hash) MarshalJSON() ([]byte, error) {
 	hashString := hash.String()
 	return json.Marshal(hashString)
 }
@@ -31,7 +31,6 @@ String returns the Hash as the hexadecimal string of the byte-reversed
  hash.
 */
 func (hash Hash) String() string {
-	//tempHash := *hash
 	for i := 0; i < HashSize/2; i++ {
 		hash[i], hash[HashSize-1-i] = hash[HashSize-1-i], hash[i]
 	}
