@@ -60,7 +60,7 @@ bool path_string_to_bools(const string &data, vector<bool> &result)
     result.resize(data.size() * 8);
     for (int i = 0; i < data.size(); ++i)
         for (int j = 0; j < 8; ++j)
-            result[i * 8 + j] = bool((data_mem[i] >> (7-j)) & 1); // 7-j since each byte must be convert to MSB
+            result[i * 8 + j] = bool((data_mem[i] >> (7 - j)) & 1); // 7-j since each byte must be convert to MSB
     return true;
 }
 
@@ -196,7 +196,8 @@ bool transform_prove_request(const ProveRequest *request,
 
     // Convert rt
     i = 0;
-    for (auto &rt: request->rts()) {
+    for (auto &rt : request->rts())
+    {
         success &= string_to_uint256(rt, rts[i++]);
     }
 
@@ -307,7 +308,8 @@ bool transform_verify_request(const VerifyRequest *request,
 
     // Convert rt
     int i = 0;
-    for (auto &rt: request->rts()) {
+    for (auto &rt : request->rts())
+    {
         success &= string_to_uint256(rt, rts[i++]);
     }
 
@@ -334,7 +336,8 @@ int print_proof_inputs(const std::array<libzcash::JSInput, ZC_NUM_JS_INPUTS> &in
                        bool computeProof)
 {
     cout << "Printing Proof's input" << '\n';
-    for (auto &input: inputs) {
+    for (auto &input : inputs)
+    {
         cout << "input.key: " << input.key.inner().GetHex() << '\n';
         cout << "input.value: " << input.note.value() << '\n';
         cout << "input.note.a_pk: " << input.note.a_pk.GetHex() << '\n';
@@ -343,7 +346,8 @@ int print_proof_inputs(const std::array<libzcash::JSInput, ZC_NUM_JS_INPUTS> &in
         cout << "input.note.cm: " << input.note.cm.GetHex() << '\n';
         cout << "input.note.nf: " << input.note.nf.GetHex() << '\n';
     }
-    for (auto &output: out_notes) {
+    for (auto &output : out_notes)
+    {
         cout << "output.value: " << output.value() << '\n';
         cout << "output.a_pk: " << output.a_pk.GetHex() << '\n';
         cout << "output.r: " << output.r.GetHex() << '\n';
@@ -351,7 +355,8 @@ int print_proof_inputs(const std::array<libzcash::JSInput, ZC_NUM_JS_INPUTS> &in
         cout << "output.cm: " << output.cm.GetHex() << '\n';
         cout << "output.nf: " << output.nf.GetHex() << '\n';
     }
-    for (auto &rt: rts) {
+    for (auto &rt : rts)
+    {
         cout << "rt: " << rt.GetHex() << '\n';
     }
 
@@ -386,8 +391,10 @@ class ZksnarkImpl final : public Zksnark::Service
         uint64_t vpub_old = reward;
         uint64_t vpub_new = fee;
         print_proof_inputs(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, address_last_byte, compute_proof);
-        auto proof = js->prove(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, address_last_byte, compute_proof);
-//         libzcash::PHGRProof proof;
+        // production make real proof
+         auto proof = js->prove(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, address_last_byte, compute_proof);
+        // testing make default proof
+    //    libzcash::PHGRProof proof;
         print_proof(proof);
 
         zksnark::PHGRProof *zk_proof = new zksnark::PHGRProof();
@@ -441,11 +448,13 @@ void RunServer(string &verifying_key, string &proving_key)
     server->Wait();
 }
 
-int test_merkle_tree() {
+int test_merkle_tree()
+{
     uint256 x, y;
     bool ok = string_to_uint256("d26356e6f726dfb4c0a395f3af134851139ce1c64cfed3becc3530c8c8ad5660", x);
     ok &= string_to_uint256("5aaf71f995db014006d630dedf7ffcbfa8854055e6a8cc9ef153629e3045b7e1", y);
-    if (!ok) {
+    if (!ok)
+    {
         cout << "Fail to parse hash\n";
         return 0;
     }

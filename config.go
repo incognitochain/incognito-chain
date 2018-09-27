@@ -18,7 +18,6 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 )
 
@@ -705,7 +704,7 @@ func loadConfig() (*config, []string, error) {
 
 	// Ensure there is at least one mining address when the generate flag is
 	// set.
-	if cfg.Generate && len(cfg.SealerKeySet) == 0 && len(cfg.SealerKeySet) == 0 {
+	if cfg.Generate && len(cfg.SealerKeySet) == 0 && len(cfg.SealerSpendingKey) == 0 {
 		str := "%s: the generate flag is set, but there are no sealer's key " +
 			"specified "
 		err := fmt.Errorf(str, funcName)
@@ -858,15 +857,16 @@ func parseAndSetDebugLevels(debugLevel string) error {
 }
 
 func (self *config) GetSealerKeySet() (*cashec.KeySetSealer, error) {
-	var keysetSealer *cashec.KeySetSealer
+	keysetSealer := &cashec.KeySetSealer{}
 	if len(self.SealerSpendingKey) != 0 {
 		Logger.log.Warn("!!NOT RECOMMENDED TO USE SPENDING KEY!!")
 		keySetUser := cashec.KeySet{}
-		base85C := base58.Base58Check{}
-		spendingKeyByte, _, err := base85C.Decode(self.SealerSpendingKey)
-		if err != nil {
-			return keysetSealer, err
-		}
+		spendingKeyByte, _ := base64.StdEncoding.DecodeString(self.SealerSpendingKey)
+		// base58C := base58.Base58Check{}
+		// spendingKeyByte, _, err := base58C.Decode(sealerB64)
+		// if err != nil {
+		// 	return keysetSealer, err
+		// }
 		keySetUser.ImportFromPrivateKeyByte(spendingKeyByte)
 		keysetSealer, _ = keySetUser.CreateSealerKeySet()
 		return keysetSealer, nil

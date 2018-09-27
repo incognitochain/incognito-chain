@@ -33,8 +33,7 @@ type BlockHeader struct {
 
 	// POS
 	BlockCommitteeSigs []string //Include sealer and validators signature
-	NextCommittee      []string //Voted committee for the next block
-	BlockCommittee     map[string]string
+	Committee          []string //Voted committee for the next block
 	// Parallel PoS
 	ChainID      byte
 	ChainsHeight []int //height of 20 chain when this block is created

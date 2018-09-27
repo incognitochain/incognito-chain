@@ -606,9 +606,9 @@ func GenerateProofForGenesisTx(
 ) (*Tx, error) {
 	// Generate JoinSplit key pair to act as a dummy key (since we don't sign genesis tx)
 	privateSignKey := [32]byte{1}
-	keyPair := &cashec.KeySet{}
-	keyPair.ImportFromPrivateKeyByte(privateSignKey[:])
-	sigPubKey := keyPair.PublicKey.Apk[:]
+	keySet := &cashec.KeySet{}
+	keySet.ImportFromPrivateKeyByte(privateSignKey[:])
+	sigPubKey := keySet.PublicKey.Apk[:]
 
 	addressLastByte := byte(0) // Sender of genesis tx is defaulted to be in chain 0
 	tx := NewTxTemplate()

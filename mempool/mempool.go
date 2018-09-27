@@ -240,7 +240,6 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 // remove transaction for pool
 func (tp *TxPool) removeTx(tx *transaction.Transaction) error {
 	Logger.log.Infof((*tx).Hash().String())
-	tp.mtx.Lock()
 	if _, exists := tp.pool[*(*tx).Hash()]; exists {
 		delete(tp.pool, *(*tx).Hash())
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
@@ -248,7 +247,6 @@ func (tp *TxPool) removeTx(tx *transaction.Transaction) error {
 	} else {
 		return errors.New("Not exist tx in pool")
 	}
-	tp.mtx.Unlock()
 	return nil
 }
 

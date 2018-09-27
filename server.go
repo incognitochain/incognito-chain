@@ -199,6 +199,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 		BlockChain:  self.BlockChain,
 		MemPool:     self.MemPool,
 		Server:      self,
+		FeeEstimator: self.FeeEstimator,
 	})
 
 	// Init Net Sync manager to process messages

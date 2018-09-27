@@ -23,8 +23,8 @@ func (self *BlockChain) maybeAcceptBlock(block *Block) (bool, error) {
 		return false, ruleError(ErrPreviousBlockUnknown, str)
 	}
 
-	blockHeight := prevNode.Height + 1
-	block.Height = blockHeight
+	//blockHeight := prevNode.Height + 1
+	//block.Height = blockHeight
 
 	// Insert the block into the database if it's not already there.  Even
 	// though it is possible the block will ultimately fail to connect, it
