@@ -18,9 +18,10 @@ window.onload = function () {
                 dumpprivkey(response.Result.PublicKey)
                 getbalance();
             } else {
-
+                alert('Bad response');
             }
         } else {
+            alert('Network error');
         }
     };
     var url = new URL(window.location.href);
@@ -49,9 +50,14 @@ function dumpprivkey(publicKey) {
             if (response.Result != null) {
                 document.getElementById("lb_privateKey").innerText = response.Result.PrivateKey;
             } else {
-
+                if (response.Error != null) {
+                    alert(response.Error.message);
+                } else {
+                    alert('Bad response');
+                }
             }
         } else {
+            alert('Network error');
         }
     };
     xhr.send(JSON.stringify({
@@ -77,9 +83,14 @@ function getbalance() {
             if (response.Result != null) {
                 document.getElementById("lb_balance").innerText = numberWithCommas(response.Result);
             } else {
-
+                if (response.Error != null) {
+                    alert(response.Error.message);
+                } else {
+                    alert('Bad response');
+                }
             }
         } else {
+            alert('Network error');
         }
     };
     xhr.send(JSON.stringify({
@@ -120,9 +131,12 @@ function sendmany() {
             } else {
                 if (response.Error != null) {
                     alert(response.Error.message)
+                } else {
+                    alert('Bad response');
                 }
             }
         } else {
+            alert('Network error')
         }
     };
     var dest = {};

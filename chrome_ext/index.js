@@ -57,9 +57,12 @@ function loadListAccount() {
             } else {
                 if (response.Error != null) {
                     alert(response.Error.message)
+                } else {
+                    alert('Bad response');
                 }
             }
         } else {
+            alert('Network error');
         }
     };
     xhr.send(JSON.stringify({
@@ -105,9 +108,12 @@ function newAccount() {
             } else {
                 if (response.Error != null) {
                     alert(response.Error.message)
+                } else {
+                    alert('Bad response');
                 }
             }
         } else {
+            alert('Network error');
         }
     };
     xhr.send(JSON.stringify({
@@ -139,9 +145,12 @@ function importAccount() {
             } else {
                 if (response.Error != null) {
                     alert(response.Error.message)
+                } else {
+                    alert('Bad response');
                 }
             }
         } else {
+            alert('Network error');
         }
     };
     xhr.send(JSON.stringify({
