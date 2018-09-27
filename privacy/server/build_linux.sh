@@ -41,14 +41,14 @@ ldconfig # refresh shared library cache.
 cd ..
 
 # install lib protobuf-compiler
-echo "install protobuf-compiler... "
-echo "apt install protobuf-compiler -y"
-apt install protobuf-compiler -y
+#echo "install protobuf-compiler... "
+#echo "apt install protobuf-compiler -y"
+#apt install protobuf-compiler -y
 
 # install lib protobuf-c
-echo "install protobuf-c ... "
-echo "apt install protobuf-c-compiler -y"
-apt install protobuf-c-compiler -y
+#echo "install protobuf-c ... "
+#echo "apt install protobuf-c-compiler -y"
+#apt install protobuf-c-compiler -y
 
 # install lib cmake
 echo "install cmake ... "
@@ -80,5 +80,3 @@ then
 else
 	wget https://github.com/ninjadotorg/cash-prototype/releases/download/zkpp-v0.0.2/verifying.key
 fi
-
-./main
