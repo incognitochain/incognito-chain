@@ -18,7 +18,11 @@ window.onload = function () {
                 dumpprivkey(response.Result.PublicKey)
                 getbalance();
             } else {
-                alert('Bad response');
+                if (response.Error != null) {
+                    alert(response.Error.message);
+                } else {
+                    alert('Bad response');
+                }
             }
         } else {
             alert('Network error');
