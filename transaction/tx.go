@@ -610,7 +610,11 @@ func GenerateProofForGenesisTx(
 	keySet.ImportFromPrivateKeyByte(privateSignKey[:])
 	sigPubKey := keySet.PublicKey.Apk[:]
 
-	addressLastByte := byte(0) // Sender of genesis tx is defaulted to be in chain 0
+	// Get last byte of genesis sender's address
+	tempKeySet := cashec.KeySet{}
+	tempKeySet.ImportFromPrivateKey(inputs[0].Key)
+	addressLastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
+
 	tx := NewTxTemplate()
 	tx.JSPubKey = sigPubKey
 	tx.AddressLastByte = addressLastByte

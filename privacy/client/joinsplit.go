@@ -140,7 +140,7 @@ func Prove(inputs []*JSInput,
 	fmt.Printf("Anchor: %x\n", rts)
 	fmt.Printf("reward: %v\n", reward)
 	fmt.Printf("fee: %v\n", fee)
-	fmt.Printf("last byte: %v\n", addressLastByte)
+	fmt.Printf("last byte: %d\n", addressLastByte)
 	for i, zkinput := range zkInputs {
 		fmt.Printf("zkInputs[%d].SpendingKey: %x\n", i, zkinput.SpendingKey)
 		fmt.Printf("zkInputs[%d].Note.Value: %v\n", i, zkinput.Note.Value)
