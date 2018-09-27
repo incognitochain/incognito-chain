@@ -205,7 +205,10 @@ func CreateTx(
 
 	// Create tx before adding js descs
 	tx := NewTxTemplate()
-	tx.AddressLastByte = senderChainID
+	tempKeySet := cashec.KeySet{}
+	tempKeySet.ImportFromPrivateKey(senderKey)
+	lastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
+	tx.AddressLastByte = lastByte
 	var latestAnchor map[byte][]byte
 
 	for len(inputNotes) > 0 || len(paymentInfo) > 0 {
@@ -603,9 +606,9 @@ func GenerateProofForGenesisTx(
 ) (*Tx, error) {
 	// Generate JoinSplit key pair to act as a dummy key (since we don't sign genesis tx)
 	privateSignKey := [32]byte{1}
-	keyPair := &cashec.KeySet{}
-	keyPair.ImportFromPrivateKeyByte(privateSignKey[:])
-	sigPubKey := keyPair.PublicKey.Apk[:]
+	keySet := &cashec.KeySet{}
+	keySet.ImportFromPrivateKeyByte(privateSignKey[:])
+	sigPubKey := keySet.PublicKey.Apk[:]
 
 	tx := NewTxTemplate()
 	tx.JSPubKey = sigPubKey

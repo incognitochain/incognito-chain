@@ -50,6 +50,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 
 	// blockTxns := append([]transaction.Transaction{coinbaseTx}, txs...)
 	receiverKeyset, _ := wallet.Base58CheckDeserialize(payToAddress)
+	_ = receiverKeyset
 
 	var txsToAdd []transaction.Transaction
 
@@ -131,12 +132,12 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	}
 
 	rt := g.chain.BestState[chainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
-	coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, &receiverKeyset.KeySet.PublicKey, map[string]uint64{}, rt, chainID)
-	if err != nil {
-		return nil, err
-	}
-	// the 1st tx will be coinbaseTx
-	txsToAdd = append([]transaction.Transaction{coinbaseTx}, txsToAdd...)
+	//coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, &receiverKeyset.KeySet.PublicKey, map[string]uint64{}, rt, chainID)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//// the 1st tx will be coinbaseTx
+	//txsToAdd = append([]transaction.Transaction{coinbaseTx}, txsToAdd...)
 
 	merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(txsToAdd)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
@@ -181,7 +182,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 		Difficulty:            0, //@todo should be create Difficulty logic
 		Nonce:                 0, //@todo should be create Nonce logic
 		BlockCommitteeSigs:    []string{},
-		NextCommittee:         []string{},
+		Committee:             []string{},
 		ChainID:               chainID,
 	}
 	for _, tx := range txsToAdd {

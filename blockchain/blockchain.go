@@ -152,7 +152,7 @@ func (self *BlockChain) createChainState(chainID byte) error {
 		initBlock = &Block{}
 		initBlock.Header.ChainID = chainID
 		initBlock.Header.Timestamp = self.Config.ChainParams.GenesisBlock.Header.Timestamp
-		initBlock.Header.NextCommittee = self.Config.ChainParams.GenesisBlock.Header.NextCommittee
+		initBlock.Header.Committee = self.Config.ChainParams.GenesisBlock.Header.Committee
 	}
 	initBlock.Height = 1
 
@@ -776,19 +776,24 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 	// lock chain
 	self.chainLock.Lock()
 
+	// get list nullifiers from db to check spending
+	nullifiersInDb := make([][]byte, 0)
+	for _, bestState := range self.BestState {
+		bestBlock := bestState.BestBlock
+		chainId := bestBlock.Header.ChainID
+		txViewPoint, err := self.FetchTxViewPoint(typeJoinSplitDesc, chainId)
+		if err != nil {
+			return nil, err
+		}
+		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers[typeJoinSplitDesc]...)
+	}
+
 	for _, bestState := range self.BestState {
 		// get best blockFs
 		bestBlock := bestState.BestBlock
 		chainId := bestBlock.Header.ChainID
 		results[chainId] = make([]transaction.Tx, 0)
 		blockHeight := bestBlock.Height
-
-		// get list nullifiers from db to check spending
-		txViewPoint, err := self.FetchTxViewPoint(typeJoinSplitDesc, chainId)
-		if err != nil {
-			return nil, err
-		}
-		nullifiersInDb := txViewPoint.listNullifiers[typeJoinSplitDesc]
 
 		for blockHeight > 0 {
 			txsInBlock := bestBlock.Transactions
@@ -867,6 +872,9 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 
 			// continue with previous block
 			blockHeight--
+			if chainId != 0 && blockHeight == 1 {
+				break
+			}
 			if blockHeight > 0 {
 				// not is genesis block
 				preBlockHash := bestBlock.Header.PrevBlockHash
