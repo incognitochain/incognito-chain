@@ -38,14 +38,14 @@ function loadListAccount() {
 
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
-                accounts = response.Result.Accounts;
+                var accounts = response.Result.Accounts;
                 removeChilds('list_account')
                 accountTotal = 0;
                 for (var key in accounts) {
 
                     console.log(accounts)
 
-                    balance = accounts[key];
+                    var balance = accounts[key];
                     var li = document.createElement('li');
                     li.innerHTML = '<a href="account_detail.html?account=' + key + '">' + key + ' (' + balance + ')' + '</a>'
                     li.classList = "list-group-item"
