@@ -553,6 +553,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 }
 
 func (self *Engine) OnBlockReceived(block *blockchain.Block) {
+	self.config.BlockChain.ProcessBlock(block)
 	if self.config.BlockChain.BestState[block.Header.ChainID].Height < block.Height {
 		if _, _, err := self.config.BlockChain.GetBlockHeightByBlockHash(block.Hash()); err != nil {
 			err := self.validateBlock(block)
@@ -627,20 +628,17 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 
 func (self *Engine) UpdateChain(block *blockchain.Block) {
 	// save block
-	Logger.log.Infof("1111111111111111111111111111111111111111111111111111111111111111111111")
 	self.config.BlockChain.StoreBlock(block)
 	//self.FeeEstimator.RegisterBlock(block)
-	Logger.log.Infof("04040346034075789349873489634893489 73849 7389473890478349789043798034780437894398")
+
 	// save best state
 	newBestState := &blockchain.BestState{}
 	// numTxns := uint64(len(block.Transactions))
 	for _, tx := range block.Transactions {
 		self.config.MemPool.RemoveTx(tx)
 	}
-	Logger.log.Infof("222222222222222222222222222222222222222222222222222222222222")
 	tree := self.config.BlockChain.BestState[block.Header.ChainID].CmTree
 	blockchain.UpdateMerkleTreeForBlock(tree, block)
-	Logger.log.Infof("333333333333333333333333333333333333333333333333333333")
 	newBestState.Init(block, tree)
 	self.config.BlockChain.BestState[block.Header.ChainID] = newBestState
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)
