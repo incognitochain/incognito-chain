@@ -63,7 +63,7 @@ type Config struct {
 	blockGen        *BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server          interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -627,17 +627,20 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 
 func (self *Engine) UpdateChain(block *blockchain.Block) {
 	// save block
+	Logger.log.Infof("1111111111111111111111111111111111111111111111111111111111111111111111")
 	self.config.BlockChain.StoreBlock(block)
-
+	//self.FeeEstimator.RegisterBlock(block)
+	Logger.log.Infof("04040346034075789349873489634893489 73849 7389473890478349789043798034780437894398")
 	// save best state
 	newBestState := &blockchain.BestState{}
 	// numTxns := uint64(len(block.Transactions))
 	for _, tx := range block.Transactions {
 		self.config.MemPool.RemoveTx(tx)
 	}
+	Logger.log.Infof("222222222222222222222222222222222222222222222222222222222222")
 	tree := self.config.BlockChain.BestState[block.Header.ChainID].CmTree
 	blockchain.UpdateMerkleTreeForBlock(tree, block)
-
+	Logger.log.Infof("333333333333333333333333333333333333333333333333333333")
 	newBestState.Init(block, tree)
 	self.config.BlockChain.BestState[block.Header.ChainID] = newBestState
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)
