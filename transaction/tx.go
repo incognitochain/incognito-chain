@@ -109,7 +109,7 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
 	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+	var sizeDescs = uint64(max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
 	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
@@ -259,7 +259,7 @@ func CreateTx(
 			input.InputNote = createDummyNote(senderKey)
 			input.Key = senderKey
 			input.WitnessPath = (&client.MerklePath{}).CreateDummyPath() // No need to build commitment merkle path for dummy note
-			dummyNoteChainID := byte(0)                                  // Default chain for dummy note
+			dummyNoteChainID := senderChainID                            // Dummy note's chain is the same as sender's
 			inputs[dummyNoteChainID] = append(inputs[dummyNoteChainID], input)
 			numInputNotes++
 			fmt.Printf("Add dummy input note\n")
@@ -297,9 +297,9 @@ func CreateTx(
 			}
 		}
 		latestAnchor = newRts
-		// Add dummy anchor for dummy note
-		if len(latestAnchor[byte(0)]) == 0 {
-			latestAnchor[byte(0)] = make([]byte, 32)
+		// Add dummy anchor to for dummy inputs
+		if len(latestAnchor[senderChainID]) == 0 {
+			latestAnchor[senderChainID] = make([]byte, 32)
 		}
 
 		// Choose output notes for the js desc
@@ -419,7 +419,7 @@ func (tx *Tx) BuildNewJSDesc(
 
 	var seed, phi []byte
 	var outputR [][]byte
-	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rts, reward, fee, seed, phi, outputR)
+	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rts, reward, fee, seed, phi, outputR, tx.AddressLastByte)
 	if err != nil {
 		return err
 	}
@@ -610,12 +610,25 @@ func GenerateProofForGenesisTx(
 	keyPair.ImportFromPrivateKeyByte(privateSignKey[:])
 	sigPubKey := keyPair.PublicKey.Apk[:]
 
+	addressLastByte := byte(0) // Sender of genesis tx is defaulted to be in chain 0
 	tx := NewTxTemplate()
 	tx.JSPubKey = sigPubKey
+	tx.AddressLastByte = addressLastByte
 	fmt.Printf("JSPubKey: %x\n", tx.JSPubKey)
 
 	var fee uint64 // Zero fee for genesis tx
-	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rts, reward, fee, seed, phi, outputR)
+	proof, hSig, seed, phi, err := client.Prove(
+		inputs,
+		outputs,
+		tx.JSPubKey,
+		rts,
+		reward,
+		fee,
+		seed,
+		phi,
+		outputR,
+		addressLastByte,
+	)
 	if err != nil {
 		return nil, err
 	}

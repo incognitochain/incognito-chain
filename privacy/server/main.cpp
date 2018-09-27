@@ -131,7 +131,8 @@ bool transform_prove_request(const ProveRequest *request,
                              uint252 &phi,
                              RtArray &rts,
                              uint64_t &reward,
-                             uint64_t &fee)
+                             uint64_t &fee,
+                             unsigned char &address_last_byte)
 {
     if (request->inputs_size() != ZC_NUM_JS_INPUTS || request->outnotes_size() != ZC_NUM_JS_OUTPUTS)
         return false;
@@ -189,26 +190,24 @@ bool transform_prove_request(const ProveRequest *request,
 
     // Convert hsig
     success &= string_to_uint256(request->hsig(), hsig);
-    cout << "hsig: " << hsig.GetHex() << '\n';
 
     // Convert phi
     success &= string_to_uint252(request->phi(), phi);
-    cout << "phi: " << phi.inner().GetHex() << '\n';
 
     // Convert rt
     i = 0;
     for (auto &rt: request->rts()) {
         success &= string_to_uint256(rt, rts[i++]);
-        cout << "rt: " << rts[i].GetHex() << '\n';
     }
 
     // Convert reward
     reward = request->reward();
-    cout << "reward: " << reward << '\n';
 
     // Convert fee
     fee = request->fee();
-    cout << "fee: " << fee << '\n';
+
+    // Convert address last byte
+    address_last_byte = request->addresslastbyte() & ((1 << 8) - 1);
 
     return success;
 }
@@ -256,7 +255,8 @@ bool transform_verify_request(const VerifyRequest *request,
                               uint256 &hsig,
                               RtArray &rts,
                               uint64_t &reward,
-                              uint64_t &fee)
+                              uint64_t &fee,
+                              unsigned char &address_last_byte)
 {
     if (request->nullifiers_size() != ZC_NUM_JS_INPUTS || request->commits_size() != ZC_NUM_JS_OUTPUTS)
         return false;
@@ -304,13 +304,11 @@ bool transform_verify_request(const VerifyRequest *request,
 
     // Convert hsig
     success &= string_to_uint256(request->hsig(), hsig);
-    cout << "hsig: " << hsig.GetHex() << '\n';
 
     // Convert rt
     int i = 0;
     for (auto &rt: request->rts()) {
         success &= string_to_uint256(rt, rts[i++]);
-        cout << "rt: " << rts[i].GetHex() << '\n';
     }
 
     // Convert reward
@@ -318,6 +316,9 @@ bool transform_verify_request(const VerifyRequest *request,
 
     // Convert fee
     fee = request->fee();
+
+    // Convert address last byte
+    address_last_byte = request->addresslastbyte() & ((1 << 8) - 1);
 
     return success;
 }
@@ -329,6 +330,7 @@ int print_proof_inputs(const std::array<libzcash::JSInput, ZC_NUM_JS_INPUTS> &in
                        const RtArray &rts,
                        uint256 &h_sig,
                        uint252 &phi,
+                       unsigned char &address_last_byte,
                        bool computeProof)
 {
     cout << "Printing Proof's input" << '\n';
@@ -357,6 +359,7 @@ int print_proof_inputs(const std::array<libzcash::JSInput, ZC_NUM_JS_INPUTS> &in
     cout << "vpub_new: " << vpub_new << '\n';
     cout << "h_sig: " << h_sig.GetHex() << '\n';
     cout << "phi: " << phi.inner().GetHex() << '\n';
+    cout << "address_last_byte: " << address_last_byte << '\n';
     cout << "computeProof: " << computeProof << '\n';
     return 0;
 }
@@ -372,7 +375,8 @@ class ZksnarkImpl final : public Zksnark::Service
         uint252 phi;
         RtArray rts;
         uint64_t reward, fee;
-        bool success = transform_prove_request(request, inputs, out_notes, hsig, phi, rts, reward, fee);
+        unsigned char address_last_byte = 0;
+        bool success = transform_prove_request(request, inputs, out_notes, hsig, phi, rts, reward, fee, address_last_byte);
         cout << "transform_prove_request status: " << success << '\n';
 
         if (!success)
@@ -381,8 +385,8 @@ class ZksnarkImpl final : public Zksnark::Service
         bool compute_proof = true;
         uint64_t vpub_old = reward;
         uint64_t vpub_new = fee;
-        print_proof_inputs(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, compute_proof);
-        auto proof = js->prove(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, compute_proof);
+        print_proof_inputs(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, address_last_byte, compute_proof);
+        auto proof = js->prove(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, address_last_byte, compute_proof);
 //         libzcash::PHGRProof proof;
         print_proof(proof);
 
@@ -404,14 +408,15 @@ class ZksnarkImpl final : public Zksnark::Service
         CommitmentArray commitments;
         NullifierArray macs;
         uint64_t reward, fee;
-        bool success = transform_verify_request(request, proof, nullifiers, commitments, macs, hsig, rts, reward, fee);
+        unsigned char address_last_byte = 0;
+        bool success = transform_verify_request(request, proof, nullifiers, commitments, macs, hsig, rts, reward, fee, address_last_byte);
         cout << "transform_verify_request status: " << success << '\n';
 
         uint64_t vpub_old = reward;
         uint64_t vpub_new = fee;
         bool valid = false;
         if (success)
-            valid = js->verify(proof, macs, nullifiers, commitments, vpub_old, vpub_new, rts, hsig);
+            valid = js->verify(proof, macs, nullifiers, commitments, vpub_old, vpub_new, rts, hsig, address_last_byte);
         reply->set_valid(valid);
         return Status::OK;
     }
@@ -456,7 +461,7 @@ int test_merkle_tree() {
 }
 
 int generate_params() {
-    ZCJoinSplit::Generate("/tmp/r1cs.params", "/tmp/verifying.key", "/tmp/proving.key");
+    ZCJoinSplit::Generate("/tmp/r1cs.params", "/tmp/verifying-lastbyte.key", "/tmp/proving-lastbyte.key");
     return 0;
 }
 
@@ -471,6 +476,6 @@ int main(int argc, char const *argv[])
         verifying_key = string(argv[1]);
         proving_key = string(argv[2]);
     }
-    RunServer(proving_key, verifying_key);
+    RunServer(verifying_key, proving_key);
     return 0;
 }

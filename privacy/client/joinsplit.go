@@ -45,6 +45,7 @@ func Prove(inputs []*JSInput,
 	reward, fee uint64,
 	seed, phi []byte,
 	outputR [][]byte,
+	addressLastByte byte,
 ) (proof *zksnark.PHGRProof, hSig, newSeed, newPhi []byte, err error) {
 	// Check balance between input and output
 	totalInput := reward
@@ -125,19 +126,21 @@ func Prove(inputs []*JSInput,
 	zkNotes := Notes2ZksnarkNotes(outNotes)
 	zkInputs := JSInputs2ZkInputs(inputs)
 	var proveRequest = &zksnark.ProveRequest{
-		Hsig:     hSig,
-		Phi:      newPhi,
-		Rts:      rts,
-		OutNotes: zkNotes,
-		Inputs:   zkInputs,
-		Reward:   reward,
-		Fee:      fee,
+		Hsig:            hSig,
+		Phi:             newPhi,
+		Rts:             rts,
+		OutNotes:        zkNotes,
+		Inputs:          zkInputs,
+		Reward:          reward,
+		Fee:             fee,
+		AddressLastByte: uint32(addressLastByte),
 	}
 	// fmt.Printf("proveRequest: %v\n", proveRequest)
 	fmt.Printf("key: %x\n", proveRequest.Inputs[0].SpendingKey)
 	fmt.Printf("Anchor: %x\n", rts)
 	fmt.Printf("reward: %v\n", reward)
 	fmt.Printf("fee: %v\n", fee)
+	fmt.Printf("last byte: %v\n", addressLastByte)
 	for i, zkinput := range zkInputs {
 		fmt.Printf("zkInputs[%d].SpendingKey: %x\n", i, zkinput.SpendingKey)
 		fmt.Printf("zkInputs[%d].Note.Value: %v\n", i, zkinput.Note.Value)
