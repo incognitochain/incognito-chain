@@ -80,5 +80,3 @@ then
 else
 	wget https://github.com/ninjadotorg/cash-prototype/releases/download/zkpp-v0.0.2/verifying.key
 fi
-
-./main
