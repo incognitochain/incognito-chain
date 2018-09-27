@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <title>Account List</title>
     <script src='const.js'></script>
+    <script src='jquery-3.3.1.min.js'></script>
+    <script src='popper.min.js'></script>
+    <script src='bootstrap.min.js'></script>
+    <link rel="stylesheet" href="bootstrap.min.css"/>
     <script src='account_detail.js'></script>
 </head>
 
@@ -37,27 +41,44 @@
 
 </style>
 
-<body style="width: 600px; height: 550px">
+<body style="width: 600px; height: 550px; padding: 10px">
 
 <div id="loader"></div>
 <div style="display:none;" id="myDiv" class="animate-bottom">
-    <h2><a href="index.html">Back</a></h2>
-    <h2>Account Detail</h2>
-    <h3>PublicKey</h3>
-    <div id="lb_publicKey"></div>
-    <h3>ReadonlyKey</h3>
-    <div id="lb_readonlyKey"></div>
-    <h3>PrivateKey</h3>
-    <div id="lb_privateKey"></div>
-    <h3>Balance</h3>
-    <div id="lb_balance"></div>
-    <h3>Send</h3>
-    Address <input id="txt_address"></input>
-    <br>
-    Amount  <input id="txt_amount"></input>
-    <br>
-    <button id="bt_send" type="button">Send</button>
-</div>
+    <a href="index.html">Back</a>
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">Account Detail</h5>
+        </div>
+        <div class="card-body">
+            <label>PublicKey</label>
+            <p id="lb_publicKey"></p>
+            <label>ReadonlyKey</label>
+            <p id="lb_readonlyKey"></p>
+            <label>PrivateKey</label>
+            <p id="lb_privateKey"></p>
+            <label>Balance</label>
+            <p id="lb_balance"></p>
+        </div>
+    </div>
+    <div class="card" style="margin: 10px 0px 10px 0px;">
+        <div class="card-header">
+            <h5>Send coin</h5>
+        </div>
+        <div class="card-body">
+            <form>
+                <div class="form-group">
+                    <label>Receiver's address</label>
+                    <input id="txt_address"></input>
+                </div>
+                <div class="form-group">
+                    <label>Amount</label>
+                    <input id="txt_amount"></input>
+                </div>
+                <button id="bt_send" type="submit" class="btn btn-primary">Send</button>
+            </form>
+        </div>
+    </div>
 
 </body>
 </html>
