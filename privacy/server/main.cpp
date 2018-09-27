@@ -417,11 +417,11 @@ class ZksnarkImpl final : public Zksnark::Service
     }
 };
 
-void RunServer()
+void RunServer(string &verifying_key, string &proving_key)
 {
     // Creating zksnark circuit and load params
-    js = ZCJoinSplit::Prepared("./verifying.key",
-                               "./proving.key");
+    cout << "Key: " << verifying_key << " " << proving_key << '\n';
+    js = ZCJoinSplit::Prepared(verifying_key, proving_key);
     cout << "Done preparing zksnark\n";
 
     // Run server
@@ -457,11 +457,20 @@ int test_merkle_tree() {
 
 int generate_params() {
     ZCJoinSplit::Generate("/tmp/r1cs.params", "/tmp/verifying.key", "/tmp/proving.key");
+    return 0;
 }
 
 int main(int argc, char const *argv[])
 {
     // generate_params();
-    RunServer();
+    // return 0;
+
+    string verifying_key = "./verifying.key";
+    string proving_key = "./proving.key";
+    if (argc > 2) {
+        verifying_key = string(argv[1]);
+        proving_key = string(argv[2]);
+    }
+    RunServer(proving_key, verifying_key);
     return 0;
 }

@@ -110,7 +110,8 @@ public:
                 nullifiers,
                 commitments,
                 vpub_old,
-                vpub_new
+                vpub_new,
+                0
             );
 
             return r1cs_ppzksnark_online_verifier_strong_IC<alt_bn128_pp>(vk_precomp, witness, r1cs_proof);
@@ -158,7 +159,8 @@ public:
                 inputs,
                 out_notes,
                 vpub_old,
-                vpub_new
+                vpub_new,
+                0
             );
             std::cout << "Done generate_r1cs_witness\n";
         }

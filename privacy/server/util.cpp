@@ -12,6 +12,12 @@ std::vector<unsigned char> convertIntToVectorLE(const uint64_t val_int) {
     return bytes;
 }
 
+std::vector<unsigned char> convertCharToVectorLE(const unsigned char val_int) {
+    std::vector<unsigned char> bytes;
+    bytes.push_back(val_int);
+    return bytes;
+}
+
 // Convert bytes into boolean vector. (MSB to LSB)
 std::vector<bool> convertBytesVectorToVector(const std::vector<unsigned char>& bytes) {
     std::vector<bool> ret;
