@@ -68,7 +68,6 @@ func (tx Tx) Hash() *common.Hash {
 // - JSDescriptions are valid (zk-snark proof satisfied)
 // Note: This method doesn't check for double spending
 func (tx *Tx) ValidateTransaction() bool {
-	return true
 	// Check for tx signature
 	tx.SetTxId(tx.Hash())
 	valid, err := VerifySign(tx)
@@ -81,9 +80,9 @@ func (tx *Tx) ValidateTransaction() bool {
 
 	// Check each js desc
 	for txID, desc := range tx.Descs {
-		if desc.Reward != 0 {
-			return false // Coinbase tx shouldn't be broadcasted across the network
-		}
+		//if desc.Reward != 0 {
+		//	return false // Coinbase tx shouldn't be broadcasted across the network
+		//}
 
 		// Apply fee only to the first desc of tx
 		fee := uint64(0)
