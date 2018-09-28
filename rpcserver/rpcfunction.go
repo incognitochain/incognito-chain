@@ -67,12 +67,13 @@ var RpcLimited = map[string]commandHandler{
 	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
 	"getaccountaddress":     RpcServer.handleGetAccountAddress,
 	"dumpprivkey":           RpcServer.handleDumpPrivkey,
-	"importaccount":         RpcServer.handleImportAccount,
-	"listunspent":           RpcServer.handleListUnspent,
-	"getbalance":            RpcServer.handleGetBalance,
-	"getreceivedbyaccount":  RpcServer.handleGetReceivedByAccount,
-	"settxfee":              RpcServer.handleSetTxFee,
-	"createsealerkeyset":    RpcServer.handleCreateSealerKeySet,
+	/*"dumpprivraw":           RpcServer.handleDumpPrivkeyRaw,*/
+	"importaccount":        RpcServer.handleImportAccount,
+	"listunspent":          RpcServer.handleListUnspent,
+	"getbalance":           RpcServer.handleGetBalance,
+	"getreceivedbyaccount": RpcServer.handleGetReceivedByAccount,
+	"settxfee":             RpcServer.handleSetTxFee,
+	"createsealerkeyset":   RpcServer.handleCreateSealerKeySet,
 }
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -996,6 +997,24 @@ Result—the private key
 func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	return self.Config.Wallet.DumpPrivkey(params.(string))
 }
+
+/*func (self RpcServer) handleDumpPrivkeyRaw(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	//return self.Config.Wallet.DumpPrivkey(params.(string))
+	temp := params.(string)
+	byteA, _, _ := base58.Base58Check{}.Decode(temp)
+	spedingKey := client.SpendingKey{}
+	copy(spedingKey[:], byteA)
+	key := wallet.Key{
+		Depth:       byte(0),
+		ChainCode:   make([]byte, 32),
+		ChildNumber: make([]byte, 4),
+		KeySet: cashec.KeySet{
+			PrivateKey: spedingKey,
+		},
+	}
+	result := key.Base58CheckSerialize(wallet.PriKeyType)
+	return result, nil
+}*/
 
 /**
 handleImportAccount - import a new account by private-key

@@ -95,7 +95,10 @@ func (self *Wallet) ImportAccount(privateKeyStr string, accountName string, pass
 		}
 	}
 
-	priKey, _ := Base58CheckDeserialize(privateKeyStr)
+	priKey, err := Base58CheckDeserialize(privateKeyStr)
+	if err != nil {
+		return nil, err
+	}
 	priKey.KeySet.ImportFromPrivateKey(&priKey.KeySet.PrivateKey)
 
 	Logger.log.Infof("Pub-key : %s", priKey.Base58CheckSerialize(PubKeyType))
@@ -108,7 +111,7 @@ func (self *Wallet) ImportAccount(privateKeyStr string, accountName string, pass
 		Name:       accountName,
 	}
 	self.MasterAccount.Child = append(self.MasterAccount.Child, account)
-	err := self.Save(self.PassPhrase)
+	err = self.Save(self.PassPhrase)
 	if err != nil {
 		return nil, err
 	}
