@@ -22,6 +22,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"golang.org/x/crypto/ed25519"
+	"github.com/ninjadotorg/cash-prototype/common/base58"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -1294,5 +1295,8 @@ func (self RpcServer) handleCreateSealerKeySet(params interface{}, closeChan <-c
 	if err != nil {
 		return nil, err
 	}
-	return sealerKeySet.EncodeToString(), nil
+	result := make(map[string]string)
+	result["SealerKeySet"] = sealerKeySet.EncodeToString()
+	result["SealerPublicKey"] = base58.Base58Check{}.Encode(sealerKeySet.SpublicKey, byte(0x00))
+	return result, nil
 }
