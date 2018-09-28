@@ -89,10 +89,19 @@ func (tx *Tx) ValidateTransaction() bool {
 			fee = tx.Fee
 		}
 
-		rts := [][]byte{}
 		nf1, nf2 := desc.Nullifiers[0], desc.Nullifiers[1]
 		hSig := client.HSigCRH(desc.HSigSeed, nf1, nf2, tx.JSPubKey)
-		valid, err := client.Verify(desc.Proof, desc.Nullifiers, desc.Commitments, rts, desc.Vmacs, hSig, desc.Reward, fee, tx.AddressLastByte)
+		valid, err := client.Verify(
+			desc.Proof,
+			desc.Nullifiers,
+			desc.Commitments,
+			desc.Anchor,
+			desc.Vmacs,
+			hSig,
+			desc.Reward,
+			fee,
+			tx.AddressLastByte,
+		)
 
 		if valid == false {
 			if err != nil {
