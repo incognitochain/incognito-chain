@@ -64,17 +64,44 @@ func (tx Tx) Hash() *common.Hash {
 }
 
 // ValidateTransaction returns true if transaction is valid:
-// - JSDescriptions are valid (zk-snark proof satisfied)
 // - Signature matches the signing public key
+// - JSDescriptions are valid (zk-snark proof satisfied)
 // Note: This method doesn't check for double spending
 func (tx *Tx) ValidateTransaction() bool {
-	for _, desc := range tx.Descs {
+	// Check for tx signature
+	valid, err := VerifySign(tx)
+	if valid == false {
+		if err != nil {
+			fmt.Printf("Error verifying signature of tx: %v", err)
+		}
+		return false
+	}
+
+	// Check each js desc
+	for txID, desc := range tx.Descs {
 		if desc.Reward != 0 {
 			return false // Coinbase tx shouldn't be broadcasted across the network
 		}
+
+		// Apply fee only to the first desc of tx
+		fee := uint64(0)
+		if txID == 0 {
+			fee = tx.Fee
+		}
+
+		rts := [][]byte{}
+		nf1, nf2 := desc.Nullifiers[0], desc.Nullifiers[1]
+		hSig := client.HSigCRH(desc.HSigSeed, nf1, nf2, tx.JSPubKey)
+		valid, err := client.Verify(desc.Proof, desc.Nullifiers, desc.Commitments, rts, desc.Vmacs, hSig, desc.Reward, fee, tx.AddressLastByte)
+
+		if valid == false {
+			if err != nil {
+				fmt.Printf("Error validating tx: %v\n", err)
+			}
+			return false
+		}
 	}
 
-	// TODO: implement
 	return true
 }
 
