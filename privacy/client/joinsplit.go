@@ -171,12 +171,20 @@ func Prove(inputs []*JSInput,
 }
 
 // Verify checks if a zk-proof of a JSDesc is valid or not
-func Verify(proof *zksnark.PHGRProof, nf, cm *[][]byte, rts [][]byte, hSig []byte, reward uint64) (bool, error) {
+func Verify(
+	proof *zksnark.PHGRProof,
+	nf, cm [][]byte,
+	rts, macs [][]byte,
+	hSig []byte,
+	reward,
+	fee uint64,
+	addressLastByte byte,
+) (bool, error) {
 	// Calling libsnark's verify
 	const address = "localhost:50052"
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("fail to connect %v", err)
+		return false, fmt.Errorf("fail to connect: %v", err)
 	}
 	defer conn.Close()
 
@@ -185,17 +193,20 @@ func Verify(proof *zksnark.PHGRProof, nf, cm *[][]byte, rts [][]byte, hSig []byt
 	defer cancel()
 
 	var verifyRequest = &zksnark.VerifyRequest{
-		Proof:      proof,
-		Hsig:       hSig,
-		Rts:        rts,
-		Nullifiers: *nf,
-		Commits:    *cm,
-		Reward:     reward,
+		Proof:           proof,
+		Hsig:            hSig,
+		Rts:             rts,
+		Nullifiers:      nf,
+		Commits:         cm,
+		Macs:            macs,
+		Reward:          reward,
+		Fee:             fee,
+		AddressLastByte: uint32(addressLastByte),
 	}
-	fmt.Printf("verifyRequest: %v\n", verifyRequest)
+	fmt.Printf("verifyRequest: %+v\n", verifyRequest)
 	r, err := c.Verify(ctx, verifyRequest)
 	if err != nil {
-		log.Fatalf("fail to verify: %v", err)
+		return false, fmt.Errorf("fail to verify: %v", err)
 	}
 	log.Printf("response: %v", r.Valid)
 

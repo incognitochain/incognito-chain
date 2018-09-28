@@ -34,7 +34,7 @@ function loadListAccount() {
 
         showLoading(false);
 
-        if (xhr.status === 200) {
+        if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
 
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
@@ -42,9 +42,6 @@ function loadListAccount() {
                 removeChilds('list_account')
                 accountTotal = 0;
                 for (var key in accounts) {
-
-                    console.log(accounts)
-
                     var balance = accounts[key];
                     var li = document.createElement('li');
                     li.innerHTML = '<a href="account_detail.html?account=' + key + '">' + key + ' (' + balance + ')' + '</a>'
@@ -57,10 +54,11 @@ function loadListAccount() {
             } else {
                 if (response.Error != null) {
                     alert(response.Error.message)
+                } else {
+                    alert('Bad response');
                 }
             }
-        } else {
-        }
+        } 
     };
     xhr.send(JSON.stringify({
         jsonrpc: "1.0",
@@ -97,18 +95,18 @@ function newAccount() {
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false)
-        if (xhr.status === 200) {
-            console.log(this.responseText.toString());
+        if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
                 loadListAccount();
             } else {
                 if (response.Error != null) {
                     alert(response.Error.message)
+                } else {
+                    alert('Bad response');
                 }
             }
-        } else {
-        }
+        } 
     };
     xhr.send(JSON.stringify({
         jsonrpc: "1.0",
@@ -131,18 +129,18 @@ function importAccount() {
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false)
-        if (xhr.status === 200) {
-            console.log(this.responseText.toString());
+        if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
                 loadListAccount();
             } else {
                 if (response.Error != null) {
                     alert(response.Error.message)
+                } else {
+                    alert('Bad response');
                 }
             }
-        } else {
-        }
+        } 
     };
     xhr.send(JSON.stringify({
         jsonrpc: "1.0",
