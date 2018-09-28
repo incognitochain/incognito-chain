@@ -57,7 +57,7 @@ func (tx Tx) Hash() *common.Hash {
 		record += desc.toString()
 	}
 	record += string(tx.JSPubKey)
-	record += string(tx.JSSig)
+	// record += string(tx.JSSig)
 	record += string(tx.AddressLastByte)
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -69,6 +69,7 @@ func (tx Tx) Hash() *common.Hash {
 // Note: This method doesn't check for double spending
 func (tx *Tx) ValidateTransaction() bool {
 	// Check for tx signature
+	tx.SetTxId(tx.Hash())
 	valid, err := VerifySign(tx)
 	if valid == false {
 		if err != nil {
