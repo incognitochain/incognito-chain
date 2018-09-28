@@ -96,7 +96,6 @@ function newAccount() {
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false)
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
-            console.log(this.responseText.toString());
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
                 loadListAccount();
@@ -131,7 +130,6 @@ function importAccount() {
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false)
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
-            console.log(this.responseText.toString());
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
                 loadListAccount();
