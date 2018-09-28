@@ -18,6 +18,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 )
 
@@ -852,7 +853,6 @@ func parseAndSetDebugLevels(debugLevel string) error {
 
 		setLogLevel(subsysID, logLevel)
 	}
-
 	return nil
 }
 
@@ -861,12 +861,10 @@ func (self *config) GetSealerKeySet() (*cashec.KeySetSealer, error) {
 	if len(self.SealerSpendingKey) != 0 {
 		Logger.log.Warn("!!NOT RECOMMENDED TO USE SPENDING KEY!!")
 		keySetUser := cashec.KeySet{}
-		spendingKeyByte, _ := base64.StdEncoding.DecodeString(self.SealerSpendingKey)
-		// base58C := base58.Base58Check{}
-		// spendingKeyByte, _, err := base58C.Decode(sealerB64)
-		// if err != nil {
-		// 	return keysetSealer, err
-		// }
+		spendingKeyByte, _, err := base58.Base58Check{}.Decode(self.SealerSpendingKey)
+		if err != nil {
+			return keysetSealer, err
+		}
 		keySetUser.ImportFromPrivateKeyByte(spendingKeyByte)
 		keysetSealer, _ = keySetUser.CreateSealerKeySet()
 		return keysetSealer, nil

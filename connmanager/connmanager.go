@@ -1,7 +1,6 @@
 package connmanager
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -22,6 +21,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/bootnode/server"
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/wire"
 )
@@ -445,7 +445,7 @@ listen:
 				if listener.Config.SealerPrvKey != "" {
 					keySet := &cashec.KeySetSealer{}
 					keySet.Import(listener.Config.SealerPrvKey)
-					publicKey = base64.StdEncoding.EncodeToString(keySet.SpublicKey)
+					publicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))
 				}
 
 				// remove later

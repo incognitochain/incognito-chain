@@ -1,7 +1,6 @@
 package ppos
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
@@ -63,7 +63,7 @@ type Config struct {
 	blockGen        *BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server interface {
+	Server          interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -171,7 +171,7 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 	self.quitSealer = make(chan struct{})
 	self.validatorSigCh = make(chan blockSig)
 	self.sealerStarted = true
-	Logger.log.Info("Starting sealer with public key: " + base64.StdEncoding.EncodeToString(self.config.ValidatorKeySet.SpublicKey))
+	Logger.log.Info("Starting sealer with public key: " + base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)))
 
 	go func() {
 		for {
@@ -216,13 +216,13 @@ func (self *Engine) StopSealer() {
 func (self *Engine) createBlock() (*blockchain.Block, error) {
 	Logger.log.Info("Start creating block...")
 	myChainID, _ := self.getMyChain()
-	newblock, err := self.config.blockGen.NewBlockTemplate(base64.StdEncoding.EncodeToString(self.config.ValidatorKeySet.SpublicKey), self.config.BlockChain, myChainID)
+	newblock, err := self.config.blockGen.NewBlockTemplate(base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)), self.config.BlockChain, myChainID)
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
 	newblock.Block.Header.ChainsHeight = self.validatedChainsHeight.Heights
 	newblock.Block.Header.ChainID = myChainID
-	newblock.Block.ChainLeader = base64.StdEncoding.EncodeToString(self.config.ValidatorKeySet.SpublicKey)
+	newblock.Block.ChainLeader = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 	newblock.Block.Header.Committee = self.GetNextCommittee()
 	sig, err := self.signData([]byte(newblock.Block.Hash().String()))
 	if err != nil {
@@ -256,12 +256,20 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 					Logger.log.Critical("(o_O)!", validatorSig, "this block", blockHash)
 					continue
 				}
-				decPubkey, _ := base64.StdEncoding.DecodeString(validatorSig.Validator)
+				decPubkey, _, err := base58.Base58Check{}.Decode(validatorSig.Validator)
+				if err != nil {
+					Logger.log.Error("Can't decode validator public key")
+					continue
+				}
 				validatorKp := cashec.KeySetSealer{
 					SpublicKey: decPubkey,
 				}
 
-				decSig, _ := base64.StdEncoding.DecodeString(validatorSig.ValidatorSig)
+				decSig, _, err := base58.Base58Check{}.Decode(validatorSig.ValidatorSig)
+				if err != nil {
+					Logger.log.Error("Can't decode validator signature")
+					continue
+				}
 				isValid, _ := validatorKp.Verify([]byte(block.Hash().String()), decSig)
 				if isValid {
 					reslist = append(reslist, validatorSig.ValidatorSig)
@@ -322,7 +330,7 @@ func (self *Engine) signData(data []byte) (string, error) {
 	if err != nil {
 		return "", errors.New("Can't sign data. " + err.Error())
 	}
-	return base64.StdEncoding.EncodeToString(signatureByte), nil
+	return base58.Base58Check{}.Encode(signatureByte, byte(0x00)), nil
 }
 
 func (self *Engine) validateBlock(block *blockchain.Block) error {
@@ -338,11 +346,17 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 	}
 
 	// 2. Check whether signature of the block belongs to chain leader or not.
-	decPubkey, _ := base64.StdEncoding.DecodeString(block.ChainLeader)
+	decPubkey, _, err := base58.Base58Check{}.Decode(block.ChainLeader)
+	if err != nil {
+		return err
+	}
 	k := cashec.KeySetSealer{
 		SpublicKey: decPubkey,
 	}
-	decSig, _ := base64.StdEncoding.DecodeString(block.ChainLeaderSig)
+	decSig, _, err := base58.Base58Check{}.Decode(block.ChainLeaderSig)
+	if err != nil {
+		return err
+	}
 	isValidSignature, err := k.Verify([]byte(strings.Join(block.Header.BlockCommitteeSigs, "")), decSig)
 	if err != nil {
 		return err
@@ -486,7 +500,8 @@ func (self *Engine) getMyChain() (byte, []string) {
 		if err != nil {
 			return TOTAL_VALIDATORS, []string{}
 		}
-		if base64.StdEncoding.EncodeToString(self.config.ValidatorKeySet.SpublicKey) == myChainCommittee[0] {
+		pkey := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+		if pkey == myChainCommittee[0] {
 			return idx, myChainCommittee
 		}
 	}
@@ -513,7 +528,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 			Reason:    err.Error(),
 			BlockHash: block.Hash().String(),
 			ChainID:   block.Header.ChainID,
-			Validator: base64.StdEncoding.EncodeToString(self.config.ValidatorKeySet.SpublicKey),
+			Validator: base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)),
 		}
 		dataByte, _ := invalidBlockMsg.JsonSerialize()
 		invalidBlockMsg.ValidatorSig, err = self.signData(dataByte)
@@ -538,7 +553,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 	}
 	blockSigMsg := wire.MessageBlockSig{
 		BlockHash:    block.Hash().String(),
-		Validator:    base64.StdEncoding.EncodeToString(self.config.ValidatorKeySet.SpublicKey),
+		Validator:    base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)),
 		ValidatorSig: sig,
 	}
 	peerID, err := peer2.IDB58Decode(msgBlock.SenderID)
