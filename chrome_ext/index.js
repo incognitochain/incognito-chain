@@ -34,7 +34,7 @@ function loadListAccount() {
 
         showLoading(false);
 
-        if (xhr.status === 200) {
+        if (xhr.status == 200) {
 
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
@@ -97,7 +97,7 @@ function newAccount() {
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false)
-        if (xhr.status === 200) {
+        if (xhr.status == 200) {
             console.log(this.responseText.toString());
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
@@ -134,7 +134,7 @@ function importAccount() {
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false)
-        if (xhr.status === 200) {
+        if (xhr.status == 200) {
             console.log(this.responseText.toString());
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {

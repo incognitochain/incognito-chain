@@ -7,7 +7,7 @@ window.onload = function () {
     xhr.open("POST", api_url);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
-        if (xhr.status === 200) {
+        if (xhr.status == 200) {
             console.log(this.responseText.toString());
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null) {
@@ -48,7 +48,7 @@ function dumpprivkey(publicKey) {
     xhr.open("POST", api_url);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
-        if (xhr.status === 200) {
+        if (xhr.status == 200) {
             console.log(this.responseText.toString());
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null) {
@@ -81,7 +81,7 @@ function getbalance() {
     xhr.open("POST", api_url);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
-        if (xhr.status === 200) {
+        if (xhr.status == 200) {
             console.log(this.responseText.toString());
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null) {
@@ -128,7 +128,7 @@ function sendmany() {
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false);
 
-        if (xhr.status === 200) {
+        if (xhr.status == 200) {
             console.log(this.responseText.toString());
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
