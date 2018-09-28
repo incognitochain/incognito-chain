@@ -23,8 +23,6 @@ window.onload = function () {
                     alert('Bad response');
                 }
             }
-        } else {
-            alert('Network error');
         }
     };
     var url = new URL(window.location.href);
@@ -58,8 +56,6 @@ function dumpprivkey(publicKey) {
                     alert('Bad response');
                 }
             }
-        } else {
-            alert('Network error');
         }
     };
     xhr.send(JSON.stringify({
@@ -122,7 +118,6 @@ function sendmany() {
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false);
-
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
@@ -133,8 +128,6 @@ function sendmany() {
                     alert('Bad response');
                 }
             }
-        } else {
-            alert('Network error')
         }
     };
     var dest = {};
