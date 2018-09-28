@@ -364,7 +364,7 @@ int print_proof_inputs(const std::array<libzcash::JSInput, ZC_NUM_JS_INPUTS> &in
     cout << "vpub_new: " << vpub_new << '\n';
     cout << "h_sig: " << h_sig.GetHex() << '\n';
     cout << "phi: " << phi.inner().GetHex() << '\n';
-    cout << "address_last_byte: " << address_last_byte << '\n';
+    cout << "address_last_byte: " << int(address_last_byte) << '\n';
     cout << "computeProof: " << computeProof << '\n';
     return 0;
 }
