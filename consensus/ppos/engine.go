@@ -63,7 +63,7 @@ type Config struct {
 	blockGen        *BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server          interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -216,7 +216,8 @@ func (self *Engine) StopSealer() {
 func (self *Engine) createBlock() (*blockchain.Block, error) {
 	Logger.log.Info("Start creating block...")
 	myChainID, _ := self.getMyChain()
-	newblock, err := self.config.blockGen.NewBlockTemplate(base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)), self.config.BlockChain, myChainID)
+	paymentAddress, err := self.config.ValidatorKeySet.GetPaymentAddress()
+	newblock, err := self.config.blockGen.NewBlockTemplate(paymentAddress, self.config.BlockChain, myChainID)
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
