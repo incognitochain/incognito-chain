@@ -1,7 +1,3 @@
-function numberWithCommas(x) {
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
 window.onload = function () {
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
     xhr.open("POST", api_url);
