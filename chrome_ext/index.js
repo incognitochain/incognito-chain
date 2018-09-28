@@ -42,9 +42,6 @@ function loadListAccount() {
                 removeChilds('list_account')
                 accountTotal = 0;
                 for (var key in accounts) {
-
-                    console.log(accounts)
-
                     var balance = accounts[key];
                     var li = document.createElement('li');
                     li.innerHTML = '<a href="account_detail.html?account=' + key + '">' + key + ' (' + balance + ')' + '</a>'
