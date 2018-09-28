@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
@@ -11,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/consensus/ppos"
 
 	"crypto/tls"
@@ -195,10 +195,10 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 	// })
 
 	self.ConsensusEngine = ppos.New(&ppos.Config{
-		ChainParams: self.chainParams,
-		BlockChain:  self.BlockChain,
-		MemPool:     self.MemPool,
-		Server:      self,
+		ChainParams:  self.chainParams,
+		BlockChain:   self.BlockChain,
+		MemPool:      self.MemPool,
+		Server:       self,
 		FeeEstimator: self.FeeEstimator,
 	})
 
@@ -351,7 +351,7 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 			Logger.log.Critical("Invalid sealer's private key")
 			return
 		}
-		msg.(*wire.MessageVersion).PublicKey = base64.StdEncoding.EncodeToString(keySet.SpublicKey)
+		msg.(*wire.MessageVersion).PublicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))
 	}
 
 	if err != nil {
@@ -558,7 +558,10 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 // newPeerConfig returns the configuration for the listening Peer.
 */
 func (self *Server) NewPeerConfig() *peer.Config {
-	keysetSealer, _ := cfg.GetSealerKeySet()
+	keysetSealer, err := cfg.GetSealerKeySet()
+	if err != nil {
+		Logger.log.Critical(err)
+	}
 	return &peer.Config{
 		MessageListeners: peer.MessageListeners{
 			OnBlock:     self.OnBlock,
@@ -576,7 +579,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnGetChainState: self.OnGetChainState,
 			OnChainState:    self.OnChainState,
 		},
-		SealerPrvKey: base64.StdEncoding.EncodeToString(keysetSealer.SprivateKey),
+		SealerPrvKey: base58.Base58Check{}.Encode(keysetSealer.SprivateKey, byte(0x00)),
 	}
 }
 
@@ -684,7 +687,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 				Logger.log.Critical("Invalid sealer's private key")
 				return
 			}
-			msgS.(*wire.MessageVersion).PublicKey = base64.StdEncoding.EncodeToString(keySet.SpublicKey)
+			msgS.(*wire.MessageVersion).PublicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))
 		}
 		if err != nil {
 			return

@@ -2,9 +2,9 @@ package cashec
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 
+	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"golang.org/x/crypto/ed25519"
 )
@@ -28,7 +28,8 @@ func (self *KeySetSealer) GenerateKey(seed []byte) (*KeySetSealer, error) {
 
 func (self *KeySetSealer) Import(privateKey string) (*KeySetSealer, error) {
 	key := ed25519.PrivateKey{}
-	key, err := base64.StdEncoding.DecodeString(privateKey)
+	base58C := base58.Base58Check{}
+	key, _, err := base58C.Decode(privateKey)
 	if err != nil {
 		return self, err
 	}
@@ -50,15 +51,13 @@ func (self *KeySetSealer) Sign(data []byte) ([]byte, error) {
 
 func (self *KeySetSealer) EncodeToString() string {
 	val, _ := json.Marshal(self)
-	result := base64.StdEncoding.EncodeToString(val)
+	result := base58.Base58Check{}.Encode(val, byte(0x00))
 	return result
 }
 
 func (self *KeySetSealer) DecodeToKeySet(keystring string) (*KeySetSealer, error) {
-	keyBytes, err := base64.StdEncoding.DecodeString(keystring)
-	if err != nil {
-		return self, err
-	}
+	base58C := base58.Base58Check{}
+	keyBytes, _, _ := base58C.Decode(keystring)
 	json.Unmarshal(keyBytes, self)
 	return self, nil
 }

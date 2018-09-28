@@ -9,7 +9,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/transaction"
-	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
 // TODO: create block template (move block template from mining to here)
@@ -69,7 +68,7 @@ import (
 // 	return agentDataPoints
 // }
 
-func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain, chainID byte) (*BlockTemplate, error) {
+func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, chain *blockchain.BlockChain, chainID byte) (*BlockTemplate, error) {
 
 	prevBlock := chain.BestState[chainID]
 	prevBlockHash := chain.BestState[chainID].BestBlock.Hash()
@@ -85,7 +84,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 		}
 	}
 
-	txs, _, _ := extractTxsAndComputeInitialFees(sourceTxns)
+	txs, _, feeMap := extractTxsAndComputeInitialFees(sourceTxns)
 	//@todo we need apply sort rules for sourceTxns here
 
 	// agentDataPoints := getLatestAgentDataPoints(chain, actionParamTxs)
@@ -104,8 +103,8 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	// blockTxns = append(blockTxns, coinbaseTx)
 
 	// blockTxns := append([]transaction.Transaction{coinbaseTx}, txs...)
-	receiverKeyset, _ := wallet.Base58CheckDeserialize(payToAddress)
-	_ = receiverKeyset
+	//receiverKeyset, _ := wallet.Base58CheckDeserialize(payToAddress)
+	//_ = receiverKeyset
 
 	var txsToAdd []transaction.Transaction
 
@@ -181,8 +180,8 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	for _, tx := range txToRemove {
 		g.txSource.RemoveTx(tx)
 	}
-	// TODO PoW
-	//time.Sleep(time.Second * 15)
+
+	// check len of txs in block
 	if len(txsToAdd) == 0 {
 		return nil, errors.New("no transaction available for this chain")
 	}
@@ -190,9 +189,10 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	rt := g.chain.BestState[chainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
 	coinbaseTx, err := createCoinbaseTx(
 		&blockchain.Params{},
-		&receiverKeyset.KeySet.PublicKey,
+		&payToAddress,
 		rt,
 		chainID,
+		feeMap,
 	)
 	if err != nil {
 		return nil, err
@@ -354,6 +354,7 @@ func createCoinbaseTx(
 	receiverAddr *client.PaymentAddress,
 	rt []byte,
 	chainID byte,
+	feeMap map[string]uint64,
 ) (*transaction.Tx, error) {
 	// Create Proof for the joinsplit op
 	inputs := make([]*client.JSInput, 2)
@@ -363,7 +364,7 @@ func createCoinbaseTx(
 
 	// Get reward
 	// TODO(@0xbunyip): implement bonds reward
-	var reward uint64 = DEFAULT_MINING_REWARD // TODO: probably will need compute reward based on block height
+	var reward uint64 = DEFAULT_MINING_REWARD + feeMap[common.TxOutCoinType] // TODO: probably will need compute reward based on block height
 
 	// Create new notes: first one is coinbase UTXO, second one has 0 value
 	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}
@@ -387,7 +388,6 @@ func createCoinbaseTx(
 	if err != nil {
 		return nil, err
 	}
-
 	tx, err = transaction.SignTx(tx)
 	if err != nil {
 		return nil, err
