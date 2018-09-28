@@ -89,8 +89,8 @@ static std::list<std::pair<std::string, long long*> > op_data_points = {
 #endif
 };
 
-bool inhibit_profiling_info = false;
-bool inhibit_profiling_counters = false;
+bool inhibit_profiling_info = true;
+bool inhibit_profiling_counters = true;
 
 void clear_profiling_counters()
 {
