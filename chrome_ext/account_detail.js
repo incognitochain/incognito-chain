@@ -93,9 +93,7 @@ function getbalance() {
                     alert('Bad response');
                 }
             }
-        } else {
-            alert('Network error');
-        }
+        } 
     };
     xhr.send(JSON.stringify({
         jsonrpc: "1.0",
