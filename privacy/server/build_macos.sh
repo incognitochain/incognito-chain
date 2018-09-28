@@ -37,6 +37,11 @@ echo "install cmake ... "
 echo "brew install cmake"
 brew install cmake
 
+# install lib libomp
+echo "install libomp ... "
+echo "brew install cmake"
+brew install brew install libomp
+
 BUILD_DIR="build"
 if [ ! -d "$BUILD_DIR" ]; then
   mkdir build
