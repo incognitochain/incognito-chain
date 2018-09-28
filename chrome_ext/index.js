@@ -44,7 +44,7 @@ function loadListAccount() {
                 for (var key in accounts) {
                     var balance = accounts[key];
                     var li = document.createElement('li');
-                    li.innerHTML = '<a href="account_detail.html?account=' + encodeURIComponent(key) + '">' + key + ' (' + numberWithCommas(balance) + ')' + '</a>'
+                    li.innerHTML = '<a href="account_detail.html?account=' + key + '">' + key + ' (' + balance + ')' + '</a>'
                     li.classList = "list-group-item"
                     document.getElementById("list_account").appendChild(li);
                     accountTotal++;
