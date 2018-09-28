@@ -7,8 +7,7 @@ window.onload = function () {
     xhr.open("POST", api_url);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
-        if (xhr.status === 200) {
-            console.log(this.responseText.toString());
+        if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null) {
                 document.getElementById("lb_publicKey").innerText = response.Result.PublicKey;
@@ -18,9 +17,12 @@ window.onload = function () {
                 dumpprivkey(response.Result.PublicKey)
                 getbalance();
             } else {
-
+                if (response.Error != null) {
+                    alert(response.Error.message);
+                } else {
+                    alert('Bad response');
+                }
             }
-        } else {
         }
     };
     var url = new URL(window.location.href);
@@ -43,15 +45,17 @@ function dumpprivkey(publicKey) {
     xhr.open("POST", api_url);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
-        if (xhr.status === 200) {
-            console.log(this.responseText.toString());
+        if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null) {
                 document.getElementById("lb_privateKey").innerText = response.Result.PrivateKey;
             } else {
-
+                if (response.Error != null) {
+                    alert(response.Error.message);
+                } else {
+                    alert('Bad response');
+                }
             }
-        } else {
         }
     };
     xhr.send(JSON.stringify({
@@ -71,16 +75,18 @@ function getbalance() {
     xhr.open("POST", api_url);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
-        if (xhr.status === 200) {
-            console.log(this.responseText.toString());
+        if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null) {
                 document.getElementById("lb_balance").innerText = numberWithCommas(response.Result);
             } else {
-
+                if (response.Error != null) {
+                    alert(response.Error.message);
+                } else {
+                    alert('Bad response');
+                }
             }
-        } else {
-        }
+        } 
     };
     xhr.send(JSON.stringify({
         jsonrpc: "1.0",
@@ -112,17 +118,16 @@ function sendmany() {
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false);
-
-        if (xhr.status === 200) {
-            console.log(this.responseText.toString());
+        if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
             } else {
                 if (response.Error != null) {
                     alert(response.Error.message)
+                } else {
+                    alert('Bad response');
                 }
             }
-        } else {
         }
     };
     var dest = {};
