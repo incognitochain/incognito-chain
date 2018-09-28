@@ -545,11 +545,15 @@ func (tx *Tx) buildJSDescAndEncrypt(
 }
 
 // CreateRandomJSInput creates a dummy input with 0 value note that belongs to a random address
-func CreateRandomJSInput() *client.JSInput {
-	randomKey := client.RandSpendingKey()
+func CreateRandomJSInput(spendingKey *client.SpendingKey) *client.JSInput {
+	if spendingKey == nil {
+		randomKey := client.RandSpendingKey()
+		spendingKey = &randomKey
+	}
+
 	input := new(client.JSInput)
-	input.InputNote = createDummyNote(&randomKey)
-	input.Key = &randomKey
+	input.InputNote = createDummyNote(spendingKey)
+	input.Key = spendingKey
 	input.WitnessPath = (&client.MerklePath{}).CreateDummyPath()
 	return input
 }

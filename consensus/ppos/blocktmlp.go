@@ -357,8 +357,9 @@ func createCoinbaseTx(
 ) (*transaction.Tx, error) {
 	// Create Proof for the joinsplit op
 	inputs := make([]*client.JSInput, 2)
-	inputs[0] = transaction.CreateRandomJSInput()
-	inputs[1] = transaction.CreateRandomJSInput()
+	inputs[0] = transaction.CreateRandomJSInput(nil)
+	inputs[1] = transaction.CreateRandomJSInput(inputs[0].Key)
+	dummyAddress := client.GenPaymentAddress(*inputs[0].Key)
 
 	// Get reward
 	// TODO(@0xbunyip): implement bonds reward
@@ -378,6 +379,7 @@ func createCoinbaseTx(
 
 	// Generate proof and sign tx
 	tx := transaction.NewTxTemplate()
+	tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
 	var coinbaseTxFee uint64 // Zero fee for coinbase tx
 	rtMap := map[byte][]byte{chainID: rt}
 	inputMap := map[byte][]*client.JSInput{chainID: inputs}
@@ -385,6 +387,7 @@ func createCoinbaseTx(
 	if err != nil {
 		return nil, err
 	}
+
 	tx, err = transaction.SignTx(tx)
 	if err != nil {
 		return nil, err
