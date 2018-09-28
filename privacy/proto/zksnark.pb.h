@@ -813,6 +813,12 @@ class ProveRequest : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::google::protobuf::uint64 fee() const;
   void set_fee(::google::protobuf::uint64 value);
 
+  // uint32 addressLastByte = 8;
+  void clear_addresslastbyte();
+  static const int kAddressLastByteFieldNumber = 8;
+  ::google::protobuf::uint32 addresslastbyte() const;
+  void set_addresslastbyte(::google::protobuf::uint32 value);
+
   // @@protoc_insertion_point(class_scope:zksnark.ProveRequest)
  private:
 
@@ -824,6 +830,7 @@ class ProveRequest : public ::google::protobuf::Message /* @@protoc_insertion_po
   ::google::protobuf::internal::ArenaStringPtr phi_;
   ::google::protobuf::uint64 reward_;
   ::google::protobuf::uint64 fee_;
+  ::google::protobuf::uint32 addresslastbyte_;
   mutable ::google::protobuf::internal::CachedSize _cached_size_;
   friend struct ::protobuf_zksnark_2eproto::TableStruct;
 };
@@ -1367,6 +1374,12 @@ class VerifyRequest : public ::google::protobuf::Message /* @@protoc_insertion_p
   ::google::protobuf::uint64 fee() const;
   void set_fee(::google::protobuf::uint64 value);
 
+  // uint32 addressLastByte = 9;
+  void clear_addresslastbyte();
+  static const int kAddressLastByteFieldNumber = 9;
+  ::google::protobuf::uint32 addresslastbyte() const;
+  void set_addresslastbyte(::google::protobuf::uint32 value);
+
   // @@protoc_insertion_point(class_scope:zksnark.VerifyRequest)
  private:
 
@@ -1379,6 +1392,7 @@ class VerifyRequest : public ::google::protobuf::Message /* @@protoc_insertion_p
   ::zksnark::PHGRProof* proof_;
   ::google::protobuf::uint64 reward_;
   ::google::protobuf::uint64 fee_;
+  ::google::protobuf::uint32 addresslastbyte_;
   mutable ::google::protobuf::internal::CachedSize _cached_size_;
   friend struct ::protobuf_zksnark_2eproto::TableStruct;
 };
@@ -2328,6 +2342,20 @@ inline void ProveRequest::set_fee(::google::protobuf::uint64 value) {
   // @@protoc_insertion_point(field_set:zksnark.ProveRequest.fee)
 }
 
+// uint32 addressLastByte = 8;
+inline void ProveRequest::clear_addresslastbyte() {
+  addresslastbyte_ = 0u;
+}
+inline ::google::protobuf::uint32 ProveRequest::addresslastbyte() const {
+  // @@protoc_insertion_point(field_get:zksnark.ProveRequest.addressLastByte)
+  return addresslastbyte_;
+}
+inline void ProveRequest::set_addresslastbyte(::google::protobuf::uint32 value) {
+  
+  addresslastbyte_ = value;
+  // @@protoc_insertion_point(field_set:zksnark.ProveRequest.addressLastByte)
+}
+
 // -------------------------------------------------------------------
 
 // PHGRProof
@@ -3227,6 +3255,20 @@ inline void VerifyRequest::set_fee(::google::protobuf::uint64 value) {
   
   fee_ = value;
   // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.fee)
+}
+
+// uint32 addressLastByte = 9;
+inline void VerifyRequest::clear_addresslastbyte() {
+  addresslastbyte_ = 0u;
+}
+inline ::google::protobuf::uint32 VerifyRequest::addresslastbyte() const {
+  // @@protoc_insertion_point(field_get:zksnark.VerifyRequest.addressLastByte)
+  return addresslastbyte_;
+}
+inline void VerifyRequest::set_addresslastbyte(::google::protobuf::uint32 value) {
+  
+  addresslastbyte_ = value;
+  // @@protoc_insertion_point(field_set:zksnark.VerifyRequest.addressLastByte)
 }
 
 // -------------------------------------------------------------------

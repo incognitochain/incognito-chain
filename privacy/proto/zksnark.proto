@@ -42,6 +42,7 @@ message ProveRequest {
     repeated bytes rts = 5;
     uint64 reward = 6;
     uint64 fee = 7;
+    uint32 addressLastByte = 8;
 }
 
 message PHGRProof {
@@ -68,6 +69,7 @@ message VerifyRequest {
     repeated bytes macs = 6;
     uint64 reward = 7;
     uint64 fee = 8;
+    uint32 addressLastByte = 9;
 }
 
 message VerifyReply {

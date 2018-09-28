@@ -84,6 +84,7 @@ public:
         const std::array<uint256, NumInputs>& rt,
         uint256 &h_sig,
         uint252 &phi,
+        unsigned char &address_last_byte,
         bool computeProof = true
         // For paymentdisclosure, we need to retrieve the esk.
         // Reference as non-const parameter with default value leads to compile error.
@@ -102,7 +103,8 @@ public:
         uint64_t vpub_old,
         uint64_t vpub_new,
         const std::array<uint256, NumInputs>& rt,
-        uint256 &h_sig
+        uint256 &h_sig,
+        unsigned char &address_last_byte
     ) = 0;
 
 protected:

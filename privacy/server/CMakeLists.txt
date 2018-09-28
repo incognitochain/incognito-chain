@@ -3,6 +3,10 @@ project("spscoin")
 
 set (CMAKE_CXX_STANDARD 11)
 
+if (${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
+    add_definitions(-DCUSTOM_ENDIAN)
+endif()
+
 # Set build type
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)

@@ -14,8 +14,10 @@
 #include <string.h>
 
 #include "sodium.h"
-// make compile error (Sep 27, camthanh)
-//#include "compat/endian.h"
+
+#if defined(CUSTOM_ENDIAN)
+#include "compat/endian.h"
+#endif // CUSTOM_ENDIAN
 
 #if defined(NDEBUG)
 # error "Zcash cannot be compiled without assertions."

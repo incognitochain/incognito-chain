@@ -70,7 +70,7 @@ if [ -f "$file" ]
 then
 	echo "$file found."
 else
-	wget https://github.com/ninjadotorg/cash-prototype/releases/download/zkpp-v0.0.2/proving.key
+	wget https://github.com/ninjadotorg/cash-prototype/releases/download/zkpp-v0.0.3/proving.key
 fi
 
 file="./verifying.key"
@@ -78,5 +78,5 @@ if [ -f "$file" ]
 then
 	echo "$file found."
 else
-	wget https://github.com/ninjadotorg/cash-prototype/releases/download/zkpp-v0.0.2/verifying.key
+	wget https://github.com/ninjadotorg/cash-prototype/releases/download/zkpp-v0.0.3/verifying.key
 fi

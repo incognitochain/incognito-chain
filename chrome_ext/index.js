@@ -19,6 +19,9 @@ window.onload = function () {
     document.getElementById("bt_import").onclick = function () {
         importAccount()
     };
+    document.getElementById("bt_new").onclick = function () {
+        newAccount()
+    };
 };
 
 function loadListAccount() {
@@ -35,18 +38,19 @@ function loadListAccount() {
 
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
-                accounts = response.Result.Accounts;
+                var accounts = response.Result.Accounts;
                 removeChilds('list_account')
                 accountTotal = 0;
                 for (var key in accounts) {
 
                     console.log(accounts)
 
-                    balance = accounts[key];
+                    var balance = accounts[key];
                     var li = document.createElement('li');
                     li.innerHTML = '<a href="account_detail.html?account=' + key + '">' + key + ' (' + balance + ')' + '</a>'
+                    li.classList = "list-group-item"
                     document.getElementById("list_account").appendChild(li);
-                    accountTotal ++;
+                    accountTotal++;
                 }
                 document.getElementById("loader").style.display = "none";
                 document.getElementById("myDiv").style.display = "block";
@@ -83,11 +87,42 @@ function showLoading(show) {
     }
 }
 
+function newAccount() {
+    var accName = 'Account ' + document.getElementById("txt_accountName").value;
+
+    showLoading(true);
+
+    var xhr = new XMLHttpRequest();   // new HttpRequest instance
+    xhr.open("POST", api_url);
+    xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    xhr.onreadystatechange = function (oEvent) {
+        showLoading(false)
+        if (xhr.status === 200) {
+            console.log(this.responseText.toString());
+            var response = JSON.parse(this.responseText.toString());
+            if (response.Result != null && response.Result != '') {
+                loadListAccount();
+            } else {
+                if (response.Error != null) {
+                    alert(response.Error.message)
+                }
+            }
+        } else {
+        }
+    };
+    xhr.send(JSON.stringify({
+        jsonrpc: "1.0",
+        method: "getaccountaddress",
+        params: accName,
+        id: 1
+    }));
+}
+
 function importAccount() {
 
     var priKey = document.getElementById("txt_privateKey").value;
     var passphrase = window.localStorage['cash_passphrase'];
-    var accName = 'Account ' + accountTotal
+    var accName = 'Account ' + accountTotal;
 
     showLoading(true);
 

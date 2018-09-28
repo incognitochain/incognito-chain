@@ -98,7 +98,8 @@ public:
         uint64_t vpub_old,
         uint64_t vpub_new,
         const std::array<uint256, NumInputs>& rts,
-        uint256 &h_sig
+        uint256 &h_sig,
+        unsigned char &address_last_byte
     ) {
         try {
             auto r1cs_proof = proof.to_libsnark_proof<r1cs_ppzksnark_proof<ppzksnark_ppT>>();
@@ -110,7 +111,8 @@ public:
                 nullifiers,
                 commitments,
                 vpub_old,
-                vpub_new
+                vpub_new,
+                address_last_byte
             );
 
             return r1cs_ppzksnark_online_verifier_strong_IC<alt_bn128_pp>(vk_precomp, witness, r1cs_proof);
@@ -138,6 +140,7 @@ public:
         const std::array<uint256, NumInputs>& rts,
         uint256 &h_sig,
         uint252 &phi,
+        unsigned char &address_last_byte,
         bool computeProof
         // uint256 *out_esk // Payment disclosure
     ) {
@@ -158,7 +161,8 @@ public:
                 inputs,
                 out_notes,
                 vpub_old,
-                vpub_new
+                vpub_new,
+                address_last_byte
             );
             std::cout << "Done generate_r1cs_witness\n";
         }

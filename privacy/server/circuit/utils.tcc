@@ -47,6 +47,12 @@ std::vector<bool> uint64_to_bool_vector(uint64_t input) {
     return convertBytesVectorToVector(num_bv);
 }
 
+std::vector<bool> uint8_to_bool_vector(unsigned char input) {
+    auto num_bv = convertCharToVectorLE(input);
+
+    return convertBytesVectorToVector(num_bv);
+}
+
 void insert_uint256(std::vector<bool>& into, uint256 from) {
     std::vector<bool> blob = uint256_to_bool_vector(from);
     into.insert(into.end(), blob.begin(), blob.end());
@@ -54,6 +60,11 @@ void insert_uint256(std::vector<bool>& into, uint256 from) {
 
 void insert_uint64(std::vector<bool>& into, uint64_t from) {
     std::vector<bool> num = uint64_to_bool_vector(from);
+    into.insert(into.end(), num.begin(), num.end());
+}
+
+void insert_uint8(std::vector<bool>& into, unsigned char from) {
+    std::vector<bool> num = uint8_to_bool_vector(from);
     into.insert(into.end(), num.begin(), num.end());
 }
 

@@ -30,7 +30,6 @@ public:
 template<typename FieldT>
 class input_note_gadget : public note_gadget<FieldT> {
 private:
-    std::shared_ptr<digest_variable<FieldT>> a_pk;
     std::shared_ptr<digest_variable<FieldT>> rho;
 
     std::shared_ptr<digest_variable<FieldT>> commitment;
@@ -43,6 +42,7 @@ private:
     std::shared_ptr<PRF_nf_gadget<FieldT>> expose_nullifiers;
 public:
     std::shared_ptr<digest_variable<FieldT>> a_sk;
+    std::shared_ptr<digest_variable<FieldT>> a_pk;
 
     input_note_gadget(
         protoboard<FieldT>& pb,
@@ -134,6 +134,12 @@ public:
         std::cout << "Done fill a_sk and spend_authority\n";
 
         // [SANITY CHECK] Witness a_pk with note information
+        std::cout << "Note a_pk:\n";
+        auto a = uint256_to_bool_vector(note.a_pk);
+        for (auto b: a) {
+            std::cout << b;
+        }
+        std::cout << '\n';
         a_pk->bits.fill_with_bits(
             this->pb,
             uint256_to_bool_vector(note.a_pk)

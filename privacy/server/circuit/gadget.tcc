@@ -22,6 +22,7 @@ private:
     std::array<std::shared_ptr<digest_variable<FieldT>>, NumOutputs> zk_output_commitments;
     pb_variable_array<FieldT> zk_vpub_old;
     pb_variable_array<FieldT> zk_vpub_new;
+    std::shared_ptr<digest_variable<FieldT>> zk_address_last_byte;
 
     // Aux inputs
     pb_variable<FieldT> ZERO;
@@ -71,6 +72,7 @@ public:
 
             alloc_uint64(zk_unpacked_inputs, zk_vpub_old);
             alloc_uint64(zk_unpacked_inputs, zk_vpub_new);
+            alloc_uintx(zk_unpacked_inputs, zk_address_last_byte, 8);
 
             assert(zk_unpacked_inputs.size() == verifying_input_bit_size());
 
@@ -153,6 +155,17 @@ public:
 
             // Authenticate h_sig with a_sk
             zk_mac_authentication[i]->generate_r1cs_constraints();
+
+            // Enforce address last byte of sender's a_pk
+            int address_len = zk_address_last_byte->digest_size;
+            for (int j = 0; j < address_len; ++j) {
+                int a_pk_len = zk_input_notes[i]->a_pk->digest_size;
+                this->pb.add_r1cs_constraint(r1cs_constraint<FieldT>(
+                    1,
+                    zk_address_last_byte->bits[j],
+                    zk_input_notes[i]->a_pk->bits[a_pk_len-(address_len-j)]
+                ));
+            }
         }
 
         for (size_t i = 0; i < NumOutputs; i++) {
@@ -203,7 +216,8 @@ public:
         const std::array<JSInput, NumInputs>& inputs,
         const std::array<SproutNote, NumOutputs>& outputs,
         uint64_t vpub_old,
-        uint64_t vpub_new
+        uint64_t vpub_new,
+        unsigned char address_last_byte
     ) {
         // Witness `zero`
         this->pb.val(ZERO) = FieldT::zero();
@@ -219,8 +233,19 @@ public:
                 uint256_to_bool_vector(rts[i])
             );
         }
-
         std::cout << "Done fill zk_merkle_root\n";
+
+        // Witness last byte of sender's public address
+        zk_address_last_byte->bits.fill_with_bits(
+            this->pb,
+            uint8_to_bool_vector(address_last_byte)
+        );
+        std::cout << "address last byte:\n";
+        auto a = uint8_to_bool_vector(address_last_byte);
+        for (auto b: a) {
+            std::cout << b;
+        }
+        std::cout << '\n';
 
         // Witness public balance values
         zk_vpub_old.fill_with_bits(
@@ -306,7 +331,8 @@ public:
         const std::array<uint256, NumInputs>& nullifiers,
         const std::array<uint256, NumOutputs>& commitments,
         uint64_t vpub_old,
-        uint64_t vpub_new
+        uint64_t vpub_new,
+        unsigned char address_last_byte
     ) {
         std::vector<bool> verify_inputs;
 
@@ -324,6 +350,7 @@ public:
 
         insert_uint64(verify_inputs, vpub_old);
         insert_uint64(verify_inputs, vpub_new);
+        insert_uint8(verify_inputs, address_last_byte);
 
         assert(verify_inputs.size() == verifying_input_bit_size());
         auto verify_field_elements = pack_bit_vector_into_field_element_vector<FieldT>(verify_inputs);
@@ -345,6 +372,7 @@ public:
         }
         acc += 64; // vpub_old
         acc += 64; // vpub_new
+        acc += 8;  // address_last_byte
 
         return acc;
     }
@@ -367,5 +395,14 @@ public:
     ) {
         integer.allocate(this->pb, 64, "");
         packed_into.insert(packed_into.end(), integer.begin(), integer.end());
+    }
+
+    void alloc_uintx(
+        pb_variable_array<FieldT> &packed_into,
+        std::shared_ptr<digest_variable<FieldT>> &var,
+        int x
+    ) {
+        var.reset(new digest_variable<FieldT>(this->pb, x, ""));
+        packed_into.insert(packed_into.end(), var->bits.begin(), var->bits.end());
     }
 };
