@@ -14,6 +14,61 @@ import (
 
 // TODO: create block template (move block template from mining to here)
 
+// func getLatestAgentDataPoints(
+// 	chain *blockchain.BlockChain,
+// 	actionParamTxs []*transaction.ActionParamTx,
+// ) map[string]*blockchain.AgentDataPoint {
+// 	agentDataPoints := map[string]*blockchain.AgentDataPoint{}
+// 	bestBlock := chain.BestState.BestBlock
+
+// 	if bestBlock != nil && bestBlock.AgentDataPoints != nil {
+// 		agentDataPoints = bestBlock.AgentDataPoints
+// 	}
+
+// 	for _, actionParamTx := range actionParamTxs {
+// 		inputAgentID := actionParamTx.Param.AgentID
+
+// 		_, ok := agentDataPoints[inputAgentID]
+// 		if !ok || actionParamTx.LockTime > agentDataPoints[inputAgentID].LockTime {
+// 			agentDataPoints[inputAgentID] = &blockchain.AgentDataPoint{
+// 				AgentID:          actionParamTx.Param.AgentID,
+// 				AgentSig:         actionParamTx.Param.AgentSig,
+// 				NumOfCoins:       actionParamTx.Param.NumOfCoins,
+// 				NumOfBonds:       actionParamTx.Param.NumOfBonds,
+// 				Tax:              actionParamTx.Param.Tax,
+// 				EligibleAgentIDs: actionParamTx.Param.EligibleAgentIDs,
+// 				LockTime:         actionParamTx.LockTime,
+// 			}
+// 		}
+// 	}
+
+// 	// in case of not being enough number of agents
+// 	dataPointsLen := len(agentDataPoints)
+// 	if dataPointsLen < NUMBER_OF_MAKING_DECISION_AGENTS {
+// 		return agentDataPoints
+// 	}
+
+// 	// check add/remove agents by number of votes
+// 	votesForAgents := map[string]int{}
+// 	for _, dataPoint := range agentDataPoints {
+// 		for _, eligibleAgentID := range dataPoint.EligibleAgentIDs {
+// 			if _, ok := votesForAgents[eligibleAgentID]; !ok {
+// 				votesForAgents[eligibleAgentID] = 1
+// 				continue
+// 			}
+// 			votesForAgents[eligibleAgentID] += 1
+// 		}
+// 	}
+
+// 	for agentID, votes := range votesForAgents {
+// 		if votes < int(math.Floor(float64(dataPointsLen/2))+1) {
+// 			delete(agentDataPoints, agentID)
+// 		}
+// 	}
+
+// 	return agentDataPoints
+// }
+
 func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockchain.BlockChain, chainID byte) (*BlockTemplate, error) {
 
 	prevBlock := chain.BestState[chainID]
@@ -56,15 +111,16 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 
 	var txToRemove []transaction.Transaction
 	// mempoolLoop:
-	for _, txDesc := range txs {
-		tx, ok := txDesc.(*transaction.Tx)
-		if !ok {
-			return nil, fmt.Errorf("Transaction in block not recognized")
-		}
+	for _, tx := range txs {
+		// tx, ok := txDesc.(*transaction.Tx)
+		// if !ok {
+		// 	return nil, fmt.Errorf("Transaction in block not recognized")
+		// }
+
 		//@todo need apply validate tx, logic check all referenced here
 		// call function spendTransaction to mark utxo
 
-		txChainID, _ := g.GetTxSenderChain(tx.AddressLastByte)
+		txChainID, _ := g.GetTxSenderChain(tx.GetSenderAddrLastByte())
 		if txChainID != chainID {
 			continue
 		}
@@ -132,12 +188,17 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress string, chain *blockcha
 	}
 
 	rt := g.chain.BestState[chainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
-	//coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, &receiverKeyset.KeySet.PublicKey, map[string]uint64{}, rt, chainID)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//// the 1st tx will be coinbaseTx
-	//txsToAdd = append([]transaction.Transaction{coinbaseTx}, txsToAdd...)
+	coinbaseTx, err := createCoinbaseTx(
+		&blockchain.Params{},
+		&receiverKeyset.KeySet.PublicKey,
+		rt,
+		chainID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	// the 1st tx will be coinbaseTx
+	txsToAdd = append([]transaction.Transaction{coinbaseTx}, txsToAdd...)
 
 	merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(txsToAdd)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
@@ -291,7 +352,6 @@ func extractTxsAndComputeInitialFees(txDescs []*transaction.TxDesc) (
 func createCoinbaseTx(
 	params *blockchain.Params,
 	receiverAddr *client.PaymentAddress,
-	rewardMap map[string]uint64,
 	rt []byte,
 	chainID byte,
 ) (*transaction.Tx, error) {
@@ -302,16 +362,7 @@ func createCoinbaseTx(
 
 	// Get reward
 	// TODO(@0xbunyip): implement bonds reward
-	fmt.Printf("reward map: %+v\n", rewardMap)
-	var reward uint64
-	for rewardType, rewardValue := range rewardMap {
-		if rewardValue <= 0 {
-			continue
-		}
-		if rewardType == "coins" {
-			reward += rewardValue
-		}
-	}
+	var reward uint64 = DEFAULT_MINING_REWARD // TODO: probably will need compute reward based on block height
 
 	// Create new notes: first one is coinbase UTXO, second one has 0 value
 	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}
