@@ -384,23 +384,27 @@ class ZksnarkImpl final : public Zksnark::Service
         bool success = transform_prove_request(request, inputs, out_notes, hsig, phi, rts, reward, fee, address_last_byte);
         cout << "transform_prove_request status: " << success << '\n';
 
-        if (!success)
+        if (!success) {
+            reply->set_success(false);
             return Status::OK;
+        }
 
         bool compute_proof = true;
         uint64_t vpub_old = reward;
         uint64_t vpub_new = fee;
         print_proof_inputs(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, address_last_byte, compute_proof);
         // production make real proof
-         auto proof = js->prove(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, address_last_byte, compute_proof);
+        libzcash::PHGRProof proof;
+        success = js->prove(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, address_last_byte, compute_proof, proof);
         // testing make default proof
     //    libzcash::PHGRProof proof;
-        print_proof(proof);
+        // print_proof(proof);
 
         zksnark::PHGRProof *zk_proof = new zksnark::PHGRProof();
-        success = transform_prove_reply(proof, *zk_proof);
+        success &= transform_prove_reply(proof, *zk_proof);
         cout << "transform_prove_reply status: " << success << '\n';
         cout << "setting allocated_proof\n";
+        reply->set_success(success);
         reply->set_allocated_proof(zk_proof);
         return Status::OK;
     }
@@ -422,8 +426,11 @@ class ZksnarkImpl final : public Zksnark::Service
         uint64_t vpub_old = reward;
         uint64_t vpub_new = fee;
         bool valid = false;
-        if (success)
-            valid = js->verify(proof, macs, nullifiers, commitments, vpub_old, vpub_new, rts, hsig, address_last_byte);
+        if (success) {
+            success = js->verify(proof, macs, nullifiers, commitments, vpub_old, vpub_new, rts, hsig, address_last_byte, valid);
+        }
+
+        reply->set_success(success);
         reply->set_valid(valid);
         return Status::OK;
     }

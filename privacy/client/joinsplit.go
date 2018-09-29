@@ -167,6 +167,9 @@ func Prove(inputs []*JSInput,
 	}
 	log.Printf("Prove response:\n")
 	printProof(r.Proof)
+	if !r.Success {
+		return nil, nil, nil, nil, fmt.Errorf("Prove returns success = false")
+	}
 	return r.Proof, hSig, newSeed, newPhi, nil
 }
 
@@ -208,8 +211,10 @@ func Verify(
 	if err != nil {
 		return false, fmt.Errorf("fail to verify: %v", err)
 	}
-	log.Printf("response: %v", r.Valid)
-
+	log.Printf("response: %v %v", r.Valid, r.Success)
+	if !r.Success {
+		return false, fmt.Errorf("Verify returns success = false")
+	}
 	return r.Valid, err
 }
 

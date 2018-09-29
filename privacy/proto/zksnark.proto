@@ -58,6 +58,7 @@ message PHGRProof {
 
 message ProveReply {
     PHGRProof proof = 1;
+    bool success = 2;
 }
 
 message VerifyRequest {
@@ -74,4 +75,5 @@ message VerifyRequest {
 
 message VerifyReply {
     bool valid = 1;
+    bool success = 2;
 }
