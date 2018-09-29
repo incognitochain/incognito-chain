@@ -63,7 +63,7 @@ type Config struct {
 	blockGen        *BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server interface {
+	Server          interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -307,7 +307,7 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 	case resList := <-validateSigList:
 		Logger.log.Info("Validator sigs: ", resList)
 		finalBlock.Header.BlockCommitteeSigs = append(finalBlock.Header.BlockCommitteeSigs, resList...)
-	case <-time.After(30 * time.Second):
+	case <-time.After(MAX_BLOCKSIGN_WAIT_TIME * time.Second):
 		return errCantFinalizeBlock
 	}
 
