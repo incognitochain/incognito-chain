@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	fileLimitWant = 2048
-	fileLimitMin  = 1024
+	FileLimitWant = 2048
+	FileLimitMin  = 1024
 )
 
-// SetLimits raises some process limits to values which allow btcd and
+// SetLimits raises some process limits to values which allow node and
 // associated utilities to run.
 func SetLimits() error {
 	var rLimit syscall.Rlimit
@@ -25,23 +25,23 @@ func SetLimits() error {
 	if err != nil {
 		return err
 	}
-	if rLimit.Cur > fileLimitWant {
+	if rLimit.Cur > FileLimitWant {
 		return nil
 	}
-	if rLimit.Max < fileLimitMin {
+	if rLimit.Max < FileLimitMin {
 		err = fmt.Errorf("need at least %v file descriptors",
-			fileLimitMin)
+			FileLimitMin)
 		return err
 	}
-	if rLimit.Max < fileLimitWant {
+	if rLimit.Max < FileLimitWant {
 		rLimit.Cur = rLimit.Max
 	} else {
-		rLimit.Cur = fileLimitWant
+		rLimit.Cur = FileLimitWant
 	}
 	err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
 	if err != nil {
 		// try min value
-		rLimit.Cur = fileLimitMin
+		rLimit.Cur = FileLimitMin
 		err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
 		if err != nil {
 			return err
