@@ -4,11 +4,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 )
 
-// MaxBlockHeaderPayload is the maximum number of bytes a block header can be.
-// Version 4 bytes + Timestamp 4 bytes + Bits 4 bytes + Nonce 4 bytes +
-// PrevBlockHash and MerkleRoot hashes.
-const MaxBlockHeaderPayload = 16 + (common.HashSize * 2)
-
 type BlockHeader struct {
 	// Version of the block.  This is not the same as the protocol version.
 	Version int
@@ -34,6 +29,7 @@ type BlockHeader struct {
 	// POS
 	BlockCommitteeSigs []string //Include sealer and validators signature
 	Committee          []string //Voted committee for the next block
+
 	// Parallel PoS
 	ChainID      byte
 	ChainsHeight []int //height of 20 chain when this block is created
