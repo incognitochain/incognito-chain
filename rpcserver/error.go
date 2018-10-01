@@ -1,4 +1,4 @@
-package common
+package rpcserver
 
 import "fmt"
 

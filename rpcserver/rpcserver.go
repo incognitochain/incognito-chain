@@ -23,7 +23,6 @@ import (
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/addrmanager"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/connmanager"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/mempool"
@@ -326,8 +325,8 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 	var result interface{}
 	var request jsonrpc.Request
 	if err := json.Unmarshal(body, &request); err != nil {
-		jsonErr = &common.RPCError{
-			Code:    common.ErrRPCParse.Code,
+		jsonErr = &RPCError{
+			Code:    ErrRPCParse.Code,
 			Message: "Failed to parse request: " + err.Error(),
 		}
 	}
@@ -372,8 +371,8 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 		// Check if the user is limited and set error if method unauthorized
 		if !isLimitedUser {
 			if _, ok := RpcLimited[request.Method]; ok {
-				jsonErr = &common.RPCError{
-					Code:    common.ErrRPCInvalidParams.Code,
+				jsonErr = &RPCError{
+					Code:    ErrRPCInvalidParams.Code,
 					Message: "limited user not authorized for this method",
 				}
 			}
@@ -387,8 +386,8 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 					command = RpcLimited[request.Method]
 				} else {
 					result = nil
-					jsonErr = &common.RPCError{
-						Code:    common.ErrRPCInvalidParams.Code,
+					jsonErr = &RPCError{
+						Code:    ErrRPCInvalidParams.Code,
 						Message: "limited user not authorized for this method",
 					}
 				}
@@ -425,16 +424,16 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 // passed parameters.  It will automatically convert errors that are not of
 // the type *btcjson.RPCError to the appropriate type as needed.
 func (self RpcServer) createMarshalledReply(id, result interface{}, replyErr error) ([]byte, error) {
-	var jsonErr *common.RPCError
+	var jsonErr *RPCError
 	if replyErr != nil {
-		if jErr, ok := replyErr.(*common.RPCError); ok {
+		if jErr, ok := replyErr.(*RPCError); ok {
 			jsonErr = jErr
 		} else {
 			jsonErr = self.internalRPCError(replyErr.Error(), "")
 		}
 	}
 
-	return jsonrpc.MarshalResponse(id, result, jsonErr)
+	return MarshalResponse(id, result, jsonErr)
 }
 
 // internalRPCError is a convenience function to convert an internal error to
@@ -442,13 +441,13 @@ func (self RpcServer) createMarshalledReply(id, result interface{}, replyErr err
 // RPC server subsystem since internal errors really should not occur.  The
 // context parameter is only used in the log message and may be empty if it's
 // not needed.
-func (self RpcServer) internalRPCError(errStr, context string) *common.RPCError {
+func (self RpcServer) internalRPCError(errStr, context string) *RPCError {
 	logStr := errStr
 	if context != "" {
 		logStr = context + ": " + errStr
 	}
 	Logger.log.Info(logStr)
-	return common.NewRPCError(common.ErrRPCInternal.Code, errStr)
+	return NewRPCError(ErrRPCInternal.Code, errStr)
 }
 
 // httpStatusLine returns a response Status-Line (RFC 2616 Section 6.1)

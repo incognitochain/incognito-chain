@@ -1,12 +1,8 @@
-package jsonrpc
+package rpcserver
 
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
 // Response is the general form of a JSON-RPC response.  The type of the Result
@@ -14,9 +10,9 @@ import (
 // interface.  The ID field has to be a pointer for Go to put a null in it when
 // empty.
 type Response struct {
-	Result json.RawMessage  `json:"Result"`
-	Error  *common.RPCError `json:"Error"`
-	Id     *interface{}     `json:"Id"`
+	Result json.RawMessage `json:"Result"`
+	Error  *RPCError       `json:"Error"`
+	Id     *interface{}    `json:"Id"`
 }
 
 // NewResponse returns a new JSON-RPC response object given the provided id,
@@ -25,10 +21,10 @@ type Response struct {
 //
 // Typically callers will instead want to create the fully marshalled JSON-RPC
 // response to send over the wire with the MarshalResponse function.
-func NewResponse(id interface{}, marshalledResult []byte, rpcErr *common.RPCError) (*Response, error) {
+func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*Response, error) {
 	if !IsValidIDType(id) {
 		str := fmt.Sprintf("the id of type '%T' is invalid", id)
-		return nil, common.MakeError(common.ErrInvalidType, str)
+		return nil, MakeError(ErrInvalidType, str)
 	}
 
 	pid := &id
@@ -49,10 +45,10 @@ func NewResponse(id interface{}, marshalledResult []byte, rpcErr *common.RPCErro
 func IsValidIDType(id interface{}) bool {
 	switch id.(type) {
 	case int, int8, int16, int32, int64,
-		uint, uint8, uint16, uint32, uint64,
-		float32, float64,
-		string,
-		nil:
+	uint, uint8, uint16, uint32, uint64,
+	float32, float64,
+	string,
+	nil:
 		return true
 	default:
 		return false
@@ -61,7 +57,7 @@ func IsValidIDType(id interface{}) bool {
 
 // MarshalResponse marshals the passed id, result, and RPCError to a JSON-RPC
 // response byte slice that is suitable for transmission to a JSON-RPC client.
-func MarshalResponse(id interface{}, result interface{}, rpcErr *common.RPCError) ([]byte, error) {
+func MarshalResponse(id interface{}, result interface{}, rpcErr *RPCError) ([]byte, error) {
 	marshalledResult, err := json.Marshal(result)
 	if err != nil {
 		return nil, err
@@ -71,36 +67,4 @@ func MarshalResponse(id interface{}, result interface{}, rpcErr *common.RPCError
 		return nil, err
 	}
 	return json.Marshal(&response)
-}
-
-// GetBlockChainInfoResult models the data returned from the getblockchaininfo
-// command.
-type GetBlockChainInfoResult struct {
-	Chain                string   `json:"BlockChain"`
-	Blocks               int      `json:"Blocks"`
-	Headers              int32    `json:"Headers"`
-	BestBlockHash        []string `json:"BestBlockHash"`
-	Difficulty           uint32   `json:"Difficulty"`
-	MedianTime           int64    `json:"MedianTime"`
-	VerificationProgress float64  `json:"VerificationProgress,omitempty"`
-	Pruned               bool     `json:"Pruned"`
-	PruneHeight          int32    `json:"PruneHeight,omitempty"`
-	ChainWork            string   `json:"ChainWork,omitempty"`
-	//SoftForks            []*SoftForkDescription              `json:"softforks"`
-	//Bip9SoftForks        map[string]*Bip9SoftForkDescription `json:"bip9_softforks"`
-}
-
-type GetHeaderResult struct {
-	BlockNum  int                    `json:"blocknum"`
-	ChainID   byte                   `json:"chainid"`
-	BlockHash string                 `json:"blockhash"`
-	Header    blockchain.BlockHeader `json:"header"`
-}
-
-type ListAccounts struct {
-	Accounts map[string]uint64 `json:"Accounts"`
-}
-
-type GetAddressesByAccount struct {
-	Addresses [] wallet.KeySerializedData `json:"Addresses"`
 }
