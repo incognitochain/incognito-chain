@@ -86,19 +86,21 @@ func (self *BlockChain) Init(config *Config) error {
 	return nil
 }
 
+/*
 // initChainState attempts to load and initialize the chain state from the
 // database.  When the db does not yet contain any chain state, both it and the
 // chain state are initialized to the genesis block.
+*/
 func (self *BlockChain) initChainState() error {
 	// TODO
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	var initialized bool
 	self.BestState = make([]*BestState, ChainCount)
-	for chainID := byte(0); chainID < ChainCount; chainID++ {
-		bestStateBytes, err := self.config.DataBase.FetchBestState(chainID)
+	for chainId := byte(0); chainId < ChainCount; chainId++ {
+		bestStateBytes, err := self.config.DataBase.FetchBestState(chainId)
 		if err == nil {
-			err = json.Unmarshal(bestStateBytes, &self.BestState[chainID])
+			err = json.Unmarshal(bestStateBytes, &self.BestState[chainId])
 			if err != nil {
 				initialized = false
 			} else {
@@ -111,7 +113,7 @@ func (self *BlockChain) initChainState() error {
 		if !initialized {
 			// At this point the database has not already been initialized, so
 			// initialize both it and the chain state to the genesis block.
-			err := self.createChainState(chainID)
+			err := self.createChainState(chainId)
 			if err != nil {
 				return err
 			}
@@ -119,15 +121,13 @@ func (self *BlockChain) initChainState() error {
 		}
 	}
 
-	for _, chain := range self.BestState {
-		fmt.Println(chain)
-	}
-
 	return nil
 }
 
+/*
 // UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
-func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
+*/
+func (self BlockChain) UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 	for _, blockTx := range block.Transactions {
 		if blockTx.GetType() == common.TxNormalType {
 			tx, ok := blockTx.(*transaction.Tx)
@@ -145,9 +145,11 @@ func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 	return nil
 }
 
+/*
 // createChainState initializes both the database and the chain state to the
 // genesis block.  This includes creating the necessary buckets and inserting
 // the genesis block, so it must only be called on an uninitialized database.
+*/
 func (self *BlockChain) createChainState(chainID byte) error {
 	// Create a new block from genesis block and set it as best block of chain
 	var initBlock *Block
@@ -169,7 +171,7 @@ func (self *BlockChain) createChainState(chainID byte) error {
 	//blockWeight := uint64(GetBlockWeight(genesisBlock))
 
 	tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
-	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
+	if err := self.UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
 		return err
 	}
 
@@ -328,35 +330,6 @@ Save block hash by index(height) of block
 func (self *BlockChain) StoreBlockIndex(block *Block) error {
 	return self.config.DataBase.StoreBlockIndex(block.Hash(), block.Height, block.Header.ChainID)
 }
-
-// Uses an existing database to update the utxo set
-// in the database based on the provided utxo view contents and state.  In
-// particular, only the entries that have been marked as modified are written
-// to the database.
-/*func (self *BlockChain) StoreUtxoView(view *UtxoViewpoint) error {
-	for outpoint, entry := range view.entries {
-		// No need to update the database if the entry was not modified.
-		if entry == nil || !entry.isModified() {
-			continue
-		}
-
-		// Remove the utxo entry if it is spent.
-		if entry.IsSpent() {
-			err := self.config.DataBase.DeleteUtxoEntry(&outpoint)
-			//recycleOutpointKey(key)
-			if err != nil {
-				return err
-			}
-			continue
-		}
-
-		err := self.config.DataBase.StoreUtxoEntry(&outpoint, entry)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
 
 /*
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
@@ -522,38 +495,6 @@ func (self *BlockChain) GetAllHashBlocks() ([][]*common.Hash, error) {
 	return data, err
 }
 
-// FetchUtxoView loads unspent transaction outputs for the inputs referenced by
-// the passed transaction from the point of view of the end of the main chain.
-// It also attempts to fetch the utxos for the outputs of the transaction itself
-// so the returned view can be examined for duplicate transactions.
-//
-// This function is safe for concurrent access however the returned view is NOT.
-/*func (b *BlockChain) FetchUtxoView(tx transaction.Tx) (*UtxoViewpoint, error) {
-	neededSet := make(map[transaction.OutPoint]struct{})
-
-	// create outpoint map for txout of tx by itself hash
-	prevOut := transaction.OutPoint{Hash: *tx.Hash()}
-	for txOutIdx, _ := range tx.TxOut {
-		prevOut.Vout = uint32(txOutIdx)
-		neededSet[prevOut] = struct{}{}
-	}
-
-	// create outpoint map for txin of tx
-	if !IsCoinBaseTx(tx) {
-		for _, txIn := range tx.TxIn {
-			neededSet[txIn.PreviousOutPoint] = struct{}{}
-		}
-	}
-
-	// Request the utxos from the point of view of the end of the main
-	// chain.
-	view := NewUtxoViewpoint()
-	b.chainLock.RLock()
-	err := view.fetchUtxosMain(b.config.DataBase, neededSet)
-	b.chainLock.RUnlock()
-	return view, err
-}*/
-
 /*
 FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
 Param typeJoinSplitDesc - COIN or BOND
@@ -582,43 +523,6 @@ func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string, chainId byte)
 // cumulatively has the most proof of work.  It returns whether or not the block
 // ended up on the main chain (either due to extending the main chain or causing
 // a reorganization to become the main chain).
-/*func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
-	// We are extending the main (best) chain with a new block.  This is the
-	// most common case.
-	parentHash := &block.Header.PrevBlockHash
-	if parentHash.IsEqual(&b.BestState[block.Header.ChainID].BestBlockHash) {
-		view := NewUtxoViewpoint()
-		view.SetBestHash(parentHash)
-
-		err := view.fetchInputUtxos(b.config.DataBase, block)
-		stxos := make([]SpentTxOut, 0, countSpentOutputs(block))
-		if err != nil {
-			return false, err
-		}
-
-		//
-		err = view.connectTransactions(block, &stxos)
-		if err != nil {
-			return false, err
-		}
-
-		// TODO with stxos
-		_ = stxos
-
-		// Update the utxo set using the state of the utxo view.  This
-		// entails removing all of the utxos spent and adding the new
-		// ones created by the block.
-		err = b.StoreUtxoView(view)
-		if err != nil {
-			return false, err
-		}
-
-		return true, nil
-	} else {
-		// we in sub chain
-		return false, nil
-	}
-}*/
 func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 	// We are extending the main (best) chain with a new block.  This is the
 	// most common case.
@@ -651,18 +555,6 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 		return false, nil
 	}
 }
-
-// countSpentOutputs returns the number of utxos the passed block spends.
-/*func countSpentOutputs(block *Block) int {
-	// Exclude the coinbase transaction since it can't spend anything.
-	var numSpent int
-	for _, tx := range block.Transactions[1:] {
-		if tx.GetType() == common.TxNormalType {
-			numSpent += len(tx.(*transaction.Tx).TxIn)
-		}
-	}
-	return numSpent
-}*/
 
 /*
 GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key
@@ -903,6 +795,9 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 	return results, nil
 }
 
+/*
+GetAllUnitCoinSupplier - return all list unit currency(bond, coin, ...) with amount of every of them
+ */
 func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 	result := make(map[string]uint64)
 	result[common.TxOutCoinType] = uint64(0)

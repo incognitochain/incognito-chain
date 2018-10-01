@@ -654,9 +654,8 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 }
 
 func (self *Engine) UpdateChain(block *blockchain.Block) {
-	// save block
-	//self.config.BlockChain.StoreBlock(block)
-	//self.FeeEstimator.RegisterBlock(block)
+	// save block into fee estimator
+	self.config.FeeEstimator[block.Header.ChainID].RegisterBlock(block)
 
 	// save best state
 	newBestState := &blockchain.BestState{}
@@ -665,7 +664,7 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 		self.config.MemPool.RemoveTx(tx)
 	}
 	tree := self.config.BlockChain.BestState[block.Header.ChainID].CmTree
-	blockchain.UpdateMerkleTreeForBlock(tree, block)
+	self.config.BlockChain.UpdateMerkleTreeForBlock(tree, block)
 	newBestState.Init(block, tree)
 	self.config.BlockChain.BestState[block.Header.ChainID] = newBestState
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)
