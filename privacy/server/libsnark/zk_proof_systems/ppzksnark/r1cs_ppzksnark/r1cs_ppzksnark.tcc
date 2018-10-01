@@ -681,7 +681,9 @@ bool r1cs_ppzksnark_online_verifier_weak_IC(const r1cs_ppzksnark_processed_verif
                                             const r1cs_ppzksnark_primary_input<ppT> &primary_input,
                                             const r1cs_ppzksnark_proof<ppT> &proof)
 {
-    assert(pvk.encoded_IC_query.domain_size() >= primary_input.size());
+    if (pvk.encoded_IC_query.domain_size() < primary_input.size())
+        return false;
+    // assert(pvk.encoded_IC_query.domain_size() >= primary_input.size());
 
     const accumulation_vector<G1<ppT> > accumulated_IC = pvk.encoded_IC_query.template accumulate_chunk<Fr<ppT> >(primary_input.begin(), primary_input.end(), 0);
     const G1<ppT> &acc = accumulated_IC.first;
@@ -804,7 +806,9 @@ bool r1cs_ppzksnark_affine_verifier_weak_IC(const r1cs_ppzksnark_verification_ke
                                             const r1cs_ppzksnark_proof<ppT> &proof)
 {
     enter_block("Call to r1cs_ppzksnark_affine_verifier_weak_IC");
-    assert(vk.encoded_IC_query.domain_size() >= primary_input.size());
+    if (vk.encoded_IC_query.domain_size() < primary_input.size())
+        return false;
+    // assert(vk.encoded_IC_query.domain_size() >= primary_input.size());
 
     affine_ate_G2_precomp<ppT> pvk_pp_G2_one_precomp        = ppT::affine_ate_precompute_G2(G2<ppT>::one());
     affine_ate_G2_precomp<ppT> pvk_vk_alphaA_g2_precomp     = ppT::affine_ate_precompute_G2(vk.alphaA_g2);
@@ -817,7 +821,9 @@ bool r1cs_ppzksnark_affine_verifier_weak_IC(const r1cs_ppzksnark_verification_ke
 
     enter_block("Compute input-dependent part of A");
     const accumulation_vector<G1<ppT> > accumulated_IC = vk.encoded_IC_query.template accumulate_chunk<Fr<ppT> >(primary_input.begin(), primary_input.end(), 0);
-    assert(accumulated_IC.is_fully_accumulated());
+    if (!accumulated_IC.is_fully_accumulated())
+        return false;
+    // assert(accumulated_IC.is_fully_accumulated());
     const G1<ppT> &acc = accumulated_IC.first;
     leave_block("Compute input-dependent part of A");
 

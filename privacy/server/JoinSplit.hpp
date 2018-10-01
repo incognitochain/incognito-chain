@@ -67,7 +67,7 @@ public:
     //                     );
 
     // Compute nullifiers, macs, note commitments & encryptions, and SNARK proof
-    virtual PHGRProof prove(
+    virtual bool prove(
         // bool makeGrothProof,
         const std::array<JSInput, NumInputs>& inputs,
         // const std::array<JSOutput, NumOutputs>& outputs,
@@ -85,7 +85,8 @@ public:
         uint256 &h_sig,
         uint252 &phi,
         unsigned char &address_last_byte,
-        bool computeProof = true
+        bool computeProof,
+        PHGRProof &proof
         // For paymentdisclosure, we need to retrieve the esk.
         // Reference as non-const parameter with default value leads to compile error.
         // So use pointer for simplicity.
@@ -104,7 +105,8 @@ public:
         uint64_t vpub_new,
         const std::array<uint256, NumInputs>& rt,
         uint256 &h_sig,
-        unsigned char &address_last_byte
+        unsigned char &address_last_byte,
+        bool &valid
     ) = 0;
 
 protected:

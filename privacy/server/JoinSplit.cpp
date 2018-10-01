@@ -99,8 +99,10 @@ public:
         uint64_t vpub_new,
         const std::array<uint256, NumInputs>& rts,
         uint256 &h_sig,
-        unsigned char &address_last_byte
+        unsigned char &address_last_byte,
+        bool &valid
     ) {
+        valid = false;
         try {
             auto r1cs_proof = proof.to_libsnark_proof<r1cs_ppzksnark_proof<ppzksnark_ppT>>();
 
@@ -115,7 +117,7 @@ public:
                 address_last_byte
             );
 
-            return r1cs_ppzksnark_online_verifier_strong_IC<alt_bn128_pp>(vk_precomp, witness, r1cs_proof);
+            valid = r1cs_ppzksnark_online_verifier_strong_IC<alt_bn128_pp>(vk_precomp, witness, r1cs_proof);
             return true;
         } catch (const std::exception &e) {
             std::cout << "Error: " << e.what() << '\n';
@@ -123,7 +125,7 @@ public:
         }
     }
 
-    PHGRProof prove(
+    bool prove(
         // bool makeGrothProof,
         const std::array<JSInput, NumInputs>& inputs,
         // const std::array<JSOutput, NumOutputs>& outputs,
@@ -141,11 +143,13 @@ public:
         uint256 &h_sig,
         uint252 &phi,
         unsigned char &address_last_byte,
-        bool computeProof
+        bool computeProof,
+        libzcash::PHGRProof &proof
         // uint256 *out_esk // Payment disclosure
     ) {
+        proof = PHGRProof();
         if (!computeProof) {
-            return PHGRProof();
+            return true;
         }
 
         protoboard<FieldT> pb;
@@ -171,7 +175,9 @@ public:
 
         // The constraint system must be satisfied or there is an unimplemented
         // or incorrect sanity check above. Or the constraint system is broken!
-        assert(pb.is_satisfied());
+        if (!pb.is_satisfied()) {
+            return false;
+        }
         std::cout << "Done assert satisfied\n";
 
         // TODO: These are copies, which is not strictly necessary.
@@ -187,17 +193,17 @@ public:
         std::ifstream fh(pkPath, std::ios::binary);
 
         if(!fh.is_open()) {
-            char error[100];
-            sprintf(error, "could not load param file at %s", pkPath.c_str());
-            throw std::runtime_error(std::string(error));
+            printf("could not load param file at %s", pkPath.c_str());
+            return false;
         }
 
-        return PHGRProof(r1cs_ppzksnark_prover_streaming<ppzksnark_ppT>(
+        proof = PHGRProof(r1cs_ppzksnark_prover_streaming<ppzksnark_ppT>(
             fh,
             primary_input,
             aux_input,
             pb.constraint_system
         ));
+        return true;
     }
 };
 

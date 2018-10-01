@@ -77,10 +77,14 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 		// if len of sourceTxns < MIN_TXs -> wait for more transactions
 		Logger.log.Info("not enough transactions. Wait for more...")
 		fmt.Println(sourceTxns)
-		<-time.Tick(MAX_BLOCK_WAIT_TIME * time.Second)
+		<-time.Tick(MIN_BLOCK_WAIT_TIME * time.Second)
 		sourceTxns = g.txSource.MiningDescs()
 		if len(sourceTxns) == 0 {
-			return nil, errors.New("No Tx")
+			<-time.Tick(MAX_BLOCK_WAIT_TIME * time.Second)
+			sourceTxns = g.txSource.MiningDescs()
+			if len(sourceTxns) == 0 {
+				return nil, errors.New("No Tx")
+			}
 		}
 	}
 
@@ -202,8 +206,6 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 
 	merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(txsToAdd)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
-	// TODO PoW
-	//time.Sleep(time.Second * 15)
 
 	// Store commitments and nullifiers in database
 	var descType string
@@ -291,8 +293,6 @@ type BlkTmplGenerator struct {
 
 type BlockTemplate struct {
 	Block *blockchain.Block
-
-	// Fees []float64
 }
 
 // TxSource represents a source of transactions to consider for inclusion in

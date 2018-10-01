@@ -1151,11 +1151,18 @@ class ProveReply : public ::google::protobuf::Message /* @@protoc_insertion_poin
   ::zksnark::PHGRProof* mutable_proof();
   void set_allocated_proof(::zksnark::PHGRProof* proof);
 
+  // bool success = 2;
+  void clear_success();
+  static const int kSuccessFieldNumber = 2;
+  bool success() const;
+  void set_success(bool value);
+
   // @@protoc_insertion_point(class_scope:zksnark.ProveReply)
  private:
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::zksnark::PHGRProof* proof_;
+  bool success_;
   mutable ::google::protobuf::internal::CachedSize _cached_size_;
   friend struct ::protobuf_zksnark_2eproto::TableStruct;
 };
@@ -1491,11 +1498,18 @@ class VerifyReply : public ::google::protobuf::Message /* @@protoc_insertion_poi
   bool valid() const;
   void set_valid(bool value);
 
+  // bool success = 2;
+  void clear_success();
+  static const int kSuccessFieldNumber = 2;
+  bool success() const;
+  void set_success(bool value);
+
   // @@protoc_insertion_point(class_scope:zksnark.VerifyReply)
  private:
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   bool valid_;
+  bool success_;
   mutable ::google::protobuf::internal::CachedSize _cached_size_;
   friend struct ::protobuf_zksnark_2eproto::TableStruct;
 };
@@ -2842,6 +2856,20 @@ inline void ProveReply::set_allocated_proof(::zksnark::PHGRProof* proof) {
   // @@protoc_insertion_point(field_set_allocated:zksnark.ProveReply.proof)
 }
 
+// bool success = 2;
+inline void ProveReply::clear_success() {
+  success_ = false;
+}
+inline bool ProveReply::success() const {
+  // @@protoc_insertion_point(field_get:zksnark.ProveReply.success)
+  return success_;
+}
+inline void ProveReply::set_success(bool value) {
+  
+  success_ = value;
+  // @@protoc_insertion_point(field_set:zksnark.ProveReply.success)
+}
+
 // -------------------------------------------------------------------
 
 // VerifyRequest
@@ -3287,6 +3315,20 @@ inline void VerifyReply::set_valid(bool value) {
   
   valid_ = value;
   // @@protoc_insertion_point(field_set:zksnark.VerifyReply.valid)
+}
+
+// bool success = 2;
+inline void VerifyReply::clear_success() {
+  success_ = false;
+}
+inline bool VerifyReply::success() const {
+  // @@protoc_insertion_point(field_get:zksnark.VerifyReply.success)
+  return success_;
+}
+inline void VerifyReply::set_success(bool value) {
+  
+  success_ = value;
+  // @@protoc_insertion_point(field_set:zksnark.VerifyReply.success)
 }
 
 #ifdef __GNUC__
