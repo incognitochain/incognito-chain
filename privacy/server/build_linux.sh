@@ -63,7 +63,7 @@ fi
 cd build
 
 cmake ..
-make
+make -j4
 
 file="./proving.key"
 if [ -f "$file" ]
