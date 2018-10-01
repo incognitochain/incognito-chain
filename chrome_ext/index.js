@@ -3,6 +3,11 @@ var accountTotal = 0;
 window.onload = function () {
     if (typeof(Storage) !== "undefined") {
         // Code for localStorage/sessionStorage.
+        var cashNodeUrl = window.localStorage['cash_node_url'];
+        if (cashNodeUrl == null || cashNodeUrl == '') {
+            window.localStorage['cash_node_urls'] = JSON.stringify([api_url]);
+            window.localStorage['cash_node_url'] = api_url;
+        }
         var passphrase = window.localStorage['cash_passphrase'];
         if (passphrase == null || passphrase == '') {
             window.location.href = 'passphrase.html'
@@ -17,10 +22,12 @@ window.onload = function () {
     loadListAccount();
 
     document.getElementById("bt_import").onclick = function () {
-        importAccount()
+        importAccount();
+        return false;
     };
     document.getElementById("bt_new").onclick = function () {
-        newAccount()
+        newAccount();
+        return false;
     };
 };
 
@@ -28,7 +35,7 @@ function loadListAccount() {
     showLoading(true);
 
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
-    xhr.open("POST", api_url);
+    xhr.open("POST", window.localStorage['cash_node_url']);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
 
@@ -68,13 +75,6 @@ function loadListAccount() {
     }));
 }
 
-function removeChilds(id) {
-    var elm = document.getElementById(id);
-    while (elm != null && elm.hasChildNodes()) {
-        elm.removeChild(elm.lastChild);
-    }
-}
-
 function showLoading(show) {
     if (show) {
         document.getElementById("loader").style.display = "block";
@@ -91,7 +91,7 @@ function newAccount() {
     showLoading(true);
 
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
-    xhr.open("POST", api_url);
+    xhr.open("POST", window.localStorage['cash_node_url']);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false)
@@ -125,7 +125,7 @@ function importAccount() {
     showLoading(true);
 
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
-    xhr.open("POST", api_url);
+    xhr.open("POST", window.localStorage['cash_node_url']);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false)

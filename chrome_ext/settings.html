@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Account List</title>
     <script src='const.js'></script>
-    <script src='index.js'></script>
+    <script src='settings.js'></script>
     <script src='jquery-3.3.1.min.js'></script>
     <script src='popper.min.js'></script>
     <script src='bootstrap.min.js'></script>
@@ -45,31 +45,21 @@
 <div id="loader"></div>
 <div style="display:none;" id="myDiv" class="animate-bottom">
     <form>
-        <h4><a href="settings.html">Settings</a></h4>
-        <h4>Accounts</h4>
+        <a href="index.html" id="lnk_back">Back</a>
+        <h4>Nodes</h4>
         <div class="form-group">
             <ul class="list-group" id="list_account">
             </ul>
         </div>
     </form>
     <form>
-        <h4>Create new account</h4>
+        <h4>Add Node</h4>
         <div class="form-group">
-            <label>Account Name</label>
-            <input id="txt_accountName" class="form-control"></input>
+            <label>Node Url</label>
+            <input id="txt_nodeUrl" class="form-control"></input>
         </div>
         <div class="form-group">
-            <button id="bt_new" type="submit" class="btn btn-primary">New Account</button>
-        </div>
-    </form>
-    <form>
-        <h4>Import account</h4>
-        <div class="form-group">
-            <label>Private key</label>
-            <input id="txt_privateKey" class="form-control"></input>
-        </div>
-        <div class="form-group">
-            <button id="bt_import" type="submit" class="btn btn-warning">Import</button>
+            <button id="bt_add" type="submit" class="btn btn-primary">Add</button>
         </div>
     </form>
 </div>
