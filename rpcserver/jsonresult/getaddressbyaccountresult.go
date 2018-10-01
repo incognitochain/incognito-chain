@@ -1,4 +1,4 @@
-package jsonrpc
+package jsonresult
 
 import "github.com/ninjadotorg/cash-prototype/wallet"
 

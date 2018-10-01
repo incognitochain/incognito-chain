@@ -1,4 +1,4 @@
-package jsonrpc
+package jsonresult
 
 type GetMiningInfoResult struct {
 	Blocks         uint64 `json:"Blocks"`

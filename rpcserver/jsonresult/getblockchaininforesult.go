@@ -1,4 +1,4 @@
-package jsonrpc
+package jsonresult
 
 // GetBlockChainInfoResult models the data returned from the getblockchaininfo
 // command.

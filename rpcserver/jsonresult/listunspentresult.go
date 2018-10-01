@@ -1,4 +1,4 @@
-package jsonrpc
+package jsonresult
 
 // ListUnspentResult models a successful response from the listunspent request.
 type ListUnspentResult struct {

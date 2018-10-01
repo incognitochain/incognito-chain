@@ -1,4 +1,4 @@
-package jsonrpc
+package jsonresult
 
 type GetMempoolInfo struct {
 	Size          int    `json:"Size"`

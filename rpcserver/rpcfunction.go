@@ -18,7 +18,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
-	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
+	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonresult"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"golang.org/x/crypto/ed25519"
@@ -79,7 +79,7 @@ var RpcLimited = map[string]commandHandler{
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
-	result := jsonrpc.GetHeaderResult{}
+	result := jsonresult.GetHeaderResult{}
 
 	arrayParams := common.InterfaceSlice(params)
 	log.Println(arrayParams)
@@ -350,7 +350,7 @@ getblockchaininfo RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	allHashBlocks, _ := self.Config.BlockChain.GetAllHashBlocks()
-	result := jsonrpc.GetBlockChainInfoResult{
+	result := jsonresult.GetBlockChainInfoResult{
 		Chain:  self.Config.ChainParams.Name,
 		Blocks: len(allHashBlocks),
 	}
@@ -536,8 +536,8 @@ Parameter #3—the list readonly which be used to view utxo
 */
 func (self RpcServer) handleListTransactions(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	log.Println(params)
-	result := jsonrpc.ListUnspentResult{
-		ListUnspentResultItems: make(map[string]map[byte][]jsonrpc.ListUnspentResultItem),
+	result := jsonresult.ListUnspentResult{
+		ListUnspentResultItems: make(map[string]map[byte][]jsonresult.ListUnspentResultItem),
 	}
 
 	// get params
@@ -574,12 +574,12 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 		if err != nil {
 			return nil, err
 		}
-		listTxs := make([]jsonrpc.ListUnspentResultItem, 0)
+		listTxs := make([]jsonresult.ListUnspentResultItem, 0)
 		for chainId, txs := range txsMap {
 			for _, tx := range txs {
-				item := jsonrpc.ListUnspentResultItem{
+				item := jsonresult.ListUnspentResultItem{
 					TxId:          tx.Hash().String(),
-					JoinSplitDesc: make([]jsonrpc.JoinSplitDesc, 0),
+					JoinSplitDesc: make([]jsonresult.JoinSplitDesc, 0),
 				}
 				for _, desc := range tx.Descs {
 					notes := desc.GetNote()
@@ -587,7 +587,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 					for _, note := range notes {
 						amounts = append(amounts, note.Value)
 					}
-					item.JoinSplitDesc = append(item.JoinSplitDesc, jsonrpc.JoinSplitDesc{
+					item.JoinSplitDesc = append(item.JoinSplitDesc, jsonresult.JoinSplitDesc{
 						Anchors:     desc.Anchor,
 						Commitments: desc.Commitments,
 						Amounts:     amounts,
@@ -615,8 +615,8 @@ Parameter #3—the list readonly which be used to view utxo
 */
 func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
-	result := jsonrpc.ListUnspentResult{
-		ListUnspentResultItems: make(map[string]map[byte][]jsonrpc.ListUnspentResultItem),
+	result := jsonresult.ListUnspentResult{
+		ListUnspentResultItems: make(map[string]map[byte][]jsonresult.ListUnspentResultItem),
 	}
 
 	// get params
@@ -640,12 +640,12 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 		if err != nil {
 			return nil, err
 		}
-		listTxs := make([]jsonrpc.ListUnspentResultItem, 0)
+		listTxs := make([]jsonresult.ListUnspentResultItem, 0)
 		for chainId, txs := range txsMap {
 			for _, tx := range txs {
-				item := jsonrpc.ListUnspentResultItem{
+				item := jsonresult.ListUnspentResultItem{
 					TxId:          tx.Hash().String(),
-					JoinSplitDesc: make([]jsonrpc.JoinSplitDesc, 0),
+					JoinSplitDesc: make([]jsonresult.JoinSplitDesc, 0),
 				}
 				for _, desc := range tx.Descs {
 					notes := desc.GetNote()
@@ -653,7 +653,7 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 					for _, note := range notes {
 						amounts = append(amounts, note.Value)
 					}
-					item.JoinSplitDesc = append(item.JoinSplitDesc, jsonrpc.JoinSplitDesc{
+					item.JoinSplitDesc = append(item.JoinSplitDesc, jsonresult.JoinSplitDesc{
 						Anchors:     desc.Anchor,
 						Commitments: desc.Commitments,
 						Amounts:     amounts,
@@ -927,7 +927,7 @@ Result—a list of accounts and their balances
 
 */
 func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	result := jsonrpc.ListAccounts{
+	result := jsonresult.ListAccounts{
 		Accounts: make(map[string]uint64),
 	}
 	accounts := self.Config.Wallet.ListAccounts()
@@ -974,7 +974,7 @@ Parameter #1—the account name
 Result—a list of addresses
 */
 func (self RpcServer) handleGetAddressesByAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	result := jsonrpc.GetAddressesByAccount{}
+	result := jsonresult.GetAddressesByAccount{}
 	var err error
 	result.Addresses, err = self.Config.Wallet.GetAddressesByAccount(params.(string))
 	return result, err
@@ -1212,7 +1212,7 @@ func (self RpcServer) handleGetGenerate(params interface{}, closeChan <-chan str
 handleGetMempoolInfo - RPC returns information about the node's current txs memory pool
 */
 func (self RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	result := jsonrpc.GetMempoolInfo{}
+	result := jsonresult.GetMempoolInfo{}
 	result.Size = self.Config.TxMemPool.Count()
 	result.Bytes = self.Config.TxMemPool.Size()
 	result.MempoolMaxFee = self.Config.TxMemPool.MaxFee()
@@ -1227,7 +1227,7 @@ func (self RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan s
 		return nil, errors.New("Not mining")
 	}
 	chainId := byte(int(params.(float64)))
-	result := jsonrpc.GetMiningInfoResult{}
+	result := jsonresult.GetMiningInfoResult{}
 	result.Blocks = uint64(self.Config.BlockChain.BestState[chainId].BestBlock.Height + 1)
 	result.PoolSize = self.Config.TxMemPool.Count()
 	result.Chain = self.Config.ChainParams.Name
