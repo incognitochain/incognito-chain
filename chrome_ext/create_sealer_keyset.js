@@ -1,7 +1,3 @@
-function numberWithCommas(x) {
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
 window.onload = function () {
     var url = new URL(window.location.href);
     var accountName = url.searchParams.get("accountName");
@@ -9,7 +5,7 @@ window.onload = function () {
     document.getElementById("lnk_back").href = 'account_detail.html?account=' + encodeURIComponent(accountName);
 
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
-    xhr.open("POST", api_url);
+    xhr.open("POST", window.localStorage['cash_node_url']);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
@@ -19,8 +15,6 @@ window.onload = function () {
                 document.getElementById("lb_SealerPublicKey").innerText = response.Result.SealerPublicKey;
                 document.getElementById("loader").style.display = "none";
                 document.getElementById("myDiv").style.display = "block";
-                dumpprivkey(response.Result.PublicKey)
-                getbalance();
             } else {
                 if (response.Error != null) {
                     alert(response.Error.message);
