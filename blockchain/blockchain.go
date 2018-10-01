@@ -269,9 +269,13 @@ func (self *BlockChain) StoreBestState(chainID byte) error {
 	return self.config.DataBase.StoreBestBlock(self.BestState[chainID], chainID)
 }
 
-func (self *BlockChain) GetBestState(chainID byte) (*BestState, error) {
+/*
+GetBestState - return a best state from a chain
+ */
+// #1 - chainId - index of chain
+func (self *BlockChain) GetBestState(chainId byte) (*BestState, error) {
 	bestState := BestState{}
-	bestStateBytes, err := self.config.DataBase.FetchBestState(chainID)
+	bestStateBytes, err := self.config.DataBase.FetchBestState(chainId)
 	if err == nil {
 		err = json.Unmarshal(bestStateBytes, &bestState)
 	}
