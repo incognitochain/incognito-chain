@@ -23,7 +23,7 @@ type NetSync struct {
 	//
 	syncPeer *peer.Peer
 
-	Config *NetSyncConfig
+	config *NetSyncConfig
 }
 
 type NetSyncConfig struct {
@@ -46,7 +46,7 @@ type NetSyncConfig struct {
 }
 
 func (self NetSync) New(cfg *NetSyncConfig) (*NetSync, error) {
-	self.Config = cfg
+	self.config = cfg
 	self.quit = make(chan struct{})
 	self.msgChan = make(chan interface{})
 	return &self, nil
@@ -157,7 +157,7 @@ func (self *NetSync) QueueTx(_ *peer.Peer, msg *wire.MessageTx, done chan struct
 func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 	Logger.log.Info("Handling new message tx")
 	// TODO get message tx and process
-	hash, txDesc, error := self.Config.MemPool.MaybeAcceptTransaction(msg.Transaction)
+	hash, txDesc, error := self.config.MemPool.MaybeAcceptTransaction(msg.Transaction)
 
 	if error != nil {
 		fmt.Print(error)
@@ -223,12 +223,12 @@ func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan s
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Handling new message getblocks message")
-	if senderBlockHeaderIndex, chainID, err := self.Config.BlockChain.GetBlockHeightByBlockHash(&msg.LastBlockHash); err == nil {
-		if self.Config.BlockChain.BestState[chainID].BestBlock.Hash() != &msg.LastBlockHash {
+	if senderBlockHeaderIndex, chainID, err := self.config.BlockChain.GetBlockHeightByBlockHash(&msg.LastBlockHash); err == nil {
+		if self.config.BlockChain.BestState[chainID].BestBlock.Hash() != &msg.LastBlockHash {
 			// Send Blocks back to requestor
-			chainBlocks, _ := self.Config.BlockChain.GetChainBlocks(chainID)
+			chainBlocks, _ := self.config.BlockChain.GetChainBlocks(chainID)
 			for index := int(senderBlockHeaderIndex) + 1; index < len(chainBlocks); index++ {
-				block, _ := self.Config.BlockChain.GetBlockByBlockHeight(int32(index), chainID)
+				block, _ := self.config.BlockChain.GetBlockByBlockHeight(int32(index), chainID)
 				fmt.Printf("Send block %x \n", *block.Hash())
 
 				blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
@@ -238,7 +238,7 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 
 				blockMsg.(*wire.MessageBlock).Block = *block
 				peerID, _ := peer2.IDFromString(msg.SenderID)
-				self.Config.Server.PushMessageToPeer(blockMsg, peerID)
+				self.config.Server.PushMessageToPeer(blockMsg, peerID)
 			}
 		}
 	} else {
@@ -255,28 +255,28 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 
 func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 	Logger.log.Info("Handling new message BlockSig")
-	self.Config.Consensus.OnBlockReceived(&msg.Block)
+	self.config.Consensus.OnBlockReceived(&msg.Block)
 }
 
 func (self *NetSync) HandleMessageBlockSig(msg *wire.MessageBlockSig) {
 	Logger.log.Info("Handling new message BlockSig")
-	self.Config.Consensus.OnBlockSigReceived(msg.BlockHash, msg.Validator, msg.ValidatorSig)
+	self.config.Consensus.OnBlockSigReceived(msg.BlockHash, msg.Validator, msg.ValidatorSig)
 }
 func (self *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
 	Logger.log.Info("Handling new message invalidblock")
-	self.Config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.ChainID, msg.Reason)
+	self.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.ChainID, msg.Reason)
 }
 func (self *NetSync) HandleMessageRequestSign(msg *wire.MessageRequestSign) {
 	Logger.log.Info("Handling new message requestsign")
-	self.Config.Consensus.OnRequestSign(msg)
+	self.config.Consensus.OnRequestSign(msg)
 }
 
 func (self *NetSync) HandleMessageGetChainState(msg *wire.MessageGetChainState) {
 	Logger.log.Info("Handling new message getchainstate")
-	self.Config.Consensus.OnGetChainState(msg)
+	self.config.Consensus.OnGetChainState(msg)
 }
 
 func (self *NetSync) HandleMessageChainState(msg *wire.MessageChainState) {
 	Logger.log.Info("Handling new message chainstate")
-	self.Config.Consensus.OnChainStateReceived(msg)
+	self.config.Consensus.OnChainStateReceived(msg)
 }
