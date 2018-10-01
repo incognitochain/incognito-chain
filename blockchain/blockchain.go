@@ -20,25 +20,26 @@ import (
 )
 
 const (
-	CHAIN_COUNT = 20
+	ChainCount = 20
 )
 
+/*
+BlockChain is a view presents for data in blockchain network
+because we use 20 chain data to contain all block in system, so
+this struct has a array best state with len = 20,
+every beststate present for a best block in every chain
+ */
 type BlockChain struct {
-	Config    Config
 	BestState []*BestState //BestState of 20 chain.
 
+	config    Config
 	chainLock sync.RWMutex
 }
 
-type blockIdx struct {
-	Idx     int
-	ChainID byte
-}
-
-// Config is a descriptor which specifies the blockchain instance configuration.
+// config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
 	// DataBase defines the database which houses the blocks and will be used to
-	// store all metadata created by this package such as the utxo set.
+	// store all metadata created by this package.
 	//
 	// This field is required.
 	DataBase database.DB
@@ -57,6 +58,9 @@ type Config struct {
 	ChainParams *Params
 }
 
+/*
+Init - init a blockchain view from config
+ */
 func (self *BlockChain) Init(config *Config) error {
 	// Enforce required config fields.
 	if config.DataBase == nil {
@@ -66,7 +70,7 @@ func (self *BlockChain) Init(config *Config) error {
 		return errors.New("blockchain.New chain parameters nil")
 	}
 
-	self.Config = *config
+	self.config = *config
 
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
@@ -75,7 +79,9 @@ func (self *BlockChain) Init(config *Config) error {
 		return err
 	}
 
-	// Logger.log.Infof("BlockChain state (height %d, hash %v, totaltx %d)", self.BestState.Height, self.BestState.BestBlockHash.String(), self.BestState.TotalTxns)
+	for chainIndex, bestState := range self.BestState {
+		Logger.log.Infof("BlockChain state for chain #%d (height %d, hash %v, totaltx %d)", chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns)
+	}
 
 	return nil
 }
@@ -88,9 +94,9 @@ func (self *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	var initialized bool
-	self.BestState = make([]*BestState, CHAIN_COUNT)
-	for chainID := byte(0); chainID < CHAIN_COUNT; chainID++ {
-		bestStateBytes, err := self.Config.DataBase.FetchBestState(chainID)
+	self.BestState = make([]*BestState, ChainCount)
+	for chainID := byte(0); chainID < ChainCount; chainID++ {
+		bestStateBytes, err := self.config.DataBase.FetchBestState(chainID)
 		if err == nil {
 			err = json.Unmarshal(bestStateBytes, &self.BestState[chainID])
 			if err != nil {
@@ -145,14 +151,14 @@ func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 func (self *BlockChain) createChainState(chainID byte) error {
 	// Create a new block from genesis block and set it as best block of chain
 	var initBlock *Block
-	//genesisChainID, _ := common.GetTxSenderChain(self.Config.ChainParams.GenesisBlock.Transactions[0].(*transaction.Tx).AddressLastByte)
+	//genesisChainID, _ := common.GetTxSenderChain(self.config.ChainParams.GenesisBlock.Transactions[0].(*transaction.Tx).AddressLastByte)
 	if chainID == 0 {
-		initBlock = self.Config.ChainParams.GenesisBlock
+		initBlock = self.config.ChainParams.GenesisBlock
 	} else {
 		initBlock = &Block{}
 		initBlock.Header.ChainID = chainID
-		initBlock.Header.Timestamp = self.Config.ChainParams.GenesisBlock.Header.Timestamp
-		initBlock.Header.Committee = self.Config.ChainParams.GenesisBlock.Header.Committee
+		initBlock.Header.Timestamp = self.config.ChainParams.GenesisBlock.Header.Timestamp
+		initBlock.Header.Committee = self.config.ChainParams.GenesisBlock.Header.Committee
 	}
 	initBlock.Height = 1
 
@@ -172,7 +178,7 @@ func (self *BlockChain) createChainState(chainID byte) error {
 
 	// save nullifiers and commitments from genesisblock
 	view := NewTxViewPoint(chainID)
-	err := view.fetchTxViewPoint(self.Config.DataBase, initBlock)
+	err := view.fetchTxViewPoint(self.config.DataBase, initBlock)
 	if err != nil {
 		return err
 	}
@@ -242,26 +248,26 @@ func (self *BlockChain) createChainState(chainID byte) error {
 Get block index(height) of block
 */
 func (self *BlockChain) GetBlockHeightByBlockHash(hash *common.Hash) (int32, byte, error) {
-	return self.Config.DataBase.GetIndexOfBlock(hash)
+	return self.config.DataBase.GetIndexOfBlock(hash)
 }
 
 /*
 Get block hash by block index(height)
 */
 func (self *BlockChain) GetBlockHashByBlockHeight(height int32, chainID byte) (*common.Hash, error) {
-	return self.Config.DataBase.GetBlockByIndex(height, chainID)
+	return self.config.DataBase.GetBlockByIndex(height, chainID)
 }
 
 /*
 Fetch DB and get block by index(height) of block
 */
 func (self *BlockChain) GetBlockByBlockHeight(height int32, chainID byte) (*Block, error) {
-	hashBlock, err := self.Config.DataBase.GetBlockByIndex(height, chainID)
+	hashBlock, err := self.config.DataBase.GetBlockByIndex(height, chainID)
 	if err != nil {
 		return nil, err
 	}
 	fmt.Println(hashBlock)
-	blockBytes, err := self.Config.DataBase.FetchBlock(hashBlock)
+	blockBytes, err := self.config.DataBase.FetchBlock(hashBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +285,7 @@ func (self *BlockChain) GetBlockByBlockHeight(height int32, chainID byte) (*Bloc
 Fetch DB and get block data by block hash
 */
 func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
-	blockBytes, err := self.Config.DataBase.FetchBlock(hash)
+	blockBytes, err := self.config.DataBase.FetchBlock(hash)
 	if err != nil {
 		return nil, err
 	}
@@ -295,12 +301,12 @@ func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 Store best state of block(best block, num of tx, ...) into Database
 */
 func (self *BlockChain) StoreBestState(chainID byte) error {
-	return self.Config.DataBase.StoreBestBlock(self.BestState[chainID], chainID)
+	return self.config.DataBase.StoreBestBlock(self.BestState[chainID], chainID)
 }
 
 func (self *BlockChain) GetBestState(chainID byte) (*BestState, error) {
 	bestState := BestState{}
-	bestStateBytes, err := self.Config.DataBase.FetchBestState(chainID)
+	bestStateBytes, err := self.config.DataBase.FetchBestState(chainID)
 	if err == nil {
 		err = json.Unmarshal(bestStateBytes, &bestState)
 	}
@@ -311,7 +317,7 @@ func (self *BlockChain) GetBestState(chainID byte) (*BestState, error) {
 Store block into Database
 */
 func (self *BlockChain) StoreBlock(block *Block) error {
-	return self.Config.DataBase.StoreBlock(block, block.Header.ChainID)
+	return self.config.DataBase.StoreBlock(block, block.Header.ChainID)
 }
 
 /*
@@ -320,7 +326,7 @@ and
 Save block hash by index(height) of block
 */
 func (self *BlockChain) StoreBlockIndex(block *Block) error {
-	return self.Config.DataBase.StoreBlockIndex(block.Hash(), block.Height, block.Header.ChainID)
+	return self.config.DataBase.StoreBlockIndex(block.Hash(), block.Height, block.Header.ChainID)
 }
 
 // Uses an existing database to update the utxo set
@@ -336,7 +342,7 @@ func (self *BlockChain) StoreBlockIndex(block *Block) error {
 
 		// Remove the utxo entry if it is spent.
 		if entry.IsSpent() {
-			err := self.Config.DataBase.DeleteUtxoEntry(&outpoint)
+			err := self.config.DataBase.DeleteUtxoEntry(&outpoint)
 			//recycleOutpointKey(key)
 			if err != nil {
 				return err
@@ -344,7 +350,7 @@ func (self *BlockChain) StoreBlockIndex(block *Block) error {
 			continue
 		}
 
-		err := self.Config.DataBase.StoreUtxoEntry(&outpoint, entry)
+		err := self.config.DataBase.StoreUtxoEntry(&outpoint, entry)
 		if err != nil {
 			return err
 		}
@@ -359,7 +365,7 @@ this is a list tx-out which are used by a new tx
 func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
 	for typeJoinSplitDesc, item := range view.listNullifiers {
 		for _, item1 := range item {
-			err := self.Config.DataBase.StoreNullifiers(item1, typeJoinSplitDesc, view.chainId)
+			err := self.config.DataBase.StoreNullifiers(item1, typeJoinSplitDesc, view.chainId)
 			if err != nil {
 				return err
 			}
@@ -375,7 +381,7 @@ this is a list tx-in which are used by a new tx
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
 	for typeJoinSplitDesc, item := range view.listCommitments {
 		for _, item1 := range item {
-			err := self.Config.DataBase.StoreCommitments(item1, typeJoinSplitDesc, view.chainId)
+			err := self.config.DataBase.StoreCommitments(item1, typeJoinSplitDesc, view.chainId)
 			if err != nil {
 				return err
 			}
@@ -390,7 +396,7 @@ this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, typeJoinSplitDesc string, chainId byte) error {
 	for _, nullifier := range nullifiers {
-		err := self.Config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc, chainId)
+		err := self.config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc, chainId)
 		if err != nil {
 			return err
 		}
@@ -404,7 +410,7 @@ this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, typeJoinSplitDesc string, chainId byte) error {
 	for _, item := range commitments {
-		err := self.Config.DataBase.StoreCommitments(item, typeJoinSplitDesc, chainId)
+		err := self.config.DataBase.StoreCommitments(item, typeJoinSplitDesc, chainId)
 		if err != nil {
 			return err
 		}
@@ -423,7 +429,7 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx, typeJoinSplitD
 			if err != nil {
 				return err
 			}
-			err = self.Config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc, chainId)
+			err = self.config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc, chainId)
 			if err != nil {
 				return err
 			}
@@ -443,7 +449,7 @@ func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx, typeJoinSplit
 			if err != nil {
 				return err
 			}
-			err = self.Config.DataBase.StoreCommitments(item, typeJoinSplitDesc, chainId)
+			err = self.config.DataBase.StoreCommitments(item, typeJoinSplitDesc, chainId)
 			if err != nil {
 				return err
 			}
@@ -458,14 +464,14 @@ Return block array
 */
 func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
 	result := make([][]*Block, 0)
-	data, err := self.Config.DataBase.FetchAllBlocks()
+	data, err := self.config.DataBase.FetchAllBlocks()
 	if err != nil {
 		return nil, err
 	}
 
 	for chainID, chain := range data {
 		for _, item := range chain {
-			blockBytes, err := self.Config.DataBase.FetchBlock(item)
+			blockBytes, err := self.config.DataBase.FetchBlock(item)
 			if err != nil {
 				return nil, err
 			}
@@ -483,13 +489,13 @@ func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
 
 func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 	result := make([]*Block, 0)
-	data, err := self.Config.DataBase.FetchChainBlocks(chainID)
+	data, err := self.config.DataBase.FetchChainBlocks(chainID)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, item := range data {
-		blockBytes, err := self.Config.DataBase.FetchBlock(item)
+		blockBytes, err := self.config.DataBase.FetchBlock(item)
 		if err != nil {
 			return nil, err
 		}
@@ -509,7 +515,7 @@ Get all hash of blocks in chain
 Return hashes array
 */
 func (self *BlockChain) GetAllHashBlocks() ([][]*common.Hash, error) {
-	data, err := self.Config.DataBase.FetchAllBlocks()
+	data, err := self.config.DataBase.FetchAllBlocks()
 	if err != nil {
 		return nil, err
 	}
@@ -543,7 +549,7 @@ func (self *BlockChain) GetAllHashBlocks() ([][]*common.Hash, error) {
 	// chain.
 	view := NewUtxoViewpoint()
 	b.chainLock.RLock()
-	err := view.fetchUtxosMain(b.Config.DataBase, neededSet)
+	err := view.fetchUtxosMain(b.config.DataBase, neededSet)
 	b.chainLock.RUnlock()
 	return view, err
 }*/
@@ -554,12 +560,12 @@ Param typeJoinSplitDesc - COIN or BOND
 */
 func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string, chainId byte) (*TxViewPoint, error) {
 	view := NewTxViewPoint(chainId)
-	commitments, err := self.Config.DataBase.FetchCommitments(typeJoinSplitDesc, chainId)
+	commitments, err := self.config.DataBase.FetchCommitments(typeJoinSplitDesc, chainId)
 	if err != nil {
 		return nil, err
 	}
 	view.listCommitments[typeJoinSplitDesc] = commitments
-	nullifiers, err := self.Config.DataBase.FetchNullifiers(typeJoinSplitDesc, chainId)
+	nullifiers, err := self.config.DataBase.FetchNullifiers(typeJoinSplitDesc, chainId)
 	if err != nil {
 		return nil, err
 	}
@@ -584,7 +590,7 @@ func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string, chainId byte)
 		view := NewUtxoViewpoint()
 		view.SetBestHash(parentHash)
 
-		err := view.fetchInputUtxos(b.Config.DataBase, block)
+		err := view.fetchInputUtxos(b.config.DataBase, block)
 		stxos := make([]SpentTxOut, 0, countSpentOutputs(block))
 		if err != nil {
 			return false, err
@@ -620,7 +626,7 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 	if parentHash.IsEqual(b.BestState[block.Header.ChainID].BestBlockHash) {
 		view := NewTxViewPoint(block.Header.ChainID)
 
-		err := view.fetchTxViewPoint(b.Config.DataBase, block)
+		err := view.fetchTxViewPoint(b.config.DataBase, block)
 		if err != nil {
 			return false, err
 		}

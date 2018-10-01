@@ -479,7 +479,7 @@ type serverTest struct {
 	// expectedPeerCerts contains a list of PEM blocks of expected
 	// certificates from the client.
 	expectedPeerCerts []string
-	// config, if not nil, contains a custom Config to use for this test.
+	// config, if not nil, contains a custom config to use for this test.
 	config *Config
 	// expectHandshakeErrorIncluding, when not empty, contains a string
 	// that must be a substring of the error resulting from the handshake.
@@ -1277,10 +1277,10 @@ var getConfigForClientTests = []struct {
 		"",
 		func(config *Config) error {
 			// The value of SessionTicketKey should have been
-			// duplicated into the per-connection Config.
+			// duplicated into the per-connection config.
 			for i := range config.SessionTicketKey {
 				if b := config.SessionTicketKey[i]; b != byte(i) {
-					return fmt.Errorf("SessionTicketKey was not duplicated from original Config: byte %d has value %d", i, b)
+					return fmt.Errorf("SessionTicketKey was not duplicated from original config: byte %d has value %d", i, b)
 				}
 			}
 			return nil
@@ -1303,7 +1303,7 @@ var getConfigForClientTests = []struct {
 		"",
 		func(config *Config) error {
 			// The session ticket keys should have been duplicated
-			// into the per-connection Config.
+			// into the per-connection config.
 			if l := len(config.sessionTicketKeys); l != 1 {
 				return fmt.Errorf("got len(sessionTicketKeys) == %d, wanted 1", l)
 			}

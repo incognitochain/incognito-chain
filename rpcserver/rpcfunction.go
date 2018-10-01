@@ -913,7 +913,7 @@ func (self RpcServer) handleCreateActionParamsTransaction(
 	}
 
 	// broadcast message
-	// self.Config.Server.PushTxMessage(hash)
+	// self.config.Server.PushTxMessage(hash)
 
 	return tx.Hash(), nil
 }
@@ -1000,7 +1000,7 @@ func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan str
 }
 
 /*func (self RpcServer) handleDumpPrivkeyRaw(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	//return self.Config.Wallet.DumpPrivkey(params.(string))
+	//return self.config.Wallet.DumpPrivkey(params.(string))
 	temp := params.(string)
 	byteA, _, _ := base58.Base58Check{}.Decode(temp)
 	spedingKey := client.SpendingKey{}
@@ -1047,7 +1047,7 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 //
 //	peersMap := []string{}
 //
-//	peers := self.Config.AddrMgr.AddressCache()
+//	peers := self.config.AddrMgr.AddressCache()
 //	for _, peer := range peers {
 //		peersMap = append(peersMap, peer.RawAddress)
 //	}

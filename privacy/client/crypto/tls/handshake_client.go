@@ -31,7 +31,7 @@ type clientHandshakeState struct {
 
 func makeClientHello(config *Config) (*clientHelloMsg, error) {
 	if len(config.ServerName) == 0 && !config.InsecureSkipVerify {
-		return nil, errors.New("tls: either ServerName or InsecureSkipVerify must be specified in the tls.Config")
+		return nil, errors.New("tls: either ServerName or InsecureSkipVerify must be specified in the tls.config")
 	}
 
 	nextProtosLength := 0

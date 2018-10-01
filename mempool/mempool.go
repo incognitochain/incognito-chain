@@ -17,7 +17,7 @@ import (
 // ID is Peer Ids, so that orphans can be identified by which peer first re-payed them.
 type ID uint64
 
-// Config is a descriptor containing the memory pool configuration.
+// config is a descriptor containing the memory pool configuration.
 type Config struct {
 	// Policy defines the various mempool configuration options related
 	// to policy.

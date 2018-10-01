@@ -186,7 +186,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DB, chainParams 
 
 	// blockTemplateGenerator := mining.NewBlkTmplGenerator(self.MemPool, self.BlockChain)
 
-	// self.Miner = miner.New(&miner.Config{
+	// self.Miner = miner.New(&miner.config{
 	// 	ChainParams:            self.chainParams,
 	// 	BlockTemplateGenerator: blockTemplateGenerator,
 	// 	MiningAddrs:            cfg.MiningAddrs,
@@ -320,18 +320,18 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 	// call address manager to process new outbound peer
 	// push message version
 	// if message version is compatible -> add outbound peer to address manager
-	//for _, listen := range self.ConnManager.Config.ListenerPeers {
+	//for _, listen := range self.ConnManager.config.ListenerPeers {
 	//	listen.NegotiateOutboundProtocol(peer)
 	//}
 	//go self.peerDoneHandler(peer)
 	//
 	//msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
 	//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.BlockChain.BestState.BestBlock.Hash()
-	//msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.Config.ListenerPeers[0].PeerID
+	//msgNew.(*wire.MessageGetBlocks).SenderID = self.ConnManager.config.ListenerPeers[0].PeerID
 	//if err != nil {
 	//	return
 	//}
-	//self.ConnManager.Config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
+	//self.ConnManager.config.ListenerPeers[0].QueueMessageWithEncoding(msgNew, nil)
 
 	// push message version
 	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
@@ -651,7 +651,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 
 	// TODO push message again for remote peer
 	//var dc chan<- struct{}
-	//for _, listen := range self.ConnManager.Config.ListenerPeers {
+	//for _, listen := range self.ConnManager.config.ListenerPeers {
 	//	msg, err := wire.MakeEmptyMessage(wire.CmdVerack)
 	//	if err != nil {
 	//		continue

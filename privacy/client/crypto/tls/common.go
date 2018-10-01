@@ -154,7 +154,7 @@ type ConnectionState struct {
 	HandshakeComplete           bool                  // TLS handshake is complete
 	DidResume                   bool                  // connection resumes a previous TLS connection
 	CipherSuite                 uint16                // cipher suite in use (TLS_RSA_WITH_RC4_128_SHA, ...)
-	NegotiatedProtocol          string                // negotiated next protocol (not guaranteed to be from Config.NextProtos)
+	NegotiatedProtocol          string                // negotiated next protocol (not guaranteed to be from config.NextProtos)
 	NegotiatedProtocolIsMutual  bool                  // negotiated protocol was advertised by server (client side only)
 	ServerName                  string                // server name requested by client, if any (server side only)
 	PeerCertificates            []*x509.Certificate   // certificate chain presented by remote peer
@@ -266,7 +266,7 @@ type ClientHelloInfo struct {
 	// Negotiation Extension is being used (see
 	// https://tools.ietf.org/html/rfc7301#section-3.1).
 	//
-	// Servers can select a protocol by setting Config.NextProtos in a
+	// Servers can select a protocol by setting config.NextProtos in a
 	// GetConfigForClient return value.
 	SupportedProtos []string
 
@@ -324,9 +324,9 @@ const (
 	RenegotiateFreelyAsClient
 )
 
-// A Config structure is used to configure a TLS client or server.
+// A config structure is used to configure a TLS client or server.
 // After one has been passed to a TLS function it must not be
-// modified. A Config may be reused; the tls package will also not
+// modified. A config may be reused; the tls package will also not
 // modify it.
 type Config struct {
 	// Rand provides the source of entropy for nonces and RSA blinding.
@@ -349,7 +349,7 @@ type Config struct {
 	// NameToCertificate maps from a certificate name to an element of
 	// Certificates. Note that a certificate name can be of the form
 	// '*.example.com' and so doesn't have to be a domain name as such.
-	// See Config.BuildNameToCertificate
+	// See config.BuildNameToCertificate
 	// The nil value causes the first element of Certificates to be used
 	// for all connections.
 	NameToCertificate map[string]*Certificate
@@ -379,16 +379,16 @@ type Config struct {
 	GetClientCertificate func(*CertificateRequestInfo) (*Certificate, error)
 
 	// GetConfigForClient, if not nil, is called after a ClientHello is
-	// received from a client. It may return a non-nil Config in order to
-	// change the Config that will be used to handle this connection. If
-	// the returned Config is nil, the original Config will be used. The
-	// Config returned by this callback may not be subsequently modified.
+	// received from a client. It may return a non-nil config in order to
+	// change the config that will be used to handle this connection. If
+	// the returned config is nil, the original config will be used. The
+	// config returned by this callback may not be subsequently modified.
 	//
-	// If GetConfigForClient is nil, the Config passed to Server() will be
+	// If GetConfigForClient is nil, the config passed to Server() will be
 	// used for all connections.
 	//
-	// Uniquely for the fields in the returned Config, session ticket keys
-	// will be duplicated from the original Config if not set.
+	// Uniquely for the fields in the returned config, session ticket keys
+	// will be duplicated from the original config if not set.
 	// Specifically, if SetSessionTicketKeys was called on the original
 	// config but not on the returned config then the ticket keys from the
 	// original config will be copied into the new config before use.
@@ -502,7 +502,7 @@ type Config struct {
 	// used for debugging.
 	KeyLogWriter io.Writer
 
-	serverInitOnce sync.Once // guards calling (*Config).serverInit
+	serverInitOnce sync.Once // guards calling (*config).serverInit
 
 	// mutex protects sessionTicketKeys.
 	mutex sync.RWMutex
@@ -537,7 +537,7 @@ func ticketKeyFromBytes(b [32]byte) (key ticketKey) {
 	return key
 }
 
-// Clone returns a shallow clone of c. It is safe to clone a Config that is
+// Clone returns a shallow clone of c. It is safe to clone a config that is
 // being used concurrently by a TLS client or server.
 func (c *Config) Clone() *Config {
 	// Running serverInit ensures that it's safe to read
@@ -581,7 +581,7 @@ func (c *Config) Clone() *Config {
 
 // serverInit is run under c.serverInitOnce to do initialization of c. If c was
 // returned by a GetConfigForClient callback then the argument should be the
-// Config that was passed to Server, otherwise it should be nil.
+// config that was passed to Server, otherwise it should be nil.
 func (c *Config) serverInit(originalConfig *Config) {
 	if c.SessionTicketsDisabled || len(c.ticketKeys()) != 0 {
 		return

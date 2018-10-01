@@ -76,7 +76,7 @@ type Peer struct {
 	HandleFailed       func(peerConn *PeerConn)
 }
 
-// Config is the struct to hold configuration options useful to Peer.
+// config is the struct to hold configuration options useful to Peer.
 type Config struct {
 	MessageListeners MessageListeners
 	SealerPrvKey     string

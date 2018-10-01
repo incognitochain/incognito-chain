@@ -73,7 +73,7 @@ func NewListener(inner net.Listener, config *Config) net.Listener {
 // at least one certificate or else set GetCertificate.
 func Listen(network, laddr string, config *Config) (net.Listener, error) {
 	if config == nil || (len(config.Certificates) == 0 && config.GetCertificate == nil) {
-		return nil, errors.New("tls: neither Certificates nor GetCertificate set in Config")
+		return nil, errors.New("tls: neither Certificates nor GetCertificate set in config")
 	}
 	l, err := net.Listen(network, laddr)
 	if err != nil {
@@ -94,7 +94,7 @@ func (timeoutError) Temporary() bool { return true }
 // handshake as a whole.
 //
 // DialWithDialer interprets a nil configuration as equivalent to the zero
-// configuration; see the documentation of Config for the defaults.
+// configuration; see the documentation of config for the defaults.
 func DialWithDialer(dialer *net.Dialer, network, addr string, config *Config) (*Conn, error) {
 	// We want the Timeout and Deadline values from dialer to cover the
 	// whole process: TCP connection and TLS handshake. This means that we
@@ -164,7 +164,7 @@ func DialWithDialer(dialer *net.Dialer, network, addr string, config *Config) (*
 // and then initiates a TLS handshake, returning the resulting
 // TLS connection.
 // Dial interprets a nil configuration as equivalent to
-// the zero configuration; see the documentation of Config
+// the zero configuration; see the documentation of config
 // for the defaults.
 func Dial(network, addr string, config *Config) (*Conn, error) {
 	return DialWithDialer(new(net.Dialer), network, addr, config)
