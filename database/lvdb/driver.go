@@ -16,7 +16,7 @@ func init() {
 	}
 }
 
-func openDriver(args ...interface{}) (database.DB, error) {
+func openDriver(args ...interface{}) (database.DatabaseInterface, error) {
 	if len(args) != 1 {
 		return nil, errors.New("invalid arguments")
 	}

@@ -4,8 +4,8 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 )
 
-// DB provides the interface that is used to store blocks.
-type DB interface {
+// DatabaseInterface provides the interface that is used to store blocks.
+type DatabaseInterface interface {
 	StoreBlock(interface{}, byte) error
 	FetchBlock(*common.Hash) ([]byte, error)
 	HasBlock(*common.Hash) (bool, error)

@@ -13,7 +13,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
-func setup(t *testing.T) (database.DB, func()) {
+func setup(t *testing.T) (database.DatabaseInterface, func()) {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %+v", err)
