@@ -153,7 +153,6 @@ func (self BlockChain) UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, bloc
 func (self *BlockChain) createChainState(chainID byte) error {
 	// Create a new block from genesis block and set it as best block of chain
 	var initBlock *Block
-	//genesisChainID, _ := common.GetTxSenderChain(self.config.ChainParams.GenesisBlock.Transactions[0].(*transaction.Tx).AddressLastByte)
 	if chainID == 0 {
 		initBlock = self.config.ChainParams.GenesisBlock
 	} else {
@@ -163,12 +162,6 @@ func (self *BlockChain) createChainState(chainID byte) error {
 		initBlock.Header.Committee = self.config.ChainParams.GenesisBlock.Header.Committee
 	}
 	initBlock.Height = 1
-
-	// Initialize the state related to the best block.  Since it is the
-	// genesis block, use its timestamp for the median time.
-	// numTxns := uint64(len(initBlock.Transactions))
-	//blockSize := uint64(genesisBlock.SerializeSize())
-	//blockWeight := uint64(GetBlockWeight(genesisBlock))
 
 	tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
 	if err := self.UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
@@ -185,9 +178,8 @@ func (self *BlockChain) createChainState(chainID byte) error {
 		return err
 	}
 	view.SetBestHash(initBlock.Hash())
-	// Update the list nullifiers and commitment set using the state of the used tx view point. This
-	// entails adding the new
-	// ones created by the block.
+	// Update the list nullifiers and commitment set using the state of the tx view point. This
+	// entails adding the new ones created by the block.
 	err = self.StoreNullifiersFromTxViewPoint(*view)
 	if err != nil {
 		return err
@@ -213,35 +205,6 @@ func (self *BlockChain) createChainState(chainID byte) error {
 	if err != nil {
 		return err
 	}
-
-	// Spam random blocks
-	// for index := 0; index < 0; index++ {
-	// 	hashBestBlock := self.BestState[0].BestBlockHash
-	// 	newSpamBlock := Block{
-	// 		Header: BlockHeader{
-	// 			Version:       1,
-	// 			PrevBlockHash: hashBestBlock,
-	// 			Timestamp:     time.Now(),
-	// 			Difficulty:    0,     //@todo should be create Difficulty logic
-	// 			Nonce:         index, //@todo should be create Nonce logic
-	// 		},
-	// 		Height: int32(index + 1),
-	// 	}
-	// 	// store block genesis
-	// 	err := self.StoreBlock(&newSpamBlock)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	err = self.StoreBlockIndex(initBlock)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	self.BestState[chainID].Init(&newSpamBlock, 0, 0, numTxns, numTxns, time.Unix(newSpamBlock.Header.Timestamp.Unix(), 0))
-	// 	err = self.StoreBestState(chainID)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
 
 	return nil
 }
