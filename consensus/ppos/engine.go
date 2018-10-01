@@ -63,7 +63,7 @@ type Config struct {
 	blockGen        *BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server          interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -581,9 +581,7 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 			_ = isMainChain
 			_ = ok
 			if err != nil {
-				Logger.log.Info("---------------------------------------------------------------------------------------------------------")
 				Logger.log.Error(err)
-				Logger.log.Info("---------------------------------------------------------------------------------------------------------")
 				return
 			}
 			self.UpdateChain(block)

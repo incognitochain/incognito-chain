@@ -2,16 +2,19 @@ package blockchain
 
 import "fmt"
 
-// maybeAcceptBlock potentially accepts a block into the block chain and, if
-// accepted, returns whether or not it is on the main chain.  It performs
-// several validation checks which depend on its position within the block chain
-// before adding it.  The block is expected to have already gone through
-// ProcessBlock before calling this function with it.
-//
-// The flags are also passed to checkBlockContext and connectBestChain.  See
-// their documentation for how the flags modify their behavior.
-//
-// This function MUST be called with the chain state lock held (for writes).
+/*
+maybeAcceptBlock potentially accepts a block into the block chain and, if
+accepted, returns whether or not it is on the main chain.  It performs
+several validation checks which depend on its position within the block chain
+before adding it.  The block is expected to have already gone through
+ProcessBlock before calling this function with it.
+
+The flags are also passed to checkBlockContext and connectBestChain.  See
+their documentation for how the flags modify their behavior.
+
+This function MUST be called with the chain state lock held (for writes).
+*/
+// #1 - block - candidate block which be needed to check
 func (self *BlockChain) maybeAcceptBlock(block *Block) (bool, error) {
 	// TODO
 	// The height of this block is one more than the referenced previous

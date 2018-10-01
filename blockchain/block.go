@@ -11,11 +11,9 @@ import (
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
-const (
-	// Default length of list tx in block
-	defaultTransactionAlloc = 2048
-)
+/*
 
+ */
 type AgentDataPoint struct {
 	AgentID          string
 	AgentSig         string
@@ -26,6 +24,13 @@ type AgentDataPoint struct {
 	LockTime         int64
 }
 
+/*
+Block is struct present every block in blockchain
+block contains many types of transaction
+- normal tx:
+- action tx:
+
+ */
 type Block struct {
 	Header          BlockHeader
 	Transactions    []transaction.Transaction
@@ -39,7 +44,8 @@ type Block struct {
 }
 
 /*
-Customer UnmarshalJSON to parse list Tx
+Customize UnmarshalJSON to parse list Tx
+because we have many types of block, so we can need to customize data from marshal from json string to build a block
 */
 func (self *Block) UnmarshalJSON(data []byte) error {
 	type Alias Block
@@ -180,29 +186,32 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+/*
+AddTransaction adds a new transaction into block
+ */
+// #1 - tx
 func (self *Block) AddTransaction(tx transaction.Transaction) error {
 	self.Transactions = append(self.Transactions, tx)
 	return nil
 }
 
-func (self *Block) ClearTransactions() {
-	self.Transactions = make([]transaction.Transaction, 0, defaultTransactionAlloc)
-}
+/*
+Hash creates a hash from block data
+ */
 
 func (self Block) Hash() *common.Hash {
-	//if self.blockHash != nil {
-	//	return self.blockHash
-	//}
+	if self.blockHash != nil {
+		return self.blockHash
+	}
 	record := strconv.Itoa(self.Header.Version) +
 		string(self.Header.ChainID) +
 		self.Header.MerkleRoot.String() +
 		self.Header.MerkleRootCommitments.String() +
-		//strconv.FormatInt(self.Header.Timestamp, 10) +
+		strconv.FormatInt(self.Header.Timestamp, 10) +
 		self.Header.PrevBlockHash.String() +
 		strconv.Itoa(self.Header.Nonce) +
 		strconv.Itoa(len(self.Transactions))
 	hash := common.DoubleHashH([]byte(record))
-	//self.blockHash = &hash
-	//return self.blockHash
-	return &hash
+	self.blockHash = &hash
+	return self.blockHash
 }

@@ -32,6 +32,11 @@ type BestState struct {
 	sync.Mutex
 }
 
+/*
+Init create a beststate data from block and commitment tree
+ */
+ // #1 - block
+ // #2 - commitment merkle tree
 func (self *BestState) Init(block *Block, tree *client.IncMerkleTree) {
 	bestBlockHash := block.Hash()
 	self.BestBlock = block
