@@ -140,48 +140,8 @@ func max(x, y int) int {
 	return y
 }
 
-// EstimateTxSize returns the estimated size of the tx in kilobyte
-func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
-	var sizeVersion uint64 = 1  // int8
-	var sizeType uint64 = 8     // string
-	var sizeLockTime uint64 = 8 // int64
-	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
-	var sizejSPubKey uint64 = 64 // [64]byte
-	var sizejSSig uint64 = 64    // [64]byte
-	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
-	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
-}
-
 func (tx *Tx) GetSenderAddrLastByte() byte {
 	return tx.AddressLastByte
-}
-
-// NewTxTemplate returns a new Tx initialized with default data
-func NewTxTemplate() *Tx {
-	//Generate signing key 96 bytes
-	sigPrivKey, err := client.GenerateKey(rand.Reader)
-	if err != nil {
-		panic(err)
-	}
-
-	// Verification key 64 bytes
-	sigPubKey := PubKeyToByteArray(&sigPrivKey.PublicKey)
-
-	tx := &Tx{
-		Version:         TxVersion,
-		Type:            common.TxNormalType,
-		LockTime:        time.Now().Unix(),
-		Fee:             0,
-		Descs:           nil,
-		JSPubKey:        sigPubKey,
-		JSSig:           nil,
-		AddressLastByte: 0,
-
-		txId:       nil,
-		sigPrivKey: sigPrivKey,
-	}
-	return tx
 }
 
 // CreateTx creates transaction with appropriate proof for a private payment
@@ -241,7 +201,7 @@ func CreateTx(
 	senderFullKey.ImportFromPrivateKeyByte(senderKey[:])
 
 	// Create tx before adding js descs
-	tx := NewTxTemplate()
+	tx := CreateEmptyTx()
 	tempKeySet := cashec.KeySet{}
 	tempKeySet.ImportFromPrivateKey(senderKey)
 	lastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
@@ -656,7 +616,7 @@ func GenerateProofForGenesisTx(
 	tempKeySet.ImportFromPrivateKey(inputs[0].Key)
 	addressLastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
 
-	tx := NewTxTemplate()
+	tx := CreateEmptyTx()
 	tx.JSPubKey = sigPubKey
 	tx.AddressLastByte = addressLastByte
 	fmt.Printf("JSPubKey: %x\n", tx.JSPubKey)
@@ -738,4 +698,44 @@ func SortArrayTxs(data []Tx, sortType int, sortAsc bool) {
 			// do nothing
 		}
 	}
+}
+
+// EstimateTxSize returns the estimated size of the tx in kilobyte
+func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
+	var sizeVersion uint64 = 1  // int8
+	var sizeType uint64 = 8     // string
+	var sizeLockTime uint64 = 8 // int64
+	var sizeFee uint64 = 8      // uint64
+	var sizeDescs = uint64(max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+	var sizejSPubKey uint64 = 64 // [64]byte
+	var sizejSSig uint64 = 64    // [64]byte
+	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
+	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
+}
+
+// CreateEmptyTx returns a new Tx initialized with default data
+func CreateEmptyTx() *Tx {
+	//Generate signing key 96 bytes
+	sigPrivKey, err := client.GenerateKey(rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+
+	// Verification key 64 bytes
+	sigPubKey := PubKeyToByteArray(&sigPrivKey.PublicKey)
+
+	tx := &Tx{
+		Version:         TxVersion,
+		Type:            common.TxNormalType,
+		LockTime:        time.Now().Unix(),
+		Fee:             0,
+		Descs:           nil,
+		JSPubKey:        sigPubKey,
+		JSSig:           nil,
+		AddressLastByte: 0,
+
+		txId:       nil,
+		sigPrivKey: sigPrivKey,
+	}
+	return tx
 }

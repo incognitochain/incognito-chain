@@ -379,7 +379,7 @@ func createCoinbaseTx(
 	// Shuffle output notes randomly (if necessary)
 
 	// Generate proof and sign tx
-	tx := transaction.NewTxTemplate()
+	tx := transaction.CreateEmptyTx()
 	tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
 	var coinbaseTxFee uint64 // Zero fee for coinbase tx
 	rtMap := map[byte][]byte{chainID: rt}

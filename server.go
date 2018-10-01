@@ -311,33 +311,10 @@ func (self *Server) InboundPeerConnected(peerConn *peer.PeerConn) {
 */
 func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 	Logger.log.Info("Outbound PEER connected with PEER Id - " + peerConn.PeerID.String())
-
-	// push message version
-	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
-	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
-	msg.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.ListeningAddress
-	msg.(*wire.MessageVersion).RawLocalAddress = peerConn.ListenerPeer.RawAddress
-	msg.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerID
-	msg.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
-	msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
-	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
-	msg.(*wire.MessageVersion).LastBlock = 0
-	msg.(*wire.MessageVersion).ProtocolVersion = 1
-	// Validate Public Key from SealerPrvKey
-	if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
-		keySet, err := cfg.GetSealerKeySet()
-		if err != nil {
-			Logger.log.Critical("Invalid sealer's private key")
-			return
-		}
-		msg.(*wire.MessageVersion).PublicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))
-	}
-
+	err := self.PushVersionMessage(peerConn)
 	if err != nil {
-		return
+		Logger.log.Error(err)
 	}
-	var dc chan<- struct{}
-	peerConn.QueueMessageWithEncoding(msg, dc)
 }
 
 /*
@@ -396,7 +373,7 @@ func (self Server) peerHandler() {
 	Logger.log.Info("Start peer handler")
 
 	if !cfg.DisableDNSSeed {
-		// TODO load peer from seed DNS
+		// load peer from seed DNS
 		// add to address manager
 		//self.AddrManager.AddAddresses(make([]*peer.Peer, 0))
 
@@ -626,19 +603,6 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	}
 	//
 
-	// if version message is ok -> add to addManager
-	//self.AddrManager.Good(remotePeer)
-
-	// TODO push message again for remote peer
-	//var dc chan<- struct{}
-	//for _, listen := range self.ConnManager.config.ListenerPeers {
-	//	msg, err := wire.MakeEmptyMessage(wire.CmdVerack)
-	//	if err != nil {
-	//		continue
-	//	}
-	//	listen.QueueMessageWithEncoding(msg, dc)
-	//}
-
 	msgV, err := wire.MakeEmptyMessage(wire.CmdVerack)
 	if err != nil {
 		return
@@ -650,29 +614,10 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 
 	//	push version message again
 	if !peerConn.VerAckReceived() {
-		msgS, err := wire.MakeEmptyMessage(wire.CmdVersion)
-		msgS.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
-		msgS.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.ListeningAddress
-		msgS.(*wire.MessageVersion).RawLocalAddress = peerConn.ListenerPeer.RawAddress
-		msgS.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerID
-		msgS.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
-		msgS.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
-		msgS.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
-		msgS.(*wire.MessageVersion).LastBlock = 0
-		msgS.(*wire.MessageVersion).ProtocolVersion = 1
-		// Validate Public Key from SealerPrvKey
-		if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
-			keySet, err := cfg.GetSealerKeySet()
-			if err != nil {
-				Logger.log.Critical("Invalid sealer's private key")
-				return
-			}
-			msgS.(*wire.MessageVersion).PublicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))
-		}
+		err := self.PushVersionMessage(peerConn)
 		if err != nil {
-			return
+			Logger.log.Error(err)
 		}
-		peerConn.QueueMessageWithEncoding(msgS, nil)
 	}
 
 	Logger.log.Info("Receive version message END")
@@ -912,5 +857,35 @@ func (self *Server) PushMessageGetChainState() error {
 		Logger.log.Info("Send a GetChainState: %v", msg)
 		listener.QueueMessageWithEncoding(msg, dc)
 	}
+	return nil
+}
+
+func (self Server) PushVersionMessage(peerConn *peer.PeerConn) (error) {
+	// push message version
+	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
+	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
+	msg.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.ListeningAddress
+	msg.(*wire.MessageVersion).RawLocalAddress = peerConn.ListenerPeer.RawAddress
+	msg.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerID
+	msg.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
+	msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
+	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
+	msg.(*wire.MessageVersion).ProtocolVersion = 1
+
+	// Validate Public Key from SealerPrvKey
+	if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
+		keySet, err := cfg.GetSealerKeySet()
+		if err != nil {
+			Logger.log.Critical("Invalid sealer's private key")
+			return err
+		}
+		msg.(*wire.MessageVersion).PublicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))
+	}
+
+	if err != nil {
+		return err
+	}
+	var dc chan<- struct{}
+	peerConn.QueueMessageWithEncoding(msg, dc)
 	return nil
 }
