@@ -26,7 +26,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/connmanager"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/mempool"
-	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonrpc"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
@@ -247,7 +246,7 @@ func (self RpcServer) checkAuth(r *http.Request, require bool) (bool, bool, erro
 		return true, false, nil
 	}
 
-	// Request's auth doesn't match either user
+	// RpcRequest's auth doesn't match either user
 	Logger.log.Warnf("RPC authentication failure from %s", r.RemoteAddr)
 	return false, false, errors.New("auth failure")
 }
@@ -323,7 +322,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 	var responseID interface{}
 	var jsonErr error
 	var result interface{}
-	var request jsonrpc.Request
+	var request RpcRequest
 	if err := json.Unmarshal(body, &request); err != nil {
 		jsonErr = &RPCError{
 			Code:    ErrRPCParse.Code,
@@ -350,13 +349,13 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 		//
 		// RPC quirks can be enabled by the user to avoid compatibility issues
 		// with software relying on Core's behavior.
-		if request.ID == nil && !(self.Config.RPCQuirks && request.Jsonrpc == "") {
+		if request.Id == nil && !(self.Config.RPCQuirks && request.Jsonrpc == "") {
 			return
 		}
 
-		// The parse was at least successful enough to have an ID so
+		// The parse was at least successful enough to have an Id so
 		// set it for the response.
-		responseID = request.ID
+		responseID = request.Id
 
 		// Setup a close notifier.  Since the connection is hijacked,
 		// the CloseNotifer on the ResponseWriter is not available.

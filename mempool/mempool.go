@@ -14,7 +14,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
-// ID is Peer Ids, so that orphans can be identified by which peer first re-payed them.
+// Id is Peer Ids, so that orphans can be identified by which peer first re-payed them.
 type ID uint64
 
 // config is a descriptor containing the memory pool configuration.
@@ -38,7 +38,7 @@ type Config struct {
 // to it such as an expiration time to help prevent caching the orphan forever.
 /*type orphanTx struct {
 	tx         *transaction.Tx
-	id         ID
+	id         Id
 	expiration time.Time
 }*/
 

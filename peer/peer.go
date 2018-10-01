@@ -135,7 +135,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	}
 
 	// Generate a key pair for this Host. We will use it
-	// to obtain a valid Host ID.
+	// to obtain a valid Host Id.
 	priv, _, err := crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, r)
 	if err != nil {
 		return &self, err
@@ -172,7 +172,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	// by encapsulating both addresses:
 	addr := basicHost.Addrs()[0]
 	fullAddr := addr.Encapsulate(hostAddr)
-	Logger.log.Infof("I am listening on %s with PEER ID - %s\n", fullAddr, basicHost.ID().String())
+	Logger.log.Infof("I am listening on %s with PEER Id - %s\n", fullAddr, basicHost.ID().String())
 	pid, err := fullAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		log.Print(err)
@@ -259,23 +259,23 @@ func (self *Peer) NumOutbound() int {
 }
 
 func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
-	Logger.log.Infof("Opening stream to PEER ID - %s \n", peer.PeerID.String())
+	Logger.log.Infof("Opening stream to PEER Id - %s \n", peer.PeerID.String())
 
 	self.peerConnsMutex.Lock()
 	_peerConn, ok := self.PeerConns[peer.PeerID.String()]
 	self.peerConnsMutex.Unlock()
 	if ok && _peerConn.State() == ConnEstablished {
-		Logger.log.Infof("Checked Existed PEER ID - %s", peer.PeerID.String())
+		Logger.log.Infof("Checked Existed PEER Id - %s", peer.PeerID.String())
 		return nil, nil
 	}
 
 	if peer.PeerID.Pretty() == self.PeerID.Pretty() {
-		Logger.log.Infof("Checked Myself PEER ID - %s", peer.PeerID.String())
+		Logger.log.Infof("Checked Myself PEER Id - %s", peer.PeerID.String())
 		return nil, nil
 	}
 
 	if self.NumOutbound() >= self.MaxOutbound && self.MaxOutbound > 0 && !ok {
-		Logger.log.Infof("Checked Max Outbound Connection PEER ID - %s", peer.PeerID.String())
+		Logger.log.Infof("Checked Max Outbound Connection PEER Id - %s", peer.PeerID.String())
 
 		//push to pending peers
 		self.ConnPending(peer)
@@ -285,7 +285,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	stream, err := self.Host.NewStream(context.Background(), peer.PeerID, "/blockchain/1.0.0")
 	Logger.log.Info(peer, stream, err)
 	if err != nil {
-		Logger.log.Errorf("Fail in opening stream to PEER ID - %s with err: %s", self.PeerID.String(), err.Error())
+		Logger.log.Errorf("Fail in opening stream to PEER Id - %s with err: %s", self.PeerID.String(), err.Error())
 		return nil, err
 	}
 
@@ -325,7 +325,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	//timeOutVerAck := make(chan struct{})
 	//time.AfterFunc(time.Second*10, func() {
 	//	if !peerConn.VerAckReceived() {
-	//		Logger.log.Infof("NewPeerConnection timeoutVerack timeout PEER ID %s", peerConn.PeerID.String())
+	//		Logger.log.Infof("NewPeerConnection timeoutVerack timeout PEER Id %s", peerConn.PeerID.String())
 	//		timeOutVerAck <- struct{}{}
 	//	}
 	//})
@@ -333,10 +333,10 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	for {
 		select {
 		case <-peerConn.disconnect:
-			Logger.log.Infof("NewPeerConnection Close Stream PEER ID %s", peerConn.PeerID.String())
+			Logger.log.Infof("NewPeerConnection Close Stream PEER Id %s", peerConn.PeerID.String())
 			return &peerConn, nil
 		//case <-timeOutVerAck:
-		//	Logger.log.Infof("NewPeerConnection timeoutVerack PEER ID %s", peerConn.PeerID.String())
+		//	Logger.log.Infof("NewPeerConnection timeoutVerack PEER Id %s", peerConn.PeerID.String())
 		//	break
 		}
 	}
@@ -357,12 +357,12 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	}
 
 	remotePeerID := stream.Conn().RemotePeer()
-	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with ID %s", self.Host.ID().String(), remotePeerID.String())
+	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with Id %s", self.Host.ID().String(), remotePeerID.String())
 	self.peerConnsMutex.Lock()
 	_peerConn, ok := self.PeerConns[remotePeerID.String()]
 	self.peerConnsMutex.Unlock()
 	if ok && _peerConn.State() == ConnEstablished {
-		Logger.log.Infof("Received a new stream existed PEER ID - %s", remotePeerID)
+		Logger.log.Infof("Received a new stream existed PEER Id - %s", remotePeerID)
 
 		return
 	}
@@ -407,7 +407,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	//timeOutVerAck := make(chan struct{})
 	//time.AfterFunc(time.Second*10, func() {
 	//	if !peerConn.VerAckReceived() {
-	//		Logger.log.Infof("HandleStream timeoutVerack timeout PEER ID %s", peerConn.PeerID.String())
+	//		Logger.log.Infof("HandleStream timeoutVerack timeout PEER Id %s", peerConn.PeerID.String())
 	//		timeOutVerAck <- struct{}{}
 	//	}
 	//})
@@ -415,10 +415,10 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	for {
 		select {
 		case <-peerConn.disconnect:
-			Logger.log.Infof("HandleStream close stream PEER ID %s", peerConn.PeerID.String())
+			Logger.log.Infof("HandleStream close stream PEER Id %s", peerConn.PeerID.String())
 			return
 		//case <-timeOutVerAck:
-		//	Logger.log.Infof("HandleStream timeoutVerack PEER ID %s", peerConn.PeerID.String())
+		//	Logger.log.Infof("HandleStream timeoutVerack PEER Id %s", peerConn.PeerID.String())
 		//	break
 		}
 	}

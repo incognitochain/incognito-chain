@@ -256,7 +256,7 @@ func (self *ConnManager) Connect(addr string, pubKey string) {
 	if atomic.LoadInt32(&self.stop) != 0 {
 		return
 	}
-	// The following code extracts target's peer ID from the
+	// The following code extracts target's peer Id from the
 	// given multiaddress
 	ipfsaddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
@@ -488,7 +488,7 @@ listen:
 						_, exist := self.DiscoveredPeers[rawPeer.PublicKey]
 						//Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
 						if !exist {
-							// The following code extracts target's peer ID from the
+							// The following code extracts target's peer Id from the
 							// given multiaddress
 							ipfsaddr, err := ma.NewMultiaddr(rawPeer.RawAddress)
 							if err != nil {

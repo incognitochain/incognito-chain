@@ -1712,7 +1712,7 @@ func TestConstraintCases(t *testing.T) {
 		// parent level. Since all certificates at a given level have
 		// the same name and public key, any parent certificate is
 		// sufficient to get the correct issuer name and authority
-		// key ID.
+		// key Id.
 		var parent *Certificate
 		parentKey := rootKey
 

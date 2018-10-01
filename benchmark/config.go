@@ -14,7 +14,7 @@ const (
 
 // See loadConfig for details on the configuration load process.
 type config struct {
-	Strategy	int		`long:"strategy" short:"s" description:"Strategy ID"`
+	Strategy	int		`long:"strategy" short:"s" description:"Strategy Id"`
 	TotalTxs	int		`long:"txs" short:"t" description:"Total transactions to test"`
 	RPCAddress	[]string	`long:"rpcaddress" short:"r" description:"RPC address of any node"`
 }

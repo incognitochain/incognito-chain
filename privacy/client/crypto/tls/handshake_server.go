@@ -334,7 +334,7 @@ func (hs *serverHandshakeState) doResumeHandshake() error {
 	c := hs.c
 
 	hs.hello.cipherSuite = hs.suite.id
-	// We echo the client's session ID in the ServerHello to let it know
+	// We echo the client's session Id in the ServerHello to let it know
 	// that we're doing a resumption.
 	hs.hello.sessionId = hs.clientHello.sessionId
 	hs.hello.ticketSupported = hs.sessionState.usedOldKey

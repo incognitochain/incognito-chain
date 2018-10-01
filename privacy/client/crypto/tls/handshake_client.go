@@ -150,7 +150,7 @@ func (c *Conn) clientHandshake() error {
 
 	if session != nil {
 		hello.sessionTicket = session.sessionTicket
-		// A random session ID is used to detect when the
+		// A random session Id is used to detect when the
 		// server accepted the ticket and is resuming a session
 		// (see RFC 5077).
 		hello.sessionId = make([]byte, 16)

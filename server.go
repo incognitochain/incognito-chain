@@ -315,7 +315,7 @@ func (self *Server) InboundPeerConnected(peerConn *peer.PeerConn) {
 // request instance and the connection itself, and finally notifies the address
 // manager of the attempt.
 func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
-	Logger.log.Info("Outbound PEER connected with PEER ID - " + peerConn.PeerID.String())
+	Logger.log.Info("Outbound PEER connected with PEER Id - " + peerConn.PeerID.String())
 	// TODO:
 	// call address manager to process new outbound peer
 	// push message version

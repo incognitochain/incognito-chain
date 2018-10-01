@@ -7,7 +7,7 @@ import (
 
 // Response is the general form of a JSON-RPC response.  The type of the Result
 // field varies from one command to the next, so it is implemented as an
-// interface.  The ID field has to be a pointer for Go to put a null in it when
+// interface.  The Id field has to be a pointer for Go to put a null in it when
 // empty.
 type Response struct {
 	Result json.RawMessage `json:"Result"`
@@ -35,12 +35,12 @@ func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*Re
 	}, nil
 }
 
-// IsValidIDType checks that the ID field (which can go in any of the JSON-RPC
+// IsValidIDType checks that the Id field (which can go in any of the JSON-RPC
 // requests, responses, or notifications) is valid.  JSON-RPC 1.0 allows any
 // valid JSON type.  JSON-RPC 2.0 (which coind follows for some parts) only
 // allows string, number, or null, so this function restricts the allowed types
 // to that list.  This function is only provided in case the caller is manually
-// marshalling for some reason.    The functions which accept an ID in this
+// marshalling for some reason.    The functions which accept an Id in this
 // package already call this function to ensure the provided id is valid.
 func IsValidIDType(id interface{}) bool {
 	switch id.(type) {
