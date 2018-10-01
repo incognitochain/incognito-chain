@@ -68,7 +68,7 @@ type Config struct {
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
 		PushMessageToPeer(wire.Message, peer2.ID) error
-		GetChainState() error
+		PushMessageGetChainState() error
 	}
 	FeeEstimator map[byte]*mempool.FeeEstimator
 }
@@ -86,6 +86,7 @@ func (self *Engine) Start() error {
 		self.Unlock()
 		return errors.New("Consensus engine is already started")
 	}
+	// TODO - change constant
 	time.Sleep(1 * time.Second)
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
 	self.started = true
@@ -116,25 +117,17 @@ func (self *Engine) Start() error {
 	self.validatedChainsHeight.Heights = self.knownChainsHeight.Heights
 	self.currentCommittee = self.config.BlockChain.BestState[0].BestBlock.Header.Committee
 
+	// TODO - change constant
 	time.Sleep(2 * time.Second)
 	go func() {
 		for {
-			self.config.Server.GetChainState()
+			self.config.Server.PushMessageGetChainState()
 			time.Sleep(10 * time.Second)
 		}
 	}()
 	self.quit = make(chan struct{})
 	self.wg.Add(1)
 
-	// Test GetPeerIdsFromPublicKey
-	//go func(){
-	//	for {
-	//		realPubKey := "vHX/aAVJsH4sHpYAHR3i1guLSE07QV3l"
-	//		peerIds := self.config.Server.GetPeerIdsFromPublicKey(realPubKey)
-	//		Logger.log.Info("DEBUG GetPeerIdsFromPublicKey", peerIds)
-	//		time.Sleep(5 * time.Second)
-	//	}
-	//}()
 	return nil
 }
 
@@ -148,7 +141,6 @@ func (self *Engine) Stop() error {
 	}
 	self.StopSealer()
 	close(self.quit)
-	// self.wg.Wait()
 	self.started = false
 	Logger.log.Info("Consensus engine stopped")
 	return nil

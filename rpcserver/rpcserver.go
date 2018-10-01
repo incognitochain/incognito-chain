@@ -65,7 +65,7 @@ type RpcServerConfig struct {
 
 	ChainParams    *blockchain.Params
 	BlockChain     *blockchain.BlockChain
-	Db             *database.DB
+	Db             *database.DatabaseInterface
 	Wallet         *wallet.Wallet
 	ConnMgr        *connmanager.ConnManager
 	AddrMgr        *addrmanager.AddrManager

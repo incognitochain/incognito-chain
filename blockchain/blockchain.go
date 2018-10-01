@@ -42,7 +42,7 @@ type Config struct {
 	// store all metadata created by this package.
 	//
 	// This field is required.
-	DataBase database.DB
+	DataBase database.DatabaseInterface
 
 	// Interrupt specifies a channel the caller can close to signal that
 	// long running operations, such as catching up indexes or performing
@@ -224,7 +224,7 @@ func (self *BlockChain) GetBlockHashByBlockHeight(height int32, chainId byte) (*
 }
 
 /*
-Fetch DB and get block by index(height) of block
+Fetch DatabaseInterface and get block by index(height) of block
 */
 func (self *BlockChain) GetBlockByBlockHeight(height int32, chainId byte) (*Block, error) {
 	hashBlock, err := self.config.DataBase.GetBlockByIndex(height, chainId)
@@ -247,7 +247,7 @@ func (self *BlockChain) GetBlockByBlockHeight(height int32, chainId byte) (*Bloc
 }
 
 /*
-Fetch DB and get block data by block hash
+Fetch DatabaseInterface and get block data by block hash
 */
 func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 	blockBytes, err := self.config.DataBase.FetchBlock(hash)

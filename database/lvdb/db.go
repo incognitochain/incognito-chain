@@ -27,7 +27,7 @@ var (
 	feeEstimator      = []byte("feeEstimator")
 )
 
-func open(dbPath string) (database.DB, error) {
+func open(dbPath string) (database.DatabaseInterface, error) {
 	lvdb, err := leveldb.OpenFile(filepath.Join(dbPath, "db"), nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "levelvdb.OpenFile %s", dbPath)

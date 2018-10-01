@@ -3,10 +3,10 @@ package database
 import "github.com/pkg/errors"
 
 // Driver defines a structure for backend drivers to use when they registered
-// themselves as a backend which implements the DB interface.
+// themselves as a backend which implements the DatabaseInterface interface.
 type Driver struct {
 	DbType string
-	Open   func(args ...interface{}) (DB, error)
+	Open   func(args ...interface{}) (DatabaseInterface, error)
 }
 
 var drivers = make(map[string]*Driver)
@@ -21,7 +21,7 @@ func RegisterDriver(d Driver) error {
 }
 
 // Open opens the db connection.
-func Open(typ string, args ...interface{}) (DB, error) {
+func Open(typ string, args ...interface{}) (DatabaseInterface, error) {
 	d, exists := drivers[typ]
 	if !exists {
 		return nil, errors.Errorf("driver %s is not registered", typ)
