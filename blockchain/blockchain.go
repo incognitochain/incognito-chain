@@ -150,14 +150,14 @@ func (self BlockChain) UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, bloc
 // genesis block.  This includes creating the necessary buckets and inserting
 // the genesis block, so it must only be called on an uninitialized database.
 */
-func (self *BlockChain) createChainState(chainID byte) error {
+func (self *BlockChain) createChainState(chainId byte) error {
 	// Create a new block from genesis block and set it as best block of chain
 	var initBlock *Block
-	if chainID == 0 {
+	if chainId == 0 {
 		initBlock = self.config.ChainParams.GenesisBlock
 	} else {
 		initBlock = &Block{}
-		initBlock.Header.ChainID = chainID
+		initBlock.Header.ChainID = chainId
 		initBlock.Header.Timestamp = self.config.ChainParams.GenesisBlock.Header.Timestamp
 		initBlock.Header.Committee = self.config.ChainParams.GenesisBlock.Header.Committee
 	}
@@ -168,11 +168,11 @@ func (self *BlockChain) createChainState(chainID byte) error {
 		return err
 	}
 
-	self.BestState[chainID] = &BestState{}
-	self.BestState[chainID].Init(initBlock, tree)
+	self.BestState[chainId] = &BestState{}
+	self.BestState[chainId].Init(initBlock, tree)
 
 	// save nullifiers and commitments from genesisblock
-	view := NewTxViewPoint(chainID)
+	view := NewTxViewPoint(chainId)
 	err := view.fetchTxViewPoint(self.config.DataBase, initBlock)
 	if err != nil {
 		return err
@@ -201,7 +201,7 @@ func (self *BlockChain) createChainState(chainID byte) error {
 		return err
 	}
 	// store best state
-	err = self.StoreBestState(chainID)
+	err = self.StoreBestState(chainId)
 	if err != nil {
 		return err
 	}
@@ -219,15 +219,15 @@ func (self *BlockChain) GetBlockHeightByBlockHash(hash *common.Hash) (int32, byt
 /*
 Get block hash by block index(height)
 */
-func (self *BlockChain) GetBlockHashByBlockHeight(height int32, chainID byte) (*common.Hash, error) {
-	return self.config.DataBase.GetBlockByIndex(height, chainID)
+func (self *BlockChain) GetBlockHashByBlockHeight(height int32, chainId byte) (*common.Hash, error) {
+	return self.config.DataBase.GetBlockByIndex(height, chainId)
 }
 
 /*
 Fetch DB and get block by index(height) of block
 */
-func (self *BlockChain) GetBlockByBlockHeight(height int32, chainID byte) (*Block, error) {
-	hashBlock, err := self.config.DataBase.GetBlockByIndex(height, chainID)
+func (self *BlockChain) GetBlockByBlockHeight(height int32, chainId byte) (*Block, error) {
+	hashBlock, err := self.config.DataBase.GetBlockByIndex(height, chainId)
 	if err != nil {
 		return nil, err
 	}
@@ -265,8 +265,8 @@ func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 /*
 Store best state of block(best block, num of tx, ...) into Database
 */
-func (self *BlockChain) StoreBestState(chainID byte) error {
-	return self.config.DataBase.StoreBestBlock(self.BestState[chainID], chainID)
+func (self *BlockChain) StoreBestState(chainId byte) error {
+	return self.config.DataBase.StoreBestBlock(self.BestState[chainId], chainId)
 }
 
 /*
