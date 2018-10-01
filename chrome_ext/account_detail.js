@@ -1,10 +1,6 @@
-function numberWithCommas(x) {
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
 window.onload = function () {
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
-    xhr.open("POST", api_url);
+    xhr.open("POST", window.localStorage['cash_node_url']);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
@@ -41,7 +37,7 @@ window.onload = function () {
 
 function dumpprivkey(publicKey) {
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
-    xhr.open("POST", api_url);
+    xhr.open("POST", window.localStorage['cash_node_url']);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
@@ -74,7 +70,7 @@ function getbalance() {
     var passphrase = window.localStorage['cash_passphrase'];
 
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
-    xhr.open("POST", api_url);
+    xhr.open("POST", window.localStorage['cash_node_url']);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
@@ -116,7 +112,7 @@ function sendmany() {
     showLoading(true);
 
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
-    xhr.open("POST", api_url);
+    xhr.open("POST", window.localStorage['cash_node_url']);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false);

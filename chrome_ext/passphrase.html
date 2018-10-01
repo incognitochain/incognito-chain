@@ -5,19 +5,32 @@
     <title>Passpharse</title>
     <script src='const.js'></script>
     <script src='passphrase.js'></script>
+    <script src='jquery-3.3.1.min.js'></script>
+    <script src='popper.min.js'></script>
+    <script src='bootstrap.min.js'></script>
+    <link rel="stylesheet" href="bootstrap.min.css"/>
 </head>
 
 <style>
 
 </style>
 
-<body style="width: 600px; height: 550px">
+<body style="width: 600px; height: 550px; padding: 10px;">
 
 <div id="myDiv" class="animate-bottom">
-    <h2>Passpharse</h2>
-    <h3>Enter Passpharse</h3>
-    <input id="txt_passphrase"></input>
-    <button id="bt_save" type="button">Save</button>
+    <form>
+        <a href="index.html" id="lnk_back">Back</a>
+    </form>
+    <form>
+        <h4>Passpharse</h4>
+        <div class="form-group">
+            <label>Passpharse</label>
+            <input id="txt_passphrase" class="form-control"></input>
+        </div>
+        <div class="form-group">
+            <button id="bt_save" class="btn btn-primary">Save</button>
+        </div>
+    </form>
 </div>
 
 </body>
