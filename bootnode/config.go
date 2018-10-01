@@ -21,7 +21,7 @@ func newConfigParser(cfg *config, options flags.Options) *flags.Parser {
 	return parser
 }
 
-/**
+/*
 // loadConfig initializes and parses the config using a config file and command
 // line options.
 //

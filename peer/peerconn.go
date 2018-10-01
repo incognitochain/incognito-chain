@@ -49,7 +49,7 @@ type PeerConn struct {
 	HandleFailed       func(peerConn *PeerConn)
 }
 
-/**
+/*
 Handle all in message
 */
 func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
@@ -183,7 +183,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	}
 }
 
-/**
+/*
 // OutMessageHandler handles the queuing of outgoing data for the peer. This runs as
 // a muxer for various sources of input so we can ensure that server and peer
 // handlers will not block on us sending a message.  That data is then passed on

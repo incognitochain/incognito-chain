@@ -41,7 +41,7 @@ func HashRipeMD160(data []byte) ([]byte, error) {
 	return hasher.Sum(nil), nil
 }
 
-/**
+/*
 Double hash or HASH 160
  */
 func Hash160(data []byte) ([]byte, error) {

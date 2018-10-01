@@ -1,6 +1,6 @@
 package blockchain
 
-/**
+/*
 Use these function to validate common data in blockchain
  */
 
@@ -9,7 +9,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
-/**
+/*
 IsCoinBaseTx determines whether or not a transaction is a coinbase.
 */
 func IsCoinBaseTx(tx transaction.Transaction) bool {

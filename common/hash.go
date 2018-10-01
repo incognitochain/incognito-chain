@@ -26,7 +26,7 @@ func (hash *Hash) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-/**
+/*
 String returns the Hash as the hexadecimal string of the byte-reversed
  hash.
 */
@@ -37,7 +37,7 @@ func (hash Hash) String() string {
 	return hex.EncodeToString(hash[:])
 }
 
-/**
+/*
 CloneBytes returns a copy of the bytes which represent the hash as a byte
 slice.
 NOTE: It is generally cheaper to just slice the hash directly thereby reusing the same bytes rather than calling this method.
@@ -49,7 +49,7 @@ func (hash *Hash) CloneBytes() []byte {
 	return newHash
 }
 
-/**
+/*
 SetBytes sets the bytes which represent the hash.  An error is returned if the number of bytes passed in is not HashSize.
 */
 func (hash *Hash) SetBytes(newHash []byte) error {
@@ -70,7 +70,7 @@ func (hash *Hash) BytesToHash(b []byte) Hash {
 	return h
 }
 
-/**
+/*
 IsEqual returns true if target is the same as hash.
 */
 func (hash *Hash) IsEqual(target *Hash) bool {
@@ -83,7 +83,7 @@ func (hash *Hash) IsEqual(target *Hash) bool {
 	return hash.String() == target.String()
 }
 
-/**
+/*
 NewHash returns a new Hash from a byte slice.  An error is returned if the number of bytes passed in is not HashSize.
 */
 func (hash Hash) NewHash(newHash []byte) (*Hash, error) {
@@ -94,7 +94,7 @@ func (hash Hash) NewHash(newHash []byte) (*Hash, error) {
 	return &hash, err
 }
 
-/**
+/*
 // NewHashFromStr creates a Hash from a hash string.  The string should be
 // the hexadecimal string of a byte-reversed hash, but any missing characters
 // result in zero padding at the end of the Hash.
@@ -107,7 +107,7 @@ func (self Hash) NewHashFromStr(hash string) (*Hash, error) {
 	return &self, nil
 }
 
-/**
+/*
 // Decode decodes the byte-reversed hexadecimal string encoding of a Hash to a
 // destination.
 */

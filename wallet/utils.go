@@ -82,7 +82,7 @@ func compressPublicKey(x *big.Int, y *big.Int) []byte {
 //}
 //
 
-/**
+/*
 Numerical
 */
 func uint32Bytes(i uint32) []byte {

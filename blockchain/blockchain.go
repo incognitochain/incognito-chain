@@ -238,21 +238,21 @@ func (self *BlockChain) createChainState(chainID byte) error {
 	return nil
 }
 
-/**
+/*
 Get block index(height) of block
 */
 func (self *BlockChain) GetBlockHeightByBlockHash(hash *common.Hash) (int32, byte, error) {
 	return self.Config.DataBase.GetIndexOfBlock(hash)
 }
 
-/**
+/*
 Get block hash by block index(height)
 */
 func (self *BlockChain) GetBlockHashByBlockHeight(height int32, chainID byte) (*common.Hash, error) {
 	return self.Config.DataBase.GetBlockByIndex(height, chainID)
 }
 
-/**
+/*
 Fetch DB and get block by index(height) of block
 */
 func (self *BlockChain) GetBlockByBlockHeight(height int32, chainID byte) (*Block, error) {
@@ -275,7 +275,7 @@ func (self *BlockChain) GetBlockByBlockHeight(height int32, chainID byte) (*Bloc
 	return &block, nil
 }
 
-/**
+/*
 Fetch DB and get block data by block hash
 */
 func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
@@ -291,7 +291,7 @@ func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 	return &block, nil
 }
 
-/**
+/*
 Store best state of block(best block, num of tx, ...) into Database
 */
 func (self *BlockChain) StoreBestState(chainID byte) error {
@@ -307,14 +307,14 @@ func (self *BlockChain) GetBestState(chainID byte) (*BestState, error) {
 	return &bestState, err
 }
 
-/**
+/*
 Store block into Database
 */
 func (self *BlockChain) StoreBlock(block *Block) error {
 	return self.Config.DataBase.StoreBlock(block, block.Header.ChainID)
 }
 
-/**
+/*
 Save index(height) of block by block hash
 and
 Save block hash by index(height) of block
@@ -352,7 +352,7 @@ func (self *BlockChain) StoreBlockIndex(block *Block) error {
 	return nil
 }*/
 
-/**
+/*
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
 */
@@ -368,7 +368,7 @@ func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
 	return nil
 }
 
-/**
+/*
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
 */
@@ -384,7 +384,7 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 	return nil
 }
 
-/**
+/*
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
 */
@@ -398,7 +398,7 @@ func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, ty
 	return nil
 }
 
-/**
+/*
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
 */
@@ -412,7 +412,7 @@ func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte,
 	return nil
 }
 
-/**
+/*
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
 */
@@ -432,7 +432,7 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx, typeJoinSplitD
 	return nil
 }
 
-/**
+/*
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
 */
@@ -452,7 +452,7 @@ func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx, typeJoinSplit
 	return nil
 }
 
-/**
+/*
 Get all blocks in chain
 Return block array
 */
@@ -504,7 +504,7 @@ func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 	return result, nil
 }
 
-/**
+/*
 Get all hash of blocks in chain
 Return hashes array
 */
@@ -548,7 +548,7 @@ func (self *BlockChain) GetAllHashBlocks() ([][]*common.Hash, error) {
 	return view, err
 }*/
 
-/**
+/*
 FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
 Param typeJoinSplitDesc - COIN or BOND
 */
@@ -658,7 +658,7 @@ func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
 	return numSpent
 }*/
 
-/**
+/*
 GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key
 - Param #1: key - key set which contain readonly-key and pub-key
 - Param #2: typeJoinSplitDesc - which type of joinsplitdesc(COIN or BOND)
@@ -755,7 +755,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, typeJoinSp
 	return results, nil
 }
 
-/**
+/*
 GetListTxByPrivateKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
 With private-key, we can check unspent tx by check nullifiers from database
 - Param #1: privateKey - byte[] of privatekey

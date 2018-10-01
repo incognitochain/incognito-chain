@@ -181,7 +181,7 @@ func (self RpcServer) Stop() error {
 	return nil
 }
 
-/**
+/*
 Handle all request to rpcserver
 */
 func (self RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
@@ -277,7 +277,7 @@ func (self RpcServer) AuthFail(w http.ResponseWriter) {
 	http.Error(w, "401 Unauthorized.", http.StatusUnauthorized)
 }
 
-/**
+/*
 handles reading and responding to RPC messages.
 */
 func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, isLimitedUser bool) {

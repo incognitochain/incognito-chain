@@ -554,7 +554,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 	return peers, nil
 }
 
-/**
+/*
 // newPeerConfig returns the configuration for the listening Peer.
 */
 func (self *Server) NewPeerConfig() *peer.Config {
@@ -618,7 +618,7 @@ func (self Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Info("Receive a new transaction END")
 }
 
-/**
+/*
 // OnVersion is invoked when a peer receives a version message
 // and is used to negotiate the protocol version details as well as kick start
 // the communications.
@@ -698,7 +698,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	Logger.log.Info("Receive version message END")
 }
 
-/**
+/*
 OnVerAck is invoked when a peer receives a version acknowlege message
 */
 func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
@@ -861,7 +861,7 @@ func (self *Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {
 	return result
 }
 
-/**
+/*
 PushMessageToAll broadcast msg
 */
 func (self *Server) PushMessageToAll(msg wire.Message) error {
@@ -877,7 +877,7 @@ func (self *Server) PushMessageToAll(msg wire.Message) error {
 	return nil
 }
 
-/**
+/*
 PushMessageToPeer push msg to peer
 */
 func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
@@ -917,30 +917,11 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 	return true
 }
 
-// /**
-// UpdateChain - Update chain with received block
-// */
-// func (self *Server) UpdateChain(block *blockchain.Block) {
-// 	// save block
-// 	self.BlockChain.StoreBlock(block)
-// 	self.FeeEstimator.RegisterBlock(block)
+/*
 
-// 	// Update commitments merkle tree
-// 	tree := self.BlockChain.BestState.CmTree
-// 	blockchain.UpdateMerkleTreeForBlock(tree, block)
-
-// 	// save best state
-//  	numTxns := uint64(len(block.Transactions))
-// 	totalTxns := self.BlockChain.BestState.TotalTxns + numTxns
-// 	newBestState := &blockchain.BestState{}
-// 	newBestState.Init(block, 0, 0, numTxns, totalTxns, time.Unix(block.Header.Timestamp, 0), tree)
-// 	self.BlockChain.BestState = newBestState
-// 	self.BlockChain.StoreBestState()
-
-// 	// save index of block
-// 	self.BlockChain.StoreBlockIndex(block)
-// }
-
+ */
+//#1: param1 -
+//
 func (self *Server) GetChainState() error {
 	Logger.log.Info("Send a GetChainState")
 	var dc chan<- struct{}

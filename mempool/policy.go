@@ -15,7 +15,7 @@ type Policy struct {
 	MaxTxVersion int8
 }
 
-/**
+/*
 
  */
 func (self *Policy) CheckTxVersion(tx *transaction.Transaction) bool {
@@ -45,7 +45,7 @@ func (self *Policy) calcMinFeeTxAccepted(tx *transaction.Tx) uint64 {
 	return 0
 }
 
-/**
+/*
 
  */
 func (self *Policy) CheckTransactionFee(tx *transaction.Tx) error {

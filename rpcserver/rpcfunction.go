@@ -128,7 +128,7 @@ func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan s
 	return "", nil
 }
 
-/**
+/*
 getblockcount RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -209,7 +209,7 @@ func (self RpcServer) handleGetBestBlockHash(params interface{}, closeChan <-cha
 	return "temporary unavailable", nil
 }
 
-/**
+/*
 getblockcount RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -345,7 +345,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 	return nil, nil
 }
 
-/**
+/*
 getblockchaininfo RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -361,7 +361,7 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 	return result, nil
 }
 
-/**
+/*
 getblockcount RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlockCount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -372,7 +372,7 @@ func (self RpcServer) handleGetBlockCount(params interface{}, closeChan <-chan s
 	return 0, nil
 }
 
-/**
+/*
 getblockhash RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -386,7 +386,7 @@ func (self RpcServer) handleGetBlockHash(params interface{}, closeChan <-chan st
 	return hash.Hash().String(), nil
 }
 
-/**
+/*
 getblocktemplate RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -444,7 +444,7 @@ func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-cha
 	return nil, errors.New("Wrong data")
 }
 
-/**
+/*
 getaddednodeinfo RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetAddedNodeInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -498,7 +498,7 @@ func (self RpcServer) handleGetAddedNodeInfo(params interface{}, closeChan <-cha
 	return nodes, nil
 }
 
-/**
+/*
 addnode RPC return information fo blockchain node
 */
 func (self RpcServer) handleAddNode(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -523,7 +523,7 @@ func (self RpcServer) handleAddNode(params interface{}, closeChan <-chan struct{
 	return nil, nil
 }
 
-/**
+/*
 // handleList returns a slice of objects representing the wallet
 // transactions fitting the given criteria. The confirmations will be more than
 // minconf, less than maxconf and if addresses is populated only the addresses
@@ -602,7 +602,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 	return result, nil
 }
 
-/**
+/*
 // handleList returns a slice of objects representing the unspent wallet
 // transactions fitting the given criteria. The confirmations will be more than
 // minconf, less than maxconf and if addresses is populated only the addresses
@@ -667,7 +667,7 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 	return result, nil
 }
 
-/**
+/*
 // handleCreateTransaction handles createtransaction commands.
 */
 func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -793,7 +793,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	return nil, err
 }
 
-/**
+/*
 // handleSendTransaction implements the sendtransaction command.
 Parameter #1—a serialized transaction to broadcast
 Parameter #2–whether to allow high fees
@@ -835,7 +835,7 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 	return tx.Hash(), nil
 }
 
-/**
+/*
 handleSendMany - RPC creates transaction and send to network
 */
 func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -849,7 +849,7 @@ func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct
 	return txId, err
 }
 
-/**
+/*
  * handleGetNumberOfCoins handles getNumberOfCoins commands.
  */
 func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -867,7 +867,7 @@ func assertEligibleAgentIDs(eligibleAgentIDs interface{}) []string {
 	return results
 }
 
-/**
+/*
 // handleCreateRawTransaction handles createrawtransaction commands.
 */
 func (self RpcServer) handleCreateActionParamsTransaction(
@@ -918,7 +918,7 @@ func (self RpcServer) handleCreateActionParamsTransaction(
 	return tx.Hash(), nil
 }
 
-/**
+/*
 listaccount RPC lists accounts and their balances.
 
 Parameter #1—the minimum number of confirmations a transaction must have
@@ -953,7 +953,7 @@ func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan st
 	return result, nil
 }
 
-/**
+/*
 getaccount RPC returns the name of the account associated with the given address.
 - Param #1: address
 */
@@ -967,7 +967,7 @@ func (self RpcServer) handleGetAccount(params interface{}, closeChan <-chan stru
 	return "", nil
 }
 
-/**
+/*
 getaddressesbyaccount RPC returns a list of every address assigned to a particular account.
 
 Parameter #1—the account name
@@ -980,7 +980,7 @@ func (self RpcServer) handleGetAddressesByAccount(params interface{}, closeChan 
 	return result, err
 }
 
-/**
+/*
 getaccountaddress RPC returns the current coin address for receiving payments to this account. If the account doesn’t exist, it creates both the account and a new address for receiving payment. Once a payment has been received to an address, future calls to this RPC for the same account will return a different address.
 Parameter #1—an account name
 Result—a bitcoin address
@@ -989,7 +989,7 @@ func (self RpcServer) handleGetAccountAddress(params interface{}, closeChan <-ch
 	return self.Config.Wallet.GetAccountAddress(params.(string))
 }
 
-/**
+/*
  dumpprivkey RPC returns the wallet-import-format (WIP) private key corresponding to an address. (But does not remove it from the wallet.)
 
 Parameter #1—the address corresponding to the private key to get
@@ -1017,7 +1017,7 @@ func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan str
 	return result, nil
 }*/
 
-/**
+/*
 handleImportAccount - import a new account by private-key
 - Param #1: private-key string
 - Param #2: account name
@@ -1038,7 +1038,7 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 	}, err
 }
 
-///**
+///*
 //handleGetAllPeers - return all peers which this node connected
 // */
 //func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -1057,7 +1057,7 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 //	return result, nil
 //}
 
-/**
+/*
 handleGetBalance - RPC gets the balances in decimal
 */
 func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -1131,7 +1131,7 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 	return balance, nil
 }
 
-/**
+/*
 handleGetReceivedByAccount -  RPC returns the total amount received by addresses in a particular account from transactions with the specified number of confirmations. It does not count coinbase transactions.
 */
 func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -1187,7 +1187,7 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 	return balance, nil
 }
 
-/**
+/*
 handleGetConnectionCount - RPC returns the number of connections to other nodes.
 */
 func (self RpcServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -1201,14 +1201,14 @@ func (self RpcServer) handleGetConnectionCount(params interface{}, closeChan <-c
 	return result, nil
 }
 
-/**
+/*
 handleGetGenerate - RPC returns true if the node is set to generate blocks using its CPU
 */
 func (self RpcServer) handleGetGenerate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	return self.Config.IsGenerateNode, nil
 }
 
-/**
+/*
 handleGetMempoolInfo - RPC returns information about the node's current txs memory pool
 */
 func (self RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -1219,7 +1219,7 @@ func (self RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-chan 
 	return result, nil
 }
 
-/**
+/*
 handleGetMiningInfo - RPC returns various mining-related info
 */
 func (self RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -1236,7 +1236,7 @@ func (self RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan s
 	return "temporary unavailable", nil
 }
 
-/**
+/*
 handleGetRawMempool - RPC returns all transaction ids in memory pool as a json array of string transaction ids
 Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */
@@ -1245,7 +1245,7 @@ func (self RpcServer) handleGetRawMempool(params interface{}, closeChan <-chan s
 	return txIds, nil
 }
 
-/**
+/*
 handleMempoolEntry - RPC fetch a specific transaction from the mempool
 */
 func (self RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -1259,7 +1259,7 @@ func (self RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan st
 	return tx, err
 }
 
-/**
+/*
 handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to be paid for a transaction to be included within a certain number of blocks.
 */
 func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -1275,7 +1275,7 @@ func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan str
 	return uint64(feeRate), nil
 }
 
-/**
+/*
 handleSetTxFee - RPC sets the transaction fee per kilobyte paid more by transactions created by this wallet. default is 1 coin per 1 kb
 */
 func (self RpcServer) handleSetTxFee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {

@@ -23,7 +23,7 @@ func (view *TxViewPoint) ListCommitments(joinSplitDescType string) [][]byte {
 	return view.listCommitments[joinSplitDescType]
 }
 
-/**
+/*
 BestHash returns the hash of the best block in the chain the view currently
 represents.
 */
@@ -31,7 +31,7 @@ func (view *TxViewPoint) BestHash() *common.Hash {
 	return &view.currentBestHash
 }
 
-/**
+/*
 SetBestHash sets the hash of the best block in the chain the view currently
 represents.
 */
@@ -39,7 +39,7 @@ func (view *TxViewPoint) SetBestHash(hash *common.Hash) {
 	view.currentBestHash = *hash
 }
 
-/**
+/*
 fetchTxViewPoint get list nullifiers and commitments from txs in block and check if they are not in Main chain db
 return a tx view point which contains list new nullifiers and new commitments from block
 */
@@ -82,7 +82,7 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DB, block *Block) error {
 	return nil
 }
 
-/**
+/*
 Create a Tx view point, which contains data about nullifiers and commitments
  */
 func NewTxViewPoint(chainId byte) *TxViewPoint {

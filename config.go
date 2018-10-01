@@ -310,7 +310,7 @@ func removeDuplicateAddresses(addrs []string) []string {
 	return result
 }
 
-/**
+/*
 // loadConfig initializes and parses the config using a config file and command
 // line options.
 //

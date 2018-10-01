@@ -38,7 +38,7 @@ type Block struct {
 	blockHash *common.Hash
 }
 
-/**
+/*
 Customer UnmarshalJSON to parse list Tx
 */
 func (self *Block) UnmarshalJSON(data []byte) error {

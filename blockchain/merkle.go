@@ -112,9 +112,11 @@ func (self Merkle) nextPowerOfTwo(n int) int {
 	return 1 << exponent // 2^exponent
 }
 
-// hashMerkleBranches takes two hashes, treated as the left and right tree
-// nodes, and returns the hash of their concatenation.  This is a helper
-// function used to aid in the generation of a merkle tree.
+/*
+hashMerkleBranches takes two hashes, treated as the left and right tree
+nodes, and returns the hash of their concatenation.  This is a helper
+function used to aid in the generation of a merkle tree.
+*/
 func (self Merkle) hashMerkleBranches(left *common.Hash, right *common.Hash) *common.Hash {
 	// Concatenate the left and right nodes.
 	var hash [common.HashSize * 2]byte

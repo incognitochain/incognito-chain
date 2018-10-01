@@ -13,7 +13,7 @@ var (
 	cfg *config
 )
 
-/**
+/*
 -r http://35.197.54.6:9334 -r http://35.199.184.12:9334 -r http://35.197.11.153:9334 -r http://35.233.184.32:9334 -r http://35.199.161.129:9334 -r http://104.196.241.178:9334 -r http://35.233.169.216:9334 -r http://35.233.193.14:9334 -r http://35.197.35.147:9334 -r http://35.230.45.84:9334 -r http://104.199.123.169:9334 -r http://35.233.225.60:9334 -r http://35.199.152.203:9334 -r http://35.233.195.5:9334 -r http://35.230.124.92:9334 -r http://35.233.215.171:9334 -r http://35.185.215.171:9334 -r http://35.230.96.189:9334 -r http://35.233.155.157:9334 -r http://35.197.116.165:9334
  */
 
@@ -38,7 +38,7 @@ func main() {
 	}
 }
 
-/**
+/*
 Strategy 1: send out 1k transactions per second by n transactions
 */
 func strategy1() {
@@ -71,7 +71,7 @@ func strategy1() {
 	}
 }
 
-/**
+/*
 Strategy 2: send out n transactions
 */
 func strategy2() {
@@ -88,7 +88,7 @@ func strategy2() {
 	log.Printf("Send out %d transactions\n", totalSendOut)
 }
 
-/**
+/*
 Strategy 3: send out n transactions to 1 node only
 */
 func strategy3() {

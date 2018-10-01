@@ -12,7 +12,7 @@ type KeySet struct {
 	ReadonlyKey client.ViewingKey
 }
 
-/**
+/*
 GenerateKey - generate key set from seed byte[]
 */
 func (self *KeySet) GenerateKey(seed []byte) *KeySet {
@@ -25,7 +25,7 @@ func (self *KeySet) GenerateKey(seed []byte) *KeySet {
 	return self
 }
 
-/**
+/*
 ImportFromPrivateKeyByte - from private-key byte[], regenerate pub-key and readonly-key
 */
 func (self *KeySet) ImportFromPrivateKeyByte(privateKey []byte) {
@@ -35,7 +35,7 @@ func (self *KeySet) ImportFromPrivateKeyByte(privateKey []byte) {
 	// self.SealerKeyPair.GenerateKey(self.PrivateKey[:])
 }
 
-/**
+/*
 ImportFromPrivateKeyByte - from private-key data, regenerate pub-key and readonly-key
 */
 func (self *KeySet) ImportFromPrivateKey(privateKey *client.SpendingKey) {

@@ -73,7 +73,7 @@ type TxPool struct {
 	nextExpireScan time.Time
 }
 
-/**
+/*
 Init Txpool from config
 */
 func (tp *TxPool) Init(cfg *Config) {
@@ -90,7 +90,7 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	return false
 }
 
-/**
+/*
 // add transaction into pool
 */
 func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *TxDesc {
@@ -140,7 +140,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	return hash, txDesc, err
 }
 
-/**
+/*
 // maybeAcceptTransaction is the internal function which implements the public
 // MaybeAcceptTransaction.  See the comment for MaybeAcceptTransaction for
 // more details.
@@ -290,7 +290,7 @@ func (tp *TxPool) Count() int {
 	return count
 }
 
-/**
+/*
 Sum of all transactions sizes
 */
 func (tp *TxPool) Size() uint64 {
@@ -319,7 +319,7 @@ func (tp *TxPool) MaxFee() uint64 {
 	return fee
 }
 
-/**
+/*
 // LastUpdated returns the last time a transaction was added to or
 	// removed from the source pool.
 */
@@ -327,7 +327,7 @@ func (tp *TxPool) LastUpdated() time.Time {
 	return time.Unix(tp.lastUpdated, 0)
 }
 
-/**
+/*
 // HaveTransaction returns whether or not the passed transaction hash
 	// exists in the source pool.
 */
@@ -340,7 +340,7 @@ func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
 	return haveTx
 }
 
-/**
+/*
 CheckTransactionFee - check fee of tx
 */
 func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error) {
@@ -368,7 +368,7 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 	}
 }
 
-/**
+/*
 ValidateSanityData - validate sansity data of tx
 */
 func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
@@ -532,7 +532,7 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 	return true, nil
 }
 
-/**
+/*
 List all tx ids in mempool
 */
 func (tp *TxPool) ListTxs() []string {

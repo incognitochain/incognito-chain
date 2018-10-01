@@ -107,7 +107,7 @@ func AppDataDir(appName string, roaming bool) string {
 	return appDataDir(runtime.GOOS, appName, roaming)
 }
 
-/**
+/*
 Convert interface of slice to slice
 */
 func InterfaceSlice(slice interface{}) []interface{} {
@@ -125,7 +125,7 @@ func InterfaceSlice(slice interface{}) []interface{} {
 	return ret
 }
 
-/**
+/*
 // parseListeners determines whether each listen address is IPv4 and IPv6 and
 // returns a slice of appropriate net.Addrs to listen on with TCP. It also
 // properly detects addresses which apply to "all interfaces" and adds the
@@ -176,7 +176,7 @@ func JsonUnmarshallByteArray(string string) []byte {
 	return bytes
 }
 
-/**
+/*
 SliceExists - Check slice contain item
 */
 func SliceExists(slice interface{}, item interface{}) (bool, error) {

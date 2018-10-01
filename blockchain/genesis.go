@@ -50,7 +50,7 @@ func createGenesisJSInput(idx uint) *client.JSInput {
 	return input
 }
 
-/**
+/*
 Use to get hardcode for genesis block
 */
 func (self GenesisBlockGenerator) createGenesisTx(coinReward uint64) (*transaction.Tx, error) {
