@@ -1,20 +1,9 @@
 package blockchain
 
 import (
-	"math/big"
 	"time"
 
 	"github.com/ninjadotorg/cash-prototype/common"
-)
-
-var (
-	// bigOne is 1 represented as a big.Int.  It is defined here to avoid
-	// the overhead of creating it multiple times.
-	bigOne = big.NewInt(1)
-
-	// mainPowLimit is the highest proof of work value a coin block can
-	// have for the main network.  It is the value 2^224 - 1.
-	mainPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 224), bigOne)
 )
 
 // DNSSeed identifies a DNS seed.
@@ -52,18 +41,6 @@ type Params struct {
 	// GenesisHash is the starting block hash.
 	GenesisHash *common.Hash
 
-	// PowLimit defines the highest allowed proof of work value for a block
-	// as a uint256.
-	PowLimit *big.Int
-
-	// PowLimitBits defines the highest allowed proof of work value for a
-	// block in compact form.
-	PowLimitBits uint32
-
-	// CoinbaseMaturity is the number of blocks required before newly mined
-	// coins (coinbase transactions) can be spent.
-	CoinbaseMaturity uint16
-
 	// SubsidyReductionInterval is the interval of blocks before the subsidy
 	// is reduced.
 	SubsidyReductionInterval int32
@@ -98,8 +75,8 @@ type Params struct {
 	// GenerateSupported specifies whether or not CPU mining is allowed.
 	GenerateSupported bool
 
-	// Mempool parameters
-	RelayNonStdTxs bool
+	/*// Mempool parameters
+	RelayNonStdTxs bool*/
 }
 
 var pposValidators = []string{
@@ -130,7 +107,7 @@ var MainNetParams = Params{
 	Name:        MAINNET_NAME,
 	Net:         MAINNET,
 	DefaultPort: MAINET_DEFAULT_PORT,
-	DNSSeeds:    []string{
+	DNSSeeds: []string{
 		/*{"seed.coin.sipa.be", true},
 		{"dnsseed.bluematt.me", true},
 		{"dnsseed.coin.dashjr.org", false},
@@ -142,9 +119,6 @@ var MainNetParams = Params{
 
 	// BlockChain parameters
 	GenesisBlock:             GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(time.Date(2018, 8, 1, 0, 0, 0, 0, time.Local), 0x18aea41a, 0x1d00ffff, 1, GENESIS_BLOCK_REWARD, pposValidators),
-	PowLimit:                 mainPowLimit,
-	PowLimitBits:             486604799,
-	CoinbaseMaturity:         100,
 	SubsidyReductionInterval: 210000,
 	TargetTimespan:           time.Hour * 24 * 14, // 14 days
 	TargetTimePerBlock:       time.Minute * 10,    // 10 minutes
@@ -154,5 +128,5 @@ var MainNetParams = Params{
 	GenerateSupported:        false,
 
 	// Mempool parameters
-	RelayNonStdTxs: false,
+	//RelayNonStdTxs: false,
 }
