@@ -24,7 +24,7 @@ echo "install grpc ... "
 git clone -b $(curl -L http://grpc.io/release) https://github.com/grpc/grpc
 cd grpc
 git submodule update --init
-make
+make -j4
 make install
 cd ..
 
@@ -34,7 +34,7 @@ curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/pr
 unzip protobuf-cpp-3.6.1.zip
 cd protobuf-3.6.1
 ./configure
-make
+make -j4
 make check
 make install
 ldconfig # refresh shared library cache.
