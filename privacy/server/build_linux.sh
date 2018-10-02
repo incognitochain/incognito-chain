@@ -57,6 +57,7 @@ sudo tar xf cmake-3.5.2.tar.gz
 cd cmake-3.5.2
 sudo ./configure
 sudo make -j4
+sudo make install
 cd ..
 
 BUILD_DIR="build"
