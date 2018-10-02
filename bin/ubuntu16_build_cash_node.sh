@@ -9,11 +9,12 @@ wget https://dl.google.com/go/go1.10.2.linux-amd64.tar.gz
 sudo tar -xvf go1.10.2.linux-amd64.tar.gz
 sudo mv go /usr/local
 
-sudo export GOROOT=/usr/local/go
-sudo export GOPATH=$HOME/go
-sudo export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+export GOROOT=/usr/local/go
+export GOPATH=$HOME/go
+export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 
-mkdir go/src/github.com/ninjadotorg -p
+mkdir ~/go/bin -p
+mkdir ~/go/src/github.com/ninjadotorg -p
 
 echo "Install glide..."
 curl https://glide.sh/get | sh
