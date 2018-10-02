@@ -29,6 +29,4 @@ echo "Install cash-prototype packages..."
 cd cash-prototype
 glide install
 
-echo "Build privacy..."
-cd privacy/server
-sudo bash ./build_linux.sh
+

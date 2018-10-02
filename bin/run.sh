@@ -9,6 +9,8 @@ KEY=$1
 cd ~/go/src/github.com/ninjadotorg/cash-prototype
 cd privacy/server/build
 sudo ./main > privacy.log &
+echo "Started privacy..."
+
 cd ../../../
-go build
+/usr/local/go/bin/go build
 ./cash-prototype --discoverpeers --generate --sealerkeyset $KEY
