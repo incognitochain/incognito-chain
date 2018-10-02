@@ -27,3 +27,8 @@ func (self *Engine) OnCandidateVote() {
 func (self *Engine) OnCandidateRequestTx() {
 
 }
+
+func (self *Engine) CheckCommittee(committee []string, blockHeight int, chainID byte) bool {
+
+	return true
+}

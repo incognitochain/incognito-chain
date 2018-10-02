@@ -11,63 +11,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
-// TODO: create block template (move block template from mining to here)
-
-// func getLatestAgentDataPoints(
-// 	chain *blockchain.BlockChain,
-// 	actionParamTxs []*transaction.ActionParamTx,
-// ) map[string]*blockchain.AgentDataPoint {
-// 	agentDataPoints := map[string]*blockchain.AgentDataPoint{}
-// 	bestBlock := chain.BestState.BestBlock
-
-// 	if bestBlock != nil && bestBlock.AgentDataPoints != nil {
-// 		agentDataPoints = bestBlock.AgentDataPoints
-// 	}
-
-// 	for _, actionParamTx := range actionParamTxs {
-// 		inputAgentID := actionParamTx.Param.AgentID
-
-// 		_, ok := agentDataPoints[inputAgentID]
-// 		if !ok || actionParamTx.LockTime > agentDataPoints[inputAgentID].LockTime {
-// 			agentDataPoints[inputAgentID] = &blockchain.AgentDataPoint{
-// 				AgentID:          actionParamTx.Param.AgentID,
-// 				AgentSig:         actionParamTx.Param.AgentSig,
-// 				NumOfCoins:       actionParamTx.Param.NumOfCoins,
-// 				NumOfBonds:       actionParamTx.Param.NumOfBonds,
-// 				Tax:              actionParamTx.Param.Tax,
-// 				EligibleAgentIDs: actionParamTx.Param.EligibleAgentIDs,
-// 				LockTime:         actionParamTx.LockTime,
-// 			}
-// 		}
-// 	}
-
-// 	// in case of not being enough number of agents
-// 	dataPointsLen := len(agentDataPoints)
-// 	if dataPointsLen < NUMBER_OF_MAKING_DECISION_AGENTS {
-// 		return agentDataPoints
-// 	}
-
-// 	// check add/remove agents by number of votes
-// 	votesForAgents := map[string]int{}
-// 	for _, dataPoint := range agentDataPoints {
-// 		for _, eligibleAgentID := range dataPoint.EligibleAgentIDs {
-// 			if _, ok := votesForAgents[eligibleAgentID]; !ok {
-// 				votesForAgents[eligibleAgentID] = 1
-// 				continue
-// 			}
-// 			votesForAgents[eligibleAgentID] += 1
-// 		}
-// 	}
-
-// 	for agentID, votes := range votesForAgents {
-// 		if votes < int(math.Floor(float64(dataPointsLen/2))+1) {
-// 			delete(agentDataPoints, agentID)
-// 		}
-// 	}
-
-// 	return agentDataPoints
-// }
-
 func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, chain *blockchain.BlockChain, chainID byte) (*BlockTemplate, error) {
 
 	prevBlock := chain.BestState[chainID]
