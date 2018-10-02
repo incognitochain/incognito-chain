@@ -63,7 +63,7 @@ type Config struct {
 	blockGen        *BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server interface {
+	Server          interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -86,8 +86,6 @@ func (self *Engine) Start() error {
 		self.Unlock()
 		return errors.New("Consensus engine is already started")
 	}
-	// TODO - change constant
-	time.Sleep(1 * time.Second)
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
 	self.started = true
 	self.knownChainsHeight.Heights = make([]int, TOTAL_VALIDATORS)
@@ -117,12 +115,10 @@ func (self *Engine) Start() error {
 	self.validatedChainsHeight.Heights = self.knownChainsHeight.Heights
 	self.currentCommittee = self.config.BlockChain.BestState[0].BestBlock.Header.Committee
 
-	// TODO - change constant
-	time.Sleep(2 * time.Second)
 	go func() {
 		for {
 			self.config.Server.PushMessageGetChainState()
-			time.Sleep(10 * time.Second)
+			time.Sleep(GETCHAINSTATE_INTERVAL * time.Second)
 		}
 	}()
 	self.quit = make(chan struct{})
@@ -551,7 +547,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 	}
 	peerID, err := peer2.IDB58Decode(msgBlock.SenderID)
 	if err != nil {
-		Logger.log.Error("ERRORR", msgBlock.SenderID, peerID, err)
+		Logger.log.Error("ERROR", msgBlock.SenderID, peerID, err)
 	}
 	Logger.log.Info(block.Hash().String(), blockSigMsg)
 	err = self.config.Server.PushMessageToPeer(&blockSigMsg, peerID)
@@ -605,7 +601,7 @@ func (self *Engine) OnInvalidBlockReceived(blockHash string, chainID byte, reaso
 }
 
 func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
-	fmt.Println(msg)
+	// fmt.Println(msg)
 	chainInfo := msg.ChainInfo.(map[string]interface{})
 	for i, v := range self.knownChainsHeight.Heights {
 		if chainInfo["ChainsHeight"] != nil {
