@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 	"sync"
 	"time"
@@ -63,7 +62,7 @@ type Config struct {
 	blockGen        *BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server interface {
+	Server          interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -86,8 +85,6 @@ func (self *Engine) Start() error {
 		self.Unlock()
 		return errors.New("Consensus engine is already started")
 	}
-	// TODO - change constant
-	time.Sleep(1 * time.Second)
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
 	self.started = true
 	self.knownChainsHeight.Heights = make([]int, TOTAL_VALIDATORS)
@@ -117,12 +114,10 @@ func (self *Engine) Start() error {
 	self.validatedChainsHeight.Heights = self.knownChainsHeight.Heights
 	self.currentCommittee = self.config.BlockChain.BestState[0].BestBlock.Header.Committee
 
-	// TODO - change constant
-	time.Sleep(2 * time.Second)
 	go func() {
 		for {
 			self.config.Server.PushMessageGetChainState()
-			time.Sleep(10 * time.Second)
+			time.Sleep(GETCHAINSTATE_INTERVAL * time.Second)
 		}
 	}()
 	self.quit = make(chan struct{})
@@ -424,26 +419,25 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 		return errBlockSizeExceed
 	}
 
-	// 2. Check user is in current committee or not
-	// for _, c := range self.currentCommittee {
-	// 	if strings.Compare(c, block.ChainLeader) != 0 {
-	// 		return errNotInCommittee
-	// 	}
-	// }
-
-	// 3. Check signature of the block belongs to current committee or not.
-	// decPubkey, _ := base64.StdEncoding.DecodeString(block.ChainLeader)
-	// k := cashec.KeyPair{
-	// 	PublicKey: decPubkey,
-	// }
-	// decSig, _ := base64.StdEncoding.DecodeString(block.Header.BlockCommitteeSigs[0])
-	// isValidSignature, err := k.Verify([]byte(block.Hash().String()), decSig)
-	// if err != nil {
-	// 	return err
-	// }
-	// if isValidSignature == false {
-	// 	return errSigWrongOrNotExits
-	// }
+	// 2. Check signature of the block leader
+	decPubkey, _, err := base58.Base58Check{}.Decode(block.ChainLeader)
+	if err != nil {
+		return err
+	}
+	k := cashec.KeySetSealer{
+		SpublicKey: decPubkey,
+	}
+	decSig, _, err := base58.Base58Check{}.Decode(block.ChainLeaderSig)
+	if err != nil {
+		return err
+	}
+	isValidSignature, err := k.Verify([]byte(strings.Join(block.Header.BlockCommitteeSigs, "")), decSig)
+	if err != nil {
+		return err
+	}
+	if isValidSignature == false {
+		return errSigWrongOrNotExits
+	}
 
 	// 4. Check chains height of the block.
 	if self.validatedChainsHeight.Heights[block.Header.ChainID] == (int(block.Height) - 1) {
@@ -504,7 +498,7 @@ func (self *Engine) getMyChain() (byte, []string) {
 func (self *Engine) getChainValidators(chainID byte) ([]string, error) {
 	var validators []string
 	for index := 1; index <= CHAIN_VALIDATORS_LENGTH; index++ {
-		validatorID := math.Mod(float64(index+int(chainID)), 20)
+		validatorID := (index + int(chainID)) % TOTAL_VALIDATORS
 		validators = append(validators, self.currentCommittee[int(validatorID)])
 	}
 	if len(validators) == CHAIN_VALIDATORS_LENGTH {
@@ -551,7 +545,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 	}
 	peerID, err := peer2.IDB58Decode(msgBlock.SenderID)
 	if err != nil {
-		Logger.log.Error("ERRORR", msgBlock.SenderID, peerID, err)
+		Logger.log.Error("ERROR", msgBlock.SenderID, peerID, err)
 	}
 	Logger.log.Info(block.Hash().String(), blockSigMsg)
 	err = self.config.Server.PushMessageToPeer(&blockSigMsg, peerID)
@@ -605,7 +599,7 @@ func (self *Engine) OnInvalidBlockReceived(blockHash string, chainID byte, reaso
 }
 
 func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
-	fmt.Println(msg)
+	// fmt.Println(msg)
 	chainInfo := msg.ChainInfo.(map[string]interface{})
 	for i, v := range self.knownChainsHeight.Heights {
 		if chainInfo["ChainsHeight"] != nil {

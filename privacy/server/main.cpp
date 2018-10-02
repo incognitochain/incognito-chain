@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <cstdint>
+#include <unistd.h>
 
 #include <grpc/grpc.h>
 #include <grpcpp/server.h>
@@ -394,10 +395,11 @@ class ZksnarkImpl final : public Zksnark::Service
         uint64_t vpub_new = fee;
         print_proof_inputs(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, address_last_byte, compute_proof);
         // production make real proof
-        libzcash::PHGRProof proof;
-        success = js->prove(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, address_last_byte, compute_proof, proof);
+//        libzcash::PHGRProof proof;
+//        success = js->prove(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, address_last_byte, compute_proof, proof);
         // testing make default proof
-    //    libzcash::PHGRProof proof;
+        libzcash::PHGRProof proof;
+        sleep(20);
         // print_proof(proof);
 
         zksnark::PHGRProof *zk_proof = new zksnark::PHGRProof();
@@ -426,9 +428,16 @@ class ZksnarkImpl final : public Zksnark::Service
         uint64_t vpub_old = reward;
         uint64_t vpub_new = fee;
         bool valid = false;
-        if (success) {
-            success = js->verify(proof, macs, nullifiers, commitments, vpub_old, vpub_new, rts, hsig, address_last_byte, valid);
-        }
+
+        // testing not verify proof
+        // if (success) {
+        //    success = js->verify(proof, macs, nullifiers, commitments, vpub_old, vpub_new, rts, hsig, address_last_byte, valid);
+        // }
+
+        // testing not verify proof
+        success = true;
+        valid = true;
+        //
 
         reply->set_success(success);
         reply->set_valid(valid);
