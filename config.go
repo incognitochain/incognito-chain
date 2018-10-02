@@ -597,13 +597,13 @@ func loadConfig() (*config, []string, error) {
 			return nil, nil, err
 		}
 		// Get address from env
-		//externalAddress := os.Getenv("EXTERNAL_ADDRESS")
-		//if externalAddress != "" {
-		//	host, _, err := net.SplitHostPort(externalAddress)
-		//	if err == nil && host != "" {
-		//		addrs = []string{host}
-		//	}
-		//}
+		externalAddress := os.Getenv("EXTERNAL_ADDRESS")
+		if externalAddress != "" {
+			host, _, err := net.SplitHostPort(externalAddress)
+			if err == nil && host != "" {
+				addrs = []string{host}
+			}
+		}
 
 		//Logger.log.Info(externalAddress, addrs)
 
