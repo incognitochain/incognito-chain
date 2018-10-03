@@ -20,7 +20,6 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/wire"
-	"net"
 )
 
 const (
@@ -43,7 +42,7 @@ type ConnState uint8
 // established or failed depending on the connection result.  An established
 // connection which was disconnected is categorized as disconnected.
 const (
-	ConnPending ConnState = iota
+	ConnPending      ConnState = iota
 	ConnFailing
 	ConnCanceled
 	ConnEstablished
@@ -336,9 +335,9 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("NewPeerConnection Close Stream PEER Id %s", peerConn.PeerID.String())
 			return &peerConn, nil
-		//case <-timeOutVerAck:
-		//	Logger.log.Infof("NewPeerConnection timeoutVerack PEER Id %s", peerConn.PeerID.String())
-		//	break
+			//case <-timeOutVerAck:
+			//	Logger.log.Infof("NewPeerConnection timeoutVerack PEER Id %s", peerConn.PeerID.String())
+			//	break
 		}
 	}
 
@@ -418,9 +417,9 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		case <-peerConn.disconnect:
 			Logger.log.Infof("HandleStream close stream PEER Id %s", peerConn.PeerID.String())
 			return
-		//case <-timeOutVerAck:
-		//	Logger.log.Infof("HandleStream timeoutVerack PEER Id %s", peerConn.PeerID.String())
-		//	break
+			//case <-timeOutVerAck:
+			//	Logger.log.Infof("HandleStream timeoutVerack PEER Id %s", peerConn.PeerID.String())
+			//	break
 		}
 	}
 }
