@@ -20,6 +20,7 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/wire"
+	"net"
 )
 
 const (
@@ -469,11 +470,18 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.PeerID.String())
 
 	if peerConn.IsOutbound {
-		if peerConn.State() != ConnCanceled {
-
-			peerConn.updateState(ConnPending)
-			go self.retryPeerConnection(peerConn)
+		//if peerConn.State() != ConnCanceled {
+		//
+		//	peerConn.updateState(ConnPending)
+		//	go self.retryPeerConnection(peerConn)
+		//}
+		peerConn.updateState(ConnCanceled)
+		self.peerConnsMutex.Lock()
+		_, ok := self.PeerConns[peerConn.PeerID.String()]
+		if ok {
+			delete(self.PeerConns, peerConn.PeerID.String())
 		}
+		self.peerConnsMutex.Unlock()
 	} else {
 		peerConn.updateState(ConnCanceled)
 		self.peerConnsMutex.Lock()
