@@ -519,7 +519,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 	if err != nil {
 		Logger.log.Critical(err)
 	}
-	return &peer.Config{
+	config := &peer.Config{
 		MessageListeners: peer.MessageListeners{
 			OnBlock:     self.OnBlock,
 			OnTx:        self.OnTx,
@@ -536,8 +536,11 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnGetChainState: self.OnGetChainState,
 			OnChainState:    self.OnChainState,
 		},
-		SealerPrvKey: base58.Base58Check{}.Encode(keysetSealer.SprivateKey, byte(0x00)),
 	}
+	if len(keysetSealer.SprivateKey) != 0 {
+		config.SealerPrvKey = base58.Base58Check{}.Encode(keysetSealer.SprivateKey, byte(0x00))
+	}
+	return config
 }
 
 // OnBlock is invoked when a peer receives a block message.  It
