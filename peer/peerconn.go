@@ -233,6 +233,8 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		case <-self.quit:
 			Logger.log.Infof("PEER %s quit OUT message handler", self.PeerID)
 
+			self.IsConnected = false
+
 			close(self.disconnect)
 
 			if self.HandleDisconnected != nil {
