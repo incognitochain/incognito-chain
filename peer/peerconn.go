@@ -57,7 +57,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 		Logger.log.Infof("PEER %s Reading stream", self.PeerID.String())
 		str, err := rw.ReadString('\n')
 		if err != nil {
-			Logger.log.Error(err)
+			Logger.log.Errorf("InMessageHandler PEER %s ERROR %s", self.PeerID, err)
 			Logger.log.Infof("InMessageHandler PEER %s quit IN message handler", self.PeerID)
 
 			Logger.log.Infof("PEER %s quit IN message handler", self.PeerID)
