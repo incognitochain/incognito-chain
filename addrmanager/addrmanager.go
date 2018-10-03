@@ -132,7 +132,7 @@ func (self *AddrManager) savePeers() {
 func (self *AddrManager) loadPeers() {
 	//self.mtx.Lock()
 	//defer self.mtx.Unlock()
-
+	return
 	err := self.deserializePeers(self.peersFile)
 	if err != nil {
 		Logger.log.Infof("Failed to parse file %s: %v", self.peersFile, err)
