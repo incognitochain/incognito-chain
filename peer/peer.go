@@ -371,7 +371,7 @@ func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
 
 func (self *Peer) HandleStream(stream net.Stream) {
 	fmt.Println("DEBUG", stream.Conn().RemoteMultiaddr(), stream.Conn().LocalMultiaddr())
-
+	self.newPeerConnectionMutex.Lock()
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
@@ -383,12 +383,10 @@ func (self *Peer) HandleStream(stream net.Stream) {
 
 	remotePeerID := stream.Conn().RemotePeer()
 	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with Id %s", self.Host.ID().String(), remotePeerID.String())
-	self.peerConnsMutex.Lock()
 	_, ok := self.PeerConns[remotePeerID.String()]
-	self.peerConnsMutex.Unlock()
 	if ok {
 		Logger.log.Infof("Received a new stream existed PEER Id - %s", remotePeerID)
-
+		self.newPeerConnectionMutex.Unlock()
 		return
 	}
 
@@ -418,6 +416,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	}
 
 	self.SetPeerConn(&peerConn)
+	self.newPeerConnectionMutex.Unlock()
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
