@@ -61,10 +61,10 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 		if err != nil {
 			self.IsConnected = false
 
-			Logger.log.Errorf("InMessageHandler PEER %s ERROR %s", self.PeerID, err)
-			Logger.log.Infof("InMessageHandler PEER %s quit IN message handler", self.PeerID)
-
 			Logger.log.Infof("PEER %s quit IN message handler", self.PeerID)
+			Logger.log.Errorf("InMessageHandler PEER %s ERROR %s", self.Peer.RawAddress, err)
+			Logger.log.Infof("InMessageHandler PEER %s quit IN message handler", self.Peer.RawAddress)
+			Logger.log.Info("PEER %s quit IN message handler")
 			self.quit <- struct{}{}
 			return
 		}
@@ -274,9 +274,4 @@ func (p *PeerConn) State() ConnState {
 	state := p.state
 	p.stateMtx.RUnlock()
 	return state
-}
-
-// State is the connection state of the requested connection.
-func (p *PeerConn) Close() {
-	close(p.quit)
 }
