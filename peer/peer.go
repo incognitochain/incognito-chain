@@ -20,6 +20,7 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/wire"
+	"net"
 )
 
 const (
@@ -377,9 +378,9 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	remotePeerID := stream.Conn().RemotePeer()
 	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with Id %s", self.Host.ID().String(), remotePeerID.String())
 	self.peerConnsMutex.Lock()
-	_peerConn, ok := self.PeerConns[remotePeerID.String()]
+	_, ok := self.PeerConns[remotePeerID.String()]
 	self.peerConnsMutex.Unlock()
-	if ok && _peerConn.State() == ConnEstablished {
+	if ok {
 		Logger.log.Infof("Received a new stream existed PEER Id - %s", remotePeerID)
 
 		return
