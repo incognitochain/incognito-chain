@@ -475,7 +475,7 @@ listen:
 				}
 
 				for _, peerConn := range listener.PeerConns {
-					Logger.log.Info("PeerConn Sate", peerConn.Peer.RawAddress, peerConn.State())
+					Logger.log.Info("PeerConn Sate", peerConn.State(), peerConn.IsOutbound, peerConn.Peer.RawAddress)
 				}
 
 				err := client.Call("Handler.Ping", args, &response)
