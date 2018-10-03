@@ -210,8 +210,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				messageByte = append(messageByte, header...)
 				message := hex.EncodeToString(messageByte)
 				message += "\n"
-				Logger.log.Infof("Send a message %s %s %s", self.Peer.PublicKey, outMsg.msg.MessageType(),
-					outMsg.msg.MessageType()) // , string(messageByte)
+				Logger.log.Infof("Send a message %s to %s", outMsg.msg.MessageType(), self.Peer.RawAddress) // , string(messageByte)
 				_, err = rw.Writer.WriteString(message)
 				if err != nil {
 					Logger.log.Critical("DM ERROR", err)
