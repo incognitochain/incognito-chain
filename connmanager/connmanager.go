@@ -474,6 +474,10 @@ listen:
 					Logger.log.Info("Public Key", pubK, info.PeerID.Pretty(), result)
 				}
 
+				for _, peerConn := range listener.PeerConns {
+					Logger.log.Info("PeerConn Sate", peerConn.Peer.RawAddress, peerConn.State())
+				}
+
 				err := client.Call("Handler.Ping", args, &response)
 				if err != nil {
 					//Logger.log.Error("[Exchange Peers] Ping:", err)
