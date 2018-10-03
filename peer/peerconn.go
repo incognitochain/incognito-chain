@@ -275,3 +275,7 @@ func (p *PeerConn) State() ConnState {
 	p.stateMtx.RUnlock()
 	return state
 }
+
+func (p *PeerConn) Close() {
+	close(p.quit)
+}
