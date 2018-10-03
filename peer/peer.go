@@ -261,18 +261,18 @@ func (self *Peer) NumOutbound() int {
 func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER Id - %s \n", peer.PeerID.String())
 
-	self.peerConnsMutex.Lock()
+	//self.peerConnsMutex.Lock()
 	_, ok := self.PeerConns[peer.PeerID.String()]
 	//if ok && _peerConn.State() == ConnEstablished {
 	if ok {
 		Logger.log.Infof("Checked Existed PEER Id - %s", peer.PeerID.String())
-		self.peerConnsMutex.Unlock()
+		//self.peerConnsMutex.Unlock()
 		return nil, nil
 	}
 
 	if peer.PeerID.Pretty() == self.PeerID.Pretty() {
 		Logger.log.Infof("Checked Myself PEER Id - %s", peer.PeerID.String())
-		self.peerConnsMutex.Unlock()
+		//self.peerConnsMutex.Unlock()
 		return nil, nil
 	}
 
@@ -281,7 +281,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 		//push to pending peers
 		self.ConnPending(peer)
-		self.peerConnsMutex.Unlock()
+		//self.peerConnsMutex.Unlock()
 		return nil, nil
 	}
 
@@ -289,7 +289,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	Logger.log.Info(peer, stream, err)
 	if err != nil {
 		Logger.log.Errorf("Fail in opening stream to PEER Id - %s with err: %s", self.PeerID.String(), err.Error())
-		self.peerConnsMutex.Unlock()
+		//self.peerConnsMutex.Unlock()
 		return nil, err
 	}
 
@@ -315,7 +315,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	}
 
 	self.SetPeerConn(&peerConn)
-	self.peerConnsMutex.Unlock()
+	//self.peerConnsMutex.Unlock()
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
