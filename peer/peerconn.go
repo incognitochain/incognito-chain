@@ -64,6 +64,8 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			Logger.log.Errorf("InMessageHandler PEER %s ERROR %s", self.Peer.RawAddress, err)
 			Logger.log.Infof("InMessageHandler PEER %s quit IN message handler", self.Peer.RawAddress)
 
+			close(self.quit)
+
 			return
 		}
 
