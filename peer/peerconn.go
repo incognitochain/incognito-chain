@@ -27,6 +27,7 @@ type PeerConn struct {
 	ReaderWriterStream *bufio.ReadWriter
 	verAckReceived     bool
 	VerValid           bool
+	IsConnected		   bool
 
 	TargetAddress    ma.Multiaddr
 	PeerID           peer.ID
@@ -53,10 +54,13 @@ type PeerConn struct {
 Handle all in message
 */
 func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
+	self.IsConnected = true
 	for {
 		Logger.log.Infof("PEER %s Reading stream", self.PeerID.String())
 		str, err := rw.ReadString('\n')
 		if err != nil {
+			self.IsConnected = false
+
 			Logger.log.Errorf("InMessageHandler PEER %s ERROR %s", self.PeerID, err)
 			Logger.log.Infof("InMessageHandler PEER %s quit IN message handler", self.PeerID)
 
@@ -270,4 +274,9 @@ func (p *PeerConn) State() ConnState {
 	state := p.state
 	p.stateMtx.RUnlock()
 	return state
+}
+
+// State is the connection state of the requested connection.
+func (p *PeerConn) Close() {
+	close(p.quit)
 }

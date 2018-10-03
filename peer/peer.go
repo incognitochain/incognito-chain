@@ -20,6 +20,7 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/wire"
+	"net"
 )
 
 const (
@@ -310,9 +311,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		HandleFailed:       self.handleFailed,
 	}
 
-	self.peerConnsMutex.Lock()
-	self.PeerConns[peerConn.PeerID.String()] = &peerConn
-	self.peerConnsMutex.Unlock()
+	self.SetPeerConn(&peerConn)
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
@@ -342,6 +341,26 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	}
 
 	return &peerConn, nil
+}
+
+func (self *Peer) SetPeerConn(peerConn *PeerConn) {
+	_peerConn, ok := self.PeerConns[peerConn.Peer.PeerID.String()]
+	if ok {
+		if _peerConn.IsConnected {
+			_peerConn.Close()
+		}
+	}
+	self.PeerConns[peerConn.Peer.PeerID.String()] = peerConn
+}
+
+func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
+	_peerConn, ok := self.PeerConns[peerConn.Peer.PeerID.String()]
+	if ok {
+		if _peerConn.IsConnected {
+			_peerConn.Close()
+		}
+		delete(self.PeerConns, peerConn.Peer.PeerID.String())
+	}
 }
 
 func (self *Peer) HandleStream(stream net.Stream) {
@@ -392,9 +411,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		HandleFailed:       self.handleFailed,
 	}
 
-	self.peerConnsMutex.Lock()
-	self.PeerConns[peerConn.PeerID.String()] = &peerConn
-	self.peerConnsMutex.Unlock()
+	self.SetPeerConn(&peerConn)
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
@@ -475,20 +492,12 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 		//	go self.retryPeerConnection(peerConn)
 		//}
 		peerConn.updateState(ConnCanceled)
-		self.peerConnsMutex.Lock()
-		_, ok := self.PeerConns[peerConn.PeerID.String()]
-		if ok {
-			delete(self.PeerConns, peerConn.PeerID.String())
-		}
-		self.peerConnsMutex.Unlock()
+		self.RemovePeerConn(peerConn)
+
+		go self.retryPeerConnection(peerConn)
 	} else {
 		peerConn.updateState(ConnCanceled)
-		self.peerConnsMutex.Lock()
-		_, ok := self.PeerConns[peerConn.PeerID.String()]
-		if ok {
-			delete(self.PeerConns, peerConn.PeerID.String())
-		}
-		self.peerConnsMutex.Unlock()
+		self.RemovePeerConn(peerConn)
 	}
 
 	if self.HandleDisconnected != nil {
