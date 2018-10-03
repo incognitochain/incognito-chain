@@ -427,11 +427,11 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 	k := cashec.KeySetSealer{
 		SpublicKey: decPubkey,
 	}
-	decSig, _, err := base58.Base58Check{}.Decode(block.ChainLeaderSig)
+	decSig, _, err := base58.Base58Check{}.Decode(block.Header.BlockCommitteeSigs[0])
 	if err != nil {
 		return err
 	}
-	isValidSignature, err := k.Verify([]byte(strings.Join(block.Header.BlockCommitteeSigs, "")), decSig)
+	isValidSignature, err := k.Verify([]byte(block.Hash().String()), decSig)
 	if err != nil {
 		return err
 	}
