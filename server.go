@@ -857,7 +857,7 @@ func (self *Server) PushMessageGetChainState() error {
 			return err
 		}
 		msg.SetSenderID(listener.PeerID)
-		Logger.log.Info("Send a GetChainState: %v", msg)
+		Logger.log.Infof("Send a GetChainState from %s", listener.RawAddress)
 		listener.QueueMessageWithEncoding(msg, dc)
 	}
 	return nil

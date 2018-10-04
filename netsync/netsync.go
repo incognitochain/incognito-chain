@@ -30,7 +30,7 @@ type NetSyncConfig struct {
 	BlockChain *blockchain.BlockChain
 	ChainParam *blockchain.Params
 	MemPool    *mempool.TxPool
-	Server     interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, peer2.ID) error
 	}
@@ -222,8 +222,9 @@ func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan s
 // }
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
-	Logger.log.Info("Handling new message getblocks message")
-	if senderBlockHeaderIndex, chainID, err := self.config.BlockChain.GetBlockHeightByBlockHash(&msg.LastBlockHash); err == nil {
+	Logger.log.Info("Handling new message - " + wire.CmdGetBlocks)
+	senderBlockHeaderIndex, chainID, err := self.config.BlockChain.GetBlockHeightByBlockHash(&msg.LastBlockHash)
+	if err == nil {
 		if self.config.BlockChain.BestState[chainID].BestBlockHash != &msg.LastBlockHash {
 			// Send Blocks back to requestor
 			chainBlocks, _ := self.config.BlockChain.GetChainBlocks(chainID)
@@ -242,7 +243,8 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 			}
 		}
 	} else {
-		Logger.log.Info("No new blocks to return")
+		Logger.log.Error(err)
+		Logger.log.Error("No new blocks to return")
 	}
 
 	// Logger.log.Infof("Send a msgVersion: %s", msgNewJSON)
