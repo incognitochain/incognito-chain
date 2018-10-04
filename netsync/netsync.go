@@ -245,6 +245,12 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 			}
 		}
 	} else {
+		Logger.log.Error(blockHash.String(), "----------")
+		Logger.log.Error(self.config.BlockChain.BestState[9].BestBlockHash.String())
+		chainBlocks, _ := self.config.BlockChain.GetChainBlocks(9)
+		for _, block := range chainBlocks {
+			Logger.log.Error(block.Hash().String())
+		}
 		Logger.log.Error(err)
 		Logger.log.Error("No new blocks to return")
 	}
