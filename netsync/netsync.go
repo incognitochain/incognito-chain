@@ -250,7 +250,7 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 					Logger.log.Error("Sender ID is empty")
 					break
 				}
-				peerID, err := peer2.IDFromString(msg.SenderID)
+				peerID, err := peer2.IDB58Decode(msg.SenderID)
 				if err != nil {
 					Logger.log.Error(err)
 					break
