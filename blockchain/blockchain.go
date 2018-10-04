@@ -266,7 +266,7 @@ func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 Store best state of block(best block, num of tx, ...) into Database
 */
 func (self *BlockChain) StoreBestState(chainId byte) error {
-	return self.config.DataBase.StoreBestBlock(self.BestState[chainId], chainId)
+	return self.config.DataBase.StoreBestState(self.BestState[chainId], chainId)
 }
 
 /*
