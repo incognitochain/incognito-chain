@@ -255,8 +255,8 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(nonce int, diffi
 	// update default genesis block
 	genesisBlock.Header.Timestamp = time.Unix()
 	//genesisBlock.Header.PrevBlockHash = (&common.Hash{}).String()
-	genesisBlock.Header.Nonce = nonce
-	genesisBlock.Header.Difficulty = difficulty
+	// genesisBlock.Header.Nonce = nonce
+	// genesisBlock.Header.Difficulty = difficulty
 	genesisBlock.Header.Version = version
 	genesisBlock.Header.Committee = preSelectValidators
 	genesisBlock.Height = 1
