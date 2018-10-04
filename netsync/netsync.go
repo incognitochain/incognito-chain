@@ -237,15 +237,24 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 			chainBlocks, _ := self.config.BlockChain.GetChainBlocks(chainID)
 			for index := int(senderBlockHeaderIndex) + 1; index <= len(chainBlocks); index++ {
 				block, _ := self.config.BlockChain.GetBlockByBlockHeight(int32(index), chainID)
-				Logger.log.Info("Send block %x \n", *block.Hash())
+				Logger.log.Info("Send block %s \n", block.Hash().String())
 
 				blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
 				if err != nil {
+					Logger.log.Error(err)
 					break
 				}
 
 				blockMsg.(*wire.MessageBlock).Block = *block
-				peerID, _ := peer2.IDFromString(msg.SenderID)
+				if msg.SenderID == "" {
+					Logger.log.Error("Sender ID is empty")
+					break
+				}
+				peerID, err := peer2.IDFromString(msg.SenderID)
+				if err != nil {
+					Logger.log.Error(err)
+					break
+				}
 				self.config.Server.PushMessageToPeer(blockMsg, peerID)
 			}
 		}
