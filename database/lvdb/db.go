@@ -244,7 +244,7 @@ func (db *db) StoreBlockIndex(h *common.Hash, idx int32, chainID byte) error {
 	buf := make([]byte, 5)
 	binary.LittleEndian.PutUint32(buf, uint32(idx))
 	buf[4] = chainID
-	//z:index-chainid
+	//{i-[hash]}:index-chainid
 	if err := db.lvdb.Put(db.getKeyIdx(h), buf, nil); err != nil {
 		return errors.Wrap(err, "db.lvdb.Put")
 	}
