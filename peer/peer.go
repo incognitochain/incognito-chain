@@ -63,18 +63,31 @@ type Peer struct {
 	MaxOutbound int
 	MaxInbound  int
 
-	PeerConns              map[string]*PeerConn
-	peerConnsMutex         sync.Mutex
-	newPeerConnectionMutex sync.Mutex
-	PendingPeers           map[string]*Peer
-	pendingPeersMutex      sync.Mutex
+	PeerConns      map[string]*PeerConn
+	peerConnsMutex sync.Mutex
+	//newPeerConnectionMutex sync.Mutex
+	PendingPeers      map[string]*Peer
+	pendingPeersMutex sync.Mutex
 
-	quit           chan struct{}
+	cStop          chan struct{}
 	disconnectPeer chan *PeerConn
+	cNewConn       chan *NewPeerMsg
+	cNewStream     chan *NewStreamMsg
+	cStopConn      chan struct{}
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
 	HandleFailed       func(peerConn *PeerConn)
+}
+
+type NewPeerMsg struct {
+	Peer *Peer
+	Done chan struct{}
+}
+
+type NewStreamMsg struct {
+	Stream net.Stream
+	Done   chan struct{}
 }
 
 // config is the struct to hold configuration options useful to Peer.
@@ -189,11 +202,14 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.Host = basicHost
 	self.TargetAddress = fullAddr
 	self.PeerID = PeerID
-	self.quit = make(chan struct{}, 1)
+	self.cStop = make(chan struct{}, 1)
 	self.disconnectPeer = make(chan *PeerConn)
+	self.cNewConn = make(chan *NewPeerMsg)
+	self.cNewStream = make(chan *NewStreamMsg)
+	self.cStopConn = make(chan struct{})
 
 	self.peerConnsMutex = sync.Mutex{}
-	self.newPeerConnectionMutex = sync.Mutex{}
+	//self.newPeerConnectionMutex = sync.Mutex{}
 	return &self, nil
 }
 
@@ -201,12 +217,64 @@ func (self *Peer) Start() error {
 	Logger.log.Info("Peer start")
 	// ping to bootnode for test env
 	Logger.log.Info("Set stream handler and wait for connection from other peer")
-	self.Host.SetStreamHandler("/blockchain/1.0.0", self.HandleStream)
+	self.Host.SetStreamHandler("/blockchain/1.0.0", self.PushStream)
+
+	go self.ProcessConn()
+
 	select {
-	case <-self.quit:
+	case <-self.cStop:
+		close(self.cStopConn)
 		Logger.log.Infof("PEER server shutdown complete %s", self.PeerID)
 		break
 	} // hang forever
+	return nil
+}
+
+func (self *Peer) PushStream(stream net.Stream) {
+	newStreamMsg := NewStreamMsg{
+		Stream: stream,
+		Done:   nil,
+	}
+	self.cNewStream <- &newStreamMsg
+}
+
+func (self *Peer) PushConn(peer *Peer, done chan struct{}) {
+	newPeerMsg := NewPeerMsg{
+		Peer: peer,
+		Done: done,
+	}
+	self.cNewConn <- &newPeerMsg
+}
+
+func (self *Peer) ProcessConn() error {
+	for {
+		select {
+		case <-self.cStopConn:
+			Logger.log.Info("ProcessConn QUIT")
+			return nil
+		case newPeerMsg := <-self.cNewConn:
+			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.Peer.PeerID, newPeerMsg.Peer.RawAddress)
+			cDone := make(chan struct{})
+			go self.HandleConn(newPeerMsg.Peer, cDone)
+			<-cDone
+			if newPeerMsg.Done != nil {
+				close(newPeerMsg.Done)
+			}
+			Logger.log.Infof("ProcessConn END CONN %s %s", newPeerMsg.Peer.PeerID, newPeerMsg.Peer.RawAddress)
+			continue
+		case newStreamMsg := <-self.cNewStream:
+			remotePeerID := newStreamMsg.Stream.Conn().RemotePeer()
+			Logger.log.Infof("ProcessConn START STREAM %s", remotePeerID)
+			cDone := make(chan struct{})
+			go self.HandleStream(newStreamMsg.Stream, cDone)
+			<-cDone
+			if newStreamMsg.Done != nil {
+				close(newStreamMsg.Done)
+			}
+			Logger.log.Infof("ProcessConn END STREAM %s", remotePeerID)
+			continue
+		}
+	}
 	return nil
 }
 
@@ -230,7 +298,6 @@ func (self *Peer) ConnCanceled(peer *Peer) {
 	if ok {
 		delete(self.PeerConns, peer.PeerID.String())
 	}
-	Logger.log.Info("sdgdfgdfgdfg", self.PendingPeers, peer)
 	self.pendingPeersMutex.Lock()
 	self.PendingPeers[peer.PeerID.String()] = peer
 	self.pendingPeersMutex.Unlock()
@@ -260,21 +327,50 @@ func (self *Peer) NumOutbound() int {
 	return ret
 }
 
-func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
+func (self *Peer) SetPeerConn(peerConn *PeerConn) {
+	_peerConn, ok := self.PeerConns[peerConn.Peer.PeerID.String()]
+	if ok && _peerConn != peerConn {
+		if _peerConn.IsConnected {
+			_peerConn.Close()
+		}
+		Logger.log.Infof("SetPeerConn and Remove %s %s", _peerConn.Peer.PeerID, _peerConn.Peer.RawAddress)
+	}
+	self.PeerConns[peerConn.Peer.PeerID.String()] = peerConn
+}
+
+func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
+	_peerConn, ok := self.PeerConns[peerConn.Peer.PeerID.String()]
+	if ok {
+		if _peerConn.IsConnected {
+			_peerConn.Close()
+		}
+		delete(self.PeerConns, peerConn.Peer.PeerID.String())
+		Logger.log.Infof("RemovePeerConn %s %s", peerConn.Peer.PeerID, peerConn.Peer.RawAddress)
+	}
+}
+
+func (self *Peer) HandleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER Id - %s \n", peer.PeerID.String())
 
-	self.newPeerConnectionMutex.Lock()
+	//self.newPeerConnectionMutex.Lock()
 	_, ok := self.PeerConns[peer.PeerID.String()]
-	//if ok && _peerConn.State() == ConnEstablished {
 	if ok {
 		Logger.log.Infof("Checked Existed PEER Id - %s", peer.PeerID.String())
-		self.newPeerConnectionMutex.Unlock()
+		//self.newPeerConnectionMutex.Unlock()
+
+		if cDone != nil {
+			close(cDone)
+		}
 		return nil, nil
 	}
 
 	if peer.PeerID.Pretty() == self.PeerID.Pretty() {
 		Logger.log.Infof("Checked Myself PEER Id - %s", peer.PeerID.String())
-		self.newPeerConnectionMutex.Unlock()
+		//self.newPeerConnectionMutex.Unlock()
+
+		if cDone != nil {
+			close(cDone)
+		}
 		return nil, nil
 	}
 
@@ -283,7 +379,11 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 		//push to pending peers
 		self.ConnPending(peer)
-		self.newPeerConnectionMutex.Unlock()
+		//self.newPeerConnectionMutex.Unlock()
+
+		if cDone != nil {
+			close(cDone)
+		}
 		return nil, nil
 	}
 
@@ -291,7 +391,11 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	Logger.log.Info(peer, stream, err)
 	if err != nil {
 		Logger.log.Errorf("Fail in opening stream to PEER Id - %s with err: %s", self.PeerID.String(), err.Error())
-		self.newPeerConnectionMutex.Unlock()
+		//self.newPeerConnectionMutex.Unlock()
+
+		if cDone != nil {
+			close(cDone)
+		}
 		return nil, err
 	}
 
@@ -319,7 +423,7 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	}
 
 	self.SetPeerConn(&peerConn)
-	self.newPeerConnectionMutex.Unlock()
+	//self.newPeerConnectionMutex.Unlock()
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
@@ -328,6 +432,10 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	peerConn.updateState(ConnEstablished)
 
 	go self.handleConnected(&peerConn)
+
+	if cDone != nil {
+		close(cDone)
+	}
 
 	for {
 		select {
@@ -350,37 +458,16 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 	return &peerConn, nil
 }
 
-func (self *Peer) SetPeerConn(peerConn *PeerConn) {
-	_peerConn, ok := self.PeerConns[peerConn.Peer.PeerID.String()]
-	if ok && _peerConn != peerConn {
-		if _peerConn.IsConnected {
-			_peerConn.Close()
-		}
-		Logger.log.Infof("SetPeerConn and Remove %s", _peerConn.Peer.RawAddress)
-	}
-	self.PeerConns[peerConn.Peer.PeerID.String()] = peerConn
-}
-
-func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
-	_peerConn, ok := self.PeerConns[peerConn.Peer.PeerID.String()]
-	if ok {
-		if _peerConn.IsConnected {
-			_peerConn.Close()
-		}
-		delete(self.PeerConns, peerConn.Peer.PeerID.String())
-		Logger.log.Infof("RemovePeerConn %s", peerConn.Peer.RawAddress)
-	}
-}
-
-func (self *Peer) HandleStream(stream net.Stream) {
-	fmt.Println("DEBUG", stream.Conn().RemoteMultiaddr(), stream.Conn().LocalMultiaddr())
-	self.newPeerConnectionMutex.Lock()
+func (self *Peer) HandleStream(stream net.Stream, cDone chan struct{}) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
 	if self.NumInbound() >= self.MaxInbound && self.MaxInbound > 0 {
 		Logger.log.Infof("Max Peer Inbound Connection")
 
+		if cDone != nil {
+			close(cDone)
+		}
 		return
 	}
 
@@ -389,7 +476,11 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	_, ok := self.PeerConns[remotePeerID.String()]
 	if ok {
 		Logger.log.Infof("Received a new stream existed PEER Id - %s", remotePeerID)
-		self.newPeerConnectionMutex.Unlock()
+		//self.newPeerConnectionMutex.Unlock()
+
+		if cDone != nil {
+			close(cDone)
+		}
 		return
 	}
 
@@ -416,7 +507,7 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	}
 
 	self.SetPeerConn(&peerConn)
-	self.newPeerConnectionMutex.Unlock()
+	//self.newPeerConnectionMutex.Unlock()
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
@@ -425,6 +516,10 @@ func (self *Peer) HandleStream(stream net.Stream) {
 	peerConn.updateState(ConnEstablished)
 
 	go self.handleConnected(&peerConn)
+
+	if cDone != nil {
+		close(cDone)
+	}
 
 	for {
 		select {
@@ -471,7 +566,8 @@ func (self *Peer) Stop() {
 		peerConn.updateState(ConnCanceled)
 	}
 	self.peerConnsMutex.Unlock()
-	self.quit <- struct{}{}
+
+	close(self.cStop)
 }
 
 func (self *Peer) handleConnected(peerConn *PeerConn) {
@@ -527,10 +623,11 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 		if peerConn.RetryCount < maxRetryConn {
 			peerConn.updateState(ConnPending)
 
-			_, err := peerConn.ListenerPeer.NewPeerConnection(peerConn.Peer)
-			if err != nil {
-				go self.retryPeerConnection(peerConn)
-			}
+			//_, err := peerConn.ListenerPeer.PushConn(peerConn.Peer)
+			//if err != nil {
+			//	go self.retryPeerConnection(peerConn)
+			//}
+			peerConn.ListenerPeer.PushConn(peerConn.Peer, nil)
 		} else {
 			peerConn.updateState(ConnCanceled)
 
@@ -544,7 +641,7 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 func (self *Peer) newPeerConnection() {
 	self.pendingPeersMutex.Lock()
 	for _, peer := range self.PendingPeers {
-		go self.NewPeerConnection(peer)
+		go self.PushConn(peer, nil)
 	}
 	self.pendingPeersMutex.Unlock()
 }
