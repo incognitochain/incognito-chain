@@ -300,7 +300,7 @@ func (db *db) FetchAllBlocks() ([][]*common.Hash, error) {
 func (db *db) FetchChainBlocks(chainID byte) ([]*common.Hash, error) {
 	var keys []*common.Hash
 	prefix := append(append(chainIDPrefix, chainID), blockKeyPrefix...)
-	iter := db.lvdb.NewIterator(util.BytesPrefix(blockKeyPrefix), nil)
+	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		h := new(common.Hash)
 		_ = h.SetBytes(iter.Key()[len(prefix):])
