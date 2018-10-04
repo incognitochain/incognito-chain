@@ -27,7 +27,7 @@ type PeerConn struct {
 	ReaderWriterStream *bufio.ReadWriter
 	verAckReceived     bool
 	VerValid           bool
-	IsConnected		   bool
+	IsConnected        bool
 
 	TargetAddress    ma.Multiaddr
 	PeerID           peer.ID
@@ -38,8 +38,12 @@ type PeerConn struct {
 	Config Config
 
 	sendMessageQueue chan outMsg
-	quit             chan struct{}
-	disconnect       chan struct{}
+	//quit             chan struct{}
+	//disconnect       chan struct{}
+	cDisconnect      chan struct{}
+	cRead            chan struct{}
+	cWrite           chan struct{}
+	cClose           chan struct{}
 
 	Peer             *Peer
 	ValidatorAddress string
@@ -61,10 +65,10 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 		if err != nil {
 			self.IsConnected = false
 
-			Logger.log.Errorf("InMessageHandler PEER %s ERROR %s", self.Peer.RawAddress, err)
-			Logger.log.Infof("InMessageHandler PEER %s quit IN message handler", self.Peer.RawAddress)
+			Logger.log.Errorf("InMessageHandler ERROR %s %s %s", self.PeerID, self.Peer.RawAddress, err)
+			Logger.log.Infof("InMessageHandler QUIT %s %s", self.PeerID, self.Peer.RawAddress)
 
-			close(self.quit)
+			close(self.cWrite)
 
 			return
 		}
@@ -199,13 +203,10 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		select {
 		case outMsg := <-self.sendMessageQueue:
 			{
-				// self.flagMutex.Lock()
-				// TODO
 				// send message
 				messageByte, err := outMsg.msg.JsonSerialize()
 				if err != nil {
 					fmt.Println(err)
-					// self.flagMutex.Unlock()
 					continue
 				}
 				header := make([]byte, wire.MessageHeaderSize)
@@ -218,24 +219,22 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				_, err = rw.Writer.WriteString(message)
 				if err != nil {
 					Logger.log.Critical("DM ERROR", err)
-					// self.flagMutex.Unlock()
-					return
+					continue
 				}
 				err = rw.Writer.Flush()
 				if err != nil {
 					Logger.log.Critical("DM ERROR", err)
-					// self.flagMutex.Unlock()
-					return
+					continue
 				}
 				// self.flagMutex.Unlock()
 
 			}
-		case <-self.quit:
-			Logger.log.Infof("PEER %s quit OUT message handler", self.PeerID)
+		case <-self.cWrite:
+			Logger.log.Infof("OutMessageHandler QUIT %s %s", self.PeerID, self.Peer.RawAddress)
 
 			self.IsConnected = false
 
-			close(self.disconnect)
+			close(self.cDisconnect)
 
 			if self.HandleDisconnected != nil {
 				go self.HandleDisconnected(self)
@@ -279,5 +278,5 @@ func (p *PeerConn) State() ConnState {
 }
 
 func (p *PeerConn) Close() {
-	close(p.quit)
+	close(p.cClose)
 }
