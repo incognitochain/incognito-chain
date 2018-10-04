@@ -1,7 +1,6 @@
 package ppos
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -63,7 +62,7 @@ type Config struct {
 	blockGen        *BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server interface {
+	Server          interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -384,20 +383,20 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 	}
 
 	// 4. Validate committee member signatures
-	for i, sig := range block.Header.BlockCommitteeSigs {
-		decSig, _ := base64.StdEncoding.DecodeString(sig)
-		decPubkey, _ := base64.StdEncoding.DecodeString(self.currentCommittee[i])
-		k := cashec.KeySetSealer{
-			SpublicKey: decPubkey,
-		}
-		isValidSignature, err := k.Verify([]byte(block.Hash().String()), decSig)
-		if err != nil {
-			return err
-		}
-		if isValidSignature == false {
-			return errSigWrongOrNotExits
-		}
-	}
+	// for i, sig := range block.Header.BlockCommitteeSigs {
+	// 	decSig, _ := base64.StdEncoding.DecodeString(sig)
+	// 	decPubkey, _ := base64.StdEncoding.DecodeString(self.currentCommittee[i])
+	// 	k := cashec.KeySetSealer{
+	// 		SpublicKey: decPubkey,
+	// 	}
+	// 	isValidSignature, err := k.Verify([]byte(block.Hash().String()), decSig)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	if isValidSignature == false {
+	// 		return errSigWrongOrNotExits
+	// 	}
+	// }
 
 	// 5. Re-validate transactions again @@
 	for _, tx := range block.Transactions {
