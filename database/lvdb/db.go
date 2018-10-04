@@ -58,7 +58,8 @@ func (db *db) StoreBlock(v interface{}, chainID byte) error {
 	}
 	var (
 		hash = h.Hash()
-		key  = append(blockKeyPrefix, hash[:]...)
+		key  = append(append(chainIDPrefix, chainID), append(blockKeyPrefix, hash[:]...)...)
+		// key should look like this c10b-blockhash
 	)
 	if db.hasBlock(key) {
 		return errors.Errorf("block %s already exists", hash.String())

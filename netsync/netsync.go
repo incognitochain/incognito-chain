@@ -31,7 +31,7 @@ type NetSyncConfig struct {
 	BlockChain *blockchain.BlockChain
 	ChainParam *blockchain.Params
 	MemPool    *mempool.TxPool
-	Server     interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, peer2.ID) error
 	}
@@ -247,7 +247,10 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	} else {
 		Logger.log.Error(blockHash.String(), "----------")
 		Logger.log.Error(self.config.BlockChain.BestState[9].BestBlockHash.String())
-		chainBlocks, _ := self.config.BlockChain.GetChainBlocks(9)
+		chainBlocks, err2 := self.config.BlockChain.GetChainBlocks(9)
+		if err2 != nil {
+			Logger.log.Error(err2)
+		}
 		for _, block := range chainBlocks {
 			Logger.log.Error(block.Hash().String())
 		}
