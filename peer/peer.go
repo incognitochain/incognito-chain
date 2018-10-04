@@ -308,8 +308,10 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 		Config:             self.Config,
 		PeerID:             remotePeerID,
 		ReaderWriterStream: rw,
-		quit:               make(chan struct{}),
-		disconnect:         make(chan struct{}),
+		cDisconnect:        make(chan struct{}),
+		cClose:             make(chan struct{}),
+		cRead:              make(chan struct{}),
+		cWrite:             make(chan struct{}),
 		sendMessageQueue:   make(chan outMsg),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,
@@ -327,22 +329,21 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 
 	go self.handleConnected(&peerConn)
 
-	//timeOutVerAck := make(chan struct{})
-	//time.AfterFunc(time.Second*10, func() {
-	//	if !peerConn.VerAckReceived() {
-	//		Logger.log.Infof("NewPeerConnection timeoutVerack timeout PEER Id %s", peerConn.PeerID.String())
-	//		timeOutVerAck <- struct{}{}
-	//	}
-	//})
-
 	for {
 		select {
-		case <-peerConn.disconnect:
-			Logger.log.Infof("NewPeerConnection Close Stream PEER Id %s", peerConn.PeerID.String())
+		case <-peerConn.cDisconnect:
+			Logger.log.Infof("NewPeerConnection Disconnected Stream PEER Id %s", peerConn.PeerID.String())
 			return &peerConn, nil
-			//case <-timeOutVerAck:
-			//	Logger.log.Infof("NewPeerConnection timeoutVerack PEER Id %s", peerConn.PeerID.String())
-			//	break
+		case <-peerConn.cClose:
+			Logger.log.Infof("NewPeerConnection closed stream PEER Id %s", peerConn.PeerID.String())
+			go func() {
+				select {
+				case <-peerConn.cDisconnect:
+					Logger.log.Infof("NewPeerConnection disconnected after closed stream PEER Id %s", peerConn.PeerID.String())
+					return
+				}
+			}()
+			return &peerConn, nil
 		}
 	}
 
@@ -350,12 +351,13 @@ func (self *Peer) NewPeerConnection(peer *Peer) (*PeerConn, error) {
 }
 
 func (self *Peer) SetPeerConn(peerConn *PeerConn) {
-	/*_peerConn, ok := self.PeerConns[peerConn.Peer.PeerID.String()]
-	if ok {
+	_peerConn, ok := self.PeerConns[peerConn.Peer.PeerID.String()]
+	if ok && _peerConn != peerConn {
 		if _peerConn.IsConnected {
 			_peerConn.Close()
 		}
-	}*/
+		Logger.log.Infof("SetPeerConn and Remove %s", _peerConn.Peer.RawAddress)
+	}
 	self.PeerConns[peerConn.Peer.PeerID.String()] = peerConn
 }
 
@@ -366,6 +368,7 @@ func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
 			_peerConn.Close()
 		}
 		delete(self.PeerConns, peerConn.Peer.PeerID.String())
+		Logger.log.Infof("RemovePeerConn %s", peerConn.Peer.RawAddress)
 	}
 }
 
@@ -390,11 +393,6 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		return
 	}
 
-	// TODO this code make EOF for libp2p
-	//if !atomic.CompareAndSwapInt32(&self.connected, 0, 1) {
-	//	return
-	//}
-
 	// Create a buffer stream for non blocking read and write.
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
@@ -407,8 +405,10 @@ func (self *Peer) HandleStream(stream net.Stream) {
 		Config:             self.Config,
 		PeerID:             remotePeerID,
 		ReaderWriterStream: rw,
-		quit:               make(chan struct{}),
-		disconnect:         make(chan struct{}),
+		cDisconnect:        make(chan struct{}),
+		cClose:             make(chan struct{}),
+		cRead:              make(chan struct{}),
+		cWrite:             make(chan struct{}),
 		sendMessageQueue:   make(chan outMsg),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,
@@ -426,22 +426,21 @@ func (self *Peer) HandleStream(stream net.Stream) {
 
 	go self.handleConnected(&peerConn)
 
-	//timeOutVerAck := make(chan struct{})
-	//time.AfterFunc(time.Second*10, func() {
-	//	if !peerConn.VerAckReceived() {
-	//		Logger.log.Infof("HandleStream timeoutVerack timeout PEER Id %s", peerConn.PeerID.String())
-	//		timeOutVerAck <- struct{}{}
-	//	}
-	//})
-
 	for {
 		select {
-		case <-peerConn.disconnect:
-			Logger.log.Infof("HandleStream close stream PEER Id %s", peerConn.PeerID.String())
+		case <-peerConn.cDisconnect:
+			Logger.log.Infof("HandleStream disconnected stream PEER Id %s", peerConn.PeerID.String())
 			return
-			//case <-timeOutVerAck:
-			//	Logger.log.Infof("HandleStream timeoutVerack PEER Id %s", peerConn.PeerID.String())
-			//	break
+		case <-peerConn.cClose:
+			Logger.log.Infof("HandleStream closed stream PEER Id %s", peerConn.PeerID.String())
+			go func() {
+				select {
+				case <-peerConn.cDisconnect:
+					Logger.log.Infof("HandleStream disconnected after closed stream PEER Id %s", peerConn.PeerID.String())
+					return
+				}
+			}()
+			return
 		}
 	}
 }
