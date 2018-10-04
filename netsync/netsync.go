@@ -227,12 +227,17 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	blockHash, _ := common.Hash{}.NewHashFromStr(msg.LastBlockHash)
 	senderBlockHeaderIndex, chainID, err := self.config.BlockChain.GetBlockHeightByBlockHash(blockHash)
 	if err == nil {
-		if self.config.BlockChain.BestState[chainID].BestBlockHash.String() != blockHash.String() {
+		bestHashStr := self.config.BlockChain.BestState[chainID].BestBlockHash.String()
+		Logger.log.Infof("Blockhash from message %s", blockHash.String())
+		Logger.log.Infof("Blockhash of bestChain in chainID %d - %s", chainID, bestHashStr)
+		Logger.log.Info("Index of block %d \n", senderBlockHeaderIndex)
+		Logger.log.Info("chainId of block %d \n", chainID)
+		if bestHashStr != blockHash.String() {
 			// Send Blocks back to requestor
 			chainBlocks, _ := self.config.BlockChain.GetChainBlocks(chainID)
 			for index := int(senderBlockHeaderIndex) + 1; index <= len(chainBlocks); index++ {
 				block, _ := self.config.BlockChain.GetBlockByBlockHeight(int32(index), chainID)
-				fmt.Printf("Send block %x \n", *block.Hash())
+				Logger.log.Info("Send block %x \n", *block.Hash())
 
 				blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
 				if err != nil {
