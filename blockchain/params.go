@@ -118,7 +118,7 @@ var MainNetParams = Params{
 	},
 
 	// BlockChain parameters
-	GenesisBlock:             GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(time.Date(2018, 8, 1, 0, 0, 0, 0, time.Local), 0x18aea41a, 0x1d00ffff, 1, GENESIS_BLOCK_REWARD, pposValidators),
+	GenesisBlock:             GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(0x18aea41a, 0x1d00ffff, 1, GENESIS_BLOCK_REWARD, pposValidators),
 	SubsidyReductionInterval: 210000,
 	TargetTimespan:           time.Hour * 24 * 14, // 14 days
 	TargetTimePerBlock:       time.Minute * 10,    // 10 minutes

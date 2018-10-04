@@ -62,7 +62,7 @@ type Config struct {
 	blockGen        *BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server          interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -606,9 +606,13 @@ func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
 		if chainInfo["ChainsHeight"] != nil {
 			if v < int(chainInfo["ChainsHeight"].([]interface{})[i].(float64)) {
 				self.knownChainsHeight.Heights[i] = int(chainInfo["ChainsHeight"].([]interface{})[i].(float64))
-
+				lastBlockHash := self.config.BlockChain.BestState[i].BestBlockHash.String()
+				Logger.log.Info("############################")
+				Logger.log.Infof("ChainId: %d", i)
+				Logger.log.Infof("best state with block has: %d", lastBlockHash)
+				Logger.log.Info("############################")
 				getBlkMsg := &wire.MessageGetBlocks{
-					LastBlockHash: self.config.BlockChain.BestState[i].BestBlockHash.String(),
+					LastBlockHash: lastBlockHash,
 				}
 				Logger.log.Info("Send getblock to " + msg.SenderID)
 				peerID, err := peer2.IDB58Decode(msg.SenderID)
