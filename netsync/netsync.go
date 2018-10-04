@@ -8,6 +8,7 @@ import (
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/wire"
@@ -30,7 +31,7 @@ type NetSyncConfig struct {
 	BlockChain *blockchain.BlockChain
 	ChainParam *blockchain.Params
 	MemPool    *mempool.TxPool
-	Server interface {
+	Server     interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, peer2.ID) error
 	}
@@ -223,9 +224,10 @@ func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan s
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Handling new message - " + wire.CmdGetBlocks)
-	senderBlockHeaderIndex, chainID, err := self.config.BlockChain.GetBlockHeightByBlockHash(&msg.LastBlockHash)
+	blockHash, _ := common.Hash{}.NewHashFromStr(msg.LastBlockHash)
+	senderBlockHeaderIndex, chainID, err := self.config.BlockChain.GetBlockHeightByBlockHash(blockHash)
 	if err == nil {
-		if self.config.BlockChain.BestState[chainID].BestBlockHash != &msg.LastBlockHash {
+		if self.config.BlockChain.BestState[chainID].BestBlockHash.String() != blockHash.String() {
 			// Send Blocks back to requestor
 			chainBlocks, _ := self.config.BlockChain.GetChainBlocks(chainID)
 			for index := int(senderBlockHeaderIndex) + 1; index <= len(chainBlocks); index++ {
