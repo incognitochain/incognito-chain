@@ -264,7 +264,7 @@ func (db *db) GetIndexOfBlock(h *common.Hash) (int32, byte, error) {
 
 	var idx int32
 	var chainID byte
-	if err := binary.Read(bytes.NewReader(b[:3]), binary.LittleEndian, &idx); err != nil {
+	if err := binary.Read(bytes.NewReader(b[:4]), binary.LittleEndian, &idx); err != nil {
 		return 0, 0, errors.Wrap(err, "binary.Read")
 	}
 	if err = binary.Read(bytes.NewReader(b[4:]), binary.LittleEndian, &chainID); err != nil {
