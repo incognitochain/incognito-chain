@@ -30,7 +30,7 @@ type NetSyncConfig struct {
 	BlockChain *blockchain.BlockChain
 	ChainParam *blockchain.Params
 	MemPool    *mempool.TxPool
-	Server interface {
+	Server     interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, peer2.ID) error
 	}
@@ -224,10 +224,10 @@ func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan s
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Handling new message getblocks message")
 	if senderBlockHeaderIndex, chainID, err := self.config.BlockChain.GetBlockHeightByBlockHash(&msg.LastBlockHash); err == nil {
-		if self.config.BlockChain.BestState[chainID].BestBlock.Hash() != &msg.LastBlockHash {
+		if self.config.BlockChain.BestState[chainID].BestBlockHash != &msg.LastBlockHash {
 			// Send Blocks back to requestor
 			chainBlocks, _ := self.config.BlockChain.GetChainBlocks(chainID)
-			for index := int(senderBlockHeaderIndex) + 1; index < len(chainBlocks); index++ {
+			for index := int(senderBlockHeaderIndex) + 1; index <= len(chainBlocks); index++ {
 				block, _ := self.config.BlockChain.GetBlockByBlockHeight(int32(index), chainID)
 				fmt.Printf("Send block %x \n", *block.Hash())
 
