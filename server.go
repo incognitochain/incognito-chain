@@ -557,12 +557,12 @@ func (self *Server) OnBlock(p *peer.PeerConn,
 }
 
 func (self *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
-	Logger.log.Info("Receive a get-block message START")
+	Logger.log.Info("Receive a " + msg.MessageType() + " message START")
 	var txProcessed chan struct{}
 	self.NetSync.QueueGetBlock(nil, msg, txProcessed)
 	//<-txProcessed
 
-	Logger.log.Info("Receive a get-block message END")
+	Logger.log.Info("Receive a " + msg.MessageType() + " message END")
 }
 
 // OnTx is invoked when a peer receives a tx message.  It blocks
