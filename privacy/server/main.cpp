@@ -399,7 +399,7 @@ class ZksnarkImpl final : public Zksnark::Service
 //        success = js->prove(inputs, out_notes, vpub_old, vpub_new, rts, hsig, phi, address_last_byte, compute_proof, proof);
         // testing make default proof
         libzcash::PHGRProof proof;
-        sleep(20);
+        sleep(1);
         // print_proof(proof);
 
         zksnark::PHGRProof *zk_proof = new zksnark::PHGRProof();
