@@ -31,7 +31,8 @@ window.onload = function () {
     }));
 
     document.getElementById("bt_send").onclick = function () {
-        sendToMany()
+        sendmany();
+        return false;
     };
 
     addNewRow();
@@ -147,22 +148,8 @@ function showLoading(show) {
     }
 }
 
-function sendToMany() {
+function sendmany() {
     let priKey = document.getElementById("lb_privateKey").innerText;
-
-    let txtAddresses = document.getElementsByClassName('txt_address');
-    let txtAmounts = document.getElementsByClassName('txt_amount');
-    for (let i = 0; i < txtAddresses.length; i++) {
-        let pubKey = txtAddresses[i].value;
-        let amount = txtAmounts[i].value;
-        sendmany(priKey, pubKey, amount);
-    }
-}
-
-function sendmany(priKey, pubKey, amount) {
-    // var priKey = document.getElementById("lb_privateKey").innerText;
-    // var pubKey = document.getElementById("txt_address").value;
-    // var amount = document.getElementById("txt_amount").value;
 
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
     xhr.open("POST", window.localStorage['cash_node_url']);
@@ -181,7 +168,16 @@ function sendmany(priKey, pubKey, amount) {
         }
     };
     var dest = {};
-    dest[pubKey] = parseInt(amount);
+
+    let txtAddresses = document.getElementsByClassName('txt_address');
+    let txtAmounts = document.getElementsByClassName('txt_amount');
+    for (let i = 0; i < txtAddresses.length; i++) {
+        let pubKey = txtAddresses[i].value;
+        let amount = txtAmounts[i].value;
+
+        dest[pubKey] = parseInt(amount);
+    }
+
     xhr.send(JSON.stringify({
         jsonrpc: "1.0",
         method: "sendmany",
