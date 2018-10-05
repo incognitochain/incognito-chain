@@ -313,8 +313,7 @@ func (self *ConnManager) Connect(addr string, pubKey string) {
 		// make a new stream from host B to host A
 		// it should be handled on host A by the handler we set above because
 		// we use the same /peer/1.0.0 protocol
-
-		go listen.NewPeerConnection(&peer)
+		go listen.PushConn(&peer, nil)
 	}
 }
 
