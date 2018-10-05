@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -44,7 +43,7 @@ type Engine struct {
 	candidates            []string
 	knownChainsHeight     chainsHeight
 	validatedChainsHeight chainsHeight
-	validatorSigCh        chan blockSig
+	blockSigCh            chan blockSig
 }
 
 type ChainInfo struct {
@@ -112,7 +111,10 @@ func (self *Engine) Start() error {
 		}
 	}
 	self.validatedChainsHeight.Heights = self.knownChainsHeight.Heights
-	self.currentCommittee = self.config.BlockChain.BestState[0].BestBlock.Header.Committee
+	for key := range self.config.BlockChain.BestState[0].BestBlock.Header.CommitteeSigs {
+		self.currentCommittee = append(self.currentCommittee, key)
+	}
+	// self.currentCommittee = self.config.BlockChain.BestState[0].BestBlock.Header.Committee
 
 	go func() {
 		for {
@@ -156,7 +158,7 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 	self.config.ValidatorKeySet = sealerKeySet
 
 	self.quitSealer = make(chan struct{})
-	self.validatorSigCh = make(chan blockSig)
+	self.blockSigCh = make(chan blockSig)
 	self.sealerStarted = true
 	Logger.log.Info("Starting sealer with public key: " + base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)))
 
@@ -195,7 +197,7 @@ func (self *Engine) StopSealer() {
 	if self.sealerStarted {
 		Logger.log.Info("Stopping Sealer...")
 		close(self.quitSealer)
-		close(self.validatorSigCh)
+		close(self.blockSigCh)
 		self.sealerStarted = false
 	}
 }
@@ -211,61 +213,65 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	newblock.Block.Header.ChainsHeight = self.validatedChainsHeight.Heights
 	newblock.Block.Header.ChainID = myChainID
 	newblock.Block.ChainLeader = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
-	newblock.Block.Header.Committee = self.GetNextCommittee()
+	// newblock.Block.Header.Committee = self.GetNextCommittee()
+
+	for _, validator := range self.GetNextCommittee() {
+		newblock.Block.Header.CommitteeSigs[validator] = ""
+	}
+
 	sig, err := self.signData([]byte(newblock.Block.Hash().String()))
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
-	newblock.Block.Header.BlockCommitteeSigs = []string{sig}
+	newblock.Block.Header.CommitteeSigs[newblock.Block.ChainLeader] = sig
 	return newblock.Block, nil
 }
 
 func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) error {
 	Logger.log.Info("Start finalizing block...")
 	finalBlock := block
-	validateSigList := make(chan []string)
+	allSigReceived := make(chan struct{})
 	cancel := make(chan struct{})
 	defer func() {
 		close(cancel)
-		close(validateSigList)
+		close(allSigReceived)
 	}()
 
 	// Collect signatures of other validators
 	go func(blockHash string) {
-		var reslist []string
+		var sigsReceived int
 		for {
 			select {
 			case <-cancel:
 				return
-			case validatorSig := <-self.validatorSigCh:
-				Logger.log.Info("Validator's signature received", len(reslist))
+			case blocksig := <-self.blockSigCh:
+				Logger.log.Info("Validator's signature received", sigsReceived)
 
-				if blockHash != validatorSig.BlockHash {
-					Logger.log.Critical("(o_O)!", validatorSig, "this block", blockHash)
+				if blockHash != blocksig.BlockHash {
+					Logger.log.Critical("(o_O)!", blocksig, "this block", blockHash)
 					continue
-				}
-				decPubkey, _, err := base58.Base58Check{}.Decode(validatorSig.Validator)
-				if err != nil {
-					Logger.log.Error("Can't decode validator public key")
-					continue
-				}
-				validatorKp := cashec.KeySetSealer{
-					SpublicKey: decPubkey,
 				}
 
-				decSig, _, err := base58.Base58Check{}.Decode(validatorSig.ValidatorSig)
-				if err != nil {
-					Logger.log.Error("Can't decode validator signature")
-					continue
+				if sig, ok := block.Header.CommitteeSigs[blocksig.Validator]; ok {
+					if sig != "" {
+						if indexOfValidator(blocksig.Validator, chainValidators) < len(chainValidators) {
+							err := cashec.ValidateDataB58(blocksig.Validator, blocksig.ValidatorSig, []byte(block.Hash().String()))
+
+							if err != nil {
+								Logger.log.Error("Validate sig error:", err)
+								continue
+							} else {
+								sigsReceived++
+								finalBlock.Header.CommitteeSigs[blocksig.Validator] = blocksig.ValidatorSig
+							}
+						}
+					} else {
+						Logger.log.Error("Already received this validator blocksig")
+					}
 				}
-				isValid, _ := validatorKp.Verify([]byte(block.Hash().String()), decSig)
-				if isValid {
-					reslist = append(reslist, validatorSig.ValidatorSig)
-				} else {
-					Logger.log.Error("Invalid validator's signature")
-				}
-				if len(reslist) == (CHAIN_VALIDATORS_LENGTH - 1) {
-					validateSigList <- reslist
+
+				if sigsReceived == (CHAIN_VALIDATORS_LENGTH - 1) {
+					allSigReceived <- struct{}{}
 					return
 				}
 			}
@@ -291,14 +297,14 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 
 	// Wait for signatures of other validators
 	select {
-	case resList := <-validateSigList:
-		Logger.log.Info("Validator sigs: ", resList)
-		finalBlock.Header.BlockCommitteeSigs = append(finalBlock.Header.BlockCommitteeSigs, resList...)
+	case <-allSigReceived:
+		Logger.log.Info("Validator sigs: ", finalBlock.Header.CommitteeSigs)
 	case <-time.After(MAX_BLOCKSIGN_WAIT_TIME * time.Second):
 		return errCantFinalizeBlock
 	}
 
-	sig, err := self.signData([]byte(strings.Join(finalBlock.Header.BlockCommitteeSigs, "")))
+	cmsBytes, _ := json.Marshal(finalBlock.Header.CommitteeSigs)
+	sig, err := self.signData(cmsBytes)
 	if err != nil {
 		return err
 	}
@@ -345,7 +351,8 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 	if err != nil {
 		return err
 	}
-	isValidSignature, err := k.Verify([]byte(strings.Join(block.Header.BlockCommitteeSigs, "")), decSig)
+	cmsBytes, _ := json.Marshal(block.Header.CommitteeSigs)
+	isValidSignature, err := k.Verify(cmsBytes, decSig)
 	if err != nil {
 		return err
 	}
@@ -428,7 +435,7 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 	k := cashec.KeySetSealer{
 		SpublicKey: decPubkey,
 	}
-	decSig, _, err := base58.Base58Check{}.Decode(block.Header.BlockCommitteeSigs[0])
+	decSig, _, err := base58.Base58Check{}.Decode(block.Header.CommitteeSigs[block.ChainLeader])
 	if err != nil {
 		return err
 	}
@@ -585,7 +592,7 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 
 func (self *Engine) OnBlockSigReceived(blockHash string, validator string, sig string) {
 	Logger.log.Info("Received a block signature")
-	self.validatorSigCh <- blockSig{
+	self.blockSigCh <- blockSig{
 		BlockHash:    blockHash,
 		Validator:    validator,
 		ValidatorSig: sig,

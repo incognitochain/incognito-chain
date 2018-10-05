@@ -32,3 +32,12 @@ func (self *Engine) CheckCommittee(committee []string, blockHeight int, chainID 
 
 	return true
 }
+
+func indexOfValidator(validator string, committeeList []string) int {
+	for k, v := range committeeList {
+		if validator == v {
+			return k
+		}
+	}
+	return -1
+}

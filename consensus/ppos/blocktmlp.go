@@ -185,9 +185,10 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 		MerkleRoot:            *merkleRoot,
 		MerkleRootCommitments: common.Hash{},
 		Timestamp:             time.Now().Unix(),
-		BlockCommitteeSigs:    []string{},
-		Committee:             []string{},
-		ChainID:               chainID,
+		// BlockCommitteeSigs:    []string{},
+		// Committee:             []string{},
+		CommitteeSigs: map[string]string{},
+		ChainID:       chainID,
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
