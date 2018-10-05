@@ -187,7 +187,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 		Timestamp:             time.Now().Unix(),
 		// BlockCommitteeSigs:    []string{},
 		// Committee:             []string{},
-		CommitteeSigs: map[string]string{},
+		CommitteeSigs: make(map[string]string),
 		ChainID:       chainID,
 	}
 	for _, tx := range txsToAdd {

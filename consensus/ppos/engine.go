@@ -390,6 +390,8 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 				}
 			}
 		}
+	} else {
+		return errChainNotFullySynced
 	}
 
 	rtOld := self.config.BlockChain.BestState[block.Header.ChainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
