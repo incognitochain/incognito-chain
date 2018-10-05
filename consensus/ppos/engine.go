@@ -65,7 +65,7 @@ type Config struct {
 	blockGen        *BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server          interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -383,6 +383,8 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 				}
 			}
 		}
+	} else {
+		return errChainNotFullySynced
 	}
 
 	rtOld := self.config.BlockChain.BestState[block.Header.ChainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
@@ -391,8 +393,8 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 	self.config.BlockChain.UpdateMerkleTreeForBlock(newTree, block)
 	rt := newTree.GetRoot(common.IncMerkleTreeHeight)
 	Logger.log.Infof("[validateblock] updated tree rt: %x\n", rt)
-	if !bytes.Equal(rt, block.Header.MerkleRootCommitments.CloneBytes()) {
-		Logger.log.Errorf("MerkleRootCommitments diff!! \n%x\n%x\n%x", rtOld, rt, block.Header.MerkleRootCommitments)
+	if !bytes.Equal(rt[:], block.Header.MerkleRootCommitments.CloneBytes()) {
+		Logger.log.Errorf("MerkleRootCommitments diff!! \n%x\n%x\n%x", rtOld, rt[:], block.Header.MerkleRootCommitments[:])
 		for _, blockTx := range block.Transactions {
 			if blockTx.GetType() == common.TxNormalType {
 				tx, ok := blockTx.(*transaction.Tx)
