@@ -1,6 +1,7 @@
 package ppos
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/mempool"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
@@ -18,13 +20,14 @@ import (
 )
 
 var (
-	errBlockSizeExceed     = errors.New("block size is too big")
-	errNotInCommittee      = errors.New("user not in committee")
-	errSigWrongOrNotExits  = errors.New("signature is wrong or not existed in block header")
-	errChainNotFullySynced = errors.New("chains are not fully synced")
-	errTxIsWrong           = errors.New("transaction is wrong")
-	errNotEnoughChainData  = errors.New("not enough chain data")
-	errCantFinalizeBlock   = errors.New("can't finalize block")
+	errBlockSizeExceed       = errors.New("block size is too big")
+	errNotInCommittee        = errors.New("user not in committee")
+	errSigWrongOrNotExits    = errors.New("signature is wrong or not existed in block header")
+	errChainNotFullySynced   = errors.New("chains are not fully synced")
+	errTxIsWrong             = errors.New("transaction is wrong")
+	errNotEnoughChainData    = errors.New("not enough chain data")
+	errCantFinalizeBlock     = errors.New("can't finalize block")
+	errMerkleRootCommitments = errors.New("MerkleRootCommitments is wrong")
 )
 
 // PoSEngine only need to start if node runner want to be a validator
@@ -389,6 +392,30 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 		}
 	}
 
+	rtOld := self.config.BlockChain.BestState[block.Header.ChainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
+	newTree := self.config.BlockChain.BestState[block.Header.ChainID].CmTree.MakeCopy()
+	Logger.log.Infof("[validateblock] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
+	self.config.BlockChain.UpdateMerkleTreeForBlock(newTree, block)
+	rt := newTree.GetRoot(common.IncMerkleTreeHeight)
+	Logger.log.Infof("[validateblock] updated tree rt: %x\n", rt)
+	if !bytes.Equal(rt, block.Header.MerkleRootCommitments.CloneBytes()) {
+		Logger.log.Errorf("MerkleRootCommitments diff!! \n%x\n%x\n%x", rtOld, rt, block.Header.MerkleRootCommitments)
+		for _, blockTx := range block.Transactions {
+			if blockTx.GetType() == common.TxNormalType {
+				tx, ok := blockTx.(*transaction.Tx)
+				if ok == false {
+					Logger.log.Errorf("Transaction in block not valid")
+				}
+
+				for _, desc := range tx.Descs {
+					for _, cm := range desc.Commitments {
+						Logger.log.Infof("%x", cm[:])
+					}
+				}
+			}
+		}
+		return errMerkleRootCommitments
+	}
 	// 4. Validate committee member signatures
 	// for i, sig := range block.Header.BlockCommitteeSigs {
 	// 	decSig, _ := base64.StdEncoding.DecodeString(sig)
