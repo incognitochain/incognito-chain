@@ -151,10 +151,14 @@ function showLoading(show) {
 function sendmany() {
     let priKey = document.getElementById("lb_privateKey").innerText;
 
+    showLoading(true);
+
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
     xhr.open("POST", window.localStorage['cash_node_url']);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
+        showLoading(false);
+
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
