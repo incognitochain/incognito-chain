@@ -21,8 +21,8 @@ window.onload = function () {
             }
         }
     };
-    let url = new URL(window.location.href);
-    let account = url.searchParams.get("account");
+    var url = new URL(window.location.href);
+    var account = url.searchParams.get("account");
     xhr.send(JSON.stringify({
         jsonrpc: "1.0",
         method: "getaccountaddress",
@@ -31,14 +31,53 @@ window.onload = function () {
     }));
 
     document.getElementById("bt_send").onclick = function () {
-        sendmany()
+        sendmany();
         return false;
     };
-    document.getElementById("bt_send_many").onclick = function () {
-        window.location.href = 'sendmany.html?account=' + encodeURIComponent(account);
-        return false;
-    };
+
+    addNewRow();
 };
+
+function addNewRow() {
+    let tbSend = document.getElementById("tb_send");
+    let index = tbSend.getElementsByTagName("tr").length;
+    let row = tbSend.insertRow(index);
+    let cell1 = row.insertCell(0);
+    let cell2 = row.insertCell(1);
+    let cell3 = row.insertCell(2);
+    cell1.innerHTML = '<td><input id="txt_address" class="form-control txt_address"></input></td>';
+    cell2.innerHTML = '<td><input id="txt_amount" class="form-control txt_amount"></input></td>';
+    cell3.innerHTML = '';
+
+    let txtAmount = tbSend.getElementsByTagName("tr")[index].getElementsByClassName('txt_amount')[0];
+    txtAmount.addEventListener('keypress', function(e){
+        if (e.keyCode == 13) {
+            let length = tbSend.getElementsByTagName("tr").length;
+            if (this.parentNode.parentNode.rowIndex == length - 1) {
+                tbSend.rows[length - 1].cells[2].innerHTML = '<td><button id="bt_remove" type="submit" class="btn btn-primary">Remove</button></td>';
+
+                let btSend = tbSend.getElementsByTagName("tr")[length - 1].getElementsByTagName('button')[0];
+                btSend.onclick = function (ev) {
+                    tbSend.deleteRow(this.parentNode.parentNode.rowIndex);
+                    return false;
+                };
+
+                addNewRow();
+
+                saveData();
+            }
+            return false;
+        }
+    });
+
+    tbSend.getElementsByTagName("tr")[index].getElementsByClassName('txt_address')[0].focus();
+
+    saveData();
+}
+
+function saveData() {
+    
+}
 
 function dumpprivkey(publicKey) {
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
@@ -110,9 +149,7 @@ function showLoading(show) {
 }
 
 function sendmany() {
-    var priKey = document.getElementById("lb_privateKey").innerText;
-    var pubKey = document.getElementById("txt_address").value;
-    var amount = document.getElementById("txt_amount").value;
+    let priKey = document.getElementById("lb_privateKey").innerText;
 
     showLoading(true);
 
@@ -121,6 +158,7 @@ function sendmany() {
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false);
+
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
@@ -134,7 +172,16 @@ function sendmany() {
         }
     };
     var dest = {};
-    dest[pubKey] = parseInt(amount);
+
+    let txtAddresses = document.getElementsByClassName('txt_address');
+    let txtAmounts = document.getElementsByClassName('txt_amount');
+    for (let i = 0; i < txtAddresses.length; i++) {
+        let pubKey = txtAddresses[i].value;
+        let amount = txtAmounts[i].value;
+
+        dest[pubKey] = parseInt(amount);
+    }
+
     xhr.send(JSON.stringify({
         jsonrpc: "1.0",
         method: "sendmany",
