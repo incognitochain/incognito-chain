@@ -12,23 +12,31 @@ type TxViewPoint struct {
 	listCommitments map[string]([][]byte)
 
 	// hash of best block in current
-	currentBestHash common.Hash
+	currentBestBlockHash common.Hash
 }
 
+/*
+ListNullifiers returns list nullifers which is contained in TxViewPoint
+ */
+// #1: joinSplitDescType is "Coin" Or "Bond"
 func (view *TxViewPoint) ListNullifiers(joinSplitDescType string) [][]byte {
 	return view.listNullifiers[joinSplitDescType]
 }
 
+/*
+ListNullifiers returns list nullifers which is contained in TxViewPoint
+ */
+// #1: joinSplitDescType is "Coin" Or "Bond"
 func (view *TxViewPoint) ListCommitments(joinSplitDescType string) [][]byte {
 	return view.listCommitments[joinSplitDescType]
 }
 
 /*
-BestHash returns the hash of the best block in the chain the view currently
+CurrentBestBlockHash returns the hash of the best block in the chain the view currently
 represents.
 */
-func (view *TxViewPoint) BestHash() *common.Hash {
-	return &view.currentBestHash
+func (view *TxViewPoint) CurrentBestBlockHash() *common.Hash {
+	return &view.currentBestBlockHash
 }
 
 /*
@@ -36,7 +44,7 @@ SetBestHash sets the hash of the best block in the chain the view currently
 represents.
 */
 func (view *TxViewPoint) SetBestHash(hash *common.Hash) {
-	view.currentBestHash = *hash
+	view.currentBestBlockHash = *hash
 }
 
 /*
