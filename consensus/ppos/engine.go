@@ -121,6 +121,8 @@ func (self *Engine) Start() error {
 		for {
 			self.config.Server.PushMessageGetChainState()
 			time.Sleep(GETCHAINSTATE_INTERVAL * time.Second)
+			Logger.log.Info("Heights ", self.knownChainsHeight.Heights)
+			Logger.log.Info("Heights ", self.validatedChainsHeight.Heights)
 		}
 	}()
 	self.quit = make(chan struct{})
@@ -186,6 +188,16 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 						if err != nil {
 							Logger.log.Critical(err)
 							continue
+						}
+					}
+				} else {
+					for i, v := range self.knownChainsHeight.Heights {
+						if v > self.validatedChainsHeight.Heights[i] {
+							lastBlockHash := self.config.BlockChain.BestState[i].BestBlockHash.String()
+							getBlkMsg := &wire.MessageGetBlocks{
+								LastBlockHash: lastBlockHash,
+							}
+							self.config.Server.PushMessageToAll(getBlkMsg)
 						}
 					}
 				}
@@ -638,7 +650,7 @@ func (self *Engine) OnInvalidBlockReceived(blockHash string, chainID byte, reaso
 func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
 	// fmt.Println(msg)
 	chainInfo := msg.ChainInfo.(map[string]interface{})
-	for i, v := range self.knownChainsHeight.Heights {
+	for i, v := range self.validatedChainsHeight.Heights {
 		if chainInfo["ChainsHeight"] != nil {
 			if v < int(chainInfo["ChainsHeight"].([]interface{})[i].(float64)) {
 				self.knownChainsHeight.Heights[i] = int(chainInfo["ChainsHeight"].([]interface{})[i].(float64))
@@ -656,9 +668,9 @@ func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
 					continue
 				}
 				self.config.Server.PushMessageToPeer(getBlkMsg, peerID)
-			} else {
-
 			}
+		} else {
+			Logger.log.Error("what the ...")
 		}
 	}
 	return
