@@ -114,7 +114,7 @@ func (self *Engine) Start() error {
 			}
 		}
 	}
-	self.validatedChainsHeight.Heights = self.knownChainsHeight.Heights
+	copy(self.validatedChainsHeight.Heights, self.knownChainsHeight.Heights)
 	self.currentCommittee = self.config.BlockChain.BestState[0].BestBlock.Header.Committee
 
 	go func() {
@@ -174,8 +174,8 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 					if chainID < TOTAL_VALIDATORS {
 						Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
 						Logger.log.Info("Current chainsHeight")
-						fmt.Println(self.validatedChainsHeight.Heights)
-						fmt.Println(chainID, validators)
+						Logger.log.Info(self.validatedChainsHeight.Heights)
+						Logger.log.Info(chainID, validators)
 
 						newBlock, err := self.createBlock()
 						if err != nil {
@@ -211,7 +211,7 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
-	newblock.Block.Header.ChainsHeight = self.validatedChainsHeight.Heights
+	copy(newblock.Block.Header.ChainsHeight, self.validatedChainsHeight.Heights)
 	newblock.Block.Header.ChainID = myChainID
 	newblock.Block.ChainLeader = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 	newblock.Block.Header.Committee = self.GetNextCommittee()
