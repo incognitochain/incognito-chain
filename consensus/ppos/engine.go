@@ -65,7 +65,7 @@ type Config struct {
 	blockGen        *BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server interface {
+	Server          interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -326,7 +326,9 @@ func (self *Engine) signData(data []byte) (string, error) {
 
 func (self *Engine) validateBlock(block *blockchain.Block) error {
 	// validate steps: block size -> sealer's sig of the final block -> sealer is belong to committee -> validate each committee member's sig
-
+	if block.Header.PrevBlockHash.String() != self.config.BlockChain.BestState[block.Header.ChainID].BestBlockHash.String() {
+		return errChainNotFullySynced
+	}
 	// 1. Check blocksize
 	blockBytes, err := json.Marshal(block)
 	if err != nil {
@@ -440,6 +442,9 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 	// validate steps: block size -> sealer is belong to committee -> validate sealer's sig -> check chainsHeight of this block -> validate each transaction
 
+	if block.Header.PrevBlockHash.String() != self.config.BlockChain.BestState[block.Header.ChainID].BestBlockHash.String() {
+		return errChainNotFullySynced
+	}
 	// 1. Check whether block size is greater than MAX_BLOCKSIZE or not.
 	blockBytes, err := json.Marshal(*block)
 	if err != nil {
@@ -496,6 +501,8 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 				}
 			}
 		}
+	} else {
+		return errChainNotFullySynced
 	}
 
 	// 5. Revalidate transactions in block.
