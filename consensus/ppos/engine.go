@@ -113,13 +113,11 @@ func (self *Engine) Start() error {
 			}
 		}
 	}
-	self.validatedChainsHeight.Heights = self.knownChainsHeight.Heights
+
+	copy(self.validatedChainsHeight.Heights, self.knownChainsHeight.Heights)
 	for key := range self.config.BlockChain.BestState[0].BestBlock.Header.CommitteeSigs {
 		self.currentCommittee = append(self.currentCommittee, key)
 	}
-	// self.currentCommittee = self.config.BlockChain.BestState[0].BestBlock.Header.Committee
-	copy(self.validatedChainsHeight.Heights, self.knownChainsHeight.Heights)
-	self.currentCommittee = self.config.BlockChain.BestState[0].BestBlock.Header.Committee
 
 	go func() {
 		for {
