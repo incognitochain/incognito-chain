@@ -624,6 +624,11 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 			if err != nil {
 				Logger.log.Error(err)
 			}
+			self.knownChainsHeight.Lock()
+			if self.knownChainsHeight.Heights[block.Header.ChainID] < int(block.Height) {
+				self.knownChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
+			}
+			self.knownChainsHeight.Unlock()
 		}
 	} else {
 		//save block to cache
