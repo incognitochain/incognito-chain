@@ -204,18 +204,18 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		case outMsg := <-self.sendMessageQueue:
 			{
 				// send message
-				messageByte, err := outMsg.msg.JsonSerialize()
+				messageByte, err := outMsg.message.JsonSerialize()
 				if err != nil {
 					fmt.Println(err)
 					continue
 				}
 				header := make([]byte, wire.MessageHeaderSize)
-				CmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.msg))
+				CmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.message))
 				copy(header[:], []byte(CmdType))
 				messageByte = append(messageByte, header...)
 				message := hex.EncodeToString(messageByte)
 				message += "\n"
-				Logger.log.Infof("Send a message %s to %s", outMsg.msg.MessageType(), self.Peer.RawAddress) // , string(messageByte)
+				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.Peer.RawAddress) // , string(messageByte)
 				_, err = rw.Writer.WriteString(message)
 				if err != nil {
 					Logger.log.Critical("DM ERROR", err)
@@ -253,7 +253,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 // This function is safe for concurrent access.
 func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
 	if self.IsConnected {
-		self.sendMessageQueue <- outMsg{msg: msg, doneChan: doneChan}
+		self.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
 	}
 }
 
