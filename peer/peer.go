@@ -22,28 +22,10 @@ import (
 	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
-const (
-	// listen all interface
-	LocalHost         = "0.0.0.0"
-	MaxRetryConn      = 5
-	RetryConnDuration = 30 * time.Second
-)
-
 // ConnState represents the state of the requested connection.
 type ConnState uint8
 
-// ConnState can be either pending, established, disconnected or failed.  When
-// a new connection is requested, it is attempted and categorized as
-// established or failed depending on the connection result.  An established
-// connection which was disconnected is categorized as disconnected.
-const (
-	ConnPending      ConnState = iota
-	ConnFailing
-	ConnCanceled
-	ConnEstablished
-	ConnDisconnected
-)
-
+// Peer is present for libp2p node data
 type Peer struct {
 	Host host.Host
 
@@ -133,6 +115,9 @@ type outMsg struct {
 	//encoding wire.MessageEncoding
 }
 
+/*
+NewPeer - create a new peer with go libp2p
+ */
 func (self Peer) NewPeer() (*Peer, error) {
 	// If the seed is zero, use real cryptographic randomness. Otherwise, use a
 	// deterministic randomness source to make generated keys stay the same
@@ -206,6 +191,9 @@ func (self Peer) NewPeer() (*Peer, error) {
 	return &self, nil
 }
 
+/*
+Start - start peer to begin waiting for connections from other peers
+ */
 func (self *Peer) Start() error {
 	Logger.log.Info("Peer start")
 	// ping to bootnode for test env
