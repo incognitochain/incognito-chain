@@ -16,6 +16,12 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 	prevBlock := chain.BestState[chainID]
 	prevBlockHash := chain.BestState[chainID].BestBlock.Hash()
 	sourceTxns := g.txSource.MiningDescs()
+
+	var txsToAdd []transaction.Transaction
+	var txToRemove []transaction.Transaction
+	var feeMap map[string]uint64
+	var txs []transaction.Transaction
+
 	if len(sourceTxns) < MIN_TXs {
 		// if len of sourceTxns < MIN_TXs -> wait for more transactions
 		Logger.log.Info("not enough transactions. Wait for more...")
@@ -26,36 +32,15 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 			<-time.Tick(MAX_BLOCK_WAIT_TIME * time.Second)
 			sourceTxns = g.txSource.MiningDescs()
 			if len(sourceTxns) == 0 {
-				return nil, errors.New("No Tx")
+				// return nil, errors.New("No Tx")
+				Logger.log.Info("Creating empty block...")
+				goto concludeBlock
 			}
 		}
 	}
 
-	txs, _, feeMap := extractTxsAndComputeInitialFees(sourceTxns)
-	//@todo we need apply sort rules for sourceTxns here
+	txs, _, feeMap = extractTxsAndComputeInitialFees(sourceTxns)
 
-	// agentDataPoints := getLatestAgentDataPoints(chain, actionParamTxs)
-	// rewardMap := calculateReward(agentDataPoints, feeMap)
-
-	// coinbaseScript := []byte("1234567890123456789012") //@todo should be create function create basescript
-
-	// coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, coinbaseScript, payToAddress, rewardMap)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// dependers := make(map[common.Hash]map[common.Hash]*txPrioItem)
-
-	// blockTxns := make([]transaction.Transaction, 0, len(sourceTxns))
-	// blockTxns = append(blockTxns, coinbaseTx)
-
-	// blockTxns := append([]transaction.Transaction{coinbaseTx}, txs...)
-	//receiverKeyset, _ := wallet.Base58CheckDeserialize(payToAddress)
-	//_ = receiverKeyset
-
-	var txsToAdd []transaction.Transaction
-
-	var txToRemove []transaction.Transaction
 	// mempoolLoop:
 	for _, tx := range txs {
 		// tx, ok := txDesc.(*transaction.Tx)
@@ -66,7 +51,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 		//@todo need apply validate tx, logic check all referenced here
 		// call function spendTransaction to mark utxo
 
-		txChainID, _ := g.GetTxSenderChain(tx.GetSenderAddrLastByte())
+		txChainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
 		if txChainID != chainID {
 			continue
 		}
@@ -133,6 +118,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 		return nil, errors.New("no transaction available for this chain")
 	}
 
+concludeBlock:
 	rt := g.chain.BestState[chainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
 	coinbaseTx, err := createCoinbaseTx(
 		&blockchain.Params{},
@@ -228,17 +214,6 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 		Block: &block,
 	}
 	return blockTemp, nil
-}
-
-func (g *BlkTmplGenerator) GetTxSenderChain(senderLastByte byte) (byte, error) {
-	modResult := senderLastByte % 100
-	for index := byte(0); index < 5; index++ {
-		if (modResult-index)%5 == 0 {
-			// result := byte((modResult - index) / 5)
-			return byte((modResult - index) / 5), nil
-		}
-	}
-	return 0, errors.New("can't get sender's chainID")
 }
 
 type BlkTmplGenerator struct {

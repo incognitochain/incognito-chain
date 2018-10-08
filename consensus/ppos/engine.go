@@ -88,10 +88,9 @@ func (self *Engine) Start() error {
 		return errors.New("Consensus engine is already started")
 	}
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
-	self.started = true
 	self.knownChainsHeight.Heights = make([]int, TOTAL_VALIDATORS)
-	self.currentCommittee = make([]string, TOTAL_VALIDATORS)
 	self.validatedChainsHeight.Heights = make([]int, TOTAL_VALIDATORS)
+	self.currentCommittee = []string{}
 
 	for chainID := 0; chainID < TOTAL_VALIDATORS; chainID++ {
 		self.knownChainsHeight.Heights[chainID] = int(self.config.BlockChain.BestState[chainID].Height)
@@ -127,6 +126,8 @@ func (self *Engine) Start() error {
 			Logger.log.Info("Heights ", self.validatedChainsHeight.Heights)
 		}
 	}()
+
+	self.started = true
 	self.quit = make(chan struct{})
 	self.wg.Add(1)
 
@@ -173,33 +174,36 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 			case <-self.quitSealer:
 				return
 			default:
-				if common.IntArrayEquals(self.knownChainsHeight.Heights, self.validatedChainsHeight.Heights) {
-					chainID, validators := self.getMyChain()
-					if chainID < TOTAL_VALIDATORS {
-						Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
-						Logger.log.Info("Current chainsHeight")
-						Logger.log.Info(self.validatedChainsHeight.Heights)
-						Logger.log.Info(chainID, validators)
+				if self.started {
+					if common.IntArrayEquals(self.knownChainsHeight.Heights, self.validatedChainsHeight.Heights) {
+						chainID, validators := self.getMyChain()
+						fmt.Println(base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)), len(self.currentCommittee))
+						if chainID < TOTAL_VALIDATORS {
+							Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
+							Logger.log.Info("Current chainsHeight")
+							Logger.log.Info(self.validatedChainsHeight.Heights)
+							Logger.log.Info(chainID, validators)
 
-						newBlock, err := self.createBlock()
-						if err != nil {
-							Logger.log.Error(err)
-							continue
-						}
-						err = self.Finalize(newBlock, validators)
-						if err != nil {
-							Logger.log.Critical(err)
-							continue
-						}
-					}
-				} else {
-					for i, v := range self.knownChainsHeight.Heights {
-						if v > self.validatedChainsHeight.Heights[i] {
-							lastBlockHash := self.config.BlockChain.BestState[i].BestBlockHash.String()
-							getBlkMsg := &wire.MessageGetBlocks{
-								LastBlockHash: lastBlockHash,
+							newBlock, err := self.createBlock()
+							if err != nil {
+								Logger.log.Error(err)
+								continue
 							}
-							self.config.Server.PushMessageToAll(getBlkMsg)
+							err = self.Finalize(newBlock, validators)
+							if err != nil {
+								Logger.log.Critical(err)
+								continue
+							}
+						}
+					} else {
+						for i, v := range self.knownChainsHeight.Heights {
+							if v > self.validatedChainsHeight.Heights[i] {
+								lastBlockHash := self.config.BlockChain.BestState[i].BestBlockHash.String()
+								getBlkMsg := &wire.MessageGetBlocks{
+									LastBlockHash: lastBlockHash,
+								}
+								self.config.Server.PushMessageToAll(getBlkMsg)
+							}
 						}
 					}
 				}
@@ -433,20 +437,34 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 		return errMerkleRootCommitments
 	}
 	// 4. Validate committee member signatures
-	// for i, sig := range block.Header.BlockCommitteeSigs {
-	// 	decSig, _ := base64.StdEncoding.DecodeString(sig)
-	// 	decPubkey, _ := base64.StdEncoding.DecodeString(self.currentCommittee[i])
-	// 	k := cashec.KeySetSealer{
-	// 		SpublicKey: decPubkey,
-	// 	}
-	// 	isValidSignature, err := k.Verify([]byte(block.Hash().String()), decSig)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	if isValidSignature == false {
-	// 		return errSigWrongOrNotExits
-	// 	}
-	// }
+	committee := []string{}
+	for validator, _ := range block.Header.CommitteeSigs {
+		committee = append(committee, validator)
+	}
+	blockCommittee, err := getChainValidators(block.Header.ChainID, committee)
+	if err != nil {
+		return err
+	}
+	for _, validator := range blockCommittee {
+		decPubkey, _, err := base58.Base58Check{}.Decode(validator)
+		if err != nil {
+			return err
+		}
+		k := cashec.KeySetSealer{
+			SpublicKey: decPubkey,
+		}
+		decSig, _, err := base58.Base58Check{}.Decode(block.Header.CommitteeSigs[validator])
+		if err != nil {
+			return err
+		}
+		isValidSignature, err := k.Verify([]byte(block.Hash().String()), decSig)
+		if err != nil {
+			return err
+		}
+		if isValidSignature == false {
+			return errSigWrongOrNotExits
+		}
+	}
 
 	// 5. Re-validate transactions again @@
 	for _, tx := range block.Transactions {
@@ -539,7 +557,7 @@ func (self *Engine) getMyChain() (byte, []string) {
 	var myChainCommittee []string
 	var err error
 	for idx := byte(0); idx < byte(TOTAL_VALIDATORS); idx++ {
-		myChainCommittee, err = self.getChainValidators(idx)
+		myChainCommittee, err = getChainValidators(idx, self.currentCommittee)
 		if err != nil {
 			return TOTAL_VALIDATORS, []string{}
 		}
@@ -549,18 +567,6 @@ func (self *Engine) getMyChain() (byte, []string) {
 		}
 	}
 	return TOTAL_VALIDATORS, []string{} // nope, you're not in the committee
-}
-
-func (self *Engine) getChainValidators(chainID byte) ([]string, error) {
-	var validators []string
-	for index := 1; index <= CHAIN_VALIDATORS_LENGTH; index++ {
-		validatorID := (index + int(chainID)) % TOTAL_VALIDATORS
-		validators = append(validators, self.currentCommittee[int(validatorID)])
-	}
-	if len(validators) == CHAIN_VALIDATORS_LENGTH {
-		return validators, nil
-	}
-	return nil, errors.New("can't get chain's validators")
 }
 
 func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {

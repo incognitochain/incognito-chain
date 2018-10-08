@@ -122,7 +122,7 @@ func (self Server) setupRPCListeners() ([]net.Listener, error) {
 
 /*
 NewServer - create server object which control all process of node
- */
+*/
 func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterface, chainParams *blockchain.Params, interrupt <-chan struct{}) error {
 	// Init data for Server
 	self.chainParams = chainParams
@@ -847,7 +847,7 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 
 /*
 GetChainState - send a getchainstate msg to connected peer
- */
+*/
 func (self *Server) PushMessageGetChainState() error {
 	Logger.log.Info("Send a GetChainState")
 	var dc chan<- struct{}
@@ -863,7 +863,7 @@ func (self *Server) PushMessageGetChainState() error {
 	return nil
 }
 
-func (self Server) PushVersionMessage(peerConn *peer.PeerConn) (error) {
+func (self Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	// push message version
 	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
 	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
