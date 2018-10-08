@@ -45,11 +45,11 @@ type Peer struct {
 	PendingPeers      map[string]*Peer
 	pendingPeersMutex sync.Mutex
 
-	cStop          chan struct{}
-	disconnectPeer chan *PeerConn
-	cNewConn       chan *NewPeerMsg
-	cNewStream     chan *NewStreamMsg
-	cStopConn      chan struct{}
+	cStop           chan struct{}
+	cDisconnectPeer chan *PeerConn
+	cNewConn        chan *NewPeerMsg
+	cNewStream      chan *NewStreamMsg
+	cStopConn       chan struct{}
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -182,7 +182,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.TargetAddress = fullAddr
 	self.PeerID = peerID
 	self.cStop = make(chan struct{}, 1)
-	self.disconnectPeer = make(chan *PeerConn)
+	self.cDisconnectPeer = make(chan *PeerConn)
 	self.cNewConn = make(chan *NewPeerMsg)
 	self.cNewStream = make(chan *NewStreamMsg)
 	self.cStopConn = make(chan struct{})
@@ -236,7 +236,14 @@ func (self *Peer) ProcessConn() {
 		case newPeerMsg := <-self.cNewConn:
 			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.Peer.PeerID, newPeerMsg.Peer.RawAddress)
 			cDone := make(chan struct{})
-			go self.HandleConn(newPeerMsg.Peer, cDone)
+			go func(self *Peer) {
+				peerConn, err := self.handleConn(newPeerMsg.Peer, cDone)
+				if err != nil {
+					Logger.log.Errorf("Fail in opening stream from PEER Id - %s with err: %s", self.PeerID.String(), err.Error())
+				} else {
+					Logger.log.Errorf("Success in opening stream from PEER Id - %s to %s", self.PeerID.String(), peerConn.RawAddress)
+				}
+			}(self)
 			<-cDone
 			if newPeerMsg.Done != nil {
 				close(newPeerMsg.Done)
@@ -330,7 +337,7 @@ func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
 	}
 }
 
-func (self *Peer) HandleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error) {
+func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER Id - %s \n", peer.RawAddress)
 
 	_, ok := self.PeerConns[peer.PeerID.String()]
@@ -371,7 +378,6 @@ func (self *Peer) HandleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 		if cDone != nil {
 			close(cDone)
 		}
-		Logger.log.Errorf("Fail in opening stream to PEER Id - %s with err: %s", self.PeerID.String(), err.Error())
 		return nil, NewPeerError(OpeningStreamP2PErr, err, self)
 	}
 

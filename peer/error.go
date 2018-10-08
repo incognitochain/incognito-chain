@@ -39,5 +39,6 @@ func NewPeerError(key string, err error, peer *Peer) *PeerError {
 		err:     err,
 		code:    ErrCodeMessage[key].code,
 		message: ErrCodeMessage[key].message,
+		peer:    peer,
 	}
 }
