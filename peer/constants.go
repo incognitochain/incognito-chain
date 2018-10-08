@@ -7,6 +7,7 @@ const (
 	LocalHost         = "0.0.0.0"
 	MaxRetryConn      = 5
 	RetryConnDuration = 30 * time.Second
+	ProtocolId        = "/blockchain/1.0.0"
 )
 
 // ConnState can be either pending, established, disconnected or failed.  When
