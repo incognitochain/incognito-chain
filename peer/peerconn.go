@@ -21,7 +21,7 @@ type PeerConn struct {
 
 	RetryCount int32
 	IsOutbound bool
-	state      ConnState
+	connState  ConnState
 	stateMtx   sync.RWMutex
 
 	ReaderWriterStream *bufio.ReadWriter
@@ -231,18 +231,18 @@ func (p *PeerConn) VerAckReceived() bool {
 }
 
 // updateState updates the state of the connection request.
-func (p *PeerConn) updateState(state ConnState) {
+func (p *PeerConn) updateConnState(connState ConnState) {
 	p.stateMtx.Lock()
-	p.state = state
+	p.connState = connState
 	p.stateMtx.Unlock()
 }
 
 // State is the connection state of the requested connection.
-func (p *PeerConn) State() ConnState {
+func (p *PeerConn) ConnState() ConnState {
 	p.stateMtx.RLock()
-	state := p.state
+	connState := p.connState
 	p.stateMtx.RUnlock()
-	return state
+	return connState
 }
 
 func (p *PeerConn) Close() {

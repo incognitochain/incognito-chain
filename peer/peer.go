@@ -410,7 +410,7 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 	go peerConn.OutMessageHandler(rw)
 
 	peerConn.RetryCount = 0
-	peerConn.updateState(ConnEstablished)
+	peerConn.updateConnState(ConnEstablished)
 
 	go self.handleConnected(&peerConn)
 
@@ -494,7 +494,7 @@ func (self *Peer) HandleStream(stream net.Stream, cDone chan struct{}) {
 	go peerConn.OutMessageHandler(rw)
 
 	peerConn.RetryCount = 0
-	peerConn.updateState(ConnEstablished)
+	peerConn.updateConnState(ConnEstablished)
 
 	go self.handleConnected(&peerConn)
 
@@ -539,7 +539,7 @@ func (self *Peer) Stop() {
 	self.Host.Close()
 	self.peerConnsMutex.Lock()
 	for _, peerConn := range self.PeerConns {
-		peerConn.updateState(ConnCanceled)
+		peerConn.updateConnState(ConnCanceled)
 	}
 	self.peerConnsMutex.Unlock()
 
@@ -552,7 +552,7 @@ handleConnected - set established flag to a peer when being connected
 func (self *Peer) handleConnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleConnected %s", peerConn.PeerID.String())
 	peerConn.RetryCount = 0
-	peerConn.updateState(ConnEstablished)
+	peerConn.updateConnState(ConnEstablished)
 
 	self.ConnEstablished(peerConn.Peer)
 
@@ -566,7 +566,7 @@ handleDisconnected - handle connected peer when it is disconnected, remove and r
  */
 func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.PeerID.String())
-	peerConn.updateState(ConnCanceled)
+	peerConn.updateConnState(ConnCanceled)
 	self.RemovePeerConn(peerConn)
 	if peerConn.IsOutbound {
 		go self.retryPeerConnection(peerConn)
@@ -599,10 +599,10 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 		peerConn.RetryCount += 1
 
 		if peerConn.RetryCount < MaxRetryConn {
-			peerConn.updateState(ConnPending)
+			peerConn.updateConnState(ConnPending)
 			peerConn.ListenerPeer.PushConn(peerConn.Peer, nil)
 		} else {
-			peerConn.updateState(ConnCanceled)
+			peerConn.updateConnState(ConnCanceled)
 			self.ConnCanceled(peerConn.Peer)
 			self.renewPeerConnection()
 			self.ConnPending(peerConn.Peer)
