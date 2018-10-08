@@ -22,33 +22,10 @@ import (
 	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
-const (
-	//LOCAL_HOST = "127.0.0.1"
-	// listen all interface
-	LOCAL_HOST = "0.0.0.0"
-	// trickleTimeout is the duration of the ticker which trickles down the
-	// inventory to a peer.
-	trickleTimeout = 10 * time.Second
-
-	maxRetryConn      = 5
-	retryConnDuration = 30 * time.Second
-)
-
 // ConnState represents the state of the requested connection.
 type ConnState uint8
 
-// ConnState can be either pending, established, disconnected or failed.  When
-// a new connection is requested, it is attempted and categorized as
-// established or failed depending on the connection result.  An established
-// connection which was disconnected is categorized as disconnected.
-const (
-	ConnPending      ConnState = iota
-	ConnFailing
-	ConnCanceled
-	ConnEstablished
-	ConnDisconnected
-)
-
+// Peer is present for libp2p node data
 type Peer struct {
 	Host host.Host
 
@@ -63,9 +40,8 @@ type Peer struct {
 	MaxOutbound int
 	MaxInbound  int
 
-	PeerConns      map[string]*PeerConn
-	peerConnsMutex sync.Mutex
-	//newPeerConnectionMutex sync.Mutex
+	PeerConns         map[string]*PeerConn
+	peerConnsMutex    sync.Mutex
 	PendingPeers      map[string]*Peer
 	pendingPeersMutex sync.Mutex
 
@@ -102,6 +78,7 @@ type WrappedStream struct {
 	Reader *bufio.Reader
 }
 
+/*
 // MessageListeners defines callback function pointers to invoke with message
 // listeners for a peer. Any listener which is not set to a concrete callback
 // during peer initialization is ignored. Execution of multiple message
@@ -111,6 +88,7 @@ type WrappedStream struct {
 // blocking calls (such as WaitForShutdown) on the peer instance since the input
 // handler goroutine blocks until the callback has completed.  Doing so will
 // result in a deadlock.
+*/
 type MessageListeners struct {
 	OnTx        func(p *PeerConn, msg *wire.MessageTx)
 	OnBlock     func(p *PeerConn, msg *wire.MessageBlock)
@@ -132,11 +110,14 @@ type MessageListeners struct {
 // when the message has been sent (or won't be sent due to things such as
 // shutdown)
 type outMsg struct {
-	msg      wire.Message
+	message  wire.Message
 	doneChan chan<- struct{}
 	//encoding wire.MessageEncoding
 }
 
+/*
+NewPeer - create a new peer with go libp2p
+ */
 func (self Peer) NewPeer() (*Peer, error) {
 	// If the seed is zero, use real cryptographic randomness. Otherwise, use a
 	// deterministic randomness source to make generated keys stay the same
@@ -152,12 +133,12 @@ func (self Peer) NewPeer() (*Peer, error) {
 	// to obtain a valid Host Id.
 	priv, _, err := crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, r)
 	if err != nil {
-		return &self, err
+		return &self, NewPeerError(PeerGenerateKeyPairErr, err)
 	}
 
 	ip := strings.Split(self.ListeningAddress.String(), ":")[0]
 	if len(ip) == 0 {
-		ip = LOCAL_HOST
+		ip = LocalHost
 	}
 	Logger.log.Info(ip)
 	port := strings.Split(self.ListeningAddress.String(), ":")[1]
@@ -170,7 +151,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 
 	basicHost, err := libp2p.New(context.Background(), opts...)
 	if err != nil {
-		return &self, err
+		return &self, NewPeerError(CreateP2PNodeErr, err)
 	}
 
 	// Build Host multiaddress
@@ -178,8 +159,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 
 	hostAddr, err := ma.NewMultiaddr(mulAddrStr)
 	if err != nil {
-		log.Print(err)
-		return &self, err
+		return &self, NewPeerError(CreateP2PAddressErr, err)
 	}
 
 	// Now we can build a full multiaddress to reach this Host
@@ -189,19 +169,18 @@ func (self Peer) NewPeer() (*Peer, error) {
 	Logger.log.Infof("I am listening on %s with PEER Id - %s\n", fullAddr, basicHost.ID().String())
 	pid, err := fullAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
-		log.Print(err)
-		return &self, err
+		return &self, NewPeerError(GetPeerIdFromProtocolErr, err)
 	}
-	PeerID, err := peer.IDB58Decode(pid)
+	peerID, err := peer.IDB58Decode(pid)
 	if err != nil {
 		log.Print(err)
-		return &self, err
+		return &self, NewPeerError(GetPeerIdFromProtocolErr, err)
 	}
 
 	self.RawAddress = fullAddr.String()
 	self.Host = basicHost
 	self.TargetAddress = fullAddr
-	self.PeerID = PeerID
+	self.PeerID = peerID
 	self.cStop = make(chan struct{}, 1)
 	self.disconnectPeer = make(chan *PeerConn)
 	self.cNewConn = make(chan *NewPeerMsg)
@@ -209,10 +188,12 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.cStopConn = make(chan struct{})
 
 	self.peerConnsMutex = sync.Mutex{}
-	//self.newPeerConnectionMutex = sync.Mutex{}
 	return &self, nil
 }
 
+/*
+Start - start peer to begin waiting for connections from other peers
+ */
 func (self *Peer) Start() error {
 	Logger.log.Info("Peer start")
 	// ping to bootnode for test env
@@ -552,7 +533,7 @@ func (self *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- str
 		// Logger.log.Info("PEER %s QueueMessageWithEncoding START", peerConnection.PeerID)
 		go peerConnection.QueueMessageWithEncoding(msg, doneChan)
 		// Logger.log.Info("PEER %s QueueMessageWithEncoding END", peerConnection.PeerID)
-		// Logger.log.Info("Queued msg", peerConnection.PeerID.Pretty(), peerConnection.ListenerPeer.PeerID.Pretty())
+		// Logger.log.Info("Queued message", peerConnection.PeerID.Pretty(), peerConnection.ListenerPeer.PeerID.Pretty())
 	}
 	// self.peerConnsMutex.Unlock()
 }
@@ -616,11 +597,11 @@ func (self *Peer) handleFailed(peerConn *PeerConn) {
 }
 
 func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
-	time.AfterFunc(retryConnDuration, func() {
+	time.AfterFunc(RetryConnDuration, func() {
 		Logger.log.Infof("Retry New Peer Connection %s", peerConn.PeerID.String())
 		peerConn.RetryCount += 1
 
-		if peerConn.RetryCount < maxRetryConn {
+		if peerConn.RetryCount < MaxRetryConn {
 			peerConn.updateState(ConnPending)
 
 			//_, err := peerConn.ListenerPeer.PushConn(peerConn.Peer)

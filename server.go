@@ -211,6 +211,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		var err error
 		peers, err = self.InitListenerPeers(self.AddrManager, listenAddrs)
 		if err != nil {
+			Logger.log.Error(err)
 			return err
 		}
 	}
