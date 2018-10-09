@@ -78,7 +78,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				// get cmd type in header message
 				commandInHeader := messageHeader[:wire.MessageCmdTypeSize]
 				commandInHeader = bytes.Trim(messageHeader, "\x00")
-				Logger.log.Infof("Received message type %s from %s", string(commandInHeader), self.RawAddress)
+				Logger.log.Infof("Received message type %s from %s", string(commandInHeader), self.PeerID)
 				commandType := string(messageHeader[:len(commandInHeader)])
 				// convert to particular message from message cmd type
 				var message, err = wire.MakeEmptyMessage(string(commandType))
