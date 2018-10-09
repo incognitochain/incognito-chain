@@ -238,10 +238,8 @@ func (self *Peer) processConn() {
 			cDone := make(chan struct{})
 			go func(self *Peer) {
 				peerConn, err := self.handleConn(newPeerMsg.Peer, cDone)
-				if err != nil {
+				if err != nil && peerConn == nil {
 					Logger.log.Errorf("Fail in opening stream from PEER Id - %s with err: %s", self.PeerID.String(), err.Error())
-				} else {
-					Logger.log.Errorf("Success in opening stream from PEER Id - %s to %s", self.PeerID.String(), peerConn.RawAddress)
 				}
 			}(self)
 			<-cDone
