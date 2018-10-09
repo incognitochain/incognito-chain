@@ -183,13 +183,14 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				cmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.message))
 				copy(header[:], []byte(cmdType))
 				messageByte = append(messageByte, header...)
+				Logger.log.Infof("Content: %s", string(messageByte))
 				message := hex.EncodeToString(messageByte)
 				// add end character to message (delim '\n')
 				message += "\n"
+				Logger.log.Infof("Content in hex encode: %s", string(message))
 
 				// send on p2p stream
-				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.Peer.PeerID.String()) // , string(messageByte)
-				Logger.log.Infof("Content: %s", string(message))
+				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.Peer.PeerID.String())
 				_, err = rw.Writer.WriteString(message)
 				if err != nil {
 					Logger.log.Critical("DM ERROR", err)
