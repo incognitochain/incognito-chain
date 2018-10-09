@@ -1,6 +1,10 @@
 package ppos
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/ninjadotorg/cash-prototype/common/base58"
+)
 
 func (self *Engine) SwitchMember() {
 
@@ -35,23 +39,14 @@ func (self *Engine) CheckCommittee(committee []string, blockHeight int, chainID 
 	return true
 }
 
-func getChainValidators(chainID byte, committee []string) ([]string, error) {
-	var validators []string
-	for index := 1; index <= CHAIN_VALIDATORS_LENGTH; index++ {
-		validatorID := (index + int(chainID)) % TOTAL_VALIDATORS
-		validators = append(validators, committee[int(validatorID)])
+func (self *Engine) signData(data []byte) (string, error) {
+	signatureByte, err := self.config.ValidatorKeySet.Sign(data)
+	if err != nil {
+		return "", errors.New("Can't sign data. " + err.Error())
 	}
-	if len(validators) == CHAIN_VALIDATORS_LENGTH {
-		return validators, nil
-	}
-	return nil, errors.New("can't get chain's validators")
+	return base58.Base58Check{}.Encode(signatureByte, byte(0x00)), nil
 }
 
-func indexOfValidator(validator string, committeeList []string) int {
-	for k, v := range committeeList {
-		if validator == v {
-			return k
-		}
-	}
-	return -1
-}
+// func getChainValidator(chainID byte, committee []string) (string, error) {
+// 	return committee[int((1+int(chainID))%TOTAL_VALIDATORS)], nil
+// }

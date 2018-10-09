@@ -10,7 +10,7 @@ const (
 	MAX_SYNC_CHAINS_TIME    = 5                        // second
 	MAX_BLOCKSIGN_WAIT_TIME = 20                       // second
 	TOTAL_VALIDATORS        = 20                       // = TOTAL CHAINS
-	CHAIN_VALIDATORS_LENGTH = (TOTAL_VALIDATORS / 2) + 1
+	MINIMUM_BLOCKSIGS       = (TOTAL_VALIDATORS / 2) + 1
 	DEFAULT_MINING_REWARD   = 50
 	GETCHAINSTATE_INTERVAL  = 10 //second
 )

@@ -234,3 +234,12 @@ func IntArrayEquals(a []int, b []int) bool {
 	}
 	return true
 }
+
+func IndexOfStr(item string, list []string) int {
+	for k, v := range list {
+		if item == v {
+			return k
+		}
+	}
+	return -1
+}
