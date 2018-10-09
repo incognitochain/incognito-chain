@@ -5,8 +5,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"log"
 	"reflect"
 	"sync"
 
@@ -57,13 +55,13 @@ Handle all in message
 func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	self.IsConnected = true
 	for {
-		Logger.log.Infof("PEER %s Reading stream", self.PeerID.String())
+		Logger.log.Infof("PEER %s (address: %s) Reading stream", self.Peer.PeerID.String(), self.Peer.RawAddress)
 		str, err := rw.ReadString('\n')
 		if err != nil {
 			self.IsConnected = false
 
 			Logger.log.Errorf("InMessageHandler ERROR %s %s %s", self.PeerID, self.Peer.RawAddress, err)
-			Logger.log.Infof("InMessageHandler QUIT %s %s", self.PeerID, self.Peer.RawAddress)
+			Logger.log.Errorf("InMessageHandler QUIT %s %s", self.PeerID, self.Peer.RawAddress)
 
 			close(self.cWrite)
 
@@ -73,34 +71,35 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 		//Logger.log.Infof("Received message: %s \n", str)
 		if str != "\n" {
 			go func(msgStr string) {
-				// Parse Message header
+				// Parse Message header from last 24 bytes header message
 				jsonDecodeString, _ := hex.DecodeString(msgStr)
 				messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 
-				commandInHeader := messageHeader[:12]
+				// get cmd type in header message
+				commandInHeader := messageHeader[:wire.MessageCmdTypeSize]
 				commandInHeader = bytes.Trim(messageHeader, "\x00")
-				Logger.log.Infof("Received message Type - %s %s", string(commandInHeader), self.PeerID)
+				Logger.log.Infof("Received message type %s from %s", string(commandInHeader), self.RawAddress)
 				commandType := string(messageHeader[:len(commandInHeader)])
+				// convert to particular message from message cmd type
 				var message, err = wire.MakeEmptyMessage(string(commandType))
-
-				// Parse Message body
-				messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
 				if err != nil {
+					Logger.log.Error("Can not find particular message for message cmd type")
 					Logger.log.Error(err)
 					return
 				}
-				if commandType != wire.CmdBlock {
-					err = json.Unmarshal(messageBody, &message)
-				} else {
-					err = json.Unmarshal(messageBody, &message)
-				}
+
+				// Parse Message body
+				messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
+				err = json.Unmarshal(messageBody, &message)
 				if err != nil {
+					Logger.log.Error("Can not parse struct from json message")
 					Logger.log.Error(err)
 					return
 				}
 				realType := reflect.TypeOf(message)
-				log.Print(realType)
-				// check type of Message
+				Logger.log.Infof("Cmd message type of struct %s", realType.String())
+
+				// process message for each of message type
 				switch realType {
 				case reflect.TypeOf(&wire.MessageTx{}):
 					if self.Config.MessageListeners.OnTx != nil {
@@ -153,8 +152,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 						self.Config.MessageListeners.OnChainState(self, message.(*wire.MessageChainState))
 					}
 				default:
-					Logger.log.Warnf("InMessageHandler Received unhandled message of type %v "+
-						"from %v", realType, self)
+					Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, self)
 				}
 			}(str)
 		}
@@ -172,19 +170,26 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		select {
 		case outMsg := <-self.sendMessageQueue:
 			{
-				// send message
+				// Create and send message
 				messageByte, err := outMsg.message.JsonSerialize()
 				if err != nil {
-					fmt.Println(err)
+					Logger.log.Error("Can not serialize json format for message:" + outMsg.message.MessageType())
+					Logger.log.Error(err)
 					continue
 				}
+
+				// add 24 bytes header into message
 				header := make([]byte, wire.MessageHeaderSize)
-				CmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.message))
-				copy(header[:], []byte(CmdType))
+				cmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.message))
+				copy(header[:], []byte(cmdType))
 				messageByte = append(messageByte, header...)
 				message := hex.EncodeToString(messageByte)
+				// add end character to message (delim '\n')
 				message += "\n"
+
+				// send on p2p stream
 				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.Peer.RawAddress) // , string(messageByte)
+				Logger.log.Infof("Content: %s", string(message))
 				_, err = rw.Writer.WriteString(message)
 				if err != nil {
 					Logger.log.Critical("DM ERROR", err)
@@ -195,7 +200,6 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 					Logger.log.Critical("DM ERROR", err)
 					continue
 				}
-
 			}
 		case <-self.cWrite:
 			Logger.log.Infof("OutMessageHandler QUIT %s %s", self.PeerID, self.Peer.RawAddress)

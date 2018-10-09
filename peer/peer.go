@@ -200,7 +200,7 @@ func (self *Peer) Start() {
 	Logger.log.Info("Set stream handler and wait for connection from other peer")
 	self.Host.SetStreamHandler(ProtocolId, self.PushStream)
 
-	go self.ProcessConn()
+	go self.processConn()
 
 	select {
 	case <-self.cStop:
@@ -227,7 +227,7 @@ func (self *Peer) PushConn(peer *Peer, done chan struct{}) {
 	self.cNewConn <- &newPeerMsg
 }
 
-func (self *Peer) ProcessConn() {
+func (self *Peer) processConn() {
 	for {
 		select {
 		case <-self.cStopConn:
@@ -254,7 +254,7 @@ func (self *Peer) ProcessConn() {
 			remotePeerID := newStreamMsg.Stream.Conn().RemotePeer()
 			Logger.log.Infof("ProcessConn START STREAM %s", remotePeerID)
 			cDone := make(chan struct{})
-			go self.HandleStream(newStreamMsg.Stream, cDone)
+			go self.handleStream(newStreamMsg.Stream, cDone)
 			<-cDone
 			if newStreamMsg.Done != nil {
 				close(newStreamMsg.Done)
@@ -439,7 +439,7 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 	return &peerConn, nil
 }
 
-func (self *Peer) HandleStream(stream net.Stream, cDone chan struct{}) {
+func (self *Peer) handleStream(stream net.Stream, cDone chan struct{}) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
@@ -457,7 +457,6 @@ func (self *Peer) HandleStream(stream net.Stream, cDone chan struct{}) {
 	_, ok := self.PeerConns[remotePeerID.String()]
 	if ok {
 		Logger.log.Infof("Received a new stream existed PEER Id - %s", remotePeerID)
-		//self.newPeerConnectionMutex.Unlock()
 
 		if cDone != nil {
 			close(cDone)
@@ -488,7 +487,6 @@ func (self *Peer) HandleStream(stream net.Stream, cDone chan struct{}) {
 	}
 
 	self.SetPeerConn(&peerConn)
-	//self.newPeerConnectionMutex.Unlock()
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
