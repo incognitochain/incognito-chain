@@ -670,12 +670,12 @@ func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
 				lastBlockHash := self.config.BlockChain.BestState[i].BestBlockHash.String()
 				Logger.log.Info("############################")
 				Logger.log.Infof("ChainId: %d", i)
-				Logger.log.Infof("best state with block has: %d", lastBlockHash)
+				Logger.log.Infof("Best state with block hash: %s", lastBlockHash)
 				Logger.log.Info("############################")
 				getBlkMsg := &wire.MessageGetBlocks{
 					LastBlockHash: lastBlockHash,
 				}
-				Logger.log.Info("Send getblock to " + msg.SenderID)
+				Logger.log.Info("Send " + getBlkMsg.MessageType() + " to " + msg.SenderID)
 				peerID, err := peer2.IDB58Decode(msg.SenderID)
 				if err != nil {
 					continue
