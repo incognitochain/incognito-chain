@@ -51,7 +51,7 @@ type Config struct {
 	blockGen        *BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server          interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -101,6 +101,10 @@ func (self *Engine) Start() error {
 	}
 
 	copy(self.validatedChainsHeight.Heights, self.knownChainsHeight.Heights)
+	Logger.log.Info("-------------------------------------------")
+	Logger.log.Info(len(self.validatedChainsHeight.Heights))
+	Logger.log.Info(len(self.knownChainsHeight.Heights))
+	Logger.log.Info("-------------------------------------------")
 	for key := range self.config.BlockChain.BestState[0].BestBlock.Header.CommitteeSigs {
 		self.currentCommittee = append(self.currentCommittee, key)
 	}
@@ -447,6 +451,9 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 	if self.validatedChainsHeight.Heights[block.Header.ChainID] == (int(block.Height) - 1) {
 		notFullySync := false
 		for i := 0; i < TOTAL_VALIDATORS; i++ {
+			Logger.log.Info("--------------------------------------------------------")
+			Logger.log.Info(len(self.validatedChainsHeight.Heights))
+			Logger.log.Info(len(block.Header.ChainsHeight))
 			if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
 				notFullySync = true
 				getBlkMsg := &wire.MessageGetBlocks{
