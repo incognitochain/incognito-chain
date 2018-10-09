@@ -227,7 +227,8 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
-	newblock.Block.Header.ChainsHeight = self.validatedChainsHeight.Heights
+	newblock.Block.Header.ChainsHeight = make([]int, TOTAL_VALIDATORS)
+	copy(newblock.Block.Header.ChainsHeight, self.validatedChainsHeight.Heights)
 	newblock.Block.Header.ChainID = myChainID
 	newblock.Block.ChainLeader = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 	newblock.Block.Header.Committee = self.GetNextCommittee()
