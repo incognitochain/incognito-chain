@@ -188,7 +188,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				message += "\n"
 
 				// send on p2p stream
-				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.Peer.RawAddress) // , string(messageByte)
+				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.Peer.PeerID.String()) // , string(messageByte)
 				Logger.log.Infof("Content: %s", string(message))
 				_, err = rw.Writer.WriteString(message)
 				if err != nil {
