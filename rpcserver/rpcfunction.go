@@ -17,12 +17,12 @@ import (
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonresult"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"golang.org/x/crypto/ed25519"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -711,6 +711,10 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 
 	// param #4: estimation fee coin per kb
 	numBlock := uint32(arrayParams[3].(float64))
+
+	// param #5: node address
+	nodeAddr := arrayParams[4].(string)
+	fmt.Println("NODE ADDRESS:", nodeAddr)
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
