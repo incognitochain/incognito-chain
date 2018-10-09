@@ -1,7 +1,6 @@
 package ppos
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,22 +11,10 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/mempool"
-	"github.com/ninjadotorg/cash-prototype/transaction"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/wire"
-)
-
-var (
-	errBlockSizeExceed       = errors.New("block size is too big")
-	errNotInCommittee        = errors.New("user not in committee")
-	errSigWrongOrNotExits    = errors.New("signature is wrong or not existed in block header")
-	errChainNotFullySynced   = errors.New("chains are not fully synced")
-	errTxIsWrong             = errors.New("transaction is wrong")
-	errNotEnoughChainData    = errors.New("not enough chain data")
-	errCantFinalizeBlock     = errors.New("can't finalize block")
-	errMerkleRootCommitments = errors.New("MerkleRootCommitments is wrong")
 )
 
 // PoSEngine only need to start if node runner want to be a validator
@@ -153,10 +140,10 @@ func (self *Engine) Stop() error {
 	return nil
 }
 
-func New(Config *Config) *Engine {
-	Config.blockGen = NewBlkTmplGenerator(Config.MemPool, Config.BlockChain)
+func New(cfg *Config) *Engine {
+	cfg.blockGen = NewBlkTmplGenerator(cfg.MemPool, cfg.BlockChain)
 	return &Engine{
-		config: *Config,
+		config: *cfg,
 	}
 }
 
@@ -180,20 +167,20 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 			default:
 				if self.started {
 					if common.IntArrayEquals(self.knownChainsHeight.Heights, self.validatedChainsHeight.Heights) {
-						chainID, validators := self.getMyChain()
+						chainID := self.getMyChain()
 						fmt.Println(base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)), len(self.currentCommittee))
 						if chainID < TOTAL_VALIDATORS {
 							Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
 							Logger.log.Info("Current chainsHeight")
 							Logger.log.Info(self.validatedChainsHeight.Heights)
-							Logger.log.Info(chainID, validators)
+							Logger.log.Info("My chainID: ", chainID)
 
 							newBlock, err := self.createBlock()
 							if err != nil {
 								Logger.log.Error(err)
 								continue
 							}
-							err = self.Finalize(newBlock, validators)
+							err = self.Finalize(newBlock)
 							if err != nil {
 								Logger.log.Critical(err)
 								continue
@@ -227,7 +214,7 @@ func (self *Engine) StopSealer() {
 
 func (self *Engine) createBlock() (*blockchain.Block, error) {
 	Logger.log.Info("Start creating block...")
-	myChainID, _ := self.getMyChain()
+	myChainID := self.getMyChain()
 	paymentAddress, err := self.config.ValidatorKeySet.GetPaymentAddress()
 	newblock, err := self.config.blockGen.NewBlockTemplate(paymentAddress, self.config.BlockChain, myChainID)
 	if err != nil {
@@ -251,11 +238,15 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	return newblock.Block, nil
 }
 
-func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) error {
+func (self *Engine) Finalize(block *blockchain.Block) error {
 	Logger.log.Info("Start finalizing block...")
 	finalBlock := block
 	allSigReceived := make(chan struct{})
 	cancel := make(chan struct{})
+	committee := []string{}
+	for validator := range block.Header.CommitteeSigs {
+		committee = append(committee, validator)
+	}
 	defer func() {
 		close(cancel)
 		close(allSigReceived)
@@ -278,7 +269,7 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 
 				if sig, ok := block.Header.CommitteeSigs[blocksig.Validator]; ok {
 					if sig != "" {
-						if indexOfValidator(blocksig.Validator, chainValidators) < len(chainValidators) {
+						if common.IndexOfStr(blocksig.Validator, committee) < len(committee) {
 							err := cashec.ValidateDataB58(blocksig.Validator, blocksig.ValidatorSig, []byte(block.Hash().String()))
 
 							if err != nil {
@@ -294,7 +285,7 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 					}
 				}
 
-				if sigsReceived == (CHAIN_VALIDATORS_LENGTH - 1) {
+				if sigsReceived == (MINIMUM_BLOCKSIGS - 1) {
 					allSigReceived <- struct{}{}
 					return
 				}
@@ -305,17 +296,19 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 	go func() {
 		reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestSign)
 		reqSigMsg.(*wire.MessageRequestSign).Block = *block
-		for idx := 1; idx < CHAIN_VALIDATORS_LENGTH; idx++ {
+		for idx := 0; idx < TOTAL_VALIDATORS; idx++ {
 			//@TODO: retry on failed validators
-			go func(validator string) {
-				peerIDs := self.config.Server.GetPeerIdsFromPublicKey(validator)
-				if len(peerIDs) != 0 {
-					Logger.log.Info("Request signaure from "+peerIDs[0], validator)
-					self.config.Server.PushMessageToPeer(reqSigMsg, peerIDs[0])
-				} else {
-					fmt.Println("Validator's peer not found!", validator)
-				}
-			}(chainValidators[idx])
+			if committee[idx] != block.ChainLeader {
+				go func(validator string) {
+					peerIDs := self.config.Server.GetPeerIdsFromPublicKey(validator)
+					if len(peerIDs) != 0 {
+						Logger.log.Info("Request signaure from "+peerIDs[0], validator)
+						self.config.Server.PushMessageToPeer(reqSigMsg, peerIDs[0])
+					} else {
+						fmt.Println("Validator's peer not found!", validator)
+					}
+				}(committee[idx])
+			}
 		}
 	}()
 
@@ -343,26 +336,15 @@ func (self *Engine) Finalize(block *blockchain.Block, chainValidators []string) 
 	return nil
 }
 
-func (self *Engine) signData(data []byte) (string, error) {
-	signatureByte, err := self.config.ValidatorKeySet.Sign(data)
-	if err != nil {
-		return "", errors.New("Can't sign data. " + err.Error())
-	}
-	return base58.Base58Check{}.Encode(signatureByte, byte(0x00)), nil
-}
-
 func (self *Engine) validateBlock(block *blockchain.Block) error {
 	// validate steps: block size -> sealer's sig of the final block -> sealer is belong to committee -> validate each committee member's sig
 	if block.Header.PrevBlockHash.String() != self.config.BlockChain.BestState[block.Header.ChainID].BestBlockHash.String() {
 		return errChainNotFullySynced
 	}
 	// 1. Check blocksize
-	blockBytes, err := json.Marshal(block)
+	err := self.CheckBlockSize(block)
 	if err != nil {
 		return err
-	}
-	if len(blockBytes) > MAX_BLOCKSIZE {
-		return errBlockSizeExceed
 	}
 
 	// 2. Check whether signature of the block belongs to chain leader or not.
@@ -417,68 +399,20 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 		return errChainNotFullySynced
 	}
 
-	rtOld := self.config.BlockChain.BestState[block.Header.ChainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
-	newTree := self.config.BlockChain.BestState[block.Header.ChainID].CmTree.MakeCopy()
-	Logger.log.Infof("[validateblock] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
-	self.config.BlockChain.UpdateMerkleTreeForBlock(newTree, block)
-	rt := newTree.GetRoot(common.IncMerkleTreeHeight)
-	Logger.log.Infof("[validateblock] updated tree rt: %x\n", rt)
-	if !bytes.Equal(rt[:], block.Header.MerkleRootCommitments.CloneBytes()) {
-		Logger.log.Errorf("MerkleRootCommitments diff!! \n%x\n%x\n%x", rtOld, rt[:], block.Header.MerkleRootCommitments[:])
-		for _, blockTx := range block.Transactions {
-			if blockTx.GetType() == common.TxNormalType {
-				tx, ok := blockTx.(*transaction.Tx)
-				if ok == false {
-					Logger.log.Errorf("Transaction in block not valid")
-				}
-
-				for _, desc := range tx.Descs {
-					for _, cm := range desc.Commitments {
-						Logger.log.Infof("%x", cm[:])
-					}
-				}
-			}
-		}
-		return errMerkleRootCommitments
-	}
-	// 4. Validate committee member signatures
-	committee := []string{}
-	for validator, _ := range block.Header.CommitteeSigs {
-		committee = append(committee, validator)
-	}
-	blockCommittee, err := getChainValidators(block.Header.ChainID, committee)
+	// 4. Validate MerkleRootCommitments
+	err = self.ValidateMerkleRootCommitments(block)
 	if err != nil {
 		return err
 	}
-	for _, validator := range blockCommittee {
-		decPubkey, _, err := base58.Base58Check{}.Decode(validator)
-		if err != nil {
-			return err
-		}
-		k := cashec.KeySetSealer{
-			SpublicKey: decPubkey,
-		}
-		decSig, _, err := base58.Base58Check{}.Decode(block.Header.CommitteeSigs[validator])
-		if err != nil {
-			return err
-		}
-		isValidSignature, err := k.Verify([]byte(block.Hash().String()), decSig)
-		if err != nil {
-			return err
-		}
-		if isValidSignature == false {
-			return errSigWrongOrNotExits
-		}
-	}
 
-	// 5. Re-validate transactions again @@
-	for _, tx := range block.Transactions {
-		if tx.ValidateTransaction() == false {
-			return errTxIsWrong
-		}
+	// 5. Validate committee member signatures
+	err = self.ValidateCommitteeSigs([]byte(block.Hash().String()), block.Header.CommitteeSigs)
+	if err != nil {
+		return err
 	}
+	// 6. Validate transactions
+	return self.ValidateTxList(block.Transactions)
 
-	return nil
 }
 
 func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
@@ -488,12 +422,9 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 		return errChainNotFullySynced
 	}
 	// 1. Check whether block size is greater than MAX_BLOCKSIZE or not.
-	blockBytes, err := json.Marshal(*block)
+	err := self.CheckBlockSize(block)
 	if err != nil {
 		return err
-	}
-	if len(blockBytes) > MAX_BLOCKSIZE {
-		return errBlockSizeExceed
 	}
 
 	// 2. Check signature of the block leader
@@ -550,31 +481,26 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 		return errChainNotFullySynced
 	}
 
-	// 5. Revalidate transactions in block.
-	for _, tx := range block.Transactions {
-		if tx.ValidateTransaction() == false {
-			return errTxIsWrong
-		}
+	// 5. Validate MerkleRootCommitments
+	err = self.ValidateMerkleRootCommitments(block)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	// 6. Validate transactions
+	return self.ValidateTxList(block.Transactions)
 }
 
 // get validator chainID and committee of that chainID
-func (self *Engine) getMyChain() (byte, []string) {
-	var myChainCommittee []string
-	var err error
+func (self *Engine) getMyChain() byte {
+	pkey := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 	for idx := byte(0); idx < byte(TOTAL_VALIDATORS); idx++ {
-		myChainCommittee, err = getChainValidators(idx, self.currentCommittee)
-		if err != nil {
-			return TOTAL_VALIDATORS, []string{}
-		}
-		pkey := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
-		if pkey == myChainCommittee[0] {
-			return idx, myChainCommittee
+		validator := self.currentCommittee[int((1+int(idx))%TOTAL_VALIDATORS)]
+		if pkey == validator {
+			return idx
 		}
 	}
-	return TOTAL_VALIDATORS, []string{} // nope, you're not in the committee
+	return TOTAL_VALIDATORS // nope, you're not in the committee
 }
 
 func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
