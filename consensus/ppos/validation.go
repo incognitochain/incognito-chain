@@ -127,3 +127,78 @@ func (self *Engine) IsEnoughData(block *blockchain.Block) error {
 	}
 	return nil
 }
+
+func (self *Engine) validateBlock(block *blockchain.Block) error {
+	// 1. Check PrevBlockHash
+	if block.Header.PrevBlockHash.String() != self.config.BlockChain.BestState[block.Header.ChainID].BestBlockHash.String() {
+		return errChainNotFullySynced
+	}
+	// 2. Check block size
+	err := self.CheckBlockSize(block)
+	if err != nil {
+		return err
+	}
+
+	// 3. Check whether signature of the block belongs to chain leader or not.
+	cmsBytes, _ := json.Marshal(block.Header.CommitteeSigs)
+	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, cmsBytes)
+	if err != nil {
+		return err
+	}
+
+	// 4. Check whether we acquire enough data to validate this block
+	err = self.IsEnoughData(block)
+	if err != nil {
+		return err
+	}
+
+	// 5. Validate MerkleRootCommitments
+	err = self.ValidateMerkleRootCommitments(block)
+	if err != nil {
+		return err
+	}
+
+	// 6. Validate committee member signatures
+	err = self.ValidateCommitteeSigs([]byte(block.Hash().String()), block.Header.CommitteeSigs)
+	if err != nil {
+		return err
+	}
+	// 7. Validate transactions
+	return self.ValidateTxList(block.Transactions)
+
+}
+
+func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
+
+	// 1. Check prevBlockHash
+	if block.Header.PrevBlockHash.String() != self.config.BlockChain.BestState[block.Header.ChainID].BestBlockHash.String() {
+		return errChainNotFullySynced
+	}
+	// 2. Check block size
+	err := self.CheckBlockSize(block)
+	if err != nil {
+		return err
+	}
+
+	// 3. Check signature of the block leader
+	cmsBytes, _ := json.Marshal(block.Header.CommitteeSigs)
+	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, cmsBytes)
+	if err != nil {
+		return err
+	}
+
+	// 4. Check whether we acquire enough data to validate this block
+	err = self.IsEnoughData(block)
+	if err != nil {
+		return err
+	}
+
+	// 5. Validate MerkleRootCommitments
+	err = self.ValidateMerkleRootCommitments(block)
+	if err != nil {
+		return err
+	}
+
+	// 7. Validate transactions
+	return self.ValidateTxList(block.Transactions)
+}
