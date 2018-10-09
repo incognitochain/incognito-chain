@@ -11,8 +11,6 @@ const (
 const (
 	GENESIS_BLOCK_REWARD       = uint64(1000000000)
 	GENESIS_BLOCK_PAYMENT_ADDR = "12Rt2dt1UT6PjZ7HzDVjkP5nAXZ22vPYWD1b31XuJ4FJBPorWpGbKTACT8wyfHqwDRqg3EuX2zAU9YQZvB6bNMNTsSGjqXHMQw9H1Xn"
-	// readonly-key 13hVcoFvEFAnkGmmcHg6b54i6FbDEwP4cRDQHzCVP1NY6mkFnbk1ytK1V6cuNRHfL2Zz31ZxH4Aw8mwe9J5RgWVxLHFJMZxoV8JGyzo
-	// pri-key 11111119q5P6bukedopEFUh7HDuiobEhcXb8VxdygNTzNoyDyXPzmAN13UXRKnwuXPEehA6AfD9UyGbsfKsg1aKvnf8AfX6nnfSQVr9bHio
 )
 
 // global variables for genesis blok
