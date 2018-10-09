@@ -3,12 +3,15 @@ package ppos
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
 func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
@@ -88,6 +91,39 @@ func (self *Engine) CheckBlockSize(block *blockchain.Block) error {
 	}
 	if len(blockBytes) > MAX_BLOCKSIZE {
 		return errBlockSizeExceed
+	}
+	return nil
+}
+
+func (self *Engine) IsEnoughData(block *blockchain.Block) error {
+	if self.validatedChainsHeight.Heights[block.Header.ChainID] == (int(block.Height) - 1) {
+		notFullySync := false
+		for i := 0; i < TOTAL_VALIDATORS; i++ {
+			if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
+				notFullySync = true
+				getBlkMsg := &wire.MessageGetBlocks{
+					LastBlockHash: self.config.BlockChain.BestState[i].BestBlockHash.String(),
+				}
+				peerIDs := self.config.Server.GetPeerIdsFromPublicKey(block.ChainLeader)
+				if len(peerIDs) != 0 {
+					Logger.log.Info("Send getblock to "+peerIDs[0], block.ChainLeader)
+					self.config.Server.PushMessageToPeer(getBlkMsg, peerIDs[0])
+				} else {
+					fmt.Println("Validator's peer not found!", block.ChainLeader)
+				}
+			}
+		}
+		if notFullySync {
+			timer := time.NewTimer(MAX_SYNC_CHAINS_TIME * time.Second)
+			<-timer.C
+			for i := 0; i < TOTAL_VALIDATORS; i++ {
+				if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
+					return errChainNotFullySynced
+				}
+			}
+		}
+	} else {
+		return errChainNotFullySynced
 	}
 	return nil
 }

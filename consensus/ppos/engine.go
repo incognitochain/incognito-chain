@@ -51,7 +51,7 @@ type Config struct {
 	blockGen        *BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server interface {
+	Server          interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -337,148 +337,27 @@ func (self *Engine) Finalize(block *blockchain.Block) error {
 }
 
 func (self *Engine) validateBlock(block *blockchain.Block) error {
-	// validate steps: block size -> sealer's sig of the final block -> sealer is belong to committee -> validate each committee member's sig
+	// 1. Check PrevBlockHash
 	if block.Header.PrevBlockHash.String() != self.config.BlockChain.BestState[block.Header.ChainID].BestBlockHash.String() {
 		return errChainNotFullySynced
 	}
-	// 1. Check blocksize
+	// 2. Check block size
 	err := self.CheckBlockSize(block)
 	if err != nil {
 		return err
 	}
 
-	// 2. Check whether signature of the block belongs to chain leader or not.
-	decPubkey, _, err := base58.Base58Check{}.Decode(block.ChainLeader)
-	if err != nil {
-		return err
-	}
-	k := cashec.KeySetSealer{
-		SpublicKey: decPubkey,
-	}
-	decSig, _, err := base58.Base58Check{}.Decode(block.ChainLeaderSig)
-	if err != nil {
-		return err
-	}
+	// 3. Check whether signature of the block belongs to chain leader or not.
 	cmsBytes, _ := json.Marshal(block.Header.CommitteeSigs)
-	isValidSignature, err := k.Verify(cmsBytes, decSig)
-	if err != nil {
-		return err
-	}
-	if isValidSignature == false {
-		return errSigWrongOrNotExits
-	}
-
-	// 3. Check whether we acquire enough data to validate this block
-	if self.validatedChainsHeight.Heights[block.Header.ChainID] == (int(block.Height) - 1) {
-		notFullySync := false
-		for i := 0; i < TOTAL_VALIDATORS; i++ {
-			if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
-				notFullySync = true
-				getBlkMsg := &wire.MessageGetBlocks{
-					LastBlockHash: self.config.BlockChain.BestState[i].BestBlockHash.String(),
-				}
-				peerIDs := self.config.Server.GetPeerIdsFromPublicKey(block.ChainLeader)
-				if len(peerIDs) != 0 {
-					Logger.log.Info("Send getblock to "+peerIDs[0], block.ChainLeader)
-					self.config.Server.PushMessageToPeer(getBlkMsg, peerIDs[0])
-				} else {
-					fmt.Println("Validator's peer not found!", block.ChainLeader)
-				}
-			}
-		}
-		if notFullySync {
-			timer := time.NewTimer(MAX_SYNC_CHAINS_TIME * time.Second)
-			<-timer.C
-			for i := 0; i < TOTAL_VALIDATORS; i++ {
-				if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
-					return errChainNotFullySynced
-				}
-			}
-		}
-	} else {
-		return errChainNotFullySynced
-	}
-
-	// 4. Validate MerkleRootCommitments
-	err = self.ValidateMerkleRootCommitments(block)
+	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, cmsBytes)
 	if err != nil {
 		return err
 	}
 
-	// 5. Validate committee member signatures
-	err = self.ValidateCommitteeSigs([]byte(block.Hash().String()), block.Header.CommitteeSigs)
+	// 4. Check whether we acquire enough data to validate this block
+	err = self.IsEnoughData(block)
 	if err != nil {
 		return err
-	}
-	// 6. Validate transactions
-	return self.ValidateTxList(block.Transactions)
-
-}
-
-func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
-	// validate steps: block size -> sealer is belong to committee -> validate sealer's sig -> check chainsHeight of this block -> validate each transaction
-
-	if block.Header.PrevBlockHash.String() != self.config.BlockChain.BestState[block.Header.ChainID].BestBlockHash.String() {
-		return errChainNotFullySynced
-	}
-	// 1. Check whether block size is greater than MAX_BLOCKSIZE or not.
-	err := self.CheckBlockSize(block)
-	if err != nil {
-		return err
-	}
-
-	// 2. Check signature of the block leader
-	decPubkey, _, err := base58.Base58Check{}.Decode(block.ChainLeader)
-	if err != nil {
-		return err
-	}
-	k := cashec.KeySetSealer{
-		SpublicKey: decPubkey,
-	}
-	decSig, _, err := base58.Base58Check{}.Decode(block.Header.CommitteeSigs[block.ChainLeader])
-	if err != nil {
-		return err
-	}
-	isValidSignature, err := k.Verify([]byte(block.Hash().String()), decSig)
-	if err != nil {
-		return err
-	}
-	if isValidSignature == false {
-		return errSigWrongOrNotExits
-	}
-
-	// 4. Check chains height of the block.
-	if self.validatedChainsHeight.Heights[block.Header.ChainID] == (int(block.Height) - 1) {
-		notFullySync := false
-		for i := 0; i < TOTAL_VALIDATORS; i++ {
-			Logger.log.Info("--------------------------------------------------------")
-			Logger.log.Info(len(self.validatedChainsHeight.Heights))
-			Logger.log.Info(len(block.Header.ChainsHeight))
-			if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
-				notFullySync = true
-				getBlkMsg := &wire.MessageGetBlocks{
-					LastBlockHash: self.config.BlockChain.BestState[i].BestBlockHash.String(),
-				}
-				peerIDs := self.config.Server.GetPeerIdsFromPublicKey(block.ChainLeader)
-				if len(peerIDs) != 0 {
-					Logger.log.Info("Send getblock to "+peerIDs[0], block.ChainLeader)
-					self.config.Server.PushMessageToPeer(getBlkMsg, peerIDs[0])
-				} else {
-					fmt.Println("Validator's peer not found!", block.ChainLeader)
-				}
-			}
-		}
-		if notFullySync {
-			timer := time.NewTimer(MAX_SYNC_CHAINS_TIME * time.Second)
-			<-timer.C
-			for i := 0; i < TOTAL_VALIDATORS; i++ {
-				if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
-					return errChainNotFullySynced
-				}
-			}
-		}
-	} else {
-		return errChainNotFullySynced
 	}
 
 	// 5. Validate MerkleRootCommitments
@@ -487,7 +366,48 @@ func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
 		return err
 	}
 
-	// 6. Validate transactions
+	// 6. Validate committee member signatures
+	err = self.ValidateCommitteeSigs([]byte(block.Hash().String()), block.Header.CommitteeSigs)
+	if err != nil {
+		return err
+	}
+	// 7. Validate transactions
+	return self.ValidateTxList(block.Transactions)
+
+}
+
+func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
+
+	// 1. Check prevBlockHash
+	if block.Header.PrevBlockHash.String() != self.config.BlockChain.BestState[block.Header.ChainID].BestBlockHash.String() {
+		return errChainNotFullySynced
+	}
+	// 2. Check block size
+	err := self.CheckBlockSize(block)
+	if err != nil {
+		return err
+	}
+
+	// 3. Check signature of the block leader
+	cmsBytes, _ := json.Marshal(block.Header.CommitteeSigs)
+	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, cmsBytes)
+	if err != nil {
+		return err
+	}
+
+	// 4. Check whether we acquire enough data to validate this block
+	err = self.IsEnoughData(block)
+	if err != nil {
+		return err
+	}
+
+	// 5. Validate MerkleRootCommitments
+	err = self.ValidateMerkleRootCommitments(block)
+	if err != nil {
+		return err
+	}
+
+	// 7. Validate transactions
 	return self.ValidateTxList(block.Transactions)
 }
 
@@ -607,10 +527,6 @@ func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
 			if v < int(chainInfo["ChainsHeight"].([]interface{})[i].(float64)) {
 				self.knownChainsHeight.Heights[i] = int(chainInfo["ChainsHeight"].([]interface{})[i].(float64))
 				lastBlockHash := self.config.BlockChain.BestState[i].BestBlockHash.String()
-				Logger.log.Info("############################")
-				Logger.log.Infof("ChainId: %d", i)
-				Logger.log.Infof("Best state with block hash: %s", lastBlockHash)
-				Logger.log.Info("############################")
 				getBlkMsg := &wire.MessageGetBlocks{
 					LastBlockHash: lastBlockHash,
 				}
@@ -629,16 +545,15 @@ func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
 }
 
 func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
-	chainInfo := ChainInfo{
-		CurrentCommittee:  self.currentCommittee,
-		CandidateListHash: "",
-		ChainsHeight:      self.validatedChainsHeight.Heights,
-	}
 	newMsg, err := wire.MakeEmptyMessage(wire.CmdChainState)
 	if err != nil {
 		return
 	}
-	newMsg.(*wire.MessageChainState).ChainInfo = chainInfo
+	newMsg.(*wire.MessageChainState).ChainInfo = ChainInfo{
+		CurrentCommittee:  self.currentCommittee,
+		CandidateListHash: "",
+		ChainsHeight:      self.validatedChainsHeight.Heights,
+	}
 	peerID, _ := peer2.IDB58Decode(msg.SenderID)
 	self.config.Server.PushMessageToPeer(newMsg, peerID)
 	return
