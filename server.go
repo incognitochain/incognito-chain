@@ -206,16 +206,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		return err
 	}
 
-	var peers []*peer.Peer
-	if !cfg.DisableListen {
-		var err error
-		peers, err = self.InitListenerPeers(self.AddrManager, listenAddrs)
-		if err != nil {
-			Logger.log.Error(err)
-			return err
-		}
-	}
-
 	// Create a connection manager.
 	targetOutbound := defaultNumberOfTargetOutbound
 	if cfg.MaxOutPeers > targetOutbound {
@@ -225,14 +215,23 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	if cfg.MaxInPeers > targetInbound {
 		targetInbound = cfg.MaxInPeers
 	}
+	var peers []*peer.Peer
+	if !cfg.DisableListen {
+		var err error
+		peers, err = self.InitListenerPeers(self.AddrManager, listenAddrs, targetOutbound, targetInbound)
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+	}
 
 	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
 		ListenerPeers:        peers,
-		TargetOutbound:       uint32(targetOutbound),
-		TargetInbound:        uint32(targetInbound),
-		DiscoverPeers:        cfg.DiscoverPeers,
+		/*TargetOutbound:       targetOutbound,
+		TargetInbound:        targetInbound,*/
+		DiscoverPeers: cfg.DiscoverPeers,
 	})
 	if err != nil {
 		return err
@@ -469,7 +468,7 @@ func (self Server) Start() {
 // addresses to the address manager. Returns the listeners and a NAT interface,
 // which is non-nil if UPnP is in use.
 */
-func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string) ([]*peer.Peer, error) {
+func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string, targetOutbound int, targetInbound int) ([]*peer.Peer, error) {
 	netAddrs, err := common.ParseListeners(listenAddrs, "ip")
 	if err != nil {
 		return nil, err
@@ -501,6 +500,8 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 			PeerConns:        make(map[string]*peer.PeerConn),
 			PendingPeers:     make(map[string]*peer.Peer),
 		}.NewPeer()
+		peer.Config.MaxInbound = targetInbound
+		peer.Config.MaxOutbound = targetOutbound
 		if err != nil {
 			return nil, err
 		}

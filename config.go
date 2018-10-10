@@ -328,7 +328,6 @@ func loadConfig() (*config, []string, error) {
 	cfg := config{
 		ConfigFile:           defaultConfigFile,
 		DebugLevel:           defaultLogLevel,
-		MaxPeers:             defaultMaxPeers,
 		MaxOutPeers:          defaultMaxPeers,
 		MaxInPeers:           defaultMaxPeers,
 		BanDuration:          defaultBanDuration,

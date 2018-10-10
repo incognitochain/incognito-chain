@@ -27,6 +27,16 @@ type ConnState uint8
 
 // RemotePeer is present for libp2p node data
 type Peer struct {
+	peerConnMutex     sync.Mutex
+	pendingPeersMutex sync.Mutex
+
+	// channel
+	cStop           chan struct{}
+	cDisconnectPeer chan *PeerConn
+	cNewConn        chan *NewPeerMsg
+	cNewStream      chan *NewStreamMsg
+	cStopConn       chan struct{}
+
 	Host host.Host
 
 	TargetAddress    ma.Multiaddr
@@ -35,21 +45,11 @@ type Peer struct {
 	ListeningAddress common.SimpleAddr
 	PublicKey        string
 
-	Seed        int64
-	Config      Config
-	MaxOutbound int
-	MaxInbound  int
+	Seed   int64
+	Config Config
 
-	PeerConns         map[string]*PeerConn
-	peerConnsMutex    sync.Mutex
-	PendingPeers      map[string]*Peer
-	pendingPeersMutex sync.Mutex
-
-	cStop           chan struct{}
-	cDisconnectPeer chan *PeerConn
-	cNewConn        chan *NewPeerMsg
-	cNewStream      chan *NewStreamMsg
-	cStopConn       chan struct{}
+	PeerConns    map[string]*PeerConn
+	PendingPeers map[string]*Peer
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -70,6 +70,8 @@ type NewStreamMsg struct {
 type Config struct {
 	MessageListeners MessageListeners
 	SealerPrvKey     string
+	MaxOutbound      int
+	MaxInbound       int
 }
 
 type WrappedStream struct {
@@ -187,7 +189,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.cNewStream = make(chan *NewStreamMsg)
 	self.cStopConn = make(chan struct{})
 
-	self.peerConnsMutex = sync.Mutex{}
+	self.peerConnMutex = sync.Mutex{}
 	return &self, nil
 }
 
@@ -291,25 +293,25 @@ func (self *Peer) ConnCanceled(peer *Peer) {
 
 func (self *Peer) NumInbound() int {
 	ret := int(0)
-	self.peerConnsMutex.Lock()
+	self.peerConnMutex.Lock()
 	for _, peerConn := range self.PeerConns {
 		if !peerConn.IsOutbound {
 			ret++
 		}
 	}
-	self.peerConnsMutex.Unlock()
+	self.peerConnMutex.Unlock()
 	return ret
 }
 
 func (self *Peer) NumOutbound() int {
 	ret := int(0)
-	self.peerConnsMutex.Lock()
+	self.peerConnMutex.Lock()
 	for _, peerConn := range self.PeerConns {
 		if peerConn.IsOutbound {
 			ret++
 		}
 	}
-	self.peerConnsMutex.Unlock()
+	self.peerConnMutex.Unlock()
 	return ret
 }
 
@@ -358,7 +360,7 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 		return nil, nil
 	}
 
-	if self.NumOutbound() >= self.MaxOutbound && self.MaxOutbound > 0 && !ok {
+	if self.NumOutbound() >= self.Config.MaxOutbound && self.Config.MaxOutbound > 0 && !ok {
 		Logger.log.Infof("Checked Max Outbound Connection PEER Id - %s", peer.RawAddress)
 
 		//push to pending peers
@@ -442,7 +444,7 @@ func (self *Peer) handleStream(stream net.Stream, cDone chan struct{}) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
-	if self.NumInbound() >= self.MaxInbound && self.MaxInbound > 0 {
+	if self.NumInbound() >= self.Config.MaxInbound && self.Config.MaxInbound > 0 {
 		Logger.log.Infof("Max RemotePeer Inbound Connection")
 
 		if cDone != nil {
@@ -534,11 +536,11 @@ func (self *Peer) Stop() {
 	Logger.log.Infof("PEER %s Stop", self.PeerID.String())
 
 	self.Host.Close()
-	self.peerConnsMutex.Lock()
+	self.peerConnMutex.Lock()
 	for _, peerConn := range self.PeerConns {
 		peerConn.updateConnState(ConnCanceled)
 	}
-	self.peerConnsMutex.Unlock()
+	self.peerConnMutex.Unlock()
 
 	close(self.cStop)
 }
