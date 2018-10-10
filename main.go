@@ -2,17 +2,15 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"runtime"
 	"runtime/debug"
-
-	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/limits"
+	"path/filepath"
 
 	_ "github.com/ninjadotorg/cash-prototype/database/lvdb"
-	wallet2 "github.com/ninjadotorg/cash-prototype/wallet"
-	"path/filepath"
+	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/limits"
+	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
 var (
@@ -38,10 +36,10 @@ func mainMaster(serverChan chan<- *Server) error {
 	// triggered either from an OS signal such as SIGINT (Ctrl+C) or from
 	// another subsystem such as the RPC server.
 	interrupt := interruptListener()
-	defer log.Println("Shutdown complete")
+	defer Logger.log.Info("Shutdown complete")
 
 	// Show version at startup.
-	log.Printf("Version %s", "1")
+	Logger.log.Infof("Version %s", version())
 
 	// Return now if an interrupt signal was triggered.
 	if interruptRequested(interrupt) {
@@ -57,27 +55,26 @@ func mainMaster(serverChan chan<- *Server) error {
 	}
 
 	// Check wallet and start it
-	var wallet *wallet2.Wallet
+	var walletObj *wallet.Wallet
 	if cfg.Wallet == true {
-		wallet = &wallet2.Wallet{}
-		wallet.Config = &wallet2.WalletConfig{
+		walletObj = &wallet.Wallet{}
+		walletObj.Config = &wallet.WalletConfig{
 			DataDir:  cfg.DataDir,
 			DataFile: cfg.WalletDbName,
 			DataPath: filepath.Join(cfg.DataDir, cfg.WalletDbName),
 			PayTxFee: 1,
 		}
-		err = wallet.LoadWallet(cfg.WalletPassphrase)
+		err = walletObj.LoadWallet(cfg.WalletPassphrase)
 		if err != nil {
-			wallet.Init(cfg.WalletPassphrase, 0)
-			wallet.Save(cfg.WalletPassphrase)
+			walletObj.Init(cfg.WalletPassphrase, 0)
+			walletObj.Save(cfg.WalletPassphrase)
 		}
 	}
 
 	// Create server and start it.
 	server := Server{}
-	server.wallet = wallet
-	err = server.NewServer(cfg.Listeners, db, activeNetParams.Params,
-		interrupt)
+	server.wallet = walletObj
+	err = server.NewServer(cfg.Listeners, db, activeNetParams.Params, interrupt)
 	if err != nil {
 		Logger.log.Errorf("Unable to start server on %v", cfg.Listeners)
 		Logger.log.Error(err)
