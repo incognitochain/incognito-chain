@@ -327,7 +327,7 @@ func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)
 }
 
 func (self *ConnManager) DiscoverPeers() {
-	Logger.log.Infof("Start Discover Peers")
+	Logger.log.Info("Start Discover Peers")
 	var client *rpc.Client
 	var err error
 
