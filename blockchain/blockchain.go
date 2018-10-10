@@ -24,7 +24,7 @@ const (
 )
 
 /*
-BlockChain is a view presents for data in blockchain network
+blockChain is a view presents for data in blockchain network
 because we use 20 chain data to contain all block in system, so
 this struct has a array best state with len = 20,
 every beststate present for a best block in every chain
@@ -80,7 +80,7 @@ func (self *BlockChain) Init(config *Config) error {
 	}
 
 	for chainIndex, bestState := range self.BestState {
-		Logger.log.Infof("BlockChain state for chain #%d (height %d, hash %v, totaltx %d)", chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns)
+		Logger.log.Infof("blockChain state for chain #%d (height %d, hash %v, totaltx %d)", chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns)
 	}
 
 	return nil

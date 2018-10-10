@@ -206,12 +206,12 @@ func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan s
 // 	// // Skip verify and insert directly to local blockchain
 // 	// // There should be a method in blockchain.go to insert block to prevent data-race if we read from memory
 
-// 	// isMainChain, isOrphanBlock, err := self.config.BlockChain.ProcessBlock(&newBlock)
+// 	// isMainChain, isOrphanBlock, err := self.config.blockChain.ProcessBlock(&newBlock)
 // 	// _ = isMainChain
 // 	// _ = isOrphanBlock
 // 	// _ = err
 
-// 	a := self.config.BlockChain.BestState.BestBlock.Hash().String()
+// 	a := self.config.blockChain.BestState.BestBlock.Hash().String()
 // 	Logger.log.Infof(a)
 // 	//if msg.Block.Header.PrevBlockHash == a {
 // 	self.config.Server.UpdateChain(&newBlock)

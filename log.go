@@ -33,7 +33,7 @@ var (
 	peerLogger        = backendLog.Logger("RemotePeer Log")
 	dbLogger          = backendLog.Logger("Database Log")
 	walletLogger      = backendLog.Logger("Wallet log")
-	blockchainLogger  = backendLog.Logger("BlockChain log")
+	blockchainLogger  = backendLog.Logger("blockChain log")
 	consensusLogger   = backendLog.Logger("Consensus log")
 	mempoolLogger     = backendLog.Logger("Mempool log")
 )

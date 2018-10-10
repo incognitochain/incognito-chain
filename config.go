@@ -117,7 +117,7 @@ type config struct {
 	SimNet               bool          `long:"simnet" description:"Use the simulation test network"`
 	AddCheckpoints       []string      `long:"addcheckpoint" description:"Add a custom checkpoint.  Format: '<height>:<hash>'"`
 	DisableCheckpoints   bool          `long:"nocheckpoints" description:"Disable built-in checkpoints.  Don't do this unless you know what you're doing."`
-	DbType               string        `long:"dbtype" description:"Database backend to use for the Block BlockChain"`
+	DbType               string        `long:"dbtype" description:"Database backend to use for the Block blockChain"`
 	DebugLevel           string        `short:"d" long:"debuglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
 	CPUProfile           string        `long:"cpuprofile" description:"Write CPU profile to the specified file"`
 	Upnp                 bool          `long:"upnp" description:"Use UPnP to map our listening port outside of NAT"`

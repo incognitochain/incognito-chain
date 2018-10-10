@@ -55,7 +55,7 @@ var RpcHandler = map[string]commandHandler{
 	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 
 	//
-	//"getallpeers": RpcServer.handleGetAllPeers,
+	//"getallpeers": rpcServer.handleGetAllPeers,
 }
 
 // Commands that are available to a limited user
@@ -68,7 +68,7 @@ var RpcLimited = map[string]commandHandler{
 	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
 	"getaccountaddress":     RpcServer.handleGetAccountAddress,
 	"dumpprivkey":           RpcServer.handleDumpPrivkey,
-	/*"dumpprivraw":           RpcServer.handleDumpPrivkeyRaw,*/
+	/*"dumpprivraw":           rpcServer.handleDumpPrivkeyRaw,*/
 	"importaccount":        RpcServer.handleImportAccount,
 	"listunspent":          RpcServer.handleListUnspent,
 	"getbalance":           RpcServer.handleGetBalance,
@@ -999,7 +999,7 @@ func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan str
 	return self.Config.Wallet.DumpPrivkey(params.(string))
 }
 
-/*func (self RpcServer) handleDumpPrivkeyRaw(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+/*func (self rpcServer) handleDumpPrivkeyRaw(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	//return self.config.Wallet.DumpPrivkey(params.(string))
 	temp := params.(string)
 	byteA, _, _ := base58.Base58Check{}.Decode(temp)
@@ -1041,7 +1041,7 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 ///*
 //handleGetAllPeers - return all peers which this node connected
 // */
-//func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+//func (self rpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 //	log.Println(params)
 //	result := make(map[string]interface{})
 //

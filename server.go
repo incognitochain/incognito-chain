@@ -47,11 +47,11 @@ type Server struct {
 
 	chainParams *blockchain.Params
 	connManager *connmanager.ConnManager
-	BlockChain  *blockchain.BlockChain
+	blockChain  *blockchain.BlockChain
 	dataBase    database.DatabaseInterface
-	RpcServer   *rpcserver.RpcServer
-	MemPool     *mempool.TxPool
-	WaitGroup   sync.WaitGroup
+	rpcServer   *rpcserver.RpcServer
+	memPool     *mempool.TxPool
+	waitGroup   sync.WaitGroup
 	netSync     *netsync.NetSync
 	addrManager *addrmanager.AddrManager
 	wallet      *wallet.Wallet
@@ -129,8 +129,8 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	var err error
 
 	// Create a new block chain instance with the appropriate configuration.9
-	self.BlockChain = &blockchain.BlockChain{}
-	err = self.BlockChain.Init(&blockchain.Config{
+	self.blockChain = &blockchain.BlockChain{}
+	err = self.blockChain.Init(&blockchain.Config{
 		ChainParams: self.chainParams,
 		DataBase:    self.dataBase,
 		Interrupt:   interrupt,
@@ -142,7 +142,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	// Search for a FeeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
 	self.FeeEstimator = make(map[byte]*mempool.FeeEstimator)
-	for _, bestState := range self.BlockChain.BestState {
+	for _, bestState := range self.blockChain.BestState {
 		chainId := bestState.BestBlock.Header.ChainID
 		feeEstimatorData, err := self.dataBase.GetFeeEstimator(chainId)
 		if err == nil && len(feeEstimatorData) > 0 {
@@ -157,8 +157,8 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 
 	// If no feeEstimator has been found, or if the one that has been found
 	// is behind somehow, create a new one and start over.
-	// if self.FeeEstimator == nil || self.FeeEstimator.LastKnownHeight() != self.BlockChain.BestState.BestBlock.Height {
-	for _, bestState := range self.BlockChain.BestState {
+	// if self.FeeEstimator == nil || self.FeeEstimator.LastKnownHeight() != self.blockChain.BestState.BestBlock.Height {
+	for _, bestState := range self.blockChain.BestState {
 		chainId := bestState.BestBlock.Header.ChainID
 		if self.FeeEstimator[chainId] == nil {
 			self.FeeEstimator[chainId] = mempool.NewFeeEstimator(
@@ -168,12 +168,12 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	}
 
 	// create mempool tx
-	self.MemPool = &mempool.TxPool{}
-	self.MemPool.Init(&mempool.Config{
+	self.memPool = &mempool.TxPool{}
+	self.memPool.Init(&mempool.Config{
 		Policy: mempool.Policy{
 			MaxTxVersion: transaction.TxVersion + 1,
 		},
-		BlockChain:   self.BlockChain,
+		BlockChain:   self.blockChain,
 		ChainParams:  chainParams,
 		FeeEstimator: self.FeeEstimator,
 	})
@@ -182,17 +182,17 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 
 	self.ConsensusEngine = ppos.New(&ppos.Config{
 		ChainParams:  self.chainParams,
-		BlockChain:   self.BlockChain,
-		MemPool:      self.MemPool,
+		BlockChain:   self.blockChain,
+		MemPool:      self.memPool,
 		Server:       self,
 		FeeEstimator: self.FeeEstimator,
 	})
 
 	// Init Net Sync manager to process messages
 	self.netSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
-		BlockChain:   self.BlockChain,
+		BlockChain:   self.blockChain,
 		ChainParam:   chainParams,
-		MemPool:      self.MemPool,
+		MemPool:      self.memPool,
 		Server:       self,
 		Consensus:    self.ConsensusEngine,
 		FeeEstimator: self.FeeEstimator,
@@ -251,8 +251,8 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			RPCQuirks:      cfg.RPCQuirks,
 			RPCMaxClients:  cfg.RPCMaxClients,
 			ChainParams:    chainParams,
-			BlockChain:     self.BlockChain,
-			TxMemPool:      self.MemPool,
+			BlockChain:     self.blockChain,
+			TxMemPool:      self.memPool,
 			Server:         self,
 			Wallet:         self.wallet,
 			ConnMgr:        self.connManager,
@@ -265,15 +265,15 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			IsGenerateNode: cfg.Generate,
 			FeeEstimator:   self.FeeEstimator,
 		}
-		self.RpcServer = &rpcserver.RpcServer{}
-		err = self.RpcServer.Init(&rpcConfig)
+		self.rpcServer = &rpcserver.RpcServer{}
+		err = self.rpcServer.Init(&rpcConfig)
 		if err != nil {
 			return err
 		}
 
 		// Signal process shutdown when the RPC server requests it.
 		go func() {
-			<-self.RpcServer.RequestedProcessShutdown()
+			<-self.rpcServer.RequestedProcessShutdown()
 			shutdownRequestChannel <- struct{}{}
 		}()
 	}
@@ -308,7 +308,7 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 // WaitForShutdown blocks until the main listener and peer handlers are stopped.
 */
 func (self Server) WaitForShutdown() {
-	self.WaitGroup.Wait()
+	self.waitGroup.Wait()
 }
 
 /*
@@ -319,8 +319,8 @@ func (self Server) Stop() error {
 	self.connManager.Stop()
 
 	// Shutdown the RPC server if it's not disabled.
-	if !cfg.DisableRPC && self.RpcServer != nil {
-		self.RpcServer.Stop()
+	if !cfg.DisableRPC && self.rpcServer != nil {
+		self.rpcServer.Stop()
 	}
 
 	// Save fee estimator in the db
@@ -421,18 +421,18 @@ func (self Server) Start() {
 
 	// Start the peer handler which in turn starts the address and block
 	// managers.
-	self.WaitGroup.Add(1)
+	self.waitGroup.Add(1)
 
 	go self.peerHandler()
 
-	if !cfg.DisableRPC && self.RpcServer != nil {
-		self.WaitGroup.Add(1)
+	if !cfg.DisableRPC && self.rpcServer != nil {
+		self.waitGroup.Add(1)
 
 		// Start the rebroadcastHandler, which ensures user tx received by
 		// the RPC server are rebroadcast until being included in a block.
 		//go self.rebroadcastHandler()
 
-		self.RpcServer.Start()
+		self.rpcServer.Start()
 	}
 
 	// //creat mining
@@ -661,7 +661,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 		// send message get blocks
 
 		//msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
-		//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.BlockChain.BestState.BestBlockHash
+		//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.blockChain.BestState.BestBlockHash
 		//println(peerConn.ListenerPeer.PeerId.String())
 		//msgNew.(*wire.MessageGetBlocks).SenderID = peerConn.ListenerPeer.PeerId.String()
 		//if err != nil {
