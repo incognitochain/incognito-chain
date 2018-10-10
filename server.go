@@ -46,7 +46,7 @@ type Server struct {
 	newPeers  chan *peer.Peer
 
 	chainParams *blockchain.Params
-	ConnManager *connmanager.ConnManager
+	connManager *connmanager.ConnManager
 	BlockChain  *blockchain.BlockChain
 	DataBase    database.DatabaseInterface
 	RpcServer   *rpcserver.RpcServer
@@ -223,7 +223,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	if err != nil {
 		return err
 	}
-	self.ConnManager = connManager
+	self.connManager = connManager
 
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
@@ -232,7 +232,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	}
 
 	for _, addr := range permanentPeers {
-		go self.ConnManager.Connect(addr, "")
+		go self.connManager.Connect(addr, "")
 	}
 
 	if !cfg.DisableRPC {
@@ -255,7 +255,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			TxMemPool:      self.MemPool,
 			Server:         self,
 			Wallet:         self.wallet,
-			ConnMgr:        self.ConnManager,
+			ConnMgr:        self.connManager,
 			AddrMgr:        self.addrManager,
 			RPCUser:        cfg.RPCUser,
 			RPCPass:        cfg.RPCPass,
@@ -316,7 +316,7 @@ func (self Server) WaitForShutdown() {
 */
 func (self Server) Stop() error {
 	// stop connection manager
-	self.ConnManager.Stop()
+	self.connManager.Stop()
 
 	// Shutdown the RPC server if it's not disabled.
 	if !cfg.DisableRPC && self.RpcServer != nil {
@@ -364,7 +364,7 @@ func (self Server) peerHandler() {
 		// add to address manager
 		//self.addrManager.AddAddresses(make([]*peer.RemotePeer, 0))
 
-		self.ConnManager.SeedFromDNS(self.chainParams.DNSSeeds, func(addrs []string) {
+		self.connManager.SeedFromDNS(self.chainParams.DNSSeeds, func(addrs []string) {
 			// Bitcoind uses a lookup of the dns seeder here. This
 			// is rather strange since the values looked up by the
 			// DNS seed lookups will vary quite a lot.
@@ -377,11 +377,11 @@ func (self Server) peerHandler() {
 	if len(cfg.ConnectPeers) == 0 {
 		// TODO connect with peer in file
 		for _, addr := range self.addrManager.AddressCache() {
-			go self.ConnManager.Connect(addr.RawAddress, addr.PublicKey)
+			go self.connManager.Connect(addr.RawAddress, addr.PublicKey)
 		}
 	}
 
-	go self.ConnManager.Start()
+	go self.connManager.Start()
 
 out:
 	for {
@@ -403,7 +403,7 @@ out:
 	}
 	self.netSync.Stop()
 	self.addrManager.Stop()
-	self.ConnManager.Stop()
+	self.connManager.Stop()
 }
 
 /*
@@ -638,7 +638,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 		peerConn.QueueMessageWithEncoding(msgS, dc)
 
 		//	broadcast addr to all peer
-		for _, listen := range self.ConnManager.ListeningPeers {
+		for _, listen := range self.connManager.ListeningPeers {
 			msgS, err := wire.MakeEmptyMessage(wire.CmdAddr)
 			if err != nil {
 				return
@@ -647,7 +647,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 			rawPeers := []wire.RawPeer{}
 			peers := self.addrManager.AddressCache()
 			for _, peer := range peers {
-				if peerConn.RemotePeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+				if peerConn.RemotePeerID.Pretty() != self.connManager.GetPeerId(peer.RawAddress) {
 					rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
 				}
 			}
@@ -688,14 +688,14 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 	addresses := []string{}
 	peers := self.addrManager.AddressCache()
 	for _, peer := range peers {
-		if peerConn.RemotePeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+		if peerConn.RemotePeerID.Pretty() != self.connManager.GetPeerId(peer.RawAddress) {
 			addresses = append(addresses, peer.RawAddress)
 		}
 	}
 
 	rawPeers := []wire.RawPeer{}
 	for _, peer := range peers {
-		if peerConn.RemotePeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+		if peerConn.RemotePeerID.Pretty() != self.connManager.GetPeerId(peer.RawAddress) {
 			rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
 		}
 	}
@@ -710,10 +710,10 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	// TODO for onaddr message
 	log.Printf("Receive addr message %v", msg.RawPeers)
 	//for _, rawPeer := range msg.RawPeers {
-	//	for _, listen := range self.ConnManager.ListeningPeers {
+	//	for _, listen := range self.connManager.ListeningPeers {
 	//		for _, _peerConn := range listen.PeerConns {
-	//			if _peerConn.RemotePeerID.Pretty() != self.ConnManager.GetPeerId(rawPeer.RemoteRawAddress) {
-	//				go self.ConnManager.Connect(rawPeer.RemoteRawAddress, rawPeer.PublicKey)
+	//			if _peerConn.RemotePeerID.Pretty() != self.connManager.GetPeerId(rawPeer.RemoteRawAddress) {
+	//				go self.connManager.Connect(rawPeer.RemoteRawAddress, rawPeer.PublicKey)
 	//			}
 	//		}
 	//	}
@@ -757,7 +757,7 @@ func (self *Server) OnChainState(_ *peer.PeerConn, msg *wire.MessageChainState) 
 func (self *Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {
 	result := []peer2.ID{}
 
-	for _, listener := range self.ConnManager.Config.ListenerPeers {
+	for _, listener := range self.connManager.Config.ListenerPeers {
 		for _, peerConn := range listener.PeerConns {
 			// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PublicKey)
 			if peerConn.RemotePeer.PublicKey == pubKey {
@@ -784,11 +784,11 @@ PushMessageToAll broadcast msg
 func (self *Server) PushMessageToAll(msg wire.Message) error {
 	Logger.log.Info("Push msg to all")
 	var dc chan<- struct{}
-	for index := 0; index < len(self.ConnManager.Config.ListenerPeers); index++ {
+	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
 		Logger.log.Info("Pushed 1")
-		msg.SetSenderID(self.ConnManager.Config.ListenerPeers[index].PeerID)
+		msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
 		Logger.log.Info("Pushed 2")
-		self.ConnManager.Config.ListenerPeers[index].QueueMessageWithEncoding(msg, dc)
+		self.connManager.Config.ListenerPeers[index].QueueMessageWithEncoding(msg, dc)
 		Logger.log.Info("Pushed 3")
 	}
 	return nil
@@ -800,10 +800,10 @@ PushMessageToPeer push msg to peer
 func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 	Logger.log.Info("Push msg to ", peerId)
 	var dc chan<- struct{}
-	for index := 0; index < len(self.ConnManager.Config.ListenerPeers); index++ {
-		peerConn, exist := self.ConnManager.Config.ListenerPeers[index].PeerConns[peerId.String()]
+	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
+		peerConn, exist := self.connManager.Config.ListenerPeers[index].PeerConns[peerId.String()]
 		if exist {
-			msg.SetSenderID(self.ConnManager.Config.ListenerPeers[index].PeerID)
+			msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
 			peerConn.QueueMessageWithEncoding(msg, dc)
 			Logger.log.Info("Pushed")
 			return nil
@@ -840,7 +840,7 @@ GetChainState - send a getchainstate msg to connected peer
 func (self *Server) PushMessageGetChainState() error {
 	Logger.log.Info("Send a GetChainState")
 	var dc chan<- struct{}
-	for _, listener := range self.ConnManager.Config.ListenerPeers {
+	for _, listener := range self.connManager.Config.ListenerPeers {
 		msg, err := wire.MakeEmptyMessage(wire.CmdGetChainState)
 		if err != nil {
 			return err
