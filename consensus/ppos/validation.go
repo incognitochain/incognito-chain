@@ -129,12 +129,14 @@ func (self *Engine) IsEnoughData(block *blockchain.Block) error {
 }
 
 func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
-	// 1. Check PrevBlockHash
-	if block.Header.PrevBlockHash.String() != self.config.BlockChain.BestState[block.Header.ChainID].BestBlockHash.String() {
-		return errChainNotFullySynced
+	// 1. Check whether we acquire enough data to validate this block
+	err := self.IsEnoughData(block)
+	if err != nil {
+		return err
 	}
+
 	// 2. Check block size
-	err := self.CheckBlockSize(block)
+	err = self.CheckBlockSize(block)
 	if err != nil {
 		return err
 	}
@@ -142,12 +144,6 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 	// 3. Check whether signature of the block belongs to chain leader or not.
 	cmsBytes, _ := json.Marshal(block.Header.CommitteeSigs)
 	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, cmsBytes)
-	if err != nil {
-		return err
-	}
-
-	// 4. Check whether we acquire enough data to validate this block
-	err = self.IsEnoughData(block)
 	if err != nil {
 		return err
 	}
@@ -169,13 +165,14 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 }
 
 func (self *Engine) validatePreSignBlockSanity(block *blockchain.Block) error {
-
-	// 1. Check prevBlockHash
-	if block.Header.PrevBlockHash.String() != self.config.BlockChain.BestState[block.Header.ChainID].BestBlockHash.String() {
-		return errChainNotFullySynced
+	// 1. Check whether we acquire enough data to validate this block
+	err := self.IsEnoughData(block)
+	if err != nil {
+		return err
 	}
+
 	// 2. Check block size
-	err := self.CheckBlockSize(block)
+	err = self.CheckBlockSize(block)
 	if err != nil {
 		return err
 	}

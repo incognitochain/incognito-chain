@@ -332,7 +332,6 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	}
 	// save best state
 	newBestState := &blockchain.BestState{}
-	// numTxns := uint64(len(block.Transactions))
 	for _, tx := range block.Transactions {
 		self.config.MemPool.RemoveTx(tx)
 	}
