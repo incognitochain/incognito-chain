@@ -41,26 +41,25 @@ type Server struct {
 	started     int32
 	startupTime int64
 
-	donePeers chan *peer.Peer
-	quit      chan struct{}
-	newPeers  chan *peer.Peer
-
-	chainParams *blockchain.Params
-	connManager *connmanager.ConnManager
-	blockChain  *blockchain.BlockChain
-	dataBase    database.DatabaseInterface
-	rpcServer   *rpcserver.RpcServer
-	memPool     *mempool.TxPool
-	waitGroup   sync.WaitGroup
-	netSync     *netsync.NetSync
-	addrManager *addrmanager.AddrManager
-	wallet      *wallet.Wallet
+	chainParams     *blockchain.Params
+	connManager     *connmanager.ConnManager
+	blockChain      *blockchain.BlockChain
+	dataBase        database.DatabaseInterface
+	rpcServer       *rpcserver.RpcServer
+	memPool         *mempool.TxPool
+	waitGroup       sync.WaitGroup
+	netSync         *netsync.NetSync
+	addrManager     *addrmanager.AddrManager
+	wallet          *wallet.Wallet
+	consensusEngine *ppos.Engine
 
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
-	FeeEstimator map[byte]*mempool.FeeEstimator
+	feeEstimator map[byte]*mempool.FeeEstimator
 
-	ConsensusEngine *ppos.Engine
+	cDonePeers chan *peer.Peer
+	cQuit      chan struct{}
+	cNewPeers  chan *peer.Peer
 }
 
 // setupRPCListeners returns a slice of listeners that are configured for use
@@ -121,9 +120,9 @@ NewServer - create server object which control all process of node
 func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterface, chainParams *blockchain.Params, interrupt <-chan struct{}) error {
 	// Init data for Server
 	self.chainParams = chainParams
-	self.quit = make(chan struct{})
-	self.donePeers = make(chan *peer.Peer)
-	self.newPeers = make(chan *peer.Peer)
+	self.cQuit = make(chan struct{})
+	self.cDonePeers = make(chan *peer.Peer)
+	self.cNewPeers = make(chan *peer.Peer)
 	self.dataBase = db
 
 	var err error
@@ -139,9 +138,9 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		return err
 	}
 
-	// Search for a FeeEstimator state in the database. If none can be found
+	// Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
-	self.FeeEstimator = make(map[byte]*mempool.FeeEstimator)
+	self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 	for _, bestState := range self.blockChain.BestState {
 		chainId := bestState.BestBlock.Header.ChainID
 		feeEstimatorData, err := self.dataBase.GetFeeEstimator(chainId)
@@ -150,18 +149,18 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			if err != nil {
 				Logger.log.Errorf("Failed to restore fee estimator %v", err)
 			} else {
-				self.FeeEstimator[chainId] = feeEstimator
+				self.feeEstimator[chainId] = feeEstimator
 			}
 		}
 	}
 
 	// If no feeEstimator has been found, or if the one that has been found
 	// is behind somehow, create a new one and start over.
-	// if self.FeeEstimator == nil || self.FeeEstimator.LastKnownHeight() != self.blockChain.BestState.BestBlock.Height {
+	// if self.feeEstimator == nil || self.feeEstimator.LastKnownHeight() != self.blockChain.BestState.BestBlock.Height {
 	for _, bestState := range self.blockChain.BestState {
 		chainId := bestState.BestBlock.Header.ChainID
-		if self.FeeEstimator[chainId] == nil {
-			self.FeeEstimator[chainId] = mempool.NewFeeEstimator(
+		if self.feeEstimator[chainId] == nil {
+			self.feeEstimator[chainId] = mempool.NewFeeEstimator(
 				mempool.DefaultEstimateFeeMaxRollback,
 				mempool.DefaultEstimateFeeMinRegisteredBlocks)
 		}
@@ -175,17 +174,17 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		},
 		BlockChain:   self.blockChain,
 		ChainParams:  chainParams,
-		FeeEstimator: self.FeeEstimator,
+		FeeEstimator: self.feeEstimator,
 	})
 
 	self.addrManager = addrmanager.New(cfg.DataDir, nil)
 
-	self.ConsensusEngine = ppos.New(&ppos.Config{
+	self.consensusEngine = ppos.New(&ppos.Config{
 		ChainParams:  self.chainParams,
 		BlockChain:   self.blockChain,
 		MemPool:      self.memPool,
 		Server:       self,
-		FeeEstimator: self.FeeEstimator,
+		FeeEstimator: self.feeEstimator,
 	})
 
 	// Init Net Sync manager to process messages
@@ -194,8 +193,8 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		ChainParam:   chainParams,
 		MemPool:      self.memPool,
 		Server:       self,
-		Consensus:    self.ConsensusEngine,
-		FeeEstimator: self.FeeEstimator,
+		Consensus:    self.consensusEngine,
+		FeeEstimator: self.feeEstimator,
 	})
 	if err != nil {
 		return err
@@ -263,7 +262,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			RPCLimitPass:   cfg.RPCLimitPass,
 			DisableAuth:    cfg.RPCDisableAuth,
 			IsGenerateNode: cfg.Generate,
-			FeeEstimator:   self.FeeEstimator,
+			FeeEstimator:   self.feeEstimator,
 		}
 		self.rpcServer = &rpcserver.RpcServer{}
 		err = self.rpcServer.Init(&rpcConfig)
@@ -324,7 +323,7 @@ func (self Server) Stop() error {
 	}
 
 	// Save fee estimator in the db
-	for chainId, feeEstimator := range self.FeeEstimator {
+	for chainId, feeEstimator := range self.feeEstimator {
 		feeEstimatorData := feeEstimator.Save()
 		if len(feeEstimatorData) > 0 {
 			err := self.dataBase.StoreFeeEstimator(feeEstimatorData, chainId)
@@ -336,10 +335,10 @@ func (self Server) Stop() error {
 		}
 	}
 
-	self.ConsensusEngine.Stop()
+	self.consensusEngine.Stop()
 
-	// Signal the remaining goroutines to quit.
-	close(self.quit)
+	// Signal the remaining goroutines to cQuit.
+	close(self.cQuit)
 	return nil
 }
 
@@ -386,11 +385,11 @@ func (self Server) peerHandler() {
 out:
 	for {
 		select {
-		case p := <-self.donePeers:
+		case p := <-self.cDonePeers:
 			self.handleDonePeerMsg(p)
-		case p := <-self.newPeers:
+		case p := <-self.cNewPeers:
 			self.handleAddPeerMsg(p)
-		case <-self.quit:
+		case <-self.cQuit:
 			{
 				// Disconnect all peers on server shutdown.
 				//state.forAllPeers(func(sp *serverPeer) {
@@ -439,14 +438,14 @@ func (self Server) Start() {
 	// if cfg.Generate == true && (len(cfg.MiningAddrs) > 0) {
 	// 	self.Miner.Start()
 	// }
-	self.ConsensusEngine.Start()
+	self.consensusEngine.Start()
 	if cfg.Generate == true && (len(cfg.SealerSpendingKey) > 0 || len(cfg.SealerKeySet) > 0) {
 		sealerKeySet, err := cfg.GetSealerKeySet()
 		if err != nil {
 			Logger.log.Critical(err)
 			return
 		}
-		self.ConsensusEngine.StartSealer(*sealerKeySet)
+		self.consensusEngine.StartSealer(*sealerKeySet)
 	}
 }
 
@@ -586,7 +585,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		peerConn.RemotePeer.PublicKey = msg.PublicKey
 	}
 
-	self.newPeers <- remotePeer
+	self.cNewPeers <- remotePeer
 	// TODO check version message
 	valid := false
 

@@ -216,7 +216,7 @@ func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan s
 // 	//if msg.Block.Header.PrevBlockHash == a {
 // 	self.config.Server.UpdateChain(&newBlock)
 // 	//}
-// 	err = self.config.FeeEstimator.RegisterBlock(&newBlock)
+// 	err = self.config.feeEstimator.RegisterBlock(&newBlock)
 // 	if err != nil {
 // 		Logger.log.Error(err)
 // 	}
