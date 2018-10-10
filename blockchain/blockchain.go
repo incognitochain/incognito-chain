@@ -38,7 +38,7 @@ type BlockChain struct {
 
 // config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
-	// DataBase defines the database which houses the blocks and will be used to
+	// dataBase defines the database which houses the blocks and will be used to
 	// store all metadata created by this package.
 	//
 	// This field is required.

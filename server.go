@@ -48,7 +48,7 @@ type Server struct {
 	chainParams *blockchain.Params
 	connManager *connmanager.ConnManager
 	BlockChain  *blockchain.BlockChain
-	DataBase    database.DatabaseInterface
+	dataBase    database.DatabaseInterface
 	RpcServer   *rpcserver.RpcServer
 	MemPool     *mempool.TxPool
 	WaitGroup   sync.WaitGroup
@@ -124,7 +124,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	self.quit = make(chan struct{})
 	self.donePeers = make(chan *peer.Peer)
 	self.newPeers = make(chan *peer.Peer)
-	self.DataBase = db
+	self.dataBase = db
 
 	var err error
 
@@ -132,7 +132,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	self.BlockChain = &blockchain.BlockChain{}
 	err = self.BlockChain.Init(&blockchain.Config{
 		ChainParams: self.chainParams,
-		DataBase:    self.DataBase,
+		DataBase:    self.dataBase,
 		Interrupt:   interrupt,
 	})
 	if err != nil {
@@ -144,7 +144,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	self.FeeEstimator = make(map[byte]*mempool.FeeEstimator)
 	for _, bestState := range self.BlockChain.BestState {
 		chainId := bestState.BestBlock.Header.ChainID
-		feeEstimatorData, err := self.DataBase.GetFeeEstimator(chainId)
+		feeEstimatorData, err := self.dataBase.GetFeeEstimator(chainId)
 		if err == nil && len(feeEstimatorData) > 0 {
 			feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 			if err != nil {
@@ -327,7 +327,7 @@ func (self Server) Stop() error {
 	for chainId, feeEstimator := range self.FeeEstimator {
 		feeEstimatorData := feeEstimator.Save()
 		if len(feeEstimatorData) > 0 {
-			err := self.DataBase.StoreFeeEstimator(feeEstimatorData, chainId)
+			err := self.dataBase.StoreFeeEstimator(feeEstimatorData, chainId)
 			if err != nil {
 				Logger.log.Errorf("Can't save fee estimator data: %v", err)
 			} else {
