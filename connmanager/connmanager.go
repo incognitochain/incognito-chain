@@ -444,8 +444,10 @@ listen:
 
 				if listener.Config.SealerPrvKey != "" {
 					keySet := &cashec.KeySetSealer{}
-					keySet.Import(listener.Config.SealerPrvKey)
-					publicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))
+					_, err := keySet.Import(listener.Config.SealerPrvKey)
+					if err != nil {
+						publicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))
+					}
 				}
 
 				// remove later

@@ -56,20 +56,19 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	self.IsConnected = true
 	for {
 		Logger.log.Infof("PEER %s (address: %s) Reading stream", self.Peer.PeerID.String(), self.Peer.RawAddress)
-		str, err := rw.ReadString('\n')
+		str, err := rw.ReadString(DelimMessageByte)
 		if err != nil {
 			self.IsConnected = false
-
-			Logger.log.Errorf("InMessageHandler ERROR %s %s %s", self.PeerID, self.Peer.RawAddress, err)
+			Logger.log.Error("---------------------------------------------------------------------")
+			Logger.log.Errorf("InMessageHandler ERROR %s %s", self.PeerID, self.Peer.RawAddress)
+			Logger.log.Error(err)
 			Logger.log.Errorf("InMessageHandler QUIT %s %s", self.PeerID, self.Peer.RawAddress)
-
+			Logger.log.Error("---------------------------------------------------------------------")
 			close(self.cWrite)
-
 			return
 		}
 
-		//Logger.log.Infof("Received message: %s \n", str)
-		if str != "\n" {
+		if str != DelimMessageStr {
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
 				jsonDecodeString, _ := hex.DecodeString(msgStr)
@@ -186,7 +185,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				Logger.log.Infof("Content: %s", string(messageByte))
 				message := hex.EncodeToString(messageByte)
 				// add end character to message (delim '\n')
-				message += "\n"
+				message += DelimMessageStr
 				Logger.log.Infof("Content in hex encode: %s", string(message))
 
 				// send on p2p stream

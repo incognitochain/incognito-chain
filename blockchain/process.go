@@ -62,12 +62,9 @@ func (self *BlockChain) ProcessBlock(block *Block) (bool, bool, error) {
 //
 // This function is safe for concurrent access.
 func (self *BlockChain) blockExists(hash *common.Hash) (bool, error) {
-	block, err := self.GetBlockByBlockHash(hash)
+	result, err := self.config.DataBase.HasBlock(hash)
 	if err != nil {
 		return false, err
 	}
-	if block == nil {
-		return false, nil
-	}
-	return true, err
+	return result, err
 }
