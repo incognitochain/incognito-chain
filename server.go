@@ -53,7 +53,7 @@ type Server struct {
 	MemPool     *mempool.TxPool
 	WaitGroup   sync.WaitGroup
 	NetSync     *netsync.NetSync
-	AddrManager *addrmanager.AddrManager
+	addrManager *addrmanager.AddrManager
 	wallet      *wallet.Wallet
 
 	// The fee estimator keeps track of how long transactions are left in
@@ -178,7 +178,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		FeeEstimator: self.FeeEstimator,
 	})
 
-	self.AddrManager = addrmanager.New(cfg.DataDir, nil)
+	self.addrManager = addrmanager.New(cfg.DataDir, nil)
 
 	self.ConsensusEngine = ppos.New(&ppos.Config{
 		ChainParams:  self.chainParams,
@@ -205,7 +205,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	var peers []*peer.Peer
 	if !cfg.DisableListen {
 		var err error
-		peers, err = self.InitListenerPeers(self.AddrManager, listenAddrs, cfg.MaxOutPeers, cfg.MaxInPeers)
+		peers, err = self.InitListenerPeers(self.addrManager, listenAddrs, cfg.MaxOutPeers, cfg.MaxInPeers)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
@@ -256,7 +256,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			Server:         self,
 			Wallet:         self.wallet,
 			ConnMgr:        self.ConnManager,
-			AddrMgr:        self.AddrManager,
+			AddrMgr:        self.addrManager,
 			RPCUser:        cfg.RPCUser,
 			RPCPass:        cfg.RPCPass,
 			RPCLimitUser:   cfg.RPCLimitUser,
@@ -354,7 +354,7 @@ func (self Server) peerHandler() {
 	// to this handler and rather than adding more channels to sychronize
 	// things, it's easier and slightly faster to simply start and stop them
 	// in this handler.
-	self.AddrManager.Start()
+	self.addrManager.Start()
 	self.NetSync.Start()
 
 	Logger.log.Info("Start peer handler")
@@ -362,7 +362,7 @@ func (self Server) peerHandler() {
 	if !cfg.DisableDNSSeed {
 		// load peer from seed DNS
 		// add to address manager
-		//self.AddrManager.AddAddresses(make([]*peer.RemotePeer, 0))
+		//self.addrManager.AddAddresses(make([]*peer.RemotePeer, 0))
 
 		self.ConnManager.SeedFromDNS(self.chainParams.DNSSeeds, func(addrs []string) {
 			// Bitcoind uses a lookup of the dns seeder here. This
@@ -370,13 +370,13 @@ func (self Server) peerHandler() {
 			// DNS seed lookups will vary quite a lot.
 			// to replicate this behaviour we put all addresses as
 			// having come from the first one.
-			self.AddrManager.AddAddressesStr(addrs)
+			self.addrManager.AddAddressesStr(addrs)
 		})
 	}
 
 	if len(cfg.ConnectPeers) == 0 {
 		// TODO connect with peer in file
-		for _, addr := range self.AddrManager.AddressCache() {
+		for _, addr := range self.addrManager.AddressCache() {
 			go self.ConnManager.Connect(addr.RawAddress, addr.PublicKey)
 		}
 	}
@@ -402,7 +402,7 @@ out:
 		}
 	}
 	self.NetSync.Stop()
-	self.AddrManager.Stop()
+	self.addrManager.Stop()
 	self.ConnManager.Stop()
 }
 
@@ -626,7 +626,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 		peerConn.VerValid = true
 
 		if peerConn.IsOutbound {
-			self.AddrManager.Good(peerConn.RemotePeer)
+			self.addrManager.Good(peerConn.RemotePeer)
 		}
 
 		// send message for get addr
@@ -645,7 +645,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 			}
 
 			rawPeers := []wire.RawPeer{}
-			peers := self.AddrManager.AddressCache()
+			peers := self.addrManager.AddressCache()
 			for _, peer := range peers {
 				if peerConn.RemotePeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
 					rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
@@ -686,7 +686,7 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 	}
 
 	addresses := []string{}
-	peers := self.AddrManager.AddressCache()
+	peers := self.addrManager.AddressCache()
 	for _, peer := range peers {
 		if peerConn.RemotePeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
 			addresses = append(addresses, peer.RawAddress)
@@ -819,7 +819,7 @@ func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 // handleDonePeerMsg deals with peers that have signalled they are done.  It is
 // invoked from the peerHandler goroutine.
 func (self *Server) handleDonePeerMsg(sp *peer.Peer) {
-	//self.AddrManager.
+	//self.addrManager.
 	// TODO
 }
 
