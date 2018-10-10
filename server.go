@@ -211,6 +211,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		var err error
 		peers, err = self.InitListenerPeers(self.AddrManager, listenAddrs)
 		if err != nil {
+			Logger.log.Error(err)
 			return err
 		}
 	}
@@ -557,12 +558,12 @@ func (self *Server) OnBlock(p *peer.PeerConn,
 }
 
 func (self *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
-	Logger.log.Info("Receive a get-block message START")
+	Logger.log.Info("Receive a " + msg.MessageType() + " message START")
 	var txProcessed chan struct{}
 	self.NetSync.QueueGetBlock(nil, msg, txProcessed)
 	//<-txProcessed
 
-	Logger.log.Info("Receive a get-block message END")
+	Logger.log.Info("Receive a " + msg.MessageType() + " message END")
 }
 
 // OnTx is invoked when a peer receives a tx message.  It blocks
@@ -857,7 +858,7 @@ func (self *Server) PushMessageGetChainState() error {
 			return err
 		}
 		msg.SetSenderID(listener.PeerID)
-		Logger.log.Info("Send a GetChainState: %v", msg)
+		Logger.log.Infof("Send a GetChainState from %s", listener.RawAddress)
 		listener.QueueMessageWithEncoding(msg, dc)
 	}
 	return nil

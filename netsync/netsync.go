@@ -8,6 +8,7 @@ import (
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/wire"
@@ -222,27 +223,53 @@ func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan s
 // }
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
-	Logger.log.Info("Handling new message getblocks message")
-	if senderBlockHeaderIndex, chainID, err := self.config.BlockChain.GetBlockHeightByBlockHash(&msg.LastBlockHash); err == nil {
-		if self.config.BlockChain.BestState[chainID].BestBlock.Hash() != &msg.LastBlockHash {
+	Logger.log.Info("Handling new message - " + wire.CmdGetBlocks)
+	blockHash, _ := common.Hash{}.NewHashFromStr(msg.LastBlockHash)
+	senderBlockHeaderIndex, chainID, err := self.config.BlockChain.GetBlockHeightByBlockHash(blockHash)
+	if err == nil {
+		bestHashStr := self.config.BlockChain.BestState[chainID].BestBlockHash.String()
+		Logger.log.Infof("Blockhash from message %s", blockHash.String())
+		Logger.log.Infof("Blockhash of bestChain in chainID %d - %s", chainID, bestHashStr)
+		Logger.log.Info("Index of block %d \n", senderBlockHeaderIndex)
+		Logger.log.Info("chainId of block %d \n", chainID)
+		if bestHashStr != blockHash.String() {
 			// Send Blocks back to requestor
 			chainBlocks, _ := self.config.BlockChain.GetChainBlocks(chainID)
-			for index := int(senderBlockHeaderIndex) + 1; index < len(chainBlocks); index++ {
+			for index := int(senderBlockHeaderIndex) + 1; index <= len(chainBlocks); index++ {
 				block, _ := self.config.BlockChain.GetBlockByBlockHeight(int32(index), chainID)
-				fmt.Printf("Send block %x \n", *block.Hash())
+				Logger.log.Info("Send block %s \n", block.Hash().String())
 
 				blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
 				if err != nil {
+					Logger.log.Error(err)
 					break
 				}
 
 				blockMsg.(*wire.MessageBlock).Block = *block
-				peerID, _ := peer2.IDFromString(msg.SenderID)
+				if msg.SenderID == "" {
+					Logger.log.Error("Sender ID is empty")
+					break
+				}
+				peerID, err := peer2.IDB58Decode(msg.SenderID)
+				if err != nil {
+					Logger.log.Error(err)
+					break
+				}
 				self.config.Server.PushMessageToPeer(blockMsg, peerID)
 			}
 		}
 	} else {
-		Logger.log.Info("No new blocks to return")
+		Logger.log.Error(blockHash.String(), "----------")
+		Logger.log.Error(self.config.BlockChain.BestState[9].BestBlockHash.String())
+		chainBlocks, err2 := self.config.BlockChain.GetChainBlocks(9)
+		if err2 != nil {
+			Logger.log.Error(err2)
+		}
+		for _, block := range chainBlocks {
+			Logger.log.Error(block.Hash().String())
+		}
+		Logger.log.Error(err)
+		Logger.log.Error("No new blocks to return")
 	}
 
 	// Logger.log.Infof("Send a msgVersion: %s", msgNewJSON)

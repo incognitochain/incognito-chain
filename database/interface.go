@@ -12,7 +12,7 @@ type DatabaseInterface interface {
 	FetchAllBlocks() ([][]*common.Hash, error)
 	FetchChainBlocks(byte) ([]*common.Hash, error)
 
-	StoreBestBlock(interface{}, byte) error
+	StoreBestState(interface{}, byte) error
 	FetchBestState(byte) ([]byte, error)
 
 	StoreNullifiers([]byte, string, byte) error

@@ -5,8 +5,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"log"
 	"reflect"
 	"sync"
 
@@ -21,24 +19,26 @@ type PeerConn struct {
 
 	RetryCount int32
 	IsOutbound bool
-	state      ConnState
+	connState  ConnState
 	stateMtx   sync.RWMutex
 
 	ReaderWriterStream *bufio.ReadWriter
 	verAckReceived     bool
 	VerValid           bool
+	IsConnected        bool
 
 	TargetAddress    ma.Multiaddr
 	PeerID           peer.ID
 	RawAddress       string
 	ListeningAddress common.SimpleAddr
 
-	// flagMutex sync.Mutex
 	Config Config
 
 	sendMessageQueue chan outMsg
-	quit             chan struct{}
-	disconnect       chan struct{}
+	cDisconnect      chan struct{}
+	cRead            chan struct{}
+	cWrite           chan struct{}
+	cClose           chan struct{}
 
 	Peer             *Peer
 	ValidatorAddress string
@@ -53,131 +53,106 @@ type PeerConn struct {
 Handle all in message
 */
 func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
+	self.IsConnected = true
 	for {
-		Logger.log.Infof("PEER %s Reading stream", self.PeerID.String())
+		Logger.log.Infof("PEER %s (address: %s) Reading stream", self.Peer.PeerID.String(), self.Peer.RawAddress)
 		str, err := rw.ReadString('\n')
 		if err != nil {
-			Logger.log.Error(err)
-			Logger.log.Infof("InMessageHandler PEER %s quit IN message handler", self.PeerID)
+			self.IsConnected = false
 
-			Logger.log.Infof("PEER %s quit IN message handler", self.PeerID)
-			self.quit <- struct{}{}
+			Logger.log.Errorf("InMessageHandler ERROR %s %s %s", self.PeerID, self.Peer.RawAddress, err)
+			Logger.log.Errorf("InMessageHandler QUIT %s %s", self.PeerID, self.Peer.RawAddress)
+
+			close(self.cWrite)
+
 			return
 		}
 
 		//Logger.log.Infof("Received message: %s \n", str)
 		if str != "\n" {
 			go func(msgStr string) {
-				// Parse Message header
+				// Parse Message header from last 24 bytes header message
 				jsonDecodeString, _ := hex.DecodeString(msgStr)
 				messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 
-				//Logger.log.Infof("Received message: %s \n", jsonDecodeString)
-
-				commandInHeader := messageHeader[:12]
+				// get cmd type in header message
+				commandInHeader := messageHeader[:wire.MessageCmdTypeSize]
 				commandInHeader = bytes.Trim(messageHeader, "\x00")
-				Logger.log.Infof("Received message Type - %s %s", string(commandInHeader), self.PeerID)
+				Logger.log.Infof("Received message type %s from %s", string(commandInHeader), self.PeerID)
 				commandType := string(messageHeader[:len(commandInHeader)])
+				// convert to particular message from message cmd type
 				var message, err = wire.MakeEmptyMessage(string(commandType))
-
-				// Parse Message body
-				messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
-				//Logger.log.Infof("Message Body - %s %s", string(messageBody), self.PeerID)
 				if err != nil {
+					Logger.log.Error("Can not find particular message for message cmd type")
 					Logger.log.Error(err)
 					return
 				}
-				if commandType != wire.CmdBlock {
-					err = json.Unmarshal(messageBody, &message)
-				} else {
-					err = json.Unmarshal(messageBody, &message)
-				}
-				//temp := message.(map[string]interface{})
+
+				// Parse Message body
+				messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
+				err = json.Unmarshal(messageBody, &message)
 				if err != nil {
+					Logger.log.Error("Can not parse struct from json message")
 					Logger.log.Error(err)
 					return
 				}
 				realType := reflect.TypeOf(message)
-				log.Print(realType)
-				// check type of Message
+				Logger.log.Infof("Cmd message type of struct %s", realType.String())
+
+				// process message for each of message type
 				switch realType {
 				case reflect.TypeOf(&wire.MessageTx{}):
 					if self.Config.MessageListeners.OnTx != nil {
-						//self.flagMutex.Lock()
 						self.Config.MessageListeners.OnTx(self, message.(*wire.MessageTx))
-						//self.flagMutex.Unlock()
 					}
 				case reflect.TypeOf(&wire.MessageBlock{}):
 					if self.Config.MessageListeners.OnBlock != nil {
-						//self.flagMutex.Lock()
 						self.Config.MessageListeners.OnBlock(self, message.(*wire.MessageBlock))
-						//self.flagMutex.Unlock()
 					}
 				case reflect.TypeOf(&wire.MessageGetBlocks{}):
 					if self.Config.MessageListeners.OnGetBlocks != nil {
-						//self.flagMutex.Lock()
 						self.Config.MessageListeners.OnGetBlocks(self, message.(*wire.MessageGetBlocks))
-						//self.flagMutex.Unlock()
 					}
 				case reflect.TypeOf(&wire.MessageVersion{}):
 					if self.Config.MessageListeners.OnVersion != nil {
-						//self.flagMutex.Lock()
 						versionMessage := message.(*wire.MessageVersion)
 						self.Config.MessageListeners.OnVersion(self, versionMessage)
-						//self.flagMutex.Unlock()
 					}
 				case reflect.TypeOf(&wire.MessageVerAck{}):
-					//self.flagMutex.Lock()
 					self.verAckReceived = true
 					if self.Config.MessageListeners.OnVerAck != nil {
 						self.Config.MessageListeners.OnVerAck(self, message.(*wire.MessageVerAck))
 					}
-					//self.flagMutex.Unlock()
 				case reflect.TypeOf(&wire.MessageGetAddr{}):
-					//self.flagMutex.Lock()
 					if self.Config.MessageListeners.OnGetAddr != nil {
 						self.Config.MessageListeners.OnGetAddr(self, message.(*wire.MessageGetAddr))
 					}
-					//self.flagMutex.Unlock()
 				case reflect.TypeOf(&wire.MessageAddr{}):
-					//self.flagMutex.Lock()
 					if self.Config.MessageListeners.OnGetAddr != nil {
 						self.Config.MessageListeners.OnAddr(self, message.(*wire.MessageAddr))
 					}
-					//self.flagMutex.Unlock()
 				case reflect.TypeOf(&wire.MessageRequestSign{}):
 					if self.Config.MessageListeners.OnRequestSign != nil {
-						//self.flagMutex.Lock()
 						self.Config.MessageListeners.OnRequestSign(self, message.(*wire.MessageRequestSign))
-						//self.flagMutex.Unlock()
 					}
 				case reflect.TypeOf(&wire.MessageInvalidBlock{}):
 					if self.Config.MessageListeners.OnInvalidBlock != nil {
-						//self.flagMutex.Lock()
 						self.Config.MessageListeners.OnInvalidBlock(self, message.(*wire.MessageInvalidBlock))
-						//self.flagMutex.Unlock()
 					}
 				case reflect.TypeOf(&wire.MessageBlockSig{}):
 					if self.Config.MessageListeners.OnBlockSig != nil {
-						//self.flagMutex.Lock()
 						self.Config.MessageListeners.OnBlockSig(self, message.(*wire.MessageBlockSig))
-						//self.flagMutex.Unlock()
 					}
 				case reflect.TypeOf(&wire.MessageGetChainState{}):
 					if self.Config.MessageListeners.OnGetChainState != nil {
-						//self.flagMutex.Lock()
 						self.Config.MessageListeners.OnGetChainState(self, message.(*wire.MessageGetChainState))
-						//self.flagMutex.Unlock()
 					}
 				case reflect.TypeOf(&wire.MessageChainState{}):
 					if self.Config.MessageListeners.OnChainState != nil {
-						//self.flagMutex.Lock()
 						self.Config.MessageListeners.OnChainState(self, message.(*wire.MessageChainState))
-						//self.flagMutex.Unlock()
 					}
 				default:
-					Logger.log.Warnf("InMessageHandler Received unhandled message of type %v "+
-						"from %v", realType, self)
+					Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, self)
 				}
 			}(str)
 		}
@@ -195,42 +170,44 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 		select {
 		case outMsg := <-self.sendMessageQueue:
 			{
-				// self.flagMutex.Lock()
-				// TODO
-				// send message
-				messageByte, err := outMsg.msg.JsonSerialize()
+				// Create and send message
+				messageByte, err := outMsg.message.JsonSerialize()
 				if err != nil {
-					fmt.Println(err)
-					// self.flagMutex.Unlock()
+					Logger.log.Error("Can not serialize json format for message:" + outMsg.message.MessageType())
+					Logger.log.Error(err)
 					continue
 				}
+
+				// add 24 bytes header into message
 				header := make([]byte, wire.MessageHeaderSize)
-				CmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.msg))
-				copy(header[:], []byte(CmdType))
+				cmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.message))
+				copy(header[:], []byte(cmdType))
 				messageByte = append(messageByte, header...)
+				Logger.log.Infof("Content: %s", string(messageByte))
 				message := hex.EncodeToString(messageByte)
+				// add end character to message (delim '\n')
 				message += "\n"
-				Logger.log.Infof("Send a message %s %s %s", self.Peer.PublicKey, outMsg.msg.MessageType(),
-					outMsg.msg.MessageType()) // , string(messageByte)
+				Logger.log.Infof("Content in hex encode: %s", string(message))
+
+				// send on p2p stream
+				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.Peer.PeerID.String())
 				_, err = rw.Writer.WriteString(message)
 				if err != nil {
 					Logger.log.Critical("DM ERROR", err)
-					// self.flagMutex.Unlock()
-					return
+					continue
 				}
 				err = rw.Writer.Flush()
 				if err != nil {
 					Logger.log.Critical("DM ERROR", err)
-					// self.flagMutex.Unlock()
-					return
+					continue
 				}
-				// self.flagMutex.Unlock()
-
 			}
-		case <-self.quit:
-			Logger.log.Infof("PEER %s quit OUT message handler", self.PeerID)
+		case <-self.cWrite:
+			Logger.log.Infof("OutMessageHandler QUIT %s %s", self.PeerID, self.Peer.RawAddress)
 
-			close(self.disconnect)
+			self.IsConnected = false
+
+			close(self.cDisconnect)
 
 			if self.HandleDisconnected != nil {
 				go self.HandleDisconnected(self)
@@ -248,8 +225,8 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 //
 // This function is safe for concurrent access.
 func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
-	if self.state == ConnEstablished {
-		self.sendMessageQueue <- outMsg{msg: msg, doneChan: doneChan}
+	if self.IsConnected {
+		self.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
 	}
 }
 
@@ -259,16 +236,20 @@ func (p *PeerConn) VerAckReceived() bool {
 }
 
 // updateState updates the state of the connection request.
-func (p *PeerConn) updateState(state ConnState) {
+func (p *PeerConn) updateConnState(connState ConnState) {
 	p.stateMtx.Lock()
-	p.state = state
+	p.connState = connState
 	p.stateMtx.Unlock()
 }
 
 // State is the connection state of the requested connection.
-func (p *PeerConn) State() ConnState {
+func (p *PeerConn) ConnState() ConnState {
 	p.stateMtx.RLock()
-	state := p.state
+	connState := p.connState
 	p.stateMtx.RUnlock()
-	return state
+	return connState
+}
+
+func (p *PeerConn) Close() {
+	close(p.cClose)
 }

@@ -13,6 +13,7 @@ import (
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 )
 
 var (
@@ -58,7 +59,10 @@ func (db *db) StoreBlock(v interface{}, chainID byte) error {
 	}
 	var (
 		hash = h.Hash()
-		key  = append(blockKeyPrefix, hash[:]...)
+		key  = append(append(chainIDPrefix, chainID), append(blockKeyPrefix, hash[:]...)...)
+		// key should look like this c10{b-[blockhash]}:{b-[blockhash]}
+		keyB = append(blockKeyPrefix, hash[:]...)
+		// key should look like this {b-blockhash}:block
 	)
 	if db.hasBlock(key) {
 		return errors.Errorf("block %s already exists", hash.String())
@@ -67,7 +71,10 @@ func (db *db) StoreBlock(v interface{}, chainID byte) error {
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
 	}
-	if err := db.put(key, val); err != nil {
+	if err := db.put(key, keyB); err != nil {
+		return errors.Wrap(err, "db.Put")
+	}
+	if err := db.put(keyB, val); err != nil {
 		return errors.Wrap(err, "db.Put")
 	}
 	return nil
@@ -85,14 +92,14 @@ func (db *db) put(key, value []byte) error {
 }
 
 func (db *db) HasBlock(hash *common.Hash) (bool, error) {
-	if exists := db.hasBlock(db.getKey(hash)); exists {
+	if exists := db.hasBlock(db.getKeyBlock(hash)); exists {
 		return true, nil
 	}
 	return false, nil
 }
 
 func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
-	block, err := db.lvdb.Get(db.getKey(hash), nil)
+	block, err := db.lvdb.Get(db.getKeyBlock(hash), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "db.lvdb.Get")
 	}
@@ -212,7 +219,7 @@ func (db *db) HasCommitment(commitment []byte, typeJoinSplitDesc string, chainId
 	return false, nil
 }
 
-func (db *db) StoreBestBlock(v interface{}, chainID byte) error {
+func (db *db) StoreBestState(v interface{}, chainID byte) error {
 	val, err := json.Marshal(v)
 	if err != nil {
 		return errors.Wrap(err, "json.Marshal")
@@ -237,10 +244,11 @@ func (db *db) StoreBlockIndex(h *common.Hash, idx int32, chainID byte) error {
 	buf := make([]byte, 5)
 	binary.LittleEndian.PutUint32(buf, uint32(idx))
 	buf[4] = chainID
-
+	//{i-[hash]}:index-chainid
 	if err := db.lvdb.Put(db.getKeyIdx(h), buf, nil); err != nil {
 		return errors.Wrap(err, "db.lvdb.Put")
 	}
+	//{index-chainid}:[hash]
 	if err := db.lvdb.Put(buf, h[:], nil); err != nil {
 		return errors.Wrap(err, "db.lvdb.Put")
 	}
@@ -249,13 +257,14 @@ func (db *db) StoreBlockIndex(h *common.Hash, idx int32, chainID byte) error {
 
 func (db *db) GetIndexOfBlock(h *common.Hash) (int32, byte, error) {
 	b, err := db.lvdb.Get(db.getKeyIdx(h), nil)
+	//{i-[hash]}:index-chainid
 	if err != nil {
 		return 0, 0, errors.Wrap(err, "db.lvdb.Get")
 	}
 
 	var idx int32
 	var chainID byte
-	if err := binary.Read(bytes.NewReader(b[:3]), binary.LittleEndian, &idx); err != nil {
+	if err := binary.Read(bytes.NewReader(b[:4]), binary.LittleEndian, &idx); err != nil {
 		return 0, 0, errors.Wrap(err, "binary.Read")
 	}
 	if err = binary.Read(bytes.NewReader(b[4:]), binary.LittleEndian, &chainID); err != nil {
@@ -268,6 +277,7 @@ func (db *db) GetBlockByIndex(idx int32, chainID byte) (*common.Hash, error) {
 	buf := make([]byte, 5)
 	binary.LittleEndian.PutUint32(buf, uint32(idx))
 	buf[4] = chainID
+	// {index-chainid}: {blockhash}
 
 	b, err := db.lvdb.Get(buf, nil)
 	if err != nil {
@@ -280,9 +290,10 @@ func (db *db) GetBlockByIndex(idx int32, chainID byte) (*common.Hash, error) {
 
 func (db *db) FetchAllBlocks() ([][]*common.Hash, error) {
 	var keys [][]*common.Hash
-	for chainID := byte(0); chainID <= 19; chainID++ {
+	for chainID := byte(0); chainID < blockchain.ChainCount; chainID++ {
 		prefix := append(append(chainIDPrefix, chainID), blockKeyPrefix...)
-		iter := db.lvdb.NewIterator(util.BytesPrefix(blockKeyPrefix), nil)
+		// prefix {c10{b-......}}
+		iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 		for iter.Next() {
 			h := new(common.Hash)
 			_ = h.SetBytes(iter.Key()[len(prefix):])
@@ -299,7 +310,8 @@ func (db *db) FetchAllBlocks() ([][]*common.Hash, error) {
 func (db *db) FetchChainBlocks(chainID byte) ([]*common.Hash, error) {
 	var keys []*common.Hash
 	prefix := append(append(chainIDPrefix, chainID), blockKeyPrefix...)
-	iter := db.lvdb.NewIterator(util.BytesPrefix(blockKeyPrefix), nil)
+	//prefix {c10{b-......}}
+	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		h := new(common.Hash)
 		_ = h.SetBytes(iter.Key()[len(prefix):])
@@ -327,7 +339,7 @@ func (db *db) GetFeeEstimator(chainId byte) ([]byte, error) {
 	return b, err
 }
 
-func (db *db) getKey(h *common.Hash) []byte {
+func (db *db) getKeyBlock(h *common.Hash) []byte {
 	var key []byte
 	key = append(blockKeyPrefix, h[:]...)
 	return key

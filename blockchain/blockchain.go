@@ -28,7 +28,7 @@ BlockChain is a view presents for data in blockchain network
 because we use 20 chain data to contain all block in system, so
 this struct has a array best state with len = 20,
 every beststate present for a best block in every chain
- */
+*/
 type BlockChain struct {
 	BestState []*BestState //BestState of 20 chain.
 
@@ -60,7 +60,7 @@ type Config struct {
 
 /*
 Init - init a blockchain view from config
- */
+*/
 func (self *BlockChain) Init(config *Config) error {
 	// Enforce required config fields.
 	if config.DataBase == nil {
@@ -266,12 +266,12 @@ func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 Store best state of block(best block, num of tx, ...) into Database
 */
 func (self *BlockChain) StoreBestState(chainId byte) error {
-	return self.config.DataBase.StoreBestBlock(self.BestState[chainId], chainId)
+	return self.config.DataBase.StoreBestState(self.BestState[chainId], chainId)
 }
 
 /*
 GetBestState - return a best state from a chain
- */
+*/
 // #1 - chainId - index of chain
 func (self *BlockChain) GetBestState(chainId byte) (*BestState, error) {
 	bestState := BestState{}
@@ -764,7 +764,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 
 /*
 GetAllUnitCoinSupplier - return all list unit currency(bond, coin, ...) with amount of every of them
- */
+*/
 func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 	result := make(map[string]uint64)
 	result[common.TxOutCoinType] = uint64(0)

@@ -4,14 +4,15 @@ import (
 	"fmt"
 	"reflect"
 
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 // list message type
 const (
-	MessageHeaderSize = 24
+	MessageHeaderSize  = 24
+	MessageCmdTypeSize = 12
 
 	CmdBlock          = "block"
 	CmdTx             = "tx"
@@ -30,10 +31,10 @@ const (
 	CmdRequestSign       = "requestsign"
 	CmdInvalidBlock      = "invalidblock"
 	CmdBlockSig          = "blocksig"
-	CmdGetChainState     = "getchainstate"
+	CmdGetChainState     = "getchstate"
 	CmdChainState        = "chainstate"
-	CmdCandidateProposal = "candidateproposal"
-	CmdCandidateVote     = "candidatevote"
+	CmdCandidateProposal = "cndproposal"
+	CmdCandidateVote     = "cndvote"
 )
 
 // Interface for message wire on P2P network
@@ -74,7 +75,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdBlockHeader:
 		msg = &MessageBlockHeader{}
-	// POS start
+		// POS start
 	case CmdBlockSig:
 		msg = &MessageBlockSig{}
 		break
@@ -93,7 +94,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdCandidateProposal:
 		msg = &MessageCandidateProposal{}
-	// POS end
+		// POS end
 	case CmdGetAddr:
 		msg = &MessageGetAddr{}
 		break
@@ -125,7 +126,14 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdGetBlockHeader, nil
 	case reflect.TypeOf(&MessageBlockHeader{}):
 		return CmdBlockHeader, nil
-	// POS start
+	case reflect.TypeOf(&MessageGetAddr{}):
+		return CmdGetAddr, nil
+	case reflect.TypeOf(&MessageAddr{}):
+		return CmdAddr, nil
+	case reflect.TypeOf(&MessagePing{}):
+		return CmdPing, nil
+
+		// POS start
 	case reflect.TypeOf(&MessageBlockSig{}):
 		return CmdBlockSig, nil
 	case reflect.TypeOf(&MessageRequestSign{}):
@@ -140,13 +148,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdGetChainState, nil
 	case reflect.TypeOf(&MessageChainState{}):
 		return CmdChainState, nil
-	// POS end
-	case reflect.TypeOf(&MessageGetAddr{}):
-		return CmdGetAddr, nil
-	case reflect.TypeOf(&MessageAddr{}):
-		return CmdAddr, nil
-	case reflect.TypeOf(&MessagePing{}):
-		return CmdPing, nil
+		// POS end
+
 	default:
 		return "", fmt.Errorf("unhandled this message type [%s]", msgType)
 	}
