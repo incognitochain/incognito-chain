@@ -454,7 +454,7 @@ func (self RpcServer) handleGetAddedNodeInfo(params interface{}, closeChan <-cha
 	for _, nodeAddrI := range paramsArray {
 		if nodeAddr, ok := nodeAddrI.(string); ok {
 			for _, listen := range self.Config.ConnMgr.ListeningPeers {
-				peerIDstr := self.Config.ConnMgr.GetPeerIDStr(nodeAddr)
+				peerIDstr, _ := self.Config.ConnMgr.GetPeerIDStr(nodeAddr)
 
 				peerConn, existed := listen.PeerConns[peerIDstr]
 				if existed {
@@ -506,7 +506,7 @@ func (self RpcServer) handleAddNode(params interface{}, closeChan <-chan struct{
 	for _, nodeAddrI := range paramsArray {
 		if nodeAddr, ok := nodeAddrI.(string); ok {
 			for _, listen := range self.Config.ConnMgr.ListeningPeers {
-				peerIDstr := self.Config.ConnMgr.GetPeerIDStr(nodeAddr)
+				peerIDstr, _ := self.Config.ConnMgr.GetPeerIDStr(nodeAddr)
 				_, existed := listen.PeerConns[peerIDstr]
 				if existed {
 				} else {

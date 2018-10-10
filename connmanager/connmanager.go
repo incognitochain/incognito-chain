@@ -122,12 +122,12 @@ func (self ConnManager) New(cfg *Config) (*ConnManager, error) {
 }
 
 func (self ConnManager) GetPeerId(addr string) string {
-	ipfsaddr, err := ma.NewMultiaddr(addr)
+	ipfsAddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
 		log.Print(err)
 		return ""
 	}
-	pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
+	pid, err := ipfsAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		log.Print(err)
 		return ""
@@ -140,23 +140,23 @@ func (self ConnManager) GetPeerId(addr string) string {
 	return peerId.Pretty()
 }
 
-func (self ConnManager) GetPeerIDStr(addr string) string {
+func (self ConnManager) GetPeerIDStr(addr string) (string, error) {
 	ipfsaddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
-		log.Print(err)
-		return ""
+		Logger.log.Error(err)
+		return "", err
 	}
 	pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
-		log.Print(err)
-		return ""
+		Logger.log.Error(err)
+		return "", err
 	}
 	peerId, err := libpeer.IDB58Decode(pid)
 	if err != nil {
-		log.Print(err)
-		return ""
+		Logger.log.Error(err)
+		return "", err
 	}
-	return peerId.String()
+	return peerId.String(), nil
 }
 
 // Connect assigns an id and dials a connection to the address of the
@@ -169,19 +169,19 @@ func (self *ConnManager) Connect(addr string, pubKey string) {
 	// given multiaddress
 	ipfsaddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
-		log.Print(err)
+		Logger.log.Error(err)
 		return
 	}
 
 	pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
-		log.Print(err)
+		Logger.log.Error(err)
 		return
 	}
 
 	peerId, err := libpeer.IDB58Decode(pid)
 	if err != nil {
-		log.Print(err)
+		Logger.log.Error(err)
 		return
 	}
 
