@@ -50,3 +50,5 @@ RUN cd cmake-3.5.2 && ./configure && make -j4 && make install
 RUN cd $GOPATH/src/github.com/ninjadotorg/cash-prototype/privacy/server && mkdir build && cd build && cmake .. && \
     make -j4 && wget https://github.com/ninjadotorg/cash-prototype/releases/download/zkpp-v0.0.3/proving.key && \
     wget https://github.com/ninjadotorg/cash-prototype/releases/download/zkpp-v0.0.3/verifying.key
+
+CMD ["top"]
