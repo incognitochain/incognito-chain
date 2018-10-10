@@ -22,14 +22,14 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 	var feeMap map[string]uint64
 	var txs []transaction.Transaction
 
-	if len(sourceTxns) < MIN_TXs {
+	if len(sourceTxns) < common.MIN_TXs {
 		// if len of sourceTxns < MIN_TXs -> wait for more transactions
 		Logger.log.Info("not enough transactions. Wait for more...")
 		fmt.Println(sourceTxns)
-		<-time.Tick(MIN_BLOCK_WAIT_TIME * time.Second)
+		<-time.Tick(common.MIN_BLOCK_WAIT_TIME * time.Second)
 		sourceTxns = g.txSource.MiningDescs()
 		if len(sourceTxns) == 0 {
-			<-time.Tick(MAX_BLOCK_WAIT_TIME * time.Second)
+			<-time.Tick(common.MAX_BLOCK_WAIT_TIME * time.Second)
 			sourceTxns = g.txSource.MiningDescs()
 			if len(sourceTxns) == 0 {
 				// return nil, errors.New("No Tx")
@@ -55,55 +55,11 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 		if txChainID != chainID {
 			continue
 		}
-		/*for _, desc := range tx.Descs {
-			view, err := g.chain.FetchTxViewPoint(desc.Type)
-			_ = view
-			_ = err
-		}*/
-		/*
-			if err != nil {
-				fmt.Print("Unable to fetch utxo view for tx %s: %v",
-					tx.Hash(), err)
-				continue
-			}
-			prioItem := &txPrioItem{tx: tx}
-			for _, txIn := range tx.TxIn {
-				originHash := &txIn.PreviousOutPoint.Hash
-				entry := utxos.LookupEntry(txIn.PreviousOutPoint)
-				if entry == nil || entry.IsSpent() {
-					if !TxPool.HaveTx(originHash) {
-						fmt.Print("Skipping tx %s because it "+
-							"references unspent output %s "+
-							"which is not available",
-							tx.Hash(), txIn.PreviousOutPoint)
-						continue mempoolLoop
-					}
-
-					// The transaction is referencing another
-					// transaction in the source pool, so setup an
-					// ordering dependency.
-					deps, exists := dependers[*originHash]
-					if !exists {
-						deps = make(map[common.Hash]*txPrioItem)
-						dependers[*originHash] = deps
-					}
-					deps[*prioItem.tx.Hash()] = prioItem
-					if prioItem.dependsOn == nil {
-						prioItem.dependsOn = make(
-							map[common.Hash]struct{})
-					}
-					prioItem.dependsOn[*originHash] = struct{}{}
-
-					// Skip the check below. We already know the
-					// referenced transaction is available.
-					continue
-				}
-			}*/
 		if !tx.ValidateTransaction() {
 			txToRemove = append(txToRemove, transaction.Transaction(tx))
 		}
 		txsToAdd = append(txsToAdd, tx)
-		if len(txsToAdd) == MAX_TXs_IN_BLOCK {
+		if len(txsToAdd) == common.MAX_TXs_IN_BLOCK {
 			break
 		}
 		// g.txSource.Clear()
@@ -296,7 +252,7 @@ func createCoinbaseTx(
 
 	// Get reward
 	// TODO(@0xbunyip): implement bonds reward
-	var reward uint64 = DEFAULT_MINING_REWARD + feeMap[common.TxOutCoinType] // TODO: probably will need compute reward based on block height
+	var reward uint64 = common.DEFAULT_MINING_REWARD + feeMap[common.TxOutCoinType] // TODO: probably will need compute reward based on block height
 
 	// Create new notes: first one is coinbase UTXO, second one has 0 value
 	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}

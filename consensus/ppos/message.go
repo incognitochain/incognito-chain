@@ -9,7 +9,7 @@ import (
 
 func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 	block := &msgBlock.Block
-	err := self.validatePreSignBlock(block)
+	err := self.validatePreSignBlockSanity(block)
 	if err != nil {
 		invalidBlockMsg := &wire.MessageInvalidBlock{
 			Reason:    err.Error(),
@@ -34,7 +34,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 
 	sig, err := self.signData([]byte(block.Hash().String()))
 	if err != nil {
-		Logger.log.Critical("OHSHITT", err)
+		Logger.log.Error("Can't sign block ", err)
 		// ??? something went terribly wrong
 		return
 	}
@@ -57,8 +57,8 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 
 func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 	if self.config.BlockChain.BestState[block.Header.ChainID].Height < block.Height {
-		if _, _, err := self.config.BlockChain.GetBlockHeightByBlockHash(block.Hash()); err != nil {
-			err := self.validateBlock(block)
+		if _, err := self.config.BlockChain.BlockExists(block.Hash()); err != nil {
+			err := self.validateBlockSanity(block)
 			if err != nil {
 				Logger.log.Error(err)
 				return
@@ -71,18 +71,7 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 				return
 			}
 			self.UpdateChain(block)
-			err = self.config.FeeEstimator[block.Header.ChainID].RegisterBlock(block)
-			if err != nil {
-				Logger.log.Error(err)
-			}
-			self.knownChainsHeight.Lock()
-			if self.knownChainsHeight.Heights[block.Header.ChainID] < int(block.Height) {
-				self.knownChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
-			}
-			self.knownChainsHeight.Unlock()
 		}
-	} else {
-		//save block to cache
 	}
 	return
 }
@@ -153,4 +142,14 @@ func (self *Engine) OnCandidateVote() {
 
 func (self *Engine) OnCandidateRequestTx() {
 
+}
+
+func (self *Engine) sendBlockMsg(block *blockchain.Block) {
+	blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
+	blockMsg.(*wire.MessageBlock).Block = *block
+	self.config.Server.PushMessageToAll(blockMsg)
 }

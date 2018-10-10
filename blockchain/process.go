@@ -26,7 +26,7 @@ func (self *BlockChain) ProcessBlock(block *Block) (bool, bool, error) {
 	Logger.log.Infof("Processing block %v", blockHash)
 
 	// The block must not already exist in the main chain or side chains.
-	exists, err := self.blockExists(blockHash)
+	exists, err := self.BlockExists(blockHash)
 	//if err != nil {
 	//	return false, false, err
 	//}
@@ -61,7 +61,7 @@ func (self *BlockChain) ProcessBlock(block *Block) (bool, bool, error) {
 // the main chain or any side chains.
 //
 // This function is safe for concurrent access.
-func (self *BlockChain) blockExists(hash *common.Hash) (bool, error) {
+func (self *BlockChain) BlockExists(hash *common.Hash) (bool, error) {
 	block, err := self.GetBlockByBlockHash(hash)
 	if err != nil {
 		return false, err
