@@ -48,57 +48,12 @@ func mainMaster(serverChan chan<- *Server) error {
 		return nil
 	}
 
-	// Process dataBase
-	// Load the block database.
-	/*db, err := loadBlockDB(cfg)
-	if err != nil {
-		mainLog.Errorf("%v", err)
-		return err
-	}
-	defer func() {
-		// Ensure the database is sync'd and closed on shutdown.
-		mainLog.Infof("Gracefully shutting down the database...")
-		db.Close()
-	}()
-
-	// Return now if an interrupt signal was triggered.
-	if interruptRequested(interrupt) {
-		return nil
-	}
-
-	// Drop indexes and exit if requested.
-	//
-	// NOTE: The order is important here because dropping the tx index also
-	// drops the address index since it relies on it.
-	if cfg.DropAddrIndex {
-		if err := indexers.DropAddrIndex(db, interrupt); err != nil {
-			mainLog.Errorf("%v", err)
-			return err
-		}
-
-		return nil
-	}
-	if cfg.DropTxIndex {
-		if err := indexers.DropTxIndex(db, interrupt); err != nil {
-			mainLog.Errorf("%v", err)
-			return err
-		}
-
-		return nil
-	}
-	if cfg.DropCfIndex {
-		if err := indexers.DropCfIndex(db, interrupt); err != nil {
-			mainLog.Errorf("%v", err)
-			return err
-		}
-
-		return nil
-	}*/
-
 	// Create db and use it.
 	db, err := database.Open("leveldb", cfg.DataDir)
 	if err != nil {
-		log.Fatalf("could not open connection to leveldb: %v", err)
+		Logger.log.Error("could not open connection to leveldb")
+		Logger.log.Error(err)
+		panic(err)
 	}
 
 	// Check wallet and start it
@@ -124,16 +79,15 @@ func mainMaster(serverChan chan<- *Server) error {
 	err = server.NewServer(cfg.Listeners, db, activeNetParams.Params,
 		interrupt)
 	if err != nil {
-		// TODO: this logging could do with some beautifying.
-		log.Printf("Unable to start server on %v: %v",
-			cfg.Listeners, err)
+		Logger.log.Errorf("Unable to start server on %v", cfg.Listeners)
+		Logger.log.Error(err)
 		return err
 	}
 	defer func() {
-		log.Printf("Gracefully shutting down the server...")
+		Logger.log.Info("Gracefully shutting down the server...")
 		server.Stop()
 		server.WaitForShutdown()
-		log.Print("Server shutdown complete")
+		Logger.log.Info("Server shutdown complete")
 	}()
 	server.Start()
 	if serverChan != nil {
