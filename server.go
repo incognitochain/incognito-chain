@@ -32,11 +32,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
-const (
-	defaultNumberOfTargetOutbound = 8
-	defaultNumberOfTargetInbound  = 8
-)
-
 // onionAddr implements the net.Addr interface and represents a tor address.
 type onionAddr struct {
 	addr string
@@ -207,18 +202,10 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	}
 
 	// Create a connection manager.
-	targetOutbound := defaultNumberOfTargetOutbound
-	if cfg.MaxOutPeers > targetOutbound {
-		targetOutbound = cfg.MaxOutPeers
-	}
-	targetInbound := defaultNumberOfTargetInbound
-	if cfg.MaxInPeers > targetInbound {
-		targetInbound = cfg.MaxInPeers
-	}
 	var peers []*peer.Peer
 	if !cfg.DisableListen {
 		var err error
-		peers, err = self.InitListenerPeers(self.AddrManager, listenAddrs, targetOutbound, targetInbound)
+		peers, err = self.InitListenerPeers(self.AddrManager, listenAddrs, cfg.MaxOutPeers, cfg.MaxInPeers)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
