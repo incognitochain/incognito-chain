@@ -54,7 +54,7 @@ type Server struct {
 	WaitGroup   sync.WaitGroup
 	NetSync     *netsync.NetSync
 	AddrManager *addrmanager.AddrManager
-	Wallet      *wallet.Wallet
+	wallet      *wallet.Wallet
 
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
@@ -254,7 +254,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			BlockChain:     self.BlockChain,
 			TxMemPool:      self.MemPool,
 			Server:         self,
-			Wallet:         self.Wallet,
+			Wallet:         self.wallet,
 			ConnMgr:        self.ConnManager,
 			AddrMgr:        self.AddrManager,
 			RPCUser:        cfg.RPCUser,

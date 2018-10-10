@@ -120,7 +120,7 @@ func mainMaster(serverChan chan<- *Server) error {
 
 	// Create server and start it.
 	server := Server{}
-	server.Wallet = wallet
+	server.wallet = wallet
 	err = server.NewServer(cfg.Listeners, db, activeNetParams.Params,
 		interrupt)
 	if err != nil {
