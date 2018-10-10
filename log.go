@@ -30,7 +30,7 @@ var (
 	mainLogger        = backendLog.Logger("Server Log")
 	rpcLogger         = backendLog.Logger("RPC Log")
 	netsyncLogger     = backendLog.Logger("Netsync Log")
-	peerLogger        = backendLog.Logger("Peer Log")
+	peerLogger        = backendLog.Logger("RemotePeer Log")
 	dbLogger          = backendLog.Logger("Database Log")
 	walletLogger      = backendLog.Logger("Wallet log")
 	blockchainLogger  = backendLog.Logger("BlockChain log")

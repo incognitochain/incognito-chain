@@ -3,7 +3,7 @@ package peer
 import "fmt"
 
 const (
-	// Peer err
+	// RemotePeer err
 	PeerGenerateKeyPairErr   = "PeerGenerateKeyPairErr"
 	CreateP2PNodeErr         = "CreateP2PNodeErr"
 	CreateP2PAddressErr      = "CreateP2PAddressErr"

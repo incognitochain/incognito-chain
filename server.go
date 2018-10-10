@@ -311,7 +311,7 @@ func (self *Server) InboundPeerConnected(peerConn *peer.PeerConn) {
 // manager of the attempt.
 */
 func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
-	Logger.log.Info("Outbound PEER connected with PEER Id - " + peerConn.PeerID.String())
+	Logger.log.Info("Outbound PEER connected with PEER Id - " + peerConn.RemotePeerID.String())
 	err := self.PushVersionMessage(peerConn)
 	if err != nil {
 		Logger.log.Error(err)
@@ -376,7 +376,7 @@ func (self Server) peerHandler() {
 	if !cfg.DisableDNSSeed {
 		// load peer from seed DNS
 		// add to address manager
-		//self.AddrManager.AddAddresses(make([]*peer.Peer, 0))
+		//self.AddrManager.AddAddresses(make([]*peer.RemotePeer, 0))
 
 		self.ConnManager.SeedFromDNS(self.chainParams.DNSSeeds, func(addrs []string) {
 			// Bitcoind uses a lookup of the dns seeder here. This
@@ -513,7 +513,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 }
 
 /*
-// newPeerConfig returns the configuration for the listening Peer.
+// newPeerConfig returns the configuration for the listening RemotePeer.
 */
 func (self *Server) NewPeerConfig() *peer.Config {
 	keysetSealer, err := cfg.GetSealerKeySet()
@@ -595,7 +595,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	}
 
 	if msg.PublicKey != "" {
-		peerConn.Peer.PublicKey = msg.PublicKey
+		peerConn.RemotePeer.PublicKey = msg.PublicKey
 	}
 
 	self.newPeers <- remotePeer
@@ -638,7 +638,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 		peerConn.VerValid = true
 
 		if peerConn.IsOutbound {
-			self.AddrManager.Good(peerConn.Peer)
+			self.AddrManager.Good(peerConn.RemotePeer)
 		}
 
 		// send message for get addr
@@ -659,7 +659,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 			rawPeers := []wire.RawPeer{}
 			peers := self.AddrManager.AddressCache()
 			for _, peer := range peers {
-				if peerConn.PeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+				if peerConn.RemotePeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
 					rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
 				}
 			}
@@ -700,14 +700,14 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 	addresses := []string{}
 	peers := self.AddrManager.AddressCache()
 	for _, peer := range peers {
-		if peerConn.PeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+		if peerConn.RemotePeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
 			addresses = append(addresses, peer.RawAddress)
 		}
 	}
 
 	rawPeers := []wire.RawPeer{}
 	for _, peer := range peers {
-		if peerConn.PeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+		if peerConn.RemotePeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
 			rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
 		}
 	}
@@ -724,8 +724,8 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	//for _, rawPeer := range msg.RawPeers {
 	//	for _, listen := range self.ConnManager.ListeningPeers {
 	//		for _, _peerConn := range listen.PeerConns {
-	//			if _peerConn.PeerID.Pretty() != self.ConnManager.GetPeerId(rawPeer.RawAddress) {
-	//				go self.ConnManager.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
+	//			if _peerConn.RemotePeerID.Pretty() != self.ConnManager.GetPeerId(rawPeer.RemoteRawAddress) {
+	//				go self.ConnManager.Connect(rawPeer.RemoteRawAddress, rawPeer.PublicKey)
 	//			}
 	//		}
 	//	}
@@ -771,17 +771,17 @@ func (self *Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {
 
 	for _, listener := range self.ConnManager.Config.ListenerPeers {
 		for _, peerConn := range listener.PeerConns {
-			// Logger.log.Info("Test PeerConn", peerConn.Peer.PublicKey)
-			if peerConn.Peer.PublicKey == pubKey {
+			// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PublicKey)
+			if peerConn.RemotePeer.PublicKey == pubKey {
 				exist := false
 				for _, item := range result {
-					if item.Pretty() == peerConn.Peer.PeerID.Pretty() {
+					if item.Pretty() == peerConn.RemotePeer.PeerID.Pretty() {
 						exist = true
 					}
 				}
 
 				if !exist {
-					result = append(result, peerConn.Peer.PeerID)
+					result = append(result, peerConn.RemotePeer.PeerID)
 				}
 			}
 		}
@@ -821,11 +821,11 @@ func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 			return nil
 		} else {
 			fmt.Println()
-			Logger.log.Critical("Peer not exist!")
+			Logger.log.Critical("RemotePeer not exist!")
 			fmt.Println()
 		}
 	}
-	return errors.New("Peer not found")
+	return errors.New("RemotePeer not found")
 }
 
 // handleDonePeerMsg deals with peers that have signalled they are done.  It is

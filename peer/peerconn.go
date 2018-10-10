@@ -9,40 +9,37 @@ import (
 	"sync"
 
 	"github.com/libp2p/go-libp2p-peer"
-	ma "github.com/multiformats/go-multiaddr"
-	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
 type PeerConn struct {
-	connected int32
+	connected      int32
+	connState      ConnState
+	stateMtx       sync.RWMutex
+	verAckReceived bool
 
-	RetryCount int32
-	IsOutbound bool
-	connState  ConnState
-	stateMtx   sync.RWMutex
-
-	ReaderWriterStream *bufio.ReadWriter
-	verAckReceived     bool
-	VerValid           bool
-	IsConnected        bool
-
-	TargetAddress    ma.Multiaddr
-	PeerID           peer.ID
-	RawAddress       string
-	ListeningAddress common.SimpleAddr
-
-	Config Config
-
+	// channel
 	sendMessageQueue chan outMsg
 	cDisconnect      chan struct{}
 	cRead            chan struct{}
 	cWrite           chan struct{}
 	cClose           chan struct{}
 
-	Peer             *Peer
-	ValidatorAddress string
-	ListenerPeer     *Peer
+	RetryCount int32
+
+	// remote peer info
+	RemotePeer       *Peer
+	RemotePeerID     peer.ID
+	RemoteRawAddress string
+	IsOutbound       bool
+
+	ReaderWriterStream *bufio.ReadWriter
+	VerValid           bool
+	IsConnected        bool
+
+	Config Config
+
+	ListenerPeer *Peer
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -55,14 +52,14 @@ Handle all in message
 func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	self.IsConnected = true
 	for {
-		Logger.log.Infof("PEER %s (address: %s) Reading stream", self.Peer.PeerID.String(), self.Peer.RawAddress)
+		Logger.log.Infof("PEER %s (address: %s) Reading stream", self.RemotePeer.PeerID.String(), self.RemotePeer.RawAddress)
 		str, err := rw.ReadString(DelimMessageByte)
 		if err != nil {
 			self.IsConnected = false
 			Logger.log.Error("---------------------------------------------------------------------")
-			Logger.log.Errorf("InMessageHandler ERROR %s %s", self.PeerID, self.Peer.RawAddress)
+			Logger.log.Errorf("InMessageHandler ERROR %s %s", self.RemotePeerID, self.RemotePeer.RawAddress)
 			Logger.log.Error(err)
-			Logger.log.Errorf("InMessageHandler QUIT %s %s", self.PeerID, self.Peer.RawAddress)
+			Logger.log.Errorf("InMessageHandler QUIT %s %s", self.RemotePeerID, self.RemotePeer.RawAddress)
 			Logger.log.Error("---------------------------------------------------------------------")
 			close(self.cWrite)
 			return
@@ -77,7 +74,7 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				// get cmd type in header message
 				commandInHeader := messageHeader[:wire.MessageCmdTypeSize]
 				commandInHeader = bytes.Trim(messageHeader, "\x00")
-				Logger.log.Infof("Received message type %s from %s", string(commandInHeader), self.PeerID)
+				Logger.log.Infof("Received message type %s from %s", string(commandInHeader), self.RemotePeerID)
 				commandType := string(messageHeader[:len(commandInHeader)])
 				// convert to particular message from message cmd type
 				var message, err = wire.MakeEmptyMessage(string(commandType))
@@ -189,7 +186,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				Logger.log.Infof("Content in hex encode: %s", string(message))
 
 				// send on p2p stream
-				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.Peer.PeerID.String())
+				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.RemotePeer.PeerID.String())
 				_, err = rw.Writer.WriteString(message)
 				if err != nil {
 					Logger.log.Critical("DM ERROR", err)
@@ -202,7 +199,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				}
 			}
 		case <-self.cWrite:
-			Logger.log.Infof("OutMessageHandler QUIT %s %s", self.PeerID, self.Peer.RawAddress)
+			Logger.log.Infof("OutMessageHandler QUIT %s %s", self.RemotePeerID, self.RemotePeer.RawAddress)
 
 			self.IsConnected = false
 
@@ -230,8 +227,7 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 }
 
 func (p *PeerConn) VerAckReceived() bool {
-	verAckReceived := p.verAckReceived
-	return verAckReceived
+	return p.verAckReceived
 }
 
 // updateState updates the state of the connection request.

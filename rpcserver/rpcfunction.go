@@ -460,7 +460,7 @@ func (self RpcServer) handleGetAddedNodeInfo(params interface{}, closeChan <-cha
 				if existed {
 					node := map[string]interface{}{}
 
-					node["addednode"] = peerConn.Peer.RawAddress
+					node["addednode"] = peerConn.RemotePeer.RawAddress
 					node["connected"] = true
 					connected := "inbound"
 					if peerConn.IsOutbound {
@@ -468,7 +468,7 @@ func (self RpcServer) handleGetAddedNodeInfo(params interface{}, closeChan <-cha
 					}
 					node["addresses"] = []map[string]interface{}{
 						map[string]interface{}{
-							"address":   peerConn.Peer.RawAddress,
+							"address":   peerConn.RemotePeer.RawAddress,
 							"connected": connected,
 						},
 					}
@@ -1049,7 +1049,7 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 //
 //	peers := self.config.AddrMgr.AddressCache()
 //	for _, peer := range peers {
-//		peersMap = append(peersMap, peer.RawAddress)
+//		peersMap = append(peersMap, peer.RemoteRawAddress)
 //	}
 //
 //	result["peers"] = peersMap
