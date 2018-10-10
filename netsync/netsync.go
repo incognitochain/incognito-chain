@@ -198,7 +198,7 @@ func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan s
 	self.msgChan <- msg
 }
 
-// func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
+// func (self *netSync) HandleMessageBlock(msg *wire.MessageBlock) {
 // 	Logger.log.Info("Handling new message block")
 // 	// TODO get message block and process
 // 	newBlock := msg.Block

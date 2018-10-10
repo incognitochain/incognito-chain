@@ -52,7 +52,7 @@ type Server struct {
 	RpcServer   *rpcserver.RpcServer
 	MemPool     *mempool.TxPool
 	WaitGroup   sync.WaitGroup
-	NetSync     *netsync.NetSync
+	netSync     *netsync.NetSync
 	addrManager *addrmanager.AddrManager
 	wallet      *wallet.Wallet
 
@@ -189,7 +189,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	})
 
 	// Init Net Sync manager to process messages
-	self.NetSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
+	self.netSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
 		BlockChain:   self.BlockChain,
 		ChainParam:   chainParams,
 		MemPool:      self.MemPool,
@@ -355,7 +355,7 @@ func (self Server) peerHandler() {
 	// things, it's easier and slightly faster to simply start and stop them
 	// in this handler.
 	self.addrManager.Start()
-	self.NetSync.Start()
+	self.netSync.Start()
 
 	Logger.log.Info("Start peer handler")
 
@@ -401,7 +401,7 @@ out:
 			}
 		}
 	}
-	self.NetSync.Stop()
+	self.netSync.Stop()
 	self.addrManager.Stop()
 	self.ConnManager.Stop()
 }
@@ -539,7 +539,7 @@ func (self *Server) OnBlock(p *peer.PeerConn,
 	Logger.log.Info("Receive a new block START")
 
 	var txProcessed chan struct{}
-	self.NetSync.QueueBlock(nil, msg, txProcessed)
+	self.netSync.QueueBlock(nil, msg, txProcessed)
 	//<-txProcessed
 
 	Logger.log.Info("Receive a new block END")
@@ -548,7 +548,7 @@ func (self *Server) OnBlock(p *peer.PeerConn,
 func (self *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Receive a " + msg.MessageType() + " message START")
 	var txProcessed chan struct{}
-	self.NetSync.QueueGetBlock(nil, msg, txProcessed)
+	self.netSync.QueueGetBlock(nil, msg, txProcessed)
 	//<-txProcessed
 
 	Logger.log.Info("Receive a " + msg.MessageType() + " message END")
@@ -561,7 +561,7 @@ func (self *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
 func (self Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Info("Receive a new transaction START")
 	var txProcessed chan struct{}
-	self.NetSync.QueueTx(nil, msg, txProcessed)
+	self.netSync.QueueTx(nil, msg, txProcessed)
 	//<-txProcessed
 
 	Logger.log.Info("Receive a new transaction END")
@@ -723,34 +723,34 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageRequestSign) {
 	Logger.log.Info("Receive a requestsign START")
 	var txProcessed chan struct{}
-	self.NetSync.QueueMessage(nil, msg, txProcessed)
+	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a requestsign END")
 }
 
 func (self *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {
 	Logger.log.Info("Receive a invalidblock START", msg)
 	var txProcessed chan struct{}
-	self.NetSync.QueueMessage(nil, msg, txProcessed)
+	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a invalidblock END", msg)
 }
 
 func (self *Server) OnBlockSig(_ *peer.PeerConn, msg *wire.MessageBlockSig) {
 	Logger.log.Info("Receive a BlockSig")
 	var txProcessed chan struct{}
-	self.NetSync.QueueMessage(nil, msg, txProcessed)
+	self.netSync.QueueMessage(nil, msg, txProcessed)
 }
 
 func (self *Server) OnGetChainState(_ *peer.PeerConn, msg *wire.MessageGetChainState) {
 	Logger.log.Info("Receive a getchainstate START")
 	var txProcessed chan struct{}
-	self.NetSync.QueueMessage(nil, msg, txProcessed)
+	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a getchainstate END")
 }
 
 func (self *Server) OnChainState(_ *peer.PeerConn, msg *wire.MessageChainState) {
 	Logger.log.Info("Receive a chainstate START")
 	var txProcessed chan struct{}
-	self.NetSync.QueueMessage(nil, msg, txProcessed)
+	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a chainstate END")
 }
 
