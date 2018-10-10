@@ -61,13 +61,10 @@ func (self *BlockChain) ProcessBlock(block *Block) (bool, bool, error) {
 // the main chain or any side chains.
 //
 // This function is safe for concurrent access.
-func (self *BlockChain) BlockExists(hash *common.Hash) (bool, error) {
-	block, err := self.GetBlockByBlockHash(hash)
+func (self *BlockChain) blockExists(hash *common.Hash) (bool, error) {
+	result, err := self.config.DataBase.HasBlock(hash)
 	if err != nil {
 		return false, err
 	}
-	if block == nil {
-		return false, nil
-	}
-	return true, err
+	return result, err
 }

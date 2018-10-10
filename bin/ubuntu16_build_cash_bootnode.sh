@@ -26,7 +26,9 @@ cd go/src/github.com/ninjadotorg
 git clone https://github.com/ninjadotorg/cash-prototype -b Parallel-PoS-Privacy
 
 echo "Install cash-prototype packages..."
-cd cash-prototype
+cd cash-prototype/bootnode
 glide install
+
+
 
 
