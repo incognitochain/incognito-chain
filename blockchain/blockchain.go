@@ -178,7 +178,7 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	if err != nil {
 		return err
 	}
-	view.SetBestHash(initBlock.Hash())
+	// view.SetBestHash(initBlock.Hash())
 	// Update the list nullifiers and commitment set using the state of the tx view point. This
 	// entails adding the new ones created by the block.
 	err = self.StoreNullifiersFromTxViewPoint(*view)
@@ -491,34 +491,35 @@ func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string, chainId byte)
 // cumulatively has the most proof of work.  It returns whether or not the block
 // ended up on the main chain (either due to extending the main chain or causing
 // a reorganization to become the main chain).
-func (b *BlockChain) connectBestChain(block *Block) (bool, error) {
+func (self *BlockChain) connectBestChain(block *Block) (bool, error) {
 	// We are extending the main (best) chain with a new block.  This is the
 	// most common case.
 	parentHash := &block.Header.PrevBlockHash
-	if parentHash.IsEqual(b.BestState[block.Header.ChainID].BestBlockHash) {
+	if parentHash.IsEqual(self.BestState[block.Header.ChainID].BestBlockHash) {
 		view := NewTxViewPoint(block.Header.ChainID)
 
-		err := view.fetchTxViewPoint(b.config.DataBase, block)
+		err := view.fetchTxViewPoint(self.config.DataBase, block)
 		if err != nil {
 			return false, err
 		}
 
-		view.SetBestHash(block.Hash())
+		// view.SetBestHash(block.Hash())
 		// Update the list nullifiers and commitment set using the state of the used tx view point. This
 		// entails adding the new
 		// ones created by the block.
-		err = b.StoreNullifiersFromTxViewPoint(*view)
+		err = self.StoreNullifiersFromTxViewPoint(*view)
 		if err != nil {
 			return false, err
 		}
 
-		err = b.StoreCommitmentsFromTxViewPoint(*view)
+		err = self.StoreCommitmentsFromTxViewPoint(*view)
 		if err != nil {
 			return false, err
 		}
 
 		return true, nil
 	} else {
+
 		// we in sub chain
 		return false, nil
 	}

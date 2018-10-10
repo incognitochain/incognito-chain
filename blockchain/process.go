@@ -25,26 +25,6 @@ func (self *BlockChain) ProcessBlock(block *Block) (bool, bool, error) {
 	blockHash := block.Hash()
 	Logger.log.Infof("Processing block %v", blockHash)
 
-	// The block must not already exist in the main chain or side chains.
-	exists, err := self.BlockExists(blockHash)
-	//if err != nil {
-	//	return false, false, err
-	//}
-	if exists {
-		Logger.log.Infof("already have block %v", blockHash)
-		return false, false, nil
-	}
-	// TODO: privacy consensus checks:
-	// - Only first tx is coinbase (only one desc and reward >= 0)
-	// - All js desc's proofs are valid
-	// - Coinbase reward == block reward + sum(fee of all tx)
-
-	// TODO check more
-	// check orphan blocks
-	// check checkpoint if using checkpoint to prevent sidechain
-	// Perform preliminary sanity checks on the block and its transactions.
-	// ... TODO TODO TODO by consensus
-
 	// The block has passed all context independent checks and appears sane
 	// enough to potentially accept it into the block chain.
 	isMainChain, err := self.maybeAcceptBlock(block)
