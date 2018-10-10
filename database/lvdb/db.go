@@ -351,24 +351,3 @@ func (db *db) getKeyIdx(h *common.Hash) []byte {
 	key = append(blockKeyIdxPrefix, h[:]...)
 	return key
 }
-
-func (db *db) StoreBestCndList(v interface{}, chainID byte) error {
-	val, err := json.Marshal(v)
-	if err != nil {
-		return errors.Wrap(err, "json.Marshal")
-	}
-	key := append(bestCndListKey, chainID)
-	if err := db.put(key, val); err != nil {
-		return errors.Wrap(err, "db.Put")
-	}
-	return nil
-}
-
-func (db *db) FetchBestCndList(chainID byte) ([]byte, error) {
-	key := append(bestCndListKey, chainID)
-	cndList, err := db.lvdb.Get(key, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "db.lvdb.Get")
-	}
-	return cndList, nil
-}
