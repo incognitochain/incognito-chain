@@ -2,15 +2,14 @@ package blockchain
 
 // constant for network
 const (
-	MAINNET             = 0xd9b4bef9
-	MAINNET_NAME        = "mainnet"
-	MAINET_DEFAULT_PORT = "9333"
-)
+	// Mainnet
+	MAINNET                            = 0xd9b4bef9
+	MAINNET_NAME                       = "mainnet"
+	MAINET_DEFAULT_PORT                = "9333"
+	MAINNET_GENESIS_BLOCK_REWARD       = uint64(1000000000)
+	MAINNET_GENESIS_BLOCK_PAYMENT_ADDR = "12Rt2dt1UT6PjZ7HzDVjkP5nAXZ22vPYWD1b31XuJ4FJBPorWpGbKTACT8wyfHqwDRqg3EuX2zAU9YQZvB6bNMNTsSGjqXHMQw9H1Xn"
 
-// constant for genesis block
-const (
-	GENESIS_BLOCK_REWARD       = uint64(1000000000)
-	GENESIS_BLOCK_PAYMENT_ADDR = "12Rt2dt1UT6PjZ7HzDVjkP5nAXZ22vPYWD1b31XuJ4FJBPorWpGbKTACT8wyfHqwDRqg3EuX2zAU9YQZvB6bNMNTsSGjqXHMQw9H1Xn"
+	// Testnet 
 )
 
 // global variables for genesis blok
