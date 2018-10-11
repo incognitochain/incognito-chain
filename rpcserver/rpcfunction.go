@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -78,11 +77,11 @@ var RpcLimited = map[string]commandHandler{
 }
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 	result := jsonresult.GetHeaderResult{}
 
 	arrayParams := common.InterfaceSlice(params)
-	log.Println(arrayParams)
+	Logger.log.Info(arrayParams)
 	getBy := arrayParams[0].(string)
 	block := arrayParams[1].(string)
 	chainID := arrayParams[2].(float64)
@@ -90,7 +89,7 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 	case "blockhash":
 		bhash := common.Hash{}
 		err := bhash.Decode(&bhash, block)
-		log.Println(bhash)
+		Logger.log.Info(bhash)
 		if err != nil {
 			return nil, errors.New("Invalid blockhash format")
 		}
@@ -535,7 +534,7 @@ Parameter #2—the maximum number of confirmations an output may have
 Parameter #3—the list readonly which be used to view utxo
 */
 func (self RpcServer) handleListTransactions(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 	result := jsonresult.ListUnspentResult{
 		ListUnspentResultItems: make(map[string]map[byte][]jsonresult.ListUnspentResultItem),
 	}
@@ -800,7 +799,7 @@ Parameter #2–whether to allow high fees
 Result—a TXID or error message
 */
 func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	hexRawTx := arrayParams[0].(string)
 	rawTxBytes, err := hex.DecodeString(hexRawTx)
@@ -809,7 +808,7 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 		return nil, err
 	}
 	var tx transaction.Tx
-	// log.Println(string(rawTxBytes))
+	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		return nil, err
@@ -853,7 +852,7 @@ func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct
  * handleGetNumberOfCoins handles getNumberOfCoins commands.
  */
 func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 	result, err := self.Config.BlockChain.GetAllUnitCoinSupplier()
 	return result, err
 }
@@ -874,7 +873,7 @@ func (self RpcServer) handleCreateActionParamsTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.ActionParamTx{
 		Version:  1,
@@ -1042,7 +1041,7 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 //handleGetAllPeers - return all peers which this node connected
 // */
 //func (self rpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-//	log.Println(params)
+//	Logger.log.Info(params)
 //	result := make(map[string]interface{})
 //
 //	peersMap := []string{}

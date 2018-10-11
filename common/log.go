@@ -11,6 +11,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"github.com/fatih/color"
 )
 
 // Logger is an interface which describes a level-based logger.  A default
@@ -86,6 +87,16 @@ const (
 	// Lshortfile modifies the logger output to include filename and line number
 	// of the logging callsite, e.g. main.go:123.  Overrides Llongfile.
 	Lshortfile
+)
+
+var (
+	FgGreen   = color.New(color.FgGreen).FprintfFunc()
+	FgRed     = color.New(color.FgRed).FprintfFunc()
+	FgYellow  = color.New(color.FgYellow).FprintfFunc()
+	FgBlue    = color.New(color.FgBlue).FprintfFunc()
+	FgCyan    = color.New(color.FgCyan).FprintfFunc()
+	FgMagenta = color.New(color.FgMagenta).FprintfFunc()
+	FgWhite   = color.New(color.FgWhite).FprintfFunc()
 )
 
 // Read logger flags from the LOGFLAGS environment variable.  Multiple flags can
@@ -305,9 +316,7 @@ func (b *Backend) print(lvl, tag string, args ...interface{}) {
 	fmt.Fprintln(buf, args...)
 	*bytebuf = buf.Bytes()
 
-	b.mu.Lock()
-	b.w.Write(*bytebuf)
-	b.mu.Unlock()
+	b.colorPrint(lvl, *bytebuf)
 
 	recycleBuffer(bytebuf)
 }
@@ -332,11 +341,38 @@ func (b *Backend) printf(lvl, tag string, format string, args ...interface{}) {
 	fmt.Fprintf(buf, format, args...)
 	*bytebuf = append(buf.Bytes(), '\n')
 
-	b.mu.Lock()
-	b.w.Write(*bytebuf)
-	b.mu.Unlock()
+	b.colorPrint(lvl, *bytebuf)
 
 	recycleBuffer(bytebuf)
+}
+
+func (b *Backend) colorPrint(lvl string, bytebuf []byte) {
+	b.mu.Lock()
+	switch lvl {
+	case "INF":
+		{
+			FgGreen(b.w, string(bytebuf[:]))
+		}
+	case "ERR":
+		{
+			FgRed(b.w, string(bytebuf[:]))
+		}
+	case "WRN":
+		{
+			FgYellow(b.w, string(bytebuf[:]))
+		}
+	case "CRT":
+		{
+			FgCyan(b.w, string(bytebuf[:]))
+		}
+	case "DBG":
+		{
+			FgMagenta(b.w, string(bytebuf[:]))
+		}
+	default:
+		FgWhite(b.w, string(bytebuf[:]))
+	}
+	b.mu.Unlock()
 }
 
 // Logger returns a new logger for a particular subsystem that writes to the

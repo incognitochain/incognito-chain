@@ -707,7 +707,7 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 
 func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	// TODO for onaddr message
-	log.Printf("Receive addr message %v", msg.RawPeers)
+	Logger.log.Infof("Receive addr message %v", msg.RawPeers)
 	//for _, rawPeer := range msg.RawPeers {
 	//	for _, listen := range self.connManager.ListeningPeers {
 	//		for _, _peerConn := range listen.PeerConns {

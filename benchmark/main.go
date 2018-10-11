@@ -24,7 +24,7 @@ func main() {
 	// load config
 	tcfg, err := loadConfig()
 	if err != nil {
-		log.Println("Parse config error", err.Error())
+		Logger.log.Info("Parse config error", err.Error())
 		return
 	}
 	cfg = tcfg
@@ -51,7 +51,7 @@ func strategy1() {
 
 	for {
 		if totalSendOut >= cfg.TotalTxs {
-			log.Println("totalSendout", totalSendOut, "cfg.TotalTxs", cfg.TotalTxs, stepSendout)
+			Logger.log.Info("totalSendout", totalSendOut, "cfg.TotalTxs", cfg.TotalTxs, stepSendout)
 			break
 		}
 
@@ -123,7 +123,7 @@ func sendRandomTransaction(ah int) (bool, interface{}) {
 
 	params := buildCreateParams(addressHash, txId, pkScript, value, id)
 	//jsonValue, _ := json.Marshal(params)
-	//log.Println("Create transaction params", string(jsonValue))
+	//Logger.log.Info("Create transaction params", string(jsonValue))
 
 	var endpoint string
 
@@ -136,7 +136,7 @@ func sendRandomTransaction(ah int) (bool, interface{}) {
 
 	err, tx := api.Get(endpoint, params)
 
-	//log.Println("CREATE transaction params response", tx)
+	//Logger.log.Info("CREATE transaction params response", tx)
 
 	if err != nil {
 		log.Printf("send transaction error: %s", err.Error())
@@ -145,11 +145,11 @@ func sendRandomTransaction(ah int) (bool, interface{}) {
 
 	sendParams := buildSendParams(tx["result"].(string), id)
 	//jsonValue2, _ := json.Marshal(sendParams)
-	//log.Println("Send transaction params", string(jsonValue2))
+	//Logger.log.Info("Send transaction params", string(jsonValue2))
 
 	err, response := api.Get(endpoint, sendParams)
 
-	//log.Println("Send transaction params response", response)
+	//Logger.log.Info("Send transaction params response", response)
 
 	if err != nil {
 		return false, ""

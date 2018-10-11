@@ -27,11 +27,11 @@ func interruptListener() <-chan struct{} {
 		// channel to notify the caller.
 		select {
 		case sig := <-interruptChannel:
-			log.Printf("Received signal (%s).  Shutting down...",
+			Logger.log.Warnf("Received signal (%s).  Shutting down...",
 				sig)
 
 		case <-shutdownRequestChannel:
-			log.Print("Shutdown requested.  Shutting down...")
+			Logger.log.Warn("Shutdown requested.  Shutting down...")
 		}
 		close(c)
 

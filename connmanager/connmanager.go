@@ -93,10 +93,10 @@ type DiscoverPeerInfo struct {
 // Stop gracefully shuts down the connection manager.
 func (self ConnManager) Stop() {
 	if atomic.AddInt32(&self.stop, 1) != 1 {
-		log.Println("Connection manager already stopped")
+		Logger.log.Info("Connection manager already stopped")
 		return
 	}
-	log.Println("Stop connection manager")
+	Logger.log.Info("Stop connection manager")
 
 	// Stop all the listeners.  There will not be any listeners if
 	// listening is disabled.
@@ -105,7 +105,7 @@ func (self ConnManager) Stop() {
 	}
 
 	close(self.Quit)
-	log.Println("Connection manager stopped")
+	Logger.log.Warn("Connection manager stopped")
 }
 
 func (self ConnManager) New(cfg *Config) (*ConnManager, error) {

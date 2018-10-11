@@ -181,9 +181,9 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				messageByte = append(messageByte, header...)
 				Logger.log.Infof("Content: %s", string(messageByte))
 				message := hex.EncodeToString(messageByte)
+				Logger.log.Infof("Content in hex encode: %s", string(message))
 				// add end character to message (delim '\n')
 				message += DelimMessageStr
-				Logger.log.Infof("Content in hex encode: %s", string(message))
 
 				// send on p2p stream
 				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.RemotePeer.PeerID.String())
