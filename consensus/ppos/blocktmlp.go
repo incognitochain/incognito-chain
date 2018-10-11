@@ -25,7 +25,6 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 	if len(sourceTxns) < common.MIN_TXs {
 		// if len of sourceTxns < MIN_TXs -> wait for more transactions
 		Logger.log.Info("not enough transactions. Wait for more...")
-		fmt.Println(sourceTxns)
 		<-time.Tick(common.MIN_BLOCK_WAIT_TIME * time.Second)
 		sourceTxns = g.txSource.MiningDescs()
 		if len(sourceTxns) == 0 {
@@ -62,7 +61,6 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 		if len(txsToAdd) == common.MAX_TXs_IN_BLOCK {
 			break
 		}
-		// g.txSource.Clear()
 	}
 
 	for _, tx := range txToRemove {
@@ -140,10 +138,8 @@ concludeBlock:
 
 	// Add new commitments to merkle tree and save the root
 	newTree := g.chain.BestState[chainID].CmTree.MakeCopy()
-	fmt.Printf("[newBlockTemplate] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
 	blockchain.UpdateMerkleTreeForBlock(newTree, &block)
 	rt = newTree.GetRoot(common.IncMerkleTreeHeight)
-	fmt.Printf("[newBlockTemplate] updated tree rt: %x\n", rt)
 	copy(block.Header.MerkleRootCommitments[:], rt)
 
 	for _, tempBlockTx := range block.Transactions {

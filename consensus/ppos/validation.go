@@ -3,7 +3,6 @@ package ppos
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
@@ -109,7 +108,7 @@ func (self *Engine) IsEnoughData(block *blockchain.Block) error {
 					Logger.log.Info("Send getblock to "+peerIDs[0], block.ChainLeader)
 					self.config.Server.PushMessageToPeer(getBlkMsg, peerIDs[0])
 				} else {
-					fmt.Println("Validator's peer not found!", block.ChainLeader)
+					Logger.log.Error("Validator's peer not found!", block.ChainLeader)
 				}
 			}
 		}

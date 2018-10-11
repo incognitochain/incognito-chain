@@ -3,7 +3,6 @@ package ppos
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -294,7 +293,7 @@ func (self *Engine) Finalize(block *blockchain.Block) error {
 						Logger.log.Info("Request signaure from "+peerIDs[0], validator)
 						self.config.Server.PushMessageToPeer(reqSigMsg, peerIDs[0])
 					} else {
-						fmt.Println("Validator's peer not found!", validator)
+						Logger.log.Error("Validator's peer not found!", validator)
 					}
 				}(committee[idx])
 			}

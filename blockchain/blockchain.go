@@ -231,13 +231,11 @@ func (self *BlockChain) GetBlockByBlockHeight(height int32, chainId byte) (*Bloc
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(hashBlock)
 	blockBytes, err := self.config.DataBase.FetchBlock(hashBlock)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println(blockBytes)
 	block := Block{}
 	err = json.Unmarshal(blockBytes, &block)
 	if err != nil {

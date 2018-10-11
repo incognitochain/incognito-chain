@@ -91,7 +91,6 @@ func (self *Engine) OnInvalidBlockReceived(blockHash string, chainID byte, reaso
 }
 
 func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
-	// fmt.Println(msg)
 	chainInfo := msg.ChainInfo.(map[string]interface{})
 	for i, v := range self.validatedChainsHeight.Heights {
 		if chainInfo["ChainsHeight"] != nil {
