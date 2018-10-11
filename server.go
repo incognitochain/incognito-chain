@@ -216,6 +216,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		OnOutboundConnection: self.OutboundPeerConnected,
 		ListenerPeers:        peers,
 		DiscoverPeers:        cfg.DiscoverPeers,
+		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
 	})
 	if err != nil {
 		return err
@@ -378,7 +379,7 @@ func (self Server) peerHandler() {
 		}
 	}
 
-	go self.connManager.Start()
+	go self.connManager.Start(cfg.DiscoverPeersAddress)
 
 out:
 	for {

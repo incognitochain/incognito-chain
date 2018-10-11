@@ -88,6 +88,7 @@ type config struct {
 	MaxOutPeers          int           `long:"maxoutpeers" description:"Max number of outbound peers"`
 	MaxInPeers           int           `long:"maxinpeers" description:"Max number of inbound peers"`
 	DiscoverPeers        bool          `long:"discoverpeers" description:"Enable discover peers"`
+	DiscoverPeersAddress string        `long:"discoverpeersaddress" description:"Url to connect discover peers server"`
 	DisableBanning       bool          `long:"nobanning" description:"Disable banning of misbehaving peers"`
 	BanDuration          time.Duration `long:"banduration" description:"How long to ban misbehaving peers.  Valid time units are {s, m, h}.  Minimum 1 second"`
 	BanThreshold         uint32        `long:"banthreshold" description:"Maximum allowed ban score before disconnecting and banning misbehaving peers."`
@@ -342,22 +343,24 @@ func loadConfig() (*config, []string, error) {
 		RPCKey:               defaultRPCKeyFile,
 		RPCCert:              defaultRPCCertFile,
 		//MinRelayTxFee:        common.DefaultMinRelayTxFee.ToBTC(),
-		FreeTxRelayLimit:  defaultFreeTxRelayLimit,
-		BlockMinSize:      defaultBlockMinSize,
-		BlockMaxSize:      defaultBlockMaxSize,
-		BlockMinWeight:    defaultBlockMinWeight,
-		BlockMaxWeight:    defaultBlockMaxWeight,
-		BlockPrioritySize: mempool.DefaultBlockPrioritySize,
-		MaxOrphanTxs:      defaultMaxOrphanTransactions,
-		SigCacheMaxSize:   defaultSigCacheMaxSize,
-		Generate:          defaultGenerate,
-		TxIndex:           defaultTxIndex,
-		AddrIndex:         defaultAddrIndex,
-		WalletDbName:      defaultWalletDbName,
-		DisableTLS:        defaultDisableRpcTls,
-		RPCDisableAuth:    true,
-		SealerSpendingKey: os.Getenv("SEALERPRVKEY"),
-		SealerKeySet:      os.Getenv("SEALERKEYSET"),
+		FreeTxRelayLimit:     defaultFreeTxRelayLimit,
+		BlockMinSize:         defaultBlockMinSize,
+		BlockMaxSize:         defaultBlockMaxSize,
+		BlockMinWeight:       defaultBlockMinWeight,
+		BlockMaxWeight:       defaultBlockMaxWeight,
+		BlockPrioritySize:    mempool.DefaultBlockPrioritySize,
+		MaxOrphanTxs:         defaultMaxOrphanTransactions,
+		SigCacheMaxSize:      defaultSigCacheMaxSize,
+		Generate:             defaultGenerate,
+		TxIndex:              defaultTxIndex,
+		AddrIndex:            defaultAddrIndex,
+		WalletDbName:         defaultWalletDbName,
+		DisableTLS:           defaultDisableRpcTls,
+		RPCDisableAuth:       true,
+		SealerSpendingKey:    os.Getenv("SEALERPRVKEY"),
+		SealerKeySet:         os.Getenv("SEALERKEYSET"),
+		DiscoverPeers:        false,
+		DiscoverPeersAddress: "35.230.8.182:9339",
 	}
 
 	// Service options which are only added on Windows.
@@ -752,6 +755,13 @@ func loadConfig() (*config, []string, error) {
 				fmt.Fprintln(os.Stderr, usageMessage)
 				return nil, nil, err
 			}
+		}
+	}
+
+	if cfg.DiscoverPeers {
+		if cfg.DiscoverPeersAddress == "" {
+			err := fmt.Errorf("Discover peers server is empty")
+			return nil, nil, err
 		}
 	}
 

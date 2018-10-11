@@ -67,7 +67,8 @@ type Config struct {
 	//OnOutboundDisconnection is a callback that is fired when an outbound connection is disconnected
 	OnOutboundDisconnection func(peerConn *peer.PeerConn)
 
-	DiscoverPeers bool
+	DiscoverPeers        bool
+	DiscoverPeersAddress string
 }
 
 type DiscoverPeerInfo struct {
@@ -205,7 +206,7 @@ func (self *ConnManager) Connect(addr string, pubKey string) {
 	}
 }
 
-func (self *ConnManager) Start() {
+func (self *ConnManager) Start(discoverPeerAddress string) {
 	// Already started?
 	if atomic.AddInt32(&self.start, 1) != 1 {
 		return
@@ -227,8 +228,9 @@ func (self *ConnManager) Start() {
 			self.ListeningPeers[listner.PeerID] = listner
 		}
 
-		if self.Config.DiscoverPeers {
-			go self.DiscoverPeers()
+		if self.Config.DiscoverPeers && self.Config.DiscoverPeersAddress != "" {
+			Logger.log.Infof("DiscoverPeers: true\n----------------------------------------------------------------\n|               Discover peer url: %s               |\n----------------------------------------------------------------", self.Config.DiscoverPeersAddress)
+			go self.DiscoverPeers(discoverPeerAddress)
 		}
 	}
 }
@@ -304,7 +306,7 @@ func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)
 	seedFn(addrs)
 }
 
-func (self *ConnManager) DiscoverPeers() {
+func (self *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 	Logger.log.Info("Start Discover Peers")
 	var client *rpc.Client
 	var err error
@@ -316,7 +318,7 @@ listen:
 			// server bootnode 35.199.177.89:9339
 			// server live bootnode 35.230.8.182:9339
 			// local bootnode 127.0.0.1:9339
-			client, err = rpc.Dial("tcp", "35.230.8.182:9339")
+			client, err = rpc.Dial("tcp", discoverPeerAddress)
 			if err != nil {
 				Logger.log.Error("[Exchange Peers] re-connect:", err)
 			}

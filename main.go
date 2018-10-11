@@ -29,6 +29,7 @@ var winServiceMain func() (bool, error)
 func mainMaster(serverChan chan<- *Server) error {
 	tcfg, _, err := loadConfig()
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
 	cfg = tcfg
