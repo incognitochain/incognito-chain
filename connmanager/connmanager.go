@@ -37,18 +37,12 @@ type ConnManager struct {
 	stop         int32
 	// Discover Peers
 	discoveredPeers map[string]*DiscoverPeerInfo
+	// channel
+	cQuit chan struct{}
 
 	Config Config
-	// Pending Connection
-	Pending map[libpeer.ID]*peer.Peer
-
-	// Connected Connection
-	Connected map[libpeer.ID]*peer.Peer
 
 	ListeningPeers map[libpeer.ID]*peer.Peer
-
-	// quit channel
-	cQuit chan struct{}
 }
 
 type Config struct {
@@ -105,8 +99,6 @@ func (self ConnManager) New(cfg *Config) (*ConnManager, error) {
 	self.cQuit = make(chan struct{})
 	self.discoveredPeers = make(map[string]*DiscoverPeerInfo)
 
-	self.Pending = map[libpeer.ID]*peer.Peer{}
-	self.Connected = map[libpeer.ID]*peer.Peer{}
 	self.ListeningPeers = map[libpeer.ID]*peer.Peer{}
 
 	return &self, nil
