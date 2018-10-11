@@ -30,7 +30,7 @@ block contains many types of transaction
 - normal tx:
 - action tx:
 
- */
+*/
 type Block struct {
 	Header          BlockHeader
 	Transactions    []transaction.Transaction
@@ -188,7 +188,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 
 /*
 AddTransaction adds a new transaction into block
- */
+*/
 // #1 - tx
 func (self *Block) AddTransaction(tx transaction.Transaction) error {
 	self.Transactions = append(self.Transactions, tx)
@@ -197,7 +197,7 @@ func (self *Block) AddTransaction(tx transaction.Transaction) error {
 
 /*
 Hash creates a hash from block data
- */
+*/
 
 func (self Block) Hash() *common.Hash {
 	if self.blockHash != nil {
@@ -209,8 +209,9 @@ func (self Block) Hash() *common.Hash {
 		self.Header.MerkleRootCommitments.String() +
 		strconv.FormatInt(self.Header.Timestamp, 10) +
 		self.Header.PrevBlockHash.String() +
-		strconv.Itoa(self.Header.Nonce) +
-		strconv.Itoa(len(self.Transactions))
+		strconv.Itoa(len(self.Transactions)) +
+		self.ChainLeader +
+		strconv.Itoa(int(self.Height))
 	hash := common.DoubleHashH([]byte(record))
 	self.blockHash = &hash
 	return self.blockHash

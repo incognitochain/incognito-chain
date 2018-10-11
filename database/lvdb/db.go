@@ -11,9 +11,9 @@ import (
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 
+	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
 )
 
 var (
@@ -305,6 +305,7 @@ func (db *db) FetchAllBlocks() ([][]*common.Hash, error) {
 			return nil, errors.Wrap(err, "iter.Error")
 		}
 	}
+
 	return keys, nil
 }
 
