@@ -330,19 +330,13 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	if err != nil {
 		Logger.log.Error(err)
 	}
-	// save best state
-	newBestState := &blockchain.BestState{}
+	// update tx pool
 	for _, tx := range block.Transactions {
 		self.config.MemPool.RemoveTx(tx)
 	}
-	tree := self.config.BlockChain.BestState[block.Header.ChainID].CmTree
-	self.config.BlockChain.UpdateMerkleTreeForBlock(tree, block)
-	newBestState.Init(block, tree)
-	self.config.BlockChain.BestState[block.Header.ChainID] = newBestState
-	self.config.BlockChain.StoreBestState(block.Header.ChainID)
 
-	// save index of block
-	self.config.BlockChain.StoreBlockIndex(block)
+	self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
+
 	self.knownChainsHeight.Lock()
 	if self.knownChainsHeight.Heights[block.Header.ChainID] < int(block.Height) {
 		self.knownChainsHeight.Heights[block.Header.ChainID] = int(block.Height)

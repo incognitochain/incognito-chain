@@ -60,7 +60,7 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 	rtOld := self.config.BlockChain.BestState[block.Header.ChainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
 	newTree := self.config.BlockChain.BestState[block.Header.ChainID].CmTree.MakeCopy()
 	Logger.log.Infof("[validateblock] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
-	self.config.BlockChain.UpdateMerkleTreeForBlock(newTree, block)
+	blockchain.UpdateMerkleTreeForBlock(newTree, block)
 	rt := newTree.GetRoot(common.IncMerkleTreeHeight)
 	Logger.log.Infof("[validateblock] updated tree rt: %x\n", rt)
 	if !bytes.Equal(rt[:], block.Header.MerkleRootCommitments.CloneBytes()) {

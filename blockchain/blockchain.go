@@ -127,7 +127,7 @@ func (self *BlockChain) initChainState() error {
 /*
 // UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
 */
-func (self BlockChain) UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
+func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 	for _, blockTx := range block.Transactions {
 		if blockTx.GetType() == common.TxNormalType {
 			tx, ok := blockTx.(*transaction.Tx)
@@ -165,7 +165,7 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	initBlock.Height = 1
 
 	tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
-	if err := self.UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
+	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
 		return err
 	}
 
@@ -486,43 +486,29 @@ func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string, chainId byte)
 // connectBestChain handles connecting the passed block to the chain while
 // respecting proper chain selection according to the chain with the most
 // proof of work.  In the typical case, the new block simply extends the main
-// chain.  However, it may also be extending (or creating) a side chain (fork)
-// which may or may not end up becoming the main chain depending on which fork
-// cumulatively has the most proof of work.  It returns whether or not the block
-// ended up on the main chain (either due to extending the main chain or causing
-// a reorganization to become the main chain).
-func (self *BlockChain) connectBestChain(block *Block) (bool, error) {
-	// We are extending the main (best) chain with a new block.  This is the
-	// most common case.
-	parentHash := &block.Header.PrevBlockHash
-	if parentHash.IsEqual(self.BestState[block.Header.ChainID].BestBlockHash) {
-		view := NewTxViewPoint(block.Header.ChainID)
+// chain.
+func (self *BlockChain) ConnectBestChain(block *Block) error {
+	view := NewTxViewPoint(block.Header.ChainID)
 
-		err := view.fetchTxViewPoint(self.config.DataBase, block)
-		if err != nil {
-			return false, err
-		}
-
-		// view.SetBestHash(block.Hash())
-		// Update the list nullifiers and commitment set using the state of the used tx view point. This
-		// entails adding the new
-		// ones created by the block.
-		err = self.StoreNullifiersFromTxViewPoint(*view)
-		if err != nil {
-			return false, err
-		}
-
-		err = self.StoreCommitmentsFromTxViewPoint(*view)
-		if err != nil {
-			return false, err
-		}
-
-		return true, nil
-	} else {
-
-		// we in sub chain
-		return false, nil
+	err := view.fetchTxViewPoint(self.config.DataBase, block)
+	if err != nil {
+		return err
 	}
+
+	// Update the list nullifiers and commitment set using the state of the used tx view point. This
+	// entails adding the new
+	// ones created by the block.
+	err = self.StoreNullifiersFromTxViewPoint(*view)
+	if err != nil {
+		return err
+	}
+
+	err = self.StoreCommitmentsFromTxViewPoint(*view)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 /*

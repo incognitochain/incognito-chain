@@ -141,7 +141,7 @@ concludeBlock:
 	// Add new commitments to merkle tree and save the root
 	newTree := g.chain.BestState[chainID].CmTree.MakeCopy()
 	fmt.Printf("[newBlockTemplate] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
-	g.chain.UpdateMerkleTreeForBlock(newTree, &block)
+	blockchain.UpdateMerkleTreeForBlock(newTree, &block)
 	rt = newTree.GetRoot(common.IncMerkleTreeHeight)
 	fmt.Printf("[newBlockTemplate] updated tree rt: %x\n", rt)
 	copy(block.Header.MerkleRootCommitments[:], rt)

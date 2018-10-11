@@ -63,9 +63,7 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 				Logger.log.Error(err)
 				return
 			}
-			isMainChain, ok, err := self.config.BlockChain.ProcessBlock(block)
-			_ = isMainChain
-			_ = ok
+			err = self.config.BlockChain.ConnectBlock(block)
 			if err != nil {
 				Logger.log.Error(err)
 				return
@@ -106,12 +104,13 @@ func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
 				Logger.log.Info("Send " + getBlkMsg.MessageType() + " to " + msg.SenderID)
 				peerID, err := peer2.IDB58Decode(msg.SenderID)
 				if err != nil {
+					Logger.log.Error(err)
 					continue
 				}
 				self.config.Server.PushMessageToPeer(getBlkMsg, peerID)
 			}
 		} else {
-			Logger.log.Error("what the ...")
+			Logger.log.Error("ChainsHeight is empty!")
 		}
 	}
 	return

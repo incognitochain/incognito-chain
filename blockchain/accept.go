@@ -15,7 +15,7 @@ their documentation for how the flags modify their behavior.
 This function MUST be called with the chain state lock held (for writes).
 */
 // #1 - block - candidate block which be needed to check
-func (self *BlockChain) maybeAcceptBlock(block *Block) (bool, error) {
+func (self *BlockChain) maybeAcceptBlock(block *Block) error {
 	// TODO
 	// The height of this block is one more than the referenced previous
 	// block.
@@ -23,7 +23,7 @@ func (self *BlockChain) maybeAcceptBlock(block *Block) (bool, error) {
 	prevNode, err := self.GetBlockByBlockHash(prevHash)
 	if prevNode == nil {
 		str := fmt.Sprintf("previous block %s is unknown", prevHash)
-		return false, ruleError(ErrPreviousBlockUnknown, str)
+		return ruleError(ErrPreviousBlockUnknown, str)
 	}
 
 	// Insert the block into the database if it's not already there.  Even
@@ -37,14 +37,14 @@ func (self *BlockChain) maybeAcceptBlock(block *Block) (bool, error) {
 	// blocks that fail to connect available for further analysis.
 	err = self.StoreBlock(block)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	// fetch nullifiers and commitments(utxo) from block and save
-	isMainChain, err := self.connectBestChain(block)
+	err = self.ConnectBestChain(block)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	return isMainChain, nil
+	return nil
 }

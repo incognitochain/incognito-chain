@@ -18,23 +18,40 @@ import (
 // isMainChain
 // isOrphan
 // err
-func (self *BlockChain) ProcessBlock(block *Block) (bool, bool, error) {
+func (self *BlockChain) ConnectBlock(block *Block) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 
-	blockHash := block.Hash()
+	blockHash := block.Hash().String()
 	Logger.log.Infof("Processing block %v", blockHash)
 
-	// The block has passed all context independent checks and appears sane
-	// enough to potentially accept it into the block chain.
-	isMainChain, err := self.maybeAcceptBlock(block)
+	// Insert the block into the database if it's not already there.  Even
+	// though it is possible the block will ultimately fail to connect, it
+	// has already passed all proof-of-work and validity tests which means
+	// it would be prohibitively expensive for an attacker to fill up the
+	// disk with a bunch of blocks that fail to connect.  This is necessary
+	// since it allows block download to be decoupled from the much more
+	// expensive connection logic.  It also has some other nice properties
+	// such as making blocks that never become part of the main chain or
+	// blocks that fail to connect available for further analysis.
+	err := self.StoreBlock(block)
 	if err != nil {
-		return false, false, err
+		return err
+	}
+	// save index of block
+	err = self.StoreBlockIndex(block)
+	if err != nil {
+		return err
+	}
+	// fetch nullifiers and commitments(utxo) from block and save
+	err = self.ConnectBestChain(block)
+	if err != nil {
+		return err
 	}
 
-	Logger.log.Infof("Accepted block %s", blockHash.String())
+	Logger.log.Infof("Accepted block %s", blockHash)
 
-	return isMainChain, false, nil
+	return nil
 }
 
 // blockExists determines whether a block with the given hash exists either in
