@@ -1,0 +1,5 @@
+package connmanager
+
+const (
+	EmptyString = ""
+)

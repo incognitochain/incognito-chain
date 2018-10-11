@@ -109,17 +109,17 @@ func (self ConnManager) GetPeerId(addr string) string {
 	ipfsAddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
 		log.Print(err)
-		return ""
+		return EmptyString
 	}
 	pid, err := ipfsAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		log.Print(err)
-		return ""
+		return EmptyString
 	}
 	peerId, err := libpeer.IDB58Decode(pid)
 	if err != nil {
 		log.Print(err)
-		return ""
+		return EmptyString
 	}
 	return peerId.Pretty()
 }
@@ -128,17 +128,17 @@ func (self ConnManager) GetPeerIDStr(addr string) (string, error) {
 	ipfsaddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
 		Logger.log.Error(err)
-		return "", err
+		return EmptyString, err
 	}
 	pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		Logger.log.Error(err)
-		return "", err
+		return EmptyString, err
 	}
 	peerId, err := libpeer.IDB58Decode(pid)
 	if err != nil {
 		Logger.log.Error(err)
-		return "", err
+		return EmptyString, err
 	}
 	return peerId.String(), nil
 }
@@ -192,16 +192,13 @@ func (self *ConnManager) Connect(addr string, pubKey string) {
 			HandleFailed:       self.handleFailed,
 		}
 
-		if pubKey != "" {
+		if pubKey != EmptyString {
 			peer.PublicKey = pubKey
 		}
 
 		listen.Host.Peerstore().AddAddr(peer.PeerID, peer.TargetAddress, pstore.PermanentAddrTTL)
 		Logger.log.Info("DEBUG Connect to RemotePeer", peer.PublicKey)
 		Logger.log.Info(listen.Host.Peerstore().Addrs(peer.PeerID))
-		// make a new stream from host B to host A
-		// it should be handled on host A by the handler we set above because
-		// we use the same /peer/1.0.0 protocol
 		go listen.PushConn(&peer, nil)
 	}
 }
@@ -228,7 +225,7 @@ func (self *ConnManager) Start(discoverPeerAddress string) {
 			self.ListeningPeers[listner.PeerID] = listner
 		}
 
-		if self.Config.DiscoverPeers && self.Config.DiscoverPeersAddress != "" {
+		if self.Config.DiscoverPeers && self.Config.DiscoverPeersAddress != EmptyString {
 			Logger.log.Infof("DiscoverPeers: true\n----------------------------------------------------------------\n|               Discover peer url: %s               |\n----------------------------------------------------------------", self.Config.DiscoverPeersAddress)
 			go self.DiscoverPeers(discoverPeerAddress)
 		}
@@ -315,22 +312,19 @@ listen:
 	for {
 		//Logger.log.Infof("Peers", self.discoveredPeers)
 		if client == nil {
-			// server bootnode 35.199.177.89:9339
-			// server live bootnode 35.230.8.182:9339
-			// local bootnode 127.0.0.1:9339
 			client, err = rpc.Dial("tcp", discoverPeerAddress)
 			if err != nil {
-				Logger.log.Error("[Exchange Peers] re-connect:", err)
+				Logger.log.Error("[Exchange Peers] re-connect:")
+				Logger.log.Error(err)
 			}
 		}
 		if client != nil {
 			for _, listener := range self.Config.ListenerPeers {
-				//Logger.log.Infof("[Exchange Peers] Ping")
 				var response []wire.RawPeer
 
 				var publicKey string
 
-				if listener.Config.SealerPrvKey != "" {
+				if listener.Config.SealerPrvKey != EmptyString {
 					keySet := &cashec.KeySetSealer{}
 					_, err := keySet.Import(listener.Config.SealerPrvKey)
 					if err != nil {
@@ -342,9 +336,9 @@ listen:
 				rawAddress := listener.RawAddress
 
 				externalAddress := os.Getenv("EXTERNAL_ADDRESS")
-				if externalAddress != "" {
+				if externalAddress != EmptyString {
 					host, _, err := net.SplitHostPort(externalAddress)
-					if err == nil && host != "" {
+					if err == nil && host != EmptyString {
 						rawAddress = strings.Replace(rawAddress, "127.0.0.1", host, 1)
 					}
 				}
@@ -378,7 +372,7 @@ listen:
 				}
 
 				for _, rawPeer := range response {
-					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerID.String()) {
+					if rawPeer.PublicKey != EmptyString && !strings.Contains(rawPeer.RawAddress, listener.PeerID.String()) {
 						_, exist := self.discoveredPeers[rawPeer.PublicKey]
 						//Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RemoteRawAddress, exist)
 						if !exist {
