@@ -14,7 +14,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
-// Id is Peer Ids, so that orphans can be identified by which peer first re-payed them.
+// Id is RemotePeer Ids, so that orphans can be identified by which peer first re-payed them.
 type ID uint64
 
 // config is a descriptor containing the memory pool configuration.

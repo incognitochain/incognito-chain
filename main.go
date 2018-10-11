@@ -2,17 +2,15 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"runtime"
 	"runtime/debug"
-
-	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/limits"
+	"path/filepath"
 
 	_ "github.com/ninjadotorg/cash-prototype/database/lvdb"
-	wallet2 "github.com/ninjadotorg/cash-prototype/wallet"
-	"path/filepath"
+	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/limits"
+	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
 var (
@@ -38,102 +36,55 @@ func mainMaster(serverChan chan<- *Server) error {
 	// triggered either from an OS signal such as SIGINT (Ctrl+C) or from
 	// another subsystem such as the RPC server.
 	interrupt := interruptListener()
-	defer log.Println("Shutdown complete")
+	defer Logger.log.Info("Shutdown complete")
 
 	// Show version at startup.
-	log.Printf("Version %s", "1")
+	Logger.log.Infof("Version %s", version())
 
 	// Return now if an interrupt signal was triggered.
 	if interruptRequested(interrupt) {
 		return nil
 	}
-
-	// Process DataBase
-	// Load the block database.
-	/*db, err := loadBlockDB(cfg)
-	if err != nil {
-		mainLog.Errorf("%v", err)
-		return err
-	}
-	defer func() {
-		// Ensure the database is sync'd and closed on shutdown.
-		mainLog.Infof("Gracefully shutting down the database...")
-		db.Close()
-	}()
-
-	// Return now if an interrupt signal was triggered.
-	if interruptRequested(interrupt) {
-		return nil
-	}
-
-	// Drop indexes and exit if requested.
-	//
-	// NOTE: The order is important here because dropping the tx index also
-	// drops the address index since it relies on it.
-	if cfg.DropAddrIndex {
-		if err := indexers.DropAddrIndex(db, interrupt); err != nil {
-			mainLog.Errorf("%v", err)
-			return err
-		}
-
-		return nil
-	}
-	if cfg.DropTxIndex {
-		if err := indexers.DropTxIndex(db, interrupt); err != nil {
-			mainLog.Errorf("%v", err)
-			return err
-		}
-
-		return nil
-	}
-	if cfg.DropCfIndex {
-		if err := indexers.DropCfIndex(db, interrupt); err != nil {
-			mainLog.Errorf("%v", err)
-			return err
-		}
-
-		return nil
-	}*/
 
 	// Create db and use it.
 	db, err := database.Open("leveldb", cfg.DataDir)
 	if err != nil {
-		log.Fatalf("could not open connection to leveldb: %v", err)
+		Logger.log.Error("could not open connection to leveldb")
+		Logger.log.Error(err)
+		panic(err)
 	}
 
 	// Check wallet and start it
-	var wallet *wallet2.Wallet
+	var walletObj *wallet.Wallet
 	if cfg.Wallet == true {
-		wallet = &wallet2.Wallet{}
-		wallet.Config = &wallet2.WalletConfig{
+		walletObj = &wallet.Wallet{}
+		walletObj.Config = &wallet.WalletConfig{
 			DataDir:  cfg.DataDir,
 			DataFile: cfg.WalletDbName,
 			DataPath: filepath.Join(cfg.DataDir, cfg.WalletDbName),
 			PayTxFee: 1,
 		}
-		err = wallet.LoadWallet(cfg.WalletPassphrase)
+		err = walletObj.LoadWallet(cfg.WalletPassphrase)
 		if err != nil {
-			wallet.Init(cfg.WalletPassphrase, 0)
-			wallet.Save(cfg.WalletPassphrase)
+			walletObj.Init(cfg.WalletPassphrase, 0)
+			walletObj.Save(cfg.WalletPassphrase)
 		}
 	}
 
 	// Create server and start it.
 	server := Server{}
-	server.Wallet = wallet
-	err = server.NewServer(cfg.Listeners, db, activeNetParams.Params,
-		interrupt)
+	server.wallet = walletObj
+	err = server.NewServer(cfg.Listeners, db, activeNetParams.Params, interrupt)
 	if err != nil {
-		// TODO: this logging could do with some beautifying.
-		log.Printf("Unable to start server on %v: %v",
-			cfg.Listeners, err)
+		Logger.log.Errorf("Unable to start server on %v", cfg.Listeners)
+		Logger.log.Error(err)
 		return err
 	}
 	defer func() {
-		log.Printf("Gracefully shutting down the server...")
+		Logger.log.Info("Gracefully shutting down the server...")
 		server.Stop()
 		server.WaitForShutdown()
-		log.Print("Server shutdown complete")
+		Logger.log.Info("Server shutdown complete")
 	}()
 	server.Start()
 	if serverChan != nil {

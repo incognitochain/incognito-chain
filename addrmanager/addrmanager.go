@@ -254,7 +254,7 @@ out:
 }
 
 // Connected Marks the given address as currently connected and working at the
-// current time.  The address must already be known to AddrManager else it will
+// current time.  The address must already be known to addrManager else it will
 // be ignored.
 func (a *AddrManager) Connected(peer *peer.Peer) {
 	//a.mtx.Lock()
