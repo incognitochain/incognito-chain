@@ -173,7 +173,7 @@ func (self RpcServer) Stop() error {
 	for _, listen := range self.Config.Listenters {
 		listen.Close()
 	}
-	Logger.log.Info("RPC server shutdown complete")
+	Logger.log.Warn("RPC server shutdown complete")
 	self.started = 0
 	self.shutdown = 1
 	return nil

@@ -168,7 +168,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	// by encapsulating both addresses:
 	addr := basicHost.Addrs()[0]
 	fullAddr := addr.Encapsulate(hostAddr)
-	Logger.log.Infof("I am listening on %s with PEER Id - %s\n", fullAddr, basicHost.ID().String())
+	Logger.log.Infof("I am listening on %s with PEER Id - %s", fullAddr, basicHost.ID().String())
 	pid, err := fullAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		return &self, NewPeerError(GetPeerIdFromProtocolErr, err, &self)
@@ -207,7 +207,7 @@ func (self *Peer) Start() {
 	select {
 	case <-self.cStop:
 		close(self.cStopConn)
-		Logger.log.Infof("PEER server shutdown complete %s", self.PeerID)
+		Logger.log.Warnf("PEER server shutdown complete %s", self.PeerID)
 		break
 	}
 	return
@@ -338,7 +338,7 @@ func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
 }
 
 func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error) {
-	Logger.log.Infof("Opening stream to PEER Id - %s \n", peer.RawAddress)
+	Logger.log.Infof("Opening stream to PEER Id - %s", peer.RawAddress)
 
 	_, ok := self.PeerConns[peer.PeerID.String()]
 	if ok {
