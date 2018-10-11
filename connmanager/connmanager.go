@@ -93,10 +93,10 @@ type DiscoverPeerInfo struct {
 // Stop gracefully shuts down the connection manager.
 func (self ConnManager) Stop() {
 	if atomic.AddInt32(&self.stop, 1) != 1 {
-		Logger.log.Info("Connection manager already stopped")
+		Logger.log.Error("Connection manager already stopped")
 		return
 	}
-	Logger.log.Info("Stop connection manager")
+	Logger.log.Warn("Stopping connection manager")
 
 	// Stop all the listeners.  There will not be any listeners if
 	// listening is disabled.
@@ -192,9 +192,6 @@ func (self *ConnManager) Connect(addr string, pubKey string) {
 	targetAddr := ipfsaddr.Decapsulate(targetPeerAddr)
 
 	for _, listen := range self.Config.ListenerPeers {
-		/*listen.Config.MaxOutbound = int(self.Config.TargetOutbound)
-		listen.Config.MaxInbound = int(self.Config.TargetInbound)*/
-
 		listen.HandleConnected = self.handleConnected
 		listen.HandleDisconnected = self.handleDisconnected
 		listen.HandleFailed = self.handleFailed

@@ -533,7 +533,7 @@ func (self *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- str
 }
 
 func (self *Peer) Stop() {
-	Logger.log.Infof("PEER %s Stop", self.PeerID.String())
+	Logger.log.Infof("Stopping PEER %s", self.PeerID.String())
 
 	self.Host.Close()
 	self.peerConnMutex.Lock()
@@ -543,6 +543,7 @@ func (self *Peer) Stop() {
 	self.peerConnMutex.Unlock()
 
 	close(self.cStop)
+	Logger.log.Infof("PEER %s stopped", self.PeerID.String())
 }
 
 /*

@@ -215,9 +215,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
 		ListenerPeers:        peers,
-		/*TargetOutbound:       targetOutbound,
-		TargetInbound:        targetInbound,*/
-		DiscoverPeers: cfg.DiscoverPeers,
+		DiscoverPeers:        cfg.DiscoverPeers,
 	})
 	if err != nil {
 		return err
