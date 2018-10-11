@@ -77,7 +77,7 @@ func (self *Engine) Start() error {
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
 	self.knownChainsHeight.Heights = make([]int, common.TOTAL_VALIDATORS)
 	self.validatedChainsHeight.Heights = make([]int, common.TOTAL_VALIDATORS)
-	self.currentCommittee = []string{}
+	self.currentCommittee = make([]string, 20)
 
 	for chainID := 0; chainID < common.TOTAL_VALIDATORS; chainID++ {
 		self.knownChainsHeight.Heights[chainID] = int(self.config.BlockChain.BestState[chainID].Height)
@@ -102,11 +102,7 @@ func (self *Engine) Start() error {
 
 	copy(self.validatedChainsHeight.Heights, self.knownChainsHeight.Heights)
 	copy(self.currentCommittee, self.config.BlockChain.BestState[0].BestBlock.Header.Committee)
-	// for key := range self.config.BlockChain.BestState[0].BestBlock.Header.CommitteeSigs {
-	// 	self.currentCommittee = append(self.currentCommittee, key)
-	// }
 
-	fmt.Println(self.currentCommittee)
 	go func() {
 		for {
 			self.config.Server.PushMessageGetChainState()
@@ -164,7 +160,6 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 				if self.started {
 					if common.IntArrayEquals(self.knownChainsHeight.Heights, self.validatedChainsHeight.Heights) {
 						chainID := self.getMyChain()
-						fmt.Println(base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)), len(self.currentCommittee))
 						if chainID < common.TOTAL_VALIDATORS {
 							Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
 							Logger.log.Info("Current chainsHeight")
