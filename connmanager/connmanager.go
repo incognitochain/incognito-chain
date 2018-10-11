@@ -354,11 +354,11 @@ listen:
 							result = append(result, peerConn.RemotePeer.PeerID.Pretty())
 						}
 					}
-					Logger.log.Info("Public Key", pubK, info.PeerID.Pretty(), result)
+					Logger.log.Infof("Public Key %s, %s, %s", pubK, info.PeerID.Pretty(), result)
 				}
 
 				for _, peerConn := range listener.PeerConns {
-					Logger.log.Info("PeerConn state", peerConn.ConnState(), peerConn.IsOutbound, peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
+					Logger.log.Info("PeerConn state %s %s %s", peerConn.ConnState(), peerConn.IsOutbound, peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
 				}
 
 				err := client.Call("Handler.Ping", args, &response)
