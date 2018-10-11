@@ -10,7 +10,6 @@ import (
 	"net/rpc"
 	"os"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -36,6 +35,8 @@ type ConnManager struct {
 	connReqCount uint64
 	start        int32
 	stop         int32
+	// Discover Peers
+	discoveredPeers map[string]*DiscoverPeerInfo
 
 	Config Config
 	// Pending Connection
@@ -44,19 +45,10 @@ type ConnManager struct {
 	// Connected Connection
 	Connected map[libpeer.ID]*peer.Peer
 
-	// Discover Peers
-	DiscoveredPeers map[string]*DiscoverPeerInfo
-
 	ListeningPeers map[libpeer.ID]*peer.Peer
 
-	WaitGroup sync.WaitGroup
-
-	// Request channel
-	Requests chan interface{}
 	// quit channel
-	Quit chan struct{}
-
-	FailedAttempts uint32
+	cQuit chan struct{}
 }
 
 type Config struct {
@@ -104,15 +96,14 @@ func (self ConnManager) Stop() {
 		listener.Stop()
 	}
 
-	close(self.Quit)
+	close(self.cQuit)
 	Logger.log.Warn("Connection manager stopped")
 }
 
 func (self ConnManager) New(cfg *Config) (*ConnManager, error) {
 	self.Config = *cfg
-	self.Quit = make(chan struct{})
-	self.Requests = make(chan interface{})
-	self.DiscoveredPeers = make(map[string]*DiscoverPeerInfo)
+	self.cQuit = make(chan struct{})
+	self.discoveredPeers = make(map[string]*DiscoverPeerInfo)
 
 	self.Pending = map[libpeer.ID]*peer.Peer{}
 	self.Connected = map[libpeer.ID]*peer.Peer{}
@@ -229,7 +220,6 @@ func (self *ConnManager) Start() {
 	}
 
 	Logger.log.Info("Connection manager started")
-	self.WaitGroup.Add(1)
 	// Start handler to listent channel from connection peer
 	//go self.connHandler()
 
@@ -237,7 +227,6 @@ func (self *ConnManager) Start() {
 	// provided a callback to be invoked when connections are accepted.
 	if self.Config.OnInboundAccept != nil {
 		for _, listner := range self.Config.ListenerPeers {
-			self.WaitGroup.Add(1)
 			listner.HandleConnected = self.handleConnected
 			listner.HandleDisconnected = self.handleDisconnected
 			listner.HandleFailed = self.handleFailed
@@ -330,7 +319,7 @@ func (self *ConnManager) DiscoverPeers() {
 
 listen:
 	for {
-		//Logger.log.Infof("Peers", self.DiscoveredPeers)
+		//Logger.log.Infof("Peers", self.discoveredPeers)
 		if client == nil {
 			// server bootnode 35.199.177.89:9339
 			// server live bootnode 35.230.8.182:9339
@@ -370,7 +359,7 @@ listen:
 				Logger.log.Infof("[Exchange Peers] Ping", args)
 
 				Logger.log.Info("Dump PeerConns", len(listener.PeerConns))
-				for pubK, info := range self.DiscoveredPeers {
+				for pubK, info := range self.discoveredPeers {
 					var result []string
 					for _, peerConn := range listener.PeerConns {
 						if peerConn.RemotePeer.PublicKey == pubK {
@@ -395,7 +384,7 @@ listen:
 
 				for _, rawPeer := range response {
 					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerID.String()) {
-						_, exist := self.DiscoveredPeers[rawPeer.PublicKey]
+						_, exist := self.discoveredPeers[rawPeer.PublicKey]
 						//Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RemoteRawAddress, exist)
 						if !exist {
 							// The following code extracts target's peer Id from the
@@ -418,7 +407,7 @@ listen:
 								return
 							}
 
-							self.DiscoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
+							self.discoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
 							//Logger.log.Info("Start connect to peer", rawPeer.PublicKey, rawPeer.RemoteRawAddress, exist)
 							go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
 						} else {
