@@ -36,7 +36,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	// triggered either from an OS signal such as SIGINT (Ctrl+C) or from
 	// another subsystem such as the RPC server.
 	interrupt := interruptListener()
-	defer Logger.log.Info("Shutdown complete")
+	defer Logger.log.Warn("Shutdown complete")
 
 	// Show version at startup.
 	Logger.log.Infof("Version %s", version())
@@ -81,10 +81,10 @@ func mainMaster(serverChan chan<- *Server) error {
 		return err
 	}
 	defer func() {
-		Logger.log.Info("Gracefully shutting down the server...")
+		Logger.log.Warn("Gracefully shutting down the server...")
 		server.Stop()
 		server.WaitForShutdown()
-		Logger.log.Info("Server shutdown complete")
+		Logger.log.Warn("Server shutdown complete")
 	}()
 	server.Start()
 	if serverChan != nil {

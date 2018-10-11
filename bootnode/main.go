@@ -16,7 +16,7 @@ func main() {
 	// load config
 	tcfg, err := loadConfig()
 	if err != nil {
-		log.Println("Parse config error", err.Error())
+		Logger.log.Info("Parse config error", err.Error())
 		return
 	}
 	cfg = tcfg
@@ -27,9 +27,9 @@ func main() {
 	server := &server.RpcServer{}
 	err = server.Init(&rpcConfig)
 	if err != nil {
-		log.Println("Init bootnode error", err.Error())
+		Logger.log.Info("Init bootnode error", err.Error())
 		return
 	}
-	log.Println("Start server")
+	Logger.log.Info("Start server")
 	server.Start()
 }
