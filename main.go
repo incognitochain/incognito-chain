@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"runtime/debug"
 	"path/filepath"
-
+	"log"
 	_ "github.com/ninjadotorg/cash-prototype/database/lvdb"
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/limits"
@@ -29,8 +29,8 @@ var winServiceMain func() (bool, error)
 func mainMaster(serverChan chan<- *Server) error {
 	tcfg, _, err := loadConfig()
 	if err != nil {
-		Logger.log.Error("Load config error")
-		Logger.log.Error(err)
+		log.Println("Load config error")
+		log.Println(err)
 		return err
 	}
 	cfg = tcfg
