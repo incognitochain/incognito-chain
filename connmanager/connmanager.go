@@ -369,7 +369,8 @@ listen:
 
 				err := client.Call("Handler.Ping", args, &response)
 				if err != nil {
-					//Logger.log.Error("[Exchange Peers] Ping:", err)
+					Logger.log.Error("[Exchange Peers] Ping:")
+					Logger.log.Error(err)
 					client = nil
 					time.Sleep(time.Second * 2)
 
@@ -440,16 +441,4 @@ func (self *ConnManager) getPeerIdsFromPublicKey(pubKey string) []libpeer.ID {
 	}
 
 	return result
-}
-
-func (p *ConnManager) GetPeerConnsByPeerId(peerId libpeer.ID) []*peer.PeerConn {
-	results := []*peer.PeerConn{}
-	for _, listen := range p.ListeningPeers {
-		for _, peerConn := range listen.PeerConns {
-			if peerConn.RemotePeerID == peerId {
-				results = append(results, peerConn)
-			}
-		}
-	}
-	return results
 }
