@@ -23,9 +23,9 @@ func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
 	return nil
 }
 
-func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committeeSigs map[string]string) error {
+func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, sigs []string) error {
 	validatedSigs := 0
-	for validator, sig := range committeeSigs {
+	for idx, validator := range committee {
 		decPubkey, _, err := base58.Base58Check{}.Decode(validator)
 		if err != nil {
 			Logger.log.Error(err)
@@ -34,7 +34,7 @@ func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committeeSigs map[st
 		k := cashec.KeySetSealer{
 			SpublicKey: decPubkey,
 		}
-		decSig, _, err := base58.Base58Check{}.Decode(sig)
+		decSig, _, err := base58.Base58Check{}.Decode(sigs[idx])
 		if err != nil {
 			Logger.log.Error(err)
 			continue
@@ -141,9 +141,9 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 		return err
 	}
 
-	// 3. Check whether signature of the block belongs to chain leader or not.
-	cmsBytes, _ := json.Marshal(block.Header.CommitteeSigs)
-	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, cmsBytes)
+	// 3. Check signature of the block leader for block header
+	headerBytes, _ := json.Marshal(block.Header)
+	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, headerBytes)
 	if err != nil {
 		return err
 	}
@@ -155,7 +155,7 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 	}
 
 	// 6. Validate committee member signatures
-	err = self.ValidateCommitteeSigs([]byte(block.Hash().String()), block.Header.CommitteeSigs)
+	err = self.ValidateCommitteeSigs([]byte(block.Hash().String()), block.Header.Committee, block.Header.BlockCommitteeSigs)
 	if err != nil {
 		return err
 	}
@@ -177,9 +177,9 @@ func (self *Engine) validatePreSignBlockSanity(block *blockchain.Block) error {
 		return err
 	}
 
-	// 3. Check signature of the block leader
-	cmsBytes, _ := json.Marshal(block.Header.CommitteeSigs)
-	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, cmsBytes)
+	// 3. Check signature of the block leader for block header
+	headerBytes, _ := json.Marshal(block.Header)
+	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, headerBytes)
 	if err != nil {
 		return err
 	}

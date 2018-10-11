@@ -127,10 +127,10 @@ concludeBlock:
 		MerkleRoot:            *merkleRoot,
 		MerkleRootCommitments: common.Hash{},
 		Timestamp:             time.Now().Unix(),
-		// BlockCommitteeSigs:    []string{},
-		// Committee:             []string{},
-		CommitteeSigs: make(map[string]string),
-		ChainID:       chainID,
+		BlockCommitteeSigs:    make([]string, common.TOTAL_VALIDATORS),
+		Committee:             make([]string, common.TOTAL_VALIDATORS),
+		// CommitteeSigs: make(map[string]string),
+		ChainID: chainID,
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
