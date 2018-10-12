@@ -15,14 +15,12 @@ import (
 )
 
 type NetSync struct {
-	started  int32
-	shutdown int32
-
-	msgChan   chan interface{}
+	started   int32
+	shutdown  int32
 	waitgroup sync.WaitGroup
-	quit      chan struct{}
-	//
-	syncPeer *peer.Peer
+
+	cMessage chan interface{}
+	cQuit    chan struct{}
 
 	config *NetSyncConfig
 }
@@ -31,7 +29,7 @@ type NetSyncConfig struct {
 	BlockChain *blockchain.BlockChain
 	ChainParam *blockchain.Params
 	MemPool    *mempool.TxPool
-	Server     interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, peer2.ID) error
 	}
@@ -48,8 +46,8 @@ type NetSyncConfig struct {
 
 func (self NetSync) New(cfg *NetSyncConfig) (*NetSync, error) {
 	self.config = cfg
-	self.quit = make(chan struct{})
-	self.msgChan = make(chan interface{})
+	self.cQuit = make(chan struct{})
+	self.cMessage = make(chan interface{})
 	return &self, nil
 }
 
@@ -76,7 +74,7 @@ func (self *NetSync) Stop() error {
 	}
 
 	Logger.log.Info("Sync manager shutting down")
-	close(self.quit)
+	close(self.cQuit)
 	// self.waitgroup.Wait()
 	return nil
 }
@@ -91,7 +89,7 @@ func (self *NetSync) messageHandler() {
 out:
 	for {
 		select {
-		case msgChan := <-self.msgChan:
+		case msgChan := <-self.cMessage:
 			{
 				switch msg := msgChan.(type) {
 				case *wire.MessageTx:
@@ -130,7 +128,7 @@ out:
 					Logger.log.Infof("Invalid message type in block "+"handler: %T", msg)
 				}
 			}
-		case msgChan := <-self.quit:
+		case msgChan := <-self.cQuit:
 			{
 				Logger.log.Info(msgChan)
 				break out
@@ -151,7 +149,7 @@ func (self *NetSync) QueueTx(_ *peer.Peer, msg *wire.MessageTx, done chan struct
 		done <- struct{}{}
 		return
 	}
-	self.msgChan <- msg
+	self.cMessage <- msg
 }
 
 // handleTxMsg handles transaction messages from all peers.
@@ -177,7 +175,7 @@ func (self *NetSync) QueueBlock(_ *peer.Peer, msg *wire.MessageBlock, done chan 
 		done <- struct{}{}
 		return
 	}
-	self.msgChan <- msg
+	self.cMessage <- msg
 }
 
 func (self *NetSync) QueueGetBlock(peer *peer.Peer, msg *wire.MessageGetBlocks, done chan struct{}) {
@@ -186,7 +184,7 @@ func (self *NetSync) QueueGetBlock(peer *peer.Peer, msg *wire.MessageGetBlocks, 
 		done <- struct{}{}
 		return
 	}
-	self.msgChan <- msg
+	self.cMessage <- msg
 }
 
 func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan struct{}) {
@@ -195,7 +193,7 @@ func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan s
 		done <- struct{}{}
 		return
 	}
-	self.msgChan <- msg
+	self.cMessage <- msg
 }
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
