@@ -875,6 +875,25 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 
 	if tx.GetType() == "n" {
 		log.Println("We have a normal tx ....")
+
+		hash, txDesc, err := self.Config.TxMemPool.MaybeAcceptTransaction(&tx)
+		if err != nil {
+			return nil, err
+		}
+
+		Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+
+		// broadcast message
+		txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+		if err != nil {
+			return nil, err
+		}
+
+		txMsg.(*wire.MessageTx).Transaction = &tx
+		self.Config.Server.PushMessageToAll(txMsg)
+
+		return tx.Hash(), nil
 	}
 	var tx2 transaction.TxVoting
 	err = json.Unmarshal(rawTxBytes, &tx2)
