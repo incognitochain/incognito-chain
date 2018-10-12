@@ -81,13 +81,13 @@ func (self Server) setupRPCListeners() ([]net.Listener, error) {
 				return nil, err
 			}
 		}
-		keypair, err := tls.LoadX509KeyPair(cfg.RPCCert, cfg.RPCKey)
+		keyPair, err := tls.LoadX509KeyPair(cfg.RPCCert, cfg.RPCKey)
 		if err != nil {
 			return nil, err
 		}
 
 		tlsConfig := tls.Config{
-			Certificates: []tls.Certificate{keypair},
+			Certificates: []tls.Certificate{keyPair},
 			MinVersion:   tls.VersionTLS12,
 		}
 
@@ -207,7 +207,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	self.netSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
 		BlockChain:   self.blockChain,
 		ChainParam:   chainParams,
-		MemPool:      self.memPool,
+		MemTxPool:    self.memPool,
 		Server:       self,
 		Consensus:    self.consensusEngine,
 		FeeEstimator: self.feeEstimator,

@@ -27,13 +27,13 @@ var winServiceMain func() (bool, error)
 // notified with the server once it is setup so it can gracefully stop it when
 // requested from the service control manager.
 func mainMaster(serverChan chan<- *Server) error {
-	tcfg, _, err := loadConfig()
+	tempConfig, _, err := loadConfig()
 	if err != nil {
 		log.Println("Load config error")
 		log.Println(err)
 		return err
 	}
-	cfg = tcfg
+	cfg = tempConfig
 	// Get a channel that will be closed when a shutdown signal has been
 	// triggered either from an OS signal such as SIGINT (Ctrl+C) or from
 	// another subsystem such as the RPC server.
