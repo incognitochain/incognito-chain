@@ -85,6 +85,9 @@ type config struct {
 	DebugLevel           string   `short:"d" long:"debuglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
 	Generate             bool     `long:"generate" description:"Generate (mine) coins using the CPU"`
 
+	// Net config
+	TestNet bool `long:"testnet" description:"Use the test network"`
+
 	// PoS config
 	SealerSpendingKey string `long:"sealerspendingkey" description:"!!!WARNING Leave this if you don't know what this is"`
 	SealerKeySet      string `long:"sealerkeyset" description:"Key-set of the block sealer used to seal block"`
@@ -273,6 +276,7 @@ func loadConfig() (*config, []string, error) {
 		DisableTLS:           defaultDisableRpcTls,
 		RPCDisableAuth:       true,
 		DiscoverPeers:        false,
+		TestNet:              false,
 		DiscoverPeersAddress: "35.230.8.182:9339",
 	}
 
@@ -299,6 +303,21 @@ func loadConfig() (*config, []string, error) {
 	usageMessage := fmt.Sprintf("Use %s -h to show usage", appName)
 	if preCfg.ShowVersion {
 		fmt.Println(appName, "version", "0.0")
+		os.Exit(0)
+	}
+
+	// Multiple networks can't be selected simultaneously.
+	numNets := 0
+	// Count number of network flags passed; assign active network params
+	// while we're at it
+	if cfg.TestNet {
+		numNets++
+		activeNetParams = &testNetParams
+	}
+
+	if numNets > 1 {
+		Logger.log.Error("The testnet, regtest, segnet, and simnet params " +
+			"can't be used together -- choose one of the four")
 		os.Exit(0)
 	}
 

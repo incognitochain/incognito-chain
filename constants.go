@@ -1,5 +1,6 @@
 package main
 
 const (
-	MAINNET_RPC_SERVER_PORT = "9334"
+	MainnetRpcServerPort = "9334"
+	TestnetRpcServerPort = "9334"
 )
