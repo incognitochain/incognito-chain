@@ -260,23 +260,20 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(nonce int, diffi
 	genesisBlock.Header.Version = version
 	genesisBlock.Header.Committee = make([]string, len(preSelectValidators))
 	copy(genesisBlock.Header.Committee, preSelectValidators)
-	// genesisBlock.Header.CommitteeSigs = make(map[string]string)
-	// for _, validator := range preSelectValidators {
-	// 	genesisBlock.Header.CommitteeSigs[validator] = ""
-	// }
-	// genesisBlock.Header.Committee = preSelectValidators
+
 	genesisBlock.Height = 1
-	tx, err := self.getGenesisTx(initialCoin)
-	// tx, err := self.createGenesisTx(initialCoin, initialAddress)
+	// tx, err := self.getGenesisTx(initialCoin)
+	// // tx, err := self.createGenesisTx(initialCoin, initialAddress)
 
-	if err != nil {
-		Logger.log.Error(err)
-		return nil
-	}
-	genesisBlock.Header.MerkleRootCommitments = self.calcCommitmentMerkleRoot(tx)
-	fmt.Printf("Anchor: %x\n", genesisBlock.Header.MerkleRootCommitments[:])
+	// if err != nil {
+	// 	Logger.log.Error(err)
+	// 	return nil
+	// }
+	// genesisBlock.Header.MerkleRootCommitments = self.calcCommitmentMerkleRoot(tx)
+	// fmt.Printf("Anchor: %x\n", genesisBlock.Header.MerkleRootCommitments[:])
 
-	genesisBlock.Transactions = append(genesisBlock.Transactions, tx)
-	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
+	// genesisBlock.Transactions = append(genesisBlock.Transactions, tx)
+	// genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
+	genesisBlock.Header.SalaryFund = 1000
 	return &genesisBlock
 }

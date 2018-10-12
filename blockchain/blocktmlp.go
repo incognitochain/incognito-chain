@@ -1,35 +1,37 @@
-package ppos
+package blockchain
 
 import (
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
-func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, chain *blockchain.BlockChain, chainID byte) (*BlockTemplate, error) {
+func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, chainID byte) (*BlockTemplate, error) {
 
-	prevBlock := chain.BestState[chainID]
-	prevBlockHash := chain.BestState[chainID].BestBlock.Hash()
-	sourceTxns := g.txSource.MiningDescs()
+	prevBlock := blockgen.chain.BestState[chainID]
+	prevBlockHash := blockgen.chain.BestState[chainID].BestBlock.Hash()
+	sourceTxns := blockgen.txPool.MiningDescs()
 
 	var txsToAdd []transaction.Transaction
 	var txToRemove []transaction.Transaction
 	var feeMap map[string]uint64
 	var txs []transaction.Transaction
 
+	// Get reward
+	var salary uint64 = blockgen.rewardAgent.GetSalary()
+
 	if len(sourceTxns) < common.MinTxsInBlock {
 		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
 		Logger.log.Info("not enough transactions. Wait for more...")
 		<-time.Tick(common.MinBlockWaitTime * time.Second)
-		sourceTxns = g.txSource.MiningDescs()
+		sourceTxns = blockgen.txPool.MiningDescs()
 		if len(sourceTxns) == 0 {
 			<-time.Tick(common.MaxBlockWaitTime * time.Second)
-			sourceTxns = g.txSource.MiningDescs()
+			sourceTxns = blockgen.txPool.MiningDescs()
 			if len(sourceTxns) == 0 {
 				// return nil, errors.New("No Tx")
 				Logger.log.Info("Creating empty block...")
@@ -64,7 +66,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 	}
 
 	for _, tx := range txToRemove {
-		g.txSource.RemoveTx(tx)
+		blockgen.txPool.RemoveTx(tx)
 	}
 
 	// check len of txs in block
@@ -73,13 +75,12 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 	}
 
 concludeBlock:
-	rt := g.chain.BestState[chainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
-	coinbaseTx, err := createCoinbaseTx(
-		&blockchain.Params{},
+	rt := blockgen.chain.BestState[chainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
+	coinbaseTx, err := createSalaryTx(
+		salary,
 		&payToAddress,
 		rt,
 		chainID,
-		feeMap,
 	)
 	if err != nil {
 		return nil, err
@@ -87,7 +88,7 @@ concludeBlock:
 	// the 1st tx will be coinbaseTx
 	txsToAdd = append([]transaction.Transaction{coinbaseTx}, txsToAdd...)
 
-	merkleRoots := blockchain.Merkle{}.BuildMerkleTreeStore(txsToAdd)
+	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 
 	// Store commitments and nullifiers in database
@@ -115,11 +116,11 @@ concludeBlock:
 	}
 	// TODO(@0xsirrush): check if cm and nf should be saved here (when generate block template)
 	// or when UpdateBestState
-	g.chain.StoreCommitmentsFromListCommitment(commitments, descType, chainID)
-	g.chain.StoreNullifiersFromListNullifier(nullifiers, descType, chainID)
+	blockgen.chain.StoreCommitmentsFromListCommitment(commitments, descType, chainID)
+	blockgen.chain.StoreNullifiersFromListNullifier(nullifiers, descType, chainID)
 
-	block := blockchain.Block{}
-	block.Header = blockchain.BlockHeader{
+	block := Block{}
+	block.Header = BlockHeader{
 		Version:               1,
 		PrevBlockHash:         *prevBlockHash,
 		MerkleRoot:            *merkleRoot,
@@ -127,8 +128,8 @@ concludeBlock:
 		Timestamp:             time.Now().Unix(),
 		BlockCommitteeSigs:    make([]string, common.TotalValidators),
 		Committee:             make([]string, common.TotalValidators),
-		// CommitteeSigs: make(map[string]string),
-		ChainID: chainID,
+		ChainID:               chainID,
+		SalaryFund:            blockgen.chain.BestState[chainID].BestBlock.Header.SalaryFund - salary + feeMap[common.TxOutCoinType],
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
@@ -137,8 +138,8 @@ concludeBlock:
 	}
 
 	// Add new commitments to merkle tree and save the root
-	newTree := g.chain.BestState[chainID].CmTree.MakeCopy()
-	blockchain.UpdateMerkleTreeForBlock(newTree, &block)
+	newTree := blockgen.chain.BestState[chainID].CmTree.MakeCopy()
+	UpdateMerkleTreeForBlock(newTree, &block)
 	rt = newTree.GetRoot(common.IncMerkleTreeHeight)
 	copy(block.Header.MerkleRootCommitments[:], rt)
 
@@ -169,22 +170,23 @@ concludeBlock:
 }
 
 type BlkTmplGenerator struct {
-	txSource    TxSource
-	chain       *blockchain.BlockChain
-	chainParams *blockchain.Params
+	txPool      TxPool
+	chain       *BlockChain
+	rewardAgent RewardAgent
+	// chainParams *blockchain.Params
 	// policy      *Policy
 }
 
 type BlockTemplate struct {
-	Block *blockchain.Block
+	Block *Block
 }
 
-// TxSource represents a source of transactions to consider for inclusion in
+// txPool represents a source of transactions to consider for inclusion in
 // new blocks.
 //
 // The interface contract requires that all of these methods are safe for
 // concurrent access with respect to the source.
-type TxSource interface {
+type TxPool interface {
 	// LastUpdated returns the last time a transaction was added to or
 	// removed from the source pool.
 	LastUpdated() time.Time
@@ -201,11 +203,16 @@ type TxSource interface {
 	RemoveTx(tx transaction.Transaction) error
 }
 
-func NewBlkTmplGenerator(txSource TxSource, chain *blockchain.BlockChain) *BlkTmplGenerator {
+type RewardAgent interface {
+	GetSalary() uint64
+}
+
+func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent) (*BlkTmplGenerator, error) {
 	return &BlkTmplGenerator{
-		txSource: txSource,
-		chain:    chain,
-	}
+		txPool:      txPool,
+		chain:       chain,
+		rewardAgent: rewardAgent,
+	}, nil
 }
 
 func extractTxsAndComputeInitialFees(txDescs []*transaction.TxDesc) (
@@ -233,12 +240,57 @@ func extractTxsAndComputeInitialFees(txDescs []*transaction.TxDesc) (
 	return txs, actionParamTxs, feeMap
 }
 
-func createCoinbaseTx(
-	params *blockchain.Params,
+// func createCoinbaseTx(
+// 	params *blockchain.Params,
+// 	receiverAddr *client.PaymentAddress,
+// 	rt []byte,
+// 	chainID byte,
+// 	feeMap map[string]uint64,
+// ) (*transaction.Tx, error) {
+// 	// Create Proof for the joinsplit op
+// 	inputs := make([]*client.JSInput, 2)
+// 	inputs[0] = transaction.CreateRandomJSInput(nil)
+// 	inputs[1] = transaction.CreateRandomJSInput(inputs[0].Key)
+// 	dummyAddress := client.GenPaymentAddress(*inputs[0].Key)
+
+// 	// Get reward
+// 	// TODO(@0xbunyip): implement bonds reward
+// 	var reward uint64 = common.DefaultCoinBaseTxReward + feeMap[common.TxOutCoinType] // TODO: probably will need compute reward based on block height
+
+// 	// Create new notes: first one is coinbase UTXO, second one has 0 value
+// 	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}
+// 	placeHolderOutputNote := &client.Note{Value: 0, Apk: receiverAddr.Apk}
+
+// 	outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
+// 	outputs[0].EncKey = receiverAddr.Pkenc
+// 	outputs[0].OutputNote = outNote
+// 	outputs[1].EncKey = receiverAddr.Pkenc
+// 	outputs[1].OutputNote = placeHolderOutputNote
+
+// 	// Shuffle output notes randomly (if necessary)
+
+// 	// Generate proof and sign tx
+// 	tx := transaction.CreateEmptyTx()
+// 	tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
+// 	var coinbaseTxFee uint64 // Zero fee for coinbase tx
+// 	rtMap := map[byte][]byte{chainID: rt}
+// 	inputMap := map[byte][]*client.JSInput{chainID: inputs}
+// 	err := tx.BuildNewJSDesc(inputMap, outputs, rtMap, reward, coinbaseTxFee)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	tx, err = transaction.SignTx(tx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return tx, err
+// }
+
+func createSalaryTx(
+	salary uint64,
 	receiverAddr *client.PaymentAddress,
 	rt []byte,
 	chainID byte,
-	feeMap map[string]uint64,
 ) (*transaction.Tx, error) {
 	// Create Proof for the joinsplit op
 	inputs := make([]*client.JSInput, 2)
@@ -246,12 +298,8 @@ func createCoinbaseTx(
 	inputs[1] = transaction.CreateRandomJSInput(inputs[0].Key)
 	dummyAddress := client.GenPaymentAddress(*inputs[0].Key)
 
-	// Get reward
-	// TODO(@0xbunyip): implement bonds reward
-	var reward uint64 = common.DefaultCoinBaseTxReward + feeMap[common.TxOutCoinType] // TODO: probably will need compute reward based on block height
-
 	// Create new notes: first one is coinbase UTXO, second one has 0 value
-	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}
+	outNote := &client.Note{Value: salary, Apk: receiverAddr.Apk}
 	placeHolderOutputNote := &client.Note{Value: 0, Apk: receiverAddr.Apk}
 
 	outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
@@ -265,10 +313,9 @@ func createCoinbaseTx(
 	// Generate proof and sign tx
 	tx := transaction.CreateEmptyTx()
 	tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
-	var coinbaseTxFee uint64 // Zero fee for coinbase tx
 	rtMap := map[byte][]byte{chainID: rt}
 	inputMap := map[byte][]*client.JSInput{chainID: inputs}
-	err := tx.BuildNewJSDesc(inputMap, outputs, rtMap, reward, coinbaseTxFee)
+	err := tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0)
 	if err != nil {
 		return nil, err
 	}

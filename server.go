@@ -10,6 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/rewardagent"
+
 	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/consensus/ppos"
 
@@ -52,7 +54,8 @@ type Server struct {
 	addrManager     *addrmanager.AddrManager
 	wallet          *wallet.Wallet
 	consensusEngine *ppos.Engine
-
+	blockgen        *blockchain.BlkTmplGenerator
+	rewardAgent     *rewardagent.RewardAgent
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator
@@ -179,13 +182,26 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 
 	self.addrManager = addrmanager.New(cfg.DataDir, nil)
 
-	self.consensusEngine = ppos.New(&ppos.Config{
+	self.rewardAgent, err = rewardagent.RewardAgent{}.Init(&rewardagent.RewardAgentConfig{})
+	if err != nil {
+		return err
+	}
+
+	self.blockgen, err = blockchain.BlkTmplGenerator{}.Init(self.memPool, self.blockChain, self.rewardAgent)
+	if err != nil {
+		return err
+	}
+	self.consensusEngine, err = ppos.Engine{}.Init(&ppos.EngineConfig{
 		ChainParams:  self.chainParams,
 		BlockChain:   self.blockChain,
 		MemPool:      self.memPool,
 		Server:       self,
 		FeeEstimator: self.feeEstimator,
+		BlockGen:     self.blockgen,
 	})
+	if err != nil {
+		return err
+	}
 
 	// Init Net Sync manager to process messages
 	self.netSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{

@@ -27,7 +27,7 @@ type Engine struct {
 	sealerStarted bool
 	quitSealer    chan struct{}
 
-	config                Config
+	config                EngineConfig
 	currentCommittee      []string
 	candidates            []string
 	knownChainsHeight     chainsHeight
@@ -44,10 +44,11 @@ type chainsHeight struct {
 	Heights []int
 	sync.Mutex
 }
-type Config struct {
-	BlockChain      *blockchain.BlockChain
+type EngineConfig struct {
+	BlockChain *blockchain.BlockChain
+	// RewardAgent
 	ChainParams     *blockchain.Params
-	blockGen        *BlkTmplGenerator
+	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
 	Server          interface {
@@ -131,11 +132,11 @@ func (self *Engine) Stop() error {
 	return nil
 }
 
-func New(cfg *Config) *Engine {
-	cfg.blockGen = NewBlkTmplGenerator(cfg.MemPool, cfg.BlockChain)
+func (self Engine) Init(cfg *EngineConfig) (*Engine, error) {
+	// cfg.blockGen = NewBlkTmplGenerator(cfg.MemPool, cfg.BlockChain)
 	return &Engine{
 		config: *cfg,
-	}
+	}, nil
 }
 
 func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
@@ -206,7 +207,7 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	Logger.log.Info("Start creating block...")
 	myChainID := self.getMyChain()
 	paymentAddress, err := self.config.ValidatorKeySet.GetPaymentAddress()
-	newblock, err := self.config.blockGen.NewBlockTemplate(paymentAddress, self.config.BlockChain, myChainID)
+	newblock, err := self.config.BlockGen.NewBlockTemplate(paymentAddress, myChainID)
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
@@ -216,9 +217,6 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	newblock.Block.ChainLeader = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 
 	copy(newblock.Block.Header.Committee, self.GetNextCommittee())
-	// for _, validator := range self.GetNextCommittee() {
-	// 	newblock.Block.Header.CommitteeSigs[validator] = ""
-	// }
 
 	sig, err := self.signData([]byte(newblock.Block.Hash().String()))
 	if err != nil {
@@ -234,9 +232,6 @@ func (self *Engine) Finalize(block *blockchain.Block) error {
 	allSigReceived := make(chan struct{})
 	cancel := make(chan struct{})
 	committee := block.Header.Committee
-	// for validator := range block.Header.CommitteeSigs {
-	// 	committee = append(committee, validator)
-	// }
 	defer func() {
 		close(cancel)
 		close(allSigReceived)
