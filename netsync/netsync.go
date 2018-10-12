@@ -1,7 +1,6 @@
 package netsync
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -32,6 +31,7 @@ type NetSyncConfig struct {
 	Server interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, peer2.ID) error
+		PushMessageToAll(wire.Message) error
 	}
 	Consensus interface {
 		OnBlockReceived(*blockchain.Block)
@@ -60,7 +60,7 @@ func (self *NetSync) Start() {
 	self.waitgroup.Add(1)
 	go self.messageHandler()
 	time.AfterFunc(2*time.Second, func() {
-
+		// TODO something here
 	})
 }
 
@@ -68,14 +68,12 @@ func (self *NetSync) Start() {
 // handlers and waiting for them to finish.
 func (self *NetSync) Stop() error {
 	if atomic.AddInt32(&self.shutdown, 1) != 1 {
-		Logger.log.Info("Sync manager is already in the process of " +
-			"shutting down")
+		Logger.log.Warn("Sync manager is already in the process of shutting down")
 		return nil
 	}
 
-	Logger.log.Info("Sync manager shutting down")
+	Logger.log.Warn("Sync manager shutting down")
 	close(self.cQuit)
-	// self.waitgroup.Wait()
 	return nil
 }
 
@@ -130,7 +128,7 @@ out:
 			}
 		case msgChan := <-self.cQuit:
 			{
-				Logger.log.Info(msgChan)
+				Logger.log.Warn(msgChan)
 				break out
 			}
 		}
@@ -143,7 +141,7 @@ out:
 // QueueTx adds the passed transaction message and peer to the block handling
 // queue. Responds to the done channel argument after the tx message is
 // processed.
-func (self *NetSync) QueueTx(_ *peer.Peer, msg *wire.MessageTx, done chan struct{}) {
+func (self *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
 	if atomic.LoadInt32(&self.shutdown) != 0 {
 		done <- struct{}{}
@@ -155,14 +153,19 @@ func (self *NetSync) QueueTx(_ *peer.Peer, msg *wire.MessageTx, done chan struct
 // handleTxMsg handles transaction messages from all peers.
 func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 	Logger.log.Info("Handling new message tx")
-	// TODO get message tx and process
-	hash, txDesc, error := self.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
+	hash, txDesc, err := self.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
 
-	if error != nil {
-		fmt.Print(error)
+	if err != nil {
+		Logger.log.Error(err)
 	} else {
-		fmt.Print("there is hash of transaction", hash)
-		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)
+		Logger.log.Infof("there is hash of transaction %s", hash.String())
+		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+
+		// Broadcast to network
+		err := self.config.Server.PushMessageToAll(msg)
+		if err != nil {
+			Logger.log.Error(err)
+		}
 	}
 }
 
