@@ -3,6 +3,7 @@ package cashec
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 
 	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
@@ -74,4 +75,28 @@ func (self *KeySetSealer) GetViewingKey() (client.ViewingKey, error) {
 	viewingKey.Apk = self.SpendingAddress
 	viewingKey.Skenc = self.ReceivingKey
 	return viewingKey, nil
+}
+
+func ValidateDataB58(pubkey string, sig string, data []byte) error {
+	decPubkey, _, err := base58.Base58Check{}.Decode(pubkey)
+	if err != nil {
+		return errors.New("can't decode public key:" + err.Error())
+	}
+
+	validatorKp := KeySetSealer{
+		SpublicKey: decPubkey,
+	}
+	decSig, _, err := base58.Base58Check{}.Decode(sig)
+	if err != nil {
+		return errors.New("can't decode signature: " + err.Error())
+	}
+
+	isValid, err := validatorKp.Verify(data, decSig)
+	if err != nil {
+		return errors.New("error when verify data: " + err.Error())
+	}
+	if !isValid {
+		return errors.New("Invalid signature")
+	}
+	return nil
 }

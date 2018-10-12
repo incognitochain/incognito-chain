@@ -20,16 +20,10 @@ type BlockHeader struct {
 	// uint64 on the wire and therefore is limited to 2106.
 	Timestamp int64
 
-	// Difficulty target for the block.
-	Difficulty uint32
-
-	// Nonce used to generate the block.
-	Nonce int
-
 	// POS
-	BlockCommitteeSigs []string //Include sealer and validators signature
-	Committee          []string //Voted committee for the next block
-
+	// BlockCommitteeSigs []string          //Include sealer and validators signature
+	// Committee          []string          //Voted committee for the next block
+	CommitteeSigs map[string]string // Committee and its sigs
 	// Parallel PoS
 	ChainID      byte
 	ChainsHeight []int //height of 20 chain when this block is created

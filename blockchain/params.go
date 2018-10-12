@@ -107,7 +107,7 @@ var MainNetParams = Params{
 	Name:        MAINNET_NAME,
 	Net:         MAINNET,
 	DefaultPort: MAINET_DEFAULT_PORT,
-	DNSSeeds: []string{
+	DNSSeeds:    []string{
 		/*{"seed.coin.sipa.be", true},
 		{"dnsseed.bluematt.me", true},
 		{"dnsseed.coin.dashjr.org", false},

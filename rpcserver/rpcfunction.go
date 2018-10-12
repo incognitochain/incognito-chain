@@ -264,9 +264,9 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			result["merkleroot"] = block.Header.MerkleRoot.String()
 			result["time"] = block.Header.Timestamp
 			result["mediantime"] = 0
-			result["nonce"] = block.Header.Nonce
+			// result["nonce"] = block.Header.Nonce
 			result["bits"] = ""
-			result["difficulty"] = block.Header.Difficulty
+			// result["difficulty"] = block.Header.Difficulty
 			result["chainwork"] = block.Header.ChainID
 			result["previousblockhash"] = block.Header.PrevBlockHash.String()
 			result["nextblockhash"] = nextHashString
@@ -299,9 +299,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			result["merkleroot"] = block.Header.MerkleRoot.String()
 			result["time"] = block.Header.Timestamp
 			result["mediantime"] = 0
-			result["nonce"] = block.Header.Nonce
 			result["bits"] = ""
-			result["difficulty"] = block.Header.Difficulty
 			result["chainwork"] = block.Header.ChainID
 			result["previousblockhash"] = block.Header.PrevBlockHash.String()
 			result["nextblockhash"] = nextHashString
