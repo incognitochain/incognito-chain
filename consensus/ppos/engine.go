@@ -25,14 +25,16 @@ type Engine struct {
 	quit    chan struct{}
 
 	sealerStarted bool
-	quitSealer    chan struct{}
+
+	// channel
+	cQuitSealer chan struct{}
+	cBlockSig   chan blockSig
 
 	config                EngineConfig
 	currentCommittee      []string
 	candidates            []string
 	knownChainsHeight     chainsHeight
 	validatedChainsHeight chainsHeight
-	blockSigCh            chan blockSig
 }
 
 type ChainInfo struct {
@@ -51,7 +53,7 @@ type EngineConfig struct {
 	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server          interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIdsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -146,15 +148,15 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 	}
 	self.config.ValidatorKeySet = sealerKeySet
 
-	self.quitSealer = make(chan struct{})
-	self.blockSigCh = make(chan blockSig)
+	self.cQuitSealer = make(chan struct{})
+	self.cBlockSig = make(chan blockSig)
 	self.sealerStarted = true
 	Logger.log.Info("Starting sealer with public key: " + base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)))
 
 	go func() {
 		for {
 			select {
-			case <-self.quitSealer:
+			case <-self.cQuitSealer:
 				return
 			default:
 				if self.started {
@@ -197,8 +199,8 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 func (self *Engine) StopSealer() {
 	if self.sealerStarted {
 		Logger.log.Info("Stopping Sealer...")
-		close(self.quitSealer)
-		close(self.blockSigCh)
+		close(self.cQuitSealer)
+		close(self.cBlockSig)
 		self.sealerStarted = false
 	}
 }
@@ -244,7 +246,7 @@ func (self *Engine) Finalize(block *blockchain.Block) error {
 			select {
 			case <-cancel:
 				return
-			case blocksig := <-self.blockSigCh:
+			case blocksig := <-self.cBlockSig:
 				Logger.log.Info("Validator's signature received", sigsReceived)
 
 				if blockHash != blocksig.BlockHash {
