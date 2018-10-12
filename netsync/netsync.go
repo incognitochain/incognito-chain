@@ -28,7 +28,7 @@ type NetSync struct {
 type NetSyncConfig struct {
 	BlockChain *blockchain.BlockChain
 	ChainParam *blockchain.Params
-	MemPool    *mempool.TxPool
+	MemTxPool  *mempool.TxPool
 	Server interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, peer2.ID) error
@@ -156,7 +156,7 @@ func (self *NetSync) QueueTx(_ *peer.Peer, msg *wire.MessageTx, done chan struct
 func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 	Logger.log.Info("Handling new message tx")
 	// TODO get message tx and process
-	hash, txDesc, error := self.config.MemPool.MaybeAcceptTransaction(msg.Transaction)
+	hash, txDesc, error := self.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
 
 	if error != nil {
 		fmt.Print(error)

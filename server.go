@@ -191,7 +191,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	self.netSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
 		BlockChain:   self.blockChain,
 		ChainParam:   chainParams,
-		MemPool:      self.memPool,
+		MemTxPool:    self.memPool,
 		Server:       self,
 		Consensus:    self.consensusEngine,
 		FeeEstimator: self.feeEstimator,
