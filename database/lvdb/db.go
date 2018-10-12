@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"path/filepath"
-
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
@@ -20,16 +18,14 @@ var (
 	chainIDPrefix     = []byte("c")
 	blockKeyPrefix    = []byte("b-")
 	blockKeyIdxPrefix = []byte("i-")
-	usedTxKey         = []byte("usedTx")
-	notUsedTxKey      = []byte("notusedTx")
-	usedTxBondKey     = []byte("usedTxBond")
-	notUsedBondTxKey  = []byte("notusedTxBond")
+	nullifiers        = []byte("nullifiers-")
+	commitments       = []byte("commitments-")
 	bestBlockKey      = []byte("bestBlock")
 	feeEstimator      = []byte("feeEstimator")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {
-	lvdb, err := leveldb.OpenFile(filepath.Join(dbPath, "db"), nil)
+	lvdb, err := leveldb.OpenFile(dbPath, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "levelvdb.OpenFile %s", dbPath)
 	}
@@ -110,7 +106,7 @@ func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
 }
 
 func (db *db) StoreNullifiers(nullifier []byte, typeJoinSplitDesc string, chainId byte) error {
-	key := append(usedTxKey, []byte(typeJoinSplitDesc)...)
+	key := db.getNullifierKey(typeJoinSplitDesc)
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -135,7 +131,7 @@ func (db *db) StoreNullifiers(nullifier []byte, typeJoinSplitDesc string, chainI
 }
 
 func (db *db) StoreCommitments(commitments []byte, typeJoinSplitDesc string, chainId byte) error {
-	key := append(notUsedTxKey, []byte(typeJoinSplitDesc)...)
+	key := db.getCommitmentKey(typeJoinSplitDesc)
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -160,7 +156,7 @@ func (db *db) StoreCommitments(commitments []byte, typeJoinSplitDesc string, cha
 }
 
 func (db *db) FetchNullifiers(typeJoinSplitDesc string, chainId byte) ([][]byte, error) {
-	key := append(usedTxKey, []byte(typeJoinSplitDesc)...)
+	key := db.getNullifierKey(typeJoinSplitDesc)
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -177,7 +173,7 @@ func (db *db) FetchNullifiers(typeJoinSplitDesc string, chainId byte) ([][]byte,
 }
 
 func (db *db) FetchCommitments(typeJoinSplitDesc string, chainId byte) ([][]byte, error) {
-	key := append(notUsedTxKey, []byte(typeJoinSplitDesc)...)
+	key := db.getCommitmentKey(typeJoinSplitDesc)
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -349,5 +345,15 @@ func (db *db) getKeyBlock(h *common.Hash) []byte {
 func (db *db) getKeyIdx(h *common.Hash) []byte {
 	var key []byte
 	key = append(blockKeyIdxPrefix, h[:]...)
+	return key
+}
+
+func (db db) getNullifierKey(typeJoinSplitDesc string) []byte {
+	key := append(nullifiers, []byte(typeJoinSplitDesc)...)
+	return key
+}
+
+func (db db) getCommitmentKey(typeJoinSplitDesc string) []byte {
+	key := append(commitments, []byte(typeJoinSplitDesc)...)
 	return key
 }

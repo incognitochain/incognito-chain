@@ -21,16 +21,17 @@ import (
 
 // default config
 const (
-	defaultConfigFilename = "config.conf"
-	defaultDataDirname    = "data"
-	defaultDataPrefix     = "block"
-	defaultLogLevel       = "info"
-	defaultLogDirname     = "logs"
-	defaultLogFilename    = "log.log"
-	defaultMaxPeers       = 125
-	defaultGenerate       = false
-	sampleConfigFilename  = "sample-config.conf"
-	defaultDisableRpcTls  = true
+	defaultConfigFilename  = "config.conf"
+	defaultDataDirname     = "data"
+	defaultDatabaseDirname = "block"
+	defaultLogLevel        = "info"
+	defaultLogDirname      = "logs"
+	defaultLogFilename     = "log.log"
+	defaultMaxPeers        = 125
+	defaultMaxRPCClients   = 10
+	defaultGenerate        = false
+	sampleConfigFilename   = "sample-config.conf"
+	defaultDisableRpcTls   = true
 
 	// For wallet
 	defaultWalletDbName = "wallet.db"
@@ -54,7 +55,7 @@ type config struct {
 	ShowVersion          bool     `short:"V" long:"version" description:"Display version information and exit"`
 	ConfigFile           string   `short:"C" long:"configfile" description:"Path to configuratio\n file"`
 	DataDir              string   `short:"b" long:"datadir" description:"Directory to store data"`
-	DataPrefix           string   `short:"p" long:"datapre" description:"Data prefix"`
+	DatabaseDir          string   `short:"p" long:"datapre" description:"Database dir"`
 	LogDir               string   `long:"logdir" description:"Directory to log output."`
 	AddPeers             []string `short:"a" long:"addpeer" description:"Add a peer to connect with at startup"`
 	ConnectPeers         []string `long:"connect" description:"Connect only to the specified peers at startup"`
@@ -266,8 +267,9 @@ func loadConfig() (*config, []string, error) {
 		DebugLevel:           defaultLogLevel,
 		MaxOutPeers:          defaultMaxPeers,
 		MaxInPeers:           defaultMaxPeers,
+		RPCMaxClients:        defaultMaxRPCClients,
 		DataDir:              defaultDataDir,
-		DataPrefix:           defaultDataPrefix,
+		DatabaseDir:          defaultDatabaseDirname,
 		LogDir:               defaultLogDir,
 		RPCKey:               defaultRPCKeyFile,
 		RPCCert:              defaultRPCCertFile,
@@ -320,9 +322,7 @@ func loadConfig() (*config, []string, error) {
 	// Load additional config from file.
 	var configFileError error
 	parser := newConfigParser(&cfg, &serviceOpts, flags.Default)
-	if preCfg.ConfigFile !=
-		defaultConfigFile {
-
+	if !(preCfg.TestNet) || preCfg.ConfigFile != defaultConfigFile {
 		if _, err := os.Stat(preCfg.ConfigFile); os.IsNotExist(err) {
 			err := createDefaultConfigFile(preCfg.ConfigFile)
 			if err != nil {
