@@ -187,7 +187,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	// end check with policy
 
 	// validate double spend for normal tx
-	if tx.GetType() == common.TxNormalType {
+	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxVotingType {
 		txViewPoint, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainID)
 		if err != nil {
 			str := fmt.Sprintf("Can not check double spend for tx")
@@ -196,33 +196,13 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 			return nil, nil, err
 		}
 		nullifierDb := txViewPoint.ListNullifiers(common.TxOutCoinType)
-		for _, desc := range tx.(*transaction.Tx).Descs {
-			for _, nullifer := range desc.Nullifiers {
-				existed, err := common.SliceBytesExists(nullifierDb, nullifer)
-				if err != nil {
-					str := fmt.Sprintf("Can not check double spend for tx")
-					err := TxRuleError{}
-					err.Init(CanNotCheckDoubleSpend, str)
-					return nil, nil, err
-				}
-				if existed {
-					str := fmt.Sprintf("Nullifiers of transaction %v already existed", txHash.String())
-					err := TxRuleError{}
-					err.Init(RejectDuplicateTx, str)
-					return nil, nil, err
-				}
-			}
+		var descs []*transaction.JoinSplitDesc
+		if tx.GetType() == common.TxNormalType {
+			descs = tx.(*transaction.Tx).Descs
+		} else if tx.GetType() == common.TxVotingType {
+			descs = tx.(*transaction.TxVoting).Descs
 		}
-	} else if tx.GetType() == common.TxVotingType {
-		txViewPoint, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainID)
-		if err != nil {
-			str := fmt.Sprintf("Can not check double spend for tx")
-			err := TxRuleError{}
-			err.Init(CanNotCheckDoubleSpend, str)
-			return nil, nil, err
-		}
-		nullifierDb := txViewPoint.ListNullifiers(common.TxOutCoinType)
-		for _, desc := range tx.(*transaction.TxVoting).Descs {
+		for _, desc := range descs {
 			for _, nullifer := range desc.Nullifiers {
 				existed, err := common.SliceBytesExists(nullifierDb, nullifer)
 				if err != nil {
