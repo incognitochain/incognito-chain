@@ -459,11 +459,13 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 		return nil, err
 	}
 
+	// use keycache to save listener peer into file, this will make peer id of listener not change after turn off node
 	kc := KeyCache{}
-	kc.Load(filepath.Join(cfg.DataDir, "kc.json"))
+	kc.Load(filepath.Join(cfg.DataDir, "listenerpeer.json"))
 
 	peers := make([]*peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
+		// load seed of libp2p from keycache file, if not exist -> save a new data into keycache file
 		seed := int64(0)
 		seedC, _ := strconv.ParseInt(os.Getenv("NODE_SEED"), 10, 64)
 		if seedC == 0 {
@@ -478,6 +480,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 		} else {
 			seed = seedC
 		}
+
 		peer, err := peer.Peer{
 			Seed:             seed,
 			ListeningAddress: addr,
