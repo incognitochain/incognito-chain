@@ -12,8 +12,6 @@ import (
 	"runtime"
 	"sort"
 	"strings"
-	"time"
-
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jessevdk/go-flags"
 	"github.com/ninjadotorg/cash-prototype/cashec"
@@ -30,8 +28,6 @@ const (
 	defaultLogDirname           = "logs"
 	defaultLogFilename          = "log.log"
 	defaultMaxPeers             = 125
-	defaultBanDuration          = time.Hour * 24
-	defaultBanThreshold         = 100
 	defaultMaxRPCClients        = 10
 	defaultMaxRPCWebsockets     = 25
 	defaultMaxRPCConcurrentReqs = 20
@@ -91,10 +87,7 @@ type config struct {
 	Proxy                string   `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
 	ProxyUser            string   `long:"proxyuser" description:"Username for proxy server"`
 	ProxyPass            string   `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
-	DisableCheckpoints   bool     `long:"nocheckpoints" description:"Disable built-in checkpoints.  Don't do this unless you know what you're doing."`
 	DebugLevel           string   `short:"d" long:"debuglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
-	Upnp                 bool     `long:"upnp" description:"Use UPnP to map our listening port outside of NAT"`
-	MinRelayTxFee        float64  `long:"minrelaytxfee" description:"The minimum transaction fee in BTC/kB to be considered a non-zero fee."`
 	Generate             bool     `long:"generate" description:"Generate (mine) coins using the CPU"`
 
 	// PoS config
