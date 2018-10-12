@@ -286,7 +286,7 @@ func (self *Engine) Finalize(block *blockchain.Block) error {
 				}
 
 				if sigsReceived == (MINIMUM_BLOCKSIGS - 1) {
-					allSigReceived <- struct{}{}
+					close(allSigReceived)
 					return
 				}
 			}
