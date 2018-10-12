@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"os/signal"
-	"log"
 )
 
 // shutdownRequestChannel is used to initiate shutdown from one of the
@@ -27,8 +26,7 @@ func interruptListener() <-chan struct{} {
 		// channel to notify the caller.
 		select {
 		case sig := <-interruptChannel:
-			Logger.log.Warnf("Received signal (%s).  Shutting down...",
-				sig)
+			Logger.log.Warnf("Received signal (%s).  Shutting down...", sig)
 
 		case <-shutdownRequestChannel:
 			Logger.log.Warn("Shutdown requested.  Shutting down...")
@@ -41,12 +39,10 @@ func interruptListener() <-chan struct{} {
 		for {
 			select {
 			case sig := <-interruptChannel:
-				log.Printf("Received signal (%s).  Already "+
-					"shutting down...", sig)
+				Logger.log.Infof("Received signal (%s).  Already shutting down...", sig)
 
 			case <-shutdownRequestChannel:
-				log.Print("Shutdown requested.  Already " +
-					"shutting down...")
+				Logger.log.Info("Shutdown requested.  Already shutting down...")
 			}
 		}
 	}()

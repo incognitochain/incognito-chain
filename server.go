@@ -78,13 +78,13 @@ func (self Server) setupRPCListeners() ([]net.Listener, error) {
 				return nil, err
 			}
 		}
-		keypair, err := tls.LoadX509KeyPair(cfg.RPCCert, cfg.RPCKey)
+		keyPair, err := tls.LoadX509KeyPair(cfg.RPCCert, cfg.RPCKey)
 		if err != nil {
 			return nil, err
 		}
 
 		tlsConfig := tls.Config{
-			Certificates: []tls.Certificate{keypair},
+			Certificates: []tls.Certificate{keyPair},
 			MinVersion:   tls.VersionTLS12,
 		}
 

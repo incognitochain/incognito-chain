@@ -326,16 +326,14 @@ func loadConfig() (*config, []string, error) {
 		if _, err := os.Stat(preCfg.ConfigFile); os.IsNotExist(err) {
 			err := createDefaultConfigFile(preCfg.ConfigFile)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error creating a "+
-					"default config file: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Error creating a default config file: %v\n", err)
 			}
 		}
 
 		err := flags.NewIniParser(parser).ParseFile(preCfg.ConfigFile)
 		if err != nil {
 			if _, ok := err.(*os.PathError); !ok {
-				fmt.Fprintf(os.Stderr, "Error parsing config "+
-					"file: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Error parsing config file: %v\n", err)
 				fmt.Fprintln(os.Stderr, usageMessage)
 				return nil, nil, err
 			}
@@ -382,8 +380,7 @@ func loadConfig() (*config, []string, error) {
 	}
 
 	if numNets > 1 {
-		Logger.log.Error("The testnet, regtest, segnet, and simnet params " +
-			"can't be used together -- choose one of the four")
+		Logger.log.Error("The testnet, regtest, segnet, and simnet params can't be used together -- choose one of the four")
 		os.Exit(0)
 	}
 
@@ -421,8 +418,7 @@ func loadConfig() (*config, []string, error) {
 
 	// --addPeer and --connect do not mix.
 	if len(cfg.AddPeers) > 0 && len(cfg.ConnectPeers) > 0 {
-		str := "%s: the --addpeer and --connect options can not be " +
-			"mixed"
+		str := "%s: the --addpeer and --connect options can not be mixed"
 		err := fmt.Errorf(str, funcName)
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, usageMessage)
@@ -450,8 +446,7 @@ func loadConfig() (*config, []string, error) {
 	}
 
 	if cfg.RPCUser == cfg.RPCLimitUser && cfg.RPCUser != "" {
-		str := "%s: --rpcuser and --rpclimituser must not specify the " +
-			"same username"
+		str := "%s: --rpcuser and --rpclimituser must not specify the same username"
 		err := fmt.Errorf(str, funcName)
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, usageMessage)
@@ -460,8 +455,7 @@ func loadConfig() (*config, []string, error) {
 
 	// Check to make sure limited and admin users don't have the same password
 	if cfg.RPCPass == cfg.RPCLimitPass && cfg.RPCPass != "" {
-		str := "%s: --rpcpass and --rpclimitpass must not specify the " +
-			"same password"
+		str := "%s: --rpcpass and --rpclimitpass must not specify the same password"
 		err := fmt.Errorf(str, funcName)
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, usageMessage)
@@ -506,8 +500,7 @@ func loadConfig() (*config, []string, error) {
 	// Ensure there is at least one mining address when the generate flag is
 	// set.
 	if cfg.Generate && len(cfg.SealerKeySet) == 0 && len(cfg.SealerSpendingKey) == 0 {
-		str := "%s: the generate flag is set, but there are no sealer's key " +
-			"specified "
+		str := "%s: the generate flag is set, but there are no sealer's key specified "
 		err := fmt.Errorf(str, funcName)
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, usageMessage)
@@ -545,9 +538,7 @@ func loadConfig() (*config, []string, error) {
 				return nil, nil, err
 			}
 			if _, ok := allowedTLSListeners[host]; !ok {
-				str := "%s: the --notls option may not be used " +
-					"when binding RPC to non localhost " +
-					"addresses: %s"
+				str := "%s: the --notls option may not be used when binding RPC to non localhost addresses: %s"
 				err := fmt.Errorf(str, funcName, addr)
 				fmt.Fprintln(os.Stderr, err)
 				fmt.Fprintln(os.Stderr, usageMessage)
@@ -629,8 +620,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	// issues and update the log levels accordingly.
 	for _, logLevelPair := range strings.Split(debugLevel, ",") {
 		if !strings.Contains(logLevelPair, "=") {
-			str := "The specified debug level contains an invalid " +
-				"subsystem/level pair [%v]"
+			str := "The specified debug level contains an invalid subsystem/level pair [%v]"
 			return fmt.Errorf(str, logLevelPair)
 		}
 
@@ -640,8 +630,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 
 		// Validate subsystem.
 		if _, exists := subsystemLoggers[subsysID]; !exists {
-			str := "The specified subsystem [%v] is invalid -- " +
-				"supported subsytems %v"
+			str := "The specified subsystem [%v] is invalid -- supported subsytems %v"
 			return fmt.Errorf(str, subsysID, supportedSubsystems())
 		}
 
