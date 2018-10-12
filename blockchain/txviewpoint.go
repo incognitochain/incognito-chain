@@ -17,7 +17,7 @@ type TxViewPoint struct {
 
 /*
 ListNullifiers returns list nullifers which is contained in TxViewPoint
- */
+*/
 // #1: joinSplitDescType is "Coin" Or "Bond"
 func (view *TxViewPoint) ListNullifiers(joinSplitDescType string) [][]byte {
 	return view.listNullifiers[joinSplitDescType]
@@ -25,7 +25,7 @@ func (view *TxViewPoint) ListNullifiers(joinSplitDescType string) [][]byte {
 
 /*
 ListNullifiers returns list nullifers which is contained in TxViewPoint
- */
+*/
 // #1: joinSplitDescType is "Coin" Or "Bond"
 func (view *TxViewPoint) ListCommitments(joinSplitDescType string) [][]byte {
 	return view.listCommitments[joinSplitDescType]
@@ -43,9 +43,9 @@ func (view *TxViewPoint) CurrentBestBlockHash() *common.Hash {
 SetBestHash sets the hash of the best block in the chain the view currently
 represents.
 */
-func (view *TxViewPoint) SetBestHash(hash *common.Hash) {
-	view.currentBestBlockHash = *hash
-}
+// func (view *TxViewPoint) SetBestHash(hash *common.Hash) {
+// 	view.currentBestBlockHash = *hash
+// }
 
 /*
 fetchTxViewPoint get list nullifiers and commitments from txs in block and check if they are not in Main chain db
@@ -92,7 +92,7 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 
 /*
 Create a Tx view point, which contains data about nullifiers and commitments
- */
+*/
 func NewTxViewPoint(chainId byte) *TxViewPoint {
 	return &TxViewPoint{
 		chainId:         chainId,

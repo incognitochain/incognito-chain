@@ -16,46 +16,30 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 	prevBlock := chain.BestState[chainID]
 	prevBlockHash := chain.BestState[chainID].BestBlock.Hash()
 	sourceTxns := g.txSource.MiningDescs()
-	if len(sourceTxns) < MIN_TXs {
+
+	var txsToAdd []transaction.Transaction
+	var txToRemove []transaction.Transaction
+	var feeMap map[string]uint64
+	var txs []transaction.Transaction
+
+	if len(sourceTxns) < common.MIN_TXs {
 		// if len of sourceTxns < MIN_TXs -> wait for more transactions
 		Logger.log.Info("not enough transactions. Wait for more...")
-		fmt.Println(sourceTxns)
-		<-time.Tick(MIN_BLOCK_WAIT_TIME * time.Second)
+		<-time.Tick(common.MIN_BLOCK_WAIT_TIME * time.Second)
 		sourceTxns = g.txSource.MiningDescs()
 		if len(sourceTxns) == 0 {
-			<-time.Tick(MAX_BLOCK_WAIT_TIME * time.Second)
+			<-time.Tick(common.MAX_BLOCK_WAIT_TIME * time.Second)
 			sourceTxns = g.txSource.MiningDescs()
 			if len(sourceTxns) == 0 {
-				return nil, errors.New("No Tx")
+				// return nil, errors.New("No Tx")
+				Logger.log.Info("Creating empty block...")
+				goto concludeBlock
 			}
 		}
 	}
 
-	txs, _, feeMap := extractTxsAndComputeInitialFees(sourceTxns)
-	//@todo we need apply sort rules for sourceTxns here
+	txs, _, feeMap = extractTxsAndComputeInitialFees(sourceTxns)
 
-	// agentDataPoints := getLatestAgentDataPoints(chain, actionParamTxs)
-	// rewardMap := calculateReward(agentDataPoints, feeMap)
-
-	// coinbaseScript := []byte("1234567890123456789012") //@todo should be create function create basescript
-
-	// coinbaseTx, err := createCoinbaseTx(&blockchain.Params{}, coinbaseScript, payToAddress, rewardMap)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// dependers := make(map[common.Hash]map[common.Hash]*txPrioItem)
-
-	// blockTxns := make([]transaction.Transaction, 0, len(sourceTxns))
-	// blockTxns = append(blockTxns, coinbaseTx)
-
-	// blockTxns := append([]transaction.Transaction{coinbaseTx}, txs...)
-	//receiverKeyset, _ := wallet.Base58CheckDeserialize(payToAddress)
-	//_ = receiverKeyset
-
-	var txsToAdd []transaction.Transaction
-
-	var txToRemove []transaction.Transaction
 	// mempoolLoop:
 	for _, tx := range txs {
 		// tx, ok := txDesc.(*transaction.Tx)
@@ -66,62 +50,17 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 		//@todo need apply validate tx, logic check all referenced here
 		// call function spendTransaction to mark utxo
 
-		txChainID, _ := g.GetTxSenderChain(tx.GetSenderAddrLastByte())
+		txChainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
 		if txChainID != chainID {
 			continue
 		}
-		/*for _, desc := range tx.Descs {
-			view, err := g.chain.FetchTxViewPoint(desc.Type)
-			_ = view
-			_ = err
-		}*/
-		/*
-			if err != nil {
-				fmt.Print("Unable to fetch utxo view for tx %s: %v",
-					tx.Hash(), err)
-				continue
-			}
-			prioItem := &txPrioItem{tx: tx}
-			for _, txIn := range tx.TxIn {
-				originHash := &txIn.PreviousOutPoint.Hash
-				entry := utxos.LookupEntry(txIn.PreviousOutPoint)
-				if entry == nil || entry.IsSpent() {
-					if !TxPool.HaveTx(originHash) {
-						fmt.Print("Skipping tx %s because it "+
-							"references unspent output %s "+
-							"which is not available",
-							tx.Hash(), txIn.PreviousOutPoint)
-						continue mempoolLoop
-					}
-
-					// The transaction is referencing another
-					// transaction in the source pool, so setup an
-					// ordering dependency.
-					deps, exists := dependers[*originHash]
-					if !exists {
-						deps = make(map[common.Hash]*txPrioItem)
-						dependers[*originHash] = deps
-					}
-					deps[*prioItem.tx.Hash()] = prioItem
-					if prioItem.dependsOn == nil {
-						prioItem.dependsOn = make(
-							map[common.Hash]struct{})
-					}
-					prioItem.dependsOn[*originHash] = struct{}{}
-
-					// Skip the check below. We already know the
-					// referenced transaction is available.
-					continue
-				}
-			}*/
 		if !tx.ValidateTransaction() {
 			txToRemove = append(txToRemove, transaction.Transaction(tx))
 		}
 		txsToAdd = append(txsToAdd, tx)
-		if len(txsToAdd) == MAX_TXs_IN_BLOCK {
+		if len(txsToAdd) == common.MAX_TXs_IN_BLOCK {
 			break
 		}
-		// g.txSource.Clear()
 	}
 
 	for _, tx := range txToRemove {
@@ -133,6 +72,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 		return nil, errors.New("no transaction available for this chain")
 	}
 
+concludeBlock:
 	rt := g.chain.BestState[chainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
 	coinbaseTx, err := createCoinbaseTx(
 		&blockchain.Params{},
@@ -185,11 +125,10 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 		MerkleRoot:            *merkleRoot,
 		MerkleRootCommitments: common.Hash{},
 		Timestamp:             time.Now().Unix(),
-		Difficulty:            0, //@todo should be create Difficulty logic
-		Nonce:                 0, //@todo should be create Nonce logic
-		BlockCommitteeSigs:    []string{},
-		Committee:             []string{},
-		ChainID:               chainID,
+		BlockCommitteeSigs:    make([]string, common.TOTAL_VALIDATORS),
+		Committee:             make([]string, common.TOTAL_VALIDATORS),
+		// CommitteeSigs: make(map[string]string),
+		ChainID: chainID,
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
@@ -199,10 +138,8 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 
 	// Add new commitments to merkle tree and save the root
 	newTree := g.chain.BestState[chainID].CmTree.MakeCopy()
-	fmt.Printf("[newBlockTemplate] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
-	g.chain.UpdateMerkleTreeForBlock(newTree, &block)
+	blockchain.UpdateMerkleTreeForBlock(newTree, &block)
 	rt = newTree.GetRoot(common.IncMerkleTreeHeight)
-	fmt.Printf("[newBlockTemplate] updated tree rt: %x\n", rt)
 	copy(block.Header.MerkleRootCommitments[:], rt)
 
 	for _, tempBlockTx := range block.Transactions {
@@ -229,17 +166,6 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 		Block: &block,
 	}
 	return blockTemp, nil
-}
-
-func (g *BlkTmplGenerator) GetTxSenderChain(senderLastByte byte) (byte, error) {
-	modResult := senderLastByte % 100
-	for index := byte(0); index < 5; index++ {
-		if (modResult-index)%5 == 0 {
-			// result := byte((modResult - index) / 5)
-			return byte((modResult - index) / 5), nil
-		}
-	}
-	return 0, errors.New("can't get sender's chainID")
 }
 
 type BlkTmplGenerator struct {
@@ -322,7 +248,7 @@ func createCoinbaseTx(
 
 	// Get reward
 	// TODO(@0xbunyip): implement bonds reward
-	var reward uint64 = DEFAULT_MINING_REWARD + feeMap[common.TxOutCoinType] // TODO: probably will need compute reward based on block height
+	var reward uint64 = common.DEFAULT_MINING_REWARD + feeMap[common.TxOutCoinType] // TODO: probably will need compute reward based on block height
 
 	// Create new notes: first one is coinbase UTXO, second one has 0 value
 	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}

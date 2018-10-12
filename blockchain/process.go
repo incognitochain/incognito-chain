@@ -18,50 +18,47 @@ import (
 // isMainChain
 // isOrphan
 // err
-func (self *BlockChain) ProcessBlock(block *Block) (bool, bool, error) {
+func (self *BlockChain) ConnectBlock(block *Block) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 
-	blockHash := block.Hash()
+	blockHash := block.Hash().String()
 	Logger.log.Infof("Processing block %v", blockHash)
 
-	// The block must not already exist in the main chain or side chains.
-	exists, err := self.blockExists(blockHash)
-	//if err != nil {
-	//	return false, false, err
-	//}
-	if exists {
-		Logger.log.Infof("already have block %v", blockHash)
-		return false, false, nil
-	}
-	// TODO: privacy consensus checks:
-	// - Only first tx is coinbase (only one desc and reward >= 0)
-	// - All js desc's proofs are valid
-	// - Coinbase reward == block reward + sum(fee of all tx)
-
-	// TODO check more
-	// check orphan blocks
-	// check checkpoint if using checkpoint to prevent sidechain
-	// Perform preliminary sanity checks on the block and its transactions.
-	// ... TODO TODO TODO by consensus
-
-	// The block has passed all context independent checks and appears sane
-	// enough to potentially accept it into the block chain.
-	isMainChain, err := self.maybeAcceptBlock(block)
+	// Insert the block into the database if it's not already there.  Even
+	// though it is possible the block will ultimately fail to connect, it
+	// has already passed all proof-of-work and validity tests which means
+	// it would be prohibitively expensive for an attacker to fill up the
+	// disk with a bunch of blocks that fail to connect.  This is necessary
+	// since it allows block download to be decoupled from the much more
+	// expensive connection logic.  It also has some other nice properties
+	// such as making blocks that never become part of the main chain or
+	// blocks that fail to connect available for further analysis.
+	err := self.StoreBlock(block)
 	if err != nil {
-		return false, false, err
+		return err
+	}
+	// save index of block
+	err = self.StoreBlockIndex(block)
+	if err != nil {
+		return err
+	}
+	// fetch nullifiers and commitments(utxo) from block and save
+	err = self.ConnectBestChain(block)
+	if err != nil {
+		return err
 	}
 
-	Logger.log.Infof("Accepted block %s", blockHash.String())
+	Logger.log.Infof("Accepted block %s", blockHash)
 
-	return isMainChain, false, nil
+	return nil
 }
 
 // blockExists determines whether a block with the given hash exists either in
 // the main chain or any side chains.
 //
 // This function is safe for concurrent access.
-func (self *BlockChain) blockExists(hash *common.Hash) (bool, error) {
+func (self *BlockChain) BlockExists(hash *common.Hash) (bool, error) {
 	result, err := self.config.DataBase.HasBlock(hash)
 	if err != nil {
 		return false, err

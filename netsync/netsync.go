@@ -31,7 +31,7 @@ type NetSyncConfig struct {
 	BlockChain *blockchain.BlockChain
 	ChainParam *blockchain.Params
 	MemPool    *mempool.TxPool
-	Server interface {
+	Server     interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, peer2.ID) error
 	}
@@ -197,30 +197,6 @@ func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan s
 	}
 	self.msgChan <- msg
 }
-
-// func (self *netSync) HandleMessageBlock(msg *wire.MessageBlock) {
-// 	Logger.log.Info("Handling new message block")
-// 	// TODO get message block and process
-// 	newBlock := msg.Block
-
-// 	// // Skip verify and insert directly to local blockchain
-// 	// // There should be a method in blockchain.go to insert block to prevent data-race if we read from memory
-
-// 	// isMainChain, isOrphanBlock, err := self.config.blockChain.ProcessBlock(&newBlock)
-// 	// _ = isMainChain
-// 	// _ = isOrphanBlock
-// 	// _ = err
-
-// 	a := self.config.blockChain.BestState.BestBlock.Hash().String()
-// 	Logger.log.Infof(a)
-// 	//if msg.Block.Header.PrevBlockHash == a {
-// 	self.config.Server.UpdateChain(&newBlock)
-// 	//}
-// 	err = self.config.feeEstimator.RegisterBlock(&newBlock)
-// 	if err != nil {
-// 		Logger.log.Error(err)
-// 	}
-// }
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Handling new message - " + wire.CmdGetBlocks)
