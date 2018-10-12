@@ -88,7 +88,7 @@ func (self *Engine) CheckBlockSize(block *blockchain.Block) error {
 	if err != nil {
 		return err
 	}
-	if len(blockBytes) > common.MAX_BLOCKSIZE {
+	if len(blockBytes) > common.MaxBlockSize {
 		return errBlockSizeExceed
 	}
 	return nil
@@ -97,7 +97,7 @@ func (self *Engine) CheckBlockSize(block *blockchain.Block) error {
 func (self *Engine) IsEnoughData(block *blockchain.Block) error {
 	if self.validatedChainsHeight.Heights[block.Header.ChainID] == (int(block.Height) - 1) {
 		notFullySync := false
-		for i := 0; i < common.TOTAL_VALIDATORS; i++ {
+		for i := 0; i < common.TotalValidators; i++ {
 			if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
 				notFullySync = true
 				getBlkMsg := &wire.MessageGetBlocks{
@@ -113,9 +113,9 @@ func (self *Engine) IsEnoughData(block *blockchain.Block) error {
 			}
 		}
 		if notFullySync {
-			timer := time.NewTimer(common.MAX_SYNC_CHAINS_TIME * time.Second)
+			timer := time.NewTimer(common.MaxSyncChainTime * time.Second)
 			<-timer.C
-			for i := 0; i < common.TOTAL_VALIDATORS; i++ {
+			for i := 0; i < common.TotalValidators; i++ {
 				if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
 					return errChainNotFullySynced
 				}

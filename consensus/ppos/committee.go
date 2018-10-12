@@ -39,11 +39,11 @@ func (self *Engine) signData(data []byte) (string, error) {
 // getMyChain validator chainID and committee of that chainID
 func (self *Engine) getMyChain() byte {
 	pkey := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
-	for idx := byte(0); idx < byte(common.TOTAL_VALIDATORS); idx++ {
-		validator := self.currentCommittee[int((1+int(idx))%common.TOTAL_VALIDATORS)]
+	for idx := byte(0); idx < byte(common.TotalValidators); idx++ {
+		validator := self.currentCommittee[int((1+int(idx))%common.TotalValidators)]
 		if pkey == validator {
 			return idx
 		}
 	}
-	return common.TOTAL_VALIDATORS // nope, you're not in the committee
+	return common.TotalValidators // nope, you're not in the committee
 }

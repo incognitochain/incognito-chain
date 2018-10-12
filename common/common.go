@@ -14,6 +14,7 @@ import (
 	"unicode"
 
 	"github.com/pkg/errors"
+	"log"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -113,7 +114,8 @@ Convert interface of slice to slice
 func InterfaceSlice(slice interface{}) []interface{} {
 	s := reflect.ValueOf(slice)
 	if s.Kind() != reflect.Slice {
-		panic("InterfaceSlice() given a non-slice type")
+		log.Println("InterfaceSlice() given a non-slice type")
+		return nil
 	}
 
 	ret := make([]interface{}, s.Len())
@@ -171,6 +173,9 @@ func ParseListeners(addrs []string, netType string) ([]SimpleAddr, error) {
 	return netAddrs, nil
 }
 
+/*
+JsonUnmarshallByteArray - because golang default base64 encode for byte[] data
+ */
 func JsonUnmarshallByteArray(string string) []byte {
 	bytes, _ := base64.StdEncoding.DecodeString(string)
 	return bytes

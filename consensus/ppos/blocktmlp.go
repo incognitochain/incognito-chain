@@ -22,13 +22,13 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 	var feeMap map[string]uint64
 	var txs []transaction.Transaction
 
-	if len(sourceTxns) < common.MIN_TXs {
-		// if len of sourceTxns < MIN_TXs -> wait for more transactions
+	if len(sourceTxns) < common.MinTxsInBlock {
+		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
 		Logger.log.Info("not enough transactions. Wait for more...")
-		<-time.Tick(common.MIN_BLOCK_WAIT_TIME * time.Second)
+		<-time.Tick(common.MinBlockWaitTime * time.Second)
 		sourceTxns = g.txSource.MiningDescs()
 		if len(sourceTxns) == 0 {
-			<-time.Tick(common.MAX_BLOCK_WAIT_TIME * time.Second)
+			<-time.Tick(common.MaxBlockWaitTime * time.Second)
 			sourceTxns = g.txSource.MiningDescs()
 			if len(sourceTxns) == 0 {
 				// return nil, errors.New("No Tx")
@@ -58,7 +58,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 			txToRemove = append(txToRemove, transaction.Transaction(tx))
 		}
 		txsToAdd = append(txsToAdd, tx)
-		if len(txsToAdd) == common.MAX_TXs_IN_BLOCK {
+		if len(txsToAdd) == common.MaxTxsInBlock {
 			break
 		}
 	}
@@ -125,8 +125,8 @@ concludeBlock:
 		MerkleRoot:            *merkleRoot,
 		MerkleRootCommitments: common.Hash{},
 		Timestamp:             time.Now().Unix(),
-		BlockCommitteeSigs:    make([]string, common.TOTAL_VALIDATORS),
-		Committee:             make([]string, common.TOTAL_VALIDATORS),
+		BlockCommitteeSigs:    make([]string, common.TotalValidators),
+		Committee:             make([]string, common.TotalValidators),
 		// CommitteeSigs: make(map[string]string),
 		ChainID: chainID,
 	}
@@ -248,7 +248,7 @@ func createCoinbaseTx(
 
 	// Get reward
 	// TODO(@0xbunyip): implement bonds reward
-	var reward uint64 = common.DEFAULT_MINING_REWARD + feeMap[common.TxOutCoinType] // TODO: probably will need compute reward based on block height
+	var reward uint64 = common.DefaultCoinBaseTxReward + feeMap[common.TxOutCoinType] // TODO: probably will need compute reward based on block height
 
 	// Create new notes: first one is coinbase UTXO, second one has 0 value
 	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}
