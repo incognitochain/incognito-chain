@@ -248,13 +248,6 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 		Logger.log.Error(err)
 		Logger.log.Error("No new blocks to return")
 	}
-
-	// Logger.log.Infof("Send a msgVersion: %s", msgNewJSON)
-	// rw := self.syncPeer.OutboundReaderWriterStreams[msg.SenderID]
-	// self.syncPeer.flagMutex.Lock()
-	// rw.Writer.WriteString(msgNewJSON)
-	// rw.Writer.Flush()
-	// self.syncPeer.flagMutex.Unlock()
 }
 
 func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
