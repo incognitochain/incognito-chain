@@ -21,19 +21,16 @@ import (
 
 // default config
 const (
-	defaultConfigFilename       = "config.conf"
-	defaultDataDirname          = "data"
-	defaultDataPrefix           = "block"
-	defaultLogLevel             = "info"
-	defaultLogDirname           = "logs"
-	defaultLogFilename          = "log.log"
-	defaultMaxPeers             = 125
-	defaultMaxRPCClients        = 10
-	defaultMaxRPCWebsockets     = 25
-	defaultMaxRPCConcurrentReqs = 20
-	defaultGenerate             = false
-	sampleConfigFilename        = "sample-config.conf"
-	defaultDisableRpcTls        = true
+	defaultConfigFilename = "config.conf"
+	defaultDataDirname    = "data"
+	defaultDataPrefix     = "block"
+	defaultLogLevel       = "info"
+	defaultLogDirname     = "logs"
+	defaultLogFilename    = "log.log"
+	defaultMaxPeers       = 125
+	defaultGenerate       = false
+	sampleConfigFilename  = "sample-config.conf"
+	defaultDisableRpcTls  = true
 
 	// For wallet
 	defaultWalletDbName = "wallet.db"
@@ -78,8 +75,6 @@ type config struct {
 	RPCCert              string   `long:"rpccert" description:"File containing the certificate file"`
 	RPCKey               string   `long:"rpckey" description:"File containing the certificate key"`
 	RPCMaxClients        int      `long:"rpcmaxclients" description:"Max number of RPC clients for standard connections"`
-	RPCMaxWebsockets     int      `long:"rpcmaxwebsockets" description:"Max number of RPC websocket connections"`
-	RPCMaxConcurrentReqs int      `long:"rpcmaxconcurrentreqs" description:"Max number of concurrent RPC requests that may be processed concurrently"`
 	RPCQuirks            bool     `long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
 	DisableRPC           bool     `long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
 	DisableTLS           bool     `long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
@@ -268,9 +263,6 @@ func loadConfig() (*config, []string, error) {
 		DebugLevel:           defaultLogLevel,
 		MaxOutPeers:          defaultMaxPeers,
 		MaxInPeers:           defaultMaxPeers,
-		RPCMaxClients:        defaultMaxRPCClients,
-		RPCMaxWebsockets:     defaultMaxRPCWebsockets,
-		RPCMaxConcurrentReqs: defaultMaxRPCConcurrentReqs,
 		DataDir:              defaultDataDir,
 		DataPrefix:           defaultDataPrefix,
 		LogDir:               defaultLogDir,
@@ -490,15 +482,6 @@ func loadConfig() (*config, []string, error) {
 			addr = net.JoinHostPort(addr, activeNetParams.rpcPort)
 			cfg.RPCListeners = append(cfg.RPCListeners, addr)
 		}
-	}
-
-	if cfg.RPCMaxConcurrentReqs < 0 {
-		str := "%s: The rpcmaxwebsocketconcurrentrequests option may " +
-			"not be less than 0 -- parsed [%d]"
-		err := fmt.Errorf(str, funcName, cfg.RPCMaxConcurrentReqs)
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprintln(os.Stderr, usageMessage)
-		return nil, nil, err
 	}
 
 	// Ensure there is at least one mining address when the generate flag is
