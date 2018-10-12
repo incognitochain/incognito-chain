@@ -36,8 +36,6 @@ type Tx struct {
 
 	txId       *common.Hash
 	sigPrivKey *client.PrivateKey
-
-	ExtraData *VotingData
 }
 
 func (tx *Tx) SetTxId(txId *common.Hash) {

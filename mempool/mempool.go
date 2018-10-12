@@ -361,6 +361,11 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 		{
 			return 0, nil
 		}
+	case common.TxVotingType:
+		{
+			fmt.Println("Validate Voting Tx successfully")
+			return 0, nil
+		}
 	default:
 		{
 			return 0, errors.New("Wrong tx type")

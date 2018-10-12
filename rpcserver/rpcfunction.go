@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/wire"
+	peer "github.com/libp2p/go-libp2p-peer"
+	multiaddr "github.com/multiformats/go-multiaddr"
 
 	"net"
 
@@ -22,6 +24,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonresult"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
+	"github.com/ninjadotorg/cash-prototype/wire"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -667,6 +670,29 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 	return result, nil
 }
 
+func validateNodeAddress(nodeAddr string) bool {
+	if len(nodeAddr) == 0 {
+		return false
+	}
+
+	strs := strings.Split(nodeAddr, "/ipfs/")
+	if len(strs) != 2 {
+		return false
+	}
+
+	_, err := multiaddr.NewMultiaddr(strs[0])
+	if err != nil {
+		return false
+	}
+
+	_, err = peer.IDB58Decode(strs[1])
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
 /*
 // handleCreateTransaction handles createtransaction commands.
 */
@@ -714,7 +740,9 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 
 	// param #5: node address
 	nodeAddr := arrayParams[4].(string)
-	fmt.Println("NODE ADDRESS:", nodeAddr)
+	if valid := validateNodeAddress(nodeAddr); !valid {
+		return nil, errors.New("node address is wrong")
+	}
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
@@ -779,21 +807,43 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		commitmentsDb[chainId] = txViewPoint.ListCommitments(common.TxOutCoinType)
 	}
 
-	tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos,
-		merkleRootCommitments,
-		candidateTxsMap,
-		nullifiersDb,
-		commitmentsDb,
-		realFee,
-		chainIdSender)
-	if err != nil {
-		return nil, err
+	if nodeAddr == "" {
+		fmt.Println("Create normal Tx")
+		tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos,
+			merkleRootCommitments,
+			candidateTxsMap,
+			nullifiersDb,
+			commitmentsDb,
+			realFee,
+			chainIdSender)
+		if err != nil {
+			return nil, err
+		}
+		byteArrays, err := json.Marshal(tx)
+		if err == nil {
+			// return hex for a new tx
+			return hex.EncodeToString(byteArrays), nil
+		}
+	} else {
+		fmt.Println("Create Voting Tx....")
+		tx, err := transaction.CreateVotingTx(&senderKey.KeySet.PrivateKey, paymentInfos,
+			merkleRootCommitments,
+			candidateTxsMap,
+			nullifiersDb,
+			commitmentsDb,
+			realFee,
+			chainIdSender,
+			nodeAddr)
+		if err != nil {
+			return nil, err
+		}
+		byteArrays, err := json.Marshal(tx)
+		if err == nil {
+			// return hex for a new tx
+			return hex.EncodeToString(byteArrays), nil
+		}
 	}
-	byteArrays, err := json.Marshal(tx)
-	if err == nil {
-		// return hex for a new tx
-		return hex.EncodeToString(byteArrays), nil
-	}
+
 	return nil, err
 }
 
@@ -804,10 +854,12 @@ Parameter #2–whether to allow high fees
 Result—a TXID or error message
 */
 func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
+	//log.Println(params)
 	arrayParams := common.InterfaceSlice(params)
 	hexRawTx := arrayParams[0].(string)
 	rawTxBytes, err := hex.DecodeString(hexRawTx)
+
+	log.Println("Preparing to send transaction ...")
 
 	if err != nil {
 		return nil, err
@@ -816,27 +868,43 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 	// log.Println(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
+		log.Println("Err", err)
 		return nil, err
 	}
 
-	hash, txDesc, err := self.Config.TxMemPool.MaybeAcceptTransaction(&tx)
+	if tx.GetType() == "n" {
+		log.Println("We have a normal tx ....")
+	}
+	var tx2 transaction.TxVoting
+	err = json.Unmarshal(rawTxBytes, &tx2)
 	if err != nil {
+		log.Println("Err", err)
 		return nil, err
 	}
+	if tx2.GetType() == "v" {
+		log.Println("We have a voting tx ....")
 
-	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
-	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+		hash, txDesc, err := self.Config.TxMemPool.MaybeAcceptTransaction(&tx2)
+		if err != nil {
+			return nil, err
+		}
 
-	// broadcast message
-	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
-	if err != nil {
-		return nil, err
+		Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+
+		// broadcast message
+		txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+		if err != nil {
+			return nil, err
+		}
+
+		txMsg.(*wire.MessageTx).Transaction = &tx2
+		self.Config.Server.PushMessageToAll(txMsg)
+
+		return tx.Hash(), nil
 	}
 
-	txMsg.(*wire.MessageTx).Transaction = &tx
-	self.Config.Server.PushMessageToAll(txMsg)
-
-	return tx.Hash(), nil
+	return nil, nil
 }
 
 /*
