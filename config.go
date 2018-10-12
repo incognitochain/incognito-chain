@@ -306,21 +306,6 @@ func loadConfig() (*config, []string, error) {
 		os.Exit(0)
 	}
 
-	// Multiple networks can't be selected simultaneously.
-	numNets := 0
-	// Count number of network flags passed; assign active network params
-	// while we're at it
-	if cfg.TestNet {
-		numNets++
-		activeNetParams = &testNetParams
-	}
-
-	if numNets > 1 {
-		Logger.log.Error("The testnet, regtest, segnet, and simnet params " +
-			"can't be used together -- choose one of the four")
-		os.Exit(0)
-	}
-
 	// Perform service command and exit if specified.  Invalid service
 	// commands show an appropriate error.  Only runs on Windows since
 	// the runServiceCommand function will be nil when not on Windows.
@@ -385,6 +370,21 @@ func loadConfig() (*config, []string, error) {
 		err := fmt.Errorf(str, funcName, err)
 		fmt.Fprintln(os.Stderr, err)
 		return nil, nil, err
+	}
+
+	// Multiple networks can't be selected simultaneously.
+	numNets := 0
+	// Count number of network flags passed; assign active network params
+	// while we're at it
+	if cfg.TestNet {
+		numNets++
+		activeNetParams = &testNetParams
+	}
+
+	if numNets > 1 {
+		Logger.log.Error("The testnet, regtest, segnet, and simnet params " +
+			"can't be used together -- choose one of the four")
+		os.Exit(0)
 	}
 
 	// Append the network type to the data directory so it is "namespaced"
