@@ -737,9 +737,12 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	numBlock := uint32(arrayParams[3].(float64))
 
 	// param #5: node address
-	nodeAddr := arrayParams[4].(string)
-	if valid := validateNodeAddress(nodeAddr); !valid {
-		return nil, errors.New("node address is wrong")
+	nodeAddr := ""
+	if len(arrayParams) >= 5 {
+		nodeAddr = arrayParams[4].(string)
+		if valid := validateNodeAddress(nodeAddr); !valid {
+			return nil, errors.New("node address is wrong")
+		}
 	}
 
 	// list unspent tx for estimation fee
