@@ -8,7 +8,7 @@ import (
 )
 
 func TestLevelDBDriver(t *testing.T) {
-	_, err := database.Open("lvdb", ".")
+	_, err := database.Open("leveldb", ".")
 	if err != nil {
 		t.Fatalf("database.Open %+v", err)
 	}
