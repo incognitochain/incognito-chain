@@ -151,8 +151,20 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	txHash := tx.Hash()
 
 	// that make sure transaction is accepted when passed any rules
-	txInfo := tx.(*transaction.Tx)
-	chainID, err := common.GetTxSenderChain(txInfo.AddressLastByte)
+	var chainID byte
+	var err error
+
+	switch tx.(type) {
+	case *transaction.Tx:
+		log.Println("Normal tx again")
+		txInfo := tx.(*transaction.Tx)
+		chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
+	case *transaction.TxVoting:
+		log.Println("Tx voting ")
+		txInfo := tx.(*transaction.TxVoting)
+		chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
+	}
+
 	if err != nil {
 		return nil, nil, err
 	}
@@ -217,6 +229,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 		err.Init(RejectCoinbaseTx, fmt.Sprintf("%v is coinbase tx", txHash.String()))
 		return nil, nil, err
 	}
+
+	fmt.Println("Still run well")
 
 	// sanity data
 	if validate, errS := tp.ValidateSanityData(tx); !validate {
@@ -530,6 +544,8 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		if txA.Type != common.TxActionParamsType {
 			return false, errors.New("Wrong tx type")
 		}
+	} else if tx.GetType() == common.TxVotingType {
+		return true, nil
 	} else {
 		return false, errors.New("Wrong tx type")
 	}
