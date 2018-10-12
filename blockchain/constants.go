@@ -3,20 +3,24 @@ package blockchain
 // constant for network
 const (
 	// Mainnet
-	Mainnet                   = 0x01
-	MainetName                = "mainnet"
-	MainnetDefaultPort        = "9333"
-	MainnetInitFundSalary     = 1000
-	MainnetGenesisBlockReward = uint64(1000000000)
+	Mainnet               = 0x01
+	MainetName            = "mainnet"
+	MainnetDefaultPort    = "9333"
+	MainnetInitFundSalary = 1000
+	MainnetInitDCBToken   = 1000
+	MainnetInitGovToken   = 1000
+	MainnetInitCmBToken   = 1000
 	// TODO change on production
 	MainnetGenesisblockPaymentAddress = "12Rt2dt1UT6PjZ7HzDVjkP5nAXZ22vPYWD1b31XuJ4FJBPorWpGbKTACT8wyfHqwDRqg3EuX2zAU9YQZvB6bNMNTsSGjqXHMQw9H1Xn"
 
 	// Testnet
-	Testnet                   = 0x02
-	TestnetName               = "testnet"
-	TestnetDefaultPort        = "9444"
-	TestnetGenesisBlockReward = uint64(1000000000)
-	TestnetInitFundSalary     = 1000
+	Testnet               = 0x02
+	TestnetName           = "testnet"
+	TestnetDefaultPort    = "9444"
+	TestnetInitFundSalary = 1000
+	TestnetInitDCBToken   = 1000
+	TestnetInitGovToken   = 1000
+	TestnetInitCmBToken   = 1000
 	// TODO change on production
 	TestnetGenesisBlockPaymentAddress = "12Rt2dt1UT6PjZ7HzDVjkP5nAXZ22vPYWD1b31XuJ4FJBPorWpGbKTACT8wyfHqwDRqg3EuX2zAU9YQZvB6bNMNTsSGjqXHMQw9H1Xn"
 )

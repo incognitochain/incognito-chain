@@ -247,7 +247,7 @@ func (self GenesisBlockGenerator) calcCommitmentMerkleRoot(tx *transaction.Tx) c
 	return &genesisBlock
 }*/
 
-func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(nonce int, difficulty uint32, version int, initialCoin uint64, initialAddress string, preSelectValidators []string, initSalaryFund uint64) *Block {
+func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(nonce int, difficulty uint32, version int, initialAddress string, preSelectValidators []string, initSalaryFund uint64) *Block {
 	//init the loc
 	loc, _ := time.LoadLocation("America/New_York")
 	time := time.Date(2018, 8, 1, 0, 0, 0, 0, loc)
