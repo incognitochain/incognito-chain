@@ -172,24 +172,6 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	self.BestState[chainId] = &BestState{}
 	self.BestState[chainId].Init(initBlock, tree)
 
-	// // save nullifiers and commitments from genesisblock
-	// view := NewTxViewPoint(chainId)
-	// err := view.fetchTxViewPoint(self.config.DataBase, initBlock)
-	// if err != nil {
-	// 	return err
-	// }
-	// // view.SetBestHash(initBlock.Hash())
-	// // Update the list nullifiers and commitment set using the state of the tx view point. This
-	// // entails adding the new ones created by the block.
-	// err = self.StoreNullifiersFromTxViewPoint(*view)
-	// if err != nil {
-	// 	return err
-	// }
-	// err = self.StoreCommitmentsFromTxViewPoint(*view)
-	// if err != nil {
-	// 	return err
-	// }
-
 	// store block genesis
 	err := self.StoreBlock(initBlock)
 	if err != nil {

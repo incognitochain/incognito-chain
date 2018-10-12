@@ -26,6 +26,7 @@ func (self RewardAgent) Init(cfg *RewardAgentConfig) (*RewardAgent, error) {
 }
 
 func (self *RewardAgent) GetSalary() uint64 {
+	// TODO: get param from prev-blocks to define a salary reward which gov need to pay for miner
 	return 0
 }
 

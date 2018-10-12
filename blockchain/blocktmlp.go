@@ -22,7 +22,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	var txs []transaction.Transaction
 
 	// Get reward
-	var salary uint64 = blockgen.rewardAgent.GetSalary()
+	salary := blockgen.rewardAgent.GetSalary()
 
 	if len(sourceTxns) < common.MinTxsInBlock {
 		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
@@ -120,6 +120,7 @@ concludeBlock:
 	blockgen.chain.StoreNullifiersFromListNullifier(nullifiers, descType, chainID)
 
 	block := Block{}
+	currentSalaryFund := blockgen.chain.BestState[chainID].BestBlock.Header.SalaryFund
 	block.Header = BlockHeader{
 		Version:               1,
 		PrevBlockHash:         *prevBlockHash,
@@ -129,7 +130,7 @@ concludeBlock:
 		BlockCommitteeSigs:    make([]string, common.TotalValidators),
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
-		SalaryFund:            blockgen.chain.BestState[chainID].BestBlock.Header.SalaryFund - salary + feeMap[common.TxOutCoinType],
+		SalaryFund:            currentSalaryFund - salary + feeMap[common.TxOutCoinType],
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
@@ -240,52 +241,58 @@ func extractTxsAndComputeInitialFees(txDescs []*transaction.TxDesc) (
 	return txs, actionParamTxs, feeMap
 }
 
-// func createCoinbaseTx(
-// 	params *blockchain.Params,
-// 	receiverAddr *client.PaymentAddress,
-// 	rt []byte,
-// 	chainID byte,
-// 	feeMap map[string]uint64,
-// ) (*transaction.Tx, error) {
-// 	// Create Proof for the joinsplit op
-// 	inputs := make([]*client.JSInput, 2)
-// 	inputs[0] = transaction.CreateRandomJSInput(nil)
-// 	inputs[1] = transaction.CreateRandomJSInput(inputs[0].Key)
-// 	dummyAddress := client.GenPaymentAddress(*inputs[0].Key)
+/*func createCoinbaseTx(
+	params *blockchain.Params,
+	receiverAddr *client.PaymentAddress,
+	rt []byte,
+	chainID byte,
+	feeMap map[string]uint64,
+) (*transaction.Tx, error) {
+	// Create Proof for the joinsplit op
+	inputs := make([]*client.JSInput, 2)
+	inputs[0] = transaction.CreateRandomJSInput(nil)
+	inputs[1] = transaction.CreateRandomJSInput(inputs[0].Key)
+	dummyAddress := client.GenPaymentAddress(*inputs[0].Key)
 
-// 	// Get reward
-// 	// TODO(@0xbunyip): implement bonds reward
-// 	var reward uint64 = common.DefaultCoinBaseTxReward + feeMap[common.TxOutCoinType] // TODO: probably will need compute reward based on block height
+	// Get reward
+	// TODO(@0xbunyip): implement bonds reward
+	var reward uint64 = common.DefaultCoinBaseTxReward + feeMap[common.TxOutCoinType] // TODO: probably will need compute reward based on block height
 
-// 	// Create new notes: first one is coinbase UTXO, second one has 0 value
-// 	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}
-// 	placeHolderOutputNote := &client.Note{Value: 0, Apk: receiverAddr.Apk}
+	// Create new notes: first one is coinbase UTXO, second one has 0 value
+	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}
+	placeHolderOutputNote := &client.Note{Value: 0, Apk: receiverAddr.Apk}
 
-// 	outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
-// 	outputs[0].EncKey = receiverAddr.Pkenc
-// 	outputs[0].OutputNote = outNote
-// 	outputs[1].EncKey = receiverAddr.Pkenc
-// 	outputs[1].OutputNote = placeHolderOutputNote
+	outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
+	outputs[0].EncKey = receiverAddr.Pkenc
+	outputs[0].OutputNote = outNote
+	outputs[1].EncKey = receiverAddr.Pkenc
+	outputs[1].OutputNote = placeHolderOutputNote
 
-// 	// Shuffle output notes randomly (if necessary)
+	// Shuffle output notes randomly (if necessary)
 
-// 	// Generate proof and sign tx
-// 	tx := transaction.CreateEmptyTx()
-// 	tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
-// 	var coinbaseTxFee uint64 // Zero fee for coinbase tx
-// 	rtMap := map[byte][]byte{chainID: rt}
-// 	inputMap := map[byte][]*client.JSInput{chainID: inputs}
-// 	err := tx.BuildNewJSDesc(inputMap, outputs, rtMap, reward, coinbaseTxFee)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	tx, err = transaction.SignTx(tx)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return tx, err
-// }
+	// Generate proof and sign tx
+	tx := transaction.CreateEmptyTx()
+	tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
+	var coinbaseTxFee uint64 // Zero fee for coinbase tx
+	rtMap := map[byte][]byte{chainID: rt}
+	inputMap := map[byte][]*client.JSInput{chainID: inputs}
+	err := tx.BuildNewJSDesc(inputMap, outputs, rtMap, reward, coinbaseTxFee)
+	if err != nil {
+		return nil, err
+	}
+	tx, err = transaction.SignTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	return tx, err
+}*/
 
+// createSalaryTx
+// Blockchain use this tx to pay a reward(salary) to miner of chain
+// #1 - salary:
+// #2 - receiverAddr:
+// #3 - rt
+// #4 - chainID
 func createSalaryTx(
 	salary uint64,
 	receiverAddr *client.PaymentAddress,
@@ -307,8 +314,6 @@ func createSalaryTx(
 	outputs[0].OutputNote = outNote
 	outputs[1].EncKey = receiverAddr.Pkenc
 	outputs[1].OutputNote = placeHolderOutputNote
-
-	// Shuffle output notes randomly (if necessary)
 
 	// Generate proof and sign tx
 	tx := transaction.CreateEmptyTx()

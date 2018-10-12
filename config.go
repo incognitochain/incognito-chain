@@ -52,7 +52,7 @@ var runServiceCommand func(string) error
 // See loadConfig for details on the configuration load process.
 type config struct {
 	ShowVersion          bool     `short:"V" long:"version" description:"Display version information and exit"`
-	ConfigFile           string   `short:"C" long:"configfile" description:"Path to configuration file"`
+	ConfigFile           string   `short:"C" long:"configfile" description:"Path to configuratio\n file"`
 	DataDir              string   `short:"b" long:"datadir" description:"Directory to store data"`
 	DataPrefix           string   `short:"p" long:"datapre" description:"Data prefix"`
 	LogDir               string   `long:"logdir" description:"Directory to log output."`
