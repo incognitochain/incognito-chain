@@ -29,7 +29,7 @@ $ make install-privacy
 - Pre-install like "Prerequisites"
 - Run privacy-server
     ```bash
-    $ make run-privacy # or
+    $ make start-privacy # or
     $ cd path_proj/privacy/server/build
     $ ./main
     ```
