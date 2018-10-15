@@ -4,14 +4,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
 )
 
-// MsgVerAck defines a bitcoin verack message which is used for a peer to
-// acknowledge a version message (MsgVersion) after it has used the information
-// to negotiate parameters.  It implements the Message interface.
-//
-// This message has no payload.
+const (
+	MaxPingPayload = 1000 // 1 1Kb
+)
+
 type MessagePing struct {
 }
 
@@ -20,7 +19,7 @@ func (self MessagePing) MessageType() string {
 }
 
 func (self MessagePing) MaxPayloadLength(pver int) int {
-	return MaxBlockPayload
+	return MaxPingPayload
 }
 
 func (self MessagePing) JsonSerialize() ([]byte, error) {
