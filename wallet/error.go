@@ -14,7 +14,9 @@ var ErrCodeMessage = map[string]struct {
 	code    int
 	message string
 }{
-	UnexpectedErr:         {-1, "Unexpected error"},
+	UnexpectedErr: {-1, "Unexpected error"},
+
+
 	InvalidChecksumErr:    {-1000, "Checksum does not match"},
 	WrongPassphraseErr:    {-1001, "Wrong passphrase"},
 	ExistedAccountErr:     {-1002, "Existed account"},
