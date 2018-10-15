@@ -3,7 +3,7 @@ package wire
 import (
 	"encoding/json"
 
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 )
 
