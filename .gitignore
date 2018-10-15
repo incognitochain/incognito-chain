@@ -27,3 +27,5 @@ cash-prototype
 *.o
 
 .DS_Store
+.env
+datadirs/data**

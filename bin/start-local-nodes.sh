@@ -7,6 +7,11 @@ fi
 TOTAL=$1
 SRC=$(pwd)
 
+DB_DIR=$2
+if [$DB_DIR == ""]; then
+  DB_DIR=$SRC/datadirs
+fi
+
 KEY1="CAESYKPGwbdMn73bb1dVoNDliMTrEy9ui/+uu7IqrR5xABDt1PgXkrFB+D4v6hrrQnQqYlwNkzD/R9jhmeWnGq0IPyjU+BeSsUH4Pi/qGutCdCpiXA2TMP9H2OGZ5acarQg/KA=="
 KEY2="CAESYMTVh+plO0Jk34qWb1vc9VloYfxyTIHEtsEKCxMMvuVXpOR9Lgf1C5BwU5PbBgmPgGRQR5ro7c8LKE3IKrjpLDak5H0uB/ULkHBTk9sGCY+AZFBHmujtzwsoTcgquOksNg=="
 KEY3="CAESYJHWT+jDxKqyl2dyx2G6m5eg606+ryEXz/a31X6OmNcEyBM05Qk1h6oYE0K+voqhT1cEx6egDoi/cCIhO/lYpufIEzTlCTWHqhgTQr6+iqFPVwTHp6AOiL9wIiE7+Vim5w=="
@@ -47,22 +52,25 @@ tmux new-window -d -n bootnode
 
 tmux send-keys -t cash-prototype:0.0 "cd $SRC && cd bootnode && ./bootnode" ENTER
 
+echo $DB_DIR
+
 for ((i=1;i<=$TOTAL;i++));
 do
     PORT=$((2333 + $i))
     eval KEY=\${KEY$i}
-    
+
     # open new window in tmux
-    tmux new-window -d -n node$1 
+    tmux new-window -d -n node$1
 
     # remove data folder
     rm -rf data$i
 
     # build options to start node
-    opts="--listen 127.0.0.1:$PORT --discoverpeers --datadir data$i --sealerprvkey $KEY"
+    opts="--listen 127.0.0.1:$PORT --discoverpeers --datadir $DB_DIR/data$i --sealerprvkey $KEY"
+
     if [ $i != 1 ]
     then
-        opts="--norpc --listen 127.0.0.1:$PORT --discoverpeers --datadir data$i --sealerprvkey $KEY"
+        opts="--norpc --listen 127.0.0.1:$PORT --discoverpeers --datadir ${DB_DIR}/data$i --sealerprvkey $KEY"
     fi
     # send command to node window
     tmux send-keys -t cash-prototype:$i.0 "cd $SRC && ./cash-prototype $opts" ENTER
