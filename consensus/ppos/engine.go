@@ -31,8 +31,6 @@ type Engine struct {
 	cBlockSig   chan blockSig
 
 	config                EngineConfig
-	currentCommittee      []string
-	candidates            []string
 	knownChainsHeight     chainsHeight
 	validatedChainsHeight chainsHeight
 }
@@ -81,7 +79,6 @@ func (self *Engine) Start() error {
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
 	self.knownChainsHeight.Heights = make([]int, common.TotalValidators)
 	self.validatedChainsHeight.Heights = make([]int, common.TotalValidators)
-	self.currentCommittee = make([]string, 20)
 
 	for chainID := 0; chainID < common.TotalValidators; chainID++ {
 		self.knownChainsHeight.Heights[chainID] = int(self.config.BlockChain.BestState[chainID].Height)
@@ -105,7 +102,6 @@ func (self *Engine) Start() error {
 	}
 
 	copy(self.validatedChainsHeight.Heights, self.knownChainsHeight.Heights)
-	copy(self.currentCommittee, self.config.BlockChain.BestState[0].BestBlock.Header.Committee)
 
 	go func() {
 		for {
@@ -236,7 +232,7 @@ func (self *Engine) Finalize(finalBlock *blockchain.Block) error {
 	}()
 	retryTime := 0
 finalizing:
-	copy(finalBlock.Header.Committee, self.GetNextCommittee())
+	copy(finalBlock.Header.Committee, self.GetCommittee())
 	sig, err := self.signData([]byte(finalBlock.Hash().String()))
 	if err != nil {
 		return err

@@ -121,7 +121,7 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 		return
 	}
 	newMsg.(*wire.MessageChainState).ChainInfo = ChainInfo{
-		CurrentCommittee:  self.currentCommittee,
+		CurrentCommittee:  self.GetCommittee(),
 		CandidateListHash: "",
 		ChainsHeight:      self.validatedChainsHeight.Heights,
 	}
