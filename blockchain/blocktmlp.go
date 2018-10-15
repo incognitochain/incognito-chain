@@ -112,6 +112,22 @@ concludeBlock:
 				}
 				descType = desc.Type
 			}
+		} else if blockTx.GetType() == common.TxVotingType {
+			tx, ok := blockTx.(*transaction.TxVoting)
+			if !ok {
+				Logger.log.Error("Transaction not recognized to store in database")
+				continue
+			}
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					commitments = append(commitments, cm)
+				}
+
+				for _, nf := range desc.Nullifiers {
+					nullifiers = append(nullifiers, nf)
+				}
+				descType = desc.Type
+			}
 		}
 	}
 	// TODO(@0xsirrush): check if cm and nf should be saved here (when generate block template)
@@ -147,6 +163,17 @@ concludeBlock:
 	for _, tempBlockTx := range block.Transactions {
 		if tempBlockTx.GetType() == common.TxNormalType {
 			tx, ok := tempBlockTx.(*transaction.Tx)
+			if ok == false {
+				Logger.log.Errorf("Transaction in block not valid")
+			}
+
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					Logger.log.Infof("%x", cm[:])
+				}
+			}
+		} else if tempBlockTx.GetType() == common.TxVotingType {
+			tx, ok := tempBlockTx.(*transaction.TxVoting)
 			if ok == false {
 				Logger.log.Errorf("Transaction in block not valid")
 			}

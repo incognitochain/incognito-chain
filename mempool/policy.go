@@ -36,12 +36,25 @@ func (self *Policy) CheckTxVersion(tx *transaction.Transaction) bool {
 				return false
 			}
 		}
+	case common.TxVotingType:
+		{
+			temp := (*tx).(*transaction.TxVoting)
+			if temp.Version > self.MaxTxVersion {
+				return false
+			}
+		}
 	}
 	return true
 }
 
 // return min transacton fee required for a transaction that we accepted into the memmory pool and replayed.
 func (self *Policy) calcMinFeeTxAccepted(tx *transaction.Tx) uint64 {
+	//@todo we will create rules of calc here later.
+	return 0
+}
+
+// return min transacton fee required for a transaction that we accepted into the memmory pool and replayed.
+func (self *Policy) calcMinFeeVotingTxAccepted(tx *transaction.TxVoting) uint64 {
 	//@todo we will create rules of calc here later.
 	return 0
 }
@@ -55,6 +68,19 @@ func (self *Policy) CheckTransactionFee(tx *transaction.Tx) error {
 		str := fmt.Sprintf("transaction %v has %d fees which is under the required amount of %d", tx.Hash().String(), tx.Fee, minFee)
 		err := MempoolTxError{}
 		err.Init(RejectInvalidFee, errors.New(str))
+		return err
+	}
+	return nil
+}
+
+func (self *Policy) CheckVotingTransactionFee(tx *transaction.TxVoting) error {
+	minFee := self.calcMinFeeVotingTxAccepted(tx)
+	if tx.Fee < minFee {
+		str := fmt.Sprintf("transaction %v has %d fees which is under "+
+			"the required amount of %d", tx.Hash().String(), tx.Fee,
+			minFee)
+		err := TxRuleError{}
+		err.Init(RejectInvalidFee, str)
 		return err
 	}
 	return nil
