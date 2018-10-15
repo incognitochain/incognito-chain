@@ -148,7 +148,7 @@ func CreateVotingTx(
 	for chainID, chainTxs := range usableTx {
 		for _, tx := range chainTxs {
 			for _, desc := range tx.Descs {
-				for _, note := range desc.note {
+				for _, note := range desc.Note {
 					chainNote := &ChainNote{note: note, chainID: chainID}
 					inputNotes = append(inputNotes, chainNote)
 					fmt.Printf("[CreateTx] inputNote.Value: %v\n", note.Value)
