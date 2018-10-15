@@ -345,7 +345,7 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 		// update candidate list
 		if tx.GetType() == common.TxVotingType {
 			txV, ok := tx.(*transaction.TxVoting)
-			nodeAddr := strings.ToLower(txV.NodeAddr)
+			nodeAddr := txV.NodeAddr
 			if ok && common.IndexOfStr(nodeAddr, bestState.CndList) < 0 {
 				bestState.CndList = append(bestState.CndList, nodeAddr)
 			}
