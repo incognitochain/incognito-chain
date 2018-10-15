@@ -53,7 +53,7 @@ func (self *Policy) CheckTransactionFee(tx *transaction.Tx) error {
 	minFee := self.calcMinFeeTxAccepted(tx)
 	if tx.Fee < minFee {
 		str := fmt.Sprintf("transaction %v has %d fees which is under the required amount of %d", tx.Hash().String(), tx.Fee, minFee)
-		err := TxRuleError{}
+		err := MempoolTxError{}
 		err.Init(RejectInvalidFee, errors.New(str))
 		return err
 	}

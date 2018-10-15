@@ -150,7 +150,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	// check version
 	ok := tp.config.Policy.CheckTxVersion(&tx)
 	if !ok {
-		err := TxRuleError{}
+		err := MempoolTxError{}
 		err.Init(RejectVersion, errors.New(fmt.Sprintf("%v's version is invalid", txHash.String())))
 		return nil, nil, err
 	}
@@ -167,7 +167,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 		txViewPoint, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainID)
 		if err != nil {
 			str := fmt.Sprintf("Can not check double spend for tx")
-			err := TxRuleError{}
+			err := MempoolTxError{}
 			err.Init(CanNotCheckDoubleSpend, errors.New(str))
 			return nil, nil, err
 		}
@@ -177,13 +177,13 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 				existed, err := common.SliceBytesExists(nullifierDb, nullifer)
 				if err != nil {
 					str := fmt.Sprintf("Can not check double spend for tx")
-					err := TxRuleError{}
+					err := MempoolTxError{}
 					err.Init(CanNotCheckDoubleSpend, errors.New(str))
 					return nil, nil, err
 				}
 				if existed {
 					str := fmt.Sprintf("Nullifiers of transaction %v already existed", txHash.String())
-					err := TxRuleError{}
+					err := MempoolTxError{}
 					err.Init(RejectDuplicateTx, errors.New(str))
 					return nil, nil, err
 				}
@@ -194,21 +194,21 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	// Don't accept the transaction if it already exists in the pool.
 	if tp.isTxInPool(txHash) {
 		str := fmt.Sprintf("already have transaction %v", txHash.String())
-		err := TxRuleError{}
+		err := MempoolTxError{}
 		err.Init(RejectDuplicateTx, errors.New(str))
 		return nil, nil, err
 	}
 
 	// A standalone transaction must not be a coinbase transaction.
 	if blockchain.IsCoinBaseTx(tx) {
-		err := TxRuleError{}
+		err := MempoolTxError{}
 		err.Init(RejectCoinbaseTx, errors.New(fmt.Sprintf("%v is coinbase tx", txHash.String())))
 		return nil, nil, err
 	}
 
 	// sanity data
 	if validate, errS := tp.ValidateSanityData(tx); !validate {
-		err := TxRuleError{}
+		err := MempoolTxError{}
 		err.Init(RejectSansityTx, errors.New(fmt.Sprintf("transaction's sansity %v is error %v", txHash.String(), errS.Error())))
 		return nil, nil, err
 	}
@@ -216,7 +216,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	// Validate tx by it self
 	validate := tx.ValidateTransaction()
 	if !validate {
-		err := TxRuleError{}
+		err := MempoolTxError{}
 		err.Init(RejectInvalidTx, errors.New("Invalid tx"))
 		return nil, nil, err
 	}
@@ -364,7 +364,7 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		chainId, err := common.GetTxSenderChain(tx.(*transaction.Tx).AddressLastByte)
 		if err != nil {
 			str := fmt.Sprintf("Can not check double spend for tx")
-			err := TxRuleError{}
+			err := MempoolTxError{}
 			err.Init(CanNotCheckDoubleSpend, errors.New(str))
 			return false, err
 		}
