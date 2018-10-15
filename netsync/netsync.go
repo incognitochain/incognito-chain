@@ -44,11 +44,11 @@ type NetSyncConfig struct {
 	FeeEstimator map[byte]*mempool.FeeEstimator
 }
 
-func (self NetSync) New(cfg *NetSyncConfig) (*NetSync, error) {
+func (self NetSync) New(cfg *NetSyncConfig) (*NetSync) {
 	self.config = cfg
 	self.cQuit = make(chan struct{})
 	self.cMessage = make(chan interface{})
-	return &self, nil
+	return &self
 }
 
 func (self *NetSync) Start() {
@@ -66,15 +66,13 @@ func (self *NetSync) Start() {
 
 // Stop gracefully shuts down the sync manager by stopping all asynchronous
 // handlers and waiting for them to finish.
-func (self *NetSync) Stop() error {
+func (self *NetSync) Stop() {
 	if atomic.AddInt32(&self.shutdown, 1) != 1 {
 		Logger.log.Warn("Sync manager is already in the process of shutting down")
-		return nil
 	}
 
 	Logger.log.Warn("Sync manager shutting down")
 	close(self.cQuit)
-	return nil
 }
 
 // messageHandler is the main handler for the sync manager.  It must be run as a

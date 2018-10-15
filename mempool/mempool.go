@@ -60,17 +60,6 @@ type TxPool struct {
 	mtx    sync.RWMutex
 	config Config
 	pool   map[common.Hash]*TxDesc
-	//orphans       map[chainhash.Hash]*orphanTx
-	//orphansByPrev map[wire.OutPoint]map[common.Hash]*Tx
-	//outpoints     map[wire.OutPoint]*Tx
-	//pennyTotal    float64 // exponentially decaying total for penny spends.
-	//lastPennyUnix int64   // unix time of last ``penny spend''
-
-	// nextExpireScan is the time after which the orphan pool will be
-	// scanned in order to evict orphans.  This is NOT a hard deadline as
-	// the scan will only run when an orphan is added to the pool as opposed
-	// to on an unconditional timer.
-	nextExpireScan time.Time
 }
 
 /*
@@ -79,7 +68,6 @@ Init Txpool from config
 func (tp *TxPool) Init(cfg *Config) {
 	tp.config = *cfg
 	tp.pool = make(map[common.Hash]*TxDesc)
-	tp.nextExpireScan = time.Now().Add(orphanExpireScanInterval)
 }
 
 // check transaction in pool

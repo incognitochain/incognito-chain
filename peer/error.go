@@ -47,20 +47,3 @@ func NewPeerError(key string, err error, peer *Peer) *PeerError {
 		peer:    peer,
 	}
 }
-
-type PeerConnErr struct {
-	err     error
-	code    int
-	message string
-
-	peerConn *PeerConn
-}
-
-func NewPeerConnError(key string, err error, peer *Peer) *PeerError {
-	return &PeerError{
-		err:     err,
-		code:    ErrCodeMessage[key].code,
-		message: ErrCodeMessage[key].message,
-		peer:    peer,
-	}
-}
