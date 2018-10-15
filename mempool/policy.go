@@ -79,8 +79,8 @@ func (self *Policy) CheckVotingTransactionFee(tx *transaction.TxVoting) error {
 		str := fmt.Sprintf("transaction %v has %d fees which is under "+
 			"the required amount of %d", tx.Hash().String(), tx.Fee,
 			minFee)
-		err := TxRuleError{}
-		err.Init(RejectInvalidFee, str)
+		err := MempoolTxError{}
+		err.Init(RejectInvalidFee, errors.New(str))
 		return err
 	}
 	return nil

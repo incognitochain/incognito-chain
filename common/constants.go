@@ -24,7 +24,7 @@ const (
 	MinBlockWaitTime        = 3                     // second
 	MaxBlockWaitTime        = 20 - MinBlockWaitTime // second
 	MaxSyncChainTime        = 5                     // second
-	MaxBlockSigWaitTime     = 20                    // second
+	MaxBlockSigWaitTime     = 10                    // second
 	TotalValidators         = 20                    // = TOTAL CHAINS
 	MinBlockSigs            = (TotalValidators / 2) + 1
 	DefaultCoinBaseTxReward = 50

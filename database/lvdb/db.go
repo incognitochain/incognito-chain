@@ -22,7 +22,6 @@ var (
 	commitments       = []byte("commitments-")
 	bestBlockKey      = []byte("bestBlock")
 	feeEstimator      = []byte("feeEstimator")
-	bestCndListKey    = []byte("bestCndList")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {
