@@ -33,23 +33,12 @@ type Config struct {
 	FeeEstimator map[byte]*FeeEstimator
 }
 
-// orphanTx is normal transaction that references an ancestor transaction
-// that is not yet available.  It also contains additional information related
-// to it such as an expiration time to help prevent caching the orphan forever.
-/*type orphanTx struct {
-	tx         *transaction.Tx
-	id         Id
-	expiration time.Time
-}*/
-
 // TxDesc is transaction description in mempool
 type TxDesc struct {
 	// transaction details
 	Desc transaction.TxDesc
 
-	// StartingPriority is the priority of the transaction when it was added
-	// to the pool.
-	StartingPriority float64
+	StartingPriority int
 }
 
 // TxPool is transaction pool
