@@ -30,6 +30,8 @@ type BestState struct {
 	TotalTxns uint64 // The total number of txns in the chain.
 	// MedianTime time.Time // Median time as per CalcPastMedianTime.
 	sync.Mutex
+
+	CndList []string
 }
 
 /*

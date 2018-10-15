@@ -393,8 +393,8 @@ func validateSanityNormalTxData(tp *TxPool, tx *transaction.Tx) (bool, error) {
 	chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
 	if err != nil {
 		str := fmt.Sprintf("Can not check double spend for tx")
-		err := TxRuleError{}
-		err.Init(CanNotCheckDoubleSpend, str)
+		err := MempoolTxError{}
+		err.Init(CanNotCheckDoubleSpend, errors.New(str))
 		return false, err
 	}
 	txN := tx
