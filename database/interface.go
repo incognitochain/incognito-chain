@@ -29,5 +29,8 @@ type DatabaseInterface interface {
 	StoreFeeEstimator([]byte, byte) error
 	GetFeeEstimator(byte) ([]byte, error)
 
+	StoreCndList([]byte, string, byte) error
+	FetchCndList(string, byte) ([][]byte, error)
+
 	Close() error
 }
