@@ -14,18 +14,16 @@ const (
 	MessageHeaderSize  = 24
 	MessageCmdTypeSize = 12
 
-	CmdBlock          = "block"
-	CmdTx             = "tx"
-	CmdGetBlocks      = "getblocks"
-	CmdInv            = "inv"
-	CmdGetData        = "getdata"
-	CmdVersion        = "version"
-	CmdVerack         = "verack"
-	CmdGetAddr        = "getaddr"
-	CmdAddr           = "addr"
-	CmdPing           = "ping"
-	CmdGetBlockHeader = "getheader"
-	CmdBlockHeader    = "header"
+	CmdBlock     = "block"
+	CmdTx        = "tx"
+	CmdGetBlocks = "getblocks"
+	CmdInv       = "inv"
+	CmdGetData   = "getdata"
+	CmdVersion   = "version"
+	CmdVerack    = "verack"
+	CmdGetAddr   = "getaddr"
+	CmdAddr      = "addr"
+	CmdPing      = "ping"
 
 	// POS Cmd
 	CmdRequestSign       = "requestsign"
@@ -70,11 +68,6 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdVerack:
 		msg = &MessageVerAck{}
 		break
-	case CmdGetBlockHeader:
-		msg = &MessageGetBlockHeader{}
-		break
-	case CmdBlockHeader:
-		msg = &MessageBlockHeader{}
 		// POS start
 	case CmdBlockSig:
 		msg = &MessageBlockSig{}
@@ -122,10 +115,6 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdVersion, nil
 	case reflect.TypeOf(&MessageVerAck{}):
 		return CmdVerack, nil
-	case reflect.TypeOf(&MessageGetBlockHeader{}):
-		return CmdGetBlockHeader, nil
-	case reflect.TypeOf(&MessageBlockHeader{}):
-		return CmdBlockHeader, nil
 	case reflect.TypeOf(&MessageGetAddr{}):
 		return CmdGetAddr, nil
 	case reflect.TypeOf(&MessageAddr{}):

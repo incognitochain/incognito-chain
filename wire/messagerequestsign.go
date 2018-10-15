@@ -17,7 +17,7 @@ func (self *MessageRequestSign) MessageType() string {
 }
 
 func (self *MessageRequestSign) MaxPayloadLength(pver int) int {
-	return MaxHeaderPayload
+	return MaxBlockPayload
 }
 
 func (self *MessageRequestSign) JsonSerialize() ([]byte, error) {

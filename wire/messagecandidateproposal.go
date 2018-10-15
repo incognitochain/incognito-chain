@@ -14,7 +14,7 @@ func (self MessageCandidateProposal) MessageType() string {
 }
 
 func (self MessageCandidateProposal) MaxPayloadLength(pver int) int {
-	return MaxHeaderPayload
+	return MaxBlockPayload
 }
 
 func (self MessageCandidateProposal) JsonSerialize() ([]byte, error) {
