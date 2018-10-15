@@ -115,7 +115,7 @@ var MainNetParams = Params{
 	},
 
 	// blockChain parameters
-	GenesisBlock:             GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(0x18aea41a, 0x1d00ffff, 1, MainnetGenesisBlockReward, MainnetGenesisblockPaymentAddress, pposValidators),
+	GenesisBlock:             GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(0x18aea41a, 0x1d00ffff, 1, MainnetGenesisblockPaymentAddress, pposValidators, MainnetInitFundSalary),
 	SubsidyReductionInterval: 210000,
 	TargetTimespan:           time.Hour * 24 * 14, // 14 days
 	TargetTimePerBlock:       time.Minute * 10,    // 10 minutes
@@ -141,7 +141,7 @@ var TestNetParams = Params{
 	},
 
 	// blockChain parameters
-	GenesisBlock:             GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(0x18aea41a, 0x1d00ffff, 1, TestnetGenesisBlockReward, TestnetGenesisBlockPaymentAddress, pposValidators),
+	GenesisBlock:             GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(0x18aea41a, 0x1d00ffff, 1, TestnetGenesisBlockPaymentAddress, pposValidators, TestnetInitFundSalary),
 	SubsidyReductionInterval: 210000,
 	TargetTimespan:           time.Hour * 24 * 14, // 14 days
 	TargetTimePerBlock:       time.Minute * 10,    // 10 minutes

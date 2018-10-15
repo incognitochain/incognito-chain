@@ -10,6 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ninjadotorg/cash-prototype/rewardagent"
+
 	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/consensus/ppos"
 
@@ -52,7 +54,8 @@ type Server struct {
 	addrManager     *addrmanager.AddrManager
 	wallet          *wallet.Wallet
 	consensusEngine *ppos.Engine
-
+	blockgen        *blockchain.BlkTmplGenerator
+	rewardAgent     *rewardagent.RewardAgent
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator
@@ -179,26 +182,36 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 
 	self.addrManager = addrmanager.New(cfg.DataDir, nil)
 
-	self.consensusEngine = ppos.New(&ppos.Config{
+	self.rewardAgent, err = rewardagent.RewardAgent{}.Init(&rewardagent.RewardAgentConfig{})
+	if err != nil {
+		return err
+	}
+
+	self.blockgen, err = blockchain.BlkTmplGenerator{}.Init(self.memPool, self.blockChain, self.rewardAgent)
+	if err != nil {
+		return err
+	}
+	self.consensusEngine, err = ppos.Engine{}.Init(&ppos.EngineConfig{
 		ChainParams:  self.chainParams,
 		BlockChain:   self.blockChain,
 		MemPool:      self.memPool,
 		Server:       self,
 		FeeEstimator: self.feeEstimator,
-	})
-
-	// Init Net Sync manager to process messages
-	self.netSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
-		BlockChain:   self.blockChain,
-		ChainParam:   chainParams,
-		MemPool:      self.memPool,
-		Server:       self,
-		Consensus:    self.consensusEngine,
-		FeeEstimator: self.feeEstimator,
+		BlockGen:     self.blockgen,
 	})
 	if err != nil {
 		return err
 	}
+
+	// Init Net Sync manager to process messages
+	self.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
+		BlockChain:   self.blockChain,
+		ChainParam:   chainParams,
+		MemTxPool:    self.memPool,
+		Server:       self,
+		Consensus:    self.consensusEngine,
+		FeeEstimator: self.feeEstimator,
+	})
 
 	// Create a connection manager.
 	var peers []*peer.Peer
@@ -211,16 +224,13 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		}
 	}
 
-	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
+	connManager := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
 		ListenerPeers:        peers,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
 	})
-	if err != nil {
-		return err
-	}
 	self.connManager = connManager
 
 	// Start up persistent peers.
@@ -755,7 +765,7 @@ func (self *Server) OnChainState(_ *peer.PeerConn, msg *wire.MessageChainState) 
 	Logger.log.Info("Receive a chainstate END")
 }
 
-func (self *Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {
+func (self *Server) GetPeerIDsFromPublicKey(pubKey string) []peer2.ID {
 	result := []peer2.ID{}
 
 	for _, listener := range self.connManager.Config.ListenerPeers {

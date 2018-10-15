@@ -76,7 +76,7 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 
 func (self *Engine) OnBlockSigReceived(blockHash string, validator string, sig string) {
 	Logger.log.Info("Received a block signature")
-	self.blockSigCh <- blockSig{
+	self.cBlockSig <- blockSig{
 		BlockHash:    blockHash,
 		Validator:    validator,
 		ValidatorSig: sig,

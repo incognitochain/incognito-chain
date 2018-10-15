@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"strconv"
+	"strings"
 
 	"encoding/json"
 	"errors"
@@ -211,7 +212,9 @@ func (self Block) Hash() *common.Hash {
 		self.Header.PrevBlockHash.String() +
 		strconv.Itoa(len(self.Transactions)) +
 		self.ChainLeader +
-		strconv.Itoa(int(self.Height))
+		strconv.Itoa(int(self.Height)) +
+		strconv.Itoa(int(self.Header.SalaryFund)) +
+		strings.Join(self.Header.Committee, ",")
 	hash := common.DoubleHashH([]byte(record))
 	self.blockHash = &hash
 	return self.blockHash

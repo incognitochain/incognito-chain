@@ -95,14 +95,14 @@ func (self ConnManager) Stop() {
 	Logger.log.Warn("Connection manager stopped")
 }
 
-func (self ConnManager) New(cfg *Config) (*ConnManager, error) {
+func (self ConnManager) New(cfg *Config) (*ConnManager) {
 	self.Config = *cfg
 	self.cQuit = make(chan struct{})
 	self.discoveredPeers = make(map[string]*DiscoverPeerInfo)
 
 	self.ListeningPeers = map[libpeer.ID]*peer.Peer{}
 
-	return &self, nil
+	return &self
 }
 
 func (self ConnManager) GetPeerId(addr string) string {

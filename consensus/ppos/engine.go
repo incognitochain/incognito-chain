@@ -25,14 +25,16 @@ type Engine struct {
 	quit    chan struct{}
 
 	sealerStarted bool
-	quitSealer    chan struct{}
 
-	config                Config
+	// channel
+	cQuitSealer chan struct{}
+	cBlockSig   chan blockSig
+
+	config                EngineConfig
 	currentCommittee      []string
 	candidates            []string
 	knownChainsHeight     chainsHeight
 	validatedChainsHeight chainsHeight
-	blockSigCh            chan blockSig
 }
 
 type ChainInfo struct {
@@ -44,15 +46,17 @@ type chainsHeight struct {
 	Heights []int
 	sync.Mutex
 }
-type Config struct {
-	BlockChain      *blockchain.BlockChain
+
+type EngineConfig struct {
+	BlockChain *blockchain.BlockChain
+	// RewardAgent
 	ChainParams     *blockchain.Params
-	blockGen        *BlkTmplGenerator
+	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
 	Server          interface {
 		// list functions callback which are assigned from Server struct
-		GetPeerIdsFromPublicKey(string) []peer2.ID
+		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
 		PushMessageToPeer(wire.Message, peer2.ID) error
 		PushMessageGetChainState() error
@@ -66,6 +70,7 @@ type blockSig struct {
 	ValidatorSig string
 }
 
+//Start start consensus engine
 func (self *Engine) Start() error {
 	self.Lock()
 	defer self.Unlock()
@@ -116,6 +121,7 @@ func (self *Engine) Start() error {
 	return nil
 }
 
+//Stop stop consensus engine
 func (self *Engine) Stop() error {
 	Logger.log.Info("Stopping Consensus engine...")
 	self.Lock()
@@ -131,13 +137,14 @@ func (self *Engine) Stop() error {
 	return nil
 }
 
-func New(cfg *Config) *Engine {
-	cfg.blockGen = NewBlkTmplGenerator(cfg.MemPool, cfg.BlockChain)
+//Init apply configuration to consensus engine
+func (self Engine) Init(cfg *EngineConfig) (*Engine, error) {
 	return &Engine{
 		config: *cfg,
-	}
+	}, nil
 }
 
+//StartSealer start sealing block
 func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 	if self.sealerStarted {
 		Logger.log.Error("Sealer already started")
@@ -145,15 +152,15 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 	}
 	self.config.ValidatorKeySet = sealerKeySet
 
-	self.quitSealer = make(chan struct{})
-	self.blockSigCh = make(chan blockSig)
+	self.cQuitSealer = make(chan struct{})
+	self.cBlockSig = make(chan blockSig)
 	self.sealerStarted = true
 	Logger.log.Info("Starting sealer with public key: " + base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)))
 
 	go func() {
 		for {
 			select {
-			case <-self.quitSealer:
+			case <-self.cQuitSealer:
 				return
 			default:
 				if self.started {
@@ -193,11 +200,12 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 	}()
 }
 
+// StopSealer stop sealer
 func (self *Engine) StopSealer() {
 	if self.sealerStarted {
 		Logger.log.Info("Stopping Sealer...")
-		close(self.quitSealer)
-		close(self.blockSigCh)
+		close(self.cQuitSealer)
+		close(self.cBlockSig)
 		self.sealerStarted = false
 	}
 }
@@ -206,7 +214,7 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	Logger.log.Info("Start creating block...")
 	myChainID := self.getMyChain()
 	paymentAddress, err := self.config.ValidatorKeySet.GetPaymentAddress()
-	newblock, err := self.config.blockGen.NewBlockTemplate(paymentAddress, self.config.BlockChain, myChainID)
+	newblock, err := self.config.BlockGen.NewBlockTemplate(paymentAddress, myChainID)
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
@@ -214,33 +222,27 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	copy(newblock.Block.Header.ChainsHeight, self.validatedChainsHeight.Heights)
 	newblock.Block.Header.ChainID = myChainID
 	newblock.Block.ChainLeader = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
-
-	copy(newblock.Block.Header.Committee, self.GetNextCommittee())
-	// for _, validator := range self.GetNextCommittee() {
-	// 	newblock.Block.Header.CommitteeSigs[validator] = ""
-	// }
-
-	sig, err := self.signData([]byte(newblock.Block.Hash().String()))
-	if err != nil {
-		return &blockchain.Block{}, err
-	}
-	newblock.Block.Header.BlockCommitteeSigs[newblock.Block.Header.ChainID] = sig
 	return newblock.Block, nil
 }
 
-func (self *Engine) Finalize(block *blockchain.Block) error {
+// Finalize after successfully create a block we will send this block to other validators to get their signatures
+func (self *Engine) Finalize(finalBlock *blockchain.Block) error {
 	Logger.log.Info("Start finalizing block...")
-	finalBlock := block
 	allSigReceived := make(chan struct{})
 	cancel := make(chan struct{})
-	committee := block.Header.Committee
-	// for validator := range block.Header.CommitteeSigs {
-	// 	committee = append(committee, validator)
-	// }
 	defer func() {
 		close(cancel)
 		close(allSigReceived)
 	}()
+	retryTime := 0
+finalizing:
+	copy(finalBlock.Header.Committee, self.GetNextCommittee())
+	sig, err := self.signData([]byte(finalBlock.Hash().String()))
+	if err != nil {
+		return err
+	}
+	finalBlock.Header.BlockCommitteeSigs[finalBlock.Header.ChainID] = sig
+	committee := finalBlock.Header.Committee
 
 	// Collect signatures of other validators
 	go func(blockHash string) {
@@ -249,17 +251,17 @@ func (self *Engine) Finalize(block *blockchain.Block) error {
 			select {
 			case <-cancel:
 				return
-			case blocksig := <-self.blockSigCh:
+			case blocksig := <-self.cBlockSig:
 				Logger.log.Info("Validator's signature received", sigsReceived)
 
 				if blockHash != blocksig.BlockHash {
-					Logger.log.Critical("(o_O)!", blocksig, "this block", blockHash)
+					Logger.log.Critical("Block hash not match!", blocksig, "this block", blockHash)
 					continue
 				}
 
 				if idx := common.IndexOfStr(blocksig.Validator, committee); idx != -1 {
-					if block.Header.BlockCommitteeSigs[idx] != "" {
-						err := cashec.ValidateDataB58(blocksig.Validator, blocksig.ValidatorSig, []byte(block.Hash().String()))
+					if finalBlock.Header.BlockCommitteeSigs[idx] != "" {
+						err := cashec.ValidateDataB58(blocksig.Validator, blocksig.ValidatorSig, []byte(finalBlock.Hash().String()))
 
 						if err != nil {
 							Logger.log.Error("Validate sig error:", err)
@@ -279,16 +281,21 @@ func (self *Engine) Finalize(block *blockchain.Block) error {
 				}
 			}
 		}
-	}(block.Hash().String())
+	}(finalBlock.Hash().String())
+
 	//Request for signatures of other validators
 	go func() {
+		//Uncomment this segment to create block with 1 node (validator)
+		/*
+			allSigReceived <- struct{}{}
+		*/
 		reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestSign)
-		reqSigMsg.(*wire.MessageRequestSign).Block = *block
+		reqSigMsg.(*wire.MessageRequestSign).Block = *finalBlock
 		for idx := 0; idx < common.TotalValidators; idx++ {
 			//@TODO: retry on failed validators
-			if committee[idx] != block.ChainLeader {
+			if committee[idx] != finalBlock.ChainLeader {
 				go func(validator string) {
-					peerIDs := self.config.Server.GetPeerIdsFromPublicKey(validator)
+					peerIDs := self.config.Server.GetPeerIDsFromPublicKey(validator)
 					if len(peerIDs) != 0 {
 						Logger.log.Info("Request signaure from "+peerIDs[0], validator)
 						self.config.Server.PushMessageToPeer(reqSigMsg, peerIDs[0])
@@ -299,23 +306,26 @@ func (self *Engine) Finalize(block *blockchain.Block) error {
 			}
 		}
 	}()
-
 	// Wait for signatures of other validators
 	select {
 	case <-allSigReceived:
 		Logger.log.Info("Validator sigs: ", finalBlock.Header.BlockCommitteeSigs)
 	case <-time.After(common.MaxBlockSigWaitTime * time.Second):
-		return errCantFinalizeBlock
+		//blocksig wait time exceeded -> get a new commitee list and retry
+		Logger.log.Error(errExceedSigWaitTime)
+		retryTime++
+		Logger.log.Infof("Start finalizing block... %d time", retryTime)
+		goto finalizing
 	}
 
 	headerBytes, _ := json.Marshal(finalBlock.Header)
-	sig, err := self.signData(headerBytes)
+	sig, err = self.signData(headerBytes)
 	if err != nil {
 		return err
 	}
 	finalBlock.ChainLeaderSig = sig
 	self.UpdateChain(finalBlock)
-	self.sendBlockMsg(block)
+	self.sendBlockMsg(finalBlock)
 	return nil
 }
 

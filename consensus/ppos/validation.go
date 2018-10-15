@@ -114,13 +114,15 @@ func (self *Engine) IsEnoughData(block *blockchain.Block) error {
 				getBlkMsg := &wire.MessageGetBlocks{
 					LastBlockHash: self.config.BlockChain.BestState[i].BestBlockHash.String(),
 				}
-				peerIDs := self.config.Server.GetPeerIdsFromPublicKey(block.ChainLeader)
-				if len(peerIDs) != 0 {
-					Logger.log.Info("Send getblock to "+peerIDs[0], block.ChainLeader)
-					self.config.Server.PushMessageToPeer(getBlkMsg, peerIDs[0])
-				} else {
-					Logger.log.Error("Validator's peer not found!", block.ChainLeader)
-				}
+				go func(chainLeader string) {
+					peerIDs := self.config.Server.GetPeerIDsFromPublicKey(chainLeader)
+					if len(peerIDs) != 0 {
+						Logger.log.Info("Send getblock to "+peerIDs[0], chainLeader)
+						self.config.Server.PushMessageToPeer(getBlkMsg, peerIDs[0])
+					} else {
+						Logger.log.Error("Validator's peer not found!", chainLeader)
+					}
+				}(block.ChainLeader)
 			}
 		}
 		if notFullySync {
