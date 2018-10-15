@@ -249,6 +249,8 @@ finalizing:
 		var sigsReceived int
 		for {
 			select {
+			case <-self.quit:
+				return
 			case <-cancel:
 				return
 			case blocksig := <-self.cBlockSig:
@@ -315,6 +317,7 @@ finalizing:
 		Logger.log.Error(errExceedSigWaitTime)
 		retryTime++
 		Logger.log.Infof("Start finalizing block... %d time", retryTime)
+
 		goto finalizing
 	}
 
@@ -341,6 +344,7 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	}
 
 	self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
+	self.config.BlockChain.StoreBestState(block.Header.ChainID)
 
 	self.knownChainsHeight.Lock()
 	if self.knownChainsHeight.Heights[block.Header.ChainID] < int(block.Height) {
