@@ -204,7 +204,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	}
 
 	// Init Net Sync manager to process messages
-	self.netSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
+	self.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
 		BlockChain:   self.blockChain,
 		ChainParam:   chainParams,
 		MemTxPool:    self.memPool,
@@ -212,9 +212,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		Consensus:    self.consensusEngine,
 		FeeEstimator: self.feeEstimator,
 	})
-	if err != nil {
-		return err
-	}
 
 	// Create a connection manager.
 	var peers []*peer.Peer
