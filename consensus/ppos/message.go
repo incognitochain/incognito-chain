@@ -121,9 +121,9 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 		return
 	}
 	newMsg.(*wire.MessageChainState).ChainInfo = ChainInfo{
-		CurrentCommittee:  self.GetCommittee(),
-		CandidateListHash: "",
-		ChainsHeight:      self.validatedChainsHeight.Heights,
+		CurrentCommittee:        self.GetCommittee(),
+		CandidateListMerkleHash: "",
+		ChainsHeight:            self.validatedChainsHeight.Heights,
 	}
 	peerID, _ := peer2.IDB58Decode(msg.SenderID)
 	self.config.Server.PushMessageToPeer(newMsg, peerID)
