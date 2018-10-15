@@ -25,3 +25,5 @@ cash-prototype
 # Build Directory
 /privacy/server/build
 *.o
+
+.DS_Store
