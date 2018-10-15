@@ -14,7 +14,7 @@ type MessageCandidateVote struct {
 }
 
 func (self MessageCandidateVote) MessageType() string {
-	return CmdRequestSign
+	return CmdRequestBlockSign
 }
 
 func (self MessageCandidateVote) MaxPayloadLength(pver int) int {

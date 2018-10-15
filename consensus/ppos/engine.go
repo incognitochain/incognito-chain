@@ -287,7 +287,7 @@ finalizing:
 		/*
 			allSigReceived <- struct{}{}
 		*/
-		reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestSign)
+		reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestBlockSign)
 		reqSigMsg.(*wire.MessageRequestBlockSign).Block = *finalBlock
 		for idx := 0; idx < common.TotalValidators; idx++ {
 			//@TODO: retry on failed validators

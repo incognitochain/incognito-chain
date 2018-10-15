@@ -17,7 +17,7 @@ type MessageRequestBlockSign struct {
 }
 
 func (self *MessageRequestBlockSign) MessageType() string {
-	return CmdRequestSign
+	return CmdRequestBlockSign
 }
 
 func (self *MessageRequestBlockSign) MaxPayloadLength(pver int) int {
