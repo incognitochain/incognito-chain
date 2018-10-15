@@ -6,6 +6,7 @@ import (
 	"crypto/sha512"
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common/base58"
+	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 const (
@@ -139,7 +140,7 @@ func (key *Key) Serialize(keyType byte) ([]byte, error) {
 func (key *Key) Base58CheckSerialize(keyType byte) string {
 	serializedKey, err := key.Serialize(keyType)
 	if err != nil {
-		return ""
+		return common.EmptyString
 	}
 
 	return base58.Base58Check{}.Encode(serializedKey, byte(0x00))
@@ -173,7 +174,7 @@ func Deserialize(data []byte) (*Key, error) {
 	cs2 := data[len(data)-4:]
 	for i := range cs1 {
 		if cs1[i] != cs2[i] {
-			return nil, ErrInvalidChecksum
+			return nil, NewWalletError(InvalidChecksumErr, nil)
 		}
 	}
 	return key, nil

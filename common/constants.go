@@ -1,6 +1,10 @@
 package common
 
 const (
+	EmptyString = ""
+)
+
+const (
 	TxNormalType        = "n" // normal tx(send and receive coin)
 	TxActionParamsType  = "a" // action tx to edit params
 	IncMerkleTreeHeight = 29
