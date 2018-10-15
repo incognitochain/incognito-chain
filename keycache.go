@@ -7,6 +7,9 @@ import (
 	"encoding/json"
 )
 
+/*
+This is a utility to save data key-value into file
+ */
 type KeyCache struct {
 	mtx       sync.Mutex
 	cacheFile string
@@ -63,7 +66,7 @@ func (self *KeyCache) Get(key string) interface{} {
 	value, ok := self.data[key]
 	if ok {
 		return value
-	} else  {
+	} else {
 		return nil
 	}
 }

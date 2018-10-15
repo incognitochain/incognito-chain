@@ -12,58 +12,34 @@ import (
 	"runtime"
 	"sort"
 	"strings"
-	"time"
-
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jessevdk/go-flags"
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/common/base58"
-	"github.com/ninjadotorg/cash-prototype/mempool"
 )
 
+// default config
 const (
-	defaultConfigFilename       = "config.conf"
-	defaultDataDirname          = "data"
-	defaultDataPrefix           = "block"
-	defaultLogLevel             = "info"
-	defaultLogDirname           = "logs"
-	defaultLogFilename          = "log.log"
-	defaultMaxPeers             = 125
-	defaultBanDuration          = time.Hour * 24
-	defaultBanThreshold         = 100
-	defaultConnectTimeout       = time.Second * 30
-	defaultMaxRPCClients        = 10
-	defaultMaxRPCWebsockets     = 25
-	defaultMaxRPCConcurrentReqs = 20
-	defaultDbType               = "ffldb"
-	defaultFreeTxRelayLimit     = 15.0
-	defaultBlockMinSize         = 0
-	defaultBlockMaxSize         = 750000
-	defaultBlockMinWeight       = 0
-	defaultBlockMaxWeight       = 3000000
-	blockMaxSizeMin             = 1000
-	//blockMaxSizeMax              = blockchain.MaxBlockBaseSize - 1000
-	blockMaxWeightMin = 4000
-	//blockMaxWeightMax            = blockchain.MaxBlockWeight - 4000
-	defaultGenerate              = false
-	defaultMaxOrphanTransactions = 100
-	defaultMaxOrphanTxSize       = 100000
-	defaultSigCacheMaxSize       = 100000
-	sampleConfigFilename         = "sample-config.conf"
-	defaultTxIndex               = false
-	defaultAddrIndex             = false
-	defaultDisableRpcTls         = true
+	defaultConfigFilename = "config.conf"
+	defaultDataDirname    = "data"
+	defaultDataPrefix     = "block"
+	defaultLogLevel       = "info"
+	defaultLogDirname     = "logs"
+	defaultLogFilename    = "log.log"
+	defaultMaxPeers       = 125
+	defaultGenerate       = false
+	sampleConfigFilename  = "sample-config.conf"
+	defaultDisableRpcTls  = true
 
 	// For wallet
 	defaultWalletDbName = "wallet.db"
 )
 
 var (
-	defaultHomeDir    = common.AppDataDir("prototype", false)
-	defaultConfigFile = filepath.Join(defaultHomeDir, defaultConfigFilename)
-	defaultDataDir    = filepath.Join(defaultHomeDir, defaultDataDirname)
-	//knownDbTypes       = database.SupportedDrivers()
+	defaultHomeDir     = common.AppDataDir("prototype", false)
+	defaultConfigFile  = filepath.Join(defaultHomeDir, defaultConfigFilename)
+	defaultDataDir     = filepath.Join(defaultHomeDir, defaultDataDirname)
 	defaultRPCKeyFile  = filepath.Join(defaultHomeDir, "rpc.key")
 	defaultRPCCertFile = filepath.Join(defaultHomeDir, "rpc.cert")
 	defaultLogDir      = filepath.Join(defaultHomeDir, defaultLogDirname)
@@ -75,82 +51,42 @@ var runServiceCommand func(string) error
 
 // See loadConfig for details on the configuration load process.
 type config struct {
-	ShowVersion          bool          `short:"V" long:"version" description:"Display version information and exit"`
-	ConfigFile           string        `short:"C" long:"configfile" description:"Path to configuration file"`
-	DataDir              string        `short:"b" long:"datadir" description:"Directory to store data"`
-	DataPrefix           string        `short:"p" long:"datapre" description:"Data prefix"`
-	LogDir               string        `long:"logdir" description:"Directory to log output."`
-	AddPeers             []string      `short:"a" long:"addpeer" description:"Add a peer to connect with at startup"`
-	ConnectPeers         []string      `long:"connect" description:"Connect only to the specified peers at startup"`
-	DisableListen        bool          `long:"nolisten" description:"Disable listening for incoming connections -- NOTE: Listening is automatically disabled if the --connect or --proxy options are used without also specifying listen interfaces via --listen"`
-	Listeners            []string      `long:"listen" description:"Add an interface/port to listen for connections (default all interfaces port: 8333, testnet: 18333)"`
-	MaxPeers             int           `long:"maxpeers" description:"Max number of inbound and outbound peers"`
-	MaxOutPeers          int           `long:"maxoutpeers" description:"Max number of outbound peers"`
-	MaxInPeers           int           `long:"maxinpeers" description:"Max number of inbound peers"`
-	DiscoverPeers        bool          `long:"discoverpeers" description:"Enable discover peers"`
-	DisableBanning       bool          `long:"nobanning" description:"Disable banning of misbehaving peers"`
-	BanDuration          time.Duration `long:"banduration" description:"How long to ban misbehaving peers.  Valid time units are {s, m, h}.  Minimum 1 second"`
-	BanThreshold         uint32        `long:"banthreshold" description:"Maximum allowed ban score before disconnecting and banning misbehaving peers."`
-	RPCDisableAuth       bool          `long:"norpcauth" description:"Disable RPC authorization by username/password"`
-	RPCUser              string        `short:"u" long:"rpcuser" description:"Username for RPC connections"`
-	RPCPass              string        `short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`
-	RPCLimitUser         string        `long:"rpclimituser" description:"Username for limited RPC connections"`
-	RPCLimitPass         string        `long:"rpclimitpass" default-mask:"-" description:"Password for limited RPC connections"`
-	RPCListeners         []string      `long:"rpclisten" description:"Add an interface/port to listen for RPC connections (default port: 8334, testnet: 18334)"`
-	RPCCert              string        `long:"rpccert" description:"File containing the certificate file"`
-	RPCKey               string        `long:"rpckey" description:"File containing the certificate key"`
-	RPCMaxClients        int           `long:"rpcmaxclients" description:"Max number of RPC clients for standard connections"`
-	RPCMaxWebsockets     int           `long:"rpcmaxwebsockets" description:"Max number of RPC websocket connections"`
-	RPCMaxConcurrentReqs int           `long:"rpcmaxconcurrentreqs" description:"Max number of concurrent RPC requests that may be processed concurrently"`
-	RPCQuirks            bool          `long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
-	DisableRPC           bool          `long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
-	DisableTLS           bool          `long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
-	DisableDNSSeed       bool          `long:"nodnsseed" description:"Disable DNS seeding for peers"`
-	ExternalIPs          []string      `long:"externalip" description:"Add an ip to the list of local addresses we claim to listen on to peers"`
-	Proxy                string        `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
-	ProxyUser            string        `long:"proxyuser" description:"Username for proxy server"`
-	ProxyPass            string        `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
-	NoOnion              bool          `long:"noonion" description:"Disable connecting to tor hidden services"`
-	TorIsolation         bool          `long:"torisolation" description:"Enable Tor stream isolation by randomizing user credentials for each connection."`
-	TestNet3             bool          `long:"testnet" description:"Use the test network"`
-	RegressionTest       bool          `long:"regtest" description:"Use the regression test network"`
-	SimNet               bool          `long:"simnet" description:"Use the simulation test network"`
-	AddCheckpoints       []string      `long:"addcheckpoint" description:"Add a custom checkpoint.  Format: '<height>:<hash>'"`
-	DisableCheckpoints   bool          `long:"nocheckpoints" description:"Disable built-in checkpoints.  Don't do this unless you know what you're doing."`
-	DbType               string        `long:"dbtype" description:"Database backend to use for the Block BlockChain"`
-	DebugLevel           string        `short:"d" long:"debuglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
-	CPUProfile           string        `long:"cpuprofile" description:"Write CPU profile to the specified file"`
-	Upnp                 bool          `long:"upnp" description:"Use UPnP to map our listening port outside of NAT"`
-	MinRelayTxFee        float64       `long:"minrelaytxfee" description:"The minimum transaction fee in BTC/kB to be considered a non-zero fee."`
-	FreeTxRelayLimit     float64       `long:"limitfreerelay" description:"Limit relay of transactions with no transaction fee to the given amount in thousands of bytes per minute"`
-	NoRelayPriority      bool          `long:"norelaypriority" description:"Do not require free or low-fee transactions to have high priority for relaying"`
-	MaxOrphanTxs         int           `long:"maxorphantx" description:"Max number of orphan transactions to keep in memory"`
-	Generate             bool          `long:"generate" description:"Generate (mine) coins using the CPU"`
-	MiningAddrs          []string      `long:"miningaddr" description:"Add the specified payment address to the list of addresses to use for generated blocks -- At least one address is required if the generate option is set"`
-	BlockMinSize         uint32        `long:"blockminsize" description:"Mininum block size in bytes to be used when creating a block"`
-	BlockMaxSize         uint32        `long:"blockmaxsize" description:"Maximum block size in bytes to be used when creating a block"`
-	BlockMinWeight       uint32        `long:"blockminweight" description:"Mininum block weight to be used when creating a block"`
-	BlockMaxWeight       uint32        `long:"blockmaxweight" description:"Maximum block weight to be used when creating a block"`
-	BlockPrioritySize    uint32        `long:"blockprioritysize" description:"Size in bytes for high-priority/low-fee transactions when creating a block"`
-	UserAgentComments    []string      `long:"uacomment" description:"Comment to add to the user agent -- See BIP 14 for more information."`
-	NoPeerBloomFilters   bool          `long:"nopeerbloomfilters" description:"Disable bloom filtering support"`
-	NoCFilters           bool          `long:"nocfilters" description:"Disable committed filtering (CF) support"`
-	DropCfIndex          bool          `long:"dropcfindex" description:"Deletes the index used for committed filtering (CF) support from the database on start up and then exits."`
-	SigCacheMaxSize      uint          `long:"sigcachemaxsize" description:"The maximum number of entries in the signature verification cache"`
-	BlocksOnly           bool          `long:"blocksonly" description:"Do not accept transactions from remote peers."`
-	TxIndex              bool          `long:"txindex" description:"Maintain a full hash-based transaction index which makes all transactions available via the getrawtransaction RPC"`
-	DropTxIndex          bool          `long:"droptxindex" description:"Deletes the hash-based transaction index from the database on start up and then exits."`
-	AddrIndex            bool          `long:"addrindex" description:"Maintain a full address-based transaction index which makes the searchrawtransactions RPC available"`
-	DropAddrIndex        bool          `long:"dropaddrindex" description:"Deletes the address-based transaction index from the database on start up and then exits."`
-	//RelayNonStd          bool          `long:"relaynonstd" description:"Relay non-standard transactions regardless of the default settings for the active network."`
-	//RejectNonStd         bool          `long:"rejectnonstd" description:"Reject non-standard transactions regardless of the default settings for the active network."`
-	//lookup               func(string) ([]net.IP, error)
-	//oniondial            func(string, string, time.Duration) (net.Conn, error)
-	//dial                 func(string, string, time.Duration) (net.Conn, error)
-	//addCheckpoints       []chaincfg.Checkpoint
-	//miningAddrs []btcutil.Address
-	//minRelayTxFee        btcutil.Amount
-	//whitelists           []*net.IPNet
+	ShowVersion          bool     `short:"V" long:"version" description:"Display version information and exit"`
+	ConfigFile           string   `short:"C" long:"configfile" description:"Path to configuration file"`
+	DataDir              string   `short:"b" long:"datadir" description:"Directory to store data"`
+	DataPrefix           string   `short:"p" long:"datapre" description:"Data prefix"`
+	LogDir               string   `long:"logdir" description:"Directory to log output."`
+	AddPeers             []string `short:"a" long:"addpeer" description:"Add a peer to connect with at startup"`
+	ConnectPeers         []string `long:"connect" description:"Connect only to the specified peers at startup"`
+	DisableListen        bool     `long:"nolisten" description:"Disable listening for incoming connections -- NOTE: Listening is automatically disabled if the --connect or --proxy options are used without also specifying listen interfaces via --listen"`
+	Listeners            []string `long:"listen" description:"Add an interface/port to listen for connections (default all interfaces port: 8333, testnet: 18333)"`
+	MaxPeers             int      `long:"maxpeers" description:"Max number of inbound and outbound peers"`
+	MaxOutPeers          int      `long:"maxoutpeers" description:"Max number of outbound peers"`
+	MaxInPeers           int      `long:"maxinpeers" description:"Max number of inbound peers"`
+	DiscoverPeers        bool     `long:"discoverpeers" description:"Enable discover peers"`
+	DiscoverPeersAddress string   `long:"discoverpeersaddress" description:"Url to connect discover peers server"`
+	DisableBanning       bool     `long:"nobanning" description:"Disable banning of misbehaving peers"`
+	RPCDisableAuth       bool     `long:"norpcauth" description:"Disable RPC authorization by username/password"`
+	RPCUser              string   `short:"u" long:"rpcuser" description:"Username for RPC connections"`
+	RPCPass              string   `short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`
+	RPCLimitUser         string   `long:"rpclimituser" description:"Username for limited RPC connections"`
+	RPCLimitPass         string   `long:"rpclimitpass" default-mask:"-" description:"Password for limited RPC connections"`
+	RPCListeners         []string `long:"rpclisten" description:"Add an interface/port to listen for RPC connections (default port: 8334, testnet: 18334)"`
+	RPCCert              string   `long:"rpccert" description:"File containing the certificate file"`
+	RPCKey               string   `long:"rpckey" description:"File containing the certificate key"`
+	RPCMaxClients        int      `long:"rpcmaxclients" description:"Max number of RPC clients for standard connections"`
+	RPCQuirks            bool     `long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
+	DisableRPC           bool     `long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
+	DisableTLS           bool     `long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
+	DisableDNSSeed       bool     `long:"nodnsseed" description:"Disable DNS seeding for peers"`
+	Proxy                string   `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
+	ProxyUser            string   `long:"proxyuser" description:"Username for proxy server"`
+	ProxyPass            string   `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
+	DebugLevel           string   `short:"d" long:"debuglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
+	Generate             bool     `long:"generate" description:"Generate (mine) coins using the CPU"`
+
+	// Net config
+	TestNet bool `long:"testnet" description:"Use the test network"`
 
 	// PoS config
 	SealerSpendingKey string `long:"sealerspendingkey" description:"!!!WARNING Leave this if you don't know what this is"`
@@ -328,37 +264,20 @@ func loadConfig() (*config, []string, error) {
 	cfg := config{
 		ConfigFile:           defaultConfigFile,
 		DebugLevel:           defaultLogLevel,
-		MaxPeers:             defaultMaxPeers,
 		MaxOutPeers:          defaultMaxPeers,
 		MaxInPeers:           defaultMaxPeers,
-		BanDuration:          defaultBanDuration,
-		BanThreshold:         defaultBanThreshold,
-		RPCMaxClients:        defaultMaxRPCClients,
-		RPCMaxWebsockets:     defaultMaxRPCWebsockets,
-		RPCMaxConcurrentReqs: defaultMaxRPCConcurrentReqs,
 		DataDir:              defaultDataDir,
 		DataPrefix:           defaultDataPrefix,
 		LogDir:               defaultLogDir,
-		DbType:               defaultDbType,
 		RPCKey:               defaultRPCKeyFile,
 		RPCCert:              defaultRPCCertFile,
-		//MinRelayTxFee:        common.DefaultMinRelayTxFee.ToBTC(),
-		FreeTxRelayLimit:  defaultFreeTxRelayLimit,
-		BlockMinSize:      defaultBlockMinSize,
-		BlockMaxSize:      defaultBlockMaxSize,
-		BlockMinWeight:    defaultBlockMinWeight,
-		BlockMaxWeight:    defaultBlockMaxWeight,
-		BlockPrioritySize: mempool.DefaultBlockPrioritySize,
-		MaxOrphanTxs:      defaultMaxOrphanTransactions,
-		SigCacheMaxSize:   defaultSigCacheMaxSize,
-		Generate:          defaultGenerate,
-		TxIndex:           defaultTxIndex,
-		AddrIndex:         defaultAddrIndex,
-		WalletDbName:      defaultWalletDbName,
-		DisableTLS:        defaultDisableRpcTls,
-		RPCDisableAuth:    true,
-		SealerSpendingKey: os.Getenv("SEALERPRVKEY"),
-		SealerKeySet:      os.Getenv("SEALERKEYSET"),
+		Generate:             defaultGenerate,
+		WalletDbName:         defaultWalletDbName,
+		DisableTLS:           defaultDisableRpcTls,
+		RPCDisableAuth:       true,
+		DiscoverPeers:        false,
+		TestNet:              false,
+		DiscoverPeersAddress: "35.230.8.182:9339",
 	}
 
 	// Service options which are only added on Windows.
@@ -401,32 +320,25 @@ func loadConfig() (*config, []string, error) {
 	// Load additional config from file.
 	var configFileError error
 	parser := newConfigParser(&cfg, &serviceOpts, flags.Default)
-	if !(preCfg.RegressionTest || preCfg.SimNet) || preCfg.ConfigFile !=
+	if preCfg.ConfigFile !=
 		defaultConfigFile {
 
 		if _, err := os.Stat(preCfg.ConfigFile); os.IsNotExist(err) {
 			err := createDefaultConfigFile(preCfg.ConfigFile)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error creating a "+
-					"default config file: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Error creating a default config file: %v\n", err)
 			}
 		}
 
 		err := flags.NewIniParser(parser).ParseFile(preCfg.ConfigFile)
 		if err != nil {
 			if _, ok := err.(*os.PathError); !ok {
-				fmt.Fprintf(os.Stderr, "Error parsing config "+
-					"file: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Error parsing config file: %v\n", err)
 				fmt.Fprintln(os.Stderr, usageMessage)
 				return nil, nil, err
 			}
 			configFileError = err
 		}
-	}
-
-	// Don't add peers from the config file when in regression test mode.
-	if preCfg.RegressionTest && len(cfg.AddPeers) > 0 {
-		cfg.AddPeers = nil
 	}
 
 	// Parse command line options again to ensure they take precedence.
@@ -458,25 +370,19 @@ func loadConfig() (*config, []string, error) {
 		return nil, nil, err
 	}
 
-	/*	// Set the default policy for relaying non-standard transactions
-		// according to the default of the active network. The set
-		// configuration value takes precedence over the default value for the
-		// selected network.
-		relayNonStd := activeNetParams.RelayNonStdTxs
-		switch {
-		case cfg.RelayNonStd && cfg.RejectNonStd:
-			str := "%s: rejectnonstd and relaynonstd cannot be used " +
-				"together -- choose only one"
-			err := fmt.Errorf(str, funcName)
-			fmt.Fprintln(os.Stderr, err)
-			fmt.Fprintln(os.Stderr, usageMessage)
-			return nil, nil, err
-		case cfg.RejectNonStd:
-			relayNonStd = false
-		case cfg.RelayNonStd:
-			relayNonStd = true
-		}
-		cfg.RelayNonStd = relayNonStd*/
+	// Multiple networks can't be selected simultaneously.
+	numNets := 0
+	// Count number of network flags passed; assign active network params
+	// while we're at it
+	if cfg.TestNet {
+		numNets++
+		activeNetParams = &testNetParams
+	}
+
+	if numNets > 1 {
+		Logger.log.Error("The testnet, regtest, segnet, and simnet params can't be used together -- choose one of the four")
+		os.Exit(0)
+	}
 
 	// Append the network type to the data directory so it is "namespaced"
 	// per network.  In addition to the block database, there are other
@@ -510,30 +416,9 @@ func loadConfig() (*config, []string, error) {
 		return nil, nil, err
 	}
 
-	// Validate database type.
-	// Database
-	//if !validDbType(cfg.DbType) {
-	//	str := "%s: The specified database type [%v] is invalid -- " +
-	//		"supported types %v"
-	//	err := fmt.Errorf(str, funcName, cfg.DbType, knownDbTypes)
-	//	fmt.Fprintln(os.Stderr, err)
-	//	fmt.Fprintln(os.Stderr, usageMessage)
-	//	return nil, nil, err
-	//}
-
-	// Don't allow ban durations that are too short.
-	if cfg.BanDuration < time.Second {
-		str := "%s: The banduration option may not be less than 1s -- parsed [%v]"
-		err := fmt.Errorf(str, funcName, cfg.BanDuration)
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprintln(os.Stderr, usageMessage)
-		return nil, nil, err
-	}
-
 	// --addPeer and --connect do not mix.
 	if len(cfg.AddPeers) > 0 && len(cfg.ConnectPeers) > 0 {
-		str := "%s: the --addpeer and --connect options can not be " +
-			"mixed"
+		str := "%s: the --addpeer and --connect options can not be mixed"
 		err := fmt.Errorf(str, funcName)
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, usageMessage)
@@ -561,8 +446,7 @@ func loadConfig() (*config, []string, error) {
 	}
 
 	if cfg.RPCUser == cfg.RPCLimitUser && cfg.RPCUser != "" {
-		str := "%s: --rpcuser and --rpclimituser must not specify the " +
-			"same username"
+		str := "%s: --rpcuser and --rpclimituser must not specify the same username"
 		err := fmt.Errorf(str, funcName)
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, usageMessage)
@@ -571,8 +455,7 @@ func loadConfig() (*config, []string, error) {
 
 	// Check to make sure limited and admin users don't have the same password
 	if cfg.RPCPass == cfg.RPCLimitPass && cfg.RPCPass != "" {
-		str := "%s: --rpcpass and --rpclimitpass must not specify the " +
-			"same password"
+		str := "%s: --rpcpass and --rpclimitpass must not specify the same password"
 		err := fmt.Errorf(str, funcName)
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, usageMessage)
@@ -614,100 +497,10 @@ func loadConfig() (*config, []string, error) {
 		}
 	}
 
-	if cfg.RPCMaxConcurrentReqs < 0 {
-		str := "%s: The rpcmaxwebsocketconcurrentrequests option may " +
-			"not be less than 0 -- parsed [%d]"
-		err := fmt.Errorf(str, funcName, cfg.RPCMaxConcurrentReqs)
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprintln(os.Stderr, usageMessage)
-		return nil, nil, err
-	}
-
-	// Limit the max orphan count to a sane vlue.
-	if cfg.MaxOrphanTxs < 0 {
-		str := "%s: The maxorphantx option may not be less than 0 " +
-			"-- parsed [%d]"
-		err := fmt.Errorf(str, funcName, cfg.MaxOrphanTxs)
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprintln(os.Stderr, usageMessage)
-		return nil, nil, err
-	}
-
-	// Limit the block priority and minimum block sizes to max block size.
-	cfg.BlockPrioritySize = minUint32(cfg.BlockPrioritySize, cfg.BlockMaxSize)
-	cfg.BlockMinSize = minUint32(cfg.BlockMinSize, cfg.BlockMaxSize)
-	cfg.BlockMinWeight = minUint32(cfg.BlockMinWeight, cfg.BlockMaxWeight)
-
-	// Look for illegal characters in the user agent comments.
-	for _, uaComment := range cfg.UserAgentComments {
-		if strings.ContainsAny(uaComment, "/:()") {
-			err := fmt.Errorf("%s: The following characters must not "+
-				"appear in user agent comments: '/', ':', '(', ')'",
-				funcName)
-			fmt.Fprintln(os.Stderr, err)
-			fmt.Fprintln(os.Stderr, usageMessage)
-			return nil, nil, err
-		}
-	}
-
-	// --txindex and --droptxindex do not mix.
-	if cfg.TxIndex && cfg.DropTxIndex {
-		err := fmt.Errorf("%s: the --txindex and --droptxindex "+
-			"options may  not be activated at the same time",
-			funcName)
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprintln(os.Stderr, usageMessage)
-		return nil, nil, err
-	}
-
-	// --addrindex and --dropaddrindex do not mix.
-	if cfg.AddrIndex && cfg.DropAddrIndex {
-		err := fmt.Errorf("%s: the --addrindex and --dropaddrindex "+
-			"options may not be activated at the same time",
-			funcName)
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprintln(os.Stderr, usageMessage)
-		return nil, nil, err
-	}
-
-	// --addrindex and --droptxindex do not mix.
-	if cfg.AddrIndex && cfg.DropTxIndex {
-		err := fmt.Errorf("%s: the --addrindex and --droptxindex "+
-			"options may not be activated at the same time "+
-			"because the address index relies on the transaction "+
-			"index",
-			funcName)
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprintln(os.Stderr, usageMessage)
-		return nil, nil, err
-	}
-
-	// Check mining addresses are valid and saved parsed versions.
-	//cfg.miningAddrs = make([]btcutil.Address, 0, len(cfg.MiningAddrs))
-	//for _, strAddr := range cfg.MiningAddrs {
-	//	addr, err := btcutil.DecodeAddress(strAddr, activeNetParams.Params)
-	//	if err != nil {
-	//		str := "%s: mining address '%s' failed to decode: %v"
-	//		err := fmt.Errorf(str, funcName, strAddr, err)
-	//		fmt.Fprintln(os.Stderr, err)
-	//		fmt.Fprintln(os.Stderr, usageMessage)
-	//		return nil, nil, err
-	//	}
-	//	if !addr.IsForNet(activeNetParams.Params) {
-	//		str := "%s: mining address '%s' is on the wrong network"
-	//		err := fmt.Errorf(str, funcName, strAddr)
-	//		fmt.Fprintln(os.Stderr, err)
-	//		fmt.Fprintln(os.Stderr, usageMessage)
-	//		return nil, nil, err
-	//	}
-	//	cfg.miningAddrs = append(cfg.miningAddrs, addr)
-	//}
-
 	// Ensure there is at least one mining address when the generate flag is
 	// set.
 	if cfg.Generate && len(cfg.SealerKeySet) == 0 && len(cfg.SealerSpendingKey) == 0 {
-		str := "%s: the generate flag is set, but there are no sealer's key " +
-			"specified "
+		str := "%s: the generate flag is set, but there are no sealer's key specified "
 		err := fmt.Errorf(str, funcName)
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, usageMessage)
@@ -745,9 +538,7 @@ func loadConfig() (*config, []string, error) {
 				return nil, nil, err
 			}
 			if _, ok := allowedTLSListeners[host]; !ok {
-				str := "%s: the --notls option may not be used " +
-					"when binding RPC to non localhost " +
-					"addresses: %s"
+				str := "%s: the --notls option may not be used when binding RPC to non localhost addresses: %s"
 				err := fmt.Errorf(str, funcName, addr)
 				fmt.Fprintln(os.Stderr, err)
 				fmt.Fprintln(os.Stderr, usageMessage)
@@ -756,12 +547,12 @@ func loadConfig() (*config, []string, error) {
 		}
 	}
 
-	// Add default port to all added peer addresses if needed and remove
-	// duplicate addresses.
-	//cfg.AddPeers = normalizeAddresses(cfg.AddPeers,
-	//	activeNetParams.DefaultPort)
-	//cfg.ConnectPeers = normalizeAddresses(cfg.ConnectPeers,
-	//	activeNetParams.DefaultPort)
+	if cfg.DiscoverPeers {
+		if cfg.DiscoverPeersAddress == "" {
+			err := fmt.Errorf("Discover peers server is empty")
+			return nil, nil, err
+		}
+	}
 
 	// Warn about missing config file only after all other configuration is
 	// done.  This prevents the warning on help messages and invalid
@@ -829,8 +620,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	// issues and update the log levels accordingly.
 	for _, logLevelPair := range strings.Split(debugLevel, ",") {
 		if !strings.Contains(logLevelPair, "=") {
-			str := "The specified debug level contains an invalid " +
-				"subsystem/level pair [%v]"
+			str := "The specified debug level contains an invalid subsystem/level pair [%v]"
 			return fmt.Errorf(str, logLevelPair)
 		}
 
@@ -840,8 +630,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 
 		// Validate subsystem.
 		if _, exists := subsystemLoggers[subsysID]; !exists {
-			str := "The specified subsystem [%v] is invalid -- " +
-				"supported subsytems %v"
+			str := "The specified subsystem [%v] is invalid -- supported subsytems %v"
 			return fmt.Errorf(str, subsysID, supportedSubsystems())
 		}
 

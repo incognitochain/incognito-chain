@@ -32,11 +32,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
-const (
-	defaultNumberOfTargetOutbound = 8
-	defaultNumberOfTargetInbound  = 8
-)
-
 // onionAddr implements the net.Addr interface and represents a tor address.
 type onionAddr struct {
 	addr string
@@ -46,26 +41,25 @@ type Server struct {
 	started     int32
 	startupTime int64
 
-	donePeers chan *peer.Peer
-	quit      chan struct{}
-	newPeers  chan *peer.Peer
-
-	chainParams *blockchain.Params
-	ConnManager *connmanager.ConnManager
-	BlockChain  *blockchain.BlockChain
-	DataBase    database.DatabaseInterface
-	RpcServer   *rpcserver.RpcServer
-	MemPool     *mempool.TxPool
-	WaitGroup   sync.WaitGroup
-	NetSync     *netsync.NetSync
-	AddrManager *addrmanager.AddrManager
-	Wallet      *wallet.Wallet
+	chainParams     *blockchain.Params
+	connManager     *connmanager.ConnManager
+	blockChain      *blockchain.BlockChain
+	dataBase        database.DatabaseInterface
+	rpcServer       *rpcserver.RpcServer
+	memPool         *mempool.TxPool
+	waitGroup       sync.WaitGroup
+	netSync         *netsync.NetSync
+	addrManager     *addrmanager.AddrManager
+	wallet          *wallet.Wallet
+	consensusEngine *ppos.Engine
 
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
-	FeeEstimator map[byte]*mempool.FeeEstimator
+	feeEstimator map[byte]*mempool.FeeEstimator
 
-	ConsensusEngine *ppos.Engine
+	cDonePeers chan *peer.Peer
+	cQuit      chan struct{}
+	cNewPeers  chan *peer.Peer
 }
 
 // setupRPCListeners returns a slice of listeners that are configured for use
@@ -84,13 +78,13 @@ func (self Server) setupRPCListeners() ([]net.Listener, error) {
 				return nil, err
 			}
 		}
-		keypair, err := tls.LoadX509KeyPair(cfg.RPCCert, cfg.RPCKey)
+		keyPair, err := tls.LoadX509KeyPair(cfg.RPCCert, cfg.RPCKey)
 		if err != nil {
 			return nil, err
 		}
 
 		tlsConfig := tls.Config{
-			Certificates: []tls.Certificate{keypair},
+			Certificates: []tls.Certificate{keyPair},
 			MinVersion:   tls.VersionTLS12,
 		}
 
@@ -126,118 +120,108 @@ NewServer - create server object which control all process of node
 func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterface, chainParams *blockchain.Params, interrupt <-chan struct{}) error {
 	// Init data for Server
 	self.chainParams = chainParams
-	self.quit = make(chan struct{})
-	self.donePeers = make(chan *peer.Peer)
-	self.newPeers = make(chan *peer.Peer)
-	self.DataBase = db
+	self.cQuit = make(chan struct{})
+	self.cDonePeers = make(chan *peer.Peer)
+	self.cNewPeers = make(chan *peer.Peer)
+	self.dataBase = db
 
 	var err error
 
 	// Create a new block chain instance with the appropriate configuration.9
-	self.BlockChain = &blockchain.BlockChain{}
-	err = self.BlockChain.Init(&blockchain.Config{
+	self.blockChain = &blockchain.BlockChain{}
+	err = self.blockChain.Init(&blockchain.Config{
 		ChainParams: self.chainParams,
-		DataBase:    self.DataBase,
+		DataBase:    self.dataBase,
 		Interrupt:   interrupt,
 	})
 	if err != nil {
 		return err
 	}
 
-	// Search for a FeeEstimator state in the database. If none can be found
+	// Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
-	self.FeeEstimator = make(map[byte]*mempool.FeeEstimator)
-	for _, bestState := range self.BlockChain.BestState {
+	self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
+	for _, bestState := range self.blockChain.BestState {
 		chainId := bestState.BestBlock.Header.ChainID
-		feeEstimatorData, err := self.DataBase.GetFeeEstimator(chainId)
+		feeEstimatorData, err := self.dataBase.GetFeeEstimator(chainId)
 		if err == nil && len(feeEstimatorData) > 0 {
 			feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 			if err != nil {
 				Logger.log.Errorf("Failed to restore fee estimator %v", err)
 			} else {
-				self.FeeEstimator[chainId] = feeEstimator
+				self.feeEstimator[chainId] = feeEstimator
 			}
 		}
 	}
 
 	// If no feeEstimator has been found, or if the one that has been found
 	// is behind somehow, create a new one and start over.
-	// if self.FeeEstimator == nil || self.FeeEstimator.LastKnownHeight() != self.BlockChain.BestState.BestBlock.Height {
-	for _, bestState := range self.BlockChain.BestState {
+	// if self.feeEstimator == nil || self.feeEstimator.LastKnownHeight() != self.blockChain.BestState.BestBlock.Height {
+	for _, bestState := range self.blockChain.BestState {
 		chainId := bestState.BestBlock.Header.ChainID
-		if self.FeeEstimator[chainId] == nil {
-			self.FeeEstimator[chainId] = mempool.NewFeeEstimator(
+		if self.feeEstimator[chainId] == nil {
+			self.feeEstimator[chainId] = mempool.NewFeeEstimator(
 				mempool.DefaultEstimateFeeMaxRollback,
 				mempool.DefaultEstimateFeeMinRegisteredBlocks)
 		}
 	}
 
 	// create mempool tx
-	self.MemPool = &mempool.TxPool{}
-	self.MemPool.Init(&mempool.Config{
+	self.memPool = &mempool.TxPool{}
+	self.memPool.Init(&mempool.Config{
 		Policy: mempool.Policy{
 			MaxTxVersion: transaction.TxVersion + 1,
 		},
-		BlockChain:   self.BlockChain,
+		BlockChain:   self.blockChain,
 		ChainParams:  chainParams,
-		FeeEstimator: self.FeeEstimator,
+		FeeEstimator: self.feeEstimator,
 	})
 
-	self.AddrManager = addrmanager.New(cfg.DataDir, nil)
+	self.addrManager = addrmanager.New(cfg.DataDir, nil)
 
-	self.ConsensusEngine = ppos.New(&ppos.Config{
+	self.consensusEngine = ppos.New(&ppos.Config{
 		ChainParams:  self.chainParams,
-		BlockChain:   self.BlockChain,
-		MemPool:      self.MemPool,
+		BlockChain:   self.blockChain,
+		MemPool:      self.memPool,
 		Server:       self,
-		FeeEstimator: self.FeeEstimator,
+		FeeEstimator: self.feeEstimator,
 	})
 
 	// Init Net Sync manager to process messages
-	self.NetSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
-		BlockChain:   self.BlockChain,
+	self.netSync, err = netsync.NetSync{}.New(&netsync.NetSyncConfig{
+		BlockChain:   self.blockChain,
 		ChainParam:   chainParams,
-		MemPool:      self.MemPool,
+		MemPool:      self.memPool,
 		Server:       self,
-		Consensus:    self.ConsensusEngine,
-		FeeEstimator: self.FeeEstimator,
+		Consensus:    self.consensusEngine,
+		FeeEstimator: self.feeEstimator,
 	})
 	if err != nil {
 		return err
 	}
 
+	// Create a connection manager.
 	var peers []*peer.Peer
 	if !cfg.DisableListen {
 		var err error
-		peers, err = self.InitListenerPeers(self.AddrManager, listenAddrs)
+		peers, err = self.InitListenerPeers(self.addrManager, listenAddrs, cfg.MaxOutPeers, cfg.MaxInPeers)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
 		}
 	}
 
-	// Create a connection manager.
-	targetOutbound := defaultNumberOfTargetOutbound
-	if cfg.MaxOutPeers > targetOutbound {
-		targetOutbound = cfg.MaxOutPeers
-	}
-	targetInbound := defaultNumberOfTargetInbound
-	if cfg.MaxInPeers > targetInbound {
-		targetInbound = cfg.MaxInPeers
-	}
-
 	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
 		ListenerPeers:        peers,
-		TargetOutbound:       uint32(targetOutbound),
-		TargetInbound:        uint32(targetInbound),
 		DiscoverPeers:        cfg.DiscoverPeers,
+		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
 	})
 	if err != nil {
 		return err
 	}
-	self.ConnManager = connManager
+	self.connManager = connManager
 
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
@@ -246,7 +230,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	}
 
 	for _, addr := range permanentPeers {
-		go self.ConnManager.Connect(addr, "")
+		go self.connManager.Connect(addr, "")
 	}
 
 	if !cfg.DisableRPC {
@@ -265,29 +249,29 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			RPCQuirks:      cfg.RPCQuirks,
 			RPCMaxClients:  cfg.RPCMaxClients,
 			ChainParams:    chainParams,
-			BlockChain:     self.BlockChain,
-			TxMemPool:      self.MemPool,
+			BlockChain:     self.blockChain,
+			TxMemPool:      self.memPool,
 			Server:         self,
-			Wallet:         self.Wallet,
-			ConnMgr:        self.ConnManager,
-			AddrMgr:        self.AddrManager,
+			Wallet:         self.wallet,
+			ConnMgr:        self.connManager,
+			AddrMgr:        self.addrManager,
 			RPCUser:        cfg.RPCUser,
 			RPCPass:        cfg.RPCPass,
 			RPCLimitUser:   cfg.RPCLimitUser,
 			RPCLimitPass:   cfg.RPCLimitPass,
 			DisableAuth:    cfg.RPCDisableAuth,
 			IsGenerateNode: cfg.Generate,
-			FeeEstimator:   self.FeeEstimator,
+			FeeEstimator:   self.feeEstimator,
 		}
-		self.RpcServer = &rpcserver.RpcServer{}
-		err = self.RpcServer.Init(&rpcConfig)
+		self.rpcServer = &rpcserver.RpcServer{}
+		err = self.rpcServer.Init(&rpcConfig)
 		if err != nil {
 			return err
 		}
 
 		// Signal process shutdown when the RPC server requests it.
 		go func() {
-			<-self.RpcServer.RequestedProcessShutdown()
+			<-self.rpcServer.RequestedProcessShutdown()
 			shutdownRequestChannel <- struct{}{}
 		}()
 	}
@@ -311,7 +295,7 @@ func (self *Server) InboundPeerConnected(peerConn *peer.PeerConn) {
 // manager of the attempt.
 */
 func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
-	Logger.log.Info("Outbound PEER connected with PEER Id - " + peerConn.PeerID.String())
+	Logger.log.Info("Outbound PEER connected with PEER Id - " + peerConn.RemotePeerID.String())
 	err := self.PushVersionMessage(peerConn)
 	if err != nil {
 		Logger.log.Error(err)
@@ -322,7 +306,7 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 // WaitForShutdown blocks until the main listener and peer handlers are stopped.
 */
 func (self Server) WaitForShutdown() {
-	self.WaitGroup.Wait()
+	self.waitGroup.Wait()
 }
 
 /*
@@ -330,18 +314,18 @@ func (self Server) WaitForShutdown() {
 */
 func (self Server) Stop() error {
 	// stop connection manager
-	self.ConnManager.Stop()
+	self.connManager.Stop()
 
 	// Shutdown the RPC server if it's not disabled.
-	if !cfg.DisableRPC && self.RpcServer != nil {
-		self.RpcServer.Stop()
+	if !cfg.DisableRPC && self.rpcServer != nil {
+		self.rpcServer.Stop()
 	}
 
 	// Save fee estimator in the db
-	for chainId, feeEstimator := range self.FeeEstimator {
+	for chainId, feeEstimator := range self.feeEstimator {
 		feeEstimatorData := feeEstimator.Save()
 		if len(feeEstimatorData) > 0 {
-			err := self.DataBase.StoreFeeEstimator(feeEstimatorData, chainId)
+			err := self.dataBase.StoreFeeEstimator(feeEstimatorData, chainId)
 			if err != nil {
 				Logger.log.Errorf("Can't save fee estimator data: %v", err)
 			} else {
@@ -350,10 +334,10 @@ func (self Server) Stop() error {
 		}
 	}
 
-	self.ConsensusEngine.Stop()
+	self.consensusEngine.Stop()
 
-	// Signal the remaining goroutines to quit.
-	close(self.quit)
+	// Signal the remaining goroutines to cQuit.
+	close(self.cQuit)
 	return nil
 }
 
@@ -368,43 +352,43 @@ func (self Server) peerHandler() {
 	// to this handler and rather than adding more channels to sychronize
 	// things, it's easier and slightly faster to simply start and stop them
 	// in this handler.
-	self.AddrManager.Start()
-	self.NetSync.Start()
+	self.addrManager.Start()
+	self.netSync.Start()
 
 	Logger.log.Info("Start peer handler")
 
 	if !cfg.DisableDNSSeed {
 		// load peer from seed DNS
 		// add to address manager
-		//self.AddrManager.AddAddresses(make([]*peer.Peer, 0))
+		//self.addrManager.AddAddresses(make([]*peer.RemotePeer, 0))
 
-		self.ConnManager.SeedFromDNS(self.chainParams.DNSSeeds, func(addrs []string) {
+		self.connManager.SeedFromDNS(self.chainParams.DNSSeeds, func(addrs []string) {
 			// Bitcoind uses a lookup of the dns seeder here. This
 			// is rather strange since the values looked up by the
 			// DNS seed lookups will vary quite a lot.
 			// to replicate this behaviour we put all addresses as
 			// having come from the first one.
-			self.AddrManager.AddAddressesStr(addrs)
+			self.addrManager.AddAddressesStr(addrs)
 		})
 	}
 
 	if len(cfg.ConnectPeers) == 0 {
 		// TODO connect with peer in file
-		for _, addr := range self.AddrManager.AddressCache() {
-			go self.ConnManager.Connect(addr.RawAddress, addr.PublicKey)
+		for _, addr := range self.addrManager.AddressCache() {
+			go self.connManager.Connect(addr.RawAddress, addr.PublicKey)
 		}
 	}
 
-	go self.ConnManager.Start()
+	go self.connManager.Start(cfg.DiscoverPeersAddress)
 
 out:
 	for {
 		select {
-		case p := <-self.donePeers:
+		case p := <-self.cDonePeers:
 			self.handleDonePeerMsg(p)
-		case p := <-self.newPeers:
+		case p := <-self.cNewPeers:
 			self.handleAddPeerMsg(p)
-		case <-self.quit:
+		case <-self.cQuit:
 			{
 				// Disconnect all peers on server shutdown.
 				//state.forAllPeers(func(sp *serverPeer) {
@@ -415,9 +399,9 @@ out:
 			}
 		}
 	}
-	self.NetSync.Stop()
-	self.AddrManager.Stop()
-	self.ConnManager.Stop()
+	self.netSync.Stop()
+	self.addrManager.Stop()
+	self.connManager.Stop()
 }
 
 /*
@@ -435,32 +419,32 @@ func (self Server) Start() {
 
 	// Start the peer handler which in turn starts the address and block
 	// managers.
-	self.WaitGroup.Add(1)
+	self.waitGroup.Add(1)
 
 	go self.peerHandler()
 
-	if !cfg.DisableRPC && self.RpcServer != nil {
-		self.WaitGroup.Add(1)
+	if !cfg.DisableRPC && self.rpcServer != nil {
+		self.waitGroup.Add(1)
 
 		// Start the rebroadcastHandler, which ensures user tx received by
 		// the RPC server are rebroadcast until being included in a block.
 		//go self.rebroadcastHandler()
 
-		self.RpcServer.Start()
+		self.rpcServer.Start()
 	}
 
 	// //creat mining
 	// if cfg.Generate == true && (len(cfg.MiningAddrs) > 0) {
 	// 	self.Miner.Start()
 	// }
-	self.ConsensusEngine.Start()
+	self.consensusEngine.Start()
 	if cfg.Generate == true && (len(cfg.SealerSpendingKey) > 0 || len(cfg.SealerKeySet) > 0) {
 		sealerKeySet, err := cfg.GetSealerKeySet()
 		if err != nil {
 			Logger.log.Critical(err)
 			return
 		}
-		self.ConsensusEngine.StartSealer(*sealerKeySet)
+		self.consensusEngine.StartSealer(*sealerKeySet)
 	}
 }
 
@@ -469,17 +453,19 @@ func (self Server) Start() {
 // addresses to the address manager. Returns the listeners and a NAT interface,
 // which is non-nil if UPnP is in use.
 */
-func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string) ([]*peer.Peer, error) {
+func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string, targetOutbound int, targetInbound int) ([]*peer.Peer, error) {
 	netAddrs, err := common.ParseListeners(listenAddrs, "ip")
 	if err != nil {
 		return nil, err
 	}
 
+	// use keycache to save listener peer into file, this will make peer id of listener not change after turn off node
 	kc := KeyCache{}
-	kc.Load(filepath.Join(cfg.DataDir, "kc.json"))
+	kc.Load(filepath.Join(cfg.DataDir, "listenerpeer.json"))
 
 	peers := make([]*peer.Peer, 0, len(netAddrs))
 	for _, addr := range netAddrs {
+		// load seed of libp2p from keycache file, if not exist -> save a new data into keycache file
 		seed := int64(0)
 		seedC, _ := strconv.ParseInt(os.Getenv("NODE_SEED"), 10, 64)
 		if seedC == 0 {
@@ -494,6 +480,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 		} else {
 			seed = seedC
 		}
+
 		peer, err := peer.Peer{
 			Seed:             seed,
 			ListeningAddress: addr,
@@ -501,6 +488,8 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 			PeerConns:        make(map[string]*peer.PeerConn),
 			PendingPeers:     make(map[string]*peer.Peer),
 		}.NewPeer()
+		peer.Config.MaxInbound = targetInbound
+		peer.Config.MaxOutbound = targetOutbound
 		if err != nil {
 			return nil, err
 		}
@@ -513,7 +502,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 }
 
 /*
-// newPeerConfig returns the configuration for the listening Peer.
+// newPeerConfig returns the configuration for the listening RemotePeer.
 */
 func (self *Server) NewPeerConfig() *peer.Config {
 	keysetSealer, err := cfg.GetSealerKeySet()
@@ -551,7 +540,7 @@ func (self *Server) OnBlock(p *peer.PeerConn,
 	Logger.log.Info("Receive a new block START")
 
 	var txProcessed chan struct{}
-	self.NetSync.QueueBlock(nil, msg, txProcessed)
+	self.netSync.QueueBlock(nil, msg, txProcessed)
 	//<-txProcessed
 
 	Logger.log.Info("Receive a new block END")
@@ -560,7 +549,7 @@ func (self *Server) OnBlock(p *peer.PeerConn,
 func (self *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Receive a " + msg.MessageType() + " message START")
 	var txProcessed chan struct{}
-	self.NetSync.QueueGetBlock(nil, msg, txProcessed)
+	self.netSync.QueueGetBlock(nil, msg, txProcessed)
 	//<-txProcessed
 
 	Logger.log.Info("Receive a " + msg.MessageType() + " message END")
@@ -573,7 +562,7 @@ func (self *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
 func (self Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Info("Receive a new transaction START")
 	var txProcessed chan struct{}
-	self.NetSync.QueueTx(nil, msg, txProcessed)
+	self.netSync.QueueTx(nil, msg, txProcessed)
 	//<-txProcessed
 
 	Logger.log.Info("Receive a new transaction END")
@@ -595,10 +584,10 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	}
 
 	if msg.PublicKey != "" {
-		peerConn.Peer.PublicKey = msg.PublicKey
+		peerConn.RemotePeer.PublicKey = msg.PublicKey
 	}
 
-	self.newPeers <- remotePeer
+	self.cNewPeers <- remotePeer
 	// TODO check version message
 	valid := false
 
@@ -638,7 +627,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 		peerConn.VerValid = true
 
 		if peerConn.IsOutbound {
-			self.AddrManager.Good(peerConn.Peer)
+			self.addrManager.Good(peerConn.RemotePeer)
 		}
 
 		// send message for get addr
@@ -650,16 +639,16 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 		peerConn.QueueMessageWithEncoding(msgS, dc)
 
 		//	broadcast addr to all peer
-		for _, listen := range self.ConnManager.ListeningPeers {
+		for _, listen := range self.connManager.ListeningPeers {
 			msgS, err := wire.MakeEmptyMessage(wire.CmdAddr)
 			if err != nil {
 				return
 			}
 
 			rawPeers := []wire.RawPeer{}
-			peers := self.AddrManager.AddressCache()
+			peers := self.addrManager.AddressCache()
 			for _, peer := range peers {
-				if peerConn.PeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+				if peerConn.RemotePeerID.Pretty() != self.connManager.GetPeerId(peer.RawAddress) {
 					rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
 				}
 			}
@@ -673,7 +662,7 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 		// send message get blocks
 
 		//msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
-		//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.BlockChain.BestState.BestBlockHash
+		//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *self.blockChain.BestState.BestBlockHash
 		//println(peerConn.ListenerPeer.PeerId.String())
 		//msgNew.(*wire.MessageGetBlocks).SenderID = peerConn.ListenerPeer.PeerId.String()
 		//if err != nil {
@@ -698,16 +687,16 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 	}
 
 	addresses := []string{}
-	peers := self.AddrManager.AddressCache()
+	peers := self.addrManager.AddressCache()
 	for _, peer := range peers {
-		if peerConn.PeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+		if peerConn.RemotePeerID.Pretty() != self.connManager.GetPeerId(peer.RawAddress) {
 			addresses = append(addresses, peer.RawAddress)
 		}
 	}
 
 	rawPeers := []wire.RawPeer{}
 	for _, peer := range peers {
-		if peerConn.PeerID.Pretty() != self.ConnManager.GetPeerId(peer.RawAddress) {
+		if peerConn.RemotePeerID.Pretty() != self.connManager.GetPeerId(peer.RawAddress) {
 			rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
 		}
 	}
@@ -720,12 +709,12 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 
 func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	// TODO for onaddr message
-	log.Printf("Receive addr message %v", msg.RawPeers)
+	Logger.log.Infof("Receive addr message %v", msg.RawPeers)
 	//for _, rawPeer := range msg.RawPeers {
-	//	for _, listen := range self.ConnManager.ListeningPeers {
+	//	for _, listen := range self.connManager.ListeningPeers {
 	//		for _, _peerConn := range listen.PeerConns {
-	//			if _peerConn.PeerID.Pretty() != self.ConnManager.GetPeerId(rawPeer.RawAddress) {
-	//				go self.ConnManager.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
+	//			if _peerConn.RemotePeerID.Pretty() != self.connManager.GetPeerId(rawPeer.RemoteRawAddress) {
+	//				go self.connManager.Connect(rawPeer.RemoteRawAddress, rawPeer.PublicKey)
 	//			}
 	//		}
 	//	}
@@ -735,53 +724,53 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageRequestSign) {
 	Logger.log.Info("Receive a requestsign START")
 	var txProcessed chan struct{}
-	self.NetSync.QueueMessage(nil, msg, txProcessed)
+	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a requestsign END")
 }
 
 func (self *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {
 	Logger.log.Info("Receive a invalidblock START", msg)
 	var txProcessed chan struct{}
-	self.NetSync.QueueMessage(nil, msg, txProcessed)
+	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a invalidblock END", msg)
 }
 
 func (self *Server) OnBlockSig(_ *peer.PeerConn, msg *wire.MessageBlockSig) {
 	Logger.log.Info("Receive a BlockSig")
 	var txProcessed chan struct{}
-	self.NetSync.QueueMessage(nil, msg, txProcessed)
+	self.netSync.QueueMessage(nil, msg, txProcessed)
 }
 
 func (self *Server) OnGetChainState(_ *peer.PeerConn, msg *wire.MessageGetChainState) {
 	Logger.log.Info("Receive a getchainstate START")
 	var txProcessed chan struct{}
-	self.NetSync.QueueMessage(nil, msg, txProcessed)
+	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a getchainstate END")
 }
 
 func (self *Server) OnChainState(_ *peer.PeerConn, msg *wire.MessageChainState) {
 	Logger.log.Info("Receive a chainstate START")
 	var txProcessed chan struct{}
-	self.NetSync.QueueMessage(nil, msg, txProcessed)
+	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a chainstate END")
 }
 
 func (self *Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {
 	result := []peer2.ID{}
 
-	for _, listener := range self.ConnManager.Config.ListenerPeers {
+	for _, listener := range self.connManager.Config.ListenerPeers {
 		for _, peerConn := range listener.PeerConns {
-			// Logger.log.Info("Test PeerConn", peerConn.Peer.PublicKey)
-			if peerConn.Peer.PublicKey == pubKey {
+			// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PublicKey)
+			if peerConn.RemotePeer.PublicKey == pubKey {
 				exist := false
 				for _, item := range result {
-					if item.Pretty() == peerConn.Peer.PeerID.Pretty() {
+					if item.Pretty() == peerConn.RemotePeer.PeerID.Pretty() {
 						exist = true
 					}
 				}
 
 				if !exist {
-					result = append(result, peerConn.Peer.PeerID)
+					result = append(result, peerConn.RemotePeer.PeerID)
 				}
 			}
 		}
@@ -796,11 +785,11 @@ PushMessageToAll broadcast msg
 func (self *Server) PushMessageToAll(msg wire.Message) error {
 	Logger.log.Info("Push msg to all")
 	var dc chan<- struct{}
-	for index := 0; index < len(self.ConnManager.Config.ListenerPeers); index++ {
+	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
 		Logger.log.Info("Pushed 1")
-		msg.SetSenderID(self.ConnManager.Config.ListenerPeers[index].PeerID)
+		msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
 		Logger.log.Info("Pushed 2")
-		self.ConnManager.Config.ListenerPeers[index].QueueMessageWithEncoding(msg, dc)
+		self.connManager.Config.ListenerPeers[index].QueueMessageWithEncoding(msg, dc)
 		Logger.log.Info("Pushed 3")
 	}
 	return nil
@@ -812,26 +801,26 @@ PushMessageToPeer push msg to peer
 func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 	Logger.log.Info("Push msg to ", peerId)
 	var dc chan<- struct{}
-	for index := 0; index < len(self.ConnManager.Config.ListenerPeers); index++ {
-		peerConn, exist := self.ConnManager.Config.ListenerPeers[index].PeerConns[peerId.String()]
+	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
+		peerConn, exist := self.connManager.Config.ListenerPeers[index].PeerConns[peerId.String()]
 		if exist {
-			msg.SetSenderID(self.ConnManager.Config.ListenerPeers[index].PeerID)
+			msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
 			peerConn.QueueMessageWithEncoding(msg, dc)
 			Logger.log.Info("Pushed")
 			return nil
 		} else {
 			fmt.Println()
-			Logger.log.Critical("Peer not exist!")
+			Logger.log.Critical("RemotePeer not exist!")
 			fmt.Println()
 		}
 	}
-	return errors.New("Peer not found")
+	return errors.New("RemotePeer not found")
 }
 
 // handleDonePeerMsg deals with peers that have signalled they are done.  It is
 // invoked from the peerHandler goroutine.
 func (self *Server) handleDonePeerMsg(sp *peer.Peer) {
-	//self.AddrManager.
+	//self.addrManager.
 	// TODO
 }
 
@@ -852,7 +841,7 @@ GetChainState - send a getchainstate msg to connected peer
 func (self *Server) PushMessageGetChainState() error {
 	Logger.log.Info("Send a GetChainState")
 	var dc chan<- struct{}
-	for _, listener := range self.ConnManager.Config.ListenerPeers {
+	for _, listener := range self.connManager.Config.ListenerPeers {
 		msg, err := wire.MakeEmptyMessage(wire.CmdGetChainState)
 		if err != nil {
 			return err

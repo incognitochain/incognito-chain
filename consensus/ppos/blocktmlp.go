@@ -22,14 +22,13 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 	var feeMap map[string]uint64
 	var txs []transaction.Transaction
 
-	if len(sourceTxns) < MIN_TXs {
-		// if len of sourceTxns < MIN_TXs -> wait for more transactions
+	if len(sourceTxns) < common.MinTxsInBlock {
+		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
 		Logger.log.Info("not enough transactions. Wait for more...")
-		fmt.Println(sourceTxns)
-		<-time.Tick(MIN_BLOCK_WAIT_TIME * time.Second)
+		<-time.Tick(common.MinBlockWaitTime * time.Second)
 		sourceTxns = g.txSource.MiningDescs()
 		if len(sourceTxns) == 0 {
-			<-time.Tick(MAX_BLOCK_WAIT_TIME * time.Second)
+			<-time.Tick(common.MaxBlockWaitTime * time.Second)
 			sourceTxns = g.txSource.MiningDescs()
 			if len(sourceTxns) == 0 {
 				// return nil, errors.New("No Tx")
@@ -55,58 +54,13 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, 
 		if txChainID != chainID {
 			continue
 		}
-		/*for _, desc := range tx.Descs {
-			view, err := g.chain.FetchTxViewPoint(desc.Type)
-			_ = view
-			_ = err
-		}*/
-		/*
-			if err != nil {
-				fmt.Print("Unable to fetch utxo view for tx %s: %v",
-					tx.Hash(), err)
-				continue
-			}
-			prioItem := &txPrioItem{tx: tx}
-			for _, txIn := range tx.TxIn {
-				originHash := &txIn.PreviousOutPoint.Hash
-				entry := utxos.LookupEntry(txIn.PreviousOutPoint)
-				if entry == nil || entry.IsSpent() {
-					if !TxPool.HaveTx(originHash) {
-						fmt.Print("Skipping tx %s because it "+
-							"references unspent output %s "+
-							"which is not available",
-							tx.Hash(), txIn.PreviousOutPoint)
-						continue mempoolLoop
-					}
-
-					// The transaction is referencing another
-					// transaction in the source pool, so setup an
-					// ordering dependency.
-					deps, exists := dependers[*originHash]
-					if !exists {
-						deps = make(map[common.Hash]*txPrioItem)
-						dependers[*originHash] = deps
-					}
-					deps[*prioItem.tx.Hash()] = prioItem
-					if prioItem.dependsOn == nil {
-						prioItem.dependsOn = make(
-							map[common.Hash]struct{})
-					}
-					prioItem.dependsOn[*originHash] = struct{}{}
-
-					// Skip the check below. We already know the
-					// referenced transaction is available.
-					continue
-				}
-			}*/
 		if !tx.ValidateTransaction() {
 			txToRemove = append(txToRemove, transaction.Transaction(tx))
 		}
 		txsToAdd = append(txsToAdd, tx)
-		if len(txsToAdd) == MAX_TXs_IN_BLOCK {
+		if len(txsToAdd) == common.MaxTxsInBlock {
 			break
 		}
-		// g.txSource.Clear()
 	}
 
 	for _, tx := range txToRemove {
@@ -187,10 +141,10 @@ concludeBlock:
 		MerkleRoot:            *merkleRoot,
 		MerkleRootCommitments: common.Hash{},
 		Timestamp:             time.Now().Unix(),
-		// BlockCommitteeSigs:    []string{},
-		// Committee:             []string{},
-		CommitteeSigs: make(map[string]string),
-		ChainID:       chainID,
+		BlockCommitteeSigs:    make([]string, common.TotalValidators),
+		Committee:             make([]string, common.TotalValidators),
+		// CommitteeSigs: make(map[string]string),
+		ChainID: chainID,
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
@@ -200,10 +154,8 @@ concludeBlock:
 
 	// Add new commitments to merkle tree and save the root
 	newTree := g.chain.BestState[chainID].CmTree.MakeCopy()
-	fmt.Printf("[newBlockTemplate] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
-	g.chain.UpdateMerkleTreeForBlock(newTree, &block)
+	blockchain.UpdateMerkleTreeForBlock(newTree, &block)
 	rt = newTree.GetRoot(common.IncMerkleTreeHeight)
-	fmt.Printf("[newBlockTemplate] updated tree rt: %x\n", rt)
 	copy(block.Header.MerkleRootCommitments[:], rt)
 
 	for _, tempBlockTx := range block.Transactions {
@@ -323,7 +275,7 @@ func createCoinbaseTx(
 
 	// Get reward
 	// TODO(@0xbunyip): implement bonds reward
-	var reward uint64 = DEFAULT_MINING_REWARD + feeMap[common.TxOutCoinType] // TODO: probably will need compute reward based on block height
+	var reward uint64 = common.DefaultCoinBaseTxReward + feeMap[common.TxOutCoinType] // TODO: probably will need compute reward based on block height
 
 	// Create new notes: first one is coinbase UTXO, second one has 0 value
 	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}

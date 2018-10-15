@@ -9,9 +9,7 @@ import (
 	"net/http"
 	"net/rpc"
 	"os"
-	"runtime"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -20,17 +18,9 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/cash-prototype/bootnode/server"
 	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/wire"
-)
-
-const (
-	// defaultTargetOutbound is the default number of outbound connections to
-	// maintain.
-	defaultTargetOutbound = uint32(20)
-	defaultTargetInbound  = uint32(20)
 )
 
 // ConnState represents the state of the requested connection.
@@ -45,27 +35,14 @@ type ConnManager struct {
 	connReqCount uint64
 	start        int32
 	stop         int32
+	// Discover Peers
+	discoveredPeers map[string]*DiscoverPeerInfo
+	// channel
+	cQuit chan struct{}
 
 	Config Config
-	// Pending Connection
-	Pending map[libpeer.ID]*peer.Peer
-
-	// Connected Connection
-	Connected map[libpeer.ID]*peer.Peer
-
-	// Discover Peers
-	DiscoveredPeers map[string]*DiscoverPeerInfo
 
 	ListeningPeers map[libpeer.ID]*peer.Peer
-
-	WaitGroup sync.WaitGroup
-
-	// Request channel
-	Requests chan interface{}
-	// quit channel
-	Quit chan struct{}
-
-	FailedAttempts uint32
 }
 
 type Config struct {
@@ -90,12 +67,8 @@ type Config struct {
 	//OnOutboundDisconnection is a callback that is fired when an outbound connection is disconnected
 	OnOutboundDisconnection func(peerConn *peer.PeerConn)
 
-	// TargetOutbound is the number of outbound network connections to
-	// maintain. Defaults to 8.
-	TargetOutbound uint32
-	TargetInbound  uint32
-
-	DiscoverPeers bool
+	DiscoverPeers        bool
+	DiscoverPeersAddress string
 }
 
 type DiscoverPeerInfo struct {
@@ -104,84 +77,13 @@ type DiscoverPeerInfo struct {
 	PeerID     libpeer.ID
 }
 
-// registerPending is used to register a pending connection attempt. By
-// registering pending connection attempts we allow callers to cancel pending
-// connection attempts before their successful or in the case they're not
-// longer wanted.
-//type registerPending struct {
-//	connRequest *ConnReq
-//	done        chan struct{}
-//}
-//
-//// handleConnected is used to queue a successful connection.
-//type handleConnected struct {
-//	connRequest *ConnReq
-//	Peer        peer.Peer
-//}
-//
-//// handleDisconnected is used to remove a connection.
-//type handleDisconnected struct {
-//	id    uint64
-//	retry bool
-//}
-//
-//// handleFailed is used to remove a pending connection.
-//type handleFailed struct {
-//	c   *ConnReq
-//	err error
-//}
-
-// parseListeners determines whether each listen address is IPv4 and IPv6 and
-// returns a slice of appropriate net.Addrs to listen on with TCP. It also
-// properly detects addresses which apply to "all interfaces" and adds the
-// address as both IPv4 and IPv6.
-func parseListeners(addrs []string, netType string) ([]common.SimpleAddr, error) {
-	netAddrs := make([]common.SimpleAddr, 0, len(addrs)*2)
-	for _, addr := range addrs {
-		host, _, err := net.SplitHostPort(addr)
-		if err != nil {
-			// Shouldn't happen due to already being normalized.
-			return nil, err
-		}
-
-		// Empty host or host of * on plan9 is both IPv4 and IPv6.
-		if host == "" || (host == "*" && runtime.GOOS == "plan9") {
-			netAddrs = append(netAddrs, common.SimpleAddr{Net: netType + "4", Addr: addr})
-			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
-			continue
-		}
-
-		// Strip IPv6 zone id if present since net.ParseIP does not
-		// handle it.
-		zoneIndex := strings.LastIndex(host, "%")
-		if zoneIndex > 0 {
-			host = host[:zoneIndex]
-		}
-
-		// Parse the IP.
-		ip := net.ParseIP(host)
-		if ip == nil {
-			return nil, fmt.Errorf("'%s' is not a valid IP address", host)
-		}
-
-		// To4 returns nil when the IP is not an IPv4 address, so use
-		// this determine the address type.
-		if ip.To4() == nil {
-			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
-		} else {
-			netAddrs = append(netAddrs, common.SimpleAddr{Net: netType + "4", Addr: addr})
-		}
-	}
-	return netAddrs, nil
-}
-
 // Stop gracefully shuts down the connection manager.
 func (self ConnManager) Stop() {
 	if atomic.AddInt32(&self.stop, 1) != 1 {
-		log.Println("Connection manager already stopped")
+		Logger.log.Error("Connection manager already stopped")
 		return
 	}
-	log.Println("Stop connection manager")
+	Logger.log.Warn("Stopping connection manager")
 
 	// Stop all the listeners.  There will not be any listeners if
 	// listening is disabled.
@@ -189,65 +91,56 @@ func (self ConnManager) Stop() {
 		listener.Stop()
 	}
 
-	close(self.Quit)
-	log.Println("Connection manager stopped")
+	close(self.cQuit)
+	Logger.log.Warn("Connection manager stopped")
 }
 
 func (self ConnManager) New(cfg *Config) (*ConnManager, error) {
-	if cfg.TargetOutbound == 0 {
-		cfg.TargetOutbound = defaultTargetOutbound
-	}
-	if cfg.TargetInbound == 0 {
-		cfg.TargetInbound = defaultTargetInbound
-	}
 	self.Config = *cfg
-	self.Quit = make(chan struct{})
-	self.Requests = make(chan interface{})
-	self.DiscoveredPeers = make(map[string]*DiscoverPeerInfo)
+	self.cQuit = make(chan struct{})
+	self.discoveredPeers = make(map[string]*DiscoverPeerInfo)
 
-	self.Pending = map[libpeer.ID]*peer.Peer{}
-	self.Connected = map[libpeer.ID]*peer.Peer{}
 	self.ListeningPeers = map[libpeer.ID]*peer.Peer{}
 
 	return &self, nil
 }
 
 func (self ConnManager) GetPeerId(addr string) string {
-	ipfsaddr, err := ma.NewMultiaddr(addr)
+	ipfsAddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
 		log.Print(err)
-		return ""
+		return EmptyString
 	}
-	pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
+	pid, err := ipfsAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		log.Print(err)
-		return ""
+		return EmptyString
 	}
 	peerId, err := libpeer.IDB58Decode(pid)
 	if err != nil {
 		log.Print(err)
-		return ""
+		return EmptyString
 	}
 	return peerId.Pretty()
 }
 
-func (self ConnManager) GetPeerIDStr(addr string) string {
+func (self ConnManager) GetPeerIDStr(addr string) (string, error) {
 	ipfsaddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
-		log.Print(err)
-		return ""
+		Logger.log.Error(err)
+		return EmptyString, err
 	}
 	pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
-		log.Print(err)
-		return ""
+		Logger.log.Error(err)
+		return EmptyString, err
 	}
 	peerId, err := libpeer.IDB58Decode(pid)
 	if err != nil {
-		log.Print(err)
-		return ""
+		Logger.log.Error(err)
+		return EmptyString, err
 	}
-	return peerId.String()
+	return peerId.String(), nil
 }
 
 // Connect assigns an id and dials a connection to the address of the
@@ -260,33 +153,29 @@ func (self *ConnManager) Connect(addr string, pubKey string) {
 	// given multiaddress
 	ipfsaddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
-		log.Print(err)
+		Logger.log.Error(err)
 		return
 	}
 
 	pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
-		log.Print(err)
+		Logger.log.Error(err)
 		return
 	}
 
 	peerId, err := libpeer.IDB58Decode(pid)
 	if err != nil {
-		log.Print(err)
+		Logger.log.Error(err)
 		return
 	}
 
 	// Decapsulate the /ipfs/<peerID> part from the target
 	// /ip4/<a.b.c.d>/ipfs/<peer> becomes /ip4/<a.b.c.d>
 
-	targetPeerAddr, _ := ma.NewMultiaddr(
-		fmt.Sprintf("/ipfs/%s", libpeer.IDB58Encode(peerId)))
+	targetPeerAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", libpeer.IDB58Encode(peerId)))
 	targetAddr := ipfsaddr.Decapsulate(targetPeerAddr)
 
 	for _, listen := range self.Config.ListenerPeers {
-		listen.MaxOutbound = int(self.Config.TargetOutbound)
-		listen.MaxInbound = int(self.Config.TargetInbound)
-
 		listen.HandleConnected = self.handleConnected
 		listen.HandleDisconnected = self.handleDisconnected
 		listen.HandleFailed = self.handleFailed
@@ -303,28 +192,24 @@ func (self *ConnManager) Connect(addr string, pubKey string) {
 			HandleFailed:       self.handleFailed,
 		}
 
-		if pubKey != "" {
+		if pubKey != EmptyString {
 			peer.PublicKey = pubKey
 		}
 
 		listen.Host.Peerstore().AddAddr(peer.PeerID, peer.TargetAddress, pstore.PermanentAddrTTL)
-		Logger.log.Info("DEBUG Connect to Peer", peer.PublicKey)
+		Logger.log.Info("DEBUG Connect to RemotePeer", peer.PublicKey)
 		Logger.log.Info(listen.Host.Peerstore().Addrs(peer.PeerID))
-		// make a new stream from host B to host A
-		// it should be handled on host A by the handler we set above because
-		// we use the same /peer/1.0.0 protocol
 		go listen.PushConn(&peer, nil)
 	}
 }
 
-func (self *ConnManager) Start() {
+func (self *ConnManager) Start(discoverPeerAddress string) {
 	// Already started?
 	if atomic.AddInt32(&self.start, 1) != 1 {
 		return
 	}
 
 	Logger.log.Info("Connection manager started")
-	self.WaitGroup.Add(1)
 	// Start handler to listent channel from connection peer
 	//go self.connHandler()
 
@@ -332,7 +217,6 @@ func (self *ConnManager) Start() {
 	// provided a callback to be invoked when connections are accepted.
 	if self.Config.OnInboundAccept != nil {
 		for _, listner := range self.Config.ListenerPeers {
-			self.WaitGroup.Add(1)
 			listner.HandleConnected = self.handleConnected
 			listner.HandleDisconnected = self.handleDisconnected
 			listner.HandleFailed = self.handleFailed
@@ -341,8 +225,9 @@ func (self *ConnManager) Start() {
 			self.ListeningPeers[listner.PeerID] = listner
 		}
 
-		if self.Config.DiscoverPeers {
-			go self.DiscoverPeers()
+		if self.Config.DiscoverPeers && self.Config.DiscoverPeersAddress != EmptyString {
+			Logger.log.Infof("DiscoverPeers: true\n----------------------------------------------------------------\n|               Discover peer url: %s               |\n----------------------------------------------------------------", self.Config.DiscoverPeersAddress)
+			go self.DiscoverPeers(discoverPeerAddress)
 		}
 	}
 }
@@ -354,25 +239,25 @@ func (self *ConnManager) listenHandler(listen *peer.Peer) {
 }
 
 func (self *ConnManager) handleConnected(peerConn *peer.PeerConn) {
-	Logger.log.Infof("handleConnected %s", peerConn.PeerID.String())
+	Logger.log.Infof("handleConnected %s", peerConn.RemotePeerID.String())
 	if peerConn.IsOutbound {
-		Logger.log.Infof("handleConnected OUTBOUND %s", peerConn.PeerID.String())
+		Logger.log.Infof("handleConnected OUTBOUND %s", peerConn.RemotePeerID.String())
 
 		if self.Config.OnOutboundConnection != nil {
 			self.Config.OnOutboundConnection(peerConn)
 		}
 
 	} else {
-		Logger.log.Infof("handleConnected INBOUND %s", peerConn.PeerID.String())
+		Logger.log.Infof("handleConnected INBOUND %s", peerConn.RemotePeerID.String())
 	}
 }
 
 func (p *ConnManager) handleDisconnected(peerConn *peer.PeerConn) {
-	Logger.log.Infof("handleDisconnected %s", peerConn.PeerID.String())
+	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.String())
 }
 
 func (self *ConnManager) handleFailed(peerConn *peer.PeerConn) {
-	Logger.log.Infof("handleFailed %s", peerConn.PeerID.String())
+	Logger.log.Infof("handleFailed %s", peerConn.RemotePeerID.String())
 }
 
 func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)) {
@@ -418,43 +303,42 @@ func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)
 	seedFn(addrs)
 }
 
-func (self *ConnManager) DiscoverPeers() {
-	Logger.log.Infof("Start Discover Peers")
+func (self *ConnManager) DiscoverPeers(discoverPeerAddress string) {
+	Logger.log.Info("Start Discover Peers")
 	var client *rpc.Client
 	var err error
 
 listen:
 	for {
-		//Logger.log.Infof("Peers", self.DiscoveredPeers)
+		//Logger.log.Infof("Peers", self.discoveredPeers)
 		if client == nil {
-			// server bootnode 35.199.177.89:9339
-			// server live bootnode 35.230.8.182:9339
-			// local bootnode 127.0.0.1:9339
-			client, err = rpc.Dial("tcp", "127.0.0.1:9339")
+			client, err = rpc.Dial("tcp", discoverPeerAddress)
 			if err != nil {
-				Logger.log.Error("[Exchange Peers] re-connect:", err)
+				Logger.log.Error("[Exchange Peers] re-connect:")
+				Logger.log.Error(err)
 			}
 		}
 		if client != nil {
 			for _, listener := range self.Config.ListenerPeers {
-				//Logger.log.Infof("[Exchange Peers] Ping")
 				var response []wire.RawPeer
 
 				var publicKey string
 
-				if listener.Config.SealerPrvKey != "" {
+				if listener.Config.SealerPrvKey != EmptyString {
 					keySet := &cashec.KeySetSealer{}
-					keySet.Import(listener.Config.SealerPrvKey)
-					publicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))
+					_, err := keySet.Import(listener.Config.SealerPrvKey)
+					if err != nil {
+						publicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))
+					}
 				}
 
 				// remove later
 				rawAddress := listener.RawAddress
 
 				externalAddress := os.Getenv("EXTERNAL_ADDRESS")
-				if externalAddress != "" {
+				if externalAddress != EmptyString {
 					host, _, err := net.SplitHostPort(externalAddress)
-					if err == nil && host != "" {
+					if err == nil && host != EmptyString {
 						rawAddress = strings.Replace(rawAddress, "127.0.0.1", host, 1)
 					}
 				}
@@ -463,23 +347,24 @@ listen:
 				Logger.log.Infof("[Exchange Peers] Ping", args)
 
 				Logger.log.Info("Dump PeerConns", len(listener.PeerConns))
-				for pubK, info := range self.DiscoveredPeers {
+				for pubK, info := range self.discoveredPeers {
 					var result []string
 					for _, peerConn := range listener.PeerConns {
-						if peerConn.Peer.PublicKey == pubK {
-							result = append(result, peerConn.Peer.PeerID.Pretty())
+						if peerConn.RemotePeer.PublicKey == pubK {
+							result = append(result, peerConn.RemotePeer.PeerID.Pretty())
 						}
 					}
-					Logger.log.Info("Public Key", pubK, info.PeerID.Pretty(), result)
+					Logger.log.Infof("Public Key %s, %s, %s", pubK, info.PeerID.Pretty(), result)
 				}
 
 				for _, peerConn := range listener.PeerConns {
-					Logger.log.Info("PeerConn state", peerConn.ConnState(), peerConn.IsOutbound, peerConn.PeerID.Pretty(), peerConn.Peer.RawAddress)
+					Logger.log.Info("PeerConn state %s %s %s", peerConn.ConnState(), peerConn.IsOutbound, peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
 				}
 
 				err := client.Call("Handler.Ping", args, &response)
 				if err != nil {
-					//Logger.log.Error("[Exchange Peers] Ping:", err)
+					Logger.log.Error("[Exchange Peers] Ping:")
+					Logger.log.Error(err)
 					client = nil
 					time.Sleep(time.Second * 2)
 
@@ -487,9 +372,9 @@ listen:
 				}
 
 				for _, rawPeer := range response {
-					if rawPeer.PublicKey != "" && !strings.Contains(rawPeer.RawAddress, listener.PeerID.String()) {
-						_, exist := self.DiscoveredPeers[rawPeer.PublicKey]
-						//Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
+					if rawPeer.PublicKey != EmptyString && !strings.Contains(rawPeer.RawAddress, listener.PeerID.String()) {
+						_, exist := self.discoveredPeers[rawPeer.PublicKey]
+						//Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RemoteRawAddress, exist)
 						if !exist {
 							// The following code extracts target's peer Id from the
 							// given multiaddress
@@ -511,8 +396,8 @@ listen:
 								return
 							}
 
-							self.DiscoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
-							//Logger.log.Info("Start connect to peer", rawPeer.PublicKey, rawPeer.RawAddress, exist)
+							self.discoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
+							//Logger.log.Info("Start connect to peer", rawPeer.PublicKey, rawPeer.RemoteRawAddress, exist)
 							go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
 						} else {
 							peerIds := self.getPeerIdsFromPublicKey(rawPeer.PublicKey)
@@ -533,33 +418,21 @@ func (self *ConnManager) getPeerIdsFromPublicKey(pubKey string) []libpeer.ID {
 
 	for _, listener := range self.Config.ListenerPeers {
 		for _, peerConn := range listener.PeerConns {
-			// Logger.log.Info("Test PeerConn", peerConn.Peer.PublicKey)
-			if peerConn.Peer.PublicKey == pubKey {
+			// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PublicKey)
+			if peerConn.RemotePeer.PublicKey == pubKey {
 				exist := false
 				for _, item := range result {
-					if item.Pretty() == peerConn.Peer.PeerID.Pretty() {
+					if item.Pretty() == peerConn.RemotePeer.PeerID.Pretty() {
 						exist = true
 					}
 				}
 
 				if !exist {
-					result = append(result, peerConn.Peer.PeerID)
+					result = append(result, peerConn.RemotePeer.PeerID)
 				}
 			}
 		}
 	}
 
 	return result
-}
-
-func (p *ConnManager) GetPeerConnsByPeerId(peerId libpeer.ID) []*peer.PeerConn {
-	results := []*peer.PeerConn{}
-	for _, listen := range p.ListeningPeers {
-		for _, peerConn := range listen.PeerConns {
-			if peerConn.PeerID == peerId {
-				results = append(results, peerConn)
-			}
-		}
-	}
-	return results
 }

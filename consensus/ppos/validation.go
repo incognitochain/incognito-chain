@@ -3,7 +3,6 @@ package ppos
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
@@ -23,9 +22,9 @@ func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
 	return nil
 }
 
-func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committeeSigs map[string]string) error {
+func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, sigs []string) error {
 	validatedSigs := 0
-	for validator, sig := range committeeSigs {
+	for idx, validator := range committee {
 		decPubkey, _, err := base58.Base58Check{}.Decode(validator)
 		if err != nil {
 			Logger.log.Error(err)
@@ -34,7 +33,7 @@ func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committeeSigs map[st
 		k := cashec.KeySetSealer{
 			SpublicKey: decPubkey,
 		}
-		decSig, _, err := base58.Base58Check{}.Decode(sig)
+		decSig, _, err := base58.Base58Check{}.Decode(sigs[idx])
 		if err != nil {
 			Logger.log.Error(err)
 			continue
@@ -60,7 +59,7 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 	rtOld := self.config.BlockChain.BestState[block.Header.ChainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
 	newTree := self.config.BlockChain.BestState[block.Header.ChainID].CmTree.MakeCopy()
 	Logger.log.Infof("[validateblock] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
-	self.config.BlockChain.UpdateMerkleTreeForBlock(newTree, block)
+	blockchain.UpdateMerkleTreeForBlock(newTree, block)
 	rt := newTree.GetRoot(common.IncMerkleTreeHeight)
 	Logger.log.Infof("[validateblock] updated tree rt: %x\n", rt)
 	if !bytes.Equal(rt[:], block.Header.MerkleRootCommitments.CloneBytes()) {
@@ -100,7 +99,7 @@ func (self *Engine) CheckBlockSize(block *blockchain.Block) error {
 	if err != nil {
 		return err
 	}
-	if len(blockBytes) > MAX_BLOCKSIZE {
+	if len(blockBytes) > common.MaxBlockSize {
 		return errBlockSizeExceed
 	}
 	return nil
@@ -109,7 +108,7 @@ func (self *Engine) CheckBlockSize(block *blockchain.Block) error {
 func (self *Engine) IsEnoughData(block *blockchain.Block) error {
 	if self.validatedChainsHeight.Heights[block.Header.ChainID] == (int(block.Height) - 1) {
 		notFullySync := false
-		for i := 0; i < TOTAL_VALIDATORS; i++ {
+		for i := 0; i < common.TotalValidators; i++ {
 			if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
 				notFullySync = true
 				getBlkMsg := &wire.MessageGetBlocks{
@@ -120,14 +119,14 @@ func (self *Engine) IsEnoughData(block *blockchain.Block) error {
 					Logger.log.Info("Send getblock to "+peerIDs[0], block.ChainLeader)
 					self.config.Server.PushMessageToPeer(getBlkMsg, peerIDs[0])
 				} else {
-					fmt.Println("Validator's peer not found!", block.ChainLeader)
+					Logger.log.Error("Validator's peer not found!", block.ChainLeader)
 				}
 			}
 		}
 		if notFullySync {
-			timer := time.NewTimer(MAX_SYNC_CHAINS_TIME * time.Second)
+			timer := time.NewTimer(common.MaxSyncChainTime * time.Second)
 			<-timer.C
-			for i := 0; i < TOTAL_VALIDATORS; i++ {
+			for i := 0; i < common.TotalValidators; i++ {
 				if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
 					return errChainNotFullySynced
 				}
@@ -139,26 +138,22 @@ func (self *Engine) IsEnoughData(block *blockchain.Block) error {
 	return nil
 }
 
-func (self *Engine) validateBlock(block *blockchain.Block) error {
-	// 1. Check PrevBlockHash
-	if block.Header.PrevBlockHash.String() != self.config.BlockChain.BestState[block.Header.ChainID].BestBlockHash.String() {
-		return errChainNotFullySynced
+func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
+	// 1. Check whether we acquire enough data to validate this block
+	err := self.IsEnoughData(block)
+	if err != nil {
+		return err
 	}
+
 	// 2. Check block size
-	err := self.CheckBlockSize(block)
+	err = self.CheckBlockSize(block)
 	if err != nil {
 		return err
 	}
 
-	// 3. Check whether signature of the block belongs to chain leader or not.
-	cmsBytes, _ := json.Marshal(block.Header.CommitteeSigs)
-	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, cmsBytes)
-	if err != nil {
-		return err
-	}
-
-	// 4. Check whether we acquire enough data to validate this block
-	err = self.IsEnoughData(block)
+	// 3. Check signature of the block leader for block header
+	headerBytes, _ := json.Marshal(block.Header)
+	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, headerBytes)
 	if err != nil {
 		return err
 	}
@@ -170,7 +165,7 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 	}
 
 	// 6. Validate committee member signatures
-	err = self.ValidateCommitteeSigs([]byte(block.Hash().String()), block.Header.CommitteeSigs)
+	err = self.ValidateCommitteeSigs([]byte(block.Hash().String()), block.Header.Committee, block.Header.BlockCommitteeSigs)
 	if err != nil {
 		return err
 	}
@@ -179,21 +174,22 @@ func (self *Engine) validateBlock(block *blockchain.Block) error {
 
 }
 
-func (self *Engine) validatePreSignBlock(block *blockchain.Block) error {
-
-	// 1. Check prevBlockHash
-	if block.Header.PrevBlockHash.String() != self.config.BlockChain.BestState[block.Header.ChainID].BestBlockHash.String() {
-		return errChainNotFullySynced
-	}
-	// 2. Check block size
-	err := self.CheckBlockSize(block)
+func (self *Engine) validatePreSignBlockSanity(block *blockchain.Block) error {
+	// 1. Check whether we acquire enough data to validate this block
+	err := self.IsEnoughData(block)
 	if err != nil {
 		return err
 	}
 
-	// 3. Check signature of the block leader
-	cmsBytes, _ := json.Marshal(block.Header.CommitteeSigs)
-	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, cmsBytes)
+	// 2. Check block size
+	err = self.CheckBlockSize(block)
+	if err != nil {
+		return err
+	}
+
+	// 3. Check signature of the block leader for block header
+	headerBytes, _ := json.Marshal(block.Header)
+	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, headerBytes)
 	if err != nil {
 		return err
 	}

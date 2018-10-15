@@ -34,10 +34,26 @@ type BestState struct {
 
 /*
 Init create a beststate data from block and commitment tree
- */
- // #1 - block
- // #2 - commitment merkle tree
+*/
+// #1 - block
+// #2 - commitment merkle tree
 func (self *BestState) Init(block *Block, tree *client.IncMerkleTree) {
+	bestBlockHash := block.Hash()
+	self.BestBlock = block
+	self.BestBlockHash = bestBlockHash
+	self.CmTree = tree
+
+	self.TotalTxns += uint64(len(block.Transactions))
+	self.NumTxns = uint64(len(block.Transactions))
+	self.Height = block.Height
+}
+
+func (self *BestState) Update(block *Block) {
+	tree := self.CmTree
+	err := UpdateMerkleTreeForBlock(tree, block)
+	if err != nil {
+		Logger.log.Error("WHAT")
+	}
 	bestBlockHash := block.Hash()
 	self.BestBlock = block
 	self.BestBlockHash = bestBlockHash

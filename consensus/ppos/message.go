@@ -9,7 +9,7 @@ import (
 
 func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 	block := &msgBlock.Block
-	err := self.validatePreSignBlock(block)
+	err := self.validatePreSignBlockSanity(block)
 	if err != nil {
 		invalidBlockMsg := &wire.MessageInvalidBlock{
 			Reason:    err.Error(),
@@ -34,7 +34,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 
 	sig, err := self.signData([]byte(block.Hash().String()))
 	if err != nil {
-		Logger.log.Critical("OHSHITT", err)
+		Logger.log.Error("Can't sign block ", err)
 		// ??? something went terribly wrong
 		return
 	}
@@ -57,32 +57,19 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
 
 func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 	if self.config.BlockChain.BestState[block.Header.ChainID].Height < block.Height {
-		if _, _, err := self.config.BlockChain.GetBlockHeightByBlockHash(block.Hash()); err != nil {
-			err := self.validateBlock(block)
+		if _, err := self.config.BlockChain.BlockExists(block.Hash()); err != nil {
+			err := self.validateBlockSanity(block)
 			if err != nil {
 				Logger.log.Error(err)
 				return
 			}
-			isMainChain, ok, err := self.config.BlockChain.ProcessBlock(block)
-			_ = isMainChain
-			_ = ok
+			err = self.config.BlockChain.ConnectBlock(block)
 			if err != nil {
 				Logger.log.Error(err)
 				return
 			}
 			self.UpdateChain(block)
-			err = self.config.FeeEstimator[block.Header.ChainID].RegisterBlock(block)
-			if err != nil {
-				Logger.log.Error(err)
-			}
-			self.knownChainsHeight.Lock()
-			if self.knownChainsHeight.Heights[block.Header.ChainID] < int(block.Height) {
-				self.knownChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
-			}
-			self.knownChainsHeight.Unlock()
 		}
-	} else {
-		//save block to cache
 	}
 	return
 }
@@ -104,7 +91,6 @@ func (self *Engine) OnInvalidBlockReceived(blockHash string, chainID byte, reaso
 }
 
 func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
-	// fmt.Println(msg)
 	chainInfo := msg.ChainInfo.(map[string]interface{})
 	for i, v := range self.validatedChainsHeight.Heights {
 		if chainInfo["ChainsHeight"] != nil {
@@ -117,12 +103,13 @@ func (self *Engine) OnChainStateReceived(msg *wire.MessageChainState) {
 				Logger.log.Info("Send " + getBlkMsg.MessageType() + " to " + msg.SenderID)
 				peerID, err := peer2.IDB58Decode(msg.SenderID)
 				if err != nil {
+					Logger.log.Error(err)
 					continue
 				}
 				self.config.Server.PushMessageToPeer(getBlkMsg, peerID)
 			}
 		} else {
-			Logger.log.Error("what the ...")
+			Logger.log.Error("ChainsHeight is empty!")
 		}
 	}
 	return
@@ -153,4 +140,14 @@ func (self *Engine) OnCandidateVote() {
 
 func (self *Engine) OnCandidateRequestTx() {
 
+}
+
+func (self *Engine) sendBlockMsg(block *blockchain.Block) {
+	blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
+	blockMsg.(*wire.MessageBlock).Block = *block
+	self.config.Server.PushMessageToAll(blockMsg)
 }

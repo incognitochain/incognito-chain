@@ -3,7 +3,7 @@ package jsonresult
 // GetBlockChainInfoResult models the data returned from the getblockchaininfo
 // command.
 type GetBlockChainInfoResult struct {
-	Chain                string   `json:"BlockChain"`
+	Chain                string   `json:"blockChain"`
 	Blocks               int      `json:"Blocks"`
 	Headers              int32    `json:"Headers"`
 	BestBlockHash        []string `json:"BestBlockHash"`

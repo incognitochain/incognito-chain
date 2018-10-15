@@ -6,13 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
-	"strings"
 	"time"
 
-	peer "github.com/libp2p/go-libp2p-peer"
-	multiaddr "github.com/multiformats/go-multiaddr"
+	"github.com/ninjadotorg/cash-prototype/wire"
 
 	"net"
 
@@ -24,7 +21,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonresult"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
-	"github.com/ninjadotorg/cash-prototype/wire"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -58,7 +54,7 @@ var RpcHandler = map[string]commandHandler{
 	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 
 	//
-	//"getallpeers": RpcServer.handleGetAllPeers,
+	//"getallpeers": rpcServer.handleGetAllPeers,
 }
 
 // Commands that are available to a limited user
@@ -71,7 +67,7 @@ var RpcLimited = map[string]commandHandler{
 	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
 	"getaccountaddress":     RpcServer.handleGetAccountAddress,
 	"dumpprivkey":           RpcServer.handleDumpPrivkey,
-	/*"dumpprivraw":           RpcServer.handleDumpPrivkeyRaw,*/
+	/*"dumpprivraw":           rpcServer.handleDumpPrivkeyRaw,*/
 	"importaccount":        RpcServer.handleImportAccount,
 	"listunspent":          RpcServer.handleListUnspent,
 	"getbalance":           RpcServer.handleGetBalance,
@@ -81,11 +77,11 @@ var RpcLimited = map[string]commandHandler{
 }
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 	result := jsonresult.GetHeaderResult{}
 
 	arrayParams := common.InterfaceSlice(params)
-	log.Println(arrayParams)
+	Logger.log.Info(arrayParams)
 	getBy := arrayParams[0].(string)
 	block := arrayParams[1].(string)
 	chainID := arrayParams[2].(float64)
@@ -93,7 +89,7 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 	case "blockhash":
 		bhash := common.Hash{}
 		err := bhash.Decode(&bhash, block)
-		log.Println(bhash)
+		Logger.log.Info(bhash)
 		if err != nil {
 			return nil, errors.New("Invalid blockhash format")
 		}
@@ -330,14 +326,6 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 					}
 					transactionT["hex"] = hex.EncodeToString(data)
 					transactionT["locktime"] = txA.LockTime
-				} else if tx.GetType() == common.TxVotingType {
-					txV := tx.(*transaction.TxVoting)
-					data, err := json.Marshal(txV)
-					if err != nil {
-						return nil, err
-					}
-					transactionT["hex"] = hex.EncodeToString(data)
-					transactionT["locktime"] = txV.LockTime
 				}
 
 				transactionT["blockhash"] = block.Hash().String()
@@ -437,15 +425,6 @@ func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-cha
 					return nil, err
 				}
 				transactionT["data"] = hex.EncodeToString(data)
-			} else if tx.GetType() == common.TxVotingType {
-				txV := tx.(*transaction.TxVoting)
-				transactionT["fee"] = txV.Fee
-				data, err := json.Marshal(txV)
-				if err != nil {
-					return nil, err
-				}
-				transactionT["data"] = hex.EncodeToString(data)
-
 			} else {
 				transactionT["fee"] = 0
 			}
@@ -472,13 +451,13 @@ func (self RpcServer) handleGetAddedNodeInfo(params interface{}, closeChan <-cha
 	for _, nodeAddrI := range paramsArray {
 		if nodeAddr, ok := nodeAddrI.(string); ok {
 			for _, listen := range self.Config.ConnMgr.ListeningPeers {
-				peerIDstr := self.Config.ConnMgr.GetPeerIDStr(nodeAddr)
+				peerIDstr, _ := self.Config.ConnMgr.GetPeerIDStr(nodeAddr)
 
 				peerConn, existed := listen.PeerConns[peerIDstr]
 				if existed {
 					node := map[string]interface{}{}
 
-					node["addednode"] = peerConn.Peer.RawAddress
+					node["addednode"] = peerConn.RemotePeer.RawAddress
 					node["connected"] = true
 					connected := "inbound"
 					if peerConn.IsOutbound {
@@ -486,7 +465,7 @@ func (self RpcServer) handleGetAddedNodeInfo(params interface{}, closeChan <-cha
 					}
 					node["addresses"] = []map[string]interface{}{
 						map[string]interface{}{
-							"address":   peerConn.Peer.RawAddress,
+							"address":   peerConn.RemotePeer.RawAddress,
 							"connected": connected,
 						},
 					}
@@ -524,7 +503,7 @@ func (self RpcServer) handleAddNode(params interface{}, closeChan <-chan struct{
 	for _, nodeAddrI := range paramsArray {
 		if nodeAddr, ok := nodeAddrI.(string); ok {
 			for _, listen := range self.Config.ConnMgr.ListeningPeers {
-				peerIDstr := self.Config.ConnMgr.GetPeerIDStr(nodeAddr)
+				peerIDstr, _ := self.Config.ConnMgr.GetPeerIDStr(nodeAddr)
 				_, existed := listen.PeerConns[peerIDstr]
 				if existed {
 				} else {
@@ -553,7 +532,7 @@ Parameter #2—the maximum number of confirmations an output may have
 Parameter #3—the list readonly which be used to view utxo
 */
 func (self RpcServer) handleListTransactions(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 	result := jsonresult.ListUnspentResult{
 		ListUnspentResultItems: make(map[string]map[byte][]jsonresult.ListUnspentResultItem),
 	}
@@ -685,29 +664,6 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 	return result, nil
 }
 
-func validateNodeAddress(nodeAddr string) bool {
-	if len(nodeAddr) == 0 {
-		return false
-	}
-
-	strs := strings.Split(nodeAddr, "/ipfs/")
-	if len(strs) != 2 {
-		return false
-	}
-
-	_, err := multiaddr.NewMultiaddr(strs[0])
-	if err != nil {
-		return false
-	}
-
-	_, err = peer.IDB58Decode(strs[1])
-	if err != nil {
-		return false
-	}
-
-	return true
-}
-
 /*
 // handleCreateTransaction handles createtransaction commands.
 */
@@ -752,15 +708,6 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 
 	// param #4: estimation fee coin per kb
 	numBlock := uint32(arrayParams[3].(float64))
-
-	// param #5: node address
-	nodeAddr := ""
-	if len(arrayParams) >= 5 {
-		nodeAddr = arrayParams[4].(string)
-		if valid := validateNodeAddress(nodeAddr); !valid {
-			return nil, errors.New("node address is wrong")
-		}
-	}
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
@@ -825,43 +772,21 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		commitmentsDb[chainId] = txViewPoint.ListCommitments(common.TxOutCoinType)
 	}
 
-	if nodeAddr == "" {
-		fmt.Println("Create normal Tx")
-		tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos,
-			merkleRootCommitments,
-			candidateTxsMap,
-			nullifiersDb,
-			commitmentsDb,
-			realFee,
-			chainIdSender)
-		if err != nil {
-			return nil, err
-		}
-		byteArrays, err := json.Marshal(tx)
-		if err == nil {
-			// return hex for a new tx
-			return hex.EncodeToString(byteArrays), nil
-		}
-	} else {
-		fmt.Println("Create Voting Tx....")
-		tx, err := transaction.CreateVotingTx(&senderKey.KeySet.PrivateKey, paymentInfos,
-			merkleRootCommitments,
-			candidateTxsMap,
-			nullifiersDb,
-			commitmentsDb,
-			realFee,
-			chainIdSender,
-			nodeAddr)
-		if err != nil {
-			return nil, err
-		}
-		byteArrays, err := json.Marshal(tx)
-		if err == nil {
-			// return hex for a new tx
-			return hex.EncodeToString(byteArrays), nil
-		}
+	tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos,
+		merkleRootCommitments,
+		candidateTxsMap,
+		nullifiersDb,
+		commitmentsDb,
+		realFee,
+		chainIdSender)
+	if err != nil {
+		return nil, err
 	}
-
+	byteArrays, err := json.Marshal(tx)
+	if err == nil {
+		// return hex for a new tx
+		return hex.EncodeToString(byteArrays), nil
+	}
 	return nil, err
 }
 
@@ -872,76 +797,39 @@ Parameter #2–whether to allow high fees
 Result—a TXID or error message
 */
 func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	//log.Println(params)
+	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	hexRawTx := arrayParams[0].(string)
 	rawTxBytes, err := hex.DecodeString(hexRawTx)
-
-	log.Println("Preparing to send transaction ...")
 
 	if err != nil {
 		return nil, err
 	}
 	var tx transaction.Tx
-	// log.Println(string(rawTxBytes))
+	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		log.Println("Err", err)
 		return nil, err
 	}
 
-	if tx.GetType() == "n" {
-		log.Println("We have a normal tx ....")
-
-		hash, txDesc, err := self.Config.TxMemPool.MaybeAcceptTransaction(&tx)
-		if err != nil {
-			return nil, err
-		}
-
-		Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
-		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
-
-		// broadcast message
-		txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
-		if err != nil {
-			return nil, err
-		}
-
-		txMsg.(*wire.MessageTx).Transaction = &tx
-		self.Config.Server.PushMessageToAll(txMsg)
-
-		return tx.Hash(), nil
-	}
-	var tx2 transaction.TxVoting
-	err = json.Unmarshal(rawTxBytes, &tx2)
+	hash, txDesc, err := self.Config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
-		log.Println("Err", err)
 		return nil, err
 	}
-	if tx2.GetType() == "v" {
-		log.Println("We have a voting tx ....")
 
-		hash, txDesc, err := self.Config.TxMemPool.MaybeAcceptTransaction(&tx2)
-		if err != nil {
-			return nil, err
-		}
+	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
-		Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
-		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
-
-		// broadcast message
-		txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
-		if err != nil {
-			return nil, err
-		}
-
-		txMsg.(*wire.MessageTx).Transaction = &tx2
-		self.Config.Server.PushMessageToAll(txMsg)
-
-		return tx.Hash(), nil
+	// broadcast message
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, nil
+	txMsg.(*wire.MessageTx).Transaction = &tx
+	self.Config.Server.PushMessageToAll(txMsg)
+
+	return tx.Hash(), nil
 }
 
 /*
@@ -962,7 +850,7 @@ func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct
  * handleGetNumberOfCoins handles getNumberOfCoins commands.
  */
 func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 	result, err := self.Config.BlockChain.GetAllUnitCoinSupplier()
 	return result, err
 }
@@ -983,7 +871,7 @@ func (self RpcServer) handleCreateActionParamsTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.ActionParamTx{
 		Version:  1,
@@ -1108,7 +996,7 @@ func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan str
 	return self.Config.Wallet.DumpPrivkey(params.(string))
 }
 
-/*func (self RpcServer) handleDumpPrivkeyRaw(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+/*func (self rpcServer) handleDumpPrivkeyRaw(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	//return self.config.Wallet.DumpPrivkey(params.(string))
 	temp := params.(string)
 	byteA, _, _ := base58.Base58Check{}.Decode(temp)
@@ -1150,15 +1038,15 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 ///*
 //handleGetAllPeers - return all peers which this node connected
 // */
-//func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-//	log.Println(params)
+//func (self rpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+//	Logger.log.Info(params)
 //	result := make(map[string]interface{})
 //
 //	peersMap := []string{}
 //
 //	peers := self.config.AddrMgr.AddressCache()
 //	for _, peer := range peers {
-//		peersMap = append(peersMap, peer.RawAddress)
+//		peersMap = append(peersMap, peer.RemoteRawAddress)
 //	}
 //
 //	result["peers"] = peersMap
