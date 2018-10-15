@@ -222,28 +222,27 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	copy(newblock.Block.Header.ChainsHeight, self.validatedChainsHeight.Heights)
 	newblock.Block.Header.ChainID = myChainID
 	newblock.Block.ChainLeader = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
-
-	copy(newblock.Block.Header.Committee, self.GetNextCommittee())
-
-	sig, err := self.signData([]byte(newblock.Block.Hash().String()))
-	if err != nil {
-		return &blockchain.Block{}, err
-	}
-	newblock.Block.Header.BlockCommitteeSigs[newblock.Block.Header.ChainID] = sig
 	return newblock.Block, nil
 }
 
 // Finalize after successfully create a block we will send this block to other validators to get their signatures
-func (self *Engine) Finalize(block *blockchain.Block) error {
+func (self *Engine) Finalize(finalBlock *blockchain.Block) error {
 	Logger.log.Info("Start finalizing block...")
-	finalBlock := block
 	allSigReceived := make(chan struct{})
 	cancel := make(chan struct{})
-	committee := block.Header.Committee
 	defer func() {
 		close(cancel)
 		close(allSigReceived)
 	}()
+	retryTime := 0
+finalizing:
+	copy(finalBlock.Header.Committee, self.GetNextCommittee())
+	sig, err := self.signData([]byte(finalBlock.Hash().String()))
+	if err != nil {
+		return err
+	}
+	finalBlock.Header.BlockCommitteeSigs[finalBlock.Header.ChainID] = sig
+	committee := finalBlock.Header.Committee
 
 	// Collect signatures of other validators
 	go func(blockHash string) {
@@ -261,8 +260,8 @@ func (self *Engine) Finalize(block *blockchain.Block) error {
 				}
 
 				if idx := common.IndexOfStr(blocksig.Validator, committee); idx != -1 {
-					if block.Header.BlockCommitteeSigs[idx] != "" {
-						err := cashec.ValidateDataB58(blocksig.Validator, blocksig.ValidatorSig, []byte(block.Hash().String()))
+					if finalBlock.Header.BlockCommitteeSigs[idx] != "" {
+						err := cashec.ValidateDataB58(blocksig.Validator, blocksig.ValidatorSig, []byte(finalBlock.Hash().String()))
 
 						if err != nil {
 							Logger.log.Error("Validate sig error:", err)
@@ -282,14 +281,19 @@ func (self *Engine) Finalize(block *blockchain.Block) error {
 				}
 			}
 		}
-	}(block.Hash().String())
+	}(finalBlock.Hash().String())
+
 	//Request for signatures of other validators
 	go func() {
+		//Uncomment this segment to create block with 1 node (validator)
+		/*
+			allSigReceived <- struct{}{}
+		*/
 		reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestSign)
-		reqSigMsg.(*wire.MessageRequestSign).Block = *block
+		reqSigMsg.(*wire.MessageRequestSign).Block = *finalBlock
 		for idx := 0; idx < common.TotalValidators; idx++ {
 			//@TODO: retry on failed validators
-			if committee[idx] != block.ChainLeader {
+			if committee[idx] != finalBlock.ChainLeader {
 				go func(validator string) {
 					peerIDs := self.config.Server.GetPeerIDsFromPublicKey(validator)
 					if len(peerIDs) != 0 {
@@ -302,23 +306,26 @@ func (self *Engine) Finalize(block *blockchain.Block) error {
 			}
 		}
 	}()
-
 	// Wait for signatures of other validators
 	select {
 	case <-allSigReceived:
 		Logger.log.Info("Validator sigs: ", finalBlock.Header.BlockCommitteeSigs)
 	case <-time.After(common.MaxBlockSigWaitTime * time.Second):
-		return errCantFinalizeBlock
+		//blocksig wait time exceeded -> get a new commitee list and retry
+		Logger.log.Error(errExceedSigWaitTime)
+		retryTime++
+		Logger.log.Infof("Start finalizing block... %d time", retryTime)
+		goto finalizing
 	}
 
 	headerBytes, _ := json.Marshal(finalBlock.Header)
-	sig, err := self.signData(headerBytes)
+	sig, err = self.signData(headerBytes)
 	if err != nil {
 		return err
 	}
 	finalBlock.ChainLeaderSig = sig
 	self.UpdateChain(finalBlock)
-	self.sendBlockMsg(block)
+	self.sendBlockMsg(finalBlock)
 	return nil
 }
 
