@@ -3,7 +3,11 @@ package wire
 import (
 	"encoding/json"
 
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
+)
+
+const (
+	MaxBlockSigPayload = 1000 // 1 Kb
 )
 
 type MessageBlockSig struct {
@@ -17,7 +21,7 @@ func (self *MessageBlockSig) MessageType() string {
 }
 
 func (self *MessageBlockSig) MaxPayloadLength(pver int) int {
-	return MaxBlockPayload
+	return MaxBlockSigPayload
 }
 
 func (self *MessageBlockSig) JsonSerialize() ([]byte, error) {

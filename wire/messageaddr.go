@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	MaxGetAddressPayload = 1000
+	MaxGetAddressPayload = 1000 // 1 Kb
 )
 
 type RawPeer struct {

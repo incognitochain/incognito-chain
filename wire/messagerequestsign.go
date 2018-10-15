@@ -3,8 +3,12 @@ package wire
 import (
 	"encoding/json"
 
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
+)
+
+const (
+	MaxRequestBlockSign = 4000000 // 4Mb
 )
 
 type MessageRequestSign struct {
@@ -17,7 +21,7 @@ func (self *MessageRequestSign) MessageType() string {
 }
 
 func (self *MessageRequestSign) MaxPayloadLength(pver int) int {
-	return MaxBlockPayload
+	return MaxRequestBlockSign
 }
 
 func (self *MessageRequestSign) JsonSerialize() ([]byte, error) {
