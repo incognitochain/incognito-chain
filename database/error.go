@@ -11,20 +11,27 @@ const (
 	NotExistValue = "NotExistValue"
 
 	// BlockChain err
-
+	NotImplHashMethod = "NotImplHashMethod"
+	BlockExisted      = "BlockExisted"
+	UnexpectedError   = "UnexpectedError"
 )
 
 var ErrCodeMessage = map[string]struct {
 	code    int
 	message string
 }{
-	// -1xxx
+	// -1xxx driver
 	DriverExistErr:       {-1000, "Driver is already registered"},
 	DriverNotRegisterErr: {-1001, "Driver is not registered"},
 
-	// -2xxx
+	// -2xxx levelDb
 	OpenDbErr:     {-2000, "Open database error"},
 	NotExistValue: {-2001, "Value is not existed"},
+
+	// -3xxx blockchain
+	NotImplHashMethod: {-3000, "Data does not implement Hash() method"},
+	BlockExisted:      {-3001, "Block already existed"},
+	UnexpectedError:   {-3002, "Unexpected error"},
 }
 
 type DatabaseError struct {

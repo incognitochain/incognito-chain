@@ -39,7 +39,6 @@ type db struct {
 func (db *db) hasValue(key []byte) (bool, error) {
 	ret, err := db.lvdb.Has(key, nil)
 	if err != nil {
-
 		return false, database.NewDatabaseError(database.NotExistValue, err)
 	}
 	return ret, nil
@@ -52,7 +51,7 @@ type hasher interface {
 func (db *db) StoreBlock(v interface{}, chainID byte) error {
 	h, ok := v.(hasher)
 	if !ok {
-		return errors.New("v must implement Hash() method")
+		return database.NewDatabaseError(database.NotImplHashMethod, errors.New("v must implement Hash() method"))
 	}
 	var (
 		hash = h.Hash()
@@ -62,17 +61,17 @@ func (db *db) StoreBlock(v interface{}, chainID byte) error {
 		// key should look like this {b-blockhash}:block
 	)
 	if ok, _ := db.hasValue(key); ok {
-		return errors.Errorf("block %s already exists", hash.String())
+		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("block %s already exists", hash.String()))
 	}
 	val, err := json.Marshal(v)
 	if err != nil {
-		return errors.Wrap(err, "json.Marshal")
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
 	if err := db.put(key, keyB); err != nil {
-		return errors.Wrap(err, "db.Put")
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 	if err := db.put(keyB, val); err != nil {
-		return errors.Wrap(err, "db.Put")
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 	return nil
 }
@@ -83,7 +82,7 @@ func (db *db) Close() error {
 
 func (db *db) put(key, value []byte) error {
 	if err := db.lvdb.Put(key, value, nil); err != nil {
-		return errors.Wrap(err, "db.lvdb.Put")
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Put"))
 	}
 	return nil
 }
@@ -98,7 +97,7 @@ func (db *db) HasBlock(hash *common.Hash) (bool, error) {
 func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
 	block, err := db.lvdb.Get(db.getKeyBlock(hash), nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "db.lvdb.Get")
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
 	ret := make([]byte, len(block))
@@ -111,19 +110,19 @@ func (db *db) StoreNullifiers(nullifier []byte, typeJoinSplitDesc string, chainI
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return errors.Wrap(err, "db.lvdb.Get")
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
 	var txs [][]byte
 	if len(res) > 0 {
 		if err := json.Unmarshal(res, &txs); err != nil {
-			return errors.Wrap(err, "json.Unmarshal")
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
 	txs = append(txs, nullifier)
 	b, err := json.Marshal(txs)
 	if err != nil {
-		return errors.Wrap(err, "json.Marshal")
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
 	if err := db.lvdb.Put(key, b, nil); err != nil {
 		return err
@@ -136,19 +135,19 @@ func (db *db) StoreCommitments(commitments []byte, typeJoinSplitDesc string, cha
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return errors.Wrap(err, "db.lvdb.Get")
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
 	var txs [][]byte
 	if len(res) > 0 {
 		if err := json.Unmarshal(res, &txs); err != nil {
-			return errors.Wrap(err, "json.Unmarshal")
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
 	txs = append(txs, commitments)
 	b, err := json.Marshal(txs)
 	if err != nil {
-		return errors.Wrap(err, "json.Marshal")
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
 	if err := db.lvdb.Put(key, b, nil); err != nil {
 		return err
@@ -161,7 +160,7 @@ func (db *db) FetchNullifiers(typeJoinSplitDesc string, chainId byte) ([][]byte,
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return make([][]byte, 0), errors.Wrap(err, "db.lvdb.Get")
+		return make([][]byte, 0), database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
 	var txs [][]byte
@@ -178,13 +177,13 @@ func (db *db) FetchCommitments(typeJoinSplitDesc string, chainId byte) ([][]byte
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return make([][]byte, 0), errors.Wrap(err, "db.lvdb.Get")
+		return make([][]byte, 0), database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
 	var txs [][]byte
 	if len(res) > 0 {
 		if err := json.Unmarshal(res, &txs); err != nil {
-			return make([][]byte, 0), errors.Wrap(err, "json.Unmarshal")
+			return make([][]byte, 0), database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
 	return txs, nil
@@ -193,7 +192,7 @@ func (db *db) FetchCommitments(typeJoinSplitDesc string, chainId byte) ([][]byte
 func (db *db) HasNullifier(nullifier []byte, typeJoinSplitDesc string, chainId byte) (bool, error) {
 	listNullifiers, err := db.FetchNullifiers(typeJoinSplitDesc, chainId)
 	if err != nil {
-		return false, err
+		return false, database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	for _, item := range listNullifiers {
 		if bytes.Equal(item, nullifier) {
@@ -206,7 +205,7 @@ func (db *db) HasNullifier(nullifier []byte, typeJoinSplitDesc string, chainId b
 func (db *db) HasCommitment(commitment []byte, typeJoinSplitDesc string, chainId byte) (bool, error) {
 	listCommitments, err := db.FetchCommitments(typeJoinSplitDesc, chainId)
 	if err != nil {
-		return false, err
+		return false, database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	for _, item := range listCommitments {
 		if bytes.Equal(item, commitment) {
@@ -219,11 +218,11 @@ func (db *db) HasCommitment(commitment []byte, typeJoinSplitDesc string, chainId
 func (db *db) StoreBestState(v interface{}, chainID byte) error {
 	val, err := json.Marshal(v)
 	if err != nil {
-		return errors.Wrap(err, "json.Marshal")
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
 	key := append(bestBlockKey, chainID)
 	if err := db.put(key, val); err != nil {
-		return errors.Wrap(err, "db.Put")
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
 }
@@ -232,7 +231,7 @@ func (db *db) FetchBestState(chainID byte) ([]byte, error) {
 	key := append(bestBlockKey, chainID)
 	block, err := db.lvdb.Get(key, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "db.lvdb.Get")
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.get"))
 	}
 	return block, nil
 }
@@ -243,11 +242,11 @@ func (db *db) StoreBlockIndex(h *common.Hash, idx int32, chainID byte) error {
 	buf[4] = chainID
 	//{i-[hash]}:index-chainid
 	if err := db.lvdb.Put(db.getKeyIdx(h), buf, nil); err != nil {
-		return errors.Wrap(err, "db.lvdb.Put")
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	//{index-chainid}:[hash]
 	if err := db.lvdb.Put(buf, h[:], nil); err != nil {
-		return errors.Wrap(err, "db.lvdb.Put")
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
 }
@@ -256,16 +255,16 @@ func (db *db) GetIndexOfBlock(h *common.Hash) (int32, byte, error) {
 	b, err := db.lvdb.Get(db.getKeyIdx(h), nil)
 	//{i-[hash]}:index-chainid
 	if err != nil {
-		return 0, 0, errors.Wrap(err, "db.lvdb.Get")
+		return 0, 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.get"))
 	}
 
 	var idx int32
 	var chainID byte
 	if err := binary.Read(bytes.NewReader(b[:4]), binary.LittleEndian, &idx); err != nil {
-		return 0, 0, errors.Wrap(err, "binary.Read")
+		return 0, 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "binary.Read"))
 	}
 	if err = binary.Read(bytes.NewReader(b[4:]), binary.LittleEndian, &chainID); err != nil {
-		return 0, 0, errors.Wrap(err, "binary.Read")
+		return 0, 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "binary.Read"))
 	}
 	return idx, chainID, nil
 }
@@ -278,7 +277,7 @@ func (db *db) GetBlockByIndex(idx int32, chainID byte) (*common.Hash, error) {
 
 	b, err := db.lvdb.Get(buf, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "db.lvdb.Get")
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 	h := new(common.Hash)
 	_ = h.SetBytes(b[:])
@@ -298,7 +297,7 @@ func (db *db) FetchAllBlocks() ([][]*common.Hash, error) {
 		}
 		iter.Release()
 		if err := iter.Error(); err != nil {
-			return nil, errors.Wrap(err, "iter.Error")
+			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
 		}
 	}
 
@@ -317,14 +316,14 @@ func (db *db) FetchChainBlocks(chainID byte) ([]*common.Hash, error) {
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		return nil, errors.Wrap(err, "iter.Error")
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
 	}
 	return keys, nil
 }
 
 func (db *db) StoreFeeEstimator(val []byte, chainId byte) error {
 	if err := db.put(append(feeEstimator, chainId), val); err != nil {
-		return errors.Wrap(err, "db.Put")
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.put"))
 	}
 	return nil
 }
@@ -332,7 +331,7 @@ func (db *db) StoreFeeEstimator(val []byte, chainId byte) error {
 func (db *db) GetFeeEstimator(chainId byte) ([]byte, error) {
 	b, err := db.lvdb.Get(append(feeEstimator, chainId), nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "db.ldb.Get")
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 	return b, err
 }
