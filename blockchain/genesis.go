@@ -260,5 +260,20 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(nonce int, diffi
 
 	genesisBlock.Height = 1
 	genesisBlock.Header.SalaryFund = initSalaryFund
+
+	// TODO create 3 genesis token tx for DCB, Gov, CmB
+	// txs, err := self.getGenesisTokenTxs()
+
+	// if err != nil {
+	// 	Logger.log.Error(err)
+	// 	return nil
+	// }
+
+	// genesisBlock.Header.MerkleRootCommitments = self.calcCommitmentMerkleRoot(tx)
+	// fmt.Printf("Anchor: %x\n", genesisBlock.Header.MerkleRootCommitments[:])
+
+	// genesisBlock.Transactions = append(genesisBlock.Transactions, tx)
+	// genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
+
 	return &genesisBlock
 }

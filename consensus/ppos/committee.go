@@ -2,6 +2,9 @@ package ppos
 
 import (
 	"errors"
+	"sync"
+
+	"github.com/ninjadotorg/cash-prototype/cashec"
 
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/common/base58"
@@ -46,4 +49,10 @@ func (self *Engine) getMyChain() byte {
 		}
 	}
 	return common.TotalValidators // nope, you're not in the committee
+}
+
+type ValidatorList struct {
+	sync.Mutex
+	Committee []cashec.KeySetSealer
+	Candidate []cashec.KeySetSealer
 }

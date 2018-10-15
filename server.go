@@ -765,7 +765,7 @@ func (self *Server) OnChainState(_ *peer.PeerConn, msg *wire.MessageChainState) 
 	Logger.log.Info("Receive a chainstate END")
 }
 
-func (self *Server) GetPeerIdsFromPublicKey(pubKey string) []peer2.ID {
+func (self *Server) GetPeerIDsFromPublicKey(pubKey string) []peer2.ID {
 	result := []peer2.ID{}
 
 	for _, listener := range self.connManager.Config.ListenerPeers {
