@@ -36,9 +36,9 @@ type Engine struct {
 }
 
 type ChainInfo struct {
-	CurrentCommittee  []string
-	CandidateListHash string
-	ChainsHeight      []int
+	CurrentCommittee        []string
+	CandidateListMerkleHash string
+	ChainsHeight            []int
 }
 type chainsHeight struct {
 	Heights []int
