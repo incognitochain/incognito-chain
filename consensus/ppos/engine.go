@@ -46,6 +46,7 @@ type chainsHeight struct {
 	Heights []int
 	sync.Mutex
 }
+
 type EngineConfig struct {
 	BlockChain *blockchain.BlockChain
 	// RewardAgent
@@ -53,9 +54,9 @@ type EngineConfig struct {
 	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server interface {
+	Server          interface {
 		// list functions callback which are assigned from Server struct
-		GetPeerIdsFromPublicKey(string) []peer2.ID
+		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
 		PushMessageToPeer(wire.Message, peer2.ID) error
 		PushMessageGetChainState() error
@@ -69,6 +70,7 @@ type blockSig struct {
 	ValidatorSig string
 }
 
+//Start start consensus engine
 func (self *Engine) Start() error {
 	self.Lock()
 	defer self.Unlock()
@@ -119,6 +121,7 @@ func (self *Engine) Start() error {
 	return nil
 }
 
+//Stop stop consensus engine
 func (self *Engine) Stop() error {
 	Logger.log.Info("Stopping Consensus engine...")
 	self.Lock()
@@ -134,13 +137,14 @@ func (self *Engine) Stop() error {
 	return nil
 }
 
+//Init apply configuration to consensus engine
 func (self Engine) Init(cfg *EngineConfig) (*Engine, error) {
-	// cfg.blockGen = NewBlkTmplGenerator(cfg.MemPool, cfg.BlockChain)
 	return &Engine{
 		config: *cfg,
 	}, nil
 }
 
+//StartSealer start sealing block
 func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 	if self.sealerStarted {
 		Logger.log.Error("Sealer already started")
@@ -196,6 +200,7 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 	}()
 }
 
+// StopSealer stop sealer
 func (self *Engine) StopSealer() {
 	if self.sealerStarted {
 		Logger.log.Info("Stopping Sealer...")
@@ -228,6 +233,7 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	return newblock.Block, nil
 }
 
+// Finalize after successfully create a block we will send this block to other validators to get their signatures
 func (self *Engine) Finalize(block *blockchain.Block) error {
 	Logger.log.Info("Start finalizing block...")
 	finalBlock := block
@@ -250,7 +256,7 @@ func (self *Engine) Finalize(block *blockchain.Block) error {
 				Logger.log.Info("Validator's signature received", sigsReceived)
 
 				if blockHash != blocksig.BlockHash {
-					Logger.log.Critical("(o_O)!", blocksig, "this block", blockHash)
+					Logger.log.Critical("Block hash not match!", blocksig, "this block", blockHash)
 					continue
 				}
 
@@ -285,7 +291,7 @@ func (self *Engine) Finalize(block *blockchain.Block) error {
 			//@TODO: retry on failed validators
 			if committee[idx] != block.ChainLeader {
 				go func(validator string) {
-					peerIDs := self.config.Server.GetPeerIdsFromPublicKey(validator)
+					peerIDs := self.config.Server.GetPeerIDsFromPublicKey(validator)
 					if len(peerIDs) != 0 {
 						Logger.log.Info("Request signaure from "+peerIDs[0], validator)
 						self.config.Server.PushMessageToPeer(reqSigMsg, peerIDs[0])
