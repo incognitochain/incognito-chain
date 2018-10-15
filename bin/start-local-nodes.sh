@@ -8,7 +8,7 @@ TOTAL=$1
 SRC=$(pwd)
 
 DB_DIR=$2
-if [$DB_DIR == ""]; then
+if [ "$DB_DIR" == "" ]; then
   DB_DIR=$SRC/datadirs
 fi
 
@@ -51,8 +51,6 @@ tmux new -d -s cash-prototype
 tmux new-window -d -n bootnode
 
 tmux send-keys -t cash-prototype:0.0 "cd $SRC && cd bootnode && ./bootnode" ENTER
-
-echo $DB_DIR
 
 for ((i=1;i<=$TOTAL;i++));
 do
