@@ -212,6 +212,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.Block) error {
 		if t.GetType() == common.TxNormalType {
 			transactions[t.(*transaction.Tx)] = struct{}{}
 		}
+		// TODO Voting
 	}
 
 	// Count the number of replacements we make per bin so that we don't

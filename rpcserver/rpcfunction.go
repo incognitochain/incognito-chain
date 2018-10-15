@@ -330,6 +330,14 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 					}
 					transactionT["hex"] = hex.EncodeToString(data)
 					transactionT["locktime"] = txA.LockTime
+				} else if tx.GetType() == common.TxVotingType {
+					txV := tx.(*transaction.TxVoting)
+					data, err := json.Marshal(txV)
+					if err != nil {
+						return nil, err
+					}
+					transactionT["hex"] = hex.EncodeToString(data)
+					transactionT["locktime"] = txV.LockTime
 				}
 
 				transactionT["blockhash"] = block.Hash().String()
@@ -429,6 +437,15 @@ func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-cha
 					return nil, err
 				}
 				transactionT["data"] = hex.EncodeToString(data)
+			} else if tx.GetType() == common.TxVotingType {
+				txV := tx.(*transaction.TxVoting)
+				transactionT["fee"] = txV.Fee
+				data, err := json.Marshal(txV)
+				if err != nil {
+					return nil, err
+				}
+				transactionT["data"] = hex.EncodeToString(data)
+
 			} else {
 				transactionT["fee"] = 0
 			}

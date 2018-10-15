@@ -77,6 +77,17 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 						Logger.log.Infof("%x", cm[:])
 					}
 				}
+			} else if blockTx.GetType() == common.TxVotingType {
+				tx, ok := blockTx.(*transaction.TxVoting)
+				if ok == false {
+					Logger.log.Errorf("Transaction in block not valid")
+				}
+
+				for _, desc := range tx.Descs {
+					for _, cm := range desc.Commitments {
+						Logger.log.Infof("%x", cm[:])
+					}
+				}
 			}
 		}
 		return errMerkleRootCommitments

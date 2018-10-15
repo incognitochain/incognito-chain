@@ -140,6 +140,17 @@ func (self BlockChain) UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, bloc
 					tree.AddNewNode(cm[:])
 				}
 			}
+		} else if blockTx.GetType() == common.TxVotingType {
+			tx, ok := blockTx.(*transaction.TxVoting)
+			if ok == false {
+				return fmt.Errorf("Transaction in block not valid")
+			}
+
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					tree.AddNewNode(cm[:])
+				}
+			}
 		}
 	}
 	return nil
@@ -595,6 +606,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, typeJoinSp
 					}
 					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
 				}
+				// TODO Voting
 			}
 			// detected some tx can be accepted
 			if len(txsInBlockAccepted) > 0 {
@@ -729,6 +741,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 						txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
 					}
 				}
+				// TODO Voting
 			}
 			// detected some tx can be accepted
 			if len(txsInBlockAccepted) > 0 {

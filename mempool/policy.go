@@ -35,6 +35,13 @@ func (self *Policy) CheckTxVersion(tx *transaction.Transaction) bool {
 				return false
 			}
 		}
+	case common.TxVotingType:
+		{
+			temp := (*tx).(*transaction.TxVoting)
+			if temp.Version > self.MaxTxVersion {
+				return false
+			}
+		}
 	}
 	return true
 }

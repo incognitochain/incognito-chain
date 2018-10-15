@@ -117,6 +117,15 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 				Logger.log.Error(err)
 			}
 		}
+	} else if tx.GetType() == common.TxVotingType {
+		if tp.config.FeeEstimator != nil {
+			chainId, err := common.GetTxSenderChain(tx.(*transaction.TxVoting).AddressLastByte)
+			if err == nil {
+				tp.config.FeeEstimator[chainId].ObserveTransaction(txD)
+			} else {
+				Logger.log.Error(err)
+			}
+		}
 	}
 
 	return txD
