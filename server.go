@@ -227,16 +227,13 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		}
 	}
 
-	connManager, err := connmanager.ConnManager{}.New(&connmanager.Config{
+	connManager := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
 		ListenerPeers:        peers,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
 	})
-	if err != nil {
-		return err
-	}
 	self.connManager = connManager
 
 	// Start up persistent peers.
