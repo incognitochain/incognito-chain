@@ -2,13 +2,18 @@ package database
 
 import "fmt"
 
-const ()
+const (
+	DriverExistErr       = "DriverExistErr"
+	DriverNotRegisterErr = "DriverNotRegisterErr"
+)
 
 var ErrCodeMessage = map[string]struct {
 	code    int
 	message string
 }{
 	// -1xxx
+	DriverExistErr:       {-1000, "Driver is already registered"},
+	DriverNotRegisterErr: {-1001, "Driver is not registered"},
 }
 
 type DatabaseError struct {

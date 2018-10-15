@@ -14,7 +14,7 @@ var drivers = make(map[string]*Driver)
 // RegisterDriver registers the driver d.
 func RegisterDriver(d Driver) error {
 	if _, exists := drivers[d.DbType]; exists {
-		return errors.Errorf("driver %s is already registered", d.DbType)
+		return NewDatabaseError(DriverExistErr, errors.Errorf("Driver %s is already registered", d.DbType))
 	}
 	drivers[d.DbType] = &d
 	return nil
@@ -24,7 +24,7 @@ func RegisterDriver(d Driver) error {
 func Open(typ string, args ...interface{}) (DatabaseInterface, error) {
 	d, exists := drivers[typ]
 	if !exists {
-		return nil, errors.Errorf("driver %s is not registered", typ)
+		return nil, NewDatabaseError(DriverNotRegisterErr, errors.Errorf("Driver %s is not registered", typ))
 	}
 	return d.Open(args...)
 }
