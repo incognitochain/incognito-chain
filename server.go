@@ -731,7 +731,7 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	//}
 }
 
-func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageRequestSign) {
+func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageRequestBlockSign) {
 	Logger.log.Info("Receive a requestsign START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)

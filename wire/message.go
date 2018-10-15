@@ -73,7 +73,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageBlockSig{}
 		break
 	case CmdRequestSign:
-		msg = &MessageRequestSign{}
+		msg = &MessageRequestBlockSign{}
 		break
 	case CmdInvalidBlock:
 		msg = &MessageInvalidBlock{}
@@ -125,7 +125,7 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		// POS start
 	case reflect.TypeOf(&MessageBlockSig{}):
 		return CmdBlockSig, nil
-	case reflect.TypeOf(&MessageRequestSign{}):
+	case reflect.TypeOf(&MessageRequestBlockSign{}):
 		return CmdRequestSign, nil
 	case reflect.TypeOf(&MessageCandidateVote{}):
 		return CmdCandidateVote, nil

@@ -7,7 +7,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
-func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
+func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestBlockSign) {
 	block := &msgBlock.Block
 	err := self.validatePreSignBlockSanity(block)
 	if err != nil {

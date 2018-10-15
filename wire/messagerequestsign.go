@@ -11,30 +11,30 @@ const (
 	MaxRequestBlockSign = 4000000 // 4Mb
 )
 
-type MessageRequestSign struct {
+type MessageRequestBlockSign struct {
 	Block    blockchain.Block
 	SenderID string
 }
 
-func (self *MessageRequestSign) MessageType() string {
+func (self *MessageRequestBlockSign) MessageType() string {
 	return CmdRequestSign
 }
 
-func (self *MessageRequestSign) MaxPayloadLength(pver int) int {
+func (self *MessageRequestBlockSign) MaxPayloadLength(pver int) int {
 	return MaxRequestBlockSign
 }
 
-func (self *MessageRequestSign) JsonSerialize() ([]byte, error) {
+func (self *MessageRequestBlockSign) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self *MessageRequestSign) JsonDeserialize(jsonStr string) error {
+func (self *MessageRequestBlockSign) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), self)
 	return err
 }
 
-func (self *MessageRequestSign) SetSenderID(senderID peer.ID) error {
+func (self *MessageRequestBlockSign) SetSenderID(senderID peer.ID) error {
 	self.SenderID = senderID.Pretty()
 	return nil
 }
