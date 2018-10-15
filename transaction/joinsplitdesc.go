@@ -18,7 +18,7 @@ type JoinSplitDesc struct {
 	Reward          uint64             `json:"Reward"`          // For coinbase tx
 	Vmacs           [][]byte           `json:"Vmacs"`           // len == 2, 32 bytes
 
-	note []*client.Note // decrypt data for EncryptedData
+	Note []*client.Note // decrypt data for EncryptedData
 }
 
 // EstimateJSDescSize returns the estimated size of a JoinSplitDesc in bytes
@@ -57,9 +57,9 @@ func (desc *JoinSplitDesc) toString() string {
 }
 
 func (self *JoinSplitDesc) AppendNote(note *client.Note) {
-	self.note = append(self.note, note)
+	self.Note = append(self.Note, note)
 }
 
 func (self *JoinSplitDesc) GetNote() []*client.Note {
-	return self.note
+	return self.Note
 }

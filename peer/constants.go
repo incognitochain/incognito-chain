@@ -8,6 +8,8 @@ const (
 	MaxRetryConn      = 5
 	RetryConnDuration = 30 * time.Second
 	ProtocolId        = "/blockchain/1.0.0"
+	DelimMessageByte  = '\n'
+	DelimMessageStr   = "\n"
 )
 
 // ConnState can be either pending, established, disconnected or failed.  When

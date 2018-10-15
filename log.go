@@ -12,11 +12,11 @@ import (
 	"github.com/ninjadotorg/cash-prototype/connmanager"
 	"github.com/ninjadotorg/cash-prototype/consensus/ppos"
 	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/ninjadotorg/cash-prototype/netsync"
 	"github.com/ninjadotorg/cash-prototype/peer"
 	"github.com/ninjadotorg/cash-prototype/rpcserver"
 	"github.com/ninjadotorg/cash-prototype/wallet"
-	"github.com/ninjadotorg/cash-prototype/mempool"
 )
 
 var (
@@ -33,7 +33,7 @@ var (
 	peerLogger        = backendLog.Logger("Peer Log")
 	dbLogger          = backendLog.Logger("Database Log")
 	walletLogger      = backendLog.Logger("Wallet log")
-	blockchainLogger  = backendLog.Logger("BlockChain log")
+	blockchainLogger  = backendLog.Logger("blockChain log")
 	consensusLogger   = backendLog.Logger("Consensus log")
 	mempoolLogger     = backendLog.Logger("Mempool log")
 )

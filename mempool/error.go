@@ -1,38 +1,43 @@
 package mempool
 
-// TxRuleError identifies a rule violation.  It is used to indicate that
-// processing of a transaction failed due to one of the many validation
-// rules.  The caller can use type assertions to determine if a failure was
-// specifically due to a rule violation and access the ErrorCode field to
-// ascertain the specific reason for the rule violation.
-type TxRuleError struct {
-	rejectCode  TxErrCode // The code to send with reject messages
-	description string    // Human readable description of the issue
+const (
+	RejectDuplicateTx      = "RejectDuplicateTx"
+	RejectInvalidTx        = "RejectInvalidTx"
+	RejectSansityTx        = "RejectSansityTx"
+	RejectCoinbaseTx       = "RejectCoinbaseTx"
+	RejectVersion          = "RejectVersion"
+	RejectInvalidFee       = "RejectInvalidFee"
+	CanNotCheckDoubleSpend = "CanNotCheckDoubleSpend"
+)
+
+var ErrCodeMessage = map[string]struct {
+	code    int
+	message string
+}{
+	RejectDuplicateTx:      {-1000, "Reject duplicate tx"},
+	RejectInvalidTx:        {-1001, "Reject invalid tx"},
+	RejectSansityTx:        {-1002, "Reject not sansity tx"},
+	RejectCoinbaseTx:       {-1003, "Reject coinbase tx"},
+	RejectInvalidFee:       {-1004, "Reject invalid fee"},
+	RejectVersion:          {-1005, "Reject invalid version"},
+	CanNotCheckDoubleSpend: {-1006, "Can not check double spend"},
+}
+
+type MempoolTxError struct {
+	code        int    // The code to send with reject messages
+	description string // Human readable description of the issue
+	err         error
 }
 
 // Error satisfies the error interface and prints human-readable errors.
-func (e TxRuleError) Error() string {
+func (e MempoolTxError) Error() string {
 	return e.description
 }
 
-// txRuleError creates an underlying TxRuleError with the given a set of
+// txRuleError creates an underlying MempoolTxError with the given a set of
 // arguments and returns a RuleError that encapsulates it.
-func (e *TxRuleError) Init(code TxErrCode, desc string) {
-	e.rejectCode = code
-	e.description = desc
+func (e *MempoolTxError) Init(key string, err error) {
+	e.code = ErrCodeMessage[key].code
+	e.description = ErrCodeMessage[key].message
+	e.err = err
 }
-
-// rejectCode represents a numeric value by which a remote peer indicates
-// why a message was rejected.
-type TxErrCode uint8
-
-// These constants define the various supported reject codes.
-const (
-	RejectDuplicateTx      TxErrCode = 1
-	RejectInvalidTx        TxErrCode = 2
-	RejectSansityTx        TxErrCode = 3
-	RejectCoinbaseTx       TxErrCode = 4
-	RejectVersion          TxErrCode = 5
-	RejectInvalidFee       TxErrCode = 6
-	CanNotCheckDoubleSpend TxErrCode = 7
-)

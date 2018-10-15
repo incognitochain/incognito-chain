@@ -25,8 +25,18 @@ import (
 // ConnState represents the state of the requested connection.
 type ConnState uint8
 
-// Peer is present for libp2p node data
+// RemotePeer is present for libp2p node data
 type Peer struct {
+	peerConnMutex     sync.Mutex
+	pendingPeersMutex sync.Mutex
+
+	// channel
+	cStop           chan struct{}
+	cDisconnectPeer chan *PeerConn
+	cNewConn        chan *NewPeerMsg
+	cNewStream      chan *NewStreamMsg
+	cStopConn       chan struct{}
+
 	Host host.Host
 
 	TargetAddress    ma.Multiaddr
@@ -35,21 +45,11 @@ type Peer struct {
 	ListeningAddress common.SimpleAddr
 	PublicKey        string
 
-	Seed        int64
-	Config      Config
-	MaxOutbound int
-	MaxInbound  int
+	Seed   int64
+	Config Config
 
-	PeerConns         map[string]*PeerConn
-	peerConnsMutex    sync.Mutex
-	PendingPeers      map[string]*Peer
-	pendingPeersMutex sync.Mutex
-
-	cStop           chan struct{}
-	cDisconnectPeer chan *PeerConn
-	cNewConn        chan *NewPeerMsg
-	cNewStream      chan *NewStreamMsg
-	cStopConn       chan struct{}
+	PeerConns    map[string]*PeerConn
+	PendingPeers map[string]*Peer
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -66,10 +66,12 @@ type NewStreamMsg struct {
 	Done   chan struct{}
 }
 
-// config is the struct to hold configuration options useful to Peer.
+// config is the struct to hold configuration options useful to RemotePeer.
 type Config struct {
 	MessageListeners MessageListeners
 	SealerPrvKey     string
+	MaxOutbound      int
+	MaxInbound       int
 }
 
 type WrappedStream struct {
@@ -166,7 +168,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	// by encapsulating both addresses:
 	addr := basicHost.Addrs()[0]
 	fullAddr := addr.Encapsulate(hostAddr)
-	Logger.log.Infof("I am listening on %s with PEER Id - %s\n", fullAddr, basicHost.ID().String())
+	Logger.log.Infof("I am listening on %s with PEER Id - %s", fullAddr, basicHost.ID().String())
 	pid, err := fullAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		return &self, NewPeerError(GetPeerIdFromProtocolErr, err, &self)
@@ -187,7 +189,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 	self.cNewStream = make(chan *NewStreamMsg)
 	self.cStopConn = make(chan struct{})
 
-	self.peerConnsMutex = sync.Mutex{}
+	self.peerConnMutex = sync.Mutex{}
 	return &self, nil
 }
 
@@ -195,7 +197,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 Start - start peer to begin waiting for connections from other peers
  */
 func (self *Peer) Start() {
-	Logger.log.Info("Peer start")
+	Logger.log.Info("RemotePeer start")
 	// ping to bootnode for test env
 	Logger.log.Info("Set stream handler and wait for connection from other peer")
 	self.Host.SetStreamHandler(ProtocolId, self.PushStream)
@@ -205,7 +207,7 @@ func (self *Peer) Start() {
 	select {
 	case <-self.cStop:
 		close(self.cStopConn)
-		Logger.log.Infof("PEER server shutdown complete %s", self.PeerID)
+		Logger.log.Warnf("PEER server shutdown complete %s", self.PeerID)
 		break
 	}
 	return
@@ -291,52 +293,52 @@ func (self *Peer) ConnCanceled(peer *Peer) {
 
 func (self *Peer) NumInbound() int {
 	ret := int(0)
-	self.peerConnsMutex.Lock()
+	self.peerConnMutex.Lock()
 	for _, peerConn := range self.PeerConns {
 		if !peerConn.IsOutbound {
 			ret++
 		}
 	}
-	self.peerConnsMutex.Unlock()
+	self.peerConnMutex.Unlock()
 	return ret
 }
 
 func (self *Peer) NumOutbound() int {
 	ret := int(0)
-	self.peerConnsMutex.Lock()
+	self.peerConnMutex.Lock()
 	for _, peerConn := range self.PeerConns {
 		if peerConn.IsOutbound {
 			ret++
 		}
 	}
-	self.peerConnsMutex.Unlock()
+	self.peerConnMutex.Unlock()
 	return ret
 }
 
 func (self *Peer) SetPeerConn(peerConn *PeerConn) {
-	_peerConn, ok := self.PeerConns[peerConn.Peer.PeerID.String()]
-	if ok && _peerConn != peerConn {
-		if _peerConn.IsConnected {
-			_peerConn.Close()
+	internalConnPeer, ok := self.PeerConns[peerConn.RemotePeer.PeerID.String()]
+	if ok && internalConnPeer != peerConn {
+		if internalConnPeer.IsConnected {
+			internalConnPeer.Close()
 		}
-		Logger.log.Infof("SetPeerConn and Remove %s %s", _peerConn.Peer.PeerID, _peerConn.Peer.RawAddress)
+		Logger.log.Infof("SetPeerConn and Remove %s %s", internalConnPeer.RemotePeer.PeerID, internalConnPeer.RemotePeer.RawAddress)
 	}
-	self.PeerConns[peerConn.Peer.PeerID.String()] = peerConn
+	self.PeerConns[peerConn.RemotePeer.PeerID.String()] = peerConn
 }
 
 func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
-	_peerConn, ok := self.PeerConns[peerConn.Peer.PeerID.String()]
+	internalConnPeer, ok := self.PeerConns[peerConn.RemotePeer.PeerID.String()]
 	if ok {
-		if _peerConn.IsConnected {
-			_peerConn.Close()
+		if internalConnPeer.IsConnected {
+			internalConnPeer.Close()
 		}
-		delete(self.PeerConns, peerConn.Peer.PeerID.String())
-		Logger.log.Infof("RemovePeerConn %s %s", peerConn.Peer.PeerID, peerConn.Peer.RawAddress)
+		delete(self.PeerConns, peerConn.RemotePeer.PeerID.String())
+		Logger.log.Infof("RemovePeerConn %s %s", peerConn.RemotePeer.PeerID, peerConn.RemotePeer.RawAddress)
 	}
 }
 
 func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error) {
-	Logger.log.Infof("Opening stream to PEER Id - %s \n", peer.RawAddress)
+	Logger.log.Infof("Opening stream to PEER Id - %s", peer.RawAddress)
 
 	_, ok := self.PeerConns[peer.PeerID.String()]
 	if ok {
@@ -358,7 +360,7 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 		return nil, nil
 	}
 
-	if self.NumOutbound() >= self.MaxOutbound && self.MaxOutbound > 0 && !ok {
+	if self.NumOutbound() >= self.Config.MaxOutbound && self.Config.MaxOutbound > 0 && !ok {
 		Logger.log.Infof("Checked Max Outbound Connection PEER Id - %s", peer.RawAddress)
 
 		//push to pending peers
@@ -387,10 +389,11 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 
 	peerConn := PeerConn{
 		IsOutbound:         true,
-		Peer:               peer,
+		RemotePeer:         peer,
+		RemotePeerID:       remotePeerID,
+		RemoteRawAddress:   peer.RawAddress,
 		ListenerPeer:       self,
 		Config:             self.Config,
-		PeerID:             remotePeerID,
 		ReaderWriterStream: rw,
 		cDisconnect:        make(chan struct{}),
 		cClose:             make(chan struct{}),
@@ -419,14 +422,14 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 	for {
 		select {
 		case <-peerConn.cDisconnect:
-			Logger.log.Infof("NewPeerConnection Disconnected Stream PEER Id %s", peerConn.PeerID.String())
+			Logger.log.Infof("NewPeerConnection Disconnected Stream PEER Id %s", peerConn.RemotePeerID.String())
 			return &peerConn, nil
 		case <-peerConn.cClose:
-			Logger.log.Infof("NewPeerConnection closed stream PEER Id %s", peerConn.PeerID.String())
+			Logger.log.Infof("NewPeerConnection closed stream PEER Id %s", peerConn.RemotePeerID.String())
 			go func() {
 				select {
 				case <-peerConn.cDisconnect:
-					Logger.log.Infof("NewPeerConnection disconnected after closed stream PEER Id %s", peerConn.PeerID.String())
+					Logger.log.Infof("NewPeerConnection disconnected after closed stream PEER Id %s", peerConn.RemotePeerID.String())
 					return
 				}
 			}()
@@ -441,8 +444,8 @@ func (self *Peer) handleStream(stream net.Stream, cDone chan struct{}) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
-	if self.NumInbound() >= self.MaxInbound && self.MaxInbound > 0 {
-		Logger.log.Infof("Max Peer Inbound Connection")
+	if self.NumInbound() >= self.Config.MaxInbound && self.Config.MaxInbound > 0 {
+		Logger.log.Infof("Max RemotePeer Inbound Connection")
 
 		if cDone != nil {
 			close(cDone)
@@ -468,11 +471,11 @@ func (self *Peer) handleStream(stream net.Stream, cDone chan struct{}) {
 	peerConn := PeerConn{
 		IsOutbound:   false,
 		ListenerPeer: self,
-		Peer: &Peer{
+		RemotePeer: &Peer{
 			PeerID: remotePeerID,
 		},
 		Config:             self.Config,
-		PeerID:             remotePeerID,
+		RemotePeerID:       remotePeerID,
 		ReaderWriterStream: rw,
 		cDisconnect:        make(chan struct{}),
 		cClose:             make(chan struct{}),
@@ -501,14 +504,14 @@ func (self *Peer) handleStream(stream net.Stream, cDone chan struct{}) {
 	for {
 		select {
 		case <-peerConn.cDisconnect:
-			Logger.log.Infof("HandleStream disconnected stream PEER Id %s", peerConn.PeerID.String())
+			Logger.log.Infof("HandleStream disconnected stream PEER Id %s", peerConn.RemotePeerID.String())
 			return
 		case <-peerConn.cClose:
-			Logger.log.Infof("HandleStream closed stream PEER Id %s", peerConn.PeerID.String())
+			Logger.log.Infof("HandleStream closed stream PEER Id %s", peerConn.RemotePeerID.String())
 			go func() {
 				select {
 				case <-peerConn.cDisconnect:
-					Logger.log.Infof("HandleStream disconnected after closed stream PEER Id %s", peerConn.PeerID.String())
+					Logger.log.Infof("HandleStream disconnected after closed stream PEER Id %s", peerConn.RemotePeerID.String())
 					return
 				}
 			}()
@@ -530,27 +533,28 @@ func (self *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- str
 }
 
 func (self *Peer) Stop() {
-	Logger.log.Infof("PEER %s Stop", self.PeerID.String())
+	Logger.log.Infof("Stopping PEER %s", self.PeerID.String())
 
 	self.Host.Close()
-	self.peerConnsMutex.Lock()
+	self.peerConnMutex.Lock()
 	for _, peerConn := range self.PeerConns {
 		peerConn.updateConnState(ConnCanceled)
 	}
-	self.peerConnsMutex.Unlock()
+	self.peerConnMutex.Unlock()
 
 	close(self.cStop)
+	Logger.log.Infof("PEER %s stopped", self.PeerID.String())
 }
 
 /*
 handleConnected - set established flag to a peer when being connected
  */
 func (self *Peer) handleConnected(peerConn *PeerConn) {
-	Logger.log.Infof("handleConnected %s", peerConn.PeerID.String())
+	Logger.log.Infof("handleConnected %s", peerConn.RemotePeerID.String())
 	peerConn.RetryCount = 0
 	peerConn.updateConnState(ConnEstablished)
 
-	self.ConnEstablished(peerConn.Peer)
+	self.ConnEstablished(peerConn.RemotePeer)
 
 	if self.HandleConnected != nil {
 		self.HandleConnected(peerConn)
@@ -561,7 +565,7 @@ func (self *Peer) handleConnected(peerConn *PeerConn) {
 handleDisconnected - handle connected peer when it is disconnected, remove and retry connection
  */
 func (self *Peer) handleDisconnected(peerConn *PeerConn) {
-	Logger.log.Infof("handleDisconnected %s", peerConn.PeerID.String())
+	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.String())
 	peerConn.updateConnState(ConnCanceled)
 	self.RemovePeerConn(peerConn)
 	if peerConn.IsOutbound {
@@ -577,9 +581,9 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 handleFailed - handle when connecting peer failure
  */
 func (self *Peer) handleFailed(peerConn *PeerConn) {
-	Logger.log.Infof("handleFailed %s", peerConn.PeerID.String())
+	Logger.log.Infof("handleFailed %s", peerConn.RemotePeerID.String())
 
-	self.ConnCanceled(peerConn.Peer)
+	self.ConnCanceled(peerConn.RemotePeer)
 
 	if self.HandleFailed != nil {
 		self.HandleFailed(peerConn)
@@ -591,17 +595,17 @@ retryPeerConnection - retry to connect to peer when being disconnected
  */
 func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 	time.AfterFunc(RetryConnDuration, func() {
-		Logger.log.Infof("Retry New Peer Connection %s", peerConn.RawAddress)
+		Logger.log.Infof("Retry New RemotePeer Connection %s", peerConn.RemoteRawAddress)
 		peerConn.RetryCount += 1
 
 		if peerConn.RetryCount < MaxRetryConn {
 			peerConn.updateConnState(ConnPending)
-			peerConn.ListenerPeer.PushConn(peerConn.Peer, nil)
+			peerConn.ListenerPeer.PushConn(peerConn.RemotePeer, nil)
 		} else {
 			peerConn.updateConnState(ConnCanceled)
-			self.ConnCanceled(peerConn.Peer)
+			self.ConnCanceled(peerConn.RemotePeer)
 			self.renewPeerConnection()
-			self.ConnPending(peerConn.Peer)
+			self.ConnPending(peerConn.RemotePeer)
 		}
 	})
 }
@@ -614,7 +618,7 @@ func (self *Peer) renewPeerConnection() {
 		self.pendingPeersMutex.Lock()
 		Logger.log.Infof("*start - Creating peer conn to %d pending peers", len(self.PendingPeers))
 		for _, peer := range self.PendingPeers {
-			Logger.log.Infof("---> Peer: ", peer.RawAddress)
+			Logger.log.Infof("---> RemotePeer: ", peer.RawAddress)
 			go self.PushConn(peer, nil)
 		}
 		Logger.log.Infof("*end - Creating peer conn to %d pending peers", len(self.PendingPeers))

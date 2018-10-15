@@ -247,30 +247,33 @@ func (self GenesisBlockGenerator) calcCommitmentMerkleRoot(tx *transaction.Tx) c
 	return &genesisBlock
 }*/
 
-func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(nonce int, difficulty uint32, version int, initialCoin uint64, initialAddress string, preSelectValidators []string) *Block {
+func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(nonce int, difficulty uint32, version int, initialAddress string, preSelectValidators []string, initSalaryFund uint64) *Block {
 	//init the loc
 	loc, _ := time.LoadLocation("America/New_York")
 	time := time.Date(2018, 8, 1, 0, 0, 0, 0, loc)
 	genesisBlock := Block{}
 	// update default genesis block
 	genesisBlock.Header.Timestamp = time.Unix()
-	//genesisBlock.Header.PrevBlockHash = (&common.Hash{}).String()
-	genesisBlock.Header.Nonce = nonce
-	genesisBlock.Header.Difficulty = difficulty
 	genesisBlock.Header.Version = version
-	genesisBlock.Header.Committee = preSelectValidators
+	genesisBlock.Header.Committee = make([]string, len(preSelectValidators))
+	copy(genesisBlock.Header.Committee, preSelectValidators)
+
 	genesisBlock.Height = 1
-	tx, err := self.getGenesisTx(initialCoin)
-	// tx, err := self.createGenesisTx(initialCoin, initialAddress)
+	genesisBlock.Header.SalaryFund = initSalaryFund
 
-	if err != nil {
-		Logger.log.Error(err)
-		return nil
-	}
-	genesisBlock.Header.MerkleRootCommitments = self.calcCommitmentMerkleRoot(tx)
-	fmt.Printf("Anchor: %x\n", genesisBlock.Header.MerkleRootCommitments[:])
+	// TODO create 3 genesis token tx for DCB, Gov, CmB
+	// txs, err := self.getGenesisTokenTxs()
 
-	genesisBlock.Transactions = append(genesisBlock.Transactions, tx)
-	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
+	// if err != nil {
+	// 	Logger.log.Error(err)
+	// 	return nil
+	// }
+
+	// genesisBlock.Header.MerkleRootCommitments = self.calcCommitmentMerkleRoot(tx)
+	// fmt.Printf("Anchor: %x\n", genesisBlock.Header.MerkleRootCommitments[:])
+
+	// genesisBlock.Transactions = append(genesisBlock.Transactions, tx)
+	// genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
+
 	return &genesisBlock
 }

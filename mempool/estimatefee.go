@@ -101,7 +101,7 @@ func deserializeObservedTransaction(r io.Reader) (*observedTransaction, error) {
 }
 
 // registeredBlock has the hash of a block and the list of transactions
-// it mined which had been previously observed by the FeeEstimator. It
+// it mined which had been previously observed by the feeEstimator. It
 // is used if Rollback is called to reverse the effect of registering
 // a block.
 type registeredBlock struct {
@@ -118,7 +118,7 @@ func (rb *registeredBlock) serialize(w io.Writer, txs map[*observedTransaction]u
 	}
 }
 
-// FeeEstimator manages the data necessary to create
+// feeEstimator manages the data necessary to create
 // fee estimations. It is safe for concurrent access.
 type FeeEstimator struct {
 	maxRollback uint32
@@ -150,7 +150,7 @@ type FeeEstimator struct {
 	dropped []*registeredBlock
 }
 
-// NewFeeEstimator creates a FeeEstimator for which at most maxRollback blocks
+// NewFeeEstimator creates a feeEstimator for which at most maxRollback blocks
 // can be unregistered and which returns an error unless minRegisteredBlocks
 // have been registered with it.
 func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32) *FeeEstimator {
@@ -305,7 +305,7 @@ func (ef *FeeEstimator) LastKnownHeight() int32 {
 	return ef.lastKnownHeight
 }
 
-// Rollback unregisters a recently registered block from the FeeEstimator.
+// Rollback unregisters a recently registered block from the feeEstimator.
 // This can be used to reverse the effect of an orphaned block on the fee
 // estimator. The maximum number of rollbacks allowed is given by
 // maxRollbacks.
@@ -545,7 +545,7 @@ func (ef *FeeEstimator) EstimateFee(numBlocks uint32) (CoinPerKilobyte, error) {
 	return ef.cached[int(numBlocks)-1], nil
 }
 
-// In case the format for the serialized version of the FeeEstimator changes,
+// In case the format for the serialized version of the feeEstimator changes,
 // we use a version number. If the version number changes, it does not make
 // sense to try to upgrade a previous version to a new version. Instead, just
 // start fee estimation over.
@@ -569,7 +569,7 @@ func deserializeRegisteredBlock(r io.Reader, txs map[uint32]*observedTransaction
 	return rb, nil
 }
 
-// FeeEstimatorState represents a saved FeeEstimator that can be
+// FeeEstimatorState represents a saved feeEstimator that can be
 // restored with data from an earlier session of the program.
 type FeeEstimatorState []byte
 
@@ -588,7 +588,7 @@ func (q observedTxSet) Swap(i, j int) {
 	q[i], q[j] = q[j], q[i]
 }
 
-// Save records the current state of the FeeEstimator to a []byte that
+// Save records the current state of the feeEstimator to a []byte that
 // can be restored later.
 func (ef *FeeEstimator) Save() FeeEstimatorState {
 	ef.mtx.Lock()
@@ -647,7 +647,7 @@ func (ef *FeeEstimator) Save() FeeEstimatorState {
 }
 
 // RestoreFeeEstimator takes a FeeEstimatorState that was previously
-// returned by Save and restores it to a FeeEstimator
+// returned by Save and restores it to a feeEstimator
 func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 	r := bytes.NewReader([]byte(data))
 

@@ -1,7 +1,6 @@
 package netsync
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -15,14 +14,12 @@ import (
 )
 
 type NetSync struct {
-	started  int32
-	shutdown int32
-
-	msgChan   chan interface{}
+	started   int32
+	shutdown  int32
 	waitgroup sync.WaitGroup
-	quit      chan struct{}
-	//
-	syncPeer *peer.Peer
+
+	cMessage chan interface{}
+	cQuit    chan struct{}
 
 	config *NetSyncConfig
 }
@@ -30,10 +27,11 @@ type NetSync struct {
 type NetSyncConfig struct {
 	BlockChain *blockchain.BlockChain
 	ChainParam *blockchain.Params
-	MemPool    *mempool.TxPool
+	MemTxPool  *mempool.TxPool
 	Server interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, peer2.ID) error
+		PushMessageToAll(wire.Message) error
 	}
 	Consensus interface {
 		OnBlockReceived(*blockchain.Block)
@@ -46,11 +44,11 @@ type NetSyncConfig struct {
 	FeeEstimator map[byte]*mempool.FeeEstimator
 }
 
-func (self NetSync) New(cfg *NetSyncConfig) (*NetSync, error) {
+func (self NetSync) New(cfg *NetSyncConfig) (*NetSync) {
 	self.config = cfg
-	self.quit = make(chan struct{})
-	self.msgChan = make(chan interface{})
-	return &self, nil
+	self.cQuit = make(chan struct{})
+	self.cMessage = make(chan interface{})
+	return &self
 }
 
 func (self *NetSync) Start() {
@@ -62,23 +60,19 @@ func (self *NetSync) Start() {
 	self.waitgroup.Add(1)
 	go self.messageHandler()
 	time.AfterFunc(2*time.Second, func() {
-
+		// TODO something here
 	})
 }
 
 // Stop gracefully shuts down the sync manager by stopping all asynchronous
 // handlers and waiting for them to finish.
-func (self *NetSync) Stop() error {
+func (self *NetSync) Stop() {
 	if atomic.AddInt32(&self.shutdown, 1) != 1 {
-		Logger.log.Info("Sync manager is already in the process of " +
-			"shutting down")
-		return nil
+		Logger.log.Warn("Sync manager is already in the process of shutting down")
 	}
 
-	Logger.log.Info("Sync manager shutting down")
-	close(self.quit)
-	// self.waitgroup.Wait()
-	return nil
+	Logger.log.Warn("Sync manager shutting down")
+	close(self.cQuit)
 }
 
 // messageHandler is the main handler for the sync manager.  It must be run as a
@@ -91,7 +85,7 @@ func (self *NetSync) messageHandler() {
 out:
 	for {
 		select {
-		case msgChan := <-self.msgChan:
+		case msgChan := <-self.cMessage:
 			{
 				switch msg := msgChan.(type) {
 				case *wire.MessageTx:
@@ -130,9 +124,9 @@ out:
 					Logger.log.Infof("Invalid message type in block "+"handler: %T", msg)
 				}
 			}
-		case msgChan := <-self.quit:
+		case msgChan := <-self.cQuit:
 			{
-				Logger.log.Info(msgChan)
+				Logger.log.Warn(msgChan)
 				break out
 			}
 		}
@@ -145,26 +139,31 @@ out:
 // QueueTx adds the passed transaction message and peer to the block handling
 // queue. Responds to the done channel argument after the tx message is
 // processed.
-func (self *NetSync) QueueTx(_ *peer.Peer, msg *wire.MessageTx, done chan struct{}) {
+func (self *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
 	if atomic.LoadInt32(&self.shutdown) != 0 {
 		done <- struct{}{}
 		return
 	}
-	self.msgChan <- msg
+	self.cMessage <- msg
 }
 
 // handleTxMsg handles transaction messages from all peers.
 func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 	Logger.log.Info("Handling new message tx")
-	// TODO get message tx and process
-	hash, txDesc, error := self.config.MemPool.MaybeAcceptTransaction(msg.Transaction)
+	hash, txDesc, err := self.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
 
-	if error != nil {
-		fmt.Print(error)
+	if err != nil {
+		Logger.log.Error(err)
 	} else {
-		fmt.Print("there is hash of transaction", hash)
-		fmt.Print("there is priority of transaction in pool", txDesc.StartingPriority)
+		Logger.log.Infof("there is hash of transaction %s", hash.String())
+		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+
+		// Broadcast to network
+		err := self.config.Server.PushMessageToAll(msg)
+		if err != nil {
+			Logger.log.Error(err)
+		}
 	}
 }
 
@@ -177,7 +176,7 @@ func (self *NetSync) QueueBlock(_ *peer.Peer, msg *wire.MessageBlock, done chan 
 		done <- struct{}{}
 		return
 	}
-	self.msgChan <- msg
+	self.cMessage <- msg
 }
 
 func (self *NetSync) QueueGetBlock(peer *peer.Peer, msg *wire.MessageGetBlocks, done chan struct{}) {
@@ -186,7 +185,7 @@ func (self *NetSync) QueueGetBlock(peer *peer.Peer, msg *wire.MessageGetBlocks, 
 		done <- struct{}{}
 		return
 	}
-	self.msgChan <- msg
+	self.cMessage <- msg
 }
 
 func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan struct{}) {
@@ -195,32 +194,8 @@ func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan s
 		done <- struct{}{}
 		return
 	}
-	self.msgChan <- msg
+	self.cMessage <- msg
 }
-
-// func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
-// 	Logger.log.Info("Handling new message block")
-// 	// TODO get message block and process
-// 	newBlock := msg.Block
-
-// 	// // Skip verify and insert directly to local blockchain
-// 	// // There should be a method in blockchain.go to insert block to prevent data-race if we read from memory
-
-// 	// isMainChain, isOrphanBlock, err := self.config.BlockChain.ProcessBlock(&newBlock)
-// 	// _ = isMainChain
-// 	// _ = isOrphanBlock
-// 	// _ = err
-
-// 	a := self.config.BlockChain.BestState.BestBlock.Hash().String()
-// 	Logger.log.Infof(a)
-// 	//if msg.Block.Header.PrevBlockHash == a {
-// 	self.config.Server.UpdateChain(&newBlock)
-// 	//}
-// 	err = self.config.FeeEstimator.RegisterBlock(&newBlock)
-// 	if err != nil {
-// 		Logger.log.Error(err)
-// 	}
-// }
 
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Handling new message - " + wire.CmdGetBlocks)
@@ -271,13 +246,6 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 		Logger.log.Error(err)
 		Logger.log.Error("No new blocks to return")
 	}
-
-	// Logger.log.Infof("Send a msgVersion: %s", msgNewJSON)
-	// rw := self.syncPeer.OutboundReaderWriterStreams[msg.SenderID]
-	// self.syncPeer.flagMutex.Lock()
-	// rw.Writer.WriteString(msgNewJSON)
-	// rw.Writer.Flush()
-	// self.syncPeer.flagMutex.Unlock()
 }
 
 func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {

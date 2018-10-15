@@ -3,7 +3,7 @@ package peer
 import "fmt"
 
 const (
-	// Peer err
+	// RemotePeer err
 	PeerGenerateKeyPairErr   = "PeerGenerateKeyPairErr"
 	CreateP2PNodeErr         = "CreateP2PNodeErr"
 	CreateP2PAddressErr      = "CreateP2PAddressErr"
@@ -40,23 +40,6 @@ func (e PeerError) Error() string {
 }
 
 func NewPeerError(key string, err error, peer *Peer) *PeerError {
-	return &PeerError{
-		err:     err,
-		code:    ErrCodeMessage[key].code,
-		message: ErrCodeMessage[key].message,
-		peer:    peer,
-	}
-}
-
-type PeerConnErr struct {
-	err     error
-	code    int
-	message string
-
-	peerConn *PeerConn
-}
-
-func NewPeerConnError(key string, err error, peer *Peer) *PeerError {
 	return &PeerError{
 		err:     err,
 		code:    ErrCodeMessage[key].code,

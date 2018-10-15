@@ -1,4 +1,4 @@
-package main
+package utility
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/wallet"
 )
 
-func main5() {
+func main() {
 	mnemonicGen := wallet.MnemonicGenerator{}
 	Entropy, _ := mnemonicGen.NewEntropy(128)
 	Mnemonic, _ := mnemonicGen.NewMnemonic(Entropy)

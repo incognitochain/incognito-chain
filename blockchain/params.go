@@ -74,9 +74,6 @@ type Params struct {
 
 	// GenerateSupported specifies whether or not CPU mining is allowed.
 	GenerateSupported bool
-
-	/*// Mempool parameters
-	RelayNonStdTxs bool*/
 }
 
 var pposValidators = []string{
@@ -104,9 +101,9 @@ var pposValidators = []string{
 
 // MainNetParams defines the network parameters for the main coin network.
 var MainNetParams = Params{
-	Name:        MAINNET_NAME,
-	Net:         MAINNET,
-	DefaultPort: MAINET_DEFAULT_PORT,
+	Name:        MainetName,
+	Net:         Mainnet,
+	DefaultPort: MainnetDefaultPort,
 	DNSSeeds: []string{
 		/*{"seed.coin.sipa.be", true},
 		{"dnsseed.bluematt.me", true},
@@ -117,8 +114,8 @@ var MainNetParams = Params{
 		//"/ip4/127.0.0.1/tcp/9333/ipfs/QmRuvXN7BpTqxqpPLSftDFbKEYiRZRUb7iqZJcz2CxFvVS",
 	},
 
-	// BlockChain parameters
-	GenesisBlock:             GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(0x18aea41a, 0x1d00ffff, 1, MAINNET_GENESIS_BLOCK_REWARD, MAINNET_GENESIS_BLOCK_PAYMENT_ADDR, pposValidators),
+	// blockChain parameters
+	GenesisBlock:             GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(0x18aea41a, 0x1d00ffff, 1, MainnetGenesisblockPaymentAddress, pposValidators, MainnetInitFundSalary),
 	SubsidyReductionInterval: 210000,
 	TargetTimespan:           time.Hour * 24 * 14, // 14 days
 	TargetTimePerBlock:       time.Minute * 10,    // 10 minutes
@@ -126,7 +123,30 @@ var MainNetParams = Params{
 	ReduceMinDifficulty:      false,
 	MinDiffReductionTime:     0,
 	GenerateSupported:        false,
+}
 
-	// Mempool parameters
-	//RelayNonStdTxs: false,
+// TestNetParams defines the network parameters for the test coin network.
+var TestNetParams = Params{
+	Name:        TestnetName,
+	Net:         Testnet,
+	DefaultPort: TestnetDefaultPort,
+	DNSSeeds: []string{
+		/*{"seed.coin.sipa.be", true},
+		{"dnsseed.bluematt.me", true},
+		{"dnsseed.coin.dashjr.org", false},
+		{"seed.coinstats.com", true},
+		{"seed.bitnodes.io", false},
+		{"seed.coin.jonasschnelli.ch", true},*/
+		//"/ip4/127.0.0.1/tcp/9333/ipfs/QmRuvXN7BpTqxqpPLSftDFbKEYiRZRUb7iqZJcz2CxFvVS",
+	},
+
+	// blockChain parameters
+	GenesisBlock:             GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(0x18aea41a, 0x1d00ffff, 1, TestnetGenesisBlockPaymentAddress, pposValidators, TestnetInitFundSalary),
+	SubsidyReductionInterval: 210000,
+	TargetTimespan:           time.Hour * 24 * 14, // 14 days
+	TargetTimePerBlock:       time.Minute * 10,    // 10 minutes
+	RetargetAdjustmentFactor: 4,                   // 25% less, 400% more
+	ReduceMinDifficulty:      false,
+	MinDiffReductionTime:     0,
+	GenerateSupported:        false,
 }

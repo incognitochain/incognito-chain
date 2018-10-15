@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -17,12 +16,12 @@ import (
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonresult"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"golang.org/x/crypto/ed25519"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -55,7 +54,7 @@ var RpcHandler = map[string]commandHandler{
 	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 
 	//
-	//"getallpeers": RpcServer.handleGetAllPeers,
+	//"getallpeers": rpcServer.handleGetAllPeers,
 }
 
 // Commands that are available to a limited user
@@ -68,7 +67,7 @@ var RpcLimited = map[string]commandHandler{
 	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
 	"getaccountaddress":     RpcServer.handleGetAccountAddress,
 	"dumpprivkey":           RpcServer.handleDumpPrivkey,
-	/*"dumpprivraw":           RpcServer.handleDumpPrivkeyRaw,*/
+	/*"dumpprivraw":           rpcServer.handleDumpPrivkeyRaw,*/
 	"importaccount":        RpcServer.handleImportAccount,
 	"listunspent":          RpcServer.handleListUnspent,
 	"getbalance":           RpcServer.handleGetBalance,
@@ -78,11 +77,11 @@ var RpcLimited = map[string]commandHandler{
 }
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 	result := jsonresult.GetHeaderResult{}
 
 	arrayParams := common.InterfaceSlice(params)
-	log.Println(arrayParams)
+	Logger.log.Info(arrayParams)
 	getBy := arrayParams[0].(string)
 	block := arrayParams[1].(string)
 	chainID := arrayParams[2].(float64)
@@ -90,7 +89,7 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 	case "blockhash":
 		bhash := common.Hash{}
 		err := bhash.Decode(&bhash, block)
-		log.Println(bhash)
+		Logger.log.Info(bhash)
 		if err != nil {
 			return nil, errors.New("Invalid blockhash format")
 		}
@@ -261,9 +260,9 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			result["merkleroot"] = block.Header.MerkleRoot.String()
 			result["time"] = block.Header.Timestamp
 			result["mediantime"] = 0
-			result["nonce"] = block.Header.Nonce
+			// result["nonce"] = block.Header.Nonce
 			result["bits"] = ""
-			result["difficulty"] = block.Header.Difficulty
+			// result["difficulty"] = block.Header.Difficulty
 			result["chainwork"] = block.Header.ChainID
 			result["previousblockhash"] = block.Header.PrevBlockHash.String()
 			result["nextblockhash"] = nextHashString
@@ -296,9 +295,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			result["merkleroot"] = block.Header.MerkleRoot.String()
 			result["time"] = block.Header.Timestamp
 			result["mediantime"] = 0
-			result["nonce"] = block.Header.Nonce
 			result["bits"] = ""
-			result["difficulty"] = block.Header.Difficulty
 			result["chainwork"] = block.Header.ChainID
 			result["previousblockhash"] = block.Header.PrevBlockHash.String()
 			result["nextblockhash"] = nextHashString
@@ -454,13 +451,13 @@ func (self RpcServer) handleGetAddedNodeInfo(params interface{}, closeChan <-cha
 	for _, nodeAddrI := range paramsArray {
 		if nodeAddr, ok := nodeAddrI.(string); ok {
 			for _, listen := range self.Config.ConnMgr.ListeningPeers {
-				peerIDstr := self.Config.ConnMgr.GetPeerIDStr(nodeAddr)
+				peerIDstr, _ := self.Config.ConnMgr.GetPeerIDStr(nodeAddr)
 
 				peerConn, existed := listen.PeerConns[peerIDstr]
 				if existed {
 					node := map[string]interface{}{}
 
-					node["addednode"] = peerConn.Peer.RawAddress
+					node["addednode"] = peerConn.RemotePeer.RawAddress
 					node["connected"] = true
 					connected := "inbound"
 					if peerConn.IsOutbound {
@@ -468,7 +465,7 @@ func (self RpcServer) handleGetAddedNodeInfo(params interface{}, closeChan <-cha
 					}
 					node["addresses"] = []map[string]interface{}{
 						map[string]interface{}{
-							"address":   peerConn.Peer.RawAddress,
+							"address":   peerConn.RemotePeer.RawAddress,
 							"connected": connected,
 						},
 					}
@@ -506,7 +503,7 @@ func (self RpcServer) handleAddNode(params interface{}, closeChan <-chan struct{
 	for _, nodeAddrI := range paramsArray {
 		if nodeAddr, ok := nodeAddrI.(string); ok {
 			for _, listen := range self.Config.ConnMgr.ListeningPeers {
-				peerIDstr := self.Config.ConnMgr.GetPeerIDStr(nodeAddr)
+				peerIDstr, _ := self.Config.ConnMgr.GetPeerIDStr(nodeAddr)
 				_, existed := listen.PeerConns[peerIDstr]
 				if existed {
 				} else {
@@ -535,7 +532,7 @@ Parameter #2—the maximum number of confirmations an output may have
 Parameter #3—the list readonly which be used to view utxo
 */
 func (self RpcServer) handleListTransactions(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 	result := jsonresult.ListUnspentResult{
 		ListUnspentResultItems: make(map[string]map[byte][]jsonresult.ListUnspentResultItem),
 	}
@@ -800,7 +797,7 @@ Parameter #2–whether to allow high fees
 Result—a TXID or error message
 */
 func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	hexRawTx := arrayParams[0].(string)
 	rawTxBytes, err := hex.DecodeString(hexRawTx)
@@ -809,7 +806,7 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 		return nil, err
 	}
 	var tx transaction.Tx
-	// log.Println(string(rawTxBytes))
+	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		return nil, err
@@ -853,7 +850,7 @@ func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct
  * handleGetNumberOfCoins handles getNumberOfCoins commands.
  */
 func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 	result, err := self.Config.BlockChain.GetAllUnitCoinSupplier()
 	return result, err
 }
@@ -874,7 +871,7 @@ func (self RpcServer) handleCreateActionParamsTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, error) {
-	log.Println(params)
+	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.ActionParamTx{
 		Version:  1,
@@ -999,7 +996,7 @@ func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan str
 	return self.Config.Wallet.DumpPrivkey(params.(string))
 }
 
-/*func (self RpcServer) handleDumpPrivkeyRaw(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+/*func (self rpcServer) handleDumpPrivkeyRaw(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	//return self.config.Wallet.DumpPrivkey(params.(string))
 	temp := params.(string)
 	byteA, _, _ := base58.Base58Check{}.Decode(temp)
@@ -1041,15 +1038,15 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 ///*
 //handleGetAllPeers - return all peers which this node connected
 // */
-//func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-//	log.Println(params)
+//func (self rpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+//	Logger.log.Info(params)
 //	result := make(map[string]interface{})
 //
 //	peersMap := []string{}
 //
 //	peers := self.config.AddrMgr.AddressCache()
 //	for _, peer := range peers {
-//		peersMap = append(peersMap, peer.RawAddress)
+//		peersMap = append(peersMap, peer.RemoteRawAddress)
 //	}
 //
 //	result["peers"] = peersMap
