@@ -313,7 +313,9 @@ finalizing:
 		Logger.log.Error(errExceedSigWaitTime)
 		retryTime++
 		Logger.log.Infof("Start finalizing block... %d time", retryTime)
-
+		if retryTime == 5 {
+			return errExceedBlockRetry
+		}
 		goto finalizing
 	}
 
