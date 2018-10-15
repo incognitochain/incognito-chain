@@ -801,3 +801,14 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 	self.chainLock.Unlock()
 	return result, nil
 }
+
+/*
+Get Candidate List from all chain and merge all to one
+*/
+func (self *BlockChain) GetCndList() ([]string) {
+	cndList := []string{}
+	for _, bestState := range self.BestState {
+		cndList = append(cndList, bestState.CndList...)
+	}
+	return cndList
+}
