@@ -27,7 +27,7 @@ var (
 func open(dbPath string) (database.DatabaseInterface, error) {
 	lvdb, err := leveldb.OpenFile(dbPath, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "levelvdb.OpenFile %s", dbPath)
+		return nil, database.NewDatabaseError(database.OpenDbErr, errors.Wrapf(err, "levelvdb.OpenFile %s", dbPath))
 	}
 	return &db{lvdb: lvdb}, nil
 }
@@ -36,12 +36,13 @@ type db struct {
 	lvdb *leveldb.DB
 }
 
-func (db *db) hasBlock(key []byte) bool {
+func (db *db) hasValue(key []byte) (bool, error) {
 	ret, err := db.lvdb.Has(key, nil)
 	if err != nil {
-		return false
+
+		return false, database.NewDatabaseError(database.NotExistValue, err)
 	}
-	return ret
+	return ret, nil
 }
 
 type hasher interface {
@@ -60,7 +61,7 @@ func (db *db) StoreBlock(v interface{}, chainID byte) error {
 		keyB = append(blockKeyPrefix, hash[:]...)
 		// key should look like this {b-blockhash}:block
 	)
-	if db.hasBlock(key) {
+	if ok, _ := db.hasValue(key); ok {
 		return errors.Errorf("block %s already exists", hash.String())
 	}
 	val, err := json.Marshal(v)
@@ -88,7 +89,7 @@ func (db *db) put(key, value []byte) error {
 }
 
 func (db *db) HasBlock(hash *common.Hash) (bool, error) {
-	if exists := db.hasBlock(db.getKeyBlock(hash)); exists {
+	if exists, _ := db.hasValue(db.getKeyBlock(hash)); exists {
 		return true, nil
 	}
 	return false, nil

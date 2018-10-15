@@ -5,6 +5,13 @@ import "fmt"
 const (
 	DriverExistErr       = "DriverExistErr"
 	DriverNotRegisterErr = "DriverNotRegisterErr"
+
+	// LevelDB
+	OpenDbErr     = "OpenDbErr"
+	NotExistValue = "NotExistValue"
+
+	// BlockChain err
+
 )
 
 var ErrCodeMessage = map[string]struct {
@@ -14,6 +21,10 @@ var ErrCodeMessage = map[string]struct {
 	// -1xxx
 	DriverExistErr:       {-1000, "Driver is already registered"},
 	DriverNotRegisterErr: {-1001, "Driver is not registered"},
+
+	// -2xxx
+	OpenDbErr:     {-2000, "Open database error"},
+	NotExistValue: {-2001, "Value is not existed"},
 }
 
 type DatabaseError struct {
