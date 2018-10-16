@@ -347,9 +347,9 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 			nodeAddr := txV.NodeAddr
 			cndVal, ok := bestState.CndMap[nodeAddr]
 			if ok {
-				bestState.CndMap[nodeAddr] = cndVal + 0
+				bestState.CndMap[nodeAddr] = cndVal + txV.Coin
 			} else {
-				bestState.CndMap[nodeAddr] = 0
+				bestState.CndMap[nodeAddr] = txV.Coin
 			}
 		}
 	}
