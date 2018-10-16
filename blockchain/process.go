@@ -44,7 +44,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		return err
 	}
 	// fetch nullifiers and commitments(utxo) from block and save
-	err = self.ConnectBestChain(block)
+	err = self.CreateTxViewPoint(block)
 	if err != nil {
 		return err
 	}

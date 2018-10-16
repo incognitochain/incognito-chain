@@ -143,20 +143,23 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 
 	// Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
-	self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
-	for _, bestState := range self.blockChain.BestState {
-		chainID := bestState.BestBlock.Header.ChainID
-		feeEstimatorData, err := self.dataBase.GetFeeEstimator(chainID)
-		if err == nil && len(feeEstimatorData) > 0 {
-			feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
-			if err != nil {
-				Logger.log.Errorf("Failed to restore fee estimator %v", err)
-				Logger.log.Errorf("Init")
-				self.feeEstimator[chainId] = mempool.NewFeeEstimator(
-					mempool.DefaultEstimateFeeMaxRollback,
-					mempool.DefaultEstimateFeeMinRegisteredBlocks)
-			} else {
-				self.feeEstimator[chainID] = feeEstimator
+	if cfg.NoRebuildChainDep {
+		Logger.log.Info("Load chain dependencies from DB")
+		self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
+		for _, bestState := range self.blockChain.BestState {
+			chainID := bestState.BestBlock.Header.ChainID
+			feeEstimatorData, err := self.dataBase.GetFeeEstimator(chainID)
+			if err == nil && len(feeEstimatorData) > 0 {
+				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
+				if err != nil {
+					Logger.log.Errorf("Failed to restore fee estimator %v", err)
+					Logger.log.Info("Init NewFeeEstimator")
+					self.feeEstimator[chainID] = mempool.NewFeeEstimator(
+						mempool.DefaultEstimateFeeMaxRollback,
+						mempool.DefaultEstimateFeeMinRegisteredBlocks)
+				} else {
+					self.feeEstimator[chainID] = feeEstimator
+				}
 			}
 		}
 	}
