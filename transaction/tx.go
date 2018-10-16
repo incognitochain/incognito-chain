@@ -424,7 +424,7 @@ func (tx *Tx) BuildNewJSDesc(
 	var outputR [][]byte
 	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rts, reward, fee, seed, phi, outputR, tx.AddressLastByte)
 	if noPrivacy {
-		proof = &zksnark.PHGRProof{}
+		proof = nil
 	}
 	if err != nil {
 		return err
@@ -451,7 +451,7 @@ func (tx *Tx) buildJSDescAndEncrypt(
 ) error {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
-	notes := [2]client.Note{*outputs[0].OutputNote, *outputs[1].OutputNote}
+	notes := [2]*client.Note{outputs[0].OutputNote, outputs[1].OutputNote}
 	keys := [2]client.TransmissionKey{outputs[0].EncKey, outputs[1].EncKey}
 
 	ephemeralPubKey := new(client.EphemeralPubKey)
@@ -475,7 +475,10 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	fmt.Printf("notes[1].Rho: %x\n", notes[1].Rho)
 	fmt.Printf("notes[1].R: %x\n", notes[1].R)
 	fmt.Printf("notes[1].Memo: %v\n", notes[1].Memo)
-	noteciphers := client.EncryptNote(notes, keys, *ephemeralPrivKey, *ephemeralPubKey, hSig)
+	var noteciphers [][] byte
+	if proof != nil {
+		noteciphers = client.EncryptNote(notes, keys, *ephemeralPrivKey, *ephemeralPubKey, hSig)
+	}
 
 	//Calculate vmacs to prove this transaction is signed by this user
 	vmacs := make([][]byte, 2)
@@ -498,6 +501,9 @@ func (tx *Tx) buildJSDescAndEncrypt(
 		Vmacs:           vmacs,
 	}
 	tx.Descs = append(tx.Descs, desc)
+	if desc.Proof == nil { // no privacy
+		desc.Note = []*client.Note{outputs[0].OutputNote, outputs[1].OutputNote}
+	}
 
 	fmt.Println("desc:")
 	fmt.Printf("Anchor: %x\n", desc.Anchor)
