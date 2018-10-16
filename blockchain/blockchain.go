@@ -808,7 +808,11 @@ Get Candidate List from all chain and merge all to one
 func (self *BlockChain) GetCndList() ([]string) {
 	cndList := []string{}
 	for _, bestState := range self.BestState {
-		cndList = append(cndList, bestState.CndList...)
+		for nodeUrl, _ := range bestState.CndMap {
+			if common.IndexOfStr(nodeUrl, cndList) < 0 {
+				cndList = append(cndList, nodeUrl)
+			}
+		}
 	}
 	return cndList
 }
