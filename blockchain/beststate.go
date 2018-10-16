@@ -48,6 +48,7 @@ func (self *BestState) Init(block *Block, tree *client.IncMerkleTree) {
 	self.TotalTxns += uint64(len(block.Transactions))
 	self.NumTxns = uint64(len(block.Transactions))
 	self.Height = block.Height
+	self.Candidates = make(map[string]uint64)
 }
 
 func (self *BestState) Update(block *Block) {
@@ -64,4 +65,7 @@ func (self *BestState) Update(block *Block) {
 	self.TotalTxns += uint64(len(block.Transactions))
 	self.NumTxns = uint64(len(block.Transactions))
 	self.Height = block.Height
+	if self.Candidates == nil {
+		self.Candidates = make(map[string]uint64)
+	}
 }

@@ -370,6 +370,9 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 func (self *Engine) GetCndList(block *blockchain.Block) (map[string]uint64) {
 	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
 	candidates := bestState.Candidates
+	if candidates == nil {
+		candidates = make(map[string]uint64)
+	}
 	for _, tx := range block.Transactions {
 		if tx.GetType() == common.TxVotingType {
 			txV, ok := tx.(*transaction.TxVoting)

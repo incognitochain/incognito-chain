@@ -261,6 +261,8 @@ func extractTxsAndComputeInitialFees(txDescs []*transaction.TxDesc) (
 		if txType == common.TxActionParamsType {
 			actionParamTxs = append(actionParamTxs, tx.(*transaction.ActionParamTx))
 			continue
+		} else if txType == common.TxVotingType {
+			continue
 		}
 		normalTx, _ := tx.(*transaction.Tx)
 		feeMap[normalTx.Descs[0].Type] += txDesc.Fee
