@@ -167,7 +167,6 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 		}
 	}
 	result.Networks = networks
-	result.RelayFee = 0
 	result.IncrementalFee = self.config.Wallet.Config.IncrementalFee
 	result.Warnings = ""
 
