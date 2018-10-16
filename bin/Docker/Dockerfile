@@ -49,4 +49,7 @@ RUN cd $GOPATH/src/github.com/ninjadotorg/cash-prototype/privacy/server && mkdir
     make -j4 && wget https://github.com/ninjadotorg/cash-prototype/releases/download/zkpp-v0.0.3/proving.key && \
     wget https://github.com/ninjadotorg/cash-prototype/releases/download/zkpp-v0.0.3/verifying.key
 
-CMD ["top"]
+COPY ./run_cash-prototype.sh ./
+COPY ./run_privacy.sh ./
+
+ENTRYPOINT ["top", "-b"]
