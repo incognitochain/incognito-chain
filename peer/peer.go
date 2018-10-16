@@ -101,7 +101,7 @@ type MessageListeners struct {
 	OnAddr      func(p *PeerConn, msg *wire.MessageAddr)
 
 	//PoS
-	OnRequestSign   func(p *PeerConn, msg *wire.MessageRequestSign)
+	OnRequestSign   func(p *PeerConn, msg *wire.MessageRequestBlockSign)
 	OnInvalidBlock  func(p *PeerConn, msg *wire.MessageInvalidBlock)
 	OnBlockSig      func(p *PeerConn, msg *wire.MessageBlockSig)
 	OnGetChainState func(p *PeerConn, msg *wire.MessageGetChainState)

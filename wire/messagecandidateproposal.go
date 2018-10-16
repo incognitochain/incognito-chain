@@ -3,7 +3,11 @@ package wire
 import (
 	"encoding/json"
 
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
+)
+
+const (
+	MaxCandidateProposalPayload = 1000 // 1 Kb
 )
 
 type MessageCandidateProposal struct {
@@ -14,7 +18,7 @@ func (self MessageCandidateProposal) MessageType() string {
 }
 
 func (self MessageCandidateProposal) MaxPayloadLength(pver int) int {
-	return MaxHeaderPayload
+	return MaxCandidateProposalPayload
 }
 
 func (self MessageCandidateProposal) JsonSerialize() ([]byte, error) {

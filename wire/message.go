@@ -14,21 +14,19 @@ const (
 	MessageHeaderSize  = 24
 	MessageCmdTypeSize = 12
 
-	CmdBlock          = "block"
-	CmdTx             = "tx"
-	CmdGetBlocks      = "getblocks"
-	CmdInv            = "inv"
-	CmdGetData        = "getdata"
-	CmdVersion        = "version"
-	CmdVerack         = "verack"
-	CmdGetAddr        = "getaddr"
-	CmdAddr           = "addr"
-	CmdPing           = "ping"
-	CmdGetBlockHeader = "getheader"
-	CmdBlockHeader    = "header"
+	CmdBlock     = "block"
+	CmdTx        = "tx"
+	CmdGetBlocks = "getblocks"
+	CmdInv       = "inv"
+	CmdGetData   = "getdata"
+	CmdVersion   = "version"
+	CmdVerack    = "verack"
+	CmdGetAddr   = "getaddr"
+	CmdAddr      = "addr"
+	CmdPing      = "ping"
 
 	// POS Cmd
-	CmdRequestSign       = "requestsign"
+	CmdRequestBlockSign  = "rqblocksign"
 	CmdInvalidBlock      = "invalidblock"
 	CmdBlockSig          = "blocksig"
 	CmdGetChainState     = "getchstate"
@@ -70,17 +68,12 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdVerack:
 		msg = &MessageVerAck{}
 		break
-	case CmdGetBlockHeader:
-		msg = &MessageGetBlockHeader{}
-		break
-	case CmdBlockHeader:
-		msg = &MessageBlockHeader{}
 		// POS start
 	case CmdBlockSig:
 		msg = &MessageBlockSig{}
 		break
-	case CmdRequestSign:
-		msg = &MessageRequestSign{}
+	case CmdRequestBlockSign:
+		msg = &MessageRequestBlockSign{}
 		break
 	case CmdInvalidBlock:
 		msg = &MessageInvalidBlock{}
@@ -122,10 +115,6 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdVersion, nil
 	case reflect.TypeOf(&MessageVerAck{}):
 		return CmdVerack, nil
-	case reflect.TypeOf(&MessageGetBlockHeader{}):
-		return CmdGetBlockHeader, nil
-	case reflect.TypeOf(&MessageBlockHeader{}):
-		return CmdBlockHeader, nil
 	case reflect.TypeOf(&MessageGetAddr{}):
 		return CmdGetAddr, nil
 	case reflect.TypeOf(&MessageAddr{}):
@@ -136,8 +125,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		// POS start
 	case reflect.TypeOf(&MessageBlockSig{}):
 		return CmdBlockSig, nil
-	case reflect.TypeOf(&MessageRequestSign{}):
-		return CmdRequestSign, nil
+	case reflect.TypeOf(&MessageRequestBlockSign{}):
+		return CmdRequestBlockSign, nil
 	case reflect.TypeOf(&MessageCandidateVote{}):
 		return CmdCandidateVote, nil
 	case reflect.TypeOf(&MessageCandidateProposal{}):

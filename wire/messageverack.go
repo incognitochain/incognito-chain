@@ -4,14 +4,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
 )
 
-// MsgVerAck defines a bitcoin verack message which is used for a peer to
-// acknowledge a version message (MsgVersion) after it has used the information
-// to negotiate parameters.  It implements the Message interface.
-//
-// This message has no payload.
 type MessageVerAck struct {
 	Valid bool
 }

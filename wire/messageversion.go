@@ -9,6 +9,10 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common"
 )
 
+const (
+	MaxVersionPayload = 1000 // 1 1Kb
+)
+
 type MessageVersion struct {
 	ProtocolVersion  int
 	Timestamp        time.Time
@@ -26,7 +30,7 @@ func (self MessageVersion) MessageType() string {
 }
 
 func (self MessageVersion) MaxPayloadLength(pver int) int {
-	return MaxBlockPayload
+	return MaxVersionPayload
 }
 
 func (self MessageVersion) JsonSerialize() ([]byte, error) {

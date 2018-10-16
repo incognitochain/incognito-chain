@@ -7,7 +7,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
-func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestSign) {
+func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestBlockSign) {
 	block := &msgBlock.Block
 	err := self.validatePreSignBlockSanity(block)
 	if err != nil {
@@ -121,9 +121,9 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 		return
 	}
 	newMsg.(*wire.MessageChainState).ChainInfo = ChainInfo{
-		CurrentCommittee:  self.currentCommittee,
-		CandidateListHash: "",
-		ChainsHeight:      self.validatedChainsHeight.Heights,
+		CurrentCommittee:        self.GetCommittee(),
+		CandidateListMerkleHash: "",
+		ChainsHeight:            self.validatedChainsHeight.Heights,
 	}
 	peerID, _ := peer2.IDB58Decode(msg.SenderID)
 	self.config.Server.PushMessageToPeer(newMsg, peerID)

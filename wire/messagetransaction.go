@@ -4,8 +4,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+)
+
+const (
+	MaxTxPayload = 4000000 // 4 Mb
 )
 
 type MessageTx struct {
@@ -17,7 +21,7 @@ func (self MessageTx) MessageType() string {
 }
 
 func (self MessageTx) MaxPayloadLength(pver int) int {
-	return MaxBlockPayload
+	return MaxTxPayload
 }
 
 func (self MessageTx) JsonSerialize() ([]byte, error) {

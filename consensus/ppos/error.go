@@ -12,4 +12,5 @@ var (
 	errExceedSigWaitTime     = errors.New("exceed blocksig wait time")
 	errMerkleRootCommitments = errors.New("MerkleRootCommitments is wrong")
 	errNotEnoughSigs         = errors.New("not enough signatures")
+	errExceedBlockRetry      = errors.New("exceed block retry")
 )

@@ -51,6 +51,16 @@ func CreateEmptyVotingTx(nodeAddr string) (*TxVoting, error) {
 	return tx, nil
 }
 
+func (tx *TxVoting) GetValue() uint64 {
+	val := uint64(0)
+	for _, desc := range tx.Descs {
+		for _, note := range desc.Note {
+			val += note.Value
+		}
+	}
+	return val
+}
+
 func (tx *TxVoting) SetTxId(txId *common.Hash) {
 	tx.Tx.txId = txId
 }

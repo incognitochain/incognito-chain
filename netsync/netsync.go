@@ -35,7 +35,7 @@ type NetSyncConfig struct {
 	}
 	Consensus interface {
 		OnBlockReceived(*blockchain.Block)
-		OnRequestSign(*wire.MessageRequestSign)
+		OnRequestSign(*wire.MessageRequestBlockSign)
 		OnBlockSigReceived(string, string, string)
 		OnInvalidBlockReceived(string, byte, string)
 		OnGetChainState(*wire.MessageGetChainState)
@@ -108,7 +108,7 @@ out:
 					{
 						self.HandleMessageInvalidBlock(msg)
 					}
-				case *wire.MessageRequestSign:
+				case *wire.MessageRequestBlockSign:
 					{
 						self.HandleMessageRequestSign(msg)
 					}
@@ -261,7 +261,7 @@ func (self *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
 	Logger.log.Info("Handling new message invalidblock")
 	self.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.ChainID, msg.Reason)
 }
-func (self *NetSync) HandleMessageRequestSign(msg *wire.MessageRequestSign) {
+func (self *NetSync) HandleMessageRequestSign(msg *wire.MessageRequestBlockSign) {
 	Logger.log.Info("Handling new message requestsign")
 	self.config.Consensus.OnRequestSign(msg)
 }

@@ -36,9 +36,8 @@ type Block struct {
 	Header          BlockHeader
 	Transactions    []transaction.Transaction
 	AgentDataPoints map[string]*AgentDataPoint
-	// ChainToBlock    map[byte]int
-	ChainLeader    string
-	ChainLeaderSig string
+	ChainLeader     string
+	ChainLeaderSig  string
 
 	Height    int32
 	blockHash *common.Hash

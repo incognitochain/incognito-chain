@@ -20,13 +20,11 @@ type BlockHeader struct {
 	// uint64 on the wire and therefore is limited to 2106.
 	Timestamp int64
 
-	// POS
+	// Parallel PoS
 	BlockCommitteeSigs []string //Include sealer and validators signature
 	Committee          []string //Voted committee for the next block
-
-	// Parallel PoS
-	ChainID      byte
-	ChainsHeight []int //height of 20 chain when this block is created
+	ChainID            byte
+	ChainsHeight       []int //height of 20 chain when this block is created
 
 	SalaryFund uint64
 }
