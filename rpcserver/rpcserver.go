@@ -322,10 +322,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 	var result interface{}
 	var request RpcRequest
 	if err := json.Unmarshal(body, &request); err != nil {
-		jsonErr = &RPCError{
-			Code:    ErrRPCParse.Code,
-			Message: "Failed to parse request: " + err.Error(),
-		}
+		jsonErr = NewRPCError(ErrRPCParse, err)
 	}
 
 	if jsonErr == nil {
@@ -368,10 +365,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 		// Check if the user is limited and set error if method unauthorized
 		if !isLimitedUser {
 			if _, ok := RpcLimited[request.Method]; ok {
-				jsonErr = &RPCError{
-					Code:    ErrRPCInvalidParams.Code,
-					Message: "limited user not authorized for this method",
-				}
+				jsonErr = NewRPCError(ErrRPCInvalidParams, nil)
 			}
 		}
 		if jsonErr == nil {
@@ -383,10 +377,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 					command = RpcLimited[request.Method]
 				} else {
 					result = nil
-					jsonErr = &RPCError{
-						Code:    ErrRPCInvalidParams.Code,
-						Message: "limited user not authorized for this method",
-					}
+					jsonErr = NewRPCError(ErrRPCInvalidParams, nil)
 				}
 			}
 			if command != nil {
@@ -444,7 +435,7 @@ func (self RpcServer) internalRPCError(errStr, context string) *RPCError {
 		logStr = context + ": " + errStr
 	}
 	Logger.log.Info(logStr)
-	return NewRPCError(ErrRPCInternal.Code, errStr)
+	return NewRPCError(ErrRPCInternal, errors.New(errStr))
 }
 
 // httpStatusLine returns a response Status-Line (RFC 2616 Section 6.1)

@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 )
 
 // Response is the general form of a JSON-RPC response.  The type of the Result
@@ -24,7 +25,7 @@ type Response struct {
 func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*Response, error) {
 	if !IsValidIDType(id) {
 		str := fmt.Sprintf("the id of type '%T' is invalid", id)
-		return nil, MakeError(ErrInvalidType, str)
+		return nil, NewRPCError(ErrInvalidType, errors.New(str))
 	}
 
 	pid := &id
