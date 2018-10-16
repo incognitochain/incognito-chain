@@ -236,7 +236,7 @@ func CreateVotingTx(
 			for _, input := range chainInputs {
 				input.InputNote.Cm = client.GetCommitment(input.InputNote)
 
-				found := false
+				found := true
 				for _, c := range commitments[chainID] {
 					if bytes.Equal(c, input.InputNote.Cm) {
 						found = true
