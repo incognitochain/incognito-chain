@@ -47,17 +47,18 @@ type RpcServer struct {
 	shutdown   int32
 	numClients int32
 
-	Config     RpcServerConfig
-	HttpServer *http.Server
+	config     RpcServerConfig
+	httpServer *http.Server
 
 	statusLock  sync.RWMutex
 	statusLines map[int]string
 
-	authsha      [sha256.Size]byte
-	limitauthsha [sha256.Size]byte
+	authSHA      [sha256.Size]byte
+	limitAuthSHA [sha256.Size]byte
 
-	requestProcessShutdown chan struct{}
-	quit                   chan int
+	// channel
+	cRequestProcessShutdown chan struct{}
+	cQuit                   chan int
 }
 
 type RpcServerConfig struct {
@@ -65,7 +66,7 @@ type RpcServerConfig struct {
 
 	ChainParams    *blockchain.Params
 	BlockChain     *blockchain.BlockChain
-	Db             *database.DatabaseInterface
+	Database       *database.DatabaseInterface
 	Wallet         *wallet.Wallet
 	ConnMgr        *connmanager.ConnManager
 	AddrMgr        *addrmanager.AddrManager
@@ -93,17 +94,17 @@ type RpcServerConfig struct {
 }
 
 func (self *RpcServer) Init(config *RpcServerConfig) error {
-	self.Config = *config
+	self.config = *config
 	self.statusLines = make(map[int]string)
 	if config.RPCUser != "" && config.RPCPass != "" {
 		login := config.RPCUser + ":" + config.RPCPass
 		auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(login))
-		self.authsha = sha256.Sum256([]byte(auth))
+		self.authSHA = sha256.Sum256([]byte(auth))
 	}
 	if config.RPCLimitUser != "" && config.RPCLimitPass != "" {
 		login := config.RPCLimitUser + ":" + config.RPCLimitPass
 		auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(login))
-		self.limitauthsha = sha256.Sum256([]byte(auth))
+		self.limitAuthSHA = sha256.Sum256([]byte(auth))
 	}
 	return nil
 }
@@ -112,7 +113,7 @@ func (self *RpcServer) Init(config *RpcServerConfig) error {
 // RPC client requests the process to shutdown.  If the request can not be read
 // immediately, it is dropped.
 func (self RpcServer) RequestedProcessShutdown() <-chan struct{} {
-	return self.requestProcessShutdown
+	return self.cRequestProcessShutdown
 }
 
 // limitConnections responds with a 503 service unavailable and returns true if
@@ -120,9 +121,9 @@ func (self RpcServer) RequestedProcessShutdown() <-chan struct{} {
 //
 // This function is safe for concurrent access.
 func (self RpcServer) limitConnections(w http.ResponseWriter, remoteAddr string) bool {
-	if int(atomic.LoadInt32(&self.numClients)+1) > self.Config.RPCMaxClients {
+	if int(atomic.LoadInt32(&self.numClients)+1) > self.config.RPCMaxClients {
 		Logger.log.Infof("Max RPC clients exceeded [%d] - "+
-			"disconnecting client %s", self.Config.RPCMaxClients,
+			"disconnecting client %s", self.config.RPCMaxClients,
 			remoteAddr)
 		http.Error(w, "503 Too busy.  Try again later.",
 			http.StatusServiceUnavailable)
@@ -137,7 +138,7 @@ func (self RpcServer) Start() error {
 		return errors.New("RPC server is already started")
 	}
 	rpcServeMux := http.NewServeMux()
-	self.HttpServer = &http.Server{
+	self.httpServer = &http.Server{
 		Handler: rpcServeMux,
 
 		// Timeout connections which don't complete the initial
@@ -148,10 +149,10 @@ func (self RpcServer) Start() error {
 	rpcServeMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		self.RpcHandleRequest(w, r)
 	})
-	for _, listen := range self.Config.Listenters {
+	for _, listen := range self.config.Listenters {
 		go func(listen net.Listener) {
 			Logger.log.Infof("RPC server listening on %s", listen.Addr())
-			go self.HttpServer.Serve(listen)
+			go self.httpServer.Serve(listen)
 			Logger.log.Infof("RPC listener done for %s", listen.Addr())
 		}(listen)
 	}
@@ -167,10 +168,10 @@ func (self RpcServer) Stop() error {
 	}
 	Logger.log.Info("RPC server shutting down")
 	if self.started != 0 {
-		self.HttpServer.Close()
-		close(self.quit)
+		self.httpServer.Close()
+		close(self.cQuit)
 	}
-	for _, listen := range self.Config.Listenters {
+	for _, listen := range self.config.Listenters {
 		listen.Close()
 	}
 	Logger.log.Warn("RPC server shutdown complete")
@@ -217,7 +218,7 @@ func (self RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
 // of the server (true) or whether the user is limited (false). The second is
 // always false if the first is.
 func (self RpcServer) checkAuth(r *http.Request, require bool) (bool, bool, error) {
-	if self.Config.DisableAuth == true {
+	if self.config.DisableAuth == true {
 		return true, true, nil
 	}
 	authhdr := r.Header["Authorization"]
@@ -235,13 +236,13 @@ func (self RpcServer) checkAuth(r *http.Request, require bool) (bool, bool, erro
 
 	// Check for limited auth first as in environments with limited users, those
 	// are probably expected to have a higher volume of calls
-	limitcmp := subtle.ConstantTimeCompare(authsha[:], self.limitauthsha[:])
+	limitcmp := subtle.ConstantTimeCompare(authsha[:], self.limitAuthSHA[:])
 	if limitcmp == 1 {
 		return true, true, nil
 	}
 
 	// Check for admin-level auth
-	cmp := subtle.ConstantTimeCompare(authsha[:], self.authsha[:])
+	cmp := subtle.ConstantTimeCompare(authsha[:], self.authSHA[:])
 	if cmp == 1 {
 		return true, false, nil
 	}
@@ -344,7 +345,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 		//
 		// RPC quirks can be enabled by the user to avoid compatibility issues
 		// with software relying on Core's behavior.
-		if request.Id == nil && !(self.Config.RPCQuirks && request.Jsonrpc == "") {
+		if request.Id == nil && !(self.config.RPCQuirks && request.Jsonrpc == "") {
 			return
 		}
 

@@ -152,7 +152,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			if err != nil {
 				Logger.log.Errorf("Failed to restore fee estimator %v", err)
 				Logger.log.Errorf("Init")
-				self.feeEstimator[chainId] = mempool.NewFeeEstimator(
+				self.feeEstimator[chainID] = mempool.NewFeeEstimator(
 					mempool.DefaultEstimateFeeMaxRollback,
 					mempool.DefaultEstimateFeeMinRegisteredBlocks)
 			} else {
