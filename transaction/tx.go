@@ -203,7 +203,10 @@ func CreateTx(
 	senderFullKey.ImportFromPrivateKeyByte(senderKey[:])
 
 	// Create tx before adding js descs
-	tx := CreateEmptyTx()
+	tx, err := CreateEmptyTx()
+	if err != nil {
+		return nil, err
+	}
 	tempKeySet := cashec.KeySet{}
 	tempKeySet.ImportFromPrivateKey(senderKey)
 	lastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
@@ -382,7 +385,7 @@ func CreateTx(
 	}
 
 	// Sign tx
-	tx, err := SignTx(tx)
+	tx, err = SignTx(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -618,7 +621,10 @@ func GenerateProofForGenesisTx(
 	tempKeySet.ImportFromPrivateKey(inputs[0].Key)
 	addressLastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
 
-	tx := CreateEmptyTx()
+	tx, err := CreateEmptyTx()
+	if err != nil {
+		return nil, err
+	}
 	tx.JSPubKey = sigPubKey
 	tx.AddressLastByte = addressLastByte
 	fmt.Printf("JSPubKey: %x\n", tx.JSPubKey)
@@ -708,7 +714,7 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
 	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
+	var sizeDescs = uint64(max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
 	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
@@ -716,11 +722,11 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 }
 
 // CreateEmptyTx returns a new Tx initialized with default data
-func CreateEmptyTx() *Tx {
+func CreateEmptyTx() (*Tx, error) {
 	//Generate signing key 96 bytes
 	sigPrivKey, err := client.GenerateKey(rand.Reader)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// Verification key 64 bytes
@@ -739,5 +745,5 @@ func CreateEmptyTx() *Tx {
 		txId:       nil,
 		sigPrivKey: sigPrivKey,
 	}
-	return tx
+	return tx, nil
 }

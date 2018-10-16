@@ -24,11 +24,11 @@ type TxVoting struct {
 }
 
 // CreateVotingTx ...
-func CreateEmptyVotingTx(nodeAddr string) *TxVoting {
+func CreateEmptyVotingTx(nodeAddr string) (*TxVoting, error) {
 	//Generate signing key 96 bytes
 	sigPrivKey, err := client.GenerateKey(rand.Reader)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// Verification key 64 bytes
@@ -49,7 +49,7 @@ func CreateEmptyVotingTx(nodeAddr string) *TxVoting {
 		},
 		NodeAddr: nodeAddr,
 	}
-	return tx
+	return tx, nil
 }
 
 func (tx *TxVoting) SetTxId(txId *common.Hash) {
@@ -170,7 +170,10 @@ func CreateVotingTx(
 	senderFullKey.ImportFromPrivateKeyByte(senderKey[:])
 
 	// Create tx before adding js descs
-	tx := CreateEmptyVotingTx(nodeAddr)
+	tx, err := CreateEmptyVotingTx(nodeAddr)
+	if err != nil {
+		return nil, err
+	}
 	tempKeySet := cashec.KeySet{}
 	tempKeySet.ImportFromPrivateKey(senderKey)
 	lastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
@@ -349,7 +352,7 @@ func CreateVotingTx(
 	}
 
 	// Sign tx
-	tx, err := SignTxVoting(tx)
+	tx, err = SignTxVoting(tx)
 	if err != nil {
 		return nil, err
 	}
