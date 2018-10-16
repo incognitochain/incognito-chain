@@ -27,4 +27,6 @@ type BlockHeader struct {
 	ChainsHeight       []int //height of 20 chain when this block is created
 
 	SalaryFund uint64
+
+	CandidateHash common.Hash
 }

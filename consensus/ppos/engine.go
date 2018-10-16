@@ -326,6 +326,11 @@ finalizing:
 		return err
 	}
 	finalBlock.ChainLeaderSig = sig
+
+	candidates := self.GetCndList(finalBlock)
+	candidateBytes, _ := json.Marshal(candidates)
+	finalBlock.Header.CandidateHash = common.HashH(candidateBytes)
+
 	self.UpdateChain(finalBlock)
 	self.sendBlockMsg(finalBlock)
 	return nil
@@ -339,13 +344,15 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	}
 
 	// update candidate list
-	self.UpdateCndList(block)
+	//self.UpdateCndList(block)
 
 	// update tx pool
 	for _, tx := range block.Transactions {
 		self.config.MemPool.RemoveTx(tx)
 	}
 
+	// update candidate list
+	self.config.BlockChain.BestState[block.Header.ChainID].Candidates = self.GetCndList(block)
 	self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)
 
@@ -360,19 +367,21 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.validatedChainsHeight.Unlock()
 }
 
-func (self *Engine) UpdateCndList(block *blockchain.Block) {
+func (self *Engine) GetCndList(block *blockchain.Block) (map[string]uint64) {
 	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
+	candidates := bestState.Candidates
 	for _, tx := range block.Transactions {
 		if tx.GetType() == common.TxVotingType {
 			txV, ok := tx.(*transaction.TxVoting)
 			nodeAddr := txV.NodeAddr
-			cndVal, ok := bestState.Candidates[nodeAddr]
+			cndVal, ok := candidates[nodeAddr]
 			_ = cndVal
 			if ok {
-				bestState.Candidates[nodeAddr] = cndVal + txV.GetValue()
+				candidates[nodeAddr] = cndVal + txV.GetValue()
 			} else {
-				bestState.Candidates[nodeAddr] = txV.GetValue()
+				candidates[nodeAddr] = txV.GetValue()
 			}
 		}
 	}
+	return candidates
 }
