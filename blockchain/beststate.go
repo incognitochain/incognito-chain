@@ -31,7 +31,7 @@ type BestState struct {
 	// MedianTime time.Time // Median time as per CalcPastMedianTime.
 	sync.Mutex
 
-	CndMap  map[string]uint64
+	Candidates map[string]uint64
 }
 
 /*

@@ -366,12 +366,12 @@ func (self *Engine) UpdateCndList(block *blockchain.Block) {
 		if tx.GetType() == common.TxVotingType {
 			txV, ok := tx.(*transaction.TxVoting)
 			nodeAddr := txV.NodeAddr
-			cndVal, ok := bestState.CndMap[nodeAddr]
+			cndVal, ok := bestState.Candidates[nodeAddr]
 			_ = cndVal
 			if ok {
-				bestState.CndMap[nodeAddr] = cndVal + txV.GetValue()
+				bestState.Candidates[nodeAddr] = cndVal + txV.GetValue()
 			} else {
-				bestState.CndMap[nodeAddr] = txV.GetValue()
+				bestState.Candidates[nodeAddr] = txV.GetValue()
 			}
 		}
 	}
