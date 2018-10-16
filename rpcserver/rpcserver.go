@@ -73,7 +73,7 @@ type RpcServerConfig struct {
 	AddrMgr        *addrmanager.AddrManager
 	IsGenerateNode bool
 	Server interface {
-		// Push Tx message
+		// Push Tx Message
 		PushMessageToAll(message wire.Message) error
 		PushMessageToPeer(message wire.Message, id peer2.ID) error
 	}
@@ -161,10 +161,9 @@ func (self *RpcServer) Start() error {
 }
 
 // Stop is used by server.go to stop the rpc listener.
-func (self RpcServer) Stop() error {
+func (self RpcServer) Stop() {
 	if atomic.AddInt32(&self.shutdown, 1) != 1 {
 		Logger.log.Info("RPC server is already in the process of shutting down")
-		return nil
 	}
 	Logger.log.Info("RPC server shutting down")
 	if self.started != 0 {
@@ -177,7 +176,6 @@ func (self RpcServer) Stop() error {
 	Logger.log.Warn("RPC server shutdown complete")
 	self.started = 0
 	self.shutdown = 1
-	return nil
 }
 
 /*
@@ -197,8 +195,9 @@ func (self RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
 	self.IncrementClients()
 	defer self.DecrementClients()
 	// Check authentication for rpc user
-	_, isLimitUser, err := self.checkAuth(r, true)
-	if err != nil {
+	ok, isLimitUser, err := self.checkAuth(r, true)
+	if err != nil || !ok {
+		Logger.log.Error(err)
 		self.AuthFail(w)
 		return
 	}
@@ -249,7 +248,7 @@ func (self RpcServer) checkAuth(r *http.Request, require bool) (bool, bool, erro
 
 	// RpcRequest's auth doesn't match either user
 	Logger.log.Warnf("RPC authentication failure from %s", r.RemoteAddr)
-	return false, false, errors.New("auth failure")
+	return false, false, NewRPCError(ErrAuthFail, nil)
 }
 
 // IncrementClients adds one to the number of connected RPC clients.  Note
@@ -268,7 +267,7 @@ func (self *RpcServer) DecrementClients() {
 	atomic.AddInt32(&self.numClients, -1)
 }
 
-// AuthFail sends a message back to the client if the http auth is rejected.
+// AuthFail sends a Message back to the client if the http auth is rejected.
 func (self RpcServer) AuthFail(w http.ResponseWriter) {
 	w.Header().Add("WWW-Authenticate", `Basic realm="RPC"`)
 	http.Error(w, "401 Unauthorized.", http.StatusUnauthorized)
@@ -286,7 +285,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 	r.Body.Close()
 	if err != nil {
 		errCode := http.StatusBadRequest
-		http.Error(w, fmt.Sprintf("%d error reading JSON message: %v",
+		http.Error(w, fmt.Sprintf("%d error reading JSON Message: %v",
 			errCode, err), errCode)
 		return
 	}
@@ -345,7 +344,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 		//
 		// RPC quirks can be enabled by the user to avoid compatibility issues
 		// with software relying on Core's behavior.
-		if request.Id == nil && !(self.config.RPCQuirks && request.Jsonrpc == "") {
+		if request.Id == nil && !(self.config.RPCQuirks && request.Jsonrpc == common.EmptyString) {
 			return
 		}
 
@@ -365,8 +364,9 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 
 		// Check if the user is limited and set error if method unauthorized
 		if !isLimitedUser {
-			if _, ok := RpcLimited[request.Method]; ok {
-				jsonErr = NewRPCError(ErrRPCInvalidParams, nil)
+			if function, ok := RpcLimited[request.Method]; ok {
+				_ = function
+				jsonErr = NewRPCError(ErrRPCInvalidMethodPermission, errors.New(fmt.Sprintf("")))
 			}
 		}
 		if jsonErr == nil {
@@ -378,11 +378,13 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 					command = RpcLimited[request.Method]
 				} else {
 					result = nil
-					jsonErr = NewRPCError(ErrRPCInvalidParams, nil)
+					jsonErr = NewRPCError(ErrRPCMethodNotFound, nil)
 				}
 			}
 			if command != nil {
 				result, jsonErr = command(self, request.Params, closeChan)
+			} else {
+				jsonErr = NewRPCError(ErrRPCMethodNotFound, nil)
 			}
 		}
 	}
@@ -426,9 +428,9 @@ func (self RpcServer) createMarshalledReply(id, result interface{}, replyErr err
 }
 
 // internalRPCError is a convenience function to convert an internal error to
-// an RPC error with the appropriate code set.  It also logs the error to the
+// an RPC error with the appropriate Code set.  It also logs the error to the
 // RPC server subsystem since internal errors really should not occur.  The
-// context parameter is only used in the log message and may be empty if it's
+// context parameter is only used in the log Message and may be empty if it's
 // not needed.
 func (self RpcServer) internalRPCError(errStr, context string) *RPCError {
 	logStr := errStr
@@ -440,8 +442,8 @@ func (self RpcServer) internalRPCError(errStr, context string) *RPCError {
 }
 
 // httpStatusLine returns a response Status-Line (RFC 2616 Section 6.1)
-// for the given request and response status code.  This function was lifted and
-// adapted from the standard library HTTP server code since it's not exported.
+// for the given request and response status Code.  This function was lifted and
+// adapted from the standard library HTTP server Code since it's not exported.
 func (self RpcServer) httpStatusLine(req *http.Request, code int) string {
 	// Fast path:
 	key := code
@@ -469,7 +471,7 @@ func (self RpcServer) httpStatusLine(req *http.Request, code int) string {
 		self.statusLines[key] = line
 		self.statusLock.Unlock()
 	} else {
-		text = "status code " + codeStr
+		text = "status Code " + codeStr
 		line = proto + " " + codeStr + " " + text + "\r\n"
 	}
 
@@ -478,7 +480,7 @@ func (self RpcServer) httpStatusLine(req *http.Request, code int) string {
 
 // writeHTTPResponseHeaders writes the necessary response headers prior to
 // writing an HTTP body given a request to use for protocol negotiation, headers
-// to write, a status code, and a writer.
+// to write, a status Code, and a writer.
 func (self RpcServer) writeHTTPResponseHeaders(req *http.Request, headers http.Header, code int, w io.Writer) error {
 	_, err := io.WriteString(w, self.httpStatusLine(req, code))
 	if err != nil {

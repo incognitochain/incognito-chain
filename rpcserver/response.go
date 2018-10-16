@@ -67,5 +67,9 @@ func MarshalResponse(id interface{}, result interface{}, rpcErr *RPCError) ([]by
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(&response)
+	resultResp, err := json.Marshal(&response)
+	if err != nil {
+		return nil, err
+	}
+	return resultResp, nil
 }

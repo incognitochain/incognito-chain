@@ -794,7 +794,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 // handleSendTransaction implements the sendtransaction command.
 Parameter #1—a serialized transaction to broadcast
 Parameter #2–whether to allow high fees
-Result—a TXID or error message
+Result—a TXID or error Message
 */
 func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
@@ -820,7 +820,7 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
 	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
-	// broadcast message
+	// broadcast Message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 	if err != nil {
 		return nil, err
@@ -909,7 +909,7 @@ func (self RpcServer) handleCreateActionParamsTransaction(
 		return nil, err
 	}
 
-	// broadcast message
+	// broadcast Message
 	// self.config.Server.PushTxMessage(hash)
 
 	return tx.Hash(), nil
