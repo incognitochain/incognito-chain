@@ -1,6 +1,5 @@
 package jsonresult
 
-// ListUnspentResult models a successful response from the listunspent request.
 type ListUnspentResult struct {
 	ListUnspentResultItems map[string]map[byte][]ListUnspentResultItem `json:"ListUnspentResultItems"`
 }
@@ -48,5 +47,3 @@ func (self *JoinSplitDesc) Init(data interface{}) {
 		self.Commitments = append(self.Commitments, []byte(temp.(string)))
 	}
 }
-
-// end
