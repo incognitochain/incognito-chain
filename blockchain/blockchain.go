@@ -17,6 +17,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"sort"
 )
 
 const (
@@ -808,7 +809,25 @@ Get Candidate List from all chain and merge all to one
 func (self *BlockChain) GetCndList() ([]string) {
 	cndList := []string{}
 	for _, bestState := range self.BestState {
-		cndList = append(cndList, bestState.CndList...)
+		for nodeAddr, _ := range bestState.CndMap {
+			if common.IndexOfStr(nodeAddr, cndList) < 0 {
+				cndList = append(cndList, nodeAddr)
+			}
+		}
 	}
+	sort.Slice(cndList, func(i, j int) bool {
+		return self.GetCndNodeAmount(cndList[i]) > self.GetCndNodeAmount(cndList[j])
+	})
 	return cndList
+}
+
+func (self *BlockChain) GetCndNodeAmount(nodeAddr string) (uint64) {
+	var amount uint64
+	for _, bestState := range self.BestState {
+		cndVal, ok := bestState.CndMap[nodeAddr]
+		if ok {
+			amount += cndVal
+		}
+	}
+	return amount
 }

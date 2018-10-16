@@ -15,7 +15,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/wire"
 	"github.com/ninjadotorg/cash-prototype/transaction"
-	"strings"
 )
 
 // PoSEngine only need to start if node runner want to be a validator
@@ -56,7 +55,7 @@ type EngineConfig struct {
 	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server          interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -339,17 +338,13 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	}
 
 	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
+
+	// update candidate list
+	self.UpdateCndList(block)
+
 	// update tx pool
 	for _, tx := range block.Transactions {
 		self.config.MemPool.RemoveTx(tx)
-		// update candidate list
-		if tx.GetType() == common.TxVotingType {
-			txV, ok := tx.(*transaction.TxVoting)
-			nodeAddr := strings.ToLower(txV.NodeAddr)
-			if ok && common.IndexOfStr(nodeAddr, bestState.CndList) < 0 {
-				bestState.CndList = append(bestState.CndList, nodeAddr)
-			}
-		}
 	}
 
 	bestState.Update(block)
@@ -363,4 +358,20 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.validatedChainsHeight.Lock()
 	self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
 	self.validatedChainsHeight.Unlock()
+}
+
+func (self *Engine) UpdateCndList(block *blockchain.Block) {
+	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
+	for _, tx := range block.Transactions {
+		if tx.GetType() == common.TxVotingType {
+			txV, ok := tx.(*transaction.TxVoting)
+			nodeAddr := txV.NodeAddr
+			cndVal, ok := bestState.CndMap[nodeAddr]
+			if ok {
+				bestState.CndMap[nodeAddr] = cndVal + txV.Coin
+			} else {
+				bestState.CndMap[nodeAddr] = txV.Coin
+			}
+		}
+	}
 }

@@ -19,16 +19,16 @@ import (
 // TxVoting ...
 type TxVoting struct {
 	Tx
-
+	Coin     uint64
 	NodeAddr string
 }
 
 // CreateVotingTx ...
-func CreateEmptyVotingTx(nodeAddr string) *TxVoting {
+func CreateEmptyVotingTx(nodeAddr string) (*TxVoting, error) {
 	//Generate signing key 96 bytes
 	sigPrivKey, err := client.GenerateKey(rand.Reader)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// Verification key 64 bytes
@@ -49,7 +49,7 @@ func CreateEmptyVotingTx(nodeAddr string) *TxVoting {
 		},
 		NodeAddr: nodeAddr,
 	}
-	return tx
+	return tx, nil
 }
 
 func (tx *TxVoting) SetTxId(txId *common.Hash) {
@@ -126,6 +126,7 @@ func CreateVotingTx(
 	senderChainID byte,
 	nodeAddr string,
 ) (*TxVoting, error) {
+	fee = 0 // TODO remove this line
 	fmt.Printf("List of all commitments before building tx:\n")
 	fmt.Printf("rts: %v\n", rts)
 	for _, cm := range commitments {
@@ -162,7 +163,7 @@ func CreateVotingTx(
 	for _, chainNote := range inputNotes {
 		sumInputValue += chainNote.note.Value
 	}
-	if sumInputValue < value+fee {
+	if sumInputValue < value+fee && false { // TODO remove false
 		return nil, fmt.Errorf("Input value less than output value")
 	}
 
@@ -170,7 +171,10 @@ func CreateVotingTx(
 	senderFullKey.ImportFromPrivateKeyByte(senderKey[:])
 
 	// Create tx before adding js descs
-	tx := CreateEmptyVotingTx(nodeAddr)
+	tx, err := CreateEmptyVotingTx(nodeAddr)
+	if err != nil {
+		return nil, err
+	}
 	tempKeySet := cashec.KeySet{}
 	tempKeySet.ImportFromPrivateKey(senderKey)
 	lastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
@@ -236,7 +240,7 @@ func CreateVotingTx(
 			for _, input := range chainInputs {
 				input.InputNote.Cm = client.GetCommitment(input.InputNote)
 
-				found := false
+				found := true
 				for _, c := range commitments[chainID] {
 					if bytes.Equal(c, input.InputNote.Cm) {
 						found = true
@@ -270,7 +274,7 @@ func CreateVotingTx(
 
 		// Choose output notes for the js desc
 		outputs := []*client.JSOutput{}
-		for len(paymentInfo) > 0 && len(outputs) < NumDescOutputs-1 && inputValue > 0 { // Leave out 1 output note for change
+		for len(paymentInfo) > 0 && len(outputs) < NumDescOutputs-1 && inputValue >= 0 { // Leave out 1 output note for change // TODO remove equal 0
 			p := paymentInfo[len(paymentInfo)-1]
 			var outNote *client.Note
 			var encKey client.TransmissionKey
@@ -292,14 +296,14 @@ func CreateVotingTx(
 			outputs = append(outputs, output)
 		}
 
-		if inputValue > 0 {
+		if inputValue >= 0 { // TODO remove equal 0
 			// Still has some room left, check if one more output note is possible to add
 			var p *client.PaymentInfo
 			if len(paymentInfo) > 0 {
 				p = paymentInfo[len(paymentInfo)-1]
 			}
 
-			if p != nil && p.Amount == inputValue {
+			if p != nil && p.Amount == inputValue { // TODO remove equal 0
 				// Exactly equal, add this output note to js desc
 				outNote := &client.Note{Value: p.Amount, Apk: p.PaymentAddress.Apk}
 				output := &client.JSOutput{EncKey: p.PaymentAddress.Pkenc, OutputNote: outNote}
@@ -330,11 +334,9 @@ func CreateVotingTx(
 			fmt.Printf("Create dummy output note\n")
 		}
 
-		// TODO: Shuffle output notes randomly (if necessary)
-
 		// Generate proof and sign tx
 		var reward uint64 // Zero reward for non-coinbase transaction
-		err = tx.Tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply)
+		err = tx.Tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, true)
 		if err != nil {
 			return nil, err
 		}
@@ -349,7 +351,7 @@ func CreateVotingTx(
 	}
 
 	// Sign tx
-	tx, err := SignTxVoting(tx)
+	tx, err = SignTxVoting(tx)
 	if err != nil {
 		return nil, err
 	}
