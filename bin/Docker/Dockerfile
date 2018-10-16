@@ -26,12 +26,10 @@ RUN echo $PATH
 RUN mkdir /go/bin -p
 RUN mkdir /go/src/github.com/ninjadotorg -p
 
-# install glide
-RUN curl https://glide.sh/get | sh
 # clone source from github.com/ninjadotorg/cash-prototype
 RUN cd $GOPATH/src/github.com/ninjadotorg && git clone https://github.com/ninjadotorg/cash-prototype -b Parallel-PoS-Privacy
 # install cash-prototype packages
-RUN cd $GOPATH/src/github.com/ninjadotorg/cash-prototype && glide install
+RUN cd $GOPATH/src/github.com/ninjadotorg/cash-prototype && go get -v
 
 # install grpc
 RUN git clone -b $(curl -L http://grpc.io/release) https://github.com/grpc/grpc
