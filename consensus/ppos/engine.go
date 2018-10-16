@@ -367,10 +367,11 @@ func (self *Engine) UpdateCndList(block *blockchain.Block) {
 			txV, ok := tx.(*transaction.TxVoting)
 			nodeAddr := txV.NodeAddr
 			cndVal, ok := bestState.CndMap[nodeAddr]
+			_ = cndVal
 			if ok {
-				bestState.CndMap[nodeAddr] = cndVal + txV.Coin
+				//bestState.CndMap[nodeAddr] = cndVal + txV.Coin
 			} else {
-				bestState.CndMap[nodeAddr] = txV.Coin
+				//bestState.CndMap[nodeAddr] = txV.Coin
 			}
 		}
 	}

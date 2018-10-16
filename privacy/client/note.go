@@ -73,10 +73,10 @@ func ParseJsonToNote(jsonnote []byte) (*Note, error) {
 	return &note, nil
 }
 
-func EncryptNote(note [2]Note, pkenc [2]TransmissionKey,
+func EncryptNote(note [2]*Note, pkenc [2]TransmissionKey,
 	esk EphemeralPrivKey, epk EphemeralPubKey, hSig []byte) [][]byte {
 
-	noteJsons := [][]byte{ParseNoteToJson(&note[0]), ParseNoteToJson(&note[1])}
+	noteJsons := [][]byte{ParseNoteToJson(note[0]), ParseNoteToJson(note[1])}
 
 	var sk [32]byte
 	copy(sk[:], esk[:])
@@ -252,7 +252,7 @@ func TestEncrypt() {
 	copy(hSig[:], tmp[:])
 	//Generate note
 	note_temp := GenNote()
-	notes := [2]Note{*note_temp, *note_temp}
+	notes := [2]*Note{note_temp, note_temp}
 
 	fmt.Printf("\nPlain note: %+v\n", notes)
 
