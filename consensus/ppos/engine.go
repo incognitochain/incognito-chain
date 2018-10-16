@@ -338,20 +338,13 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	}
 
 	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
+
+	// update candidate list
+	self.UpdateCndList(block)
+
 	// update tx pool
 	for _, tx := range block.Transactions {
 		self.config.MemPool.RemoveTx(tx)
-		// update candidate list
-		if tx.GetType() == common.TxVotingType {
-			txV, ok := tx.(*transaction.TxVoting)
-			nodeAddr := txV.NodeAddr
-			cndVal, ok := bestState.CndMap[nodeAddr]
-			if ok {
-				bestState.CndMap[nodeAddr] = cndVal + txV.Coin
-			} else {
-				bestState.CndMap[nodeAddr] = txV.Coin
-			}
-		}
 	}
 
 	bestState.Update(block)
@@ -365,4 +358,20 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.validatedChainsHeight.Lock()
 	self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
 	self.validatedChainsHeight.Unlock()
+}
+
+func (self *Engine) UpdateCndList(block *blockchain.Block) {
+	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
+	for _, tx := range block.Transactions {
+		if tx.GetType() == common.TxVotingType {
+			txV, ok := tx.(*transaction.TxVoting)
+			nodeAddr := txV.NodeAddr
+			cndVal, ok := bestState.CndMap[nodeAddr]
+			if ok {
+				bestState.CndMap[nodeAddr] = cndVal + txV.Coin
+			} else {
+				bestState.CndMap[nodeAddr] = txV.Coin
+			}
+		}
+	}
 }
