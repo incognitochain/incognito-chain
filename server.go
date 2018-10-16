@@ -145,8 +145,8 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	// or if it cannot be loaded, create a new one.
 	self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 	for _, bestState := range self.blockChain.BestState {
-		chainId := bestState.BestBlock.Header.ChainID
-		feeEstimatorData, err := self.dataBase.GetFeeEstimator(chainId)
+		chainID := bestState.BestBlock.Header.ChainID
+		feeEstimatorData, err := self.dataBase.GetFeeEstimator(chainID)
 		if err == nil && len(feeEstimatorData) > 0 {
 			feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 			if err != nil {
@@ -156,7 +156,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 					mempool.DefaultEstimateFeeMaxRollback,
 					mempool.DefaultEstimateFeeMinRegisteredBlocks)
 			} else {
-				self.feeEstimator[chainId] = feeEstimator
+				self.feeEstimator[chainID] = feeEstimator
 			}
 		}
 	}

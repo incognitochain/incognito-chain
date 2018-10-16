@@ -7,10 +7,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common/base58"
 )
 
-func (self *Engine) SwitchMember() {
-
-}
-
 func (self *Engine) GetCommittee() []string {
 	return self.config.BlockChain.BestState[0].BestBlock.Header.Committee
 }
@@ -19,7 +15,7 @@ func (self *Engine) CheckCandidate() error {
 	return nil
 }
 
-func (self *Engine) ProposeCandidate() {
+func (self *Engine) ProposeCandidateToCommittee() {
 
 }
 
@@ -47,4 +43,18 @@ func (self *Engine) getMyChain() byte {
 		}
 	}
 	return common.TotalValidators // nope, you're not in the committee
+}
+
+func (committee *committeeStruct) UpdateCommittee(chainLeader string, validatorSig []string) {
+	committee.Lock()
+	defer committee.Unlock()
+	committee.ValidatorBlkNum[chainLeader]++
+	for idx, sig := range validatorSig {
+		if sig != "" {
+			committee.ValidatorReliablePts[committee.CurrentCommittee[idx]]++
+		}
+	}
+	for validator := range committee.ValidatorReliablePts {
+		committee.ValidatorReliablePts[validator]--
+	}
 }

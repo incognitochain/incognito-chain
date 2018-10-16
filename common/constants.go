@@ -28,6 +28,7 @@ const (
 	MaxBlockWaitTime        = 20 - MinBlockWaitTime // second
 	MaxSyncChainTime        = 5                     // second
 	MaxBlockSigWaitTime     = 10                    // second
+	MaxBlockPerTurn         = 100                   // maximum blocks that a validator can create per turn
 	TotalValidators         = 20                    // = TOTAL CHAINS
 	MinBlockSigs            = (TotalValidators / 2) + 1
 	DefaultCoinBaseTxReward = 50
