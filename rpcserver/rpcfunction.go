@@ -26,6 +26,7 @@ import (
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
 
+// Commands valid for normal user
 var RpcHandler = map[string]commandHandler{
 	"getnetworkinfo":                RpcServer.handleGetNetWorkInfo,
 	"getbestblock":                  RpcServer.handleGetBestBlock,
@@ -48,19 +49,18 @@ var RpcHandler = map[string]commandHandler{
 	"getrawmempool":                 RpcServer.handleGetRawMempool,
 	"getmempoolentry":               RpcServer.handleMempoolEntry,
 	"estimatefee":                   RpcServer.handleEstimateFee,
+	//"getallpeers": rpcServer.handleGetAllPeers,
 
 	//POS
-	"votecandidate": RpcServer.handleVoteCandidate,
-	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
-
-	//
-	//"getallpeers": rpcServer.handleGetAllPeers,
+	"getheader": RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 }
 
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
+	// node
 	"addnode":          RpcServer.handleAddNode,
 	"getaddednodeinfo": RpcServer.handleGetAddedNodeInfo,
+
 	// WALLET
 	"listaccounts":          RpcServer.handleListAccounts,
 	"getaccount":            RpcServer.handleGetAccount,
@@ -91,11 +91,11 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 		err := bhash.Decode(&bhash, block)
 		Logger.log.Info(bhash)
 		if err != nil {
-			return nil, errors.New("Invalid blockhash format")
+			return nil, NewRPCError(ErrUnexpected, errors.New("Invalid blockhash format"))
 		}
 		block, err := self.config.BlockChain.GetBlockByBlockHash(&bhash)
 		if err != nil {
-			return nil, errors.New("Block not exist")
+			return nil, NewRPCError(ErrUnexpected, errors.New("Block not exist"))
 		}
 		result.Header = block.Header
 		result.BlockNum = int(block.Height) + 1
@@ -104,11 +104,11 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 	case "blocknum":
 		bnum, err := strconv.Atoi(block)
 		if err != nil {
-			return nil, errors.New("Invalid blocknum format")
+			return nil, NewRPCError(ErrUnexpected, errors.New("Invalid blocknum format"))
 		}
 		fmt.Println(chainID)
 		if int32(bnum-1) > self.config.BlockChain.BestState[uint8(chainID)].Height || bnum <= 0 {
-			return nil, errors.New("Block not exist")
+			return nil, NewRPCError(ErrUnexpected, errors.New("Block not exist"))
 		}
 		block, _ := self.config.BlockChain.GetBlockByBlockHeight(int32(bnum-1), uint8(chainID))
 		result.Header = block.Header
@@ -116,15 +116,10 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 		result.ChainID = uint8(chainID)
 		result.BlockHash = block.Hash().String()
 	default:
-		return nil, errors.New("Wrong request format")
+		return nil, NewRPCError(ErrUnexpected, errors.New("Wrong request format"))
 	}
 
 	return result, nil
-}
-
-func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-
-	return "", nil
 }
 
 /*
@@ -438,7 +433,7 @@ func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-cha
 
 		return result, nil
 	}
-	return nil, errors.New("Wrong data")
+	return nil, NewRPCError(ErrUnexpected, errors.New("Wrong data"))
 }
 
 /*
@@ -1060,10 +1055,10 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 	balance := uint64(0)
 
 	if self.config.Wallet == nil {
-		return balance, errors.New("Wallet is not existed")
+		return balance, NewRPCError(ErrUnexpected, errors.New("Wallet is not existed"))
 	}
 	if len(self.config.Wallet.MasterAccount.Child) == 0 {
-		return balance, errors.New("No account is existed")
+		return balance, NewRPCError(ErrUnexpected, errors.New("No account is existed"))
 	}
 
 	// convert params to array
@@ -1080,7 +1075,7 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 	passPhrase := arrayParams[2].(string)
 
 	if passPhrase != self.config.Wallet.PassPhrase {
-		return balance, errors.New("Password phrase is wrong for local wallet")
+		return balance, NewRPCError(ErrUnexpected, errors.New("Password phrase is wrong for local wallet"))
 	}
 
 	if accountName == "*" {
@@ -1134,10 +1129,10 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 	balance := uint64(0)
 
 	if self.config.Wallet == nil {
-		return balance, errors.New("Wallet is not existed")
+		return balance, NewRPCError(ErrUnexpected, errors.New("Wallet is not existed"))
 	}
 	if len(self.config.Wallet.MasterAccount.Child) == 0 {
-		return balance, errors.New("No account is existed")
+		return balance, NewRPCError(ErrUnexpected, errors.New("No account is existed"))
 	}
 
 	// convert params to array
@@ -1154,7 +1149,7 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 	passPhrase := arrayParams[2].(string)
 
 	if passPhrase != self.config.Wallet.PassPhrase {
-		return balance, errors.New("Password phrase is wrong for local wallet")
+		return balance, NewRPCError(ErrUnexpected, errors.New("Password phrase is wrong for local wallet"))
 	}
 
 	for _, account := range self.config.Wallet.MasterAccount.Child {
@@ -1220,7 +1215,7 @@ handleGetMiningInfo - RPC returns various mining-related info
 */
 func (self RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	if !self.config.IsGenerateNode {
-		return nil, errors.New("Not mining")
+		return nil, NewRPCError(ErrUnexpected, errors.New("Not mining"))
 	}
 	chainId := byte(int(params.(float64)))
 	result := jsonresult.GetMiningInfoResult{}
