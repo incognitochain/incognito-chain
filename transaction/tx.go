@@ -370,7 +370,7 @@ func CreateTx(
 
 		// Generate proof and sign tx
 		var reward uint64 // Zero reward for non-coinbase transaction
-		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply)
+		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, false)
 		if err != nil {
 			return nil, err
 		}
@@ -401,6 +401,7 @@ func (tx *Tx) BuildNewJSDesc(
 	outputs []*client.JSOutput,
 	rtMap map[byte][]byte,
 	reward, fee uint64,
+	noPrivacy bool,
 ) error {
 	// Gather inputs from different chains
 	inputs := []*client.JSInput{}
@@ -422,6 +423,9 @@ func (tx *Tx) BuildNewJSDesc(
 	var seed, phi []byte
 	var outputR [][]byte
 	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rts, reward, fee, seed, phi, outputR, tx.AddressLastByte)
+	if noPrivacy {
+		proof = &zksnark.PHGRProof{}
+	}
 	if err != nil {
 		return err
 	}

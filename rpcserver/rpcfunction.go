@@ -7,16 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
-
-	"github.com/libp2p/go-libp2p-peer"
-	"github.com/multiformats/go-multiaddr"
-
-	"github.com/ninjadotorg/cash-prototype/wire"
-
 	"net"
-
+	"github.com/ninjadotorg/cash-prototype/wire"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -669,29 +662,6 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 	return result, nil
 }
 
-func validateNodeAddress(nodeAddr string) bool {
-	if len(nodeAddr) == 0 {
-		return false
-	}
-
-	strs := strings.Split(nodeAddr, "/ipfs/")
-	if len(strs) != 2 {
-		return false
-	}
-
-	_, err := multiaddr.NewMultiaddr(strs[0])
-	if err != nil {
-		return false
-	}
-
-	_, err = peer.IDB58Decode(strs[1])
-	if err != nil {
-		return false
-	}
-
-	return true
-}
-
 func (self RpcServer) handleCreateRegistration(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 
@@ -728,7 +698,7 @@ func (self RpcServer) handleCreateRegistration(params interface{}, closeChan <-c
 	numBlock := uint32(arrayParams[3].(float64))
 
 	nodeAddr := arrayParams[4].(string)
-	if valid := validateNodeAddress(nodeAddr); !valid {
+	if valid := common.ValidateNodeAddress(nodeAddr); !valid {
 		return nil, errors.New("node address is wrong")
 	}
 
@@ -808,7 +778,7 @@ func (self RpcServer) handleCreateRegistration(params interface{}, closeChan <-c
 		return nil, err
 	}
 	byteArrays, err := json.Marshal(tx)
-	if err != nil {
+	if err == nil {
 		// return hex for a new tx
 		return hex.EncodeToString(byteArrays), nil
 	}
@@ -909,7 +879,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	numBlock := uint32(arrayParams[3].(float64))
 
 	nodeAddr := arrayParams[4].(string)
-	if valid := validateNodeAddress(nodeAddr); !valid {
+	if valid := common.ValidateNodeAddress(nodeAddr); !valid {
 		return nil, errors.New("node address is wrong")
 	}
 

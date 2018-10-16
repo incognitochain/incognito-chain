@@ -350,7 +350,7 @@ func createSalaryTx(
 	tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
 	rtMap := map[byte][]byte{chainID: rt}
 	inputMap := map[byte][]*client.JSInput{chainID: inputs}
-	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0)
+	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0, false)
 	if err != nil {
 		return nil, err
 	}
