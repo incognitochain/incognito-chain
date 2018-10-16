@@ -129,12 +129,16 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 
 	result.Version = 1
 	result.SubVersion = ""
-	result.ProtocolVersion = ""
+	result.ProtocolVersion = self.config.ProtocolVersion
 	result.LocalServices = ""
 	result.LocalRelay = true
 	result.TimeOffset = 0
 	result.NetworkActive = true
-	result.Connections = 0
+	result.LocalAddresses = []string{}
+	for _, listener := range self.config.ConnMgr.ListeningPeers {
+		result.Connections += len(listener.PeerConns)
+		result.LocalAddresses = append(result.LocalAddresses, listener.RawAddress)
+	}
 
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -165,11 +169,7 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 			networks = append(networks, network)
 		}
 	}
-
 	result.Networks = networks
-
-	result.LocalAddresses = []string{}
-
 	result.RelayFee = 0
 	result.IncrementalFee = 0
 	result.Warnings = ""
