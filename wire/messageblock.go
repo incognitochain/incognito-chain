@@ -3,12 +3,12 @@ package wire
 import (
 	"encoding/json"
 
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 )
 
 const (
-	MaxBlockPayload = 4000000
+	MaxBlockPayload = 4000000 // 4 Mb
 )
 
 type MessageBlock struct {

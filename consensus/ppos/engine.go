@@ -32,16 +32,14 @@ type Engine struct {
 	cBlockSig   chan blockSig
 
 	config                EngineConfig
-	currentCommittee      []string
-	candidates            []string
 	knownChainsHeight     chainsHeight
 	validatedChainsHeight chainsHeight
 }
 
 type ChainInfo struct {
-	CurrentCommittee  []string
-	CandidateListHash string
-	ChainsHeight      []int
+	CurrentCommittee        []string
+	CandidateListMerkleHash string
+	ChainsHeight            []int
 }
 type chainsHeight struct {
 	Heights []int
@@ -82,7 +80,6 @@ func (self *Engine) Start() error {
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
 	self.knownChainsHeight.Heights = make([]int, common.TotalValidators)
 	self.validatedChainsHeight.Heights = make([]int, common.TotalValidators)
-	self.currentCommittee = make([]string, 20)
 
 	for chainID := 0; chainID < common.TotalValidators; chainID++ {
 		self.knownChainsHeight.Heights[chainID] = int(self.config.BlockChain.BestState[chainID].Height)
@@ -106,7 +103,6 @@ func (self *Engine) Start() error {
 	}
 
 	copy(self.validatedChainsHeight.Heights, self.knownChainsHeight.Heights)
-	copy(self.currentCommittee, self.config.BlockChain.BestState[0].BestBlock.Header.Committee)
 
 	go func() {
 		for {
@@ -237,7 +233,7 @@ func (self *Engine) Finalize(finalBlock *blockchain.Block) error {
 	}()
 	retryTime := 0
 finalizing:
-	copy(finalBlock.Header.Committee, self.GetNextCommittee())
+	copy(finalBlock.Header.Committee, self.GetCommittee())
 	sig, err := self.signData([]byte(finalBlock.Hash().String()))
 	if err != nil {
 		return err
@@ -250,6 +246,8 @@ finalizing:
 		var sigsReceived int
 		for {
 			select {
+			case <-self.quit:
+				return
 			case <-cancel:
 				return
 			case blocksig := <-self.cBlockSig:
@@ -290,8 +288,8 @@ finalizing:
 		/*
 			allSigReceived <- struct{}{}
 		*/
-		reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestSign)
-		reqSigMsg.(*wire.MessageRequestSign).Block = *finalBlock
+		reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestBlockSign)
+		reqSigMsg.(*wire.MessageRequestBlockSign).Block = *finalBlock
 		for idx := 0; idx < common.TotalValidators; idx++ {
 			//@TODO: retry on failed validators
 			if committee[idx] != finalBlock.ChainLeader {
@@ -316,6 +314,9 @@ finalizing:
 		Logger.log.Error(errExceedSigWaitTime)
 		retryTime++
 		Logger.log.Infof("Start finalizing block... %d time", retryTime)
+		if retryTime == 5 {
+			return errExceedBlockRetry
+		}
 		goto finalizing
 	}
 
@@ -337,8 +338,6 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 		Logger.log.Error(err)
 	}
 
-	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
-
 	// update candidate list
 	self.UpdateCndList(block)
 
@@ -347,7 +346,8 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 		self.config.MemPool.RemoveTx(tx)
 	}
 
-	bestState.Update(block)
+	self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
+	self.config.BlockChain.StoreBestState(block.Header.ChainID)
 
 	self.knownChainsHeight.Lock()
 	if self.knownChainsHeight.Heights[block.Header.ChainID] < int(block.Height) {

@@ -2,9 +2,17 @@ package wire
 
 import (
 	"encoding/json"
-
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
 )
+
+const (
+	MaxGetAddressPayload = 1000 // 1 Kb
+)
+
+type RawPeer struct {
+	RawAddress string
+	PublicKey  string
+}
 
 type MessageAddr struct {
 	RawPeers []RawPeer
@@ -15,7 +23,7 @@ func (self MessageAddr) MessageType() string {
 }
 
 func (self MessageAddr) MaxPayloadLength(pver int) int {
-	return MaxBlockPayload
+	return MaxGetAddressPayload
 }
 
 func (self MessageAddr) JsonSerialize() ([]byte, error) {

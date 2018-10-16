@@ -3,7 +3,11 @@ package wire
 import (
 	"encoding/json"
 
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
+)
+
+const (
+	MaxGetBlockPayload = 1000 // 1kb
 )
 
 type MessageGetBlocks struct {

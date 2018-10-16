@@ -127,9 +127,9 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnGetAddr != nil {
 						self.Config.MessageListeners.OnAddr(self, message.(*wire.MessageAddr))
 					}
-				case reflect.TypeOf(&wire.MessageRequestSign{}):
+				case reflect.TypeOf(&wire.MessageRequestBlockSign{}):
 					if self.Config.MessageListeners.OnRequestSign != nil {
-						self.Config.MessageListeners.OnRequestSign(self, message.(*wire.MessageRequestSign))
+						self.Config.MessageListeners.OnRequestSign(self, message.(*wire.MessageRequestBlockSign))
 					}
 				case reflect.TypeOf(&wire.MessageInvalidBlock{}):
 					if self.Config.MessageListeners.OnInvalidBlock != nil {

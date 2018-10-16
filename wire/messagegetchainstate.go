@@ -3,7 +3,11 @@ package wire
 import (
 	"encoding/json"
 
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
+)
+
+const (
+	MaxGetChainStatePayload = 1000 // 1kb
 )
 
 type MessageGetChainState struct {
@@ -15,7 +19,7 @@ func (self *MessageGetChainState) MessageType() string {
 }
 
 func (self *MessageGetChainState) MaxPayloadLength(pver int) int {
-	return MaxBlockPayload
+	return MaxGetChainStatePayload
 }
 
 func (self *MessageGetChainState) JsonSerialize() ([]byte, error) {

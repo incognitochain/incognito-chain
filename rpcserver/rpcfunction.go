@@ -1147,9 +1147,8 @@ Result—a list of addresses
 */
 func (self RpcServer) handleGetAddressesByAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	result := jsonresult.GetAddressesByAccount{}
-	var err error
-	result.Addresses, err = self.Config.Wallet.GetAddressesByAccount(params.(string))
-	return result, err
+	result.Addresses = self.Config.Wallet.GetAddressesByAccount(params.(string))
+	return result, nil
 }
 
 /*
@@ -1158,7 +1157,7 @@ Parameter #1—an account name
 Result—a bitcoin address
 */
 func (self RpcServer) handleGetAccountAddress(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.Config.Wallet.GetAccountAddress(params.(string))
+	return self.Config.Wallet.GetAccountAddress(params.(string)), nil
 }
 
 /*
@@ -1168,7 +1167,7 @@ Parameter #1—the address corresponding to the private key to get
 Result—the private key
 */
 func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.Config.Wallet.DumpPrivkey(params.(string))
+	return self.Config.Wallet.DumpPrivkey(params.(string)), nil
 }
 
 /*func (self rpcServer) handleDumpPrivkeyRaw(params interface{}, closeChan <-chan struct{}) (interface{}, error) {

@@ -4,51 +4,15 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha512"
-	"errors"
-
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common/base58"
-)
-
-const (
-	// FirstHardenedChild is the index of the firxt "harded" Child Key as per the
-	// bip32 spec
-	//FirstHardenedChild = uint32(0x80000000)
-
-	// PublicKeyCompressedLength is the byte count of a compressed public Key
-	PublicKeyCompressedLength = 33
+	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 const (
 	PriKeyType      = byte(0x0)
 	PubKeyType      = byte(0x1)
 	ReadonlyKeyType = byte(0x2)
-)
-
-var (
-	// PrivateWalletVersion is the version flag for serialized private keys
-	//PrivateWalletVersion, _ = hex.DecodeString("0488ADE4")
-
-	// PublicWalletVersion is the version flag for serialized private keys
-	//PublicWalletVersion, _ = hex.DecodeString("0488B21E")
-
-	// ErrSerializedKeyWrongSize is returned when trying to deserialize a Key that
-	// has an incorrect length
-	ErrSerializedKeyWrongSize = errors.New("Serialized keys should by exactly 82 bytes")
-
-	// ErrHardnedChildPublicKey is returned when trying to create a harded Child
-	// of the public Key
-	ErrHardnedChildPublicKey = errors.New("Can't create hardened Child for public Key")
-
-	// ErrInvalidChecksum is returned when deserializing a Key with an incorrect
-	// checksum
-	ErrInvalidChecksum = errors.New("Checksum doesn't match")
-
-	// ErrInvalidPrivateKey is returned when a derived private Key is invalid
-	ErrInvalidPrivateKey = errors.New("Invalid private Key")
-
-	// ErrInvalidPublicKey is returned when a derived public Key is invalid
-	ErrInvalidPublicKey = errors.New("Invalid public Key")
 )
 
 // KeySet represents a bip32 extended Key
@@ -115,17 +79,9 @@ func (key *Key) NewChildKey(childIdx uint32) (*Key, error) {
 }
 
 func (key *Key) getIntermediary(childIdx uint32) ([]byte, error) {
-	// Get intermediary to create Key and chaincode from
-	// Hardened children are based on the private Key
-	// NonHardened children are based on the public Key
 	childIndexBytes := uint32Bytes(childIdx)
 
 	var data []byte
-	//if childIdx >= FirstHardenedChild {
-	//	data = append([]byte{0x0}, Key.KeySet.PrivateKey...)
-	//} else {
-	// data = key.KeySet.PublicKey
-	//}
 	data = append(data, childIndexBytes...)
 
 	hmac := hmac.New(sha512.New, key.ChainCode)
@@ -184,7 +140,7 @@ func (key *Key) Serialize(keyType byte) ([]byte, error) {
 func (key *Key) Base58CheckSerialize(keyType byte) string {
 	serializedKey, err := key.Serialize(keyType)
 	if err != nil {
-		return ""
+		return common.EmptyString
 	}
 
 	return base58.Base58Check{}.Encode(serializedKey, byte(0x00))
@@ -192,9 +148,6 @@ func (key *Key) Base58CheckSerialize(keyType byte) string {
 
 // Deserialize a byte slice into a KeySet
 func Deserialize(data []byte) (*Key, error) {
-	//if len(data) != 101 {
-	//	return nil, ErrSerializedKeyWrongSize
-	//}
 	var key = &Key{}
 	keyType := data[0]
 	if keyType == PriKeyType {
@@ -217,11 +170,11 @@ func Deserialize(data []byte) (*Key, error) {
 	}
 
 	// validate checksum
-	cs1 := base58.ChecksumFirst4Bytes(data[0 : len(data)-4])
+	cs1 := base58.ChecksumFirst4Bytes(data[0: len(data)-4])
 	cs2 := data[len(data)-4:]
 	for i := range cs1 {
 		if cs1[i] != cs2[i] {
-			return nil, ErrInvalidChecksum
+			return nil, NewWalletError(InvalidChecksumErr, nil)
 		}
 	}
 	return key, nil
