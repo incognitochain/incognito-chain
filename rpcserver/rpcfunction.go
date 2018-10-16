@@ -7,7 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/libp2p/go-libp2p-peer"
+	"github.com/multiformats/go-multiaddr"
 
 	"github.com/ninjadotorg/cash-prototype/wire"
 
@@ -39,6 +43,7 @@ var RpcHandler = map[string]commandHandler{
 	"createtransaction":             RpcServer.handleCreateTransaction,
 	"sendtransaction":               RpcServer.handleSendTransaction,
 	"sendmany":                      RpcServer.handleSendMany,
+	"sendregistration":              RpcServer.handleSendRegistration,
 	"getnumberofcoinsandbonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createactionparamstransaction": RpcServer.handleCreateActionParamsTransaction,
 	"getconnectioncount":            RpcServer.handleGetConnectionCount,
@@ -664,6 +669,200 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 	return result, nil
 }
 
+func validateNodeAddress(nodeAddr string) bool {
+	if len(nodeAddr) == 0 {
+		return false
+	}
+
+	strs := strings.Split(nodeAddr, "/ipfs/")
+	if len(strs) != 2 {
+		return false
+	}
+
+	_, err := multiaddr.NewMultiaddr(strs[0])
+	if err != nil {
+		return false
+	}
+
+	_, err = peer.IDB58Decode(strs[1])
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
+func (self RpcServer) handleCreateRegistration(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	Logger.log.Info(params)
+
+	// all params
+	arrayParams := common.InterfaceSlice(params)
+
+	// param #1: private key of sender
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, nil
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	lastByte := senderKey.KeySet.PublicKey.Apk[len(senderKey.KeySet.PublicKey.Apk)-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	if err != nil {
+		return nil, nil
+	}
+
+	// param #2: list receiver
+	totalAmmount := int64(0)
+	receiversParam := int64(arrayParams[1].(float64))
+	paymentInfos := []*client.PaymentInfo{
+		&client.PaymentInfo{
+			Amount: uint64(receiversParam),
+		},
+	}
+	totalAmmount = receiversParam
+
+	// param #3: estimation fee coin per kb
+	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
+
+	// param #4: estimation fee coin per kb
+	numBlock := uint32(arrayParams[3].(float64))
+
+	nodeAddr := arrayParams[4].(string)
+	if valid := validateNodeAddress(nodeAddr); !valid {
+		return nil, errors.New("node address is wrong")
+	}
+
+	// list unspent tx for estimation fee
+	estimateTotalAmount := totalAmmount
+	usableTxsMap, _ := self.Config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, common.TxOutCoinType, transaction.SortByAmount, false)
+	candidateTxs := make([]*transaction.Tx, 0)
+	candidateTxsMap := make(map[byte][]*transaction.Tx)
+	for chainId, usableTxs := range usableTxsMap {
+		for _, temp := range usableTxs {
+			for _, desc := range temp.Descs {
+				for _, note := range desc.GetNote() {
+					amount := note.Value
+					estimateTotalAmount -= int64(amount)
+				}
+			}
+			txData := temp
+			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
+			candidateTxs = append(candidateTxs, &txData)
+			if estimateTotalAmount <= 0 {
+				break
+			}
+		}
+	}
+
+	// check real fee per Tx
+	var realFee uint64
+	if int64(estimateFeeCoinPerKb) == -1 {
+		temp, _ := self.Config.FeeEstimator[chainIdSender].EstimateFee(numBlock)
+		estimateFeeCoinPerKb = int64(temp)
+	}
+	estimateFeeCoinPerKb += int64(self.Config.Wallet.Config.PayTxFee)
+	estimateTxSizeInKb := transaction.EstimateTxSize(candidateTxs, paymentInfos)
+	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
+
+	// list unspent tx for create tx
+	totalAmmount += int64(realFee)
+	candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
+	for chainId, usableTxs := range usableTxsMap {
+		for _, temp := range usableTxs {
+			for _, desc := range temp.Descs {
+				for _, note := range desc.GetNote() {
+					amount := note.Value
+					estimateTotalAmount -= int64(amount)
+				}
+			}
+			txData := temp
+			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
+			if estimateTotalAmount <= 0 {
+				break
+			}
+		}
+	}
+
+	// get merkleroot commitments, nullifers db, commitments db for every chain
+	nullifiersDb := make(map[byte]([][]byte))
+	commitmentsDb := make(map[byte]([][]byte))
+	merkleRootCommitments := make(map[byte]*common.Hash)
+	for chainId, _ := range candidateTxsMap {
+		merkleRootCommitments[chainId] = &self.Config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
+		// get tx view point
+		txViewPoint, _ := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainId)
+		nullifiersDb[chainId] = txViewPoint.ListNullifiers(common.TxOutCoinType)
+		commitmentsDb[chainId] = txViewPoint.ListCommitments(common.TxOutCoinType)
+	}
+
+	fmt.Println("Create voting Tx ...")
+	tx, err := transaction.CreateVotingTx(&senderKey.KeySet.PrivateKey, paymentInfos,
+		merkleRootCommitments,
+		candidateTxsMap,
+		nullifiersDb,
+		commitmentsDb,
+		realFee,
+		chainIdSender,
+		nodeAddr)
+	if err != nil {
+		return nil, err
+	}
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		// return hex for a new tx
+		return hex.EncodeToString(byteArrays), nil
+	}
+
+	return nil, err
+}
+
+func (self RpcServer) handleSendRawRegistration(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	Logger.log.Info(params)
+	arrayParams := common.InterfaceSlice(params)
+	hexRawTx := arrayParams[0].(string)
+	rawTxBytes, err := hex.DecodeString(hexRawTx)
+
+	if err != nil {
+		return nil, err
+	}
+	var tx transaction.TxVoting
+	// Logger.log.Info(string(rawTxBytes))
+	err = json.Unmarshal(rawTxBytes, &tx)
+	if err != nil {
+		return nil, err
+	}
+
+	hash, txDesc, err := self.Config.TxMemPool.MaybeAcceptTransaction(&tx)
+	if err != nil {
+		return nil, err
+	}
+
+	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+
+	// broadcast message
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg.(*wire.MessageTx).Transaction = &tx
+	self.Config.Server.PushMessageToAll(txMsg)
+
+	return tx.Hash(), nil
+}
+
+func (self RpcServer) handleSendRegistration(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	hexStrOfTx, err := self.handleCreateRegistration(params, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, hexStrOfTx)
+	txId, err := self.handleSendRawRegistration(newParam, closeChan)
+	return txId, err
+}
+
 /*
 // handleCreateTransaction handles createtransaction commands.
 */
@@ -708,6 +907,11 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 
 	// param #4: estimation fee coin per kb
 	numBlock := uint32(arrayParams[3].(float64))
+
+	nodeAddr := arrayParams[4].(string)
+	if valid := validateNodeAddress(nodeAddr); !valid {
+		return nil, errors.New("node address is wrong")
+	}
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
@@ -787,6 +991,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		// return hex for a new tx
 		return hex.EncodeToString(byteArrays), nil
 	}
+
 	return nil, err
 }
 
