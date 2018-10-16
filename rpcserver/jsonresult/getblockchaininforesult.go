@@ -13,6 +13,4 @@ type GetBlockChainInfoResult struct {
 	Pruned               bool     `json:"Pruned"`
 	PruneHeight          int32    `json:"PruneHeight,omitempty"`
 	ChainWork            string   `json:"ChainWork,omitempty"`
-	//SoftForks            []*SoftForkDescription              `json:"softforks"`
-	//Bip9SoftForks        map[string]*Bip9SoftForkDescription `json:"bip9_softforks"`
 }

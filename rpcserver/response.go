@@ -24,16 +24,17 @@ type Response struct {
 // response to send over the wire with the MarshalResponse function.
 func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*Response, error) {
 	if !IsValidIDType(id) {
-		str := fmt.Sprintf("the id of type '%T' is invalid", id)
+		str := fmt.Sprintf("The id of type '%T' is invalid", id)
 		return nil, NewRPCError(ErrInvalidType, errors.New(str))
 	}
 
 	pid := &id
-	return &Response{
+	resp := &Response{
 		Result: marshalledResult,
 		Error:  rpcErr,
 		Id:     pid,
-	}, nil
+	}
+	return resp, nil
 }
 
 // IsValidIDType checks that the Id field (which can go in any of the JSON-RPC
