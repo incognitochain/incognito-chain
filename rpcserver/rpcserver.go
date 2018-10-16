@@ -62,15 +62,15 @@ type RpcServer struct {
 }
 
 type RpcServerConfig struct {
-	Listenters []net.Listener
-
-	ChainParams    *blockchain.Params
-	BlockChain     *blockchain.BlockChain
-	Database       *database.DatabaseInterface
-	Wallet         *wallet.Wallet
-	ConnMgr        *connmanager.ConnManager
-	AddrMgr        *addrmanager.AddrManager
-	IsGenerateNode bool
+	Listenters      []net.Listener
+	ProtocolVersion string
+	ChainParams     *blockchain.Params
+	BlockChain      *blockchain.BlockChain
+	Database        *database.DatabaseInterface
+	Wallet          *wallet.Wallet
+	ConnMgr         *connmanager.ConnManager
+	AddrMgr         *addrmanager.AddrManager
+	IsGenerateNode  bool
 	Server interface {
 		// Push Tx Message
 		PushMessageToAll(message wire.Message) error

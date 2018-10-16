@@ -49,7 +49,7 @@ var RpcHandler = map[string]commandHandler{
 	"getrawmempool":                 RpcServer.handleGetRawMempool,
 	"getmempoolentry":               RpcServer.handleMempoolEntry,
 	"estimatefee":                   RpcServer.handleEstimateFee,
-	//"getallpeers": rpcServer.handleGetAllPeers,
+	"getallpeers":                   RpcServer.handleGetAllPeers,
 
 	//POS
 	"getheader": RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -125,16 +125,16 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 getblockcount RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	result := map[string]interface{}{}
+	result := jsonresult.GetNetworkInfoResult{}
 
-	result["version"] = 1
-	result["subversion"] = ""
-	result["protocolversion"] = 0
-	result["localservices"] = ""
-	result["localrelay"] = true
-	result["timeoffset"] = 0
-	result["networkactive"] = true
-	result["connections"] = 0
+	result.Version = 1
+	result.SubVersion = ""
+	result.ProtocolVersion = ""
+	result.LocalServices = ""
+	result.LocalRelay = true
+	result.TimeOffset = 0
+	result.NetworkActive = true
+	result.Connections = 0
 
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -166,13 +166,13 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 		}
 	}
 
-	result["networks"] = networks
+	result.Networks = networks
 
-	result["localaddresses"] = []string{}
+	result.LocalAddresses = []string{}
 
-	result["relayfee"] = 0
-	result["incrementalfee"] = 0
-	result["warnings"] = ""
+	result.RelayFee = 0
+	result.IncrementalFee = 0
+	result.Warnings = ""
 
 	return result, nil
 }
@@ -871,10 +871,7 @@ func assertEligibleAgentIDs(eligibleAgentIDs interface{}) []string {
 /*
 // handleCreateRawTransaction handles createrawtransaction commands.
 */
-func (self RpcServer) handleCreateActionParamsTransaction(
-	params interface{},
-	closeChan <-chan struct{},
-) (interface{}, error) {
+func (self RpcServer) handleCreateActionParamsTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	tx := transaction.ActionParamTx{
@@ -1020,24 +1017,26 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 	}, nil
 }
 
-///*
-//handleGetAllPeers - return all peers which this node connected
-// */
-//func (self rpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-//	Logger.log.Info(params)
-//	result := make(map[string]interface{})
-//
-//	peersMap := []string{}
-//
-//	peers := self.config.AddrMgr.AddressCache()
-//	for _, peer := range peers {
-//		peersMap = append(peersMap, peer.RemoteRawAddress)
-//	}
-//
-//	result["peers"] = peersMap
-//
-//	return result, nil
-//}
+/*
+handleGetAllPeers - return all peers which this node connected
+ */
+func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	Logger.log.Info(params)
+	result := make(map[string]interface{})
+
+	peersMap := []string{}
+
+	peers := self.config.AddrMgr.AddressCache()
+	for _, peer := range peers {
+		for _, peerConn := range peer.PeerConns {
+			peersMap = append(peersMap, peerConn.RemoteRawAddress)
+		}
+	}
+
+	result["peers"] = peersMap
+
+	return result, nil
+}
 
 /*
 handleGetBalance - RPC gets the balances in decimal

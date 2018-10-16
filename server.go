@@ -38,6 +38,7 @@ type Server struct {
 	started     int32
 	startupTime int64
 
+	protocolVersion string
 	chainParams     *blockchain.Params
 	connManager     *connmanager.ConnManager
 	blockChain      *blockchain.BlockChain
@@ -115,8 +116,9 @@ func (self Server) setupRPCListeners() ([]net.Listener, error) {
 /*
 NewServer - create server object which control all process of node
 */
-func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterface, chainParams *blockchain.Params, interrupt <-chan struct{}) error {
+func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
 	// Init data for Server
+	self.protocolVersion = protocolVer
 	self.chainParams = chainParams
 	self.cQuit = make(chan struct{})
 	self.cDonePeers = make(chan *peer.Peer)
@@ -242,23 +244,24 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		}
 
 		rpcConfig := rpcserver.RpcServerConfig{
-			Listenters:     rpcListeners,
-			RPCQuirks:      cfg.RPCQuirks,
-			RPCMaxClients:  cfg.RPCMaxClients,
-			ChainParams:    chainParams,
-			BlockChain:     self.blockChain,
-			TxMemPool:      self.memPool,
-			Server:         self,
-			Wallet:         self.wallet,
-			ConnMgr:        self.connManager,
-			AddrMgr:        self.addrManager,
-			RPCUser:        cfg.RPCUser,
-			RPCPass:        cfg.RPCPass,
-			RPCLimitUser:   cfg.RPCLimitUser,
-			RPCLimitPass:   cfg.RPCLimitPass,
-			DisableAuth:    cfg.RPCDisableAuth,
-			IsGenerateNode: cfg.Generate,
-			FeeEstimator:   self.feeEstimator,
+			Listenters:      rpcListeners,
+			RPCQuirks:       cfg.RPCQuirks,
+			RPCMaxClients:   cfg.RPCMaxClients,
+			ChainParams:     chainParams,
+			BlockChain:      self.blockChain,
+			TxMemPool:       self.memPool,
+			Server:          self,
+			Wallet:          self.wallet,
+			ConnMgr:         self.connManager,
+			AddrMgr:         self.addrManager,
+			RPCUser:         cfg.RPCUser,
+			RPCPass:         cfg.RPCPass,
+			RPCLimitUser:    cfg.RPCLimitUser,
+			RPCLimitPass:    cfg.RPCLimitPass,
+			DisableAuth:     cfg.RPCDisableAuth,
+			IsGenerateNode:  cfg.Generate,
+			FeeEstimator:    self.feeEstimator,
+			ProtocolVersion: self.protocolVersion,
 		}
 		self.rpcServer = &rpcserver.RpcServer{}
 		self.rpcServer.Init(&rpcConfig)
@@ -585,7 +588,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	// TODO check version message
 	valid := false
 
-	if msg.ProtocolVersion == 1 {
+	if msg.ProtocolVersion == self.protocolVersion {
 		valid = true
 	}
 	//
@@ -857,7 +860,7 @@ func (self Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
 	msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
 	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
-	msg.(*wire.MessageVersion).ProtocolVersion = 1
+	msg.(*wire.MessageVersion).ProtocolVersion = self.protocolVersion
 
 	// Validate Public Key from SealerPrvKey
 	if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
