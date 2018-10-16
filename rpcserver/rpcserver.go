@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -285,8 +284,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 	r.Body.Close()
 	if err != nil {
 		errCode := http.StatusBadRequest
-		http.Error(w, fmt.Sprintf("%d error reading JSON Message: %v",
-			errCode, err), errCode)
+		http.Error(w, fmt.Sprintf("%d error reading JSON Message: %v", errCode, err), errCode)
 		return
 	}
 	Logger.log.Info(string(body))
@@ -300,14 +298,15 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 	hj, ok := w.(http.Hijacker)
 	if !ok {
 		errMsg := "webserver doesn't support hijacking"
-		log.Print(errMsg)
+		Logger.log.Error(errMsg)
 		errCode := http.StatusInternalServerError
 		http.Error(w, strconv.Itoa(errCode)+" "+errMsg, errCode)
 		return
 	}
 	conn, buf, err := hj.Hijack()
 	if err != nil {
-		Logger.log.Infof("Failed to hijack HTTP connection: %v", err)
+		Logger.log.Errorf("Failed to hijack HTTP connection: %s", err.Error())
+		Logger.log.Error(err)
 		errCode := http.StatusInternalServerError
 		http.Error(w, strconv.Itoa(errCode)+" "+err.Error(), errCode)
 		return
@@ -391,23 +390,26 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 	// Marshal the response.
 	msg, err := self.createMarshalledReply(responseID, result, jsonErr)
 	if err != nil {
-		Logger.log.Infof("Failed to marshal reply: %v", err)
+		Logger.log.Errorf("Failed to marshal reply: %s", err.Error())
+		Logger.log.Error(err)
 		return
 	}
 
 	// Write the response.
 	err = self.writeHTTPResponseHeaders(r, w.Header(), http.StatusOK, buf)
 	if err != nil {
-		Logger.log.Info(err)
+		Logger.log.Error(err)
 		return
 	}
 	if _, err := buf.Write(msg); err != nil {
-		Logger.log.Infof("Failed to write marshalled reply: %v", err)
+		Logger.log.Errorf("Failed to write marshalled reply: %s", err.Error())
+		Logger.log.Error(err)
 	}
 
 	// Terminate with newline to maintain compatibility with coin Core.
 	if err := buf.WriteByte('\n'); err != nil {
-		Logger.log.Infof("Failed to append terminating newline to reply: %v", err)
+		Logger.log.Errorf("Failed to append terminating newline to reply: %s", err.Error())
+		Logger.log.Error(err)
 	}
 }
 
@@ -420,7 +422,7 @@ func (self RpcServer) createMarshalledReply(id, result interface{}, replyErr err
 		if jErr, ok := replyErr.(*RPCError); ok {
 			jsonErr = jErr
 		} else {
-			jsonErr = self.internalRPCError(replyErr.Error(), "")
+			jsonErr = self.internalRPCError(replyErr.Error(), common.EmptyString)
 		}
 	}
 
@@ -434,7 +436,7 @@ func (self RpcServer) createMarshalledReply(id, result interface{}, replyErr err
 // not needed.
 func (self RpcServer) internalRPCError(errStr, context string) *RPCError {
 	logStr := errStr
-	if context != "" {
+	if context != common.EmptyString {
 		logStr = context + ": " + errStr
 	}
 	Logger.log.Info(logStr)
@@ -465,7 +467,7 @@ func (self RpcServer) httpStatusLine(req *http.Request, code int) string {
 	}
 	codeStr := strconv.Itoa(code)
 	text := http.StatusText(code)
-	if text != "" {
+	if text != common.EmptyString {
 		line = proto + " " + codeStr + " " + text + "\r\n"
 		self.statusLock.Lock()
 		self.statusLines[key] = line
