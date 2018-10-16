@@ -327,6 +327,7 @@ finalizing:
 	}
 	finalBlock.ChainLeaderSig = sig
 
+	// hash candidate list and set to block header
 	candidates := self.GetCndList(finalBlock)
 	candidateBytes, _ := json.Marshal(candidates)
 	finalBlock.Header.CandidateHash = common.HashH(candidateBytes)
