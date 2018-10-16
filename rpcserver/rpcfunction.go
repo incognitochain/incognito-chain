@@ -127,13 +127,10 @@ getblockcount RPC return information fo blockchain node
 func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	result := jsonresult.GetNetworkInfoResult{}
 
-	result.Version = 1
+	result.Version = RpcServerVersion
 	result.SubVersion = ""
 	result.ProtocolVersion = self.config.ProtocolVersion
-	result.LocalServices = ""
-	result.LocalRelay = true
-	result.TimeOffset = 0
-	result.NetworkActive = true
+	result.NetworkActive = len(self.config.ConnMgr.ListeningPeers) > 0
 	result.LocalAddresses = []string{}
 	for _, listener := range self.config.ConnMgr.ListeningPeers {
 		result.Connections += len(listener.PeerConns)
@@ -171,7 +168,7 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 	}
 	result.Networks = networks
 	result.RelayFee = 0
-	result.IncrementalFee = 0
+	result.IncrementalFee = self.config.Wallet.Config.IncrementalFee
 	result.Warnings = ""
 
 	return result, nil
@@ -732,7 +729,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		temp, _ := self.config.FeeEstimator[chainIdSender].EstimateFee(numBlock)
 		estimateFeeCoinPerKb = int64(temp)
 	}
-	estimateFeeCoinPerKb += int64(self.config.Wallet.Config.PayTxFee)
+	estimateFeeCoinPerKb += int64(self.config.Wallet.Config.IncrementalFee)
 	estimateTxSizeInKb := transaction.EstimateTxSize(candidateTxs, paymentInfos)
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 
@@ -1263,7 +1260,7 @@ func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan str
 handleSetTxFee - RPC sets the transaction fee per kilobyte paid more by transactions created by this wallet. default is 1 coin per 1 kb
 */
 func (self RpcServer) handleSetTxFee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	self.config.Wallet.Config.PayTxFee = uint64(params.(float64))
+	self.config.Wallet.Config.IncrementalFee = uint64(params.(float64))
 	err := self.config.Wallet.Save(self.config.Wallet.PassPhrase)
 	return err == nil, NewRPCError(ErrUnexpected, err)
 }

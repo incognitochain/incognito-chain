@@ -27,7 +27,7 @@ type WalletConfig struct {
 	DataFile string
 	DataPath string
 
-	PayTxFee uint64
+	IncrementalFee uint64
 }
 
 func (self *Wallet) Init(passPhrase string, numOfAccount uint32) {
