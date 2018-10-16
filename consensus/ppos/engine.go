@@ -33,6 +33,16 @@ type Engine struct {
 	config                EngineConfig
 	knownChainsHeight     chainsHeight
 	validatedChainsHeight chainsHeight
+
+	committee committeeStruct
+}
+
+type committeeStruct struct {
+	ValidatorBlkNum      map[string]int //track the number of block created by each validator
+	ValidatorReliablePts map[string]int //track how reliable is the validator node
+	UpcomingCommittee    []string
+	CurrentCommittee     []string
+	sync.Mutex
 }
 
 type ChainInfo struct {
@@ -79,6 +89,8 @@ func (self *Engine) Start() error {
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
 	self.knownChainsHeight.Heights = make([]int, common.TotalValidators)
 	self.validatedChainsHeight.Heights = make([]int, common.TotalValidators)
+	self.committee.ValidatorBlkNum = make(map[string]int)
+	self.committee.ValidatorReliablePts = make(map[string]int)
 
 	for chainID := 0; chainID < common.TotalValidators; chainID++ {
 		self.knownChainsHeight.Heights[chainID] = int(self.config.BlockChain.BestState[chainID].Height)
@@ -283,7 +295,7 @@ finalizing:
 
 	//Request for signatures of other validators
 	go func() {
-		//Uncomment this segment to create block with 1 node (validator)
+		//Uncomment this segment to create block with only 1 node (validator)
 		/*
 			allSigReceived <- struct{}{}
 		*/
@@ -306,6 +318,8 @@ finalizing:
 	}()
 	// Wait for signatures of other validators
 	select {
+	case <-self.quit:
+		return nil
 	case <-allSigReceived:
 		Logger.log.Info("Validator sigs: ", finalBlock.Header.BlockCommitteeSigs)
 	case <-time.After(common.MaxBlockSigWaitTime * time.Second):
@@ -353,4 +367,6 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.validatedChainsHeight.Lock()
 	self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
 	self.validatedChainsHeight.Unlock()
+
+	self.committee.UpdateCommittee(block.ChainLeader, block.Header.BlockCommitteeSigs)
 }

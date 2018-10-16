@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jessevdk/go-flags"
 	"github.com/ninjadotorg/cash-prototype/cashec"
@@ -21,18 +22,18 @@ import (
 
 // default config
 const (
-	defaultConfigFilename  = "config.conf"
-	defaultDataDirname     = "data"
-	defaultDatabaseDirname = "block"
-	defaultLogLevel        = "info"
-	defaultLogDirname      = "logs"
-	defaultLogFilename     = "log.log"
-	defaultMaxPeers        = 125
-	defaultMaxRPCClients   = 10
-	defaultGenerate        = false
-	sampleConfigFilename   = "sample-config.conf"
-	defaultDisableRpcTls   = true
-
+	defaultConfigFilename    = "config.conf"
+	defaultDataDirname       = "data"
+	defaultDatabaseDirname   = "block"
+	defaultLogLevel          = "info"
+	defaultLogDirname        = "logs"
+	defaultLogFilename       = "log.log"
+	defaultMaxPeers          = 125
+	defaultMaxRPCClients     = 10
+	defaultGenerate          = false
+	sampleConfigFilename     = "sample-config.conf"
+	defaultDisableRpcTls     = true
+	defaultNoRebuildChainDep = false
 	// For wallet
 	defaultWalletDbName = "wallet.db"
 )
@@ -96,6 +97,9 @@ type config struct {
 	Wallet           bool   `long:"wallet" description:"Use wallet"`
 	WalletDbName     string `long:"walletdbname" description:"Wallet Database Name file, default is wallet.db"`
 	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
+
+	// DB
+	NoRebuildChainDep bool `long:"norebuildchaindep" description:"Load existed chain dependencies instead of rebuild from block data"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -280,6 +284,7 @@ func loadConfig() (*config, []string, error) {
 		DiscoverPeers:        false,
 		TestNet:              false,
 		DiscoverPeersAddress: "35.230.8.182:9339",
+		NoRebuildChainDep:    defaultNoRebuildChainDep,
 	}
 
 	// Service options which are only added on Windows.
