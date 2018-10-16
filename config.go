@@ -280,7 +280,7 @@ func loadConfig() (*config, []string, error) {
 		Generate:             defaultGenerate,
 		WalletDbName:         defaultWalletDbName,
 		DisableTLS:           defaultDisableRpcTls,
-		RPCDisableAuth:       true,
+		RPCDisableAuth:       false,
 		DiscoverPeers:        false,
 		TestNet:              false,
 		DiscoverPeersAddress: "35.230.8.182:9339",
