@@ -809,7 +809,7 @@ Get Candidate List from all chain and merge all to one
 func (self *BlockChain) GetCndList() ([]string) {
 	cndList := []string{}
 	for _, bestState := range self.BestState {
-		for nodeAddr, _ := range bestState.CndMap {
+		for nodeAddr, _ := range bestState.Candidates {
 			if common.IndexOfStr(nodeAddr, cndList) < 0 {
 				cndList = append(cndList, nodeAddr)
 			}
@@ -824,7 +824,7 @@ func (self *BlockChain) GetCndList() ([]string) {
 func (self *BlockChain) GetCndNodeAmount(nodeAddr string) (uint64) {
 	var amount uint64
 	for _, bestState := range self.BestState {
-		cndVal, ok := bestState.CndMap[nodeAddr]
+		cndVal, ok := bestState.Candidates[nodeAddr]
 		if ok {
 			amount += cndVal
 		}
