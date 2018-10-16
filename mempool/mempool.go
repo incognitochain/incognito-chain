@@ -627,22 +627,10 @@ func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxVoting) (bo
 			return false, errors.New("Wrong tx desc's vmacs")
 		}
 		//
-		if desc.Proof == nil {
+		if desc.Proof != nil { // no privacy
 			return false, errors.New("Wrong tx desc's proof")
 		}
-		// check length of Proof
-		//if len(desc.Proof.G_A) != 33 ||
-		//	len(desc.Proof.G_APrime) != 33 ||
-		//	len(desc.Proof.G_B) != 65 ||
-		//	len(desc.Proof.G_BPrime) != 33 ||
-		//	len(desc.Proof.G_C) != 33 ||
-		//	len(desc.Proof.G_CPrime) != 33 ||
-		//	len(desc.Proof.G_K) != 33 ||
-		//	len(desc.Proof.G_H) != 33 {
-		//	return false, errors.New("Wrong tx desc's proof")
-		//}
-		//
-		if len(desc.EncryptedData) != 2 {
+		if len(desc.EncryptedData) != 0 {
 			return false, errors.New("Wrong tx desc's encryptedData")
 		}
 		// check nulltifier is existed in DB
