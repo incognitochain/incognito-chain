@@ -151,21 +151,13 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 			if err != nil {
 				Logger.log.Errorf("Failed to restore fee estimator %v", err)
+				Logger.log.Errorf("Init")
+				self.feeEstimator[chainId] = mempool.NewFeeEstimator(
+					mempool.DefaultEstimateFeeMaxRollback,
+					mempool.DefaultEstimateFeeMinRegisteredBlocks)
 			} else {
 				self.feeEstimator[chainId] = feeEstimator
 			}
-		}
-	}
-
-	// If no feeEstimator has been found, or if the one that has been found
-	// is behind somehow, create a new one and start over.
-	// if self.feeEstimator == nil || self.feeEstimator.LastKnownHeight() != self.blockChain.BestState.BestBlock.Height {
-	for _, bestState := range self.blockChain.BestState {
-		chainId := bestState.BestBlock.Header.ChainID
-		if self.feeEstimator[chainId] == nil {
-			self.feeEstimator[chainId] = mempool.NewFeeEstimator(
-				mempool.DefaultEstimateFeeMaxRollback,
-				mempool.DefaultEstimateFeeMinRegisteredBlocks)
 		}
 	}
 
