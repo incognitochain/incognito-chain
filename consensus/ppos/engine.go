@@ -14,6 +14,7 @@ import (
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 )
 
 // PoSEngine only need to start if node runner want to be a validator
@@ -54,7 +55,7 @@ type EngineConfig struct {
 	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server          interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -335,12 +336,22 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	if err != nil {
 		Logger.log.Error(err)
 	}
+
+	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
 	// update tx pool
 	for _, tx := range block.Transactions {
 		self.config.MemPool.RemoveTx(tx)
+		// update candidate list
+		if tx.GetType() == common.TxVotingType {
+			txV, ok := tx.(*transaction.TxVoting)
+			nodeAddr := txV.NodeAddr
+			if ok && common.IndexOfStr(nodeAddr, bestState.CndList) < 0 {
+				bestState.CndList = append(bestState.CndList, nodeAddr)
+			}
+		}
 	}
 
-	self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
+	bestState.Update(block)
 
 	self.knownChainsHeight.Lock()
 	if self.knownChainsHeight.Heights[block.Header.ChainID] < int(block.Height) {
