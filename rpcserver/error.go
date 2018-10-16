@@ -4,6 +4,7 @@ import "fmt"
 
 const (
 	ErrUnexpected        = "ErrUnexpected"
+	ErrAlreadyStarted    = "ErrAlreadyStarted"
 	ErrRPCInvalidRequest = "ErrRPCInvalidRequest"
 	ErrRPCMethodNotFound = "ErrRPCMethodNotFound"
 	ErrRPCInvalidParams  = "ErrRPCInvalidParams"
@@ -17,7 +18,11 @@ var ErrCodeMessage = map[string]struct {
 	code    int
 	message string
 }{
-	ErrUnexpected:        {-1, "Unexpected error"},
+	// rpc server error
+	ErrUnexpected:     {-1, "Unexpected error"},
+	ErrAlreadyStarted: {-2, "RPC server is already started"},
+
+	// rpc api error
 	ErrRPCInvalidRequest: {-1001, "Invalid request"},
 	ErrRPCMethodNotFound: {-1002, "Method not found"},
 	ErrRPCInvalidParams:  {-1003, "Invalid parameters"},

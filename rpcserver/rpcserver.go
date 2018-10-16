@@ -27,6 +27,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/mempool"
 	"github.com/ninjadotorg/cash-prototype/wallet"
+	"github.com/ninjadotorg/cash-prototype/common"
 )
 
 const (
@@ -93,20 +94,19 @@ type RpcServerConfig struct {
 	FeeEstimator map[byte]*mempool.FeeEstimator
 }
 
-func (self *RpcServer) Init(config *RpcServerConfig) error {
+func (self *RpcServer) Init(config *RpcServerConfig) {
 	self.config = *config
 	self.statusLines = make(map[int]string)
-	if config.RPCUser != "" && config.RPCPass != "" {
+	if config.RPCUser != "" && config.RPCPass != common.EmptyString {
 		login := config.RPCUser + ":" + config.RPCPass
 		auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(login))
 		self.authSHA = sha256.Sum256([]byte(auth))
 	}
-	if config.RPCLimitUser != "" && config.RPCLimitPass != "" {
+	if config.RPCLimitUser != common.EmptyString && config.RPCLimitPass != common.EmptyString {
 		login := config.RPCLimitUser + ":" + config.RPCLimitPass
 		auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(login))
 		self.limitAuthSHA = sha256.Sum256([]byte(auth))
 	}
-	return nil
 }
 
 // RequestedProcessShutdown returns a channel that is sent to when an authorized
@@ -133,9 +133,9 @@ func (self RpcServer) limitConnections(w http.ResponseWriter, remoteAddr string)
 }
 
 // Start is used by server.go to start the rpc listener.
-func (self RpcServer) Start() error {
+func (self *RpcServer) Start() error {
 	if atomic.AddInt32(&self.started, 1) != 1 {
-		return errors.New("RPC server is already started")
+		return NewRPCError(ErrAlreadyStarted, nil)
 	}
 	rpcServeMux := http.NewServeMux()
 	self.httpServer = &http.Server{

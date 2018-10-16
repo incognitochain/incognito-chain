@@ -34,11 +34,6 @@ import (
 	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
-// onionAddr implements the net.Addr interface and represents a tor address.
-type onionAddr struct {
-	addr string
-}
-
 type Server struct {
 	started     int32
 	startupTime int64
@@ -266,10 +261,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			FeeEstimator:   self.feeEstimator,
 		}
 		self.rpcServer = &rpcserver.RpcServer{}
-		err = self.rpcServer.Init(&rpcConfig)
-		if err != nil {
-			return err
-		}
+		self.rpcServer.Init(&rpcConfig)
 
 		// Signal process shutdown when the RPC server requests it.
 		go func() {
