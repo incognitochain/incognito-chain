@@ -139,14 +139,14 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 
 	ifaces, err := net.Interfaces()
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	networks := []map[string]interface{}{}
 	for _, i := range ifaces {
 		addrs, err := i.Addrs()
 		if err != nil {
-			return nil, err
+			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		for _, addr := range addrs {
 			network := map[string]interface{}{}
@@ -212,11 +212,11 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 		hashString := paramsT[0].(string)
 		hash, errH := common.Hash{}.NewHashFromStr(hashString)
 		if errH != nil {
-			return nil, errH
+			return nil, NewRPCError(ErrUnexpected, errH)
 		}
 		block, errD := self.config.BlockChain.GetBlockByBlockHash(hash)
 		if errD != nil {
-			return nil, errD
+			return nil, NewRPCError(ErrUnexpected, errD)
 		}
 		result := map[string]interface{}{}
 
@@ -227,7 +227,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 		if verbosity == "0" {
 			data, err := json.Marshal(block)
 			if err != nil {
-				return nil, err
+				return nil, NewRPCError(ErrUnexpected, err)
 			}
 			result["data"] = hex.EncodeToString(data)
 		} else if verbosity == "1" {
@@ -239,7 +239,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			if blockHeight < best.Height {
 				nextHash, err := self.config.BlockChain.GetBlockByBlockHeight(blockHeight+1, chainId)
 				if err != nil {
-					return nil, err
+					return nil, NewRPCError(ErrUnexpected, err)
 				}
 				nextHashString = nextHash.Hash().String()
 			}
@@ -274,7 +274,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			if blockHeight < best.Height {
 				nextHash, err := self.config.BlockChain.GetBlockByBlockHeight(blockHeight+1, chainId)
 				if err != nil {
-					return nil, err
+					return nil, NewRPCError(ErrUnexpected, err)
 				}
 				nextHashString = nextHash.Hash().String()
 			}
@@ -317,7 +317,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 					txA := tx.(*transaction.ActionParamTx)
 					data, err := json.Marshal(txA)
 					if err != nil {
-						return nil, err
+						return nil, NewRPCError(ErrUnexpected, err)
 					}
 					transactionT["hex"] = hex.EncodeToString(data)
 					transactionT["locktime"] = txA.LockTime
@@ -373,7 +373,7 @@ func (self RpcServer) handleGetBlockHash(params interface{}, closeChan <-chan st
 	height := int32(arrayParams[1].(float64))
 	hash, err := self.config.BlockChain.GetBlockByBlockHeight(height, chainId)
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	return hash.Hash().String(), nil
 }
@@ -408,7 +408,7 @@ func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-cha
 				transactionT["fee"] = txN.Fee
 				data, err := json.Marshal(txN)
 				if err != nil {
-					return nil, err
+					return nil, NewRPCError(ErrUnexpected, err)
 				}
 				transactionT["data"] = hex.EncodeToString(data)
 
@@ -417,7 +417,7 @@ func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-cha
 				transactionT["fee"] = 0
 				data, err := json.Marshal(txA)
 				if err != nil {
-					return nil, err
+					return nil, NewRPCError(ErrUnexpected, err)
 				}
 				transactionT["data"] = hex.EncodeToString(data)
 			} else {
@@ -501,6 +501,7 @@ func (self RpcServer) handleAddNode(params interface{}, closeChan <-chan struct{
 				peerIDstr, _ := self.config.ConnMgr.GetPeerIDStr(nodeAddr)
 				_, existed := listen.PeerConns[peerIDstr]
 				if existed {
+					NewRPCError(ErrUnexpected, errors.New("Not exist"))
 				} else {
 					_, existed := listen.PendingPeers[peerIDstr]
 					if existed {
@@ -546,14 +547,14 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 		readonlyKeyStr := keys["ReadonlyKey"].(string)
 		readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
 		if err != nil {
-			return nil, err
+			return nil, NewRPCError(ErrUnexpected, err)
 		}
 
 		// get keyset only contain pub-key by deserializing
 		pubKeyStr := keys["PublicKey"].(string)
 		pubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
 		if err != nil {
-			return nil, err
+			return nil, NewRPCError(ErrUnexpected, err)
 		}
 
 		// create a key set
@@ -564,7 +565,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 
 		txsMap, err := self.config.BlockChain.GetListTxByReadonlyKey(&keySet, common.TxOutCoinType)
 		if err != nil {
-			return nil, err
+			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		listTxs := make([]jsonresult.ListUnspentResultItem, 0)
 		for chainId, txs := range txsMap {
@@ -625,12 +626,12 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 		priKeyStr := keys["PrivateKey"].(string)
 		readonlyKey, err := wallet.Base58CheckDeserialize(priKeyStr)
 		if err != nil {
-			return nil, err
+			return nil, NewRPCError(ErrUnexpected, err)
 		}
 
 		txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&readonlyKey.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
 		if err != nil {
-			return nil, err
+			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		listTxs := make([]jsonresult.ListUnspentResultItem, 0)
 		for chainId, txs := range txsMap {
@@ -672,13 +673,13 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	senderKeyParam := arrayParams[0]
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
 	if err != nil {
-		return nil, nil
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	lastByte := senderKey.KeySet.PublicKey.Apk[len(senderKey.KeySet.PublicKey.Apk)-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
 	if err != nil {
-		return nil, nil
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	// param #2: list receiver
@@ -688,7 +689,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	for pubKeyStr, amount := range receiversParam {
 		receiverPubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
 		if err != nil {
-			return nil, nil
+			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		paymentInfo := &client.PaymentInfo{
 			Amount:         uint64(amount.(float64)),
@@ -775,14 +776,14 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		realFee,
 		chainIdSender)
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	byteArrays, err := json.Marshal(tx)
-	if err == nil {
+	if err != nil {
 		// return hex for a new tx
-		return hex.EncodeToString(byteArrays), nil
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	return nil, err
+	return hex.EncodeToString(byteArrays), nil
 }
 
 /*
@@ -798,18 +799,18 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 	rawTxBytes, err := hex.DecodeString(hexRawTx)
 
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	var tx transaction.Tx
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	hash, txDesc, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
@@ -818,11 +819,14 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 	// broadcast Message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
-	self.config.Server.PushMessageToAll(txMsg)
+	err = self.config.Server.PushMessageToAll(txMsg)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 
 	return tx.Hash(), nil
 }
@@ -833,12 +837,15 @@ handleSendMany - RPC creates transaction and send to network
 func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	hexStrOfTx, err := self.handleCreateTransaction(params, closeChan)
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, hexStrOfTx)
 	txId, err := self.handleSendTransaction(newParam, closeChan)
-	return txId, err
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	return txId, nil
 }
 
 /*
@@ -847,6 +854,9 @@ func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct
 func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	result, err := self.config.BlockChain.GetAllUnitCoinSupplier()
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 	return result, err
 }
 
@@ -901,7 +911,7 @@ func (self RpcServer) handleCreateActionParamsTransaction(
 
 	_, _, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	// broadcast Message
@@ -926,7 +936,7 @@ func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan st
 	for accountName, account := range accounts {
 		txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
 		if err != nil {
-			return nil, err
+			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		amount := uint64(0)
 		for _, txs := range txsMap {
@@ -956,7 +966,7 @@ func (self RpcServer) handleGetAccount(params interface{}, closeChan <-chan stru
 			return account.Name, nil
 		}
 	}
-	return "", nil
+	return nil, nil
 }
 
 /*
@@ -1021,12 +1031,12 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 	passPhrase := arrayParams[2].(string)
 	account, err := self.config.Wallet.ImportAccount(privateKey, accountName, passPhrase)
 	if err != nil {
-		return "", err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	return wallet.KeySerializedData{
 		PublicKey:   account.Key.Base58CheckSerialize(wallet.PubKeyType),
 		ReadonlyKey: account.Key.Base58CheckSerialize(wallet.ReadonlyKeyType),
-	}, err
+	}, nil
 }
 
 ///*
@@ -1083,7 +1093,7 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 		for _, account := range self.config.Wallet.MasterAccount.Child {
 			txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
 			if err != nil {
-				return nil, err
+				return nil, NewRPCError(ErrUnexpected, err)
 			}
 			for _, txs := range txsMap {
 				for _, tx := range txs {
@@ -1102,7 +1112,7 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 				// get balance for accountName in wallet
 				txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
 				if err != nil {
-					return nil, err
+					return nil, NewRPCError(ErrUnexpected, err)
 				}
 				for _, txs := range txsMap {
 					for _, tx := range txs {
@@ -1157,7 +1167,7 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 			// get balance for accountName in wallet
 			txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
 			if err != nil {
-				return nil, err
+				return nil, NewRPCError(ErrUnexpected, err)
 			}
 			for _, txs := range txsMap {
 				for _, tx := range txs {
@@ -1243,11 +1253,14 @@ func (self RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan st
 	// Param #1: hash string of tx(tx id)
 	txId, err := common.Hash{}.NewHashFromStr(params.(string))
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	tx, err := self.config.TxMemPool.GetTx(txId)
-	return tx, err
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	return tx, nil
 }
 
 /*
@@ -1261,7 +1274,7 @@ func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan str
 	chainId := byte(int(arrayParams[1].(float64)))
 	feeRate, err := self.config.FeeEstimator[chainId].EstimateFee(numBlock)
 	if err != nil {
-		return -1, err
+		return -1, NewRPCError(ErrUnexpected, err)
 	}
 	return uint64(feeRate), nil
 }
@@ -1272,19 +1285,19 @@ handleSetTxFee - RPC sets the transaction fee per kilobyte paid more by transact
 func (self RpcServer) handleSetTxFee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	self.config.Wallet.Config.PayTxFee = uint64(params.(float64))
 	err := self.config.Wallet.Save(self.config.Wallet.PassPhrase)
-	return err == nil, err
+	return err == nil, NewRPCError(ErrUnexpected, err)
 }
 
 func (self RpcServer) handleCreateSealerKeySet(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// param #1: private key of sender
 	senderKey, err := wallet.Base58CheckDeserialize(params.(string))
 	if err != nil {
-		return nil, nil
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	sealerKeySet, err := senderKey.KeySet.CreateSealerKeySet()
 	if err != nil {
-		return nil, err
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := make(map[string]string)
 	result["SealerKeySet"] = sealerKeySet.EncodeToString()
