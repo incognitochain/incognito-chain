@@ -19,7 +19,7 @@ import (
 // TxVoting ...
 type TxVoting struct {
 	Tx
-
+	Coin     uint64
 	NodeAddr string
 }
 
