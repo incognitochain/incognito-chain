@@ -389,3 +389,13 @@ func (self *Engine) GetCndList(block *blockchain.Block) (map[string]uint64) {
 	}
 	return candidates
 }
+
+func (self *Engine) IsExistedNodeAddr(nodeAddr string) (bool) {
+	for _, bestState := range self.config.BlockChain.BestState {
+		_, ok := bestState.Candidates[nodeAddr]
+		if ok {
+			return true
+		}
+	}
+	return false
+}
