@@ -386,6 +386,12 @@ func (self *Engine) GetCndList(block *blockchain.Block) (map[string]blockchain.C
 					Timestamp: block.Header.Timestamp,
 					ChainID:   block.Header.ChainID,
 				}
+			} else {
+				candidates[nodeAddr] = blockchain.CndInfo{
+					Value:     cndVal.Value + txV.GetValue(),
+					Timestamp: block.Header.Timestamp,
+					ChainID:   block.Header.ChainID,
+				}
 			}
 		}
 	}

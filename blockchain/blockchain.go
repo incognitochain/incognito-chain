@@ -845,7 +845,11 @@ func (self *BlockChain) GetCndInfo(nodeAddr string) (CndInfo) {
 	for _, bestState := range self.BestState {
 		cndValTmp, ok := bestState.Candidates[nodeAddr]
 		if ok {
-			return cndValTmp
+			cndVal.Value += cndValTmp.Value
+			if cndValTmp.Timestamp > cndVal.Timestamp {
+				cndVal.Timestamp = cndValTmp.Timestamp
+				cndVal.ChainID = cndValTmp.ChainID
+			}
 		}
 	}
 	return cndVal
