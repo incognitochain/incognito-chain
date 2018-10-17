@@ -10,7 +10,7 @@ type DatabaseInterface interface {
 	StoreBlock(interface{}, byte) error
 	FetchBlock(*common.Hash) ([]byte, error)
 	HasBlock(*common.Hash) (bool, error)
-	FetchAllBlocks() ([][]*common.Hash, error)
+	FetchAllBlocks() (map[byte][]*common.Hash, error)
 	FetchChainBlocks(byte) ([]*common.Hash, error)
 	// Block index
 	StoreBlockIndex(*common.Hash, int32, byte) error

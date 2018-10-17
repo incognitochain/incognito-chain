@@ -435,7 +435,7 @@ func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 Get all hash of blocks in chain
 Return hashes array
 */
-func (self *BlockChain) GetAllHashBlocks() ([][]*common.Hash, error) {
+func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 	data, err := self.config.DataBase.FetchAllBlocks()
 	if err != nil {
 		return nil, err

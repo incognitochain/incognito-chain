@@ -285,8 +285,8 @@ func (db *db) GetBlockByIndex(idx int32, chainID byte) (*common.Hash, error) {
 	return h, nil
 }
 
-func (db *db) FetchAllBlocks() ([][]*common.Hash, error) {
-	var keys [][]*common.Hash
+func (db *db) FetchAllBlocks() (map[byte][]*common.Hash, error) {
+	var keys map[byte][]*common.Hash
 	for chainID := byte(0); chainID < blockchain.ChainCount; chainID++ {
 		prefix := append(append(chainIDPrefix, chainID), blockKeyPrefix...)
 		// prefix {c10{b-......}}

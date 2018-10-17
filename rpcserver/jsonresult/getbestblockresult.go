@@ -5,8 +5,9 @@ type GetBestBlockResult struct {
 }
 
 type GetBestBlockItem struct {
-	Height int32  `json:"Height"`
-	Hash   string `json:"Hash"`
+	Height   int32  `json:"Height"`
+	Hash     string `json:"Hash"`
+	TotalTxs uint64 `json:"TotalTxs"`
 }
 
 type GetBestBlockHashResult struct {

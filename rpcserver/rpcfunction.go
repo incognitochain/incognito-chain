@@ -180,8 +180,9 @@ func (self RpcServer) handleGetBestBlock(params interface{}, closeChan <-chan st
 	}
 	for chainID, best := range self.config.BlockChain.BestState {
 		result.BestBlocks[strconv.Itoa(chainID)] = jsonresult.GetBestBlockItem{
-			Height: best.BestBlock.Height,
-			Hash:   best.BestBlockHash.String(),
+			Height:   best.BestBlock.Height,
+			Hash:     best.BestBlockHash.String(),
+			TotalTxs: best.TotalTxns,
 		}
 	}
 	return result, nil
@@ -310,14 +311,16 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 getblockchaininfo RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	allHashBlocks, _ := self.config.BlockChain.GetAllHashBlocks()
 	result := jsonresult.GetBlockChainInfoResult{
-		Chain:  self.config.ChainParams.Name,
-		Blocks: len(allHashBlocks),
+		ChainName:  self.config.ChainParams.Name,
+		BestBlocks: make(map[string]jsonresult.GetBestBlockItem),
 	}
-
-	for _, bestState := range self.config.BlockChain.BestState {
-		result.BestBlockHash = append(result.BestBlockHash, bestState.BestBlockHash.String())
+	for chainID, best := range self.config.BlockChain.BestState {
+		result.BestBlocks[strconv.Itoa(chainID)] = jsonresult.GetBestBlockItem{
+			Height:   best.BestBlock.Height,
+			Hash:     best.BestBlockHash.String(),
+			TotalTxs: best.TotalTxns,
+		}
 	}
 	return result, nil
 }
