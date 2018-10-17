@@ -95,6 +95,11 @@ func (tx *TxVoting) ValidateTransaction() bool {
 	if !tx.Tx.ValidateTransaction() {
 		return false
 	}
+
+	// TODO: check the burnt money is sufficient or not
+
+	// TODO: check whether this node address is currently in candidate list or not
+
 	return true
 }
 

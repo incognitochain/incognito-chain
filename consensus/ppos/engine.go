@@ -13,8 +13,8 @@ import (
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/wire"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
 // PoSEngine only need to start if node runner want to be a validator
@@ -53,7 +53,7 @@ type EngineConfig struct {
 	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server interface {
+	Server          interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -285,9 +285,9 @@ finalizing:
 	//Request for signatures of other validators
 	go func() {
 		//Uncomment this segment to create block with 1 node (validator)
-		/*
-			allSigReceived <- struct{}{}
-		*/
+
+		allSigReceived <- struct{}{}
+
 		reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestBlockSign)
 		reqSigMsg.(*wire.MessageRequestBlockSign).Block = *finalBlock
 		for idx := 0; idx < common.TotalValidators; idx++ {
@@ -367,7 +367,7 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.validatedChainsHeight.Unlock()
 }
 
-func (self *Engine) GetCndList(block *blockchain.Block) (map[string]uint64) {
+func (self *Engine) GetCndList(block *blockchain.Block) map[string]uint64 {
 	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
 	candidates := bestState.Candidates
 	if candidates == nil {
