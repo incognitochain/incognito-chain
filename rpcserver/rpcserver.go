@@ -59,7 +59,6 @@ type RpcServer struct {
 
 	// channel
 	cRequestProcessShutdown chan struct{}
-	cQuit                   chan int
 }
 
 type RpcServerConfig struct {
@@ -168,7 +167,6 @@ func (self RpcServer) Stop() {
 	Logger.log.Info("RPC server shutting down")
 	if self.started != 0 {
 		self.httpServer.Close()
-		close(self.cQuit)
 	}
 	for _, listen := range self.config.Listenters {
 		listen.Close()
