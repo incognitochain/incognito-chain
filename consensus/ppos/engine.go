@@ -327,6 +327,7 @@ finalizing:
 	}
 	finalBlock.ChainLeaderSig = sig
 
+	// hash candidate list and set to block header
 	candidates := self.GetCndList(finalBlock)
 	candidateBytes, _ := json.Marshal(candidates)
 	finalBlock.Header.CandidateHash = common.HashH(candidateBytes)
@@ -367,11 +368,15 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.validatedChainsHeight.Unlock()
 }
 
+<<<<<<< HEAD
 func (self *Engine) GetCndList(block *blockchain.Block) map[string]uint64 {
+=======
+func (self *Engine) GetCndList(block *blockchain.Block) (map[string]blockchain.CndInfo) {
+>>>>>>> c6cff416fd7b72008ff15cc99e9026feea952f27
 	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
 	candidates := bestState.Candidates
 	if candidates == nil {
-		candidates = make(map[string]uint64)
+		candidates = make(map[string]blockchain.CndInfo)
 	}
 	for _, tx := range block.Transactions {
 		if tx.GetType() == common.TxVotingType {
@@ -379,12 +384,24 @@ func (self *Engine) GetCndList(block *blockchain.Block) map[string]uint64 {
 			nodeAddr := txV.NodeAddr
 			cndVal, ok := candidates[nodeAddr]
 			_ = cndVal
-			if ok {
-				candidates[nodeAddr] = cndVal + txV.GetValue()
-			} else {
-				candidates[nodeAddr] = txV.GetValue()
+			if !ok {
+				candidates[nodeAddr] = blockchain.CndInfo{
+					Value:     txV.GetValue(),
+					Timestamp: block.Header.Timestamp,
+					ChainID:   block.Header.ChainID,
+				}
 			}
 		}
 	}
 	return candidates
+}
+
+func (self *Engine) IsExistedNodeAddr(nodeAddr string) (bool) {
+	for _, bestState := range self.config.BlockChain.BestState {
+		_, ok := bestState.Candidates[nodeAddr]
+		if ok {
+			return true
+		}
+	}
+	return false
 }
