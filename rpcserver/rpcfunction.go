@@ -46,6 +46,7 @@ var RpcHandler = map[string]commandHandler{
 	"getrawmempool":                 RpcServer.handleGetRawMempool,
 	"getmempoolentry":               RpcServer.handleMempoolEntry,
 	"estimatefee":                   RpcServer.handleEstimateFee,
+	"getcndlist":                    RpcServer.handleGetCndList,
 
 	//POS
 	"votecandidate": RpcServer.handleVoteCandidate,
@@ -1470,4 +1471,10 @@ func (self RpcServer) handleCreateSealerKeySet(params interface{}, closeChan <-c
 	result["SealerKeySet"] = sealerKeySet.EncodeToString()
 	result["SealerPublicKey"] = base58.Base58Check{}.Encode(sealerKeySet.SpublicKey, byte(0x00))
 	return result, nil
+}
+
+func (self RpcServer) handleGetCndList(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// param #1: private key of sender
+	cndList := self.Config.BlockChain.GetCndList()
+	return cndList, nil
 }
