@@ -175,27 +175,27 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 
 // handleGetBestBlock implements the getbestblock command.
 func (self RpcServer) handleGetBestBlock(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	// All other "get block" commands give either the height, the
-	// hash, or both but require the block SHA.  This gets both for
-	// the best block.
-	chainId := byte(int(params.(float64)))
-	best := self.config.BlockChain.BestState[chainId]
-	result := map[string]interface{}{
-		"hash":   best.BestBlockHash.String(),
-		"height": best.Height,
+	result := jsonresult.GetBestBlockResult{
+		BestBlocks: make(map[string]jsonresult.GetBestBlockItem),
+	}
+	for chainID, best := range self.config.BlockChain.BestState {
+		result.BestBlocks[strconv.Itoa(chainID)] = jsonresult.GetBestBlockItem{
+			Height: best.BestBlock.Height,
+			Hash:   best.BestBlockHash.String(),
+		}
 	}
 	return result, nil
 }
 
 // handleGetBestBlock implements the getbestblock command.
 func (self RpcServer) handleGetBestBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	// All other "get block" commands give either the height, the
-	// hash, or both but require the block SHA.  This gets both for
-	// the best block.
-	chainId := byte(int(params.(float64)))
-	best := self.config.BlockChain.BestState[chainId]
-	return best.BestBlockHash.String(), nil
-	return "temporary unavailable", nil
+	result := jsonresult.GetBestBlockHashResult{
+		BestBlockHashes: make(map[string]string),
+	}
+	for chainID, best := range self.config.BlockChain.BestState {
+		result.BestBlockHashes[strconv.Itoa(chainID)] = best.BestBlockHash.String()
+	}
+	return result, nil
 }
 
 /*
