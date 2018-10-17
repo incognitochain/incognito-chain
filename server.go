@@ -437,7 +437,12 @@ func (self Server) Start() {
 	// if cfg.Generate == true && (len(cfg.MiningAddrs) > 0) {
 	// 	self.Miner.Start()
 	// }
-	self.consensusEngine.Start()
+	err := self.consensusEngine.Start()
+	if err != nil {
+		Logger.log.Error(err)
+		go self.Stop()
+		return
+	}
 	if cfg.Generate == true && (len(cfg.SealerSpendingKey) > 0 || len(cfg.SealerKeySet) > 0) {
 		sealerKeySet, err := cfg.GetSealerKeySet()
 		if err != nil {

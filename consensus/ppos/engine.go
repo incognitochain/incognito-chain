@@ -3,7 +3,6 @@ package ppos
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -104,57 +103,68 @@ func (self *Engine) Start() error {
 	copy(self.committee.CurrentCommittee, self.config.ChainParams.GenesisBlock.Header.Committee)
 	copy(self.committee.UpcomingCommittee, self.committee.CurrentCommittee)
 
-	validatedChainsHeight := make([]int, common.TotalValidators)
-	rebuildChainDep := true
 	if _, ok := self.config.FeeEstimator[0]; !ok {
+		// if happen when NoRebuildChainDep = false
+		validatedChainsHeight := make([]int, common.TotalValidators)
 		self.config.FeeEstimator = make(map[byte]*mempool.FeeEstimator)
-	} else {
-		rebuildChainDep = false
-	}
-
-	for chainID := byte(0); chainID < common.TotalValidators; chainID++ {
-		//Don't validate genesis block (blockHeight = 1)
-		validatedChainsHeight[chainID] = 1
-		if rebuildChainDep {
+		var wg sync.WaitGroup
+		errCh := make(chan error)
+		for chainID := byte(0); chainID < common.TotalValidators; chainID++ {
+			//Don't validate genesis block (blockHeight = 1)
+			validatedChainsHeight[chainID] = 1
 			self.config.FeeEstimator[chainID] = mempool.NewFeeEstimator(
 				mempool.DefaultEstimateFeeMaxRollback,
 				mempool.DefaultEstimateFeeMinRegisteredBlocks)
-		}
-		for blockHeight := 2; blockHeight <= self.knownChainsHeight.Heights[chainID]; blockHeight++ {
-			block, err := self.config.BlockChain.GetBlockByBlockHeight(int32(blockHeight), byte(chainID))
-			if err != nil {
-				Logger.log.Error(err)
-				break
-			}
-			//Comment validateBlockSanity segment to create block with only 1 node (validator)
-			err = self.validateBlockSanity(block)
-			if err != nil {
-				Logger.log.Error(err)
-				break
-			}
-			if rebuildChainDep {
-				err = self.config.BlockChain.CreateTxViewPoint(block)
-				if err != nil {
-					Logger.log.Error(err)
-					return err
+			go func(chainID byte) {
+				wg.Add(1)
+				var err error
+				defer func() {
+					wg.Done()
+					if err != nil {
+						errCh <- err
+					}
+				}()
+				for blockHeight := 2; blockHeight <= self.knownChainsHeight.Heights[chainID]; blockHeight++ {
+					var block *blockchain.Block
+					block, err = self.config.BlockChain.GetBlockByBlockHeight(int32(blockHeight), byte(chainID))
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					//Comment validateBlockSanity segment to create block with only 1 node (validator)
+					err = self.validateBlockSanity(block)
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					err = self.config.BlockChain.CreateTxViewPoint(block)
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					err = self.config.FeeEstimator[block.Header.ChainID].RegisterBlock(block)
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					self.validatedChainsHeight.Lock()
+					self.validatedChainsHeight.Heights[chainID] = blockHeight
+					self.validatedChainsHeight.Unlock()
+					self.committee.UpdateCommittee(block.ChainLeader, block.Header.BlockCommitteeSigs)
 				}
-				err = self.config.FeeEstimator[block.Header.ChainID].RegisterBlock(block)
-				if err != nil {
-					Logger.log.Error(err)
-					return err
-				}
-			}
-			self.committee.UpdateCommittee(block.ChainLeader, block.Header.BlockCommitteeSigs)
-			validatedChainsHeight[chainID] = blockHeight
+			}(chainID)
 		}
+		time.Sleep(1000 * time.Millisecond)
+		wg.Wait()
+		select {
+		case err := <-errCh:
+			return err
+		default:
+			break
+		}
+	} else {
+		copy(self.validatedChainsHeight.Heights, self.knownChainsHeight.Heights)
 	}
-
-	if !common.IntArrayEquals(validatedChainsHeight, self.knownChainsHeight.Heights) {
-		fmt.Println(validatedChainsHeight)
-		fmt.Println(self.knownChainsHeight.Heights)
-		Logger.log.Error("Something wrong in blockchain database!")
-	}
-	copy(self.validatedChainsHeight.Heights, validatedChainsHeight)
 
 	self.started = true
 	self.cQuit = make(chan struct{})

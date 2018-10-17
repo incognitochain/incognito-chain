@@ -118,7 +118,7 @@ func (self *Engine) IsEnoughData(block *blockchain.Block) error {
 			timer := time.NewTimer(common.MaxSyncChainTime * time.Second)
 			<-timer.C
 			for i := 0; i < common.TotalValidators; i++ {
-				if int(self.config.BlockChain.BestState[i].Height) < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
+				if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
 					return errChainNotFullySynced
 				}
 			}

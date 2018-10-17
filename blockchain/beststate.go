@@ -1,8 +1,6 @@
 package blockchain
 
 import (
-	"sync"
-
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 )
@@ -29,7 +27,6 @@ type BestState struct {
 	NumTxns   uint64 // The number of txns in the block.
 	TotalTxns uint64 // The total number of txns in the chain.
 	// MedianTime time.Time // Median time as per CalcPastMedianTime.
-	sync.Mutex
 }
 
 /*
