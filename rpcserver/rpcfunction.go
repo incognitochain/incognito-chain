@@ -203,7 +203,7 @@ getblockcount RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	paramsT, ok := params.([]interface{})
-	if ok && len(paramsT) >= 3 {
+	if ok && len(paramsT) >= 2 {
 		hashString := paramsT[0].(string)
 		hash, errH := common.Hash{}.NewHashFromStr(hashString)
 		if errH != nil {
@@ -217,7 +217,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 
 		verbosity := paramsT[1].(string)
 
-		chainId := byte(int(paramsT[2].(float64)))
+		chainId := block.Header.ChainID
 
 		if verbosity == "0" {
 			data, err := json.Marshal(block)
