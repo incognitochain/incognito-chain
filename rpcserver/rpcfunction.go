@@ -28,28 +28,35 @@ type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, 
 
 // Commands valid for normal user
 var RpcHandler = map[string]commandHandler{
-	"getnetworkinfo":                RpcServer.handleGetNetWorkInfo,
-	"getbestblock":                  RpcServer.handleGetBestBlock,
-	"getbestblockhash":              RpcServer.handleGetBestBlockHash,
-	"getblock":                      RpcServer.handleGetBlock,
-	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
-	"getblockcount":                 RpcServer.handleGetBlockCount,
-	"getblockhash":                  RpcServer.handleGetBlockHash,
-	"getblocktemplate":              RpcServer.handleGetBlockTemplate,
+	// node
+	"getnetworkinfo":     RpcServer.handleGetNetWorkInfo,
+	"getconnectioncount": RpcServer.handleGetConnectionCount,
+	"getallpeers":        RpcServer.handleGetAllPeers,
+	"getrawmempool":      RpcServer.handleGetRawMempool,
+	"getmempoolentry":    RpcServer.handleMempoolEntry,
+	"estimatefee":        RpcServer.handleEstimateFee,
+
+	// block
+	"getbestblock":      RpcServer.handleGetBestBlock,
+	"getbestblockhash":  RpcServer.handleGetBestBlockHash,
+	"getblock":          RpcServer.handleGetBlock,
+	"getblockchaininfo": RpcServer.handleGetBlockChainInfo,
+	"getblockcount":     RpcServer.handleGetBlockCount,
+	"getblockhash":      RpcServer.handleGetBlockHash,
+	/*"getblocktemplate":              RpcServer.handleGetBlockTemplate,*/
+
+	// transaction
 	"listtransactions":              RpcServer.handleListTransactions,
 	"createtransaction":             RpcServer.handleCreateTransaction,
 	"sendtransaction":               RpcServer.handleSendTransaction,
 	"sendmany":                      RpcServer.handleSendMany,
 	"getnumberofcoinsandbonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createactionparamstransaction": RpcServer.handleCreateActionParamsTransaction,
-	"getconnectioncount":            RpcServer.handleGetConnectionCount,
-	"getgenerate":                   RpcServer.handleGetGenerate,
-	"getmempoolinfo":                RpcServer.handleGetMempoolInfo,
-	"getmininginfo":                 RpcServer.handleGetMiningInfo,
-	"getrawmempool":                 RpcServer.handleGetRawMempool,
-	"getmempoolentry":               RpcServer.handleMempoolEntry,
-	"estimatefee":                   RpcServer.handleEstimateFee,
-	"getallpeers":                   RpcServer.handleGetAllPeers,
+
+	"getgenerate":    RpcServer.handleGetGenerate,
+	"getmempoolinfo": RpcServer.handleGetMempoolInfo,
+	"getmininginfo":  RpcServer.handleGetMiningInfo,
+
 
 	//POS
 	"getheader": RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -175,27 +182,28 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 
 // handleGetBestBlock implements the getbestblock command.
 func (self RpcServer) handleGetBestBlock(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	// All other "get block" commands give either the height, the
-	// hash, or both but require the block SHA.  This gets both for
-	// the best block.
-	chainId := byte(int(params.(float64)))
-	best := self.config.BlockChain.BestState[chainId]
-	result := map[string]interface{}{
-		"hash":   best.BestBlockHash.String(),
-		"height": best.Height,
+	result := jsonresult.GetBestBlockResult{
+		BestBlocks: make(map[string]jsonresult.GetBestBlockItem),
+	}
+	for chainID, best := range self.config.BlockChain.BestState {
+		result.BestBlocks[strconv.Itoa(chainID)] = jsonresult.GetBestBlockItem{
+			Height:   best.BestBlock.Height,
+			Hash:     best.BestBlockHash.String(),
+			TotalTxs: best.TotalTxns,
+		}
 	}
 	return result, nil
 }
 
 // handleGetBestBlock implements the getbestblock command.
 func (self RpcServer) handleGetBestBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	// All other "get block" commands give either the height, the
-	// hash, or both but require the block SHA.  This gets both for
-	// the best block.
-	chainId := byte(int(params.(float64)))
-	best := self.config.BlockChain.BestState[chainId]
-	return best.BestBlockHash.String(), nil
-	return "temporary unavailable", nil
+	result := jsonresult.GetBestBlockHashResult{
+		BestBlockHashes: make(map[string]string),
+	}
+	for chainID, best := range self.config.BlockChain.BestState {
+		result.BestBlockHashes[strconv.Itoa(chainID)] = best.BestBlockHash.String()
+	}
+	return result, nil
 }
 
 /*
@@ -203,7 +211,7 @@ getblockcount RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	paramsT, ok := params.([]interface{})
-	if ok && len(paramsT) >= 3 {
+	if ok && len(paramsT) >= 2 {
 		hashString := paramsT[0].(string)
 		hash, errH := common.Hash{}.NewHashFromStr(hashString)
 		if errH != nil {
@@ -213,18 +221,18 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 		if errD != nil {
 			return nil, NewRPCError(ErrUnexpected, errD)
 		}
-		result := map[string]interface{}{}
+		result := jsonresult.GetBlockResult{}
 
 		verbosity := paramsT[1].(string)
 
-		chainId := byte(int(paramsT[2].(float64)))
+		chainId := block.Header.ChainID
 
 		if verbosity == "0" {
 			data, err := json.Marshal(block)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
-			result["data"] = hex.EncodeToString(data)
+			result.Data = hex.EncodeToString(data)
 		} else if verbosity == "1" {
 			best := self.config.BlockChain.BestState[chainId]
 
@@ -239,26 +247,18 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 				nextHashString = nextHash.Hash().String()
 			}
 
-			result["hash"] = block.Hash().String()
-			result["confirmations"] = int64(1 + best.Height - blockHeight)
-			result["size"] = -1
-			result["strippedsize"] = -1
-			result["weight"] = -1
-			result["height"] = block.Height
-			result["version"] = block.Header.Version
-			result["versionHex"] = fmt.Sprintf("%x", block.Header.Version)
-			result["merkleroot"] = block.Header.MerkleRoot.String()
-			result["time"] = block.Header.Timestamp
-			result["mediantime"] = 0
-			// result["nonce"] = block.Header.Nonce
-			result["bits"] = ""
-			// result["difficulty"] = block.Header.Difficulty
-			result["chainwork"] = block.Header.ChainID
-			result["previousblockhash"] = block.Header.PrevBlockHash.String()
-			result["nextblockhash"] = nextHashString
-			result["tx"] = []string{}
+			result.Hash = block.Hash().String()
+			result.Confirmations = int64(1 + best.Height - blockHeight)
+			result.Height = block.Height
+			result.Version = block.Header.Version
+			result.MerkleRoot = block.Header.MerkleRoot.String()
+			result.Time = block.Header.Timestamp
+			result.ChainID = block.Header.ChainID
+			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
+			result.NextBlockHash = nextHashString
+			result.TxHashes = []string{}
 			for _, tx := range block.Transactions {
-				result["tx"] = append(result["tx"].([]string), tx.Hash().String())
+				result.TxHashes = append(result.TxHashes, tx.Hash().String())
 			}
 		} else if verbosity == "2" {
 			best := self.config.BlockChain.BestState[chainId]
@@ -274,56 +274,38 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 				nextHashString = nextHash.Hash().String()
 			}
 
-			result["hash"] = block.Hash().String()
-			result["confirmations"] = int64(1 + best.Height - blockHeight)
-			result["size"] = -1
-			result["strippedsize"] = -1
-			result["weight"] = -1
-			result["height"] = block.Height
-			result["version"] = block.Header.Version
-			result["versionHex"] = fmt.Sprintf("%x", block.Header.Version)
-			result["merkleroot"] = block.Header.MerkleRoot.String()
-			result["time"] = block.Header.Timestamp
-			result["mediantime"] = 0
-			result["bits"] = ""
-			result["chainwork"] = block.Header.ChainID
-			result["previousblockhash"] = block.Header.PrevBlockHash.String()
-			result["nextblockhash"] = nextHashString
-			result["tx"] = []map[string]interface{}{}
+			result.Hash = block.Hash().String()
+			result.Confirmations = int64(1 + best.Height - blockHeight)
+			result.Height = block.Height
+			result.Version = block.Header.Version
+			result.MerkleRoot = block.Header.MerkleRoot.String()
+			result.Time = block.Header.Timestamp
+			result.ChainID = block.Header.ChainID
+			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
+			result.NextBlockHash = nextHashString
+			result.Txs = make([]jsonresult.GetBlockTxResult, 0)
 			for _, tx := range block.Transactions {
-				transactionT := map[string]interface{}{}
+				transactionT := jsonresult.GetBlockTxResult{}
 
-				transactionT["version"] = block.Header.Version
-				transactionT["size"] = -1
-				transactionT["vsize"] = -1
-				transactionT["hex"] = nil
-				transactionT["txid"] = tx.Hash().String()
-				transactionT["hash"] = tx.Hash().String()
-
+				transactionT.Hash = tx.Hash().String()
 				if tx.GetType() == common.TxNormalType {
 					txN := tx.(*transaction.Tx)
 					data, err := json.Marshal(txN)
 					if err != nil {
 						return nil, err
 					}
-					transactionT["hex"] = hex.EncodeToString(data)
-					transactionT["locktime"] = txN.LockTime
+					transactionT.HexData = hex.EncodeToString(data)
+					transactionT.Locktime = txN.LockTime
 				} else if tx.GetType() == common.TxActionParamsType {
 					txA := tx.(*transaction.ActionParamTx)
 					data, err := json.Marshal(txA)
 					if err != nil {
 						return nil, NewRPCError(ErrUnexpected, err)
 					}
-					transactionT["hex"] = hex.EncodeToString(data)
-					transactionT["locktime"] = txA.LockTime
+					transactionT.HexData = hex.EncodeToString(data)
+					transactionT.Locktime = txA.LockTime
 				}
-
-				transactionT["blockhash"] = block.Hash().String()
-				transactionT["confirmations"] = 0
-				transactionT["time"] = block.Header.Timestamp
-				transactionT["blocktime"] = block.Header.Timestamp
-
-				result["tx"] = append(result["tx"].([]map[string]interface{}), transactionT)
+				result.Txs = append(result.Txs, transactionT)
 			}
 		}
 
@@ -336,14 +318,16 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 getblockchaininfo RPC return information fo blockchain node
 */
 func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	allHashBlocks, _ := self.config.BlockChain.GetAllHashBlocks()
 	result := jsonresult.GetBlockChainInfoResult{
-		Chain:  self.config.ChainParams.Name,
-		Blocks: len(allHashBlocks),
+		ChainName:  self.config.ChainParams.Name,
+		BestBlocks: make(map[string]jsonresult.GetBestBlockItem),
 	}
-
-	for _, bestState := range self.config.BlockChain.BestState {
-		result.BestBlockHash = append(result.BestBlockHash, bestState.BestBlockHash.String())
+	for chainID, best := range self.config.BlockChain.BestState {
+		result.BestBlocks[strconv.Itoa(chainID)] = jsonresult.GetBestBlockItem{
+			Height:   best.BestBlock.Height,
+			Hash:     best.BestBlockHash.String(),
+			TotalTxs: best.TotalTxns,
+		}
 	}
 	return result, nil
 }
@@ -376,7 +360,7 @@ func (self RpcServer) handleGetBlockHash(params interface{}, closeChan <-chan st
 /*
 getblocktemplate RPC return information fo blockchain node
 */
-func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+/*func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// Param #1: —what chain id
 	chainId := byte(int(params.(float64)))
 	if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState[chainId].BestBlock != nil {
@@ -429,7 +413,7 @@ func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-cha
 		return result, nil
 	}
 	return nil, NewRPCError(ErrUnexpected, errors.New("Wrong data"))
-}
+}*/
 
 /*
 getaddednodeinfo RPC return information fo blockchain node
