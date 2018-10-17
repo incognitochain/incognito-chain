@@ -816,18 +816,37 @@ func (self *BlockChain) GetCndList() ([]string) {
 		}
 	}
 	sort.Slice(cndList, func(i, j int) bool {
-		return self.GetCndNodeAmount(cndList[i]) > self.GetCndNodeAmount(cndList[j])
+		cndInfoi := self.GetCndInfo(cndList[i])
+		cndInfoj := self.GetCndInfo(cndList[j])
+		if cndInfoi.Value == cndInfoj.Value {
+			if cndInfoi.Timestamp < cndInfoj.Timestamp {
+				return true
+			} else if cndInfoi.Timestamp > cndInfoj.Timestamp {
+				return false
+			} else {
+				if cndInfoi.ChainID <= cndInfoj.ChainID {
+					return true
+				} else if cndInfoi.ChainID < cndInfoj.ChainID {
+					return false
+				}
+			}
+		} else if cndInfoi.Value > cndInfoj.Value {
+			return true
+		} else {
+			return false
+		}
+		return false
 	})
 	return cndList
 }
 
-func (self *BlockChain) GetCndNodeAmount(nodeAddr string) (uint64) {
-	var amount uint64
+func (self *BlockChain) GetCndInfo(nodeAddr string) (CndInfo) {
+	var cndVal CndInfo
 	for _, bestState := range self.BestState {
-		cndVal, ok := bestState.Candidates[nodeAddr]
+		cndValTmp, ok := bestState.Candidates[nodeAddr]
 		if ok {
-			amount += cndVal
+			return cndValTmp
 		}
 	}
-	return amount
+	return cndVal
 }

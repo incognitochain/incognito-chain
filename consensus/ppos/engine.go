@@ -368,11 +368,11 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.validatedChainsHeight.Unlock()
 }
 
-func (self *Engine) GetCndList(block *blockchain.Block) (map[string]uint64) {
+func (self *Engine) GetCndList(block *blockchain.Block) (map[string]blockchain.CndInfo) {
 	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
 	candidates := bestState.Candidates
 	if candidates == nil {
-		candidates = make(map[string]uint64)
+		candidates = make(map[string]blockchain.CndInfo)
 	}
 	for _, tx := range block.Transactions {
 		if tx.GetType() == common.TxVotingType {
@@ -380,10 +380,12 @@ func (self *Engine) GetCndList(block *blockchain.Block) (map[string]uint64) {
 			nodeAddr := txV.NodeAddr
 			cndVal, ok := candidates[nodeAddr]
 			_ = cndVal
-			if ok {
-				candidates[nodeAddr] = cndVal + txV.GetValue()
-			} else {
-				candidates[nodeAddr] = txV.GetValue()
+			if !ok {
+				candidates[nodeAddr] = blockchain.CndInfo{
+					Value:     txV.GetValue(),
+					Timestamp: block.Header.Timestamp,
+					ChainID:   block.Header.ChainID,
+				}
 			}
 		}
 	}

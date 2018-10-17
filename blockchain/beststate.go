@@ -31,7 +31,7 @@ type BestState struct {
 	// MedianTime time.Time // Median time as per CalcPastMedianTime.
 	sync.Mutex
 
-	Candidates map[string]uint64
+	Candidates map[string]CndInfo
 }
 
 /*
@@ -49,7 +49,7 @@ func (self *BestState) Init(block *Block, tree *client.IncMerkleTree) {
 	self.NumTxns = uint64(len(block.Transactions))
 	self.Height = block.Height
 	if self.Candidates == nil {
-		self.Candidates = make(map[string]uint64)
+		self.Candidates = make(map[string]CndInfo)
 	}
 }
 
@@ -68,6 +68,6 @@ func (self *BestState) Update(block *Block) {
 	self.NumTxns = uint64(len(block.Transactions))
 	self.Height = block.Height
 	if self.Candidates == nil {
-		self.Candidates = make(map[string]uint64)
+		self.Candidates = make(map[string]CndInfo)
 	}
 }
