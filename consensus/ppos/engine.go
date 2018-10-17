@@ -368,11 +368,7 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.validatedChainsHeight.Unlock()
 }
 
-<<<<<<< HEAD
-func (self *Engine) GetCndList(block *blockchain.Block) map[string]uint64 {
-=======
 func (self *Engine) GetCndList(block *blockchain.Block) (map[string]blockchain.CndInfo) {
->>>>>>> c6cff416fd7b72008ff15cc99e9026feea952f27
 	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
 	candidates := bestState.Candidates
 	if candidates == nil {
