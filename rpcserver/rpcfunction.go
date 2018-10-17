@@ -28,28 +28,35 @@ type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, 
 
 // Commands valid for normal user
 var RpcHandler = map[string]commandHandler{
-	"getnetworkinfo":                RpcServer.handleGetNetWorkInfo,
-	"getbestblock":                  RpcServer.handleGetBestBlock,
-	"getbestblockhash":              RpcServer.handleGetBestBlockHash,
-	"getblock":                      RpcServer.handleGetBlock,
-	"getblockchaininfo":             RpcServer.handleGetBlockChainInfo,
-	"getblockcount":                 RpcServer.handleGetBlockCount,
-	"getblockhash":                  RpcServer.handleGetBlockHash,
-	"getblocktemplate":              RpcServer.handleGetBlockTemplate,
+	// node
+	"getnetworkinfo":     RpcServer.handleGetNetWorkInfo,
+	"getconnectioncount": RpcServer.handleGetConnectionCount,
+	"getallpeers":        RpcServer.handleGetAllPeers,
+	"getrawmempool":      RpcServer.handleGetRawMempool,
+	"getmempoolentry":    RpcServer.handleMempoolEntry,
+	"estimatefee":        RpcServer.handleEstimateFee,
+
+	// block
+	"getbestblock":      RpcServer.handleGetBestBlock,
+	"getbestblockhash":  RpcServer.handleGetBestBlockHash,
+	"getblock":          RpcServer.handleGetBlock,
+	"getblockchaininfo": RpcServer.handleGetBlockChainInfo,
+	"getblockcount":     RpcServer.handleGetBlockCount,
+	"getblockhash":      RpcServer.handleGetBlockHash,
+	/*"getblocktemplate":              RpcServer.handleGetBlockTemplate,*/
+
+	// transaction
 	"listtransactions":              RpcServer.handleListTransactions,
 	"createtransaction":             RpcServer.handleCreateTransaction,
 	"sendtransaction":               RpcServer.handleSendTransaction,
 	"sendmany":                      RpcServer.handleSendMany,
 	"getnumberofcoinsandbonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createactionparamstransaction": RpcServer.handleCreateActionParamsTransaction,
-	"getconnectioncount":            RpcServer.handleGetConnectionCount,
-	"getgenerate":                   RpcServer.handleGetGenerate,
-	"getmempoolinfo":                RpcServer.handleGetMempoolInfo,
-	"getmininginfo":                 RpcServer.handleGetMiningInfo,
-	"getrawmempool":                 RpcServer.handleGetRawMempool,
-	"getmempoolentry":               RpcServer.handleMempoolEntry,
-	"estimatefee":                   RpcServer.handleEstimateFee,
-	"getallpeers":                   RpcServer.handleGetAllPeers,
+
+	"getgenerate":    RpcServer.handleGetGenerate,
+	"getmempoolinfo": RpcServer.handleGetMempoolInfo,
+	"getmininginfo":  RpcServer.handleGetMiningInfo,
+
 
 	//POS
 	"getheader": RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -353,7 +360,7 @@ func (self RpcServer) handleGetBlockHash(params interface{}, closeChan <-chan st
 /*
 getblocktemplate RPC return information fo blockchain node
 */
-func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+/*func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// Param #1: —what chain id
 	chainId := byte(int(params.(float64)))
 	if self.config.BlockChain.BestState != nil && self.config.BlockChain.BestState[chainId].BestBlock != nil {
@@ -406,7 +413,7 @@ func (self RpcServer) handleGetBlockTemplate(params interface{}, closeChan <-cha
 		return result, nil
 	}
 	return nil, NewRPCError(ErrUnexpected, errors.New("Wrong data"))
-}
+}*/
 
 /*
 getaddednodeinfo RPC return information fo blockchain node
