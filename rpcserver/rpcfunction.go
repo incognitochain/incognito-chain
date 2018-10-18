@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"strconv"
 	"time"
-	"net"
-	"github.com/ninjadotorg/cash-prototype/wire"
+
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/cashec"
 	"github.com/ninjadotorg/cash-prototype/common"
@@ -18,6 +18,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonresult"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
+	"github.com/ninjadotorg/cash-prototype/wire"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -55,10 +56,8 @@ var RpcHandler = map[string]commandHandler{
 	"getmempoolinfo": RpcServer.handleGetMempoolInfo,
 	"getmininginfo":  RpcServer.handleGetMiningInfo,
 
-
 	//POS
-	"votecandidate": RpcServer.handleVoteCandidate,
-	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
+	"getheader": RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 }
 
 // Commands that are available to a limited user
@@ -125,11 +124,6 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 	}
 
 	return result, nil
-}
-
-func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-
-	return "", nil
 }
 
 /*
@@ -518,11 +512,11 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 
 	// get params
 	paramsArray := common.InterfaceSlice(params)
-	min := int(paramsArray[0].(float64))
-	max := int(paramsArray[1].(float64))
-	_ = min
-	_ = max
-	listKeyParams := common.InterfaceSlice(paramsArray[2])
+	assetType := paramsArray[0].(string)
+	if ok, err := common.SliceExists(common.ListAsset, assetType); !ok || err != nil {
+		return nil, NewRPCError(ErrUnexpected, errors.New(fmt.Sprintf("Asset is not in list: ", common.ListAsset)))
+	}
+	listKeyParams := common.InterfaceSlice(paramsArray[1])
 	for _, keyParam := range listKeyParams {
 		keys := keyParam.(map[string]interface{})
 
@@ -546,7 +540,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 			PublicKey:   pubKey.KeySet.PublicKey,
 		}
 
-		txsMap, err := self.config.BlockChain.GetListTxByReadonlyKey(&keySet, common.TxOutCoinType)
+		txsMap, err := self.config.BlockChain.GetListTxByReadonlyKey(&keySet, assetType)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -612,7 +606,7 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 
-		txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&readonlyKey.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
+		txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&readonlyKey.KeySet.PrivateKey, common.AssetTypeCoin, transaction.NoSort, false)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -685,7 +679,7 @@ func (self RpcServer) handleCreateRegistration(params interface{}, closeChan <-c
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, common.TxOutCoinType, transaction.SortByAmount, false)
+	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, common.AssetTypeCoin, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
@@ -741,9 +735,9 @@ func (self RpcServer) handleCreateRegistration(params interface{}, closeChan <-c
 	for chainId, _ := range candidateTxsMap {
 		merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
 		// get tx view point
-		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers(common.TxOutCoinType)
-		commitmentsDb[chainId] = txViewPoint.ListCommitments(common.TxOutCoinType)
+		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainId)
+		nullifiersDb[chainId] = txViewPoint.ListNullifiers(common.AssetTypeCoin)
+		commitmentsDb[chainId] = txViewPoint.ListCommitments(common.AssetTypeCoin)
 	}
 
 	fmt.Println("Create voting Tx ...")
@@ -866,7 +860,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, common.TxOutCoinType, transaction.SortByAmount, false)
+	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, common.AssetTypeCoin, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
@@ -922,9 +916,9 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	for chainId, _ := range candidateTxsMap {
 		merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
 		// get tx view point
-		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers(common.TxOutCoinType)
-		commitmentsDb[chainId] = txViewPoint.ListCommitments(common.TxOutCoinType)
+		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainId)
+		nullifiersDb[chainId] = txViewPoint.ListNullifiers(common.AssetTypeCoin)
+		commitmentsDb[chainId] = txViewPoint.ListCommitments(common.AssetTypeCoin)
 	}
 
 	tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos,
@@ -942,7 +936,11 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		// return hex for a new tx
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	return hex.EncodeToString(byteArrays), nil
+	hexData := hex.EncodeToString(byteArrays)
+	result := jsonresult.CreateTransactionResult{
+		HexData: hexData,
+	}
+	return result, nil
 }
 
 /*
@@ -987,7 +985,11 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	return tx.Hash(), nil
+	txID := tx.Hash().String()
+	result := jsonresult.CreateTransactionResult{
+		TxID: txID,
+	}
+	return result, nil
 }
 
 /*
@@ -1000,11 +1002,14 @@ func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, hexStrOfTx)
-	txId, err := self.handleSendTransaction(newParam, closeChan)
+	sendResult, err := self.handleSendTransaction(newParam, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	return txId, nil
+	result := jsonresult.CreateTransactionResult{
+		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
+	}
+	return result, nil
 }
 
 /*
@@ -1090,7 +1095,7 @@ func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan st
 	}
 	accounts := self.config.Wallet.ListAccounts()
 	for accountName, account := range accounts {
-		txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
+		txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.AssetTypeCoin, transaction.NoSort, false)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -1179,22 +1184,18 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 
 /*
 handleGetAllPeers - return all peers which this node connected
- */
+*/
 func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
-	result := make(map[string]interface{})
-
+	result := jsonresult.GetAllPeersResult{}
 	peersMap := []string{}
-
 	peers := self.config.AddrMgr.AddressCache()
 	for _, peer := range peers {
 		for _, peerConn := range peer.PeerConns {
 			peersMap = append(peersMap, peerConn.RemoteRawAddress)
 		}
 	}
-
-	result["peers"] = peersMap
-
+	result.Peers = peersMap
 	return result, nil
 }
 
@@ -1231,7 +1232,7 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 	if accountName == "*" {
 		// get balance for all accounts in wallet
 		for _, account := range self.config.Wallet.MasterAccount.Child {
-			txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
+			txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.AssetTypeCoin, transaction.NoSort, false)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
@@ -1250,7 +1251,7 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 		for _, account := range self.config.Wallet.MasterAccount.Child {
 			if account.Name == accountName {
 				// get balance for accountName in wallet
-				txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
+				txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.AssetTypeCoin, transaction.NoSort, false)
 				if err != nil {
 					return nil, NewRPCError(ErrUnexpected, err)
 				}
@@ -1305,7 +1306,7 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 	for _, account := range self.config.Wallet.MasterAccount.Child {
 		if account.Name == accountName {
 			// get balance for accountName in wallet
-			txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.TxOutCoinType, transaction.NoSort, false)
+			txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.AssetTypeCoin, transaction.NoSort, false)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
@@ -1382,8 +1383,10 @@ handleGetRawMempool - RPC returns all transaction ids in memory pool as a json a
 Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */
 func (self RpcServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	txIds := self.config.TxMemPool.ListTxs()
-	return txIds, nil
+	result := jsonresult.GetRawMempoolResult{
+		TxHashes: self.config.TxMemPool.ListTxs(),
+	}
+	return result, nil
 }
 
 /*
@@ -1391,16 +1394,17 @@ handleMempoolEntry - RPC fetch a specific transaction from the mempool
 */
 func (self RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// Param #1: hash string of tx(tx id)
-	txId, err := common.Hash{}.NewHashFromStr(params.(string))
+	txID, err := common.Hash{}.NewHashFromStr(params.(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	tx, err := self.config.TxMemPool.GetTx(txId)
+	result := jsonresult.GetMempoolEntryResult{}
+	result.Tx, err = self.config.TxMemPool.GetTx(txID)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	return tx, nil
+	return result, nil
 }
 
 /*
@@ -1410,13 +1414,17 @@ func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan str
 	// Param #1: —how many blocks the transaction may wait before being included
 	arrayParams := common.InterfaceSlice(params)
 	numBlock := uint32(arrayParams[0].(float64))
-	// Param #2: —what chain id
-	chainId := byte(int(arrayParams[1].(float64)))
-	feeRate, err := self.config.FeeEstimator[chainId].EstimateFee(numBlock)
-	if err != nil {
-		return -1, NewRPCError(ErrUnexpected, err)
+	result := jsonresult.EstimateFeeResult{
+		FeeRate: make(map[string]uint64),
 	}
-	return uint64(feeRate), nil
+	for chainID, feeEstimator := range self.config.FeeEstimator {
+		feeRate, err := feeEstimator.EstimateFee(numBlock)
+		result.FeeRate[strconv.Itoa(int(chainID))] = uint64(feeRate)
+		if err != nil {
+			return -1, NewRPCError(ErrUnexpected, err)
+		}
+	}
+	return result, nil
 }
 
 /*

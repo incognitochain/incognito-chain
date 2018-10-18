@@ -296,9 +296,9 @@ Uses an existing database to update the set of used tx by saving list nullifier 
 this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
-	for typeJoinSplitDesc, item := range view.listNullifiers {
+	for coinType, item := range view.listNullifiers {
 		for _, item1 := range item {
-			err := self.config.DataBase.StoreNullifiers(item1, typeJoinSplitDesc, view.chainId)
+			err := self.config.DataBase.StoreNullifiers(item1, coinType, view.chainId)
 			if err != nil {
 				return err
 			}
@@ -312,9 +312,9 @@ Uses an existing database to update the set of not used tx by saving list commit
 this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
-	for typeJoinSplitDesc, item := range view.listCommitments {
+	for coinType, item := range view.listCommitments {
 		for _, item1 := range item {
-			err := self.config.DataBase.StoreCommitments(item1, typeJoinSplitDesc, view.chainId)
+			err := self.config.DataBase.StoreCommitments(item1, coinType, view.chainId)
 			if err != nil {
 				return err
 			}
@@ -327,9 +327,9 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
 */
-func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, typeJoinSplitDesc string, chainId byte) error {
+func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, coinType string, chainId byte) error {
 	for _, nullifier := range nullifiers {
-		err := self.config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc, chainId)
+		err := self.config.DataBase.StoreNullifiers(nullifier, coinType, chainId)
 		if err != nil {
 			return err
 		}
@@ -341,9 +341,9 @@ func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, ty
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
 */
-func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, typeJoinSplitDesc string, chainId byte) error {
+func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, coinType string, chainId byte) error {
 	for _, item := range commitments {
-		err := self.config.DataBase.StoreCommitments(item, typeJoinSplitDesc, chainId)
+		err := self.config.DataBase.StoreCommitments(item, coinType, chainId)
 		if err != nil {
 			return err
 		}
@@ -355,14 +355,14 @@ func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte,
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
 */
-func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx, typeJoinSplitDesc string) error {
+func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx, coinType string) error {
 	for _, desc := range tx.Descs {
 		for _, nullifier := range desc.Nullifiers {
 			chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
 			if err != nil {
 				return err
 			}
-			err = self.config.DataBase.StoreNullifiers(nullifier, typeJoinSplitDesc, chainId)
+			err = self.config.DataBase.StoreNullifiers(nullifier, coinType, chainId)
 			if err != nil {
 				return err
 			}
@@ -375,14 +375,14 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx, typeJoinSplitD
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
 */
-func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx, typeJoinSplitDesc string) error {
+func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx, coinType string) error {
 	for _, desc := range tx.Descs {
 		for _, item := range desc.Commitments {
 			chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
 			if err != nil {
 				return err
 			}
-			err = self.config.DataBase.StoreCommitments(item, typeJoinSplitDesc, chainId)
+			err = self.config.DataBase.StoreCommitments(item, coinType, chainId)
 			if err != nil {
 				return err
 			}
@@ -457,20 +457,20 @@ func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 
 /*
 FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
-Param typeJoinSplitDesc - COIN or BOND
+Param coinType - COIN or BOND
 */
-func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string, chainId byte) (*TxViewPoint, error) {
+func (self *BlockChain) FetchTxViewPoint(coinType string, chainId byte) (*TxViewPoint, error) {
 	view := NewTxViewPoint(chainId)
-	commitments, err := self.config.DataBase.FetchCommitments(typeJoinSplitDesc, chainId)
+	commitments, err := self.config.DataBase.FetchCommitments(coinType, chainId)
 	if err != nil {
 		return nil, err
 	}
-	view.listCommitments[typeJoinSplitDesc] = commitments
-	nullifiers, err := self.config.DataBase.FetchNullifiers(typeJoinSplitDesc, chainId)
+	view.listCommitments[coinType] = commitments
+	nullifiers, err := self.config.DataBase.FetchNullifiers(coinType, chainId)
 	if err != nil {
 		return nil, err
 	}
-	view.listNullifiers[typeJoinSplitDesc] = nullifiers
+	view.listNullifiers[coinType] = nullifiers
 	// view.SetBestHash(self.BestState.BestBlockHash)
 	return view, nil
 }
@@ -502,14 +502,14 @@ func (self *BlockChain) CreateTxViewPoint(block *Block) error {
 /*
 GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key
 - Param #1: key - key set which contain readonly-key and pub-key
-- Param #2: typeJoinSplitDesc - which type of joinsplitdesc(COIN or BOND)
+- Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, typeJoinSplitDesc string) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType string) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx, 0)
 
 	// set default for params
-	if typeJoinSplitDesc == "" {
-		typeJoinSplitDesc = common.TxOutCoinType
+	if coinType == "" {
+		coinType = common.AssetTypeCoin
 	}
 
 	// lock chain
@@ -544,21 +544,30 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, typeJoinSp
 							Commitments:   make([][]byte, 0),
 							EncryptedData: make([][]byte, 0),
 						}
-						for i, encData := range desc.EncryptedData {
-							var epk client.EphemeralPubKey
-							copy(epk[:], desc.EphemeralPubKey)
-							// var hSig []byte
-							// copy(hSig, desc.HSigSeed)
-							hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
-							note := new(client.Note)
-							note, err := client.DecryptNote(encData, keySet.ReadonlyKey.Skenc, keySet.PublicKey.Pkenc, epk, hSig)
-							spew.Dump(note)
-							if err == nil && note != nil {
-								copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
+						if desc.Proof != nil && len(desc.EncryptedData) > 0 {
+							// privacy
+							for i, encData := range desc.EncryptedData {
+								var epk client.EphemeralPubKey
+								copy(epk[:], desc.EphemeralPubKey)
+								// var hSig []byte
+								// copy(hSig, desc.HSigSeed)
+								hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
+								note := new(client.Note)
+								note, err := client.DecryptNote(encData, keySet.ReadonlyKey.Skenc, keySet.PublicKey.Pkenc, epk, hSig)
+								spew.Dump(note)
+								if err == nil && note != nil {
+									copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
+									copyDesc.AppendNote(note)
+									copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
+								} else {
+									continue
+								}
+							}
+						} else {
+							// no privacy
+							for i, note := range desc.Note {
 								copyDesc.AppendNote(note)
 								copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
-							} else {
-								continue
 							}
 						}
 						if len(copyDesc.EncryptedData) > 0 {
@@ -601,9 +610,9 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, typeJoinSp
 GetListTxByPrivateKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
 With private-key, we can check unspent tx by check nullifiers from database
 - Param #1: privateKey - byte[] of privatekey
-- Param #2: typeJoinSplitDesc - which type of joinsplitdesc(COIN or BOND)
+- Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, typeJoinSplitDesc string, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, coinType string, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx)
 
 	// Get set of keys from private keybyte
@@ -611,8 +620,8 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 	keys.ImportFromPrivateKey(privateKey)
 
 	// set default for params
-	if typeJoinSplitDesc == "" {
-		typeJoinSplitDesc = common.TxOutCoinType
+	if coinType == "" {
+		coinType = common.AssetTypeCoin
 	}
 
 	// lock chain
@@ -623,11 +632,11 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 	for _, bestState := range self.BestState {
 		bestBlock := bestState.BestBlock
 		chainId := bestBlock.Header.ChainID
-		txViewPoint, err := self.FetchTxViewPoint(typeJoinSplitDesc, chainId)
+		txViewPoint, err := self.FetchTxViewPoint(coinType, chainId)
 		if err != nil {
 			return nil, err
 		}
-		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers[typeJoinSplitDesc]...)
+		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers[coinType]...)
 	}
 
 	for _, bestState := range self.BestState {
@@ -662,20 +671,49 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 							Commitments:   make([][]byte, 0),
 							EncryptedData: make([][]byte, 0),
 						}
-						for i, encData := range desc.EncryptedData {
-							var epk client.EphemeralPubKey
-							copy(epk[:], desc.EphemeralPubKey)
-							hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
-							note := new(client.Note)
-							note, err := client.DecryptNote(encData, keys.ReadonlyKey.Skenc, keys.PublicKey.Pkenc, epk, hSig)
-							if err == nil && note != nil && note.Value > 0 {
-								// can decrypt data -> got candidate commitment
+						if desc.Proof != nil && len(desc.EncryptedData) > 0 {
+							// have privacy
+							for i, encData := range desc.EncryptedData {
+								var epk client.EphemeralPubKey
+								copy(epk[:], desc.EphemeralPubKey)
+								hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
+								note := new(client.Note)
+								note, err := client.DecryptNote(encData, keys.ReadonlyKey.Skenc, keys.PublicKey.Pkenc, epk, hSig)
+								if err == nil && note != nil && note.Value > 0 {
+									// can decrypt data -> got candidate commitment
+									candidateCommitment := desc.Commitments[i]
+									if len(nullifiersInDb) > 0 {
+										// -> check commitment with db nullifiers
+										var rho [32]byte
+										copy(rho[:], note.Rho)
+										candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
+										if len(candidateNullifier) == 0 {
+											continue
+										}
+										checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
+										if err != nil || checkCandiateNullifier == true {
+											// candidate nullifier is not existed in db
+											continue
+										}
+									}
+									copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
+									copyDesc.AppendNote(note)
+									note.Cm = candidateCommitment
+									note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
+									copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
+								} else {
+									continue
+								}
+							}
+						} else {
+							for i, note := range desc.Note {
+								// no privacy
 								candidateCommitment := desc.Commitments[i]
 								if len(nullifiersInDb) > 0 {
 									// -> check commitment with db nullifiers
 									var rho [32]byte
 									copy(rho[:], note.Rho)
-									candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
+									candidateNullifier := desc.Nullifiers
 									if len(candidateNullifier) == 0 {
 										continue
 									}
@@ -685,13 +723,10 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, ty
 										continue
 									}
 								}
-								copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
 								copyDesc.AppendNote(note)
 								note.Cm = candidateCommitment
 								note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
 								copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
-							} else {
-								continue
 							}
 						}
 						if len(copyDesc.EncryptedData) > 0 {
@@ -745,8 +780,8 @@ GetAllUnitCoinSupplier - return all list unit currency(bond, coin, ...) with amo
 */
 func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 	result := make(map[string]uint64)
-	result[common.TxOutCoinType] = uint64(0)
-	result[common.TxOutBondType] = uint64(0)
+	result[common.AssetTypeCoin] = uint64(0)
+	result[common.AssetTypeBond] = uint64(0)
 
 	// lock chain
 	self.chainLock.Lock()
@@ -771,15 +806,15 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 			for _, desc := range coinbaseTx.Descs {
 				unitType := desc.Type
 				switch unitType {
-				case common.TxOutCoinType:
+				case common.AssetTypeCoin:
 					rewardCoin += desc.Reward
-				case common.TxOutBondType:
+				case common.AssetTypeBond:
 					rewardBond += desc.Reward
 				}
 			}
 			rewardCoin -= totalFeeInBlock
-			result[common.TxOutCoinType] += rewardCoin
-			result[common.TxOutBondType] += rewardBond
+			result[common.AssetTypeCoin] += rewardCoin
+			result[common.AssetTypeBond] += rewardBond
 
 			// continue with previous block
 			blockHeight--

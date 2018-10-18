@@ -496,7 +496,7 @@ func (tx *Tx) buildJSDescAndEncrypt(
 		EncryptedData:   noteciphers,
 		EphemeralPubKey: ephemeralPubKey[:],
 		HSigSeed:        seed,
-		Type:            common.TxOutCoinType,
+		Type:            common.AssetTypeCoin,
 		Reward:          reward,
 		Vmacs:           vmacs,
 	}
@@ -724,7 +724,7 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
 	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+	var sizeDescs = uint64(max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
 	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig

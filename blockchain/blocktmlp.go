@@ -146,7 +146,7 @@ concludeBlock:
 		BlockCommitteeSigs:    make([]string, common.TotalValidators),
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
-		SalaryFund:            currentSalaryFund - salary + feeMap[common.TxOutCoinType],
+		SalaryFund:            currentSalaryFund - salary + feeMap[common.AssetTypeCoin],
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
@@ -251,8 +251,8 @@ func extractTxsAndComputeInitialFees(txDescs []*transaction.TxDesc) (
 	var txs []transaction.Transaction
 	var actionParamTxs []*transaction.ActionParamTx
 	var feeMap = map[string]uint64{
-		fmt.Sprintf(common.TxOutCoinType): 0,
-		fmt.Sprintf(common.TxOutBondType): 0,
+		fmt.Sprintf(common.AssetTypeCoin): 0,
+		fmt.Sprintf(common.AssetTypeBond): 0,
 	}
 	for _, txDesc := range txDescs {
 		tx := txDesc.Tx
@@ -285,7 +285,7 @@ func extractTxsAndComputeInitialFees(txDescs []*transaction.TxDesc) (
 
 	// Get reward
 	// TODO(@0xbunyip): implement bonds reward
-	var reward uint64 = common.DefaultCoinBaseTxReward + feeMap[common.TxOutCoinType] // TODO: probably will need compute reward based on block height
+	var reward uint64 = common.DefaultCoinBaseTxReward + feeMap[common.AssetTypeCoin] // TODO: probably will need compute reward based on block height
 
 	// Create new notes: first one is coinbase UTXO, second one has 0 value
 	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}

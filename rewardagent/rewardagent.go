@@ -54,8 +54,8 @@ func (self *RewardAgent) GetSalary() uint64 {
 // ) map[string]uint64 {
 // 	if len(agentDataPoints) < NUMBER_OF_MAKING_DECISION_AGENTS {
 // 		return map[string]uint64{
-// 			"coins": DEFAULT_COINS + feeMap[common.TxOutCoinType],
-// 			"bonds": DEFAULT_BONDS + feeMap[common.TxOutBondType],
+// 			"coins": DEFAULT_COINS + feeMap[common.AssetTypeCoin],
+// 			"bonds": DEFAULT_BONDS + feeMap[common.AssetTypeBond],
 // 		}
 // 	}
 
@@ -74,23 +74,23 @@ func (self *RewardAgent) GetSalary() uint64 {
 // 	}
 // 	if math.Max(float64(len(issuingCoinsActions)), float64(len(contractingCoinsActions))) < (math.Floor(float64(len(agentDataPoints)/2)) + 1) {
 // 		return map[string]uint64{
-// 			"coins": DEFAULT_COINS + feeMap[common.TxOutCoinType],
-// 			"bonds": DEFAULT_BONDS + feeMap[common.TxOutBondType],
+// 			"coins": DEFAULT_COINS + feeMap[common.AssetTypeCoin],
+// 			"bonds": DEFAULT_BONDS + feeMap[common.AssetTypeBond],
 // 		}
 // 	}
 
 // 	if len(issuingCoinsActions) == len(contractingCoinsActions) {
 // 		return map[string]uint64{
-// 			"coins": DEFAULT_COINS + feeMap[common.TxOutCoinType],
-// 			"bonds": DEFAULT_BONDS + feeMap[common.TxOutBondType],
+// 			"coins": DEFAULT_COINS + feeMap[common.AssetTypeCoin],
+// 			"bonds": DEFAULT_BONDS + feeMap[common.AssetTypeBond],
 // 		}
 // 	}
 
 // 	if len(issuingCoinsActions) < len(contractingCoinsActions) {
 // 		_, medianBond, medianTax := getMedians(contractingCoinsActions)
-// 		coins := uint64(math.Floor((100 - medianTax) * 0.01 * float64(feeMap[common.TxOutCoinType])))
-// 		burnedCoins := feeMap[common.TxOutCoinType] - coins
-// 		bonds := uint64(math.Floor(medianBond)) + feeMap[common.TxOutBondType] + burnedCoins
+// 		coins := uint64(math.Floor((100 - medianTax) * 0.01 * float64(feeMap[common.AssetTypeCoin])))
+// 		burnedCoins := feeMap[common.AssetTypeCoin] - coins
+// 		bonds := uint64(math.Floor(medianBond)) + feeMap[common.AssetTypeBond] + burnedCoins
 // 		return map[string]uint64{
 // 			"coins":       coins,
 // 			"bonds":       bonds,
@@ -101,7 +101,7 @@ func (self *RewardAgent) GetSalary() uint64 {
 // 	medianCoin, _, _ := getMedians(issuingCoinsActions)
 
 // 	return map[string]uint64{
-// 		"coins": uint64(math.Floor(medianCoin)) + feeMap[common.TxOutCoinType],
-// 		"bonds": feeMap[common.TxOutBondType],
+// 		"coins": uint64(math.Floor(medianCoin)) + feeMap[common.AssetTypeCoin],
+// 		"bonds": feeMap[common.AssetTypeBond],
 // 	}
 // }
