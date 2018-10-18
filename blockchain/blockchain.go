@@ -544,21 +544,30 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 							Commitments:   make([][]byte, 0),
 							EncryptedData: make([][]byte, 0),
 						}
-						for i, encData := range desc.EncryptedData {
-							var epk client.EphemeralPubKey
-							copy(epk[:], desc.EphemeralPubKey)
-							// var hSig []byte
-							// copy(hSig, desc.HSigSeed)
-							hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
-							note := new(client.Note)
-							note, err := client.DecryptNote(encData, keySet.ReadonlyKey.Skenc, keySet.PublicKey.Pkenc, epk, hSig)
-							spew.Dump(note)
-							if err == nil && note != nil {
-								copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
+						if desc.Proof != nil && len(desc.EncryptedData) > 0 {
+							// privacy
+							for i, encData := range desc.EncryptedData {
+								var epk client.EphemeralPubKey
+								copy(epk[:], desc.EphemeralPubKey)
+								// var hSig []byte
+								// copy(hSig, desc.HSigSeed)
+								hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
+								note := new(client.Note)
+								note, err := client.DecryptNote(encData, keySet.ReadonlyKey.Skenc, keySet.PublicKey.Pkenc, epk, hSig)
+								spew.Dump(note)
+								if err == nil && note != nil {
+									copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
+									copyDesc.AppendNote(note)
+									copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
+								} else {
+									continue
+								}
+							}
+						} else {
+							// no privacy
+							for i, note := range desc.Note {
 								copyDesc.AppendNote(note)
 								copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
-							} else {
-								continue
 							}
 						}
 						if len(copyDesc.EncryptedData) > 0 {
@@ -662,20 +671,49 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, co
 							Commitments:   make([][]byte, 0),
 							EncryptedData: make([][]byte, 0),
 						}
-						for i, encData := range desc.EncryptedData {
-							var epk client.EphemeralPubKey
-							copy(epk[:], desc.EphemeralPubKey)
-							hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
-							note := new(client.Note)
-							note, err := client.DecryptNote(encData, keys.ReadonlyKey.Skenc, keys.PublicKey.Pkenc, epk, hSig)
-							if err == nil && note != nil && note.Value > 0 {
-								// can decrypt data -> got candidate commitment
+						if desc.Proof != nil && len(desc.EncryptedData) > 0 {
+							// have privacy
+							for i, encData := range desc.EncryptedData {
+								var epk client.EphemeralPubKey
+								copy(epk[:], desc.EphemeralPubKey)
+								hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
+								note := new(client.Note)
+								note, err := client.DecryptNote(encData, keys.ReadonlyKey.Skenc, keys.PublicKey.Pkenc, epk, hSig)
+								if err == nil && note != nil && note.Value > 0 {
+									// can decrypt data -> got candidate commitment
+									candidateCommitment := desc.Commitments[i]
+									if len(nullifiersInDb) > 0 {
+										// -> check commitment with db nullifiers
+										var rho [32]byte
+										copy(rho[:], note.Rho)
+										candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
+										if len(candidateNullifier) == 0 {
+											continue
+										}
+										checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
+										if err != nil || checkCandiateNullifier == true {
+											// candidate nullifier is not existed in db
+											continue
+										}
+									}
+									copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
+									copyDesc.AppendNote(note)
+									note.Cm = candidateCommitment
+									note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
+									copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
+								} else {
+									continue
+								}
+							}
+						} else {
+							for i, note := range desc.Note {
+								// no privacy
 								candidateCommitment := desc.Commitments[i]
 								if len(nullifiersInDb) > 0 {
 									// -> check commitment with db nullifiers
 									var rho [32]byte
 									copy(rho[:], note.Rho)
-									candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
+									candidateNullifier := desc.Nullifiers
 									if len(candidateNullifier) == 0 {
 										continue
 									}
@@ -685,13 +723,10 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, co
 										continue
 									}
 								}
-								copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
 								copyDesc.AppendNote(note)
 								note.Cm = candidateCommitment
 								note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
 								copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
-							} else {
-								continue
 							}
 						}
 						if len(copyDesc.EncryptedData) > 0 {
