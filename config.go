@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jessevdk/go-flags"
 	"github.com/ninjadotorg/cash-prototype/cashec"
@@ -32,7 +33,7 @@ const (
 	defaultGenerate        = false
 	sampleConfigFilename   = "sample-config.conf"
 	defaultDisableRpcTls   = true
-
+	defaultFastMode        = false
 	// For wallet
 	defaultWalletDbName = "wallet.db"
 )
@@ -96,6 +97,8 @@ type config struct {
 	Wallet           bool   `long:"wallet" description:"Use wallet"`
 	WalletDbName     string `long:"walletdbname" description:"Wallet Database Name file, default is wallet.db"`
 	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
+
+	FastMode bool `long:"fastmode" description:"Load existed chain dependencies instead of rebuild from block data"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -276,10 +279,11 @@ func loadConfig() (*config, []string, error) {
 		Generate:             defaultGenerate,
 		WalletDbName:         defaultWalletDbName,
 		DisableTLS:           defaultDisableRpcTls,
-		RPCDisableAuth:       true,
+		RPCDisableAuth:       false,
 		DiscoverPeers:        false,
 		TestNet:              false,
 		DiscoverPeersAddress: "35.230.8.182:9339",
+		FastMode:             defaultFastMode,
 	}
 
 	// Service options which are only added on Windows.

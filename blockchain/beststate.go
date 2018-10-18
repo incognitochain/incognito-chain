@@ -1,8 +1,6 @@
 package blockchain
 
 import (
-	"sync"
-
 	"github.com/ninjadotorg/cash-prototype/common"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 )
@@ -22,15 +20,9 @@ type BestState struct {
 
 	CmTree *client.IncMerkleTree // The commitments merkle tree of the best block
 
-	Height int32 // The height of the block.
-	// Difficulty  []uint32  // The difficulty bits of the block.
-	BlockSize uint64 // The size of the block.
-	// BlockWeight []uint64  // The weight of the block.
+	Height    int32  // The height of the block.
 	NumTxns   uint64 // The number of txns in the block.
 	TotalTxns uint64 // The total number of txns in the chain.
-	// MedianTime time.Time // Median time as per CalcPastMedianTime.
-	sync.Mutex
-
 	Candidates map[string]CndInfo
 }
 

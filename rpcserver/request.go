@@ -8,8 +8,8 @@ package rpcserver
 // construct raw requests for some reason.
 
 type RpcRequest struct {
-	Jsonrpc string      `json:"jsonrpc"`
-	Method  string      `json:"method"`
-	Params  interface{} `json:"params"`
-	Id      interface{} `json:"id"`
+	Jsonrpc string      `json:"Jsonrpc"`
+	Method  string      `json:"Method"`
+	Params  interface{} `json:"Params"`
+	Id      interface{} `json:"Id"`
 }

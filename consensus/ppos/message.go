@@ -63,11 +63,6 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 				Logger.log.Error(err)
 				return
 			}
-			err = self.config.BlockChain.ConnectBlock(block)
-			if err != nil {
-				Logger.log.Error(err)
-				return
-			}
 			self.UpdateChain(block)
 		}
 	}

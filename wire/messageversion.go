@@ -14,7 +14,7 @@ const (
 )
 
 type MessageVersion struct {
-	ProtocolVersion  int
+	ProtocolVersion  string
 	Timestamp        time.Time
 	RemoteAddress    common.SimpleAddr
 	RawRemoteAddress string

@@ -41,7 +41,8 @@ func mainMaster(serverChan chan<- *Server) error {
 	defer Logger.log.Warn("Shutdown complete")
 
 	// Show version at startup.
-	Logger.log.Infof("Version %s", version())
+	version := version()
+	Logger.log.Infof("Version %s", version)
 
 	// Return now if an interrupt signal was triggered.
 	if interruptRequested(interrupt) {
@@ -61,10 +62,10 @@ func mainMaster(serverChan chan<- *Server) error {
 	if cfg.Wallet == true {
 		walletObj = &wallet.Wallet{}
 		walletObj.Config = &wallet.WalletConfig{
-			DataDir:  cfg.DataDir,
-			DataFile: cfg.WalletDbName,
-			DataPath: filepath.Join(cfg.DataDir, cfg.WalletDbName),
-			PayTxFee: 0,
+			DataDir:        cfg.DataDir,
+			DataFile:       cfg.WalletDbName,
+			DataPath:       filepath.Join(cfg.DataDir, cfg.WalletDbName),
+			IncrementalFee: 0,
 		}
 		err = walletObj.LoadWallet(cfg.WalletPassphrase)
 		if err != nil {
@@ -76,7 +77,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	// Create server and start it.
 	server := Server{}
 	server.wallet = walletObj
-	err = server.NewServer(cfg.Listeners, db, activeNetParams.Params, interrupt)
+	err = server.NewServer(cfg.Listeners, db, activeNetParams.Params, version, interrupt)
 	if err != nil {
 		Logger.log.Errorf("Unable to start server on %v", cfg.Listeners)
 		Logger.log.Error(err)

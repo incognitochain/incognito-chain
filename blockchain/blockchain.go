@@ -447,7 +447,7 @@ func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 Get all hash of blocks in chain
 Return hashes array
 */
-func (self *BlockChain) GetAllHashBlocks() ([][]*common.Hash, error) {
+func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 	data, err := self.config.DataBase.FetchAllBlocks()
 	if err != nil {
 		return nil, err
@@ -475,11 +475,7 @@ func (self *BlockChain) FetchTxViewPoint(typeJoinSplitDesc string, chainId byte)
 	return view, nil
 }
 
-// connectBestChain handles connecting the passed block to the chain while
-// respecting proper chain selection according to the chain with the most
-// proof of work.  In the typical case, the new block simply extends the main
-// chain.
-func (self *BlockChain) ConnectBestChain(block *Block) error {
+func (self *BlockChain) CreateTxViewPoint(block *Block) error {
 	view := NewTxViewPoint(block.Header.ChainID)
 
 	err := view.fetchTxViewPoint(self.config.DataBase, block)

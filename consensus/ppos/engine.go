@@ -23,7 +23,7 @@ type Engine struct {
 	sync.Mutex
 	started bool
 	wg      sync.WaitGroup
-	quit    chan struct{}
+	cQuit   chan struct{}
 
 	sealerStarted bool
 
@@ -34,6 +34,16 @@ type Engine struct {
 	config                EngineConfig
 	knownChainsHeight     chainsHeight
 	validatedChainsHeight chainsHeight
+
+	committee committeeStruct
+}
+
+type committeeStruct struct {
+	ValidatorBlkNum      map[string]int //track the number of block created by each validator
+	ValidatorReliablePts map[string]int //track how reliable is the validator node
+	UpcomingCommittee    []string
+	CurrentCommittee     []string
+	sync.Mutex
 }
 
 type ChainInfo struct {
@@ -80,29 +90,85 @@ func (self *Engine) Start() error {
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
 	self.knownChainsHeight.Heights = make([]int, common.TotalValidators)
 	self.validatedChainsHeight.Heights = make([]int, common.TotalValidators)
+	self.committee.ValidatorBlkNum = make(map[string]int)
+	self.committee.ValidatorReliablePts = make(map[string]int)
+	self.committee.UpcomingCommittee = make([]string, common.TotalValidators)
+	self.committee.CurrentCommittee = make([]string, common.TotalValidators)
 
 	for chainID := 0; chainID < common.TotalValidators; chainID++ {
 		self.knownChainsHeight.Heights[chainID] = int(self.config.BlockChain.BestState[chainID].Height)
+		self.validatedChainsHeight.Heights[chainID] = 1
 	}
 
 	Logger.log.Info("Validating local blockchain...")
-	for chainID := 0; chainID < common.TotalValidators; chainID++ {
-		//Don't validate genesis block (blockHeight = 1)
-		for blockHeight := 2; blockHeight < self.knownChainsHeight.Heights[chainID]; blockHeight++ {
-			block, err := self.config.BlockChain.GetBlockByBlockHeight(int32(blockHeight), byte(chainID))
-			if err != nil {
-				Logger.log.Error(err)
-				return err
-			}
-			err = self.validateBlockSanity(block)
-			if err != nil {
-				Logger.log.Error(err)
-				return err
-			}
+	copy(self.committee.CurrentCommittee, self.config.ChainParams.GenesisBlock.Header.Committee)
+	copy(self.committee.UpcomingCommittee, self.committee.CurrentCommittee)
+
+	if _, ok := self.config.FeeEstimator[0]; !ok {
+		// happen when FastMode = false
+		validatedChainsHeight := make([]int, common.TotalValidators)
+		self.config.FeeEstimator = make(map[byte]*mempool.FeeEstimator)
+		var wg sync.WaitGroup
+		errCh := make(chan error)
+		for chainID := byte(0); chainID < common.TotalValidators; chainID++ {
+			//Don't validate genesis block (blockHeight = 1)
+			validatedChainsHeight[chainID] = 1
+			self.config.FeeEstimator[chainID] = mempool.NewFeeEstimator(
+				mempool.DefaultEstimateFeeMaxRollback,
+				mempool.DefaultEstimateFeeMinRegisteredBlocks)
+			go func(chainID byte) {
+				wg.Add(1)
+				var err error
+				defer func() {
+					wg.Done()
+					if err != nil {
+						errCh <- err
+					}
+				}()
+				for blockHeight := 2; blockHeight <= self.knownChainsHeight.Heights[chainID]; blockHeight++ {
+					var block *blockchain.Block
+					block, err = self.config.BlockChain.GetBlockByBlockHeight(int32(blockHeight), byte(chainID))
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					//Comment validateBlockSanity segment to create block with only 1 node (validator)
+					err = self.validateBlockSanity(block)
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					err = self.config.BlockChain.CreateTxViewPoint(block)
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					err = self.config.FeeEstimator[block.Header.ChainID].RegisterBlock(block)
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					self.validatedChainsHeight.Lock()
+					self.validatedChainsHeight.Heights[chainID] = blockHeight
+					self.validatedChainsHeight.Unlock()
+					self.committee.UpdateCommittee(block.ChainLeader, block.Header.BlockCommitteeSigs)
+				}
+			}(chainID)
 		}
+		time.Sleep(1000 * time.Millisecond)
+		wg.Wait()
+		select {
+		case err := <-errCh:
+			return err
+		default:
+			break
+		}
+	} else {
+		copy(self.validatedChainsHeight.Heights, self.knownChainsHeight.Heights)
 	}
 
-	copy(self.validatedChainsHeight.Heights, self.knownChainsHeight.Heights)
+	self.started = true
+	self.cQuit = make(chan struct{})
 
 	go func() {
 		for {
@@ -110,9 +176,6 @@ func (self *Engine) Start() error {
 			time.Sleep(common.GetChainStateInterval * time.Second)
 		}
 	}()
-
-	self.started = true
-	self.quit = make(chan struct{})
 	self.wg.Add(1)
 
 	return nil
@@ -128,7 +191,7 @@ func (self *Engine) Stop() error {
 		return errors.New("Consensus engine isn't running")
 	}
 	self.StopSealer()
-	close(self.quit)
+	close(self.cQuit)
 	self.started = false
 	Logger.log.Info("Consensus engine stopped")
 	return nil
@@ -246,7 +309,7 @@ finalizing:
 		var sigsReceived int
 		for {
 			select {
-			case <-self.quit:
+			case <-self.cQuit:
 				return
 			case <-cancel:
 				return
@@ -284,9 +347,8 @@ finalizing:
 
 	//Request for signatures of other validators
 	go func() {
-		//Uncomment this segment to create block with 1 node (validator)
-
-		allSigReceived <- struct{}{}
+		//Uncomment this segment to create block with only 1 node (validator)
+		// allSigReceived <- struct{}{}
 
 		reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestBlockSign)
 		reqSigMsg.(*wire.MessageRequestBlockSign).Block = *finalBlock
@@ -307,6 +369,8 @@ finalizing:
 	}()
 	// Wait for signatures of other validators
 	select {
+	case <-self.cQuit:
+		return nil
 	case <-allSigReceived:
 		Logger.log.Info("Validator sigs: ", finalBlock.Header.BlockCommitteeSigs)
 	case <-time.After(common.MaxBlockSigWaitTime * time.Second):
@@ -338,10 +402,16 @@ finalizing:
 }
 
 func (self *Engine) UpdateChain(block *blockchain.Block) {
-	// save block into fee estimator
-	err := self.config.FeeEstimator[block.Header.ChainID].RegisterBlock(block)
+	err := self.config.BlockChain.ConnectBlock(block)
 	if err != nil {
 		Logger.log.Error(err)
+		return
+	}
+	// save block into fee estimator
+	err = self.config.FeeEstimator[block.Header.ChainID].RegisterBlock(block)
+	if err != nil {
+		Logger.log.Error(err)
+		return
 	}
 
 	// update candidate list
@@ -366,6 +436,8 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.validatedChainsHeight.Lock()
 	self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
 	self.validatedChainsHeight.Unlock()
+
+	self.committee.UpdateCommittee(block.ChainLeader, block.Header.BlockCommitteeSigs)
 }
 
 func (self *Engine) GetCndList(block *blockchain.Block) (map[string]blockchain.CndInfo) {

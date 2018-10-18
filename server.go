@@ -34,15 +34,11 @@ import (
 	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
-// onionAddr implements the net.Addr interface and represents a tor address.
-type onionAddr struct {
-	addr string
-}
-
 type Server struct {
 	started     int32
 	startupTime int64
 
+	protocolVersion string
 	chainParams     *blockchain.Params
 	connManager     *connmanager.ConnManager
 	blockChain      *blockchain.BlockChain
@@ -120,8 +116,9 @@ func (self Server) setupRPCListeners() ([]net.Listener, error) {
 /*
 NewServer - create server object which control all process of node
 */
-func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterface, chainParams *blockchain.Params, interrupt <-chan struct{}) error {
+func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
 	// Init data for Server
+	self.protocolVersion = protocolVer
 	self.chainParams = chainParams
 	self.cQuit = make(chan struct{})
 	self.cDonePeers = make(chan *peer.Peer)
@@ -143,29 +140,24 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 
 	// Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
-	self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
-	for _, bestState := range self.blockChain.BestState {
-		chainId := bestState.BestBlock.Header.ChainID
-		feeEstimatorData, err := self.dataBase.GetFeeEstimator(chainId)
-		if err == nil && len(feeEstimatorData) > 0 {
-			feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
-			if err != nil {
-				Logger.log.Errorf("Failed to restore fee estimator %v", err)
-			} else {
-				self.feeEstimator[chainId] = feeEstimator
+	if cfg.FastMode {
+		Logger.log.Info("Load chain dependencies from DB")
+		self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
+		for _, bestState := range self.blockChain.BestState {
+			chainID := bestState.BestBlock.Header.ChainID
+			feeEstimatorData, err := self.dataBase.GetFeeEstimator(chainID)
+			if err == nil && len(feeEstimatorData) > 0 {
+				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
+				if err != nil {
+					Logger.log.Errorf("Failed to restore fee estimator %v", err)
+					Logger.log.Info("Init NewFeeEstimator")
+					self.feeEstimator[chainID] = mempool.NewFeeEstimator(
+						mempool.DefaultEstimateFeeMaxRollback,
+						mempool.DefaultEstimateFeeMinRegisteredBlocks)
+				} else {
+					self.feeEstimator[chainID] = feeEstimator
+				}
 			}
-		}
-	}
-
-	// If no feeEstimator has been found, or if the one that has been found
-	// is behind somehow, create a new one and start over.
-	// if self.feeEstimator == nil || self.feeEstimator.LastKnownHeight() != self.blockChain.BestState.BestBlock.Height {
-	for _, bestState := range self.blockChain.BestState {
-		chainId := bestState.BestBlock.Header.ChainID
-		if self.feeEstimator[chainId] == nil {
-			self.feeEstimator[chainId] = mempool.NewFeeEstimator(
-				mempool.DefaultEstimateFeeMaxRollback,
-				mempool.DefaultEstimateFeeMinRegisteredBlocks)
 		}
 	}
 
@@ -255,29 +247,27 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		}
 
 		rpcConfig := rpcserver.RpcServerConfig{
-			Listenters:     rpcListeners,
-			RPCQuirks:      cfg.RPCQuirks,
-			RPCMaxClients:  cfg.RPCMaxClients,
-			ChainParams:    chainParams,
-			BlockChain:     self.blockChain,
-			TxMemPool:      self.memPool,
-			Server:         self,
-			Wallet:         self.wallet,
-			ConnMgr:        self.connManager,
-			AddrMgr:        self.addrManager,
-			RPCUser:        cfg.RPCUser,
-			RPCPass:        cfg.RPCPass,
-			RPCLimitUser:   cfg.RPCLimitUser,
-			RPCLimitPass:   cfg.RPCLimitPass,
-			DisableAuth:    cfg.RPCDisableAuth,
-			IsGenerateNode: cfg.Generate,
-			FeeEstimator:   self.feeEstimator,
+			Listenters:      rpcListeners,
+			RPCQuirks:       cfg.RPCQuirks,
+			RPCMaxClients:   cfg.RPCMaxClients,
+			ChainParams:     chainParams,
+			BlockChain:      self.blockChain,
+			TxMemPool:       self.memPool,
+			Server:          self,
+			Wallet:          self.wallet,
+			ConnMgr:         self.connManager,
+			AddrMgr:         self.addrManager,
+			RPCUser:         cfg.RPCUser,
+			RPCPass:         cfg.RPCPass,
+			RPCLimitUser:    cfg.RPCLimitUser,
+			RPCLimitPass:    cfg.RPCLimitPass,
+			DisableAuth:     cfg.RPCDisableAuth,
+			IsGenerateNode:  cfg.Generate,
+			FeeEstimator:    self.feeEstimator,
+			ProtocolVersion: self.protocolVersion,
 		}
 		self.rpcServer = &rpcserver.RpcServer{}
-		err = self.rpcServer.Init(&rpcConfig)
-		if err != nil {
-			return err
-		}
+		self.rpcServer.Init(&rpcConfig)
 
 		// Signal process shutdown when the RPC server requests it.
 		go func() {
@@ -447,7 +437,12 @@ func (self Server) Start() {
 	// if cfg.Generate == true && (len(cfg.MiningAddrs) > 0) {
 	// 	self.Miner.Start()
 	// }
-	self.consensusEngine.Start()
+	err := self.consensusEngine.Start()
+	if err != nil {
+		Logger.log.Error(err)
+		go self.Stop()
+		return
+	}
 	if cfg.Generate == true && (len(cfg.SealerSpendingKey) > 0 || len(cfg.SealerKeySet) > 0) {
 		sealerKeySet, err := cfg.GetSealerKeySet()
 		if err != nil {
@@ -601,7 +596,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	// TODO check version message
 	valid := false
 
-	if msg.ProtocolVersion == 1 {
+	if msg.ProtocolVersion == self.protocolVersion {
 		valid = true
 	}
 	//
@@ -873,7 +868,7 @@ func (self Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
 	msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
 	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
-	msg.(*wire.MessageVersion).ProtocolVersion = 1
+	msg.(*wire.MessageVersion).ProtocolVersion = self.protocolVersion
 
 	// Validate Public Key from SealerPrvKey
 	if peerConn.ListenerPeer.Config.SealerPrvKey != "" {

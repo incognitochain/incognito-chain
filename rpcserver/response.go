@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 )
 
 // Response is the general form of a JSON-RPC response.  The type of the Result
@@ -23,16 +24,17 @@ type Response struct {
 // response to send over the wire with the MarshalResponse function.
 func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*Response, error) {
 	if !IsValidIDType(id) {
-		str := fmt.Sprintf("the id of type '%T' is invalid", id)
-		return nil, MakeError(ErrInvalidType, str)
+		str := fmt.Sprintf("The id of type '%T' is invalid", id)
+		return nil, NewRPCError(ErrInvalidType, errors.New(str))
 	}
 
 	pid := &id
-	return &Response{
+	resp := &Response{
 		Result: marshalledResult,
 		Error:  rpcErr,
 		Id:     pid,
-	}, nil
+	}
+	return resp, nil
 }
 
 // IsValidIDType checks that the Id field (which can go in any of the JSON-RPC
@@ -66,5 +68,9 @@ func MarshalResponse(id interface{}, result interface{}, rpcErr *RPCError) ([]by
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(&response)
+	resultResp, err := json.Marshal(&response)
+	if err != nil {
+		return nil, err
+	}
+	return resultResp, nil
 }

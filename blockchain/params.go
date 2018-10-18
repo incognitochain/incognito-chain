@@ -104,7 +104,7 @@ var MainNetParams = Params{
 	Name:        MainetName,
 	Net:         Mainnet,
 	DefaultPort: MainnetDefaultPort,
-	DNSSeeds: []string{
+	DNSSeeds:    []string{
 		/*{"seed.coin.sipa.be", true},
 		{"dnsseed.bluematt.me", true},
 		{"dnsseed.coin.dashjr.org", false},
@@ -115,14 +115,7 @@ var MainNetParams = Params{
 	},
 
 	// blockChain parameters
-	GenesisBlock:             GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(0x18aea41a, 0x1d00ffff, 1, MainnetGenesisblockPaymentAddress, pposValidators, MainnetInitFundSalary),
-	SubsidyReductionInterval: 210000,
-	TargetTimespan:           time.Hour * 24 * 14, // 14 days
-	TargetTimePerBlock:       time.Minute * 10,    // 10 minutes
-	RetargetAdjustmentFactor: 4,                   // 25% less, 400% more
-	ReduceMinDifficulty:      false,
-	MinDiffReductionTime:     0,
-	GenerateSupported:        false,
+	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(0x18aea41a, 0x1d00ffff, 1, MainnetGenesisblockPaymentAddress, pposValidators, MainnetInitFundSalary),
 }
 
 // TestNetParams defines the network parameters for the test coin network.
@@ -130,7 +123,7 @@ var TestNetParams = Params{
 	Name:        TestnetName,
 	Net:         Testnet,
 	DefaultPort: TestnetDefaultPort,
-	DNSSeeds: []string{
+	DNSSeeds:    []string{
 		/*{"seed.coin.sipa.be", true},
 		{"dnsseed.bluematt.me", true},
 		{"dnsseed.coin.dashjr.org", false},
@@ -141,12 +134,5 @@ var TestNetParams = Params{
 	},
 
 	// blockChain parameters
-	GenesisBlock:             GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(0x18aea41a, 0x1d00ffff, 1, TestnetGenesisBlockPaymentAddress, pposValidators, TestnetInitFundSalary),
-	SubsidyReductionInterval: 210000,
-	TargetTimespan:           time.Hour * 24 * 14, // 14 days
-	TargetTimePerBlock:       time.Minute * 10,    // 10 minutes
-	RetargetAdjustmentFactor: 4,                   // 25% less, 400% more
-	ReduceMinDifficulty:      false,
-	MinDiffReductionTime:     0,
-	GenerateSupported:        false,
+	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(0x18aea41a, 0x1d00ffff, 1, TestnetGenesisBlockPaymentAddress, pposValidators, TestnetInitFundSalary),
 }
