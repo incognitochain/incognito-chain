@@ -326,23 +326,21 @@ func loadConfig() (*config, []string, error) {
 	// Load additional config from file.
 	var configFileError error
 	parser := newConfigParser(&cfg, &serviceOpts, flags.Default)
-	if !(preCfg.TestNet) || preCfg.ConfigFile != defaultConfigFile {
-		if _, err := os.Stat(preCfg.ConfigFile); os.IsNotExist(err) {
-			err := createDefaultConfigFile(preCfg.ConfigFile)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error creating a default config file: %v\n", err)
-			}
-		}
-
-		err := flags.NewIniParser(parser).ParseFile(preCfg.ConfigFile)
+	if _, err := os.Stat(preCfg.ConfigFile); os.IsNotExist(err) {
+		err := createDefaultConfigFile(preCfg.ConfigFile)
 		if err != nil {
-			if _, ok := err.(*os.PathError); !ok {
-				fmt.Fprintf(os.Stderr, "Error parsing config file: %v\n", err)
-				fmt.Fprintln(os.Stderr, usageMessage)
-				return nil, nil, err
-			}
-			configFileError = err
+			fmt.Fprintf(os.Stderr, "Error creating a default config file: %v\n", err)
 		}
+	}
+
+	errParse := flags.NewIniParser(parser).ParseFile(preCfg.ConfigFile)
+	if errParse != nil {
+		if _, ok := errParse.(*os.PathError); !ok {
+			fmt.Fprintf(os.Stderr, "Error parsing config file: %v\n", errParse)
+			fmt.Fprintln(os.Stderr, usageMessage)
+			return nil, nil, errParse
+		}
+		configFileError = errParse
 	}
 
 	// Parse command line options again to ensure they take precedence.
