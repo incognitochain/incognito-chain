@@ -33,6 +33,8 @@ var RpcHandler = map[string]commandHandler{
 	"getrawmempool":      RpcServer.handleGetRawMempool,
 	"getmempoolentry":    RpcServer.handleMempoolEntry,
 	"estimatefee":        RpcServer.handleEstimateFee,
+	"getgenerate":        RpcServer.handleGetGenerate,
+	"getmininginfo":      RpcServer.handleGetMiningInfo,
 
 	// block
 	"getbestblock":      RpcServer.handleGetBestBlock,
@@ -51,10 +53,7 @@ var RpcHandler = map[string]commandHandler{
 	"getnumberofcoinsandbonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
 	"createactionparamstransaction": RpcServer.handleCreateActionParamsTransaction,
 	"sendregistration":              RpcServer.handleSendRegistration,
-
-	"getgenerate":    RpcServer.handleGetGenerate,
-	"getmempoolinfo": RpcServer.handleGetMempoolInfo,
-	"getmininginfo":  RpcServer.handleGetMiningInfo,
+	"getmempoolinfo":                RpcServer.handleGetMempoolInfo,
 
 	//POS
 	"getheader": RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -1375,7 +1374,6 @@ func (self RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan s
 	result.Chain = self.config.ChainParams.Name
 	result.CurrentBlockTx = len(self.config.BlockChain.BestState[chainId].BestBlock.Transactions)
 	return result, nil
-	return "temporary unavailable", nil
 }
 
 /*
