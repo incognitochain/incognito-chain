@@ -4,7 +4,6 @@ import (
 	"log"
 	"github.com/ninjadotorg/cash-prototype/common"
 	"os"
-	"fmt"
 	"github.com/ninjadotorg/cash-prototype/wallet"
 	"path/filepath"
 )
@@ -27,8 +26,10 @@ func main() {
 
 	log.Printf("Process cmd: %s", cfg.Command)
 	if ok, err := common.SliceExists(CmdList, cfg.Command); ok || err == nil {
-		argsWithoutProg := os.Args[3:]
-		fmt.Printf("Params %v\n", argsWithoutProg)
+		if cfg.WalletPassphrase == "" || cfg.WalletName == "" {
+			log.Println("Wrong param")
+			return
+		}
 		if cfg.Command == InitWalletCmd {
 			var walletObj *wallet.Wallet
 			walletObj = &wallet.Wallet{}
@@ -38,11 +39,10 @@ func main() {
 				DataPath:       filepath.Join(cfg.DataDir, cfg.WalletName),
 				IncrementalFee: 0,
 			}
-			err = walletObj.LoadWallet(cfg.WalletPassphrase)
-			if err == nil {
-				// can not load wallet -> not exist
+			if _, err := os.Stat(walletObj.Config.DataPath); os.IsNotExist(err) {
 				walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
 				walletObj.Save(cfg.WalletPassphrase)
+				log.Printf("Create wallet successfully with name: %s", cfg.WalletName)
 			} else {
 				log.Printf("Exist wallet with name %s\n", )
 			}

@@ -8,20 +8,9 @@ import (
 )
 
 const (
-	defaultConfigFilename  = "config.conf"
-	defaultDataDirname     = "data"
-	defaultDatabaseDirname = "block"
-	defaultLogLevel        = "info"
-	defaultLogDirname      = "logs"
-	defaultLogFilename     = "log.log"
-	defaultMaxPeers        = 125
-	defaultMaxRPCClients   = 10
-	defaultGenerate        = false
-	sampleConfigFilename   = "sample-config.conf"
-	defaultDisableRpcTls   = true
-	defaultFastMode        = false
-	// For wallet
-	defaultWalletName = "wallet"
+	defaultConfigFilename = "config.conf"
+	defaultDataDirname    = "data"
+	defaultLogDirname     = "logs"
 )
 
 var (

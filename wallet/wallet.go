@@ -147,12 +147,10 @@ func (self *Wallet) LoadWallet(password string) error {
 	// read file and decrypt
 	bytesData, err := ioutil.ReadFile(self.Config.DataPath)
 	if err != nil {
-		Logger.log.Error(err)
 		return NewWalletError(UnexpectedErr, err)
 	}
 	bufBytes, err := AES{}.Decrypt(password, string(bytesData))
 	if err != nil {
-		Logger.log.Error(err)
 		return NewWalletError(UnexpectedErr, err)
 	}
 
