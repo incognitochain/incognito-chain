@@ -1377,8 +1377,10 @@ handleGetRawMempool - RPC returns all transaction ids in memory pool as a json a
 Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */
 func (self RpcServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	txIds := self.config.TxMemPool.ListTxs()
-	return txIds, nil
+	result := jsonresult.GetRawMempoolResult{
+		TxHashes: self.config.TxMemPool.ListTxs(),
+	}
+	return result, nil
 }
 
 /*
@@ -1386,16 +1388,17 @@ handleMempoolEntry - RPC fetch a specific transaction from the mempool
 */
 func (self RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// Param #1: hash string of tx(tx id)
-	txId, err := common.Hash{}.NewHashFromStr(params.(string))
+	txID, err := common.Hash{}.NewHashFromStr(params.(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	tx, err := self.config.TxMemPool.GetTx(txId)
+	result := jsonresult.GetMempoolEntryResult{}
+	result.Tx, err = self.config.TxMemPool.GetTx(txID)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	return tx, nil
+	return result, nil
 }
 
 /*
@@ -1405,13 +1408,17 @@ func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan str
 	// Param #1: —how many blocks the transaction may wait before being included
 	arrayParams := common.InterfaceSlice(params)
 	numBlock := uint32(arrayParams[0].(float64))
-	// Param #2: —what chain id
-	chainId := byte(int(arrayParams[1].(float64)))
-	feeRate, err := self.config.FeeEstimator[chainId].EstimateFee(numBlock)
-	if err != nil {
-		return -1, NewRPCError(ErrUnexpected, err)
+	result := jsonresult.EstimateFeeResult{
+		FeeRate: make(map[string]uint64),
 	}
-	return uint64(feeRate), nil
+	for chainID, feeEstimator := range self.config.FeeEstimator {
+		feeRate, err := feeEstimator.EstimateFee(numBlock)
+		result.FeeRate[strconv.Itoa(int(chainID))] = uint64(feeRate)
+		if err != nil {
+			return -1, NewRPCError(ErrUnexpected, err)
+		}
+	}
+	return result, nil
 }
 
 /*
