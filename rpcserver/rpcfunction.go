@@ -948,7 +948,8 @@ Result—a list of accounts and their balances
 */
 func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	result := jsonresult.ListAccounts{
-		Accounts: make(map[string]uint64),
+		Accounts:   make(map[string]uint64),
+		WalletName: self.config.Wallet.Name,
 	}
 	accounts := self.config.Wallet.ListAccounts()
 	for accountName, account := range accounts {

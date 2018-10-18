@@ -18,20 +18,20 @@ type Wallet struct {
 	PassPhrase    string
 	Mnemonic      string
 	MasterAccount Account
-
-	Config *WalletConfig
+	Name          string
+	Config        *WalletConfig
 }
 
 type WalletConfig struct {
-	DataDir  string
-	DataFile string
-	DataPath string
-
+	DataDir        string
+	DataFile       string
+	DataPath       string
 	IncrementalFee uint64
 }
 
-func (self *Wallet) Init(passPhrase string, numOfAccount uint32) {
+func (self *Wallet) Init(passPhrase string, numOfAccount uint32, name string) {
 	mnemonicGen := MnemonicGenerator{}
+	self.Name = name
 	self.Entropy, _ = mnemonicGen.NewEntropy(128)
 	self.Mnemonic, _ = mnemonicGen.NewMnemonic(self.Entropy)
 	self.Seed = mnemonicGen.NewSeed(self.Mnemonic, passPhrase)

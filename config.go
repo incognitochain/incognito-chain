@@ -35,7 +35,7 @@ const (
 	defaultDisableRpcTls   = true
 	defaultFastMode        = false
 	// For wallet
-	defaultWalletDbName = "wallet.db"
+	defaultWalletName = "wallet"
 )
 
 var (
@@ -94,8 +94,8 @@ type config struct {
 	SealerSpendingKey string `long:"sealerspendingkey" description:"!!!WARNING Leave this if you don't know what this is"`
 	SealerKeySet      string `long:"sealerkeyset" description:"Key-set of the block sealer used to seal block"`
 	// For Wallet
-	Wallet           bool   `long:"wallet" description:"Use wallet"`
-	WalletDbName     string `long:"walletdbname" description:"Wallet Database Name file, default is wallet.db"`
+	Wallet           bool   `long:"enablewallet" description:"Use wallet"`
+	WalletName       string `long:"wallet" description:"Wallet Database Name file, default is 'wallet''"`
 	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
 
 	FastMode bool `long:"fastmode" description:"Load existed chain dependencies instead of rebuild from block data"`
@@ -277,7 +277,7 @@ func loadConfig() (*config, []string, error) {
 		RPCKey:               defaultRPCKeyFile,
 		RPCCert:              defaultRPCCertFile,
 		Generate:             defaultGenerate,
-		WalletDbName:         defaultWalletDbName,
+		WalletName:           defaultWalletName,
 		DisableTLS:           defaultDisableRpcTls,
 		RPCDisableAuth:       false,
 		DiscoverPeers:        false,

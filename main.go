@@ -63,13 +63,13 @@ func mainMaster(serverChan chan<- *Server) error {
 		walletObj = &wallet.Wallet{}
 		walletObj.Config = &wallet.WalletConfig{
 			DataDir:        cfg.DataDir,
-			DataFile:       cfg.WalletDbName,
-			DataPath:       filepath.Join(cfg.DataDir, cfg.WalletDbName),
+			DataFile:       cfg.WalletName,
+			DataPath:       filepath.Join(cfg.DataDir, cfg.WalletName),
 			IncrementalFee: 0,
 		}
 		err = walletObj.LoadWallet(cfg.WalletPassphrase)
 		if err != nil {
-			walletObj.Init(cfg.WalletPassphrase, 0)
+			walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
 			walletObj.Save(cfg.WalletPassphrase)
 		}
 	}

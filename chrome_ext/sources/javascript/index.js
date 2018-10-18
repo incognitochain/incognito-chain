@@ -46,6 +46,7 @@ function loadListAccount() {
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
                 var accounts = response.Result.Accounts;
+                $('#walletName').text(response.Result.WalletName);
                 removeChilds('list_account')
                 accountTotal = 0;
                 for (var key in accounts) {
