@@ -57,7 +57,7 @@ var RpcHandler = map[string]commandHandler{
 
 	//POS
 	"votecandidate": RpcServer.handleVoteCandidate,
-	"getheader": RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
+	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 }
 
 // Commands that are available to a limited user
@@ -684,7 +684,7 @@ func (self RpcServer) handleCreateRegistration(params interface{}, closeChan <-c
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.Config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, common.TxOutCoinType, transaction.SortByAmount, false)
+	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, common.TxOutCoinType, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
@@ -707,10 +707,10 @@ func (self RpcServer) handleCreateRegistration(params interface{}, closeChan <-c
 	// check real fee per Tx
 	var realFee uint64
 	if int64(estimateFeeCoinPerKb) == -1 {
-		temp, _ := self.Config.FeeEstimator[chainIdSender].EstimateFee(numBlock)
+		temp, _ := self.config.FeeEstimator[chainIdSender].EstimateFee(numBlock)
 		estimateFeeCoinPerKb = int64(temp)
 	}
-	estimateFeeCoinPerKb += int64(self.Config.Wallet.Config.PayTxFee)
+	estimateFeeCoinPerKb += int64(self.config.Wallet.Config.IncrementalFee)
 	estimateTxSizeInKb := transaction.EstimateTxSize(candidateTxs, paymentInfos)
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 
@@ -738,9 +738,9 @@ func (self RpcServer) handleCreateRegistration(params interface{}, closeChan <-c
 	commitmentsDb := make(map[byte]([][]byte))
 	merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
-		merkleRootCommitments[chainId] = &self.Config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
+		merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
 		// get tx view point
-		txViewPoint, _ := self.Config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainId)
+		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainId)
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers(common.TxOutCoinType)
 		commitmentsDb[chainId] = txViewPoint.ListCommitments(common.TxOutCoinType)
 	}
@@ -782,7 +782,7 @@ func (self RpcServer) handleSendRawRegistration(params interface{}, closeChan <-
 		return nil, err
 	}
 
-	hash, txDesc, err := self.Config.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, txDesc, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
 		return nil, err
 	}
@@ -797,7 +797,7 @@ func (self RpcServer) handleSendRawRegistration(params interface{}, closeChan <-
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
-	self.Config.Server.PushMessageToAll(txMsg)
+	self.config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil
 }
@@ -1446,6 +1446,6 @@ func (self RpcServer) handleCreateSealerKeySet(params interface{}, closeChan <-c
 
 func (self RpcServer) handleGetCndList(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// param #1: private key of sender
-	cndList := self.Config.BlockChain.GetCndList()
+	cndList := self.config.BlockChain.GetCndList()
 	return cndList, nil
 }
