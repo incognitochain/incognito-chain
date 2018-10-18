@@ -140,7 +140,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 
 	// Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
-	if cfg.NoRebuildChainDep {
+	if cfg.FastMode {
 		Logger.log.Info("Load chain dependencies from DB")
 		self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 		for _, bestState := range self.blockChain.BestState {

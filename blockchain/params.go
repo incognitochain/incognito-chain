@@ -116,13 +116,6 @@ var MainNetParams = Params{
 
 	// blockChain parameters
 	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(0x18aea41a, 0x1d00ffff, 1, MainnetGenesisblockPaymentAddress, pposValidators, MainnetInitFundSalary),
-	// SubsidyReductionInterval: 210000,
-	// TargetTimespan:           time.Hour * 24 * 14, // 14 days
-	// TargetTimePerBlock:       time.Minute * 10,    // 10 minutes
-	// RetargetAdjustmentFactor: 4,                   // 25% less, 400% more
-	// ReduceMinDifficulty:      false,
-	// MinDiffReductionTime:     0,
-	// GenerateSupported:        false,
 }
 
 // TestNetParams defines the network parameters for the test coin network.

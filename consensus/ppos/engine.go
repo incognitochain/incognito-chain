@@ -104,7 +104,7 @@ func (self *Engine) Start() error {
 	copy(self.committee.UpcomingCommittee, self.committee.CurrentCommittee)
 
 	if _, ok := self.config.FeeEstimator[0]; !ok {
-		// if happen when NoRebuildChainDep = false
+		// happen when FastMode = false
 		validatedChainsHeight := make([]int, common.TotalValidators)
 		self.config.FeeEstimator = make(map[byte]*mempool.FeeEstimator)
 		var wg sync.WaitGroup
