@@ -68,6 +68,8 @@ func (tx Tx) Hash() *common.Hash {
 // - JSDescriptions are valid (zk-snark proof satisfied)
 // Note: This method doesn't check for double spending
 func (tx *Tx) ValidateTransaction() bool {
+	return true
+
 	// Check for tx signature
 	tx.SetTxId(tx.Hash())
 	valid, err := VerifySign(tx)
@@ -201,7 +203,10 @@ func CreateTx(
 	senderFullKey.ImportFromPrivateKeyByte(senderKey[:])
 
 	// Create tx before adding js descs
-	tx := CreateEmptyTx()
+	tx, err := CreateEmptyTx()
+	if err != nil {
+		return nil, err
+	}
 	tempKeySet := cashec.KeySet{}
 	tempKeySet.ImportFromPrivateKey(senderKey)
 	lastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
@@ -365,7 +370,7 @@ func CreateTx(
 
 		// Generate proof and sign tx
 		var reward uint64 // Zero reward for non-coinbase transaction
-		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply)
+		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, false)
 		if err != nil {
 			return nil, err
 		}
@@ -380,7 +385,7 @@ func CreateTx(
 	}
 
 	// Sign tx
-	tx, err := SignTx(tx)
+	tx, err = SignTx(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -396,6 +401,7 @@ func (tx *Tx) BuildNewJSDesc(
 	outputs []*client.JSOutput,
 	rtMap map[byte][]byte,
 	reward, fee uint64,
+	noPrivacy bool,
 ) error {
 	// Gather inputs from different chains
 	inputs := []*client.JSInput{}
@@ -417,6 +423,9 @@ func (tx *Tx) BuildNewJSDesc(
 	var seed, phi []byte
 	var outputR [][]byte
 	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rts, reward, fee, seed, phi, outputR, tx.AddressLastByte)
+	if noPrivacy {
+		proof = nil
+	}
 	if err != nil {
 		return err
 	}
@@ -442,7 +451,7 @@ func (tx *Tx) buildJSDescAndEncrypt(
 ) error {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
-	notes := [2]client.Note{*outputs[0].OutputNote, *outputs[1].OutputNote}
+	notes := [2]*client.Note{outputs[0].OutputNote, outputs[1].OutputNote}
 	keys := [2]client.TransmissionKey{outputs[0].EncKey, outputs[1].EncKey}
 
 	ephemeralPubKey := new(client.EphemeralPubKey)
@@ -466,7 +475,10 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	fmt.Printf("notes[1].Rho: %x\n", notes[1].Rho)
 	fmt.Printf("notes[1].R: %x\n", notes[1].R)
 	fmt.Printf("notes[1].Memo: %v\n", notes[1].Memo)
-	noteciphers := client.EncryptNote(notes, keys, *ephemeralPrivKey, *ephemeralPubKey, hSig)
+	var noteciphers [][] byte
+	if proof != nil {
+		noteciphers = client.EncryptNote(notes, keys, *ephemeralPrivKey, *ephemeralPubKey, hSig)
+	}
 
 	//Calculate vmacs to prove this transaction is signed by this user
 	vmacs := make([][]byte, 2)
@@ -489,6 +501,9 @@ func (tx *Tx) buildJSDescAndEncrypt(
 		Vmacs:           vmacs,
 	}
 	tx.Descs = append(tx.Descs, desc)
+	if desc.Proof == nil { // no privacy
+		desc.Note = []*client.Note{outputs[0].OutputNote, outputs[1].OutputNote}
+	}
 
 	fmt.Println("desc:")
 	fmt.Printf("Anchor: %x\n", desc.Anchor)
@@ -616,7 +631,10 @@ func GenerateProofForGenesisTx(
 	tempKeySet.ImportFromPrivateKey(inputs[0].Key)
 	addressLastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
 
-	tx := CreateEmptyTx()
+	tx, err := CreateEmptyTx()
+	if err != nil {
+		return nil, err
+	}
 	tx.JSPubKey = sigPubKey
 	tx.AddressLastByte = addressLastByte
 	fmt.Printf("JSPubKey: %x\n", tx.JSPubKey)
@@ -714,11 +732,11 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 }
 
 // CreateEmptyTx returns a new Tx initialized with default data
-func CreateEmptyTx() *Tx {
+func CreateEmptyTx() (*Tx, error) {
 	//Generate signing key 96 bytes
 	sigPrivKey, err := client.GenerateKey(rand.Reader)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// Verification key 64 bytes
@@ -737,5 +755,5 @@ func CreateEmptyTx() *Tx {
 		txId:       nil,
 		sigPrivKey: sigPrivKey,
 	}
-	return tx
+	return tx, nil
 }

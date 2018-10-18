@@ -17,6 +17,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/database"
 	"github.com/ninjadotorg/cash-prototype/privacy/client"
 	"github.com/ninjadotorg/cash-prototype/transaction"
+	"sort"
 )
 
 const (
@@ -131,6 +132,17 @@ func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 	for _, blockTx := range block.Transactions {
 		if blockTx.GetType() == common.TxNormalType {
 			tx, ok := blockTx.(*transaction.Tx)
+			if ok == false {
+				return fmt.Errorf("Transaction in block not valid")
+			}
+
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					tree.AddNewNode(cm[:])
+				}
+			}
+		} else if blockTx.GetType() == common.TxVotingType {
+			tx, ok := blockTx.(*transaction.TxVoting)
 			if ok == false {
 				return fmt.Errorf("Transaction in block not valid")
 			}
@@ -558,6 +570,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 					}
 					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
 				}
+				// TODO Voting
 			}
 			// detected some tx can be accepted
 			if len(txsInBlockAccepted) > 0 {
@@ -692,6 +705,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, co
 						txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
 					}
 				}
+				// TODO Voting
 			}
 			// detected some tx can be accepted
 			if len(txsInBlockAccepted) > 0 {
@@ -783,4 +797,56 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 	// unlock chain
 	self.chainLock.Unlock()
 	return result, nil
+}
+
+/*
+Get Candidate List from all chain and merge all to one
+*/
+func (self *BlockChain) GetCndList() ([]string) {
+	cndList := []string{}
+	for _, bestState := range self.BestState {
+		for nodeAddr, _ := range bestState.Candidates {
+			if common.IndexOfStr(nodeAddr, cndList) < 0 {
+				cndList = append(cndList, nodeAddr)
+			}
+		}
+	}
+	sort.Slice(cndList, func(i, j int) bool {
+		cndInfoi := self.GetCndInfo(cndList[i])
+		cndInfoj := self.GetCndInfo(cndList[j])
+		if cndInfoi.Value == cndInfoj.Value {
+			if cndInfoi.Timestamp < cndInfoj.Timestamp {
+				return true
+			} else if cndInfoi.Timestamp > cndInfoj.Timestamp {
+				return false
+			} else {
+				if cndInfoi.ChainID <= cndInfoj.ChainID {
+					return true
+				} else if cndInfoi.ChainID < cndInfoj.ChainID {
+					return false
+				}
+			}
+		} else if cndInfoi.Value > cndInfoj.Value {
+			return true
+		} else {
+			return false
+		}
+		return false
+	})
+	return cndList
+}
+
+func (self *BlockChain) GetCndInfo(nodeAddr string) (CndInfo) {
+	var cndVal CndInfo
+	for _, bestState := range self.BestState {
+		cndValTmp, ok := bestState.Candidates[nodeAddr]
+		if ok {
+			cndVal.Value += cndValTmp.Value
+			if cndValTmp.Timestamp > cndVal.Timestamp {
+				cndVal.Timestamp = cndValTmp.Timestamp
+				cndVal.ChainID = cndValTmp.ChainID
+			}
+		}
+	}
+	return cndVal
 }

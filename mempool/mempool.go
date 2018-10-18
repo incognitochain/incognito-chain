@@ -91,6 +91,15 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 				Logger.log.Error(err)
 			}
 		}
+	} else if tx.GetType() == common.TxVotingType {
+		if tp.config.FeeEstimator != nil {
+			chainId, err := common.GetTxSenderChain(tx.(*transaction.TxVoting).AddressLastByte)
+			if err == nil {
+				tp.config.FeeEstimator[chainId].ObserveTransaction(txD)
+			} else {
+				Logger.log.Error(err)
+			}
+		}
 	}
 
 	return txD
@@ -125,8 +134,20 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	txHash := tx.Hash()
 
 	// that make sure transaction is accepted when passed any rules
-	txInfo := tx.(*transaction.Tx)
-	chainID, err := common.GetTxSenderChain(txInfo.AddressLastByte)
+	var chainID byte
+	var err error
+
+	switch tx.(type) {
+	case *transaction.Tx:
+		log.Println("Normal tx again")
+		txInfo := tx.(*transaction.Tx)
+		chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
+	case *transaction.TxVoting:
+		log.Println("Tx voting ")
+		txInfo := tx.(*transaction.TxVoting)
+		chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
+	}
+
 	if err != nil {
 		return nil, nil, err
 	}
@@ -148,8 +169,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	}
 	// end check with policy
 
-	// validate double spend for normal tx
-	if tx.GetType() == common.TxNormalType {
+	// validate double spend for : normal tx, voting tx
+	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxVotingType {
 		txViewPoint, err := tp.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainID)
 		if err != nil {
 			str := fmt.Sprintf("Can not check double spend for tx")
@@ -158,7 +179,13 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 			return nil, nil, err
 		}
 		nullifierDb := txViewPoint.ListNullifiers(common.AssetTypeCoin)
-		for _, desc := range tx.(*transaction.Tx).Descs {
+		var descs []*transaction.JoinSplitDesc
+		if tx.GetType() == common.TxNormalType {
+			descs = tx.(*transaction.Tx).Descs
+		} else if tx.GetType() == common.TxVotingType {
+			descs = tx.(*transaction.TxVoting).Descs
+		}
+		for _, desc := range descs {
 			for _, nullifer := range desc.Nullifiers {
 				existed, err := common.SliceBytesExists(nullifierDb, nullifer)
 				if err != nil {
@@ -335,6 +362,12 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 		{
 			return 0, nil
 		}
+	case common.TxVotingType:
+		{
+			votingTx := tx.(*transaction.TxVoting)
+			err := tp.config.Policy.CheckVotingTransactionFee(votingTx)
+			return votingTx.Fee, err
+		}
 	default:
 		{
 			return 0, errors.New("Wrong tx type")
@@ -342,148 +375,291 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 	}
 }
 
+func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
+	chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
+	if err != nil {
+		str := fmt.Sprintf("Can not check double spend for tx")
+		err := MempoolTxError{}
+		err.Init(CanNotCheckDoubleSpend, errors.New(str))
+		return false, err
+	}
+	txN := tx
+	//check version
+	if txN.Version > transaction.TxVersion {
+		return false, errors.New("Wrong tx version")
+	}
+	// check LockTime before now
+	if int64(txN.LockTime) > time.Now().Unix() {
+		return false, errors.New("Wrong tx locktime")
+	}
+	// check Type equal "n"
+	if txN.Type != common.TxVotingType {
+		return false, errors.New("Wrong tx type")
+	}
+	// check length of JSPubKey
+	if len(txN.JSPubKey) != 64 {
+		return false, errors.New("Wrong tx jspubkey")
+	}
+	// check length of JSSig
+	if len(txN.JSSig) != 64 {
+		return false, errors.New("Wrong tx jssig")
+	}
+	//check Descs
+
+	// get list nullifiers from db to check spending
+	txViewPointTxOutBond, err := tp.config.BlockChain.FetchTxViewPoint(common.AssetTypeBond, chainId)
+	if err != nil {
+		return false, errors.New("Wrong tx nultifier")
+	}
+	nullifiersInDbTxOutBond := txViewPointTxOutBond.ListNullifiers(common.AssetTypeBond)
+
+	txViewPointTxOutCoin, err := tp.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainId)
+	if err != nil {
+		return false, errors.New("Wrong tx nultifier")
+	}
+	nullifiersInDbTxOutCoin := txViewPointTxOutCoin.ListNullifiers(common.AssetTypeCoin)
+
+	for _, desc := range txN.Descs {
+		// check length of Anchor
+		if len(desc.Anchor) != 2 {
+			return false, errors.New("Wrong tx desc's anchor")
+		}
+		// check length of EphemeralPubKey
+		if len(desc.EphemeralPubKey) != client.EphemeralKeyLength {
+			return false, errors.New("Wrong tx desc's ephemeralpubkey")
+		}
+		// check length of HSigSeed
+		if len(desc.HSigSeed) != 32 {
+			return false, errors.New("Wrong tx desc's hsigseed")
+		}
+		// check value of Type
+		if desc.Type != common.AssetTypeBond && desc.Type != common.AssetTypeCoin {
+			return false, errors.New("Wrong tx desc's type")
+		}
+		// check length of Nullifiers
+		if len(desc.Nullifiers) != 2 {
+			return false, errors.New("Wrong tx desc's nullifiers")
+		}
+		if len(desc.Nullifiers[0]) != 32 {
+			return false, errors.New("Wrong tx desc's nullifiers")
+		}
+		if len(desc.Nullifiers[1]) != 32 {
+			return false, errors.New("Wrong tx desc's nullifiers")
+		}
+		// check length of Commitments
+		if len(desc.Commitments) != 2 {
+			return false, errors.New("Wrong tx desc's commitments")
+		}
+		if len(desc.Commitments[0]) != 32 {
+			return false, errors.New("Wrong tx desc's commitments")
+		}
+		if len(desc.Commitments[1]) != 32 {
+			return false, errors.New("Wrong tx desc's commitments")
+		}
+		// check length of Vmacs
+		if len(desc.Vmacs) != 2 {
+			return false, errors.New("Wrong tx desc's vmacs")
+		}
+		if len(desc.Vmacs[0]) != 32 {
+			return false, errors.New("Wrong tx desc's vmacs")
+		}
+		if len(desc.Vmacs[1]) != 32 {
+			return false, errors.New("Wrong tx desc's vmacs")
+		}
+		//
+		if desc.Proof == nil {
+			return false, errors.New("Wrong tx desc's proof")
+		}
+		// check length of Proof
+		if len(desc.Proof.G_A) != 33 ||
+			len(desc.Proof.G_APrime) != 33 ||
+			len(desc.Proof.G_B) != 65 ||
+			len(desc.Proof.G_BPrime) != 33 ||
+			len(desc.Proof.G_C) != 33 ||
+			len(desc.Proof.G_CPrime) != 33 ||
+			len(desc.Proof.G_K) != 33 ||
+			len(desc.Proof.G_H) != 33 {
+			return false, errors.New("Wrong tx desc's proof")
+		}
+		//
+		if len(desc.EncryptedData) != 2 {
+			return false, errors.New("Wrong tx desc's encryptedData")
+		}
+		// check nulltifier is existed in DB
+		if desc.Type == common.AssetTypeBond {
+			checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[0])
+			if err != nil || checkCandiateNullifier == true {
+				// candidate nullifier is existed in db
+				return false, errors.New("Wrong tx desc's nullifier")
+			}
+			checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[1])
+			if err != nil || checkCandiateNullifier == true {
+				// candidate nullifier is existed in db
+				return false, errors.New("Wrong tx desc's nullifier")
+			}
+		}
+		if desc.Type == common.AssetTypeBond {
+			checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[0])
+			if err != nil || checkCandiateNullifier == true {
+				// candidate nullifier is existed in db
+				return false, errors.New("Wrong tx desc's nullifier")
+			}
+			checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[1])
+			if err != nil || checkCandiateNullifier == true {
+				// candidate nullifier is existed in db
+				return false, errors.New("Wrong tx desc's nullifier")
+			}
+		}
+		if desc.Reward != 0 {
+			return false, errors.New("Wrong tx desc's reward")
+		}
+	}
+	return true, nil
+}
+
+func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxVoting) (bool, error) {
+	if !common.ValidateNodeAddress(txVoting.NodeAddr) {
+		return false, errors.New("Wrong voting node data")
+	}
+	tx := txVoting.Tx
+	chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
+	if err != nil {
+		str := fmt.Sprintf("Can not check double spend for tx")
+		err := MempoolTxError{}
+		err.Init(CanNotCheckDoubleSpend, errors.New(str))
+		return false, errors.New("Wrong tx version")
+	}
+	txN := tx
+	//check version
+	if txN.Version > transaction.TxVersion {
+		return false, errors.New("Wrong tx version")
+	}
+	// check LockTime before now
+	if int64(txN.LockTime) > time.Now().Unix() {
+		return false, errors.New("Wrong tx locktime")
+	}
+	// check Type equal "n"
+	if txN.Type != common.TxVotingType {
+		return false, errors.New("Wrong tx type")
+	}
+	// check length of JSPubKey
+	if len(txN.JSPubKey) != 64 {
+		return false, errors.New("Wrong tx jspubkey")
+	}
+	// check length of JSSig
+	if len(txN.JSSig) != 64 {
+		return false, errors.New("Wrong tx jssig")
+	}
+	//check Descs
+
+	// get list nullifiers from db to check spending
+	txViewPointTxOutBond, err := tp.config.BlockChain.FetchTxViewPoint(common.AssetTypeBond, chainId)
+	if err != nil {
+		return false, errors.New("Wrong tx nultifier")
+	}
+	nullifiersInDbTxOutBond := txViewPointTxOutBond.ListNullifiers(common.AssetTypeBond)
+
+	txViewPointTxOutCoin, err := tp.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainId)
+	if err != nil {
+		return false, errors.New("Wrong tx nultifier")
+	}
+	nullifiersInDbTxOutCoin := txViewPointTxOutCoin.ListNullifiers(common.AssetTypeCoin)
+
+	for _, desc := range txN.Descs {
+		// check length of Anchor
+		if len(desc.Anchor) != 2 {
+			return false, errors.New("Wrong tx desc's anchor")
+		}
+		// check length of EphemeralPubKey
+		if len(desc.EphemeralPubKey) != client.EphemeralKeyLength {
+			return false, errors.New("Wrong tx desc's ephemeralpubkey")
+		}
+		// check length of HSigSeed
+		if len(desc.HSigSeed) != 32 {
+			return false, errors.New("Wrong tx desc's hsigseed")
+		}
+		// check value of Type
+		if desc.Type != common.AssetTypeBond && desc.Type != common.AssetTypeCoin {
+			return false, errors.New("Wrong tx desc's type")
+		}
+		// check length of Nullifiers
+		if len(desc.Nullifiers) != 2 {
+			return false, errors.New("Wrong tx desc's nullifiers")
+		}
+		if len(desc.Nullifiers[0]) != 32 {
+			return false, errors.New("Wrong tx desc's nullifiers")
+		}
+		if len(desc.Nullifiers[1]) != 32 {
+			return false, errors.New("Wrong tx desc's nullifiers")
+		}
+		// check length of Commitments
+		if len(desc.Commitments) != 2 {
+			return false, errors.New("Wrong tx desc's commitments")
+		}
+		if len(desc.Commitments[0]) != 32 {
+			return false, errors.New("Wrong tx desc's commitments")
+		}
+		if len(desc.Commitments[1]) != 32 {
+			return false, errors.New("Wrong tx desc's commitments")
+		}
+		// check length of Vmacs
+		if len(desc.Vmacs) != 2 {
+			return false, errors.New("Wrong tx desc's vmacs")
+		}
+		if len(desc.Vmacs[0]) != 32 {
+			return false, errors.New("Wrong tx desc's vmacs")
+		}
+		if len(desc.Vmacs[1]) != 32 {
+			return false, errors.New("Wrong tx desc's vmacs")
+		}
+		//
+		if desc.Proof != nil { // no privacy
+			return false, errors.New("Wrong tx desc's proof")
+		}
+		if len(desc.EncryptedData) != 0 {
+			return false, errors.New("Wrong tx desc's encryptedData")
+		}
+		// check nulltifier is existed in DB
+		if desc.Type == common.AssetTypeBond {
+			checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[0])
+			if err != nil || checkCandiateNullifier == true {
+				// candidate nullifier is existed in db
+				return false, errors.New("Wrong tx desc's nullifier")
+			}
+			checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[1])
+			if err != nil || checkCandiateNullifier == true {
+				// candidate nullifier is existed in db
+				return false, errors.New("Wrong tx desc's nullifier")
+			}
+		}
+		if desc.Type == common.AssetTypeBond {
+			checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[0])
+			if err != nil || checkCandiateNullifier == true {
+				// candidate nullifier is existed in db
+				return false, errors.New("Wrong tx desc's nullifier")
+			}
+			checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[1])
+			if err != nil || checkCandiateNullifier == true {
+				// candidate nullifier is existed in db
+				return false, errors.New("Wrong tx desc's nullifier")
+			}
+		}
+		if desc.Reward != 0 {
+			return false, errors.New("Wrong tx desc's reward")
+		}
+	}
+	return true, nil
+}
+
 /*
 ValidateSanityData - validate sansity data of tx
 */
 func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 	if tx.GetType() == common.TxNormalType {
-		chainId, err := common.GetTxSenderChain(tx.(*transaction.Tx).AddressLastByte)
-		if err != nil {
-			str := fmt.Sprintf("Can not check double spend for tx")
-			err := MempoolTxError{}
-			err.Init(CanNotCheckDoubleSpend, errors.New(str))
+		txA := tx.(*transaction.TxVoting)
+		ok, err := tp.validateSanityNormalTxData(&txA.Tx)
+		if !ok {
 			return false, err
-		}
-		txN := tx.(*transaction.Tx)
-		//check version
-		if txN.Version > transaction.TxVersion {
-			return false, errors.New("Wrong tx version")
-		}
-		// check LockTime before now
-		if int64(txN.LockTime) > time.Now().Unix() {
-			return false, errors.New("Wrong tx locktime")
-		}
-		// check Type equal "n"
-		if txN.Type != common.TxNormalType {
-			return false, errors.New("Wrong tx type")
-		}
-		// check length of JSPubKey
-		if len(txN.JSPubKey) != 64 {
-			return false, errors.New("Wrong tx jspubkey")
-		}
-		// check length of JSSig
-		if len(txN.JSSig) != 64 {
-			return false, errors.New("Wrong tx jssig")
-		}
-		//check Descs
-
-		// get list nullifiers from db to check spending
-		txViewPointTxOutBond, err := tp.config.BlockChain.FetchTxViewPoint(common.AssetTypeBond, chainId)
-		if err != nil {
-			return false, errors.New("Wrong tx nultifier")
-		}
-		nullifiersInDbTxOutBond := txViewPointTxOutBond.ListNullifiers(common.AssetTypeBond)
-
-		txViewPointTxOutCoin, err := tp.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainId)
-		if err != nil {
-			return false, errors.New("Wrong tx nultifier")
-		}
-		nullifiersInDbTxOutCoin := txViewPointTxOutCoin.ListNullifiers(common.AssetTypeCoin)
-
-		for _, desc := range txN.Descs {
-			// check length of Anchor
-			if len(desc.Anchor) != 2 {
-				return false, errors.New("Wrong tx desc's anchor")
-			}
-			// check length of EphemeralPubKey
-			if len(desc.EphemeralPubKey) != client.EphemeralKeyLength {
-				return false, errors.New("Wrong tx desc's ephemeralpubkey")
-			}
-			// check length of HSigSeed
-			if len(desc.HSigSeed) != 32 {
-				return false, errors.New("Wrong tx desc's hsigseed")
-			}
-			// check value of Type
-			if desc.Type != common.AssetTypeBond && desc.Type != common.AssetTypeCoin {
-				return false, errors.New("Wrong tx desc's type")
-			}
-			// check length of Nullifiers
-			if len(desc.Nullifiers) != 2 {
-				return false, errors.New("Wrong tx desc's nullifiers")
-			}
-			if len(desc.Nullifiers[0]) != 32 {
-				return false, errors.New("Wrong tx desc's nullifiers")
-			}
-			if len(desc.Nullifiers[1]) != 32 {
-				return false, errors.New("Wrong tx desc's nullifiers")
-			}
-			// check length of Commitments
-			if len(desc.Commitments) != 2 {
-				return false, errors.New("Wrong tx desc's commitments")
-			}
-			if len(desc.Commitments[0]) != 32 {
-				return false, errors.New("Wrong tx desc's commitments")
-			}
-			if len(desc.Commitments[1]) != 32 {
-				return false, errors.New("Wrong tx desc's commitments")
-			}
-			// check length of Vmacs
-			if len(desc.Vmacs) != 2 {
-				return false, errors.New("Wrong tx desc's vmacs")
-			}
-			if len(desc.Vmacs[0]) != 32 {
-				return false, errors.New("Wrong tx desc's vmacs")
-			}
-			if len(desc.Vmacs[1]) != 32 {
-				return false, errors.New("Wrong tx desc's vmacs")
-			}
-			//
-			if desc.Proof == nil {
-				return false, errors.New("Wrong tx desc's proof")
-			}
-			// check length of Proof
-			if len(desc.Proof.G_A) != 33 ||
-				len(desc.Proof.G_APrime) != 33 ||
-				len(desc.Proof.G_B) != 65 ||
-				len(desc.Proof.G_BPrime) != 33 ||
-				len(desc.Proof.G_C) != 33 ||
-				len(desc.Proof.G_CPrime) != 33 ||
-				len(desc.Proof.G_K) != 33 ||
-				len(desc.Proof.G_H) != 33 {
-				return false, errors.New("Wrong tx desc's proof")
-			}
-			//
-			if len(desc.EncryptedData) != 2 {
-				return false, errors.New("Wrong tx desc's encryptedData")
-			}
-			// check nulltifier is existed in DB
-			if desc.Type == common.AssetTypeBond {
-				checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[0])
-				if err != nil || checkCandiateNullifier == true {
-					// candidate nullifier is existed in db
-					return false, errors.New("Wrong tx desc's nullifier")
-				}
-				checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[1])
-				if err != nil || checkCandiateNullifier == true {
-					// candidate nullifier is existed in db
-					return false, errors.New("Wrong tx desc's nullifier")
-				}
-			}
-			if desc.Type == common.AssetTypeBond {
-				checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[0])
-				if err != nil || checkCandiateNullifier == true {
-					// candidate nullifier is existed in db
-					return false, errors.New("Wrong tx desc's nullifier")
-				}
-				checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[1])
-				if err != nil || checkCandiateNullifier == true {
-					// candidate nullifier is existed in db
-					return false, errors.New("Wrong tx desc's nullifier")
-				}
-			}
-			if desc.Reward != 0 {
-				return false, errors.New("Wrong tx desc's reward")
-			}
 		}
 	} else if tx.GetType() == common.TxActionParamsType {
 		txA := tx.(*transaction.ActionParamTx)
@@ -498,6 +674,12 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		// check Type equal "a"
 		if txA.Type != common.TxActionParamsType {
 			return false, errors.New("Wrong tx type")
+		}
+	} else if tx.GetType() == common.TxVotingType {
+		txA := tx.(*transaction.TxVoting)
+		ok, err := tp.validateSanityVotingTxData(txA)
+		if !ok {
+			return false, err
 		}
 	} else {
 		return false, errors.New("Wrong tx type")

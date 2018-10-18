@@ -7,6 +7,7 @@ const (
 const (
 	TxNormalType        = "n" // normal tx(send and receive coin)
 	TxActionParamsType  = "a" // action tx to edit params
+	TxVotingType        = "v" // voting tx
 	IncMerkleTreeHeight = 29
 )
 

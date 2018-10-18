@@ -112,6 +112,22 @@ concludeBlock:
 				}
 				descType = desc.Type
 			}
+		} else if blockTx.GetType() == common.TxVotingType {
+			tx, ok := blockTx.(*transaction.TxVoting)
+			if !ok {
+				Logger.log.Error("Transaction not recognized to store in database")
+				continue
+			}
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					commitments = append(commitments, cm)
+				}
+
+				for _, nf := range desc.Nullifiers {
+					nullifiers = append(nullifiers, nf)
+				}
+				descType = desc.Type
+			}
 		}
 	}
 	// TODO(@0xsirrush): check if cm and nf should be saved here (when generate block template)
@@ -147,6 +163,17 @@ concludeBlock:
 	for _, tempBlockTx := range block.Transactions {
 		if tempBlockTx.GetType() == common.TxNormalType {
 			tx, ok := tempBlockTx.(*transaction.Tx)
+			if ok == false {
+				Logger.log.Errorf("Transaction in block not valid")
+			}
+
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					Logger.log.Infof("%x", cm[:])
+				}
+			}
+		} else if tempBlockTx.GetType() == common.TxVotingType {
+			tx, ok := tempBlockTx.(*transaction.TxVoting)
 			if ok == false {
 				Logger.log.Errorf("Transaction in block not valid")
 			}
@@ -234,6 +261,8 @@ func extractTxsAndComputeInitialFees(txDescs []*transaction.TxDesc) (
 		if txType == common.TxActionParamsType {
 			actionParamTxs = append(actionParamTxs, tx.(*transaction.ActionParamTx))
 			continue
+		} else if txType == common.TxVotingType {
+			continue
 		}
 		normalTx, _ := tx.(*transaction.Tx)
 		feeMap[normalTx.Descs[0].Type] += txDesc.Fee
@@ -316,11 +345,14 @@ func createSalaryTx(
 	outputs[1].OutputNote = placeHolderOutputNote
 
 	// Generate proof and sign tx
-	tx := transaction.CreateEmptyTx()
+	tx, err := transaction.CreateEmptyTx()
+	if err != nil {
+		return nil, err
+	}
 	tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
 	rtMap := map[byte][]byte{chainID: rt}
 	inputMap := map[byte][]*client.JSInput{chainID: inputs}
-	err := tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0)
+	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0, false)
 	if err != nil {
 		return nil, err
 	}

@@ -13,6 +13,7 @@ import (
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wire"
 )
 
@@ -389,6 +390,12 @@ finalizing:
 		return err
 	}
 	finalBlock.ChainLeaderSig = sig
+
+	// hash candidate list and set to block header
+	candidates := self.GetCndList(finalBlock)
+	candidateBytes, _ := json.Marshal(candidates)
+	finalBlock.Header.CandidateHash = common.HashH(candidateBytes)
+
 	self.UpdateChain(finalBlock)
 	self.sendBlockMsg(finalBlock)
 	return nil
@@ -406,11 +413,17 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 		Logger.log.Error(err)
 		return
 	}
+
+	// update candidate list
+	//self.UpdateCndList(block)
+
 	// update tx pool
 	for _, tx := range block.Transactions {
 		self.config.MemPool.RemoveTx(tx)
 	}
 
+	// update candidate list
+	self.config.BlockChain.BestState[block.Header.ChainID].Candidates = self.GetCndList(block)
 	self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)
 
@@ -425,4 +438,44 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.validatedChainsHeight.Unlock()
 
 	self.committee.UpdateCommittee(block.ChainLeader, block.Header.BlockCommitteeSigs)
+}
+
+func (self *Engine) GetCndList(block *blockchain.Block) (map[string]blockchain.CndInfo) {
+	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
+	candidates := bestState.Candidates
+	if candidates == nil {
+		candidates = make(map[string]blockchain.CndInfo)
+	}
+	for _, tx := range block.Transactions {
+		if tx.GetType() == common.TxVotingType {
+			txV, ok := tx.(*transaction.TxVoting)
+			nodeAddr := txV.NodeAddr
+			cndVal, ok := candidates[nodeAddr]
+			_ = cndVal
+			if !ok {
+				candidates[nodeAddr] = blockchain.CndInfo{
+					Value:     txV.GetValue(),
+					Timestamp: block.Header.Timestamp,
+					ChainID:   block.Header.ChainID,
+				}
+			} else {
+				candidates[nodeAddr] = blockchain.CndInfo{
+					Value:     cndVal.Value + txV.GetValue(),
+					Timestamp: block.Header.Timestamp,
+					ChainID:   block.Header.ChainID,
+				}
+			}
+		}
+	}
+	return candidates
+}
+
+func (self *Engine) IsExistedNodeAddr(nodeAddr string) (bool) {
+	for _, bestState := range self.config.BlockChain.BestState {
+		_, ok := bestState.Candidates[nodeAddr]
+		if ok {
+			return true
+		}
+	}
+	return false
 }

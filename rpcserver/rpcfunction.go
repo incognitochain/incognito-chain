@@ -6,12 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"strconv"
 	"time"
-
-	"github.com/ninjadotorg/cash-prototype/wire"
-
-	"net"
 
 	"github.com/ninjadotorg/cash-prototype/blockchain"
 	"github.com/ninjadotorg/cash-prototype/cashec"
@@ -21,6 +18,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/rpcserver/jsonresult"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wallet"
+	"github.com/ninjadotorg/cash-prototype/wire"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -57,9 +55,9 @@ var RpcHandler = map[string]commandHandler{
 	"getmempoolinfo": RpcServer.handleGetMempoolInfo,
 	"getmininginfo":  RpcServer.handleGetMiningInfo,
 
-
 	//POS
-	"getheader": RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
+	"votecandidate": RpcServer.handleVoteCandidate,
+	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 }
 
 // Commands that are available to a limited user
@@ -126,6 +124,11 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 	}
 
 	return result, nil
+}
+
+func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+
+	return "", nil
 }
 
 /*
@@ -639,6 +642,177 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 	return result, nil
 }
 
+func (self RpcServer) handleCreateRegistration(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	Logger.log.Info(params)
+
+	// all params
+	arrayParams := common.InterfaceSlice(params)
+
+	// param #1: private key of sender
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, nil
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	lastByte := senderKey.KeySet.PublicKey.Apk[len(senderKey.KeySet.PublicKey.Apk)-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	if err != nil {
+		return nil, nil
+	}
+
+	// param #2: list receiver
+	totalAmmount := int64(0)
+	receiversParam := int64(arrayParams[1].(float64))
+	paymentInfos := []*client.PaymentInfo{
+		&client.PaymentInfo{
+			Amount: uint64(receiversParam),
+		},
+	}
+	totalAmmount = receiversParam
+
+	// param #3: estimation fee coin per kb
+	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
+
+	// param #4: estimation fee coin per kb
+	numBlock := uint32(arrayParams[3].(float64))
+
+	nodeAddr := arrayParams[4].(string)
+	if valid := common.ValidateNodeAddress(nodeAddr); !valid {
+		return nil, errors.New("node address is wrong")
+	}
+
+	// list unspent tx for estimation fee
+	estimateTotalAmount := totalAmmount
+	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, common.AssetTypeCoin, transaction.SortByAmount, false)
+	candidateTxs := make([]*transaction.Tx, 0)
+	candidateTxsMap := make(map[byte][]*transaction.Tx)
+	for chainId, usableTxs := range usableTxsMap {
+		for _, temp := range usableTxs {
+			for _, desc := range temp.Descs {
+				for _, note := range desc.GetNote() {
+					amount := note.Value
+					estimateTotalAmount -= int64(amount)
+				}
+			}
+			txData := temp
+			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
+			candidateTxs = append(candidateTxs, &txData)
+			if estimateTotalAmount <= 0 {
+				break
+			}
+		}
+	}
+
+	// check real fee per Tx
+	var realFee uint64
+	if int64(estimateFeeCoinPerKb) == -1 {
+		temp, _ := self.config.FeeEstimator[chainIdSender].EstimateFee(numBlock)
+		estimateFeeCoinPerKb = int64(temp)
+	}
+	estimateFeeCoinPerKb += int64(self.config.Wallet.Config.IncrementalFee)
+	estimateTxSizeInKb := transaction.EstimateTxSize(candidateTxs, paymentInfos)
+	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
+
+	// list unspent tx for create tx
+	totalAmmount += int64(realFee)
+	candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
+	for chainId, usableTxs := range usableTxsMap {
+		for _, temp := range usableTxs {
+			for _, desc := range temp.Descs {
+				for _, note := range desc.GetNote() {
+					amount := note.Value
+					estimateTotalAmount -= int64(amount)
+				}
+			}
+			txData := temp
+			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
+			if estimateTotalAmount <= 0 {
+				break
+			}
+		}
+	}
+
+	// get merkleroot commitments, nullifers db, commitments db for every chain
+	nullifiersDb := make(map[byte]([][]byte))
+	commitmentsDb := make(map[byte]([][]byte))
+	merkleRootCommitments := make(map[byte]*common.Hash)
+	for chainId, _ := range candidateTxsMap {
+		merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
+		// get tx view point
+		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainId)
+		nullifiersDb[chainId] = txViewPoint.ListNullifiers(common.AssetTypeCoin)
+		commitmentsDb[chainId] = txViewPoint.ListCommitments(common.AssetTypeCoin)
+	}
+
+	fmt.Println("Create voting Tx ...")
+	tx, err := transaction.CreateVotingTx(&senderKey.KeySet.PrivateKey, paymentInfos,
+		merkleRootCommitments,
+		candidateTxsMap,
+		nullifiersDb,
+		commitmentsDb,
+		realFee,
+		chainIdSender,
+		nodeAddr)
+	if err != nil {
+		return nil, err
+	}
+	byteArrays, err := json.Marshal(tx)
+	if err == nil {
+		// return hex for a new tx
+		return hex.EncodeToString(byteArrays), nil
+	}
+
+	return nil, err
+}
+
+func (self RpcServer) handleSendRawRegistration(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	Logger.log.Info(params)
+	arrayParams := common.InterfaceSlice(params)
+	hexRawTx := arrayParams[0].(string)
+	rawTxBytes, err := hex.DecodeString(hexRawTx)
+
+	if err != nil {
+		return nil, err
+	}
+	var tx transaction.TxVoting
+	// Logger.log.Info(string(rawTxBytes))
+	err = json.Unmarshal(rawTxBytes, &tx)
+	if err != nil {
+		return nil, err
+	}
+
+	hash, txDesc, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	if err != nil {
+		return nil, err
+	}
+
+	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+
+	// broadcast message
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg.(*wire.MessageTx).Transaction = &tx
+	self.config.Server.PushMessageToAll(txMsg)
+
+	return tx.Hash(), nil
+}
+
+func (self RpcServer) handleSendRegistration(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	hexStrOfTx, err := self.handleCreateRegistration(params, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, hexStrOfTx)
+	txId, err := self.handleSendRawRegistration(newParam, closeChan)
+	return txId, err
+}
+
 /*
 // handleCreateTransaction handles createtransaction commands.
 */
@@ -683,6 +857,11 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 
 	// param #4: estimation fee coin per kb
 	numBlock := uint32(arrayParams[3].(float64))
+
+	nodeAddr := arrayParams[4].(string)
+	if valid := common.ValidateNodeAddress(nodeAddr); !valid {
+		return nil, errors.New("node address is wrong")
+	}
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
@@ -999,7 +1178,7 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 
 /*
 handleGetAllPeers - return all peers which this node connected
- */
+*/
 func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	result := make(map[string]interface{})
@@ -1263,4 +1442,10 @@ func (self RpcServer) handleCreateSealerKeySet(params interface{}, closeChan <-c
 	result["SealerKeySet"] = sealerKeySet.EncodeToString()
 	result["SealerPublicKey"] = base58.Base58Check{}.Encode(sealerKeySet.SpublicKey, byte(0x00))
 	return result, nil
+}
+
+func (self RpcServer) handleGetCndList(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// param #1: private key of sender
+	cndList := self.config.BlockChain.GetCndList()
+	return cndList, nil
 }

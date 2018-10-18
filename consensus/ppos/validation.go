@@ -11,6 +11,7 @@ import (
 	"github.com/ninjadotorg/cash-prototype/common/base58"
 	"github.com/ninjadotorg/cash-prototype/transaction"
 	"github.com/ninjadotorg/cash-prototype/wire"
+	"errors"
 )
 
 func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
@@ -67,6 +68,17 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 		for _, blockTx := range block.Transactions {
 			if blockTx.GetType() == common.TxNormalType {
 				tx, ok := blockTx.(*transaction.Tx)
+				if ok == false {
+					Logger.log.Errorf("Transaction in block not valid")
+				}
+
+				for _, desc := range tx.Descs {
+					for _, cm := range desc.Commitments {
+						Logger.log.Infof("%x", cm[:])
+					}
+				}
+			} else if blockTx.GetType() == common.TxVotingType {
+				tx, ok := blockTx.(*transaction.TxVoting)
 				if ok == false {
 					Logger.log.Errorf("Transaction in block not valid")
 				}
@@ -160,7 +172,17 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 	if err != nil {
 		return err
 	}
-	// 7. Validate transactions
+	// 7. validate candidate list hash
+	candidates := self.GetCndList(block)
+	candidateBytes, err := json.Marshal(candidates)
+	if err != nil {
+		return err
+	}
+	if block.Header.CandidateHash.String() != common.HashH(candidateBytes).String() {
+		return errors.New("Candidate List Hash is wrong")
+	}
+
+	// 8. Validate transactions
 	return self.ValidateTxList(block.Transactions)
 
 }

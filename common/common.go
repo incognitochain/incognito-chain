@@ -15,6 +15,8 @@ import (
 
 	"github.com/pkg/errors"
 	"log"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/libp2p/go-libp2p-peer"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -247,4 +249,27 @@ func IndexOfStr(item string, list []string) int {
 		}
 	}
 	return -1
+}
+
+func ValidateNodeAddress(nodeAddr string) bool {
+	if len(nodeAddr) == 0 {
+		return false
+	}
+
+	strs := strings.Split(nodeAddr, "/ipfs/")
+	if len(strs) != 2 {
+		return false
+	}
+
+	_, err := multiaddr.NewMultiaddr(strs[0])
+	if err != nil {
+		return false
+	}
+
+	_, err = peer.IDB58Decode(strs[1])
+	if err != nil {
+		return false
+	}
+
+	return true
 }
