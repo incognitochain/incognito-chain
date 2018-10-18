@@ -13,11 +13,11 @@ const (
 // unit type use in tx
 // coin or token or bond
 const (
-	TxOutCoinType  = "x" // coin x
-	TxOutBondType  = "b" // bond
-	TxGovTokenType = "g" // government token
-	TxDcbTokenType = "d" // decentralized central bank token
-	TxCmbTokenType = "c" // commercial bank token
+	AssetTypeCoin     = "x" // coin x
+	AssetTypeBond     = "b" // bond
+	AssetTypeGovToken = "g" // government token
+	AssetTypeDcbToken = "d" // decentralized central bank token
+	AssetTypeCmbToken = "c" // commercial bank token
 )
 
 const (

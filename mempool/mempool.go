@@ -150,14 +150,14 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 	// validate double spend for normal tx
 	if tx.GetType() == common.TxNormalType {
-		txViewPoint, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainID)
+		txViewPoint, err := tp.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainID)
 		if err != nil {
 			str := fmt.Sprintf("Can not check double spend for tx")
 			err := MempoolTxError{}
 			err.Init(CanNotCheckDoubleSpend, errors.New(str))
 			return nil, nil, err
 		}
-		nullifierDb := txViewPoint.ListNullifiers(common.TxOutCoinType)
+		nullifierDb := txViewPoint.ListNullifiers(common.AssetTypeCoin)
 		for _, desc := range tx.(*transaction.Tx).Descs {
 			for _, nullifer := range desc.Nullifiers {
 				existed, err := common.SliceBytesExists(nullifierDb, nullifer)
@@ -378,17 +378,17 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		//check Descs
 
 		// get list nullifiers from db to check spending
-		txViewPointTxOutBond, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutBondType, chainId)
+		txViewPointTxOutBond, err := tp.config.BlockChain.FetchTxViewPoint(common.AssetTypeBond, chainId)
 		if err != nil {
 			return false, errors.New("Wrong tx nultifier")
 		}
-		nullifiersInDbTxOutBond := txViewPointTxOutBond.ListNullifiers(common.TxOutBondType)
+		nullifiersInDbTxOutBond := txViewPointTxOutBond.ListNullifiers(common.AssetTypeBond)
 
-		txViewPointTxOutCoin, err := tp.config.BlockChain.FetchTxViewPoint(common.TxOutCoinType, chainId)
+		txViewPointTxOutCoin, err := tp.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainId)
 		if err != nil {
 			return false, errors.New("Wrong tx nultifier")
 		}
-		nullifiersInDbTxOutCoin := txViewPointTxOutCoin.ListNullifiers(common.TxOutCoinType)
+		nullifiersInDbTxOutCoin := txViewPointTxOutCoin.ListNullifiers(common.AssetTypeCoin)
 
 		for _, desc := range txN.Descs {
 			// check length of Anchor
@@ -404,7 +404,7 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 				return false, errors.New("Wrong tx desc's hsigseed")
 			}
 			// check value of Type
-			if desc.Type != common.TxOutBondType && desc.Type != common.TxOutCoinType {
+			if desc.Type != common.AssetTypeBond && desc.Type != common.AssetTypeCoin {
 				return false, errors.New("Wrong tx desc's type")
 			}
 			// check length of Nullifiers
@@ -457,7 +457,7 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 				return false, errors.New("Wrong tx desc's encryptedData")
 			}
 			// check nulltifier is existed in DB
-			if desc.Type == common.TxOutBondType {
+			if desc.Type == common.AssetTypeBond {
 				checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[0])
 				if err != nil || checkCandiateNullifier == true {
 					// candidate nullifier is existed in db
@@ -469,7 +469,7 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 					return false, errors.New("Wrong tx desc's nullifier")
 				}
 			}
-			if desc.Type == common.TxOutBondType {
+			if desc.Type == common.AssetTypeBond {
 				checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[0])
 				if err != nil || checkCandiateNullifier == true {
 					// candidate nullifier is existed in db

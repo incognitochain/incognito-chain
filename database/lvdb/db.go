@@ -53,28 +53,6 @@ func (db *db) put(key, value []byte) error {
 	return nil
 }
 
-// func (db *db) getKeyBlock(h *common.Hash) []byte {
-// 	var key []byte
-// 	key = append(blockKeyPrefix, h[:]...)
-// 	return key
-// }
-
-// func (db *db) getKeyIdx(h *common.Hash) []byte {
-// 	var key []byte
-// 	key = append(blockKeyIdxPrefix, h[:]...)
-// 	return key
-// }
-
-// func (db db) getNullifierKey(typeJoinSplitDesc string) []byte {
-// 	key := append(nullifiers, []byte(typeJoinSplitDesc)...)
-// 	return key
-// }
-
-// func (db db) getCommitmentKey(typeJoinSplitDesc string) []byte {
-// 	key := append(commitments, []byte(typeJoinSplitDesc)...)
-// 	return key
-// }
-
 func (db db) getKey(keyType string, key interface{}) []byte {
 	var dbkey []byte
 	switch keyType {

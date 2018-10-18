@@ -10,8 +10,8 @@ import (
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
 
-func (db *db) StoreNullifiers(nullifier []byte, typeJoinSplitDesc string, chainId byte) error {
-	key := db.getKey("commitment", typeJoinSplitDesc)
+func (db *db) StoreNullifiers(nullifier []byte, coinType string, chainId byte) error {
+	key := db.getKey("commitment", coinType)
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -35,9 +35,9 @@ func (db *db) StoreNullifiers(nullifier []byte, typeJoinSplitDesc string, chainI
 	return nil
 }
 
-func (db *db) FetchNullifiers(typeJoinSplitDesc string, chainId byte) ([][]byte, error) {
-	key := db.getKey("nullifier", typeJoinSplitDesc)
-	key = append(key, chainId)
+func (db *db) FetchNullifiers(coinType string, chainID byte) ([][]byte, error) {
+	key := db.getKey("nullifier", coinType)
+	key = append(key, chainID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return make([][]byte, 0), database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
@@ -52,8 +52,8 @@ func (db *db) FetchNullifiers(typeJoinSplitDesc string, chainId byte) ([][]byte,
 	return txs, nil
 }
 
-func (db *db) HasNullifier(nullifier []byte, typeJoinSplitDesc string, chainId byte) (bool, error) {
-	listNullifiers, err := db.FetchNullifiers(typeJoinSplitDesc, chainId)
+func (db *db) HasNullifier(nullifier []byte, coinType string, chainID byte) (bool, error) {
+	listNullifiers, err := db.FetchNullifiers(coinType, chainID)
 	if err != nil {
 		return false, database.NewDatabaseError(database.UnexpectedError, err)
 	}
@@ -66,11 +66,12 @@ func (db *db) HasNullifier(nullifier []byte, typeJoinSplitDesc string, chainId b
 }
 
 func (db *db) CleanNullifiers() error {
+
 	return nil
 }
 
-func (db *db) StoreCommitments(commitments []byte, typeJoinSplitDesc string, chainId byte) error {
-	key := db.getKey("commitment", typeJoinSplitDesc)
+func (db *db) StoreCommitments(commitments []byte, coinType string, chainId byte) error {
+	key := db.getKey("commitment", coinType)
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -94,8 +95,8 @@ func (db *db) StoreCommitments(commitments []byte, typeJoinSplitDesc string, cha
 	return nil
 }
 
-func (db *db) FetchCommitments(typeJoinSplitDesc string, chainId byte) ([][]byte, error) {
-	key := db.getKey("commitment", typeJoinSplitDesc)
+func (db *db) FetchCommitments(coinType string, chainId byte) ([][]byte, error) {
+	key := db.getKey("commitment", coinType)
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -110,8 +111,8 @@ func (db *db) FetchCommitments(typeJoinSplitDesc string, chainId byte) ([][]byte
 	}
 	return txs, nil
 }
-func (db *db) HasCommitment(commitment []byte, typeJoinSplitDesc string, chainId byte) (bool, error) {
-	listCommitments, err := db.FetchCommitments(typeJoinSplitDesc, chainId)
+func (db *db) HasCommitment(commitment []byte, coinType string, chainId byte) (bool, error) {
+	listCommitments, err := db.FetchCommitments(coinType, chainId)
 	if err != nil {
 		return false, database.NewDatabaseError(database.UnexpectedError, err)
 	}
