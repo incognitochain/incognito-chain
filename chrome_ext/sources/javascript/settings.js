@@ -3,7 +3,7 @@ window.onload = function () {
         // Code for localStorage/sessionStorage.
         let passphrase = window.localStorage['cash_passphrase'];
         if (passphrase == null || passphrase == '') {
-            window.location.href = "index.html";
+            window.location.href = "../../index.html";
         }
     } else {
         // Sorry! No Web Storage support..
@@ -60,7 +60,7 @@ function addNode() {
 function selectNode(nodeUrl) {
     window.localStorage['cash_passphrase'] = '';
     window.localStorage['cash_node_url'] = nodeUrl;
-    window.location.href = 'index.html';
+    window.location.href = '../../index.html';
 
     return false;
 }
