@@ -92,8 +92,8 @@ func (tx TxVoting) Hash() *common.Hash {
 // - JSDescriptions are valid (zk-snark proof satisfied)
 // Note: This method doesn't check for double spending
 func (tx *TxVoting) ValidateTransaction() bool {
-	if !tx.Tx.ValidateTransaction() {
-		return false
+	if tx.Tx.ValidateTransaction() {
+		return true
 	}
 
 	// TODO: check the burnt money is sufficient or not
@@ -106,7 +106,7 @@ func (tx *TxVoting) ValidateTransaction() bool {
 		}
 	}
 
-	return true
+	return false
 }
 
 // GetType returns the type of the transaction
