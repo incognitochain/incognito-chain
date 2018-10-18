@@ -21,6 +21,8 @@ const (
 	AssetTypeCmbToken = "c" // commercial bank token
 )
 
+var ListAsset = []string{AssetTypeCoin, AssetTypeBond, AssetTypeGovToken, AssetTypeDcbToken, AssetTypeCmbToken}
+
 const (
 	MaxBlockSize            = 5000000 //byte 5MB
 	MaxTxsInBlock           = 1000

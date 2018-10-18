@@ -56,8 +56,7 @@ var RpcHandler = map[string]commandHandler{
 	"getmininginfo":  RpcServer.handleGetMiningInfo,
 
 	//POS
-	"votecandidate": RpcServer.handleVoteCandidate,
-	"getheader":     RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
+	"getheader": RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 }
 
 // Commands that are available to a limited user
@@ -124,11 +123,6 @@ func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struc
 	}
 
 	return result, nil
-}
-
-func (self RpcServer) handleVoteCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-
-	return "", nil
 }
 
 /*
@@ -517,11 +511,11 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 
 	// get params
 	paramsArray := common.InterfaceSlice(params)
-	min := int(paramsArray[0].(float64))
-	max := int(paramsArray[1].(float64))
-	_ = min
-	_ = max
-	listKeyParams := common.InterfaceSlice(paramsArray[2])
+	assetType := paramsArray[0].(string)
+	if ok, err := common.SliceExists(common.ListAsset, assetType); !ok || err != nil {
+		return nil, NewRPCError(ErrUnexpected, errors.New(fmt.Sprintf("Asset is not in list: ", common.ListAsset)))
+	}
+	listKeyParams := common.InterfaceSlice(paramsArray[1])
 	for _, keyParam := range listKeyParams {
 		keys := keyParam.(map[string]interface{})
 
@@ -545,7 +539,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 			PublicKey:   pubKey.KeySet.PublicKey,
 		}
 
-		txsMap, err := self.config.BlockChain.GetListTxByReadonlyKey(&keySet, common.AssetTypeCoin)
+		txsMap, err := self.config.BlockChain.GetListTxByReadonlyKey(&keySet, assetType)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -941,7 +935,11 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		// return hex for a new tx
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	return hex.EncodeToString(byteArrays), nil
+	hexData := hex.EncodeToString(byteArrays)
+	result := jsonresult.CreateTransactionResult{
+		HexData: hexData,
+	}
+	return result, nil
 }
 
 /*
@@ -986,7 +984,11 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	return tx.Hash(), nil
+	txID := tx.Hash().String()
+	result := jsonresult.CreateTransactionResult{
+		TxID: txID,
+	}
+	return result, nil
 }
 
 /*
@@ -999,11 +1001,14 @@ func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, hexStrOfTx)
-	txId, err := self.handleSendTransaction(newParam, closeChan)
+	sendResult, err := self.handleSendTransaction(newParam, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	return txId, nil
+	result := jsonresult.CreateTransactionResult{
+		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
+	}
+	return result, nil
 }
 
 /*
