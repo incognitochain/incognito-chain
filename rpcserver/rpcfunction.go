@@ -1181,19 +1181,15 @@ handleGetAllPeers - return all peers which this node connected
 */
 func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
-	result := make(map[string]interface{})
-
+	result := jsonresult.GetAllPeersResult{}
 	peersMap := []string{}
-
 	peers := self.config.AddrMgr.AddressCache()
 	for _, peer := range peers {
 		for _, peerConn := range peer.PeerConns {
 			peersMap = append(peersMap, peerConn.RemoteRawAddress)
 		}
 	}
-
-	result["peers"] = peersMap
-
+	result.Peers = peersMap
 	return result, nil
 }
 
