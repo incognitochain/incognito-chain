@@ -97,8 +97,14 @@ func (tx *TxVoting) ValidateTransaction() bool {
 	}
 
 	// TODO: check the burnt money is sufficient or not
-
-	// TODO: check whether this node address is currently in candidate list or not
+	var receviedAddr client.SpendingAddress
+	for _, desc := range tx.Descs {
+		for _, note := range desc.Note {
+			if note.Apk == receviedAddr {
+				return true
+			}
+		}
+	}
 
 	return true
 }
