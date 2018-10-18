@@ -193,20 +193,6 @@ func createDefaultConfigFile(destinationPath string) error {
 	return nil
 }
 
-// cleanAndExpandPath expands environment variables and leading ~ in the
-// passed path, cleans the result, and returns it.
-func cleanAndExpandPath(path string) string {
-	// Expand initial ~ to OS specific home directory.
-	if strings.HasPrefix(path, "~") {
-		homeDir := filepath.Dir(defaultHomeDir)
-		path = strings.Replace(path, "~", homeDir, 1)
-	}
-
-	// NOTE: The os.ExpandEnv doesn't work with Windows-style %VARIABLE%,
-	// but they variables can still be expanded via POSIX-style $VARIABLE.
-	return filepath.Clean(os.ExpandEnv(path))
-}
-
 // minUint32 is a helper function to return the minimum of two uint32s.
 // This avoids a math import and the need to cast to floats.
 func minUint32(a, b uint32) uint32 {
@@ -392,12 +378,12 @@ func loadConfig() (*config, []string, error) {
 	// All data is specific to a network, so namespacing the data directory
 	// means each individual piece of serialized data does not have to
 	// worry about changing names per network and such.
-	cfg.DataDir = cleanAndExpandPath(cfg.DataDir)
+	cfg.DataDir = common.CleanAndExpandPath(cfg.DataDir, defaultHomeDir)
 	cfg.DataDir = filepath.Join(cfg.DataDir, netName(activeNetParams))
 
 	// Append the network type to the log directory so it is "namespaced"
 	// per network in the same fashion as the data directory.
-	cfg.LogDir = cleanAndExpandPath(cfg.LogDir)
+	cfg.LogDir = common.CleanAndExpandPath(cfg.LogDir, defaultHomeDir)
 	cfg.LogDir = filepath.Join(cfg.LogDir, netName(activeNetParams))
 
 	// Special show command to list supported subsystems and exit.
