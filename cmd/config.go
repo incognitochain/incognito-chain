@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"github.com/jessevdk/go-flags"
 	"os"
+	"fmt"
 )
 
 const (
@@ -12,7 +12,11 @@ const (
 
 // See loadConfig for details on the configuration load process.
 type config struct {
-	RPCPort int `long:"rpcport" short:"p" description:"Max number of RPC clients for standard connections"`
+	Command string `long:"cmd" short:"c" description:"Command name"`
+
+	// For Wallet
+	WalletName       string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
+	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
 }
 
 // newConfigParser returns a new command line flags parser.
@@ -23,11 +27,9 @@ func newConfigParser(cfg *config, options flags.Options) *flags.Parser {
 
 func loadConfig() (*config, error) {
 	cfg := config{
-		RPCPort: defaultRPCPort,
 	}
 
-	preCfg := cfg
-	preParser := newConfigParser(&preCfg, flags.HelpFlag)
+	preParser := newConfigParser(&cfg, flags.HelpFlag)
 	_, err := preParser.Parse()
 	if err != nil {
 		if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
