@@ -22,7 +22,7 @@ var (
 	defaultLogDir      = filepath.Join(defaultHomeDir, defaultLogDirname)
 )
 
-// See loadConfig for details on the configuration load process.
+// See loadParams for details on the configuration load process.
 type params struct {
 	Command string `long:"cmd" short:"c" description:"Command name"`
 	DataDir string `short:"b" long:"datadir" description:"Directory to store data"`
@@ -40,7 +40,7 @@ func newConfigParser(cfg *params, options flags.Options) *flags.Parser {
 	return parser
 }
 
-func loadConfig() (*params, error) {
+func loadParams() (*params, error) {
 	cfg := params{
 		DataDir: defaultDataDir,
 		TestNet: false,

@@ -15,7 +15,7 @@ func main() {
 	log.Printf("Version %s\n", "0.0.1")
 
 	// load params
-	tcfg, err := loadConfig()
+	tcfg, err := loadParams()
 	if err != nil {
 		log.Println("Parse params error", err.Error())
 		return
