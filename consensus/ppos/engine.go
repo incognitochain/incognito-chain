@@ -21,13 +21,11 @@ import (
 
 type Engine struct {
 	sync.Mutex
-	started bool
-	wg      sync.WaitGroup
-	cQuit   chan struct{}
-
+	started       bool
 	sealerStarted bool
 
 	// channel
+	cQuit       chan struct{}
 	cQuitSealer chan struct{}
 	cBlockSig   chan blockSig
 
@@ -79,12 +77,19 @@ type blockSig struct {
 	ValidatorSig string
 }
 
+//Init apply configuration to consensus engine
+func (self Engine) Init(cfg *EngineConfig) (*Engine, error) {
+	return &Engine{
+		config: *cfg,
+	}, nil
+}
+
 //Start start consensus engine
 func (self *Engine) Start() error {
 	self.Lock()
 	defer self.Unlock()
 	if self.started {
-		self.Unlock()
+		// self.Unlock()
 		return errors.New("Consensus engine is already started")
 	}
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
@@ -176,7 +181,6 @@ func (self *Engine) Start() error {
 			time.Sleep(common.GetChainStateInterval * time.Second)
 		}
 	}()
-	self.wg.Add(1)
 
 	return nil
 }
@@ -195,13 +199,6 @@ func (self *Engine) Stop() error {
 	self.started = false
 	Logger.log.Info("Consensus engine stopped")
 	return nil
-}
-
-//Init apply configuration to consensus engine
-func (self Engine) Init(cfg *EngineConfig) (*Engine, error) {
-	return &Engine{
-		config: *cfg,
-	}, nil
 }
 
 //StartSealer start sealing block
@@ -346,12 +343,12 @@ finalizing:
 	}(finalBlock.Hash().String())
 
 	//Request for signatures of other validators
-	go func() {
+	go func(block blockchain.Block) {
 		//Uncomment this segment to create block with only 1 node (validator)
 		// allSigReceived <- struct{}{}
 
 		reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestBlockSign)
-		reqSigMsg.(*wire.MessageRequestBlockSign).Block = *finalBlock
+		reqSigMsg.(*wire.MessageRequestBlockSign).Block = block
 		for idx := 0; idx < common.TotalValidators; idx++ {
 			//@TODO: retry on failed validators
 			if committee[idx] != finalBlock.ChainLeader {
@@ -366,7 +363,7 @@ finalizing:
 				}(committee[idx])
 			}
 		}
-	}()
+	}(*finalBlock)
 	// Wait for signatures of other validators
 	select {
 	case <-self.cQuit:
@@ -440,7 +437,7 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.committee.UpdateCommittee(block.ChainLeader, block.Header.BlockCommitteeSigs)
 }
 
-func (self *Engine) GetCndList(block *blockchain.Block) (map[string]blockchain.CndInfo) {
+func (self *Engine) GetCndList(block *blockchain.Block) map[string]blockchain.CndInfo {
 	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
 	candidates := bestState.Candidates
 	if candidates == nil {
@@ -470,7 +467,7 @@ func (self *Engine) GetCndList(block *blockchain.Block) (map[string]blockchain.C
 	return candidates
 }
 
-func (self *Engine) IsExistedNodeAddr(nodeAddr string) (bool) {
+func (self *Engine) IsExistedNodeAddr(nodeAddr string) bool {
 	for _, bestState := range self.config.BlockChain.BestState {
 		_, ok := bestState.Candidates[nodeAddr]
 		if ok {

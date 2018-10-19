@@ -18,8 +18,14 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 
 	var txsToAdd []transaction.Transaction
 	var txToRemove []transaction.Transaction
-	var feeMap map[string]uint64
-	var txs []transaction.Transaction
+	// var actionParamTxs []*transaction.ActionParamTx
+	var feeMap = map[string]uint64{
+		fmt.Sprintf(common.AssetTypeCoin):     0,
+		fmt.Sprintf(common.AssetTypeBond):     0,
+		fmt.Sprintf(common.AssetTypeGovToken): 0,
+		fmt.Sprintf(common.AssetTypeDcbToken): 0,
+		fmt.Sprintf(common.AssetTypeCmbToken): 0,
+	}
 
 	// Get reward
 	salary := blockgen.rewardAgent.GetSalary()
@@ -40,25 +46,28 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 		}
 	}
 
-	txs, _, feeMap = extractTxsAndComputeInitialFees(sourceTxns)
-
-	// mempoolLoop:
-	for _, tx := range txs {
-		// tx, ok := txDesc.(*transaction.Tx)
-		// if !ok {
-		// 	return nil, fmt.Errorf("Transaction in block not recognized")
-		// }
-
-		//@todo need apply validate tx, logic check all referenced here
-		// call function spendTransaction to mark utxo
-
+	for _, txDesc := range sourceTxns {
+		tx := txDesc.Tx
 		txChainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
 		if txChainID != chainID {
 			continue
 		}
 		if !tx.ValidateTransaction() {
 			txToRemove = append(txToRemove, transaction.Transaction(tx))
+			continue
 		}
+		txType := tx.GetType()
+		txFee := uint64(0)
+		switch txType {
+		case common.TxActionParamsType:
+			// actionParamTxs = append(actionParamTxs, tx.(*transaction.ActionParamTx))
+			continue
+		case common.TxVotingType:
+			txFee = tx.(*transaction.TxVoting).Fee
+		case common.TxNormalType:
+			txFee = tx.(*transaction.Tx).Fee
+		}
+		feeMap[txType] += txFee
 		txsToAdd = append(txsToAdd, tx)
 		if len(txsToAdd) == common.MaxTxsInBlock {
 			break
@@ -76,64 +85,28 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 
 concludeBlock:
 	rt := blockgen.chain.BestState[chainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
-	coinbaseTx, err := createSalaryTx(
-		salary,
-		&payToAddress,
-		rt,
-		chainID,
-	)
+	salaryTx, err := createSalaryTx(salary, &payToAddress, rt, chainID)
 	if err != nil {
 		return nil, err
 	}
 	// the 1st tx will be coinbaseTx
-	txsToAdd = append([]transaction.Transaction{coinbaseTx}, txsToAdd...)
+	txsToAdd = append([]transaction.Transaction{salaryTx}, txsToAdd...)
 
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 
-	// Store commitments and nullifiers in database
-	var descType string
-	commitments := [][]byte{}
-	nullifiers := [][]byte{}
+	// Get salary fund from txs
+	salaryFund := uint64(0)
 	for _, blockTx := range txsToAdd {
-		if blockTx.GetType() == common.TxNormalType {
-			tx, ok := blockTx.(*transaction.Tx)
-			if !ok {
-				Logger.log.Error("Transaction not recognized to store in database")
-				continue
-			}
-			for _, desc := range tx.Descs {
-				for _, cm := range desc.Commitments {
-					commitments = append(commitments, cm)
-				}
-
-				for _, nf := range desc.Nullifiers {
-					nullifiers = append(nullifiers, nf)
-				}
-				descType = desc.Type
-			}
-		} else if blockTx.GetType() == common.TxVotingType {
+		if blockTx.GetType() == common.TxVotingType {
 			tx, ok := blockTx.(*transaction.TxVoting)
 			if !ok {
 				Logger.log.Error("Transaction not recognized to store in database")
 				continue
 			}
-			for _, desc := range tx.Descs {
-				for _, cm := range desc.Commitments {
-					commitments = append(commitments, cm)
-				}
-
-				for _, nf := range desc.Nullifiers {
-					nullifiers = append(nullifiers, nf)
-				}
-				descType = desc.Type
-			}
+			salaryFund += tx.GetValue()
 		}
 	}
-	// TODO(@0xsirrush): check if cm and nf should be saved here (when generate block template)
-	// or when UpdateBestState
-	blockgen.chain.StoreCommitmentsFromListCommitment(commitments, descType, chainID)
-	blockgen.chain.StoreNullifiersFromListNullifier(nullifiers, descType, chainID)
 
 	block := Block{}
 	currentSalaryFund := blockgen.chain.BestState[chainID].BestBlock.Header.SalaryFund
@@ -146,7 +119,7 @@ concludeBlock:
 		BlockCommitteeSigs:    make([]string, common.TotalValidators),
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
-		SalaryFund:            currentSalaryFund - salary + feeMap[common.AssetTypeCoin],
+		SalaryFund:            currentSalaryFund - salary + feeMap[common.AssetTypeCoin] + salaryFund,
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
@@ -159,32 +132,6 @@ concludeBlock:
 	UpdateMerkleTreeForBlock(newTree, &block)
 	rt = newTree.GetRoot(common.IncMerkleTreeHeight)
 	copy(block.Header.MerkleRootCommitments[:], rt)
-
-	for _, tempBlockTx := range block.Transactions {
-		if tempBlockTx.GetType() == common.TxNormalType {
-			tx, ok := tempBlockTx.(*transaction.Tx)
-			if ok == false {
-				Logger.log.Errorf("Transaction in block not valid")
-			}
-
-			for _, desc := range tx.Descs {
-				for _, cm := range desc.Commitments {
-					Logger.log.Infof("%x", cm[:])
-				}
-			}
-		} else if tempBlockTx.GetType() == common.TxVotingType {
-			tx, ok := tempBlockTx.(*transaction.TxVoting)
-			if ok == false {
-				Logger.log.Errorf("Transaction in block not valid")
-			}
-
-			for _, desc := range tx.Descs {
-				for _, cm := range desc.Commitments {
-					Logger.log.Infof("%x", cm[:])
-				}
-			}
-		}
-	}
 
 	//update the latest AgentDataPoints to block
 	// block.AgentDataPoints = agentDataPoints
@@ -251,70 +198,31 @@ func extractTxsAndComputeInitialFees(txDescs []*transaction.TxDesc) (
 	var txs []transaction.Transaction
 	var actionParamTxs []*transaction.ActionParamTx
 	var feeMap = map[string]uint64{
-		fmt.Sprintf(common.AssetTypeCoin): 0,
-		fmt.Sprintf(common.AssetTypeBond): 0,
+		fmt.Sprintf(common.AssetTypeCoin):     0,
+		fmt.Sprintf(common.AssetTypeBond):     0,
+		fmt.Sprintf(common.AssetTypeGovToken): 0,
+		fmt.Sprintf(common.AssetTypeDcbToken): 0,
+		fmt.Sprintf(common.AssetTypeCmbToken): 0,
 	}
 	for _, txDesc := range txDescs {
 		tx := txDesc.Tx
 		txs = append(txs, tx)
 		txType := tx.GetType()
-		if txType == common.TxActionParamsType {
+		txFee := uint64(0)
+		switch txType {
+		case common.TxActionParamsType:
 			actionParamTxs = append(actionParamTxs, tx.(*transaction.ActionParamTx))
 			continue
-		} else if txType == common.TxVotingType {
-			continue
+		case common.TxVotingType:
+			txFee = tx.(*transaction.TxVoting).Fee
+		case common.TxNormalType:
+			txFee = tx.(*transaction.Tx).Fee
 		}
 		normalTx, _ := tx.(*transaction.Tx)
-		feeMap[normalTx.Descs[0].Type] += txDesc.Fee
+		feeMap[normalTx.Descs[0].Type] += txFee
 	}
 	return txs, actionParamTxs, feeMap
 }
-
-/*func createCoinbaseTx(
-	params *blockchain.Params,
-	receiverAddr *client.PaymentAddress,
-	rt []byte,
-	chainID byte,
-	feeMap map[string]uint64,
-) (*transaction.Tx, error) {
-	// Create Proof for the joinsplit op
-	inputs := make([]*client.JSInput, 2)
-	inputs[0] = transaction.CreateRandomJSInput(nil)
-	inputs[1] = transaction.CreateRandomJSInput(inputs[0].Key)
-	dummyAddress := client.GenPaymentAddress(*inputs[0].Key)
-
-	// Get reward
-	// TODO(@0xbunyip): implement bonds reward
-	var reward uint64 = common.DefaultCoinBaseTxReward + feeMap[common.AssetTypeCoin] // TODO: probably will need compute reward based on block height
-
-	// Create new notes: first one is coinbase UTXO, second one has 0 value
-	outNote := &client.Note{Value: reward, Apk: receiverAddr.Apk}
-	placeHolderOutputNote := &client.Note{Value: 0, Apk: receiverAddr.Apk}
-
-	outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
-	outputs[0].EncKey = receiverAddr.Pkenc
-	outputs[0].OutputNote = outNote
-	outputs[1].EncKey = receiverAddr.Pkenc
-	outputs[1].OutputNote = placeHolderOutputNote
-
-	// Shuffle output notes randomly (if necessary)
-
-	// Generate proof and sign tx
-	tx := transaction.CreateEmptyTx()
-	tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
-	var coinbaseTxFee uint64 // Zero fee for coinbase tx
-	rtMap := map[byte][]byte{chainID: rt}
-	inputMap := map[byte][]*client.JSInput{chainID: inputs}
-	err := tx.BuildNewJSDesc(inputMap, outputs, rtMap, reward, coinbaseTxFee)
-	if err != nil {
-		return nil, err
-	}
-	tx, err = transaction.SignTx(tx)
-	if err != nil {
-		return nil, err
-	}
-	return tx, err
-}*/
 
 // createSalaryTx
 // Blockchain use this tx to pay a reward(salary) to miner of chain
