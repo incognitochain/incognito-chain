@@ -159,6 +159,22 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 				}
 			}
 		}
+	} else {
+		err := self.dataBase.CleanCommitments()
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		err = self.dataBase.CleanNullifiers()
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		err = self.dataBase.CleanFeeEstimator()
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
 	}
 
 	// create mempool tx

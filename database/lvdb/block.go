@@ -58,7 +58,25 @@ func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
 	return ret, nil
 }
 
-func (db *db) DeleteBlock(hash *common.Hash) error {
+func (db *db) DeleteBlock(hash *common.Hash, idx int32, chainID byte) error {
+	// Delete block
+	err := db.lvdb.Delete(db.getKey("block", hash), nil)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+
+	// Delete block index
+	err = db.lvdb.Delete(db.getKey("blockidx", hash), nil)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+	buf := make([]byte, 5)
+	binary.LittleEndian.PutUint32(buf, uint32(idx))
+	buf[4] = chainID
+	err = db.lvdb.Delete(buf, nil)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
 	return nil
 }
 
@@ -84,6 +102,13 @@ func (db *db) FetchBestState(chainID byte) ([]byte, error) {
 }
 
 func (db *db) CleanBestState() error {
+	for chainID := byte(0); chainID < common.TotalValidators; chainID++ {
+		key := append(bestBlockKey, chainID)
+		err := db.lvdb.Delete(key, nil)
+		if err != nil {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+	}
 	return nil
 }
 
