@@ -302,6 +302,9 @@ func (self *Engine) Finalize(finalBlock *blockchain.Block) error {
 	}()
 	retryTime := 0
 finalizing:
+	finalBlock.Header.BlockCommitteeSigs = make([]string, common.TotalValidators)
+	finalBlock.Header.Committee = make([]string, common.TotalValidators)
+
 	copy(finalBlock.Header.Committee, self.GetCommittee())
 	sig, err := self.signData([]byte(finalBlock.Hash().String()))
 	if err != nil {
@@ -382,11 +385,11 @@ finalizing:
 	case <-time.After(common.MaxBlockSigWaitTime * time.Second):
 		//blocksig wait time exceeded -> get a new commitee list and retry
 		Logger.log.Error(errExceedSigWaitTime)
-		retryTime++
-		Logger.log.Infof("Start finalizing block... %d time", retryTime)
 		if retryTime == 5 {
 			return errExceedBlockRetry
 		}
+		retryTime++
+		Logger.log.Infof("Start finalizing block... %d time", retryTime)
 		goto finalizing
 	}
 

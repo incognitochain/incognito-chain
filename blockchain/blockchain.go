@@ -93,7 +93,6 @@ func (self *BlockChain) Init(config *Config) error {
 // chain state are initialized to the genesis block.
 */
 func (self *BlockChain) initChainState() error {
-	// TODO
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	var initialized bool
