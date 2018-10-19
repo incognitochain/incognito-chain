@@ -16,6 +16,7 @@ import (
 	"github.com/ninjadotorg/cash/transaction"
 	"github.com/ninjadotorg/cash/wire"
 	"github.com/ninjadotorg/cash/connmanager"
+	"fmt"
 )
 
 // PoSEngine only need to start if node runner want to be a validator
@@ -295,13 +296,13 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 func (self *Engine) Finalize(finalBlock *blockchain.Block) error {
 	Logger.log.Info("Start finalizing block...")
 	allSigReceived := make(chan struct{})
-	cancel := make(chan struct{})
+
 	defer func() {
-		close(cancel)
 		close(allSigReceived)
 	}()
 	retryTime := 0
 finalizing:
+	cancel := make(chan struct{})
 	finalBlock.Header.BlockCommitteeSigs = make([]string, common.TotalValidators)
 	finalBlock.Header.Committee = make([]string, common.TotalValidators)
 
@@ -315,7 +316,7 @@ finalizing:
 
 	// Collect signatures of other validators
 	go func(blockHash string) {
-		var sigsReceived int
+		sigsReceived := 0
 		for {
 			select {
 			case <-self.cQuit:
@@ -323,7 +324,6 @@ finalizing:
 			case <-cancel:
 				return
 			case blocksig := <-self.cBlockSig:
-				Logger.log.Info("Validator's signature received", sigsReceived)
 
 				if blockHash != blocksig.BlockHash {
 					Logger.log.Critical("Block hash not match!", blocksig, "this block", blockHash)
@@ -331,8 +331,8 @@ finalizing:
 				}
 
 				if idx := common.IndexOfStr(blocksig.Validator, committee); idx != -1 {
-					if finalBlock.Header.BlockCommitteeSigs[idx] != "" {
-						err := cashec.ValidateDataB58(blocksig.Validator, blocksig.ValidatorSig, []byte(finalBlock.Hash().String()))
+					if finalBlock.Header.BlockCommitteeSigs[idx] == "" {
+						err := cashec.ValidateDataB58(blocksig.Validator, blocksig.ValidatorSig, []byte(blockHash))
 
 						if err != nil {
 							Logger.log.Error("Validate sig error:", err)
@@ -340,6 +340,8 @@ finalizing:
 						} else {
 							sigsReceived++
 							finalBlock.Header.BlockCommitteeSigs[idx] = blocksig.ValidatorSig
+							Logger.log.Info("Validator's signature received", sigsReceived)
+							fmt.Println(finalBlock.Header.BlockCommitteeSigs, " : ", idx)
 						}
 					} else {
 						Logger.log.Error("Already received this validator blocksig")
@@ -367,7 +369,7 @@ finalizing:
 				go func(validator string) {
 					peerIDs := self.config.Server.GetPeerIDsFromPublicKey(validator)
 					if len(peerIDs) != 0 {
-						Logger.log.Info("Request signaure from "+peerIDs[0], validator)
+						Logger.log.Info("Request signature from "+peerIDs[0], validator)
 						self.config.Server.PushMessageToPeer(reqSigMsg, peerIDs[0])
 					} else {
 						Logger.log.Error("Validator's peer not found!", validator)
@@ -379,6 +381,7 @@ finalizing:
 	// Wait for signatures of other validators
 	select {
 	case <-self.cQuit:
+		close(cancel)
 		return nil
 	case <-allSigReceived:
 		Logger.log.Info("Validator sigs: ", finalBlock.Header.BlockCommitteeSigs)
@@ -390,6 +393,7 @@ finalizing:
 		}
 		retryTime++
 		Logger.log.Infof("Start finalizing block... %d time", retryTime)
+		close(cancel)
 		goto finalizing
 	}
 
