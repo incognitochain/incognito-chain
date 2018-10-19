@@ -57,7 +57,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestBlockSign) {
 
 func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 	if self.config.BlockChain.BestState[block.Header.ChainID].Height < block.Height {
-		if _, err := self.config.BlockChain.BlockExists(block.Hash()); err != nil {
+		if exists, _ := self.config.BlockChain.BlockExists(block.Hash()); !exists {
 			err := self.validateBlockSanity(block)
 			if err != nil {
 				Logger.log.Error(err)

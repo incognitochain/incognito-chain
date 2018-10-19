@@ -162,18 +162,19 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 		return err
 	}
 
+	// 4. Validate committee member signatures
+	err = self.ValidateCommitteeSigs([]byte(block.Hash().String()), block.Header.Committee, block.Header.BlockCommitteeSigs)
+	if err != nil {
+		return err
+	}
+
 	// 5. Validate MerkleRootCommitments
 	err = self.ValidateMerkleRootCommitments(block)
 	if err != nil {
 		return err
 	}
 
-	// 6. Validate committee member signatures
-	err = self.ValidateCommitteeSigs([]byte(block.Hash().String()), block.Header.Committee, block.Header.BlockCommitteeSigs)
-	if err != nil {
-		return err
-	}
-	// 7. validate candidate list hash
+	// 6. validate candidate list hash
 	candidates := self.GetCndList(block)
 	candidateBytes, err := json.Marshal(candidates)
 	if err != nil {
@@ -183,7 +184,7 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 		return errors.New("Candidate List Hash is wrong")
 	}
 
-	// 8. Validate transactions
+	// 7. Validate transactions
 	return self.ValidateTxList(block.Transactions)
 
 }

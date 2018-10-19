@@ -13,10 +13,9 @@ import (
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash/blockchain"
+	"github.com/ninjadotorg/cash/connmanager"
 	"github.com/ninjadotorg/cash/transaction"
 	"github.com/ninjadotorg/cash/wire"
-	"github.com/ninjadotorg/cash/connmanager"
-	"fmt"
 )
 
 // PoSEngine only need to start if node runner want to be a validator
@@ -68,7 +67,7 @@ type EngineConfig struct {
 	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server interface {
+	Server          interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -312,6 +311,7 @@ finalizing:
 		return err
 	}
 	finalBlock.Header.BlockCommitteeSigs[finalBlock.Header.ChainID] = sig
+
 	committee := finalBlock.Header.Committee
 
 	// Collect signatures of other validators
@@ -341,7 +341,6 @@ finalizing:
 							sigsReceived++
 							finalBlock.Header.BlockCommitteeSigs[idx] = blocksig.ValidatorSig
 							Logger.log.Info("Validator's signature received", sigsReceived)
-							fmt.Println(finalBlock.Header.BlockCommitteeSigs, " : ", idx)
 						}
 					} else {
 						Logger.log.Error("Already received this validator blocksig")
