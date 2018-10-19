@@ -8,6 +8,8 @@ window.onload = function () {
 
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
     xhr.open("POST", window.localStorage['cash_node_url']);
+    var auth = "Basic " + $.base64.encode(window.localStorage['rpcUserName'] + ":" + window.localStorage['rpcPassword']);
+    xhr.setRequestHeader("Authorization", auth);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false);

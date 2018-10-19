@@ -31,16 +31,14 @@ window.onload = function () {
     });
 };
 
-$(window).unload(function () {
-    window.localStorage.removeItem('cash_passphrase');
-});
-
 function loadListAccount() {
     showLoading(true);
 
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
     xhr.open("POST", window.localStorage['cash_node_url']);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    var auth = "Basic " + $.base64.encode(window.localStorage['rpcUserName'] + ":" + window.localStorage['rpcPassword']);
+    xhr.setRequestHeader("Authorization", auth);
     xhr.onreadystatechange = function (oEvent) {
 
         showLoading(false);
@@ -98,6 +96,8 @@ function newAccount() {
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
     xhr.open("POST", window.localStorage['cash_node_url']);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    var auth = "Basic " + $.base64.encode(window.localStorage['rpcUserName'] + ":" + window.localStorage['rpcPassword']);
+    xhr.setRequestHeader("Authorization", auth);
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false)
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
@@ -132,6 +132,8 @@ function importAccount() {
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
     xhr.open("POST", window.localStorage['cash_node_url']);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    var auth = "Basic " + $.base64.encode(window.localStorage['rpcUserName'] + ":" + window.localStorage['rpcPassword']);
+    xhr.setRequestHeader("Authorization", auth);
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false)
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {

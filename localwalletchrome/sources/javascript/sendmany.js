@@ -1,7 +1,11 @@
 window.onload = function () {
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
     xhr.open("POST", window.localStorage['cash_node_url']);
+    var auth = "Basic " + $.base64.encode(window.localStorage['rpcUserName'] + ":" + window.localStorage['rpcPassword']);
+    xhr.setRequestHeader("Authorization", auth);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    var auth = "Basic " + $.base64.encode(window.localStorage['rpcUserName'] + ":" + window.localStorage['rpcPassword']);
+    xhr.setRequestHeader("Authorization", auth);
     xhr.onreadystatechange = function (oEvent) {
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
@@ -50,7 +54,7 @@ function addNewRow() {
     cell3.innerHTML = '';
 
     let txtAmount = tbSend.getElementsByTagName("tr")[index].getElementsByClassName('txt_amount')[0];
-    txtAmount.addEventListener('keypress', function(e){
+    txtAmount.addEventListener('keypress', function (e) {
         if (e.keyCode == 13) {
             let length = tbSend.getElementsByTagName("tr").length;
             if (this.parentNode.parentNode.rowIndex == length - 1) {
@@ -76,13 +80,15 @@ function addNewRow() {
 }
 
 function saveData() {
-    
+
 }
 
 function dumpprivkey(publicKey) {
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
     xhr.open("POST", window.localStorage['cash_node_url']);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    var auth = "Basic " + $.base64.encode(window.localStorage['rpcUserName'] + ":" + window.localStorage['rpcPassword']);
+    xhr.setRequestHeader("Authorization", auth);
     xhr.onreadystatechange = function (oEvent) {
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
@@ -116,6 +122,8 @@ function getbalance() {
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
     xhr.open("POST", window.localStorage['cash_node_url']);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    var auth = "Basic " + $.base64.encode(window.localStorage['rpcUserName'] + ":" + window.localStorage['rpcPassword']);
+    xhr.setRequestHeader("Authorization", auth);
     xhr.onreadystatechange = function (oEvent) {
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
@@ -128,7 +136,7 @@ function getbalance() {
                     alert('Bad response');
                 }
             }
-        } 
+        }
     };
     xhr.send(JSON.stringify({
         jsonrpc: "1.0",
@@ -156,6 +164,8 @@ function sendmany() {
     var xhr = new XMLHttpRequest();   // new HttpRequest instance
     xhr.open("POST", window.localStorage['cash_node_url']);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    var auth = "Basic " + $.base64.encode(window.localStorage['rpcUserName'] + ":" + window.localStorage['rpcPassword']);
+    xhr.setRequestHeader("Authorization", auth);
     xhr.onreadystatechange = function (oEvent) {
         showLoading(false);
 
