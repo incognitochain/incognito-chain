@@ -3,6 +3,7 @@ package ppos
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -143,6 +144,7 @@ func (self *Engine) Start() error {
 						Logger.log.Error(err)
 						return
 					}
+					fmt.Println("block height:", block.Height)
 					//Comment validateBlockSanity segment to create block with only 1 node (validator)
 					err = self.validateBlockSanity(block)
 					if err != nil {
@@ -288,6 +290,12 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	copy(newblock.Block.Header.ChainsHeight, self.validatedChainsHeight.Heights)
 	newblock.Block.Header.ChainID = myChainID
 	newblock.Block.ChainLeader = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+
+	// hash candidate list and set to block header
+	candidates := self.GetCndList(newblock.Block)
+	candidateBytes, _ := json.Marshal(candidates)
+	newblock.Block.Header.CandidateHash = common.HashH(candidateBytes)
+
 	return newblock.Block, nil
 }
 
@@ -300,8 +308,8 @@ func (self *Engine) Finalize(finalBlock *blockchain.Block) error {
 		close(allSigReceived)
 	}()
 	retryTime := 0
-finalizing:
 	cancel := make(chan struct{})
+finalizing:
 	finalBlock.Header.BlockCommitteeSigs = make([]string, common.TotalValidators)
 	finalBlock.Header.Committee = make([]string, common.TotalValidators)
 
@@ -380,7 +388,7 @@ finalizing:
 	// Wait for signatures of other validators
 	select {
 	case <-self.cQuit:
-		close(cancel)
+		cancel <- struct{}{}
 		return nil
 	case <-allSigReceived:
 		Logger.log.Info("Validator sigs: ", finalBlock.Header.BlockCommitteeSigs)
@@ -392,7 +400,7 @@ finalizing:
 		}
 		retryTime++
 		Logger.log.Infof("Start finalizing block... %d time", retryTime)
-		close(cancel)
+		cancel <- struct{}{}
 		goto finalizing
 	}
 
@@ -402,11 +410,6 @@ finalizing:
 		return err
 	}
 	finalBlock.ChainLeaderSig = sig
-
-	// hash candidate list and set to block header
-	candidates := self.GetCndList(finalBlock)
-	candidateBytes, _ := json.Marshal(candidates)
-	finalBlock.Header.CandidateHash = common.HashH(candidateBytes)
 
 	self.UpdateChain(finalBlock)
 	self.sendBlockMsg(finalBlock)

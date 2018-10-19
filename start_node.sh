@@ -34,7 +34,7 @@ PORT=$((9430 + $1))
 eval KEY=\${KEY$1}
 if [ $1 != 1 ]
 then
-    ./cash-$1 --listen "127.0.0.1:$PORT" --norpc --datadir "data/node-$1" --generate --sealerkeyset "$KEY" --connect "/ip4/127.0.0.1/tcp/9431/ipfs/QmZ2UwF3fqrpc2eAtJbgQytkbN2UnLQod5LMfswU7YGQDw"
+    ./cash-$1 --listen "127.0.0.1:$PORT" --norpc --datadir "data/node-$1" --generate --sealerkeyset "$KEY" --connect "/ip4/127.0.0.1/tcp/9431/ipfs/QmPxHvwzf5igUZGDZjLdSGcqn2yPuEUGtZ2WcLxqeHEpsf"
 else
     ./cash-$1 --listen "127.0.0.1:$PORT" --norpc --datadir "data/node-$1" --generate --sealerkeyset "$KEY"
 fi
