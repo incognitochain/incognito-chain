@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Account List</title>
     <script src='sources/javascript/const.js'></script>
-    <script src='sources/javascript/settings.js'></script>
+    <script src='sources/javascript/index.js'></script>
     <script src='sources/javascript/jquery-3.3.1.min.js'></script>
     <script src='sources/javascript/popper.min.js'></script>
     <script src='sources/javascript/bootstrap.min.js'></script>
@@ -45,21 +45,31 @@
 <div id="loader"></div>
 <div style="display:none;" id="myDiv" class="animate-bottom">
     <form>
-        <a href="index.html" id="lnk_back">Back</a>
-        <h4>Nodes</h4>
+        <a href="settings.html">Settings</a>
+        <h4>Accounts in <span id="walletName">...</span></h4>
         <div class="form-group">
             <ul class="list-group" id="list_account">
             </ul>
         </div>
     </form>
     <form>
-        <h4>Add Node</h4>
+        <h4>Create new account</h4>
         <div class="form-group">
-            <label>Node Url</label>
-            <input id="txt_nodeUrl" class="form-control"></input>
+            <label>Account Name</label>
+            <input id="txt_accountName" class="form-control"></input>
         </div>
         <div class="form-group">
-            <button id="bt_add" type="submit" class="btn btn-primary">Add</button>
+            <button id="bt_new" type="submit" class="btn btn-primary">New Account</button>
+        </div>
+    </form>
+    <form>
+        <h4>Import account</h4>
+        <div class="form-group">
+            <label>Private key</label>
+            <input id="txt_privateKey" class="form-control"></input>
+        </div>
+        <div class="form-group">
+            <button id="bt_import" type="submit" class="btn btn-warning">Import</button>
         </div>
     </form>
 </div>
