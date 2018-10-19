@@ -29,8 +29,9 @@ type config struct {
 	TestNet bool   `long:"testnet" description:"Use the test network"`
 
 	// For Wallet
-	WalletName       string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
-	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
+	WalletName        string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
+	WalletPassphrase  string `long:"walletpassphrase" description:"Wallet passphrase"`
+	WalletAccountName string `long:"walletaccountname" description:"Wallet account name"`
 }
 
 // newConfigParser returns a new command line flags parser.

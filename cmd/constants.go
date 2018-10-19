@@ -1,7 +1,9 @@
 package main
 
 const (
-	InitWalletCmd = "initwallet"
+	CreateWalletCmd      = "createwallet"
+	ListWalletAccountCmd = "listaccounts"
+	GetWalletAccountCmd  = "getaccount"
 )
 
-var CmdList = []string{InitWalletCmd}
+var CmdList = []string{CreateWalletCmd, ListWalletAccountCmd, GetWalletAccountCmd}
