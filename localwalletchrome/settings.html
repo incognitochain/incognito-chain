@@ -55,13 +55,26 @@
         </div>
     </form>
     <form>
+        <div class="form-group">
+            <label>Rpc username</label>
+            <input id="rpcUsername" class="form-control"></input>
+        </div>
+        <div class="form-group">
+            <label>Rpc password</label>
+            <input type="password" id="rpcPassword" class="form-control"></input>
+        </div>
+        <div class="form-group">
+            <button id="saveRpcAuth" type="submit" class="btn btn-primary" style="float: right">Save</button>
+        </div>
+    </form>
+    <form>
         <h5>Add Node</h5>
         <div class="form-group">
             <label>Rpc server</label>
             <input id="txt_nodeUrl" class="form-control"></input>
         </div>
         <div class="form-group">
-            <button id="bt_add" type="submit" class="btn btn-primary">Add</button>
+            <button id="bt_add" type="submit" class="btn btn-primary" style="float: right">Add</button>
         </div>
     </form>
 </div>

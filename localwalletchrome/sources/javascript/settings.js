@@ -1,16 +1,4 @@
 window.onload = function () {
-    /*if (typeof(Storage) !== "undefined") {
-        // Code for localStorage/sessionStorage.
-        let passphrase = window.localStorage['cash_passphrase'];
-        if (passphrase == null || passphrase == '') {
-            window.location.href = "../../index.html";
-        }
-    } else {
-        // Sorry! No Web Storage support..
-        alert('Sorry! No Web Storage support')
-        return
-    }*/
-
     loadList();
 
     document.getElementById("bt_add").onclick = function () {
@@ -18,6 +6,14 @@ window.onload = function () {
     };
 
     showLoading(false)
+
+    $('#saveRpcAuth').click(function () {
+        var rpcUserName = $('#rpcUsername').val();
+        var rpcPassword = $('#rpcPassword').val();
+
+        window.localStorage['rpcUserName'] = rpcUserName;
+        window.localStorage['rpcPassword'] = rpcPassword;
+    });
 };
 
 function loadList() {
@@ -28,12 +24,17 @@ function loadList() {
         var nodeUrl = cashNodeUrls[i];
         var li = document.createElement('li');
         if (nodeUrl != cashNodeUrl) {
-            li.innerHTML = '<a style="font-weight: 300;">' + nodeUrl + '</a>' + '<button id="bt_select_' + i + '" style="margin-left: 20px" class="btn btn-primary" onclick="return selectNode(\'' + nodeUrl + '\')">Select</button>';
+            li.innerHTML = '<a style="font-weight: 300;">' + nodeUrl + '</a>' + '<button data="' + nodeUrl + '" id="bt_select_' + i + '" style="margin-left: 20px" class="btn btn-primary" onclick="selectNode(nodeUrl)">Select</button>';
         } else {
-            li.innerHTML = '<a style="font-weight: 600; text-decoration: underline">' + nodeUrl + '</a>' + '<button id="bt_select_' + i + '" style="margin-left: 20px" class="btn btn-primary" onclick="return selectNode(\'' + nodeUrl + '\')">Select</button>';
+            li.innerHTML = '<a style="font-weight: 500; font-style: italic;">' + nodeUrl + '</a>' + '<button id="bt_select_' + i + '" style="margin-left: 20px" class="btn btn-primary">Select</button>';
         }
         li.classList = "list-group-item"
         document.getElementById("list_account").appendChild(li);
+
+        $("#bt_select_" + i).click(function () {
+            selectNode($(this).attr('data'));
+            return false;
+        });
     }
 }
 
