@@ -2,12 +2,8 @@ package main
 
 import (
 	"log"
-	"os"
-	"path/filepath"
 	"encoding/json"
 	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/wallet"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -35,7 +31,11 @@ func main() {
 					log.Println("Wrong param")
 					return
 				}
-				createWallet()
+				err := createWallet()
+				if err != nil {
+					log.Println(err)
+					return
+				}
 			}
 		case ListWalletAccountCmd:
 			{
@@ -43,8 +43,16 @@ func main() {
 					log.Println("Wrong param")
 					return
 				}
-				accounts, _ := listAccounts()
-				result, _ := json.MarshalIndent(accounts, "", "\t")
+				accounts, err := listAccounts()
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				result, err := parseToJsonString(accounts)
+				if err != nil {
+					log.Println(err)
+					return
+				}
 				log.Println(string(result))
 			}
 		case GetWalletAccountCmd:
@@ -53,12 +61,16 @@ func main() {
 					log.Println("Wrong param")
 					return
 				}
-				accounts, err := getAccount()
+				account, err := getAccount()
 				if err != nil {
 					log.Println(err)
 					return
 				}
-				result, _ := json.MarshalIndent(accounts, "", "\t")
+				result, err := parseToJsonString(account)
+				if err != nil {
+					log.Println(err)
+					return
+				}
 				log.Println(string(result))
 			}
 		}
@@ -67,56 +79,11 @@ func main() {
 	}
 }
 
-func loadWallet() (*wallet.Wallet, error) {
-	var walletObj *wallet.Wallet
-	walletObj = &wallet.Wallet{}
-	walletObj.Config = &wallet.WalletConfig{
-		DataDir:        cfg.DataDir,
-		DataFile:       cfg.WalletName,
-		DataPath:       filepath.Join(cfg.DataDir, cfg.WalletName),
-		IncrementalFee: 0,
-	}
-	err := walletObj.LoadWallet(cfg.WalletPassphrase)
-	return walletObj, err
-}
-
-func createWallet() {
-	var walletObj *wallet.Wallet
-	walletObj = &wallet.Wallet{}
-	walletObj.Config = &wallet.WalletConfig{
-		DataDir:        cfg.DataDir,
-		DataFile:       cfg.WalletName,
-		DataPath:       filepath.Join(cfg.DataDir, cfg.WalletName),
-		IncrementalFee: 0,
-	}
-	if _, err := os.Stat(walletObj.Config.DataPath); os.IsNotExist(err) {
-		walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
-		walletObj.Save(cfg.WalletPassphrase)
-		log.Printf("Create wallet successfully with name: %s", cfg.WalletName)
-	} else {
-		log.Printf("Exist wallet with name %s\n", )
-	}
-}
-
-func listAccounts() (interface{}, error) {
-	walletObj, err := loadWallet()
+func parseToJsonString(data interface{}) ([]byte, error) {
+	result, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
-	accounts := walletObj.ListAccounts()
-	return accounts, err
-}
-
-func getAccount() (interface{}, error) {
-	walletObj, err := loadWallet()
-	if err != nil {
-		return nil, err
-	}
-	accounts := walletObj.ListAccounts()
-	for _, account := range accounts {
-		if cfg.WalletAccountName == account.Name {
-			return account, nil
-		}
-	}
-	return nil, errors.New("Not found")
+	return result, nil
 }
