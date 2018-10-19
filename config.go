@@ -39,7 +39,7 @@ const (
 )
 
 var (
-	defaultHomeDir     = common.AppDataDir("prototype", false)
+	defaultHomeDir     = common.AppDataDir("cash", false)
 	defaultConfigFile  = filepath.Join(defaultHomeDir, defaultConfigFilename)
 	defaultDataDir     = filepath.Join(defaultHomeDir, defaultDataDirname)
 	defaultRPCKeyFile  = filepath.Join(defaultHomeDir, "rpc.key")

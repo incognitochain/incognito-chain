@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	defaultHomeDir    = common.AppDataDir("prototype", false)
+	defaultHomeDir    = common.AppDataDir("cash", false)
 	defaultConfigFile = filepath.Join(defaultHomeDir, defaultConfigFilename)
 	defaultDataDir    = filepath.Join(defaultHomeDir, defaultDataDirname)
 	defaultLogDir     = filepath.Join(defaultHomeDir, defaultLogDirname)
