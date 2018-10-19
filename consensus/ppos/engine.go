@@ -15,6 +15,7 @@ import (
 	"github.com/ninjadotorg/cash/blockchain"
 	"github.com/ninjadotorg/cash/transaction"
 	"github.com/ninjadotorg/cash/wire"
+	"github.com/ninjadotorg/cash/connmanager"
 )
 
 // PoSEngine only need to start if node runner want to be a validator
@@ -25,9 +26,13 @@ type Engine struct {
 	sealerStarted bool
 
 	// channel
-	cQuit       chan struct{}
-	cQuitSealer chan struct{}
-	cBlockSig   chan blockSig
+	cQuit          chan struct{}
+	cQuitSealer    chan struct{}
+	cBlockSig      chan blockSig
+	cQuitSwap      chan struct{}
+	cSwapReqDie    chan byte
+	cSwapReqPeriod chan byte
+	cSwapReqBad    chan byte
 
 	config                EngineConfig
 	knownChainsHeight     chainsHeight
@@ -55,13 +60,14 @@ type chainsHeight struct {
 }
 
 type EngineConfig struct {
-	BlockChain *blockchain.BlockChain
+	BlockChain  *blockchain.BlockChain
+	ConnManager *connmanager.ConnManager
 	// RewardAgent
 	ChainParams     *blockchain.Params
 	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server          interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -195,6 +201,9 @@ func (self *Engine) Stop() error {
 		return errors.New("Consensus engine isn't running")
 	}
 	self.StopSealer()
+	if self.cQuitSwap != nil {
+		close(self.cQuitSwap)
+	}
 	close(self.cQuit)
 	self.started = false
 	Logger.log.Info("Consensus engine stopped")
@@ -475,4 +484,45 @@ func (self *Engine) IsExistedNodeAddr(nodeAddr string) bool {
 		}
 	}
 	return false
+}
+
+func (self *Engine) StartSwap() error {
+	self.cQuitSwap = make(chan struct{})
+	for {
+		select {
+		case <-self.cQuitSwap:
+			{
+				Logger.log.Info("Consensus engine stopped swap")
+				return nil
+			}
+		case chainId := <-self.cSwapReqPeriod:
+			{
+				Logger.log.Infof("Consensus engine swap period %s START", chainId)
+
+				//cndList := self.config.BlockChain.GetCndList()
+				//for _, cndNode := range cndList {
+				//	self.config.ConnManager.Connect()
+				//}
+
+				Logger.log.Infof("Consensus engine swap period %s END", chainId)
+				continue
+			}
+		case chainId := <-self.cSwapReqDie:
+			{
+				Logger.log.Infof("Consensus engine swap die %s START", chainId)
+
+				Logger.log.Infof("Consensus engine swap die %s END", chainId)
+				continue
+			}
+		case chainId := <-self.cSwapReqBad:
+			{
+				Logger.log.Infof("Consensus engine swap bad %s START", chainId)
+
+				Logger.log.Infof("Consensus engine swap bad %s END", chainId)
+				continue
+			}
+		}
+	}
+
+	return nil
 }

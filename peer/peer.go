@@ -57,13 +57,13 @@ type Peer struct {
 }
 
 type NewPeerMsg struct {
-	Peer *Peer
-	Done chan struct{}
+	Peer  *Peer
+	CConn chan *PeerConn
 }
 
 type NewStreamMsg struct {
 	Stream net.Stream
-	Done   chan struct{}
+	CConn  chan *PeerConn
 }
 
 // config is the struct to hold configuration options useful to RemotePeer.
@@ -216,15 +216,15 @@ func (self *Peer) Start() {
 func (self *Peer) PushStream(stream net.Stream) {
 	newStreamMsg := NewStreamMsg{
 		Stream: stream,
-		Done:   nil,
+		CConn:   nil,
 	}
 	self.cNewStream <- &newStreamMsg
 }
 
-func (self *Peer) PushConn(peer *Peer, done chan struct{}) {
+func (self *Peer) PushConn(peer *Peer, cConn chan *PeerConn) {
 	newPeerMsg := NewPeerMsg{
-		Peer: peer,
-		Done: done,
+		Peer:  peer,
+		CConn: cConn,
 	}
 	self.cNewConn <- &newPeerMsg
 }
@@ -237,27 +237,27 @@ func (self *Peer) processConn() {
 			return
 		case newPeerMsg := <-self.cNewConn:
 			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.Peer.PeerID, newPeerMsg.Peer.RawAddress)
-			cDone := make(chan struct{})
+			cDone := make(chan *PeerConn)
 			go func(self *Peer) {
 				peerConn, err := self.handleConn(newPeerMsg.Peer, cDone)
 				if err != nil && peerConn == nil {
 					Logger.log.Errorf("Fail in opening stream from PEER Id - %s with err: %s", self.PeerID.String(), err.Error())
 				}
 			}(self)
-			<-cDone
-			if newPeerMsg.Done != nil {
-				close(newPeerMsg.Done)
+			p := <-cDone
+			if newPeerMsg.CConn != nil {
+				newPeerMsg.CConn <- p
 			}
 			Logger.log.Infof("ProcessConn END CONN %s %s", newPeerMsg.Peer.PeerID, newPeerMsg.Peer.RawAddress)
 			continue
 		case newStreamMsg := <-self.cNewStream:
 			remotePeerID := newStreamMsg.Stream.Conn().RemotePeer()
 			Logger.log.Infof("ProcessConn START STREAM %s", remotePeerID)
-			cDone := make(chan struct{})
-			go self.handleStream(newStreamMsg.Stream, cDone)
-			<-cDone
-			if newStreamMsg.Done != nil {
-				close(newStreamMsg.Done)
+			cConn := make(chan *PeerConn)
+			go self.handleStream(newStreamMsg.Stream, cConn)
+			p := <-cConn
+			if newStreamMsg.CConn != nil {
+				newStreamMsg.CConn <- p
 			}
 			Logger.log.Infof("ProcessConn END STREAM %s", remotePeerID)
 			continue
@@ -337,15 +337,15 @@ func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
 	}
 }
 
-func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error) {
+func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER Id - %s", peer.RawAddress)
 
 	_, ok := self.PeerConns[peer.PeerID.String()]
 	if ok {
 		Logger.log.Infof("Checked Existed PEER Id - %s", peer.RawAddress)
 
-		if cDone != nil {
-			close(cDone)
+		if cConn != nil {
+			cConn <- nil
 		}
 		return nil, nil
 	}
@@ -354,8 +354,8 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 		Logger.log.Infof("Checked Myself PEER Id - %s", peer.RawAddress)
 		//self.newPeerConnectionMutex.Unlock()
 
-		if cDone != nil {
-			close(cDone)
+		if cConn != nil {
+			cConn <- nil
 		}
 		return nil, nil
 	}
@@ -366,8 +366,8 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 		//push to pending peers
 		self.ConnPending(peer)
 
-		if cDone != nil {
-			close(cDone)
+		if cConn != nil {
+			cConn <- nil
 		}
 		return nil, nil
 	}
@@ -375,8 +375,8 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 	stream, err := self.Host.NewStream(context.Background(), peer.PeerID, ProtocolId)
 	Logger.log.Info(peer, stream, err)
 	if err != nil {
-		if cDone != nil {
-			close(cDone)
+		if cConn != nil {
+			cConn <- nil
 		}
 		return nil, NewPeerError(OpeningStreamP2PErr, err, self)
 	}
@@ -415,8 +415,8 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 
 	go self.handleConnected(&peerConn)
 
-	if cDone != nil {
-		close(cDone)
+	if cConn != nil {
+		cConn <- &peerConn
 	}
 
 	for {
@@ -440,7 +440,7 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 	return &peerConn, nil
 }
 
-func (self *Peer) handleStream(stream net.Stream, cDone chan struct{}) {
+func (self *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 

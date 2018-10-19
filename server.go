@@ -202,6 +202,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	self.consensusEngine, err = ppos.Engine{}.Init(&ppos.EngineConfig{
 		ChainParams:  self.chainParams,
 		BlockChain:   self.blockChain,
+		ConnManager:  self.connManager,
 		MemPool:      self.memPool,
 		Server:       self,
 		FeeEstimator: self.feeEstimator,
