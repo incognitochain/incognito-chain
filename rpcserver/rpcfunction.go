@@ -27,52 +27,52 @@ type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, 
 // Commands valid for normal user
 var RpcHandler = map[string]commandHandler{
 	// node
-	"getnetworkinfo":     RpcServer.handleGetNetWorkInfo,
-	"getconnectioncount": RpcServer.handleGetConnectionCount,
-	"getallpeers":        RpcServer.handleGetAllPeers,
-	"getrawmempool":      RpcServer.handleGetRawMempool,
-	"getmempoolentry":    RpcServer.handleMempoolEntry,
-	"estimatefee":        RpcServer.handleEstimateFee,
-	"getgenerate":        RpcServer.handleGetGenerate,
-	"getmininginfo":      RpcServer.handleGetMiningInfo,
+	GetNetworkInfo:     RpcServer.handleGetNetWorkInfo,
+	GetConnectionCount: RpcServer.handleGetConnectionCount,
+	GetAllPeers:        RpcServer.handleGetAllPeers,
+	GetRawMempool:      RpcServer.handleGetRawMempool,
+	GetMempoolEntry:    RpcServer.handleMempoolEntry,
+	EstimateFee:        RpcServer.handleEstimateFee,
+	GetGenerate:        RpcServer.handleGetGenerate,
+	GetMiningInfo:      RpcServer.handleGetMiningInfo,
 
 	// block
-	"getbestblock":      RpcServer.handleGetBestBlock,
-	"getbestblockhash":  RpcServer.handleGetBestBlockHash,
-	"getblock":          RpcServer.handleGetBlock,
-	"getblockchaininfo": RpcServer.handleGetBlockChainInfo,
-	"getblockcount":     RpcServer.handleGetBlockCount,
-	"getblockhash":      RpcServer.handleGetBlockHash,
+	GetBestBlock:      RpcServer.handleGetBestBlock,
+	GetBestBlockHash:  RpcServer.handleGetBestBlockHash,
+	GetBlock:          RpcServer.handleGetBlock,
+	GetBlockChainInfo: RpcServer.handleGetBlockChainInfo,
+	GetBlockCount:     RpcServer.handleGetBlockCount,
+	GetBlockHash:      RpcServer.handleGetBlockHash,
 	/*"getblocktemplate":              RpcServer.handleGetBlockTemplate,*/
 
 	// transaction
-	"listtransactions":              RpcServer.handleListTransactions,
-	"createtransaction":             RpcServer.handleCreateTransaction,
-	"sendtransaction":               RpcServer.handleSendTransaction,
-	"sendmany":                      RpcServer.handleSendMany,
-	"getnumberofcoinsandbonds":      RpcServer.handleGetNumberOfCoinsAndBonds,
-	"createactionparamstransaction": RpcServer.handleCreateActionParamsTransaction,
-	"sendregistration":              RpcServer.handleSendRegistration,
-	"getmempoolinfo":                RpcServer.handleGetMempoolInfo,
+	ListTransactions:              RpcServer.handleListTransactions,
+	CreateTransaction:             RpcServer.handleCreateTransaction,
+	SendTransaction:               RpcServer.handleSendTransaction,
+	SendMany:                      RpcServer.handleSendMany,
+	GetNumberOfCoinsAndBonds:      RpcServer.handleGetNumberOfCoinsAndBonds,
+	CreateActionParamsTransaction: RpcServer.handleCreateActionParamsTransaction,
+	SendRegistration:              RpcServer.handleSendRegistration,
+	GetMempoolInfo:                RpcServer.handleGetMempoolInfo,
 
 	//POS
-	"getheader": RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
+	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 }
 
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	"listaccounts":          RpcServer.HandleListAccounts,
-	"getaccount":            RpcServer.handleGetAccount,
-	"getaddressesbyaccount": RpcServer.handleGetAddressesByAccount,
-	"getaccountaddress":     RpcServer.handleGetAccountAddress,
-	"dumpprivkey":           RpcServer.handleDumpPrivkey,
-	"importaccount":         RpcServer.handleImportAccount,
-	"listunspent":           RpcServer.handleListUnspent,
-	"getbalance":            RpcServer.handleGetBalance,
-	"getreceivedbyaccount":  RpcServer.handleGetReceivedByAccount,
-	"settxfee":              RpcServer.handleSetTxFee,
-	"createsealerkeyset":    RpcServer.handleCreateSealerKeySet,
+	ListAccounts:          RpcServer.HandleListAccounts,
+	GetAccount:            RpcServer.handleGetAccount,
+	GetAddressesByAccount: RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:     RpcServer.handleGetAccountAddress,
+	DumpPrivkey:           RpcServer.handleDumpPrivkey,
+	ImportAccount:         RpcServer.handleImportAccount,
+	ListUnspent:           RpcServer.handleListUnspent,
+	GetBalance:            RpcServer.handleGetBalance,
+	GetReceivedByAccount:  RpcServer.handleGetReceivedByAccount,
+	SetTxFee:              RpcServer.handleSetTxFee,
+	CreateSealerKeyset:    RpcServer.handleCreateSealerKeySet,
 }
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
