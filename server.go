@@ -56,9 +56,8 @@ type Server struct {
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator
 
-	cDonePeers chan *peer.Peer
-	cQuit      chan struct{}
-	cNewPeers  chan *peer.Peer
+	cQuit     chan struct{}
+	cNewPeers chan *peer.Peer
 }
 
 // setupRPCListeners returns a slice of listeners that are configured for use
@@ -121,7 +120,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	self.protocolVersion = protocolVer
 	self.chainParams = chainParams
 	self.cQuit = make(chan struct{})
-	self.cDonePeers = make(chan *peer.Peer)
 	self.cNewPeers = make(chan *peer.Peer)
 	self.dataBase = db
 
@@ -389,7 +387,6 @@ func (self Server) peerHandler() {
 	}
 
 	if len(cfg.ConnectPeers) == 0 {
-		// TODO connect with peer in file
 		for _, addr := range self.addrManager.AddressCache() {
 			go self.connManager.Connect(addr.RawAddress, addr.PublicKey)
 		}
@@ -400,17 +397,10 @@ func (self Server) peerHandler() {
 out:
 	for {
 		select {
-		case p := <-self.cDonePeers:
-			self.handleDonePeerMsg(p)
 		case p := <-self.cNewPeers:
 			self.handleAddPeerMsg(p)
 		case <-self.cQuit:
 			{
-				// Disconnect all peers on server shutdown.
-				//state.forAllPeers(func(sp *serverPeer) {
-				//	srvrLog.Tracef("Shutdown peer %s", sp)
-				//	sp.Disconnect()
-				//})
 				break out
 			}
 		}
@@ -609,13 +599,10 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	}
 
 	self.cNewPeers <- remotePeer
-	// TODO check version message
 	valid := false
-
 	if msg.ProtocolVersion == self.protocolVersion {
 		valid = true
 	}
-	//
 
 	msgV, err := wire.MakeEmptyMessage(wire.CmdVerack)
 	if err != nil {
@@ -641,7 +628,6 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 OnVerAck is invoked when a peer receives a version acknowlege message
 */
 func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
-	// TODO for onverack message
 	Logger.log.Info("Receive verack message START")
 
 	if msg.Valid {
@@ -838,21 +824,14 @@ func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 	return errors.New("RemotePeer not found")
 }
 
-// handleDonePeerMsg deals with peers that have signalled they are done.  It is
-// invoked from the peerHandler goroutine.
-func (self *Server) handleDonePeerMsg(sp *peer.Peer) {
-	//self.addrManager.
-	// TODO
-}
-
 // handleAddPeerMsg deals with adding new peers.  It is invoked from the
 // peerHandler goroutine.
 func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 	if peer == nil {
 		return false
 	}
-
-	// TODO:
+	Logger.log.Info("New peer have just sent a message version")
+	Logger.log.Info(peer)
 	return true
 }
 

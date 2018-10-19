@@ -253,16 +253,6 @@ out:
 	Logger.log.Infof("Address handler done")
 }
 
-// Connected Marks the given address as currently connected and working at the
-// current time.  The address must already be known to addrManager else it will
-// be ignored.
-func (a *AddrManager) Connected(peer *peer.Peer) {
-	//a.mtx.Lock()
-	//defer a.mtx.Unlock()
-
-	// TODO
-}
-
 // Good marks the given address as good.  To be called after a successful
 // connection and version exchange.  If the address is unknown to the address
 // manager it will be ignored.

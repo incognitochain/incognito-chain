@@ -3,8 +3,6 @@ package netsync
 import (
 	"sync"
 	"sync/atomic"
-	"time"
-
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash/blockchain"
 	"github.com/ninjadotorg/cash/common"
@@ -59,9 +57,6 @@ func (self *NetSync) Start() {
 	Logger.log.Info("Starting sync manager")
 	self.waitgroup.Add(1)
 	go self.messageHandler()
-	time.AfterFunc(2*time.Second, func() {
-		// TODO something here
-	})
 }
 
 // Stop gracefully shuts down the sync manager by stopping all asynchronous
