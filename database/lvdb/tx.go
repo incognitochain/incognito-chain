@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 func (db *db) StoreNullifiers(nullifier []byte, coinType string, chainId byte) error {
@@ -66,7 +67,17 @@ func (db *db) HasNullifier(nullifier []byte, coinType string, chainID byte) (boo
 }
 
 func (db *db) CleanNullifiers() error {
-
+	iter := db.lvdb.NewIterator(util.BytesPrefix(nullifiers), nil)
+	for iter.Next() {
+		err := db.lvdb.Delete(iter.Key(), nil)
+		if err != nil {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+	}
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
+	}
 	return nil
 }
 
@@ -125,6 +136,17 @@ func (db *db) HasCommitment(commitment []byte, coinType string, chainId byte) (b
 }
 
 func (db *db) CleanCommitments() error {
+	iter := db.lvdb.NewIterator(util.BytesPrefix(commitments), nil)
+	for iter.Next() {
+		err := db.lvdb.Delete(iter.Key(), nil)
+		if err != nil {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+	}
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
+	}
 	return nil
 }
 
@@ -144,5 +166,16 @@ func (db *db) GetFeeEstimator(chainId byte) ([]byte, error) {
 }
 
 func (db *db) CleanFeeEstimator() error {
+	iter := db.lvdb.NewIterator(util.BytesPrefix(feeEstimator), nil)
+	for iter.Next() {
+		err := db.lvdb.Delete(iter.Key(), nil)
+		if err != nil {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+	}
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
+	}
 	return nil
 }
