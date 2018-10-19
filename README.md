@@ -1,4 +1,4 @@
-# Cash-prototype
+# Cash
 
 One prototype version for a new type of crypto curency
 
