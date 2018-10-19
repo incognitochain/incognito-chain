@@ -202,7 +202,7 @@ func (self *Engine) validatePreSignBlockSanity(block *blockchain.Block) error {
 	}
 
 	// 3. Check signature of the block leader for block hash
-	err = cashec.ValidateDataB58(block.ChainLeader, block.Header.BlockCommitteeSigs[block.Header.ChainID], []byte(finalBlock.Hash().String()))
+	err = cashec.ValidateDataB58(block.ChainLeader, block.Header.BlockCommitteeSigs[block.Header.ChainID], []byte(block.Hash().String()))
 	if err != nil {
 		return err
 	}
