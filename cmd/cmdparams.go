@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	defaultConfigFilename = "config.conf"
+	defaultConfigFilename = "params.conf"
 	defaultDataDirname    = "data"
 	defaultLogDirname     = "logs"
 )
@@ -23,7 +23,7 @@ var (
 )
 
 // See loadConfig for details on the configuration load process.
-type config struct {
+type params struct {
 	Command string `long:"cmd" short:"c" description:"Command name"`
 	DataDir string `short:"b" long:"datadir" description:"Directory to store data"`
 	TestNet bool   `long:"testnet" description:"Use the test network"`
@@ -35,13 +35,13 @@ type config struct {
 }
 
 // newConfigParser returns a new command line flags parser.
-func newConfigParser(cfg *config, options flags.Options) *flags.Parser {
+func newConfigParser(cfg *params, options flags.Options) *flags.Parser {
 	parser := flags.NewParser(cfg, options)
 	return parser
 }
 
-func loadConfig() (*config, error) {
-	cfg := config{
+func loadConfig() (*params, error) {
+	cfg := params{
 		DataDir: defaultDataDir,
 		TestNet: false,
 	}

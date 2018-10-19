@@ -7,14 +7,14 @@ import (
 )
 
 var (
-	cfg *config
+	cfg *params
 )
 
 func main() {
 	// Show version at startup.
 	log.Printf("Version %s\n", "0.0.1")
 
-	// load config
+	// load params
 	tcfg, err := loadConfig()
 	if err != nil {
 		log.Println("Parse params error", err.Error())
