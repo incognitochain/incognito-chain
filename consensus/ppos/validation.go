@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"time"
 
+	"errors"
+
 	"github.com/ninjadotorg/cash/blockchain"
 	"github.com/ninjadotorg/cash/cashec"
 	"github.com/ninjadotorg/cash/common"
 	"github.com/ninjadotorg/cash/common/base58"
 	"github.com/ninjadotorg/cash/transaction"
 	"github.com/ninjadotorg/cash/wire"
-	"errors"
 )
 
 func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
@@ -200,25 +201,18 @@ func (self *Engine) validatePreSignBlockSanity(block *blockchain.Block) error {
 		return err
 	}
 
-	// 3. Check signature of the block leader for block header
-	headerBytes, _ := json.Marshal(block.Header)
-	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, headerBytes)
+	// 3. Check signature of the block leader for block hash
+	err = cashec.ValidateDataB58(block.ChainLeader, block.Header.BlockCommitteeSigs[block.Header.ChainID], []byte(block.Hash().String()))
 	if err != nil {
 		return err
 	}
 
-	// 4. Check whether we acquire enough data to validate this block
-	err = self.IsEnoughData(block)
-	if err != nil {
-		return err
-	}
-
-	// 5. Validate MerkleRootCommitments
+	// 4. Validate MerkleRootCommitments
 	err = self.ValidateMerkleRootCommitments(block)
 	if err != nil {
 		return err
 	}
 
-	// 7. Validate transactions
+	// 5. Validate transactions
 	return self.ValidateTxList(block.Transactions)
 }
