@@ -1,5 +1,5 @@
 window.onload = function () {
-    if (typeof(Storage) !== "undefined") {
+    /*if (typeof(Storage) !== "undefined") {
         // Code for localStorage/sessionStorage.
         let passphrase = window.localStorage['cash_passphrase'];
         if (passphrase == null || passphrase == '') {
@@ -9,7 +9,7 @@ window.onload = function () {
         // Sorry! No Web Storage support..
         alert('Sorry! No Web Storage support')
         return
-    }
+    }*/
 
     loadList();
 
