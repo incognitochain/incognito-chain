@@ -7,10 +7,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/database"
-	_ "github.com/ninjadotorg/cash-prototype/database/lvdb"
-	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash/blockchain"
+	"github.com/ninjadotorg/cash/database"
+	_ "github.com/ninjadotorg/cash/database/lvdb"
+	"github.com/ninjadotorg/cash/transaction"
 )
 
 func setup(t *testing.T) (database.DatabaseInterface, func()) {

@@ -10,28 +10,28 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/rewardagent"
+	"github.com/ninjadotorg/cash/rewardagent"
 
-	"github.com/ninjadotorg/cash-prototype/common/base58"
-	"github.com/ninjadotorg/cash-prototype/consensus/ppos"
+	"github.com/ninjadotorg/cash/common/base58"
+	"github.com/ninjadotorg/cash/consensus/ppos"
 
 	"crypto/tls"
 	"os"
 	"strconv"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash-prototype/addrmanager"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/connmanager"
-	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/mempool"
-	"github.com/ninjadotorg/cash-prototype/netsync"
-	"github.com/ninjadotorg/cash-prototype/peer"
-	"github.com/ninjadotorg/cash-prototype/rpcserver"
-	"github.com/ninjadotorg/cash-prototype/transaction"
-	"github.com/ninjadotorg/cash-prototype/wallet"
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/cash/addrmanager"
+	"github.com/ninjadotorg/cash/blockchain"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/connmanager"
+	"github.com/ninjadotorg/cash/database"
+	"github.com/ninjadotorg/cash/mempool"
+	"github.com/ninjadotorg/cash/netsync"
+	"github.com/ninjadotorg/cash/peer"
+	"github.com/ninjadotorg/cash/rpcserver"
+	"github.com/ninjadotorg/cash/transaction"
+	"github.com/ninjadotorg/cash/wallet"
+	"github.com/ninjadotorg/cash/wire"
 )
 
 type Server struct {

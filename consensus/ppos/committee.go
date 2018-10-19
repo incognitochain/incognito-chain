@@ -3,8 +3,8 @@ package ppos
 import (
 	"errors"
 
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/common/base58"
 )
 
 func (self *Engine) GetCommittee() []string {

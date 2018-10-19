@@ -16,9 +16,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash/blockchain"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/transaction"
 )
 
 const (

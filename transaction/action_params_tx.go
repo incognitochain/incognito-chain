@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash/common"
 	//"encoding/json"
 	"unsafe"
 )

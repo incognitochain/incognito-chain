@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash/common"
 )
 
 const (

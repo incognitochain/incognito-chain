@@ -3,7 +3,7 @@ package transaction
 import (
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash/common"
 )
 
 type Transaction interface {

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/benchmark/api"
+	"github.com/ninjadotorg/cash/benchmark/api"
 )
 
 var (

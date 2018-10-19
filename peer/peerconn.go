@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/cash/wire"
 )
 
 type PeerConn struct {

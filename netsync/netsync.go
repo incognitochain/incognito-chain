@@ -6,11 +6,11 @@ import (
 	"time"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/mempool"
-	"github.com/ninjadotorg/cash-prototype/peer"
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/cash/blockchain"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/mempool"
+	"github.com/ninjadotorg/cash/peer"
+	"github.com/ninjadotorg/cash/wire"
 )
 
 type NetSync struct {

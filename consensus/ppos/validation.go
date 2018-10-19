@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
-	"github.com/ninjadotorg/cash-prototype/transaction"
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/cash/blockchain"
+	"github.com/ninjadotorg/cash/cashec"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/common/base58"
+	"github.com/ninjadotorg/cash/transaction"
+	"github.com/ninjadotorg/cash/wire"
 	"errors"
 )
 

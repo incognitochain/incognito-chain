@@ -1,8 +1,8 @@
 package cashec
 
 import (
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/privacy/client"
 )
 
 type KeySet struct {

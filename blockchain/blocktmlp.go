@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
-	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/privacy/client"
+	"github.com/ninjadotorg/cash/transaction"
 )
 
 func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, chainID byte) (*BlockTemplate, error) {

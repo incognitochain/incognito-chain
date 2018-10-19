@@ -3,7 +3,7 @@ package blockchain
 import (
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash/common"
 )
 
 // DNSSeed identifies a DNS seed.

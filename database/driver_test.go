@@ -3,8 +3,8 @@ package database_test
 import (
 	"testing"
 
-	"github.com/ninjadotorg/cash-prototype/database"
-	_ "github.com/ninjadotorg/cash-prototype/database/lvdb"
+	"github.com/ninjadotorg/cash/database"
+	_ "github.com/ninjadotorg/cash/database/lvdb"
 )
 
 func TestLevelDBDriver(t *testing.T) {

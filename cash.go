@@ -7,10 +7,10 @@ import (
 	"runtime/debug"
 	"path/filepath"
 	"log"
-	_ "github.com/ninjadotorg/cash-prototype/database/lvdb"
-	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/limits"
-	"github.com/ninjadotorg/cash-prototype/wallet"
+	_ "github.com/ninjadotorg/cash/database/lvdb"
+	"github.com/ninjadotorg/cash/database"
+	"github.com/ninjadotorg/cash/limits"
+	"github.com/ninjadotorg/cash/wallet"
 )
 
 var (

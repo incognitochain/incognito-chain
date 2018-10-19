@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/ninjadotorg/cash-prototype/privacy/client/crypto/sha256"
+	"github.com/ninjadotorg/cash/privacy/client/crypto/sha256"
 	"golang.org/x/crypto/blake2b"
 )
 

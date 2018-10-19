@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha512"
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
-	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash/cashec"
+	"github.com/ninjadotorg/cash/common/base58"
+	"github.com/ninjadotorg/cash/common"
 )
 
 const (

@@ -1,8 +1,8 @@
 package blockchain
 
 import (
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/privacy/client"
 )
 
 // BestState houses information about the current best block and other info

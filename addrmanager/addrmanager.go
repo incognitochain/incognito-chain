@@ -11,7 +11,7 @@ import (
 	"time"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash-prototype/peer"
+	"github.com/ninjadotorg/cash/peer"
 )
 
 const (

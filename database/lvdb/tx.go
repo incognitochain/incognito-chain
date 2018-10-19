@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash/database"
 
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"

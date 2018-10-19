@@ -12,11 +12,11 @@ import (
 	"encoding/json"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
-	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash/cashec"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/database"
+	"github.com/ninjadotorg/cash/privacy/client"
+	"github.com/ninjadotorg/cash/transaction"
 	"sort"
 )
 

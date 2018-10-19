@@ -1,6 +1,6 @@
 package jsonresult
 
-import "github.com/ninjadotorg/cash-prototype/blockchain"
+import "github.com/ninjadotorg/cash/blockchain"
 
 type GetHeaderResult struct {
 	BlockNum  int                    `json:"blocknum"`

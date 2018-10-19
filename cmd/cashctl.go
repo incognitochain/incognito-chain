@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"encoding/json"
-	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash/common"
 )
 
 var (

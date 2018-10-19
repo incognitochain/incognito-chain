@@ -15,10 +15,10 @@ import (
 
 	"math"
 
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
-	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
+	"github.com/ninjadotorg/cash/cashec"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/privacy/client"
+	"github.com/ninjadotorg/cash/privacy/proto/zksnark"
 )
 
 // Tx represents a coin-transfer-transaction stored in a block

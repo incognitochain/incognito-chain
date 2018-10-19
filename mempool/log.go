@@ -1,6 +1,6 @@
 package mempool
 
-import "github.com/ninjadotorg/cash-prototype/common"
+import "github.com/ninjadotorg/cash/common"
 
 type MempoolLogger struct {
 	log common.Logger

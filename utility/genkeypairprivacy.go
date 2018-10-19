@@ -3,7 +3,7 @@ package utility
 import (
 	"fmt"
 
-	"github.com/ninjadotorg/cash-prototype/wallet"
+	"github.com/ninjadotorg/cash/wallet"
 )
 
 func main() {

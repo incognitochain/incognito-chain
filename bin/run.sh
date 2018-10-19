@@ -6,7 +6,7 @@ fi
 
 KEY=$1
 
-cd ~/go/src/github.com/ninjadotorg/cash-prototype
+cd ~/go/src/github.com/ninjadotorg/cash
 cd privacy/server/build
 sudo ./main > privacy.log &
 echo "Started privacy..."

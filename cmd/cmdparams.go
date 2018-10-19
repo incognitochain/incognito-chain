@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/jessevdk/go-flags"
 	"path/filepath"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/blockchain"
 )
 
 const (

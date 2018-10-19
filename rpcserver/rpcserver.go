@@ -13,20 +13,20 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/cash/wire"
 
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash-prototype/addrmanager"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/connmanager"
-	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/mempool"
-	"github.com/ninjadotorg/cash-prototype/wallet"
-	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash/addrmanager"
+	"github.com/ninjadotorg/cash/blockchain"
+	"github.com/ninjadotorg/cash/connmanager"
+	"github.com/ninjadotorg/cash/database"
+	"github.com/ninjadotorg/cash/mempool"
+	"github.com/ninjadotorg/cash/wallet"
+	"github.com/ninjadotorg/cash/common"
 )
 
 const (

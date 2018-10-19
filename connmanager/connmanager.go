@@ -16,11 +16,11 @@ import (
 	libpeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
-	"github.com/ninjadotorg/cash-prototype/bootnode/server"
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
-	"github.com/ninjadotorg/cash-prototype/peer"
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/cash/bootnode/server"
+	"github.com/ninjadotorg/cash/cashec"
+	"github.com/ninjadotorg/cash/common/base58"
+	"github.com/ninjadotorg/cash/peer"
+	"github.com/ninjadotorg/cash/wire"
 )
 
 // ConnState represents the state of the requested connection.

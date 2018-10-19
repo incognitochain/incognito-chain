@@ -1,7 +1,7 @@
 package blockchain
 
 import (
-	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash/common"
 )
 
 type BlockHeader struct {

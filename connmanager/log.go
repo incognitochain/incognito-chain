@@ -1,7 +1,7 @@
 package connmanager
 
 import (
-	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash/common"
 )
 
 type ConnManagerLogger struct {

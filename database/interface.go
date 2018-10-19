@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash/common"
 )
 
 // DatabaseInterface provides the interface that is used to store blocks.

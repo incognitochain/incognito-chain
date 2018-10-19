@@ -11,9 +11,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
+	"github.com/ninjadotorg/cash/cashec"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/privacy/client"
 )
 
 // TxVoting ...

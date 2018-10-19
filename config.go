@@ -15,9 +15,9 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jessevdk/go-flags"
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
+	"github.com/ninjadotorg/cash/cashec"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/common/base58"
 )
 
 // default config

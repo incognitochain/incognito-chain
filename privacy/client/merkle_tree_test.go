@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash/common"
 )
 
 func buildByteSequence(k int) [][]byte {

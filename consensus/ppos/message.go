@@ -2,9 +2,9 @@ package ppos
 
 import (
 	peer2 "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/cash/blockchain"
+	"github.com/ninjadotorg/cash/common/base58"
+	"github.com/ninjadotorg/cash/wire"
 )
 
 func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestBlockSign) {

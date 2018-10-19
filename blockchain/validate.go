@@ -5,8 +5,8 @@ Use these function to validate common data in blockchain
  */
 
 import (
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/transaction"
 )
 
 /*

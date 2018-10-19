@@ -3,8 +3,8 @@ package mempool
 import (
 	"fmt"
 
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/transaction"
 	"errors"
 )
 

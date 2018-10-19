@@ -5,9 +5,9 @@ import (
 	"encoding/binary"
 	"encoding/json"
 
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/cash/blockchain"
+	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/database"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )

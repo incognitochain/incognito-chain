@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
+	"github.com/ninjadotorg/cash/privacy/proto/zksnark"
 	"google.golang.org/grpc"
 )
 

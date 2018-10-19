@@ -1,7 +1,7 @@
 package blockchain
 
 import (
-	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/cash/common"
 )
 
 // ProcessBlock is the main workhorse for handling insertion of new blocks into

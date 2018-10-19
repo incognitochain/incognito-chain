@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/cash/wire"
 )
 
 type Handler struct {
