@@ -6,7 +6,8 @@ window.onload = function () {
     };
 
     showLoading(false)
-
+    $('#rpcUsername').val(window.localStorage['rpcUserName'])
+    $('#rpcPassword').val(window.localStorage['rpcPassword'])
     $('#saveRpcAuth').click(function () {
         var rpcUserName = $('#rpcUsername').val();
         var rpcPassword = $('#rpcPassword').val();
