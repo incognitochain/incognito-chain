@@ -21,15 +21,19 @@ window.onload = function () {
 
     loadListAccount();
 
-    document.getElementById("bt_import").onclick = function () {
+    $('#bt_import').click(function () {
         importAccount();
         return false;
-    };
-    document.getElementById("bt_new").onclick = function () {
+    });
+    $('#bt_new').click(function () {
         newAccount();
         return false;
-    };
+    });
 };
+
+$(window).unload(function () {
+    window.localStorage.removeItem('cash_passphrase');
+});
 
 function loadListAccount() {
     showLoading(true);
@@ -52,14 +56,13 @@ function loadListAccount() {
                 for (var key in accounts) {
                     var balance = accounts[key];
                     var li = document.createElement('li');
-                    console.log(key)
                     li.innerHTML = '<a href="../../account_detail.html?account=' + key + '">' + key + ' (' + balance + ')' + '</a>'
                     li.classList = "list-group-item"
-                    document.getElementById("list_account").appendChild(li);
+                    $('#list_account').append(li);
                     accountTotal++;
                 }
-                document.getElementById("loader").style.display = "none";
-                document.getElementById("myDiv").style.display = "block";
+                $('#loader').hide();
+                $('#myDiv').show();
             } else {
                 if (response.Error != null) {
                     alert(response.Error.message)
