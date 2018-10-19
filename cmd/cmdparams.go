@@ -14,12 +14,10 @@ const (
 )
 
 var (
-	defaultHomeDir     = common.AppDataDir("prototype", false)
-	defaultConfigFile  = filepath.Join(defaultHomeDir, defaultConfigFilename)
-	defaultDataDir     = filepath.Join(defaultHomeDir, defaultDataDirname)
-	defaultRPCKeyFile  = filepath.Join(defaultHomeDir, "rpc.key")
-	defaultRPCCertFile = filepath.Join(defaultHomeDir, "rpc.cert")
-	defaultLogDir      = filepath.Join(defaultHomeDir, defaultLogDirname)
+	defaultHomeDir    = common.AppDataDir("prototype", false)
+	defaultConfigFile = filepath.Join(defaultHomeDir, defaultConfigFilename)
+	defaultDataDir    = filepath.Join(defaultHomeDir, defaultDataDirname)
+	defaultLogDir     = filepath.Join(defaultHomeDir, defaultLogDirname)
 )
 
 // See loadParams for details on the configuration load process.
