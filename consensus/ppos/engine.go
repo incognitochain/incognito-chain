@@ -27,13 +27,11 @@ type Engine struct {
 	sealerStarted bool
 
 	// channel
-	cQuit          chan struct{}
-	cQuitSealer    chan struct{}
-	cBlockSig      chan blockSig
-	cQuitSwap      chan struct{}
-	cSwapReqDie    chan byte
-	cSwapReqPeriod chan byte
-	cSwapReqBad    chan byte
+	cQuit       chan struct{}
+	cQuitSealer chan struct{}
+	cBlockSig   chan blockSig
+	cQuitSwap   chan struct{}
+	cSwapChain  chan byte
 
 	config                EngineConfig
 	knownChainsHeight     chainsHeight
@@ -504,7 +502,7 @@ func (self *Engine) StartSwap() error {
 				Logger.log.Info("Consensus engine stopped swap")
 				return nil
 			}
-		case chainId := <-self.cSwapReqPeriod:
+		case chainId := <-self.cSwapChain:
 			{
 				Logger.log.Infof("Consensus engine swap period %s START", chainId)
 
@@ -514,20 +512,6 @@ func (self *Engine) StartSwap() error {
 				//}
 
 				Logger.log.Infof("Consensus engine swap period %s END", chainId)
-				continue
-			}
-		case chainId := <-self.cSwapReqDie:
-			{
-				Logger.log.Infof("Consensus engine swap die %s START", chainId)
-
-				Logger.log.Infof("Consensus engine swap die %s END", chainId)
-				continue
-			}
-		case chainId := <-self.cSwapReqBad:
-			{
-				Logger.log.Infof("Consensus engine swap bad %s START", chainId)
-
-				Logger.log.Infof("Consensus engine swap bad %s END", chainId)
 				continue
 			}
 		}

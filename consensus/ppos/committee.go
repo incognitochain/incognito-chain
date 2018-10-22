@@ -8,6 +8,9 @@ import (
 )
 
 func (self *Engine) GetCommittee() []string {
+
+
+
 	return self.config.BlockChain.BestState[0].BestBlock.Header.Committee
 }
 
