@@ -40,6 +40,16 @@ window.onload = function () {
         window.location.href = 'sendmany.html?account=' + encodeURIComponent(account);
         return false;
     };
+
+    $('#bt_register').click(function () {
+        var r = confirm();
+        if (r) {
+            sendRegistrationCandidate();
+        }
+        return false;
+    });
+
+    showNetworkInfo();
 };
 
 function dumpprivkey(publicKey) {
@@ -95,7 +105,7 @@ function getbalance() {
                     alert('Bad response');
                 }
             }
-        } 
+        }
     };
     xhr.send(JSON.stringify({
         jsonrpc: "1.0",
@@ -132,6 +142,7 @@ function sendmany() {
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null && response.Result != '') {
+                alert("Success");
             } else {
                 if (response.Error != null) {
                     alert(response.Error.message)
@@ -149,4 +160,69 @@ function sendmany() {
         params: [priKey, dest, -1, 1],
         id: 1
     }));
+}
+
+function sendRegistrationCandidate() {
+    var priKey = $('#lb_privateKey').text();
+    var candidateFee = parseInt($('#candidateFee').val());
+    var candidatePeerInfo = $('#listAddresses input:checked').val();
+    var auth = "Basic " + $.base64.encode(window.localStorage['rpcUserName'] + ":" + window.localStorage['rpcPassword']);
+    $.ajax({
+        url: window.localStorage['cash_node_url'],
+        type: 'POST',
+        data: JSON.stringify({
+            jsonrpc: "1.0",
+            method: "sendregistration",
+            params: [priKey, candidateFee, -1, 1, candidatePeerInfo],
+            id: 1
+        }),
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader('Authorization', auth);
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        },
+        success: function (response) {
+            if (response.Result != null && response.Result != '') {
+                alert("Success");
+            } else {
+                if (response.Error != null) {
+                    alert(response.Error.message)
+                } else {
+                    alert('Bad response');
+                }
+            }
+        }
+    });
+}
+
+function showNetworkInfo() {
+    var auth = "Basic " + $.base64.encode(window.localStorage['rpcUserName'] + ":" + window.localStorage['rpcPassword']);
+    $.ajax({
+        url: window.localStorage['cash_node_url'],
+        type: 'POST',
+        data: JSON.stringify({
+            jsonrpc: "1.0",
+            method: "getnetworkinfo",
+            params: [],
+            id: 1
+        }),
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader('Authorization', auth);
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        },
+        success: function (response) {
+            if (response.Result != null) {
+                $('#listAddresses').html('');
+                response.Result.LocalAddresses.forEach(function (value) {
+                    $('#listAddresses').append('<li style="margin-right: 5px;"><input value="' + value + '" type="radio" name="lcAddresses"/>' + value + '</li>')
+                });
+            }
+            else {
+                if (response.Error != null) {
+                    alert(response.Error.message)
+                } else {
+                    alert('Bad response');
+                }
+            }
+        }
+    });
 }
