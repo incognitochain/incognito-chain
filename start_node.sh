@@ -26,6 +26,7 @@ KEY18="1BuMVcA1nU13NDAWxA1JxpK2zT7eXxpKNz35hKXrjZtQ8qDwx7gUYpnZtk7jozocE74WbxpFN
 KEY19="1ufrxRyJ47kwKA2Wi33bpQG8JXi8qJJvTxFjST2LqoRWuDtB6zukDSXusiNtoVAghuuUMgGvzZTB5facSo6e6xN66gm5n5aJjz62i9vtGkj5uo5VZ4gwHdqzGWaoVdDZfDLfgeZq8eA7K3Mk76hCFmbtZxxNUSEpRGF9E5w3UQPfDN2QSzHhKzXtvWKBa1Ka63oKKctxjhx5GtnAUeazSNUuDvNiM72BJmGBJ348FxMsteEBuMjpDWhRBCZS3QMPnqkhJMGLxQMhnnQojZGP4KXWUjLCSBksDzNN2HCuzdVoRVJsbDuV3mTgE9eMwnvY2Ve586Gu3ffsMwSAZcqrFMzrNdRgK7jHN9ZtiwhTKiPKmvZJ4mbYSfjxWBwA67w2c3H7GUr89fWo85ARnrGQBV9z9Zxugth27GwB8JZv6vFBp69rFm4Wn2vwRt7BEU2EVD6hJ26NS6Ra6uu7w9DP6xFSbWti4PbbYMp5AxeWK6E9Yg1Us9oSngVxFytuqcsHbmFFqhRDW3Ux9VzG2k3Z1CRNSGxYaQmM5UM28FfhP528woQX2bdRG6WiuKTvwhBHB8LDKggRTSN1NvrCKRe3GjrAdSbT2ysFUBKLH6DrSW58XZTqdMSLmQncUieger5rcp5XWTSx6QvP7P3TPWY8XWrh7MCNFiQE2L9zemWnb9ap3PXM5GFCNzmCDk8upCA32Zy6pC4EWg1fQdYfiaEh5ihvnQehbpymgM6gH3trqZbwDnMYnRU3ydsJRug93X59Nzx6torGdguXtR"
 KEY20="1cXZ1szvjp1Guhme8d7HQwcauz2FzuDGos5FXdTvKWCoTWWGfRSdDuYpuY8GZmczoSGqYb5eeeoGEuofWa7D2jK1yUKxDRr9VdGcF1mWkmAqXge6vH6gCnMUxeqbWwNtCnp8txpWbehwqqzuakWuheHZt9m2zep4w6hZwkcavGLiW9XR2mwfux9v9Gzths4W8JuGkzadz74ChdrX5T2xFDbSs8qLVULdgzmNp4iNYu8oKa1A9Jx3gFtpbB8aMZKmk3iZgVdovcL7pTf5DiykfXUjFAiJMNR7mP1eDfQsPey3nJzj4R5BCv21P96V1ctuFk9p7DvNaJA9yWh5mfugS36f4SKGcTf66DF37Nyo2uhiaVyZqtbCnuFB65HDXa8MLVWK2rsN75cioFV2Qt4fpChircdH7W5yrzKhUzsQiGggsLJusNWzwUps4DBy3RaoiZJ7e7aRHDqsS2CZ4xwPgfL3sRV8q4J5fjU4SpdXpbKYRujR2jq3fT1cv3mpRudQNikn8DjiQVC2PoxeSFjtdz6izJKSSnPcALgAhC1mVjEAhEFyF5mkwWFXNtSuUNwpKG3egv1LnEF3ZjjgECpHjpVTZGUXzeQ1nD6TUuT86n543PEmwX5NDke6rzNDQ94CQ4N2QkhQmeWP6WTk2zDxHeDHUJw74UowESPrppJWPN8GRzz1LpEVkefkhQscvaE93YqiH1hNvLRF1BZ8w8W8jAJYZ7y4a6jGo8pStE2jw6wG8P8no8LEzDwk2ar46vD13Y52kUsaY8"
 
+rm -rf ./data/node-$1/mainnet/block
 mkdir -p ./data/node-$1
 rm -rf ./cash-$1
 go build
@@ -34,7 +35,7 @@ PORT=$((9430 + $1))
 eval KEY=\${KEY$1}
 if [ $1 != 1 ]
 then
-    ./cash-$1 --listen "127.0.0.1:$PORT" --norpc --datadir "data/node-$1" --generate --sealerkeyset "$KEY" --connect "/ip4/127.0.0.1/tcp/9431/ipfs/QmPxHvwzf5igUZGDZjLdSGcqn2yPuEUGtZ2WcLxqeHEpsf"
+    ./cash-$1 --listen "127.0.0.1:$PORT" --norpc --datadir "data/node-$1" --generate --sealerkeyset "$KEY" --connect "/ip4/127.0.0.1/tcp/9431/ipfs/QmWazSLMDWKBxLWWaVWuYxAdEqEBfhZog4927mhyNjbKvA"
 else
     ./cash-$1 --listen "127.0.0.1:$PORT" --norpc --datadir "data/node-$1" --generate --sealerkeyset "$KEY"
 fi

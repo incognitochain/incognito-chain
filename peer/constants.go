@@ -5,8 +5,8 @@ import "time"
 const (
 	// listen all interface
 	LocalHost         = "0.0.0.0"
-	MaxRetryConn      = 5
-	RetryConnDuration = 30 * time.Second
+	MaxRetryConn      = 15
+	RetryConnDuration = 10 * time.Second
 	ProtocolId        = "/blockchain/1.0.0"
 	DelimMessageByte  = '\n'
 	DelimMessageStr   = "\n"

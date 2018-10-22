@@ -600,7 +600,13 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 
 		if peerConn.RetryCount < MaxRetryConn {
 			peerConn.updateConnState(ConnPending)
-			peerConn.ListenerPeer.PushConn(peerConn.RemotePeer, nil)
+			cConn := make(chan *PeerConn)
+			peerConn.ListenerPeer.PushConn(peerConn.RemotePeer, cConn)
+			p := <- cConn
+			if p == nil {
+				peerConn.RetryCount ++
+				go self.retryPeerConnection(peerConn)
+			}
 		} else {
 			peerConn.updateConnState(ConnCanceled)
 			self.ConnCanceled(peerConn.RemotePeer)
