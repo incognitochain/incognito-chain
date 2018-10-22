@@ -303,12 +303,12 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 func (self *Engine) Finalize(finalBlock *blockchain.Block) error {
 	Logger.log.Info("Start finalizing block...")
 	allSigReceived := make(chan struct{})
-
-	defer func() {
-		close(allSigReceived)
-	}()
 	retryTime := 0
 	cancel := make(chan struct{})
+	defer func() {
+		close(cancel)
+		close(allSigReceived)
+	}()
 finalizing:
 	finalBlock.Header.BlockCommitteeSigs = make([]string, common.TotalValidators)
 	finalBlock.Header.Committee = make([]string, common.TotalValidators)
@@ -396,6 +396,7 @@ finalizing:
 		//blocksig wait time exceeded -> get a new commitee list and retry
 		Logger.log.Error(errExceedSigWaitTime)
 		if retryTime == 5 {
+			cancel <- struct{}{}
 			return errExceedBlockRetry
 		}
 		retryTime++
@@ -428,9 +429,6 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 		Logger.log.Error(err)
 		return
 	}
-
-	// update candidate list
-	//self.UpdateCndList(block)
 
 	// update tx pool
 	for _, tx := range block.Transactions {
