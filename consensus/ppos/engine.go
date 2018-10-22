@@ -119,7 +119,6 @@ func (self *Engine) Start() error {
 	if _, ok := self.config.FeeEstimator[0]; !ok {
 		// happen when FastMode = false
 		validatedChainsHeight := make([]int, common.TotalValidators)
-		self.config.FeeEstimator = make(map[byte]*mempool.FeeEstimator)
 		var wg sync.WaitGroup
 		errCh := make(chan error)
 		for chainID := byte(0); chainID < common.TotalValidators; chainID++ {
