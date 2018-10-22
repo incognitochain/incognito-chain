@@ -654,6 +654,7 @@ func (self RpcServer) handleSendRawRegistration(params interface{}, closeChan <-
 	return tx.Hash(), nil
 }
 
+// handleSendRegistration handle sendregistration commitee candidate command.
 func (self RpcServer) handleSendRegistration(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	hexStrOfTx, err := self.handleCreateRegistration(params, closeChan)
 	if err != nil {
