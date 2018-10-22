@@ -34,9 +34,8 @@ const (
 	CmdCandidateProposal = "cndproposal"
 	CmdCandidateVote     = "cndvote"
 
-	CmdRequestSwapPeriod = "requestswapperiod"
-	CmdRequestSwapDie    = "requestswapdie"
-	CmdRequestSwapBad    = "requestswapbad"
+	CmdRequestSwap    = "requestswap"
+	CmdSignSwap       = "signswap"
 )
 
 // Interface for message wire on P2P network
