@@ -173,6 +173,8 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			Logger.log.Error(err)
 			return err
 		}
+
+		self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 	}
 
 	// create mempool tx

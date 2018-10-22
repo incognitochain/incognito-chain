@@ -4,8 +4,6 @@ window.onload = function () {
     var auth = "Basic " + $.base64.encode(window.localStorage['rpcUserName'] + ":" + window.localStorage['rpcPassword']);
     xhr.setRequestHeader("Authorization", auth);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-    var auth = "Basic " + $.base64.encode(window.localStorage['rpcUserName'] + ":" + window.localStorage['rpcPassword']);
-    xhr.setRequestHeader("Authorization", auth);
     xhr.onreadystatechange = function (oEvent) {
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
