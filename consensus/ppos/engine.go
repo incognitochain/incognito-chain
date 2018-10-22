@@ -3,7 +3,6 @@ package ppos
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -68,7 +67,7 @@ type EngineConfig struct {
 	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server          interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -143,7 +142,7 @@ func (self *Engine) Start() error {
 						Logger.log.Error(err)
 						return
 					}
-					fmt.Println("block height:", block.Height)
+					Logger.log.Infof("block height: %d", block.Height)
 					//Comment validateBlockSanity segment to create block with only 1 node (validator)
 					err = self.validateBlockSanity(block)
 					if err != nil {
