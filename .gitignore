@@ -35,3 +35,6 @@ cashctl
 privacy/server/proving\.key
 
 privacy/server/verifying\.key
+.DS_Store
+.env
+datadirs/data**
