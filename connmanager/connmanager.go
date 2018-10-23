@@ -327,7 +327,7 @@ listen:
 				if listener.Config.SealerPrvKey != EmptyString {
 					keySet := &cashec.KeySetSealer{}
 					_, err := keySet.Import(listener.Config.SealerPrvKey)
-					if err != nil {
+					if err == nil {
 						publicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))
 					}
 				}
@@ -370,7 +370,6 @@ listen:
 
 					goto listen
 				}
-
 				for _, rawPeer := range response {
 					if rawPeer.PublicKey != EmptyString && !strings.Contains(rawPeer.RawAddress, listener.PeerID.String()) {
 						_, exist := self.discoveredPeers[rawPeer.PublicKey]
@@ -409,7 +408,7 @@ listen:
 				}
 			}
 		}
-		time.Sleep(time.Second * 60)
+		time.Sleep(time.Second * 10)
 	}
 }
 

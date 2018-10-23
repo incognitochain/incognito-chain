@@ -304,7 +304,6 @@ func (self *Engine) Finalize(finalBlock *blockchain.Block) error {
 	defer func() {
 		close(cancel)
 		close(allSigReceived)
-		close(cancel)
 	}()
 finalizing:
 	finalBlock.Header.BlockCommitteeSigs = make([]string, common.TotalValidators)
@@ -507,6 +506,15 @@ func (self *Engine) StartSwap() error {
 				//for _, cndNode := range cndList {
 				//	self.config.ConnManager.Connect()
 				//}
+				// check node is connected
+
+				// send message for request sign swap
+
+				// wait sign result for other committee for swap
+
+				// verify result
+
+				// broadcast message for update new committee list
 
 				Logger.log.Infof("Consensus engine swap period %s END", chainId)
 				continue

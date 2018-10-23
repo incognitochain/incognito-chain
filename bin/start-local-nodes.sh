@@ -7,6 +7,11 @@ fi
 TOTAL=$1
 SRC=$(pwd)
 
+DB_DIR=$2
+if [ "$DB_DIR" == "" ]; then
+  DB_DIR=$SRC/datadirs
+fi
+
 KEY1="1cXZ1szvjp1Guhme8d7HQwcMfpNfS39S7CVFqoETiFHJ9JN5nbKqCaGkM6rTps4r27H9D3pEmwvkBcGvhvyJusbgbRumJ6KcT7oLob3NGhboFnmsuiCo9z1eVWb2TFxi1mbhruCErCfCsGnxxxpo2YfGndQfvcTphmz1QykqkRucWss9TUnp4VQac8SnmkDfkSsANzLfGmHRxbWkZRQXXXgBHrBPiBBcWmCGANKWYFaGK47ptBq5FQdgoVFkqUd1ydcCkAnaN7iSa1fW2MNQbzniVCCvkycWz9S56bvgZpUJAKSFCiBrspw3gSdeWy7ox1aH4azBFc6xUikPqZ2MgfQHjnn8TUjuD4U8c2HGrQy99F6XPupK7S6KNMoBxzMxoVXSXojrikKQp4nxwi9szw7eJdN7PbmNUUNHkH7zdUdB9vHHGKSS891aHiCjT8vm2DoGnfeiDnQ5Fpd6ifo83kpGDduzoFoGsbAd2R322et1Woi2RoT1zsjuYQdVKSo9G5N616UY2fAT48SBGFu3PAJz8sDoYPQEeBghk58YiFcjBcyUshNaVwffE3QijSLQAtdB9TrAF1EtjypyU1ezzvM8Zhiq6UD1UCP5h24KC5cDkUpW9sCkJDpGJF9KRYK1ymktPpd3T8N9oS6uKUM3VijS2MkYcMkcBVhoPsrZa2dWyHZ1E8SjXnkHBv3twpJvehkvM69pe6jw68ezsJ4TLrUBrNj4Z12dRnEZSuQfHUqdULN96wF553edyt5tgzJ2jGmj8LFbAE"
 KEY2="1cXZ1szvjp1Guhme8d7HQwcBVUyF7SYdSbmFkCVpPSz1BfgkaaBykNccsorqohKbfzH84P9kn8qfWY9YnXUFE5p7aMEiqmcuFfp5G34uhAd3VPB53V5P8A8yeEZ7TCbk4QFNngcR9tSxFfQuvXNWycoSdZcTqgJWZB1Hss6nB9ht3qw1evRCj4hsYWtsZ6PsgP7mGtdAuE6eGdoXVZatUANsYjuHhHDrUEiEdXopFq7SUoEG2QrrtGAU61KzUUcq9w87QT8FWSiFxYxS8zVJQHwTUbW9eheYVvdbFGrDu2UDwa9vC1Xk2tUdTHEyb1bhcyxS35EhxJ5iVKwYyT954S55h57A1wvjcTz6z3uJmxAAyd583UK7mu2zWyh1cK14HjsrefU4PhSETBgqjz7WvTLFosxevZNhgtTdZCJQemRRyw2ouAQCK3fatu6q7kvYdCfdfBVXSLbEzMYh8JjNo5mYgyWV6SLFefyR22zw5MMpg4wbi5mdhFEfHDf8LspjN7D6FA6WY36E4kr2CKtE7God8P2gRQNz9bPmScEvVFhhqxhmbCTqKCVs3yeM4GMfj7UnjsjDjLZ3iqeDCeAcYjBxe2Y5zJpBb3nFdiaeHeywiDWBfKGoqCSQmL8rbUqRUqShcpbiE8kDBECn6uuTFhxuXBTo33VctQcWPFWWSfKbLvsWtfa685LbCBYpspqgvYq3sK9NHx7ocLPWGRLD9iKJ4NP8EawQyZH8mgMLhnPeC2kuQ8BJiF6p529y1AdzPU6N1KJ7pg"
 KEY3="13horJt6gBxUDDcx2teNjSg4kTMoTcw6Zt1NGKVYJjzrAoPQ2gZqWuFzZuLWGWEcH9rZhineEEkuXxtTvEoHezrJAT1L38BrBSCoaC98YhrWdcf396hBZ1CKH9vw3C7adt3QcjEwka192qnwAbyc3FaDZz7mLH8aqbqwbArQBWytgC4p4BWNEpwLSu8wBhEwbgYA4ySLdF1geeG5qudNVSRwwEyQMxQ4qw2aYMDf3AaXGiq8QT6bG15kddQGAoUt8XLRLTptKs4T19N4771ZHXHRwiWhf58hSMpQJyuzN9uz4z171Dbd6Hzu3Nvae2VQ8NKPCcMVYSwzJmqfogMEeWwqghgWnFK6nsKmWCNXFQHzsp2zE5Ggo8uX3aAXuv8PrNX2B8YuhtVS87WhNKBACvptwGsq7eYzc3PZMA4Gij7oqR3cUdtxZ5X4GdisBXjEp3rHvoy41r8qJujzgKcoqWspeQKfVG7w7wAaANUZytizYJXxyzxRqnhNfQskcgscSgbiAcngh2zqqYXzHGuNSKqxzmwdvjXCygSpzN2EXSHn5fvBDAc68NwqzWhjS626gmmRBcbsf7uk4A8BTMomJq2ZyGWU58tqqo2EedBH386S3G499beAVydMP7HJt8e9T3nSJZMWhKa26gjo6BGitLXSbtMrouhkBt4TwwUJ3WsEZLvSFJpWAsKmR1pZKZsDzLXrzqLvUpq8AHE727yxGKWg7ocKXNPJGU2azBzPqtXAhFeYnK69pkqQGtVXmhYjjTNhPLeiCfJN"
@@ -61,18 +66,18 @@ for ((i=1;i<=$TOTAL;i++));
 do
     PORT=$((2333 + $i))
     eval KEY=\${KEY$i}
-    
+
     # open new window in tmux
-    tmux new-window -d -n node$1 
+    tmux new-window -d -n node$1
 
     # remove data folder
     rm -rf data$i
 
     # build options to start node
-    opts="--listen 127.0.0.1:$PORT --discoverpeers --datadir data$i --generate --sealerkeyset $KEY --wallet --walletpassphrase '12345678'"
+    opts="--listen 127.0.0.1:$PORT --discoverpeers --datadir $DB_DIR/data$i --generate --sealerkeyset $KEY --wallet --walletpassphrase '12345678'"
     if [ $i != 1 ]
     then
-        opts="--norpc --listen 127.0.0.1:$PORT --discoverpeers --datadir data$i --generate --sealerkeyset $KEY "
+        opts="--norpc --listen 127.0.0.1:$PORT --discoverpeers --datadir $DB_DIR/data$i --generate --sealerkeyset $KEY "
     fi
     # send command to node window
     tmux send-keys -t cash-prototype:$i.0 "cd $SRC && ./cash-prototype $opts" ENTER
