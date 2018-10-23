@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func processRequest(method string, endpoint string, mapData map[string]interface{}) (error, map[string]interface{}) {
+func processRequest(method string, endpoint string, mapData map[string]interface{}) (error, []byte) {
 	jsonValue, _ := json.Marshal(mapData)
 	request, err := http.NewRequest(method, endpoint, bytes.NewBuffer(jsonValue))
 	request.Header.Set("Content-Type", "application/json")
@@ -18,17 +18,15 @@ func processRequest(method string, endpoint string, mapData map[string]interface
 		return err, nil
 	}
 
-	b, _ := ioutil.ReadAll(response.Body)
+	b, error := ioutil.ReadAll(response.Body)
 
-	var data map[string]interface{}
-	json.Unmarshal(b, &data)
-	return nil, data
+	return error, b
 }
 
-func Get(endpoint string, data map[string]interface{}) (error, map[string]interface{}) {
+func Get(endpoint string, data map[string]interface{}) (error, []byte) {
 	return processRequest("GET", endpoint, data)
 }
 
-func Post(endpoint string, data map[string]interface{}) (error, map[string]interface{}) {
+func Post(endpoint string, data map[string]interface{}) (error, []byte) {
 	return processRequest("GET", endpoint, data)
 }
