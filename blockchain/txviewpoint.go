@@ -57,26 +57,50 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 	acceptedNullifiers := make(map[string][][]byte)
 	acceptedCommitments := make(map[string][][]byte)
 	for _, tx := range transactions {
-		for _, desc := range tx.(*transaction.Tx).Descs {
-			for _, item := range desc.Nullifiers {
-				temp, err := db.HasNullifier(item, desc.Type, block.Header.ChainID)
-				if err != nil {
-					return err
+		if tx.GetType() == common.TxNormalType {
+			for _, desc := range tx.(*transaction.Tx).Descs {
+				for _, item := range desc.Nullifiers {
+					temp, err := db.HasNullifier(item, desc.Type, block.Header.ChainID)
+					if err != nil {
+						return err
+					}
+					if !temp {
+						acceptedNullifiers[desc.Type] = append(acceptedNullifiers[desc.Type], item)
+					}
 				}
-				if !temp {
-					acceptedNullifiers[desc.Type] = append(acceptedNullifiers[desc.Type], item)
+				for _, item := range desc.Commitments {
+					temp, err := db.HasCommitment(item, desc.Type, block.Header.ChainID)
+					if err != nil {
+						return err
+					}
+					if !temp {
+						acceptedCommitments[desc.Type] = append(acceptedCommitments[desc.Type], item)
+					}
 				}
 			}
-			for _, item := range desc.Commitments {
-				temp, err := db.HasCommitment(item, desc.Type, block.Header.ChainID)
-				if err != nil {
-					return err
+		} else if tx.GetType() == common.TxVotingType {
+			for _, desc := range tx.(*transaction.TxVoting).Descs {
+				for _, item := range desc.Nullifiers {
+					temp, err := db.HasNullifier(item, desc.Type, block.Header.ChainID)
+					if err != nil {
+						return err
+					}
+					if !temp {
+						acceptedNullifiers[desc.Type] = append(acceptedNullifiers[desc.Type], item)
+					}
 				}
-				if !temp {
-					acceptedCommitments[desc.Type] = append(acceptedCommitments[desc.Type], item)
+				for _, item := range desc.Commitments {
+					temp, err := db.HasCommitment(item, desc.Type, block.Header.ChainID)
+					if err != nil {
+						return err
+					}
+					if !temp {
+						acceptedCommitments[desc.Type] = append(acceptedCommitments[desc.Type], item)
+					}
 				}
 			}
 		}
+
 	}
 
 	if len(acceptedNullifiers) > 0 {

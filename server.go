@@ -525,13 +525,14 @@ func (self *Server) NewPeerConfig() *peer.Config {
 	}
 	config := &peer.Config{
 		MessageListeners: peer.MessageListeners{
-			OnBlock:     self.OnBlock,
-			OnTx:        self.OnTx,
-			OnVersion:   self.OnVersion,
-			OnGetBlocks: self.OnGetBlocks,
-			OnVerAck:    self.OnVerAck,
-			OnGetAddr:   self.OnGetAddr,
-			OnAddr:      self.OnAddr,
+			OnBlock:         self.OnBlock,
+			OnTx:            self.OnTx,
+			OnRegisteration: self.OnRegisteration,
+			OnVersion:       self.OnVersion,
+			OnGetBlocks:     self.OnGetBlocks,
+			OnVerAck:        self.OnVerAck,
+			OnGetAddr:       self.OnGetAddr,
+			OnAddr:          self.OnAddr,
 
 			//ppos
 			OnRequestSign:   self.OnRequestSign,
@@ -580,6 +581,15 @@ func (self Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	//<-txProcessed
 
 	Logger.log.Info("Receive a new transaction END")
+}
+
+func (self Server) OnRegisteration(peer *peer.PeerConn, msg *wire.MessageRegisteration) {
+	Logger.log.Info("Receive a new registeration START")
+	var txProcessed chan struct{}
+	self.netSync.QueueRegisteration(nil, msg, txProcessed)
+	//<-txProcessed
+
+	Logger.log.Info("Receive a new registeration END")
 }
 
 /*

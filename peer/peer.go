@@ -106,6 +106,7 @@ type MessageListeners struct {
 	OnBlockSig      func(p *PeerConn, msg *wire.MessageBlockSig)
 	OnGetChainState func(p *PeerConn, msg *wire.MessageGetChainState)
 	OnChainState    func(p *PeerConn, msg *wire.MessageChainState)
+	OnRegisteration func(p *PeerConn, msg *wire.MessageRegisteration)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal
@@ -216,7 +217,7 @@ func (self *Peer) Start() {
 func (self *Peer) PushStream(stream net.Stream) {
 	newStreamMsg := NewStreamMsg{
 		Stream: stream,
-		CConn:   nil,
+		CConn:  nil,
 	}
 	self.cNewStream <- &newStreamMsg
 }
@@ -602,7 +603,7 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 			peerConn.updateConnState(ConnPending)
 			cConn := make(chan *PeerConn)
 			peerConn.ListenerPeer.PushConn(peerConn.RemotePeer, cConn)
-			p := <- cConn
+			p := <-cConn
 			if p == nil {
 				peerConn.RetryCount ++
 				go self.retryPeerConnection(peerConn)

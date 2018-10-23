@@ -14,16 +14,17 @@ const (
 	MessageHeaderSize  = 24
 	MessageCmdTypeSize = 12
 
-	CmdBlock     = "block"
-	CmdTx        = "tx"
-	CmdGetBlocks = "getblocks"
-	CmdInv       = "inv"
-	CmdGetData   = "getdata"
-	CmdVersion   = "version"
-	CmdVerack    = "verack"
-	CmdGetAddr   = "getaddr"
-	CmdAddr      = "addr"
-	CmdPing      = "ping"
+	CmdBlock         = "block"
+	CmdTx            = "tx"
+	CmdRegisteration = "registeration"
+	CmdGetBlocks     = "getblocks"
+	CmdInv           = "inv"
+	CmdGetData       = "getdata"
+	CmdVersion       = "version"
+	CmdVerack        = "verack"
+	CmdGetAddr       = "getaddr"
+	CmdAddr          = "addr"
+	CmdPing          = "ping"
 
 	// POS Cmd
 	CmdRequestBlockSign  = "rqblocksign"
@@ -34,8 +35,9 @@ const (
 	CmdCandidateProposal = "cndproposal"
 	CmdCandidateVote     = "cndvote"
 
-	CmdRequestSwap    = "requestswap"
-	CmdSignSwap       = "signswap"
+	// SWAP Cmd
+	CmdRequestSwap = "requestswap"
+	CmdSignSwap    = "signswap"
 )
 
 // Interface for message wire on P2P network
@@ -55,6 +57,11 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 			Block: blockchain.Block{
 				Transactions: make([]transaction.Transaction, 0),
 			},
+		}
+		break
+	case CmdRegisteration:
+		msg = &MessageRegisteration{
+			Transaction: &transaction.TxVoting{},
 		}
 		break
 	case CmdGetBlocks:
@@ -114,6 +121,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdGetBlocks, nil
 	case reflect.TypeOf(&MessageTx{}):
 		return CmdTx, nil
+	case reflect.TypeOf(&MessageRegisteration{}):
+		return CmdRegisteration, nil
 	case reflect.TypeOf(&MessageVersion{}):
 		return CmdVersion, nil
 	case reflect.TypeOf(&MessageVerAck{}):

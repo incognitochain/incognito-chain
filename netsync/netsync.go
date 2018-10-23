@@ -87,6 +87,10 @@ out:
 					{
 						self.HandleMessageTx(msg)
 					}
+				case *wire.MessageRegisteration:
+					{
+						self.HandleMessageRegisteration(msg)
+					}
 				case *wire.MessageBlock:
 					{
 						self.HandleMessageBlock(msg)
@@ -134,6 +138,15 @@ out:
 // QueueTx adds the passed transaction message and peer to the block handling
 // queue. Responds to the done channel argument after the tx message is
 // processed.
+func (self *NetSync) QueueRegisteration(peer *peer.Peer, msg *wire.MessageRegisteration, done chan struct{}) {
+	// Don't accept more transactions if we're shutting down.
+	if atomic.LoadInt32(&self.shutdown) != 0 {
+		done <- struct{}{}
+		return
+	}
+	self.cMessage <- msg
+}
+
 func (self *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
 	if atomic.LoadInt32(&self.shutdown) != 0 {
@@ -145,6 +158,25 @@ func (self *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan str
 
 // handleTxMsg handles transaction messages from all peers.
 func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
+	Logger.log.Info("Handling new message tx")
+	hash, txDesc, err := self.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
+
+	if err != nil {
+		Logger.log.Error(err)
+	} else {
+		Logger.log.Infof("there is hash of transaction %s", hash.String())
+		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+
+		// Broadcast to network
+		err := self.config.Server.PushMessageToAll(msg)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+	}
+}
+
+// handleTxMsg handles transaction messages from all peers.
+func (self *NetSync) HandleMessageRegisteration(msg *wire.MessageRegisteration) {
 	Logger.log.Info("Handling new message tx")
 	hash, txDesc, err := self.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
 

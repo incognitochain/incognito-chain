@@ -147,6 +147,10 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnChainState != nil {
 						self.Config.MessageListeners.OnChainState(self, message.(*wire.MessageChainState))
 					}
+				case reflect.TypeOf(&wire.MessageRegisteration{}):
+					if self.Config.MessageListeners.OnRegisteration != nil {
+						self.Config.MessageListeners.OnRegisteration(self, message.(*wire.MessageRegisteration))
+					}
 				default:
 					Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, self)
 				}
@@ -181,7 +185,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				messageByte = append(messageByte, header...)
 				Logger.log.Infof("Content: %s", string(messageByte))
 				message := hex.EncodeToString(messageByte)
-				Logger.log.Infof("Content in hex encode: %s", string(message))
+				//Logger.log.Infof("Content in hex encode: %s", string(message))
 				// add end character to message (delim '\n')
 				message += DelimMessageStr
 

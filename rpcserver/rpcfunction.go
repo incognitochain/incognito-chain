@@ -55,6 +55,8 @@ var RpcHandler = map[string]commandHandler{
 	SendRegistration:              RpcServer.handleSendRegistration,
 	GetMempoolInfo:                RpcServer.handleGetMempoolInfo,
 
+	GetCndList: RpcServer.handleGetCndList,
+
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 }
@@ -643,12 +645,12 @@ func (self RpcServer) handleSendRawRegistration(params interface{}, closeChan <-
 	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
 
 	// broadcast message
-	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdRegisteration)
 	if err != nil {
 		return nil, err
 	}
 
-	txMsg.(*wire.MessageTx).Transaction = &tx
+	txMsg.(*wire.MessageRegisteration).Transaction = &tx
 	self.config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil
