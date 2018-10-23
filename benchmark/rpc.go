@@ -75,7 +75,7 @@ func (rpc *RPC) DumpPrivateKey(params string) (error, string) {
 /**
 SendMany used to send coin to user
 */
-func (rpc *RPC) SendMany(fromPrvKey string, toPubKey string, value int) (error, string) {
+func (rpc *RPC) SendMany(fromPrvKey string, toPubKey string, value float64) (error, string) {
 	args := map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method": "sendmany",

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"time"
 )
@@ -30,13 +31,11 @@ func main() {
 		strategy1()
 	} else if cfg.Strategy == 2 {
 		strategy2()
-	} else if cfg.Strategy == 3 {
-		strategy3()
 	}
 }
 
 /*
-Strategy 1: send out 1k transactions per second by n transactions
+Strategy 1: send out n transactions per second by m transactions
 */
 func strategy1() {
 	totalSendOut := 0
@@ -69,26 +68,9 @@ func strategy1() {
 }
 
 /*
-Strategy 2: send out n transactions
+Strategy 2: send out n transactions once
 */
 func strategy2() {
-	totalSendOut := 0
-
-	for i := 0; i < cfg.TotalTxs; i++ {
-		isSuccess, hash := sendRandomTransaction()
-		if isSuccess {
-			log.Printf("Send a transaction success: %s", hash)
-		}
-		totalSendOut += 1
-	}
-
-	log.Printf("Send out %d transactions\n", totalSendOut)
-}
-
-/*
-Strategy 3: send out n transactions to 1 node only
-*/
-func strategy3() {
 	totalSendOut := 0
 
 	for i := 0; i < cfg.TotalTxs; i++ {
@@ -115,7 +97,7 @@ func sendRandomTransaction() (bool, interface{}) {
 	}
 	ai += 1
 	// todo send many
-	value := randomInt(1, 10000000)
+	value := float64(randomInt(1, 10000000)) / math.Pow(10, 18)
 	err, txId := rpc.SendMany(cfg.GenesisPrvKey, wallet.PublicKey, value)
 
 	return true, txId
