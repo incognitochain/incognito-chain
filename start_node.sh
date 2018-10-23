@@ -27,15 +27,21 @@ KEY19="1ufrxRyJ47kwKA2Wi33bpQG8JXi8qJJvTxFjST2LqoRWuDtB6zukDSXusiNtoVAghuuUMgGvz
 KEY20="1cXZ1szvjp1Guhme8d7HQwcauz2FzuDGos5FXdTvKWCoTWWGfRSdDuYpuY8GZmczoSGqYb5eeeoGEuofWa7D2jK1yUKxDRr9VdGcF1mWkmAqXge6vH6gCnMUxeqbWwNtCnp8txpWbehwqqzuakWuheHZt9m2zep4w6hZwkcavGLiW9XR2mwfux9v9Gzths4W8JuGkzadz74ChdrX5T2xFDbSs8qLVULdgzmNp4iNYu8oKa1A9Jx3gFtpbB8aMZKmk3iZgVdovcL7pTf5DiykfXUjFAiJMNR7mP1eDfQsPey3nJzj4R5BCv21P96V1ctuFk9p7DvNaJA9yWh5mfugS36f4SKGcTf66DF37Nyo2uhiaVyZqtbCnuFB65HDXa8MLVWK2rsN75cioFV2Qt4fpChircdH7W5yrzKhUzsQiGggsLJusNWzwUps4DBy3RaoiZJ7e7aRHDqsS2CZ4xwPgfL3sRV8q4J5fjU4SpdXpbKYRujR2jq3fT1cv3mpRudQNikn8DjiQVC2PoxeSFjtdz6izJKSSnPcALgAhC1mVjEAhEFyF5mkwWFXNtSuUNwpKG3egv1LnEF3ZjjgECpHjpVTZGUXzeQ1nD6TUuT86n543PEmwX5NDke6rzNDQ94CQ4N2QkhQmeWP6WTk2zDxHeDHUJw74UowESPrppJWPN8GRzz1LpEVkefkhQscvaE93YqiH1hNvLRF1BZ8w8W8jAJYZ7y4a6jGo8pStE2jw6wG8P8no8LEzDwk2ar46vD13Y52kUsaY8"
 
 rm -rf ./data/node-$1/mainnet/block
+rm -rf ./data/node-$1/mainnet/wallet
+rm -rf ./data/node-$1/mainnet/peer.json
+
 mkdir -p ./data/node-$1
 rm -rf ./cash-$1
 go build
 mv ./cash ./cash-$1
 PORT=$((9430 + $1))
 eval KEY=\${KEY$1}
+
+export EXTERNAL_ADDRESS="127.0.0.1:$PORT"
+
 if [ $1 != 1 ]
 then
-    ./cash-$1 --listen "127.0.0.1:$PORT" --norpc --datadir "data/node-$1" --generate --sealerkeyset "$KEY" --connect "/ip4/127.0.0.1/tcp/9431/ipfs/QmWazSLMDWKBxLWWaVWuYxAdEqEBfhZog4927mhyNjbKvA"
+    ./cash-$1 --listen "127.0.0.1:$PORT" --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --generate --sealerkeyset $KEY --norpc
 else
-    ./cash-$1 --listen "127.0.0.1:$PORT" --norpc --datadir "data/node-$1" --generate --sealerkeyset "$KEY"
+    ./cash-$1 --listen "127.0.0.1:$PORT" --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --generate --sealerkeyset $KEY --rpcuser "ad" --rpcpass "123" --enablewallet --walletpassphrase "12345678"
 fi

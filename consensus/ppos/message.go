@@ -146,3 +146,13 @@ func (self *Engine) sendBlockMsg(block *blockchain.Block) {
 	blockMsg.(*wire.MessageBlock).Block = *block
 	self.config.Server.PushMessageToAll(blockMsg)
 }
+
+func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
+	Logger.log.Info("Received a MessageRequestSwap")
+	return
+}
+
+func (self *Engine) OnSignSwap(msg *wire.MessageSignSwap) {
+	Logger.log.Info("Received a MessageSignSwap")
+	return
+}
