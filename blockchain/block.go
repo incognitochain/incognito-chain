@@ -187,6 +187,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 					Fee:             uint64(txTemp["Fee"].(float64)),
 					AddressLastByte: byte(txTemp["AddressLastByte"].(float64)),
 				},
+				NodeAddr: txTemp["NodeAddr"].(string),
 			}
 			jSPubKey, ok := txTemp["JSPubKey"]
 			if ok && jSPubKey != nil {
