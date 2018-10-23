@@ -14,14 +14,13 @@ const (
 // unit type use in tx
 // coin or token or bond
 const (
-	AssetTypeCoin     = "x" // coin x
+	AssetTypeCoin     = "c" // 'constant' coin
 	AssetTypeBond     = "b" // bond
 	AssetTypeGovToken = "g" // government token
 	AssetTypeDcbToken = "d" // decentralized central bank token
-	AssetTypeCmbToken = "c" // commercial bank token
 )
 
-var ListAsset = []string{AssetTypeCoin, AssetTypeBond, AssetTypeGovToken, AssetTypeDcbToken, AssetTypeCmbToken}
+var ListAsset = []string{AssetTypeCoin, AssetTypeBond, AssetTypeGovToken, AssetTypeDcbToken}
 
 const (
 	MaxBlockSize            = 5000000 //byte 5MB
