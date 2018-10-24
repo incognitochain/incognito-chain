@@ -4,9 +4,14 @@ import (
 	"github.com/ninjadotorg/cash/common"
 )
 
+type GovernanceParams struct {
+	BasicSalary uint64
+}
+
 type BlockHeader struct {
 	// Version of the block.  This is not the same as the protocol version.
 	Version int
+
 	// Hash of the previous block header in the block chain.
 	PrevBlockHash common.Hash
 
@@ -25,8 +30,9 @@ type BlockHeader struct {
 	Committee          []string //Voted committee for the next block
 	ChainID            byte
 	ChainsHeight       []int //height of 20 chain when this block is created
+	CandidateHash      common.Hash
 
-	SalaryFund uint64
+	SalaryFund uint64 // use to pay salary for miner in chain
 
-	CandidateHash common.Hash
+	GovernanceParams GovernanceParams // params which get from governance for network
 }

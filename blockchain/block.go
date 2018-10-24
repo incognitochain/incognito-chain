@@ -13,19 +13,6 @@ import (
 )
 
 /*
-
- */
-type AgentDataPoint struct {
-	AgentID          string
-	AgentSig         string
-	NumOfCoins       float64
-	NumOfBonds       float64
-	Tax              float64
-	EligibleAgentIDs []string
-	LockTime         int64
-}
-
-/*
 Block is struct present every block in blockchain
 block contains many types of transaction
 - normal tx:
@@ -33,11 +20,10 @@ block contains many types of transaction
 
 */
 type Block struct {
-	Header          BlockHeader
-	Transactions    []transaction.Transaction
-	AgentDataPoints map[string]*AgentDataPoint
-	ChainLeader     string
-	ChainLeaderSig  string
+	Header         BlockHeader
+	Transactions   []transaction.Transaction
+	ChainLeader    string
+	ChainLeaderSig string
 
 	Height    int32
 	blockHash *common.Hash

@@ -27,7 +27,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	}
 
 	// Get reward
-	salary := blockgen.rewardAgent.GetSalary()
+	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
 
 	if len(sourceTxns) < common.MinTxsInBlock {
 		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
@@ -84,7 +84,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 
 concludeBlock:
 	rt := blockgen.chain.BestState[chainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
-	salaryTx, err := createSalaryTx(salary, &payToAddress, rt, chainID)
+	salaryTx, err := createSalaryTx(basicSalary, &payToAddress, rt, chainID)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ concludeBlock:
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 
-	// Get salary fund from txs
+	// Get basicSalary fund from txs
 	salaryFund := uint64(0)
 	for _, blockTx := range txsToAdd {
 		if blockTx.GetType() == common.TxVotingType {
@@ -118,7 +118,7 @@ concludeBlock:
 		BlockCommitteeSigs:    make([]string, common.TotalValidators),
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
-		SalaryFund:            currentSalaryFund - salary + feeMap[common.AssetTypeCoin] + salaryFund,
+		SalaryFund:            currentSalaryFund - basicSalary + feeMap[common.AssetTypeCoin] + salaryFund,
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
@@ -178,7 +178,7 @@ type TxPool interface {
 }
 
 type RewardAgent interface {
-	GetSalary() uint64
+	GetBasicSalary(chainID byte) uint64
 }
 
 func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent) (*BlkTmplGenerator, error) {
