@@ -65,7 +65,7 @@ func (self *Policy) calcMinFeeVotingTxAccepted(tx *transaction.TxVoting) uint64 
 func (self *Policy) CheckTransactionFee(tx *transaction.Tx) error {
 	minFee := self.calcMinFeeTxAccepted(tx)
 	if tx.Fee < minFee {
-		str := fmt.Sprintf("transaction %v has %d fees which is under the required amount of %d", tx.Hash().String(), tx.Fee, minFee)
+		str := fmt.Sprintf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), tx.Fee, minFee)
 		err := MempoolTxError{}
 		err.Init(RejectInvalidFee, errors.New(str))
 		return err
@@ -76,7 +76,7 @@ func (self *Policy) CheckTransactionFee(tx *transaction.Tx) error {
 func (self *Policy) CheckVotingTransactionFee(tx *transaction.TxVoting) error {
 	minFee := self.calcMinFeeVotingTxAccepted(tx)
 	if tx.Fee < minFee {
-		str := fmt.Sprintf("transaction %v has %d fees which is under "+
+		str := fmt.Sprintf("transaction %+v has %d fees which is under "+
 			"the required amount of %d", tx.Hash().String(), tx.Fee,
 			minFee)
 		err := MempoolTxError{}

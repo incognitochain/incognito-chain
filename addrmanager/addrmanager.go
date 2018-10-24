@@ -116,13 +116,13 @@ func (self *AddrManager) savePeers() {
 
 	w, err := os.Create(self.peersFile)
 	if err != nil {
-		Logger.log.Infof("Error opening file %s: %v", self.peersFile, err)
+		Logger.log.Infof("Error opening file %s: %+v", self.peersFile, err)
 		return
 	}
 	enc := json.NewEncoder(w)
 	defer w.Close()
 	if err := enc.Encode(&sam); err != nil {
-		Logger.log.Infof("Failed to encode file %s: %v", self.peersFile, err)
+		Logger.log.Infof("Failed to encode file %s: %+v", self.peersFile, err)
 		return
 	}
 }
@@ -134,11 +134,11 @@ func (self *AddrManager) loadPeers() {
 	//defer self.mtx.Unlock()
 	err := self.deserializePeers(self.peersFile)
 	if err != nil {
-		Logger.log.Infof("Failed to parse file %s: %v", self.peersFile, err)
+		Logger.log.Infof("Failed to parse file %s: %+v", self.peersFile, err)
 		// if it is invalid we nuke the old one unconditionally.
 		err = os.Remove(self.peersFile)
 		if err != nil {
-			Logger.log.Infof("Failed to remove corrupt peers file %s: %v",
+			Logger.log.Infof("Failed to remove corrupt peers file %s: %+v",
 				self.peersFile, err)
 		}
 		self.reset()
@@ -172,7 +172,7 @@ func (self *AddrManager) deserializePeers(filePath string) error {
 	}
 	r, err := os.Open(filePath)
 	if err != nil {
-		return fmt.Errorf("%s error opening file: %v", filePath, err)
+		return fmt.Errorf("%s error opening file: %+v", filePath, err)
 	}
 	defer r.Close()
 
@@ -180,11 +180,11 @@ func (self *AddrManager) deserializePeers(filePath string) error {
 	dec := json.NewDecoder(r)
 	err = dec.Decode(&sam)
 	if err != nil {
-		return fmt.Errorf("error reading %s: %v", filePath, err)
+		return fmt.Errorf("error reading %s: %+v", filePath, err)
 	}
 
 	if sam.Version != 1 {
-		return fmt.Errorf("unknown version %v in serialized "+
+		return fmt.Errorf("unknown version %+v in serialized "+
 			"addrmanager", sam.Version)
 	}
 	copy(self.key[:], sam.Key[:])

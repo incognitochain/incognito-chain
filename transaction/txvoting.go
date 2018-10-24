@@ -148,7 +148,7 @@ func CreateVotingTx(
 ) (*TxVoting, error) {
 	fee = 0 // TODO remove this line
 	fmt.Printf("List of all commitments before building tx:\n")
-	fmt.Printf("rts: %v\n", rts)
+	fmt.Printf("rts: %+v\n", rts)
 	for _, cm := range commitments {
 		fmt.Printf("%x\n", cm)
 	}
@@ -156,7 +156,7 @@ func CreateVotingTx(
 	var value uint64
 	for _, p := range paymentInfo {
 		value += p.Amount
-		fmt.Printf("[CreateTx] paymentInfo.Value: %v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Apk)
+		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Apk)
 	}
 
 	type ChainNote struct {
@@ -172,7 +172,7 @@ func CreateVotingTx(
 				for _, note := range desc.Note {
 					chainNote := &ChainNote{note: note, chainID: chainID}
 					inputNotes = append(inputNotes, chainNote)
-					fmt.Printf("[CreateTx] inputNote.Value: %v\n", note.Value)
+					fmt.Printf("[CreateTx] inputNote.Value: %+v\n", note.Value)
 				}
 			}
 		}
@@ -227,7 +227,7 @@ func CreateVotingTx(
 
 			inputNotes = inputNotes[:len(inputNotes)-1]
 			numInputNotes++
-			fmt.Printf("Choose input note with value %v and cm %x\n", input.InputNote.Value, input.InputNote.Cm)
+			fmt.Printf("Choose input note with value %+v and cm %x\n", input.InputNote.Value, input.InputNote.Cm)
 		}
 
 		var feeApply uint64 // Zero fee for js descs other than the first one
@@ -303,13 +303,13 @@ func CreateVotingTx(
 				encKey = p.PaymentAddress.Pkenc
 				inputValue -= p.Amount
 				paymentInfo = paymentInfo[:len(paymentInfo)-1]
-				fmt.Printf("Use output value %v => %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Use output value %+v => %x\n", outNote.Value, outNote.Apk)
 			} else { // Not enough for this note, send some and save the rest for next js desc
 				outNote = &client.Note{Value: inputValue, Apk: p.PaymentAddress.Apk}
 				encKey = p.PaymentAddress.Pkenc
 				paymentInfo[len(paymentInfo)-1].Amount = p.Amount - inputValue
 				inputValue = 0
-				fmt.Printf("Partially send %v to %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Partially send %+v to %x\n", outNote.Value, outNote.Apk)
 			}
 
 			output := &client.JSOutput{EncKey: encKey, OutputNote: outNote}
@@ -329,13 +329,13 @@ func CreateVotingTx(
 				output := &client.JSOutput{EncKey: p.PaymentAddress.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
 				paymentInfo = paymentInfo[:len(paymentInfo)-1]
-				fmt.Printf("Exactly enough, include 1 more output %v, %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Exactly enough, include 1 more output %+v, %x\n", outNote.Value, outNote.Apk)
 			} else {
 				// Cannot put the output note into this js desc, create a change note instead
 				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PublicKey.Apk}
 				output := &client.JSOutput{EncKey: senderFullKey.PublicKey.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
-				fmt.Printf("Create change outnote %v, %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Create change outnote %+v, %x\n", outNote.Value, outNote.Apk)
 
 				// Use the change note to continually send to receivers if needed
 				if len(paymentInfo) > 0 {
@@ -367,7 +367,7 @@ func CreateVotingTx(
 			commitments[senderChainID] = append(commitments[senderChainID], output.OutputNote.Cm)
 		}
 
-		fmt.Printf("Len input and info: %v %v\n", len(inputNotes), len(paymentInfo))
+		fmt.Printf("Len input and info: %+v %+v\n", len(inputNotes), len(paymentInfo))
 	}
 
 	// Sign tx

@@ -36,7 +36,7 @@ type PeerError struct {
 }
 
 func (e PeerError) Error() string {
-	return fmt.Sprintf("%v: %v", e.code, e.message)
+	return fmt.Sprintf("%+v: %+v", e.code, e.message)
 }
 
 func NewPeerError(key string, err error, peer *Peer) *PeerError {

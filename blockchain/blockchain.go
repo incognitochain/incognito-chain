@@ -81,7 +81,8 @@ func (self *BlockChain) Init(config *Config) error {
 	}
 
 	for chainIndex, bestState := range self.BestState {
-		Logger.log.Infof("blockChain state for chain #%d (height %d, hash %v, totaltx %d)", chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns)
+		Logger.log.Infof("BlockChain state for chain #%d (Height %d, Best block hash %+v, Total tx %d, Salary fund %d, Gov Param %+v)",
+			chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GovernanceParams)
 	}
 
 	return nil
@@ -172,6 +173,7 @@ func (self *BlockChain) createChainState(chainId byte) error {
 		initBlock.Header.Timestamp = self.config.ChainParams.GenesisBlock.Header.Timestamp
 		initBlock.Header.Committee = self.config.ChainParams.GenesisBlock.Header.Committee
 		initBlock.Header.SalaryFund = self.config.ChainParams.GenesisBlock.Header.SalaryFund
+		initBlock.Header.GovernanceParams = self.config.ChainParams.GenesisBlock.Header.GovernanceParams
 	}
 	initBlock.Height = 1
 

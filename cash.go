@@ -81,7 +81,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	server.wallet = walletObj
 	err = server.NewServer(cfg.Listeners, db, activeNetParams.Params, version, interrupt)
 	if err != nil {
-		Logger.log.Errorf("Unable to start server on %v", cfg.Listeners)
+		Logger.log.Errorf("Unable to start server on %+v", cfg.Listeners)
 		Logger.log.Error(err)
 		return err
 	}
@@ -115,7 +115,7 @@ func main() {
 
 	// Up some limits.
 	if err := limits.SetLimits(); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to set limits: %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to set limits: %+v\n", err)
 		os.Exit(1)
 	}
 
