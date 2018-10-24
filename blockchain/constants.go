@@ -6,10 +6,10 @@ const (
 	Mainnet               = 0x01
 	MainetName            = "mainnet"
 	MainnetDefaultPort    = "9333"
-	MainnetInitFundSalary = 1000
-	MainnetInitDCBToken   = 1000
-	MainnetInitGovToken   = 1000
-	MainnetInitCmBToken   = 1000
+	MainnetInitFundSalary = 0
+	MainnetInitDCBToken   = 0
+	MainnetInitGovToken   = 0
+	MainnetInitCmBToken   = 0
 	// TODO change on production
 	MainnetGenesisblockPaymentAddress = "12Rt2dt1UT6PjZ7HzDVjkP5nAXZ22vPYWD1b31XuJ4FJBPorWpGbKTACT8wyfHqwDRqg3EuX2zAU9YQZvB6bNMNTsSGjqXHMQw9H1Xn"
 
@@ -17,10 +17,10 @@ const (
 	Testnet               = 0x02
 	TestnetName           = "testnet"
 	TestnetDefaultPort    = "9444"
-	TestnetInitFundSalary = 1000
-	TestnetInitDCBToken   = 1000
-	TestnetInitGovToken   = 1000
-	TestnetInitCmBToken   = 1000
+	TestnetInitFundSalary = 1000000000
+	TestnetInitDCBToken   = 0
+	TestnetInitGovToken   = 0
+	TestnetInitCmBToken   = 0
 	// TODO change on production
 	TestnetGenesisBlockPaymentAddress = "12Rt2dt1UT6PjZ7HzDVjkP5nAXZ22vPYWD1b31XuJ4FJBPorWpGbKTACT8wyfHqwDRqg3EuX2zAU9YQZvB6bNMNTsSGjqXHMQw9H1Xn"
 )

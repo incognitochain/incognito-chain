@@ -172,6 +172,7 @@ func (self *BlockChain) createChainState(chainId byte) error {
 		initBlock.Header.Timestamp = self.config.ChainParams.GenesisBlock.Header.Timestamp
 		initBlock.Header.Committee = self.config.ChainParams.GenesisBlock.Header.Committee
 		initBlock.Header.SalaryFund = self.config.ChainParams.GenesisBlock.Header.SalaryFund
+		initBlock.Header.GovernanceParams = self.config.ChainParams.GenesisBlock.Header.GovernanceParams
 	}
 	initBlock.Height = 1
 
