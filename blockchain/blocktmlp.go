@@ -26,7 +26,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 		fmt.Sprintf(common.AssetTypeDcbToken): 0,
 	}
 
-	// Get reward
+	// Get reward from basic salary
 	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
 
 	if len(sourceTxns) < common.MinTxsInBlock {
