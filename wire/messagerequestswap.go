@@ -10,10 +10,10 @@ const (
 )
 
 type MessageRequestSwap struct {
-	SenderID           string
-	RequesterPublicKey string
-	ChainID            byte
-	SealerPublicKey    string
+	SenderID     string
+	RequesterPbk string
+	ChainID      byte
+	SealerPbk    string
 }
 
 func (self MessageRequestSwap) MessageType() string {

@@ -40,6 +40,7 @@ type NetSyncConfig struct {
 		OnChainStateReceived(*wire.MessageChainState)
 		OnRequestSwap(swap *wire.MessageRequestSwap)
 		OnSignSwap(swap *wire.MessageSignSwap)
+		OnUpdateSwap(swap *wire.MessageUpdateSwap)
 	}
 	FeeEstimator map[byte]*mempool.FeeEstimator
 }
@@ -128,6 +129,10 @@ out:
 				case *wire.MessageSignSwap:
 					{
 						self.HandleMessageSignSwap(msg)
+					}
+				case *wire.MessageUpdateSwap:
+					{
+						self.HandleMessageUpdateSwap(msg)
 					}
 				default:
 					Logger.log.Infof("Invalid message type in block "+"handler: %T", msg)
@@ -320,6 +325,11 @@ func (self *NetSync) HandleMessageRequestSwap(msg *wire.MessageRequestSwap) {
 }
 
 func (self *NetSync) HandleMessageSignSwap(msg *wire.MessageSignSwap) {
-	Logger.log.Info("Handling new message requestswap")
+	Logger.log.Info("Handling new message signswap")
 	self.config.Consensus.OnSignSwap(msg)
+}
+
+func (self *NetSync) HandleMessageUpdateSwap(msg *wire.MessageUpdateSwap) {
+	Logger.log.Info("Handling new message updateswap")
+	self.config.Consensus.OnUpdateSwap(msg)
 }

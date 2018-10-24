@@ -22,8 +22,9 @@ import (
 
 type Engine struct {
 	sync.Mutex
-	started       bool
-	sealerStarted bool
+	started        bool
+	sealerStarted  bool
+	committeeMutex sync.Mutex
 
 	// channel
 	cQuit       chan struct{}
@@ -93,7 +94,8 @@ type swapSig struct {
 //Init apply configuration to consensus engine
 func (self Engine) Init(cfg *EngineConfig) (*Engine, error) {
 	return &Engine{
-		config: *cfg,
+		committeeMutex: sync.Mutex{},
+		config:         *cfg,
 	}, nil
 }
 
@@ -537,8 +539,9 @@ func (self *Engine) StartSwap() error {
 				committee := make([]string, common.TotalValidators)
 				copy(committee, self.GetCommittee())
 
-				requesterPublicKey := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
-				sealerPublicKey := "abc"
+				requesterPbk := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+				// TODO get first public key from candidate list
+				sealerPbk := "abc"
 
 				signatureMap := make(map[string]string)
 
@@ -546,7 +549,7 @@ func (self *Engine) StartSwap() error {
 
 			// Collect signatures of other validators
 				cancel := make(chan struct{})
-				go func(requesterPublicKey string, chainId byte, sealerPublicKey string) {
+				go func(requesterPublicKey string, chainId byte, sealerPbk string) {
 					for {
 						select {
 						case <-cancel:
@@ -564,22 +567,22 @@ func (self *Engine) StartSwap() error {
 							return
 						}
 					}
-				}(requesterPublicKey, chainId, sealerPublicKey)
+				}(requesterPbk, chainId, sealerPbk)
 
 				// Request signatures from other validators
-				go func(requesterPublicKey string, chainId byte, sealerPublicKey string) {
+				go func(requesterPbk string, chainId byte, sealerPbk string) {
 					reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestSwap)
-					reqSigMsg.(*wire.MessageRequestSwap).RequesterPublicKey = requesterPublicKey
+					reqSigMsg.(*wire.MessageRequestSwap).RequesterPbk = requesterPbk
 					reqSigMsg.(*wire.MessageRequestSwap).ChainID = chainId
-					reqSigMsg.(*wire.MessageRequestSwap).SealerPublicKey = sealerPublicKey
+					reqSigMsg.(*wire.MessageRequestSwap).SealerPbk = sealerPbk
 
 					for idx := 0; idx < common.TotalValidators; idx++ {
-						if committee[idx] != requesterPublicKey {
+						if committee[idx] != requesterPbk {
 							go func(validator string) {
 								peerIDs := self.config.Server.GetPeerIDsFromPublicKey(validator)
 								if len(peerIDs) > 0 {
 									for _, peerID := range peerIDs {
-										Logger.log.Info("Request swap from "+peerID, validator)
+										Logger.log.Infof("Request swap to %s %s", peerID, validator)
 										self.config.Server.PushMessageToPeer(reqSigMsg, peerID)
 									}
 								} else {
@@ -588,7 +591,7 @@ func (self *Engine) StartSwap() error {
 							}(committee[idx])
 						}
 					}
-				}(requesterPublicKey, chainId, sealerPublicKey)
+				}(requesterPbk, chainId, sealerPbk)
 
 				// Wait for signatures of other validators
 				select {
@@ -612,6 +615,7 @@ func (self *Engine) StartSwap() error {
 				committeeV := make([]string, common.TotalValidators)
 				copy(committeeV, self.GetCommittee())
 
+				self.updateCommittee(sealerPbk)
 				// check node is connected
 
 				// send message for request sign swap
@@ -627,5 +631,23 @@ func (self *Engine) StartSwap() error {
 			}
 		}
 	}
+	return nil
+}
+
+func (self *Engine) updateCommittee(sealerPbk string) error {
+	self.committeeMutex.Lock()
+	defer self.committeeMutex.Unlock()
+
+	committee := make([]string, common.TotalValidators)
+	copy(committee, self.GetCommittee())
+
+	if common.IndexOfStr(sealerPbk, committee) >= 0 {
+		return nil
+	}
+
+	//TODO update committee list
+
+	//TODO remove sealerPbk from candidate list
+
 	return nil
 }

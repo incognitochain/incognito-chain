@@ -153,9 +153,9 @@ func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 	senderID := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 
 	rawBytes := []byte{}
-	rawBytes = append(rawBytes, []byte(msg.RequesterPublicKey)...)
+	rawBytes = append(rawBytes, []byte(msg.RequesterPbk)...)
 	rawBytes = append(rawBytes, msg.ChainID)
-	rawBytes = append(rawBytes, []byte(msg.SealerPublicKey)...)
+	rawBytes = append(rawBytes, []byte(msg.SealerPbk)...)
 
 	sig, err := self.signData(rawBytes)
 	if err != nil {
@@ -164,7 +164,7 @@ func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 	}
 	messageSigMsg := wire.MessageSignSwap{
 		SenderID:           senderID,
-		RequesterPublicKey: msg.RequesterPublicKey,
+		RequesterPublicKey: msg.RequesterPbk,
 		Validator:          base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)),
 		ValidatorSig:       sig,
 	}
@@ -189,5 +189,10 @@ func (self *Engine) OnSignSwap(msg *wire.MessageSignSwap) {
 		Validator:          msg.Validator,
 		ValidatorSig:       msg.ValidatorSig,
 	}
+	return
+}
+
+func (self *Engine) OnUpdateSwap(msg *wire.MessageUpdateSwap) {
+	Logger.log.Info("Received a MessageUpdateSwap")
 	return
 }
