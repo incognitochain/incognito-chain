@@ -25,6 +25,11 @@ const (
 	TestnetGenesisBlockPaymentAddress = "12Rt2dt1UT6PjZ7HzDVjkP5nAXZ22vPYWD1b31XuJ4FJBPorWpGbKTACT8wyfHqwDRqg3EuX2zAU9YQZvB6bNMNTsSGjqXHMQw9H1Xn"
 )
 
+const (
+	// BlockVersion is the current latest supported block version.
+	BlockVersion = 1
+)
+
 // global variables for genesis blok
 var (
 	GENESIS_BLOCK_ANCHORS           = [][32]byte{[32]byte{}, [32]byte{}}

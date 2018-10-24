@@ -88,7 +88,7 @@ concludeBlock:
 	if err != nil {
 		return nil, err
 	}
-	// the 1st tx will be coinbaseTx
+	// the 1st tx will be salaryTx
 	txsToAdd = append([]transaction.Transaction{salaryTx}, txsToAdd...)
 
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
@@ -110,7 +110,7 @@ concludeBlock:
 	block := Block{}
 	currentSalaryFund := blockgen.chain.BestState[chainID].BestBlock.Header.SalaryFund
 	block.Header = BlockHeader{
-		Version:               1,
+		Version:               BlockVersion,
 		PrevBlockHash:         *prevBlockHash,
 		MerkleRoot:            *merkleRoot,
 		MerkleRootCommitments: common.Hash{},
