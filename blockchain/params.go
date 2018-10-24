@@ -2,8 +2,6 @@ package blockchain
 
 import (
 	"time"
-
-	"github.com/ninjadotorg/cash/common"
 )
 
 // DNSSeed identifies a DNS seed.
@@ -37,9 +35,6 @@ type Params struct {
 
 	// GenesisBlock defines the first block of the chain.
 	GenesisBlock *Block
-
-	// GenesisHash is the starting block hash.
-	GenesisHash *common.Hash
 
 	// SubsidyReductionInterval is the interval of blocks before the subsidy
 	// is reduced.
@@ -105,17 +100,11 @@ var MainNetParams = Params{
 	Net:         Mainnet,
 	DefaultPort: MainnetDefaultPort,
 	DNSSeeds: []string{
-		/*{"seed.coin.sipa.be", true},
-		{"dnsseed.bluematt.me", true},
-		{"dnsseed.coin.dashjr.org", false},
-		{"seed.coinstats.com", true},
-		{"seed.bitnodes.io", false},
-		{"seed.coin.jonasschnelli.ch", true},*/
 		//"/ip4/127.0.0.1/tcp/9333/ipfs/QmRuvXN7BpTqxqpPLSftDFbKEYiRZRUb7iqZJcz2CxFvVS",
 	},
 
 	// blockChain parameters
-	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(0x18aea41a, 0x1d00ffff, 1, MainnetGenesisblockPaymentAddress, pposValidators, MainnetInitFundSalary, 0),
+	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, MainnetGenesisblockPaymentAddress, pposValidators, MainnetInitFundSalary, 0),
 }
 
 // TestNetParams defines the network parameters for the test coin network.
@@ -124,15 +113,9 @@ var TestNetParams = Params{
 	Net:         Testnet,
 	DefaultPort: TestnetDefaultPort,
 	DNSSeeds: []string{
-		/*{"seed.coin.sipa.be", true},
-		{"dnsseed.bluematt.me", true},
-		{"dnsseed.coin.dashjr.org", false},
-		{"seed.coinstats.com", true},
-		{"seed.bitnodes.io", false},
-		{"seed.coin.jonasschnelli.ch", true},*/
 		//"/ip4/127.0.0.1/tcp/9333/ipfs/QmRuvXN7BpTqxqpPLSftDFbKEYiRZRUb7iqZJcz2CxFvVS",
 	},
 
 	// blockChain parameters
-	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(0x18aea41a, 0x1d00ffff, 1, TestnetGenesisBlockPaymentAddress, pposValidators, TestnetInitFundSalary, 1),
+	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, TestnetGenesisBlockPaymentAddress, pposValidators, TestnetInitFundSalary, 1),
 }

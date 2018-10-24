@@ -75,7 +75,7 @@ func (tx *Tx) ValidateTransaction() bool {
 	valid, err := VerifySign(tx)
 	if valid == false {
 		if err != nil {
-			fmt.Printf("Error verifying signature of tx: %v", err)
+			fmt.Printf("Error verifying signature of tx: %+v", err)
 		}
 		return false
 	}
@@ -108,7 +108,7 @@ func (tx *Tx) ValidateTransaction() bool {
 
 		if valid == false {
 			if err != nil {
-				fmt.Printf("Error validating tx: %v\n", err)
+				fmt.Printf("Error validating tx: %+v\n", err)
 			}
 			return false
 		}
@@ -160,7 +160,7 @@ func CreateTx(
 	senderChainID byte,
 ) (*Tx, error) {
 	fmt.Printf("List of all commitments before building tx:\n")
-	fmt.Printf("rts: %v\n", rts)
+	fmt.Printf("rts: %+v\n", rts)
 	for _, cm := range commitments {
 		fmt.Printf("%x\n", cm)
 	}
@@ -168,7 +168,7 @@ func CreateTx(
 	var value uint64
 	for _, p := range paymentInfo {
 		value += p.Amount
-		fmt.Printf("[CreateTx] paymentInfo.Value: %v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Apk)
+		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Apk)
 	}
 
 	type ChainNote struct {
@@ -184,7 +184,7 @@ func CreateTx(
 				for _, note := range desc.Note {
 					chainNote := &ChainNote{note: note, chainID: chainID}
 					inputNotes = append(inputNotes, chainNote)
-					fmt.Printf("[CreateTx] inputNote.Value: %v\n", note.Value)
+					fmt.Printf("[CreateTx] inputNote.Value: %+v\n", note.Value)
 				}
 			}
 		}
@@ -239,7 +239,7 @@ func CreateTx(
 
 			inputNotes = inputNotes[:len(inputNotes)-1]
 			numInputNotes++
-			fmt.Printf("Choose input note with value %v and cm %x\n", input.InputNote.Value, input.InputNote.Cm)
+			fmt.Printf("Choose input note with value %+v and cm %x\n", input.InputNote.Value, input.InputNote.Cm)
 		}
 
 		var feeApply uint64 // Zero fee for js descs other than the first one
@@ -315,13 +315,13 @@ func CreateTx(
 				encKey = p.PaymentAddress.Pkenc
 				inputValue -= p.Amount
 				paymentInfo = paymentInfo[:len(paymentInfo)-1]
-				fmt.Printf("Use output value %v => %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Use output value %+v => %x\n", outNote.Value, outNote.Apk)
 			} else { // Not enough for this note, send some and save the rest for next js desc
 				outNote = &client.Note{Value: inputValue, Apk: p.PaymentAddress.Apk}
 				encKey = p.PaymentAddress.Pkenc
 				paymentInfo[len(paymentInfo)-1].Amount = p.Amount - inputValue
 				inputValue = 0
-				fmt.Printf("Partially send %v to %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Partially send %+v to %x\n", outNote.Value, outNote.Apk)
 			}
 
 			output := &client.JSOutput{EncKey: encKey, OutputNote: outNote}
@@ -341,13 +341,13 @@ func CreateTx(
 				output := &client.JSOutput{EncKey: p.PaymentAddress.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
 				paymentInfo = paymentInfo[:len(paymentInfo)-1]
-				fmt.Printf("Exactly enough, include 1 more output %v, %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Exactly enough, include 1 more output %+v, %x\n", outNote.Value, outNote.Apk)
 			} else {
 				// Cannot put the output note into this js desc, create a change note instead
 				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PublicKey.Apk}
 				output := &client.JSOutput{EncKey: senderFullKey.PublicKey.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
-				fmt.Printf("Create change outnote %v, %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Create change outnote %+v, %x\n", outNote.Value, outNote.Apk)
 
 				// Use the change note to continually send to receivers if needed
 				if len(paymentInfo) > 0 {
@@ -381,7 +381,7 @@ func CreateTx(
 			commitments[senderChainID] = append(commitments[senderChainID], output.OutputNote.Cm)
 		}
 
-		fmt.Printf("Len input and info: %v %v\n", len(inputNotes), len(paymentInfo))
+		fmt.Printf("Len input and info: %+v %+v\n", len(inputNotes), len(paymentInfo))
 	}
 
 	// Sign tx
@@ -467,14 +467,14 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	fmt.Printf("ephemeralPubKey: %x\n", *ephemeralPubKey)
 	fmt.Printf("tranmissionKey[0]: %x\n", keys[0])
 	fmt.Printf("tranmissionKey[1]: %x\n", keys[1])
-	fmt.Printf("notes[0].Value: %v\n", notes[0].Value)
+	fmt.Printf("notes[0].Value: %+v\n", notes[0].Value)
 	fmt.Printf("notes[0].Rho: %x\n", notes[0].Rho)
 	fmt.Printf("notes[0].R: %x\n", notes[0].R)
-	fmt.Printf("notes[0].Memo: %v\n", notes[0].Memo)
-	fmt.Printf("notes[1].Value: %v\n", notes[1].Value)
+	fmt.Printf("notes[0].Memo: %+v\n", notes[0].Memo)
+	fmt.Printf("notes[1].Value: %+v\n", notes[1].Value)
 	fmt.Printf("notes[1].Rho: %x\n", notes[1].Rho)
 	fmt.Printf("notes[1].R: %x\n", notes[1].R)
-	fmt.Printf("notes[1].Memo: %v\n", notes[1].Memo)
+	fmt.Printf("notes[1].Memo: %+v\n", notes[1].Memo)
 	var noteciphers [][] byte
 	if proof != nil {
 		noteciphers = client.EncryptNote(notes, keys, *ephemeralPrivKey, *ephemeralPubKey, hSig)
@@ -513,8 +513,8 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	fmt.Printf("EncryptedData: %x\n", desc.EncryptedData)
 	fmt.Printf("EphemeralPubKey: %x\n", desc.EphemeralPubKey)
 	fmt.Printf("HSigSeed: %x\n", desc.HSigSeed)
-	fmt.Printf("Type: %v\n", desc.Type)
-	fmt.Printf("Reward: %v\n", desc.Reward)
+	fmt.Printf("Type: %+v\n", desc.Type)
+	fmt.Printf("Reward: %+v\n", desc.Reward)
 	fmt.Printf("Vmacs: %x %x\n", desc.Vmacs[0], desc.Vmacs[1])
 	return nil
 }

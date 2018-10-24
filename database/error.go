@@ -41,7 +41,7 @@ type DatabaseError struct {
 }
 
 func (e DatabaseError) Error() string {
-	return fmt.Sprintf("%v: %v", e.code, e.message)
+	return fmt.Sprintf("%+v: %+v", e.code, e.message)
 }
 
 func NewDatabaseError(key string, err error) *DatabaseError {

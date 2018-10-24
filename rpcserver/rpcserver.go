@@ -283,7 +283,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 	r.Body.Close()
 	if err != nil {
 		errCode := http.StatusBadRequest
-		http.Error(w, fmt.Sprintf("%d error reading JSON Message: %v", errCode, err), errCode)
+		http.Error(w, fmt.Sprintf("%d error reading JSON Message: %+v", errCode, err), errCode)
 		return
 	}
 	Logger.log.Info(string(body))

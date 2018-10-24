@@ -102,7 +102,7 @@ func ExampleConfig_keyLogWriter() {
 	}
 	resp, err := client.Get(server.URL)
 	if err != nil {
-		log.Fatalf("Failed to get URL: %v", err)
+		log.Fatalf("Failed to get URL: %+v", err)
 	}
 	resp.Body.Close()
 

@@ -23,7 +23,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	defer self.chainLock.Unlock()
 
 	blockHash := block.Hash().String()
-	Logger.log.Infof("Processing block %v", blockHash)
+	Logger.log.Infof("Processing block %+v", blockHash)
 
 	// Insert the block into the database if it's not already there.  Even
 	// though it is possible the block will ultimately fail to connect, it

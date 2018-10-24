@@ -28,7 +28,7 @@ func TestGenericPath(t *testing.T) {
 		"0dcc27dfc1f3d3b16a16c0763cf43b91" +
 		"40bbf9bbb7233724e9a0c6655b185d76"
 	if _, err := io.WriteString(c, in); err != nil {
-		t.Fatalf("could not write to c: %v", err)
+		t.Fatalf("could not write to c: %+v", err)
 	}
 	out := fmt.Sprintf("%x", c.Sum(nil))
 	if out != gold {

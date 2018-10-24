@@ -81,7 +81,8 @@ func (self *BlockChain) Init(config *Config) error {
 	}
 
 	for chainIndex, bestState := range self.BestState {
-		Logger.log.Infof("blockChain state for chain #%d (height %d, hash %v, totaltx %d)", chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns)
+		Logger.log.Infof("blockChain state for chain #%d (height %d, hash %+v, totaltx %d, Salary fund %d, Gov Param %+v)",
+			chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GovernanceParams)
 	}
 
 	return nil

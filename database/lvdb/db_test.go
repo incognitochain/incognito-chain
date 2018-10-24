@@ -70,12 +70,12 @@ func TestStoreTxOut(t *testing.T) {
 	tx := []byte("abcd")
 	err := db.StoreNullifiers(tx)
 	if err != nil {
-		t.Errorf("db.StoreNullifiers %v", err)
+		t.Errorf("db.StoreNullifiers %+v", err)
 	}
 
 	tx = []byte("efgh")
 	err = db.StoreNullifiers(tx)
 	if err != nil {
-		t.Errorf("db.StoreNullifiers %v", err)
+		t.Errorf("db.StoreNullifiers %+v", err)
 	}
 }
