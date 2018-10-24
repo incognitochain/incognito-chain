@@ -147,9 +147,17 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnChainState != nil {
 						self.Config.MessageListeners.OnChainState(self, message.(*wire.MessageChainState))
 					}
-				case reflect.TypeOf(&wire.MessageRegisteration{}):
-					if self.Config.MessageListeners.OnRegisteration != nil {
-						self.Config.MessageListeners.OnRegisteration(self, message.(*wire.MessageRegisteration))
+				case reflect.TypeOf(&wire.MessageRegistration{}):
+					if self.Config.MessageListeners.OnRegistration != nil {
+						self.Config.MessageListeners.OnRegistration(self, message.(*wire.MessageRegistration))
+					}
+				case reflect.TypeOf(&wire.MessageRequestSwap{}):
+					if self.Config.MessageListeners.OnRequestSwap != nil {
+						self.Config.MessageListeners.OnRequestSwap(self, message.(*wire.MessageRequestSwap))
+					}
+				case reflect.TypeOf(&wire.MessageSignSwap{}):
+					if self.Config.MessageListeners.OnSignSwap != nil {
+						self.Config.MessageListeners.OnSignSwap(self, message.(*wire.MessageSignSwap))
 					}
 				default:
 					Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, self)

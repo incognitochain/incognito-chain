@@ -38,6 +38,8 @@ type NetSyncConfig struct {
 		OnInvalidBlockReceived(string, byte, string)
 		OnGetChainState(*wire.MessageGetChainState)
 		OnChainStateReceived(*wire.MessageChainState)
+		OnRequestSwap(swap *wire.MessageRequestSwap)
+		OnSignSwap(swap *wire.MessageSignSwap)
 	}
 	FeeEstimator map[byte]*mempool.FeeEstimator
 }
@@ -87,7 +89,7 @@ out:
 					{
 						self.HandleMessageTx(msg)
 					}
-				case *wire.MessageRegisteration:
+				case *wire.MessageRegistration:
 					{
 						self.HandleMessageRegisteration(msg)
 					}
@@ -119,6 +121,14 @@ out:
 					{
 						self.HandleMessageChainState(msg)
 					}
+				case *wire.MessageRequestSwap:
+					{
+						self.HandleMessageRequestSwap(msg)
+					}
+				case *wire.MessageSignSwap:
+					{
+						self.HandleMessageSignSwap(msg)
+					}
 				default:
 					Logger.log.Infof("Invalid message type in block "+"handler: %T", msg)
 				}
@@ -138,7 +148,7 @@ out:
 // QueueTx adds the passed transaction message and peer to the block handling
 // queue. Responds to the done channel argument after the tx message is
 // processed.
-func (self *NetSync) QueueRegisteration(peer *peer.Peer, msg *wire.MessageRegisteration, done chan struct{}) {
+func (self *NetSync) QueueRegisteration(peer *peer.Peer, msg *wire.MessageRegistration, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
 	if atomic.LoadInt32(&self.shutdown) != 0 {
 		done <- struct{}{}
@@ -176,7 +186,7 @@ func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 }
 
 // handleTxMsg handles transaction messages from all peers.
-func (self *NetSync) HandleMessageRegisteration(msg *wire.MessageRegisteration) {
+func (self *NetSync) HandleMessageRegisteration(msg *wire.MessageRegistration) {
 	Logger.log.Info("Handling new message tx")
 	hash, txDesc, err := self.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
 
@@ -288,6 +298,7 @@ func (self *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
 	Logger.log.Info("Handling new message invalidblock")
 	self.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.ChainID, msg.Reason)
 }
+
 func (self *NetSync) HandleMessageRequestSign(msg *wire.MessageRequestBlockSign) {
 	Logger.log.Info("Handling new message requestsign")
 	self.config.Consensus.OnRequestSign(msg)
@@ -301,4 +312,14 @@ func (self *NetSync) HandleMessageGetChainState(msg *wire.MessageGetChainState) 
 func (self *NetSync) HandleMessageChainState(msg *wire.MessageChainState) {
 	Logger.log.Info("Handling new message chainstate")
 	self.config.Consensus.OnChainStateReceived(msg)
+}
+
+func (self *NetSync) HandleMessageRequestSwap(msg *wire.MessageRequestSwap) {
+	Logger.log.Info("Handling new message requestswap")
+	self.config.Consensus.OnRequestSwap(msg)
+}
+
+func (self *NetSync) HandleMessageSignSwap(msg *wire.MessageSignSwap) {
+	Logger.log.Info("Handling new message requestswap")
+	self.config.Consensus.OnSignSwap(msg)
 }
