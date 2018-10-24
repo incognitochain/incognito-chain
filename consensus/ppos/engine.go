@@ -84,11 +84,11 @@ type blockSig struct {
 }
 
 type swapSig struct {
-	RequesterPublicKey string
-	ChainID            byte
-	SealerPublicKey    string
-	Validator          string
-	ValidatorSig       string
+	RequesterPbk    string
+	ChainID         byte
+	SealerPublicKey string
+	Validator       string
+	ValidatorSig    string
 }
 
 //Init apply configuration to consensus engine
@@ -549,14 +549,14 @@ func (self *Engine) StartSwap() error {
 
 			// Collect signatures of other validators
 				cancel := make(chan struct{})
-				go func(requesterPublicKey string, chainId byte, sealerPbk string) {
+				go func(requesterPbk string, chainId byte, sealerPbk string) {
 					for {
 						select {
 						case <-cancel:
 							return
 						case swapSig := <-self.cSwapSig:
 							_ = swapSig
-							if common.IndexOfStr(swapSig.Validator, committee) >= 0 && swapSig.RequesterPublicKey == requesterPublicKey {
+							if common.IndexOfStr(swapSig.Validator, committee) >= 0 && swapSig.RequesterPbk == requesterPbk {
 								signatureMap[swapSig.Validator] = swapSig.ValidatorSig
 								if len(signatureMap) >= (common.TotalValidators / 2) {
 									close(allSigReceived)

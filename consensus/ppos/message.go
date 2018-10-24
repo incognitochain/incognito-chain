@@ -163,10 +163,10 @@ func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 		return
 	}
 	messageSigMsg := wire.MessageSignSwap{
-		SenderID:           senderID,
-		RequesterPublicKey: msg.RequesterPbk,
-		Validator:          base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)),
-		ValidatorSig:       sig,
+		SenderID:     senderID,
+		RequesterPbk: msg.RequesterPbk,
+		Validator:    base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)),
+		ValidatorSig: sig,
 	}
 	peerID, err := peer2.IDB58Decode(msg.SenderID)
 	if err != nil {
@@ -183,11 +183,11 @@ func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 func (self *Engine) OnSignSwap(msg *wire.MessageSignSwap) {
 	Logger.log.Info("Received a MessageSignSwap")
 	self.cSwapSig <- swapSig{
-		RequesterPublicKey: msg.RequesterPublicKey,
-		ChainID:            msg.ChainID,
-		SealerPublicKey:    msg.SealerPublicKey,
-		Validator:          msg.Validator,
-		ValidatorSig:       msg.ValidatorSig,
+		RequesterPbk:    msg.RequesterPbk,
+		ChainID:         msg.ChainID,
+		SealerPublicKey: msg.SealerPbk,
+		Validator:       msg.Validator,
+		ValidatorSig:    msg.ValidatorSig,
 	}
 	return
 }

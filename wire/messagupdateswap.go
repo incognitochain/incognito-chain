@@ -10,11 +10,11 @@ const (
 )
 
 type MessageUpdateSwap struct {
-	SenderID        string
-	ChainID         byte
-	SealerPublicKey string
-	Validators      []string
-	ValidatorSigs   []string
+	SenderID     string
+	RequesterPbk string
+	ChainID      byte
+	SealerPbk    string
+	Signatures   map[string]string
 }
 
 func (self MessageUpdateSwap) MessageType() string {
