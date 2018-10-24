@@ -68,7 +68,7 @@ if !(brew ls --versions cmake > /dev/null); then
   echo "brew install cmake"
   brew install cmake
 else
-  echo "grpc has been installed"
+  echo "cmake has been installed"
 fi
 
 # # install lib libomp
