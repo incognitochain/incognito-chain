@@ -12,29 +12,29 @@ const (
 	MaxTxRegisterationPayload = 4000000 // 4 Mb
 )
 
-type MessageRegisteration struct {
+type MessageRegistration struct {
 	Transaction transaction.Transaction
 }
 
-func (self MessageRegisteration) MessageType() string {
+func (self MessageRegistration) MessageType() string {
 	return CmdRegisteration
 }
 
-func (self MessageRegisteration) MaxPayloadLength(pver int) int {
+func (self MessageRegistration) MaxPayloadLength(pver int) int {
 	return MaxTxRegisterationPayload
 }
 
-func (self MessageRegisteration) JsonSerialize() ([]byte, error) {
+func (self MessageRegistration) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(self)
 	return jsonBytes, err
 }
 
-func (self MessageRegisteration) JsonDeserialize(jsonStr string) error {
+func (self MessageRegistration) JsonDeserialize(jsonStr string) error {
 	jsonDecodeString, _ := hex.DecodeString(jsonStr)
 	err := json.Unmarshal([]byte(jsonDecodeString), self)
 	return err
 }
 
-func (self MessageRegisteration) SetSenderID(senderID peer.ID) error {
+func (self MessageRegistration) SetSenderID(senderID peer.ID) error {
 	return nil
 }

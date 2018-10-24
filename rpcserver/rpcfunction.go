@@ -652,7 +652,7 @@ func (self RpcServer) handleSendRawRegistration(params interface{}, closeChan <-
 		return nil, err
 	}
 
-	txMsg.(*wire.MessageRegisteration).Transaction = &tx
+	txMsg.(*wire.MessageRegistration).Transaction = &tx
 	self.config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil

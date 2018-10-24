@@ -149,10 +149,45 @@ func (self *Engine) sendBlockMsg(block *blockchain.Block) {
 
 func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 	Logger.log.Info("Received a MessageRequestSwap")
+
+	senderID := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+
+	rawBytes := []byte{}
+	rawBytes = append(rawBytes, []byte(msg.RequesterPublicKey)...)
+	rawBytes = append(rawBytes, msg.ChainID)
+	rawBytes = append(rawBytes, []byte(msg.SealerPublicKey)...)
+
+	sig, err := self.signData(rawBytes)
+	if err != nil {
+		Logger.log.Error("Can't sign swap ", err)
+		return
+	}
+	messageSigMsg := wire.MessageSignSwap{
+		SenderID:           senderID,
+		RequesterPublicKey: msg.RequesterPublicKey,
+		Validator:          base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)),
+		ValidatorSig:       sig,
+	}
+	peerID, err := peer2.IDB58Decode(msg.SenderID)
+	if err != nil {
+		Logger.log.Error("ERROR", msg.SenderID, peerID, err)
+	}
+	err = self.config.Server.PushMessageToPeer(&messageSigMsg, peerID)
+	if err != nil {
+		Logger.log.Error(err)
+	}
+
 	return
 }
 
 func (self *Engine) OnSignSwap(msg *wire.MessageSignSwap) {
 	Logger.log.Info("Received a MessageSignSwap")
+	self.cSwapSig <- swapSig{
+		RequesterPublicKey: msg.RequesterPublicKey,
+		ChainID:            msg.ChainID,
+		SealerPublicKey:    msg.SealerPublicKey,
+		Validator:          msg.Validator,
+		ValidatorSig:       msg.ValidatorSig,
+	}
 	return
 }

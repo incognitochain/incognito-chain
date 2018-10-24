@@ -527,14 +527,13 @@ func (self *Server) NewPeerConfig() *peer.Config {
 	}
 	config := &peer.Config{
 		MessageListeners: peer.MessageListeners{
-			OnBlock:         self.OnBlock,
-			OnTx:            self.OnTx,
-			OnRegisteration: self.OnRegisteration,
-			OnVersion:       self.OnVersion,
-			OnGetBlocks:     self.OnGetBlocks,
-			OnVerAck:        self.OnVerAck,
-			OnGetAddr:       self.OnGetAddr,
-			OnAddr:          self.OnAddr,
+			OnBlock:     self.OnBlock,
+			OnTx:        self.OnTx,
+			OnVersion:   self.OnVersion,
+			OnGetBlocks: self.OnGetBlocks,
+			OnVerAck:    self.OnVerAck,
+			OnGetAddr:   self.OnGetAddr,
+			OnAddr:      self.OnAddr,
 
 			//ppos
 			OnRequestSign:   self.OnRequestSign,
@@ -542,6 +541,10 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnBlockSig:      self.OnBlockSig,
 			OnGetChainState: self.OnGetChainState,
 			OnChainState:    self.OnChainState,
+			//
+			OnRegistration: self.OnRegistration,
+			OnRequestSwap:  self.OnRequestSwap,
+			OnSignSwap:     self.OnSignSwap,
 		},
 	}
 	if len(keysetSealer.SprivateKey) != 0 {
@@ -585,13 +588,27 @@ func (self Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Info("Receive a new transaction END")
 }
 
-func (self Server) OnRegisteration(peer *peer.PeerConn, msg *wire.MessageRegisteration) {
-	Logger.log.Info("Receive a new registeration START")
+func (self Server) OnRegistration(peer *peer.PeerConn, msg *wire.MessageRegistration) {
+	Logger.log.Info("Receive a new registration START")
 	var txProcessed chan struct{}
 	self.netSync.QueueRegisteration(nil, msg, txProcessed)
 	//<-txProcessed
 
-	Logger.log.Info("Receive a new registeration END")
+	Logger.log.Info("Receive a new registration END")
+}
+
+func (self Server) OnRequestSwap(peer *peer.PeerConn, msg *wire.MessageRequestSwap) {
+	Logger.log.Info("Receive a new request swap START")
+	var txProcessed chan struct{}
+	self.netSync.QueueMessage(nil, msg, txProcessed)
+	Logger.log.Info("Receive a new request swap END")
+}
+
+func (self Server) OnSignSwap(peer *peer.PeerConn, msg *wire.MessageSignSwap) {
+	Logger.log.Info("Receive a new sign swap START")
+	var txProcessed chan struct{}
+	self.netSync.QueueMessage(nil, msg, txProcessed)
+	Logger.log.Info("Receive a new sign swap END")
 }
 
 /*

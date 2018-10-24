@@ -38,6 +38,7 @@ const (
 	// SWAP Cmd
 	CmdRequestSwap = "requestswap"
 	CmdSignSwap    = "signswap"
+	CmdUpdateSwap  = "updateswap"
 )
 
 // Interface for message wire on P2P network
@@ -60,7 +61,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		}
 		break
 	case CmdRegisteration:
-		msg = &MessageRegisteration{
+		msg = &MessageRegistration{
 			Transaction: &transaction.TxVoting{},
 		}
 		break
@@ -107,6 +108,12 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdPing:
 		msg = &MessagePing{}
 		break
+	case CmdRequestSwap:
+		msg = &MessageRequestSwap{}
+		break
+	case CmdSignSwap:
+		msg = &MessageSignSwap{}
+		break
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}
@@ -121,7 +128,7 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdGetBlocks, nil
 	case reflect.TypeOf(&MessageTx{}):
 		return CmdTx, nil
-	case reflect.TypeOf(&MessageRegisteration{}):
+	case reflect.TypeOf(&MessageRegistration{}):
 		return CmdRegisteration, nil
 	case reflect.TypeOf(&MessageVersion{}):
 		return CmdVersion, nil
@@ -150,7 +157,10 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 	case reflect.TypeOf(&MessageChainState{}):
 		return CmdChainState, nil
 		// POS end
-
+	case reflect.TypeOf(&MessageRequestSwap{}):
+		return CmdRequestSwap, nil
+	case reflect.TypeOf(&MessageSignSwap{}):
+		return CmdSignSwap, nil
 	default:
 		return "", fmt.Errorf("unhandled this message type [%s]", msgType)
 	}

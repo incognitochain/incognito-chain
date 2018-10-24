@@ -10,8 +10,10 @@ const (
 )
 
 type MessageRequestSwap struct {
-	ChainID   byte
-	PublicKey string
+	SenderID           string
+	RequesterPublicKey string
+	ChainID            byte
+	SealerPublicKey    string
 }
 
 func (self MessageRequestSwap) MessageType() string {
@@ -32,6 +34,7 @@ func (self MessageRequestSwap) JsonDeserialize(jsonStr string) error {
 	return err
 }
 
-func (self MessageRequestSwap) SetSenderID(senderID peer.ID) error {
+func (self *MessageRequestSwap) SetSenderID(senderID peer.ID) error {
+	self.SenderID = senderID.Pretty()
 	return nil
 }

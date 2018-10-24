@@ -12,6 +12,24 @@ const (
 	MaxTxPayload = 4000000 // 4 Mb
 )
 
+//func (self *MessageTx) UnmarshalJSON(data []byte) error {
+//	tmp := make(map[string]interface{})
+//	err := json.Unmarshal(data, &tmp)
+//	if err != nil {
+//		return err
+//	}
+//	if tmp["Transaction"].(map[string]interface{})["Type"] == common.TxNormalType {
+//		self.Transaction = &transaction.Tx{}
+//	} else if tmp["Transaction"].(map[string]interface{})["Type"] == common.TxVotingType {
+//		self.Transaction = &transaction.TxVoting{}
+//	}
+//	err = json.Unmarshal(data, self)
+//	if err != nil {
+//		return err
+//	}
+//	return nil
+//}
+
 type MessageTx struct {
 	Transaction transaction.Transaction
 }
