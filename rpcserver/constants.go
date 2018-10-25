@@ -13,7 +13,8 @@ const (
 
 	GetBestBlock      = "getbestblock"
 	GetBestBlockHash  = "getbestblockhash"
-	GetBlock          = "getblock"
+	GetBlocks         = "getblocks"
+	RetrieveBlock     = "retrieveblock"
 	GetBlockChainInfo = "getblockchaininfo"
 	GetBlockCount     = "getblockcount"
 	GetBlockHash      = "getblockhash"

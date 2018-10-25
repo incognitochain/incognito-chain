@@ -39,7 +39,8 @@ var RpcHandler = map[string]commandHandler{
 	// block
 	GetBestBlock:      RpcServer.handleGetBestBlock,
 	GetBestBlockHash:  RpcServer.handleGetBestBlockHash,
-	GetBlock:          RpcServer.handleGetBlock,
+	RetrieveBlock:     RpcServer.handleRetrieveBlock,
+	GetBlocks:         RpcServer.handleGetBlocks,
 	GetBlockChainInfo: RpcServer.handleGetBlockChainInfo,
 	GetBlockCount:     RpcServer.handleGetBlockCount,
 	GetBlockHash:      RpcServer.handleGetBlockHash,
@@ -204,7 +205,7 @@ func (self RpcServer) handleGetBestBlockHash(params interface{}, closeChan <-cha
 /*
 getblockcount RPC return information fo blockchain node
 */
-func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	paramsT, ok := params.([]interface{})
 	if ok && len(paramsT) >= 2 {
 		hashString := paramsT[0].(string)
@@ -252,6 +253,7 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
 			result.NextBlockHash = nextHashString
 			result.TxHashes = []string{}
+			result.BlockProducerSign = block.ChainLeaderSig
 			for _, tx := range block.Transactions {
 				result.TxHashes = append(result.TxHashes, tx.Hash().String())
 			}
@@ -307,6 +309,37 @@ func (self RpcServer) handleGetBlock(params interface{}, closeChan <-chan struct
 		return result, nil
 	}
 	return nil, nil
+}
+
+// handleGetBlocks - get n top blocks from chain ID
+func (self RpcServer) handleGetBlocks(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	result := make([]jsonresult.GetBlockResult, 0)
+	arrayParams := common.InterfaceSlice(params)
+	numBlock := int(arrayParams[0].(float64))
+	chainID := int(arrayParams[1].(float64))
+	bestBlock := self.config.BlockChain.BestState[chainID].BestBlock
+	blockResult := jsonresult.GetBlockResult{}
+	blockResult.Init(bestBlock)
+	result = append(result, blockResult)
+	for numBlock > 0 {
+		numBlock--
+		emptyHash := common.Hash{}
+		if blockResult.PreviousBlockHash == emptyHash.String() {
+			break
+		}
+		hash, errH := common.Hash{}.NewHashFromStr(blockResult.PreviousBlockHash)
+		if errH != nil {
+			return nil, errH
+		}
+		block, errD := self.config.BlockChain.GetBlockByBlockHash(hash)
+		if errD != nil {
+			return nil, errD
+		}
+		blockResult := jsonresult.GetBlockResult{}
+		blockResult.Init(block)
+		result = append(result, blockResult)
+	}
+	return result, nil
 }
 
 /*
