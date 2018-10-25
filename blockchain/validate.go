@@ -10,11 +10,11 @@ import (
 )
 
 /*
-IsCoinBaseTx determines whether or not a transaction is a coinbase.
+IsSalaryTx determines whether or not a transaction is a coinbase.
 */
-func IsCoinBaseTx(tx transaction.Transaction) bool {
+func IsSalaryTx(tx transaction.Transaction) bool {
 	// Check normal tx(not an action tx)
-	if tx.GetType() == common.TxActionParamsType {
+	if tx.GetType() != common.TxNormalType {
 		return true
 	}
 	normalTx, ok := tx.(*transaction.Tx)

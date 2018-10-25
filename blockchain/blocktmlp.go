@@ -252,14 +252,14 @@ func createSalaryTx(
 	outputs[1].OutputNote = placeHolderOutputNote
 
 	// Generate proof and sign tx
-	tx, err := transaction.CreateEmptyTx()
+	tx, err := transaction.CreateEmptyTx(common.TxSalaryType)
 	if err != nil {
 		return nil, err
 	}
 	tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
 	rtMap := map[byte][]byte{chainID: rt}
 	inputMap := map[byte][]*client.JSInput{chainID: inputs}
-	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0, false)
+	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0, true)
 	if err != nil {
 		return nil, err
 	}

@@ -1175,7 +1175,7 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 			}
 			for _, txs := range txsMap {
 				for _, tx := range txs {
-					if blockchain.IsCoinBaseTx(&tx) {
+					if blockchain.IsSalaryTx(&tx) {
 						continue
 					}
 					for _, desc := range tx.Descs {
