@@ -10,7 +10,7 @@ import (
 )
 
 /*
-IsSalaryTx determines whether or not a transaction is a coinbase.
+IsSalaryTx determines whether or not a transaction is a salary.
 */
 func IsSalaryTx(tx transaction.Transaction) bool {
 	// Check normal tx(not an action tx)

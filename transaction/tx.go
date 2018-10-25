@@ -83,7 +83,7 @@ func (tx *Tx) ValidateTransaction() bool {
 	// Check each js desc
 	for txID, desc := range tx.Descs {
 		//if desc.Reward != 0 {
-		//	return false // Coinbase tx shouldn't be broadcasted across the network
+		//	return false // Salary tx shouldn't be broadcasted across the network
 		//}
 
 		// Apply fee only to the first desc of tx
@@ -369,7 +369,7 @@ func CreateTx(
 		// TODO: Shuffle output notes randomly (if necessary)
 
 		// Generate proof and sign tx
-		var reward uint64 // Zero reward for non-coinbase transaction
+		var reward uint64 // Zero reward for non-salary transaction
 		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, false)
 		if err != nil {
 			return nil, err

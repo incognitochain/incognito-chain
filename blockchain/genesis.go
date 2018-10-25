@@ -59,7 +59,7 @@ func (self GenesisBlockGenerator) createGenesisTx(initialCoin uint64, initialAdd
 	inputs = append(inputs, createGenesisJSInput(0))
 	inputs = append(inputs, createGenesisJSInput(1))
 
-	// Create new notes: first one is a coinbase UTXO, second one has 0 value
+	// Create new notes: first one is a salary UTXO, second one has 0 value
 	key, err := wallet.Base58CheckDeserialize(initialAddress)
 	if err != nil {
 		return nil, err

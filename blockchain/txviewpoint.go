@@ -53,7 +53,7 @@ return a tx view point which contains list new nullifiers and new commitments fr
 */
 func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *Block) error {
 	transactions := block.Transactions
-	// Loop through all of the transaction descs (except for the coinbase tx)
+	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedNullifiers := make(map[string][][]byte)
 	acceptedCommitments := make(map[string][][]byte)
 	for _, tx := range transactions {

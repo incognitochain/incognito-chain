@@ -41,7 +41,7 @@ type Merkle struct {
 //
 // The additional bool parameter indicates if we are generating the merkle tree
 // using witness transaction id's rather than regular transaction id's. This
-// also presents an additional case wherein the wtxid of the coinbase transaction
+// also presents an additional case wherein the wtxid of the salary transaction
 // is the zeroHash.
 func (self Merkle) BuildMerkleTreeStore(transactions []transaction.Transaction) []*common.Hash {
 	// Calculate how many entries are required to hold the binary merkle
@@ -55,7 +55,7 @@ func (self Merkle) BuildMerkleTreeStore(transactions []transaction.Transaction) 
 		// If we're computing a witness merkle root, instead of the
 		// regular txid, we use the modified wtxid which includes a
 		// transaction's witness data within the digest. Additionally,
-		// the coinbase's wtxid is all zeroes.
+		// the salary's wtxid is all zeroes.
 		witness := false
 		switch {
 		case witness && i == 0:

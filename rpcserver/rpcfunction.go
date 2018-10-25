@@ -1137,7 +1137,7 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 }
 
 /*
-handleGetReceivedByAccount -  RPC returns the total amount received by addresses in a particular account from transactions with the specified number of confirmations. It does not count coinbase transactions.
+handleGetReceivedByAccount -  RPC returns the total amount received by addresses in a particular account from transactions with the specified number of confirmations. It does not count salary transactions.
 */
 func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	balance := uint64(0)
