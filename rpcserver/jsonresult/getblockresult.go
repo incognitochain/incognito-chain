@@ -26,19 +26,17 @@ type GetBlockTxResult struct {
 }
 
 func (self *GetBlockResult) Init(block *blockchain.Block) {
-	temp := &GetBlockResult{
-		BlockProducerSign: block.ChainLeaderSig,
-		BlockProducer:     block.ChainLeader,
-		Hash:              block.Hash().String(),
-		PreviousBlockHash: block.Header.PrevBlockHash.String(),
-		Version:           block.Header.Version,
-		Height:            block.Height,
-		Time:              block.Header.Timestamp,
-		ChainID:           block.Header.ChainID,
-		MerkleRoot:        block.Header.MerkleRoot.String(),
-	}
+	self.BlockProducerSign = block.ChainLeaderSig
+	self.BlockProducer = block.ChainLeader
+	self.Hash = block.Hash().String()
+	self.PreviousBlockHash = block.Header.PrevBlockHash.String()
+	self.Version = block.Header.Version
+	self.Height = block.Height
+	self.Time = block.Header.Timestamp
+	self.ChainID = block.Header.ChainID
+	self.MerkleRoot = block.Header.MerkleRoot.String()
+	self.TxHashes = make([]string, 0)
 	for _, tx := range block.Transactions {
-		temp.TxHashes = append(temp.TxHashes, tx.Hash().String())
+		self.TxHashes = append(self.TxHashes, tx.Hash().String())
 	}
-	self = temp
 }
