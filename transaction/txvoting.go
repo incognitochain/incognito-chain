@@ -9,8 +9,6 @@ import (
 	"math/big"
 	"sort"
 	"strconv"
-	"time"
-
 	"github.com/ninjadotorg/cash/cashec"
 	"github.com/ninjadotorg/cash/common"
 	"github.com/ninjadotorg/cash/privacy/client"
@@ -22,33 +20,17 @@ type TxVoting struct {
 	NodeAddr string
 }
 
-// CreateVotingTx ...
+// CreateEmptyVotingTx - return an init tv voting
 func CreateEmptyVotingTx(nodeAddr string) (*TxVoting, error) {
-	//Generate signing key 96 bytes
-	sigPrivKey, err := client.GenerateKey(rand.Reader)
+	emptyTx, err := CreateEmptyTx(common.TxVotingType)
 	if err != nil {
 		return nil, err
 	}
-
-	// Verification key 64 bytes
-	sigPubKey := PubKeyToByteArray(&sigPrivKey.PublicKey)
-
-	tx := &TxVoting{
-		Tx: Tx{
-			Type:            common.TxVotingType,
-			LockTime:        time.Now().Unix(),
-			Fee:             0,
-			Descs:           nil,
-			JSPubKey:        sigPubKey,
-			JSSig:           nil,
-			AddressLastByte: 0,
-
-			txId:       nil,
-			sigPrivKey: sigPrivKey,
-		},
+	txVoting := &TxVoting{
+		Tx:       *emptyTx,
 		NodeAddr: nodeAddr,
 	}
-	return tx, nil
+	return txVoting, nil
 }
 
 func (tx *TxVoting) GetValue() uint64 {
