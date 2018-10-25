@@ -22,7 +22,7 @@ block contains many types of transaction
 type Block struct {
 	Header         BlockHeader
 	Transactions   []transaction.Transaction
-	ChainLeader    string
+	ChainLeader    string // in base58check.encode
 	ChainLeaderSig string
 
 	Height    int32

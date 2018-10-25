@@ -32,7 +32,7 @@ type BlockHeader struct {
 	ChainsHeight       []int //height of 20 chain when this block is created
 	CandidateHash      common.Hash
 
-	SalaryFund uint64 // use to pay salary for miner in chain
+	SalaryFund uint64 // use to pay salary for miners(block producer or current leader) in chain
 
 	GovernanceParams GovernanceParams // params which get from governance for network
 }

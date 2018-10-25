@@ -319,11 +319,13 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 	}
 	for chainID, best := range self.config.BlockChain.BestState {
 		result.BestBlocks[strconv.Itoa(chainID)] = jsonresult.GetBestBlockItem{
-			Height:      best.BestBlock.Height,
-			Hash:        best.BestBlockHash.String(),
-			TotalTxs:    best.TotalTxns,
-			SalaryFund:  best.BestBlock.Header.SalaryFund,
-			BasicSalary: best.BestBlock.Header.GovernanceParams.BasicSalary,
+			Height:           best.BestBlock.Height,
+			Hash:             best.BestBlockHash.String(),
+			TotalTxs:         best.TotalTxns,
+			SalaryFund:       best.BestBlock.Header.SalaryFund,
+			BasicSalary:      best.BestBlock.Header.GovernanceParams.BasicSalary,
+			BlockProducer:    best.BestBlock.ChainLeader,
+			BlockProducerSig: best.BestBlock.ChainLeaderSig,
 		}
 	}
 	return result, nil
