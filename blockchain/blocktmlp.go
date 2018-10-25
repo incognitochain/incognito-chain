@@ -241,7 +241,7 @@ func createSalaryTx(
 	inputs[1] = transaction.CreateRandomJSInput(inputs[0].Key)
 	dummyAddress := client.GenPaymentAddress(*inputs[0].Key)
 
-	// Create new notes: first one is coinbase UTXO, second one has 0 value
+	// Create new notes: first one is salary UTXO, second one has 0 value
 	outNote := &client.Note{Value: salary, Apk: receiverAddr.Apk}
 	placeHolderOutputNote := &client.Note{Value: 0, Apk: receiverAddr.Apk}
 

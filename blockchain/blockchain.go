@@ -801,10 +801,10 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 				totalFeeInBlock += fee
 			}
 
-			coinbaseTx := txsInBlock[0].(*transaction.Tx)
+			salaryTx := txsInBlock[0].(*transaction.Tx)
 			rewardBond := uint64(0)
 			rewardCoin := uint64(0)
-			for _, desc := range coinbaseTx.Descs {
+			for _, desc := range salaryTx.Descs {
 				unitType := desc.Type
 				switch unitType {
 				case common.AssetTypeCoin:
