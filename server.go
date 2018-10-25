@@ -545,6 +545,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnRegistration: self.OnRegistration,
 			OnRequestSwap:  self.OnRequestSwap,
 			OnSignSwap:     self.OnSignSwap,
+			OnUpdateSwap:   self.OnUpdateSwap,
 		},
 	}
 	if len(keysetSealer.SprivateKey) != 0 {
@@ -609,6 +610,13 @@ func (self Server) OnSignSwap(peer *peer.PeerConn, msg *wire.MessageSignSwap) {
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a new sign swap END")
+}
+
+func (self Server) OnUpdateSwap(peer *peer.PeerConn, msg *wire.MessageUpdateSwap) {
+	Logger.log.Info("Receive a new update swap START")
+	var txProcessed chan struct{}
+	self.netSync.QueueMessage(nil, msg, txProcessed)
+	Logger.log.Info("Receive a new update swap END")
 }
 
 /*

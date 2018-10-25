@@ -114,6 +114,11 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdSignSwap:
 		msg = &MessageSignSwap{}
 		break
+	case CmdUpdateSwap:
+		msg = &MessageUpdateSwap{
+			Signatures: make(map[string]string),
+		}
+		break
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}

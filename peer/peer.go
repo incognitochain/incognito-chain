@@ -109,6 +109,7 @@ type MessageListeners struct {
 	OnRegistration  func(p *PeerConn, msg *wire.MessageRegistration)
 	OnRequestSwap   func(p *PeerConn, msg *wire.MessageRequestSwap)
 	OnSignSwap      func(p *PeerConn, msg *wire.MessageSignSwap)
+	OnUpdateSwap    func(p *PeerConn, msg *wire.MessageUpdateSwap)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal

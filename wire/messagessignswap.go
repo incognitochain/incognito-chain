@@ -10,12 +10,12 @@ const (
 )
 
 type MessageSignSwap struct {
-	SenderID           string
-	RequesterPublicKey string
-	ChainID            byte
-	SealerPublicKey    string
-	Validator          string
-	ValidatorSig       string
+	SenderID     string
+	RequesterPbk string
+	ChainID      byte
+	SealerPbk    string
+	Validator    string
+	ValidatorSig string
 }
 
 func (self MessageSignSwap) MessageType() string {
