@@ -14,7 +14,7 @@ type JoinSplitDesc struct {
 	EncryptedData   [][]byte           `json:"EncryptedData"`   // len == 2
 	EphemeralPubKey []byte             `json:"EphemeralPubKey"` // 32 bytes
 	HSigSeed        []byte             `json:"HSigSeed"`        // 32 bytes
-	Type            string             `json:"Type"`            // unit type (coin or bond) which used in tx
+	Type            string             `json:"Type"`            // asset type (constant coin or bond or d-token, g-token) which used in tx
 	Reward          uint64             `json:"Reward"`          // For salary tx
 	Vmacs           [][]byte           `json:"Vmacs"`           // len == 2, 32 bytes
 
