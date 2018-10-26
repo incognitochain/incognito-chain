@@ -1365,7 +1365,11 @@ func (self RpcServer) handleGetCommitteeCandidateList(params interface{}, closeC
 func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	result := make(map[string]string)
 	for chainID, bestState := range self.config.BlockChain.BestState {
-		result[strconv.Itoa(chainID)] = bestState.BestBlock.ChainLeader;
+		if bestState.BestBlock.ChainLeader != "" {
+			result[strconv.Itoa(chainID)] = bestState.BestBlock.ChainLeader;
+		} else {
+			result[strconv.Itoa(chainID)] = self.config.ChainParams.GenesisBlock.Header.Committee[chainID]
+		}
 	}
 	return result, nil
 }
