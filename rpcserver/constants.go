@@ -27,7 +27,7 @@ const (
 	CreateActionParamsTransaction     = "createactionparamstransaction"
 	SendRegistrationCandidateCommitee = "sendregistration"
 	GetMempoolInfo                    = "getmempoolinfo"
-	GetCndList                        = "getcndlist"
+	GetCommiteeCandidateList          = "getcommiteecandidate"
 
 	GetHeader = "getheader"
 

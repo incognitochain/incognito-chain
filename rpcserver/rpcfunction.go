@@ -56,7 +56,7 @@ var RpcHandler = map[string]commandHandler{
 	SendRegistrationCandidateCommitee: RpcServer.handleSendRegistrationCandidateCommitee,
 	GetMempoolInfo:                    RpcServer.handleGetMempoolInfo,
 
-	GetCndList: RpcServer.handleGetCommiteeCandidateList,
+	GetCommiteeCandidateList: RpcServer.handleGetCommiteeCandidateList,
 
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
