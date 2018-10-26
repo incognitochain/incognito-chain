@@ -57,6 +57,7 @@ var RpcHandler = map[string]commandHandler{
 	GetMempoolInfo:                     RpcServer.handleGetMempoolInfo,
 
 	GetCommitteeCandidateList: RpcServer.handleGetCommitteeCandidateList,
+	GetBlockProducerList:      RpcServer.handleGetBlockProducerList,
 
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -1359,4 +1360,12 @@ func (self RpcServer) handleGetCommitteeCandidateList(params interface{}, closeC
 	// param #1: private key of sender
 	cndList := self.config.BlockChain.GetCommitteeCandateList()
 	return cndList, nil
+}
+
+func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	result := make(map[string]string)
+	for chainID, bestState := range self.config.BlockChain.BestState {
+		result[strconv.Itoa(chainID)] = bestState.BestBlock.ChainLeader;
+	}
+	return result, nil
 }
