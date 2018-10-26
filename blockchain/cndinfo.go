@@ -1,6 +1,6 @@
 package blockchain
 
-type CndInfo struct {
+type CommiteeCandidateInfo struct {
 	Value     uint64
 	Timestamp int64
 	ChainID   byte

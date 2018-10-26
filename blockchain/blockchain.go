@@ -872,8 +872,8 @@ func (self *BlockChain) GetCommiteeCandateList() ([]string) {
 	return cndList
 }
 
-func (self *BlockChain) GetCommiteeCandidateInfo(nodeAddr string) (CndInfo) {
-	var cndVal CndInfo
+func (self *BlockChain) GetCommiteeCandidateInfo(nodeAddr string) (CommiteeCandidateInfo) {
+	var cndVal CommiteeCandidateInfo
 	for _, bestState := range self.BestState {
 		cndValTmp, ok := bestState.Candidates[nodeAddr]
 		if ok {

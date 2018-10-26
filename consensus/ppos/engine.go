@@ -465,26 +465,26 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.committee.UpdateCommittee(block.ChainLeader, block.Header.BlockCommitteeSigs)
 }
 
-func (self *Engine) GetCndList(block *blockchain.Block) map[string]blockchain.CndInfo {
+func (self *Engine) GetCndList(block *blockchain.Block) map[string]blockchain.CommiteeCandidateInfo {
 	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
 	candidates := bestState.Candidates
 	if candidates == nil {
-		candidates = make(map[string]blockchain.CndInfo)
+		candidates = make(map[string]blockchain.CommiteeCandidateInfo)
 	}
 	for _, tx := range block.Transactions {
 		if tx.GetType() == common.TxVotingType {
 			txV, ok := tx.(*transaction.TxVoting)
-			nodeAddr := txV.NodeAddr
+			nodeAddr := txV.PublicKey
 			cndVal, ok := candidates[nodeAddr]
 			_ = cndVal
 			if !ok {
-				candidates[nodeAddr] = blockchain.CndInfo{
+				candidates[nodeAddr] = blockchain.CommiteeCandidateInfo{
 					Value:     txV.GetValue(),
 					Timestamp: block.Header.Timestamp,
 					ChainID:   block.Header.ChainID,
 				}
 			} else {
-				candidates[nodeAddr] = blockchain.CndInfo{
+				candidates[nodeAddr] = blockchain.CommiteeCandidateInfo{
 					Value:     cndVal.Value + txV.GetValue(),
 					Timestamp: block.Header.Timestamp,
 					ChainID:   block.Header.ChainID,

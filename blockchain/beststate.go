@@ -23,7 +23,7 @@ type BestState struct {
 	Height    int32  // The height of the block.
 	NumTxns   uint64 // The number of txns in the block.
 	TotalTxns uint64 // The total number of txns in the chain.
-	Candidates map[string]CndInfo
+	Candidates map[string]CommiteeCandidateInfo
 }
 
 /*
@@ -41,7 +41,7 @@ func (self *BestState) Init(block *Block, tree *client.IncMerkleTree) {
 	self.NumTxns = uint64(len(block.Transactions))
 	self.Height = block.Height
 	if self.Candidates == nil {
-		self.Candidates = make(map[string]CndInfo)
+		self.Candidates = make(map[string]CommiteeCandidateInfo)
 	}
 }
 
@@ -60,6 +60,6 @@ func (self *BestState) Update(block *Block) {
 	self.NumTxns = uint64(len(block.Transactions))
 	self.Height = block.Height
 	if self.Candidates == nil {
-		self.Candidates = make(map[string]CndInfo)
+		self.Candidates = make(map[string]CommiteeCandidateInfo)
 	}
 }

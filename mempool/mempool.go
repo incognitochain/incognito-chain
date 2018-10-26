@@ -518,7 +518,7 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 }
 
 func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxVoting) (bool, error) {
-	if !common.ValidateNodeAddress(txVoting.NodeAddr) {
+	if !common.ValidateNodeAddress(txVoting.PublicKey) {
 		return false, errors.New("Wrong voting node data")
 	}
 	tx := txVoting.Tx
