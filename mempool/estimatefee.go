@@ -209,7 +209,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.Block) error {
 	// Randomly order txs in block.
 	transactions := make(map[*transaction.Tx]struct{})
 	for _, t := range block.Transactions {
-		if t.GetType() == common.TxNormalType {
+		if t.GetType() == common.TxNormalType || t.GetType() == common.TxSalaryType {
 			transactions[t.(*transaction.Tx)] = struct{}{}
 		}
 		// TODO Voting

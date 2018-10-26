@@ -655,7 +655,7 @@ func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxVoting) (bo
 ValidateSanityData - validate sansity data of tx
 */
 func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
-	if tx.GetType() == common.TxNormalType {
+	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxSalaryType {
 		txA := tx.(*transaction.TxVoting)
 		ok, err := tp.validateSanityNormalTxData(&txA.Tx)
 		if !ok {
