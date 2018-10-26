@@ -622,16 +622,12 @@ func (self *Engine) StartSwap() error {
 				committeeV := make([]string, common.TotalValidators)
 				copy(committeeV, self.GetCommittee())
 
-				self.updateCommittee(sealerPbk)
-				// check node is connected
-
-				// send message for request sign swap
-
-				// wait sign result for other committee for swap
-
-				// verify result
-
-				// broadcast message for update new committee list
+				err := self.updateCommittee(sealerPbk, chainId)
+				if err == nil {
+					// broadcast message for update new committee list
+				} else {
+					Logger.log.Errorf("Update committee is error", err)
+				}
 
 				Logger.log.Infof("Consensus engine swap %d END", chainId)
 				continue
@@ -641,20 +637,21 @@ func (self *Engine) StartSwap() error {
 	return nil
 }
 
-func (self *Engine) updateCommittee(sealerPbk string) error {
+func (self *Engine) updateCommittee(sealerPbk string, chanId byte) error {
 	self.committeeMutex.Lock()
 	defer self.committeeMutex.Unlock()
 
 	committee := make([]string, common.TotalValidators)
 	copy(committee, self.GetCommittee())
 
-	if common.IndexOfStr(sealerPbk, committee) >= 0 {
-		return nil
+	idx := common.IndexOfStr(sealerPbk, committee)
+	if idx >= 0 {
+		return errors.New("committee is swapped")
 	}
-
-	//TODO update committee list
-
+	self.Committee = append(committee[:chanId], sealerPbk)
+	self.Committee = append(self.Committee, committee[chanId+1:]...)
 	//TODO remove sealerPbk from candidate list
+
 
 	return nil
 }

@@ -226,7 +226,7 @@ func (self *Engine) OnUpdateSwap(msg *wire.MessageUpdateSwap) {
 		return
 	}
 	//TODO update committee list
-	self.updateCommittee(msg.SealerPbk)
+	self.updateCommittee(msg.SealerPbk, msg.ChainID)
 
 	return
 }
