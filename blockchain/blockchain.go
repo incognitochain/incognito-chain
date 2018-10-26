@@ -836,20 +836,20 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 }
 
 /*
-Get Candidate List from all chain and merge all to one
+Get Candidate List from all chain and merge all to one - return pubkey of them
 */
 func (self *BlockChain) GetCommitteeCandateList() ([]string) {
-	cndList := []string{}
+	candidatePubkeyList := []string{}
 	for _, bestState := range self.BestState {
-		for nodeAddr, _ := range bestState.Candidates {
-			if common.IndexOfStr(nodeAddr, cndList) < 0 {
-				cndList = append(cndList, nodeAddr)
+		for pubkey, _ := range bestState.Candidates {
+			if common.IndexOfStr(pubkey, candidatePubkeyList) < 0 {
+				candidatePubkeyList = append(candidatePubkeyList, pubkey)
 			}
 		}
 	}
-	sort.Slice(cndList, func(i, j int) bool {
-		cndInfoi := self.GetCommitteeCandidateInfo(cndList[i])
-		cndInfoj := self.GetCommitteeCandidateInfo(cndList[j])
+	sort.Slice(candidatePubkeyList, func(i, j int) bool {
+		cndInfoi := self.GetCommitteeCandidateInfo(candidatePubkeyList[i])
+		cndInfoj := self.GetCommitteeCandidateInfo(candidatePubkeyList[j])
 		if cndInfoi.Value == cndInfoj.Value {
 			if cndInfoi.Timestamp < cndInfoj.Timestamp {
 				return true
@@ -869,7 +869,7 @@ func (self *BlockChain) GetCommitteeCandateList() ([]string) {
 		}
 		return false
 	})
-	return cndList
+	return candidatePubkeyList
 }
 
 func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) (CommitteeCandidateInfo) {
