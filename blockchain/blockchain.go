@@ -838,7 +838,7 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 /*
 Get Candidate List from all chain and merge all to one
 */
-func (self *BlockChain) GetCommiteeCandateList() ([]string) {
+func (self *BlockChain) GetCommitteeCandateList() ([]string) {
 	cndList := []string{}
 	for _, bestState := range self.BestState {
 		for nodeAddr, _ := range bestState.Candidates {
@@ -848,8 +848,8 @@ func (self *BlockChain) GetCommiteeCandateList() ([]string) {
 		}
 	}
 	sort.Slice(cndList, func(i, j int) bool {
-		cndInfoi := self.GetCommiteeCandidateInfo(cndList[i])
-		cndInfoj := self.GetCommiteeCandidateInfo(cndList[j])
+		cndInfoi := self.GetCommitteeCandidateInfo(cndList[i])
+		cndInfoj := self.GetCommitteeCandidateInfo(cndList[j])
 		if cndInfoi.Value == cndInfoj.Value {
 			if cndInfoi.Timestamp < cndInfoj.Timestamp {
 				return true
@@ -872,8 +872,8 @@ func (self *BlockChain) GetCommiteeCandateList() ([]string) {
 	return cndList
 }
 
-func (self *BlockChain) GetCommiteeCandidateInfo(nodeAddr string) (CommiteeCandidateInfo) {
-	var cndVal CommiteeCandidateInfo
+func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) (CommitteeCandidateInfo) {
+	var cndVal CommitteeCandidateInfo
 	for _, bestState := range self.BestState {
 		cndValTmp, ok := bestState.Candidates[nodeAddr]
 		if ok {
