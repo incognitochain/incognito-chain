@@ -8,10 +8,11 @@ import (
 )
 
 func (self *Engine) GetCommittee() []string {
-
-
-
-	return self.config.BlockChain.BestState[0].BestBlock.Header.Committee
+	if len(self.Committee) <= 0 {
+		self.Committee = make([]string, len(self.config.BlockChain.BestState[0].BestBlock.Header.Committee))
+		copy(self.Committee, self.config.BlockChain.BestState[0].BestBlock.Header.Committee)
+	}
+	return self.Committee
 }
 
 func (self *Engine) CheckCandidate() error {
