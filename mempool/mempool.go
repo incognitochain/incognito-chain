@@ -145,7 +145,11 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	case *transaction.TxVoting:
 		log.Println("Tx voting ")
 		txInfo := tx.(*transaction.TxVoting)
-		chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
+    chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
+  case *transaction.TxCustomToken:
+    log.Println("Tx custom token")
+    txInfo := tx.(*transaction.TxCustomToken)
+    chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
 	}
 
 	if err != nil {

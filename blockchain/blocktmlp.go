@@ -61,6 +61,8 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 		case common.TxActionParamsType:
 			// actionParamTxs = append(actionParamTxs, tx.(*transaction.ActionParamTx))
 			continue
+		case common.TxCustomTokenType:
+			txFee = tx.(*transaction.TxCustomToken).Fee
 		case common.TxVotingType:
 			txFee = tx.(*transaction.TxVoting).Fee
 		case common.TxSalaryType:

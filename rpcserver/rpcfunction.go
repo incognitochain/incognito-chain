@@ -53,7 +53,8 @@ var RpcHandler = map[string]commandHandler{
 	SendMany:                           RpcServer.handleSendMany,
 	GetNumberOfCoinsAndBonds:           RpcServer.handleGetNumberOfCoinsAndBonds,
 	CreateActionParamsTransaction:      RpcServer.handleCreateActionParamsTransaction,
-	SendRegistrationCandidateCommittee: RpcServer.handleSendRegistrationCandidateCommittee,
+  SendRegistrationCandidateCommittee: RpcServer.handleSendRegistrationCandidateCommittee,
+  CreateCustomTokenTransaction:       RpcServer.handleCreateCustomTokenTransaction,
 	GetMempoolInfo:                     RpcServer.handleGetMempoolInfo,
 
 	GetCommitteeCandidateList:  RpcServer.handleGetCommitteeCandidateList,
@@ -709,6 +710,151 @@ func (self RpcServer) handleSendRegistrationCandidateCommittee(params interface{
 	newParam = append(newParam, hexStrOfTx)
 	txId, err := self.handleSendRawRegistrationCandidateCommittee(newParam, closeChan)
 	return txId, err
+}
+
+// handleCreateCustomTokenTransaction handle create a custom token command.
+func (self RpcServer) handleCreateCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+  // all params
+	arrayParams := common.InterfaceSlice(params)
+
+	// param #1: private key of sender
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	lastByte := senderKey.KeySet.PublicKey.Apk[len(senderKey.KeySet.PublicKey.Apk)-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	// param #2: list receiver
+	totalAmmount := int64(0)
+	receiversParam := arrayParams[1].(map[string]interface{})
+	paymentInfos := make([]*client.PaymentInfo, 0)
+	for pubKeyStr, amount := range receiversParam {
+		receiverPubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		paymentInfo := &client.PaymentInfo{
+			Amount:         uint64(amount.(float64)),
+			PaymentAddress: receiverPubKey.KeySet.PublicKey,
+		}
+		totalAmmount += int64(paymentInfo.Amount)
+		paymentInfos = append(paymentInfos, paymentInfo)
+	}
+
+	// param #3: estimation fee coin per kb
+	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
+
+	// param #4: estimation fee coin per kb by numblock
+	numBlock := uint32(arrayParams[3].(float64))
+
+	nodeAddr := arrayParams[4].(string)
+	if valid := common.ValidateNodeAddress(nodeAddr); !valid {
+		return nil, errors.New("node address is wrong")
+  }
+  
+  // param #5: token params
+  tokenParamsRaw := arrayParams[5].(map[string]interface{})
+  tokenParams := &transaction.CustomTokenParamTx{
+		PropertyName:    tokenParamsRaw["TokenName"].(string),
+		PropertySymbol:  tokenParamsRaw["TokenSymbol"].(string),
+		TxCustomTokenID: tokenParamsRaw["TokenHash"].(string),
+		TokenTxType:     tokenParamsRaw["TokenTxType"].(float64),
+		Amount:          tokenParamsRaw["TokenAmount"].(float64),
+	}
+
+
+	// list unspent tx for estimation fee
+	estimateTotalAmount := totalAmmount
+	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, common.AssetTypeCoin, transaction.SortByAmount, false)
+	candidateTxs := make([]*transaction.Tx, 0)
+	candidateTxsMap := make(map[byte][]*transaction.Tx)
+	for chainId, usableTxs := range usableTxsMap {
+		for _, temp := range usableTxs {
+			for _, desc := range temp.Descs {
+				for _, note := range desc.GetNote() {
+					amount := note.Value
+					estimateTotalAmount -= int64(amount)
+				}
+			}
+			txData := temp
+			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
+			candidateTxs = append(candidateTxs, &txData)
+			if estimateTotalAmount <= 0 {
+				break
+			}
+		}
+	}
+
+	// check real fee per Tx
+	var realFee uint64
+	if int64(estimateFeeCoinPerKb) == -1 {
+		temp, _ := self.config.FeeEstimator[chainIdSender].EstimateFee(numBlock)
+		estimateFeeCoinPerKb = int64(temp)
+	}
+	estimateFeeCoinPerKb += int64(self.config.Wallet.Config.IncrementalFee)
+	estimateTxSizeInKb := transaction.EstimateTxSize(candidateTxs, paymentInfos)
+	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
+
+	// list unspent tx for create tx
+	totalAmmount += int64(realFee)
+	candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
+	for chainId, usableTxs := range usableTxsMap {
+		for _, temp := range usableTxs {
+			for _, desc := range temp.Descs {
+				for _, note := range desc.GetNote() {
+					amount := note.Value
+					estimateTotalAmount -= int64(amount)
+				}
+			}
+			txData := temp
+			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
+			if estimateTotalAmount <= 0 {
+				break
+			}
+		}
+	}
+
+	// get merkleroot commitments, nullifers db, commitments db for every chain
+	nullifiersDb := make(map[byte]([][]byte))
+	commitmentsDb := make(map[byte]([][]byte))
+	merkleRootCommitments := make(map[byte]*common.Hash)
+	for chainId, _ := range candidateTxsMap {
+		merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
+		// get tx view point
+		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainId)
+		nullifiersDb[chainId] = txViewPoint.ListNullifiers(common.AssetTypeCoin)
+		commitmentsDb[chainId] = txViewPoint.ListCommitments(common.AssetTypeCoin)
+	}
+
+	tx, err := transaction.CreateTxCustomToken(&senderKey.KeySet.PrivateKey, paymentInfos,
+		merkleRootCommitments,
+		candidateTxsMap,
+		nullifiersDb,
+		commitmentsDb,
+		realFee,
+		common.AssetTypeCoin,
+    chainIdSender,
+    tokenParams)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+  }
+  
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		// return hex for a new tx
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	hexData := hex.EncodeToString(byteArrays)
+	result := jsonresult.CreateTransactionResult{
+		HexData: hexData,
+	}
+	return result, nil
 }
 
 /*

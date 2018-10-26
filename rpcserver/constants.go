@@ -26,6 +26,7 @@ const (
 	GetNumberOfCoinsAndBonds           = "getnumberofcoinsandbonds"
 	CreateActionParamsTransaction      = "createactionparamstransaction"
 	SendRegistrationCandidateCommittee = "sendregistration"
+	CreateCustomTokenTransaction       = "createcustomtokentransaction"
 	GetMempoolInfo                     = "getmempoolinfo"
 	GetCommitteeCandidateList          = "getcommitteecandidate"
 	RetrieveCommitteeCandidate         = "retrievecommitteecandidate"
