@@ -835,6 +835,17 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 	return result, nil
 }
 
+func (self *BlockChain) GetCommitteCandidate(pubkeyParam string) (*CommitteeCandidateInfo) {
+	for _, bestState := range self.BestState {
+		for pubkey, candidateInfo := range bestState.Candidates {
+			if pubkey == pubkeyParam {
+				return &candidateInfo
+			}
+		}
+	}
+	return nil
+}
+
 /*
 Get Candidate List from all chain and merge all to one - return pubkey of them
 */

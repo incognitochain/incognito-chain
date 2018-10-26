@@ -28,6 +28,7 @@ const (
 	SendRegistrationCandidateCommittee = "sendregistration"
 	GetMempoolInfo                     = "getmempoolinfo"
 	GetCommitteeCandidateList          = "getcommitteecandidate"
+	RetrieveCommitteeCandidate         = "retrievecommitteecandidate"
 	GetBlockProducerList               = "getblockproducer"
 
 	GetHeader = "getheader"

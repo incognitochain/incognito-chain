@@ -56,8 +56,9 @@ var RpcHandler = map[string]commandHandler{
 	SendRegistrationCandidateCommittee: RpcServer.handleSendRegistrationCandidateCommittee,
 	GetMempoolInfo:                     RpcServer.handleGetMempoolInfo,
 
-	GetCommitteeCandidateList: RpcServer.handleGetCommitteeCandidateList,
-	GetBlockProducerList:      RpcServer.handleGetBlockProducerList,
+	GetCommitteeCandidateList:  RpcServer.handleGetCommitteeCandidateList,
+	RetrieveCommitteeCandidate: RpcServer.handleRetrieveCommiteeCandidate,
+	GetBlockProducerList:       RpcServer.handleGetBlockProducerList,
 
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -1360,6 +1361,13 @@ func (self RpcServer) handleGetCommitteeCandidateList(params interface{}, closeC
 	// param #1: private key of sender
 	cndList := self.config.BlockChain.GetCommitteeCandateList()
 	return cndList, nil
+}
+
+func (self RpcServer) handleRetrieveCommiteeCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	candidateInfo := self.config.BlockChain.GetCommitteCandidate(params.(string))
+	result := jsonresult.RetrieveCommitteecCandidateResult{}
+	result.Init(candidateInfo)
+	return result, nil
 }
 
 func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
