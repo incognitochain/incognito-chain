@@ -22,6 +22,7 @@ type Policy struct {
 func (self *Policy) CheckTxVersion(tx *transaction.Transaction) bool {
 	txType := (*tx).GetType()
 	switch txType {
+	case common.TxSalaryType:
 	case common.TxNormalType:
 		{
 			temp := (*tx).(*transaction.Tx)

@@ -57,7 +57,7 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 	acceptedNullifiers := make(map[string][][]byte)
 	acceptedCommitments := make(map[string][][]byte)
 	for _, tx := range transactions {
-		if tx.GetType() == common.TxNormalType {
+		if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxSalaryType {
 			for _, desc := range tx.(*transaction.Tx).Descs {
 				for _, item := range desc.Nullifiers {
 					temp, err := db.HasNullifier(item, desc.Type, block.Header.ChainID)

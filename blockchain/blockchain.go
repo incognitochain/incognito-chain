@@ -130,7 +130,7 @@ func (self *BlockChain) initChainState() error {
 */
 func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 	for _, blockTx := range block.Transactions {
-		if blockTx.GetType() == common.TxNormalType {
+		if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
 			tx, ok := blockTx.(*transaction.Tx)
 			if ok == false {
 				return fmt.Errorf("Transaction in block not valid")
@@ -526,7 +526,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 			txsInBlock := bestBlock.Transactions
 			txsInBlockAccepted := make([]transaction.Tx, 0)
 			for _, txInBlock := range txsInBlock {
-				if txInBlock.GetType() == common.TxNormalType {
+				if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
 					tx := txInBlock.(*transaction.Tx)
 					copyTx := transaction.Tx{
 						Version:  tx.Version,
@@ -651,7 +651,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, co
 			txsInBlock := bestBlock.Transactions
 			txsInBlockAccepted := make([]transaction.Tx, 0)
 			for _, txInBlock := range txsInBlock {
-				if txInBlock.GetType() == common.TxNormalType {
+				if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
 					tx := txInBlock.(*transaction.Tx)
 					copyTx := transaction.Tx{
 						Version:         tx.Version,
@@ -836,20 +836,20 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 }
 
 /*
-Get Candidate List from all chain and merge all to one
+Get Candidate List from all chain and merge all to one - return pubkey of them
 */
-func (self *BlockChain) GetCommiteeCandateList() ([]string) {
-	cndList := []string{}
+func (self *BlockChain) GetCommitteeCandateList() ([]string) {
+	candidatePubkeyList := []string{}
 	for _, bestState := range self.BestState {
-		for nodeAddr, _ := range bestState.Candidates {
-			if common.IndexOfStr(nodeAddr, cndList) < 0 {
-				cndList = append(cndList, nodeAddr)
+		for pubkey, _ := range bestState.Candidates {
+			if common.IndexOfStr(pubkey, candidatePubkeyList) < 0 {
+				candidatePubkeyList = append(candidatePubkeyList, pubkey)
 			}
 		}
 	}
-	sort.Slice(cndList, func(i, j int) bool {
-		cndInfoi := self.GetCommiteeCandidateInfo(cndList[i])
-		cndInfoj := self.GetCommiteeCandidateInfo(cndList[j])
+	sort.Slice(candidatePubkeyList, func(i, j int) bool {
+		cndInfoi := self.GetCommitteeCandidateInfo(candidatePubkeyList[i])
+		cndInfoj := self.GetCommitteeCandidateInfo(candidatePubkeyList[j])
 		if cndInfoi.Value == cndInfoj.Value {
 			if cndInfoi.Timestamp < cndInfoj.Timestamp {
 				return true
@@ -869,11 +869,11 @@ func (self *BlockChain) GetCommiteeCandateList() ([]string) {
 		}
 		return false
 	})
-	return cndList
+	return candidatePubkeyList
 }
 
-func (self *BlockChain) GetCommiteeCandidateInfo(nodeAddr string) (CommiteeCandidateInfo) {
-	var cndVal CommiteeCandidateInfo
+func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) (CommitteeCandidateInfo) {
+	var cndVal CommitteeCandidateInfo
 	for _, bestState := range self.BestState {
 		cndValTmp, ok := bestState.Candidates[nodeAddr]
 		if ok {

@@ -407,7 +407,7 @@ finalizing:
 	case <-allSigReceived:
 		Logger.log.Info("Validator sigs: ", finalBlock.Header.BlockCommitteeSigs)
 	case <-time.After(common.MaxBlockSigWaitTime * time.Second):
-		//blocksig wait time exceeded -> get a new commitee list and retry
+		//blocksig wait time exceeded -> get a new committee list and retry
 		Logger.log.Error(errExceedSigWaitTime)
 		if retryTime == 5 {
 			cancel <- struct{}{}
@@ -467,11 +467,11 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.committee.UpdateCommittee(block.ChainLeader, block.Header.BlockCommitteeSigs)
 }
 
-func (self *Engine) GetCndList(block *blockchain.Block) map[string]blockchain.CommiteeCandidateInfo {
+func (self *Engine) GetCndList(block *blockchain.Block) map[string]blockchain.CommitteeCandidateInfo {
 	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
 	candidates := bestState.Candidates
 	if candidates == nil {
-		candidates = make(map[string]blockchain.CommiteeCandidateInfo)
+		candidates = make(map[string]blockchain.CommitteeCandidateInfo)
 	}
 	for _, tx := range block.Transactions {
 		if tx.GetType() == common.TxVotingType {
@@ -480,13 +480,13 @@ func (self *Engine) GetCndList(block *blockchain.Block) map[string]blockchain.Co
 			cndVal, ok := candidates[nodeAddr]
 			_ = cndVal
 			if !ok {
-				candidates[nodeAddr] = blockchain.CommiteeCandidateInfo{
+				candidates[nodeAddr] = blockchain.CommitteeCandidateInfo{
 					Value:     txV.GetValue(),
 					Timestamp: block.Header.Timestamp,
 					ChainID:   block.Header.ChainID,
 				}
 			} else {
-				candidates[nodeAddr] = blockchain.CommiteeCandidateInfo{
+				candidates[nodeAddr] = blockchain.CommitteeCandidateInfo{
 					Value:     cndVal.Value + txV.GetValue(),
 					Timestamp: block.Header.Timestamp,
 					ChainID:   block.Header.ChainID,
@@ -605,7 +605,7 @@ func (self *Engine) StartSwap() error {
 				case <-allSigReceived:
 					Logger.log.Info("Validator signatures: ", signatureMap)
 				case <-time.After(common.MaxBlockSigWaitTime * time.Second):
-					//blocksig wait time exceeded -> get a new commitee list and retry
+					//blocksig wait time exceeded -> get a new committee list and retry
 					//Logger.log.Error(errExceedSigWaitTime)
 
 					close(cancel)

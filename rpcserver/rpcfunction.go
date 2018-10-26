@@ -47,16 +47,17 @@ var RpcHandler = map[string]commandHandler{
 	/*"getblocktemplate":              RpcServer.handleGetBlockTemplate,*/
 
 	// transaction
-	ListTransactions:                  RpcServer.handleListTransactions,
-	CreateTransaction:                 RpcServer.handleCreateTransaction,
-	SendTransaction:                   RpcServer.handleSendTransaction,
-	SendMany:                          RpcServer.handleSendMany,
-	GetNumberOfCoinsAndBonds:          RpcServer.handleGetNumberOfCoinsAndBonds,
-	CreateActionParamsTransaction:     RpcServer.handleCreateActionParamsTransaction,
-	SendRegistrationCandidateCommitee: RpcServer.handleSendRegistrationCandidateCommitee,
-	GetMempoolInfo:                    RpcServer.handleGetMempoolInfo,
+	ListTransactions:                   RpcServer.handleListTransactions,
+	CreateTransaction:                  RpcServer.handleCreateTransaction,
+	SendTransaction:                    RpcServer.handleSendTransaction,
+	SendMany:                           RpcServer.handleSendMany,
+	GetNumberOfCoinsAndBonds:           RpcServer.handleGetNumberOfCoinsAndBonds,
+	CreateActionParamsTransaction:      RpcServer.handleCreateActionParamsTransaction,
+	SendRegistrationCandidateCommittee: RpcServer.handleSendRegistrationCandidateCommittee,
+	GetMempoolInfo:                     RpcServer.handleGetMempoolInfo,
 
-	GetCndList: RpcServer.handleGetCommiteeCandidateList,
+	GetCommitteeCandidateList: RpcServer.handleGetCommitteeCandidateList,
+	GetBlockProducerList:      RpcServer.handleGetBlockProducerList,
 
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -285,7 +286,7 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 				transactionT := jsonresult.GetBlockTxResult{}
 
 				transactionT.Hash = tx.Hash().String()
-				if tx.GetType() == common.TxNormalType {
+				if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxSalaryType {
 					txN := tx.(*transaction.Tx)
 					data, err := json.Marshal(txN)
 					if err != nil {
@@ -533,7 +534,7 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 	return result, nil
 }
 
-func (self RpcServer) handleCreateRegistrationCandidateCommitee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateRegistrationCandidateCommittee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 
 	// all params
@@ -661,7 +662,7 @@ func (self RpcServer) handleCreateRegistrationCandidateCommitee(params interface
 	return nil, err
 }
 
-func (self RpcServer) handleSendRawRegistrationCandidateCommitee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleSendRawRegistrationCandidateCommittee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	hexRawTx := arrayParams[0].(string)
@@ -697,15 +698,15 @@ func (self RpcServer) handleSendRawRegistrationCandidateCommitee(params interfac
 	return tx.Hash(), nil
 }
 
-// handleSendRegistrationCandidateCommitee handle sendregistration commitee candidate command.
-func (self RpcServer) handleSendRegistrationCandidateCommitee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	hexStrOfTx, err := self.handleCreateRegistrationCandidateCommitee(params, closeChan)
+// handleSendRegistrationCandidateCommittee handle sendregistration committee candidate command.
+func (self RpcServer) handleSendRegistrationCandidateCommittee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	hexStrOfTx, err := self.handleCreateRegistrationCandidateCommittee(params, closeChan)
 	if err != nil {
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, hexStrOfTx)
-	txId, err := self.handleSendRawRegistrationCandidateCommitee(newParam, closeChan)
+	txId, err := self.handleSendRawRegistrationCandidateCommittee(newParam, closeChan)
 	return txId, err
 }
 
@@ -1355,8 +1356,16 @@ func (self RpcServer) handleCreateSealerKeySet(params interface{}, closeChan <-c
 	return result, nil
 }
 
-func (self RpcServer) handleGetCommiteeCandidateList(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetCommitteeCandidateList(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// param #1: private key of sender
-	cndList := self.config.BlockChain.GetCommiteeCandateList()
+	cndList := self.config.BlockChain.GetCommitteeCandateList()
 	return cndList, nil
+}
+
+func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	result := make(map[string]string)
+	for chainID, bestState := range self.config.BlockChain.BestState {
+		result[strconv.Itoa(chainID)] = bestState.BestBlock.ChainLeader;
+	}
+	return result, nil
 }

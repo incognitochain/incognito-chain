@@ -49,7 +49,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 
 	// process tx from tx interface of temp
 	for _, txTemp := range temp.Transactions {
-		if txTemp["Type"].(string) == common.TxNormalType {
+		if txTemp["Type"].(string) == common.TxNormalType || txTemp["Type"].(string) == common.TxSalaryType {
 			// init a tx
 			txNormal := &transaction.Tx{
 				Version:         int8(txTemp["Version"].(float64)),
