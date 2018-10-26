@@ -56,7 +56,7 @@ var RpcHandler = map[string]commandHandler{
 	SendRegistrationCandidateCommitee: RpcServer.handleSendRegistrationCandidateCommitee,
 	GetMempoolInfo:                    RpcServer.handleGetMempoolInfo,
 
-	GetCndList: RpcServer.handleGetCndList,
+	GetCndList: RpcServer.handleGetCommiteeCandidateList,
 
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -1350,8 +1350,8 @@ func (self RpcServer) handleCreateSealerKeySet(params interface{}, closeChan <-c
 	return result, nil
 }
 
-func (self RpcServer) handleGetCndList(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleGetCommiteeCandidateList(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// param #1: private key of sender
-	cndList := self.config.BlockChain.GetCndList()
+	cndList := self.config.BlockChain.GetCommiteeCandateList()
 	return cndList, nil
 }
