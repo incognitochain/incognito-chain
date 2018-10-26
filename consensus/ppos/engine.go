@@ -39,6 +39,8 @@ type Engine struct {
 	validatedChainsHeight chainsHeight
 
 	committee committeeStruct
+
+	Committee []string //Voted committee for the next block
 }
 
 type committeeStruct struct {
@@ -495,16 +497,6 @@ func (self *Engine) GetCndList(block *blockchain.Block) map[string]blockchain.Co
 	return candidates
 }
 
-func (self *Engine) IsExistedNodeAddr(nodeAddr string) bool {
-	for _, bestState := range self.config.BlockChain.BestState {
-		_, ok := bestState.Candidates[nodeAddr]
-		if ok {
-			return true
-		}
-	}
-	return false
-}
-
 func (self *Engine) StartSwap() error {
 	Logger.log.Info("Consensus engine START SWAP")
 
@@ -540,8 +532,13 @@ func (self *Engine) StartSwap() error {
 				copy(committee, self.GetCommittee())
 
 				requesterPbk := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
-				// TODO get first public key from candidate list
+				// TODO get first public key from candidate list and check available node
 				sealerPbk := "abc"
+				//peerIDs := self.config.Server.GetPeerIDsFromPublicKey(sealerPbk)
+				//if len(peerIDs) == 0 {
+				//	continue
+				//}
+				// TODO check public key is connected
 
 				signatureMap := make(map[string]string)
 
@@ -568,7 +565,7 @@ func (self *Engine) StartSwap() error {
 								}
 								Logger.log.Info("SWAP validate signature ok from ", swapSig.Validator, sealerPbk)
 								signatureMap[swapSig.Validator] = swapSig.ValidatorSig
-								if len(signatureMap) >= common.TotalValidators / 2 {
+								if len(signatureMap) >= common.TotalValidators/2 {
 									close(allSigReceived)
 									return
 								}
