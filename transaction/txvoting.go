@@ -125,6 +125,7 @@ func CreateVotingTx(
 	nullifiers map[byte]([][]byte),
 	commitments map[byte]([][]byte),
 	fee uint64,
+	assetType string,
 	senderChainID byte,
 	nodeAddr string,
 ) (*TxVoting, error) {
@@ -338,7 +339,7 @@ func CreateVotingTx(
 
 		// Generate proof and sign tx
 		var reward uint64 // Zero reward for non-salary transaction
-		err = tx.Tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, true)
+		err = tx.Tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, assetType, true)
 		if err != nil {
 			return nil, err
 		}

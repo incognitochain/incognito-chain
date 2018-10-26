@@ -259,7 +259,10 @@ func createSalaryTx(
 	tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
 	rtMap := map[byte][]byte{chainID: rt}
 	inputMap := map[byte][]*client.JSInput{chainID: inputs}
-	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0, true)
+
+	// NOTE: always pay salary with constant coin
+	assetTypeToPaySalary := common.AssetTypeCoin
+	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0, assetTypeToPaySalary, true)
 	if err != nil {
 		return nil, err
 	}

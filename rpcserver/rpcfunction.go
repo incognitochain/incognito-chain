@@ -573,9 +573,12 @@ func (self RpcServer) handleCreateRegistrationCandidateCommitee(params interface
 		return nil, errors.New("node address is wrong")
 	}
 
+	// ONLY use CONSTANT COIN for registration candidate tx
+	assetType := common.AssetTypeCoin
+
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, common.AssetTypeCoin, transaction.SortByAmount, false)
+	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, assetType, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
@@ -643,6 +646,7 @@ func (self RpcServer) handleCreateRegistrationCandidateCommitee(params interface
 		nullifiersDb,
 		commitmentsDb,
 		realFee,
+		assetType,
 		chainIdSender,
 		nodeAddr)
 	if err != nil {
@@ -747,7 +751,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	// param #3: estimation fee coin per kb
 	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
 
-	// param #4: estimation fee coin per kb
+	// param #4: estimation fee coin per kb by numblock
 	numBlock := uint32(arrayParams[3].(float64))
 
 	nodeAddr := arrayParams[4].(string)
@@ -824,6 +828,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		nullifiersDb,
 		commitmentsDb,
 		realFee,
+		common.AssetTypeCoin,
 		chainIdSender)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)

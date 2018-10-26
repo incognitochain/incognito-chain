@@ -157,6 +157,7 @@ func CreateTx(
 	nullifiers map[byte]([][]byte),
 	commitments map[byte]([][]byte),
 	fee uint64,
+	assetType string,
 	senderChainID byte,
 ) (*Tx, error) {
 	fmt.Printf("List of all commitments before building tx:\n")
@@ -370,7 +371,7 @@ func CreateTx(
 
 		// Generate proof and sign tx
 		var reward uint64 // Zero reward for non-salary transaction
-		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, false)
+		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, assetType, false)
 		if err != nil {
 			return nil, err
 		}
@@ -401,6 +402,7 @@ func (tx *Tx) BuildNewJSDesc(
 	outputs []*client.JSOutput,
 	rtMap map[byte][]byte,
 	reward, fee uint64,
+	assetType string,
 	noPrivacy bool,
 ) error {
 	// Gather inputs from different chains
@@ -431,7 +433,7 @@ func (tx *Tx) BuildNewJSDesc(
 	}
 
 	var ephemeralPrivKey *client.EphemeralPrivKey // nil ephemeral key, will be randomly created later
-	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, ephemeralPrivKey)
+	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, ephemeralPrivKey, assetType)
 	if err != nil {
 		return err
 	}
@@ -448,6 +450,7 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	reward uint64,
 	hSig, seed []byte,
 	ephemeralPrivKey *client.EphemeralPrivKey,
+	assetType string,
 ) error {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
@@ -496,7 +499,7 @@ func (tx *Tx) buildJSDescAndEncrypt(
 		EncryptedData:   noteciphers,
 		EphemeralPubKey: ephemeralPubKey[:],
 		HSigSeed:        seed,
-		Type:            common.AssetTypeCoin,
+		Type:            assetType,
 		Reward:          reward,
 		Vmacs:           vmacs,
 	}
@@ -619,6 +622,7 @@ func GenerateProofForGenesisTx(
 	seed, phi []byte,
 	outputR [][]byte,
 	ephemeralPrivKey client.EphemeralPrivKey,
+	assetType string,
 ) (*Tx, error) {
 	// Generate JoinSplit key pair to act as a dummy key (since we don't sign genesis tx)
 	privateSignKey := [32]byte{1}
@@ -656,7 +660,7 @@ func GenerateProofForGenesisTx(
 		return nil, err
 	}
 
-	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, &ephemeralPrivKey)
+	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, &ephemeralPrivKey, assetType)
 	return tx, err
 }
 
