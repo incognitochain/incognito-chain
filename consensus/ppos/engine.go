@@ -557,8 +557,18 @@ func (self *Engine) StartSwap() error {
 						case swapSig := <-self.cSwapSig:
 							_ = swapSig
 							if common.IndexOfStr(swapSig.Validator, committee) >= 0 && swapSig.RequesterPbk == requesterPbk {
+								// verify signature
+								rawBytes := []byte{}
+								rawBytes = append(rawBytes, []byte(requesterPbk)...)
+								rawBytes = append(rawBytes, chainId)
+								rawBytes = append(rawBytes, []byte(sealerPbk)...)
+								err := cashec.ValidateDataB58(swapSig.Validator, swapSig.ValidatorSig, rawBytes)
+								if err != nil {
+									continue
+								}
+								Logger.log.Info("SWAP validate signature ok from ", swapSig.Validator, sealerPbk)
 								signatureMap[swapSig.Validator] = swapSig.ValidatorSig
-								if len(signatureMap) >= (common.TotalValidators / 2) {
+								if len(signatureMap) >= common.TotalValidators / 2 {
 									close(allSigReceived)
 									return
 								}

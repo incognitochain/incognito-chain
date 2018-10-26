@@ -5,6 +5,8 @@ import (
 	"github.com/ninjadotorg/cash/blockchain"
 	"github.com/ninjadotorg/cash/common/base58"
 	"github.com/ninjadotorg/cash/wire"
+	"github.com/ninjadotorg/cash/cashec"
+	"github.com/ninjadotorg/cash/common"
 )
 
 func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestBlockSign) {
@@ -194,5 +196,37 @@ func (self *Engine) OnSignSwap(msg *wire.MessageSignSwap) {
 
 func (self *Engine) OnUpdateSwap(msg *wire.MessageUpdateSwap) {
 	Logger.log.Info("Received a MessageUpdateSwap")
+
+	committee := make([]string, common.TotalValidators)
+	copy(committee, self.GetCommittee())
+
+	if common.IndexOfStr(msg.SealerPbk, committee) >= 0 {
+		Logger.log.Error("ERROR OnUpdateSwap is existed committee")
+		return
+	}
+
+	//TODO versify signatures
+	rawBytes := []byte{}
+	rawBytes = append(rawBytes, []byte(msg.RequesterPbk)...)
+	rawBytes = append(rawBytes, msg.ChainID)
+	rawBytes = append(rawBytes, []byte(msg.SealerPbk)...)
+	cLeader := 0
+	for leaderPbk, leaderSig := range msg.Signatures {
+		if common.IndexOfStr(leaderPbk, committee) >= 0 {
+			err := cashec.ValidateDataB58(leaderPbk, leaderSig, rawBytes)
+			if err != nil {
+				Logger.log.Error("ERROR OnUpdateSwap", leaderPbk, err)
+				return
+			}
+		}
+		cLeader += 1
+	}
+	if cLeader < common.TotalValidators / 2 {
+		Logger.log.Error("ERROR OnUpdateSwap not enough signatures")
+		return
+	}
+	//TODO update committee list
+	self.updateCommittee(msg.SealerPbk)
+
 	return
 }
