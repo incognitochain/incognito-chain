@@ -1365,6 +1365,9 @@ func (self RpcServer) handleGetCommitteeCandidateList(params interface{}, closeC
 
 func (self RpcServer) handleRetrieveCommiteeCandidate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	candidateInfo := self.config.BlockChain.GetCommitteCandidate(params.(string))
+	if candidateInfo == nil {
+		return nil, nil
+	}
 	result := jsonresult.RetrieveCommitteecCandidateResult{}
 	result.Init(candidateInfo)
 	return result, nil
