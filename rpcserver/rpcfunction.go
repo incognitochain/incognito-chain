@@ -53,7 +53,7 @@ var RpcHandler = map[string]commandHandler{
 	GetNumberOfCoinsAndBonds:           RpcServer.handleGetNumberOfCoinsAndBonds,
 	CreateActionParamsTransaction:      RpcServer.handleCreateActionParamsTransaction,
 	SendRegistrationCandidateCommittee: RpcServer.handleSendRegistrationCandidateCommittee,
-	CreateCustomTokenTransaction:       RpcServer.handleCreateCustomTokenTransaction,
+	CustomTokenTransaction:    				  RpcServer.handleCustomTokenTransaction,
 	GetMempoolInfo:                     RpcServer.handleGetMempoolInfo,
 
 	GetCommitteeCandidateList:  RpcServer.handleGetCommitteeCandidateList,
@@ -711,8 +711,8 @@ func (self RpcServer) handleSendRegistrationCandidateCommittee(params interface{
 	return txId, err
 }
 
-// handleCreateCustomTokenTransaction handle create a custom token command.
-func (self RpcServer) handleCreateCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+// handleCustomTokenTransaction handle create a custom token command.
+func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// all params
 	arrayParams := common.InterfaceSlice(params)
 
