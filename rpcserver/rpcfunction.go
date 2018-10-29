@@ -765,6 +765,7 @@ func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan
 		TxCustomTokenID: tokenParamsRaw["TokenHash"].(string),
 		TokenTxType:     tokenParamsRaw["TokenTxType"].(float64),
 		Amount:          tokenParamsRaw["TokenAmount"].(float64),
+		// Receiver:        tokenParamsRaw["TokenReceiver"].(string), TO-DO
 	}
 
 	// list unspent tx for estimation fee
