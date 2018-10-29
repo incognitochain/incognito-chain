@@ -135,10 +135,6 @@ func (self *Engine) OnCandidateVote() {
 
 }
 
-func (self *Engine) OnCandidateRequestTx() {
-
-}
-
 func (self *Engine) sendBlockMsg(block *blockchain.Block) {
 	blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
 	if err != nil {
