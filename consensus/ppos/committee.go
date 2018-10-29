@@ -2,6 +2,7 @@ package ppos
 
 import (
 	"errors"
+	"time"
 
 	"github.com/ninjadotorg/cash/common"
 	"github.com/ninjadotorg/cash/common/base58"
@@ -61,5 +62,18 @@ func (committee *committeeStruct) UpdateCommitteePoint(chainLeader string, valid
 	}
 	for validator := range committee.ValidatorReliablePts {
 		committee.ValidatorReliablePts[validator] += SigPointMin
+	}
+}
+
+func (self *Engine) CommitteeWatcher() {
+	self.cQuitCommitteeWatcher = make(chan struct{})
+	for {
+		select {
+		case <-self.cQuitCommitteeWatcher:
+			Logger.log.Info("Committee watcher stoppeds")
+			return
+		case <-time.After(CmWacherInterval * time.Second):
+
+		}
 	}
 }
