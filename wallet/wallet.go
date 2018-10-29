@@ -29,7 +29,7 @@ type WalletConfig struct {
 	IncrementalFee uint64
 }
 
-func (self *Wallet) Init(passPhrase string, numOfAccount uint32, name string) {
+func (self *Wallet) Init(passPhrase string, numOfAccount uint32, name string) (error) {
 	mnemonicGen := MnemonicGenerator{}
 	self.Name = name
 	self.Entropy, _ = mnemonicGen.NewEntropy(128)
@@ -37,7 +37,10 @@ func (self *Wallet) Init(passPhrase string, numOfAccount uint32, name string) {
 	self.Seed = mnemonicGen.NewSeed(self.Mnemonic, passPhrase)
 	self.PassPhrase = passPhrase
 
-	masterKey, _ := NewMasterKey(self.Seed)
+	masterKey, err := NewMasterKey(self.Seed)
+	if err != nil {
+		return err
+	}
 	self.MasterAccount = Account{
 		Key:   *masterKey,
 		Child: make([]Account, 0),

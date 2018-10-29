@@ -31,7 +31,11 @@ func createWallet() error {
 		IncrementalFee: 0,
 	}
 	if _, err := os.Stat(walletObj.Config.DataPath); os.IsNotExist(err) {
-		walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
+		err1 := walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
+		if err1 != nil {
+			log.Println(err)
+			return nil
+		}
 		walletObj.Save(cfg.WalletPassphrase)
 		log.Printf("Create wallet successfully with name: %s", cfg.WalletName)
 		return nil
