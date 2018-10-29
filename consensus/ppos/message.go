@@ -205,7 +205,7 @@ func (self *Engine) OnUpdateSwap(msg *wire.MessageUpdateSwap) {
 		return
 	}
 
-	//TODO versify signatures
+	//versify signatures
 	rawBytes := []byte{}
 	rawBytes = append(rawBytes, []byte(msg.RequesterPbk)...)
 	rawBytes = append(rawBytes, msg.ChainID)
