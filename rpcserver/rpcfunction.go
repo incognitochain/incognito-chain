@@ -842,7 +842,7 @@ func (self RpcServer) handleCreateCustomTokenTransaction(params interface{}, clo
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-
+	
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		// return hex for a new tx
