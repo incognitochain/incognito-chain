@@ -27,12 +27,12 @@ type Engine struct {
 	committeeMutex sync.Mutex
 
 	// channel
-	cQuit       chan struct{}
-	cQuitSealer chan struct{}
-	cBlockSig   chan blockSig
-	cSwapSig    chan swapSig
-	cQuitSwap   chan struct{}
-	cSwapChain  chan byte
+	cQuit                 chan struct{}
+	cQuitSealer           chan struct{}
+	cBlockSig             chan blockSig
+	cQuitSwap             chan struct{}
+	cSwapChain            chan byte
+	cQuitCommitteeWatcher chan struct{}
 
 	config                EngineConfig
 	knownChainsHeight     chainsHeight
@@ -69,7 +69,7 @@ type EngineConfig struct {
 	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server interface {
+	Server          interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -173,7 +173,7 @@ func (self *Engine) Start() error {
 					self.validatedChainsHeight.Lock()
 					self.validatedChainsHeight.Heights[chainID] = blockHeight
 					self.validatedChainsHeight.Unlock()
-					self.committee.UpdateCommittee(block.ChainLeader, block.Header.BlockCommitteeSigs)
+					self.committee.UpdateCommitteePoint(block.ChainLeader, block.Header.BlockCommitteeSigs)
 				}
 			}(chainID)
 		}
@@ -464,7 +464,7 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
 	self.validatedChainsHeight.Unlock()
 
-	self.committee.UpdateCommittee(block.ChainLeader, block.Header.BlockCommitteeSigs)
+	self.committee.UpdateCommitteePoint(block.ChainLeader, block.Header.BlockCommitteeSigs)
 }
 
 func (self *Engine) GetCndList(block *blockchain.Block) map[string]blockchain.CommitteeCandidateInfo {
@@ -654,4 +654,17 @@ func (self *Engine) updateCommittee(sealerPbk string, chanId byte) error {
 
 
 	return nil
+}
+
+func (self *Engine) CommitteeWatcher() {
+	self.cQuitCommitteeWatcher = make(chan struct{})
+	for {
+		select {
+		case <-self.cQuitCommitteeWatcher:
+			Logger.log.Info("Committee watcher stoppeds")
+			return
+		case <-time.After(CmWacherInterval * time.Second):
+
+		}
+	}
 }

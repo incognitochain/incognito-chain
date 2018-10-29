@@ -15,7 +15,7 @@ func (self *Engine) GetCommittee() []string {
 	return self.Committee
 }
 
-func (self *Engine) CheckCandidate() error {
+func (self *Engine) CheckCandidate(candidate string) error {
 	return nil
 }
 
@@ -49,16 +49,17 @@ func (self *Engine) getMyChain() byte {
 	return common.TotalValidators // nope, you're not in the committee
 }
 
-func (committee *committeeStruct) UpdateCommittee(chainLeader string, validatorSig []string) {
+func (committee *committeeStruct) UpdateCommitteePoint(chainLeader string, validatorSig []string) {
 	committee.Lock()
 	defer committee.Unlock()
 	committee.ValidatorBlkNum[chainLeader]++
+	committee.ValidatorReliablePts[chainLeader] += BlkPointAdd
 	for idx, sig := range validatorSig {
 		if sig != "" {
-			committee.ValidatorReliablePts[committee.CurrentCommittee[idx]]++
+			committee.ValidatorReliablePts[committee.CurrentCommittee[idx]] += SigPointAdd
 		}
 	}
 	for validator := range committee.ValidatorReliablePts {
-		committee.ValidatorReliablePts[validator]--
+		committee.ValidatorReliablePts[validator] += SigPointMin
 	}
 }
