@@ -9,12 +9,6 @@ import (
 	"github.com/ninjadotorg/cash/common"
 )
 
-const (
-	PriKeyType      = byte(0x0)
-	PubKeyType      = byte(0x1)
-	ReadonlyKeyType = byte(0x2)
-)
-
 // KeySet represents a bip32 extended Key
 type Key struct {
 	Depth       byte   // 1 bytes
@@ -26,7 +20,7 @@ type Key struct {
 // NewMasterKey creates a new master extended Key from a Seed
 func NewMasterKey(seed []byte) (*Key, error) {
 	// Generate Key and chaincode
-	hmac := hmac.New(sha512.New, []byte("Bitcoin Seed"))
+	hmac := hmac.New(sha512.New, []byte("Constant Seed"))
 	_, err := hmac.Write(seed)
 	if err != nil {
 		Logger.log.Error(err)
