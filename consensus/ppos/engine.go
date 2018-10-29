@@ -630,6 +630,11 @@ func (self *Engine) StartSwap() error {
 				err := self.updateCommittee(sealerPbk, chainId)
 				if err == nil {
 					// broadcast message for update new committee list
+					reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdUpdateSwap)
+					reqSigMsg.(*wire.MessageUpdateSwap).RequesterPbk = requesterPbk
+					reqSigMsg.(*wire.MessageUpdateSwap).ChainID = chainId
+					reqSigMsg.(*wire.MessageUpdateSwap).SealerPbk = sealerPbk
+					reqSigMsg.(*wire.MessageUpdateSwap).Signatures = signatureMap
 				} else {
 					Logger.log.Errorf("Update committee is error", err)
 				}

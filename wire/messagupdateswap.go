@@ -10,7 +10,6 @@ const (
 )
 
 type MessageUpdateSwap struct {
-	SenderID     string
 	RequesterPbk string
 	ChainID      byte
 	SealerPbk    string
