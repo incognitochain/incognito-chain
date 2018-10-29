@@ -161,9 +161,9 @@ func main() {
 	// tx.Type = "Normal"
 	// tx.LockTime = 123
 	// tx.Fee = 1234
-	// tx.SetTxId(tx.Hash())
+	// tx.SetTxID(tx.Hash())
 
-	// fmt.Printf("Hash tx: %s\n", tx.GetTxId())
+	// fmt.Printf("Hash tx: %s\n", tx.GetTxID())
 	// signed_tx, err := transaction.SignTx(tx, privKey)
 	// if err != nil {
 	// 	fmt.Printf("Error: %s", err)
@@ -177,7 +177,7 @@ func main() {
 	// fmt.Printf("Signature: %v\n", signed_tx.JSSig)
 	// fmt.Printf("Size of signature: %d\n", len(signed_tx.JSSig))
 
-	// fmt.Printf("Hash tx: %s\n", signed_tx.GetTxId())
+	// fmt.Printf("Hash tx: %s\n", signed_tx.GetTxID())
 	// res, _ := transaction.VerifySign(signed_tx)
 
 	// fmt.Println(res)
