@@ -44,7 +44,6 @@ var RpcHandler = map[string]commandHandler{
 	GetBlockChainInfo: RpcServer.handleGetBlockChainInfo,
 	GetBlockCount:     RpcServer.handleGetBlockCount,
 	GetBlockHash:      RpcServer.handleGetBlockHash,
-	/*"getblocktemplate":              RpcServer.handleGetBlockTemplate,*/
 
 	// transaction
 	ListTransactions:                   RpcServer.handleListTransactions,
@@ -53,8 +52,8 @@ var RpcHandler = map[string]commandHandler{
 	SendMany:                           RpcServer.handleSendMany,
 	GetNumberOfCoinsAndBonds:           RpcServer.handleGetNumberOfCoinsAndBonds,
 	CreateActionParamsTransaction:      RpcServer.handleCreateActionParamsTransaction,
-  SendRegistrationCandidateCommittee: RpcServer.handleSendRegistrationCandidateCommittee,
-  CreateCustomTokenTransaction:       RpcServer.handleCreateCustomTokenTransaction,
+	SendRegistrationCandidateCommittee: RpcServer.handleSendRegistrationCandidateCommittee,
+	CreateCustomTokenTransaction:       RpcServer.handleCreateCustomTokenTransaction,
 	GetMempoolInfo:                     RpcServer.handleGetMempoolInfo,
 
 	GetCommitteeCandidateList:  RpcServer.handleGetCommitteeCandidateList,
@@ -714,7 +713,7 @@ func (self RpcServer) handleSendRegistrationCandidateCommittee(params interface{
 
 // handleCreateCustomTokenTransaction handle create a custom token command.
 func (self RpcServer) handleCreateCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-  // all params
+	// all params
 	arrayParams := common.InterfaceSlice(params)
 
 	// param #1: private key of sender
@@ -756,18 +755,17 @@ func (self RpcServer) handleCreateCustomTokenTransaction(params interface{}, clo
 	nodeAddr := arrayParams[4].(string)
 	if valid := common.ValidateNodeAddress(nodeAddr); !valid {
 		return nil, errors.New("node address is wrong")
-  }
-  
-  // param #5: token params
-  tokenParamsRaw := arrayParams[5].(map[string]interface{})
-  tokenParams := &transaction.CustomTokenParamTx{
+	}
+
+	// param #5: token params
+	tokenParamsRaw := arrayParams[5].(map[string]interface{})
+	tokenParams := &transaction.CustomTokenParamTx{
 		PropertyName:    tokenParamsRaw["TokenName"].(string),
 		PropertySymbol:  tokenParamsRaw["TokenSymbol"].(string),
 		TxCustomTokenID: tokenParamsRaw["TokenHash"].(string),
 		TokenTxType:     tokenParamsRaw["TokenTxType"].(float64),
 		Amount:          tokenParamsRaw["TokenAmount"].(float64),
 	}
-
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
@@ -839,12 +837,12 @@ func (self RpcServer) handleCreateCustomTokenTransaction(params interface{}, clo
 		commitmentsDb,
 		realFee,
 		common.AssetTypeCoin,
-    chainIdSender,
-    tokenParams)
+		chainIdSender,
+		tokenParams)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
-  }
-  
+	}
+
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		// return hex for a new tx
