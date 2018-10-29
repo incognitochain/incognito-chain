@@ -32,6 +32,7 @@ type Engine struct {
 	cBlockSig             chan blockSig
 	cQuitSwap             chan struct{}
 	cSwapChain            chan byte
+	cSwapSig              chan swapSig
 	cQuitCommitteeWatcher chan struct{}
 
 	config                EngineConfig
