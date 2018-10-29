@@ -69,7 +69,7 @@ type EngineConfig struct {
 	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server          interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -651,7 +651,6 @@ func (self *Engine) updateCommittee(sealerPbk string, chanId byte) error {
 	self.Committee = append(committee[:chanId], sealerPbk)
 	self.Committee = append(self.Committee, committee[chanId+1:]...)
 	//TODO remove sealerPbk from candidate list
-
 
 	return nil
 }
