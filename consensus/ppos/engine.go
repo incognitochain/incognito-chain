@@ -533,14 +533,18 @@ func (self *Engine) StartSwap() error {
 				copy(committee, self.GetCommittee())
 
 				requesterPbk := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
-				// TODO get first public key from candidate list and check available node
-				sealerPbk := "abc"
-				//peerIDs := self.config.Server.GetPeerIDsFromPublicKey(sealerPbk)
-				//if len(peerIDs) == 0 {
-				//	continue
-				//}
-				// TODO check public key is connected
-
+				committeeCandidateList := self.config.BlockChain.GetCommitteeCandidateList()
+				sealerPbk := ""
+				for _, committeeCandidatePbk := range committeeCandidateList {
+					peerIDs := self.config.Server.GetPeerIDsFromPublicKey(committeeCandidatePbk)
+					if len(peerIDs) == 0 {
+						continue
+					}
+					sealerPbk = committeeCandidatePbk
+				}
+				if sealerPbk == "" {
+					continue
+				}
 				signatureMap := make(map[string]string)
 
 			BeginSwap:
@@ -651,7 +655,11 @@ func (self *Engine) updateCommittee(sealerPbk string, chanId byte) error {
 	}
 	self.Committee = append(committee[:chanId], sealerPbk)
 	self.Committee = append(self.Committee, committee[chanId+1:]...)
-	//TODO remove sealerPbk from candidate list
+	//remove sealerPbk from candidate list
+	for chainId, bestState := range self.config.BlockChain.BestState {
+		bestState.RemoveCandidate(sealerPbk)
+		self.config.BlockChain.StoreBestState(byte(chainId))
+	}
 
 	return nil
 }

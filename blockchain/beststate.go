@@ -63,3 +63,10 @@ func (self *BestState) Update(block *Block) {
 		self.Candidates = make(map[string]CommitteeCandidateInfo)
 	}
 }
+
+func (self *BestState) RemoveCandidate(sealerPbk string) {
+	_, ok := self.Candidates[sealerPbk]
+	if ok {
+		delete(self.Candidates, sealerPbk)
+	}
+}

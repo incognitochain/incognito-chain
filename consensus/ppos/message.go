@@ -148,6 +148,11 @@ func (self *Engine) sendBlockMsg(block *blockchain.Block) {
 func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 	Logger.log.Info("Received a MessageRequestSwap")
 
+	peerIDs := self.config.Server.GetPeerIDsFromPublicKey(msg.SealerPbk)
+	if len(peerIDs) == 0 {
+		return
+	}
+
 	senderID := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 
 	rawBytes := []byte{}

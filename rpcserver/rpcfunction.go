@@ -1505,7 +1505,7 @@ func (self RpcServer) handleCreateSealerKeySet(params interface{}, closeChan <-c
 
 func (self RpcServer) handleGetCommitteeCandidateList(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// param #1: private key of sender
-	cndList := self.config.BlockChain.GetCommitteeCandateList()
+	cndList := self.config.BlockChain.GetCommitteeCandidateList()
 	return cndList, nil
 }
 

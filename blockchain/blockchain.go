@@ -849,7 +849,7 @@ func (self *BlockChain) GetCommitteCandidate(pubkeyParam string) (*CommitteeCand
 /*
 Get Candidate List from all chain and merge all to one - return pubkey of them
 */
-func (self *BlockChain) GetCommitteeCandateList() ([]string) {
+func (self *BlockChain) GetCommitteeCandidateList() ([]string) {
 	candidatePubkeyList := []string{}
 	for _, bestState := range self.BestState {
 		for pubkey, _ := range bestState.Candidates {
