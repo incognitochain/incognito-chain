@@ -3,7 +3,6 @@ package addrmanager
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"sync"
@@ -14,60 +13,40 @@ import (
 	"github.com/ninjadotorg/cash/peer"
 )
 
-type localAddress struct {
-	na    *peer.Peer
-	score AddressPriority
-}
-
 // AddressPriority type is used to describe the hierarchy of local address
 // discovery methods.
 type AddressPriority int
 
 type AddrManager struct {
-	mtx        sync.Mutex
-	peersFile  string
-	lookupFunc func(string) ([]string, error)
-	rand       *rand.Rand
-	key        [32]byte
-	started    int32
-	shutdown   int32
-	waitgroup  sync.WaitGroup
-	quit       chan struct{}
-	nTried     int
-	nNew       int
+	mtx       sync.Mutex
+	peersFile string
+	key       [32]byte
+	started   int32
+	shutdown  int32
+	waitgroup sync.WaitGroup
+
+	cQuit chan struct{}
 
 	addrIndex map[string]*peer.Peer // address key to KnownAddress for all addrs.
-
-	localAddresses map[string]*localAddress
 }
 
 type serializedKnownAddress struct {
-	Addr        string
-	Src         string
-	PublicKey   string
-	Attempts    int
-	TimeStamp   int64
-	LastAttempt int64
-	LastSuccess int64
-	// no refcount or tried, that is available from context.
+	Addr      string
+	Src       string
+	PublicKey string
 }
 
 type serializedAddrManager struct {
-	Version      int
-	Key          [32]byte
-	Addresses    []*serializedKnownAddress
-	NewBuckets   [newBucketCount][]string // string is NetAddressKey
-	TriedBuckets [triedBucketCount][]string
+	Version   int
+	Key       [32]byte
+	Addresses []*serializedKnownAddress
 }
 
-func New(dataDir string, lookupFunc func(string) ([]string, error)) *AddrManager {
+func New(dataDir string) *AddrManager {
 	addrManager := AddrManager{
-		peersFile:      filepath.Join(dataDir, "peer.json"),
-		lookupFunc:     lookupFunc,
-		rand:           rand.New(rand.NewSource(time.Now().UnixNano())),
-		quit:           make(chan struct{}),
-		localAddresses: make(map[string]*localAddress),
-		mtx:            sync.Mutex{},
+		peersFile: filepath.Join(dataDir, "peer.json"),
+		cQuit:     make(chan struct{}),
+		mtx:       sync.Mutex{},
 	}
 	addrManager.reset()
 	return &addrManager
@@ -76,8 +55,6 @@ func New(dataDir string, lookupFunc func(string) ([]string, error)) *AddrManager
 // savePeers saves all the known addresses to a file so they can be read back
 // in at next run.
 func (self *AddrManager) savePeers() {
-	//self.mtx.Lock()
-	//defer self.mtx.Unlock()
 
 	if len(self.addrIndex) == 0 {
 		return
@@ -169,7 +146,7 @@ func (self *AddrManager) deserializePeers(filePath string) error {
 		return fmt.Errorf("error reading %s: %+v", filePath, err)
 	}
 
-	if sam.Version != 1 {
+	if sam.Version != Version {
 		return fmt.Errorf("unknown version %+v in serialized "+
 			"addrmanager", sam.Version)
 	}
@@ -214,7 +191,7 @@ func (self *AddrManager) Stop() error {
 	}
 
 	Logger.log.Infof("Address manager shutting down")
-	close(self.quit)
+	close(self.cQuit)
 	self.waitgroup.Wait()
 	return nil
 }
@@ -222,7 +199,7 @@ func (self *AddrManager) Stop() error {
 // addressHandler is the main handler for the address manager.  It must be run
 // as a goroutine.
 func (self *AddrManager) addressHandler() {
-	dumpAddressTicker := time.NewTicker(dumpAddressInterval)
+	dumpAddressTicker := time.NewTicker(DumpAddressInterval)
 	defer dumpAddressTicker.Stop()
 out:
 	for {
@@ -230,7 +207,7 @@ out:
 		case <-dumpAddressTicker.C:
 			self.savePeers()
 
-		case <-self.quit:
+		case <-self.cQuit:
 			break out
 		}
 	}
@@ -247,15 +224,6 @@ func (self *AddrManager) Good(addr *peer.Peer) {
 	defer self.mtx.Unlock()
 
 	self.addrIndex[addr.RawAddress] = addr
-}
-
-func (self *AddrManager) AddAddresses(addr []*peer.Peer) {
-	self.mtx.Lock()
-	defer self.mtx.Unlock()
-
-	for _, peer := range addr {
-		self.addrIndex[peer.RawAddress] = peer
-	}
 }
 
 func (self *AddrManager) AddAddressesStr(addrs []string) {
@@ -286,12 +254,4 @@ func (self *AddrManager) AddressCache() []*peer.Peer {
 		allAddr = append(allAddr, v)
 	}
 	return allAddr
-}
-
-func (self *AddrManager) ExistedAddr(addr string) bool {
-	self.mtx.Lock()
-	defer self.mtx.Unlock()
-
-	_, ok := self.addrIndex[addr]
-	return ok
 }
