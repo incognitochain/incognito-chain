@@ -43,11 +43,11 @@ func (tx *TxVoting) GetValue() uint64 {
 	return val
 }
 
-func (tx *TxVoting) SetTxId(txId *common.Hash) {
+func (tx *TxVoting) SetTxID(txId *common.Hash) {
 	tx.Tx.txId = txId
 }
 
-func (tx *TxVoting) GetTxId() *common.Hash {
+func (tx *TxVoting) GetTxID() *common.Hash {
 	return tx.Tx.txId
 }
 
@@ -102,7 +102,7 @@ func (tx *TxVoting) GetTxVirtualSize() uint64 {
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
 	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(max(1, len(tx.Descs))) * EstimateJSDescSize()
+	var sizeDescs = uint64(max(1, len(tx.Tx.Descs))) * EstimateJSDescSize()
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
 	var sizeNodeAddr uint64 = 8  // string
@@ -372,8 +372,8 @@ func SignTxVoting(tx *TxVoting) (*TxVoting, error) {
 	}
 
 	// Hash transaction
-	tx.SetTxId(tx.Hash())
-	hash := tx.GetTxId()
+	tx.SetTxID(tx.Hash())
+	hash := tx.GetTxID()
 	data := make([]byte, common.HashSize)
 	copy(data, hash[:])
 
@@ -408,7 +408,7 @@ func VerifySignVotingTx(tx *TxVoting) (bool, error) {
 	ecdsaSignature.S = new(big.Int).SetBytes(tx.Tx.JSSig[32:64])
 
 	// Hash origin transaction
-	hash := tx.GetTxId()
+	hash := tx.GetTxID()
 	data := make([]byte, common.HashSize)
 	copy(data, hash[:])
 

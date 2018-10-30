@@ -34,6 +34,7 @@ type Engine struct {
 	cSwapChain            chan byte
 	cSwapSig              chan swapSig
 	cQuitCommitteeWatcher chan struct{}
+	cNewBlock             chan blockchain.Block
 
 	config                EngineConfig
 	knownChainsHeight     chainsHeight
@@ -47,7 +48,6 @@ type Engine struct {
 type committeeStruct struct {
 	ValidatorBlkNum      map[string]int //track the number of block created by each validator
 	ValidatorReliablePts map[string]int //track how reliable is the validator node
-	UpcomingCommittee    []string
 	CurrentCommittee     []string
 	sync.Mutex
 }
@@ -70,7 +70,7 @@ type EngineConfig struct {
 	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server interface {
+	Server          interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -113,19 +113,18 @@ func (self *Engine) Start() error {
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
 	self.knownChainsHeight.Heights = make([]int, common.TotalValidators)
 	self.validatedChainsHeight.Heights = make([]int, common.TotalValidators)
+
 	self.committee.ValidatorBlkNum = make(map[string]int)
 	self.committee.ValidatorReliablePts = make(map[string]int)
-	self.committee.UpcomingCommittee = make([]string, common.TotalValidators)
 	self.committee.CurrentCommittee = make([]string, common.TotalValidators)
 
 	for chainID := 0; chainID < common.TotalValidators; chainID++ {
 		self.knownChainsHeight.Heights[chainID] = int(self.config.BlockChain.BestState[chainID].Height)
 		self.validatedChainsHeight.Heights[chainID] = 1
-	}
 
-	Logger.log.Info("Validating local blockchain...")
+	}
 	copy(self.committee.CurrentCommittee, self.config.ChainParams.GenesisBlock.Header.Committee)
-	copy(self.committee.UpcomingCommittee, self.committee.CurrentCommittee)
+	Logger.log.Info("Validating local blockchain...")
 
 	if _, ok := self.config.FeeEstimator[0]; !ok {
 		// happen when FastMode = false
@@ -233,6 +232,8 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 
 	self.cQuitSealer = make(chan struct{})
 	self.cBlockSig = make(chan blockSig)
+	self.cNewBlock = make(chan blockchain.Block)
+
 	self.sealerStarted = true
 	Logger.log.Info("Starting sealer with public key: " + base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)))
 
@@ -549,7 +550,7 @@ func (self *Engine) StartSwap() error {
 
 			BeginSwap:
 
-			// Collect signatures of other validators
+				// Collect signatures of other validators
 				cancel := make(chan struct{})
 				go func(requesterPbk string, chainId byte, sealerPbk string) {
 					for {
@@ -667,17 +668,4 @@ func (self *Engine) updateCommittee(sealerPbk string, chanId byte) error {
 	}
 
 	return nil
-}
-
-func (self *Engine) CommitteeWatcher() {
-	self.cQuitCommitteeWatcher = make(chan struct{})
-	for {
-		select {
-		case <-self.cQuitCommitteeWatcher:
-			Logger.log.Info("Committee watcher stoppeds")
-			return
-		case <-time.After(CmWacherInterval * time.Second):
-
-		}
-	}
 }
