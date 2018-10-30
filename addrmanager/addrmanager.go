@@ -19,7 +19,7 @@ type AddrManager struct {
 	key       [32]byte
 	started   int32
 	shutdown  int32
-	waitgroup sync.WaitGroup
+	waitGroup sync.WaitGroup
 
 	cQuit chan struct{}
 
@@ -142,8 +142,7 @@ func (self *AddrManager) deserializePeers(filePath string) error {
 	}
 
 	if sam.Version != Version {
-		return fmt.Errorf("unknown version %+v in serialized "+
-			"addrmanager", sam.Version)
+		return fmt.Errorf("unknown version %+v in serialized addrmanager", sam.Version)
 	}
 	copy(self.key[:], sam.Key[:])
 
@@ -172,7 +171,7 @@ func (self *AddrManager) Start() {
 	// Load peers we already know about from file.
 	self.loadPeers()
 	// Start the address ticker to save addresses periodically.
-	self.waitgroup.Add(1)
+	self.waitGroup.Add(1)
 	go self.addressHandler()
 
 }
@@ -180,14 +179,13 @@ func (self *AddrManager) Start() {
 // Stop gracefully shuts down the address manager by stopping the main handler.
 func (self *AddrManager) Stop() error {
 	if atomic.AddInt32(&self.shutdown, 1) != 1 {
-		Logger.log.Infof("Address manager is already in the process of " +
-			"shutting down")
+		Logger.log.Infof("Address manager is already in the process of shutting down")
 		return nil
 	}
 
 	Logger.log.Infof("Address manager shutting down")
 	close(self.cQuit)
-	self.waitgroup.Wait()
+	self.waitGroup.Wait()
 	return nil
 }
 
@@ -207,7 +205,7 @@ out:
 		}
 	}
 	self.savePeers()
-	self.waitgroup.Done()
+	self.waitGroup.Done()
 	Logger.log.Infof("Address handler done")
 }
 
