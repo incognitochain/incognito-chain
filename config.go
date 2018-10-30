@@ -67,7 +67,6 @@ type config struct {
 	MaxInPeers           int      `long:"maxinpeers" description:"Max number of inbound peers"`
 	DiscoverPeers        bool     `long:"discoverpeers" description:"Enable discover peers"`
 	DiscoverPeersAddress string   `long:"discoverpeersaddress" description:"Url to connect discover peers server"`
-	DisableBanning       bool     `long:"nobanning" description:"Disable banning of misbehaving peers"`
 	RPCDisableAuth       bool     `long:"norpcauth" description:"Disable RPC authorization by username/password"`
 	RPCUser              string   `short:"u" long:"rpcuser" description:"Username for RPC connections"`
 	RPCPass              string   `short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`
