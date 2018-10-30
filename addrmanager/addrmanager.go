@@ -13,10 +13,6 @@ import (
 	"github.com/ninjadotorg/cash/peer"
 )
 
-// AddressPriority type is used to describe the hierarchy of local address
-// discovery methods.
-type AddressPriority int
-
 type AddrManager struct {
 	mtx       sync.Mutex
 	peersFile string
@@ -54,10 +50,10 @@ func New(dataDir string) *AddrManager {
 
 // savePeers saves all the known addresses to a file so they can be read back
 // in at next run.
-func (self *AddrManager) savePeers() {
+func (self *AddrManager) savePeers() error {
 
 	if len(self.addrIndex) == 0 {
-		return
+		return nil
 	}
 
 	sam := new(serializedAddrManager)
@@ -80,14 +76,15 @@ func (self *AddrManager) savePeers() {
 	w, err := os.Create(self.peersFile)
 	if err != nil {
 		Logger.log.Infof("Error opening file %s: %+v", self.peersFile, err)
-		return
+		return NewAddrManagerError(UnexpectedError, err)
 	}
 	enc := json.NewEncoder(w)
 	defer w.Close()
 	if err := enc.Encode(&sam); err != nil {
 		Logger.log.Infof("Failed to encode file %s: %+v", self.peersFile, err)
-		return
+		return NewAddrManagerError(UnexpectedError, err)
 	}
+	return nil
 }
 
 // loadPeers loads the known address from the saved file.  If empty, missing, or
@@ -101,11 +98,9 @@ func (self *AddrManager) loadPeers() {
 		// if it is invalid we nuke the old one unconditionally.
 		err = os.Remove(self.peersFile)
 		if err != nil {
-			Logger.log.Infof("Failed to remove corrupt peers file %s: %+v",
-				self.peersFile, err)
+			Logger.log.Infof("Failed to remove corrupt peers file %s: %+v", self.peersFile, err)
 		}
 		self.reset()
-		return
 	}
 	Logger.log.Infof("Loaded %d addresses from file '%s'", self.numAddresses(), self.peersFile)
 }
