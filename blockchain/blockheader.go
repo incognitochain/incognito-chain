@@ -5,7 +5,7 @@ import (
 )
 
 type GovernanceParams struct {
-	BasicSalary uint64
+	SalaryPerTx uint64
 }
 
 type BlockHeader struct {

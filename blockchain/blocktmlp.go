@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/ninjadotorg/cash/common"
@@ -19,15 +18,17 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	var txsToAdd []transaction.Transaction
 	var txToRemove []transaction.Transaction
 	// var actionParamTxs []*transaction.ActionParamTx
-	var feeMap = map[string]uint64{
-		fmt.Sprintf(common.AssetTypeCoin):     0,
-		fmt.Sprintf(common.AssetTypeBond):     0,
-		fmt.Sprintf(common.AssetTypeGovToken): 0,
-		fmt.Sprintf(common.AssetTypeDcbToken): 0,
-	}
+	// var feeMap = map[string]uint64{
+	// 	fmt.Sprintf(common.AssetTypeCoin):     0,
+	// 	fmt.Sprintf(common.AssetTypeBond):     0,
+	// 	fmt.Sprintf(common.AssetTypeGovToken): 0,
+	// 	fmt.Sprintf(common.AssetTypeDcbToken): 0,
+	// }
+	totalFee := uint64(0)
 
-	// Get reward from basic salary
-	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
+	// Get salary per tx
+	salaryPerTx := blockgen.chain.BestState[chainID].BestBlock.Header.GovernanceParams.SalaryPerTx
+	// basicSalary := blockgen.rewardAgent.GetBasicSalary()
 
 	if len(sourceTxns) < common.MinTxsInBlock {
 		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
@@ -55,21 +56,21 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 			txToRemove = append(txToRemove, transaction.Transaction(tx))
 			continue
 		}
-		txType := tx.GetType()
-		txFee := uint64(0)
-		switch txType {
-		case common.TxActionParamsType:
-			// actionParamTxs = append(actionParamTxs, tx.(*transaction.ActionParamTx))
-			continue
-		case common.TxCustomTokenType:
-			txFee = tx.(*transaction.TxCustomToken).Fee
-		case common.TxVotingType:
-			txFee = tx.(*transaction.TxVoting).Fee
-		case common.TxSalaryType:
-		case common.TxNormalType:
-			txFee = tx.(*transaction.Tx).Fee
-		}
-		feeMap[txType] += txFee
+		// txType := tx.GetType()
+		// txFee := uint64(0)
+		// switch txType {
+		// case common.TxActionParamsType:
+		// 	// actionParamTxs = append(actionParamTxs, tx.(*transaction.ActionParamTx))
+		// 	continue
+		// case common.TxCustomTokenType:
+		// 	txFee = tx.(*transaction.TxCustomToken).Fee
+		// case common.TxVotingType:
+		// 	txFee = tx.(*transaction.TxVoting).Fee
+		// case common.TxSalaryType:
+		// case common.TxNormalType:
+		// 	txFee = tx.(*transaction.Tx).Fee
+		// }
+		totalFee += tx.GetTxFee()
 		txsToAdd = append(txsToAdd, tx)
 		if len(txsToAdd) == common.MaxTxsInBlock {
 			break
@@ -86,8 +87,25 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	}
 
 concludeBlock:
+	// Get blocksalary fund from txs
+	salaryFundAdd := uint64(0)
+	salaryMULTP := uint64(0)
+	for _, blockTx := range txsToAdd {
+		if blockTx.GetType() == common.TxVotingType {
+			tx, ok := blockTx.(*transaction.TxVoting)
+			if !ok {
+				Logger.log.Error("Transaction not recognized to store in database")
+				continue
+			}
+			salaryFundAdd += tx.GetValue()
+		}
+		if blockTx.GetTxFee() > 0 {
+			salaryMULTP++
+		}
+	}
+
 	rt := blockgen.chain.BestState[chainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
-	salaryTx, err := createSalaryTx(basicSalary, &payToAddress, rt, chainID)
+	salaryTx, err := createSalaryTx(salaryMULTP*salaryPerTx, &payToAddress, rt, chainID)
 	if err != nil {
 		return nil, err
 	}
@@ -96,19 +114,6 @@ concludeBlock:
 
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
-
-	// Get basicSalary fund from txs
-	salaryFund := uint64(0)
-	for _, blockTx := range txsToAdd {
-		if blockTx.GetType() == common.TxVotingType {
-			tx, ok := blockTx.(*transaction.TxVoting)
-			if !ok {
-				Logger.log.Error("Transaction not recognized to store in database")
-				continue
-			}
-			salaryFund += tx.GetValue()
-		}
-	}
 
 	block := Block{}
 	currentSalaryFund := blockgen.chain.BestState[chainID].BestBlock.Header.SalaryFund
@@ -121,7 +126,7 @@ concludeBlock:
 		BlockCommitteeSigs:    make([]string, common.TotalValidators),
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
-		SalaryFund:            currentSalaryFund - basicSalary + feeMap[common.AssetTypeCoin] + salaryFund,
+		SalaryFund:            currentSalaryFund - (salaryMULTP * salaryPerTx) + totalFee + salaryFundAdd,
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
@@ -181,7 +186,7 @@ type TxPool interface {
 }
 
 type RewardAgent interface {
-	GetBasicSalary(chainID byte) uint64
+	// GetSalaryPerTx() uint64
 }
 
 func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent) (*BlkTmplGenerator, error) {
@@ -191,40 +196,6 @@ func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent 
 		rewardAgent: rewardAgent,
 	}, nil
 }
-
-/* TODO:
-func extractTxsAndComputeInitialFees(txDescs []*transaction.TxDesc) (
-	[]transaction.Transaction,
-	[]*transaction.ActionParamTx,
-	map[string]uint64,
-) {
-	var txs []transaction.Transaction
-	var actionParamTxs []*transaction.ActionParamTx
-	var feeMap = map[string]uint64{
-		fmt.Sprintf(common.AssetTypeCoin):     0,
-		fmt.Sprintf(common.AssetTypeBond):     0,
-		fmt.Sprintf(common.AssetTypeGovToken): 0,
-		fmt.Sprintf(common.AssetTypeDcbToken): 0,
-	}
-	for _, txDesc := range txDescs {
-		tx := txDesc.Tx
-		txs = append(txs, tx)
-		txType := tx.GetType()
-		txFee := uint64(0)
-		switch txType {
-		case common.TxActionParamsType:
-			actionParamTxs = append(actionParamTxs, tx.(*transaction.ActionParamTx))
-			continue
-		case common.TxVotingType:
-			txFee = tx.(*transaction.TxVoting).Fee
-		case common.TxNormalType:
-			txFee = tx.(*transaction.Tx).Fee
-		}
-		normalTx, _ := tx.(*transaction.Tx)
-		feeMap[normalTx.Descs[0].Type] += txFee
-	}
-	return txs, actionParamTxs, feeMap
-}*/
 
 // createSalaryTx
 // Blockchain use this tx to pay a reward(salary) to miner of chain
