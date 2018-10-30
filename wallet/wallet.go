@@ -29,7 +29,7 @@ type WalletConfig struct {
 	IncrementalFee uint64
 }
 
-func (self *Wallet) Init(passPhrase string, numOfAccount uint32, name string) (error) {
+func (self *Wallet) Init(passPhrase string, numOfAccount uint32, name string) error {
 	mnemonicGen := MnemonicGenerator{}
 	self.Name = name
 	self.Entropy, _ = mnemonicGen.NewEntropy(128)
@@ -166,7 +166,7 @@ func (self *Wallet) LoadWallet(password string) error {
 	return nil
 }
 
-func (self *Wallet) DumpPrivkey(addressP string) (KeySerializedData) {
+func (self *Wallet) DumpPrivkey(addressP string) KeySerializedData {
 	for _, account := range self.MasterAccount.Child {
 		address := account.Key.Base58CheckSerialize(PubKeyType)
 		if address == addressP {
@@ -179,7 +179,7 @@ func (self *Wallet) DumpPrivkey(addressP string) (KeySerializedData) {
 	return KeySerializedData{}
 }
 
-func (self *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
+func (self *Wallet) GetAccountAddress(accountParam string) KeySerializedData {
 	for _, account := range self.MasterAccount.Child {
 		if account.Name == accountParam {
 			key := KeySerializedData{
@@ -197,7 +197,7 @@ func (self *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
 	return key
 }
 
-func (self *Wallet) GetAddressesByAccount(accountParam string) ([]KeySerializedData) {
+func (self *Wallet) GetAddressesByAccount(accountParam string) []KeySerializedData {
 	result := make([]KeySerializedData, 0)
 	for _, account := range self.MasterAccount.Child {
 		if account.Name == accountParam {
