@@ -53,7 +53,7 @@ var RpcHandler = map[string]commandHandler{
 	GetNumberOfCoinsAndBonds:           RpcServer.handleGetNumberOfCoinsAndBonds,
 	CreateActionParamsTransaction:      RpcServer.handleCreateActionParamsTransaction,
 	SendRegistrationCandidateCommittee: RpcServer.handleSendRegistrationCandidateCommittee,
-	CustomTokenTransaction:    				  RpcServer.handleCustomTokenTransaction,
+	CustomTokenTransaction:             RpcServer.handleCustomTokenTransaction,
 	GetMempoolInfo:                     RpcServer.handleGetMempoolInfo,
 
 	GetCommitteeCandidateList:  RpcServer.handleGetCommitteeCandidateList,
@@ -559,10 +559,10 @@ func (self RpcServer) handleCreateRegistrationCandidateCommittee(params interfac
 	receiversParam := int64(arrayParams[1].(float64))
 	paymentInfos := []*client.PaymentInfo{
 		&client.PaymentInfo{
-			Amount: uint64(receiversParam),
+			Amount: common.ConstantToMiliConstant(uint64(receiversParam)),
 		},
 	}
-	totalAmmount = receiversParam
+	totalAmmount = int64(common.ConstantToMiliConstant(uint64(receiversParam)))
 
 	// param #3: estimation fee coin per kb
 	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
@@ -843,7 +843,7 @@ func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	
+
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		// return hex for a new tx
@@ -888,7 +888,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		paymentInfo := &client.PaymentInfo{
-			Amount:         uint64(amount.(float64)),
+			Amount:         common.ConstantToMiliConstant(uint64(amount.(float64))),
 			PaymentAddress: receiverPubKey.KeySet.PublicKey,
 		}
 		totalAmmount += int64(paymentInfo.Amount)
