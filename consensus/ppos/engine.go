@@ -252,7 +252,7 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 				if self.started {
 					if common.IntArrayEquals(self.knownChainsHeight.Heights, self.validatedChainsHeight.Heights) {
 						chainID := self.getMyChain()
-						if chainID >= 0 {
+						if chainID >= 0 && chainID < common.TotalValidators {
 							Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
 							Logger.log.Info("Current chainsHeight")
 							Logger.log.Info(self.validatedChainsHeight.Heights)
@@ -532,8 +532,8 @@ func (self *Engine) StartSwap() error {
 
 				allSigReceived := make(chan struct{})
 				retryTime := 0
-				committee := make([]string, common.TotalValidators)
-				copy(committee, self.GetCommittee())
+
+				committee := self.GetCommittee()
 
 				requesterPbk := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 

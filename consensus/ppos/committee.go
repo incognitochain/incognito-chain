@@ -10,7 +10,11 @@ import (
 )
 
 func (self *Engine) GetCommittee() []string {
-	return self.committee.CurrentCommittee
+	self.committee.Lock()
+	defer self.committee.Unlock()
+	committee := make([]string, common.TotalValidators)
+	copy(committee, self.committee.CurrentCommittee)
+	return committee
 }
 
 func (self *Engine) CheckCandidate(candidate string) error {
@@ -97,11 +101,11 @@ func (self *Engine) updateCommittee(sealerPbk string, chanId byte) error {
 	defer self.committee.Unlock()
 
 	committee := make([]string, common.TotalValidators)
-	copy(committee, self.GetCommittee())
+	copy(committee, self.committee.CurrentCommittee)
 
 	idx := common.IndexOfStr(sealerPbk, committee)
 	if idx >= 0 {
-		return errors.New("committee is swapped")
+		return errors.New("pbk is existed on committee list")
 	}
 	currentCommittee := make([]string, common.TotalValidators)
 	currentCommittee = append(committee[:chanId], sealerPbk)

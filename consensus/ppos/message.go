@@ -153,8 +153,7 @@ func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 		return
 	}
 
-	committee := make([]string, common.TotalValidators)
-	copy(committee, self.GetCommittee())
+	committee := self.GetCommittee()
 
 	if common.IndexOfStr(msg.RequesterPbk, committee) < 0 {
 		Logger.log.Error("ERROR OnRequestSwap is not existed committee")
@@ -222,8 +221,7 @@ func (self *Engine) OnUpdateSwap(msg *wire.MessageUpdateSwap) {
 		return
 	}
 
-	committee := make([]string, common.TotalValidators)
-	copy(committee, self.GetCommittee())
+	committee := self.GetCommittee()
 
 	if common.IndexOfStr(msg.SealerPbk, committee) >= 0 {
 		Logger.log.Error("ERROR OnUpdateSwap is existed committee")
@@ -238,8 +236,10 @@ func (self *Engine) OnUpdateSwap(msg *wire.MessageUpdateSwap) {
 			err := cashec.ValidateDataB58(leaderPbk, leaderSig, rawBytes)
 			if err != nil {
 				Logger.log.Error("ERROR OnUpdateSwap", leaderPbk, err)
-				return
+				continue
 			}
+		} else {
+			continue
 		}
 		cLeader += 1
 	}
