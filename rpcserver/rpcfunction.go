@@ -735,13 +735,8 @@ func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan
 	// param #3: estimation fee coin per kb by numblock
 	numBlock := uint32(arrayParams[2].(float64))
 
-	nodeAddr := arrayParams[3].(string)
-	if valid := common.ValidateNodeAddress(nodeAddr); !valid {
-		return nil, errors.New("node address is wrong")
-	}
-
 	// param #4: token params
-	tokenParamsRaw := arrayParams[4].(map[string]interface{})
+	tokenParamsRaw := arrayParams[3].(map[string]interface{})
 
 	tokenParams := &transaction.CustomTokenParamTx{
 		PropertyName:    tokenParamsRaw["TokenName"].(string),
@@ -752,7 +747,7 @@ func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan
 		Receivers:       transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"]),
 	}
 
-	totalAmmount := int64(0)
+	totalAmmount := estimateFeeCoinPerKb
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
