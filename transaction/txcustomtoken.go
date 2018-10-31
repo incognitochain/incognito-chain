@@ -3,10 +3,8 @@ package transaction
 import (
 	"bytes"
 	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"fmt"
-	"hash"
 	"math"
 	"math/big"
 	"sort"
@@ -26,20 +24,20 @@ type TxTokenVin struct {
 
 // TxTokenVout ...
 type TxTokenVout struct {
-	Value       uint64
+	Value       float64
 	ScripPubKey string
 }
 
 // TxToken ...
 type TxToken struct {
-	Version         byte
-	Type            byte
+	Version         float64
+	Type            float64
 	PropertyName    string
 	PropertySymbol  string
 	Vin             []TxTokenVin
 	Vout            []TxTokenVout
-	TxCustomTokenID hash.Hash
 	Amount          float64
+	TxCustomTokenID common.Hash
 }
 
 // TxCustomToken ...
@@ -49,6 +47,7 @@ type TxCustomToken struct {
 	TxToken TxToken
 }
 
+// CustomTokenReceiver ...
 type CustomTokenReceiver struct {
 	PubKey string  `json:"PubKey"`
 	Amount float64 `json:"Amount"`
@@ -64,6 +63,7 @@ type CustomTokenParamTx struct {
 	Receivers       []CustomTokenReceiver `json:"TokenReceivers"`
 }
 
+// CreateCustomTokenReceiverArray ...
 func CreateCustomTokenReceiverArray(data interface{}) []CustomTokenReceiver {
 	result := make([]CustomTokenReceiver, 0)
 	receivers := data.([]interface{})
@@ -105,6 +105,17 @@ func (tx *TxCustomToken) GetTxID() *common.Hash {
 	return tx.Tx.txId
 }
 
+// Hash ...
+func (tx *TxToken) Hash() *common.Hash {
+	record := strconv.Itoa(int(tx.Version))
+	record += strconv.FormatFloat(tx.Type, 'f', 6, 64)
+	record += strconv.FormatFloat(tx.Amount, 'f', 6, 64)
+	record += tx.PropertyName
+	record += tx.PropertySymbol
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
 // Hash returns the hash of all fields of the transaction
 func (tx TxCustomToken) Hash() *common.Hash {
 	record := strconv.Itoa(int(tx.Tx.Version))
@@ -121,7 +132,7 @@ func (tx TxCustomToken) Hash() *common.Hash {
 	record += tx.TxToken.PropertyName
 	record += tx.TxToken.PropertySymbol
 	record += fmt.Sprintf("%f", tx.TxToken.Amount)
-	record += base64.URLEncoding.EncodeToString(tx.TxToken.TxCustomTokenID.Sum(nil))
+	record += tx.TxToken.TxCustomTokenID.String()
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -171,6 +182,7 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }
 
+// GetTxFee ...
 func (tx *TxCustomToken) GetTxFee() uint64 {
 	return tx.Fee
 }
@@ -417,8 +429,61 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 		fmt.Printf("Len input and info: %+v %+v\n", len(inputNotes), len(paymentInfo))
 	}
 
+	var handled = false
+
 	// add token data params
-	// TODO
+	if tokenParams.TokenTxType == 50 {
+		handled = true
+
+		tx.TxToken = TxToken{
+			Version:        1,
+			Type:           50,
+			PropertyName:   tokenParams.PropertyName,
+			PropertySymbol: tokenParams.PropertySymbol,
+			Vin:            nil,
+			Vout:           nil,
+			Amount:         tokenParams.Amount,
+		}
+
+		tx.TxToken.TxCustomTokenID = *tx.TxToken.Hash()
+
+		var Vout []TxTokenVout
+		var tempAmount float64
+
+		for _, receiver := range tokenParams.Receivers {
+			receiverAmount := receiver.Amount
+			if tempAmount+receiver.Amount > tokenParams.Amount {
+				receiverAmount = tokenParams.Amount - tempAmount
+				tempAmount = tokenParams.Amount
+			} else {
+				tempAmount += receiver.Amount
+			}
+			Vout = append(Vout, TxTokenVout{
+				ScripPubKey: receiver.PubKey,
+				Value:       receiverAmount,
+			})
+		}
+	}
+
+	if tokenParams.TokenTxType == 51 {
+		handled = true
+		tokenID := tokenParams.TxCustomTokenID
+		fmt.Println(tokenID)
+		// transfer handler
+		// get token info of TxCustomTokenID
+		// TO-DO
+		// get list of vout of sender of TxCustomTokenID
+		// TO-DO
+		tx.TxToken = TxToken{
+			Version: 1,
+			Type:    51,
+			// TxCustomTokenID: tokenParams.TxCustomTokenID.(hash.Hash),
+		}
+	}
+
+	if handled != true {
+		return nil, errors.New("Can't handle this TokenTxType")
+	}
 
 	// Sign tx
 	tx, err = SignTxCustomToken(tx)
