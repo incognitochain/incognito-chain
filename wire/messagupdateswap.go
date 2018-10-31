@@ -10,6 +10,7 @@ const (
 )
 
 type MessageUpdateSwap struct {
+	LockTime     int64
 	RequesterPbk string
 	ChainID      byte
 	SealerPbk    string

@@ -7,6 +7,8 @@ import (
 	"github.com/ninjadotorg/cash/wire"
 	"github.com/ninjadotorg/cash/cashec"
 	"github.com/ninjadotorg/cash/common"
+	"encoding/binary"
+	"time"
 )
 
 func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestBlockSign) {
@@ -148,6 +150,9 @@ func (self *Engine) sendBlockMsg(block *blockchain.Block) {
 func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 	Logger.log.Info("Received a MessageRequestSwap")
 
+	if msg.LockTime > time.Now().Unix() {
+		return
+	}
 	peerIDs := self.config.Server.GetPeerIDsFromPublicKey(msg.SealerPbk)
 	if len(peerIDs) == 0 {
 		return
@@ -156,6 +161,9 @@ func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 	senderID := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 
 	rawBytes := []byte{}
+	bTime := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bTime, uint64(msg.LockTime))
+	rawBytes = append(rawBytes, bTime...)
 	rawBytes = append(rawBytes, []byte(msg.RequesterPbk)...)
 	rawBytes = append(rawBytes, msg.ChainID)
 	rawBytes = append(rawBytes, []byte(msg.SealerPbk)...)
@@ -186,6 +194,7 @@ func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 func (self *Engine) OnSignSwap(msg *wire.MessageSignSwap) {
 	Logger.log.Info("Received a MessageSignSwap")
 	self.cSwapSig <- swapSig{
+		LockTime:        msg.LockTime,
 		RequesterPbk:    msg.RequesterPbk,
 		ChainID:         msg.ChainID,
 		SealerPublicKey: msg.SealerPbk,
@@ -198,6 +207,10 @@ func (self *Engine) OnSignSwap(msg *wire.MessageSignSwap) {
 func (self *Engine) OnUpdateSwap(msg *wire.MessageUpdateSwap) {
 	Logger.log.Info("Received a MessageUpdateSwap")
 
+	if msg.LockTime > time.Now().Unix() {
+		return
+	}
+
 	committee := make([]string, common.TotalValidators)
 	copy(committee, self.GetCommittee())
 
@@ -208,6 +221,9 @@ func (self *Engine) OnUpdateSwap(msg *wire.MessageUpdateSwap) {
 
 	//versify signatures
 	rawBytes := []byte{}
+	bTime := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bTime, uint64(msg.LockTime))
+	rawBytes = append(rawBytes, bTime...)
 	rawBytes = append(rawBytes, []byte(msg.RequesterPbk)...)
 	rawBytes = append(rawBytes, msg.ChainID)
 	rawBytes = append(rawBytes, []byte(msg.SealerPbk)...)
@@ -222,7 +238,7 @@ func (self *Engine) OnUpdateSwap(msg *wire.MessageUpdateSwap) {
 		}
 		cLeader += 1
 	}
-	if cLeader < common.TotalValidators / 2 {
+	if cLeader < common.TotalValidators/2 {
 		Logger.log.Error("ERROR OnUpdateSwap not enough signatures")
 		return
 	}

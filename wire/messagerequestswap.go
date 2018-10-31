@@ -10,6 +10,7 @@ const (
 )
 
 type MessageRequestSwap struct {
+	LockTime     int64
 	SenderID     string
 	RequesterPbk string
 	ChainID      byte

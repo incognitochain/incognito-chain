@@ -50,6 +50,7 @@ type committeeStruct struct {
 	ValidatorReliablePts map[string]int //track how reliable is the validator node
 	CurrentCommittee     []string
 	sync.Mutex
+	LastUpdate           int64
 }
 
 type ChainInfo struct {
@@ -70,7 +71,7 @@ type EngineConfig struct {
 	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server          interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -87,6 +88,7 @@ type blockSig struct {
 }
 
 type swapSig struct {
+	LockTime        int64
 	RequesterPbk    string
 	ChainID         byte
 	SealerPublicKey string
@@ -550,7 +552,7 @@ func (self *Engine) StartSwap() error {
 
 			BeginSwap:
 
-				// Collect signatures of other validators
+			// Collect signatures of other validators
 				cancel := make(chan struct{})
 				go func(requesterPbk string, chainId byte, sealerPbk string) {
 					for {
@@ -582,9 +584,11 @@ func (self *Engine) StartSwap() error {
 					}
 				}(requesterPbk, chainId, sealerPbk)
 
+				lockTime := time.Now().Unix()
 				// Request signatures from other validators
 				go func(requesterPbk string, chainId byte, sealerPbk string) {
 					reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestSwap)
+					reqSigMsg.(*wire.MessageRequestSwap).LockTime = lockTime
 					reqSigMsg.(*wire.MessageRequestSwap).RequesterPbk = requesterPbk
 					reqSigMsg.(*wire.MessageRequestSwap).ChainID = chainId
 					reqSigMsg.(*wire.MessageRequestSwap).SealerPbk = sealerPbk
@@ -632,6 +636,7 @@ func (self *Engine) StartSwap() error {
 				if err == nil {
 					// broadcast message for update new committee list
 					reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdUpdateSwap)
+					reqSigMsg.(*wire.MessageUpdateSwap).LockTime = lockTime
 					reqSigMsg.(*wire.MessageUpdateSwap).RequesterPbk = requesterPbk
 					reqSigMsg.(*wire.MessageUpdateSwap).ChainID = chainId
 					reqSigMsg.(*wire.MessageUpdateSwap).SealerPbk = sealerPbk

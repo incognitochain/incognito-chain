@@ -60,6 +60,8 @@ func (self *Wallet) Init(passPhrase string, numOfAccount uint32, name string) (e
 		}
 		self.MasterAccount.Child = append(self.MasterAccount.Child, account)
 	}
+
+	return nil
 }
 
 func (self *Wallet) CreateNewAccount(accountName string) *Account {
