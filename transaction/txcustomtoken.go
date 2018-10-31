@@ -50,21 +50,32 @@ type TxCustomToken struct {
 }
 
 type CustomTokenReceiver struct {
-	PubKey string `json:"PubKey"`
+	PubKey string  `json:"PubKey"`
 	Amount float64 `json:"Amount"`
 }
 
 // CustomTokenParamTx ...
 type CustomTokenParamTx struct {
-	PropertyName    string     `json:"TokenName"`
-	PropertySymbol  string     `json:"TokenSymbol"`
-	TxCustomTokenID string     `json:"TokenHash"`
-	Amount          float64    `json:"TokenAmount"`
-	TokenTxType     float64    `json:"TokenTxType"`
+	PropertyName    string                `json:"TokenName"`
+	PropertySymbol  string                `json:"TokenSymbol"`
+	TxCustomTokenID string                `json:"TokenHash"`
+	Amount          float64               `json:"TokenAmount"`
+	TokenTxType     float64               `json:"TokenTxType"`
 	Receivers       []CustomTokenReceiver `json:"TokenReceivers"`
 }
 
-func
+func CreateCustomTokenReceiverArray(data interface{}) []CustomTokenReceiver {
+	result := make([]CustomTokenReceiver, 0)
+	receivers := data.([]map[string]interface{})
+	for _, item := range receivers {
+		resultItem := CustomTokenReceiver{
+			PubKey: item["PubKey"].(string),
+			Amount: item["Amount"].(float64),
+		}
+		result = append(result, resultItem)
+	}
+	return result
+}
 
 // CreateEmptyCustomTokenTx - return an init custom token transaction
 func CreateEmptyCustomTokenTx() (*TxCustomToken, error) {

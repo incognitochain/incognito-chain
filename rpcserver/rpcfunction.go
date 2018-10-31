@@ -749,7 +749,7 @@ func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan
 		TxCustomTokenID: tokenParamsRaw["TokenHash"].(string),
 		TokenTxType:     tokenParamsRaw["TokenTxType"].(float64),
 		Amount:          tokenParamsRaw["TokenAmount"].(float64),
-		Receivers:       tokenParamsRaw["TokenReceivers"],
+		Receivers:       transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"]),
 	}
 
 	totalAmmount := int64(0)
