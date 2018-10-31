@@ -27,6 +27,8 @@ cash
 
 cashctl
 
+bootnode
+
 /dev-env/nodes-data/node*/data
 # Build Directory
 /privacy/server/build
