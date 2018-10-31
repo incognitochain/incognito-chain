@@ -49,15 +49,22 @@ type TxCustomToken struct {
 	TxToken TxToken
 }
 
+type CustomTokenReceiver struct {
+	PubKey string `json:"PubKey"`
+	Amount float64 `json:"Amount"`
+}
+
 // CustomTokenParamTx ...
 type CustomTokenParamTx struct {
-	PropertyName    string  `json:"TokenName"`
-	PropertySymbol  string  `json:"TokenSymbol"`
-	TxCustomTokenID string  `json:"TokenHash"`
-	Amount          float64 `json:"TokenAmount"`
-	TokenTxType     float64 `json:"TokenTxType"`
-	// Receiver        string  `json:"TokenReceiver"` TO-DO add type
+	PropertyName    string     `json:"TokenName"`
+	PropertySymbol  string     `json:"TokenSymbol"`
+	TxCustomTokenID string     `json:"TokenHash"`
+	Amount          float64    `json:"TokenAmount"`
+	TokenTxType     float64    `json:"TokenTxType"`
+	Receivers       []CustomTokenReceiver `json:"TokenReceivers"`
 }
+
+func
 
 // CreateEmptyCustomTokenTx - return an init custom token transaction
 func CreateEmptyCustomTokenTx() (*TxCustomToken, error) {
