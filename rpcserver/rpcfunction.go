@@ -1176,7 +1176,7 @@ func (self RpcServer) handleGetAddressesByAccount(params interface{}, closeChan 
 /*
 getaccountaddress RPC returns the current coin address for receiving payments to this account. If the account doesn’t exist, it creates both the account and a new address for receiving payment. Once a payment has been received to an address, future calls to this RPC for the same account will return a different address.
 Parameter #1—an account name
-Result—a bitcoin address
+Result—a constant address
 */
 func (self RpcServer) handleGetAccountAddress(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	return self.config.Wallet.GetAccountAddress(params.(string)), nil

@@ -1,12 +1,9 @@
 package connmanager
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
-	"net/http"
 	"net/rpc"
 	"os"
 	"strings"
@@ -260,7 +257,7 @@ func (self *ConnManager) handleFailed(peerConn *peer.PeerConn) {
 	Logger.log.Infof("handleFailed %s", peerConn.RemotePeerID.String())
 }
 
-func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)) {
+/*func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)) {
 	addrs := []string{}
 	for _, host := range hosts {
 		request, err := http.NewRequest("GET", host, nil)
@@ -301,7 +298,7 @@ func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)
 		}
 	}
 	seedFn(addrs)
-}
+}*/
 
 func (self *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 	Logger.log.Info("Start Discover Peers")
