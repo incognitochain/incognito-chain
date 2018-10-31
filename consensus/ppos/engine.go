@@ -252,7 +252,7 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 				if self.started {
 					if common.IntArrayEquals(self.knownChainsHeight.Heights, self.validatedChainsHeight.Heights) {
 						chainID := self.getMyChain()
-						if chainID < common.TotalValidators {
+						if chainID >= 0 {
 							Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
 							Logger.log.Info("Current chainsHeight")
 							Logger.log.Info(self.validatedChainsHeight.Heights)
@@ -310,7 +310,7 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	newblock.Block.BlockProducer = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 
 	// hash candidate list and set to block header
-	candidates := self.GetCndList(newblock.Block)
+	candidates := self.GetCandidateCommitteeList(newblock.Block)
 	candidateBytes, _ := json.Marshal(candidates)
 	newblock.Block.Header.CandidateHash = common.HashH(candidateBytes)
 
@@ -454,7 +454,7 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	}
 
 	// update candidate list
-	self.config.BlockChain.BestState[block.Header.ChainID].Candidates = self.GetCndList(block)
+	self.config.BlockChain.BestState[block.Header.ChainID].Candidates = self.GetCandidateCommitteeList(block)
 	self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)
 
@@ -471,7 +471,7 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.committee.UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)
 }
 
-func (self *Engine) GetCndList(block *blockchain.Block) map[string]blockchain.CommitteeCandidateInfo {
+func (self *Engine) GetCandidateCommitteeList(block *blockchain.Block) map[string]blockchain.CommitteeCandidateInfo {
 	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
 	candidates := bestState.Candidates
 	if candidates == nil {
