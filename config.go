@@ -79,12 +79,12 @@ type config struct {
 	RPCQuirks            bool     `long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
 	DisableRPC           bool     `long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
 	DisableTLS           bool     `long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
-	DisableDNSSeed       bool     `long:"nodnsseed" description:"Disable DNS seeding for peers"`
 	Proxy                string   `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
 	ProxyUser            string   `long:"proxyuser" description:"Username for proxy server"`
 	ProxyPass            string   `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
 	DebugLevel           string   `short:"d" long:"debuglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
 	Generate             bool     `long:"generate" description:"Generate (mine) coins using the CPU"`
+	//DisableDNSSeed       bool     `long:"nodnsseed" description:"Disable DNS seeding for peers"`
 
 	// Net config
 	TestNet bool `long:"testnet" description:"Use the test network"`
@@ -419,9 +419,9 @@ func loadConfig() (*config, []string, error) {
 	}
 
 	// Connect means no DNS seeding.
-	if len(cfg.ConnectPeers) > 0 {
+	/*if len(cfg.ConnectPeers) > 0 {
 		cfg.DisableDNSSeed = true
-	}
+	}*/
 
 	// Add the default listener if none were specified. The default
 	// listener is all addresses on the listen port for the network

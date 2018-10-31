@@ -376,20 +376,20 @@ func (self Server) peerHandler() {
 
 	Logger.log.Info("Start peer handler")
 
-	if !cfg.DisableDNSSeed {
+	/*if !cfg.DisableDNSSeed {
 		// load peer from seed DNS
 		// add to address manager
 		//self.addrManager.AddAddresses(make([]*peer.RemotePeer, 0))
 
 		self.connManager.SeedFromDNS(self.chainParams.DNSSeeds, func(addrs []string) {
-			// Bitcoind uses a lookup of the dns seeder here. This
+			// Constant uses a lookup of the dns seeder here. This
 			// is rather strange since the values looked up by the
 			// DNS seed lookups will vary quite a lot.
 			// to replicate this behaviour we put all addresses as
 			// having come from the first one.
 			self.addrManager.AddAddressesStr(addrs)
 		})
-	}
+	}*/
 
 	if len(cfg.ConnectPeers) == 0 {
 		for _, addr := range self.addrManager.AddressCache() {
