@@ -830,14 +830,11 @@ func (self *Server) GetPeerIDsFromPublicKey(pubKey string) []peer2.ID {
 PushMessageToAll broadcast msg
 */
 func (self *Server) PushMessageToAll(msg wire.Message) error {
-	Logger.log.Info("Push msg to all")
+	Logger.log.Info("Push msg to all peers")
 	var dc chan<- struct{}
 	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
-		Logger.log.Info("Pushed 1")
 		msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
-		Logger.log.Info("Pushed 2")
 		self.connManager.Config.ListenerPeers[index].QueueMessageWithEncoding(msg, dc)
-		Logger.log.Info("Pushed 3")
 	}
 	return nil
 }

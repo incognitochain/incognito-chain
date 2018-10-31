@@ -513,7 +513,7 @@ func (self *Engine) StartSwap() error {
 			select {
 			case <-time.After(10 * time.Second):
 				Logger.log.Info("Consensus engine SWAP TIMER")
-				self.cSwapChain <- byte(1)
+				self.cSwapChain <- byte(10)
 				continue
 			}
 		}
@@ -536,6 +536,11 @@ func (self *Engine) StartSwap() error {
 				copy(committee, self.GetCommittee())
 
 				requesterPbk := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+
+				if common.IndexOfStr(requesterPbk, committee) < 0 {
+					continue
+				}
+
 				committeeCandidateList := self.config.BlockChain.GetCommitteeCandidateList()
 				sealerPbk := ""
 				for _, committeeCandidatePbk := range committeeCandidateList {
@@ -545,10 +550,18 @@ func (self *Engine) StartSwap() error {
 					}
 					sealerPbk = committeeCandidatePbk
 				}
-				sealerPbk = "1q4iCdtqb67DcNYyCE8FvMZKrDRE8KHW783VoYm5LXvds7vpsi"
+				if sealerPbk == "" {
+					//TODO for testing
+					sealerPbk = "1q4iCdtqb67DcNYyCE8FvMZKrDRE8KHW783VoYm5LXvds7vpsi"
+				}
 				if sealerPbk == "" {
 					continue
 				}
+
+				if common.IndexOfStr(sealerPbk, committee) >= 0 {
+					continue
+				}
+
 				signatureMap := make(map[string]string)
 				lockTime := time.Now().Unix()
 			BeginSwap:
@@ -645,6 +658,8 @@ func (self *Engine) StartSwap() error {
 					reqSigMsg.(*wire.MessageUpdateSwap).ChainID = chainId
 					reqSigMsg.(*wire.MessageUpdateSwap).SealerPbk = sealerPbk
 					reqSigMsg.(*wire.MessageUpdateSwap).Signatures = signatureMap
+
+					self.config.Server.PushMessageToAll(reqSigMsg)
 				} else {
 					Logger.log.Errorf("Update committee is error", err)
 				}
