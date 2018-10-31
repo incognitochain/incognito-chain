@@ -106,9 +106,9 @@ func (self *AddrManager) loadPeers() {
 }
 
 // NumAddresses returns the number of addresses known to the address manager.
-func (a *AddrManager) numAddresses() int {
+func (self *AddrManager) numAddresses() int {
 	//return a.nTried + a.nNew
-	return len(a.addrIndex)
+	return len(self.addrIndex)
 }
 
 // reset resets the address manager by reinitialising the random source
