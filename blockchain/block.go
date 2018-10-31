@@ -20,10 +20,10 @@ block contains many types of transaction
 
 */
 type Block struct {
-	Header         BlockHeader
-	Transactions   []transaction.Transaction
-	ChainLeader    string // in base58check.encode
-	ChainLeaderSig string
+	Header           BlockHeader
+	Transactions     []transaction.Transaction
+	BlockProducer    string // in base58check.encode
+	BlockProducerSig string
 
 	Height    int32
 	blockHash *common.Hash
@@ -289,17 +289,23 @@ func (self Block) Hash() *common.Hash {
 	if self.blockHash != nil {
 		return self.blockHash
 	}
+
 	record := strconv.Itoa(self.Header.Version) +
+		self.BlockProducer +
+		self.BlockProducerSig +
+		strconv.Itoa(len(self.Transactions)) +
+		strconv.Itoa(int(self.Height)) +
+
+		strconv.FormatInt(self.Header.Timestamp, 10) +
 		string(self.Header.ChainID) +
 		self.Header.MerkleRoot.String() +
 		self.Header.MerkleRootCommitments.String() +
-		strconv.FormatInt(self.Header.Timestamp, 10) +
 		self.Header.PrevBlockHash.String() +
-		strconv.Itoa(len(self.Transactions)) +
-		self.ChainLeader +
-		strconv.Itoa(int(self.Height)) +
 		strconv.Itoa(int(self.Header.SalaryFund)) +
+		strconv.Itoa(int(self.Header.GovernanceParams.SalaryPerTx)) +
+		strconv.Itoa(int(self.Header.GovernanceParams.BasicSalary)) +
 		strings.Join(self.Header.Committee, ",")
+
 	hash := common.DoubleHashH([]byte(record))
 	self.blockHash = &hash
 	return self.blockHash

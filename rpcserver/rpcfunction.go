@@ -255,7 +255,7 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
 			result.NextBlockHash = nextHashString
 			result.TxHashes = []string{}
-			result.BlockProducerSign = block.ChainLeaderSig
+			result.BlockProducerSign = block.BlockProducerSig
 			for _, tx := range block.Transactions {
 				result.TxHashes = append(result.TxHashes, tx.Hash().String())
 			}
@@ -359,8 +359,8 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 			TotalTxs:         bestState.TotalTxns,
 			SalaryFund:       bestState.BestBlock.Header.SalaryFund,
 			SalaryPerTx:      bestState.BestBlock.Header.GovernanceParams.SalaryPerTx,
-			BlockProducer:    bestState.BestBlock.ChainLeader,
-			BlockProducerSig: bestState.BestBlock.ChainLeaderSig,
+			BlockProducer:    bestState.BestBlock.BlockProducer,
+			BlockProducerSig: bestState.BestBlock.BlockProducerSig,
 		}
 	}
 	return result, nil
@@ -1502,8 +1502,8 @@ func (self RpcServer) handleRetrieveCommiteeCandidate(params interface{}, closeC
 func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	result := make(map[string]string)
 	for chainID, bestState := range self.config.BlockChain.BestState {
-		if bestState.BestBlock.ChainLeader != "" {
-			result[strconv.Itoa(chainID)] = bestState.BestBlock.ChainLeader;
+		if bestState.BestBlock.BlockProducer != "" {
+			result[strconv.Itoa(chainID)] = bestState.BestBlock.BlockProducer;
 		} else {
 			result[strconv.Itoa(chainID)] = self.config.ChainParams.GenesisBlock.Header.Committee[chainID]
 		}

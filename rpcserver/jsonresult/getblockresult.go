@@ -26,8 +26,8 @@ type GetBlockTxResult struct {
 }
 
 func (self *GetBlockResult) Init(block *blockchain.Block) {
-	self.BlockProducerSign = block.ChainLeaderSig
-	self.BlockProducer = block.ChainLeader
+	self.BlockProducerSign = block.BlockProducerSig
+	self.BlockProducer = block.BlockProducer
 	self.Hash = block.Hash().String()
 	self.PreviousBlockHash = block.Header.PrevBlockHash.String()
 	self.Version = block.Header.Version

@@ -175,7 +175,7 @@ func (self *Engine) Start() error {
 					self.validatedChainsHeight.Lock()
 					self.validatedChainsHeight.Heights[chainID] = blockHeight
 					self.validatedChainsHeight.Unlock()
-					self.committee.UpdateCommitteePoint(block.ChainLeader, block.Header.BlockCommitteeSigs)
+					self.committee.UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)
 				}
 			}(chainID)
 		}
@@ -307,7 +307,7 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	newblock.Block.Header.ChainsHeight = make([]int, common.TotalValidators)
 	copy(newblock.Block.Header.ChainsHeight, self.validatedChainsHeight.Heights)
 	newblock.Block.Header.ChainID = myChainID
-	newblock.Block.ChainLeader = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+	newblock.Block.BlockProducer = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 
 	// hash candidate list and set to block header
 	candidates := self.GetCndList(newblock.Block)
@@ -390,7 +390,7 @@ finalizing:
 		reqSigMsg.(*wire.MessageRequestBlockSign).Block = block
 		for idx := 0; idx < common.TotalValidators; idx++ {
 			//@TODO: retry on failed validators
-			if committee[idx] != finalBlock.ChainLeader {
+			if committee[idx] != finalBlock.BlockProducer {
 				go func(validator string) {
 					peerIDs := self.config.Server.GetPeerIDsFromPublicKey(validator)
 					if len(peerIDs) != 0 {
@@ -428,7 +428,7 @@ finalizing:
 	if err != nil {
 		return err
 	}
-	finalBlock.ChainLeaderSig = sig
+	finalBlock.BlockProducerSig = sig
 
 	self.UpdateChain(finalBlock)
 	self.sendBlockMsg(finalBlock)
@@ -468,7 +468,7 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
 	self.validatedChainsHeight.Unlock()
 
-	self.committee.UpdateCommitteePoint(block.ChainLeader, block.Header.BlockCommitteeSigs)
+	self.committee.UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)
 }
 
 func (self *Engine) GetCndList(block *blockchain.Block) map[string]blockchain.CommitteeCandidateInfo {
