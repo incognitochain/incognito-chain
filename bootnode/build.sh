@@ -1,7 +1,7 @@
 echo "Start build bootnode"
 
 echo "go get"
-go get
+go get -d
 
 APP_NAME="constant-bootnode"
 
