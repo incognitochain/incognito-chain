@@ -152,6 +152,15 @@ func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 	if msg.LockTime > time.Now().Unix() {
 		return
 	}
+
+	committee := make([]string, common.TotalValidators)
+	copy(committee, self.GetCommittee())
+
+	if common.IndexOfStr(msg.RequesterPbk, committee) < 0 {
+		Logger.log.Error("ERROR OnRequestSwap is not existed committee")
+		return
+	}
+
 	rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.RequesterPbk, msg.ChainID, msg.SealerPbk)
 	// TODO check requester signature
 	err := cashec.ValidateDataB58(msg.RequesterPbk, msg.RequesterSig, rawBytes)
@@ -234,7 +243,7 @@ func (self *Engine) OnUpdateSwap(msg *wire.MessageUpdateSwap) {
 		}
 		cLeader += 1
 	}
-	if cLeader < common.TotalValidators/2 {
+	if cLeader < 1 {
 		Logger.log.Error("ERROR OnUpdateSwap not enough signatures")
 		return
 	}
