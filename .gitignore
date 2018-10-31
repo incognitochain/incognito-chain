@@ -27,7 +27,7 @@ cash
 
 cashctl
 
-bootnode
+constant-bootnode
 
 /dev-env/nodes-data/node*/data
 # Build Directory

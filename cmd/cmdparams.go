@@ -5,6 +5,9 @@ import (
 	"path/filepath"
 	"github.com/ninjadotorg/cash/common"
 	"github.com/ninjadotorg/cash/blockchain"
+	"os"
+	"fmt"
+	"github.com/fatih/color"
 )
 
 const (
@@ -45,7 +48,17 @@ func loadParams() (*params, error) {
 	}
 
 	preParser := newConfigParser(&cfg, flags.HelpFlag)
-	preParser.Parse()
+	_, err := preParser.Parse()
+	if err != nil {
+		if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
+			fmt.Fprintln(os.Stderr, err)
+			red := color.New(color.FgRed).SprintFunc()
+			fmt.Println(red("---------------------------------------"))
+			fmt.Printf("List cmd: %+v \n", red(CmdList))
+			fmt.Println(red("---------------------------------------"))
+			return nil, err
+		}
+	}
 	cfg.DataDir = common.CleanAndExpandPath(cfg.DataDir, defaultHomeDir)
 	if cfg.TestNet {
 		cfg.DataDir = filepath.Join(cfg.DataDir, blockchain.TestNetParams.Name)
