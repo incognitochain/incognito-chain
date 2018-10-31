@@ -104,7 +104,7 @@ var MainNetParams = Params{
 	},
 
 	// blockChain parameters
-	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, MainnetGenesisblockPaymentAddress, pposValidators, MainnetInitFundSalary, 0),
+	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, MainnetGenesisblockPaymentAddress, pposValidators, MainnetInitFundSalary, 0, 0),
 }
 
 // TestNetParams defines the network parameters for the test coin network.
@@ -117,5 +117,5 @@ var TestNetParams = Params{
 	},
 
 	// blockChain parameters
-	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, TestnetGenesisBlockPaymentAddress, pposValidators, TestnetInitFundSalary, 1),
+	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, TestnetGenesisBlockPaymentAddress, pposValidators, TestnetInitFundSalary, 1000, 1000),
 }

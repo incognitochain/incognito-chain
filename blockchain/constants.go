@@ -17,7 +17,7 @@ const (
 	Testnet               = 0x02
 	TestnetName           = "testnet"
 	TestnetDefaultPort    = "9444"
-	TestnetInitFundSalary = 1000000000
+	TestnetInitFundSalary = 1000000000000000
 	TestnetInitDCBToken   = 0
 	TestnetInitGovToken   = 0
 	TestnetInitCmBToken   = 0
