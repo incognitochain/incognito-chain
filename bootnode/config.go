@@ -6,10 +6,6 @@ import (
 	"os"
 )
 
-const (
-	defaultRPCPort = 9330
-)
-
 // See loadConfig for details on the configuration load process.
 type config struct {
 	RPCPort int `long:"rpcport" short:"p" description:"Max number of RPC clients for standard connections"`
@@ -23,7 +19,7 @@ func newConfigParser(cfg *config, options flags.Options) *flags.Parser {
 
 func loadConfig() (*config, error) {
 	cfg := config{
-		RPCPort: defaultRPCPort,
+		RPCPort: RpcServerPort,
 	}
 
 	preCfg := cfg

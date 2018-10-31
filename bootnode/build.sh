@@ -3,28 +3,12 @@ echo "Start build bootnode"
 echo "go get"
 go get
 
-sleep 7 &
-PID=$!
-echo $PID
-i=1
-sp="/-\|"
-echo -n ' '
-while [ -d /proc/$PID ]
-do
-  printf "\b${sp:i++%${#sp}:1}"
-done
+APP_NAME="constant-bootnode"
 
-echo "go build -o bootnode"
-go build -o bootnode
+echo "go build -o $APP_NAME"
+go build -o $APP_NAME
 
-sleep 7 &
-PID=$!
-i=1
-sp="/-\|"
-echo -n ' '
-while [ -d /proc/$PID ]
-do
-  printf "\b${sp:i++%${#sp}:1}"
-done
+echo "cp ./constant-bootnode $GOPATH/bin/$APP_NAME"
+mv ./constant-bootnode $GOPATH/bin/$APP_NAME
 
 echo "Build bootnode success!"
