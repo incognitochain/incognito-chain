@@ -650,19 +650,20 @@ func (self *Engine) StartSwap() error {
 				copy(committeeV, self.GetCommittee())
 
 				err := self.updateCommittee(sealerPbk, chainId)
-				if err == nil {
-					// broadcast message for update new committee list
-					reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdUpdateSwap)
-					reqSigMsg.(*wire.MessageUpdateSwap).LockTime = lockTime
-					reqSigMsg.(*wire.MessageUpdateSwap).RequesterPbk = requesterPbk
-					reqSigMsg.(*wire.MessageUpdateSwap).ChainID = chainId
-					reqSigMsg.(*wire.MessageUpdateSwap).SealerPbk = sealerPbk
-					reqSigMsg.(*wire.MessageUpdateSwap).Signatures = signatureMap
-
-					self.config.Server.PushMessageToAll(reqSigMsg)
-				} else {
-					Logger.log.Errorf("Update committee is error", err)
+				if err != nil {
+					Logger.log.Errorf("Consensus update committee is error", err)
+					continue
 				}
+
+				// broadcast message for update new committee list
+				reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdUpdateSwap)
+				reqSigMsg.(*wire.MessageUpdateSwap).LockTime = lockTime
+				reqSigMsg.(*wire.MessageUpdateSwap).RequesterPbk = requesterPbk
+				reqSigMsg.(*wire.MessageUpdateSwap).ChainID = chainId
+				reqSigMsg.(*wire.MessageUpdateSwap).SealerPbk = sealerPbk
+				reqSigMsg.(*wire.MessageUpdateSwap).Signatures = signatureMap
+
+				self.config.Server.PushMessageToAll(reqSigMsg)
 
 				Logger.log.Infof("Consensus engine swap %d END", chainId)
 				continue
