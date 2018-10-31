@@ -69,12 +69,12 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
 				jsonDecodeString, _ := hex.DecodeString(msgStr)
+				Logger.log.Infof("In message content : %s", string(jsonDecodeString))
 				messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 
 				// get cmd type in header message
 				commandInHeader := messageHeader[:wire.MessageCmdTypeSize]
 				commandInHeader = bytes.Trim(messageHeader, "\x00")
-				Logger.log.Infof("Received message type %s from %s", string(commandInHeader), self.RemotePeerID)
 				commandType := string(messageHeader[:len(commandInHeader)])
 				// convert to particular message from message cmd type
 				var message, err = wire.MakeEmptyMessage(string(commandType))
@@ -191,7 +191,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				cmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.message))
 				copy(header[:], []byte(cmdType))
 				messageByte = append(messageByte, header...)
-				Logger.log.Infof("Content: %s", string(messageByte))
+				Logger.log.Infof("Out message TYPE %s CONTENT %s", cmdType, string(messageByte))
 				message := hex.EncodeToString(messageByte)
 				//Logger.log.Infof("Content in hex encode: %s", string(message))
 				// add end character to message (delim '\n')

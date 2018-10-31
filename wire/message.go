@@ -166,6 +166,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdRequestSwap, nil
 	case reflect.TypeOf(&MessageSignSwap{}):
 		return CmdSignSwap, nil
+	case reflect.TypeOf(&MessageUpdateSwap{}):
+		return CmdUpdateSwap, nil
 	default:
 		return "", fmt.Errorf("unhandled this message type [%s]", msgType)
 	}
