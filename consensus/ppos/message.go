@@ -7,7 +7,6 @@ import (
 	"github.com/ninjadotorg/cash/wire"
 	"github.com/ninjadotorg/cash/cashec"
 	"github.com/ninjadotorg/cash/common"
-	"encoding/binary"
 	"time"
 )
 
@@ -153,20 +152,19 @@ func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 	if msg.LockTime > time.Now().Unix() {
 		return
 	}
+	rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.RequesterPbk, msg.ChainID, msg.SealerPbk)
+	// TODO check requester signature
+	err := cashec.ValidateDataB58(msg.RequesterPbk, msg.RequesterSig, rawBytes)
+	if err != nil {
+		return
+	}
+
 	peerIDs := self.config.Server.GetPeerIDsFromPublicKey(msg.SealerPbk)
 	if len(peerIDs) == 0 {
 		return
 	}
 
 	senderID := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
-
-	rawBytes := []byte{}
-	bTime := make([]byte, 8)
-	binary.LittleEndian.PutUint64(bTime, uint64(msg.LockTime))
-	rawBytes = append(rawBytes, bTime...)
-	rawBytes = append(rawBytes, []byte(msg.RequesterPbk)...)
-	rawBytes = append(rawBytes, msg.ChainID)
-	rawBytes = append(rawBytes, []byte(msg.SealerPbk)...)
 
 	sig, err := self.signData(rawBytes)
 	if err != nil {
@@ -194,12 +192,12 @@ func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 func (self *Engine) OnSignSwap(msg *wire.MessageSignSwap) {
 	Logger.log.Info("Received a MessageSignSwap")
 	self.cSwapSig <- swapSig{
-		LockTime:        msg.LockTime,
-		RequesterPbk:    msg.RequesterPbk,
-		ChainID:         msg.ChainID,
-		SealerPublicKey: msg.SealerPbk,
-		Validator:       msg.Validator,
-		ValidatorSig:    msg.ValidatorSig,
+		LockTime:     msg.LockTime,
+		RequesterPbk: msg.RequesterPbk,
+		ChainID:      msg.ChainID,
+		SealerPbk:    msg.SealerPbk,
+		Validator:    msg.Validator,
+		ValidatorSig: msg.ValidatorSig,
 	}
 	return
 }
@@ -220,13 +218,7 @@ func (self *Engine) OnUpdateSwap(msg *wire.MessageUpdateSwap) {
 	}
 
 	//versify signatures
-	rawBytes := []byte{}
-	bTime := make([]byte, 8)
-	binary.LittleEndian.PutUint64(bTime, uint64(msg.LockTime))
-	rawBytes = append(rawBytes, bTime...)
-	rawBytes = append(rawBytes, []byte(msg.RequesterPbk)...)
-	rawBytes = append(rawBytes, msg.ChainID)
-	rawBytes = append(rawBytes, []byte(msg.SealerPbk)...)
+	rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.RequesterPbk, msg.ChainID, msg.SealerPbk)
 	cLeader := 0
 	for leaderPbk, leaderSig := range msg.Signatures {
 		if common.IndexOfStr(leaderPbk, committee) >= 0 {

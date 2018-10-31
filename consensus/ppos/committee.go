@@ -6,14 +6,11 @@ import (
 
 	"github.com/ninjadotorg/cash/common"
 	"github.com/ninjadotorg/cash/common/base58"
+	"encoding/binary"
 )
 
 func (self *Engine) GetCommittee() []string {
-	if len(self.Committee) <= 0 {
-		self.Committee = make([]string, len(self.config.BlockChain.BestState[0].BestBlock.Header.Committee))
-		copy(self.Committee, self.config.BlockChain.BestState[0].BestBlock.Header.Committee)
-	}
-	return self.Committee
+	return self.committee.CurrentCommittee
 }
 
 func (self *Engine) CheckCandidate(candidate string) error {
@@ -95,4 +92,39 @@ func (self *Engine) CommitteeWatcher() {
 			self.committee.Unlock()
 		}
 	}
+}
+
+func (self *Engine) updateCommittee(sealerPbk string, chanId byte) error {
+	self.committee.Lock()
+	defer self.committee.Unlock()
+
+	committee := make([]string, common.TotalValidators)
+	copy(committee, self.GetCommittee())
+
+	idx := common.IndexOfStr(sealerPbk, committee)
+	if idx >= 0 {
+		return errors.New("committee is swapped")
+	}
+	currentCommittee := make([]string, common.TotalValidators)
+	currentCommittee = append(committee[:chanId], sealerPbk)
+	currentCommittee = append(currentCommittee, committee[chanId+1:]...)
+	self.committee.CurrentCommittee = currentCommittee
+	//remove sealerPbk from candidate list
+	for chainId, bestState := range self.config.BlockChain.BestState {
+		bestState.RemoveCandidate(sealerPbk)
+		self.config.BlockChain.StoreBestState(byte(chainId))
+	}
+
+	return nil
+}
+
+func (self *Engine) getRawBytesForSwap(lockTime int64, requesterPbk string, chainId byte, sealerPbk string) ([]byte) {
+	rawBytes := []byte{}
+	bTime := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bTime, uint64(lockTime))
+	rawBytes = append(rawBytes, bTime...)
+	rawBytes = append(rawBytes, []byte(requesterPbk)...)
+	rawBytes = append(rawBytes, chainId)
+	rawBytes = append(rawBytes, []byte(sealerPbk)...)
+	return rawBytes
 }

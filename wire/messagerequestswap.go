@@ -15,6 +15,7 @@ type MessageRequestSwap struct {
 	RequesterPbk string
 	ChainID      byte
 	SealerPbk    string
+	RequesterSig string
 }
 
 func (self MessageRequestSwap) MessageType() string {
