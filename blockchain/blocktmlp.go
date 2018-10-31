@@ -27,8 +27,9 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	totalFee := uint64(0)
 
 	// Get salary per tx
-	salaryPerTx := blockgen.chain.BestState[chainID].BestBlock.Header.GovernanceParams.SalaryPerTx
-	// basicSalary := blockgen.rewardAgent.GetBasicSalary()
+	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(chainID)
+	// Get basic salary on block
+	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
 
 	if len(sourceTxns) < common.MinTxsInBlock {
 		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
@@ -87,7 +88,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	}
 
 concludeBlock:
-	// Get blocksalary fund from txs
+// Get blocksalary fund from txs
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0)
 	for _, blockTx := range txsToAdd {
@@ -105,7 +106,14 @@ concludeBlock:
 	}
 
 	rt := blockgen.chain.BestState[chainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
-	salaryTx, err := createSalaryTx(salaryMULTP*salaryPerTx, &payToAddress, rt, chainID)
+
+	// ------------------------ HOW to GET salary on a block-------------------
+	// total salary = tx * (salary per tx) + (basic salary on block)
+	// ------------------------------------------------------------------------
+	totalSalary := salaryMULTP*salaryPerTx + basicSalary
+	// create salary tx to pay constant for block producer
+	salaryTx, err := createSalaryTx(totalSalary, &payToAddress, rt, chainID)
+
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +194,8 @@ type TxPool interface {
 }
 
 type RewardAgent interface {
-	// GetSalaryPerTx() uint64
+	GetBasicSalary(chainID byte) uint64
+	GetSalaryPerTx(chainID byte) uint64
 }
 
 func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent) (*BlkTmplGenerator, error) {
