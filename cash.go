@@ -65,7 +65,7 @@ func mainMaster(serverChan chan<- *Server) error {
 			DataDir:        cfg.DataDir,
 			DataFile:       cfg.WalletName,
 			DataPath:       filepath.Join(cfg.DataDir, cfg.WalletName),
-			IncrementalFee: 0,
+			IncrementalFee: 0, // 0 mili constant
 		}
 		err = walletObj.LoadWallet(cfg.WalletPassphrase)
 		if err != nil {

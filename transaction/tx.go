@@ -135,15 +135,19 @@ func (tx *Tx) GetTxVirtualSize() uint64 {
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }
 
+func (tx *Tx) GetTxFee() uint64 {
+	return tx.Fee
+}
+
+func (tx *Tx) GetSenderAddrLastByte() byte {
+	return tx.AddressLastByte
+}
+
 func max(x, y int) int {
 	if x > y {
 		return x
 	}
 	return y
-}
-
-func (tx *Tx) GetSenderAddrLastByte() byte {
-	return tx.AddressLastByte
 }
 
 // CreateTx creates transaction with appropriate proof for a private payment
@@ -478,7 +482,7 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	fmt.Printf("notes[1].Rho: %x\n", notes[1].Rho)
 	fmt.Printf("notes[1].R: %x\n", notes[1].R)
 	fmt.Printf("notes[1].Memo: %+v\n", notes[1].Memo)
-	var noteciphers [][] byte
+	var noteciphers [][]byte
 	if proof != nil {
 		noteciphers = client.EncryptNote(notes, keys, *ephemeralPrivKey, *ephemeralPubKey, hSig)
 	}
@@ -728,7 +732,7 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
 	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+	var sizeDescs = uint64(max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
 	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig

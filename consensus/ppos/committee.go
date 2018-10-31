@@ -72,8 +72,27 @@ func (self *Engine) CommitteeWatcher() {
 		case <-self.cQuitCommitteeWatcher:
 			Logger.log.Info("Committee watcher stoppeds")
 			return
-		case <-time.After(CmWacherInterval * time.Second):
+		case _ = <-self.cNewBlock:
 
+		case <-time.After(common.MaxBlockTime * time.Second):
+			self.committee.Lock()
+			myPubKey := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+			if common.IndexOfStr(myPubKey, self.committee.CurrentCommittee) != -1 {
+				for idx := 0; idx < common.TotalValidators; idx++ {
+					if self.committee.CurrentCommittee[idx] != myPubKey {
+						go func(validator string) {
+							peerIDs := self.config.Server.GetPeerIDsFromPublicKey(validator)
+							if len(peerIDs) != 0 {
+								// Peer exist
+							} else {
+								// Peer not exist
+							}
+						}(self.committee.CurrentCommittee[idx])
+					}
+				}
+			}
+
+			self.committee.Unlock()
 		}
 	}
 }

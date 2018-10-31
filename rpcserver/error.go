@@ -35,10 +35,6 @@ var ErrCodeMessage = map[string]struct {
 	ErrRPCInvalidMethodPermission: {-1008, "Invalid method permission"},
 }
 
-// RpcErrorCode identifies a kind of error.  These error codes are NOT used for
-// JSON-RPC response errors.
-type RpcErrorCode int
-
 // RPCError represents an error that is used as a part of a JSON-RPC Response
 // object.
 type RPCError struct {

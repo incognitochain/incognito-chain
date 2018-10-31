@@ -123,8 +123,8 @@ func (self *Engine) Start() error {
 	for chainID := 0; chainID < common.TotalValidators; chainID++ {
 		self.knownChainsHeight.Heights[chainID] = int(self.config.BlockChain.BestState[chainID].Height)
 		self.validatedChainsHeight.Heights[chainID] = 1
-
 	}
+
 	copy(self.committee.CurrentCommittee, self.config.ChainParams.GenesisBlock.Header.Committee)
 	Logger.log.Info("Validating local blockchain...")
 

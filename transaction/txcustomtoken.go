@@ -152,6 +152,10 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }
 
+func (tx *TxCustomToken) GetTxFee() uint64 {
+	return tx.Fee
+}
+
 // GetSenderAddrLastByte ...
 func (tx *TxCustomToken) GetSenderAddrLastByte() byte {
 	return tx.Tx.AddressLastByte

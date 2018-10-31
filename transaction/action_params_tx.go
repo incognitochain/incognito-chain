@@ -75,3 +75,7 @@ func (tx *ActionParamTx) GetSenderAddrLastByte() byte {
 	agentIDBytes := []byte(tx.Param.AgentID)
 	return agentIDBytes[len(agentIDBytes)-1]
 }
+
+func (tx *ActionParamTx) GetTxFee() uint64 {
+	return 0
+}

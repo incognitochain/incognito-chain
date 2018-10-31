@@ -188,7 +188,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		FeeEstimator: self.feeEstimator,
 	})
 
-	self.addrManager = addrmanager.New(cfg.DataDir, nil)
+	self.addrManager = addrmanager.New(cfg.DataDir)
 
 	self.rewardAgent, err = rewardagent.RewardAgent{}.Init(&rewardagent.RewardAgentConfig{
 		BlockChain: self.blockChain,

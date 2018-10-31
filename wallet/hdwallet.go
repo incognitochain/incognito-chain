@@ -32,12 +32,6 @@ func NewMasterKey(seed []byte) (*Key, error) {
 	keyBytes := intermediary[:32]  // use to create master private/public keypair
 	chainCode := intermediary[32:] // be used with public Key (in keypair) for new Child keys
 
-	// Validate Key
-	/*err = validatePrivateKey(keyBytes)
-	if err != nil {
-		return nil, err
-	}*/
-
 	keySet := (&cashec.KeySet{}).GenerateKey(keyBytes)
 
 	// Create the Key struct

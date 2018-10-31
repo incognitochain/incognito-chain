@@ -1,16 +1,17 @@
 package common
 
 const (
-	EmptyString = ""
+	EmptyString         = ""
+	MiliConstant        = 3 // 1 constant = 10^3 mili constant, we will use 1 miliconstant as minimum unit constant in tx
+	IncMerkleTreeHeight = 29
 )
 
 const (
-	TxNormalType        = "n" // normal tx(send and receive coin)
-	TxSalaryType        = "s" // salary tx(gov pay salary for block producer)
-	TxActionParamsType  = "a" // action tx to edit params
-	TxVotingType        = "v" // voting tx
-	TxCustomTokenType   = "t" // token  tx
-	IncMerkleTreeHeight = 29
+	TxNormalType       = "n" // normal tx(send and receive coin)
+	TxSalaryType       = "s" // salary tx(gov pay salary for block producer)
+	TxActionParamsType = "a" // action tx to edit params
+	TxVotingType       = "v" // voting tx
+	TxCustomTokenType  = "t" // token  tx
 )
 
 // unit type use in tx
@@ -24,6 +25,7 @@ const (
 
 var ListAsset = []string{AssetTypeCoin, AssetTypeBond, AssetTypeGovToken, AssetTypeDcbToken}
 
+// for mining consensus
 const (
 	MaxBlockSize          = 5000000 //byte 5MB
 	MaxTxsInBlock         = 1000
@@ -36,4 +38,5 @@ const (
 	TotalValidators       = 20                    // = TOTAL CHAINS
 	MinBlockSigs          = (TotalValidators / 2) + 1
 	GetChainStateInterval = 10 //second
+	MaxBlockTime          = 60 //second Maximum for a chain to grow
 )

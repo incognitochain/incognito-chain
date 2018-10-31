@@ -9,7 +9,7 @@ type GetBestBlockItem struct {
 	Hash             string `json:"Hash"`
 	TotalTxs         uint64 `json:"TotalTxs"`
 	SalaryFund       uint64 `json:"SalaryFund"`
-	BasicSalary      uint64 `json:"BasicSalary"`
+	SalaryPerTx      uint64 `json:"SalaryPerTx"`
 	BlockProducer    string `json:"BlockProducer"`
 	BlockProducerSig string `json:"BlockProducerSig"`
 }

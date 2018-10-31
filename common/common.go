@@ -17,6 +17,7 @@ import (
 	"log"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/libp2p/go-libp2p-peer"
+	"math"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -286,4 +287,8 @@ func CleanAndExpandPath(path string, defaultHomeDir string) string {
 	// NOTE: The os.ExpandEnv doesn't work with Windows-style %VARIABLE%,
 	// but they variables can still be expanded via POSIX-style $VARIABLE.
 	return filepath.Clean(os.ExpandEnv(path))
+}
+
+func ConstantToMiliConstant(constant uint64) uint64 {
+	return constant * uint64(math.Pow(10, MiliConstant))
 }

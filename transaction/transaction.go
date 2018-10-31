@@ -12,6 +12,7 @@ type Transaction interface {
 	GetType() string
 	GetTxVirtualSize() uint64
 	GetSenderAddrLastByte() byte
+	GetTxFee() uint64
 }
 type TxDesc struct {
 	// Tx is the transaction associated with the entry.
