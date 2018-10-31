@@ -245,7 +245,7 @@ func removeDuplicateAddresses(addrs []string) []string {
 // 	3) Load configuration file overwriting defaults with any specified options
 // 	4) Parse CLI options and overwrite/add any specified options
 //
-// The above results in btcd functioning properly without any config settings
+// The above results in Constant functioning properly without any config settings
 // while still allowing the user to override settings with config files and
 // command line options.  Command line options always take precedence.
 */
