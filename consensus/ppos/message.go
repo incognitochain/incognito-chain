@@ -156,34 +156,38 @@ func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 	// TODO check requester signature
 	err := cashec.ValidateDataB58(msg.RequesterPbk, msg.RequesterSig, rawBytes)
 	if err != nil {
+		Logger.log.Info("Received a MessageRequestSwap validate error", err)
 		return
 	}
-
 	peerIDs := self.config.Server.GetPeerIDsFromPublicKey(msg.SealerPbk)
 	if len(peerIDs) == 0 {
 		return
 	}
-
-	senderID := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 
 	sig, err := self.signData(rawBytes)
 	if err != nil {
 		Logger.log.Error("Can't sign swap ", err)
 		return
 	}
-	messageSigMsg := wire.MessageSignSwap{
-		SenderID:     senderID,
-		RequesterPbk: msg.RequesterPbk,
-		Validator:    base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)),
-		ValidatorSig: sig,
-	}
-	peerID, err := peer2.IDB58Decode(msg.SenderID)
+	messageSigMsg, err := wire.MakeEmptyMessage(wire.CmdSignSwap)
 	if err != nil {
-		Logger.log.Error("ERROR", msg.SenderID, peerID, err)
+		return
 	}
-	err = self.config.Server.PushMessageToPeer(&messageSigMsg, peerID)
-	if err != nil {
-		Logger.log.Error(err)
+	messageSigMsg.(*wire.MessageSignSwap).LockTime = msg.LockTime
+	messageSigMsg.(*wire.MessageSignSwap).RequesterPbk = msg.RequesterPbk
+	messageSigMsg.(*wire.MessageSignSwap).ChainID = msg.ChainID
+	messageSigMsg.(*wire.MessageSignSwap).SealerPbk = msg.SealerPbk
+	messageSigMsg.(*wire.MessageSignSwap).Validator = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+	messageSigMsg.(*wire.MessageSignSwap).ValidatorSig = sig
+
+	peerIDs = self.config.Server.GetPeerIDsFromPublicKey(msg.RequesterPbk)
+	if len(peerIDs) > 0 {
+		for _, peerID := range peerIDs {
+			Logger.log.Infof("sign swap to %s %s", peerID, msg.RequesterPbk)
+			self.config.Server.PushMessageToPeer(messageSigMsg, peerID)
+		}
+	} else {
+		Logger.log.Error("Validator's peer not found!", msg.RequesterPbk)
 	}
 
 	return
