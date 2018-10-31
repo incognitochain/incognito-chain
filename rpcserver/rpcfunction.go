@@ -729,44 +729,25 @@ func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	// param #2: list receiver
-	totalAmmount := int64(0)
-	receiversParam := arrayParams[1].(map[string]interface{})
-	paymentInfos := make([]*client.PaymentInfo, 0)
-	for pubKeyStr, amount := range receiversParam {
-		receiverPubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
-		}
-		paymentInfo := &client.PaymentInfo{
-			Amount:         uint64(amount.(float64)),
-			PaymentAddress: receiverPubKey.KeySet.PublicKey,
-		}
-		totalAmmount += int64(paymentInfo.Amount)
-		paymentInfos = append(paymentInfos, paymentInfo)
-	}
+	// param #2: estimation fee coin per kb
+	estimateFeeCoinPerKb := int64(arrayParams[1].(float64))
 
-	// param #3: estimation fee coin per kb
-	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
+	// param #3: estimation fee coin per kb by numblock
+	numBlock := uint32(arrayParams[2].(float64))
 
-	// param #4: estimation fee coin per kb by numblock
-	numBlock := uint32(arrayParams[3].(float64))
+	// param #4: token params
+	tokenParamsRaw := arrayParams[3].(map[string]interface{})
 
-	nodeAddr := arrayParams[4].(string)
-	if valid := common.ValidateNodeAddress(nodeAddr); !valid {
-		return nil, errors.New("node address is wrong")
-	}
-
-	// param #5: token params
-	tokenParamsRaw := arrayParams[5].(map[string]interface{})
 	tokenParams := &transaction.CustomTokenParamTx{
 		PropertyName:    tokenParamsRaw["TokenName"].(string),
 		PropertySymbol:  tokenParamsRaw["TokenSymbol"].(string),
 		TxCustomTokenID: tokenParamsRaw["TokenHash"].(string),
 		TokenTxType:     tokenParamsRaw["TokenTxType"].(float64),
 		Amount:          tokenParamsRaw["TokenAmount"].(float64),
-		// Receiver:        tokenParamsRaw["TokenReceiver"].(string), TO-DO
+		Receivers:       transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"]),
 	}
+
+	totalAmmount := estimateFeeCoinPerKb
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
@@ -797,7 +778,7 @@ func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan
 		estimateFeeCoinPerKb = int64(temp)
 	}
 	estimateFeeCoinPerKb += int64(self.config.Wallet.Config.IncrementalFee)
-	estimateTxSizeInKb := transaction.EstimateTxSize(candidateTxs, paymentInfos)
+	estimateTxSizeInKb := transaction.EstimateTxSize(candidateTxs, nil)
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 
 	// list unspent tx for create tx
@@ -831,7 +812,7 @@ func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan
 		commitmentsDb[chainId] = txViewPoint.ListCommitments(common.AssetTypeCoin)
 	}
 
-	tx, err := transaction.CreateTxCustomToken(&senderKey.KeySet.PrivateKey, paymentInfos,
+	tx, err := transaction.CreateTxCustomToken(&senderKey.KeySet.PrivateKey, nil,
 		merkleRootCommitments,
 		candidateTxsMap,
 		nullifiersDb,
