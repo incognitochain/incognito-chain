@@ -137,6 +137,7 @@ concludeBlock:
 	salaryTx, err := createSalaryTx(totalSalary, &payToAddress, rt, chainID)
 
 	if err != nil {
+		Logger.log.Error(err)
 		return nil, err
 	}
 	// the 1st tx will be salaryTx
@@ -166,7 +167,11 @@ concludeBlock:
 
 	// Add new commitments to merkle tree and save the root
 	newTree := prevCmTree
-	UpdateMerkleTreeForBlock(newTree, &block)
+	err = UpdateMerkleTreeForBlock(newTree, &block)
+	if err != nil {
+		// TODO check error to process
+		return nil, err
+	}
 	rt = newTree.GetRoot(common.IncMerkleTreeHeight)
 	copy(block.Header.MerkleRootCommitments[:], rt)
 
@@ -209,7 +214,7 @@ func createSalaryTx(
 	// Generate proof and sign tx
 	tx, err := transaction.CreateEmptyTx(common.TxSalaryType)
 	if err != nil {
-		return nil, err
+		return nil, NewBlockChainError(UnExpectedError, err)
 	}
 	tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
 	rtMap := map[byte][]byte{chainID: rt}
@@ -219,11 +224,11 @@ func createSalaryTx(
 	assetTypeToPaySalary := common.AssetTypeCoin
 	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0, assetTypeToPaySalary, true)
 	if err != nil {
-		return nil, err
+		return nil, NewBlockChainError(UnExpectedError, err)
 	}
 	tx, err = transaction.SignTx(tx)
 	if err != nil {
-		return nil, err
+		return nil, NewBlockChainError(UnExpectedError, err)
 	}
-	return tx, err
+	return tx, nil
 }
