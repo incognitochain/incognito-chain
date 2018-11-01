@@ -14,7 +14,6 @@ import (
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/cash/blockchain"
 	"github.com/ninjadotorg/cash/connmanager"
-	"github.com/ninjadotorg/cash/transaction"
 	"github.com/ninjadotorg/cash/wire"
 )
 
@@ -208,7 +207,7 @@ func (self *Engine) Stop() error {
 	if !self.started {
 		return errors.New("Consensus engine isn't running")
 	}
-	self.StopBlockProducer()
+	self.StopSealer()
 	if self.cQuitSwap != nil {
 		close(self.cQuitSwap)
 	}
@@ -218,8 +217,8 @@ func (self *Engine) Stop() error {
 	return nil
 }
 
-//StartBlockProducer start sealing block
-func (self *Engine) StartBlockProducer(sealerKeySet cashec.KeySetSealer) {
+//StartSealer start sealing block
+func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 	if self.sealerStarted {
 		Logger.log.Error("Sealer already started")
 		return
@@ -248,7 +247,7 @@ func (self *Engine) StartBlockProducer(sealerKeySet cashec.KeySetSealer) {
 					if common.IntArrayEquals(self.knownChainsHeight.Heights, self.validatedChainsHeight.Heights) {
 						chainID := self.getMyChain()
 						if chainID >= 0 && chainID < common.TotalValidators {
-							Logger.log.Critical("Yay!! It's my turn")
+							Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
 							Logger.log.Info("Current chainsHeight")
 							Logger.log.Info(self.validatedChainsHeight.Heights)
 							Logger.log.Info("My chainID: ", chainID)
@@ -281,8 +280,8 @@ func (self *Engine) StartBlockProducer(sealerKeySet cashec.KeySetSealer) {
 	}()
 }
 
-// StopBlockProducer stop sealer
-func (self *Engine) StopBlockProducer() {
+// StopSealer stop sealer
+func (self *Engine) StopSealer() {
 	if self.sealerStarted {
 		Logger.log.Info("Stopping Sealer...")
 		close(self.cQuitSealer)
@@ -295,21 +294,21 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	Logger.log.Info("Start creating block...")
 	myChainID := self.getMyChain()
 	paymentAddress, err := self.config.ValidatorKeySet.GetPaymentAddress()
-	newBlock, err := self.config.BlockGen.NewBlockTemplate(paymentAddress, myChainID)
+	newblock, err := self.config.BlockGen.NewBlockTemplate(paymentAddress, myChainID)
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
-	newBlock.Header.ChainsHeight = make([]int, common.TotalValidators)
-	copy(newBlock.Header.ChainsHeight, self.validatedChainsHeight.Heights)
-	newBlock.Header.ChainID = myChainID
-	newBlock.BlockProducer = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+	newblock.Header.ChainsHeight = make([]int, common.TotalValidators)
+	copy(newblock.Header.ChainsHeight, self.validatedChainsHeight.Heights)
+	newblock.Header.ChainID = myChainID
+	newblock.BlockProducer = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 
 	// hash candidate list and set to block header
-	candidates := self.GetCandidateCommitteeList(newBlock)
+	candidates := self.GetCandidateCommitteeList(newblock)
 	candidateBytes, _ := json.Marshal(candidates)
-	newBlock.Header.CandidateHash = common.HashH(candidateBytes)
+	newblock.Header.CandidateHash = common.HashH(candidateBytes)
 
-	return newBlock, nil
+	return newblock, nil
 }
 
 // Finalize after successfully create a block we will send this block to other validators to get their signatures
@@ -346,21 +345,16 @@ finalizing:
 				return
 			case blocksig := <-self.cBlockSig:
 
-				if blockHash != blocksig.BlockHash {
-					Logger.log.Critical("Block hash not match!", blocksig, "this block", blockHash)
-					continue
-				}
-
 				if idx := common.IndexOfStr(blocksig.Validator, committee); idx != -1 {
 					if finalBlock.Header.BlockCommitteeSigs[idx] == common.EmptyString {
-						err := cashec.ValidateDataB58(blocksig.Validator, blocksig.ValidatorSig, []byte(blockHash))
+						err := cashec.ValidateDataB58(blocksig.Validator, blocksig.BlockSig, []byte(blockHash))
 
 						if err != nil {
 							Logger.log.Error("Validate sig error:", err)
 							continue
 						} else {
 							sigsReceived++
-							finalBlock.Header.BlockCommitteeSigs[idx] = blocksig.ValidatorSig
+							finalBlock.Header.BlockCommitteeSigs[idx] = blocksig.BlockSig
 							Logger.log.Info("Validator's signature received", sigsReceived)
 						}
 					} else {
