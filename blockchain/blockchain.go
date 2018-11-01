@@ -139,7 +139,7 @@ func (self *BlockChain) createChainState(chainId byte) error {
 		initBlock = &Block{}
 		initBlock.Header = self.config.ChainParams.GenesisBlock.Header
 		initBlock.Header.ChainID = chainId
-		initBlock.Header.PrevBlockHash = *self.config.ChainParams.GenesisBlock.Hash()
+		initBlock.Header.PrevBlockHash = common.Hash{}
 	}
 	initBlock.Height = 1
 
