@@ -7,14 +7,18 @@ package blockchain
 import "fmt"
 
 const (
-	UnExpectedError = iota
+	UnExpectedError               = iota
+	UpdateMerkleTreeForBlockError
+	UnmashallJsonBlockError
 )
 
 var ErrCodeMessage = map[int]struct {
 	code    int
 	message string
 }{
-	UnExpectedError: {-1, "Unexpected error"},
+	UnExpectedError:               {-1, "Unexpected error"},
+	UpdateMerkleTreeForBlockError: {-2, "Update Merkle Commitments Tree For Block is failed"},
+	UnmashallJsonBlockError:       {-3, "Unmarshall json block is failed"},
 }
 
 type BlockChainError struct {

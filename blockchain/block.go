@@ -44,7 +44,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
 
 	// process tx from tx interface of temp
@@ -264,7 +264,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 			}
 			self.Transactions = append(self.Transactions, txNormal)
 		} else {
-			return errors.New("Can not parse a wrong tx")
+			return NewBlockChainError(UnmashallJsonBlockError, errors.New("Can not parse a wrong tx"))
 		}
 	}
 
@@ -277,6 +277,9 @@ AddTransaction adds a new transaction into block
 */
 // #1 - tx
 func (self *Block) AddTransaction(tx transaction.Transaction) error {
+	if self.Transactions == nil {
+		return NewBlockChainError(UnExpectedError, errors.New("Not init tx arrays"))
+	}
 	self.Transactions = append(self.Transactions, tx)
 	return nil
 }

@@ -458,6 +458,7 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	err = self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
 	if err != nil {
 		Logger.log.Errorf("Can not update merkle tree for block: %+v", err)
+		return
 	}
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)
 
