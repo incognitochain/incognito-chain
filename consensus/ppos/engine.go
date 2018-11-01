@@ -401,10 +401,10 @@ finalizing:
 		Logger.log.Info("Validator sigs: ", finalBlock.Header.BlockCommitteeSigs)
 	case <-time.After(common.MaxBlockSigWaitTime * time.Second):
 		//blocksig wait time exceeded -> get a new committee list and retry
-		Logger.log.Error(errExceedSigWaitTime)
+		Logger.log.Error(ErrExceedSigWaitTime)
 		if retryTime == 5 {
 			cancel <- struct{}{}
-			return errExceedBlockRetry
+			return NewConsensusError(ErrExceedBlockRetry, nil)
 		}
 		retryTime++
 		Logger.log.Infof("Start finalizing block... %d time", retryTime)

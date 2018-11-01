@@ -75,13 +75,13 @@ func (self *AddrManager) savePeers() error {
 
 	w, err := os.Create(self.peersFile)
 	if err != nil {
-		Logger.log.Infof("Error opening file %s: %+v", self.peersFile, err)
+		Logger.log.Errorf("Error opening file %s: %+v", self.peersFile, err)
 		return NewAddrManagerError(UnexpectedError, err)
 	}
 	enc := json.NewEncoder(w)
 	defer w.Close()
 	if err := enc.Encode(&sam); err != nil {
-		Logger.log.Infof("Failed to encode file %s: %+v", self.peersFile, err)
+		Logger.log.Errorf("Failed to encode file %s: %+v", self.peersFile, err)
 		return NewAddrManagerError(UnexpectedError, err)
 	}
 	return nil
@@ -94,11 +94,11 @@ func (self *AddrManager) loadPeers() {
 	//defer self.mtx.Unlock()
 	err := self.deserializePeers(self.peersFile)
 	if err != nil {
-		Logger.log.Infof("Failed to parse file %s: %+v", self.peersFile, err)
+		Logger.log.Errorf("Failed to parse file %s: %+v", self.peersFile, err)
 		// if it is invalid we nuke the old one unconditionally.
 		err = os.Remove(self.peersFile)
 		if err != nil {
-			Logger.log.Infof("Failed to remove corrupt peers file %s: %+v", self.peersFile, err)
+			Logger.log.Errorf("Failed to remove corrupt peers file %s: %+v", self.peersFile, err)
 		}
 		self.reset()
 	}
@@ -179,7 +179,7 @@ func (self *AddrManager) Start() {
 // Stop gracefully shuts down the address manager by stopping the main handler.
 func (self *AddrManager) Stop() error {
 	if atomic.AddInt32(&self.shutdown, 1) != 1 {
-		Logger.log.Infof("Address manager is already in the process of shutting down")
+		Logger.log.Errorf("Address manager is already in the process of shutting down")
 		return nil
 	}
 

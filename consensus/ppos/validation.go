@@ -18,7 +18,7 @@ import (
 func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
 	for _, tx := range txList {
 		if tx.ValidateTransaction() == false {
-			return errTxIsWrong
+			return NewConsensusError(ErrTxIsWrong, nil)
 		}
 	}
 	return nil
@@ -52,7 +52,7 @@ func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, 
 	}
 
 	if validatedSigs < 10 {
-		return errNotEnoughSigs
+		return NewConsensusError(ErrNotEnoughSigs, nil)
 	}
 	return nil
 }
@@ -94,7 +94,7 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 				}
 			}
 		}
-		return errMerkleRootCommitments
+		return NewConsensusError(ErrMerkleRootCommitments, nil)
 	}
 	return nil
 }
@@ -105,7 +105,7 @@ func (self *Engine) CheckBlockSize(block *blockchain.Block) error {
 		return err
 	}
 	if len(blockBytes) > common.MaxBlockSize {
-		return errBlockSizeExceed
+		return NewConsensusError(ErrBlockSizeExceed, nil)
 	}
 	return nil
 }
@@ -135,12 +135,12 @@ func (self *Engine) IsEnoughData(block *blockchain.Block) error {
 			<-timer.C
 			for i := 0; i < common.TotalValidators; i++ {
 				if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
-					return errChainNotFullySynced
+					return NewConsensusError(ErrChainNotFullySynced, nil)
 				}
 			}
 		}
 	} else {
-		return errChainNotFullySynced
+		return NewConsensusError(ErrChainNotFullySynced, nil)
 	}
 	return nil
 }
