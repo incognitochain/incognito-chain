@@ -544,10 +544,10 @@ func (self *Engine) StartSwap() error {
 						}
 						sealerPbk = committeeCandidatePbk
 					}
-					if sealerPbk == common.EmptyString {
-						//TODO for testing
-						sealerPbk = "1q4iCdtqb67DcNYyCE8FvMZKrDRE8KHW783VoYm5LXvds7vpsi"
-					}
+					//if sealerPbk == common.EmptyString {
+					//	//TODO for testing
+					//	sealerPbk = "1q4iCdtqb67DcNYyCE8FvMZKrDRE8KHW783VoYm5LXvds7vpsi"
+					//}
 					if sealerPbk == common.EmptyString {
 						continue
 					}
