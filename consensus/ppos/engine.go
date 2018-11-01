@@ -455,7 +455,10 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 
 	// update candidate list
 	self.config.BlockChain.BestState[block.Header.ChainID].Candidates = self.GetCandidateCommitteeList(block)
-	self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
+	err = self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
+	if err != nil {
+		Logger.log.Errorf("Can not update merkle tree for block: %+v", err)
+	}
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)
 
 	self.knownChainsHeight.Lock()

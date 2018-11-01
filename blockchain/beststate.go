@@ -20,9 +20,9 @@ type BestState struct {
 
 	CmTree *client.IncMerkleTree // The commitments merkle tree of the best block
 
-	Height    int32  // The height of the block.
-	NumTxns   uint64 // The number of txns in the block.
-	TotalTxns uint64 // The total number of txns in the chain.
+	Height     int32  // The height of the block.
+	NumTxns    uint64 // The number of txns in the block.
+	TotalTxns  uint64 // The total number of txns in the chain.
 	Candidates map[string]CommitteeCandidateInfo
 }
 
@@ -45,11 +45,11 @@ func (self *BestState) Init(block *Block, tree *client.IncMerkleTree) {
 	}
 }
 
-func (self *BestState) Update(block *Block) {
+func (self *BestState) Update(block *Block) error {
 	tree := self.CmTree
 	err := UpdateMerkleTreeForBlock(tree, block)
 	if err != nil {
-		Logger.log.Error("WHAT")
+		return NewBlockChainError(UnExpectedError, err)
 	}
 	bestBlockHash := block.Hash()
 	self.BestBlock = block
@@ -62,6 +62,7 @@ func (self *BestState) Update(block *Block) {
 	if self.Candidates == nil {
 		self.Candidates = make(map[string]CommitteeCandidateInfo)
 	}
+	return nil
 }
 
 func (self *BestState) RemoveCandidate(sealerPbk string) {
