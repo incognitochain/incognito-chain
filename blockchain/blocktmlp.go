@@ -166,7 +166,11 @@ concludeBlock:
 
 	// Add new commitments to merkle tree and save the root
 	newTree := prevCmTree
-	UpdateMerkleTreeForBlock(newTree, &block)
+	err = UpdateMerkleTreeForBlock(newTree, &block)
+	if err != nil {
+		// TODO check error to process
+		return nil, err
+	}
 	rt = newTree.GetRoot(common.IncMerkleTreeHeight)
 	copy(block.Header.MerkleRootCommitments[:], rt)
 
