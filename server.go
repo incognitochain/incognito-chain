@@ -450,7 +450,7 @@ func (self Server) Start() {
 			Logger.log.Critical(err)
 			return
 		}
-		self.consensusEngine.StartSealer(*sealerKeySet)
+		self.consensusEngine.StartBlockProducer(*sealerKeySet)
 		self.consensusEngine.StartSwap()
 	}
 }

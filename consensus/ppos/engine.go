@@ -208,7 +208,7 @@ func (self *Engine) Stop() error {
 	if !self.started {
 		return errors.New("Consensus engine isn't running")
 	}
-	self.StopSealer()
+	self.StopBlockProducer()
 	if self.cQuitSwap != nil {
 		close(self.cQuitSwap)
 	}
@@ -218,8 +218,8 @@ func (self *Engine) Stop() error {
 	return nil
 }
 
-//StartSealer start sealing block
-func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
+//StartBlockProducer start sealing block
+func (self *Engine) StartBlockProducer(sealerKeySet cashec.KeySetSealer) {
 	if self.sealerStarted {
 		Logger.log.Error("Sealer already started")
 		return
@@ -248,7 +248,7 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 					if common.IntArrayEquals(self.knownChainsHeight.Heights, self.validatedChainsHeight.Heights) {
 						chainID := self.getMyChain()
 						if chainID >= 0 && chainID < common.TotalValidators {
-							Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
+							Logger.log.Critical("Yay!! It's my turn")
 							Logger.log.Info("Current chainsHeight")
 							Logger.log.Info(self.validatedChainsHeight.Heights)
 							Logger.log.Info("My chainID: ", chainID)
@@ -281,8 +281,8 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 	}()
 }
 
-// StopSealer stop sealer
-func (self *Engine) StopSealer() {
+// StopBlockProducer stop sealer
+func (self *Engine) StopBlockProducer() {
 	if self.sealerStarted {
 		Logger.log.Info("Stopping Sealer...")
 		close(self.cQuitSealer)
@@ -295,21 +295,21 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	Logger.log.Info("Start creating block...")
 	myChainID := self.getMyChain()
 	paymentAddress, err := self.config.ValidatorKeySet.GetPaymentAddress()
-	newblock, err := self.config.BlockGen.NewBlockTemplate(paymentAddress, myChainID)
+	newBlock, err := self.config.BlockGen.NewBlockTemplate(paymentAddress, myChainID)
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
-	newblock.Header.ChainsHeight = make([]int, common.TotalValidators)
-	copy(newblock.Header.ChainsHeight, self.validatedChainsHeight.Heights)
-	newblock.Header.ChainID = myChainID
-	newblock.BlockProducer = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+	newBlock.Header.ChainsHeight = make([]int, common.TotalValidators)
+	copy(newBlock.Header.ChainsHeight, self.validatedChainsHeight.Heights)
+	newBlock.Header.ChainID = myChainID
+	newBlock.BlockProducer = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 
 	// hash candidate list and set to block header
-	candidates := self.GetCandidateCommitteeList(newblock)
+	candidates := self.GetCandidateCommitteeList(newBlock)
 	candidateBytes, _ := json.Marshal(candidates)
-	newblock.Header.CandidateHash = common.HashH(candidateBytes)
+	newBlock.Header.CandidateHash = common.HashH(candidateBytes)
 
-	return newblock, nil
+	return newBlock, nil
 }
 
 // Finalize after successfully create a block we will send this block to other validators to get their signatures
