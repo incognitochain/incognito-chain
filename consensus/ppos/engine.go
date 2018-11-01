@@ -671,5 +671,5 @@ func (self *Engine) StartSwap() error {
 
 func (self *Engine) Swap(chainId byte) {
 	Logger.log.Info("Consensus engine swap chain id -> %d", chainId)
-	self.cSwapChain <- byte(10)
+	self.cSwapChain <- chainId
 }
