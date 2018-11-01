@@ -74,10 +74,10 @@ do
     rm -rf data$i
 
     # build options to start node
-    opts="--listen 127.0.0.1:$PORT --discoverpeers --datadir $DB_DIR/data$i --generate --sealerkeyset $KEY --wallet --walletpassphrase '12345678'"
+    opts="--listen 127.0.0.1:$PORT --discoverpeers --datadir $DB_DIR/data$i --generate --producerkeyset $KEY --wallet --walletpassphrase '12345678'"
     if [ $i != 1 ]
     then
-        opts="--norpc --listen 127.0.0.1:$PORT --discoverpeers --datadir $DB_DIR/data$i --generate --sealerkeyset $KEY "
+        opts="--norpc --listen 127.0.0.1:$PORT --discoverpeers --datadir $DB_DIR/data$i --generate --producerkeyset $KEY "
     fi
     # send command to node window
     tmux send-keys -t cash-prototype:$i.0 "cd $SRC && ./cash-prototype $opts" ENTER

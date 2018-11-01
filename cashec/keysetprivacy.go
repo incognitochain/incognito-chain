@@ -6,7 +6,7 @@ import (
 )
 
 type KeySet struct {
-	// SealerKeyPair KeyPair
+	// ProducerKeyPair KeyPair
 	PrivateKey  client.SpendingKey
 	PublicKey   client.PaymentAddress
 	ReadonlyKey client.ViewingKey
@@ -43,13 +43,13 @@ func (self *KeySet) ImportFromPrivateKey(privateKey *client.SpendingKey) {
 }
 
 /*
-Generate Sealer keyset from privacy key set
- */
-func (self *KeySet) CreateSealerKeySet() (*KeySetSealer, error) {
-	var sealerKeySet KeySetSealer
-	sealerKeySet.GenerateKey(self.PrivateKey[:])
-	sealerKeySet.SpendingAddress = self.PublicKey.Apk
-	sealerKeySet.TransmissionKey = self.PublicKey.Pkenc
-	sealerKeySet.ReceivingKey = self.ReadonlyKey.Skenc
-	return &sealerKeySet, nil
+Generate Producer keyset from privacy key set
+*/
+func (self *KeySet) CreateProducerKeySet() (*KeySetProducer, error) {
+	var producerKeySet KeySetProducer
+	producerKeySet.GenerateKey(self.PrivateKey[:])
+	producerKeySet.SpendingAddress = self.PublicKey.Apk
+	producerKeySet.TransmissionKey = self.PublicKey.Pkenc
+	producerKeySet.ReceivingKey = self.ReadonlyKey.Skenc
+	return &producerKeySet, nil
 }

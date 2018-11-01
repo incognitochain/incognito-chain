@@ -21,13 +21,13 @@ import (
 
 type Engine struct {
 	sync.Mutex
-	started        bool
-	sealerStarted  bool
-	committeeMutex sync.Mutex
+	started         bool
+	producerStarted bool
+	committeeMutex  sync.Mutex
 
 	// channel
 	cQuit                 chan struct{}
-	cQuitSealer           chan struct{}
+	cQuitProducer         chan struct{}
 	cBlockSig             chan blockSig
 	cQuitSwap             chan struct{}
 	cSwapChain            chan byte
@@ -49,7 +49,7 @@ type committeeStruct struct {
 	ValidatorReliablePts map[string]int //track how reliable is the validator node
 	CurrentCommittee     []string
 	sync.Mutex
-	LastUpdate           int64
+	LastUpdate int64
 }
 
 type ChainInfo struct {
@@ -66,11 +66,11 @@ type EngineConfig struct {
 	BlockChain  *blockchain.BlockChain
 	ConnManager *connmanager.ConnManager
 	// RewardAgent
-	ChainParams     *blockchain.Params
-	BlockGen        *blockchain.BlkTmplGenerator
-	MemPool         *mempool.TxPool
-	ValidatorKeySet cashec.KeySetSealer
-	Server interface {
+	ChainParams    *blockchain.Params
+	BlockGen       *blockchain.BlkTmplGenerator
+	MemPool        *mempool.TxPool
+	ProducerKeySet cashec.KeySetProducer
+	Server         interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -207,7 +207,7 @@ func (self *Engine) Stop() error {
 	if !self.started {
 		return errors.New("Consensus engine isn't running")
 	}
-	self.StopSealer()
+	self.StopProducer()
 	if self.cQuitSwap != nil {
 		close(self.cQuitSwap)
 	}
@@ -217,21 +217,21 @@ func (self *Engine) Stop() error {
 	return nil
 }
 
-//StartSealer start sealing block
-func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
-	if self.sealerStarted {
-		Logger.log.Error("Sealer already started")
+//StartProducer start producing block
+func (self *Engine) StartProducer(producerKeySet cashec.KeySetProducer) {
+	if self.producerStarted {
+		Logger.log.Error("Producer already started")
 		return
 	}
 
-	self.config.ValidatorKeySet = sealerKeySet
+	self.config.ProducerKeySet = producerKeySet
 
-	self.cQuitSealer = make(chan struct{})
+	self.cQuitProducer = make(chan struct{})
 	self.cBlockSig = make(chan blockSig)
 	self.cNewBlock = make(chan blockchain.Block)
 
-	self.sealerStarted = true
-	Logger.log.Info("Starting sealer with public key: " + base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)))
+	self.producerStarted = true
+	Logger.log.Info("Starting producer with public key: " + base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00)))
 
 	// TODO test SWAP
 	//go self.StartSwap()
@@ -240,7 +240,7 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 	go func() {
 		for {
 			select {
-			case <-self.cQuitSealer:
+			case <-self.cQuitProducer:
 				return
 			default:
 				if self.started {
@@ -280,20 +280,20 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 	}()
 }
 
-// StopSealer stop sealer
-func (self *Engine) StopSealer() {
-	if self.sealerStarted {
-		Logger.log.Info("Stopping Sealer...")
-		close(self.cQuitSealer)
+// StopProducer stop producer
+func (self *Engine) StopProducer() {
+	if self.producerStarted {
+		Logger.log.Info("Stopping Producer...")
+		close(self.cQuitProducer)
 		close(self.cBlockSig)
-		self.sealerStarted = false
+		self.producerStarted = false
 	}
 }
 
 func (self *Engine) createBlock() (*blockchain.Block, error) {
 	Logger.log.Info("Start creating block...")
 	myChainID := self.getMyChain()
-	paymentAddress, err := self.config.ValidatorKeySet.GetPaymentAddress()
+	paymentAddress, err := self.config.ProducerKeySet.GetPaymentAddress()
 	newblock, err := self.config.BlockGen.NewBlockTemplate(paymentAddress, myChainID)
 	if err != nil {
 		return &blockchain.Block{}, err
@@ -301,7 +301,7 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	newblock.Header.ChainsHeight = make([]int, common.TotalValidators)
 	copy(newblock.Header.ChainsHeight, self.validatedChainsHeight.Heights)
 	newblock.Header.ChainID = myChainID
-	newblock.BlockProducer = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+	newblock.BlockProducer = base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00))
 
 	// hash candidate list and set to block header
 	candidates := self.GetCandidateCommitteeList(newblock)

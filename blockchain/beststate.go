@@ -65,9 +65,9 @@ func (self *BestState) Update(block *Block) error {
 	return nil
 }
 
-func (self *BestState) RemoveCandidate(sealerPbk string) {
-	_, ok := self.Candidates[sealerPbk]
+func (self *BestState) RemoveCandidate(producerPbk string) {
+	_, ok := self.Candidates[producerPbk]
 	if ok {
-		delete(self.Candidates, sealerPbk)
+		delete(self.Candidates, producerPbk)
 	}
 }

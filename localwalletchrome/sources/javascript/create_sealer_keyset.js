@@ -17,8 +17,8 @@ window.onload = function () {
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null) {
-                document.getElementById("lb_SealerKeySet").innerText = response.Result.SealerKeySet;
-                document.getElementById("lb_SealerPublicKey").innerText = response.Result.SealerPublicKey;
+                document.getElementById("lb_ProducerKeySet").innerText = response.Result.ProducerKeySet;
+                document.getElementById("lb_ProducerPublicKey").innerText = response.Result.ProducerPublicKey;
                 document.getElementById("loader").style.display = "none";
                 document.getElementById("myDiv").style.display = "block";
             } else {
@@ -35,7 +35,7 @@ window.onload = function () {
     var priKey = url.searchParams.get("priKey");
     xhr.send(JSON.stringify({
         jsonrpc: "1.0",
-        method: "createsealerkeyset",
+        method: "createproducerkeyset",
         params: priKey,
         id: 1
     }));

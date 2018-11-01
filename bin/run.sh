@@ -13,4 +13,4 @@ echo "Started privacy..."
 
 cd ../../../
 /usr/local/go/bin/go build
-./cash-prototype --discoverpeers --generate --sealerkeyset $KEY
+./cash-prototype --discoverpeers --generate --producerkeyset $KEY

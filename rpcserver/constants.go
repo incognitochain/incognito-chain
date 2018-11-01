@@ -45,5 +45,5 @@ const (
 	GetBalance            = "getbalance"
 	GetReceivedByAccount  = "getreceivedbyaccount"
 	SetTxFee              = "settxfee"
-	CreateSealerKeyset    = "createsealerkeyset"
+	CreateProducerKeyset  = "createproducerkeyset"
 )

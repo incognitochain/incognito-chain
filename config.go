@@ -92,8 +92,8 @@ type config struct {
 	TestNet bool `long:"testnet" description:"Use the test network"`
 
 	// PoS config
-	SealerSpendingKey string `long:"sealerspendingkey" description:"!!!WARNING Leave this if you don't know what this is"`
-	SealerKeySet      string `long:"sealerkeyset" description:"Key-set of the block sealer used to seal block"`
+	ProducerSpendingKey string `long:"producerspendingkey" description:"!!!WARNING Leave this if you don't know what this is"`
+	ProducerKeySet      string `long:"producerkeyset" description:"Key-set of the block producer used to seal block"`
 	// For Wallet
 	Wallet           bool   `long:"enablewallet" description:"Enable wallet"`
 	WalletName       string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
@@ -483,8 +483,8 @@ func loadConfig() (*config, []string, error) {
 
 	// Ensure there is at least one mining address when the generate flag is
 	// set.
-	if cfg.Generate && len(cfg.SealerKeySet) == 0 && len(cfg.SealerSpendingKey) == 0 {
-		str := "%s: the generate flag is set, but there are no sealer's key specified "
+	if cfg.Generate && len(cfg.ProducerKeySet) == 0 && len(cfg.ProducerSpendingKey) == 0 {
+		str := "%s: the generate flag is set, but there are no producer's key specified "
 		err := fmt.Errorf(str, funcName)
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, usageMessage)
@@ -629,19 +629,19 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	return nil
 }
 
-func (self *config) GetSealerKeySet() (*cashec.KeySetSealer, error) {
-	keysetSealer := &cashec.KeySetSealer{}
-	if len(self.SealerSpendingKey) != 0 {
+func (self *config) GetProducerKeySet() (*cashec.KeySetProducer, error) {
+	KeySetProducer := &cashec.KeySetProducer{}
+	if len(self.ProducerSpendingKey) != 0 {
 		Logger.log.Warn("!!NOT RECOMMENDED TO USE SPENDING KEY!!")
 		keySetUser := cashec.KeySet{}
-		spendingKeyByte, _, err := base58.Base58Check{}.Decode(self.SealerSpendingKey)
+		spendingKeyByte, _, err := base58.Base58Check{}.Decode(self.ProducerSpendingKey)
 		if err != nil {
-			return keysetSealer, err
+			return KeySetProducer, err
 		}
 		keySetUser.ImportFromPrivateKeyByte(spendingKeyByte)
-		keysetSealer, _ = keySetUser.CreateSealerKeySet()
-		return keysetSealer, nil
+		KeySetProducer, _ = keySetUser.CreateProducerKeySet()
+		return KeySetProducer, nil
 	} else {
-		return keysetSealer.DecodeToKeySet(self.SealerKeySet)
+		return KeySetProducer.DecodeToKeySet(self.ProducerKeySet)
 	}
 }

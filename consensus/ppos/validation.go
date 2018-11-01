@@ -32,7 +32,7 @@ func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, 
 			Logger.log.Error(err)
 			continue
 		}
-		k := cashec.KeySetSealer{
+		k := cashec.KeySetProducer{
 			SpublicKey: decPubkey,
 		}
 		decSig, _, err := base58.Base58Check{}.Decode(sigs[idx])

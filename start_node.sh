@@ -42,7 +42,7 @@ export EXTERNAL_ADDRESS="127.0.0.1:$PORT"
 
 if [ $1 != 1 ]
 then
-    ./cash-$1 --listen "127.0.0.1:$PORT" --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --generate --sealerkeyset $KEY --norpc
+    ./cash-$1 --listen "127.0.0.1:$PORT" --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --generate --producerkeyset $KEY --norpc
 else
-    ./cash-$1 --listen "127.0.0.1:$PORT" --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --generate --sealerkeyset $KEY --rpcuser "ad" --rpcpass "123" --enablewallet --walletpassphrase "12345678"
+    ./cash-$1 --listen "127.0.0.1:$PORT" --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --generate --producerkeyset $KEY --rpcuser "ad" --rpcpass "123" --enablewallet --walletpassphrase "12345678"
 fi

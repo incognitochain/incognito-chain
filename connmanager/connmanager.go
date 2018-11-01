@@ -92,7 +92,7 @@ func (self ConnManager) Stop() {
 	Logger.log.Warn("Connection manager stopped")
 }
 
-func (self ConnManager) New(cfg *Config) (*ConnManager) {
+func (self ConnManager) New(cfg *Config) *ConnManager {
 	self.Config = *cfg
 	self.cQuit = make(chan struct{})
 	self.discoveredPeers = make(map[string]*DiscoverPeerInfo)
@@ -321,9 +321,9 @@ listen:
 
 				var publicKey string
 
-				if listener.Config.SealerPrvKey != EmptyString {
-					keySet := &cashec.KeySetSealer{}
-					_, err := keySet.Import(listener.Config.SealerPrvKey)
+				if listener.Config.ProducerPrvKey != EmptyString {
+					keySet := &cashec.KeySetProducer{}
+					_, err := keySet.Import(listener.Config.ProducerPrvKey)
 					if err == nil {
 						publicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))
 					}

@@ -77,7 +77,7 @@ var RpcLimited = map[string]commandHandler{
 	GetBalance:            RpcServer.handleGetBalance,
 	GetReceivedByAccount:  RpcServer.handleGetReceivedByAccount,
 	SetTxFee:              RpcServer.handleSetTxFee,
-	CreateSealerKeyset:    RpcServer.handleCreateSealerKeySet,
+	CreateProducerKeyset:  RpcServer.handleCreateProducerKeySet,
 }
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -1466,20 +1466,20 @@ func (self RpcServer) handleSetTxFee(params interface{}, closeChan <-chan struct
 	return err == nil, NewRPCError(ErrUnexpected, err)
 }
 
-func (self RpcServer) handleCreateSealerKeySet(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateProducerKeySet(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// param #1: private key of sender
 	senderKey, err := wallet.Base58CheckDeserialize(params.(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	sealerKeySet, err := senderKey.KeySet.CreateSealerKeySet()
+	producerKeySet, err := senderKey.KeySet.CreateProducerKeySet()
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := make(map[string]string)
-	result["SealerKeySet"] = sealerKeySet.EncodeToString()
-	result["SealerPublicKey"] = base58.Base58Check{}.Encode(sealerKeySet.SpublicKey, byte(0x00))
+	result["ProducerKeySet"] = producerKeySet.EncodeToString()
+	result["ProducerPublicKey"] = base58.Base58Check{}.Encode(producerKeySet.SpublicKey, byte(0x00))
 	return result, nil
 }
 
@@ -1503,7 +1503,7 @@ func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <
 	result := make(map[string]string)
 	for chainID, bestState := range self.config.BlockChain.BestState {
 		if bestState.BestBlock.BlockProducer != "" {
-			result[strconv.Itoa(chainID)] = bestState.BestBlock.BlockProducer;
+			result[strconv.Itoa(chainID)] = bestState.BestBlock.BlockProducer
 		} else {
 			result[strconv.Itoa(chainID)] = self.config.ChainParams.GenesisBlock.Header.Committee[chainID]
 		}

@@ -29,7 +29,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageBlockSigReq) {
 			Reason:    err.Error(),
 			BlockHash: block.Hash().String(),
 			ChainID:   block.Header.ChainID,
-			Validator: base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)),
+			Validator: base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00)),
 		}
 		dataByte, _ := invalidBlockMsg.JsonSerialize()
 		invalidBlockMsg.ValidatorSig, err = self.signData(dataByte)
@@ -53,7 +53,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageBlockSigReq) {
 		return
 	}
 	blockSigMsg := wire.MessageBlockSig{
-		Validator: base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)),
+		Validator: base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00)),
 		BlockSig:  sig,
 	}
 	peerID, err := peer2.IDB58Decode(msgBlock.SenderID)
@@ -188,8 +188,8 @@ func (self *Engine) OnSwapRequest(msg *wire.MessageSwapRequest) {
 	// messageSigMsg.(*wire.MessageSwapSig).LockTime = msg.LockTime
 	// messageSigMsg.(*wire.MessageSwapSig).RequesterPbk = msg.RequesterPbk
 	// messageSigMsg.(*wire.MessageSwapSig).ChainID = msg.ChainID
-	// messageSigMsg.(*wire.MessageSwapSig).SealerPbk = msg.SealerPbk
-	messageSigMsg.(*wire.MessageSwapSig).Validator = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+	// messageSigMsg.(*wire.MessageSwapSig).ProducerPbk = msg.ProducerPbk
+	messageSigMsg.(*wire.MessageSwapSig).Validator = base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00))
 	messageSigMsg.(*wire.MessageSwapSig).SwapSig = sig
 
 	peerID, err := peer2.IDB58Decode(msg.SenderID)

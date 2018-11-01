@@ -444,13 +444,13 @@ func (self Server) Start() {
 		go self.Stop()
 		return
 	}
-	if cfg.Generate == true && (len(cfg.SealerSpendingKey) > 0 || len(cfg.SealerKeySet) > 0) {
-		sealerKeySet, err := cfg.GetSealerKeySet()
+	if cfg.Generate == true && (len(cfg.ProducerSpendingKey) > 0 || len(cfg.ProducerKeySet) > 0) {
+		producerKeySet, err := cfg.GetProducerKeySet()
 		if err != nil {
 			Logger.log.Critical(err)
 			return
 		}
-		self.consensusEngine.StartSealer(*sealerKeySet)
+		self.consensusEngine.StartProducer(*producerKeySet)
 		self.consensusEngine.StartSwap()
 	}
 }
@@ -512,7 +512,7 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 // newPeerConfig returns the configuration for the listening RemotePeer.
 */
 func (self *Server) NewPeerConfig() *peer.Config {
-	keysetSealer, err := cfg.GetSealerKeySet()
+	KeySetProducer, err := cfg.GetProducerKeySet()
 	if err != nil {
 		Logger.log.Critical(err)
 	}
@@ -539,8 +539,8 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnSwapUpdate:   self.OnSwapUpdate,
 		},
 	}
-	if len(keysetSealer.SprivateKey) != 0 {
-		config.SealerPrvKey = base58.Base58Check{}.Encode(keysetSealer.SprivateKey, byte(0x00))
+	if len(KeySetProducer.SprivateKey) != 0 {
+		config.ProducerPrvKey = base58.Base58Check{}.Encode(KeySetProducer.SprivateKey, byte(0x00))
 	}
 	return config
 }
@@ -893,11 +893,11 @@ func (self Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
 	msg.(*wire.MessageVersion).ProtocolVersion = self.protocolVersion
 
-	// Validate Public Key from SealerPrvKey
-	if peerConn.ListenerPeer.Config.SealerPrvKey != "" {
-		keySet, err := cfg.GetSealerKeySet()
+	// Validate Public Key from ProducerPrvKey
+	if peerConn.ListenerPeer.Config.ProducerPrvKey != "" {
+		keySet, err := cfg.GetProducerKeySet()
 		if err != nil {
-			Logger.log.Critical("Invalid sealer's private key")
+			Logger.log.Critical("Invalid producer's private key")
 			return err
 		}
 		msg.(*wire.MessageVersion).PublicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Account List</title>
@@ -8,12 +9,11 @@
     <script src='sources/javascript/jquery.base64.min.js'></script>
     <script src='sources/javascript/popper.min.js'></script>
     <script src='sources/javascript/bootstrap.min.js'></script>
-    <link rel="stylesheet" href="sources/css/bootstrap.min.css"/>
-    <script src='sources/javascript/create_sealer_keyset.js'></script>
+    <link rel="stylesheet" href="sources/css/bootstrap.min.css" />
+    <script src='sources/javascript/create_producer_keyset.js'></script>
 </head>
 
 <style>
-
     #loader {
         position: absolute;
         left: 50%;
@@ -35,6 +35,7 @@
         0% {
             transform: rotate(0deg);
         }
+
         100% {
             transform: rotate(360deg);
         }
@@ -44,20 +45,21 @@
 
 <body style="width: 600px; height: 550px; padding: 10px">
 
-<div id="loader"></div>
-<div style="display:none;" id="myDiv" class="animate-bottom">
-    <a id="lnk_back" href="index.html">Back</a>
-    <div class="card">
-        <div class="card-header">
-            <h5 class="card-title">Sealer Keyset</h5>
-        </div>
-        <div class="card-body">
-            <label>Sealer KeySet</label>
-            <p id="lb_SealerKeySet" style="font-style: italic"></p>
-            <label>Sealer PublicKey</label>
-            <p id="lb_SealerPublicKey" style="font-style: italic"></p>
+    <div id="loader"></div>
+    <div style="display:none;" id="myDiv" class="animate-bottom">
+        <a id="lnk_back" href="index.html">Back</a>
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Producer Keyset</h5>
+            </div>
+            <div class="card-body">
+                <label>Producer KeySet</label>
+                <p id="lb_ProducerKeySet" style="font-style: italic"></p>
+                <label>Producer PublicKey</label>
+                <p id="lb_ProducerPublicKey" style="font-style: italic"></p>
+            </div>
         </div>
     </div>
-</div>
 </body>
+
 </html>

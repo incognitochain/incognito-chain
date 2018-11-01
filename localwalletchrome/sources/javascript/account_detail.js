@@ -65,7 +65,7 @@ function dumpprivkey(publicKey) {
                 document.getElementById("lb_privateKey").innerText = response.Result.PrivateKey;
                 var url = new URL(window.location.href);
                 var account = url.searchParams.get("account");
-                document.getElementById("lnk_createsealerkeyset").href = 'create_sealer_keyset.html?priKey=' + encodeURIComponent(response.Result.PrivateKey) + '&accountName=' + encodeURIComponent(account);
+                document.getElementById("lnk_createproducerkeyset").href = 'create_producer_keyset.html?priKey=' + encodeURIComponent(response.Result.PrivateKey) + '&accountName=' + encodeURIComponent(account);
             } else {
                 if (response.Error != null) {
                     alert(response.Error.message);

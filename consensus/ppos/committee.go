@@ -34,7 +34,7 @@ func (self *Engine) CheckCommittee(committee []string, blockHeight int, chainID 
 }
 
 func (self *Engine) signData(data []byte) (string, error) {
-	signatureByte, err := self.config.ValidatorKeySet.Sign(data)
+	signatureByte, err := self.config.ProducerKeySet.Sign(data)
 	if err != nil {
 		return common.EmptyString, errors.New("Can't sign data. " + err.Error())
 	}
@@ -43,7 +43,7 @@ func (self *Engine) signData(data []byte) (string, error) {
 
 // getMyChain validator chainID and committee of that chainID
 func (self *Engine) getMyChain() byte {
-	pbk := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+	pbk := base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00))
 	return self.getChainIdByPbk(pbk)
 }
 
@@ -108,7 +108,7 @@ func (self *Engine) CommitteeWatcher() {
 
 		case <-time.After(common.MaxBlockTime * time.Second):
 			self.committee.Lock()
-			myPubKey := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+			myPubKey := base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00))
 			if common.IndexOfStr(myPubKey, self.committee.CurrentCommittee) != -1 {
 				for idx := 0; idx < common.TotalValidators; idx++ {
 					if self.committee.CurrentCommittee[idx] != myPubKey {
@@ -129,37 +129,37 @@ func (self *Engine) CommitteeWatcher() {
 	}
 }
 
-func (self *Engine) updateCommittee(sealerPbk string, chanId byte) error {
+func (self *Engine) updateCommittee(producerPbk string, chanId byte) error {
 	self.committee.Lock()
 	defer self.committee.Unlock()
 
 	committee := make([]string, common.TotalValidators)
 	copy(committee, self.committee.CurrentCommittee)
 
-	idx := common.IndexOfStr(sealerPbk, committee)
+	idx := common.IndexOfStr(producerPbk, committee)
 	if idx >= 0 {
 		return errors.New("pbk is existed on committee list")
 	}
 	currentCommittee := make([]string, common.TotalValidators)
-	currentCommittee = append(committee[:chanId], sealerPbk)
+	currentCommittee = append(committee[:chanId], producerPbk)
 	currentCommittee = append(currentCommittee, committee[chanId+1:]...)
 	self.committee.CurrentCommittee = currentCommittee
-	//remove sealerPbk from candidate list
+	//remove producerPbk from candidate list
 	for chainId, bestState := range self.config.BlockChain.BestState {
-		bestState.RemoveCandidate(sealerPbk)
+		bestState.RemoveCandidate(producerPbk)
 		self.config.BlockChain.StoreBestState(byte(chainId))
 	}
 
 	return nil
 }
 
-func (self *Engine) getRawBytesForSwap(lockTime int64, requesterPbk string, chainId byte, sealerPbk string) []byte {
+func (self *Engine) getRawBytesForSwap(lockTime int64, requesterPbk string, chainId byte, producerPbk string) []byte {
 	rawBytes := []byte{}
 	bTime := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bTime, uint64(lockTime))
 	rawBytes = append(rawBytes, bTime...)
 	rawBytes = append(rawBytes, []byte(requesterPbk)...)
 	rawBytes = append(rawBytes, chainId)
-	rawBytes = append(rawBytes, []byte(sealerPbk)...)
+	rawBytes = append(rawBytes, []byte(producerPbk)...)
 	return rawBytes
 }

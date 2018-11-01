@@ -27,7 +27,7 @@ type BlockHeader struct {
 	Timestamp int64
 
 	// Parallel PoS
-	BlockCommitteeSigs []string //Include sealer and validators signature
+	BlockCommitteeSigs []string //Include producer and validators signature
 	Committee          []string //Voted committee for the next block
 	ChainID            byte
 	ChainsHeight       []int //height of 20 chain when this block is created
