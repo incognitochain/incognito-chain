@@ -4,8 +4,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 
-	"github.com/ninjadotorg/cash/common"
-	"github.com/ninjadotorg/cash/database"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 )
 
 type db struct {

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash/blockchain"
+	"github.com/ninjadotorg/constant/blockchain"
 )
 
 const (

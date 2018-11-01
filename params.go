@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ninjadotorg/cash/blockchain"
+	"github.com/ninjadotorg/constant/blockchain"
 )
 
 // activeNetParams is a pointer to the parameters specific to the

@@ -5,11 +5,11 @@ import (
 	"sync/atomic"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash/blockchain"
-	"github.com/ninjadotorg/cash/common"
-	"github.com/ninjadotorg/cash/mempool"
-	"github.com/ninjadotorg/cash/peer"
-	"github.com/ninjadotorg/cash/wire"
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/mempool"
+	"github.com/ninjadotorg/constant/peer"
+	"github.com/ninjadotorg/constant/wire"
 )
 
 type NetSync struct {

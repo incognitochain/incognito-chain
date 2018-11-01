@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ninjadotorg/cash/privacy/client/crypto/sha256"
+	"github.com/ninjadotorg/constant/privacy/client/crypto/sha256"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/curve25519"
 

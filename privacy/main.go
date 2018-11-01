@@ -8,9 +8,9 @@ import (
 	// "unsafe"
 
 
-	"github.com/ninjadotorg/cash/privacy/client"
-	"github.com/ninjadotorg/cash/privacy/proto/zksnark"
-	// "github.com/ninjadotorg/cash/transaction"
+	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy/proto/zksnark"
+	// "github.com/ninjadotorg/constant/transaction"
 )
 
 type ProveResult struct {

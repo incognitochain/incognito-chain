@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ninjadotorg/cash/bootnode/server"
+	"github.com/ninjadotorg/constant/bootnode/server"
 	"log"
 )
 

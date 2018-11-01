@@ -3,7 +3,7 @@ package rewardagent
 import (
 	"sync"
 
-	"github.com/ninjadotorg/cash/blockchain"
+	"github.com/ninjadotorg/constant/blockchain"
 )
 
 type RewardAgent struct {

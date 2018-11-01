@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ninjadotorg/cash/common"
-	"github.com/ninjadotorg/cash/privacy/client"
-	"github.com/ninjadotorg/cash/privacy/proto/zksnark"
-	"github.com/ninjadotorg/cash/transaction"
-	"github.com/ninjadotorg/cash/wallet"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy/proto/zksnark"
+	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 type GenesisBlockGenerator struct {

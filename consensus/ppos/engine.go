@@ -6,15 +6,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ninjadotorg/cash/cashec"
-	"github.com/ninjadotorg/cash/common"
-	"github.com/ninjadotorg/cash/common/base58"
-	"github.com/ninjadotorg/cash/mempool"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/mempool"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash/blockchain"
-	"github.com/ninjadotorg/cash/connmanager"
-	"github.com/ninjadotorg/cash/wire"
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/connmanager"
+	"github.com/ninjadotorg/constant/wire"
 )
 
 // PoSEngine only need to start if node runner want to be a validator

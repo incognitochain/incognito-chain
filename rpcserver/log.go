@@ -1,6 +1,6 @@
 package rpcserver
 
-import "github.com/ninjadotorg/cash/common"
+import "github.com/ninjadotorg/constant/common"
 
 type RpcLogger struct {
 	log common.Logger

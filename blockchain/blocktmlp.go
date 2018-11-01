@@ -3,9 +3,9 @@ package blockchain
 import (
 	"time"
 
-	"github.com/ninjadotorg/cash/common"
-	"github.com/ninjadotorg/cash/privacy/client"
-	"github.com/ninjadotorg/cash/transaction"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 type BlkTmplGenerator struct {

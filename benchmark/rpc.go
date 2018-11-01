@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"github.com/ninjadotorg/cash/benchmark/api"
-	"github.com/ninjadotorg/cash/wallet"
+	"github.com/ninjadotorg/constant/benchmark/api"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 

@@ -1,7 +1,7 @@
 FROM golang:1.11rc1-alpine
 
 ENV REFLEXGLIDE=https://github.com/Masterminds/glide/releases/download/v0.12.3/glide-v0.12.3-linux-amd64.tar.gz
-ENV WORK=/go/src/github.com/ninjadotorg/cash-prototype
+ENV WORK=/go/src/github.com/ninjadotorg/constant
 ENV GOROOT="/usr/local/go"
 ENV GOPATH="/go"
 

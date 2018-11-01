@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/constant/common"
 )
 
 // ErrChecksum indicates that the checksum of a check-encoded string does not verify against

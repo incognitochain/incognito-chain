@@ -3,7 +3,7 @@ package mempool
 import (
 	"testing"
 
-	"github.com/ninjadotorg/cash/transaction"
+	"github.com/ninjadotorg/constant/transaction"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

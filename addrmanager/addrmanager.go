@@ -10,7 +10,7 @@ import (
 	"time"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash/peer"
+	"github.com/ninjadotorg/constant/peer"
 )
 
 type AddrManager struct {

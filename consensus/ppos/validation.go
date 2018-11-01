@@ -7,12 +7,12 @@ import (
 
 	"errors"
 
-	"github.com/ninjadotorg/cash/blockchain"
-	"github.com/ninjadotorg/cash/cashec"
-	"github.com/ninjadotorg/cash/common"
-	"github.com/ninjadotorg/cash/common/base58"
-	"github.com/ninjadotorg/cash/transaction"
-	"github.com/ninjadotorg/cash/wire"
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/wire"
 )
 
 func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {

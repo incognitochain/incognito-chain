@@ -5,8 +5,8 @@ import (
 	"reflect"
 
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash/blockchain"
-	"github.com/ninjadotorg/cash/transaction"
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 // list message type

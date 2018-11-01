@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/constant/common"
 )
 
 type DbLogger struct {

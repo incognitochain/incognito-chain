@@ -10,9 +10,9 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/ninjadotorg/cash/cashec"
-	"github.com/ninjadotorg/cash/common"
-	"github.com/ninjadotorg/cash/privacy/client"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy/client"
 )
 
 // TxVoting ...

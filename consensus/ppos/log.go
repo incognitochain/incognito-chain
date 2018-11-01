@@ -1,6 +1,6 @@
 package ppos
 
-import "github.com/ninjadotorg/cash/common"
+import "github.com/ninjadotorg/constant/common"
 
 type PoSLogger struct {
 	log common.Logger

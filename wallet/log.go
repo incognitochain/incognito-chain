@@ -1,6 +1,6 @@
 package wallet
 
-import "github.com/ninjadotorg/cash/common"
+import "github.com/ninjadotorg/constant/common"
 
 type WalletLogger struct {
 	log common.Logger

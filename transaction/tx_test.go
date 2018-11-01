@@ -4,9 +4,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/ninjadotorg/cash/common"
-	"github.com/ninjadotorg/cash/privacy/client"
-	"github.com/ninjadotorg/cash/wallet"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 func TestSpendGenesisTx(t *testing.T) {

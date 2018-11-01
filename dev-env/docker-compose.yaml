@@ -4,7 +4,7 @@ services:
     image: golang:1.11rc1-alpine
     container_name: cash-prototype-dev
     volumes:
-      - "../:/go/src/github.com/ninjadotorg/cash"
+      - "../:/go/src/github.com/ninjadotorg/constant"
     command: > 
       sh -c "apk update && apk add --no-cache curl git 
       && curl -Lk https://github.com/Masterminds/glide/releases/download/v0.13.1/glide-v0.13.1-linux-amd64.tar.gz -o glide.tar.gz 
@@ -12,7 +12,7 @@ services:
       && tar -xzf glide.tar.gz -C ~/glide
       && mv ~/glide/linux-amd64/glide /bin/glide 
       && tail -f /dev/null"
-    working_dir: /go/src/github.com/ninjadotorg/cash
+    working_dir: /go/src/github.com/ninjadotorg/constant
     ports:
       - 9333:9333
     networks:

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/ninjadotorg/cash/common/base58"
-	"github.com/ninjadotorg/cash/privacy/client"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/privacy/client"
 	"golang.org/x/crypto/ed25519"
 )
 

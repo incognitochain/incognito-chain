@@ -1,6 +1,6 @@
 package netsync
 
-import "github.com/ninjadotorg/cash/common"
+import "github.com/ninjadotorg/constant/common"
 
 type NetSyncLogger struct {
 	log common.Logger

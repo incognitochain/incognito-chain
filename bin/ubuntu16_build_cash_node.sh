@@ -23,7 +23,7 @@ curl https://glide.sh/get | sh
 
 echo "Clone cash-prototype..."
 cd go/src/github.com/ninjadotorg
-git clone https://github.com/ninjadotorg/cash -b Parallel-PoS-Privacy
+git clone https://github.com/ninjadotorg/constant -b Parallel-PoS-Privacy
 
 echo "Install cash-prototype packages..."
 cd cash-prototype

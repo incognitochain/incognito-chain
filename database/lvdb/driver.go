@@ -3,7 +3,7 @@ package lvdb
 import (
 	"errors"
 
-	"github.com/ninjadotorg/cash/database"
+	"github.com/ninjadotorg/constant/database"
 )
 
 func init() {

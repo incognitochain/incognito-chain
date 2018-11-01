@@ -1,6 +1,6 @@
 package blockchain
 
-import "github.com/ninjadotorg/cash/common"
+import "github.com/ninjadotorg/constant/common"
 
 type BlockChainLogger struct {
 	log common.Logger

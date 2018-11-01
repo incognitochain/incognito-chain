@@ -1,9 +1,9 @@
 package blockchain
 
 import (
-	"github.com/ninjadotorg/cash/common"
-	"github.com/ninjadotorg/cash/database"
-	"github.com/ninjadotorg/cash/transaction"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/transaction"
 	"errors"
 )
 

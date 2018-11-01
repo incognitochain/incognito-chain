@@ -3,7 +3,7 @@ package main
 import (
 	"path/filepath"
 	"os"
-	"github.com/ninjadotorg/cash/wallet"
+	"github.com/ninjadotorg/constant/wallet"
 	"log"
 	"errors"
 )

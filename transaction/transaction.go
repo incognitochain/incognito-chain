@@ -3,7 +3,7 @@ package transaction
 import (
 	"time"
 
-	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/constant/common"
 )
 
 // Interface for all type of transaction
