@@ -11,9 +11,8 @@ const (
 )
 
 type MessageBlockSig struct {
-	BlockHash    string
-	Validator    string
-	ValidatorSig string
+	Validator string
+	BlockSig  string
 }
 
 func (self *MessageBlockSig) MessageType() string {

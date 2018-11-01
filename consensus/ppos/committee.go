@@ -4,9 +4,12 @@ import (
 	"errors"
 	"time"
 
+	"encoding/binary"
+
+	"github.com/ninjadotorg/cash/blockchain"
 	"github.com/ninjadotorg/cash/common"
 	"github.com/ninjadotorg/cash/common/base58"
-	"encoding/binary"
+	"github.com/ninjadotorg/cash/transaction"
 )
 
 func (self *Engine) GetCommittee() []string {
@@ -47,6 +50,36 @@ func (self *Engine) getMyChain() byte {
 func (self *Engine) getChainIdByPbk(pbk string) byte {
 	committee := self.GetCommittee()
 	return byte(common.IndexOfStr(pbk, committee))
+}
+
+func (self *Engine) GetCandidateCommitteeList(block *blockchain.Block) map[string]blockchain.CommitteeCandidateInfo {
+	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
+	candidates := bestState.Candidates
+	if candidates == nil {
+		candidates = make(map[string]blockchain.CommitteeCandidateInfo)
+	}
+	for _, tx := range block.Transactions {
+		if tx.GetType() == common.TxVotingType {
+			txV, ok := tx.(*transaction.TxVoting)
+			nodeAddr := txV.PublicKey
+			cndVal, ok := candidates[nodeAddr]
+			_ = cndVal
+			if !ok {
+				candidates[nodeAddr] = blockchain.CommitteeCandidateInfo{
+					Value:     txV.GetValue(),
+					Timestamp: block.Header.Timestamp,
+					ChainID:   block.Header.ChainID,
+				}
+			} else {
+				candidates[nodeAddr] = blockchain.CommitteeCandidateInfo{
+					Value:     cndVal.Value + txV.GetValue(),
+					Timestamp: block.Header.Timestamp,
+					ChainID:   block.Header.ChainID,
+				}
+			}
+		}
+	}
+	return candidates
 }
 
 func (committee *committeeStruct) UpdateCommitteePoint(chainLeader string, validatorSig []string) {
@@ -120,7 +153,7 @@ func (self *Engine) updateCommittee(sealerPbk string, chanId byte) error {
 	return nil
 }
 
-func (self *Engine) getRawBytesForSwap(lockTime int64, requesterPbk string, chainId byte, sealerPbk string) ([]byte) {
+func (self *Engine) getRawBytesForSwap(lockTime int64, requesterPbk string, chainId byte, sealerPbk string) []byte {
 	rawBytes := []byte{}
 	bTime := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bTime, uint64(lockTime))

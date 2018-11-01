@@ -127,9 +127,9 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnGetAddr != nil {
 						self.Config.MessageListeners.OnAddr(self, message.(*wire.MessageAddr))
 					}
-				case reflect.TypeOf(&wire.MessageRequestBlockSign{}):
+				case reflect.TypeOf(&wire.MessageBlockSigReq{}):
 					if self.Config.MessageListeners.OnRequestSign != nil {
-						self.Config.MessageListeners.OnRequestSign(self, message.(*wire.MessageRequestBlockSign))
+						self.Config.MessageListeners.OnRequestSign(self, message.(*wire.MessageBlockSigReq))
 					}
 				case reflect.TypeOf(&wire.MessageInvalidBlock{}):
 					if self.Config.MessageListeners.OnInvalidBlock != nil {
@@ -151,17 +151,17 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnRegistration != nil {
 						self.Config.MessageListeners.OnRegistration(self, message.(*wire.MessageRegistration))
 					}
-				case reflect.TypeOf(&wire.MessageRequestSwap{}):
-					if self.Config.MessageListeners.OnRequestSwap != nil {
-						self.Config.MessageListeners.OnRequestSwap(self, message.(*wire.MessageRequestSwap))
+				case reflect.TypeOf(&wire.MessageSwapRequest{}):
+					if self.Config.MessageListeners.OnSwapRequest != nil {
+						self.Config.MessageListeners.OnSwapRequest(self, message.(*wire.MessageSwapRequest))
 					}
-				case reflect.TypeOf(&wire.MessageSignSwap{}):
+				case reflect.TypeOf(&wire.MessageSwapSig{}):
 					if self.Config.MessageListeners.OnSignSwap != nil {
-						self.Config.MessageListeners.OnSignSwap(self, message.(*wire.MessageSignSwap))
+						self.Config.MessageListeners.OnSignSwap(self, message.(*wire.MessageSwapSig))
 					}
-				case reflect.TypeOf(&wire.MessageUpdateSwap{}):
-					if self.Config.MessageListeners.OnUpdateSwap != nil {
-						self.Config.MessageListeners.OnUpdateSwap(self, message.(*wire.MessageUpdateSwap))
+				case reflect.TypeOf(&wire.MessageSwapUpdate{}):
+					if self.Config.MessageListeners.OnSwapUpdate != nil {
+						self.Config.MessageListeners.OnSwapUpdate(self, message.(*wire.MessageSwapUpdate))
 					}
 				default:
 					Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, self)
