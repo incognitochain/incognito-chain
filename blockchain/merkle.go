@@ -137,7 +137,7 @@ func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 		if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
 			tx, ok := blockTx.(*transaction.Tx)
 			if ok == false {
-				return fmt.Errorf("Transaction in block not valid")
+				return NewBlockChainError(UnExpectedError, fmt.Errorf("Transaction in block not valid"))
 			}
 
 			for _, desc := range tx.Descs {
@@ -148,7 +148,7 @@ func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 		} else if blockTx.GetType() == common.TxVotingType {
 			tx, ok := blockTx.(*transaction.TxVoting)
 			if ok == false {
-				return fmt.Errorf("Transaction in block not valid")
+				return NewBlockChainError(UnExpectedError, fmt.Errorf("Transaction in block not valid"))
 			}
 
 			for _, desc := range tx.Descs {
