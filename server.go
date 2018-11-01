@@ -451,6 +451,7 @@ func (self Server) Start() {
 			return
 		}
 		self.consensusEngine.StartSealer(*sealerKeySet)
+		self.consensusEngine.StartSwap()
 	}
 }
 
