@@ -512,157 +512,160 @@ func (self *Engine) StartSwap() error {
 	self.cQuitSwap = make(chan struct{})
 	self.cSwapChain = make(chan byte)
 
-	for {
-		select {
-		case <-self.cQuitSwap:
-			{
-				Logger.log.Info("Consensus engine STOP SWAP")
-				return nil
-			}
-		case chainId := <-self.cSwapChain:
-			{
-				Logger.log.Infof("Consensus engine swap %d START", chainId)
-
-				allSigReceived := make(chan struct{})
-				retryTime := 0
-
-				committee := self.GetCommittee()
-
-				requesterPbk := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
-
-				if common.IndexOfStr(requesterPbk, committee) < 0 {
-					continue
+	go func() error {
+		for {
+			select {
+			case <-self.cQuitSwap:
+				{
+					Logger.log.Info("Consensus engine STOP SWAP")
+					return nil
 				}
+			case chainId := <-self.cSwapChain:
+				{
+					Logger.log.Infof("Consensus engine swap %d START", chainId)
 
-				committeeCandidateList := self.config.BlockChain.GetCommitteeCandidateList()
-				sealerPbk := common.EmptyString
-				for _, committeeCandidatePbk := range committeeCandidateList {
-					peerIDs := self.config.Server.GetPeerIDsFromPublicKey(committeeCandidatePbk)
-					if len(peerIDs) == 0 {
+					allSigReceived := make(chan struct{})
+					retryTime := 0
+
+					committee := self.GetCommittee()
+
+					requesterPbk := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+
+					if common.IndexOfStr(requesterPbk, committee) < 0 {
 						continue
 					}
-					sealerPbk = committeeCandidatePbk
-				}
-				if sealerPbk == common.EmptyString {
-					//TODO for testing
-					sealerPbk = "1q4iCdtqb67DcNYyCE8FvMZKrDRE8KHW783VoYm5LXvds7vpsi"
-				}
-				if sealerPbk == common.EmptyString {
-					continue
-				}
 
-				if common.IndexOfStr(sealerPbk, committee) >= 0 {
-					continue
-				}
-
-				signatureMap := make(map[string]string)
-				lockTime := time.Now().Unix()
-			BeginSwap:
-			// Collect signatures of other validators
-				cancel := make(chan struct{})
-				go func(lockTime int64, requesterPbk string, chainId byte, sealerPbk string) {
-					for {
-						select {
-						case <-cancel:
-							return
-						case swapSig := <-self.cSwapSig:
-							_ = swapSig
-							if common.IndexOfStr(swapSig.Validator, committee) >= 0 && swapSig.RequesterPbk == requesterPbk {
-								// verify signature
-								rawBytes := self.getRawBytesForSwap(lockTime, requesterPbk, chainId, sealerPbk)
-								err := cashec.ValidateDataB58(swapSig.Validator, swapSig.ValidatorSig, rawBytes)
-								if err != nil {
-									continue
-								}
-								Logger.log.Info("SWAP validate signature ok from ", swapSig.Validator, sealerPbk)
-								signatureMap[swapSig.Validator] = swapSig.ValidatorSig
-								if len(signatureMap) >= common.TotalValidators/2 {
-									close(allSigReceived)
-									return
-								}
-							}
-						case <-time.After(common.MaxBlockSigWaitTime * time.Second * 5):
-							return
+					committeeCandidateList := self.config.BlockChain.GetCommitteeCandidateList()
+					sealerPbk := common.EmptyString
+					for _, committeeCandidatePbk := range committeeCandidateList {
+						peerIDs := self.config.Server.GetPeerIDsFromPublicKey(committeeCandidatePbk)
+						if len(peerIDs) == 0 {
+							continue
 						}
+						sealerPbk = committeeCandidatePbk
 					}
-				}(lockTime, requesterPbk, chainId, sealerPbk)
-
-				// Request signatures from other validators
-				go func(requesterPbk string, chainId byte, sealerPbk string) {
-					reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestSwap)
-					reqSigMsg.(*wire.MessageRequestSwap).LockTime = lockTime
-					reqSigMsg.(*wire.MessageRequestSwap).RequesterPbk = requesterPbk
-					reqSigMsg.(*wire.MessageRequestSwap).ChainID = chainId
-					reqSigMsg.(*wire.MessageRequestSwap).SealerPbk = sealerPbk
-
-					rawBytes := self.getRawBytesForSwap(lockTime, requesterPbk, chainId, sealerPbk)
-					sigStr, err := self.signData(rawBytes)
-					if err != nil {
-						Logger.log.Infof("Request swap sign error", err)
-						return
+					if sealerPbk == common.EmptyString {
+						//TODO for testing
+						sealerPbk = "1q4iCdtqb67DcNYyCE8FvMZKrDRE8KHW783VoYm5LXvds7vpsi"
 					}
-					reqSigMsg.(*wire.MessageRequestSwap).RequesterSig = sigStr
+					if sealerPbk == common.EmptyString {
+						continue
+					}
 
-					for idx := 0; idx < common.TotalValidators; idx++ {
-						if committee[idx] != requesterPbk {
-							go func(validator string) {
-								peerIDs := self.config.Server.GetPeerIDsFromPublicKey(validator)
-								if len(peerIDs) > 0 {
-									for _, peerID := range peerIDs {
-										Logger.log.Infof("Request swap to %s %s", peerID, validator)
-										self.config.Server.PushMessageToPeer(reqSigMsg, peerID)
+					if common.IndexOfStr(sealerPbk, committee) >= 0 {
+						continue
+					}
+
+					signatureMap := make(map[string]string)
+					lockTime := time.Now().Unix()
+				BeginSwap:
+				// Collect signatures of other validators
+					cancel := make(chan struct{})
+					go func(lockTime int64, requesterPbk string, chainId byte, sealerPbk string) {
+						for {
+							select {
+							case <-cancel:
+								return
+							case swapSig := <-self.cSwapSig:
+								_ = swapSig
+								if common.IndexOfStr(swapSig.Validator, committee) >= 0 && swapSig.RequesterPbk == requesterPbk {
+									// verify signature
+									rawBytes := self.getRawBytesForSwap(lockTime, requesterPbk, chainId, sealerPbk)
+									err := cashec.ValidateDataB58(swapSig.Validator, swapSig.ValidatorSig, rawBytes)
+									if err != nil {
+										continue
 									}
-								} else {
-									Logger.log.Error("Validator's peer not found!", validator)
+									Logger.log.Info("SWAP validate signature ok from ", swapSig.Validator, sealerPbk)
+									signatureMap[swapSig.Validator] = swapSig.ValidatorSig
+									if len(signatureMap) >= common.TotalValidators/2 {
+										close(allSigReceived)
+										return
+									}
 								}
-							}(committee[idx])
+							case <-time.After(common.MaxBlockSigWaitTime * time.Second * 5):
+								return
+							}
 						}
+					}(lockTime, requesterPbk, chainId, sealerPbk)
+
+					// Request signatures from other validators
+					go func(requesterPbk string, chainId byte, sealerPbk string) {
+						reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdRequestSwap)
+						reqSigMsg.(*wire.MessageRequestSwap).LockTime = lockTime
+						reqSigMsg.(*wire.MessageRequestSwap).RequesterPbk = requesterPbk
+						reqSigMsg.(*wire.MessageRequestSwap).ChainID = chainId
+						reqSigMsg.(*wire.MessageRequestSwap).SealerPbk = sealerPbk
+
+						rawBytes := self.getRawBytesForSwap(lockTime, requesterPbk, chainId, sealerPbk)
+						sigStr, err := self.signData(rawBytes)
+						if err != nil {
+							Logger.log.Infof("Request swap sign error", err)
+							return
+						}
+						reqSigMsg.(*wire.MessageRequestSwap).RequesterSig = sigStr
+
+						for idx := 0; idx < common.TotalValidators; idx++ {
+							if committee[idx] != requesterPbk {
+								go func(validator string) {
+									peerIDs := self.config.Server.GetPeerIDsFromPublicKey(validator)
+									if len(peerIDs) > 0 {
+										for _, peerID := range peerIDs {
+											Logger.log.Infof("Request swap to %s %s", peerID, validator)
+											self.config.Server.PushMessageToPeer(reqSigMsg, peerID)
+										}
+									} else {
+										Logger.log.Error("Validator's peer not found!", validator)
+									}
+								}(committee[idx])
+							}
+						}
+					}(requesterPbk, chainId, sealerPbk)
+
+					// Wait for signatures of other validators
+					select {
+					case <-allSigReceived:
+						Logger.log.Info("Validator signatures: ", signatureMap)
+					case <-time.After(common.MaxBlockSigWaitTime * time.Second):
+						//blocksig wait time exceeded -> get a new committee list and retry
+						//Logger.log.Error(errExceedSigWaitTime)
+
+						close(cancel)
+						if retryTime == 5 {
+							continue
+						}
+						retryTime++
+						Logger.log.Infof("Start finalizing swap... %d time", retryTime)
+						goto BeginSwap
 					}
-				}(requesterPbk, chainId, sealerPbk)
 
-				// Wait for signatures of other validators
-				select {
-				case <-allSigReceived:
-					Logger.log.Info("Validator signatures: ", signatureMap)
-				case <-time.After(common.MaxBlockSigWaitTime * time.Second):
-					//blocksig wait time exceeded -> get a new committee list and retry
-					//Logger.log.Error(errExceedSigWaitTime)
+					Logger.log.Infof("SWAP DONE")
 
-					close(cancel)
-					if retryTime == 5 {
+					committeeV := make([]string, common.TotalValidators)
+					copy(committeeV, self.GetCommittee())
+
+					err := self.updateCommittee(sealerPbk, chainId)
+					if err != nil {
+						Logger.log.Errorf("Consensus update committee is error", err)
 						continue
 					}
-					retryTime++
-					Logger.log.Infof("Start finalizing swap... %d time", retryTime)
-					goto BeginSwap
-				}
 
-				Logger.log.Infof("SWAP DONE")
+					// broadcast message for update new committee list
+					reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdUpdateSwap)
+					reqSigMsg.(*wire.MessageUpdateSwap).LockTime = lockTime
+					reqSigMsg.(*wire.MessageUpdateSwap).RequesterPbk = requesterPbk
+					reqSigMsg.(*wire.MessageUpdateSwap).ChainID = chainId
+					reqSigMsg.(*wire.MessageUpdateSwap).SealerPbk = sealerPbk
+					reqSigMsg.(*wire.MessageUpdateSwap).Signatures = signatureMap
 
-				committeeV := make([]string, common.TotalValidators)
-				copy(committeeV, self.GetCommittee())
+					self.config.Server.PushMessageToAll(reqSigMsg)
 
-				err := self.updateCommittee(sealerPbk, chainId)
-				if err != nil {
-					Logger.log.Errorf("Consensus update committee is error", err)
+					Logger.log.Infof("Consensus engine swap %d END", chainId)
 					continue
 				}
-
-				// broadcast message for update new committee list
-				reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdUpdateSwap)
-				reqSigMsg.(*wire.MessageUpdateSwap).LockTime = lockTime
-				reqSigMsg.(*wire.MessageUpdateSwap).RequesterPbk = requesterPbk
-				reqSigMsg.(*wire.MessageUpdateSwap).ChainID = chainId
-				reqSigMsg.(*wire.MessageUpdateSwap).SealerPbk = sealerPbk
-				reqSigMsg.(*wire.MessageUpdateSwap).Signatures = signatureMap
-
-				self.config.Server.PushMessageToAll(reqSigMsg)
-
-				Logger.log.Infof("Consensus engine swap %d END", chainId)
-				continue
 			}
 		}
-	}
+	}()
+
 	return nil
 }
 
