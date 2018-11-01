@@ -60,13 +60,19 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestBlockSign) {
 
 func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 	if self.config.BlockChain.BestState[block.Header.ChainID].Height < block.Height {
-		if exists, _ := self.config.BlockChain.BlockExists(block.Hash()); !exists {
-			err := self.validateBlockSanity(block)
-			if err != nil {
-				Logger.log.Error(err)
-				return
+		exists, err := self.config.BlockChain.BlockExists(block.Hash())
+		if err != nil {
+			Logger.log.Error(err)
+			return
+		} else {
+			if !exists {
+				err := self.validateBlockSanity(block)
+				if err != nil {
+					Logger.log.Error(err)
+					return
+				}
+				self.UpdateChain(block)
 			}
-			self.UpdateChain(block)
 		}
 	}
 	return
@@ -245,7 +251,7 @@ func (self *Engine) OnUpdateSwap(msg *wire.MessageUpdateSwap) {
 		}
 		cLeader += 1
 	}
-	if cLeader < common.TotalValidators / 2 {
+	if cLeader < common.TotalValidators/2 {
 		Logger.log.Error("ERROR OnUpdateSwap not enough signatures")
 		return
 	}
