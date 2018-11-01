@@ -513,7 +513,7 @@ func (self *Engine) StartSwap() error {
 			select {
 			case <-time.After(10 * time.Second):
 				Logger.log.Info("Consensus engine SWAP TIMER")
-				self.cSwapChain <- byte(10)
+				self.Swap(10)
 				continue
 			}
 		}
@@ -671,4 +671,9 @@ func (self *Engine) StartSwap() error {
 		}
 	}
 	return nil
+}
+
+func (self *Engine) Swap(chainId byte) {
+	Logger.log.Info("Consensus engine swap chain id -> %d", chainId)
+	self.cSwapChain <- byte(10)
 }
