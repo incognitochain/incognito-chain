@@ -49,7 +49,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageBlockSigReq) {
 	sig, err := self.signData([]byte(block.Hash().String()))
 	if err != nil {
 		Logger.log.Error("Can't sign block ", err)
-		// ??? something went terribly wrong
+		// TODO something went terribly wrong
 		return
 	}
 	blockSigMsg := wire.MessageBlockSig{
