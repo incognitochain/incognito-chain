@@ -512,17 +512,6 @@ func (self *Engine) StartSwap() error {
 	self.cQuitSwap = make(chan struct{})
 	self.cSwapChain = make(chan byte)
 
-	go func() {
-		for {
-			select {
-			case <-time.After(10 * time.Second):
-				Logger.log.Info("Consensus engine SWAP TIMER")
-				self.Swap(10)
-				continue
-			}
-		}
-	}()
-
 	for {
 		select {
 		case <-self.cQuitSwap:
