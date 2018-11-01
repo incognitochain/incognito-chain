@@ -538,6 +538,9 @@ func (self *Engine) StartSwap() error {
 					committeeCandidateList := self.config.BlockChain.GetCommitteeCandidateList()
 					sealerPbk := common.EmptyString
 					for _, committeeCandidatePbk := range committeeCandidateList {
+						if common.IndexOfStr(committeeCandidatePbk, committee) >= 0 {
+							continue
+						}
 						peerIDs := self.config.Server.GetPeerIDsFromPublicKey(committeeCandidatePbk)
 						if len(peerIDs) == 0 {
 							continue
