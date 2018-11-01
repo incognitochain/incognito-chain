@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"errors"
 	"time"
 
 	"github.com/ninjadotorg/cash/common"
@@ -9,166 +8,10 @@ import (
 	"github.com/ninjadotorg/cash/transaction"
 )
 
-func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, chainID byte) (*BlockTemplate, error) {
-
-	prevBlock := blockgen.chain.BestState[chainID]
-	prevBlockHash := blockgen.chain.BestState[chainID].BestBlock.Hash()
-	sourceTxns := blockgen.txPool.MiningDescs()
-
-	var txsToAdd []transaction.Transaction
-	var txToRemove []transaction.Transaction
-	// var actionParamTxs []*transaction.ActionParamTx
-	// var feeMap = map[string]uint64{
-	// 	fmt.Sprintf(common.AssetTypeCoin):     0,
-	// 	fmt.Sprintf(common.AssetTypeBond):     0,
-	// 	fmt.Sprintf(common.AssetTypeGovToken): 0,
-	// 	fmt.Sprintf(common.AssetTypeDcbToken): 0,
-	// }
-	totalFee := uint64(0)
-
-	// Get salary per tx
-	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(chainID)
-	// Get basic salary on block
-	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
-
-	if len(sourceTxns) < common.MinTxsInBlock {
-		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
-		Logger.log.Info("not enough transactions. Wait for more...")
-		<-time.Tick(common.MinBlockWaitTime * time.Second)
-		sourceTxns = blockgen.txPool.MiningDescs()
-		if len(sourceTxns) == 0 {
-			<-time.Tick(common.MaxBlockWaitTime * time.Second)
-			sourceTxns = blockgen.txPool.MiningDescs()
-			if len(sourceTxns) == 0 {
-				// return nil, errors.New("No Tx")
-				Logger.log.Info("Creating empty block...")
-				goto concludeBlock
-			}
-		}
-	}
-
-	for _, txDesc := range sourceTxns {
-		tx := txDesc.Tx
-		txChainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
-		if txChainID != chainID {
-			continue
-		}
-		if !tx.ValidateTransaction() {
-			txToRemove = append(txToRemove, transaction.Transaction(tx))
-			continue
-		}
-		// txType := tx.GetType()
-		// txFee := uint64(0)
-		// switch txType {
-		// case common.TxActionParamsType:
-		// 	// actionParamTxs = append(actionParamTxs, tx.(*transaction.ActionParamTx))
-		// 	continue
-		// case common.TxCustomTokenType:
-		// 	txFee = tx.(*transaction.TxCustomToken).Fee
-		// case common.TxVotingType:
-		// 	txFee = tx.(*transaction.TxVoting).Fee
-		// case common.TxSalaryType:
-		// case common.TxNormalType:
-		// 	txFee = tx.(*transaction.Tx).Fee
-		// }
-		totalFee += tx.GetTxFee()
-		txsToAdd = append(txsToAdd, tx)
-		if len(txsToAdd) == common.MaxTxsInBlock {
-			break
-		}
-	}
-
-	for _, tx := range txToRemove {
-		blockgen.txPool.RemoveTx(tx)
-	}
-
-	// check len of txs in block
-	if len(txsToAdd) == 0 {
-		return nil, errors.New("no transaction available for this chain")
-	}
-
-concludeBlock:
-// Get blocksalary fund from txs
-	salaryFundAdd := uint64(0)
-	salaryMULTP := uint64(0)
-	for _, blockTx := range txsToAdd {
-		if blockTx.GetType() == common.TxVotingType {
-			tx, ok := blockTx.(*transaction.TxVoting)
-			if !ok {
-				Logger.log.Error("Transaction not recognized to store in database")
-				continue
-			}
-			salaryFundAdd += tx.GetValue()
-		}
-		if blockTx.GetTxFee() > 0 {
-			salaryMULTP++
-		}
-	}
-
-	rt := blockgen.chain.BestState[chainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
-
-	// ------------------------ HOW to GET salary on a block-------------------
-	// total salary = tx * (salary per tx) + (basic salary on block)
-	// ------------------------------------------------------------------------
-	totalSalary := salaryMULTP*salaryPerTx + basicSalary
-	// create salary tx to pay constant for block producer
-	salaryTx, err := createSalaryTx(totalSalary, &payToAddress, rt, chainID)
-
-	if err != nil {
-		return nil, err
-	}
-	// the 1st tx will be salaryTx
-	txsToAdd = append([]transaction.Transaction{salaryTx}, txsToAdd...)
-
-	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
-	merkleRoot := merkleRoots[len(merkleRoots)-1]
-
-	block := Block{}
-	currentSalaryFund := blockgen.chain.BestState[chainID].BestBlock.Header.SalaryFund
-	block.Header = BlockHeader{
-		Version:               BlockVersion,
-		PrevBlockHash:         *prevBlockHash,
-		MerkleRoot:            *merkleRoot,
-		MerkleRootCommitments: common.Hash{},
-		Timestamp:             time.Now().Unix(),
-		BlockCommitteeSigs:    make([]string, common.TotalValidators),
-		Committee:             make([]string, common.TotalValidators),
-		ChainID:               chainID,
-		SalaryFund:            currentSalaryFund - (salaryMULTP * salaryPerTx) + totalFee + salaryFundAdd,
-	}
-	for _, tx := range txsToAdd {
-		if err := block.AddTransaction(tx); err != nil {
-			return nil, err
-		}
-	}
-
-	// Add new commitments to merkle tree and save the root
-	newTree := blockgen.chain.BestState[chainID].CmTree.MakeCopy()
-	UpdateMerkleTreeForBlock(newTree, &block)
-	rt = newTree.GetRoot(common.IncMerkleTreeHeight)
-	copy(block.Header.MerkleRootCommitments[:], rt)
-
-	//update the latest AgentDataPoints to block
-	// block.AgentDataPoints = agentDataPoints
-	// Set height
-	block.Height = prevBlock.Height + 1
-
-	blockTemp := &BlockTemplate{
-		Block: &block,
-	}
-	return blockTemp, nil
-}
-
 type BlkTmplGenerator struct {
 	txPool      TxPool
 	chain       *BlockChain
 	rewardAgent RewardAgent
-	// chainParams *blockchain.Params
-	// policy      *Policy
-}
-
-type BlockTemplate struct {
-	Block *Block
 }
 
 // txPool represents a source of transactions to consider for inclusion in
@@ -204,6 +47,135 @@ func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent 
 		chain:       chain,
 		rewardAgent: rewardAgent,
 	}, nil
+}
+
+func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, chainID byte) (*Block, error) {
+
+	prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	prevBlockHash := blockgen.chain.BestState[chainID].BestBlock.Hash()
+	prevCmTree := blockgen.chain.BestState[chainID].CmTree.MakeCopy()
+	sourceTxns := blockgen.txPool.MiningDescs()
+
+	var txsToAdd []transaction.Transaction
+	var txToRemove []transaction.Transaction
+	// var actionParamTxs []*transaction.ActionParamTx
+	totalFee := uint64(0)
+
+	// Get salary per tx
+	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(chainID)
+	// Get basic salary on block
+	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
+
+	if len(sourceTxns) < common.MinTxsInBlock {
+		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
+		Logger.log.Info("not enough transactions. Wait for more...")
+		<-time.Tick(common.MinBlockWaitTime * time.Second)
+		sourceTxns = blockgen.txPool.MiningDescs()
+		if len(sourceTxns) == 0 {
+			<-time.Tick(common.MaxBlockWaitTime * time.Second)
+			sourceTxns = blockgen.txPool.MiningDescs()
+			if len(sourceTxns) == 0 {
+				// return nil, errors.New("No Tx")
+				Logger.log.Info("Creating empty block...")
+				goto concludeBlock
+			}
+		}
+	}
+
+	for _, txDesc := range sourceTxns {
+		tx := txDesc.Tx
+		txChainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+		if txChainID != chainID {
+			continue
+		}
+		if !tx.ValidateTransaction() {
+			txToRemove = append(txToRemove, transaction.Transaction(tx))
+			continue
+		}
+		totalFee += tx.GetTxFee()
+		txsToAdd = append(txsToAdd, tx)
+		if len(txsToAdd) == common.MaxTxsInBlock {
+			break
+		}
+	}
+
+	for _, tx := range txToRemove {
+		blockgen.txPool.RemoveTx(tx)
+	}
+
+	// check len of txs in block
+	if len(txsToAdd) == 0 {
+		// return nil, errors.New("no transaction available for this chain")
+		Logger.log.Info("Creating empty block...")
+	}
+
+concludeBlock:
+// Get blocksalary fund from txs
+	salaryFundAdd := uint64(0)
+	salaryMULTP := uint64(0) //salary multiplier
+	for _, blockTx := range txsToAdd {
+		if blockTx.GetType() == common.TxVotingType {
+			tx, ok := blockTx.(*transaction.TxVoting)
+			if !ok {
+				Logger.log.Error("Transaction not recognized to store in database")
+				continue
+			}
+			salaryFundAdd += tx.GetValue()
+		}
+		if blockTx.GetTxFee() > 0 {
+			salaryMULTP++
+		}
+	}
+
+	rt := prevBlock.Header.MerkleRootCommitments.CloneBytes()
+
+	// ------------------------ HOW to GET salary on a block-------------------
+	// total salary = tx * (salary per tx) + (basic salary on block)
+	// ------------------------------------------------------------------------
+	totalSalary := salaryMULTP*salaryPerTx + basicSalary
+	// create salary tx to pay constant for block producer
+	salaryTx, err := createSalaryTx(totalSalary, &payToAddress, rt, chainID)
+
+	if err != nil {
+		return nil, err
+	}
+	// the 1st tx will be salaryTx
+	txsToAdd = append([]transaction.Transaction{salaryTx}, txsToAdd...)
+
+	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
+	merkleRoot := merkleRoots[len(merkleRoots)-1]
+
+	block := Block{}
+	currentSalaryFund := prevBlock.Header.SalaryFund
+	block.Header = BlockHeader{
+		Version:               BlockVersion,
+		PrevBlockHash:         *prevBlockHash,
+		MerkleRoot:            *merkleRoot,
+		MerkleRootCommitments: common.Hash{},
+		Timestamp:             time.Now().Unix(),
+		BlockCommitteeSigs:    make([]string, common.TotalValidators),
+		Committee:             make([]string, common.TotalValidators),
+		ChainID:               chainID,
+		SalaryFund:            currentSalaryFund - (salaryMULTP * salaryPerTx) + totalFee + salaryFundAdd,
+	}
+	for _, tx := range txsToAdd {
+		if err := block.AddTransaction(tx); err != nil {
+			return nil, err
+		}
+	}
+
+	// Add new commitments to merkle tree and save the root
+	newTree := prevCmTree
+	UpdateMerkleTreeForBlock(newTree, &block)
+	rt = newTree.GetRoot(common.IncMerkleTreeHeight)
+	copy(block.Header.MerkleRootCommitments[:], rt)
+
+	//update the latest AgentDataPoints to block
+	// block.AgentDataPoints = agentDataPoints
+	// Set height
+	block.Height = prevBlock.Height + 1
+
+	return &block, nil
 }
 
 // createSalaryTx

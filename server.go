@@ -346,9 +346,9 @@ func (self Server) Stop() error {
 		if len(feeEstimatorData) > 0 {
 			err := self.dataBase.StoreFeeEstimator(feeEstimatorData, chainId)
 			if err != nil {
-				Logger.log.Errorf("Can't save fee estimator data: %v", err)
+				Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", chainId, err)
 			} else {
-				Logger.log.Info("Save fee estimator data")
+				Logger.log.Infof("Save fee estimator data on chain #%d", chainId)
 			}
 		}
 	}
@@ -410,6 +410,11 @@ func (self Server) Start() {
 	}
 
 	Logger.log.Info("Starting server")
+	if cfg.TestNet {
+		Logger.log.Info("************************")
+		Logger.log.Info("* Testnet is active *")
+		Logger.log.Info("************************")
+	}
 	// Server startup time. Used for the uptime command for uptime calculation.
 	self.startupTime = time.Now().Unix()
 

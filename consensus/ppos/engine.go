@@ -304,17 +304,17 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
-	newblock.Block.Header.ChainsHeight = make([]int, common.TotalValidators)
-	copy(newblock.Block.Header.ChainsHeight, self.validatedChainsHeight.Heights)
-	newblock.Block.Header.ChainID = myChainID
-	newblock.Block.BlockProducer = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+	newblock.Header.ChainsHeight = make([]int, common.TotalValidators)
+	copy(newblock.Header.ChainsHeight, self.validatedChainsHeight.Heights)
+	newblock.Header.ChainID = myChainID
+	newblock.BlockProducer = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 
 	// hash candidate list and set to block header
-	candidates := self.GetCandidateCommitteeList(newblock.Block)
+	candidates := self.GetCandidateCommitteeList(newblock)
 	candidateBytes, _ := json.Marshal(candidates)
-	newblock.Block.Header.CandidateHash = common.HashH(candidateBytes)
+	newblock.Header.CandidateHash = common.HashH(candidateBytes)
 
-	return newblock.Block, nil
+	return newblock, nil
 }
 
 // Finalize after successfully create a block we will send this block to other validators to get their signatures
@@ -357,7 +357,7 @@ finalizing:
 				}
 
 				if idx := common.IndexOfStr(blocksig.Validator, committee); idx != -1 {
-					if finalBlock.Header.BlockCommitteeSigs[idx] == "" {
+					if finalBlock.Header.BlockCommitteeSigs[idx] == common.EmptyString {
 						err := cashec.ValidateDataB58(blocksig.Validator, blocksig.ValidatorSig, []byte(blockHash))
 
 						if err != nil {
@@ -455,7 +455,11 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 
 	// update candidate list
 	self.config.BlockChain.BestState[block.Header.ChainID].Candidates = self.GetCandidateCommitteeList(block)
-	self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
+	err = self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
+	if err != nil {
+		Logger.log.Errorf("Can not update merkle tree for block: %+v", err)
+		return
+	}
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)
 
 	self.knownChainsHeight.Lock()
@@ -542,7 +546,7 @@ func (self *Engine) StartSwap() error {
 				}
 
 				committeeCandidateList := self.config.BlockChain.GetCommitteeCandidateList()
-				sealerPbk := ""
+				sealerPbk := common.EmptyString
 				for _, committeeCandidatePbk := range committeeCandidateList {
 					peerIDs := self.config.Server.GetPeerIDsFromPublicKey(committeeCandidatePbk)
 					if len(peerIDs) == 0 {
@@ -550,11 +554,11 @@ func (self *Engine) StartSwap() error {
 					}
 					sealerPbk = committeeCandidatePbk
 				}
-				if sealerPbk == "" {
+				if sealerPbk == common.EmptyString {
 					//TODO for testing
 					sealerPbk = "1q4iCdtqb67DcNYyCE8FvMZKrDRE8KHW783VoYm5LXvds7vpsi"
 				}
-				if sealerPbk == "" {
+				if sealerPbk == common.EmptyString {
 					continue
 				}
 
@@ -583,7 +587,7 @@ func (self *Engine) StartSwap() error {
 								}
 								Logger.log.Info("SWAP validate signature ok from ", swapSig.Validator, sealerPbk)
 								signatureMap[swapSig.Validator] = swapSig.ValidatorSig
-								if len(signatureMap) >= common.TotalValidators / 2 {
+								if len(signatureMap) >= common.TotalValidators/2 {
 									close(allSigReceived)
 									return
 								}

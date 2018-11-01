@@ -220,3 +220,5 @@ func (self *Engine) validatePreSignBlockSanity(block *blockchain.Block) error {
 	// 5. Validate transactions
 	return self.ValidateTxList(block.Transactions)
 }
+
+// func (self *Engine) ValidateSalary(block )

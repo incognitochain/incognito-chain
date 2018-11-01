@@ -1,9 +1,11 @@
 package blockchain
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/ninjadotorg/cash/common"
+	"github.com/ninjadotorg/cash/privacy/client"
 	"github.com/ninjadotorg/cash/transaction"
 )
 
@@ -125,4 +127,36 @@ func (self Merkle) hashMerkleBranches(left *common.Hash, right *common.Hash) *co
 
 	newHash := common.DoubleHashH(hash[:])
 	return &newHash
+}
+
+/*
+// UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
+*/
+func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
+	for _, blockTx := range block.Transactions {
+		if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
+			tx, ok := blockTx.(*transaction.Tx)
+			if ok == false {
+				return fmt.Errorf("Transaction in block not valid")
+			}
+
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					tree.AddNewNode(cm[:])
+				}
+			}
+		} else if blockTx.GetType() == common.TxVotingType {
+			tx, ok := blockTx.(*transaction.TxVoting)
+			if ok == false {
+				return fmt.Errorf("Transaction in block not valid")
+			}
+
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					tree.AddNewNode(cm[:])
+				}
+			}
+		}
+	}
+	return nil
 }

@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"errors"
-	"fmt"
 
 	//"fmt"
 	//"time"
@@ -11,13 +10,14 @@ import (
 
 	"encoding/json"
 
+	"sort"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ninjadotorg/cash/cashec"
 	"github.com/ninjadotorg/cash/common"
 	"github.com/ninjadotorg/cash/database"
 	"github.com/ninjadotorg/cash/privacy/client"
 	"github.com/ninjadotorg/cash/transaction"
-	"sort"
 )
 
 const (
@@ -65,10 +65,10 @@ Init - init a blockchain view from config
 func (self *BlockChain) Init(config *Config) error {
 	// Enforce required config fields.
 	if config.DataBase == nil {
-		return errors.New("blockchain.New database is nil")
+		return NewBlockChainError(UnExpectedError, errors.New("Database is not config"))
 	}
 	if config.ChainParams == nil {
-		return errors.New("blockchain.New chain parameters nil")
+		return NewBlockChainError(UnExpectedError, errors.New("Chain parameters is not config"))
 	}
 
 	self.config = *config
@@ -126,38 +126,6 @@ func (self *BlockChain) initChainState() error {
 }
 
 /*
-// UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
-*/
-func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
-	for _, blockTx := range block.Transactions {
-		if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
-			tx, ok := blockTx.(*transaction.Tx)
-			if ok == false {
-				return fmt.Errorf("Transaction in block not valid")
-			}
-
-			for _, desc := range tx.Descs {
-				for _, cm := range desc.Commitments {
-					tree.AddNewNode(cm[:])
-				}
-			}
-		} else if blockTx.GetType() == common.TxVotingType {
-			tx, ok := blockTx.(*transaction.TxVoting)
-			if ok == false {
-				return fmt.Errorf("Transaction in block not valid")
-			}
-
-			for _, desc := range tx.Descs {
-				for _, cm := range desc.Commitments {
-					tree.AddNewNode(cm[:])
-				}
-			}
-		}
-	}
-	return nil
-}
-
-/*
 // createChainState initializes both the database and the chain state to the
 // genesis block.  This includes creating the necessary buckets and inserting
 // the genesis block, so it must only be called on an uninitialized database.
@@ -169,17 +137,15 @@ func (self *BlockChain) createChainState(chainId byte) error {
 		initBlock = self.config.ChainParams.GenesisBlock
 	} else {
 		initBlock = &Block{}
+		initBlock.Header = self.config.ChainParams.GenesisBlock.Header
 		initBlock.Header.ChainID = chainId
-		initBlock.Header.Timestamp = self.config.ChainParams.GenesisBlock.Header.Timestamp
-		initBlock.Header.Committee = self.config.ChainParams.GenesisBlock.Header.Committee
-		initBlock.Header.SalaryFund = self.config.ChainParams.GenesisBlock.Header.SalaryFund
-		initBlock.Header.GovernanceParams = self.config.ChainParams.GenesisBlock.Header.GovernanceParams
+		initBlock.Header.PrevBlockHash = common.Hash{}
 	}
 	initBlock.Height = 1
 
 	tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
 	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
-		return err
+		return NewBlockChainError(UpdateMerkleTreeForBlockError, err)
 	}
 
 	self.BestState[chainId] = &BestState{}
@@ -188,18 +154,18 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	// store block genesis
 	err := self.StoreBlock(initBlock)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 
 	// store block hash by index and index by block hash
 	err = self.StoreBlockIndex(initBlock)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 	// store best state
 	err = self.StoreBestState(chainId)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 
 	return nil
@@ -835,7 +801,7 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 	return result, nil
 }
 
-func (self *BlockChain) GetCommitteCandidate(pubkeyParam string) (*CommitteeCandidateInfo) {
+func (self *BlockChain) GetCommitteCandidate(pubkeyParam string) *CommitteeCandidateInfo {
 	for _, bestState := range self.BestState {
 		for pubkey, candidateInfo := range bestState.Candidates {
 			if pubkey == pubkeyParam {
@@ -849,7 +815,7 @@ func (self *BlockChain) GetCommitteCandidate(pubkeyParam string) (*CommitteeCand
 /*
 Get Candidate List from all chain and merge all to one - return pubkey of them
 */
-func (self *BlockChain) GetCommitteeCandidateList() ([]string) {
+func (self *BlockChain) GetCommitteeCandidateList() []string {
 	candidatePubkeyList := []string{}
 	for _, bestState := range self.BestState {
 		for pubkey, _ := range bestState.Candidates {
@@ -883,7 +849,7 @@ func (self *BlockChain) GetCommitteeCandidateList() ([]string) {
 	return candidatePubkeyList
 }
 
-func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) (CommitteeCandidateInfo) {
+func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCandidateInfo {
 	var cndVal CommitteeCandidateInfo
 	for _, bestState := range self.BestState {
 		cndValTmp, ok := bestState.Candidates[nodeAddr]

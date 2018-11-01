@@ -3,10 +3,10 @@ package addrmanager
 import "fmt"
 
 const (
-	UnexpectedError = "ErrUnexpected"
+	UnexpectedError = iota
 )
 
-var ErrCodeMessage = map[string]struct {
+var ErrCodeMessage = map[int]struct {
 	code    int
 	message string
 }{
@@ -23,7 +23,7 @@ func (e AddrManagerError) Error() string {
 	return fmt.Sprintf("%d: %s", e.Code, e.Message)
 }
 
-func NewAddrManagerError(key string, err error) *AddrManagerError {
+func NewAddrManagerError(key int, err error) *AddrManagerError {
 	return &AddrManagerError{
 		Code:    ErrCodeMessage[key].code,
 		Message: ErrCodeMessage[key].message,
