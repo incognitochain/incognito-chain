@@ -7,7 +7,7 @@ import (
 )
 
 type TxViewPoint struct {
-	chainId         byte
+	chainID         byte
 	listNullifiers  map[string]([][]byte)
 	listCommitments map[string]([][]byte)
 
@@ -38,14 +38,6 @@ represents.
 func (view *TxViewPoint) CurrentBestBlockHash() *common.Hash {
 	return &view.currentBestBlockHash
 }
-
-/*
-SetBestHash sets the hash of the best block in the chain the view currently
-represents.
-*/
-// func (view *TxViewPoint) SetBestHash(hash *common.Hash) {
-// 	view.currentBestBlockHash = *hash
-// }
 
 /*
 fetchTxViewPoint get list nullifiers and commitments from txs in block and check if they are not in Main chain db
@@ -119,7 +111,7 @@ Create a Tx view point, which contains data about nullifiers and commitments
 */
 func NewTxViewPoint(chainId byte) *TxViewPoint {
 	return &TxViewPoint{
-		chainId:         chainId,
+		chainID:         chainId,
 		listNullifiers:  make(map[string]([][]byte)),
 		listCommitments: make(map[string]([][]byte)),
 	}
