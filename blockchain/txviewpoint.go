@@ -4,6 +4,7 @@ import (
 	"github.com/ninjadotorg/cash/common"
 	"github.com/ninjadotorg/cash/database"
 	"github.com/ninjadotorg/cash/transaction"
+	"github.com/pkg/errors"
 )
 
 type TxViewPoint struct {
@@ -39,6 +40,7 @@ func (view *TxViewPoint) CurrentBestBlockHash() *common.Hash {
 	return &view.currentBestBlockHash
 }
 
+// fetch from desc of tx to get nullifiers and commitments
 func (view *TxViewPoint) processFetchTxViewPoint(acceptedNullifiers map[string][][]byte, acceptedCommitments map[string][][]byte, block *Block, db database.DatabaseInterface, desc *transaction.JoinSplitDesc) error {
 	for _, item := range desc.Nullifiers {
 		temp, err := db.HasNullifier(item, desc.Type, block.Header.ChainID)
@@ -70,15 +72,27 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 	acceptedNullifiers := make(map[string][][]byte)
 	acceptedCommitments := make(map[string][][]byte)
 	for _, tx := range transactions {
-		if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxSalaryType {
-			normalTx := tx.(*transaction.Tx)
-			for _, desc := range normalTx.Descs {
-				view.processFetchTxViewPoint(acceptedNullifiers, acceptedCommitments, block, db, desc)
+		switch tx.GetType() {
+		case common.TxNormalType:
+		case common.TxSalaryType:
+			{
+				normalTx := tx.(*transaction.Tx)
+				for _, desc := range normalTx.Descs {
+					err := view.processFetchTxViewPoint(acceptedNullifiers, acceptedCommitments, block, db, desc)
+					return NewBlockChainError(UnExpectedError, err)
+				}
 			}
-		} else if tx.GetType() == common.TxVotingType {
-			votingTx := tx.(*transaction.TxVoting)
-			for _, desc := range votingTx.Descs {
-				view.processFetchTxViewPoint(acceptedNullifiers, acceptedCommitments, block, db, desc)
+		case common.TxVotingType:
+			{
+				votingTx := tx.(*transaction.TxVoting)
+				for _, desc := range votingTx.Descs {
+					err := view.processFetchTxViewPoint(acceptedNullifiers, acceptedCommitments, block, db, desc)
+					return NewBlockChainError(UnExpectedError, err)
+				}
+			}
+		default:
+			{
+				return NewBlockChainError(UnExpectedError, errors.New("Tx type is invalid"))
 			}
 		}
 	}
