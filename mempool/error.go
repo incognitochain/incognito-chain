@@ -1,16 +1,16 @@
 package mempool
 
 const (
-	RejectDuplicateTx      = "RejectDuplicateTx"
-	RejectInvalidTx        = "RejectInvalidTx"
-	RejectSansityTx        = "RejectSansityTx"
-	RejectSalaryTx         = "RejectSalaryTx"
-	RejectVersion          = "RejectVersion"
-	RejectInvalidFee       = "RejectInvalidFee"
-	CanNotCheckDoubleSpend = "CanNotCheckDoubleSpend"
+	RejectDuplicateTx      = iota
+	RejectInvalidTx
+	RejectSansityTx
+	RejectSalaryTx
+	RejectVersion
+	RejectInvalidFee
+	CanNotCheckDoubleSpend
 )
 
-var ErrCodeMessage = map[string]struct {
+var ErrCodeMessage = map[int]struct {
 	code    int
 	message string
 }{
@@ -36,7 +36,7 @@ func (e MempoolTxError) Error() string {
 
 // txRuleError creates an underlying MempoolTxError with the given a set of
 // arguments and returns a RuleError that encapsulates it.
-func (e *MempoolTxError) Init(key string, err error) {
+func (e *MempoolTxError) Init(key int, err error) {
 	e.code = ErrCodeMessage[key].code
 	e.description = ErrCodeMessage[key].message
 	e.err = err

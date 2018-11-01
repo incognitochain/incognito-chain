@@ -4,16 +4,16 @@ import "fmt"
 
 const (
 	// RemotePeer err
-	PeerGenerateKeyPairErr   = "PeerGenerateKeyPairErr"
-	CreateP2PNodeErr         = "CreateP2PNodeErr"
-	CreateP2PAddressErr      = "CreateP2PAddressErr"
-	GetPeerIdFromProtocolErr = "GetPeerIdFromProtocolErr"
-	OpeningStreamP2PErr      = "OpeningStreamP2PErr"
+	PeerGenerateKeyPairErr   = iota
+	CreateP2PNodeErr
+	CreateP2PAddressErr
+	GetPeerIdFromProtocolErr
+	OpeningStreamP2PErr
 
 	// PeerConn err
 )
 
-var ErrCodeMessage = map[string]struct {
+var ErrCodeMessage = map[int]struct {
 	code    int
 	message string
 }{
@@ -39,7 +39,7 @@ func (e PeerError) Error() string {
 	return fmt.Sprintf("%+v: %+v", e.code, e.message)
 }
 
-func NewPeerError(key string, err error, peer *Peer) *PeerError {
+func NewPeerError(key int, err error, peer *Peer) *PeerError {
 	return &PeerError{
 		err:     err,
 		code:    ErrCodeMessage[key].code,
