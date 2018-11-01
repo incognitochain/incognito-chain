@@ -159,6 +159,10 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnSignSwap != nil {
 						self.Config.MessageListeners.OnSignSwap(self, message.(*wire.MessageSignSwap))
 					}
+				case reflect.TypeOf(&wire.MessageUpdateSwap{}):
+					if self.Config.MessageListeners.OnUpdateSwap != nil {
+						self.Config.MessageListeners.OnUpdateSwap(self, message.(*wire.MessageUpdateSwap))
+					}
 				default:
 					Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, self)
 				}
@@ -226,7 +230,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 	}
 }
 
-// QueueMessageWithEncoding adds the passed bitcoin message to the peer send
+// QueueMessageWithEncoding adds the passed Constant message to the peer send
 // queue. This function is identical to QueueMessage, however it allows the
 // caller to specify the wire encoding type that should be used when
 // encoding/decoding blocks and transactions.

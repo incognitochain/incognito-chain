@@ -10,7 +10,11 @@ import (
 )
 
 func (self *Engine) GetCommittee() []string {
-	return self.committee.CurrentCommittee
+	self.committee.Lock()
+	defer self.committee.Unlock()
+	committee := make([]string, common.TotalValidators)
+	copy(committee, self.committee.CurrentCommittee)
+	return committee
 }
 
 func (self *Engine) CheckCandidate(candidate string) error {
@@ -29,22 +33,20 @@ func (self *Engine) CheckCommittee(committee []string, blockHeight int, chainID 
 func (self *Engine) signData(data []byte) (string, error) {
 	signatureByte, err := self.config.ValidatorKeySet.Sign(data)
 	if err != nil {
-		return "", errors.New("Can't sign data. " + err.Error())
+		return common.EmptyString, errors.New("Can't sign data. " + err.Error())
 	}
 	return base58.Base58Check{}.Encode(signatureByte, byte(0x00)), nil
 }
 
 // getMyChain validator chainID and committee of that chainID
 func (self *Engine) getMyChain() byte {
+	pbk := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+	return self.getChainIdByPbk(pbk)
+}
+
+func (self *Engine) getChainIdByPbk(pbk string) byte {
 	committee := self.GetCommittee()
-	pkey := base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
-	for idx := byte(0); idx < byte(common.TotalValidators); idx++ {
-		validator := committee[int((1+int(idx))%common.TotalValidators)]
-		if pkey == validator {
-			return idx
-		}
-	}
-	return common.TotalValidators // nope, you're not in the committee
+	return byte(common.IndexOfStr(pbk, committee))
 }
 
 func (committee *committeeStruct) UpdateCommitteePoint(chainLeader string, validatorSig []string) {
@@ -53,7 +55,7 @@ func (committee *committeeStruct) UpdateCommitteePoint(chainLeader string, valid
 	committee.ValidatorBlkNum[chainLeader]++
 	committee.ValidatorReliablePts[chainLeader] += BlkPointAdd
 	for idx, sig := range validatorSig {
-		if sig != "" {
+		if sig != common.EmptyString {
 			committee.ValidatorReliablePts[committee.CurrentCommittee[idx]] += SigPointAdd
 		}
 	}
@@ -99,11 +101,11 @@ func (self *Engine) updateCommittee(sealerPbk string, chanId byte) error {
 	defer self.committee.Unlock()
 
 	committee := make([]string, common.TotalValidators)
-	copy(committee, self.GetCommittee())
+	copy(committee, self.committee.CurrentCommittee)
 
 	idx := common.IndexOfStr(sealerPbk, committee)
 	if idx >= 0 {
-		return errors.New("committee is swapped")
+		return errors.New("pbk is existed on committee list")
 	}
 	currentCommittee := make([]string, common.TotalValidators)
 	currentCommittee = append(committee[:chanId], sealerPbk)

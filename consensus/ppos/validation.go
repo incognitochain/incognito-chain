@@ -178,7 +178,7 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 	}
 
 	// 6. validate candidate list hash
-	candidates := self.GetCndList(block)
+	candidates := self.GetCandidateCommitteeList(block)
 	candidateBytes, err := json.Marshal(candidates)
 	if err != nil {
 		return err

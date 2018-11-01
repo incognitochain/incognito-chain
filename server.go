@@ -376,21 +376,6 @@ func (self Server) peerHandler() {
 
 	Logger.log.Info("Start peer handler")
 
-	if !cfg.DisableDNSSeed {
-		// load peer from seed DNS
-		// add to address manager
-		//self.addrManager.AddAddresses(make([]*peer.RemotePeer, 0))
-
-		self.connManager.SeedFromDNS(self.chainParams.DNSSeeds, func(addrs []string) {
-			// Bitcoind uses a lookup of the dns seeder here. This
-			// is rather strange since the values looked up by the
-			// DNS seed lookups will vary quite a lot.
-			// to replicate this behaviour we put all addresses as
-			// having come from the first one.
-			self.addrManager.AddAddressesStr(addrs)
-		})
-	}
-
 	if len(cfg.ConnectPeers) == 0 {
 		for _, addr := range self.addrManager.AddressCache() {
 			go self.connManager.Connect(addr.RawAddress, addr.PublicKey)
@@ -830,14 +815,11 @@ func (self *Server) GetPeerIDsFromPublicKey(pubKey string) []peer2.ID {
 PushMessageToAll broadcast msg
 */
 func (self *Server) PushMessageToAll(msg wire.Message) error {
-	Logger.log.Info("Push msg to all")
+	Logger.log.Info("Push msg to all peers")
 	var dc chan<- struct{}
 	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
-		Logger.log.Info("Pushed 1")
 		msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
-		Logger.log.Info("Pushed 2")
 		self.connManager.Config.ListenerPeers[index].QueueMessageWithEncoding(msg, dc)
-		Logger.log.Info("Pushed 3")
 	}
 	return nil
 }

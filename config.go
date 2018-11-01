@@ -53,13 +53,15 @@ var runServiceCommand func(string) error
 
 // See loadConfig for details on the configuration load process.
 type config struct {
-	ShowVersion          bool     `short:"V" long:"version" description:"Display version information and exit"`
-	ConfigFile           string   `short:"C" long:"configfile" description:"Path to configuratio\n file"`
-	DataDir              string   `short:"b" long:"datadir" description:"Directory to store data"`
-	DatabaseDir          string   `short:"p" long:"datapre" description:"Database dir"`
-	LogDir               string   `long:"logdir" description:"Directory to log output."`
+	ShowVersion bool   `short:"V" long:"version" description:"Display version information and exit"`
+	ConfigFile  string `short:"C" long:"configfile" description:"Path to configuratio\n file"`
+	DataDir     string `short:"D" long:"datadir" description:"Directory to store data"`
+	DatabaseDir string `short:"d" long:"datapre" description:"Database dir"`
+	LogDir      string `short:"L" long:"logdir" description:"Directory to log output."`
+	LogLevel    string `short:"l" long:"loglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
+
 	AddPeers             []string `short:"a" long:"addpeer" description:"Add a peer to connect with at startup"`
-	ConnectPeers         []string `long:"connect" description:"Connect only to the specified peers at startup"`
+	ConnectPeers         []string `short:"c" long:"connect" description:"Connect only to the specified peers at startup"`
 	DisableListen        bool     `long:"nolisten" description:"Disable listening for incoming connections -- NOTE: Listening is automatically disabled if the --connect or --proxy options are used without also specifying listen interfaces via --listen"`
 	Listeners            []string `long:"listen" description:"Add an interface/port to listen for connections (default all interfaces port: 9333, testnet: 9444)"`
 	MaxPeers             int      `long:"maxpeers" description:"Max number of inbound and outbound peers"`
@@ -67,24 +69,24 @@ type config struct {
 	MaxInPeers           int      `long:"maxinpeers" description:"Max number of inbound peers"`
 	DiscoverPeers        bool     `long:"discoverpeers" description:"Enable discover peers"`
 	DiscoverPeersAddress string   `long:"discoverpeersaddress" description:"Url to connect discover peers server"`
-	RPCDisableAuth       bool     `long:"norpcauth" description:"Disable RPC authorization by username/password"`
-	RPCUser              string   `short:"u" long:"rpcuser" description:"Username for RPC connections"`
-	RPCPass              string   `short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`
-	RPCLimitUser         string   `long:"rpclimituser" description:"Username for limited RPC connections"`
-	RPCLimitPass         string   `long:"rpclimitpass" default-mask:"-" description:"Password for limited RPC connections"`
-	RPCListeners         []string `long:"rpclisten" description:"Add an interface/port to listen for RPC connections (default port: 9334, testnet: 9334)"`
-	RPCCert              string   `long:"rpccert" description:"File containing the certificate file"`
-	RPCKey               string   `long:"rpckey" description:"File containing the certificate key"`
-	RPCMaxClients        int      `long:"rpcmaxclients" description:"Max number of RPC clients for standard connections"`
-	RPCQuirks            bool     `long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
-	DisableRPC           bool     `long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
-	DisableTLS           bool     `long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
-	DisableDNSSeed       bool     `long:"nodnsseed" description:"Disable DNS seeding for peers"`
-	Proxy                string   `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
-	ProxyUser            string   `long:"proxyuser" description:"Username for proxy server"`
-	ProxyPass            string   `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
-	DebugLevel           string   `short:"d" long:"debuglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
-	Generate             bool     `long:"generate" description:"Generate (mine) coins using the CPU"`
+
+	RPCDisableAuth bool     `long:"norpcauth" description:"Disable RPC authorization by username/password"`
+	RPCUser        string   `short:"u" long:"rpcuser" description:"Username for RPC connections"`
+	RPCPass        string   `short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`
+	RPCLimitUser   string   `long:"rpclimituser" description:"Username for limited RPC connections"`
+	RPCLimitPass   string   `long:"rpclimitpass" default-mask:"-" description:"Password for limited RPC connections"`
+	RPCListeners   []string `long:"rpclisten" description:"Add an interface/port to listen for RPC connections (default port: 9334, testnet: 9334)"`
+	RPCCert        string   `long:"rpccert" description:"File containing the certificate file"`
+	RPCKey         string   `long:"rpckey" description:"File containing the certificate key"`
+	RPCMaxClients  int      `long:"rpcmaxclients" description:"Max number of RPC clients for standard connections"`
+	RPCQuirks      bool     `long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
+	DisableRPC     bool     `long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
+	DisableTLS     bool     `long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
+
+	Proxy     string `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
+	ProxyUser string `long:"proxyuser" description:"Username for proxy server"`
+	ProxyPass string `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
+	Generate  bool   `long:"generate" description:"Generate (mine) coins using the CPU"`
 
 	// Net config
 	TestNet bool `long:"testnet" description:"Use the test network"`
@@ -245,14 +247,14 @@ func removeDuplicateAddresses(addrs []string) []string {
 // 	3) Load configuration file overwriting defaults with any specified options
 // 	4) Parse CLI options and overwrite/add any specified options
 //
-// The above results in btcd functioning properly without any config settings
+// The above results in Constant functioning properly without any config settings
 // while still allowing the user to override settings with config files and
 // command line options.  Command line options always take precedence.
 */
 func loadConfig() (*config, []string, error) {
 	cfg := config{
 		ConfigFile:           defaultConfigFile,
-		DebugLevel:           defaultLogLevel,
+		LogLevel:             defaultLogLevel,
 		MaxOutPeers:          defaultMaxPeers,
 		MaxInPeers:           defaultMaxPeers,
 		RPCMaxClients:        defaultMaxRPCClients,
@@ -386,7 +388,7 @@ func loadConfig() (*config, []string, error) {
 	cfg.LogDir = filepath.Join(cfg.LogDir, netName(activeNetParams))
 
 	// Special show command to list supported subsystems and exit.
-	if cfg.DebugLevel == "show" {
+	if cfg.LogLevel == "show" {
 		fmt.Println("Supported subsystems", supportedSubsystems())
 		os.Exit(0)
 	}
@@ -396,7 +398,7 @@ func loadConfig() (*config, []string, error) {
 	initLogRotator(filepath.Join(cfg.LogDir, defaultLogFilename))
 
 	// Parse, validate, and set debug log level(s).
-	if err := parseAndSetDebugLevels(cfg.DebugLevel); err != nil {
+	if err := parseAndSetDebugLevels(cfg.LogLevel); err != nil {
 		err := fmt.Errorf("%s: %v", funcName, err.Error())
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, usageMessage)
@@ -413,14 +415,9 @@ func loadConfig() (*config, []string, error) {
 	}
 
 	// --proxy or --connect without --listen disables listening.
-	if (cfg.Proxy != "" || len(cfg.ConnectPeers) > 0) &&
+	if (cfg.Proxy != common.EmptyString || len(cfg.ConnectPeers) > 0) &&
 		len(cfg.Listeners) == 0 {
 		cfg.DisableListen = true
-	}
-
-	// Connect means no DNS seeding.
-	if len(cfg.ConnectPeers) > 0 {
-		cfg.DisableDNSSeed = true
 	}
 
 	// Add the default listener if none were specified. The default

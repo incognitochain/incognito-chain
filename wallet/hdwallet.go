@@ -124,7 +124,7 @@ func (key *Key) Serialize(keyType byte) ([]byte, error) {
 	return serializedKey, nil
 }
 
-// Base58CheckSerialize encodes the KeySet in the standard Bitcoin base58 encoding
+// Base58CheckSerialize encodes the KeySet in the standard Constant base58 encoding
 func (key *Key) Base58CheckSerialize(keyType byte) string {
 	serializedKey, err := key.Serialize(keyType)
 	if err != nil {

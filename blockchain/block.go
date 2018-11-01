@@ -290,13 +290,10 @@ func (self Block) Hash() *common.Hash {
 		return self.blockHash
 	}
 
-	record := strconv.Itoa(self.Header.Version) +
-		self.BlockProducer +
-		self.BlockProducerSig +
-		strconv.Itoa(len(self.Transactions)) +
-		strconv.Itoa(int(self.Height)) +
+	record := common.EmptyString
 
-		strconv.FormatInt(self.Header.Timestamp, 10) +
+	// add data from header
+	record += strconv.FormatInt(self.Header.Timestamp, 10) +
 		string(self.Header.ChainID) +
 		self.Header.MerkleRoot.String() +
 		self.Header.MerkleRootCommitments.String() +
@@ -305,6 +302,18 @@ func (self Block) Hash() *common.Hash {
 		strconv.Itoa(int(self.Header.GovernanceParams.SalaryPerTx)) +
 		strconv.Itoa(int(self.Header.GovernanceParams.BasicSalary)) +
 		strings.Join(self.Header.Committee, ",")
+
+	// add data from body
+	record += strconv.Itoa(self.Header.Version) +
+		self.BlockProducer +
+		self.BlockProducerSig +
+		strconv.Itoa(len(self.Transactions)) +
+		strconv.Itoa(int(self.Height))
+
+	// add data from tx
+	for _, tx := range self.Transactions {
+		record += tx.Hash().String()
+	}
 
 	hash := common.DoubleHashH([]byte(record))
 	self.blockHash = &hash

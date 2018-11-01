@@ -120,7 +120,7 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 	}
 	newMsg.(*wire.MessageChainState).ChainInfo = ChainInfo{
 		CurrentCommittee:        self.GetCommittee(),
-		CandidateListMerkleHash: "",
+		CandidateListMerkleHash: common.EmptyString,
 		ChainsHeight:            self.validatedChainsHeight.Heights,
 	}
 	peerID, _ := peer2.IDB58Decode(msg.SenderID)
@@ -152,6 +152,14 @@ func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 	if msg.LockTime > time.Now().Unix() {
 		return
 	}
+
+	committee := self.GetCommittee()
+
+	if common.IndexOfStr(msg.RequesterPbk, committee) < 0 {
+		Logger.log.Error("ERROR OnRequestSwap is not existed committee")
+		return
+	}
+
 	rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.RequesterPbk, msg.ChainID, msg.SealerPbk)
 	// TODO check requester signature
 	err := cashec.ValidateDataB58(msg.RequesterPbk, msg.RequesterSig, rawBytes)
@@ -159,6 +167,8 @@ func (self *Engine) OnRequestSwap(msg *wire.MessageRequestSwap) {
 		Logger.log.Info("Received a MessageRequestSwap validate error", err)
 		return
 	}
+	// validate condition for swap
+
 	peerIDs := self.config.Server.GetPeerIDsFromPublicKey(msg.SealerPbk)
 	if len(peerIDs) == 0 {
 		return
@@ -213,8 +223,7 @@ func (self *Engine) OnUpdateSwap(msg *wire.MessageUpdateSwap) {
 		return
 	}
 
-	committee := make([]string, common.TotalValidators)
-	copy(committee, self.GetCommittee())
+	committee := self.GetCommittee()
 
 	if common.IndexOfStr(msg.SealerPbk, committee) >= 0 {
 		Logger.log.Error("ERROR OnUpdateSwap is existed committee")
@@ -229,12 +238,14 @@ func (self *Engine) OnUpdateSwap(msg *wire.MessageUpdateSwap) {
 			err := cashec.ValidateDataB58(leaderPbk, leaderSig, rawBytes)
 			if err != nil {
 				Logger.log.Error("ERROR OnUpdateSwap", leaderPbk, err)
-				return
+				continue
 			}
+		} else {
+			continue
 		}
 		cLeader += 1
 	}
-	if cLeader < common.TotalValidators/2 {
+	if cLeader < common.TotalValidators / 2 {
 		Logger.log.Error("ERROR OnUpdateSwap not enough signatures")
 		return
 	}

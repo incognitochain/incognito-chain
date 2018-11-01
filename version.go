@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+	"github.com/ninjadotorg/cash/common"
 )
 
 // semanticAlphabet
@@ -41,7 +42,7 @@ func version() string {
 	// not be contained in the pre-release string.  The pre-release version
 	// is not appended if it contains invalid characters.
 	preRelease := normalizeVerString(appPreRelease)
-	if preRelease != "" {
+	if preRelease != common.EmptyString {
 		version = fmt.Sprintf("%s-%s", version, preRelease)
 	}
 
@@ -50,7 +51,7 @@ func version() string {
 	// not be contained in the build metadata string.  The build metadata
 	// string is not appended if it contains invalid characters.
 	build := normalizeVerString(appBuild)
-	if build != "" {
+	if build != common.EmptyString {
 		version = fmt.Sprintf("%s+%s", version, build)
 	}
 
