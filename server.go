@@ -410,6 +410,11 @@ func (self Server) Start() {
 	}
 
 	Logger.log.Info("Starting server")
+	if cfg.TestNet {
+		Logger.log.Info("************************")
+		Logger.log.Info("* Testnet is active *")
+		Logger.log.Info("************************")
+	}
 	// Server startup time. Used for the uptime command for uptime calculation.
 	self.startupTime = time.Now().Unix()
 

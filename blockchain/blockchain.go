@@ -65,10 +65,10 @@ Init - init a blockchain view from config
 func (self *BlockChain) Init(config *Config) error {
 	// Enforce required config fields.
 	if config.DataBase == nil {
-		return errors.New("blockchain.New database is nil")
+		return NewBlockChainError(UnExpectedError, errors.New("Database is not config"))
 	}
 	if config.ChainParams == nil {
-		return errors.New("blockchain.New chain parameters nil")
+		return NewBlockChainError(UnExpectedError, errors.New("Chain parameters is not config"))
 	}
 
 	self.config = *config
@@ -137,11 +137,9 @@ func (self *BlockChain) createChainState(chainId byte) error {
 		initBlock = self.config.ChainParams.GenesisBlock
 	} else {
 		initBlock = &Block{}
+		initBlock.Header = self.config.ChainParams.GenesisBlock.Header
 		initBlock.Header.ChainID = chainId
-		initBlock.Header.Timestamp = self.config.ChainParams.GenesisBlock.Header.Timestamp
-		initBlock.Header.Committee = self.config.ChainParams.GenesisBlock.Header.Committee
-		initBlock.Header.SalaryFund = self.config.ChainParams.GenesisBlock.Header.SalaryFund
-		initBlock.Header.GovernanceParams = self.config.ChainParams.GenesisBlock.Header.GovernanceParams
+		initBlock.Header.PrevBlockHash = *self.config.ChainParams.GenesisBlock.Hash()
 	}
 	initBlock.Height = 1
 
