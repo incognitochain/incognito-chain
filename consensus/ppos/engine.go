@@ -253,7 +253,7 @@ func (self *Engine) StartSealer(sealerKeySet cashec.KeySetSealer) {
 					if common.IntArrayEquals(self.knownChainsHeight.Heights, self.validatedChainsHeight.Heights) {
 						chainID := self.getMyChain()
 						if chainID >= 0 && chainID < common.TotalValidators {
-							Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
+							Logger.log.Critical("Yay!! It's my turn")
 							Logger.log.Info("Current chainsHeight")
 							Logger.log.Info(self.validatedChainsHeight.Heights)
 							Logger.log.Info("My chainID: ", chainID)
