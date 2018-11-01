@@ -346,9 +346,9 @@ func (self Server) Stop() error {
 		if len(feeEstimatorData) > 0 {
 			err := self.dataBase.StoreFeeEstimator(feeEstimatorData, chainId)
 			if err != nil {
-				Logger.log.Errorf("Can't save fee estimator data: %v", err)
+				Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", chainId, err)
 			} else {
-				Logger.log.Info("Save fee estimator data")
+				Logger.log.Infof("Save fee estimator data on chain #%d", chainId)
 			}
 		}
 	}
