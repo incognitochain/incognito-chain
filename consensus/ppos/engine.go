@@ -357,7 +357,7 @@ finalizing:
 				}
 
 				if idx := common.IndexOfStr(blocksig.Validator, committee); idx != -1 {
-					if finalBlock.Header.BlockCommitteeSigs[idx] == "" {
+					if finalBlock.Header.BlockCommitteeSigs[idx] == common.EmptyString {
 						err := cashec.ValidateDataB58(blocksig.Validator, blocksig.ValidatorSig, []byte(blockHash))
 
 						if err != nil {
@@ -542,7 +542,7 @@ func (self *Engine) StartSwap() error {
 				}
 
 				committeeCandidateList := self.config.BlockChain.GetCommitteeCandidateList()
-				sealerPbk := ""
+				sealerPbk := common.EmptyString
 				for _, committeeCandidatePbk := range committeeCandidateList {
 					peerIDs := self.config.Server.GetPeerIDsFromPublicKey(committeeCandidatePbk)
 					if len(peerIDs) == 0 {
@@ -550,11 +550,11 @@ func (self *Engine) StartSwap() error {
 					}
 					sealerPbk = committeeCandidatePbk
 				}
-				if sealerPbk == "" {
+				if sealerPbk == common.EmptyString {
 					//TODO for testing
 					sealerPbk = "1q4iCdtqb67DcNYyCE8FvMZKrDRE8KHW783VoYm5LXvds7vpsi"
 				}
-				if sealerPbk == "" {
+				if sealerPbk == common.EmptyString {
 					continue
 				}
 

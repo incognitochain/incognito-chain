@@ -33,7 +33,7 @@ func (self *Engine) CheckCommittee(committee []string, blockHeight int, chainID 
 func (self *Engine) signData(data []byte) (string, error) {
 	signatureByte, err := self.config.ValidatorKeySet.Sign(data)
 	if err != nil {
-		return "", errors.New("Can't sign data. " + err.Error())
+		return common.EmptyString, errors.New("Can't sign data. " + err.Error())
 	}
 	return base58.Base58Check{}.Encode(signatureByte, byte(0x00)), nil
 }
@@ -55,7 +55,7 @@ func (committee *committeeStruct) UpdateCommitteePoint(chainLeader string, valid
 	committee.ValidatorBlkNum[chainLeader]++
 	committee.ValidatorReliablePts[chainLeader] += BlkPointAdd
 	for idx, sig := range validatorSig {
-		if sig != "" {
+		if sig != common.EmptyString {
 			committee.ValidatorReliablePts[committee.CurrentCommittee[idx]] += SigPointAdd
 		}
 	}

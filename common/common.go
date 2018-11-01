@@ -26,7 +26,7 @@ import (
 // primarily to enable the testing package to properly test the function by
 // forcing an operating system that is not the currently one.
 func appDataDir(goos, appName string, roaming bool) string {
-	if appName == "" || appName == "." {
+	if appName == EmptyString || appName == "." {
 		return "."
 	}
 
@@ -46,7 +46,7 @@ func appDataDir(goos, appName string, roaming bool) string {
 	// Fall back to standard HOME environment variable that works
 	// for most POSIX OSes if the directory from the Go standard
 	// lib failed.
-	if err != nil || homeDir == "" {
+	if err != nil || homeDir == EmptyString {
 		homeDir = os.Getenv("HOME")
 	}
 
@@ -57,27 +57,27 @@ func appDataDir(goos, appName string, roaming bool) string {
 		// Windows XP and before didn't have a LOCALAPPDATA, so fallback
 		// to regular APPDATA when LOCALAPPDATA is not set.
 		appData := os.Getenv("LOCALAPPDATA")
-		if roaming || appData == "" {
+		if roaming || appData == EmptyString {
 			appData = os.Getenv("APPDATA")
 		}
 
-		if appData != "" {
+		if appData != EmptyString {
 			return filepath.Join(appData, appNameUpper)
 		}
 
 	case "darwin":
-		if homeDir != "" {
+		if homeDir != EmptyString {
 			return filepath.Join(homeDir, "Library",
 				"Application Support", appNameUpper)
 		}
 
 	case "plan9":
-		if homeDir != "" {
+		if homeDir != EmptyString {
 			return filepath.Join(homeDir, appNameLower)
 		}
 
 	default:
-		if homeDir != "" {
+		if homeDir != EmptyString {
 			return filepath.Join(homeDir, "."+appNameLower)
 		}
 	}
@@ -146,7 +146,7 @@ func ParseListeners(addrs []string, netType string) ([]SimpleAddr, error) {
 		}
 
 		// Empty host or host of * on plan9 is both IPv4 and IPv6.
-		if host == "" || (host == "*" && runtime.GOOS == "plan9") {
+		if host == EmptyString || (host == "*" && runtime.GOOS == "plan9") {
 			netAddrs = append(netAddrs, SimpleAddr{Net: netType + "4", Addr: addr})
 			//netAddrs = append(netAddrs, simpleAddr{net: netType + "6", addr: addr})
 			continue

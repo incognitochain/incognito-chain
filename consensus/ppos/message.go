@@ -120,7 +120,7 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 	}
 	newMsg.(*wire.MessageChainState).ChainInfo = ChainInfo{
 		CurrentCommittee:        self.GetCommittee(),
-		CandidateListMerkleHash: "",
+		CandidateListMerkleHash: common.EmptyString,
 		ChainsHeight:            self.validatedChainsHeight.Heights,
 	}
 	peerID, _ := peer2.IDB58Decode(msg.SenderID)

@@ -6,6 +6,7 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/ninjadotorg/cash/common"
 )
 
 // DeploymentError identifies an error that indicates a deployment Id was
@@ -271,7 +272,7 @@ var errorCodeStrings = map[ErrorCode]string{
 
 // String returns the ErrorCode as a human-readable name.
 func (e ErrorCode) String() string {
-	if s := errorCodeStrings[e]; s != "" {
+	if s := errorCodeStrings[e]; s != common.EmptyString {
 		return s
 	}
 	return fmt.Sprintf("Unknown ErrorCode (%d)", int(e))
