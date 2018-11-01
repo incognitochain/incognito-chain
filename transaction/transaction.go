@@ -6,6 +6,7 @@ import (
 	"github.com/ninjadotorg/cash/common"
 )
 
+// Interface for all type of transaction
 type Transaction interface {
 	Hash() *common.Hash
 	ValidateTransaction() bool
@@ -14,6 +15,8 @@ type Transaction interface {
 	GetSenderAddrLastByte() byte
 	GetTxFee() uint64
 }
+
+// This is tx struct which is really saved in tx mempool
 type TxDesc struct {
 	// Tx is the transaction associated with the entry.
 	Tx Transaction
