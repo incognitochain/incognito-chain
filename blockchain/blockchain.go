@@ -145,7 +145,7 @@ func (self *BlockChain) createChainState(chainId byte) error {
 
 	tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
 	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
-		return err
+		return NewBlockChainError(UpdateMerkleTreeForBlockError, err)
 	}
 
 	self.BestState[chainId] = &BestState{}
@@ -154,18 +154,18 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	// store block genesis
 	err := self.StoreBlock(initBlock)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 
 	// store block hash by index and index by block hash
 	err = self.StoreBlockIndex(initBlock)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 	// store best state
 	err = self.StoreBestState(chainId)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 
 	return nil
