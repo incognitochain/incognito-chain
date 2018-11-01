@@ -27,18 +27,16 @@ const (
 	CmdPing          = "ping"
 
 	// POS Cmd
-	CmdRequestBlockSign  = "rqblocksign"
-	CmdInvalidBlock      = "invalidblock"
-	CmdBlockSig          = "blocksig"
-	CmdGetChainState     = "getchstate"
-	CmdChainState        = "chainstate"
-	CmdCandidateProposal = "cndproposal"
-	CmdCandidateVote     = "cndvote"
+	CmdBlockSigReq   = "blocksigreq"
+	CmdBlockSig      = "blocksig"
+	CmdInvalidBlock  = "invalidblock"
+	CmdGetChainState = "getchstate"
+	CmdChainState    = "chainstate"
 
 	// SWAP Cmd
-	CmdRequestSwap = "requestswap"
-	CmdSignSwap    = "signswap"
-	CmdUpdateSwap  = "updateswap"
+	CmdSwapRequest = "swaprequest"
+	CmdSwapSig     = "swapsig"
+	CmdSwapUpdate  = "swapupdate"
 )
 
 // Interface for message wire on P2P network
@@ -79,12 +77,11 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdVerack:
 		msg = &MessageVerAck{}
 		break
-		// POS start
 	case CmdBlockSig:
 		msg = &MessageBlockSig{}
 		break
-	case CmdRequestBlockSign:
-		msg = &MessageRequestBlockSign{}
+	case CmdBlockSigReq:
+		msg = &MessageBlockSigReq{}
 		break
 	case CmdInvalidBlock:
 		msg = &MessageInvalidBlock{}
@@ -93,12 +90,6 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageGetChainState{}
 	case CmdChainState:
 		msg = &MessageChainState{}
-	case CmdCandidateVote:
-		msg = &MessageCandidateVote{}
-		break
-	case CmdCandidateProposal:
-		msg = &MessageCandidateProposal{}
-		// POS end
 	case CmdGetAddr:
 		msg = &MessageGetAddr{}
 		break
@@ -108,14 +99,14 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdPing:
 		msg = &MessagePing{}
 		break
-	case CmdRequestSwap:
-		msg = &MessageRequestSwap{}
+	case CmdSwapRequest:
+		msg = &MessageSwapRequest{}
 		break
-	case CmdSignSwap:
-		msg = &MessageSignSwap{}
+	case CmdSwapSig:
+		msg = &MessageSwapSig{}
 		break
-	case CmdUpdateSwap:
-		msg = &MessageUpdateSwap{
+	case CmdSwapUpdate:
+		msg = &MessageSwapUpdate{
 			Signatures: make(map[string]string),
 		}
 		break
@@ -145,29 +136,22 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdAddr, nil
 	case reflect.TypeOf(&MessagePing{}):
 		return CmdPing, nil
-
-		// POS start
 	case reflect.TypeOf(&MessageBlockSig{}):
 		return CmdBlockSig, nil
-	case reflect.TypeOf(&MessageRequestBlockSign{}):
-		return CmdRequestBlockSign, nil
-	case reflect.TypeOf(&MessageCandidateVote{}):
-		return CmdCandidateVote, nil
-	case reflect.TypeOf(&MessageCandidateProposal{}):
-		return CmdCandidateProposal, nil
+	case reflect.TypeOf(&MessageBlockSigReq{}):
+		return CmdBlockSigReq, nil
 	case reflect.TypeOf(&MessageInvalidBlock{}):
 		return CmdInvalidBlock, nil
 	case reflect.TypeOf(&MessageGetChainState{}):
 		return CmdGetChainState, nil
 	case reflect.TypeOf(&MessageChainState{}):
 		return CmdChainState, nil
-		// POS end
-	case reflect.TypeOf(&MessageRequestSwap{}):
-		return CmdRequestSwap, nil
-	case reflect.TypeOf(&MessageSignSwap{}):
-		return CmdSignSwap, nil
-	case reflect.TypeOf(&MessageUpdateSwap{}):
-		return CmdUpdateSwap, nil
+	case reflect.TypeOf(&MessageSwapRequest{}):
+		return CmdSwapRequest, nil
+	case reflect.TypeOf(&MessageSwapSig{}):
+		return CmdSwapSig, nil
+	case reflect.TypeOf(&MessageSwapUpdate{}):
+		return CmdSwapUpdate, nil
 	default:
 		return "", fmt.Errorf("unhandled this message type [%s]", msgType)
 	}

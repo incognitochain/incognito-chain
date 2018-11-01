@@ -528,9 +528,9 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnChainState:    self.OnChainState,
 			//
 			OnRegistration: self.OnRegistration,
-			OnRequestSwap:  self.OnRequestSwap,
+			OnSwapRequest:  self.OnSwapRequest,
 			OnSignSwap:     self.OnSignSwap,
-			OnUpdateSwap:   self.OnUpdateSwap,
+			OnSwapUpdate:   self.OnSwapUpdate,
 		},
 	}
 	if len(keysetSealer.SprivateKey) != 0 {
@@ -583,21 +583,21 @@ func (self Server) OnRegistration(peer *peer.PeerConn, msg *wire.MessageRegistra
 	Logger.log.Info("Receive a new registration END")
 }
 
-func (self Server) OnRequestSwap(peer *peer.PeerConn, msg *wire.MessageRequestSwap) {
+func (self Server) OnSwapRequest(peer *peer.PeerConn, msg *wire.MessageSwapRequest) {
 	Logger.log.Info("Receive a new request swap START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a new request swap END")
 }
 
-func (self Server) OnSignSwap(peer *peer.PeerConn, msg *wire.MessageSignSwap) {
+func (self Server) OnSignSwap(peer *peer.PeerConn, msg *wire.MessageSwapSig) {
 	Logger.log.Info("Receive a new sign swap START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a new sign swap END")
 }
 
-func (self Server) OnUpdateSwap(peer *peer.PeerConn, msg *wire.MessageUpdateSwap) {
+func (self Server) OnSwapUpdate(peer *peer.PeerConn, msg *wire.MessageSwapUpdate) {
 	Logger.log.Info("Receive a new update swap START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
@@ -753,7 +753,7 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	//}
 }
 
-func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageRequestBlockSign) {
+func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageBlockSigReq) {
 	Logger.log.Info("Receive a requestsign START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
