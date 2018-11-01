@@ -50,7 +50,7 @@ type committeeStruct struct {
 	ValidatorReliablePts map[string]int //track how reliable is the validator node
 	CurrentCommittee     []string
 	sync.Mutex
-	LastUpdate int64
+	LastUpdate           int64
 }
 
 type ChainInfo struct {
@@ -71,7 +71,7 @@ type EngineConfig struct {
 	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server          interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -310,7 +310,7 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	newblock.BlockProducer = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 
 	// hash candidate list and set to block header
-	candidates := self.GetCandidateCommitteeList(newblock.Block)
+	candidates := self.GetCandidateCommitteeList(newblock)
 	candidateBytes, _ := json.Marshal(candidates)
 	newblock.Header.CandidateHash = common.HashH(candidateBytes)
 
@@ -565,7 +565,7 @@ func (self *Engine) StartSwap() error {
 				signatureMap := make(map[string]string)
 				lockTime := time.Now().Unix()
 			BeginSwap:
-				// Collect signatures of other validators
+			// Collect signatures of other validators
 				cancel := make(chan struct{})
 				go func(lockTime int64, requesterPbk string, chainId byte, sealerPbk string) {
 					for {
@@ -583,7 +583,7 @@ func (self *Engine) StartSwap() error {
 								}
 								Logger.log.Info("SWAP validate signature ok from ", swapSig.Validator, sealerPbk)
 								signatureMap[swapSig.Validator] = swapSig.ValidatorSig
-								if len(signatureMap) >= common.TotalValidators / 2 {
+								if len(signatureMap) >= common.TotalValidators/2 {
 									close(allSigReceived)
 									return
 								}
