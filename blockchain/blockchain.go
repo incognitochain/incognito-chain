@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"errors"
-	"fmt"
 
 	//"fmt"
 	//"time"
@@ -11,13 +10,14 @@ import (
 
 	"encoding/json"
 
+	"sort"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ninjadotorg/cash/cashec"
 	"github.com/ninjadotorg/cash/common"
 	"github.com/ninjadotorg/cash/database"
 	"github.com/ninjadotorg/cash/privacy/client"
 	"github.com/ninjadotorg/cash/transaction"
-	"sort"
 )
 
 const (
@@ -122,38 +122,6 @@ func (self *BlockChain) initChainState() error {
 		}
 	}
 
-	return nil
-}
-
-/*
-// UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
-*/
-func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
-	for _, blockTx := range block.Transactions {
-		if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
-			tx, ok := blockTx.(*transaction.Tx)
-			if ok == false {
-				return fmt.Errorf("Transaction in block not valid")
-			}
-
-			for _, desc := range tx.Descs {
-				for _, cm := range desc.Commitments {
-					tree.AddNewNode(cm[:])
-				}
-			}
-		} else if blockTx.GetType() == common.TxVotingType {
-			tx, ok := blockTx.(*transaction.TxVoting)
-			if ok == false {
-				return fmt.Errorf("Transaction in block not valid")
-			}
-
-			for _, desc := range tx.Descs {
-				for _, cm := range desc.Commitments {
-					tree.AddNewNode(cm[:])
-				}
-			}
-		}
-	}
 	return nil
 }
 
@@ -835,7 +803,7 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 	return result, nil
 }
 
-func (self *BlockChain) GetCommitteCandidate(pubkeyParam string) (*CommitteeCandidateInfo) {
+func (self *BlockChain) GetCommitteCandidate(pubkeyParam string) *CommitteeCandidateInfo {
 	for _, bestState := range self.BestState {
 		for pubkey, candidateInfo := range bestState.Candidates {
 			if pubkey == pubkeyParam {
@@ -849,7 +817,7 @@ func (self *BlockChain) GetCommitteCandidate(pubkeyParam string) (*CommitteeCand
 /*
 Get Candidate List from all chain and merge all to one - return pubkey of them
 */
-func (self *BlockChain) GetCommitteeCandidateList() ([]string) {
+func (self *BlockChain) GetCommitteeCandidateList() []string {
 	candidatePubkeyList := []string{}
 	for _, bestState := range self.BestState {
 		for pubkey, _ := range bestState.Candidates {
@@ -883,7 +851,7 @@ func (self *BlockChain) GetCommitteeCandidateList() ([]string) {
 	return candidatePubkeyList
 }
 
-func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) (CommitteeCandidateInfo) {
+func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCandidateInfo {
 	var cndVal CommitteeCandidateInfo
 	for _, bestState := range self.BestState {
 		cndValTmp, ok := bestState.Candidates[nodeAddr]

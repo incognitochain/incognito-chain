@@ -50,7 +50,7 @@ type committeeStruct struct {
 	ValidatorReliablePts map[string]int //track how reliable is the validator node
 	CurrentCommittee     []string
 	sync.Mutex
-	LastUpdate           int64
+	LastUpdate int64
 }
 
 type ChainInfo struct {
@@ -71,7 +71,7 @@ type EngineConfig struct {
 	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server interface {
+	Server          interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -304,17 +304,17 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
-	newblock.Block.Header.ChainsHeight = make([]int, common.TotalValidators)
-	copy(newblock.Block.Header.ChainsHeight, self.validatedChainsHeight.Heights)
-	newblock.Block.Header.ChainID = myChainID
-	newblock.Block.BlockProducer = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
+	newblock.Header.ChainsHeight = make([]int, common.TotalValidators)
+	copy(newblock.Header.ChainsHeight, self.validatedChainsHeight.Heights)
+	newblock.Header.ChainID = myChainID
+	newblock.BlockProducer = base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00))
 
 	// hash candidate list and set to block header
-	candidates := self.GetCndList(newblock.Block)
+	candidates := self.GetCndList(newblock)
 	candidateBytes, _ := json.Marshal(candidates)
-	newblock.Block.Header.CandidateHash = common.HashH(candidateBytes)
+	newblock.Header.CandidateHash = common.HashH(candidateBytes)
 
-	return newblock.Block, nil
+	return newblock, nil
 }
 
 // Finalize after successfully create a block we will send this block to other validators to get their signatures
@@ -552,7 +552,7 @@ func (self *Engine) StartSwap() error {
 				signatureMap := make(map[string]string)
 				lockTime := time.Now().Unix()
 			BeginSwap:
-			// Collect signatures of other validators
+				// Collect signatures of other validators
 				cancel := make(chan struct{})
 				go func(lockTime int64, requesterPbk string, chainId byte, sealerPbk string) {
 					for {
