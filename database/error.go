@@ -3,20 +3,20 @@ package database
 import "fmt"
 
 const (
-	DriverExistErr       = "DriverExistErr"
-	DriverNotRegisterErr = "DriverNotRegisterErr"
+	DriverExistErr       = iota
+	DriverNotRegisterErr
 
 	// LevelDB
-	OpenDbErr     = "OpenDbErr"
-	NotExistValue = "NotExistValue"
+	OpenDbErr
+	NotExistValue
 
 	// BlockChain err
-	NotImplHashMethod = "NotImplHashMethod"
-	BlockExisted      = "BlockExisted"
-	UnexpectedError   = "UnexpectedError"
+	NotImplHashMethod
+	BlockExisted
+	UnexpectedError
 )
 
-var ErrCodeMessage = map[string]struct {
+var ErrCodeMessage = map[int]struct {
 	code    int
 	message string
 }{
@@ -44,7 +44,7 @@ func (e DatabaseError) Error() string {
 	return fmt.Sprintf("%+v: %+v", e.code, e.message)
 }
 
-func NewDatabaseError(key string, err error) *DatabaseError {
+func NewDatabaseError(key int, err error) *DatabaseError {
 	return &DatabaseError{
 		err:     err,
 		code:    ErrCodeMessage[key].code,

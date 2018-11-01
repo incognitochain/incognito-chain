@@ -3,14 +3,14 @@ package wallet
 import "fmt"
 
 const (
-	InvalidChecksumErr    = "InvalidChecksumErr"
-	WrongPassphraseErr    = "WrongPassphraseErr"
-	ExistedAccountErr     = "ExistedAccountErr"
-	ExistedAccountNameErr = "ExistedAccountNameErr"
-	UnexpectedErr         = "UnexpectedErr"
+	InvalidChecksumErr    = iota
+	WrongPassphraseErr
+	ExistedAccountErr
+	ExistedAccountNameErr
+	UnexpectedErr
 )
 
-var ErrCodeMessage = map[string]struct {
+var ErrCodeMessage = map[int]struct {
 	code    int
 	message string
 }{
@@ -33,7 +33,7 @@ func (e WalletError) Error() string {
 	return fmt.Sprintf("%+v: %+v", e.code, e.message)
 }
 
-func NewWalletError(key string, err error) *WalletError {
+func NewWalletError(key int, err error) *WalletError {
 	return &WalletError{
 		err:     err,
 		code:    ErrCodeMessage[key].code,

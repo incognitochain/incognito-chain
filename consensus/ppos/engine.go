@@ -49,7 +49,7 @@ type committeeStruct struct {
 	ValidatorReliablePts map[string]int //track how reliable is the validator node
 	CurrentCommittee     []string
 	sync.Mutex
-	LastUpdate int64
+	LastUpdate           int64
 }
 
 type ChainInfo struct {
@@ -70,7 +70,7 @@ type EngineConfig struct {
 	BlockGen        *blockchain.BlkTmplGenerator
 	MemPool         *mempool.TxPool
 	ValidatorKeySet cashec.KeySetSealer
-	Server          interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -442,7 +442,11 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 
 	// update candidate list
 	self.config.BlockChain.BestState[block.Header.ChainID].Candidates = self.GetCandidateCommitteeList(block)
-	self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
+	err = self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
+	if err != nil {
+		Logger.log.Errorf("Can not update merkle tree for block: %+v", err)
+		return
+	}
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)
 
 	self.knownChainsHeight.Lock()

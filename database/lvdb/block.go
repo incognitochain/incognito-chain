@@ -41,10 +41,12 @@ func (db *db) StoreBlock(v interface{}, chainID byte) error {
 }
 
 func (db *db) HasBlock(hash *common.Hash) (bool, error) {
-	if exists, _ := db.hasValue(db.getKey("block", hash)); exists {
-		return true, nil
+	exists, err := db.hasValue(db.getKey("block", hash))
+	if err != nil {
+		return false, err
+	} else {
+		return exists, nil
 	}
-	return false, nil
 }
 
 func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {

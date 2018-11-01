@@ -65,10 +65,10 @@ Init - init a blockchain view from config
 func (self *BlockChain) Init(config *Config) error {
 	// Enforce required config fields.
 	if config.DataBase == nil {
-		return errors.New("blockchain.New database is nil")
+		return NewBlockChainError(UnExpectedError, errors.New("Database is not config"))
 	}
 	if config.ChainParams == nil {
-		return errors.New("blockchain.New chain parameters nil")
+		return NewBlockChainError(UnExpectedError, errors.New("Chain parameters is not config"))
 	}
 
 	self.config = *config
@@ -137,17 +137,15 @@ func (self *BlockChain) createChainState(chainId byte) error {
 		initBlock = self.config.ChainParams.GenesisBlock
 	} else {
 		initBlock = &Block{}
+		initBlock.Header = self.config.ChainParams.GenesisBlock.Header
 		initBlock.Header.ChainID = chainId
-		initBlock.Header.Timestamp = self.config.ChainParams.GenesisBlock.Header.Timestamp
-		initBlock.Header.Committee = self.config.ChainParams.GenesisBlock.Header.Committee
-		initBlock.Header.SalaryFund = self.config.ChainParams.GenesisBlock.Header.SalaryFund
-		initBlock.Header.GovernanceParams = self.config.ChainParams.GenesisBlock.Header.GovernanceParams
+		initBlock.Header.PrevBlockHash = common.Hash{}
 	}
 	initBlock.Height = 1
 
 	tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
 	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
-		return err
+		return NewBlockChainError(UpdateMerkleTreeForBlockError, err)
 	}
 
 	self.BestState[chainId] = &BestState{}
@@ -156,18 +154,18 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	// store block genesis
 	err := self.StoreBlock(initBlock)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 
 	// store block hash by index and index by block hash
 	err = self.StoreBlockIndex(initBlock)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 	// store best state
 	err = self.StoreBestState(chainId)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 
 	return nil
@@ -234,7 +232,7 @@ func (self *BlockChain) StoreBestState(chainId byte) error {
 /*
 GetBestState - return a best state from a chain
 */
-// #1 - chainId - index of chain
+// #1 - chainID - index of chain
 func (self *BlockChain) GetBestState(chainId byte) (*BestState, error) {
 	bestState := BestState{}
 	bestStateBytes, err := self.config.DataBase.FetchBestState(chainId)
@@ -267,7 +265,7 @@ this is a list tx-out which are used by a new tx
 func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
 	for coinType, item := range view.listNullifiers {
 		for _, item1 := range item {
-			err := self.config.DataBase.StoreNullifiers(item1, coinType, view.chainId)
+			err := self.config.DataBase.StoreNullifiers(item1, coinType, view.chainID)
 			if err != nil {
 				return err
 			}
@@ -283,7 +281,7 @@ this is a list tx-in which are used by a new tx
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
 	for coinType, item := range view.listCommitments {
 		for _, item1 := range item {
-			err := self.config.DataBase.StoreCommitments(item1, coinType, view.chainId)
+			err := self.config.DataBase.StoreCommitments(item1, coinType, view.chainID)
 			if err != nil {
 				return err
 			}

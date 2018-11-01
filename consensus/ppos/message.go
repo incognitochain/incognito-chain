@@ -70,13 +70,19 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageBlockSigReq) {
 
 func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 	if self.config.BlockChain.BestState[block.Header.ChainID].Height < block.Height {
-		if exists, _ := self.config.BlockChain.BlockExists(block.Hash()); !exists {
-			err := self.validateBlockSanity(block)
-			if err != nil {
-				Logger.log.Error(err)
-				return
+		exists, err := self.config.BlockChain.BlockExists(block.Hash())
+		if err != nil {
+			Logger.log.Error(err)
+			return
+		} else {
+			if !exists {
+				err := self.validateBlockSanity(block)
+				if err != nil {
+					Logger.log.Error(err)
+					return
+				}
+				self.UpdateChain(block)
 			}
-			self.UpdateChain(block)
 		}
 	}
 	return
