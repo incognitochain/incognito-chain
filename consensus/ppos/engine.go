@@ -583,7 +583,7 @@ func (self *Engine) StartSwap() error {
 								}
 								Logger.log.Info("SWAP validate signature ok from ", swapSig.Validator, sealerPbk)
 								signatureMap[swapSig.Validator] = swapSig.ValidatorSig
-								if len(signatureMap) >= 1 {
+								if len(signatureMap) >= common.TotalValidators / 2 {
 									close(allSigReceived)
 									return
 								}
