@@ -137,6 +137,7 @@ concludeBlock:
 	salaryTx, err := createSalaryTx(totalSalary, &payToAddress, rt, chainID)
 
 	if err != nil {
+		Logger.log.Error(err)
 		return nil, err
 	}
 	// the 1st tx will be salaryTx
@@ -213,7 +214,7 @@ func createSalaryTx(
 	// Generate proof and sign tx
 	tx, err := transaction.CreateEmptyTx(common.TxSalaryType)
 	if err != nil {
-		return nil, err
+		return nil, NewBlockChainError(UnExpectedError, err)
 	}
 	tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
 	rtMap := map[byte][]byte{chainID: rt}
@@ -223,11 +224,11 @@ func createSalaryTx(
 	assetTypeToPaySalary := common.AssetTypeCoin
 	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0, assetTypeToPaySalary, true)
 	if err != nil {
-		return nil, err
+		return nil, NewBlockChainError(UnExpectedError, err)
 	}
 	tx, err = transaction.SignTx(tx)
 	if err != nil {
-		return nil, err
+		return nil, NewBlockChainError(UnExpectedError, err)
 	}
-	return tx, err
+	return tx, nil
 }
