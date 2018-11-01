@@ -232,7 +232,7 @@ func (self *BlockChain) StoreBestState(chainId byte) error {
 /*
 GetBestState - return a best state from a chain
 */
-// #1 - chainId - index of chain
+// #1 - chainID - index of chain
 func (self *BlockChain) GetBestState(chainId byte) (*BestState, error) {
 	bestState := BestState{}
 	bestStateBytes, err := self.config.DataBase.FetchBestState(chainId)
@@ -265,7 +265,7 @@ this is a list tx-out which are used by a new tx
 func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
 	for coinType, item := range view.listNullifiers {
 		for _, item1 := range item {
-			err := self.config.DataBase.StoreNullifiers(item1, coinType, view.chainId)
+			err := self.config.DataBase.StoreNullifiers(item1, coinType, view.chainID)
 			if err != nil {
 				return err
 			}
@@ -281,7 +281,7 @@ this is a list tx-in which are used by a new tx
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
 	for coinType, item := range view.listCommitments {
 		for _, item1 := range item {
-			err := self.config.DataBase.StoreCommitments(item1, coinType, view.chainId)
+			err := self.config.DataBase.StoreCommitments(item1, coinType, view.chainID)
 			if err != nil {
 				return err
 			}

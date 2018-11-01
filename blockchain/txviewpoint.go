@@ -4,10 +4,11 @@ import (
 	"github.com/ninjadotorg/cash/common"
 	"github.com/ninjadotorg/cash/database"
 	"github.com/ninjadotorg/cash/transaction"
+	"errors"
 )
 
 type TxViewPoint struct {
-	chainId         byte
+	chainID         byte
 	listNullifiers  map[string]([][]byte)
 	listCommitments map[string]([][]byte)
 
@@ -18,7 +19,7 @@ type TxViewPoint struct {
 /*
 ListNullifiers returns list nullifers which is contained in TxViewPoint
 */
-// #1: joinSplitDescType is "Coin" Or "Bond"
+// #1: joinSplitDescType is "Coin" Or "Bond" or other token
 func (view *TxViewPoint) ListNullifiers(joinSplitDescType string) [][]byte {
 	return view.listNullifiers[joinSplitDescType]
 }
@@ -39,13 +40,28 @@ func (view *TxViewPoint) CurrentBestBlockHash() *common.Hash {
 	return &view.currentBestBlockHash
 }
 
-/*
-SetBestHash sets the hash of the best block in the chain the view currently
-represents.
-*/
-// func (view *TxViewPoint) SetBestHash(hash *common.Hash) {
-// 	view.currentBestBlockHash = *hash
-// }
+// fetch from desc of tx to get nullifiers and commitments
+func (view *TxViewPoint) processFetchTxViewPoint(acceptedNullifiers map[string][][]byte, acceptedCommitments map[string][][]byte, block *Block, db database.DatabaseInterface, desc *transaction.JoinSplitDesc) error {
+	for _, item := range desc.Nullifiers {
+		temp, err := db.HasNullifier(item, desc.Type, block.Header.ChainID)
+		if err != nil {
+			return err
+		}
+		if !temp {
+			acceptedNullifiers[desc.Type] = append(acceptedNullifiers[desc.Type], item)
+		}
+	}
+	for _, item := range desc.Commitments {
+		temp, err := db.HasCommitment(item, desc.Type, block.Header.ChainID)
+		if err != nil {
+			return err
+		}
+		if !temp {
+			acceptedCommitments[desc.Type] = append(acceptedCommitments[desc.Type], item)
+		}
+	}
+	return nil
+}
 
 /*
 fetchTxViewPoint get list nullifiers and commitments from txs in block and check if they are not in Main chain db
@@ -57,50 +73,29 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 	acceptedNullifiers := make(map[string][][]byte)
 	acceptedCommitments := make(map[string][][]byte)
 	for _, tx := range transactions {
-		if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxSalaryType {
-			for _, desc := range tx.(*transaction.Tx).Descs {
-				for _, item := range desc.Nullifiers {
-					temp, err := db.HasNullifier(item, desc.Type, block.Header.ChainID)
-					if err != nil {
-						return err
-					}
-					if !temp {
-						acceptedNullifiers[desc.Type] = append(acceptedNullifiers[desc.Type], item)
-					}
-				}
-				for _, item := range desc.Commitments {
-					temp, err := db.HasCommitment(item, desc.Type, block.Header.ChainID)
-					if err != nil {
-						return err
-					}
-					if !temp {
-						acceptedCommitments[desc.Type] = append(acceptedCommitments[desc.Type], item)
-					}
+		switch tx.GetType() {
+		case common.TxNormalType:
+		case common.TxSalaryType:
+			{
+				normalTx := tx.(*transaction.Tx)
+				for _, desc := range normalTx.Descs {
+					err := view.processFetchTxViewPoint(acceptedNullifiers, acceptedCommitments, block, db, desc)
+					return NewBlockChainError(UnExpectedError, err)
 				}
 			}
-		} else if tx.GetType() == common.TxVotingType {
-			for _, desc := range tx.(*transaction.TxVoting).Descs {
-				for _, item := range desc.Nullifiers {
-					temp, err := db.HasNullifier(item, desc.Type, block.Header.ChainID)
-					if err != nil {
-						return err
-					}
-					if !temp {
-						acceptedNullifiers[desc.Type] = append(acceptedNullifiers[desc.Type], item)
-					}
+		case common.TxVotingType:
+			{
+				votingTx := tx.(*transaction.TxVoting)
+				for _, desc := range votingTx.Descs {
+					err := view.processFetchTxViewPoint(acceptedNullifiers, acceptedCommitments, block, db, desc)
+					return NewBlockChainError(UnExpectedError, err)
 				}
-				for _, item := range desc.Commitments {
-					temp, err := db.HasCommitment(item, desc.Type, block.Header.ChainID)
-					if err != nil {
-						return err
-					}
-					if !temp {
-						acceptedCommitments[desc.Type] = append(acceptedCommitments[desc.Type], item)
-					}
-				}
+			}
+		default:
+			{
+				return NewBlockChainError(UnExpectedError, errors.New("Tx type is invalid"))
 			}
 		}
-
 	}
 
 	if len(acceptedNullifiers) > 0 {
@@ -119,7 +114,7 @@ Create a Tx view point, which contains data about nullifiers and commitments
 */
 func NewTxViewPoint(chainId byte) *TxViewPoint {
 	return &TxViewPoint{
-		chainId:         chainId,
+		chainID:         chainId,
 		listNullifiers:  make(map[string]([][]byte)),
 		listCommitments: make(map[string]([][]byte)),
 	}

@@ -101,15 +101,15 @@ type MessageListeners struct {
 	OnAddr      func(p *PeerConn, msg *wire.MessageAddr)
 
 	//PoS
-	OnRequestSign   func(p *PeerConn, msg *wire.MessageRequestBlockSign)
+	OnRequestSign   func(p *PeerConn, msg *wire.MessageBlockSigReq)
 	OnInvalidBlock  func(p *PeerConn, msg *wire.MessageInvalidBlock)
 	OnBlockSig      func(p *PeerConn, msg *wire.MessageBlockSig)
 	OnGetChainState func(p *PeerConn, msg *wire.MessageGetChainState)
 	OnChainState    func(p *PeerConn, msg *wire.MessageChainState)
 	OnRegistration  func(p *PeerConn, msg *wire.MessageRegistration)
-	OnRequestSwap   func(p *PeerConn, msg *wire.MessageRequestSwap)
-	OnSignSwap      func(p *PeerConn, msg *wire.MessageSignSwap)
-	OnUpdateSwap    func(p *PeerConn, msg *wire.MessageUpdateSwap)
+	OnSwapRequest   func(p *PeerConn, msg *wire.MessageSwapRequest)
+	OnSignSwap      func(p *PeerConn, msg *wire.MessageSwapSig)
+	OnSwapUpdate    func(p *PeerConn, msg *wire.MessageSwapUpdate)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal
@@ -123,7 +123,7 @@ type outMsg struct {
 
 /*
 NewPeer - create a new peer with go libp2p
- */
+*/
 func (self Peer) NewPeer() (*Peer, error) {
 	// If the seed is zero, use real cryptographic randomness. Otherwise, use a
 	// deterministic randomness source to make generated keys stay the same
@@ -199,7 +199,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 
 /*
 Start - start peer to begin waiting for connections from other peers
- */
+*/
 func (self *Peer) Start() {
 	Logger.log.Info("RemotePeer start")
 	// ping to bootnode for test env
@@ -552,7 +552,7 @@ func (self *Peer) Stop() {
 
 /*
 handleConnected - set established flag to a peer when being connected
- */
+*/
 func (self *Peer) handleConnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleConnected %s", peerConn.RemotePeerID.String())
 	peerConn.RetryCount = 0
@@ -567,7 +567,7 @@ func (self *Peer) handleConnected(peerConn *PeerConn) {
 
 /*
 handleDisconnected - handle connected peer when it is disconnected, remove and retry connection
- */
+*/
 func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.String())
 	peerConn.updateConnState(ConnCanceled)
@@ -583,7 +583,7 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 
 /*
 handleFailed - handle when connecting peer failure
- */
+*/
 func (self *Peer) handleFailed(peerConn *PeerConn) {
 	Logger.log.Infof("handleFailed %s", peerConn.RemotePeerID.String())
 
@@ -596,7 +596,7 @@ func (self *Peer) handleFailed(peerConn *PeerConn) {
 
 /*
 retryPeerConnection - retry to connect to peer when being disconnected
- */
+*/
 func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 	time.AfterFunc(RetryConnDuration, func() {
 		Logger.log.Infof("Retry New RemotePeer Connection %s", peerConn.RemoteRawAddress)
@@ -608,7 +608,7 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 			peerConn.ListenerPeer.PushConn(peerConn.RemotePeer, cConn)
 			p := <-cConn
 			if p == nil {
-				peerConn.RetryCount ++
+				peerConn.RetryCount++
 				go self.retryPeerConnection(peerConn)
 			}
 		} else {
@@ -622,7 +622,7 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 
 /*
 renewPeerConnection - create peer conn by goroutines for pending peers(reconnect)
- */
+*/
 func (self *Peer) renewPeerConnection() {
 	if len(self.PendingPeers) > 0 {
 		self.pendingPeersMutex.Lock()

@@ -36,17 +36,17 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	// blocks that fail to connect available for further analysis.
 	err := self.StoreBlock(block)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 	// save index of block
 	err = self.StoreBlockIndex(block)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 	// fetch nullifiers and commitments(utxo) from block and save
 	err = self.CreateTxViewPoint(block)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 
 	Logger.log.Infof("Accepted block %s", blockHash)
@@ -61,7 +61,8 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 func (self *BlockChain) BlockExists(hash *common.Hash) (bool, error) {
 	result, err := self.config.DataBase.HasBlock(hash)
 	if err != nil {
-		return false, err
+		return false, NewBlockChainError(UnExpectedError, err)
+	} else {
+		return result, nil
 	}
-	return result, err
 }
