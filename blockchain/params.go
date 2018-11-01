@@ -4,16 +4,6 @@ import (
 	"time"
 )
 
-// DNSSeed identifies a DNS seed.
-type DNSSeed struct {
-	// Host defines the hostname of the seed.
-	Host string
-
-	// HasFiltering defines whether the seed supports filtering
-	// by service flags (wire.ServiceFlag).
-	HasFiltering bool
-}
-
 /*
 Params defines a network by its params. These params may be used by Applications
 to differentiate network as well as addresses and keys for one network
@@ -28,10 +18,6 @@ type Params struct {
 
 	// DefaultPort defines the default peer-to-peer port for the network.
 	DefaultPort string
-
-	// DNSSeeds defines a list of DNS seeds for the network that are used
-	// as one method to discover peers.
-	DNSSeeds []string
 
 	// GenesisBlock defines the first block of the chain.
 	GenesisBlock *Block
@@ -99,9 +85,6 @@ var MainNetParams = Params{
 	Name:        MainetName,
 	Net:         Mainnet,
 	DefaultPort: MainnetDefaultPort,
-	DNSSeeds: []string{
-		//"/ip4/127.0.0.1/tcp/9333/ipfs/QmRuvXN7BpTqxqpPLSftDFbKEYiRZRUb7iqZJcz2CxFvVS",
-	},
 
 	// blockChain parameters
 	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, MainnetGenesisblockPaymentAddress, pposValidators, MainnetInitFundSalary, 0, 0),
@@ -112,9 +95,6 @@ var TestNetParams = Params{
 	Name:        TestnetName,
 	Net:         Testnet,
 	DefaultPort: TestnetDefaultPort,
-	DNSSeeds: []string{
-		//"/ip4/127.0.0.1/tcp/9333/ipfs/QmRuvXN7BpTqxqpPLSftDFbKEYiRZRUb7iqZJcz2CxFvVS",
-	},
 
 	// blockChain parameters
 	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, TestnetGenesisBlockPaymentAddress, pposValidators, TestnetInitFundSalary, 1000, 1000),

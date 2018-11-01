@@ -87,7 +87,6 @@ type config struct {
 	ProxyUser string `long:"proxyuser" description:"Username for proxy server"`
 	ProxyPass string `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
 	Generate  bool   `long:"generate" description:"Generate (mine) coins using the CPU"`
-	//DisableDNSSeed       bool     `long:"nodnsseed" description:"Disable DNS seeding for peers"`
 
 	// Net config
 	TestNet bool `long:"testnet" description:"Use the test network"`
@@ -420,11 +419,6 @@ func loadConfig() (*config, []string, error) {
 		len(cfg.Listeners) == 0 {
 		cfg.DisableListen = true
 	}
-
-	// Connect means no DNS seeding.
-	/*if len(cfg.ConnectPeers) > 0 {
-		cfg.DisableDNSSeed = true
-	}*/
 
 	// Add the default listener if none were specified. The default
 	// listener is all addresses on the listen port for the network
