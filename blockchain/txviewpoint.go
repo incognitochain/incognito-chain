@@ -4,7 +4,7 @@ import (
 	"github.com/ninjadotorg/cash/common"
 	"github.com/ninjadotorg/cash/database"
 	"github.com/ninjadotorg/cash/transaction"
-	"github.com/pkg/errors"
+	"errors"
 )
 
 type TxViewPoint struct {
@@ -60,6 +60,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(acceptedNullifiers map[string][
 			acceptedCommitments[desc.Type] = append(acceptedCommitments[desc.Type], item)
 		}
 	}
+	return nil
 }
 
 /*
