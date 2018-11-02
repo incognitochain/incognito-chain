@@ -24,8 +24,8 @@ type TxTokenVin struct {
 
 // TxTokenVout ...
 type TxTokenVout struct {
-	Value       uint64
-	ScripPubKey string
+	Value          uint64
+	PaymentAddress string
 }
 
 // TxToken ...
@@ -44,31 +44,26 @@ type TxCustomToken struct {
 	TxToken TxToken
 }
 
-// CustomTokenReceiver ...
-type CustomTokenReceiver struct {
-	PubKey string `json:"PubKey"`
-	Amount uint64 `json:"Amount"`
-}
-
-// CustomTokenParamTx ...
+// CustomTokenParamTx - use for rpc request json body
 type CustomTokenParamTx struct {
-	PropertyName    string                `json:"TokenName"`
-	PropertySymbol  string                `json:"TokenSymbol"`
-	TxCustomTokenID string                `json:"TokenHash"`
-	Amount          uint64                `json:"TokenAmount"`
-	TokenTxType     int                   `json:"TokenTxType"`
-	Receivers       []CustomTokenReceiver `json:"TokenReceivers"`
+	PropertyName   string        `json:"TokenName"`
+	PropertySymbol string        `json:"TokenSymbol"`
+	Amount         uint64        `json:"TokenAmount"`
+	TokenTxType    int           `json:"TokenTxType"`
+	Receivers      []TxTokenVout `json:"TokenReceivers"`
+
+	vins []TxTokenVin
 }
 
 // CreateCustomTokenReceiverArray ...
-func CreateCustomTokenReceiverArray(data interface{}) []CustomTokenReceiver {
-	result := make([]CustomTokenReceiver, 0)
+func CreateCustomTokenReceiverArray(data interface{}) []TxTokenVout {
+	result := make([]TxTokenVout, 0)
 	receivers := data.([]interface{})
 	for _, item := range receivers {
 		temp := item.(map[string]interface{})
-		resultItem := CustomTokenReceiver{
-			PubKey: temp["PubKey"].(string),
-			Amount: uint64(temp["Amount"].(float64)),
+		resultItem := TxTokenVout{
+			PaymentAddress: temp["PaymentAddress"].(string),
+			Value:          uint64(temp["Value"].(float64)),
 		}
 		result = append(result, resultItem)
 	}
@@ -187,6 +182,8 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 	assetType string,
 	senderChainID byte,
 	tokenParams *CustomTokenParamTx) (*TxCustomToken, error) {
+
+	// TODO: create normal tx
 	fee = 0 // TODO remove this line
 	fmt.Printf("List of all commitments before building tx:\n")
 	fmt.Printf("rts: %+v\n", rts)
@@ -412,10 +409,11 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 
 		fmt.Printf("Len input and info: %+v %+v\n", len(inputNotes), len(paymentInfo))
 	}
+	// end TODO
 
 	var handled = false
 
-	// add token data params
+	// TODO: add token data params
 	if tokenParams.TokenTxType == CustomTokenInit {
 		handled = true
 
@@ -432,16 +430,17 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 		var tempAmount uint64
 
 		for _, receiver := range tokenParams.Receivers {
-			receiverAmount := receiver.Amount
-			if tempAmount+receiver.Amount > tokenParams.Amount {
+			receiverAmount := receiver.Value
+			if tempAmount+receiver.Value > tokenParams.Amount {
 				receiverAmount = tokenParams.Amount - tempAmount
 				tempAmount = tokenParams.Amount
 			} else {
-				tempAmount += receiver.Amount
+				tempAmount += receiver.Value
 			}
+			hash160, _ := common.Hash160([]byte(receiver.PaymentAddress))
 			VoutsTemp = append(VoutsTemp, TxTokenVout{
-				ScripPubKey: receiver.PubKey,
-				Value:       receiverAmount,
+				PaymentAddress: string(hash160), // hash160 of wallet paymentaddress
+				Value:          receiverAmount,
 			})
 		}
 		tx.TxToken.Vouts = VoutsTemp
@@ -449,18 +448,9 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 
 	if tokenParams.TokenTxType == CustomTokenTransfer {
 		handled = true
-		tokenID := tokenParams.TxCustomTokenID
-		fmt.Println(tokenID)
-		// transfer handler
-		// get token info of TxCustomTokenID
-		// TO-DO
-		// get list of vout of sender of TxCustomTokenID
-		// TO-DO
-		tx.TxToken = TxToken{
-			Type: tokenParams.TokenTxType,
-			// TxCustomTokenID: tokenParams.TxCustomTokenID.(hash.Hash),
-		}
+		// get all vout of token on sender chainID
 	}
+	// end TODO
 
 	if handled != true {
 		return nil, errors.New("Can't handle this TokenTxType")

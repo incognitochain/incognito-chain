@@ -863,3 +863,6 @@ func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCand
 	}
 	return cndVal
 }
+func (self *BlockChain) GetTxTokenVoutBySender(senderChainID byte, senderPaymentAddress string) {
+	//self.BestState[senderChainID]
+}

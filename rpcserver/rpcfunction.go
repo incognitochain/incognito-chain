@@ -737,14 +737,14 @@ func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan
 
 	// param #4: token params
 	tokenParamsRaw := arrayParams[3].(map[string]interface{})
-
 	tokenParams := &transaction.CustomTokenParamTx{
-		PropertyName:    tokenParamsRaw["TokenName"].(string),
-		PropertySymbol:  tokenParamsRaw["TokenSymbol"].(string),
-		TxCustomTokenID: tokenParamsRaw["TokenHash"].(string),
-		TokenTxType:     int(tokenParamsRaw["TokenTxType"].(float64)),
-		Amount:          uint64(tokenParamsRaw["TokenAmount"].(float64)),
-		Receivers:       transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"]),
+		PropertyName:   tokenParamsRaw["TokenName"].(string),
+		PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
+		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
+		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
+		Receivers:      transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"]),
+	}
+	if tokenParams.TokenTxType == transaction.CustomTokenTransfer {
 	}
 
 	totalAmmount := estimateFeeCoinPerKb
