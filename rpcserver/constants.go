@@ -31,6 +31,7 @@ const (
 	GetCommitteeCandidateList          = "getcommitteecandidate"
 	RetrieveCommitteeCandidate         = "retrievecommitteecandidate"
 	GetBlockProducerList               = "getblockproducer"
+	ListUnspentCustomToken             = "listunspentcustomtoken"
 
 	GetHeader = "getheader"
 

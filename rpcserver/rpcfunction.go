@@ -55,6 +55,7 @@ var RpcHandler = map[string]commandHandler{
 	SendRegistrationCandidateCommittee: RpcServer.handleSendRegistrationCandidateCommittee,
 	SendCustomTokenTransaction:         RpcServer.handleSendCustomTokenTransaction,
 	GetMempoolInfo:                     RpcServer.handleGetMempoolInfo,
+	ListUnspentCustomToken:             RpcServer.handleListUnspentCustomTokenTransaction,
 
 	GetCommitteeCandidateList:  RpcServer.handleGetCommitteeCandidateList,
 	RetrieveCommitteeCandidate: RpcServer.handleRetrieveCommiteeCandidate,

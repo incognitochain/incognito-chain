@@ -879,6 +879,7 @@ func (self *BlockChain) GetUnspentTxTokenVoutBySender(senderKeyset cashec.KeySet
 	txCustomTokenIDs := []common.Hash{}
 	for prevHash.String() != (common.Hash{}).String() {
 		block, err := self.GetBlockByBlockHash(prevHash)
+		prevHash = &block.Header.PrevBlockHash
 		if err != nil {
 			return nil, err
 		}
@@ -901,20 +902,20 @@ func (self *BlockChain) GetUnspentTxTokenVoutBySender(senderKeyset cashec.KeySet
 		prevHash := bestState.BestBlock.Hash()
 		for prevHash.String() != (common.Hash{}).String() {
 			block, err := self.GetBlockByBlockHash(prevHash)
+			prevHash = &block.Header.PrevBlockHash
 			if err != nil {
 				return nil, err
 			}
 			for _, tx := range block.Transactions {
 				if tx.GetType() == common.TxCustomTokenType {
 					customTokenTx := tx.(*transaction.TxCustomToken)
-					if len(txCustomTokenIDs) > 0 {
-						if existed, err := common.SliceExists(txCustomTokenIDs, customTokenTx.Hash()); !existed && err == nil {
-							for index, vout := range customTokenTx.TxToken.Vouts {
-								if vout.PaymentAddress.Apk == senderKeyset.PaymentAddress.Apk {
-									vout.SetIndex(index)
-									vout.SetTxCustomTokenID(*tx.Hash())
-									voutList = append(voutList, vout)
-								}
+					for index, vout := range customTokenTx.TxToken.Vouts {
+						if vout.PaymentAddress.Apk == senderKeyset.PaymentAddress.Apk {
+							existed, err := common.SliceExists(txCustomTokenIDs, tx.Hash())
+							if !existed && err == nil {
+								vout.SetIndex(index)
+								vout.SetTxCustomTokenID(*tx.Hash())
+								voutList = append(voutList, vout)
 							}
 						}
 					}
