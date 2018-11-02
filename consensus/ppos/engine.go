@@ -151,11 +151,11 @@ func (self *Engine) Start() error {
 					}
 					Logger.log.Infof("block height: %d", block.Height)
 					//TODO Comment validateBlockSanity segment to create block with only 1 node (validator)
-					/*err = self.validateBlockSanity(block)
+					err = self.validateBlockSanity(block)
 					if err != nil {
 						Logger.log.Error(err)
 						return
-					}*/
+					}
 					// end TODO
 					err = self.config.BlockChain.CreateTxViewPoint(block)
 					if err != nil {
