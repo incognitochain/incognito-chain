@@ -19,13 +19,9 @@
 
 vendor
 
-prototype
+constant
 
-cash-prototype
-
-cash
-
-cashctl
+constantctl
 
 constant-bootnode
 
