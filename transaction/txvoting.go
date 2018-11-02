@@ -185,7 +185,7 @@ func CreateVotingTx(
 	}
 	tempKeySet := cashec.KeySet{}
 	tempKeySet.ImportFromPrivateKey(senderKey)
-	lastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
+	lastByte := tempKeySet.PaymentAddress.Apk[len(tempKeySet.PaymentAddress.Apk)-1]
 	tx.Tx.AddressLastByte = lastByte
 	var latestAnchor map[byte][]byte
 
@@ -320,8 +320,8 @@ func CreateVotingTx(
 				fmt.Printf("Exactly enough, include 1 more output %+v, %x\n", outNote.Value, outNote.Apk)
 			} else {
 				// Cannot put the output note into this js desc, create a change note instead
-				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PublicKey.Apk}
-				output := &client.JSOutput{EncKey: senderFullKey.PublicKey.Pkenc, OutputNote: outNote}
+				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PaymentAddress.Apk}
+				output := &client.JSOutput{EncKey: senderFullKey.PaymentAddress.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
 				fmt.Printf("Create change outnote %+v, %x\n", outNote.Value, outNote.Apk)
 

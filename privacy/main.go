@@ -169,7 +169,7 @@ func main() {
 	// 	fmt.Printf("Error: %s", err)
 	// }
 
-	// pub := transaction.PubKeyToByteArray(&privKey.PublicKey)
+	// pub := transaction.PubKeyToByteArray(&privKey.PaymentAddress)
 	// signed_tx.JSPubKey = pub
 	// fmt.Printf("Pub key: %v\n",signed_tx.JSPubKey)
 	// fmt.Printf("Size of pub key: %d\n", len(signed_tx.JSPubKey))

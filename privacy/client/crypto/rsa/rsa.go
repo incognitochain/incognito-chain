@@ -36,7 +36,7 @@ import (
 var bigZero = big.NewInt(0)
 var bigOne = big.NewInt(1)
 
-// A PublicKey represents the public part of an RSA key.
+// A PaymentAddress represents the public part of an RSA key.
 type PublicKey struct {
 	N *big.Int // modulus
 	E int      // public exponent

@@ -520,7 +520,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 								// copy(hSig, desc.HSigSeed)
 								hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
 								note := new(client.Note)
-								note, err := client.DecryptNote(encData, keySet.ReadonlyKey.Skenc, keySet.PublicKey.Pkenc, epk, hSig)
+								note, err := client.DecryptNote(encData, keySet.ReadonlyKey.Skenc, keySet.PaymentAddress.Pkenc, epk, hSig)
 								spew.Dump(note)
 								if err == nil && note != nil {
 									copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
@@ -645,7 +645,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, co
 								copy(epk[:], desc.EphemeralPubKey)
 								hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
 								note := new(client.Note)
-								note, err := client.DecryptNote(encData, keys.ReadonlyKey.Skenc, keys.PublicKey.Pkenc, epk, hSig)
+								note, err := client.DecryptNote(encData, keys.ReadonlyKey.Skenc, keys.PaymentAddress.Pkenc, epk, hSig)
 								if err == nil && note != nil && note.Value > 0 {
 									// can decrypt data -> got candidate commitment
 									candidateCommitment := desc.Commitments[i]

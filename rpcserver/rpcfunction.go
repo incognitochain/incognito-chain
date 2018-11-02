@@ -426,7 +426,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 		}
 
 		// get keyset only contain pub-key by deserializing
-		pubKeyStr := keys["PublicKey"].(string)
+		pubKeyStr := keys["PaymentAddress"].(string)
 		pubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
@@ -434,8 +434,8 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 
 		// create a key set
 		keySet := cashec.KeySet{
-			ReadonlyKey: readonlyKey.KeySet.ReadonlyKey,
-			PublicKey:   pubKey.KeySet.PublicKey,
+			ReadonlyKey:    readonlyKey.KeySet.ReadonlyKey,
+			PaymentAddress: pubKey.KeySet.PaymentAddress,
 		}
 
 		txsMap, err := self.config.BlockChain.GetListTxByReadonlyKey(&keySet, assetType)
@@ -548,7 +548,7 @@ func (self RpcServer) handleCreateRegistrationCandidateCommittee(params interfac
 		return nil, nil
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	lastByte := senderKey.KeySet.PublicKey.Apk[len(senderKey.KeySet.PublicKey.Apk)-1]
+	lastByte := senderKey.KeySet.PaymentAddress.Apk[len(senderKey.KeySet.PaymentAddress.Apk)-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
 	if err != nil {
 		return nil, nil
@@ -723,7 +723,7 @@ func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	lastByte := senderKey.KeySet.PublicKey.Apk[len(senderKey.KeySet.PublicKey.Apk)-1]
+	lastByte := senderKey.KeySet.PaymentAddress.Apk[len(senderKey.KeySet.PaymentAddress.Apk)-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -853,7 +853,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	lastByte := senderKey.KeySet.PublicKey.Apk[len(senderKey.KeySet.PublicKey.Apk)-1]
+	lastByte := senderKey.KeySet.PaymentAddress.Apk[len(senderKey.KeySet.PaymentAddress.Apk)-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -870,7 +870,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		}
 		paymentInfo := &client.PaymentInfo{
 			Amount:         common.ConstantToMiliConstant(uint64(amount.(float64))),
-			PaymentAddress: receiverPubKey.KeySet.PublicKey,
+			PaymentAddress: receiverPubKey.KeySet.PaymentAddress,
 		}
 		totalAmmount += int64(paymentInfo.Amount)
 		paymentInfos = append(paymentInfos, paymentInfo)

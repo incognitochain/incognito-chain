@@ -370,7 +370,7 @@ listen:
 				for _, rawPeer := range response {
 					if rawPeer.PublicKey != EmptyString && !strings.Contains(rawPeer.RawAddress, listener.PeerID.String()) {
 						_, exist := self.discoveredPeers[rawPeer.PublicKey]
-						//Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RemoteRawAddress, exist)
+						//Logger.log.Info("Discovered peer", rawPeer.PaymentAddress, rawPeer.RemoteRawAddress, exist)
 						if !exist {
 							// The following code extracts target's peer Id from the
 							// given multiaddress
@@ -393,7 +393,7 @@ listen:
 							}
 
 							self.discoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
-							//Logger.log.Info("Start connect to peer", rawPeer.PublicKey, rawPeer.RemoteRawAddress, exist)
+							//Logger.log.Info("Start connect to peer", rawPeer.PaymentAddress, rawPeer.RemoteRawAddress, exist)
 							go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
 						} else {
 							peerIds := self.getPeerIdsFromPublicKey(rawPeer.PublicKey)
@@ -414,7 +414,7 @@ func (self *ConnManager) getPeerIdsFromPublicKey(pubKey string) []libpeer.ID {
 
 	for _, listener := range self.Config.ListenerPeers {
 		for _, peerConn := range listener.PeerConns {
-			// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PublicKey)
+			// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PaymentAddress)
 			if peerConn.RemotePeer.PublicKey == pubKey {
 				exist := false
 				for _, item := range result {
