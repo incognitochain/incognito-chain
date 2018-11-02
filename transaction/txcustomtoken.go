@@ -12,65 +12,12 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy/client"
 	"strconv"
-	"github.com/ninjadotorg/constant/wallet"
 )
-
-// TxTokenVin ...
-type TxTokenVin struct {
-	TxCustomTokenID common.Hash
-	VoutIndex       int
-	Signature       string
-	PubKey          string
-}
-
-// TxTokenVout ...
-type TxTokenVout struct {
-	Value          uint64
-	PaymentAddress client.PaymentAddress
-}
-
-// TxToken ...
-type TxToken struct {
-	PropertyName   string
-	PropertySymbol string
-	Type           int
-	Amount         uint64
-	Vins           []TxTokenVin
-	Vouts          []TxTokenVout
-}
 
 // TxCustomToken ...
 type TxCustomToken struct {
 	Tx
 	TxToken TxToken
-}
-
-// CustomTokenParamTx - use for rpc request json body
-type CustomTokenParamTx struct {
-	PropertyName   string        `json:"TokenName"`
-	PropertySymbol string        `json:"TokenSymbol"`
-	Amount         uint64        `json:"TokenAmount"`
-	TokenTxType    int           `json:"TokenTxType"`
-	Receivers      []TxTokenVout `json:"TokenReceivers"`
-
-	vins []TxTokenVin
-}
-
-// CreateCustomTokenReceiverArray ...
-func CreateCustomTokenReceiverArray(data interface{}) []TxTokenVout {
-	result := make([]TxTokenVout, 0)
-	receivers := data.([]interface{})
-	for _, item := range receivers {
-		temp := item.(map[string]interface{})
-		paymentAddress := temp["PaymentAddress"].(string)
-		key, _ := wallet.Base58CheckDeserialize(paymentAddress)
-		resultItem := TxTokenVout{
-			PaymentAddress: key.KeySet.PaymentAddress,
-			Value:          uint64(temp["Value"].(float64)),
-		}
-		result = append(result, resultItem)
-	}
-	return result
 }
 
 // CreateEmptyCustomTokenTx - return an init custom token transaction
@@ -432,19 +379,19 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 		var VoutsTemp []TxTokenVout
 		var tempAmount uint64
 
-		for _, receiver := range tokenParams.Receivers {
-			receiverAmount := receiver.Value
-			if tempAmount+receiver.Value > tokenParams.Amount {
-				receiverAmount = tokenParams.Amount - tempAmount
-				tempAmount = tokenParams.Amount
-			} else {
-				tempAmount += receiver.Value
-			}
-			VoutsTemp = append(VoutsTemp, TxTokenVout{
-				PaymentAddress: receiver.PaymentAddress,
-				Value:          receiverAmount,
-			})
+		receiver := tokenParams.Receiver
+		receiverAmount := receiver.Value
+		if tempAmount+receiver.Value > tokenParams.Amount {
+			receiverAmount = tokenParams.Amount - tempAmount
+			tempAmount = tokenParams.Amount
+		} else {
+			tempAmount += receiver.Value
 		}
+		VoutsTemp = append(VoutsTemp, TxTokenVout{
+			PaymentAddress: receiver.PaymentAddress,
+			Value:          receiverAmount,
+		})
+
 		tx.TxToken.Vouts = VoutsTemp
 	}
 

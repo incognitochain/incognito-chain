@@ -711,6 +711,22 @@ func (self RpcServer) handleSendRegistrationCandidateCommittee(params interface{
 	return txId, err
 }
 
+func (self RpcServer) handleListUnspentCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+	// param #1: paymentaddress of sender
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKeyset := senderKey.KeySet
+	unspentTxTokenOuts, err := self.config.BlockChain.GetUnspentTxTokenVoutBySender(senderKeyset)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	return unspentTxTokenOuts, err
+}
+
 // handleCustomTokenTransaction handle create a custom token command.
 func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// all params
@@ -742,9 +758,32 @@ func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan
 		PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
 		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
 		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
-		Receivers:      transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"]),
+		Receiver:       transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"]),
 	}
 	if tokenParams.TokenTxType == transaction.CustomTokenTransfer {
+		unspentTxTokenOuts, err := self.config.BlockChain.GetUnspentTxTokenVoutBySender(senderKey.KeySet)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		if len(unspentTxTokenOuts) == 0 {
+			return nil, NewRPCError(ErrUnexpected, errors.New("Balance of token is zero"))
+		}
+		txTokenIns := []transaction.TxTokenVin{}
+		for _, out := range unspentTxTokenOuts {
+			item := transaction.TxTokenVin{
+				PaymentAddress:  out.PaymentAddress,
+				TxCustomTokenID: out.GetTxCustomTokenID(),
+				VoutIndex:       out.GetIndex(),
+			}
+			// TODO create signature -> base58check.encode of txtokenout double hash
+			signature, err := senderKey.KeySet.Sign(out.Hash()[:])
+			if err != nil {
+				return nil, NewRPCError(ErrUnexpected, err)
+			}
+			item.Signature = base58.Base58Check{}.Encode(signature, 0)
+			txTokenIns = append(txTokenIns, item)
+		}
+		tokenParams.SetVins(txTokenIns)
 	}
 
 	totalAmmount := estimateFeeCoinPerKb

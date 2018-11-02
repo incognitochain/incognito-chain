@@ -863,6 +863,64 @@ func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCand
 	}
 	return cndVal
 }
-func (self *BlockChain) GetTxTokenVoutBySender(senderChainID byte, senderPaymentAddress string) {
-	//self.BestState[senderChainID]
+
+// Get all unspent tx custom token out of sender
+func (self *BlockChain) GetUnspentTxTokenVoutBySender(senderKeyset cashec.KeySet) ([]transaction.TxTokenVout, error) {
+	lastByte := senderKeyset.PaymentAddress.Apk[len(senderKeyset.PaymentAddress.Apk)-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	if err != nil {
+		return nil, err
+	}
+	// get all vin custom token of sender
+	bestStateOfSender := self.BestState[chainIdSender]
+	prevHash := bestStateOfSender.BestBlock.Hash()
+	// list spent
+	vinList := []transaction.TxTokenVin{}
+	txCustomTokenIDs := []common.Hash{}
+	for prevHash.String() != (common.Hash{}).String() {
+		block, err := self.GetBlockByBlockHash(prevHash)
+		if err != nil {
+			return nil, err
+		}
+		for _, tx := range block.Transactions {
+			if tx.GetType() == common.TxCustomTokenType {
+				customTokenTx := tx.(*transaction.TxCustomToken)
+				for _, vin := range customTokenTx.TxToken.Vins {
+					if vin.PaymentAddress.Apk == senderKeyset.PaymentAddress.Apk {
+						vinList = append(vinList, vin)
+						txCustomTokenIDs = append(txCustomTokenIDs, *customTokenTx.Hash())
+					}
+				}
+			}
+		}
+	}
+
+	// get all vout custom token of sender which unspent
+	voutList := []transaction.TxTokenVout{}
+	for _, bestState := range self.BestState {
+		prevHash := bestState.BestBlock.Hash()
+		for prevHash.String() != (common.Hash{}).String() {
+			block, err := self.GetBlockByBlockHash(prevHash)
+			if err != nil {
+				return nil, err
+			}
+			for _, tx := range block.Transactions {
+				if tx.GetType() == common.TxCustomTokenType {
+					customTokenTx := tx.(*transaction.TxCustomToken)
+					if len(txCustomTokenIDs) > 0 {
+						if existed, err := common.SliceExists(txCustomTokenIDs, customTokenTx.Hash()); !existed && err == nil {
+							for index, vout := range customTokenTx.TxToken.Vouts {
+								if vout.PaymentAddress.Apk == senderKeyset.PaymentAddress.Apk {
+									vout.SetIndex(index)
+									vout.SetTxCustomTokenID(*tx.Hash())
+									voutList = append(voutList, vout)
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return voutList, nil
 }
