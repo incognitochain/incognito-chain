@@ -915,6 +915,7 @@ func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, cl
 	return tx.Hash(), nil
 }
 
+// handleSendCustomTokenTransaction - create and send a tx which process on a custom token look like erc-20 on eth
 func (self RpcServer) handleSendCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	data, err := self.handleCreateRawCustomTokenTransaction(params, closeChan)
 	tx := data.(jsonresult.CreateTransactionResult)
