@@ -3,6 +3,9 @@ package cashec
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/common/base58"
+	"encoding/json"
+	"errors"
 )
 
 type KeySet struct {
@@ -52,4 +55,63 @@ func (self *KeySet) CreateProducerKeySet() (*KeySetProducer, error) {
 	producerKeySet.TransmissionKey = self.PublicKey.Pkenc
 	producerKeySet.ReceivingKey = self.ReadonlyKey.Skenc
 	return &producerKeySet, nil
+}
+
+func (self *KeySet) Verify(data, signature []byte) (bool, error) {
+	/*isValid := false
+	hash := common.HashB(data)
+	isValid = privacy.Verify(signature, hash[:], self.PaymentAddress.Pk)
+	return isValid, nil*/
+	return true, nil
+}
+
+func (self *KeySet) Sign(data []byte) ([]byte, error) {
+	/*hash := common.HashB(data)
+	signature, err := privacy.Sign(hash[:], self.PrivateKey)
+	return signature, err*/
+	return []byte{}, nil
+}
+
+func (self *KeySet) EncodeToString() string {
+	val, _ := json.Marshal(self)
+	result := base58.Base58Check{}.Encode(val, byte(0x00))
+	return result
+}
+
+func (self *KeySet) DecodeToKeySet(keystring string) (*KeySet, error) {
+	base58C := base58.Base58Check{}
+	keyBytes, _, _ := base58C.Decode(keystring)
+	json.Unmarshal(keyBytes, self)
+	return self, nil
+}
+
+func (self *KeySet) GetPaymentAddress() (client.PaymentAddress, error) {
+	return self.PublicKey, nil
+}
+
+func (self *KeySet) GetViewingKey() (client.ViewingKey, error) {
+	return self.ReadonlyKey, nil
+}
+
+func ValidateDataB58_(pubkey string, sig string, data []byte) error {
+	decPubkey, _, err := base58.Base58Check{}.Decode(pubkey)
+	if err != nil {
+		return errors.New("can't decode public key:" + err.Error())
+	}
+
+	validatorKp := KeySet{}
+	copy(validatorKp.PublicKey.Apk[:], decPubkey)
+	decSig, _, err := base58.Base58Check{}.Decode(sig)
+	if err != nil {
+		return errors.New("can't decode signature: " + err.Error())
+	}
+
+	isValid, err := validatorKp.Verify(data, decSig)
+	if err != nil {
+		return errors.New("error when verify data: " + err.Error())
+	}
+	if !isValid {
+		return errors.New("Invalid signature")
+	}
+	return nil
 }
