@@ -12,6 +12,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy/client"
 	"strconv"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 // TxTokenVin ...
@@ -25,7 +26,7 @@ type TxTokenVin struct {
 // TxTokenVout ...
 type TxTokenVout struct {
 	Value          uint64
-	PaymentAddress string
+	PaymentAddress client.PaymentAddress
 }
 
 // TxToken ...
@@ -61,8 +62,10 @@ func CreateCustomTokenReceiverArray(data interface{}) []TxTokenVout {
 	receivers := data.([]interface{})
 	for _, item := range receivers {
 		temp := item.(map[string]interface{})
+		paymentAddress := temp["PaymentAddress"].(string)
+		key, _ := wallet.Base58CheckDeserialize(paymentAddress)
 		resultItem := TxTokenVout{
-			PaymentAddress: temp["PaymentAddress"].(string),
+			PaymentAddress: key.KeySet.PaymentAddress,
 			Value:          uint64(temp["Value"].(float64)),
 		}
 		result = append(result, resultItem)
@@ -437,9 +440,8 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 			} else {
 				tempAmount += receiver.Value
 			}
-			hash160, _ := common.Hash160([]byte(receiver.PaymentAddress))
 			VoutsTemp = append(VoutsTemp, TxTokenVout{
-				PaymentAddress: string(hash160), // hash160 of wallet paymentaddress
+				PaymentAddress: receiver.PaymentAddress,
 				Value:          receiverAmount,
 			})
 		}
