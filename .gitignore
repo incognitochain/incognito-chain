@@ -38,3 +38,4 @@ privacy/server/verifying\.key
 datadirs/data**
 data/**
 cash-*
+constant-*

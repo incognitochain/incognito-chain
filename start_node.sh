@@ -32,9 +32,9 @@ rm -rf ./data/node-$1/mainnet/block
 #rm -rf ./data/node-$1/mainnet/peer.json
 
 mkdir -p ./data/node-$1
-rm -rf ./cash-$1
+rm -rf ./constant-$1
 go build
-mv ./cash ./cash-$1
+mv ./constant ./constant-$1
 PORT=$((9430 + $1))
 eval KEY=\${KEY$1}
 
@@ -42,7 +42,7 @@ export EXTERNAL_ADDRESS="127.0.0.1:$PORT"
 
 if [ $1 != 1 ]
 then
-    ./cash-$1 --listen "127.0.0.1:$PORT" --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --generate --producerkeyset $KEY --norpc
+    ./constant-$1 --listen "127.0.0.1:$PORT" --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --generate --producerkeyset $KEY --norpc
 else
-    ./cash-$1 --listen "127.0.0.1:$PORT" --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --generate --producerkeyset $KEY --rpcuser "ad" --rpcpass "123" --enablewallet --walletpassphrase "12345678"
+    ./constant-$1 --listen "127.0.0.1:$PORT" --discoverpeers --discoverpeersaddress "127.0.0.1:9330" --datadir "data/node-$1" --generate --producerkeyset $KEY --rpcuser "ad" --rpcpass "123" --enablewallet --walletpassphrase "12345678"
 fi
