@@ -742,8 +742,8 @@ func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan
 		PropertyName:    tokenParamsRaw["TokenName"].(string),
 		PropertySymbol:  tokenParamsRaw["TokenSymbol"].(string),
 		TxCustomTokenID: tokenParamsRaw["TokenHash"].(string),
-		TokenTxType:     tokenParamsRaw["TokenTxType"].(float64),
-		Amount:          tokenParamsRaw["TokenAmount"].(float64),
+		TokenTxType:     int(tokenParamsRaw["TokenTxType"].(float64)),
+		Amount:          uint64(tokenParamsRaw["TokenAmount"].(float64)),
 		Receivers:       transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"]),
 	}
 
