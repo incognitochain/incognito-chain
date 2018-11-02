@@ -1218,7 +1218,8 @@ Parameter #1—an account name
 Result—a constant address
 */
 func (self RpcServer) handleGetAccountAddress(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.Wallet.GetAccountAddress(params.(string)), nil
+	result := self.config.Wallet.GetAccountAddress(params.(string))
+	return result, nil
 }
 
 /*
@@ -1228,7 +1229,8 @@ Parameter #1—the address corresponding to the private key to get
 Result—the private key
 */
 func (self RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.Wallet.DumpPrivkey(params.(string)), nil
+	result := self.config.Wallet.DumpPrivkey(params.(string))
+	return result, nil
 }
 
 /*
@@ -1247,8 +1249,8 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	return wallet.KeySerializedData{
-		PublicKey:   account.Key.Base58CheckSerialize(wallet.PubKeyType),
-		ReadonlyKey: account.Key.Base58CheckSerialize(wallet.ReadonlyKeyType),
+		PaymentAddress: account.Key.Base58CheckSerialize(wallet.PubKeyType),
+		ReadonlyKey:    account.Key.Base58CheckSerialize(wallet.ReadonlyKeyType),
 	}, nil
 }
 

@@ -184,16 +184,16 @@ func (self *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
 	for _, account := range self.MasterAccount.Child {
 		if account.Name == accountParam {
 			key := KeySerializedData{
-				PublicKey:   account.Key.Base58CheckSerialize(PubKeyType),
-				ReadonlyKey: account.Key.Base58CheckSerialize(ReadonlyKeyType),
+				PaymentAddress: account.Key.Base58CheckSerialize(PubKeyType),
+				ReadonlyKey:    account.Key.Base58CheckSerialize(ReadonlyKeyType),
 			}
 			return key
 		}
 	}
 	newAccount := self.CreateNewAccount(accountParam)
 	key := KeySerializedData{
-		PublicKey:   newAccount.Key.Base58CheckSerialize(PubKeyType),
-		ReadonlyKey: newAccount.Key.Base58CheckSerialize(ReadonlyKeyType),
+		PaymentAddress: newAccount.Key.Base58CheckSerialize(PubKeyType),
+		ReadonlyKey:    newAccount.Key.Base58CheckSerialize(ReadonlyKeyType),
 	}
 	return key
 }
@@ -203,8 +203,8 @@ func (self *Wallet) GetAddressesByAccount(accountParam string) ([]KeySerializedD
 	for _, account := range self.MasterAccount.Child {
 		if account.Name == accountParam {
 			item := KeySerializedData{
-				PublicKey:   account.Key.Base58CheckSerialize(PubKeyType),
-				ReadonlyKey: account.Key.Base58CheckSerialize(ReadonlyKeyType),
+				PaymentAddress: account.Key.Base58CheckSerialize(PubKeyType),
+				ReadonlyKey:    account.Key.Base58CheckSerialize(ReadonlyKeyType),
 			}
 			result = append(result, item)
 		}

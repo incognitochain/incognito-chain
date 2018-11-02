@@ -98,7 +98,7 @@ func sendRandomTransaction() (bool, interface{}) {
 	ai += 1
 	// todo send many
 	value := float64(randomInt(1, 10000000)) / math.Pow(10, 18)
-	err, txId := rpc.SendMany(cfg.GenesisPrvKey, wallet.PublicKey, value)
+	err, txId := rpc.SendMany(cfg.GenesisPrvKey, wallet.PaymentAddress, value)
 
 	return true, txId
 }
