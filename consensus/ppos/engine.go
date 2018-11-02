@@ -49,7 +49,7 @@ type committeeStruct struct {
 	ValidatorReliablePts map[string]int //track how reliable is the validator node
 	CurrentCommittee     []string
 	sync.Mutex
-	LastUpdate int64
+	LastUpdate           int64
 }
 
 type ChainInfo struct {
@@ -70,7 +70,7 @@ type EngineConfig struct {
 	BlockGen       *blockchain.BlkTmplGenerator
 	MemPool        *mempool.TxPool
 	ProducerKeySet cashec.KeySetProducer
-	Server         interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -150,12 +150,13 @@ func (self *Engine) Start() error {
 						return
 					}
 					Logger.log.Infof("block height: %d", block.Height)
-					//Comment validateBlockSanity segment to create block with only 1 node (validator)
-					err = self.validateBlockSanity(block)
+					//TODO Comment validateBlockSanity segment to create block with only 1 node (validator)
+					/*err = self.validateBlockSanity(block)
 					if err != nil {
 						Logger.log.Error(err)
 						return
-					}
+					}*/
+					// end TODO
 					err = self.config.BlockChain.CreateTxViewPoint(block)
 					if err != nil {
 						Logger.log.Error(err)
@@ -372,8 +373,9 @@ finalizing:
 
 	//Request for signatures of other validators
 	go func(block blockchain.Block) {
-		//Uncomment this segment to create block with only 1 node (validator)
-		// allSigReceived <- struct{}{}
+		//TODO Uncomment this segment to create block with only 1 node (validator)
+		//allSigReceived <- struct{}{}
+		// end TODO
 
 		reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdBlockSigReq)
 		reqSigMsg.(*wire.MessageBlockSigReq).Block = block

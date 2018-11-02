@@ -80,7 +80,9 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 				normalTx := tx.(*transaction.Tx)
 				for _, desc := range normalTx.Descs {
 					err := view.processFetchTxViewPoint(acceptedNullifiers, acceptedCommitments, block, db, desc)
-					return NewBlockChainError(UnExpectedError, err)
+					if err != nil {
+						return NewBlockChainError(UnExpectedError, err)
+					}
 				}
 			}
 		case common.TxVotingType:
@@ -88,7 +90,19 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 				votingTx := tx.(*transaction.TxVoting)
 				for _, desc := range votingTx.Descs {
 					err := view.processFetchTxViewPoint(acceptedNullifiers, acceptedCommitments, block, db, desc)
-					return NewBlockChainError(UnExpectedError, err)
+					if err != nil {
+						return NewBlockChainError(UnExpectedError, err)
+					}
+				}
+			}
+		case common.TxCustomTokenType:
+			{
+				tx := tx.(*transaction.TxCustomToken)
+				for _, desc := range tx.Descs {
+					err := view.processFetchTxViewPoint(acceptedNullifiers, acceptedCommitments, block, db, desc)
+					if err != nil {
+						return NewBlockChainError(UnExpectedError, err)
+					}
 				}
 			}
 		default:

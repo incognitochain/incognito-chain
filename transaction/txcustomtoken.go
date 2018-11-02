@@ -68,7 +68,7 @@ func (tx *TxCustomToken) ValidateTransaction() bool {
 	// validate for normal tx
 	if tx.Tx.ValidateTransaction() {
 		// validate for tx token
-		// TODO
+		// TODO, verify signature
 		return true
 	}
 	return false

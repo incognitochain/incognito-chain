@@ -537,7 +537,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 								copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
 							}
 						}
-						if len(copyDesc.EncryptedData) > 0 {
+						if len(copyDesc.Note) > 0 {
 							listDesc = append(listDesc, copyDesc)
 						}
 					}
@@ -696,7 +696,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, co
 								copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
 							}
 						}
-						if len(copyDesc.EncryptedData) > 0 {
+						if len(copyDesc.Note) > 0 {
 							listDesc = append(listDesc, copyDesc)
 						}
 					}

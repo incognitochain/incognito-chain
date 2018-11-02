@@ -10,6 +10,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy/proto/zksnark"
 	"github.com/ninjadotorg/constant/transaction"
+	"log"
 )
 
 /*
@@ -77,6 +78,9 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 						EphemeralPubKey: common.JsonUnmarshallByteArray(item["EphemeralPubKey"].(string)),
 						HSigSeed:        common.JsonUnmarshallByteArray(item["HSigSeed"].(string)),
 					}
+					temp, err := json.Marshal(item["Note"].([]interface{}))
+					err = json.Unmarshal([]byte(temp), &desc.Note)
+					Logger.log.Error(err)
 					// proof
 					if ok := item["Proof"] != nil; ok {
 						proofTemp := item["Proof"].(map[string]interface{})
@@ -194,6 +198,115 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 						EphemeralPubKey: common.JsonUnmarshallByteArray(item["EphemeralPubKey"].(string)),
 						HSigSeed:        common.JsonUnmarshallByteArray(item["HSigSeed"].(string)),
 					}
+					temp, err := json.Marshal(item["Note"].([]interface{}))
+					err = json.Unmarshal([]byte(temp), &desc.Note)
+					Logger.log.Error(err)
+					// proof
+					if ok := item["Proof"] != nil; ok {
+						proofTemp := item["Proof"].(map[string]interface{})
+						proof := &zksnark.PHGRProof{
+							G_A:      common.JsonUnmarshallByteArray(proofTemp["g_A"].(string)),
+							G_APrime: common.JsonUnmarshallByteArray(proofTemp["g_A_prime"].(string)),
+							G_B:      common.JsonUnmarshallByteArray(proofTemp["g_B"].(string)),
+							G_BPrime: common.JsonUnmarshallByteArray(proofTemp["g_B_prime"].(string)),
+							G_C:      common.JsonUnmarshallByteArray(proofTemp["g_C"].(string)),
+							G_CPrime: common.JsonUnmarshallByteArray(proofTemp["g_C_prime"].(string)),
+							G_K:      common.JsonUnmarshallByteArray(proofTemp["g_K"].(string)),
+							G_H:      common.JsonUnmarshallByteArray(proofTemp["g_H"].(string)),
+						}
+						desc.Proof = proof
+					}
+
+					// anchor
+					if ok := item["Anchor"] != nil; ok {
+						anchorsTemp := item["Anchor"].([]interface{})
+						anchors := make([][]byte, 0)
+						for _, n := range anchorsTemp {
+							anchors = append(anchors, common.JsonUnmarshallByteArray(n.(string)))
+						}
+						desc.Anchor = anchors
+					}
+
+					// nullifier
+					if ok := item["Nullifiers"] != nil; ok {
+						nullifiersTemp := item["Nullifiers"].([]interface{})
+						nullifiers := make([][]byte, 0)
+						for _, n := range nullifiersTemp {
+							nullifiers = append(nullifiers, common.JsonUnmarshallByteArray(n.(string)))
+						}
+						desc.Nullifiers = nullifiers
+					}
+
+					// commitment
+					if ok := item["Commitments"] != nil; ok {
+						commitmentsTemp := item["Commitments"].([]interface{})
+						commitments := make([][]byte, 0)
+						for _, n := range commitmentsTemp {
+							commitments = append(commitments, common.JsonUnmarshallByteArray(n.(string)))
+						}
+						desc.Commitments = commitments
+					}
+
+					// encrypt data
+					if ok := item["EncryptedData"] != nil; ok {
+						datasTemp := item["EncryptedData"].([]interface{})
+						datas := make([][]byte, 0)
+						for _, n := range datasTemp {
+							datas = append(datas, common.JsonUnmarshallByteArray(n.(string)))
+						}
+						desc.EncryptedData = datas
+					}
+
+					// vmac
+					if ok := item["Vmacs"] != nil; ok {
+						vmacsTemp := item["Vmacs"].([]interface{})
+						vmacs := make([][]byte, 0)
+						for _, n := range vmacsTemp {
+							vmacs = append(vmacs, common.JsonUnmarshallByteArray(n.(string)))
+						}
+						desc.Vmacs = vmacs
+					}
+					txNormal.Descs = append(txNormal.Descs, desc)
+				}
+			}
+			self.Transactions = append(self.Transactions, txNormal)
+		} else if txTemp["Type"].(string) == common.TxCustomTokenType {
+			log.Println(txTemp)
+			// init a tx
+			txNormal := &transaction.TxCustomToken{
+				Tx: transaction.Tx{
+					Version:         int8(txTemp["Version"].(float64)),
+					Type:            txTemp["Type"].(string),
+					LockTime:        int64(txTemp["LockTime"].(float64)),
+					Fee:             uint64(txTemp["Fee"].(float64)),
+					AddressLastByte: byte(txTemp["AddressLastByte"].(float64)),
+				},
+			}
+			temp, err := json.Marshal(txTemp["TxToken"].(map[string]interface{}))
+			err = json.Unmarshal([]byte(temp), &txNormal.TxToken)
+			Logger.log.Error(err)
+			jSPubKey, ok := txTemp["JSPubKey"]
+			if ok && jSPubKey != nil {
+				txNormal.JSPubKey = common.JsonUnmarshallByteArray(jSPubKey.(string))
+			}
+			jSSig, ok := txTemp["JSSig"]
+			if ok && jSSig != nil {
+				txNormal.JSSig = common.JsonUnmarshallByteArray(jSSig.(string))
+			}
+			desc, ok := txTemp["Descs"]
+			if ok && desc != nil {
+				descTemps := desc.([]interface{})
+				for _, descTemp := range descTemps {
+					item := descTemp.(map[string]interface{})
+					desc := &transaction.JoinSplitDesc{
+						Type:            item["Type"].(string),
+						Reward:          uint64(item["Reward"].(float64)),
+						EphemeralPubKey: common.JsonUnmarshallByteArray(item["EphemeralPubKey"].(string)),
+						HSigSeed:        common.JsonUnmarshallByteArray(item["HSigSeed"].(string)),
+					}
+					temp, err := json.Marshal(item["Note"].([]interface{}))
+					err = json.Unmarshal([]byte(temp), &desc.Note)
+					Logger.log.Error(err)
 					// proof
 					if ok := item["Proof"] != nil; ok {
 						proofTemp := item["Proof"].(map[string]interface{})

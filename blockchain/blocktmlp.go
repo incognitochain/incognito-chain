@@ -146,7 +146,9 @@ concludeBlock:
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 
-	block := Block{}
+	block := Block{
+		Transactions: make([]transaction.Transaction, 0),
+	}
 	currentSalaryFund := prevBlock.Header.SalaryFund
 	block.Header = BlockHeader{
 		Version:               BlockVersion,
@@ -158,6 +160,7 @@ concludeBlock:
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
 		SalaryFund:            currentSalaryFund - (salaryMULTP * salaryPerTx) + totalFee + salaryFundAdd,
+		GovernanceParams:      prevBlock.Header.GovernanceParams, // TODO: need get from gov-params tx
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
