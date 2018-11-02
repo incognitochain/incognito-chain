@@ -4,8 +4,8 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/privacy/client"
-	"strconv"
 	"github.com/ninjadotorg/constant/wallet"
+	"fmt"
 )
 
 // TxTokenVin ...
@@ -14,6 +14,17 @@ type TxTokenVin struct {
 	VoutIndex       int
 	Signature       string
 	PaymentAddress  client.PaymentAddress
+}
+
+func (self TxTokenVin) Hash() *common.Hash {
+	record := common.EmptyString
+	record += self.TxCustomTokenID.String()
+	record += fmt.Sprintf("%d", self.VoutIndex)
+	record += self.Signature
+	record += base58.Base58Check{}.Encode(self.PaymentAddress.Apk[:], 0)
+	// final hash
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
 }
 
 // TxTokenVout ...
@@ -27,8 +38,8 @@ type TxTokenVout struct {
 
 func (self TxTokenVout) Hash() *common.Hash {
 	record := common.EmptyString
+	record += fmt.Sprintf("%d", self.Value)
 	record += base58.Base58Check{}.Encode(self.PaymentAddress.Apk[:], 0)
-	record += strconv.Itoa(int(self.Value))
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -52,12 +63,20 @@ func (self TxTokenVout) GetTxCustomTokenID() common.Hash {
 
 // TxToken ...
 type TxToken struct {
+	PropertyID     common.Hash // = hash of TxToken data
 	PropertyName   string
 	PropertySymbol string
 	Type           int
 	Amount         uint64
 	Vins           []TxTokenVin
 	Vouts          []TxTokenVout
+}
+
+func (self TxToken) Hash() *common.Hash {
+	record := self.PropertyName + self.PropertyName + fmt.Sprintf("%d", self.Amount)
+	// final hash
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
 }
 
 // CustomTokenParamTx - use for rpc request json body

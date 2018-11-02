@@ -855,7 +855,6 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, 
 	tx, err := transaction.CreateTxCustomToken(&senderKey.KeySet.PrivateKey, nil,
 		merkleRootCommitments,
 		candidateTxsMap,
-		nullifiersDb,
 		commitmentsDb,
 		realFee,
 		common.AssetTypeCoin,
@@ -919,6 +918,9 @@ func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, cl
 // handleSendCustomTokenTransaction - create and send a tx which process on a custom token look like erc-20 on eth
 func (self RpcServer) handleSendCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	data, err := self.handleCreateRawCustomTokenTransaction(params, closeChan)
+	if err != nil {
+		return nil, err
+	}
 	tx := data.(jsonresult.CreateTransactionResult)
 	hexStrOfTx := tx.HexData
 	if err != nil {
