@@ -674,26 +674,28 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, co
 							}
 						} else {
 							for i, note := range desc.Note {
-								// no privacy
-								candidateCommitment := desc.Commitments[i]
-								if len(nullifiersInDb) > 0 {
-									// -> check commitment with db nullifiers
-									var rho [32]byte
-									copy(rho[:], note.Rho)
-									candidateNullifier := desc.Nullifiers
-									if len(candidateNullifier) == 0 {
-										continue
+								if note.Apk == keys.PaymentAddress.Apk {
+									// no privacy
+									candidateCommitment := desc.Commitments[i]
+									if len(nullifiersInDb) > 0 {
+										// -> check commitment with db nullifiers
+										var rho [32]byte
+										copy(rho[:], note.Rho)
+										candidateNullifier := desc.Nullifiers
+										if len(candidateNullifier) == 0 {
+											continue
+										}
+										checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
+										if err != nil || checkCandiateNullifier == true {
+											// candidate nullifier is not existed in db
+											continue
+										}
 									}
-									checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
-									if err != nil || checkCandiateNullifier == true {
-										// candidate nullifier is not existed in db
-										continue
-									}
+									copyDesc.AppendNote(note)
+									note.Cm = candidateCommitment
+									note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
+									copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
 								}
-								copyDesc.AppendNote(note)
-								note.Cm = candidateCommitment
-								note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
-								copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
 							}
 						}
 						if len(copyDesc.Note) > 0 {
