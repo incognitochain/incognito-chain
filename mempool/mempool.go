@@ -356,6 +356,14 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 
 	txType := tx.GetType()
 	switch txType {
+	case common.TxCustomTokenType:
+		{
+			{
+				tx := tx.(*transaction.TxCustomToken)
+				err := tp.config.Policy.CheckCustomTokenTransactionFee(tx)
+				return tx.Fee, err
+			}
+		}
 	case common.TxNormalType:
 		{
 			normalTx := tx.(*transaction.Tx)
@@ -660,8 +668,8 @@ ValidateSanityData - validate sansity data of tx
 */
 func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxSalaryType {
-		txA := tx.(*transaction.TxVoting)
-		ok, err := tp.validateSanityNormalTxData(&txA.Tx)
+		txA := tx.(*transaction.Tx)
+		ok, err := tp.validateSanityNormalTxData(txA)
 		if !ok {
 			return false, err
 		}
@@ -685,6 +693,9 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		if !ok {
 			return false, err
 		}
+	} else if tx.GetType() == common.TxCustomTokenType {
+		// TODO check sanity
+		return true, nil
 	} else {
 		return false, errors.New("Wrong tx type")
 	}

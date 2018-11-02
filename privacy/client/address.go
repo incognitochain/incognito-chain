@@ -31,6 +31,13 @@ type PaymentAddress struct {
 	Pkenc TransmissionKey // use to encrypt data
 }
 
+/*func (self *PaymentAddress) UnmarshalJSON(data []byte) error {
+	temp := PaymentAddress{}
+	err := json.Unmarshal(data, &temp)
+	self = &temp
+	return err
+}*/
+
 type PaymentInfo struct {
 	PaymentAddress PaymentAddress
 	Amount         uint64

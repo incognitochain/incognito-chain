@@ -53,7 +53,7 @@ var RpcHandler = map[string]commandHandler{
 	GetNumberOfCoinsAndBonds:           RpcServer.handleGetNumberOfCoinsAndBonds,
 	CreateActionParamsTransaction:      RpcServer.handleCreateActionParamsTransaction,
 	SendRegistrationCandidateCommittee: RpcServer.handleSendRegistrationCandidateCommittee,
-	CustomTokenTransaction:             RpcServer.handleCustomTokenTransaction,
+	SendCustomTokenTransaction:         RpcServer.handleSendCustomTokenTransaction,
 	GetMempoolInfo:                     RpcServer.handleGetMempoolInfo,
 
 	GetCommitteeCandidateList:  RpcServer.handleGetCommitteeCandidateList,
@@ -727,8 +727,8 @@ func (self RpcServer) handleListUnspentCustomTokenTransaction(params interface{}
 	return unspentTxTokenOuts, err
 }
 
-// handleCustomTokenTransaction handle create a custom token command.
-func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+// handleCreateRawCustomTokenTransaction handle create a custom token command.
+func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// all params
 	arrayParams := common.InterfaceSlice(params)
 
@@ -873,7 +873,59 @@ func (self RpcServer) handleCustomTokenTransaction(params interface{}, closeChan
 	result := jsonresult.CreateTransactionResult{
 		HexData: hexData,
 	}
+
+	//
+
 	return result, nil
+}
+
+func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	Logger.log.Info(params)
+	arrayParams := common.InterfaceSlice(params)
+	hexRawTx := arrayParams[0].(string)
+	rawTxBytes, err := hex.DecodeString(hexRawTx)
+
+	if err != nil {
+		return nil, err
+	}
+	tx := transaction.TxCustomToken{}
+	// Logger.log.Info(string(rawTxBytes))
+	err = json.Unmarshal(rawTxBytes, &tx)
+	if err != nil {
+		return nil, err
+	}
+
+	hash, txDesc, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	if err != nil {
+		return nil, err
+	}
+
+	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+
+	// broadcast message
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdRegisteration)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg.(*wire.MessageRegistration).Transaction = &tx
+	self.config.Server.PushMessageToAll(txMsg)
+
+	return tx.Hash(), nil
+}
+
+func (self RpcServer) handleSendCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	data, err := self.handleCreateRawCustomTokenTransaction(params, closeChan)
+	tx := data.(jsonresult.CreateTransactionResult)
+	hexStrOfTx := tx.HexData
+	if err != nil {
+		return nil, err
+	}
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, hexStrOfTx)
+	txId, err := self.handleSendRawCustomTokenTransaction(newParam, closeChan)
+	return txId, err
 }
 
 /*
@@ -1065,7 +1117,9 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 handleSendMany - RPC creates transaction and send to network
 */
 func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	hexStrOfTx, err := self.handleCreateTransaction(params, closeChan)
+	data, err := self.handleCreateTransaction(params, closeChan)
+	tx := data.(jsonresult.CreateTransactionResult)
+	hexStrOfTx := tx.HexData
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
