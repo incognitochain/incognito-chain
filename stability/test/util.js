@@ -102,6 +102,16 @@ module.exports = {
                 return gasUsed * gasPrice;
         },
 
+	padToBytes32: function(n) {
+	    if (n.substring(0, 2) === '0x') {
+                n = n.slice(2)
+	    }
+	    while (n.length < 64) {
+                n = n + '0';
+	    }
+	    return "0x" + n;
+        },
+
 	keccak256: function(...args) {
 	    args = args.map(arg => {
                 if (typeof arg === 'string') {

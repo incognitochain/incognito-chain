@@ -17,12 +17,12 @@ contract("SimpleLoan", (accounts) => {
 
     before(async () => {
         c = await p2p.deployed();
-	key = "" 
+	key = u.padToBytes32(web3.toHex("a"))
 	digest = ww.utils.soliditySha3(key) 
+//	l(key, digest, web3.sha3(key, { encoding: "hex" }))
     })
 
-    let tx1, hid1
-    let tx2, hid2
+    let tx1, tx2
     let offchain = 1
 
     describe('main flow', () => {
@@ -30,7 +30,7 @@ contract("SimpleLoan", (accounts) => {
             let ratio = await c.collateralRatio(web3.toWei(10), 1000, { from: requester1 })
         })
 	    
-        it('should create new c request', async () => {
+        it('should create new loan request', async () => {
 	    lid = 0 
 	    receiver = 0 
 	    request = 1000
@@ -40,9 +40,11 @@ contract("SimpleLoan", (accounts) => {
             as(!isNaN(lid))
         })
 
-        it('should accept c request successfully', async () => {
+        it('should accept loan request successfully', async () => {
             tx1 = await c.acceptLoan(lid, key, offchain, { from: root })
             lid1 = await u.oc(tx1, "__acceptLoan", "lid")
+//	    l((await u.oc(tx0, "__acceptLoan", "offchain")))
+//	    l((await u.oc(tx1, "__acceptLoan", "key")))
 	    eq(lid1, lid)
         })
 
