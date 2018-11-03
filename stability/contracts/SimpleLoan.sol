@@ -151,17 +151,22 @@ contract SimpleLoan {
     function liquidate(bytes32 lid, bytes32 offchain) public {
         uint256 debt = loans[lid].principle + loans[lid].interest;
         require(loans[lid].state == State.Accepted && loans[lid].principle > 0 &&
-                ((now > loans[lid].maturityDate && loans[lid].interest > 0) || // interest wasn't paid on time
+                (now > loans[lid].maturityDate || // interest wasn't paid on time
                  !safelyCollateralized(loans[lid].amount, debt))); // collateral is not enough
 
-        uint256 penaltyPercent = (liquidationStart - collateralRatio(loans[lid].amount, debt)) * decimals / (liquidationStart - 100 * decimals) * 5 + 5 * decimals;
+	uint256 currentRatio = collateralRatio(loans[lid].amount, debt);
+        uint256 penaltyPercent = 0;
+	if (liquidationStart > currentRatio) {
+	    penaltyPercent = (liquidationStart - currentRatio) * decimals / (liquidationStart - 100 * decimals) * 5 + 5 * decimals;
+	}
+
         if (penaltyPercent > maxPenaltyPercent) {
             penaltyPercent = maxPenaltyPercent;
         }
         uint256 liquidationPercent = penaltyPercent + 100 * decimals; // liquidate 100% debt
         uint256 liquidationAmount = debt * assetPrice * liquidationPercent / collateralPrice / 10 ** 18 / decimals / 100;
         if (liquidationAmount > loans[lid].amount) {
-            liquidationAmount = loans[lid].amount;
+            liquidationAmount = loans[lid].amount; // TODO: not enough collateral?
         }
 
         loans[lid].principle = 0;

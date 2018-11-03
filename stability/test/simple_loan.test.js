@@ -32,11 +32,12 @@ contract("SimpleLoan", (accounts) => {
 	    
         it('should create new loan request', async () => {
 	    lid = 0 
-	    receiver = 0 
+	    receiver = "0x123"
 	    request = 1000
 
             tx1 = await c.sendCollateral(lid, digest, receiver, request, offchain, { from: requester1, value: web3.toWei(10) })
             lid = await u.oc(tx1, "__sendCollateral", "lid")
+	    l(lid)
             as(!isNaN(lid))
         })
 
@@ -83,30 +84,54 @@ contract("SimpleLoan", (accounts) => {
         })
     })
 
-//    describe('when inited', () => {
-//        it('should be able to make handshake from second entity', async () => {
-//            tx1 = await c.init(owner2, offchain, { from: owner1 })
-//            hid1 = await oc(tx1, "__init", "hid")
-//            tx2 = await c.shake(hid1, offchain, { from: owner2 })
-//            hid2 = await oc(tx2, "__shake", "hid")
-//            eq(Number(hid1), Number(hid2))
-//        })
-//
-//        it("should fail to shake if acceptor does not match", async () => {
-//            tx1 = await c.init(owner3, offchain, { from: owner2 })
-//            hid1 = await oc(tx1, "__init", "hid")
-//            u.assertRevert(c.shake(hid1, offchain, { from: owner1 } ))
-//        })
-//
-//        it('should update acceptor if not set when init', async () => {
-//            tx1 = await c.init('0x0', offchain, { from: owner1 })
-//            hid1 = await oc(tx1, "__init", "hid")
-//            eq((await c.handshakes(hid1))[1], 0)
-//
-//            tx2 = await c.shake(hid1, offchain, { from: owner2 })
-//            await oc(tx2, "__shake", "hid")
-//            eq((await c.handshakes(hid1))[1], owner2)
-//        })
-//    })
+    describe('auto-liquidate after maturity date', () => {
+        it('should create new loan request', async () => {
+	    lid = 0 
+	    receiver = "0x456"
+	    request = 1000
+
+            tx1 = await c.sendCollateral(lid, digest, receiver, request, offchain, { from: requester1, value: web3.toWei(10) })
+            lid = await u.oc(tx1, "__sendCollateral", "lid")
+	    l(lid)
+            as(!isNaN(lid))
+        })
+
+        it('should accept loan request successfully', async () => {
+            tx1 = await c.acceptLoan(lid, key, offchain, { from: root })
+            lid1 = await u.oc(tx1, "__acceptLoan", "lid")
+	    eq(lid1, lid)
+        })
+
+        it("should add new payment", async () => {
+	    let amount = 5
+	    let eInterest = 5, ePrinciple = 1000
+            tx = await c.addPayment(lid, amount, offchain, { from: root })
+            lid1 = await u.oc(tx, "__addPayment", "lid")
+            eq(lid1, lid)
+            let loan = await c.loans(lid)
+	    let newPrinciple = loan[5].toNumber()
+	    let newInterest = loan[6].toNumber()
+	    eq(newInterest, eInterest)
+	    eq(newPrinciple, ePrinciple)
+        })
+	
+        it("should be able to liquidate", async () => {
+	    u.increaseTime(u.d2s(100)) // pass maturity date of loan
+            tx = await c.liquidate(lid, offchain, { from: root })
+            lid1 = await u.oc(tx, "__liquidate", "lid")
+	    let loan = await c.loans(lid)
+            let amount = loan[3].toNumber()
+	    eq(amount, web3.toWei(10))
+            eq(lid1, lid)
+        })
+
+        it("should be able to refund", async () => {
+            tx = await c.refundCollateral(lid, offchain, { from: root })
+            lid1 = await u.oc(tx, "__refundCollateral", "lid")
+	    let amount = await u.oc(tx, "__refundCollateral", "amount")
+	    eq(amount, web3.toWei(10))
+            eq(lid1, lid)
+        })
+    })
 })
 
