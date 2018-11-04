@@ -118,18 +118,19 @@ contract("SimpleLoan", (accounts) => {
         it("should be able to liquidate", async () => {
             u.increaseTime(u.d2s(100)) // pass maturity date of loan
             tx = await c.liquidate(lid, offchain, { from: root })
-            lid1 = await u.oc(tx, "__liquidate", "lid")
-            let loan = await c.loans(lid)
-            let amount = loan[3].toNumber()
-            eq(amount, web3.toWei(10))
-            eq(lid1, lid)
+            let amount = await u.oc(tx, "__liquidate", "amount")
+            let commission = await u.oc(tx, "__liquidate", "commission")
+            l(amount.toNumber(), commission.toNumber())
+            eq(amount.toNumber(), web3.toWei(5.427))
+            eq(commission.toNumber(), web3.toWei(0.1005))
         })
 
         it("should be able to refund", async () => {
+            l(((await c.loans(lid))[3]).toNumber())
             tx = await c.refundCollateral(lid, offchain, { from: root })
             lid1 = await u.oc(tx, "__refundCollateral", "lid")
             let amount = await u.oc(tx, "__refundCollateral", "amount")
-            eq(amount, web3.toWei(10))
+            eq(amount.toNumber(), web3.toWei(4.975))
             eq(lid1, lid)
         })
     })

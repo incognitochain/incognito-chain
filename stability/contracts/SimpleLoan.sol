@@ -27,7 +27,10 @@ contract SimpleLoan {
     uint256 public escrowWindow = 2 days;
     uint256 public interestRate = 1 * decimals; // 1%
     uint256 public liquidationStart = 150 * decimals; // auto-liquidation starts at 150%
-    uint256 public maxPenaltyPercent = 10 * decimals; // 10%, maximum penalty for auto-liquidation
+    uint256 public liquidationEnd = 100 * decimals; // below 100%, commission doesn't increase
+    uint256 public liquidationPenalty = 10 * decimals; // 10%, maximum penalty for auto-liquidation
+    uint256 public minCommission = 10 * decimals; // minimum 10% of liquidation amount
+    uint256 public maxCommission = 20 * decimals; // max 20%
 
     // TODO: move to price feed contract
     uint256 public collateralPrice = 200 * decimals; // price in USD for each Wei
@@ -38,7 +41,7 @@ contract SimpleLoan {
     event __rejectLoan(bytes32 lid, bytes32 offchain);
     event __refundCollateral(bytes32 lid, uint256 amount, bytes32 offchain);
     event __addPayment(bytes32 lid, bytes32 offchain);
-    event __liquidate(bytes32 lid, bytes32 offchain);
+    event __liquidate(bytes32 lid, uint256 amount, uint256 commission, bytes32 offchain);
 
     constructor(address _lender) public {
         lender = _lender;
@@ -47,6 +50,10 @@ contract SimpleLoan {
     modifier onlyLender() {
         require(msg.sender == lender);
         _;
+    }
+
+    function partial(uint256 value, uint256 percent) public view returns (uint256) {
+        return value * percent / decimals / 100;
     }
 
     function collateralRatio(uint256 collateralAmount, uint256 debtAmount) public view returns (uint256) {
@@ -100,7 +107,7 @@ contract SimpleLoan {
         loans[lid].state = State.Accepted;
         uint256 request = loans[lid].request;
         loans[lid].principle = request;
-        loans[lid].interest = request * interestRate / 100 / decimals;
+        loans[lid].interest = partial(request, interestRate);
         loans[lid].maturityDate = now + loanMaturity;
         emit __acceptLoan(lid, key, offchain);
     }
@@ -143,7 +150,7 @@ contract SimpleLoan {
             loans[lid].interest = newInterest;
         } else {
             loans[lid].maturityDate += loanMaturity;
-            loans[lid].interest = newPrinciple * interestRate / 100 / decimals;
+            loans[lid].interest = partial(newPrinciple, interestRate);
         }
         emit __addPayment(lid, offchain);
     }
@@ -154,26 +161,27 @@ contract SimpleLoan {
                 (now > loans[lid].maturityDate || // interest wasn't paid on time
                  !safelyCollateralized(loans[lid].amount, debt))); // collateral is not enough
 
-        uint256 currentRatio = collateralRatio(loans[lid].amount, debt);
-        uint256 penaltyPercent = 0;
-        if (liquidationStart > currentRatio) {
-            penaltyPercent = (liquidationStart - currentRatio) * decimals / (liquidationStart - 100 * decimals) * 5 + 5 * decimals;
+        uint256 base = debt * assetPrice * 10 ** 18 / collateralPrice;// ETH amount needed to buy back enough Constant at current price
+        uint256 penalty = partial(base, liquidationPenalty);
+        uint256 liquidationAmount = base + penalty;
+        uint256 collateralAmount = loans[lid].amount;
+        if (liquidationAmount > collateralAmount) {
+            liquidationAmount = collateralAmount; // TODO: not enough collateral?
         }
-
-        if (penaltyPercent > maxPenaltyPercent) {
-            penaltyPercent = maxPenaltyPercent;
-        }
-        uint256 liquidationPercent = penaltyPercent + 100 * decimals; // liquidate 100% debt
-        uint256 liquidationAmount = debt * assetPrice * liquidationPercent / collateralPrice / 10 ** 18 / decimals / 100;
-        if (liquidationAmount > loans[lid].amount) {
-            liquidationAmount = loans[lid].amount; // TODO: not enough collateral?
+        uint256 currentRatio = collateralRatio(collateralAmount, debt);
+        uint256 commission = partial(penalty, maxCommission);
+        if (currentRatio < liquidationEnd) {
+            commission = partial(penalty, minCommission);
+        } else if (currentRatio < liquidationStart) {
+            commission = partial(penalty, (currentRatio - liquidationEnd) * (maxCommission - minCommission) / (liquidationStart - liquidationEnd));
         }
 
         loans[lid].principle = 0;
         loans[lid].interest = 0;
         loans[lid].amount -= liquidationAmount;
         loans[lid].state = State.Liquidated;
-        lender.transfer(liquidationAmount); // TODO: transfer penalty to somewhere else?
-        emit __liquidate(lid, offchain);
+        msg.sender.transfer(commission);
+        lender.transfer(liquidationAmount - commission); // TODO: transfer penalty to somewhere else?
+        emit __liquidate(lid, liquidationAmount - commission, commission, offchain);
     }
 }
