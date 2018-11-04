@@ -50,10 +50,10 @@ contract SimpleLoan {
     }
 
     function collateralRatio(uint256 collateralAmount, uint256 debtAmount) public view returns (uint256) {
-	uint256 debtValue = debtAmount * assetPrice * 10 ** 18;
-	if (debtValue == 0) {
-	    debtValue = 1; // dummy value in case zero debt
-	}
+        uint256 debtValue = debtAmount * assetPrice * 10 ** 18;
+        if (debtValue == 0) {
+            debtValue = 1; // dummy value in case zero debt
+        }
         return collateralAmount * collateralPrice * 100 * decimals / debtValue;
     }
 
@@ -68,8 +68,8 @@ contract SimpleLoan {
         uint256 request,
         bytes32 offchain
     )
-        public
-        payable
+    public
+    payable
     {
         if (lid != 0x0) {
             // TODO: allow update request amount of CONST?
@@ -101,7 +101,7 @@ contract SimpleLoan {
         uint256 request = loans[lid].request;
         loans[lid].principle = request;
         loans[lid].interest = request * interestRate / 100 / decimals;
-	loans[lid].maturityDate = now + loanMaturity;
+        loans[lid].maturityDate = now + loanMaturity;
         emit __acceptLoan(lid, key, offchain);
     }
 
@@ -129,11 +129,11 @@ contract SimpleLoan {
         uint256 principle = loans[lid].principle;
 
         // Pay interest first if needed
-	uint256 newInterest = interest;
-	if (now + loanMaturity >= loans[lid].maturityDate) {
+        uint256 newInterest = interest;
+        if (now + loanMaturity >= loans[lid].maturityDate) {
             newInterest = interest > amount ? interest - amount : 0;
             amount -= interest - newInterest; // left-over goes to principle
-	}
+        }
 
         // Pay principle
         uint256 newPrinciple = principle > amount ? principle - amount : 0;
@@ -154,11 +154,11 @@ contract SimpleLoan {
                 (now > loans[lid].maturityDate || // interest wasn't paid on time
                  !safelyCollateralized(loans[lid].amount, debt))); // collateral is not enough
 
-	uint256 currentRatio = collateralRatio(loans[lid].amount, debt);
+        uint256 currentRatio = collateralRatio(loans[lid].amount, debt);
         uint256 penaltyPercent = 0;
-	if (liquidationStart > currentRatio) {
-	    penaltyPercent = (liquidationStart - currentRatio) * decimals / (liquidationStart - 100 * decimals) * 5 + 5 * decimals;
-	}
+        if (liquidationStart > currentRatio) {
+            penaltyPercent = (liquidationStart - currentRatio) * decimals / (liquidationStart - 100 * decimals) * 5 + 5 * decimals;
+        }
 
         if (penaltyPercent > maxPenaltyPercent) {
             penaltyPercent = maxPenaltyPercent;
