@@ -132,5 +132,47 @@ contract("SimpleLoan", (accounts) => {
             eq(lid1, lid)
         })
     })
+
+    describe('auto-liquidate because under-collateralized', () => {
+        it('should create new loan request', async () => {
+            lid = 0 
+            receiver = "0x789"
+            request = 1000
+
+            tx1 = await c.sendCollateral(lid, digest, receiver, request, offchain, { from: requester1, value: web3.toWei(10) })
+            lid = await u.oc(tx1, "__sendCollateral", "lid")
+            as(!isNaN(lid))
+        })
+
+        it('should accept loan request successfully', async () => {
+            tx1 = await c.acceptLoan(lid, key, offchain, { from: root })
+            lid1 = await u.oc(tx1, "__acceptLoan", "lid")
+            eq(lid1, lid)
+            l((await c.get('abc')).toNumber())
+            l((await c.get('interestRate')).toNumber())
+        })
+        
+//        it('should update eth price accordingly', async () => {
+//        })
+//
+//        it("should be able to liquidate", async () => {
+//            u.increaseTime(u.d2s(100)) // pass maturity date of loan
+//            tx = await c.liquidate(lid, offchain, { from: root })
+//            let amount = await u.oc(tx, "__liquidate", "amount")
+//            let commission = await u.oc(tx, "__liquidate", "commission")
+////            l(amount.toNumber(), commission.toNumber())
+//            eq(amount.toNumber(), web3.toWei(5.427))
+//            eq(commission.toNumber(), web3.toWei(0.1005))
+//        })
+//
+//        it("should be able to refund", async () => {
+////            l(((await c.loans(lid))[3]).toNumber())
+//            tx = await c.refundCollateral(lid, offchain, { from: root })
+//            lid1 = await u.oc(tx, "__refundCollateral", "lid")
+//            let amount = await u.oc(tx, "__refundCollateral", "amount")
+//            eq(amount.toNumber(), web3.toWei(4.4725))
+//            eq(lid1, lid)
+//        })
+    })
 })
 

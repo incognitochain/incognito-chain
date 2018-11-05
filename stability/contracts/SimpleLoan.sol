@@ -20,19 +20,12 @@ contract SimpleLoan {
     }
     mapping(bytes32 => Loan) public loans;
 
-    // TODO: update with multisig
     // TODO: support different types of loan
+    mapping(bytes32 => uint256) public params;
     uint256 public decimals = 10 ** 2; // support 2 digits after decimal point
-    uint256 public loanMaturity = 90 days; // seconds
-    uint256 public escrowWindow = 2 days;
-    uint256 public interestRate = 1 * decimals; // 1%
-    uint256 public liquidationStart = 150 * decimals; // auto-liquidation starts at 150%
-    uint256 public liquidationEnd = 100 * decimals; // below 100%, commission doesn't increase
-    uint256 public liquidationPenalty = 10 * decimals; // 10%, maximum penalty for auto-liquidation
-    uint256 public minCommission = 10 * decimals; // minimum 10% of liquidation amount
-    uint256 public maxCommission = 20 * decimals; // max 20%
 
     // TODO: move to price feed contract
+    // TODO: update with multisig
     uint256 public collateralPrice = 200 * decimals; // price in USD for each Wei
     uint256 public assetPrice = 1 * decimals; // price in USD for each CONST
 
@@ -43,13 +36,25 @@ contract SimpleLoan {
     event __addPayment(bytes32 lid, bytes32 offchain);
     event __liquidate(bytes32 lid, uint256 amount, uint256 commission, bytes32 offchain);
 
-    constructor(address _lender) public {
-        lender = _lender;
-    }
-
     modifier onlyLender() {
         require(msg.sender == lender);
         _;
+    }
+
+    constructor(address _lender) public {
+        lender = _lender;
+        params["loanMaturity"] = 90 days; // seconds
+        params["escrowWindow"] = 2 days;
+        params["interestRate"] = 1 * decimals; // 1%
+        params["liquidationStart"] = 150 * decimals; // auto-liquidation starts at 150%
+        params["liquidationEnd"] = 100 * decimals; // below 100%, commission doesn't increase
+        params["liquidationPenalty"] = 10 * decimals; // 10%, maximum penalty for auto-liquidation
+        params["minCommission"] = 10 * decimals; // minimum 10% of liquidation amount
+        params["maxCommission"] = 20 * decimals; // max 20%
+    }
+
+    function get(bytes32 name) public view returns (uint256) {
+        return params[name];
     }
 
     function partial(uint256 value, uint256 percent) public view returns (uint256) {
@@ -65,7 +70,7 @@ contract SimpleLoan {
     }
 
     function safelyCollateralized(uint256 collateralAmount, uint256 debtAmount) public view returns (bool) {
-        return collateralRatio(collateralAmount, debtAmount) >= liquidationStart;
+        return collateralRatio(collateralAmount, debtAmount) >= params["liquidationStart"];
     }
 
     function sendCollateral(
@@ -93,7 +98,7 @@ contract SimpleLoan {
             c.digest = digest;
             c.amount = msg.value;
             c.request = request;
-            c.escrowDeadline = now + escrowWindow;
+            c.escrowDeadline = now + params["escrowWindow"];
             c.stableCoinReceiver = stableCoinReceiver;
             loans[lid] = c;
         }
@@ -107,8 +112,8 @@ contract SimpleLoan {
         loans[lid].state = State.Accepted;
         uint256 request = loans[lid].request;
         loans[lid].principle = request;
-        loans[lid].interest = partial(request, interestRate);
-        loans[lid].maturityDate = now + loanMaturity;
+        loans[lid].interest = partial(request, params["interestRate"]);
+        loans[lid].maturityDate = now + params["loanMaturity"];
         emit __acceptLoan(lid, key, offchain);
     }
 
@@ -137,6 +142,7 @@ contract SimpleLoan {
 
         // Pay interest first if needed
         uint256 newInterest = interest;
+        uint256 loanMaturity = params["loanMaturity"];
         if (now + loanMaturity >= loans[lid].maturityDate) {
             newInterest = interest > amount ? interest - amount : 0;
             amount -= interest - newInterest; // left-over goes to principle
@@ -150,7 +156,7 @@ contract SimpleLoan {
             loans[lid].interest = newInterest;
         } else {
             loans[lid].maturityDate += loanMaturity;
-            loans[lid].interest = partial(newPrinciple, interestRate);
+            loans[lid].interest = partial(newPrinciple, params["interestRate"]);
         }
         emit __addPayment(lid, offchain);
     }
@@ -162,13 +168,17 @@ contract SimpleLoan {
                  !safelyCollateralized(loans[lid].amount, debt))); // collateral is not enough
 
         uint256 base = debt * assetPrice * 10 ** 18 / collateralPrice;// ETH amount needed to buy back enough Constant at current price
-        uint256 penalty = partial(base, liquidationPenalty);
+        uint256 penalty = partial(base, params["liquidationPenalty"]);
         uint256 liquidationAmount = base + penalty;
         uint256 collateralAmount = loans[lid].amount;
         if (liquidationAmount > collateralAmount) {
             liquidationAmount = collateralAmount; // TODO: not enough collateral?
         }
         uint256 currentRatio = collateralRatio(collateralAmount, debt);
+        uint256 maxCommission = params["maxCommission"];
+        uint256 minCommission = params["minCommission"];
+        uint256 liquidationStart = params["liquidationStart"];
+        uint256 liquidationEnd = params["liquidationEnd"];
         uint256 commission = partial(penalty, maxCommission);
         if (currentRatio < liquidationEnd) {
             commission = partial(penalty, minCommission);
