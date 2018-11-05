@@ -225,7 +225,7 @@ func createSalaryTx(
 
 	// NOTE: always pay salary with constant coin
 	assetTypeToPaySalary := common.AssetTypeCoin
-	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0, assetTypeToPaySalary, true)
+	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0, assetTypeToPaySalary, false)
 	if err != nil {
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}

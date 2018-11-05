@@ -977,11 +977,6 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	// param #4: estimation fee coin per kb by numblock
 	numBlock := uint32(arrayParams[3].(float64))
 
-	nodeAddr := arrayParams[4].(string)
-	if valid := common.ValidateNodeAddress(nodeAddr); !valid {
-		return nil, errors.New("node address is wrong")
-	}
-
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
 	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, common.AssetTypeCoin, transaction.SortByAmount, false)

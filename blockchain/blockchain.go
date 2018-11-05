@@ -533,8 +533,10 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 						} else {
 							// no privacy
 							for i, note := range desc.Note {
-								copyDesc.AppendNote(note)
-								copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
+								if note.Apk == keySet.PaymentAddress.Apk {
+									copyDesc.AppendNote(note)
+									copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
+								}
 							}
 						}
 						if len(copyDesc.Note) > 0 {
