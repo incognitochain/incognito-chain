@@ -332,6 +332,9 @@ func (self RpcServer) handleGetBlocks(params interface{}, closeChan <-chan struc
 		blockResult.Init(block)
 		result = append(result, blockResult)
 		previousHash = &block.Header.PrevBlockHash
+		if previousHash.String() == (common.Hash{}).String() {
+			break
+		}
 	}
 	return result, nil
 }
