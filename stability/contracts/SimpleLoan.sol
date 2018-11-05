@@ -29,12 +29,21 @@ contract SimpleLoan {
     uint256 public collateralPrice = 200 * decimals; // price in USD for each Wei
     uint256 public assetPrice = 1 * decimals; // price in USD for each CONST
 
+    function updateCollateralPrice(uint256 newPrice) public onlyLender {
+        collateralPrice = newPrice;
+    }
+
+    function updateAssetPrice(uint256 newPrice) public onlyLender {
+        assetPrice = newPrice;
+    }
+
     event __sendCollateral(bytes32 lid, uint256 amount, bytes32 offchain);
     event __acceptLoan(bytes32 lid, bytes32 key, bytes32 offchain);
     event __rejectLoan(bytes32 lid, bytes32 offchain);
     event __refundCollateral(bytes32 lid, uint256 amount, bytes32 offchain);
     event __addPayment(bytes32 lid, bytes32 offchain);
     event __liquidate(bytes32 lid, uint256 amount, uint256 commission, bytes32 offchain);
+    event __update(bytes32 name, uint256 value, bytes32 offchain);
 
     modifier onlyLender() {
         require(msg.sender == lender);
@@ -51,6 +60,11 @@ contract SimpleLoan {
         params["liquidationPenalty"] = 10 * decimals; // 10%, maximum penalty for auto-liquidation
         params["minCommission"] = 10 * decimals; // minimum 10% of liquidation amount
         params["maxCommission"] = 20 * decimals; // max 20%
+    }
+
+    function update(bytes32 name, uint256 value, bytes32 offchain) public onlyLender {
+        params[name] = value;
+        emit __update(name, value, offchain);
     }
 
     function get(bytes32 name) public view returns (uint256) {
@@ -183,7 +197,7 @@ contract SimpleLoan {
         if (currentRatio < liquidationEnd) {
             commission = partial(penalty, minCommission);
         } else if (currentRatio < liquidationStart) {
-            commission = partial(penalty, (currentRatio - liquidationEnd) * (maxCommission - minCommission) / (liquidationStart - liquidationEnd));
+            commission = partial(penalty, minCommission + (currentRatio - liquidationEnd) * (maxCommission - minCommission) / (liquidationStart - liquidationEnd));
         }
 
         loans[lid].principle = 0;

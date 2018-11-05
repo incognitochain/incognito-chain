@@ -12,6 +12,7 @@ contract("SimpleLoan", (accounts) => {
     const root = accounts[0]
     const owner = accounts[1]
     const requester1 = accounts[2]
+    const requester2 = accounts[3]
 
     let c, digest, key, lid;
 
@@ -148,23 +149,32 @@ contract("SimpleLoan", (accounts) => {
             tx1 = await c.acceptLoan(lid, key, offchain, { from: root })
             lid1 = await u.oc(tx1, "__acceptLoan", "lid")
             eq(lid1, lid)
-            l((await c.get('abc')).toNumber())
-            l((await c.get('interestRate')).toNumber())
         })
         
-//        it('should update eth price accordingly', async () => {
-//        })
-//
-//        it("should be able to liquidate", async () => {
-//            u.increaseTime(u.d2s(100)) // pass maturity date of loan
-//            tx = await c.liquidate(lid, offchain, { from: root })
-//            let amount = await u.oc(tx, "__liquidate", "amount")
-//            let commission = await u.oc(tx, "__liquidate", "commission")
-////            l(amount.toNumber(), commission.toNumber())
-//            eq(amount.toNumber(), web3.toWei(5.427))
-//            eq(commission.toNumber(), web3.toWei(0.1005))
-//        })
-//
+        it('should update price but fail to liquidate', async () => {
+            let eCollateralPrice = 180 * 100
+            tx1 = await c.updateCollateralPrice(eCollateralPrice, { from: root })
+            let newCollateralPrice = (await c.collateralPrice()).toNumber()
+//            let loan = await c.loans(lid)
+//            let amount = loan[3].toNumber(), debt = loan[5].toNumber() + loan[6].toNumber()
+//            l(amount, debt)
+//            l((await c.collateralRatio(amount, debt)).toNumber())
+            eq(newCollateralPrice, eCollateralPrice)
+            await u.assertRevert(c.liquidate(lid, offchain, { from: requester2 }))
+        })
+
+        it("should be able to liquidate", async () => {
+            let eCollateralPrice = 120 * 100
+            tx1 = await c.updateCollateralPrice(eCollateralPrice, { from: root })
+            tx = await c.liquidate(lid, offchain, { from: root })
+            let amount = await u.oc(tx, "__liquidate", "amount")
+            let commission = await u.oc(tx, "__liquidate", "commission")
+//            l(amount.toNumber(), commission.toNumber())
+            eq(amount.toNumber(), web3.toWei(9.14252))
+            as.isAtLeast(commission.toNumber(), parseInt(web3.toWei(0.115813), 10))
+            as.isAtMost(commission.toNumber(), parseInt(web3.toWei(0.115814), 10))
+        })
+
 //        it("should be able to refund", async () => {
 ////            l(((await c.loans(lid))[3]).toNumber())
 //            tx = await c.refundCollateral(lid, offchain, { from: root })
