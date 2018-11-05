@@ -321,26 +321,17 @@ func (self RpcServer) handleGetBlocks(params interface{}, closeChan <-chan struc
 	numBlock := int(arrayParams[0].(float64))
 	chainID := int(arrayParams[1].(float64))
 	bestBlock := self.config.BlockChain.BestState[chainID].BestBlock
-	blockResult := jsonresult.GetBlockResult{}
-	blockResult.Init(bestBlock)
-	result = append(result, blockResult)
+	previousHash := bestBlock.Hash()
 	for numBlock > 0 {
 		numBlock--
-		emptyHash := common.Hash{}
-		if blockResult.PreviousBlockHash == emptyHash.String() {
-			break
-		}
-		hash, errH := common.Hash{}.NewHashFromStr(blockResult.PreviousBlockHash)
-		if errH != nil {
-			return nil, errH
-		}
-		block, errD := self.config.BlockChain.GetBlockByBlockHash(hash)
+		block, errD := self.config.BlockChain.GetBlockByBlockHash(previousHash)
 		if errD != nil {
 			return nil, errD
 		}
 		blockResult := jsonresult.GetBlockResult{}
 		blockResult.Init(block)
 		result = append(result, blockResult)
+		previousHash = &block.Header.PrevBlockHash
 	}
 	return result, nil
 }
