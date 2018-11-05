@@ -37,7 +37,6 @@ contract("SimpleLoan", (accounts) => {
 
             tx1 = await c.sendCollateral(lid, digest, receiver, request, offchain, { from: requester1, value: web3.toWei(10) })
             lid = await u.oc(tx1, "__sendCollateral", "lid")
-            l(lid)
             as(!isNaN(lid))
         })
 
@@ -92,7 +91,6 @@ contract("SimpleLoan", (accounts) => {
 
             tx1 = await c.sendCollateral(lid, digest, receiver, request, offchain, { from: requester1, value: web3.toWei(10) })
             lid = await u.oc(tx1, "__sendCollateral", "lid")
-            l(lid)
             as(!isNaN(lid))
         })
 
@@ -120,17 +118,17 @@ contract("SimpleLoan", (accounts) => {
             tx = await c.liquidate(lid, offchain, { from: root })
             let amount = await u.oc(tx, "__liquidate", "amount")
             let commission = await u.oc(tx, "__liquidate", "commission")
-            l(amount.toNumber(), commission.toNumber())
+//            l(amount.toNumber(), commission.toNumber())
             eq(amount.toNumber(), web3.toWei(5.427))
             eq(commission.toNumber(), web3.toWei(0.1005))
         })
 
         it("should be able to refund", async () => {
-            l(((await c.loans(lid))[3]).toNumber())
+//            l(((await c.loans(lid))[3]).toNumber())
             tx = await c.refundCollateral(lid, offchain, { from: root })
             lid1 = await u.oc(tx, "__refundCollateral", "lid")
             let amount = await u.oc(tx, "__refundCollateral", "amount")
-            eq(amount.toNumber(), web3.toWei(4.975))
+            eq(amount.toNumber(), web3.toWei(4.4725))
             eq(lid1, lid)
         })
     })
