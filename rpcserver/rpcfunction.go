@@ -74,6 +74,7 @@ var RpcLimited = map[string]commandHandler{
 	GetAccountAddress:     RpcServer.handleGetAccountAddress,
 	DumpPrivkey:           RpcServer.handleDumpPrivkey,
 	ImportAccount:         RpcServer.handleImportAccount,
+	RemoveAccount:         RpcServer.handleRemoveAccount,
 	ListUnspent:           RpcServer.handleListUnspent,
 	GetBalance:            RpcServer.handleGetBalance,
 	GetReceivedByAccount:  RpcServer.handleGetReceivedByAccount,
@@ -1303,6 +1304,18 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 		PaymentAddress: account.Key.Base58CheckSerialize(wallet.PubKeyType),
 		ReadonlyKey:    account.Key.Base58CheckSerialize(wallet.ReadonlyKeyType),
 	}, nil
+}
+
+func (self RpcServer) handleRemoveAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+	privateKey := arrayParams[0].(string)
+	accountName := arrayParams[1].(string)
+	passPhrase := arrayParams[2].(string)
+	err := self.config.Wallet.RemoveAccount(privateKey, accountName, passPhrase)
+	if err != nil {
+		return false, NewRPCError(ErrUnexpected, err)
+	}
+	return true, nil
 }
 
 /*
