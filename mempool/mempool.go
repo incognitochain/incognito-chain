@@ -8,10 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
-	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 // config is a descriptor containing the memory pool configuration.
@@ -139,12 +139,16 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 	switch tx.(type) {
 	case *transaction.Tx:
-		log.Println("Normal tx again")
+		log.Println("Normal tx")
 		txInfo := tx.(*transaction.Tx)
 		chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
 	case *transaction.TxVoting:
-		log.Println("Tx voting ")
+		log.Println("Tx voting")
 		txInfo := tx.(*transaction.TxVoting)
+		chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
+	case *transaction.TxCustomToken:
+		log.Println("Tx custom token")
+		txInfo := tx.(*transaction.TxCustomToken)
 		chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
 	}
 
@@ -158,7 +162,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	ok := tp.config.Policy.CheckTxVersion(&tx)
 	if !ok {
 		err := MempoolTxError{}
-		err.Init(RejectVersion, errors.New(fmt.Sprintf("%v's version is invalid", txHash.String())))
+		err.Init(RejectVersion, errors.New(fmt.Sprintf("%+v's version is invalid", txHash.String())))
 		return nil, nil, err
 	}
 
@@ -195,7 +199,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 					return nil, nil, err
 				}
 				if existed {
-					str := fmt.Sprintf("Nullifiers of transaction %v already existed", txHash.String())
+					str := fmt.Sprintf("Nullifiers of transaction %+v already existed", txHash.String())
 					err := MempoolTxError{}
 					err.Init(RejectDuplicateTx, errors.New(str))
 					return nil, nil, err
@@ -206,16 +210,16 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 	// Don't accept the transaction if it already exists in the pool.
 	if tp.isTxInPool(txHash) {
-		str := fmt.Sprintf("already have transaction %v", txHash.String())
+		str := fmt.Sprintf("already have transaction %+v", txHash.String())
 		err := MempoolTxError{}
 		err.Init(RejectDuplicateTx, errors.New(str))
 		return nil, nil, err
 	}
 
-	// A standalone transaction must not be a coinbase transaction.
-	if blockchain.IsCoinBaseTx(tx) {
+	// A standalone transaction must not be a salary transaction.
+	if blockchain.IsSalaryTx(tx) {
 		err := MempoolTxError{}
-		err.Init(RejectCoinbaseTx, errors.New(fmt.Sprintf("%v is coinbase tx", txHash.String())))
+		err.Init(RejectSalaryTx, errors.New(fmt.Sprintf("%+v is salary tx", txHash.String())))
 		return nil, nil, err
 	}
 
@@ -345,13 +349,21 @@ func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
 CheckTransactionFee - check fee of tx
 */
 func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error) {
-	// Coinbase transactions have no inputs.
-	if blockchain.IsCoinBaseTx(tx) {
+	// Salary transactions have no inputs.
+	if blockchain.IsSalaryTx(tx) {
 		return 0, nil
 	}
 
 	txType := tx.GetType()
 	switch txType {
+	case common.TxCustomTokenType:
+		{
+			{
+				tx := tx.(*transaction.TxCustomToken)
+				err := tp.config.Policy.CheckCustomTokenTransactionFee(tx)
+				return tx.Fee, err
+			}
+		}
 	case common.TxNormalType:
 		{
 			normalTx := tx.(*transaction.Tx)
@@ -392,8 +404,8 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 	if int64(txN.LockTime) > time.Now().Unix() {
 		return false, errors.New("Wrong tx locktime")
 	}
-	// check Type equal "n"
-	if txN.Type != common.TxVotingType {
+	// check Type is normal or salary tx
+	if len(txN.Type) != 1 || (txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType) { // only 1 byte
 		return false, errors.New("Wrong tx type")
 	}
 	// check length of JSPubKey
@@ -518,7 +530,7 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 }
 
 func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxVoting) (bool, error) {
-	if !common.ValidateNodeAddress(txVoting.NodeAddr) {
+	if !common.ValidateNodeAddress(txVoting.PublicKey) {
 		return false, errors.New("Wrong voting node data")
 	}
 	tx := txVoting.Tx
@@ -655,9 +667,9 @@ func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxVoting) (bo
 ValidateSanityData - validate sansity data of tx
 */
 func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
-	if tx.GetType() == common.TxNormalType {
-		txA := tx.(*transaction.TxVoting)
-		ok, err := tp.validateSanityNormalTxData(&txA.Tx)
+	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxSalaryType {
+		txA := tx.(*transaction.Tx)
+		ok, err := tp.validateSanityNormalTxData(txA)
 		if !ok {
 			return false, err
 		}
@@ -681,6 +693,9 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		if !ok {
 			return false, err
 		}
+	} else if tx.GetType() == common.TxCustomTokenType {
+		// TODO check sanity
+		return true, nil
 	} else {
 		return false, errors.New("Wrong tx type")
 	}

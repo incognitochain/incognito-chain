@@ -6,11 +6,11 @@ fi
 
 KEY=$1
 
-cd ~/go/src/github.com/ninjadotorg/cash-prototype
+cd ~/go/src/github.com/ninjadotorg/constant
 cd privacy/server/build
 sudo ./main > privacy.log &
 echo "Started privacy..."
 
 cd ../../../
 /usr/local/go/bin/go build
-./cash-prototype --discoverpeers --generate --sealerkeyset $KEY
+./cash-prototype --discoverpeers --generate --producerkeyset $KEY

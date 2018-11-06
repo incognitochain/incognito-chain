@@ -19,7 +19,7 @@ type Parameters struct {
 	P, Q, G *big.Int
 }
 
-// PublicKey represents a DSA public key.
+// PaymentAddress represents a DSA public key.
 type PublicKey struct {
 	Parameters
 	Y *big.Int

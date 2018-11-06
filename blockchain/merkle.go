@@ -1,10 +1,12 @@
 package blockchain
 
 import (
+	"fmt"
 	"math"
 
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 type Merkle struct {
@@ -17,7 +19,7 @@ type Merkle struct {
 // is stored in a linear array.
 //
 // A merkle tree is a tree in which every non-leaf node is the hash of its
-// children nodes.  A diagram depicting how this works for bitcoin transactions
+// children nodes.  A diagram depicting how this works for constant transactions
 // where h(x) is a double sha256 follows:
 //
 //	         root = h1234 = h(h12 + h34)
@@ -41,7 +43,7 @@ type Merkle struct {
 //
 // The additional bool parameter indicates if we are generating the merkle tree
 // using witness transaction id's rather than regular transaction id's. This
-// also presents an additional case wherein the wtxid of the coinbase transaction
+// also presents an additional case wherein the wtxid of the salary transaction
 // is the zeroHash.
 func (self Merkle) BuildMerkleTreeStore(transactions []transaction.Transaction) []*common.Hash {
 	// Calculate how many entries are required to hold the binary merkle
@@ -55,7 +57,7 @@ func (self Merkle) BuildMerkleTreeStore(transactions []transaction.Transaction) 
 		// If we're computing a witness merkle root, instead of the
 		// regular txid, we use the modified wtxid which includes a
 		// transaction's witness data within the digest. Additionally,
-		// the coinbase's wtxid is all zeroes.
+		// the salary's wtxid is all zeroes.
 		witness := false
 		switch {
 		case witness && i == 0:
@@ -125,4 +127,36 @@ func (self Merkle) hashMerkleBranches(left *common.Hash, right *common.Hash) *co
 
 	newHash := common.DoubleHashH(hash[:])
 	return &newHash
+}
+
+/*
+// UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
+*/
+func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
+	for _, blockTx := range block.Transactions {
+		if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
+			tx, ok := blockTx.(*transaction.Tx)
+			if ok == false {
+				return NewBlockChainError(UnExpectedError, fmt.Errorf("Transaction in block not valid"))
+			}
+
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					tree.AddNewNode(cm[:])
+				}
+			}
+		} else if blockTx.GetType() == common.TxVotingType {
+			tx, ok := blockTx.(*transaction.TxVoting)
+			if ok == false {
+				return NewBlockChainError(UnExpectedError, fmt.Errorf("Transaction in block not valid"))
+			}
+
+			for _, desc := range tx.Descs {
+				for _, cm := range desc.Commitments {
+					tree.AddNewNode(cm[:])
+				}
+			}
+		}
+	}
+	return nil
 }

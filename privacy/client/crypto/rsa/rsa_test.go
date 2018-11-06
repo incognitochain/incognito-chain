@@ -120,7 +120,7 @@ func testKeyBasics(t *testing.T, priv *PrivateKey) {
 		return
 	}
 	if m.Cmp(m2) != 0 {
-		t.Errorf("got:%v, want:%v (%+v)", m2, m, priv)
+		t.Errorf("got:%+v, want:%+v (%+v)", m2, m, priv)
 	}
 
 	m3, err := decrypt(rand.Reader, priv, c)
@@ -128,7 +128,7 @@ func testKeyBasics(t *testing.T, priv *PrivateKey) {
 		t.Errorf("error while decrypting (blind): %s", err)
 	}
 	if m.Cmp(m3) != 0 {
-		t.Errorf("(blind) got:%v, want:%v (%#v)", m3, m, priv)
+		t.Errorf("(blind) got:%+v, want:%+v (%#v)", m3, m, priv)
 	}
 }
 

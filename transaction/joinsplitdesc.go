@@ -1,8 +1,8 @@
 package transaction
 
 import (
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
-	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
+	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy/proto/zksnark"
 )
 
 // JoinSplitDesc stores the UTXO of a transaction
@@ -14,8 +14,8 @@ type JoinSplitDesc struct {
 	EncryptedData   [][]byte           `json:"EncryptedData"`   // len == 2
 	EphemeralPubKey []byte             `json:"EphemeralPubKey"` // 32 bytes
 	HSigSeed        []byte             `json:"HSigSeed"`        // 32 bytes
-	Type            string             `json:"Type"`            // unit type (coin or bond) which used in tx
-	Reward          uint64             `json:"Reward"`          // For coinbase tx
+	Type            string             `json:"Type"`            // asset type (constant coin or bond or d-token, g-token) which used in tx
+	Reward          uint64             `json:"Reward"`          // For salary tx
 	Vmacs           [][]byte           `json:"Vmacs"`           // len == 2, 32 bytes
 
 	Note []*client.Note // decrypt data for EncryptedData

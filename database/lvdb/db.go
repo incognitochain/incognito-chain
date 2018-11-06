@@ -4,8 +4,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 )
 
 type db struct {
@@ -20,8 +20,8 @@ var (
 	chainIDPrefix     = []byte("c")
 	blockKeyPrefix    = []byte("b-")
 	blockKeyIdxPrefix = []byte("i-")
-	nullifiers        = []byte("nullifiers-")
-	commitments       = []byte("commitments-")
+	nullifiersPrefix  = []byte("nullifiers-")
+	commitmentsPrefix = []byte("commitments-")
 	bestBlockKey      = []byte("bestBlock")
 	feeEstimator      = []byte("feeEstimator")
 )
@@ -56,14 +56,14 @@ func (db *db) put(key, value []byte) error {
 func (db db) getKey(keyType string, key interface{}) []byte {
 	var dbkey []byte
 	switch keyType {
-	case "block":
+	case string(blockKeyPrefix):
 		dbkey = append(blockKeyPrefix, key.(*common.Hash)[:]...)
-	case "blockidx":
+	case string(blockKeyIdxPrefix):
 		dbkey = append(blockKeyIdxPrefix, key.(*common.Hash)[:]...)
-	case "nullifier":
-		dbkey = append(nullifiers, []byte(key.(string))...)
-	case "commitment":
-		dbkey = append(commitments, []byte(key.(string))...)
+	case string(nullifiersPrefix):
+		dbkey = append(nullifiersPrefix, []byte(key.(string))...)
+	case string(commitmentsPrefix):
+		dbkey = append(commitmentsPrefix, []byte(key.(string))...)
 	}
 	return dbkey
 }

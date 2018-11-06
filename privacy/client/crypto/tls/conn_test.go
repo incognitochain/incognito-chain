@@ -150,7 +150,7 @@ func runDynamicRecordSizingTest(t *testing.T, config *Config) {
 
 		tlsConn := Client(clientConn, config)
 		if err := tlsConn.Handshake(); err != nil {
-			t.Errorf("Error from client handshake: %v", err)
+			t.Errorf("Error from client handshake: %+v", err)
 			return
 		}
 
@@ -164,7 +164,7 @@ func runDynamicRecordSizingTest(t *testing.T, config *Config) {
 				break
 			}
 			if err != nil || n != len(recordHeader) {
-				t.Errorf("io.ReadFull = %d, %v", n, err)
+				t.Errorf("io.ReadFull = %d, %+v", n, err)
 				return
 			}
 
@@ -175,7 +175,7 @@ func runDynamicRecordSizingTest(t *testing.T, config *Config) {
 
 			n, err = io.ReadFull(clientConn, record[:length])
 			if err != nil || n != length {
-				t.Errorf("io.ReadFull = %d, %v", n, err)
+				t.Errorf("io.ReadFull = %d, %+v", n, err)
 				return
 			}
 

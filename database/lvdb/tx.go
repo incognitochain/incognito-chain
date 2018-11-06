@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/constant/database"
 
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 func (db *db) StoreNullifiers(nullifier []byte, coinType string, chainId byte) error {
-	key := db.getKey("commitment", coinType)
+	key := db.getKey(string(nullifiersPrefix), coinType)
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -36,7 +37,7 @@ func (db *db) StoreNullifiers(nullifier []byte, coinType string, chainId byte) e
 }
 
 func (db *db) FetchNullifiers(coinType string, chainID byte) ([][]byte, error) {
-	key := db.getKey("nullifier", coinType)
+	key := db.getKey(string(nullifiersPrefix), coinType)
 	key = append(key, chainID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -66,12 +67,22 @@ func (db *db) HasNullifier(nullifier []byte, coinType string, chainID byte) (boo
 }
 
 func (db *db) CleanNullifiers() error {
-
+	iter := db.lvdb.NewIterator(util.BytesPrefix(nullifiersPrefix), nil)
+	for iter.Next() {
+		err := db.lvdb.Delete(iter.Key(), nil)
+		if err != nil {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+	}
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
+	}
 	return nil
 }
 
 func (db *db) StoreCommitments(commitments []byte, coinType string, chainId byte) error {
-	key := db.getKey("commitment", coinType)
+	key := db.getKey(string(commitmentsPrefix), coinType)
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -96,7 +107,7 @@ func (db *db) StoreCommitments(commitments []byte, coinType string, chainId byte
 }
 
 func (db *db) FetchCommitments(coinType string, chainId byte) ([][]byte, error) {
-	key := db.getKey("commitment", coinType)
+	key := db.getKey(string(commitmentsPrefix), coinType)
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -125,6 +136,17 @@ func (db *db) HasCommitment(commitment []byte, coinType string, chainId byte) (b
 }
 
 func (db *db) CleanCommitments() error {
+	iter := db.lvdb.NewIterator(util.BytesPrefix(commitmentsPrefix), nil)
+	for iter.Next() {
+		err := db.lvdb.Delete(iter.Key(), nil)
+		if err != nil {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+	}
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
+	}
 	return nil
 }
 
@@ -144,5 +166,16 @@ func (db *db) GetFeeEstimator(chainId byte) ([]byte, error) {
 }
 
 func (db *db) CleanFeeEstimator() error {
+	iter := db.lvdb.NewIterator(util.BytesPrefix(feeEstimator), nil)
+	for iter.Next() {
+		err := db.lvdb.Delete(iter.Key(), nil)
+		if err != nil {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+	}
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
+	}
 	return nil
 }

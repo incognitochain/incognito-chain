@@ -15,11 +15,15 @@
 
 .idea
 
+.vscode
+
 vendor
 
-prototype
+constant
 
-cash-prototype
+constantctl
+
+constant-bootnode
 
 /dev-env/nodes-data/node*/data
 # Build Directory
@@ -29,3 +33,9 @@ cash-prototype
 privacy/server/proving\.key
 
 privacy/server/verifying\.key
+.DS_Store
+.env
+datadirs/data**
+data/**
+cash-*
+constant-*

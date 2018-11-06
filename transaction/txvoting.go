@@ -9,46 +9,29 @@ import (
 	"math/big"
 	"sort"
 	"strconv"
-	"time"
 
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy/client"
 )
 
 // TxVoting ...
 type TxVoting struct {
 	Tx
-	NodeAddr string
+	PublicKey string
 }
 
-// CreateVotingTx ...
-func CreateEmptyVotingTx(nodeAddr string) (*TxVoting, error) {
-	//Generate signing key 96 bytes
-	sigPrivKey, err := client.GenerateKey(rand.Reader)
+// CreateEmptyVotingTx - return an init tv voting
+func CreateEmptyVotingTx(pubkey string) (*TxVoting, error) {
+	emptyTx, err := CreateEmptyTx(common.TxVotingType)
 	if err != nil {
 		return nil, err
 	}
-
-	// Verification key 64 bytes
-	sigPubKey := PubKeyToByteArray(&sigPrivKey.PublicKey)
-
-	tx := &TxVoting{
-		Tx: Tx{
-			Type:            common.TxVotingType,
-			LockTime:        time.Now().Unix(),
-			Fee:             0,
-			Descs:           nil,
-			JSPubKey:        sigPubKey,
-			JSSig:           nil,
-			AddressLastByte: 0,
-
-			txId:       nil,
-			sigPrivKey: sigPrivKey,
-		},
-		NodeAddr: nodeAddr,
+	txVoting := &TxVoting{
+		Tx:        *emptyTx,
+		PublicKey: pubkey,
 	}
-	return tx, nil
+	return txVoting, nil
 }
 
 func (tx *TxVoting) GetValue() uint64 {
@@ -61,11 +44,11 @@ func (tx *TxVoting) GetValue() uint64 {
 	return val
 }
 
-func (tx *TxVoting) SetTxId(txId *common.Hash) {
+func (tx *TxVoting) SetTxID(txId *common.Hash) {
 	tx.Tx.txId = txId
 }
 
-func (tx *TxVoting) GetTxId() *common.Hash {
+func (tx *TxVoting) GetTxID() *common.Hash {
 	return tx.Tx.txId
 }
 
@@ -82,7 +65,7 @@ func (tx TxVoting) Hash() *common.Hash {
 	record += string(tx.Tx.JSPubKey)
 	// record += string(tx.JSSig)
 	record += string(tx.Tx.AddressLastByte)
-	record += tx.NodeAddr
+	record += tx.PublicKey
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -120,7 +103,7 @@ func (tx *TxVoting) GetTxVirtualSize() uint64 {
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
 	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(max(1, len(tx.Descs))) * EstimateJSDescSize()
+	var sizeDescs = uint64(max(1, len(tx.Tx.Descs))) * EstimateJSDescSize()
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
 	var sizeNodeAddr uint64 = 8  // string
@@ -130,6 +113,10 @@ func (tx *TxVoting) GetTxVirtualSize() uint64 {
 
 func (tx *TxVoting) GetSenderAddrLastByte() byte {
 	return tx.Tx.AddressLastByte
+}
+
+func (tx *TxVoting) GetTxFee() uint64 {
+	return tx.Fee
 }
 
 // CreateVotingTx creates transaction with appropriate proof for a private payment
@@ -143,12 +130,13 @@ func CreateVotingTx(
 	nullifiers map[byte]([][]byte),
 	commitments map[byte]([][]byte),
 	fee uint64,
+	assetType string,
 	senderChainID byte,
 	nodeAddr string,
 ) (*TxVoting, error) {
 	fee = 0 // TODO remove this line
 	fmt.Printf("List of all commitments before building tx:\n")
-	fmt.Printf("rts: %v\n", rts)
+	fmt.Printf("rts: %+v\n", rts)
 	for _, cm := range commitments {
 		fmt.Printf("%x\n", cm)
 	}
@@ -156,7 +144,7 @@ func CreateVotingTx(
 	var value uint64
 	for _, p := range paymentInfo {
 		value += p.Amount
-		fmt.Printf("[CreateTx] paymentInfo.Value: %v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Apk)
+		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Apk)
 	}
 
 	type ChainNote struct {
@@ -172,7 +160,7 @@ func CreateVotingTx(
 				for _, note := range desc.Note {
 					chainNote := &ChainNote{note: note, chainID: chainID}
 					inputNotes = append(inputNotes, chainNote)
-					fmt.Printf("[CreateTx] inputNote.Value: %v\n", note.Value)
+					fmt.Printf("[CreateTx] inputNote.Value: %+v\n", note.Value)
 				}
 			}
 		}
@@ -197,7 +185,7 @@ func CreateVotingTx(
 	}
 	tempKeySet := cashec.KeySet{}
 	tempKeySet.ImportFromPrivateKey(senderKey)
-	lastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
+	lastByte := tempKeySet.PaymentAddress.Apk[len(tempKeySet.PaymentAddress.Apk)-1]
 	tx.Tx.AddressLastByte = lastByte
 	var latestAnchor map[byte][]byte
 
@@ -227,7 +215,7 @@ func CreateVotingTx(
 
 			inputNotes = inputNotes[:len(inputNotes)-1]
 			numInputNotes++
-			fmt.Printf("Choose input note with value %v and cm %x\n", input.InputNote.Value, input.InputNote.Cm)
+			fmt.Printf("Choose input note with value %+v and cm %x\n", input.InputNote.Value, input.InputNote.Cm)
 		}
 
 		var feeApply uint64 // Zero fee for js descs other than the first one
@@ -303,13 +291,13 @@ func CreateVotingTx(
 				encKey = p.PaymentAddress.Pkenc
 				inputValue -= p.Amount
 				paymentInfo = paymentInfo[:len(paymentInfo)-1]
-				fmt.Printf("Use output value %v => %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Use output value %+v => %x\n", outNote.Value, outNote.Apk)
 			} else { // Not enough for this note, send some and save the rest for next js desc
 				outNote = &client.Note{Value: inputValue, Apk: p.PaymentAddress.Apk}
 				encKey = p.PaymentAddress.Pkenc
 				paymentInfo[len(paymentInfo)-1].Amount = p.Amount - inputValue
 				inputValue = 0
-				fmt.Printf("Partially send %v to %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Partially send %+v to %x\n", outNote.Value, outNote.Apk)
 			}
 
 			output := &client.JSOutput{EncKey: encKey, OutputNote: outNote}
@@ -329,13 +317,13 @@ func CreateVotingTx(
 				output := &client.JSOutput{EncKey: p.PaymentAddress.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
 				paymentInfo = paymentInfo[:len(paymentInfo)-1]
-				fmt.Printf("Exactly enough, include 1 more output %v, %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Exactly enough, include 1 more output %+v, %x\n", outNote.Value, outNote.Apk)
 			} else {
 				// Cannot put the output note into this js desc, create a change note instead
-				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PublicKey.Apk}
-				output := &client.JSOutput{EncKey: senderFullKey.PublicKey.Pkenc, OutputNote: outNote}
+				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PaymentAddress.Apk}
+				output := &client.JSOutput{EncKey: senderFullKey.PaymentAddress.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
-				fmt.Printf("Create change outnote %v, %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Create change outnote %+v, %x\n", outNote.Value, outNote.Apk)
 
 				// Use the change note to continually send to receivers if needed
 				if len(paymentInfo) > 0 {
@@ -355,8 +343,8 @@ func CreateVotingTx(
 		}
 
 		// Generate proof and sign tx
-		var reward uint64 // Zero reward for non-coinbase transaction
-		err = tx.Tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, true)
+		var reward uint64 // Zero reward for non-salary transaction
+		err = tx.Tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, assetType, true)
 		if err != nil {
 			return nil, err
 		}
@@ -367,7 +355,7 @@ func CreateVotingTx(
 			commitments[senderChainID] = append(commitments[senderChainID], output.OutputNote.Cm)
 		}
 
-		fmt.Printf("Len input and info: %v %v\n", len(inputNotes), len(paymentInfo))
+		fmt.Printf("Len input and info: %+v %+v\n", len(inputNotes), len(paymentInfo))
 	}
 
 	// Sign tx
@@ -389,8 +377,8 @@ func SignTxVoting(tx *TxVoting) (*TxVoting, error) {
 	}
 
 	// Hash transaction
-	tx.SetTxId(tx.Hash())
-	hash := tx.GetTxId()
+	tx.SetTxID(tx.Hash())
+	hash := tx.GetTxID()
 	data := make([]byte, common.HashSize)
 	copy(data, hash[:])
 
@@ -425,7 +413,7 @@ func VerifySignVotingTx(tx *TxVoting) (bool, error) {
 	ecdsaSignature.S = new(big.Int).SetBytes(tx.Tx.JSSig[32:64])
 
 	// Hash origin transaction
-	hash := tx.GetTxId()
+	hash := tx.GetTxID()
 	data := make([]byte, common.HashSize)
 	copy(data, hash[:])
 

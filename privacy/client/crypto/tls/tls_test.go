@@ -195,7 +195,7 @@ func TestDialTimeout(t *testing.T) {
 	}
 
 	if !isTimeoutError(err) {
-		t.Errorf("resulting error not a timeout: %v\nType %T: %#v", err, err, err)
+		t.Errorf("resulting error not a timeout: %+v\nType %T: %#v", err, err, err)
 	}
 }
 
@@ -244,7 +244,7 @@ func testConnReadNonzeroAndEOF(t *testing.T, delay time.Duration) error {
 		serverConfig := testConfig.Clone()
 		srv := Server(sconn, serverConfig)
 		if err := srv.Handshake(); err != nil {
-			serr = fmt.Errorf("handshake: %v", err)
+			serr = fmt.Errorf("handshake: %+v", err)
 			srvCh <- nil
 			return
 		}
@@ -268,7 +268,7 @@ func testConnReadNonzeroAndEOF(t *testing.T, delay time.Duration) error {
 	srv.Write([]byte("foobar"))
 	n, err := conn.Read(buf)
 	if n != 6 || err != nil || string(buf) != "foobar" {
-		return fmt.Errorf("Read = %d, %v, data %q; want 6, nil, foobar", n, err, buf)
+		return fmt.Errorf("Read = %d, %+v, data %q; want 6, nil, foobar", n, err, buf)
 	}
 
 	srv.Write([]byte("abcdef"))
@@ -279,7 +279,7 @@ func testConnReadNonzeroAndEOF(t *testing.T, delay time.Duration) error {
 		return fmt.Errorf("Read = %d, buf= %q; want 6, abcdef", n, buf)
 	}
 	if err != io.EOF {
-		return fmt.Errorf("Second Read error = %v; want io.EOF", err)
+		return fmt.Errorf("Second Read error = %+v; want io.EOF", err)
 	}
 	return nil
 }
@@ -338,7 +338,7 @@ func TestVerifyHostname(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := c.VerifyHostname("www.google.com"); err != nil {
-		t.Fatalf("verify www.google.com: %v", err)
+		t.Fatalf("verify www.google.com: %+v", err)
 	}
 	if err := c.VerifyHostname("www.yahoo.com"); err == nil {
 		t.Fatalf("verify www.yahoo.com succeeded")
@@ -365,7 +365,7 @@ func TestVerifyHostnameResumed(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		c, err := Dial("tcp", "www.google.com:https", config)
 		if err != nil {
-			t.Fatalf("Dial #%d: %v", i, err)
+			t.Fatalf("Dial #%d: %+v", i, err)
 		}
 		cs := c.ConnectionState()
 		if i > 0 && !cs.DidResume {
@@ -375,7 +375,7 @@ func TestVerifyHostnameResumed(t *testing.T) {
 			t.Fatalf("Dial #%d: cs.VerifiedChains == nil", i)
 		}
 		if err := c.VerifyHostname("www.google.com"); err != nil {
-			t.Fatalf("verify www.google.com #%d: %v", i, err)
+			t.Fatalf("verify www.google.com #%d: %+v", i, err)
 		}
 		c.Close()
 	}
@@ -399,7 +399,7 @@ func TestConnCloseBreakingWrite(t *testing.T) {
 		serverConfig := testConfig.Clone()
 		srv := Server(sconn, serverConfig)
 		if err := srv.Handshake(); err != nil {
-			serr = fmt.Errorf("handshake: %v", err)
+			serr = fmt.Errorf("handshake: %+v", err)
 			srvCh <- nil
 			return
 		}
@@ -451,12 +451,12 @@ func TestConnCloseBreakingWrite(t *testing.T) {
 
 	_, err = tconn.Write([]byte("foo"))
 	if err != errConnClosed {
-		t.Errorf("Write error = %v; want errConnClosed", err)
+		t.Errorf("Write error = %+v; want errConnClosed", err)
 	}
 
 	<-closeReturned
 	if err := tconn.Close(); err != errClosed {
-		t.Errorf("Close error = %v; want errClosed", err)
+		t.Errorf("Close error = %+v; want errClosed", err)
 	}
 }
 
@@ -469,14 +469,14 @@ func TestConnCloseWrite(t *testing.T) {
 	serverCloseWrite := func() error {
 		sconn, err := ln.Accept()
 		if err != nil {
-			return fmt.Errorf("accept: %v", err)
+			return fmt.Errorf("accept: %+v", err)
 		}
 		defer sconn.Close()
 
 		serverConfig := testConfig.Clone()
 		srv := Server(sconn, serverConfig)
 		if err := srv.Handshake(); err != nil {
-			return fmt.Errorf("handshake: %v", err)
+			return fmt.Errorf("handshake: %+v", err)
 		}
 		defer srv.Close()
 
@@ -489,7 +489,7 @@ func TestConnCloseWrite(t *testing.T) {
 		}
 
 		if err := srv.CloseWrite(); err != nil {
-			return fmt.Errorf("server CloseWrite: %v", err)
+			return fmt.Errorf("server CloseWrite: %+v", err)
 		}
 
 		// Wait for clientCloseWrite to finish, so we know we
@@ -514,11 +514,11 @@ func TestConnCloseWrite(t *testing.T) {
 		defer conn.Close()
 
 		if err := conn.CloseWrite(); err != nil {
-			return fmt.Errorf("client CloseWrite: %v", err)
+			return fmt.Errorf("client CloseWrite: %+v", err)
 		}
 
 		if _, err := conn.Write([]byte{0}); err != errShutdown {
-			return fmt.Errorf("CloseWrite error = %v; want errShutdown", err)
+			return fmt.Errorf("CloseWrite error = %+v; want errShutdown", err)
 		}
 
 		data, err := ioutil.ReadAll(conn)
@@ -561,7 +561,7 @@ func TestConnCloseWrite(t *testing.T) {
 		conn := Client(netConn, testConfig.Clone())
 
 		if err := conn.CloseWrite(); err != errEarlyCloseWrite {
-			t.Errorf("CloseWrite error = %v; want errEarlyCloseWrite", err)
+			t.Errorf("CloseWrite error = %+v; want errEarlyCloseWrite", err)
 		}
 	}
 }
@@ -573,14 +573,14 @@ func TestWarningAlertFlood(t *testing.T) {
 	server := func() error {
 		sconn, err := ln.Accept()
 		if err != nil {
-			return fmt.Errorf("accept: %v", err)
+			return fmt.Errorf("accept: %+v", err)
 		}
 		defer sconn.Close()
 
 		serverConfig := testConfig.Clone()
 		srv := Server(sconn, serverConfig)
 		if err := srv.Handshake(); err != nil {
-			return fmt.Errorf("handshake: %v", err)
+			return fmt.Errorf("handshake: %+v", err)
 		}
 		defer srv.Close()
 
@@ -765,17 +765,17 @@ func throughput(b *testing.B, totalBytes int64, dynamicRecordSizingDisabled bool
 			if err != nil {
 				// panic rather than synchronize to avoid benchmark overhead
 				// (cannot call b.Fatal in goroutine)
-				panic(fmt.Errorf("accept: %v", err))
+				panic(fmt.Errorf("accept: %+v", err))
 			}
 			serverConfig := testConfig.Clone()
 			serverConfig.CipherSuites = nil // the defaults may prefer faster ciphers
 			serverConfig.DynamicRecordSizingDisabled = dynamicRecordSizingDisabled
 			srv := Server(sconn, serverConfig)
 			if err := srv.Handshake(); err != nil {
-				panic(fmt.Errorf("handshake: %v", err))
+				panic(fmt.Errorf("handshake: %+v", err))
 			}
 			if _, err := io.CopyBuffer(srv, srv, buf); err != nil {
-				panic(fmt.Errorf("copy buffer: %v", err))
+				panic(fmt.Errorf("copy buffer: %+v", err))
 			}
 		}
 	}()
@@ -857,13 +857,13 @@ func latency(b *testing.B, bps int, dynamicRecordSizingDisabled bool) {
 			if err != nil {
 				// panic rather than synchronize to avoid benchmark overhead
 				// (cannot call b.Fatal in goroutine)
-				panic(fmt.Errorf("accept: %v", err))
+				panic(fmt.Errorf("accept: %+v", err))
 			}
 			serverConfig := testConfig.Clone()
 			serverConfig.DynamicRecordSizingDisabled = dynamicRecordSizingDisabled
 			srv := Server(&slowConn{sconn, bps}, serverConfig)
 			if err := srv.Handshake(); err != nil {
-				panic(fmt.Errorf("handshake: %v", err))
+				panic(fmt.Errorf("handshake: %+v", err))
 			}
 			io.Copy(srv, srv)
 		}

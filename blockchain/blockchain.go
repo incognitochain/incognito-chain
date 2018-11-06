@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"errors"
-	"fmt"
 
 	//"fmt"
 	//"time"
@@ -11,13 +10,14 @@ import (
 
 	"encoding/json"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
-	"github.com/ninjadotorg/cash-prototype/transaction"
 	"sort"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 const (
@@ -65,10 +65,10 @@ Init - init a blockchain view from config
 func (self *BlockChain) Init(config *Config) error {
 	// Enforce required config fields.
 	if config.DataBase == nil {
-		return errors.New("blockchain.New database is nil")
+		return NewBlockChainError(UnExpectedError, errors.New("Database is not config"))
 	}
 	if config.ChainParams == nil {
-		return errors.New("blockchain.New chain parameters nil")
+		return NewBlockChainError(UnExpectedError, errors.New("Chain parameters is not config"))
 	}
 
 	self.config = *config
@@ -81,7 +81,8 @@ func (self *BlockChain) Init(config *Config) error {
 	}
 
 	for chainIndex, bestState := range self.BestState {
-		Logger.log.Infof("blockChain state for chain #%d (height %d, hash %v, totaltx %d)", chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns)
+		Logger.log.Infof("BlockChain state for chain #%d (Height %d, Best block hash %+v, Total tx %d, Salary fund %d, Gov Param %+v)",
+			chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GovernanceParams)
 	}
 
 	return nil
@@ -93,7 +94,6 @@ func (self *BlockChain) Init(config *Config) error {
 // chain state are initialized to the genesis block.
 */
 func (self *BlockChain) initChainState() error {
-	// TODO
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	var initialized bool
@@ -126,38 +126,6 @@ func (self *BlockChain) initChainState() error {
 }
 
 /*
-// UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
-*/
-func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
-	for _, blockTx := range block.Transactions {
-		if blockTx.GetType() == common.TxNormalType {
-			tx, ok := blockTx.(*transaction.Tx)
-			if ok == false {
-				return fmt.Errorf("Transaction in block not valid")
-			}
-
-			for _, desc := range tx.Descs {
-				for _, cm := range desc.Commitments {
-					tree.AddNewNode(cm[:])
-				}
-			}
-		} else if blockTx.GetType() == common.TxVotingType {
-			tx, ok := blockTx.(*transaction.TxVoting)
-			if ok == false {
-				return fmt.Errorf("Transaction in block not valid")
-			}
-
-			for _, desc := range tx.Descs {
-				for _, cm := range desc.Commitments {
-					tree.AddNewNode(cm[:])
-				}
-			}
-		}
-	}
-	return nil
-}
-
-/*
 // createChainState initializes both the database and the chain state to the
 // genesis block.  This includes creating the necessary buckets and inserting
 // the genesis block, so it must only be called on an uninitialized database.
@@ -169,16 +137,15 @@ func (self *BlockChain) createChainState(chainId byte) error {
 		initBlock = self.config.ChainParams.GenesisBlock
 	} else {
 		initBlock = &Block{}
+		initBlock.Header = self.config.ChainParams.GenesisBlock.Header
 		initBlock.Header.ChainID = chainId
-		initBlock.Header.Timestamp = self.config.ChainParams.GenesisBlock.Header.Timestamp
-		initBlock.Header.Committee = self.config.ChainParams.GenesisBlock.Header.Committee
-		initBlock.Header.SalaryFund = self.config.ChainParams.GenesisBlock.Header.SalaryFund
+		initBlock.Header.PrevBlockHash = common.Hash{}
 	}
 	initBlock.Height = 1
 
 	tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
 	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
-		return err
+		return NewBlockChainError(UpdateMerkleTreeForBlockError, err)
 	}
 
 	self.BestState[chainId] = &BestState{}
@@ -187,18 +154,18 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	// store block genesis
 	err := self.StoreBlock(initBlock)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 
 	// store block hash by index and index by block hash
 	err = self.StoreBlockIndex(initBlock)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 	// store best state
 	err = self.StoreBestState(chainId)
 	if err != nil {
-		return err
+		return NewBlockChainError(UnExpectedError, err)
 	}
 
 	return nil
@@ -265,7 +232,7 @@ func (self *BlockChain) StoreBestState(chainId byte) error {
 /*
 GetBestState - return a best state from a chain
 */
-// #1 - chainId - index of chain
+// #1 - chainID - index of chain
 func (self *BlockChain) GetBestState(chainId byte) (*BestState, error) {
 	bestState := BestState{}
 	bestStateBytes, err := self.config.DataBase.FetchBestState(chainId)
@@ -298,7 +265,7 @@ this is a list tx-out which are used by a new tx
 func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
 	for coinType, item := range view.listNullifiers {
 		for _, item1 := range item {
-			err := self.config.DataBase.StoreNullifiers(item1, coinType, view.chainId)
+			err := self.config.DataBase.StoreNullifiers(item1, coinType, view.chainID)
 			if err != nil {
 				return err
 			}
@@ -314,7 +281,7 @@ this is a list tx-in which are used by a new tx
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
 	for coinType, item := range view.listCommitments {
 		for _, item1 := range item {
-			err := self.config.DataBase.StoreCommitments(item1, coinType, view.chainId)
+			err := self.config.DataBase.StoreCommitments(item1, coinType, view.chainID)
 			if err != nil {
 				return err
 			}
@@ -525,7 +492,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 			txsInBlock := bestBlock.Transactions
 			txsInBlockAccepted := make([]transaction.Tx, 0)
 			for _, txInBlock := range txsInBlock {
-				if txInBlock.GetType() == common.TxNormalType {
+				if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
 					tx := txInBlock.(*transaction.Tx)
 					copyTx := transaction.Tx{
 						Version:  tx.Version,
@@ -553,7 +520,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 								// copy(hSig, desc.HSigSeed)
 								hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
 								note := new(client.Note)
-								note, err := client.DecryptNote(encData, keySet.ReadonlyKey.Skenc, keySet.PublicKey.Pkenc, epk, hSig)
+								note, err := client.DecryptNote(encData, keySet.ReadonlyKey.Skenc, keySet.PaymentAddress.Pkenc, epk, hSig)
 								spew.Dump(note)
 								if err == nil && note != nil {
 									copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
@@ -566,11 +533,13 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 						} else {
 							// no privacy
 							for i, note := range desc.Note {
-								copyDesc.AppendNote(note)
-								copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
+								if note.Apk == keySet.PaymentAddress.Apk {
+									copyDesc.AppendNote(note)
+									copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
+								}
 							}
 						}
-						if len(copyDesc.EncryptedData) > 0 {
+						if len(copyDesc.Note) > 0 {
 							listDesc = append(listDesc, copyDesc)
 						}
 					}
@@ -650,7 +619,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, co
 			txsInBlock := bestBlock.Transactions
 			txsInBlockAccepted := make([]transaction.Tx, 0)
 			for _, txInBlock := range txsInBlock {
-				if txInBlock.GetType() == common.TxNormalType {
+				if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
 					tx := txInBlock.(*transaction.Tx)
 					copyTx := transaction.Tx{
 						Version:         tx.Version,
@@ -678,7 +647,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, co
 								copy(epk[:], desc.EphemeralPubKey)
 								hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
 								note := new(client.Note)
-								note, err := client.DecryptNote(encData, keys.ReadonlyKey.Skenc, keys.PublicKey.Pkenc, epk, hSig)
+								note, err := client.DecryptNote(encData, keys.ReadonlyKey.Skenc, keys.PaymentAddress.Pkenc, epk, hSig)
 								if err == nil && note != nil && note.Value > 0 {
 									// can decrypt data -> got candidate commitment
 									candidateCommitment := desc.Commitments[i]
@@ -707,29 +676,31 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, co
 							}
 						} else {
 							for i, note := range desc.Note {
-								// no privacy
-								candidateCommitment := desc.Commitments[i]
-								if len(nullifiersInDb) > 0 {
-									// -> check commitment with db nullifiers
-									var rho [32]byte
-									copy(rho[:], note.Rho)
-									candidateNullifier := desc.Nullifiers
-									if len(candidateNullifier) == 0 {
-										continue
+								if note.Apk == keys.PaymentAddress.Apk {
+									// no privacy
+									candidateCommitment := desc.Commitments[i]
+									if len(nullifiersInDb) > 0 {
+										// -> check commitment with db nullifiers
+										var rho [32]byte
+										copy(rho[:], note.Rho)
+										candidateNullifier := desc.Nullifiers
+										if len(candidateNullifier) == 0 {
+											continue
+										}
+										checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
+										if err != nil || checkCandiateNullifier == true {
+											// candidate nullifier is not existed in db
+											continue
+										}
 									}
-									checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
-									if err != nil || checkCandiateNullifier == true {
-										// candidate nullifier is not existed in db
-										continue
-									}
+									copyDesc.AppendNote(note)
+									note.Cm = candidateCommitment
+									note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
+									copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
 								}
-								copyDesc.AppendNote(note)
-								note.Cm = candidateCommitment
-								note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
-								copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
 							}
 						}
-						if len(copyDesc.EncryptedData) > 0 {
+						if len(copyDesc.Note) > 0 {
 							listDesc = append(listDesc, copyDesc)
 						}
 					}
@@ -800,10 +771,10 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 				totalFeeInBlock += fee
 			}
 
-			coinbaseTx := txsInBlock[0].(*transaction.Tx)
+			salaryTx := txsInBlock[0].(*transaction.Tx)
 			rewardBond := uint64(0)
 			rewardCoin := uint64(0)
-			for _, desc := range coinbaseTx.Descs {
+			for _, desc := range salaryTx.Descs {
 				unitType := desc.Type
 				switch unitType {
 				case common.AssetTypeCoin:
@@ -834,21 +805,32 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 	return result, nil
 }
 
-/*
-Get Candidate List from all chain and merge all to one
-*/
-func (self *BlockChain) GetCndList() ([]string) {
-	cndList := []string{}
+func (self *BlockChain) GetCommitteCandidate(pubkeyParam string) *CommitteeCandidateInfo {
 	for _, bestState := range self.BestState {
-		for nodeAddr, _ := range bestState.Candidates {
-			if common.IndexOfStr(nodeAddr, cndList) < 0 {
-				cndList = append(cndList, nodeAddr)
+		for pubkey, candidateInfo := range bestState.Candidates {
+			if pubkey == pubkeyParam {
+				return &candidateInfo
 			}
 		}
 	}
-	sort.Slice(cndList, func(i, j int) bool {
-		cndInfoi := self.GetCndInfo(cndList[i])
-		cndInfoj := self.GetCndInfo(cndList[j])
+	return nil
+}
+
+/*
+Get Candidate List from all chain and merge all to one - return pubkey of them
+*/
+func (self *BlockChain) GetCommitteeCandidateList() []string {
+	candidatePubkeyList := []string{}
+	for _, bestState := range self.BestState {
+		for pubkey, _ := range bestState.Candidates {
+			if common.IndexOfStr(pubkey, candidatePubkeyList) < 0 {
+				candidatePubkeyList = append(candidatePubkeyList, pubkey)
+			}
+		}
+	}
+	sort.Slice(candidatePubkeyList, func(i, j int) bool {
+		cndInfoi := self.GetCommitteeCandidateInfo(candidatePubkeyList[i])
+		cndInfoj := self.GetCommitteeCandidateInfo(candidatePubkeyList[j])
 		if cndInfoi.Value == cndInfoj.Value {
 			if cndInfoi.Timestamp < cndInfoj.Timestamp {
 				return true
@@ -868,11 +850,11 @@ func (self *BlockChain) GetCndList() ([]string) {
 		}
 		return false
 	})
-	return cndList
+	return candidatePubkeyList
 }
 
-func (self *BlockChain) GetCndInfo(nodeAddr string) (CndInfo) {
-	var cndVal CndInfo
+func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCandidateInfo {
+	var cndVal CommitteeCandidateInfo
 	for _, bestState := range self.BestState {
 		cndValTmp, ok := bestState.Candidates[nodeAddr]
 		if ok {
@@ -884,4 +866,66 @@ func (self *BlockChain) GetCndInfo(nodeAddr string) (CndInfo) {
 		}
 	}
 	return cndVal
+}
+
+// Get all unspent tx custom token out of sender
+func (self *BlockChain) GetUnspentTxTokenVoutBySender(senderKeyset cashec.KeySet) ([]transaction.TxTokenVout, error) {
+	lastByte := senderKeyset.PaymentAddress.Apk[len(senderKeyset.PaymentAddress.Apk)-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	if err != nil {
+		return nil, err
+	}
+	// get all vin custom token of sender
+	bestStateOfSender := self.BestState[chainIdSender]
+	prevHash := bestStateOfSender.BestBlock.Hash()
+	// list spent
+	vinList := []transaction.TxTokenVin{}
+	txCustomTokenIDs := []common.Hash{}
+	for prevHash.String() != (common.Hash{}).String() {
+		block, err := self.GetBlockByBlockHash(prevHash)
+		prevHash = &block.Header.PrevBlockHash
+		if err != nil {
+			return nil, err
+		}
+		for _, tx := range block.Transactions {
+			if tx.GetType() == common.TxCustomTokenType {
+				customTokenTx := tx.(*transaction.TxCustomToken)
+				for _, vin := range customTokenTx.TxToken.Vins {
+					if vin.PaymentAddress.Apk == senderKeyset.PaymentAddress.Apk {
+						vinList = append(vinList, vin)
+						txCustomTokenIDs = append(txCustomTokenIDs, *customTokenTx.Hash())
+					}
+				}
+			}
+		}
+	}
+
+	// get all vout custom token of sender which unspent
+	voutList := []transaction.TxTokenVout{}
+	for _, bestState := range self.BestState {
+		prevHash := bestState.BestBlock.Hash()
+		for prevHash.String() != (common.Hash{}).String() {
+			block, err := self.GetBlockByBlockHash(prevHash)
+			prevHash = &block.Header.PrevBlockHash
+			if err != nil {
+				return nil, err
+			}
+			for _, tx := range block.Transactions {
+				if tx.GetType() == common.TxCustomTokenType {
+					customTokenTx := tx.(*transaction.TxCustomToken)
+					for index, vout := range customTokenTx.TxToken.Vouts {
+						if vout.PaymentAddress.Apk == senderKeyset.PaymentAddress.Apk {
+							existed, err := common.SliceExists(txCustomTokenIDs, tx.Hash())
+							if !existed && err == nil {
+								vout.SetIndex(index)
+								vout.SetTxCustomTokenID(*tx.Hash())
+								voutList = append(voutList, vout)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return voutList, nil
 }

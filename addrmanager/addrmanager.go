@@ -3,7 +3,6 @@ package addrmanager
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"sync"
@@ -11,77 +10,39 @@ import (
 	"time"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash-prototype/peer"
+	"github.com/ninjadotorg/constant/peer"
 )
-
-const (
-	// dumpAddressInterval is the interval used to dump the address
-	// cache to disk for future use.
-	dumpAddressInterval = time.Second * 10
-
-	// newBucketCount is the number of buckets that we spread new addresses
-	// over.
-	newBucketCount = 1024
-
-	// triedBucketCount is the number of buckets we split tried
-	// addresses over.
-	triedBucketCount = 64
-)
-
-type localAddress struct {
-	na    *peer.Peer
-	score AddressPriority
-}
-
-// AddressPriority type is used to describe the hierarchy of local address
-// discovery methods.
-type AddressPriority int
 
 type AddrManager struct {
-	mtx        sync.Mutex
-	peersFile  string
-	lookupFunc func(string) ([]string, error)
-	rand       *rand.Rand
-	key        [32]byte
-	started    int32
-	shutdown   int32
-	waitgroup  sync.WaitGroup
-	quit       chan struct{}
-	nTried     int
-	nNew       int
+	mtx       sync.Mutex
+	peersFile string
+	key       [32]byte
+	started   int32
+	shutdown  int32
+	waitGroup sync.WaitGroup
+
+	cQuit chan struct{}
 
 	addrIndex map[string]*peer.Peer // address key to KnownAddress for all addrs.
-
-	localAddresses map[string]*localAddress
 }
 
 type serializedKnownAddress struct {
-	Addr        string
-	Src         string
-	PublicKey   string
-	Attempts    int
-	TimeStamp   int64
-	LastAttempt int64
-	LastSuccess int64
-	// no refcount or tried, that is available from context.
+	Addr      string
+	Src       string
+	PublicKey string
 }
 
 type serializedAddrManager struct {
-	Version      int
-	Key          [32]byte
-	Addresses    []*serializedKnownAddress
-	NewBuckets   [newBucketCount][]string // string is NetAddressKey
-	TriedBuckets [triedBucketCount][]string
+	Version   int
+	Key       [32]byte
+	Addresses []*serializedKnownAddress
 }
 
-func New(dataDir string, lookupFunc func(string) ([]string, error)) *AddrManager {
+func New(dataDir string) *AddrManager {
 	addrManager := AddrManager{
-		peersFile:      filepath.Join(dataDir, "peer.json"),
-		lookupFunc:     lookupFunc,
-		rand:           rand.New(rand.NewSource(time.Now().UnixNano())),
-		quit:           make(chan struct{}),
-		localAddresses: make(map[string]*localAddress),
-		mtx:            sync.Mutex{},
+		peersFile: filepath.Join(dataDir, "peer.json"),
+		cQuit:     make(chan struct{}),
+		mtx:       sync.Mutex{},
 	}
 	addrManager.reset()
 	return &addrManager
@@ -89,12 +50,10 @@ func New(dataDir string, lookupFunc func(string) ([]string, error)) *AddrManager
 
 // savePeers saves all the known addresses to a file so they can be read back
 // in at next run.
-func (self *AddrManager) savePeers() {
-	//self.mtx.Lock()
-	//defer self.mtx.Unlock()
+func (self *AddrManager) savePeers() error {
 
 	if len(self.addrIndex) == 0 {
-		return
+		return nil
 	}
 
 	sam := new(serializedAddrManager)
@@ -116,15 +75,16 @@ func (self *AddrManager) savePeers() {
 
 	w, err := os.Create(self.peersFile)
 	if err != nil {
-		Logger.log.Infof("Error opening file %s: %v", self.peersFile, err)
-		return
+		Logger.log.Errorf("Error opening file %s: %+v", self.peersFile, err)
+		return NewAddrManagerError(UnexpectedError, err)
 	}
 	enc := json.NewEncoder(w)
 	defer w.Close()
 	if err := enc.Encode(&sam); err != nil {
-		Logger.log.Infof("Failed to encode file %s: %v", self.peersFile, err)
-		return
+		Logger.log.Errorf("Failed to encode file %s: %+v", self.peersFile, err)
+		return NewAddrManagerError(UnexpectedError, err)
 	}
+	return nil
 }
 
 // loadPeers loads the known address from the saved file.  If empty, missing, or
@@ -134,23 +94,21 @@ func (self *AddrManager) loadPeers() {
 	//defer self.mtx.Unlock()
 	err := self.deserializePeers(self.peersFile)
 	if err != nil {
-		Logger.log.Infof("Failed to parse file %s: %v", self.peersFile, err)
+		Logger.log.Errorf("Failed to parse file %s: %+v", self.peersFile, err)
 		// if it is invalid we nuke the old one unconditionally.
 		err = os.Remove(self.peersFile)
 		if err != nil {
-			Logger.log.Infof("Failed to remove corrupt peers file %s: %v",
-				self.peersFile, err)
+			Logger.log.Errorf("Failed to remove corrupt peers file %s: %+v", self.peersFile, err)
 		}
 		self.reset()
-		return
 	}
 	Logger.log.Infof("Loaded %d addresses from file '%s'", self.numAddresses(), self.peersFile)
 }
 
 // NumAddresses returns the number of addresses known to the address manager.
-func (a *AddrManager) numAddresses() int {
+func (self *AddrManager) numAddresses() int {
 	//return a.nTried + a.nNew
-	return len(a.addrIndex)
+	return len(self.addrIndex)
 }
 
 // reset resets the address manager by reinitialising the random source
@@ -172,7 +130,7 @@ func (self *AddrManager) deserializePeers(filePath string) error {
 	}
 	r, err := os.Open(filePath)
 	if err != nil {
-		return fmt.Errorf("%s error opening file: %v", filePath, err)
+		return fmt.Errorf("%s error opening file: %+v", filePath, err)
 	}
 	defer r.Close()
 
@@ -180,12 +138,11 @@ func (self *AddrManager) deserializePeers(filePath string) error {
 	dec := json.NewDecoder(r)
 	err = dec.Decode(&sam)
 	if err != nil {
-		return fmt.Errorf("error reading %s: %v", filePath, err)
+		return fmt.Errorf("error reading %s: %+v", filePath, err)
 	}
 
-	if sam.Version != 1 {
-		return fmt.Errorf("unknown version %v in serialized "+
-			"addrmanager", sam.Version)
+	if sam.Version != Version {
+		return fmt.Errorf("unknown version %+v in serialized addrmanager", sam.Version)
 	}
 	copy(self.key[:], sam.Key[:])
 
@@ -214,7 +171,7 @@ func (self *AddrManager) Start() {
 	// Load peers we already know about from file.
 	self.loadPeers()
 	// Start the address ticker to save addresses periodically.
-	self.waitgroup.Add(1)
+	self.waitGroup.Add(1)
 	go self.addressHandler()
 
 }
@@ -222,21 +179,20 @@ func (self *AddrManager) Start() {
 // Stop gracefully shuts down the address manager by stopping the main handler.
 func (self *AddrManager) Stop() error {
 	if atomic.AddInt32(&self.shutdown, 1) != 1 {
-		Logger.log.Infof("Address manager is already in the process of " +
-			"shutting down")
+		Logger.log.Errorf("Address manager is already in the process of shutting down")
 		return nil
 	}
 
 	Logger.log.Infof("Address manager shutting down")
-	close(self.quit)
-	self.waitgroup.Wait()
+	close(self.cQuit)
+	self.waitGroup.Wait()
 	return nil
 }
 
 // addressHandler is the main handler for the address manager.  It must be run
 // as a goroutine.
 func (self *AddrManager) addressHandler() {
-	dumpAddressTicker := time.NewTicker(dumpAddressInterval)
+	dumpAddressTicker := time.NewTicker(DumpAddressInterval)
 	defer dumpAddressTicker.Stop()
 out:
 	for {
@@ -244,23 +200,13 @@ out:
 		case <-dumpAddressTicker.C:
 			self.savePeers()
 
-		case <-self.quit:
+		case <-self.cQuit:
 			break out
 		}
 	}
 	self.savePeers()
-	self.waitgroup.Done()
+	self.waitGroup.Done()
 	Logger.log.Infof("Address handler done")
-}
-
-// Connected Marks the given address as currently connected and working at the
-// current time.  The address must already be known to addrManager else it will
-// be ignored.
-func (a *AddrManager) Connected(peer *peer.Peer) {
-	//a.mtx.Lock()
-	//defer a.mtx.Unlock()
-
-	// TODO
 }
 
 // Good marks the given address as good.  To be called after a successful
@@ -271,15 +217,6 @@ func (self *AddrManager) Good(addr *peer.Peer) {
 	defer self.mtx.Unlock()
 
 	self.addrIndex[addr.RawAddress] = addr
-}
-
-func (self *AddrManager) AddAddresses(addr []*peer.Peer) {
-	self.mtx.Lock()
-	defer self.mtx.Unlock()
-
-	for _, peer := range addr {
-		self.addrIndex[peer.RawAddress] = peer
-	}
 }
 
 func (self *AddrManager) AddAddressesStr(addrs []string) {
@@ -310,12 +247,4 @@ func (self *AddrManager) AddressCache() []*peer.Peer {
 		allAddr = append(allAddr, v)
 	}
 	return allAddr
-}
-
-func (self *AddrManager) ExistedAddr(addr string) bool {
-	self.mtx.Lock()
-	defer self.mtx.Unlock()
-
-	_, ok := self.addrIndex[addr]
-	return ok
 }

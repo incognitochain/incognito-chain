@@ -15,9 +15,9 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jessevdk/go-flags"
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
 // default config
@@ -35,11 +35,11 @@ const (
 	defaultDisableRpcTls   = true
 	defaultFastMode        = false
 	// For wallet
-	defaultWalletDbName = "wallet.db"
+	defaultWalletName = "wallet"
 )
 
 var (
-	defaultHomeDir     = common.AppDataDir("prototype", false)
+	defaultHomeDir     = common.AppDataDir("cash", false)
 	defaultConfigFile  = filepath.Join(defaultHomeDir, defaultConfigFilename)
 	defaultDataDir     = filepath.Join(defaultHomeDir, defaultDataDirname)
 	defaultRPCKeyFile  = filepath.Join(defaultHomeDir, "rpc.key")
@@ -53,49 +53,50 @@ var runServiceCommand func(string) error
 
 // See loadConfig for details on the configuration load process.
 type config struct {
-	ShowVersion          bool     `short:"V" long:"version" description:"Display version information and exit"`
-	ConfigFile           string   `short:"C" long:"configfile" description:"Path to configuratio\n file"`
-	DataDir              string   `short:"b" long:"datadir" description:"Directory to store data"`
-	DatabaseDir          string   `short:"p" long:"datapre" description:"Database dir"`
-	LogDir               string   `long:"logdir" description:"Directory to log output."`
+	ShowVersion bool   `short:"V" long:"version" description:"Display version information and exit"`
+	ConfigFile  string `short:"C" long:"configfile" description:"Path to configuratio\n file"`
+	DataDir     string `short:"D" long:"datadir" description:"Directory to store data"`
+	DatabaseDir string `short:"d" long:"datapre" description:"Database dir"`
+	LogDir      string `short:"L" long:"logdir" description:"Directory to log output."`
+	LogLevel    string `short:"l" long:"loglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
+
 	AddPeers             []string `short:"a" long:"addpeer" description:"Add a peer to connect with at startup"`
-	ConnectPeers         []string `long:"connect" description:"Connect only to the specified peers at startup"`
+	ConnectPeers         []string `short:"c" long:"connect" description:"Connect only to the specified peers at startup"`
 	DisableListen        bool     `long:"nolisten" description:"Disable listening for incoming connections -- NOTE: Listening is automatically disabled if the --connect or --proxy options are used without also specifying listen interfaces via --listen"`
-	Listeners            []string `long:"listen" description:"Add an interface/port to listen for connections (default all interfaces port: 8333, testnet: 18333)"`
+	Listeners            []string `long:"listen" description:"Add an interface/port to listen for connections (default all interfaces port: 9333, testnet: 9444)"`
 	MaxPeers             int      `long:"maxpeers" description:"Max number of inbound and outbound peers"`
 	MaxOutPeers          int      `long:"maxoutpeers" description:"Max number of outbound peers"`
 	MaxInPeers           int      `long:"maxinpeers" description:"Max number of inbound peers"`
 	DiscoverPeers        bool     `long:"discoverpeers" description:"Enable discover peers"`
 	DiscoverPeersAddress string   `long:"discoverpeersaddress" description:"Url to connect discover peers server"`
-	DisableBanning       bool     `long:"nobanning" description:"Disable banning of misbehaving peers"`
-	RPCDisableAuth       bool     `long:"norpcauth" description:"Disable RPC authorization by username/password"`
-	RPCUser              string   `short:"u" long:"rpcuser" description:"Username for RPC connections"`
-	RPCPass              string   `short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`
-	RPCLimitUser         string   `long:"rpclimituser" description:"Username for limited RPC connections"`
-	RPCLimitPass         string   `long:"rpclimitpass" default-mask:"-" description:"Password for limited RPC connections"`
-	RPCListeners         []string `long:"rpclisten" description:"Add an interface/port to listen for RPC connections (default port: 8334, testnet: 18334)"`
-	RPCCert              string   `long:"rpccert" description:"File containing the certificate file"`
-	RPCKey               string   `long:"rpckey" description:"File containing the certificate key"`
-	RPCMaxClients        int      `long:"rpcmaxclients" description:"Max number of RPC clients for standard connections"`
-	RPCQuirks            bool     `long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
-	DisableRPC           bool     `long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
-	DisableTLS           bool     `long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
-	DisableDNSSeed       bool     `long:"nodnsseed" description:"Disable DNS seeding for peers"`
-	Proxy                string   `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
-	ProxyUser            string   `long:"proxyuser" description:"Username for proxy server"`
-	ProxyPass            string   `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
-	DebugLevel           string   `short:"d" long:"debuglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
-	Generate             bool     `long:"generate" description:"Generate (mine) coins using the CPU"`
+
+	RPCDisableAuth bool     `long:"norpcauth" description:"Disable RPC authorization by username/password"`
+	RPCUser        string   `short:"u" long:"rpcuser" description:"Username for RPC connections"`
+	RPCPass        string   `short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`
+	RPCLimitUser   string   `long:"rpclimituser" description:"Username for limited RPC connections"`
+	RPCLimitPass   string   `long:"rpclimitpass" default-mask:"-" description:"Password for limited RPC connections"`
+	RPCListeners   []string `long:"rpclisten" description:"Add an interface/port to listen for RPC connections (default port: 9334, testnet: 9334)"`
+	RPCCert        string   `long:"rpccert" description:"File containing the certificate file"`
+	RPCKey         string   `long:"rpckey" description:"File containing the certificate key"`
+	RPCMaxClients  int      `long:"rpcmaxclients" description:"Max number of RPC clients for standard connections"`
+	RPCQuirks      bool     `long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
+	DisableRPC     bool     `long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
+	DisableTLS     bool     `long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
+
+	Proxy     string `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
+	ProxyUser string `long:"proxyuser" description:"Username for proxy server"`
+	ProxyPass string `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
+	Generate  bool   `long:"generate" description:"Generate (mine) coins using the CPU"`
 
 	// Net config
 	TestNet bool `long:"testnet" description:"Use the test network"`
 
 	// PoS config
-	SealerSpendingKey string `long:"sealerspendingkey" description:"!!!WARNING Leave this if you don't know what this is"`
-	SealerKeySet      string `long:"sealerkeyset" description:"Key-set of the block sealer used to seal block"`
+	ProducerSpendingKey string `long:"producerspendingkey" description:"!!!WARNING Leave this if you don't know what this is"`
+	ProducerKeySet      string `long:"producerkeyset" description:"Key-set of the block producer used to seal block"`
 	// For Wallet
-	Wallet           bool   `long:"wallet" description:"Use wallet"`
-	WalletDbName     string `long:"walletdbname" description:"Wallet Database Name file, default is wallet.db"`
+	Wallet           bool   `long:"enablewallet" description:"Enable wallet"`
+	WalletName       string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
 	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
 
 	FastMode bool `long:"fastmode" description:"Load existed chain dependencies instead of rebuild from block data"`
@@ -193,20 +194,6 @@ func createDefaultConfigFile(destinationPath string) error {
 	return nil
 }
 
-// cleanAndExpandPath expands environment variables and leading ~ in the
-// passed path, cleans the result, and returns it.
-func cleanAndExpandPath(path string) string {
-	// Expand initial ~ to OS specific home directory.
-	if strings.HasPrefix(path, "~") {
-		homeDir := filepath.Dir(defaultHomeDir)
-		path = strings.Replace(path, "~", homeDir, 1)
-	}
-
-	// NOTE: The os.ExpandEnv doesn't work with Windows-style %VARIABLE%,
-	// but they variables can still be expanded via POSIX-style $VARIABLE.
-	return filepath.Clean(os.ExpandEnv(path))
-}
-
 // minUint32 is a helper function to return the minimum of two uint32s.
 // This avoids a math import and the need to cast to floats.
 func minUint32(a, b uint32) uint32 {
@@ -260,14 +247,14 @@ func removeDuplicateAddresses(addrs []string) []string {
 // 	3) Load configuration file overwriting defaults with any specified options
 // 	4) Parse CLI options and overwrite/add any specified options
 //
-// The above results in btcd functioning properly without any config settings
+// The above results in Constant functioning properly without any config settings
 // while still allowing the user to override settings with config files and
 // command line options.  Command line options always take precedence.
 */
 func loadConfig() (*config, []string, error) {
 	cfg := config{
 		ConfigFile:           defaultConfigFile,
-		DebugLevel:           defaultLogLevel,
+		LogLevel:             defaultLogLevel,
 		MaxOutPeers:          defaultMaxPeers,
 		MaxInPeers:           defaultMaxPeers,
 		RPCMaxClients:        defaultMaxRPCClients,
@@ -277,7 +264,7 @@ func loadConfig() (*config, []string, error) {
 		RPCKey:               defaultRPCKeyFile,
 		RPCCert:              defaultRPCCertFile,
 		Generate:             defaultGenerate,
-		WalletDbName:         defaultWalletDbName,
+		WalletName:           defaultWalletName,
 		DisableTLS:           defaultDisableRpcTls,
 		RPCDisableAuth:       false,
 		DiscoverPeers:        false,
@@ -326,23 +313,21 @@ func loadConfig() (*config, []string, error) {
 	// Load additional config from file.
 	var configFileError error
 	parser := newConfigParser(&cfg, &serviceOpts, flags.Default)
-	if !(preCfg.TestNet) || preCfg.ConfigFile != defaultConfigFile {
-		if _, err := os.Stat(preCfg.ConfigFile); os.IsNotExist(err) {
-			err := createDefaultConfigFile(preCfg.ConfigFile)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error creating a default config file: %v\n", err)
-			}
-		}
-
-		err := flags.NewIniParser(parser).ParseFile(preCfg.ConfigFile)
+	if _, err := os.Stat(preCfg.ConfigFile); os.IsNotExist(err) {
+		err := createDefaultConfigFile(preCfg.ConfigFile)
 		if err != nil {
-			if _, ok := err.(*os.PathError); !ok {
-				fmt.Fprintf(os.Stderr, "Error parsing config file: %v\n", err)
-				fmt.Fprintln(os.Stderr, usageMessage)
-				return nil, nil, err
-			}
-			configFileError = err
+			fmt.Fprintf(os.Stderr, "Error creating a default config file: %v\n", err)
 		}
+	}
+
+	errParse := flags.NewIniParser(parser).ParseFile(preCfg.ConfigFile)
+	if errParse != nil {
+		if _, ok := errParse.(*os.PathError); !ok {
+			fmt.Fprintf(os.Stderr, "Error parsing config file: %v\n", errParse)
+			fmt.Fprintln(os.Stderr, usageMessage)
+			return nil, nil, errParse
+		}
+		configFileError = errParse
 	}
 
 	// Parse command line options again to ensure they take precedence.
@@ -394,16 +379,16 @@ func loadConfig() (*config, []string, error) {
 	// All data is specific to a network, so namespacing the data directory
 	// means each individual piece of serialized data does not have to
 	// worry about changing names per network and such.
-	cfg.DataDir = cleanAndExpandPath(cfg.DataDir)
+	cfg.DataDir = common.CleanAndExpandPath(cfg.DataDir, defaultHomeDir)
 	cfg.DataDir = filepath.Join(cfg.DataDir, netName(activeNetParams))
 
 	// Append the network type to the log directory so it is "namespaced"
 	// per network in the same fashion as the data directory.
-	cfg.LogDir = cleanAndExpandPath(cfg.LogDir)
+	cfg.LogDir = common.CleanAndExpandPath(cfg.LogDir, defaultHomeDir)
 	cfg.LogDir = filepath.Join(cfg.LogDir, netName(activeNetParams))
 
 	// Special show command to list supported subsystems and exit.
-	if cfg.DebugLevel == "show" {
+	if cfg.LogLevel == "show" {
 		fmt.Println("Supported subsystems", supportedSubsystems())
 		os.Exit(0)
 	}
@@ -413,7 +398,7 @@ func loadConfig() (*config, []string, error) {
 	initLogRotator(filepath.Join(cfg.LogDir, defaultLogFilename))
 
 	// Parse, validate, and set debug log level(s).
-	if err := parseAndSetDebugLevels(cfg.DebugLevel); err != nil {
+	if err := parseAndSetDebugLevels(cfg.LogLevel); err != nil {
 		err := fmt.Errorf("%s: %v", funcName, err.Error())
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, usageMessage)
@@ -430,14 +415,9 @@ func loadConfig() (*config, []string, error) {
 	}
 
 	// --proxy or --connect without --listen disables listening.
-	if (cfg.Proxy != "" || len(cfg.ConnectPeers) > 0) &&
+	if (cfg.Proxy != common.EmptyString || len(cfg.ConnectPeers) > 0) &&
 		len(cfg.Listeners) == 0 {
 		cfg.DisableListen = true
-	}
-
-	// Connect means no DNS seeding.
-	if len(cfg.ConnectPeers) > 0 {
-		cfg.DisableDNSSeed = true
 	}
 
 	// Add the default listener if none were specified. The default
@@ -503,8 +483,8 @@ func loadConfig() (*config, []string, error) {
 
 	// Ensure there is at least one mining address when the generate flag is
 	// set.
-	if cfg.Generate && len(cfg.SealerKeySet) == 0 && len(cfg.SealerSpendingKey) == 0 {
-		str := "%s: the generate flag is set, but there are no sealer's key specified "
+	if cfg.Generate && len(cfg.ProducerKeySet) == 0 && len(cfg.ProducerSpendingKey) == 0 {
+		str := "%s: the generate flag is set, but there are no producer's key specified "
 		err := fmt.Errorf(str, funcName)
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, usageMessage)
@@ -649,19 +629,19 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	return nil
 }
 
-func (self *config) GetSealerKeySet() (*cashec.KeySetSealer, error) {
-	keysetSealer := &cashec.KeySetSealer{}
-	if len(self.SealerSpendingKey) != 0 {
+func (self *config) GetProducerKeySet() (*cashec.KeySetProducer, error) {
+	KeySetProducer := &cashec.KeySetProducer{}
+	if len(self.ProducerSpendingKey) != 0 {
 		Logger.log.Warn("!!NOT RECOMMENDED TO USE SPENDING KEY!!")
 		keySetUser := cashec.KeySet{}
-		spendingKeyByte, _, err := base58.Base58Check{}.Decode(self.SealerSpendingKey)
+		spendingKeyByte, _, err := base58.Base58Check{}.Decode(self.ProducerSpendingKey)
 		if err != nil {
-			return keysetSealer, err
+			return KeySetProducer, err
 		}
 		keySetUser.ImportFromPrivateKeyByte(spendingKeyByte)
-		keysetSealer, _ = keySetUser.CreateSealerKeySet()
-		return keysetSealer, nil
+		KeySetProducer, _ = keySetUser.CreateProducerKeySet()
+		return KeySetProducer, nil
 	} else {
-		return keysetSealer.DecodeToKeySet(self.SealerKeySet)
+		return KeySetProducer.DecodeToKeySet(self.ProducerKeySet)
 	}
 }

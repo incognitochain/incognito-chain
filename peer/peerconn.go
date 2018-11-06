@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/constant/wire"
 )
 
 type PeerConn struct {
@@ -69,12 +69,12 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
 				jsonDecodeString, _ := hex.DecodeString(msgStr)
+				Logger.log.Infof("In message content : %s", string(jsonDecodeString))
 				messageHeader := jsonDecodeString[len(jsonDecodeString)-wire.MessageHeaderSize:]
 
 				// get cmd type in header message
 				commandInHeader := messageHeader[:wire.MessageCmdTypeSize]
 				commandInHeader = bytes.Trim(messageHeader, "\x00")
-				Logger.log.Infof("Received message type %s from %s", string(commandInHeader), self.RemotePeerID)
 				commandType := string(messageHeader[:len(commandInHeader)])
 				// convert to particular message from message cmd type
 				var message, err = wire.MakeEmptyMessage(string(commandType))
@@ -127,9 +127,9 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnGetAddr != nil {
 						self.Config.MessageListeners.OnAddr(self, message.(*wire.MessageAddr))
 					}
-				case reflect.TypeOf(&wire.MessageRequestBlockSign{}):
+				case reflect.TypeOf(&wire.MessageBlockSigReq{}):
 					if self.Config.MessageListeners.OnRequestSign != nil {
-						self.Config.MessageListeners.OnRequestSign(self, message.(*wire.MessageRequestBlockSign))
+						self.Config.MessageListeners.OnRequestSign(self, message.(*wire.MessageBlockSigReq))
 					}
 				case reflect.TypeOf(&wire.MessageInvalidBlock{}):
 					if self.Config.MessageListeners.OnInvalidBlock != nil {
@@ -146,6 +146,22 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				case reflect.TypeOf(&wire.MessageChainState{}):
 					if self.Config.MessageListeners.OnChainState != nil {
 						self.Config.MessageListeners.OnChainState(self, message.(*wire.MessageChainState))
+					}
+				case reflect.TypeOf(&wire.MessageRegistration{}):
+					if self.Config.MessageListeners.OnRegistration != nil {
+						self.Config.MessageListeners.OnRegistration(self, message.(*wire.MessageRegistration))
+					}
+				case reflect.TypeOf(&wire.MessageSwapRequest{}):
+					if self.Config.MessageListeners.OnSwapRequest != nil {
+						self.Config.MessageListeners.OnSwapRequest(self, message.(*wire.MessageSwapRequest))
+					}
+				case reflect.TypeOf(&wire.MessageSwapSig{}):
+					if self.Config.MessageListeners.OnSignSwap != nil {
+						self.Config.MessageListeners.OnSignSwap(self, message.(*wire.MessageSwapSig))
+					}
+				case reflect.TypeOf(&wire.MessageSwapUpdate{}):
+					if self.Config.MessageListeners.OnSwapUpdate != nil {
+						self.Config.MessageListeners.OnSwapUpdate(self, message.(*wire.MessageSwapUpdate))
 					}
 				default:
 					Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, self)
@@ -179,9 +195,9 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				cmdType, _ := wire.GetCmdType(reflect.TypeOf(outMsg.message))
 				copy(header[:], []byte(cmdType))
 				messageByte = append(messageByte, header...)
-				Logger.log.Infof("Content: %s", string(messageByte))
+				Logger.log.Infof("Out message TYPE %s CONTENT %s", cmdType, string(messageByte))
 				message := hex.EncodeToString(messageByte)
-				Logger.log.Infof("Content in hex encode: %s", string(message))
+				//Logger.log.Infof("Content in hex encode: %s", string(message))
 				// add end character to message (delim '\n')
 				message += DelimMessageStr
 
@@ -214,7 +230,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 	}
 }
 
-// QueueMessageWithEncoding adds the passed bitcoin message to the peer send
+// QueueMessageWithEncoding adds the passed Constant message to the peer send
 // queue. This function is identical to QueueMessage, however it allows the
 // caller to specify the wire encoding type that should be used when
 // encoding/decoding blocks and transactions.

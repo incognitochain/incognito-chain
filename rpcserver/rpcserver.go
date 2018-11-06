@@ -13,20 +13,20 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/constant/wire"
 
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash-prototype/addrmanager"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/connmanager"
-	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/mempool"
-	"github.com/ninjadotorg/cash-prototype/wallet"
-	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/constant/addrmanager"
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/connmanager"
+	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/mempool"
+	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
@@ -182,6 +182,8 @@ Handle all request to rpcserver
 func (self RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "close")
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
 	r.Close = true
 
 	// Limit the number of connections to max allowed.
@@ -283,7 +285,7 @@ func (self RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, 
 	r.Body.Close()
 	if err != nil {
 		errCode := http.StatusBadRequest
-		http.Error(w, fmt.Sprintf("%d error reading JSON Message: %v", errCode, err), errCode)
+		http.Error(w, fmt.Sprintf("%d error reading JSON Message: %+v", errCode, err), errCode)
 		return
 	}
 	Logger.log.Info(string(body))

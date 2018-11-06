@@ -3,16 +3,20 @@ package transaction
 import (
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/common"
+	"github.com/ninjadotorg/constant/common"
 )
 
+// Interface for all type of transaction
 type Transaction interface {
 	Hash() *common.Hash
 	ValidateTransaction() bool
 	GetType() string
 	GetTxVirtualSize() uint64
 	GetSenderAddrLastByte() byte
+	GetTxFee() uint64
 }
+
+// This is tx struct which is really saved in tx mempool
 type TxDesc struct {
 	// Tx is the transaction associated with the entry.
 	Tx Transaction

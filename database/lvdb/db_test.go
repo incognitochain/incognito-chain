@@ -7,10 +7,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/database"
-	_ "github.com/ninjadotorg/cash-prototype/database/lvdb"
-	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/database"
+	_ "github.com/ninjadotorg/constant/database/lvdb"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 func setup(t *testing.T) (database.DatabaseInterface, func()) {
@@ -70,12 +70,12 @@ func TestStoreTxOut(t *testing.T) {
 	tx := []byte("abcd")
 	err := db.StoreNullifiers(tx)
 	if err != nil {
-		t.Errorf("db.StoreNullifiers %v", err)
+		t.Errorf("db.StoreNullifiers %+v", err)
 	}
 
 	tx = []byte("efgh")
 	err = db.StoreNullifiers(tx)
 	if err != nil {
-		t.Errorf("db.StoreNullifiers %v", err)
+		t.Errorf("db.StoreNullifiers %+v", err)
 	}
 }

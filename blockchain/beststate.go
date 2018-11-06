@@ -1,8 +1,8 @@
 package blockchain
 
 import (
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy/client"
 )
 
 // BestState houses information about the current best block and other info
@@ -20,10 +20,10 @@ type BestState struct {
 
 	CmTree *client.IncMerkleTree // The commitments merkle tree of the best block
 
-	Height    int32  // The height of the block.
-	NumTxns   uint64 // The number of txns in the block.
-	TotalTxns uint64 // The total number of txns in the chain.
-	Candidates map[string]CndInfo
+	Height     int32  // The height of the block.
+	NumTxns    uint64 // The number of txns in the block.
+	TotalTxns  uint64 // The total number of txns in the chain.
+	Candidates map[string]CommitteeCandidateInfo
 }
 
 /*
@@ -41,15 +41,15 @@ func (self *BestState) Init(block *Block, tree *client.IncMerkleTree) {
 	self.NumTxns = uint64(len(block.Transactions))
 	self.Height = block.Height
 	if self.Candidates == nil {
-		self.Candidates = make(map[string]CndInfo)
+		self.Candidates = make(map[string]CommitteeCandidateInfo)
 	}
 }
 
-func (self *BestState) Update(block *Block) {
+func (self *BestState) Update(block *Block) error {
 	tree := self.CmTree
 	err := UpdateMerkleTreeForBlock(tree, block)
 	if err != nil {
-		Logger.log.Error("WHAT")
+		return NewBlockChainError(UnExpectedError, err)
 	}
 	bestBlockHash := block.Hash()
 	self.BestBlock = block
@@ -60,6 +60,14 @@ func (self *BestState) Update(block *Block) {
 	self.NumTxns = uint64(len(block.Transactions))
 	self.Height = block.Height
 	if self.Candidates == nil {
-		self.Candidates = make(map[string]CndInfo)
+		self.Candidates = make(map[string]CommitteeCandidateInfo)
+	}
+	return nil
+}
+
+func (self *BestState) RemoveCandidate(producerPbk string) {
+	_, ok := self.Candidates[producerPbk]
+	if ok {
+		delete(self.Candidates, producerPbk)
 	}
 }

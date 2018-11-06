@@ -18,8 +18,8 @@ import (
 	"github.com/libp2p/go-libp2p-net"
 	"github.com/libp2p/go-libp2p-peer"
 	ma "github.com/multiformats/go-multiaddr"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/wire"
 )
 
 // ConnState represents the state of the requested connection.
@@ -57,19 +57,19 @@ type Peer struct {
 }
 
 type NewPeerMsg struct {
-	Peer *Peer
-	Done chan struct{}
+	Peer  *Peer
+	CConn chan *PeerConn
 }
 
 type NewStreamMsg struct {
 	Stream net.Stream
-	Done   chan struct{}
+	CConn  chan *PeerConn
 }
 
 // config is the struct to hold configuration options useful to RemotePeer.
 type Config struct {
 	MessageListeners MessageListeners
-	SealerPrvKey     string
+	ProducerPrvKey   string
 	MaxOutbound      int
 	MaxInbound       int
 }
@@ -101,11 +101,15 @@ type MessageListeners struct {
 	OnAddr      func(p *PeerConn, msg *wire.MessageAddr)
 
 	//PoS
-	OnRequestSign   func(p *PeerConn, msg *wire.MessageRequestBlockSign)
+	OnRequestSign   func(p *PeerConn, msg *wire.MessageBlockSigReq)
 	OnInvalidBlock  func(p *PeerConn, msg *wire.MessageInvalidBlock)
 	OnBlockSig      func(p *PeerConn, msg *wire.MessageBlockSig)
 	OnGetChainState func(p *PeerConn, msg *wire.MessageGetChainState)
 	OnChainState    func(p *PeerConn, msg *wire.MessageChainState)
+	OnRegistration  func(p *PeerConn, msg *wire.MessageRegistration)
+	OnSwapRequest   func(p *PeerConn, msg *wire.MessageSwapRequest)
+	OnSignSwap      func(p *PeerConn, msg *wire.MessageSwapSig)
+	OnSwapUpdate    func(p *PeerConn, msg *wire.MessageSwapUpdate)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal
@@ -119,7 +123,7 @@ type outMsg struct {
 
 /*
 NewPeer - create a new peer with go libp2p
- */
+*/
 func (self Peer) NewPeer() (*Peer, error) {
 	// If the seed is zero, use real cryptographic randomness. Otherwise, use a
 	// deterministic randomness source to make generated keys stay the same
@@ -195,7 +199,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 
 /*
 Start - start peer to begin waiting for connections from other peers
- */
+*/
 func (self *Peer) Start() {
 	Logger.log.Info("RemotePeer start")
 	// ping to bootnode for test env
@@ -216,15 +220,15 @@ func (self *Peer) Start() {
 func (self *Peer) PushStream(stream net.Stream) {
 	newStreamMsg := NewStreamMsg{
 		Stream: stream,
-		Done:   nil,
+		CConn:  nil,
 	}
 	self.cNewStream <- &newStreamMsg
 }
 
-func (self *Peer) PushConn(peer *Peer, done chan struct{}) {
+func (self *Peer) PushConn(peer *Peer, cConn chan *PeerConn) {
 	newPeerMsg := NewPeerMsg{
-		Peer: peer,
-		Done: done,
+		Peer:  peer,
+		CConn: cConn,
 	}
 	self.cNewConn <- &newPeerMsg
 }
@@ -237,27 +241,27 @@ func (self *Peer) processConn() {
 			return
 		case newPeerMsg := <-self.cNewConn:
 			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.Peer.PeerID, newPeerMsg.Peer.RawAddress)
-			cDone := make(chan struct{})
+			cDone := make(chan *PeerConn)
 			go func(self *Peer) {
 				peerConn, err := self.handleConn(newPeerMsg.Peer, cDone)
 				if err != nil && peerConn == nil {
 					Logger.log.Errorf("Fail in opening stream from PEER Id - %s with err: %s", self.PeerID.String(), err.Error())
 				}
 			}(self)
-			<-cDone
-			if newPeerMsg.Done != nil {
-				close(newPeerMsg.Done)
+			p := <-cDone
+			if newPeerMsg.CConn != nil {
+				newPeerMsg.CConn <- p
 			}
 			Logger.log.Infof("ProcessConn END CONN %s %s", newPeerMsg.Peer.PeerID, newPeerMsg.Peer.RawAddress)
 			continue
 		case newStreamMsg := <-self.cNewStream:
 			remotePeerID := newStreamMsg.Stream.Conn().RemotePeer()
 			Logger.log.Infof("ProcessConn START STREAM %s", remotePeerID)
-			cDone := make(chan struct{})
-			go self.handleStream(newStreamMsg.Stream, cDone)
-			<-cDone
-			if newStreamMsg.Done != nil {
-				close(newStreamMsg.Done)
+			cConn := make(chan *PeerConn)
+			go self.handleStream(newStreamMsg.Stream, cConn)
+			p := <-cConn
+			if newStreamMsg.CConn != nil {
+				newStreamMsg.CConn <- p
 			}
 			Logger.log.Infof("ProcessConn END STREAM %s", remotePeerID)
 			continue
@@ -337,15 +341,15 @@ func (self *Peer) RemovePeerConn(peerConn *PeerConn) {
 	}
 }
 
-func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error) {
+func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER Id - %s", peer.RawAddress)
 
 	_, ok := self.PeerConns[peer.PeerID.String()]
 	if ok {
 		Logger.log.Infof("Checked Existed PEER Id - %s", peer.RawAddress)
 
-		if cDone != nil {
-			close(cDone)
+		if cConn != nil {
+			cConn <- nil
 		}
 		return nil, nil
 	}
@@ -354,8 +358,8 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 		Logger.log.Infof("Checked Myself PEER Id - %s", peer.RawAddress)
 		//self.newPeerConnectionMutex.Unlock()
 
-		if cDone != nil {
-			close(cDone)
+		if cConn != nil {
+			cConn <- nil
 		}
 		return nil, nil
 	}
@@ -366,8 +370,8 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 		//push to pending peers
 		self.ConnPending(peer)
 
-		if cDone != nil {
-			close(cDone)
+		if cConn != nil {
+			cConn <- nil
 		}
 		return nil, nil
 	}
@@ -375,8 +379,8 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 	stream, err := self.Host.NewStream(context.Background(), peer.PeerID, ProtocolId)
 	Logger.log.Info(peer, stream, err)
 	if err != nil {
-		if cDone != nil {
-			close(cDone)
+		if cConn != nil {
+			cConn <- nil
 		}
 		return nil, NewPeerError(OpeningStreamP2PErr, err, self)
 	}
@@ -415,8 +419,8 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 
 	go self.handleConnected(&peerConn)
 
-	if cDone != nil {
-		close(cDone)
+	if cConn != nil {
+		cConn <- &peerConn
 	}
 
 	for {
@@ -440,7 +444,7 @@ func (self *Peer) handleConn(peer *Peer, cDone chan struct{}) (*PeerConn, error)
 	return &peerConn, nil
 }
 
-func (self *Peer) handleStream(stream net.Stream, cDone chan struct{}) {
+func (self *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
@@ -520,7 +524,7 @@ func (self *Peer) handleStream(stream net.Stream, cDone chan struct{}) {
 	}
 }
 
-// QueueMessageWithEncoding adds the passed bitcoin message to the peer send
+// QueueMessageWithEncoding adds the passed Constant message to the peer send
 // queue. This function is identical to QueueMessage, however it allows the
 // caller to specify the wire encoding type that should be used when
 // encoding/decoding blocks and transactions.
@@ -548,7 +552,7 @@ func (self *Peer) Stop() {
 
 /*
 handleConnected - set established flag to a peer when being connected
- */
+*/
 func (self *Peer) handleConnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleConnected %s", peerConn.RemotePeerID.String())
 	peerConn.RetryCount = 0
@@ -563,7 +567,7 @@ func (self *Peer) handleConnected(peerConn *PeerConn) {
 
 /*
 handleDisconnected - handle connected peer when it is disconnected, remove and retry connection
- */
+*/
 func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.String())
 	peerConn.updateConnState(ConnCanceled)
@@ -579,7 +583,7 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 
 /*
 handleFailed - handle when connecting peer failure
- */
+*/
 func (self *Peer) handleFailed(peerConn *PeerConn) {
 	Logger.log.Infof("handleFailed %s", peerConn.RemotePeerID.String())
 
@@ -592,7 +596,7 @@ func (self *Peer) handleFailed(peerConn *PeerConn) {
 
 /*
 retryPeerConnection - retry to connect to peer when being disconnected
- */
+*/
 func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 	time.AfterFunc(RetryConnDuration, func() {
 		Logger.log.Infof("Retry New RemotePeer Connection %s", peerConn.RemoteRawAddress)
@@ -600,7 +604,13 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 
 		if peerConn.RetryCount < MaxRetryConn {
 			peerConn.updateConnState(ConnPending)
-			peerConn.ListenerPeer.PushConn(peerConn.RemotePeer, nil)
+			cConn := make(chan *PeerConn)
+			peerConn.ListenerPeer.PushConn(peerConn.RemotePeer, cConn)
+			p := <-cConn
+			if p == nil {
+				peerConn.RetryCount++
+				go self.retryPeerConnection(peerConn)
+			}
 		} else {
 			peerConn.updateConnState(ConnCanceled)
 			self.ConnCanceled(peerConn.RemotePeer)
@@ -612,7 +622,7 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 
 /*
 renewPeerConnection - create peer conn by goroutines for pending peers(reconnect)
- */
+*/
 func (self *Peer) renewPeerConnection() {
 	if len(self.PendingPeers) > 0 {
 		self.pendingPeersMutex.Lock()

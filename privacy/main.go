@@ -8,9 +8,9 @@ import (
 	// "unsafe"
 
 
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
-	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
-	// "github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy/proto/zksnark"
+	// "github.com/ninjadotorg/constant/transaction"
 )
 
 type ProveResult struct {
@@ -161,15 +161,15 @@ func main() {
 	// tx.Type = "Normal"
 	// tx.LockTime = 123
 	// tx.Fee = 1234
-	// tx.SetTxId(tx.Hash())
+	// tx.SetTxID(tx.Hash())
 
-	// fmt.Printf("Hash tx: %s\n", tx.GetTxId())
+	// fmt.Printf("Hash tx: %s\n", tx.GetTxID())
 	// signed_tx, err := transaction.SignTx(tx, privKey)
 	// if err != nil {
 	// 	fmt.Printf("Error: %s", err)
 	// }
 
-	// pub := transaction.PubKeyToByteArray(&privKey.PublicKey)
+	// pub := transaction.PubKeyToByteArray(&privKey.PaymentAddress)
 	// signed_tx.JSPubKey = pub
 	// fmt.Printf("Pub key: %v\n",signed_tx.JSPubKey)
 	// fmt.Printf("Size of pub key: %d\n", len(signed_tx.JSPubKey))
@@ -177,7 +177,7 @@ func main() {
 	// fmt.Printf("Signature: %v\n", signed_tx.JSSig)
 	// fmt.Printf("Size of signature: %d\n", len(signed_tx.JSSig))
 
-	// fmt.Printf("Hash tx: %s\n", signed_tx.GetTxId())
+	// fmt.Printf("Hash tx: %s\n", signed_tx.GetTxID())
 	// res, _ := transaction.VerifySign(signed_tx)
 
 	// fmt.Println(res)

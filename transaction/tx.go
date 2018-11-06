@@ -15,10 +15,10 @@ import (
 
 	"math"
 
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/privacy/client"
-	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy/proto/zksnark"
 )
 
 // Tx represents a coin-transfer-transaction stored in a block
@@ -38,11 +38,11 @@ type Tx struct {
 	sigPrivKey *client.PrivateKey
 }
 
-func (tx *Tx) SetTxId(txId *common.Hash) {
+func (tx *Tx) SetTxID(txId *common.Hash) {
 	tx.txId = txId
 }
 
-func (tx *Tx) GetTxId() *common.Hash {
+func (tx *Tx) GetTxID() *common.Hash {
 	return tx.txId
 }
 
@@ -71,11 +71,11 @@ func (tx *Tx) ValidateTransaction() bool {
 	return true
 
 	// Check for tx signature
-	tx.SetTxId(tx.Hash())
+	tx.SetTxID(tx.Hash())
 	valid, err := VerifySign(tx)
 	if valid == false {
 		if err != nil {
-			fmt.Printf("Error verifying signature of tx: %v", err)
+			fmt.Printf("Error verifying signature of tx: %+v", err)
 		}
 		return false
 	}
@@ -83,7 +83,7 @@ func (tx *Tx) ValidateTransaction() bool {
 	// Check each js desc
 	for txID, desc := range tx.Descs {
 		//if desc.Reward != 0 {
-		//	return false // Coinbase tx shouldn't be broadcasted across the network
+		//	return false // Salary tx shouldn't be broadcasted across the network
 		//}
 
 		// Apply fee only to the first desc of tx
@@ -108,7 +108,7 @@ func (tx *Tx) ValidateTransaction() bool {
 
 		if valid == false {
 			if err != nil {
-				fmt.Printf("Error validating tx: %v\n", err)
+				fmt.Printf("Error validating tx: %+v\n", err)
 			}
 			return false
 		}
@@ -135,15 +135,19 @@ func (tx *Tx) GetTxVirtualSize() uint64 {
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }
 
+func (tx *Tx) GetTxFee() uint64 {
+	return tx.Fee
+}
+
+func (tx *Tx) GetSenderAddrLastByte() byte {
+	return tx.AddressLastByte
+}
+
 func max(x, y int) int {
 	if x > y {
 		return x
 	}
 	return y
-}
-
-func (tx *Tx) GetSenderAddrLastByte() byte {
-	return tx.AddressLastByte
 }
 
 // CreateTx creates transaction with appropriate proof for a private payment
@@ -157,10 +161,11 @@ func CreateTx(
 	nullifiers map[byte]([][]byte),
 	commitments map[byte]([][]byte),
 	fee uint64,
+	assetType string,
 	senderChainID byte,
 ) (*Tx, error) {
 	fmt.Printf("List of all commitments before building tx:\n")
-	fmt.Printf("rts: %v\n", rts)
+	fmt.Printf("rts: %+v\n", rts)
 	for _, cm := range commitments {
 		fmt.Printf("%x\n", cm)
 	}
@@ -168,7 +173,7 @@ func CreateTx(
 	var value uint64
 	for _, p := range paymentInfo {
 		value += p.Amount
-		fmt.Printf("[CreateTx] paymentInfo.Value: %v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Apk)
+		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Apk)
 	}
 
 	type ChainNote struct {
@@ -184,7 +189,7 @@ func CreateTx(
 				for _, note := range desc.Note {
 					chainNote := &ChainNote{note: note, chainID: chainID}
 					inputNotes = append(inputNotes, chainNote)
-					fmt.Printf("[CreateTx] inputNote.Value: %v\n", note.Value)
+					fmt.Printf("[CreateTx] inputNote.Value: %+v\n", note.Value)
 				}
 			}
 		}
@@ -203,13 +208,13 @@ func CreateTx(
 	senderFullKey.ImportFromPrivateKeyByte(senderKey[:])
 
 	// Create tx before adding js descs
-	tx, err := CreateEmptyTx()
+	tx, err := CreateEmptyTx(common.TxNormalType)
 	if err != nil {
 		return nil, err
 	}
 	tempKeySet := cashec.KeySet{}
 	tempKeySet.ImportFromPrivateKey(senderKey)
-	lastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
+	lastByte := tempKeySet.PaymentAddress.Apk[len(tempKeySet.PaymentAddress.Apk)-1]
 	tx.AddressLastByte = lastByte
 	var latestAnchor map[byte][]byte
 
@@ -239,7 +244,7 @@ func CreateTx(
 
 			inputNotes = inputNotes[:len(inputNotes)-1]
 			numInputNotes++
-			fmt.Printf("Choose input note with value %v and cm %x\n", input.InputNote.Value, input.InputNote.Cm)
+			fmt.Printf("Choose input note with value %+v and cm %x\n", input.InputNote.Value, input.InputNote.Cm)
 		}
 
 		var feeApply uint64 // Zero fee for js descs other than the first one
@@ -315,13 +320,13 @@ func CreateTx(
 				encKey = p.PaymentAddress.Pkenc
 				inputValue -= p.Amount
 				paymentInfo = paymentInfo[:len(paymentInfo)-1]
-				fmt.Printf("Use output value %v => %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Use output value %+v => %x\n", outNote.Value, outNote.Apk)
 			} else { // Not enough for this note, send some and save the rest for next js desc
 				outNote = &client.Note{Value: inputValue, Apk: p.PaymentAddress.Apk}
 				encKey = p.PaymentAddress.Pkenc
 				paymentInfo[len(paymentInfo)-1].Amount = p.Amount - inputValue
 				inputValue = 0
-				fmt.Printf("Partially send %v to %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Partially send %+v to %x\n", outNote.Value, outNote.Apk)
 			}
 
 			output := &client.JSOutput{EncKey: encKey, OutputNote: outNote}
@@ -341,13 +346,13 @@ func CreateTx(
 				output := &client.JSOutput{EncKey: p.PaymentAddress.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
 				paymentInfo = paymentInfo[:len(paymentInfo)-1]
-				fmt.Printf("Exactly enough, include 1 more output %v, %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Exactly enough, include 1 more output %+v, %x\n", outNote.Value, outNote.Apk)
 			} else {
 				// Cannot put the output note into this js desc, create a change note instead
-				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PublicKey.Apk}
-				output := &client.JSOutput{EncKey: senderFullKey.PublicKey.Pkenc, OutputNote: outNote}
+				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PaymentAddress.Apk}
+				output := &client.JSOutput{EncKey: senderFullKey.PaymentAddress.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
-				fmt.Printf("Create change outnote %v, %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Create change outnote %+v, %x\n", outNote.Value, outNote.Apk)
 
 				// Use the change note to continually send to receivers if needed
 				if len(paymentInfo) > 0 {
@@ -369,8 +374,8 @@ func CreateTx(
 		// TODO: Shuffle output notes randomly (if necessary)
 
 		// Generate proof and sign tx
-		var reward uint64 // Zero reward for non-coinbase transaction
-		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, false)
+		var reward uint64 // Zero reward for non-salary transaction
+		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, assetType, false)
 		if err != nil {
 			return nil, err
 		}
@@ -381,7 +386,7 @@ func CreateTx(
 			commitments[senderChainID] = append(commitments[senderChainID], output.OutputNote.Cm)
 		}
 
-		fmt.Printf("Len input and info: %v %v\n", len(inputNotes), len(paymentInfo))
+		fmt.Printf("Len input and info: %+v %+v\n", len(inputNotes), len(paymentInfo))
 	}
 
 	// Sign tx
@@ -401,6 +406,7 @@ func (tx *Tx) BuildNewJSDesc(
 	outputs []*client.JSOutput,
 	rtMap map[byte][]byte,
 	reward, fee uint64,
+	assetType string,
 	noPrivacy bool,
 ) error {
 	// Gather inputs from different chains
@@ -431,7 +437,7 @@ func (tx *Tx) BuildNewJSDesc(
 	}
 
 	var ephemeralPrivKey *client.EphemeralPrivKey // nil ephemeral key, will be randomly created later
-	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, ephemeralPrivKey)
+	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, ephemeralPrivKey, assetType)
 	if err != nil {
 		return err
 	}
@@ -448,6 +454,7 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	reward uint64,
 	hSig, seed []byte,
 	ephemeralPrivKey *client.EphemeralPrivKey,
+	assetType string,
 ) error {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
@@ -467,15 +474,15 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	fmt.Printf("ephemeralPubKey: %x\n", *ephemeralPubKey)
 	fmt.Printf("tranmissionKey[0]: %x\n", keys[0])
 	fmt.Printf("tranmissionKey[1]: %x\n", keys[1])
-	fmt.Printf("notes[0].Value: %v\n", notes[0].Value)
+	fmt.Printf("notes[0].Value: %+v\n", notes[0].Value)
 	fmt.Printf("notes[0].Rho: %x\n", notes[0].Rho)
 	fmt.Printf("notes[0].R: %x\n", notes[0].R)
-	fmt.Printf("notes[0].Memo: %v\n", notes[0].Memo)
-	fmt.Printf("notes[1].Value: %v\n", notes[1].Value)
+	fmt.Printf("notes[0].Memo: %+v\n", notes[0].Memo)
+	fmt.Printf("notes[1].Value: %+v\n", notes[1].Value)
 	fmt.Printf("notes[1].Rho: %x\n", notes[1].Rho)
 	fmt.Printf("notes[1].R: %x\n", notes[1].R)
-	fmt.Printf("notes[1].Memo: %v\n", notes[1].Memo)
-	var noteciphers [][] byte
+	fmt.Printf("notes[1].Memo: %+v\n", notes[1].Memo)
+	var noteciphers [][]byte
 	if proof != nil {
 		noteciphers = client.EncryptNote(notes, keys, *ephemeralPrivKey, *ephemeralPubKey, hSig)
 	}
@@ -496,7 +503,7 @@ func (tx *Tx) buildJSDescAndEncrypt(
 		EncryptedData:   noteciphers,
 		EphemeralPubKey: ephemeralPubKey[:],
 		HSigSeed:        seed,
-		Type:            common.AssetTypeCoin,
+		Type:            assetType,
 		Reward:          reward,
 		Vmacs:           vmacs,
 	}
@@ -513,8 +520,8 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	fmt.Printf("EncryptedData: %x\n", desc.EncryptedData)
 	fmt.Printf("EphemeralPubKey: %x\n", desc.EphemeralPubKey)
 	fmt.Printf("HSigSeed: %x\n", desc.HSigSeed)
-	fmt.Printf("Type: %v\n", desc.Type)
-	fmt.Printf("Reward: %v\n", desc.Reward)
+	fmt.Printf("Type: %+v\n", desc.Type)
+	fmt.Printf("Reward: %+v\n", desc.Reward)
 	fmt.Printf("Vmacs: %x %x\n", desc.Vmacs[0], desc.Vmacs[1])
 	return nil
 }
@@ -566,8 +573,8 @@ func SignTx(tx *Tx) (*Tx, error) {
 	}
 
 	// Hash transaction
-	tx.SetTxId(tx.Hash())
-	hash := tx.GetTxId()
+	tx.SetTxID(tx.Hash())
+	hash := tx.GetTxID()
 	data := make([]byte, common.HashSize)
 	copy(data, hash[:])
 
@@ -602,7 +609,7 @@ func VerifySign(tx *Tx) (bool, error) {
 	ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])
 
 	// Hash origin transaction
-	hash := tx.GetTxId()
+	hash := tx.GetTxID()
 	data := make([]byte, common.HashSize)
 	copy(data, hash[:])
 
@@ -619,19 +626,20 @@ func GenerateProofForGenesisTx(
 	seed, phi []byte,
 	outputR [][]byte,
 	ephemeralPrivKey client.EphemeralPrivKey,
+	assetType string,
 ) (*Tx, error) {
 	// Generate JoinSplit key pair to act as a dummy key (since we don't sign genesis tx)
 	privateSignKey := [32]byte{1}
 	keySet := &cashec.KeySet{}
 	keySet.ImportFromPrivateKeyByte(privateSignKey[:])
-	sigPubKey := keySet.PublicKey.Apk[:]
+	sigPubKey := keySet.PaymentAddress.Apk[:]
 
 	// Get last byte of genesis sender's address
 	tempKeySet := cashec.KeySet{}
 	tempKeySet.ImportFromPrivateKey(inputs[0].Key)
-	addressLastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
+	addressLastByte := tempKeySet.PaymentAddress.Apk[len(tempKeySet.PaymentAddress.Apk)-1]
 
-	tx, err := CreateEmptyTx()
+	tx, err := CreateEmptyTx(common.TxNormalType)
 	if err != nil {
 		return nil, err
 	}
@@ -656,7 +664,7 @@ func GenerateProofForGenesisTx(
 		return nil, err
 	}
 
-	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, &ephemeralPrivKey)
+	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, &ephemeralPrivKey, assetType)
 	return tx, err
 }
 
@@ -724,7 +732,12 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
 	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
+	var sizeDescs uint64        // uint64
+	if payments != nil {
+		sizeDescs = uint64(max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
+	} else {
+		sizeDescs = uint64(max(1, (len(usableTx)-3))) * EstimateJSDescSize()
+	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
 	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
@@ -732,7 +745,7 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 }
 
 // CreateEmptyTx returns a new Tx initialized with default data
-func CreateEmptyTx() (*Tx, error) {
+func CreateEmptyTx(txType string) (*Tx, error) {
 	//Generate signing key 96 bytes
 	sigPrivKey, err := client.GenerateKey(rand.Reader)
 	if err != nil {
@@ -744,7 +757,7 @@ func CreateEmptyTx() (*Tx, error) {
 
 	tx := &Tx{
 		Version:         TxVersion,
-		Type:            common.TxNormalType,
+		Type:            txType,
 		LockTime:        time.Now().Unix(),
 		Fee:             0,
 		Descs:           nil,

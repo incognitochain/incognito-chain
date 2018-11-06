@@ -1,13 +1,27 @@
 package ppos
 
 import (
+	"time"
+
 	peer2 "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/wire"
 )
 
-func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestBlockSign) {
+func (self *Engine) sendBlockMsg(block *blockchain.Block) {
+	blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
+	blockMsg.(*wire.MessageBlock).Block = *block
+	self.config.Server.PushMessageToAll(blockMsg)
+}
+
+func (self *Engine) OnRequestSign(msgBlock *wire.MessageBlockSigReq) {
 	block := &msgBlock.Block
 	err := self.validatePreSignBlockSanity(block)
 	if err != nil {
@@ -15,7 +29,7 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestBlockSign) {
 			Reason:    err.Error(),
 			BlockHash: block.Hash().String(),
 			ChainID:   block.Header.ChainID,
-			Validator: base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)),
+			Validator: base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00)),
 		}
 		dataByte, _ := invalidBlockMsg.JsonSerialize()
 		invalidBlockMsg.ValidatorSig, err = self.signData(dataByte)
@@ -35,13 +49,12 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestBlockSign) {
 	sig, err := self.signData([]byte(block.Hash().String()))
 	if err != nil {
 		Logger.log.Error("Can't sign block ", err)
-		// ??? something went terribly wrong
+		// TODO something went terribly wrong
 		return
 	}
 	blockSigMsg := wire.MessageBlockSig{
-		BlockHash:    block.Hash().String(),
-		Validator:    base58.Base58Check{}.Encode(self.config.ValidatorKeySet.SpublicKey, byte(0x00)),
-		ValidatorSig: sig,
+		Validator: base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00)),
+		BlockSig:  sig,
 	}
 	peerID, err := peer2.IDB58Decode(msgBlock.SenderID)
 	if err != nil {
@@ -57,24 +70,29 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageRequestBlockSign) {
 
 func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 	if self.config.BlockChain.BestState[block.Header.ChainID].Height < block.Height {
-		if _, err := self.config.BlockChain.BlockExists(block.Hash()); err != nil {
-			err := self.validateBlockSanity(block)
-			if err != nil {
-				Logger.log.Error(err)
-				return
+		exists, err := self.config.BlockChain.BlockExists(block.Hash())
+		if err != nil {
+			Logger.log.Error(err)
+			return
+		} else {
+			if !exists {
+				err := self.validateBlockSanity(block)
+				if err != nil {
+					Logger.log.Error(err)
+					return
+				}
+				self.UpdateChain(block)
 			}
-			self.UpdateChain(block)
 		}
 	}
 	return
 }
 
-func (self *Engine) OnBlockSigReceived(blockHash string, validator string, sig string) {
+func (self *Engine) OnBlockSigReceived(validator string, sig string) {
 	Logger.log.Info("Received a block signature")
 	self.cBlockSig <- blockSig{
-		BlockHash:    blockHash,
-		Validator:    validator,
-		ValidatorSig: sig,
+		Validator: validator,
+		BlockSig:  sig,
 	}
 	return
 }
@@ -117,7 +135,7 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 	}
 	newMsg.(*wire.MessageChainState).ChainInfo = ChainInfo{
 		CurrentCommittee:        self.GetCommittee(),
-		CandidateListMerkleHash: "",
+		CandidateListMerkleHash: common.EmptyString,
 		ChainsHeight:            self.validatedChainsHeight.Heights,
 	}
 	peerID, _ := peer2.IDB58Decode(msg.SenderID)
@@ -125,24 +143,109 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 	return
 }
 
-func (self *Engine) OnCandidateProposal() {
+func (self *Engine) OnSwapRequest(msg *wire.MessageSwapRequest) {
+	Logger.log.Info("Received a MessageSwapRequest")
 
-}
-
-func (self *Engine) OnCandidateVote() {
-
-}
-
-func (self *Engine) OnCandidateRequestTx() {
-
-}
-
-func (self *Engine) sendBlockMsg(block *blockchain.Block) {
-	blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
-	if err != nil {
-		Logger.log.Error(err)
+	if msg.LockTime > time.Now().Unix() {
 		return
 	}
-	blockMsg.(*wire.MessageBlock).Block = *block
-	self.config.Server.PushMessageToAll(blockMsg)
+
+	committee := self.GetCommittee()
+
+	if common.IndexOfStr(msg.Requester, committee) < 0 {
+		Logger.log.Error("ERROR OnSwapRequest is not existed committee")
+		return
+	}
+
+	// rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.Requester, msg.ChainID, msg.Candidate)
+	// // TODO check requester signature
+	// err := cashec.ValidateDataB58(msg.RequesterPbk, msg.RequesterSig, rawBytes)
+	// if err != nil {
+	// 	Logger.log.Info("Received a MessageSwapRequest validate error", err)
+	// 	return
+	// }
+	err := msg.Verify()
+	if err != nil {
+		Logger.log.Info("Received a MessageSwapRequest validate error", err)
+		return
+	}
+	// validate condition for swap
+
+	peerIDs := self.config.Server.GetPeerIDsFromPublicKey(msg.Candidate)
+	if len(peerIDs) == 0 {
+		return
+	}
+
+	sig, err := self.signData(msg.GetMsgByte())
+	if err != nil {
+		Logger.log.Error("Can't sign swap ", err)
+		return
+	}
+	messageSigMsg, err := wire.MakeEmptyMessage(wire.CmdSwapSig)
+	if err != nil {
+		return
+	}
+	// messageSigMsg.(*wire.MessageSwapSig).LockTime = msg.LockTime
+	// messageSigMsg.(*wire.MessageSwapSig).RequesterPbk = msg.RequesterPbk
+	// messageSigMsg.(*wire.MessageSwapSig).ChainID = msg.ChainID
+	// messageSigMsg.(*wire.MessageSwapSig).ProducerPbk = msg.ProducerPbk
+	messageSigMsg.(*wire.MessageSwapSig).Validator = base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00))
+	messageSigMsg.(*wire.MessageSwapSig).SwapSig = sig
+
+	peerID, err := peer2.IDB58Decode(msg.SenderID)
+	if err != nil {
+		Logger.log.Error("ERROR", msg.SenderID, peerID, err)
+		return
+	}
+	self.config.Server.PushMessageToPeer(messageSigMsg, peerID)
+
+	return
+}
+
+func (self *Engine) OnSignSwap(msg *wire.MessageSwapSig) {
+	Logger.log.Info("Received a MessageSwapSig")
+	self.cSwapSig <- swapSig{
+		Validator: msg.Validator,
+		SwapSig:   msg.SwapSig,
+	}
+	return
+}
+
+func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
+	Logger.log.Info("Received a MessageSwapUpdate")
+
+	if msg.LockTime > time.Now().Unix() {
+		return
+	}
+
+	committee := self.GetCommittee()
+
+	if common.IndexOfStr(msg.Candidate, committee) >= 0 {
+		Logger.log.Error("ERROR OnSwapUpdate is existed committee")
+		return
+	}
+
+	//versify signatures
+	rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.Requester, msg.ChainID, msg.Candidate)
+	cLeader := 0
+	for leaderPbk, leaderSig := range msg.Signatures {
+		if common.IndexOfStr(leaderPbk, committee) >= 0 {
+			err := cashec.ValidateDataB58(leaderPbk, leaderSig, rawBytes)
+			if err != nil {
+				Logger.log.Error("ERROR OnSwapUpdate", leaderPbk, err)
+				continue
+			}
+		} else {
+			continue
+		}
+		cLeader++
+	}
+	if cLeader < common.TotalValidators/2 {
+		Logger.log.Error("ERROR OnSwapUpdate not enough signatures")
+		return
+	}
+	//TODO update committee list
+	self.updateCommittee(msg.Candidate, msg.ChainID)
+
+	return
 }

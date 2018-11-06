@@ -26,10 +26,10 @@ RUN echo $PATH
 RUN mkdir /go/bin -p
 RUN mkdir /go/src/github.com/ninjadotorg -p
 
-# clone source from github.com/ninjadotorg/cash-prototype
-RUN cd $GOPATH/src/github.com/ninjadotorg && git clone https://github.com/ninjadotorg/cash-prototype -b Parallel-PoS-Privacy
+# clone source from github.com/ninjadotorg/constant-prototype
+RUN cd $GOPATH/src/github.com/ninjadotorg && git clone https://github.com/ninjadotorg/constant -b Parallel-PoS-Privacy
 # install cash-prototype packages
-RUN cd $GOPATH/src/github.com/ninjadotorg/cash-prototype && go get -v
+RUN cd $GOPATH/src/github.com/ninjadotorg/constant && go get -v
 
 # install grpc
 RUN git clone -b $(curl -L http://grpc.io/release) https://github.com/grpc/grpc
@@ -45,9 +45,9 @@ RUN wget http://www.cmake.org/files/v3.5/cmake-3.5.2.tar.gz
 RUN tar xf cmake-3.5.2.tar.gz
 RUN cd cmake-3.5.2 && ./configure && make -j4 && make install
 
-RUN cd $GOPATH/src/github.com/ninjadotorg/cash-prototype/privacy/server && mkdir build && cd build && cmake .. && \
-    make -j4 && wget https://github.com/ninjadotorg/cash-prototype/releases/download/zkpp-v0.0.3/proving.key && \
-    wget https://github.com/ninjadotorg/cash-prototype/releases/download/zkpp-v0.0.3/verifying.key
+RUN cd $GOPATH/src/github.com/ninjadotorg/constant/privacy/server && mkdir build && cd build && cmake .. && \
+    make -j4 && wget https://github.com/ninjadotorg/constant/releases/download/zkpp-v0.0.3/proving.key && \
+    wget https://github.com/ninjadotorg/constant/releases/download/zkpp-v0.0.3/verifying.key
 
 COPY ./run_cash-prototype.sh ./
 COPY ./run_privacy.sh ./

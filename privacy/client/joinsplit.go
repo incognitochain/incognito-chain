@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/privacy/proto/zksnark"
+	"github.com/ninjadotorg/constant/privacy/proto/zksnark"
 	"google.golang.org/grpc"
 )
 
@@ -36,7 +36,7 @@ func printProof(proof *zksnark.PHGRProof) {
 // Prove calls libsnark's Prove and return the proof
 // inputs: WitnessPath and Key must be set; InputeNote's Value, Apk, R and Rho must also be set before calling this function
 // outputs: EncKey, OutputNote's Apk and Value must be set before calling this function
-// reward: for coinbase tx, this is the mining reward; for other tx, it must be 0
+// reward: for salary tx, this is the mining reward; for other tx, it must be 0
 // After this function, outputs' Rho and R and Cm will be updated
 func Prove(inputs []*JSInput,
 	outputs []*JSOutput,
@@ -114,10 +114,10 @@ func Prove(inputs []*JSInput,
 	}
 	defer conn.Close()
 
-	// c := zksnark.NewZksnarkClient(conn)
-	// ctx, cancel := context.WithTimeout(context.Background(), time.Second*500)
+	c := zksnark.NewZksnarkClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*500)
 
-	// defer cancel()
+	defer cancel()
 
 	var outNotes []*Note
 	for _, output := range outputs {
@@ -161,7 +161,8 @@ func Prove(inputs []*JSInput,
 		fmt.Printf("zkNotes[%d].Note.Apk: %x\n", i, zkout.Apk)
 	}
 
-	// r, err := c.Prove(ctx, proveRequest)
+	r, err := c.Prove(ctx, proveRequest)
+	/* for Test not privacy
 	dummyProof := &zksnark.PHGRProof{
 		G_A:      make([]byte, 33),
 		G_APrime: make([]byte, 33),
@@ -175,7 +176,7 @@ func Prove(inputs []*JSInput,
 	r := &zksnark.ProveReply{
 		Success: true,
 		Proof:   dummyProof,
-	}
+	}*/
 	if err != nil || r == nil || r.Proof == nil {
 		log.Printf("fail to prove: %v", err)
 		return nil, nil, nil, nil, errors.New("Fail to prove JoinSplit")

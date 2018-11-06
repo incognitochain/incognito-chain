@@ -281,7 +281,7 @@ func TestTLS12OnlyCipherSuites(t *testing.T) {
 	}
 	serverHello, ok := reply.(*serverHelloMsg)
 	if !ok {
-		t.Fatalf("didn't get ServerHello message in reply. Got %v\n", reply)
+		t.Fatalf("didn't get ServerHello message in reply. Got %+v\n", reply)
 	}
 	if s := serverHello.cipherSuite; s != TLS_RSA_WITH_RC4_128_SHA {
 		t.Fatalf("bad cipher suite from server: %x", s)
@@ -1015,7 +1015,7 @@ func benchmarkHandshakeServer(b *testing.B, cipherSuite uint16, curve CurveID, c
 	}()
 	server := Server(serverConn, config)
 	if err := server.Handshake(); err != nil {
-		b.Fatalf("handshake failed: %v", err)
+		b.Fatalf("handshake failed: %+v", err)
 	}
 	serverConn.Close()
 	flows := serverConn.(*recordingConn).flows
@@ -1047,7 +1047,7 @@ func benchmarkHandshakeServer(b *testing.B, cipherSuite uint16, curve CurveID, c
 		feeder <- struct{}{}
 		server := Server(serverConn, config)
 		if err := server.Handshake(); err != nil {
-			b.Fatalf("handshake failed: %v", err)
+			b.Fatalf("handshake failed: %+v", err)
 		}
 	}
 	close(feeder)
@@ -1347,7 +1347,7 @@ func TestGetConfigForClient(t *testing.T) {
 			}
 			if test.verify != nil {
 				if err := test.verify(configReturned); err != nil {
-					t.Errorf("test[%d]: verify returned error: %v", i, err)
+					t.Errorf("test[%d]: verify returned error: %+v", i, err)
 				}
 			}
 		} else {

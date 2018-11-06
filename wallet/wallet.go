@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"github.com/pkg/errors"
 )
 
 type Account struct {
@@ -18,26 +19,29 @@ type Wallet struct {
 	PassPhrase    string
 	Mnemonic      string
 	MasterAccount Account
-
-	Config *WalletConfig
+	Name          string
+	Config        *WalletConfig
 }
 
 type WalletConfig struct {
-	DataDir  string
-	DataFile string
-	DataPath string
-
+	DataDir        string
+	DataFile       string
+	DataPath       string
 	IncrementalFee uint64
 }
 
-func (self *Wallet) Init(passPhrase string, numOfAccount uint32) {
+func (self *Wallet) Init(passPhrase string, numOfAccount uint32, name string) (error) {
 	mnemonicGen := MnemonicGenerator{}
+	self.Name = name
 	self.Entropy, _ = mnemonicGen.NewEntropy(128)
 	self.Mnemonic, _ = mnemonicGen.NewMnemonic(self.Entropy)
 	self.Seed = mnemonicGen.NewSeed(self.Mnemonic, passPhrase)
 	self.PassPhrase = passPhrase
 
-	masterKey, _ := NewMasterKey(self.Seed)
+	masterKey, err := NewMasterKey(self.Seed)
+	if err != nil {
+		return err
+	}
 	self.MasterAccount = Account{
 		Key:   *masterKey,
 		Child: make([]Account, 0),
@@ -57,6 +61,8 @@ func (self *Wallet) Init(passPhrase string, numOfAccount uint32) {
 		}
 		self.MasterAccount.Child = append(self.MasterAccount.Child, account)
 	}
+
+	return nil
 }
 
 func (self *Wallet) CreateNewAccount(accountName string) *Account {
@@ -77,6 +83,19 @@ func (self *Wallet) CreateNewAccount(accountName string) *Account {
 
 func (self *Wallet) ExportAccount(childIndex uint32) string {
 	return self.MasterAccount.Child[childIndex].Key.Base58CheckSerialize(PriKeyType)
+}
+
+func (self *Wallet) RemoveAccount(privateKeyStr string, accountName string, passPhrase string) error {
+	if passPhrase != self.PassPhrase {
+		return NewWalletError(WrongPassphraseErr, nil)
+	}
+	for i, account := range self.MasterAccount.Child {
+		if account.Key.Base58CheckSerialize(PriKeyType) == privateKeyStr {
+			self.MasterAccount.Child = append(self.MasterAccount.Child[:i], self.MasterAccount.Child[i+1:]...)
+			return nil
+		}
+	}
+	return NewWalletError(UnexpectedErr, errors.New("Not found"))
 }
 
 func (self *Wallet) ImportAccount(privateKeyStr string, accountName string, passPhrase string) (*Account, error) {
@@ -147,12 +166,10 @@ func (self *Wallet) LoadWallet(password string) error {
 	// read file and decrypt
 	bytesData, err := ioutil.ReadFile(self.Config.DataPath)
 	if err != nil {
-		Logger.log.Error(err)
 		return NewWalletError(UnexpectedErr, err)
 	}
 	bufBytes, err := AES{}.Decrypt(password, string(bytesData))
 	if err != nil {
-		Logger.log.Error(err)
 		return NewWalletError(UnexpectedErr, err)
 	}
 
@@ -181,16 +198,16 @@ func (self *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
 	for _, account := range self.MasterAccount.Child {
 		if account.Name == accountParam {
 			key := KeySerializedData{
-				PublicKey:   account.Key.Base58CheckSerialize(PubKeyType),
-				ReadonlyKey: account.Key.Base58CheckSerialize(ReadonlyKeyType),
+				PaymentAddress: account.Key.Base58CheckSerialize(PubKeyType),
+				ReadonlyKey:    account.Key.Base58CheckSerialize(ReadonlyKeyType),
 			}
 			return key
 		}
 	}
 	newAccount := self.CreateNewAccount(accountParam)
 	key := KeySerializedData{
-		PublicKey:   newAccount.Key.Base58CheckSerialize(PubKeyType),
-		ReadonlyKey: newAccount.Key.Base58CheckSerialize(ReadonlyKeyType),
+		PaymentAddress: newAccount.Key.Base58CheckSerialize(PubKeyType),
+		ReadonlyKey:    newAccount.Key.Base58CheckSerialize(ReadonlyKeyType),
 	}
 	return key
 }
@@ -200,8 +217,8 @@ func (self *Wallet) GetAddressesByAccount(accountParam string) ([]KeySerializedD
 	for _, account := range self.MasterAccount.Child {
 		if account.Name == accountParam {
 			item := KeySerializedData{
-				PublicKey:   account.Key.Base58CheckSerialize(PubKeyType),
-				ReadonlyKey: account.Key.Base58CheckSerialize(ReadonlyKeyType),
+				PaymentAddress: account.Key.Base58CheckSerialize(PubKeyType),
+				ReadonlyKey:    account.Key.Base58CheckSerialize(ReadonlyKeyType),
 			}
 			result = append(result, item)
 		}

@@ -3,20 +3,20 @@ package rpcserver
 import "fmt"
 
 const (
-	ErrUnexpected                 = "ErrUnexpected"
-	ErrAlreadyStarted             = "ErrAlreadyStarted"
-	ErrRPCInvalidRequest          = "ErrRPCInvalidRequest"
-	ErrRPCMethodNotFound          = "ErrRPCMethodNotFound"
-	ErrRPCInvalidParams           = "ErrRPCInvalidParams"
-	ErrRPCInvalidMethodPermission = "ErrRPCInvalidMethodPermission"
-	ErrRPCInternal                = "ErrRPCInternal"
-	ErrRPCParse                   = "ErrRPCParse"
-	ErrInvalidType                = "ErrInvalidType"
-	ErrAuthFail                   = "ErrAuthFail"
+	ErrUnexpected                 = iota
+	ErrAlreadyStarted
+	ErrRPCInvalidRequest
+	ErrRPCMethodNotFound
+	ErrRPCInvalidParams
+	ErrRPCInvalidMethodPermission
+	ErrRPCInternal
+	ErrRPCParse
+	ErrInvalidType
+	ErrAuthFail
 )
 
 // Standard JSON-RPC 2.0 errors.
-var ErrCodeMessage = map[string]struct {
+var ErrCodeMessage = map[int]struct {
 	code    int
 	message string
 }{
@@ -34,10 +34,6 @@ var ErrCodeMessage = map[string]struct {
 	ErrAuthFail:                   {-1007, "Auth failure"},
 	ErrRPCInvalidMethodPermission: {-1008, "Invalid method permission"},
 }
-
-// RpcErrorCode identifies a kind of error.  These error codes are NOT used for
-// JSON-RPC response errors.
-type RpcErrorCode int
 
 // RPCError represents an error that is used as a part of a JSON-RPC Response
 // object.
@@ -58,7 +54,7 @@ func (e RPCError) Error() string {
 
 // NewRPCError constructs and returns a new JSON-RPC error that is suitable
 // for use in a JSON-RPC Response object.
-func NewRPCError(key string, err error) *RPCError {
+func NewRPCError(key int, err error) *RPCError {
 	return &RPCError{
 		Code:    ErrCodeMessage[key].code,
 		Message: ErrCodeMessage[key].message,

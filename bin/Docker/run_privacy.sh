@@ -1,3 +1,3 @@
 #!/bin/bash
-cd /go/src/github.com/ninjadotorg/cash-prototype/privacy/server/build
+cd /go/src/github.com/ninjadotorg/constant/privacy/server/build
 ./main

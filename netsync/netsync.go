@@ -3,14 +3,13 @@ package netsync
 import (
 	"sync"
 	"sync/atomic"
-	"time"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/mempool"
-	"github.com/ninjadotorg/cash-prototype/peer"
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/mempool"
+	"github.com/ninjadotorg/constant/peer"
+	"github.com/ninjadotorg/constant/wire"
 )
 
 type NetSync struct {
@@ -28,23 +27,26 @@ type NetSyncConfig struct {
 	BlockChain *blockchain.BlockChain
 	ChainParam *blockchain.Params
 	MemTxPool  *mempool.TxPool
-	Server interface {
+	Server     interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, peer2.ID) error
 		PushMessageToAll(wire.Message) error
 	}
 	Consensus interface {
 		OnBlockReceived(*blockchain.Block)
-		OnRequestSign(*wire.MessageRequestBlockSign)
-		OnBlockSigReceived(string, string, string)
+		OnRequestSign(*wire.MessageBlockSigReq)
+		OnBlockSigReceived(string, string)
 		OnInvalidBlockReceived(string, byte, string)
 		OnGetChainState(*wire.MessageGetChainState)
 		OnChainStateReceived(*wire.MessageChainState)
+		OnSwapRequest(swap *wire.MessageSwapRequest)
+		OnSignSwap(swap *wire.MessageSwapSig)
+		OnSwapUpdate(swap *wire.MessageSwapUpdate)
 	}
 	FeeEstimator map[byte]*mempool.FeeEstimator
 }
 
-func (self NetSync) New(cfg *NetSyncConfig) (*NetSync) {
+func (self NetSync) New(cfg *NetSyncConfig) *NetSync {
 	self.config = cfg
 	self.cQuit = make(chan struct{})
 	self.cMessage = make(chan interface{})
@@ -59,9 +61,6 @@ func (self *NetSync) Start() {
 	Logger.log.Info("Starting sync manager")
 	self.waitgroup.Add(1)
 	go self.messageHandler()
-	time.AfterFunc(2*time.Second, func() {
-		// TODO something here
-	})
 }
 
 // Stop gracefully shuts down the sync manager by stopping all asynchronous
@@ -92,6 +91,10 @@ out:
 					{
 						self.HandleMessageTx(msg)
 					}
+				case *wire.MessageRegistration:
+					{
+						self.HandleMessageRegisteration(msg)
+					}
 				case *wire.MessageBlock:
 					{
 						self.HandleMessageBlock(msg)
@@ -108,7 +111,7 @@ out:
 					{
 						self.HandleMessageInvalidBlock(msg)
 					}
-				case *wire.MessageRequestBlockSign:
+				case *wire.MessageBlockSigReq:
 					{
 						self.HandleMessageRequestSign(msg)
 					}
@@ -119,6 +122,18 @@ out:
 				case *wire.MessageChainState:
 					{
 						self.HandleMessageChainState(msg)
+					}
+				case *wire.MessageSwapRequest:
+					{
+						self.HandleMessageSwapRequest(msg)
+					}
+				case *wire.MessageSwapSig:
+					{
+						self.HandleMessageSwapSig(msg)
+					}
+				case *wire.MessageSwapUpdate:
+					{
+						self.HandleMessageSwapUpdate(msg)
 					}
 				default:
 					Logger.log.Infof("Invalid message type in block "+"handler: %T", msg)
@@ -139,6 +154,15 @@ out:
 // QueueTx adds the passed transaction message and peer to the block handling
 // queue. Responds to the done channel argument after the tx message is
 // processed.
+func (self *NetSync) QueueRegisteration(peer *peer.Peer, msg *wire.MessageRegistration, done chan struct{}) {
+	// Don't accept more transactions if we're shutting down.
+	if atomic.LoadInt32(&self.shutdown) != 0 {
+		done <- struct{}{}
+		return
+	}
+	self.cMessage <- msg
+}
+
 func (self *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
 	if atomic.LoadInt32(&self.shutdown) != 0 {
@@ -150,6 +174,25 @@ func (self *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan str
 
 // handleTxMsg handles transaction messages from all peers.
 func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
+	Logger.log.Info("Handling new message tx")
+	hash, txDesc, err := self.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
+
+	if err != nil {
+		Logger.log.Error(err)
+	} else {
+		Logger.log.Infof("there is hash of transaction %s", hash.String())
+		Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+
+		// Broadcast to network
+		err := self.config.Server.PushMessageToAll(msg)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+	}
+}
+
+// handleTxMsg handles transaction messages from all peers.
+func (self *NetSync) HandleMessageRegisteration(msg *wire.MessageRegistration) {
 	Logger.log.Info("Handling new message tx")
 	hash, txDesc, err := self.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
 
@@ -255,13 +298,14 @@ func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 
 func (self *NetSync) HandleMessageBlockSig(msg *wire.MessageBlockSig) {
 	Logger.log.Info("Handling new message BlockSig")
-	self.config.Consensus.OnBlockSigReceived(msg.BlockHash, msg.Validator, msg.ValidatorSig)
+	self.config.Consensus.OnBlockSigReceived(msg.Validator, msg.BlockSig)
 }
 func (self *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
 	Logger.log.Info("Handling new message invalidblock")
 	self.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.ChainID, msg.Reason)
 }
-func (self *NetSync) HandleMessageRequestSign(msg *wire.MessageRequestBlockSign) {
+
+func (self *NetSync) HandleMessageRequestSign(msg *wire.MessageBlockSigReq) {
 	Logger.log.Info("Handling new message requestsign")
 	self.config.Consensus.OnRequestSign(msg)
 }
@@ -274,4 +318,19 @@ func (self *NetSync) HandleMessageGetChainState(msg *wire.MessageGetChainState) 
 func (self *NetSync) HandleMessageChainState(msg *wire.MessageChainState) {
 	Logger.log.Info("Handling new message chainstate")
 	self.config.Consensus.OnChainStateReceived(msg)
+}
+
+func (self *NetSync) HandleMessageSwapRequest(msg *wire.MessageSwapRequest) {
+	Logger.log.Info("Handling new message requestswap")
+	self.config.Consensus.OnSwapRequest(msg)
+}
+
+func (self *NetSync) HandleMessageSwapSig(msg *wire.MessageSwapSig) {
+	Logger.log.Info("Handling new message signswap")
+	self.config.Consensus.OnSignSwap(msg)
+}
+
+func (self *NetSync) HandleMessageSwapUpdate(msg *wire.MessageSwapUpdate) {
+	Logger.log.Info("Handling new message SwapUpdate")
+	self.config.Consensus.OnSwapUpdate(msg)
 }

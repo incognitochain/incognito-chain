@@ -6,17 +6,17 @@ import (
 	"path/filepath"
 
 	"github.com/jrick/logrotate/rotator"
-	"github.com/ninjadotorg/cash-prototype/addrmanager"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/connmanager"
-	"github.com/ninjadotorg/cash-prototype/consensus/ppos"
-	"github.com/ninjadotorg/cash-prototype/database"
-	"github.com/ninjadotorg/cash-prototype/mempool"
-	"github.com/ninjadotorg/cash-prototype/netsync"
-	"github.com/ninjadotorg/cash-prototype/peer"
-	"github.com/ninjadotorg/cash-prototype/rpcserver"
-	"github.com/ninjadotorg/cash-prototype/wallet"
+	"github.com/ninjadotorg/constant/addrmanager"
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/connmanager"
+	"github.com/ninjadotorg/constant/consensus/ppos"
+	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/mempool"
+	"github.com/ninjadotorg/constant/netsync"
+	"github.com/ninjadotorg/constant/peer"
+	"github.com/ninjadotorg/constant/rpcserver"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 var (

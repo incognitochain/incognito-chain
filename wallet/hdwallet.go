@@ -4,15 +4,9 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha512"
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
-	"github.com/ninjadotorg/cash-prototype/common"
-)
-
-const (
-	PriKeyType      = byte(0x0)
-	PubKeyType      = byte(0x1)
-	ReadonlyKeyType = byte(0x2)
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/common"
 )
 
 // KeySet represents a bip32 extended Key
@@ -26,7 +20,7 @@ type Key struct {
 // NewMasterKey creates a new master extended Key from a Seed
 func NewMasterKey(seed []byte) (*Key, error) {
 	// Generate Key and chaincode
-	hmac := hmac.New(sha512.New, []byte("Bitcoin Seed"))
+	hmac := hmac.New(sha512.New, []byte("Constant Seed"))
 	_, err := hmac.Write(seed)
 	if err != nil {
 		Logger.log.Error(err)
@@ -37,12 +31,6 @@ func NewMasterKey(seed []byte) (*Key, error) {
 	// Split it into our Key and chain code
 	keyBytes := intermediary[:32]  // use to create master private/public keypair
 	chainCode := intermediary[32:] // be used with public Key (in keypair) for new Child keys
-
-	// Validate Key
-	/*err = validatePrivateKey(keyBytes)
-	if err != nil {
-		return nil, err
-	}*/
 
 	keySet := (&cashec.KeySet{}).GenerateKey(keyBytes)
 
@@ -110,11 +98,11 @@ func (key *Key) Serialize(keyType byte) ([]byte, error) {
 		buffer.Write(keyBytes)
 	} else if keyType == PubKeyType {
 		keyBytes := make([]byte, 0)
-		keyBytes = append(keyBytes, byte(len(key.KeySet.PublicKey.Apk))) // set length Apk
-		keyBytes = append(keyBytes, key.KeySet.PublicKey.Apk[:]...)      // set Apk
+		keyBytes = append(keyBytes, byte(len(key.KeySet.PaymentAddress.Apk))) // set length Apk
+		keyBytes = append(keyBytes, key.KeySet.PaymentAddress.Apk[:]...)      // set Apk
 
-		keyBytes = append(keyBytes, byte(len(key.KeySet.PublicKey.Pkenc))) // set length Pkenc
-		keyBytes = append(keyBytes, key.KeySet.PublicKey.Pkenc[:]...)      // set Pkenc
+		keyBytes = append(keyBytes, byte(len(key.KeySet.PaymentAddress.Pkenc))) // set length Pkenc
+		keyBytes = append(keyBytes, key.KeySet.PaymentAddress.Pkenc[:]...)      // set Pkenc
 		buffer.Write(keyBytes)
 	} else if keyType == ReadonlyKeyType {
 		keyBytes := make([]byte, 0)
@@ -136,7 +124,7 @@ func (key *Key) Serialize(keyType byte) ([]byte, error) {
 	return serializedKey, nil
 }
 
-// Base58CheckSerialize encodes the KeySet in the standard Bitcoin base58 encoding
+// Base58CheckSerialize encodes the KeySet in the standard Constant base58 encoding
 func (key *Key) Base58CheckSerialize(keyType byte) string {
 	serializedKey, err := key.Serialize(keyType)
 	if err != nil {
@@ -159,9 +147,9 @@ func Deserialize(data []byte) (*Key, error) {
 		copy(key.KeySet.PrivateKey[:], data[39:39+keyLength])
 	} else if keyType == PubKeyType {
 		apkKeyLength := int(data[1])
-		copy(key.KeySet.PublicKey.Apk[:], data[2:2+apkKeyLength])
+		copy(key.KeySet.PaymentAddress.Apk[:], data[2:2+apkKeyLength])
 		pkencKeyLength := int(data[apkKeyLength+2])
-		copy(key.KeySet.PublicKey.Pkenc[:], data[3+apkKeyLength:3+apkKeyLength+pkencKeyLength])
+		copy(key.KeySet.PaymentAddress.Pkenc[:], data[3+apkKeyLength:3+apkKeyLength+pkencKeyLength])
 	} else if keyType == ReadonlyKeyType {
 		apkKeyLength := int(data[1])
 		copy(key.KeySet.ReadonlyKey.Apk[:], data[2:2+apkKeyLength])

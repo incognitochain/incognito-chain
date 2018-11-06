@@ -5,9 +5,9 @@ import (
 	"encoding/binary"
 	"encoding/json"
 
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/database"
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
@@ -41,14 +41,16 @@ func (db *db) StoreBlock(v interface{}, chainID byte) error {
 }
 
 func (db *db) HasBlock(hash *common.Hash) (bool, error) {
-	if exists, _ := db.hasValue(db.getKey("block", hash)); exists {
-		return true, nil
+	exists, err := db.hasValue(db.getKey(string(blockKeyPrefix), hash))
+	if err != nil {
+		return false, err
+	} else {
+		return exists, nil
 	}
-	return false, nil
 }
 
 func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
-	block, err := db.lvdb.Get(db.getKey("block", hash), nil)
+	block, err := db.lvdb.Get(db.getKey(string(blockKeyPrefix), hash), nil)
 	if err != nil {
 		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
@@ -58,7 +60,25 @@ func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
 	return ret, nil
 }
 
-func (db *db) DeleteBlock(hash *common.Hash) error {
+func (db *db) DeleteBlock(hash *common.Hash, idx int32, chainID byte) error {
+	// Delete block
+	err := db.lvdb.Delete(db.getKey(string(blockKeyPrefix), hash), nil)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+
+	// Delete block index
+	err = db.lvdb.Delete(db.getKey(string(blockKeyIdxPrefix), hash), nil)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+	buf := make([]byte, 5)
+	binary.LittleEndian.PutUint32(buf, uint32(idx))
+	buf[4] = chainID
+	err = db.lvdb.Delete(buf, nil)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
 	return nil
 }
 
@@ -84,6 +104,13 @@ func (db *db) FetchBestState(chainID byte) ([]byte, error) {
 }
 
 func (db *db) CleanBestState() error {
+	for chainID := byte(0); chainID < common.TotalValidators; chainID++ {
+		key := append(bestBlockKey, chainID)
+		err := db.lvdb.Delete(key, nil)
+		if err != nil {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+	}
 	return nil
 }
 
@@ -92,7 +119,7 @@ func (db *db) StoreBlockIndex(h *common.Hash, idx int32, chainID byte) error {
 	binary.LittleEndian.PutUint32(buf, uint32(idx))
 	buf[4] = chainID
 	//{i-[hash]}:index-chainid
-	if err := db.lvdb.Put(db.getKey("blockidx", h), buf, nil); err != nil {
+	if err := db.lvdb.Put(db.getKey(string(blockKeyIdxPrefix), h), buf, nil); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	//{index-chainid}:[hash]
@@ -103,7 +130,7 @@ func (db *db) StoreBlockIndex(h *common.Hash, idx int32, chainID byte) error {
 }
 
 func (db *db) GetIndexOfBlock(h *common.Hash) (int32, byte, error) {
-	b, err := db.lvdb.Get(db.getKey("blockidx", h), nil)
+	b, err := db.lvdb.Get(db.getKey(string(blockKeyIdxPrefix), h), nil)
 	//{i-[hash]}:index-chainid
 	if err != nil {
 		return 0, 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.get"))

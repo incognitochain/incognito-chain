@@ -5,8 +5,8 @@ import (
 	"reflect"
 
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/transaction"
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 // list message type
@@ -14,25 +14,29 @@ const (
 	MessageHeaderSize  = 24
 	MessageCmdTypeSize = 12
 
-	CmdBlock     = "block"
-	CmdTx        = "tx"
-	CmdGetBlocks = "getblocks"
-	CmdInv       = "inv"
-	CmdGetData   = "getdata"
-	CmdVersion   = "version"
-	CmdVerack    = "verack"
-	CmdGetAddr   = "getaddr"
-	CmdAddr      = "addr"
-	CmdPing      = "ping"
+	CmdBlock         = "block"
+	CmdTx            = "tx"
+	CmdRegisteration = "registeration"
+	CmdGetBlocks     = "getblocks"
+	CmdInv           = "inv"
+	CmdGetData       = "getdata"
+	CmdVersion       = "version"
+	CmdVerack        = "verack"
+	CmdGetAddr       = "getaddr"
+	CmdAddr          = "addr"
+	CmdPing          = "ping"
 
 	// POS Cmd
-	CmdRequestBlockSign  = "rqblocksign"
-	CmdInvalidBlock      = "invalidblock"
-	CmdBlockSig          = "blocksig"
-	CmdGetChainState     = "getchstate"
-	CmdChainState        = "chainstate"
-	CmdCandidateProposal = "cndproposal"
-	CmdCandidateVote     = "cndvote"
+	CmdBlockSigReq   = "blocksigreq"
+	CmdBlockSig      = "blocksig"
+	CmdInvalidBlock  = "invalidblock"
+	CmdGetChainState = "getchstate"
+	CmdChainState    = "chainstate"
+
+	// SWAP Cmd
+	CmdSwapRequest = "swaprequest"
+	CmdSwapSig     = "swapsig"
+	CmdSwapUpdate  = "swapupdate"
 )
 
 // Interface for message wire on P2P network
@@ -54,6 +58,11 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 			},
 		}
 		break
+	case CmdRegisteration:
+		msg = &MessageRegistration{
+			Transaction: &transaction.TxVoting{},
+		}
+		break
 	case CmdGetBlocks:
 		msg = &MessageGetBlocks{}
 		break
@@ -68,12 +77,11 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdVerack:
 		msg = &MessageVerAck{}
 		break
-		// POS start
 	case CmdBlockSig:
 		msg = &MessageBlockSig{}
 		break
-	case CmdRequestBlockSign:
-		msg = &MessageRequestBlockSign{}
+	case CmdBlockSigReq:
+		msg = &MessageBlockSigReq{}
 		break
 	case CmdInvalidBlock:
 		msg = &MessageInvalidBlock{}
@@ -82,12 +90,6 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageGetChainState{}
 	case CmdChainState:
 		msg = &MessageChainState{}
-	case CmdCandidateVote:
-		msg = &MessageCandidateVote{}
-		break
-	case CmdCandidateProposal:
-		msg = &MessageCandidateProposal{}
-		// POS end
 	case CmdGetAddr:
 		msg = &MessageGetAddr{}
 		break
@@ -96,6 +98,17 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdPing:
 		msg = &MessagePing{}
+		break
+	case CmdSwapRequest:
+		msg = &MessageSwapRequest{}
+		break
+	case CmdSwapSig:
+		msg = &MessageSwapSig{}
+		break
+	case CmdSwapUpdate:
+		msg = &MessageSwapUpdate{
+			Signatures: make(map[string]string),
+		}
 		break
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
@@ -111,6 +124,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdGetBlocks, nil
 	case reflect.TypeOf(&MessageTx{}):
 		return CmdTx, nil
+	case reflect.TypeOf(&MessageRegistration{}):
+		return CmdRegisteration, nil
 	case reflect.TypeOf(&MessageVersion{}):
 		return CmdVersion, nil
 	case reflect.TypeOf(&MessageVerAck{}):
@@ -121,24 +136,22 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdAddr, nil
 	case reflect.TypeOf(&MessagePing{}):
 		return CmdPing, nil
-
-		// POS start
 	case reflect.TypeOf(&MessageBlockSig{}):
 		return CmdBlockSig, nil
-	case reflect.TypeOf(&MessageRequestBlockSign{}):
-		return CmdRequestBlockSign, nil
-	case reflect.TypeOf(&MessageCandidateVote{}):
-		return CmdCandidateVote, nil
-	case reflect.TypeOf(&MessageCandidateProposal{}):
-		return CmdCandidateProposal, nil
+	case reflect.TypeOf(&MessageBlockSigReq{}):
+		return CmdBlockSigReq, nil
 	case reflect.TypeOf(&MessageInvalidBlock{}):
 		return CmdInvalidBlock, nil
 	case reflect.TypeOf(&MessageGetChainState{}):
 		return CmdGetChainState, nil
 	case reflect.TypeOf(&MessageChainState{}):
 		return CmdChainState, nil
-		// POS end
-
+	case reflect.TypeOf(&MessageSwapRequest{}):
+		return CmdSwapRequest, nil
+	case reflect.TypeOf(&MessageSwapSig{}):
+		return CmdSwapSig, nil
+	case reflect.TypeOf(&MessageSwapUpdate{}):
+		return CmdSwapUpdate, nil
 	default:
 		return "", fmt.Errorf("unhandled this message type [%s]", msgType)
 	}

@@ -16,3 +16,8 @@ const (
 	SortByAmount
 	SortByCreatedTime
 )
+
+const (
+	CustomTokenInit     = 50
+	CustomTokenTransfer = 51
+)

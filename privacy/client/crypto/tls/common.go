@@ -793,9 +793,9 @@ type Certificate struct {
 	Certificate [][]byte
 	// PrivateKey contains the private key corresponding to the public key
 	// in Leaf. For a server, this must implement crypto.Signer and/or
-	// crypto.Decrypter, with an RSA or ECDSA PublicKey. For a client
+	// crypto.Decrypter, with an RSA or ECDSA PaymentAddress. For a client
 	// (performing client authentication), this must be a crypto.Signer
-	// with an RSA or ECDSA PublicKey.
+	// with an RSA or ECDSA PaymentAddress.
 	PrivateKey crypto.PrivateKey
 	// OCSPStaple contains an optional OCSP response which will be served
 	// to clients that request it.

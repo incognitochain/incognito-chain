@@ -5,19 +5,20 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/ninjadotorg/cash-prototype/blockchain"
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/common"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
-	"github.com/ninjadotorg/cash-prototype/transaction"
-	"github.com/ninjadotorg/cash-prototype/wire"
 	"errors"
+
+	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/wire"
 )
 
 func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
 	for _, tx := range txList {
 		if tx.ValidateTransaction() == false {
-			return errTxIsWrong
+			return NewConsensusError(ErrTxIsWrong, nil)
 		}
 	}
 	return nil
@@ -31,7 +32,7 @@ func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, 
 			Logger.log.Error(err)
 			continue
 		}
-		k := cashec.KeySetSealer{
+		k := cashec.KeySetProducer{
 			SpublicKey: decPubkey,
 		}
 		decSig, _, err := base58.Base58Check{}.Decode(sigs[idx])
@@ -51,7 +52,7 @@ func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, 
 	}
 
 	if validatedSigs < 10 {
-		return errNotEnoughSigs
+		return NewConsensusError(ErrNotEnoughSigs, nil)
 	}
 	return nil
 }
@@ -60,13 +61,16 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 	rtOld := self.config.BlockChain.BestState[block.Header.ChainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
 	newTree := self.config.BlockChain.BestState[block.Header.ChainID].CmTree.MakeCopy()
 	Logger.log.Infof("[validateblock] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
-	blockchain.UpdateMerkleTreeForBlock(newTree, block)
+	err := blockchain.UpdateMerkleTreeForBlock(newTree, block)
+	if err != nil {
+		return err
+	}
 	rt := newTree.GetRoot(common.IncMerkleTreeHeight)
 	Logger.log.Infof("[validateblock] updated tree rt: %x\n", rt)
 	if !bytes.Equal(rt[:], block.Header.MerkleRootCommitments.CloneBytes()) {
 		Logger.log.Errorf("MerkleRootCommitments diff!! \n%x\n%x\n%x", rtOld, rt[:], block.Header.MerkleRootCommitments[:])
 		for _, blockTx := range block.Transactions {
-			if blockTx.GetType() == common.TxNormalType {
+			if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
 				tx, ok := blockTx.(*transaction.Tx)
 				if ok == false {
 					Logger.log.Errorf("Transaction in block not valid")
@@ -90,7 +94,7 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 				}
 			}
 		}
-		return errMerkleRootCommitments
+		return NewConsensusError(ErrMerkleRootCommitments, nil)
 	}
 	return nil
 }
@@ -101,7 +105,7 @@ func (self *Engine) CheckBlockSize(block *blockchain.Block) error {
 		return err
 	}
 	if len(blockBytes) > common.MaxBlockSize {
-		return errBlockSizeExceed
+		return NewConsensusError(ErrBlockSizeExceed, nil)
 	}
 	return nil
 }
@@ -123,7 +127,7 @@ func (self *Engine) IsEnoughData(block *blockchain.Block) error {
 					} else {
 						Logger.log.Error("Validator's peer not found!", chainLeader)
 					}
-				}(block.ChainLeader)
+				}(block.BlockProducer)
 			}
 		}
 		if notFullySync {
@@ -131,12 +135,12 @@ func (self *Engine) IsEnoughData(block *blockchain.Block) error {
 			<-timer.C
 			for i := 0; i < common.TotalValidators; i++ {
 				if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
-					return errChainNotFullySynced
+					return NewConsensusError(ErrChainNotFullySynced, nil)
 				}
 			}
 		}
 	} else {
-		return errChainNotFullySynced
+		return NewConsensusError(ErrChainNotFullySynced, nil)
 	}
 	return nil
 }
@@ -156,7 +160,13 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 
 	// 3. Check signature of the block leader for block header
 	headerBytes, _ := json.Marshal(block.Header)
-	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, headerBytes)
+	err = cashec.ValidateDataB58(block.BlockProducer, block.BlockProducerSig, headerBytes)
+	if err != nil {
+		return err
+	}
+
+	// 4. Validate committee member signatures
+	err = self.ValidateCommitteeSigs([]byte(block.Hash().String()), block.Header.Committee, block.Header.BlockCommitteeSigs)
 	if err != nil {
 		return err
 	}
@@ -167,13 +177,8 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 		return err
 	}
 
-	// 6. Validate committee member signatures
-	err = self.ValidateCommitteeSigs([]byte(block.Hash().String()), block.Header.Committee, block.Header.BlockCommitteeSigs)
-	if err != nil {
-		return err
-	}
-	// 7. validate candidate list hash
-	candidates := self.GetCndList(block)
+	// 6. validate candidate list hash
+	candidates := self.GetCandidateCommitteeList(block)
 	candidateBytes, err := json.Marshal(candidates)
 	if err != nil {
 		return err
@@ -182,7 +187,7 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 		return errors.New("Candidate List Hash is wrong")
 	}
 
-	// 8. Validate transactions
+	// 7. Validate transactions
 	return self.ValidateTxList(block.Transactions)
 
 }
@@ -200,25 +205,20 @@ func (self *Engine) validatePreSignBlockSanity(block *blockchain.Block) error {
 		return err
 	}
 
-	// 3. Check signature of the block leader for block header
-	headerBytes, _ := json.Marshal(block.Header)
-	err = cashec.ValidateDataB58(block.ChainLeader, block.ChainLeaderSig, headerBytes)
+	// 3. Check signature of the block leader for block hash
+	err = cashec.ValidateDataB58(block.BlockProducer, block.Header.BlockCommitteeSigs[block.Header.ChainID], []byte(block.Hash().String()))
 	if err != nil {
 		return err
 	}
 
-	// 4. Check whether we acquire enough data to validate this block
-	err = self.IsEnoughData(block)
-	if err != nil {
-		return err
-	}
-
-	// 5. Validate MerkleRootCommitments
+	// 4. Validate MerkleRootCommitments
 	err = self.ValidateMerkleRootCommitments(block)
 	if err != nil {
 		return err
 	}
 
-	// 7. Validate transactions
+	// 5. Validate transactions
 	return self.ValidateTxList(block.Transactions)
 }
+
+// func (self *Engine) ValidateSalary(block )

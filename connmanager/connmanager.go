@@ -1,12 +1,9 @@
 package connmanager
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
-	"net/http"
 	"net/rpc"
 	"os"
 	"strings"
@@ -16,11 +13,11 @@ import (
 	libpeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
-	"github.com/ninjadotorg/cash-prototype/bootnode/server"
-	"github.com/ninjadotorg/cash-prototype/cashec"
-	"github.com/ninjadotorg/cash-prototype/common/base58"
-	"github.com/ninjadotorg/cash-prototype/peer"
-	"github.com/ninjadotorg/cash-prototype/wire"
+	"github.com/ninjadotorg/constant/bootnode/server"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/peer"
+	"github.com/ninjadotorg/constant/wire"
 )
 
 // ConnState represents the state of the requested connection.
@@ -95,7 +92,7 @@ func (self ConnManager) Stop() {
 	Logger.log.Warn("Connection manager stopped")
 }
 
-func (self ConnManager) New(cfg *Config) (*ConnManager) {
+func (self ConnManager) New(cfg *Config) *ConnManager {
 	self.Config = *cfg
 	self.cQuit = make(chan struct{})
 	self.discoveredPeers = make(map[string]*DiscoverPeerInfo)
@@ -260,7 +257,7 @@ func (self *ConnManager) handleFailed(peerConn *peer.PeerConn) {
 	Logger.log.Infof("handleFailed %s", peerConn.RemotePeerID.String())
 }
 
-func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)) {
+/*func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)) {
 	addrs := []string{}
 	for _, host := range hosts {
 		request, err := http.NewRequest("GET", host, nil)
@@ -301,7 +298,7 @@ func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)
 		}
 	}
 	seedFn(addrs)
-}
+}*/
 
 func (self *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 	Logger.log.Info("Start Discover Peers")
@@ -324,10 +321,10 @@ listen:
 
 				var publicKey string
 
-				if listener.Config.SealerPrvKey != EmptyString {
-					keySet := &cashec.KeySetSealer{}
-					_, err := keySet.Import(listener.Config.SealerPrvKey)
-					if err != nil {
+				if listener.Config.ProducerPrvKey != EmptyString {
+					keySet := &cashec.KeySetProducer{}
+					_, err := keySet.Import(listener.Config.ProducerPrvKey)
+					if err == nil {
 						publicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))
 					}
 				}
@@ -370,11 +367,10 @@ listen:
 
 					goto listen
 				}
-
 				for _, rawPeer := range response {
 					if rawPeer.PublicKey != EmptyString && !strings.Contains(rawPeer.RawAddress, listener.PeerID.String()) {
 						_, exist := self.discoveredPeers[rawPeer.PublicKey]
-						//Logger.log.Info("Discovered peer", rawPeer.PublicKey, rawPeer.RemoteRawAddress, exist)
+						//Logger.log.Info("Discovered peer", rawPeer.PaymentAddress, rawPeer.RemoteRawAddress, exist)
 						if !exist {
 							// The following code extracts target's peer Id from the
 							// given multiaddress
@@ -397,7 +393,7 @@ listen:
 							}
 
 							self.discoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
-							//Logger.log.Info("Start connect to peer", rawPeer.PublicKey, rawPeer.RemoteRawAddress, exist)
+							//Logger.log.Info("Start connect to peer", rawPeer.PaymentAddress, rawPeer.RemoteRawAddress, exist)
 							go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
 						} else {
 							peerIds := self.getPeerIdsFromPublicKey(rawPeer.PublicKey)
@@ -418,7 +414,7 @@ func (self *ConnManager) getPeerIdsFromPublicKey(pubKey string) []libpeer.ID {
 
 	for _, listener := range self.Config.ListenerPeers {
 		for _, peerConn := range listener.PeerConns {
-			// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PublicKey)
+			// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PaymentAddress)
 			if peerConn.RemotePeer.PublicKey == pubKey {
 				exist := false
 				for _, item := range result {
