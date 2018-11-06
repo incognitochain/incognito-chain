@@ -139,11 +139,11 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 	switch tx.(type) {
 	case *transaction.Tx:
-		log.Println("Normal tx again")
+		log.Println("Normal tx")
 		txInfo := tx.(*transaction.Tx)
 		chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
 	case *transaction.TxVoting:
-		log.Println("Tx voting ")
+		log.Println("Tx voting")
 		txInfo := tx.(*transaction.TxVoting)
 		chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
 	case *transaction.TxCustomToken:
@@ -404,8 +404,8 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 	if int64(txN.LockTime) > time.Now().Unix() {
 		return false, errors.New("Wrong tx locktime")
 	}
-	// check Type equal "n"
-	if txN.Type != common.TxVotingType {
+	// check Type is normal or salary tx
+	if len(txN.Type) != 1 || (txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType) { // only 1 byte
 		return false, errors.New("Wrong tx type")
 	}
 	// check length of JSPubKey

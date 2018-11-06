@@ -1005,6 +1005,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 
 	// list unspent tx for create tx
 	totalAmmount += int64(realFee)
+	estimateTotalAmount = totalAmmount
 	candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
@@ -1111,6 +1112,9 @@ handleSendMany - RPC creates transaction and send to network
 */
 func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	data, err := self.handleCreateTransaction(params, closeChan)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 	tx := data.(jsonresult.CreateTransactionResult)
 	hexStrOfTx := tx.HexData
 	if err != nil {

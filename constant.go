@@ -69,6 +69,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		}
 		err = walletObj.LoadWallet(cfg.WalletPassphrase)
 		if err != nil {
+			// TODO for test
 			walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
 			walletObj.Save(cfg.WalletPassphrase)
 			//Logger.log.Criticalf("Can not load wallet with %s. Please use cashctl to create a new wallet", walletObj.Config.DataPath)

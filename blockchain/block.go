@@ -53,6 +53,11 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 		Logger.log.Debugf("Tx json data: ", string(txTempJson))
 		switch txTemp["Type"].(string) {
 		case common.TxNormalType:
+			{
+				txNormal := &transaction.Tx{}
+				_ = json.Unmarshal(txTempJson, &txNormal)
+				self.Transactions = append(self.Transactions, txNormal)
+			}
 		case common.TxSalaryType:
 			{
 				txNormal := &transaction.Tx{}
