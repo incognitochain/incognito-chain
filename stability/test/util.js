@@ -1,4 +1,6 @@
 var fs = require('fs')
+var Web3 = require('web3');
+var ww = new Web3(Web3.givenProvider)
 
 module.exports = {
 
@@ -112,29 +114,52 @@ module.exports = {
 	    return "0x" + n;
         },
 
-	keccak256: function(...args) {
-	    args = args.map(arg => {
-                if (typeof arg === 'string') {
-                    if (arg.substring(0, 2) === '0x') {
-                        return arg.slice(2)
-                    } else {
-                        return web3.toHex(arg).slice(2)
-                    }
-                }
-
-                if (typeof arg === 'number') {
-		    let val = (arg).toString(16)
-		    while (val.length < 64) {
-	                val = '0' + val
-		    }
-                    return val 
+    keccak256: function(...args) {
+        args = args.map(arg => {
+            if (typeof arg === 'string') {
+                if (arg.substring(0, 2) === '0x') {
+                    return arg.slice(2)
                 } else {
-                    return ''
+                    return web3.toHex(arg).slice(2)
+                }
+            }
+
+            if (typeof arg === 'number') {
+                let val = (arg).toString(16)
+                while (val.length < 64) {
+                    val = '0' + val
+                }
+                return val 
+            } else {
+                return ''
+            }
+        })
+
+        args = args.join('')
+        return web3.sha3(args, { encoding: 'hex' })
+    },
+
+    roc: function (tx, abi, event, key) {
+        let a = null, hash = null;
+        for (var i = 0; i < abi.length; i++) {
+            var item = abi[i];
+            if (item.type != "event") continue;
+            if (item.name != event) continue;
+            var signature = item.name + "(" + item.inputs.map(function(input) {return input.type;}).join(",") + ")";
+            hash = web3.sha3(signature);
+            a = abi[i].inputs;
+            break;
+        }
+
+        if (a != null) {
+            let result = null
+            tx.receipt.logs.forEach(function(log) {
+                if (log.topics[0] == hash) {
+                    let r = ww.eth.abi.decodeLog(a, log.data, log.topics);
+                    result = r[key]
                 }
             })
-
-            args = args.join('')
-	    console.log('args:', args)
-            return web3.sha3(args, { encoding: 'hex' })
+            return result
         }
+    }
 }

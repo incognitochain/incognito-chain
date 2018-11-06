@@ -7,7 +7,10 @@ const neq = assert.notEqual
 const as = assert
 
 const u = require('./util.js')
-const ww = require('web3')
+const fs = require('fs')
+//const ww = require('web3')
+var Web3 = require('web3');
+var ww = new Web3(Web3.givenProvider)
 
 contract("SimpleLoan", (accounts) => {
     const root = accounts[0]
@@ -15,13 +18,16 @@ contract("SimpleLoan", (accounts) => {
     const requester1 = accounts[2]
     const requester2 = accounts[3]
 
-    let c, digest, key, lid;
+    let c, digest, key, lid, lid1;
+    let abi = null;
 
     before(async () => {
         s = await ms.deployed();
         c = await sl.deployed();
         key = u.padToBytes32(web3.toHex("a"))
         digest = ww.utils.soliditySha3(key) 
+        abi = JSON.parse(fs.readFileSync('./build/contracts/SimpleLoan.json', 'utf8')).abi
+        l(typeof(abi))
         //	l(key, digest, web3.sha3(key, { encoding: "hex" }))
     })
 
@@ -46,12 +52,7 @@ contract("SimpleLoan", (accounts) => {
         it('should accept loan request successfully', async () => {
             let data = c.contract.acceptLoan.getData(lid, key, offchain)
             tx1 = await s.submitTransaction(c.address, 0, data, { from: root })
-//            tx1 = await c.acceptLoan(lid, key, offchain, { from: root })
-            l(tx1)
-//            l(tx1.receipt.logs)
-//            l(tx1.receipt.logs.map(a => {return a}))
-            l('abcasdfasdfasdf', u.b2s('0x2caa7d07be7b7990462ca8a059568be0582ae0a101ccdcc1fdaba0da2cbf4beb'))
-            lid1 = await u.oc(tx1, "__acceptLoan", "lid")
+            lid1 = await u.roc(tx1, abi, "__acceptLoan", "lid")
             eq(lid1, lid)
         })
 
