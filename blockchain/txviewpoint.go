@@ -75,6 +75,15 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 	for _, tx := range transactions {
 		switch tx.GetType() {
 		case common.TxNormalType:
+			{
+				normalTx := tx.(*transaction.Tx)
+				for _, desc := range normalTx.Descs {
+					err := view.processFetchTxViewPoint(acceptedNullifiers, acceptedCommitments, block, db, desc)
+					if err != nil {
+						return NewBlockChainError(UnExpectedError, err)
+					}
+				}
+			}
 		case common.TxSalaryType:
 			{
 				normalTx := tx.(*transaction.Tx)
