@@ -1045,6 +1045,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		common.AssetTypeCoin,
 		chainIdSender)
 	if err != nil {
+		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	byteArrays, err := json.Marshal(tx)
