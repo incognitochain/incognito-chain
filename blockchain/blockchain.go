@@ -258,6 +258,10 @@ func (self *BlockChain) StoreBlockIndex(block *Block) error {
 	return self.config.DataBase.StoreBlockIndex(block.Hash(), block.Height, block.Header.ChainID)
 }
 
+func (self *BlockChain) StoreTransactionIndex(txHash *common.Hash, blockHash *common.Hash, index int) error {
+	return self.config.DataBase.StoreTransactionIndex(txHash, blockHash, index)
+}
+
 /*
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
@@ -928,4 +932,16 @@ func (self *BlockChain) GetUnspentTxTokenVoutBySender(senderKeyset cashec.KeySet
 		}
 	}
 	return voutList, nil
+}
+
+func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (*common.Hash, int, transaction.Transaction, error){
+		blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
+		if err != nil {
+			return nil, -1, nil, err
+		}
+		block, err := self.GetBlockByBlockHash(blockHash)
+		if err != nil {
+			return nil, -1, nil, err
+		}
+		return blockHash, index, block.Transactions[index], nil
 }

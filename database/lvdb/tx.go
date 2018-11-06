@@ -3,6 +3,9 @@ package lvdb
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/ninjadotorg/constant/common"
+	"strconv"
+	"strings"
 
 	"github.com/ninjadotorg/constant/database"
 
@@ -178,4 +181,44 @@ func (db *db) CleanFeeEstimator() error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
 	}
 	return nil
+}
+
+/*
+	StoreTransactionIndex
+	Store tx detail location
+*/
+func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, index int) error {
+	key := string(transactionKeyPrefix) + txId.String()
+	value := blockHash.String() + string(spliter) + string(index)
+
+	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/*
+  GetTransactionDetail
+	allow to get transaction detail via its position in block
+*/
+
+func (db *db) GetTransactionIndexById(txId *common.Hash)  (*common.Hash, int, error) {
+	//
+	key := string(transactionKeyPrefix) + txId.String()
+	res, err := db.lvdb.Get([]byte(key), nil)
+	if err != nil {
+		return nil, -1, err;
+	}
+	reses := strings.Split(string(res),(string(spliter)))
+	hash, err :=  common.Hash{}.NewHashFromStr(reses[0])
+	if err != nil {
+		return nil, -1, err;
+	}
+	index, err := strconv.Atoi(reses[1])
+	if err != nil {
+		return nil, -1, err;
+	}
+
+	return hash, index, nil
 }

@@ -19,6 +19,9 @@ type DatabaseInterface interface {
 	GetIndexOfBlock(*common.Hash) (int32, byte, error)
 	GetBlockByIndex(int32, byte) (*common.Hash, error)
 
+	// Transaction Index
+	StoreTransactionIndex(*common.Hash, *common.Hash, int) error
+	GetTransactionIndexById(*common.Hash) (*common.Hash,int,error)
 	// Best state of chain
 	StoreBestState(interface{}, byte) error
 	FetchBestState(byte) ([]byte, error)

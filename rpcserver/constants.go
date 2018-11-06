@@ -32,6 +32,7 @@ const (
 	RetrieveCommitteeCandidate         = "retrievecommitteecandidate"
 	GetBlockProducerList               = "getblockproducer"
 	ListUnspentCustomToken             = "listunspentcustomtoken"
+	GetTransactionByHash               = "gettransactionbyhash"
 
 	GetHeader = "getheader"
 

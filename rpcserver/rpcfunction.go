@@ -56,6 +56,7 @@ var RpcHandler = map[string]commandHandler{
 	SendCustomTokenTransaction:         RpcServer.handleSendCustomTokenTransaction,
 	GetMempoolInfo:                     RpcServer.handleGetMempoolInfo,
 	ListUnspentCustomToken:             RpcServer.handleListUnspentCustomTokenTransaction,
+	GetTransactionByHash:								RpcServer.handleGetTransactionByHash,
 
 	GetCommitteeCandidateList:  RpcServer.handleGetCommitteeCandidateList,
 	RetrieveCommitteeCandidate: RpcServer.handleRetrieveCommiteeCandidate,
@@ -721,6 +722,28 @@ func (self RpcServer) handleListUnspentCustomTokenTransaction(params interface{}
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	return unspentTxTokenOuts, err
+}
+
+// Get transaction by Hash
+func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+	// param #1: transaction Hash
+	txHash,_ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
+	blockHash, index, tx, err := self.config.BlockChain.GetTransactionByHash(txHash)
+	if err != nil {
+		return nil, err
+	}
+	result := jsonresult.TransactionDetail{
+		BlockHash: blockHash.String(),
+		Index: uint64(index),
+		Hash: tx.Hash().String(),
+		ValidateTransaction: tx.ValidateTransaction(),
+		Type: tx.GetType(),
+		TxVirtualSize: tx.GetTxVirtualSize(),
+		SenderAddrLastByte: tx.GetSenderAddrLastByte(),
+		TxFee: tx.GetTxFee(),
+	}
+	return result,nil
 }
 
 // handleCreateRawCustomTokenTransaction handle create a custom token command.
