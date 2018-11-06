@@ -49,7 +49,7 @@ var RpcHandler = map[string]commandHandler{
 	ListTransactions:                   RpcServer.handleListTransactions,
 	CreateTransaction:                  RpcServer.handleCreateTransaction,
 	SendTransaction:                    RpcServer.handleSendTransaction,
-	SendMany:                           RpcServer.handleSendMany,
+	SendMany:                           RpcServer.handlCreateAndSendTx,
 	GetNumberOfCoinsAndBonds:           RpcServer.handleGetNumberOfCoinsAndBonds,
 	CreateActionParamsTransaction:      RpcServer.handleCreateActionParamsTransaction,
 	SendRegistrationCandidateCommittee: RpcServer.handleSendRegistrationCandidateCommittee,
@@ -1110,9 +1110,9 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 }
 
 /*
-handleSendMany - RPC creates transaction and send to network
+handlCreateAndSendTx - RPC creates transaction and send to network
 */
-func (self RpcServer) handleSendMany(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handlCreateAndSendTx(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	data, err := self.handleCreateTransaction(params, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
