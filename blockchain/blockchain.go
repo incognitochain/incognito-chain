@@ -574,6 +574,11 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 	return results, nil
 }
 
+func (self *BlockChain) GetListTxByPrivateKeyInBlock(privateKey *client.SpendingKey, block *Block, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
+	results := make(map[byte][]transaction.Tx)
+	return results, nil
+}
+
 /*
 GetListTxByPrivateKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
 With private-key, we can check unspent tx by check nullifiers from database
@@ -865,16 +870,16 @@ func (self *BlockChain) GetUnspentTxTokenVoutBySender(senderKeyset cashec.KeySet
 	return voutList, nil
 }
 
-func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (*common.Hash, int, transaction.Transaction, error){
-		blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
-		if err != nil {
-			return nil, -1, nil, err
-		}
-		block, err := self.GetBlockByBlockHash(blockHash)
-		if err != nil {
-			Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and Index", index, "contains", block.Transactions[index])
-			return nil, -1, nil, err
-		}
-		Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and Index", index, "contains", block.Transactions[index])
-		return blockHash, index, block.Transactions[index], nil
+func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (*common.Hash, int, transaction.Transaction, error) {
+	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
+	if err != nil {
+		return nil, -1, nil, err
+	}
+	block, err := self.GetBlockByBlockHash(blockHash)
+	if err != nil {
+		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and Index", index, "contains", block.Transactions[index])
+		return nil, -1, nil, err
+	}
+	Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and Index", index, "contains", block.Transactions[index])
+	return blockHash, index, block.Transactions[index], nil
 }
