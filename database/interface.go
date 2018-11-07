@@ -45,9 +45,9 @@ type DatabaseInterface interface {
 	CleanFeeEstimator() error
 
 	// Custom token
-	StoreCustomToken([]byte, []byte) error                       // param: tokenID, txInitToken-id, data
-	StoreCustomTokenTx([]byte, byte, int32, int32, []byte) error // param: tokenID, chainID, block height, tx-id, data
-	ListCustomToken() [][]byte
+	StoreCustomToken(*common.Hash, []byte) error                       // param: tokenID, txInitToken-id, data
+	StoreCustomTokenTx(*common.Hash, byte, int32, int32, []byte) error // param: tokenID, chainID, block height, tx-id, data
+	ListCustomToken() ([][]byte, error)
 
 	Close() error
 }

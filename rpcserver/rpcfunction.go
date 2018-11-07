@@ -54,12 +54,15 @@ var RpcHandler = map[string]commandHandler{
 	SendRegistrationCandidateCommittee: RpcServer.handleSendRegistrationCandidateCommittee,
 	SendCustomTokenTransaction:         RpcServer.handleSendCustomTokenTransaction,
 	GetMempoolInfo:                     RpcServer.handleGetMempoolInfo,
-	ListUnspentCustomToken:             RpcServer.handleListUnspentCustomTokenTransaction,
 	GetTransactionByHash:               RpcServer.handleGetTransactionByHash,
 
 	GetCommitteeCandidateList:  RpcServer.handleGetCommitteeCandidateList,
 	RetrieveCommitteeCandidate: RpcServer.handleRetrieveCommiteeCandidate,
 	GetBlockProducerList:       RpcServer.handleGetBlockProducerList,
+
+	// custom token
+	ListUnspentCustomToken: RpcServer.handleListUnspentCustomTokenTransaction,
+	ListCustomToken:        RpcServer.handleListCustomToken,
 
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -701,6 +704,14 @@ func (self RpcServer) handleSendRegistrationCandidateCommittee(params interface{
 	newParam = append(newParam, hexStrOfTx)
 	txId, err := self.handleSendRawRegistrationCandidateCommittee(newParam, closeChan)
 	return txId, err
+}
+
+func (self RpcServer) handleListCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	temps, err := self.config.BlockChain.ListCustomToken()
+	if err != nil {
+		return nil, err
+	}
+	return temps, nil
 }
 
 func (self RpcServer) handleListUnspentCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {

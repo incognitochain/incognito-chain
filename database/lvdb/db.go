@@ -27,6 +27,7 @@ var (
 	feeEstimator         = []byte("feeEstimator")
 	spliter              = []byte("---")
 	tokenPrefix          = []byte("token-")
+	tokenInitPrefix      = []byte("token-init-")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {
@@ -67,6 +68,10 @@ func (db db) getKey(keyType string, key interface{}) []byte {
 		dbkey = append(nullifiersPrefix, []byte(key.(string))...)
 	case string(commitmentsPrefix):
 		dbkey = append(commitmentsPrefix, []byte(key.(string))...)
+	case string(tokenPrefix):
+		dbkey = append(tokenPrefix, key.(*common.Hash)[:]...)
+	case string(tokenInitPrefix):
+		dbkey = append(tokenInitPrefix, key.(*common.Hash)[:]...)
 	}
 	return dbkey
 }

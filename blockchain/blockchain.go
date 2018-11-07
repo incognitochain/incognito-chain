@@ -452,11 +452,11 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 	// check custom token and save
 	for indexTx, customTokenTx := range view.customTokenTxs {
 		if customTokenTx.TxToken.Type == transaction.CustomTokenInit {
-			err = self.config.DataBase.StoreCustomToken(customTokenTx.TxToken.PropertyID[:], customTokenTx.Hash()[:])
+			err = self.config.DataBase.StoreCustomToken(&customTokenTx.TxToken.PropertyID, customTokenTx.Hash()[:])
 			if err != nil {
 				return err
 			}
-			err = self.config.DataBase.StoreCustomTokenTx(customTokenTx.TxToken.PropertyID[:], block.Header.ChainID, block.Height, indexTx, customTokenTx.Hash()[:])
+			err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxToken.PropertyID, block.Header.ChainID, block.Height, indexTx, customTokenTx.Hash()[:])
 			if err != nil {
 				return err
 			}
@@ -907,4 +907,25 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (*common.Hash,
 	}
 	Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and Index", index, "contains", block.Transactions[index])
 	return blockHash, index, block.Transactions[index], nil
+}
+
+func (self *BlockChain) ListCustomToken() ([]transaction.TxCustomToken, error) {
+	data, err := self.config.DataBase.ListCustomToken()
+	if err != nil {
+		return nil, err
+	}
+	result := []transaction.TxCustomToken{}
+	for _, txData := range data {
+		hash := common.Hash{}
+		hash.SetBytes(txData)
+		blockHash, index, tx, err := self.GetTransactionByHash(&hash)
+		_ = blockHash
+		_ = index
+		if err != nil {
+			return nil, err
+		}
+		txCustomToken := tx.(*transaction.TxCustomToken)
+		result = append(result, *txCustomToken)
+	}
+	return result, nil
 }

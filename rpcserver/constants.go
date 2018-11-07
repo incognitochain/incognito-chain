@@ -32,6 +32,7 @@ const (
 	GetBlockProducerList               = "getblockproducer"
 	ListUnspentCustomToken             = "listunspentcustomtoken"
 	GetTransactionByHash               = "gettransactionbyhash"
+	ListCustomToken                    = "listcustomtoken"
 
 	GetHeader = "getheader"
 
