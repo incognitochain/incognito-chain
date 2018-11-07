@@ -1,20 +1,26 @@
 package blockchain
 
 import (
+	"errors"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/transaction"
-	"errors"
 )
 
 type TxViewPoint struct {
 	chainID         byte
 	listNullifiers  [][]byte
 	listCommitments [][]byte
+	listLoanIDs     [][]byte // TODO(@sirrush): store list loan ids in database
 	customTokenTxs  []*transaction.TxCustomToken
 
 	// hash of best block in current
 	currentBestBlockHash common.Hash
+}
+
+func (view *TxViewPoint) ListLoanIDs() [][]byte {
+	return view.listLoanIDs
 }
 
 /*

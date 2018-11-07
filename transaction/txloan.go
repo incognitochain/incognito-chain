@@ -94,9 +94,12 @@ func (tx *TxLoanRequest) ValidateTransaction() bool {
 		return false
 	}
 
-	// TODO: LoanID unique
 	// TODO: save and check type on-chain
 	if tx.CollateralType != "ETH" {
+		return false
+	}
+
+	if len(tx.KeyDigest) != LoanKeyDigestLen {
 		return false
 	}
 

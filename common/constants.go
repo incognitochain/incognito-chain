@@ -12,6 +12,7 @@ const (
 	TxActionParamsType = "a" // action tx to edit params
 	TxVotingType       = "v" // voting tx
 	TxCustomTokenType  = "t" // token  tx
+	TxLoanRequest      = "lr"
 )
 
 // unit type use in tx

@@ -9,15 +9,17 @@ const (
 
 	// NumDescOutputs max number of output notes in a JSDesc
 	NumDescOutputs = 2 // b
+
+	LoanKeyDigestLen = 32 // number of bytes of a loan's secret key digest
 )
 
 const (
-	NoSort            = iota
+	NoSort = iota
 	SortByAmount
 	SortByCreatedTime
 )
 
 const (
-	CustomTokenInit     = iota
+	CustomTokenInit = iota
 	CustomTokenTransfer
 )

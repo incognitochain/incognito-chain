@@ -110,7 +110,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	}
 
 concludeBlock:
-// Get blocksalary fund from txs
+	// Get blocksalary fund from txs
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
 	for _, blockTx := range txsToAdd {
@@ -161,6 +161,7 @@ concludeBlock:
 		ChainID:               chainID,
 		SalaryFund:            currentSalaryFund - (salaryMULTP * salaryPerTx) + totalFee + salaryFundAdd,
 		GovernanceParams:      prevBlock.Header.GovernanceParams, // TODO: need get from gov-params tx
+		LoanParams:            prevBlock.Header.LoanParams,
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {

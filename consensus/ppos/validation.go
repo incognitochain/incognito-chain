@@ -3,9 +3,9 @@ package ppos
 import (
 	"bytes"
 	"encoding/json"
-	"time"
-
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/cashec"
@@ -35,6 +35,39 @@ func (self *Engine) ValidateSpecTxWithBlockChain(tx transaction.Transaction) err
 	switch tx.GetType() {
 	case common.TxNormalType:
 		{
+		}
+	case common.TxLoanRequest:
+		{
+			txLoan, ok := tx.(TxLoanRequest)
+			if ok != nil {
+				return fmt.Errorf("Fail parsing LoanRequest transaction")
+			}
+
+			// Check if loan's params are correct
+			chainID, err := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+			if err != nil {
+				return err
+			}
+
+			currentParams := self.config.BlockChain.BestState[chainID].BestBlock.Header.LoanParams
+			if txLoan.Params != currentParams {
+				return fmt.Errorf("LoanRequest transaction has incorrect params")
+			}
+
+			// Check if loan id is unique across all chains
+			// TODO(@0xbunyip): update with variable number of chains
+			for i := 0; i < 20; i++ {
+				txViewPoint, err := self.config.BlockChain.FetchTxViewPoint(i)
+				if err != nil {
+					return err
+				}
+				loanIDs := txViewPoint.ListLoanIDs()
+				for _, id := range loanIDs {
+					if bytes.Equal(txLoan.LoanID, id) {
+						return fmt.Errorf("LoanID already existed")
+					}
+				}
+			}
 		}
 	}
 	return nil
