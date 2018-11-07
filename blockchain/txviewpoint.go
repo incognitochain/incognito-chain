@@ -41,11 +41,13 @@ func (view *TxViewPoint) CurrentBestBlockHash() *common.Hash {
 }
 
 // fetch from desc of tx to get nullifiers and commitments
-func (view *TxViewPoint) processFetchTxViewPoint(acceptedNullifiers [][]byte, acceptedCommitments [][]byte, block *Block, db database.DatabaseInterface, desc *transaction.JoinSplitDesc) error {
+func (view *TxViewPoint) processFetchTxViewPoint(block *Block, db database.DatabaseInterface, desc *transaction.JoinSplitDesc) ([][]byte, [][]byte, error) {
+	acceptedNullifiers := make([][]byte, 0)
+	acceptedCommitments := make([][]byte, 0)
 	for _, item := range desc.Nullifiers {
 		temp, err := db.HasNullifier(item, block.Header.ChainID)
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
 		if !temp {
 			acceptedNullifiers = append(acceptedNullifiers, item)
@@ -54,13 +56,13 @@ func (view *TxViewPoint) processFetchTxViewPoint(acceptedNullifiers [][]byte, ac
 	for _, item := range desc.Commitments {
 		temp, err := db.HasCommitment(item, block.Header.ChainID)
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
 		if !temp {
 			acceptedCommitments = append(acceptedCommitments, item)
 		}
 	}
-	return nil
+	return acceptedNullifiers, acceptedCommitments, nil
 }
 
 /*
@@ -70,6 +72,7 @@ return a tx view point which contains list new nullifiers and new commitments fr
 func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *Block) error {
 	transactions := block.Transactions
 	// Loop through all of the transaction descs (except for the salary tx)
+	// TODO
 	acceptedNullifiers := make([][]byte, 0)
 	acceptedCommitments := make([][]byte, 0)
 	for _, tx := range transactions {
@@ -78,7 +81,9 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 			{
 				normalTx := tx.(*transaction.Tx)
 				for _, desc := range normalTx.Descs {
-					err := view.processFetchTxViewPoint(acceptedNullifiers, acceptedCommitments, block, db, desc)
+					temp1, temp2, err := view.processFetchTxViewPoint(block, db, desc)
+					acceptedNullifiers = append(acceptedNullifiers, temp1...)
+					acceptedCommitments = append(acceptedCommitments, temp2...)
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err)
 					}
@@ -88,7 +93,9 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 			{
 				normalTx := tx.(*transaction.Tx)
 				for _, desc := range normalTx.Descs {
-					err := view.processFetchTxViewPoint(acceptedNullifiers, acceptedCommitments, block, db, desc)
+					temp1, temp2, err := view.processFetchTxViewPoint(block, db, desc)
+					acceptedNullifiers = append(acceptedNullifiers, temp1...)
+					acceptedCommitments = append(acceptedCommitments, temp2...)
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err)
 					}
@@ -98,7 +105,9 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 			{
 				votingTx := tx.(*transaction.TxVoting)
 				for _, desc := range votingTx.Descs {
-					err := view.processFetchTxViewPoint(acceptedNullifiers, acceptedCommitments, block, db, desc)
+					temp1, temp2, err := view.processFetchTxViewPoint(block, db, desc)
+					acceptedNullifiers = append(acceptedNullifiers, temp1...)
+					acceptedCommitments = append(acceptedCommitments, temp2...)
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err)
 					}
@@ -108,7 +117,9 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 			{
 				tx := tx.(*transaction.TxCustomToken)
 				for _, desc := range tx.Descs {
-					err := view.processFetchTxViewPoint(acceptedNullifiers, acceptedCommitments, block, db, desc)
+					temp1, temp2, err := view.processFetchTxViewPoint(block, db, desc)
+					acceptedNullifiers = append(acceptedNullifiers, temp1...)
+					acceptedCommitments = append(acceptedCommitments, temp2...)
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err)
 					}
@@ -122,11 +133,11 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 	}
 
 	if len(acceptedNullifiers) > 0 {
-		for key, item := range acceptedNullifiers {
-			view.listNullifiers[key] = append(view.listNullifiers[key], item...)
+		for _, item := range acceptedNullifiers {
+			view.listNullifiers = append(view.listNullifiers, item)
 		}
-		for key, item := range acceptedCommitments {
-			view.listCommitments[key] = append(view.listCommitments[key], item...)
+		for _, item := range acceptedCommitments {
+			view.listCommitments = append(view.listCommitments, item)
 		}
 	}
 	return nil
