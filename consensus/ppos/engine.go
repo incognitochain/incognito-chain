@@ -157,7 +157,7 @@ func (self *Engine) Start() error {
 						return
 					}*/
 					// end TODO
-					err = self.config.BlockChain.CreateTxViewPoint(block)
+					err = self.config.BlockChain.CreateAndSaveTxViewPoint(block)
 					if err != nil {
 						Logger.log.Error(err)
 						return

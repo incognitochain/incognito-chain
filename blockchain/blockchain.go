@@ -441,7 +441,7 @@ func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 	return view, nil
 }
 
-func (self *BlockChain) CreateTxViewPoint(block *Block) error {
+func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 	view := NewTxViewPoint(block.Header.ChainID)
 
 	err := view.fetchTxViewPoint(self.config.DataBase, block)
@@ -450,9 +450,16 @@ func (self *BlockChain) CreateTxViewPoint(block *Block) error {
 	}
 
 	// check custom token and save
-	for _, customTokenTx := range view.customTokenTxs {
+	for indexTx, customTokenTx := range view.customTokenTxs {
 		if customTokenTx.TxToken.Type == transaction.CustomTokenInit {
-			// TODO save DB custom token
+			err = self.config.DataBase.StoreCustomToken(customTokenTx.TxToken.PropertyID[:], customTokenTx.Hash()[:])
+			if err != nil {
+				return err
+			}
+			err = self.config.DataBase.StoreCustomTokenTx(customTokenTx.TxToken.PropertyID[:], block.Header.ChainID, block.Height, indexTx, customTokenTx.Hash()[:])
+			if err != nil {
+				return err
+			}
 		}
 	}
 

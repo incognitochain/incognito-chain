@@ -40,10 +40,10 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	} else {
 		Logger.log.Infof("Number of transaction in this block %+i", len(block.Transactions))
 	}
-	for index,tx := range block.Transactions{
-		err := self.StoreTransactionIndex(tx.Hash(),block.Hash(), index)
+	for index, tx := range block.Transactions {
+		err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
 		if err != nil {
-			Logger.log.Error("ERROR",err,"Transaction in block with hash", blockHash, "and Index", index, ":", tx)
+			Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and Index", index, ":", tx)
 			return NewBlockChainError(UnExpectedError, err)
 		}
 		Logger.log.Infof("Transaction in block with hash", blockHash, "and Index", index, ":", tx)
@@ -57,7 +57,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 	// fetch nullifiers and commitments(utxo) from block and save
-	err = self.CreateTxViewPoint(block)
+	err = self.CreateAndSaveTxViewPoint(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
