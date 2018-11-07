@@ -8,10 +8,11 @@ import (
 	"math"
 	"math/big"
 	"sort"
+	"strconv"
+
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy/client"
-	"strconv"
 )
 
 // TxCustomToken ...

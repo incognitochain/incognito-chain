@@ -2,15 +2,19 @@ package transaction
 
 import (
 	"math/big"
-	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy/client"
 )
 
-type TxLoanRequest struct {
-	Tx
+type LoanParams struct {
+	InterestRate     uint64 // basis points, e.g. 125 represents 1.25%
+	Maturity         uint64 // seconds
+	LiquidationStart uint64 // ratio between collateral and debt to start auto-liquidation, stored in basis points
+}
 
+type LoanRequest struct {
+	Params           LoanParams
 	LoanID           []byte // 32 bytes
 	CollateralType   string
 	CollateralTx     []byte // Tx hash in case of ETH
@@ -20,6 +24,49 @@ type TxLoanRequest struct {
 	ReceiveAddress *client.PaymentAddress
 
 	KeyDigest []byte // 32 bytes, from sha256
+}
+
+type TxLoanRequest struct {
+	*Tx          // for fee
+	*LoanRequest // data for a loan request
+}
+
+// CreateTxLoanRequest
+// senderKey and paymentInfo is for paying fee
+func CreateTxLoanRequest(
+	senderKey *client.SpendingKey,
+	paymentInfo []*client.PaymentInfo,
+	rts map[byte]*common.Hash,
+	usableTx map[byte][]*Tx,
+	nullifiers map[byte]([][]byte),
+	commitments map[byte]([][]byte),
+	fee uint64,
+	assetType string,
+	senderChainID byte,
+	loanRequest *LoanRequest,
+) (*TxLoanRequest, error) {
+	// Create tx for fee
+	tx, err := CreateTx(
+		senderKey,
+		paymentInfo,
+		rts,
+		usableTx,
+		nullifiers,
+		commitments,
+		fee,
+		assetType,
+		senderChainID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	txLoanRequest := &TxLoanRequest{
+		Tx:          tx,
+		LoanRequest: loanRequest,
+	}
+
+	return txLoanRequest, nil
 }
 
 func (tx *TxLoanRequest) Hash() *common.Hash {
@@ -33,7 +80,7 @@ func (tx *TxLoanRequest) Hash() *common.Hash {
 	record += tx.CollateralAmount.String()
 
 	// add more hash of loan data
-	record += strconv.Itoa(tx.LoanID)
+	record += string(tx.LoanID)
 	record += string(tx.ReceiveAddress.ToBytes())
 
 	// final hash
