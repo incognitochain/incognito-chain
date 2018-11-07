@@ -374,16 +374,9 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 				Amount:         tokenParams.Amount,
 			}
 			var VoutsTemp []TxTokenVout
-			var tempAmount uint64
 
 			receiver := tokenParams.Receiver
 			receiverAmount := receiver.Value
-			if tempAmount+receiver.Value > tokenParams.Amount {
-				receiverAmount = tokenParams.Amount - tempAmount
-				tempAmount = tokenParams.Amount
-			} else {
-				tempAmount += receiver.Value
-			}
 			VoutsTemp = append(VoutsTemp, TxTokenVout{
 				PaymentAddress: receiver.PaymentAddress,
 				Value:          receiverAmount,

@@ -781,30 +781,39 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, 
 		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
 		Receiver:       transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"]),
 	}
-	if tokenParams.TokenTxType == transaction.CustomTokenTransfer {
-		unspentTxTokenOuts, err := self.config.BlockChain.GetUnspentTxTokenVoutBySender(senderKey.KeySet)
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
-		}
-		if len(unspentTxTokenOuts) == 0 {
-			return nil, NewRPCError(ErrUnexpected, errors.New("Balance of token is zero"))
-		}
-		txTokenIns := []transaction.TxTokenVin{}
-		for _, out := range unspentTxTokenOuts {
-			item := transaction.TxTokenVin{
-				PaymentAddress:  out.PaymentAddress,
-				TxCustomTokenID: out.GetTxCustomTokenID(),
-				VoutIndex:       out.GetIndex(),
-			}
-			// TODO create signature -> base58check.encode of txtokenout double hash
-			signature, err := senderKey.KeySet.Sign(out.Hash()[:])
+	switch tokenParams.TokenTxType {
+	case transaction.CustomTokenTransfer:
+		{
+			unspentTxTokenOuts, err := self.config.BlockChain.GetUnspentTxTokenVoutBySender(senderKey.KeySet)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
-			item.Signature = base58.Base58Check{}.Encode(signature, 0)
-			txTokenIns = append(txTokenIns, item)
+			if len(unspentTxTokenOuts) == 0 {
+				return nil, NewRPCError(ErrUnexpected, errors.New("Balance of token is zero"))
+			}
+			txTokenIns := []transaction.TxTokenVin{}
+			for _, out := range unspentTxTokenOuts {
+				item := transaction.TxTokenVin{
+					PaymentAddress:  out.PaymentAddress,
+					TxCustomTokenID: out.GetTxCustomTokenID(),
+					VoutIndex:       out.GetIndex(),
+				}
+				// TODO create signature -> base58check.encode of txtokenout double hash
+				signature, err := senderKey.KeySet.Sign(out.Hash()[:])
+				if err != nil {
+					return nil, NewRPCError(ErrUnexpected, err)
+				}
+				item.Signature = base58.Base58Check{}.Encode(signature, 0)
+				txTokenIns = append(txTokenIns, item)
+			}
+			tokenParams.SetVins(txTokenIns)
 		}
-		tokenParams.SetVins(txTokenIns)
+	case transaction.CustomTokenInit:
+		{
+			if tokenParams.Receiver.Value != tokenParams.Amount { // Init with wrong max amount of custom token
+				return nil, NewRPCError(ErrUnexpected, errors.New("Init with wrong max amount of property"))
+			}
+		}
 	}
 
 	totalAmmount := estimateFeeCoinPerKb

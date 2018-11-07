@@ -583,131 +583,108 @@ func (self *BlockChain) GetListTxByPrivateKeyInBlock(privateKey *client.Spending
 
 	chainId := block.Header.ChainID
 	results[chainId] = make([]transaction.Tx, 0)
-	blockHeight := block.Height
 
-	for blockHeight > 0 {
-		txsInBlock := block.Transactions
-		txsInBlockAccepted := make([]transaction.Tx, 0)
-		for _, txInBlock := range txsInBlock {
-			if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
-				tx := txInBlock.(*transaction.Tx)
-				copyTx := transaction.Tx{
-					Version:         tx.Version,
-					JSSig:           tx.JSSig,
-					JSPubKey:        tx.JSPubKey,
-					Fee:             tx.Fee,
-					Type:            tx.Type,
-					LockTime:        tx.LockTime,
-					Descs:           make([]*transaction.JoinSplitDesc, 0),
-					AddressLastByte: tx.AddressLastByte,
+	txsInBlock := block.Transactions
+	txsInBlockAccepted := make([]transaction.Tx, 0)
+	for _, txInBlock := range txsInBlock {
+		if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
+			tx := txInBlock.(*transaction.Tx)
+			copyTx := transaction.Tx{
+				Version:         tx.Version,
+				JSSig:           tx.JSSig,
+				JSPubKey:        tx.JSPubKey,
+				Fee:             tx.Fee,
+				Type:            tx.Type,
+				LockTime:        tx.LockTime,
+				Descs:           make([]*transaction.JoinSplitDesc, 0),
+				AddressLastByte: tx.AddressLastByte,
+			}
+			// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
+			listDesc := make([]*transaction.JoinSplitDesc, 0)
+			for _, desc := range tx.Descs {
+				copyDesc := &transaction.JoinSplitDesc{
+					Anchor:        desc.Anchor,
+					Reward:        desc.Reward,
+					Commitments:   make([][]byte, 0),
+					EncryptedData: make([][]byte, 0),
 				}
-				// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
-				listDesc := make([]*transaction.JoinSplitDesc, 0)
-				for _, desc := range tx.Descs {
-					copyDesc := &transaction.JoinSplitDesc{
-						Anchor:        desc.Anchor,
-						Reward:        desc.Reward,
-						Commitments:   make([][]byte, 0),
-						EncryptedData: make([][]byte, 0),
-					}
-					if desc.Proof != nil && len(desc.EncryptedData) > 0 {
-						// have privacy
-						for i, encData := range desc.EncryptedData {
-							var epk client.EphemeralPubKey
-							copy(epk[:], desc.EphemeralPubKey)
-							hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
-							note := new(client.Note)
-							note, err := client.DecryptNote(encData, keys.ReadonlyKey.Skenc, keys.PaymentAddress.Pkenc, epk, hSig)
-							if err == nil && note != nil && note.Value > 0 {
-								// can decrypt data -> got candidate commitment
-								candidateCommitment := desc.Commitments[i]
-								if len(nullifiersInDb) > 0 {
-									// -> check commitment with db nullifiers
-									var rho [32]byte
-									copy(rho[:], note.Rho)
-									candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
-									if len(candidateNullifier) == 0 {
-										continue
-									}
-									checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
-									if err != nil || checkCandiateNullifier == true {
-										// candidate nullifier is not existed in db
-										continue
-									}
+				if desc.Proof != nil && len(desc.EncryptedData) > 0 {
+					// have privacy
+					for i, encData := range desc.EncryptedData {
+						var epk client.EphemeralPubKey
+						copy(epk[:], desc.EphemeralPubKey)
+						hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
+						note := new(client.Note)
+						note, err := client.DecryptNote(encData, keys.ReadonlyKey.Skenc, keys.PaymentAddress.Pkenc, epk, hSig)
+						if err == nil && note != nil && note.Value > 0 {
+							// can decrypt data -> got candidate commitment
+							candidateCommitment := desc.Commitments[i]
+							if len(nullifiersInDb) > 0 {
+								// -> check commitment with db nullifiers
+								var rho [32]byte
+								copy(rho[:], note.Rho)
+								candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
+								if len(candidateNullifier) == 0 {
+									continue
 								}
-								copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
-								copyDesc.AppendNote(note)
-								note.Cm = candidateCommitment
-								note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
-								copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
-							} else {
-								continue
-							}
-						}
-					} else {
-						for i, note := range desc.Note {
-							if note.Apk == keys.PaymentAddress.Apk {
-								// no privacy
-								candidateCommitment := desc.Commitments[i]
-								if len(nullifiersInDb) > 0 {
-									// -> check commitment with db nullifiers
-									var rho [32]byte
-									copy(rho[:], note.Rho)
-									candidateNullifier := desc.Nullifiers
-									if len(candidateNullifier) == 0 {
-										continue
-									}
-									checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
-									if err != nil || checkCandiateNullifier == true {
-										// candidate nullifier is not existed in db
-										continue
-									}
+								checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
+								if err != nil || checkCandiateNullifier == true {
+									// candidate nullifier is not existed in db
+									continue
 								}
-								copyDesc.AppendNote(note)
-								note.Cm = candidateCommitment
-								note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
-								copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
 							}
+							copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
+							copyDesc.AppendNote(note)
+							note.Cm = candidateCommitment
+							note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
+							copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
+						} else {
+							continue
 						}
 					}
-					if len(copyDesc.Note) > 0 {
-						listDesc = append(listDesc, copyDesc)
+				} else {
+					for i, note := range desc.Note {
+						if note.Apk == keys.PaymentAddress.Apk {
+							// no privacy
+							candidateCommitment := desc.Commitments[i]
+							if len(nullifiersInDb) > 0 {
+								// -> check commitment with db nullifiers
+								var rho [32]byte
+								copy(rho[:], note.Rho)
+								candidateNullifier := desc.Nullifiers
+								if len(candidateNullifier) == 0 {
+									continue
+								}
+								checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
+								if err != nil || checkCandiateNullifier == true {
+									// candidate nullifier is not existed in db
+									continue
+								}
+							}
+							copyDesc.AppendNote(note)
+							note.Cm = candidateCommitment
+							note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
+							copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
+						}
 					}
 				}
-				if len(listDesc) > 0 {
-					copyTx.Descs = listDesc
-				}
-				if len(copyTx.Descs) > 0 {
-					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
+				if len(copyDesc.Note) > 0 {
+					listDesc = append(listDesc, copyDesc)
 				}
 			}
-			// TODO Voting
-		}
-		// detected some tx can be accepted
-		if len(txsInBlockAccepted) > 0 {
-			// add to result
-			results[chainId] = append(results[chainId], txsInBlockAccepted...)
-		}
-
-		// continue with previous block
-		blockHeight--
-		if chainId != 0 && blockHeight == 1 {
-			break
-		}
-		if blockHeight > 0 {
-			// not is genesis block
-			preBlockHash := block.Header.PrevBlockHash
-			preBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-			if err != nil || blockHeight != preBlock.Height {
-				// pre-block is not the same block-height with calculation -> invalid blockchain
-				self.chainLock.Unlock()
-				return nil, errors.New("Invalid blockchain")
+			if len(listDesc) > 0 {
+				copyTx.Descs = listDesc
 			}
-			block = preBlock
+			if len(copyTx.Descs) > 0 {
+				txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
+			}
 		}
 	}
-	// sort txs
-	transaction.SortArrayTxs(results[chainId], sortType, sortAsc)
+	// detected some tx can be accepted
+	if len(txsInBlockAccepted) > 0 {
+		// add to result
+		results[chainId] = append(results[chainId], txsInBlockAccepted...)
+	}
 	return results, nil
 }
 
@@ -735,16 +712,42 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, so
 		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
 	}
 
+	// loop on all chains
 	for _, bestState := range self.BestState {
-		// get best blockFs
+		// get best block
 		block := bestState.BestBlock
-		var err1 error
-		results, err1 = self.GetListTxByPrivateKeyInBlock(privateKey, block, nullifiersInDb, sortType, sortAsc)
-		if err1 != nil {
-			// unlock chain
-			self.chainLock.Unlock()
-			return nil, err1
+		chainId := block.Header.ChainID
+		blockHeight := bestState.BestBlock.Height
+		// loop on all blocks in chain
+		for blockHeight > 0 {
+			var err1 error
+			// fetch block to get tx
+			resultsInChain, err1 := self.GetListTxByPrivateKeyInBlock(privateKey, block, nullifiersInDb, sortType, sortAsc)
+			if err1 != nil {
+				// unlock chain
+				self.chainLock.Unlock()
+				return nil, err1
+			}
+			results[chainId] = append(results[chainId], resultsInChain[chainId]...)
+			// continue with previous block
+			blockHeight--
+			if chainId != 0 && blockHeight == 1 {
+				break
+			}
+			if blockHeight > 0 {
+				// not is genesis block
+				preBlockHash := block.Header.PrevBlockHash
+				preBlock, err := self.GetBlockByBlockHash(&preBlockHash)
+				if err != nil || blockHeight != preBlock.Height {
+					// pre-block is not the same block-height with calculation -> invalid blockchain
+					self.chainLock.Unlock()
+					return nil, errors.New("Invalid blockchain")
+				}
+				block = preBlock
+			}
 		}
+		// sort txs
+		transaction.SortArrayTxs(results[chainId], sortType, sortAsc)
 	}
 
 	// unlock chain
