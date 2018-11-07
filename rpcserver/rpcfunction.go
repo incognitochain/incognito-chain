@@ -728,20 +728,19 @@ func (self RpcServer) handleListUnspentCustomTokenTransaction(params interface{}
 func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	arrayParams := common.InterfaceSlice(params)
 	// param #1: transaction Hash
+	Logger.log.Infof("Get TransactionByHash input Param %+v", arrayParams[0].(string))
 	txHash,_ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
+	Logger.log.Infof("Get Transaction By Hash %+v", txHash)
 	blockHash, index, tx, err := self.config.BlockChain.GetTransactionByHash(txHash)
 	if err != nil {
+		Logger.log.Errorf("Error getting blockhash and txindex in transaction by hash %+v", err)
 		return nil, err
 	}
 	result := jsonresult.TransactionDetail{
 		BlockHash: blockHash.String(),
 		Index: uint64(index),
 		Hash: tx.Hash().String(),
-		ValidateTransaction: tx.ValidateTransaction(),
-		Type: tx.GetType(),
-		TxVirtualSize: tx.GetTxVirtualSize(),
-		SenderAddrLastByte: tx.GetSenderAddrLastByte(),
-		TxFee: tx.GetTxFee(),
+		Tx: tx.(*transaction.Tx),
 	}
 	return result,nil
 }

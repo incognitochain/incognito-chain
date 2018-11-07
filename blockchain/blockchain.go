@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"errors"
-
 	//"fmt"
 	//"time"
 
@@ -941,7 +940,9 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (*common.Hash,
 		}
 		block, err := self.GetBlockByBlockHash(blockHash)
 		if err != nil {
+			Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and Index", index, "contains", block.Transactions[index])
 			return nil, -1, nil, err
 		}
+		Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and Index", index, "contains", block.Transactions[index])
 		return blockHash, index, block.Transactions[index], nil
 }
