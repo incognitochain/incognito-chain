@@ -738,7 +738,13 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, so
 	for _, bestState := range self.BestState {
 		// get best blockFs
 		block := bestState.BestBlock
-		results, _ = self.GetListTxByPrivateKeyInBlock(privateKey, block, nullifiersInDb, sortType, sortAsc)
+		var err1 error
+		results, err1 = self.GetListTxByPrivateKeyInBlock(privateKey, block, nullifiersInDb, sortType, sortAsc)
+		if err1 != nil {
+			// unlock chain
+			self.chainLock.Unlock()
+			return nil, err1
+		}
 	}
 
 	// unlock chain
