@@ -18,6 +18,6 @@ const (
 )
 
 const (
-	CustomTokenInit     = 0
-	CustomTokenTransfer = 1
+	CustomTokenInit     = iota
+	CustomTokenTransfer
 )

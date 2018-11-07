@@ -11,6 +11,7 @@ type TxViewPoint struct {
 	chainID         byte
 	listNullifiers  [][]byte
 	listCommitments [][]byte
+	customTokenTxs  []*transaction.TxCustomToken
 
 	// hash of best block in current
 	currentBestBlockHash common.Hash
@@ -72,7 +73,6 @@ return a tx view point which contains list new nullifiers and new commitments fr
 func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *Block) error {
 	transactions := block.Transactions
 	// Loop through all of the transaction descs (except for the salary tx)
-	// TODO
 	acceptedNullifiers := make([][]byte, 0)
 	acceptedCommitments := make([][]byte, 0)
 	for _, tx := range transactions {
@@ -123,6 +123,7 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err)
 					}
+					view.customTokenTxs = append(view.customTokenTxs, tx)
 				}
 			}
 		default:
@@ -151,5 +152,6 @@ func NewTxViewPoint(chainId byte) *TxViewPoint {
 		chainID:         chainId,
 		listNullifiers:  make([][]byte, 0),
 		listCommitments: make([][]byte, 0),
+		customTokenTxs:  make([]*transaction.TxCustomToken, 0),
 	}
 }

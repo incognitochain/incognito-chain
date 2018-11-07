@@ -449,6 +449,13 @@ func (self *BlockChain) CreateTxViewPoint(block *Block) error {
 		return err
 	}
 
+	// check custom token and save
+	for _, customTokenTx := range view.customTokenTxs {
+		if customTokenTx.TxToken.Type == transaction.CustomTokenInit {
+			// TODO save DB custom token
+		}
+	}
+
 	// Update the list nullifiers and commitment set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.
