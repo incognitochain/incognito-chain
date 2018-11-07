@@ -35,6 +35,19 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	// such as making blocks that never become part of the main chain or
 	// blocks that fail to connect available for further analysis.
 	err := self.StoreBlock(block)
+	if len(block.Transactions) < 1 {
+		Logger.log.Infof("No transaction in this block")
+	} else {
+		Logger.log.Infof("Number of transaction in this block %+i", len(block.Transactions))
+	}
+	for index,tx := range block.Transactions{
+		err := self.StoreTransactionIndex(tx.Hash(),block.Hash(), index)
+		if err != nil {
+			Logger.log.Error("ERROR",err,"Transaction in block with hash", blockHash, "and Index", index, ":", tx)
+			return NewBlockChainError(UnExpectedError, err)
+		}
+		Logger.log.Infof("Transaction in block with hash", blockHash, "and Index", index, ":", tx)
+	}
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}

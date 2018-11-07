@@ -129,7 +129,6 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 	usableTx map[byte][]*Tx,
 	commitments map[byte]([][]byte),
 	fee uint64,
-	assetType string,
 	senderChainID byte,
 	tokenParams *CustomTokenParamTx) (*TxCustomToken, error) {
 
@@ -345,7 +344,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 
 		// Generate proof and sign tx
 		var reward uint64 // Zero reward for non-salary transaction
-		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, assetType, true)
+		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, true)
 		if err != nil {
 			return nil, err
 		}
@@ -375,25 +374,24 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 				Vouts:          nil,
 				Amount:         tokenParams.Amount,
 			}
-			tx.TxToken.PropertyID = *tx.TxToken.Hash()
-
 			var VoutsTemp []TxTokenVout
-			var tempAmount uint64
 
 			receiver := tokenParams.Receiver
 			receiverAmount := receiver.Value
-			if tempAmount+receiver.Value > tokenParams.Amount {
-				receiverAmount = tokenParams.Amount - tempAmount
-				tempAmount = tokenParams.Amount
-			} else {
-				tempAmount += receiver.Value
-			}
 			VoutsTemp = append(VoutsTemp, TxTokenVout{
 				PaymentAddress: receiver.PaymentAddress,
 				Value:          receiverAmount,
 			})
 
 			tx.TxToken.Vouts = VoutsTemp
+			hashInitToken, err := tx.TxToken.Hash()
+			if err != nil {
+				return nil, errors.New("Can't handle this TokenTxType")
+			}
+			tx.TxToken.PropertyID = *hashInitToken
+
+			// validate PropertyID is the only one
+			// TODO check with db
 		}
 	case CustomTokenTransfer:
 		handled = true

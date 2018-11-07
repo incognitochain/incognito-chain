@@ -19,21 +19,24 @@ type DatabaseInterface interface {
 	GetIndexOfBlock(*common.Hash) (int32, byte, error)
 	GetBlockByIndex(int32, byte) (*common.Hash, error)
 
+	// Transaction Index
+	StoreTransactionIndex(*common.Hash, *common.Hash, int) error
+	GetTransactionIndexById(*common.Hash) (*common.Hash, int, error)
 	// Best state of chain
 	StoreBestState(interface{}, byte) error
 	FetchBestState(byte) ([]byte, error)
 	CleanBestState() error
 
 	// Nullifier
-	StoreNullifiers([]byte, string, byte) error
-	FetchNullifiers(string, byte) ([][]byte, error)
-	HasNullifier([]byte, string, byte) (bool, error)
+	StoreNullifiers([]byte, byte) error
+	FetchNullifiers(byte) ([][]byte, error)
+	HasNullifier([]byte, byte) (bool, error)
 	CleanNullifiers() error
 
 	// Commitment
-	StoreCommitments([]byte, string, byte) error
-	FetchCommitments(string, byte) ([][]byte, error)
-	HasCommitment([]byte, string, byte) (bool, error)
+	StoreCommitments([]byte, byte) error
+	FetchCommitments(byte) ([][]byte, error)
+	HasCommitment([]byte, byte) (bool, error)
 	CleanCommitments() error
 
 	// Fee estimator

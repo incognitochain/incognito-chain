@@ -23,7 +23,6 @@ const (
 	CreateTransaction                  = "createtransaction"
 	SendTransaction                    = "sendtransaction"
 	SendMany                           = "sendmany"
-	GetNumberOfCoinsAndBonds           = "getnumberofcoinsandbonds"
 	CreateActionParamsTransaction      = "createactionparamstransaction"
 	SendRegistrationCandidateCommittee = "sendregistration"
 	SendCustomTokenTransaction         = "sendcustomtokentransaction"
@@ -32,6 +31,7 @@ const (
 	RetrieveCommitteeCandidate         = "retrievecommitteecandidate"
 	GetBlockProducerList               = "getblockproducer"
 	ListUnspentCustomToken             = "listunspentcustomtoken"
+	GetTransactionByHash               = "gettransactionbyhash"
 
 	GetHeader = "getheader"
 

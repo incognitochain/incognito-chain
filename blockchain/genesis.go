@@ -177,7 +177,6 @@ func (self GenesisBlockGenerator) getGenesisTx(genesisBlockReward uint64) (*tran
 		EncryptedData:   encryptedData,
 		EphemeralPubKey: ephemeralPubKey,
 		HSigSeed:        GENESIS_BLOCK_SEED[:],
-		Type:            common.AssetTypeCoin,
 		Reward:          genesisBlockReward,
 		Vmacs:           vmacs,
 	}}

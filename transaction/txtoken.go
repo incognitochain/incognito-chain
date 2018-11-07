@@ -6,6 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy/client"
 	"github.com/ninjadotorg/constant/wallet"
 	"fmt"
+	"github.com/pkg/errors"
 )
 
 // TxTokenVin ...
@@ -72,11 +73,17 @@ type TxToken struct {
 	Vouts          []TxTokenVout
 }
 
-func (self TxToken) Hash() *common.Hash {
+func (self TxToken) Hash() (*common.Hash, error) {
+	if (self.Vouts == nil) {
+		return nil, errors.New("Vout is empty")
+	}
 	record := self.PropertyName + self.PropertyName + fmt.Sprintf("%d", self.Amount)
+	for _, out := range self.Vouts {
+		record += string(out.PaymentAddress.Apk[:])
+	}
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
-	return &hash
+	return &hash, nil
 }
 
 // CustomTokenParamTx - use for rpc request json body

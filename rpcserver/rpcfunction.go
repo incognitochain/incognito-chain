@@ -50,12 +50,12 @@ var RpcHandler = map[string]commandHandler{
 	CreateTransaction:                  RpcServer.handleCreateTransaction,
 	SendTransaction:                    RpcServer.handleSendTransaction,
 	SendMany:                           RpcServer.handlCreateAndSendTx,
-	GetNumberOfCoinsAndBonds:           RpcServer.handleGetNumberOfCoinsAndBonds,
 	CreateActionParamsTransaction:      RpcServer.handleCreateActionParamsTransaction,
 	SendRegistrationCandidateCommittee: RpcServer.handleSendRegistrationCandidateCommittee,
 	SendCustomTokenTransaction:         RpcServer.handleSendCustomTokenTransaction,
 	GetMempoolInfo:                     RpcServer.handleGetMempoolInfo,
 	ListUnspentCustomToken:             RpcServer.handleListUnspentCustomTokenTransaction,
+	GetTransactionByHash:               RpcServer.handleGetTransactionByHash,
 
 	GetCommitteeCandidateList:  RpcServer.handleGetCommitteeCandidateList,
 	RetrieveCommitteeCandidate: RpcServer.handleRetrieveCommiteeCandidate,
@@ -500,7 +500,7 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 
-		txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&readonlyKey.KeySet.PrivateKey, common.AssetTypeCoin, transaction.NoSort, false)
+		txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&readonlyKey.KeySet.PrivateKey, transaction.NoSort, false)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -571,12 +571,9 @@ func (self RpcServer) handleCreateRegistrationCandidateCommittee(params interfac
 		return nil, errors.New("node address is wrong")
 	}
 
-	// ONLY use CONSTANT COIN for registration candidate tx
-	assetType := common.AssetTypeCoin
-
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, assetType, transaction.SortByAmount, false)
+	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
@@ -632,9 +629,9 @@ func (self RpcServer) handleCreateRegistrationCandidateCommittee(params interfac
 	for chainId, _ := range candidateTxsMap {
 		merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
 		// get tx view point
-		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers(common.AssetTypeCoin)
-		commitmentsDb[chainId] = txViewPoint.ListCommitments(common.AssetTypeCoin)
+		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
+		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
+		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
 
 	fmt.Println("Create voting Tx ...")
@@ -644,7 +641,6 @@ func (self RpcServer) handleCreateRegistrationCandidateCommittee(params interfac
 		nullifiersDb,
 		commitmentsDb,
 		realFee,
-		assetType,
 		chainIdSender,
 		nodeAddr)
 	if err != nil {
@@ -723,6 +719,35 @@ func (self RpcServer) handleListUnspentCustomTokenTransaction(params interface{}
 	return unspentTxTokenOuts, err
 }
 
+// Get transaction by Hash
+func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+	// param #1: transaction Hash
+	Logger.log.Infof("Get TransactionByHash input Param %+v", arrayParams[0].(string))
+	txHash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
+	Logger.log.Infof("Get Transaction By Hash %+v", txHash)
+	blockHash, index, tx, err := self.config.BlockChain.GetTransactionByHash(txHash)
+	if err != nil {
+		Logger.log.Errorf("Error getting blockhash and txindex in transaction by hash %+v", err)
+		return nil, err
+	}
+	tempTx := tx.(*transaction.Tx)
+	result := jsonresult.TransactionDetail{
+		BlockHash:       blockHash.String(),
+		Index:           uint64(index),
+		Hash:            tx.Hash().String(),
+		Version:         tempTx.Version,
+		Type:            tempTx.Type,
+		LockTime:        tempTx.LockTime,
+		Fee:             tempTx.Fee,
+		Descs:           tempTx.Descs,
+		JSPubKey:        tempTx.JSPubKey,
+		JSSig:           tempTx.JSSig,
+		AddressLastByte: tempTx.AddressLastByte,
+	}
+	return result, nil
+}
+
 // handleCreateRawCustomTokenTransaction handle create a custom token command.
 func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// all params
@@ -756,37 +781,46 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, 
 		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
 		Receiver:       transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"]),
 	}
-	if tokenParams.TokenTxType == transaction.CustomTokenTransfer {
-		unspentTxTokenOuts, err := self.config.BlockChain.GetUnspentTxTokenVoutBySender(senderKey.KeySet)
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
-		}
-		if len(unspentTxTokenOuts) == 0 {
-			return nil, NewRPCError(ErrUnexpected, errors.New("Balance of token is zero"))
-		}
-		txTokenIns := []transaction.TxTokenVin{}
-		for _, out := range unspentTxTokenOuts {
-			item := transaction.TxTokenVin{
-				PaymentAddress:  out.PaymentAddress,
-				TxCustomTokenID: out.GetTxCustomTokenID(),
-				VoutIndex:       out.GetIndex(),
-			}
-			// TODO create signature -> base58check.encode of txtokenout double hash
-			signature, err := senderKey.KeySet.Sign(out.Hash()[:])
+	switch tokenParams.TokenTxType {
+	case transaction.CustomTokenTransfer:
+		{
+			unspentTxTokenOuts, err := self.config.BlockChain.GetUnspentTxTokenVoutBySender(senderKey.KeySet)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
-			item.Signature = base58.Base58Check{}.Encode(signature, 0)
-			txTokenIns = append(txTokenIns, item)
+			if len(unspentTxTokenOuts) == 0 {
+				return nil, NewRPCError(ErrUnexpected, errors.New("Balance of token is zero"))
+			}
+			txTokenIns := []transaction.TxTokenVin{}
+			for _, out := range unspentTxTokenOuts {
+				item := transaction.TxTokenVin{
+					PaymentAddress:  out.PaymentAddress,
+					TxCustomTokenID: out.GetTxCustomTokenID(),
+					VoutIndex:       out.GetIndex(),
+				}
+				// TODO create signature -> base58check.encode of txtokenout double hash
+				signature, err := senderKey.KeySet.Sign(out.Hash()[:])
+				if err != nil {
+					return nil, NewRPCError(ErrUnexpected, err)
+				}
+				item.Signature = base58.Base58Check{}.Encode(signature, 0)
+				txTokenIns = append(txTokenIns, item)
+			}
+			tokenParams.SetVins(txTokenIns)
 		}
-		tokenParams.SetVins(txTokenIns)
+	case transaction.CustomTokenInit:
+		{
+			if tokenParams.Receiver.Value != tokenParams.Amount { // Init with wrong max amount of custom token
+				return nil, NewRPCError(ErrUnexpected, errors.New("Init with wrong max amount of property"))
+			}
+		}
 	}
 
 	totalAmmount := estimateFeeCoinPerKb
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, common.AssetTypeCoin, transaction.SortByAmount, false)
+	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
@@ -842,9 +876,9 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, 
 	for chainId, _ := range candidateTxsMap {
 		merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
 		// get tx view point
-		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers(common.AssetTypeCoin)
-		commitmentsDb[chainId] = txViewPoint.ListCommitments(common.AssetTypeCoin)
+		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
+		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
+		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
 
 	tx, err := transaction.CreateTxCustomToken(&senderKey.KeySet.PrivateKey, nil,
@@ -852,7 +886,6 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, 
 		candidateTxsMap,
 		commitmentsDb,
 		realFee,
-		common.AssetTypeCoin,
 		chainIdSender,
 		tokenParams)
 	if err != nil {
@@ -974,7 +1007,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, common.AssetTypeCoin, transaction.SortByAmount, false)
+	usableTxsMap, _ := self.config.BlockChain.GetListTxByPrivateKey(&senderKey.KeySet.PrivateKey, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
@@ -1031,9 +1064,9 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	for chainId, _ := range candidateTxsMap {
 		merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
 		// get tx view point
-		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers(common.AssetTypeCoin)
-		commitmentsDb[chainId] = txViewPoint.ListCommitments(common.AssetTypeCoin)
+		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
+		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
+		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
 
 	tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos,
@@ -1134,18 +1167,6 @@ func (self RpcServer) handlCreateAndSendTx(params interface{}, closeChan <-chan 
 	return result, nil
 }
 
-/*
- * handleGetNumberOfCoins handles getNumberOfCoins commands.
- */
-func (self RpcServer) handleGetNumberOfCoinsAndBonds(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	Logger.log.Info(params)
-	result, err := self.config.BlockChain.GetAllUnitCoinSupplier()
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	return result, err
-}
-
 func assertEligibleAgentIDs(eligibleAgentIDs interface{}) []string {
 	assertedEligibleAgentIDs := eligibleAgentIDs.([]interface{})
 	results := []string{}
@@ -1218,7 +1239,7 @@ func (self RpcServer) HandleListAccounts(params interface{}, closeChan <-chan st
 	}
 	accounts := self.config.Wallet.ListAccounts()
 	for accountName, account := range accounts {
-		txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.AssetTypeCoin, transaction.NoSort, false)
+		txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, transaction.NoSort, false)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -1369,7 +1390,7 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 	if accountName == "*" {
 		// get balance for all accounts in wallet
 		for _, account := range self.config.Wallet.MasterAccount.Child {
-			txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.AssetTypeCoin, transaction.NoSort, false)
+			txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, transaction.NoSort, false)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
@@ -1388,7 +1409,7 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 		for _, account := range self.config.Wallet.MasterAccount.Child {
 			if account.Name == accountName {
 				// get balance for accountName in wallet
-				txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.AssetTypeCoin, transaction.NoSort, false)
+				txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, transaction.NoSort, false)
 				if err != nil {
 					return nil, NewRPCError(ErrUnexpected, err)
 				}
@@ -1443,7 +1464,7 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 	for _, account := range self.config.Wallet.MasterAccount.Child {
 		if account.Name == accountName {
 			// get balance for accountName in wallet
-			txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, common.AssetTypeCoin, transaction.NoSort, false)
+			txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&account.Key.KeySet.PrivateKey, transaction.NoSort, false)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}

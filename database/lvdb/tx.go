@@ -3,6 +3,10 @@ package lvdb
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"github.com/ninjadotorg/constant/common"
+	"strconv"
+	"strings"
 
 	"github.com/ninjadotorg/constant/database"
 
@@ -11,8 +15,8 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-func (db *db) StoreNullifiers(nullifier []byte, coinType string, chainId byte) error {
-	key := db.getKey(string(nullifiersPrefix), coinType)
+func (db *db) StoreNullifiers(nullifier []byte, chainId byte) error {
+	key := db.getKey(string(nullifiersPrefix), "")
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -36,8 +40,8 @@ func (db *db) StoreNullifiers(nullifier []byte, coinType string, chainId byte) e
 	return nil
 }
 
-func (db *db) FetchNullifiers(coinType string, chainID byte) ([][]byte, error) {
-	key := db.getKey(string(nullifiersPrefix), coinType)
+func (db *db) FetchNullifiers(chainID byte) ([][]byte, error) {
+	key := db.getKey(string(nullifiersPrefix), "")
 	key = append(key, chainID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -53,8 +57,8 @@ func (db *db) FetchNullifiers(coinType string, chainID byte) ([][]byte, error) {
 	return txs, nil
 }
 
-func (db *db) HasNullifier(nullifier []byte, coinType string, chainID byte) (bool, error) {
-	listNullifiers, err := db.FetchNullifiers(coinType, chainID)
+func (db *db) HasNullifier(nullifier []byte, chainID byte) (bool, error) {
+	listNullifiers, err := db.FetchNullifiers(chainID)
 	if err != nil {
 		return false, database.NewDatabaseError(database.UnexpectedError, err)
 	}
@@ -81,8 +85,8 @@ func (db *db) CleanNullifiers() error {
 	return nil
 }
 
-func (db *db) StoreCommitments(commitments []byte, coinType string, chainId byte) error {
-	key := db.getKey(string(commitmentsPrefix), coinType)
+func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
+	key := db.getKey(string(commitmentsPrefix), "")
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -106,8 +110,8 @@ func (db *db) StoreCommitments(commitments []byte, coinType string, chainId byte
 	return nil
 }
 
-func (db *db) FetchCommitments(coinType string, chainId byte) ([][]byte, error) {
-	key := db.getKey(string(commitmentsPrefix), coinType)
+func (db *db) FetchCommitments(chainId byte) ([][]byte, error) {
+	key := db.getKey(string(commitmentsPrefix), "")
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -122,8 +126,8 @@ func (db *db) FetchCommitments(coinType string, chainId byte) ([][]byte, error) 
 	}
 	return txs, nil
 }
-func (db *db) HasCommitment(commitment []byte, coinType string, chainId byte) (bool, error) {
-	listCommitments, err := db.FetchCommitments(coinType, chainId)
+func (db *db) HasCommitment(commitment []byte, chainId byte) (bool, error) {
+	listCommitments, err := db.FetchCommitments(chainId)
 	if err != nil {
 		return false, database.NewDatabaseError(database.UnexpectedError, err)
 	}
@@ -178,4 +182,50 @@ func (db *db) CleanFeeEstimator() error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
 	}
 	return nil
+}
+
+/*
+	StoreTransactionIndex
+	Store tx detail location
+*/
+func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, index int) error {
+	key := string(transactionKeyPrefix) + txId.String()
+	value := blockHash.String() + string(spliter) + strconv.Itoa(index)
+	fmt.Println("Key in StoreTransactionIndex", key)
+	fmt.Println("Value in StoreTransactionIndex", value)
+	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/*
+  GetTransactionDetail
+	allow to get transaction detail via its position in block
+*/
+
+func (db *db) GetTransactionIndexById(txId *common.Hash)  (*common.Hash, int, error) {
+	fmt.Println("TxID in GetTransactionById", txId.String())
+	key := string(transactionKeyPrefix) + txId.String()
+	_, err := db.hasValue([]byte(key))
+	if err != nil {
+		fmt.Println("ERROR in finding transaction id",txId.String(), err)
+		return nil, -1, err
+	}
+	res, err := db.lvdb.Get([]byte(key), nil)
+	if err != nil {
+		return nil, -1, err;
+	}
+	reses := strings.Split(string(res),(string(spliter)))
+	hash, err :=  common.Hash{}.NewHashFromStr(reses[0])
+	if err != nil {
+		return nil, -1, err;
+	}
+	index, err := strconv.Atoi(reses[1])
+	if err != nil {
+		return nil, -1, err;
+	}
+	fmt.Println("BlockHash", hash, "Transaction index", index)
+	return hash, index, nil
 }

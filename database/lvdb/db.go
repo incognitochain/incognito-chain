@@ -20,10 +20,12 @@ var (
 	chainIDPrefix     = []byte("c")
 	blockKeyPrefix    = []byte("b-")
 	blockKeyIdxPrefix = []byte("i-")
+	transactionKeyPrefix    = []byte("tx-")
 	nullifiersPrefix  = []byte("nullifiers-")
 	commitmentsPrefix = []byte("commitments-")
 	bestBlockKey      = []byte("bestBlock")
 	feeEstimator      = []byte("feeEstimator")
+	spliter 					= []byte("---")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {
