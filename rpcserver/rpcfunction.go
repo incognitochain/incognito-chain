@@ -724,20 +724,28 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 	arrayParams := common.InterfaceSlice(params)
 	// param #1: transaction Hash
 	Logger.log.Infof("Get TransactionByHash input Param %+v", arrayParams[0].(string))
-	txHash,_ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
+	txHash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
 	Logger.log.Infof("Get Transaction By Hash %+v", txHash)
 	blockHash, index, tx, err := self.config.BlockChain.GetTransactionByHash(txHash)
 	if err != nil {
 		Logger.log.Errorf("Error getting blockhash and txindex in transaction by hash %+v", err)
 		return nil, err
 	}
+	tempTx := tx.(*transaction.Tx)
 	result := jsonresult.TransactionDetail{
-		BlockHash: blockHash.String(),
-		Index: uint64(index),
-		Hash: tx.Hash().String(),
-		Tx: tx.(*transaction.Tx),
+		BlockHash:       blockHash.String(),
+		Index:           uint64(index),
+		Hash:            tx.Hash().String(),
+		Version:         tempTx.Version,
+		Type:            tempTx.Type,
+		LockTime:        tempTx.LockTime,
+		Fee:             tempTx.Fee,
+		Descs:           tempTx.Descs,
+		JSPubKey:        tempTx.JSPubKey,
+		JSSig:           tempTx.JSSig,
+		AddressLastByte: tempTx.AddressLastByte,
 	}
-	return result,nil
+	return result, nil
 }
 
 // handleCreateRawCustomTokenTransaction handle create a custom token command.
