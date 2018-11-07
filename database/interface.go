@@ -44,5 +44,10 @@ type DatabaseInterface interface {
 	GetFeeEstimator(byte) ([]byte, error)
 	CleanFeeEstimator() error
 
+	// Custom token
+	StoreCustomToken([]byte, []byte) error                       // param: tokenID, txInitToken-id
+	StoreCustomTokenTx([]byte, int32, byte, int32, []byte) error // param: tokenID, block height, chainID, tx-id
+	ListCustomToken() [][]byte
+
 	Close() error
 }
