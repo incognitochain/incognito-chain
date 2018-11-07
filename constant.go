@@ -74,8 +74,8 @@ func mainMaster(serverChan chan<- *Server) error {
 			walletObj.Save(cfg.WalletPassphrase)
 
 			// write log and exit when can not load wallet
-			Logger.log.Criticalf("Can not load wallet with %s. Please use constantctl to create a new wallet", walletObj.Config.DataPath)
-			return err
+			//Logger.log.Criticalf("Can not load wallet with %s. Please use constantctl to create a new wallet", walletObj.Config.DataPath)
+			//return err
 		}
 	}
 

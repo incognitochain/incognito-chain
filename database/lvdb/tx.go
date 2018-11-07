@@ -3,6 +3,7 @@ package lvdb
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/ninjadotorg/constant/common"
 	"strconv"
 	"strings"
@@ -189,8 +190,9 @@ func (db *db) CleanFeeEstimator() error {
 */
 func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, index int) error {
 	key := string(transactionKeyPrefix) + txId.String()
-	value := blockHash.String() + string(spliter) + string(index)
-
+	value := blockHash.String() + string(spliter) + strconv.Itoa(index)
+	fmt.Println("Key in StoreTransactionIndex", key)
+	fmt.Println("Value in StoreTransactionIndex", value)
 	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
 		return err
 	}
@@ -203,15 +205,20 @@ func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, i
 	allow to get transaction detail via its position in block
 */
 
-func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, error) {
-	//
+func (db *db) GetTransactionIndexById(txId *common.Hash)  (*common.Hash, int, error) {
+	fmt.Println("TxID in GetTransactionById", txId.String())
 	key := string(transactionKeyPrefix) + txId.String()
+	_, err := db.hasValue([]byte(key))
+	if err != nil {
+		fmt.Println("ERROR in finding transaction id",txId.String(), err)
+		return nil, -1, err
+	}
 	res, err := db.lvdb.Get([]byte(key), nil)
 	if err != nil {
 		return nil, -1, err;
 	}
-	reses := strings.Split(string(res), (string(spliter)))
-	hash, err := common.Hash{}.NewHashFromStr(reses[0])
+	reses := strings.Split(string(res),(string(spliter)))
+	hash, err :=  common.Hash{}.NewHashFromStr(reses[0])
 	if err != nil {
 		return nil, -1, err;
 	}
@@ -219,6 +226,6 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 	if err != nil {
 		return nil, -1, err;
 	}
-
+	fmt.Println("BlockHash", hash, "Transaction index", index)
 	return hash, index, nil
 }
