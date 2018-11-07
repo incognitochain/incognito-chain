@@ -373,8 +373,6 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 				Vouts:          nil,
 				Amount:         tokenParams.Amount,
 			}
-			tx.TxToken.PropertyID = *tx.TxToken.Hash()
-
 			var VoutsTemp []TxTokenVout
 			var tempAmount uint64
 
@@ -392,6 +390,14 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 			})
 
 			tx.TxToken.Vouts = VoutsTemp
+			hashInitToken, err := tx.TxToken.Hash()
+			if err != nil {
+				return nil, errors.New("Can't handle this TokenTxType")
+			}
+			tx.TxToken.PropertyID = *hashInitToken
+
+			// validate PropertyID is the only one
+			// TODO check with db
 		}
 	case CustomTokenTransfer:
 		handled = true
