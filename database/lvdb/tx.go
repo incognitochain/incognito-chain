@@ -14,8 +14,8 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-func (db *db) StoreNullifiers(nullifier []byte, coinType string, chainId byte) error {
-	key := db.getKey(string(nullifiersPrefix), coinType)
+func (db *db) StoreNullifiers(nullifier []byte, chainId byte) error {
+	key := db.getKey(string(nullifiersPrefix), "")
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -39,8 +39,8 @@ func (db *db) StoreNullifiers(nullifier []byte, coinType string, chainId byte) e
 	return nil
 }
 
-func (db *db) FetchNullifiers(coinType string, chainID byte) ([][]byte, error) {
-	key := db.getKey(string(nullifiersPrefix), coinType)
+func (db *db) FetchNullifiers(chainID byte) ([][]byte, error) {
+	key := db.getKey(string(nullifiersPrefix), "")
 	key = append(key, chainID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -56,8 +56,8 @@ func (db *db) FetchNullifiers(coinType string, chainID byte) ([][]byte, error) {
 	return txs, nil
 }
 
-func (db *db) HasNullifier(nullifier []byte, coinType string, chainID byte) (bool, error) {
-	listNullifiers, err := db.FetchNullifiers(coinType, chainID)
+func (db *db) HasNullifier(nullifier []byte, chainID byte) (bool, error) {
+	listNullifiers, err := db.FetchNullifiers(chainID)
 	if err != nil {
 		return false, database.NewDatabaseError(database.UnexpectedError, err)
 	}
@@ -84,8 +84,8 @@ func (db *db) CleanNullifiers() error {
 	return nil
 }
 
-func (db *db) StoreCommitments(commitments []byte, coinType string, chainId byte) error {
-	key := db.getKey(string(commitmentsPrefix), coinType)
+func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
+	key := db.getKey(string(commitmentsPrefix), "")
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -109,8 +109,8 @@ func (db *db) StoreCommitments(commitments []byte, coinType string, chainId byte
 	return nil
 }
 
-func (db *db) FetchCommitments(coinType string, chainId byte) ([][]byte, error) {
-	key := db.getKey(string(commitmentsPrefix), coinType)
+func (db *db) FetchCommitments(chainId byte) ([][]byte, error) {
+	key := db.getKey(string(commitmentsPrefix), "")
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -125,8 +125,8 @@ func (db *db) FetchCommitments(coinType string, chainId byte) ([][]byte, error) 
 	}
 	return txs, nil
 }
-func (db *db) HasCommitment(commitment []byte, coinType string, chainId byte) (bool, error) {
-	listCommitments, err := db.FetchCommitments(coinType, chainId)
+func (db *db) HasCommitment(commitment []byte, chainId byte) (bool, error) {
+	listCommitments, err := db.FetchCommitments(chainId)
 	if err != nil {
 		return false, database.NewDatabaseError(database.UnexpectedError, err)
 	}
@@ -203,15 +203,15 @@ func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, i
 	allow to get transaction detail via its position in block
 */
 
-func (db *db) GetTransactionIndexById(txId *common.Hash)  (*common.Hash, int, error) {
+func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, error) {
 	//
 	key := string(transactionKeyPrefix) + txId.String()
 	res, err := db.lvdb.Get([]byte(key), nil)
 	if err != nil {
 		return nil, -1, err;
 	}
-	reses := strings.Split(string(res),(string(spliter)))
-	hash, err :=  common.Hash{}.NewHashFromStr(reses[0])
+	reses := strings.Split(string(res), (string(spliter)))
+	hash, err := common.Hash{}.NewHashFromStr(reses[0])
 	if err != nil {
 		return nil, -1, err;
 	}

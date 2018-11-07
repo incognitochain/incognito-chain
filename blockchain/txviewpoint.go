@@ -9,8 +9,8 @@ import (
 
 type TxViewPoint struct {
 	chainID         byte
-	listNullifiers  map[string]([][]byte)
-	listCommitments map[string]([][]byte)
+	listNullifiers  [][]byte
+	listCommitments [][]byte
 
 	// hash of best block in current
 	currentBestBlockHash common.Hash
@@ -20,16 +20,16 @@ type TxViewPoint struct {
 ListNullifiers returns list nullifers which is contained in TxViewPoint
 */
 // #1: joinSplitDescType is "Coin" Or "Bond" or other token
-func (view *TxViewPoint) ListNullifiers(joinSplitDescType string) [][]byte {
-	return view.listNullifiers[joinSplitDescType]
+func (view *TxViewPoint) ListNullifiers() [][]byte {
+	return view.listNullifiers
 }
 
 /*
 ListNullifiers returns list nullifers which is contained in TxViewPoint
 */
 // #1: joinSplitDescType is "Coin" Or "Bond"
-func (view *TxViewPoint) ListCommitments(joinSplitDescType string) [][]byte {
-	return view.listCommitments[joinSplitDescType]
+func (view *TxViewPoint) ListCommitments() [][]byte {
+	return view.listCommitments
 }
 
 /*
@@ -41,23 +41,23 @@ func (view *TxViewPoint) CurrentBestBlockHash() *common.Hash {
 }
 
 // fetch from desc of tx to get nullifiers and commitments
-func (view *TxViewPoint) processFetchTxViewPoint(acceptedNullifiers map[string][][]byte, acceptedCommitments map[string][][]byte, block *Block, db database.DatabaseInterface, desc *transaction.JoinSplitDesc) error {
+func (view *TxViewPoint) processFetchTxViewPoint(acceptedNullifiers [][]byte, acceptedCommitments [][]byte, block *Block, db database.DatabaseInterface, desc *transaction.JoinSplitDesc) error {
 	for _, item := range desc.Nullifiers {
-		temp, err := db.HasNullifier(item, desc.Type, block.Header.ChainID)
+		temp, err := db.HasNullifier(item, block.Header.ChainID)
 		if err != nil {
 			return err
 		}
 		if !temp {
-			acceptedNullifiers[desc.Type] = append(acceptedNullifiers[desc.Type], item)
+			acceptedNullifiers = append(acceptedNullifiers, item)
 		}
 	}
 	for _, item := range desc.Commitments {
-		temp, err := db.HasCommitment(item, desc.Type, block.Header.ChainID)
+		temp, err := db.HasCommitment(item, block.Header.ChainID)
 		if err != nil {
 			return err
 		}
 		if !temp {
-			acceptedCommitments[desc.Type] = append(acceptedCommitments[desc.Type], item)
+			acceptedCommitments = append(acceptedCommitments, item)
 		}
 	}
 	return nil
@@ -70,8 +70,8 @@ return a tx view point which contains list new nullifiers and new commitments fr
 func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *Block) error {
 	transactions := block.Transactions
 	// Loop through all of the transaction descs (except for the salary tx)
-	acceptedNullifiers := make(map[string][][]byte)
-	acceptedCommitments := make(map[string][][]byte)
+	acceptedNullifiers := make([][]byte, 0)
+	acceptedCommitments := make([][]byte, 0)
 	for _, tx := range transactions {
 		switch tx.GetType() {
 		case common.TxNormalType:
@@ -138,7 +138,7 @@ Create a Tx view point, which contains data about nullifiers and commitments
 func NewTxViewPoint(chainId byte) *TxViewPoint {
 	return &TxViewPoint{
 		chainID:         chainId,
-		listNullifiers:  make(map[string]([][]byte)),
-		listCommitments: make(map[string]([][]byte)),
+		listNullifiers:  make([][]byte, 0),
+		listCommitments: make([][]byte, 0),
 	}
 }

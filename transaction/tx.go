@@ -375,7 +375,7 @@ func CreateTx(
 
 		// Generate proof and sign tx
 		var reward uint64 // Zero reward for non-salary transaction
-		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, assetType, false)
+		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, false)
 		if err != nil {
 			return nil, err
 		}
@@ -406,7 +406,6 @@ func (tx *Tx) BuildNewJSDesc(
 	outputs []*client.JSOutput,
 	rtMap map[byte][]byte,
 	reward, fee uint64,
-	assetType string,
 	noPrivacy bool,
 ) error {
 	// Gather inputs from different chains
@@ -437,7 +436,7 @@ func (tx *Tx) BuildNewJSDesc(
 	}
 
 	var ephemeralPrivKey *client.EphemeralPrivKey // nil ephemeral key, will be randomly created later
-	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, ephemeralPrivKey, assetType)
+	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, ephemeralPrivKey)
 	if err != nil {
 		return err
 	}
@@ -454,7 +453,6 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	reward uint64,
 	hSig, seed []byte,
 	ephemeralPrivKey *client.EphemeralPrivKey,
-	assetType string,
 ) error {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
@@ -503,7 +501,6 @@ func (tx *Tx) buildJSDescAndEncrypt(
 		EncryptedData:   noteciphers,
 		EphemeralPubKey: ephemeralPubKey[:],
 		HSigSeed:        seed,
-		Type:            assetType,
 		Reward:          reward,
 		Vmacs:           vmacs,
 	}
@@ -520,7 +517,6 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	fmt.Printf("EncryptedData: %x\n", desc.EncryptedData)
 	fmt.Printf("EphemeralPubKey: %x\n", desc.EphemeralPubKey)
 	fmt.Printf("HSigSeed: %x\n", desc.HSigSeed)
-	fmt.Printf("Type: %+v\n", desc.Type)
 	fmt.Printf("Reward: %+v\n", desc.Reward)
 	fmt.Printf("Vmacs: %x %x\n", desc.Vmacs[0], desc.Vmacs[1])
 	return nil
@@ -664,7 +660,7 @@ func GenerateProofForGenesisTx(
 		return nil, err
 	}
 
-	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, &ephemeralPrivKey, assetType)
+	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, &ephemeralPrivKey)
 	return tx, err
 }
 

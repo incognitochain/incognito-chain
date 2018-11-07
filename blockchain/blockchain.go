@@ -267,12 +267,10 @@ Uses an existing database to update the set of used tx by saving list nullifier 
 this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
-	for coinType, item := range view.listNullifiers {
-		for _, item1 := range item {
-			err := self.config.DataBase.StoreNullifiers(item1, coinType, view.chainID)
-			if err != nil {
-				return err
-			}
+	for _, item1 := range view.listNullifiers {
+		err := self.config.DataBase.StoreNullifiers(item1, view.chainID)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -283,12 +281,10 @@ Uses an existing database to update the set of not used tx by saving list commit
 this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
-	for coinType, item := range view.listCommitments {
-		for _, item1 := range item {
-			err := self.config.DataBase.StoreCommitments(item1, coinType, view.chainID)
-			if err != nil {
-				return err
-			}
+	for _, item1 := range view.listCommitments {
+		err := self.config.DataBase.StoreCommitments(item1, view.chainID)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -298,9 +294,9 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
 */
-func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, coinType string, chainId byte) error {
+func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, chainId byte) error {
 	for _, nullifier := range nullifiers {
-		err := self.config.DataBase.StoreNullifiers(nullifier, coinType, chainId)
+		err := self.config.DataBase.StoreNullifiers(nullifier, chainId)
 		if err != nil {
 			return err
 		}
@@ -312,9 +308,9 @@ func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, co
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
 */
-func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, coinType string, chainId byte) error {
+func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, chainId byte) error {
 	for _, item := range commitments {
-		err := self.config.DataBase.StoreCommitments(item, coinType, chainId)
+		err := self.config.DataBase.StoreCommitments(item, chainId)
 		if err != nil {
 			return err
 		}
@@ -326,14 +322,14 @@ func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte,
 Uses an existing database to update the set of used tx by saving list nullifier of privacy,
 this is a list tx-out which are used by a new tx
 */
-func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx, coinType string) error {
+func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
 	for _, desc := range tx.Descs {
 		for _, nullifier := range desc.Nullifiers {
 			chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
 			if err != nil {
 				return err
 			}
-			err = self.config.DataBase.StoreNullifiers(nullifier, coinType, chainId)
+			err = self.config.DataBase.StoreNullifiers(nullifier, chainId)
 			if err != nil {
 				return err
 			}
@@ -346,14 +342,14 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx, coinType strin
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
 */
-func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx, coinType string) error {
+func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
 	for _, desc := range tx.Descs {
 		for _, item := range desc.Commitments {
 			chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
 			if err != nil {
 				return err
 			}
-			err = self.config.DataBase.StoreCommitments(item, coinType, chainId)
+			err = self.config.DataBase.StoreCommitments(item, chainId)
 			if err != nil {
 				return err
 			}
@@ -430,18 +426,18 @@ func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
 Param coinType - COIN or BOND
 */
-func (self *BlockChain) FetchTxViewPoint(coinType string, chainId byte) (*TxViewPoint, error) {
+func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 	view := NewTxViewPoint(chainId)
-	commitments, err := self.config.DataBase.FetchCommitments(coinType, chainId)
+	commitments, err := self.config.DataBase.FetchCommitments(chainId)
 	if err != nil {
 		return nil, err
 	}
-	view.listCommitments[coinType] = commitments
-	nullifiers, err := self.config.DataBase.FetchNullifiers(coinType, chainId)
+	view.listCommitments = commitments
+	nullifiers, err := self.config.DataBase.FetchNullifiers(chainId)
 	if err != nil {
 		return nil, err
 	}
-	view.listNullifiers[coinType] = nullifiers
+	view.listNullifiers = nullifiers
 	// view.SetBestHash(self.BestState.BestBlockHash)
 	return view, nil
 }
@@ -585,17 +581,12 @@ With private-key, we can check unspent tx by check nullifiers from database
 - Param #1: privateKey - byte[] of privatekey
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, coinType string, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx)
 
 	// Get set of keys from private keybyte
 	keys := cashec.KeySet{}
 	keys.ImportFromPrivateKey(privateKey)
-
-	// set default for params
-	if coinType == "" {
-		coinType = common.AssetTypeCoin
-	}
 
 	// lock chain
 	self.chainLock.Lock()
@@ -605,11 +596,11 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, co
 	for _, bestState := range self.BestState {
 		bestBlock := bestState.BestBlock
 		chainId := bestBlock.Header.ChainID
-		txViewPoint, err := self.FetchTxViewPoint(coinType, chainId)
+		txViewPoint, err := self.FetchTxViewPoint(chainId)
 		if err != nil {
 			return nil, err
 		}
-		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers[coinType]...)
+		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
 	}
 
 	for _, bestState := range self.BestState {
@@ -750,65 +741,6 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, co
 	return results, nil
 }
 
-/*
-GetAllUnitCoinSupplier - return all list unit currency(bond, coin, ...) with amount of every of them
-*/
-func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
-	result := make(map[string]uint64)
-	result[common.AssetTypeCoin] = uint64(0)
-	result[common.AssetTypeBond] = uint64(0)
-
-	// lock chain
-	self.chainLock.Lock()
-	for _, bestState := range self.BestState {
-		// get best block of each chain
-		bestBlock := bestState.BestBlock
-		blockHeight := bestBlock.Height
-
-		for blockHeight > 0 {
-
-			txsInBlock := bestBlock.Transactions
-			totalFeeInBlock := uint64(0)
-			for _, txInBlock := range txsInBlock {
-				tx := txInBlock.(*transaction.Tx)
-				fee := tx.Fee
-				totalFeeInBlock += fee
-			}
-
-			salaryTx := txsInBlock[0].(*transaction.Tx)
-			rewardBond := uint64(0)
-			rewardCoin := uint64(0)
-			for _, desc := range salaryTx.Descs {
-				unitType := desc.Type
-				switch unitType {
-				case common.AssetTypeCoin:
-					rewardCoin += desc.Reward
-				case common.AssetTypeBond:
-					rewardBond += desc.Reward
-				}
-			}
-			rewardCoin -= totalFeeInBlock
-			result[common.AssetTypeCoin] += rewardCoin
-			result[common.AssetTypeBond] += rewardBond
-
-			// continue with previous block
-			blockHeight--
-			if blockHeight > 0 {
-				// not is genesis block
-				preBlockHash := bestBlock.Header.PrevBlockHash
-				bestBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-				if blockHeight != bestBlock.Height || err != nil {
-					// pre-block is not the same block-height with calculation -> invalid blockchain
-					return nil, errors.New("Invalid blockchain")
-				}
-			}
-		}
-	}
-	// unlock chain
-	self.chainLock.Unlock()
-	return result, nil
-}
-
 func (self *BlockChain) GetCommitteCandidate(pubkeyParam string) *CommitteeCandidateInfo {
 	for _, bestState := range self.BestState {
 		for pubkey, candidateInfo := range bestState.Candidates {
@@ -934,14 +866,14 @@ func (self *BlockChain) GetUnspentTxTokenVoutBySender(senderKeyset cashec.KeySet
 	return voutList, nil
 }
 
-func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (*common.Hash, int, transaction.Transaction, error){
-		blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
-		if err != nil {
-			return nil, -1, nil, err
-		}
-		block, err := self.GetBlockByBlockHash(blockHash)
-		if err != nil {
-			return nil, -1, nil, err
-		}
-		return blockHash, index, block.Transactions[index], nil
+func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (*common.Hash, int, transaction.Transaction, error) {
+	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
+	if err != nil {
+		return nil, -1, nil, err
+	}
+	block, err := self.GetBlockByBlockHash(blockHash)
+	if err != nil {
+		return nil, -1, nil, err
+	}
+	return blockHash, index, block.Transactions[index], nil
 }

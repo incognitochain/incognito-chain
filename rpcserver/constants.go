@@ -23,7 +23,6 @@ const (
 	CreateTransaction                  = "createtransaction"
 	SendTransaction                    = "sendtransaction"
 	SendMany                           = "sendmany"
-	GetNumberOfCoinsAndBonds           = "getnumberofcoinsandbonds"
 	CreateActionParamsTransaction      = "createactionparamstransaction"
 	SendRegistrationCandidateCommittee = "sendregistration"
 	SendCustomTokenTransaction         = "sendcustomtokentransaction"
