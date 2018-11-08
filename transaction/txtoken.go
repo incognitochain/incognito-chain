@@ -14,7 +14,7 @@ type TxTokenVin struct {
 	TxCustomTokenID common.Hash
 	VoutIndex       int
 	Signature       string
-	PaymentAddress  client.PaymentAddress
+	PaymentAddress  client.PaymentAddress // use to verify signature of pre-utxo of token
 }
 
 func (self TxTokenVin) Hash() *common.Hash {
@@ -88,6 +88,7 @@ func (self TxToken) Hash() (*common.Hash, error) {
 
 // CustomTokenParamTx - use for rpc request json body
 type CustomTokenParamTx struct {
+	PropertyID     string      `json:"TokenID"`
 	PropertyName   string      `json:"TokenName"`
 	PropertySymbol string      `json:"TokenSymbol"`
 	Amount         uint64      `json:"TokenAmount"`

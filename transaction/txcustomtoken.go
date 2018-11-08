@@ -399,7 +399,10 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 		}
 	case CustomTokenTransfer:
 		handled = true
-		// TODO get all vout of token on sender chainID
+		//inputTokenAmount := 0
+		//for _, vin := range tokenParams.vins {
+		//inputTokenAmount += vin.Signature
+		//}
 	}
 
 	if handled != true {

@@ -755,7 +755,11 @@ func (self RpcServer) handleListUnspentCustomTokenTransaction(params interface{}
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	senderKeyset := senderKey.KeySet
-	unspentTxTokenOuts, err := self.config.BlockChain.GetUnspentTxTokenVoutBySender(senderKeyset)
+
+	// param #2: tokenID
+	tokenIDParam := arrayParams[1]
+	tokenID, _ := common.Hash{}.NewHashFromStr(tokenIDParam.(string))
+	unspentTxTokenOuts, err := self.config.BlockChain.GetUnspentTxCustomTokenVout(senderKeyset, tokenID)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -780,7 +784,7 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 	result := jsonresult.TransactionDetail{
 		BlockHash:       blockHash.String(),
 		Index:           uint64(index),
-		ChainId:				 chainId,
+		ChainId:         chainId,
 		Hash:            tx.Hash().String(),
 		Version:         tempTx.Version,
 		Type:            tempTx.Type,
@@ -821,6 +825,7 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, 
 	// param #4: token params
 	tokenParamsRaw := arrayParams[3].(map[string]interface{})
 	tokenParams := &transaction.CustomTokenParamTx{
+		PropertyID:     tokenParamsRaw["TokenID"].(string),
 		PropertyName:   tokenParamsRaw["TokenName"].(string),
 		PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
 		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
@@ -830,7 +835,8 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, 
 	switch tokenParams.TokenTxType {
 	case transaction.CustomTokenTransfer:
 		{
-			unspentTxTokenOuts, err := self.config.BlockChain.GetUnspentTxTokenVoutBySender(senderKey.KeySet)
+			tokenID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+			unspentTxTokenOuts, err := self.config.BlockChain.GetUnspentTxCustomTokenVout(senderKey.KeySet, tokenID)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}

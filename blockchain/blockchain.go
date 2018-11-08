@@ -910,61 +910,36 @@ func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCand
 	return cndVal
 }
 
-// Get all unspent tx custom token out of sender
-func (self *BlockChain) GetUnspentTxTokenVoutBySender(senderKeyset cashec.KeySet) ([]transaction.TxTokenVout, error) {
-	lastByte := senderKeyset.PaymentAddress.Apk[len(senderKeyset.PaymentAddress.Apk)-1]
-	chainIdSender, err := common.GetTxSenderChain(lastByte)
-	if err != nil {
-		return nil, err
-	}
-	// get all vin custom token of sender
-	bestStateOfSender := self.BestState[chainIdSender]
-	prevHash := bestStateOfSender.BestBlock.Hash()
+// GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
+func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
 	// list spent
 	vinList := []transaction.TxTokenVin{}
 	txCustomTokenIDs := []common.Hash{}
-	for prevHash.String() != (common.Hash{}).String() {
-		block, err := self.GetBlockByBlockHash(prevHash)
-		prevHash = &block.Header.PrevBlockHash
-		if err != nil {
-			return nil, err
-		}
-		for _, tx := range block.Transactions {
-			if tx.GetType() == common.TxCustomTokenType {
-				customTokenTx := tx.(*transaction.TxCustomToken)
-				for _, vin := range customTokenTx.TxToken.Vins {
-					if vin.PaymentAddress.Apk == senderKeyset.PaymentAddress.Apk {
-						vinList = append(vinList, vin)
-						txCustomTokenIDs = append(txCustomTokenIDs, *customTokenTx.Hash())
-					}
-				}
+	listCustomTx, err := self.GetCustomTokenTxs(tokenID)
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range listCustomTx {
+		customTokenTx := tx.(*transaction.TxCustomToken)
+		for _, vin := range customTokenTx.TxToken.Vins {
+			if vin.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
+				vinList = append(vinList, vin)
+				txCustomTokenIDs = append(txCustomTokenIDs, *customTokenTx.Hash())
 			}
 		}
 	}
 
 	// get all vout custom token of sender which unspent
 	voutList := []transaction.TxTokenVout{}
-	for _, bestState := range self.BestState {
-		prevHash := bestState.BestBlock.Hash()
-		for prevHash.String() != (common.Hash{}).String() {
-			block, err := self.GetBlockByBlockHash(prevHash)
-			prevHash = &block.Header.PrevBlockHash
-			if err != nil {
-				return nil, err
-			}
-			for _, tx := range block.Transactions {
-				if tx.GetType() == common.TxCustomTokenType {
-					customTokenTx := tx.(*transaction.TxCustomToken)
-					for index, vout := range customTokenTx.TxToken.Vouts {
-						if vout.PaymentAddress.Apk == senderKeyset.PaymentAddress.Apk {
-							existed, err := common.SliceExists(txCustomTokenIDs, tx.Hash())
-							if !existed && err == nil {
-								vout.SetIndex(index)
-								vout.SetTxCustomTokenID(*tx.Hash())
-								voutList = append(voutList, vout)
-							}
-						}
-					}
+	for _, tx := range listCustomTx {
+		customTokenTx := tx.(*transaction.TxCustomToken)
+		for index, vout := range customTokenTx.TxToken.Vouts {
+			if vout.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
+				existed, err := common.SliceExists(txCustomTokenIDs, tx.Hash())
+				if !existed && err == nil {
+					vout.SetIndex(index)
+					vout.SetTxCustomTokenID(*tx.Hash())
+					voutList = append(voutList, vout)
 				}
 			}
 		}
