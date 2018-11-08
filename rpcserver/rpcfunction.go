@@ -706,12 +706,19 @@ func (self RpcServer) handleSendRegistrationCandidateCommittee(params interface{
 	return txId, err
 }
 
+// handleListCustomToken - return list all custom token in network
 func (self RpcServer) handleListCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	temps, err := self.config.BlockChain.ListCustomToken()
 	if err != nil {
 		return nil, err
 	}
-	return temps, nil
+	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{},}
+	for _, tx := range temps {
+		item := jsonresult.CustomToken{}
+		item.Init(tx)
+		result.ListCustomToken = append(result.ListCustomToken, item)
+	}
+	return result, nil
 }
 
 func (self RpcServer) handleListUnspentCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
