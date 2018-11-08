@@ -28,6 +28,8 @@ var (
 	bestBlockKey         = []byte("bestBlock")
 	feeEstimator         = []byte("feeEstimator")
 	spliter              = []byte("-")
+	tokenPrefix          = []byte("token-")
+	tokenInitPrefix      = []byte("token-init-")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {
