@@ -31,7 +31,7 @@ func (self *GetBlockResult) Init(block *blockchain.Block) {
 	self.Hash = block.Hash().String()
 	self.PreviousBlockHash = block.Header.PrevBlockHash.String()
 	self.Version = block.Header.Version
-	self.Height = block.Height
+	self.Height = block.Header.Height
 	self.Time = block.Header.Timestamp
 	self.ChainID = block.Header.ChainID
 	self.MerkleRoot = block.Header.MerkleRoot.String()

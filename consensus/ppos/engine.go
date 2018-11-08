@@ -149,7 +149,7 @@ func (self *Engine) Start() error {
 						Logger.log.Error(err)
 						return
 					}
-					Logger.log.Infof("block height: %d", block.Height)
+					Logger.log.Infof("block height: %d", block.Header.Height)
 					//Comment validateBlockSanity segment to create block with only 1 node (validator)
 					err = self.validateBlockSanity(block)
 					if err != nil {
@@ -452,13 +452,13 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)
 
 	self.knownChainsHeight.Lock()
-	if self.knownChainsHeight.Heights[block.Header.ChainID] < int(block.Height) {
-		self.knownChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
+	if self.knownChainsHeight.Heights[block.Header.ChainID] < int(block.Header.Height) {
+		self.knownChainsHeight.Heights[block.Header.ChainID] = int(block.Header.Height)
 		self.sendBlockMsg(block)
 	}
 	self.knownChainsHeight.Unlock()
 	self.validatedChainsHeight.Lock()
-	self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Height)
+	self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Header.Height)
 	self.validatedChainsHeight.Unlock()
 
 	self.committee.UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)

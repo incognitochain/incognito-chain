@@ -141,7 +141,7 @@ func (self *BlockChain) createChainState(chainId byte) error {
 		initBlock.Header.ChainID = chainId
 		initBlock.Header.PrevBlockHash = common.Hash{}
 	}
-	initBlock.Height = 1
+	initBlock.Header.Height = 1
 
 	tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
 	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
@@ -255,7 +255,7 @@ and
 Save block hash by index(height) of block
 */
 func (self *BlockChain) StoreBlockIndex(block *Block) error {
-	return self.config.DataBase.StoreBlockIndex(block.Hash(), block.Height, block.Header.ChainID)
+	return self.config.DataBase.StoreBlockIndex(block.Hash(), block.Header.Height, block.Header.ChainID)
 }
 
 /*
@@ -486,7 +486,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 		// get best block
 		bestBlock := bestState.BestBlock
 		chainId := bestState.BestBlock.Header.ChainID
-		blockHeight := bestBlock.Height
+		blockHeight := bestBlock.Header.Height
 
 		for blockHeight > 0 {
 			txsInBlock := bestBlock.Transactions
@@ -560,7 +560,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 				// not is genesis block
 				preBlockHash := bestBlock.Header.PrevBlockHash
 				bestBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-				if blockHeight != bestBlock.Height || err != nil {
+				if blockHeight != bestBlock.Header.Height || err != nil {
 					// pre-block is not the same block-height with calculation -> invalid blockchain
 					return nil, errors.New("Invalid blockchain")
 				}
@@ -611,7 +611,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, co
 		bestBlock := bestState.BestBlock
 		chainId := bestBlock.Header.ChainID
 		results[chainId] = make([]transaction.Tx, 0)
-		blockHeight := bestBlock.Height
+		blockHeight := bestBlock.Header.Height
 
 		for blockHeight > 0 {
 			txsInBlock := bestBlock.Transactions
@@ -724,7 +724,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, co
 				// not is genesis block
 				preBlockHash := bestBlock.Header.PrevBlockHash
 				preBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-				if err != nil || blockHeight != preBlock.Height {
+				if err != nil || blockHeight != preBlock.Header.Height {
 					// pre-block is not the same block-height with calculation -> invalid blockchain
 					self.chainLock.Unlock()
 					return nil, errors.New("Invalid blockchain")
@@ -755,7 +755,7 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 	for _, bestState := range self.BestState {
 		// get best block of each chain
 		bestBlock := bestState.BestBlock
-		blockHeight := bestBlock.Height
+		blockHeight := bestBlock.Header.Height
 
 		for blockHeight > 0 {
 
@@ -789,7 +789,7 @@ func (self *BlockChain) GetAllUnitCoinSupplier() (map[string]uint64, error) {
 				// not is genesis block
 				preBlockHash := bestBlock.Header.PrevBlockHash
 				bestBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-				if blockHeight != bestBlock.Height || err != nil {
+				if blockHeight != bestBlock.Header.Height || err != nil {
 					// pre-block is not the same block-height with calculation -> invalid blockchain
 					return nil, errors.New("Invalid blockchain")
 				}

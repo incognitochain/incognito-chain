@@ -196,7 +196,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.Block) error {
 	// The previous sorted list is invalid, so delete it.
 	ef.cached = nil
 
-	height := block.Height
+	height := block.Header.Height
 	if height != ef.lastKnownHeight+1 && ef.lastKnownHeight != UnminedHeight {
 		return fmt.Errorf("intermediate block not recorded; current height is %d; new height is %d",
 			ef.lastKnownHeight, height)

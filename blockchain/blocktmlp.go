@@ -110,7 +110,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	}
 
 concludeBlock:
-// Get blocksalary fund from txs
+	// Get blocksalary fund from txs
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
 	for _, blockTx := range txsToAdd {
@@ -178,7 +178,7 @@ concludeBlock:
 	//update the latest AgentDataPoints to block
 	// block.AgentDataPoints = agentDataPoints
 	// Set height
-	block.Height = prevBlock.Height + 1
+	block.Header.Height = prevBlock.Header.Height + 1
 
 	return &block, nil
 }

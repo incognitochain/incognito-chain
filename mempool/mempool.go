@@ -155,7 +155,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	if err != nil {
 		return nil, nil, err
 	}
-	bestHeight := tp.config.BlockChain.BestState[chainID].BestBlock.Height
+	bestHeight := tp.config.BlockChain.BestState[chainID].BestBlock.Header.Height
 	// nextBlockHeight := bestHeight + 1
 	// Check tx with policy
 	// check version

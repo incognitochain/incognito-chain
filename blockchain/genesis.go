@@ -264,7 +264,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(version int, ini
 	}
 	copy(genesisBlock.Header.Committee, preSelectValidators)
 
-	genesisBlock.Height = 1
+	genesisBlock.Header.Height = 1
 	genesisBlock.Header.SalaryFund = initSalaryFund
 
 	// TODO create 3 genesis token tx for DCB, Gov, CmB

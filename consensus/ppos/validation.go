@@ -111,7 +111,7 @@ func (self *Engine) CheckBlockSize(block *blockchain.Block) error {
 }
 
 func (self *Engine) IsEnoughData(block *blockchain.Block) error {
-	if self.validatedChainsHeight.Heights[block.Header.ChainID] == (int(block.Height) - 1) {
+	if self.validatedChainsHeight.Heights[block.Header.ChainID] == (int(block.Header.Height) - 1) {
 		notFullySync := false
 		for i := 0; i < common.TotalValidators; i++ {
 			if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {

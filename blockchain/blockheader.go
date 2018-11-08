@@ -36,4 +36,7 @@ type BlockHeader struct {
 	SalaryFund uint64 // use to pay salary for miners(block producer or current leader) in chain
 
 	GovernanceParams GovernanceParams // params which get from governance for network
+
+	//Block Height
+	Height int32
 }

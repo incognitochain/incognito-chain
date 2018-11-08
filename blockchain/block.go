@@ -25,7 +25,6 @@ type Block struct {
 	BlockProducer    string // in base58check.encode
 	BlockProducerSig string
 
-	Height    int32
 	blockHash *common.Hash
 }
 
@@ -311,7 +310,7 @@ func (self Block) Hash() *common.Hash {
 		self.BlockProducer +
 		self.BlockProducerSig +
 		strconv.Itoa(len(self.Transactions)) +
-		strconv.Itoa(int(self.Height))
+		strconv.Itoa(int(self.Header.Height))
 
 	// add data from tx
 	for _, tx := range self.Transactions {
