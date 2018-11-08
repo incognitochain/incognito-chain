@@ -3,10 +3,11 @@ package jsonresult
 import "github.com/ninjadotorg/constant/transaction"
 
 type CustomToken struct {
-	ID     string `json:"ID"`
-	Name   string `json:"Name"`
-	Symbol string `json:"Symbol"`
-	Amount uint64 `json:"Amount"`
+	ID      string   `json:"ID"`
+	Name    string   `json:"Name"`
+	Symbol  string   `json:"Symbol"`
+	Amount  uint64   `json:"Amount"`
+	ListTxs []string `json:"ListTxs"`
 }
 
 func (self *CustomToken) Init(obj transaction.TxCustomToken) {

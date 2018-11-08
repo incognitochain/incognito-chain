@@ -39,3 +39,16 @@ func (db *db) ListCustomToken() ([][]byte, error) {
 	iter.Release()
 	return result, nil
 }
+
+func (db *db) CustomTokenTxs(tokenID *common.Hash) ([][]byte, error) {
+	result := make([][]byte, 0)
+	key := tokenPrefix
+	key = append(key, tokenID[:]...)
+	// key = token-{tokenID}
+	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
+	for iter.Next() {
+		result = append(result, iter.Value())
+	}
+	iter.Release()
+	return result, nil
+}

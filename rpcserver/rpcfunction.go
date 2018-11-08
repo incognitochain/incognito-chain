@@ -52,7 +52,6 @@ var RpcHandler = map[string]commandHandler{
 	SendMany:                           RpcServer.handlCreateAndSendTx,
 	CreateActionParamsTransaction:      RpcServer.handleCreateActionParamsTransaction,
 	SendRegistrationCandidateCommittee: RpcServer.handleSendRegistrationCandidateCommittee,
-	SendCustomTokenTransaction:         RpcServer.handleSendCustomTokenTransaction,
 	GetMempoolInfo:                     RpcServer.handleGetMempoolInfo,
 	GetTransactionByHash:               RpcServer.handleGetTransactionByHash,
 
@@ -61,8 +60,10 @@ var RpcHandler = map[string]commandHandler{
 	GetBlockProducerList:       RpcServer.handleGetBlockProducerList,
 
 	// custom token
-	ListUnspentCustomToken: RpcServer.handleListUnspentCustomTokenTransaction,
-	ListCustomToken:        RpcServer.handleListCustomToken,
+	SendCustomTokenTransaction: RpcServer.handleSendCustomTokenTransaction,
+	ListUnspentCustomToken:     RpcServer.handleListUnspentCustomTokenTransaction,
+	ListCustomToken:            RpcServer.handleListCustomToken,
+	CustomToken:                RpcServer.handleCustomTokenDetail,
 
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -725,6 +726,22 @@ func (self RpcServer) handleListCustomToken(params interface{}, closeChan <-chan
 		item := jsonresult.CustomToken{}
 		item.Init(tx)
 		result.ListCustomToken = append(result.ListCustomToken, item)
+	}
+	return result, nil
+}
+
+func (self RpcServer) handleCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	tokenIDStr := params.(string)
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
+	if err != nil {
+		return nil, err
+	}
+	txs, _ := self.config.BlockChain.GetCustomTokenTxs(tokenID)
+	result := jsonresult.CustomToken{
+		ListTxs: []string{},
+	}
+	for _, tx := range txs {
+		result.ListTxs = append(result.ListTxs, tx.String())
 	}
 	return result, nil
 }

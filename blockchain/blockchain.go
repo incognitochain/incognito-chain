@@ -1003,3 +1003,17 @@ func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomT
 	}
 	return result, nil
 }
+
+func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) ([]common.Hash, error) {
+	txHashesInByte, err := self.config.DataBase.CustomTokenTxs(tokenID)
+	if err != nil {
+		return nil, err
+	}
+	result := []common.Hash{}
+	for _, temp := range txHashesInByte {
+		item := common.Hash{}
+		item.SetBytes(temp)
+		result = append(result, item)
+	}
+	return result, nil
+}

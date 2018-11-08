@@ -33,6 +33,7 @@ const (
 	ListUnspentCustomToken             = "listunspentcustomtoken"
 	GetTransactionByHash               = "gettransactionbyhash"
 	ListCustomToken                    = "listcustomtoken"
+	CustomToken                        = "customtoken"
 
 	GetHeader = "getheader"
 
