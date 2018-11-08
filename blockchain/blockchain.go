@@ -1,9 +1,12 @@
 package blockchain
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
-
+	"fmt"
 	"github.com/ninjadotorg/constant/wallet"
+	"strings"
 
 	//"fmt"
 	//"time"
@@ -796,7 +799,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, so
 		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
 	}
 	if self.config.Light {
-		results, err := self.config.DataBase.GetTransactionLightMode(privateKey)
+		results, err := self.config.DataBase.GetTransactionLightModeByPrivateKey(privateKey)
 		//Logger.log.Infof("UTXO lightmode %+v", results)
 		if err != nil {
 			return nil, err
@@ -950,23 +953,71 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 	return voutList, nil
 }
 
-func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (*common.Hash, int, transaction.Transaction, error) {
+func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, transaction.Transaction, error) {
 	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
 		// check lightweight
 		if self.config.Light {
 			// TODO get data with light mode
+			fmt.Println("ERROR in GetTransactionByHash", err)
+			const(
+				bigNumber = 999999999
+			)
+			var(
+				blockHeight uint32
+				txIndex uint32
+				chainId []byte
+			)
+			// Get transaction
+			tx := transaction.Tx{}
+			locationByte, txByte, err := self.config.DataBase.GetTransactionLightModeByHash(txHash)
+			fmt.Println("GetTransactionByHash - 1", locationByte, txByte,err)
+			if err != nil {
+				return byte(255), nil, -1, nil, err
+			}
+			err = json.Unmarshal(txByte, &tx)
+			if err != nil {
+				return byte(255), nil, -1, nil, err
+			}
+			// Handle string to get chainId, blockheight, txindex information
+			locations := strings.Split(string(locationByte), string("-"))
+			// Get Chain Id
+			chainId = []byte(locations[2])
+			// Get Block Height
+			tempBlockHeight := []byte(locations[3])
+			bufBlockHeight := bytes.NewBuffer(tempBlockHeight)
+			err = binary.Read(bufBlockHeight, binary.LittleEndian, &blockHeight)
+			if err != nil {
+				return byte(255), nil, -1, nil, err
+			}
+			blockHeight = uint32(bigNumber-blockHeight)
+			fmt.Println("Testing in GetTransactionByHash, blockHeight", blockHeight)
+			block,err := self.GetBlockByBlockHeight(int32(blockHeight),chainId[0])
+			if err != nil {
+				fmt.Println("ERROR in GetTransactionByHash, get Block by height", err)
+				return byte(255), nil, -1, nil, err
+			}
+			//Get txIndex
+			tempTxIndex := []byte(locations[4])
+			bufTxIndex := bytes.NewBuffer(tempTxIndex)
+			err = binary.Read(bufTxIndex, binary.LittleEndian, &txIndex)
+			if err != nil {
+				return byte(255), nil, -1, nil, err
+			}
+			txIndex = uint32(bigNumber-txIndex)
+			fmt.Println("Testing in GetTransactionByHash, blockHash, index, tx", block.Hash(), txIndex, tx)
+			return chainId[0], block.Hash(), int(txIndex), &tx, nil
 		}
 
-		return nil, -1, nil, err
+		return byte(255), nil, -1, nil, err
 	}
 	block, err := self.GetBlockByBlockHash(blockHash)
 	if err != nil {
 		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and Index", index, "contains", block.Transactions[index])
-		return nil, -1, nil, err
+		return byte(255), nil, -1, nil, err
 	}
 	Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and Index", index, "contains", block.Transactions[index])
-	return blockHash, index, block.Transactions[index], nil
+	return block.Header.ChainID, blockHash, index, block.Transactions[index], nil
 }
 
 func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomToken, error) {
@@ -978,7 +1029,7 @@ func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomT
 	for _, txData := range data {
 		hash := common.Hash{}
 		hash.SetBytes(txData)
-		blockHash, index, tx, err := self.GetTransactionByHash(&hash)
+		_, blockHash, index, tx, err := self.GetTransactionByHash(&hash)
 		_ = blockHash
 		_ = index
 		if err != nil {
@@ -1011,7 +1062,9 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 	}
 	result := make(map[common.Hash]transaction.Transaction)
 	for _, temp := range txHashesInByte {
-		_, _, tx, err := self.GetTransactionByHash(temp)
+		item := common.Hash{}
+		item.SetBytes(temp)
+		_, _, _, tx, err := self.GetTransactionByHash(&item)
 		if err != nil {
 			return nil, err
 		}

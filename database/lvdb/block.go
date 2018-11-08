@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -36,6 +37,7 @@ func (db *db) StoreBlock(v interface{}, chainID byte) error {
 	if err := db.put(keyB, val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
+	fmt.Println("Test Store Block keyB: ", string(keyB))
 	return nil
 }
 
@@ -60,6 +62,7 @@ func (db *db) StoreBlockHeader(v interface{}, hash *common.Hash, chainID byte) e
 	if err := db.put(keyB, val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
+	fmt.Println("Test StoreBlockHeader keyB: ", string(keyB))
 	return nil
 }
 

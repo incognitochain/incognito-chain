@@ -217,6 +217,7 @@ func (db *db) GetTransactionIndexById(txId *common.Hash)  (*common.Hash, int, er
 		fmt.Println("ERROR in finding transaction id",txId.String(), err)
 		return nil, -1, err
 	}
+
 	res, err := db.lvdb.Get([]byte(key), nil)
 	if err != nil {
 		return nil, -1, err;
@@ -240,17 +241,35 @@ func (db *db) GetTransactionIndexById(txId *common.Hash)  (*common.Hash, int, er
 
 */
 func (db *db)  StoreTransactionLightMode(privateKey *client.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
+	tempChainId := []byte{}
+	tempChainId = append(tempChainId,chainId)
+	temp3ChainId := int(chainId)
+	temp2ChainId := string(int(chainId))
+	fmt.Println("StoreTransactionLightMode", privateKey, temp3ChainId, temp2ChainId, blockHeight, txIndex)
 	const(
 		bigNumber = 999999999
 	)
 	reverseBlockHeight := make([]byte, 4)
 	binary.LittleEndian.PutUint32(reverseBlockHeight, uint32(bigNumber-blockHeight))
-	//fmt.Println("StoreTransactionLightMode reverseBlockHeight in byte", reverseBlockHeight, []byte(string(reverseBlockHeight)))
-	reverseTxIndex := make([]byte, 4)
-	binary.LittleEndian.PutUint32(reverseTxIndex, uint32(bigNumber-blockHeight))
 
-	key1 := string(privateKeyPrefix) + privateKey.String() + string(spliter) + string(chainId) + string(spliter) + string(reverseBlockHeight) + string(spliter) + string(reverseTxIndex)
-	key2 := string(privateKeyPrefix) + tx.Hash().String()
+	// Uncomment this to test little endian encoding and decoding
+	/*
+	buf := bytes.NewBuffer(reverseBlockHeight)
+	var temp uint32
+	err1 := binary.Read(buf, binary.LittleEndian, &temp)
+	if err1 != nil {
+		return err1
+	}
+	fmt.Println("Testing encoding and decoding uint32 little endian", uint32(999999999-temp), blockHeight)
+	*/
+
+	//fmt.Println("StoreTransactionLightMode reverseBlockHeight in byte", reverseBlockHeight, []byte(string(reverseBlockHeight)))
+
+	reverseTxIndex := make([]byte, 4)
+	binary.LittleEndian.PutUint32(reverseTxIndex, uint32(bigNumber-uint32(txIndex)))
+
+	key1 := string(privateKeyPrefix) + privateKey.String() + string(spliter) + string(int(chainId)) + string(spliter) + string(reverseBlockHeight) + string(spliter) + string(reverseTxIndex)
+	key2 := string(transactionKeyPrefix) + tx.Hash().String()
 
 	if ok, _ := db.hasValue([]byte(key1)); ok {
 		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("tx %s already exists", key1))
@@ -270,8 +289,8 @@ func (db *db)  StoreTransactionLightMode(privateKey *client.SpendingKey, chainId
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 
-	//fmt.Println("Storing Transaction in light mode: txLocation -> tx", key1, tx)
-	//fmt.Println("Storing Transaction in light mode: txHash -> txLocation", key2, key1)
+	fmt.Println("Storing Transaction in light mode: txLocation -> tx", key1, tx)
+	fmt.Println("Storing Transaction in light mode: txHash -> txLocation", key2, key1)
 	return nil
 }
 
@@ -281,16 +300,18 @@ func (db *db)  StoreTransactionLightMode(privateKey *client.SpendingKey, chainId
 	1. Key -> value : prefix(privateky)-privateKey-chainId-(999999999 - blockHeight)-(999999999 - txIndex) 		-> 		tx
 
 */
-func (db *db)  GetTransactionLightMode(privateKey *client.SpendingKey) (map[byte][]transaction.Tx, error)  {
+func (db *db)  GetTransactionLightModeByPrivateKey(privateKey *client.SpendingKey) (map[byte][]transaction.Tx, error)  {
 	prefix := []byte(string(privateKeyPrefix) + privateKey.String())
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	results := make(map[byte][]transaction.Tx)
 	for iter.Next() {
 		key := iter.Key()
 		value := iter.Value()
+		fmt.Println("GetTransactionLightModeByPrivateKey, key", string(key))
 		reses := strings.Split(string(key),string(spliter))
 		tempChainId, _ := strconv.Atoi(reses[2])
 		chainId := byte(tempChainId)
+		fmt.Println("GetTransactionLightModeByPrivateKey, chainId", chainId)
 		tx := transaction.Tx{}
 		err := json.Unmarshal(value, &tx)
 		if err != nil {
@@ -300,4 +321,33 @@ func (db *db)  GetTransactionLightMode(privateKey *client.SpendingKey) (map[byte
 	}
 	iter.Release()
 	return results, nil
+}
+/*
+	Key: transactionPrefix-txHash
+  Value: txLocation
+  tx: tx object in byte
+*/
+func (db *db)  GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, error)  {
+	key := string(transactionKeyPrefix) + txId.String()
+	fmt.Println("GetTransactionLightModeByHash - key", key)
+	_, err := db.hasValue([]byte(key))
+	if err != nil {
+		fmt.Println("ERROR in finding transaction id",txId.String(), err)
+		return nil, nil, err
+	}
+	value, err := db.lvdb.Get([]byte(key), nil)
+	fmt.Println("GetTransactionLightModeByHash - value", value)
+	if err != nil {
+		return nil, nil, err;
+	}
+	_, err1 := db.hasValue([]byte(value))
+	if err1 != nil {
+		fmt.Println("ERROR in finding location transaction id",txId.String(), err1)
+		return nil, nil, err
+	}
+	tx, err := db.lvdb.Get([]byte(value), nil)
+	if err != nil {
+		return nil, nil, err;
+	}
+	return value, tx, nil
 }

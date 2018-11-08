@@ -773,11 +773,8 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 	Logger.log.Infof("Get TransactionByHash input Param %+v", arrayParams[0].(string))
 	txHash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
 	Logger.log.Infof("Get Transaction By Hash %+v", txHash)
-	blockHash, index, tx, err := self.config.BlockChain.GetTransactionByHash(txHash)
-	block, err := self.config.BlockChain.GetBlockByBlockHash(blockHash)
-	chainId := block.Header.ChainID
+	chainId, blockHash, index, tx, err := self.config.BlockChain.GetTransactionByHash(txHash)
 	if err != nil {
-		Logger.log.Errorf("Error getting blockhash and txindex in transaction by hash %+v", err)
 		return nil, err
 	}
 	tempTx := tx.(*transaction.Tx)
