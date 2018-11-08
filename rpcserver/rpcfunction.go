@@ -844,6 +844,7 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, 
 				return nil, NewRPCError(ErrUnexpected, errors.New("Balance of token is zero"))
 			}
 			txTokenIns := []transaction.TxTokenVin{}
+			txTokenInsAmount := uint64(0)
 			for _, out := range unspentTxTokenOuts {
 				item := transaction.TxTokenVin{
 					PaymentAddress:  out.PaymentAddress,
@@ -857,12 +858,14 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, 
 				}
 				item.Signature = base58.Base58Check{}.Encode(signature, 0)
 				txTokenIns = append(txTokenIns, item)
+				txTokenInsAmount += out.Value
 			}
 			tokenParams.SetVins(txTokenIns)
+			tokenParams.SetVinsAmount(txTokenInsAmount)
 		}
 	case transaction.CustomTokenInit:
 		{
-			if tokenParams.Receiver.Value != tokenParams.Amount { // Init with wrong max amount of custom token
+			if tokenParams.Receiver[0].Value != tokenParams.Amount { // Init with wrong max amount of custom token
 				return nil, NewRPCError(ErrUnexpected, errors.New("Init with wrong max amount of property"))
 			}
 		}

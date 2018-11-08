@@ -376,7 +376,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 			}
 			var VoutsTemp []TxTokenVout
 
-			receiver := tokenParams.Receiver
+			receiver := tokenParams.Receiver[0]
 			receiverAmount := receiver.Value
 			VoutsTemp = append(VoutsTemp, TxTokenVout{
 				PaymentAddress: receiver.PaymentAddress,
@@ -399,10 +399,34 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 		}
 	case CustomTokenTransfer:
 		handled = true
-		//inputTokenAmount := 0
-		//for _, vin := range tokenParams.vins {
-		//inputTokenAmount += vin.Signature
-		//}
+		paymentTokenAmount := uint64(0)
+		for _, receiver := range tokenParams.Receiver {
+			paymentTokenAmount += receiver.Value
+		}
+		refundTokenAmount := tokenParams.vinsAmount - paymentTokenAmount
+		tx.TxToken = TxToken{
+			Type:           tokenParams.TokenTxType,
+			PropertyName:   tokenParams.PropertyName,
+			PropertySymbol: tokenParams.PropertySymbol,
+			Vins:           nil,
+			Vouts:          nil,
+		}
+		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+		tx.TxToken.PropertyID = *propertyID
+		tx.TxToken.Vins = tokenParams.vins
+		var VoutsTemp []TxTokenVout
+		for _, receiver := range tokenParams.Receiver {
+			receiverAmount := receiver.Value
+			VoutsTemp = append(VoutsTemp, TxTokenVout{
+				PaymentAddress: receiver.PaymentAddress,
+				Value:          receiverAmount,
+			})
+		}
+		VoutsTemp = append(VoutsTemp, TxTokenVout{
+			PaymentAddress: tokenParams.vins[0].PaymentAddress,
+			Value:          refundTokenAmount,
+		})
+		tx.TxToken.Vouts = VoutsTemp
 	}
 
 	if handled != true {
