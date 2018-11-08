@@ -12,7 +12,7 @@ type TxViewPoint struct {
 	chainID         byte
 	listNullifiers  [][]byte
 	listCommitments [][]byte
-	customTokenTxs  []*transaction.TxCustomToken
+	customTokenTxs  map[int32]*transaction.TxCustomToken
 
 	// hash of best block in current
 	currentBestBlockHash common.Hash
@@ -76,7 +76,7 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedNullifiers := make([][]byte, 0)
 	acceptedCommitments := make([][]byte, 0)
-	for _, tx := range transactions {
+	for indexTx, tx := range transactions {
 		switch tx.GetType() {
 		case common.TxNormalType:
 			{
@@ -124,8 +124,8 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err)
 					}
-					view.customTokenTxs = append(view.customTokenTxs, tx)
 				}
+				view.customTokenTxs[int32(indexTx)] = tx
 			}
 		default:
 			{
@@ -153,6 +153,6 @@ func NewTxViewPoint(chainId byte) *TxViewPoint {
 		chainID:         chainId,
 		listNullifiers:  make([][]byte, 0),
 		listCommitments: make([][]byte, 0),
-		customTokenTxs:  make([]*transaction.TxCustomToken, 0),
+		customTokenTxs:  make(map[int32]*transaction.TxCustomToken, 0),
 	}
 }

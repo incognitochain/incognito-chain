@@ -39,4 +39,7 @@ type BlockHeader struct {
 	GovernanceParams GovernanceParams // params which get from governance for network
 
 	LoanParams transaction.LoanParams // params for collateralized loans of Constant
+
+	//Block Height
+	Height int32
 }

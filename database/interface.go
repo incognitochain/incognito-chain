@@ -2,12 +2,16 @@ package database
 
 import (
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 // DatabaseInterface provides the interface that is used to store blocks.
 type DatabaseInterface interface {
 	// Block
 	StoreBlock(interface{}, byte) error
+	StoreBlockHeader(interface{}, *common.Hash, byte) error
+	StoreTransactionLightMode(*client.SpendingKey, byte, int32, int, *transaction.Tx) error
 	FetchBlock(*common.Hash) ([]byte, error)
 	HasBlock(*common.Hash) (bool, error)
 	FetchAllBlocks() (map[byte][]*common.Hash, error)
@@ -22,6 +26,8 @@ type DatabaseInterface interface {
 	// Transaction Index
 	StoreTransactionIndex(*common.Hash, *common.Hash, int) error
 	GetTransactionIndexById(*common.Hash) (*common.Hash, int, error)
+	GetTransactionLightModeByPrivateKey(*client.SpendingKey) (map[byte][]transaction.Tx, error)
+	GetTransactionLightModeByHash(*common.Hash) ([]byte, []byte, error)
 	// Best state of chain
 	StoreBestState(interface{}, byte) error
 	FetchBestState(byte) ([]byte, error)
@@ -43,6 +49,12 @@ type DatabaseInterface interface {
 	StoreFeeEstimator([]byte, byte) error
 	GetFeeEstimator(byte) ([]byte, error)
 	CleanFeeEstimator() error
+
+	// Custom token
+	StoreCustomToken(*common.Hash, []byte) error                       // param: tokenID, txInitToken-id, data tx
+	StoreCustomTokenTx(*common.Hash, byte, int32, int32, []byte) error // param: tokenID, chainID, block height, tx-id, data tx
+	ListCustomToken() ([][]byte, error)
+	CustomTokenTxs(*common.Hash) ([]*common.Hash, error) // token id
 
 	Close() error
 }

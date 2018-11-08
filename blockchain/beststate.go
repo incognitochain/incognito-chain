@@ -43,7 +43,7 @@ func (self *BestState) Init(block *Block, tree *client.IncMerkleTree) {
 
 	self.TotalTxns += uint64(len(block.Transactions))
 	self.NumTxns = uint64(len(block.Transactions))
-	self.Height = block.Height
+	self.Height = block.Header.Height
 	if self.Candidates == nil {
 		self.Candidates = make(map[string]CommitteeCandidateInfo)
 	}
@@ -66,7 +66,7 @@ func (self *BestState) Update(block *Block) error {
 
 	self.TotalTxns += uint64(len(block.Transactions))
 	self.NumTxns = uint64(len(block.Transactions))
-	self.Height = block.Height
+	self.Height = block.Header.Height
 	if self.Candidates == nil {
 		self.Candidates = make(map[string]CommitteeCandidateInfo)
 	}

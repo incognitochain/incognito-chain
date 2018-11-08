@@ -14,7 +14,7 @@ type TxTokenVin struct {
 	TxCustomTokenID common.Hash
 	VoutIndex       int
 	Signature       string
-	PaymentAddress  client.PaymentAddress
+	PaymentAddress  client.PaymentAddress // use to verify signature of pre-utxo of token
 }
 
 func (self TxTokenVin) Hash() *common.Hash {
@@ -88,27 +88,36 @@ func (self TxToken) Hash() (*common.Hash, error) {
 
 // CustomTokenParamTx - use for rpc request json body
 type CustomTokenParamTx struct {
-	PropertyName   string      `json:"TokenName"`
-	PropertySymbol string      `json:"TokenSymbol"`
-	Amount         uint64      `json:"TokenAmount"`
-	TokenTxType    int         `json:"TokenTxType"`
-	Receiver       TxTokenVout `json:"TokenReceiver"`
+	PropertyID     string        `json:"TokenID"`
+	PropertyName   string        `json:"TokenName"`
+	PropertySymbol string        `json:"TokenSymbol"`
+	Amount         uint64        `json:"TokenAmount"`
+	TokenTxType    int           `json:"TokenTxType"`
+	Receiver       []TxTokenVout `json:"TokenReceiver"`
 
-	vins []TxTokenVin
+	vins       []TxTokenVin
+	vinsAmount uint64
 }
 
 func (self *CustomTokenParamTx) SetVins(vins []TxTokenVin) {
 	self.vins = vins
 }
 
+func (self *CustomTokenParamTx) SetVinsAmount(vinsAmount uint64) {
+	self.vinsAmount = vinsAmount
+}
+
 // CreateCustomTokenReceiverArray ...
-func CreateCustomTokenReceiverArray(data interface{}) TxTokenVout {
-	temp := data.(map[string]interface{})
-	paymentAddress := temp["PaymentAddress"].(string)
-	key, _ := wallet.Base58CheckDeserialize(paymentAddress)
-	resultItem := TxTokenVout{
-		PaymentAddress: key.KeySet.PaymentAddress,
-		Value:          uint64(temp["Value"].(float64)),
+func CreateCustomTokenReceiverArray(data interface{}) []TxTokenVout {
+	result := []TxTokenVout{}
+	receivers := data.(map[string]interface{})
+	for key, value := range receivers {
+		key, _ := wallet.Base58CheckDeserialize(key)
+		temp := TxTokenVout{
+			PaymentAddress: key.KeySet.PaymentAddress,
+			Value:          uint64(value.(float64)),
+		}
+		result = append(result, temp)
 	}
-	return resultItem
+	return result
 }

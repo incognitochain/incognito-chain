@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -37,6 +36,32 @@ func (db *db) StoreBlock(v interface{}, chainID byte) error {
 	if err := db.put(keyB, val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
+	//fmt.Println("Test Store Block keyB: ", string(keyB))
+	return nil
+}
+
+func (db *db) StoreBlockHeader(v interface{}, hash *common.Hash, chainID byte) error {
+	//fmt.Println("Log in StoreBlockHeader", v, hash, chainID)
+	var (
+		key  = append(append(chainIDPrefix, chainID), append(blockKeyPrefix, hash[:]...)...)
+		// key should look like this c10{bh-[blockhash]}:{bh-[blockhash]}
+		keyB = append(blockKeyPrefix, hash[:]...)
+		// key should look like this {bh-blockhash}:block
+	)
+	if ok, _ := db.hasValue(key); ok {
+		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("block %s already exists", hash.String()))
+	}
+	val, err := json.Marshal(v)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+	}
+	if err := db.put(key, keyB); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
+	}
+	if err := db.put(keyB, val); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
+	}
+	//fmt.Println("Test StoreBlockHeader keyB: ", string(keyB))
 	return nil
 }
 

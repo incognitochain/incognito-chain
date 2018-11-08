@@ -1,7 +1,13 @@
 package blockchain
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
+	"fmt"
+	"github.com/ninjadotorg/constant/wallet"
+	"strings"
+
 	//"fmt"
 	//"time"
 
@@ -56,6 +62,11 @@ type Config struct {
 	//
 	// This field is required.
 	ChainParams *Params
+
+	//Light mode flag
+	Light bool
+	//Wallet for light mode
+	Wallet *wallet.Wallet
 }
 
 /*
@@ -140,7 +151,7 @@ func (self *BlockChain) createChainState(chainId byte) error {
 		initBlock.Header.ChainID = chainId
 		initBlock.Header.PrevBlockHash = common.Hash{}
 	}
-	initBlock.Height = 1
+	initBlock.Header.Height = 1
 
 	tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
 	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
@@ -198,9 +209,18 @@ func (self *BlockChain) GetBlockByBlockHeight(height int32, chainId byte) (*Bloc
 	}
 
 	block := Block{}
-	err = json.Unmarshal(blockBytes, &block)
-	if err != nil {
-		return nil, err
+	blockHeader := BlockHeader{}
+	if self.config.Light {
+		err = json.Unmarshal(blockBytes, &blockHeader)
+		if err != nil {
+			return nil, err
+		}
+		block.Header = blockHeader
+	} else {
+		err = json.Unmarshal(blockBytes, &block)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &block, nil
 }
@@ -214,9 +234,18 @@ func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 		return nil, err
 	}
 	block := Block{}
-	err = json.Unmarshal(blockBytes, &block)
-	if err != nil {
-		return nil, err
+	blockHeader := BlockHeader{}
+	if self.config.Light {
+		err = json.Unmarshal(blockBytes, &blockHeader)
+		if err != nil {
+			return nil, err
+		}
+		block.Header = blockHeader
+	} else {
+		err = json.Unmarshal(blockBytes, &block)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &block, nil
 }
@@ -249,12 +278,27 @@ func (self *BlockChain) StoreBlock(block *Block) error {
 }
 
 /*
+	Store Only Block Header into database
+*/
+func (self *BlockChain) StoreBlockHeader(block *Block) error {
+	//Logger.log.Infof("Store Block Header, block header %+v, block hash %+v, chain id %+v",block.Header, block.blockHash, block.Header.ChainID)
+	return self.config.DataBase.StoreBlockHeader(block.Header, block.Hash(), block.Header.ChainID)
+}
+
+/*
+	Store Transaction in Light mode
+*/
+func (self *BlockChain) StoreUnspentTransactionLightMode(privatKey *client.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
+	return self.config.DataBase.StoreTransactionLightMode(privatKey, chainId, blockHeight, txIndex, tx)
+}
+
+/*
 Save index(height) of block by block hash
 and
 Save block hash by index(height) of block
 */
 func (self *BlockChain) StoreBlockIndex(block *Block) error {
-	return self.config.DataBase.StoreBlockIndex(block.Hash(), block.Height, block.Header.ChainID)
+	return self.config.DataBase.StoreBlockIndex(block.Hash(), block.Header.Height, block.Header.ChainID)
 }
 
 func (self *BlockChain) StoreTransactionIndex(txHash *common.Hash, blockHash *common.Hash, index int) error {
@@ -375,9 +419,18 @@ func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
 				return nil, err
 			}
 			block := Block{}
-			err = json.Unmarshal(blockBytes, &block)
-			if err != nil {
-				return nil, err
+			blockHeader := BlockHeader{}
+			if self.config.Light {
+				err = json.Unmarshal(blockBytes, &blockHeader)
+				if err != nil {
+					return nil, err
+				}
+				block.Header = blockHeader
+			} else {
+				err = json.Unmarshal(blockBytes, &block)
+				if err != nil {
+					return nil, err
+				}
 			}
 			result[chainID] = append(result[chainID], &block)
 		}
@@ -399,9 +452,18 @@ func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 			return nil, err
 		}
 		block := Block{}
-		err = json.Unmarshal(blockBytes, &block)
-		if err != nil {
-			return nil, err
+		blockHeader := BlockHeader{}
+		if self.config.Light {
+			err = json.Unmarshal(blockBytes, &blockHeader)
+			if err != nil {
+				return nil, err
+			}
+			block.Header = blockHeader
+		} else {
+			err = json.Unmarshal(blockBytes, &block)
+			if err != nil {
+				return nil, err
+			}
 		}
 		result = append(result, &block)
 	}
@@ -441,7 +503,7 @@ func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 	return view, nil
 }
 
-func (self *BlockChain) CreateTxViewPoint(block *Block) error {
+func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 	view := NewTxViewPoint(block.Header.ChainID)
 
 	err := view.fetchTxViewPoint(self.config.DataBase, block)
@@ -450,9 +512,25 @@ func (self *BlockChain) CreateTxViewPoint(block *Block) error {
 	}
 
 	// check custom token and save
-	for _, customTokenTx := range view.customTokenTxs {
-		if customTokenTx.TxToken.Type == transaction.CustomTokenInit {
-			// TODO save DB custom token
+	for indexTx, customTokenTx := range view.customTokenTxs {
+		switch customTokenTx.TxToken.Type {
+		case transaction.CustomTokenInit:
+			{
+				Logger.log.Info("Store custom token when it is issued")
+				err = self.config.DataBase.StoreCustomToken(&customTokenTx.TxToken.PropertyID, customTokenTx.Hash()[:])
+				if err != nil {
+					return err
+				}
+			}
+		case transaction.CustomTokenTransfer:
+			{
+				Logger.log.Info("Transfer custom token")
+			}
+		}
+		// save tx which relate to custom token
+		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxToken.PropertyID, block.Header.ChainID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
+		if err != nil {
+			return err
 		}
 	}
 
@@ -492,7 +570,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 		// get best block
 		bestBlock := bestState.BestBlock
 		chainId := bestState.BestBlock.Header.ChainID
-		blockHeight := bestBlock.Height
+		blockHeight := bestBlock.Header.Height
 
 		for blockHeight > 0 {
 			txsInBlock := bestBlock.Transactions
@@ -568,7 +646,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 				// not is genesis block
 				preBlockHash := bestBlock.Header.PrevBlockHash
 				bestBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-				if blockHeight != bestBlock.Height || err != nil {
+				if blockHeight != bestBlock.Header.Height || err != nil {
 					// pre-block is not the same block-height with calculation -> invalid blockchain
 					return nil, errors.New("Invalid blockchain")
 				}
@@ -581,7 +659,8 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 	return results, nil
 }
 
-func (self *BlockChain) GetListTxByPrivateKeyInBlock(privateKey *client.SpendingKey, block *Block, nullifiersInDb [][]byte, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *client.SpendingKey, block *Block, nullifiersInDb [][]byte, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
+	//fmt.Println("debug GetListUnspentTxByPrivateKeyInBlock")
 	results := make(map[byte][]transaction.Tx)
 
 	// Get set of keys from private keybyte
@@ -701,11 +780,12 @@ With private-key, we can check unspent tx by check nullifiers from database
 - Param #1: privateKey - byte[] of privatekey
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListUnspentTxByPrivateKey(privateKey *client.SpendingKey, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx)
 
 	// lock chain
 	self.chainLock.Lock()
+	defer self.chainLock.Unlock()
 
 	// get list nullifiers from db to check spending
 	nullifiersInDb := make([][]byte, 0)
@@ -718,21 +798,31 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, so
 		}
 		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
 	}
-
+	if self.config.Light {
+		// Get unspent tx light mode
+		results, err := self.config.DataBase.GetTransactionLightModeByPrivateKey(privateKey)
+		//Logger.log.Infof("UTXO lightmode %+v", results)
+		if err != nil {
+			return nil, err
+		}
+		if results != nil {
+			return results, nil
+		}
+	}
 	// loop on all chains
 	for _, bestState := range self.BestState {
 		// get best block
 		block := bestState.BestBlock
 		chainId := block.Header.ChainID
-		blockHeight := bestState.BestBlock.Height
+		blockHeight := bestState.BestBlock.Header.Height
 		// loop on all blocks in chain
 		for blockHeight > 0 {
 			var err1 error
 			// fetch block to get tx
-			resultsInChain, err1 := self.GetListTxByPrivateKeyInBlock(privateKey, block, nullifiersInDb, sortType, sortAsc)
+			resultsInChain, err1 := self.GetListUnspentTxByPrivateKeyInBlock(privateKey, block, nullifiersInDb, sortType, sortAsc)
 			if err1 != nil {
 				// unlock chain
-				self.chainLock.Unlock()
+				//self.chainLock.Unlock()
 				return nil, err1
 			}
 			results[chainId] = append(results[chainId], resultsInChain[chainId]...)
@@ -745,9 +835,9 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, so
 				// not is genesis block
 				preBlockHash := block.Header.PrevBlockHash
 				preBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-				if err != nil || blockHeight != preBlock.Height {
+				if err != nil || blockHeight != preBlock.Header.Height {
 					// pre-block is not the same block-height with calculation -> invalid blockchain
-					self.chainLock.Unlock()
+					//self.chainLock.Unlock()
 					return nil, errors.New("Invalid blockchain")
 				}
 				block = preBlock
@@ -758,7 +848,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, so
 	}
 
 	// unlock chain
-	self.chainLock.Unlock()
+	//self.chainLock.Unlock()
 
 	return results, nil
 }
@@ -826,61 +916,37 @@ func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCand
 	return cndVal
 }
 
-// Get all unspent tx custom token out of sender
-func (self *BlockChain) GetUnspentTxTokenVoutBySender(senderKeyset cashec.KeySet) ([]transaction.TxTokenVout, error) {
-	lastByte := senderKeyset.PaymentAddress.Apk[len(senderKeyset.PaymentAddress.Apk)-1]
-	chainIdSender, err := common.GetTxSenderChain(lastByte)
+// GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
+func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
+	// list spent
+	vinList := []transaction.TxTokenVin{}
+	txCustomTokenIDs := [][]byte{}
+	listCustomTx, err := self.GetCustomTokenTxs(tokenID)
 	if err != nil {
 		return nil, err
 	}
-	// get all vin custom token of sender
-	bestStateOfSender := self.BestState[chainIdSender]
-	prevHash := bestStateOfSender.BestBlock.Hash()
-	// list spent
-	vinList := []transaction.TxTokenVin{}
-	txCustomTokenIDs := []common.Hash{}
-	for prevHash.String() != (common.Hash{}).String() {
-		block, err := self.GetBlockByBlockHash(prevHash)
-		prevHash = &block.Header.PrevBlockHash
-		if err != nil {
-			return nil, err
-		}
-		for _, tx := range block.Transactions {
-			if tx.GetType() == common.TxCustomTokenType {
-				customTokenTx := tx.(*transaction.TxCustomToken)
-				for _, vin := range customTokenTx.TxToken.Vins {
-					if vin.PaymentAddress.Apk == senderKeyset.PaymentAddress.Apk {
-						vinList = append(vinList, vin)
-						txCustomTokenIDs = append(txCustomTokenIDs, *customTokenTx.Hash())
-					}
-				}
+	for _, tx := range listCustomTx {
+		customTokenTx := tx.(*transaction.TxCustomToken)
+		for _, vin := range customTokenTx.TxToken.Vins {
+			if vin.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
+				vinList = append(vinList, vin)
+				txCustomTokenIDs = append(txCustomTokenIDs, vin.TxCustomTokenID[:])
 			}
 		}
 	}
 
 	// get all vout custom token of sender which unspent
 	voutList := []transaction.TxTokenVout{}
-	for _, bestState := range self.BestState {
-		prevHash := bestState.BestBlock.Hash()
-		for prevHash.String() != (common.Hash{}).String() {
-			block, err := self.GetBlockByBlockHash(prevHash)
-			prevHash = &block.Header.PrevBlockHash
-			if err != nil {
-				return nil, err
-			}
-			for _, tx := range block.Transactions {
-				if tx.GetType() == common.TxCustomTokenType {
-					customTokenTx := tx.(*transaction.TxCustomToken)
-					for index, vout := range customTokenTx.TxToken.Vouts {
-						if vout.PaymentAddress.Apk == senderKeyset.PaymentAddress.Apk {
-							existed, err := common.SliceExists(txCustomTokenIDs, tx.Hash())
-							if !existed && err == nil {
-								vout.SetIndex(index)
-								vout.SetTxCustomTokenID(*tx.Hash())
-								voutList = append(voutList, vout)
-							}
-						}
-					}
+	for _, tx := range listCustomTx {
+		customTokenTx := tx.(*transaction.TxCustomToken)
+		for index, vout := range customTokenTx.TxToken.Vouts {
+			if vout.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
+				txHash := tx.Hash()
+				existed, err := common.SliceBytesExists(txCustomTokenIDs, txHash[:])
+				if !existed && err == nil {
+					vout.SetIndex(index)
+					vout.SetTxCustomTokenID(*tx.Hash())
+					voutList = append(voutList, vout)
 				}
 			}
 		}
@@ -888,16 +954,121 @@ func (self *BlockChain) GetUnspentTxTokenVoutBySender(senderKeyset cashec.KeySet
 	return voutList, nil
 }
 
-func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (*common.Hash, int, transaction.Transaction, error) {
+func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, transaction.Transaction, error) {
 	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
-		return nil, -1, nil, err
+		// check lightweight
+		if self.config.Light {
+			// TODO get data with light mode
+			fmt.Println("ERROR in GetTransactionByHash", err)
+			const (
+				bigNumber   = 999999999
+				bigNumberTx = 999999
+			)
+			var (
+				blockHeight uint32
+				txIndex     uint32
+				chainId     []byte
+			)
+			// Get transaction
+			tx := transaction.Tx{}
+			locationByte, txByte, err := self.config.DataBase.GetTransactionLightModeByHash(txHash)
+			fmt.Println("GetTransactionByHash - 1", locationByte, txByte, err)
+			if err != nil {
+				return byte(255), nil, -1, nil, err
+			}
+			err = json.Unmarshal(txByte, &tx)
+			if err != nil {
+				return byte(255), nil, -1, nil, err
+			}
+			// Handle string to get chainId, blockheight, txindex information
+			locations := strings.Split(string(locationByte), string("-"))
+			// Get Chain Id
+			chainId = []byte(locations[2])
+			// Get Block Height
+			tempBlockHeight := []byte(locations[3])
+			bufBlockHeight := bytes.NewBuffer(tempBlockHeight)
+			err = binary.Read(bufBlockHeight, binary.LittleEndian, &blockHeight)
+			if err != nil {
+				return byte(255), nil, -1, nil, err
+			}
+			blockHeight = uint32(bigNumber - blockHeight)
+			fmt.Println("Testing in GetTransactionByHash, blockHeight", blockHeight)
+			block, err := self.GetBlockByBlockHeight(int32(blockHeight), chainId[0])
+			if err != nil {
+				fmt.Println("ERROR in GetTransactionByHash, get Block by height", err)
+				return byte(255), nil, -1, nil, err
+			}
+			//Get txIndex
+			tempTxIndex := []byte(locations[4])
+			bufTxIndex := bytes.NewBuffer(tempTxIndex)
+			err = binary.Read(bufTxIndex, binary.LittleEndian, &txIndex)
+			if err != nil {
+				return byte(255), nil, -1, nil, err
+			}
+			txIndex = uint32(bigNumberTx - txIndex)
+			fmt.Println("Testing in GetTransactionByHash, blockHash, index, tx", block.Hash(), txIndex, tx)
+			return chainId[0], block.Hash(), int(txIndex), &tx, nil
+		}
+
+		return byte(255), nil, -1, nil, err
 	}
 	block, err := self.GetBlockByBlockHash(blockHash)
 	if err != nil {
 		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and Index", index, "contains", block.Transactions[index])
-		return nil, -1, nil, err
+		return byte(255), nil, -1, nil, err
 	}
 	Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and Index", index, "contains", block.Transactions[index])
-	return blockHash, index, block.Transactions[index], nil
+	return block.Header.ChainID, blockHash, index, block.Transactions[index], nil
+}
+
+func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomToken, error) {
+	data, err := self.config.DataBase.ListCustomToken()
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[common.Hash]transaction.TxCustomToken)
+	for _, txData := range data {
+		hash := common.Hash{}
+		hash.SetBytes(txData)
+		_, blockHash, index, tx, err := self.GetTransactionByHash(&hash)
+		_ = blockHash
+		_ = index
+		if err != nil {
+			return nil, err
+		}
+		txCustomToken := tx.(*transaction.TxCustomToken)
+		result[txCustomToken.TxToken.PropertyID] = *txCustomToken
+	}
+	return result, nil
+}
+
+// GetCustomTokenTxsHash - return list hash of tx which relate to custom token
+func (self *BlockChain) GetCustomTokenTxsHash(tokenID *common.Hash) ([]common.Hash, error) {
+	txHashesInByte, err := self.config.DataBase.CustomTokenTxs(tokenID)
+	if err != nil {
+		return nil, err
+	}
+	result := []common.Hash{}
+	for _, temp := range txHashesInByte {
+		result = append(result, *temp)
+	}
+	return result, nil
+}
+
+// GetCustomTokenTxsHash - return list of tx which relate to custom token
+func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]transaction.Transaction, error) {
+	txHashesInByte, err := self.config.DataBase.CustomTokenTxs(tokenID)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[common.Hash]transaction.Transaction)
+	for _, temp := range txHashesInByte {
+		_, _, _, tx, err := self.GetTransactionByHash(temp)
+		if err != nil {
+			return nil, err
+		}
+		result[*tx.Hash()] = tx
+	}
+	return result, nil
 }

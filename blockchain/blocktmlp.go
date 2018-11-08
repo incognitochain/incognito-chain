@@ -159,7 +159,7 @@ concludeBlock:
 		BlockCommitteeSigs:    make([]string, common.TotalValidators),
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
-		SalaryFund:            currentSalaryFund - (salaryMULTP * salaryPerTx) + totalFee + salaryFundAdd,
+		SalaryFund:            currentSalaryFund - totalSalary + totalFee + salaryFundAdd,
 		GovernanceParams:      prevBlock.Header.GovernanceParams, // TODO: need get from gov-params tx
 		LoanParams:            prevBlock.Header.LoanParams,
 	}
@@ -182,7 +182,7 @@ concludeBlock:
 	//update the latest AgentDataPoints to block
 	// block.AgentDataPoints = agentDataPoints
 	// Set height
-	block.Height = prevBlock.Height + 1
+	block.Header.Height = prevBlock.Header.Height + 1
 
 	return &block, nil
 }

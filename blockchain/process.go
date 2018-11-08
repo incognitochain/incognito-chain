@@ -1,7 +1,10 @@
 package blockchain
 
 import (
+	"fmt"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/transaction"
+	"strings"
 )
 
 // ProcessBlock is the main workhorse for handling insertion of new blocks into
@@ -34,30 +37,74 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	// expensive connection logic.  It also has some other nice properties
 	// such as making blocks that never become part of the main chain or
 	// blocks that fail to connect available for further analysis.
-	err := self.StoreBlock(block)
-	if len(block.Transactions) < 1 {
-		Logger.log.Infof("No transaction in this block")
-	} else {
-		Logger.log.Infof("Number of transaction in this block %+i", len(block.Transactions))
-	}
-	for index,tx := range block.Transactions{
-		err := self.StoreTransactionIndex(tx.Hash(),block.Hash(), index)
+	if self.config.Light {
+		Logger.log.Infof("Storing Block Header of Block %+v", blockHash)
+		err := self.StoreBlockHeader(block)
 		if err != nil {
-			Logger.log.Error("ERROR",err,"Transaction in block with hash", blockHash, "and Index", index, ":", tx)
 			return NewBlockChainError(UnExpectedError, err)
 		}
-		Logger.log.Infof("Transaction in block with hash", blockHash, "and Index", index, ":", tx)
-	}
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
+		nullifiersInDb := make([][]byte, 0)
+		chainId := block.Header.ChainID
+		txViewPoint, err := self.FetchTxViewPoint(chainId)
+		if err != nil {
+			return NewBlockChainError(UnExpectedError, err)
+		}
+		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
+		for _, account := range self.config.Wallet.MasterAccount.Child {
+			unspentTxs, err1 := self.GetListUnspentTxByPrivateKeyInBlock(&account.Key.KeySet.PrivateKey, block, nullifiersInDb, transaction.NoSort, true)
+			if err1 != nil {
+				return NewBlockChainError(UnExpectedError, err1)
+			}
+
+			for chainId, txs := range unspentTxs {
+				for _, unspent := range txs {
+					var txIndex = -1
+					// Iterate to get Tx Index of transaction in a block
+					for i, _ := range block.Transactions {
+						txHash := unspent.Hash().String()
+						blockTxHash := block.Transactions[i].(*transaction.Tx).Hash().String()
+						if strings.Compare(txHash, blockTxHash) == 0 {
+							txIndex = i
+							fmt.Println("Found Transaction i", unspent.Hash(), i)
+							break
+						}
+					}
+					//if txIndex == -1 {
+					//	return NewBlockChainError(UnExpectedError, err)
+					//}
+					err := self.StoreUnspentTransactionLightMode(&account.Key.KeySet.PrivateKey, chainId, block.Header.Height, txIndex, &unspent)
+					if err != nil {
+						return NewBlockChainError(UnExpectedError, err)
+					}
+				}
+			}
+		}
+	} else {
+		err := self.StoreBlock(block)
+		if len(block.Transactions) < 1 {
+			Logger.log.Infof("No transaction in this block")
+		} else {
+			Logger.log.Infof("Number of transaction in this block %+v", len(block.Transactions))
+		}
+		for index, tx := range block.Transactions {
+			err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
+			if err != nil {
+				Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and Index", index, ":", tx)
+				return NewBlockChainError(UnExpectedError, err)
+			}
+			Logger.log.Infof("Transaction in block with hash", blockHash, "and Index", index, ":", tx)
+		}
+		if err != nil {
+			return NewBlockChainError(UnExpectedError, err)
+		}
 	}
 	// save index of block
-	err = self.StoreBlockIndex(block)
+	err := self.StoreBlockIndex(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 	// fetch nullifiers and commitments(utxo) from block and save
-	err = self.CreateTxViewPoint(block)
+	err = self.CreateAndSaveTxViewPoint(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
