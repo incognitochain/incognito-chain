@@ -254,6 +254,7 @@ Store block into Database
 func (self *BlockChain) StoreBlock(block *Block) error {
 	return self.config.DataBase.StoreBlock(block, block.Header.ChainID)
 }
+
 /*
 	Store Only Block Header into database
 */
@@ -266,7 +267,7 @@ func (self *BlockChain) StoreBlockHeader(block *Block) error {
 	Store Transaction in Light mode
 */
 func (self *BlockChain) StoreTransactionLightMode(privatKey *client.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
-	return self.config.DataBase.StoreTransactionLightMode(privatKey,chainId,blockHeight,txIndex, tx)
+	return self.config.DataBase.StoreTransactionLightMode(privatKey, chainId, blockHeight, txIndex, tx)
 }
 
 /*
@@ -931,12 +932,12 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (*common.Hash,
 	return blockHash, index, block.Transactions[index], nil
 }
 
-func (self *BlockChain) ListCustomToken() ([]transaction.TxCustomToken, error) {
+func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomToken, error) {
 	data, err := self.config.DataBase.ListCustomToken()
 	if err != nil {
 		return nil, err
 	}
-	result := []transaction.TxCustomToken{}
+	result := make(map[common.Hash]transaction.TxCustomToken)
 	for _, txData := range data {
 		hash := common.Hash{}
 		hash.SetBytes(txData)
@@ -947,7 +948,7 @@ func (self *BlockChain) ListCustomToken() ([]transaction.TxCustomToken, error) {
 			return nil, err
 		}
 		txCustomToken := tx.(*transaction.TxCustomToken)
-		result = append(result, *txCustomToken)
+		result[txCustomToken.TxToken.PropertyID] = *txCustomToken
 	}
 	return result, nil
 }
