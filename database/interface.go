@@ -26,6 +26,7 @@ type DatabaseInterface interface {
 	// Transaction Index
 	StoreTransactionIndex(*common.Hash, *common.Hash, int) error
 	GetTransactionIndexById(*common.Hash) (*common.Hash, int, error)
+	GetTransactionLightMode(*client.SpendingKey) (map[byte][]transaction.Tx, error)
 	// Best state of chain
 	StoreBestState(interface{}, byte) error
 	FetchBestState(byte) ([]byte, error)

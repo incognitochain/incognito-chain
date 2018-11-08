@@ -2,6 +2,7 @@ package lvdb
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/ninjadotorg/constant/common"
@@ -242,9 +243,13 @@ func (db *db)  StoreTransactionLightMode(privateKey *client.SpendingKey, chainId
 	const(
 		bigNumber = 999999999
 	)
-	reverseBlockHeight := bigNumber - blockHeight
-	reverseTxIndex := bigNumber - txIndex
-	key1 := string(privateKeyPrefix) + privateKey.String() + string(spliter) + string(chainId) + string(reverseBlockHeight) + string(reverseTxIndex)
+	reverseBlockHeight := make([]byte, 4)
+	binary.LittleEndian.PutUint32(reverseBlockHeight, uint32(bigNumber-blockHeight))
+	//fmt.Println("StoreTransactionLightMode reverseBlockHeight in byte", reverseBlockHeight, []byte(string(reverseBlockHeight)))
+	reverseTxIndex := make([]byte, 4)
+	binary.LittleEndian.PutUint32(reverseTxIndex, uint32(bigNumber-blockHeight))
+
+	key1 := string(privateKeyPrefix) + privateKey.String() + string(spliter) + string(chainId) + string(spliter) + string(reverseBlockHeight) + string(spliter) + string(reverseTxIndex)
 	key2 := string(privateKeyPrefix) + tx.Hash().String()
 
 	if ok, _ := db.hasValue([]byte(key1)); ok {
@@ -264,5 +269,35 @@ func (db *db)  StoreTransactionLightMode(privateKey *client.SpendingKey, chainId
 	if err := db.put([]byte(key2), []byte(key1)); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
+
+	//fmt.Println("Storing Transaction in light mode: txLocation -> tx", key1, tx)
+	//fmt.Println("Storing Transaction in light mode: txHash -> txLocation", key2, key1)
 	return nil
+}
+
+/*
+	Get Transaction in Light mode
+	Get transaction by prefix(privateKey)privateKey, this prefix help to get all transaction belong to that privatekey
+	1. Key -> value : prefix(privateky)-privateKey-chainId-(999999999 - blockHeight)-(999999999 - txIndex) 		-> 		tx
+
+*/
+func (db *db)  GetTransactionLightMode(privateKey *client.SpendingKey) (map[byte][]transaction.Tx, error)  {
+	prefix := []byte(string(privateKeyPrefix) + privateKey.String())
+	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
+	results := make(map[byte][]transaction.Tx)
+	for iter.Next() {
+		key := iter.Key()
+		value := iter.Value()
+		reses := strings.Split(string(key),string(spliter))
+		tempChainId, _ := strconv.Atoi(reses[2])
+		chainId := byte(tempChainId)
+		tx := transaction.Tx{}
+		err := json.Unmarshal(value, &tx)
+		if err != nil {
+			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+		}
+		results[chainId] = append(results[chainId], tx)
+	}
+	iter.Release()
+	return results, nil
 }

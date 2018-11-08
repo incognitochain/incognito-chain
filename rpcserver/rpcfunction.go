@@ -503,7 +503,6 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-
 		txsMap, err := self.config.BlockChain.GetListTxByPrivateKey(&readonlyKey.KeySet.PrivateKey, transaction.NoSort, false)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
@@ -528,6 +527,14 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 					})
 				}
 				listTxs = append(listTxs, item)
+			}
+			//fmt.Println("listTxs in handleListUnspent", listTxs)
+
+			if result.ListUnspentResultItems[priKeyStr] == nil {
+				result.ListUnspentResultItems[priKeyStr] = map[byte][]jsonresult.ListUnspentResultItem{}
+			}
+			if result.ListUnspentResultItems[priKeyStr][chainId] == nil {
+				result.ListUnspentResultItems[priKeyStr][chainId] = []jsonresult.ListUnspentResultItem{}
 			}
 			result.ListUnspentResultItems[priKeyStr][chainId] = listTxs
 		}

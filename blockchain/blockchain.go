@@ -205,9 +205,18 @@ func (self *BlockChain) GetBlockByBlockHeight(height int32, chainId byte) (*Bloc
 	}
 
 	block := Block{}
-	err = json.Unmarshal(blockBytes, &block)
-	if err != nil {
-		return nil, err
+	blockHeader := BlockHeader{}
+	if self.config.Light {
+		err = json.Unmarshal(blockBytes, &blockHeader)
+		if err != nil {
+			return nil, err
+		}
+		block.Header = blockHeader
+	} else {
+		err = json.Unmarshal(blockBytes, &block)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &block, nil
 }
@@ -221,9 +230,18 @@ func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 		return nil, err
 	}
 	block := Block{}
-	err = json.Unmarshal(blockBytes, &block)
-	if err != nil {
-		return nil, err
+	blockHeader := BlockHeader{}
+	if self.config.Light {
+		err = json.Unmarshal(blockBytes, &blockHeader)
+		if err != nil {
+			return nil, err
+		}
+		block.Header = blockHeader
+	} else {
+		err = json.Unmarshal(blockBytes, &block)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &block, nil
 }
@@ -397,9 +415,18 @@ func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
 				return nil, err
 			}
 			block := Block{}
-			err = json.Unmarshal(blockBytes, &block)
-			if err != nil {
-				return nil, err
+			blockHeader := BlockHeader{}
+			if self.config.Light {
+				err = json.Unmarshal(blockBytes, &blockHeader)
+				if err != nil {
+					return nil, err
+				}
+				block.Header = blockHeader
+			} else {
+				err = json.Unmarshal(blockBytes, &block)
+				if err != nil {
+					return nil, err
+				}
 			}
 			result[chainID] = append(result[chainID], &block)
 		}
@@ -421,9 +448,18 @@ func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 			return nil, err
 		}
 		block := Block{}
-		err = json.Unmarshal(blockBytes, &block)
-		if err != nil {
-			return nil, err
+		blockHeader := BlockHeader{}
+		if self.config.Light {
+			err = json.Unmarshal(blockBytes, &blockHeader)
+			if err != nil {
+				return nil, err
+			}
+			block.Header = blockHeader
+		} else {
+			err = json.Unmarshal(blockBytes, &block)
+			if err != nil {
+				return nil, err
+			}
 		}
 		result = append(result, &block)
 	}
@@ -736,6 +772,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, so
 
 	// lock chain
 	self.chainLock.Lock()
+	defer self.chainLock.Unlock()
 
 	// get list nullifiers from db to check spending
 	nullifiersInDb := make([][]byte, 0)
@@ -748,7 +785,16 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, so
 		}
 		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
 	}
-
+	if self.config.Light {
+		results, err := self.config.DataBase.GetTransactionLightMode(privateKey)
+		//Logger.log.Infof("UTXO lightmode %+v", results)
+		if err != nil {
+			return nil, err
+		}
+		if results != nil {
+			return results, nil
+		}
+	}
 	// loop on all chains
 	for _, bestState := range self.BestState {
 		// get best block
@@ -762,7 +808,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, so
 			resultsInChain, err1 := self.GetListTxByPrivateKeyInBlock(privateKey, block, nullifiersInDb, sortType, sortAsc)
 			if err1 != nil {
 				// unlock chain
-				self.chainLock.Unlock()
+				//self.chainLock.Unlock()
 				return nil, err1
 			}
 			results[chainId] = append(results[chainId], resultsInChain[chainId]...)
@@ -777,7 +823,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, so
 				preBlock, err := self.GetBlockByBlockHash(&preBlockHash)
 				if err != nil || blockHeight != preBlock.Height {
 					// pre-block is not the same block-height with calculation -> invalid blockchain
-					self.chainLock.Unlock()
+					//self.chainLock.Unlock()
 					return nil, errors.New("Invalid blockchain")
 				}
 				block = preBlock
@@ -788,7 +834,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, so
 	}
 
 	// unlock chain
-	self.chainLock.Unlock()
+	//self.chainLock.Unlock()
 
 	return results, nil
 }
