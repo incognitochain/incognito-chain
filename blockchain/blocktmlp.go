@@ -59,6 +59,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	var txsToAdd []transaction.Transaction
 	var txToRemove []transaction.Transaction
 	// var actionParamTxs []*transaction.ActionParamTx
+	totalFee := uint64(0)
 
 	// Get salary per tx
 	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(chainID)
@@ -158,7 +159,7 @@ concludeBlock:
 		BlockCommitteeSigs:    make([]string, common.TotalValidators),
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
-		SalaryFund:            currentSalaryFund - totalSalary + salaryFundAdd,
+		SalaryFund:            currentSalaryFund - totalSalary + totalFee + salaryFundAdd,
 		GovernanceParams:      prevBlock.Header.GovernanceParams, // TODO: need get from gov-params tx
 	}
 	for _, tx := range txsToAdd {
