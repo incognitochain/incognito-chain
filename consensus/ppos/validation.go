@@ -55,16 +55,10 @@ func (self *Engine) ValidateSpecTxWithBlockChain(tx transaction.Transaction) err
 			}
 
 			// Check if loan id is unique across all chains
-			// TODO(@0xbunyip): update with variable number of chains
-			for i := 0; i < 20; i++ {
-				txViewPoint, err := self.config.BlockChain.FetchTxViewPoint(i)
-				if err != nil {
-					return err
-				}
-				loanIDs := txViewPoint.ListLoanIDs()
-				for _, id := range loanIDs {
+			for chainID, bestState := range self.config.BlockChain.BestState {
+				for _, id := range bestState.LoanIDs {
 					if bytes.Equal(txLoan.LoanID, id) {
-						return fmt.Errorf("LoanID already existed")
+						return fmt.Errorf("LoanID already existed on chain %d", chainID)
 					}
 				}
 			}

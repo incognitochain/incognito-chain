@@ -12,15 +12,10 @@ type TxViewPoint struct {
 	chainID         byte
 	listNullifiers  [][]byte
 	listCommitments [][]byte
-	listLoanIDs     [][]byte // TODO(@sirrush): store list loan ids in database
 	customTokenTxs  []*transaction.TxCustomToken
 
 	// hash of best block in current
 	currentBestBlockHash common.Hash
-}
-
-func (view *TxViewPoint) ListLoanIDs() [][]byte {
-	return view.listLoanIDs
 }
 
 /*
