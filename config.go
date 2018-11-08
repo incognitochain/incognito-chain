@@ -546,7 +546,9 @@ func loadConfig() (*config, []string, error) {
 	if configFileError != nil {
 		spew.Dump(configFileError)
 	}
-
+	if cfg.Light {
+		cfg.DatabaseDir = cfg.DatabaseDir + "-light"
+	}
 	return &cfg, remainingArgs, nil
 }
 

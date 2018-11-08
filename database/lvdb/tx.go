@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/transaction"
 	"strconv"
 	"strings"
 
@@ -187,6 +189,8 @@ func (db *db) CleanFeeEstimator() error {
 /*
 	StoreTransactionIndex
 	Store tx detail location
+  Key: prefixTx-txHash
+	Value: blockHash-blockIndex
 */
 func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, index int) error {
 	key := string(transactionKeyPrefix) + txId.String()
@@ -201,8 +205,7 @@ func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, i
 }
 
 /*
-  GetTransactionDetail
-	allow to get transaction detail via its position in block
+  Get Transaction by ID
 */
 
 func (db *db) GetTransactionIndexById(txId *common.Hash)  (*common.Hash, int, error) {
@@ -228,4 +231,38 @@ func (db *db) GetTransactionIndexById(txId *common.Hash)  (*common.Hash, int, er
 	}
 	fmt.Println("BlockHash", hash, "Transaction index", index)
 	return hash, index, nil
+}
+/*
+	Store Transaction in Light mode
+	1. Key -> value : prefix(privateky)privateKey-chainId-(999999999 - blockHeight)-(999999999 - txIndex) 		-> 		tx
+	2. Key -> value :							prefix(transaction)txHash 												->  	privateKey-chainId-blockHeight-txIndex
+
+*/
+func (db *db)  StoreTransactionLightMode(privateKey *client.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
+	const(
+		bigNumber = 999999999
+	)
+	reverseBlockHeight := bigNumber - blockHeight
+	reverseTxIndex := bigNumber - txIndex
+	key1 := string(privateKeyPrefix) + privateKey.String() + string(spliter) + string(chainId) + string(reverseBlockHeight) + string(reverseTxIndex)
+	key2 := string(privateKeyPrefix) + tx.Hash().String()
+
+	if ok, _ := db.hasValue([]byte(key1)); ok {
+		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("tx %s already exists", key1))
+	}
+	if ok, _ := db.hasValue([]byte(key2)); ok {
+		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("tx %s already exists", key2))
+	}
+
+	value,err := json.Marshal(tx)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+	}
+	if err := db.put([]byte(key1), value); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
+	}
+	if err := db.put([]byte(key2), []byte(key1)); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
+	}
+	return nil
 }

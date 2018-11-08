@@ -2,6 +2,7 @@ package client
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 
 	"golang.org/x/crypto/curve25519"
 )
@@ -145,4 +146,11 @@ func GenEphemeralKey() (EphemeralPubKey, EphemeralPrivKey) {
 	copy(esk[:], esk_tmp[:])
 
 	return esk.GenPubKey(), esk
+}
+
+func (spendingKey SpendingKey) String() string {
+	for i := 0; i < SpendingKeyLength/2; i++ {
+		spendingKey[i], spendingKey[SpendingKeyLength-1-i] = spendingKey[SpendingKeyLength-1-i], spendingKey[i]
+	}
+	return hex.EncodeToString(spendingKey[:])
 }

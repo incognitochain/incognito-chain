@@ -19,15 +19,15 @@ type hasher interface {
 var (
 	chainIDPrefix        = []byte("c")
 	blockKeyPrefix       = []byte("b-")
+	blockHeaderKeyPrefix = []byte("bh-")
 	blockKeyIdxPrefix    = []byte("i-")
 	transactionKeyPrefix = []byte("tx-")
+	privateKeyPrefix     = []byte("prk-")
 	nullifiersPrefix     = []byte("nullifiers-")
 	commitmentsPrefix    = []byte("commitments-")
 	bestBlockKey         = []byte("bestBlock")
 	feeEstimator         = []byte("feeEstimator")
-	spliter              = []byte("---")
-	tokenPrefix          = []byte("token-")
-	tokenInitPrefix      = []byte("token-init-")
+	spliter              = []byte("-")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {

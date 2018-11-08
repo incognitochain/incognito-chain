@@ -2,12 +2,16 @@ package database
 
 import (
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 // DatabaseInterface provides the interface that is used to store blocks.
 type DatabaseInterface interface {
 	// Block
 	StoreBlock(interface{}, byte) error
+	StoreBlockHeader(interface{}, *common.Hash, byte) error
+	StoreTransactionLightMode(*client.SpendingKey, byte, int32, int, *transaction.Tx) error
 	FetchBlock(*common.Hash) ([]byte, error)
 	HasBlock(*common.Hash) (bool, error)
 	FetchAllBlocks() (map[byte][]*common.Hash, error)

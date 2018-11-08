@@ -2,6 +2,8 @@ package blockchain
 
 import (
 	"errors"
+	"github.com/ninjadotorg/constant/wallet"
+
 	//"fmt"
 	//"time"
 
@@ -56,6 +58,11 @@ type Config struct {
 	//
 	// This field is required.
 	ChainParams *Params
+
+	//Light mode flag
+	Light bool
+	//Wallet for light mode
+	Wallet *wallet.Wallet
 }
 
 /*
@@ -246,6 +253,20 @@ Store block into Database
 */
 func (self *BlockChain) StoreBlock(block *Block) error {
 	return self.config.DataBase.StoreBlock(block, block.Header.ChainID)
+}
+/*
+	Store Only Block Header into database
+*/
+func (self *BlockChain) StoreBlockHeader(block *Block) error {
+	//Logger.log.Infof("Store Block Header, block header %+v, block hash %+v, chain id %+v",block.Header, block.blockHash, block.Header.ChainID)
+	return self.config.DataBase.StoreBlockHeader(block.Header, block.Hash(), block.Header.ChainID)
+}
+
+/*
+	Store Transaction in Light mode
+*/
+func (self *BlockChain) StoreTransactionLightMode(privatKey *client.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
+	return self.config.DataBase.StoreTransactionLightMode(privatKey,chainId,blockHeight,txIndex, tx)
 }
 
 /*
@@ -589,6 +610,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 }
 
 func (self *BlockChain) GetListTxByPrivateKeyInBlock(privateKey *client.SpendingKey, block *Block, nullifiersInDb [][]byte, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
+	//fmt.Println("debug GetListTxByPrivateKeyInBlock")
 	results := make(map[byte][]transaction.Tx)
 
 	// Get set of keys from private keybyte
