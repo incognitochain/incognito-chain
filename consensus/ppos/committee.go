@@ -159,7 +159,7 @@ func (self *Engine) updateCommittee(producerPbk string, chanId byte) error {
 	return nil
 }
 
-func (self *Engine) getRawBytesForSwa(lockTime int64, requesterPbk string, chainId byte, producerPbk string) []byte {
+func (self *Engine) getRawBytesForSwap(lockTime int64, requesterPbk string, chainId byte, producerPbk string) []byte {
 	rawBytes := []byte{}
 	bTime := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bTime, uint64(lockTime))
