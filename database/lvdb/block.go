@@ -42,9 +42,9 @@ func (db *db) StoreBlock(v interface{}, chainID byte) error {
 func (db *db) StoreBlockHeader(v interface{}, hash *common.Hash, chainID byte) error {
 	//fmt.Println("Log in StoreBlockHeader", v, hash, chainID)
 	var (
-		key  = append(append(chainIDPrefix, chainID), append(blockHeaderKeyPrefix, hash[:]...)...)
+		key  = append(append(chainIDPrefix, chainID), append(blockKeyPrefix, hash[:]...)...)
 		// key should look like this c10{bh-[blockhash]}:{bh-[blockhash]}
-		keyB = append(blockHeaderKeyPrefix, hash[:]...)
+		keyB = append(blockKeyPrefix, hash[:]...)
 		// key should look like this {bh-blockhash}:block
 	)
 	if ok, _ := db.hasValue(key); ok {

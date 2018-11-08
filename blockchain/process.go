@@ -36,6 +36,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	// such as making blocks that never become part of the main chain or
 	// blocks that fail to connect available for further analysis.
 	if self.config.Light {
+		Logger.log.Infof("Storing Block Header of Block %+v", blockHash)
 		err := self.StoreBlockHeader(block)
 		if err != nil {
 			return NewBlockChainError(UnExpectedError, err)
