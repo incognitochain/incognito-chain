@@ -139,11 +139,11 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 	switch tx.(type) {
 	case *transaction.Tx:
-		log.Println("Normal tx again")
+		log.Println("Normal tx")
 		txInfo := tx.(*transaction.Tx)
 		chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
 	case *transaction.TxVoting:
-		log.Println("Tx voting ")
+		log.Println("Tx voting")
 		txInfo := tx.(*transaction.TxVoting)
 		chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
 	case *transaction.TxCustomToken:
@@ -175,14 +175,14 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 	// validate double spend for : normal tx, voting tx
 	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxVotingType {
-		txViewPoint, err := tp.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainID)
+		txViewPoint, err := tp.config.BlockChain.FetchTxViewPoint(chainID)
 		if err != nil {
 			str := fmt.Sprintf("Can not check double spend for tx")
 			err := MempoolTxError{}
 			err.Init(CanNotCheckDoubleSpend, errors.New(str))
 			return nil, nil, err
 		}
-		nullifierDb := txViewPoint.ListNullifiers(common.AssetTypeCoin)
+		nullifierDb := txViewPoint.ListNullifiers()
 		var descs []*transaction.JoinSplitDesc
 		if tx.GetType() == common.TxNormalType {
 			descs = tx.(*transaction.Tx).Descs
@@ -356,6 +356,14 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 
 	txType := tx.GetType()
 	switch txType {
+	case common.TxCustomTokenType:
+		{
+			{
+				tx := tx.(*transaction.TxCustomToken)
+				err := tp.config.Policy.CheckCustomTokenTransactionFee(tx)
+				return tx.Fee, err
+			}
+		}
 	case common.TxNormalType:
 		{
 			normalTx := tx.(*transaction.Tx)
@@ -380,13 +388,6 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 }
 
 func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
-	chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
-	if err != nil {
-		str := fmt.Sprintf("Can not check double spend for tx")
-		err := MempoolTxError{}
-		err.Init(CanNotCheckDoubleSpend, errors.New(str))
-		return false, err
-	}
 	txN := tx
 	//check version
 	if txN.Version > transaction.TxVersion {
@@ -396,8 +397,8 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 	if int64(txN.LockTime) > time.Now().Unix() {
 		return false, errors.New("Wrong tx locktime")
 	}
-	// check Type equal "n"
-	if txN.Type != common.TxVotingType {
+	// check Type is normal or salary tx
+	if len(txN.Type) != 1 || (txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType) { // only 1 byte
 		return false, errors.New("Wrong tx type")
 	}
 	// check length of JSPubKey
@@ -409,19 +410,6 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 		return false, errors.New("Wrong tx jssig")
 	}
 	//check Descs
-
-	// get list nullifiers from db to check spending
-	txViewPointTxOutBond, err := tp.config.BlockChain.FetchTxViewPoint(common.AssetTypeBond, chainId)
-	if err != nil {
-		return false, errors.New("Wrong tx nultifier")
-	}
-	nullifiersInDbTxOutBond := txViewPointTxOutBond.ListNullifiers(common.AssetTypeBond)
-
-	txViewPointTxOutCoin, err := tp.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainId)
-	if err != nil {
-		return false, errors.New("Wrong tx nultifier")
-	}
-	nullifiersInDbTxOutCoin := txViewPointTxOutCoin.ListNullifiers(common.AssetTypeCoin)
 
 	for _, desc := range txN.Descs {
 		// check length of Anchor
@@ -435,10 +423,6 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 		// check length of HSigSeed
 		if len(desc.HSigSeed) != 32 {
 			return false, errors.New("Wrong tx desc's hsigseed")
-		}
-		// check value of Type
-		if desc.Type != common.AssetTypeBond && desc.Type != common.AssetTypeCoin {
-			return false, errors.New("Wrong tx desc's type")
 		}
 		// check length of Nullifiers
 		if len(desc.Nullifiers) != 2 {
@@ -490,30 +474,6 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 			return false, errors.New("Wrong tx desc's encryptedData")
 		}
 		// check nulltifier is existed in DB
-		if desc.Type == common.AssetTypeBond {
-			checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[0])
-			if err != nil || checkCandiateNullifier == true {
-				// candidate nullifier is existed in db
-				return false, errors.New("Wrong tx desc's nullifier")
-			}
-			checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[1])
-			if err != nil || checkCandiateNullifier == true {
-				// candidate nullifier is existed in db
-				return false, errors.New("Wrong tx desc's nullifier")
-			}
-		}
-		if desc.Type == common.AssetTypeBond {
-			checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[0])
-			if err != nil || checkCandiateNullifier == true {
-				// candidate nullifier is existed in db
-				return false, errors.New("Wrong tx desc's nullifier")
-			}
-			checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[1])
-			if err != nil || checkCandiateNullifier == true {
-				// candidate nullifier is existed in db
-				return false, errors.New("Wrong tx desc's nullifier")
-			}
-		}
 		if desc.Reward != 0 {
 			return false, errors.New("Wrong tx desc's reward")
 		}
@@ -526,13 +486,6 @@ func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxVoting) (bo
 		return false, errors.New("Wrong voting node data")
 	}
 	tx := txVoting.Tx
-	chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
-	if err != nil {
-		str := fmt.Sprintf("Can not check double spend for tx")
-		err := MempoolTxError{}
-		err.Init(CanNotCheckDoubleSpend, errors.New(str))
-		return false, errors.New("Wrong tx version")
-	}
 	txN := tx
 	//check version
 	if txN.Version > transaction.TxVersion {
@@ -556,19 +509,6 @@ func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxVoting) (bo
 	}
 	//check Descs
 
-	// get list nullifiers from db to check spending
-	txViewPointTxOutBond, err := tp.config.BlockChain.FetchTxViewPoint(common.AssetTypeBond, chainId)
-	if err != nil {
-		return false, errors.New("Wrong tx nultifier")
-	}
-	nullifiersInDbTxOutBond := txViewPointTxOutBond.ListNullifiers(common.AssetTypeBond)
-
-	txViewPointTxOutCoin, err := tp.config.BlockChain.FetchTxViewPoint(common.AssetTypeCoin, chainId)
-	if err != nil {
-		return false, errors.New("Wrong tx nultifier")
-	}
-	nullifiersInDbTxOutCoin := txViewPointTxOutCoin.ListNullifiers(common.AssetTypeCoin)
-
 	for _, desc := range txN.Descs {
 		// check length of Anchor
 		if len(desc.Anchor) != 2 {
@@ -581,10 +521,6 @@ func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxVoting) (bo
 		// check length of HSigSeed
 		if len(desc.HSigSeed) != 32 {
 			return false, errors.New("Wrong tx desc's hsigseed")
-		}
-		// check value of Type
-		if desc.Type != common.AssetTypeBond && desc.Type != common.AssetTypeCoin {
-			return false, errors.New("Wrong tx desc's type")
 		}
 		// check length of Nullifiers
 		if len(desc.Nullifiers) != 2 {
@@ -624,30 +560,6 @@ func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxVoting) (bo
 			return false, errors.New("Wrong tx desc's encryptedData")
 		}
 		// check nulltifier is existed in DB
-		if desc.Type == common.AssetTypeBond {
-			checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[0])
-			if err != nil || checkCandiateNullifier == true {
-				// candidate nullifier is existed in db
-				return false, errors.New("Wrong tx desc's nullifier")
-			}
-			checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutBond, desc.Nullifiers[1])
-			if err != nil || checkCandiateNullifier == true {
-				// candidate nullifier is existed in db
-				return false, errors.New("Wrong tx desc's nullifier")
-			}
-		}
-		if desc.Type == common.AssetTypeBond {
-			checkCandiateNullifier, err := common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[0])
-			if err != nil || checkCandiateNullifier == true {
-				// candidate nullifier is existed in db
-				return false, errors.New("Wrong tx desc's nullifier")
-			}
-			checkCandiateNullifier, err = common.SliceExists(nullifiersInDbTxOutCoin, desc.Nullifiers[1])
-			if err != nil || checkCandiateNullifier == true {
-				// candidate nullifier is existed in db
-				return false, errors.New("Wrong tx desc's nullifier")
-			}
-		}
 		if desc.Reward != 0 {
 			return false, errors.New("Wrong tx desc's reward")
 		}
@@ -660,8 +572,8 @@ ValidateSanityData - validate sansity data of tx
 */
 func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxSalaryType {
-		txA := tx.(*transaction.TxVoting)
-		ok, err := tp.validateSanityNormalTxData(&txA.Tx)
+		txA := tx.(*transaction.Tx)
+		ok, err := tp.validateSanityNormalTxData(txA)
 		if !ok {
 			return false, err
 		}
@@ -685,6 +597,9 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		if !ok {
 			return false, err
 		}
+	} else if tx.GetType() == common.TxCustomTokenType {
+		// TODO check sanity
+		return true, nil
 	} else {
 		return false, errors.New("Wrong tx type")
 	}

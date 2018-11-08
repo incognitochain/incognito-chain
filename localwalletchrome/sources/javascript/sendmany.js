@@ -8,11 +8,11 @@ window.onload = function () {
         if (xhr.status == 200 && xhr.readyState == XMLHttpRequest.DONE) {
             var response = JSON.parse(this.responseText.toString());
             if (response.Result != null) {
-                document.getElementById("lb_publicKey").innerText = response.Result.PublicKey;
+                document.getElementById("lb_publicKey").innerText = response.Result.PaymentAddress;
                 document.getElementById("lb_readonlyKey").innerText = response.Result.ReadonlyKey;
                 document.getElementById("loader").style.display = "none";
                 document.getElementById("myDiv").style.display = "block";
-                dumpprivkey(response.Result.PublicKey)
+                dumpprivkey(response.Result.PaymentAddress)
                 getbalance();
             } else {
                 if (response.Error != null) {

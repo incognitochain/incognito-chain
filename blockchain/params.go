@@ -57,7 +57,21 @@ type Params struct {
 	GenerateSupported bool
 }
 
-var pposValidators = []string{
+var preSelectValidatorsMainnet = []string{
+
+}
+
+// MainNetParams defines the network parameters for the main coin network.
+var MainNetParams = Params{
+	Name:        MainetName,
+	Net:         Mainnet,
+	DefaultPort: MainnetDefaultPort,
+
+	// blockChain parameters
+	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, MainnetGenesisblockPaymentAddress, preSelectValidatorsMainnet, MainnetInitFundSalary, 0, 0),
+}
+
+var preSelectValidatorsTestnet = []string{
 	"124sf2tJ4K6iVD6PS4dZzs3BNYuYmHmup3Q9MfhorDrJ6aiSr46",
 	"1WG3ys2tsZKpAYV7UEMirmALrMe7wDijnZfTp2Nnd9Ei6upGhc",
 	"12K2poTdqzStNZjKdvYzdTBihhigTRWimHWVd7nZ5wRjEPVEZ8n",
@@ -66,7 +80,7 @@ var pposValidators = []string{
 	"12TZJQbucHA97TJNVtp8xud2BUbrzt1Mgq8Kif1BEdf51BVPFwR",
 	"12EgPTDbermjn6xSxtdjPiguaV4moStJK1uiHnSSnw6rdM9TEBe",
 	"12ixtJSwVqvLrB4x14ux9c3h2DyUgdfvyjt5XooHkxh6vbcZomW",
-	"12ogKMsmp3iwapFLa1HLeh2SmeEevF9bbUeLbcceD2TUY3MiJtW",
+	"1cizgU9GeDuEiH7GddwnV2YhPBB3aD1DMir3dynDQahjwQyqTk", // me
 	"1QHok11tCavbA328ASuHWpoS3P5KuAkWoDLRJZXGbWpBK6xjAS",
 	"1Jd94JYrqLGLUV6wEa43gdsDGc6JGcy2hYbsNptRuSS3iPz24e",
 	"1Q7P7QZGfJSrzC3US1Eqw2iPYDX5rqEG2T8ADsjrML5cQbSaU8",
@@ -80,16 +94,6 @@ var pposValidators = []string{
 	"12k5BfodMQLMDZXmKNwd9gj7eqek3WQqmwYxyj37HBtJpMx1djR",
 }
 
-// MainNetParams defines the network parameters for the main coin network.
-var MainNetParams = Params{
-	Name:        MainetName,
-	Net:         Mainnet,
-	DefaultPort: MainnetDefaultPort,
-
-	// blockChain parameters
-	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, MainnetGenesisblockPaymentAddress, pposValidators, MainnetInitFundSalary, 0, 0),
-}
-
 // TestNetParams defines the network parameters for the test coin network.
 var TestNetParams = Params{
 	Name:        TestnetName,
@@ -97,5 +101,5 @@ var TestNetParams = Params{
 	DefaultPort: TestnetDefaultPort,
 
 	// blockChain parameters
-	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, TestnetGenesisBlockPaymentAddress, pposValidators, TestnetInitFundSalary, 1000, 1000),
+	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, TestnetGenesisBlockPaymentAddress, preSelectValidatorsTestnet, TestnetInitFundSalary, 1000, 1000),
 }

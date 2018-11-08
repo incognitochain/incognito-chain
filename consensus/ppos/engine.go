@@ -150,13 +150,14 @@ func (self *Engine) Start() error {
 						return
 					}
 					Logger.log.Infof("block height: %d", block.Header.Height)
-					//Comment validateBlockSanity segment to create block with only 1 node (validator)
-					err = self.validateBlockSanity(block)
+					//TODO Comment validateBlockSanity segment to create block with only 1 node (validator)
+					/*err = self.validateBlockSanity(block)
 					if err != nil {
 						Logger.log.Error(err)
 						return
-					}
-					err = self.config.BlockChain.CreateTxViewPoint(block)
+					}*/
+					// end TODO
+					err = self.config.BlockChain.CreateAndSaveTxViewPoint(block)
 					if err != nil {
 						Logger.log.Error(err)
 						return
@@ -372,8 +373,9 @@ finalizing:
 
 	//Request for signatures of other validators
 	go func(block blockchain.Block) {
-		//Uncomment this segment to create block with only 1 node (validator)
-		// allSigReceived <- struct{}{}
+		//TODO Uncomment this segment to create block with only 1 node (validator)
+		allSigReceived <- struct{}{}
+		// end TODO
 
 		reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdBlockSigReq)
 		reqSigMsg.(*wire.MessageBlockSigReq).Block = block

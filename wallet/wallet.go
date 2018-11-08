@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"github.com/pkg/errors"
 )
 
 type Account struct {
@@ -82,6 +83,19 @@ func (self *Wallet) CreateNewAccount(accountName string) *Account {
 
 func (self *Wallet) ExportAccount(childIndex uint32) string {
 	return self.MasterAccount.Child[childIndex].Key.Base58CheckSerialize(PriKeyType)
+}
+
+func (self *Wallet) RemoveAccount(privateKeyStr string, accountName string, passPhrase string) error {
+	if passPhrase != self.PassPhrase {
+		return NewWalletError(WrongPassphraseErr, nil)
+	}
+	for i, account := range self.MasterAccount.Child {
+		if account.Key.Base58CheckSerialize(PriKeyType) == privateKeyStr {
+			self.MasterAccount.Child = append(self.MasterAccount.Child[:i], self.MasterAccount.Child[i+1:]...)
+			return nil
+		}
+	}
+	return NewWalletError(UnexpectedErr, errors.New("Not found"))
 }
 
 func (self *Wallet) ImportAccount(privateKeyStr string, accountName string, passPhrase string) (*Account, error) {
@@ -184,16 +198,16 @@ func (self *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
 	for _, account := range self.MasterAccount.Child {
 		if account.Name == accountParam {
 			key := KeySerializedData{
-				PublicKey:   account.Key.Base58CheckSerialize(PubKeyType),
-				ReadonlyKey: account.Key.Base58CheckSerialize(ReadonlyKeyType),
+				PaymentAddress: account.Key.Base58CheckSerialize(PubKeyType),
+				ReadonlyKey:    account.Key.Base58CheckSerialize(ReadonlyKeyType),
 			}
 			return key
 		}
 	}
 	newAccount := self.CreateNewAccount(accountParam)
 	key := KeySerializedData{
-		PublicKey:   newAccount.Key.Base58CheckSerialize(PubKeyType),
-		ReadonlyKey: newAccount.Key.Base58CheckSerialize(ReadonlyKeyType),
+		PaymentAddress: newAccount.Key.Base58CheckSerialize(PubKeyType),
+		ReadonlyKey:    newAccount.Key.Base58CheckSerialize(ReadonlyKeyType),
 	}
 	return key
 }
@@ -203,8 +217,8 @@ func (self *Wallet) GetAddressesByAccount(accountParam string) ([]KeySerializedD
 	for _, account := range self.MasterAccount.Child {
 		if account.Name == accountParam {
 			item := KeySerializedData{
-				PublicKey:   account.Key.Base58CheckSerialize(PubKeyType),
-				ReadonlyKey: account.Key.Base58CheckSerialize(ReadonlyKeyType),
+				PaymentAddress: account.Key.Base58CheckSerialize(PubKeyType),
+				ReadonlyKey:    account.Key.Base58CheckSerialize(ReadonlyKeyType),
 			}
 			result = append(result, item)
 		}

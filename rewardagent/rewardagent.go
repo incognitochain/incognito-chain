@@ -28,6 +28,7 @@ func (self RewardAgent) Init(cfg *RewardAgentConfig) (*RewardAgent, error) {
 	return &self, nil
 }
 
+
 func (self *RewardAgent) GetBasicSalary(chainID byte) uint64 {
 	return self.config.BlockChain.BestState[chainID].BestBlock.Header.GovernanceParams.BasicSalary
 }

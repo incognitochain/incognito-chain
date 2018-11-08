@@ -193,22 +193,22 @@ func TestMarshalRSAPublicKey(t *testing.T) {
 		t.Errorf("ParsePKCS1PublicKey = %+v, want %+v", pub, pub2)
 	}
 
-	// It's never been documented that asn1.Marshal/Unmarshal on rsa.PublicKey works,
+	// It's never been documented that asn1.Marshal/Unmarshal on rsa.PaymentAddress works,
 	// but it does, and we know of code that depends on it.
 	// Lock that in, even though we'd prefer that people use MarshalPKCS1PublicKey and ParsePKCS1PublicKey.
 	derBytes2, err := asn1.Marshal(*pub)
 	if err != nil {
-		t.Errorf("Marshal(rsa.PublicKey): %v", err)
+		t.Errorf("Marshal(rsa.PaymentAddress): %v", err)
 	} else if !bytes.Equal(derBytes, derBytes2) {
-		t.Errorf("Marshal(rsa.PublicKey) = %x, want %x", derBytes2, derBytes)
+		t.Errorf("Marshal(rsa.PaymentAddress) = %x, want %x", derBytes2, derBytes)
 	}
 	pub3 := new(rsa.PublicKey)
 	rest, err := asn1.Unmarshal(derBytes, pub3)
 	if err != nil {
-		t.Errorf("Unmarshal(rsa.PublicKey): %v", err)
+		t.Errorf("Unmarshal(rsa.PaymentAddress): %v", err)
 	}
 	if len(rest) != 0 || pub.N.Cmp(pub3.N) != 0 || pub.E != pub3.E {
-		t.Errorf("Unmarshal(rsa.PublicKey) = %+v, %q want %+v, %q", pub, rest, pub2, []byte(nil))
+		t.Errorf("Unmarshal(rsa.PaymentAddress) = %+v, %q want %+v, %q", pub, rest, pub2, []byte(nil))
 	}
 
 	publicKeys := []struct {

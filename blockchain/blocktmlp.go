@@ -146,7 +146,9 @@ concludeBlock:
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 
-	block := Block{}
+	block := Block{
+		Transactions: make([]transaction.Transaction, 0),
+	}
 	currentSalaryFund := prevBlock.Header.SalaryFund
 	block.Header = BlockHeader{
 		Version:               BlockVersion,
@@ -157,7 +159,8 @@ concludeBlock:
 		BlockCommitteeSigs:    make([]string, common.TotalValidators),
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
-		SalaryFund:            currentSalaryFund - (salaryMULTP * salaryPerTx) + totalFee + salaryFundAdd,
+		SalaryFund:            currentSalaryFund - totalSalary + totalFee + salaryFundAdd,
+		GovernanceParams:      prevBlock.Header.GovernanceParams, // TODO: need get from gov-params tx
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
@@ -221,8 +224,7 @@ func createSalaryTx(
 	inputMap := map[byte][]*client.JSInput{chainID: inputs}
 
 	// NOTE: always pay salary with constant coin
-	assetTypeToPaySalary := common.AssetTypeCoin
-	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0, assetTypeToPaySalary, true)
+	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0, false)
 	if err != nil {
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}

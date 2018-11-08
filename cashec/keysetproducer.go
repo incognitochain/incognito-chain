@@ -10,6 +10,8 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
+// TODO - remove this object after apply ecliptic curves for keysetprivacy
+
 type KeySetProducer struct {
 	SprivateKey     []byte
 	SpublicKey      []byte

@@ -64,15 +64,15 @@ func (self GenesisBlockGenerator) createGenesisTx(initialCoin uint64, initialAdd
 	if err != nil {
 		return nil, err
 	}
-	outNote := &client.Note{Value: initialCoin, Apk: key.KeySet.PublicKey.Apk}
-	placeHolderOutputNote := &client.Note{Value: 0, Apk: key.KeySet.PublicKey.Apk}
+	outNote := &client.Note{Value: initialCoin, Apk: key.KeySet.PaymentAddress.Apk}
+	placeHolderOutputNote := &client.Note{Value: 0, Apk: key.KeySet.PaymentAddress.Apk}
 
-	fmt.Printf("EncKey: %x\n", key.KeySet.PublicKey.Pkenc)
+	fmt.Printf("EncKey: %x\n", key.KeySet.PaymentAddress.Pkenc)
 
 	// Create deterministic outputs
 	outputs := []*client.JSOutput{
-		&client.JSOutput{EncKey: key.KeySet.PublicKey.Pkenc, OutputNote: outNote},
-		&client.JSOutput{EncKey: key.KeySet.PublicKey.Pkenc, OutputNote: placeHolderOutputNote},
+		&client.JSOutput{EncKey: key.KeySet.PaymentAddress.Pkenc, OutputNote: outNote},
+		&client.JSOutput{EncKey: key.KeySet.PaymentAddress.Pkenc, OutputNote: placeHolderOutputNote},
 	}
 
 	// Wrap ephemeral private key
@@ -177,7 +177,6 @@ func (self GenesisBlockGenerator) getGenesisTx(genesisBlockReward uint64) (*tran
 		EncryptedData:   encryptedData,
 		EphemeralPubKey: ephemeralPubKey,
 		HSigSeed:        GENESIS_BLOCK_SEED[:],
-		Type:            common.AssetTypeCoin,
 		Reward:          genesisBlockReward,
 		Vmacs:           vmacs,
 	}}
@@ -188,7 +187,7 @@ func (self GenesisBlockGenerator) getGenesisTx(genesisBlockReward uint64) (*tran
 	}
 
 	//tempKeySet, _ := wallet.Base58CheckDeserialize(GENESIS_BLOCK_PAYMENT_ADDR)
-	//lastByte := tempKeySet.KeySet.PublicKey.Apk[len(tempKeySet.KeySet.PublicKey.Apk)-1]
+	//lastByte := tempKeySet.KeySet.PaymentAddress.Apk[len(tempKeySet.KeySet.PaymentAddress.Apk)-1]
 
 	tx := &transaction.Tx{
 		Version:  transaction.TxVersion,

@@ -24,9 +24,9 @@ import (
 // Tx represents a coin-transfer-transaction stored in a block
 type Tx struct {
 	Version  int8   `json:"Version"`
-	Type     string `json:"Type"` // n
+	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
-	Fee      uint64 `json:"Fee"` // Fee applies to first js desc
+	Fee      uint64 `json:"Fee"` // Fee applies: always consant
 
 	Descs    []*JoinSplitDesc `json:"Descs"`
 	JSPubKey []byte           `json:"JSPubKey,omitempty"` // 64 bytes
@@ -214,7 +214,7 @@ func CreateTx(
 	}
 	tempKeySet := cashec.KeySet{}
 	tempKeySet.ImportFromPrivateKey(senderKey)
-	lastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
+	lastByte := tempKeySet.PaymentAddress.Apk[len(tempKeySet.PaymentAddress.Apk)-1]
 	tx.AddressLastByte = lastByte
 	var latestAnchor map[byte][]byte
 
@@ -349,8 +349,8 @@ func CreateTx(
 				fmt.Printf("Exactly enough, include 1 more output %+v, %x\n", outNote.Value, outNote.Apk)
 			} else {
 				// Cannot put the output note into this js desc, create a change note instead
-				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PublicKey.Apk}
-				output := &client.JSOutput{EncKey: senderFullKey.PublicKey.Pkenc, OutputNote: outNote}
+				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PaymentAddress.Apk}
+				output := &client.JSOutput{EncKey: senderFullKey.PaymentAddress.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
 				fmt.Printf("Create change outnote %+v, %x\n", outNote.Value, outNote.Apk)
 
@@ -375,7 +375,7 @@ func CreateTx(
 
 		// Generate proof and sign tx
 		var reward uint64 // Zero reward for non-salary transaction
-		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, assetType, false)
+		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, false)
 		if err != nil {
 			return nil, err
 		}
@@ -406,7 +406,6 @@ func (tx *Tx) BuildNewJSDesc(
 	outputs []*client.JSOutput,
 	rtMap map[byte][]byte,
 	reward, fee uint64,
-	assetType string,
 	noPrivacy bool,
 ) error {
 	// Gather inputs from different chains
@@ -437,7 +436,7 @@ func (tx *Tx) BuildNewJSDesc(
 	}
 
 	var ephemeralPrivKey *client.EphemeralPrivKey // nil ephemeral key, will be randomly created later
-	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, ephemeralPrivKey, assetType)
+	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, ephemeralPrivKey)
 	if err != nil {
 		return err
 	}
@@ -454,7 +453,6 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	reward uint64,
 	hSig, seed []byte,
 	ephemeralPrivKey *client.EphemeralPrivKey,
-	assetType string,
 ) error {
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
@@ -503,7 +501,6 @@ func (tx *Tx) buildJSDescAndEncrypt(
 		EncryptedData:   noteciphers,
 		EphemeralPubKey: ephemeralPubKey[:],
 		HSigSeed:        seed,
-		Type:            assetType,
 		Reward:          reward,
 		Vmacs:           vmacs,
 	}
@@ -520,7 +517,6 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	fmt.Printf("EncryptedData: %x\n", desc.EncryptedData)
 	fmt.Printf("EphemeralPubKey: %x\n", desc.EphemeralPubKey)
 	fmt.Printf("HSigSeed: %x\n", desc.HSigSeed)
-	fmt.Printf("Type: %+v\n", desc.Type)
 	fmt.Printf("Reward: %+v\n", desc.Reward)
 	fmt.Printf("Vmacs: %x %x\n", desc.Vmacs[0], desc.Vmacs[1])
 	return nil
@@ -632,12 +628,12 @@ func GenerateProofForGenesisTx(
 	privateSignKey := [32]byte{1}
 	keySet := &cashec.KeySet{}
 	keySet.ImportFromPrivateKeyByte(privateSignKey[:])
-	sigPubKey := keySet.PublicKey.Apk[:]
+	sigPubKey := keySet.PaymentAddress.Apk[:]
 
 	// Get last byte of genesis sender's address
 	tempKeySet := cashec.KeySet{}
 	tempKeySet.ImportFromPrivateKey(inputs[0].Key)
-	addressLastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
+	addressLastByte := tempKeySet.PaymentAddress.Apk[len(tempKeySet.PaymentAddress.Apk)-1]
 
 	tx, err := CreateEmptyTx(common.TxNormalType)
 	if err != nil {
@@ -664,7 +660,7 @@ func GenerateProofForGenesisTx(
 		return nil, err
 	}
 
-	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, &ephemeralPrivKey, assetType)
+	err = tx.buildJSDescAndEncrypt(inputs, outputs, proof, rts, reward, hSig, seed, &ephemeralPrivKey)
 	return tx, err
 }
 
@@ -734,9 +730,9 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 	var sizeFee uint64 = 8      // uint64
 	var sizeDescs uint64        // uint64
 	if payments != nil {
-		sizeDescs = uint64(max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
+		sizeDescs = uint64(max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
 	} else {
-		sizeDescs = uint64(max(1, (len(usableTx)-3))) * EstimateJSDescSize()
+		sizeDescs = uint64(max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
 	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte

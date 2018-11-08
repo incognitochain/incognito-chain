@@ -16,3 +16,8 @@ const (
 	SortByAmount
 	SortByCreatedTime
 )
+
+const (
+	CustomTokenInit     = iota
+	CustomTokenTransfer
+)

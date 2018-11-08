@@ -126,11 +126,21 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	var err error
 
 	// Create a new block chain instance with the appropriate configuration.9
+	if cfg.Light {
+		if self.wallet == nil {
+			return errors.New("Wallet NOT FOUND. Light Mode required Wallet with at least one child account")
+		}
+		if len(self.wallet.MasterAccount.Child) < 1 {
+			return errors.New("No child account in wallet. Light Mode required Wallet with at least one child account")
+		}
+	}
 	self.blockChain = &blockchain.BlockChain{}
 	err = self.blockChain.Init(&blockchain.Config{
 		ChainParams: self.chainParams,
 		DataBase:    self.dataBase,
 		Interrupt:   interrupt,
+		Light:       cfg.Light,
+		Wallet:      self.wallet,
 	})
 	if err != nil {
 		return err
@@ -752,7 +762,7 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	//	for _, listen := range self.connManager.ListeningPeers {
 	//		for _, _peerConn := range listen.PeerConns {
 	//			if _peerConn.RemotePeerID.Pretty() != self.connManager.GetPeerId(rawPeer.RemoteRawAddress) {
-	//				go self.connManager.Connect(rawPeer.RemoteRawAddress, rawPeer.PublicKey)
+	//				go self.connManager.Connect(rawPeer.RemoteRawAddress, rawPeer.PaymentAddress)
 	//			}
 	//		}
 	//	}
@@ -798,7 +808,7 @@ func (self *Server) GetPeerIDsFromPublicKey(pubKey string) []peer2.ID {
 
 	for _, listener := range self.connManager.Config.ListenerPeers {
 		for _, peerConn := range listener.PeerConns {
-			// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PublicKey)
+			// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PaymentAddress)
 			if peerConn.RemotePeer.PublicKey == pubKey {
 				exist := false
 				for _, item := range result {

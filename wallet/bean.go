@@ -1,7 +1,7 @@
 package wallet
 
 type KeySerializedData struct {
-	PrivateKey  string `json:"PrivateKey"`
-	PublicKey   string `json:"PublicKey"`
-	ReadonlyKey string `json:"ReadonlyKey"`
+	PrivateKey     string `json:"PrivateKey"`
+	PaymentAddress string `json:"PaymentAddress"`
+	ReadonlyKey    string `json:"ReadonlyKey"`
 }

@@ -2,12 +2,16 @@ package database
 
 import (
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 // DatabaseInterface provides the interface that is used to store blocks.
 type DatabaseInterface interface {
 	// Block
 	StoreBlock(interface{}, byte) error
+	StoreBlockHeader(interface{}, *common.Hash, byte) error
+	StoreTransactionLightMode(*client.SpendingKey, byte, int32, int, *transaction.Tx) error
 	FetchBlock(*common.Hash) ([]byte, error)
 	HasBlock(*common.Hash) (bool, error)
 	FetchAllBlocks() (map[byte][]*common.Hash, error)
@@ -19,27 +23,37 @@ type DatabaseInterface interface {
 	GetIndexOfBlock(*common.Hash) (int32, byte, error)
 	GetBlockByIndex(int32, byte) (*common.Hash, error)
 
+	// Transaction Index
+	StoreTransactionIndex(*common.Hash, *common.Hash, int) error
+	GetTransactionIndexById(*common.Hash) (*common.Hash, int, error)
+	GetTransactionLightMode(*client.SpendingKey) (map[byte][]transaction.Tx, error)
 	// Best state of chain
 	StoreBestState(interface{}, byte) error
 	FetchBestState(byte) ([]byte, error)
 	CleanBestState() error
 
 	// Nullifier
-	StoreNullifiers([]byte, string, byte) error
-	FetchNullifiers(string, byte) ([][]byte, error)
-	HasNullifier([]byte, string, byte) (bool, error)
+	StoreNullifiers([]byte, byte) error
+	FetchNullifiers(byte) ([][]byte, error)
+	HasNullifier([]byte, byte) (bool, error)
 	CleanNullifiers() error
 
 	// Commitment
-	StoreCommitments([]byte, string, byte) error
-	FetchCommitments(string, byte) ([][]byte, error)
-	HasCommitment([]byte, string, byte) (bool, error)
+	StoreCommitments([]byte, byte) error
+	FetchCommitments(byte) ([][]byte, error)
+	HasCommitment([]byte, byte) (bool, error)
 	CleanCommitments() error
 
 	// Fee estimator
 	StoreFeeEstimator([]byte, byte) error
 	GetFeeEstimator(byte) ([]byte, error)
 	CleanFeeEstimator() error
+
+	// Custom token
+	StoreCustomToken(*common.Hash, []byte) error                       // param: tokenID, txInitToken-id, data tx
+	StoreCustomTokenTx(*common.Hash, byte, int32, int32, []byte) error // param: tokenID, chainID, block height, tx-id, data tx
+	ListCustomToken() ([][]byte, error)
+	CustomTokenTxs(*common.Hash) ([]*common.Hash, error) // token id
 
 	Close() error
 }

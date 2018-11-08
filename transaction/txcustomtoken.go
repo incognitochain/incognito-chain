@@ -8,74 +8,16 @@ import (
 	"math"
 	"math/big"
 	"sort"
-	"strconv"
-
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy/client"
+	"strconv"
 )
-
-// TxTokenVin ...
-type TxTokenVin struct {
-	Vout      int
-	Signature string
-	PubKey    string
-}
-
-// TxTokenVout ...
-type TxTokenVout struct {
-	Value       float64
-	ScripPubKey string
-}
-
-// TxToken ...
-type TxToken struct {
-	Version         float64
-	Type            float64
-	PropertyName    string
-	PropertySymbol  string
-	Vin             []TxTokenVin
-	Vout            []TxTokenVout
-	Amount          float64
-	TxCustomTokenID common.Hash
-}
 
 // TxCustomToken ...
 type TxCustomToken struct {
 	Tx
-
 	TxToken TxToken
-}
-
-// CustomTokenReceiver ...
-type CustomTokenReceiver struct {
-	PubKey string  `json:"PubKey"`
-	Amount float64 `json:"Amount"`
-}
-
-// CustomTokenParamTx ...
-type CustomTokenParamTx struct {
-	PropertyName    string                `json:"TokenName"`
-	PropertySymbol  string                `json:"TokenSymbol"`
-	TxCustomTokenID string                `json:"TokenHash"`
-	Amount          float64               `json:"TokenAmount"`
-	TokenTxType     float64               `json:"TokenTxType"`
-	Receivers       []CustomTokenReceiver `json:"TokenReceivers"`
-}
-
-// CreateCustomTokenReceiverArray ...
-func CreateCustomTokenReceiverArray(data interface{}) []CustomTokenReceiver {
-	result := make([]CustomTokenReceiver, 0)
-	receivers := data.([]interface{})
-	for _, item := range receivers {
-		temp := item.(map[string]interface{})
-		resultItem := CustomTokenReceiver{
-			PubKey: temp["PubKey"].(string),
-			Amount: temp["Amount"].(float64),
-		}
-		result = append(result, resultItem)
-	}
-	return result
 }
 
 // CreateEmptyCustomTokenTx - return an init custom token transaction
@@ -105,41 +47,28 @@ func (tx *TxCustomToken) GetTxID() *common.Hash {
 	return tx.Tx.txId
 }
 
-// Hash ...
-func (tx *TxToken) Hash() *common.Hash {
-	record := strconv.Itoa(int(tx.Version))
-	record += strconv.FormatFloat(tx.Type, 'f', 6, 64)
-	record += strconv.FormatFloat(tx.Amount, 'f', 6, 64)
-	record += tx.PropertyName
-	record += tx.PropertySymbol
-	hash := common.DoubleHashH([]byte(record))
-	return &hash
-}
-
 // Hash returns the hash of all fields of the transaction
 func (tx TxCustomToken) Hash() *common.Hash {
-	record := strconv.Itoa(int(tx.Tx.Version))
-	record += tx.Tx.Type
-	record += strconv.FormatInt(tx.Tx.LockTime, 10)
-	record += strconv.FormatUint(tx.Tx.Fee, 10)
-	record += strconv.Itoa(len(tx.Tx.Descs))
-	for _, desc := range tx.Tx.Descs {
-		record += desc.toString()
-	}
-	record += string(tx.Tx.JSPubKey)
-	// record += string(tx.JSSig)
-	record += string(tx.Tx.AddressLastByte)
+	// get hash of tx
+	record := tx.Tx.Hash().String()
+
+	// add more hash of txtoken
 	record += tx.TxToken.PropertyName
 	record += tx.TxToken.PropertySymbol
-	record += fmt.Sprintf("%f", tx.TxToken.Amount)
-	record += tx.TxToken.TxCustomTokenID.String()
+	record += strconv.Itoa(tx.TxToken.Type)
+	record += strconv.Itoa(int(tx.TxToken.Amount))
+
+	// final hash
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 // ValidateTransaction ...
 func (tx *TxCustomToken) ValidateTransaction() bool {
+	// validate for normal tx
 	if tx.Tx.ValidateTransaction() {
+		// validate for tx token
+		// TODO, verify signature
 		return true
 	}
 	return false
@@ -197,13 +126,13 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 	paymentInfo []*client.PaymentInfo,
 	rts map[byte]*common.Hash,
 	usableTx map[byte][]*Tx,
-	nullifiers map[byte]([][]byte),
 	commitments map[byte]([][]byte),
 	fee uint64,
-	assetType string,
 	senderChainID byte,
-	tokenParams *CustomTokenParamTx) (*TxCustomToken, error) {
-	fee = 0 // TODO remove this line
+	tokenParams *CustomTokenParamTx,
+	listCustomTokens map[common.Hash]TxCustomToken) (*TxCustomToken, error) {
+
+	// TODO: create normal tx
 	fmt.Printf("List of all commitments before building tx:\n")
 	fmt.Printf("rts: %+v\n", rts)
 	for _, cm := range commitments {
@@ -254,11 +183,11 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 	}
 	tempKeySet := cashec.KeySet{}
 	tempKeySet.ImportFromPrivateKey(senderKey)
-	lastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
+	lastByte := tempKeySet.PaymentAddress.Apk[len(tempKeySet.PaymentAddress.Apk)-1]
 	tx.Tx.AddressLastByte = lastByte
 	var latestAnchor map[byte][]byte
 
-	if len(inputNotes) > 0 || len(paymentInfo) >= 0 {
+	if len(inputNotes) > 0 || len(paymentInfo) > 0 {
 		// Sort input and output notes ascending by value to start building js descs
 		sort.Slice(inputNotes, func(i, j int) bool {
 			return inputNotes[i].note.Value < inputNotes[j].note.Value
@@ -351,7 +280,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 
 		// Choose output notes for the js desc
 		outputs := []*client.JSOutput{}
-		for len(paymentInfo) > 0 && len(outputs) < NumDescOutputs-1 && inputValue >= 0 { // Leave out 1 output note for change // TODO remove equal 0
+		for len(paymentInfo) > 0 && len(outputs) < NumDescOutputs-1 && inputValue > 0 { // Leave out 1 output note for change
 			p := paymentInfo[len(paymentInfo)-1]
 			var outNote *client.Note
 			var encKey client.TransmissionKey
@@ -373,14 +302,14 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 			outputs = append(outputs, output)
 		}
 
-		if inputValue >= 0 { // TODO remove equal 0
+		if inputValue > 0 {
 			// Still has some room left, check if one more output note is possible to add
 			var p *client.PaymentInfo
 			if len(paymentInfo) > 0 {
 				p = paymentInfo[len(paymentInfo)-1]
 			}
 
-			if p != nil && p.Amount == inputValue { // TODO remove equal 0
+			if p != nil && p.Amount == inputValue {
 				// Exactly equal, add this output note to js desc
 				outNote := &client.Note{Value: p.Amount, Apk: p.PaymentAddress.Apk}
 				output := &client.JSOutput{EncKey: p.PaymentAddress.Pkenc, OutputNote: outNote}
@@ -389,8 +318,8 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 				fmt.Printf("Exactly enough, include 1 more output %+v, %x\n", outNote.Value, outNote.Apk)
 			} else {
 				// Cannot put the output note into this js desc, create a change note instead
-				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PublicKey.Apk}
-				output := &client.JSOutput{EncKey: senderFullKey.PublicKey.Pkenc, OutputNote: outNote}
+				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PaymentAddress.Apk}
+				output := &client.JSOutput{EncKey: senderFullKey.PaymentAddress.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
 				fmt.Printf("Create change outnote %+v, %x\n", outNote.Value, outNote.Apk)
 
@@ -415,7 +344,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 
 		// Generate proof and sign tx
 		var reward uint64 // Zero reward for non-salary transaction
-		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, assetType, true)
+		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, false)
 		if err != nil {
 			return nil, err
 		}
@@ -428,57 +357,76 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 
 		fmt.Printf("Len input and info: %+v %+v\n", len(inputNotes), len(paymentInfo))
 	}
+	// end TODO
 
 	var handled = false
 
-	// add token data params
-	if tokenParams.TokenTxType == 50 {
-		handled = true
+	// Add token data params
+	switch tokenParams.TokenTxType {
+	case CustomTokenInit:
+		{
+			handled = true
+			tx.TxToken = TxToken{
+				Type:           tokenParams.TokenTxType,
+				PropertyName:   tokenParams.PropertyName,
+				PropertySymbol: tokenParams.PropertySymbol,
+				Vins:           nil,
+				Vouts:          nil,
+				Amount:         tokenParams.Amount,
+			}
+			var VoutsTemp []TxTokenVout
 
+			receiver := tokenParams.Receiver[0]
+			receiverAmount := receiver.Value
+			VoutsTemp = append(VoutsTemp, TxTokenVout{
+				PaymentAddress: receiver.PaymentAddress,
+				Value:          receiverAmount,
+			})
+
+			tx.TxToken.Vouts = VoutsTemp
+			hashInitToken, err := tx.TxToken.Hash()
+			if err != nil {
+				return nil, errors.New("Can't handle this TokenTxType")
+			}
+			// validate PropertyID is the only one
+			for customTokenID := range listCustomTokens {
+				if hashInitToken.String() == customTokenID.String() {
+					return nil, errors.New("This token is existed in network")
+				}
+			}
+			tx.TxToken.PropertyID = *hashInitToken
+
+		}
+	case CustomTokenTransfer:
+		handled = true
+		paymentTokenAmount := uint64(0)
+		for _, receiver := range tokenParams.Receiver {
+			paymentTokenAmount += receiver.Value
+		}
+		refundTokenAmount := tokenParams.vinsAmount - paymentTokenAmount
 		tx.TxToken = TxToken{
-			Version:        1,
-			Type:           50,
+			Type:           tokenParams.TokenTxType,
 			PropertyName:   tokenParams.PropertyName,
 			PropertySymbol: tokenParams.PropertySymbol,
-			Vin:            nil,
-			Vout:           nil,
-			Amount:         tokenParams.Amount,
+			Vins:           nil,
+			Vouts:          nil,
 		}
-
-		tx.TxToken.TxCustomTokenID = *tx.TxToken.Hash()
-
-		var Vout []TxTokenVout
-		var tempAmount float64
-
-		for _, receiver := range tokenParams.Receivers {
-			receiverAmount := receiver.Amount
-			if tempAmount+receiver.Amount > tokenParams.Amount {
-				receiverAmount = tokenParams.Amount - tempAmount
-				tempAmount = tokenParams.Amount
-			} else {
-				tempAmount += receiver.Amount
-			}
-			Vout = append(Vout, TxTokenVout{
-				ScripPubKey: receiver.PubKey,
-				Value:       receiverAmount,
+		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+		tx.TxToken.PropertyID = *propertyID
+		tx.TxToken.Vins = tokenParams.vins
+		var VoutsTemp []TxTokenVout
+		for _, receiver := range tokenParams.Receiver {
+			receiverAmount := receiver.Value
+			VoutsTemp = append(VoutsTemp, TxTokenVout{
+				PaymentAddress: receiver.PaymentAddress,
+				Value:          receiverAmount,
 			})
 		}
-	}
-
-	if tokenParams.TokenTxType == 51 {
-		handled = true
-		tokenID := tokenParams.TxCustomTokenID
-		fmt.Println(tokenID)
-		// transfer handler
-		// get token info of TxCustomTokenID
-		// TO-DO
-		// get list of vout of sender of TxCustomTokenID
-		// TO-DO
-		tx.TxToken = TxToken{
-			Version: 1,
-			Type:    51,
-			// TxCustomTokenID: tokenParams.TxCustomTokenID.(hash.Hash),
-		}
+		VoutsTemp = append(VoutsTemp, TxTokenVout{
+			PaymentAddress: tokenParams.vins[0].PaymentAddress,
+			Value:          refundTokenAmount,
+		})
+		tx.TxToken.Vouts = VoutsTemp
 	}
 
 	if handled != true {

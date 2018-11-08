@@ -19,6 +19,22 @@ func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
 	for _, tx := range txList {
 		if tx.ValidateTransaction() == false {
 			return NewConsensusError(ErrTxIsWrong, nil)
+		} else {
+			err := self.ValidateSpecTxWithBlockChain(tx)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// Check tx with blockchain
+func (self *Engine) ValidateSpecTxWithBlockChain(tx transaction.Transaction) error {
+	// TODO
+	switch tx.GetType() {
+	case common.TxNormalType:
+		{
 		}
 	}
 	return nil

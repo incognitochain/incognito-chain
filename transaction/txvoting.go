@@ -130,7 +130,6 @@ func CreateVotingTx(
 	nullifiers map[byte]([][]byte),
 	commitments map[byte]([][]byte),
 	fee uint64,
-	assetType string,
 	senderChainID byte,
 	nodeAddr string,
 ) (*TxVoting, error) {
@@ -185,7 +184,7 @@ func CreateVotingTx(
 	}
 	tempKeySet := cashec.KeySet{}
 	tempKeySet.ImportFromPrivateKey(senderKey)
-	lastByte := tempKeySet.PublicKey.Apk[len(tempKeySet.PublicKey.Apk)-1]
+	lastByte := tempKeySet.PaymentAddress.Apk[len(tempKeySet.PaymentAddress.Apk)-1]
 	tx.Tx.AddressLastByte = lastByte
 	var latestAnchor map[byte][]byte
 
@@ -320,8 +319,8 @@ func CreateVotingTx(
 				fmt.Printf("Exactly enough, include 1 more output %+v, %x\n", outNote.Value, outNote.Apk)
 			} else {
 				// Cannot put the output note into this js desc, create a change note instead
-				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PublicKey.Apk}
-				output := &client.JSOutput{EncKey: senderFullKey.PublicKey.Pkenc, OutputNote: outNote}
+				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PaymentAddress.Apk}
+				output := &client.JSOutput{EncKey: senderFullKey.PaymentAddress.Pkenc, OutputNote: outNote}
 				outputs = append(outputs, output)
 				fmt.Printf("Create change outnote %+v, %x\n", outNote.Value, outNote.Apk)
 
@@ -344,7 +343,7 @@ func CreateVotingTx(
 
 		// Generate proof and sign tx
 		var reward uint64 // Zero reward for non-salary transaction
-		err = tx.Tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, assetType, true)
+		err = tx.Tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, true)
 		if err != nil {
 			return nil, err
 		}

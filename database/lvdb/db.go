@@ -17,13 +17,19 @@ type hasher interface {
 }
 
 var (
-	chainIDPrefix     = []byte("c")
-	blockKeyPrefix    = []byte("b-")
-	blockKeyIdxPrefix = []byte("i-")
-	nullifiers        = []byte("nullifiers-")
-	commitments       = []byte("commitments-")
-	bestBlockKey      = []byte("bestBlock")
-	feeEstimator      = []byte("feeEstimator")
+	chainIDPrefix        = []byte("c")
+	blockKeyPrefix       = []byte("b-")
+	blockHeaderKeyPrefix = []byte("bh-")
+	blockKeyIdxPrefix    = []byte("i-")
+	transactionKeyPrefix = []byte("tx-")
+	privateKeyPrefix     = []byte("prk-")
+	nullifiersPrefix     = []byte("nullifiers-")
+	commitmentsPrefix    = []byte("commitments-")
+	bestBlockKey         = []byte("bestBlock")
+	feeEstimator         = []byte("feeEstimator")
+	spliter              = []byte("-")
+	tokenPrefix          = []byte("token-")
+	tokenInitPrefix      = []byte("token-init-")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {
@@ -56,14 +62,18 @@ func (db *db) put(key, value []byte) error {
 func (db db) getKey(keyType string, key interface{}) []byte {
 	var dbkey []byte
 	switch keyType {
-	case "block":
+	case string(blockKeyPrefix):
 		dbkey = append(blockKeyPrefix, key.(*common.Hash)[:]...)
-	case "blockidx":
+	case string(blockKeyIdxPrefix):
 		dbkey = append(blockKeyIdxPrefix, key.(*common.Hash)[:]...)
-	case "nullifier":
-		dbkey = append(nullifiers, []byte(key.(string))...)
-	case "commitment":
-		dbkey = append(commitments, []byte(key.(string))...)
+	case string(nullifiersPrefix):
+		dbkey = append(nullifiersPrefix, []byte(key.(string))...)
+	case string(commitmentsPrefix):
+		dbkey = append(commitmentsPrefix, []byte(key.(string))...)
+	case string(tokenPrefix):
+		dbkey = append(tokenPrefix, key.(*common.Hash)[:]...)
+	case string(tokenInitPrefix):
+		dbkey = append(tokenInitPrefix, key.(*common.Hash)[:]...)
 	}
 	return dbkey
 }

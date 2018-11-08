@@ -19,13 +19,9 @@
 
 vendor
 
-prototype
+constant
 
-cash-prototype
-
-cash
-
-cashctl
+constantctl
 
 constant-bootnode
 
@@ -42,3 +38,4 @@ privacy/server/verifying\.key
 datadirs/data**
 data/**
 cash-*
+constant-*

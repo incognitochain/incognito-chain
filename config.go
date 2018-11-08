@@ -91,6 +91,8 @@ type config struct {
 	// Net config
 	TestNet bool `long:"testnet" description:"Use the test network"`
 
+	Light bool `long:"light" description:"Default 'false'', when node run with mode 'light'', we only save block-header and a transactions database which relate to accounts in wallet"`
+
 	// PoS config
 	ProducerSpendingKey string `long:"producerspendingkey" description:"!!!WARNING Leave this if you don't know what this is"`
 	ProducerKeySet      string `long:"producerkeyset" description:"Key-set of the block producer used to seal block"`
@@ -544,7 +546,9 @@ func loadConfig() (*config, []string, error) {
 	if configFileError != nil {
 		spew.Dump(configFileError)
 	}
-
+	if cfg.Light {
+		cfg.DatabaseDir = cfg.DatabaseDir + "-light"
+	}
 	return &cfg, remainingArgs, nil
 }
 
