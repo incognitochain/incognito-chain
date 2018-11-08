@@ -512,7 +512,7 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 		switch customTokenTx.TxToken.Type {
 		case transaction.CustomTokenInit:
 			{
-				// Store custom token when it is issued
+				Logger.log.Info("Store custom token when it is issued")
 				err = self.config.DataBase.StoreCustomToken(&customTokenTx.TxToken.PropertyID, customTokenTx.Hash()[:])
 				if err != nil {
 					return err
@@ -520,6 +520,7 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 			}
 		case transaction.CustomTokenTransfer:
 			{
+				Logger.log.Info("Transfer custom token")
 			}
 		}
 		// save tx which relate to custom token
@@ -914,7 +915,7 @@ func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCand
 func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
 	// list spent
 	vinList := []transaction.TxTokenVin{}
-	txCustomTokenIDs := []common.Hash{}
+	txCustomTokenIDs := [][]byte{}
 	listCustomTx, err := self.GetCustomTokenTxs(tokenID)
 	if err != nil {
 		return nil, err
@@ -924,7 +925,7 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 		for _, vin := range customTokenTx.TxToken.Vins {
 			if vin.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
 				vinList = append(vinList, vin)
-				txCustomTokenIDs = append(txCustomTokenIDs, *customTokenTx.Hash())
+				txCustomTokenIDs = append(txCustomTokenIDs, vin.TxCustomTokenID[:])
 			}
 		}
 	}
@@ -935,7 +936,8 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 		customTokenTx := tx.(*transaction.TxCustomToken)
 		for index, vout := range customTokenTx.TxToken.Vouts {
 			if vout.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
-				existed, err := common.SliceExists(txCustomTokenIDs, tx.Hash())
+				txHash := tx.Hash()
+				existed, err := common.SliceBytesExists(txCustomTokenIDs, txHash[:])
 				if !existed && err == nil {
 					vout.SetIndex(index)
 					vout.SetTxCustomTokenID(*tx.Hash())
@@ -995,9 +997,7 @@ func (self *BlockChain) GetCustomTokenTxsHash(tokenID *common.Hash) ([]common.Ha
 	}
 	result := []common.Hash{}
 	for _, temp := range txHashesInByte {
-		item := common.Hash{}
-		item.SetBytes(temp)
-		result = append(result, item)
+		result = append(result, *temp)
 	}
 	return result, nil
 }
@@ -1010,9 +1010,7 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 	}
 	result := make(map[common.Hash]transaction.Transaction)
 	for _, temp := range txHashesInByte {
-		item := common.Hash{}
-		item.SetBytes(temp)
-		_, _, tx, err := self.GetTransactionByHash(&item)
+		_, _, tx, err := self.GetTransactionByHash(temp)
 		if err != nil {
 			return nil, err
 		}

@@ -53,7 +53,7 @@ type DatabaseInterface interface {
 	StoreCustomToken(*common.Hash, []byte) error                       // param: tokenID, txInitToken-id, data tx
 	StoreCustomTokenTx(*common.Hash, byte, int32, int32, []byte) error // param: tokenID, chainID, block height, tx-id, data tx
 	ListCustomToken() ([][]byte, error)
-	CustomTokenTxs(*common.Hash) ([][]byte, error) // token id
+	CustomTokenTxs(*common.Hash) ([]*common.Hash, error) // token id
 
 	Close() error
 }

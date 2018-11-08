@@ -204,6 +204,9 @@ func SliceExists(slice interface{}, item interface{}) (bool, error) {
 	return false, nil
 }
 
+/*
+SliceBytesExists - Check slice []byte contain item
+*/
 func SliceBytesExists(slice interface{}, item interface{}) (bool, error) {
 	s := reflect.ValueOf(slice)
 
