@@ -31,7 +31,6 @@ func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
 
 // Check tx with blockchain
 func (self *Engine) ValidateSpecTxWithBlockChain(tx transaction.Transaction) error {
-	// TODO
 	switch tx.GetType() {
 	case common.TxNormalType:
 		{
@@ -55,6 +54,22 @@ func (self *Engine) ValidateSpecTxWithBlockChain(tx transaction.Transaction) err
 			}
 
 			// Check if loan id is unique across all chains
+			for chainID, bestState := range self.config.BlockChain.BestState {
+				for _, id := range bestState.LoanIDs {
+					if bytes.Equal(txLoan.LoanID, id) {
+						return fmt.Errorf("LoanID already existed on chain %d", chainID)
+					}
+				}
+			}
+		}
+	case common.TxLoanResponse:
+		{
+			txLoan, ok := tx.(TxLoanResponse)
+			if ok != nil {
+				return fmt.Errorf("Fail parsing LoanResponse transaction")
+			}
+
+			// Check if a loan request with the same id exists on any chain
 			for chainID, bestState := range self.config.BlockChain.BestState {
 				for _, id := range bestState.LoanIDs {
 					if bytes.Equal(txLoan.LoanID, id) {

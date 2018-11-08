@@ -7,6 +7,18 @@ import (
 	"github.com/ninjadotorg/constant/privacy/client"
 )
 
+type FeeArgs struct {
+	SenderKey     *client.SpendingKey
+	PaymentInfo   []*client.PaymentInfo
+	Rts           map[byte]*common.Hash
+	UsableTx      map[byte][]*Tx
+	Nullifiers    map[byte]([][]byte)
+	Commitments   map[byte]([][]byte)
+	Fee           uint64
+	AssetType     string
+	SenderChainID byte
+}
+
 type LoanParams struct {
 	InterestRate     uint64 // basis points, e.g. 125 represents 1.25%
 	Maturity         uint64 // seconds
@@ -26,43 +38,39 @@ type LoanRequest struct {
 	KeyDigest []byte // 32 bytes, from sha256
 }
 
+type TxWithFee struct {
+	*Tx // for fee only
+}
+
 type TxLoanRequest struct {
-	*Tx          // for fee
+	TxWithFee
 	*LoanRequest // data for a loan request
 }
 
 // CreateTxLoanRequest
 // senderKey and paymentInfo is for paying fee
 func CreateTxLoanRequest(
-	senderKey *client.SpendingKey,
-	paymentInfo []*client.PaymentInfo,
-	rts map[byte]*common.Hash,
-	usableTx map[byte][]*Tx,
-	nullifiers map[byte]([][]byte),
-	commitments map[byte]([][]byte),
-	fee uint64,
-	assetType string,
-	senderChainID byte,
+	feeArgs FeeArgs,
 	loanRequest *LoanRequest,
 ) (*TxLoanRequest, error) {
 	// Create tx for fee
 	tx, err := CreateTx(
-		senderKey,
-		paymentInfo,
-		rts,
-		usableTx,
-		nullifiers,
-		commitments,
-		fee,
-		assetType,
-		senderChainID,
+		feeArgs.SenderKey,
+		feeArgs.PaymentInfo,
+		feeArgs.Rts,
+		feeArgs.UsableTx,
+		feeArgs.Nullifiers,
+		feeArgs.Commitments,
+		feeArgs.Fee,
+		feeArgs.AssetType,
+		feeArgs.SenderChainID,
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	txLoanRequest := &TxLoanRequest{
-		Tx:          tx,
+		TxWithFee:   TxWithFee{Tx: tx},
 		LoanRequest: loanRequest,
 	}
 
@@ -106,19 +114,19 @@ func (tx *TxLoanRequest) ValidateTransaction() bool {
 	return true
 }
 
-func (tx *TxLoanRequest) GetType() string {
-	return tx.Type
+func (tx *TxWithFee) GetType() string {
+	return tx.Tx.Type
 }
 
-func (tx *TxLoanRequest) GetTxVirtualSize() uint64 {
+func (tx *TxWithFee) GetTxVirtualSize() uint64 {
 	// TODO: calculate
 	return 0
 }
 
-func (tx *TxLoanRequest) GetSenderAddrLastByte() byte {
-	return tx.AddressLastByte
+func (tx *TxWithFee) GetSenderAddrLastByte() byte {
+	return tx.Tx.AddressLastByte
 }
 
-func (tx *TxLoanRequest) GetTxFee() uint64 {
-	return tx.Fee
+func (tx *TxWithFee) GetTxFee() uint64 {
+	return tx.Tx.Fee
 }

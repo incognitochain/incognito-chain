@@ -13,6 +13,7 @@ const (
 	TxVotingType       = "v" // voting tx
 	TxCustomTokenType  = "t" // token  tx
 	TxLoanRequest      = "lr"
+	TxLoanResponse     = "ls"
 )
 
 // unit type use in tx
