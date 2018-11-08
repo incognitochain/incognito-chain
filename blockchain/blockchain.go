@@ -659,8 +659,8 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 	return results, nil
 }
 
-func (self *BlockChain) GetListTxByPrivateKeyInBlock(privateKey *client.SpendingKey, block *Block, nullifiersInDb [][]byte, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
-	//fmt.Println("debug GetListTxByPrivateKeyInBlock")
+func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *client.SpendingKey, block *Block, nullifiersInDb [][]byte, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
+	//fmt.Println("debug GetListUnspentTxByPrivateKeyInBlock")
 	results := make(map[byte][]transaction.Tx)
 
 	// Get set of keys from private keybyte
@@ -780,7 +780,7 @@ With private-key, we can check unspent tx by check nullifiers from database
 - Param #1: privateKey - byte[] of privatekey
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListUnspentTxByPrivateKey(privateKey *client.SpendingKey, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx)
 
 	// lock chain
@@ -799,6 +799,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, so
 		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
 	}
 	if self.config.Light {
+		// Get unspent tx light mode
 		results, err := self.config.DataBase.GetTransactionLightModeByPrivateKey(privateKey)
 		//Logger.log.Infof("UTXO lightmode %+v", results)
 		if err != nil {
@@ -818,7 +819,7 @@ func (self *BlockChain) GetListTxByPrivateKey(privateKey *client.SpendingKey, so
 		for blockHeight > 0 {
 			var err1 error
 			// fetch block to get tx
-			resultsInChain, err1 := self.GetListTxByPrivateKeyInBlock(privateKey, block, nullifiersInDb, sortType, sortAsc)
+			resultsInChain, err1 := self.GetListUnspentTxByPrivateKeyInBlock(privateKey, block, nullifiersInDb, sortType, sortAsc)
 			if err1 != nil {
 				// unlock chain
 				//self.chainLock.Unlock()
@@ -960,19 +961,19 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 		if self.config.Light {
 			// TODO get data with light mode
 			fmt.Println("ERROR in GetTransactionByHash", err)
-			const(
-				bigNumber = 999999999
+			const (
+				bigNumber   = 999999999
 				bigNumberTx = 999999
 			)
-			var(
+			var (
 				blockHeight uint32
-				txIndex uint32
-				chainId []byte
+				txIndex     uint32
+				chainId     []byte
 			)
 			// Get transaction
 			tx := transaction.Tx{}
 			locationByte, txByte, err := self.config.DataBase.GetTransactionLightModeByHash(txHash)
-			fmt.Println("GetTransactionByHash - 1", locationByte, txByte,err)
+			fmt.Println("GetTransactionByHash - 1", locationByte, txByte, err)
 			if err != nil {
 				return byte(255), nil, -1, nil, err
 			}
@@ -991,9 +992,9 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 			if err != nil {
 				return byte(255), nil, -1, nil, err
 			}
-			blockHeight = uint32(bigNumber-blockHeight)
+			blockHeight = uint32(bigNumber - blockHeight)
 			fmt.Println("Testing in GetTransactionByHash, blockHeight", blockHeight)
-			block,err := self.GetBlockByBlockHeight(int32(blockHeight),chainId[0])
+			block, err := self.GetBlockByBlockHeight(int32(blockHeight), chainId[0])
 			if err != nil {
 				fmt.Println("ERROR in GetTransactionByHash, get Block by height", err)
 				return byte(255), nil, -1, nil, err
@@ -1005,7 +1006,7 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 			if err != nil {
 				return byte(255), nil, -1, nil, err
 			}
-			txIndex = uint32(bigNumberTx-txIndex)
+			txIndex = uint32(bigNumberTx - txIndex)
 			fmt.Println("Testing in GetTransactionByHash, blockHash, index, tx", block.Hash(), txIndex, tx)
 			return chainId[0], block.Hash(), int(txIndex), &tx, nil
 		}

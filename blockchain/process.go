@@ -51,7 +51,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		}
 		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
 		for _, account := range self.config.Wallet.MasterAccount.Child {
-			results, err1 := self.GetListTxByPrivateKeyInBlock(&account.Key.KeySet.PrivateKey, block, nullifiersInDb, transaction.NoSort, true)
+			results, err1 := self.GetListUnspentTxByPrivateKeyInBlock(&account.Key.KeySet.PrivateKey, block, nullifiersInDb, transaction.NoSort, true)
 			if err1 != nil {
 				return NewBlockChainError(UnExpectedError, err1)
 			}
@@ -63,7 +63,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 					for i, _ := range block.Transactions {
 						txHash := tx.Hash().String()
 						blockTxHash := block.Transactions[i].(*transaction.Tx).Hash().String()
-						if strings.Compare(txHash,blockTxHash) == 0 {
+						if strings.Compare(txHash, blockTxHash) == 0 {
 							txIndex = i
 							fmt.Println("Found Transaction i", tx.Hash(), i)
 							break
