@@ -67,6 +67,9 @@ var RpcHandler = map[string]commandHandler{
 
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
+
+	//check hash value
+	CheckHashValue: RpcServer.handleCheckHashValue,
 }
 
 // Commands that are available to a limited user
@@ -793,6 +796,45 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 		AddressLastByte: tempTx.AddressLastByte,
 	}
 	return result, nil
+}
+
+func (self RpcServer) handleCheckHashValue(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	var (
+		isTransaction bool
+		isBlock       bool
+	)
+	arrayParams := common.InterfaceSlice(params)
+	// param #1: transaction Hash
+	Logger.log.Infof("Check hash value  input Param %+v", arrayParams[0].(string))
+	hash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
+
+	// Check block
+	_, err := self.config.BlockChain.GetBlockByBlockHash(hash)
+	if err != nil {
+		isBlock = false
+	} else {
+		isBlock = true
+		result := jsonresult.HashValueDetail{
+			IsBlock:       isBlock,
+			IsTransaction: false,
+		}
+		return result, nil
+	}
+	_, _, _, _, err1 := self.config.BlockChain.GetTransactionByHash(hash)
+	if err1 != nil {
+		isTransaction = false
+	} else {
+		isTransaction = true
+		result := jsonresult.HashValueDetail{
+			IsBlock:       false,
+			IsTransaction: isTransaction,
+		}
+		return result, nil
+	}
+	return jsonresult.HashValueDetail{
+		IsBlock:       isBlock,
+		IsTransaction: isTransaction,
+	}, nil
 }
 
 // handleCreateRawCustomTokenTransaction handle create a custom token command.

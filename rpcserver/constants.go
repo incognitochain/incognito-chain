@@ -34,6 +34,7 @@ const (
 	GetTransactionByHash               = "gettransactionbyhash"
 	ListCustomToken                    = "listcustomtoken"
 	CustomToken                        = "customtoken"
+	CheckHashValue                     = "checkhashvalue"
 
 	GetHeader = "getheader"
 
