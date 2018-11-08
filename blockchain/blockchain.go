@@ -967,6 +967,11 @@ func (self *BlockChain) GetUnspentTxTokenVoutBySender(senderKeyset cashec.KeySet
 func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (*common.Hash, int, transaction.Transaction, error) {
 	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
+		// check lightweight
+		if self.config.Light {
+			// TODO get data with light mode
+		}
+
 		return nil, -1, nil, err
 	}
 	block, err := self.GetBlockByBlockHash(blockHash)
