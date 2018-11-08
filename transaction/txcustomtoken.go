@@ -129,7 +129,8 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 	commitments map[byte]([][]byte),
 	fee uint64,
 	senderChainID byte,
-	tokenParams *CustomTokenParamTx) (*TxCustomToken, error) {
+	tokenParams *CustomTokenParamTx,
+	listCustomTokens map[common.Hash]TxCustomToken) (*TxCustomToken, error) {
 
 	// TODO: create normal tx
 	fmt.Printf("List of all commitments before building tx:\n")
@@ -186,7 +187,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 	tx.Tx.AddressLastByte = lastByte
 	var latestAnchor map[byte][]byte
 
-	if len(inputNotes) > 0 || len(paymentInfo) >= 0 {
+	if len(inputNotes) > 0 || len(paymentInfo) > 0 {
 		// Sort input and output notes ascending by value to start building js descs
 		sort.Slice(inputNotes, func(i, j int) bool {
 			return inputNotes[i].note.Value < inputNotes[j].note.Value
@@ -343,7 +344,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 
 		// Generate proof and sign tx
 		var reward uint64 // Zero reward for non-salary transaction
-		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, true)
+		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, false)
 		if err != nil {
 			return nil, err
 		}
@@ -360,7 +361,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 
 	var handled = false
 
-	// TODO: add token data params
+	// Add token data params
 	switch tokenParams.TokenTxType {
 	case CustomTokenInit:
 		{
@@ -387,14 +388,18 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 			if err != nil {
 				return nil, errors.New("Can't handle this TokenTxType")
 			}
+			// validate PropertyID is the only one
+			for customTokenID := range listCustomTokens {
+				if hashInitToken.String() == customTokenID.String() {
+					return nil, errors.New("This token is existed in network")
+				}
+			}
 			tx.TxToken.PropertyID = *hashInitToken
 
-			// validate PropertyID is the only one
-			// TODO check with db
 		}
 	case CustomTokenTransfer:
 		handled = true
-		// get all vout of token on sender chainID
+		// TODO get all vout of token on sender chainID
 	}
 
 	if handled != true {

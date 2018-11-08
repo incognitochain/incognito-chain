@@ -871,18 +871,20 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, 
 	// list unspent tx for create tx
 	totalAmmount += int64(realFee)
 	candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
-	for chainId, usableTxs := range usableTxsMap {
-		for _, temp := range usableTxs {
-			for _, desc := range temp.Descs {
-				for _, note := range desc.GetNote() {
-					amount := note.Value
-					estimateTotalAmount -= int64(amount)
+	if totalAmmount > 0 {
+		for chainId, usableTxs := range usableTxsMap {
+			for _, temp := range usableTxs {
+				for _, desc := range temp.Descs {
+					for _, note := range desc.GetNote() {
+						amount := note.Value
+						estimateTotalAmount -= int64(amount)
+					}
 				}
-			}
-			txData := temp
-			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
-			if estimateTotalAmount <= 0 {
-				break
+				txData := temp
+				candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
+				if estimateTotalAmount <= 0 {
+					break
+				}
 			}
 		}
 	}
@@ -899,13 +901,17 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, 
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
 
+	// get list custom token
+	listCustomTokens, err := self.config.BlockChain.ListCustomToken()
+
 	tx, err := transaction.CreateTxCustomToken(&senderKey.KeySet.PrivateKey, nil,
 		merkleRootCommitments,
 		candidateTxsMap,
 		commitmentsDb,
 		realFee,
 		chainIdSender,
-		tokenParams)
+		tokenParams,
+		listCustomTokens)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
