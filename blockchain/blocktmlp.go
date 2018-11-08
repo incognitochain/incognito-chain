@@ -151,6 +151,7 @@ concludeBlock:
 	}
 	currentSalaryFund := prevBlock.Header.SalaryFund
 	block.Header = BlockHeader{
+		Height:                prevBlock.Header.Height + 1,
 		Version:               BlockVersion,
 		PrevBlockHash:         *prevBlockHash,
 		MerkleRoot:            *merkleRoot,
@@ -180,8 +181,6 @@ concludeBlock:
 
 	//update the latest AgentDataPoints to block
 	// block.AgentDataPoints = agentDataPoints
-	// Set height
-	block.Header.Height = prevBlock.Header.Height + 1
 
 	return &block, nil
 }

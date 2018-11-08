@@ -40,7 +40,7 @@ type NetSyncConfig struct {
 		OnGetChainState(*wire.MessageGetChainState)
 		OnChainStateReceived(*wire.MessageChainState)
 		OnSwapRequest(swap *wire.MessageSwapRequest)
-		OnSignSwap(swap *wire.MessageSwapSig)
+		OnSwapSig(swap *wire.MessageSwapSig)
 		OnSwapUpdate(swap *wire.MessageSwapUpdate)
 	}
 	FeeEstimator map[byte]*mempool.FeeEstimator
@@ -327,7 +327,7 @@ func (self *NetSync) HandleMessageSwapRequest(msg *wire.MessageSwapRequest) {
 
 func (self *NetSync) HandleMessageSwapSig(msg *wire.MessageSwapSig) {
 	Logger.log.Info("Handling new message signswap")
-	self.config.Consensus.OnSignSwap(msg)
+	self.config.Consensus.OnSwapSig(msg)
 }
 
 func (self *NetSync) HandleMessageSwapUpdate(msg *wire.MessageSwapUpdate) {

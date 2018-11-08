@@ -545,7 +545,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			//
 			OnRegistration: self.OnRegistration,
 			OnSwapRequest:  self.OnSwapRequest,
-			OnSignSwap:     self.OnSignSwap,
+			OnSwapSig:     self.OnSwapSig,
 			OnSwapUpdate:   self.OnSwapUpdate,
 		},
 	}
@@ -606,7 +606,7 @@ func (self Server) OnSwapRequest(peer *peer.PeerConn, msg *wire.MessageSwapReque
 	Logger.log.Info("Receive a new request swap END")
 }
 
-func (self Server) OnSignSwap(peer *peer.PeerConn, msg *wire.MessageSwapSig) {
+func (self Server) OnSwapSig(peer *peer.PeerConn, msg *wire.MessageSwapSig) {
 	Logger.log.Info("Receive a new sign swap START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)

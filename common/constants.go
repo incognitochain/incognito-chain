@@ -38,5 +38,5 @@ const (
 	TotalValidators       = 20                    // = TOTAL CHAINS
 	MinBlockSigs          = (TotalValidators / 2) + 1
 	GetChainStateInterval = 10 //second
-	MaxBlockTime          = 60 //second Maximum for a chain to grow
+	MaxBlockTime          = 10 //second Maximum for a chain to grow
 )
