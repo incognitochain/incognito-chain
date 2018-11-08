@@ -1,8 +1,10 @@
 package blockchain
 
 import (
+	"fmt"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/transaction"
+	"strings"
 )
 
 // ProcessBlock is the main workhorse for handling insertion of new blocks into
@@ -59,11 +61,17 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 					var txIndex = -1
 					// Iterate to get Tx Index of transaction in a block
 					for i, _ := range block.Transactions {
-						if tx.Hash() == block.Transactions[i].(*transaction.Tx).Hash() {
+						txHash := tx.Hash().String()
+						blockTxHash := block.Transactions[i].(*transaction.Tx).Hash().String()
+						if strings.Compare(txHash,blockTxHash) == 0 {
 							txIndex = i
+							fmt.Println("Found Transaction i", tx.Hash(), i)
 							break
 						}
 					}
+					//if txIndex == -1 {
+					//	return NewBlockChainError(UnExpectedError, err)
+					//}
 					err := self.StoreTransactionLightMode(&account.Key.KeySet.PrivateKey, chainId, block.Header.Height, txIndex, &tx)
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err)

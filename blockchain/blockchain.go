@@ -962,6 +962,7 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 			fmt.Println("ERROR in GetTransactionByHash", err)
 			const(
 				bigNumber = 999999999
+				bigNumberTx = 999999
 			)
 			var(
 				blockHeight uint32
@@ -1004,7 +1005,7 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 			if err != nil {
 				return byte(255), nil, -1, nil, err
 			}
-			txIndex = uint32(bigNumber-txIndex)
+			txIndex = uint32(bigNumberTx-txIndex)
 			fmt.Println("Testing in GetTransactionByHash, blockHash, index, tx", block.Hash(), txIndex, tx)
 			return chainId[0], block.Hash(), int(txIndex), &tx, nil
 		}
