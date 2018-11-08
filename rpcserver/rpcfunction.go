@@ -1540,6 +1540,7 @@ func (self RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-chan 
 	result.Size = self.config.TxMemPool.Count()
 	result.Bytes = self.config.TxMemPool.Size()
 	result.MempoolMaxFee = self.config.TxMemPool.MaxFee()
+	result.ListTxs = self.config.TxMemPool.ListTxs()
 	return result, nil
 }
 
