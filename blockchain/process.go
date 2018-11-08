@@ -51,28 +51,28 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		}
 		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
 		for _, account := range self.config.Wallet.MasterAccount.Child {
-			results, err1 := self.GetListUnspentTxByPrivateKeyInBlock(&account.Key.KeySet.PrivateKey, block, nullifiersInDb, transaction.NoSort, true)
+			unspentTxs, err1 := self.GetListUnspentTxByPrivateKeyInBlock(&account.Key.KeySet.PrivateKey, block, nullifiersInDb, transaction.NoSort, true)
 			if err1 != nil {
 				return NewBlockChainError(UnExpectedError, err1)
 			}
 
-			for chainId, txs := range results {
-				for _, tx := range txs {
+			for chainId, txs := range unspentTxs {
+				for _, unspent := range txs {
 					var txIndex = -1
 					// Iterate to get Tx Index of transaction in a block
 					for i, _ := range block.Transactions {
-						txHash := tx.Hash().String()
+						txHash := unspent.Hash().String()
 						blockTxHash := block.Transactions[i].(*transaction.Tx).Hash().String()
 						if strings.Compare(txHash, blockTxHash) == 0 {
 							txIndex = i
-							fmt.Println("Found Transaction i", tx.Hash(), i)
+							fmt.Println("Found Transaction i", unspent.Hash(), i)
 							break
 						}
 					}
 					//if txIndex == -1 {
 					//	return NewBlockChainError(UnExpectedError, err)
 					//}
-					err := self.StoreTransactionLightMode(&account.Key.KeySet.PrivateKey, chainId, block.Header.Height, txIndex, &tx)
+					err := self.StoreUnspentTransactionLightMode(&account.Key.KeySet.PrivateKey, chainId, block.Header.Height, txIndex, &unspent)
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err)
 					}
