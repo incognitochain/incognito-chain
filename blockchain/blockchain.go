@@ -509,15 +509,23 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 
 	// check custom token and save
 	for indexTx, customTokenTx := range view.customTokenTxs {
-		if customTokenTx.TxToken.Type == transaction.CustomTokenInit {
-			err = self.config.DataBase.StoreCustomToken(&customTokenTx.TxToken.PropertyID, customTokenTx.Hash()[:])
-			if err != nil {
-				return err
+		switch customTokenTx.TxToken.Type {
+		case transaction.CustomTokenInit:
+			{
+				// Store custom token when it is issued
+				err = self.config.DataBase.StoreCustomToken(&customTokenTx.TxToken.PropertyID, customTokenTx.Hash()[:])
+				if err != nil {
+					return err
+				}
 			}
-			err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxToken.PropertyID, block.Header.ChainID, block.Height, indexTx, customTokenTx.Hash()[:])
-			if err != nil {
-				return err
+		case transaction.CustomTokenTransfer:
+			{
 			}
+		}
+		// save tx which relate to custom token
+		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxToken.PropertyID, block.Header.ChainID, block.Height, indexTx, customTokenTx.Hash()[:])
+		if err != nil {
+			return err
 		}
 	}
 
@@ -1004,7 +1012,8 @@ func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomT
 	return result, nil
 }
 
-func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) ([]common.Hash, error) {
+// GetCustomTokenTxsHash - return list hash of tx which relate to custom token
+func (self *BlockChain) GetCustomTokenTxsHash(tokenID *common.Hash) ([]common.Hash, error) {
 	txHashesInByte, err := self.config.DataBase.CustomTokenTxs(tokenID)
 	if err != nil {
 		return nil, err
@@ -1014,6 +1023,25 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) ([]common.Hash, 
 		item := common.Hash{}
 		item.SetBytes(temp)
 		result = append(result, item)
+	}
+	return result, nil
+}
+
+// GetCustomTokenTxsHash - return list of tx which relate to custom token
+func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]transaction.Transaction, error) {
+	txHashesInByte, err := self.config.DataBase.CustomTokenTxs(tokenID)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[common.Hash]transaction.Transaction)
+	for _, temp := range txHashesInByte {
+		item := common.Hash{}
+		item.SetBytes(temp)
+		_, _, tx, err := self.GetTransactionByHash(&item)
+		if err != nil {
+			return nil, err
+		}
+		result[*tx.Hash()] = tx
 	}
 	return result, nil
 }

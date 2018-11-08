@@ -736,7 +736,7 @@ func (self RpcServer) handleCustomTokenDetail(params interface{}, closeChan <-ch
 	if err != nil {
 		return nil, err
 	}
-	txs, _ := self.config.BlockChain.GetCustomTokenTxs(tokenID)
+	txs, _ := self.config.BlockChain.GetCustomTokenTxsHash(tokenID)
 	result := jsonresult.CustomToken{
 		ListTxs: []string{},
 	}
