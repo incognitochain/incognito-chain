@@ -266,7 +266,7 @@ func (db *db)  StoreTransactionLightMode(privateKey *client.SpendingKey, chainId
 	//fmt.Println("StoreTransactionLightMode reverseBlockHeight in byte", reverseBlockHeight, []byte(string(reverseBlockHeight)))
 
 	reverseTxIndex := make([]byte, 4)
-	binary.LittleEndian.PutUint32(reverseTxIndex, uint32(bigNumber-uint32(txIndex)))
+	binary.LittleEndian.PutUint32(reverseTxIndex, uint32(bigNumber-int32(txIndex)))
 
 	key1 := string(privateKeyPrefix) + privateKey.String() + string(spliter) + string(int(chainId)) + string(spliter) + string(reverseBlockHeight) + string(spliter) + string(reverseTxIndex)
 	key2 := string(transactionKeyPrefix) + tx.Hash().String()

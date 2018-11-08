@@ -1062,9 +1062,7 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 	}
 	result := make(map[common.Hash]transaction.Transaction)
 	for _, temp := range txHashesInByte {
-		item := common.Hash{}
-		item.SetBytes(temp)
-		_, _, _, tx, err := self.GetTransactionByHash(&item)
+		_, _, _, tx, err := self.GetTransactionByHash(temp)
 		if err != nil {
 			return nil, err
 		}
