@@ -123,8 +123,8 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err)
 					}
-					view.customTokenTxs[int32(indexTx)] = tx
 				}
+				view.customTokenTxs[int32(indexTx)] = tx
 			}
 		default:
 			{

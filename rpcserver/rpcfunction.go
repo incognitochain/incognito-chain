@@ -914,6 +914,7 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, 
 		tokenParams,
 		listCustomTokens)
 	if err != nil {
+		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
