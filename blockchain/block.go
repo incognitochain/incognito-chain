@@ -77,7 +77,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 			}
 		case common.TxVotingType:
 			{
-				txVoting := &transaction.TxVoting{}
+				txVoting := &transaction.TxRegisterCandidate{}
 				_ = json.Unmarshal(txTempJson, &txVoting)
 				self.Transactions = append(self.Transactions, txVoting)
 			}

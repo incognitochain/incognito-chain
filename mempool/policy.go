@@ -45,7 +45,7 @@ func (self *Policy) CheckTxVersion(tx *transaction.Transaction) bool {
 		}
 	case common.TxVotingType:
 		{
-			temp := (*tx).(*transaction.TxVoting)
+			temp := (*tx).(*transaction.TxRegisterCandidate)
 			if temp.Version > self.MaxTxVersion {
 				return false
 			}
@@ -67,7 +67,7 @@ func (self *Policy) calcMinFeeTxAccepted(tx *transaction.Tx) uint64 {
 }
 
 // return min transacton fee required for a transaction that we accepted into the memmory pool and replayed.
-func (self *Policy) calcMinFeeVotingTxAccepted(tx *transaction.TxVoting) uint64 {
+func (self *Policy) calcMinFeeVotingTxAccepted(tx *transaction.TxRegisterCandidate) uint64 {
 	//@todo we will create rules of calc here later.
 	return 0
 }
@@ -86,7 +86,7 @@ func (self *Policy) CheckTransactionFee(tx *transaction.Tx) error {
 	return nil
 }
 
-func (self *Policy) CheckVotingTransactionFee(tx *transaction.TxVoting) error {
+func (self *Policy) CheckVotingTransactionFee(tx *transaction.TxRegisterCandidate) error {
 	minFee := self.calcMinFeeVotingTxAccepted(tx)
 	if tx.Fee < minFee {
 		str := fmt.Sprintf("transaction %+v has %d fees which is under "+

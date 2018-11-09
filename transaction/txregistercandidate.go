@@ -15,26 +15,26 @@ import (
 	"github.com/ninjadotorg/constant/privacy/client"
 )
 
-// TxVoting ...
-type TxVoting struct {
+// TxRegisterCandidate ...
+type TxRegisterCandidate struct {
 	Tx
 	PublicKey string
 }
 
 // CreateEmptyVotingTx - return an init tv voting
-func CreateEmptyVotingTx(pubkey string) (*TxVoting, error) {
+func CreateEmptyVotingTx(pubkey string) (*TxRegisterCandidate, error) {
 	emptyTx, err := CreateEmptyTx(common.TxVotingType)
 	if err != nil {
 		return nil, err
 	}
-	txVoting := &TxVoting{
+	txVoting := &TxRegisterCandidate{
 		Tx:        *emptyTx,
 		PublicKey: pubkey,
 	}
 	return txVoting, nil
 }
 
-func (tx *TxVoting) GetValue() uint64 {
+func (tx *TxRegisterCandidate) GetValue() uint64 {
 	val := uint64(0)
 	for _, desc := range tx.Descs {
 		for _, note := range desc.Note {
@@ -44,16 +44,16 @@ func (tx *TxVoting) GetValue() uint64 {
 	return val
 }
 
-func (tx *TxVoting) SetTxID(txId *common.Hash) {
+func (tx *TxRegisterCandidate) SetTxID(txId *common.Hash) {
 	tx.Tx.txId = txId
 }
 
-func (tx *TxVoting) GetTxID() *common.Hash {
+func (tx *TxRegisterCandidate) GetTxID() *common.Hash {
 	return tx.Tx.txId
 }
 
 // Hash returns the hash of all fields of the transaction
-func (tx TxVoting) Hash() *common.Hash {
+func (tx TxRegisterCandidate) Hash() *common.Hash {
 	record := strconv.Itoa(int(tx.Tx.Version))
 	record += tx.Tx.Type
 	record += strconv.FormatInt(tx.Tx.LockTime, 10)
@@ -74,7 +74,7 @@ func (tx TxVoting) Hash() *common.Hash {
 // - Signature matches the signing public key
 // - JSDescriptions are valid (zk-snark proof satisfied)
 // Note: This method doesn't check for double spending
-func (tx *TxVoting) ValidateTransaction() bool {
+func (tx *TxRegisterCandidate) ValidateTransaction() bool {
 	if tx.Tx.ValidateTransaction() {
 		return true
 	}
@@ -93,12 +93,12 @@ func (tx *TxVoting) ValidateTransaction() bool {
 }
 
 // GetType returns the type of the transaction
-func (tx *TxVoting) GetType() string {
+func (tx *TxRegisterCandidate) GetType() string {
 	return tx.Tx.Type
 }
 
 // GetTxVirtualSize computes the virtual size of a given transaction
-func (tx *TxVoting) GetTxVirtualSize() uint64 {
+func (tx *TxRegisterCandidate) GetTxVirtualSize() uint64 {
 	var sizeVersion uint64 = 1  // int8
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
@@ -111,11 +111,11 @@ func (tx *TxVoting) GetTxVirtualSize() uint64 {
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }
 
-func (tx *TxVoting) GetSenderAddrLastByte() byte {
+func (tx *TxRegisterCandidate) GetSenderAddrLastByte() byte {
 	return tx.Tx.AddressLastByte
 }
 
-func (tx *TxVoting) GetTxFee() uint64 {
+func (tx *TxRegisterCandidate) GetTxFee() uint64 {
 	return tx.Fee
 }
 
@@ -131,7 +131,7 @@ func CreateVotingTx(
 	fee uint64,
 	senderChainID byte,
 	nodeAddr string,
-) (*TxVoting, error) {
+) (*TxRegisterCandidate, error) {
 	fee = 0 // TODO remove this line
 	fmt.Printf("List of all commitments before building tx:\n")
 	fmt.Printf("rts: %+v\n", rts)
@@ -368,7 +368,7 @@ func CreateVotingTx(
 }
 
 // SignTxVoting ...
-func SignTxVoting(tx *TxVoting) (*TxVoting, error) {
+func SignTxVoting(tx *TxRegisterCandidate) (*TxRegisterCandidate, error) {
 	//Check input transaction
 	if tx.Tx.JSSig != nil {
 		return nil, errors.New("Inpusut transaction must be an unsigned one")
@@ -394,7 +394,7 @@ func SignTxVoting(tx *TxVoting) (*TxVoting, error) {
 	return tx, nil
 }
 
-func VerifySignVotingTx(tx *TxVoting) (bool, error) {
+func VerifySignVotingTx(tx *TxRegisterCandidate) (bool, error) {
 	//Check input transaction
 	if tx.Tx.JSSig == nil || tx.Tx.JSPubKey == nil {
 		return false, errors.New("Input transaction must be an signed one!")

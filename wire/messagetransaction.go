@@ -21,7 +21,7 @@ const (
 //	if tmp["Transaction"].(map[string]interface{})["Type"] == common.TxNormalType {
 //		self.Transaction = &transaction.Tx{}
 //	} else if tmp["Transaction"].(map[string]interface{})["Type"] == common.TxVotingType {
-//		self.Transaction = &transaction.TxVoting{}
+//		self.Transaction = &transaction.TxRegisterCandidate{}
 //	}
 //	err = json.Unmarshal(data, self)
 //	if err != nil {

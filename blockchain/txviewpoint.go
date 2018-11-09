@@ -103,7 +103,7 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 			}
 		case common.TxVotingType:
 			{
-				votingTx := tx.(*transaction.TxVoting)
+				votingTx := tx.(*transaction.TxRegisterCandidate)
 				for _, desc := range votingTx.Descs {
 					temp1, temp2, err := view.processFetchTxViewPoint(block, db, desc)
 					acceptedNullifiers = append(acceptedNullifiers, temp1...)

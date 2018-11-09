@@ -677,7 +677,7 @@ func (self RpcServer) handleSendRawRegistrationCandidateCommittee(params interfa
 	if err != nil {
 		return nil, err
 	}
-	var tx transaction.TxVoting
+	var tx transaction.TxRegisterCandidate
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {

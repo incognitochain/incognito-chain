@@ -115,7 +115,7 @@ concludeBlock:
 	salaryMULTP := uint64(0) //salary multiplier
 	for _, blockTx := range txsToAdd {
 		if blockTx.GetType() == common.TxVotingType {
-			tx, ok := blockTx.(*transaction.TxVoting)
+			tx, ok := blockTx.(*transaction.TxRegisterCandidate)
 			if !ok {
 				Logger.log.Error("Transaction not recognized to store in database")
 				continue

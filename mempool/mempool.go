@@ -93,7 +93,7 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 		}
 	} else if tx.GetType() == common.TxVotingType {
 		if tp.config.FeeEstimator != nil {
-			chainId, err := common.GetTxSenderChain(tx.(*transaction.TxVoting).AddressLastByte)
+			chainId, err := common.GetTxSenderChain(tx.(*transaction.TxRegisterCandidate).AddressLastByte)
 			if err == nil {
 				tp.config.FeeEstimator[chainId].ObserveTransaction(txD)
 			} else {
@@ -292,7 +292,7 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 }
 
 // Validate sanity for registration candidate tx data
-func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxVoting) (bool, error) {
+func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxRegisterCandidate) (bool, error) {
 	if !common.ValidateNodeAddress(txVoting.PublicKey) {
 		return false, errors.New("Wrong voting node data")
 	}
@@ -553,7 +553,7 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 		}
 	case common.TxVotingType:
 		{
-			votingTx := tx.(*transaction.TxVoting)
+			votingTx := tx.(*transaction.TxRegisterCandidate)
 			err := tp.config.Policy.CheckVotingTransactionFee(votingTx)
 			return votingTx.Fee, err
 		}
@@ -589,7 +589,7 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 			return false, errors.New("Wrong tx type")
 		}
 	} else if tx.GetType() == common.TxVotingType {
-		txA := tx.(*transaction.TxVoting)
+		txA := tx.(*transaction.TxRegisterCandidate)
 		ok, err := tp.validateSanityVotingTxData(txA)
 		if !ok {
 			return false, err
