@@ -7,11 +7,11 @@ const (
 )
 
 const (
-	TxNormalType       = "n" // normal tx(send and receive coin)
-	TxSalaryType       = "s" // salary tx(gov pay salary for block producer)
-	TxActionParamsType = "a" // action tx to edit params
-	TxVotingType       = "v" // voting tx
-	TxCustomTokenType  = "t" // token  tx
+	TxNormalType            = "n" // normal tx(send and receive coin)
+	TxSalaryType            = "s" // salary tx(gov pay salary for block producer)
+	TxActionParamsType      = "a" // action tx to edit params
+	TxRegisterCandidateType = "v" // voting tx
+	TxCustomTokenType       = "t" // token  tx
 )
 
 // unit type use in tx

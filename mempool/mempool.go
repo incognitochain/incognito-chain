@@ -91,7 +91,7 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 				Logger.log.Error(err)
 			}
 		}
-	} else if tx.GetType() == common.TxVotingType {
+	} else if tx.GetType() == common.TxRegisterCandidateType {
 		if tp.config.FeeEstimator != nil {
 			chainId, err := common.GetTxSenderChain(tx.(*transaction.TxRegisterCandidate).AddressLastByte)
 			if err == nil {
@@ -307,7 +307,7 @@ func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxRegisterCan
 		return false, errors.New("Wrong tx locktime")
 	}
 	// check Type equal "n"
-	if txN.Type != common.TxVotingType {
+	if txN.Type != common.TxRegisterCandidateType {
 		return false, errors.New("Wrong tx type")
 	}
 	// check length of JSPubKey
@@ -406,7 +406,7 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 			// check double spend
 			return blockChain.ValidateDoubleSpend(tx, chainID)
 		}
-	case common.TxVotingType:
+	case common.TxRegisterCandidateType:
 		{
 			// check double spend
 			return blockChain.ValidateDoubleSpend(tx, chainID)
@@ -551,7 +551,7 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 		{
 			return 0, nil
 		}
-	case common.TxVotingType:
+	case common.TxRegisterCandidateType:
 		{
 			votingTx := tx.(*transaction.TxRegisterCandidate)
 			err := tp.config.Policy.CheckVotingTransactionFee(votingTx)
@@ -588,7 +588,7 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		if txA.Type != common.TxActionParamsType {
 			return false, errors.New("Wrong tx type")
 		}
-	} else if tx.GetType() == common.TxVotingType {
+	} else if tx.GetType() == common.TxRegisterCandidateType {
 		txA := tx.(*transaction.TxRegisterCandidate)
 		ok, err := tp.validateSanityVotingTxData(txA)
 		if !ok {

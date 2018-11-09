@@ -101,7 +101,7 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 					}
 				}
 			}
-		case common.TxVotingType:
+		case common.TxRegisterCandidateType:
 			{
 				votingTx := tx.(*transaction.TxRegisterCandidate)
 				for _, desc := range votingTx.Descs {

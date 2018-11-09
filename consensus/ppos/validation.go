@@ -95,7 +95,7 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 						Logger.log.Infof("%x", cm[:])
 					}
 				}
-			} else if blockTx.GetType() == common.TxVotingType {
+			} else if blockTx.GetType() == common.TxRegisterCandidateType {
 				tx, ok := blockTx.(*transaction.TxRegisterCandidate)
 				if ok == false {
 					Logger.log.Errorf("Transaction in block not valid")

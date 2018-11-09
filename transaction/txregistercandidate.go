@@ -23,7 +23,7 @@ type TxRegisterCandidate struct {
 
 // CreateEmptyVotingTx - return an init tv voting
 func CreateEmptyVotingTx(pubkey string) (*TxRegisterCandidate, error) {
-	emptyTx, err := CreateEmptyTx(common.TxVotingType)
+	emptyTx, err := CreateEmptyTx(common.TxRegisterCandidateType)
 	if err != nil {
 		return nil, err
 	}

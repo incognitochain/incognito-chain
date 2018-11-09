@@ -56,7 +56,7 @@ func (self *Engine) GetCandidateCommitteeList(block *blockchain.Block) map[strin
 		candidates = make(map[string]blockchain.CommitteeCandidateInfo)
 	}
 	for _, tx := range block.Transactions {
-		if tx.GetType() == common.TxVotingType {
+		if tx.GetType() == common.TxRegisterCandidateType {
 			txV, ok := tx.(*transaction.TxRegisterCandidate)
 			nodeAddr := txV.PublicKey
 			cndVal, ok := candidates[nodeAddr]

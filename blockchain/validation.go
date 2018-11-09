@@ -48,7 +48,7 @@ func (self *BlockChain) ValidateDoubleSpend(tx transaction.Transaction, chainID 
 	var descs []*transaction.JoinSplitDesc
 	if tx.GetType() == common.TxNormalType {
 		descs = tx.(*transaction.Tx).Descs
-	} else if tx.GetType() == common.TxVotingType {
+	} else if tx.GetType() == common.TxRegisterCandidateType {
 		descs = tx.(*transaction.TxRegisterCandidate).Descs
 	}
 	for _, desc := range descs {
