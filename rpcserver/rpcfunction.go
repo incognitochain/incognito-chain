@@ -1173,10 +1173,8 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos,
 		merkleRootCommitments,
 		candidateTxsMap,
-		nullifiersDb,
 		commitmentsDb,
 		realFee,
-		common.AssetTypeCoin,
 		chainIdSender)
 	if err != nil {
 		Logger.log.Critical(err)

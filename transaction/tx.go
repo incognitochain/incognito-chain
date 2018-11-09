@@ -158,10 +158,8 @@ func CreateTx(
 	paymentInfo []*client.PaymentInfo,
 	rts map[byte]*common.Hash,
 	usableTx map[byte][]*Tx,
-	nullifiers map[byte]([][]byte),
 	commitments map[byte]([][]byte),
 	fee uint64,
-	assetType string,
 	senderChainID byte,
 ) (*Tx, error) {
 	fmt.Printf("List of all commitments before building tx:\n")
