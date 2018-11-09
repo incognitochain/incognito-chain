@@ -2,6 +2,7 @@ package ppos
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"encoding/binary"
@@ -22,10 +23,6 @@ func (self *Engine) GetCommittee() []string {
 
 func (self *Engine) CheckCandidate(candidate string) error {
 	return nil
-}
-
-func (self *Engine) ProposeCandidateToCommittee() {
-
 }
 
 func (self *Engine) CheckCommittee(committee []string, blockHeight int, chainID byte) bool {
@@ -97,35 +94,44 @@ func (committee *committeeStruct) UpdateCommitteePoint(chainLeader string, valid
 	}
 }
 
-func (self *Engine) CommitteeWatcher() {
-	self.cQuitCommitteeWatcher = make(chan struct{})
+func (self *Engine) StartCommitteeWatcher() {
+	if self.committee.cmWatcherStarted {
+		Logger.log.Error("Producer already started")
+		return
+	}
+	self.committee.cmWatcherStarted = true
+	Logger.log.Info("Committee watcher started")
 	for {
 		select {
 		case <-self.cQuitCommitteeWatcher:
-			Logger.log.Info("Committee watcher stoppeds")
+			Logger.log.Info("Committee watcher stopped")
 			return
 		case _ = <-self.cNewBlock:
 
 		case <-time.After(common.MaxBlockTime * time.Second):
 			self.committee.Lock()
 			myPubKey := base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00))
+			fmt.Println(myPubKey, common.IndexOfStr(myPubKey, self.committee.CurrentCommittee))
 			if common.IndexOfStr(myPubKey, self.committee.CurrentCommittee) != -1 {
-				for idx := 0; idx < common.TotalValidators; idx++ {
-					if self.committee.CurrentCommittee[idx] != myPubKey {
-						go func(validator string) {
-							peerIDs := self.config.Server.GetPeerIDsFromPublicKey(validator)
-							if len(peerIDs) != 0 {
-								// Peer exist
-							} else {
-								// Peer not exist
-							}
-						}(self.committee.CurrentCommittee[idx])
+				for idx := 0; idx < common.TotalValidators && self.committee.CurrentCommittee[idx] != myPubKey; idx++ {
+					blkTime := time.Since(time.Unix(self.config.BlockChain.BestState[idx].BestBlock.Header.Timestamp, 0))
+					fmt.Println(blkTime)
+					if blkTime > common.MaxBlockTime*time.Second {
+
 					}
 				}
 			}
 
 			self.committee.Unlock()
 		}
+	}
+}
+
+func (self *Engine) StopCommitteeWatcher() {
+	if self.committee.cmWatcherStarted {
+		Logger.log.Info("Stopping Committee watcher...")
+		close(self.cQuitCommitteeWatcher)
+		self.committee.cmWatcherStarted = false
 	}
 }
 

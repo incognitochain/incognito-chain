@@ -40,14 +40,13 @@ type Engine struct {
 	validatedChainsHeight chainsHeight
 
 	committee committeeStruct
-
-	//Committee []string //Voted committee for the next block
 }
 
 type committeeStruct struct {
 	ValidatorBlkNum      map[string]int //track the number of block created by each validator
 	ValidatorReliablePts map[string]int //track how reliable is the validator node
 	CurrentCommittee     []string
+	cmWatcherStarted     bool
 	sync.Mutex
 	LastUpdate int64
 }
@@ -57,6 +56,7 @@ type ChainInfo struct {
 	CandidateListMerkleHash string
 	ChainsHeight            []int
 }
+
 type chainsHeight struct {
 	Heights []int
 	sync.Mutex
@@ -103,7 +103,6 @@ func (self *Engine) Start() error {
 	self.Lock()
 	defer self.Unlock()
 	if self.started {
-		// self.Unlock()
 		return errors.New("Consensus engine is already started")
 	}
 	Logger.log.Info("Starting Parallel Proof of Stake Consensus engine")
@@ -228,15 +227,12 @@ func (self *Engine) StartProducer(producerKeySet cashec.KeySetProducer) {
 	self.config.ProducerKeySet = producerKeySet
 
 	self.cQuitProducer = make(chan struct{})
+	self.cQuitCommitteeWatcher = make(chan struct{})
 	self.cBlockSig = make(chan blockSig)
 	self.cNewBlock = make(chan blockchain.Block)
 
 	self.producerStarted = true
 	Logger.log.Info("Starting producer with public key: " + base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00)))
-
-	// TODO test SWAP
-	//go self.StartSwap()
-	//return
 
 	go func() {
 		for {
@@ -248,6 +244,7 @@ func (self *Engine) StartProducer(producerKeySet cashec.KeySetProducer) {
 					if common.IntArrayEquals(self.knownChainsHeight.Heights, self.validatedChainsHeight.Heights) {
 						chainID := self.getMyChain()
 						if chainID >= 0 && chainID < common.TotalValidators {
+							go self.StartCommitteeWatcher()
 							Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
 							Logger.log.Info("Current chainsHeight")
 							Logger.log.Info(self.validatedChainsHeight.Heights)
@@ -265,6 +262,7 @@ func (self *Engine) StartProducer(producerKeySet cashec.KeySetProducer) {
 							}
 						}
 					} else {
+						self.StopCommitteeWatcher()
 						for i, v := range self.knownChainsHeight.Heights {
 							if v > self.validatedChainsHeight.Heights[i] {
 								lastBlockHash := self.config.BlockChain.BestState[i].BestBlockHash.String()
@@ -287,6 +285,7 @@ func (self *Engine) StopProducer() {
 		Logger.log.Info("Stopping Producer...")
 		close(self.cQuitProducer)
 		close(self.cBlockSig)
+		self.StopCommitteeWatcher()
 		self.producerStarted = false
 	}
 }
