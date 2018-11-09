@@ -201,41 +201,72 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	return tx.Hash(), txD, nil
 }
 
+// ValidateDoubleSpend - check double spend for any transaction type
+func (tp *TxPool) ValidateDoubleSpend(tx transaction.Transaction, chainID byte) (error) {
+	txHash := tx.Hash()
+	txViewPoint, err := tp.config.BlockChain.FetchTxViewPoint(chainID)
+	if err != nil {
+		str := fmt.Sprintf("Can not check double spend for tx")
+		err := MempoolTxError{}
+		err.Init(CanNotCheckDoubleSpend, errors.New(str))
+		return err
+	}
+	nullifierDb := txViewPoint.ListNullifiers()
+	var descs []*transaction.JoinSplitDesc
+	if tx.GetType() == common.TxNormalType {
+		descs = tx.(*transaction.Tx).Descs
+	} else if tx.GetType() == common.TxVotingType {
+		descs = tx.(*transaction.TxVoting).Descs
+	}
+	for _, desc := range descs {
+		for _, nullifer := range desc.Nullifiers {
+			existed, err := common.SliceBytesExists(nullifierDb, nullifer)
+			if err != nil {
+				str := fmt.Sprintf("Can not check double spend for tx")
+				err := MempoolTxError{}
+				err.Init(CanNotCheckDoubleSpend, errors.New(str))
+				return err
+			}
+			if existed {
+				str := fmt.Sprintf("Nullifiers of transaction %+v already existed", txHash.String())
+				err := MempoolTxError{}
+				err.Init(RejectDuplicateTx, errors.New(str))
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // ValidateTxWithBlockChain - process validation of tx with old data in blockchain
 // - check double spend
 func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID byte) (error) {
-	txHash := tx.Hash()
-	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxVotingType {
-		txViewPoint, err := tp.config.BlockChain.FetchTxViewPoint(chainID)
-		if err != nil {
-			str := fmt.Sprintf("Can not check double spend for tx")
-			err := MempoolTxError{}
-			err.Init(CanNotCheckDoubleSpend, errors.New(str))
-			return err
+	switch tx.GetType() {
+	case common.TxNormalType:
+		{
+			// check double spend
+			return tp.ValidateDoubleSpend(tx, chainID)
 		}
-		nullifierDb := txViewPoint.ListNullifiers()
-		var descs []*transaction.JoinSplitDesc
-		if tx.GetType() == common.TxNormalType {
-			descs = tx.(*transaction.Tx).Descs
-		} else if tx.GetType() == common.TxVotingType {
-			descs = tx.(*transaction.TxVoting).Descs
+	case common.TxVotingType:
+		{
+			// check double spend
+			return tp.ValidateDoubleSpend(tx, chainID)
 		}
-		for _, desc := range descs {
-			for _, nullifer := range desc.Nullifiers {
-				existed, err := common.SliceBytesExists(nullifierDb, nullifer)
-				if err != nil {
-					str := fmt.Sprintf("Can not check double spend for tx")
-					err := MempoolTxError{}
-					err.Init(CanNotCheckDoubleSpend, errors.New(str))
-					return err
-				}
-				if existed {
-					str := fmt.Sprintf("Nullifiers of transaction %+v already existed", txHash.String())
-					err := MempoolTxError{}
-					err.Init(RejectDuplicateTx, errors.New(str))
-					return err
-				}
-			}
+	case common.TxSalaryType:
+		{
+			// TODO
+			return nil
+		}
+	case common.TxCustomTokenType:
+		{
+			// check double spend for constant coin
+			return tp.ValidateDoubleSpend(tx, chainID)
+			// TODO check double spend custom token
+		}
+	case common.TxActionParamsType:
+		{
+			// TODO
+			return nil
 		}
 	}
 	return nil
