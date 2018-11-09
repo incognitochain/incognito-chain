@@ -17,7 +17,7 @@ import (
 // TxCustomToken ...
 type TxCustomToken struct {
 	Tx
-	TxToken TxToken
+	TxToken TxTokenData
 }
 
 // CreateEmptyCustomTokenTx - return an init custom token transaction
@@ -28,7 +28,7 @@ func CreateEmptyCustomTokenTx() (*TxCustomToken, error) {
 		return nil, err
 	}
 
-	txToken := TxToken{}
+	txToken := TxTokenData{}
 
 	txCustomToken := &TxCustomToken{
 		Tx:      *emptyTx,
@@ -341,7 +341,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 	case CustomTokenInit:
 		{
 			handled = true
-			tx.TxToken = TxToken{
+			tx.TxToken = TxTokenData{
 				Type:           tokenParams.TokenTxType,
 				PropertyName:   tokenParams.PropertyName,
 				PropertySymbol: tokenParams.PropertySymbol,
@@ -379,7 +379,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 			paymentTokenAmount += receiver.Value
 		}
 		refundTokenAmount := tokenParams.vinsAmount - paymentTokenAmount
-		tx.TxToken = TxToken{
+		tx.TxToken = TxTokenData{
 			Type:           tokenParams.TokenTxType,
 			PropertyName:   tokenParams.PropertyName,
 			PropertySymbol: tokenParams.PropertySymbol,

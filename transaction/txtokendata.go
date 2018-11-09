@@ -62,9 +62,9 @@ func (self TxTokenVout) GetTxCustomTokenID() common.Hash {
 	return self.txCustomTokenID
 }
 
-// TxToken ...
-type TxToken struct {
-	PropertyID     common.Hash // = hash of TxToken data
+// TxTokenData ...
+type TxTokenData struct {
+	PropertyID     common.Hash // = hash of TxTokenData data
 	PropertyName   string
 	PropertySymbol string
 
@@ -74,7 +74,7 @@ type TxToken struct {
 	Vouts  []TxTokenVout
 }
 
-func (self TxToken) Hash() (*common.Hash, error) {
+func (self TxTokenData) Hash() (*common.Hash, error) {
 	if (self.Vouts == nil) {
 		return nil, errors.New("Vout is empty")
 	}
