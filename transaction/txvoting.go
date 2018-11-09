@@ -127,7 +127,6 @@ func CreateVotingTx(
 	paymentInfo []*client.PaymentInfo,
 	rts map[byte]*common.Hash,
 	usableTx map[byte][]*Tx,
-	nullifiers map[byte]([][]byte),
 	commitments map[byte]([][]byte),
 	fee uint64,
 	senderChainID byte,

@@ -653,7 +653,6 @@ func (self RpcServer) handleCreateRegistrationCandidateCommittee(params interfac
 	tx, err := transaction.CreateVotingTx(&senderKey.KeySet.PrivateKey, paymentInfos,
 		merkleRootCommitments,
 		candidateTxsMap,
-		nullifiersDb,
 		commitmentsDb,
 		realFee,
 		chainIdSender,
