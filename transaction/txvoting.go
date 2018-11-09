@@ -103,7 +103,7 @@ func (tx *TxVoting) GetTxVirtualSize() uint64 {
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
 	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(max(1, len(tx.Tx.Descs))) * EstimateJSDescSize()
+	var sizeDescs = uint64(common.Max(1, len(tx.Tx.Descs))) * EstimateJSDescSize()
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
 	var sizeNodeAddr uint64 = 8  // string
