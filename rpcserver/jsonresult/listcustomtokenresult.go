@@ -11,10 +11,10 @@ type CustomToken struct {
 }
 
 func (self *CustomToken) Init(obj transaction.TxCustomToken) {
-	self.ID = obj.TxToken.PropertyID.String()
-	self.Symbol = obj.TxToken.PropertySymbol
-	self.Name = obj.TxToken.PropertyName
-	self.Amount = obj.TxToken.Amount
+	self.ID = obj.TxTokenData.PropertyID.String()
+	self.Symbol = obj.TxTokenData.PropertySymbol
+	self.Name = obj.TxTokenData.PropertyName
+	self.Amount = obj.TxTokenData.Amount
 }
 
 type ListCustomToken struct {

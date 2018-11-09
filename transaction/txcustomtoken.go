@@ -17,7 +17,7 @@ import (
 // TxCustomToken ...
 type TxCustomToken struct {
 	Tx
-	TxToken TxTokenData
+	TxTokenData TxTokenData
 }
 
 // CreateEmptyCustomTokenTx - return an init custom token transaction
@@ -31,8 +31,8 @@ func CreateEmptyCustomTokenTx() (*TxCustomToken, error) {
 	txToken := TxTokenData{}
 
 	txCustomToken := &TxCustomToken{
-		Tx:      *emptyTx,
-		TxToken: txToken,
+		Tx:          *emptyTx,
+		TxTokenData: txToken,
 	}
 	return txCustomToken, nil
 }
@@ -43,10 +43,10 @@ func (tx TxCustomToken) Hash() *common.Hash {
 	record := tx.Tx.Hash().String()
 
 	// add more hash of txtoken
-	record += tx.TxToken.PropertyName
-	record += tx.TxToken.PropertySymbol
-	record += strconv.Itoa(tx.TxToken.Type)
-	record += strconv.Itoa(int(tx.TxToken.Amount))
+	record += tx.TxTokenData.PropertyName
+	record += tx.TxTokenData.PropertySymbol
+	record += strconv.Itoa(tx.TxTokenData.Type)
+	record += strconv.Itoa(int(tx.TxTokenData.Amount))
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
@@ -341,7 +341,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 	case CustomTokenInit:
 		{
 			handled = true
-			tx.TxToken = TxTokenData{
+			tx.TxTokenData = TxTokenData{
 				Type:           tokenParams.TokenTxType,
 				PropertyName:   tokenParams.PropertyName,
 				PropertySymbol: tokenParams.PropertySymbol,
@@ -358,8 +358,8 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 				Value:          receiverAmount,
 			})
 
-			tx.TxToken.Vouts = VoutsTemp
-			hashInitToken, err := tx.TxToken.Hash()
+			tx.TxTokenData.Vouts = VoutsTemp
+			hashInitToken, err := tx.TxTokenData.Hash()
 			if err != nil {
 				return nil, errors.New("Can't handle this TokenTxType")
 			}
@@ -369,7 +369,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 					return nil, errors.New("This token is existed in network")
 				}
 			}
-			tx.TxToken.PropertyID = *hashInitToken
+			tx.TxTokenData.PropertyID = *hashInitToken
 
 		}
 	case CustomTokenTransfer:
@@ -379,7 +379,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 			paymentTokenAmount += receiver.Value
 		}
 		refundTokenAmount := tokenParams.vinsAmount - paymentTokenAmount
-		tx.TxToken = TxTokenData{
+		tx.TxTokenData = TxTokenData{
 			Type:           tokenParams.TokenTxType,
 			PropertyName:   tokenParams.PropertyName,
 			PropertySymbol: tokenParams.PropertySymbol,
@@ -387,8 +387,8 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 			Vouts:          nil,
 		}
 		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
-		tx.TxToken.PropertyID = *propertyID
-		tx.TxToken.Vins = tokenParams.vins
+		tx.TxTokenData.PropertyID = *propertyID
+		tx.TxTokenData.Vins = tokenParams.vins
 		var VoutsTemp []TxTokenVout
 		for _, receiver := range tokenParams.Receiver {
 			receiverAmount := receiver.Value
@@ -401,7 +401,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 			PaymentAddress: tokenParams.vins[0].PaymentAddress,
 			Value:          refundTokenAmount,
 		})
-		tx.TxToken.Vouts = VoutsTemp
+		tx.TxTokenData.Vouts = VoutsTemp
 	}
 
 	if handled != true {

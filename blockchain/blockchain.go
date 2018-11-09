@@ -513,11 +513,11 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 
 	// check custom token and save
 	for indexTx, customTokenTx := range view.customTokenTxs {
-		switch customTokenTx.TxToken.Type {
+		switch customTokenTx.TxTokenData.Type {
 		case transaction.CustomTokenInit:
 			{
 				Logger.log.Info("Store custom token when it is issued")
-				err = self.config.DataBase.StoreCustomToken(&customTokenTx.TxToken.PropertyID, customTokenTx.Hash()[:])
+				err = self.config.DataBase.StoreCustomToken(&customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
 				if err != nil {
 					return err
 				}
@@ -528,7 +528,7 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 			}
 		}
 		// save tx which relate to custom token
-		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxToken.PropertyID, block.Header.ChainID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
+		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxTokenData.PropertyID, block.Header.ChainID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
 		if err != nil {
 			return err
 		}
@@ -927,7 +927,7 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 	}
 	for _, tx := range listCustomTx {
 		customTokenTx := tx.(*transaction.TxCustomToken)
-		for _, vin := range customTokenTx.TxToken.Vins {
+		for _, vin := range customTokenTx.TxTokenData.Vins {
 			if vin.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
 				vinList = append(vinList, vin)
 				txCustomTokenIDs = append(txCustomTokenIDs, vin.TxCustomTokenID[:])
@@ -939,7 +939,7 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 	voutList := []transaction.TxTokenVout{}
 	for _, tx := range listCustomTx {
 		customTokenTx := tx.(*transaction.TxCustomToken)
-		for index, vout := range customTokenTx.TxToken.Vouts {
+		for index, vout := range customTokenTx.TxTokenData.Vouts {
 			if vout.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
 				txHash := tx.Hash()
 				existed, err := common.SliceBytesExists(txCustomTokenIDs, txHash[:])
@@ -1038,7 +1038,7 @@ func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomT
 			return nil, err
 		}
 		txCustomToken := tx.(*transaction.TxCustomToken)
-		result[txCustomToken.TxToken.PropertyID] = *txCustomToken
+		result[txCustomToken.TxTokenData.PropertyID] = *txCustomToken
 	}
 	return result, nil
 }
