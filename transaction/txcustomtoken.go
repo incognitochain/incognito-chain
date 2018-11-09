@@ -37,16 +37,6 @@ func CreateEmptyCustomTokenTx() (*TxCustomToken, error) {
 	return txCustomToken, nil
 }
 
-// SetTxID ...
-func (tx *TxCustomToken) SetTxID(txId *common.Hash) {
-	tx.Tx.txId = txId
-}
-
-// GetTxID ...
-func (tx *TxCustomToken) GetTxID() *common.Hash {
-	return tx.Tx.txId
-}
-
 // Hash returns the hash of all fields of the transaction
 func (tx TxCustomToken) Hash() *common.Hash {
 	// get hash of tx
@@ -72,11 +62,6 @@ func (tx *TxCustomToken) ValidateTransaction() bool {
 		return true
 	}
 	return false
-}
-
-// GetType returns the type of the transaction
-func (tx *TxCustomToken) GetType() string {
-	return tx.Tx.Type
 }
 
 // GetTxVirtualSize computes the virtual size of a given transaction
@@ -109,16 +94,6 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 	estimateTxSizeInByte += sizeTokenTxType
 	estimateTxSizeInByte += sizeTokenReceiver
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
-}
-
-// GetTxFee ...
-func (tx *TxCustomToken) GetTxFee() uint64 {
-	return tx.Fee
-}
-
-// GetSenderAddrLastByte ...
-func (tx *TxCustomToken) GetSenderAddrLastByte() byte {
-	return tx.Tx.AddressLastByte
 }
 
 // CreateTxCustomToken ...
