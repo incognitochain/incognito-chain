@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -1568,7 +1567,7 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 			}
 			for _, txs := range txsMap {
 				for _, tx := range txs {
-					if blockchain.IsSalaryTx(&tx) {
+					if self.config.BlockChain.IsSalaryTx(&tx) {
 						continue
 					}
 					for _, desc := range tx.Descs {

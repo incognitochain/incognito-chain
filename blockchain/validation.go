@@ -14,7 +14,7 @@ import (
 /*
 IsSalaryTx determines whether or not a transaction is a salary.
 */
-func IsSalaryTx(tx transaction.Transaction) bool {
+func (self *BlockChain) IsSalaryTx(tx transaction.Transaction) bool {
 	// Check normal tx(not an action tx)
 	if tx.GetType() != common.TxSalaryType {
 		normalTx, ok := tx.(*transaction.Tx)
