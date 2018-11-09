@@ -137,20 +137,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	var chainID byte
 	var err error
 
-	switch tx.(type) {
-	case *transaction.Tx:
-		log.Println("Normal tx")
-		txInfo := tx.(*transaction.Tx)
-		chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
-	case *transaction.TxVoting:
-		log.Println("Tx voting")
-		txInfo := tx.(*transaction.TxVoting)
-		chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
-	case *transaction.TxCustomToken:
-		log.Println("Tx custom token")
-		txInfo := tx.(*transaction.TxCustomToken)
-		chainID, err = common.GetTxSenderChain(txInfo.AddressLastByte)
-	}
+	// get chainID of tx
+	chainID, err = common.GetTxSenderChain(tx.GetSenderAddrLastByte())
 
 	if err != nil {
 		return nil, nil, err
@@ -174,38 +162,9 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	// end check with policy
 
 	// validate double spend for : normal tx, voting tx
-	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxVotingType {
-		txViewPoint, err := tp.config.BlockChain.FetchTxViewPoint(chainID)
-		if err != nil {
-			str := fmt.Sprintf("Can not check double spend for tx")
-			err := MempoolTxError{}
-			err.Init(CanNotCheckDoubleSpend, errors.New(str))
-			return nil, nil, err
-		}
-		nullifierDb := txViewPoint.ListNullifiers()
-		var descs []*transaction.JoinSplitDesc
-		if tx.GetType() == common.TxNormalType {
-			descs = tx.(*transaction.Tx).Descs
-		} else if tx.GetType() == common.TxVotingType {
-			descs = tx.(*transaction.TxVoting).Descs
-		}
-		for _, desc := range descs {
-			for _, nullifer := range desc.Nullifiers {
-				existed, err := common.SliceBytesExists(nullifierDb, nullifer)
-				if err != nil {
-					str := fmt.Sprintf("Can not check double spend for tx")
-					err := MempoolTxError{}
-					err.Init(CanNotCheckDoubleSpend, errors.New(str))
-					return nil, nil, err
-				}
-				if existed {
-					str := fmt.Sprintf("Nullifiers of transaction %+v already existed", txHash.String())
-					err := MempoolTxError{}
-					err.Init(RejectDuplicateTx, errors.New(str))
-					return nil, nil, err
-				}
-			}
-		}
+	err = tp.ValidateTxWithBlockChain(tx, chainID)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// Don't accept the transaction if it already exists in the pool.
@@ -240,6 +199,46 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 	txD := tp.addTx(tx, bestHeight, txFee)
 	return tx.Hash(), txD, nil
+}
+
+// ValidateTxWithBlockChain - process validation of tx with old data in blockchain
+// - check double spend
+func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID byte) (error) {
+	txHash := tx.Hash()
+	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxVotingType {
+		txViewPoint, err := tp.config.BlockChain.FetchTxViewPoint(chainID)
+		if err != nil {
+			str := fmt.Sprintf("Can not check double spend for tx")
+			err := MempoolTxError{}
+			err.Init(CanNotCheckDoubleSpend, errors.New(str))
+			return err
+		}
+		nullifierDb := txViewPoint.ListNullifiers()
+		var descs []*transaction.JoinSplitDesc
+		if tx.GetType() == common.TxNormalType {
+			descs = tx.(*transaction.Tx).Descs
+		} else if tx.GetType() == common.TxVotingType {
+			descs = tx.(*transaction.TxVoting).Descs
+		}
+		for _, desc := range descs {
+			for _, nullifer := range desc.Nullifiers {
+				existed, err := common.SliceBytesExists(nullifierDb, nullifer)
+				if err != nil {
+					str := fmt.Sprintf("Can not check double spend for tx")
+					err := MempoolTxError{}
+					err.Init(CanNotCheckDoubleSpend, errors.New(str))
+					return err
+				}
+				if existed {
+					str := fmt.Sprintf("Nullifiers of transaction %+v already existed", txHash.String())
+					err := MempoolTxError{}
+					err.Init(RejectDuplicateTx, errors.New(str))
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // remove transaction for pool
@@ -387,6 +386,7 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 	}
 }
 
+// Validate sanity for normal tx data
 func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 	txN := tx
 	//check version
@@ -481,6 +481,7 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 	return true, nil
 }
 
+// Validate sanity for registration candidate tx data
 func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxVoting) (bool, error) {
 	if !common.ValidateNodeAddress(txVoting.PublicKey) {
 		return false, errors.New("Wrong voting node data")
