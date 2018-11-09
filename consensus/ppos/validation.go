@@ -17,13 +17,12 @@ import (
 
 func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
 	for _, tx := range txList {
+		err := self.ValidateSpecTxWithBlockChain(tx)
+		if err != nil {
+			return err
+		}
 		if tx.ValidateTransaction() == false {
 			return NewConsensusError(ErrTxIsWrong, nil)
-		} else {
-			err := self.ValidateSpecTxWithBlockChain(tx)
-			if err != nil {
-				return err
-			}
 		}
 	}
 	return nil
@@ -31,13 +30,12 @@ func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
 
 // Check tx with blockchain
 func (self *Engine) ValidateSpecTxWithBlockChain(tx transaction.Transaction) error {
-	// TODO
-	switch tx.GetType() {
-	case common.TxNormalType:
-		{
-		}
+	// get chainID of tx
+	chainID, err := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	if err != nil {
+		return err
 	}
-	return nil
+	return self.config.MemPool.ValidateTxWithBlockChain(tx, chainID)
 }
 
 func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, sigs []string) error {

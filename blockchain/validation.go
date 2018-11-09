@@ -7,6 +7,8 @@ Use these function to validate common data in blockchain
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/transaction"
+	"fmt"
+	"errors"
 )
 
 /*
@@ -31,4 +33,38 @@ func IsSalaryTx(tx transaction.Transaction) bool {
 		return false
 	}
 	return false
+}
+
+// ValidateDoubleSpend - check double spend for any transaction type
+func (self *BlockChain) ValidateDoubleSpend(tx transaction.Transaction, chainID byte) (error) {
+	txHash := tx.Hash()
+	txViewPoint, err := self.FetchTxViewPoint(chainID)
+	if err != nil {
+		str := fmt.Sprintf("Can not check double spend for tx")
+		err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
+		return err
+	}
+	nullifierDb := txViewPoint.ListNullifiers()
+	var descs []*transaction.JoinSplitDesc
+	if tx.GetType() == common.TxNormalType {
+		descs = tx.(*transaction.Tx).Descs
+	} else if tx.GetType() == common.TxVotingType {
+		descs = tx.(*transaction.TxVoting).Descs
+	}
+	for _, desc := range descs {
+		for _, nullifer := range desc.Nullifiers {
+			existed, err := common.SliceBytesExists(nullifierDb, nullifer)
+			if err != nil {
+				str := fmt.Sprintf("Can not check double spend for tx")
+				err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
+				return err
+			}
+			if existed {
+				str := fmt.Sprintf("Nullifiers of transaction %+v already existed", txHash.String())
+				err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
+				return err
+			}
+		}
+	}
+	return nil
 }
