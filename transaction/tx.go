@@ -72,7 +72,7 @@ func (tx *Tx) ValidateTransaction() bool {
 
 	// Check for tx signature
 	tx.SetTxID(tx.Hash())
-	valid, err := VerifySign(tx)
+	valid, err := tx.VerifySign()
 	if valid == false {
 		if err != nil {
 			fmt.Printf("Error verifying signature of tx: %+v", err)
@@ -390,7 +390,7 @@ func CreateTx(
 	}
 
 	// Sign tx
-	tx, err = SignTx(tx)
+	err = tx.SignTx()
 	if err != nil {
 		return nil, err
 	}
@@ -562,10 +562,10 @@ func createDummyNote(spendingKey *client.SpendingKey) *client.Note {
 	return note
 }
 
-func SignTx(tx *Tx) (*Tx, error) {
+func (tx *Tx) SignTx() (error) {
 	//Check input transaction
 	if tx.JSSig != nil {
-		return nil, errors.New("Input transaction must be an unsigned one")
+		return errors.New("Input transaction must be an unsigned one")
 	}
 
 	// Hash transaction
@@ -579,16 +579,16 @@ func SignTx(tx *Tx) (*Tx, error) {
 	var err error
 	ecdsaSignature.R, ecdsaSignature.S, err = client.Sign(rand.Reader, tx.sigPrivKey, data[:])
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	//Signature 64 bytes
 	tx.JSSig = JSSigToByteArray(ecdsaSignature)
 
-	return tx, nil
+	return nil
 }
 
-func VerifySign(tx *Tx) (bool, error) {
+func (tx *Tx) VerifySign() (bool, error) {
 	//Check input transaction
 	if tx.JSSig == nil || tx.JSPubKey == nil {
 		return false, errors.New("Input transaction must be an signed one!")

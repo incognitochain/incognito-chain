@@ -110,7 +110,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	}
 
 concludeBlock:
-	// Get blocksalary fund from txs
+// Get blocksalary fund from txs
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
 	for _, blockTx := range txsToAdd {
@@ -228,7 +228,7 @@ func createSalaryTx(
 	if err != nil {
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}
-	tx, err = transaction.SignTx(tx)
+	err = tx.SignTx()
 	if err != nil {
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}
