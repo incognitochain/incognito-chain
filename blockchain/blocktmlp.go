@@ -110,12 +110,12 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	}
 
 concludeBlock:
-	// Get blocksalary fund from txs
+// Get blocksalary fund from txs
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
 	for _, blockTx := range txsToAdd {
-		if blockTx.GetType() == common.TxVotingType {
-			tx, ok := blockTx.(*transaction.TxVoting)
+		if blockTx.GetType() == common.TxRegisterCandidateType {
+			tx, ok := blockTx.(*transaction.TxRegisterCandidate)
 			if !ok {
 				Logger.log.Error("Transaction not recognized to store in database")
 				continue
@@ -151,6 +151,7 @@ concludeBlock:
 	}
 	currentSalaryFund := prevBlock.Header.SalaryFund
 	block.Header = BlockHeader{
+		Height:                prevBlock.Header.Height + 1,
 		Version:               BlockVersion,
 		PrevBlockHash:         *prevBlockHash,
 		MerkleRoot:            *merkleRoot,
@@ -181,8 +182,6 @@ concludeBlock:
 
 	//update the latest AgentDataPoints to block
 	// block.AgentDataPoints = agentDataPoints
-	// Set height
-	block.Header.Height = prevBlock.Header.Height + 1
 
 	return &block, nil
 }
@@ -229,7 +228,7 @@ func createSalaryTx(
 	if err != nil {
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}
-	tx, err = transaction.SignTx(tx)
+	err = tx.SignTx()
 	if err != nil {
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}

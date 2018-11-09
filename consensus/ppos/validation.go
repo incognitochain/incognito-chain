@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/ninjadotorg/constant/blockchain"
@@ -17,13 +16,12 @@ import (
 
 func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
 	for _, tx := range txList {
+		err := self.ValidateSpecTxWithBlockChain(tx)
+		if err != nil {
+			return err
+		}
 		if tx.ValidateTransaction() == false {
 			return NewConsensusError(ErrTxIsWrong, nil)
-		} else {
-			err := self.ValidateSpecTxWithBlockChain(tx)
-			if err != nil {
-				return err
-			}
 		}
 	}
 	return nil
@@ -31,55 +29,12 @@ func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
 
 // Check tx with blockchain
 func (self *Engine) ValidateSpecTxWithBlockChain(tx transaction.Transaction) error {
-	switch tx.GetType() {
-	case common.TxNormalType:
-		{
-		}
-	case common.TxLoanRequest:
-		{
-			txLoan, ok := tx.(TxLoanRequest)
-			if ok != nil {
-				return fmt.Errorf("Fail parsing LoanRequest transaction")
-			}
-
-			// Check if loan's params are correct
-			chainID, err := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
-			if err != nil {
-				return err
-			}
-
-			currentParams := self.config.BlockChain.BestState[chainID].BestBlock.Header.LoanParams
-			if txLoan.Params != currentParams {
-				return fmt.Errorf("LoanRequest transaction has incorrect params")
-			}
-
-			// Check if loan id is unique across all chains
-			for chainID, bestState := range self.config.BlockChain.BestState {
-				for _, id := range bestState.LoanIDs {
-					if bytes.Equal(txLoan.LoanID, id) {
-						return fmt.Errorf("LoanID already existed on chain %d", chainID)
-					}
-				}
-			}
-		}
-	case common.TxLoanResponse:
-		{
-			txLoan, ok := tx.(TxLoanResponse)
-			if ok != nil {
-				return fmt.Errorf("Fail parsing LoanResponse transaction")
-			}
-
-			// Check if a loan request with the same id exists on any chain
-			for chainID, bestState := range self.config.BlockChain.BestState {
-				for _, id := range bestState.LoanIDs {
-					if bytes.Equal(txLoan.LoanID, id) {
-						return fmt.Errorf("LoanID already existed on chain %d", chainID)
-					}
-				}
-			}
-		}
+	// get chainID of tx
+	chainID, err := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	if err != nil {
+		return err
 	}
-	return nil
+	return self.config.MemPool.ValidateTxWithBlockChain(tx, chainID)
 }
 
 func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, sigs []string) error {
@@ -139,8 +94,8 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 						Logger.log.Infof("%x", cm[:])
 					}
 				}
-			} else if blockTx.GetType() == common.TxVotingType {
-				tx, ok := blockTx.(*transaction.TxVoting)
+			} else if blockTx.GetType() == common.TxRegisterCandidateType {
+				tx, ok := blockTx.(*transaction.TxRegisterCandidate)
 				if ok == false {
 					Logger.log.Errorf("Transaction in block not valid")
 				}

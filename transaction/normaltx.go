@@ -72,7 +72,7 @@ func (tx *Tx) ValidateTransaction() bool {
 
 	// Check for tx signature
 	tx.SetTxID(tx.Hash())
-	valid, err := VerifySign(tx)
+	valid, err := tx.VerifySign()
 	if valid == false {
 		if err != nil {
 			fmt.Printf("Error verifying signature of tx: %+v", err)
@@ -128,7 +128,7 @@ func (tx *Tx) GetTxVirtualSize() uint64 {
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
 	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(max(1, len(tx.Descs))) * EstimateJSDescSize()
+	var sizeDescs = uint64(common.Max(1, len(tx.Descs))) * EstimateJSDescSize()
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
 	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
@@ -143,13 +143,6 @@ func (tx *Tx) GetSenderAddrLastByte() byte {
 	return tx.AddressLastByte
 }
 
-func max(x, y int) int {
-	if x > y {
-		return x
-	}
-	return y
-}
-
 // CreateTx creates transaction with appropriate proof for a private payment
 // rts: mapping from the chainID to the root of the commitment merkle tree at current block
 // 		(the latest block of the node creating this tx)
@@ -158,10 +151,8 @@ func CreateTx(
 	paymentInfo []*client.PaymentInfo,
 	rts map[byte]*common.Hash,
 	usableTx map[byte][]*Tx,
-	nullifiers map[byte]([][]byte),
 	commitments map[byte]([][]byte),
 	fee uint64,
-	assetType string,
 	senderChainID byte,
 ) (*Tx, error) {
 	fmt.Printf("List of all commitments before building tx:\n")
@@ -390,7 +381,7 @@ func CreateTx(
 	}
 
 	// Sign tx
-	tx, err = SignTx(tx)
+	err = tx.SignTx()
 	if err != nil {
 		return nil, err
 	}
@@ -562,10 +553,10 @@ func createDummyNote(spendingKey *client.SpendingKey) *client.Note {
 	return note
 }
 
-func SignTx(tx *Tx) (*Tx, error) {
+func (tx *Tx) SignTx() (error) {
 	//Check input transaction
 	if tx.JSSig != nil {
-		return nil, errors.New("Input transaction must be an unsigned one")
+		return errors.New("Input transaction must be an unsigned one")
 	}
 
 	// Hash transaction
@@ -579,16 +570,16 @@ func SignTx(tx *Tx) (*Tx, error) {
 	var err error
 	ecdsaSignature.R, ecdsaSignature.S, err = client.Sign(rand.Reader, tx.sigPrivKey, data[:])
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	//Signature 64 bytes
 	tx.JSSig = JSSigToByteArray(ecdsaSignature)
 
-	return tx, nil
+	return nil
 }
 
-func VerifySign(tx *Tx) (bool, error) {
+func (tx *Tx) VerifySign() (bool, error) {
 	//Check input transaction
 	if tx.JSSig == nil || tx.JSPubKey == nil {
 		return false, errors.New("Input transaction must be an signed one!")
@@ -730,9 +721,9 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 	var sizeFee uint64 = 8      // uint64
 	var sizeDescs uint64        // uint64
 	if payments != nil {
-		sizeDescs = uint64(max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
 	} else {
-		sizeDescs = uint64(max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
 	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte

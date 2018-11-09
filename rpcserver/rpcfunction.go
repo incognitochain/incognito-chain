@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -653,7 +652,6 @@ func (self RpcServer) handleCreateRegistrationCandidateCommittee(params interfac
 	tx, err := transaction.CreateVotingTx(&senderKey.KeySet.PrivateKey, paymentInfos,
 		merkleRootCommitments,
 		candidateTxsMap,
-		nullifiersDb,
 		commitmentsDb,
 		realFee,
 		chainIdSender,
@@ -679,7 +677,7 @@ func (self RpcServer) handleSendRawRegistrationCandidateCommittee(params interfa
 	if err != nil {
 		return nil, err
 	}
-	var tx transaction.TxVoting
+	var tx transaction.TxRegisterCandidate
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
@@ -1173,10 +1171,8 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 	tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos,
 		merkleRootCommitments,
 		candidateTxsMap,
-		nullifiersDb,
 		commitmentsDb,
 		realFee,
-		common.AssetTypeCoin,
 		chainIdSender)
 	if err != nil {
 		Logger.log.Critical(err)
@@ -1571,7 +1567,7 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 			}
 			for _, txs := range txsMap {
 				for _, tx := range txs {
-					if blockchain.IsSalaryTx(&tx) {
+					if self.config.BlockChain.IsSalaryTx(&tx) {
 						continue
 					}
 					for _, desc := range tx.Descs {

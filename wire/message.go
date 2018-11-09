@@ -60,7 +60,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdRegisteration:
 		msg = &MessageRegistration{
-			Transaction: &transaction.TxVoting{},
+			Transaction: &transaction.TxRegisterCandidate{},
 		}
 		break
 	case CmdGetBlocks:

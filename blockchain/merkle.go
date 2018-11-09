@@ -145,8 +145,8 @@ func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 					tree.AddNewNode(cm[:])
 				}
 			}
-		} else if blockTx.GetType() == common.TxVotingType {
-			tx, ok := blockTx.(*transaction.TxVoting)
+		} else if blockTx.GetType() == common.TxRegisterCandidateType {
+			tx, ok := blockTx.(*transaction.TxRegisterCandidate)
 			if ok == false {
 				return NewBlockChainError(UnExpectedError, fmt.Errorf("Transaction in block not valid"))
 			}

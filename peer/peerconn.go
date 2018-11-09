@@ -156,8 +156,8 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 						self.Config.MessageListeners.OnSwapRequest(self, message.(*wire.MessageSwapRequest))
 					}
 				case reflect.TypeOf(&wire.MessageSwapSig{}):
-					if self.Config.MessageListeners.OnSignSwap != nil {
-						self.Config.MessageListeners.OnSignSwap(self, message.(*wire.MessageSwapSig))
+					if self.Config.MessageListeners.OnSwapSig != nil {
+						self.Config.MessageListeners.OnSwapSig(self, message.(*wire.MessageSwapSig))
 					}
 				case reflect.TypeOf(&wire.MessageSwapUpdate{}):
 					if self.Config.MessageListeners.OnSwapUpdate != nil {

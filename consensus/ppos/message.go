@@ -202,7 +202,7 @@ func (self *Engine) OnSwapRequest(msg *wire.MessageSwapRequest) {
 	return
 }
 
-func (self *Engine) OnSignSwap(msg *wire.MessageSwapSig) {
+func (self *Engine) OnSwapSig(msg *wire.MessageSwapSig) {
 	Logger.log.Info("Received a MessageSwapSig")
 	self.cSwapSig <- swapSig{
 		Validator: msg.Validator,
@@ -225,7 +225,7 @@ func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
 		return
 	}
 
-	//versify signatures
+	//verify signatures
 	rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.Requester, msg.ChainID, msg.Candidate)
 	cLeader := 0
 	for leaderPbk, leaderSig := range msg.Signatures {

@@ -7,13 +7,13 @@ const (
 )
 
 const (
-	TxNormalType       = "n" // normal tx(send and receive coin)
-	TxSalaryType       = "s" // salary tx(gov pay salary for block producer)
-	TxActionParamsType = "a" // action tx to edit params
-	TxVotingType       = "v" // voting tx
-	TxCustomTokenType  = "t" // token  tx
-	TxLoanRequest      = "lr"
-	TxLoanResponse     = "ls"
+	TxNormalType            = "n" // normal tx(send and receive coin)
+	TxSalaryType            = "s" // salary tx(gov pay salary for block producer)
+	TxActionParamsType      = "a" // action tx to edit params
+	TxRegisterCandidateType = "v" // voting tx
+	TxCustomTokenType       = "t" // token  tx
+	TxLoanRequest           = "lr"
+	TxLoanResponse          = "ls"
 )
 
 // unit type use in tx
@@ -40,5 +40,5 @@ const (
 	TotalValidators       = 20                    // = TOTAL CHAINS
 	MinBlockSigs          = (TotalValidators / 2) + 1
 	GetChainStateInterval = 10 //second
-	MaxBlockTime          = 60 //second Maximum for a chain to grow
+	MaxBlockTime          = 10 //second Maximum for a chain to grow
 )

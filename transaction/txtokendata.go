@@ -62,22 +62,23 @@ func (self TxTokenVout) GetTxCustomTokenID() common.Hash {
 	return self.txCustomTokenID
 }
 
-// TxToken ...
-type TxToken struct {
-	PropertyID     common.Hash // = hash of TxToken data
+// TxTokenData ...
+type TxTokenData struct {
+	PropertyID     common.Hash // = hash of TxTokenData data
 	PropertyName   string
 	PropertySymbol string
-	Type           int
-	Amount         uint64
-	Vins           []TxTokenVin
-	Vouts          []TxTokenVout
+
+	Type   int // action type
+	Amount uint64
+	Vins   []TxTokenVin
+	Vouts  []TxTokenVout
 }
 
-func (self TxToken) Hash() (*common.Hash, error) {
+func (self TxTokenData) Hash() (*common.Hash, error) {
 	if (self.Vouts == nil) {
 		return nil, errors.New("Vout is empty")
 	}
-	record := self.PropertyName + self.PropertyName + fmt.Sprintf("%d", self.Amount)
+	record := self.PropertyName + self.PropertySymbol + fmt.Sprintf("%d", self.Amount)
 	for _, out := range self.Vouts {
 		record += string(out.PaymentAddress.Apk[:])
 	}
