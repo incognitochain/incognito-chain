@@ -143,7 +143,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	}
 	// end check with policy
 
-	// validate double spend for : normal tx, voting tx
+	// validate tx with data of blockchain
 	err = tp.ValidateTxWithBlockChain(tx, chainID)
 	if err != nil {
 		return nil, nil, err
