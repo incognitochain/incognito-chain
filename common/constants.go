@@ -14,6 +14,8 @@ const (
 	TxCustomTokenType       = "t" // token  tx
 	TxLoanRequest           = "lr"
 	TxLoanResponse          = "ls"
+	TxLoanPayment           = "lp"
+	TxLoanWithdraw          = "lw"
 )
 
 // unit type use in tx

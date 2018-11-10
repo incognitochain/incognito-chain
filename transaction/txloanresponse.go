@@ -37,6 +37,7 @@ func CreateTxLoanResponse(
 		feeArgs.Commitments,
 		feeArgs.Fee,
 		feeArgs.SenderChainID,
+		false,
 	)
 	if err != nil {
 		return nil, err
