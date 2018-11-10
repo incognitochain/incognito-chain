@@ -21,13 +21,13 @@ const (
 // unit type use in tx
 // coin or token or bond
 const (
-	AssetTypeCoin     = "c" // 'constant' coin
-	AssetTypeBond     = "b" // bond
-	AssetTypeGovToken = "g" // government token
-	AssetTypeDcbToken = "d" // decentralized central bank token
+	AssetTypeCoin      = "c" // 'constant' coin
+	AssetTypeBond      = "b" // bond
+	AssetTypeGovToken  = "g" // government token
+	AssetTypeBankToken = "d" // decentralized central bank token
 )
 
-var ListAsset = []string{AssetTypeCoin, AssetTypeBond, AssetTypeGovToken, AssetTypeDcbToken}
+var ListAsset = []string{AssetTypeCoin, AssetTypeBond, AssetTypeGovToken, AssetTypeBankToken}
 
 // for mining consensus
 const (
