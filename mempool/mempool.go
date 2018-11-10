@@ -11,6 +11,7 @@ import (
 
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy/client"
 	"github.com/ninjadotorg/constant/transaction"
 )
@@ -23,6 +24,8 @@ type Config struct {
 
 	// Block chain of node
 	BlockChain *blockchain.BlockChain
+
+	DataBase database.DatabaseInterface
 
 	ChainParams *blockchain.Params
 
@@ -430,8 +433,8 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 		}
 	case common.TxLoanRequest:
 		{
-			txLoan, ok := tx.(TxLoanRequest)
-			if ok != nil {
+			txLoan, ok := tx.(*transaction.TxLoanRequest)
+			if !ok {
 				return fmt.Errorf("Fail parsing LoanRequest transaction")
 			}
 
@@ -442,6 +445,7 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 			}
 
 			// Check if loan id is unique across all chains
+			// TODO(@0xbunyip): should we check in db/chain or only in best state?
 			for chainID, bestState := range blockChain.BestState {
 				for _, id := range bestState.LoanIDs {
 					if bytes.Equal(txLoan.LoanID, id) {
@@ -452,18 +456,45 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 		}
 	case common.TxLoanResponse:
 		{
-			txLoan, ok := tx.(TxLoanResponse)
-			if ok != nil {
+			txResponse, ok := tx.(*transaction.TxLoanResponse)
+			if !ok {
 				return fmt.Errorf("Fail parsing LoanResponse transaction")
 			}
 
 			// Check if a loan request with the same id exists on any chain
-			for chainID, bestState := range self.config.BlockChain.BestState {
-				for _, id := range bestState.LoanIDs {
-					if bytes.Equal(txLoan.LoanID, id) {
-						return fmt.Errorf("LoanID already existed on chain %d", chainID)
+			// TODO(@0xbunyip): can we access blockChain.config from here}
+			txHashes, err := tp.config.DataBase.GetLoanTxs(txResponse.LoanID)
+			if err != nil {
+				return err
+			}
+			found := false
+			for _, txHash := range txHashes {
+				hash := &common.Hash{}
+				copy(hash[:], txHash)
+				_, _, _, txOld, err := blockChain.GetTransactionByHash(hash)
+				if txOld == nil || err != nil {
+					return fmt.Errorf("Error finding corresponding loan request")
+				}
+				switch txOld.GetType() {
+				case common.TxLoanResponse:
+					{
+						return fmt.Errorf("Loan already had response")
+					}
+				case common.TxLoanRequest:
+					{
+						_, ok := txOld.(*transaction.TxLoanRequest)
+						if !ok {
+							return fmt.Errorf("Error parsing loan request tx")
+						}
+						found = true
 					}
 				}
+			}
+
+			if found == false {
+				return fmt.Errorf("Corresponding loan request not found")
+			} else {
+				return nil
 			}
 		}
 	}

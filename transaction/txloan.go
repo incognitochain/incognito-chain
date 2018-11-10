@@ -12,10 +12,8 @@ type FeeArgs struct {
 	PaymentInfo   []*client.PaymentInfo
 	Rts           map[byte]*common.Hash
 	UsableTx      map[byte][]*Tx
-	Nullifiers    map[byte]([][]byte)
 	Commitments   map[byte]([][]byte)
 	Fee           uint64
-	AssetType     string
 	SenderChainID byte
 }
 
@@ -59,10 +57,8 @@ func CreateTxLoanRequest(
 		feeArgs.PaymentInfo,
 		feeArgs.Rts,
 		feeArgs.UsableTx,
-		feeArgs.Nullifiers,
 		feeArgs.Commitments,
 		feeArgs.Fee,
-		feeArgs.AssetType,
 		feeArgs.SenderChainID,
 	)
 	if err != nil {

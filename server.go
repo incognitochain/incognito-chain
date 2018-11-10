@@ -1,33 +1,30 @@
 package main
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/ninjadotorg/constant/rewardagent"
-
-	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/consensus/ppos"
-
-	"crypto/tls"
-	"os"
-	"strconv"
 
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/addrmanager"
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/connmanager"
+	"github.com/ninjadotorg/constant/consensus/ppos"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/mempool"
 	"github.com/ninjadotorg/constant/netsync"
 	"github.com/ninjadotorg/constant/peer"
+	"github.com/ninjadotorg/constant/rewardagent"
 	"github.com/ninjadotorg/constant/rpcserver"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
@@ -194,6 +191,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			MaxTxVersion: transaction.TxVersion + 1,
 		},
 		BlockChain:   self.blockChain,
+		DataBase:     self.db,
 		ChainParams:  chainParams,
 		FeeEstimator: self.feeEstimator,
 	})
@@ -545,7 +543,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			//
 			OnRegistration: self.OnRegistration,
 			OnSwapRequest:  self.OnSwapRequest,
-			OnSwapSig:     self.OnSwapSig,
+			OnSwapSig:      self.OnSwapSig,
 			OnSwapUpdate:   self.OnSwapUpdate,
 		},
 	}

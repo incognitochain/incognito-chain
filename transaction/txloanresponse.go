@@ -6,10 +6,17 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
+type ValidLoanResponse int
+
+const (
+	Accept ValidLoanResponse = iota
+	Reject
+)
+
 type LoanResponse struct {
 	LoanID     []byte
+	Response   ValidLoanResponse
 	ValidUntil uint64
-	KeyDigest  []byte // 32 bytes, from sha256
 }
 
 type TxLoanResponse struct {
@@ -27,10 +34,8 @@ func CreateTxLoanResponse(
 		feeArgs.PaymentInfo,
 		feeArgs.Rts,
 		feeArgs.UsableTx,
-		feeArgs.Nullifiers,
 		feeArgs.Commitments,
 		feeArgs.Fee,
-		feeArgs.AssetType,
 		feeArgs.SenderChainID,
 	)
 	if err != nil {
@@ -52,7 +57,6 @@ func (tx *TxLoanResponse) Hash() *common.Hash {
 	// add more hash of loan response data
 	record += string(tx.LoanID)
 	record += strconv.Itoa(int(tx.ValidUntil))
-	record += string(tx.KeyDigest)
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
@@ -66,7 +70,7 @@ func (tx *TxLoanResponse) ValidateTransaction() bool {
 	}
 
 	// TODO(@0xbunyip): check if only board members created this tx
-	if len(tx.KeyDigest) != LoanKeyDigestLen {
+	if tx.Response != Accept || tx.Response != Reject {
 		return false
 	}
 

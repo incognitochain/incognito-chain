@@ -3,19 +3,13 @@ package blockchain
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/constant/wallet"
-	"strings"
-
-	//"fmt"
-	//"time"
-
-	"sync"
-
-	"encoding/json"
-
 	"sort"
+	"strings" //"fmt"
+	//"time"
+	"sync"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ninjadotorg/constant/cashec"
@@ -23,6 +17,7 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy/client"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 const (
@@ -481,6 +476,25 @@ func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 		return nil, err
 	}
 	return data, err
+}
+
+func (self *BlockChain) SaveLoanTxsForBlock(block *Block) error {
+	for _, tx := range block.Transactions {
+		switch tx.GetType() {
+		case common.TxLoanRequest:
+			{
+				tx := tx.(*transaction.TxLoanRequest)
+				self.config.DataBase.StoreLoanRequest(tx.LoanID, tx.Hash()[:])
+			}
+		case common.TxLoanResponse:
+			{
+				tx := tx.(*transaction.TxLoanResponse)
+				self.config.DataBase.StoreLoanResponse(tx.LoanID, tx.Hash()[:])
+			}
+		}
+	}
+
+	return nil
 }
 
 /*

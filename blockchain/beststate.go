@@ -72,7 +72,7 @@ func (self *BestState) Update(block *Block) error {
 	}
 
 	// Update list of loan ids
-	err := self.UpdateLoanIDs(block)
+	err = self.UpdateLoanIDs(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}

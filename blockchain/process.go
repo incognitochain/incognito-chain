@@ -2,9 +2,10 @@ package blockchain
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/transaction"
-	"strings"
 )
 
 // ProcessBlock is the main workhorse for handling insertion of new blocks into
@@ -105,6 +106,12 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	}
 	// fetch nullifiers and commitments(utxo) from block and save
 	err = self.CreateAndSaveTxViewPoint(block)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+
+	// Save loan txs
+	err = self.SaveLoanTxsForBlock(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
