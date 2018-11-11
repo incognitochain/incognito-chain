@@ -1086,3 +1086,8 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 	}
 	return result, nil
 }
+
+// TODO(@0xsirrush): implement
+func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) ([][]byte, error) {
+	return nil, nil
+}

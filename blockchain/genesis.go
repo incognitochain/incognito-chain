@@ -261,6 +261,11 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(version int, ini
 		SalaryPerTx: salaryPerTx,
 		BasicSalary: basicSalary,
 	}
+	genesisBlock.Header.LoanParams = transaction.LoanParams{
+		InterestRate:     0,
+		Maturity:         7776000, // 3 months in seconds
+		LiquidationStart: 15000,   // 150%
+	}
 	copy(genesisBlock.Header.Committee, preSelectValidators)
 
 	genesisBlock.Header.Height = 1

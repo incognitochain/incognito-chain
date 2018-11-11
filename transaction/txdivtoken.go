@@ -34,7 +34,7 @@ type TxDivTokenData struct {
 	Vouts  []TxDivTokenVout
 }
 
-func (tx TxTokenData) Hash() (*common.Hash, error) {
+func (tx TxDivTokenData) Hash() (*common.Hash, error) {
 	if tx.Vouts == nil {
 		return nil, errors.New("Vout is empty")
 	}

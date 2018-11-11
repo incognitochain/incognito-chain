@@ -103,6 +103,23 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 		blockgen.txPool.RemoveTx(tx)
 	}
 
+	// TODO(@0xbunyip): how to execute payout dividend proposal
+	payoutAmount := uint64(0)
+	if false {
+		dividendTxs, err := transaction.BuildDividendTxs(tokenID, proposal)
+		if err != nil {
+			return nil, err
+		}
+		for _, tx := range dividendTxs {
+			for _, desc := range tx.Descs {
+				for _, note := range desc.Notes {
+					payoutAmount += note.Value // Payout directly to token holders, no change
+				}
+			}
+		}
+		txsToAdd = append(txsToAdd, dividendTxs)
+	}
+
 	// check len of txs in block
 	if len(txsToAdd) == 0 {
 		// return nil, errors.New("no transaction available for this chain")
@@ -110,7 +127,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	}
 
 concludeBlock:
-// Get blocksalary fund from txs
+	// Get blocksalary fund from txs
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
 	for _, blockTx := range txsToAdd {
@@ -161,6 +178,7 @@ concludeBlock:
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
 		SalaryFund:            currentSalaryFund - totalSalary + totalFee + salaryFundAdd,
+		BankFund:              prevBlock.Header.BankFund - payoutAmount,
 		GovernanceParams:      prevBlock.Header.GovernanceParams, // TODO: need get from gov-params tx
 		LoanParams:            prevBlock.Header.LoanParams,
 	}

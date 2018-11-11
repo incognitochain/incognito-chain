@@ -35,6 +35,7 @@ type BlockHeader struct {
 	CandidateHash      common.Hash
 
 	SalaryFund uint64 // use to pay salary for miners(block producer or current leader) in chain
+	BankFund   uint64 // for DBank
 
 	GovernanceParams GovernanceParams // params which get from governance for network
 
