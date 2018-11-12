@@ -2,7 +2,6 @@ package client
 
 import (
 	"crypto/rand"
-	"encoding/hex"
 
 	"golang.org/x/crypto/curve25519"
 )
@@ -31,13 +30,6 @@ type PaymentAddress struct {
 	Apk   SpendingAddress // use to receive coin
 	Pkenc TransmissionKey // use to encrypt data
 }
-
-/*func (self *PaymentAddress) UnmarshalJSON(data []byte) error {
-	temp := PaymentAddress{}
-	err := json.Unmarshal(data, &temp)
-	self = &temp
-	return err
-}*/
 
 type PaymentInfo struct {
 	PaymentAddress PaymentAddress
@@ -146,11 +138,4 @@ func GenEphemeralKey() (EphemeralPubKey, EphemeralPrivKey) {
 	copy(esk[:], esk_tmp[:])
 
 	return esk.GenPubKey(), esk
-}
-
-func (spendingKey SpendingKey) String() string {
-	for i := 0; i < SpendingKeyLength/2; i++ {
-		spendingKey[i], spendingKey[SpendingKeyLength-1-i] = spendingKey[SpendingKeyLength-1-i], spendingKey[i]
-	}
-	return hex.EncodeToString(spendingKey[:])
 }

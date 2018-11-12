@@ -174,21 +174,21 @@ type SignatureAlgorithm int
 
 const (
 	UnknownSignatureAlgorithm SignatureAlgorithm = iota
-	MD2WithRSA
-	MD5WithRSA
-	SHA1WithRSA
-	SHA256WithRSA
-	SHA384WithRSA
-	SHA512WithRSA
-	DSAWithSHA1
-	DSAWithSHA256
-	ECDSAWithSHA1
-	ECDSAWithSHA256
-	ECDSAWithSHA384
-	ECDSAWithSHA512
-	SHA256WithRSAPSS
-	SHA384WithRSAPSS
-	SHA512WithRSAPSS
+	MD2WithRSA                
+	MD5WithRSA                
+	SHA1WithRSA               
+	SHA256WithRSA             
+	SHA384WithRSA             
+	SHA512WithRSA             
+	DSAWithSHA1               
+	DSAWithSHA256             
+	ECDSAWithSHA1             
+	ECDSAWithSHA256           
+	ECDSAWithSHA384           
+	ECDSAWithSHA512           
+	SHA256WithRSAPSS          
+	SHA384WithRSAPSS          
+	SHA512WithRSAPSS          
 )
 
 func (algo SignatureAlgorithm) isRSAPSS() bool {
@@ -213,9 +213,9 @@ type PublicKeyAlgorithm int
 
 const (
 	UnknownPublicKeyAlgorithm PublicKeyAlgorithm = iota
-	RSA
-	DSA
-	ECDSA
+	RSA                       
+	DSA                       
+	ECDSA                     
 )
 
 var publicKeyAlgoName = [...]string{
@@ -530,14 +530,14 @@ type KeyUsage int
 
 const (
 	KeyUsageDigitalSignature  KeyUsage = 1 << iota
-	KeyUsageContentCommitment
-	KeyUsageKeyEncipherment
-	KeyUsageDataEncipherment
-	KeyUsageKeyAgreement
-	KeyUsageCertSign
-	KeyUsageCRLSign
-	KeyUsageEncipherOnly
-	KeyUsageDecipherOnly
+	KeyUsageContentCommitment 
+	KeyUsageKeyEncipherment   
+	KeyUsageDataEncipherment  
+	KeyUsageKeyAgreement      
+	KeyUsageCertSign          
+	KeyUsageCRLSign           
+	KeyUsageEncipherOnly      
+	KeyUsageDecipherOnly      
 )
 
 // RFC 5280, 4.2.1.12  Extended Key Usage
@@ -575,19 +575,19 @@ type ExtKeyUsage int
 
 const (
 	ExtKeyUsageAny                            ExtKeyUsage = iota
-	ExtKeyUsageServerAuth
-	ExtKeyUsageClientAuth
-	ExtKeyUsageCodeSigning
-	ExtKeyUsageEmailProtection
-	ExtKeyUsageIPSECEndSystem
-	ExtKeyUsageIPSECTunnel
-	ExtKeyUsageIPSECUser
-	ExtKeyUsageTimeStamping
-	ExtKeyUsageOCSPSigning
-	ExtKeyUsageMicrosoftServerGatedCrypto
-	ExtKeyUsageNetscapeServerGatedCrypto
-	ExtKeyUsageMicrosoftCommercialCodeSigning
-	ExtKeyUsageMicrosoftKernelCodeSigning
+	ExtKeyUsageServerAuth                     
+	ExtKeyUsageClientAuth                     
+	ExtKeyUsageCodeSigning                    
+	ExtKeyUsageEmailProtection                
+	ExtKeyUsageIPSECEndSystem                 
+	ExtKeyUsageIPSECTunnel                    
+	ExtKeyUsageIPSECUser                      
+	ExtKeyUsageTimeStamping                   
+	ExtKeyUsageOCSPSigning                    
+	ExtKeyUsageMicrosoftServerGatedCrypto     
+	ExtKeyUsageNetscapeServerGatedCrypto      
+	ExtKeyUsageMicrosoftCommercialCodeSigning 
+	ExtKeyUsageMicrosoftKernelCodeSigning     
 )
 
 // extKeyUsageOIDs contains the mapping between an ExtKeyUsage and its OID.

@@ -75,7 +75,7 @@ if [ -f "$file" ]
 then
 	echo "$file found."
 else
-	sudo wget https://github.com/ninjadotorg/constant/releases/download/zkpp-v0.0.3/proving.key
+	sudo wget https://github.com/ninjadotorg/cash/releases/download/zkpp-v0.0.3/proving.key
 fi
 
 file="./verifying.key"
@@ -83,5 +83,5 @@ if [ -f "$file" ]
 then
 	echo "$file found."
 else
-	sudo wget https://github.com/ninjadotorg/constant/releases/download/zkpp-v0.0.3/verifying.key
+	sudo wget https://github.com/ninjadotorg/cash/releases/download/zkpp-v0.0.3/verifying.key
 fi

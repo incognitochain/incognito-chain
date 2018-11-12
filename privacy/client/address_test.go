@@ -21,7 +21,7 @@ func TestReceivingKey(t *testing.T) {
 
 	for i, v := range e {
 		if v != pkenc[i] {
-			t.Errorf("ReceivingKey incorrect:\nExpected: %x\n Received: %x\n", e, pkenc)
+			t.Errorf("Rk incorrect:\nExpected: %x\n Received: %x\n", e, pkenc)
 		}
 	}
 }
