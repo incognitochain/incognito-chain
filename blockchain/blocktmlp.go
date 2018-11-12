@@ -60,6 +60,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	var txToRemove []transaction.Transaction
 	// var actionParamTxs []*transaction.ActionParamTx
 	totalFee := uint64(0)
+	payoutAmount := uint64(0)
 
 	// Get salary per tx
 	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(chainID)
@@ -104,7 +105,6 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	}
 
 	// TODO(@0xbunyip): how to execute payout dividend proposal
-	payoutAmount := uint64(0)
 	if false {
 		dividendTxs, err := transaction.BuildDividendTxs(tokenID, proposal)
 		if err != nil {
