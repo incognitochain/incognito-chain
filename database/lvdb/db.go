@@ -29,11 +29,14 @@ var (
 	feeEstimator         = []byte("feeEstimator")
 	spliter              = []byte("-")
 	tokenPrefix          = []byte("token-")
+	tokenAccountPrefix   = []byte("token-account-")
 	tokenInitPrefix      = []byte("token-init-")
 	loanIDKeyPrefix      = []byte("loanID-")
 	loanTxKeyPrefix      = []byte("loanTx-")
 	loanRequestPostfix   = []byte("-req")
 	loanResponsePostfix  = []byte("-res")
+	spent       = []byte("spent")
+	unspent      = []byte("unspent")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {

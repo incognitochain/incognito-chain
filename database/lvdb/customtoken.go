@@ -2,9 +2,12 @@ package lvdb
 
 import (
 	"encoding/binary"
-	"github.com/syndtr/goleveldb/leveldb/util"
+	"fmt"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/transaction"
+	"github.com/syndtr/goleveldb/leveldb/util"
 	"log"
+	"strings"
 )
 
 func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
@@ -56,4 +59,84 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 	}
 	iter.Release()
 	return result, nil
+}
+
+/*
+	Key: token-account-{tokenId}-{account}-txHash-voutIndex
+  Value: spent/unspent
+
+*/
+func (db *db) StoreCustomTokenAccountHistory(tokenID *common.Hash, tx *transaction.TxCustomToken) error {
+	tokenKey := string(tokenAccountPrefix) + tokenID.String()
+	for _, vin := range tx.TxTokenData.Vins {
+		address := string(vin.PaymentAddress.ToBytes())
+		utxoHash := vin.Hash().String()
+		voutIndex := vin.VoutIndex
+		accountKey := tokenKey + string(spliter) + address + string(spliter) + utxoHash + string(spliter) + string(voutIndex)
+		_, err := db.hasValue([]byte(accountKey))
+		if err != nil {
+			fmt.Println("ERROR finding vin in DB, StoreCustomTokenAccountHistory", tx.Hash(), err)
+			return err
+		}
+		value, err := db.lvdb.Get([]byte(accountKey), nil)
+		if err != nil {
+			return err
+		}
+		values := strings.Split(string(value),string(spliter))
+		newValues := values[0] + string(spliter) + string(unspent)
+		if err := db.lvdb.Put([]byte(accountKey), []byte(newValues), nil); err != nil {
+			return err
+		}
+	}
+	for _, vout := range tx.TxTokenData.Vouts {
+		tokenKey := string(tokenAccountPrefix) + tokenID.String()
+		address := string(vout.PaymentAddress.ToBytes())
+		utxoHash := vout.Hash().String()
+		voutIndex := vout.GetIndex()
+		value := vout.Value
+		accountKey := tokenKey + string(spliter) + address + string(spliter) + utxoHash + string(spliter) + string(voutIndex)
+		_, err := db.hasValue([]byte(accountKey))
+		if err != nil {
+			fmt.Println("ERROR finding vout in DB, StoreCustomTokenAccountHistory", tx.Hash(), err)
+			return err
+		}
+		accountValue := string(value) + string(spliter) + string(unspent)
+		if err := db.lvdb.Put([]byte(accountKey), []byte(accountValue), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (db *db) GetCustomTokenAccountHistory(tokenID *common.Hash) ([][]byte, error){
+	results := [][]byte{}
+	//tempResults := make(map[string]int)
+	tempsResult := make(map[string]bool)
+	prefix := string(tokenAccountPrefix) + tokenID.String()
+	iter := db.lvdb.NewIterator(util.BytesPrefix([]byte(prefix)), nil)
+	for iter.Next() {
+		key := string(iter.Key())
+		value := string(iter.Value())
+		keys := strings.Split(key, string(spliter))
+		values := strings.Split(value, string(value))
+		if values[1] == string(unspent){
+			// Uncomment this to get balance of all account
+			//i, ok := tempResults[keys[3]]
+			//if ok == false {
+			//	fmt.Println("ERROR geting value in GetCustomTokenAccountHistory of account", key[3])
+			//}
+			//values0,_ := strconv.Atoi(values[0])
+			//i += values0
+			//tempResults[keys[3]] = i
+
+			tempsResult[keys[3]] = true
+		}
+	}
+	for key, value := range tempsResult {
+		if value == true {
+			results = append(results, []byte(key))
+		}
+	}
+	iter.Release()
+	return results, nil
 }

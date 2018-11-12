@@ -543,6 +543,7 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 		}
 		// save tx which relate to custom token
 		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxTokenData.PropertyID, block.Header.ChainID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
+		err = self.config.DataBase.StoreCustomTokenAccountHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
 		if err != nil {
 			return err
 		}
@@ -1089,5 +1090,9 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 
 // TODO(@0xsirrush): implement
 func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) ([][]byte, error) {
-	return nil, nil
+	result, err := self.config.DataBase.GetCustomTokenAccountHistory(tokenID)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }

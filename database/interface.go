@@ -55,6 +55,8 @@ type DatabaseInterface interface {
 	StoreCustomTokenTx(*common.Hash, byte, int32, int32, []byte) error // param: tokenID, chainID, block height, tx-id, data tx
 	ListCustomToken() ([][]byte, error)
 	CustomTokenTxs(*common.Hash) ([]*common.Hash, error) // token id
+	StoreCustomTokenAccountHistory(*common.Hash, *transaction.TxCustomToken) error
+	GetCustomTokenAccountHistory(*common.Hash) ([][]byte, error)
 
 	// Loans
 	StoreLoanRequest([]byte, []byte) error  // param: loanID, tx hash
