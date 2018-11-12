@@ -30,6 +30,10 @@ var (
 	spliter              = []byte("-")
 	tokenPrefix          = []byte("token-")
 	tokenInitPrefix      = []byte("token-init-")
+	loanIDKeyPrefix      = []byte("loanID-")
+	loanTxKeyPrefix      = []byte("loanTx-")
+	loanRequestPostfix   = []byte("-req")
+	loanResponsePostfix  = []byte("-res")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {
