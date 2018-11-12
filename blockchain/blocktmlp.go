@@ -106,18 +106,18 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 
 	// TODO(@0xbunyip): how to execute payout dividend proposal
 	if false {
-		dividendTxs, err := transaction.BuildDividendTxs(tokenID, proposal)
-		if err != nil {
-			return nil, err
-		}
-		for _, tx := range dividendTxs {
-			for _, desc := range tx.Descs {
-				for _, note := range desc.Notes {
-					payoutAmount += note.Value // Payout directly to token holders, no change
-				}
-			}
-		}
-		txsToAdd = append(txsToAdd, dividendTxs)
+		//dividendTxs, err := transaction.BuildDividendTxs(tokenID, proposal)
+		//if err != nil {
+		//	return nil, err
+		//}
+		//for _, tx := range dividendTxs {
+		//	for _, desc := range tx.Descs {
+		//		for _, note := range desc.Notes {
+		//			payoutAmount += note.Value // Payout directly to token holders, no change
+		//		}
+		//	}
+		//}
+		//txsToAdd = append(txsToAdd, dividendTxs)
 	}
 
 	// check len of txs in block

@@ -1167,13 +1167,16 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
-
+	//missing flag for privacy
+	// false by default
+	flag := false
 	tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos,
 		merkleRootCommitments,
 		candidateTxsMap,
 		commitmentsDb,
 		realFee,
-		chainIdSender)
+		chainIdSender,
+		flag)
 	if err != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)

@@ -191,7 +191,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			MaxTxVersion: transaction.TxVersion + 1,
 		},
 		BlockChain:   self.blockChain,
-		DataBase:     self.db,
+		DataBase:     self.dataBase,
 		ChainParams:  chainParams,
 		FeeEstimator: self.feeEstimator,
 	})
