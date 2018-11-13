@@ -63,7 +63,7 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 
 /*
 	Key: token-account-{tokenId}-{account}-txHash-voutIndex
-  Value: spent/unspent
+  Value: value-spent/unspent-rewarded/unreward
 
 */
 func (db *db) StoreCustomTokenAccountHistory(tokenID *common.Hash, tx *transaction.TxCustomToken) error {
@@ -83,7 +83,8 @@ func (db *db) StoreCustomTokenAccountHistory(tokenID *common.Hash, tx *transacti
 			return err
 		}
 		values := strings.Split(string(value),string(spliter))
-		newValues := values[0] + string(spliter) + string(unspent)
+		// {value}-spent-unreward
+		newValues := values[0] + string(spliter) + string(spent) + string(spliter) +  values[2]
 		if err := db.lvdb.Put([]byte(accountKey), []byte(newValues), nil); err != nil {
 			return err
 		}
@@ -100,7 +101,8 @@ func (db *db) StoreCustomTokenAccountHistory(tokenID *common.Hash, tx *transacti
 			fmt.Println("ERROR finding vout in DB, StoreCustomTokenAccountHistory", tx.Hash(), err)
 			return err
 		}
-		accountValue := string(value) + string(spliter) + string(unspent)
+		// {value}-unspent-unreward
+		accountValue := string(value) + string(spliter) + string(unspent) + string(spliter) + string(unreward)
 		if err := db.lvdb.Put([]byte(accountKey), []byte(accountValue), nil); err != nil {
 			return err
 		}
@@ -119,7 +121,7 @@ func (db *db) GetCustomTokenAccountHistory(tokenID *common.Hash) ([][]byte, erro
 		value := string(iter.Value())
 		keys := strings.Split(key, string(spliter))
 		values := strings.Split(value, string(value))
-		if values[1] == string(unspent){
+		if strings.Compare(values[1],string(unspent)) == 0 {
 			// Uncomment this to get balance of all account
 			//i, ok := tempResults[keys[3]]
 			//if ok == false {
@@ -139,4 +141,42 @@ func (db *db) GetCustomTokenAccountHistory(tokenID *common.Hash) ([][]byte, erro
 	}
 	iter.Release()
 	return results, nil
+}
+
+func (db *db) GetCustomTokenAccountUTXO(tokenID *common.Hash, address []byte) ([][]byte, error){
+	results := [][]byte{}
+	prefix := string(tokenAccountPrefix) + tokenID.String() + string(spliter) + string(address)
+	iter := db.lvdb.NewIterator(util.BytesPrefix([]byte(prefix)), nil)
+	for iter.Next() {
+		key := string(iter.Key())
+		value := string(iter.Value())
+		keys := strings.Split(key, string(spliter))
+		values := strings.Split(value, string(value))
+		if strings.Compare(values[1],string(unspent)) == 0 {
+			utxo := keys[4] + string(spliter) + keys[5]
+			results = append(results, []byte(utxo))
+		}
+	}
+	iter.Release()
+	return results, nil
+}
+
+func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, address []byte, txHash *common.Hash, voutIndex int) (error){
+	key := string(tokenAccountPrefix) + tokenID.String() + string(spliter) + string(address) + string(spliter) + txHash.String() + string(spliter) + string(voutIndex)
+	_, err := db.hasValue([]byte(key))
+	if err != nil {
+		fmt.Println("ERROR finding key in DB, UpdateRewardAccountUTXO", err)
+		return err
+	}
+	res, err := db.lvdb.Get([]byte(key), nil)
+	if err != nil {
+		return err
+	}
+	reses := strings.Split(string(res), string(spliter))
+	// {value}-unspent-unreward
+	value := reses[0] + reses[1] + string(rewared)
+	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
+		return err
+	}
+	return nil
 }

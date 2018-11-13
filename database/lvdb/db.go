@@ -35,8 +35,10 @@ var (
 	loanTxKeyPrefix      = []byte("loanTx-")
 	loanRequestPostfix   = []byte("-req")
 	loanResponsePostfix  = []byte("-res")
-	spent       = []byte("spent")
-	unspent      = []byte("unspent")
+	rewared              = []byte("reward")
+	unreward             = []byte("unreward")
+	spent                = []byte("spent")
+	unspent              = []byte("unspent")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {
