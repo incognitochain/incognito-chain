@@ -6,6 +6,7 @@ import (
 )
 
 const MaxDivTxsPerBlock = 1000
+const PayoutFrequency = 1000 // Payout dividend every 1000 blocks
 
 type PayoutProposal struct {
 	TotalAmount uint64 // total Constant to pay dividend

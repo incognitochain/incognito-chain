@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
@@ -60,7 +61,6 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	var txToRemove []transaction.Transaction
 	// var actionParamTxs []*transaction.ActionParamTx
 	totalFee := uint64(0)
-	payoutAmount := uint64(0)
 
 	// Get salary per tx
 	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(chainID)
@@ -112,12 +112,25 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 
 concludeBlock:
 	rt := prevBlock.Header.MerkleRootCommitments.CloneBytes()
+	blockHeight := prevBlock.Header.Height + 1
 
-	divTxs, payoutAmount, err := blockgen.processDividendPayout(rt, chainID)
+	// Process dividend payout for DCB if needed
+	bankDivTxs, bankPayoutAmount, err := blockgen.processBankDividend(rt, chainID, blockHeight)
 	if err != nil {
 		return nil, err
 	}
-	txsToAdd = append(txsToAdd, divTxs...)
+	for _, tx := range bankDivTxs {
+		txsToAdd = append(txsToAdd, tx)
+	}
+
+	// Process dividend payout for GOV if needed
+	govDivTxs, govPayoutAmount, err := blockgen.processGovDividend(rt, chainID, blockHeight)
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range govDivTxs {
+		txsToAdd = append(txsToAdd, tx)
+	}
 
 	// Get blocksalary fund from txs
 	salaryFundAdd := uint64(0)
@@ -150,13 +163,23 @@ concludeBlock:
 	// the 1st tx will be salaryTx
 	txsToAdd = append([]transaction.Transaction{salaryTx}, txsToAdd...)
 
+	// Check for final balance of DCB and GOV
+	currentSalaryFund := prevBlock.Header.SalaryFund
+	if currentSalaryFund < totalSalary+totalFee+salaryFundAdd-govPayoutAmount {
+		return nil, fmt.Errorf("Gov fund is not enough for salary and dividend payout")
+	}
+
+	currentBankFund := prevBlock.Header.BankFund
+	if currentBankFund < bankPayoutAmount {
+		return nil, fmt.Errorf("Bank fund is not enough for dividend payout")
+	}
+
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 
 	block := Block{
 		Transactions: make([]transaction.Transaction, 0),
 	}
-	currentSalaryFund := prevBlock.Header.SalaryFund
 	block.Header = BlockHeader{
 		Height:                prevBlock.Header.Height + 1,
 		Version:               BlockVersion,
@@ -167,8 +190,8 @@ concludeBlock:
 		BlockCommitteeSigs:    make([]string, common.TotalValidators),
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
-		SalaryFund:            currentSalaryFund - totalSalary + totalFee + salaryFundAdd,
-		BankFund:              prevBlock.Header.BankFund - payoutAmount,
+		SalaryFund:            currentSalaryFund - totalSalary + totalFee + salaryFundAdd - govPayoutAmount,
+		BankFund:              currentBankFund - bankPayoutAmount,
 		GovernanceParams:      prevBlock.Header.GovernanceParams, // TODO: need get from gov-params tx
 		LoanParams:            prevBlock.Header.LoanParams,
 	}
@@ -243,15 +266,18 @@ func createSalaryTx(
 	return tx, nil
 }
 
-func (blockgen *BlkTmplGenerator) processDividendPayout(rt []byte, chainID byte) ([]transaction.Transaction, uint64, error) {
-	txs := []transaction.Transaction{}
+func (blockgen *BlkTmplGenerator) processDividend(
+	rt []byte,
+	chainID byte,
+	tokenID *common.Hash,
+	proposal *transaction.PayoutProposal,
+	blockHeight int32,
+) ([]*transaction.Tx, uint64, error) {
 	payoutAmount := uint64(0)
 
 	// TODO(@0xbunyip): how to execute payout dividend proposal
-	if false && chainID == 0 { // only chain 0 process dividend proposals
-		tokenID := &common.Hash{}
-		proposal := &transaction.PayoutProposal{}
-
+	dividendTxs := []*transaction.Tx{}
+	if false && chainID == 0 && blockHeight%transaction.PayoutFrequency == 0 { // only chain 0 process dividend proposals
 		// TODO(@0xbunyip): cache list so that list of receivers is fixed across blocks
 		infos := []transaction.DividendInfo{}
 		tokenHolders, err := blockgen.chain.GetListTokenHolders(tokenID)
@@ -301,11 +327,22 @@ func (blockgen *BlkTmplGenerator) processDividendPayout(rt []byte, chainID byte)
 			}
 		}
 
-		dividendTxs, err := transaction.BuildDividendTxs(infos, rt, chainID)
+		dividendTxs, err = transaction.BuildDividendTxs(infos, rt, chainID)
 		if err != nil {
 			return nil, 0, err
 		}
-		txs := append(txs, dividendTxs...)
 	}
-	return txs, payoutAmount, nil
+	return dividendTxs, payoutAmount, nil
+}
+
+func (blockgen *BlkTmplGenerator) processBankDividend(rt []byte, chainID byte, blockHeight int32) ([]*transaction.Tx, uint64, error) {
+	tokenID := &common.Hash{} // TODO(@0xbunyip): hard-code tokenID of BANK token and get proposal
+	proposal := &transaction.PayoutProposal{}
+	return blockgen.processDividend(rt, chainID, tokenID, proposal, blockHeight)
+}
+
+func (blockgen *BlkTmplGenerator) processGovDividend(rt []byte, chainID byte, blockHeight int32) ([]*transaction.Tx, uint64, error) {
+	tokenID := &common.Hash{} // TODO(@0xbunyip): hard-code tokenID of GOV token and get proposal
+	proposal := &transaction.PayoutProposal{}
+	return blockgen.processDividend(rt, chainID, tokenID, proposal, blockHeight)
 }
