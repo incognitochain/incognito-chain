@@ -116,6 +116,8 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
+	// TODO: Update utxo reward for dividends
+
 	Logger.log.Infof("Accepted block %s", blockHash)
 
 	return nil

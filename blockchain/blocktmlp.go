@@ -104,22 +104,6 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 		blockgen.txPool.RemoveTx(tx)
 	}
 
-	// TODO(@0xbunyip): how to execute payout dividend proposal
-	if false {
-		dividendTxs, err := transaction.BuildDividendTxs(tokenID, proposal)
-		if err != nil {
-			return nil, err
-		}
-		for _, tx := range dividendTxs {
-			for _, desc := range tx.Descs {
-				for _, note := range desc.Notes {
-					payoutAmount += note.Value // Payout directly to token holders, no change
-				}
-			}
-		}
-		txsToAdd = append(txsToAdd, dividendTxs)
-	}
-
 	// check len of txs in block
 	if len(txsToAdd) == 0 {
 		// return nil, errors.New("no transaction available for this chain")
@@ -127,6 +111,14 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	}
 
 concludeBlock:
+	rt := prevBlock.Header.MerkleRootCommitments.CloneBytes()
+
+	divTxs, payoutAmount, err := blockgen.processDividendPayout(rt, chainID)
+	if err != nil {
+		return nil, err
+	}
+	txsToAdd = append(txsToAdd, divTxs...)
+
 	// Get blocksalary fund from txs
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
@@ -143,8 +135,6 @@ concludeBlock:
 			salaryMULTP++
 		}
 	}
-
-	rt := prevBlock.Header.MerkleRootCommitments.CloneBytes()
 
 	// ------------------------ HOW to GET salary on a block-------------------
 	// total salary = tx * (salary per tx) + (basic salary on block)
@@ -251,4 +241,71 @@ func createSalaryTx(
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}
 	return tx, nil
+}
+
+func (blockgen *BlkTmplGenerator) processDividendPayout(rt []byte, chainID byte) ([]transaction.Transaction, uint64, error) {
+	txs := []transaction.Transaction{}
+	payoutAmount := uint64(0)
+
+	// TODO(@0xbunyip): how to execute payout dividend proposal
+	if false && chainID == 0 { // only chain 0 process dividend proposals
+		tokenID := &common.Hash{}
+		proposal := &transaction.PayoutProposal{}
+
+		// TODO(@0xbunyip): cache list so that list of receivers is fixed across blocks
+		infos := []transaction.DividendInfo{}
+		tokenHolders, err := blockgen.chain.GetListTokenHolders(tokenID)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		// Get total token supply
+		totalTokenSupply := uint64(0)
+		for _, holder := range tokenHolders {
+			utxos := blockgen.chain.GetAccountUTXO(holder)
+			for i := 0; i < len(utxos); i += 1 {
+				// TODO(@0xbunyip): get amount from utxo hash
+				value := uint64(0)
+				totalTokenSupply += value
+			}
+		}
+
+		// Build tx to pay dividend to each holder
+		for _, holder := range tokenHolders {
+			utxos := blockgen.chain.GetAccountUTXO(holder) // Cached data
+			holdAmount := uint64(0)
+			for i := 0; i < len(utxos); i += 1 {
+				reward, err := blockgen.chain.GetUTXOReward(utxos[i]) // Data from latest block
+				if err != nil {
+					return nil, 0, err
+				}
+				if reward < proposal.PayoutID {
+					// TODO(@0xbunyip): get amount from utxo hash
+					value := uint64(0)
+					holdAmount += value
+				}
+			}
+
+			if holdAmount > 0 {
+				holderAddress := (&client.PaymentAddress{}).FromBytes(holder)
+				info := transaction.DividendInfo{
+					TokenHolder: *holderAddress,
+					Amount:      holdAmount / totalTokenSupply,
+				}
+				payoutAmount += info.Amount
+				infos = append(infos, info)
+
+				if len(infos) > transaction.MaxDivTxsPerBlock {
+					break // Pay dividend to only some token holders in this block
+				}
+			}
+		}
+
+		dividendTxs, err := transaction.BuildDividendTxs(infos, rt, chainID)
+		if err != nil {
+			return nil, 0, err
+		}
+		txs := append(txs, dividendTxs...)
+	}
+	return txs, payoutAmount, nil
 }

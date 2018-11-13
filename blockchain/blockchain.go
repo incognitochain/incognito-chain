@@ -1088,6 +1088,22 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 }
 
 // TODO(@0xsirrush): implement
+// Cached data, not from newest block
 func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) ([][]byte, error) {
 	return nil, nil
+}
+
+// Cached data, not from newest block
+func (self *BlockChain) GetAccountUTXO(account []byte) [][]byte {
+	return nil
+}
+
+// New data from latest block
+func (self *BlockChain) GetUTXOReward(utxo []byte) (uint64, error) {
+	return 0, nil
+}
+
+// Update to data of latest block
+func (self *BlockChain) UpdateUTXOReward(utxo []byte, reward uint64) error {
+	return nil
 }
