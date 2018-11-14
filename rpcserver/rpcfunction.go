@@ -1894,6 +1894,7 @@ func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeC
 		item := jsonresult.CustomTokenBalance{}
 		item.Name = tx.TxTokenData.PropertyName
 		item.Symbol = tx.TxTokenData.PropertySymbol
+		item.TokenID = tx.TxTokenData.PropertyID.String()
 		tokenID := tx.TxTokenData.PropertyID
 		res, err := self.config.BlockChain.GetListTokenHolders(&tokenID)
 		if err != nil {
