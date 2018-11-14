@@ -73,12 +73,12 @@ func (self *KeySet) Sign(data []byte) ([]byte, error) {
 }
 
 func (self *KeySet) Encrypt(data []byte) ([]byte, error) {
-	encryptText := client.Encrypt(self.PaymentAddress.Pkenc[:], data)
+	encryptText := client.Encrypt(self.PaymentAddress.Apk[:], data)
 	return encryptText, nil
 }
 
 func (self *KeySet) Decrypt(data []byte) ([]byte, error) {
-	data, err := client.Decrypt(self.ReadonlyKey.Skenc[:], data)
+	data, err := client.Decrypt(self.PrivateKey[:], data)
 	return data, err
 }
 
