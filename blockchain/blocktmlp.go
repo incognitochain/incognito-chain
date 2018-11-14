@@ -192,7 +192,7 @@ concludeBlock:
 		ChainID:               chainID,
 		SalaryFund:            currentSalaryFund - totalSalary + totalFee + salaryFundAdd - govPayoutAmount,
 		BankFund:              currentBankFund - bankPayoutAmount,
-		GovernanceParams:      prevBlock.Header.GovernanceParams, // TODO: need get from gov-params tx
+		GOVParams:             prevBlock.Header.GOVParams, // TODO: need get from gov-params tx
 		LoanParams:            prevBlock.Header.LoanParams,
 	}
 	for _, tx := range txsToAdd {

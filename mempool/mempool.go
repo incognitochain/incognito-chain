@@ -421,6 +421,11 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 		}
 	case common.TxCustomTokenType:
 		{
+			// verify custom token signs
+			if !blockChain.VerifyCustomTokenSigns(tx) {
+				return errors.New("Custom token signs validation is not passed.")
+			}
+
 			// check double spend for constant coin
 			return blockChain.ValidateDoubleSpend(tx, chainID)
 			// TODO check double spend custom token

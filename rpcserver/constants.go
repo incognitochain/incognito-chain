@@ -51,4 +51,10 @@ const (
 	GetReceivedByAccount  = "getreceivedbyaccount"
 	SetTxFee              = "settxfee"
 	CreateProducerKeyset  = "createproducerkeyset"
+
+	// multisig for board spending
+	CreateSignatureOnCustomTokenTx = "createsignatureoncustomtokentx"
+	GetListDCBBoard                = "getlistdcbboard"
+	GetListCBBoard                 = "getlistcbboard"
+	GetListGOVBoard                = "getlistgovboard"
 )

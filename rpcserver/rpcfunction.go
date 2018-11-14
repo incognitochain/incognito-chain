@@ -69,6 +69,12 @@ var RpcHandler = map[string]commandHandler{
 
 	//check hash value
 	CheckHashValue: RpcServer.handleCheckHashValue,
+
+	// multisig
+	CreateSignatureOnCustomTokenTx: RpcServer.handleCreateSignatureOnCustomTokenTx,
+	GetListDCBBoard:                RpcServer.handleGetListDCBBoard,
+	GetListCBBoard:                 RpcServer.handleGetListCBBoard,
+	GetListGOVBoard:                RpcServer.handleGetListGOVBoard,
 }
 
 // Commands that are available to a limited user
@@ -360,8 +366,8 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 			Hash:             bestState.BestBlockHash.String(),
 			TotalTxs:         bestState.TotalTxns,
 			SalaryFund:       bestState.BestBlock.Header.SalaryFund,
-			BasicSalary:      bestState.BestBlock.Header.GovernanceParams.BasicSalary,
-			SalaryPerTx:      bestState.BestBlock.Header.GovernanceParams.SalaryPerTx,
+			BasicSalary:      bestState.BestBlock.Header.GOVParams.BasicSalary,
+			SalaryPerTx:      bestState.BestBlock.Header.GOVParams.SalaryPerTx,
 			BlockProducer:    bestState.BestBlock.BlockProducer,
 			BlockProducerSig: bestState.BestBlock.BlockProducerSig,
 		}
@@ -722,7 +728,7 @@ func (self RpcServer) handleListCustomToken(params interface{}, closeChan <-chan
 	if err != nil {
 		return nil, err
 	}
-	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{},}
+	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
 	for _, tx := range temps {
 		item := jsonresult.CustomToken{}
 		item.Init(tx)
@@ -835,8 +841,10 @@ func (self RpcServer) handleCheckHashValue(params interface{}, closeChan <-chan 
 	}, nil
 }
 
-// handleCreateRawCustomTokenTransaction handle create a custom token command.
-func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+// buildRawCustomTokenTransaction ...
+func (self RpcServer) buildRawCustomTokenTransaction(
+	params interface{},
+) (*transaction.TxCustomToken, error) {
 	// all params
 	arrayParams := common.InterfaceSlice(params)
 
@@ -978,14 +986,27 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, 
 	// get list custom token
 	listCustomTokens, err := self.config.BlockChain.ListCustomToken()
 
-	tx, err := transaction.CreateTxCustomToken(&senderKey.KeySet.PrivateKey, nil,
+	tx, err := transaction.CreateTxCustomToken(
+		&senderKey.KeySet.PrivateKey,
+		nil,
 		merkleRootCommitments,
 		candidateTxsMap,
 		commitmentsDb,
 		realFee,
 		chainIdSender,
 		tokenParams,
-		listCustomTokens)
+		listCustomTokens,
+	)
+
+	return tx, err
+}
+
+// handleCreateRawCustomTokenTransaction handle create a custom token command.
+func (self RpcServer) handleCreateRawCustomTokenTransaction(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, error) {
+	tx, err := self.buildRawCustomTokenTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -993,19 +1014,17 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, 
 
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
-		// return hex for a new tx
+		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
 		HexData: hexData,
 	}
-
-	//
-
 	return result, nil
 }
 
+// handleSendRawCustomTokenTransaction...
 func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
@@ -1167,13 +1186,16 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
-
+	//missing flag for privacy
+	// false by default
+	flag := false
 	tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos,
 		merkleRootCommitments,
 		candidateTxsMap,
 		commitmentsDb,
 		realFee,
-		chainIdSender)
+		chainIdSender,
+		flag)
 	if err != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -1734,4 +1756,49 @@ func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <
 		}
 	}
 	return result, nil
+}
+
+func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	Logger.log.Info(params)
+	arrayParams := common.InterfaceSlice(params)
+	hexRawTx := arrayParams[0].(string)
+	rawTxBytes, err := hex.DecodeString(hexRawTx)
+
+	if err != nil {
+		return nil, err
+	}
+	tx := transaction.TxCustomToken{}
+	// Logger.log.Info(string(rawTxBytes))
+	err = json.Unmarshal(rawTxBytes, &tx)
+	if err != nil {
+		return nil, err
+	}
+	senderKeyParam := arrayParams[1]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	jsSignByteArray, err := transaction.GetTxCustomTokenSignature(&tx, senderKey.KeySet)
+	if err != nil {
+		return nil, errors.New("Failed to sign the custom token")
+	}
+	return hex.EncodeToString(jsSignByteArray), nil
+}
+
+// handleGetListDCBBoard - return list payment address of DCB board
+func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return self.config.BlockChain.BestState[0].BestBlock.Header.DCDParams.DCBBoardPubKeys, nil
+}
+
+func (self RpcServer) handleGetListCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return self.config.BlockChain.BestState[0].BestBlock.Header.CBParams.CBBoardPubKeys, nil
+}
+
+func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVParams.GOVBoardPubKeys, nil
 }
