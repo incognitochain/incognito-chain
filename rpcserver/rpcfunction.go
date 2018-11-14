@@ -1510,6 +1510,7 @@ func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan str
 	return result, nil
 }
 
+// handleGetBalanceByPrivatekey -  return balance of private key
 func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	balance := uint64(0)
 
