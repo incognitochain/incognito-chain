@@ -63,6 +63,8 @@ type Config struct {
 	Light bool
 	//Wallet for light mode
 	Wallet *wallet.Wallet
+	//snapshot reward
+	customTokenRewardSnapshot map[client.PaymentAddress]uint64
 }
 
 /*
@@ -545,9 +547,13 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 		// save tx which relate to custom token
 		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxTokenData.PropertyID, block.Header.ChainID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
 		err = self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
+		// replace 1000 with proper value for snapshot
 		if block.Header.Height%1000 == 0 {
 			// list of unreward-utxo
-
+			self.config.customTokenRewardSnapshot, err = self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(&customTokenTx.TxTokenData.PropertyID)
+			if err != nil {
+				return err
+			}
 		}
 		if err != nil {
 			return err
@@ -1115,10 +1121,14 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 }
 
 // TODO(@0xsirrush): implement
-func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) ([][]byte, error) {
-	result, err := self.config.DataBase.GetCustomTokenListPaymentAddress(tokenID)
+func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[client.PaymentAddress]uint64, error) {
+	result, err := self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(tokenID)
 	if err != nil {
 		return nil, err
 	}
 	return result, nil
+}
+
+func (self *BlockChain) GetCustomTokenRewardSnapshot() (map[client.PaymentAddress]uint64) {
+	return self.config.customTokenRewardSnapshot
 }
