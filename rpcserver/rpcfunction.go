@@ -1783,6 +1783,7 @@ func (self RpcServer) handleGetCustomTokenSignature(params interface{}, closeCha
 	return jsSignByteArray, nil
 }
 
+// handleGetListDCBBoard - return list payment address of DCB board
 func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	return self.config.BlockChain.BestState[0].BestBlock.Header.DCDParams.DCBBoardPubKeys, nil
 }
