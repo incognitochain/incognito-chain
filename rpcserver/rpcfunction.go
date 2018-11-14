@@ -737,6 +737,7 @@ func (self RpcServer) handleListCustomToken(params interface{}, closeChan <-chan
 	return result, nil
 }
 
+// handleCustomTokenDetail - return list tx which relate to custom token by token id
 func (self RpcServer) handleCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	tokenIDStr := params.(string)
 	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
