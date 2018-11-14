@@ -1910,7 +1910,7 @@ func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeC
 func (self RpcServer) handleEncryptDataByPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	arrayParams := common.InterfaceSlice(params)
 	paymentAddress := arrayParams[0].(string)
-	plainData := arrayParams[0].(string)
+	plainData := arrayParams[1].(string)
 	keySet, _ := wallet.Base58CheckDeserialize(paymentAddress)
 	encryptData, _ := keySet.KeySet.Encrypt([]byte(plainData))
 	return hex.EncodeToString(encryptData), nil
