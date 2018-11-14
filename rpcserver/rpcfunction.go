@@ -81,19 +81,20 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:          RpcServer.HandleListAccounts,
-	GetAccount:            RpcServer.handleGetAccount,
-	GetAddressesByAccount: RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:     RpcServer.handleGetAccountAddress,
-	DumpPrivkey:           RpcServer.handleDumpPrivkey,
-	ImportAccount:         RpcServer.handleImportAccount,
-	RemoveAccount:         RpcServer.handleRemoveAccount,
-	ListUnspent:           RpcServer.handleListUnspent,
-	GetBalance:            RpcServer.handleGetBalance,
-	GetReceivedByAccount:  RpcServer.handleGetReceivedByAccount,
-	SetTxFee:              RpcServer.handleSetTxFee,
-	CreateProducerKeyset:  RpcServer.handleCreateProducerKeySet,
-	EncryptData:           RpcServer.handleEncryptDataByPaymentAddress,
+	ListAccounts:           RpcServer.HandleListAccounts,
+	GetAccount:             RpcServer.handleGetAccount,
+	GetAddressesByAccount:  RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:      RpcServer.handleGetAccountAddress,
+	DumpPrivkey:            RpcServer.handleDumpPrivkey,
+	ImportAccount:          RpcServer.handleImportAccount,
+	RemoveAccount:          RpcServer.handleRemoveAccount,
+	ListUnspent:            RpcServer.handleListUnspent,
+	GetBalance:             RpcServer.handleGetBalance,
+	GetBalanceByPrivatekey: RpcServer.handleGetBalanceByPrivatekey,
+	GetReceivedByAccount:   RpcServer.handleGetReceivedByAccount,
+	SetTxFee:               RpcServer.handleSetTxFee,
+	CreateProducerKeyset:   RpcServer.handleCreateProducerKeySet,
+	EncryptData:            RpcServer.handleEncryptDataByPaymentAddress,
 }
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -1507,6 +1508,39 @@ func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan str
 	}
 	result.Peers = peersMap
 	return result, nil
+}
+
+func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	balance := uint64(0)
+
+	// all params
+	arrayParams := common.InterfaceSlice(params)
+
+	// param #1: private key of sender
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+
+	// get balance for accountName in wallet
+	txsMap, err := self.config.BlockChain.GetListUnspentTxByPrivateKey(&senderKey.KeySet.PrivateKey, transaction.NoSort, false)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	for _, txs := range txsMap {
+		for _, tx := range txs {
+			for _, desc := range tx.Descs {
+				notes := desc.GetNote()
+				for _, note := range notes {
+					balance += note.Value
+				}
+			}
+		}
+	}
+
+	return balance, nil
 }
 
 /*
