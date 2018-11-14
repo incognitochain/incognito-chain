@@ -72,6 +72,16 @@ func (self *KeySet) Sign(data []byte) ([]byte, error) {
 	return []byte{}, nil
 }
 
+func (self *KeySet) Encrypt(data []byte) ([]byte, error) {
+	encryptText := client.Encrypt(self.PaymentAddress.Pkenc[:], data)
+	return encryptText, nil
+}
+
+func (self *KeySet) Decrypt(data []byte) ([]byte, error) {
+	data, err := client.Decrypt(self.ReadonlyKey.Skenc[:], data)
+	return data, err
+}
+
 func (self *KeySet) EncodeToString() string {
 	val, _ := json.Marshal(self)
 	result := base58.Base58Check{}.Encode(val, byte(0x00))
