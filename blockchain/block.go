@@ -23,6 +23,8 @@ type Block struct {
 	Transactions     []transaction.Transaction
 	BlockProducer    string // in base58check.encode
 	BlockProducerSig string
+	GovConstitution GovConstitution
+	DCBConstitution DCBConstitution
 
 	blockHash *common.Hash
 }

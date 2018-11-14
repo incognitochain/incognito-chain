@@ -2,6 +2,10 @@ package blockchain
 
 // constant for network
 const (
+	//Network fixed params
+	ThresholdRatioOfDCBCrisis = 0.9
+	ThresholdRatioOfGovCrisis = 0.9
+
 	// Mainnet
 	Mainnet               = 0x01
 	MainetName            = "mainnet"

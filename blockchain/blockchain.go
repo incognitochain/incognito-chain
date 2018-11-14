@@ -35,6 +35,7 @@ type BlockChain struct {
 
 	config    Config
 	chainLock sync.RWMutex
+	a 	fdsf
 }
 
 // config is a descriptor which specifies the blockchain instance configuration.

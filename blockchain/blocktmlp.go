@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
@@ -12,6 +14,13 @@ type BlkTmplGenerator struct {
 	txPool      TxPool
 	chain       *BlockChain
 	rewardAgent RewardAgent
+}
+
+type ConstitutionHelper interface {
+	GetStartedBlockHeight(generator *BlkTmplGenerator, chainID byte) (int32)
+	CheckSubmitProposalType(tx transaction.Transaction) (bool)
+	CheckVotingProposalType(tx transaction.Transaction) (bool)
+	GetAmountVoteToken(tx transaction.Transaction) (uint32)
 }
 
 // txPool represents a source of transactions to consider for inclusion in
@@ -34,6 +43,9 @@ type TxPool interface {
 
 	// RemoveTx remove tx from tx resource
 	RemoveTx(tx transaction.Transaction) error
+
+	//CheckTransactionFee
+	CheckTransactionFee(tx transaction.Transaction) (uint64, error)
 }
 
 type RewardAgent interface {
@@ -83,12 +95,34 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 		}
 	}
 
+	// Check if it is the case we need to apply a new proposal
+	// 1. newNW < lastNW * 0.9
+	// 2. current block height == last Constitution start time + last Constitution execute duration
+	if blockgen.neededNewDCBConstitution(chainID) {
+		tx, err := blockgen.createRequestConstitutionTxDecs(chainID, DCBConstitutionHelper{})
+		if err != nil {
+			Logger.log.Error(err)
+			return nil, err
+		}
+		sourceTxns = append(sourceTxns, tx)
+	}
+	if blockgen.neededNewGovConstitution(chainID) {
+		tx, err := blockgen.createRequestConstitutionTxDecs(chainID, GovConstitutionHelper{})
+		if err != nil {
+			Logger.log.Error(err)
+			return nil, err
+		}
+		sourceTxns = append(sourceTxns, tx)
+	}
+
 	for _, txDesc := range sourceTxns {
 		tx := txDesc.Tx
 		txChainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
 		if txChainID != chainID {
 			continue
 		}
+		// Validate vote and propose transaction
+
 		if !tx.ValidateTransaction() {
 			txToRemove = append(txToRemove, transaction.Transaction(tx))
 			continue
@@ -127,11 +161,12 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	}
 
 concludeBlock:
-// Get blocksalary fund from txs
+	// Get blocksalary fund from txs
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
 	for _, blockTx := range txsToAdd {
 		if blockTx.GetType() == common.TxRegisterCandidateType {
+
 			tx, ok := blockTx.(*transaction.TxRegisterCandidate)
 			if !ok {
 				Logger.log.Error("Transaction not recognized to store in database")
@@ -204,6 +239,36 @@ concludeBlock:
 	return &block, nil
 }
 
+func GetOracleDCBNationalWelfare() float32 {
+	fmt.Print("Get national welfare. It is constant now. Need to change !!!")
+	return 1234
+}
+func GetOracleGovNationalWelfare() float32 {
+	fmt.Print("Get national welfare. It is constant now. Need to change !!!")
+	return 1234
+}
+
+//1. Current National welfare (NW)  < lastNW * 0.9 (Emergency case)
+//2. Block height == last constitution start time + last constitution window
+func (blockgen *BlkTmplGenerator) neededNewDCBConstitution(chainID byte) bool {
+	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+	lastDCBConstitution := BestBlock.DCBConstitution
+	if GetOracleDCBNationalWelfare() < float32(lastDCBConstitution.CurrentDCBNationalWelfare)*ThresholdRatioOfDCBCrisis ||
+		BestBlock.Header.Height+1 == lastDCBConstitution.StartedBlockHeight+lastDCBConstitution.ExecuteDuration {
+		return true
+	}
+	return false
+}
+func (blockgen *BlkTmplGenerator) neededNewGovConstitution(chainID byte) bool {
+	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+	lastGovConstitution := BestBlock.GovConstitution
+	if GetOracleGovNationalWelfare() < float32(lastGovConstitution.CurrentGovNationalWelfare)*ThresholdRatioOfGovCrisis ||
+		BestBlock.Header.Height+1 == lastGovConstitution.StartedBlockHeight+lastGovConstitution.ExecuteDuration {
+		return true
+	}
+	return false
+}
+
 // createSalaryTx
 // Blockchain use this tx to pay a reward(salary) to miner of chain
 // #1 - salary:
@@ -251,4 +316,73 @@ func createSalaryTx(
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}
 	return tx, nil
+}
+
+func (blockgen *BlkTmplGenerator) createRequestConstitutionTxDecs(
+	chainID byte,
+	ConstitutionHelper ConstitutionHelper,
+) (*transaction.TxDesc, error) {
+	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+
+	// count vote from lastConstitution.StartedBlockHeight to Bestblock height
+	CountVote := make(map[common.Hash] int64)
+	Transaction := make(map[common.Hash] *transaction.Transaction)
+	for blockHeight := ConstitutionHelper.GetStartedBlockHeight(blockgen, chainID); blockHeight < BestBlock.Header.Height; blockHeight+=1  {
+		//retrieve block from block's height
+		hashBlock, err := blockgen.chain.config.DataBase.GetBlockByIndex(blockHeight, chainID)
+		if err != nil {
+			return nil, err
+		}
+		blockBytes, err := blockgen.chain.config.DataBase.FetchBlock(hashBlock)
+		if err != nil {
+			return nil, err
+		}
+		block := Block{}
+		err = json.Unmarshal(blockBytes, &block)
+		if err != nil {
+			return nil, err
+		}
+		//count vote of this block
+		for _, tx := range block.Transactions {
+			_, exist := CountVote[*tx.Hash()]
+			if ConstitutionHelper.CheckSubmitProposalType(tx){
+				if exist {
+					return nil, err
+				}
+				CountVote[*tx.Hash()] = 0
+				Transaction[*tx.Hash()] = &tx
+			} else {
+				if ConstitutionHelper.CheckVotingProposalType(tx){
+					if !exist {
+						return nil, err
+					}
+					CountVote[*tx.Hash()] +=  int64(ConstitutionHelper.GetAmountVoteToken(tx))
+				}
+			}
+		}
+	}
+
+	// get transaction and create transaction desc
+	var maxVote int64
+	var res common.Hash
+	for key, value := range CountVote {
+		if value > maxVote{
+			maxVote = value
+			res = key
+		}
+	}
+
+	AcceptedTransaction := *Transaction[res]
+	Fee, err := blockgen.txPool.CheckTransactionFee(AcceptedTransaction)
+	if err != nil {
+		return nil, err
+	}
+
+	AcceptedTransactionDesc := transaction.TxDesc{
+		Tx: AcceptedTransaction,
+		Added: time.Now(),
+		Height: BestBlock.Header.Height,
+		Fee: Fee,
+	}
+	return &AcceptedTransactionDesc, nil
 }
