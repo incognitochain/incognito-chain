@@ -74,6 +74,8 @@ var RpcHandler = map[string]commandHandler{
 	BuildCustomTokenTransaction: RpcServer.handleBuildCustomTokenTransaction,
 	GetCustomTokenSignature:     RpcServer.handleGetCustomTokenSignature,
 	GetListDCBBoard:             RpcServer.handleGetListDCBBoard,
+	GetListCBBoard:              RpcServer.handleGetListCBBoard,
+	GetListGOVBoard:             RpcServer.handleGetListGOVBoard,
 }
 
 // Commands that are available to a limited user
@@ -1786,4 +1788,12 @@ func (self RpcServer) handleGetCustomTokenSignature(params interface{}, closeCha
 // handleGetListDCBBoard - return list payment address of DCB board
 func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	return self.config.BlockChain.BestState[0].BestBlock.Header.DCDParams.DCBBoardPubKeys, nil
+}
+
+func (self RpcServer) handleGetListCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return self.config.BlockChain.BestState[0].BestBlock.Header.CBParams.CBBoardPubKeys, nil
+}
+
+func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVParams.GOVBoardPubKeys, nil
 }

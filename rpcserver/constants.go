@@ -56,4 +56,6 @@ const (
 	BuildCustomTokenTransaction = "buildcustomtokentransaction"
 	GetCustomTokenSignature     = "getcustomtokensignature"
 	GetListDCBBoard             = "getlistdcbboard"
+	GetListCBBoard              = "getlistcbboard"
+	GetListGOVBoard             = "getlistgovboard"
 )
