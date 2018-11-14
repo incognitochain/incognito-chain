@@ -30,11 +30,11 @@ func (self RewardAgent) Init(cfg *RewardAgentConfig) (*RewardAgent, error) {
 
 
 func (self *RewardAgent) GetBasicSalary(chainID byte) uint64 {
-	return self.config.BlockChain.BestState[chainID].BestBlock.Header.GovernanceParams.BasicSalary
+	return self.config.BlockChain.BestState[chainID].BestBlock.Header.GOVParams.BasicSalary
 }
 
 func (self *RewardAgent) GetSalaryPerTx(chainID byte) uint64 {
-	return self.config.BlockChain.BestState[chainID].BestBlock.Header.GovernanceParams.SalaryPerTx
+	return self.config.BlockChain.BestState[chainID].BestBlock.Header.GOVParams.SalaryPerTx
 }
 
 // func getMedians(agentDataPoints []*blockchain.AgentDataPoint) (

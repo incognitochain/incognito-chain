@@ -398,7 +398,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 // ValidateTxWithBlockChain - process validation of tx with old data in blockchain
 // - check double spend
-func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID byte) (error) {
+func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID byte) error {
 	blockChain := tp.config.BlockChain
 	switch tx.GetType() {
 	case common.TxNormalType:
@@ -418,6 +418,11 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 		}
 	case common.TxCustomTokenType:
 		{
+			// verify custom token signs
+			if !blockChain.VerifyCustomTokenSigns(tx) {
+				return errors.New("Custom token signs validation is not passed.")
+			}
+
 			// check double spend for constant coin
 			return blockChain.ValidateDoubleSpend(tx, chainID)
 			// TODO check double spend custom token
