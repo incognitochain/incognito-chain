@@ -44,3 +44,15 @@ const (
 	GetChainStateInterval = 10 //second
 	MaxBlockTime          = 10 //second Maximum for a chain to grow
 )
+
+// board types
+const (
+	DCB = 1
+	GOV = 2
+)
+
+// board addresses
+var (
+	DCBAddress = []byte{}
+	GOVAddress = []byte{}
+)

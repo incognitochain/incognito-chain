@@ -5,9 +5,18 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 )
 
-type GovernanceParams struct {
-	SalaryPerTx uint64 // salary for each tx in block(mili constant)
-	BasicSalary uint64 // basic salary per block(mili constant)
+type GOVParams struct {
+	SalaryPerTx     uint64 // salary for each tx in block(mili constant)
+	BasicSalary     uint64 // basic salary per block(mili constant)
+	GOVBoardPubKeys []string
+}
+
+type DCDParams struct {
+	DCBBoardPubKeys []string
+}
+
+type CBParams struct {
+	CBBoardPubKeys []string
 }
 
 type BlockHeader struct {
@@ -37,7 +46,9 @@ type BlockHeader struct {
 	SalaryFund uint64 // use to pay salary for miners(block producer or current leader) in chain
 	BankFund   uint64 // for DBank
 
-	GovernanceParams GovernanceParams // params which get from governance for network
+	GOVParams GOVParams // params which get from governance for network
+	DCDParams DCDParams
+	CBParams  CBParams
 
 	LoanParams transaction.LoanParams // params for collateralized loans of Constant
 

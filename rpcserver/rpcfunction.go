@@ -69,6 +69,10 @@ var RpcHandler = map[string]commandHandler{
 
 	//check hash value
 	CheckHashValue: RpcServer.handleCheckHashValue,
+
+	// multisig
+	BuildCustomTokenTransaction: RpcServer.handleBuildCustomTokenTransaction,
+	GetCustomTokenSignature:     RpcServer.handleGetCustomTokenSignature,
 }
 
 // Commands that are available to a limited user
@@ -360,8 +364,8 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 			Hash:             bestState.BestBlockHash.String(),
 			TotalTxs:         bestState.TotalTxns,
 			SalaryFund:       bestState.BestBlock.Header.SalaryFund,
-			BasicSalary:      bestState.BestBlock.Header.GovernanceParams.BasicSalary,
-			SalaryPerTx:      bestState.BestBlock.Header.GovernanceParams.SalaryPerTx,
+			BasicSalary:      bestState.BestBlock.Header.GOVParams.BasicSalary,
+			SalaryPerTx:      bestState.BestBlock.Header.GOVParams.SalaryPerTx,
 			BlockProducer:    bestState.BestBlock.BlockProducer,
 			BlockProducerSig: bestState.BestBlock.BlockProducerSig,
 		}
@@ -722,7 +726,7 @@ func (self RpcServer) handleListCustomToken(params interface{}, closeChan <-chan
 	if err != nil {
 		return nil, err
 	}
-	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{},}
+	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
 	for _, tx := range temps {
 		item := jsonresult.CustomToken{}
 		item.Init(tx)
@@ -835,8 +839,10 @@ func (self RpcServer) handleCheckHashValue(params interface{}, closeChan <-chan 
 	}, nil
 }
 
-// handleCreateRawCustomTokenTransaction handle create a custom token command.
-func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+// buildRawCustomTokenTransaction ...
+func (self RpcServer) buildRawCustomTokenTransaction(
+	params interface{},
+) (*transaction.TxCustomToken, error) {
 	// all params
 	arrayParams := common.InterfaceSlice(params)
 
@@ -978,34 +984,53 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, 
 	// get list custom token
 	listCustomTokens, err := self.config.BlockChain.ListCustomToken()
 
-	tx, err := transaction.CreateTxCustomToken(&senderKey.KeySet.PrivateKey, nil,
+	tx, err := transaction.BuildTxCustomToken(
+		&senderKey.KeySet.PrivateKey,
+		nil,
 		merkleRootCommitments,
 		candidateTxsMap,
 		commitmentsDb,
 		realFee,
 		chainIdSender,
 		tokenParams,
-		listCustomTokens)
+		listCustomTokens,
+	)
+
+	return tx, err
+}
+
+// handleCreateRawCustomTokenTransaction handle create a custom token command.
+func (self RpcServer) handleCreateRawCustomTokenTransaction(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, error) {
+	tx, err := self.buildRawCustomTokenTransaction(params)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
+	if tx.BoardType == 0 { // the custom token is not for board's spending
+		tx, err = transaction.SignTxCustomToken(tx)
+		if err != nil {
+			Logger.log.Error(err)
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+	}
+
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
-		// return hex for a new tx
+		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
 		HexData: hexData,
 	}
-
-	//
-
 	return result, nil
 }
 
+// handleSendRawCustomTokenTransaction...
 func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
@@ -1737,4 +1762,25 @@ func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <
 		}
 	}
 	return result, nil
+}
+
+func (self RpcServer) handleBuildCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	tx, err := self.buildRawCustomTokenTransaction(params)
+	return tx, err
+}
+
+func (self RpcServer) handleGetCustomTokenSignature(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// all params
+	arrayParams := common.InterfaceSlice(params)
+
+	// param #1: custom tokne
+	customToken, ok := arrayParams[0].(transaction.TxCustomToken)
+	if !ok {
+		return nil, errors.New("Type of param #1 should be *transaction.TxCustomToken")
+	}
+	jsSignByteArray, err := transaction.GetTxCustomTokenSignature(&customToken)
+	if err != nil {
+		return nil, errors.New("Failed to sign the custom token")
+	}
+	return jsSignByteArray, nil
 }

@@ -1,11 +1,12 @@
 package transaction
 
 import (
+	"fmt"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/privacy/client"
 	"github.com/ninjadotorg/constant/wallet"
-	"fmt"
 	"github.com/pkg/errors"
 )
 
@@ -75,7 +76,7 @@ type TxTokenData struct {
 }
 
 func (self TxTokenData) Hash() (*common.Hash, error) {
-	if (self.Vouts == nil) {
+	if self.Vouts == nil {
 		return nil, errors.New("Vout is empty")
 	}
 	record := self.PropertyName + self.PropertySymbol + fmt.Sprintf("%d", self.Amount)
