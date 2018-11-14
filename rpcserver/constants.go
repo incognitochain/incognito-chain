@@ -53,9 +53,8 @@ const (
 	CreateProducerKeyset  = "createproducerkeyset"
 
 	// multisig for board spending
-	BuildCustomTokenTransaction = "buildcustomtokentransaction"
-	GetCustomTokenSignature     = "getcustomtokensignature"
-	GetListDCBBoard             = "getlistdcbboard"
-	GetListCBBoard              = "getlistcbboard"
-	GetListGOVBoard             = "getlistgovboard"
+	CreateSignatureOnCustomTokenTx = "createsignatureoncustomtokentx"
+	GetListDCBBoard                = "getlistdcbboard"
+	GetListCBBoard                 = "getlistcbboard"
+	GetListGOVBoard                = "getlistgovboard"
 )
