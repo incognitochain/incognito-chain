@@ -35,6 +35,7 @@ const (
 	ListCustomToken                    = "listcustomtoken"
 	CustomToken                        = "customtoken"
 	CheckHashValue                     = "checkhashvalue"
+	GetListCustomTokenBalance          = "getlistcustomtokenbalance"
 
 	GetHeader = "getheader"
 
