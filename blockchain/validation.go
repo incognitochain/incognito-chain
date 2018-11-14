@@ -117,7 +117,7 @@ func (bc *BlockChain) VerifyCustomTokenSigns(tx transaction.Transaction) bool {
 		}
 
 		// verify signs
-		pubKeysByBoard := bc.BestState[0].BestBlock.DCBBoardPubKeys
+		pubKeysByBoard := bc.BestState[0].BestBlock.Header.DCDParams.DCBBoardPubKeys
 		fmt.Println("pubKeysByBoard: ", pubKeysByBoard)
 		// TODO: do validation here
 		return true
@@ -128,7 +128,7 @@ func (bc *BlockChain) VerifyCustomTokenSigns(tx transaction.Transaction) bool {
 			return false
 		}
 
-		pubKeysByBoard := bc.BestState[0].BestBlock.GOVBoardPubKeys
+		pubKeysByBoard := bc.BestState[0].BestBlock.Header.GOVParams.GOVBoardPubKeys
 		fmt.Println("pubKeysByBoard: ", pubKeysByBoard)
 		// TODO: do validation here
 		return true

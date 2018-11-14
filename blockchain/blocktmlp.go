@@ -161,7 +161,7 @@ concludeBlock:
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
 		SalaryFund:            currentSalaryFund - totalSalary + totalFee + salaryFundAdd,
-		GovernanceParams:      prevBlock.Header.GovernanceParams, // TODO: need get from gov-params tx
+		GOVParams:             prevBlock.Header.GOVParams, // TODO: need get from gov-params tx
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {

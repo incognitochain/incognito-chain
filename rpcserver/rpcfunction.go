@@ -364,8 +364,8 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 			Hash:             bestState.BestBlockHash.String(),
 			TotalTxs:         bestState.TotalTxns,
 			SalaryFund:       bestState.BestBlock.Header.SalaryFund,
-			BasicSalary:      bestState.BestBlock.Header.GovernanceParams.BasicSalary,
-			SalaryPerTx:      bestState.BestBlock.Header.GovernanceParams.SalaryPerTx,
+			BasicSalary:      bestState.BestBlock.Header.GOVParams.BasicSalary,
+			SalaryPerTx:      bestState.BestBlock.Header.GOVParams.SalaryPerTx,
 			BlockProducer:    bestState.BestBlock.BlockProducer,
 			BlockProducerSig: bestState.BestBlock.BlockProducerSig,
 		}

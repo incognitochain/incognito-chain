@@ -23,8 +23,6 @@ type Block struct {
 	Transactions     []transaction.Transaction
 	BlockProducer    string // in base58check.encode
 	BlockProducerSig string
-	DCBBoardPubKeys  []string
-	GOVBoardPubKeys  []string
 
 	blockHash *common.Hash
 }
@@ -124,8 +122,8 @@ func (self Block) Hash() *common.Hash {
 		self.Header.MerkleRootCommitments.String() +
 		self.Header.PrevBlockHash.String() +
 		strconv.Itoa(int(self.Header.SalaryFund)) +
-		strconv.Itoa(int(self.Header.GovernanceParams.SalaryPerTx)) +
-		strconv.Itoa(int(self.Header.GovernanceParams.BasicSalary)) +
+		strconv.Itoa(int(self.Header.GOVParams.SalaryPerTx)) +
+		strconv.Itoa(int(self.Header.GOVParams.BasicSalary)) +
 		strings.Join(self.Header.Committee, ",")
 
 	// add data from body

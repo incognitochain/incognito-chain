@@ -257,7 +257,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(version int, ini
 	genesisBlock.Header.Timestamp = time.Unix()
 	genesisBlock.Header.Version = version
 	genesisBlock.Header.Committee = make([]string, len(preSelectValidators))
-	genesisBlock.Header.GovernanceParams = GovernanceParams{
+	genesisBlock.Header.GOVParams = GOVParams{
 		SalaryPerTx: salaryPerTx,
 		BasicSalary: basicSalary,
 	}
