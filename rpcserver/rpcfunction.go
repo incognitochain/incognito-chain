@@ -59,11 +59,13 @@ var RpcHandler = map[string]commandHandler{
 	GetBlockProducerList:       RpcServer.handleGetBlockProducerList,
 
 	// custom token
-	SendCustomTokenTransaction: RpcServer.handleSendCustomTokenTransaction,
-	ListUnspentCustomToken:     RpcServer.handleListUnspentCustomTokenTransaction,
-	ListCustomToken:            RpcServer.handleListCustomToken,
-	CustomToken:                RpcServer.handleCustomTokenDetail,
-	GetListCustomTokenBalance:  RpcServer.handleGetListCustomTokenBalance,
+	CreateRawCustomTokenTransaction: RpcServer.handleCreateRawCustomTokenTransaction,
+	SendRawCustomTokenTransaction:   RpcServer.handleSendRawCustomTokenTransaction,
+	SendCustomTokenTransaction:      RpcServer.handleSendCustomTokenTransaction,
+	ListUnspentCustomToken:          RpcServer.handleListUnspentCustomTokenTransaction,
+	ListCustomToken:                 RpcServer.handleListCustomToken,
+	CustomToken:                     RpcServer.handleCustomTokenDetail,
+	GetListCustomTokenBalance:       RpcServer.handleGetListCustomTokenBalance,
 
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -1035,7 +1037,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	return tx, err
 }
 
-// handleCreateRawCustomTokenTransaction handle create a custom token command.
+// handleCreateRawCustomTokenTransaction - handle create a custom token command and return in hex string format.
 func (self RpcServer) handleCreateRawCustomTokenTransaction(
 	params interface{},
 	closeChan <-chan struct{},
@@ -1826,6 +1828,7 @@ func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <
 	return result, nil
 }
 
+// handleCreateSignatureOnCustomTokenTx - return a signature which is signed on raw custom token tx
 func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)

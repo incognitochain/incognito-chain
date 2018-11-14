@@ -26,6 +26,8 @@ const (
 	CreateActionParamsTransaction      = "createactionparamstransaction"
 	SendRegistrationCandidateCommittee = "sendregistration"
 	SendCustomTokenTransaction         = "sendcustomtokentransaction"
+	SendRawCustomTokenTransaction      = "sendrawcustomtokentransaction"
+	CreateRawCustomTokenTransaction    = "createrawcustomtokentransaction"
 	GetMempoolInfo                     = "getmempoolinfo"
 	GetCommitteeCandidateList          = "getcommitteecandidate"
 	RetrieveCommitteeCandidate         = "retrievecommitteecandidate"
