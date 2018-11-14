@@ -52,6 +52,7 @@ const (
 	GetReceivedByAccount  = "getreceivedbyaccount"
 	SetTxFee              = "settxfee"
 	CreateProducerKeyset  = "createproducerkeyset"
+	EncryptData           = "encryptdata"
 
 	// multisig for board spending
 	CreateSignatureOnCustomTokenTx = "createsignatureoncustomtokentx"

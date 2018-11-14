@@ -93,6 +93,7 @@ var RpcLimited = map[string]commandHandler{
 	GetReceivedByAccount:  RpcServer.handleGetReceivedByAccount,
 	SetTxFee:              RpcServer.handleSetTxFee,
 	CreateProducerKeyset:  RpcServer.handleCreateProducerKeySet,
+	EncryptData:           RpcServer.handleEncryptDataByPaymentAddress,
 }
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -1861,7 +1862,17 @@ func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeC
 			return nil, err
 		}
 		item.Amount = res[accountPaymentAddress]
-		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance,item)
+		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 	}
 	return result, nil
+}
+
+// handleEncryptDataByPaymentAddress - get payment address and make an encrypted data
+func (self RpcServer) handleEncryptDataByPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+	paymentAddress := arrayParams[0].(string)
+	plainData := arrayParams[0].(string)
+	keySet, _ := wallet.Base58CheckDeserialize(paymentAddress)
+	encryptData, _ := keySet.KeySet.Encrypt([]byte(plainData))
+	return hex.EncodeToString(encryptData), nil
 }
