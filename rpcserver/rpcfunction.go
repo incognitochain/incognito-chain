@@ -71,9 +71,10 @@ var RpcHandler = map[string]commandHandler{
 	CheckHashValue: RpcServer.handleCheckHashValue,
 
 	// multisig
-	BuildCustomTokenTransaction: RpcServer.handleBuildCustomTokenTransaction,
-	GetCustomTokenSignature:     RpcServer.handleGetCustomTokenSignature,
-	GetListDCBBoard:             RpcServer.handleGetListDCBBoard,
+	CreateSignatureOnCustomTokenTx: RpcServer.handleCreateSignatureOnCustomTokenTx,
+	GetListDCBBoard:                RpcServer.handleGetListDCBBoard,
+	GetListCBBoard:                 RpcServer.handleGetListCBBoard,
+	GetListGOVBoard:                RpcServer.handleGetListGOVBoard,
 }
 
 // Commands that are available to a limited user
@@ -985,7 +986,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	// get list custom token
 	listCustomTokens, err := self.config.BlockChain.ListCustomToken()
 
-	tx, err := transaction.BuildTxCustomToken(
+	tx, err := transaction.CreateTxCustomToken(
 		&senderKey.KeySet.PrivateKey,
 		nil,
 		merkleRootCommitments,
@@ -1009,14 +1010,6 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	if tx.BoardType == 0 { // the custom token is not for board's spending
-		tx, err = transaction.SignTxCustomToken(tx)
-		if err != nil {
-			Logger.log.Error(err)
-			return nil, NewRPCError(ErrUnexpected, err)
-		}
 	}
 
 	byteArrays, err := json.Marshal(tx)
@@ -1765,28 +1758,47 @@ func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <
 	return result, nil
 }
 
-func (self RpcServer) handleBuildCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	tx, err := self.buildRawCustomTokenTransaction(params)
-	return tx, err
-}
-
-func (self RpcServer) handleGetCustomTokenSignature(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	// all params
+func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
+	hexRawTx := arrayParams[0].(string)
+	rawTxBytes, err := hex.DecodeString(hexRawTx)
 
-	// param #1: custom tokne
-	customToken, ok := arrayParams[0].(transaction.TxCustomToken)
-	if !ok {
-		return nil, errors.New("Type of param #1 should be *transaction.TxCustomToken")
+	if err != nil {
+		return nil, err
 	}
-	jsSignByteArray, err := transaction.GetTxCustomTokenSignature(&customToken)
+	tx := transaction.TxCustomToken{}
+	// Logger.log.Info(string(rawTxBytes))
+	err = json.Unmarshal(rawTxBytes, &tx)
+	if err != nil {
+		return nil, err
+	}
+	senderKeyParam := arrayParams[1]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	jsSignByteArray, err := transaction.GetTxCustomTokenSignature(&tx, senderKey.KeySet)
 	if err != nil {
 		return nil, errors.New("Failed to sign the custom token")
 	}
-	return jsSignByteArray, nil
+	return hex.EncodeToString(jsSignByteArray), nil
 }
 
 // handleGetListDCBBoard - return list payment address of DCB board
 func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	return self.config.BlockChain.BestState[0].BestBlock.Header.DCDParams.DCBBoardPubKeys, nil
+}
+
+func (self RpcServer) handleGetListCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return self.config.BlockChain.BestState[0].BestBlock.Header.CBParams.CBBoardPubKeys, nil
+}
+
+func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVParams.GOVBoardPubKeys, nil
 }
