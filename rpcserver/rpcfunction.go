@@ -918,6 +918,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		{
 			tokenID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 			unspentTxTokenOuts, err := self.config.BlockChain.GetUnspentTxCustomTokenVout(senderKey.KeySet, tokenID)
+			fmt.Println("buildRawCustomTokenTransaction ", unspentTxTokenOuts)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}

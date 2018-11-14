@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strconv"
+	//"strconv"
 	"strings" //"fmt"
 	//"time"
 	"sync"
@@ -541,7 +541,7 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 			}
 		case transaction.CustomTokenTransfer:
 			{
-				Logger.log.Info("Transfer custom token")
+				Logger.log.Info("Transfer custom token %+v", customTokenTx)
 			}
 		}
 		// save tx which relate to custom token
@@ -974,34 +974,36 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 	//				vout.SetIndex(index)
 	//				vout.SetTxCustomTokenID(*tx.Hash())
 	//				voutList = append(voutList, vout)
+	//				fmt.Println("GetUnspentTxCustomTokenVout vout", vout)
 	//			}
 	//		}
 	//	}
 	//}
 	//====================
-	voutList := []transaction.TxTokenVout{}
-	listCustomTx, err := self.GetCustomTokenTxs(tokenID)
-	utxos, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress)
+	//voutList := []transaction.TxTokenVout{}
+	voutList, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress)
 	if err != nil {
 		return nil, err
 	}
-	for _, utxo := range utxos {
-		items := strings.Split(string(utxo), string([]byte("-")))
-		txHashTemp := items[0]
-		voutIndexTemp := items[1]
-		fmt.Println("GetUnspentTxCustomTokenVout txHashTemp", txHashTemp)
-		fmt.Println("GetUnspentTxCustomTokenVout voutIndexTemp", voutIndexTemp)
-		voutIndex, err := strconv.Atoi(voutIndexTemp)
-		if err != nil {
-			return nil, err
-		}
-		txHash,_ := common.Hash{}.NewHashFromStr(txHashTemp)
-		fmt.Println("GetUnspentTxCustomTokenVout txHash", txHash)
-		fmt.Println("GetUnspentTxCustomTokenVout voutIndex", voutIndex)
-		customTx := listCustomTx[*txHash].(*transaction.TxCustomToken)
-		vout := customTx.TxTokenData.Vouts[voutIndex]
-		voutList = append(voutList, vout)
-	}
+	//for _, utxo := range utxos {
+	//	items := strings.Split(string(utxo), string([]byte("-")))
+	//	txHashTemp := items[0]
+	//	voutIndexTemp := items[1]
+	//	fmt.Println("GetUnspentTxCustomTokenVout txHashTemp", txHashTemp)
+	//	fmt.Println("GetUnspentTxCustomTokenVout voutIndexTemp", voutIndexTemp)
+	//	voutIndex, err := strconv.Atoi(voutIndexTemp)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	txHash,_ := common.Hash{}.NewHashFromStr(txHashTemp)
+	//	fmt.Println("GetUnspentTxCustomTokenVout txHash", txHash)
+	//	fmt.Println("GetUnspentTxCustomTokenVout voutIndex", voutIndex)
+	//	vout := transaction.TxTokenVout{}
+	//	vout.SetTxCustomTokenID(*txHash)
+	//	vout.SetIndex(voutIndex)
+	//	fmt.Println("GetUnspentTxCustomTokenVout vout", vout)
+	//	voutList = append(voutList, vout)
+	//}
 	return voutList, nil
 }
 
@@ -1014,7 +1016,7 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 			fmt.Println("ERROR in GetTransactionByHash", err)
 			const (
 				bigNumber   = 999999999
-				bigNumberTx = 999999
+				bigNumberTx = 999999999
 			)
 			var (
 				blockHeight uint32
