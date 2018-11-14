@@ -729,9 +729,9 @@ func (self RpcServer) handleListCustomToken(params interface{}, closeChan <-chan
 		return nil, err
 	}
 	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
-	for _, tx := range temps {
+	for _, token := range temps {
 		item := jsonresult.CustomToken{}
-		item.Init(tx)
+		item.Init(token)
 		result.ListCustomToken = append(result.ListCustomToken, item)
 	}
 	return result, nil
@@ -739,8 +739,8 @@ func (self RpcServer) handleListCustomToken(params interface{}, closeChan <-chan
 
 // handleCustomTokenDetail - return list tx which relate to custom token by token id
 func (self RpcServer) handleCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	tokenIDStr := params.(string)
-	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
+	arrayParams := common.InterfaceSlice(params)
+	tokenID, err := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
 	if err != nil {
 		return nil, err
 	}
