@@ -986,15 +986,19 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 		return nil, err
 	}
 	for _, utxo := range utxos {
-		txHashTemp := utxo[:32]
-		voutIndexTemp := string(utxo[32:])
+		items := strings.Split(string(utxo), string([]byte("-")))
+		txHashTemp := items[0]
+		voutIndexTemp := items[1]
+		fmt.Println("GetUnspentTxCustomTokenVout txHashTemp", txHashTemp)
+		fmt.Println("GetUnspentTxCustomTokenVout voutIndexTemp", voutIndexTemp)
 		voutIndex, err := strconv.Atoi(voutIndexTemp)
 		if err != nil {
 			return nil, err
 		}
-		txHash := common.Hash{}
-		txHash.BytesToHash(txHashTemp)
-		customTx := listCustomTx[txHash].(*transaction.TxCustomToken)
+		txHash,_ := common.Hash{}.NewHashFromStr(txHashTemp)
+		fmt.Println("GetUnspentTxCustomTokenVout txHash", txHash)
+		fmt.Println("GetUnspentTxCustomTokenVout voutIndex", voutIndex)
+		customTx := listCustomTx[*txHash].(*transaction.TxCustomToken)
 		vout := customTx.TxTokenData.Vouts[voutIndex]
 		voutList = append(voutList, vout)
 	}

@@ -192,7 +192,7 @@ func (db *db) GetCustomTokenListPaymentAddressesBalance(tokenID *common.Hash) (m
 	Get a list of UTXO that can be reward all payment address
 	key: payment address
 	value: a list of utxo
-	Each utxo consist of two part: first 32 byte is txHash, the rest is voutIndex
+	Each utxo consist of two part: txHash-index
 */
 func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[client.PaymentAddress][][]byte, error) {
 
@@ -208,9 +208,9 @@ func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[client.P
 		if (strings.Compare(values[1], string(unspent)) == 0) && (strings.Compare(values[2], string(unreward)) == 0) {
 			paymentAddress := client.PaymentAddress{}
 			paymentAddress.FromBytes([]byte(keys[3]))
-			//utxo := keys[4] + string(spliter) + keys[5]
-			utxo := append([]byte(keys[4]), []byte(keys[5])[:]...)
-			results[paymentAddress] = append(results[paymentAddress], utxo)
+			utxo := keys[4] + string(spliter) + keys[5]
+			//utxo := append([]byte(keys[4]), []byte(keys[5])[:]...)
+			results[paymentAddress] = append(results[paymentAddress], []byte(utxo))
 		}
 	}
 	iter.Release()
@@ -219,7 +219,7 @@ func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[client.P
 
 /*
 	Get a list of UTXO of one address
-	Return a list of UTXO, each UTXO has format: first 32 byte is txHash, the rest is voutIndex
+	Return a list of UTXO, each UTXO has format: txHash-index
 */
 func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddress client.PaymentAddress) ([][]byte, error) {
 	prefix := string(tokenPaymentAddressPrefix) + tokenID.String() + string(spliter) + string(paymentAddress.ToBytes())
@@ -232,9 +232,9 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddr
 		values := strings.Split(value, string(spliter))
 		// get unspent and unreward transaction output
 		if (strings.Compare(values[1], string(unspent)) == 0) {
-			//utxo := keys[4] + string(spliter) + keys[5]
-			utxo := append([]byte(keys[4]), []byte(keys[5])[:]...)
-			results = append(results, utxo)
+			utxo := keys[4] + string(spliter) + keys[5]
+			//utxo := append([]byte(keys[4]), []byte(keys[5])[:]...)
+			results = append(results, []byte(utxo))
 		}
 	}
 	iter.Release()
