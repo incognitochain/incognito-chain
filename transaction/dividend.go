@@ -1,6 +1,8 @@
 package transaction
 
 import (
+	"fmt"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy/client"
 )
@@ -8,9 +10,45 @@ import (
 const MaxDivTxsPerBlock = 1000
 const PayoutFrequency = 1000 // Payout dividend every 1000 blocks
 
+type DividendPayout struct {
+	PayoutID uint64
+	TokenID  *common.Hash
+}
+
+type TxDividendPayout struct {
+	*Tx
+	DividendPayout
+}
+
+func (tx *TxDividendPayout) Hash() *common.Hash {
+	// get hash of tx
+	record := tx.Tx.Hash().String()
+
+	record += fmt.Sprintf("%d", tx.PayoutID)
+	record += string(tx.TokenID[:])
+
+	// final hash
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+func (tx *TxDividendPayout) ValidateTransaction() bool {
+	// validate for normal tx
+	if !tx.Tx.ValidateTransaction() {
+		return false
+	}
+
+	return true
+}
+
+func (tx *TxDividendPayout) GetType() string {
+	return common.TxDividendPayout
+}
+
 type PayoutProposal struct {
 	TotalAmount uint64 // total Constant to pay dividend
 	PayoutID    uint64 // increasing ID for each type of token
+	TokenID     *common.Hash
 }
 
 type DividendInfo struct {
@@ -22,9 +60,17 @@ func BuildDividendTxs(
 	infos []DividendInfo,
 	rt []byte,
 	chainID byte,
-) ([]*Tx, error) {
+	proposal *PayoutProposal,
+) ([]*TxDividendPayout, error) {
+	if len(infos)%2 != 0 { // Add dummy receiver if needed
+		infos = append(infos, DividendInfo{
+			TokenHolder: client.GenPaymentAddress(client.RandSpendingKey()),
+			Amount:      0,
+		})
+	}
+
 	numInfos := len(infos)
-	txs := []*Tx{}
+	txs := []*TxDividendPayout{}
 	for i := 0; i < numInfos; i += 2 {
 		// Create Proof for the joinsplit op
 		inputs := make([]*client.JSInput, 2)
@@ -44,7 +90,7 @@ func BuildDividendTxs(
 		outputs[1].OutputNote = outNote2
 
 		// Generate proof and sign tx
-		tx, err := CreateEmptyTx(common.TxTokenDividendPayout)
+		tx, err := CreateEmptyTx(common.TxDividendPayout)
 		if err != nil {
 			return nil, err
 		}
@@ -62,7 +108,13 @@ func BuildDividendTxs(
 		if err != nil {
 			return nil, err
 		}
-		txs = append(txs, tx)
+		txs = append(txs, &TxDividendPayout{
+			DividendPayout: DividendPayout{
+				PayoutID: proposal.PayoutID,
+				TokenID:  proposal.TokenID,
+			},
+			Tx: tx,
+		})
 	}
 	return txs, nil
 }

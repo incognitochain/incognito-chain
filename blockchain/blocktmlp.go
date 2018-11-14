@@ -269,65 +269,36 @@ func createSalaryTx(
 func (blockgen *BlkTmplGenerator) processDividend(
 	rt []byte,
 	chainID byte,
-	tokenID *common.Hash,
 	proposal *transaction.PayoutProposal,
 	blockHeight int32,
-) ([]*transaction.Tx, uint64, error) {
+) ([]*transaction.TxDividendPayout, uint64, error) {
 	payoutAmount := uint64(0)
 
 	// TODO(@0xbunyip): how to execute payout dividend proposal
-	dividendTxs := []*transaction.Tx{}
+	dividendTxs := []*transaction.TxDividendPayout{}
 	if false && chainID == 0 && blockHeight%transaction.PayoutFrequency == 0 { // only chain 0 process dividend proposals
-		// TODO(@0xbunyip): cache list so that list of receivers is fixed across blocks
-		infos := []transaction.DividendInfo{}
-		tokenHolders, err := blockgen.chain.GetListTokenHolders(tokenID)
+		totalTokenSupply, tokenHolders, amounts, err := blockgen.chain.GetAmountPerAccount(proposal)
 		if err != nil {
 			return nil, 0, err
 		}
 
-		// Get total token supply
-		totalTokenSupply := uint64(0)
-		for _, holder := range tokenHolders {
-			utxos := blockgen.chain.GetAccountUTXO(holder)
-			for i := 0; i < len(utxos); i += 1 {
-				// TODO(@0xbunyip): get amount from utxo hash
-				value := uint64(0)
-				totalTokenSupply += value
-			}
-		}
-
+		infos := []transaction.DividendInfo{}
 		// Build tx to pay dividend to each holder
-		for _, holder := range tokenHolders {
-			utxos := blockgen.chain.GetAccountUTXO(holder) // Cached data
-			holdAmount := uint64(0)
-			for i := 0; i < len(utxos); i += 1 {
-				reward, err := blockgen.chain.GetUTXOReward(utxos[i]) // Data from latest block
-				if err != nil {
-					return nil, 0, err
-				}
-				if reward < proposal.PayoutID {
-					// TODO(@0xbunyip): get amount from utxo hash
-					value := uint64(0)
-					holdAmount += value
-				}
+		for i, holder := range tokenHolders {
+			holderAddress := (&client.PaymentAddress{}).FromBytes(holder)
+			info := transaction.DividendInfo{
+				TokenHolder: *holderAddress,
+				Amount:      amounts[i] / totalTokenSupply,
 			}
+			payoutAmount += info.Amount
+			infos = append(infos, info)
 
-			if holdAmount > 0 {
-				holderAddress := (&client.PaymentAddress{}).FromBytes(holder)
-				info := transaction.DividendInfo{
-					TokenHolder: *holderAddress,
-					Amount:      holdAmount / totalTokenSupply,
-				}
-				payoutAmount += info.Amount
-				infos = append(infos, info)
-
-				if len(infos) > transaction.MaxDivTxsPerBlock {
-					break // Pay dividend to only some token holders in this block
-				}
+			if len(infos) > transaction.MaxDivTxsPerBlock {
+				break // Pay dividend to only some token holders in this block
 			}
 		}
 
-		dividendTxs, err = transaction.BuildDividendTxs(infos, rt, chainID)
+		dividendTxs, err = transaction.BuildDividendTxs(infos, rt, chainID, proposal)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -335,14 +306,18 @@ func (blockgen *BlkTmplGenerator) processDividend(
 	return dividendTxs, payoutAmount, nil
 }
 
-func (blockgen *BlkTmplGenerator) processBankDividend(rt []byte, chainID byte, blockHeight int32) ([]*transaction.Tx, uint64, error) {
+func (blockgen *BlkTmplGenerator) processBankDividend(rt []byte, chainID byte, blockHeight int32) ([]*transaction.TxDividendPayout, uint64, error) {
 	tokenID := &common.Hash{} // TODO(@0xbunyip): hard-code tokenID of BANK token and get proposal
-	proposal := &transaction.PayoutProposal{}
-	return blockgen.processDividend(rt, chainID, tokenID, proposal, blockHeight)
+	proposal := &transaction.PayoutProposal{
+		TokenID: tokenID,
+	}
+	return blockgen.processDividend(rt, chainID, proposal, blockHeight)
 }
 
-func (blockgen *BlkTmplGenerator) processGovDividend(rt []byte, chainID byte, blockHeight int32) ([]*transaction.Tx, uint64, error) {
+func (blockgen *BlkTmplGenerator) processGovDividend(rt []byte, chainID byte, blockHeight int32) ([]*transaction.TxDividendPayout, uint64, error) {
 	tokenID := &common.Hash{} // TODO(@0xbunyip): hard-code tokenID of GOV token and get proposal
-	proposal := &transaction.PayoutProposal{}
-	return blockgen.processDividend(rt, chainID, tokenID, proposal, blockHeight)
+	proposal := &transaction.PayoutProposal{
+		TokenID: tokenID,
+	}
+	return blockgen.processDividend(rt, chainID, proposal, blockHeight)
 }

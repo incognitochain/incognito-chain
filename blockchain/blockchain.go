@@ -497,6 +497,26 @@ func (self *BlockChain) SaveLoanTxsForBlock(block *Block) error {
 	return nil
 }
 
+func (self *BlockChain) UpdateDividendPayout(block *Block) error {
+	for _, tx := range block.Transactions {
+		switch tx.GetType() {
+		case common.TxDividendPayout:
+			{
+				tx := tx.(*transaction.TxDividendPayout)
+				for _, desc := range tx.Descs {
+					for _, note := range desc.Note {
+						utxos := self.GetAccountUTXO(note.Apk[:])
+						for _, utxo := range utxos {
+							self.UpdateUTXOReward(utxo, tx.PayoutID)
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
 /*
 FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
 Param coinType - COIN or BOND
