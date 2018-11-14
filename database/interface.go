@@ -55,9 +55,9 @@ type DatabaseInterface interface {
 	StoreCustomTokenTx(*common.Hash, byte, int32, int32, []byte) error // param: tokenID, chainID, block height, tx-id, data tx
 	ListCustomToken() ([][]byte, error)
 	CustomTokenTxs(*common.Hash) ([]*common.Hash, error) // token id
-	StoreCustomTokenAccountHistory(*common.Hash, *transaction.TxCustomToken) error 	// store account history of custom token
-	GetCustomTokenAccountHistory(*common.Hash) ([][]byte, error) // get all account that have balance > 0 of a custom token
-	GetCustomTokenAccountUTXO(*common.Hash, []byte) ([][]byte, error) // get all utxo of an account of a token
+	StoreCustomTokenPaymentAddresstHistory(*common.Hash, *transaction.TxCustomToken) error 	// store account history of custom token
+	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error) // get all account that have balance > 0 of a custom token
+	GetCustomTokenPaymentAddressUTXO(*common.Hash, client.PaymentAddress) ([][]byte, error) // get list of utxo of an account of a token
 
 	// Loans
 	StoreLoanRequest([]byte, []byte) error  // param: loanID, tx hash

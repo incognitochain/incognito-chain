@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings" //"fmt"
 	//"time"
 	"sync"
@@ -543,7 +544,11 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 		}
 		// save tx which relate to custom token
 		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxTokenData.PropertyID, block.Header.ChainID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
-		err = self.config.DataBase.StoreCustomTokenAccountHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
+		err = self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
+		if block.Header.Height%1000 == 0 {
+			// list of unreward-utxo
+
+		}
 		if err != nil {
 			return err
 		}
@@ -934,37 +939,58 @@ func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCand
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
 func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
 	// list spent
-	vinList := []transaction.TxTokenVin{}
-	txCustomTokenIDs := [][]byte{}
+	//====================
+	//vinList := []transaction.TxTokenVin{}
+	//txCustomTokenIDs := [][]byte{}
+	//listCustomTx, err := self.GetCustomTokenTxs(tokenID)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//for _, tx := range listCustomTx {
+	//	customTokenTx := tx.(*transaction.TxCustomToken)
+	//	for _, vin := range customTokenTx.TxTokenData.Vins {
+	//		if vin.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
+	//			vinList = append(vinList, vin)
+	//			txCustomTokenIDs = append(txCustomTokenIDs, vin.TxCustomTokenID[:])
+	//		}
+	//	}
+	//}
+	//
+	//// get all vout custom token of sender which unspent
+	//voutList := []transaction.TxTokenVout{}
+	//for _, tx := range listCustomTx {
+	//	customTokenTx := tx.(*transaction.TxCustomToken)
+	//	for index, vout := range customTokenTx.TxTokenData.Vouts {
+	//		if vout.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
+	//			txHash := tx.Hash()
+	//			existed, err := common.SliceBytesExists(txCustomTokenIDs, txHash[:])
+	//			if !existed && err == nil {
+	//				vout.SetIndex(index)
+	//				vout.SetTxCustomTokenID(*tx.Hash())
+	//				voutList = append(voutList, vout)
+	//			}
+	//		}
+	//	}
+	//}
+	//====================
+	voutList := []transaction.TxTokenVout{}
 	listCustomTx, err := self.GetCustomTokenTxs(tokenID)
+	utxos, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress)
 	if err != nil {
 		return nil, err
 	}
-	for _, tx := range listCustomTx {
-		customTokenTx := tx.(*transaction.TxCustomToken)
-		for _, vin := range customTokenTx.TxTokenData.Vins {
-			if vin.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
-				vinList = append(vinList, vin)
-				txCustomTokenIDs = append(txCustomTokenIDs, vin.TxCustomTokenID[:])
-			}
+	for _, utxo := range utxos {
+		txHashTemp := utxo[:32]
+		voutIndexTemp := string(utxo[32:])
+		voutIndex, err := strconv.Atoi(voutIndexTemp)
+		if err != nil {
+			return nil, err
 		}
-	}
-
-	// get all vout custom token of sender which unspent
-	voutList := []transaction.TxTokenVout{}
-	for _, tx := range listCustomTx {
-		customTokenTx := tx.(*transaction.TxCustomToken)
-		for index, vout := range customTokenTx.TxTokenData.Vouts {
-			if vout.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
-				txHash := tx.Hash()
-				existed, err := common.SliceBytesExists(txCustomTokenIDs, txHash[:])
-				if !existed && err == nil {
-					vout.SetIndex(index)
-					vout.SetTxCustomTokenID(*tx.Hash())
-					voutList = append(voutList, vout)
-				}
-			}
-		}
+		txHash := common.Hash{}
+		txHash.BytesToHash(txHashTemp)
+		customTx := listCustomTx[txHash].(*transaction.TxCustomToken)
+		vout := customTx.TxTokenData.Vouts[voutIndex]
+		voutList = append(voutList, vout)
 	}
 	return voutList, nil
 }
@@ -1090,7 +1116,7 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 
 // TODO(@0xsirrush): implement
 func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) ([][]byte, error) {
-	result, err := self.config.DataBase.GetCustomTokenAccountHistory(tokenID)
+	result, err := self.config.DataBase.GetCustomTokenListPaymentAddress(tokenID)
 	if err != nil {
 		return nil, err
 	}
