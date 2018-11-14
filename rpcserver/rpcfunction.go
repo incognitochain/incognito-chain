@@ -73,6 +73,7 @@ var RpcHandler = map[string]commandHandler{
 	// multisig
 	BuildCustomTokenTransaction: RpcServer.handleBuildCustomTokenTransaction,
 	GetCustomTokenSignature:     RpcServer.handleGetCustomTokenSignature,
+	GetListDCBBoard:             RpcServer.handleGetListDCBBoard,
 }
 
 // Commands that are available to a limited user
@@ -1783,4 +1784,9 @@ func (self RpcServer) handleGetCustomTokenSignature(params interface{}, closeCha
 		return nil, errors.New("Failed to sign the custom token")
 	}
 	return jsSignByteArray, nil
+}
+
+// handleGetListDCBBoard - return list payment address of DCB board
+func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return self.config.BlockChain.BestState[0].BestBlock.Header.DCDParams.DCBBoardPubKeys, nil
 }

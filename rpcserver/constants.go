@@ -55,4 +55,5 @@ const (
 	// multisig for board spending
 	BuildCustomTokenTransaction = "buildcustomtokentransaction"
 	GetCustomTokenSignature     = "getcustomtokensignature"
+	GetListDCBBoard             = "getlistdcbboard"
 )
