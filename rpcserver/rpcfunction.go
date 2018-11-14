@@ -785,20 +785,50 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 	if err != nil {
 		return nil, err
 	}
-	tempTx := tx.(*transaction.Tx)
-	result := jsonresult.TransactionDetail{
-		BlockHash:       blockHash.String(),
-		Index:           uint64(index),
-		ChainId:         chainId,
-		Hash:            tx.Hash().String(),
-		Version:         tempTx.Version,
-		Type:            tempTx.Type,
-		LockTime:        tempTx.LockTime,
-		Fee:             tempTx.Fee,
-		Descs:           tempTx.Descs,
-		JSPubKey:        tempTx.JSPubKey,
-		JSSig:           tempTx.JSSig,
-		AddressLastByte: tempTx.AddressLastByte,
+	result := jsonresult.TransactionDetail{}
+	switch tx.GetType() {
+	case common.TxNormalType:
+		{
+			tempTx := tx.(*transaction.Tx)
+			result = jsonresult.TransactionDetail{
+				BlockHash:       blockHash.String(),
+				Index:           uint64(index),
+				ChainId:         chainId,
+				Hash:            tx.Hash().String(),
+				Version:         tempTx.Version,
+				Type:            tempTx.Type,
+				LockTime:        tempTx.LockTime,
+				Fee:             tempTx.Fee,
+				Descs:           tempTx.Descs,
+				JSPubKey:        tempTx.JSPubKey,
+				JSSig:           tempTx.JSSig,
+				AddressLastByte: tempTx.AddressLastByte,
+			}
+		}
+	case common.TxCustomTokenType:
+		{
+			tempTx := tx.(*transaction.TxCustomToken)
+			result = jsonresult.TransactionDetail{
+				BlockHash:       blockHash.String(),
+				Index:           uint64(index),
+				ChainId:         chainId,
+				Hash:            tx.Hash().String(),
+				Version:         tempTx.Version,
+				Type:            tempTx.Type,
+				LockTime:        tempTx.LockTime,
+				Fee:             tempTx.Fee,
+				Descs:           tempTx.Descs,
+				JSPubKey:        tempTx.JSPubKey,
+				JSSig:           tempTx.JSSig,
+				AddressLastByte: tempTx.AddressLastByte,
+			}
+			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
+			result.MetaData = string(txCustomData)
+		}
+	default:
+		{
+
+		}
 	}
 	return result, nil
 }
