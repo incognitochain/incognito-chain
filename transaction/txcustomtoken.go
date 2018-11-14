@@ -8,16 +8,19 @@ import (
 	"math"
 	"math/big"
 	"sort"
+	"strconv"
+
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy/client"
-	"strconv"
 )
 
 // TxCustomToken ...
 type TxCustomToken struct {
 	Tx
 	TxTokenData TxTokenData
+	BoardType   uint8 // 1: DCB, 2: GOV
+	BoardSigns  map[string][]byte
 }
 
 // CreateEmptyCustomTokenTx - return an init custom token transaction
@@ -96,8 +99,9 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }
 
-// CreateTxCustomToken ...
-func CreateTxCustomToken(senderKey *client.SpendingKey,
+// BuildTxCustomToken ...
+func BuildTxCustomToken(
+	senderKey *client.SpendingKey,
 	paymentInfo []*client.PaymentInfo,
 	rts map[byte]*common.Hash,
 	usableTx map[byte][]*Tx,
@@ -105,7 +109,8 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 	fee uint64,
 	senderChainID byte,
 	tokenParams *CustomTokenParamTx,
-	listCustomTokens map[common.Hash]TxCustomToken) (*TxCustomToken, error) {
+	listCustomTokens map[common.Hash]TxCustomToken,
+) (*TxCustomToken, error) {
 
 	// TODO: create normal tx
 	fmt.Printf("List of all commitments before building tx:\n")
@@ -407,6 +412,35 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 	if handled != true {
 		return nil, errors.New("Can't handle this TokenTxType")
 	}
+	return tx, nil
+}
+
+// CreateTxCustomToken ...
+func CreateTxCustomToken(senderKey *client.SpendingKey,
+	paymentInfo []*client.PaymentInfo,
+	rts map[byte]*common.Hash,
+	usableTx map[byte][]*Tx,
+	commitments map[byte]([][]byte),
+	fee uint64,
+	senderChainID byte,
+	tokenParams *CustomTokenParamTx,
+	listCustomTokens map[common.Hash]TxCustomToken,
+) (*TxCustomToken, error) {
+
+	tx, err := BuildTxCustomToken(
+		senderKey,
+		paymentInfo,
+		rts,
+		usableTx,
+		commitments,
+		fee,
+		senderChainID,
+		tokenParams,
+		listCustomTokens,
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	// Sign tx
 	tx, err = SignTxCustomToken(tx)
@@ -419,11 +453,11 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 	return tx, nil
 }
 
-// SignTxCustomToken ...
-func SignTxCustomToken(tx *TxCustomToken) (*TxCustomToken, error) {
+//  GetTxCustomTokenSignature ...
+func GetTxCustomTokenSignature(tx *TxCustomToken) ([]byte, error) {
 	//Check input transaction
 	if tx.Tx.JSSig != nil {
-		return nil, errors.New("Inpusut transaction must be an unsigned one")
+		return nil, errors.New("Input transaction must be an unsigned one")
 	}
 
 	// Hash transaction
@@ -437,12 +471,20 @@ func SignTxCustomToken(tx *TxCustomToken) (*TxCustomToken, error) {
 	var err error
 	ecdsaSignature.R, ecdsaSignature.S, err = client.Sign(rand.Reader, tx.Tx.sigPrivKey, data[:])
 	if err != nil {
+		return []byte{}, err
+	}
+	return JSSigToByteArray(ecdsaSignature), nil
+}
+
+// SignTxCustomToken ...
+func SignTxCustomToken(tx *TxCustomToken) (*TxCustomToken, error) {
+	jsSignByteArray, err := GetTxCustomTokenSignature(tx)
+	if err != nil {
 		return nil, err
 	}
 
 	//Signature 64 bytes
-	tx.Tx.JSSig = JSSigToByteArray(ecdsaSignature)
-
+	tx.Tx.JSSig = jsSignByteArray
 	return tx, nil
 }
 

@@ -12,12 +12,12 @@ const (
 )
 
 const (
-	NoSort            = iota
+	NoSort = iota
 	SortByAmount
 	SortByCreatedTime
 )
 
 const (
-	CustomTokenInit     = iota
+	CustomTokenInit = iota
 	CustomTokenTransfer
 )
