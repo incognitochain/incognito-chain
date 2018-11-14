@@ -63,6 +63,7 @@ var RpcHandler = map[string]commandHandler{
 	ListUnspentCustomToken:     RpcServer.handleListUnspentCustomTokenTransaction,
 	ListCustomToken:            RpcServer.handleListCustomToken,
 	CustomToken:                RpcServer.handleCustomTokenDetail,
+	GetListCustomTokenBalance:  RpcServer.handleGetListCustomTokenBalance,
 
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -1832,4 +1833,35 @@ func (self RpcServer) handleGetListCBBoard(params interface{}, closeChan <-chan 
 
 func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVParams.GOVBoardPubKeys, nil
+}
+
+// payment address -> balance of all custom token
+
+func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+	accountParam := arrayParams[0].(string)
+	account, err := wallet.Base58CheckDeserialize(accountParam)
+	if err != nil {
+		return nil, nil
+	}
+	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
+	result.Account = accountParam
+	accountPaymentAddress := account.KeySet.PaymentAddress
+	temps, err := self.config.BlockChain.ListCustomToken()
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range temps {
+		item := jsonresult.CustomTokenBalance{}
+		item.Name = tx.TxTokenData.PropertyName
+		item.Symbol = tx.TxTokenData.PropertySymbol
+		tokenID := tx.TxTokenData.PropertyID
+		res, err := self.config.BlockChain.GetListTokenHolders(&tokenID)
+		if err != nil {
+			return nil, err
+		}
+		item.Amount = res[accountPaymentAddress]
+		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance,item)
+	}
+	return result, nil
 }
