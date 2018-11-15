@@ -6,6 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy/client"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 	"log"
 	"strconv"
@@ -72,16 +73,17 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 	tokenKey := string(tokenPaymentAddressPrefix) + tokenID.String()
 	for _, vin := range tx.TxTokenData.Vins {
 		//fmt.Println("VIN StoreCustomTokenPaymentAddresstHistory", vin)
-		fmt.Println(" Paymentaddress in VIN StoreCustomTokenPaymentAddresstHistory", vin.PaymentAddress)
+		//fmt.Println(" Paymentaddress in VIN StoreCustomTokenPaymentAddresstHistory", vin.PaymentAddress)
 		paymentAddress := string(vin.PaymentAddress.ToBytes())
 		utxoHashTemp := &vin.TxCustomTokenID
 		utxoHash := utxoHashTemp.String()
 		//fmt.Println(" txHASH in VIN StoreCustomTokenPaymentAddresstHistory", vin.TxCustomTokenID)
 		//fmt.Println(" txHASH in VIN StoreCustomTokenPaymentAddresstHistory", utxoHashTemp)
-		fmt.Println(" txHASH in VIN StoreCustomTokenPaymentAddresstHistory", utxoHash)
+		//fmt.Println(" txHASH in VIN StoreCustomTokenPaymentAddresstHistory", utxoHash)
 		voutIndex := vin.VoutIndex
 		paymentAddressKey := tokenKey + string(spliter) + paymentAddress + string(spliter) + utxoHash + string(spliter) + strconv.Itoa(voutIndex)
-		_, err := db.hasValue([]byte(paymentAddressKey))
+		ok, err := db.hasValue([]byte(paymentAddressKey))
+		fmt.Println("Finding VIN in StoreCustomTokenPaymentAddresstHistory ", ok)
 		if err != nil {
 			fmt.Println("ERROR finding vin in DB, StoreCustomTokenPaymentAddresstHistory", tx.Hash(), err)
 			return err
@@ -92,8 +94,13 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		}
 		// old value: {value}-unspent-unreward/reward
 		values := strings.Split(string(value), string(spliter))
+		fmt.Println("OldValues in StoreCustomTokenPaymentAddresstHistory", string(value))
+		if strings.Compare(values[1], string(unspent)) != 0 {
+			return errors.New("Double Spend Detected")
+		}
 		// new value: {value}-spent-unreward/reward
 		newValues := values[0] + string(spliter) + string(spent) + string(spliter) + values[2]
+		fmt.Println("NewValues in StoreCustomTokenPaymentAddresstHistory", newValues)
 		if err := db.lvdb.Put([]byte(paymentAddressKey), []byte(newValues), nil); err != nil {
 			return err
 		}
@@ -174,7 +181,7 @@ func (db *db) GetCustomTokenListPaymentAddressesBalance(tokenID *common.Hash) (m
 		keys := strings.Split(key, string(spliter))
 		values := strings.Split(value, string(spliter))
 		//fmt.Println("GetCustomTokenListPaymentAddressesBalance, key", key)
-		//fmt.Println("GetCustomTokenListPaymentAddressesBalance, value", value)
+		fmt.Println("GetCustomTokenListPaymentAddressesBalance, value", value)
 		//fmt.Println("GetCustomTokenListPaymentAddressesBalance, unspent/spent", values[1])
 		if strings.Compare(values[1], string(unspent)) == 0 {
 			// Uncomment this to get balance of all account
