@@ -5,15 +5,11 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"sort"
-	"strconv"
-
-	// "crypto/sha256"
-	"math/big"
-
-	"time"
-
 	"math"
+	"math/big"
+	"sort"
+	"strconv" // "crypto/sha256"
+	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -154,6 +150,7 @@ func CreateTx(
 	commitments map[byte]([][]byte),
 	fee uint64,
 	senderChainID byte,
+	noPrivacy bool,
 ) (*Tx, error) {
 	fmt.Printf("List of all commitments before building tx:\n")
 	fmt.Printf("rts: %+v\n", rts)
@@ -366,7 +363,7 @@ func CreateTx(
 
 		// Generate proof and sign tx
 		var reward uint64 // Zero reward for non-salary transaction
-		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, false)
+		err = tx.BuildNewJSDesc(inputs, outputs, latestAnchor, reward, feeApply, noPrivacy)
 		if err != nil {
 			return nil, err
 		}
@@ -553,7 +550,7 @@ func createDummyNote(spendingKey *client.SpendingKey) *client.Note {
 	return note
 }
 
-func (tx *Tx) SignTx() (error) {
+func (tx *Tx) SignTx() error {
 	//Check input transaction
 	if tx.JSSig != nil {
 		return errors.New("Input transaction must be an unsigned one")
@@ -721,9 +718,9 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 	var sizeFee uint64 = 8      // uint64
 	var sizeDescs uint64        // uint64
 	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
 	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
 	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte

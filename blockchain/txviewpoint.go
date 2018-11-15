@@ -1,10 +1,11 @@
 package blockchain
 
 import (
+	"errors"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/transaction"
-	"errors"
 )
 
 type TxViewPoint struct {

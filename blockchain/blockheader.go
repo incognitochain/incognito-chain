@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 type GOVParams struct {
@@ -43,10 +44,13 @@ type BlockHeader struct {
 	CandidateHash      common.Hash
 
 	SalaryFund uint64 // use to pay salary for miners(block producer or current leader) in chain
+	BankFund   uint64 // for DBank
 
 	GOVParams GOVParams // params which get from governance for network
 	DCDParams DCDParams
 	CBParams  CBParams
+
+	LoanParams transaction.LoanParams // params for collateralized loans of Constant
 
 	//Block Height
 	Height int32
