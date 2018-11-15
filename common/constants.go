@@ -12,18 +12,22 @@ const (
 	TxActionParamsType      = "a" // action tx to edit params
 	TxRegisterCandidateType = "v" // voting tx
 	TxCustomTokenType       = "t" // token  tx
+	TxLoanRequest           = "lr"
+	TxLoanResponse          = "ls"
+	TxLoanPayment           = "lp"
+	TxLoanWithdraw          = "lw"
 )
 
 // unit type use in tx
 // coin or token or bond
 const (
-	AssetTypeCoin     = "c" // 'constant' coin
-	AssetTypeBond     = "b" // bond
-	AssetTypeGovToken = "g" // government token
-	AssetTypeDcbToken = "d" // decentralized central bank token
+	AssetTypeCoin      = "c" // 'constant' coin
+	AssetTypeBond      = "b" // bond
+	AssetTypeGovToken  = "g" // government token
+	AssetTypeBankToken = "d" // decentralized central bank token
 )
 
-var ListAsset = []string{AssetTypeCoin, AssetTypeBond, AssetTypeGovToken, AssetTypeDcbToken}
+var ListAsset = []string{AssetTypeCoin, AssetTypeBond, AssetTypeGovToken, AssetTypeBankToken}
 
 // for mining consensus
 const (
@@ -39,4 +43,16 @@ const (
 	MinBlockSigs          = (TotalValidators / 2) + 1
 	GetChainStateInterval = 10 //second
 	MaxBlockTime          = 10 //second Maximum for a chain to grow
+)
+
+// board types
+const (
+	DCB = 1
+	GOV = 2
+)
+
+// board addresses
+var (
+	DCBAddress = []byte{}
+	GOVAddress = []byte{}
 )

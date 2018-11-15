@@ -1,0 +1,67 @@
+package transaction
+
+import (
+	"github.com/ninjadotorg/constant/common"
+)
+
+type LoanWithdraw struct {
+	LoanID []byte
+	Key    []byte
+}
+
+type TxLoanWithdraw struct {
+	TxWithFee
+	*LoanWithdraw // data for a loan response
+}
+
+func CreateTxLoanWithdraw(
+	feeArgs FeeArgs,
+	loanWithdraw *LoanWithdraw,
+) (*TxLoanWithdraw, error) {
+	// Create tx for fee
+	tx, err := CreateTx(
+		feeArgs.SenderKey,
+		feeArgs.PaymentInfo,
+		feeArgs.Rts,
+		feeArgs.UsableTx,
+		feeArgs.Commitments,
+		feeArgs.Fee,
+		feeArgs.SenderChainID,
+		false,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	txLoanWithdraw := &TxLoanWithdraw{
+		TxWithFee:    TxWithFee{Tx: tx},
+		LoanWithdraw: loanWithdraw,
+	}
+
+	return txLoanWithdraw, nil
+}
+
+func (tx *TxLoanWithdraw) Hash() *common.Hash {
+	// get hash of tx
+	record := tx.Tx.Hash().String()
+
+	// add more hash of loan response data
+	record += string(tx.LoanID)
+	record += string(tx.Key)
+
+	// final hash
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+func (tx *TxLoanWithdraw) ValidateTransaction() bool {
+	// validate for normal tx
+	if !tx.Tx.ValidateTransaction() {
+		return false
+	}
+
+	if len(tx.Key) != LoanKeyLen {
+		return false
+	}
+	return true
+}

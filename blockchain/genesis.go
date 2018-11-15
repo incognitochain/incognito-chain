@@ -257,9 +257,22 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(version int, ini
 	genesisBlock.Header.Timestamp = time.Unix()
 	genesisBlock.Header.Version = version
 	genesisBlock.Header.Committee = make([]string, len(preSelectValidators))
-	genesisBlock.Header.GovernanceParams = GovernanceParams{
+	// Gov param
+	genesisBlock.Header.GOVParams = GOVParams{
 		SalaryPerTx: salaryPerTx,
 		BasicSalary: basicSalary,
+	}
+	genesisBlock.Header.LoanParams = transaction.LoanParams{
+		InterestRate:     0,
+		Maturity:         7776000, // 3 months in seconds
+		LiquidationStart: 15000,   // 150%
+	}
+	// Decentralize central bank params
+	genesisBlock.Header.DCDParams = DCDParams{
+		DCBBoardPubKeys: []string{},
+	}
+	// Commercial bank params
+	genesisBlock.Header.CBParams = CBParams{
 	}
 	copy(genesisBlock.Header.Committee, preSelectValidators)
 
