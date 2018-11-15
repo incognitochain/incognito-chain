@@ -72,14 +72,9 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *transaction.TxCustomToken) error {
 	tokenKey := string(tokenPaymentAddressPrefix) + tokenID.String()
 	for _, vin := range tx.TxTokenData.Vins {
-		//fmt.Println("VIN StoreCustomTokenPaymentAddresstHistory", vin)
-		//fmt.Println(" Paymentaddress in VIN StoreCustomTokenPaymentAddresstHistory", vin.PaymentAddress)
 		paymentAddress := string(vin.PaymentAddress.ToBytes())
 		utxoHashTemp := &vin.TxCustomTokenID
 		utxoHash := utxoHashTemp.String()
-		//fmt.Println(" txHASH in VIN StoreCustomTokenPaymentAddresstHistory", vin.TxCustomTokenID)
-		//fmt.Println(" txHASH in VIN StoreCustomTokenPaymentAddresstHistory", utxoHashTemp)
-		//fmt.Println(" txHASH in VIN StoreCustomTokenPaymentAddresstHistory", utxoHash)
 		voutIndex := vin.VoutIndex
 		paymentAddressKey := tokenKey + string(spliter) + paymentAddress + string(spliter) + utxoHash + string(spliter) + strconv.Itoa(voutIndex)
 		ok, err := db.hasValue([]byte(paymentAddressKey))
@@ -106,13 +101,10 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		}
 	}
 	for _, vout := range tx.TxTokenData.Vouts {
-		fmt.Println(" Paymentaddress in VOUT StoreCustomTokenPaymentAddresstHistory", vout.PaymentAddress)
 		paymentAddress := string(vout.PaymentAddress.ToBytes())
 		utxoHash := tx.Hash().String()
-		//fmt.Println(" txHASH in VOUT StoreCustomTokenPaymentAddresstHistory", utxoHash)
 		voutIndex := vout.GetIndex()
 		value := vout.Value
-		//fmt.Println("token key in StoreCustomTokenPaymentAddresstHistory: ", tokenKey)
 		paymentAddressKey := tokenKey + string(spliter) + paymentAddress + string(spliter) + utxoHash + string(spliter) + strconv.Itoa(voutIndex)
 		ok, err := db.hasValue([]byte(paymentAddressKey))
 		// Vout already exist
@@ -125,7 +117,6 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		}
 		// init value: {value}-unspent-unreward
 		paymentAddressValue := strconv.Itoa(int(value)) + string(spliter) + string(unspent) + string(spliter) + string(unreward)
-		//fmt.Println("Key in StoreCustomTokenPaymentAddresstHistory: ", paymentAddressKey)
 		fmt.Println("Value in StoreCustomTokenPaymentAddresstHistory: ", paymentAddressValue)
 		if err := db.lvdb.Put([]byte(paymentAddressKey), []byte(paymentAddressValue), nil); err != nil {
 			return err
@@ -139,7 +130,6 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 */
 func (db *db) GetCustomTokenListPaymentAddress(tokenID *common.Hash) ([][]byte, error) {
 	results := [][]byte{}
-	//tempResults := make(map[string]int)
 	tempsResult := make(map[string]bool)
 	prefix := string(tokenPaymentAddressPrefix) + tokenID.String()
 	iter := db.lvdb.NewIterator(util.BytesPrefix([]byte(prefix)), nil)
@@ -149,15 +139,6 @@ func (db *db) GetCustomTokenListPaymentAddress(tokenID *common.Hash) ([][]byte, 
 		keys := strings.Split(key, string(spliter))
 		values := strings.Split(value, string(spliter))
 		if strings.Compare(values[1], string(unspent)) == 0 {
-			// Uncomment this to get balance of all account
-			//i, ok := tempResults[keys[3]]
-			//if ok == false {
-			//	fmt.Println("ERROR geting value in GetCustomTokenAccountHistory of account", key[3])
-			//}
-			//values0,_ := strconv.Atoi(values[0])
-			//i += values0
-			//tempResults[keys[3]] = i
-
 			tempsResult[keys[3]] = true
 		}
 	}
@@ -184,9 +165,7 @@ func (db *db) GetCustomTokenListPaymentAddressesBalance(tokenID *common.Hash) (m
 		value := string(iter.Value())
 		keys := strings.Split(key, string(spliter))
 		values := strings.Split(value, string(spliter))
-		//fmt.Println("GetCustomTokenListPaymentAddressesBalance, key", key)
-		fmt.Println("GetCustomTokenListPaymentAddressesBalance, value", value)
-		//fmt.Println("GetCustomTokenListPaymentAddressesBalance, unspent/spent", values[1])
+		fmt.Println("GetCustomTokenListPaymentAddressesBalance, utxo information", value)
 		if strings.Compare(values[1], string(unspent)) == 0 {
 			// Uncomment this to get balance of all account
 			paymentAddress := client.PaymentAddress{}
@@ -250,8 +229,6 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddr
 		keys := strings.Split(key, string(spliter))
 		values := strings.Split(value, string(spliter))
 		// get unspent and unreward transaction output
-		//fmt.Println("GetCustomTokenPaymentAddressUTXO keys", keys)
-		//fmt.Println("GetCustomTokenPaymentAddressUTXO values", values)
 		if (strings.Compare(values[1], string(unspent)) == 0) {
 
 			vout := transaction.TxTokenVout{}
