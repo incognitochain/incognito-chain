@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sort"
 	//"strconv"
 	"strings" //"fmt"
@@ -693,7 +692,6 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 }
 
 func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *client.SpendingKey, block *Block, nullifiersInDb [][]byte, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
-	//fmt.Println("debug GetListUnspentTxByPrivateKeyInBlock")
 	results := make(map[byte][]transaction.Tx)
 
 	// Get set of keys from private keybyte
@@ -964,7 +962,7 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 		// check lightweight
 		if self.config.Light {
 			// TODO get data with light mode
-			fmt.Println("ERROR in GetTransactionByHash", err)
+			Logger.log.Info("ERROR in GetTransactionByHash", err)
 			const (
 				bigNumber   = 999999999
 				bigNumberTx = 999999999
@@ -977,7 +975,7 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 			// Get transaction
 			tx := transaction.Tx{}
 			locationByte, txByte, err := self.config.DataBase.GetTransactionLightModeByHash(txHash)
-			fmt.Println("GetTransactionByHash - 1", locationByte, txByte, err)
+			Logger.log.Info("GetTransactionByHash - 1", locationByte, txByte, err)
 			if err != nil {
 				return byte(255), nil, -1, nil, err
 			}
@@ -997,10 +995,10 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 				return byte(255), nil, -1, nil, err
 			}
 			blockHeight = uint32(bigNumber - blockHeight)
-			fmt.Println("Testing in GetTransactionByHash, blockHeight", blockHeight)
+			Logger.log.Info("Testing in GetTransactionByHash, blockHeight", blockHeight)
 			block, err := self.GetBlockByBlockHeight(int32(blockHeight), chainId[0])
 			if err != nil {
-				fmt.Println("ERROR in GetTransactionByHash, get Block by height", err)
+				Logger.log.Error("ERROR in GetTransactionByHash, get Block by height", err)
 				return byte(255), nil, -1, nil, err
 			}
 			//Get txIndex
@@ -1011,7 +1009,7 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 				return byte(255), nil, -1, nil, err
 			}
 			txIndex = uint32(bigNumberTx - txIndex)
-			fmt.Println("Testing in GetTransactionByHash, blockHash, index, tx", block.Hash(), txIndex, tx)
+			Logger.log.Info("Testing in GetTransactionByHash, blockHash, index, tx", block.Hash(), txIndex, tx)
 			return chainId[0], block.Hash(), int(txIndex), &tx, nil
 		}
 
