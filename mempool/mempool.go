@@ -406,6 +406,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID byte) error {
 	blockChain := tp.config.BlockChain
 	switch tx.GetType() {
+	// TODO check tx with current mempool
 	case common.TxNormalType:
 		{
 			// check double spend
