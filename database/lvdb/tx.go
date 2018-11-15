@@ -247,10 +247,6 @@ func (db *db) StoreTransactionLightMode(privateKey *client.SpendingKey, chainId 
 	temp3ChainId := int(chainId)
 	temp2ChainId := string(int(chainId))
 	fmt.Println("StoreTransactionLightMode", privateKey, temp3ChainId, temp2ChainId, blockHeight, txIndex)
-	const (
-		bigNumber   = 999999999
-		bigNumberTx = 999999999
-	)
 	reverseBlockHeight := make([]byte, 4)
 	binary.LittleEndian.PutUint32(reverseBlockHeight, uint32(bigNumber-blockHeight))
 

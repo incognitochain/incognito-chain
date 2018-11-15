@@ -22,7 +22,6 @@ func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
 }
 
 func (db *db) StoreCustomTokenTx(tokenID *common.Hash, chainID byte, blockHeight int32, txIndex int32, txHash []byte) error {
-	bigNumber := int32(999999999)
 	key := db.getKey(string(tokenPrefix), tokenID) // token-{tokenID}-chainID-(999999999-blockHeight)-(999999999-txIndex)
 	key = append(key, chainID)
 	bs := make([]byte, 4)
