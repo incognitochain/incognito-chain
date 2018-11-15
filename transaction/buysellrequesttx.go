@@ -2,22 +2,23 @@ package transaction
 
 import "github.com/ninjadotorg/constant/common"
 
-type CrowSaleRequestTx struct {
+type BuySellRequestTx struct {
 	*RequestInfo
 	*Tx
 }
 
 type RequestInfo struct {
-	Amount   uint64
-	BuyPrice uint64 // in Constant unit
+	AssetType string
+	Amount    uint64
+	BuyPrice  uint64 // in Constant unit
 }
 
 // CreateTxLoanRequest
 // senderKey and paymentInfo is for paying fee
-func CreateCrowSaleRequestTx(
+func CreateBuySellRequestTx(
 	feeArgs FeeArgs,
 	requestInfo *RequestInfo,
-) (*CrowSaleRequestTx, error) {
+) (*BuySellRequestTx, error) {
 	// Create tx for fee &
 	tx, err := CreateTx(
 		feeArgs.SenderKey,
@@ -33,18 +34,19 @@ func CreateCrowSaleRequestTx(
 		return nil, err
 	}
 
-	CrowSaleRequestTx := &CrowSaleRequestTx{
+	BuySellRequestTx := &BuySellRequestTx{
 		RequestInfo: requestInfo,
 		Tx:          tx,
 	}
-	return CrowSaleRequestTx, nil
+	return BuySellRequestTx, nil
 }
 
-func (tx *CrowSaleRequestTx) Hash() *common.Hash {
+func (tx *BuySellRequestTx) Hash() *common.Hash {
 	// get hash of tx
 	record := tx.Tx.Hash().String()
 
 	// add more hash of collateral data
+	record += tx.AssetType
 	record += string(tx.Amount)
 	record += string(tx.BuyPrice)
 
@@ -53,7 +55,7 @@ func (tx *CrowSaleRequestTx) Hash() *common.Hash {
 	return &hash
 }
 
-func (tx *CrowSaleRequestTx) ValidateTransaction() bool {
+func (tx *BuySellRequestTx) ValidateTransaction() bool {
 	// validate for normal tx
 	if !tx.Tx.ValidateTransaction() {
 		return false
@@ -61,19 +63,19 @@ func (tx *CrowSaleRequestTx) ValidateTransaction() bool {
 	return true
 }
 
-func (tx *CrowSaleRequestTx) GetType() string {
+func (tx *BuySellRequestTx) GetType() string {
 	return tx.Tx.Type
 }
 
-func (tx *CrowSaleRequestTx) GetTxVirtualSize() uint64 {
+func (tx *BuySellRequestTx) GetTxVirtualSize() uint64 {
 	// TODO: calculate
 	return 0
 }
 
-func (tx *CrowSaleRequestTx) GetSenderAddrLastByte() byte {
+func (tx *BuySellRequestTx) GetSenderAddrLastByte() byte {
 	return tx.Tx.AddressLastByte
 }
 
-func (tx *CrowSaleRequestTx) GetTxFee() uint64 {
+func (tx *BuySellRequestTx) GetTxFee() uint64 {
 	return tx.Tx.Fee
 }
