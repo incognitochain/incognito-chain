@@ -46,6 +46,7 @@ func Prove(inputs []*JSInput,
 	seed, phi []byte,
 	outputR [][]byte,
 	addressLastByte byte,
+	noPrivacy bool,
 ) (proof *zksnark.PHGRProof, hSig, newSeed, newPhi []byte, err error) {
 	// Check balance between input and output
 	totalInput := reward
@@ -161,7 +162,12 @@ func Prove(inputs []*JSInput,
 		fmt.Printf("zkNotes[%d].Note.Apk: %x\n", i, zkout.Apk)
 	}
 
-	r, err := c.Prove(ctx, proveRequest)
+	var r *zksnark.ProveReply;
+	if !noPrivacy {
+		r, err = c.Prove(ctx, proveRequest)
+	} else {
+		return nil, hSig, newSeed, newPhi, nil
+	}
 	/* for Test not privacy
 	dummyProof := &zksnark.PHGRProof{
 		G_A:      make([]byte, 33),
