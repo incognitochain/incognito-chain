@@ -16,6 +16,8 @@ const (
 	TxLoanResponse          = "ls"
 	TxLoanPayment           = "lp"
 	TxLoanWithdraw          = "lw"
+	TxBuyRequest            = "br"
+	TxSellRequest           = "sr"
 )
 
 // unit type use in tx
