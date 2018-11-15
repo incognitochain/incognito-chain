@@ -1,10 +1,9 @@
 package privacy
 
 import (
+	"fmt"
 	"github.com/minio/blake2b-simd"
 	"math/big"
-	"math/rand"
-	"time"
 )
 type Helper interface {
 	InitBasePoint() *BasePoint
@@ -49,12 +48,7 @@ func (basePoint *BasePoint) InitBasePoint() {
 	basePoint.H = hashGenerator(basePoint.G);
 }
 // Random number modular N
-func randIntModN() *big.Int {
-	rand.Seed(time.Now().UTC().Unix())
-	x:=big.NewInt(rand.Int63())
-	x.Mod(x,Curve.Params().N);
-	return x
-}
+
 func computeCommitmentPoint(pointG EllipticPoint, pointH EllipticPoint, val1 *big.Int, val2 *big.Int) proofFactor{
 	factor:= new(proofFactor)
 	factor.X, factor.Y= Curve.ScalarMult(pointG.X, pointG.Y, val1.Bytes())
@@ -86,11 +80,11 @@ func MultiScalarMul(factors  [] *big.Int, point EllipticPoint) *EllipticPoint{
 func ProveProductCommitment(ipCm InputCommitments)  ProofOfProductCommitment{
 	proof :=  new(ProofOfProductCommitment)
 	proof.basePoint.InitBasePoint();
-	d := randIntModN();
-	e := randIntModN();
-	s := randIntModN();
-	s1 := randIntModN();
-	t := randIntModN();
+	d := new(big.Int).SetBytes(RandBytes(32));
+	e := new(big.Int).SetBytes(RandBytes(32));
+	s := new(big.Int).SetBytes(RandBytes(32));
+	s1 := new(big.Int).SetBytes(RandBytes(32));
+	t := new(big.Int).SetBytes(RandBytes(32));
 	ipCm.cmA = Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,ipCm.witnessA,ipCm.randA)
 	ipCm.cmB = Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,ipCm.witnessB,ipCm.randB)
 	ipCm.cmC = Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,ipCm.witnessAB,ipCm.randC)
@@ -234,35 +228,41 @@ func VerifyProductCommitment (proof ProofOfProductCommitment) bool {
 	return false;
 }
 func TestProductCommitment() {
-	witnessA := RandBytes(32)
-	witnessB := RandBytes(32)
-	C:= new(big.Int)
-	C.SetBytes(witnessA)
-	C.Mul(C, new(big.Int).SetBytes(witnessB))
-	witnessC := C.Bytes()
+
+	res := true
+	for res{
+		witnessA := RandBytes(32)
+		witnessB := RandBytes(32)
+		C:= new(big.Int)
+		C.SetBytes(witnessA)
+		C.Mul(C, new(big.Int).SetBytes(witnessB))
+		witnessC := C.Bytes()
 
 
-	rA := RandBytes(32)
-	rB := RandBytes(32)
-	rC := RandBytes(32)
-	r1Int := new(big.Int).SetBytes(rA)
-	r2Int := new(big.Int).SetBytes(rB)
-	r3Int := new(big.Int).SetBytes(rC)
-	r1Int.Mod(r1Int, Curve.Params().N)
-	r2Int.Mod(r2Int, Curve.Params().N)
-	r3Int.Mod(r3Int, Curve.Params().N)
+		rA := RandBytes(32)
+		rB := RandBytes(32)
+		rC := RandBytes(32)
+		r1Int := new(big.Int).SetBytes(rA)
+		r2Int := new(big.Int).SetBytes(rB)
+		r3Int := new(big.Int).SetBytes(rC)
+		r1Int.Mod(r1Int, Curve.Params().N)
+		r2Int.Mod(r2Int, Curve.Params().N)
+		r3Int.Mod(r3Int, Curve.Params().N)
 
-	rA = r1Int.Bytes()
-	rB = r2Int.Bytes()
-	rC = r3Int.Bytes()
+		rA = r1Int.Bytes()
+		rB = r2Int.Bytes()
+		rC = r3Int.Bytes()
 
-	ipCm:= new(InputCommitments)
-	ipCm.witnessA = witnessA
-	ipCm.witnessB = witnessB
-	ipCm.witnessAB = witnessC
-	ipCm.randA = rA
-	ipCm.randB = rB
-	ipCm.randC = rC
-	proof:= ProveProductCommitment(*ipCm)
-	println(VerifyProductCommitment(proof))
+		ipCm:= new(InputCommitments)
+		ipCm.witnessA = witnessA
+		ipCm.witnessB = witnessB
+		ipCm.witnessAB = witnessC
+		ipCm.randA = rA
+		ipCm.randB = rB
+		ipCm.randC = rC
+		proof:= ProveProductCommitment(*ipCm)
+		res = VerifyProductCommitment(proof)
+		fmt.Println(res)
+	}
+
 }

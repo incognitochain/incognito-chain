@@ -164,9 +164,7 @@ func (com PCParams) Commit(values [CM_CAPACITY][]byte) []byte {
 
 	// convert result from Elliptic to bytes array
 	// append type commitment into the first byte
-	var res []byte
-	res = append(res, FULL_CM)
-	res = append(res, CompressKey(commitment)...)
+	res := CompressCommitment(commitment, FULL_CM)
 	return res
 }
 
@@ -181,12 +179,11 @@ func (com PCParams) CommitSpecValue(value, sRnd []byte, index byte) []byte {
 	temp.X, temp.Y = Curve.ScalarMult(com.G[index].X, com.G[index].Y, value)
 	commitment.X, commitment.Y = Curve.Add(commitment.X, commitment.Y, temp.X, temp.Y)
 
-	//append type commitment into the first byte
-	var res []byte
-	res = append(res, index)
-	res = append(res, CompressKey(commitment)...)
+	// commit commitment from a elliptic point to 34 bytes
+	res := CompressCommitment(commitment, index)
 	return res
 }
+
 func (com PCParams) CommitWithSpecPoint(G EllipticPoint, H EllipticPoint, value, sRnd []byte) []byte {
 	var commitment, temp EllipticPoint
 	commitment = EllipticPoint{big.NewInt(0), big.NewInt(0)}
@@ -204,6 +201,50 @@ func (com PCParams) CommitWithSpecPoint(G EllipticPoint, H EllipticPoint, value,
 	res = append(res, CompressKey(commitment)...)
 	return res
 }
+
+// CommitBitByBit commits value bit by bit and commits (nBitsThreshold - nBits) zero bits as padding
+func (com PCParams) CommitBitByBit(value uint64, nBits int, nBitsThreshold int, rands[][]byte, index byte) ([][]byte, error){
+	if len(rands) != nBitsThreshold{
+		return nil, fmt.Errorf("do not have enough random number to commit")
+	}
+	Pcm.InitCommitment()
+
+	commitments := make([][]byte, nBitsThreshold)
+	commitmentPoints := make([]EllipticPoint, nBitsThreshold)
+	for i:=0; value > 0; i++{
+		commitmentPoints[i] = EllipticPoint{big.NewInt(0), big.NewInt(0)}
+		commitments[i] = make([]byte, 34)
+		//commitmentPoints[i].X, commitmentPoints[i].Y = Curve.ScalarMult(com.G[RAND].X, com.G[RAND].Y, rands[i])
+		//
+		//bit := value % 2
+		//if bit == 1 {
+		//	commitmentPoints[i].X, commitmentPoints[i].Y = Curve.Add(commitmentPoints[i].X, commitmentPoints[i].Y, com.G[index].X, com.G[index].Y)
+		//}
+
+		bit := value % 2
+		if bit == 1 {
+			commitments[i] = Pcm.CommitSpecValue(big.NewInt(1).Bytes(), rands[i], index)
+		} else{
+			commitments[i] = Pcm.CommitSpecValue(big.NewInt(0).Bytes(), rands[i], index)
+		}
+
+		//Compress commitment to byte array
+		//commitments[i] = CompressCommitment(commitmentPoints[i], index)
+		value = value / 2
+	}
+
+	// commit padding bits
+	for j := nBits; j < nBitsThreshold; j++{
+		commitmentPoints[j] = EllipticPoint{big.NewInt(0), big.NewInt(0)}
+		commitments[j] = make([]byte, 34)
+		commitmentPoints[j].X, commitmentPoints[j].Y = Curve.ScalarMult(com.G[RAND].X, com.G[RAND].Y, rands[j])
+		//Compress commitment to byte array
+		commitments[j] = CompressCommitment(commitmentPoints[j], index)
+	}
+
+	return commitments, nil
+}
+
 //testFunction allow we test each of function for PedersenCommitment
 //00: Test generate commitment for four random value and show that on console
 //01: Test generate commitment for special value and its random value in special index

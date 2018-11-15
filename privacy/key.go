@@ -165,13 +165,24 @@ func FromByteArrayToPoint(pointByte []byte) EllipticPoint {
 
 // CompressKey compresses key from 64 bytes to 33 bytes
 func CompressKey(point EllipticPoint) []byte {
-	b := make([]byte, 0, PubKeyBytesLenCompressed)
-	format := pubkeyCompressed
-	if isOdd(point.Y) {
-		format |= 0x1
+	if Curve.IsOnCurve(point.X, point.Y) {
+		b := make([]byte, 0, PubKeyBytesLenCompressed)
+		format := pubkeyCompressed
+		if isOdd(point.Y) {
+			format |= 0x1
+		}
+		b = append(b, format)
+		return paddedAppend(32, b, point.X.Bytes())
 	}
-	b = append(b, format)
-	return paddedAppend(32, b, point.X.Bytes())
+	return nil
+}
+
+// Compress Commitment from 64 bytes to 34 bytes (include bytes index)
+func CompressCommitment(cmPoint EllipticPoint, typeCommitment byte) []byte{
+	var commitment []byte
+	commitment = append(commitment, typeCommitment)
+	commitment = append(commitment, CompressKey(cmPoint)...)
+	return commitment
 }
 
 func isOdd(a *big.Int) bool {
@@ -230,11 +241,11 @@ func decompressPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	xTemp := new(big.Int)
 
 	// Y = +-sqrt(x^3 - 3*x + B)
-	x3 := new(big.Int).Mul(x, x)
-	x3.Mul(x3, x)
-	x3.Add(x3, Curve.Params().B)
-	x3.Sub(x3, xTemp.Mul(x, new(big.Int).SetInt64(3)))
-	x3.Mod(x3, Curve.Params().P)
+	xCube := new(big.Int).Mul(x, x)
+	xCube.Mul(xCube, x)
+	xCube.Add(xCube, Curve.Params().B)
+	xCube.Sub(xCube, xTemp.Mul(x, new(big.Int).SetInt64(3)))
+	xCube.Mod(xCube, Curve.Params().P)
 
 	//check P = 3 mod 4?
 	if temp.Mod(Q, new(big.Int).SetInt64(4)).Cmp(new(big.Int).SetInt64(3)) != 0 {
@@ -245,18 +256,20 @@ func decompressPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	// This code used to do a full sqrt based on tonelli/shanks,
 	// but this was replaced by the algorithms referenced in
 	// https://bitcointalk.org/index.php?topic=162805.msg1712294#msg1712294
-	y := new(big.Int).Exp(x3, PAdd1Div4(Q), Q)
+	y := new(big.Int).Exp(xCube, PAdd1Div4(Q), Q)
 
 	if ybit != isOdd(y) {
 		y.Sub(Curve.Params().P, y)
 	}
 
 	// Check that y is a square root of x^3  - 3*x + B.
-	y2 := new(big.Int).Mul(y, y)
-	y2.Mod(y2, Curve.Params().P)
-	if y2.Cmp(x3) != 0 {
+	ySquare := new(big.Int).Mul(y, y)
+	ySquare.Mod(ySquare, Curve.Params().P)
+	if ySquare.Cmp(xCube) != 0 {
 		return nil, fmt.Errorf("invalid square root")
 	}
+
+	//fmt.Println(Curve.IsOnCurve(x, y))
 
 	// Verify that y-coord has expected parity.
 	if ybit != isOdd(y) {

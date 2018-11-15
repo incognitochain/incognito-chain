@@ -3,7 +3,6 @@ package privacy
 import (
 	"fmt"
 	"math/big"
-	"strconv"
 )
 
 //inversePoint return inverse point of ECC Point input
@@ -41,18 +40,33 @@ func IsPowerOfTwo(n int) bool {
 
 }
 
-func ConvertAsciiToInt(c uint8) byte {
-	return byte(c - 48)
-}
-
 // ConvertIntToBinany represents a integer number in binary
-func ConvertIntToBinany(i int) []byte{
+func ConvertIntToBinany(i int, n int) []byte{
+	binary := make([]byte, n)
+	tmp := i
 
-	binary := make([]byte, 32)
-	str := strconv.FormatInt(int64(i), 2)
-	for j := 0; j < len(str); j++ {
-		binary[j] = ConvertAsciiToInt(str[j])
+	for i := n-1; i >= 0; i--{
+		binary[i] = byte(tmp % 2)
+		tmp = tmp / 2
 	}
+
+	//fmt.Printf("\nBinary: %v\n", binary)
 	return binary
-	//fmt.Printf("inddex in binary: %v\n", binary)
 }
+
+// ConvertIntToBinany represents a integer number in binary with specific length
+//func ConvertBigIntToBinany(i big.Int, len int) ([]byte, error){
+//
+//	if len%8 != 0 {
+//		return nil, fmt.Errorf("length must be divided by 8")
+//	}
+//
+//	binary := make([]byte, len/8)
+//
+//	str := strconv.FormatInt(int64(i), 2)
+//	for j := 0; j < len(str); j++ {
+//		binary[j] = ConvertAsciiToInt(str[j])
+//	}
+//	return binary
+//	//fmt.Printf("inddex in binary: %v\n", binary)
+//}
