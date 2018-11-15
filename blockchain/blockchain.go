@@ -3,19 +3,14 @@ package blockchain
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ninjadotorg/constant/wallet"
-	"strings"
-
-	//"fmt"
-	//"time"
-
-	"sync"
-
-	"encoding/json"
-
 	"sort"
+	//"strconv"
+	"strings" //"fmt"
+	//"time"
+	"sync"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ninjadotorg/constant/cashec"
@@ -23,6 +18,7 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy/client"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 const (
@@ -67,6 +63,8 @@ type Config struct {
 	Light bool
 	//Wallet for light mode
 	Wallet *wallet.Wallet
+	//snapshot reward
+	customTokenRewardSnapshot map[client.PaymentAddress]uint64
 }
 
 /*
@@ -92,7 +90,7 @@ func (self *BlockChain) Init(config *Config) error {
 
 	for chainIndex, bestState := range self.BestState {
 		Logger.log.Infof("BlockChain state for chain #%d (Height %d, Best block hash %+v, Total tx %d, Salary fund %d, Gov Param %+v)",
-			chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GovernanceParams)
+			chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GOVParams)
 	}
 
 	return nil
@@ -483,6 +481,25 @@ func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 	return data, err
 }
 
+func (self *BlockChain) SaveLoanTxsForBlock(block *Block) error {
+	for _, tx := range block.Transactions {
+		switch tx.GetType() {
+		case common.TxLoanRequest:
+			{
+				tx := tx.(*transaction.TxLoanRequest)
+				self.config.DataBase.StoreLoanRequest(tx.LoanID, tx.Hash()[:])
+			}
+		case common.TxLoanResponse:
+			{
+				tx := tx.(*transaction.TxLoanResponse)
+				self.config.DataBase.StoreLoanResponse(tx.LoanID, tx.Hash()[:])
+			}
+		}
+	}
+
+	return nil
+}
+
 /*
 FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
 Param coinType - COIN or BOND
@@ -524,11 +541,27 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 			}
 		case transaction.CustomTokenTransfer:
 			{
-				Logger.log.Info("Transfer custom token")
+				Logger.log.Info("Transfer custom token %+v", customTokenTx)
 			}
 		}
 		// save tx which relate to custom token
+		// Reject Double spend UTXO before enter this state
+		err = self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
+		// TODO: detect/cactch/revert/skip double spend tx
+		if err != nil {
+			// Skip double spend
+			continue
+		}
 		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxTokenData.PropertyID, block.Header.ChainID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
+
+		// replace 1000 with proper value for snapshot
+		if block.Header.Height%1000 == 0 {
+			// list of unreward-utxo
+			self.config.customTokenRewardSnapshot, err = self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(&customTokenTx.TxTokenData.PropertyID)
+			if err != nil {
+				return err
+			}
+		}
 		if err != nil {
 			return err
 		}
@@ -919,38 +952,65 @@ func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCand
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
 func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
 	// list spent
-	vinList := []transaction.TxTokenVin{}
-	txCustomTokenIDs := [][]byte{}
-	listCustomTx, err := self.GetCustomTokenTxs(tokenID)
+	//====================
+	//vinList := []transaction.TxTokenVin{}
+	//txCustomTokenIDs := [][]byte{}
+	//listCustomTx, err := self.GetCustomTokenTxs(tokenID)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//for _, tx := range listCustomTx {
+	//	customTokenTx := tx.(*transaction.TxCustomToken)
+	//	for _, vin := range customTokenTx.TxTokenData.Vins {
+	//		if vin.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
+	//			vinList = append(vinList, vin)
+	//			txCustomTokenIDs = append(txCustomTokenIDs, vin.TxCustomTokenID[:])
+	//		}
+	//	}
+	//}
+	//
+	//// get all vout custom token of sender which unspent
+	//voutList := []transaction.TxTokenVout{}
+	//for _, tx := range listCustomTx {
+	//	customTokenTx := tx.(*transaction.TxCustomToken)
+	//	for index, vout := range customTokenTx.TxTokenData.Vouts {
+	//		if vout.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
+	//			txHash := tx.Hash()
+	//			existed, err := common.SliceBytesExists(txCustomTokenIDs, txHash[:])
+	//			if !existed && err == nil {
+	//				vout.SetIndex(index)
+	//				vout.SetTxCustomTokenID(*tx.Hash())
+	//				voutList = append(voutList, vout)
+	//				fmt.Println("GetUnspentTxCustomTokenVout vout", vout)
+	//			}
+	//		}
+	//	}
+	//}
+	//====================
+	//voutList := []transaction.TxTokenVout{}
+	voutList, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress)
 	if err != nil {
 		return nil, err
 	}
-	for _, tx := range listCustomTx {
-		customTokenTx := tx.(*transaction.TxCustomToken)
-		for _, vin := range customTokenTx.TxTokenData.Vins {
-			if vin.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
-				vinList = append(vinList, vin)
-				txCustomTokenIDs = append(txCustomTokenIDs, vin.TxCustomTokenID[:])
-			}
-		}
-	}
-
-	// get all vout custom token of sender which unspent
-	voutList := []transaction.TxTokenVout{}
-	for _, tx := range listCustomTx {
-		customTokenTx := tx.(*transaction.TxCustomToken)
-		for index, vout := range customTokenTx.TxTokenData.Vouts {
-			if vout.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
-				txHash := tx.Hash()
-				existed, err := common.SliceBytesExists(txCustomTokenIDs, txHash[:])
-				if !existed && err == nil {
-					vout.SetIndex(index)
-					vout.SetTxCustomTokenID(*tx.Hash())
-					voutList = append(voutList, vout)
-				}
-			}
-		}
-	}
+	//for _, utxo := range utxos {
+	//	items := strings.Split(string(utxo), string([]byte("-")))
+	//	txHashTemp := items[0]
+	//	voutIndexTemp := items[1]
+	//	fmt.Println("GetUnspentTxCustomTokenVout txHashTemp", txHashTemp)
+	//	fmt.Println("GetUnspentTxCustomTokenVout voutIndexTemp", voutIndexTemp)
+	//	voutIndex, err := strconv.Atoi(voutIndexTemp)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	txHash,_ := common.Hash{}.NewHashFromStr(txHashTemp)
+	//	fmt.Println("GetUnspentTxCustomTokenVout txHash", txHash)
+	//	fmt.Println("GetUnspentTxCustomTokenVout voutIndex", voutIndex)
+	//	vout := transaction.TxTokenVout{}
+	//	vout.SetTxCustomTokenID(*txHash)
+	//	vout.SetIndex(voutIndex)
+	//	fmt.Println("GetUnspentTxCustomTokenVout vout", vout)
+	//	voutList = append(voutList, vout)
+	//}
 	return voutList, nil
 }
 
@@ -963,7 +1023,7 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 			fmt.Println("ERROR in GetTransactionByHash", err)
 			const (
 				bigNumber   = 999999999
-				bigNumberTx = 999999
+				bigNumberTx = 999999999
 			)
 			var (
 				blockHeight uint32
@@ -1071,4 +1131,17 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 		result[*tx.Hash()] = tx
 	}
 	return result, nil
+}
+
+// TODO(@0xsirrush): implement
+func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[client.PaymentAddress]uint64, error) {
+	result, err := self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(tokenID)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (self *BlockChain) GetCustomTokenRewardSnapshot() (map[client.PaymentAddress]uint64) {
+	return self.config.customTokenRewardSnapshot
 }

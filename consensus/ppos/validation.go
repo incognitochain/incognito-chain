@@ -3,9 +3,8 @@ package ppos
 import (
 	"bytes"
 	"encoding/json"
-	"time"
-
 	"errors"
+	"time"
 
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/cashec"
