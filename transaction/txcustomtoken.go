@@ -3,10 +3,10 @@ package transaction
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
-	"math/big"
 	"sort"
 	"strconv"
 
@@ -100,7 +100,7 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 }
 
 // BuildTxCustomToken ...
-func BuildTxCustomToken(
+func buildTxCustomToken(
 	senderKey *client.SpendingKey,
 	paymentInfo []*client.PaymentInfo,
 	rts map[byte]*common.Hash,
@@ -427,7 +427,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 	listCustomTokens map[common.Hash]TxCustomToken,
 ) (*TxCustomToken, error) {
 
-	tx, err := BuildTxCustomToken(
+	tx, err := buildTxCustomToken(
 		senderKey,
 		paymentInfo,
 		rts,
@@ -443,7 +443,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 	}
 
 	// Sign tx
-	tx, err = SignTxCustomToken(tx)
+	tx, err = SignPrivacyTxCustomToken(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -454,7 +454,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 }
 
 //  GetTxCustomTokenSignature ...
-func GetTxCustomTokenSignature(tx *TxCustomToken) ([]byte, error) {
+func getTxCustomTokenPrivacySignature(tx *TxCustomToken) ([]byte, error) {
 	//Check input transaction
 	if tx.Tx.JSSig != nil {
 		return nil, errors.New("Input transaction must be an unsigned one")
@@ -477,8 +477,8 @@ func GetTxCustomTokenSignature(tx *TxCustomToken) ([]byte, error) {
 }
 
 // SignTxCustomToken ...
-func SignTxCustomToken(tx *TxCustomToken) (*TxCustomToken, error) {
-	jsSignByteArray, err := GetTxCustomTokenSignature(tx)
+func SignPrivacyTxCustomToken(tx *TxCustomToken) (*TxCustomToken, error) {
+	jsSignByteArray, err := getTxCustomTokenPrivacySignature(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -488,8 +488,14 @@ func SignTxCustomToken(tx *TxCustomToken) (*TxCustomToken, error) {
 	return tx, nil
 }
 
+func GetTxCustomTokenSignature(tx *TxCustomToken, keyset cashec.KeySet) ([]byte, error) {
+	buff := new(bytes.Buffer)
+	json.NewEncoder(buff).Encode(tx)
+	return keyset.Sign(buff.Bytes())
+}
+
 // VerifySignCustomTokenTx ...
-func VerifySignCustomTokenTx(tx *TxCustomToken) (bool, error) {
+/*func VerifySignCustomTokenTx(tx *TxCustomToken) (bool, error) {
 	//Check input transaction
 	if tx.Tx.JSSig == nil || tx.Tx.JSPubKey == nil {
 		return false, errors.New("Input transaction must be an signed one!")
@@ -512,4 +518,4 @@ func VerifySignCustomTokenTx(tx *TxCustomToken) (bool, error) {
 
 	valid := client.VerifySign(pubKey, data[:], ecdsaSignature.R, ecdsaSignature.S)
 	return valid, nil
-}
+}*/

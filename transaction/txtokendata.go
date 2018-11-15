@@ -32,7 +32,7 @@ func (self TxTokenVin) Hash() *common.Hash {
 // TxTokenVout ...
 type TxTokenVout struct {
 	Value          uint64
-	PaymentAddress client.PaymentAddress
+	PaymentAddress client.PaymentAddress // public key of receiver
 
 	index           int
 	txCustomTokenID common.Hash

@@ -3,7 +3,7 @@ package database
 import "fmt"
 
 const (
-	DriverExistErr       = iota
+	DriverExistErr = iota
 	DriverNotRegisterErr
 
 	// LevelDB
@@ -14,6 +14,7 @@ const (
 	NotImplHashMethod
 	BlockExisted
 	UnexpectedError
+	KeyExisted
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -32,6 +33,7 @@ var ErrCodeMessage = map[int]struct {
 	NotImplHashMethod: {-3000, "Data does not implement Hash() method"},
 	BlockExisted:      {-3001, "Block already existed"},
 	UnexpectedError:   {-3002, "Unexpected error"},
+	KeyExisted:        {-3003, "Key already existed in database"},
 }
 
 type DatabaseError struct {

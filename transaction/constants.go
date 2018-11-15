@@ -9,6 +9,10 @@ const (
 
 	// NumDescOutputs max number of output notes in a JSDesc
 	NumDescOutputs = 2 // b
+
+	LoanKeyDigestLen = 32 // number of bytes of a loan's secret key digest
+
+	LoanKeyLen = 32
 )
 
 const (
