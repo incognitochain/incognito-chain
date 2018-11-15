@@ -3,7 +3,7 @@ package privacy
 import "fmt"
 
 type SerialNumber []byte   //32 bytes
-type CoinCommitment []byte //3 bytes
+type CoinCommitment []byte //34 bytes
 type Random []byte         //32 bytes
 type Value []byte          //32 bytes4
 

@@ -1,8 +1,6 @@
 package main
 
-import(
-	"github.com/ninjadotorg/constant/privacy"
-)
+import "github.com/ninjadotorg/constant/privacy"
 
 func main() {
 
@@ -96,5 +94,15 @@ func main() {
 
 	privacy.TestPKOneOfMany()
 
+	//poly1 := privacy.Poly{big.NewInt(0), big.NewInt(10), big.NewInt(23)}
+	//fmt.Println(poly1.String())
+	//privacy.TestGetCoefficient()
+	//x:=big.NewInt(-3)
+	//x.Mod(x,new(big.Int).SetInt64(5))
+	//fmt.Println(x)
+	//privacy.TestPKMaxValue()
 
+	//privacy.TestPKComZeroOne()
+	//privacy.TestProductCommitment()
+//
 }
