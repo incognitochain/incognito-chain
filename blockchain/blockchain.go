@@ -520,6 +520,18 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 	return nil
 }
 
+func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
+	for _, tx := range block.Transactions {
+		switch tx.GetType() {
+		case common.TxCrowdsale:
+			{
+				// Send asset to escrow account
+				tx := tx.(*transaction.TxCrowdsale)
+			}
+		}
+	}
+}
+
 /*
 FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
 Param coinType - COIN or BOND

@@ -17,6 +17,7 @@ const (
 	TxLoanPayment           = "lp"
 	TxLoanWithdraw          = "lw"
 	TxDividendPayout        = "td"
+	TxCrowdsale             = "cs"
 )
 
 // unit type use in tx
