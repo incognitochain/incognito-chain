@@ -951,66 +951,10 @@ func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCand
 
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
 func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
-	// list spent
-	//====================
-	//vinList := []transaction.TxTokenVin{}
-	//txCustomTokenIDs := [][]byte{}
-	//listCustomTx, err := self.GetCustomTokenTxs(tokenID)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//for _, tx := range listCustomTx {
-	//	customTokenTx := tx.(*transaction.TxCustomToken)
-	//	for _, vin := range customTokenTx.TxTokenData.Vins {
-	//		if vin.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
-	//			vinList = append(vinList, vin)
-	//			txCustomTokenIDs = append(txCustomTokenIDs, vin.TxCustomTokenID[:])
-	//		}
-	//	}
-	//}
-	//
-	//// get all vout custom token of sender which unspent
-	//voutList := []transaction.TxTokenVout{}
-	//for _, tx := range listCustomTx {
-	//	customTokenTx := tx.(*transaction.TxCustomToken)
-	//	for index, vout := range customTokenTx.TxTokenData.Vouts {
-	//		if vout.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
-	//			txHash := tx.Hash()
-	//			existed, err := common.SliceBytesExists(txCustomTokenIDs, txHash[:])
-	//			if !existed && err == nil {
-	//				vout.SetIndex(index)
-	//				vout.SetTxCustomTokenID(*tx.Hash())
-	//				voutList = append(voutList, vout)
-	//				fmt.Println("GetUnspentTxCustomTokenVout vout", vout)
-	//			}
-	//		}
-	//	}
-	//}
-	//====================
-	//voutList := []transaction.TxTokenVout{}
 	voutList, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress)
 	if err != nil {
 		return nil, err
 	}
-	//for _, utxo := range utxos {
-	//	items := strings.Split(string(utxo), string([]byte("-")))
-	//	txHashTemp := items[0]
-	//	voutIndexTemp := items[1]
-	//	fmt.Println("GetUnspentTxCustomTokenVout txHashTemp", txHashTemp)
-	//	fmt.Println("GetUnspentTxCustomTokenVout voutIndexTemp", voutIndexTemp)
-	//	voutIndex, err := strconv.Atoi(voutIndexTemp)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	txHash,_ := common.Hash{}.NewHashFromStr(txHashTemp)
-	//	fmt.Println("GetUnspentTxCustomTokenVout txHash", txHash)
-	//	fmt.Println("GetUnspentTxCustomTokenVout voutIndex", voutIndex)
-	//	vout := transaction.TxTokenVout{}
-	//	vout.SetTxCustomTokenID(*txHash)
-	//	vout.SetIndex(voutIndex)
-	//	fmt.Println("GetUnspentTxCustomTokenVout vout", vout)
-	//	voutList = append(voutList, vout)
-	//}
 	return voutList, nil
 }
 
