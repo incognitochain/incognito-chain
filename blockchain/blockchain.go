@@ -524,10 +524,11 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 		case common.TxCrowdsale:
 			{
 				// Send asset to escrow account
-				tx := tx.(*transaction.TxCrowdsale)
+				//				tx := tx.(*transaction.TxCrowdsale)
 			}
 		}
 	}
+	return nil
 }
 
 /*

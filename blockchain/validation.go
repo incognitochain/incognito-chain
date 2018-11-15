@@ -238,8 +238,8 @@ func (self *BlockChain) GetAmountPerAccount(proposal *transaction.PayoutProposal
 
 	// Get total token supply
 	totalTokenSupply := uint64(0)
-	for _, holder := range tokenHolders {
-		utxos := self.GetAccountUTXO(holder)
+	for holder, _ := range tokenHolders {
+		utxos := self.GetAccountUTXO(holder.Apk[:])
 		for i := 0; i < len(utxos); i += 1 {
 			// TODO(@0xbunyip): get amount from utxo hash
 			value := uint64(0)
@@ -250,8 +250,8 @@ func (self *BlockChain) GetAmountPerAccount(proposal *transaction.PayoutProposal
 	// Get amount per account
 	rewardHolders := [][]byte{}
 	amounts := []uint64{}
-	for _, holder := range tokenHolders {
-		utxos := self.GetAccountUTXO(holder) // Cached data
+	for holder, _ := range tokenHolders {
+		utxos := self.GetAccountUTXO(holder.Apk[:]) // Cached data
 		amount := uint64(0)
 		for i := 0; i < len(utxos); i += 1 {
 			reward, err := self.GetUTXOReward(utxos[i]) // Data from latest block
@@ -266,7 +266,7 @@ func (self *BlockChain) GetAmountPerAccount(proposal *transaction.PayoutProposal
 		}
 
 		if amount > 0 {
-			rewardHolders = append(rewardHolders, holder)
+			rewardHolders = append(rewardHolders, holder.Apk[:])
 			amounts = append(amounts, amount)
 		}
 	}

@@ -456,7 +456,7 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 		}
 	case common.TxDividendPayout:
 		{
-			return blockChain.ValidteTxDividendPayout(tx, chainID)
+			return blockChain.ValidateTxDividendPayout(tx, chainID)
 		}
 	}
 	return nil
