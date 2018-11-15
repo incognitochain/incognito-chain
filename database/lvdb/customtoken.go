@@ -109,12 +109,16 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		fmt.Println(" Paymentaddress in VOUT StoreCustomTokenPaymentAddresstHistory", vout.PaymentAddress)
 		paymentAddress := string(vout.PaymentAddress.ToBytes())
 		utxoHash := tx.Hash().String()
-		fmt.Println(" txHASH in VOUT StoreCustomTokenPaymentAddresstHistory", utxoHash)
+		//fmt.Println(" txHASH in VOUT StoreCustomTokenPaymentAddresstHistory", utxoHash)
 		voutIndex := vout.GetIndex()
 		value := vout.Value
-		fmt.Println("token key in StoreCustomTokenPaymentAddresstHistory: ", tokenKey)
+		//fmt.Println("token key in StoreCustomTokenPaymentAddresstHistory: ", tokenKey)
 		paymentAddressKey := tokenKey + string(spliter) + paymentAddress + string(spliter) + utxoHash + string(spliter) + strconv.Itoa(voutIndex)
-		_, err := db.hasValue([]byte(paymentAddressKey))
+		ok, err := db.hasValue([]byte(paymentAddressKey))
+		// Vout already exist
+		if ok {
+			return errors.New("UTXO already exist")
+		}
 		if err != nil {
 			fmt.Println("ERROR finding vout in DB, StoreCustomTokenPaymentAddresstHistory", tx.Hash(), err)
 			return err
@@ -122,7 +126,7 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		// init value: {value}-unspent-unreward
 		paymentAddressValue := strconv.Itoa(int(value)) + string(spliter) + string(unspent) + string(spliter) + string(unreward)
 		//fmt.Println("Key in StoreCustomTokenPaymentAddresstHistory: ", paymentAddressKey)
-		//fmt.Println("Value in StoreCustomTokenPaymentAddresstHistory: ", paymentAddressValue)
+		fmt.Println("Value in StoreCustomTokenPaymentAddresstHistory: ", paymentAddressValue)
 		if err := db.lvdb.Put([]byte(paymentAddressKey), []byte(paymentAddressValue), nil); err != nil {
 			return err
 		}
