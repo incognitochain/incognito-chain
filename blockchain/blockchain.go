@@ -545,8 +545,15 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 			}
 		}
 		// save tx which relate to custom token
-		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxTokenData.PropertyID, block.Header.ChainID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
+		// Reject Double spend UTXO before enter this state
 		err = self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
+		// TODO: detect/cactch/revert/skip double spend tx
+		if err != nil {
+			// Skip double spend
+			continue
+		}
+		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxTokenData.PropertyID, block.Header.ChainID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
+
 		// replace 1000 with proper value for snapshot
 		if block.Header.Height%1000 == 0 {
 			// list of unreward-utxo
