@@ -1912,8 +1912,14 @@ func (self RpcServer) handleEncryptDataByPaymentAddress(params interface{}, clos
 	arrayParams := common.InterfaceSlice(params)
 	paymentAddress := arrayParams[0].(string)
 	plainData := arrayParams[1].(string)
-	keySet, _ := wallet.Base58CheckDeserialize(paymentAddress)
-	encryptData, _ := keySet.KeySet.Encrypt([]byte(plainData))
+	keySet, err := wallet.Base58CheckDeserialize(paymentAddress)
+	if err != nil {
+		return nil, err
+	}
+	encryptData, err := keySet.KeySet.Encrypt([]byte(plainData))
+	if err != nil {
+		return nil, err
+	}
 	_ = encryptData
 	// TODO
 	return hex.EncodeToString([]byte{}), nil
