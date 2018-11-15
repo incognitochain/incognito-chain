@@ -3,6 +3,7 @@ package transaction
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -488,9 +489,9 @@ func SignPrivacyTxCustomToken(tx *TxCustomToken) (*TxCustomToken, error) {
 }
 
 func GetTxCustomTokenSignature(tx *TxCustomToken, keyset cashec.KeySet) ([]byte, error) {
-	// TODO - implement
-	temp, err := keyset.Sign([]byte{})
-	return temp, err
+	buff := new(bytes.Buffer)
+	json.NewEncoder(buff).Encode(tx)
+	return keyset.Sign(buff.Bytes())
 }
 
 // VerifySignCustomTokenTx ...
