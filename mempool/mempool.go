@@ -268,23 +268,25 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 			return false, errors.New("Wrong tx desc's vmacs")
 		}
 		//
-		if desc.Proof == nil {
+		if desc.Proof == nil && len(desc.Note) == 0 {
 			return false, errors.New("Wrong tx desc's proof")
 		}
-		// check length of Proof
-		if len(desc.Proof.G_A) != 33 ||
-			len(desc.Proof.G_APrime) != 33 ||
-			len(desc.Proof.G_B) != 65 ||
-			len(desc.Proof.G_BPrime) != 33 ||
-			len(desc.Proof.G_C) != 33 ||
-			len(desc.Proof.G_CPrime) != 33 ||
-			len(desc.Proof.G_K) != 33 ||
-			len(desc.Proof.G_H) != 33 {
-			return false, errors.New("Wrong tx desc's proof")
-		}
-		//
-		if len(desc.EncryptedData) != 2 {
-			return false, errors.New("Wrong tx desc's encryptedData")
+		if desc.Proof != nil {
+			// check length of Proof
+			if len(desc.Proof.G_A) != 33 ||
+				len(desc.Proof.G_APrime) != 33 ||
+				len(desc.Proof.G_B) != 65 ||
+				len(desc.Proof.G_BPrime) != 33 ||
+				len(desc.Proof.G_C) != 33 ||
+				len(desc.Proof.G_CPrime) != 33 ||
+				len(desc.Proof.G_K) != 33 ||
+				len(desc.Proof.G_H) != 33 {
+				return false, errors.New("Wrong tx desc's proof")
+			}
+			//
+			if len(desc.EncryptedData) != 2 {
+				return false, errors.New("Wrong tx desc's encryptedData")
+			}
 		}
 		// check nulltifier is existed in DB
 		if desc.Reward != 0 {
@@ -404,6 +406,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID byte) error {
 	blockChain := tp.config.BlockChain
 	switch tx.GetType() {
+	// TODO check tx with current mempool
 	case common.TxNormalType:
 		{
 			// check double spend

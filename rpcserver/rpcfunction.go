@@ -918,6 +918,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		{
 			tokenID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 			unspentTxTokenOuts, err := self.config.BlockChain.GetUnspentTxCustomTokenVout(senderKey.KeySet, tokenID)
+			fmt.Println("buildRawCustomTokenTransaction ", unspentTxTokenOuts)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
@@ -1910,8 +1911,17 @@ func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeC
 func (self RpcServer) handleEncryptDataByPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	arrayParams := common.InterfaceSlice(params)
 	paymentAddress := arrayParams[0].(string)
-	plainData := arrayParams[0].(string)
-	keySet, _ := wallet.Base58CheckDeserialize(paymentAddress)
-	encryptData, _ := keySet.KeySet.Encrypt([]byte(plainData))
-	return hex.EncodeToString(encryptData), nil
+	plainData := arrayParams[1].(string)
+	keySet, err := wallet.Base58CheckDeserialize(paymentAddress)
+	if err != nil {
+		return nil, err
+	}
+	encryptData, err := keySet.KeySet.Encrypt([]byte(plainData))
+	if err != nil {
+		return nil, err
+	}
+	_ = encryptData
+	// TODO
+	return hex.EncodeToString([]byte{}), nil
+	//return hex.EncodeToString(encryptData), nil
 }

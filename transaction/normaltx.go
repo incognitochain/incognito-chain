@@ -396,6 +396,7 @@ func (tx *Tx) BuildNewJSDesc(
 	reward, fee uint64,
 	noPrivacy bool,
 ) error {
+	noPrivacy = true
 	// Gather inputs from different chains
 	inputs := []*client.JSInput{}
 	rts := [][]byte{}
@@ -415,10 +416,7 @@ func (tx *Tx) BuildNewJSDesc(
 
 	var seed, phi []byte
 	var outputR [][]byte
-	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rts, reward, fee, seed, phi, outputR, tx.AddressLastByte)
-	if noPrivacy {
-		proof = nil
-	}
+	proof, hSig, seed, phi, err := client.Prove(inputs, outputs, tx.JSPubKey, rts, reward, fee, seed, phi, outputR, tx.AddressLastByte, noPrivacy)
 	if err != nil {
 		return err
 	}
@@ -643,6 +641,7 @@ func GenerateProofForGenesisTx(
 		phi,
 		outputR,
 		addressLastByte,
+		true,
 	)
 	if err != nil {
 		return nil, err
@@ -718,9 +717,9 @@ func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
 	var sizeFee uint64 = 8      // uint64
 	var sizeDescs uint64        // uint64
 	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
 	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
 	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte

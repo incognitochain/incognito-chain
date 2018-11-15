@@ -3,6 +3,7 @@ package common
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -13,11 +14,12 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/pkg/errors"
 	"log"
-	"github.com/multiformats/go-multiaddr"
-	"github.com/libp2p/go-libp2p-peer"
 	"math"
+
+	"github.com/libp2p/go-libp2p-peer"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/pkg/errors"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -178,7 +180,7 @@ func ParseListeners(addrs []string, netType string) ([]SimpleAddr, error) {
 
 /*
 JsonUnmarshallByteArray - because golang default base64 encode for byte[] data
- */
+*/
 func JsonUnmarshallByteArray(string string) []byte {
 	bytes, _ := base64.StdEncoding.DecodeString(string)
 	return bytes
@@ -301,4 +303,10 @@ func Max(x, y int) int {
 		return x
 	}
 	return y
+}
+
+func ToBytes(obj interface{}) []byte {
+	buff := new(bytes.Buffer)
+	json.NewEncoder(buff).Encode(obj)
+	return buff.Bytes()
 }
