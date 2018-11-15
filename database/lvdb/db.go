@@ -27,7 +27,7 @@ var (
 	commitmentsPrefix         = []byte("commitments-")
 	bestBlockKey              = []byte("bestBlock")
 	feeEstimator              = []byte("feeEstimator")
-	spliter                   = []byte("-")
+	splitter                  = []byte("-[-]-")
 	tokenPrefix               = []byte("token-")
 	tokenPaymentAddressPrefix = []byte("token-paymentaddress-")
 	tokenInitPrefix           = []byte("token-init-")

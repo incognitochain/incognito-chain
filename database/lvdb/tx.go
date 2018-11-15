@@ -195,7 +195,7 @@ func (db *db) CleanFeeEstimator() error {
 */
 func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, index int) error {
 	key := string(transactionKeyPrefix) + txId.String()
-	value := blockHash.String() + string(spliter) + strconv.Itoa(index)
+	value := blockHash.String() + string(splitter) + strconv.Itoa(index)
 	fmt.Println("Key in StoreTransactionIndex", key)
 	fmt.Println("Value in StoreTransactionIndex", value)
 	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
@@ -222,7 +222,7 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 	if err != nil {
 		return nil, -1, err;
 	}
-	reses := strings.Split(string(res), (string(spliter)))
+	reses := strings.Split(string(res), (string(splitter)))
 	hash, err := common.Hash{}.NewHashFromStr(reses[0])
 	if err != nil {
 		return nil, -1, err;
@@ -270,7 +270,7 @@ func (db *db) StoreTransactionLightMode(privateKey *client.SpendingKey, chainId 
 	reverseTxIndex := make([]byte, 4)
 	binary.LittleEndian.PutUint32(reverseTxIndex, uint32(bigNumberTx-int32(txIndex)))
 
-	key1 := string(privateKeyPrefix) + privateKey.String() + string(spliter) + string(int(chainId)) + string(spliter) + string(reverseBlockHeight) + string(spliter) + string(reverseTxIndex)
+	key1 := string(privateKeyPrefix) + privateKey.String() + string(splitter) + string(int(chainId)) + string(splitter) + string(reverseBlockHeight) + string(splitter) + string(reverseTxIndex)
 	key2 := string(transactionKeyPrefix) + unspentTx.Hash().String()
 
 	if ok, _ := db.hasValue([]byte(key1)); ok {
@@ -310,7 +310,7 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *client.SpendingKey
 		key := iter.Key()
 		value := iter.Value()
 		fmt.Println("GetTransactionLightModeByPrivateKey, key", string(key))
-		reses := strings.Split(string(key), string(spliter))
+		reses := strings.Split(string(key), string(splitter))
 		tempChainId, _ := strconv.Atoi(reses[2])
 		chainId := byte(tempChainId)
 		fmt.Println("GetTransactionLightModeByPrivateKey, chainId", chainId)
