@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"strconv"
 
@@ -80,9 +79,8 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }
 
-// BuildTxCustomToken ...
-func buildTxCustomToken(
-	senderKey *client.SpendingKey,
+// CreateTxCustomToken ...
+func CreateTxCustomToken(senderKey *client.SpendingKey,
 	paymentInfo []*client.PaymentInfo,
 	rts map[byte]*common.Hash,
 	usableTx map[byte][]*Tx,
@@ -92,15 +90,15 @@ func buildTxCustomToken(
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
 ) (*TxCustomToken, error) {
-
-	// create normal tx
+	// create normal txCustomToken
 	normalTx, err := CreateTx(senderKey, paymentInfo, rts, usableTx, commitments, fee, senderChainID, true)
 	if err != nil {
 		return nil, err
 	}
+	// override txCustomToken type
 	normalTx.Type = common.TxCustomTokenType
-	// end
-	tx := &TxCustomToken{
+
+	txCustomToken := &TxCustomToken{
 		Tx:          *normalTx,
 		TxTokenData: TxTokenData{},
 	}
@@ -112,7 +110,7 @@ func buildTxCustomToken(
 	case CustomTokenInit:
 		{
 			handled = true
-			tx.TxTokenData = TxTokenData{
+			txCustomToken.TxTokenData = TxTokenData{
 				Type:           tokenParams.TokenTxType,
 				PropertyName:   tokenParams.PropertyName,
 				PropertySymbol: tokenParams.PropertySymbol,
@@ -129,8 +127,8 @@ func buildTxCustomToken(
 				Value:          receiverAmount,
 			})
 
-			tx.TxTokenData.Vouts = VoutsTemp
-			hashInitToken, err := tx.TxTokenData.Hash()
+			txCustomToken.TxTokenData.Vouts = VoutsTemp
+			hashInitToken, err := txCustomToken.TxTokenData.Hash()
 			if err != nil {
 				return nil, errors.New("Can't handle this TokenTxType")
 			}
@@ -140,7 +138,7 @@ func buildTxCustomToken(
 					return nil, errors.New("This token is existed in network")
 				}
 			}
-			tx.TxTokenData.PropertyID = *hashInitToken
+			txCustomToken.TxTokenData.PropertyID = *hashInitToken
 
 		}
 	case CustomTokenTransfer:
@@ -150,7 +148,7 @@ func buildTxCustomToken(
 			paymentTokenAmount += receiver.Value
 		}
 		refundTokenAmount := tokenParams.vinsAmount - paymentTokenAmount
-		tx.TxTokenData = TxTokenData{
+		txCustomToken.TxTokenData = TxTokenData{
 			Type:           tokenParams.TokenTxType,
 			PropertyName:   tokenParams.PropertyName,
 			PropertySymbol: tokenParams.PropertySymbol,
@@ -158,8 +156,8 @@ func buildTxCustomToken(
 			Vouts:          nil,
 		}
 		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
-		tx.TxTokenData.PropertyID = *propertyID
-		tx.TxTokenData.Vins = tokenParams.vins
+		txCustomToken.TxTokenData.PropertyID = *propertyID
+		txCustomToken.TxTokenData.Vins = tokenParams.vins
 		var VoutsTemp []TxTokenVout
 		for _, receiver := range tokenParams.Receiver {
 			receiverAmount := receiver.Value
@@ -172,45 +170,13 @@ func buildTxCustomToken(
 			PaymentAddress: tokenParams.vins[0].PaymentAddress,
 			Value:          refundTokenAmount,
 		})
-		tx.TxTokenData.Vouts = VoutsTemp
+		txCustomToken.TxTokenData.Vouts = VoutsTemp
 	}
 
 	if handled != true {
 		return nil, errors.New("Can't handle this TokenTxType")
 	}
-	return tx, nil
-}
-
-// CreateTxCustomToken ...
-func CreateTxCustomToken(senderKey *client.SpendingKey,
-	paymentInfo []*client.PaymentInfo,
-	rts map[byte]*common.Hash,
-	usableTx map[byte][]*Tx,
-	commitments map[byte]([][]byte),
-	fee uint64,
-	senderChainID byte,
-	tokenParams *CustomTokenParamTx,
-	listCustomTokens map[common.Hash]TxCustomToken,
-) (*TxCustomToken, error) {
-
-	tx, err := buildTxCustomToken(
-		senderKey,
-		paymentInfo,
-		rts,
-		usableTx,
-		commitments,
-		fee,
-		senderChainID,
-		tokenParams,
-		listCustomTokens,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Printf("jspubkey: %x\n", tx.JSPubKey)
-	fmt.Printf("jssig: %x\n", tx.JSSig)
-	return tx, nil
+	return txCustomToken, nil
 }
 
 func GetTxCustomTokenSignature(tx *TxCustomToken, keyset cashec.KeySet) ([]byte, error) {
