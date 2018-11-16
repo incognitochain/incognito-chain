@@ -1731,7 +1731,5 @@ func (self RpcServer) handleEncryptDataByPaymentAddress(params interface{}, clos
 		return nil, err
 	}
 	_ = encryptData
-	// TODO
 	return hex.EncodeToString([]byte{}), nil
-	//return hex.EncodeToString(encryptData), nil
 }
