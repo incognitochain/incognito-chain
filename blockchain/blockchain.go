@@ -523,8 +523,12 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 		switch tx.GetType() {
 		case common.TxCrowdsale:
 			{
-				// Send asset to escrow account
-				//				tx := tx.(*transaction.TxCrowdsale)
+				// Store saledata in db
+				tx := tx.(*transaction.TxCrowdsale)
+				err := self.config.DataBase.SaveCrowdsaleData(tx.SaleID, tx.BondID, tx.BaseAsset, tx.QuoteAsset, tx.Price, tx.EscrowAccount)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}

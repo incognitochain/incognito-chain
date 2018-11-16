@@ -10,8 +10,9 @@ import (
 
 var allowedAsset = []string{common.AssetTypeCoin, common.AssetTypeBond}
 
-type TxCrowdsale struct {
-	*TxCustomToken
+type SaleData struct {
+	SaleID []byte // Unique id of the crowdsale to store in db
+	BondID []byte // in case either base or quote asset is bond
 
 	BaseAsset     string
 	QuoteAsset    string
@@ -19,23 +20,10 @@ type TxCrowdsale struct {
 	EscrowAccount client.PaymentAddress
 }
 
-// CreateEmptyCrowdsaleTx - return an init custom token transaction
-func CreateEmptyCrowdsaleTx() (*TxCrowdsale, error) {
-	emptyTx, err := CreateEmptyTx(common.TxCrowdsale)
+type TxCrowdsale struct {
+	*TxCustomToken
 
-	if err != nil {
-		return nil, err
-	}
-
-	txToken := TxTokenData{}
-
-	txCrowdsale := &TxCrowdsale{
-		TxCustomToken: &TxCustomToken{
-			Tx:          *emptyTx,
-			TxTokenData: txToken,
-		},
-	}
-	return txCrowdsale, nil
+	*SaleData
 }
 
 // Hash returns the hash of all fields of the transaction
@@ -50,8 +38,10 @@ func (tx TxCrowdsale) Hash() *common.Hash {
 	record += strconv.Itoa(int(tx.TxTokenData.Amount))
 
 	// add more hash of crowdsale
+	record += string(tx.SaleID)
 	record += tx.BaseAsset + tx.QuoteAsset
 	record += fmt.Sprint(tx.Price)
+	record += string(tx.EscrowAccount.Apk[:])
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
@@ -71,6 +61,26 @@ func isAllowed(assetType string, allowed []string) bool {
 func (tx *TxCrowdsale) ValidateTransaction() bool {
 	// validate for normal tx
 	if tx.Tx.ValidateTransaction() {
+		// Check if all tokens are of the same kind
+		bondID := ""
+		if len(tx.TxTokenData.Vouts) > 0 {
+			bondID = tx.TxTokenData.Vouts[0].BondID
+		}
+
+		// TODO(@0xbunyip): get Vout from Vin and check as well
+		//		for _, vin := range tx.TxTokenData.Vins {
+		//			if vin.BondID != bondID {
+		//				return false
+		//			}
+		//		}
+
+		for _, vout := range tx.TxTokenData.Vouts {
+			if vout.BondID != bondID {
+				return false
+			}
+		}
+
+		// Check if crowdsale assets are valid
 		if !isAllowed(tx.BaseAsset, allowedAsset) || !isAllowed(tx.QuoteAsset, allowedAsset) {
 			return false
 		}
@@ -90,13 +100,11 @@ func CreateTxCrowdsale(
 	commitments map[byte]([][]byte),
 	fee uint64,
 	senderChainID byte,
-	tokenParams *CustomTokenParamTx,
+	tokenParams *CustomTokenParamTx, // All Vins and Vouts must have the same bondID
 	listCustomToken map[common.Hash]TxCustomToken,
-	baseAsset string,
-	quoteAsset string,
-	price uint64,
+	saleData *SaleData,
 ) (*TxCrowdsale, error) {
-	txCustom, err := buildTxCustomToken(
+	txCustom, err := CreateTxCustomToken(
 		senderKey,
 		paymentInfo,
 		rts,
@@ -111,23 +119,15 @@ func CreateTxCrowdsale(
 		return nil, err
 	}
 
-	// TODO(@0xbunyip): sign on full crowdsale tx
-	// Sign tx
-	txCustom, err = SignPrivacyTxCustomToken(txCustom)
-	if err != nil {
-		return nil, err
-	}
-
 	tx := &TxCrowdsale{
 		TxCustomToken: txCustom,
-		BaseAsset:     baseAsset,
-		QuoteAsset:    quoteAsset,
-		Price:         price,
+		SaleData:      saleData,
 	}
 
-	if !isAllowed(tx.BaseAsset, allowedAsset) || !isAllowed(tx.QuoteAsset, allowedAsset) {
-		return nil, fmt.Errorf("Asset type is incorrect")
+	if !tx.ValidateTransaction() {
+		return nil, fmt.Errorf("Created tx is invalid")
 	}
 
+	// TODO: sign tx
 	return tx, nil
 }

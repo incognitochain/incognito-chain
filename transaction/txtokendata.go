@@ -44,6 +44,7 @@ type TxTokenVout struct {
 	Value          uint64
 	PaymentAddress client.PaymentAddress // public key of receiver
 
+	BondID          string // Temporary
 	index           int
 	txCustomTokenID common.Hash
 }
