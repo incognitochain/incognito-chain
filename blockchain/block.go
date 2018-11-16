@@ -95,6 +95,42 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				_ = json.Unmarshal(txTempJson, &buySellResTx)
 				self.Transactions = append(self.Transactions, buySellResTx)
 			}
+		case common.TxSubmitDCBProposal:
+			{
+				submitDCBProposalTx := &transaction.TxSubmitDCBProposal{}
+				_ = json.Unmarshal(txTempJson, &submitDCBProposalTx)
+				self.Transactions = append(self.Transactions, submitDCBProposalTx)
+			}
+		case common.TxSubmitGovProposal:
+			{
+				submitGovProposalTx := &transaction.TxSubmitGovProposal{}
+				_ = json.Unmarshal(txTempJson, &submitGovProposalTx)
+				self.Transactions = append(self.Transactions, submitGovProposalTx)
+			}
+		case common.TxVoteDCBProposal:
+			{
+				VoteDcbProposalTx := &transaction.TxVoteDCBProposal{}
+				_ = json.Unmarshal(txTempJson, &VoteDcbProposalTx)
+				self.Transactions = append(self.Transactions, VoteDcbProposalTx)
+			}
+		case common.TxVoteGovProposal:
+			{
+				VoteDcbProposalTx := &transaction.TxVoteGovProposal{}
+				_ = json.Unmarshal(txTempJson, &VoteDcbProposalTx)
+				self.Transactions = append(self.Transactions, VoteDcbProposalTx)
+			}
+		case common.TxAcceptDCBProposal:
+			{
+				AcceptDCBProposal := &transaction.TxAcceptDCBProposal{}
+				_ = json.Unmarshal(txTempJson, &AcceptDCBProposal)
+				self.Transactions = append(self.Transactions, AcceptDCBProposal)
+			}
+		case common.TxAcceptGovProposal:
+			{
+				AcceptGovProposal := &transaction.TxAcceptGovProposal{}
+				_ = json.Unmarshal(txTempJson, &AcceptGovProposal)
+				self.Transactions = append(self.Transactions, AcceptGovProposal)
+			}
 
 		default:
 			{

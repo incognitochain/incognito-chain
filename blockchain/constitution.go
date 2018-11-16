@@ -37,7 +37,7 @@ func (DCBConstitutionHelper) CheckSubmitProposalType(tx transaction.Transaction)
 }
 
 func (DCBConstitutionHelper) CheckVotingProposalType(tx transaction.Transaction) (bool){
-	return tx.GetType() == common.TxVotingDCBProposal
+	return tx.GetType() == common.TxVoteDCBProposal
 }
 
 func (DCBConstitutionHelper) GetAmountVoteToken(tx transaction.Transaction) (uint32) {
@@ -55,7 +55,7 @@ func (GovConstitutionHelper) CheckSubmitProposalType(tx transaction.Transaction)
 }
 
 func (GovConstitutionHelper) CheckVotingProposalType(tx transaction.Transaction) (bool){
-	return tx.GetType() == common.TxVotingGovProposal
+	return tx.GetType() == common.TxVoteGovProposal
 }
 
 func (GovConstitutionHelper) GetAmountVoteToken(tx transaction.Transaction) (uint32) {
