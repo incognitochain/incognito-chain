@@ -83,7 +83,7 @@ func main() {
 	zkp.TestPKOneOfMany()
 
 	//zkp.TestPKMaxValue()
-
+	zkp.TestPKComProduct()
 	//privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestProductCommitment()
 //
