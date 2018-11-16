@@ -13,7 +13,7 @@ type RequestInfo struct {
 	BuyPrice  uint64 // in Constant unit
 }
 
-// CreateTxLoanRequest
+// CreateBuySellRequestTx
 // senderKey and paymentInfo is for paying fee
 func CreateBuySellRequestTx(
 	feeArgs FeeArgs,
@@ -45,7 +45,6 @@ func (tx *BuySellRequestTx) Hash() *common.Hash {
 	// get hash of tx
 	record := tx.Tx.Hash().String()
 
-	// add more hash of collateral data
 	record += tx.AssetType
 	record += string(tx.Amount)
 	record += string(tx.BuyPrice)

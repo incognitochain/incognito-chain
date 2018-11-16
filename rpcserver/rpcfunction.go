@@ -989,8 +989,8 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 
 	// list unspent tx for create tx
 	totalAmmount += int64(realFee)
-	candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
 	if totalAmmount > 0 {
+		candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
 		for chainId, usableTxs := range usableTxsMap {
 			for _, temp := range usableTxs {
 				for _, desc := range temp.Descs {
@@ -1855,7 +1855,7 @@ func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, c
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	jsSignByteArray, err := transaction.GetTxCustomTokenSignature(&tx, senderKey.KeySet)
+	jsSignByteArray, err := tx.GetTxCustomTokenSignature(senderKey.KeySet)
 	if err != nil {
 		return nil, errors.New("Failed to sign the custom token")
 	}

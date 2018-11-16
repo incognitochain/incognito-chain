@@ -81,6 +81,19 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				_ = json.Unmarshal(txTempJson, &txVoting)
 				self.Transactions = append(self.Transactions, txVoting)
 			}
+		case common.TxBuyRequest, common.TxSellRequest:
+			{
+				buySellReqTx := &transaction.BuySellRequestTx{}
+				_ = json.Unmarshal(txTempJson, &buySellReqTx)
+				self.Transactions = append(self.Transactions, buySellReqTx)
+			}
+		case common.TxBuyResponse, common.TxSellResponse:
+			{
+				buySellResTx := &transaction.BuySellResponseTx{}
+				_ = json.Unmarshal(txTempJson, &buySellResTx)
+				self.Transactions = append(self.Transactions, buySellResTx)
+			}
+
 		default:
 			{
 				return NewBlockChainError(UnmashallJsonBlockError, errors.New("Can not parse a wrong tx"))

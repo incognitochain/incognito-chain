@@ -20,6 +20,8 @@ const (
 	TxCrowdsale             = "cs"
 	TxBuyRequest            = "br"
 	TxSellRequest           = "sr"
+	TxBuyResponse           = "brs"
+	TxSellResponse          = "srs"
 )
 
 // unit type use in tx

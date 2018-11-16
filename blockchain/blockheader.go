@@ -25,8 +25,8 @@ type SellingBonds struct {
 	BondPrice      uint64 // in Constant unit
 	Maturity       uint32
 	BuyBackPrice   uint64 // in Constant unit
-	StartSellingAt uint32
-	SellingWithin  uint32
+	StartSellingAt uint32 // start selling bonds at block height
+	SellingWithin  uint32 // selling bonds within n blocks
 }
 
 type Oracle struct {
