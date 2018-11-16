@@ -761,14 +761,14 @@ func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *client.S
 					}
 				} else {
 					for i, note := range desc.Note {
-						if note.Apk == keys.PaymentAddress.Apk {
+						if note.Apk == keys.PaymentAddress.Apk && note.Value > 0 {
 							// no privacy
 							candidateCommitment := desc.Commitments[i]
 							if len(nullifiersInDb) > 0 {
 								// -> check commitment with db nullifiers
 								var rho [32]byte
 								copy(rho[:], note.Rho)
-								candidateNullifier := desc.Nullifiers
+								candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
 								if len(candidateNullifier) == 0 {
 									continue
 								}
@@ -782,6 +782,8 @@ func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *client.S
 							note.Cm = candidateCommitment
 							note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
 							copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
+						} else {
+							continue
 						}
 					}
 				}
