@@ -452,7 +452,7 @@ func (self Server) Start() {
 		go self.Stop()
 		return
 	}
-	if cfg.Generate == true && (len(cfg.ProducerSpendingKey) > 0 || len(cfg.ProducerKeySet) > 0) {
+	if cfg.Generate == true && (len(cfg.ProducerSpendingKey) > 0) {
 		producerKeySet, err := cfg.GetProducerKeySet()
 		if err != nil {
 			Logger.log.Critical(err)
@@ -547,8 +547,8 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnSwapUpdate:   self.OnSwapUpdate,
 		},
 	}
-	if len(KeySetProducer.SprivateKey) != 0 {
-		config.ProducerPrvKey = base58.Base58Check{}.Encode(KeySetProducer.SprivateKey, byte(0x00))
+	if len(KeySetProducer.PrivateKey) != 0 {
+		config.ProducerPrvKey = base58.Base58Check{}.Encode(KeySetProducer.PrivateKey, byte(0x00))
 	}
 	return config
 }
@@ -908,7 +908,7 @@ func (self Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 			Logger.log.Critical("Invalid producer's private key")
 			return err
 		}
-		msg.(*wire.MessageVersion).PublicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))
+		msg.(*wire.MessageVersion).PublicKey = base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, byte(0x00))
 	}
 
 	if err != nil {

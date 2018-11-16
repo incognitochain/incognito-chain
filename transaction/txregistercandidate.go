@@ -1,5 +1,6 @@
 package transaction
 
+/*
 import (
 	"bytes"
 	"crypto/rand"
@@ -12,7 +13,7 @@ import (
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
 )
 
 // TxRegisterCandidate ...
@@ -418,3 +419,4 @@ func VerifySignVotingTx(tx *TxRegisterCandidate) (bool, error) {
 	valid := client.VerifySign(pubKey, data[:], ecdsaSignature.R, ecdsaSignature.S)
 	return valid, nil
 }
+*/

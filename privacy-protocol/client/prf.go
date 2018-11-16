@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/ninjadotorg/constant/privacy/client/crypto/sha256"
+	"github.com/ninjadotorg/constant/privacy-protocol/client/crypto/sha256"
 	"golang.org/x/crypto/blake2b"
 )
 

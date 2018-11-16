@@ -32,7 +32,7 @@ func (self *Engine) StartSwap() {
 
 				committee := self.GetCommittee()
 
-				requesterPbk := base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00))
+				requesterPbk := base58.Base58Check{}.Encode(self.config.ProducerKeySet.PaymentAddress.Pk, byte(0x00))
 
 				if common.IndexOfStr(requesterPbk, committee) < 0 {
 					continue
@@ -67,7 +67,7 @@ func (self *Engine) StartSwap() {
 				reqSigMsg.(*wire.MessageSwapRequest).ChainID = chainID
 				reqSigMsg.(*wire.MessageSwapRequest).Candidate = nextProducerPbk
 			BeginSwap:
-				// Collect signatures of other validators
+			// Collect signatures of other validators
 				cancel := make(chan struct{})
 				go func() {
 					for {

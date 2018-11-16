@@ -14,6 +14,8 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"golang.org/x/crypto/sha3"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"encoding/hex"
 )
 
 /*
@@ -53,9 +55,9 @@ func (self *BlockChain) ValidateDoubleSpend(tx transaction.Transaction, chainID 
 	var descs []*transaction.JoinSplitDesc
 	if tx.GetType() == common.TxNormalType {
 		descs = tx.(*transaction.Tx).Descs
-	} else if tx.GetType() == common.TxRegisterCandidateType {
+	} /*else if tx.GetType() == common.TxRegisterCandidateType {
 		descs = tx.(*transaction.TxRegisterCandidate).Descs
-	}
+	}*/
 	for _, desc := range descs {
 		for _, nullifer := range desc.Nullifiers {
 			existed, err := common.SliceBytesExists(nullifierDb, nullifer)
@@ -239,7 +241,10 @@ func (self *BlockChain) GetAmountPerAccount(proposal *transaction.PayoutProposal
 	// Get total token supply
 	totalTokenSupply := uint64(0)
 	for holder, _ := range tokenHolders {
-		utxos := self.GetAccountUTXO(holder.Apk[:])
+		temp, _ := hex.DecodeString(holder)
+		paymentAddress := privacy.PaymentAddress{}
+		paymentAddress.FromBytes(temp)
+		utxos := self.GetAccountUTXO(paymentAddress.Pk[:])
 		for i := 0; i < len(utxos); i += 1 {
 			// TODO(@0xbunyip): get amount from utxo hash
 			value := uint64(0)
@@ -251,7 +256,10 @@ func (self *BlockChain) GetAmountPerAccount(proposal *transaction.PayoutProposal
 	rewardHolders := [][]byte{}
 	amounts := []uint64{}
 	for holder, _ := range tokenHolders {
-		utxos := self.GetAccountUTXO(holder.Apk[:]) // Cached data
+		temp, _ := hex.DecodeString(holder)
+		paymentAddress := privacy.PaymentAddress{}
+		paymentAddress.FromBytes(temp)
+		utxos := self.GetAccountUTXO(paymentAddress.Pk[:]) // Cached data
 		amount := uint64(0)
 		for i := 0; i < len(utxos); i += 1 {
 			reward, err := self.GetUTXOReward(utxos[i]) // Data from latest block
@@ -266,7 +274,7 @@ func (self *BlockChain) GetAmountPerAccount(proposal *transaction.PayoutProposal
 		}
 
 		if amount > 0 {
-			rewardHolders = append(rewardHolders, holder.Apk[:])
+			rewardHolders = append(rewardHolders, paymentAddress.Pk[:])
 			amounts = append(amounts, amount)
 		}
 	}
@@ -328,7 +336,7 @@ func isAnyBoardAddressInVins(customToken *transaction.TxCustomToken) bool {
 	GOVAddressStr := string(common.GOVAddress)
 	DCBAddressStr := string(common.DCBAddress)
 	for _, vin := range customToken.TxTokenData.Vins {
-		apkStr := string(vin.PaymentAddress.Apk[:])
+		apkStr := string(vin.PaymentAddress.Pk[:])
 		if apkStr == GOVAddressStr || apkStr == DCBAddressStr {
 			return true
 		}
@@ -341,7 +349,7 @@ func isAllBoardAddressesInVins(
 	boardAddrStr string,
 ) bool {
 	for _, vin := range customToken.TxTokenData.Vins {
-		apkStr := string(vin.PaymentAddress.Apk[:])
+		apkStr := string(vin.PaymentAddress.Pk[:])
 		if apkStr != boardAddrStr {
 			return false
 		}

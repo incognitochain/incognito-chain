@@ -5,7 +5,7 @@ import (
 	"math"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
@@ -145,7 +145,7 @@ func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 					tree.AddNewNode(cm[:])
 				}
 			}
-		} else if blockTx.GetType() == common.TxRegisterCandidateType {
+		} /*else if blockTx.GetType() == common.TxRegisterCandidateType {
 			tx, ok := blockTx.(*transaction.TxRegisterCandidate)
 			if ok == false {
 				return NewBlockChainError(UnExpectedError, fmt.Errorf("Transaction in block not valid"))
@@ -156,7 +156,7 @@ func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 					tree.AddNewNode(cm[:])
 				}
 			}
-		}
+		}*/
 	}
 	return nil
 }

@@ -1,12 +1,12 @@
 package cashec
 
-import (
+/*import (
 	"bytes"
 	"encoding/json"
 	"errors"
 
 	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -101,4 +101,4 @@ func ValidateDataB58(pubkey string, sig string, data []byte) error {
 		return errors.New("Invalid signature")
 	}
 	return nil
-}
+}*/

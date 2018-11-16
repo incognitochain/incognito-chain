@@ -11,7 +11,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
@@ -94,7 +94,7 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 				Logger.log.Error(err)
 			}
 		}
-	} else if tx.GetType() == common.TxRegisterCandidateType {
+	} /*else if tx.GetType() == common.TxRegisterCandidateType {
 		if tp.config.FeeEstimator != nil {
 			chainId, err := common.GetTxSenderChain(tx.(*transaction.TxRegisterCandidate).AddressLastByte)
 			if err == nil {
@@ -103,7 +103,7 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 				Logger.log.Error(err)
 			}
 		}
-	}
+	}*/
 
 	return txD
 }
@@ -297,7 +297,7 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 }
 
 // Validate sanity for registration candidate tx data
-func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxRegisterCandidate) (bool, error) {
+/*func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxRegisterCandidate) (bool, error) {
 	if !common.ValidateNodeAddress(txVoting.PublicKey) {
 		return false, errors.New("Wrong voting node data")
 	}
@@ -369,7 +369,7 @@ func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxRegisterCan
 			return false, errors.New("Wrong tx desc's vmacs")
 		}
 		//
-		if desc.Proof != nil { // no privacy
+		if desc.Proof != nil { // no privacy-protocol
 			return false, errors.New("Wrong tx desc's proof")
 		}
 		if len(desc.EncryptedData) != 0 {
@@ -381,7 +381,7 @@ func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxRegisterCan
 		}
 	}
 	return true, nil
-}
+}*/
 
 // MaybeAcceptTransaction is the main workhorse for handling insertion of new
 // free-standing transactions into a memory pool.  It includes functionality
@@ -412,11 +412,11 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 			// check double spend
 			return blockChain.ValidateDoubleSpend(tx, chainID)
 		}
-	case common.TxRegisterCandidateType:
-		{
-			// check double spend
-			return blockChain.ValidateDoubleSpend(tx, chainID)
-		}
+		/*case common.TxRegisterCandidateType:
+		  {
+			  // check double spend
+			  return blockChain.ValidateDoubleSpend(tx, chainID)
+		  }*/
 	case common.TxSalaryType:
 		{
 			// TODO
@@ -586,12 +586,12 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 		{
 			return 0, nil
 		}
-	case common.TxRegisterCandidateType:
-		{
-			votingTx := tx.(*transaction.TxRegisterCandidate)
-			err := tp.config.Policy.CheckVotingTransactionFee(votingTx)
-			return votingTx.Fee, err
-		}
+		/*case common.TxRegisterCandidateType:
+		  {
+			  votingTx := tx.(*transaction.TxRegisterCandidate)
+			  err := tp.config.Policy.CheckVotingTransactionFee(votingTx)
+			  return votingTx.Fee, err
+		  }*/
 	default:
 		{
 			return 0, errors.New("Wrong tx type")
@@ -622,12 +622,6 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		// check Type equal "a"
 		if txA.Type != common.TxActionParamsType {
 			return false, errors.New("Wrong tx type")
-		}
-	} else if tx.GetType() == common.TxRegisterCandidateType {
-		txA := tx.(*transaction.TxRegisterCandidate)
-		ok, err := tp.validateSanityVotingTxData(txA)
-		if !ok {
-			return false, err
 		}
 	} else if tx.GetType() == common.TxCustomTokenType {
 		// TODO check sanity

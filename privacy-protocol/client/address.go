@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 
 	"golang.org/x/crypto/curve25519"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 const (
@@ -40,7 +41,7 @@ type PaymentAddress struct {
 }*/
 
 type PaymentInfo struct {
-	PaymentAddress PaymentAddress
+	PaymentAddress privacy.PaymentAddress
 	Amount         uint64
 }
 
@@ -72,14 +73,14 @@ func RandSpendingKey() SpendingKey {
 	return ask
 }
 
-func GenSpendingAddress(ask SpendingKey) SpendingAddress {
+func GenSpendingAddress(ask privacy.SpendingKey) SpendingAddress {
 	data := PRF_addr_x(ask[:], 0)
 	var apk SpendingAddress
 	copy(apk[:], data)
 	return apk
 }
 
-func GenViewingKey(ask SpendingKey) ViewingKey {
+func GenViewingKey(ask privacy.SpendingKey) ViewingKey {
 	var ivk ViewingKey
 	ivk.Apk = GenSpendingAddress(ask)
 	ivk.Skenc = GenReceivingKey(ask)
@@ -103,7 +104,7 @@ func (addr *PaymentAddress) ToBytes() []byte {
 	return result
 }
 
-func GenReceivingKey(ask SpendingKey) ReceivingKey {
+func GenReceivingKey(ask privacy.SpendingKey) ReceivingKey {
 	data := PRF_addr_x(ask[:], 1)
 	clamped := clampCurve25519(data)
 	var skenc ReceivingKey
@@ -122,7 +123,7 @@ func GenTransmissionKey(skenc ReceivingKey) TransmissionKey {
 	return pkenc
 }
 
-func GenPaymentAddress(ask SpendingKey) PaymentAddress {
+func GenPaymentAddress(ask privacy.SpendingKey) PaymentAddress {
 	var addr PaymentAddress
 	addr.Apk = GenSpendingAddress(ask)
 	addr.Pkenc = GenTransmissionKey(GenReceivingKey(ask))

@@ -5,9 +5,9 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/privacy/client"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/pkg/errors"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type BuyBackInfo struct {
@@ -25,7 +25,7 @@ type TxTokenVin struct {
 	TxCustomTokenID common.Hash
 	VoutIndex       int
 	Signature       string
-	PaymentAddress  client.PaymentAddress // use to verify signature of pre-utxo of token
+	PaymentAddress  privacy.PaymentAddress // use to verify signature of pre-utxo of token
 }
 
 func (self TxTokenVin) Hash() *common.Hash {
@@ -33,7 +33,7 @@ func (self TxTokenVin) Hash() *common.Hash {
 	record += self.TxCustomTokenID.String()
 	record += fmt.Sprintf("%d", self.VoutIndex)
 	record += self.Signature
-	record += base58.Base58Check{}.Encode(self.PaymentAddress.Apk[:], 0)
+	record += base58.Base58Check{}.Encode(self.PaymentAddress.Pk[:], 0)
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -42,7 +42,7 @@ func (self TxTokenVin) Hash() *common.Hash {
 // TxTokenVout ...
 type TxTokenVout struct {
 	Value          uint64
-	PaymentAddress client.PaymentAddress // public key of receiver
+	PaymentAddress privacy.PaymentAddress // public key of receiver
 
 	BondID          string // Temporary
 	index           int
@@ -52,7 +52,7 @@ type TxTokenVout struct {
 func (self TxTokenVout) Hash() *common.Hash {
 	record := common.EmptyString
 	record += fmt.Sprintf("%d", self.Value)
-	record += base58.Base58Check{}.Encode(self.PaymentAddress.Apk[:], 0)
+	record += base58.Base58Check{}.Encode(self.PaymentAddress.Pk[:], 0)
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -93,7 +93,7 @@ func (self TxTokenData) Hash() (*common.Hash, error) {
 	}
 	record := self.PropertyName + self.PropertySymbol + fmt.Sprintf("%d", self.Amount)
 	for _, out := range self.Vouts {
-		record += string(out.PaymentAddress.Apk[:])
+		record += string(out.PaymentAddress.Pk[:])
 	}
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

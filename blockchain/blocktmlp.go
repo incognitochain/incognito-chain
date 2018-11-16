@@ -5,8 +5,9 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type BlkTmplGenerator struct {
@@ -50,7 +51,7 @@ func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent 
 	}, nil
 }
 
-func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAddress, chainID byte) (*Block, error) {
+func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentAddress, chainID byte) (*Block, error) {
 
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 	prevBlockHash := blockgen.chain.BestState[chainID].BestBlock.Hash()
@@ -136,17 +137,14 @@ concludeBlock:
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
 	for _, blockTx := range txsToAdd {
-		if blockTx.GetType() == common.TxRegisterCandidateType {
-
-		}
-		if blockTx.GetType() == common.TxRegisterCandidateType {
+		/*if blockTx.GetType() == common.TxRegisterCandidateType {
 			tx, ok := blockTx.(*transaction.TxRegisterCandidate)
 			if !ok {
 				Logger.log.Error("Transaction not recognized to store in database")
 				continue
 			}
 			salaryFundAdd += tx.GetValue()
-		}
+		}*/
 		if blockTx.GetTxFee() > 0 {
 			salaryMULTP++
 		}
@@ -228,7 +226,7 @@ concludeBlock:
 // #4 - chainID
 func createSalaryTx(
 	salary uint64,
-	receiverAddr *client.PaymentAddress,
+	receiverAddr *privacy.PaymentAddress,
 	rt []byte,
 	chainID byte,
 ) (*transaction.Tx, error) {
@@ -239,13 +237,13 @@ func createSalaryTx(
 	dummyAddress := client.GenPaymentAddress(*inputs[0].Key)
 
 	// Create new notes: first one is salary UTXO, second one has 0 value
-	outNote := &client.Note{Value: salary, Apk: receiverAddr.Apk}
-	placeHolderOutputNote := &client.Note{Value: 0, Apk: receiverAddr.Apk}
+	outNote := &client.Note{Value: salary, Apk: receiverAddr.Pk}
+	placeHolderOutputNote := &client.Note{Value: 0, Apk: receiverAddr.Pk}
 
 	outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
-	outputs[0].EncKey = receiverAddr.Pkenc
+	outputs[0].EncKey = receiverAddr.Tk
 	outputs[0].OutputNote = outNote
-	outputs[1].EncKey = receiverAddr.Pkenc
+	outputs[1].EncKey = receiverAddr.Tk
 	outputs[1].OutputNote = placeHolderOutputNote
 
 	// Generate proof and sign tx
@@ -288,7 +286,7 @@ func (blockgen *BlkTmplGenerator) processDividend(
 		infos := []transaction.DividendInfo{}
 		// Build tx to pay dividend to each holder
 		for i, holder := range tokenHolders {
-			holderAddress := (&client.PaymentAddress{}).FromBytes(holder)
+			holderAddress := (&privacy.PaymentAddress{}).FromBytes(holder)
 			info := transaction.DividendInfo{
 				TokenHolder: *holderAddress,
 				Amount:      amounts[i] / totalTokenSupply,
