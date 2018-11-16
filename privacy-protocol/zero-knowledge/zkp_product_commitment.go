@@ -3,11 +3,15 @@ package zkp
 import (
 	"fmt"
 	"github.com/minio/blake2b-simd"
-	"math/big"
-
 	"github.com/ninjadotorg/constant/privacy-protocol"
-
+	"math/big"
 )
+
+
+
+/*------------------------------------------------------*/
+/*-------DECLARE INNER INGREDIENT FOR THE PROTOCOL------*/
+
 type Helper interface {
 	InitBasePoint() *BasePoint
 }
@@ -16,7 +20,7 @@ type BasePoint struct {
 	G privacy.EllipticPoint
 	H privacy.EllipticPoint
 }
-type ProofOfProductCommitment struct {
+type PKComProductProof struct {
 	basePoint BasePoint
 	D proofFactor
 	D1 proofFactor
@@ -31,7 +35,7 @@ type ProofOfProductCommitment struct {
 	cmB 		 	[]byte
 	cmC 		 	[]byte
 }
-type InputCommitments struct {
+type PKComProductWitness struct {
 	witnessA  []byte
 	cmA       []byte
 	randA     []byte
@@ -42,6 +46,16 @@ type InputCommitments struct {
 	cmC       []byte
 	randC     []byte
 }
+/*-----------------END OF DECLARATION-------------------*/
+/*------------------------------------------------------*/
+
+type PKComProductProtocol struct {
+	Witness PKComProductWitness
+	Proof   PKComProductProof
+}
+
+/*------------------------------------------------------*/
+/*------IMPLEMENT INNER INGREDIENT FOR THE PROTOCOL-----*/
 func (basePoint *BasePoint) InitBasePoint() {
 
 	P:= new(privacy.EllipticPoint)
@@ -80,23 +94,33 @@ func MultiScalarMul(factors  [] *big.Int, point privacy.EllipticPoint) *privacy.
 	P.X, P.Y = privacy.Curve.ScalarMult(point.X, point.Y,a.Bytes());
 	return P
 }
-func ProveProductCommitment(ipCm InputCommitments)  ProofOfProductCommitment{
-	proof :=  new(ProofOfProductCommitment)
+
+
+func (pro *PKComProductProtocol) SetWitness(witness PKComProductWitness) {
+	pro.Witness = witness
+}
+func (pro *PKComProductProtocol) SetProof(proof PKComProductProof) {
+	pro.Proof = proof
+}
+
+
+func (pro *PKComProductProtocol) Prove() (*PKComProductProof,error) {
+	proof :=  new(PKComProductProof)
 	proof.basePoint.InitBasePoint();
 	d := new(big.Int).SetBytes(privacy.RandBytes(32));
 	e := new(big.Int).SetBytes(privacy.RandBytes(32));
 	s := new(big.Int).SetBytes(privacy.RandBytes(32));
 	s1 := new(big.Int).SetBytes(privacy.RandBytes(32));
 	t := new(big.Int).SetBytes(privacy.RandBytes(32));
-	ipCm.cmA = privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,ipCm.witnessA,ipCm.randA)
-	ipCm.cmB = privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,ipCm.witnessB,ipCm.randB)
-	ipCm.cmC = privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,ipCm.witnessAB,ipCm.randC)
+	pro.Witness.cmA = privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessA,pro.Witness.randA)
+	pro.Witness.cmB = privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessB,pro.Witness.randB)
+	pro.Witness.cmC = privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessAB,pro.Witness.randC)
 	//Compute D factor of Proof
 	D:= computeCommitmentPoint(proof.basePoint.G, proof.basePoint.H, d,s);
 
 	//Compute D' factor of Proof
 	G1 := new(privacy.EllipticPoint)
-	G1,_= privacy.DecompressCommitment(ipCm.cmB);
+	G1,_= privacy.DecompressCommitment(pro.Witness.cmB);
 	D1:= computeCommitmentPoint(*G1,proof.basePoint.H, d,s1);
 
 
@@ -124,7 +148,7 @@ func ProveProductCommitment(ipCm InputCommitments)  ProofOfProductCommitment{
 
 	//compute f1
 	a:= new(big.Int)
-	a.SetBytes(ipCm.witnessA)
+	a.SetBytes(pro.Witness.witnessA)
 	f1:= a.Mul(a,x)
 
 	f1 = f1.Add(f1,d)
@@ -134,21 +158,21 @@ func ProveProductCommitment(ipCm InputCommitments)  ProofOfProductCommitment{
 
 	//compute z1
 	ra:= new(big.Int)
-	ra.SetBytes(ipCm.randA)
+	ra.SetBytes(pro.Witness.randA)
 	z1:= ra.Mul(ra,x)
 	z1 = z1.Add(z1,s)
 	z1 = z1.Mod(z1,privacy.Curve.Params().N)
 	proof.z1 = *z1;
 	//compute f2
 	b:= new(big.Int)
-	b.SetBytes(ipCm.witnessB)
+	b.SetBytes(pro.Witness.witnessB)
 	f2:= b.Mul(b,x)
 	f2 = f2.Add(f2,e)
 	f2 = f2.Mod(f2,privacy.Curve.Params().N)
 	proof.f2 = *f2;
 	//compute z2 = rb*x+t mod p
 	rb:= new(big.Int)
-	rb.SetBytes(ipCm.randB)
+	rb.SetBytes(pro.Witness.randB)
 	z2:= rb.Mul(rb,x)
 	z2 = z2.Add(z2,t)
 	z2 = z2.Mod(z2,privacy.Curve.Params().N)
@@ -156,46 +180,46 @@ func ProveProductCommitment(ipCm InputCommitments)  ProofOfProductCommitment{
 	//compute z3 = (rc-a*rb) + s'
 	rb_new:=new(big.Int)
 	a_new:= new(big.Int)
-	a_new.SetBytes(ipCm.witnessA)
-	rb_new.SetBytes(ipCm.randB)
+	a_new.SetBytes(pro.Witness.witnessA)
+	rb_new.SetBytes(pro.Witness.randB)
 	rc:= new(big.Int)
-	rc.SetBytes(ipCm.randC)
+	rc.SetBytes(pro.Witness.randC)
 	rc = rc.Sub(rc,a_new.Mul(a_new,rb_new))
 	z3:= rc.Mul(rc,x)
 	z3 = z3.Add(z3,s1)
 	z3 = z3.Mod(z3,privacy.Curve.Params().N)
 	proof.z3 = *z3;
-	proof.cmA = ipCm.cmA
-	proof.cmB = ipCm.cmB
-	proof.cmC = ipCm.cmC
+	proof.cmA = pro.Witness.cmA
+	proof.cmB = pro.Witness.cmB
+	proof.cmC = pro.Witness.cmC
 	proof.G1 = *G1
-	return *proof;
+	return proof,nil;
 }
 
-func VerifyProductCommitment (proof ProofOfProductCommitment) bool {
+func (pro *PKComProductProtocol) Verify () bool {
 	pts1 := new(privacy.EllipticPoint)
 	data:=[][]byte{
-		proof.basePoint.G.X.Bytes(),
-		proof.basePoint.G.Y.Bytes(),
-		proof.basePoint.H.Y.Bytes(),
-		proof.basePoint.H.Y.Bytes(),
-		proof.D.X.Bytes(),
-		proof.D.Y.Bytes(),
-		proof.D1.X.Bytes(),
-		proof.D1.Y.Bytes(),
-		proof.E.X.Bytes(),
-		proof.E.Y.Bytes(),
+		pro.Proof.basePoint.G.X.Bytes(),
+		pro.Proof.basePoint.G.Y.Bytes(),
+		pro.Proof.basePoint.H.Y.Bytes(),
+		pro.Proof.basePoint.H.Y.Bytes(),
+		pro.Proof.D.X.Bytes(),
+		pro.Proof.D.Y.Bytes(),
+		pro.Proof.D1.X.Bytes(),
+		pro.Proof.D1.Y.Bytes(),
+		pro.Proof.E.X.Bytes(),
+		pro.Proof.E.Y.Bytes(),
 	}
 	x:= computeHashString(data)
 	checkFlag:=0;
 
 	//Check witness 1: xA + D == 	Commit(f1,z1)
 	A:= new(privacy.EllipticPoint)
-	A,_ = privacy.DecompressCommitment(proof.cmA);
+	A,_ = privacy.DecompressCommitment(pro.Proof.cmA);
 	pts1.X, pts1.Y = privacy.Curve.ScalarMult(A.X, A.Y, x)
-	pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, proof.D.X,proof.D.Y);
+	pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, pro.Proof.D.X,pro.Proof.D.Y);
 
-	com1 := computeCommitmentPoint(proof.basePoint.G,proof.basePoint.H, &proof.f1, &proof.z1)
+	com1 := computeCommitmentPoint(pro.Proof.basePoint.G,pro.Proof.basePoint.H, &pro.Proof.f1, &pro.Proof.z1)
 
 	if (com1.X.Cmp(pts1.X)==0 && com1.Y.Cmp(pts1.Y)==0){
 		checkFlag +=1
@@ -203,10 +227,10 @@ func VerifyProductCommitment (proof ProofOfProductCommitment) bool {
 		}
 	//Check witness 2: xB + E == 	Commit(f2,z2)
 	B:= new(privacy.EllipticPoint)
-	B,_ = privacy.DecompressCommitment(proof.cmB);
+	B,_ = privacy.DecompressCommitment(pro.Proof.cmB);
 	pts1.X, pts1.Y = privacy.Curve.ScalarMult(B.X, B.Y, x)
-	pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, proof.E.X,proof.E.Y);
-	com2 := computeCommitmentPoint(proof.basePoint.G,proof.basePoint.H, &proof.f2, &proof.z2)
+	pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, pro.Proof.E.X,pro.Proof.E.Y);
+	com2 := computeCommitmentPoint(pro.Proof.basePoint.G,pro.Proof.basePoint.H, &pro.Proof.f2, &pro.Proof.z2)
 
 	if (com2.X.Cmp(pts1.X)==0 && com2.Y.Cmp(pts1.Y)==0){
 		checkFlag +=1
@@ -214,10 +238,10 @@ func VerifyProductCommitment (proof ProofOfProductCommitment) bool {
 	}
 	//  Check witness 3: xC + D1 == Commit'(f1,z3)
 	C := new(privacy.EllipticPoint)
-	C,_ = privacy.DecompressCommitment(proof.cmC);
+	C,_ = privacy.DecompressCommitment(pro.Proof.cmC);
 	pts1.X, pts1.Y = privacy.Curve.ScalarMult(C.X, C.Y, x)
-	pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, proof.D1.X,proof.D1.Y);
-	com3 := computeCommitmentPoint(proof.G1,proof.basePoint.H, &proof.f1, &proof.z3)
+	pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, pro.Proof.D1.X,pro.Proof.D1.Y);
+	com3 := computeCommitmentPoint(pro.Proof.G1,pro.Proof.basePoint.H, &pro.Proof.f1, &pro.Proof.z3)
 	//fmt.Println(pts1)
 	//fmt.Println(com3)
 	if (com3.X.Cmp(pts1.X)==0 && com3.Y.Cmp(pts1.Y)==0){
@@ -230,7 +254,7 @@ func VerifyProductCommitment (proof ProofOfProductCommitment) bool {
 	}
 	return false;
 }
-func TestProductCommitment() {
+func TestPKComProduct() {
 
 	res := true
 	for res{
@@ -256,15 +280,18 @@ func TestProductCommitment() {
 		rB = r2Int.Bytes()
 		rC = r3Int.Bytes()
 
-		ipCm:= new(InputCommitments)
+		ipCm:= new(PKComProductWitness)
 		ipCm.witnessA = witnessA
 		ipCm.witnessB = witnessB
 		ipCm.witnessAB = witnessC
 		ipCm.randA = rA
 		ipCm.randB = rB
 		ipCm.randC = rC
-		proof:= ProveProductCommitment(*ipCm)
-		res = VerifyProductCommitment(proof)
+		var zk PKComProductProtocol
+		zk.SetWitness(*ipCm)
+		proof,_:= zk.Prove()
+		zk.SetProof(*proof)
+		res = zk.Verify();
 		fmt.Println(res)
 	}
 
