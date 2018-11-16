@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sort"
 	//"strconv"
 	"strings" //"fmt"
@@ -693,7 +692,6 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 }
 
 func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *client.SpendingKey, block *Block, nullifiersInDb [][]byte, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
-	//fmt.Println("debug GetListUnspentTxByPrivateKeyInBlock")
 	results := make(map[byte][]transaction.Tx)
 
 	// Get set of keys from private keybyte
@@ -763,14 +761,14 @@ func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *client.S
 					}
 				} else {
 					for i, note := range desc.Note {
-						if note.Apk == keys.PaymentAddress.Apk {
+						if note.Apk == keys.PaymentAddress.Apk && note.Value > 0 {
 							// no privacy
 							candidateCommitment := desc.Commitments[i]
 							if len(nullifiersInDb) > 0 {
 								// -> check commitment with db nullifiers
 								var rho [32]byte
 								copy(rho[:], note.Rho)
-								candidateNullifier := desc.Nullifiers
+								candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
 								if len(candidateNullifier) == 0 {
 									continue
 								}
@@ -784,6 +782,8 @@ func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *client.S
 							note.Cm = candidateCommitment
 							note.Apk = client.GenPaymentAddress(keys.PrivateKey).Apk
 							copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
+						} else {
+							continue
 						}
 					}
 				}
@@ -951,66 +951,10 @@ func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCand
 
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
 func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
-	// list spent
-	//====================
-	//vinList := []transaction.TxTokenVin{}
-	//txCustomTokenIDs := [][]byte{}
-	//listCustomTx, err := self.GetCustomTokenTxs(tokenID)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//for _, tx := range listCustomTx {
-	//	customTokenTx := tx.(*transaction.TxCustomToken)
-	//	for _, vin := range customTokenTx.TxTokenData.Vins {
-	//		if vin.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
-	//			vinList = append(vinList, vin)
-	//			txCustomTokenIDs = append(txCustomTokenIDs, vin.TxCustomTokenID[:])
-	//		}
-	//	}
-	//}
-	//
-	//// get all vout custom token of sender which unspent
-	//voutList := []transaction.TxTokenVout{}
-	//for _, tx := range listCustomTx {
-	//	customTokenTx := tx.(*transaction.TxCustomToken)
-	//	for index, vout := range customTokenTx.TxTokenData.Vouts {
-	//		if vout.PaymentAddress.Apk == receiverKeyset.PaymentAddress.Apk {
-	//			txHash := tx.Hash()
-	//			existed, err := common.SliceBytesExists(txCustomTokenIDs, txHash[:])
-	//			if !existed && err == nil {
-	//				vout.SetIndex(index)
-	//				vout.SetTxCustomTokenID(*tx.Hash())
-	//				voutList = append(voutList, vout)
-	//				fmt.Println("GetUnspentTxCustomTokenVout vout", vout)
-	//			}
-	//		}
-	//	}
-	//}
-	//====================
-	//voutList := []transaction.TxTokenVout{}
 	voutList, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress)
 	if err != nil {
 		return nil, err
 	}
-	//for _, utxo := range utxos {
-	//	items := strings.Split(string(utxo), string([]byte("-")))
-	//	txHashTemp := items[0]
-	//	voutIndexTemp := items[1]
-	//	fmt.Println("GetUnspentTxCustomTokenVout txHashTemp", txHashTemp)
-	//	fmt.Println("GetUnspentTxCustomTokenVout voutIndexTemp", voutIndexTemp)
-	//	voutIndex, err := strconv.Atoi(voutIndexTemp)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	txHash,_ := common.Hash{}.NewHashFromStr(txHashTemp)
-	//	fmt.Println("GetUnspentTxCustomTokenVout txHash", txHash)
-	//	fmt.Println("GetUnspentTxCustomTokenVout voutIndex", voutIndex)
-	//	vout := transaction.TxTokenVout{}
-	//	vout.SetTxCustomTokenID(*txHash)
-	//	vout.SetIndex(voutIndex)
-	//	fmt.Println("GetUnspentTxCustomTokenVout vout", vout)
-	//	voutList = append(voutList, vout)
-	//}
 	return voutList, nil
 }
 
@@ -1020,7 +964,7 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 		// check lightweight
 		if self.config.Light {
 			// TODO get data with light mode
-			fmt.Println("ERROR in GetTransactionByHash", err)
+			Logger.log.Info("ERROR in GetTransactionByHash", err)
 			const (
 				bigNumber   = 999999999
 				bigNumberTx = 999999999
@@ -1033,7 +977,7 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 			// Get transaction
 			tx := transaction.Tx{}
 			locationByte, txByte, err := self.config.DataBase.GetTransactionLightModeByHash(txHash)
-			fmt.Println("GetTransactionByHash - 1", locationByte, txByte, err)
+			Logger.log.Info("GetTransactionByHash - 1", locationByte, txByte, err)
 			if err != nil {
 				return byte(255), nil, -1, nil, err
 			}
@@ -1053,10 +997,10 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 				return byte(255), nil, -1, nil, err
 			}
 			blockHeight = uint32(bigNumber - blockHeight)
-			fmt.Println("Testing in GetTransactionByHash, blockHeight", blockHeight)
+			Logger.log.Info("Testing in GetTransactionByHash, blockHeight", blockHeight)
 			block, err := self.GetBlockByBlockHeight(int32(blockHeight), chainId[0])
 			if err != nil {
-				fmt.Println("ERROR in GetTransactionByHash, get Block by height", err)
+				Logger.log.Error("ERROR in GetTransactionByHash, get Block by height", err)
 				return byte(255), nil, -1, nil, err
 			}
 			//Get txIndex
@@ -1067,7 +1011,7 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 				return byte(255), nil, -1, nil, err
 			}
 			txIndex = uint32(bigNumberTx - txIndex)
-			fmt.Println("Testing in GetTransactionByHash, blockHash, index, tx", block.Hash(), txIndex, tx)
+			Logger.log.Info("Testing in GetTransactionByHash, blockHash, index, tx", block.Hash(), txIndex, tx)
 			return chainId[0], block.Hash(), int(txIndex), &tx, nil
 		}
 
