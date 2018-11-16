@@ -127,10 +127,13 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress client.PaymentAd
 	}
 
 concludeBlock:
-// Get blocksalary fund from txs
+	// Get blocksalary fund from txs
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
 	for _, blockTx := range txsToAdd {
+		if blockTx.GetType() == common.TxRegisterCandidateType {
+
+		}
 		if blockTx.GetType() == common.TxRegisterCandidateType {
 			tx, ok := blockTx.(*transaction.TxRegisterCandidate)
 			if !ok {
@@ -251,4 +254,10 @@ func createSalaryTx(
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}
 	return tx, nil
+}
+
+// createBuySellResponsesTx
+// the tx is to distribute tokens (bond, gov, ...) to token requesters
+func createBuySellResponsesTx() {
+
 }
