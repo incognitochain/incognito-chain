@@ -179,7 +179,7 @@ func CreateTxCustomToken(senderKey *client.SpendingKey,
 	return txCustomToken, nil
 }
 
-func GetTxCustomTokenSignature(tx *TxCustomToken, keyset cashec.KeySet) ([]byte, error) {
+func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset cashec.KeySet) ([]byte, error) {
 	buff := new(bytes.Buffer)
 	json.NewEncoder(buff).Encode(tx)
 	return keyset.Sign(buff.Bytes())
