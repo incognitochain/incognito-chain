@@ -3,6 +3,7 @@ package transaction
 import "github.com/ninjadotorg/constant/common"
 
 type BuySellResponseTx struct {
+	txId      *common.Hash
 	ID        string
 	Amount    uint64
 	AssetType string
@@ -33,6 +34,14 @@ func CreateBuySellResponseTx(
 		BuyBackInfo: buyBackInfo,
 	}
 	return BuySellResponseTx
+}
+
+func (tx *BuySellResponseTx) SetTxID(txId *common.Hash) {
+	tx.txId = txId
+}
+
+func (tx *BuySellResponseTx) GetTxID() *common.Hash {
+	return tx.txId
 }
 
 func (tx *BuySellResponseTx) Hash() *common.Hash {
