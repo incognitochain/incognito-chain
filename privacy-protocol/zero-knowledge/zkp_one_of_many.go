@@ -8,12 +8,12 @@ import (
 )
 
 // PKOneOfManyProtocol is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
-// include witnesses: commitedValue, r []byte
+// include Witness: commitedValue, r []byte
 type PKOneOfManyProtocol struct {
 	witnesses [][]byte
 }
 
-// PKOneOfManyProof contains proof's value
+// PKOneOfManyProof contains Proof's value
 type PKOneOfManyProof struct {
 	cl, ca, cb, cd [][]byte
 	f, za, zb      [][]byte
@@ -21,7 +21,7 @@ type PKOneOfManyProof struct {
 	//val1 EllipticPoint
 }
 
-// SetWitness sets witnesses
+// SetWitness sets Witness
 func (pro *PKOneOfManyProtocol) SetWitness(witnesses [][]byte) {
 	pro.witnesses = make([][]byte, len(witnesses))
 	for i := 0; i < len(witnesses); i++ {
