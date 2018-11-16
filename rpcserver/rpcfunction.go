@@ -1711,7 +1711,7 @@ func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeC
 		if err != nil {
 			return nil, err
 		}
-		item.Amount = res[hex.EncodeToString(accountPaymentAddress.ToBytes())]
+		item.Amount = res[hex.EncodeToString(accountPaymentAddress.Pk)]
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 	}
 	return result, nil
