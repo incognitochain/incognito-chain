@@ -2,6 +2,7 @@ package privacy
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 
@@ -273,3 +274,20 @@ func paddedAppend(size uint, dst, src []byte) []byte {
 	}
 	return append(dst, src...)
 }
+
+func (addr* PaymentAddress) ToBytes() []byte{
+	result := make([]byte, 33)
+	tk := make([]byte, 33)
+	copy(result, addr.Pk[:33])
+	copy(tk, addr.Tk[:33])
+	result = append(result, tk...)
+	return result
+}
+
+func (spendingKey SpendingKey) String() string {
+	for i := 0; i < 32/2; i++ {
+		spendingKey[i], spendingKey[32-1-i] = spendingKey[32-1-i], spendingKey[i]
+	}
+	return hex.EncodeToString(spendingKey[:])
+}
+

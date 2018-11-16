@@ -91,17 +91,17 @@ func ProveProductCommitment(ipCm InputCommitments)  ProofOfProductCommitment{
 	ipCm.cmA = privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,ipCm.witnessA,ipCm.randA)
 	ipCm.cmB = privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,ipCm.witnessB,ipCm.randB)
 	ipCm.cmC = privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,ipCm.witnessAB,ipCm.randC)
-	//Compute D factor of proof
+	//Compute D factor of Proof
 	D:= computeCommitmentPoint(proof.basePoint.G, proof.basePoint.H, d,s);
 
-	//Compute D' factor of proof
+	//Compute D' factor of Proof
 	G1 := new(privacy.EllipticPoint)
 	G1,_= privacy.DecompressCommitment(ipCm.cmB);
 	D1:= computeCommitmentPoint(*G1,proof.basePoint.H, d,s1);
 
 
 
-	//Compute E factor of proof
+	//Compute E factor of Proof
 	E:= computeCommitmentPoint(proof.basePoint.G,proof.basePoint.H, e,t)
 	proof.D = D;
 	proof.E = E;

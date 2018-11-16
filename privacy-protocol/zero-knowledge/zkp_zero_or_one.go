@@ -7,19 +7,21 @@ import (
 )
 
 // PKComZeroOneProtocol is a protocol for Zero-knowledge Proof of Knowledge of committed zero or one
-// include witnesses: commitedValue, r []byte
+// include Witness: commitedValue, r []byte
 type PKComZeroOneProtocol struct {
-	witnesses PKComZeroOneWitness
-	proof PKComZeroOneProof
+	Witness PKComZeroOneWitness
+	Proof   PKComZeroOneProof
 }
 
-// PKComZeroOneProof contains proof's value
+// PKComZeroOneProof contains Proof's value
 type PKComZeroOneProof struct {
-	ca, cb    []byte // 34 bytes
-	f, za, zb []byte //32 bytes
+	ca, cb    	[]byte // 34 bytes
+	f, za, zb 	[]byte //32 bytes
+	commitment 	[]byte // 34 bytes
+	index 			byte
 }
 
-// PKComZeroOneProof contains proof's value
+// PKComZeroOneProof contains Proof's value
 type PKComZeroOneWitness struct {
 	commitment []byte
 	commitedValue []byte
@@ -27,16 +29,14 @@ type PKComZeroOneWitness struct {
 	index byte
 }
 
-// SetWitness sets witnesses
+// SetWitness sets Witness
 func (pro *PKComZeroOneProtocol) SetWitness(witness PKComZeroOneWitness) {
-	//pro.witnesses = new(PKComZeroOneWitness)
-	pro.witnesses = witness
+	pro.Witness = witness
+}
 
-	//pro.witnesses.commitment = witnesses.commitment
-	//for i := 0; i < len(witnesses); i++ {
-	//	pro.witnesses[i] = make([]byte, len(witnesses[i]))
-	//	copy(pro.witnesses[i], witnesses[i])
-	//}
+// SetWitness sets Witness
+func (pro *PKComZeroOneProtocol) SetProof(proof PKComZeroOneProof) {
+	pro.Proof = proof
 }
 
 func getindex(bigint *big.Int) int {
@@ -44,22 +44,19 @@ func getindex(bigint *big.Int) int {
 }
 
 
-// Prove creates a proof for commitment to zero or one
+// Prove creates a Proof for commitment to zero or one
 func (pro *PKComZeroOneProtocol) Prove() (*PKComZeroOneProof, error) {
 	// Check index
-	// indexInt := int(index)
-	// fmt.Printf("index int: %v\n", indexInt)
-	if pro.witnesses.index < 0 || pro.witnesses.index > 2 {
+	if pro.Witness.index < 0 || pro.Witness.index > 2 {
 		return nil, fmt.Errorf("index must be between 0 and 2")
 	}
 
-	// Check value's witnessth is zero or one
-	witness := big.NewInt(0)
-	witness.SetBytes(pro.witnesses.commitedValue)
-	fmt.Printf("witness: %v\n", witness)
+	// Check whether commited value is zero or one or not
+	commitedValue := big.NewInt(0)
+	commitedValue.SetBytes(pro.Witness.commitedValue)
 
-	if witness.Cmp(big.NewInt(0)) != 0 && witness.Cmp(big.NewInt(0)) != 1 {
-		return nil, fmt.Errorf("witness must be zero or one")
+	if commitedValue.Cmp(big.NewInt(0)) != 0 && commitedValue.Cmp(big.NewInt(0)) != 1 {
+		return nil, fmt.Errorf("commited value must be zero or one")
 	}
 
 	proof := new(PKComZeroOneProof)
@@ -79,89 +76,74 @@ func (pro *PKComZeroOneProtocol) Prove() (*PKComZeroOneProof, error) {
 
 	// Calculate ca, cb
 	proof.ca = make([]byte, 34)
-	proof.ca = privacy.Pcm.CommitSpecValue(aInt.Bytes(), sInt.Bytes(), pro.witnesses.index)
+	proof.ca = privacy.Pcm.CommitSpecValue(aInt.Bytes(), sInt.Bytes(), pro.Witness.index)
 
 	am := big.NewInt(0)
-	am.Mul(aInt, witness)
+	am.Mul(aInt, commitedValue)
 	proof.cb = make([]byte, 34)
-	proof.cb = privacy.Pcm.CommitSpecValue(am.Bytes(), tInt.Bytes(), pro.witnesses.index)
+	proof.cb = privacy.Pcm.CommitSpecValue(am.Bytes(), tInt.Bytes(), pro.Witness.index)
 
 	// Calculate x = hash (G0||G1||G2||G3||ca||cb||cm)
 	x := big.NewInt(0)
-	x.SetBytes(privacy.Pcm.GetHashOfValues([][]byte{proof.ca, proof.cb, pro.witnesses.commitment}))
+	x.SetBytes(privacy.Pcm.GetHashOfValues([][]byte{proof.ca, proof.cb, pro.Witness.commitment}))
 	x.Mod(x, privacy.Curve.Params().N)
 
 	// Calculate f = mx + a
-	fmt.Printf("witness: %v\n", witness)
 	f := big.NewInt(0)
-	fmt.Printf("f: %v\n", f.Bytes())
-	f.Mul(witness, x)
+	f.Mul(commitedValue, x)
 	f.Add(f, aInt)
 	f.Mod(f, privacy.Curve.Params().N)
-	//fmt.Printf("f: %v ___ %v\n", f.Bytes(), len(f.Bytes()))
-	proof.f = make([]byte, 32)
-
-	copy(proof.f[getindex(f):],f.Bytes())
-	fmt.Printf("proof.f: %v\n", proof.f)
+	proof.f = f.Bytes()
 
 
 	// Calculate za = rx + s
 	za := big.NewInt(1)
-	za.Mul(new(big.Int).SetBytes(pro.witnesses.rand), x)
+	za.Mul(new(big.Int).SetBytes(pro.Witness.rand), x)
 	za.Add(za, sInt)
 	za.Mod(za, privacy.Curve.Params().N)
-	proof.za = make([]byte, 32)
-	copy(proof.za[getindex(za):], za.Bytes())
+	proof.za = za.Bytes()
 
 	// Calculate zb = r(x-f) + t
 	zb := big.NewInt(1)
 	xSubF := new(big.Int).Sub(x, f)
 	xSubF.Mod(xSubF, privacy.Curve.Params().N)
-	zb.Mul(new(big.Int).SetBytes(pro.witnesses.rand), xSubF)
-	//zb.Mod(zb, privacy.Curve.Params().N)
+	zb.Mul(new(big.Int).SetBytes(pro.Witness.rand), xSubF)
 	zb.Add(zb, tInt)
 	zb.Mod(zb, privacy.Curve.Params().N)
-	proof.zb = make([]byte, 32)
-	copy(proof.zb[getindex(zb):], zb.Bytes())
+	proof.zb = zb.Bytes()
 
 	xm := big.NewInt(1)
-	xm.Mul(x, new(big.Int).SetBytes(pro.witnesses.commitedValue))
+	xm.Mul(x, new(big.Int).SetBytes(pro.Witness.commitedValue))
 	point := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
-	point.X, point.Y = privacy.Pcm.G[pro.witnesses.index].X, privacy.Pcm.G[pro.witnesses.index].Y
+	point.X, point.Y = privacy.Pcm.G[pro.Witness.index].X, privacy.Pcm.G[pro.Witness.index].Y
 	point.X, point.Y = privacy.Curve.ScalarMult(point.X, point.Y, xm.Bytes())
 
 	xr := big.NewInt(1)
-	xr.Mul(x, new(big.Int).SetBytes(pro.witnesses.rand))
+	xr.Mul(x, new(big.Int).SetBytes(pro.Witness.rand))
 	point2 := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
 	point2.X, point2.Y = privacy.Pcm.G[privacy.CM_CAPACITY-1].X, privacy.Pcm.G[privacy.CM_CAPACITY-1].Y
 	point2.X, point2.Y = privacy.Curve.ScalarMult(point2.X, point2.Y, xr.Bytes())
 
 
 	point.X, point.Y = privacy.Curve.Add(point.X, point.Y, point2.X, point2.Y)
-	//fmt.Printf("Test ve 1 \n\n\n\n")
-	//fmt.Printf("Point X: %v\n", point.X)
-	//fmt.Printf("Point Y: %v\n", point.Y)
 
-	aG := privacy.Pcm.G[pro.witnesses.index]
+	aG := privacy.Pcm.G[pro.Witness.index]
 	aG.X, aG.Y = privacy.Curve.ScalarMult(aG.X, aG.Y, aInt.Bytes())
 	sH := privacy.Pcm.G[privacy.CM_CAPACITY-1]
 	sH.X, sH.Y = privacy.Curve.ScalarMult(sH.X, sH.Y, sInt.Bytes())
 	aG.X, aG.Y = privacy.Curve.Add(aG.X, aG.Y, sH.X, sH.Y)
-
-
 	aG.X, aG.Y = privacy.Curve.Add(aG.X, aG.Y, point.X, point.Y)
-	//
-	//fmt.Printf("Test sum \n\n\n\n")
-	//fmt.Printf("Point X: %v\n", aG.X)
-	//fmt.Printf("Point Y: %v\n", aG.Y)
+
+	proof.commitment = pro.Witness.commitment
+	proof.index = pro.Witness.index
 
 	return proof, nil
 }
 
-// Verify verifies the proof for commitment to zero or one
-func (pro *PKComZeroOneProtocol) Verify(proof *PKComZeroOneProof, commitmentValue []byte, index byte) bool {
+// Verify verifies the Proof for commitment to zero or one
+func (pro *PKComZeroOneProtocol) Verify() bool {
 	//Decompress commitment  value
-	comPoint, err := privacy.DecompressCommitment(commitmentValue)
+	comPoint, err := privacy.DecompressCommitment(pro.Proof.commitment)
 	if err != nil {
 		fmt.Printf("Can not decompress commitment value to ECC point")
 		return false
@@ -169,19 +151,19 @@ func (pro *PKComZeroOneProtocol) Verify(proof *PKComZeroOneProof, commitmentValu
 
 	// Calculate x = hash (G0||G1||G2||G3||ca||cb||cm)
 	x := big.NewInt(0)
-	x.SetBytes(privacy.Pcm.GetHashOfValues([][]byte{proof.ca, proof.cb, commitmentValue}))
+	x.SetBytes(privacy.Pcm.GetHashOfValues([][]byte{pro.Proof.ca, pro.Proof.cb, pro.Proof.commitment}))
 	x.Mod(x, privacy.Curve.Params().N)
 
-	// Decompress ca, cb of proof
-	caPoint, err := privacy.DecompressCommitment(proof.ca)
+	// Decompress ca, cb of Proof
+	caPoint, err := privacy.DecompressCommitment(pro.Proof.ca)
 	if err != nil {
-		fmt.Printf("Can not decompress proof ca to ECC point")
+		fmt.Printf("Can not decompress Proof ca to ECC point")
 		return false
 	}
-	cbPoint, err := privacy.DecompressCommitment(proof.cb)
+	cbPoint, err := privacy.DecompressCommitment(pro.Proof.cb)
 	fmt.Printf("cb Point verify: %+v\n", cbPoint)
 	if err != nil {
-		fmt.Printf("Can not decompress proof cb to ECC point")
+		fmt.Printf("Can not decompress Proof cb to ECC point")
 		return false
 	}
 
@@ -191,7 +173,7 @@ func (pro *PKComZeroOneProtocol) Verify(proof *PKComZeroOneProof, commitmentValu
 	leftPoint1.X, leftPoint1.Y = privacy.Curve.Add(leftPoint1.X, leftPoint1.Y, caPoint.X, caPoint.Y)
 
 	// Calculate rightPoint1 = Com(f, za)
-	rightValue1 := privacy.Pcm.CommitSpecValue(proof.f, proof.za, index)
+	rightValue1 := privacy.Pcm.CommitSpecValue(pro.Proof.f, pro.Proof.za, pro.Proof.index)
 
 	rightPoint1, err := privacy.DecompressCommitment(rightValue1)
 	fmt.Printf("Method 1\n")
@@ -205,13 +187,13 @@ func (pro *PKComZeroOneProtocol) Verify(proof *PKComZeroOneProof, commitmentValu
 	// Calculate leftPoint2 = c^(x-f) * cb
 	leftPoint2 := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
 	xSubF := new(big.Int)
-	xSubF.Sub(x, new(big.Int).SetBytes(proof.f))
+	xSubF.Sub(x, new(big.Int).SetBytes(pro.Proof.f))
 	xSubF.Mod(xSubF, privacy.Curve.Params().N)
 	leftPoint2.X, leftPoint2.Y = privacy.Curve.ScalarMult(comPoint.X, comPoint.Y, xSubF.Bytes())
 	leftPoint2.X, leftPoint2.Y = privacy.Curve.Add(leftPoint2.X, leftPoint2.Y, cbPoint.X, cbPoint.Y)
 
 	// Calculate rightPoint1 = Com(0, zb)
-	rightValue2 := privacy.Pcm.CommitSpecValue(big.NewInt(0).Bytes(), proof.zb, index)
+	rightValue2 := privacy.Pcm.CommitSpecValue(big.NewInt(0).Bytes(), pro.Proof.zb, pro.Proof.index)
 	rightPoint2, err := privacy.DecompressCommitment(rightValue2)
 	if err != nil {
 		fmt.Printf("Can not decompress comitment for zero")
@@ -273,9 +255,11 @@ func TestPKComZeroOne() {
 		zk.SetWitness(witness)
 		proof, _ := zk.Prove()
 
+		zk.SetProof(*proof)
+
 		fmt.Printf("Proof: %+v\n", proof)
 
-		res = zk.Verify(proof, partialCommitment, 1)
+		res = zk.Verify()
 		fmt.Println(res)
 	}
 }

@@ -13,29 +13,29 @@ const(
 )
 
 // PKMaxValue is a protocol for Zero-knowledge Proof of Knowledge of max value is 2^64-1
-// include witnesses: commitedValue, r []byte
+// include Witness: commitedValue, r []byte
 type PKMaxValueProtocol struct{
-	Witnesses [][]byte
+	Witness PKMaxValueWitness
 	Proof PKMaxValueProof
 }
 
-// PKOneOfManyProof contains proof's value
+// PKOneOfManyProof contains Proof's value
 type PKMaxValueProof struct {
 	commitments [][]byte
 	proofZeroOneCommitments []*PKComZeroOneProof
-	PKComZeroOneProtocol *PKComZeroOneProtocol
+	PKComZeroOneProtocol []*PKComZeroOneProtocol
 }
 
-// SetWitness sets witnesses
-//func (pro *PKMaxValueProtocol) SetWitness(witnesses [][]byte) {
-//	pro.witnesses = make([][]byte, len(witnesses))
-//	for i := 0; i < len(witnesses); i++ {
-//		pro.witnesses[i] = make([]byte, len(witnesses[i]))
-//		copy(pro.witnesses[i], witnesses[i])
-//	}
-//}
+type PKMaxValueWitness struct{
+	value []byte
+}
 
-func (pro * PKMaxValueProtocol) Prove(value []byte) (*PKMaxValueProof, error) {
+//SetWitness sets Witness
+func (pro *PKMaxValueProtocol) SetWitness(witness PKMaxValueWitness) {
+	pro.Witness = witness
+}
+
+func (pro * PKMaxValueProtocol) Prove() (*PKMaxValueProof, error) {
 	proof := new(PKMaxValueProof)
 
 	threshold := [4]int{8, 16, 32, 64}
@@ -47,7 +47,7 @@ func (pro * PKMaxValueProtocol) Prove(value []byte) (*PKMaxValueProof, error) {
 	//fmt.Printf("max: %v\n", max)
 
 	//convert value from byte array to int64
-	vInt, n := binary.Varint(value)
+	vInt, n := binary.Varint(pro.Witness.value)
 	if uint64(vInt) > VMAX{
 		return nil, fmt.Errorf("value must be less than 2^64-1")
 	}
@@ -71,12 +71,12 @@ func (pro * PKMaxValueProtocol) Prove(value []byte) (*PKMaxValueProof, error) {
 		vIntTmp = vIntTmp / 2
 	}
 
-	// Set witnesses and commit
+	// Set Witness and commit
 	privacy.Pcm.InitCommitment()
 	witnesses := make([][][]byte, threshold[indexThreshold])
 	proof.commitments = make([][]byte, threshold[indexThreshold])
 	proof.proofZeroOneCommitments = make([]*PKComZeroOneProof, threshold[indexThreshold])
-	proof.PKComZeroOneProtocol = new(PKComZeroOneProtocol)
+	proof.PKComZeroOneProtocol = make([]*PKComZeroOneProtocol, threshold[indexThreshold])
 
 	for i := 0 ; i < nBitsValue; i++{
 		witnesses[i] = [][]byte{big.NewInt(int64(vBinary[i])).Bytes(), privacy.RandBytes(32)}
@@ -90,10 +90,10 @@ func (pro * PKMaxValueProtocol) Prove(value []byte) (*PKMaxValueProof, error) {
 		witness.commitedValue = witnesses[i][0]
 		witness.rand = witnesses[i][1]
 		witness.index = privacy.VALUE
-		proof.PKComZeroOneProtocol.SetWitness(witness)
+		proof.PKComZeroOneProtocol[i].SetWitness(witness)
 
 		proof.proofZeroOneCommitments[i] = new(PKComZeroOneProof)
-		proof.proofZeroOneCommitments[i], _ = proof.PKComZeroOneProtocol.Prove()
+		proof.proofZeroOneCommitments[i], _ = proof.PKComZeroOneProtocol[i].Prove()
 		fmt.Printf("Proof %v: %+v\n", i, proof.proofZeroOneCommitments[i])
 	}
 
@@ -109,10 +109,10 @@ func (pro * PKMaxValueProtocol) Prove(value []byte) (*PKMaxValueProof, error) {
 		witness.commitedValue = witnesses[j][0]
 		witness.rand = witnesses[j][1]
 		witness.index = privacy.VALUE
-		proof.PKComZeroOneProtocol.SetWitness(witness)
+		proof.PKComZeroOneProtocol[j].SetWitness(witness)
 
 		proof.proofZeroOneCommitments[j] = new(PKComZeroOneProof)
-		proof.proofZeroOneCommitments[j], _ = proof.PKComZeroOneProtocol.Prove()
+		proof.proofZeroOneCommitments[j], _ = proof.PKComZeroOneProtocol[j].Prove()
 		fmt.Printf("Proof %v: %+v\n", j, proof.proofZeroOneCommitments[j])
 	}
 
@@ -123,25 +123,23 @@ func (pro * PKMaxValueProtocol) SetProof(proof PKMaxValueProof){
 	pro.Proof = proof
 }
 
-func (pro * PKMaxValueProtocol) Verify(proof PKMaxValueProof) bool {
-	if len(proof.commitments) > 64 || len(proof.proofZeroOneCommitments) > 64{
+func (pro * PKMaxValueProtocol) Verify() bool {
+	if len(pro.Proof.commitments) > 64 || len(pro.Proof.proofZeroOneCommitments) > 64{
 		return false
 	}
 
-	if len(proof.commitments) != len(proof.proofZeroOneCommitments) {
+	if len(pro.Proof.commitments) != len(pro.Proof.proofZeroOneCommitments) {
 		return false
 	}
 
-	//pk := new(PKComZeroOneProtocol)
 
-	for i := 0; i < len(proof.commitments); i++{
-		res := proof.PKComZeroOneProtocol.Verify(proof.proofZeroOneCommitments[i], proof.commitments[i], privacy.VALUE)
+	for i := 0; i < len(pro.Proof.commitments); i++{
+		res := pro.Proof.PKComZeroOneProtocol[i].Verify()
 		if !res {
 			fmt.Printf("verify fail at %v\n", i)
 			return false
 		}
 	}
-
 	return true
 }
 
@@ -159,7 +157,11 @@ func TestPKMaxValue(){
 		n := binary.PutVarint(vBytes, value)
 		vBytes = vBytes[:n]
 
-		proof, err := pk.Prove(vBytes)
+		var witness PKMaxValueWitness
+		witness.value = vBytes
+		pk.SetWitness(witness)
+
+		proof, err := pk.Prove()
 
 		pk.SetProof(*proof)
 
@@ -169,7 +171,7 @@ func TestPKMaxValue(){
 		fmt.Printf("Proof.commitments: %v\n", proof.commitments)
 		fmt.Printf("Proof.proofZeroOne: %v\n", proof.proofZeroOneCommitments)
 
-		res = pk.Verify(*proof)
+		res = pk.Verify()
 
 		fmt.Println(res)
 	}
