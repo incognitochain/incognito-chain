@@ -284,6 +284,12 @@ func (addr* PaymentAddress) ToBytes() []byte{
 	return result
 }
 
+func (addr *PaymentAddress) FromBytes(data []byte) *PaymentAddress {
+	copy(addr.Pk[:], data[:33])   // First 33 bytes are Pk’s
+	copy(addr.Tk[:], data[33:]) 	// Last 33 bytes are TK’s
+	return addr
+}
+
 func (spendingKey SpendingKey) String() string {
 	for i := 0; i < 32/2; i++ {
 		spendingKey[i], spendingKey[32-1-i] = spendingKey[32-1-i], spendingKey[i]

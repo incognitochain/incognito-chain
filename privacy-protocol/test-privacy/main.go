@@ -1,11 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"math/big"
-)
-
+import "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 
 func main() {
 
@@ -16,9 +11,9 @@ func main() {
 	// fmt.Printf("Gy: %X\n", privacy-protocol.Curve.Params().Gy)
 	// fmt.Printf("BitSize: %X\n", privacy-protocol.Curve.Params().BitSize)
 
-	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	fmt.Printf("\nSpending key: %v\n", spendingKey)
-	fmt.Println(len(spendingKey))
+	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	//fmt.Printf("\nSpending key: %v\n", spendingKey)
+	//fmt.Println(len(spendingKey))
 
 	//address := privacy.GeneratePublicKey(spendingKey)
 	//fmt.Printf("\nAddress: %v\n", address)
@@ -43,12 +38,12 @@ func main() {
 	//}
 	//fmt.Printf("Transmission key point decompress: %+v\n ", point)
 
-	paymentAddress := privacy.GeneratePaymentAddress(spendingKey)
-	fmt.Println(paymentAddress.ToBytes())
-	fmt.Printf("tk: %v\n", paymentAddress.Tk)
-	fmt.Printf("pk: %v\n", paymentAddress.Pk)
-
-	fmt.Printf("spending key bytes: %v\n", spendingKey.String())
+	//paymentAddress := privacy.GeneratePaymentAddress(spendingKey)
+	//fmt.Println(paymentAddress.ToBytes())
+	//fmt.Printf("tk: %v\n", paymentAddress.Tk)
+	//fmt.Printf("pk: %v\n", paymentAddress.Pk)
+	//
+	//fmt.Printf("spending key bytes: %v\n", spendingKey.String())
 
 
 
@@ -87,7 +82,7 @@ func main() {
 
 	//zkp.TestPKOneOfMany()
 
-	//zkp.TestPKMaxValue()
+	zkp.TestPKMaxValue()
 
 	//privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestProductCommitment()
