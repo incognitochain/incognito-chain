@@ -7,19 +7,60 @@ import (
 	"math/big"
 )
 
-
 type SchnPubKey struct {
-	PK, G, H EllipticPoint // PK = G^SK + H^R
+	PK, H EllipticPoint // PK = G^SK + H^R
 }
 
 type SchnPrivKey struct {
-	SK, R *big.Int
-	PK    SchnPubKey
+	SK, R  *big.Int
+	PubKey *SchnPubKey
 }
 
 type SchnSignature struct {
 	E, S1, S2 *big.Int
 }
+
+//---------------------------------------------------------------------------------------------------------
+
+//SignScheme contain some algorithm for sign something
+type SignScheme interface {
+	KeyGen()                //Generate PriKey and PubKey
+	GetPubkey() *SchnPubKey //return Publickey belong to the PrivateKey
+	Sign(hash []byte) (*SchnSignature, error)
+	Verify(signature *SchnSignature, hash []byte) bool
+}
+
+//KeyGen Generate PriKey and PubKey
+func (priKey *SchnPrivKey) KeyGen() {
+	if priKey == nil {
+		priKey = new(SchnPrivKey)
+	}
+	xBytes := RandBytes(32)
+	priKey.SK = new(big.Int).SetBytes(xBytes)
+	priKey.SK.Mod(priKey.SK, Curve.Params().N)
+
+	rBytes := RandBytes(32)
+	priKey.R = new(big.Int).SetBytes(rBytes)
+	priKey.R.Mod(priKey.R, Curve.Params().N)
+
+	priKey.PubKey = new(SchnPubKey)
+
+	genPoint := *new(EllipticPoint)
+	genPoint.X = Curve.Params().Gx
+	genPoint.Y = Curve.Params().Gy
+
+	priKey.PubKey.H = *new(EllipticPoint)
+	priKey.PubKey.H.X, priKey.PubKey.H.Y = Curve.ScalarBaseMult(RandBytes(32))
+	rH := new(EllipticPoint)
+	rH.X, rH.Y = Curve.ScalarMult(priKey.PubKey.H.X, priKey.PubKey.H.Y, priKey.R.Bytes())
+
+	priKey.PubKey.PK = *new(EllipticPoint)
+	priKey.PubKey.PK.X, priKey.PubKey.PK.Y = Curve.ScalarBaseMult(priKey.SK.Bytes())
+	priKey.PubKey.PK.X, priKey.PubKey.PK.Y = Curve.Add(priKey.PubKey.PK.X, priKey.PubKey.PK.Y, rH.X, rH.Y)
+
+}
+
+//---------------------------------------------------------------------------------------------------------
 
 // GenSchnPrivKey generates Schnorr private key
 func SchnGenPrivKey() *SchnPrivKey {
@@ -31,7 +72,7 @@ func SchnGenPrivKey() *SchnPrivKey {
 	rBytes := RandBytes(32)
 	priv.R = new(big.Int).SetBytes(rBytes)
 	priv.R.Mod(priv.R, Curve.Params().N)
-	priv.PK = *SchnGenPubKey(*priv)
+	priv.PubKey = SchnGenPubKey(*priv)
 
 	return priv
 }
@@ -39,9 +80,9 @@ func SchnGenPrivKey() *SchnPrivKey {
 func SchnGenPubKey(priv SchnPrivKey) *SchnPubKey {
 	pub := new(SchnPubKey)
 
-	pub.G = *new(EllipticPoint)
-	pub.G.X = Curve.Params().Gx
-	pub.G.Y = Curve.Params().Gy
+	genPoint := *new(EllipticPoint)
+	genPoint.X = Curve.Params().Gx
+	genPoint.Y = Curve.Params().Gy
 
 	pub.H = *new(EllipticPoint)
 	pub.H.X, pub.H.Y = Curve.ScalarBaseMult(RandBytes(32))
@@ -60,6 +101,10 @@ func SchnSign(hash []byte, priv SchnPrivKey) (*SchnSignature, error) {
 		return nil, errors.New("Hash length must be 32 bytes")
 	}
 
+	genPoint := *new(EllipticPoint)
+	genPoint.X = Curve.Params().Gx
+	genPoint.Y = Curve.Params().Gy
+
 	signature := new(SchnSignature)
 
 	k1Bytes := RandBytes(32)
@@ -71,10 +116,10 @@ func SchnSign(hash []byte, priv SchnPrivKey) (*SchnSignature, error) {
 	k2.Mod(k2, Curve.Params().N)
 
 	t1 := new(EllipticPoint)
-	t1.X, t1.Y = Curve.ScalarMult(priv.PK.G.X, priv.PK.G.Y, k1.Bytes())
+	t1.X, t1.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, k1.Bytes())
 
 	t2 := new(EllipticPoint)
-	t2.X, t2.Y = Curve.ScalarMult(priv.PK.H.X, priv.PK.H.Y, k2.Bytes())
+	t2.X, t2.Y = Curve.ScalarMult(priv.PubKey.H.X, priv.PubKey.H.Y, k2.Bytes())
 
 	t := new(EllipticPoint)
 	t.X, t.Y = Curve.Add(t1.X, t1.Y, t2.X, t2.Y)
@@ -106,7 +151,7 @@ func SchnVerify(signature *SchnSignature, hash []byte, pub SchnPubKey) bool {
 	}
 
 	rv := new(EllipticPoint)
-	rv.X, rv.Y = Curve.ScalarMult(pub.G.X, pub.G.Y, signature.S1.Bytes())
+	rv.X, rv.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, signature.S1.Bytes())
 	tmp := new(EllipticPoint)
 	tmp.X, tmp.Y = Curve.ScalarMult(pub.H.X, pub.H.Y, signature.S2.Bytes())
 	rv.X, rv.Y = Curve.Add(rv.X, rv.Y, tmp.X, tmp.Y)
@@ -145,7 +190,7 @@ func TestSchn() {
 	signature, _ := SchnSign(hash, *priv)
 	fmt.Printf("Signature: %+v\n", signature)
 
-	res := SchnVerify(signature, hash, priv.PK)
+	res := SchnVerify(signature, hash, *priv.PubKey)
 	fmt.Println(res)
 
 }

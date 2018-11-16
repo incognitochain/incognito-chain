@@ -78,9 +78,9 @@ var preSelectValidatorsTestnet = []string{
 	"12VGen58VjKC8cT3hGhSohdb8n4kz3huXka9UNcYFbUzGdgnXKZ",
 	"12nVJxbZnexTmkbqcs9huztH9kN4DBCbjZewHgoyH6kHsLnf9uE",
 	"12TZJQbucHA97TJNVtp8xud2BUbrzt1Mgq8Kif1BEdf51BVPFwR",
-	"12EgPTDbermjn6xSxtdjPiguaV4moStJK1uiHnSSnw6rdM9TEBe",
+	"16bFdbgKxffG7EpKzH4mRv3X7t2SGK4qhAbCBN7TG9rrNqpxY47", // me
 	"12ixtJSwVqvLrB4x14ux9c3h2DyUgdfvyjt5XooHkxh6vbcZomW",
-	"1cizgU9GeDuEiH7GddwnV2YhPBB3aD1DMir3dynDQahjwQyqTk", // me
+	"1cizgU9GeDuEiH7GddwnV2YhPBB3aD1DMir3dynDQahjwQyqTk",
 	"1QHok11tCavbA328ASuHWpoS3P5KuAkWoDLRJZXGbWpBK6xjAS",
 	"1Jd94JYrqLGLUV6wEa43gdsDGc6JGcy2hYbsNptRuSS3iPz24e",
 	"1Q7P7QZGfJSrzC3US1Eqw2iPYDX5rqEG2T8ADsjrML5cQbSaU8",

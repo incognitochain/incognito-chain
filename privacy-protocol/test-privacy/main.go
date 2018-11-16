@@ -45,9 +45,6 @@ func main() {
 	//
 	//fmt.Printf("spending key bytes: %v\n", spendingKey.String())
 
-
-
-
 	//msg := "hello, world"
 	//hash := sha256.Sum256([]byte(msg))
 	//
@@ -68,15 +65,12 @@ func main() {
 	//// fmt.Println("Done")
 	//a:= new(privacy-protocol.InputCommitments)
 	//
-
 	//privacy-protocol.TestProductCommitment()
 	//privacy-protocol.Elcm.InitCommitment()
 	// privacy-protocol.TestProofIsZero()
 	// fmt.Println("Done")
 	// privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestPKOneOfMany()
-
-
 
 	//zkp.TestPKComZeroOne()
 
@@ -108,5 +102,5 @@ func main() {
 	//fmt.Println(zk.Verify())
 
 	zkp.TestPKComProduct()
-//
+
 }

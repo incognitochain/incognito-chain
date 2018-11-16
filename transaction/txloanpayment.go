@@ -66,3 +66,7 @@ func (tx *TxLoanPayment) ValidateTransaction() bool {
 	}
 	return true
 }
+
+func (tx *TxLoanPayment) GetType() string {
+	return common.TxLoanPayment
+}

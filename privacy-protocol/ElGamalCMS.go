@@ -54,7 +54,7 @@ type ElCParams struct {
 //ElCParams ...
 var Elcm ElCParams
 
-// hashGenerator derives new generator from another generator using hash function
+// HashGenerator derives new generator from another generator using hash function
 func HashGenerator(g EllipticPoint) EllipticPoint {
 	// res.X = hash(g.X), res.Y = sqrt(res.X^3 - 3X + B)
 	var res = new(EllipticPoint)
@@ -191,7 +191,6 @@ func (com ElCParams) Commit(values [CM_CAPACITY-1][]byte) []byte {
 	return commitment
 }
 
-
 // CommitSpecValue commits specific value with index and returns 34 bytes
 func (com ElCParams) CommitSpecValue(value, sRnd []byte, index byte) []byte {
 	component1 := new(EllipticPoint)
@@ -245,7 +244,9 @@ func (com ElCParams) CommitWithSpecPoint(G EllipticPoint, H EllipticPoint, value
 	commitment = append(commitment, componentBytes2...)
 
 	return commitment
+
 }
+
 
 // CommitBitByBit commits value bit by bit and commits (nBitsThreshold - nBits) zero bits as padding
 //func (com ElCParams) CommitBitByBit(value uint64, nBits int, nBitsThreshold int, rands[][]byte, index byte) ([][]byte, error){

@@ -17,6 +17,7 @@ const (
 	CmdBlock         = "block"
 	CmdTx            = "tx"
 	CmdRegisteration = "registeration"
+	CmdCustomToken   = "txtoken"
 	CmdGetBlocks     = "getblocks"
 	CmdInv           = "inv"
 	CmdGetData       = "getdata"
@@ -58,9 +59,9 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 			},
 		}
 		break
-	case CmdRegisteration:
+	case CmdCustomToken:
 		msg = &MessageRegistration{
-			Transaction: &transaction.TxRegisterCandidate{},
+			Transaction: &transaction.TxCustomToken{},
 		}
 		break
 	case CmdGetBlocks:

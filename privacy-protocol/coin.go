@@ -10,12 +10,12 @@ type Value []byte          //32 bytes
 
 // Coin represents a coin
 type Coin struct {
-	PublicKey      	PublicKey					// 33 bytes
-	SerialNumber   	SerialNumber			// 32 bytes
-	CoinCommitment 	CoinCommitment		// 34 bytes
-	R              	Random 						// Random for coin commitment
-	Value						Value 						// 32 bytes
-	Info    				[]byte
+	PublicKey      PublicKey      // 33 bytes
+	SerialNumber   SerialNumber   // 32 bytes
+	CoinCommitment CoinCommitment // 34 bytes
+	R              Random         // Random for coin commitment
+	Value          Value          // 32 bytes
+	Info           []byte
 }
 
 // CommitAll commits a coin with 4 attributes (public key, value, serial number, r)
@@ -31,6 +31,7 @@ func (coin *Coin) CommitAll() {
 func (coin *Coin) CommitPublicKey() []byte {
 	var values [CM_CAPACITY-1][]byte
 	values = [CM_CAPACITY-1][]byte{coin.PublicKey, nil, nil, coin.R}
+
 
 	var commitment []byte
 	commitment = append(commitment, PK_CM)

@@ -116,6 +116,18 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
+	// Update utxo reward for dividends
+	err = self.UpdateDividendPayout(block)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+
+	// Process crowdsale tx
+	err = self.ProcessCrowdsaleTxs(block)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+
 	Logger.log.Infof("Accepted block %s", blockHash)
 
 	return nil

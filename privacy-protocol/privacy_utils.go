@@ -52,13 +52,12 @@ func IsPowerOfTwo(n int) bool {
 }
 
 // ConvertIntToBinary represents a integer number in binary
-func ConvertIntToBinary(i int, n int) []byte{
+func ConvertIntToBinary(inum int, n int) []byte {
 	binary := make([]byte, n)
-	tmp := i
 
-	for i := n-1; i >= 0; i--{
-		binary[i] = byte(tmp % 2)
-		tmp = tmp / 2
+	for i := n - 1; i >= 0; i-- {
+		binary[i] = byte(inum % 2)
+		inum = inum / 2
 	}
 
 	return binary
