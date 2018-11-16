@@ -48,7 +48,7 @@ var RpcHandler = map[string]commandHandler{
 	ListTransactions:                   RpcServer.handleListTransactions,
 	CreateTransaction:                  RpcServer.handleCreateTransaction,
 	SendTransaction:                    RpcServer.handleSendTransaction,
-	SendMany:                           RpcServer.handlCreateAndSendTx,
+	CreateAndSendTransaction:           RpcServer.handlCreateAndSendTx,
 	CreateActionParamsTransaction:      RpcServer.handleCreateActionParamsTransaction,
 	SendRegistrationCandidateCommittee: RpcServer.handleSendRegistrationCandidateCommittee,
 	GetMempoolInfo:                     RpcServer.handleGetMempoolInfo,
