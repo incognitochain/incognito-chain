@@ -94,16 +94,7 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 				Logger.log.Error(err)
 			}
 		}
-	} /*else if tx.GetType() == common.TxRegisterCandidateType {
-		if tp.config.FeeEstimator != nil {
-			chainId, err := common.GetTxSenderChain(tx.(*transaction.TxRegisterCandidate).AddressLastByte)
-			if err == nil {
-				tp.config.FeeEstimator[chainId].ObserveTransaction(txD)
-			} else {
-				Logger.log.Error(err)
-			}
-		}
-	}*/
+	}
 
 	return txD
 }
@@ -296,93 +287,6 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 	return true, nil
 }
 
-// Validate sanity for registration candidate tx data
-/*func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxRegisterCandidate) (bool, error) {
-	if !common.ValidateNodeAddress(txVoting.PublicKey) {
-		return false, errors.New("Wrong voting node data")
-	}
-	tx := txVoting.Tx
-	txN := tx
-	//check version
-	if txN.Version > transaction.TxVersion {
-		return false, errors.New("Wrong tx version")
-	}
-	// check LockTime before now
-	if int64(txN.LockTime) > time.Now().Unix() {
-		return false, errors.New("Wrong tx locktime")
-	}
-	// check Type equal "n"
-	if txN.Type != common.TxRegisterCandidateType {
-		return false, errors.New("Wrong tx type")
-	}
-	// check length of JSPubKey
-	if len(txN.JSPubKey) != 64 {
-		return false, errors.New("Wrong tx jspubkey")
-	}
-	// check length of JSSig
-	if len(txN.JSSig) != 64 {
-		return false, errors.New("Wrong tx jssig")
-	}
-	//check Descs
-
-	for _, desc := range txN.Descs {
-		// check length of Anchor
-		if len(desc.Anchor) != 2 {
-			return false, errors.New("Wrong tx desc's anchor")
-		}
-		// check length of EphemeralPubKey
-		if len(desc.EphemeralPubKey) != client.EphemeralKeyLength {
-			return false, errors.New("Wrong tx desc's ephemeralpubkey")
-		}
-		// check length of HSigSeed
-		if len(desc.HSigSeed) != 32 {
-			return false, errors.New("Wrong tx desc's hsigseed")
-		}
-		// check length of Nullifiers
-		if len(desc.Nullifiers) != 2 {
-			return false, errors.New("Wrong tx desc's nullifiers")
-		}
-		if len(desc.Nullifiers[0]) != 32 {
-			return false, errors.New("Wrong tx desc's nullifiers")
-		}
-		if len(desc.Nullifiers[1]) != 32 {
-			return false, errors.New("Wrong tx desc's nullifiers")
-		}
-		// check length of Commitments
-		if len(desc.Commitments) != 2 {
-			return false, errors.New("Wrong tx desc's commitments")
-		}
-		if len(desc.Commitments[0]) != 32 {
-			return false, errors.New("Wrong tx desc's commitments")
-		}
-		if len(desc.Commitments[1]) != 32 {
-			return false, errors.New("Wrong tx desc's commitments")
-		}
-		// check length of Vmacs
-		if len(desc.Vmacs) != 2 {
-			return false, errors.New("Wrong tx desc's vmacs")
-		}
-		if len(desc.Vmacs[0]) != 32 {
-			return false, errors.New("Wrong tx desc's vmacs")
-		}
-		if len(desc.Vmacs[1]) != 32 {
-			return false, errors.New("Wrong tx desc's vmacs")
-		}
-		//
-		if desc.Proof != nil { // no privacy-protocol
-			return false, errors.New("Wrong tx desc's proof")
-		}
-		if len(desc.EncryptedData) != 0 {
-			return false, errors.New("Wrong tx desc's encryptedData")
-		}
-		// check nulltifier is existed in DB
-		if desc.Reward != 0 {
-			return false, errors.New("Wrong tx desc's reward")
-		}
-	}
-	return true, nil
-}*/
-
 // MaybeAcceptTransaction is the main workhorse for handling insertion of new
 // free-standing transactions into a memory pool.  It includes functionality
 // such as rejecting duplicate transactions, ensuring transactions follow all
@@ -412,11 +316,6 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 			// check double spend
 			return blockChain.ValidateDoubleSpend(tx, chainID)
 		}
-		/*case common.TxRegisterCandidateType:
-		  {
-			  // check double spend
-			  return blockChain.ValidateDoubleSpend(tx, chainID)
-		  }*/
 	case common.TxSalaryType:
 		{
 			// TODO
@@ -586,12 +485,6 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 		{
 			return 0, nil
 		}
-		/*case common.TxRegisterCandidateType:
-		  {
-			  votingTx := tx.(*transaction.TxRegisterCandidate)
-			  err := tp.config.Policy.CheckVotingTransactionFee(votingTx)
-			  return votingTx.Fee, err
-		  }*/
 	default:
 		{
 			return 0, errors.New("Wrong tx type")

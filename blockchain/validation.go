@@ -55,9 +55,7 @@ func (self *BlockChain) ValidateDoubleSpend(tx transaction.Transaction, chainID 
 	var descs []*transaction.JoinSplitDesc
 	if tx.GetType() == common.TxNormalType {
 		descs = tx.(*transaction.Tx).Descs
-	} /*else if tx.GetType() == common.TxRegisterCandidateType {
-		descs = tx.(*transaction.TxRegisterCandidate).Descs
-	}*/
+	}
 	for _, desc := range descs {
 		for _, nullifer := range desc.Nullifiers {
 			existed, err := common.SliceBytesExists(nullifierDb, nullifer)
