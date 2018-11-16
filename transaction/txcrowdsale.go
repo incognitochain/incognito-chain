@@ -82,7 +82,8 @@ func (tx *TxCrowdsale) ValidateTransaction() bool {
 }
 
 // CreateTxCrowdsale ...
-func CreateTxCrowdsale(senderKey *client.SpendingKey,
+func CreateTxCrowdsale(
+	senderKey *client.SpendingKey,
 	paymentInfo []*client.PaymentInfo,
 	rts map[byte]*common.Hash,
 	usableTx map[byte][]*Tx,
@@ -110,7 +111,7 @@ func CreateTxCrowdsale(senderKey *client.SpendingKey,
 		return nil, err
 	}
 
-	// TODO(@0xbunyip): sign on full crowdsale token
+	// TODO(@0xbunyip): sign on full crowdsale tx
 	// Sign tx
 	txCustom, err = SignPrivacyTxCustomToken(txCustom)
 	if err != nil {
