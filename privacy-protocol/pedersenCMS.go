@@ -44,7 +44,7 @@ const (
 //PCParams ...
 var Pcm PCParams
 
-// hashGenerator derives new generator from another generator using hash function
+// HashGenerator derives new generator from another generator using hash function
 func HashGenerator(g EllipticPoint) EllipticPoint {
 	// res.X = hash(g.X), res.Y = sqrt(res.X^3 - 3X + B)
 	var res = new(EllipticPoint)
@@ -168,7 +168,6 @@ func (com PCParams) Commit(values [CM_CAPACITY][]byte) []byte {
 	return res
 }
 
-
 // CommitSpecValue commits specific value with index and returns 34 bytes
 func (com PCParams) CommitSpecValue(value, sRnd []byte, index byte) []byte {
 	var commitment, temp EllipticPoint
@@ -203,15 +202,15 @@ func (com PCParams) CommitWithSpecPoint(G EllipticPoint, H EllipticPoint, value,
 }
 
 // CommitBitByBit commits value bit by bit and commits (nBitsThreshold - nBits) zero bits as padding
-func (com PCParams) CommitBitByBit(value uint64, nBits int, nBitsThreshold int, rands[][]byte, index byte) ([][]byte, error){
-	if len(rands) != nBitsThreshold{
+func (com PCParams) CommitBitByBit(value uint64, nBits int, nBitsThreshold int, rands [][]byte, index byte) ([][]byte, error) {
+	if len(rands) != nBitsThreshold {
 		return nil, fmt.Errorf("do not have enough random number to commit")
 	}
 	Pcm.InitCommitment()
 
 	commitments := make([][]byte, nBitsThreshold)
 	commitmentPoints := make([]EllipticPoint, nBitsThreshold)
-	for i:=0; value > 0; i++{
+	for i := 0; value > 0; i++ {
 		commitmentPoints[i] = EllipticPoint{big.NewInt(0), big.NewInt(0)}
 		commitments[i] = make([]byte, 34)
 		//commitmentPoints[i].X, commitmentPoints[i].Y = Curve.ScalarMult(com.G[RAND].X, com.G[RAND].Y, rands[i])
@@ -224,7 +223,7 @@ func (com PCParams) CommitBitByBit(value uint64, nBits int, nBitsThreshold int, 
 		bit := value % 2
 		if bit == 1 {
 			commitments[i] = Pcm.CommitSpecValue(big.NewInt(1).Bytes(), rands[i], index)
-		} else{
+		} else {
 			commitments[i] = Pcm.CommitSpecValue(big.NewInt(0).Bytes(), rands[i], index)
 		}
 
@@ -234,7 +233,7 @@ func (com PCParams) CommitBitByBit(value uint64, nBits int, nBitsThreshold int, 
 	}
 
 	// commit padding bits
-	for j := nBits; j < nBitsThreshold; j++{
+	for j := nBits; j < nBitsThreshold; j++ {
 		commitmentPoints[j] = EllipticPoint{big.NewInt(0), big.NewInt(0)}
 		commitments[j] = make([]byte, 34)
 		commitmentPoints[j].X, commitmentPoints[j].Y = Curve.ScalarMult(com.G[RAND].X, com.G[RAND].Y, rands[j])

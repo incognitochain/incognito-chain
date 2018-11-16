@@ -8,7 +8,7 @@ import (
 )
 
 type SchnPubKey struct {
-	PK, G, H EllipticPoint // PK = G^SK + H^R
+	PK, H EllipticPoint // PK = G^SK + H^R
 }
 
 type SchnPrivKey struct {
@@ -45,9 +45,9 @@ func (priKey *SchnPrivKey) KeyGen() {
 
 	priKey.PubKey = new(SchnPubKey)
 
-	priKey.PubKey.G = *new(EllipticPoint)
-	priKey.PubKey.G.X = Curve.Params().Gx
-	priKey.PubKey.G.Y = Curve.Params().Gy
+	genPoint := *new(EllipticPoint)
+	genPoint.X = Curve.Params().Gx
+	genPoint.Y = Curve.Params().Gy
 
 	priKey.PubKey.H = *new(EllipticPoint)
 	priKey.PubKey.H.X, priKey.PubKey.H.Y = Curve.ScalarBaseMult(RandBytes(32))
@@ -80,9 +80,9 @@ func SchnGenPrivKey() *SchnPrivKey {
 func SchnGenPubKey(priv SchnPrivKey) *SchnPubKey {
 	pub := new(SchnPubKey)
 
-	pub.G = *new(EllipticPoint)
-	pub.G.X = Curve.Params().Gx
-	pub.G.Y = Curve.Params().Gy
+	genPoint := *new(EllipticPoint)
+	genPoint.X = Curve.Params().Gx
+	genPoint.Y = Curve.Params().Gy
 
 	pub.H = *new(EllipticPoint)
 	pub.H.X, pub.H.Y = Curve.ScalarBaseMult(RandBytes(32))
@@ -101,6 +101,10 @@ func SchnSign(hash []byte, priv SchnPrivKey) (*SchnSignature, error) {
 		return nil, errors.New("Hash length must be 32 bytes")
 	}
 
+	genPoint := *new(EllipticPoint)
+	genPoint.X = Curve.Params().Gx
+	genPoint.Y = Curve.Params().Gy
+
 	signature := new(SchnSignature)
 
 	k1Bytes := RandBytes(32)
@@ -112,7 +116,7 @@ func SchnSign(hash []byte, priv SchnPrivKey) (*SchnSignature, error) {
 	k2.Mod(k2, Curve.Params().N)
 
 	t1 := new(EllipticPoint)
-	t1.X, t1.Y = Curve.ScalarMult(priv.PubKey.G.X, priv.PubKey.G.Y, k1.Bytes())
+	t1.X, t1.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, k1.Bytes())
 
 	t2 := new(EllipticPoint)
 	t2.X, t2.Y = Curve.ScalarMult(priv.PubKey.H.X, priv.PubKey.H.Y, k2.Bytes())
@@ -147,7 +151,7 @@ func SchnVerify(signature *SchnSignature, hash []byte, pub SchnPubKey) bool {
 	}
 
 	rv := new(EllipticPoint)
-	rv.X, rv.Y = Curve.ScalarMult(pub.G.X, pub.G.Y, signature.S1.Bytes())
+	rv.X, rv.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, signature.S1.Bytes())
 	tmp := new(EllipticPoint)
 	tmp.X, tmp.Y = Curve.ScalarMult(pub.H.X, pub.H.Y, signature.S2.Bytes())
 	rv.X, rv.Y = Curve.Add(rv.X, rv.Y, tmp.X, tmp.Y)
