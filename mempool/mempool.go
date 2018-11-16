@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"log"
@@ -14,7 +13,6 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
-	"golang.org/x/crypto/sha3"
 )
 
 // config is a descriptor containing the memory pool configuration.
@@ -442,159 +440,27 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 		}
 	case common.TxLoanRequest:
 		{
-			txLoan, ok := tx.(*transaction.TxLoanRequest)
-			if !ok {
-				return fmt.Errorf("Fail parsing LoanRequest transaction")
-			}
-
-			// Check if loan's params are correct
-			currentParams := blockChain.BestState[chainID].BestBlock.Header.LoanParams
-			if txLoan.Params != currentParams {
-				return fmt.Errorf("LoanRequest transaction has incorrect params")
-			}
-
-			// Check if loan id is unique across all chains
-			// TODO(@0xbunyip): should we check in db/chain or only in best state?
-			for chainID, bestState := range blockChain.BestState {
-				for _, id := range bestState.LoanIDs {
-					if bytes.Equal(txLoan.LoanID, id) {
-						return fmt.Errorf("LoanID already existed on chain %d", chainID)
-					}
-				}
-			}
+			return blockChain.ValidateTxLoanRequest(tx, chainID)
 		}
 	case common.TxLoanResponse:
 		{
-			txResponse, ok := tx.(*transaction.TxLoanResponse)
-			if !ok {
-				return fmt.Errorf("Fail parsing LoanResponse transaction")
-			}
-
-			// Check if a loan request with the same id exists on any chain
-			txHashes, err := tp.config.DataBase.GetLoanTxs(txResponse.LoanID)
-			if err != nil {
-				return err
-			}
-			found := false
-			for _, txHash := range txHashes {
-				hash := &common.Hash{}
-				copy(hash[:], txHash)
-				_, _, _, txOld, err := blockChain.GetTransactionByHash(hash)
-				if txOld == nil || err != nil {
-					return fmt.Errorf("Error finding corresponding loan request")
-				}
-				switch txOld.GetType() {
-				case common.TxLoanResponse:
-					{
-						return fmt.Errorf("Loan already had response")
-					}
-				case common.TxLoanRequest:
-					{
-						_, ok := txOld.(*transaction.TxLoanRequest)
-						if !ok {
-							return fmt.Errorf("Error parsing loan request tx")
-						}
-						found = true
-					}
-				}
-			}
-
-			if found == false {
-				return fmt.Errorf("Corresponding loan request not found")
-			} else {
-				return nil
-			}
+			return blockChain.ValidateTxLoanResponse(tx, chainID)
 		}
 	case common.TxLoanPayment:
 		{
-			txPayment, ok := tx.(*transaction.TxLoanPayment)
-			if !ok {
-				return fmt.Errorf("Fail parsing LoanPayment transaction")
-			}
-
-			// Check if a loan request with the same id exists on any chain
-			txHashes, err := tp.config.DataBase.GetLoanTxs(txPayment.LoanID)
-			if err != nil {
-				return err
-			}
-			found := false
-			for _, txHash := range txHashes {
-				hash := &common.Hash{}
-				copy(hash[:], txHash)
-				_, _, _, txOld, err := blockChain.GetTransactionByHash(hash)
-				if txOld == nil || err != nil {
-					return fmt.Errorf("Error finding corresponding loan request")
-				}
-				switch txOld.GetType() {
-				case common.TxLoanResponse:
-					{
-						found = true
-					}
-				}
-			}
-
-			if found == false {
-				return fmt.Errorf("Corresponding loan response not found")
-			} else {
-				return nil
-			}
+			return blockChain.ValidateTxLoanPayment(tx, chainID)
 		}
 	case common.TxLoanWithdraw:
 		{
-			txWithdraw, ok := tx.(*transaction.TxLoanWithdraw)
-			if !ok {
-				return fmt.Errorf("Fail parsing LoanResponse transaction")
-			}
-
-			// Check if a loan response with the same id exists on any chain
-			txHashes, err := tp.config.DataBase.GetLoanTxs(txWithdraw.LoanID)
-			if err != nil {
-				return err
-			}
-			foundResponse := false
-			keyCorrect := false
-			for _, txHash := range txHashes {
-				hash := &common.Hash{}
-				copy(hash[:], txHash)
-				_, _, _, txOld, err := blockChain.GetTransactionByHash(hash)
-				if txOld == nil || err != nil {
-					return fmt.Errorf("Error finding corresponding loan request")
-				}
-				switch txOld.GetType() {
-				case common.TxLoanRequest:
-					{
-						// Check if key is correct
-						txRequest, ok := tx.(*transaction.TxLoanRequest)
-						if !ok {
-							return fmt.Errorf("Error parsing corresponding loan request")
-						}
-						h := make([]byte, 32)
-						sha3.ShakeSum256(h, txWithdraw.Key)
-						if bytes.Equal(h, txRequest.KeyDigest) {
-							keyCorrect = true
-						}
-					}
-				case common.TxLoanResponse:
-					{
-						// Check if loan is accepted
-						txResponse, ok := tx.(*transaction.TxLoanResponse)
-						if !ok {
-							return fmt.Errorf("Error parsing corresponding loan response")
-						}
-						if txResponse.Response != transaction.Accept {
-							foundResponse = true
-						}
-					}
-
-				}
-			}
-
-			if !foundResponse {
-				return fmt.Errorf("Corresponding loan response not found")
-			} else if !keyCorrect {
-				return fmt.Errorf("Provided key is incorrect")
-			}
-			return nil
+			return blockChain.ValidateTxLoanWithdraw(tx, chainID)
+		}
+	case common.TxDividendPayout:
+		{
+			return blockChain.ValidateTxDividendPayout(tx, chainID)
+		}
+	case common.TxBuySellDCBRequest:
+		{
+			return blockChain.ValidateTxBuyRequest(tx, chainID)
 		}
 	}
 	return nil

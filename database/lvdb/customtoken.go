@@ -3,14 +3,15 @@ package lvdb
 import (
 	"encoding/binary"
 	"fmt"
+	"log"
+	"strconv"
+	"strings"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
-	"log"
-	"strconv"
-	"strings"
 )
 
 func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
@@ -255,7 +256,7 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddr
 		keys := strings.Split(key, string(splitter))
 		values := strings.Split(value, string(splitter))
 		// get unspent and unreward transaction output
-		if (strings.Compare(values[1], string(unspent)) == 0) {
+		if strings.Compare(values[1], string(unspent)) == 0 {
 
 			vout := transaction.TxTokenVout{}
 			vout.PaymentAddress = paymentAddress
@@ -283,7 +284,7 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddr
 /*
 	Update UTXO from unreward -> reward
 */
-func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress client.PaymentAddress, txHash *common.Hash, voutIndex int) (error) {
+func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress client.PaymentAddress, txHash *common.Hash, voutIndex int) error {
 	key := tokenPaymentAddressPrefix
 	key = append(key, splitter...)
 	key = append(key, (*tokenID)[:]...)
@@ -308,5 +309,9 @@ func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress clien
 	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (db *db) SaveCrowdsaleData(saleID, bondID []byte, baseAsset, quoteAsset string, price uint64, escrowAccount client.PaymentAddress) error {
 	return nil
 }

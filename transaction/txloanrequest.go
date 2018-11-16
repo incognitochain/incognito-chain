@@ -111,6 +111,10 @@ func (tx *TxLoanRequest) ValidateTransaction() bool {
 	return true
 }
 
+func (tx *TxLoanRequest) GetType() string {
+	return common.TxLoanRequest
+}
+
 func (tx *TxWithFee) GetType() string {
 	return tx.Tx.Type
 }

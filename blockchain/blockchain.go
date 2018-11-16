@@ -5,8 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"sort"
-	//"strconv"
+	"sort"    //"strconv"
 	"strings" //"fmt"
 	//"time"
 	"sync"
@@ -496,6 +495,43 @@ func (self *BlockChain) SaveLoanTxsForBlock(block *Block) error {
 		}
 	}
 
+	return nil
+}
+
+func (self *BlockChain) UpdateDividendPayout(block *Block) error {
+	for _, tx := range block.Transactions {
+		switch tx.GetType() {
+		case common.TxDividendPayout:
+			{
+				tx := tx.(*transaction.TxDividendPayout)
+				for _, desc := range tx.Descs {
+					for _, note := range desc.Note {
+						utxos := self.GetAccountUTXO(note.Apk[:])
+						for _, utxo := range utxos {
+							self.UpdateUTXOReward(utxo, tx.PayoutID)
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
+	for _, tx := range block.Transactions {
+		switch tx.GetType() {
+		case common.TxCrowdsale:
+			{
+				// Store saledata in db
+				tx := tx.(*transaction.TxCrowdsale)
+				err := self.config.DataBase.SaveCrowdsaleData(tx.SaleID, tx.BondID, tx.BaseAsset, tx.QuoteAsset, tx.Price, tx.EscrowAccount)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -1086,6 +1122,21 @@ func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[client.Pa
 	return result, nil
 }
 
-func (self *BlockChain) GetCustomTokenRewardSnapshot() (map[client.PaymentAddress]uint64) {
+// Cached data, not from newest block
+func (self *BlockChain) GetAccountUTXO(account []byte) [][]byte {
+	return nil
+}
+
+// New data from latest block
+func (self *BlockChain) GetUTXOReward(utxo []byte) (uint64, error) {
+	return 0, nil
+}
+
+// Update to data of latest block
+func (self *BlockChain) UpdateUTXOReward(utxo []byte, reward uint64) error {
+	return nil
+}
+
+func (self *BlockChain) GetCustomTokenRewardSnapshot() map[client.PaymentAddress]uint64 {
 	return self.config.customTokenRewardSnapshot
 }

@@ -16,10 +16,12 @@ const (
 	TxLoanResponse          = "ls"
 	TxLoanPayment           = "lp"
 	TxLoanWithdraw          = "lw"
-	TxBuyRequest            = "br"
-	TxSellRequest           = "sr"
-	TxBuyResponse           = "brs"
-	TxSellResponse          = "srs"
+	TxDividendPayout        = "td"
+	TxCrowdsale             = "cs"
+	TxBuyFromGOVRequest     = "bgr"
+	TxBuySellDCBRequest     = "bsdr"
+	TxBuySellDCBResponse    = "bsdrs"
+	TxBuyFromGOVResponse    = "bgrs"
 )
 
 // unit type use in tx
