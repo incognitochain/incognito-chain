@@ -20,7 +20,7 @@ type EllipticPointHelper interface {
 	RandPoint(x, y *big.Int) *EllipticPoint
 	Rand()
 	CompressPoint() []byte
-	DecompressPoint(x *big.Int, ybit bool) (*big.Int, error)
+	DecompressPoint(compressPointBytes []byte) error
 	IsSafe() bool
 	ComputeYCoord(x *big.Int) *big.Int
 }
@@ -242,4 +242,25 @@ func DecompressPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	}
 
 	return y, nil
+}
+
+func TestECC() bool {
+	//Test compress && decompress
+	eccPoint := new(EllipticPoint)
+	eccPoint.Rand()
+	if !Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
+		return false
+	}
+	fmt.Printf("On curve!")
+	if !eccPoint.IsSafe() {
+		return false
+	}
+	fmt.Printf("Safe!")
+	compressBytes := eccPoint.CompressPoint()
+	eccPointDecompressed := new(EllipticPoint)
+	err := eccPointDecompressed.DecompressPoint(compressBytes)
+	if err != nil {
+		return false
+	}
+	return true
 }
