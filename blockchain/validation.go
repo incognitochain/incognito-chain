@@ -14,6 +14,8 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"golang.org/x/crypto/sha3"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"encoding/hex"
 )
 
 /*
@@ -239,7 +241,10 @@ func (self *BlockChain) GetAmountPerAccount(proposal *transaction.PayoutProposal
 	// Get total token supply
 	totalTokenSupply := uint64(0)
 	for holder, _ := range tokenHolders {
-		utxos := self.GetAccountUTXO(holder.Apk[:])
+		temp, _ := hex.DecodeString(holder)
+		paymentAddress := privacy.PaymentAddress{}
+		paymentAddress.FromBytes(temp)
+		utxos := self.GetAccountUTXO(paymentAddress.Pk[:])
 		for i := 0; i < len(utxos); i += 1 {
 			// TODO(@0xbunyip): get amount from utxo hash
 			value := uint64(0)
@@ -251,7 +256,10 @@ func (self *BlockChain) GetAmountPerAccount(proposal *transaction.PayoutProposal
 	rewardHolders := [][]byte{}
 	amounts := []uint64{}
 	for holder, _ := range tokenHolders {
-		utxos := self.GetAccountUTXO(holder.Apk[:]) // Cached data
+		temp, _ := hex.DecodeString(holder)
+		paymentAddress := privacy.PaymentAddress{}
+		paymentAddress.FromBytes(temp)
+		utxos := self.GetAccountUTXO(paymentAddress.Pk[:]) // Cached data
 		amount := uint64(0)
 		for i := 0; i < len(utxos); i += 1 {
 			reward, err := self.GetUTXOReward(utxos[i]) // Data from latest block
@@ -266,7 +274,7 @@ func (self *BlockChain) GetAmountPerAccount(proposal *transaction.PayoutProposal
 		}
 
 		if amount > 0 {
-			rewardHolders = append(rewardHolders, holder.Apk[:])
+			rewardHolders = append(rewardHolders, paymentAddress.Pk[:])
 			amounts = append(amounts, amount)
 		}
 	}

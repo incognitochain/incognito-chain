@@ -315,6 +315,6 @@ func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress priva
 	return nil
 }
 
-func (db *db) SaveCrowdsaleData(saleID, bondID []byte, baseAsset, quoteAsset string, price uint64, escrowAccount client.PaymentAddress) error {
+func (db *db) SaveCrowdsaleData(saleID, bondID []byte, baseAsset, quoteAsset string, price uint64, escrowAccount privacy.PaymentAddress) error {
 	return nil
 }

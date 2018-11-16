@@ -286,7 +286,7 @@ func (blockgen *BlkTmplGenerator) processDividend(
 		infos := []transaction.DividendInfo{}
 		// Build tx to pay dividend to each holder
 		for i, holder := range tokenHolders {
-			holderAddress := (&client.PaymentAddress{}).FromBytes(holder)
+			holderAddress := (&privacy.PaymentAddress{}).FromBytes(holder)
 			info := transaction.DividendInfo{
 				TokenHolder: *holderAddress,
 				Amount:      amounts[i] / totalTokenSupply,
