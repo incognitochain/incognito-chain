@@ -3,6 +3,7 @@ package zkp
 import (
 	"fmt"
 	"math/big"
+
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
@@ -15,8 +16,8 @@ type PKOneOfManyProtocol struct {
 // PKOneOfManyProof contains proof's value
 type PKOneOfManyProof struct {
 	cl, ca, cb, cd [][]byte
-	f, za, zb [][]byte
-	zd []byte
+	f, za, zb      [][]byte
+	zd             []byte
 	//val1 EllipticPoint
 }
 
@@ -30,13 +31,13 @@ func (pro *PKOneOfManyProtocol) SetWitness(witnesses [][]byte) {
 }
 
 // Prove creates proof for one out of many commitments containing 0
-func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int,  commitmentValue []byte, rand []byte, index byte) (*PKOneOfManyProof, error) {
+func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int, commitmentValue []byte, rand []byte, index byte) (*PKOneOfManyProof, error) {
 	N := len(commitments)
 	proof := new(PKOneOfManyProof)
 	// Check the number of commitment list's elements
 	temp := 1
 	n := 0
-	for temp < N{
+	for temp < N {
 		temp = temp << 1
 		n++
 	}
@@ -106,16 +107,16 @@ func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int,  co
 	//
 	// Calculate: cd_k = ci^pi,k
 	commitPoints := make([]*privacy.EllipticPoint, N)
-	for k := 0; k < n; k++{
+	for k := 0; k < n; k++ {
 		// Calculate pi,k which is coefficient of x^k in polynomial pi(x)
 		res := privacy.EllipticPoint{X: big.NewInt(0), Y: big.NewInt(0)}
 		tmp := privacy.EllipticPoint{X: big.NewInt(0), Y: big.NewInt(0)}
 		var err error
 
-		for i := 0; i < N; i++{
+		for i := 0; i < N; i++ {
 			commitPoints[i] = new(privacy.EllipticPoint)
 			commitPoints[i], err = privacy.DecompressCommitment(commitments[i])
-			if err != nil{
+			if err != nil {
 				return nil, err
 			}
 
@@ -128,7 +129,7 @@ func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int,  co
 
 		comZero := privacy.Pcm.CommitSpecValue(big.NewInt(0).Bytes(), u[k], index)
 		comZeroPoint, err := privacy.DecompressCommitment(comZero)
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 		res.X, res.Y = privacy.Curve.Add(res.X, res.Y, comZeroPoint.X, comZeroPoint.Y)
@@ -139,7 +140,7 @@ func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int,  co
 
 	// Calculate x
 	x := big.NewInt(0)
-	for j:=1; j<= n; j++{
+	for j := 1; j <= n; j++ {
 		x.SetBytes(privacy.Pcm.GetHashOfValues([][]byte{x.Bytes(), proof.cl[j], proof.ca[j], proof.cb[j], proof.cd[j-1]}))
 	}
 	x.Mod(x, privacy.Curve.Params().N)
@@ -150,9 +151,9 @@ func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int,  co
 	proof.zb = make([][]byte, n+1)
 	proof.zd = make([]byte, 32)
 
-	for j := 1; j <= n; j++{
+	for j := 1; j <= n; j++ {
 		// f = lx + a
-		fInt:=  big.NewInt(0)
+		fInt := big.NewInt(0)
 		fInt.Mul(big.NewInt(int64(indexIsZeroBinary[j-1])), x)
 		fInt.Add(fInt, new(big.Int).SetBytes(a[j]))
 		fInt.Mod(fInt, privacy.Curve.Params().N)
@@ -184,7 +185,7 @@ func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int,  co
 
 	uxInt := big.NewInt(0)
 	sumInt := big.NewInt(0)
-	for k := 0; k < n; k++{
+	for k := 0; k < n; k++ {
 		uxInt.Exp(x, big.NewInt(int64(k)), privacy.Curve.Params().N)
 		uxInt.Mul(uxInt, new(big.Int).SetBytes(u[k]))
 		sumInt.Add(sumInt, uxInt)
@@ -200,13 +201,12 @@ func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int,  co
 	return proof, nil
 }
 
-
-func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyProof, index byte, rand []byte) bool{
+func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyProof, index byte, rand []byte) bool {
 	N := len(commitments)
 
 	temp := 1
 	n := 0
-	for temp < N{
+	for temp < N {
 		temp = temp << 1
 		n++
 	}
@@ -218,13 +218,13 @@ func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyP
 
 	// Calculate x
 	x := big.NewInt(0)
-	for j:=1; j<=n; j++{
+	for j := 1; j <= n; j++ {
 		x.SetBytes(privacy.Pcm.GetHashOfValues([][]byte{x.Bytes(), proof.cl[j], proof.ca[j], proof.cb[j], proof.cd[j-1]}))
 	}
 	x.Mod(x, privacy.Curve.Params().N)
 	//fmt.Printf("x Verify: %v\n", x)
 
-	for i:=1; i<=n; i++{
+	for i := 1; i <= n; i++ {
 		// Decompress cl from bytes array to Elliptic
 		clPoint[i] = new(privacy.EllipticPoint)
 		clPoint[i], err = privacy.DecompressCommitment(proof.cl[i])
@@ -250,7 +250,6 @@ func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyP
 		if err != nil {
 			return false
 		}
-
 
 		// Check cl^x * ca = Com(f, za)
 		leftPoint1 := new(privacy.EllipticPoint)
@@ -306,7 +305,7 @@ func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyP
 	rightPoint3 := new(privacy.EllipticPoint)
 	tmpPoint := new(privacy.EllipticPoint)
 
-	for i := 0; i < N; i++{
+	for i := 0; i < N; i++ {
 		iBinary := privacy.ConvertIntToBinary(i, n)
 		commitPoints[i] = new(privacy.EllipticPoint)
 		commitPoints[i], err = privacy.DecompressCommitment(commitments[i])
@@ -316,8 +315,8 @@ func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyP
 
 		exp := big.NewInt(1)
 		fji := big.NewInt(1)
-		for j := 1; j <= n; j++{
-			if iBinary[j-1] == 1{
+		for j := 1; j <= n; j++ {
+			if iBinary[j-1] == 1 {
 				fji.SetBytes(proof.f[j])
 			} else {
 				fji.Sub(x, new(big.Int).SetBytes(proof.f[j]))
@@ -332,7 +331,7 @@ func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyP
 		leftPoint3.X, leftPoint3.Y = privacy.Curve.Add(leftPoint3.X, leftPoint3.Y, tmpPoint.X, tmpPoint.Y)
 	}
 
-	for k := 0; k < n; k++{
+	for k := 0; k < n; k++ {
 		xk := big.NewInt(0)
 		xk.Exp(x, big.NewInt(int64(k)), privacy.Curve.Params().N)
 
@@ -342,11 +341,10 @@ func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyP
 		leftPoint32.X, leftPoint32.Y = privacy.Curve.Add(leftPoint32.X, leftPoint32.Y, tmpPoint.X, tmpPoint.Y)
 	}
 
-	leftPoint3.X, leftPoint3.Y = privacy.Curve.Add(leftPoint3.X, leftPoint3.Y, leftPoint32.X, leftPoint32.Y )
+	leftPoint3.X, leftPoint3.Y = privacy.Curve.Add(leftPoint3.X, leftPoint3.Y, leftPoint32.X, leftPoint32.Y)
 
 	rightValue3 := privacy.Pcm.CommitSpecValue(big.NewInt(0).Bytes(), proof.zd, index)
 	rightPoint3, _ = privacy.DecompressCommitment(rightValue3)
-
 
 	fmt.Printf("Left point 3 X: %v\n", leftPoint3.X)
 	fmt.Printf("Right point 3 X: %v\n", rightPoint3.X)
@@ -358,7 +356,6 @@ func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyP
 
 	return true
 }
-
 
 //TestPKOneOfMany test protocol for one of many commitment is commitment to zero
 func TestPKOneOfMany() {
@@ -392,12 +389,12 @@ func TestPKOneOfMany() {
 }
 
 // Get coefficient of x^k in polynomial pi(x)
-func GetCoefficient(iBinary []byte , k int, n int, a [][]byte, l []byte ) *big.Int{
+func GetCoefficient(iBinary []byte, k int, n int, a [][]byte, l []byte) *big.Int {
 	res := privacy.Poly{big.NewInt(1)}
 	var fji privacy.Poly
 
-	for j:=1; j<=n; j++{
-		fj := privacy.Poly{ new(big.Int).SetBytes(a[j]), big.NewInt(int64(l[j-1]))}
+	for j := 1; j <= n; j++ {
+		fj := privacy.Poly{new(big.Int).SetBytes(a[j]), big.NewInt(int64(l[j-1]))}
 
 		if iBinary[j-1] == 0 {
 			fji = privacy.Poly{big.NewInt(0), big.NewInt(1)}.Sub(fj, privacy.Curve.Params().N)
@@ -412,7 +409,6 @@ func GetCoefficient(iBinary []byte , k int, n int, a [][]byte, l []byte ) *big.I
 	}
 	return res[k]
 }
-
 
 //func TestGetCoefficient() {
 //	i := 3
@@ -437,4 +433,3 @@ func GetCoefficient(iBinary []byte , k int, n int, a [][]byte, l []byte ) *big.I
 //	co := GetCoefficient(iBinary, k, n, a, lBinary)
 //	fmt.Printf("Co: %v\n", co)
 //}
-

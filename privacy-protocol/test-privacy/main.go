@@ -1,10 +1,5 @@
 package main
 
-import (
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-)
-
-
 func main() {
 
 	// fmt.Printf("N: %X\n", privacy-protocol.Curve.Params().N)
@@ -61,16 +56,13 @@ func main() {
 	//// fmt.Println("Done")
 	//a:= new(privacy-protocol.InputCommitments)
 	//
-	zkp.TestPKComZeroOne()
+	//zkp.TestPKComZeroOne()
 	//privacy-protocol.TestProductCommitment()
 	//privacy-protocol.Pcm.InitCommitment()
 	// privacy-protocol.TestProofIsZero()
 	// fmt.Println("Done")
 	// privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestPKOneOfMany()
-
-
-
 
 	//zkp.TestPKOneOfMany()
 	//
@@ -85,5 +77,5 @@ func main() {
 
 	//privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestProductCommitment()
-//
+	//
 }
