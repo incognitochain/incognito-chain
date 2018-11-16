@@ -1,10 +1,9 @@
 package zkp
 
-type Proof interface{
+type Proof interface {
 }
 
 type Witness interface {
-
 }
 
 // ZKProtocols interface

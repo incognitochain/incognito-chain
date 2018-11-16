@@ -31,7 +31,7 @@ Verify:
 )
 */
 
-//ProveIsZero generate a proof prove that the commitment is zero
+//ProveIsZero generate a Proof prove that the commitment is zero
 func ProveIsZero(commitmentValue, commitmentRnd []byte, index byte) ([]byte, *big.Int) {
 	//var x big.Int
 	//s is a random number in Zp, with p is N, which is order of base point of privacy.Curve
@@ -182,10 +182,10 @@ func TestProofIsZero() bool {
 	//Convert it to byte array
 	commitZero := resPoint.CompressPoint()
 
-	//Compute proof
+	//Compute Proof
 	proofZero, z := ProveIsZero(commitZero, rInt.Bytes(), 0)
 
-	//verify proof
+	//verify Proof
 	boolValue := VerifyIsZero(commitZero, proofZero, 0, z)
 	fmt.Println("Test ProofIsZero resulit: ", boolValue)
 	return boolValue
