@@ -13,8 +13,8 @@ import (
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy/client"
-	"github.com/ninjadotorg/constant/privacy/proto/zksnark"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/proto/zksnark"
 )
 
 // Tx represents a coin-transfer-transaction stored in a block
@@ -491,7 +491,7 @@ func (tx *Tx) buildJSDescAndEncrypt(
 		Vmacs:           vmacs,
 	}
 	tx.Descs = append(tx.Descs, desc)
-	if desc.Proof == nil { // no privacy
+	if desc.Proof == nil { // no privacy-protocol
 		desc.Note = []*client.Note{outputs[0].OutputNote, outputs[1].OutputNote}
 	}
 

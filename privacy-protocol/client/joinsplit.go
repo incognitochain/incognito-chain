@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/ninjadotorg/constant/privacy/proto/zksnark"
+	"github.com/ninjadotorg/constant/privacy-protocol/proto/zksnark"
 	"google.golang.org/grpc"
 )
 
@@ -168,7 +168,7 @@ func Prove(inputs []*JSInput,
 	} else {
 		return nil, hSig, newSeed, newPhi, nil
 	}
-	/* for Test not privacy
+	/* for Test not privacy-protocol
 	dummyProof := &zksnark.PHGRProof{
 		G_A:      make([]byte, 33),
 		G_APrime: make([]byte, 33),

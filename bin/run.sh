@@ -9,7 +9,7 @@ KEY=$1
 cd ~/go/src/github.com/ninjadotorg/constant
 cd privacy/server/build
 sudo ./main > privacy.log &
-echo "Started privacy..."
+echo "Started privacy-protocol..."
 
 cd ../../../
 /usr/local/go/bin/go build

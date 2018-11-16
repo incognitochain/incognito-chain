@@ -6,7 +6,7 @@ import (
 	"errors"
 
 	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"golang.org/x/crypto/ed25519"
 )
 
