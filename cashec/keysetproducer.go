@@ -1,6 +1,6 @@
 package cashec
 
-import (
+/*import (
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -101,4 +101,4 @@ func ValidateDataB58(pubkey string, sig string, data []byte) error {
 		return errors.New("Invalid signature")
 	}
 	return nil
-}
+}*/

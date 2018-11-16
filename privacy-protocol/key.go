@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
+	"encoding/hex"
 )
 
 // var curve *elliptic.Curve
@@ -42,10 +43,10 @@ const (
 // SpendingKey 32 bytes
 type SpendingKey []byte
 
-// Pk 32 bytes
+// Pk 33 bytes
 type PublicKey []byte
 
-// Rk 32 bytes
+// Rk 33 bytes
 type ReceivingKey []byte
 
 // Tk 33 bytes
@@ -67,7 +68,6 @@ type PaymentInfo struct {
 	PaymentAddress PaymentAddress
 	Amount         uint64
 }
-
 
 // GenerateSpendingKey generates a random SpendingKey
 // SpendingKey: 32 bytes
@@ -152,10 +152,8 @@ func GeneratePaymentAddress(spendingKey []byte) PaymentAddress {
 //	return *point
 //}
 
-
-
 // Compress Commitment from 64 bytes to 34 bytes (include bytes index)
-func CompressCommitment(cmPoint EllipticPoint, typeCommitment byte) []byte{
+func CompressCommitment(cmPoint EllipticPoint, typeCommitment byte) []byte {
 	var commitment []byte
 	commitment = append(commitment, typeCommitment)
 	commitment = append(commitment, cmPoint.CompressPoint()...)
@@ -272,4 +270,28 @@ func paddedAppend(size uint, dst, src []byte) []byte {
 		dst = append(dst, 0)
 	}
 	return append(dst, src...)
+}
+
+func (addr *PaymentAddress) ToBytes() []byte {
+	result := make([]byte, 33)
+	pkenc := make([]byte, 33)
+	copy(result, addr.Pk[:33])
+	copy(pkenc, addr.Tk[:33])
+	result = append(result, pkenc...)
+	return result
+}
+
+func (addr *PaymentAddress) FromBytes(data []byte) *PaymentAddress {
+	addr.Pk = make([]byte, 33)
+	addr.Tk = make([]byte, 33)
+	copy(addr.Pk[:], data[:33]) // First 32 bytes are Apk's
+	copy(addr.Tk[:], data[33:]) // Last 32 bytes are Pkenc's
+	return addr
+}
+
+func (spendingKey SpendingKey) String() string {
+	for i := 0; i < 32/2; i++ {
+		spendingKey[i], spendingKey[32-1-i] = spendingKey[32-1-i], spendingKey[i]
+	}
+	return hex.EncodeToString(spendingKey[:])
 }

@@ -1,5 +1,6 @@
 package transaction
 
+/*
 import (
 	"bytes"
 	"crypto/rand"
@@ -418,3 +419,4 @@ func VerifySignVotingTx(tx *TxRegisterCandidate) (bool, error) {
 	valid := client.VerifySign(pubKey, data[:], ecdsaSignature.R, ecdsaSignature.S)
 	return valid, nil
 }
+*/

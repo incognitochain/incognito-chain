@@ -5,11 +5,12 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type FeeArgs struct {
-	SenderKey     *client.SpendingKey
-	PaymentInfo   []*client.PaymentInfo
+	SenderKey     *privacy.SpendingKey
+	PaymentInfo   []*privacy.PaymentInfo
 	Rts           map[byte]*common.Hash
 	UsableTx      map[byte][]*Tx
 	Commitments   map[byte]([][]byte)

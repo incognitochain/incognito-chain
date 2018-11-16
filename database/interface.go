@@ -2,8 +2,8 @@ package database
 
 import (
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 // DatabaseInterface provides the interface that is used to store blocks.
@@ -11,7 +11,7 @@ type DatabaseInterface interface {
 	// Block
 	StoreBlock(interface{}, byte) error
 	StoreBlockHeader(interface{}, *common.Hash, byte) error
-	StoreTransactionLightMode(*client.SpendingKey, byte, int32, int, *transaction.Tx) error
+	StoreTransactionLightMode(*privacy.SpendingKey, byte, int32, int, *transaction.Tx) error
 	FetchBlock(*common.Hash) ([]byte, error)
 	HasBlock(*common.Hash) (bool, error)
 	FetchAllBlocks() (map[byte][]*common.Hash, error)
@@ -26,7 +26,7 @@ type DatabaseInterface interface {
 	// Transaction Index
 	StoreTransactionIndex(*common.Hash, *common.Hash, int) error
 	GetTransactionIndexById(*common.Hash) (*common.Hash, int, error)
-	GetTransactionLightModeByPrivateKey(*client.SpendingKey) (map[byte][]transaction.Tx, error)
+	GetTransactionLightModeByPrivateKey(*privacy.SpendingKey) (map[byte][]transaction.Tx, error)
 	GetTransactionLightModeByHash(*common.Hash) ([]byte, []byte, error)
 	// Best state of chain
 	StoreBestState(interface{}, byte) error
@@ -54,11 +54,11 @@ type DatabaseInterface interface {
 	StoreCustomToken(*common.Hash, []byte) error                       // param: tokenID, txInitToken-id, data tx
 	StoreCustomTokenTx(*common.Hash, byte, int32, int32, []byte) error // param: tokenID, chainID, block height, tx-id, data tx
 	ListCustomToken() ([][]byte, error)
-	CustomTokenTxs(*common.Hash) ([]*common.Hash, error)                                                     // token id
-	StoreCustomTokenPaymentAddresstHistory(*common.Hash, *transaction.TxCustomToken) error                   // store account history of custom token
-	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error)                                         // get all account that have balance > 0 of a custom token
-	GetCustomTokenPaymentAddressUTXO(*common.Hash, client.PaymentAddress) ([]transaction.TxTokenVout, error) // get list of utxo of an account of a token
-	GetCustomTokenListPaymentAddressesBalance(*common.Hash) (map[client.PaymentAddress]uint64, error)        // get balance of all payment address of a token (only return payment address with balance > 0)
+	CustomTokenTxs(*common.Hash) ([]*common.Hash, error)                                                      // token id
+	StoreCustomTokenPaymentAddresstHistory(*common.Hash, *transaction.TxCustomToken) error                    // store account history of custom token
+	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error)                                          // get all account that have balance > 0 of a custom token
+	GetCustomTokenPaymentAddressUTXO(*common.Hash, privacy.PaymentAddress) ([]transaction.TxTokenVout, error) // get list of utxo of an account of a token
+	GetCustomTokenListPaymentAddressesBalance(*common.Hash) (map[string]uint64, error)                        // get balance of all payment address of a token (only return payment address with balance > 0)
 
 	// Loans
 	StoreLoanRequest([]byte, []byte) error  // param: loanID, tx hash
@@ -66,7 +66,7 @@ type DatabaseInterface interface {
 	GetLoanTxs([]byte) ([][]byte, error)    // param: loanID
 
 	// Crowdsale
-	SaveCrowdsaleData([]byte, []byte, string, string, uint64, client.PaymentAddress) error // param: saleID, bondID, baseAsset, quoteAsset, price, escrowAccount
+	SaveCrowdsaleData([]byte, []byte, string, string, uint64, privacy.PaymentAddress) error // param: saleID, bondID, baseAsset, quoteAsset, price, escrowAccount
 
 	Close() error
 }

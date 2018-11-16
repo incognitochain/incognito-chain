@@ -53,9 +53,9 @@ func (self *BlockChain) ValidateDoubleSpend(tx transaction.Transaction, chainID 
 	var descs []*transaction.JoinSplitDesc
 	if tx.GetType() == common.TxNormalType {
 		descs = tx.(*transaction.Tx).Descs
-	} else if tx.GetType() == common.TxRegisterCandidateType {
+	} /*else if tx.GetType() == common.TxRegisterCandidateType {
 		descs = tx.(*transaction.TxRegisterCandidate).Descs
-	}
+	}*/
 	for _, desc := range descs {
 		for _, nullifer := range desc.Nullifiers {
 			existed, err := common.SliceBytesExists(nullifierDb, nullifer)
@@ -328,7 +328,7 @@ func isAnyBoardAddressInVins(customToken *transaction.TxCustomToken) bool {
 	GOVAddressStr := string(common.GOVAddress)
 	DCBAddressStr := string(common.DCBAddress)
 	for _, vin := range customToken.TxTokenData.Vins {
-		apkStr := string(vin.PaymentAddress.Apk[:])
+		apkStr := string(vin.PaymentAddress.Pk[:])
 		if apkStr == GOVAddressStr || apkStr == DCBAddressStr {
 			return true
 		}
@@ -341,7 +341,7 @@ func isAllBoardAddressesInVins(
 	boardAddrStr string,
 ) bool {
 	for _, vin := range customToken.TxTokenData.Vins {
-		apkStr := string(vin.PaymentAddress.Apk[:])
+		apkStr := string(vin.PaymentAddress.Pk[:])
 		if apkStr != boardAddrStr {
 			return false
 		}

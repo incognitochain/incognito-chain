@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 var allowedAsset = []string{common.AssetTypeCoin, common.AssetTypeBond}
@@ -17,7 +17,7 @@ type SaleData struct {
 	BaseAsset     string
 	QuoteAsset    string
 	Price         uint64
-	EscrowAccount client.PaymentAddress
+	EscrowAccount privacy.PaymentAddress
 }
 
 type TxCrowdsale struct {
@@ -41,7 +41,7 @@ func (tx TxCrowdsale) Hash() *common.Hash {
 	record += string(tx.SaleID)
 	record += tx.BaseAsset + tx.QuoteAsset
 	record += fmt.Sprint(tx.Price)
-	record += string(tx.EscrowAccount.Apk[:])
+	record += string(tx.EscrowAccount.Pk[:])
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
@@ -93,8 +93,8 @@ func (tx *TxCrowdsale) ValidateTransaction() bool {
 
 // CreateTxCrowdsale ...
 func CreateTxCrowdsale(
-	senderKey *client.SpendingKey,
-	paymentInfo []*client.PaymentInfo,
+	senderKey *privacy.SpendingKey,
+	paymentInfo []*privacy.PaymentInfo,
 	rts map[byte]*common.Hash,
 	usableTx map[byte][]*Tx,
 	commitments map[byte]([][]byte),

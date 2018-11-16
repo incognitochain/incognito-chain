@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
 )
 
 const MaxDivTxsPerBlock = 1000
@@ -52,7 +53,7 @@ type PayoutProposal struct {
 }
 
 type DividendInfo struct {
-	TokenHolder client.PaymentAddress
+	TokenHolder privacy.PaymentAddress
 	Amount      uint64
 }
 
@@ -64,7 +65,7 @@ func BuildDividendTxs(
 ) ([]*TxDividendPayout, error) {
 	if len(infos)%2 != 0 { // Add dummy receiver if needed
 		infos = append(infos, DividendInfo{
-			TokenHolder: client.GenPaymentAddress(client.RandSpendingKey()),
+			TokenHolder: privacy.GeneratePaymentAddress(privacy.GenerateSpendingKey([]byte{})),
 			Amount:      0,
 		})
 	}
@@ -76,17 +77,17 @@ func BuildDividendTxs(
 		inputs := make([]*client.JSInput, 2)
 		inputs[0] = CreateRandomJSInput(nil)
 		inputs[1] = CreateRandomJSInput(inputs[0].Key)
-		dummyAddress := client.GenPaymentAddress(*inputs[0].Key)
+		dummyAddress := privacy.GeneratePaymentAddress(*inputs[0].Key)
 
 		// Create new notes to send to 2 token holders at the same time
-		outNote1 := &client.Note{Value: infos[i].Amount, Apk: infos[i].TokenHolder.Apk}
-		outNote2 := &client.Note{Value: infos[i+1].Amount, Apk: infos[i+1].TokenHolder.Apk}
+		outNote1 := &client.Note{Value: infos[i].Amount, Apk: infos[i].TokenHolder.Pk}
+		outNote2 := &client.Note{Value: infos[i+1].Amount, Apk: infos[i+1].TokenHolder.Pk}
 		totalAmount := outNote1.Value + outNote2.Value
 
 		outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
-		outputs[0].EncKey = infos[i].TokenHolder.Pkenc
+		outputs[0].EncKey = infos[i].TokenHolder.Tk
 		outputs[0].OutputNote = outNote1
-		outputs[1].EncKey = infos[i+1].TokenHolder.Pkenc
+		outputs[1].EncKey = infos[i+1].TokenHolder.Tk
 		outputs[1].OutputNote = outNote2
 
 		// Generate proof and sign tx
@@ -96,7 +97,7 @@ func BuildDividendTxs(
 		}
 
 		// TODO(@0xbunyip): use DCB hard-coded account here
-		tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
+		tx.AddressLastByte = dummyAddress.Pk[len(dummyAddress.Pk)-1]
 		rtMap := map[byte][]byte{chainID: rt}
 		inputMap := map[byte][]*client.JSInput{chainID: inputs}
 

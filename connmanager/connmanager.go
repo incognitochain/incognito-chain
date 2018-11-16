@@ -18,6 +18,7 @@ import (
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/peer"
 	"github.com/ninjadotorg/constant/wire"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 // ConnState represents the state of the requested connection.
@@ -322,10 +323,11 @@ listen:
 				var publicKey string
 
 				if listener.Config.ProducerPrvKey != EmptyString {
-					keySet := &cashec.KeySetProducer{}
-					_, err := keySet.Import(listener.Config.ProducerPrvKey)
+					keySet := &cashec.KeySet{}
+					key, _ := wallet.Base58CheckDeserialize(listener.Config.ProducerPrvKey)
+					keySet.ImportFromPrivateKey(&key.KeySet.PrivateKey)
 					if err == nil {
-						publicKey = base58.Base58Check{}.Encode(keySet.SpublicKey, byte(0x00))
+						publicKey = base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, byte(0x00))
 					}
 				}
 
