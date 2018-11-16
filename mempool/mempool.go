@@ -458,6 +458,10 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 		{
 			return blockChain.ValidateTxDividendPayout(tx, chainID)
 		}
+	case common.TxBuySellDCBRequest:
+		{
+			return blockChain.ValidateTxBuyRequest(tx, chainID)
+		}
 	}
 	return nil
 }

@@ -428,3 +428,7 @@ func (bc *BlockChain) VerifyCustomTokenSigns(tx transaction.Transaction) bool {
 
 	return verifyByBoard(bc, boardType, customToken)
 }
+
+func (self *BlockChain) ValidateTxBuyRequest(tx transaction.Transaction, chainID byte) error {
+	return nil
+}

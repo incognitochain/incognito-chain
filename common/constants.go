@@ -18,8 +18,9 @@ const (
 	TxLoanWithdraw          = "lw"
 	TxDividendPayout        = "td"
 	TxCrowdsale             = "cs"
-	TxBuyRequest            = "br"
-	TxSellRequest           = "sr"
+	TxBuyFromGOVRequest     = "bgr"
+	TxBuySellDCBRequest     = "bsdr"
+	TxBuySellDCBResponse    = "bsdrs"
 	TxBuyFromGOVResponse    = "bgrs"
 )
 

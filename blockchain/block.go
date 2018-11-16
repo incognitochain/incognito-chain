@@ -1,11 +1,10 @@
 package blockchain
 
 import (
-	"strconv"
-	"strings"
-
 	"encoding/json"
 	"errors"
+	"strconv"
+	"strings"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/transaction"
@@ -80,12 +79,6 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				txVoting := &transaction.TxRegisterCandidate{}
 				_ = json.Unmarshal(txTempJson, &txVoting)
 				self.Transactions = append(self.Transactions, txVoting)
-			}
-		case common.TxBuyRequest, common.TxSellRequest:
-			{
-				buySellReqTx := &transaction.BuySellRequestTx{}
-				_ = json.Unmarshal(txTempJson, &buySellReqTx)
-				self.Transactions = append(self.Transactions, buySellReqTx)
 			}
 		case common.TxBuyFromGOVResponse:
 			{
