@@ -239,11 +239,11 @@ concludeBlock:
 	return &block, nil
 }
 
-func GetOracleDCBNationalWelfare() float32 {
+func GetOracleDCBNationalWelfare() uint32 {
 	fmt.Print("Get national welfare. It is constant now. Need to change !!!")
 	return 1234
 }
-func GetOracleGovNationalWelfare() float32 {
+func GetOracleGovNationalWelfare() uint32 {
 	fmt.Print("Get national welfare. It is constant now. Need to change !!!")
 	return 1234
 }
@@ -372,8 +372,9 @@ func (blockgen *BlkTmplGenerator) createRequestConstitutionTxDecs(
 		}
 	}
 
-	AcceptedTransaction := *Transaction[res]
-	Fee, err := blockgen.txPool.CheckTransactionFee(AcceptedTransaction)
+	// xxx
+	AcceptedSubmitProposalTransaction := ConstitutionHelper.TxAcceptProposal(*Transaction[res])
+	Fee, err := blockgen.txPool.CheckTransactionFee(AcceptedSubmitProposalTransaction)
 	if err != nil {
 		return nil, err
 	}

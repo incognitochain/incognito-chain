@@ -3,27 +3,29 @@ package blockchain
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/voting"
 )
 
 type ConstitutionInfo struct {
 	StartedBlockHeight int32
 	ExecuteDuration int32
+	CurrentGovNationalWelfare int
+	ProposalTXID *common.Hash
 }
 
 type GovConstitution struct{
 	ConstitutionInfo
-	CurrentGovNationalWelfare int
-	GovParameters GovParameters
+	GovParams voting.GovParams
 }
 
 type DCBConstitution struct{
 	ConstitutionInfo
-	CurrentDCBNationalWelfare int
-	DCBParameters DCBParameters
+	DCBParameters voting.DCBParams
 }
 
 type DCBConstitutionHelper struct{}
 type GovConstitutionHelper struct{}
+
 func (DCBConstitutionHelper) GetStartedBlockHeight(blockgen *BlkTmplGenerator, chainID byte) (int32){
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	lastDCBConstitution := BestBlock.DCBConstitution
@@ -39,7 +41,7 @@ func (DCBConstitutionHelper) CheckVotingProposalType(tx transaction.Transaction)
 }
 
 func (DCBConstitutionHelper) GetAmountVoteToken(tx transaction.Transaction) (uint32) {
-	return tx.(*transaction.TxVoteDCBProposal).TxVoteDCBProposalData.AmountVoteToken
+	return tx.(*transaction.TxVoteDCBProposal).VoteDCBProposalData.AmountVoteToken
 }
 
 func (GovConstitutionHelper) GetStartedBlockHeight(blockgen *BlkTmplGenerator, chainID byte) (int32){
@@ -57,5 +59,16 @@ func (GovConstitutionHelper) CheckVotingProposalType(tx transaction.Transaction)
 }
 
 func (GovConstitutionHelper) GetAmountVoteToken(tx transaction.Transaction) (uint32) {
-	return tx.(*transaction.TxVoteGovProposal).TxVoteGovProposalData.AmountVoteToken
+	return tx.(*transaction.TxVoteGovProposal).VoteGovProposalData.AmountVoteToken
+}
+
+//xxx
+func (DCBConstitutionHelper) TxAcceptProposal(originTx transaction.Transaction) (transaction.TxlAcceptDCBProposal){
+	SubmitTx := originTx.(*transaction.TxSubmitDCBProposal)
+	AcceptTx := transaction.TxlAcceptDCBProposal{
+
+	}
+	//tx := originTx.(tran{
+	//	originTx
+	//}
 }
