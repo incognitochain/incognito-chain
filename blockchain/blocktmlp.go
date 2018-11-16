@@ -137,6 +137,9 @@ concludeBlock:
 	salaryMULTP := uint64(0) //salary multiplier
 	for _, blockTx := range txsToAdd {
 		if blockTx.GetType() == common.TxRegisterCandidateType {
+
+		}
+		if blockTx.GetType() == common.TxRegisterCandidateType {
 			tx, ok := blockTx.(*transaction.TxRegisterCandidate)
 			if !ok {
 				Logger.log.Error("Transaction not recognized to store in database")
@@ -320,4 +323,10 @@ func (blockgen *BlkTmplGenerator) processGovDividend(rt []byte, chainID byte, bl
 		TokenID: tokenID,
 	}
 	return blockgen.processDividend(rt, chainID, proposal, blockHeight)
+}
+
+// createBuySellResponsesTx
+// the tx is to distribute tokens (bond, gov, ...) to token requesters
+func createBuySellResponsesTx() {
+
 }

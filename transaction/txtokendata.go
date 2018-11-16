@@ -10,6 +10,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+type BuyBackInfo struct {
+	Maturity     uint32
+	BuyBackPrice uint64 // in Constant unit
+}
+
+type BuySellResponse struct {
+	BuyBackInfo *BuyBackInfo
+	AssetID     string // only bond for now - encoded string of compound values (Maturity + BuyBackPrice + StartSellingAt) from SellingBonds param
+}
+
 // TxTokenVin ...
 type TxTokenVin struct {
 	TxCustomTokenID common.Hash
@@ -65,9 +75,10 @@ func (self TxTokenVout) GetTxCustomTokenID() common.Hash {
 
 // TxTokenData ...
 type TxTokenData struct {
-	PropertyID     common.Hash // = hash of TxTokenData data
-	PropertyName   string
-	PropertySymbol string
+	PropertyID      common.Hash // = hash of TxTokenData data
+	PropertyName    string
+	PropertySymbol  string
+	BuySellResponse *BuySellResponse
 
 	Type   int // action type
 	Amount uint64

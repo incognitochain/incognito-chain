@@ -87,11 +87,11 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				_ = json.Unmarshal(txTempJson, &buySellReqTx)
 				self.Transactions = append(self.Transactions, buySellReqTx)
 			}
-		case common.TxBuyResponse, common.TxSellResponse:
+		case common.TxBuyFromGOVResponse:
 			{
-				buySellResTx := &transaction.BuySellResponseTx{}
-				_ = json.Unmarshal(txTempJson, &buySellResTx)
-				self.Transactions = append(self.Transactions, buySellResTx)
+				buyFromGOVResTx := &transaction.TxCustomToken{}
+				_ = json.Unmarshal(txTempJson, &buyFromGOVResTx)
+				self.Transactions = append(self.Transactions, buyFromGOVResTx)
 			}
 
 		default:
