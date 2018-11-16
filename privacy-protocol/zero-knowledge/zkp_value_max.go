@@ -1,9 +1,11 @@
-package privacy
+package zkp
 
 import (
 	"encoding/binary"
 	"fmt"
 	"math/big"
+
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 const(
@@ -13,7 +15,8 @@ const(
 // PKMaxValue is a protocol for Zero-knowledge Proof of Knowledge of max value is 2^64-1
 // include witnesses: commitedValue, r []byte
 type PKMaxValueProtocol struct{
-	//witnesses [][]byte
+	Witnesses [][]byte
+	Proof PKMaxValueProof
 }
 
 // PKOneOfManyProof contains proof's value
@@ -69,39 +72,55 @@ func (pro * PKMaxValueProtocol) Prove(value []byte) (*PKMaxValueProof, error) {
 	}
 
 	// Set witnesses and commit
-	Pcm.InitCommitment()
+	privacy.Pcm.InitCommitment()
 	witnesses := make([][][]byte, threshold[indexThreshold])
 	proof.commitments = make([][]byte, threshold[indexThreshold])
 	proof.proofZeroOneCommitments = make([]*PKComZeroOneProof, threshold[indexThreshold])
 	proof.PKComZeroOneProtocol = new(PKComZeroOneProtocol)
 
 	for i := 0 ; i < nBitsValue; i++{
-		witnesses[i] = [][]byte{big.NewInt(int64(vBinary[i])).Bytes(), RandBytes(32)}
+		witnesses[i] = [][]byte{big.NewInt(int64(vBinary[i])).Bytes(), privacy.RandBytes(32)}
 		proof.commitments[i] = make([]byte, 34)
 		fmt.Printf("witness[%v][0] : %v\n", i, witnesses[i][0])
 		fmt.Printf("witness[%v][1] : %v\n", i, witnesses[i][1])
-		proof.commitments[i] = Pcm.CommitSpecValue(witnesses[i][0], witnesses[i][1], VALUE)
-		proof.PKComZeroOneProtocol.SetWitness(witnesses[i])
+		proof.commitments[i] = privacy.Pcm.CommitSpecValue(witnesses[i][0], witnesses[i][1], privacy.VALUE)
+
+		var witness PKComZeroOneWitness
+		witness.commitment = proof.commitments[i]
+		witness.commitedValue = witnesses[i][0]
+		witness.rand = witnesses[i][1]
+		witness.index = privacy.VALUE
+		proof.PKComZeroOneProtocol.SetWitness(witness)
+
 		proof.proofZeroOneCommitments[i] = new(PKComZeroOneProof)
-		proof.proofZeroOneCommitments[i], _ = proof.PKComZeroOneProtocol.Prove(proof.commitments[i], VALUE)
+		proof.proofZeroOneCommitments[i], _ = proof.PKComZeroOneProtocol.Prove()
 		fmt.Printf("Proof %v: %+v\n", i, proof.proofZeroOneCommitments[i])
 	}
 
 	for j := nBitsValue ; j < threshold[indexThreshold] ; j++{
-		witnesses[j] = [][]byte{big.NewInt(0).Bytes(), RandBytes(32)}
+		witnesses[j] = [][]byte{big.NewInt(0).Bytes(), privacy.RandBytes(32)}
 		proof.commitments[j] = make([]byte, 34)
 		fmt.Printf("witness[%v][0] : %v\n", j, witnesses[j][0])
 		fmt.Printf("witness[%v][1] : %v\n", j, witnesses[j][1])
-		proof.commitments[j] = Pcm.CommitSpecValue(witnesses[j][0], witnesses[j][1], VALUE)
-		proof.PKComZeroOneProtocol.SetWitness(witnesses[j])
+		proof.commitments[j] = privacy.Pcm.CommitSpecValue(witnesses[j][0], witnesses[j][1], privacy.VALUE)
+
+		var witness PKComZeroOneWitness
+		witness.commitment = proof.commitments[j]
+		witness.commitedValue = witnesses[j][0]
+		witness.rand = witnesses[j][1]
+		witness.index = privacy.VALUE
+		proof.PKComZeroOneProtocol.SetWitness(witness)
+
 		proof.proofZeroOneCommitments[j] = new(PKComZeroOneProof)
-		proof.proofZeroOneCommitments[j], _ = proof.PKComZeroOneProtocol.Prove(proof.commitments[j], VALUE)
+		proof.proofZeroOneCommitments[j], _ = proof.PKComZeroOneProtocol.Prove()
 		fmt.Printf("Proof %v: %+v\n", j, proof.proofZeroOneCommitments[j])
 	}
 
-
-
 	return proof, nil
+}
+
+func (pro * PKMaxValueProtocol) SetProof(proof PKMaxValueProof){
+	pro.Proof = proof
 }
 
 func (pro * PKMaxValueProtocol) Verify(proof PKMaxValueProof) bool {
@@ -116,7 +135,7 @@ func (pro * PKMaxValueProtocol) Verify(proof PKMaxValueProof) bool {
 	//pk := new(PKComZeroOneProtocol)
 
 	for i := 0; i < len(proof.commitments); i++{
-		res := proof.PKComZeroOneProtocol.Verify(proof.proofZeroOneCommitments[i], proof.commitments[i], VALUE)
+		res := proof.PKComZeroOneProtocol.Verify(proof.proofZeroOneCommitments[i], proof.commitments[i], privacy.VALUE)
 		if !res {
 			fmt.Printf("verify fail at %v\n", i)
 			return false
@@ -141,6 +160,8 @@ func TestPKMaxValue(){
 		vBytes = vBytes[:n]
 
 		proof, err := pk.Prove(vBytes)
+
+		pk.SetProof(*proof)
 
 		if err != nil{
 			fmt.Println(err)

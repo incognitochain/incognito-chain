@@ -100,4 +100,4 @@ else
 	wget https://github.com/ninjadotorg/constant/releases/download/zkpp-v0.0.3/verifying.key
 fi
 
-echo "privacy has been built"
+echo "privacy-protocol has been built"

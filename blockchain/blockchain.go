@@ -16,7 +16,7 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 )
@@ -304,7 +304,7 @@ func (self *BlockChain) StoreTransactionIndex(txHash *common.Hash, blockHash *co
 }
 
 /*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy,
+Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
 this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
@@ -318,7 +318,7 @@ func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
 }
 
 /*
-Uses an existing database to update the set of not used tx by saving list commitments of privacy,
+Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
 this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
@@ -332,7 +332,7 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 }
 
 /*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy,
+Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
 this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, chainId byte) error {
@@ -346,7 +346,7 @@ func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, ch
 }
 
 /*
-Uses an existing database to update the set of not used tx by saving list commitments of privacy,
+Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
 this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, chainId byte) error {
@@ -360,7 +360,7 @@ func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte,
 }
 
 /*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy,
+Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
 this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
@@ -380,7 +380,7 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
 }
 
 /*
-Uses an existing database to update the set of not used tx by saving list commitments of privacy,
+Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
 this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
@@ -622,7 +622,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 							EncryptedData: make([][]byte, 0),
 						}
 						if desc.Proof != nil && len(desc.EncryptedData) > 0 {
-							// privacy
+							// privacy-protocol
 							for i, encData := range desc.EncryptedData {
 								var epk client.EphemeralPubKey
 								copy(epk[:], desc.EphemeralPubKey)
@@ -641,7 +641,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 								}
 							}
 						} else {
-							// no privacy
+							// no privacy-protocol
 							for i, note := range desc.Note {
 								if note.Apk == keySet.PaymentAddress.Apk {
 									copyDesc.AppendNote(note)
@@ -721,7 +721,7 @@ func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *client.S
 					EncryptedData: make([][]byte, 0),
 				}
 				if desc.Proof != nil && len(desc.EncryptedData) > 0 {
-					// have privacy
+					// have privacy-protocol
 					for i, encData := range desc.EncryptedData {
 						var epk client.EphemeralPubKey
 						copy(epk[:], desc.EphemeralPubKey)
@@ -757,7 +757,7 @@ func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *client.S
 				} else {
 					for i, note := range desc.Note {
 						if note.Apk == keys.PaymentAddress.Apk {
-							// no privacy
+							// no privacy-protocol
 							candidateCommitment := desc.Commitments[i]
 							if len(nullifiersInDb) > 0 {
 								// -> check commitment with db nullifiers

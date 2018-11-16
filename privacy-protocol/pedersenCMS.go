@@ -45,7 +45,7 @@ const (
 var Pcm PCParams
 
 // hashGenerator derives new generator from another generator using hash function
-func hashGenerator(g EllipticPoint) EllipticPoint {
+func HashGenerator(g EllipticPoint) EllipticPoint {
 	// res.X = hash(g.X), res.Y = sqrt(res.X^3 - 3X + B)
 	var res = new(EllipticPoint)
 	res.X = big.NewInt(0)
@@ -73,10 +73,10 @@ func hashGenerator(g EllipticPoint) EllipticPoint {
 
 //GetHashOfValues get hash of n points in G append with input values
 //return blake_2b(G[0]||G[1]||...||G[CM_CAPACITY-1]||<values>)
-func (com PCParams) getHashOfValues(values [][]byte) []byte {
-	appendStr := CompressKey(Pcm.G[0])
+func (com PCParams) GetHashOfValues(values [][]byte) []byte {
+	appendStr := Pcm.G[0].CompressPoint()
 	for i := 1; i < CM_CAPACITY; i++ {
-		appendStr = append(appendStr, CompressKey(Pcm.G[i])...)
+		appendStr = append(appendStr, Pcm.G[i].CompressPoint()...)
 	}
 	for i := 0; i < len(values); i++ {
 		appendStr = append(appendStr, values[i]...)
@@ -145,7 +145,7 @@ func (com *PCParams) InitCommitment() {
 	//fmt.Printf("G0.X: %#v\n", com.G[0].X.Bytes())
 	//fmt.Printf("G0.Y: %#v\n", com.G[0].Y.Bytes())
 	for i := 1; i < CM_CAPACITY; i++ {
-		com.G[i] = hashGenerator(com.G[i-1])
+		com.G[i] = HashGenerator(com.G[i-1])
 		//fmt.Printf("G%v.X: %#v\n", i, com.G[i].X.Bytes())
 		//fmt.Printf("G%v.Y: %#v\n", i, com.G[i].Y.Bytes())
 	}
@@ -198,7 +198,7 @@ func (com PCParams) CommitWithSpecPoint(G EllipticPoint, H EllipticPoint, value,
 	var idx byte
 	idx = 0
 	res = append(res, idx)
-	res = append(res, CompressKey(commitment)...)
+	res = append(res, commitment.CompressPoint()...)
 	return res
 }
 

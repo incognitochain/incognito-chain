@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy/crypto/sha256"
+	"github.com/ninjadotorg/constant/privacy-protocol/crypto/sha256"
 )
 
 // MerkleHash represents a hash in merkle tree

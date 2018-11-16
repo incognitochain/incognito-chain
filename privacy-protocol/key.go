@@ -1,7 +1,6 @@
 package privacy
 
 import (
-	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
 	"math/big"
@@ -69,16 +68,6 @@ type PaymentInfo struct {
 	Amount         uint64
 }
 
-// RandBytes generates random bytes
-func RandBytes(n int) []byte {
-	b := make([]byte, n)
-	_, err := rand.Read(b)
-	if err != nil {
-		fmt.Println("error:", err)
-		return nil
-	}
-	return b
-}
 
 // GenerateSpendingKey generates a random SpendingKey
 // SpendingKey: 32 bytes
@@ -100,7 +89,7 @@ func GeneratePublicKey(spendingKey []byte) PublicKey {
 	p.X, p.Y = Curve.ScalarBaseMult(spendingKey)
 	//Logger.log.Infof("p.X: %v\n", p.X)
 	//Logger.log.Infof("p.Y: %v\n", p.Y)
-	publicKey := CompressKey(p)
+	publicKey := p.CompressPoint()
 
 	return publicKey
 }
@@ -125,7 +114,7 @@ func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
 	p.X, p.Y = Curve.ScalarMult(generator.X, generator.Y, receivingKey)
 	fmt.Printf("Transmission key point: %+v\n ", p)
 	// transmissionKey := FromPointToByteArray(p)
-	transmissionKey := CompressKey(p)
+	transmissionKey := p.CompressPoint()
 	return transmissionKey
 }
 
@@ -145,43 +134,31 @@ func GeneratePaymentAddress(spendingKey []byte) PaymentAddress {
 	return paymentAddress
 }
 
-// FromPointToByteArray converts an elliptic point to byte arraygit
-func FromPointToByteArray(p EllipticPoint) []byte {
-	var pointByte []byte
-	x := p.X.Bytes()
-	y := p.Y.Bytes()
-	pointByte = append(pointByte, x...)
-	pointByte = append(pointByte, y...)
-	return pointByte
-}
+//// FromPointToByteArray converts an elliptic point to byte arraygit
+//func FromPointToByteArray(p EllipticPoint) []byte {
+//	var pointByte []byte
+//	x := p.X.Bytes()
+//	y := p.Y.Bytes()
+//	pointByte = append(pointByte, x...)
+//	pointByte = append(pointByte, y...)
+//	return pointByte
+//}
+//
+//// FromByteArrayToPoint converts a byte array to elliptic point
+//func FromByteArrayToPoint(pointByte []byte) EllipticPoint {
+//	point := new(EllipticPoint)
+//	point.X = new(big.Int).SetBytes(pointByte[0:32])
+//	point.Y = new(big.Int).SetBytes(pointByte[32:64])
+//	return *point
+//}
 
-// FromByteArrayToPoint converts a byte array to elliptic point
-func FromByteArrayToPoint(pointByte []byte) EllipticPoint {
-	point := new(EllipticPoint)
-	point.X = new(big.Int).SetBytes(pointByte[0:32])
-	point.Y = new(big.Int).SetBytes(pointByte[32:64])
-	return *point
-}
 
-// CompressKey compresses key from 64 bytes to 33 bytes
-func CompressKey(point EllipticPoint) []byte {
-	if Curve.IsOnCurve(point.X, point.Y) {
-		b := make([]byte, 0, PubKeyBytesLenCompressed)
-		format := pubkeyCompressed
-		if isOdd(point.Y) {
-			format |= 0x1
-		}
-		b = append(b, format)
-		return paddedAppend(32, b, point.X.Bytes())
-	}
-	return nil
-}
 
 // Compress Commitment from 64 bytes to 34 bytes (include bytes index)
 func CompressCommitment(cmPoint EllipticPoint, typeCommitment byte) []byte{
 	var commitment []byte
 	commitment = append(commitment, typeCommitment)
-	commitment = append(commitment, CompressKey(cmPoint)...)
+	commitment = append(commitment, cmPoint.CompressPoint()...)
 	return commitment
 }
 

@@ -12,7 +12,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"golang.org/x/crypto/sha3"
 )
@@ -369,7 +369,7 @@ func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxRegisterCan
 			return false, errors.New("Wrong tx desc's vmacs")
 		}
 		//
-		if desc.Proof != nil { // no privacy
+		if desc.Proof != nil { // no privacy-protocol
 			return false, errors.New("Wrong tx desc's proof")
 		}
 		if len(desc.EncryptedData) != 0 {

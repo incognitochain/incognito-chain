@@ -2,7 +2,7 @@ package cashec
 
 import (
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/common/base58"
 	"encoding/json"
 	"errors"
@@ -46,7 +46,7 @@ func (self *KeySet) ImportFromPrivateKey(privateKey *client.SpendingKey) {
 }
 
 /*
-Generate Producer keyset from privacy key set
+Generate Producer keyset from privacy-protocol key set
 */
 func (self *KeySet) CreateProducerKeySet() (*KeySetProducer, error) {
 	var producerKeySet KeySetProducer
@@ -60,14 +60,14 @@ func (self *KeySet) CreateProducerKeySet() (*KeySetProducer, error) {
 func (self *KeySet) Verify(data, signature []byte) (bool, error) {
 	/*isValid := false
 	hash := common.HashB(data)
-	isValid = privacy.Verify(signature, hash[:], self.PaymentAddress.Pk)
+	isValid = privacy-protocol.Verify(signature, hash[:], self.PaymentAddress.Pk)
 	return isValid, nil*/
 	return true, nil
 }
 
 func (self *KeySet) Sign(data []byte) ([]byte, error) {
 	/*hash := common.HashB(data)
-	signature, err := privacy.Sign(hash[:], self.PrivateKey)
+	signature, err := privacy-protocol.Sign(hash[:], self.PrivateKey)
 	return signature, err*/
 	return []byte{}, nil
 }

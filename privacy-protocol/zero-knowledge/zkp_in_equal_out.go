@@ -1,4 +1,4 @@
-package privacy
+package zkp
 
 
 // PKMaxValue is a protocol for Zero-knowledge Proof of Knowledge of max value is 2^64-1

@@ -93,3 +93,17 @@ func (eccPoint EllipticPoint) IsSafe() bool {
 	}
 	return true
 }
+
+// CompressPoint compresses key from 64 bytes to 33 bytes
+func (eccPoint EllipticPoint) CompressPoint() []byte {
+	if Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
+		b := make([]byte, 0, PubKeyBytesLenCompressed)
+		format := pubkeyCompressed
+		if isOdd(eccPoint.Y) {
+			format |= 0x1
+		}
+		b = append(b, format)
+		return paddedAppend(32, b, eccPoint.X.Bytes())
+	}
+	return nil
+}

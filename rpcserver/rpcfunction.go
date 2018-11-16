@@ -13,7 +13,7 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
@@ -1223,7 +1223,7 @@ func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-ch
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
-	//missing flag for privacy
+	//missing flag for privacy-protocol
 	// false by default
 	flag := false
 	tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos,

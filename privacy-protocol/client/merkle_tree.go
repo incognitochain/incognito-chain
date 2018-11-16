@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy/client/crypto/sha256"
+	"github.com/ninjadotorg/constant/privacy-protocol/client/crypto/sha256"
 )
 
 type MerkleHash []byte

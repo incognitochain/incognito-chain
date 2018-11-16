@@ -59,7 +59,7 @@ func FromByteArrayToSig(sig []byte) (r, s *big.Int) {
 	return
 }
 
-// GenerateKey generates a one-time public and private key pair for signing transaction privacy.
+// GenerateKey generates a one-time public and private key pair for signing transaction privacy-protocol.
 func GenerateKey() (privKey, pubKey []byte) {
 	tmp := new(big.Int)
 	privKey = RandBytes(32)
@@ -68,7 +68,7 @@ func GenerateKey() (privKey, pubKey []byte) {
 	}
 	var pubKeyPoint EllipticPoint
 	pubKeyPoint.X, pubKeyPoint.Y = Curve.ScalarBaseMult(privKey)
-	pubKey = CompressKey(pubKeyPoint)
+	pubKey = pubKeyPoint.CompressPoint()
 
 	return privKey, pubKey
 }
