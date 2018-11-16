@@ -22,6 +22,20 @@ type VoteDCBProposalData struct{
 	AmountVoteToken uint32
 }
 
+func (VoteDCBProposalData VoteDCBProposalData) Validate() bool {
+	return true
+	//xxx check if TXID exist
+
+	//xxx check if AmountVoteToken less than current amount of token this user has
+}
+
+func (VoteGovProposalData VoteGovProposalData) Validate() bool {
+	return true
+	//xxx check if TXID exist
+
+	//xxx check if AmountVoteToken less than current amount of token this user has
+}
+
 func (VoteDCBProposalData VoteDCBProposalData) Hash() *common.Hash {
 	record := string(common.ToBytes(VoteDCBProposalData))
 	record += string(VoteDCBProposalData.AmountVoteToken)
@@ -50,3 +64,10 @@ func (thisTx TxVoteGovProposal) Hash() *common.Hash{
 	return &hash
 }
 
+func (thisTx TxVoteDCBProposal) Validate() bool {
+	return thisTx.Tx.ValidateTransaction() && thisTx.VoteDCBProposalData.Validate()
+}
+
+func (thisTx TxVoteGovProposal) Validate() bool {
+	return thisTx.Tx.ValidateTransaction() && thisTx.VoteGovProposalData.Validate()
+}

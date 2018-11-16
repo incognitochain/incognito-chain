@@ -11,9 +11,17 @@ type DCBParams struct{
 }
 
 //xxx
-func (data DCBParams) Hash() *common.Hash {
+func (DCBParams DCBParams) Hash() *common.Hash {
 
 }
-func (data GovParams) Hash() *common.Hash {
+func (GovParams GovParams) Hash() *common.Hash {
 
+}
+
+//xxx
+func (GovParams GovParams) Validate() bool {
+	return true
+}
+func (DCBParams DCBParams) Validate() bool {
+	return true
 }

@@ -28,3 +28,8 @@ func (thisTx TxSubmitGovProposal) Hash() *common.Hash{
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (thisTx *TxSubmitDCBProposal) ValidateTransaction() bool {
+	return thisTx.Tx.ValidateTransaction() && thisTx.DCBProposalData.Validate()
+}
+

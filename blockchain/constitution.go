@@ -63,9 +63,9 @@ func (GovConstitutionHelper) GetAmountVoteToken(tx transaction.Transaction) (uin
 }
 
 //xxx
-func (DCBConstitutionHelper) TxAcceptProposal(originTx transaction.Transaction) (transaction.TxlAcceptDCBProposal){
+func (DCBConstitutionHelper) TxAcceptProposal(originTx transaction.Transaction) (transaction.TxAcceptDCBProposal){
 	SubmitTx := originTx.(*transaction.TxSubmitDCBProposal)
-	AcceptTx := transaction.TxlAcceptDCBProposal{
+	AcceptTx := transaction.TxAcceptDCBProposal{
 
 	}
 	//tx := originTx.(tran{

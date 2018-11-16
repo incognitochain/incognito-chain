@@ -12,6 +12,18 @@ type DCBProposalData struct {
 	Explaination      string
 }
 
+func (DCBProposalData DCBProposalData) Validate() bool {
+	return DCBProposalData.DCBParams.Validate() && ValidateExplaination(DCBProposalData.Explaination)
+}
+
+func (GovProposalData GovProposalData) Validate() bool {
+	return GovProposalData.GovParams.Validate() && ValidateExplaination(GovProposalData.Explaination)
+}
+
+func ValidateExplaination(explaination string) bool {
+	return true
+}
+
 func (data DCBProposalData) Hash() *common.Hash {
 	record := string(common.ToBytes(data.DCBParams.Hash()))
 	record += data.Explaination
@@ -25,3 +37,4 @@ func (data GovProposalData) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
