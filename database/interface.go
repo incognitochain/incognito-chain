@@ -66,7 +66,8 @@ type DatabaseInterface interface {
 	GetLoanTxs([]byte) ([][]byte, error)    // param: loanID
 
 	// Crowdsale
-	SaveCrowdsaleData([]byte, []byte, string, string, uint64, client.PaymentAddress) error // param: saleID, bondID, baseAsset, quoteAsset, price, escrowAccount
+	SaveCrowdsaleData(*transaction.SaleData) error
+	LoadCrowdsaleData([]byte) (*transaction.SaleData, error)
 
 	Close() error
 }
