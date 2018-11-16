@@ -90,6 +90,7 @@ func (pro * PKMaxValueProtocol) Prove() (*PKMaxValueProof, error) {
 		witness.commitedValue = witnesses[i][0]
 		witness.rand = witnesses[i][1]
 		witness.index = privacy.VALUE
+		proof.PKComZeroOneProtocol[i] = new(PKComZeroOneProtocol)
 		proof.PKComZeroOneProtocol[i].SetWitness(witness)
 
 		proof.proofZeroOneCommitments[i] = new(PKComZeroOneProof)
@@ -109,6 +110,7 @@ func (pro * PKMaxValueProtocol) Prove() (*PKMaxValueProof, error) {
 		witness.commitedValue = witnesses[j][0]
 		witness.rand = witnesses[j][1]
 		witness.index = privacy.VALUE
+		proof.PKComZeroOneProtocol[j] = new(PKComZeroOneProtocol)
 		proof.PKComZeroOneProtocol[j].SetWitness(witness)
 
 		proof.proofZeroOneCommitments[j] = new(PKComZeroOneProof)
@@ -132,8 +134,8 @@ func (pro * PKMaxValueProtocol) Verify() bool {
 		return false
 	}
 
-
 	for i := 0; i < len(pro.Proof.commitments); i++{
+		pro.Proof.PKComZeroOneProtocol[i].SetProof(*pro.Proof.proofZeroOneCommitments[i])
 		res := pro.Proof.PKComZeroOneProtocol[i].Verify()
 		if !res {
 			fmt.Printf("verify fail at %v\n", i)
@@ -156,20 +158,22 @@ func TestPKMaxValue(){
 		vBytes := make([]byte, binary.MaxVarintLen64)
 		n := binary.PutVarint(vBytes, value)
 		vBytes = vBytes[:n]
+		fmt.Printf("VBytes: %v\n", vBytes)
 
 		var witness PKMaxValueWitness
 		witness.value = vBytes
 		pk.SetWitness(witness)
 
 		proof, err := pk.Prove()
+		fmt.Printf("Proof: %+v\n", proof)
 
 		pk.SetProof(*proof)
 
 		if err != nil{
 			fmt.Println(err)
 		}
-		fmt.Printf("Proof.commitments: %v\n", proof.commitments)
-		fmt.Printf("Proof.proofZeroOne: %v\n", proof.proofZeroOneCommitments)
+		//fmt.Printf("Proof.commitments: %v\n", proof.commitments)
+		//fmt.Printf("Proof.proofZeroOne: %v\n", proof.proofZeroOneCommitments)
 
 		res = pk.Verify()
 
