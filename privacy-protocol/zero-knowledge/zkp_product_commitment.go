@@ -112,9 +112,9 @@ func (pro *PKComProductProtocol) Prove() (*PKComProductProof,error) {
 	s := new(big.Int).SetBytes(privacy.RandBytes(32));
 	s1 := new(big.Int).SetBytes(privacy.RandBytes(32));
 	t := new(big.Int).SetBytes(privacy.RandBytes(32));
-	pro.Witness.cmA = privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessA,pro.Witness.randA)
-	pro.Witness.cmB = privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessB,pro.Witness.randB)
-	pro.Witness.cmC = privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessAB,pro.Witness.randC)
+	pro.Witness.cmA = privacy.Elcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessA,pro.Witness.randA)
+	pro.Witness.cmB = privacy.Elcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessB,pro.Witness.randB)
+	pro.Witness.cmC = privacy.Elcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessAB,pro.Witness.randC)
 	//Compute D factor of Proof
 	D:= computeCommitmentPoint(proof.basePoint.G, proof.basePoint.H, d,s);
 

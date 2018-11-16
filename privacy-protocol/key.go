@@ -208,7 +208,8 @@ func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
 func DecompressCommitment(commitment []byte) (point *EllipticPoint, err error) {
 	//typeCommitment := commitment[0]
 	//fmt.Printf("Type Commmitment: %v\n", typeCommitment)
-	return DecompressKey(commitment[1:34])
+	//Decompress the second component's commitment
+	return DecompressKey(commitment[34:67])
 }
 
 // decompressPoint decompresses a point on the given curve given the X point and
