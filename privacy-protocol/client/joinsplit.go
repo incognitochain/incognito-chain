@@ -7,18 +7,19 @@ import (
 	"log"
 	"time"
 
-	"github.com/ninjadotorg/constant/privacy/proto/zksnark"
+	"github.com/ninjadotorg/constant/privacy-protocol/proto/zksnark"
 	"google.golang.org/grpc"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type JSInput struct {
 	WitnessPath *MerklePath
-	Key         *SpendingKey
+	Key         *privacy.SpendingKey
 	InputNote   *Note
 }
 
 type JSOutput struct {
-	EncKey     TransmissionKey
+	EncKey     privacy.TransmissionKey
 	OutputNote *Note
 }
 
@@ -66,7 +67,9 @@ func Prove(inputs []*JSInput,
 	for _, input := range inputs {
 		var rho [32]byte
 		copy(rho[:], input.InputNote.Rho)
-		input.InputNote.Nf = GetNullifier(*input.Key, rho)
+		key := make([]byte, len(*input.Key))
+		copy(key[:], (*input.Key)[:])
+		input.InputNote.Nf = GetNullifier(key, rho)
 
 		// Compute cm for old notes to check for merkle path
 		input.InputNote.Cm = GetCommitment(input.InputNote)
@@ -168,7 +171,7 @@ func Prove(inputs []*JSInput,
 	} else {
 		return nil, hSig, newSeed, newPhi, nil
 	}
-	/* for Test not privacy
+	/* for Test not privacy-protocol
 	dummyProof := &zksnark.PHGRProof{
 		G_A:      make([]byte, 33),
 		G_APrime: make([]byte, 33),
@@ -276,7 +279,7 @@ func JSInputs2ZkInputs(inputs []*JSInput) []*zksnark.JSInput {
 		for _, hash := range input.WitnessPath.AuthPath {
 			zkinput.WitnessPath.AuthPath = append(zkinput.WitnessPath.AuthPath, &zksnark.MerkleHash{Hash: hash})
 		}
-		copy(zkinput.SpendingKey, input.Key[:])
+		copy(zkinput.SpendingKey, (*input.Key)[:])
 		// fmt.Printf("zkinput.SpendingKey: %x %x\n", zkinput.SpendingKey, input.Key)
 
 		zkinput.Note = Note2ZksnarkNote(input.InputNote)

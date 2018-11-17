@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"strconv"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 func (db *db) StoreNullifiers(nullifier []byte, chainId byte) error {
@@ -241,7 +241,7 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 	2. Key -> value :							prefix(transaction)txHash 												->  	privateKey-chainId-blockHeight-txIndex
 
 */
-func (db *db) StoreTransactionLightMode(privateKey *client.SpendingKey, chainId byte, blockHeight int32, txIndex int, unspentTx *transaction.Tx) error {
+func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, unspentTx *transaction.Tx) error {
 	tempChainId := []byte{}
 	tempChainId = append(tempChainId, chainId)
 	temp3ChainId := int(chainId)
@@ -298,7 +298,7 @@ func (db *db) StoreTransactionLightMode(privateKey *client.SpendingKey, chainId 
 	1. Key -> value : prefix(privateky)-privateKey-chainId-(999999999 - blockHeight)-(999999999 - txIndex) 		-> 		tx
 
 */
-func (db *db) GetTransactionLightModeByPrivateKey(privateKey *client.SpendingKey) (map[byte][]transaction.Tx, error) {
+func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKey) (map[byte][]transaction.Tx, error) {
 	prefix := []byte(string(privateKeyPrefix) + privateKey.String())
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	results := make(map[byte][]transaction.Tx)

@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ninjadotorg/constant/privacy/client/crypto/sha256"
+	"github.com/ninjadotorg/constant/privacy-protocol/client/crypto/sha256"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/curve25519"
 
@@ -17,13 +17,14 @@ import (
 	"io"
 	mathrand "math/rand"
 	"strings"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 const CMPreImageLength = 105 // bytes
 
 type Note struct {
 	Value                uint64
-	Apk                  SpendingAddress
+	Apk                  privacy.PublicKey
 	Rho, R, Nf, Cm, Memo []byte
 }
 
@@ -41,7 +42,7 @@ func GetCommitment(note *Note) []byte {
 	return result[:]
 }
 
-func GetNullifier(ask SpendingKey, Rho [32]byte) []byte {
+func GetNullifier(ask privacy.SpendingKey, Rho [32]byte) []byte {
 	return PRF_nf(ask[:], Rho[:])
 }
 
@@ -73,7 +74,7 @@ func ParseJsonToNote(jsonnote []byte) (*Note, error) {
 	return &note, nil
 }
 
-func EncryptNote(note [2]*Note, pkenc [2]TransmissionKey,
+func EncryptNote(note [2]*Note, pkenc [2]privacy.TransmissionKey,
 	esk EphemeralPrivKey, epk EphemeralPubKey, hSig []byte) [][]byte {
 
 	noteJsons := [][]byte{ParseNoteToJson(note[0]), ParseNoteToJson(note[1])}
@@ -105,8 +106,8 @@ func EncryptNote(note [2]*Note, pkenc [2]TransmissionKey,
 	return ciphernotes
 }
 
-func DecryptNote(ciphernote []byte, skenc ReceivingKey,
-	pkenc TransmissionKey, epk EphemeralPubKey, hSig []byte) (*Note, error) {
+func DecryptNote(ciphernote []byte, skenc privacy.ReceivingKey,
+	pkenc privacy.TransmissionKey, epk EphemeralPubKey, hSig []byte) (*Note, error) {
 
 	var epk1 [32]byte
 	copy(epk1[:], epk[:])
@@ -245,7 +246,7 @@ func GenNote() *Note {
 	return &note
 }
 
-func TestEncrypt() {
+/*func TestEncrypt() {
 	var hSig [32]byte
 	copy(hSig[:], []byte("the-key-has-to-be-32-bytes-long!"))
 	tmp := RandBits(256)
@@ -278,7 +279,7 @@ func TestEncrypt() {
 	fmt.Printf("\nPlaintext: %+v\n", decrypted_note0)
 	fmt.Printf("\nPlaintext: %+v\n", decrypted_note1)
 
-}
+}*/
 
 func TestEncrypt1() {
 	text := []byte("My name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is AstaxieMy name is Astaxie")

@@ -65,3 +65,7 @@ func (tx *TxLoanWithdraw) ValidateTransaction() bool {
 	}
 	return true
 }
+
+func (tx *TxLoanWithdraw) GetType() string {
+	return common.TxLoanWithdraw
+}

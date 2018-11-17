@@ -9,7 +9,7 @@ import (
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 // TxCustomToken ...
@@ -80,8 +80,8 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 }
 
 // CreateTxCustomToken ...
-func CreateTxCustomToken(senderKey *client.SpendingKey,
-	paymentInfo []*client.PaymentInfo,
+func CreateTxCustomToken(senderKey *privacy.SpendingKey,
+	paymentInfo []*privacy.PaymentInfo,
 	rts map[byte]*common.Hash,
 	usableTx map[byte][]*Tx,
 	commitments map[byte]([][]byte),

@@ -61,8 +61,12 @@ func (tx *TxLoanPayment) ValidateTransaction() bool {
 	for _, desc := range tx.Tx.Descs {
 		if desc.Note == nil {
 			// TODO(@0xbunyip): check if payment is sent to DCB
-			return false // Loan payment tx must be non-privacy
+			return false // Loan payment tx must be non-privacy-protocol
 		}
 	}
 	return true
+}
+
+func (tx *TxLoanPayment) GetType() string {
+	return common.TxLoanPayment
 }
