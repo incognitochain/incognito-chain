@@ -13,12 +13,12 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
 	"golang.org/x/crypto/ed25519"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -1522,7 +1522,8 @@ func (self RpcServer) handleGetConnectionCount(params interface{}, closeChan <-c
 handleGetGenerate - RPC returns true if the node is set to generate blocks using its CPU
 */
 func (self RpcServer) handleGetGenerate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.IsGenerateNode, nil
+	// return self.config.IsGenerateNode, nil
+	return false, nil
 }
 
 /*
@@ -1541,16 +1542,17 @@ func (self RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-chan 
 handleGetMiningInfo - RPC returns various mining-related info
 */
 func (self RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	if !self.config.IsGenerateNode {
-		return nil, NewRPCError(ErrUnexpected, errors.New("Not mining"))
-	}
-	chainId := byte(int(params.(float64)))
-	result := jsonresult.GetMiningInfoResult{}
-	result.Blocks = uint64(self.config.BlockChain.BestState[chainId].BestBlock.Header.Height + 1)
-	result.PoolSize = self.config.TxMemPool.Count()
-	result.Chain = self.config.ChainParams.Name
-	result.CurrentBlockTx = len(self.config.BlockChain.BestState[chainId].BestBlock.Transactions)
-	return result, nil
+	// TODO update code to new consensus
+	// if !self.config.IsGenerateNode {
+	// 	return nil, NewRPCError(ErrUnexpected, errors.New("Not mining"))
+	// }
+	// chainId := byte(int(params.(float64)))
+	// result := jsonresult.GetMiningInfoResult{}
+	// result.Blocks = uint64(self.config.BlockChain.BestState[chainId].BestBlock.Header.Height + 1)
+	// result.PoolSize = self.config.TxMemPool.Count()
+	// result.Chain = self.config.ChainParams.Name
+	// result.CurrentBlockTx = len(self.config.BlockChain.BestState[chainId].BestBlock.Transactions)
+	return jsonresult.GetMiningInfoResult{}, nil
 }
 
 /*

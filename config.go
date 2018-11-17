@@ -14,10 +14,10 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/jessevdk/go-flags"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/jessevdk/go-flags"
 )
 
 // default config
@@ -32,8 +32,9 @@ const (
 	defaultMaxRPCClients   = 10
 	defaultGenerate        = false
 	sampleConfigFilename   = "sample-config.conf"
-	defaultDisableRpcTls   = true
-	defaultFastMode        = false
+	defaultDisableRpcTLS   = true
+	defaultFastStartup     = false
+	defaultNodeRole        = "relay"
 	// For wallet
 	defaultWalletName = "wallet"
 )
@@ -86,21 +87,22 @@ type config struct {
 	Proxy     string `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
 	ProxyUser string `long:"proxyuser" description:"Username for proxy server"`
 	ProxyPass string `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
-	Generate  bool   `long:"generate" description:"Generate (mine) coins using the CPU"`
+	// Generate  bool   `long:"generate" description:"Generate (mine) coins using the CPU"`
 
 	// Net config
 	TestNet bool `long:"testnet" description:"Use the test network"`
 
-	Light bool `long:"light" description:"Default 'false'', when node run with mode 'light'', we only save block-header and a transactions database which relate to accounts in wallet"`
+	// Light bool `long:"light" description:"Default 'false'', when node run with mode 'light'', we only save block-header and a transactions database which relate to accounts in wallet"`
 
-	// PoS config
-	ProducerSpendingKey string `long:"producerspendingkey" description:"!!!WARNING Leave this if you don't know what this is"`
+	UserPrvKey string `long:"userprvkey" description:"User private key used for operation in consensus"`
+	NodeRole   string `long:"noderole" description:"Role of this node (beacon/producer/data/wallet/relay | default role is relay) for more detail please check github doc repo"`
+
 	// For Wallet
 	Wallet           bool   `long:"enablewallet" description:"Enable wallet"`
 	WalletName       string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
 	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
 
-	FastMode bool `long:"fastmode" description:"Load existed chain dependencies instead of rebuild from block data"`
+	FastStartup bool `long:"faststartup" description:"Load existed shard/chain dependencies instead of rebuild from block data"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -254,24 +256,25 @@ func removeDuplicateAddresses(addrs []string) []string {
 */
 func loadConfig() (*config, []string, error) {
 	cfg := config{
-		ConfigFile:           defaultConfigFile,
-		LogLevel:             defaultLogLevel,
-		MaxOutPeers:          defaultMaxPeers,
-		MaxInPeers:           defaultMaxPeers,
-		RPCMaxClients:        defaultMaxRPCClients,
-		DataDir:              defaultDataDir,
-		DatabaseDir:          defaultDatabaseDirname,
-		LogDir:               defaultLogDir,
-		RPCKey:               defaultRPCKeyFile,
-		RPCCert:              defaultRPCCertFile,
-		Generate:             defaultGenerate,
+		ConfigFile:    defaultConfigFile,
+		LogLevel:      defaultLogLevel,
+		MaxOutPeers:   defaultMaxPeers,
+		MaxInPeers:    defaultMaxPeers,
+		RPCMaxClients: defaultMaxRPCClients,
+		DataDir:       defaultDataDir,
+		DatabaseDir:   defaultDatabaseDirname,
+		LogDir:        defaultLogDir,
+		RPCKey:        defaultRPCKeyFile,
+		RPCCert:       defaultRPCCertFile,
+		// Generate:             defaultGenerate,
 		WalletName:           defaultWalletName,
-		DisableTLS:           defaultDisableRpcTls,
+		DisableTLS:           defaultDisableRpcTLS,
 		RPCDisableAuth:       false,
 		DiscoverPeers:        false,
 		TestNet:              false,
 		DiscoverPeersAddress: "35.230.8.182:9339",
-		FastMode:             defaultFastMode,
+		NodeRole:             defaultNodeRole,
+		FastStartup:          defaultFastStartup,
 	}
 
 	// Service options which are only added on Windows.
@@ -482,15 +485,19 @@ func loadConfig() (*config, []string, error) {
 		}
 	}
 
+	//TODO update code for NodeRole
 	// Ensure there is at least one mining address when the generate flag is
 	// set.
-	if cfg.Generate && len(cfg.ProducerSpendingKey) == 0 {
-		str := "%s: the generate flag is set, but there are no producer's key specified "
-		err := fmt.Errorf(str, funcName)
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprintln(os.Stderr, usageMessage)
-		return nil, nil, err
-	}
+	// if cfg.Generate && len(cfg.UserPrvKey) == 0 {
+	// 	str := "%s: the generate flag is set, but there are no producer's key specified "
+	// 	err := fmt.Errorf(str, funcName)
+	// 	fmt.Fprintln(os.Stderr, err)
+	// 	fmt.Fprintln(os.Stderr, usageMessage)
+	// 	return nil, nil, err
+	// }
+	// if cfg.Light {
+	// 	cfg.DatabaseDir = cfg.DatabaseDir + "-light"
+	// }
 
 	// Add default port to all listener addresses if needed and remove
 	// duplicate addresses.
@@ -544,9 +551,6 @@ func loadConfig() (*config, []string, error) {
 	// options.  Note this should go directly before the return.
 	if configFileError != nil {
 		spew.Dump(configFileError)
-	}
-	if cfg.Light {
-		cfg.DatabaseDir = cfg.DatabaseDir + "-light"
 	}
 	return &cfg, remainingArgs, nil
 }
@@ -632,15 +636,15 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	return nil
 }
 
-func (self *config) GetProducerKeySet() (*cashec.KeySet, error) {
-	KeySetProducer := &cashec.KeySet{}
-	temp, err := wallet.Base58CheckDeserialize(self.ProducerSpendingKey)
+func (self *config) GetUserKeySet() (*cashec.KeySet, error) {
+	KeySetUser := &cashec.KeySet{}
+	temp, err := wallet.Base58CheckDeserialize(self.UserPrvKey)
 	if err != nil {
-		return KeySetProducer, err
+		return KeySetUser, err
 	}
-	KeySetProducer.ImportFromPrivateKey(&temp.KeySet.PrivateKey)
-	lastByte := KeySetProducer.PaymentAddress.Pk[len(KeySetProducer.PaymentAddress.Pk)-1]
+	KeySetUser.ImportFromPrivateKey(&temp.KeySet.PrivateKey)
+	lastByte := KeySetUser.PaymentAddress.Pk[len(KeySetUser.PaymentAddress.Pk)-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
 	Logger.log.Info("chainID: ", chainIdSender)
-	return KeySetProducer, nil
+	return KeySetUser, nil
 }

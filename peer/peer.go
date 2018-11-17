@@ -69,7 +69,7 @@ type NewStreamMsg struct {
 // config is the struct to hold configuration options useful to RemotePeer.
 type Config struct {
 	MessageListeners MessageListeners
-	ProducerPrvKey   string
+	UserPrvKey       string
 	MaxOutbound      int
 	MaxInbound       int
 }
