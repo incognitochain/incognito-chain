@@ -14,8 +14,8 @@ type SaleData struct {
 	SaleID []byte // Unique id of the crowdsale to store in db
 	BondID []byte // in case either base or quote asset is bond
 
-	BaseAsset     string
-	QuoteAsset    string
+	BuyingAsset   string
+	SellingAsset  string
 	Price         uint64
 	EscrowAccount privacy.PaymentAddress
 }
@@ -39,7 +39,7 @@ func (tx TxCrowdsale) Hash() *common.Hash {
 
 	// add more hash of crowdsale
 	record += string(tx.SaleID)
-	record += tx.BaseAsset + tx.QuoteAsset
+	record += tx.BuyingAsset + tx.SellingAsset
 	record += fmt.Sprint(tx.Price)
 	record += string(tx.EscrowAccount.Pk[:])
 
@@ -61,10 +61,17 @@ func isAllowed(assetType string, allowed []string) bool {
 func (tx *TxCrowdsale) ValidateTransaction() bool {
 	// validate for normal tx
 	if tx.Tx.ValidateTransaction() {
-		// Check if all tokens are of the same kind
-		bondID := ""
-		if len(tx.TxTokenData.Vouts) > 0 {
-			bondID = tx.TxTokenData.Vouts[0].BondID
+		if tx.SellingAsset == common.AssetTypeBond {
+			bondID := ""
+			if len(tx.TxTokenData.Vouts) > 0 {
+				bondID = tx.TxTokenData.Vouts[0].BondID
+			}
+
+			for _, vout := range tx.TxTokenData.Vouts {
+				if vout.BondID != bondID {
+					return false
+				}
+			}
 		}
 
 		// TODO(@0xbunyip): get Vout from Vin and check as well
@@ -74,14 +81,8 @@ func (tx *TxCrowdsale) ValidateTransaction() bool {
 		//			}
 		//		}
 
-		for _, vout := range tx.TxTokenData.Vouts {
-			if vout.BondID != bondID {
-				return false
-			}
-		}
-
 		// Check if crowdsale assets are valid
-		if !isAllowed(tx.BaseAsset, allowedAsset) || !isAllowed(tx.QuoteAsset, allowedAsset) {
+		if !isAllowed(tx.BuyingAsset, allowedAsset) || !isAllowed(tx.SellingAsset, allowedAsset) {
 			return false
 		}
 

@@ -6,16 +6,16 @@ Use these function to validate common data in blockchain
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"golang.org/x/crypto/sha3"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"encoding/hex"
 )
 
 /*
@@ -436,5 +436,23 @@ func (bc *BlockChain) VerifyCustomTokenSigns(tx transaction.Transaction) bool {
 }
 
 func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, chainID byte) error {
+	txCrowdsale, ok := tx.(*transaction.TxCrowdsale)
+	if !ok {
+		return fmt.Errorf("Error parsing transaction")
+	}
+
+	// Check if crowdsale id is unique
+	_, err := self.config.DataBase.LoadCrowdsaleData(txCrowdsale.SaleID)
+	if err == nil {
+		return fmt.Errorf("SaleID found in database")
+	}
+
+	// Check if asset is sent to escrow account
+	escrowAccount := self.BestState[chainID].BestBlock.Header.DCBParams.CrowdsaleEscrow
+	if txCrowdsale.SellingAsset == common.AssetTypeBond {
+		for _, vout := range txCrowdsale.TxTokenData.Vouts {
+		}
+	} else if txCrowdsale.SellingAsset == common.AssetTypeCoin {
+	}
 	return nil
 }
