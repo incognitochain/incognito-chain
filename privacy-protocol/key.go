@@ -2,11 +2,11 @@ package privacy
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
-	"encoding/hex"
 )
 
 // var curve *elliptic.Curve
@@ -107,9 +107,10 @@ func GenerateReceivingKey(spendingKey []byte) ReceivingKey {
 // Tk : 33 bytes
 func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
 	var p, generator EllipticPoint
-	random := RandBytes(256)
+	//random := RandBytes(256)
+	random := [32]byte{2}
 	//create new generator from base generator
-	generator.X, generator.Y = Curve.ScalarBaseMult(random)
+	generator.X, generator.Y = Curve.ScalarBaseMult(random[:])
 
 	p.X, p.Y = Curve.ScalarMult(generator.X, generator.Y, receivingKey)
 	fmt.Printf("Transmission key point: %+v\n ", p)
@@ -152,7 +153,7 @@ func GeneratePaymentAddress(spendingKey []byte) PaymentAddress {
 //	return *point
 //}
 
-// Compress Commitment from 64 bytes to 34 bytes (include bytes index)
+//CompressCommitment from 64 bytes to 34 bytes (include bytes index)
 func CompressCommitment(cmPoint EllipticPoint, typeCommitment byte) []byte {
 	var commitment []byte
 	commitment = append(commitment, typeCommitment)
@@ -170,21 +171,9 @@ func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
 		return nil, fmt.Errorf("pubkey string len is wrong")
 	}
 
-	format := pubKeyStr[0]
-	ybit := (format & 0x1) == 0x1
-	format &= ^byte(0x1)
-
 	pubkey = new(EllipticPoint)
 
-	// format is 0x2 | solution, <X coordinate>
-	// solution determines which solution of the curve we use.
-	/// y^2 = x^3 - 3*x + Curve.B
-	if format != pubkeyCompressed {
-		return nil, fmt.Errorf("invalid magic in compressed "+
-			"pubkey string: %d", pubKeyStr[0])
-	}
-	pubkey.X = new(big.Int).SetBytes(pubKeyStr[1:33])
-	pubkey.Y, err = decompressPoint(pubkey.X, ybit)
+	err = pubkey.DecompressPoint(pubKeyStr)
 	if err != nil {
 		return nil, err
 	}
@@ -206,52 +195,6 @@ func DecompressCommitment(commitment []byte) (point *EllipticPoint, err error) {
 	//typeCommitment := commitment[0]
 	//fmt.Printf("Type Commmitment: %v\n", typeCommitment)
 	return DecompressKey(commitment[1:34])
-}
-
-// decompressPoint decompresses a point on the given curve given the X point and
-// the solution to use.
-func decompressPoint(x *big.Int, ybit bool) (*big.Int, error) {
-	Q := Curve.Params().P
-	temp := new(big.Int)
-	xTemp := new(big.Int)
-
-	// Y = +-sqrt(x^3 - 3*x + B)
-	xCube := new(big.Int).Mul(x, x)
-	xCube.Mul(xCube, x)
-	xCube.Add(xCube, Curve.Params().B)
-	xCube.Sub(xCube, xTemp.Mul(x, new(big.Int).SetInt64(3)))
-	xCube.Mod(xCube, Curve.Params().P)
-
-	//check P = 3 mod 4?
-	if temp.Mod(Q, new(big.Int).SetInt64(4)).Cmp(new(big.Int).SetInt64(3)) != 0 {
-		return nil, fmt.Errorf("parameter P must be congruent to 3 mod 4")
-	}
-
-	// Now calculate sqrt mod p of x^3 - 3*x + B
-	// This code used to do a full sqrt based on tonelli/shanks,
-	// but this was replaced by the algorithms referenced in
-	// https://bitcointalk.org/index.php?topic=162805.msg1712294#msg1712294
-	y := new(big.Int).Exp(xCube, PAdd1Div4(Q), Q)
-
-	if ybit != isOdd(y) {
-		y.Sub(Curve.Params().P, y)
-	}
-
-	// Check that y is a square root of x^3  - 3*x + B.
-	ySquare := new(big.Int).Mul(y, y)
-	ySquare.Mod(ySquare, Curve.Params().P)
-	if ySquare.Cmp(xCube) != 0 {
-		return nil, fmt.Errorf("invalid square root")
-	}
-
-	//fmt.Println(Curve.IsOnCurve(x, y))
-
-	// Verify that y-coord has expected parity.
-	if ybit != isOdd(y) {
-		return nil, fmt.Errorf("ybit doesn't match oddness")
-	}
-
-	return y, nil
 }
 
 // PAdd1Div4 computes (p + 1) mod 4

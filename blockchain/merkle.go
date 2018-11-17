@@ -145,18 +145,7 @@ func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 					tree.AddNewNode(cm[:])
 				}
 			}
-		} /*else if blockTx.GetType() == common.TxRegisterCandidateType {
-			tx, ok := blockTx.(*transaction.TxRegisterCandidate)
-			if ok == false {
-				return NewBlockChainError(UnExpectedError, fmt.Errorf("Transaction in block not valid"))
-			}
-
-			for _, desc := range tx.Descs {
-				for _, cm := range desc.Commitments {
-					tree.AddNewNode(cm[:])
-				}
-			}
-		}*/
+		}
 	}
 	return nil
 }

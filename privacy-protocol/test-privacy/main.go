@@ -1,9 +1,6 @@
 package main
 
-import (
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-)
-
+import "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 
 func main() {
 
@@ -14,33 +11,40 @@ func main() {
 	// fmt.Printf("Gy: %X\n", privacy-protocol.Curve.Params().Gy)
 	// fmt.Printf("BitSize: %X\n", privacy-protocol.Curve.Params().BitSize)
 
-	//spendingKey := privacy-protocol.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
 	//fmt.Printf("\nSpending key: %v\n", spendingKey)
 	//fmt.Println(len(spendingKey))
-	//
-	//address := privacy-protocol.GeneratePublicKey(spendingKey)
+
+	//address := privacy.GeneratePublicKey(spendingKey)
 	//fmt.Printf("\nAddress: %v\n", address)
 	//fmt.Println(len(address))
-	//point, err := privacy-protocol.DecompressKey(address)
+	//point, err := privacy.DecompressKey(address)
 	//if err != nil {
 	//	fmt.Println(err)
 	//}
 	//fmt.Printf("Pk decom: %v\n", point)
 	//
-	//receivingKey := privacy-protocol.GenerateReceivingKey(spendingKey)
+	//receivingKey := privacy.GenerateReceivingKey(spendingKey)
 	//fmt.Printf("\nReceiving key: %v\n", receivingKey)
 	//fmt.Println(len(receivingKey))
 	//
-	//transmissionKey := privacy-protocol.GenerateTransmissionKey(receivingKey)
+	//transmissionKey := privacy.GenerateTransmissionKey(receivingKey)
 	//fmt.Printf("\nTransmission key: %v\n", transmissionKey)
 	//fmt.Println(len(transmissionKey))
 	//
-	//point, err = privacy-protocol.DecompressKey(transmissionKey)
+	//point, err = privacy.DecompressKey(transmissionKey)
 	//if err != nil {
 	//	fmt.Println(err)
 	//}
 	//fmt.Printf("Transmission key point decompress: %+v\n ", point)
+
+	//paymentAddress := privacy.GeneratePaymentAddress(spendingKey)
+	//fmt.Println(paymentAddress.ToBytes())
+	//fmt.Printf("tk: %v\n", paymentAddress.Tk)
+	//fmt.Printf("pk: %v\n", paymentAddress.Pk)
 	//
+	//fmt.Printf("spending key bytes: %v\n", spendingKey.String())
+
 	//msg := "hello, world"
 	//hash := sha256.Sum256([]byte(msg))
 	//
@@ -61,7 +65,6 @@ func main() {
 	//// fmt.Println("Done")
 	//a:= new(privacy-protocol.InputCommitments)
 	//
-	zkp.TestPKComZeroOne()
 	//privacy-protocol.TestProductCommitment()
 	//privacy-protocol.Pcm.InitCommitment()
 	// privacy-protocol.TestProofIsZero()
@@ -69,21 +72,13 @@ func main() {
 	// privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestPKOneOfMany()
 
+	//zkp.TestPKComZeroOne()
 
+	zkp.TestPKOneOfMany()
 
-
-	//zkp.TestPKOneOfMany()
-	//
-	//fmt.Printf("privacy.Curve: %v\n", privacy.Curve)
-	//poly1 := privacy-protocol.Poly{big.NewInt(0), big.NewInt(10), big.NewInt(23)}
-	//fmt.Println(poly1.String())
-	//privacy-protocol.TestGetCoefficient()
-	//x:=big.NewInt(-3)
-	//x.Mod(x,new(big.Int).SetInt64(5))
-	//fmt.Println(x)
-	//privacy-protocol.TestPKMaxValue()
-
+	//zkp.TestPKMaxValue()
+	zkp.TestPKComProduct()
 	//privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestProductCommitment()
-//
+	//
 }
