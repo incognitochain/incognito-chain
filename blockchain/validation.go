@@ -148,7 +148,7 @@ func verifyByBoard(
 		pubKeys = bc.BestState[0].BestBlock.Header.DCDParams.DCBBoardPubKeys
 	} else if boardType == common.GOV {
 		address = string(common.GOVAddress)
-		pubKeys = bc.BestState[0].BestBlock.Header.GOVParams.GOVBoardPubKeys
+		pubKeys = bc.BestState[0].BestBlock.Header.GOVConstitution.GOVBoardPubKeys
 	} else {
 		return false
 	}

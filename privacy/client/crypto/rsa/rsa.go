@@ -156,7 +156,7 @@ type CRTValue struct {
 	R     *big.Int // product of primes prior to this (inc p and q).
 }
 
-// Validate performs basic sanity checks on the key.
+// ValidateTransaction performs basic sanity checks on the key.
 // It returns nil if the key is valid, or else an error describing a problem.
 func (priv *PrivateKey) Validate() error {
 	if err := checkPub(&priv.PublicKey); err != nil {

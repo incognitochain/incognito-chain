@@ -7,13 +7,13 @@ type TxVoteDCBProposal struct {
 	VoteDCBProposalData VoteDCBProposalData
 }
 
-type TxVoteGovProposal struct {
+type TxVoteGOVProposal struct {
 	Tx
-	VoteGovProposalData VoteGovProposalData
+	VoteGOVProposalData VoteGOVProposalData
 }
 
-type VoteGovProposalData struct {
-	GovProposalTXID *common.Hash
+type VoteGOVProposalData struct {
+	GOVProposalTXID *common.Hash
 	AmountVoteToken uint32
 }
 
@@ -29,7 +29,7 @@ func (VoteDCBProposalData VoteDCBProposalData) Validate() bool {
 	//xxx check if AmountVoteToken less than current amount of token this user has
 }
 
-func (VoteGovProposalData VoteGovProposalData) Validate() bool {
+func (VoteGOVProposalData VoteGOVProposalData) Validate() bool {
 	return true
 	//xxx check if TXID exist
 
@@ -43,9 +43,9 @@ func (VoteDCBProposalData VoteDCBProposalData) Hash() *common.Hash {
 	return &hash
 }
 
-func (VoteGovProposalData VoteGovProposalData) Hash() *common.Hash {
-	record := string(common.ToBytes(VoteGovProposalData))
-	record += string(VoteGovProposalData.AmountVoteToken)
+func (VoteGOVProposalData VoteGOVProposalData) Hash() *common.Hash {
+	record := string(common.ToBytes(VoteGOVProposalData))
+	record += string(VoteGOVProposalData.AmountVoteToken)
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -57,9 +57,9 @@ func (thisTx TxVoteDCBProposal) Hash() *common.Hash{
 	return &hash
 }
 
-func (thisTx TxVoteGovProposal) Hash() *common.Hash{
+func (thisTx TxVoteGOVProposal) Hash() *common.Hash{
 	record := string(common.ToBytes(thisTx.Tx.Hash()))
-	record += string(common.ToBytes(thisTx.VoteGovProposalData.Hash()))
+	record += string(common.ToBytes(thisTx.VoteGOVProposalData.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -68,6 +68,6 @@ func (thisTx TxVoteDCBProposal) Validate() bool {
 	return thisTx.Tx.ValidateTransaction() && thisTx.VoteDCBProposalData.Validate()
 }
 
-func (thisTx TxVoteGovProposal) Validate() bool {
-	return thisTx.Tx.ValidateTransaction() && thisTx.VoteGovProposalData.Validate()
+func (thisTx TxVoteGOVProposal) Validate() bool {
+	return thisTx.Tx.ValidateTransaction() && thisTx.VoteGOVProposalData.Validate()
 }

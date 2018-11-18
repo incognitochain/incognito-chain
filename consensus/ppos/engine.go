@@ -350,7 +350,7 @@ finalizing:
 						err := cashec.ValidateDataB58(blocksig.Validator, blocksig.BlockSig, []byte(blockHash))
 
 						if err != nil {
-							Logger.log.Error("Validate sig error:", err)
+							Logger.log.Error("ValidateTransaction sig error:", err)
 							continue
 						} else {
 							sigsReceived++

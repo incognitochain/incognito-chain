@@ -5,9 +5,9 @@ import (
 	"github.com/ninjadotorg/constant/voting"
 )
 
-type TxSubmitGovProposal struct {
+type TxSubmitGOVProposal struct {
 	Tx
-	GovProposalData voting.GovProposalData
+	GOVProposalData voting.GOVProposalData
 }
 
 type TxSubmitDCBProposal struct {
@@ -22,14 +22,14 @@ func (thisTx TxSubmitDCBProposal) Hash() *common.Hash{
 	return &hash
 }
 
-func (thisTx TxSubmitGovProposal) Hash() *common.Hash{
+func (thisTx TxSubmitGOVProposal) Hash() *common.Hash{
 	record := string(common.ToBytes(thisTx.Tx.Hash()))
-	record += string(common.ToBytes(thisTx.GovProposalData.Hash()))
+	record += string(common.ToBytes(thisTx.GOVProposalData.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
-func (thisTx *TxSubmitDCBProposal) ValidateTransaction() bool {
+func (thisTx TxSubmitDCBProposal) ValidateTransaction() bool {
 	return thisTx.Tx.ValidateTransaction() && thisTx.DCBProposalData.Validate()
 }
 

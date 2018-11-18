@@ -8,11 +8,11 @@ const (
 
 const (
 	TxSubmitDCBProposal     = "pd" // submit DCB proposal tx
-	TxSubmitGovProposal     = "pg" // submit Gov proposal tx
+	TxSubmitGOVProposal     = "pg" // submit GOV proposal tx
 	TxVoteDCBProposal       = "vd" // submit DCB proposal voted tx
-	TxVoteGovProposal       = "vg" // submit Gov proposal voted tx
-	TxAcceptDCBProposal  	= "ad" // accept DCB proposal
-	TxAcceptGovProposal  	= "ag" // accept Gov proposal
+	TxVoteGOVProposal       = "vg" // submit GOV proposal voted tx
+	TxAcceptDCBProposal     = "ad" // accept DCB proposal
+	TxAcceptGOVProposal     = "ag" // accept GOV proposal
 	TxNormalType            = "n"  // normal tx(send and receive coin)
 	TxSalaryType            = "s"  // salary tx(gov pay salary for block producer)
 	TxActionParamsType      = "a"  // action tx to edit params

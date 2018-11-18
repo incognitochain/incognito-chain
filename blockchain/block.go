@@ -23,8 +23,6 @@ type Block struct {
 	Transactions     []transaction.Transaction
 	BlockProducer    string // in base58check.encode
 	BlockProducerSig string
-	GovConstitution GovConstitution
-	DCBConstitution DCBConstitution
 
 	blockHash *common.Hash
 }
@@ -101,21 +99,21 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				_ = json.Unmarshal(txTempJson, &submitDCBProposalTx)
 				self.Transactions = append(self.Transactions, submitDCBProposalTx)
 			}
-		case common.TxSubmitGovProposal:
+		case common.TxSubmitGOVProposal:
 			{
-				submitGovProposalTx := &transaction.TxSubmitGovProposal{}
-				_ = json.Unmarshal(txTempJson, &submitGovProposalTx)
-				self.Transactions = append(self.Transactions, submitGovProposalTx)
+				submitGOVProposalTx := &transaction.TxSubmitGOVProposal{}
+				_ = json.Unmarshal(txTempJson, &submitGOVProposalTx)
+				self.Transactions = append(self.Transactions, submitGOVProposalTx)
 			}
 		case common.TxVoteDCBProposal:
 			{
-				VoteDcbProposalTx := &transaction.TxVoteDCBProposal{}
-				_ = json.Unmarshal(txTempJson, &VoteDcbProposalTx)
-				self.Transactions = append(self.Transactions, VoteDcbProposalTx)
+				VoteDCBProposalTx := &transaction.TxVoteDCBProposal{}
+				_ = json.Unmarshal(txTempJson, &VoteDCBProposalTx)
+				self.Transactions = append(self.Transactions, VoteDCBProposalTx)
 			}
-		case common.TxVoteGovProposal:
+		case common.TxVoteGOVProposal:
 			{
-				VoteDcbProposalTx := &transaction.TxVoteGovProposal{}
+				VoteDcbProposalTx := &transaction.TxVoteGOVProposal{}
 				_ = json.Unmarshal(txTempJson, &VoteDcbProposalTx)
 				self.Transactions = append(self.Transactions, VoteDcbProposalTx)
 			}
@@ -125,9 +123,9 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				_ = json.Unmarshal(txTempJson, &AcceptDCBProposal)
 				self.Transactions = append(self.Transactions, AcceptDCBProposal)
 			}
-		case common.TxAcceptGovProposal:
+		case common.TxAcceptGOVProposal:
 			{
-				AcceptGovProposal := &transaction.TxAcceptGovProposal{}
+				AcceptGovProposal := &transaction.TxAcceptGOVProposal{}
 				_ = json.Unmarshal(txTempJson, &AcceptGovProposal)
 				self.Transactions = append(self.Transactions, AcceptGovProposal)
 			}
@@ -173,8 +171,8 @@ func (self Block) Hash() *common.Hash {
 		self.Header.MerkleRootCommitments.String() +
 		self.Header.PrevBlockHash.String() +
 		strconv.Itoa(int(self.Header.SalaryFund)) +
-		strconv.Itoa(int(self.Header.GOVParams.SalaryPerTx)) +
-		strconv.Itoa(int(self.Header.GOVParams.BasicSalary)) +
+		strconv.Itoa(int(self.Header.GOVConstitution.SalaryPerTx)) +
+		strconv.Itoa(int(self.Header.GOVConstitution.BasicSalary)) +
 		strings.Join(self.Header.Committee, ",")
 
 	// add data from body

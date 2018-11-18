@@ -176,7 +176,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 		return nil, nil, err
 	}
 
-	// Validate tx by it self
+	// ValidateTransaction tx by it self
 	validate := tx.ValidateTransaction()
 	if !validate {
 		err := MempoolTxError{}
@@ -201,7 +201,7 @@ func (tp *TxPool) removeTx(tx *transaction.Transaction) error {
 	return nil
 }
 
-// Validate sanity for normal tx data
+// ValidateTransaction sanity for normal tx data
 func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 	txN := tx
 	//check version
@@ -298,7 +298,7 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 	return true, nil
 }
 
-// Validate sanity for registration candidate tx data
+// ValidateTransaction sanity for registration candidate tx data
 func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxRegisterCandidate) (bool, error) {
 	if !common.ValidateNodeAddress(txVoting.PublicKey) {
 		return false, errors.New("Wrong voting node data")
