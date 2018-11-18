@@ -121,6 +121,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				AcceptGovProposal := &transaction.TxAcceptGOVProposal{}
 				_ = json.Unmarshal(txTempJson, &AcceptGovProposal)
 				self.Transactions = append(self.Transactions, AcceptGovProposal)
+			}
 
 		default:
 			{
