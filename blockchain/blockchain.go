@@ -505,11 +505,21 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 		case common.TxDividendPayout:
 			{
 				tx := tx.(*transaction.TxDividendPayout)
+				tokenID := tx.TokenID
 				for _, desc := range tx.Descs {
 					for _, note := range desc.Note {
-						utxos := self.GetAccountUTXO(note.Apk[:])
+						// TODO(@0xbunyip): replace note.Apk with bytes of PaymentAddress, not just Pk
+						paymentAddress := (&privacy.PaymentAddress{}).FromBytes(note.Apk[:])
+						utxos, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, *paymentAddress)
+						if err != nil {
+							return err
+						}
 						for _, utxo := range utxos {
-							self.UpdateUTXOReward(utxo, tx.PayoutID)
+							txHash := utxo.GetTxCustomTokenID()
+							err := self.config.DataBase.UpdateRewardAccountUTXO(tokenID, *paymentAddress, &txHash, utxo.GetIndex())
+							if err != nil {
+								return err
+							}
 						}
 					}
 				}
@@ -1121,21 +1131,6 @@ func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]ui
 		return nil, err
 	}
 	return result, nil
-}
-
-// Cached data, not from newest block
-func (self *BlockChain) GetAccountUTXO(account []byte) [][]byte {
-	return nil
-}
-
-// New data from latest block
-func (self *BlockChain) GetUTXOReward(utxo []byte) (uint64, error) {
-	return 0, nil
-}
-
-// Update to data of latest block
-func (self *BlockChain) UpdateUTXOReward(utxo []byte, reward uint64) error {
-	return nil
 }
 
 func (self *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {

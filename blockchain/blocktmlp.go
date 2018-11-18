@@ -1,13 +1,14 @@
 package blockchain
 
 import (
+	"encoding/hex"
 	"fmt"
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type BlkTmplGenerator struct {
@@ -278,7 +279,8 @@ func (blockgen *BlkTmplGenerator) processDividend(
 		infos := []transaction.DividendInfo{}
 		// Build tx to pay dividend to each holder
 		for i, holder := range tokenHolders {
-			holderAddress := (&privacy.PaymentAddress{}).FromBytes(holder)
+			temp, _ := hex.DecodeString(holder)
+			holderAddress := (&privacy.PaymentAddress{}).FromBytes(temp)
 			info := transaction.DividendInfo{
 				TokenHolder: *holderAddress,
 				Amount:      amounts[i] / totalTokenSupply,
