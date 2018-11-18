@@ -3,7 +3,6 @@ package ppos
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"time"
 
 	"github.com/ninjadotorg/constant/blockchain"
@@ -12,6 +11,7 @@ import (
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wire"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
@@ -45,8 +45,10 @@ func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, 
 			Logger.log.Error(err)
 			continue
 		}
-		k := cashec.KeySetProducer{
-			SpublicKey: decPubkey,
+		k := cashec.KeySet{
+			PaymentAddress: privacy.PaymentAddress{
+				Pk: decPubkey,
+			},
 		}
 		decSig, _, err := base58.Base58Check{}.Decode(sigs[idx])
 		if err != nil {
@@ -85,17 +87,6 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 		for _, blockTx := range block.Transactions {
 			if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
 				tx, ok := blockTx.(*transaction.Tx)
-				if ok == false {
-					Logger.log.Errorf("Transaction in block not valid")
-				}
-
-				for _, desc := range tx.Descs {
-					for _, cm := range desc.Commitments {
-						Logger.log.Infof("%x", cm[:])
-					}
-				}
-			} else if blockTx.GetType() == common.TxRegisterCandidateType {
-				tx, ok := blockTx.(*transaction.TxRegisterCandidate)
 				if ok == false {
 					Logger.log.Errorf("Transaction in block not valid")
 				}
@@ -190,17 +181,7 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 		return err
 	}
 
-	// 6. validate candidate list hash
-	candidates := self.GetCandidateCommitteeList(block)
-	candidateBytes, err := json.Marshal(candidates)
-	if err != nil {
-		return err
-	}
-	if block.Header.CandidateHash.String() != common.HashH(candidateBytes).String() {
-		return errors.New("Candidate List Hash is wrong")
-	}
-
-	// 7. ValidateTransaction transactions
+	// 6. Validate transactions
 	return self.ValidateTxList(block.Transactions)
 
 }

@@ -69,7 +69,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		}
 		err = walletObj.LoadWallet(cfg.WalletPassphrase)
 		if err != nil {
-			if cfg.Light {
+			if true {
 				// in case light mode, create wallet automatically if it not exist
 				walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
 				walletObj.Save(cfg.WalletPassphrase)

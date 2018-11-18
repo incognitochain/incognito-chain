@@ -16,7 +16,7 @@ type TxDivTokenVout struct {
 func (tx TxDivTokenVout) Hash() *common.Hash {
 	record := common.EmptyString
 	record += fmt.Sprintf("%d", tx.Value)
-	record += base58.Base58Check{}.Encode(tx.PaymentAddress.Apk[:], 0)
+	record += base58.Base58Check{}.Encode(tx.PaymentAddress.Pk[:], 0)
 	record += fmt.Sprintf("%d", tx.LastPayout)
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
@@ -40,7 +40,7 @@ func (tx TxDivTokenData) Hash() (*common.Hash, error) {
 	}
 	record := tx.PropertyName + tx.PropertySymbol + fmt.Sprintf("%d", tx.Amount)
 	for _, out := range tx.Vouts {
-		record += string(out.PaymentAddress.Apk[:])
+		record += string(out.PaymentAddress.Pk[:])
 	}
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

@@ -102,18 +102,6 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 					}
 				}
 			}
-		case common.TxRegisterCandidateType:
-			{
-				votingTx := tx.(*transaction.TxRegisterCandidate)
-				for _, desc := range votingTx.Descs {
-					temp1, temp2, err := view.processFetchTxViewPoint(block, db, desc)
-					acceptedNullifiers = append(acceptedNullifiers, temp1...)
-					acceptedCommitments = append(acceptedCommitments, temp2...)
-					if err != nil {
-						return NewBlockChainError(UnExpectedError, err)
-					}
-				}
-			}
 		case common.TxCustomTokenType:
 			{
 				tx := tx.(*transaction.TxCustomToken)

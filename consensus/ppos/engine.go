@@ -48,7 +48,7 @@ type committeeStruct struct {
 	CurrentCommittee     []string
 	cmWatcherStarted     bool
 	sync.Mutex
-	LastUpdate int64
+	LastUpdate           int64
 }
 
 type ChainInfo struct {
@@ -69,8 +69,8 @@ type EngineConfig struct {
 	ChainParams    *blockchain.Params
 	BlockGen       *blockchain.BlkTmplGenerator
 	MemPool        *mempool.TxPool
-	ProducerKeySet cashec.KeySetProducer
-	Server         interface {
+	ProducerKeySet cashec.KeySet
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error
@@ -218,7 +218,7 @@ func (self *Engine) Stop() error {
 }
 
 //StartProducer start producing block
-func (self *Engine) StartProducer(producerKeySet cashec.KeySetProducer) {
+func (self *Engine) StartProducer(producerKeySet cashec.KeySet) {
 	if self.producerStarted {
 		Logger.log.Error("Producer already started")
 		return
@@ -232,7 +232,7 @@ func (self *Engine) StartProducer(producerKeySet cashec.KeySetProducer) {
 	self.cNewBlock = make(chan blockchain.Block)
 
 	self.producerStarted = true
-	Logger.log.Info("Starting producer with public key: " + base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00)))
+	Logger.log.Info("Starting producer with public key: " + base58.Base58Check{}.Encode(self.config.ProducerKeySet.PaymentAddress.Pk, byte(0x00)))
 
 	go func() {
 		for {
@@ -301,12 +301,7 @@ func (self *Engine) createBlock() (*blockchain.Block, error) {
 	newblock.Header.ChainsHeight = make([]int, common.TotalValidators)
 	copy(newblock.Header.ChainsHeight, self.validatedChainsHeight.Heights)
 	newblock.Header.ChainID = myChainID
-	newblock.BlockProducer = base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00))
-
-	// hash candidate list and set to block header
-	candidates := self.GetCandidateCommitteeList(newblock)
-	candidateBytes, _ := json.Marshal(candidates)
-	newblock.Header.CandidateHash = common.HashH(candidateBytes)
+	newblock.BlockProducer = base58.Base58Check{}.Encode(self.config.ProducerKeySet.PaymentAddress.Pk, byte(0x00))
 
 	return newblock, nil
 }
@@ -444,7 +439,6 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	}
 
 	// update candidate list
-	self.config.BlockChain.BestState[block.Header.ChainID].Candidates = self.GetCandidateCommitteeList(block)
 	err = self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
 	if err != nil {
 		Logger.log.Errorf("Can not update merkle tree for block: %+v", err)

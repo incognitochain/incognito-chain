@@ -7,10 +7,8 @@ import (
 
 	"encoding/binary"
 
-	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/transaction"
 )
 
 func (self *Engine) GetCommittee() []string {
@@ -40,43 +38,13 @@ func (self *Engine) signData(data []byte) (string, error) {
 
 // getMyChain validator chainID and committee of that chainID
 func (self *Engine) getMyChain() byte {
-	pbk := base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00))
+	pbk := base58.Base58Check{}.Encode(self.config.ProducerKeySet.PaymentAddress.Pk, byte(0x00))
 	return self.getChainIdByPbk(pbk)
 }
 
 func (self *Engine) getChainIdByPbk(pbk string) byte {
 	committee := self.GetCommittee()
 	return byte(common.IndexOfStr(pbk, committee))
-}
-
-func (self *Engine) GetCandidateCommitteeList(block *blockchain.Block) map[string]blockchain.CommitteeCandidateInfo {
-	bestState := self.config.BlockChain.BestState[block.Header.ChainID]
-	candidates := bestState.Candidates
-	if candidates == nil {
-		candidates = make(map[string]blockchain.CommitteeCandidateInfo)
-	}
-	for _, tx := range block.Transactions {
-		if tx.GetType() == common.TxRegisterCandidateType {
-			txV, ok := tx.(*transaction.TxRegisterCandidate)
-			nodeAddr := txV.PublicKey
-			cndVal, ok := candidates[nodeAddr]
-			_ = cndVal
-			if !ok {
-				candidates[nodeAddr] = blockchain.CommitteeCandidateInfo{
-					Value:     txV.GetValue(),
-					Timestamp: block.Header.Timestamp,
-					ChainID:   block.Header.ChainID,
-				}
-			} else {
-				candidates[nodeAddr] = blockchain.CommitteeCandidateInfo{
-					Value:     cndVal.Value + txV.GetValue(),
-					Timestamp: block.Header.Timestamp,
-					ChainID:   block.Header.ChainID,
-				}
-			}
-		}
-	}
-	return candidates
 }
 
 func (committee *committeeStruct) UpdateCommitteePoint(chainLeader string, validatorSig []string) {
@@ -110,7 +78,7 @@ func (self *Engine) StartCommitteeWatcher() {
 
 		case <-time.After(common.MaxBlockTime * time.Second):
 			self.committee.Lock()
-			myPubKey := base58.Base58Check{}.Encode(self.config.ProducerKeySet.SpublicKey, byte(0x00))
+			myPubKey := base58.Base58Check{}.Encode(self.config.ProducerKeySet.PaymentAddress.Pk, byte(0x00))
 			fmt.Println(myPubKey, common.IndexOfStr(myPubKey, self.committee.CurrentCommittee))
 			if common.IndexOfStr(myPubKey, self.committee.CurrentCommittee) != -1 {
 				for idx := 0; idx < common.TotalValidators && self.committee.CurrentCommittee[idx] != myPubKey; idx++ {

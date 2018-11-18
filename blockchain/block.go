@@ -1,11 +1,10 @@
 package blockchain
 
 import (
-	"strconv"
-	"strings"
-
 	"encoding/json"
 	"errors"
+	"strconv"
+	"strings"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/transaction"
@@ -75,23 +74,17 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				_ = json.Unmarshal(txTempJson, &txCustomToken)
 				self.Transactions = append(self.Transactions, txCustomToken)
 			}
-		case common.TxRegisterCandidateType:
+			/*case common.TxBuyRequest, common.TxSellRequest:
+			  {
+				  buySellReqTx := &transaction.BuySellRequestTx{}
+				  _ = json.Unmarshal(txTempJson, &buySellReqTx)
+				  self.Transactions = append(self.Transactions, buySellReqTx)
+			  }*/
+		case common.TxBuyFromGOVResponse:
 			{
-				txVoting := &transaction.TxRegisterCandidate{}
-				_ = json.Unmarshal(txTempJson, &txVoting)
-				self.Transactions = append(self.Transactions, txVoting)
-			}
-		case common.TxBuyRequest, common.TxSellRequest:
-			{
-				buySellReqTx := &transaction.BuySellRequestTx{}
-				_ = json.Unmarshal(txTempJson, &buySellReqTx)
-				self.Transactions = append(self.Transactions, buySellReqTx)
-			}
-		case common.TxBuyResponse, common.TxSellResponse:
-			{
-				buySellResTx := &transaction.BuySellResponseTx{}
-				_ = json.Unmarshal(txTempJson, &buySellResTx)
-				self.Transactions = append(self.Transactions, buySellResTx)
+				buyFromGOVResTx := &transaction.TxCustomToken{}
+				_ = json.Unmarshal(txTempJson, &buyFromGOVResTx)
+				self.Transactions = append(self.Transactions, buyFromGOVResTx)
 			}
 		case common.TxSubmitDCBProposal:
 			{
@@ -171,8 +164,8 @@ func (self Block) Hash() *common.Hash {
 		self.Header.MerkleRootCommitments.String() +
 		self.Header.PrevBlockHash.String() +
 		strconv.Itoa(int(self.Header.SalaryFund)) +
-		strconv.Itoa(int(self.Header.GOVConstitution.SalaryPerTx)) +
-		strconv.Itoa(int(self.Header.GOVConstitution.BasicSalary)) +
+		strconv.Itoa(int(self.Header.GOVConstitution.GOVParams.SalaryPerTx)) +
+		strconv.Itoa(int(self.Header.GOVConstitution.GOVParams.BasicSalary)) +
 		strings.Join(self.Header.Committee, ",")
 
 	// add data from body

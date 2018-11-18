@@ -11,6 +11,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
 	"github.com/fatih/color"
 )
 
@@ -118,7 +119,7 @@ type Level uint32
 
 // Level constants.
 const (
-	LevelTrace    Level = iota
+	LevelTrace Level = iota
 	LevelDebug
 	LevelInfo
 	LevelWarn

@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"log"
@@ -12,9 +11,8 @@ import (
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
-	"golang.org/x/crypto/sha3"
 )
 
 // config is a descriptor containing the memory pool configuration.
@@ -90,15 +88,6 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 	if tx.GetType() == common.TxNormalType {
 		if tp.config.FeeEstimator != nil {
 			chainId, err := common.GetTxSenderChain(tx.(*transaction.Tx).AddressLastByte)
-			if err == nil {
-				tp.config.FeeEstimator[chainId].ObserveTransaction(txD)
-			} else {
-				Logger.log.Error(err)
-			}
-		}
-	} else if tx.GetType() == common.TxRegisterCandidateType {
-		if tp.config.FeeEstimator != nil {
-			chainId, err := common.GetTxSenderChain(tx.(*transaction.TxRegisterCandidate).AddressLastByte)
 			if err == nil {
 				tp.config.FeeEstimator[chainId].ObserveTransaction(txD)
 			} else {
@@ -298,93 +287,6 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 	return true, nil
 }
 
-// ValidateTransaction sanity for registration candidate tx data
-func (tp *TxPool) validateSanityVotingTxData(txVoting *transaction.TxRegisterCandidate) (bool, error) {
-	if !common.ValidateNodeAddress(txVoting.PublicKey) {
-		return false, errors.New("Wrong voting node data")
-	}
-	tx := txVoting.Tx
-	txN := tx
-	//check version
-	if txN.Version > transaction.TxVersion {
-		return false, errors.New("Wrong tx version")
-	}
-	// check LockTime before now
-	if int64(txN.LockTime) > time.Now().Unix() {
-		return false, errors.New("Wrong tx locktime")
-	}
-	// check Type equal "n"
-	if txN.Type != common.TxRegisterCandidateType {
-		return false, errors.New("Wrong tx type")
-	}
-	// check length of JSPubKey
-	if len(txN.JSPubKey) != 64 {
-		return false, errors.New("Wrong tx jspubkey")
-	}
-	// check length of JSSig
-	if len(txN.JSSig) != 64 {
-		return false, errors.New("Wrong tx jssig")
-	}
-	//check Descs
-
-	for _, desc := range txN.Descs {
-		// check length of Anchor
-		if len(desc.Anchor) != 2 {
-			return false, errors.New("Wrong tx desc's anchor")
-		}
-		// check length of EphemeralPubKey
-		if len(desc.EphemeralPubKey) != client.EphemeralKeyLength {
-			return false, errors.New("Wrong tx desc's ephemeralpubkey")
-		}
-		// check length of HSigSeed
-		if len(desc.HSigSeed) != 32 {
-			return false, errors.New("Wrong tx desc's hsigseed")
-		}
-		// check length of Nullifiers
-		if len(desc.Nullifiers) != 2 {
-			return false, errors.New("Wrong tx desc's nullifiers")
-		}
-		if len(desc.Nullifiers[0]) != 32 {
-			return false, errors.New("Wrong tx desc's nullifiers")
-		}
-		if len(desc.Nullifiers[1]) != 32 {
-			return false, errors.New("Wrong tx desc's nullifiers")
-		}
-		// check length of Commitments
-		if len(desc.Commitments) != 2 {
-			return false, errors.New("Wrong tx desc's commitments")
-		}
-		if len(desc.Commitments[0]) != 32 {
-			return false, errors.New("Wrong tx desc's commitments")
-		}
-		if len(desc.Commitments[1]) != 32 {
-			return false, errors.New("Wrong tx desc's commitments")
-		}
-		// check length of Vmacs
-		if len(desc.Vmacs) != 2 {
-			return false, errors.New("Wrong tx desc's vmacs")
-		}
-		if len(desc.Vmacs[0]) != 32 {
-			return false, errors.New("Wrong tx desc's vmacs")
-		}
-		if len(desc.Vmacs[1]) != 32 {
-			return false, errors.New("Wrong tx desc's vmacs")
-		}
-		//
-		if desc.Proof != nil { // no privacy
-			return false, errors.New("Wrong tx desc's proof")
-		}
-		if len(desc.EncryptedData) != 0 {
-			return false, errors.New("Wrong tx desc's encryptedData")
-		}
-		// check nulltifier is existed in DB
-		if desc.Reward != 0 {
-			return false, errors.New("Wrong tx desc's reward")
-		}
-	}
-	return true, nil
-}
-
 // MaybeAcceptTransaction is the main workhorse for handling insertion of new
 // free-standing transactions into a memory pool.  It includes functionality
 // such as rejecting duplicate transactions, ensuring transactions follow all
@@ -414,11 +316,6 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 			// check double spend
 			return blockChain.ValidateDoubleSpend(tx, chainID)
 		}
-	case common.TxRegisterCandidateType:
-		{
-			// check double spend
-			return blockChain.ValidateDoubleSpend(tx, chainID)
-		}
 	case common.TxSalaryType:
 		{
 			// TODO
@@ -442,159 +339,27 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 		}
 	case common.TxLoanRequest:
 		{
-			txLoan, ok := tx.(*transaction.TxLoanRequest)
-			if !ok {
-				return fmt.Errorf("Fail parsing LoanRequest transaction")
-			}
-
-			// Check if loan's params are correct
-			currentParams := blockChain.BestState[chainID].BestBlock.Header.LoanParams
-			if txLoan.Params != currentParams {
-				return fmt.Errorf("LoanRequest transaction has incorrect params")
-			}
-
-			// Check if loan id is unique across all chains
-			// TODO(@0xbunyip): should we check in db/chain or only in best state?
-			for chainID, bestState := range blockChain.BestState {
-				for _, id := range bestState.LoanIDs {
-					if bytes.Equal(txLoan.LoanID, id) {
-						return fmt.Errorf("LoanID already existed on chain %d", chainID)
-					}
-				}
-			}
+			return blockChain.ValidateTxLoanRequest(tx, chainID)
 		}
 	case common.TxLoanResponse:
 		{
-			txResponse, ok := tx.(*transaction.TxLoanResponse)
-			if !ok {
-				return fmt.Errorf("Fail parsing LoanResponse transaction")
-			}
-
-			// Check if a loan request with the same id exists on any chain
-			txHashes, err := tp.config.DataBase.GetLoanTxs(txResponse.LoanID)
-			if err != nil {
-				return err
-			}
-			found := false
-			for _, txHash := range txHashes {
-				hash := &common.Hash{}
-				copy(hash[:], txHash)
-				_, _, _, txOld, err := blockChain.GetTransactionByHash(hash)
-				if txOld == nil || err != nil {
-					return fmt.Errorf("Error finding corresponding loan request")
-				}
-				switch txOld.GetType() {
-				case common.TxLoanResponse:
-					{
-						return fmt.Errorf("Loan already had response")
-					}
-				case common.TxLoanRequest:
-					{
-						_, ok := txOld.(*transaction.TxLoanRequest)
-						if !ok {
-							return fmt.Errorf("Error parsing loan request tx")
-						}
-						found = true
-					}
-				}
-			}
-
-			if found == false {
-				return fmt.Errorf("Corresponding loan request not found")
-			} else {
-				return nil
-			}
+			return blockChain.ValidateTxLoanResponse(tx, chainID)
 		}
 	case common.TxLoanPayment:
 		{
-			txPayment, ok := tx.(*transaction.TxLoanPayment)
-			if !ok {
-				return fmt.Errorf("Fail parsing LoanPayment transaction")
-			}
-
-			// Check if a loan request with the same id exists on any chain
-			txHashes, err := tp.config.DataBase.GetLoanTxs(txPayment.LoanID)
-			if err != nil {
-				return err
-			}
-			found := false
-			for _, txHash := range txHashes {
-				hash := &common.Hash{}
-				copy(hash[:], txHash)
-				_, _, _, txOld, err := blockChain.GetTransactionByHash(hash)
-				if txOld == nil || err != nil {
-					return fmt.Errorf("Error finding corresponding loan request")
-				}
-				switch txOld.GetType() {
-				case common.TxLoanResponse:
-					{
-						found = true
-					}
-				}
-			}
-
-			if found == false {
-				return fmt.Errorf("Corresponding loan response not found")
-			} else {
-				return nil
-			}
+			return blockChain.ValidateTxLoanPayment(tx, chainID)
 		}
 	case common.TxLoanWithdraw:
 		{
-			txWithdraw, ok := tx.(*transaction.TxLoanWithdraw)
-			if !ok {
-				return fmt.Errorf("Fail parsing LoanResponse transaction")
-			}
-
-			// Check if a loan response with the same id exists on any chain
-			txHashes, err := tp.config.DataBase.GetLoanTxs(txWithdraw.LoanID)
-			if err != nil {
-				return err
-			}
-			foundResponse := false
-			keyCorrect := false
-			for _, txHash := range txHashes {
-				hash := &common.Hash{}
-				copy(hash[:], txHash)
-				_, _, _, txOld, err := blockChain.GetTransactionByHash(hash)
-				if txOld == nil || err != nil {
-					return fmt.Errorf("Error finding corresponding loan request")
-				}
-				switch txOld.GetType() {
-				case common.TxLoanRequest:
-					{
-						// Check if key is correct
-						txRequest, ok := tx.(*transaction.TxLoanRequest)
-						if !ok {
-							return fmt.Errorf("Error parsing corresponding loan request")
-						}
-						h := make([]byte, 32)
-						sha3.ShakeSum256(h, txWithdraw.Key)
-						if bytes.Equal(h, txRequest.KeyDigest) {
-							keyCorrect = true
-						}
-					}
-				case common.TxLoanResponse:
-					{
-						// Check if loan is accepted
-						txResponse, ok := tx.(*transaction.TxLoanResponse)
-						if !ok {
-							return fmt.Errorf("Error parsing corresponding loan response")
-						}
-						if txResponse.Response != transaction.Accept {
-							foundResponse = true
-						}
-					}
-
-				}
-			}
-
-			if !foundResponse {
-				return fmt.Errorf("Corresponding loan response not found")
-			} else if !keyCorrect {
-				return fmt.Errorf("Provided key is incorrect")
-			}
-			return nil
+			return blockChain.ValidateTxLoanWithdraw(tx, chainID)
+		}
+	case common.TxDividendPayout:
+		{
+			return blockChain.ValidateTxDividendPayout(tx, chainID)
+		}
+	case common.TxBuySellDCBRequest:
+		{
+			return blockChain.ValidateTxBuyRequest(tx, chainID)
 		}
 	}
 	return nil
@@ -720,12 +485,6 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 		{
 			return 0, nil
 		}
-	case common.TxRegisterCandidateType:
-		{
-			votingTx := tx.(*transaction.TxRegisterCandidate)
-			err := tp.config.Policy.CheckVotingTransactionFee(votingTx)
-			return votingTx.Fee, err
-		}
 	default:
 		{
 			return 0, errors.New("Wrong tx type")
@@ -756,12 +515,6 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		// check Type equal "a"
 		if txA.Type != common.TxActionParamsType {
 			return false, errors.New("Wrong tx type")
-		}
-	} else if tx.GetType() == common.TxRegisterCandidateType {
-		txA := tx.(*transaction.TxRegisterCandidate)
-		ok, err := tp.validateSanityVotingTxData(txA)
-		if !ok {
-			return false, err
 		}
 	} else if tx.GetType() == common.TxCustomTokenType {
 		// TODO check sanity

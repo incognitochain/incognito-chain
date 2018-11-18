@@ -23,10 +23,27 @@ type DCBParams struct{
 
 //xxx
 func (DCBParams DCBParams) Hash() *common.Hash {
-
+	record := ""
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
 }
 func (GOVParams GOVParams) Hash() *common.Hash {
+	record := string(GOVParams.SalaryPerTx)
+	record += string(GOVParams.BasicSalary)
+	record += string(common.ToBytes(GOVParams.SellingBonds.Hash()))
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
 
+func (SellingBonds SellingBonds) Hash() *common.Hash {
+	record := string(SellingBonds.BondsToSell)
+	record += string(SellingBonds.BondPrice)
+	record += string(SellingBonds.Maturity)
+	record += string(SellingBonds.BuyBackPrice)
+	record += string(SellingBonds.StartSellingAt)
+	record += string(SellingBonds.SellingWithin)
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
 }
 
 //xxx
