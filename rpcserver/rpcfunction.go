@@ -13,12 +13,12 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
 	"golang.org/x/crypto/ed25519"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -1674,7 +1674,7 @@ func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, c
 
 // handleGetListDCBBoard - return list payment address of DCB board
 func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.DCDParams.DCBBoardPubKeys, nil
+	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBParams.DCBBoardPubKeys, nil
 }
 
 func (self RpcServer) handleGetListCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {

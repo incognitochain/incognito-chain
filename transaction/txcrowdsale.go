@@ -14,10 +14,9 @@ type SaleData struct {
 	SaleID []byte // Unique id of the crowdsale to store in db
 	BondID []byte // in case either base or quote asset is bond
 
-	BuyingAsset   string
-	SellingAsset  string
-	Price         uint64
-	EscrowAccount privacy.PaymentAddress
+	BuyingAsset  string
+	SellingAsset string
+	Price        uint64
 }
 
 type TxCrowdsale struct {
@@ -41,7 +40,6 @@ func (tx TxCrowdsale) Hash() *common.Hash {
 	record += string(tx.SaleID)
 	record += tx.BuyingAsset + tx.SellingAsset
 	record += fmt.Sprint(tx.Price)
-	record += string(tx.EscrowAccount.Pk[:])
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

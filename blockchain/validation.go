@@ -403,7 +403,7 @@ func verifyByBoard(
 	var pubKeys []string
 	if boardType == common.DCB {
 		address = string(common.DCBAddress)
-		pubKeys = bc.BestState[0].BestBlock.Header.DCDParams.DCBBoardPubKeys
+		pubKeys = bc.BestState[0].BestBlock.Header.DCBParams.DCBBoardPubKeys
 	} else if boardType == common.GOV {
 		address = string(common.GOVAddress)
 		pubKeys = bc.BestState[0].BestBlock.Header.GOVParams.GOVBoardPubKeys
@@ -449,10 +449,26 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 
 	// Check if asset is sent to escrow account
 	escrowAccount := self.BestState[chainID].BestBlock.Header.DCBParams.CrowdsaleEscrow
+
 	if txCrowdsale.SellingAsset == common.AssetTypeBond {
 		for _, vout := range txCrowdsale.TxTokenData.Vouts {
+			if !bytes.Equal(escrowAccount.Pk[:], vout.PaymentAddress.Pk[:]) || !bytes.Equal(escrowAccount.Tk[:], vout.PaymentAddress.Tk[:]) {
+				return fmt.Errorf("Selling asset must be sent to escrow account")
+			}
 		}
 	} else if txCrowdsale.SellingAsset == common.AssetTypeCoin {
+		// No other assets are sent
+		if len(txCrowdsale.TxTokenData.Vouts) > 0 {
+			return fmt.Errorf("Cannot send token assets")
+		}
+
+		for _, desc := range txCrowdsale.Tx.Descs {
+			for _, note := range desc.Note {
+				if !bytes.Equal(note.Apk[:], escrowAccount.Pk[:]) {
+					return fmt.Errorf("Selling asset must be sent to escrow account")
+				}
+			}
+		}
 	}
 	return nil
 }

@@ -13,7 +13,7 @@ type GOVParams struct {
 	SellingBonds    *SellingBonds
 }
 
-type DCDParams struct {
+type DCBParams struct {
 	DCBBoardPubKeys []string
 	CrowdsaleEscrow privacy.PaymentAddress
 }
@@ -63,7 +63,7 @@ type BlockHeader struct {
 	BankFund   uint64 // for DBank
 
 	GOVParams GOVParams // params which get from governance for network
-	DCDParams DCDParams
+	DCBParams DCBParams
 	CBParams  CBParams
 
 	LoanParams transaction.LoanParams // params for collateralized loans of Constant

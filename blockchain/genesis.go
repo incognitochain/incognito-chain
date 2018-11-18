@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/privacy-protocol/proto/zksnark"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type GenesisBlockGenerator struct {
@@ -269,12 +269,11 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(version int, ini
 		LiquidationStart: 15000,   // 150%
 	}
 	// Decentralize central bank params
-	genesisBlock.Header.DCDParams = DCDParams{
+	genesisBlock.Header.DCBParams = DCBParams{
 		DCBBoardPubKeys: []string{},
 	}
 	// Commercial bank params
-	genesisBlock.Header.CBParams = CBParams{
-	}
+	genesisBlock.Header.CBParams = CBParams{}
 	copy(genesisBlock.Header.Committee, preSelectValidators)
 
 	genesisBlock.Header.Height = 1
