@@ -73,7 +73,9 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 
 	var txsToAdd []transaction.Transaction
 	var txToRemove []transaction.Transaction
-	// var actionParamTxs []*transaction.ActionParamTx
+	var buySellReqTxs []transaction.Transaction
+	bondsSold := uint64(0)
+	incomeFromBonds := uint64(0)
 	totalFee := uint64(0)
 
 	// Get salary per tx
@@ -129,6 +131,18 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 			txToRemove = append(txToRemove, transaction.Transaction(tx))
 			continue
 		}
+
+		if tx.GetType() == common.TxBuyFromGOVRequest {
+			income, soldAmt, addable := blockgen.checkBuyFromGOVReqTx(chainID, tx, bondsSold)
+			if !addable {
+				txToRemove = append(txToRemove, tx)
+				continue
+			}
+			bondsSold += soldAmt
+			incomeFromBonds += income
+			buySellReqTxs = append(buySellReqTxs, tx)
+		}
+
 		totalFee += tx.GetTxFee()
 		txsToAdd = append(txsToAdd, tx)
 		if len(txsToAdd) == common.MaxTxsInBlock {
@@ -171,16 +185,7 @@ concludeBlock:
 	// Get blocksalary fund from txs
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
-	var buySellReqTxs []*transaction.BuySellRequestTx
 	for _, blockTx := range txsToAdd {
-		if blockTx.GetType() == common.TxBuyFromGOVRequest {
-			buySellReqTx, ok := blockTx.(*transaction.BuySellRequestTx)
-			if !ok {
-				Logger.log.Error("Transaction not recognized to store in database")
-				continue
-			}
-			buySellReqTxs = append(buySellReqTxs, buySellReqTx)
-		}
 		// if blockTx.GetType() == common.TxRegisterCandidateType {
 		// 	tx, ok := blockTx.(*transaction.TxRegisterCandidate)
 		// 	if !ok {
@@ -204,18 +209,23 @@ concludeBlock:
 		Logger.log.Error(err)
 		return nil, err
 	}
+	// create buy/sell response tx to distribute bonds/govs to requesters
 	buySellResTx := buildBuySellResponsesTx(
 		common.TxBuyFromGOVResponse,
 		buySellReqTxs,
 		blockgen.chain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.SellingBonds,
 	)
+	coinbases := []transaction.Transaction{salaryTx}
+	if buySellResTx != nil {
+		coinbases = append(coinbases, buySellResTx)
+	}
 
 	// the 1st tx will be salaryTx
-	txsToAdd = append([]transaction.Transaction{salaryTx, buySellResTx}, txsToAdd...)
+	txsToAdd = append(coinbases, txsToAdd...)
 
 	// Check for final balance of DCB and GOV
 	currentSalaryFund := prevBlock.Header.SalaryFund
-	if currentSalaryFund < totalSalary+totalFee+salaryFundAdd-govPayoutAmount {
+	if currentSalaryFund+totalFee+salaryFundAdd < totalSalary+govPayoutAmount {
 		return nil, fmt.Errorf("Gov fund is not enough for salary and dividend payout")
 	}
 
@@ -240,12 +250,13 @@ concludeBlock:
 		BlockCommitteeSigs:    make([]string, common.TotalValidators),
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
-		SalaryFund:            currentSalaryFund - totalSalary + totalFee + salaryFundAdd,
+		SalaryFund:            currentSalaryFund + incomeFromBonds + totalFee + salaryFundAdd - totalSalary - govPayoutAmount,
 		BankFund:              prevBlock.Header.BankFund - bankPayoutAmount,
 		GOVConstitution:       prevBlock.Header.GOVConstitution, // TODO: need get from gov-params tx
 		DCBConstitution:       prevBlock.Header.DCBConstitution, // TODO: need get from dcb-params tx
 		LoanParams:            prevBlock.Header.LoanParams,
 	}
+	block.Header.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= bondsSold
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
@@ -542,9 +553,13 @@ func buildSingleBuySellResponseTx(
 // the tx is to distribute tokens (bond, gov, ...) to token requesters
 func buildBuySellResponsesTx(
 	coinbaseTxType string,
-	buySellReqTxs []*transaction.BuySellRequestTx,
+	buySellReqTxs []transaction.Transaction,
 	sellingBondsParam *SellingBonds,
 ) *transaction.TxCustomToken {
+	if len(buySellReqTxs) == 0 {
+		return nil
+	}
+
 	txTokenData := transaction.TxTokenData{
 		Type:           transaction.CustomTokenInit,
 		Amount:         0,
@@ -554,11 +569,29 @@ func buildBuySellResponsesTx(
 	}
 	var txTokenVouts []transaction.TxTokenVout
 	for _, reqTx := range buySellReqTxs {
-		txTokenVout := buildSingleBuySellResponseTx(reqTx, sellingBondsParam)
+		tx, _ := reqTx.(*transaction.BuySellRequestTx)
+		txTokenVout := buildSingleBuySellResponseTx(tx, sellingBondsParam)
 		txTokenVouts = append(txTokenVouts, txTokenVout)
 	}
 	txTokenData.Vouts = txTokenVouts
 	return &transaction.TxCustomToken{
 		TxTokenData: txTokenData,
 	}
+}
+
+func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
+	chainID byte,
+	tx transaction.Transaction,
+	bondsSold uint64,
+) (uint64, uint64, bool) {
+	prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	sellingBondsParams := prevBlock.Header.GOVConstitution.GOVParams.SellingBonds
+	reqTx, ok := tx.(*transaction.BuySellRequestTx)
+	if !ok {
+		return 0, 0, false
+	}
+	if bondsSold+reqTx.Amount > sellingBondsParams.BondsToSell { // run out of bonds for selling
+		return 0, 0, false
+	}
+	return reqTx.Amount * reqTx.BuyPrice, reqTx.Amount, true
 }

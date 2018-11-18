@@ -7,7 +7,7 @@ import (
 
 type BuySellRequestTx struct {
 	*RequestInfo
-	*Tx
+	*Tx // fee + amount to pay for buying bonds/govs
 }
 
 type RequestInfo struct {
@@ -38,11 +38,12 @@ func CreateBuySellRequestTx(
 		return nil, err
 	}
 
-	BuySellRequestTx := &BuySellRequestTx{
+	buySellRequestTx := &BuySellRequestTx{
 		RequestInfo: requestInfo,
 		Tx:          tx,
 	}
-	return BuySellRequestTx, nil
+	buySellRequestTx.Type = common.TxBuyFromGOVRequest
+	return buySellRequestTx, nil
 }
 
 func (tx *BuySellRequestTx) Hash() *common.Hash {
