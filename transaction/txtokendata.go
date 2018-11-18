@@ -16,8 +16,9 @@ type BuyBackInfo struct {
 }
 
 type BuySellResponse struct {
-	BuyBackInfo *BuyBackInfo
-	AssetID     string // only bond for now - encoded string of compound values (Maturity + BuyBackPrice + StartSellingAt) from SellingBonds param
+	BuyBackInfo   *BuyBackInfo
+	AssetID       string // only bond for now - encoded string of compound values (Maturity + BuyBackPrice + StartSellingAt) from SellingBonds param
+	RequestedTxID *common.Hash
 }
 
 // TxTokenVin ...
@@ -46,6 +47,7 @@ type TxTokenVout struct {
 
 	index           int
 	txCustomTokenID common.Hash
+	BuySellResponse *BuySellResponse
 }
 
 func (self TxTokenVout) Hash() *common.Hash {
@@ -75,10 +77,9 @@ func (self TxTokenVout) GetTxCustomTokenID() common.Hash {
 
 // TxTokenData ...
 type TxTokenData struct {
-	PropertyID      common.Hash // = hash of TxTokenData data
-	PropertyName    string
-	PropertySymbol  string
-	BuySellResponse *BuySellResponse
+	PropertyID     common.Hash // = hash of TxTokenData data
+	PropertyName   string
+	PropertySymbol string
 
 	Type   int // action type
 	Amount uint64

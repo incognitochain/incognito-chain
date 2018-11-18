@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"encoding/base64"
+	"fmt"
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
@@ -130,9 +132,15 @@ concludeBlock:
 	// Get blocksalary fund from txs
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
+	var buySellReqTxs []*transaction.BuySellRequestTx
 	for _, blockTx := range txsToAdd {
-		if blockTx.GetType() == common.TxRegisterCandidateType {
-
+		if blockTx.GetType() == common.TxBuyRequest || blockTx.GetType() == common.TxSellRequest {
+			buySellReqTx, ok := blockTx.(*transaction.BuySellRequestTx)
+			if !ok {
+				Logger.log.Error("Transaction not recognized to store in database")
+				continue
+			}
+			buySellReqTxs = append(buySellReqTxs, buySellReqTx)
 		}
 		if blockTx.GetType() == common.TxRegisterCandidateType {
 			tx, ok := blockTx.(*transaction.TxRegisterCandidate)
@@ -155,13 +163,18 @@ concludeBlock:
 	totalSalary := salaryMULTP*salaryPerTx + basicSalary
 	// create salary tx to pay constant for block producer
 	salaryTx, err := createSalaryTx(totalSalary, &payToAddress, rt, chainID)
-
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
 	}
+	buySellResTx := buildBuySellResponsesTx(
+		common.TxBuyFromGOVResponse,
+		buySellReqTxs,
+		blockgen.chain.BestState[0].BestBlock.Header.GOVParams.SellingBonds,
+	)
+
 	// the 1st tx will be salaryTx
-	txsToAdd = append([]transaction.Transaction{salaryTx}, txsToAdd...)
+	txsToAdd = append([]transaction.Transaction{salaryTx, buySellResTx}, txsToAdd...)
 
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(txsToAdd)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
@@ -256,8 +269,47 @@ func createSalaryTx(
 	return tx, nil
 }
 
-// createBuySellResponsesTx
-// the tx is to distribute tokens (bond, gov, ...) to token requesters
-func createBuySellResponsesTx() {
+func buildSingleBuySellResponseTx(
+	buySellReqTx *transaction.BuySellRequestTx,
+	sellingBondsParam *SellingBonds,
+) transaction.TxTokenVout {
+	buyBackInfo := &transaction.BuyBackInfo{
+		Maturity:     sellingBondsParam.Maturity,
+		BuyBackPrice: sellingBondsParam.BuyBackPrice,
+	}
+	buySellResponse := &transaction.BuySellResponse{
+		BuyBackInfo:   buyBackInfo,
+		AssetID:       base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt))),
+		RequestedTxID: buySellReqTx.Hash(),
+	}
+	return transaction.TxTokenVout{
+		Value:           buySellReqTx.Amount,
+		PaymentAddress:  buySellReqTx.PaymentAddress,
+		BuySellResponse: buySellResponse,
+	}
+}
 
+// buildBuySellResponsesTx
+// the tx is to distribute tokens (bond, gov, ...) to token requesters
+func buildBuySellResponsesTx(
+	coinbaseTxType string,
+	buySellReqTxs []*transaction.BuySellRequestTx,
+	sellingBondsParam *SellingBonds,
+) *transaction.TxCustomToken {
+	txTokenData := transaction.TxTokenData{
+		Type:           transaction.CustomTokenInit,
+		Amount:         0,
+		PropertyName:   "",
+		PropertySymbol: coinbaseTxType,
+		Vins:           []transaction.TxTokenVin{},
+	}
+	var txTokenVouts []transaction.TxTokenVout
+	for _, reqTx := range buySellReqTxs {
+		txTokenVout := buildSingleBuySellResponseTx(reqTx, sellingBondsParam)
+		txTokenVouts = append(txTokenVouts, txTokenVout)
+	}
+	txTokenData.Vouts = txTokenVouts
+	return &transaction.TxCustomToken{
+		TxTokenData: txTokenData,
+	}
 }
