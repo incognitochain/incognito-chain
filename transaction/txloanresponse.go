@@ -77,3 +77,7 @@ func (tx *TxLoanResponse) ValidateTransaction() bool {
 
 	return true
 }
+
+func (tx *TxLoanResponse) GetType() string {
+	return common.TxLoanResponse
+}

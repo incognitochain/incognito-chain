@@ -2,7 +2,7 @@ package transaction
 
 import (
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy/client"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type BuySellRequestTx struct {
@@ -11,7 +11,7 @@ type BuySellRequestTx struct {
 }
 
 type RequestInfo struct {
-	PaymentAddress client.PaymentAddress
+	PaymentAddress privacy.PaymentAddress
 	AssetType      string
 	Amount         uint64
 	BuyPrice       uint64 // in Constant unit

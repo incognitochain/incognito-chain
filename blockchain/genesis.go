@@ -6,8 +6,9 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy/client"
-	"github.com/ninjadotorg/constant/privacy/proto/zksnark"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/proto/zksnark"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 )
@@ -28,8 +29,8 @@ func (self GenesisBlockGenerator) CalcMerkleRoot(txns []transaction.Transaction)
 	return *merkles[len(merkles)-1]
 }
 
-func createGenesisInputNote(spendingKey *client.SpendingKey, idx uint) *client.Note {
-	addr := client.GenSpendingAddress(*spendingKey)
+func createGenesisInputNote(spendingKey *privacy.SpendingKey, idx uint) *client.Note {
+	addr := privacy.GeneratePublicKey(*spendingKey)
 	rho := [32]byte{byte(idx)}
 	r := [32]byte{byte(idx)}
 	note := &client.Note{
@@ -42,7 +43,7 @@ func createGenesisInputNote(spendingKey *client.SpendingKey, idx uint) *client.N
 }
 
 func createGenesisJSInput(idx uint) *client.JSInput {
-	spendingKey := &client.SpendingKey{} // SpendingKey for input of genesis transaction is 0x0
+	spendingKey := &privacy.SpendingKey{} // SpendingKey for input of genesis transaction is 0x0
 	input := new(client.JSInput)
 	input.InputNote = createGenesisInputNote(spendingKey, idx)
 	input.Key = spendingKey
@@ -64,15 +65,15 @@ func (self GenesisBlockGenerator) createGenesisTx(initialCoin uint64, initialAdd
 	if err != nil {
 		return nil, err
 	}
-	outNote := &client.Note{Value: initialCoin, Apk: key.KeySet.PaymentAddress.Apk}
-	placeHolderOutputNote := &client.Note{Value: 0, Apk: key.KeySet.PaymentAddress.Apk}
+	outNote := &client.Note{Value: initialCoin, Apk: key.KeySet.PaymentAddress.Pk}
+	placeHolderOutputNote := &client.Note{Value: 0, Apk: key.KeySet.PaymentAddress.Pk}
 
-	fmt.Printf("EncKey: %x\n", key.KeySet.PaymentAddress.Pkenc)
+	fmt.Printf("EncKey: %x\n", key.KeySet.PaymentAddress.Tk)
 
 	// Create deterministic outputs
 	outputs := []*client.JSOutput{
-		&client.JSOutput{EncKey: key.KeySet.PaymentAddress.Pkenc, OutputNote: outNote},
-		&client.JSOutput{EncKey: key.KeySet.PaymentAddress.Pkenc, OutputNote: placeHolderOutputNote},
+		&client.JSOutput{EncKey: key.KeySet.PaymentAddress.Tk, OutputNote: outNote},
+		&client.JSOutput{EncKey: key.KeySet.PaymentAddress.Tk, OutputNote: placeHolderOutputNote},
 	}
 
 	// Wrap ephemeral private key
@@ -258,7 +259,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(version int, ini
 	genesisBlock.Header.Version = version
 	genesisBlock.Header.Committee = make([]string, len(preSelectValidators))
 	// Gov param
-	genesisBlock.Header.GOVParams = GOVParams{
+	genesisBlock.Header.GOVConstitution.GOVParams = GOVParams{
 		SalaryPerTx: salaryPerTx,
 		BasicSalary: basicSalary,
 	}
@@ -268,12 +269,9 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(version int, ini
 		LiquidationStart: 15000,   // 150%
 	}
 	// Decentralize central bank params
-	genesisBlock.Header.DCDParams = DCDParams{
-		DCBBoardPubKeys: []string{},
-	}
+	genesisBlock.Header.DCBConstitution.DCBParams = DCBParams{}
 	// Commercial bank params
-	genesisBlock.Header.CBParams = CBParams{
-	}
+	genesisBlock.Header.CBParams = CBParams{}
 	copy(genesisBlock.Header.Committee, preSelectValidators)
 
 	genesisBlock.Header.Height = 1

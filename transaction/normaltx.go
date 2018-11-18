@@ -13,8 +13,9 @@ import (
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy/client"
-	"github.com/ninjadotorg/constant/privacy/proto/zksnark"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/proto/zksnark"
 )
 
 // Tx represents a coin-transfer-transaction stored in a block
@@ -143,8 +144,8 @@ func (tx *Tx) GetSenderAddrLastByte() byte {
 // rts: mapping from the chainID to the root of the commitment merkle tree at current block
 // 		(the latest block of the node creating this tx)
 func CreateTx(
-	senderKey *client.SpendingKey,
-	paymentInfo []*client.PaymentInfo,
+	senderKey *privacy.SpendingKey,
+	paymentInfo []*privacy.PaymentInfo,
 	rts map[byte]*common.Hash,
 	usableTx map[byte][]*Tx,
 	commitments map[byte]([][]byte),
@@ -161,7 +162,7 @@ func CreateTx(
 	var value uint64
 	for _, p := range paymentInfo {
 		value += p.Amount
-		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Apk)
+		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Pk)
 	}
 
 	type ChainNote struct {
@@ -193,7 +194,7 @@ func CreateTx(
 	}
 
 	senderFullKey := cashec.KeySet{}
-	senderFullKey.ImportFromPrivateKeyByte(senderKey[:])
+	senderFullKey.ImportFromPrivateKeyByte((*senderKey)[:])
 
 	// Create tx before adding js descs
 	tx, err := CreateEmptyTx(common.TxNormalType)
@@ -202,7 +203,7 @@ func CreateTx(
 	}
 	tempKeySet := cashec.KeySet{}
 	tempKeySet.ImportFromPrivateKey(senderKey)
-	lastByte := tempKeySet.PaymentAddress.Apk[len(tempKeySet.PaymentAddress.Apk)-1]
+	lastByte := tempKeySet.PaymentAddress.Pk[len(tempKeySet.PaymentAddress.Pk)-1]
 	tx.AddressLastByte = lastByte
 	var latestAnchor map[byte][]byte
 
@@ -302,16 +303,16 @@ func CreateTx(
 		for len(paymentInfo) > 0 && len(outputs) < NumDescOutputs-1 && inputValue > 0 { // Leave out 1 output note for change
 			p := paymentInfo[len(paymentInfo)-1]
 			var outNote *client.Note
-			var encKey client.TransmissionKey
+			var encKey privacy.TransmissionKey
 			if p.Amount <= inputValue { // Enough for one more output note, include it
-				outNote = &client.Note{Value: p.Amount, Apk: p.PaymentAddress.Apk}
-				encKey = p.PaymentAddress.Pkenc
+				outNote = &client.Note{Value: p.Amount, Apk: p.PaymentAddress.Pk}
+				encKey = p.PaymentAddress.Tk
 				inputValue -= p.Amount
 				paymentInfo = paymentInfo[:len(paymentInfo)-1]
 				fmt.Printf("Use output value %+v => %x\n", outNote.Value, outNote.Apk)
 			} else { // Not enough for this note, send some and save the rest for next js desc
-				outNote = &client.Note{Value: inputValue, Apk: p.PaymentAddress.Apk}
-				encKey = p.PaymentAddress.Pkenc
+				outNote = &client.Note{Value: inputValue, Apk: p.PaymentAddress.Pk}
+				encKey = p.PaymentAddress.Tk
 				paymentInfo[len(paymentInfo)-1].Amount = p.Amount - inputValue
 				inputValue = 0
 				fmt.Printf("Partially send %+v to %x\n", outNote.Value, outNote.Apk)
@@ -323,22 +324,22 @@ func CreateTx(
 
 		if inputValue > 0 {
 			// Still has some room left, check if one more output note is possible to add
-			var p *client.PaymentInfo
+			var p *privacy.PaymentInfo
 			if len(paymentInfo) > 0 {
 				p = paymentInfo[len(paymentInfo)-1]
 			}
 
 			if p != nil && p.Amount == inputValue {
 				// Exactly equal, add this output note to js desc
-				outNote := &client.Note{Value: p.Amount, Apk: p.PaymentAddress.Apk}
-				output := &client.JSOutput{EncKey: p.PaymentAddress.Pkenc, OutputNote: outNote}
+				outNote := &client.Note{Value: p.Amount, Apk: p.PaymentAddress.Pk}
+				output := &client.JSOutput{EncKey: p.PaymentAddress.Tk, OutputNote: outNote}
 				outputs = append(outputs, output)
 				paymentInfo = paymentInfo[:len(paymentInfo)-1]
 				fmt.Printf("Exactly enough, include 1 more output %+v, %x\n", outNote.Value, outNote.Apk)
 			} else {
 				// Cannot put the output note into this js desc, create a change note instead
-				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PaymentAddress.Apk}
-				output := &client.JSOutput{EncKey: senderFullKey.PaymentAddress.Pkenc, OutputNote: outNote}
+				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PaymentAddress.Pk}
+				output := &client.JSOutput{EncKey: senderFullKey.PaymentAddress.Tk, OutputNote: outNote}
 				outputs = append(outputs, output)
 				fmt.Printf("Create change outnote %+v, %x\n", outNote.Value, outNote.Apk)
 
@@ -443,7 +444,7 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	nullifiers := [][]byte{inputs[0].InputNote.Nf, inputs[1].InputNote.Nf}
 	commitments := [][]byte{outputs[0].OutputNote.Cm, outputs[1].OutputNote.Cm}
 	notes := [2]*client.Note{outputs[0].OutputNote, outputs[1].OutputNote}
-	keys := [2]client.TransmissionKey{outputs[0].EncKey, outputs[1].EncKey}
+	keys := [2]privacy.TransmissionKey{outputs[0].EncKey, outputs[1].EncKey}
 
 	ephemeralPubKey := new(client.EphemeralPubKey)
 	if ephemeralPrivKey == nil {
@@ -475,7 +476,7 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	vmacs := make([][]byte, 2)
 	for i := range inputs {
 		ask := make([]byte, 32)
-		copy(ask[:], inputs[i].Key[:])
+		copy(ask[:], (*inputs[i].Key)[:])
 		vmacs[i] = client.PRF_pk(uint64(i), ask, hSig)
 	}
 
@@ -491,7 +492,7 @@ func (tx *Tx) buildJSDescAndEncrypt(
 		Vmacs:           vmacs,
 	}
 	tx.Descs = append(tx.Descs, desc)
-	if desc.Proof == nil { // no privacy
+	if desc.Proof == nil { // no privacy-protocol
 		desc.Note = []*client.Note{outputs[0].OutputNote, outputs[1].OutputNote}
 	}
 
@@ -509,9 +510,9 @@ func (tx *Tx) buildJSDescAndEncrypt(
 }
 
 // CreateRandomJSInput creates a dummy input with 0 value note that belongs to a random address
-func CreateRandomJSInput(spendingKey *client.SpendingKey) *client.JSInput {
+func CreateRandomJSInput(spendingKey *privacy.SpendingKey) *client.JSInput {
 	if spendingKey == nil {
-		randomKey := client.RandSpendingKey()
+		randomKey := privacy.GenerateSpendingKey([]byte{})
 		spendingKey = &randomKey
 	}
 
@@ -524,16 +525,16 @@ func CreateRandomJSInput(spendingKey *client.SpendingKey) *client.JSInput {
 
 // CreateRandomJSOutput creates a dummy output with 0 value note that is sended to a random address
 func CreateRandomJSOutput() *client.JSOutput {
-	randomKey := client.RandSpendingKey()
+	randomKey := privacy.GenerateSpendingKey([]byte{})
 	output := new(client.JSOutput)
 	output.OutputNote = createDummyNote(&randomKey)
-	paymentAddr := client.GenPaymentAddress(randomKey)
-	output.EncKey = paymentAddr.Pkenc
+	paymentAddr := privacy.GeneratePaymentAddress(randomKey[:])
+	output.EncKey = paymentAddr.Tk
 	return output
 }
 
-func createDummyNote(spendingKey *client.SpendingKey) *client.Note {
-	addr := client.GenSpendingAddress(*spendingKey)
+func createDummyNote(spendingKey *privacy.SpendingKey) *client.Note {
+	addr := privacy.GeneratePublicKey((*spendingKey)[:])
 	var rho, r [32]byte
 	copy(rho[:], client.RandBits(32*8))
 	copy(r[:], client.RandBits(32*8))
@@ -614,12 +615,12 @@ func GenerateProofForGenesisTx(
 	privateSignKey := [32]byte{1}
 	keySet := &cashec.KeySet{}
 	keySet.ImportFromPrivateKeyByte(privateSignKey[:])
-	sigPubKey := keySet.PaymentAddress.Apk[:]
+	sigPubKey := keySet.PaymentAddress.Pk[:]
 
 	// Get last byte of genesis sender's address
 	tempKeySet := cashec.KeySet{}
 	tempKeySet.ImportFromPrivateKey(inputs[0].Key)
-	addressLastByte := tempKeySet.PaymentAddress.Apk[len(tempKeySet.PaymentAddress.Apk)-1]
+	addressLastByte := tempKeySet.PaymentAddress.Pk[len(tempKeySet.PaymentAddress.Pk)-1]
 
 	tx, err := CreateEmptyTx(common.TxNormalType)
 	if err != nil {
@@ -710,16 +711,16 @@ func SortArrayTxs(data []Tx, sortType int, sortAsc bool) {
 }
 
 // EstimateTxSize returns the estimated size of the tx in kilobyte
-func EstimateTxSize(usableTx []*Tx, payments []*client.PaymentInfo) uint64 {
+func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	var sizeVersion uint64 = 1  // int8
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
 	var sizeFee uint64 = 8      // uint64
 	var sizeDescs uint64        // uint64
 	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
 	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
 	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte

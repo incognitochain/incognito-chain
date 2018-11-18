@@ -6,18 +6,15 @@ import (
 )
 
 type GOVParams struct {
-	SalaryPerTx     uint64 // salary for each tx in block(mili constant)
-	BasicSalary     uint64 // basic salary per block(mili constant)
-	GOVBoardPubKeys []string
-	SellingBonds    *SellingBonds
+	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
+	BasicSalary  uint64 // basic salary per block(mili constant)
+	SellingBonds *SellingBonds
 }
 
-type DCDParams struct {
-	DCBBoardPubKeys []string
+type DCBParams struct {
 }
 
 type CBParams struct {
-	CBBoardPubKeys []string
 }
 
 type SellingBonds struct {
@@ -60,9 +57,13 @@ type BlockHeader struct {
 	SalaryFund uint64 // use to pay salary for miners(block producer or current leader) in chain
 	BankFund   uint64 // for DBank
 
-	GOVParams GOVParams // params which get from governance for network
-	DCDParams DCDParams
-	CBParams  CBParams
+	GOVConstitution GOVConstitution // params which get from governance for network
+	DCBConstitution DCBConstitution
+	CBParams        CBParams
+
+	GOVBoardPubKeys []string
+	DCBBoardPubKeys []string
+	CBBoardPubKeys  []string
 
 	LoanParams transaction.LoanParams // params for collateralized loans of Constant
 

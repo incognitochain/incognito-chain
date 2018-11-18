@@ -1,8 +1,8 @@
 package transaction
 
 import (
-	"github.com/ninjadotorg/constant/privacy/client"
-	"github.com/ninjadotorg/constant/privacy/proto/zksnark"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/proto/zksnark"
 )
 
 // JoinSplitDesc stores the UTXO of a transaction

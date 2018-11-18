@@ -14,10 +14,10 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/jessevdk/go-flags"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/wallet"
+	"github.com/jessevdk/go-flags"
 )
 
 // default config
@@ -95,7 +95,6 @@ type config struct {
 
 	// PoS config
 	ProducerSpendingKey string `long:"producerspendingkey" description:"!!!WARNING Leave this if you don't know what this is"`
-	ProducerKeySet      string `long:"producerkeyset" description:"Key-set of the block producer used to seal block"`
 	// For Wallet
 	Wallet           bool   `long:"enablewallet" description:"Enable wallet"`
 	WalletName       string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
@@ -485,7 +484,7 @@ func loadConfig() (*config, []string, error) {
 
 	// Ensure there is at least one mining address when the generate flag is
 	// set.
-	if cfg.Generate && len(cfg.ProducerKeySet) == 0 && len(cfg.ProducerSpendingKey) == 0 {
+	if cfg.Generate && len(cfg.ProducerSpendingKey) == 0 {
 		str := "%s: the generate flag is set, but there are no producer's key specified "
 		err := fmt.Errorf(str, funcName)
 		fmt.Fprintln(os.Stderr, err)
@@ -592,7 +591,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	// When the specified string doesn't have any delimters, treat it as
 	// the log level for all subsystems.
 	if !strings.Contains(debugLevel, ",") && !strings.Contains(debugLevel, "=") {
-		// Validate debug log level.
+		// ValidateTransaction debug log level.
 		if !validLogLevel(debugLevel) {
 			str := "The specified debug level [%v] is invalid"
 			return fmt.Errorf(str, debugLevel)
@@ -616,13 +615,13 @@ func parseAndSetDebugLevels(debugLevel string) error {
 		fields := strings.Split(logLevelPair, "=")
 		subsysID, logLevel := fields[0], fields[1]
 
-		// Validate subsystem.
+		// ValidateTransaction subsystem.
 		if _, exists := subsystemLoggers[subsysID]; !exists {
 			str := "The specified subsystem [%v] is invalid -- supported subsytems %v"
 			return fmt.Errorf(str, subsysID, supportedSubsystems())
 		}
 
-		// Validate log level.
+		// ValidateTransaction log level.
 		if !validLogLevel(logLevel) {
 			str := "The specified debug level [%v] is invalid"
 			return fmt.Errorf(str, logLevel)
@@ -633,19 +632,15 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	return nil
 }
 
-func (self *config) GetProducerKeySet() (*cashec.KeySetProducer, error) {
-	KeySetProducer := &cashec.KeySetProducer{}
-	if len(self.ProducerSpendingKey) != 0 {
-		Logger.log.Warn("!!NOT RECOMMENDED TO USE SPENDING KEY!!")
-		keySetUser := cashec.KeySet{}
-		spendingKeyByte, _, err := base58.Base58Check{}.Decode(self.ProducerSpendingKey)
-		if err != nil {
-			return KeySetProducer, err
-		}
-		keySetUser.ImportFromPrivateKeyByte(spendingKeyByte)
-		KeySetProducer, _ = keySetUser.CreateProducerKeySet()
-		return KeySetProducer, nil
-	} else {
-		return KeySetProducer.DecodeToKeySet(self.ProducerKeySet)
+func (self *config) GetProducerKeySet() (*cashec.KeySet, error) {
+	KeySetProducer := &cashec.KeySet{}
+	temp, err := wallet.Base58CheckDeserialize(self.ProducerSpendingKey)
+	if err != nil {
+		return KeySetProducer, err
 	}
+	KeySetProducer.ImportFromPrivateKey(&temp.KeySet.PrivateKey)
+	lastByte := KeySetProducer.PaymentAddress.Pk[len(KeySetProducer.PaymentAddress.Pk)-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	Logger.log.Info("chainID: ", chainIdSender)
+	return KeySetProducer, nil
 }

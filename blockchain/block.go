@@ -1,11 +1,10 @@
 package blockchain
 
 import (
-	"strconv"
-	"strings"
-
 	"encoding/json"
 	"errors"
+	"strconv"
+	"strings"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/transaction"
@@ -75,23 +74,53 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				_ = json.Unmarshal(txTempJson, &txCustomToken)
 				self.Transactions = append(self.Transactions, txCustomToken)
 			}
-		case common.TxRegisterCandidateType:
-			{
-				txVoting := &transaction.TxRegisterCandidate{}
-				_ = json.Unmarshal(txTempJson, &txVoting)
-				self.Transactions = append(self.Transactions, txVoting)
-			}
-		case common.TxBuyRequest, common.TxSellRequest:
-			{
-				buySellReqTx := &transaction.BuySellRequestTx{}
-				_ = json.Unmarshal(txTempJson, &buySellReqTx)
-				self.Transactions = append(self.Transactions, buySellReqTx)
-			}
+			/*case common.TxBuyRequest, common.TxSellRequest:
+			  {
+				  buySellReqTx := &transaction.BuySellRequestTx{}
+				  _ = json.Unmarshal(txTempJson, &buySellReqTx)
+				  self.Transactions = append(self.Transactions, buySellReqTx)
+			  }*/
 		case common.TxBuyFromGOVResponse:
 			{
 				buyFromGOVResTx := &transaction.TxCustomToken{}
 				_ = json.Unmarshal(txTempJson, &buyFromGOVResTx)
 				self.Transactions = append(self.Transactions, buyFromGOVResTx)
+			}
+		case common.TxSubmitDCBProposal:
+			{
+				submitDCBProposalTx := &transaction.TxSubmitDCBProposal{}
+				_ = json.Unmarshal(txTempJson, &submitDCBProposalTx)
+				self.Transactions = append(self.Transactions, submitDCBProposalTx)
+			}
+		case common.TxSubmitGOVProposal:
+			{
+				submitGOVProposalTx := &transaction.TxSubmitGOVProposal{}
+				_ = json.Unmarshal(txTempJson, &submitGOVProposalTx)
+				self.Transactions = append(self.Transactions, submitGOVProposalTx)
+			}
+		case common.TxVoteDCBProposal:
+			{
+				VoteDCBProposalTx := &transaction.TxVoteDCBProposal{}
+				_ = json.Unmarshal(txTempJson, &VoteDCBProposalTx)
+				self.Transactions = append(self.Transactions, VoteDCBProposalTx)
+			}
+		case common.TxVoteGOVProposal:
+			{
+				VoteDcbProposalTx := &transaction.TxVoteGOVProposal{}
+				_ = json.Unmarshal(txTempJson, &VoteDcbProposalTx)
+				self.Transactions = append(self.Transactions, VoteDcbProposalTx)
+			}
+		case common.TxAcceptDCBProposal:
+			{
+				AcceptDCBProposal := &transaction.TxAcceptDCBProposal{}
+				_ = json.Unmarshal(txTempJson, &AcceptDCBProposal)
+				self.Transactions = append(self.Transactions, AcceptDCBProposal)
+			}
+		case common.TxAcceptGOVProposal:
+			{
+				AcceptGovProposal := &transaction.TxAcceptGOVProposal{}
+				_ = json.Unmarshal(txTempJson, &AcceptGovProposal)
+				self.Transactions = append(self.Transactions, AcceptGovProposal)
 			}
 
 		default:
@@ -135,8 +164,8 @@ func (self Block) Hash() *common.Hash {
 		self.Header.MerkleRootCommitments.String() +
 		self.Header.PrevBlockHash.String() +
 		strconv.Itoa(int(self.Header.SalaryFund)) +
-		strconv.Itoa(int(self.Header.GOVParams.SalaryPerTx)) +
-		strconv.Itoa(int(self.Header.GOVParams.BasicSalary)) +
+		strconv.Itoa(int(self.Header.GOVConstitution.GOVParams.SalaryPerTx)) +
+		strconv.Itoa(int(self.Header.GOVConstitution.GOVParams.BasicSalary)) +
 		strings.Join(self.Header.Committee, ",")
 
 	// add data from body

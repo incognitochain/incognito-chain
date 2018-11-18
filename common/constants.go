@@ -7,18 +7,26 @@ const (
 )
 
 const (
-	TxNormalType            = "n" // normal tx(send and receive coin)
-	TxSalaryType            = "s" // salary tx(gov pay salary for block producer)
-	TxActionParamsType      = "a" // action tx to edit params
-	TxRegisterCandidateType = "v" // voting tx
-	TxCustomTokenType       = "t" // token  tx
-	TxLoanRequest           = "lr"
-	TxLoanResponse          = "ls"
-	TxLoanPayment           = "lp"
-	TxLoanWithdraw          = "lw"
-	TxBuyRequest            = "br"
-	TxSellRequest           = "sr"
-	TxBuyFromGOVResponse    = "bgrs"
+	TxSubmitDCBProposal     = "pd" // submit DCB proposal tx
+	TxSubmitGOVProposal     = "pg" // submit GOV proposal tx
+	TxVoteDCBProposal       = "vd" // submit DCB proposal voted tx
+	TxVoteGOVProposal       = "vg" // submit GOV proposal voted tx
+	TxAcceptDCBProposal     = "ad" // accept DCB proposal
+	TxAcceptGOVProposal     = "ag" // accept GOV proposal
+	TxNormalType         = "n" // normal tx(send and receive coin)
+	TxSalaryType         = "s" // salary tx(gov pay salary for block producer)
+	TxActionParamsType   = "a" // action tx to edit params
+	TxCustomTokenType    = "t" // token  tx
+	TxLoanRequest        = "lr"
+	TxLoanResponse       = "ls"
+	TxLoanPayment        = "lp"
+	TxLoanWithdraw       = "lw"
+	TxDividendPayout     = "td"
+	TxCrowdsale          = "cs"
+	TxBuyFromGOVRequest  = "bgr"
+	TxBuySellDCBRequest  = "bsdr"
+	TxBuySellDCBResponse = "bsdrs"
+	TxBuyFromGOVResponse = "bgrs"
 )
 
 // unit type use in tx
