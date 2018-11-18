@@ -591,7 +591,7 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	// When the specified string doesn't have any delimters, treat it as
 	// the log level for all subsystems.
 	if !strings.Contains(debugLevel, ",") && !strings.Contains(debugLevel, "=") {
-		// Validate debug log level.
+		// ValidateTransaction debug log level.
 		if !validLogLevel(debugLevel) {
 			str := "The specified debug level [%v] is invalid"
 			return fmt.Errorf(str, debugLevel)
@@ -615,13 +615,13 @@ func parseAndSetDebugLevels(debugLevel string) error {
 		fields := strings.Split(logLevelPair, "=")
 		subsysID, logLevel := fields[0], fields[1]
 
-		// Validate subsystem.
+		// ValidateTransaction subsystem.
 		if _, exists := subsystemLoggers[subsysID]; !exists {
 			str := "The specified subsystem [%v] is invalid -- supported subsytems %v"
 			return fmt.Errorf(str, subsysID, supportedSubsystems())
 		}
 
-		// Validate log level.
+		// ValidateTransaction log level.
 		if !validLogLevel(logLevel) {
 			str := "The specified debug level [%v] is invalid"
 			return fmt.Errorf(str, logLevel)

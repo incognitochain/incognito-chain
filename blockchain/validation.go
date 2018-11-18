@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"math"
 
+	"encoding/hex"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"golang.org/x/crypto/sha3"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"encoding/hex"
 )
 
 /*
@@ -403,10 +403,10 @@ func verifyByBoard(
 	var pubKeys []string
 	if boardType == common.DCB {
 		address = string(common.DCBAddress)
-		pubKeys = bc.BestState[0].BestBlock.Header.DCDParams.DCBBoardPubKeys
+		pubKeys = bc.BestState[0].BestBlock.Header.DCBBoardPubKeys
 	} else if boardType == common.GOV {
 		address = string(common.GOVAddress)
-		pubKeys = bc.BestState[0].BestBlock.Header.GOVParams.GOVBoardPubKeys
+		pubKeys = bc.BestState[0].BestBlock.Header.GOVBoardPubKeys
 	} else {
 		return false
 	}

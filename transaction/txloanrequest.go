@@ -4,8 +4,8 @@ import (
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
 )
 
 type FeeArgs struct {

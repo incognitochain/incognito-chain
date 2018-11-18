@@ -169,13 +169,13 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 		return err
 	}
 
-	// 4. Validate committee member signatures
+	// 4. ValidateTransaction committee member signatures
 	err = self.ValidateCommitteeSigs([]byte(block.Hash().String()), block.Header.Committee, block.Header.BlockCommitteeSigs)
 	if err != nil {
 		return err
 	}
 
-	// 5. Validate MerkleRootCommitments
+	// 5. ValidateTransaction MerkleRootCommitments
 	err = self.ValidateMerkleRootCommitments(block)
 	if err != nil {
 		return err
@@ -205,13 +205,13 @@ func (self *Engine) validatePreSignBlockSanity(block *blockchain.Block) error {
 		return err
 	}
 
-	// 4. Validate MerkleRootCommitments
+	// 4. ValidateTransaction MerkleRootCommitments
 	err = self.ValidateMerkleRootCommitments(block)
 	if err != nil {
 		return err
 	}
 
-	// 5. Validate transactions
+	// 5. ValidateTransaction transactions
 	return self.ValidateTxList(block.Transactions)
 }
 

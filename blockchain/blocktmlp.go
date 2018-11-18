@@ -1,19 +1,28 @@
 package blockchain
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type BlkTmplGenerator struct {
 	txPool      TxPool
 	chain       *BlockChain
 	rewardAgent RewardAgent
+}
+
+type ConstitutionHelper interface {
+	GetStartedBlockHeight(generator *BlkTmplGenerator, chainID byte) int32
+	CheckSubmitProposalType(tx transaction.Transaction) bool
+	CheckVotingProposalType(tx transaction.Transaction) bool
+	GetAmountVoteToken(tx transaction.Transaction) uint32
+	TxAcceptProposal(originTx transaction.Transaction) transaction.Transaction
 }
 
 // txPool represents a source of transactions to consider for inclusion in
@@ -36,6 +45,9 @@ type TxPool interface {
 
 	// RemoveTx remove tx from tx resource
 	RemoveTx(tx transaction.Transaction) error
+
+	//CheckTransactionFee
+	CheckTransactionFee(tx transaction.Transaction) (uint64, error)
 }
 
 type RewardAgent interface {
@@ -68,6 +80,26 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 	// Get basic salary on block
 	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
 
+	// Check if it is the case we need to apply a new proposal
+	// 1. newNW < lastNW * 0.9
+	// 2. current block height == last Constitution start time + last Constitution execute duration
+	if blockgen.neededNewDCBConstitution(chainID) {
+		tx, err := blockgen.createRequestConstitutionTxDecs(chainID, DCBConstitutionHelper{})
+		if err != nil {
+			Logger.log.Error(err)
+			return nil, err
+		}
+		sourceTxns = append(sourceTxns, tx)
+	}
+	if blockgen.neededNewGovConstitution(chainID) {
+		tx, err := blockgen.createRequestConstitutionTxDecs(chainID, GOVConstitutionHelper{})
+		if err != nil {
+			Logger.log.Error(err)
+			return nil, err
+		}
+		sourceTxns = append(sourceTxns, tx)
+	}
+
 	if len(sourceTxns) < common.MinTxsInBlock {
 		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
 		Logger.log.Info("not enough transactions. Wait for more...")
@@ -90,6 +122,8 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 		if txChainID != chainID {
 			continue
 		}
+		// ValidateTransaction vote and propose transaction
+
 		if !tx.ValidateTransaction() {
 			txToRemove = append(txToRemove, transaction.Transaction(tx))
 			continue
@@ -183,14 +217,21 @@ concludeBlock:
 		BlockCommitteeSigs:    make([]string, common.TotalValidators),
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
-		SalaryFund:            currentSalaryFund - totalSalary + totalFee + salaryFundAdd - govPayoutAmount,
-		BankFund:              currentBankFund - bankPayoutAmount,
-		GOVParams:             prevBlock.Header.GOVParams, // TODO: need get from gov-params tx
+		SalaryFund:            currentSalaryFund - totalSalary + totalFee + salaryFundAdd,
+		BankFund:              prevBlock.Header.BankFund - bankPayoutAmount,
+		GOVConstitution:       prevBlock.Header.GOVConstitution, // TODO: need get from gov-params tx
+		DCBConstitution:       prevBlock.Header.DCBConstitution, // TODO: need get from dcb-params tx
 		LoanParams:            prevBlock.Header.LoanParams,
 	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
+		}
+		if tx.GetType() == common.TxAcceptDCBProposal {
+			updateDCBConstitution(&block, tx, blockgen)
+		}
+		if tx.GetType() == common.TxAcceptGOVProposal {
+			updateGOVConstitution(&block, tx, blockgen)
 		}
 	}
 
@@ -206,8 +247,82 @@ concludeBlock:
 
 	//update the latest AgentDataPoints to block
 	// block.AgentDataPoints = agentDataPoints
-
 	return &block, nil
+}
+
+func updateDCBConstitution(block *Block, tx transaction.Transaction, blockgen *BlkTmplGenerator) error {
+	txAcceptDCBProposal := tx.(transaction.TxAcceptDCBProposal)
+	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(txAcceptDCBProposal.DCBProposalTXID)
+	DCBProposal := getTx.(*transaction.TxSubmitDCBProposal)
+	if err != nil {
+		return err
+	}
+	block.Header.DCBConstitution.StartedBlockHeight = block.Header.Height
+	block.Header.DCBConstitution.ExecuteDuration = DCBProposal.DCBProposalData.ExecuteDuration
+	block.Header.DCBConstitution.ProposalTXID = txAcceptDCBProposal.DCBProposalTXID
+	block.Header.DCBConstitution.CurrentDCBNationalWelfare = GetOracleDCBNationalWelfare()
+
+	//	proposalParams := DCBProposal.DCBProposalData.DCBParams // not use yet
+	block.Header.DCBConstitution.DCBParams = DCBParams{}
+	return nil
+}
+
+func updateGOVConstitution(block *Block, tx transaction.Transaction, blockgen *BlkTmplGenerator) error {
+	txAcceptGOVProposal := tx.(transaction.TxAcceptGOVProposal)
+	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(txAcceptGOVProposal.GOVProposalTXID)
+	GOVProposal := getTx.(*transaction.TxSubmitGOVProposal)
+	if err != nil {
+		return err
+	}
+	block.Header.GOVConstitution.StartedBlockHeight = block.Header.Height
+	block.Header.GOVConstitution.ExecuteDuration = GOVProposal.GOVProposalData.ExecuteDuration
+	block.Header.GOVConstitution.ProposalTXID = txAcceptGOVProposal.GOVProposalTXID
+	block.Header.GOVConstitution.CurrentGOVNationalWelfare = GetOracleGOVNationalWelfare()
+
+	proposalParams := GOVProposal.GOVProposalData.GOVParams
+	block.Header.GOVConstitution.GOVParams = GOVParams{
+		proposalParams.SalaryPerTx,
+		proposalParams.BasicSalary,
+		&SellingBonds{
+			proposalParams.SellingBonds.BondsToSell,
+			proposalParams.SellingBonds.BondPrice,
+			proposalParams.SellingBonds.Maturity,
+			proposalParams.SellingBonds.BuyBackPrice,
+			proposalParams.SellingBonds.StartSellingAt,
+			proposalParams.SellingBonds.SellingWithin,
+		},
+	}
+	return nil
+}
+
+func GetOracleDCBNationalWelfare() int32 {
+	fmt.Print("Get national welfare. It is constant now. Need to change !!!")
+	return 1234
+}
+func GetOracleGOVNationalWelfare() int32 {
+	fmt.Print("Get national welfare. It is constant now. Need to change !!!")
+	return 1234
+}
+
+//1. Current National welfare (NW)  < lastNW * 0.9 (Emergency case)
+//2. Block height == last constitution start time + last constitution window
+func (blockgen *BlkTmplGenerator) neededNewDCBConstitution(chainID byte) bool {
+	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+	lastDCBConstitution := BestBlock.Header.DCBConstitution
+	if GetOracleDCBNationalWelfare() < lastDCBConstitution.CurrentDCBNationalWelfare*ThresholdRatioOfDCBCrisis/100 ||
+		BestBlock.Header.Height+1 == lastDCBConstitution.StartedBlockHeight+lastDCBConstitution.ExecuteDuration {
+		return true
+	}
+	return false
+}
+func (blockgen *BlkTmplGenerator) neededNewGovConstitution(chainID byte) bool {
+	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+	lastGovConstitution := BestBlock.Header.GOVConstitution
+	if GetOracleGOVNationalWelfare() < lastGovConstitution.CurrentGOVNationalWelfare*ThresholdRatioOfGovCrisis/100 ||
+		BestBlock.Header.Height+1 == lastGovConstitution.StartedBlockHeight+lastGovConstitution.ExecuteDuration {
+		return true
+	}
+	return false
 }
 
 // createSalaryTx
@@ -257,6 +372,71 @@ func createSalaryTx(
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}
 	return tx, nil
+}
+
+func (blockgen *BlkTmplGenerator) createRequestConstitutionTxDecs(
+	chainID byte,
+	ConstitutionHelper ConstitutionHelper,
+) (*transaction.TxDesc, error) {
+	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+
+	// count vote from lastConstitution.StartedBlockHeight to Bestblock height
+	CountVote := make(map[common.Hash]int64)
+	Transaction := make(map[common.Hash]*transaction.Transaction)
+	for blockHeight := ConstitutionHelper.GetStartedBlockHeight(blockgen, chainID); blockHeight < BestBlock.Header.Height; blockHeight += 1 {
+		//retrieve block from block's height
+		hashBlock, err := blockgen.chain.config.DataBase.GetBlockByIndex(blockHeight, chainID)
+		if err != nil {
+			return nil, err
+		}
+		blockBytes, err := blockgen.chain.config.DataBase.FetchBlock(hashBlock)
+		if err != nil {
+			return nil, err
+		}
+		block := Block{}
+		err = json.Unmarshal(blockBytes, &block)
+		if err != nil {
+			return nil, err
+		}
+		//count vote of this block
+		for _, tx := range block.Transactions {
+			_, exist := CountVote[*tx.Hash()]
+			if ConstitutionHelper.CheckSubmitProposalType(tx) {
+				if exist {
+					return nil, err
+				}
+				CountVote[*tx.Hash()] = 0
+				Transaction[*tx.Hash()] = &tx
+			} else {
+				if ConstitutionHelper.CheckVotingProposalType(tx) {
+					if !exist {
+						return nil, err
+					}
+					CountVote[*tx.Hash()] += int64(ConstitutionHelper.GetAmountVoteToken(tx))
+				}
+			}
+		}
+	}
+
+	// get transaction and create transaction desc
+	var maxVote int64
+	var res common.Hash
+	for key, value := range CountVote {
+		if value > maxVote {
+			maxVote = value
+			res = key
+		}
+	}
+
+	acceptedSubmitProposalTransaction := ConstitutionHelper.TxAcceptProposal(*Transaction[res])
+
+	AcceptedTransactionDesc := transaction.TxDesc{
+		Tx:     acceptedSubmitProposalTransaction,
+		Added:  time.Now(),
+		Height: BestBlock.Header.Height,
+		Fee:    0,
+	}
+	return &AcceptedTransactionDesc, nil
 }
 
 func (blockgen *BlkTmplGenerator) processDividend(

@@ -57,9 +57,7 @@ type Params struct {
 	GenerateSupported bool
 }
 
-var preSelectValidatorsMainnet = []string{
-
-}
+var preSelectValidatorsMainnet = []string{}
 
 // MainNetParams defines the network parameters for the main coin network.
 var MainNetParams = Params{
