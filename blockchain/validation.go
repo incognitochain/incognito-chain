@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"math"
 
+	"encoding/hex"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"golang.org/x/crypto/sha3"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"encoding/hex"
 )
 
 /*

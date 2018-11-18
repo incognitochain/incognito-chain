@@ -14,10 +14,10 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 const (
@@ -1138,6 +1138,6 @@ func (self *BlockChain) UpdateUTXOReward(utxo []byte, reward uint64) error {
 	return nil
 }
 
-func (self *BlockChain) GetCustomTokenRewardSnapshot() (map[string]uint64) {
+func (self *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {
 	return self.config.customTokenRewardSnapshot
 }

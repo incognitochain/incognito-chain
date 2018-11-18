@@ -15,14 +15,14 @@ type TxSubmitDCBProposal struct {
 	DCBProposalData voting.DCBProposalData
 }
 
-func (thisTx TxSubmitDCBProposal) Hash() *common.Hash{
+func (thisTx TxSubmitDCBProposal) Hash() *common.Hash {
 	record := string(common.ToBytes(thisTx.Tx.Hash()))
 	record += string(common.ToBytes(thisTx.DCBProposalData.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
-func (thisTx TxSubmitGOVProposal) Hash() *common.Hash{
+func (thisTx TxSubmitGOVProposal) Hash() *common.Hash {
 	record := string(common.ToBytes(thisTx.Tx.Hash()))
 	record += string(common.ToBytes(thisTx.GOVProposalData.Hash()))
 	hash := common.DoubleHashH([]byte(record))
@@ -32,4 +32,3 @@ func (thisTx TxSubmitGOVProposal) Hash() *common.Hash{
 func (thisTx TxSubmitDCBProposal) ValidateTransaction() bool {
 	return thisTx.Tx.ValidateTransaction() && thisTx.DCBProposalData.Validate()
 }
-

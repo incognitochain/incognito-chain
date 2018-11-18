@@ -17,7 +17,7 @@ type VoteGOVProposalData struct {
 	AmountVoteToken uint32
 }
 
-type VoteDCBProposalData struct{
+type VoteDCBProposalData struct {
 	DCBProposalTXID *common.Hash
 	AmountVoteToken uint32
 }
@@ -50,14 +50,14 @@ func (VoteGOVProposalData VoteGOVProposalData) Hash() *common.Hash {
 	return &hash
 }
 
-func (thisTx TxVoteDCBProposal) Hash() *common.Hash{
+func (thisTx TxVoteDCBProposal) Hash() *common.Hash {
 	record := string(common.ToBytes(thisTx.Tx.Hash()))
 	record += string(common.ToBytes(thisTx.VoteDCBProposalData.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
-func (thisTx TxVoteGOVProposal) Hash() *common.Hash{
+func (thisTx TxVoteGOVProposal) Hash() *common.Hash {
 	record := string(common.ToBytes(thisTx.Tx.Hash()))
 	record += string(common.ToBytes(thisTx.VoteGOVProposalData.Hash()))
 	hash := common.DoubleHashH([]byte(record))

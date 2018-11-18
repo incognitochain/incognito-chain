@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type BlkTmplGenerator struct {
@@ -18,11 +18,11 @@ type BlkTmplGenerator struct {
 }
 
 type ConstitutionHelper interface {
-	GetStartedBlockHeight(generator *BlkTmplGenerator, chainID byte) (int32)
-	CheckSubmitProposalType(tx transaction.Transaction) (bool)
-	CheckVotingProposalType(tx transaction.Transaction) (bool)
-	GetAmountVoteToken(tx transaction.Transaction) (uint32)
-	TxAcceptProposal(originTx transaction.Transaction) (transaction.Transaction)
+	GetStartedBlockHeight(generator *BlkTmplGenerator, chainID byte) int32
+	CheckSubmitProposalType(tx transaction.Transaction) bool
+	CheckVotingProposalType(tx transaction.Transaction) bool
+	GetAmountVoteToken(tx transaction.Transaction) uint32
+	TxAcceptProposal(originTx transaction.Transaction) transaction.Transaction
 }
 
 // txPool represents a source of transactions to consider for inclusion in
@@ -227,7 +227,7 @@ concludeBlock:
 		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
 		}
-		if tx.GetType() == common.TxAcceptDCBProposal{
+		if tx.GetType() == common.TxAcceptDCBProposal {
 			updateDCBConstitution(&block, tx, blockgen)
 		}
 		if tx.GetType() == common.TxAcceptGOVProposal {
@@ -262,9 +262,8 @@ func updateDCBConstitution(block *Block, tx transaction.Transaction, blockgen *B
 	block.Header.DCBConstitution.ProposalTXID = txAcceptDCBProposal.DCBProposalTXID
 	block.Header.DCBConstitution.CurrentDCBNationalWelfare = GetOracleDCBNationalWelfare()
 
-//	proposalParams := DCBProposal.DCBProposalData.DCBParams // not use yet
-	block.Header.DCBConstitution.DCBParams = DCBParams{
-	}
+	//	proposalParams := DCBProposal.DCBProposalData.DCBParams // not use yet
+	block.Header.DCBConstitution.DCBParams = DCBParams{}
 	return nil
 }
 

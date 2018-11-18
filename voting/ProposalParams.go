@@ -2,10 +2,10 @@ package voting
 
 import "github.com/ninjadotorg/constant/common"
 
-type GOVParams struct{
-	SalaryPerTx     uint64 // salary for each tx in block(mili constant)
-	BasicSalary     uint64 // basic salary per block(mili constant)
-	SellingBonds    *SellingBonds
+type GOVParams struct {
+	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
+	BasicSalary  uint64 // basic salary per block(mili constant)
+	SellingBonds *SellingBonds
 }
 
 type SellingBonds struct {
@@ -17,8 +17,7 @@ type SellingBonds struct {
 	SellingWithin  uint32 // selling bonds within n blocks
 }
 
-type DCBParams struct{
-
+type DCBParams struct {
 }
 
 //xxx

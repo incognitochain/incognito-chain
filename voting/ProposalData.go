@@ -3,15 +3,15 @@ package voting
 import "github.com/ninjadotorg/constant/common"
 
 type GOVProposalData struct {
-	GOVParams    GOVParams
+	GOVParams       GOVParams
 	ExecuteDuration int32
-	Explaination string
+	Explaination    string
 }
 
 type DCBProposalData struct {
-	DCBParams DCBParams
+	DCBParams       DCBParams
 	ExecuteDuration int32
-	Explaination      string
+	Explaination    string
 }
 
 func (DCBProposalData DCBProposalData) Validate() bool {
@@ -39,4 +39,3 @@ func (GOVProposalData GOVProposalData) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
-
