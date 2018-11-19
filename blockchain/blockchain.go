@@ -734,7 +734,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 
 // GetListUnspentTxByPrivateKeyInBlock - fetch block to get unspent tx commitment which privatekey can use it
 // return a list tx which contain commitment which can be used
-func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *privacy.SpendingKey, block *Block, nullifiersInDb [][]byte, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *privacy.SpendingKey, block *Block, nullifiersInDb [][]byte, returnFullTx bool) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx)
 
 	// Get set of keys from private keybyte
@@ -838,7 +838,13 @@ func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *privacy.
 				copyTx.Descs = listDesc
 			}
 			if len(copyTx.Descs) > 0 {
-				txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
+				if !returnFullTx {
+					// only return copy tx which contain unspent commitment which relate with private key
+					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
+				} else {
+					// only return full tx which contain unspent commitment which relate with private key and other commitments
+					txsInBlockAccepted = append(txsInBlockAccepted, *txInBlock.(*transaction.Tx))
+				}
 			}
 		}
 	}
@@ -895,7 +901,7 @@ func (self *BlockChain) GetListUnspentTxByPrivateKey(privateKey *privacy.Spendin
 		for blockHeight > 0 {
 			var err1 error
 			// fetch block to get tx
-			resultsInChain, err1 := self.GetListUnspentTxByPrivateKeyInBlock(privateKey, block, nullifiersInDb, sortType, sortAsc)
+			resultsInChain, err1 := self.GetListUnspentTxByPrivateKeyInBlock(privateKey, block, nullifiersInDb, false)
 			if err1 != nil {
 				// unlock chain
 				//self.chainLock.Unlock()
