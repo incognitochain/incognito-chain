@@ -195,14 +195,6 @@ concludeBlock:
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
 	for _, blockTx := range txsToAdd {
-		// if blockTx.GetType() == common.TxRegisterCandidateType {
-		// 	tx, ok := blockTx.(*transaction.TxRegisterCandidate)
-		// 	if !ok {
-		// 		Logger.log.Error("Transaction not recognized to store in database")
-		// 		continue
-		// 	}
-		// 	salaryFundAdd += tx.GetValue()
-		// }
 		if blockTx.GetTxFee() > 0 {
 			salaryMULTP++
 		}
