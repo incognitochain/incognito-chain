@@ -68,7 +68,12 @@ func getAccount(accountName string) (interface{}, error) {
 	accounts := walletObj.ListAccounts()
 	for _, account := range accounts {
 		if accountName == account.Name {
-			return account, nil
+			result := make(map[string]interface{})
+			result["Name"] = accountName
+			result["PrivateKey"] = account.Key.Base58CheckSerialize(wallet.PriKeyType)
+			result["PaymentAddress"] = account.Key.Base58CheckSerialize(wallet.PaymentAddressType)
+			result["ReadonlyKey"] = account.Key.Base58CheckSerialize(wallet.ReadonlyKeyType)
+			return result, nil
 		}
 	}
 	return nil, errors.New("Not found")
