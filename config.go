@@ -33,7 +33,7 @@ const (
 	defaultGenerate        = false
 	sampleConfigFilename   = "sample-config.conf"
 	defaultDisableRpcTls   = true
-	defaultFastMode        = false
+	defaultFastMode        = true
 	// For wallet
 	defaultWalletName = "wallet"
 )

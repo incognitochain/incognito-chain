@@ -22,7 +22,7 @@ func main() {
 	fmt.Printf("Key: %v\n\n", *key)
 	fmt.Printf("Key: %x\n\n", *key)
 
-	pubAddr := key.Base58CheckSerialize(wallet.PubKeyType)
+	pubAddr := key.Base58CheckSerialize(wallet.PaymentAddressType)
 	privAddr := key.Base58CheckSerialize(wallet.PriKeyType)
 	readAddr := key.Base58CheckSerialize(wallet.ReadonlyKeyType)
 	fmt.Printf("pubAddr: %v\n", pubAddr)
