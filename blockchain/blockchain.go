@@ -208,6 +208,7 @@ func (self *BlockChain) GetBlockByBlockHeight(height int32, chainId byte) (*Bloc
 	block := Block{}
 	blockHeader := BlockHeader{}
 	if self.config.Light {
+		// with light node, we can only get data of header of block
 		err = json.Unmarshal(blockBytes, &blockHeader)
 		if err != nil {
 			return nil, err
@@ -233,6 +234,7 @@ func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 	block := Block{}
 	blockHeader := BlockHeader{}
 	if self.config.Light {
+		// with light node, we can only get data of header of block
 		err = json.Unmarshal(blockBytes, &blockHeader)
 		if err != nil {
 			return nil, err
@@ -418,6 +420,7 @@ func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
 			block := Block{}
 			blockHeader := BlockHeader{}
 			if self.config.Light {
+				// with light node, we can only get data of header of block
 				err = json.Unmarshal(blockBytes, &blockHeader)
 				if err != nil {
 					return nil, err
@@ -451,6 +454,7 @@ func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 		block := Block{}
 		blockHeader := BlockHeader{}
 		if self.config.Light {
+			// with light node, we can only get data of header of block
 			err = json.Unmarshal(blockBytes, &blockHeader)
 			if err != nil {
 				return nil, err
@@ -995,61 +999,66 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 	return voutList, nil
 }
 
+func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (byte, *common.Hash, int, transaction.Transaction, error) {
+	const (
+		bigNumber   = 999999999
+		bigNumberTx = 999999999
+	)
+	var (
+		blockHeight uint32
+		txIndex     uint32
+		chainId     []byte
+	)
+	// Get transaction
+	tx := transaction.Tx{}
+	locationByte, txByte, err := self.config.DataBase.GetTransactionLightModeByHash(txHash)
+	Logger.log.Info("GetTransactionByHash - 1", locationByte, txByte, err)
+	if err != nil {
+		return byte(255), nil, -1, nil, err
+	}
+	err = json.Unmarshal(txByte, &tx)
+	if err != nil {
+		return byte(255), nil, -1, nil, err
+	}
+	// Handle string to get chainId, blockheight, txindex information
+	locations := strings.Split(string(locationByte), string("-"))
+	// Get Chain Id
+	chainId = []byte(locations[2])
+	// Get Block Height
+	tempBlockHeight := []byte(locations[3])
+	bufBlockHeight := bytes.NewBuffer(tempBlockHeight)
+	err = binary.Read(bufBlockHeight, binary.LittleEndian, &blockHeight)
+	if err != nil {
+		return byte(255), nil, -1, nil, err
+	}
+	blockHeight = uint32(bigNumber - blockHeight)
+	Logger.log.Info("Testing in GetTransactionByHash, blockHeight", blockHeight)
+	block, err := self.GetBlockByBlockHeight(int32(blockHeight), chainId[0])
+	if err != nil {
+		Logger.log.Error("ERROR in GetTransactionByHash, get Block by height", err)
+		return byte(255), nil, -1, nil, err
+	}
+	//Get txIndex
+	tempTxIndex := []byte(locations[4])
+	bufTxIndex := bytes.NewBuffer(tempTxIndex)
+	err = binary.Read(bufTxIndex, binary.LittleEndian, &txIndex)
+	if err != nil {
+		return byte(255), nil, -1, nil, err
+	}
+	txIndex = uint32(bigNumberTx - txIndex)
+	Logger.log.Info("Testing in GetTransactionByHash, blockHash, index, tx", block.Hash(), txIndex, tx)
+	return chainId[0], block.Hash(), int(txIndex), &tx, nil
+}
+
+// GetTransactionByHash - retrieve tx from txId(txHash)
 func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, transaction.Transaction, error) {
 	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
 		// check lightweight
 		if self.config.Light {
-			// TODO get data with light mode
-			Logger.log.Info("ERROR in GetTransactionByHash", err)
-			const (
-				bigNumber   = 999999999
-				bigNumberTx = 999999999
-			)
-			var (
-				blockHeight uint32
-				txIndex     uint32
-				chainId     []byte
-			)
-			// Get transaction
-			tx := transaction.Tx{}
-			locationByte, txByte, err := self.config.DataBase.GetTransactionLightModeByHash(txHash)
-			Logger.log.Info("GetTransactionByHash - 1", locationByte, txByte, err)
-			if err != nil {
-				return byte(255), nil, -1, nil, err
-			}
-			err = json.Unmarshal(txByte, &tx)
-			if err != nil {
-				return byte(255), nil, -1, nil, err
-			}
-			// Handle string to get chainId, blockheight, txindex information
-			locations := strings.Split(string(locationByte), string("-"))
-			// Get Chain Id
-			chainId = []byte(locations[2])
-			// Get Block Height
-			tempBlockHeight := []byte(locations[3])
-			bufBlockHeight := bytes.NewBuffer(tempBlockHeight)
-			err = binary.Read(bufBlockHeight, binary.LittleEndian, &blockHeight)
-			if err != nil {
-				return byte(255), nil, -1, nil, err
-			}
-			blockHeight = uint32(bigNumber - blockHeight)
-			Logger.log.Info("Testing in GetTransactionByHash, blockHeight", blockHeight)
-			block, err := self.GetBlockByBlockHeight(int32(blockHeight), chainId[0])
-			if err != nil {
-				Logger.log.Error("ERROR in GetTransactionByHash, get Block by height", err)
-				return byte(255), nil, -1, nil, err
-			}
-			//Get txIndex
-			tempTxIndex := []byte(locations[4])
-			bufTxIndex := bytes.NewBuffer(tempTxIndex)
-			err = binary.Read(bufTxIndex, binary.LittleEndian, &txIndex)
-			if err != nil {
-				return byte(255), nil, -1, nil, err
-			}
-			txIndex = uint32(bigNumberTx - txIndex)
-			Logger.log.Info("Testing in GetTransactionByHash, blockHash, index, tx", block.Hash(), txIndex, tx)
-			return chainId[0], block.Hash(), int(txIndex), &tx, nil
+			// with light node, we can try get data in light mode
+			Logger.log.Info("ERROR in GetTransactionByHash, change to get in light mode", err)
+			return self.GetTransactionByHashInLightMode(txHash)
 		}
 
 		return byte(255), nil, -1, nil, err
@@ -1063,6 +1072,7 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 	return block.Header.ChainID, blockHash, index, block.Transactions[index], nil
 }
 
+// ListCustomToken - return all custom token which existed in network
 func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomToken, error) {
 	data, err := self.config.DataBase.ListCustomToken()
 	if err != nil {
@@ -1114,7 +1124,7 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 	return result, nil
 }
 
-// TODO(@0xsirrush): implement
+// GetListTokenHolders - return list paymentaddress (in hexstring) of someone who hold custom token in network
 func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]uint64, error) {
 	result, err := self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(tokenID)
 	if err != nil {
