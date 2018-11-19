@@ -1,6 +1,7 @@
 package main
 
 import (
+<<<<<<< HEAD
 	"fmt"
 	"math/big"
 	"time"
@@ -8,6 +9,9 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge-optimization"
+=======
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+>>>>>>> 62efb068dc461716fc9d58d656474ca75800bc78
 )
 
 func main() {
@@ -23,14 +27,15 @@ func main() {
 	//fmt.Printf("\nSpending key: %v\n", spendingKey)
 	//fmt.Println(len(spendingKey))
 
-	//address := privacy.GeneratePublicKey(spendingKey)
-	//fmt.Printf("\nAddress: %v\n", address)
-	//fmt.Println(len(address))
-	//point, err := privacy.DecompressKey(address)
+	// publicKey is compressed
+	//publicKey := privacy.GeneratePublicKey(spendingKey)
+	//fmt.Printf("\nPublic key: %v\n", publicKey)
+	//fmt.Printf("Len public key: %v\n", len(publicKey))
+	//point, err := privacy.DecompressKey(publicKey)
 	//if err != nil {
-	//	fmt.Println(err)
+	//fmt.Println(err)
 	//}
-	//fmt.Printf("Pk decom: %v\n", point)
+	//fmt.Printf("Public key decompress: %v\n", point)
 	//
 	//receivingKey := privacy.GenerateReceivingKey(spendingKey)
 	//fmt.Printf("\nReceiving key: %v\n", receivingKey)
@@ -62,7 +67,7 @@ func main() {
 	//}
 	//fmt.Printf("signature: %v\n", signature)
 	//
-	//valid := privacy-protocol.Verify(signature, hash[:], address)
+	//valid := privacy-protocol.Verify(signature, hash[:], publicKey)
 	//fmt.Println("\nsignature verified:", valid)
 	//
 	//tx, _ := transaction.CreateEmptyTxs()
@@ -80,6 +85,7 @@ func main() {
 	// privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestPKOneOfMany()
 
+<<<<<<< HEAD
 	// zkp.TestPKComZeroOne()
 	start := time.Now()
 	zkpoptimization.TestPKOneOfMany()
@@ -89,6 +95,14 @@ func main() {
 	zkp.TestPKOneOfMany()
 	end = time.Now()
 	fmt.Printf("%v\n", end.Sub(start))
+=======
+	//zkp.TestPKComZeroOne()
+
+
+	//zkp.TestProofIsZero()
+
+	zkp.TestPKOneOfMany()
+>>>>>>> 62efb068dc461716fc9d58d656474ca75800bc78
 
 	//zkp.TestPKMaxValue()
 	//privacy.Elcm.InitCommitment()
@@ -97,7 +111,7 @@ func main() {
 	//var zk zkp.ZKProtocols
 	//
 	//valueRand := privacy.RandBytes(32)
-	//vInt := new(big.Int).SetBytes(valueRand)
+	//vInt := new(big.Int).SetBytes(valueRagit rend)
 	//vInt.Mod(vInt, big.NewInt(2))
 	//rand := privacy.RandBytes(32)
 	//
@@ -114,26 +128,25 @@ func main() {
 	//proof, _ := zk.Prove()
 	//zk.SetProof(proof)
 	//fmt.Println(zk.Verify())
-	fmt.Printf("%v", privacy.TestECC())
-	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-
-	// publicKey is compressed
-	publicKey := privacy.GeneratePublicKey(spendingKey)
-	fmt.Printf("\nPublic key: %v\n", publicKey)
-	fmt.Printf("Len public key: %v\n", len(publicKey))
-	point := new(privacy.EllipticPoint)
-	point, err := privacy.DecompressKey(publicKey)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
-	fmt.Printf("\n %v\n", point.CompressPoint())
-	point, err = privacy.DecompressKey(point.CompressPoint())
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
-	fmt.Printf("\n %v\n", point.CompressPoint())
+	//fmt.Printf("%v", privacy.TestECC())
+	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	//
+	//// publicKey is compressed
+	//publicKey := privacy.GeneratePublicKey(spendingKey)
+	//fmt.Printf("\nPublic key: %v\n", publicKey)
+	//fmt.Printf("Len public key: %v\n", len(publicKey))
+	//point := new(privacy.EllipticPoint)
+	//point, err := privacy.DecompressKey(publicKey)
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
+	//fmt.Printf("\n %v\n", point.CompressPoint())
+	//point, err = privacy.DecompressKey(point.CompressPoint())
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
+	//fmt.Printf("\n %v\n", point.CompressPoint())
 	//zkp.TestPKComProduct()
-
 }

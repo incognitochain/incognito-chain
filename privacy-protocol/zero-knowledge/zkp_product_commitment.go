@@ -64,16 +64,7 @@ func (basePoint *BasePoint) InitBasePoint() {
 	basePoint.G = privacy.HashGenerator(*P)
 	basePoint.H = privacy.HashGenerator(basePoint.G)
 }
-// Random number modular N
 
-func computeCommitmentPoint(pointG privacy.EllipticPoint, pointH privacy.EllipticPoint, val1 *big.Int, val2 *big.Int) proofFactor{
-	factor:= new(proofFactor)
-	factor.X, factor.Y= privacy.Curve.ScalarMult(pointG.X, pointG.Y, val1.Bytes())
-	tmp:= new(proofFactor)
-	tmp.X, tmp.Y = privacy.Curve.ScalarMult(pointH.X, pointH.Y, val2.Bytes())
-	factor.X,factor.Y = privacy.Curve.Add(factor.X, factor.Y, tmp.X, tmp.Y)
-	return *factor;
-}
 func computeHashString(data [][]byte) []byte{
 	str:=make([]byte, 0)
 	for i:=0;i<len(data);i++{
@@ -88,7 +79,7 @@ func MultiScalarMul(factors  [] *big.Int, point privacy.EllipticPoint) *privacy.
 	a:=new(big.Int)
 	a.SetInt64(1)
 	for i:=0;i<len(factors);i++{
-			a.Mul(a,factors[i])
+		a.Mul(a,factors[i])
 	}
 	P:=new(privacy.EllipticPoint)
 	P.X, P.Y = privacy.Curve.ScalarMult(point.X, point.Y,a.Bytes());
@@ -116,32 +107,37 @@ func (pro *PKComProductProtocol) Prove() (*PKComProductProof,error) {
 	pro.Witness.cmB = privacy.Elcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessB,pro.Witness.randB)
 	pro.Witness.cmC = privacy.Elcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessAB,pro.Witness.randC)
 	//Compute D factor of Proof
-	D:= computeCommitmentPoint(proof.basePoint.G, proof.basePoint.H, d,s);
+	D:= privacy.Elcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H, d.Bytes(),s.Bytes());
 
 	//Compute D' factor of Proof
 	G1 := new(privacy.EllipticPoint)
 	G1,_= privacy.DecompressCommitment(pro.Witness.cmB);
-	D1:= computeCommitmentPoint(*G1,proof.basePoint.H, d,s1);
+	D1:= privacy.Elcm.CommitWithSpecPoint(*G1,proof.basePoint.H, d.Bytes(),s1.Bytes());
 
 
 
 	//Compute E factor of Proof
-	E:= computeCommitmentPoint(proof.basePoint.G,proof.basePoint.H, e,t)
-	proof.D = D;
-	proof.E = E;
- 	proof.D1 = D1;
+	E:= privacy.Elcm.CommitWithSpecPoint(proof.basePoint.G,proof.basePoint.H, e.Bytes(),t.Bytes())
+
+	D_temp,_ :=privacy.DecompressCommitment(D)
+	proof.D.X,proof.D.Y = D_temp.X, D_temp.Y
+	E_temp,_ :=privacy.DecompressCommitment(E);
+	proof.E.X, proof.E.Y = E_temp.X, E_temp.Y
+
+	D1_temp,_ :=privacy.DecompressCommitment(D1);
+	proof.D1.X, proof.D1.Y = D1_temp.X, D1_temp.Y
 	// x = hash(G||H||D||D1||E)
 	data:=[][]byte{
 		proof.basePoint.G.X.Bytes(),
 		proof.basePoint.G.Y.Bytes(),
 		proof.basePoint.H.Y.Bytes(),
 		proof.basePoint.H.Y.Bytes(),
-		D.X.Bytes(),
-		D.Y.Bytes(),
-		D1.X.Bytes(),
-		D1.Y.Bytes(),
-		E.X.Bytes(),
-		E.Y.Bytes(),
+		proof.D.X.Bytes(),
+		proof.D.Y.Bytes(),
+		proof.D1.X.Bytes(),
+		proof.D1.Y.Bytes(),
+		proof.E.X.Bytes(),
+		proof.E.Y.Bytes(),
 	}
 	x:=new(big.Int)
 	x.SetBytes(computeHashString(data))
@@ -219,37 +215,65 @@ func (pro *PKComProductProtocol) Verify () bool {
 	pts1.X, pts1.Y = privacy.Curve.ScalarMult(A.X, A.Y, x)
 	pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, pro.Proof.D.X,pro.Proof.D.Y);
 
-	com1 := computeCommitmentPoint(pro.Proof.basePoint.G,pro.Proof.basePoint.H, &pro.Proof.f1, &pro.Proof.z1)
+	com1 := privacy.Elcm.CommitWithSpecPoint(pro.Proof.basePoint.G,pro.Proof.basePoint.H, pro.Proof.f1.Bytes(), pro.Proof.z1.Bytes())
+	com1_temp,_:=privacy.DecompressCommitment(com1)
 
-	if (com1.X.Cmp(pts1.X)==0 && com1.Y.Cmp(pts1.Y)==0){
+
+
+
+
+	//fmt.Printf("Com1: %+v\n",com1_temp)
+	//fmt.Printf("pts1: %+v\n",pts1)
+	//
+
+
+
+	if (com1_temp.X.Cmp(pts1.X)==0 && com1_temp.Y.Cmp(pts1.Y)==0){
 		checkFlag +=1
-		println("Passed test 1")
-		}
+		fmt.Println("Passed test 1")
+	}
 	//Check witness 2: xB + E == 	Commit(f2,z2)
 	B:= new(privacy.EllipticPoint)
 	B,_ = privacy.DecompressCommitment(pro.Proof.cmB);
 	pts1.X, pts1.Y = privacy.Curve.ScalarMult(B.X, B.Y, x)
 	pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, pro.Proof.E.X,pro.Proof.E.Y);
-	com2 := computeCommitmentPoint(pro.Proof.basePoint.G,pro.Proof.basePoint.H, &pro.Proof.f2, &pro.Proof.z2)
+	com2 := privacy.Elcm.CommitWithSpecPoint(pro.Proof.basePoint.G,pro.Proof.basePoint.H, pro.Proof.f2.Bytes(), pro.Proof.z2.Bytes())
+	com2_temp,_:=privacy.DecompressCommitment(com2)
 
-	if (com2.X.Cmp(pts1.X)==0 && com2.Y.Cmp(pts1.Y)==0){
+	//
+	//fmt.Printf("Com2: %+v\n",com2_temp)
+	//fmt.Printf("pts2: %+v\n",pts1)
+
+
+
+	if (com2_temp.X.Cmp(pts1.X)==0 && com2_temp.Y.Cmp(pts1.Y)==0){
 		checkFlag +=1
-		println("Passed test 2")
+		fmt.Println("Passed test 2")
 	}
 	//  Check witness 3: xC + D1 == Commit'(f1,z3)
 	C := new(privacy.EllipticPoint)
 	C,_ = privacy.DecompressCommitment(pro.Proof.cmC);
 	pts1.X, pts1.Y = privacy.Curve.ScalarMult(C.X, C.Y, x)
 	pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, pro.Proof.D1.X,pro.Proof.D1.Y);
-	com3 := computeCommitmentPoint(pro.Proof.G1,pro.Proof.basePoint.H, &pro.Proof.f1, &pro.Proof.z3)
-	//fmt.Println(pts1)
-	//fmt.Println(com3)
-	if (com3.X.Cmp(pts1.X)==0 && com3.Y.Cmp(pts1.Y)==0){
+	com3 := privacy.Elcm.CommitWithSpecPoint(pro.Proof.G1,pro.Proof.basePoint.H, pro.Proof.f1.Bytes(), pro.Proof.z3.Bytes())
+	com3_temp,_:=privacy.DecompressCommitment(com3)
+
+
+	//
+	//fmt.Printf("Com3: %+v\n",com3_temp)
+	//fmt.Printf("pts3: %+v\n",pts1)
+
+
+
+
+
+	if (com3_temp.X.Cmp(pts1.X)==0 && com3_temp.Y.Cmp(pts1.Y)==0){
 		checkFlag +=1
-		println("Passed test 3")
+		fmt.Println("Passed test 3")
 	}
 	println(checkFlag)
 	if(checkFlag == 3) {
+		fmt.Println("Passed all test. This proof is valid.")
 		return true;
 	}
 	return false;
