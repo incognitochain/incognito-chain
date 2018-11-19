@@ -7,15 +7,18 @@ import (
 	"math/big"
 )
 
+//SchnPubKey denoted Schnorr Publickey
 type SchnPubKey struct {
 	PK, H EllipticPoint // PK = G^SK + H^R
 }
 
+//SchnPrivKey denoted Schnorr Privatekey
 type SchnPrivKey struct {
 	SK, R  *big.Int
 	PubKey *SchnPubKey
 }
 
+//SchnSignature denoted Schnorr Signature
 type SchnSignature struct {
 	E, S1, S2 *big.Int
 }
@@ -61,7 +64,7 @@ func (priKey *SchnPrivKey) KeyGen() {
 }
 
 //Sign is function which using for sign on hash array by privatekey
-func (priv SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
+func (priKey SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
 	if len(hash) != 32 {
 		return nil, errors.New("Hash length must be 32 bytes")
 	}
@@ -84,7 +87,7 @@ func (priv SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
 	t1.X, t1.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, k1.Bytes())
 
 	t2 := new(EllipticPoint)
-	t2.X, t2.Y = Curve.ScalarMult(priv.PubKey.H.X, priv.PubKey.H.Y, k2.Bytes())
+	t2.X, t2.Y = Curve.ScalarMult(priKey.PubKey.H.X, priKey.PubKey.H.Y, k2.Bytes())
 
 	t := new(EllipticPoint)
 	t.X, t.Y = Curve.Add(t1.X, t1.Y, t2.X, t2.Y)
@@ -92,13 +95,13 @@ func (priv SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
 	signature.E = Hash(*t, hash)
 
 	xe := new(big.Int)
-	xe.Mul(priv.SK, signature.E)
+	xe.Mul(priKey.SK, signature.E)
 	signature.S1 = new(big.Int)
 	signature.S1.Sub(k1, xe)
 	signature.S1.Mod(signature.S1, Curve.Params().N)
 
 	re := new(big.Int)
-	re.Mul(priv.R, signature.E)
+	re.Mul(priKey.R, signature.E)
 	signature.S2 = new(big.Int)
 	signature.S2.Sub(k2, re)
 	signature.S2.Mod(signature.S2, Curve.Params().N)
@@ -106,7 +109,7 @@ func (priv SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
 	return signature, nil
 }
 
-//Sign is function which using for verify that the given signature was signed by by privatekey of the public key
+//Verify is function which using for verify that the given signature was signed by by privatekey of the public key
 func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
 	if len(hash) != 32 {
 		return false
@@ -134,7 +137,7 @@ func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
 
 //---------------------------------------------------------------------------------------------------------
 
-// GenSchnPrivKey generates Schnorr private key
+// SchnGenPrivKey generates Schnorr private key
 func SchnGenPrivKey() *SchnPrivKey {
 	priv := new(SchnPrivKey)
 	xBytes := RandBytes(32)
