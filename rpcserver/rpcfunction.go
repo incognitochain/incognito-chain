@@ -1249,7 +1249,7 @@ getaccount RPC returns the name of the account associated with the given address
 */
 func (self RpcServer) handleGetAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	for _, account := range self.config.Wallet.MasterAccount.Child {
-		address := account.Key.Base58CheckSerialize(wallet.PubKeyType)
+		address := account.Key.Base58CheckSerialize(wallet.PaymentAddressType)
 		if address == params.(string) {
 			return account.Name, nil
 		}
@@ -1306,7 +1306,7 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	return wallet.KeySerializedData{
-		PaymentAddress: account.Key.Base58CheckSerialize(wallet.PubKeyType),
+		PaymentAddress: account.Key.Base58CheckSerialize(wallet.PaymentAddressType),
 		ReadonlyKey:    account.Key.Base58CheckSerialize(wallet.ReadonlyKeyType),
 	}, nil
 }

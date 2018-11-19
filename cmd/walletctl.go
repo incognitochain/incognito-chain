@@ -8,6 +8,8 @@ import (
 	"errors"
 )
 
+var walletObj *wallet.Wallet
+
 func loadWallet() (*wallet.Wallet, error) {
 	var walletObj *wallet.Wallet
 	walletObj = &wallet.Wallet{}
@@ -53,16 +55,39 @@ func listAccounts() (interface{}, error) {
 	return accounts, err
 }
 
-func getAccount() (interface{}, error) {
-	walletObj, err := loadWallet()
+func getAccount(accountName string) (interface{}, error) {
+	var err error
+	walletObj, err = loadWallet()
 	if err != nil {
 		return nil, err
 	}
 	accounts := walletObj.ListAccounts()
 	for _, account := range accounts {
-		if cfg.WalletAccountName == account.Name {
+		if accountName == account.Name {
 			return account, nil
 		}
 	}
 	return nil, errors.New("Not found")
+}
+
+func createAccount(accountName string) (interface{}, error) {
+	account, err := getAccount(accountName)
+	if err != nil {
+		return nil, err
+	}
+	if account != nil {
+		return nil, errors.New("Existed account")
+	}
+
+	if walletObj != nil {
+		account1 := walletObj.CreateNewAccount(accountName)
+		if account1 == nil {
+			return nil, errors.New("Can not create account")
+		}
+		log.Printf("Create account '%s' successfully", accountName)
+		log.Printf("Private key: %s", account1.Key.Base58CheckSerialize(wallet.PriKeyType))
+		log.Printf("Payment address: %s", account1.Key.Base58CheckSerialize(wallet.PaymentAddressType))
+		log.Printf("Readonly key: %s", account1.Key.Base58CheckSerialize(wallet.ReadonlyKeyType))
+		return account, nil
+	}
 }
