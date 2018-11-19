@@ -8,7 +8,6 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
@@ -196,14 +195,6 @@ concludeBlock:
 	salaryFundAdd := uint64(0)
 	salaryMULTP := uint64(0) //salary multiplier
 	for _, blockTx := range txsToAdd {
-		// if blockTx.GetType() == common.TxRegisterCandidateType {
-		// 	tx, ok := blockTx.(*transaction.TxRegisterCandidate)
-		// 	if !ok {
-		// 		Logger.log.Error("Transaction not recognized to store in database")
-		// 		continue
-		// 	}
-		// 	salaryFundAdd += tx.GetValue()
-		// }
 		if blockTx.GetTxFee() > 0 {
 			salaryMULTP++
 		}
@@ -214,7 +205,7 @@ concludeBlock:
 	// ------------------------------------------------------------------------
 	totalSalary := salaryMULTP*salaryPerTx + basicSalary
 	// create salary tx to pay constant for block producer
-	salaryTx, err := createSalaryTx(totalSalary, &payToAddress, rt, chainID)
+	salaryTx, err := transaction.CreateTxSalary(totalSalary, &payToAddress, rt, chainID)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -273,7 +264,9 @@ concludeBlock:
 		DCBConstitution:       prevBlock.Header.DCBConstitution, // TODO: need get from dcb-params tx
 		LoanParams:            prevBlock.Header.LoanParams,
 	}
-	block.Header.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= bondsSold
+	if block.Header.GOVConstitution.GOVParams.SellingBonds != nil {
+		block.Header.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= bondsSold
+	}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
@@ -374,55 +367,6 @@ func (blockgen *BlkTmplGenerator) neededNewGovConstitution(chainID byte) bool {
 		return true
 	}
 	return false
-}
-
-// createSalaryTx
-// Blockchain use this tx to pay a reward(salary) to miner of chain
-// #1 - salary:
-// #2 - receiverAddr:
-// #3 - rt
-// #4 - chainID
-func createSalaryTx(
-	salary uint64,
-	receiverAddr *privacy.PaymentAddress,
-	rt []byte,
-	chainID byte,
-) (*transaction.Tx, error) {
-	// Create Proof for the joinsplit op
-	inputs := make([]*client.JSInput, 2)
-	inputs[0] = transaction.CreateRandomJSInput(nil)
-	inputs[1] = transaction.CreateRandomJSInput(inputs[0].Key)
-	dummyAddress := client.GenPaymentAddress(*inputs[0].Key)
-
-	// Create new notes: first one is salary UTXO, second one has 0 value
-	outNote := &client.Note{Value: salary, Apk: receiverAddr.Pk}
-	placeHolderOutputNote := &client.Note{Value: 0, Apk: receiverAddr.Pk}
-
-	outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
-	outputs[0].EncKey = receiverAddr.Tk
-	outputs[0].OutputNote = outNote
-	outputs[1].EncKey = receiverAddr.Tk
-	outputs[1].OutputNote = placeHolderOutputNote
-
-	// Generate proof and sign tx
-	tx, err := transaction.CreateEmptyTx(common.TxSalaryType)
-	if err != nil {
-		return nil, NewBlockChainError(UnExpectedError, err)
-	}
-	tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
-	rtMap := map[byte][]byte{chainID: rt}
-	inputMap := map[byte][]*client.JSInput{chainID: inputs}
-
-	// NOTE: always pay salary with constant coin
-	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0, true)
-	if err != nil {
-		return nil, NewBlockChainError(UnExpectedError, err)
-	}
-	err = tx.SignTx()
-	if err != nil {
-		return nil, NewBlockChainError(UnExpectedError, err)
-	}
-	return tx, nil
 }
 
 func (blockgen *BlkTmplGenerator) createRequestConstitutionTxDecs(
