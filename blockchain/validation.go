@@ -438,3 +438,28 @@ func (bc *BlockChain) VerifyCustomTokenSigns(tx transaction.Transaction) bool {
 func (self *BlockChain) ValidateTxBuyRequest(tx transaction.Transaction, chainID byte) error {
 	return nil
 }
+
+//validate voting transaction
+func (bc *BlockChain) ValidateTxSubmitDCBProposal(tx transaction.Transaction, chainID byte) error {
+	return nil
+}
+
+func (bc *BlockChain) ValidateTxAcceptDCBProposal(tx transaction.Transaction, chainID byte) error {
+	return nil
+}
+
+func (bc *BlockChain) ValidateTxVoteDCBProposal(tx transaction.Transaction, chainID byte) error {
+	return nil
+}
+
+func (bc *BlockChain) ValidateTxSubmitGOVProposal(tx transaction.Transaction, chainID byte) error {
+	return nil
+}
+
+func (bc *BlockChain) ValidateTxAcceptGOVProposal(tx transaction.Transaction, chainID byte) error {
+	return nil
+}
+
+func (bc *BlockChain) ValidateTxVoteGOVProposal(tx transaction.Transaction, chainID byte) error {
+	return nil
+}

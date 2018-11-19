@@ -361,6 +361,30 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 		{
 			return blockChain.ValidateTxBuyRequest(tx, chainID)
 		}
+	case common.TxSubmitDCBProposal:
+		{
+			return blockChain.ValidateTxSubmitDCBProposal(tx, chainID)
+		}
+	case common.TxAcceptDCBProposal:
+		{
+			return blockChain.ValidateTxAcceptDCBProposal(tx, chainID)
+		}
+	case common.TxVoteDCBProposal:
+		{
+			return blockChain.ValidateTxVoteDCBProposal(tx, chainID)
+		}
+	case common.TxSubmitGOVProposal:
+		{
+			return blockChain.ValidateTxSubmitGOVProposal(tx, chainID)
+		}
+	case common.TxAcceptGOVProposal:
+		{
+			return blockChain.ValidateTxAcceptGOVProposal(tx, chainID)
+		}
+	case common.TxVoteGOVProposal:
+		{
+			return blockChain.ValidateTxVoteGOVProposal(tx, chainID)
+		}
 	}
 	return nil
 }
