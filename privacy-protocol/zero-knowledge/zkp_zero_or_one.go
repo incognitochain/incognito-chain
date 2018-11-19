@@ -2,8 +2,9 @@ package zkp
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 	"math/big"
+
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 // PKComZeroOneProtocol is a protocol for Zero-knowledge Proof of Knowledge of committed zero or one
@@ -15,10 +16,10 @@ type PKComZeroOneProtocol struct {
 
 // PKComZeroOneProof contains Proof's value
 type PKComZeroOneProof struct {
-	ca, cb    	[]byte // 34 bytes
-	f, za, zb 	[]byte //32 bytes
-	commitment 	[]byte // 34 bytes
-	index 			byte
+	ca, cb     []byte // 34 bytes
+	f, za, zb  []byte //32 bytes
+	commitment []byte // 34 bytes
+	index      byte
 }
 
 // PKComZeroOneProof contains Proof's value
@@ -43,7 +44,6 @@ func getindex(bigint *big.Int) int {
 	return 32 - len(bigint.Bytes())
 }
 
-
 // Prove creates a Proof for Commitment to zero or one
 func (pro *PKComZeroOneProtocol) Prove() (*PKComZeroOneProof, error) {
 	// Check Index
@@ -64,15 +64,15 @@ func (pro *PKComZeroOneProtocol) Prove() (*PKComZeroOneProof, error) {
 	// Generate random numbers
 	a := privacy.RandBytes(32)
 	aInt := new(big.Int).SetBytes(a)
-	aInt.Mod(aInt,  privacy.Curve.Params().N)
+	aInt.Mod(aInt, privacy.Curve.Params().N)
 
 	s := privacy.RandBytes(32)
 	sInt := new(big.Int).SetBytes(s)
-	sInt.Mod(sInt,  privacy.Curve.Params().N)
+	sInt.Mod(sInt, privacy.Curve.Params().N)
 
 	t := privacy.RandBytes(32)
 	tInt := new(big.Int).SetBytes(t)
-	tInt.Mod(tInt,  privacy.Curve.Params().N)
+	tInt.Mod(tInt, privacy.Curve.Params().N)
 
 	// Calculate ca, cb
 	proof.ca = make([]byte, 34)
@@ -94,7 +94,6 @@ func (pro *PKComZeroOneProtocol) Prove() (*PKComZeroOneProof, error) {
 	f.Add(f, aInt)
 	f.Mod(f, privacy.Curve.Params().N)
 	proof.f = f.Bytes()
-
 
 	// Calculate za = rx + s
 	za := big.NewInt(1)
@@ -123,7 +122,6 @@ func (pro *PKComZeroOneProtocol) Prove() (*PKComZeroOneProof, error) {
 	point2 := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
 	point2.X, point2.Y = privacy.Elcm.G[privacy.CM_CAPACITY-1].X, privacy.Elcm.G[privacy.CM_CAPACITY-1].Y
 	point2.X, point2.Y = privacy.Curve.ScalarMult(point2.X, point2.Y, xr.Bytes())
-
 
 	point.X, point.Y = privacy.Curve.Add(point.X, point.Y, point2.X, point2.Y)
 
@@ -232,7 +230,7 @@ func TestPKComZeroOne() {
 	//coin.CommitAll()
 	//fmt.Println(coin.CoinCommitment)
 	res := true
-	for  res{
+	for res {
 		valueRand := privacy.RandBytes(32)
 		vInt := new(big.Int).SetBytes(valueRand)
 		vInt.Mod(vInt, big.NewInt(2))

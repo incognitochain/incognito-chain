@@ -89,6 +89,7 @@ func GeneratePublicKey(spendingKey []byte) PublicKey {
 	p.X, p.Y = Curve.ScalarBaseMult(spendingKey)
 	//Logger.log.Infof("p.X: %v\n", p.X)
 	//Logger.log.Infof("p.Y: %v\n", p.Y)
+	fmt.Printf("\n%v %v \n", p.X.Bytes(), p.Y.Bytes())
 	publicKey := p.CompressPoint()
 
 	return publicKey
