@@ -71,16 +71,17 @@ func getAccount(accountName string) (interface{}, error) {
 }
 
 func createAccount(accountName string) (interface{}, error) {
-	account, err := getAccount(accountName)
-	if err != nil {
-		return nil, err
-	}
+	account, _ := getAccount(accountName)
 	if account != nil {
 		return nil, errors.New("Existed account")
 	}
 
 	if walletObj != nil {
 		account1 := walletObj.CreateNewAccount(accountName)
+		err := walletObj.Save(cfg.WalletPassphrase)
+		if err != nil {
+			return nil, err
+		}
 		if account1 == nil {
 			return nil, errors.New("Can not create account")
 		}
