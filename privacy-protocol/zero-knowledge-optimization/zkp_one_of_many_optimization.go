@@ -3,6 +3,7 @@ package zkpoptimization
 import (
 	"fmt"
 	"math/big"
+	"math/bits"
 	"sync"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -36,16 +37,28 @@ func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int, com
 	N := len(commitments)
 	proof := new(PKOneOfManyProof)
 	// Check the number of Commitment list's elements
-	temp := 1
-	n := 0
-	for temp < N {
-		temp = temp << 1
-		n++
-	}
+	// st := time.Now()
+	// temp := 1
+	// n := 0
+	// for (temp < N) && (n <= 16) {
+	// 	temp = temp << 1
+	// 	n++
+	// }
+	// if temp != N {
+	// 	return nil, fmt.Errorf("the number of Commitment list's elements must be power of two and less than 2^16")
+	// }
+	// end := time.Now()
+	// fmt.Println(end.Sub(st))
 
-	if temp != N {
-		return nil, fmt.Errorf("the number of Commitment list's elements must be power of two")
+	// st = time.Now()
+	n := bits.TrailingZeros(uint(N))
+	if (n > 16) || (n+bits.LeadingZeros(uint(N)) != 63) {
+		return nil, fmt.Errorf("the number of Commitment list's elements must be power of two and less than 2^16")
 	}
+	// end = time.Now()
+	// fmt.Println(end.Sub(st))
+
+	// fmt.Println(n1 - n)
 
 	// Check indexIsZero
 	if indexIsZero > N || index < 0 {
@@ -213,11 +226,9 @@ func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int, com
 func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyProof, index byte, rand []byte) bool {
 	N := len(commitments)
 
-	temp := 1
-	n := 0
-	for temp < N {
-		temp = temp << 1
-		n++
+	n := bits.TrailingZeros(uint(N))
+	if (n > 16) || (n+bits.LeadingZeros(uint(N)) != 63) {
+		return false
 	}
 	clPoint := make([]*privacy.EllipticPoint, n+1)
 	caPoint := make([]*privacy.EllipticPoint, n+1)

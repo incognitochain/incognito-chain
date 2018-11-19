@@ -1,17 +1,7 @@
 package main
 
 import (
-<<<<<<< HEAD
-	"fmt"
-	"math/big"
-	"time"
-
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge-optimization"
-=======
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
->>>>>>> 62efb068dc461716fc9d58d656474ca75800bc78
 )
 
 func main() {
@@ -85,24 +75,15 @@ func main() {
 	// privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestPKOneOfMany()
 
-<<<<<<< HEAD
 	// zkp.TestPKComZeroOne()
-	start := time.Now()
+	// start := time.Now()
 	zkpoptimization.TestPKOneOfMany()
-	end := time.Now()
-	fmt.Printf("%v\n", end.Sub(start))
-	start = time.Now()
-	zkp.TestPKOneOfMany()
-	end = time.Now()
-	fmt.Printf("%v\n", end.Sub(start))
-=======
-	//zkp.TestPKComZeroOne()
-
-
-	//zkp.TestProofIsZero()
-
-	zkp.TestPKOneOfMany()
->>>>>>> 62efb068dc461716fc9d58d656474ca75800bc78
+	// end := time.Now()
+	// fmt.Printf("%v\n", end.Sub(start))
+	// start = time.Now()
+	// zkp.TestPKOneOfMany()
+	// end = time.Now()
+	// fmt.Printf("%v\n", end.Sub(start))
 
 	//zkp.TestPKMaxValue()
 	//privacy.Elcm.InitCommitment()
