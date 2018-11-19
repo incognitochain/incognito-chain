@@ -1,12 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"math/big"
-
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 func main() {
@@ -80,12 +75,12 @@ func main() {
 	// privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestPKOneOfMany()
 
-	zkp.TestPKComZeroOne()
+	//zkp.TestPKComZeroOne()
 
 
 	//zkp.TestProofIsZero()
 
-	//zkp.TestPKOneOfMany()
+	zkp.TestPKOneOfMany()
 
 	//zkp.TestPKMaxValue()
 	//privacy.Elcm.InitCommitment()
@@ -111,26 +106,26 @@ func main() {
 	//proof, _ := zk.Prove()
 	//zk.SetProof(proof)
 	//fmt.Println(zk.Verify())
-	fmt.Printf("%v", privacy.TestECC())
-	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-
-	// publicKey is compressed
-	publicKey := privacy.GeneratePublicKey(spendingKey)
-	fmt.Printf("\nPublic key: %v\n", publicKey)
-	fmt.Printf("Len public key: %v\n", len(publicKey))
-	point := new(privacy.EllipticPoint)
-	point, err := privacy.DecompressKey(publicKey)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
-	fmt.Printf("\n %v\n", point.CompressPoint())
-	point, err = privacy.DecompressKey(point.CompressPoint())
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
-	fmt.Printf("\n %v\n", point.CompressPoint())
+	//fmt.Printf("%v", privacy.TestECC())
+	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	//
+	//// publicKey is compressed
+	//publicKey := privacy.GeneratePublicKey(spendingKey)
+	//fmt.Printf("\nPublic key: %v\n", publicKey)
+	//fmt.Printf("Len public key: %v\n", len(publicKey))
+	//point := new(privacy.EllipticPoint)
+	//point, err := privacy.DecompressKey(publicKey)
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
+	//fmt.Printf("\n %v\n", point.CompressPoint())
+	//point, err = privacy.DecompressKey(point.CompressPoint())
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
+	//fmt.Printf("\n %v\n", point.CompressPoint())
 	//zkp.TestPKComProduct()
 
 }
