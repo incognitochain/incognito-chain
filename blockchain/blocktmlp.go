@@ -493,7 +493,7 @@ func (blockgen *BlkTmplGenerator) processGovDividend(rt []byte, chainID byte, bl
 }
 
 func buildSingleBuySellResponseTx(
-	buySellReqTx *transaction.BuySellRequestTx,
+	buySellReqTx *transaction.TxBuySellRequest,
 	sellingBondsParam *SellingBonds,
 ) transaction.TxTokenVout {
 	buyBackInfo := &transaction.BuyBackInfo{
@@ -523,7 +523,7 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 		return 0, 0, false
 	}
 
-	reqTx, ok := tx.(*transaction.BuySellRequestTx)
+	reqTx, ok := tx.(*transaction.TxBuySellRequest)
 	if !ok {
 		return 0, 0, false
 	}
@@ -553,7 +553,7 @@ func buildBuySellResponsesTx(
 	}
 	var txTokenVouts []transaction.TxTokenVout
 	for _, reqTx := range buySellReqTxs {
-		tx, _ := reqTx.(*transaction.BuySellRequestTx)
+		tx, _ := reqTx.(*transaction.TxBuySellRequest)
 		txTokenVout := buildSingleBuySellResponseTx(tx, sellingBondsParam)
 		txTokenVouts = append(txTokenVouts, txTokenVout)
 	}
@@ -568,11 +568,11 @@ func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
 	tx transaction.Transaction,
 	buyBackConsts uint64,
 ) (*transaction.TxTokenVout, *common.Hash, bool) {
-	buyBackReqTx, ok := tx.(*transaction.BuyBackRequestTx)
+	txBuyBackReq, ok := tx.(*transaction.TxBuyBackRequest)
 	if !ok {
 		return nil, nil, false
 	}
-	_, _, _, buyFromGOVReqTx, err := blockgen.chain.GetTransactionByHash(buyBackReqTx.BuyBackFromTxID)
+	_, _, _, buyFromGOVReqTx, err := blockgen.chain.GetTransactionByHash(txBuyBackReq.BuyBackFromTxID)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, nil, false
@@ -581,7 +581,7 @@ func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
 	if !ok {
 		return nil, nil, false
 	}
-	vout := customTokenTx.TxTokenData.Vouts[buyBackReqTx.VoutIndex]
+	vout := customTokenTx.TxTokenData.Vouts[txBuyBackReq.VoutIndex]
 	buyBackInfo := vout.BuySellResponse.BuyBackInfo
 	if buyBackInfo == nil {
 		Logger.log.Error("Missing buy-back info")
