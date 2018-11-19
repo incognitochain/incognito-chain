@@ -80,7 +80,7 @@ func main() {
 
 	//zkp.TestProofIsZero()
 
-	//zkp.TestPKOneOfMany()
+	zkp.TestPKOneOfMany()
 
 	//zkp.TestPKMaxValue()
 	//privacy.Elcm.InitCommitment()
@@ -126,6 +126,5 @@ func main() {
 	//}
 	//fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
 	//fmt.Printf("\n %v\n", point.CompressPoint())
-	zkp.TestPKComProduct()
-
+	//zkp.TestPKComProduct()
 }

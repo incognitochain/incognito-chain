@@ -75,6 +75,7 @@ func (priKey SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
 
 	signature := new(SchnSignature)
 
+	// generates random numbers k1, k2 in [0, Curve.Params().N - 1]
 	k1Bytes := RandBytes(32)
 	k1 := new(big.Int).SetBytes(k1Bytes)
 	k1.Mod(k1, Curve.Params().N)
@@ -83,23 +84,29 @@ func (priKey SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
 	k2 := new(big.Int).SetBytes(k2Bytes)
 	k2.Mod(k2, Curve.Params().N)
 
+	// t1 = G^k1
 	t1 := new(EllipticPoint)
 	t1.X, t1.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, k1.Bytes())
 
+	// t2 = H^k2
 	t2 := new(EllipticPoint)
 	t2.X, t2.Y = Curve.ScalarMult(priKey.PubKey.H.X, priKey.PubKey.H.Y, k2.Bytes())
 
+	// t = t1 + t2
 	t := new(EllipticPoint)
 	t.X, t.Y = Curve.Add(t1.X, t1.Y, t2.X, t2.Y)
 
+	// E is the hash of elliptic point t and data need to be signed
 	signature.E = Hash(*t, hash)
 
+	// xe = Sk * e
 	xe := new(big.Int)
 	xe.Mul(priKey.SK, signature.E)
 	signature.S1 = new(big.Int)
 	signature.S1.Sub(k1, xe)
 	signature.S1.Mod(signature.S1, Curve.Params().N)
 
+	// re = R * e
 	re := new(big.Int)
 	re.Mul(priKey.R, signature.E)
 	signature.S2 = new(big.Int)
@@ -182,7 +189,7 @@ func SchnSign(hash []byte, priv SchnPrivKey) (*SchnSignature, error) {
 
 	signature := new(SchnSignature)
 
-	// generates random numbers k1, k2 in (0, Curve.Params().N)
+	// generates random numbers k1, k2 in [0, Curve.Params().N - 1]
 	k1Bytes := RandBytes(32)
 	k1 := new(big.Int).SetBytes(k1Bytes)
 	k1.Mod(k1, Curve.Params().N)
@@ -191,24 +198,29 @@ func SchnSign(hash []byte, priv SchnPrivKey) (*SchnSignature, error) {
 	k2 := new(big.Int).SetBytes(k2Bytes)
 	k2.Mod(k2, Curve.Params().N)
 
-
+	// t1 = G^k1
 	t1 := new(EllipticPoint)
 	t1.X, t1.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, k1.Bytes())
 
+	// t2 = H^k2
 	t2 := new(EllipticPoint)
 	t2.X, t2.Y = Curve.ScalarMult(priv.PubKey.H.X, priv.PubKey.H.Y, k2.Bytes())
 
+	// t = t1 + t2
 	t := new(EllipticPoint)
 	t.X, t.Y = Curve.Add(t1.X, t1.Y, t2.X, t2.Y)
 
+	// E is the hash of elliptic point t and data need to be signed
 	signature.E = Hash(*t, hash)
 
+	// xe = Sk * e
 	xe := new(big.Int)
 	xe.Mul(priv.SK, signature.E)
 	signature.S1 = new(big.Int)
 	signature.S1.Sub(k1, xe)
 	signature.S1.Mod(signature.S1, Curve.Params().N)
 
+	// re = R * e
 	re := new(big.Int)
 	re.Mul(priv.R, signature.E)
 	signature.S2 = new(big.Int)
