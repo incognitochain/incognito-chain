@@ -319,3 +319,19 @@ func (com ElCParams) TestFunction(testCode byte) bool {
 	}
 	return true
 }
+
+//CompressCommitment from 64 bytes to 34 bytes (include bytes index)
+func CompressCommitment(cmPoint EllipticPoint, typeCommitment byte) []byte {
+	var commitment []byte
+	commitment = append(commitment, typeCommitment)
+	commitment = append(commitment, cmPoint.CompressPoint()...)
+	return commitment
+}
+
+// DecompressCommitment decompress commitment byte array
+func DecompressCommitment(commitment []byte) (point *EllipticPoint, err error) {
+	//typeCommitment := commitment[0]
+	//fmt.Printf("Type Commmitment: %v\n", typeCommitment)
+	//Decompress the second component's commitment
+	return DecompressKey(commitment[34:67])
+}
