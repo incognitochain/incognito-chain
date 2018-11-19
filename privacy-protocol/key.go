@@ -154,14 +154,6 @@ func GeneratePaymentAddress(spendingKey []byte) PaymentAddress {
 //	return *point
 //}
 
-//CompressCommitment from 64 bytes to 34 bytes (include bytes index)
-func CompressCommitment(cmPoint EllipticPoint, typeCommitment byte) []byte {
-	var commitment []byte
-	commitment = append(commitment, typeCommitment)
-	commitment = append(commitment, cmPoint.CompressPoint()...)
-	return commitment
-}
-
 func isOdd(a *big.Int) bool {
 	return a.Bit(0) == 1
 }
@@ -189,14 +181,6 @@ func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
 		return nil, fmt.Errorf("pubkey isn't on P256 curve")
 	}
 	return pubkey, nil
-}
-
-// DecompressCommitment decompress commitment byte array
-func DecompressCommitment(commitment []byte) (point *EllipticPoint, err error) {
-	//typeCommitment := commitment[0]
-	//fmt.Printf("Type Commmitment: %v\n", typeCommitment)
-	//Decompress the second component's commitment
-	return DecompressKey(commitment[34:67])
 }
 
 // PAdd1Div4 computes (p + 1) mod 4
