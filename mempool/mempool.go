@@ -165,7 +165,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 		return nil, nil, err
 	}
 
-	// Validate tx by it self
+	// ValidateTransaction tx by it self
 	validate := tx.ValidateTransaction()
 	if !validate {
 		err := MempoolTxError{}
@@ -190,7 +190,7 @@ func (tp *TxPool) removeTx(tx *transaction.Transaction) error {
 	return nil
 }
 
-// Validate sanity for normal tx data
+// ValidateTransaction sanity for normal tx data
 func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 	txN := tx
 	//check version

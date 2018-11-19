@@ -1,16 +1,21 @@
 package transaction
 
-import "github.com/ninjadotorg/constant/common"
+import (
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+)
 
 type BuySellRequestTx struct {
 	*RequestInfo
-	*Tx
+	*Tx // fee + amount to pay for buying bonds/govs
+	// TODO: signature?
 }
 
 type RequestInfo struct {
-	AssetType string
-	Amount    uint64
-	BuyPrice  uint64 // in Constant unit
+	PaymentAddress privacy.PaymentAddress
+	AssetType      string
+	Amount         uint64
+	BuyPrice       uint64 // in Constant unit
 }
 
 // CreateBuySellRequestTx
@@ -34,11 +39,12 @@ func CreateBuySellRequestTx(
 		return nil, err
 	}
 
-	BuySellRequestTx := &BuySellRequestTx{
+	buySellRequestTx := &BuySellRequestTx{
 		RequestInfo: requestInfo,
 		Tx:          tx,
 	}
-	return BuySellRequestTx, nil
+	buySellRequestTx.Type = common.TxBuyFromGOVRequest
+	return buySellRequestTx, nil
 }
 
 func (tx *BuySellRequestTx) Hash() *common.Hash {
