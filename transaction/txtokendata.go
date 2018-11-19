@@ -5,19 +5,21 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/pkg/errors"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type BuyBackInfo struct {
-	Maturity     uint32
-	BuyBackPrice uint64 // in Constant unit
+	StartSellingAt uint32
+	Maturity       uint32
+	BuyBackPrice   uint64 // in Constant unit
 }
 
 type BuySellResponse struct {
-	BuyBackInfo *BuyBackInfo
-	AssetID     string // only bond for now - encoded string of compound values (Maturity + BuyBackPrice + StartSellingAt) from SellingBonds param
+	BuyBackInfo   *BuyBackInfo
+	AssetID       string // only bond for now - encoded string of compound values (Maturity + BuyBackPrice + StartSellingAt) from SellingBonds param
+	RequestedTxID *common.Hash
 }
 
 // TxTokenVin ...
@@ -47,6 +49,7 @@ type TxTokenVout struct {
 	BondID          string // Temporary
 	index           int
 	txCustomTokenID common.Hash
+	BuySellResponse *BuySellResponse
 }
 
 func (self TxTokenVout) Hash() *common.Hash {
@@ -76,10 +79,9 @@ func (self TxTokenVout) GetTxCustomTokenID() common.Hash {
 
 // TxTokenData ...
 type TxTokenData struct {
-	PropertyID      common.Hash // = hash of TxTokenData data
-	PropertyName    string
-	PropertySymbol  string
-	BuySellResponse *BuySellResponse
+	PropertyID     common.Hash // = hash of TxTokenData data
+	PropertyName   string
+	PropertySymbol string
 
 	Type   int // action type
 	Amount uint64

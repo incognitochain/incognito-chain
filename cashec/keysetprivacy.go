@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/common"
 )
 
 type KeySet struct {
@@ -43,31 +44,17 @@ func (self *KeySet) ImportFromPrivateKey(privateKey *privacy.SpendingKey) {
 	self.ReadonlyKey = privacy.GenerateViewingKey(self.PrivateKey[:])
 }
 
-/*
-Generate Producer keyset from privacy-protocol key set
-*/
-/*func (self *KeySet) CreateProducerKeySet() (*KeySetProducer, error) {
-	var producerKeySet KeySetProducer
-	producerKeySet.GenerateKey(self.PrivateKey[:])
-	producerKeySet.SpendingAddress = self.PaymentAddress.Apk
-	producerKeySet.TransmissionKey = self.PaymentAddress.Pkenc
-	producerKeySet.ReceivingKey = self.ReadonlyKey.Skenc
-	return &producerKeySet, nil
-}*/
-
 func (self *KeySet) Verify(data, signature []byte) (bool, error) {
-	/*isValid := false
+	isValid := false
 	hash := common.HashB(data)
-	isValid = privacy-protocol.Verify(signature, hash[:], self.PaymentAddress.Pk)
-	return isValid, nil*/
-	return true, nil
+	isValid = privacy.Verify(signature, hash[:], self.PaymentAddress.Pk)
+	return isValid, nil
 }
 
 func (self *KeySet) Sign(data []byte) ([]byte, error) {
-	/*hash := common.HashB(data)
-	signature, err := privacy-protocol.Sign(hash[:], self.PrivateKey)
-	return signature, err*/
-	return []byte{}, nil
+	hash := common.HashB(data)
+	signature, err := privacy.Sign(hash[:], self.PrivateKey)
+	return signature, err
 }
 
 func (self *KeySet) Encrypt(data []byte) ([]byte, error) {
