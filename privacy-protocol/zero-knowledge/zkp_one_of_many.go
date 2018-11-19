@@ -8,7 +8,7 @@ import (
 )
 
 // PKOneOfManyProtocol is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
-// include Witness: commitedValue, r []byte
+// include Witness: CommitedValue, r []byte
 type PKOneOfManyProtocol struct {
 	witnesses [][]byte
 }
@@ -34,7 +34,7 @@ func (pro *PKOneOfManyProtocol) SetWitness(witnesses [][]byte) {
 func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int, commitmentValue []byte, rand []byte, index byte) (*PKOneOfManyProof, error) {
 	N := len(commitments)
 	proof := new(PKOneOfManyProof)
-	// Check the number of commitment list's elements
+	// Check the number of Commitment list's elements
 	temp := 1
 	n := 0
 	for temp < N {
@@ -43,17 +43,17 @@ func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int, com
 	}
 
 	if temp != N {
-		return nil, fmt.Errorf("the number of commitment list's elements must be power of two")
+		return nil, fmt.Errorf("the number of Commitment list's elements must be power of two")
 	}
 
 	// Check indexIsZero
 	if indexIsZero > N || index < 0 {
-		return nil, fmt.Errorf("index is zero must be index in list of commitments")
+		return nil, fmt.Errorf("Index is zero must be Index in list of commitments")
 	}
 
-	// Check index
-	if index < 0 || index > 2 {
-		return nil, fmt.Errorf("index must be between 0 and 2")
+	// Check Index
+	if index < 1 || index > 4 {
+		return nil, fmt.Errorf("Index must be between 1 and 4")
 	}
 
 	// represent indexIsZero in binary
@@ -90,18 +90,18 @@ func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int, com
 		// Calculate cl, ca, cb, cd
 		// cl = Com(l, r)
 		proof.cl[j] = make([]byte, 34)
-		proof.cl[j] = privacy.Pcm.CommitSpecValue(indexInt.Bytes(), r[j], index)
+		proof.cl[j] = privacy.Elcm.CommitSpecValue(indexInt.Bytes(), r[j], index)
 
 		// ca = Com(a, s)
 		proof.ca[j] = make([]byte, 34)
-		proof.ca[j] = privacy.Pcm.CommitSpecValue(a[j], s[j], index)
+		proof.ca[j] = privacy.Elcm.CommitSpecValue(a[j], s[j], index)
 
 		// cb = Com(la, t)
 		la := new(big.Int)
 		la.Mul(indexInt, new(big.Int).SetBytes(a[j]))
 		la.Mod(la, privacy.Curve.Params().N)
 		proof.cb[j] = make([]byte, 34)
-		proof.cb[j] = privacy.Pcm.CommitSpecValue(la.Bytes(), t[j], index)
+		proof.cb[j] = privacy.Elcm.CommitSpecValue(la.Bytes(), t[j], index)
 	}
 
 	//
@@ -127,7 +127,7 @@ func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int, com
 			res.X, res.Y = privacy.Curve.Add(res.X, res.Y, tmp.X, tmp.Y)
 		}
 
-		comZero := privacy.Pcm.CommitSpecValue(big.NewInt(0).Bytes(), u[k], index)
+		comZero := privacy.Elcm.CommitSpecValue(big.NewInt(0).Bytes(), u[k], index)
 		comZeroPoint, err := privacy.DecompressCommitment(comZero)
 		if err != nil {
 			return nil, err
@@ -140,8 +140,9 @@ func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int, com
 
 	// Calculate x
 	x := big.NewInt(0)
-	for j := 1; j <= n; j++ {
-		x.SetBytes(privacy.Pcm.GetHashOfValues([][]byte{x.Bytes(), proof.cl[j], proof.ca[j], proof.cb[j], proof.cd[j-1]}))
+
+	for j:=1; j<= n; j++{
+		x.SetBytes(privacy.Elcm.GetHashOfValues([][]byte{x.Bytes(), proof.cl[j], proof.ca[j], proof.cb[j], proof.cd[j-1]}))
 	}
 	x.Mod(x, privacy.Curve.Params().N)
 
@@ -218,8 +219,8 @@ func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyP
 
 	// Calculate x
 	x := big.NewInt(0)
-	for j := 1; j <= n; j++ {
-		x.SetBytes(privacy.Pcm.GetHashOfValues([][]byte{x.Bytes(), proof.cl[j], proof.ca[j], proof.cb[j], proof.cd[j-1]}))
+	for j:=1; j<=n; j++{
+		x.SetBytes(privacy.Elcm.GetHashOfValues([][]byte{x.Bytes(), proof.cl[j], proof.ca[j], proof.cb[j], proof.cd[j-1]}))
 	}
 	x.Mod(x, privacy.Curve.Params().N)
 	//fmt.Printf("x Verify: %v\n", x)
@@ -257,7 +258,7 @@ func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyP
 		leftPoint1.X, leftPoint1.Y = privacy.Curve.Add(leftPoint1.X, leftPoint1.Y, caPoint[i].X, caPoint[i].Y)
 
 		rightPoint1 := new(privacy.EllipticPoint)
-		right1 := privacy.Pcm.CommitSpecValue(proof.f[i], proof.za[i], index)
+		right1 := privacy.Elcm.CommitSpecValue(proof.f[i], proof.za[i], index)
 		rightPoint1, err = privacy.DecompressCommitment(right1)
 		if err != nil {
 			return false
@@ -283,7 +284,7 @@ func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyP
 		leftPoint2.X, leftPoint2.Y = privacy.Curve.Add(leftPoint2.X, leftPoint2.Y, cbPoint[i].X, cbPoint[i].Y)
 
 		rightPoint2 := new(privacy.EllipticPoint)
-		right2 := privacy.Pcm.CommitSpecValue(big.NewInt(0).Bytes(), proof.zb[i], index)
+		right2 := privacy.Elcm.CommitSpecValue(big.NewInt(0).Bytes(), proof.zb[i], index)
 		rightPoint2, err = privacy.DecompressCommitment(right2)
 		if err != nil {
 			return false
@@ -343,7 +344,7 @@ func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyP
 
 	leftPoint3.X, leftPoint3.Y = privacy.Curve.Add(leftPoint3.X, leftPoint3.Y, leftPoint32.X, leftPoint32.Y)
 
-	rightValue3 := privacy.Pcm.CommitSpecValue(big.NewInt(0).Bytes(), proof.zd, index)
+	rightValue3 := privacy.Elcm.CommitSpecValue(big.NewInt(0).Bytes(), proof.zd, index)
 	rightPoint3, _ = privacy.DecompressCommitment(rightValue3)
 
 	fmt.Printf("Left point 3 X: %v\n", leftPoint3.X)
@@ -357,9 +358,10 @@ func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyP
 	return true
 }
 
-//TestPKOneOfMany test protocol for one of many commitment is commitment to zero
+
+//TestPKOneOfMany test protocol for one of many Commitment is Commitment to zero
 func TestPKOneOfMany() {
-	privacy.Pcm.InitCommitment()
+	privacy.Elcm.InitCommitment()
 	pk := new(PKOneOfManyProtocol)
 
 	indexIsZero := 23
@@ -373,12 +375,12 @@ func TestPKOneOfMany() {
 		serialNumbers[i] = privacy.RandBytes(32)
 		randoms[i] = privacy.RandBytes(32)
 		commitments[i] = make([]byte, 34)
-		commitments[i] = privacy.Pcm.CommitSpecValue(serialNumbers[i], randoms[i], privacy.SN_CM)
+		commitments[i] = privacy.Elcm.CommitSpecValue(serialNumbers[i], randoms[i], privacy.SN_CM)
 	}
 
-	// create commitment to zero at indexIsZero
+	// create Commitment to zero at indexIsZero
 	serialNumbers[indexIsZero] = big.NewInt(0).Bytes()
-	commitments[indexIsZero] = privacy.Pcm.CommitSpecValue(serialNumbers[indexIsZero], randoms[indexIsZero], privacy.SN_CM)
+	commitments[indexIsZero] = privacy.Elcm.CommitSpecValue(serialNumbers[indexIsZero], randoms[indexIsZero], privacy.SN_CM)
 	proof, err := pk.Prove(commitments, indexIsZero, commitments[indexIsZero], randoms[indexIsZero], privacy.SN_CM)
 	if err != nil {
 		fmt.Println(err)

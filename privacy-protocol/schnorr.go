@@ -7,15 +7,18 @@ import (
 	"math/big"
 )
 
+//SchnPubKey denoted Schnorr Publickey
 type SchnPubKey struct {
-	PK, G, H EllipticPoint // PK = G^SK + H^R
+	PK, H EllipticPoint // PK = G^SK + H^R
 }
 
+//SchnPrivKey denoted Schnorr Privatekey
 type SchnPrivKey struct {
 	SK, R  *big.Int
 	PubKey *SchnPubKey
 }
 
+//SchnSignature denoted Schnorr Signature
 type SchnSignature struct {
 	E, S1, S2 *big.Int
 }
@@ -45,9 +48,9 @@ func (priKey *SchnPrivKey) KeyGen() {
 
 	priKey.PubKey = new(SchnPubKey)
 
-	priKey.PubKey.G = *new(EllipticPoint)
-	priKey.PubKey.G.X = Curve.Params().Gx
-	priKey.PubKey.G.Y = Curve.Params().Gy
+	genPoint := *new(EllipticPoint)
+	genPoint.X = Curve.Params().Gx
+	genPoint.Y = Curve.Params().Gy
 
 	priKey.PubKey.H = *new(EllipticPoint)
 	priKey.PubKey.H.X, priKey.PubKey.H.Y = Curve.ScalarBaseMult(RandBytes(32))
@@ -60,9 +63,81 @@ func (priKey *SchnPrivKey) KeyGen() {
 
 }
 
+//Sign is function which using for sign on hash array by privatekey
+func (priKey SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
+	if len(hash) != 32 {
+		return nil, errors.New("Hash length must be 32 bytes")
+	}
+
+	genPoint := *new(EllipticPoint)
+	genPoint.X = Curve.Params().Gx
+	genPoint.Y = Curve.Params().Gy
+
+	signature := new(SchnSignature)
+
+	k1Bytes := RandBytes(32)
+	k1 := new(big.Int).SetBytes(k1Bytes)
+	k1.Mod(k1, Curve.Params().N)
+
+	k2Bytes := RandBytes(32)
+	k2 := new(big.Int).SetBytes(k2Bytes)
+	k2.Mod(k2, Curve.Params().N)
+
+	t1 := new(EllipticPoint)
+	t1.X, t1.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, k1.Bytes())
+
+	t2 := new(EllipticPoint)
+	t2.X, t2.Y = Curve.ScalarMult(priKey.PubKey.H.X, priKey.PubKey.H.Y, k2.Bytes())
+
+	t := new(EllipticPoint)
+	t.X, t.Y = Curve.Add(t1.X, t1.Y, t2.X, t2.Y)
+
+	signature.E = Hash(*t, hash)
+
+	xe := new(big.Int)
+	xe.Mul(priKey.SK, signature.E)
+	signature.S1 = new(big.Int)
+	signature.S1.Sub(k1, xe)
+	signature.S1.Mod(signature.S1, Curve.Params().N)
+
+	re := new(big.Int)
+	re.Mul(priKey.R, signature.E)
+	signature.S2 = new(big.Int)
+	signature.S2.Sub(k2, re)
+	signature.S2.Mod(signature.S2, Curve.Params().N)
+
+	return signature, nil
+}
+
+//Verify is function which using for verify that the given signature was signed by by privatekey of the public key
+func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
+	if len(hash) != 32 {
+		return false
+	}
+
+	if signature == nil {
+		return false
+	}
+
+	rv := new(EllipticPoint)
+	rv.X, rv.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, signature.S1.Bytes())
+	tmp := new(EllipticPoint)
+	tmp.X, tmp.Y = Curve.ScalarMult(pub.H.X, pub.H.Y, signature.S2.Bytes())
+	rv.X, rv.Y = Curve.Add(rv.X, rv.Y, tmp.X, tmp.Y)
+	tmp.X, tmp.Y = Curve.ScalarMult(pub.PK.X, pub.PK.Y, signature.E.Bytes())
+	rv.X, rv.Y = Curve.Add(rv.X, rv.Y, tmp.X, tmp.Y)
+
+	ev := Hash(*rv, hash)
+	if ev.Cmp(signature.E) == 0 {
+		return true
+	}
+
+	return false
+}
+
 //---------------------------------------------------------------------------------------------------------
 
-// GenSchnPrivKey generates Schnorr private key
+// SchnGenPrivKey generates Schnorr private key
 func SchnGenPrivKey() *SchnPrivKey {
 	priv := new(SchnPrivKey)
 	xBytes := RandBytes(32)
@@ -80,9 +155,9 @@ func SchnGenPrivKey() *SchnPrivKey {
 func SchnGenPubKey(priv SchnPrivKey) *SchnPubKey {
 	pub := new(SchnPubKey)
 
-	pub.G = *new(EllipticPoint)
-	pub.G.X = Curve.Params().Gx
-	pub.G.Y = Curve.Params().Gy
+	genPoint := *new(EllipticPoint)
+	genPoint.X = Curve.Params().Gx
+	genPoint.Y = Curve.Params().Gy
 
 	pub.H = *new(EllipticPoint)
 	pub.H.X, pub.H.Y = Curve.ScalarBaseMult(RandBytes(32))
@@ -101,6 +176,10 @@ func SchnSign(hash []byte, priv SchnPrivKey) (*SchnSignature, error) {
 		return nil, errors.New("Hash length must be 32 bytes")
 	}
 
+	genPoint := *new(EllipticPoint)
+	genPoint.X = Curve.Params().Gx
+	genPoint.Y = Curve.Params().Gy
+
 	signature := new(SchnSignature)
 
 	k1Bytes := RandBytes(32)
@@ -112,7 +191,7 @@ func SchnSign(hash []byte, priv SchnPrivKey) (*SchnSignature, error) {
 	k2.Mod(k2, Curve.Params().N)
 
 	t1 := new(EllipticPoint)
-	t1.X, t1.Y = Curve.ScalarMult(priv.PubKey.G.X, priv.PubKey.G.Y, k1.Bytes())
+	t1.X, t1.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, k1.Bytes())
 
 	t2 := new(EllipticPoint)
 	t2.X, t2.Y = Curve.ScalarMult(priv.PubKey.H.X, priv.PubKey.H.Y, k2.Bytes())
@@ -147,7 +226,7 @@ func SchnVerify(signature *SchnSignature, hash []byte, pub SchnPubKey) bool {
 	}
 
 	rv := new(EllipticPoint)
-	rv.X, rv.Y = Curve.ScalarMult(pub.G.X, pub.G.Y, signature.S1.Bytes())
+	rv.X, rv.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, signature.S1.Bytes())
 	tmp := new(EllipticPoint)
 	tmp.X, tmp.Y = Curve.ScalarMult(pub.H.X, pub.H.Y, signature.S2.Bytes())
 	rv.X, rv.Y = Curve.Add(rv.X, rv.Y, tmp.X, tmp.Y)

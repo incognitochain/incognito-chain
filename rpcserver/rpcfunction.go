@@ -369,8 +369,8 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 			Hash:             bestState.BestBlockHash.String(),
 			TotalTxs:         bestState.TotalTxns,
 			SalaryFund:       bestState.BestBlock.Header.SalaryFund,
-			BasicSalary:      bestState.BestBlock.Header.GOVParams.BasicSalary,
-			SalaryPerTx:      bestState.BestBlock.Header.GOVParams.SalaryPerTx,
+			BasicSalary:      bestState.BestBlock.Header.GOVConstitution.GOVParams.BasicSalary,
+			SalaryPerTx:      bestState.BestBlock.Header.GOVConstitution.GOVParams.SalaryPerTx,
 			BlockProducer:    bestState.BestBlock.BlockProducer,
 			BlockProducerSig: bestState.BestBlock.BlockProducerSig,
 		}
@@ -1674,15 +1674,15 @@ func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, c
 
 // handleGetListDCBBoard - return list payment address of DCB board
 func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBParams.DCBBoardPubKeys, nil
+	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBBoardPubKeys, nil
 }
 
 func (self RpcServer) handleGetListCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.CBParams.CBBoardPubKeys, nil
+	return self.config.BlockChain.BestState[0].BestBlock.Header.CBBoardPubKeys, nil
 }
 
 func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVParams.GOVBoardPubKeys, nil
+	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVBoardPubKeys, nil
 }
 
 // payment address -> balance of all custom token

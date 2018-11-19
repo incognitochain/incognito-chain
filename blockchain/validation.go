@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"math"
 
+	"encoding/hex"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
@@ -392,10 +393,14 @@ func verifyByBoard(
 	var pubKeys []string
 	if boardType == common.DCB {
 		address = string(common.DCBAddress)
+<<<<<<< HEAD
 		pubKeys = bc.BestState[0].BestBlock.Header.DCBParams.DCBBoardPubKeys
+=======
+		pubKeys = bc.BestState[0].BestBlock.Header.DCBBoardPubKeys
+>>>>>>> master
 	} else if boardType == common.GOV {
 		address = string(common.GOVAddress)
-		pubKeys = bc.BestState[0].BestBlock.Header.GOVParams.GOVBoardPubKeys
+		pubKeys = bc.BestState[0].BestBlock.Header.GOVBoardPubKeys
 	} else {
 		return false
 	}

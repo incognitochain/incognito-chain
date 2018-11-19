@@ -60,13 +60,13 @@ func main() {
 	//tx, _ := transaction.CreateEmptyTxs()
 	//fmt.Printf("Transaction: %+v\n", tx)
 
-	//privacy-protocol.Pcm.InitCommitment()
+	//privacy-protocol.Elcm.InitCommitment()
 	//privacy-protocol.TestProofIsZero()
 	//// fmt.Println("Done")
 	//a:= new(privacy-protocol.InputCommitments)
 	//
 	//privacy-protocol.TestProductCommitment()
-	//privacy-protocol.Pcm.InitCommitment()
+	//privacy-protocol.Elcm.InitCommitment()
 	// privacy-protocol.TestProofIsZero()
 	// fmt.Println("Done")
 	// privacy-protocol.TestPKComZeroOne()
@@ -74,11 +74,33 @@ func main() {
 
 	//zkp.TestPKComZeroOne()
 
-	zkp.TestPKOneOfMany()
+	//zkp.TestPKOneOfMany()
 
 	//zkp.TestPKMaxValue()
-	zkp.TestPKComProduct()
-	//privacy-protocol.TestPKComZeroOne()
-	//privacy-protocol.TestProductCommitment()
+	//privacy.Elcm.InitCommitment()
+	//privacy.Elcm.TestFunction(00)
+
+	//var zk zkp.ZKProtocols
 	//
+	//valueRand := privacy.RandBytes(32)
+	//vInt := new(big.Int).SetBytes(valueRand)
+	//vInt.Mod(vInt, big.NewInt(2))
+	//rand := privacy.RandBytes(32)
+	//
+	//partialCommitment := privacy.Elcm.CommitSpecValue(vInt.Bytes(), rand, privacy.VALUE)
+	//
+	//
+	//var witness zkp.PKComZeroOneWitness
+	//witness.CommitedValue = vInt.Bytes()
+	//witness.Rand = rand
+	//witness.Commitment = partialCommitment
+	//witness.Index = privacy.VALUE
+	//
+	//zk.SetWitness(witness)
+	//proof, _ := zk.Prove()
+	//zk.SetProof(proof)
+	//fmt.Println(zk.Verify())
+
+	zkp.TestPKComProduct()
+
 }

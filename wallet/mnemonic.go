@@ -218,7 +218,7 @@ func (self *MnemonicGenerator) MnemonicToByteArray(mnemonic string, raw ...bool)
 	rawEntropyBytes := self.padByteSlice(rawEntropy.Bytes(), checksumByteSize)
 	checksummedEntropyBytes := self.padByteSlice(checksummedEntropy.Bytes(), fullByteSize)
 
-	// Validate that the checksum is correct
+	// ValidateTransaction that the checksum is correct
 	newChecksummedEntropyBytes := self.padByteSlice(self.addChecksum(rawEntropyBytes), fullByteSize)
 	if !self.compareByteSlices(checksummedEntropyBytes, newChecksummedEntropyBytes) {
 		return nil, ErrChecksumIncorrect
