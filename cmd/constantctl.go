@@ -61,7 +61,25 @@ func main() {
 					log.Println("Wrong param")
 					return
 				}
-				account, err := getAccount()
+				account, err := getAccount(cfg.WalletAccountName)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				result, err := parseToJsonString(account)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				log.Println(string(result))
+			}
+		case CreateWalletAccountCmd:
+			{
+				if cfg.WalletPassphrase == common.EmptyString || cfg.WalletName == common.EmptyString || cfg.WalletAccountName == common.EmptyString {
+					log.Println("Wrong param")
+					return
+				}
+				account, err := createAccount(cfg.WalletAccountName)
 				if err != nil {
 					log.Println(err)
 					return
