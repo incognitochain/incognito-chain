@@ -92,6 +92,7 @@ func GeneratePublicKey(spendingKey []byte) PublicKey {
 	fmt.Printf("%+v\n", p)
 	//Logger.log.Infof("p.X: %v\n", p.X)
 	//Logger.log.Infof("p.Y: %v\n", p.Y)
+	fmt.Printf("\n%v %v \n", p.X.Bytes(), p.Y.Bytes())
 	publicKey := p.CompressPoint()
 
 	return publicKey
@@ -110,9 +111,10 @@ func GenerateReceivingKey(spendingKey []byte) ReceivingKey {
 // Tk : 33 bytes
 func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
 	var p, generator EllipticPoint
-	random := RandBytes(256)
+	//random := RandBytes(256)
+	random := [32]byte{2}
 	//create new generator from base generator
-	generator.X, generator.Y = Curve.ScalarBaseMult(random)
+	generator.X, generator.Y = Curve.ScalarBaseMult(random[:])
 
 	p.X, p.Y = Curve.ScalarMult(generator.X, generator.Y, receivingKey)
 	fmt.Printf("Transmission key point: %+v\n ", p)

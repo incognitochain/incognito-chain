@@ -44,7 +44,7 @@ type ElCParams struct {
 	// G[4]: Random
 }
 
-//ElCParams ...
+//Elcm ...
 var Elcm ElCParams
 
 // HashGenerator derives new generator from another generator using hash function
@@ -158,7 +158,7 @@ func (com *ElCParams) InitCommitment() {
 // Component 1: g[0]^r
 // Component 2: g[1]^v1 * g[2]^v2 * g[3]^v3 * g[4]^r
 // Component 1's r and component 2's r are the same
-func (com ElCParams) Commit(values [CM_CAPACITY-1][]byte) []byte {
+func (com ElCParams) Commit(values [CM_CAPACITY - 1][]byte) []byte {
 	temp := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 
 	component1 := new(EllipticPoint)
@@ -166,7 +166,7 @@ func (com ElCParams) Commit(values [CM_CAPACITY-1][]byte) []byte {
 
 	component2 := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 
-	for i := 1; i < CM_CAPACITY - 1; i++ {
+	for i := 1; i < CM_CAPACITY-1; i++ {
 		temp.X, temp.Y = Curve.ScalarMult(com.G[i].X, com.G[i].Y, values[i])
 		component2.X, component2.Y = Curve.Add(component2.X, component2.Y, temp.X, temp.Y)
 	}
@@ -240,7 +240,6 @@ func (com ElCParams) CommitWithSpecPoint(G EllipticPoint, H EllipticPoint, value
 
 }
 
-
 // CommitBitByBit commits value bit by bit and commits (nBitsThreshold - nBits) zero bits as padding
 //func (com ElCParams) CommitBitByBit(value uint64, nBits int, nBitsThreshold int, rands[][]byte, index byte) ([][]byte, error){
 //	if len(rands) != nBitsThreshold{
@@ -301,7 +300,7 @@ func (com ElCParams) TestFunction(testCode byte) bool {
 		fmt.Println("Value r: ", valuer)
 
 		//Compute commitment for all value, 4 is value of constant CM_CAPACITY
-		commitmentAll := Elcm.Commit([CM_CAPACITY-1][]byte{value1, value2, value3, valuer})
+		commitmentAll := Elcm.Commit([CM_CAPACITY - 1][]byte{value1, value2, value3, valuer})
 
 		fmt.Println("Commitment value: ", commitmentAll)
 		break

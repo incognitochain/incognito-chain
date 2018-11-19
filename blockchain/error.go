@@ -7,7 +7,7 @@ package blockchain
 import "fmt"
 
 const (
-	UnExpectedError               = iota
+	UnExpectedError = iota
 	UpdateMerkleTreeForBlockError
 	UnmashallJsonBlockError
 	CanNotCheckDoubleSpendError

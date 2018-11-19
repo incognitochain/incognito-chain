@@ -10,8 +10,8 @@ import (
 var Curve = elliptic.P256()
 
 const (
-	PointBytesLenCompressed int  = 33
-	PointCompressed         byte = 0
+	PointBytesLenCompressed      = 33
+	PointCompressed         byte = 0x2
 )
 
 //EllipticPointHelper contain some function for elliptic point
@@ -181,41 +181,43 @@ func (eccPoint EllipticPoint) CompressPoint() []byte {
 // to a point on the given curve.
 func (eccPoint *EllipticPoint) DecompressPoint(compressPointBytes []byte) error {
 	format := compressPointBytes[0]
+	ybit := (format & 0x1) == 0x1
 	format &= ^byte(0x1)
 
 	if format != PointCompressed {
 		return fmt.Errorf("invalid magic in compressed "+
 			"compressPoint bytes: %d", compressPointBytes[0])
 	}
-	ybit := (format & 0x1) == 0x1
+
 	var err error
 	if eccPoint.X == nil {
 		eccPoint.X = new(big.Int).SetBytes(compressPointBytes[1:33])
 	} else {
 		eccPoint.X.SetBytes(compressPointBytes[1:33])
 	}
-	eccPoint.Y, err = DecompressPoint(eccPoint.X, ybit)
+	eccPoint.Y, err = decompPoint(eccPoint.X, ybit)
 	return err
 }
 
-// DecompressPoint decompresses a point on the given curve given the X point and
+// DecompPoint decompresses a point on the given curve given the X point and
 // the solution to use.
-func DecompressPoint(x *big.Int, ybit bool) (*big.Int, error) {
+func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	Q := Curve.Params().P
-	temp := new(big.Int)
+	// temp := new(big.Int)
 	xTemp := new(big.Int)
 
 	// Y = +-sqrt(x^3 - 3*x + B)
 	xCube := new(big.Int).Mul(x, x)
 	xCube.Mul(xCube, x)
 	xCube.Add(xCube, Curve.Params().B)
+	xCube.Mod(xCube, Curve.Params().P)
 	xCube.Sub(xCube, xTemp.Mul(x, new(big.Int).SetInt64(3)))
 	xCube.Mod(xCube, Curve.Params().P)
 
 	//check P = 3 mod 4?
-	if temp.Mod(Q, new(big.Int).SetInt64(4)).Cmp(new(big.Int).SetInt64(3)) != 0 {
-		return nil, fmt.Errorf("parameter P must be congruent to 3 mod 4")
-	}
+	// if temp.Mod(Q, new(big.Int).SetInt64(4)).Cmp(new(big.Int).SetInt64(3)) != 0 {
+	// 	return nil, fmt.Errorf("parameter P must be congruent to 3 mod 4")
+	// }
 
 	// Now calculate sqrt mod p of x^3 - 3*x + B
 	// This code used to do a full sqrt based on tonelli/shanks,
@@ -233,8 +235,6 @@ func DecompressPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	if ySquare.Cmp(xCube) != 0 {
 		return nil, fmt.Errorf("invalid square root")
 	}
-
-	//fmt.Println(Curve.IsOnCurve(x, y))
 
 	// Verify that y-coord has expected parity.
 	if ybit != isOdd(y) {

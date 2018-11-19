@@ -124,7 +124,7 @@ func (pro *PKMaxValueProtocol) Prove() (*PKMaxValueProof, error) {
 
 func (pro *PKMaxValueProtocol) SetProof(proof PKMaxValueProof) {
 	pro.Proof = proof
-	for i := 0; i < len(pro.Proof.commitments); i++{
+	for i := 0; i < len(pro.Proof.commitments); i++ {
 		pro.Proof.PKComZeroOneProtocol[i].SetProof(*pro.Proof.proofZeroOneCommitments[i])
 	}
 }
