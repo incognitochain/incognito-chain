@@ -13,7 +13,7 @@ type GOVParams struct {
 }
 
 type DCBParams struct {
-	DCBBoardPubKeys []string
+	// TODO: add crowdsale data
 	CrowdsaleEscrow privacy.PaymentAddress
 }
 

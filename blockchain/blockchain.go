@@ -532,10 +532,17 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetType() {
-		case common.TxCrowdsale:
+		case common.TxAcceptDCBProposal:
 			{
-				// Store saledata in db
-				tx := tx.(*transaction.TxCrowdsale)
+				txAccepted := tx.(*transaction.TxAcceptDCBProposal)
+				_, _, _, getTx, err := self.GetTransactionByHash(txAccepted.DCBProposalTXID)
+				proposal := getTx.(*transaction.TxSubmitDCBProposal)
+				if err != nil {
+					return err
+				}
+
+				// Store saledata in db if needed
+				//				if proposal.DCBProposalData.
 				err := self.config.DataBase.SaveCrowdsaleData(tx.SaleData)
 				if err != nil {
 					return err
@@ -1124,7 +1131,6 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 	return result, nil
 }
 
-// TODO(@0xsirrush): implement
 func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]uint64, error) {
 	result, err := self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(tokenID)
 	if err != nil {
