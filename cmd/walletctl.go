@@ -90,4 +90,5 @@ func createAccount(accountName string) (interface{}, error) {
 		log.Printf("Readonly key: %s", account1.Key.Base58CheckSerialize(wallet.ReadonlyKeyType))
 		return account, nil
 	}
+	return nil, errors.New("Can not load wallet")
 }
