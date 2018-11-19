@@ -11,8 +11,9 @@ import (
 )
 
 type BuyBackInfo struct {
-	Maturity     uint32
-	BuyBackPrice uint64 // in Constant unit
+	StartSellingAt uint32
+	Maturity       uint32
+	BuyBackPrice   uint64 // in Constant unit
 }
 
 type BuySellResponse struct {

@@ -8,6 +8,7 @@ import (
 type BuySellRequestTx struct {
 	*RequestInfo
 	*Tx // fee + amount to pay for buying bonds/govs
+	// TODO: signature?
 }
 
 type RequestInfo struct {
