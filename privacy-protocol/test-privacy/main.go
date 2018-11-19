@@ -1,7 +1,5 @@
 package main
 
-import "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-
 func main() {
 
 	// fmt.Printf("N: %X\n", privacy-protocol.Curve.Params().N)
@@ -15,14 +13,15 @@ func main() {
 	//fmt.Printf("\nSpending key: %v\n", spendingKey)
 	//fmt.Println(len(spendingKey))
 
-	//address := privacy.GeneratePublicKey(spendingKey)
-	//fmt.Printf("\nAddress: %v\n", address)
-	//fmt.Println(len(address))
-	//point, err := privacy.DecompressKey(address)
+	// publicKey is compressed
+	//publicKey := privacy.GeneratePublicKey(spendingKey)
+	//fmt.Printf("\nPublic key: %v\n", publicKey)
+	//fmt.Printf("Len public key: %v\n", len(publicKey))
+	//point, err := privacy.DecompressKey(publicKey)
 	//if err != nil {
-	//	fmt.Println(err)
+	//fmt.Println(err)
 	//}
-	//fmt.Printf("Pk decom: %v\n", point)
+	//fmt.Printf("Public key decompress: %v\n", point)
 	//
 	//receivingKey := privacy.GenerateReceivingKey(spendingKey)
 	//fmt.Printf("\nReceiving key: %v\n", receivingKey)
@@ -54,7 +53,7 @@ func main() {
 	//}
 	//fmt.Printf("signature: %v\n", signature)
 	//
-	//valid := privacy-protocol.Verify(signature, hash[:], address)
+	//valid := privacy-protocol.Verify(signature, hash[:], publicKey)
 	//fmt.Println("\nsignature verified:", valid)
 	//
 	//tx, _ := transaction.CreateEmptyTxs()
@@ -73,6 +72,9 @@ func main() {
 	//privacy-protocol.TestPKOneOfMany()
 
 	//zkp.TestPKComZeroOne()
+
+
+	//zkp.TestProofIsZero()
 
 	//zkp.TestPKOneOfMany()
 
@@ -101,6 +103,6 @@ func main() {
 	//zk.SetProof(proof)
 	//fmt.Println(zk.Verify())
 
-	zkp.TestPKComProduct()
+	//zkp.TestPKComProduct()
 
 }

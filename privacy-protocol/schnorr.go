@@ -30,7 +30,7 @@ type SignScheme interface {
 	Verify(signature *SchnSignature, hash []byte) bool
 }
 
-//KeyGen Generate PriKey and PubKey
+//KeyGen generates PriKey and PubKey
 func (priKey *SchnPrivKey) KeyGen() {
 	if priKey == nil {
 		priKey = new(SchnPrivKey)
@@ -62,7 +62,7 @@ func (priKey *SchnPrivKey) KeyGen() {
 
 //---------------------------------------------------------------------------------------------------------
 
-// GenSchnPrivKey generates Schnorr private key
+// SchnGenPrivKey generates Schnorr private key
 func SchnGenPrivKey() *SchnPrivKey {
 	priv := new(SchnPrivKey)
 	xBytes := RandBytes(32)
@@ -107,6 +107,7 @@ func SchnSign(hash []byte, priv SchnPrivKey) (*SchnSignature, error) {
 
 	signature := new(SchnSignature)
 
+	// generates random numbers k1, k2 in (0, Curve.Params().N)
 	k1Bytes := RandBytes(32)
 	k1 := new(big.Int).SetBytes(k1Bytes)
 	k1.Mod(k1, Curve.Params().N)
@@ -114,6 +115,7 @@ func SchnSign(hash []byte, priv SchnPrivKey) (*SchnSignature, error) {
 	k2Bytes := RandBytes(32)
 	k2 := new(big.Int).SetBytes(k2Bytes)
 	k2.Mod(k2, Curve.Params().N)
+
 
 	t1 := new(EllipticPoint)
 	t1.X, t1.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, k1.Bytes())

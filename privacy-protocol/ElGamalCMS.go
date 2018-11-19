@@ -8,13 +8,6 @@ import (
 	"github.com/minio/blake2b-simd"
 )
 
-const (
-	PK    = 1
-	VALUE = 2
-	SN    = 3
-	RAND  = 4
-)
-
 // Check type of commitments
 const (
 	PK_CM    = byte(0x01)

@@ -88,7 +88,7 @@ func MultiScalarMul(factors  [] *big.Int, point privacy.EllipticPoint) *privacy.
 	a:=new(big.Int)
 	a.SetInt64(1)
 	for i:=0;i<len(factors);i++{
-			a.Mul(a,factors[i])
+		a.Mul(a,factors[i])
 	}
 	P:=new(privacy.EllipticPoint)
 	P.X, P.Y = privacy.Curve.ScalarMult(point.X, point.Y,a.Bytes());
@@ -129,7 +129,7 @@ func (pro *PKComProductProtocol) Prove() (*PKComProductProof,error) {
 	E:= computeCommitmentPoint(proof.basePoint.G,proof.basePoint.H, e,t)
 	proof.D = D;
 	proof.E = E;
- 	proof.D1 = D1;
+	proof.D1 = D1;
 	// x = hash(G||H||D||D1||E)
 	data:=[][]byte{
 		proof.basePoint.G.X.Bytes(),
@@ -224,7 +224,7 @@ func (pro *PKComProductProtocol) Verify () bool {
 	if (com1.X.Cmp(pts1.X)==0 && com1.Y.Cmp(pts1.Y)==0){
 		checkFlag +=1
 		println("Passed test 1")
-		}
+	}
 	//Check witness 2: xB + E == 	Commit(f2,z2)
 	B:= new(privacy.EllipticPoint)
 	B,_ = privacy.DecompressCommitment(pro.Proof.cmB);

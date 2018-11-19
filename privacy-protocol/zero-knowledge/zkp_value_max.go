@@ -84,13 +84,13 @@ func (pro *PKMaxValueProtocol) Prove() (*PKMaxValueProof, error) {
 		proof.commitments[i] = make([]byte, 34)
 		fmt.Printf("witness[%v][0] : %v\n", i, witnesses[i][0])
 		fmt.Printf("witness[%v][1] : %v\n", i, witnesses[i][1])
-		proof.commitments[i] = privacy.Elcm.CommitSpecValue(witnesses[i][0], witnesses[i][1], privacy.VALUE)
+		proof.commitments[i] = privacy.Elcm.CommitSpecValue(witnesses[i][0], witnesses[i][1], privacy.VALUE_CM)
 
 		var witness PKComZeroOneWitness
 		witness.Commitment = proof.commitments[i]
 		witness.CommitedValue = witnesses[i][0]
 		witness.Rand = witnesses[i][1]
-		witness.Index = privacy.VALUE
+		witness.Index = privacy.VALUE_CM
 		proof.PKComZeroOneProtocol[i] = new(PKComZeroOneProtocol)
 		proof.PKComZeroOneProtocol[i].SetWitness(witness)
 
@@ -104,13 +104,13 @@ func (pro *PKMaxValueProtocol) Prove() (*PKMaxValueProof, error) {
 		proof.commitments[j] = make([]byte, 34)
 		fmt.Printf("witness[%v][0] : %v\n", j, witnesses[j][0])
 		fmt.Printf("witness[%v][1] : %v\n", j, witnesses[j][1])
-		proof.commitments[j] = privacy.Elcm.CommitSpecValue(witnesses[j][0], witnesses[j][1], privacy.VALUE)
+		proof.commitments[j] = privacy.Elcm.CommitSpecValue(witnesses[j][0], witnesses[j][1], privacy.VALUE_CM)
 
 		var witness PKComZeroOneWitness
 		witness.Commitment = proof.commitments[j]
 		witness.CommitedValue = witnesses[j][0]
 		witness.Rand = witnesses[j][1]
-		witness.Index = privacy.VALUE
+		witness.Index = privacy.VALUE_CM
 		proof.PKComZeroOneProtocol[j] = new(PKComZeroOneProtocol)
 		proof.PKComZeroOneProtocol[j].SetWitness(witness)
 
