@@ -118,7 +118,7 @@ func (self *Wallet) ImportAccount(privateKeyStr string, accountName string, pass
 	}
 	priKey.KeySet.ImportFromPrivateKey(&priKey.KeySet.PrivateKey)
 
-	Logger.log.Infof("Pub-key : %s", priKey.Base58CheckSerialize(PubKeyType))
+	Logger.log.Infof("Pub-key : %s", priKey.Base58CheckSerialize(PaymentAddressType))
 	Logger.log.Infof("Readonly-key : %s", priKey.Base58CheckSerialize(ReadonlyKeyType))
 
 	account := Account{
@@ -183,7 +183,7 @@ func (self *Wallet) LoadWallet(password string) error {
 
 func (self *Wallet) DumpPrivkey(addressP string) (KeySerializedData) {
 	for _, account := range self.MasterAccount.Child {
-		address := account.Key.Base58CheckSerialize(PubKeyType)
+		address := account.Key.Base58CheckSerialize(PaymentAddressType)
 		if address == addressP {
 			key := KeySerializedData{
 				PrivateKey: account.Key.Base58CheckSerialize(PriKeyType),
@@ -198,7 +198,7 @@ func (self *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
 	for _, account := range self.MasterAccount.Child {
 		if account.Name == accountParam {
 			key := KeySerializedData{
-				PaymentAddress: account.Key.Base58CheckSerialize(PubKeyType),
+				PaymentAddress: account.Key.Base58CheckSerialize(PaymentAddressType),
 				ReadonlyKey:    account.Key.Base58CheckSerialize(ReadonlyKeyType),
 			}
 			return key
@@ -206,7 +206,7 @@ func (self *Wallet) GetAccountAddress(accountParam string) (KeySerializedData) {
 	}
 	newAccount := self.CreateNewAccount(accountParam)
 	key := KeySerializedData{
-		PaymentAddress: newAccount.Key.Base58CheckSerialize(PubKeyType),
+		PaymentAddress: newAccount.Key.Base58CheckSerialize(PaymentAddressType),
 		ReadonlyKey:    newAccount.Key.Base58CheckSerialize(ReadonlyKeyType),
 	}
 	return key
@@ -217,7 +217,7 @@ func (self *Wallet) GetAddressesByAccount(accountParam string) ([]KeySerializedD
 	for _, account := range self.MasterAccount.Child {
 		if account.Name == accountParam {
 			item := KeySerializedData{
-				PaymentAddress: account.Key.Base58CheckSerialize(PubKeyType),
+				PaymentAddress: account.Key.Base58CheckSerialize(PaymentAddressType),
 				ReadonlyKey:    account.Key.Base58CheckSerialize(ReadonlyKeyType),
 			}
 			result = append(result, item)
