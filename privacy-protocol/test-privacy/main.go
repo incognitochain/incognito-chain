@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 	"math/big"
-
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"time"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge-optimization"
 )
 
 func main() {
@@ -79,9 +80,15 @@ func main() {
 	// privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestPKOneOfMany()
 
-	zkp.TestPKComZeroOne()
-
-	//zkp.TestPKOneOfMany()
+	// zkp.TestPKComZeroOne()
+	start := time.Now()
+	zkpoptimization.TestPKOneOfMany()
+	end := time.Now()
+	fmt.Printf("%v\n", end.Sub(start))
+	start = time.Now()
+	zkp.TestPKOneOfMany()
+	end = time.Now()
+	fmt.Printf("%v\n", end.Sub(start))
 
 	//zkp.TestPKMaxValue()
 	//privacy.Elcm.InitCommitment()

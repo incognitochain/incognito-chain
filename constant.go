@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"runtime/debug"
-	"path/filepath"
-	"log"
-	_ "github.com/ninjadotorg/constant/database/lvdb"
+
 	"github.com/ninjadotorg/constant/database"
+	_ "github.com/ninjadotorg/constant/database/lvdb"
 	"github.com/ninjadotorg/constant/limits"
 	"github.com/ninjadotorg/constant/wallet"
 )
