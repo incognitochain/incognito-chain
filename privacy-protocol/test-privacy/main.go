@@ -17,14 +17,15 @@ func main() {
 	//fmt.Printf("\nSpending key: %v\n", spendingKey)
 	//fmt.Println(len(spendingKey))
 
-	//address := privacy.GeneratePublicKey(spendingKey)
-	//fmt.Printf("\nAddress: %v\n", address)
-	//fmt.Println(len(address))
-	//point, err := privacy.DecompressKey(address)
+	// publicKey is compressed
+	//publicKey := privacy.GeneratePublicKey(spendingKey)
+	//fmt.Printf("\nPublic key: %v\n", publicKey)
+	//fmt.Printf("Len public key: %v\n", len(publicKey))
+	//point, err := privacy.DecompressKey(publicKey)
 	//if err != nil {
-	//	fmt.Println(err)
+	//fmt.Println(err)
 	//}
-	//fmt.Printf("Pk decom: %v\n", point)
+	//fmt.Printf("Public key decompress: %v\n", point)
 	//
 	//receivingKey := privacy.GenerateReceivingKey(spendingKey)
 	//fmt.Printf("\nReceiving key: %v\n", receivingKey)
@@ -56,7 +57,7 @@ func main() {
 	//}
 	//fmt.Printf("signature: %v\n", signature)
 	//
-	//valid := privacy-protocol.Verify(signature, hash[:], address)
+	//valid := privacy-protocol.Verify(signature, hash[:], publicKey)
 	//fmt.Println("\nsignature verified:", valid)
 	//
 	//tx, _ := transaction.CreateEmptyTxs()
@@ -76,6 +77,9 @@ func main() {
 
 	//zkp.TestPKComZeroOne()
 
+
+	//zkp.TestProofIsZero()
+
 	//zkp.TestPKOneOfMany()
 
 	//zkp.TestPKMaxValue()
@@ -85,7 +89,7 @@ func main() {
 	//var zk zkp.ZKProtocols
 	//
 	//valueRand := privacy.RandBytes(32)
-	//vInt := new(big.Int).SetBytes(valueRand)
+	//vInt := new(big.Int).SetBytes(valueRagit rend)
 	//vInt.Mod(vInt, big.NewInt(2))
 	//rand := privacy.RandBytes(32)
 	//

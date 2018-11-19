@@ -32,9 +32,11 @@ func (pro *PKOneOfManyProtocol) SetWitness(witnesses [][]byte) {
 
 // Prove creates proof for one out of many commitments containing 0
 func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int, commitmentValue []byte, rand []byte, index byte) (*PKOneOfManyProof, error) {
-	N := len(commitments)
 	proof := new(PKOneOfManyProof)
+
 	// Check the number of Commitment list's elements
+	// N = 2^n
+	N := len(commitments)
 	temp := 1
 	n := 0
 	for temp < N {

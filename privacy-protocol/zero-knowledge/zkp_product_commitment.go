@@ -224,6 +224,9 @@ func (pro *PKComProductProtocol) Verify () bool {
 
 	//fmt.Printf("Com1: %+v\n",com1_temp)
 	//fmt.Printf("pts1: %+v\n",pts1)
+	//
+
+
 
 	if (com1_temp.X.Cmp(pts1.X)==0 && com1_temp.Y.Cmp(pts1.Y)==0){
 		checkFlag +=1
@@ -237,7 +240,7 @@ func (pro *PKComProductProtocol) Verify () bool {
 	com2 := privacy.Elcm.CommitWithSpecPoint(pro.Proof.basePoint.G,pro.Proof.basePoint.H, pro.Proof.f2.Bytes(), pro.Proof.z2.Bytes())
 	com2_temp,_:=privacy.DecompressCommitment(com2)
 
-
+	//
 	//fmt.Printf("Com2: %+v\n",com2_temp)
 	//fmt.Printf("pts2: %+v\n",pts1)
 
@@ -256,17 +259,21 @@ func (pro *PKComProductProtocol) Verify () bool {
 	com3_temp,_:=privacy.DecompressCommitment(com3)
 
 
-
+	//
 	//fmt.Printf("Com3: %+v\n",com3_temp)
 	//fmt.Printf("pts3: %+v\n",pts1)
+
+
+
+
 
 	if (com3_temp.X.Cmp(pts1.X)==0 && com3_temp.Y.Cmp(pts1.Y)==0){
 		checkFlag +=1
 		fmt.Println("Passed test 3")
 	}
-	//println(checkFlag)
+	println(checkFlag)
 	if(checkFlag == 3) {
-		fmt.Println("Passed all test. This proof is valid")
+		fmt.Println("Passed all test. This proof is valid.")
 		return true;
 	}
 	return false;

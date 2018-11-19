@@ -236,7 +236,7 @@ func TestPKComZeroOne() {
 		vInt.Mod(vInt, big.NewInt(2))
 		rand := privacy.RandBytes(32)
 
-		partialCommitment := privacy.Elcm.CommitSpecValue(vInt.Bytes(), rand, privacy.VALUE)
+		partialCommitment := privacy.Elcm.CommitSpecValue(vInt.Bytes(), rand, privacy.VALUE_CM)
 
 		//witness := [][]byte{
 		//	vInt.Bytes(),
@@ -248,7 +248,7 @@ func TestPKComZeroOne() {
 		witness.CommitedValue = vInt.Bytes()
 		witness.Rand = rand
 		witness.Commitment = partialCommitment
-		witness.Index = privacy.VALUE
+		witness.Index = privacy.VALUE_CM
 
 		zk.SetWitness(witness)
 		proof, _ := zk.Prove()
