@@ -52,7 +52,11 @@ func listAccounts() (interface{}, error) {
 		return nil, err
 	}
 	accounts := walletObj.ListAccounts()
-	return accounts, err
+	result := []string{}
+	for accountName, _ := range accounts {
+		result = append(result, accountName)
+	}
+	return result, err
 }
 
 func getAccount(accountName string) (interface{}, error) {
