@@ -205,7 +205,7 @@ concludeBlock:
 	// ------------------------------------------------------------------------
 	totalSalary := salaryMULTP*salaryPerTx + basicSalary
 	// create salary tx to pay constant for block producer
-	salaryTx, err := transaction.CreateSalaryTx(totalSalary, &payToAddress, rt, chainID)
+	salaryTx, err := transaction.CreateTxSalary(totalSalary, &payToAddress, rt, chainID)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err

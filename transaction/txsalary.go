@@ -6,13 +6,13 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
-// CreateSalaryTx
+// CreateTxSalary
 // Blockchain use this tx to pay a reward(salary) to miner of chain
 // #1 - salary:
 // #2 - receiverAddr:
 // #3 - rt
 // #4 - chainID
-func CreateSalaryTx(
+func CreateTxSalary(
 	salary uint64,
 	receiverAddr *privacy.PaymentAddress,
 	rt []byte,
