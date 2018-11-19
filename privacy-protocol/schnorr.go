@@ -60,6 +60,78 @@ func (priKey *SchnPrivKey) KeyGen() {
 
 }
 
+//Sign is function which using for sign on hash array by privatekey
+func (priv SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
+	if len(hash) != 32 {
+		return nil, errors.New("Hash length must be 32 bytes")
+	}
+
+	genPoint := *new(EllipticPoint)
+	genPoint.X = Curve.Params().Gx
+	genPoint.Y = Curve.Params().Gy
+
+	signature := new(SchnSignature)
+
+	k1Bytes := RandBytes(32)
+	k1 := new(big.Int).SetBytes(k1Bytes)
+	k1.Mod(k1, Curve.Params().N)
+
+	k2Bytes := RandBytes(32)
+	k2 := new(big.Int).SetBytes(k2Bytes)
+	k2.Mod(k2, Curve.Params().N)
+
+	t1 := new(EllipticPoint)
+	t1.X, t1.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, k1.Bytes())
+
+	t2 := new(EllipticPoint)
+	t2.X, t2.Y = Curve.ScalarMult(priv.PubKey.H.X, priv.PubKey.H.Y, k2.Bytes())
+
+	t := new(EllipticPoint)
+	t.X, t.Y = Curve.Add(t1.X, t1.Y, t2.X, t2.Y)
+
+	signature.E = Hash(*t, hash)
+
+	xe := new(big.Int)
+	xe.Mul(priv.SK, signature.E)
+	signature.S1 = new(big.Int)
+	signature.S1.Sub(k1, xe)
+	signature.S1.Mod(signature.S1, Curve.Params().N)
+
+	re := new(big.Int)
+	re.Mul(priv.R, signature.E)
+	signature.S2 = new(big.Int)
+	signature.S2.Sub(k2, re)
+	signature.S2.Mod(signature.S2, Curve.Params().N)
+
+	return signature, nil
+}
+
+//Sign is function which using for verify that the given signature was signed by by privatekey of the public key
+func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
+	if len(hash) != 32 {
+		return false
+	}
+
+	if signature == nil {
+		return false
+	}
+
+	rv := new(EllipticPoint)
+	rv.X, rv.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, signature.S1.Bytes())
+	tmp := new(EllipticPoint)
+	tmp.X, tmp.Y = Curve.ScalarMult(pub.H.X, pub.H.Y, signature.S2.Bytes())
+	rv.X, rv.Y = Curve.Add(rv.X, rv.Y, tmp.X, tmp.Y)
+	tmp.X, tmp.Y = Curve.ScalarMult(pub.PK.X, pub.PK.Y, signature.E.Bytes())
+	rv.X, rv.Y = Curve.Add(rv.X, rv.Y, tmp.X, tmp.Y)
+
+	ev := Hash(*rv, hash)
+	if ev.Cmp(signature.E) == 0 {
+		return true
+	}
+
+	return false
+}
+
 //---------------------------------------------------------------------------------------------------------
 
 // GenSchnPrivKey generates Schnorr private key
