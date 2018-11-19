@@ -11,7 +11,6 @@ type DatabaseInterface interface {
 	// Block
 	StoreBlock(interface{}, byte) error
 	StoreBlockHeader(interface{}, *common.Hash, byte) error
-	StoreTransactionLightMode(*privacy.SpendingKey, byte, int32, int, *transaction.Tx) error
 	FetchBlock(*common.Hash) ([]byte, error)
 	HasBlock(*common.Hash) (bool, error)
 	FetchAllBlocks() (map[byte][]*common.Hash, error)
@@ -25,9 +24,11 @@ type DatabaseInterface interface {
 
 	// Transaction Index
 	StoreTransactionIndex(*common.Hash, *common.Hash, int) error
+	StoreTransactionLightMode(*privacy.SpendingKey, byte, int32, int, *transaction.Tx) error
 	GetTransactionIndexById(*common.Hash) (*common.Hash, int, error)
 	GetTransactionLightModeByPrivateKey(*privacy.SpendingKey) (map[byte][]transaction.Tx, error)
 	GetTransactionLightModeByHash(*common.Hash) ([]byte, []byte, error)
+
 	// Best state of chain
 	StoreBestState(interface{}, byte) error
 	FetchBestState(byte) ([]byte, error)

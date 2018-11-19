@@ -732,6 +732,8 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 	return results, nil
 }
 
+// GetListUnspentTxByPrivateKeyInBlock - fetch block to get unspent tx commitment which privatekey can use it
+// return a list tx which contain commitment which can be used
 func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *privacy.SpendingKey, block *Block, nullifiersInDb [][]byte, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx)
 
@@ -872,7 +874,7 @@ func (self *BlockChain) GetListUnspentTxByPrivateKey(privateKey *privacy.Spendin
 		}
 		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
 	}
-	/*if self.config.Light {
+	if self.config.Light {
 		// Get unspent tx light mode
 		results, err := self.config.DataBase.GetTransactionLightModeByPrivateKey(privateKey)
 		//Logger.log.Infof("UTXO lightmode %+v", results)
@@ -882,7 +884,7 @@ func (self *BlockChain) GetListUnspentTxByPrivateKey(privateKey *privacy.Spendin
 		if results != nil {
 			return results, nil
 		}
-	}*/
+	}
 	// loop on all chains
 	for _, bestState := range self.BestState {
 		// get best block

@@ -44,6 +44,8 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		if err != nil {
 			return NewBlockChainError(UnExpectedError, err)
 		}
+
+		Logger.log.Infof("Fetch Block %+v to get unspent tx of all accoutns in wallet", blockHash)
 		nullifiersInDb := make([][]byte, 0)
 		chainId := block.Header.ChainID
 		txViewPoint, err := self.FetchTxViewPoint(chainId)
