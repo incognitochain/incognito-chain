@@ -8,7 +8,8 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
-// create bytes array with size
+// buildByteSequence creates bytes array with array size is k
+// and value of element at index i is i
 func buildByteSequence(k int) [][]byte {
 	var bytes [][]byte
 	for i := 1; i <= k; i++ {
@@ -18,6 +19,7 @@ func buildByteSequence(k int) [][]byte {
 	return bytes
 }
 
+// buildMerkleHashSequence creates MerkleHash array with array size is k
 func buildMerkleHashSequence(k int) []MerkleHash {
 	var hashes []MerkleHash
 	bytes := buildByteSequence(k)
@@ -44,7 +46,7 @@ func TestAddNewNode(t *testing.T) {
 	}
 
 	rt := tree.GetRoot(common.IncMerkleTreeHeight)
-	fmt.Println("rt:", rt)
+	fmt.Printf("rt: %v\n", rt)
 }
 
 //func TestBuildWitness(t *testing.T) {
