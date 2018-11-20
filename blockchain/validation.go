@@ -438,3 +438,40 @@ func (bc *BlockChain) VerifyCustomTokenSigns(tx transaction.Transaction) bool {
 func (self *BlockChain) ValidateTxBuyRequest(tx transaction.Transaction, chainID byte) error {
 	return nil
 }
+
+func (self *BlockChain) ValidateDoubleSpendCustomToken(tx *transaction.TxCustomToken) (error) {
+	listTxs, err := self.GetCustomTokenTxs(&tx.TxTokenData.PropertyID)
+	if err != nil {
+		return err
+	}
+
+	if len(listTxs) == 0 {
+		if tx.TxTokenData.Type != transaction.CustomTokenInit {
+			return errors.New("Not exist tx for this ")
+		}
+	}
+
+	if len(listTxs) > 0 {
+		for _, txInBlocks := range listTxs {
+			err := self.ValidateDoubleSpendCustomTokenOnTx(tx, txInBlocks)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCustomToken, txInBlock transaction.Transaction) (error) {
+	temp := txInBlock.(*transaction.TxCustomToken)
+	for _, vin := range temp.TxTokenData.Vins {
+		for _, item := range tx.TxTokenData.Vins {
+			if vin.TxCustomTokenID.String() == item.TxCustomTokenID.String() {
+				if vin.VoutIndex == item.VoutIndex {
+					return errors.New("Double spend")
+				}
+			}
+		}
+	}
+	return nil
+}

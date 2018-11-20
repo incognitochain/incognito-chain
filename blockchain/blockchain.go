@@ -705,7 +705,6 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 					}
 					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
 				}
-				// TODO Voting
 			}
 			// detected some tx can be accepted
 			if len(txsInBlockAccepted) > 0 {
