@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/ninjadotorg/constant/privacy-protocol"
 	"runtime"
 
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
