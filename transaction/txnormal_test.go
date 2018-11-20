@@ -26,10 +26,10 @@ func TestSpendGenesisTx(t *testing.T) {
 	r := [32]byte{1}
 	rho, _ := hex.DecodeString("6cdf29a91e53b19f5ca49cd37e7b59d3ade30120fab21fc00e6d82e28b9133fa")
 	note := []*client.Note{&client.Note{
-		Value: 1000000000,
-		Apk:   key.KeyPair.PublicKey.Apk,
-		Rho:   rho,
-		R:     r[:],
+		Value:          1000000000,
+		PaymentAddress: key.KeyPair.PublicKey.Apk,
+		Rho:            rho,
+		R:              r[:],
 	}}
 	desc := []*JoinSplitDesc{&JoinSplitDesc{note: note}}
 	usableTx := []*Tx{&Tx{Descs: desc}}

@@ -98,16 +98,16 @@ func (key *Key) Serialize(keyType byte) ([]byte, error) {
 		buffer.Write(keyBytes)
 	} else if keyType == PaymentAddressType {
 		keyBytes := make([]byte, 0)
-		keyBytes = append(keyBytes, byte(len(key.KeySet.PaymentAddress.Pk))) // set length Apk
-		keyBytes = append(keyBytes, key.KeySet.PaymentAddress.Pk[:]...)      // set Apk
+		keyBytes = append(keyBytes, byte(len(key.KeySet.PaymentAddress.Pk))) // set length PaymentAddress
+		keyBytes = append(keyBytes, key.KeySet.PaymentAddress.Pk[:]...)      // set PaymentAddress
 
 		keyBytes = append(keyBytes, byte(len(key.KeySet.PaymentAddress.Tk))) // set length Pkenc
 		keyBytes = append(keyBytes, key.KeySet.PaymentAddress.Tk[:]...)      // set Pkenc
 		buffer.Write(keyBytes)
 	} else if keyType == ReadonlyKeyType {
 		keyBytes := make([]byte, 0)
-		keyBytes = append(keyBytes, byte(len(key.KeySet.ReadonlyKey.Pk))) // set length Apk
-		keyBytes = append(keyBytes, key.KeySet.ReadonlyKey.Pk[:]...)      // set Apk
+		keyBytes = append(keyBytes, byte(len(key.KeySet.ReadonlyKey.Pk))) // set length PaymentAddress
+		keyBytes = append(keyBytes, key.KeySet.ReadonlyKey.Pk[:]...)      // set PaymentAddress
 
 		keyBytes = append(keyBytes, byte(len(key.KeySet.ReadonlyKey.Rk))) // set length Skenc
 		keyBytes = append(keyBytes, key.KeySet.ReadonlyKey.Rk[:]...)      // set Pkenc

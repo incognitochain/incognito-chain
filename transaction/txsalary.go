@@ -25,8 +25,8 @@ func CreateTxSalary(
 	dummyAddress := client.GenPaymentAddress(*inputs[0].Key)
 
 	// Create new notes: first one is salary UTXO, second one has 0 value
-	outNote := &client.Note{Value: salary, Apk: receiverAddr.Pk}
-	placeHolderOutputNote := &client.Note{Value: 0, Apk: receiverAddr.Pk}
+	outNote := &client.Note{Value: salary, PaymentAddress: *receiverAddr}
+	placeHolderOutputNote := &client.Note{Value: 0, PaymentAddress: *receiverAddr}
 
 	outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
 	outputs[0].EncKey = receiverAddr.Tk

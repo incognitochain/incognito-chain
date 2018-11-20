@@ -170,7 +170,7 @@ func CreateTx(
 	var value uint64
 	for _, p := range paymentInfo {
 		value += p.Amount
-		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Pk)
+		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
 	}
 
 	type ChainNote struct {
@@ -313,17 +313,17 @@ func CreateTx(
 			var outNote *client.Note
 			var encKey privacy.TransmissionKey
 			if p.Amount <= inputValue { // Enough for one more output note, include it
-				outNote = &client.Note{Value: p.Amount, Apk: p.PaymentAddress.Pk}
+				outNote = &client.Note{Value: p.Amount, PaymentAddress: p.PaymentAddress}
 				encKey = p.PaymentAddress.Tk
 				inputValue -= p.Amount
 				paymentInfo = paymentInfo[:len(paymentInfo)-1]
-				fmt.Printf("Use output value %+v => %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Use output value %+v => %x\n", outNote.Value, outNote.PaymentAddress)
 			} else { // Not enough for this note, send some and save the rest for next js desc
-				outNote = &client.Note{Value: inputValue, Apk: p.PaymentAddress.Pk}
+				outNote = &client.Note{Value: inputValue, PaymentAddress: p.PaymentAddress}
 				encKey = p.PaymentAddress.Tk
 				paymentInfo[len(paymentInfo)-1].Amount = p.Amount - inputValue
 				inputValue = 0
-				fmt.Printf("Partially send %+v to %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Partially send %+v to %x\n", outNote.Value, outNote.PaymentAddress)
 			}
 
 			output := &client.JSOutput{EncKey: encKey, OutputNote: outNote}
@@ -339,17 +339,17 @@ func CreateTx(
 
 			if p != nil && p.Amount == inputValue {
 				// Exactly equal, add this output note to js desc
-				outNote := &client.Note{Value: p.Amount, Apk: p.PaymentAddress.Pk}
+				outNote := &client.Note{Value: p.Amount, PaymentAddress: p.PaymentAddress}
 				output := &client.JSOutput{EncKey: p.PaymentAddress.Tk, OutputNote: outNote}
 				outputs = append(outputs, output)
 				paymentInfo = paymentInfo[:len(paymentInfo)-1]
-				fmt.Printf("Exactly enough, include 1 more output %+v, %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Exactly enough, include 1 more output %+v, %x\n", outNote.Value, outNote.PaymentAddress)
 			} else {
 				// Cannot put the output note into this js desc, create a change note instead
-				outNote := &client.Note{Value: inputValue, Apk: senderFullKey.PaymentAddress.Pk}
+				outNote := &client.Note{Value: inputValue, PaymentAddress: senderFullKey.PaymentAddress}
 				output := &client.JSOutput{EncKey: senderFullKey.PaymentAddress.Tk, OutputNote: outNote}
 				outputs = append(outputs, output)
-				fmt.Printf("Create change outnote %+v, %x\n", outNote.Value, outNote.Apk)
+				fmt.Printf("Create change outnote %+v, %x\n", outNote.Value, outNote.PaymentAddress)
 
 				// Use the change note to continually send to receivers if needed
 				if len(paymentInfo) > 0 {
@@ -542,17 +542,17 @@ func CreateRandomJSOutput() *client.JSOutput {
 }
 
 func createDummyNote(spendingKey *privacy.SpendingKey) *client.Note {
-	addr := privacy.GeneratePublicKey((*spendingKey)[:])
+	addr := privacy.GeneratePaymentAddress((*spendingKey)[:])
 	var rho, r [32]byte
 	copy(rho[:], client.RandBits(32*8))
 	copy(r[:], client.RandBits(32*8))
 
 	note := &client.Note{
-		Value: 0,
-		Apk:   addr,
-		Rho:   rho[:],
-		R:     r[:],
-		Nf:    client.GetNullifier(*spendingKey, rho),
+		Value:          0,
+		PaymentAddress: addr,
+		Rho:            rho[:],
+		R:              r[:],
+		Nf:             client.GetNullifier(*spendingKey, rho),
 	}
 	return note
 }
@@ -617,7 +617,7 @@ func GenerateProofForGenesisTx(
 	seed, phi []byte,
 	outputR [][]byte,
 	ephemeralPrivKey client.EphemeralPrivKey,
-	assetType string,
+//assetType string,
 ) (*Tx, error) {
 	// Generate JoinSplit key pair to act as a dummy key (since we don't sign genesis tx)
 	privateSignKey := [32]byte{1}

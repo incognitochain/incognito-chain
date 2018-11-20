@@ -89,7 +89,7 @@ func GenViewingKey(ask privacy.SpendingKey) ViewingKey {
 
 // FromBytes converts a byte stream to PaymentAddress
 func (addr *PaymentAddress) FromBytes(data []byte) *PaymentAddress {
-	copy(addr.Apk[:], data[:32])   // First 32 bytes are Apk's
+	copy(addr.Apk[:], data[:32])   // First 32 bytes are PaymentAddress's
 	copy(addr.Pkenc[:], data[32:]) // Last 32 bytes are Pkenc's
 	return addr
 }
