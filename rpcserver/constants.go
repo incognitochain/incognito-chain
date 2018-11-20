@@ -23,7 +23,6 @@ const (
 	CreateTransaction               = "createtransaction"
 	SendTransaction                 = "sendtransaction"
 	CreateAndSendTransaction        = "createandsendtransaction"
-	CreateActionParamsTransaction   = "createactionparamstransaction"
 	SendCustomTokenTransaction      = "sendcustomtokentransaction"
 	SendRawCustomTokenTransaction   = "sendrawcustomtokentransaction"
 	CreateRawCustomTokenTransaction = "createrawcustomtokentransaction"

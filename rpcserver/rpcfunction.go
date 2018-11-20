@@ -1,15 +1,12 @@
 package rpcserver
 
 import (
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 	"strconv"
-	"time"
-
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -17,7 +14,6 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
-	"golang.org/x/crypto/ed25519"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
@@ -45,13 +41,12 @@ var RpcHandler = map[string]commandHandler{
 	GetBlockHash:      RpcServer.handleGetBlockHash,
 
 	// transaction
-	ListTransactions:              RpcServer.handleListTransactions,
-	CreateTransaction:             RpcServer.handleCreateTransaction,
-	SendTransaction:               RpcServer.handleSendTransaction,
-	CreateAndSendTransaction:      RpcServer.handlCreateAndSendTx,
-	CreateActionParamsTransaction: RpcServer.handleCreateActionParamsTransaction,
-	GetMempoolInfo:                RpcServer.handleGetMempoolInfo,
-	GetTransactionByHash:          RpcServer.handleGetTransactionByHash,
+	ListTransactions:         RpcServer.handleListTransactions,
+	CreateTransaction:        RpcServer.handleCreateTransaction,
+	SendTransaction:          RpcServer.handleSendTransaction,
+	CreateAndSendTransaction: RpcServer.handlCreateAndSendTx,
+	GetMempoolInfo:           RpcServer.handleGetMempoolInfo,
+	GetTransactionByHash:     RpcServer.handleGetTransactionByHash,
 
 	GetCommitteeCandidateList:  RpcServer.handleGetCommitteeCandidateList,
 	RetrieveCommitteeCandidate: RpcServer.handleRetrieveCommiteeCandidate,
@@ -312,14 +307,6 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 					}
 					transactionT.HexData = hex.EncodeToString(data)
 					transactionT.Locktime = txN.LockTime
-				} else if tx.GetType() == common.TxActionParamsType {
-					txA := tx.(*transaction.ActionParamTx)
-					data, err := json.Marshal(txA)
-					if err != nil {
-						return nil, NewRPCError(ErrUnexpected, err)
-					}
-					transactionT.HexData = hex.EncodeToString(data)
-					transactionT.Locktime = txA.LockTime
 				}
 				result.Txs = append(result.Txs, transactionT)
 			}
@@ -1158,54 +1145,6 @@ func assertEligibleAgentIDs(eligibleAgentIDs interface{}) []string {
 		results = append(results, item.(string))
 	}
 	return results
-}
-
-/*
-// handleCreateRawTransaction handles createrawtransaction commands.
-*/
-func (self RpcServer) handleCreateActionParamsTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	Logger.log.Info(params)
-	arrayParams := common.InterfaceSlice(params)
-	tx := transaction.ActionParamTx{
-		Version:  1,
-		Type:     common.TxActionParamsType,
-		LockTime: time.Now().Unix(),
-	}
-
-	param := arrayParams[0].(map[string]interface{})
-	tx.Param = &transaction.Param{
-		AgentID:          param["agentId"].(string),
-		AgentSig:         param["agentSig"].(string),
-		NumOfCoins:       param["numOfCoins"].(float64),
-		NumOfBonds:       param["numOfBonds"].(float64),
-		Tax:              param["tax"].(float64),
-		EligibleAgentIDs: assertEligibleAgentIDs(param["eligibleAgentIDs"]),
-	}
-
-	// check signed tx
-	message := map[string]interface{}{
-		"agentId":          tx.Param.AgentID,
-		"numOfCoins":       tx.Param.NumOfCoins,
-		"numOfBonds":       tx.Param.NumOfBonds,
-		"tax":              tx.Param.Tax,
-		"eligibleAgentIDs": tx.Param.EligibleAgentIDs,
-	}
-	pubKeyInBytes, _ := base64.StdEncoding.DecodeString(tx.Param.AgentID)
-	sigInBytes, _ := base64.StdEncoding.DecodeString(tx.Param.AgentSig)
-	messageInBytes, _ := json.Marshal(message)
-
-	isValid := ed25519.Verify(pubKeyInBytes, messageInBytes, sigInBytes)
-	fmt.Println("isValid: ", isValid)
-
-	_, _, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	// broadcast Message
-	// self.config.Server.PushTxMessage(hash)
-
-	return tx.Hash(), nil
 }
 
 /*

@@ -287,6 +287,36 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 	return true, nil
 }
 
+func (tp *TxPool) validateSanityCustomTokenTxData(txCustomToken *transaction.TxCustomToken) (bool, error) {
+	ok, err := tp.validateSanityNormalTxData(&txCustomToken.Tx)
+	if err != nil || !ok {
+		return ok, err
+	}
+	vins := txCustomToken.TxTokenData.Vins
+	zeroHash := common.Hash{}
+	for _, vin := range vins {
+		if vin.Signature == "" {
+			return false, errors.New("Wrong signature")
+		}
+		if len(vin.PaymentAddress.Pk) == 0 {
+			return false, errors.New("Wrong input transaction")
+		}
+		if vin.TxCustomTokenID.String() == zeroHash.String() {
+			return false, errors.New("Wrong input transaction")
+		}
+	}
+	vouts := txCustomToken.TxTokenData.Vouts
+	for _, vout := range vouts {
+		if len(vout.PaymentAddress.Pk) == 0 {
+			return false, errors.New("Wrong input transaction")
+		}
+		if vout.Value == 0 {
+			return false, errors.New("Wrong input transaction")
+		}
+	}
+	return true, nil
+}
+
 // MaybeAcceptTransaction is the main workhorse for handling insertion of new
 // free-standing transactions into a memory pool.  It includes functionality
 // such as rejecting duplicate transactions, ensuring transactions follow all
@@ -331,11 +361,6 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 			// check double spend for constant coin
 			return blockChain.ValidateDoubleSpend(tx, chainID)
 			// TODO check double spend custom token
-		}
-	case common.TxActionParamsType:
-		{
-			// TODO
-			return nil
 		}
 	case common.TxLoanRequest:
 		{
@@ -481,10 +506,6 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 			err := tp.config.Policy.CheckTransactionFee(normalTx)
 			return normalTx.Fee, err
 		}
-	case common.TxActionParamsType:
-		{
-			return 0, nil
-		}
 	default:
 		{
 			return 0, errors.New("Wrong tx type")
@@ -496,33 +517,24 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 ValidateSanityData - validate sansity data of tx
 */
 func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
-	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxSalaryType {
-		txA := tx.(*transaction.Tx)
-		ok, err := tp.validateSanityNormalTxData(txA)
-		if !ok {
-			return false, err
+	switch tx.GetType() {
+	case common.TxNormalType, common.TxSalaryType:
+		{
+			txA := tx.(*transaction.Tx)
+			ok, err := tp.validateSanityNormalTxData(txA)
+			return ok, err
 		}
-	} else if tx.GetType() == common.TxActionParamsType {
-		txA := tx.(*transaction.ActionParamTx)
-		// check Version
-		if txA.Version > transaction.TxVersion {
-			return false, errors.New("Wrong tx version")
+	case common.TxCustomTokenType:
+		{
+			txCustomToken := tx.(*transaction.TxCustomToken)
+			ok, err := tp.validateSanityCustomTokenTxData(txCustomToken)
+			return ok, err
 		}
-		// check LockTime before now
-		if int64(txA.LockTime) > time.Now().Unix() {
-			return false, errors.New("Wrong tx lockTime")
-		}
-		// check Type equal "a"
-		if txA.Type != common.TxActionParamsType {
+	default:
+		{
 			return false, errors.New("Wrong tx type")
 		}
-	} else if tx.GetType() == common.TxCustomTokenType {
-		// TODO check sanity
-		return true, nil
-	} else {
-		return false, errors.New("Wrong tx type")
 	}
-
 	return true, nil
 }
 
