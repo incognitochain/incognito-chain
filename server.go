@@ -189,6 +189,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	self.memPool.Init(&mempool.Config{
 		Policy: mempool.Policy{
 			MaxTxVersion: transaction.TxVersion + 1,
+			BlockChain:   self.blockChain,
 		},
 		BlockChain:   self.blockChain,
 		DataBase:     self.dataBase,
