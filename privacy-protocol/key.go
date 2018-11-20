@@ -194,7 +194,8 @@ func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
 func DecompressCommitment(commitment []byte) (point *EllipticPoint, err error) {
 	//typeCommitment := commitment[0]
 	//fmt.Printf("Type Commmitment: %v\n", typeCommitment)
-	return DecompressKey(commitment[1:34])
+	//Decompress the second component's commitment
+	return DecompressKey(commitment[34:67])
 }
 
 // PAdd1Div4 computes (p + 1) mod 4
@@ -222,6 +223,10 @@ func (addr *PaymentAddress) ToBytes() []byte {
 	copy(pkenc, addr.Tk[:33])
 	result = append(result, pkenc...)
 	return result
+}
+
+func (addr *PaymentAddress) Size() int {
+	return len(addr.Pk) + len(addr.Tk)
 }
 
 func (addr *PaymentAddress) FromBytes(data []byte) *PaymentAddress {

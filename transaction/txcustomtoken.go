@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"math"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/cashec"
@@ -49,34 +48,29 @@ func (tx *TxCustomToken) ValidateTransaction() bool {
 
 // GetTxVirtualSize computes the virtual size of a given transaction
 func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
-	var sizeVersion uint64 = 1  // int8
-	var sizeType uint64 = 8     // string
-	var sizeLockTime uint64 = 8 // int64
-	var sizeFee uint64 = 8      // uint64
-	var sizeDescs = uint64(common.Max(1, len(tx.Tx.Descs))) * EstimateJSDescSize()
-	var sizejSPubKey uint64 = 64      // [64]byte
-	var sizejSSig uint64 = 64         // [64]byte
-	var sizeTokenName uint64 = 64     // string
-	var sizeTokenSymbol uint64 = 64   // string
-	var sizeTokenHash uint64 = 64     // string
-	var sizeTokenAmount uint64 = 64   // string
-	var sizeTokenTxType uint64 = 64   // string
-	var sizeTokenReceiver uint64 = 64 // string
+	normalTxSize := tx.Tx.GetTxVirtualSize()
 
-	estimateTxSizeInByte := sizeVersion
-	estimateTxSizeInByte += sizeType
-	estimateTxSizeInByte += sizeLockTime
-	estimateTxSizeInByte += sizeFee
-	estimateTxSizeInByte += sizeDescs
-	estimateTxSizeInByte += sizejSPubKey
-	estimateTxSizeInByte += sizejSSig
-	estimateTxSizeInByte += sizeTokenName
-	estimateTxSizeInByte += sizeTokenSymbol
-	estimateTxSizeInByte += sizeTokenHash
-	estimateTxSizeInByte += sizeTokenAmount
-	estimateTxSizeInByte += sizeTokenTxType
-	estimateTxSizeInByte += sizeTokenReceiver
-	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
+	tokenDataSize := uint64(0)
+
+	tokenDataSize += uint64(len(tx.TxTokenData.PropertyName))
+	tokenDataSize += uint64(len(tx.TxTokenData.PropertyName))
+	tokenDataSize += uint64(len(tx.TxTokenData.PropertyID))
+	tokenDataSize += 4 // for TxTokenData.Type
+
+	for _, vin := range tx.TxTokenData.Vins {
+		tokenDataSize += uint64(len(vin.Signature))
+		tokenDataSize += uint64(len(vin.TxCustomTokenID))
+		tokenDataSize += 4 // for VoutIndex
+		tokenDataSize += uint64(vin.PaymentAddress.Size())
+	}
+
+	for _, vout := range tx.TxTokenData.Vouts {
+		tokenDataSize += uint64(len(vout.BondID))
+		tokenDataSize += 8 // for value
+		tokenDataSize += uint64(vout.PaymentAddress.Size())
+	}
+
+	return normalTxSize + tokenDataSize
 }
 
 // CreateTxCustomToken ...

@@ -6,6 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/transaction"
 	"errors"
+	"github.com/ninjadotorg/constant/blockchain"
 )
 
 // Policy houses the policy (configuration parameters) which is used to control the mempool.
@@ -14,6 +15,8 @@ type Policy struct {
 	// accept.  All transactions above this version are rejected as
 	// non-standard.
 	MaxTxVersion int8
+
+	BlockChain *blockchain.BlockChain
 }
 
 /*
@@ -36,27 +39,18 @@ func (self *Policy) CheckTxVersion(tx *transaction.Transaction) bool {
 				return false
 			}
 		}
-	case common.TxActionParamsType:
-		{
-			temp := (*tx).(*transaction.ActionParamTx)
-			if temp.Version > self.MaxTxVersion {
-				return false
-			}
-		}
 	}
 	return true
 }
 
 // return min transacton fee required for a transaction that we accepted into the memmory pool and replayed.
 func (self *Policy) calcMinFeeTxCustomTokenAccepted(tx *transaction.TxCustomToken) uint64 {
-	//@todo we will create rules of calc here later.
-	return 0
+	return self.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.BasicSalary
 }
 
 // return min transacton fee required for a transaction that we accepted into the memmory pool and replayed.
 func (self *Policy) calcMinFeeTxAccepted(tx *transaction.Tx) uint64 {
-	//@todo we will create rules of calc here later.
-	return 0
+	return self.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.BasicSalary
 }
 
 /*

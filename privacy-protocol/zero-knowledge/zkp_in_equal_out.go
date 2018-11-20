@@ -2,7 +2,7 @@ package zkp
 
 
 // PKMaxValue is a protocol for Zero-knowledge Proof of Knowledge of max value is 2^64-1
-// include Witness: commitedValue, r []byte
+// include Witness: CommitedValue, r []byte
 type PKInEqualOutProtocol struct{
 	//Witness [][]byte
 }
