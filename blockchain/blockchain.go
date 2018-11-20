@@ -511,7 +511,7 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 				tx := tx.(*transaction.TxDividendPayout)
 				for _, desc := range tx.Descs {
 					for _, note := range desc.Note {
-						utxos := self.GetAccountUTXO(note.Apk[:])
+						utxos := self.GetAccountUTXO(note.PaymentAddress.Pk[:])
 						for _, utxo := range utxos {
 							self.UpdateUTXOReward(utxo, tx.PayoutID)
 						}
@@ -628,13 +628,8 @@ GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be 
 - Param #1: key - key set which contain readonly-key and pub-key
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType string) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx, 0)
-
-	// set default for params
-	if coinType == "" {
-		coinType = common.AssetTypeCoin
-	}
 
 	// lock chain
 	self.chainLock.Lock()
@@ -690,7 +685,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 						} else {
 							// no privacy-protocol
 							for i, note := range desc.Note {
-								if bytes.Equal(note.Apk[:], keySet.PaymentAddress.Pk[:]) {
+								if bytes.Equal(note.PaymentAddress.Pk[:], keySet.PaymentAddress.Pk[:]) {
 									copyDesc.AppendNote(note)
 									copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
 								}
@@ -780,7 +775,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 					copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
 					copyDesc.AppendNote(note)
 					note.Cm = candidateCommitment
-					note.Apk = privacy.GeneratePaymentAddress(keys.PrivateKey).Pk
+					note.PaymentAddress = privacy.GeneratePaymentAddress(keys.PrivateKey)
 					copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
 				} else {
 					continue
@@ -788,7 +783,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 			}
 		} else {
 			for i, note := range desc.Note {
-				if bytes.Equal(note.Apk[:], keys.PaymentAddress.Pk[:]) && note.Value > 0 {
+				if bytes.Equal(note.PaymentAddress.Pk[:], keys.PaymentAddress.Pk[:]) && note.Value > 0 {
 					// no privacy-protocol
 					candidateCommitment := desc.Commitments[i]
 					if len(nullifiersInDb) > 0 {
@@ -807,7 +802,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 					}
 					copyDesc.AppendNote(note)
 					note.Cm = candidateCommitment
-					note.Apk = privacy.GeneratePaymentAddress(keys.PrivateKey).Pk
+					note.PaymentAddress = privacy.GeneratePaymentAddress(keys.PrivateKey)
 					copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
 				} else {
 					continue
