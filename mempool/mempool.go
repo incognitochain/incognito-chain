@@ -357,12 +357,12 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 				return errors.New("Custom token signs validation is not passed.")
 			}
 
-			// check double spend for constant coin
+			// check double spend for constant coin with blockchain
 			err := blockChain.ValidateDoubleSpend(tx, chainID)
 			if err != nil {
 				return err
 			}
-			// check double spend for custom token
+			// check double spend for custom token with blockchain data
 			err = blockChain.ValidateDoubleSpendCustomToken(tx.(*transaction.TxCustomToken))
 			if err != nil {
 				return err
