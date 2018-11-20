@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge-optimization"
 )
 
 func main() {
@@ -75,12 +75,15 @@ func main() {
 	// privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestPKOneOfMany()
 
-	//zkp.TestPKComZeroOne()
-
-
-	//zkp.TestProofIsZero()
-
-	zkp.TestPKOneOfMany()
+	// zkp.TestPKComZeroOne()
+	// start := time.Now()
+	zkpoptimization.TestPKOneOfMany()
+	// end := time.Now()
+	// fmt.Printf("%v\n", end.Sub(start))
+	// start = time.Now()
+	// zkp.TestPKOneOfMany()
+	// end = time.Now()
+	// fmt.Printf("%v\n", end.Sub(start))
 
 	//zkp.TestPKMaxValue()
 	//privacy.Elcm.InitCommitment()
@@ -89,7 +92,7 @@ func main() {
 	//var zk zkp.ZKProtocols
 	//
 	//valueRand := privacy.RandBytes(32)
-	//vInt := new(big.Int).SetBytes(valueRand)
+	//vInt := new(big.Int).SetBytes(valueRagit rend)
 	//vInt.Mod(vInt, big.NewInt(2))
 	//rand := privacy.RandBytes(32)
 	//
@@ -127,5 +130,4 @@ func main() {
 	//fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
 	//fmt.Printf("\n %v\n", point.CompressPoint())
 	//zkp.TestPKComProduct()
-
 }
