@@ -24,14 +24,14 @@ const CMPreImageLength = 105 // bytes
 
 type Note struct {
 	Value                uint64
-	PaymentAddress       privacy.PaymentAddress
+	Apk                  privacy.PublicKey
 	Rho, R, Nf, Cm, Memo []byte
 }
 
 func GetCommitment(note *Note) []byte {
 	var data [CMPreImageLength]byte
 	data[0] = 0xB0
-	copy(data[1:], note.PaymentAddress.Pk[:])
+	copy(data[1:], note.Apk[:])
 	for i := 0; i < 8; i++ {
 		data[i+33] = byte(note.Value >> uint(i*8))
 	}

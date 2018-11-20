@@ -297,7 +297,7 @@ func (self *BlockChain) ValidateTxDividendPayout(tx transaction.Transaction, cha
 	for _, desc := range txPayout.Descs {
 		for _, note := range desc.Note {
 			// Check if user is not rewarded
-			utxos := self.GetAccountUTXO(note.PaymentAddress.Pk[:])
+			utxos := self.GetAccountUTXO(note.Apk[:])
 			for _, utxo := range utxos {
 				reward, err := self.GetUTXOReward(utxo)
 				if err != nil {
@@ -311,7 +311,7 @@ func (self *BlockChain) ValidateTxDividendPayout(tx transaction.Transaction, cha
 			// Check amount
 			found := 0
 			for i, holder := range tokenHolders {
-				if bytes.Equal(holder, note.PaymentAddress.Pk[:]) {
+				if bytes.Equal(holder, note.Apk[:]) {
 					found += 1
 					if amounts[i] != note.Value {
 						return fmt.Errorf("Payment amount for user %s incorrect, found %d instead of %d", holder, note.Value, amounts[i])
@@ -320,9 +320,9 @@ func (self *BlockChain) ValidateTxDividendPayout(tx transaction.Transaction, cha
 			}
 
 			if found == 0 {
-				return fmt.Errorf("User %s isn't eligible for receiving dividend", note.PaymentAddress.Pk[:])
+				return fmt.Errorf("User %s isn't eligible for receiving dividend", note.Apk[:])
 			} else if found > 1 {
-				return fmt.Errorf("Multiple dividend payments found for user %s", note.PaymentAddress.Pk[:])
+				return fmt.Errorf("Multiple dividend payments found for user %s", note.Apk[:])
 			}
 		}
 	}
