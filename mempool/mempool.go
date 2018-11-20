@@ -46,9 +46,10 @@ type TxPool struct {
 	// The following variables must only be used atomically.
 	lastUpdated int64 // last time pool was updated
 
-	mtx    sync.RWMutex
-	config Config
-	pool   map[common.Hash]*TxDesc
+	mtx            sync.RWMutex
+	config         Config
+	pool           map[common.Hash]*TxDesc
+	poolNullifiers map[common.Hash][][]byte
 }
 
 /*
@@ -57,6 +58,7 @@ Init Txpool from config
 func (tp *TxPool) Init(cfg *Config) {
 	tp.config = *cfg
 	tp.pool = make(map[common.Hash]*TxDesc)
+	tp.poolNullifiers = make(map[common.Hash][][]byte)
 }
 
 // check transaction in pool
@@ -82,6 +84,7 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 	}
 	log.Printf(tx.Hash().String())
 	tp.pool[*tx.Hash()] = txD
+	tp.poolNullifiers[*tx.Hash()] = txD.Desc.Tx.ListNullifiers()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 
 	// Record this tx for fee estimation if enabled. only apply for normal tx
@@ -136,6 +139,12 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 		return nil, nil, err
 	}
 	// end check with policy
+
+	// check tx with all txs in current mempool
+	err = tp.ValidateTxWithCurrentMempool(&tx)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// validate tx with data of blockchain
 	err = tp.ValidateTxWithBlockChain(tx, chainID)
@@ -335,12 +344,59 @@ func (tp *TxPool) MaybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	return hash, txDesc, err
 }
 
+func (tp *TxPool) ValidateDoubleSpendTxWithCurrentMempool(txNormal *transaction.Tx) (error) {
+
+	for _, temp1 := range tp.poolNullifiers {
+		for _, desc := range txNormal.Descs {
+			for _, nullifier := range desc.Nullifiers {
+				if ok, err := common.SliceBytesExists(temp1, nullifier); !ok || err != nil {
+					return errors.New("Double spend")
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (tp *TxPool) ValidateTxWithCurrentMempool(tx *transaction.Transaction) (error) {
+	txsInMem := tp.pool
+	switch (*tx).GetType() {
+	case common.TxNormalType:
+		{
+			txNormal := (*tx).(*transaction.Tx)
+			err := tp.ValidateDoubleSpendTxWithCurrentMempool(txNormal)
+			if err != nil {
+				return err
+			}
+		}
+	case common.TxSalaryType:
+		{
+			return errors.New("Can not receive a salary tx from other node, this is a violation")
+		}
+	case common.TxCustomTokenType:
+		{
+			txCustomToken := (*tx).(*transaction.TxCustomToken)
+			txNormal := txCustomToken.Tx
+			err := tp.ValidateDoubleSpendTxWithCurrentMempool(&txNormal)
+			if err != nil {
+				return err
+			}
+			for _, txInMem := range txsInMem {
+				err := tp.config.BlockChain.ValidateDoubleSpendCustomTokenOnTx(txCustomToken, txInMem.Desc.Tx)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // ValidateTxWithBlockChain - process validation of tx with old data in blockchain
 // - check double spend
 func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID byte) error {
 	blockChain := tp.config.BlockChain
 	switch tx.GetType() {
-	// TODO check tx with current mempool
 	case common.TxNormalType:
 		{
 			// check double spend

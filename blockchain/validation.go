@@ -453,14 +453,22 @@ func (self *BlockChain) ValidateDoubleSpendCustomToken(tx *transaction.TxCustomT
 
 	if len(listTxs) > 0 {
 		for _, txInBlocks := range listTxs {
-			temp := txInBlocks.(*transaction.TxCustomToken)
-			for _, vin := range temp.TxTokenData.Vins {
-				for _, item := range tx.TxTokenData.Vins {
-					if vin.TxCustomTokenID.String() == item.TxCustomTokenID.String() {
-						if vin.VoutIndex == item.VoutIndex {
-							return errors.New("Double spend")
-						}
-					}
+			err := self.ValidateDoubleSpendCustomTokenOnTx(tx, txInBlocks)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCustomToken, txInBlock transaction.Transaction) (error) {
+	temp := txInBlock.(*transaction.TxCustomToken)
+	for _, vin := range temp.TxTokenData.Vins {
+		for _, item := range tx.TxTokenData.Vins {
+			if vin.TxCustomTokenID.String() == item.TxCustomTokenID.String() {
+				if vin.VoutIndex == item.VoutIndex {
+					return errors.New("Double spend")
 				}
 			}
 		}
