@@ -285,7 +285,7 @@ concludeBlock:
 	newTree := prevCmTree
 	err = UpdateMerkleTreeForBlock(newTree, &block)
 	if err != nil {
-		// TODO check error to process
+		Logger.log.Error(err)
 		return nil, err
 	}
 	rt = newTree.GetRoot(common.IncMerkleTreeHeight)
