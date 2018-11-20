@@ -7,7 +7,7 @@ import (
 
 type BuySellRequestTx struct {
 	*RequestInfo
-	*Tx // fee + amount to pay for buying bonds/govs
+	*TxCustomToken // fee + amount to pay for buying bonds/govs
 	// TODO: signature?
 }
 
@@ -16,32 +16,43 @@ type RequestInfo struct {
 	AssetType      string
 	Amount         uint64
 	BuyPrice       uint64 // in Constant unit
+
+	SaleID []byte // only when requesting to DCB
 }
 
 // CreateBuySellRequestTx
 // senderKey and paymentInfo is for paying fee
 func CreateBuySellRequestTx(
-	feeArgs FeeArgs,
+	senderKey *privacy.SpendingKey,
+	paymentInfo []*privacy.PaymentInfo,
+	rts map[byte]*common.Hash,
+	usableTx map[byte][]*Tx,
+	commitments map[byte]([][]byte),
+	fee uint64,
+	senderChainID byte,
+	tokenParams *CustomTokenParamTx,
+	listCustomTokens map[common.Hash]TxCustomToken,
 	requestInfo *RequestInfo,
 ) (*BuySellRequestTx, error) {
 	// Create tx for fee &
-	tx, err := CreateTx(
-		feeArgs.SenderKey,
-		feeArgs.PaymentInfo,
-		feeArgs.Rts,
-		feeArgs.UsableTx,
-		feeArgs.Commitments,
-		feeArgs.Fee,
-		feeArgs.SenderChainID,
-		false,
+	tx, err := CreateTxCustomToken(
+		senderKey,
+		paymentInfo,
+		rts,
+		usableTx,
+		commitments,
+		fee,
+		senderChainID,
+		tokenParams,
+		listCustomTokens,
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	buySellRequestTx := &BuySellRequestTx{
-		RequestInfo: requestInfo,
-		Tx:          tx,
+		RequestInfo:   requestInfo,
+		TxCustomToken: tx,
 	}
 	buySellRequestTx.Type = common.TxBuyFromGOVRequest
 	return buySellRequestTx, nil

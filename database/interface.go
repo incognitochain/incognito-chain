@@ -4,6 +4,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/voting"
 )
 
 // DatabaseInterface provides the interface that is used to store blocks.
@@ -67,8 +68,8 @@ type DatabaseInterface interface {
 	GetLoanTxs([]byte) ([][]byte, error)    // param: loanID
 
 	// Crowdsale
-	SaveCrowdsaleData(*transaction.SaleData) error
-	LoadCrowdsaleData([]byte) (*transaction.SaleData, error)
+	SaveCrowdsaleData(*voting.SaleData) error
+	LoadCrowdsaleData([]byte) (*voting.SaleData, error)
 
 	Close() error
 }

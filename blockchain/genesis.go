@@ -269,9 +269,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(version int, ini
 		LiquidationStart: 15000,   // 150%
 	}
 	// Decentralize central bank params
-	genesisBlock.Header.DCBConstitution.DCBParams = DCBParams{
-		DCBBoardPubKeys: []string{},
-	}
+	genesisBlock.Header.DCBConstitution.DCBParams = DCBParams{}
 	// Commercial bank params
 	genesisBlock.Header.CBParams = CBParams{}
 	copy(genesisBlock.Header.Committee, preSelectValidators)

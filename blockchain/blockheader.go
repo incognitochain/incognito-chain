@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"github.com/ninjadotorg/constant/common"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
@@ -13,8 +12,7 @@ type GOVParams struct {
 }
 
 type DCBParams struct {
-	// TODO: add crowdsale data
-	CrowdsaleEscrow privacy.PaymentAddress
+	SaleData *transaction.SaleData
 }
 
 type CBParams struct {

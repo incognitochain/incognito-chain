@@ -5,9 +5,8 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"sort"    //"strconv"
-	"strings" //"fmt"
-	//"time"
+	"sort"
+	"strings"
 	"sync"
 
 	"github.com/davecgh/go-spew/spew"
@@ -542,10 +541,11 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 				}
 
 				// Store saledata in db if needed
-				//				if proposal.DCBProposalData.
-				err := self.config.DataBase.SaveCrowdsaleData(tx.SaleData)
-				if err != nil {
-					return err
+				if proposal.DCBProposalData.DCBParams.SaleData != nil {
+					err := self.config.DataBase.SaveCrowdsaleData(proposal.DCBProposalData.DCBParams.SaleData)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}

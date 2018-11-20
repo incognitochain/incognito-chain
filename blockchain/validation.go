@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"math"
 
-	"encoding/hex"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
@@ -393,11 +392,7 @@ func verifyByBoard(
 	var pubKeys []string
 	if boardType == common.DCB {
 		address = string(common.DCBAddress)
-<<<<<<< HEAD
-		pubKeys = bc.BestState[0].BestBlock.Header.DCBParams.DCBBoardPubKeys
-=======
 		pubKeys = bc.BestState[0].BestBlock.Header.DCBBoardPubKeys
->>>>>>> master
 	} else if boardType == common.GOV {
 		address = string(common.GOVAddress)
 		pubKeys = bc.BestState[0].BestBlock.Header.GOVBoardPubKeys
@@ -429,47 +424,35 @@ func (bc *BlockChain) VerifyCustomTokenSigns(tx transaction.Transaction) bool {
 	return verifyByBoard(bc, boardType, customToken)
 }
 
-func (self *BlockChain) ValidateTxCrowdsale(tx transaction.Transaction, chainID byte) error {
-	txCrowdsale, ok := tx.(*transaction.TxCrowdsale)
-	if !ok {
-		return fmt.Errorf("Error parsing transaction")
-	}
-
-	// Check if crowdsale id is unique
-	_, err := self.config.DataBase.LoadCrowdsaleData(txCrowdsale.SaleID)
-	if err == nil {
-		return fmt.Errorf("SaleID found in database")
-	}
-
-	// Check if asset is sent to escrow account
-	escrowAccount := self.BestState[chainID].BestBlock.Header.DCBParams.CrowdsaleEscrow
-
-	if txCrowdsale.SellingAsset == common.AssetTypeBond {
-		for _, vout := range txCrowdsale.TxTokenData.Vouts {
-			if !bytes.Equal(escrowAccount.Pk[:], vout.PaymentAddress.Pk[:]) || !bytes.Equal(escrowAccount.Tk[:], vout.PaymentAddress.Tk[:]) {
-				return fmt.Errorf("Selling asset must be sent to escrow account")
-			}
-		}
-	} else if txCrowdsale.SellingAsset == common.AssetTypeCoin {
-		// No other assets are sent
-		if len(txCrowdsale.TxTokenData.Vouts) > 0 {
-			return fmt.Errorf("Cannot send token assets")
-		}
-
-		for _, desc := range txCrowdsale.Tx.Descs {
-			for _, note := range desc.Note {
-				if !bytes.Equal(note.Apk[:], escrowAccount.Pk[:]) {
-					return fmt.Errorf("Selling asset must be sent to escrow account")
-				}
-			}
-		}
-	}
-	return nil
-}
-
 func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, chainID byte) error {
 	// Check if crowdsale existed
-	// Check if sending asset is correct
-	// Check sending address is DCB's
+	requestTx, ok := tx.(*transaction.TxBuySellDCBRequest)
+	if !ok {
+		return fmt.Errorf("Error parsing TxBuySellDCBRequest")
+	}
+	saleData, err := self.config.DataBase.LoadCrowdsaleData(requestTx.SaleID)
+	if err != nil {
+		return fmt.Errorf("SaleID not found")
+	}
+
+	// Check if sale is still valid
+	if self.BestState[chainID].Height >= saleData.EndBlock {
+		return fmt.Errorf("Sale ended")
+	}
+
+	if saleData.BuyingAsset == common.AssetTypeBond {
+		for _, vout := range requestTx.TxTokenData.Vouts {
+			// Check if sending asset is correct
+			if vout.BuySellResponse.AssetID != saleData.BondID {
+				return fmt.Errorf("Received asset id %s instead of %s", vout.BuySellResponse.AssetID, saleData.BondID)
+			}
+
+			// Check sending address is DCB's
+			// TODO(@0xbunyip): compare full payment address
+			if !bytes.Equal(vout.PaymentAddress.Pk[:], common.DCBAddress) {
+				return fmt.Errorf("Sending payment to %x instead of %x", vout.PaymentAddress.Pk[:], common.DCBAddress)
+			}
+		}
+	}
 	return nil
 }
