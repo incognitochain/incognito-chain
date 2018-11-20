@@ -460,7 +460,7 @@ func (bc *BlockChain) ValidateTxAcceptGOVProposal(tx transaction.Transaction, ch
 }
 
 func (bc *BlockChain) ValidateTxVoteGOVProposal(tx transaction.Transaction, chainID byte) error {
-
+	return nil
 }
 
 func (self *BlockChain) ValidateDoubleSpendCustomToken(tx *transaction.TxCustomToken) (error) {

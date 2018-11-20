@@ -333,6 +333,7 @@ func (tp *TxPool) validateSanityVoteDCBBoardTx(voteDCBBoard *transaction.TxVoteD
 	}
 	//xxx check this pubkey sanity
 	//	voteDCBBoard.VoteDCBBoardData.CandidatePubKey
+	return true, nil
 }
 
 // MaybeAcceptTransaction is the main workhorse for handling insertion of new
