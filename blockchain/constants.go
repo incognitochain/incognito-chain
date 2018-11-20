@@ -7,26 +7,24 @@ const (
 	ThresholdRatioOfGovCrisis = 90
 
 	// Mainnet
-	Mainnet               = 0x01
-	MainetName            = "mainnet"
-	MainnetDefaultPort    = "9333"
-	MainnetInitFundSalary = 0
-	MainnetInitDCBToken   = 0
-	MainnetInitGovToken   = 0
-	MainnetInitCmBToken   = 0
-	// TODO change on production
-	MainnetGenesisblockPaymentAddress = "12Rt2dt1UT6PjZ7HzDVjkP5nAXZ22vPYWD1b31XuJ4FJBPorWpGbKTACT8wyfHqwDRqg3EuX2zAU9YQZvB6bNMNTsSGjqXHMQw9H1Xn"
+	Mainnet                           = 0x01
+	MainetName                        = "mainnet"
+	MainnetDefaultPort                = "9333"
+	MainnetInitFundSalary             = 0
+	MainnetInitDCBToken               = 0
+	MainnetInitGovToken               = 0
+	MainnetInitCmBToken               = 0
+	MainnetGenesisblockPaymentAddress = "1UuyYcHgVFLMd8Qy7T1ZWRmfFvaEgogF7cEsqY98ubQjoQUy4VozTqyfSNjkjhjR85C6GKBmw1JKekgMwCeHtHex25XSKwzb9QPQ2g6a3"
 
 	// Testnet
-	Testnet               = 0x02
-	TestnetName           = "testnet"
-	TestnetDefaultPort    = "9444"
-	TestnetInitFundSalary = 1000000000000000
-	TestnetInitDCBToken   = 0
-	TestnetInitGovToken   = 0
-	TestnetInitCmBToken   = 0
-	// TODO change on production
-	TestnetGenesisBlockPaymentAddress = "12Rt2dt1UT6PjZ7HzDVjkP5nAXZ22vPYWD1b31XuJ4FJBPorWpGbKTACT8wyfHqwDRqg3EuX2zAU9YQZvB6bNMNTsSGjqXHMQw9H1Xn"
+	Testnet                           = 0x02
+	TestnetName                       = "testnet"
+	TestnetDefaultPort                = "9444"
+	TestnetInitFundSalary             = 1000000000000000
+	TestnetInitDCBToken               = 0
+	TestnetInitGovToken               = 0
+	TestnetInitCmBToken               = 0
+	TestnetGenesisBlockPaymentAddress = "1Uv12YEcd5w5Qm79sTGHSHYnCfVKM2ui8mbapD1dgziUf9211b5cnCSdxVb1DoXyDD19V1THMSnaAWZ18sJtmaVnh56wVhwb1HuYpkTa4"
 )
 
 const (

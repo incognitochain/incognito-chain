@@ -20,7 +20,7 @@ func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
 		if err != nil {
 			return err
 		}
-		if tx.ValidateTransaction() == false {
+		if self.ValidateSpecTxByItSelf(tx) == false {
 			return NewConsensusError(ErrTxIsWrong, nil)
 		}
 	}
@@ -35,6 +35,12 @@ func (self *Engine) ValidateSpecTxWithBlockChain(tx transaction.Transaction) err
 		return err
 	}
 	return self.config.MemPool.ValidateTxWithBlockChain(tx, chainID)
+}
+
+// Checl spec tx by it self
+func (self *Engine) ValidateSpecTxByItSelf(tx transaction.Transaction) bool {
+	// get chainID of tx
+	return self.config.MemPool.ValidateTxByItSelf(tx)
 }
 
 func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, sigs []string) error {

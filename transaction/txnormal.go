@@ -140,6 +140,14 @@ func (tx *Tx) GetSenderAddrLastByte() byte {
 	return tx.AddressLastByte
 }
 
+func (tx *Tx) ListNullifiers() [][]byte {
+	result := [][]byte{}
+	for _, d := range tx.Descs {
+		result = append(result, d.Nullifiers...)
+	}
+	return result
+}
+
 // CreateTx creates transaction with appropriate proof for a private payment
 // rts: mapping from the chainID to the root of the commitment merkle tree at current block
 // 		(the latest block of the node creating this tx)
@@ -718,9 +726,9 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	var sizeFee uint64 = 8      // uint64
 	var sizeDescs uint64        // uint64
 	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
 	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
 	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte

@@ -189,6 +189,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	self.memPool.Init(&mempool.Config{
 		Policy: mempool.Policy{
 			MaxTxVersion: transaction.TxVersion + 1,
+			BlockChain:   self.blockChain,
 		},
 		BlockChain:   self.blockChain,
 		DataBase:     self.dataBase,
@@ -723,7 +724,6 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 }
 
 func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr) {
-	// TODO for ongetaddr message
 	Logger.log.Info("Receive getaddr message START")
 
 	// send message for addr
@@ -754,17 +754,7 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 }
 
 func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
-	// TODO for onaddr message
 	Logger.log.Infof("Receive addr message %v", msg.RawPeers)
-	//for _, rawPeer := range msg.RawPeers {
-	//	for _, listen := range self.connManager.ListeningPeers {
-	//		for _, _peerConn := range listen.PeerConns {
-	//			if _peerConn.RemotePeerID.Pretty() != self.connManager.GetPeerId(rawPeer.RemoteRawAddress) {
-	//				go self.connManager.Connect(rawPeer.RemoteRawAddress, rawPeer.PaymentAddress)
-	//			}
-	//		}
-	//	}
-	//}
 }
 
 func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageBlockSigReq) {

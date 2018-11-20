@@ -5,7 +5,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
-type BuySellRequestTx struct {
+type TxBuySellRequest struct {
 	*RequestInfo
 	*Tx // fee + amount to pay for buying bonds/govs
 	// TODO: signature?
@@ -18,12 +18,12 @@ type RequestInfo struct {
 	BuyPrice       uint64 // in Constant unit
 }
 
-// CreateBuySellRequestTx
+// TxCreateBuySellRequest
 // senderKey and paymentInfo is for paying fee
-func CreateBuySellRequestTx(
+func TxCreateBuySellRequest(
 	feeArgs FeeArgs,
 	requestInfo *RequestInfo,
-) (*BuySellRequestTx, error) {
+) (*TxBuySellRequest, error) {
 	// Create tx for fee &
 	tx, err := CreateTx(
 		feeArgs.SenderKey,
@@ -39,15 +39,15 @@ func CreateBuySellRequestTx(
 		return nil, err
 	}
 
-	buySellRequestTx := &BuySellRequestTx{
+	txbuySellRequest := &TxBuySellRequest{
 		RequestInfo: requestInfo,
 		Tx:          tx,
 	}
-	buySellRequestTx.Type = common.TxBuyFromGOVRequest
-	return buySellRequestTx, nil
+	txbuySellRequest.Type = common.TxBuyFromGOVRequest
+	return txbuySellRequest, nil
 }
 
-func (tx *BuySellRequestTx) Hash() *common.Hash {
+func (tx *TxBuySellRequest) Hash() *common.Hash {
 	// get hash of tx
 	record := tx.Tx.Hash().String()
 
@@ -60,7 +60,7 @@ func (tx *BuySellRequestTx) Hash() *common.Hash {
 	return &hash
 }
 
-func (tx *BuySellRequestTx) ValidateTransaction() bool {
+func (tx *TxBuySellRequest) ValidateTransaction() bool {
 	// validate for normal tx
 	if !tx.Tx.ValidateTransaction() {
 		return false
@@ -68,19 +68,19 @@ func (tx *BuySellRequestTx) ValidateTransaction() bool {
 	return true
 }
 
-func (tx *BuySellRequestTx) GetType() string {
+func (tx *TxBuySellRequest) GetType() string {
 	return tx.Tx.Type
 }
 
-func (tx *BuySellRequestTx) GetTxVirtualSize() uint64 {
+func (tx *TxBuySellRequest) GetTxVirtualSize() uint64 {
 	// TODO: calculate
 	return 0
 }
 
-func (tx *BuySellRequestTx) GetSenderAddrLastByte() byte {
+func (tx *TxBuySellRequest) GetSenderAddrLastByte() byte {
 	return tx.Tx.AddressLastByte
 }
 
-func (tx *BuySellRequestTx) GetTxFee() uint64 {
+func (tx *TxBuySellRequest) GetTxFee() uint64 {
 	return tx.Tx.Fee
 }

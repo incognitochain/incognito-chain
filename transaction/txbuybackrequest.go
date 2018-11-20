@@ -4,7 +4,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
-type BuyBackRequestTx struct {
+type TxBuyBackRequest struct {
 	*BuyBackRequestInfo
 	*Tx // fee
 	// TODO: signature?
@@ -15,12 +15,12 @@ type BuyBackRequestInfo struct {
 	VoutIndex       int
 }
 
-// CreateBuyBackRequestTx
+// CreateTxBuyBackRequest
 // senderKey and paymentInfo is for paying fee
-func CreateBuyBackRequestTx(
+func CreateTxBuyBackRequest(
 	feeArgs FeeArgs,
 	buyBackRequestInfo *BuyBackRequestInfo,
-) (*BuyBackRequestTx, error) {
+) (*TxBuyBackRequest, error) {
 	// Create tx for fee &
 	tx, err := CreateTx(
 		feeArgs.SenderKey,
@@ -36,15 +36,15 @@ func CreateBuyBackRequestTx(
 		return nil, err
 	}
 
-	buyBackRequestTx := &BuyBackRequestTx{
+	txBuyBackRequest := &TxBuyBackRequest{
 		BuyBackRequestInfo: buyBackRequestInfo,
 		Tx:                 tx,
 	}
-	buyBackRequestTx.Type = common.TxBuyBackRequest
-	return buyBackRequestTx, nil
+	txBuyBackRequest.Type = common.TxBuyBackRequest
+	return txBuyBackRequest, nil
 }
 
-func (tx *BuyBackRequestTx) Hash() *common.Hash {
+func (tx *TxBuyBackRequest) Hash() *common.Hash {
 	// get hash of tx
 	record := tx.Tx.Hash().String()
 	record += tx.BuyBackFromTxID.String()
@@ -55,7 +55,7 @@ func (tx *BuyBackRequestTx) Hash() *common.Hash {
 	return &hash
 }
 
-func (tx *BuyBackRequestTx) ValidateTransaction() bool {
+func (tx *TxBuyBackRequest) ValidateTransaction() bool {
 	// validate for normal tx
 	if !tx.Tx.ValidateTransaction() {
 		return false
@@ -63,19 +63,19 @@ func (tx *BuyBackRequestTx) ValidateTransaction() bool {
 	return true
 }
 
-func (tx *BuyBackRequestTx) GetType() string {
+func (tx *TxBuyBackRequest) GetType() string {
 	return tx.Tx.Type
 }
 
-func (tx *BuyBackRequestTx) GetTxVirtualSize() uint64 {
+func (tx *TxBuyBackRequest) GetTxVirtualSize() uint64 {
 	// TODO: calculate
 	return 0
 }
 
-func (tx *BuyBackRequestTx) GetSenderAddrLastByte() byte {
+func (tx *TxBuyBackRequest) GetSenderAddrLastByte() byte {
 	return tx.Tx.AddressLastByte
 }
 
-func (tx *BuyBackRequestTx) GetTxFee() uint64 {
+func (tx *TxBuyBackRequest) GetTxFee() uint64 {
 	return tx.Tx.Fee
 }
