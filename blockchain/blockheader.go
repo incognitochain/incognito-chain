@@ -3,6 +3,7 @@ package blockchain
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/voting"
 )
 
 type GOVParams struct {
@@ -12,7 +13,7 @@ type GOVParams struct {
 }
 
 type DCBParams struct {
-	SaleData *transaction.SaleData
+	SaleData *voting.SaleData
 }
 
 type CBParams struct {

@@ -1,57 +1,27 @@
 package transaction
 
 import (
+	"fmt"
+
 	"github.com/ninjadotorg/constant/common"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/voting"
 )
-
-type SaleData struct {
-	SaleID []byte // Unique id of the crowdsale to store in db
-	BondID []byte // in case either base or quote asset is bond
-
-	BuyingAsset  string
-	SellingAsset string
-	Price        uint64
-}
 
 type TxBuySellDCBResponse struct {
 	*TxCustomToken // fee + amount to pay for bonds/constant
 	RequestedTxID  *common.Hash
 }
 
-// CreateTxBuySellDCBResponse
-func CreateTxBuySellDCBResponse(
-	senderKey *privacy.SpendingKey,
-	paymentInfo []*privacy.PaymentInfo,
-	rts map[byte]*common.Hash,
-	usableTx map[byte][]*Tx,
-	commitments map[byte]([][]byte),
-	fee uint64,
-	senderChainID byte,
-	tokenParams *CustomTokenParamTx,
-	listCustomTokens map[common.Hash]TxCustomToken,
-	requestedTxID *common.Hash,
-) (*TxBuySellDCBResponse, error) {
-	tx, err := CreateTxCustomToken(
-		senderKey,
-		paymentInfo,
-		rts,
-		usableTx,
-		commitments,
-		fee,
-		senderChainID,
-		tokenParams,
-		listCustomTokens,
-	)
-	if err != nil {
-		return nil, err
-	}
+func BuildTxBuySellDCBResponse(txRequest *TxBuySellRequest, saleData *voting.SaleData) (*TxBuySellDCBResponse, error) {
+	if saleData.SellingAsset == common.AssetTypeCoin {
+		// Mint and send Constant
 
-	buySellResponseTx := &TxBuySellDCBResponse{
-		TxCustomToken: tx,
+	} else if saleData.SellingAsset == common.AssetTypeBond {
+		// Send bond from DCB's account
+	} else {
+		return nil, fmt.Errorf("Selling asset of crowdsale is invalid: %s", saleData.SellingAsset)
 	}
-	buySellResponseTx.Type = common.TxBuySellDCBResponse
-	return buySellResponseTx, nil
+	return nil, nil
 }
 
 func (tx *TxBuySellDCBResponse) Hash() *common.Hash {

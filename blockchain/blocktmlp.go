@@ -470,6 +470,9 @@ func (blockgen *BlkTmplGenerator) processDividend(
 		for i, holder := range tokenHolders {
 			// TODO(@0xbunyip): holder here is Pk only, change to use both Pk and Pkenc
 			holderAddr, err := hex.DecodeString(holder)
+			if err != nil {
+				return nil, 0, err
+			}
 			holderAddress := (&privacy.PaymentAddress{}).FromBytes(holderAddr)
 			info := transaction.DividendInfo{
 				TokenHolder: *holderAddress,
@@ -661,6 +664,17 @@ func buildBuyBackResponsesTx(
 	}
 }
 
-func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*transaction.TxDesc) ([][]*transaction.TxBuySellDCBRequest, error) {
+func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*transaction.TxDesc) ([]*transaction.TxBuySellDCBResponse, error) {
+	txToRemove := []transaction.Transaction{}
+	for _, txDesc := range sourceTxns {
+		if txDesc.Tx.GetType() == common.TxBuySellDCBRequest {
+			tx, err := (txDesc.Tx).(*transaction.TxBuySellRequest)
+			if err != nil {
+				txToRemove = append(txToRemove, tx)
+			}
+
+			// Create corresponding response to send selling asset
+		}
+	}
 	return nil, nil
 }

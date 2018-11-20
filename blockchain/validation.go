@@ -425,7 +425,7 @@ func (bc *BlockChain) VerifyCustomTokenSigns(tx transaction.Transaction) bool {
 
 func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, chainID byte) error {
 	// Check if crowdsale existed
-	requestTx, ok := tx.(*transaction.TxBuySellDCBRequest)
+	requestTx, ok := tx.(*transaction.TxBuySellRequest)
 	if !ok {
 		return fmt.Errorf("Error parsing TxBuySellDCBRequest")
 	}
@@ -456,7 +456,7 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 	return nil
 }
 
-func (self *BlockChain) ValidateDoubleSpendCustomToken(tx *transaction.TxCustomToken) (error) {
+func (self *BlockChain) ValidateDoubleSpendCustomToken(tx *transaction.TxCustomToken) error {
 	listTxs, err := self.GetCustomTokenTxs(&tx.TxTokenData.PropertyID)
 	if err != nil {
 		return err
@@ -479,7 +479,7 @@ func (self *BlockChain) ValidateDoubleSpendCustomToken(tx *transaction.TxCustomT
 	return nil
 }
 
-func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCustomToken, txInBlock transaction.Transaction) (error) {
+func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCustomToken, txInBlock transaction.Transaction) error {
 	temp := txInBlock.(*transaction.TxCustomToken)
 	for _, vin := range temp.TxTokenData.Vins {
 		for _, item := range tx.TxTokenData.Vins {

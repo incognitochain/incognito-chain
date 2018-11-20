@@ -51,8 +51,8 @@ func CreateBuySellRequestTx(
 	}
 
 	txbuySellRequest := &TxBuySellRequest{
-		RequestInfo: requestInfo,
-		Tx:          tx,
+		RequestInfo:   requestInfo,
+		TxCustomToken: tx,
 	}
 	txbuySellRequest.Type = common.TxBuyFromGOVRequest
 	return txbuySellRequest, nil
