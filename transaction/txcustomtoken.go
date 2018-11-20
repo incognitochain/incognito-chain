@@ -17,6 +17,12 @@ type TxCustomToken struct {
 	TxTokenData TxTokenData
 	BoardType   uint8 // 1: DCB, 2: GOV
 	BoardSigns  map[string][]byte
+
+	listUtxo map[common.Hash]TxCustomToken
+}
+
+func (tx *TxCustomToken) SetListUtxo(data map[common.Hash]TxCustomToken) {
+	tx.listUtxo = data
 }
 
 // Hash returns the hash of all fields of the transaction
@@ -39,8 +45,24 @@ func (tx TxCustomToken) Hash() *common.Hash {
 func (tx *TxCustomToken) ValidateTransaction() bool {
 	// validate for normal tx
 	if tx.Tx.ValidateTransaction() {
-		// validate for tx token
-		// TODO, verify signature
+		if len(tx.listUtxo) == 0 {
+			return false
+		}
+		for _, vin := range tx.TxTokenData.Vins {
+			keySet := cashec.KeySet{}
+			keySet.PaymentAddress = vin.PaymentAddress
+
+			// get data from utxo
+			utxo := tx.listUtxo[vin.TxCustomTokenID]
+			vout := utxo.TxTokenData.Vouts[vin.VoutIndex]
+			data := vout.Hash() // hash of vout in utxo
+
+			ok, err := keySet.Verify(data[:], []byte(vin.Signature))
+			if err != nil {
+				return false
+			}
+			return ok
+		}
 		return true
 	}
 	return false
