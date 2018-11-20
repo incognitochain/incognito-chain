@@ -123,11 +123,11 @@ func (curve p256CurveFast) Inverse(k *big.Int) *big.Int {
 	var table [15][32]byte
 
 	x := fromBig(k)
-	// This code operates in the Montgomery domain where R = 2^256 mod n
+	// This code operates in the Montgomery domain where Randomness = 2^256 mod n
 	// and n is the order of the scalar field. (See initP256 for the
-	// value.) Elements in the Montgomery domain take the form a×R and
-	// multiplication of x and y in the calculates (x × y × R^-1) mod n. RR
-	// is R×R mod n thus the Montgomery multiplication x and RR gives x×R,
+	// value.) Elements in the Montgomery domain take the form a×Randomness and
+	// multiplication of x and y in the calculates (x × y × Randomness^-1) mod n. RR
+	// is Randomness×Randomness mod n thus the Montgomery multiplication x and RR gives x×Randomness,
 	// i.e. converts x into the Montgomery domain. Stored in BigEndian form
 	RR := []byte{0x66, 0xe1, 0x2d, 0x94, 0xf3, 0xd9, 0x56, 0x20, 0x28, 0x45, 0xb2, 0x39, 0x2b, 0x6b, 0xec, 0x59,
 		0x46, 0x99, 0x79, 0x9c, 0x49, 0xbd, 0x6f, 0xa6, 0x83, 0x24, 0x4c, 0x95, 0xbe, 0x79, 0xee, 0xa2}
@@ -204,9 +204,9 @@ func p256GetMultiplier(in []byte) []byte {
 	return fromBig(n)
 }
 
-// p256MulAsm operates in a Montgomery domain with R = 2^256 mod p, where p is the
+// p256MulAsm operates in a Montgomery domain with Randomness = 2^256 mod p, where p is the
 // underlying field of the curve. (See initP256 for the value.) Thus rr here is
-// R×R mod p. See comment in Inverse about how this is used.
+// Randomness×Randomness mod p. See comment in Inverse about how this is used.
 var rr = []byte{0x00, 0x00, 0x00, 0x04, 0xff, 0xff, 0xff, 0xfd, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
 	0xff, 0xff, 0xff, 0xfb, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03}
 

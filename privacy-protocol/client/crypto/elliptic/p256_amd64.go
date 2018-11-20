@@ -127,11 +127,11 @@ func (curve p256Curve) Inverse(k *big.Int) *big.Int {
 
 	x := make([]uint64, 4)
 	fromBig(x[:], k)
-	// This code operates in the Montgomery domain where R = 2^256 mod n
+	// This code operates in the Montgomery domain where Randomness = 2^256 mod n
 	// and n is the order of the scalar field. (See initP256 for the
-	// value.) Elements in the Montgomery domain take the form a×R and
-	// multiplication of x and y in the calculates (x × y × R^-1) mod n. RR
-	// is R×R mod n thus the Montgomery multiplication x and RR gives x×R,
+	// value.) Elements in the Montgomery domain take the form a×Randomness and
+	// multiplication of x and y in the calculates (x × y × Randomness^-1) mod n. RR
+	// is Randomness×Randomness mod n thus the Montgomery multiplication x and RR gives x×Randomness,
 	// i.e. converts x into the Montgomery domain.
 	RR := []uint64{0x83244c95be79eea2, 0x4699799c49bd6fa6, 0x2845b2392b6bec59, 0x66e12d94f3d95620}
 	p256OrdMul(table[:4], x, RR)
@@ -215,9 +215,9 @@ func p256GetScalar(out []uint64, in []byte) {
 	fromBig(out, n)
 }
 
-// p256Mul operates in a Montgomery domain with R = 2^256 mod p, where p is the
+// p256Mul operates in a Montgomery domain with Randomness = 2^256 mod p, where p is the
 // underlying field of the curve. (See initP256 for the value.) Thus rr here is
-// R×R mod p. See comment in Inverse about how this is used.
+// Randomness×Randomness mod p. See comment in Inverse about how this is used.
 var rr = []uint64{0x0000000000000003, 0xfffffffbffffffff, 0xfffffffffffffffe, 0x00000004fffffffd}
 
 func maybeReduceModP(in *big.Int) *big.Int {

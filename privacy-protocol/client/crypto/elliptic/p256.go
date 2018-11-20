@@ -19,7 +19,7 @@ type p256Curve struct {
 var (
 	p256Params *CurveParams
 
-	// RInverse contains 1/R mod p - the inverse of the Montgomery constant
+	// RInverse contains 1/Randomness mod p - the inverse of the Montgomery constant
 	// (2**257).
 	p256RInverse *big.Int
 )
@@ -97,7 +97,7 @@ func (p256Curve) ScalarMult(bigX, bigY *big.Int, scalar []byte) (x, y *big.Int) 
 // would require much bit-shifting to correct.
 //
 // Finally, the values stored in a field element are in Montgomery form. So the
-// value |y| is stored as (y*R) mod p, where p is the P-256 prime and R is
+// value |y| is stored as (y*Randomness) mod p, where p is the P-256 prime and Randomness is
 // 2**257.
 
 const (
@@ -306,12 +306,12 @@ func p256Diff(out, in, in2 *[p256Limbs]uint32) {
 	p256ReduceCarry(out, carry)
 }
 
-// p256ReduceDegree sets out = tmp/R mod p where tmp contains 64-bit words with
+// p256ReduceDegree sets out = tmp/Randomness mod p where tmp contains 64-bit words with
 // the same 29,28,... bit positions as an field element.
 //
-// The values in field elements are in Montgomery form: x*R mod p where R =
+// The values in field elements are in Montgomery form: x*Randomness mod p where Randomness =
 // 2**257. Since we just multiplied two Montgomery values together, the result
-// is x*y*R*R mod p. We wish to divide by R in order for the result also to be
+// is x*y*Randomness*Randomness mod p. We wish to divide by Randomness in order for the result also to be
 // in Montgomery form.
 //
 // On entry: tmp[i] < 2**64
@@ -367,14 +367,14 @@ func p256ReduceDegree(out *[p256Limbs]uint32, tmp [17]uint64) {
 
 	// Montgomery elimination of terms:
 	//
-	// Since R is 2**257, we can divide by R with a bitwise shift if we can
+	// Since Randomness is 2**257, we can divide by Randomness with a bitwise shift if we can
 	// ensure that the right-most 257 bits are all zero. We can make that true
 	// by adding multiplies of p without affecting the value.
 	//
 	// So we eliminate limbs from right to left. Since the bottom 29 bits of p
 	// are all ones, then by adding tmp2[0]*p to tmp2 we'll make tmp2[0] == 0.
 	// We can do that for 8 further limbs and then right shift to eliminate the
-	// extra factor of R.
+	// extra factor of Randomness.
 	for i := 0; ; i += 2 {
 		tmp2[i+1] += tmp2[i] >> 29
 		x = tmp2[i] & bottom29Bits
@@ -1144,7 +1144,7 @@ func p256ScalarMult(xOut, yOut, zOut, x, y *[p256Limbs]uint32, scalar *[32]uint8
 	}
 }
 
-// p256FromBig sets out = R*in.
+// p256FromBig sets out = Randomness*in.
 func p256FromBig(out *[p256Limbs]uint32, in *big.Int) {
 	tmp := new(big.Int).Lsh(in, 257)
 	tmp.Mod(tmp, p256Params.P)
