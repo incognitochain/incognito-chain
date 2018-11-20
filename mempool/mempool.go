@@ -332,7 +332,7 @@ func (tp *TxPool) validateSanityVoteDCBBoardTx(voteDCBBoard *transaction.TxVoteD
 		return ok, err
 	}
 	//xxx check this pubkey sanity
-//	voteDCBBoard.VoteDCBBoardData.CandidatePubKey
+	//	voteDCBBoard.VoteDCBBoardData.CandidatePubKey
 }
 
 // MaybeAcceptTransaction is the main workhorse for handling insertion of new
@@ -354,7 +354,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 }
 
 // ValidateDoubleSpendTxWithCurrentMempool - check double spend for new tx with all txs in mempool
-func (tp *TxPool) ValidateDoubleSpendTxWithCurrentMempool(txNormal transaction.Tx) (error) {
+func (tp *TxPool) ValidateDoubleSpendTxWithCurrentMempool(txNormal transaction.Tx) error {
 	for _, temp1 := range tp.poolNullifiers {
 		for _, desc := range txNormal.Descs {
 			for _, nullifier := range desc.Nullifiers {
@@ -368,7 +368,7 @@ func (tp *TxPool) ValidateDoubleSpendTxWithCurrentMempool(txNormal transaction.T
 }
 
 // ValidateTxWithCurrentMempool - check new tx with all txs in mempool
-func (tp *TxPool) ValidateTxWithCurrentMempool(tx transaction.Transaction) (error) {
+func (tp *TxPool) ValidateTxWithCurrentMempool(tx transaction.Transaction) error {
 	switch tx.GetType() {
 	case common.TxNormalType:
 		{
@@ -393,7 +393,7 @@ func (tp *TxPool) ValidateTxWithCurrentMempool(tx transaction.Transaction) (erro
 			txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
 			txCustomToKen := txVoteDCBBoard.TxCustomToken
 			err := tp.validateTxCustomTokenInPool(&txCustomToKen)
-			if err != nil{
+			if err != nil {
 				return err
 			}
 			return nil
@@ -402,7 +402,7 @@ func (tp *TxPool) ValidateTxWithCurrentMempool(tx transaction.Transaction) (erro
 		{
 			txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
 			txCustomToKen := txVoteGOVBoard.TxCustomToken
-			err:= tp.validateTxCustomTokenInPool(&txCustomToKen)
+			err := tp.validateTxCustomTokenInPool(&txCustomToKen)
 			if err != nil {
 				return err
 			}
@@ -592,7 +592,7 @@ func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
 			// with custom token tx, we need to get utxo for custom token and for validation
 			txCustomToken := tx.(*transaction.TxCustomToken)
 			ok := tp.GetListUTXOForCustomToken(txCustomToken)
-			if ok == false{
+			if ok == false {
 				return false
 			}
 			return txCustomToken.ValidateTransaction()
@@ -602,7 +602,7 @@ func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
 			txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
 			txCustomToken := txVoteDCBBoard.TxCustomToken
 			ok := tp.GetListUTXOForCustomToken(&txCustomToken)
-			if ok == false{
+			if ok == false {
 				return false
 			}
 			return txCustomToken.ValidateTransaction() && txVoteDCBBoard.Validate()
@@ -612,7 +612,7 @@ func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
 			txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
 			txCustomToken := txVoteGOVBoard.TxCustomToken
 			ok := tp.GetListUTXOForCustomToken(&txCustomToken)
-			if ok == false{
+			if ok == false {
 				return false
 			}
 			return txCustomToken.ValidateTransaction() && txVoteGOVBoard.Validate()
