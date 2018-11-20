@@ -62,12 +62,6 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				_ = json.Unmarshal(txTempJson, &txNormal)
 				self.Transactions = append(self.Transactions, txNormal)
 			}
-		case common.TxActionParamsType:
-			{
-				txAction := transaction.ActionParamTx{}
-				_ = json.Unmarshal(txTempJson, &txAction)
-				self.Transactions = append(self.Transactions, &txAction)
-			}
 		case common.TxCustomTokenType:
 			{
 				txCustomToken := &transaction.TxCustomToken{}
@@ -76,7 +70,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 			}
 			/*case common.TxBuyRequest, common.TxSellRequest:
 			  {
-				  buySellReqTx := &transaction.BuySellRequestTx{}
+				  buySellReqTx := &transaction.TxBuySellRequest{}
 				  _ = json.Unmarshal(txTempJson, &buySellReqTx)
 				  self.Transactions = append(self.Transactions, buySellReqTx)
 			  }*/
