@@ -511,7 +511,7 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 				tx := tx.(*transaction.TxDividendPayout)
 				for _, desc := range tx.Descs {
 					for _, note := range desc.Note {
-						utxos := self.GetAccountUTXO(note.PaymentAddress.Pk[:])
+						utxos := self.GetAccountUTXO(note.Apk[:])
 						for _, utxo := range utxos {
 							self.UpdateUTXOReward(utxo, tx.PayoutID)
 						}
@@ -685,7 +685,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 						} else {
 							// no privacy-protocol
 							for i, note := range desc.Note {
-								if bytes.Equal(note.PaymentAddress.Pk[:], keySet.PaymentAddress.Pk[:]) {
+								if bytes.Equal(note.Apk[:], keySet.PaymentAddress.Pk[:]) {
 									copyDesc.AppendNote(note)
 									copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
 								}
@@ -775,7 +775,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 					copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
 					copyDesc.AppendNote(note)
 					note.Cm = candidateCommitment
-					note.PaymentAddress = privacy.GeneratePaymentAddress(keys.PrivateKey)
+					note.Apk = privacy.GeneratePublicKey(keys.PrivateKey)
 					copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
 				} else {
 					continue
@@ -783,7 +783,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 			}
 		} else {
 			for i, note := range desc.Note {
-				if bytes.Equal(note.PaymentAddress.Pk[:], keys.PaymentAddress.Pk[:]) && note.Value > 0 {
+				if bytes.Equal(note.Apk[:], keys.PaymentAddress.Pk[:]) && note.Value > 0 {
 					// no privacy-protocol
 					candidateCommitment := desc.Commitments[i]
 					if len(nullifiersInDb) > 0 {
@@ -802,7 +802,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 					}
 					copyDesc.AppendNote(note)
 					note.Cm = candidateCommitment
-					note.PaymentAddress = privacy.GeneratePaymentAddress(keys.PrivateKey)
+					note.Apk = privacy.GeneratePublicKey(keys.PrivateKey)
 					copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
 				} else {
 					continue

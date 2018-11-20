@@ -35,7 +35,7 @@ func createGenesisInputNote(spendingKey *privacy.SpendingKey, idx uint) *client.
 	r := [32]byte{byte(idx)}
 	note := &client.Note{
 		Value:          0,
-		PaymentAddress: addr,
+		Apk: addr.Pk,
 		Rho:            rho[:],
 		R:              r[:],
 	}
@@ -65,8 +65,8 @@ func (self GenesisBlockGenerator) createGenesisTx(initialCoin uint64, initialAdd
 	if err != nil {
 		return nil, err
 	}
-	outNote := &client.Note{Value: initialCoin, PaymentAddress: key.KeySet.PaymentAddress}
-	placeHolderOutputNote := &client.Note{Value: 0, PaymentAddress: key.KeySet.PaymentAddress}
+	outNote := &client.Note{Value: initialCoin, Apk: key.KeySet.PaymentAddress.Pk}
+	placeHolderOutputNote := &client.Note{Value: 0, Apk: key.KeySet.PaymentAddress.Pk}
 
 	fmt.Printf("EncKey: %x\n", key.KeySet.PaymentAddress.Tk)
 

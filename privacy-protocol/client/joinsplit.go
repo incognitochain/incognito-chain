@@ -101,7 +101,7 @@ func Prove(inputs []*JSInput,
 
 		// Compute cm for new notes to check for Note commitment integrity
 		fmt.Printf("Getting commitment for output note\n")
-		fmt.Printf("PaymentAddress: %x\n", output.OutputNote.PaymentAddress)
+		fmt.Printf("PaymentAddress: %x\n", output.OutputNote.Apk)
 		fmt.Printf("Rho: %x\n", output.OutputNote.Rho)
 		fmt.Printf("Randomness: %x\n", output.OutputNote.R)
 		output.OutputNote.Cm = GetCommitment(output.OutputNote)
@@ -252,13 +252,13 @@ func Note2ZksnarkNote(note *Note) *zksnark.Note {
 		R:     make([]byte, len(note.R)),
 		Nf:    make([]byte, len(note.Nf)),
 		Rho:   make([]byte, len(note.Rho)),
-		Apk:   make([]byte, len(note.PaymentAddress.Pk)),
+		Apk:   make([]byte, len(note.Apk)),
 	}
 	copy(zknote.Cm, note.Cm)
 	copy(zknote.R, note.R)
 	copy(zknote.Nf, note.Nf) // Might be 0 for output notes
 	copy(zknote.Rho, note.Rho)
-	copy(zknote.Apk, note.PaymentAddress.Pk[:])
+	copy(zknote.Apk, note.Apk[:])
 	return &zknote
 }
 
