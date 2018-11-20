@@ -17,6 +17,7 @@ type JoinSplitDesc struct {
 	Reward          uint64             `json:"Reward"`          // For salary tx
 	Vmacs           [][]byte           `json:"Vmacs"`           // len == 2, 32 bytes
 
+	TransmissionKey [][]
 	Note []*client.Note // decrypt data for EncryptedData
 }
 

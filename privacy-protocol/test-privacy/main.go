@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"runtime"
 
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
@@ -137,5 +138,8 @@ func main() {
 	//fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
 	//fmt.Printf("\n %v\n", point.CompressPoint())
 	//zkp.TestPKComProduct()
+	//privacy.Curve.Params().G
+
+
 
 }
