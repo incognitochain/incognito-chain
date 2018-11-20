@@ -165,7 +165,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 		return nil, nil, err
 	}
 
-	// ValidateTransaction tx by it self
+	// ValidateTransaction tj by it self
 	validate := tx.ValidateTransaction()
 	if !validate {
 		err := MempoolTxError{}
