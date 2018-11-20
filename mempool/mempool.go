@@ -348,8 +348,7 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 		}
 	case common.TxSalaryType:
 		{
-			// TODO
-			return nil
+			return errors.New("Can not receive a salary tx from other node, this is a violation")
 		}
 	case common.TxCustomTokenType:
 		{
@@ -437,8 +436,6 @@ func (tp *TxPool) Size() uint64 {
 	tp.mtx.RLock()
 	size := uint64(0)
 	for _, tx := range tp.pool {
-		// TODO: need to implement size func in each type of transactions
-		// https://stackoverflow.com/questions/31496804/how-to-get-the-size-of-struct-and-its-contents-in-bytes-in-golang?rq=1
 		size += tx.Desc.Tx.GetTxVirtualSize()
 	}
 	tp.mtx.RUnlock()
