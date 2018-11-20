@@ -52,7 +52,7 @@ func (i opensslInput) Read(buf []byte) (n int, err error) {
 	for event := range i {
 		switch event {
 		case opensslRenegotiate:
-			return copy(buf, []byte("R\n")), nil
+			return copy(buf, []byte("Randomness\n")), nil
 		case opensslSendSentinel:
 			return copy(buf, []byte(opensslSentinel)), nil
 		default:

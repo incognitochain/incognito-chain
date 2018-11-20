@@ -303,7 +303,7 @@ func TestVectors(t *testing.T) {
 			pub.X = fromHex(line[5:])
 		case strings.HasPrefix(line, "Qy = "):
 			pub.Y = fromHex(line[5:])
-		case strings.HasPrefix(line, "R = "):
+		case strings.HasPrefix(line, "Randomness = "):
 			r = fromHex(line[4:])
 		case strings.HasPrefix(line, "S = "):
 			s = fromHex(line[4:])

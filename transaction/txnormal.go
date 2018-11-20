@@ -353,7 +353,7 @@ func CreateTx(
 
 				// Use the change note to continually send to receivers if needed
 				if len(paymentInfo) > 0 {
-					// outNote data (R and Rho) will be updated when building zk-proof
+					// outNote data (Randomness and Rho) will be updated when building zk-proof
 					chainNote := &ChainNote{note: outNote, chainID: senderChainID}
 					inputNotes = append(inputNotes, chainNote)
 					fmt.Printf("Reuse change note later\n")
@@ -469,11 +469,11 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	fmt.Printf("tranmissionKey[1]: %x\n", keys[1])
 	fmt.Printf("notes[0].Value: %+v\n", notes[0].Value)
 	fmt.Printf("notes[0].Rho: %x\n", notes[0].Rho)
-	fmt.Printf("notes[0].R: %x\n", notes[0].R)
+	fmt.Printf("notes[0].Randomness: %x\n", notes[0].R)
 	fmt.Printf("notes[0].Memo: %+v\n", notes[0].Memo)
 	fmt.Printf("notes[1].Value: %+v\n", notes[1].Value)
 	fmt.Printf("notes[1].Rho: %x\n", notes[1].Rho)
-	fmt.Printf("notes[1].R: %x\n", notes[1].R)
+	fmt.Printf("notes[1].Randomness: %x\n", notes[1].R)
 	fmt.Printf("notes[1].Memo: %+v\n", notes[1].Memo)
 	var noteciphers [][]byte
 	if proof != nil {

@@ -6,9 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"math/big"
 )
-
-
-
+/*The protocol is used for opening the commitments of product of 2 values*/
 /*------------------------------------------------------*/
 /*-------DECLARE INNER INGREDIENT FOR THE PROTOCOL------*/
 
@@ -56,15 +54,14 @@ type PKComProductProtocol struct {
 
 /*------------------------------------------------------*/
 /*------IMPLEMENT INNER INGREDIENT FOR THE PROTOCOL-----*/
+/*Init 2 point G and H for calculate the commitment*/
 func (basePoint *BasePoint) InitBasePoint() {
-
 	P:= new(privacy.EllipticPoint)
 	P.X = privacy.Curve.Params().Gx
 	P.Y = privacy.Curve.Params().Gy
 	basePoint.G = privacy.HashGenerator(*P)
 	basePoint.H = privacy.HashGenerator(basePoint.G)
 }
-
 func computeHashString(data [][]byte) []byte{
 	str:=make([]byte, 0)
 	for i:=0;i<len(data);i++{
@@ -75,27 +72,45 @@ func computeHashString(data [][]byte) []byte{
 	hashValue := hashFunc.Sum(nil)
 	return hashValue
 }
-func MultiScalarMul(factors  [] *big.Int, point privacy.EllipticPoint) *privacy.EllipticPoint{
-	a:=new(big.Int)
-	a.SetInt64(1)
-	for i:=0;i<len(factors);i++{
-		a.Mul(a,factors[i])
-	}
-	P:=new(privacy.EllipticPoint)
-	P.X, P.Y = privacy.Curve.ScalarMult(point.X, point.Y,a.Bytes());
-	return P
-}
-
-
 func (pro *PKComProductProtocol) SetWitness(witness PKComProductWitness) {
 	pro.Witness = witness
 }
 func (pro *PKComProductProtocol) SetProof(proof PKComProductProof) {
 	pro.Proof = proof
 }
-
-
 func (pro *PKComProductProtocol) Prove() (*PKComProductProof,error) {
+
+	/*---------------------------------------------------------------------------------|
+	| INPUT: ck: Commitment Key                                                         |
+	|				A : Commiment of value a                                                   |
+	|				(a,ra): value and its random                                               |
+	|				B : Commiment of value b                                                   |
+	|				(b,rb): value and its random														                   |
+	|				C : Commiment of value a*b														                     |
+	|				(ab,rc): product of 2 values and its random														     |
+	| OUTPUT: The proof for proving the statement: 														         |
+	|         "A,B and C is the commitment of a,b and a*b"														 |
+	|---------------------------------------------------------------------------------*/
+	/*--------------This Prove() function work under the following scheme--------------|
+	|	Choose random d, e, s, s', t in Zp																							 |
+	|	Let ck = (G, p, q, H)																														 |
+	|	Let ck' = (G, p, B, H), which B = b*G																						 |
+	|	Compute D = Com(d,s) under ck																										 |
+	|	Compute D' = Com(d,s') under ck'																								 |
+	|	Compute E = Com(e,t) under ck																		 								 |
+	|	Send D, D, E to the verifier (included in the Proof)														 |
+	|	Compute x = hash(G||H||D||D1||E) then:																					 |
+	|		Compute f1 = a*x+d mod p																										   |
+	|		Compute z1 = ra*x +s mod p																										 |
+	|		Compute f2 = bx+e mod p																										     |
+	|		Compute z2 = rb*x+t mod p																										   |
+	|		Compute z3 = (rc - a*rb) + s' mod p																						 |
+	|	Send f1, f2, z1, z2, z3 to the verifier (included in the Proof)                  |
+	|---------------------------------------------------------------------------------*/
+	/* ---------------------------------------------------------------------------------------------------------------|
+  |		THE LINK OF ORIGINAL PAPER FOR THIS PROTOCOL: https://link.springer.com/chapter/10.1007%2F978-3-319-43005-8_1 |
+  |   WE CHANGE FROM INTERACTIVE TO NON-INTERACTIVE SCHEME VIA FIAT-SHAMIR HEURISTIC														    |
+  |----------------------------------------------------------------------------------------------------------------*/
 	proof :=  new(PKComProductProof)
 	proof.basePoint.InitBasePoint();
 	d := new(big.Int).SetBytes(privacy.RandBytes(32));
@@ -108,17 +123,12 @@ func (pro *PKComProductProtocol) Prove() (*PKComProductProof,error) {
 	pro.Witness.cmC = privacy.Elcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessAB,pro.Witness.randC)
 	//Compute D factor of Proof
 	D:= privacy.Elcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H, d.Bytes(),s.Bytes());
-
 	//Compute D' factor of Proof
 	G1 := new(privacy.EllipticPoint)
 	G1,_= privacy.DecompressCommitment(pro.Witness.cmB);
 	D1:= privacy.Elcm.CommitWithSpecPoint(*G1,proof.basePoint.H, d.Bytes(),s1.Bytes());
-
-
-
 	//Compute E factor of Proof
 	E:= privacy.Elcm.CommitWithSpecPoint(proof.basePoint.G,proof.basePoint.H, e.Bytes(),t.Bytes())
-
 	D_temp,_ :=privacy.DecompressCommitment(D)
 	proof.D.X,proof.D.Y = D_temp.X, D_temp.Y
 	E_temp,_ :=privacy.DecompressCommitment(E);
@@ -146,9 +156,7 @@ func (pro *PKComProductProtocol) Prove() (*PKComProductProof,error) {
 	a:= new(big.Int)
 	a.SetBytes(pro.Witness.witnessA)
 	f1:= a.Mul(a,x)
-
 	f1 = f1.Add(f1,d)
-
 	f1 = f1.Mod(f1,privacy.Curve.Params().N);
 	proof.f1 = *f1;
 
@@ -193,6 +201,19 @@ func (pro *PKComProductProtocol) Prove() (*PKComProductProof,error) {
 }
 
 func (pro *PKComProductProtocol) Verify () bool {
+
+	/*------------------------------------------------------|
+	|	INPUT: The Proof received from the prover							|
+	| OUTPUT: True if the proof is valid, False otherwise		|
+	|------------------------------------------------------*/
+	/*--------------This Verify() function work under the following scheme--------------|
+	|	Check if D, D', E is points on Curve or not							 												  |
+	|	Check if f1, f2, z1, z2, z3 in Zp or not																				  |
+	|	Follow 3 test:																					                          |
+	|		Check if Com(f1,z1) under ck equals to x*A + D or not														|
+	|	  Check if Com(f2,z2) under ck equals to x*B + E or not														|
+	|   Check if Com(f1,z3) under ck' equals to x*C + D' or not												  |
+	|----------------------------------------------------------------------------------*/
 	pts1 := new(privacy.EllipticPoint)
 	data:=[][]byte{
 		pro.Proof.basePoint.G.X.Bytes(),
@@ -209,6 +230,20 @@ func (pro *PKComProductProtocol) Verify () bool {
 	x:= computeHashString(data)
 	checkFlag:=0;
 
+	//Check if D,D',E is on Curve
+	if !(privacy.Curve.IsOnCurve(pro.Proof.D.X, pro.Proof.D.Y) &&
+		privacy.Curve.IsOnCurve(pro.Proof.D1.X, pro.Proof.D1.Y) &&
+		privacy.Curve.IsOnCurve(pro.Proof.E.X, pro.Proof.E.Y)){
+		return false;
+	}
+	//Check if f1,f2,z1,z2,z3 in Zp
+	if (pro.Proof.f1.Cmp(privacy.Curve.Params().P)==1 ||
+		pro.Proof.f2.Cmp(privacy.Curve.Params().P)==1 ||
+		pro.Proof.z1.Cmp(privacy.Curve.Params().P)==1 ||
+		pro.Proof.z2.Cmp(privacy.Curve.Params().P)==1 ||
+		pro.Proof.z3.Cmp(privacy.Curve.Params().P)==1){
+		return false;
+	}
 	//Check witness 1: xA + D == 	Commit(f1,z1)
 	A:= new(privacy.EllipticPoint)
 	A,_ = privacy.DecompressCommitment(pro.Proof.cmA);
@@ -217,16 +252,6 @@ func (pro *PKComProductProtocol) Verify () bool {
 
 	com1 := privacy.Elcm.CommitWithSpecPoint(pro.Proof.basePoint.G,pro.Proof.basePoint.H, pro.Proof.f1.Bytes(), pro.Proof.z1.Bytes())
 	com1_temp,_:=privacy.DecompressCommitment(com1)
-
-
-
-
-
-	//fmt.Printf("Com1: %+v\n",com1_temp)
-	//fmt.Printf("pts1: %+v\n",pts1)
-	//
-
-
 
 	if (com1_temp.X.Cmp(pts1.X)==0 && com1_temp.Y.Cmp(pts1.Y)==0){
 		checkFlag +=1
@@ -240,12 +265,6 @@ func (pro *PKComProductProtocol) Verify () bool {
 	com2 := privacy.Elcm.CommitWithSpecPoint(pro.Proof.basePoint.G,pro.Proof.basePoint.H, pro.Proof.f2.Bytes(), pro.Proof.z2.Bytes())
 	com2_temp,_:=privacy.DecompressCommitment(com2)
 
-	//
-	//fmt.Printf("Com2: %+v\n",com2_temp)
-	//fmt.Printf("pts2: %+v\n",pts1)
-
-
-
 	if (com2_temp.X.Cmp(pts1.X)==0 && com2_temp.Y.Cmp(pts1.Y)==0){
 		checkFlag +=1
 		fmt.Println("Passed test 2")
@@ -257,21 +276,11 @@ func (pro *PKComProductProtocol) Verify () bool {
 	pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, pro.Proof.D1.X,pro.Proof.D1.Y);
 	com3 := privacy.Elcm.CommitWithSpecPoint(pro.Proof.G1,pro.Proof.basePoint.H, pro.Proof.f1.Bytes(), pro.Proof.z3.Bytes())
 	com3_temp,_:=privacy.DecompressCommitment(com3)
-
-
-	//
-	//fmt.Printf("Com3: %+v\n",com3_temp)
-	//fmt.Printf("pts3: %+v\n",pts1)
-
-
-
-
-
 	if (com3_temp.X.Cmp(pts1.X)==0 && com3_temp.Y.Cmp(pts1.Y)==0){
 		checkFlag +=1
 		fmt.Println("Passed test 3")
 	}
-	println(checkFlag)
+	//println(checkFlag)
 	if(checkFlag == 3) {
 		fmt.Println("Passed all test. This proof is valid.")
 		return true;
@@ -303,7 +312,6 @@ func TestPKComProduct() {
 		rA = r1Int.Bytes()
 		rB = r2Int.Bytes()
 		rC = r3Int.Bytes()
-
 		ipCm:= new(PKComProductWitness)
 		ipCm.witnessA = witnessA
 		ipCm.witnessB = witnessB
@@ -315,8 +323,6 @@ func TestPKComProduct() {
 		zk.SetWitness(*ipCm)
 		proof,_:= zk.Prove()
 		zk.SetProof(*proof)
-		res = zk.Verify();
-		fmt.Println(res)
+		zk.Verify();
 	}
-
 }

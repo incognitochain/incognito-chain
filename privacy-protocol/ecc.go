@@ -90,49 +90,7 @@ func (eccPoint EllipticPoint) InversePoint() (*EllipticPoint, error) {
 	return resPoint, nil
 }
 
-// RandPoint return pseudorandom point calculated by function F(x,y) = (x + y)^-1 * G, with G is genertor in Secp256k1
-func (eccPoint *EllipticPoint) RandPoint(x, y *big.Int) *EllipticPoint {
-	//Generate result point
-	res := new(EllipticPoint)
-	res.X = big.NewInt(0)
-	res.Y = big.NewInt(0)
-	//res <- G, we'll calculate res * (x + y)^-1 after.
-	res.X.SetBytes(Curve.Params().Gx.Bytes())
-	res.Y.SetBytes(Curve.Params().Gy.Bytes())
 
-	//intTemp is x + y (mod N)
-	intTemp := big.NewInt(0)
-	intTemp.SetBytes(x.Bytes())
-	intTemp.Add(intTemp, y)
-	intTemp.Mod(intTemp, Curve.Params().N)
-
-	//intTempInverse is (x + y)^-1 in (Zn)*
-	//Cuz intTempInverse * intTemp = 1 (int (Zn)*), so we use Euclid Theorem: a*x + b*y = GCD(a,b)
-	//in this case, we calculate GCD(intTemp,n) = intTemp*x + n*y
-	//if GCD(intTemp,n) = 1, we have intTemp*x + n*y = 1 (*)
-	//Mod (*) by n, we have intTemp*x = 1 (mod n)
-	//so intTempInverse = x
-	intTempInverse := big.NewInt(0)
-	intY := big.NewInt(0)
-	intGCD := big.NewInt(0)
-	intGCD = intGCD.GCD(intTempInverse, intY, intTemp, Curve.Params().N)
-
-	if intGCD.Cmp(big.NewInt(1)) != 0 {
-		//if GCD return value != 1, it mean we dont have (x + y)^-1 in Zn
-		return nil
-	}
-
-	//res = res * (x+y)^-1
-	res.X, res.Y = Curve.ScalarMult(res.X, res.Y, intTempInverse.Bytes())
-
-	if eccPoint.X == nil {
-		eccPoint = res
-	} else {
-		eccPoint.X = res.X
-		eccPoint.Y = res.Y
-	}
-	return res
-}
 
 //Rand make object's value to random
 func (eccPoint *EllipticPoint) Rand() {

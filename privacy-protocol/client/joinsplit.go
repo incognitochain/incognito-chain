@@ -103,7 +103,7 @@ func Prove(inputs []*JSInput,
 		fmt.Printf("Getting commitment for output note\n")
 		fmt.Printf("PaymentAddress: %x\n", output.OutputNote.PaymentAddress)
 		fmt.Printf("Rho: %x\n", output.OutputNote.Rho)
-		fmt.Printf("R: %x\n", output.OutputNote.R)
+		fmt.Printf("Randomness: %x\n", output.OutputNote.R)
 		output.OutputNote.Cm = GetCommitment(output.OutputNote)
 	}
 
@@ -150,7 +150,7 @@ func Prove(inputs []*JSInput,
 		fmt.Printf("zkInputs[%d].SpendingKey: %x\n", i, zkinput.SpendingKey)
 		fmt.Printf("zkInputs[%d].Note.Value: %v\n", i, zkinput.Note.Value)
 		fmt.Printf("zkInputs[%d].Note.Cm: %x\n", i, zkinput.Note.Cm)
-		fmt.Printf("zkInputs[%d].Note.R: %x\n", i, zkinput.Note.R)
+		fmt.Printf("zkInputs[%d].Note.Randomness: %x\n", i, zkinput.Note.R)
 		fmt.Printf("zkInputs[%d].Note.Nf: %x\n", i, zkinput.Note.Nf)
 		fmt.Printf("zkInputs[%d].Note.Rho: %x\n", i, zkinput.Note.Rho)
 		fmt.Printf("zkInputs[%d].Note.PaymentAddress: %x\n", i, zkinput.Note.Apk)
@@ -159,7 +159,7 @@ func Prove(inputs []*JSInput,
 	for i, zkout := range zkNotes {
 		fmt.Printf("zkNotes[%d].Note.Value: %v\n", i, zkout.Value)
 		fmt.Printf("zkNotes[%d].Note.Cm: %x\n", i, zkout.Cm)
-		fmt.Printf("zkNotes[%d].Note.R: %x\n", i, zkout.R)
+		fmt.Printf("zkNotes[%d].Note.Randomness: %x\n", i, zkout.R)
 		fmt.Printf("zkNotes[%d].Note.Nf: %x\n", i, zkout.Nf)
 		fmt.Printf("zkNotes[%d].Note.Rho: %x\n", i, zkout.Rho)
 		fmt.Printf("zkNotes[%d].Note.PaymentAddress: %x\n", i, zkout.Apk)
