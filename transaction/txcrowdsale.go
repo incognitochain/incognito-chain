@@ -8,7 +8,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
-var allowedAsset = []string{common.AssetTypeCoin, common.AssetTypeBond}
+//var allowedAsset = []string{common.AssetTypeCoin, common.AssetTypeBond}
 
 type SaleData struct {
 	SaleID []byte // Unique id of the crowdsale to store in db
@@ -81,9 +81,9 @@ func (tx *TxCrowdsale) ValidateTransaction() bool {
 		}
 
 		// Check if crowdsale assets are valid
-		if !isAllowed(tx.BaseAsset, allowedAsset) || !isAllowed(tx.QuoteAsset, allowedAsset) {
+		/*if !isAllowed(tx.BaseAsset, allowedAsset) || !isAllowed(tx.QuoteAsset, allowedAsset) {
 			return false
-		}
+		}*/
 
 		// TODO, verify signature
 		return true

@@ -410,9 +410,6 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 	// get params
 	paramsArray := common.InterfaceSlice(params)
 	assetType := paramsArray[0].(string)
-	if ok, err := common.SliceExists(common.ListAsset, assetType); !ok || err != nil {
-		return nil, NewRPCError(ErrUnexpected, errors.New(fmt.Sprintf("Asset is not in list: ", common.ListAsset)))
-	}
 	listKeyParams := common.InterfaceSlice(paramsArray[1])
 	for _, keyParam := range listKeyParams {
 		keys := keyParam.(map[string]interface{})

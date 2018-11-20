@@ -91,7 +91,7 @@ func (self GenesisBlockGenerator) createGenesisTx(initialCoin uint64, initialAdd
 		GENESIS_BLOCK_PHI[:],
 		GENESIS_BLOCK_OUTPUT_R,
 		ephemeralPrivKey,
-		common.AssetTypeCoin,
+		//common.AssetTypeCoin,
 	)
 	return tx, err
 }

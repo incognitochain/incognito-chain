@@ -632,9 +632,9 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 	results := make(map[byte][]transaction.Tx, 0)
 
 	// set default for params
-	if coinType == "" {
+	/*if coinType == "" {
 		coinType = common.AssetTypeCoin
-	}
+	}*/
 
 	// lock chain
 	self.chainLock.Lock()
