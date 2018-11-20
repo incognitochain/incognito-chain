@@ -344,6 +344,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	return hash, txDesc, err
 }
 
+// ValidateDoubleSpendTxWithCurrentMempool - check double spend for new tx with all txs in mempool
 func (tp *TxPool) ValidateDoubleSpendTxWithCurrentMempool(txNormal *transaction.Tx) (error) {
 
 	for _, temp1 := range tp.poolNullifiers {
@@ -358,6 +359,7 @@ func (tp *TxPool) ValidateDoubleSpendTxWithCurrentMempool(txNormal *transaction.
 	return nil
 }
 
+// ValidateTxWithCurrentMempool - check new tx with all txs in mempool
 func (tp *TxPool) ValidateTxWithCurrentMempool(tx *transaction.Transaction) (error) {
 	txsInMem := tp.pool
 	switch (*tx).GetType() {
@@ -587,7 +589,12 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 	case common.TxCustomTokenType:
 		{
 			txCustomToken := tx.(*transaction.TxCustomToken)
-			ok, err := tp.validateSanityCustomTokenTxData(txCustomToken)
+			txA := txCustomToken.Tx
+			ok, err := tp.validateSanityNormalTxData(&txA)
+			if err != nil {
+				return ok, err
+			}
+			ok, err = tp.validateSanityCustomTokenTxData(txCustomToken)
 			return ok, err
 		}
 	default:
