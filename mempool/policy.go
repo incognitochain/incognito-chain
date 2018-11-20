@@ -3,10 +3,10 @@ package mempool
 import (
 	"fmt"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/transaction"
 	"errors"
 	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 // Policy houses the policy (configuration parameters) which is used to control the mempool.

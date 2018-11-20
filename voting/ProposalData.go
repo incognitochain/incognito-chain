@@ -3,13 +3,13 @@ package voting
 import "github.com/ninjadotorg/constant/common"
 
 type GOVProposalData struct {
-	GOVParams       GOVParams
+	GOVParams       GOVVotingParams
 	ExecuteDuration int32
 	Explaination    string
 }
 
 type DCBProposalData struct {
-	DCBParams       DCBParams
+	DCBParams       DCBVotingParams
 	ExecuteDuration int32
 	Explaination    string
 }

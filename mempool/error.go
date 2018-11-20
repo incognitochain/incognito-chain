@@ -1,7 +1,7 @@
 package mempool
 
 const (
-	RejectDuplicateTx      = iota
+	RejectDuplicateTx = iota
 	RejectInvalidTx
 	RejectSansityTx
 	RejectSalaryTx
