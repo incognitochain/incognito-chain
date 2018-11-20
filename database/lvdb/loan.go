@@ -6,7 +6,6 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-// TODO(@0xbunyip): implement these
 /*
  Store loan id with tx hash:
  - for loan request
