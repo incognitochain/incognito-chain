@@ -370,6 +370,7 @@ func (tp *TxPool) ValidateTxWithCurrentMempool(tx *transaction.Transaction) (err
 			if err != nil {
 				return err
 			}
+			return nil
 		}
 	case common.TxSalaryType:
 		{
@@ -389,9 +390,14 @@ func (tp *TxPool) ValidateTxWithCurrentMempool(tx *transaction.Transaction) (err
 					return err
 				}
 			}
+			return nil
+		}
+	default:
+		{
+			return errors.New("Wrong tx type")
 		}
 	}
-	return nil
+	return errors.New("No check tx")
 }
 
 // ValidateTxWithBlockChain - process validation of tx with old data in blockchain
@@ -402,7 +408,11 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 	case common.TxNormalType:
 		{
 			// check double spend
-			return blockChain.ValidateDoubleSpend(tx, chainID)
+			err := blockChain.ValidateDoubleSpend(tx, chainID)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	case common.TxSalaryType:
 		{
@@ -425,33 +435,62 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 			if err != nil {
 				return err
 			}
+			return nil
 		}
 	case common.TxLoanRequest:
 		{
-			return blockChain.ValidateTxLoanRequest(tx, chainID)
+			err := blockChain.ValidateTxLoanRequest(tx, chainID)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	case common.TxLoanResponse:
 		{
-			return blockChain.ValidateTxLoanResponse(tx, chainID)
+			err := blockChain.ValidateTxLoanResponse(tx, chainID)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	case common.TxLoanPayment:
 		{
-			return blockChain.ValidateTxLoanPayment(tx, chainID)
+			err := blockChain.ValidateTxLoanPayment(tx, chainID)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	case common.TxLoanWithdraw:
 		{
-			return blockChain.ValidateTxLoanWithdraw(tx, chainID)
+			err := blockChain.ValidateTxLoanWithdraw(tx, chainID)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	case common.TxDividendPayout:
 		{
-			return blockChain.ValidateTxDividendPayout(tx, chainID)
+			err := blockChain.ValidateTxDividendPayout(tx, chainID)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	case common.TxBuySellDCBRequest:
 		{
-			return blockChain.ValidateTxBuyRequest(tx, chainID)
+			err := blockChain.ValidateTxBuyRequest(tx, chainID)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	default:
+		{
+			return errors.New("Wrong tx type")
 		}
 	}
-	return nil
+	return errors.New("No check Tx")
 }
 
 // RemoveTx safe remove transaction for pool
@@ -573,6 +612,7 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 			return 0, errors.New("Wrong tx type")
 		}
 	}
+	return 0, errors.New("No check tx")
 }
 
 /*
@@ -602,7 +642,7 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 			return false, errors.New("Wrong tx type")
 		}
 	}
-	return true, nil
+	return false, errors.New("No check tx")
 }
 
 /*
