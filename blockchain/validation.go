@@ -402,10 +402,10 @@ func (bc *BlockChain) verifyByBoard(
 	var pubKeys []string
 	if boardType == common.DCB {
 		address = string(common.DCBAddress)
-		pubKeys = bc.BestState[0].BestBlock.Header.DCBBoardPubKeys
+		pubKeys = bc.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys
 	} else if boardType == common.GOV {
 		address = string(common.GOVAddress)
-		pubKeys = bc.BestState[0].BestBlock.Header.GOVBoardPubKeys
+		pubKeys = bc.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys
 	} else {
 		return false
 	}
