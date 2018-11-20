@@ -48,14 +48,14 @@ func (tx TxCrowdsale) Hash() *common.Hash {
 	return &hash
 }
 
-func isAllowed(assetType string, allowed []string) bool {
+/*func isAllowed(assetType string, allowed []string) bool {
 	for _, t := range allowed {
 		if assetType == t {
 			return true
 		}
 	}
 	return false
-}
+}*/
 
 // ValidateTransaction ...
 func (tx *TxCrowdsale) ValidateTransaction() bool {
