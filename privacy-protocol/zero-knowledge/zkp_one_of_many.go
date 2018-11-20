@@ -3,6 +3,7 @@ package zkp
 import (
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
@@ -143,7 +144,7 @@ func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int, com
 	// Calculate x
 	x := big.NewInt(0)
 
-	for j:=1; j<= n; j++{
+	for j := 1; j <= n; j++ {
 		x.SetBytes(privacy.Elcm.GetHashOfValues([][]byte{x.Bytes(), proof.cl[j], proof.ca[j], proof.cb[j], proof.cd[j-1]}))
 	}
 	x.Mod(x, privacy.Curve.Params().N)
@@ -221,7 +222,7 @@ func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyP
 
 	// Calculate x
 	x := big.NewInt(0)
-	for j:=1; j<=n; j++{
+	for j := 1; j <= n; j++ {
 		x.SetBytes(privacy.Elcm.GetHashOfValues([][]byte{x.Bytes(), proof.cl[j], proof.ca[j], proof.cb[j], proof.cd[j-1]}))
 	}
 	x.Mod(x, privacy.Curve.Params().N)
@@ -360,7 +361,6 @@ func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyP
 	return true
 }
 
-
 //TestPKOneOfMany test protocol for one of many Commitment is Commitment to zero
 func TestPKOneOfMany() {
 	privacy.Elcm.InitCommitment()
@@ -383,12 +383,15 @@ func TestPKOneOfMany() {
 	// create Commitment to zero at indexIsZero
 	serialNumbers[indexIsZero] = big.NewInt(0).Bytes()
 	commitments[indexIsZero] = privacy.Elcm.CommitSpecValue(serialNumbers[indexIsZero], randoms[indexIsZero], privacy.SN_CM)
+	start := time.Now()
 	proof, err := pk.Prove(commitments, indexIsZero, commitments[indexIsZero], randoms[indexIsZero], privacy.SN_CM)
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	res := pk.Verify(commitments, proof, privacy.SN_CM, randoms[indexIsZero])
+	end := time.Now()
+	fmt.Printf("%v_+_\n", end.Sub(start))
 	fmt.Println(res)
 }
 
