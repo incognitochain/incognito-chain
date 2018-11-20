@@ -48,6 +48,9 @@ type TxPool interface {
 
 	//CheckTransactionFee
 	CheckTransactionFee(tx transaction.Transaction) (uint64, error)
+
+	// Check tx validate by it self
+	ValidateTxByItSelf(tx transaction.Transaction) bool
 }
 
 type RewardAgent interface {
@@ -128,7 +131,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 		}
 		// ValidateTransaction vote and propose transaction
 
-		if !tx.ValidateTransaction() {
+		if !blockgen.txPool.ValidateTxByItSelf(tx) {
 			txToRemove = append(txToRemove, transaction.Transaction(tx))
 			continue
 		}
