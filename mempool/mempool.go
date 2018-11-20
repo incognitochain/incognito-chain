@@ -358,8 +358,15 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 			}
 
 			// check double spend for constant coin
-			return blockChain.ValidateDoubleSpend(tx, chainID)
-			// TODO check double spend custom token
+			err := blockChain.ValidateDoubleSpend(tx, chainID)
+			if err != nil {
+				return err
+			}
+			// check double spend for custom token
+			err = blockChain.ValidateDoubleSpendCustomToken(tx.(*transaction.TxCustomToken))
+			if err != nil {
+				return err
+			}
 		}
 	case common.TxLoanRequest:
 		{
