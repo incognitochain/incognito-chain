@@ -760,11 +760,12 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 					TxCustomTokenID: out.GetTxCustomTokenID(),
 					VoutIndex:       out.GetIndex(),
 				}
-				// TODO create signature -> base58check.encode of txtokenout double hash
+				// create signature by keyset -> base58check.encode of txtokenout double hash
 				signature, err := senderKey.KeySet.Sign(out.Hash()[:])
 				if err != nil {
 					return nil, NewRPCError(ErrUnexpected, err)
 				}
+				// add signature to TxTokenVin to use token utxo
 				item.Signature = base58.Base58Check{}.Encode(signature, 0)
 				txTokenIns = append(txTokenIns, item)
 				txTokenInsAmount += out.Value

@@ -209,10 +209,12 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.Block) error {
 	// Randomly order txs in block.
 	transactions := make(map[*transaction.Tx]struct{})
 	for _, t := range block.Transactions {
-		if t.GetType() == common.TxNormalType || t.GetType() == common.TxSalaryType {
-			transactions[t.(*transaction.Tx)] = struct{}{}
+		switch t.GetType() {
+		case common.TxNormalType, common.TxSalaryType:
+			{
+				transactions[t.(*transaction.Tx)] = struct{}{}
+			}
 		}
-		// TODO Voting
 	}
 
 	// Count the number of replacements we make per bin so that we don't
@@ -406,7 +408,6 @@ func (ef *FeeEstimator) rollback() {
 				prev.mined = UnminedHeight
 
 				newBin := append(ef.bin[i][0:j], ef.bin[i][j+1:l]...)
-				// TODO This line should prevent an unintentional memory
 				// leak but it causes a panic when it is uncommented.
 				// ef.bin[i][j] = nil
 				ef.bin[i] = newBin
@@ -595,7 +596,6 @@ func (ef *FeeEstimator) Save() FeeEstimatorState {
 	ef.mtx.Lock()
 	defer ef.mtx.Unlock()
 
-	// TODO figure out what the capacity should be.
 	w := bytes.NewBuffer(make([]byte, 0))
 
 	binary.Write(w, binary.BigEndian, uint32(estimateFeeSaveVersion))

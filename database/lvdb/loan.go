@@ -22,7 +22,7 @@ import (
   value3: loanId-req/res
 */
 func (db *db) StoreLoanRequest(loanID, txHash []byte) error {
-	keyLoanID := string(loanIDKeyPrefix) + string(loanID)  + string(loanRequestPostfix)
+	keyLoanID := string(loanIDKeyPrefix) + string(loanID) + string(loanRequestPostfix)
 	valueLoanID := string(txHash)
 
 	if ok, _ := db.hasValue([]byte(keyLoanID)); ok {
@@ -44,7 +44,7 @@ func (db *db) StoreLoanRequest(loanID, txHash []byte) error {
 }
 
 func (db *db) StoreLoanResponse(loanID, txHash []byte) error {
-	keyLoanID := string(loanIDKeyPrefix) + string(loanID)  + string(loanResponsePostfix)
+	keyLoanID := string(loanIDKeyPrefix) + string(loanID) + string(loanResponsePostfix)
 	valueLoanID := string(txHash)
 	if ok, _ := db.hasValue([]byte(keyLoanID)); ok {
 		return database.NewDatabaseError(database.KeyExisted, errors.Errorf("loan ID existed %+v", keyLoanID))
@@ -70,9 +70,8 @@ func (db *db) GetLoanTxs(loanID []byte) ([][]byte, error) {
 	results := [][]byte{}
 	for iter.Next() {
 		value := iter.Value()
-		results = append(results,value)
+		results = append(results, value)
 	}
 	iter.Release()
 	return results, nil
 }
-
