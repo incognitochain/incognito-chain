@@ -225,6 +225,10 @@ func (addr *PaymentAddress) ToBytes() []byte {
 	return result
 }
 
+func (addr *PaymentAddress) Size() int {
+	return len(addr.Pk) + len(addr.Tk)
+}
+
 func (addr *PaymentAddress) FromBytes(data []byte) *PaymentAddress {
 	addr.Pk = make([]byte, 33)
 	addr.Tk = make([]byte, 33)

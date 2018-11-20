@@ -15,7 +15,6 @@ const (
 	TxAcceptGOVProposal  = "ag" // accept GOV proposal
 	TxNormalType         = "n"  // normal tx(send and receive coin)
 	TxSalaryType         = "s"  // salary tx(gov pay salary for block producer)
-	TxActionParamsType   = "a"  // action tx to edit params
 	TxCustomTokenType    = "t"  // token  tx
 	TxLoanRequest        = "lr"
 	TxLoanResponse       = "ls"

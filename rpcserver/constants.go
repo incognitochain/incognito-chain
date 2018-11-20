@@ -22,8 +22,7 @@ const (
 	ListTransactions                = "listtransactions"
 	CreateTransaction               = "createtransaction"
 	SendTransaction                 = "sendtransaction"
-	CreateAndSendTransaction        = "sendmany" // TODO rename
-	CreateActionParamsTransaction   = "createactionparamstransaction"
+	CreateAndSendTransaction        = "createandsendtransaction"
 	SendCustomTokenTransaction      = "sendcustomtokentransaction"
 	SendRawCustomTokenTransaction   = "sendrawcustomtokentransaction"
 	CreateRawCustomTokenTransaction = "createrawcustomtokentransaction"

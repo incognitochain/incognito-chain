@@ -383,8 +383,7 @@ func verifySignatures(
 	return false
 }
 
-func verifyByBoard(
-	bc *BlockChain,
+func (bc *BlockChain) verifyByBoard(
 	boardType uint8,
 	customToken *transaction.TxCustomToken,
 ) bool {
@@ -421,7 +420,7 @@ func (bc *BlockChain) VerifyCustomTokenSigns(tx transaction.Transaction) bool {
 		return true
 	}
 
-	return verifyByBoard(bc, boardType, customToken)
+	return bc.verifyByBoard(boardType, customToken)
 }
 
 func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, chainID byte) error {
@@ -451,6 +450,43 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 			// TODO(@0xbunyip): compare full payment address
 			if !bytes.Equal(vout.PaymentAddress.Pk[:], common.DCBAddress) {
 				return fmt.Errorf("Sending payment to %x instead of %x", vout.PaymentAddress.Pk[:], common.DCBAddress)
+			}
+		}
+	}
+	return nil
+}
+
+func (self *BlockChain) ValidateDoubleSpendCustomToken(tx *transaction.TxCustomToken) (error) {
+	listTxs, err := self.GetCustomTokenTxs(&tx.TxTokenData.PropertyID)
+	if err != nil {
+		return err
+	}
+
+	if len(listTxs) == 0 {
+		if tx.TxTokenData.Type != transaction.CustomTokenInit {
+			return errors.New("Not exist tx for this ")
+		}
+	}
+
+	if len(listTxs) > 0 {
+		for _, txInBlocks := range listTxs {
+			err := self.ValidateDoubleSpendCustomTokenOnTx(tx, txInBlocks)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCustomToken, txInBlock transaction.Transaction) (error) {
+	temp := txInBlock.(*transaction.TxCustomToken)
+	for _, vin := range temp.TxTokenData.Vins {
+		for _, item := range tx.TxTokenData.Vins {
+			if vin.TxCustomTokenID.String() == item.TxCustomTokenID.String() {
+				if vin.VoutIndex == item.VoutIndex {
+					return errors.New("Double spend")
+				}
 			}
 		}
 	}
