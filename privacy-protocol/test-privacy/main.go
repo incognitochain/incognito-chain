@@ -1,8 +1,6 @@
 package main
 
-import (
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge-optimization"
-)
+import "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 
 func main() {
 
@@ -75,9 +73,9 @@ func main() {
 	// privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestPKOneOfMany()
 
-	// zkp.TestPKComZeroOne()
+	zkp.TestPKComZeroOne()
 	// start := time.Now()
-	zkpoptimization.TestPKOneOfMany()
+	//zkpoptimization.TestPKOneOfMany()
 	// end := time.Now()
 	// fmt.Printf("%v\n", end.Sub(start))
 	// start = time.Now()
@@ -130,4 +128,5 @@ func main() {
 	//fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
 	//fmt.Printf("\n %v\n", point.CompressPoint())
 	//zkp.TestPKComProduct()
+
 }
