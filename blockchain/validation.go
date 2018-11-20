@@ -394,8 +394,7 @@ func verifySignatures(
 	return false
 }
 
-func verifyByBoard(
-	bc *BlockChain,
+func (bc *BlockChain) verifyByBoard(
 	boardType uint8,
 	customToken *transaction.TxCustomToken,
 ) bool {
@@ -432,7 +431,7 @@ func (bc *BlockChain) VerifyCustomTokenSigns(tx transaction.Transaction) bool {
 		return true
 	}
 
-	return verifyByBoard(bc, boardType, customToken)
+	return bc.verifyByBoard(boardType, customToken)
 }
 
 func (self *BlockChain) ValidateTxBuyRequest(tx transaction.Transaction, chainID byte) error {

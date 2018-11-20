@@ -175,7 +175,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	}
 
 	// ValidateTransaction tx by it self
-	validate := tx.ValidateTransaction()
+	validate := tp.ValidateTxByItSelf(tx)
 	if !validate {
 		err := MempoolTxError{}
 		err.Init(RejectInvalidTx, errors.New("Invalid tx"))
@@ -491,6 +491,34 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 		}
 	}
 	return errors.New("No check Tx")
+}
+
+func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
+	switch tx.GetType() {
+	case common.TxCustomTokenType:
+		{
+			// with custom token tx, we need to get utxo for custom token and for validation
+			txCustomToken := tx.(*transaction.TxCustomToken)
+			data := make(map[common.Hash]transaction.TxCustomToken)
+			for _, vin := range txCustomToken.TxTokenData.Vins {
+				_, _, _, utxo, err := tp.config.BlockChain.GetTransactionByHash(&vin.TxCustomTokenID)
+				if err != nil {
+					Logger.log.Error(err)
+					return false
+				}
+				data[vin.TxCustomTokenID] = *(utxo.(*transaction.TxCustomToken))
+			}
+			if len(data) == 0 {
+				Logger.log.Error(errors.New("Can not find any utxo for TxCustomToken"))
+				return false
+			}
+			txCustomToken.SetListUtxo(data)
+			return txCustomToken.ValidateTransaction()
+		}
+	default:
+		return tx.ValidateTransaction()
+	}
+	return false
 }
 
 // RemoveTx safe remove transaction for pool
