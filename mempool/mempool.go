@@ -392,6 +392,15 @@ func (tp *TxPool) ValidateTxWithCurrentMempool(tx *transaction.Transaction) (err
 			}
 			return nil
 		}
+	case common.TxVoteDCBBoard:
+		{
+			txVoteDCBBoard := (*tx).(*transaction.TxVoteDCBBoard)
+			err:= tp.ValidateDoubleSpendTxWithCurrentMempool(&txVoteDCBBoard.Tx)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 	default:
 		{
 			return errors.New("Wrong tx type")
