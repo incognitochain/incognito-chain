@@ -46,9 +46,10 @@ type TxPool struct {
 	// The following variables must only be used atomically.
 	lastUpdated int64 // last time pool was updated
 
-	mtx    sync.RWMutex
-	config Config
-	pool   map[common.Hash]*TxDesc
+	mtx            sync.RWMutex
+	config         Config
+	pool           map[common.Hash]*TxDesc
+	poolNullifiers map[common.Hash][][]byte
 }
 
 /*
@@ -57,6 +58,7 @@ Init Txpool from config
 func (tp *TxPool) Init(cfg *Config) {
 	tp.config = *cfg
 	tp.pool = make(map[common.Hash]*TxDesc)
+	tp.poolNullifiers = make(map[common.Hash][][]byte)
 }
 
 // check transaction in pool
@@ -82,6 +84,7 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 	}
 	log.Printf(tx.Hash().String())
 	tp.pool[*tx.Hash()] = txD
+	tp.poolNullifiers[*tx.Hash()] = txD.Desc.Tx.ListNullifiers()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 
 	// Record this tx for fee estimation if enabled. only apply for normal tx
@@ -137,6 +140,12 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	}
 	// end check with policy
 
+	// check tx with all txs in current mempool
+	err = tp.ValidateTxWithCurrentMempool(&tx)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// validate tx with data of blockchain
 	err = tp.ValidateTxWithBlockChain(tx, chainID)
 	if err != nil {
@@ -166,7 +175,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	}
 
 	// ValidateTransaction tx by it self
-	validate := tx.ValidateTransaction()
+	validate := tp.ValidateTxByItSelf(tx)
 	if !validate {
 		err := MempoolTxError{}
 		err.Init(RejectInvalidTx, errors.New("Invalid tx"))
@@ -287,6 +296,36 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx) (bool, error) {
 	return true, nil
 }
 
+func (tp *TxPool) validateSanityCustomTokenTxData(txCustomToken *transaction.TxCustomToken) (bool, error) {
+	ok, err := tp.validateSanityNormalTxData(&txCustomToken.Tx)
+	if err != nil || !ok {
+		return ok, err
+	}
+	vins := txCustomToken.TxTokenData.Vins
+	zeroHash := common.Hash{}
+	for _, vin := range vins {
+		if vin.Signature == "" {
+			return false, errors.New("Wrong signature")
+		}
+		if len(vin.PaymentAddress.Pk) == 0 {
+			return false, errors.New("Wrong input transaction")
+		}
+		if vin.TxCustomTokenID.String() == zeroHash.String() {
+			return false, errors.New("Wrong input transaction")
+		}
+	}
+	vouts := txCustomToken.TxTokenData.Vouts
+	for _, vout := range vouts {
+		if len(vout.PaymentAddress.Pk) == 0 {
+			return false, errors.New("Wrong input transaction")
+		}
+		if vout.Value == 0 {
+			return false, errors.New("Wrong input transaction")
+		}
+	}
+	return true, nil
+}
+
 // MaybeAcceptTransaction is the main workhorse for handling insertion of new
 // free-standing transactions into a memory pool.  It includes functionality
 // such as rejecting duplicate transactions, ensuring transactions follow all
@@ -305,21 +344,79 @@ func (tp *TxPool) MaybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	return hash, txDesc, err
 }
 
+// ValidateDoubleSpendTxWithCurrentMempool - check double spend for new tx with all txs in mempool
+func (tp *TxPool) ValidateDoubleSpendTxWithCurrentMempool(txNormal *transaction.Tx) (error) {
+
+	for _, temp1 := range tp.poolNullifiers {
+		for _, desc := range txNormal.Descs {
+			for _, nullifier := range desc.Nullifiers {
+				if ok, err := common.SliceBytesExists(temp1, nullifier); !ok || err != nil {
+					return errors.New("Double spend")
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// ValidateTxWithCurrentMempool - check new tx with all txs in mempool
+func (tp *TxPool) ValidateTxWithCurrentMempool(tx *transaction.Transaction) (error) {
+	txsInMem := tp.pool
+	switch (*tx).GetType() {
+	case common.TxNormalType:
+		{
+			txNormal := (*tx).(*transaction.Tx)
+			err := tp.ValidateDoubleSpendTxWithCurrentMempool(txNormal)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	case common.TxSalaryType:
+		{
+			return errors.New("Can not receive a salary tx from other node, this is a violation")
+		}
+	case common.TxCustomTokenType:
+		{
+			txCustomToken := (*tx).(*transaction.TxCustomToken)
+			txNormal := txCustomToken.Tx
+			err := tp.ValidateDoubleSpendTxWithCurrentMempool(&txNormal)
+			if err != nil {
+				return err
+			}
+			for _, txInMem := range txsInMem {
+				err := tp.config.BlockChain.ValidateDoubleSpendCustomTokenOnTx(txCustomToken, txInMem.Desc.Tx)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	default:
+		{
+			return errors.New("Wrong tx type")
+		}
+	}
+	return errors.New("No check tx")
+}
+
 // ValidateTxWithBlockChain - process validation of tx with old data in blockchain
 // - check double spend
 func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID byte) error {
 	blockChain := tp.config.BlockChain
 	switch tx.GetType() {
-	// TODO check tx with current mempool
 	case common.TxNormalType:
 		{
 			// check double spend
-			return blockChain.ValidateDoubleSpend(tx, chainID)
+			err := blockChain.ValidateDoubleSpend(tx, chainID)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	case common.TxSalaryType:
 		{
-			// TODO
-			return nil
+			return errors.New("Can not receive a salary tx from other node, this is a violation")
 		}
 	case common.TxCustomTokenType:
 		{
@@ -328,41 +425,100 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 				return errors.New("Custom token signs validation is not passed.")
 			}
 
-			// check double spend for constant coin
-			return blockChain.ValidateDoubleSpend(tx, chainID)
-			// TODO check double spend custom token
-		}
-	case common.TxActionParamsType:
-		{
-			// TODO
+			// check double spend for constant coin with blockchain
+			err := blockChain.ValidateDoubleSpend(tx, chainID)
+			if err != nil {
+				return err
+			}
+			// check double spend for custom token with blockchain data
+			err = blockChain.ValidateDoubleSpendCustomToken(tx.(*transaction.TxCustomToken))
+			if err != nil {
+				return err
+			}
 			return nil
 		}
 	case common.TxLoanRequest:
 		{
-			return blockChain.ValidateTxLoanRequest(tx, chainID)
+			err := blockChain.ValidateTxLoanRequest(tx, chainID)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	case common.TxLoanResponse:
 		{
-			return blockChain.ValidateTxLoanResponse(tx, chainID)
+			err := blockChain.ValidateTxLoanResponse(tx, chainID)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	case common.TxLoanPayment:
 		{
-			return blockChain.ValidateTxLoanPayment(tx, chainID)
+			err := blockChain.ValidateTxLoanPayment(tx, chainID)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	case common.TxLoanWithdraw:
 		{
-			return blockChain.ValidateTxLoanWithdraw(tx, chainID)
+			err := blockChain.ValidateTxLoanWithdraw(tx, chainID)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	case common.TxDividendPayout:
 		{
-			return blockChain.ValidateTxDividendPayout(tx, chainID)
+			err := blockChain.ValidateTxDividendPayout(tx, chainID)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	case common.TxBuySellDCBRequest:
 		{
-			return blockChain.ValidateTxBuyRequest(tx, chainID)
+			err := blockChain.ValidateTxBuyRequest(tx, chainID)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	default:
+		{
+			return errors.New("Wrong tx type")
 		}
 	}
-	return nil
+	return errors.New("No check Tx")
+}
+
+func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
+	switch tx.GetType() {
+	case common.TxCustomTokenType:
+		{
+			// with custom token tx, we need to get utxo for custom token and for validation
+			txCustomToken := tx.(*transaction.TxCustomToken)
+			data := make(map[common.Hash]transaction.TxCustomToken)
+			for _, vin := range txCustomToken.TxTokenData.Vins {
+				_, _, _, utxo, err := tp.config.BlockChain.GetTransactionByHash(&vin.TxCustomTokenID)
+				if err != nil {
+					Logger.log.Error(err)
+					return false
+				}
+				data[vin.TxCustomTokenID] = *(utxo.(*transaction.TxCustomToken))
+			}
+			if len(data) == 0 {
+				Logger.log.Error(errors.New("Can not find any utxo for TxCustomToken"))
+				return false
+			}
+			txCustomToken.SetListUtxo(data)
+			return txCustomToken.ValidateTransaction()
+		}
+	default:
+		return tx.ValidateTransaction()
+	}
+	return false
 }
 
 // RemoveTx safe remove transaction for pool
@@ -412,8 +568,6 @@ func (tp *TxPool) Size() uint64 {
 	tp.mtx.RLock()
 	size := uint64(0)
 	for _, tx := range tp.pool {
-		// TODO: need to implement size func in each type of transactions
-		// https://stackoverflow.com/questions/31496804/how-to-get-the-size-of-struct-and-its-contents-in-bytes-in-golang?rq=1
 		size += tx.Desc.Tx.GetTxVirtualSize()
 	}
 	tp.mtx.RUnlock()
@@ -481,49 +635,42 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 			err := tp.config.Policy.CheckTransactionFee(normalTx)
 			return normalTx.Fee, err
 		}
-	case common.TxActionParamsType:
-		{
-			return 0, nil
-		}
 	default:
 		{
 			return 0, errors.New("Wrong tx type")
 		}
 	}
+	return 0, errors.New("No check tx")
 }
 
 /*
 ValidateSanityData - validate sansity data of tx
 */
 func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
-	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxSalaryType {
-		txA := tx.(*transaction.Tx)
-		ok, err := tp.validateSanityNormalTxData(txA)
-		if !ok {
-			return false, err
+	switch tx.GetType() {
+	case common.TxNormalType, common.TxSalaryType:
+		{
+			txA := tx.(*transaction.Tx)
+			ok, err := tp.validateSanityNormalTxData(txA)
+			return ok, err
 		}
-	} else if tx.GetType() == common.TxActionParamsType {
-		txA := tx.(*transaction.ActionParamTx)
-		// check Version
-		if txA.Version > transaction.TxVersion {
-			return false, errors.New("Wrong tx version")
+	case common.TxCustomTokenType:
+		{
+			txCustomToken := tx.(*transaction.TxCustomToken)
+			txA := txCustomToken.Tx
+			ok, err := tp.validateSanityNormalTxData(&txA)
+			if err != nil {
+				return ok, err
+			}
+			ok, err = tp.validateSanityCustomTokenTxData(txCustomToken)
+			return ok, err
 		}
-		// check LockTime before now
-		if int64(txA.LockTime) > time.Now().Unix() {
-			return false, errors.New("Wrong tx lockTime")
-		}
-		// check Type equal "a"
-		if txA.Type != common.TxActionParamsType {
+	default:
+		{
 			return false, errors.New("Wrong tx type")
 		}
-	} else if tx.GetType() == common.TxCustomTokenType {
-		// TODO check sanity
-		return true, nil
-	} else {
-		return false, errors.New("Wrong tx type")
 	}
-
-	return true, nil
+	return false, errors.New("No check tx")
 }
 
 /*

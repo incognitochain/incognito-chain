@@ -11,7 +11,7 @@ import (
 var (
 	cfg *config
 	rpc *RPC
-	ai = 1
+	ai  = 1
 )
 
 func main() {
@@ -90,13 +90,11 @@ func randomInt(min, max int) int {
 }
 
 func sendRandomTransaction() (bool, interface{}) {
-	// todo create account
 	err, wallet := rpc.GetAccountAddress(fmt.Sprintf("Account %d", ai))
 	if err != nil {
 		return false, nil
 	}
 	ai += 1
-	// todo send many
 	value := float64(randomInt(1, 10000000)) / math.Pow(10, 18)
 	err, txId := rpc.SendMany(cfg.GenesisPrvKey, wallet.PaymentAddress, value)
 

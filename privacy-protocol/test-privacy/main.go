@@ -1,6 +1,11 @@
 package main
 
-import "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+import (
+	"runtime"
+
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge-optimization"
+)
 
 func main() {
 
@@ -73,7 +78,6 @@ func main() {
 	// privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestPKOneOfMany()
 
-	zkp.TestPKComZeroOne()
 	// start := time.Now()
 	//zkpoptimization.TestPKOneOfMany()
 	// end := time.Now()
@@ -82,6 +86,11 @@ func main() {
 	// zkp.TestPKOneOfMany()
 	// end = time.Now()
 	// fmt.Printf("%v\n", end.Sub(start))
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	// zkp.TestPKComZeroOne()
+	zkpoptimization.TestPKOneOfMany()
+	zkp.TestPKOneOfMany()
 
 	//zkp.TestPKMaxValue()
 	//privacy.Elcm.InitCommitment()
