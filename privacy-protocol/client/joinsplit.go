@@ -35,10 +35,10 @@ func printProof(proof *zksnark.PHGRProof) {
 }
 
 // Prove calls libsnark's Prove and return the proof
-// inputs: WitnessPath and Key must be set; InputeNote's Value, Apk, Randomness and Rho must also be set before calling this function
-// outputs: EncKey, OutputNote's Apk and Value must be set before calling this function
+// inputs: WitnessPath and Key must be set; InputeNote's Value, PaymentAddress, R and Rho must also be set before calling this function
+// outputs: EncKey, OutputNote's PaymentAddress and Value must be set before calling this function
 // reward: for salary tx, this is the mining reward; for other tx, it must be 0
-// After this function, outputs' Rho and Randomness and Cm will be updated
+// After this function, outputs' Rho and R and Cm will be updated
 func Prove(inputs []*JSInput,
 	outputs []*JSOutput,
 	pubKey []byte,
@@ -101,7 +101,7 @@ func Prove(inputs []*JSInput,
 
 		// Compute cm for new notes to check for Note commitment integrity
 		fmt.Printf("Getting commitment for output note\n")
-		fmt.Printf("Apk: %x\n", output.OutputNote.Apk)
+		fmt.Printf("PaymentAddress: %x\n", output.OutputNote.PaymentAddress)
 		fmt.Printf("Rho: %x\n", output.OutputNote.Rho)
 		fmt.Printf("Randomness: %x\n", output.OutputNote.R)
 		output.OutputNote.Cm = GetCommitment(output.OutputNote)
@@ -153,7 +153,7 @@ func Prove(inputs []*JSInput,
 		fmt.Printf("zkInputs[%d].Note.Randomness: %x\n", i, zkinput.Note.R)
 		fmt.Printf("zkInputs[%d].Note.Nf: %x\n", i, zkinput.Note.Nf)
 		fmt.Printf("zkInputs[%d].Note.Rho: %x\n", i, zkinput.Note.Rho)
-		fmt.Printf("zkInputs[%d].Note.Apk: %x\n", i, zkinput.Note.Apk)
+		fmt.Printf("zkInputs[%d].Note.PaymentAddress: %x\n", i, zkinput.Note.Apk)
 	}
 
 	for i, zkout := range zkNotes {
@@ -162,7 +162,7 @@ func Prove(inputs []*JSInput,
 		fmt.Printf("zkNotes[%d].Note.Randomness: %x\n", i, zkout.R)
 		fmt.Printf("zkNotes[%d].Note.Nf: %x\n", i, zkout.Nf)
 		fmt.Printf("zkNotes[%d].Note.Rho: %x\n", i, zkout.Rho)
-		fmt.Printf("zkNotes[%d].Note.Apk: %x\n", i, zkout.Apk)
+		fmt.Printf("zkNotes[%d].Note.PaymentAddress: %x\n", i, zkout.Apk)
 	}
 
 	var r *zksnark.ProveReply;
@@ -252,13 +252,13 @@ func Note2ZksnarkNote(note *Note) *zksnark.Note {
 		R:     make([]byte, len(note.R)),
 		Nf:    make([]byte, len(note.Nf)),
 		Rho:   make([]byte, len(note.Rho)),
-		Apk:   make([]byte, len(note.Apk)),
+		Apk:   make([]byte, len(note.PaymentAddress.Pk)),
 	}
 	copy(zknote.Cm, note.Cm)
 	copy(zknote.R, note.R)
 	copy(zknote.Nf, note.Nf) // Might be 0 for output notes
 	copy(zknote.Rho, note.Rho)
-	copy(zknote.Apk, note.Apk[:])
+	copy(zknote.Apk, note.PaymentAddress.Pk[:])
 	return &zknote
 }
 

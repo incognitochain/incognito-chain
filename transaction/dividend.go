@@ -80,8 +80,8 @@ func BuildDividendTxs(
 		dummyAddress := privacy.GeneratePaymentAddress(*inputs[0].Key)
 
 		// Create new notes to send to 2 token holders at the same time
-		outNote1 := &client.Note{Value: infos[i].Amount, Apk: infos[i].TokenHolder.Pk}
-		outNote2 := &client.Note{Value: infos[i+1].Amount, Apk: infos[i+1].TokenHolder.Pk}
+		outNote1 := &client.Note{Value: infos[i].Amount, PaymentAddress: infos[i].TokenHolder}
+		outNote2 := &client.Note{Value: infos[i+1].Amount, PaymentAddress: infos[i+1].TokenHolder}
 		totalAmount := outNote1.Value + outNote2.Value
 
 		outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}

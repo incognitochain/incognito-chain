@@ -30,17 +30,6 @@ const (
 	TxBuyBackResponse    = "bbrs"
 )
 
-// unit type use in tx
-// coin or token or bond
-const (
-	AssetTypeCoin      = "c" // 'constant' coin
-	AssetTypeBond      = "b" // bond
-	AssetTypeGovToken  = "g" // government token
-	AssetTypeBankToken = "d" // decentralized central bank token
-)
-
-var ListAsset = []string{AssetTypeCoin, AssetTypeBond, AssetTypeGovToken, AssetTypeBankToken}
-
 // for mining consensus
 const (
 	MaxBlockSize          = 5000000 //byte 5MB
