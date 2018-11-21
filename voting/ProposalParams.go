@@ -2,7 +2,7 @@ package voting
 
 import "github.com/ninjadotorg/constant/common"
 
-type GOVParams struct {
+type GOVVotingParams struct {
 	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
 	BasicSalary  uint64 // basic salary per block(mili constant)
 	SellingBonds *SellingBonds
@@ -17,16 +17,16 @@ type SellingBonds struct {
 	SellingWithin  uint32 // selling bonds within n blocks
 }
 
-type DCBParams struct {
+type DCBVotingParams struct {
 }
 
 //xxx
-func (DCBParams DCBParams) Hash() *common.Hash {
+func (DCBParams DCBVotingParams) Hash() *common.Hash {
 	record := ""
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
-func (GOVParams GOVParams) Hash() *common.Hash {
+func (GOVParams GOVVotingParams) Hash() *common.Hash {
 	record := string(GOVParams.SalaryPerTx)
 	record += string(GOVParams.BasicSalary)
 	record += string(common.ToBytes(GOVParams.SellingBonds.Hash()))
@@ -46,9 +46,9 @@ func (SellingBonds SellingBonds) Hash() *common.Hash {
 }
 
 //xxx
-func (GOVParams GOVParams) Validate() bool {
+func (GOVParams GOVVotingParams) Validate() bool {
 	return true
 }
-func (DCBParams DCBParams) Validate() bool {
+func (DCBParams DCBVotingParams) Validate() bool {
 	return true
 }
