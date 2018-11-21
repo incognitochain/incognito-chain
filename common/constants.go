@@ -56,15 +56,21 @@ const (
 	GOV = 2
 )
 
+// ico amounts
+const (
+	InitialDCBAmt = 10000
+	InitialGOVAmt = 10000
+)
+
 // board addresses
 var (
 	DCBAddress = []byte{}
 	GOVAddress = []byte{}
+	ICOAddress = []byte{}
 )
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	GOVTokenID = []byte{}
-	DCBTokenID = []byte{}
-	CMBTokenID = []byte{}
+	GOVTokenID = [32]byte{82, 253, 252, 7, 33, 130, 101, 79, 22, 63, 95, 15, 154, 98, 29, 114, 149, 102, 199, 77, 16, 3, 124, 77, 123, 187, 4, 7, 209, 226, 198, 73}
+	DCBTokenID = [32]byte{83, 140, 127, 150, 177, 100, 191, 27, 151, 187, 159, 75, 180, 114, 232, 159, 91, 20, 132, 242, 82, 9, 201, 217, 52, 62, 146, 186, 9, 221, 157, 82}
 )
