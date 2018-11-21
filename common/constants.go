@@ -12,6 +12,9 @@ const (
 	TxSubmitGOVProposal  = "pg" // submit GOV proposal tx
 	TxVoteDCBProposal    = "vd" // submit DCB proposal voted tx
 	TxVoteGOVProposal    = "vg" // submit GOV proposal voted tx
+	TxVoteDCBBoard = "vbd" // vote DCB board tx
+	TxVoteGOVBoard = "vbg" // vote DCB board tx
+
 	TxAcceptDCBProposal  = "ad" // accept DCB proposal
 	TxAcceptGOVProposal  = "ag" // accept GOV proposal
 	TxNormalType         = "n"  // normal tx(send and receive coin)
@@ -30,17 +33,6 @@ const (
 	TxBuyBackRequest     = "bbr"
 	TxBuyBackResponse    = "bbrs"
 )
-
-// unit type use in tx
-// coin or token or bond
-const (
-	AssetTypeCoin      = "c" // 'constant' coin
-	AssetTypeBond      = "b" // bond
-	AssetTypeGovToken  = "g" // government token
-	AssetTypeBankToken = "d" // decentralized central bank token
-)
-
-var ListAsset = []string{AssetTypeCoin, AssetTypeBond, AssetTypeGovToken, AssetTypeBankToken}
 
 // for mining consensus
 const (

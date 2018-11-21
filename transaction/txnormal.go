@@ -170,7 +170,7 @@ func CreateTx(
 	var value uint64
 	for _, p := range paymentInfo {
 		value += p.Amount
-		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Pk)
+		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
 	}
 
 	type ChainNote struct {
@@ -548,11 +548,11 @@ func createDummyNote(spendingKey *privacy.SpendingKey) *client.Note {
 	copy(r[:], client.RandBits(32*8))
 
 	note := &client.Note{
-		Value: 0,
-		Apk:   addr,
-		Rho:   rho[:],
-		R:     r[:],
-		Nf:    client.GetNullifier(*spendingKey, rho),
+		Value:          0,
+		Apk: addr,
+		Rho:            rho[:],
+		R:              r[:],
+		Nf:             client.GetNullifier(*spendingKey, rho),
 	}
 	return note
 }
@@ -617,7 +617,7 @@ func GenerateProofForGenesisTx(
 	seed, phi []byte,
 	outputR [][]byte,
 	ephemeralPrivKey client.EphemeralPrivKey,
-	assetType string,
+//assetType string,
 ) (*Tx, error) {
 	// Generate JoinSplit key pair to act as a dummy key (since we don't sign genesis tx)
 	privateSignKey := [32]byte{1}

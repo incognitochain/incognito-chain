@@ -286,10 +286,10 @@ concludeBlock:
 			return nil, err
 		}
 		if tx.GetType() == common.TxAcceptDCBProposal {
-			updateDCBConstitution(&block, tx, blockgen)
+			block.updateDCBConstitution(tx, blockgen)
 		}
 		if tx.GetType() == common.TxAcceptGOVProposal {
-			updateGOVConstitution(&block, tx, blockgen)
+			block.updateGOVConstitution(tx, blockgen)
 		}
 	}
 
