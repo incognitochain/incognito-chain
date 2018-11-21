@@ -4,15 +4,16 @@ const (
 	EmptyString         = ""
 	MiliConstant        = 3 // 1 constant = 10^3 mili constant, we will use 1 miliconstant as minimum unit constant in tx
 	IncMerkleTreeHeight = 29
+	RefundPeriod        = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
 )
 
 const (
-	TxSubmitDCBProposal  = "pd" // submit DCB proposal tx
-	TxSubmitGOVProposal  = "pg" // submit GOV proposal tx
-	TxVoteDCBProposal    = "vd" // submit DCB proposal voted tx
-	TxVoteGOVProposal    = "vg" // submit GOV proposal voted tx
-	TxVoteDCBBoard = "vbd" // vote DCB board tx
-	TxVoteGOVBoard = "vbg" // vote DCB board tx
+	TxSubmitDCBProposal = "pd"  // submit DCB proposal tx
+	TxSubmitGOVProposal = "pg"  // submit GOV proposal tx
+	TxVoteDCBProposal   = "vd"  // submit DCB proposal voted tx
+	TxVoteGOVProposal   = "vg"  // submit GOV proposal voted tx
+	TxVoteDCBBoard      = "vbd" // vote DCB board tx
+	TxVoteGOVBoard      = "vbg" // vote DCB board tx
 
 	TxAcceptDCBProposal  = "ad" // accept DCB proposal
 	TxAcceptGOVProposal  = "ag" // accept GOV proposal
@@ -55,8 +56,21 @@ const (
 	GOV = 2
 )
 
+// ico amounts
+const (
+	InitialDCBAmt = 10000
+	InitialGOVAmt = 10000
+)
+
 // board addresses
 var (
 	DCBAddress = []byte{}
 	GOVAddress = []byte{}
+	ICOAddress = []byte{}
+)
+
+// special token ids (aka. PropertyID in custom token)
+var (
+	GOVTokenID = [32]byte{82, 253, 252, 7, 33, 130, 101, 79, 22, 63, 95, 15, 154, 98, 29, 114, 149, 102, 199, 77, 16, 3, 124, 77, 123, 187, 4, 7, 209, 226, 198, 73}
+	DCBTokenID = [32]byte{83, 140, 127, 150, 177, 100, 191, 27, 151, 187, 159, 75, 180, 114, 232, 159, 91, 20, 132, 242, 82, 9, 201, 217, 52, 62, 146, 186, 9, 221, 157, 82}
 )

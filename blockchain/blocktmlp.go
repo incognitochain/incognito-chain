@@ -216,15 +216,21 @@ concludeBlock:
 		return nil, err
 	}
 	// create buy/sell response tx to distribute bonds/govs to requesters
-	buySellResTx := buildBuySellResponsesTx(
+	buySellResTx := blockgen.buildBuySellResponsesTx(
 		common.TxBuyFromGOVResponse,
 		buySellReqTxs,
 		blockgen.chain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.SellingBonds,
 	)
-	buyBackResTx := buildBuyBackResponsesTx(
+	// create buy-back response tx to distribute constants to buy-back requesters
+	buyBackResTx := blockgen.buildBuyBackResponsesTx(
 		common.TxBuyBackResponse,
 		txTokenVouts,
 	)
+	// create refund txs
+	currentSalaryFund := prevBlock.Header.SalaryFund
+	remainingFund := currentSalaryFund + totalFee + salaryFundAdd + incomeFromBonds - (totalSalary + buyBackCoins)
+	refundTxs, totalRefundAmt := blockgen.buildRefundTxs(chainID, remainingFund)
+
 	coinbases := []transaction.Transaction{salaryTx}
 	if buySellResTx != nil {
 		coinbases = append(coinbases, buySellResTx)
@@ -232,13 +238,14 @@ concludeBlock:
 	if buyBackResTx != nil {
 		coinbases = append(coinbases, buyBackResTx)
 	}
+	for _, refundTx := range refundTxs {
+		coinbases = append(coinbases, refundTx)
+	}
 
-	// the 1st tx will be salaryTx
 	txsToAdd = append(coinbases, txsToAdd...)
 
 	// Check for final balance of DCB and GOV
-	currentSalaryFund := prevBlock.Header.SalaryFund
-	if currentSalaryFund+totalFee+salaryFundAdd+incomeFromBonds < totalSalary+govPayoutAmount+buyBackCoins {
+	if currentSalaryFund+totalFee+salaryFundAdd+incomeFromBonds < totalSalary+govPayoutAmount+buyBackCoins+totalRefundAmt {
 		return nil, fmt.Errorf("Gov fund is not enough for salary and dividend payout")
 	}
 
@@ -263,7 +270,7 @@ concludeBlock:
 		BlockCommitteeSigs:    make([]string, common.TotalValidators),
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
-		SalaryFund:            currentSalaryFund + incomeFromBonds + totalFee + salaryFundAdd - totalSalary - govPayoutAmount - buyBackCoins,
+		SalaryFund:            currentSalaryFund + incomeFromBonds + totalFee + salaryFundAdd - totalSalary - govPayoutAmount - buyBackCoins - totalRefundAmt,
 		BankFund:              prevBlock.Header.BankFund - bankPayoutAmount,
 		GOVConstitution:       prevBlock.Header.GOVConstitution, // TODO: need get from gov-params tx
 		DCBConstitution:       prevBlock.Header.DCBConstitution, // TODO: need get from dcb-params tx
@@ -297,6 +304,52 @@ concludeBlock:
 	//update the latest AgentDataPoints to block
 	// block.AgentDataPoints = agentDataPoints
 	return &block, nil
+}
+
+func updateDCBConstitution(block *Block, tx transaction.Transaction, blockgen *BlkTmplGenerator) error {
+	txAcceptDCBProposal := tx.(transaction.TxAcceptDCBProposal)
+	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(txAcceptDCBProposal.DCBProposalTXID)
+	DCBProposal := getTx.(*transaction.TxSubmitDCBProposal)
+	if err != nil {
+		return err
+	}
+	block.Header.DCBConstitution.StartedBlockHeight = block.Header.Height
+	block.Header.DCBConstitution.ExecuteDuration = DCBProposal.DCBProposalData.ExecuteDuration
+	block.Header.DCBConstitution.ProposalTXID = txAcceptDCBProposal.DCBProposalTXID
+	block.Header.DCBConstitution.CurrentDCBNationalWelfare = GetOracleDCBNationalWelfare()
+
+	//	proposalParams := DCBProposal.DCBProposalData.DCBParams // not use yet
+	block.Header.DCBConstitution.DCBParams = DCBParams{}
+	return nil
+}
+
+func updateGOVConstitution(block *Block, tx transaction.Transaction, blockgen *BlkTmplGenerator) error {
+	txAcceptGOVProposal := tx.(transaction.TxAcceptGOVProposal)
+	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(txAcceptGOVProposal.GOVProposalTXID)
+	GOVProposal := getTx.(*transaction.TxSubmitGOVProposal)
+	if err != nil {
+		return err
+	}
+	block.Header.GOVConstitution.StartedBlockHeight = block.Header.Height
+	block.Header.GOVConstitution.ExecuteDuration = GOVProposal.GOVProposalData.ExecuteDuration
+	block.Header.GOVConstitution.ProposalTXID = txAcceptGOVProposal.GOVProposalTXID
+	block.Header.GOVConstitution.CurrentGOVNationalWelfare = GetOracleGOVNationalWelfare()
+
+	proposalParams := GOVProposal.GOVProposalData.GOVParams
+	block.Header.GOVConstitution.GOVParams = GOVParams{
+		proposalParams.SalaryPerTx,
+		proposalParams.BasicSalary,
+		&SellingBonds{
+			proposalParams.SellingBonds.BondsToSell,
+			proposalParams.SellingBonds.BondPrice,
+			proposalParams.SellingBonds.Maturity,
+			proposalParams.SellingBonds.BuyBackPrice,
+			proposalParams.SellingBonds.StartSellingAt,
+			proposalParams.SellingBonds.SellingWithin,
+		},
+		&RefundInfo{},
+	}
+	return nil
 }
 
 func GetOracleDCBNationalWelfare() int32 {
@@ -493,7 +546,7 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 
 // buildBuySellResponsesTx
 // the tx is to distribute tokens (bond, gov, ...) to token requesters
-func buildBuySellResponsesTx(
+func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 	coinbaseTxType string,
 	buySellReqTxs []transaction.Transaction,
 	sellingBondsParam *SellingBonds,
@@ -578,7 +631,7 @@ func buildSingleTxTokenResVout(
 
 // buildBuyBackResponsesTx
 // the tx is to pay constants back to token buy back requesters
-func buildBuyBackResponsesTx(
+func (blockgen *BlkTmplGenerator) buildBuyBackResponsesTx(
 	coinbaseTxType string,
 	txTokenReqVouts map[*common.Hash]*transaction.TxTokenVout,
 ) *transaction.TxCustomToken {
@@ -602,4 +655,83 @@ func buildBuyBackResponsesTx(
 	return &transaction.TxCustomToken{
 		TxTokenData: txTokenData,
 	}
+}
+
+func calculateAmountOfRefundTxs(
+	addresses []*privacy.PaymentAddress,
+	estimatedRefundAmt uint64,
+	remainingFund uint64,
+	rt []byte,
+	chainID byte,
+) ([]*transaction.Tx, uint64) {
+	amt := uint64(0)
+	if estimatedRefundAmt <= remainingFund {
+		amt = estimatedRefundAmt
+	} else {
+		amt = remainingFund
+	}
+	actualRefundAmt := amt / uint64(len(addresses))
+	var refundTxs []*transaction.Tx
+	for i := 0; i < len(addresses); i++ {
+		addr := addresses[i]
+		refundTx, err := transaction.CreateTxSalary(actualRefundAmt, addr, rt, chainID)
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
+		refundTxs = append(refundTxs, refundTx)
+	}
+	return refundTxs, amt
+}
+
+func (blockgen *BlkTmplGenerator) buildRefundTxs(
+	chainID byte,
+	remainingFund uint64,
+) ([]*transaction.Tx, uint64) {
+	if remainingFund <= 0 {
+		Logger.log.Info("GOV fund is not enough for refund.")
+		return []*transaction.Tx{}, 0
+	}
+	prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	header := prevBlock.Header
+	govParams := header.GOVConstitution.GOVParams
+	refundInfo := govParams.RefundInfo
+	if refundInfo == nil {
+		Logger.log.Info("Refund info is not existed.")
+		return []*transaction.Tx{}, 0
+	}
+	lookbackBlockHeight := header.Height - common.RefundPeriod
+	if lookbackBlockHeight < 0 {
+		return []*transaction.Tx{}, 0
+	}
+	lookbackBlock, err := blockgen.chain.GetBlockByBlockHeight(lookbackBlockHeight, chainID)
+	if err != nil {
+		Logger.log.Error(err)
+		return []*transaction.Tx{}, 0
+	}
+	var addresses []*privacy.PaymentAddress
+	estimatedRefundAmt := uint64(0)
+	for _, tx := range lookbackBlock.Transactions {
+		if tx.GetType() != common.TxNormalType {
+			continue
+		}
+		lookbackTx, ok := tx.(*transaction.Tx)
+		if !ok {
+			continue
+		}
+		addr, txValue := lookbackTx.CalculateTxValue()
+		if addr == nil || txValue > refundInfo.ThresholdToLargeTx {
+			continue
+		}
+		addresses = append(addresses, addr)
+		estimatedRefundAmt += refundInfo.RefundAmount
+	}
+	refundTxs, totalRefundAmt := calculateAmountOfRefundTxs(
+		addresses,
+		estimatedRefundAmt,
+		remainingFund,
+		prevBlock.Header.MerkleRootCommitments.CloneBytes(),
+		chainID,
+	)
+	return refundTxs, totalRefundAmt
 }

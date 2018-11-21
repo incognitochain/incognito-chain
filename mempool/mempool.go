@@ -481,7 +481,8 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 		}
 	case common.TxSalaryType:
 		{
-			return errors.New("Can not receive a salary tx from other node, this is a violation")
+			//return errors.New("Can not receive a salary tx from other node, this is a violation")
+			return nil
 		}
 	case common.TxCustomTokenType:
 		{

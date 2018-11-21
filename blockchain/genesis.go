@@ -34,10 +34,10 @@ func createGenesisInputNote(spendingKey *privacy.SpendingKey, idx uint) *client.
 	rho := [32]byte{byte(idx)}
 	r := [32]byte{byte(idx)}
 	note := &client.Note{
-		Value:          0,
-		PaymentAddress: addr,
-		Rho:            rho[:],
-		R:              r[:],
+		Value: 0,
+		Apk:   addr.Pk,
+		Rho:   rho[:],
+		R:     r[:],
 	}
 	return note
 }
@@ -65,8 +65,8 @@ func (self GenesisBlockGenerator) createGenesisTx(initialCoin uint64, initialAdd
 	if err != nil {
 		return nil, err
 	}
-	outNote := &client.Note{Value: initialCoin, PaymentAddress: key.KeySet.PaymentAddress}
-	placeHolderOutputNote := &client.Note{Value: 0, PaymentAddress: key.KeySet.PaymentAddress}
+	outNote := &client.Note{Value: initialCoin, Apk: key.KeySet.PaymentAddress.Pk}
+	placeHolderOutputNote := &client.Note{Value: 0, Apk: key.KeySet.PaymentAddress.Pk}
 
 	fmt.Printf("EncKey: %x\n", key.KeySet.PaymentAddress.Tk)
 
@@ -248,7 +248,45 @@ func (self GenesisBlockGenerator) calcCommitmentMerkleRoot(tx *transaction.Tx) c
 	return &genesisBlock
 }*/
 
-func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(version int, initialAddress string, preSelectValidators []string, initSalaryFund uint64, salaryPerTx uint64, basicSalary uint64) *Block {
+// CreateSpecialTokenTx - create special token such as GOV, BANK, VOTE
+func createSpecialTokenTx(
+	tokenID common.Hash,
+	tokenName string,
+	tokenSymbol string,
+	amount uint64,
+	icoAddress []byte,
+) transaction.TxCustomToken {
+	paymentAddr := privacy.PaymentAddress{
+		Pk: icoAddress,
+	}
+	vout := transaction.TxTokenVout{
+		Value:           amount,
+		PaymentAddress:  paymentAddr,
+		BuySellResponse: nil,
+	}
+	vout.SetIndex(0)
+	txTokenData := transaction.TxTokenData{
+		PropertyID:     tokenID,
+		PropertyName:   tokenName,
+		PropertySymbol: tokenSymbol,
+		Type:           transaction.CustomTokenInit,
+		Amount:         amount,
+		Vins:           []transaction.TxTokenVin{},
+		Vouts:          []transaction.TxTokenVout{vout},
+	}
+	return transaction.TxCustomToken{
+		TxTokenData: txTokenData,
+	}
+}
+
+func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
+	version int,
+	initialAddress string,
+	preSelectValidators []string,
+	initSalaryFund uint64,
+	salaryPerTx uint64,
+	basicSalary uint64,
+) *Block {
 	//init the loc
 	loc, _ := time.LoadLocation("America/New_York")
 	time := time.Date(2018, 8, 1, 0, 0, 0, 0, loc)
@@ -260,8 +298,10 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(version int, ini
 	genesisBlock.Header.Committee = make([]string, len(preSelectValidators))
 	// Gov param
 	genesisBlock.Header.GOVConstitution.GOVParams = GOVParams{
-		SalaryPerTx: salaryPerTx,
-		BasicSalary: basicSalary,
+		SalaryPerTx:  salaryPerTx,
+		BasicSalary:  basicSalary,
+		SellingBonds: &SellingBonds{},
+		RefundInfo:   &RefundInfo{},
 	}
 	genesisBlock.Header.LoanParams = transaction.LoanParams{
 		InterestRate:     0,
@@ -277,7 +317,24 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(version int, ini
 	genesisBlock.Header.Height = 1
 	genesisBlock.Header.SalaryFund = initSalaryFund
 
-	// TODO create 3 genesis token tx for DCB, Gov, CmB
+	// Create 2 genesis token tx for DCB, GOV
+	dcbTokenTx := createSpecialTokenTx( // DCB
+		common.Hash(common.DCBTokenID),
+		"Decentralized central bank token",
+		"DCB",
+		common.InitialDCBAmt,
+		common.ICOAddress,
+	)
+	govTokenTx := createSpecialTokenTx( // GOV
+		common.Hash(common.GOVTokenID),
+		"Government token",
+		"GOV",
+		common.InitialGOVAmt,
+		common.ICOAddress,
+	)
+	genesisBlock.AddTransaction(&dcbTokenTx)
+	genesisBlock.AddTransaction(&govTokenTx)
+
 	// txs, err := self.getGenesisTokenTxs()
 
 	// if err != nil {
