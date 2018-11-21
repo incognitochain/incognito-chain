@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
@@ -198,12 +199,15 @@ concludeBlock:
 	}
 
 	// Process crowdsale for DCB
-	dcbSaleTxs, err := blockgen.processCrowdsale(sourceTxns)
+	dcbSaleTxs, removableTxs, err := blockgen.processCrowdsale(sourceTxns, rt, chainID)
 	if err != nil {
 		return nil, err
 	}
 	for _, tx := range dcbSaleTxs {
 		txsToAdd = append(txsToAdd, tx)
+	}
+	for _, tx := range removableTxs {
+		txToRemove = append(txToRemove, tx)
 	}
 
 	// Get blocksalary fund from txs
@@ -664,17 +668,59 @@ func buildBuyBackResponsesTx(
 	}
 }
 
-func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*transaction.TxDesc) ([]*transaction.TxBuySellDCBResponse, error) {
-	txToRemove := []transaction.Transaction{}
+func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*transaction.TxDesc, rt []byte, chainID byte) ([]*transaction.TxBuySellDCBResponse, []transaction.Transaction, error) {
+	txsToRemove := []transaction.Transaction{}
+	txsResponse := []*transaction.TxBuySellDCBResponse{}
+	// Get unspent bond tx to spend if needed
+	keySet := cashec.KeySet{
+		PaymentAddress: privacy.PaymentAddress{
+			Pk: common.DCBAddress,
+		},
+	}
+	tokenID := &common.Hash{} // TODO(@0xbunyip): hard code bond token id here
+	unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keySet, tokenID)
+	if err != nil {
+		unspentTxTokenOuts = []transaction.TxTokenVout{}
+	}
 	for _, txDesc := range sourceTxns {
-		if txDesc.Tx.GetType() == common.TxBuySellDCBRequest {
-			tx, err := (txDesc.Tx).(*transaction.TxBuySellRequest)
-			if err != nil {
-				txToRemove = append(txToRemove, tx)
-			}
+		if txDesc.Tx.GetType() != common.TxBuySellDCBRequest {
+			continue
+		}
 
-			// Create corresponding response to send selling asset
+		tx, ok := (txDesc.Tx).(*transaction.TxBuySellRequest)
+		if !ok {
+			txsToRemove = append(txsToRemove, tx)
+		}
+
+		// Create corresponding response to send selling asset
+		// Get buying and selling asset from current sale
+		saleData, err := blockgen.chain.config.DataBase.LoadCrowdsaleData(tx.SaleID)
+		if err != nil {
+			txsToRemove = append(txsToRemove, tx)
+			continue
+		}
+
+		// Get price for asset bond
+		bondPrices := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
+		if saleData.SellingAsset == common.AssetTypeCoin {
+			txResponse, err := transaction.BuildResponseForCoin(tx, saleData.BondID, rt, chainID, bondPrices)
+			if err != nil {
+				txsToRemove = append(txsToRemove, tx)
+			} else {
+				txsResponse = append(txsResponse, txResponse)
+			}
+		} else if saleData.SellingAsset == common.AssetTypeBond {
+			// Get unspent token UTXO to send to user
+			txResponse := &transaction.TxBuySellDCBResponse{}
+			txResponse, unspentTxTokenOuts, err = transaction.BuildResponseForBond(tx, saleData.BondID, rt, chainID, bondPrices, unspentTxTokenOuts)
+			if err != nil {
+				txsToRemove = append(txsToRemove, tx)
+			} else {
+				txsResponse = append(txsResponse, txResponse)
+			}
+		} else {
+			txsToRemove = append(txsToRemove, tx)
 		}
 	}
-	return nil, nil
+	return txsResponse, txsToRemove, nil
 }
