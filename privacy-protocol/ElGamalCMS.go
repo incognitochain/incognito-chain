@@ -25,7 +25,7 @@ const (
 type ElGamalCommitment interface {
 	// Params returns the parameters for the commitment
 	Params() *ElCParams
-	// InitCommitment initialize the parameters
+	// Setup initialize the parameters
 	InitCommitment() *ElCParams
 	// CommitAll commits
 	Commit([CM_CAPACITY][]byte) []byte
@@ -47,32 +47,7 @@ type ElCParams struct {
 //Elcm ...
 var Elcm ElCParams
 
-// HashGenerator derives new generator from another generator using hash function
-func HashGenerator(g EllipticPoint) EllipticPoint {
-	// res.X = hash(g.X), res.Y = sqrt(res.X^3 - 3X + B)
-	var res = new(EllipticPoint)
-	res.X = big.NewInt(0)
-	res.Y = big.NewInt(0)
-	res.X.SetBytes(g.X.Bytes())
-	for {
-		hashMachine := blake2b.New256()
-		hashMachine.Write(res.X.Bytes())
-		res.X.SetBytes(hashMachine.Sum(nil))
-		res.Y = computeYCoord(res.X)
-		if (res.Y != nil) && (Curve.IsOnCurve(res.X, res.Y)) {
-			break
-		}
-	}
-	//check Point of degree 2
-	pointToChecked := new(EllipticPoint)
-	pointToChecked.X, pointToChecked.Y = Curve.Double(res.X, res.Y)
 
-	if pointToChecked.X == nil || pointToChecked.Y == nil {
-		//fmt.Errorf("Point at infinity")
-		return *new(EllipticPoint)
-	}
-	return *res
-}
 
 //GetHashOfValues get hash of n points in G append with input values
 //return blake_2b(G[0]||G[1]||...||G[CM_CAPACITY-1]||<values>)
@@ -129,7 +104,7 @@ func (com ElCParams) Params() ElCParams {
 	return com
 }
 
-// InitCommitment initializes parameters of Pedersen commitment
+// Setup initializes parameters of Pedersen commitment
 func (com *ElCParams) InitCommitment() {
 
 	// G0 is the base point of curve P256
@@ -147,7 +122,7 @@ func (com *ElCParams) InitCommitment() {
 
 	com.G[0] = EllipticPoint{Curve.Params().Gx, Curve.Params().Gy}
 	for i := 1; i < CM_CAPACITY; i++ {
-		com.G[i] = HashGenerator(com.G[i-1])
+		com.G[i] = HashPoint(com.G[i-1])
 	}
 
 	//TODO: hard code parameters
@@ -245,7 +220,7 @@ func (com ElCParams) CommitWithSpecPoint(G EllipticPoint, H EllipticPoint, value
 //	if len(rands) != nBitsThreshold{
 //		return nil, fmt.Errorf("do not have enough random number to commit")
 //	}
-//	Elcm.InitCommitment()
+//	Elcm.Setup()
 //
 //	commitments := make([][]byte, nBitsThreshold)
 //	commitmentPoints := make([]EllipticPoint, nBitsThreshold)

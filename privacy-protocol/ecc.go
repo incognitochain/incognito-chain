@@ -4,6 +4,7 @@ import (
 	"crypto/elliptic"
 	"fmt"
 	"math/big"
+	"github.com/minio/blake2b-simd"
 )
 
 // Curve P256
@@ -23,6 +24,7 @@ type EllipticPointHelper interface {
 	DecompressPoint(compressPointBytes []byte) error
 	IsSafe() bool
 	ComputeYCoord(x *big.Int) *big.Int
+	HashPoint() EllipticPoint
 }
 
 // EllipticPoint represents an point of elliptic curve
@@ -90,49 +92,7 @@ func (eccPoint EllipticPoint) InversePoint() (*EllipticPoint, error) {
 	return resPoint, nil
 }
 
-// RandPoint return pseudorandom point calculated by function F(x,y) = (x + y)^-1 * G, with G is genertor in Secp256k1
-func (eccPoint *EllipticPoint) RandPoint(x, y *big.Int) *EllipticPoint {
-	//Generate result point
-	res := new(EllipticPoint)
-	res.X = big.NewInt(0)
-	res.Y = big.NewInt(0)
-	//res <- G, we'll calculate res * (x + y)^-1 after.
-	res.X.SetBytes(Curve.Params().Gx.Bytes())
-	res.Y.SetBytes(Curve.Params().Gy.Bytes())
 
-	//intTemp is x + y (mod N)
-	intTemp := big.NewInt(0)
-	intTemp.SetBytes(x.Bytes())
-	intTemp.Add(intTemp, y)
-	intTemp.Mod(intTemp, Curve.Params().N)
-
-	//intTempInverse is (x + y)^-1 in (Zn)*
-	//Cuz intTempInverse * intTemp = 1 (int (Zn)*), so we use Euclid Theorem: a*x + b*y = GCD(a,b)
-	//in this case, we calculate GCD(intTemp,n) = intTemp*x + n*y
-	//if GCD(intTemp,n) = 1, we have intTemp*x + n*y = 1 (*)
-	//Mod (*) by n, we have intTemp*x = 1 (mod n)
-	//so intTempInverse = x
-	intTempInverse := big.NewInt(0)
-	intY := big.NewInt(0)
-	intGCD := big.NewInt(0)
-	intGCD = intGCD.GCD(intTempInverse, intY, intTemp, Curve.Params().N)
-
-	if intGCD.Cmp(big.NewInt(1)) != 0 {
-		//if GCD return value != 1, it mean we dont have (x + y)^-1 in Zn
-		return nil
-	}
-
-	//res = res * (x+y)^-1
-	res.X, res.Y = Curve.ScalarMult(res.X, res.Y, intTempInverse.Bytes())
-
-	if eccPoint.X == nil {
-		eccPoint = res
-	} else {
-		eccPoint.X = res.X
-		eccPoint.Y = res.Y
-	}
-	return res
-}
 
 //Rand make object's value to random
 func (eccPoint *EllipticPoint) Rand() {
@@ -244,6 +204,33 @@ func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	return y, nil
 }
 
+// HashPoint derives new elliptic point from another elliptic point using hash function
+func (eccPoint EllipticPoint) HashPoint() EllipticPoint {
+	// res.X = hash(g.X), res.Y = sqrt(res.X^3 - 3X + B)
+	var res = new(EllipticPoint)
+	res.X = big.NewInt(0)
+	res.Y = big.NewInt(0)
+	res.X.SetBytes(eccPoint.X.Bytes())
+	for {
+		hashMachine := blake2b.New256()
+		hashMachine.Write(res.X.Bytes())
+		res.X.SetBytes(hashMachine.Sum(nil))
+		res.Y = computeYCoord(res.X)
+		if (res.Y != nil) && (Curve.IsOnCurve(res.X, res.Y)) {
+			break
+		}
+	}
+	//check Point of degree 2
+	pointToChecked := new(EllipticPoint)
+	pointToChecked.X, pointToChecked.Y = Curve.Double(res.X, res.Y)
+
+	if pointToChecked.X == nil || pointToChecked.Y == nil {
+		//fmt.Errorf("Point at infinity")
+		return *new(EllipticPoint)
+	}
+	return *res
+}
+
 func TestECC() bool {
 	//Test compress && decompress
 	eccPoint := new(EllipticPoint)
@@ -263,4 +250,7 @@ func TestECC() bool {
 		return false
 	}
 	return true
+
+
+
 }

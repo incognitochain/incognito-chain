@@ -224,7 +224,7 @@ func TestPKComZeroOne() {
 	//	PublicKey:      pubKey,
 	//	SerialNumber:   serialNumber,
 	//	CoinCommitment: nil,
-	//	R:              r,
+	//	Randomness:              r,
 	//	Value:          value,
 	//}
 	//coin.CommitAll()

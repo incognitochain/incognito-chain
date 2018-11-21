@@ -628,13 +628,8 @@ GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be 
 - Param #1: key - key set which contain readonly-key and pub-key
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType string) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx, 0)
-
-	// set default for params
-	if coinType == "" {
-		coinType = common.AssetTypeCoin
-	}
 
 	// lock chain
 	self.chainLock.Lock()
@@ -780,7 +775,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 					copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
 					copyDesc.AppendNote(note)
 					note.Cm = candidateCommitment
-					note.Apk = privacy.GeneratePaymentAddress(keys.PrivateKey).Pk
+					note.Apk = privacy.GeneratePublicKey(keys.PrivateKey)
 					copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
 				} else {
 					continue
@@ -807,7 +802,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 					}
 					copyDesc.AppendNote(note)
 					note.Cm = candidateCommitment
-					note.Apk = privacy.GeneratePaymentAddress(keys.PrivateKey).Pk
+					note.Apk = privacy.GeneratePublicKey(keys.PrivateKey)
 					copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
 				} else {
 					continue

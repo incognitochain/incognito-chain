@@ -33,6 +33,7 @@ type Tx struct {
 
 	txId       *common.Hash
 	sigPrivKey *client.PrivateKey
+
 }
 
 func (tx *Tx) SetTxID(txId *common.Hash) {
@@ -170,7 +171,7 @@ func CreateTx(
 	var value uint64
 	for _, p := range paymentInfo {
 		value += p.Amount
-		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Pk)
+		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
 	}
 
 	type ChainNote struct {
@@ -353,7 +354,7 @@ func CreateTx(
 
 				// Use the change note to continually send to receivers if needed
 				if len(paymentInfo) > 0 {
-					// outNote data (R and Rho) will be updated when building zk-proof
+					// outNote data (Randomness and Rho) will be updated when building zk-proof
 					chainNote := &ChainNote{note: outNote, chainID: senderChainID}
 					inputNotes = append(inputNotes, chainNote)
 					fmt.Printf("Reuse change note later\n")
@@ -469,11 +470,11 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	fmt.Printf("tranmissionKey[1]: %x\n", keys[1])
 	fmt.Printf("notes[0].Value: %+v\n", notes[0].Value)
 	fmt.Printf("notes[0].Rho: %x\n", notes[0].Rho)
-	fmt.Printf("notes[0].R: %x\n", notes[0].R)
+	fmt.Printf("notes[0].Randomness: %x\n", notes[0].R)
 	fmt.Printf("notes[0].Memo: %+v\n", notes[0].Memo)
 	fmt.Printf("notes[1].Value: %+v\n", notes[1].Value)
 	fmt.Printf("notes[1].Rho: %x\n", notes[1].Rho)
-	fmt.Printf("notes[1].R: %x\n", notes[1].R)
+	fmt.Printf("notes[1].Randomness: %x\n", notes[1].R)
 	fmt.Printf("notes[1].Memo: %+v\n", notes[1].Memo)
 	var noteciphers [][]byte
 	if proof != nil {
@@ -548,11 +549,11 @@ func createDummyNote(spendingKey *privacy.SpendingKey) *client.Note {
 	copy(r[:], client.RandBits(32*8))
 
 	note := &client.Note{
-		Value: 0,
-		Apk:   addr,
-		Rho:   rho[:],
-		R:     r[:],
-		Nf:    client.GetNullifier(*spendingKey, rho),
+		Value:          0,
+		Apk: addr,
+		Rho:            rho[:],
+		R:              r[:],
+		Nf:             client.GetNullifier(*spendingKey, rho),
 	}
 	return note
 }
@@ -617,7 +618,7 @@ func GenerateProofForGenesisTx(
 	seed, phi []byte,
 	outputR [][]byte,
 	ephemeralPrivKey client.EphemeralPrivKey,
-	assetType string,
+//assetType string,
 ) (*Tx, error) {
 	// Generate JoinSplit key pair to act as a dummy key (since we don't sign genesis tx)
 	privateSignKey := [32]byte{1}

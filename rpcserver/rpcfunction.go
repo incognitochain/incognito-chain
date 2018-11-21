@@ -409,11 +409,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 
 	// get params
 	paramsArray := common.InterfaceSlice(params)
-	assetType := paramsArray[0].(string)
-	if ok, err := common.SliceExists(common.ListAsset, assetType); !ok || err != nil {
-		return nil, NewRPCError(ErrUnexpected, errors.New(fmt.Sprintf("Asset is not in list: ", common.ListAsset)))
-	}
-	listKeyParams := common.InterfaceSlice(paramsArray[1])
+	listKeyParams := common.InterfaceSlice(paramsArray[0])
 	for _, keyParam := range listKeyParams {
 		keys := keyParam.(map[string]interface{})
 
@@ -437,7 +433,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 			PaymentAddress: pubKey.KeySet.PaymentAddress,
 		}
 
-		txsMap, err := self.config.BlockChain.GetListTxByReadonlyKey(&keySet, assetType)
+		txsMap, err := self.config.BlockChain.GetListTxByReadonlyKey(&keySet)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -1614,7 +1610,7 @@ func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, c
 
 // handleGetListDCBBoard - return list payment address of DCB board
 func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBBoardPubKeys, nil
+	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys, nil
 }
 
 func (self RpcServer) handleGetListCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -1622,7 +1618,7 @@ func (self RpcServer) handleGetListCBBoard(params interface{}, closeChan <-chan 
 }
 
 func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVBoardPubKeys, nil
+	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys, nil
 }
 
 // payment address -> balance of all custom token

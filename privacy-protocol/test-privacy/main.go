@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"runtime"
 
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
@@ -66,24 +67,36 @@ func main() {
 	//tx, _ := transaction.CreateEmptyTxs()
 	//fmt.Printf("Transaction: %+v\n", tx)
 
-	//privacy-protocol.Elcm.InitCommitment()
+	//privacy-protocol.Elcm.Setup()
 	//privacy-protocol.TestProofIsZero()
 	//// fmt.Println("Done")
 	//a:= new(privacy-protocol.InputCommitments)
 	//
 	//privacy-protocol.TestProductCommitment()
-	//privacy-protocol.Elcm.InitCommitment()
+	//privacy-protocol.Elcm.Setup()
 	// privacy-protocol.TestProofIsZero()
 	// fmt.Println("Done")
 	// privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestPKOneOfMany()
+
+	// start := time.Now()
+	//zkpoptimization.TestPKOneOfMany()
+	// end := time.Now()
+	// fmt.Printf("%v\n", end.Sub(start))
+	// start = time.Now()
+	// zkp.TestPKOneOfMany()
+	// end = time.Now()
+	// fmt.Printf("%v\n", end.Sub(start))
+
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	// zkp.TestPKComZeroOne()
 	zkpoptimization.TestPKOneOfMany()
 	zkp.TestPKOneOfMany()
 
+	//privacy.TestCommitment()
+
 	//zkp.TestPKMaxValue()
-	//privacy.Elcm.InitCommitment()
+	//privacy.Elcm.Setup()
 	//privacy.Elcm.TestFunction(00)
 
 	//var zk zkp.ZKProtocols
@@ -127,4 +140,8 @@ func main() {
 	//fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
 	//fmt.Printf("\n %v\n", point.CompressPoint())
 	//zkp.TestPKComProduct()
+	//privacy.Curve.Params().G
+
+
+
 }
