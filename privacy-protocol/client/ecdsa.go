@@ -223,8 +223,8 @@ func Sign(rand io.Reader, priv *PrivateKey, hash []byte) (r, s *big.Int, err err
 			break
 		}
 	}
-	// fmt.Println("R, s not nil")
-	// fmt.Printf("R: %+v\n", *r)
+	// fmt.Println("Randomness, s not nil")
+	// fmt.Printf("Randomness: %+v\n", *r)
 	// fmt.Printf("S: %+v\n", *s)
 	return r, s, nil
 }

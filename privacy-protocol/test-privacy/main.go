@@ -69,13 +69,13 @@ func main() {
 	//tx, _ := transaction.CreateEmptyTxs()
 	//fmt.Printf("Transaction: %+v\n", tx)
 
-	//privacy-protocol.Elcm.InitCommitment()
+	//privacy-protocol.Elcm.Setup()
 	//privacy-protocol.TestProofIsZero()
 	//// fmt.Println("Done")
 	//a:= new(privacy-protocol.InputCommitments)
 	//
 	//privacy-protocol.TestProductCommitment()
-	//privacy-protocol.Elcm.InitCommitment()
+	//privacy-protocol.Elcm.Setup()
 	// privacy-protocol.TestProofIsZero()
 	// fmt.Println("Done")
 	// privacy-protocol.TestPKComZeroOne()
@@ -106,8 +106,10 @@ func main() {
 		fmt.Println("ewww")
 	}
 
+	//privacy.TestCommitment()
+
 	//zkp.TestPKMaxValue()
-	//privacy.Elcm.InitCommitment()
+	//privacy.Elcm.Setup()
 	//privacy.Elcm.TestFunction(00)
 
 	//var zk zkp.ZKProtocols
@@ -151,4 +153,6 @@ func main() {
 	//fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
 	//fmt.Printf("\n %v\n", point.CompressPoint())
 	//zkp.TestPKComProduct()
+	//privacy.Curve.Params().G
+
 }
