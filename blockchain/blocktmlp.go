@@ -216,13 +216,13 @@ concludeBlock:
 		return nil, err
 	}
 	// create buy/sell response tx to distribute bonds/govs to requesters
-	buySellResTx := buildBuySellResponsesTx(
+	buySellResTx := blockgen.buildBuySellResponsesTx(
 		common.TxBuyFromGOVResponse,
 		buySellReqTxs,
 		blockgen.chain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.SellingBonds,
 	)
 	// create buy-back response tx to distribute constants to buy-back requesters
-	buyBackResTx := buildBuyBackResponsesTx(
+	buyBackResTx := blockgen.buildBuyBackResponsesTx(
 		common.TxBuyBackResponse,
 		txTokenVouts,
 	)
@@ -238,12 +238,10 @@ concludeBlock:
 	if buyBackResTx != nil {
 		coinbases = append(coinbases, buyBackResTx)
 	}
-	if len(refundTxs) > 0 {
-		// coinbases = append(coinbases, refundTxs...)
-		for _, refundTx := range refundTxs {
-			coinbases = append(coinbases, refundTx)
-		}
+	for _, refundTx := range refundTxs {
+		coinbases = append(coinbases, refundTx)
 	}
+
 	txsToAdd = append(coinbases, txsToAdd...)
 
 	// Check for final balance of DCB and GOV
@@ -548,7 +546,7 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 
 // buildBuySellResponsesTx
 // the tx is to distribute tokens (bond, gov, ...) to token requesters
-func buildBuySellResponsesTx(
+func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 	coinbaseTxType string,
 	buySellReqTxs []transaction.Transaction,
 	sellingBondsParam *SellingBonds,
@@ -633,7 +631,7 @@ func buildSingleTxTokenResVout(
 
 // buildBuyBackResponsesTx
 // the tx is to pay constants back to token buy back requesters
-func buildBuyBackResponsesTx(
+func (blockgen *BlkTmplGenerator) buildBuyBackResponsesTx(
 	coinbaseTxType string,
 	txTokenReqVouts map[*common.Hash]*transaction.TxTokenVout,
 ) *transaction.TxCustomToken {

@@ -34,10 +34,10 @@ func createGenesisInputNote(spendingKey *privacy.SpendingKey, idx uint) *client.
 	rho := [32]byte{byte(idx)}
 	r := [32]byte{byte(idx)}
 	note := &client.Note{
-		Value:          0,
-		Apk: addr.Pk,
-		Rho:            rho[:],
-		R:              r[:],
+		Value: 0,
+		Apk:   addr.Pk,
+		Rho:   rho[:],
+		R:     r[:],
 	}
 	return note
 }
@@ -260,8 +260,10 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(version int, ini
 	genesisBlock.Header.Committee = make([]string, len(preSelectValidators))
 	// Gov param
 	genesisBlock.Header.GOVConstitution.GOVParams = GOVParams{
-		SalaryPerTx: salaryPerTx,
-		BasicSalary: basicSalary,
+		SalaryPerTx:  salaryPerTx,
+		BasicSalary:  basicSalary,
+		SellingBonds: &SellingBonds{},
+		RefundInfo:   &RefundInfo{},
 	}
 	genesisBlock.Header.LoanParams = transaction.LoanParams{
 		InterestRate:     0,

@@ -8,12 +8,12 @@ const (
 )
 
 const (
-	TxSubmitDCBProposal  = "pd" // submit DCB proposal tx
-	TxSubmitGOVProposal  = "pg" // submit GOV proposal tx
-	TxVoteDCBProposal    = "vd" // submit DCB proposal voted tx
-	TxVoteGOVProposal    = "vg" // submit GOV proposal voted tx
-	TxVoteDCBBoard = "vbd" // vote DCB board tx
-	TxVoteGOVBoard = "vbg" // vote DCB board tx
+	TxSubmitDCBProposal = "pd"  // submit DCB proposal tx
+	TxSubmitGOVProposal = "pg"  // submit GOV proposal tx
+	TxVoteDCBProposal   = "vd"  // submit DCB proposal voted tx
+	TxVoteGOVProposal   = "vg"  // submit GOV proposal voted tx
+	TxVoteDCBBoard      = "vbd" // vote DCB board tx
+	TxVoteGOVBoard      = "vbg" // vote DCB board tx
 
 	TxAcceptDCBProposal  = "ad" // accept DCB proposal
 	TxAcceptGOVProposal  = "ag" // accept GOV proposal
@@ -60,4 +60,11 @@ const (
 var (
 	DCBAddress = []byte{}
 	GOVAddress = []byte{}
+)
+
+// special token ids (aka. PropertyID in custom token)
+var (
+	GOVTokenID = []byte{}
+	DCBTokenID = []byte{}
+	CMBTokenID = []byte{}
 )
