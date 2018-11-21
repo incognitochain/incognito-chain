@@ -726,9 +726,9 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	var sizeFee uint64 = 8      // uint64
 	var sizeDescs uint64        // uint64
 	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
 	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
 	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
@@ -761,4 +761,22 @@ func CreateEmptyTx(txType string) (*Tx, error) {
 		sigPrivKey: sigPrivKey,
 	}
 	return tx, nil
+}
+
+func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
+	initiatorPubKey := tx.JSPubKey
+	txValue := uint64(0)
+	var addr *privacy.PaymentAddress
+	for _, desc := range tx.Descs {
+		for _, note := range desc.Note {
+			if string(note.Apk[:]) == string(initiatorPubKey) {
+				continue
+			}
+			addr = &privacy.PaymentAddress{
+				Pk: note.Apk,
+			}
+			txValue += note.Value
+		}
+	}
+	return addr, txValue
 }

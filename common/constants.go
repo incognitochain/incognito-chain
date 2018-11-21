@@ -4,6 +4,7 @@ const (
 	EmptyString         = ""
 	MiliConstant        = 3 // 1 constant = 10^3 mili constant, we will use 1 miliconstant as minimum unit constant in tx
 	IncMerkleTreeHeight = 29
+	RefundPeriod        = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
 )
 
 const (
