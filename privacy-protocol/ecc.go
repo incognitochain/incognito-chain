@@ -4,6 +4,7 @@ import (
 	"crypto/elliptic"
 	"fmt"
 	"math/big"
+	"github.com/minio/blake2b-simd"
 )
 
 // Curve P256
@@ -23,6 +24,7 @@ type EllipticPointHelper interface {
 	DecompressPoint(compressPointBytes []byte) error
 	IsSafe() bool
 	ComputeYCoord(x *big.Int) *big.Int
+	HashPoint() EllipticPoint
 }
 
 // EllipticPoint represents an point of elliptic curve
@@ -202,6 +204,33 @@ func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	return y, nil
 }
 
+// HashPoint derives new elliptic point from another elliptic point using hash function
+func (eccPoint EllipticPoint) HashPoint() EllipticPoint {
+	// res.X = hash(g.X), res.Y = sqrt(res.X^3 - 3X + B)
+	var res = new(EllipticPoint)
+	res.X = big.NewInt(0)
+	res.Y = big.NewInt(0)
+	res.X.SetBytes(eccPoint.X.Bytes())
+	for {
+		hashMachine := blake2b.New256()
+		hashMachine.Write(res.X.Bytes())
+		res.X.SetBytes(hashMachine.Sum(nil))
+		res.Y = computeYCoord(res.X)
+		if (res.Y != nil) && (Curve.IsOnCurve(res.X, res.Y)) {
+			break
+		}
+	}
+	//check Point of degree 2
+	pointToChecked := new(EllipticPoint)
+	pointToChecked.X, pointToChecked.Y = Curve.Double(res.X, res.Y)
+
+	if pointToChecked.X == nil || pointToChecked.Y == nil {
+		//fmt.Errorf("Point at infinity")
+		return *new(EllipticPoint)
+	}
+	return *res
+}
+
 func TestECC() bool {
 	//Test compress && decompress
 	eccPoint := new(EllipticPoint)
@@ -221,4 +250,7 @@ func TestECC() bool {
 		return false
 	}
 	return true
+
+
+
 }

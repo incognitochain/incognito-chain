@@ -15,17 +15,17 @@ const (
 )
 
 // PedersenCommitment represents a commitment that includes 4 generators
-type PedersenCommitment interface {
-	// Params returns the parameters for the commitment
-	Params() *PCParams
-	// InitCommitment initialize the parameters
-	InitCommitment() *PCParams
-	// CommitAll commits
-	Commit([PCM_CAPACITY][]byte) []byte
-	getHashOfValues([]byte) []byte
-	CommitSpecValue([]byte, []byte, byte) []byte
-	TestFunction(byte) bool
-}
+//type PedersenCommitment interface {
+//	// Params returns the parameters for the commitment
+//	Params() *PCParams
+//	// Setup initialize the parameters
+//	Setup() *PCParams
+//	// CommitAll commits
+//	Commit([PCM_CAPACITY][]byte) []byte
+//	getHashOfValues([]byte) []byte
+//	CommitSpecValue([]byte, []byte, byte) []byte
+//	TestFunction(byte) bool
+//}
 
 // PCParams represents the parameters for the commitment
 type PCParams struct {
@@ -36,10 +36,6 @@ type PCParams struct {
 	// G[3]: Random
 }
 
-const (
-	//PCM_CAPACITY ...
-	PCM_CAPACITY = 4
-)
 
 //PCParams ...
 var Pcm PCParams
@@ -65,7 +61,7 @@ func (com PCParams) Params() PCParams {
 	return com
 }
 
-// InitCommitment initializes parameters of Pedersen commitment
+// Setup initializes parameters of Pedersen commitment
 func (com *PCParams) InitCommitment() {
 
 	// G0 is the base point of curve P256
@@ -84,7 +80,7 @@ func (com *PCParams) InitCommitment() {
 	//fmt.Printf("G0.X: %#v\n", com.G[0].X.Bytes())
 	//fmt.Printf("G0.Y: %#v\n", com.G[0].Y.Bytes())
 	for i := 1; i < PCM_CAPACITY; i++ {
-		com.G[i] = HashGenerator(com.G[i-1])
+		com.G[i] = com.G[i-1].HashPoint()
 		//fmt.Printf("G%v.X: %#v\n", i, com.G[i].X.Bytes())
 		//fmt.Printf("G%v.Y: %#v\n", i, com.G[i].Y.Bytes())
 	}

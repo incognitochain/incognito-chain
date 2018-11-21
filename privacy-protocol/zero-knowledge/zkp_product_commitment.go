@@ -59,8 +59,8 @@ func (basePoint *BasePoint) InitBasePoint() {
 	P:= new(privacy.EllipticPoint)
 	P.X = privacy.Curve.Params().Gx
 	P.Y = privacy.Curve.Params().Gy
-	basePoint.G = privacy.HashGenerator(*P)
-	basePoint.H = privacy.HashGenerator(basePoint.G)
+	basePoint.G = P.HashPoint()
+	basePoint.H = basePoint.G.HashPoint()
 }
 func computeHashString(data [][]byte) []byte{
 	str:=make([]byte, 0)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"runtime"
 
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
@@ -66,13 +67,13 @@ func main() {
 	//tx, _ := transaction.CreateEmptyTxs()
 	//fmt.Printf("Transaction: %+v\n", tx)
 
-	//privacy-protocol.Elcm.InitCommitment()
+	//privacy-protocol.Elcm.Setup()
 	//privacy-protocol.TestProofIsZero()
 	//// fmt.Println("Done")
 	//a:= new(privacy-protocol.InputCommitments)
 	//
 	//privacy-protocol.TestProductCommitment()
-	//privacy-protocol.Elcm.InitCommitment()
+	//privacy-protocol.Elcm.Setup()
 	// privacy-protocol.TestProofIsZero()
 	// fmt.Println("Done")
 	// privacy-protocol.TestPKComZeroOne()
@@ -92,8 +93,10 @@ func main() {
 	zkpoptimization.TestPKOneOfMany()
 	zkp.TestPKOneOfMany()
 
+	//privacy.TestCommitment()
+
 	//zkp.TestPKMaxValue()
-	//privacy.Elcm.InitCommitment()
+	//privacy.Elcm.Setup()
 	//privacy.Elcm.TestFunction(00)
 
 	//var zk zkp.ZKProtocols
