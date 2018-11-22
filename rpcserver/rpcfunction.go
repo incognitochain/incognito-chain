@@ -53,13 +53,13 @@ var RpcHandler = map[string]commandHandler{
 	GetBlockProducerList:       RpcServer.handleGetBlockProducerList,
 
 	// custom token
-	CreateRawCustomTokenTransaction: RpcServer.handleCreateRawCustomTokenTransaction,
-	SendRawCustomTokenTransaction:   RpcServer.handleSendRawCustomTokenTransaction,
-	SendCustomTokenTransaction:      RpcServer.handleSendCustomTokenTransaction,
-	ListUnspentCustomToken:          RpcServer.handleListUnspentCustomTokenTransaction,
-	ListCustomToken:                 RpcServer.handleListCustomToken,
-	CustomToken:                     RpcServer.handleCustomTokenDetail,
-	GetListCustomTokenBalance:       RpcServer.handleGetListCustomTokenBalance,
+	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
+	SendRawCustomTokenTransaction:       RpcServer.handleSendRawCustomTokenTransaction,
+	CreateAndSendCustomTokenTransaction: RpcServer.handleCreateAndSendCustomTokenTransaction,
+	ListUnspentCustomToken:              RpcServer.handleListUnspentCustomTokenTransaction,
+	ListCustomToken:                     RpcServer.handleListCustomToken,
+	CustomToken:                         RpcServer.handleCustomTokenDetail,
+	GetListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
 
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -909,8 +909,8 @@ func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, cl
 	return tx.Hash(), nil
 }
 
-// handleSendCustomTokenTransaction - create and send a tx which process on a custom token look like erc-20 on eth
-func (self RpcServer) handleSendCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+// handleCreateAndSendCustomTokenTransaction - create and send a tx which process on a custom token look like erc-20 on eth
+func (self RpcServer) handleCreateAndSendCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	data, err := self.handleCreateRawCustomTokenTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
