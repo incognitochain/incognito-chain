@@ -142,6 +142,7 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	var initBlock *Block
 	if chainId == 0 {
 		initBlock = self.config.ChainParams.GenesisBlock
+
 	} else {
 		initBlock = &Block{}
 		initBlock.Header = self.config.ChainParams.GenesisBlock.Header
@@ -158,17 +159,12 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	self.BestState[chainId] = &BestState{}
 	self.BestState[chainId].Init(initBlock, tree)
 
-	// store block genesis
-	err := self.StoreBlock(initBlock)
+	err := self.ConnectBlock(initBlock)
 	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
+		Logger.log.Error(err)
+		return err
 	}
 
-	// store block hash by index and index by block hash
-	err = self.StoreBlockIndex(initBlock)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
 	// store best state
 	err = self.StoreBestState(chainId)
 	if err != nil {

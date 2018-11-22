@@ -272,9 +272,11 @@ func createSpecialTokenTx(
 		Vins:           []transaction.TxTokenVin{},
 		Vouts:          []transaction.TxTokenVout{vout},
 	}
-	return transaction.TxCustomToken{
+	result := transaction.TxCustomToken{
 		TxTokenData: txTokenData,
 	}
+	result.Type = common.TxCustomTokenType
+	return result
 }
 
 func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
@@ -287,7 +289,9 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	//init the loc
 	loc, _ := time.LoadLocation("America/New_York")
 	time := time.Date(2018, 8, 1, 0, 0, 0, 0, loc)
-	genesisBlock := Block{}
+	genesisBlock := Block{
+		Transactions: []transaction.Transaction{},
+	}
 	genesisBlock.Header = BlockHeader{}
 
 	// update default genesis block
