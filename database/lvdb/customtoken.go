@@ -43,7 +43,9 @@ func (db *db) ListCustomToken() ([][]byte, error) {
 	result := make([][]byte, 0)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(tokenInitPrefix), nil)
 	for iter.Next() {
-		result = append(result, iter.Value())
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
+		result = append(result, value)
 	}
 	iter.Release()
 	return result, nil
