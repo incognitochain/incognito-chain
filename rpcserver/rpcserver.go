@@ -22,11 +22,11 @@ import (
 	peer2 "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/addrmanager"
 	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/connmanager"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/mempool"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/common"
 )
 
 const (
@@ -71,7 +71,7 @@ type RpcServerConfig struct {
 	ConnMgr         *connmanager.ConnManager
 	AddrMgr         *addrmanager.AddrManager
 	IsGenerateNode  bool
-	Server interface {
+	Server          interface {
 		// Push Tx Message
 		PushMessageToAll(message wire.Message) error
 		PushMessageToPeer(message wire.Message, id peer2.ID) error

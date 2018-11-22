@@ -82,7 +82,13 @@ func (self *BlockChain) ValidateTxLoanRequest(tx transaction.Transaction, chainI
 
 	// Check if loan's params are correct
 	currentParams := self.BestState[chainID].BestBlock.Header.LoanParams
-	if txLoan.Params != currentParams {
+	ok = false
+	for _, temp := range currentParams {
+		if txLoan.Params == temp {
+			ok = true
+		}
+	}
+	if !ok {
 		return fmt.Errorf("LoanRequest transaction has incorrect params")
 	}
 
@@ -320,8 +326,8 @@ func (self *BlockChain) ValidateTxDividendPayout(tx transaction.Transaction, cha
 }
 
 func isAnyBoardAddressInVins(customToken *transaction.TxCustomToken) bool {
-	GOVAddressStr := string(common.GOVAddress)
-	DCBAddressStr := string(common.DCBAddress)
+	GOVAddressStr := string(GOVAddress)
+	DCBAddressStr := string(DCBAddress)
 	for _, vin := range customToken.TxTokenData.Vins {
 		apkStr := string(vin.PaymentAddress.Pk[:])
 		if apkStr == GOVAddressStr || apkStr == DCBAddressStr {
@@ -390,11 +396,11 @@ func (bc *BlockChain) verifyByBoard(
 	var address string
 	var pubKeys []string
 	if boardType == common.DCB {
-		address = string(common.DCBAddress)
-		pubKeys = bc.BestState[0].BestBlock.Header.DCBBoardPubKeys
+		address = string(DCBAddress)
+		pubKeys = bc.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys
 	} else if boardType == common.GOV {
-		address = string(common.GOVAddress)
-		pubKeys = bc.BestState[0].BestBlock.Header.GOVBoardPubKeys
+		address = string(GOVAddress)
+		pubKeys = bc.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys
 	} else {
 		return false
 	}
@@ -490,6 +496,31 @@ func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction,
 	}
 
 	// TODO(@0xbunyip): validate amount of asset sent
+	return nil
+}
+
+//validate voting transaction
+func (bc *BlockChain) ValidateTxSubmitDCBProposal(tx transaction.Transaction, chainID byte) error {
+	return nil
+}
+
+func (bc *BlockChain) ValidateTxAcceptDCBProposal(tx transaction.Transaction, chainID byte) error {
+	return nil
+}
+
+func (bc *BlockChain) ValidateTxVoteDCBProposal(tx transaction.Transaction, chainID byte) error {
+	return nil
+}
+
+func (bc *BlockChain) ValidateTxSubmitGOVProposal(tx transaction.Transaction, chainID byte) error {
+	return nil
+}
+
+func (bc *BlockChain) ValidateTxAcceptGOVProposal(tx transaction.Transaction, chainID byte) error {
+	return nil
+}
+
+func (bc *BlockChain) ValidateTxVoteGOVProposal(tx transaction.Transaction, chainID byte) error {
 	return nil
 }
 

@@ -24,4 +24,6 @@ const (
 const (
 	CustomTokenInit = iota
 	CustomTokenTransfer
+	VoteDCBBoard
+	VoteGOVBoard
 )

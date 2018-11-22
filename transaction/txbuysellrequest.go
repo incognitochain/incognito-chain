@@ -13,7 +13,7 @@ type TxBuySellRequest struct {
 
 type RequestInfo struct {
 	PaymentAddress privacy.PaymentAddress
-	AssetType      string
+	AssetType      common.Hash // token id
 	Amount         uint64
 	BuyPrice       uint64 // in Constant unit
 
@@ -62,7 +62,7 @@ func (tx *TxBuySellRequest) Hash() *common.Hash {
 	// get hash of tx
 	record := tx.Tx.Hash().String()
 
-	record += tx.AssetType
+	record += tx.AssetType.String()
 	record += string(tx.Amount)
 	record += string(tx.BuyPrice)
 

@@ -8,6 +8,7 @@ type GOVVotingParams struct {
 	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
 	BasicSalary  uint64 // basic salary per block(mili constant)
 	SellingBonds *SellingBonds
+	RefundInfo   *RefundInfo
 }
 
 type SellingBonds struct {
@@ -27,6 +28,11 @@ type SaleData struct {
 	SellingAsset string
 	Price        uint64
 	EndBlock     int32
+}
+
+type RefundInfo struct {
+	ThresholdToLargeTx uint64
+	RefundAmount       uint64
 }
 
 type DCBVotingParams struct {

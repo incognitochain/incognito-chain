@@ -157,17 +157,12 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	self.BestState[chainId] = &BestState{}
 	self.BestState[chainId].Init(initBlock, tree)
 
-	// store block genesis
-	err := self.StoreBlock(initBlock)
+	err := self.ConnectBlock(initBlock)
 	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
+		Logger.log.Error(err)
+		return err
 	}
 
-	// store block hash by index and index by block hash
-	err = self.StoreBlockIndex(initBlock)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
 	// store best state
 	err = self.StoreBestState(chainId)
 	if err != nil {
@@ -590,7 +585,7 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 		switch customTokenTx.TxTokenData.Type {
 		case transaction.CustomTokenInit:
 			{
-				Logger.log.Info("Store custom token when it is issued")
+				Logger.log.Info("Store custom token when it is issued", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
 				err = self.config.DataBase.StoreCustomToken(&customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
 				if err != nil {
 					return err
@@ -645,13 +640,8 @@ GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be 
 - Param #1: key - key set which contain readonly-key and pub-key
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType string) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx, 0)
-
-	// set default for params
-	if coinType == "" {
-		coinType = common.AssetTypeCoin
-	}
 
 	// lock chain
 	self.chainLock.Lock()
@@ -797,7 +787,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 					copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
 					copyDesc.AppendNote(note)
 					note.Cm = candidateCommitment
-					note.Apk = privacy.GeneratePaymentAddress(keys.PrivateKey).Pk
+					note.Apk = privacy.GeneratePublicKey(keys.PrivateKey)
 					copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
 				} else {
 					continue
@@ -824,7 +814,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 					}
 					copyDesc.AppendNote(note)
 					note.Cm = candidateCommitment
-					note.Apk = privacy.GeneratePaymentAddress(keys.PrivateKey).Pk
+					note.Apk = privacy.GeneratePublicKey(keys.PrivateKey)
 					copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
 				} else {
 					continue
