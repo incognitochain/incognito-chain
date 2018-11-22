@@ -35,7 +35,7 @@ package zkp
 //func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int, commitmentValue []byte, rand []byte, index byte) (*PKOneOfManyProof, error) {
 //	proof := new(PKOneOfManyProof)
 //
-//	// Check the number of PedersenCommitment list's elements
+//	// Check the number of Commitment list's elements
 //	// N = 2^n
 //	N := len(commitments)
 //	temp := 1
@@ -46,11 +46,11 @@ package zkp
 //	}
 //
 //	if temp != N {
-//		return nil, fmt.Errorf("the number of PedersenCommitment list's elements must be power of two")
+//		return nil, fmt.Errorf("the number of Commitment list's elements must be power of two")
 //	}
 //
 //	// Check indexIsZero
-//	if indexIsZero > N || index < 0 {
+//	if indexIsZero > N || indexIsZero < 0 {
 //		return nil, fmt.Errorf("Index is zero must be Index in list of commitments")
 //	}
 //
@@ -63,18 +63,18 @@ package zkp
 //	indexIsZeroBinary := privacy.ConvertIntToBinary(indexIsZero, n)
 //
 //	//
-//	r := make([][]byte, n+1)
-//	a := make([][]byte, n+1)
-//	s := make([][]byte, n+1)
-//	t := make([][]byte, n+1)
+//	r := make([][]byte, n)
+//	a := make([][]byte, n)
+//	s := make([][]byte, n)
+//	t := make([][]byte, n)
 //	u := make([][]byte, n)
 //
-//	proof.cl = make([][]byte, n+1)
-//	proof.ca = make([][]byte, n+1)
-//	proof.cb = make([][]byte, n+1)
+//	proof.cl = make([][]byte, n)
+//	proof.ca = make([][]byte, n)
+//	proof.cb = make([][]byte, n)
 //	proof.cd = make([][]byte, n)
 //
-//	for j := 1; j <= n; j++ {
+//	for j := n - 1; j >= 0; j-- {
 //		// Generate random numbers
 //		r[j] = make([]byte, 32)
 //		r[j] = privacy.RandBytes(32)
@@ -84,27 +84,27 @@ package zkp
 //		s[j] = privacy.RandBytes(32)
 //		t[j] = make([]byte, 32)
 //		t[j] = privacy.RandBytes(32)
-//		u[j-1] = make([]byte, 32)
-//		u[j-1] = privacy.RandBytes(32)
+//		u[j] = make([]byte, 32)
+//		u[j] = privacy.RandBytes(32)
 //
 //		// convert indexIsZeroBinary[j] to big.Int
-//		indexInt := big.NewInt(int64(indexIsZeroBinary[j-1]))
+//		indexInt := big.NewInt(int64(indexIsZeroBinary[j]))
 //
 //		// Calculate cl, ca, cb, cd
 //		// cl = Com(l, r)
 //		proof.cl[j] = make([]byte, 34)
-//		proof.cl[j] = privacy.Pcm.CommitAtIndex(indexInt.Bytes(), r[j], index)
+//		proof.cl[j] = privacy.Elcm.CommitSpecValue(indexInt.Bytes(), r[j], index)
 //
 //		// ca = Com(a, s)
 //		proof.ca[j] = make([]byte, 34)
-//		proof.ca[j] = privacy.Pcm.CommitAtIndex(a[j], s[j], index)
+//		proof.ca[j] = privacy.Elcm.CommitSpecValue(a[j], s[j], index)
 //
 //		// cb = Com(la, t)
 //		la := new(big.Int)
 //		la.Mul(indexInt, new(big.Int).SetBytes(a[j]))
 //		la.Mod(la, privacy.Curve.Params().N)
 //		proof.cb[j] = make([]byte, 34)
-//		proof.cb[j] = privacy.Pcm.CommitAtIndex(la.Bytes(), t[j], index)
+//		proof.cb[j] = privacy.Elcm.CommitSpecValue(la.Bytes(), t[j], index)
 //	}
 //
 //	//
@@ -119,23 +119,27 @@ package zkp
 //		for i := 0; i < N; i++ {
 //			commitPoints[i] = new(privacy.EllipticPoint)
 //			commitPoints[i], err = privacy.DecompressCommitment(commitments[i])
+//			//fmt.Printf("i %v k %v %v\n", i, k, *commitPoints[i])
 //			if err != nil {
 //				return nil, err
 //			}
 //
 //			iBinary := privacy.ConvertIntToBinary(i, n)
 //			pik := GetCoefficient(iBinary, k, n, a, indexIsZeroBinary)
-//
+//			//fmt.Printf("i %v k %v n %v %v\n", i, k, n, pik)
 //			tmp.X, tmp.Y = privacy.Curve.ScalarMult(commitPoints[i].X, commitPoints[i].Y, pik.Bytes())
 //			res.X, res.Y = privacy.Curve.Add(res.X, res.Y, tmp.X, tmp.Y)
+//			// fmt.Printf("i %v k %v %v\n", i, k, tmp)
 //		}
 //
-//		comZero := privacy.Pcm.CommitAtIndex(big.NewInt(0).Bytes(), u[k], index)
+//		comZero := privacy.Elcm.CommitSpecValue(big.NewInt(0).Bytes(), u[k], index)
 //		comZeroPoint, err := privacy.DecompressCommitment(comZero)
 //		if err != nil {
 //			return nil, err
 //		}
 //		res.X, res.Y = privacy.Curve.Add(res.X, res.Y, comZeroPoint.X, comZeroPoint.Y)
+//		// fmt.Printf("%v ", k)
+//		// fmt.Println(res)
 //		cd := res.CompressPoint()
 //		proof.cd[k] = make([]byte, 33)
 //		copy(proof.cd[k], cd)
@@ -144,21 +148,21 @@ package zkp
 //	// Calculate x
 //	x := big.NewInt(0)
 //
-//	for j := 1; j <= n; j++ {
-//		x.SetBytes(privacy.Pcm.GetHashOfValues([][]byte{x.Bytes(), proof.cl[j], proof.ca[j], proof.cb[j], proof.cd[j-1]}))
+//	for j := 0; j <= n-1; j++ {
+//		x.SetBytes(privacy.Elcm.GetHashOfValues([][]byte{x.Bytes(), proof.cl[j], proof.ca[j], proof.cb[j], proof.cd[j]}))
 //	}
 //	x.Mod(x, privacy.Curve.Params().N)
 //
 //	// Calculate za, zb zd
-//	proof.f = make([][]byte, n+1)
-//	proof.za = make([][]byte, n+1)
-//	proof.zb = make([][]byte, n+1)
+//	proof.f = make([][]byte, n)
+//	proof.za = make([][]byte, n)
+//	proof.zb = make([][]byte, n)
 //	proof.zd = make([]byte, 32)
 //
-//	for j := 1; j <= n; j++ {
+//	for j := n - 1; j >= 0; j-- {
 //		// f = lx + a
 //		fInt := big.NewInt(0)
-//		fInt.Mul(big.NewInt(int64(indexIsZeroBinary[j-1])), x)
+//		fInt.Mul(big.NewInt(int64(indexIsZeroBinary[j])), x)
 //		fInt.Add(fInt, new(big.Int).SetBytes(a[j]))
 //		fInt.Mod(fInt, privacy.Curve.Params().N)
 //		proof.f[j] = make([]byte, 32)
@@ -214,21 +218,22 @@ package zkp
 //		temp = temp << 1
 //		n++
 //	}
-//	clPoint := make([]*privacy.EllipticPoint, n+1)
-//	caPoint := make([]*privacy.EllipticPoint, n+1)
-//	cbPoint := make([]*privacy.EllipticPoint, n+1)
+//	clPoint := make([]*privacy.EllipticPoint, n)
+//	caPoint := make([]*privacy.EllipticPoint, n)
+//	cbPoint := make([]*privacy.EllipticPoint, n)
 //	cdPoint := make([]*privacy.EllipticPoint, n)
 //	var err error
 //
 //	// Calculate x
 //	x := big.NewInt(0)
-//	for j := 1; j <= n; j++ {
-//		x.SetBytes(privacy.Pcm.GetHashOfValues([][]byte{x.Bytes(), proof.cl[j], proof.ca[j], proof.cb[j], proof.cd[j-1]}))
+//	for j := 0; j <= n-1; j++ {
+//		x.SetBytes(privacy.Elcm.GetHashOfValues([][]byte{x.Bytes(), proof.cl[j], proof.ca[j], proof.cb[j], proof.cd[j]}))
+//		x.Mod(x, privacy.Curve.Params().N)
 //	}
-//	x.Mod(x, privacy.Curve.Params().N)
+//
 //	//fmt.Printf("x Verify: %v\n", x)
 //
-//	for i := 1; i <= n; i++ {
+//	for i := 0; i < n; i++ {
 //		// Decompress cl from bytes array to Elliptic
 //		clPoint[i] = new(privacy.EllipticPoint)
 //		clPoint[i], err = privacy.DecompressCommitment(proof.cl[i])
@@ -249,8 +254,8 @@ package zkp
 //		}
 //
 //		// Decompress cd from bytes array to Elliptic
-//		cdPoint[i-1] = new(privacy.EllipticPoint)
-//		cdPoint[i-1], err = privacy.DecompressKey(proof.cd[i-1])
+//		cdPoint[i] = new(privacy.EllipticPoint)
+//		cdPoint[i], err = privacy.DecompressKey(proof.cd[i])
 //		if err != nil {
 //			return false
 //		}
@@ -261,7 +266,7 @@ package zkp
 //		leftPoint1.X, leftPoint1.Y = privacy.Curve.Add(leftPoint1.X, leftPoint1.Y, caPoint[i].X, caPoint[i].Y)
 //
 //		rightPoint1 := new(privacy.EllipticPoint)
-//		right1 := privacy.Pcm.CommitAtIndex(proof.f[i], proof.za[i], index)
+//		right1 := privacy.Elcm.CommitSpecValue(proof.f[i], proof.za[i], index)
 //		rightPoint1, err = privacy.DecompressCommitment(right1)
 //		if err != nil {
 //			return false
@@ -287,7 +292,7 @@ package zkp
 //		leftPoint2.X, leftPoint2.Y = privacy.Curve.Add(leftPoint2.X, leftPoint2.Y, cbPoint[i].X, cbPoint[i].Y)
 //
 //		rightPoint2 := new(privacy.EllipticPoint)
-//		right2 := privacy.Pcm.CommitAtIndex(big.NewInt(0).Bytes(), proof.zb[i], index)
+//		right2 := privacy.Elcm.CommitSpecValue(big.NewInt(0).Bytes(), proof.zb[i], index)
 //		rightPoint2, err = privacy.DecompressCommitment(right2)
 //		if err != nil {
 //			return false
@@ -319,8 +324,8 @@ package zkp
 //
 //		exp := big.NewInt(1)
 //		fji := big.NewInt(1)
-//		for j := 1; j <= n; j++ {
-//			if iBinary[j-1] == 1 {
+//		for j := n - 1; j >= 0; j-- {
+//			if iBinary[j] == 1 {
 //				fji.SetBytes(proof.f[j])
 //			} else {
 //				fji.Sub(x, new(big.Int).SetBytes(proof.f[j]))
@@ -347,13 +352,13 @@ package zkp
 //
 //	leftPoint3.X, leftPoint3.Y = privacy.Curve.Add(leftPoint3.X, leftPoint3.Y, leftPoint32.X, leftPoint32.Y)
 //
-//	rightValue3 := privacy.Pcm.CommitAtIndex(big.NewInt(0).Bytes(), proof.zd, index)
+//	rightValue3 := privacy.Elcm.CommitSpecValue(big.NewInt(0).Bytes(), proof.zd, index)
 //	rightPoint3, _ = privacy.DecompressCommitment(rightValue3)
 //
-//	fmt.Printf("Left point 3 X: %v\n", leftPoint3.X)
-//	fmt.Printf("Right point 3 X: %v\n", rightPoint3.X)
-//	fmt.Printf("Left point 3 Y: %v\n", leftPoint3.Y)
-//	fmt.Printf("Right point 3 Y: %v\n", rightPoint3.Y)
+//	// fmt.Printf("Left point 3 X: %v\n", leftPoint3.X)
+//	// fmt.Printf("Right point 3 X: %v\n", rightPoint3.X)
+//	// fmt.Printf("Left point 3 Y: %v\n", leftPoint3.Y)
+//	// fmt.Printf("Right point 3 Y: %v\n", rightPoint3.Y)
 //	if leftPoint3.X.Cmp(rightPoint3.X) != 0 || leftPoint3.Y.Cmp(rightPoint3.Y) != 0 {
 //		return false
 //	}
@@ -361,9 +366,9 @@ package zkp
 //	return true
 //}
 //
-////TestPKOneOfMany test protocol for one of many PedersenCommitment is PedersenCommitment to zero
-//func TestPKOneOfMany() {
-//	privacy.Pcm.InitCommitment()
+////TestPKOneOfMany test protocol for one of many Commitment is Commitment to zero
+//func TestPKOneOfMany() bool {
+//	// privacy.Elcm.InitCommitment()
 //	pk := new(PKOneOfManyProtocol)
 //
 //	indexIsZero := 23
@@ -377,22 +382,26 @@ package zkp
 //		serialNumbers[i] = privacy.RandBytes(32)
 //		randoms[i] = privacy.RandBytes(32)
 //		commitments[i] = make([]byte, 34)
-//		commitments[i] = privacy.Pcm.CommitAtIndex(serialNumbers[i], randoms[i], privacy.SND)
+//		commitments[i] = privacy.Elcm.CommitSpecValue(serialNumbers[i], randoms[i], privacy.SN_CM)
 //	}
-//
-//	// create PedersenCommitment to zero at indexIsZero
+//	// fmt.Printf("%v\n", commitments[indexIsZero])
+//	// fmt.Printf("%v\n", randoms[indexIsZero])
+//	// create Commitment to zero at indexIsZero
 //	serialNumbers[indexIsZero] = big.NewInt(0).Bytes()
-//	commitments[indexIsZero] = privacy.Pcm.CommitAtIndex(serialNumbers[indexIsZero], randoms[indexIsZero], privacy.SND)
+//	commitments[indexIsZero] = privacy.Elcm.CommitSpecValue(serialNumbers[indexIsZero], randoms[indexIsZero], privacy.SN_CM)
+//	// fmt.Printf("%v\n", commitments[indexIsZero])
+//	// fmt.Printf("%v\n", randoms[indexIsZero])
 //	start := time.Now()
-//	proof, err := pk.Prove(commitments, indexIsZero, commitments[indexIsZero], randoms[indexIsZero], privacy.SND)
+//	proof, err := pk.Prove(commitments, indexIsZero, commitments[indexIsZero], randoms[indexIsZero], privacy.SN_CM)
 //	if err != nil {
 //		fmt.Println(err)
 //	}
 //
-//	res := pk.Verify(commitments, proof, privacy.SND, randoms[indexIsZero])
+//	res := pk.Verify(commitments, proof, privacy.SN_CM, randoms[indexIsZero])
 //	end := time.Now()
 //	fmt.Printf("%v_+_\n", end.Sub(start))
-//	fmt.Println(res)
+//	//fmt.Println(res)
+//	return res
 //}
 //
 //// Get coefficient of x^k in polynomial pi(x)
@@ -400,10 +409,10 @@ package zkp
 //	res := privacy.Poly{big.NewInt(1)}
 //	var fji privacy.Poly
 //
-//	for j := 1; j <= n; j++ {
-//		fj := privacy.Poly{new(big.Int).SetBytes(a[j]), big.NewInt(int64(l[j-1]))}
+//	for j := n - 1; j >= 0; j-- {
+//		fj := privacy.Poly{new(big.Int).SetBytes(a[j]), big.NewInt(int64(l[j]))}
 //
-//		if iBinary[j-1] == 0 {
+//		if iBinary[j] == 0 {
 //			fji = privacy.Poly{big.NewInt(0), big.NewInt(1)}.Sub(fj, privacy.Curve.Params().N)
 //		} else {
 //			fji = fj
@@ -417,26 +426,6 @@ package zkp
 //	return res[k]
 //}
 //
-////func TestGetCoefficient() {
-////	i := 3
-////	n := 4
-////	l := 2
-////	k := 0
-////	iBinary := privacy.ConvertIntToBinary(i, n)
-////
-////	fmt.Printf("iBinary: %v\n", iBinary)
-////	fmt.Printf("Binary 3: %v\n", iBinary[3])
-////
-////	lBinary := privacy.ConvertIntToBinary(l, n)
-////
-////	// a[i] = 2
-////	a := make([][]byte, n+1)
-////	for i:= 1; i<=n ;i++{
-////		a[i] = big.NewInt(2).Bytes()
-////		fmt.Printf("a[%v]: %v\n", i, a[i])
-////	}
-////
-////	//
-////	co := GetCoefficient(iBinary, k, n, a, lBinary)
-////	fmt.Printf("Co: %v\n", co)
-////}
+//
+//
+//

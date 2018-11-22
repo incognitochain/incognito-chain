@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	//"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+
+	//"runtime"
 )
 
 func main() {
@@ -76,20 +77,31 @@ func main() {
 	// fmt.Println("Done")
 	// privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestPKOneOfMany()
-
-	// start := time.Now()
-	//zkpoptimization.TestPKOneOfMany()
-	// end := time.Now()
-	// fmt.Printf("%v\n", end.Sub(start))
-	// start = time.Now()
-	// zkp.TestPKOneOfMany()
-	// end = time.Now()
-	// fmt.Printf("%v\n", end.Sub(start))
-
+	//i := 0
 	//runtime.GOMAXPROCS(runtime.NumCPU())
-	//// zkp.TestPKComZeroOne()
-	//zkpoptimization.TestPKOneOfMany()
-	//zkp.TestPKOneOfMany()
+	//privacy.Elcm.InitCommitment()
+	//n := 500
+	//for i = 0; i < n; i++ {
+	//
+	//	//  zkp.TestPKComZeroOne()
+	//
+	//	//for i := 0; i < 500; i++ {
+	//
+	//	if !zkp.TestPKOneOfMany() {
+	//		break
+	//	}
+	//	if !zkpoptimization.TestPKOneOfMany() {
+	//		break
+	//	}
+	//
+	//	fmt.Println("----------------------")
+	//}
+	////}
+	//if i == n {
+	//	fmt.Println("Well done")
+	//} else {
+	//	fmt.Println("ewww")
+	//}
 
 	//privacy.TestCommitment()
 
@@ -151,5 +163,6 @@ func main() {
 
 	/*----------------- TEST COMMITMENT -----------------*/
 	privacy.TestCommitment(01)
+
 
 }
