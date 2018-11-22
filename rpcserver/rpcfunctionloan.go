@@ -31,6 +31,9 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 
 	// param #2: Fee
 	fee := uint64(arrayParams[1].(float64))
+	if fee == 0 {
+		fee = self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.BasicSalary
+	}
 	totalAmmount := fee
 
 	// param #3: loan params
@@ -136,6 +139,18 @@ func (self RpcServer) handleSendRawLoanRequest(params interface{}, closeChan <-c
 }
 
 func (self RpcServer) handleCreateAndSendLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-
-	return nil, nil
+	data, err := self.handleCreateRawLoanRequest(params, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	hexStrOfTx := tx.HexData
+	if err != nil {
+		return nil, err
+	}
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, RawCustomTokenTransactionHelper{})
+	txId, err := self.handleSendRawLoanRequest(newParam, closeChan)
+	return txId, err
 }
