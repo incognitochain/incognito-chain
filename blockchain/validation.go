@@ -82,7 +82,13 @@ func (self *BlockChain) ValidateTxLoanRequest(tx transaction.Transaction, chainI
 
 	// Check if loan's params are correct
 	currentParams := self.BestState[chainID].BestBlock.Header.LoanParams
-	if txLoan.Params != currentParams {
+	ok = false
+	for _, temp := range currentParams {
+		if txLoan.Params == temp {
+			ok = true
+		}
+	}
+	if !ok {
 		return fmt.Errorf("LoanRequest transaction has incorrect params")
 	}
 

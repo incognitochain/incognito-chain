@@ -9,6 +9,7 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
+	"github.com/pkg/errors"
 )
 
 func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -39,14 +40,9 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 
 	// param #3: loan params
 	loanParams := arrayParams[2].(map[string]interface{})
-	loanParamsByte, err := json.Marshal(loanParams)
-	if err != nil {
-		return nil, err
-	}
-	loanRequest := transaction.LoanRequest{}
-	err = json.Unmarshal(loanParamsByte, &loanRequest)
-	if err != nil {
-		return nil, err
+	loanRequest := transaction.NewLoanRequest(loanParams)
+	if loanRequest == nil {
+		return nil, errors.New("Miss data")
 	}
 
 	// list unspent tx for estimation fee
@@ -90,7 +86,7 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 		Rts:           merkleRootCommitments,
 		SenderChainID: chainIdSender,
 		SenderKey:     &senderKey.KeySet.PrivateKey,
-	}, &loanRequest)
+	}, loanRequest)
 	if err != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)
