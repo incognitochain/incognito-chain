@@ -37,9 +37,16 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 	totalAmmount := fee
 
 	// param #3: loan params
-	// TODO 0xbunnyip
 	loanParams := arrayParams[2].(map[string]interface{})
-	_ = loanParams
+	loanParamsByte, err := json.Marshal(loanParams)
+	if err != nil {
+		return nil, err
+	}
+	loanRequest := transaction.LoanRequest{}
+	err = json.Unmarshal(loanParamsByte, &loanRequest)
+	if err != nil {
+		return nil, err
+	}
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
@@ -82,9 +89,7 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 		Rts:           merkleRootCommitments,
 		SenderChainID: chainIdSender,
 		SenderKey:     &senderKey.KeySet.PrivateKey,
-	}, &transaction.LoanRequest{
-		// TODO 0xbunnyip
-	})
+	}, &loanRequest)
 	if err != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)
