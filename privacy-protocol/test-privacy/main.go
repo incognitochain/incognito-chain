@@ -1,11 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"runtime"
-
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge-optimization"
+	//"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
 func main() {
@@ -67,13 +65,13 @@ func main() {
 	//tx, _ := transaction.CreateEmptyTxs()
 	//fmt.Printf("Transaction: %+v\n", tx)
 
-	//privacy-protocol.Elcm.Setup()
+	//privacy-protocol.Pcm.Setup()
 	//privacy-protocol.TestProofIsZero()
 	//// fmt.Println("Done")
 	//a:= new(privacy-protocol.InputCommitments)
 	//
 	//privacy-protocol.TestProductCommitment()
-	//privacy-protocol.Elcm.Setup()
+	//privacy-protocol.Pcm.Setup()
 	// privacy-protocol.TestProofIsZero()
 	// fmt.Println("Done")
 	// privacy-protocol.TestPKComZeroOne()
@@ -88,16 +86,16 @@ func main() {
 	// end = time.Now()
 	// fmt.Printf("%v\n", end.Sub(start))
 
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	// zkp.TestPKComZeroOne()
-	zkpoptimization.TestPKOneOfMany()
-	zkp.TestPKOneOfMany()
+	//runtime.GOMAXPROCS(runtime.NumCPU())
+	//// zkp.TestPKComZeroOne()
+	//zkpoptimization.TestPKOneOfMany()
+	//zkp.TestPKOneOfMany()
 
 	//privacy.TestCommitment()
 
 	//zkp.TestPKMaxValue()
-	//privacy.Elcm.Setup()
-	//privacy.Elcm.TestFunction(00)
+	//privacy.Pcm.Setup()
+	//privacy.Pcm.TestFunction(00)
 
 	//var zk zkp.ZKProtocols
 	//
@@ -106,7 +104,7 @@ func main() {
 	//vInt.Mod(vInt, big.NewInt(2))
 	//rand := privacy.RandBytes(32)
 	//
-	//partialCommitment := privacy.Elcm.CommitSpecValue(vInt.Bytes(), rand, privacy.VALUE)
+	//partialCommitment := privacy.Pcm.CommitAtIndex(vInt.Bytes(), rand, privacy.VALUE)
 	//
 	//
 	//var witness zkp.PKComZeroOneWitness
@@ -143,5 +141,15 @@ func main() {
 	//privacy.Curve.Params().G
 
 
+	//zkp.TestPKComZeroOne()
+
+	/*----------------- TEST PCM SINGLETON -----------------*/
+	privacy.Pcm = privacy.GetPedersenParams()
+	fmt.Printf("a1: %p\n", &privacy.Pcm)
+	privacy.Pcm = privacy.GetPedersenParams()
+	fmt.Printf("a1: %p\n", &privacy.Pcm)
+
+	/*----------------- TEST COMMITMENT -----------------*/
+	privacy.TestCommitment(01)
 
 }

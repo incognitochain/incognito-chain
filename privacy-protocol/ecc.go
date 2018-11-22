@@ -215,7 +215,7 @@ func (eccPoint EllipticPoint) HashPoint() EllipticPoint {
 		hashMachine := blake2b.New256()
 		hashMachine.Write(res.X.Bytes())
 		res.X.SetBytes(hashMachine.Sum(nil))
-		res.Y = computeYCoord(res.X)
+		res.ComputeYCoord()
 		if (res.Y != nil) && (Curve.IsOnCurve(res.X, res.Y)) {
 			break
 		}

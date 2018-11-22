@@ -518,7 +518,7 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 	for _, test := range tests {
 		commonName := "test.example.com"
 		template := Certificate{
-			// SerialNumber is negative to ensure that negative
+			// SNDerivator is negative to ensure that negative
 			// values are parsed. This is due to the prevalence of
 			// buggy code that produces certificates with negative
 			// serial numbers.

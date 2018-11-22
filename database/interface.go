@@ -40,7 +40,7 @@ type DatabaseInterface interface {
 	HasNullifier([]byte, byte) (bool, error)
 	CleanNullifiers() error
 
-	// Commitment
+	// PedersenCommitment
 	StoreCommitments([]byte, byte) error
 	FetchCommitments(byte) ([][]byte, error)
 	HasCommitment([]byte, byte) (bool, error)

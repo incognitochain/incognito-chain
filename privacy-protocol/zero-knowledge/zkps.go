@@ -16,7 +16,7 @@ type ZKProtocols interface {
 
 
 func Prove(){
-	// Commit each component of coins being spent
+	// CommitAll each component of coins being spent
 
 
 	// Summing all commitments into one commitment and proving the knowledge of its openings

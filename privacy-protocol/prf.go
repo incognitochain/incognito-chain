@@ -2,9 +2,13 @@ package privacy
 
 import "math/big"
 
+type VRF struct{
+	seed, derivator *big.Int
+}
+
 // PRF returns pseudorandom point calculated by function F(x,y) = (x + y)^-1 * G, with G is generator in P256
 // x = seed, y = derivator
-func PRF(seed, derivator *big.Int) *EllipticPoint {
+func (vrf VRF) Eval() *EllipticPoint {
 	//Generate result point
 	res := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 
@@ -16,8 +20,8 @@ func PRF(seed, derivator *big.Int) *EllipticPoint {
 
 	//intTemp is seed + derivator (mod N)
 	intTemp := big.NewInt(0)
-	intTemp.SetBytes(seed.Bytes())
-	intTemp.Add(intTemp, derivator)
+	intTemp.SetBytes(vrf.seed.Bytes())
+	intTemp.Add(intTemp, vrf.derivator)
 	intTemp.Mod(intTemp, Curve.Params().N)
 
 	//intTempInverse is (seed + derivator)^-1 in (Zn)*

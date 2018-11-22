@@ -282,7 +282,7 @@ func CreateTx(
 					}
 				}
 				if found == false {
-					return nil, fmt.Errorf("Commitment %x of input note isn't in commitments list of chain %d", input.InputNote.Cm, chainID)
+					return nil, fmt.Errorf("PedersenCommitment %x of input note isn't in commitments list of chain %d", input.InputNote.Cm, chainID)
 				}
 			}
 		}
