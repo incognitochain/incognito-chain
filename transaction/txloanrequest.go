@@ -29,7 +29,6 @@ type LoanRequest struct {
 	Params           LoanParams `json:"Params"`
 	LoanID           []byte     `json:"LoanID"` // 32 bytes
 	CollateralType   string     `json:"CollateralType"`
-	CollateralTx     []byte     `json:"CollateralTx"` // Tx hash in case of ETH
 	CollateralAmount *big.Int   `json:"CollateralAmount"`
 
 	LoanAmount     uint64                  `json:"LoanAmount"`
@@ -63,9 +62,6 @@ func NewLoanRequest(data map[string]interface{}) *LoanRequest {
 
 	s, err := hex.DecodeString(data["LoanID"].(string))
 	result.LoanID = s
-
-	s, err = hex.DecodeString(data["CollateralTx"].(string))
-	result.CollateralTx = s
 
 	s, err = hex.DecodeString(data["KeyDigest"].(string))
 	result.KeyDigest = s
@@ -114,7 +110,6 @@ func (tx *TxLoanRequest) Hash() *common.Hash {
 	// add more hash of collateral data
 	record += string(tx.LoanID)
 	record += tx.CollateralType
-	record += string(tx.CollateralTx)
 	record += tx.CollateralAmount.String()
 
 	// add more hash of loan data
