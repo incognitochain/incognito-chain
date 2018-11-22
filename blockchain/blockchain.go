@@ -142,7 +142,6 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	var initBlock *Block
 	if chainId == 0 {
 		initBlock = self.config.ChainParams.GenesisBlock
-
 	} else {
 		initBlock = &Block{}
 		initBlock.Header = self.config.ChainParams.GenesisBlock.Header
@@ -569,7 +568,7 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 		switch customTokenTx.TxTokenData.Type {
 		case transaction.CustomTokenInit:
 			{
-				Logger.log.Info("Store custom token when it is issued")
+				Logger.log.Info("Store custom token when it is issued", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
 				err = self.config.DataBase.StoreCustomToken(&customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
 				if err != nil {
 					return err
