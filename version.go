@@ -7,8 +7,8 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"strings"
 	"github.com/ninjadotorg/constant/common"
+	"strings"
 )
 
 // semanticAlphabet
