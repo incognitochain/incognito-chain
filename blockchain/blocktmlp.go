@@ -703,7 +703,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*transaction.TxD
 		// Get price for asset bond
 		bondPrices := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
 		if saleData.SellingAsset == common.AssetTypeCoin {
-			txResponse, err := transaction.BuildResponseForCoin(tx, saleData.BondID, rt, chainID, bondPrices)
+			txResponse, err := transaction.BuildResponseForCoin(tx, saleData.BondID, rt, chainID, bondPrices, tx.SaleID)
 			if err != nil {
 				txsToRemove = append(txsToRemove, tx)
 			} else {
@@ -712,7 +712,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*transaction.TxD
 		} else if saleData.SellingAsset == common.AssetTypeBond {
 			// Get unspent token UTXO to send to user
 			txResponse := &transaction.TxBuySellDCBResponse{}
-			txResponse, unspentTxTokenOuts, err = transaction.BuildResponseForBond(tx, saleData.BondID, rt, chainID, bondPrices, unspentTxTokenOuts)
+			txResponse, unspentTxTokenOuts, err = transaction.BuildResponseForBond(tx, saleData.BondID, rt, chainID, bondPrices, unspentTxTokenOuts, tx.SaleID)
 			if err != nil {
 				txsToRemove = append(txsToRemove, tx)
 			} else {

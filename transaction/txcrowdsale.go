@@ -11,9 +11,10 @@ import (
 type TxBuySellDCBResponse struct {
 	*TxCustomToken // fee + amount to pay for bonds/constant
 	RequestedTxID  *common.Hash
+	SaleID         []byte
 }
 
-func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64) (*TxBuySellDCBResponse, error) {
+func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64, saleID []byte) (*TxBuySellDCBResponse, error) {
 	// Mint and send Constant
 	pks := [][]byte{txRequest.PaymentAddress.Pk[:], txRequest.PaymentAddress.Pk[:]}
 	tks := [][]byte{txRequest.PaymentAddress.Tk[:], txRequest.PaymentAddress.Tk[:]}
@@ -38,11 +39,12 @@ func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte,
 	txResponse := &TxBuySellDCBResponse{
 		TxCustomToken: txToken,
 		RequestedTxID: txRequest.Hash(),
+		SaleID:        saleID,
 	}
 	return txResponse, nil
 }
 
-func BuildResponseForBond(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []TxTokenVout) (*TxBuySellDCBResponse, []TxTokenVout, error) {
+func BuildResponseForBond(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []TxTokenVout, saleID []byte) (*TxBuySellDCBResponse, []TxTokenVout, error) {
 	// Get amount of Constant user sent
 	value := uint64(0)
 	userPk := privacy.PublicKey{}
@@ -105,6 +107,7 @@ func BuildResponseForBond(txRequest *TxBuySellRequest, bondID string, rt []byte,
 	txResponse := &TxBuySellDCBResponse{
 		TxCustomToken: txToken,
 		RequestedTxID: txRequest.Hash(),
+		SaleID:        saleID,
 	}
 	return txResponse, unspentTxTokenOuts[usedID:], nil
 }
@@ -113,16 +116,18 @@ func (tx *TxBuySellDCBResponse) Hash() *common.Hash {
 	// get hash of tx
 	record := tx.Tx.Hash().String()
 	record += string(tx.RequestedTxID[:])
+	record += string(tx.SaleID)
 
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (tx *TxBuySellDCBResponse) ValidateTransaction() bool {
-	// validate for normal tx
-	if !tx.Tx.ValidateTransaction() {
+	// validate for customtoken tx
+	if !tx.TxCustomToken.ValidateTransaction() {
 		return false
 	}
+	// TODO(@0xbunyip): check if there's a corresponding request in the same block
 	return true
 }
 

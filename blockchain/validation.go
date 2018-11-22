@@ -446,13 +446,50 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 				return fmt.Errorf("Received asset id %s instead of %s", vout.BuySellResponse.AssetID, saleData.BondID)
 			}
 
-			// Check sending address is DCB's
+			// Check if receiving address is DCB's
 			// TODO(@0xbunyip): compare full payment address
 			if !bytes.Equal(vout.PaymentAddress.Pk[:], common.DCBAddress) {
 				return fmt.Errorf("Sending payment to %x instead of %x", vout.PaymentAddress.Pk[:], common.DCBAddress)
 			}
 		}
+	} else if saleData.BuyingAsset == common.AssetTypeCoin {
+		for _, desc := range requestTx.Tx.Descs {
+			for _, note := range desc.Note {
+				if !bytes.Equal(note.Apk[:], common.DCBAddress) {
+					return fmt.Errorf("Sending payment to %x instead of %x", note.Apk[:], common.DCBAddress)
+				}
+			}
+		}
 	}
+	return nil
+}
+
+func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction, chainID byte) error {
+	// Check if crowdsale existed
+	responseTx, ok := tx.(*transaction.TxBuySellDCBResponse)
+	if !ok {
+		return fmt.Errorf("Error parsing TxBuySellDCBResponse")
+	}
+	saleData, err := self.config.DataBase.LoadCrowdsaleData(responseTx.SaleID)
+	if err != nil {
+		return fmt.Errorf("SaleID not found")
+	}
+
+	// Check if sale is still valid
+	if self.BestState[chainID].Height >= saleData.EndBlock {
+		return fmt.Errorf("Sale ended")
+	}
+
+	if saleData.SellingAsset == common.AssetTypeBond {
+		for _, vout := range responseTx.TxTokenData.Vouts {
+			// Check if sending asset is correct
+			if vout.BuySellResponse.AssetID != saleData.BondID {
+				return fmt.Errorf("Sending asset id %s instead of %s", vout.BuySellResponse.AssetID, saleData.BondID)
+			}
+		}
+	}
+
+	// TODO(@0xbunyip): validate amount of asset sent
 	return nil
 }
 

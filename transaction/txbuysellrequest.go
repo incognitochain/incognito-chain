@@ -73,7 +73,7 @@ func (tx *TxBuySellRequest) Hash() *common.Hash {
 
 func (tx *TxBuySellRequest) ValidateTransaction() bool {
 	// validate for normal tx
-	if !tx.Tx.ValidateTransaction() {
+	if !tx.TxCustomToken.ValidateTransaction() {
 		return false
 	}
 	return true
