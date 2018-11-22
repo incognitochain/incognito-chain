@@ -6,11 +6,96 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wire"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	Logger.log.Info(params)
 
-	return nil, nil
+	// all params
+	arrayParams := common.InterfaceSlice(params)
+
+	// param #1: private key of sender
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	// param #2: Fee
+	fee := uint64(arrayParams[1].(float64))
+	totalAmmount := fee
+
+	// param #3: loan params
+	// TODO 0xbunnyip
+	loanParams := arrayParams[2].(map[string]interface{})
+	_ = loanParams
+
+	// list unspent tx for estimation fee
+	estimateTotalAmount := totalAmmount
+	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByPrivateKey(&senderKey.KeySet.PrivateKey, transaction.SortByAmount, false)
+	candidateTxs := make([]*transaction.Tx, 0)
+	candidateTxsMap := make(map[byte][]*transaction.Tx)
+	for chainId, usableTxs := range usableTxsMap {
+		for _, temp := range usableTxs {
+			for _, desc := range temp.Descs {
+				for _, note := range desc.GetNote() {
+					amount := note.Value
+					estimateTotalAmount -= uint64(amount)
+				}
+			}
+			txData := temp
+			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
+			candidateTxs = append(candidateTxs, &txData)
+			if estimateTotalAmount <= 0 {
+				break
+			}
+		}
+	}
+
+	// get merkleroot commitments, nullifers db, commitments db for every chain
+	nullifiersDb := make(map[byte]([][]byte))
+	commitmentsDb := make(map[byte]([][]byte))
+	merkleRootCommitments := make(map[byte]*common.Hash)
+	for chainId, _ := range candidateTxsMap {
+		merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
+		// get tx view point
+		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
+		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
+		commitmentsDb[chainId] = txViewPoint.ListCommitments()
+	}
+	tx, err := transaction.CreateTxLoanRequest(transaction.FeeArgs{
+		Fee:           fee,
+		Commitments:   commitmentsDb,
+		UsableTx:      candidateTxsMap,
+		PaymentInfo:   nil,
+		Rts:           merkleRootCommitments,
+		SenderChainID: chainIdSender,
+		SenderKey:     &senderKey.KeySet.PrivateKey,
+	}, &transaction.LoanRequest{
+		// TODO 0xbunnyip
+	})
+	if err != nil {
+		Logger.log.Critical(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		// return hex for a new tx
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	hexData := hex.EncodeToString(byteArrays)
+	result := jsonresult.CreateTransactionResult{
+		HexData: hexData,
+	}
+	return result, nil
 }
 
 func (self RpcServer) handleSendRawLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -51,8 +136,6 @@ func (self RpcServer) handleSendRawLoanRequest(params interface{}, closeChan <-c
 }
 
 func (self RpcServer) handleCreateAndSendLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-
-
 
 	return nil, nil
 }
