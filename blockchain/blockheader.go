@@ -8,6 +8,7 @@ import (
 type GOVParams struct {
 	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
 	BasicSalary  uint64 // basic salary per block(mili constant)
+	TxFee        uint64
 	SellingBonds *SellingBonds
 	RefundInfo   *RefundInfo
 }
@@ -67,9 +68,9 @@ type BlockHeader struct {
 	DCBConstitution DCBConstitution
 	CBParams        CBParams
 
-	DCBGovernor DCBGovernor
-	GOVGovernor GOVGovernor
-	CBBoardPubKeys  []string
+	DCBGovernor    DCBGovernor
+	GOVGovernor    GOVGovernor
+	CBBoardPubKeys []string
 
 	LoanParams transaction.LoanParams // params for collateralized loans of Constant
 

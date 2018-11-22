@@ -5,6 +5,7 @@ import "github.com/ninjadotorg/constant/common"
 type GOVVotingParams struct {
 	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
 	BasicSalary  uint64 // basic salary per block(mili constant)
+	TxFee        uint64
 	SellingBonds *SellingBonds
 	RefundInfo   *RefundInfo
 }

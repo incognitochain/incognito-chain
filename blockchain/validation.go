@@ -11,6 +11,7 @@ import (
 	"math"
 
 	"encoding/hex"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
@@ -463,7 +464,7 @@ func (bc *BlockChain) ValidateTxVoteGOVProposal(tx transaction.Transaction, chai
 	return nil
 }
 
-func (self *BlockChain) ValidateDoubleSpendCustomToken(tx *transaction.TxCustomToken) (error) {
+func (self *BlockChain) ValidateDoubleSpendCustomToken(tx *transaction.TxCustomToken) error {
 	listTxs, err := self.GetCustomTokenTxs(&tx.TxTokenData.PropertyID)
 	if err != nil {
 		return err
@@ -486,7 +487,7 @@ func (self *BlockChain) ValidateDoubleSpendCustomToken(tx *transaction.TxCustomT
 	return nil
 }
 
-func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCustomToken, txInBlock transaction.Transaction) (error) {
+func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCustomToken, txInBlock transaction.Transaction) error {
 	temp := txInBlock.(*transaction.TxCustomToken)
 	for _, vin := range temp.TxTokenData.Vins {
 		for _, item := range tx.TxTokenData.Vins {
@@ -497,5 +498,52 @@ func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCus
 			}
 		}
 	}
+	return nil
+}
+
+func (self *BlockChain) ValidateBuyFromGOVRequestTx(
+	tx transaction.Transaction,
+	chainID byte,
+) error {
+	buySellReqTx, ok := tx.(*transaction.TxBuySellRequest)
+	if !ok {
+		return fmt.Errorf("Fail parsing TxBuySellRequest transaction")
+	}
+
+	// check double spending on fee + amount tx
+	err := self.ValidateDoubleSpend(buySellReqTx.Tx, chainID)
+	if err != nil {
+		return err
+	}
+
+	// TODO: support and validate for either bonds or govs buy requests
+
+	sellingBondsParams := self.BestState[chainID].BestBlock.Header.GOVConstitution.GOVParams.SellingBonds
+	if sellingBondsParams == nil {
+		return errors.New("SellingBonds params are not existed.")
+	}
+
+	// check if buy price againsts SellingBonds params' BondPrice is correct or not
+	if buySellReqTx.BuyPrice < sellingBondsParams.BondPrice {
+		return errors.New("Requested buy price is under SellingBonds params' buy price.")
+	}
+	return nil
+}
+
+func (self *BlockChain) ValidateBuyBackRequestTx(
+	tx transaction.Transaction,
+	chainID byte,
+) error {
+	buyBackReqTx, ok := tx.(*transaction.TxBuyBackRequest)
+	if !ok {
+		return fmt.Errorf("Fail parsing TxBuyBackRequest transaction")
+	}
+
+	// check double spending on fee + amount tx
+	err := self.ValidateDoubleSpend(buyBackReqTx.Tx, chainID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

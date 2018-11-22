@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"errors"
+
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/transaction"
@@ -45,12 +46,12 @@ func (self *Policy) CheckTxVersion(tx *transaction.Transaction) bool {
 
 // return min transacton fee required for a transaction that we accepted into the memmory pool and replayed.
 func (self *Policy) calcMinFeeTxCustomTokenAccepted(tx *transaction.TxCustomToken) uint64 {
-	return self.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.BasicSalary
+	return self.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.TxFee
 }
 
 // return min transacton fee required for a transaction that we accepted into the memmory pool and replayed.
 func (self *Policy) calcMinFeeTxAccepted(tx *transaction.Tx) uint64 {
-	return self.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.BasicSalary
+	return self.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.TxFee
 }
 
 /*

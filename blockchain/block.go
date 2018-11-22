@@ -212,6 +212,7 @@ func (block *Block) updateGOVConstitution(tx transaction.Transaction, blockgen *
 	block.Header.GOVConstitution.GOVParams = GOVParams{
 		proposalParams.SalaryPerTx,
 		proposalParams.BasicSalary,
+		proposalParams.TxFee,
 		&SellingBonds{
 			proposalParams.SellingBonds.BondsToSell,
 			proposalParams.SellingBonds.BondPrice,
