@@ -3,7 +3,7 @@ package rpcserver
 import "fmt"
 
 const (
-	ErrUnexpected                 = iota
+	ErrUnexpected = iota
 	ErrAlreadyStarted
 	ErrRPCInvalidRequest
 	ErrRPCMethodNotFound

@@ -331,8 +331,20 @@ func (tp *TxPool) validateSanityVoteDCBBoardTx(voteDCBBoard *transaction.TxVoteD
 	if err != nil || !ok {
 		return ok, err
 	}
-	//xxx check this pubkey sanity
-	//	voteDCBBoard.VoteDCBBoardData.CandidatePubKey
+	if len(voteDCBBoard.VoteDCBBoardData.CandidatePubKey) != 33 {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (tp *TxPool) validateSanityVoteGOVBoardTx(voteGOVBoard *transaction.TxVoteGOVBoard) (bool, error) {
+	ok, err := tp.validateSanityCustomTokenTxData(&voteGOVBoard.TxCustomToken)
+	if err != nil || !ok {
+		return ok, err
+	}
+	if len(voteGOVBoard.VoteGOVBoardData.CandidatePubKey) != 33 {
+		return false, nil
+	}
 	return true, nil
 }
 
@@ -769,6 +781,12 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 		{
 			txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
 			ok, err := tp.validateSanityVoteDCBBoardTx(txVoteDCBBoard)
+			return ok, err
+		}
+	case common.TxVoteGOVBoard:
+		{
+			txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
+			ok, err := tp.validateSanityVoteGOVBoardTx(txVoteGOVBoard)
 			return ok, err
 		}
 	default:
