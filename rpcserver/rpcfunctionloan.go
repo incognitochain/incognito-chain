@@ -11,6 +11,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+func (self RpcServer) handleGetLoanParams(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return self.config.BlockChain.BestState[0].BestBlock.Header.LoanParams, nil
+}
+
 func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 
