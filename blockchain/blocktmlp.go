@@ -302,52 +302,6 @@ concludeBlock:
 	return &block, nil
 }
 
-func updateDCBConstitution(block *Block, tx transaction.Transaction, blockgen *BlkTmplGenerator) error {
-	txAcceptDCBProposal := tx.(transaction.TxAcceptDCBProposal)
-	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(txAcceptDCBProposal.DCBProposalTXID)
-	DCBProposal := getTx.(*transaction.TxSubmitDCBProposal)
-	if err != nil {
-		return err
-	}
-	block.Header.DCBConstitution.StartedBlockHeight = block.Header.Height
-	block.Header.DCBConstitution.ExecuteDuration = DCBProposal.DCBProposalData.ExecuteDuration
-	block.Header.DCBConstitution.ProposalTXID = txAcceptDCBProposal.DCBProposalTXID
-	block.Header.DCBConstitution.CurrentDCBNationalWelfare = GetOracleDCBNationalWelfare()
-
-	//	proposalParams := DCBProposal.DCBProposalData.DCBParams // not use yet
-	block.Header.DCBConstitution.DCBParams = DCBParams{}
-	return nil
-}
-
-func updateGOVConstitution(block *Block, tx transaction.Transaction, blockgen *BlkTmplGenerator) error {
-	txAcceptGOVProposal := tx.(transaction.TxAcceptGOVProposal)
-	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(txAcceptGOVProposal.GOVProposalTXID)
-	GOVProposal := getTx.(*transaction.TxSubmitGOVProposal)
-	if err != nil {
-		return err
-	}
-	block.Header.GOVConstitution.StartedBlockHeight = block.Header.Height
-	block.Header.GOVConstitution.ExecuteDuration = GOVProposal.GOVProposalData.ExecuteDuration
-	block.Header.GOVConstitution.ProposalTXID = txAcceptGOVProposal.GOVProposalTXID
-	block.Header.GOVConstitution.CurrentGOVNationalWelfare = GetOracleGOVNationalWelfare()
-
-	proposalParams := GOVProposal.GOVProposalData.GOVParams
-	block.Header.GOVConstitution.GOVParams = GOVParams{
-		proposalParams.SalaryPerTx,
-		proposalParams.BasicSalary,
-		&SellingBonds{
-			proposalParams.SellingBonds.BondsToSell,
-			proposalParams.SellingBonds.BondPrice,
-			proposalParams.SellingBonds.Maturity,
-			proposalParams.SellingBonds.BuyBackPrice,
-			proposalParams.SellingBonds.StartSellingAt,
-			proposalParams.SellingBonds.SellingWithin,
-		},
-		&RefundInfo{},
-	}
-	return nil
-}
-
 func GetOracleDCBNationalWelfare() int32 {
 	fmt.Print("Get national welfare. It is constant now. Need to change !!!")
 	return 1234
