@@ -39,10 +39,10 @@ var (
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	DCBTokenID  = [common.HashSize]byte{0}
-	GOVTokenID  = [common.HashSize]byte{1}
-	CMBTokenID  = [common.HashSize]byte{2}
-	BondTokenID = [common.HashSize]byte{3}
+	DCBTokenID  = [common.HashSize]byte{1}
+	GOVTokenID  = [common.HashSize]byte{2}
+	CMBTokenID  = [common.HashSize]byte{3}
+	BondTokenID = [common.HashSize]byte{4}
 )
 
 const (

@@ -8,6 +8,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
+	"log"
 )
 
 type GenesisBlockGenerator struct {
@@ -254,6 +255,7 @@ func createSpecialTokenTx(
 	amount uint64,
 	initialAddress privacy.PaymentAddress,
 ) transaction.TxCustomToken {
+	log.Printf("Init token %s: %s \n", tokenSymbol, tokenID.String())
 	paymentAddr := initialAddress
 	vout := transaction.TxTokenVout{
 		Value:           amount,
@@ -343,7 +345,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 
 	// Create genesis token tx for CMB
 	cmbTokenTx := createSpecialTokenTx(
-		common.Hash(GOVTokenID),
+		common.Hash(CMBTokenID),
 		"Commercial bank token",
 		"CMB",
 		icoParams.InitialCMBToken,
