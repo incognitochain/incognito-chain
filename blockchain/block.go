@@ -220,7 +220,10 @@ func (block *Block) updateGOVConstitution(tx transaction.Transaction, blockgen *
 			proposalParams.SellingBonds.StartSellingAt,
 			proposalParams.SellingBonds.SellingWithin,
 		},
-		&RefundInfo{},
+		&RefundInfo{
+			proposalParams.RefundInfo.ThresholdToLargeTx,
+			proposalParams.RefundInfo.RefundAmount,
+		},
 	}
 	return nil
 }
