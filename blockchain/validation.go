@@ -331,8 +331,8 @@ func (self *BlockChain) ValidateTxDividendPayout(tx transaction.Transaction, cha
 }
 
 func isAnyBoardAddressInVins(customToken *transaction.TxCustomToken) bool {
-	GOVAddressStr := string(common.GOVAddress)
-	DCBAddressStr := string(common.DCBAddress)
+	GOVAddressStr := string(GOVAddress)
+	DCBAddressStr := string(DCBAddress)
 	for _, vin := range customToken.TxTokenData.Vins {
 		apkStr := string(vin.PaymentAddress.Pk[:])
 		if apkStr == GOVAddressStr || apkStr == DCBAddressStr {
@@ -401,10 +401,10 @@ func (bc *BlockChain) verifyByBoard(
 	var address string
 	var pubKeys []string
 	if boardType == common.DCB {
-		address = string(common.DCBAddress)
+		address = string(DCBAddress)
 		pubKeys = bc.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys
 	} else if boardType == common.GOV {
-		address = string(common.GOVAddress)
+		address = string(GOVAddress)
 		pubKeys = bc.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys
 	} else {
 		return false
