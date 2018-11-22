@@ -14,18 +14,19 @@ const (
 	MessageHeaderSize  = 24
 	MessageCmdTypeSize = 12
 
-	CmdBlock         = "block"
-	CmdTx            = "tx"
-	CmdRegisteration = "registeration"
-	CmdCustomToken   = "txtoken"
-	CmdGetBlocks     = "getblocks"
-	CmdInv           = "inv"
-	CmdGetData       = "getdata"
-	CmdVersion       = "version"
-	CmdVerack        = "verack"
-	CmdGetAddr       = "getaddr"
-	CmdAddr          = "addr"
-	CmdPing          = "ping"
+	CmdBlock             = "block"
+	CmdTx                = "tx"
+	CmdRegisteration     = "registeration"
+	CmdCustomToken       = "txtoken"
+	CmdCLoanRequestToken = "txloanreq"
+	CmdGetBlocks         = "getblocks"
+	CmdInv               = "inv"
+	CmdGetData           = "getdata"
+	CmdVersion           = "version"
+	CmdVerack            = "verack"
+	CmdGetAddr           = "getaddr"
+	CmdAddr              = "addr"
+	CmdPing              = "ping"
 
 	// POS Cmd
 	CmdBlockSigReq   = "blocksigreq"
@@ -60,8 +61,13 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		}
 		break
 	case CmdCustomToken:
-		msg = &MessageRegistration{
+		msg = &MessageTx{
 			Transaction: &transaction.TxCustomToken{},
+		}
+		break
+	case CmdCLoanRequestToken:
+		msg = &MessageTx{
+			Transaction: &transaction.TxLoanRequest{},
 		}
 		break
 	case CmdGetBlocks:
@@ -125,8 +131,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdGetBlocks, nil
 	case reflect.TypeOf(&MessageTx{}):
 		return CmdTx, nil
-	case reflect.TypeOf(&MessageRegistration{}):
-		return CmdRegisteration, nil
+		/*case reflect.TypeOf(&MessageRegistration{}):
+		  return CmdRegisteration, nil*/
 	case reflect.TypeOf(&MessageVersion{}):
 		return CmdVersion, nil
 	case reflect.TypeOf(&MessageVerAck{}):

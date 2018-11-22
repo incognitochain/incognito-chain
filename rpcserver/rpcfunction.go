@@ -61,6 +61,9 @@ var RpcHandler = map[string]commandHandler{
 	CustomToken:                         RpcServer.handleCustomTokenDetail,
 	GetListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
 
+	// Loan tx
+	CreateAndSendLoanRequest: RpcServer.handleCreateAndSendLoanRequest,
+
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 
@@ -995,7 +998,7 @@ func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, cl
 		return nil, err
 	}
 
-	txMsg.(*wire.MessageRegistration).Transaction = tx
+	txMsg.(*wire.MessageTx).Transaction = tx
 	self.config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil

@@ -147,10 +147,10 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnChainState != nil {
 						self.Config.MessageListeners.OnChainState(self, message.(*wire.MessageChainState))
 					}
-				case reflect.TypeOf(&wire.MessageRegistration{}):
-					if self.Config.MessageListeners.OnRegistration != nil {
-						self.Config.MessageListeners.OnRegistration(self, message.(*wire.MessageRegistration))
-					}
+					/*case reflect.TypeOf(&wire.MessageRegistration{}):
+					  if self.Config.MessageListeners.OnRegistration != nil {
+						  self.Config.MessageListeners.OnRegistration(self, message.(*wire.MessageRegistration))
+					  }*/
 				case reflect.TypeOf(&wire.MessageSwapRequest{}):
 					if self.Config.MessageListeners.OnSwapRequest != nil {
 						self.Config.MessageListeners.OnSwapRequest(self, message.(*wire.MessageSwapRequest))
