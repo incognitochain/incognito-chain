@@ -37,12 +37,8 @@ type LoanRequest struct {
 	KeyDigest []byte // 32 bytes, from sha256
 }
 
-type TxWithFee struct {
-	*Tx // for fee only
-}
-
 type TxLoanRequest struct {
-	TxWithFee
+	Tx
 	*LoanRequest // data for a loan request
 }
 
@@ -68,7 +64,7 @@ func CreateTxLoanRequest(
 	}
 
 	txLoanRequest := &TxLoanRequest{
-		TxWithFee:   TxWithFee{Tx: tx},
+		Tx:          *tx,
 		LoanRequest: loanRequest,
 	}
 
@@ -114,21 +110,4 @@ func (tx *TxLoanRequest) ValidateTransaction() bool {
 
 func (tx *TxLoanRequest) GetType() string {
 	return common.TxLoanRequest
-}
-
-func (tx *TxWithFee) GetType() string {
-	return tx.Tx.Type
-}
-
-func (tx *TxWithFee) GetTxVirtualSize() uint64 {
-	// TODO: calculate
-	return 0
-}
-
-func (tx *TxWithFee) GetSenderAddrLastByte() byte {
-	return tx.Tx.AddressLastByte
-}
-
-func (tx *TxWithFee) GetTxFee() uint64 {
-	return tx.Tx.Fee
 }

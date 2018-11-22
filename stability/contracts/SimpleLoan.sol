@@ -1,14 +1,14 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.5.0;
 
 contract SimpleLoan {
-    address public lender; // the only one who is able to accept collateral or return it
+    address payable public lender; // the only one who is able to accept collateral or return it
 
     enum State {Empty, Inited, Accepted, Rejected, Refunded, Liquidated}
 
     // TODO: each loan has separate interest and maturity window
     struct Loan {
         State state;
-        address borrower;
+        address payable borrower;
         bytes32 digest; // must equal keccak256(key) for some bytes32 key
         uint256 amount; // in Wei
         uint256 request; // amount to loan, in CONST
@@ -50,7 +50,7 @@ contract SimpleLoan {
         _;
     }
 
-    constructor(address _lender) public {
+    constructor(address payable _lender) public {
         lender = _lender;
         params["loanMaturity"] = 90 days; // seconds
         params["escrowWindow"] = 2 days;
@@ -71,7 +71,7 @@ contract SimpleLoan {
         return params[name];
     }
 
-    function partial(uint256 value, uint256 percent) public view returns (uint256) {
+    function part(uint256 value, uint256 percent) public view returns (uint256) {
         return value * percent / decimals / 100;
     }
 
@@ -90,7 +90,7 @@ contract SimpleLoan {
     function sendCollateral(
         bytes32 lid,
         bytes32 digest,
-        bytes stableCoinReceiver,
+        bytes memory stableCoinReceiver,
         uint256 request,
         bytes32 offchain
     )
@@ -126,7 +126,7 @@ contract SimpleLoan {
         loans[lid].state = State.Accepted;
         uint256 request = loans[lid].request;
         loans[lid].principle = request;
-        loans[lid].interest = partial(request, params["interestRate"]);
+        loans[lid].interest = part(request, params["interestRate"]);
         loans[lid].maturityDate = now + params["loanMaturity"];
         emit __acceptLoan(lid, key, offchain);
     }
@@ -170,7 +170,7 @@ contract SimpleLoan {
             loans[lid].interest = newInterest;
         } else {
             loans[lid].maturityDate += loanMaturity;
-            loans[lid].interest = partial(newPrinciple, params["interestRate"]);
+            loans[lid].interest = part(newPrinciple, params["interestRate"]);
         }
         emit __addPayment(lid, offchain);
     }
@@ -182,7 +182,7 @@ contract SimpleLoan {
                  !safelyCollateralized(loans[lid].amount, debt))); // collateral is not enough
 
         uint256 base = debt * assetPrice * 10 ** 18 / collateralPrice;// ETH amount needed to buy back enough Constant at current price
-        uint256 penalty = partial(base, params["liquidationPenalty"]);
+        uint256 penalty = part(base, params["liquidationPenalty"]);
         uint256 liquidationAmount = base + penalty;
         uint256 collateralAmount = loans[lid].amount;
         if (liquidationAmount > collateralAmount) {
@@ -193,11 +193,11 @@ contract SimpleLoan {
         uint256 minCommission = params["minCommission"];
         uint256 liquidationStart = params["liquidationStart"];
         uint256 liquidationEnd = params["liquidationEnd"];
-        uint256 commission = partial(penalty, maxCommission);
+        uint256 commission = part(penalty, maxCommission);
         if (currentRatio < liquidationEnd) {
-            commission = partial(penalty, minCommission);
+            commission = part(penalty, minCommission);
         } else if (currentRatio < liquidationStart) {
-            commission = partial(penalty, minCommission + (currentRatio - liquidationEnd) * (maxCommission - minCommission) / (liquidationStart - liquidationEnd));
+            commission = part(penalty, minCommission + (currentRatio - liquidationEnd) * (maxCommission - minCommission) / (liquidationStart - liquidationEnd));
         }
 
         loans[lid].principle = 0;
