@@ -3,6 +3,7 @@ package blockchain
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/voting"
 )
 
 type GOVParams struct {
@@ -14,6 +15,7 @@ type GOVParams struct {
 }
 
 type DCBParams struct {
+	SaleData *voting.SaleData
 }
 
 type CBParams struct {
@@ -72,7 +74,7 @@ type BlockHeader struct {
 	GOVGovernor    GOVGovernor
 	CBBoardPubKeys []string
 
-	LoanParams transaction.LoanParams // params for collateralized loans of Constant
+	LoanParams []transaction.LoanParams // params for collateralized loans of Constant
 
 	//Block Height
 	Height int32

@@ -3,12 +3,18 @@ package rpcserver
 import (
 	"encoding/hex"
 	"encoding/json"
-	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/wire"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
+	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/wire"
+	"github.com/pkg/errors"
 )
+
+func (self RpcServer) handleGetLoanParams(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return self.config.BlockChain.BestState[0].BestBlock.Header.LoanParams, nil
+}
 
 func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
@@ -38,14 +44,9 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 
 	// param #3: loan params
 	loanParams := arrayParams[2].(map[string]interface{})
-	loanParamsByte, err := json.Marshal(loanParams)
-	if err != nil {
-		return nil, err
-	}
-	loanRequest := transaction.LoanRequest{}
-	err = json.Unmarshal(loanParamsByte, &loanRequest)
-	if err != nil {
-		return nil, err
+	loanRequest := transaction.NewLoanRequest(loanParams)
+	if loanRequest == nil {
+		return nil, errors.New("Miss data")
 	}
 
 	// list unspent tx for estimation fee
@@ -89,7 +90,7 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 		Rts:           merkleRootCommitments,
 		SenderChainID: chainIdSender,
 		SenderKey:     &senderKey.KeySet.PrivateKey,
-	}, &loanRequest)
+	}, loanRequest)
 	if err != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -155,7 +156,6 @@ func (self RpcServer) handleCreateAndSendLoanRequest(params interface{}, closeCh
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, hexStrOfTx)
-	newParam = append(newParam, RawCustomTokenTransactionHelper{})
 	txId, err := self.handleSendRawLoanRequest(newParam, closeChan)
 	return txId, err
 }

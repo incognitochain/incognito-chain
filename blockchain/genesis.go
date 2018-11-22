@@ -306,11 +306,14 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		SellingBonds: &SellingBonds{},
 		RefundInfo:   &RefundInfo{},
 	}
-	genesisBlock.Header.LoanParams = transaction.LoanParams{
-		InterestRate:     0,
-		Maturity:         7776000, // 3 months in seconds
-		LiquidationStart: 15000,   // 150%
-	}
+	genesisBlock.Header.LoanParams = []transaction.LoanParams{}
+	genesisBlock.Header.LoanParams = append(genesisBlock.Header.LoanParams,
+		transaction.LoanParams{
+			InterestRate:     0,
+			Maturity:         7776000, // 3 months in seconds
+			LiquidationStart: 15000,   // 150%
+		},
+	)
 
 	// Decentralize central bank params
 	genesisBlock.Header.DCBConstitution.DCBParams = DCBParams{}
