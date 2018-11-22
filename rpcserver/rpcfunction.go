@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
+	"strconv"
+
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -13,8 +16,6 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
-	"net"
-	"strconv"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -75,6 +76,14 @@ var RpcHandler = map[string]commandHandler{
 	GetListDCBBoard:                RpcServer.handleGetListDCBBoard,
 	GetListCBBoard:                 RpcServer.handleGetListCBBoard,
 	GetListGOVBoard:                RpcServer.handleGetListGOVBoard,
+
+	// vote
+	SendRawVoteBoardDCBTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
+	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
+	CreateAndSendVoteDCBBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
+	SendRawVoteBoardGOVTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
+	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
+	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
 }
 
 // Commands that are available to a limited user
@@ -93,24 +102,6 @@ var RpcLimited = map[string]commandHandler{
 	GetReceivedByAccount:   RpcServer.handleGetReceivedByAccount,
 	SetTxFee:               RpcServer.handleSetTxFee,
 	EncryptData:            RpcServer.handleEncryptDataByPaymentAddress,
-}
-
-type RawVoteBoardDCBTransactionHelper struct{}
-type RawVoteBoardGOVTransactionHelper struct{}
-type RawCustomTokenTransactionHelper struct{}
-
-type RawTransactionHelper interface {
-	GetTransaction() transaction.Transaction
-}
-
-func (RawCustomTokenTransactionHelper) GetTransaction() transaction.Transaction {
-	return &transaction.TxCustomToken{}
-}
-func (RawVoteBoardDCBTransactionHelper) GetTransaction() transaction.Transaction {
-	return &transaction.TxVoteDCBBoard{}
-}
-func (RawVoteBoardGOVTransactionHelper) GetTransaction() transaction.Transaction {
-	return &transaction.TxVoteGOVBoard{}
 }
 
 func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -870,34 +861,6 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	return tx, err
 }
 
-func (self RpcServer) buildRawVoteDCBBoardTransaction(
-	params interface{},
-) (*transaction.TxVoteDCBBoard, error) {
-	arrayParams := common.InterfaceSlice(params)
-	tx, err := self.buildRawCustomTokenTransaction(params)
-	newTx := transaction.TxVoteDCBBoard{
-		TxCustomToken: *tx,
-		VoteDCBBoardData: transaction.VoteDCBBoardData{
-			arrayParams[len(arrayParams)-1].(string),
-		},
-	}
-	return &newTx, err
-}
-
-func (self RpcServer) buildRawVoteGOVBoardTransaction(
-	params interface{},
-) (*transaction.TxVoteGOVBoard, error) {
-	arrayParams := common.InterfaceSlice(params)
-	tx, err := self.buildRawCustomTokenTransaction(params)
-	newTx := transaction.TxVoteGOVBoard{
-		TxCustomToken: *tx,
-		VoteGOVBoardData: transaction.VoteGOVBoardData{
-			arrayParams[len(arrayParams)-1].(string),
-		},
-	}
-	return &newTx, err
-}
-
 // handleCreateRawCustomTokenTransaction - handle create a custom token command and return in hex string format.
 func (self RpcServer) handleCreateRawCustomTokenTransaction(
 	params interface{},
@@ -921,62 +884,17 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(
 	return result, nil
 }
 
-func (self RpcServer) handleCreateRawVoteDCBBoardTransaction(
-	params interface{},
-	closeChan <-chan struct{},
-) (interface{}, error) {
-	tx, err := self.buildRawVoteDCBBoardTransaction(params)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	byteArrays, err := json.Marshal(tx)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	hexData := hex.EncodeToString(byteArrays)
-	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
-	}
-	return result, nil
-}
-
-func (self RpcServer) handleCreateRawVoteGOVBoardTransaction(
-	params interface{},
-	closeChan <-chan struct{},
-) (interface{}, error) {
-	tx, err := self.buildRawVoteGOVBoardTransaction(params)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	byteArrays, err := json.Marshal(tx)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	hexData := hex.EncodeToString(byteArrays)
-	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
-	}
-	return result, nil
-}
-
 // handleSendRawTransaction...
 func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
-	RawTransactionHelper := arrayParams[len(arrayParams)-1].(RawTransactionHelper)
 	hexRawTx := arrayParams[0].(string)
 	rawTxBytes, err := hex.DecodeString(hexRawTx)
 
 	if err != nil {
 		return nil, err
 	}
-	tx := RawTransactionHelper.GetTransaction()
+	tx := transaction.TxCustomToken{}
 	//tx := transaction.TxCustomToken{}
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
@@ -984,7 +902,7 @@ func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, cl
 		return nil, err
 	}
 
-	hash, txDesc, err := self.config.TxMemPool.MaybeAcceptTransaction(tx)
+	hash, txDesc, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
 		return nil, err
 	}
@@ -998,7 +916,7 @@ func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, cl
 		return nil, err
 	}
 
-	txMsg.(*wire.MessageTx).Transaction = tx
+	txMsg.(*wire.MessageTx).Transaction = &tx
 	self.config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil
@@ -1017,41 +935,7 @@ func (self RpcServer) handleCreateAndSendCustomTokenTransaction(params interface
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, hexStrOfTx)
-	newParam = append(newParam, RawCustomTokenTransactionHelper{})
 	txId, err := self.handleSendRawCustomTokenTransaction(newParam, closeChan)
-	return txId, err
-}
-
-func (self RpcServer) handleSendVoteBoardDCBTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	data, err := self.handleCreateRawVoteDCBBoardTransaction(params, closeChan)
-	if err != nil {
-		return nil, err
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
-	if err != nil {
-		return nil, err
-	}
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
-	newParam = append(newParam, RawVoteBoardDCBTransactionHelper{})
-	txId, err := self.handleSendRawTransaction(newParam, closeChan)
-	return txId, err
-}
-func (self RpcServer) handleSendVoteBoardGOVTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	data, err := self.handleCreateRawVoteGOVBoardTransaction(params, closeChan)
-	if err != nil {
-		return nil, err
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
-	if err != nil {
-		return nil, err
-	}
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
-	newParam = append(newParam, RawVoteBoardGOVTransactionHelper{})
-	txId, err := self.handleSendRawTransaction(newParam, closeChan)
 	return txId, err
 }
 

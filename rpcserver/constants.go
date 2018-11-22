@@ -63,4 +63,12 @@ const (
 	GetListDCBBoard                = "getlistdcbboard"
 	GetListCBBoard                 = "getlistcbboard"
 	GetListGOVBoard                = "getlistgovboard"
+
+	// vote
+	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"
+	CreateRawVoteDCBBoardTx              = "createrawvotedcbboardtx"
+	CreateAndSendVoteDCBBoardTransaction = "createandsendvotedcbboardtransaction"
+	SendRawVoteBoardGOVTx                = "sendrawvoteboardgovtx"
+	CreateRawVoteGOVBoardTx              = "createrawvotegovboardtx"
+	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
 )
