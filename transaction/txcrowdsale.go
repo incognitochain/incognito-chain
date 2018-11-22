@@ -14,7 +14,7 @@ type TxBuySellDCBResponse struct {
 	SaleID         []byte
 }
 
-func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64, saleID []byte) (*TxBuySellDCBResponse, error) {
+func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64, saleID []byte, dcbAddress []byte) (*TxBuySellDCBResponse, error) {
 	// Mint and send Constant
 	pks := [][]byte{txRequest.PaymentAddress.Pk[:], txRequest.PaymentAddress.Pk[:]}
 	tks := [][]byte{txRequest.PaymentAddress.Tk[:], txRequest.PaymentAddress.Tk[:]}
@@ -22,7 +22,7 @@ func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte,
 	// Get value of the bonds that user sent
 	bonds := uint64(0)
 	for _, vout := range txRequest.TxTokenData.Vouts {
-		if bytes.Equal(vout.PaymentAddress.Pk[:], common.DCBAddress) {
+		if bytes.Equal(vout.PaymentAddress.Pk[:], dcbAddress) {
 			bonds += vout.Value
 		}
 	}
@@ -44,13 +44,13 @@ func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte,
 	return txResponse, nil
 }
 
-func BuildResponseForBond(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []TxTokenVout, saleID []byte) (*TxBuySellDCBResponse, []TxTokenVout, error) {
+func BuildResponseForBond(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []TxTokenVout, saleID []byte, dcbAddress []byte) (*TxBuySellDCBResponse, []TxTokenVout, error) {
 	// Get amount of Constant user sent
 	value := uint64(0)
 	userPk := privacy.PublicKey{}
 	for _, desc := range txRequest.Tx.Descs {
 		for _, note := range desc.Note {
-			if bytes.Equal(note.Apk[:], common.DCBAddress) {
+			if bytes.Equal(note.Apk[:], dcbAddress) {
 				value += note.Value
 				userPk = note.Apk
 			}
@@ -92,7 +92,7 @@ func BuildResponseForBond(txRequest *TxBuySellRequest, bondID string, rt []byte,
 	}
 	if sumBonds > bonds {
 		txTokenOuts = append(txTokenOuts, TxTokenVout{
-			PaymentAddress: privacy.PaymentAddress{Pk: common.DCBAddress},
+			PaymentAddress: privacy.PaymentAddress{Pk: dcbAddress},
 			Value:          sumBonds - bonds,
 		})
 	}

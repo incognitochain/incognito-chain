@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -693,7 +694,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*transaction.TxD
 	// Get unspent bond tx to spend if needed
 	keySet := cashec.KeySet{
 		PaymentAddress: privacy.PaymentAddress{
-			Pk: common.DCBAddress,
+			Pk: DCBAddress,
 		},
 	}
 	tokenID := &common.Hash{} // TODO(@0xbunyip): hard code bond token id here
@@ -721,17 +722,17 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*transaction.TxD
 
 		// Get price for asset bond
 		bondPrices := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
-		if saleData.SellingAsset == common.AssetTypeCoin {
-			txResponse, err := transaction.BuildResponseForCoin(tx, saleData.BondID, rt, chainID, bondPrices, tx.SaleID)
+		if bytes.Equal(saleData.SellingAsset, ConstantID[:]) {
+			txResponse, err := transaction.BuildResponseForCoin(tx, saleData.BondID, rt, chainID, bondPrices, tx.SaleID, DCBAddress)
 			if err != nil {
 				txsToRemove = append(txsToRemove, tx)
 			} else {
 				txsResponse = append(txsResponse, txResponse)
 			}
-		} else if saleData.SellingAsset == common.AssetTypeBond {
+		} else if bytes.Equal(saleData.SellingAsset, BondTokenID[:]) {
 			// Get unspent token UTXO to send to user
 			txResponse := &transaction.TxBuySellDCBResponse{}
-			txResponse, unspentTxTokenOuts, err = transaction.BuildResponseForBond(tx, saleData.BondID, rt, chainID, bondPrices, unspentTxTokenOuts, tx.SaleID)
+			txResponse, unspentTxTokenOuts, err = transaction.BuildResponseForBond(tx, saleData.BondID, rt, chainID, bondPrices, unspentTxTokenOuts, tx.SaleID, DCBAddress)
 			if err != nil {
 				txsToRemove = append(txsToRemove, tx)
 			} else {

@@ -445,7 +445,7 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 		return fmt.Errorf("Sale ended")
 	}
 
-	if saleData.BuyingAsset == common.AssetTypeBond {
+	if bytes.Equal(saleData.BuyingAsset, BondTokenID[:]) {
 		for _, vout := range requestTx.TxTokenData.Vouts {
 			// Check if sending asset is correct
 			if vout.BuySellResponse.AssetID != saleData.BondID {
@@ -454,15 +454,15 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 
 			// Check if receiving address is DCB's
 			// TODO(@0xbunyip): compare full payment address
-			if !bytes.Equal(vout.PaymentAddress.Pk[:], common.DCBAddress) {
-				return fmt.Errorf("Sending payment to %x instead of %x", vout.PaymentAddress.Pk[:], common.DCBAddress)
+			if !bytes.Equal(vout.PaymentAddress.Pk[:], DCBAddress) {
+				return fmt.Errorf("Sending payment to %x instead of %x", vout.PaymentAddress.Pk[:], DCBAddress)
 			}
 		}
-	} else if saleData.BuyingAsset == common.AssetTypeCoin {
+	} else if bytes.Equal(saleData.BuyingAsset, ConstantID[:]) {
 		for _, desc := range requestTx.Tx.Descs {
 			for _, note := range desc.Note {
-				if !bytes.Equal(note.Apk[:], common.DCBAddress) {
-					return fmt.Errorf("Sending payment to %x instead of %x", note.Apk[:], common.DCBAddress)
+				if !bytes.Equal(note.Apk[:], DCBAddress) {
+					return fmt.Errorf("Sending payment to %x instead of %x", note.Apk[:], DCBAddress)
 				}
 			}
 		}
@@ -486,7 +486,7 @@ func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction,
 		return fmt.Errorf("Sale ended")
 	}
 
-	if saleData.SellingAsset == common.AssetTypeBond {
+	if bytes.Equal(saleData.SellingAsset, BondTokenID[:]) {
 		for _, vout := range responseTx.TxTokenData.Vouts {
 			// Check if sending asset is correct
 			if vout.BuySellResponse.AssetID != saleData.BondID {

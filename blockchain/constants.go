@@ -39,6 +39,7 @@ var (
 
 // special token ids (aka. PropertyID in custom token)
 var (
+	ConstantID  = [common.HashSize]byte{0} // To send Constant in custom token
 	DCBTokenID  = [common.HashSize]byte{1}
 	GOVTokenID  = [common.HashSize]byte{2}
 	CMBTokenID  = [common.HashSize]byte{3}

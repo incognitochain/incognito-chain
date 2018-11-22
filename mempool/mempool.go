@@ -308,7 +308,7 @@ func (tp *TxPool) validateSanityCustomTokenTxData(txCustomToken *transaction.TxC
 		if len(vin.PaymentAddress.Pk) == 0 {
 			return false, errors.New("Wrong input transaction")
 		}
-		if bytes.Equal(vin.PaymentAddress.Pk, common.DCBAddress) {
+		if bytes.Equal(vin.PaymentAddress.Pk, blockchain.DCBAddress) {
 			if !allowToUseDCBFund {
 				return false, errors.New("Cannot use DCB's fund here")
 			}
@@ -428,33 +428,13 @@ func (tp *TxPool) ValidateTxWithCurrentMempool(tx transaction.Transaction) error
 		}
 	case common.TxBuySellDCBRequest:
 		{
-			txRequest := (*tx).(*transaction.TxBuySellRequest)
-			err := tp.ValidateDoubleSpendTxWithCurrentMempool(&txRequest.TxCustomToken.Tx)
-			if err != nil {
-				return err
-			}
-			for _, txInMem := range txsInMem {
-				err := tp.config.BlockChain.ValidateDoubleSpendCustomTokenOnTx(txRequest.TxCustomToken, txInMem.Desc.Tx)
-				if err != nil {
-					return err
-				}
-			}
-			return nil
+			txRequest := tx.(*transaction.TxBuySellRequest)
+			return tp.validateTxCustomTokenInPool(txRequest.TxCustomToken)
 		}
 	case common.TxBuySellDCBResponse:
 		{
-			txResponse := (*tx).(*transaction.TxBuySellDCBResponse)
-			err := tp.ValidateDoubleSpendTxWithCurrentMempool(&txResponse.TxCustomToken.Tx)
-			if err != nil {
-				return err
-			}
-			for _, txInMem := range txsInMem {
-				err := tp.config.BlockChain.ValidateDoubleSpendCustomTokenOnTx(txResponse.TxCustomToken, txInMem.Desc.Tx)
-				if err != nil {
-					return err
-				}
-			}
-			return nil
+			txResponse := tx.(*transaction.TxBuySellDCBResponse)
+			return tp.validateTxCustomTokenInPool(txResponse.TxCustomToken)
 		}
 	default:
 		{
