@@ -67,11 +67,11 @@ type BlockHeader struct {
 	DCBConstitution DCBConstitution
 	CBParams        CBParams
 
-	DCBGovernor DCBGovernor
-	GOVGovernor GOVGovernor
-	CBBoardPubKeys  []string
+	DCBGovernor    DCBGovernor
+	GOVGovernor    GOVGovernor
+	CBBoardPubKeys []string
 
-	LoanParams transaction.LoanParams // params for collateralized loans of Constant
+	LoanParams []transaction.LoanParams // params for collateralized loans of Constant
 
 	//Block Height
 	Height int32

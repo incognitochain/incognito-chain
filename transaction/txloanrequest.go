@@ -20,9 +20,9 @@ type FeeArgs struct {
 }
 
 type LoanParams struct {
-	InterestRate     uint64 `json:"InterestRate"` // basis points, e.g. 125 represents 1.25%
-	Maturity         uint64 `json:"Maturity"`     // seconds
-	LiquidationStart uint64 `json:"Maturity"`     // ratio between collateral and debt to start auto-liquidation, stored in basis points
+	InterestRate     uint64 `json:"InterestRate"`     // basis points, e.g. 125 represents 1.25%
+	Maturity         uint64 `json:"Maturity"`         // seconds
+	LiquidationStart uint64 `json:"LiquidationStart"` // ratio between collateral and debt to start auto-liquidation, stored in basis points
 }
 
 type LoanRequest struct {
