@@ -1,20 +1,20 @@
 package rpcserver
 
 import (
-	"time"
-	"io/ioutil"
-	"os"
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"math/big"
-	"bytes"
+	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
-	"crypto/rand"
 	"fmt"
+	"io/ioutil"
+	"math/big"
 	"net"
+	"os"
+	"time"
 )
 
 // genCertPair generates a key/cert pair to the paths provided.
