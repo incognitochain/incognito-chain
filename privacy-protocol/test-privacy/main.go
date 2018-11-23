@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
-
+	//"fmt"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	//"math/big"
 
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
@@ -19,6 +17,7 @@ func main() {
 	// fmt.Printf("Gy: %X\n", privacy-protocol.Curve.Params().Gy)
 	// fmt.Printf("BitSize: %X\n", privacy-protocol.Curve.Params().BitSize)
 
+	/*---------------------- TEST KEY SET ----------------------*/
 	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
 	//fmt.Printf("\nSpending key: %v\n", spendingKey)
 	//fmt.Println(len(spendingKey))
@@ -54,32 +53,18 @@ func main() {
 	//
 	//fmt.Printf("spending key bytes: %v\n", spendingKey.String())
 
-	//msg := "hello, world"
-	//hash := sha256.Sum256([]byte(msg))
-	//
-	//signature, err := privacy-protocol.Sign(hash[:], spendingKey)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//fmt.Printf("signature: %v\n", signature)
-	//
-	//valid := privacy-protocol.Verify(signature, hash[:], publicKey)
-	//fmt.Println("\nsignature verified:", valid)
-	//
-	//tx, _ := transaction.CreateEmptyTxs()
-	//fmt.Printf("Transaction: %+v\n", tx)
+	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
-	//privacy-protocol.Pcm.Setup()
-	//privacy-protocol.TestProofIsZero()
-	//// fmt.Println("Done")
-	//a:= new(privacy-protocol.InputCommitments)
-	//
-	//privacy-protocol.TestProductCommitment()
-	//privacy-protocol.Pcm.Setup()
-	// privacy-protocol.TestProofIsZero()
-	// fmt.Println("Done")
-	// privacy-protocol.TestPKComZeroOne()
-	//privacy-protocol.TestPKOneOfMany()
+	//privacy.TestProofIsZero()
+
+	//privacy.TestProductCommitment()
+
+	// privacy.TestProofIsZero()
+
+	// privacy.TestPKComZeroOne()
+
+	// privacy.TestPKOneOfMany()
+
 	//i := 0
 	//runtime.GOMAXPROCS(runtime.NumCPU())
 	//privacy.Elcm.InitCommitment()
@@ -158,12 +143,27 @@ func main() {
 	//zkp.TestPKComZeroOne()
 
 	/*----------------- TEST PCM SINGLETON -----------------*/
-	privacy.Pcm = privacy.GetPedersenParams()
-	fmt.Printf("a1: %p\n", &privacy.Pcm)
-	privacy.Pcm = privacy.GetPedersenParams()
-	fmt.Printf("a1: %p\n", &privacy.Pcm)
+	//privacy.Pcm = privacy.GetPedersenParams()
+	//fmt.Printf("a1: %p\n", &privacy.Pcm)
+	//privacy.Pcm = privacy.GetPedersenParams()
+	//fmt.Printf("a1: %p\n", &privacy.Pcm)
+
+	/*----------------- TEST NEW PCM -----------------*/
+	//var generators []privacy.EllipticPoint
+	//generators := make([]privacy.EllipticPoint, 3)
+	//generators[0] = privacy.EllipticPoint{big.NewInt(23), big.NewInt(0)}
+	//generators[0].ComputeYCoord()
+	//generators[1] = privacy.EllipticPoint{big.NewInt(12), big.NewInt(0)}
+	//generators[1].ComputeYCoord()
+	//generators[2] = privacy.EllipticPoint{big.NewInt(45), big.NewInt(0)}
+	//generators[2].ComputeYCoord()
+	//newPcm := privacy.NewPedersenParams(generators)
+	//fmt.Printf("New Pcm: %+v\n", newPcm)
 
 	/*----------------- TEST COMMITMENT -----------------*/
-	privacy.TestCommitment(01)
+	//privacy.TestCommitment(01)
+
+	/*----------------- TEST SIGNATURE -----------------*/
+	privacy.TestSchn()
 
 }

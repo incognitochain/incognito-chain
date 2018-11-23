@@ -3,7 +3,6 @@ package privacy
 import (
 	"fmt"
 	"math/big"
-	"sync"
 )
 
 const (
@@ -33,33 +32,42 @@ type PedersenCommitment interface {
 
 // PCParams represents the parameters for the commitment
 type PCParams struct {
-	G [PCM_CAPACITY]EllipticPoint // generators
+	G []EllipticPoint // generators
 	// G[0]: public key
 	// G[1]: Value
 	// G[2]: SNDerivator
 	// G[3]: Random
 }
 
-// Pcm store params for all of scheme which uses PedersenCommitment
-// and init once time by GetPedersenParams
-var Pcm *PCParams
+//PCParams ...
+//var Pcm *PCParams
+//var once sync.Once
+//func GetPedersenParams() *PCParams {
+//	once.Do(func() {
+//		var pcm PCParams
+//		pcm.G = make([]EllipticPoint, PCM_CAPACITY)
+//		pcm.G[0] = EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
+//		for i := 1; i < PCM_CAPACITY; i++ {
+//			pcm.G[i] = pcm.G[i-1].HashPoint()
+//		}
+//
+//		Pcm = &pcm
+//	})
+//	return Pcm
+//}
 
-var once sync.Once
-
-// GetPedersenParams Init all default params for PedersenCommitment Scheme
-func GetPedersenParams() *PCParams {
-	once.Do(func() {
-		var pcm PCParams
-		//Pcm.G = make([]EllipticPoint, PCM_CAPACITY)
-		pcm.G[0] = EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
-		for i := 1; i < PCM_CAPACITY; i++ {
-			pcm.G[i] = pcm.G[i-1].Hash()
-		}
-
-		Pcm = &pcm
-	})
-	return Pcm
+// NewPedersenParams creates new generators
+func NewPedersenParams() PCParams {
+	var pcm PCParams
+	pcm.G = make([]EllipticPoint, PCM_CAPACITY)
+	pcm.G[0] = EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
+	for i := 1; i < PCM_CAPACITY; i++ {
+		pcm.G[i] = pcm.G[i-1].Hash()
+	}
+	return pcm
 }
+
+var PedCom = NewPedersenParams()
 
 //GetHashOfValues get hash of n points in G append with input values
 //return blake_2b(G[0]||G[1]||...||G[PCM_CAPACITY-1]||<values>)
@@ -200,7 +208,7 @@ func (com PCParams) CommitAtIndex(value, rand big.Int, index byte) EllipticPoint
 //00: Test generate commitment for four random value and show that on console
 //01: Test generate commitment for special value and its random value in special index
 func TestCommitment(testCode byte) bool {
-	Pcm := GetPedersenParams()
+	Pcm := NewPedersenParams()
 	switch testCode {
 	case 0: //Generate commitment for 4 random value
 		//Generate 4 random value
