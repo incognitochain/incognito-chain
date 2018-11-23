@@ -14,19 +14,22 @@ const (
 	MessageHeaderSize  = 24
 	MessageCmdTypeSize = 12
 
-	CmdBlock             = "block"
-	CmdTx                = "tx"
-	CmdRegisteration     = "registeration"
-	CmdCustomToken       = "txtoken"
-	CmdCLoanRequestToken = "txloanreq"
-	CmdGetBlocks         = "getblocks"
-	CmdInv               = "inv"
-	CmdGetData           = "getdata"
-	CmdVersion           = "version"
-	CmdVerack            = "verack"
-	CmdGetAddr           = "getaddr"
-	CmdAddr              = "addr"
-	CmdPing              = "ping"
+	CmdBlock              = "block"
+	CmdTx                 = "tx"
+	CmdRegisteration      = "registeration"
+	CmdCustomToken        = "txtoken"
+	CmdCLoanRequestToken  = "txloanreq"
+	CmdCLoanResponseToken = "txloanres"
+	CmdCLoanWithdrawToken = "txloanwith"
+	CmdCLoanPayToken      = "txloanpay"
+	CmdGetBlocks          = "getblocks"
+	CmdInv                = "inv"
+	CmdGetData            = "getdata"
+	CmdVersion            = "version"
+	CmdVerack             = "verack"
+	CmdGetAddr            = "getaddr"
+	CmdAddr               = "addr"
+	CmdPing               = "ping"
 
 	// POS Cmd
 	CmdBlockSigReq   = "blocksigreq"
@@ -68,6 +71,21 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdCLoanRequestToken:
 		msg = &MessageTx{
 			Transaction: &transaction.TxLoanRequest{},
+		}
+		break
+	case CmdCLoanResponseToken:
+		msg = &MessageTx{
+			Transaction: &transaction.TxLoanResponse{},
+		}
+		break
+	case CmdCLoanWithdrawToken:
+		msg = &MessageTx{
+			Transaction: &transaction.TxLoanWithdraw{},
+		}
+		break
+	case CmdCLoanPayToken:
+		msg = &MessageTx{
+			Transaction: &transaction.TxLoanPayment{},
 		}
 		break
 	case CmdGetBlocks:
