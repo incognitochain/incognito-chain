@@ -20,7 +20,7 @@ type SignScheme interface {
 
 //SchnPubKey denoted Schnorr Publickey
 type SchnPubKey struct {
-	PK, H EllipticPoint // PK = G^SK + H^Randomness
+	PK, G, H EllipticPoint // PK = G^SK + H^Randomness
 }
 
 //SchnPrivKey denoted Schnorr Privatekey
@@ -62,7 +62,6 @@ func (priKey *SchnPrivKey) KeyGen() {
 	priKey.PubKey.PK = *new(EllipticPoint)
 	priKey.PubKey.PK.X, priKey.PubKey.PK.Y = Curve.ScalarBaseMult(priKey.SK.Bytes())
 	priKey.PubKey.PK.X, priKey.PubKey.PK.Y = Curve.Add(priKey.PubKey.PK.X, priKey.PubKey.PK.Y, rH.X, rH.Y)
-
 }
 
 //Sign is function which using for sign on hash array by private key

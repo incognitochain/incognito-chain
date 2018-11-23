@@ -16,12 +16,13 @@ type PKComZeroOneProtocol struct {
 
 // PKComZeroOneProof contains Proof's value
 type PKComZeroOneProof struct {
-	ca, cb     EllipticPoint // 34 bytes
+	ca, cb     privacy.EllipticPoint
 	f, za, zb  []byte //32 bytes
-	commitment []byte // 34 bytes
+	commitment privacy.EllipticPoint
 	index      byte
 }
 
+//ioc container in golang
 
 //json.Marshal(proof PK)
 // PKComZeroOneProof contains Proof's value

@@ -19,6 +19,7 @@ type Coin struct {
 	Randomness     big.Int         	// Random for coin commitment
 	Value          big.Int          	// 32 bytes
 	Info           []byte
+	MerkleRoot			MerkleRoot
 }
 
 //CommitAll commits a coin with 4 attributes (public key, value, serial number, r)
@@ -63,3 +64,10 @@ type Coin struct {
 //	commitment = append(commitment, Pcm.Commit(values)...)
 //	return commitment
 //}
+
+// SpendingCoin represents a list of coins to be spent corresponding to spending key
+type SpendingCoin struct{
+	Coins []Coin
+	SpendingKey SpendingKey
+}
+
