@@ -2,6 +2,7 @@ package privacy
 
 import (
 	"crypto/elliptic"
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -65,7 +66,7 @@ func (eccPoint *EllipticPoint) ComputeYCoord() error {
 	//fmt.Printf("y2: %X\n", y2)
 	//fmt.Printf("x3: %X\n", x3)
 	if y2.Cmp(x3) != 0 {
-		return fmt.Errorf("Cant compute y")
+		return errors.New("Cant compute y")
 	}
 	return nil
 }
@@ -74,7 +75,7 @@ func (eccPoint *EllipticPoint) ComputeYCoord() error {
 func (eccPoint EllipticPoint) Inverse() (*EllipticPoint, error) {
 	//Check that input is ECC point
 	if !Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
-		return nil, fmt.Errorf("Input is not ECC Point")
+		return nil, errors.New("Input is not ECC Point")
 	}
 	//Create result point
 	resPoint := new(EllipticPoint)
@@ -145,8 +146,7 @@ func (eccPoint *EllipticPoint) Decompress(compressPointBytes []byte) error {
 	format &= ^byte(0x1)
 
 	if format != pointCompressed {
-		return fmt.Errorf("invalid magic in compressed "+
-			"compressPoint bytes: %d", compressPointBytes[0])
+		return errors.New("invalid magic in compressed compressPoint bytes")
 	}
 
 	var err error
@@ -176,7 +176,7 @@ func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 
 	//check P = 3 mod 4?
 	// if temp.Mod(Q, new(big.Int).SetInt64(4)).Cmp(new(big.Int).SetInt64(3)) != 0 {
-	// 	return nil, fmt.Errorf("parameter P must be congruent to 3 mod 4")
+	// 	return nil, errors.New("parameter P must be congruent to 3 mod 4")
 	// }
 
 	// Now calculate sqrt mod p of x^3 - 3*x + B
@@ -193,12 +193,12 @@ func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	ySquare := new(big.Int).Mul(y, y)
 	ySquare.Mod(ySquare, Curve.Params().P)
 	if ySquare.Cmp(xCube) != 0 {
-		return nil, fmt.Errorf("invalid square root")
+		return nil, errors.New("invalid square root")
 	}
 
 	// Verify that y-coord has expected parity.
 	if ybit != isOdd(y) {
-		return nil, fmt.Errorf("ybit doesn't match oddness")
+		return nil, errors.New("ybit doesn't match oddness")
 	}
 
 	return y, nil
@@ -225,7 +225,7 @@ func (eccPoint EllipticPoint) Hash() EllipticPoint {
 	pointToChecked.X, pointToChecked.Y = Curve.Double(res.X, res.Y)
 
 	if pointToChecked.X == nil || pointToChecked.Y == nil {
-		//fmt.Errorf("Point at infinity")
+		//errors.New("Point at infinity")
 		return *new(EllipticPoint)
 	}
 	return *res
