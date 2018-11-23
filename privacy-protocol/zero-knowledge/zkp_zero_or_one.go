@@ -22,9 +22,6 @@ type PKComZeroOneProof struct {
 	index      byte
 }
 
-//ioc container in golang
-
-//json.Marshal(proof PK)
 // PKComZeroOneProof contains Proof's value
 type PKComZeroOneWitness struct {
 	Commitment    privacy.EllipticPoint
@@ -81,7 +78,6 @@ func (pro *PKComZeroOneProtocol) Prove() (*PKComZeroOneProof, error) {
 	proof.ca = make([]byte, 33)
 	proof.ca = privacy.Pcm.CommitAtIndex(aInt.Bytes(), sInt.Bytes(), pro.Witness.Index)
 
-
 	var ca privacy.PedersenCommitment
 	openingca := []privacy.Opening{
 		{Value: aInt.Bytes(), Index: pro.Witness.Index},
@@ -92,9 +88,6 @@ func (pro *PKComZeroOneProtocol) Prove() (*PKComZeroOneProof, error) {
 
 	var caD privacy.PedersenCommitment
 	caD.Decompress(proof.ca)
-
-
-
 
 	am := big.NewInt(0)
 	am.Mul(aInt, commitedValue)
