@@ -259,8 +259,8 @@ func (wit *PKOneOfManyWitness) Prove( /*commitments [][]byte, indexIsZero int, c
 	return &proof, nil
 }
 
-func (pro *PKOneOfManyProof) Verify(commitments [][]byte, proof *PKOneOfManyProof, index byte, rand []byte) bool {
-	N := len(commitments)
+func (pro *PKOneOfManyProof) Verify( /*commitments [][]byte, proof *PKOneOfManyProof, index byte, rand []byte*/ ) bool {
+	N := len(pro.commitments)
 
 	temp := 1
 	n := 0
@@ -268,10 +268,10 @@ func (pro *PKOneOfManyProof) Verify(commitments [][]byte, proof *PKOneOfManyProo
 		temp = temp << 1
 		n++
 	}
-	clPoint := make([]*privacy.EllipticPoint, n)
-	caPoint := make([]*privacy.EllipticPoint, n)
-	cbPoint := make([]*privacy.EllipticPoint, n)
-	cdPoint := make([]*privacy.EllipticPoint, n)
+	// clPoint := make([]*privacy.EllipticPoint, n)
+	// caPoint := make([]*privacy.EllipticPoint, n)
+	// cbPoint := make([]*privacy.EllipticPoint, n)
+	// cdPoint := make([]*privacy.EllipticPoint, n)
 	var err error
 
 	// Calculate x
@@ -291,43 +291,37 @@ func (pro *PKOneOfManyProof) Verify(commitments [][]byte, proof *PKOneOfManyProo
 
 	for i := 0; i < n; i++ {
 		// Decompress cl from bytes array to Elliptic
-		clPoint[i] = new(privacy.EllipticPoint)
-		clPoint[i], err = privacy.DecompressCommitment(proof.cl[i])
-		if err != nil {
-			return false
-		}
+		// clPoint[i] = new(privacy.EllipticPoint)
+		// clPoint[i], err = privacy.DecompressCommitment(proof.cl[i])
+		// if err != nil {
+		// 	return false
+		// }
 		// Decompress ca from bytes array to Elliptic
-		caPoint[i] = new(privacy.EllipticPoint)
-		caPoint[i], err = privacy.DecompressCommitment(proof.ca[i])
-		if err != nil {
-			return false
-		}
+		// caPoint[i] = new(privacy.EllipticPoint)
+		// caPoint[i], err = privacy.DecompressCommitment(proof.ca[i])
+		// if err != nil {
+		// 	return false
+		// }
 		// Decompress cb from bytes array to Elliptic
-		cbPoint[i] = new(privacy.EllipticPoint)
-		cbPoint[i], err = privacy.DecompressCommitment(proof.cb[i])
-		if err != nil {
-			return false
-		}
+		// cbPoint[i] = new(privacy.EllipticPoint)
+		// cbPoint[i], err = privacy.DecompressCommitment(proof.cb[i])
+		// if err != nil {
+		// 	return false
+		// }
 
-		// Decompress cd from bytes array to Elliptic
-		cdPoint[i] = new(privacy.EllipticPoint)
-		cdPoint[i], err = privacy.DecompressKey(proof.cd[i])
-		if err != nil {
-			return false
-		}
+		// // Decompress cd from bytes array to Elliptic
+		// cdPoint[i] = new(privacy.EllipticPoint)
+		// cdPoint[i], err = privacy.DecompressKey(proof.cd[i])
+		// if err != nil {
+		// 	return false
+		// }
 
 		// Check cl^x * ca = Com(f, za)
 		leftPoint1 := new(privacy.EllipticPoint)
-		leftPoint1.X, leftPoint1.Y = privacy.Curve.ScalarMult(clPoint[i].X, clPoint[i].Y, x.Bytes())
-		leftPoint1.X, leftPoint1.Y = privacy.Curve.Add(leftPoint1.X, leftPoint1.Y, caPoint[i].X, caPoint[i].Y)
+		leftPoint1.X, leftPoint1.Y = privacy.Curve.ScalarMult(pro.cl[i].X, pro.cl[i].Y, x.Bytes())
+		leftPoint1.X, leftPoint1.Y = privacy.Curve.Add(leftPoint1.X, leftPoint1.Y, pro.ca[i].X, pro.ca[i].Y)
 
-		rightPoint1 := new(privacy.EllipticPoint)
-		right1 := privacy.Elcm.CommitSpecValue(proof.f[i], proof.za[i], index)
-		rightPoint1, err = privacy.DecompressCommitment(right1)
-		if err != nil {
-			return false
-		}
-
+		rightPoint1 := privacy.PedCom.CommitAtIndex(pro.f[i], pro.za[i], index)
 		//fmt.Printf("Left point 1 X: %v\n", leftPoint1.X)
 		//fmt.Printf("Right point 1 X: %v\n", rightPoint1.X)
 		//fmt.Printf("Left point 1 Y: %v\n", leftPoint1.Y)
@@ -340,19 +334,19 @@ func (pro *PKOneOfManyProof) Verify(commitments [][]byte, proof *PKOneOfManyProo
 		// Check cl^(x-f) * cb = Com(0, zb)
 		leftPoint2 := new(privacy.EllipticPoint)
 		xSubF := new(big.Int)
-		tmp := new(big.Int).SetBytes(proof.f[i])
+		// tmp := new(big.Int).SetBytes(proof.f[i])
 		//fmt.Printf("tmp: %v\n", tmp)
-		xSubF.Sub(x, tmp)
+		xSubF.Sub(x, pro.f[i])
 		xSubF.Mod(xSubF, privacy.Curve.Params().N)
-		leftPoint2.X, leftPoint2.Y = privacy.Curve.ScalarMult(clPoint[i].X, clPoint[i].Y, xSubF.Bytes())
-		leftPoint2.X, leftPoint2.Y = privacy.Curve.Add(leftPoint2.X, leftPoint2.Y, cbPoint[i].X, cbPoint[i].Y)
+		leftPoint2.X, leftPoint2.Y = privacy.Curve.ScalarMult(pro.cl[i].X, pro.cl[i].Y, xSubF.Bytes())
+		leftPoint2.X, leftPoint2.Y = privacy.Curve.Add(leftPoint2.X, leftPoint2.Y, pro.cb[i].X, pro.cb[i].Y)
 
-		rightPoint2 := new(privacy.EllipticPoint)
-		right2 := privacy.Elcm.CommitSpecValue(big.NewInt(0).Bytes(), proof.zb[i], index)
-		rightPoint2, err = privacy.DecompressCommitment(right2)
-		if err != nil {
-			return false
-		}
+		// rightPoint2 := new(privacy.EllipticPoint)
+		rightPoint2 := privacy.Elcm.CommitSpecValue(big.NewInt(0), pro.zb[i], index)
+		// rightPoint2, err = privacy.DecompressCommitment(right2)
+		// if err != nil {
+		// 	return false
+		// }
 
 		//fmt.Printf("Left point 2 X: %v\n", leftPoint2.X)
 		//fmt.Printf("Right point 2 X: %v\n", rightPoint2.X)
@@ -364,27 +358,27 @@ func (pro *PKOneOfManyProof) Verify(commitments [][]byte, proof *PKOneOfManyProo
 		}
 	}
 
-	commitPoints := make([]*privacy.EllipticPoint, N)
+	// commitPoints := make([]*privacy.EllipticPoint, N)
 	leftPoint3 := privacy.EllipticPoint{X: big.NewInt(0), Y: big.NewInt(0)}
 	leftPoint32 := privacy.EllipticPoint{X: big.NewInt(0), Y: big.NewInt(0)}
-	rightPoint3 := new(privacy.EllipticPoint)
+	// rightPoint3 := new(privacy.EllipticPoint)
 	tmpPoint := new(privacy.EllipticPoint)
 
 	for i := 0; i < N; i++ {
 		iBinary := privacy.ConvertIntToBinary(i, n)
-		commitPoints[i] = new(privacy.EllipticPoint)
-		commitPoints[i], err = privacy.DecompressCommitment(commitments[i])
-		if err != nil {
-			return false
-		}
+		// commitPoints[i] = new(privacy.EllipticPoint)
+		// commitPoints[i], err = privacy.DecompressCommitment(pro.commitments[i])
+		// if err != nil {
+		// 	return false
+		// }
 
 		exp := big.NewInt(1)
 		fji := big.NewInt(1)
 		for j := n - 1; j >= 0; j-- {
 			if iBinary[j] == 1 {
-				fji.SetBytes(proof.f[j])
+				*fji = *pro.f[j]
 			} else {
-				fji.Sub(x, new(big.Int).SetBytes(proof.f[j]))
+				fji.Sub(x, pro.f[j])
 				fji.Mod(fji, privacy.Curve.Params().N)
 			}
 
@@ -392,7 +386,7 @@ func (pro *PKOneOfManyProof) Verify(commitments [][]byte, proof *PKOneOfManyProo
 			exp.Mod(exp, privacy.Curve.Params().N)
 		}
 
-		tmpPoint.X, tmpPoint.Y = privacy.Curve.ScalarMult(commitPoints[i].X, commitPoints[i].Y, exp.Bytes())
+		tmpPoint.X, tmpPoint.Y = privacy.Curve.ScalarMult(pro.commitments[i].X, pro.commitments[i].Y, exp.Bytes())
 		leftPoint3.X, leftPoint3.Y = privacy.Curve.Add(leftPoint3.X, leftPoint3.Y, tmpPoint.X, tmpPoint.Y)
 	}
 
@@ -402,14 +396,14 @@ func (pro *PKOneOfManyProof) Verify(commitments [][]byte, proof *PKOneOfManyProo
 
 		xk.Sub(privacy.Curve.Params().N, xk)
 
-		tmpPoint.X, tmpPoint.Y = privacy.Curve.ScalarMult(cdPoint[k].X, cdPoint[k].Y, xk.Bytes())
+		tmpPoint.X, tmpPoint.Y = privacy.Curve.ScalarMult(pro.cd[k].X, pro.cd[k].Y, xk.Bytes())
 		leftPoint32.X, leftPoint32.Y = privacy.Curve.Add(leftPoint32.X, leftPoint32.Y, tmpPoint.X, tmpPoint.Y)
 	}
 
 	leftPoint3.X, leftPoint3.Y = privacy.Curve.Add(leftPoint3.X, leftPoint3.Y, leftPoint32.X, leftPoint32.Y)
 
-	rightValue3 := privacy.Elcm.CommitSpecValue(big.NewInt(0).Bytes(), proof.zd, index)
-	rightPoint3, _ = privacy.DecompressCommitment(rightValue3)
+	rightPoint3 := privacy.PedCom.CommitAtIndex(big.NewInt(0), pro.zd, index)
+	// rightPoint3, _ = privacy.DecompressCommitment(rightValue3)
 
 	// fmt.Printf("Left point 3 X: %v\n", leftPoint3.X)
 	// fmt.Printf("Right point 3 X: %v\n", rightPoint3.X)
@@ -461,13 +455,13 @@ func TestPKOneOfMany() bool {
 }
 
 // Get coefficient of x^k in polynomial pi(x)
-func GetCoefficient(iBinary []byte, k int, n int, a [][]byte, l []byte) *big.Int {
+func GetCoefficient(iBinary []byte, k int, n int, a []big.Int, l []byte) *big.Int {
 	res := privacy.Poly{big.NewInt(1)}
 	var fji privacy.Poly
 
 	for j := n - 1; j >= 0; j-- {
-		fj := privacy.Poly{new(big.Int).SetBytes(a[j]), big.NewInt(int64(l[j]))}
-
+		// fj := privacy.Poly{new(big.Int).SetBytes(a[j]), big.NewInt(int64(l[j]))}
+		fj := privacy.Poly{a[j], big.NewInt(int64(l[j]))}
 		if iBinary[j] == 0 {
 			fji = privacy.Poly{big.NewInt(0), big.NewInt(1)}.Sub(fj, privacy.Curve.Params().N)
 		} else {
