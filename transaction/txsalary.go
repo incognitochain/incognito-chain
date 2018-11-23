@@ -35,7 +35,7 @@ func CreateTxSalary(
 	outputs[1].OutputNote = placeHolderOutputNote
 
 	// Generate proof and sign tx
-	tx, err := CreateEmptyTx(common.TxSalaryType)
+	tx, err := CreateEmptyTx(common.TxSalaryType, nil, true)
 	if err != nil {
 		return nil, err
 	}
