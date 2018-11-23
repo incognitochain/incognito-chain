@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"math/big"
 	"sort"
 	"strconv" // "crypto/sha256"
 	"time"
@@ -606,21 +605,27 @@ func (tx *Tx) VerifySign() (bool, error) {
 	}
 
 	// UnParse Public key
-	pubKey := new(client.PublicKey)
+	/*pubKey := new(client.PublicKey)
 	pubKey.X = new(big.Int).SetBytes(tx.JSPubKey[0:32])
-	pubKey.Y = new(big.Int).SetBytes(tx.JSPubKey[32:64])
+	pubKey.Y = new(big.Int).SetBytes(tx.JSPubKey[32:64])*/
 
 	// UnParse ECDSA signature
-	ecdsaSignature := new(client.EcdsaSignature)
+	/*ecdsaSignature := new(client.EcdsaSignature)
 	ecdsaSignature.R = new(big.Int).SetBytes(tx.JSSig[0:32])
-	ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])
+	ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])*/
 
 	// Hash origin transaction
 	hash := tx.GetTxID()
 	data := make([]byte, common.HashSize)
 	copy(data, hash[:])
 
-	valid := client.VerifySign(pubKey, data[:], ecdsaSignature.R, ecdsaSignature.S)
+	//valid := client.VerifySign(pubKey, data[:], ecdsaSignature.R, ecdsaSignature.S)
+	keyset := cashec.KeySet{}
+	keyset.PaymentAddress.Pk = tx.JSPubKey
+	valid, err := keyset.Verify(data[:], tx.JSSig)
+	if err != nil {
+		return false, err
+	}
 	return valid, nil
 }
 
