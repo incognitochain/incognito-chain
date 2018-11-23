@@ -3,7 +3,6 @@ package privacy
 import (
 	"fmt"
 	"math/big"
-	"sync"
 )
 
 const (
@@ -33,7 +32,7 @@ type PedersenCommitment interface {
 
 // PCParams represents the parameters for the commitment
 type PCParams struct {
-	G [PCM_CAPACITY]EllipticPoint // generators
+	G []EllipticPoint // generators
 	// G[0]: public key
 	// G[1]: Value
 	// G[2]: SNDerivator
@@ -41,24 +40,35 @@ type PCParams struct {
 }
 
 //PCParams ...
-//var Pcm PCParams
+//var Pcm *PCParams
+//var once sync.Once
+//func GetPedersenParams() *PCParams {
+//	once.Do(func() {
+//		var pcm PCParams
+//		pcm.G = make([]EllipticPoint, PCM_CAPACITY)
+//		pcm.G[0] = EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
+//		for i := 1; i < PCM_CAPACITY; i++ {
+//			pcm.G[i] = pcm.G[i-1].HashPoint()
+//		}
+//
+//		Pcm = &pcm
+//	})
+//	return Pcm
+//}
 
-var Pcm *PCParams
-var once sync.Once
-func GetPedersenParams() *PCParams {
-	once.Do(func() {
-		var pcm PCParams
-		//Pcm.G = make([]EllipticPoint, PCM_CAPACITY)
-		pcm.G[0] = EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
-		for i := 1; i < PCM_CAPACITY; i++ {
-			pcm.G[i] = pcm.G[i-1].HashPoint()
-		}
-
-		Pcm = &pcm
-	})
-	return Pcm
+// NewPedersenParams creates new generators
+func NewPedersenParams() PCParams{
+	var pcm PCParams
+	pcm.G = make([]EllipticPoint, PCM_CAPACITY)
+	pcm.G[0] = EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
+	for i := 1; i < PCM_CAPACITY; i++ {
+		pcm.G[i] = pcm.G[i-1].HashPoint()
+	}
+	return pcm
 }
 
+
+var PedCom  = NewPedersenParams()
 
 //GetHashOfValues get hash of n points in G append with input values
 //return blake_2b(G[0]||G[1]||...||G[PCM_CAPACITY-1]||<values>)

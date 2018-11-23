@@ -18,7 +18,7 @@ const (
 //EllipticPointHelper contain some function for elliptic point
 type EllipticPointHelper interface {
 	InversePoint() (*EllipticPoint, error)
-	RandPoint(x, y *big.Int) *EllipticPoint
+	//RandPoint(x, y *big.Int) *EllipticPoint
 	Rand()
 	CompressPoint() []byte
 	DecompressPoint(compressPointBytes []byte) error
