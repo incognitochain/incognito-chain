@@ -24,7 +24,7 @@ type EllipticPointHelper interface {
 	Compress() []byte
 	Decompress(compressPointBytes []byte) error
 	IsSafe() bool
-	ComputeOrdinate()
+	ComputeYCoord()
 	Hash() EllipticPoint
 }
 
