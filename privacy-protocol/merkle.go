@@ -1,4 +1,4 @@
 package privacy
 
 
-type MerkleRoot []byte
+type MerkleNode []byte

@@ -11,17 +11,10 @@ type TxPrivacy struct{
 
 func (tx * TxPrivacy) CreateTx(
 	paymentInfo []privacy.PaymentInfo,
-	unspentCoins []privacy.SpendingCoin,
-	rt privacy.MerkleRoot,
+	unspentCoins []privacy.UnspentCoin,
+	fee uint64,
+	noPrivacy bool,
+) (*TxPrivacy, error){
 
-
-
-
-
-	){
-
+	return nil, nil
 }
-
-
-
-

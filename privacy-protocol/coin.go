@@ -13,13 +13,12 @@ type SNDerivator []byte
 
 // Coin represents a coin
 type Coin struct {
-	PublicKey      EllipticPoint      	// 33 bytes
-	SNDerivator    big.Int   		// 32 bytes
-	CoinCommitment EllipticPoint 	// 33 bytes
-	Randomness     big.Int         	// Random for coin commitment
-	Value          big.Int          	// 32 bytes
+	PublicKey      *EllipticPoint      	// 33 bytes
+	CoinCommitment *EllipticPoint 	// 33 bytes
+	SNDerivator    *big.Int   		// 32 bytes
+	Randomness     *big.Int         	// Random for coin commitment
+	Value          *big.Int          	// 32 bytes
 	Info           []byte
-	MerkleRoot			MerkleRoot
 }
 
 //CommitAll commits a coin with 4 attributes (public key, value, serial number, r)
@@ -65,9 +64,9 @@ type Coin struct {
 //	return commitment
 //}
 
-// SpendingCoin represents a list of coins to be spent corresponding to spending key
-type SpendingCoin struct{
-	Coins []Coin
+// UnspentCoin represents a list of coins to be spent corresponding to spending key
+type UnspentCoin struct {
 	SpendingKey SpendingKey
+	UnspentCoinList map[Coin]big.Int
 }
 
