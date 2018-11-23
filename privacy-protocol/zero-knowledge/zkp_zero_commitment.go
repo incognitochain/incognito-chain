@@ -8,6 +8,24 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
+type PKComZeroProtocol struct {
+	Witness PKComZeroWitnees
+	Proof PKComZeroProof
+}
+
+type PKComZeroProof struct {
+	commitmentValue *privacy.EllipticPoint //statement
+	index byte //statement
+	commitmentZeroS *privacy.EllipticPoint
+	z *big.Int
+	index byte
+}
+
+type PKComZeroWitnees struct {
+	commitmentRnd *big.Int
+	// index byte
+}
+
 /*Protocol for opening a PedersenCommitment to 0
 Prove:
 	commitmentValue is PedersenCommitment value of Zero, that is statement needed to prove
@@ -32,8 +50,16 @@ Verify:
 )
 */
 
+func (pro *PKComZeroProtocol) SetWitness(witness PKComZeroWitnees) {
+	pro.Witness = witness
+}
+
+func (pro *PKComZeroProtocol) SetProof(proof PKComZeroProof){
+	pro.Proof = proof
+}
+
 //Prove generate a Proof prove that the PedersenCommitment is zero
-func Prove(commitmentValue *privacy.EllipticPoint, commitmentRnd *big.Int, index byte) (*privacy.EllipticPoint, *big.Int) {
+func (pro *PKComZeroProtocol) Prove(commitmentValue *privacy.EllipticPoint, index byte) (*PKComZeroProof, error) {//???
 	//var x big.Int
 	//s is a random number in Zp, with p is N, which is order of base point of privacy.Curve
 	sRnd, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
@@ -45,22 +71,27 @@ func Prove(commitmentValue *privacy.EllipticPoint, commitmentRnd *big.Int, index
 	commitmentZeroS := privacy.PedCom.CommitAtIndex(big.NewInt(0), sRnd, index)
 
 	//Generate challenge x in Zp
-	xChallenge:=GenerateChallenge([][]{commitmentValue.Bytes()}))
+	xChallenge:=GenerateChallenge([][]{pro.Witness.commitmentValue.Bytes()}))
 
 	//Calculate z=r*x + s (mod N)
 	z := big.NewInt(0)
-	*z = *commitmentRnd
+	*z = *(pro.Witness.commitmentRnd)
 	z.Mul(z, xChallenge)
 	z.Mod(z, privacy.Curve.Params().N)
 	z.Add(z, sRnd)
 	z.Mod(z, privacy.Curve.Params().N)
 
+	proof := new(PKComZeroProof)
+	proof.commitmentZeroS = &commitmentZeroS
+	proof.z = z
+	proof.index = new(byte)
+	*(proof.index) = index
 	//return B, z
-	return &commitmentZeroS, z
+	return proof
 }
 
 //Verify verify that under PedersenCommitment is zero
-func Verify(commitmentValue, commitmentZeroS *privacy.EllipticPoint, index byte, z *big.Int) bool {
+func (pro *PKComZeroProtocol) Verify() bool {
 	//Generate challenge x in Zp
 	xChallenge:=GenerateChallenge([][]{commitmentValue.Bytes()}))
 
@@ -78,18 +109,18 @@ func Verify(commitmentValue, commitmentZeroS *privacy.EllipticPoint, index byte,
 	verifyPoint.X = big.NewInt(0)
 	verifyPoint.Y = big.NewInt(0)
 	//Set verifyPoint = A
-	*(verifyPoint.X) = *(commitmentValue.X)
-	*(verifyPoint.Y) = *(commitmentValue.Y)
+	*(verifyPoint.X) = *(pro.Proof.commitmentValue.X)
+	*(verifyPoint.Y) = *(pro.Proof.commitmentValue.Y)
 	//verifyPoint = verifyPoint.x
 	verifyPoint.X, verifyPoint.Y = privacy.Curve.ScalarMult(verifyPoint.X, verifyPoint.Y, xChallenge.Bytes())
 	//verifyPoint = verifyPoint + B
-	verifyPoint.X, verifyPoint.Y = privacy.Curve.Add(verifyPoint.X, verifyPoint.Y, commitmentZeroS.X, commitmentZeroS.Y)
+	verifyPoint.X, verifyPoint.Y = privacy.Curve.Add(verifyPoint.X, verifyPoint.Y, pro.Proof.commitmentZeroS.X, pro.Proof.commitmentZeroS.Y)
 
 	//Generate Zero number
 	zeroInt := big.NewInt(0)
 
 	//Calculate comm_ck(0,z, Index)
-	commitmentZeroZ := privacy.PedCom.CommitAtIndex(zeroInt, z, index)
+	commitmentZeroZ := privacy.PedCom.CommitAtIndex(zeroInt, pro.Proof.z, pro.Proof.index)
 
 	if commitmentZeroZ.X.CmpAbs(verifyPoint.X) != 0 {
 		return false
@@ -103,67 +134,5 @@ func Verify(commitmentValue, commitmentZeroS *privacy.EllipticPoint, index byte,
 
 //TestProofIsZero test prove and verify function
 func TestProofIsZero() bool {
-	return true
-	// //Generate a random PedersenCommitment
-
-	// //First, generate random value to commit and calculate two PedersenCommitment with different PRDNumber
-	// //Random value
-	// serialNumber := privacy.RandBytes(32)
-
-	// //Random two PRDNumber in Zp
-	// r1Int := big.NewInt(0)
-	// r2Int := big.NewInt(0)
-	// r1 := privacy.RandBytes(32)
-	// r2 := privacy.RandBytes(32)
-	// r1Int.SetBytes(r1)
-	// r2Int.SetBytes(r2)
-	// r1Int.Mod(r1Int, privacy.Curve.Params().N)
-	// r2Int.Mod(r2Int, privacy.Curve.Params().N)
-	// r1 = r1Int.Bytes()
-	// r2 = r2Int.Bytes()
-
-	// //Calculate two Pedersen PedersenCommitment
-	// committemp1 := privacy.PedCom.CommitAtIndex(serialNumber, r1, 0)
-	// committemp2 := privacy.PedCom.CommitAtIndex(serialNumber, r2, 0)
-
-	// //Converting them to ECC Point
-	// committemp1Point, err := privacy.DecompressCommitment(committemp1)
-	// if err != nil {
-	// 	fmt.Println(err.Error())
-	// 	return false
-	// }
-	// committemp2Point, err := privacy.DecompressCommitment(committemp2)
-	// if err != nil {
-	// 	fmt.Println(err.Error())
-	// 	return false
-	// }
-
-	// //Compute inverse of commitment2 cuz we wanna calculate A1 + A2^-1 in ECC
-	// //Inverse of A(x,y) in ECC is A'(x,P-y) with P is order of field
-	// inverse_committemp2Point := new(privacy.privacy.EllipticPoint)
-	// inverse_committemp2Point.X = big.NewInt(0)
-	// inverse_committemp2Point.Y = big.NewInt(0)
-	// inverse_committemp2Point.X.SetBytes(committemp2Point.X.Bytes())
-	// inverse_committemp2Point.Y.SetBytes(committemp2Point.Y.Bytes())
-	// inverse_committemp2Point.Y.Sub(privacy.Curve.Params().P, committemp2Point.Y)
-
-	// //So, when we have A1+A2^-1, we need compute r = r1 - r2 (mod N), which is r of zero PedersenCommitment
-	// rInt := big.NewInt(0)
-	// rInt.Sub(r1Int, r2Int)
-	// rInt.Mod(rInt, privacy.Curve.Params().N)
-
-	// //Convert result of A1 + A2^-1 to ECC Point
-	// resPoint := privacy.privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
-	// resPoint.X, resPoint.Y = privacy.Curve.Add(committemp1Point.X, committemp1Point.Y, inverse_committemp2Point.X, inverse_committemp2Point.Y)
-
-	// //Convert it to byte array
-	// commitZero := resPoint.CompressPoint()
-
-	// //Compute Proof
-	// proofZero, z := Prove(commitZero, rInt.Bytes(), 0)
-
-	// //verify Proof
-	// boolValue := Verify(commitZero, proofZero, 0, z)
-	// fmt.Println("Test ProofIsZero resulit: ", boolValue)
-	// return boolValue
+	return false
 }

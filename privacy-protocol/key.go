@@ -83,7 +83,7 @@ func GenerateSpendingKey(seed []byte) SpendingKey {
 	return spendingKey
 }
 
-ToByte()
+// ToByte()
 
 // GeneratePublicKey computes an address corresponding with spendingKey
 // Pk : 33 bytes
@@ -95,7 +95,7 @@ func GeneratePublicKey(spendingKey []byte) PublicKey {
 	//Logger.log.Infof("p.X: %v\n", p.X)
 	//Logger.log.Infof("p.Y: %v\n", p.Y)
 	fmt.Printf("\n%v %v \n", p.X.Bytes(), p.Y.Bytes())
-	publicKey := p.CompressPoint()
+	publicKey := p.Compress()
 
 	return publicKey
 }
@@ -121,7 +121,7 @@ func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
 	p.X, p.Y = Curve.ScalarMult(generator.X, generator.Y, receivingKey)
 	fmt.Printf("Transmission key point: %+v\n ", p)
 	// transmissionKey := FromPointToByteArray(p)
-	transmissionKey := p.CompressPoint()
+	transmissionKey := p.Compress()
 	return transmissionKey
 }
 
@@ -171,7 +171,7 @@ func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
 
 	pubkey = new(EllipticPoint)
 
-	err = pubkey.DecompressPoint(pubKeyStr)
+	err = pubkey.Decompress(pubKeyStr)
 	if err != nil {
 		return nil, err
 	}

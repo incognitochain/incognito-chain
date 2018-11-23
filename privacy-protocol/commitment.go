@@ -1,4 +1,5 @@
 package privacy
+
 //
 //import (
 //	"fmt"

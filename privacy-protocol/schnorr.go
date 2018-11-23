@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 )
+
 //1
 
 //SignScheme contains some algorithms for digital signature scheme
@@ -33,7 +34,6 @@ type SchnPrivKey struct {
 type SchnSignature struct {
 	E, S1, S2 *big.Int
 }
-
 
 //KeyGen generates PriKey and PubKey
 func (priKey *SchnPrivKey) KeyGen() {

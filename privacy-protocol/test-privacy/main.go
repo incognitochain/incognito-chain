@@ -2,7 +2,7 @@ package main
 
 import (
 	//"fmt"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	//"github.com/ninjadotorg/constant/privacy-protocol"
 	//"math/big"
 
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
