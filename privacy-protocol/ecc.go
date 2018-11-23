@@ -4,6 +4,7 @@ import (
 	"crypto/elliptic"
 	"fmt"
 	"math/big"
+
 	"github.com/minio/blake2b-simd"
 )
 
@@ -11,19 +12,19 @@ import (
 var Curve = elliptic.P256()
 
 const (
-	PointBytesLenCompressed      = 33
-	PointCompressed         byte = 0x2
+	pointBytesLenCompressed      = 33
+	pointCompressed         byte = 0x2
 )
 
 //EllipticPointHelper contain some function for elliptic point
 type EllipticPointHelper interface {
 	InversePoint() (*EllipticPoint, error)
-	RandPoint(x, y *big.Int) *EllipticPoint
+	// RandPoint(x, y *big.Int) *EllipticPoint
 	Rand()
 	CompressPoint() []byte
 	DecompressPoint(compressPointBytes []byte) error
 	IsSafe() bool
-	ComputeYCoord(x *big.Int) *big.Int
+	ComputeYCoord()
 	HashPoint() EllipticPoint
 }
 
@@ -92,8 +93,6 @@ func (eccPoint EllipticPoint) InversePoint() (*EllipticPoint, error) {
 	return resPoint, nil
 }
 
-
-
 //Rand make object's value to random
 func (eccPoint *EllipticPoint) Rand() {
 	if eccPoint.X == nil {
@@ -126,8 +125,8 @@ func (eccPoint EllipticPoint) IsSafe() bool {
 // CompressPoint compresses key from 64 bytes to PointBytesLenCompressed bytes
 func (eccPoint EllipticPoint) CompressPoint() []byte {
 	if Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
-		b := make([]byte, 0, PointBytesLenCompressed)
-		format := PointCompressed
+		b := make([]byte, 0, pointBytesLenCompressed)
+		format := pointCompressed
 		if isOdd(eccPoint.Y) {
 			format |= 0x1
 		}
@@ -144,7 +143,7 @@ func (eccPoint *EllipticPoint) DecompressPoint(compressPointBytes []byte) error 
 	ybit := (format & 0x1) == 0x1
 	format &= ^byte(0x1)
 
-	if format != PointCompressed {
+	if format != pointCompressed {
 		return fmt.Errorf("invalid magic in compressed "+
 			"compressPoint bytes: %d", compressPointBytes[0])
 	}
@@ -250,7 +249,5 @@ func TestECC() bool {
 		return false
 	}
 	return true
-
-
 
 }

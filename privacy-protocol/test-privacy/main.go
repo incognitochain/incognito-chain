@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"runtime"
 
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge-optimization"
 
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 func main() {
@@ -68,7 +68,7 @@ func main() {
 	//
 	//tx, _ := transaction.CreateEmptyTxs()
 	//fmt.Printf("Transaction: %+v\n", tx)
-
+	//privacy.TestECC()
 	//privacy-protocol.Elcm.Setup()
 	//privacy-protocol.TestProofIsZero()
 	//// fmt.Println("Done")

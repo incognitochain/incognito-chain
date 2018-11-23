@@ -47,8 +47,6 @@ type ElCParams struct {
 //Elcm ...
 var Elcm ElCParams
 
-
-
 //GetHashOfValues get hash of n points in G append with input values
 //return blake_2b(G[0]||G[1]||...||G[CM_CAPACITY-1]||<values>)
 func (com ElCParams) GetHashOfValues(values [][]byte) []byte {
@@ -122,7 +120,7 @@ func (com *ElCParams) InitCommitment() {
 
 	com.G[0] = EllipticPoint{Curve.Params().Gx, Curve.Params().Gy}
 	for i := 1; i < CM_CAPACITY; i++ {
-		com.G[i] = HashPoint(com.G[i-1])
+		com.G[i] = com.G[i-1].HashPoint()
 	}
 
 	//TODO: hard code parameters
