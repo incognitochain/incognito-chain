@@ -1,6 +1,7 @@
 package zkp
 
 import (
+	"crypto/rand"
 	"fmt"
 	"math/big"
 	"time"
@@ -8,36 +9,72 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
-// PKOneOfManyProtocol is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
+// PKOneOfManyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
 // include Witness: CommitedValue, r []byte
-type PKOneOfManyProtocol struct {
-	witnesses [][]byte
+type PKOneOfManyWitness struct {
+	commitments []*privacy.EllipticPoint
+	rand        *big.Int
+	indexIsZero *int
 }
 
 // PKOneOfManyProof contains Proof's value
 type PKOneOfManyProof struct {
-	cl, ca, cb, cd []privacy.EllipticPoint
-	f, za, zb      []privacy.EllipticPoint
-	zd             privacy.EllipticPoint
-	//val1 EllipticPoint
+	commitments    []*privacy.EllipticPoint
+	cl, ca, cb, cd []*privacy.EllipticPoint
+	f, za, zb      []*big.Int
+	zd             *big.Int
 }
 
-// SetWitness sets Witness
-func (pro *PKOneOfManyProtocol) SetWitness(witnesses [][]byte) {
-	pro.witnesses = make([][]byte, len(witnesses))
-	for i := 0; i < len(witnesses); i++ {
-		pro.witnesses[i] = make([]byte, len(witnesses[i]))
-		copy(pro.witnesses[i], witnesses[i])
-	}
+// Set sets Witness
+func (wit *PKOneOfManyWitness) Set(
+	commitments []privacy.EllipticPoint,
+	rand big.Int,
+	indexIsZero int) {
+
+	wit.commitments = &commitments
+	wit.indexIsZero = &indexIsZero
+	wit.rand = &rand
+	// if wit.commitments == nil {
+	// 	make([]*privacy.EllipticPoint, len(commitments))
+	// }
+
+	// for i := 0; i < len(commitments); i++ {
+	// 	if wit.commitments[i].X == nil {
+	// 		wit.commitments[i].X = big.NewInt(0)
+	// 	}
+	// 	*(wit.commitments[i].X) = *(commitments[i].X)
+
+	// 	if wit.commitments[i].Y == nil {
+	// 		wit.commitments[i].Y = big.NewInt(0)
+	// 	}
+	// 	*(wit.commitments[i].Y) = *(commitments[i].Y)
+	// }
+
+	// copy(wit.rand, rand)
+	// wit.indexIsZero = indexIsZero
+
+}
+
+// Set sets Proof
+func (pro *PKOneOfManyProof) Set(
+	commitments []privacy.EllipticPoint,
+	cl, ca, cb, cd []privacy.EllipticPoint,
+	f, za, zb []big.Int,
+	zd big.Int) {
+
+	pro.commitments = &commitments
+	pro.cl, pro.ca, pro.cb, pro.cd = &cl, &ca, &cb, &cd
+	pro.f, pro.za, pro.zb = &f, &za, &zb
+	pro.zd = &zd
 }
 
 // Prove creates proof for one out of many commitments containing 0
-func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int, commitmentValue []byte, rand []byte, index byte) (*PKOneOfManyProof, error) {
-	proof := new(PKOneOfManyProof)
+func (wit *PKOneOfManyWitness) Prove( /*commitments [][]byte, indexIsZero int, commitmentValue []byte, index byte*/ ) (*PKOneOfManyProof, error) {
+	// proof := new(PKOneOfManyProof)
 
 	// Check the number of Commitment list's elements
 	// N = 2^n
-	N := len(commitments)
+	N := len(wit.commitments)
 	temp := 1
 	n := 0
 	for temp < N {
@@ -60,156 +97,169 @@ func (pro *PKOneOfManyProtocol) Prove(commitments [][]byte, indexIsZero int, com
 	}
 
 	// represent indexIsZero in binary
-	indexIsZeroBinary := privacy.ConvertIntToBinary(indexIsZero, n)
+	indexIsZeroBinary := privacy.ConvertIntToBinary(*wit.indexIsZero, n)
 
 	//
-	r := make([][]byte, n)
-	a := make([][]byte, n)
-	s := make([][]byte, n)
-	t := make([][]byte, n)
-	u := make([][]byte, n)
+	r := make([]big.Int, n)
+	a := make([]big.Int, n)
+	s := make([]big.Int, n)
+	t := make([]big.Int, n)
+	u := make([]big.Int, n)
 
-	proof.cl = make([][]byte, n)
-	proof.ca = make([][]byte, n)
-	proof.cb = make([][]byte, n)
-	proof.cd = make([][]byte, n)
+	cl := make([]privacy.EllipticPoint, n)
+	ca := make([]privacy.EllipticPoint, n)
+	cb := make([]privacy.EllipticPoint, n)
+	cd := make([]privacy.EllipticPoint, n)
 
 	for j := n - 1; j >= 0; j-- {
 		// Generate random numbers
-		r[j] = make([]byte, 32)
-		r[j] = privacy.RandBytes(32)
-		a[j] = make([]byte, 32)
-		a[j] = privacy.RandBytes(32)
-		s[j] = make([]byte, 32)
-		s[j] = privacy.RandBytes(32)
-		t[j] = make([]byte, 32)
-		t[j] = privacy.RandBytes(32)
-		u[j] = make([]byte, 32)
-		u[j] = privacy.RandBytes(32)
+		r[j], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
+		a[j], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
+		s[j], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
+		t[j], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
+		u[j], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
+		// r[j] = make([]byte, 32)
+		// r[j] = privacy.RandBytes(32)
+		// a[j] = make([]byte, 32)
+		// a[j] = privacy.RandBytes(32)
+		// s[j] = make([]byte, 32)
+		// s[j] = privacy.RandBytes(32)
+		// t[j] = make([]byte, 32)
+		// t[j] = privacy.RandBytes(32)
+		// u[j] = make([]byte, 32)
+		// u[j] = privacy.RandBytes(32)
 
 		// convert indexIsZeroBinary[j] to big.Int
 		indexInt := big.NewInt(int64(indexIsZeroBinary[j]))
 
 		// Calculate cl, ca, cb, cd
 		// cl = Com(l, r)
-		proof.cl[j] = make([]byte, 34)
-		proof.cl[j] = privacy.Elcm.CommitSpecValue(indexInt.Bytes(), r[j], index)
+		cl[j] = privacy.PedCom.CommitAtIndex(indexInt, r[j], index)
 
 		// ca = Com(a, s)
-		proof.ca[j] = make([]byte, 34)
-		proof.ca[j] = privacy.Elcm.CommitSpecValue(a[j], s[j], index)
+		ca[j] = privacy.PedCom.CommitAtIndex(a[j], s[j], index)
 
 		// cb = Com(la, t)
 		la := new(big.Int)
-		la.Mul(indexInt, new(big.Int).SetBytes(a[j]))
+		la.Mul(indexInt, a[j])
 		la.Mod(la, privacy.Curve.Params().N)
-		proof.cb[j] = make([]byte, 34)
-		proof.cb[j] = privacy.Elcm.CommitSpecValue(la.Bytes(), t[j], index)
+		cb[j] = privacy.PedCom.CommitAtIndex(la, t[j], index)
 	}
 
 	//
 	// Calculate: cd_k = ci^pi,k
-	commitPoints := make([]*privacy.EllipticPoint, N)
+	commitPoints := make([]privacy.EllipticPoint, N)
 	for k := 0; k < n; k++ {
 		// Calculate pi,k which is coefficient of x^k in polynomial pi(x)
 		res := privacy.EllipticPoint{X: big.NewInt(0), Y: big.NewInt(0)}
 		tmp := privacy.EllipticPoint{X: big.NewInt(0), Y: big.NewInt(0)}
+
 		var err error
 
 		for i := 0; i < N; i++ {
-			commitPoints[i] = new(privacy.EllipticPoint)
-			commitPoints[i], err = privacy.DecompressCommitment(commitments[i])
+			// commitPoints[i] = new(privacy.EllipticPoint)
+			// commitPoints[i], err = privacy.DecompressCommitment(commitments[i])
 			//fmt.Printf("i %v k %v %v\n", i, k, *commitPoints[i])
-			if err != nil {
-				return nil, err
-			}
+			// if err != nil {
+			// 	return nil, err
+			// }
 
 			iBinary := privacy.ConvertIntToBinary(i, n)
 			pik := GetCoefficient(iBinary, k, n, a, indexIsZeroBinary)
 			//fmt.Printf("i %v k %v n %v %v\n", i, k, n, pik)
-			tmp.X, tmp.Y = privacy.Curve.ScalarMult(commitPoints[i].X, commitPoints[i].Y, pik.Bytes())
+			tmp.X, tmp.Y = privacy.Curve.ScalarMult(wit.commitments[i].X, wit.commitments[i].Y, pik.Bytes())
 			res.X, res.Y = privacy.Curve.Add(res.X, res.Y, tmp.X, tmp.Y)
 			// fmt.Printf("i %v k %v %v\n", i, k, tmp)
 		}
 
-		comZero := privacy.Elcm.CommitSpecValue(big.NewInt(0).Bytes(), u[k], index)
-		comZeroPoint, err := privacy.DecompressCommitment(comZero)
-		if err != nil {
-			return nil, err
-		}
-		res.X, res.Y = privacy.Curve.Add(res.X, res.Y, comZeroPoint.X, comZeroPoint.Y)
-		// fmt.Printf("%v ", k)
-		// fmt.Println(res)
-		cd := res.CompressPoint()
-		proof.cd[k] = make([]byte, 33)
-		copy(proof.cd[k], cd)
+		comZero := privacy.PedCom.CommitAtIndex(big.NewInt(0), u[k], index)
+		// comZeroPoint, err := privacy.DecompressCommitment(comZero)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		res.X, res.Y = privacy.Curve.Add(res.X, res.Y, comZero.X, comZero.Y)
+		cd[k] = res
 	}
 
 	// Calculate x
 	x := big.NewInt(0)
 
 	for j := 0; j <= n-1; j++ {
-		x.SetBytes(privacy.Elcm.GetHashOfValues([][]byte{x.Bytes(), proof.cl[j], proof.ca[j], proof.cb[j], proof.cd[j]}))
+		*x = *GenerateChallenge([][]byte{x.Bytes(), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
+		// x.SetBytes(privacy.Elcm.GetHashOfValues([][]byte{x.Bytes(), cl[j], ca[j], cb[j], cd[j]}))
+		x.Mod(x, privacy.Curve.Params().N)
 	}
-	x.Mod(x, privacy.Curve.Params().N)
 
 	// Calculate za, zb zd
-	proof.f = make([][]byte, n)
-	proof.za = make([][]byte, n)
-	proof.zb = make([][]byte, n)
-	proof.zd = make([]byte, 32)
+
+	za := make([]big.Int, n)
+	zb := make([]big.Int, n)
+	zd := make(big.Int)
+	f := make([]big.Int, n)
 
 	for j := n - 1; j >= 0; j-- {
 		// f = lx + a
-		fInt := big.NewInt(0)
-		fInt.Mul(big.NewInt(int64(indexIsZeroBinary[j])), x)
-		fInt.Add(fInt, new(big.Int).SetBytes(a[j]))
-		fInt.Mod(fInt, privacy.Curve.Params().N)
-		proof.f[j] = make([]byte, 32)
-		proof.f[j] = fInt.Bytes()
+		// fInt := big.NewInt(0)
+		f[j].Mul(big.NewInt(int64(indexIsZeroBinary[j])), x)
+		// fInt.Mul(big.NewInt(int64(indexIsZeroBinary[j])), x)
+		f[j].Add(f[j], a[j])
+		// fInt.Add(fInt, new(big.Int).SetBytes(a[j]))
+		f[j].Mod(f[j], privacy.Curve.Params().N)
+		// fInt.Mod(fInt, privacy.Curve.Params().N)
+		// f[j] = make([]byte, 32)
+		// f[j] = fInt.Bytes()
 
 		// za = s + rx
-		zaInt := big.NewInt(0)
-		zaInt.Mul(new(big.Int).SetBytes(r[j]), x)
-		zaInt.Add(zaInt, new(big.Int).SetBytes(s[j]))
-		proof.za[j] = make([]byte, 32)
-		proof.za[j] = zaInt.Bytes()
+		za[j].Mul(r[j], x)
+		// zaInt := big.NewInt(0)
+		// zaInt.Mul(new(big.Int).SetBytes(r[j]), x)
+		za[j].Add(za[j], s[j])
+		// zaInt.Add(zaInt, new(big.Int).SetBytes(s[j]))
+		// za[j] = make([]byte, 32)
+		// za[j] = zaInt.Bytes()
 
 		// zb = r(x - f) + t
-		zbInt := big.NewInt(0)
-		zbInt.Sub(privacy.Curve.Params().N, fInt)
-		zbInt.Add(zbInt, x)
-		zbInt.Mul(zbInt, new(big.Int).SetBytes(r[j]))
-		zbInt.Add(zbInt, new(big.Int).SetBytes(t[j]))
-		zbInt.Mod(zbInt, privacy.Curve.Params().N)
-		proof.zb[j] = make([]byte, 32)
-		proof.zb[j] = zbInt.Bytes()
+		// zbInt := big.NewInt(0)
+		zb[j].Sub(privacy.Curve.Params().N, f[j])
+		// zbInt.Sub(privacy.Curve.Params().N, fInt)
+		zb[j].Add(zb[j], x)
+		// zbInt.Add(zbInt, x)
+		zb[j].Mul(zb[j], r[j])
+		// zbInt.Mul(zbInt, new(big.Int).SetBytes(r[j]))
+		zb[j].Add(zb[j], t[j])
+		// zbInt.Add(zbInt, new(big.Int).SetBytes(t[j]))
+		zb[j].Mod(zb[j], privacy.Curve.Params().N)
+		// zbInt.Mod(zbInt, privacy.Curve.Params().N)
+		// zb[j] = make([]byte, 32)
+		// zb[j] = zbInt.Bytes()
 
 	}
 
-	zdInt := big.NewInt(0)
-	zdInt.Exp(x, big.NewInt(int64(n)), privacy.Curve.Params().N)
-	zdInt.Mul(zdInt, new(big.Int).SetBytes(rand))
+	// zdInt := big.NewInt(0)
+	zd.Exp(x, big.NewInt(int64(n)), privacy.Curve.Params().N)
+	zd.Mul(zd, wit.rand)
+	// zdInt.Mul(zdInt, new(big.Int).SetBytes(rand))
 
 	uxInt := big.NewInt(0)
 	sumInt := big.NewInt(0)
 	for k := 0; k < n; k++ {
 		uxInt.Exp(x, big.NewInt(int64(k)), privacy.Curve.Params().N)
-		uxInt.Mul(uxInt, new(big.Int).SetBytes(u[k]))
+		uxInt.Mul(uxInt, u[k])
 		sumInt.Add(sumInt, uxInt)
 		sumInt.Mod(sumInt, privacy.Curve.Params().N)
 	}
 
 	sumInt.Sub(privacy.Curve.Params().N, sumInt)
 
-	zdInt.Add(zdInt, sumInt)
-	zdInt.Mod(zdInt, privacy.Curve.Params().N)
-	proof.zd = zdInt.Bytes()
-
-	return proof, nil
+	zd.Add(zd, sumInt)
+	zd.Mod(zd, privacy.Curve.Params().N)
+	// zd = zdInt.Bytes()
+	var proof PKOneOfManyProof
+	proof.Set(&wit.commitments, &cl, &ca, &cb, &cd, &f, &za, &zb, &zd)
+	return &proof, nil
 }
 
-func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyProof, index byte, rand []byte) bool {
+func (pro *PKOneOfManyProof) Verify(commitments [][]byte, proof *PKOneOfManyProof, index byte, rand []byte) bool {
 	N := len(commitments)
 
 	temp := 1
@@ -225,9 +275,15 @@ func (pro *PKOneOfManyProtocol) Verify(commitments [][]byte, proof *PKOneOfManyP
 	var err error
 
 	// Calculate x
-	x := big.NewInt(0)
+	// x := big.NewInt(0)
+	// for j := 0; j <= n-1; j++ {
+	// 	x.SetBytes(privacy.Elcm.GetHashOfValues([][]byte{x.Bytes(), proof.cl[j], proof.ca[j], proof.cb[j], proof.cd[j]}))
+	// 	x.Mod(x, privacy.Curve.Params().N)
+	// }
+
 	for j := 0; j <= n-1; j++ {
-		x.SetBytes(privacy.Elcm.GetHashOfValues([][]byte{x.Bytes(), proof.cl[j], proof.ca[j], proof.cb[j], proof.cd[j]}))
+		*x = *GenerateChallenge([][]byte{x.Bytes(), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
+		// x.SetBytes(privacy.Elcm.GetHashOfValues([][]byte{x.Bytes(), cl[j], ca[j], cb[j], cd[j]}))
 		x.Mod(x, privacy.Curve.Params().N)
 	}
 

@@ -2,28 +2,25 @@ package zkp
 
 import (
 	"crypto/rand"
-	"fmt"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
-type PKComZeroProtocol struct {
-	Witness PKComZeroWitnees
-	Proof PKComZeroProof
-}
+// type PKComZeroProtocol struct {
+// 	Witness PKComZeroWitnees
+// 	Proof   PKComZeroProof
+// }
 
 type PKComZeroProof struct {
 	commitmentValue *privacy.EllipticPoint //statement
-	index byte //statement
+	index           byte                   //statement
 	commitmentZeroS *privacy.EllipticPoint
-	z *big.Int
-	index byte
+	z               *big.Int
 }
 
 type PKComZeroWitnees struct {
 	commitmentRnd *big.Int
-	// index byte
 }
 
 /*Protocol for opening a PedersenCommitment to 0
@@ -50,16 +47,44 @@ Verify:
 )
 */
 
-func (pro *PKComZeroProtocol) SetWitness(witness PKComZeroWitnees) {
-	pro.Witness = witness
+// SetValue dosomethings
+func (wit *PKComZeroWitnees) SetValue(commitmentRnd *big.Int) {
+	pro.commitmentRnd = commitmentRnd
 }
 
-func (pro *PKComZeroProtocol) SetProof(proof PKComZeroProof){
-	pro.Proof = proof
+// SetValue dosomethings
+func (pro *PKComZeroProof) SetValue(
+	commitmentValue *privacy.EllipticPoint, //statement
+	index byte, //statement
+	commitmentZeroS *privacy.EllipticPoint,
+	z *big.Int) {
+
+	if pro.commitmentValue == nil {
+		pro.commitmentValue = new(privacy.EllipticPoint)
+		pro.commitmentValue.X = big.NewInt(0)
+		pro.commitmentValue.Y = big.NewInt(0)
+	}
+	*(pro.commitmentValue.X) = *(commitmentValue.X)
+	*(pro.commitmentValue.Y) = *(commitmentValue.Y)
+
+	if pro.commitmentZeroS == nil {
+		pro.commitmentZeroS = new(privacy.EllipticPoint)
+		pro.commitmentZeroS.X = big.NewInt(0)
+		pro.commitmentZeroS.Y = big.NewInt(0)
+	}
+	*(pro.commitmentZeroS.X) = *(commitmentZeroS.X)
+	*(pro.commitmentZeroS.Y) = *(commitmentZeroS.Y)
+
+	pro.index = index
+	if pro.z == nil {
+		pro.z = big.NewInt(0)
+	}
+	*(pro.z) = *z
+
 }
 
 //Prove generate a Proof prove that the PedersenCommitment is zero
-func (pro *PKComZeroProtocol) Prove(commitmentValue *privacy.EllipticPoint, index byte) (*PKComZeroProof, error) {//???
+func (wit PKComZeroWitnees) Prove(commitmentValue *privacy.EllipticPoint, index byte) (*PKComZeroProof, error) { //???
 	//var x big.Int
 	//s is a random number in Zp, with p is N, which is order of base point of privacy.Curve
 	sRnd, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
@@ -71,29 +96,25 @@ func (pro *PKComZeroProtocol) Prove(commitmentValue *privacy.EllipticPoint, inde
 	commitmentZeroS := privacy.PedCom.CommitAtIndex(big.NewInt(0), sRnd, index)
 
 	//Generate challenge x in Zp
-	xChallenge:=GenerateChallenge([][]{pro.Witness.commitmentValue.Bytes()}))
+	xChallenge := GenerateChallenge([][]byte{commitmentValue.Bytes()})
 
 	//Calculate z=r*x + s (mod N)
 	z := big.NewInt(0)
-	*z = *(pro.Witness.commitmentRnd)
+	*z = *(wit.commitmentRnd)
 	z.Mul(z, xChallenge)
 	z.Mod(z, privacy.Curve.Params().N)
 	z.Add(z, sRnd)
 	z.Mod(z, privacy.Curve.Params().N)
 
 	proof := new(PKComZeroProof)
-	proof.commitmentZeroS = &commitmentZeroS
-	proof.z = z
-	proof.index = new(byte)
-	*(proof.index) = index
-	//return B, z
-	return proof
+	proof.SetValue(commitmentValue, index, commitmentZeroS, z)
+	return proof, nil
 }
 
 //Verify verify that under PedersenCommitment is zero
-func (pro *PKComZeroProtocol) Verify() bool {
+func (pro *PKComZeroProof) Verify() bool {
 	//Generate challenge x in Zp
-	xChallenge:=GenerateChallenge([][]{commitmentValue.Bytes()}))
+	xChallenge := GenerateChallenge([][]byte{pro.commitmentValue.Bytes()})
 
 	//convert commitmentValue []byte to Point in ECC
 	// commitmentValuePoint, err := privacy.DecompressKey(commitmentValue)
@@ -109,12 +130,12 @@ func (pro *PKComZeroProtocol) Verify() bool {
 	verifyPoint.X = big.NewInt(0)
 	verifyPoint.Y = big.NewInt(0)
 	//Set verifyPoint = A
-	*(verifyPoint.X) = *(pro.Proof.commitmentValue.X)
-	*(verifyPoint.Y) = *(pro.Proof.commitmentValue.Y)
+	*(verifyPoint.X) = *(pro.commitmentValue.X)
+	*(verifyPoint.Y) = *(pro.commitmentValue.Y)
 	//verifyPoint = verifyPoint.x
 	verifyPoint.X, verifyPoint.Y = privacy.Curve.ScalarMult(verifyPoint.X, verifyPoint.Y, xChallenge.Bytes())
 	//verifyPoint = verifyPoint + B
-	verifyPoint.X, verifyPoint.Y = privacy.Curve.Add(verifyPoint.X, verifyPoint.Y, pro.Proof.commitmentZeroS.X, pro.Proof.commitmentZeroS.Y)
+	verifyPoint.X, verifyPoint.Y = privacy.Curve.Add(verifyPoint.X, verifyPoint.Y, pro.commitmentZeroS.X, pro.commitmentZeroS.Y)
 
 	//Generate Zero number
 	zeroInt := big.NewInt(0)
