@@ -106,7 +106,7 @@ type MessageListeners struct {
 	OnBlockSig      func(p *PeerConn, msg *wire.MessageBlockSig)
 	OnGetChainState func(p *PeerConn, msg *wire.MessageGetChainState)
 	OnChainState    func(p *PeerConn, msg *wire.MessageChainState)
-	OnRegistration  func(p *PeerConn, msg *wire.MessageRegistration)
+	//OnRegistration  func(p *PeerConn, msg *wire.MessageRegistration)
 	OnSwapRequest   func(p *PeerConn, msg *wire.MessageSwapRequest)
 	OnSwapSig       func(p *PeerConn, msg *wire.MessageSwapSig)
 	OnSwapUpdate    func(p *PeerConn, msg *wire.MessageSwapUpdate)

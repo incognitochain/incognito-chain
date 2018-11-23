@@ -10,7 +10,7 @@ type LoanWithdraw struct {
 }
 
 type TxLoanWithdraw struct {
-	TxWithFee
+	Tx
 	*LoanWithdraw // data for a loan response
 }
 
@@ -34,7 +34,7 @@ func CreateTxLoanWithdraw(
 	}
 
 	txLoanWithdraw := &TxLoanWithdraw{
-		TxWithFee:    TxWithFee{Tx: tx},
+		Tx:           *tx,
 		LoanWithdraw: loanWithdraw,
 	}
 

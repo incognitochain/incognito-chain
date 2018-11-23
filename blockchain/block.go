@@ -92,7 +92,9 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				_ = json.Unmarshal(txTempJson, &submitGOVProposalTx)
 				self.Transactions = append(self.Transactions, submitGOVProposalTx)
 			}
-		case common.TxVoteDCBProposal: { VoteDCBProposalTx := &transaction.TxVoteDCBProposal{}
+		case common.TxVoteDCBProposal:
+			{
+				VoteDCBProposalTx := &transaction.TxVoteDCBProposal{}
 				_ = json.Unmarshal(txTempJson, &VoteDCBProposalTx)
 				self.Transactions = append(self.Transactions, VoteDCBProposalTx)
 			}
@@ -210,6 +212,7 @@ func (block *Block) updateGOVConstitution(tx transaction.Transaction, blockgen *
 	block.Header.GOVConstitution.GOVParams = GOVParams{
 		proposalParams.SalaryPerTx,
 		proposalParams.BasicSalary,
+		proposalParams.TxFee,
 		&SellingBonds{
 			proposalParams.SellingBonds.BondsToSell,
 			proposalParams.SellingBonds.BondPrice,
@@ -217,6 +220,10 @@ func (block *Block) updateGOVConstitution(tx transaction.Transaction, blockgen *
 			proposalParams.SellingBonds.BuyBackPrice,
 			proposalParams.SellingBonds.StartSellingAt,
 			proposalParams.SellingBonds.SellingWithin,
+		},
+		&RefundInfo{
+			proposalParams.RefundInfo.ThresholdToLargeTx,
+			proposalParams.RefundInfo.RefundAmount,
 		},
 	}
 	return nil

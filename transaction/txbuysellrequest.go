@@ -7,41 +7,52 @@ import (
 
 type TxBuySellRequest struct {
 	*RequestInfo
-	*Tx // fee + amount to pay for buying bonds/govs
+	*TxCustomToken // fee + amount to pay for buying bonds/govs
 	// TODO: signature?
 }
 
 type RequestInfo struct {
 	PaymentAddress privacy.PaymentAddress
-	AssetType      string
+	AssetType      common.Hash // token id
 	Amount         uint64
 	BuyPrice       uint64 // in Constant unit
+
+	SaleID []byte // only when requesting to DCB
 }
 
 // TxCreateBuySellRequest
 // senderKey and paymentInfo is for paying fee
-func TxCreateBuySellRequest(
-	feeArgs FeeArgs,
+func CreateBuySellRequestTx(
+	senderKey *privacy.SpendingKey,
+	paymentInfo []*privacy.PaymentInfo,
+	rts map[byte]*common.Hash,
+	usableTx map[byte][]*Tx,
+	commitments map[byte]([][]byte),
+	fee uint64,
+	senderChainID byte,
+	tokenParams *CustomTokenParamTx,
+	listCustomTokens map[common.Hash]TxCustomToken,
 	requestInfo *RequestInfo,
 ) (*TxBuySellRequest, error) {
 	// Create tx for fee &
-	tx, err := CreateTx(
-		feeArgs.SenderKey,
-		feeArgs.PaymentInfo,
-		feeArgs.Rts,
-		feeArgs.UsableTx,
-		feeArgs.Commitments,
-		feeArgs.Fee,
-		feeArgs.SenderChainID,
-		false,
+	tx, err := CreateTxCustomToken(
+		senderKey,
+		paymentInfo,
+		rts,
+		usableTx,
+		commitments,
+		fee,
+		senderChainID,
+		tokenParams,
+		listCustomTokens,
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	txbuySellRequest := &TxBuySellRequest{
-		RequestInfo: requestInfo,
-		Tx:          tx,
+		RequestInfo:   requestInfo,
+		TxCustomToken: tx,
 	}
 	txbuySellRequest.Type = common.TxBuyFromGOVRequest
 	return txbuySellRequest, nil
@@ -51,7 +62,7 @@ func (tx *TxBuySellRequest) Hash() *common.Hash {
 	// get hash of tx
 	record := tx.Tx.Hash().String()
 
-	record += tx.AssetType
+	record += tx.AssetType.String()
 	record += string(tx.Amount)
 	record += string(tx.BuyPrice)
 
@@ -62,7 +73,7 @@ func (tx *TxBuySellRequest) Hash() *common.Hash {
 
 func (tx *TxBuySellRequest) ValidateTransaction() bool {
 	// validate for normal tx
-	if !tx.Tx.ValidateTransaction() {
+	if !tx.TxCustomToken.ValidateTransaction() {
 		return false
 	}
 	return true

@@ -68,7 +68,8 @@ func (db *db) GetLoanTxs(loanID []byte) ([][]byte, error) {
 	iter := db.lvdb.NewIterator(util.BytesPrefix([]byte(loanIdPrefix)), nil)
 	results := [][]byte{}
 	for iter.Next() {
-		value := iter.Value()
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
 		results = append(results, value)
 	}
 	iter.Release()
