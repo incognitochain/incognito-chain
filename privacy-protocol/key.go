@@ -83,6 +83,8 @@ func GenerateSpendingKey(seed []byte) SpendingKey {
 	return spendingKey
 }
 
+ToByte()
+
 // GeneratePublicKey computes an address corresponding with spendingKey
 // Pk : 33 bytes
 func GeneratePublicKey(spendingKey []byte) PublicKey {

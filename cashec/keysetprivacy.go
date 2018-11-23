@@ -21,6 +21,7 @@ GenerateKey - generate key set from seed byte[]
 */
 func (self *KeySet) GenerateKey(seed []byte) *KeySet {
 	self.PrivateKey = privacy.GenerateSpendingKey(seed)
+	.ToByte
 	self.PaymentAddress = privacy.GeneratePaymentAddress(self.PrivateKey[:])
 	self.ReadonlyKey = privacy.GenerateViewingKey(self.PrivateKey[:])
 	return self
