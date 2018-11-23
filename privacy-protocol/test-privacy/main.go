@@ -5,7 +5,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	//"math/big"
 
-	//"runtime"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 func main() {
@@ -140,7 +140,6 @@ func main() {
 	//zkp.TestPKComProduct()
 	//privacy.Curve.Params().G
 
-
 	//zkp.TestPKComZeroOne()
 
 	/*----------------- TEST PCM SINGLETON -----------------*/
@@ -166,12 +165,5 @@ func main() {
 
 	/*----------------- TEST SIGNATURE -----------------*/
 	privacy.TestSchn()
-
-
-
-
-
-
-
 
 }

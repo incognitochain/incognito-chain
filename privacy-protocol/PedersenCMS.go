@@ -57,18 +57,17 @@ type PCParams struct {
 //}
 
 // NewPedersenParams creates new generators
-func NewPedersenParams() PCParams{
+func NewPedersenParams() PCParams {
 	var pcm PCParams
 	pcm.G = make([]EllipticPoint, PCM_CAPACITY)
 	pcm.G[0] = EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
 	for i := 1; i < PCM_CAPACITY; i++ {
-		pcm.G[i] = pcm.G[i-1].HashPoint()
+		pcm.G[i] = pcm.G[i-1].Hash()
 	}
 	return pcm
 }
 
-
-var PedCom  = NewPedersenParams()
+var PedCom = NewPedersenParams()
 
 //GetHashOfValues get hash of n points in G append with input values
 //return blake_2b(G[0]||G[1]||...||G[PCM_CAPACITY-1]||<values>)
@@ -209,7 +208,8 @@ func (com PCParams) CommitAtIndex(value, rand big.Int, index byte) EllipticPoint
 //00: Test generate commitment for four random value and show that on console
 //01: Test generate commitment for special value and its random value in special index
 func TestCommitment(testCode byte) bool {
-	//Pcm := GetPedersenParams()
+
+	Pcm := NewPedersenParams()
 	switch testCode {
 	case 0: //Generate commitment for 4 random value
 		//Generate 4 random value
@@ -226,11 +226,11 @@ func TestCommitment(testCode byte) bool {
 		commitmentAll := Pcm.CommitAll([PCM_CAPACITY]big.Int{*value1, *value2, *value3, *valuer})
 		fmt.Println("Pedersen Commitment point: ", commitmentAll)
 
-		cmBytes := commitmentAll.CompressPoint()
+		cmBytes := commitmentAll.Compress()
 		fmt.Println("Pedersen Commitment bytes: ", cmBytes)
 
 		cmPoint := new(EllipticPoint)
-		cmPoint.DecompressPoint(cmBytes)
+		cmPoint.Decompress(cmBytes)
 		fmt.Println("Pedersen Commitment decompress: ", cmPoint)
 
 		break
@@ -246,11 +246,11 @@ func TestCommitment(testCode byte) bool {
 
 		fmt.Println("Pedersen Commitment value: ", commitmentSpec)
 
-		cmBytes := commitmentSpec.CompressPoint()
+		cmBytes := commitmentSpec.Compress()
 		fmt.Println("Pedersen Commitment bytes: ", cmBytes)
 
 		cmPoint := new(EllipticPoint)
-		cmPoint.DecompressPoint(cmBytes)
+		cmPoint.Decompress(cmBytes)
 		fmt.Println("Pedersen Commitment decompress: ", cmPoint)
 		break
 	}
