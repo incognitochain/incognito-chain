@@ -208,6 +208,7 @@ func (com PCParams) CommitAtIndex(value, rand big.Int, index byte) EllipticPoint
 //00: Test generate commitment for four random value and show that on console
 //01: Test generate commitment for special value and its random value in special index
 func TestCommitment(testCode byte) bool {
+
 	Pcm := NewPedersenParams()
 	switch testCode {
 	case 0: //Generate commitment for 4 random value
@@ -255,3 +256,5 @@ func TestCommitment(testCode byte) bool {
 	}
 	return true
 }
+
+
