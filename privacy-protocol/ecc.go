@@ -18,17 +18,18 @@ const (
 
 //EllipticPointHelper contain some function for elliptic point
 type EllipticPointHelper interface {
-	InversePoint() (*EllipticPoint, error)
+	Inverse() (*EllipticPoint, error)
 	// RandPoint(x, y *big.Int) *EllipticPoint
-	Rand()
-	CompressPoint() []byte
-	DecompressPoint(compressPointBytes []byte) error
+	Randomize()
+	Compress() []byte
+	Decompress(compressPointBytes []byte) error
 	IsSafe() bool
-	ComputeYCoord()
-	HashPoint() EllipticPoint
+	ComputeOrdinate()
+	Hash() EllipticPoint
 }
 
-// EllipticPoint represents an point of elliptic curve
+// EllipticPoint represents an point of elliptic curve,
+// which contains X, Y. X is Abscissa, Y is Ordinate
 type EllipticPoint struct {
 	X, Y *big.Int
 }
@@ -69,8 +70,8 @@ func (eccPoint *EllipticPoint) ComputeYCoord() error {
 	return nil
 }
 
-// InversePoint return inverse point of ECC Point input
-func (eccPoint EllipticPoint) InversePoint() (*EllipticPoint, error) {
+// Inverse return inverse point of ECC Point input
+func (eccPoint EllipticPoint) Inverse() (*EllipticPoint, error) {
 	//Check that input is ECC point
 	if !Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
 		return nil, fmt.Errorf("Input is not ECC Point")
@@ -93,8 +94,8 @@ func (eccPoint EllipticPoint) InversePoint() (*EllipticPoint, error) {
 	return resPoint, nil
 }
 
-//Rand make object's value to random
-func (eccPoint *EllipticPoint) Rand() {
+// Randomize make object's value to random
+func (eccPoint *EllipticPoint) Randomize() {
 	if eccPoint.X == nil {
 		eccPoint.X = big.NewInt(0)
 	}
@@ -122,8 +123,8 @@ func (eccPoint EllipticPoint) IsSafe() bool {
 	return true
 }
 
-// CompressPoint compresses key from 64 bytes to PointBytesLenCompressed bytes
-func (eccPoint EllipticPoint) CompressPoint() []byte {
+// Compress compresses key from 64 bytes to PointBytesLenCompressed bytes
+func (eccPoint EllipticPoint) Compress() []byte {
 	if Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
 		b := make([]byte, 0, pointBytesLenCompressed)
 		format := pointCompressed
@@ -136,9 +137,9 @@ func (eccPoint EllipticPoint) CompressPoint() []byte {
 	return nil
 }
 
-// DecompressPoint decompresses a byte array, which was created by CompressPoint func,
+// Decompress decompresses a byte array, which was created by CompressPoint func,
 // to a point on the given curve.
-func (eccPoint *EllipticPoint) DecompressPoint(compressPointBytes []byte) error {
+func (eccPoint *EllipticPoint) Decompress(compressPointBytes []byte) error {
 	format := compressPointBytes[0]
 	ybit := (format & 0x1) == 0x1
 	format &= ^byte(0x1)
@@ -203,8 +204,8 @@ func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	return y, nil
 }
 
-// HashPoint derives new elliptic point from another elliptic point using hash function
-func (eccPoint EllipticPoint) HashPoint() EllipticPoint {
+// Hash derives new elliptic point from another elliptic point using hash function
+func (eccPoint EllipticPoint) Hash() EllipticPoint {
 	// res.X = hash(g.X), res.Y = sqrt(res.X^3 - 3X + B)
 	var res = new(EllipticPoint)
 	res.X = big.NewInt(0)
@@ -214,7 +215,7 @@ func (eccPoint EllipticPoint) HashPoint() EllipticPoint {
 		hashMachine := blake2b.New256()
 		hashMachine.Write(res.X.Bytes())
 		res.X.SetBytes(hashMachine.Sum(nil))
-		res.Y = computeYCoord(res.X)
+		res.ComputeYCoord()
 		if (res.Y != nil) && (Curve.IsOnCurve(res.X, res.Y)) {
 			break
 		}
@@ -233,7 +234,7 @@ func (eccPoint EllipticPoint) HashPoint() EllipticPoint {
 func TestECC() bool {
 	//Test compress && decompress
 	eccPoint := new(EllipticPoint)
-	eccPoint.Rand()
+	eccPoint.Randomize()
 	if !Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
 		return false
 	}
@@ -242,9 +243,9 @@ func TestECC() bool {
 		return false
 	}
 	fmt.Printf("Safe!")
-	compressBytes := eccPoint.CompressPoint()
+	compressBytes := eccPoint.Compress()
 	eccPointDecompressed := new(EllipticPoint)
-	err := eccPointDecompressed.DecompressPoint(compressBytes)
+	err := eccPointDecompressed.Decompress(compressBytes)
 	if err != nil {
 		return false
 	}

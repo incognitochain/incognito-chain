@@ -542,7 +542,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnGetChainState: self.OnGetChainState,
 			OnChainState:    self.OnChainState,
 			//
-			OnRegistration: self.OnRegistration,
+			//OnRegistration: self.OnRegistration,
 			OnSwapRequest:  self.OnSwapRequest,
 			OnSwapSig:      self.OnSwapSig,
 			OnSwapUpdate:   self.OnSwapUpdate,
@@ -589,14 +589,14 @@ func (self Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Info("Receive a new transaction END")
 }
 
-func (self Server) OnRegistration(peer *peer.PeerConn, msg *wire.MessageRegistration) {
+/*func (self Server) OnRegistration(peer *peer.PeerConn, msg *wire.MessageRegistration) {
 	Logger.log.Info("Receive a new registration START")
 	var txProcessed chan struct{}
 	self.netSync.QueueRegisteration(nil, msg, txProcessed)
 	//<-txProcessed
 
 	Logger.log.Info("Receive a new registration END")
-}
+}*/
 
 func (self Server) OnSwapRequest(peer *peer.PeerConn, msg *wire.MessageSwapRequest) {
 	Logger.log.Info("Receive a new request swap START")

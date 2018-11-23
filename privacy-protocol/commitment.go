@@ -1,57 +1,233 @@
 package privacy
-
-import (
-	"math/big"
-)
-
-// PedersenCommitment represents a commitment that includes 4 generators
-type Commitment interface {
-	// Setup initialize the commitment parameters
-	Setup()
-	// Commit commits openings and return result to receiver
-	Commit([]Opening)
-	// Open return the openings of commitment
-	Open() []Opening
-
-	//CommitSpecValue([]byte, []byte, byte) []byte
-}
-
-type Opening struct{
-	Value []byte
-	Random []byte
-}
-
-const (
-	//PCM_CAPACITY ...
-	PCM_CAPACITY = 4
-	ECM_CAPACITY = 5
-)
-
-type PedersenCommitment struct{
-	// Commitment value
-	Commitment []EllipticPoint
-	// Openings of commitment
-	Openings []Opening
-	// Generators of commitment
-	G []EllipticPoint
-
-}
-
-
-func (pcm *PedersenCommitment) Setup()  {
-	pcm.G = make([]EllipticPoint, PCM_CAPACITY)
-
-	pcm.G[0] = EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
-
-	for i := 1; i < PCM_CAPACITY; i++ {
-		pcm.G[i] = pcm.G[i-1].HashPoint()
-	}
-}
-
-
-//func TestCommitment(){
-//	var pcm PedersenCommitment
-//	res := pcm.Setup()
-//	fmt.Println(res)
+//
+//import (
+//	"fmt"
+//	"math/big"
+//	"sync"
+//)
+//
+//const (
+//	SK    = byte(0x00)
+//	VALUE = byte(0x01)
+//	SND   = byte(0x02)
+//	RAND  = byte(0x03)
+//	FULL  = byte(0x04)
+//)
+//
+//const (
+//	//PCM_CAPACITY ...
+//	PCM_CAPACITY = 4
+//	//ECM_CAPACITY = 5
+//)
+//
+//// PedersenCommitment represents a commitment that includes 4 generators
+////type PedersenCommitment interface {
+////	//// Setup initialize the commitment parameters
+////	//Setup()
+////	// CommitAll commits openings and return result to receiver
+////	CommitAll(openings []big.Int) error
+////	// Open return the openings of commitment
+////	Decommit() []Opening
+////
+////	//CommitAtIndex([]byte, []byte, byte) []byte
+////}
+////
+////type Opening struct{
+////	Value []byte
+////	Index byte
+////	// Index = 0: PublicKey
+////	// Index = 1: Value
+////	// Index = 2: Serial Number Derivator
+////	// Index = 3: Random
+////}
+//
+//type PedersenParams struct {
+//	// Generators of commitment
+//	G [PCM_CAPACITY]EllipticPoint
 //}
-
+//
+//// GetPedersenParams generate one-time generators of commitment
+//// G[0] = base point of curve
+//// G[1] = hash of G[0]
+//// G[2] = hash of G[1]
+//// G[3] = hash of G[2]
+//
+//var instance *PedersenParams
+//var once sync.Once
+//func GetPedersenParams() *PedersenParams {
+//	once.Do(func() {
+//		var pcm PedersenParams
+//		pcm.G[0] = EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
+//		for i := 1; i < PCM_CAPACITY; i++ {
+//			pcm.G[i] = pcm.G[i-1].HashPoint()
+//		}
+//		instance = &pcm
+//	})
+//	return instance
+//}
+//
+//type PedersenCommitment struct{
+//	// PedersenCommitment value
+//	Commitment EllipticPoint
+//	// Openings of commitment
+//	openings []big.Int
+//
+//	Type byte
+//}
+//
+//// CommitAll returns Pedersen commitment value
+//func (pcm *PedersenCommitment) Commit(openings []Opening) error{
+//	if len(openings) > 4{
+//		return fmt.Errorf("Length of openings must be less or equal to 4")
+//	}
+//
+//	// Set openings to pcm
+//	pcm.Openings = openings
+//
+//	// Get pedersen params
+//	pcmParams := GetPedersenParams()
+//
+//	// Create commitment
+//	pcm.Commitment = EllipticPoint{big.NewInt(0), big.NewInt(0)}
+//	temp := EllipticPoint{big.NewInt(0), big.NewInt(0)}
+//
+//	for _, opening := range openings{
+//		temp.X, temp.Y = Curve.ScalarMult(pcmParams.G[opening.Index].X, pcmParams.G[opening.Index].Y, opening.Value)
+//		pcm.Commitment.X, pcm.Commitment.Y = Curve.Add(pcm.Commitment.X, pcm.Commitment.Y, temp.X, temp.Y)
+//	}
+//	return nil
+//}
+//
+//func (pcm *PedersenCommitment) Decommit() []Opening {
+//	return pcm.Openings
+//}
+//
+////// Compress compresses commitment from Elliptic point to 33 bytes array
+////func (pcm PedersenCommitment) Compress() []byte {
+////	return pcm.PedersenCommitment.CompressPoint()
+////}
+////
+////func (pcm *PedersenCommitment) Decompress(commitmentBytes []byte) {
+////	pcm.PedersenCommitment.DecompressPoint(commitmentBytes)
+////}
+//
+//
+////type ElGamalCommitment struct{
+////	// PedersenCommitment value
+////	PedersenCommitment []EllipticPoint
+////	// Openings of commitment
+////	Openings []Opening
+////}
+////
+////type ElGamalParams struct {
+////	// Generators of commitment
+////	G [ECM_CAPACITY]EllipticPoint
+////}
+////
+////// GetElGamalParams generate generators of commitment
+////// G[0] = base point of curve
+////// G[1] = hash of G[0]
+////// G[2] = hash of G[1]
+////// G[3] = hash of G[2]
+////// G[4] = hash of G[3]
+////
+////var ecmParams *ElGamalParams
+////var once1 sync.Once
+////func GetElGamalParams() *ElGamalParams {
+////	once1.Do(func() {
+////		var ecm ElGamalParams
+////		ecm.G[0] = EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
+////		for i := 1; i < ECM_CAPACITY; i++ {
+////			ecm.G[i] = ecm.G[i-1].HashPoint()
+////		}
+////		ecmParams = &ecm
+////	})
+////	return ecmParams
+////}
+////
+////
+////// CommitAll returns Pedersen commitment value
+////func (ecm *ElGamalCommitment) CommitAll(openings []Opening) error{
+////	if len(openings) > 4{
+////		return fmt.Errorf("Length of openings must be less than or equal to 4")
+////	}
+////
+////	// Set openings to ecm
+////	ecm.Openings = openings
+////
+////	// Get ElGamalParams
+////	ecmParams := GetElGamalParams()
+////
+////	// Create commitment include 2 components
+////	ecm.PedersenCommitment = make([]EllipticPoint, 2)
+////	// first component: G[4]^Rand
+////	ecm.PedersenCommitment[0] = EllipticPoint{big.NewInt(0), big.NewInt(0)}
+////	ecm.PedersenCommitment[1] = EllipticPoint{big.NewInt(0), big.NewInt(0)}
+////	temp := EllipticPoint{big.NewInt(0), big.NewInt(0)}
+////
+////	for _, opening := range openings{
+////		temp.X, temp.Y = Curve.ScalarMult(ecmParams.G[opening.Index].X, ecmParams.G[opening.Index].Y, opening.Value)
+////		ecm.PedersenCommitment[0].X, ecm.PedersenCommitment[0].Y = Curve.Add(ecm.PedersenCommitment[0].X, ecm.PedersenCommitment[0].Y, temp.X, temp.Y)
+////
+////		if opening.Index == RAND{
+////			ecm.PedersenCommitment[0].X, ecm.PedersenCommitment[0].Y = Curve.ScalarMult(ecmParams.G[ECM_CAPACITY-1].X, ecmParams.G[ECM_CAPACITY-1].Y, opening.Value)
+////		}
+////	}
+////	return nil
+////}
+////
+////func (ecm ElGamalCommitment) Decommit() []Opening {
+////	return ecm.Openings
+////}
+////
+////// Compress compresses commitment from Elliptic point to 33 bytes array
+////func (ecm ElGamalCommitment) Compress() []byte {
+////	var commitment []byte
+////	commitmentBytes1 := ecm.PedersenCommitment[0].CompressPoint()
+////	commitmentBytes2 := ecm.PedersenCommitment[1].CompressPoint()
+////	commitment = append(commitment, commitmentBytes1...)
+////	commitment = append(commitment, commitmentBytes2...)
+////	return commitment
+////}
+////
+////func (ecm * ElGamalCommitment) Decompress(commitmentBytes []byte) {
+////	ecm.PedersenCommitment = make([]EllipticPoint, 2)
+////	ecm.PedersenCommitment[0].DecompressPoint(commitmentBytes[0:33])
+////	ecm.PedersenCommitment[1].DecompressPoint(commitmentBytes[34:66])
+////}
+////
+////func DEcompressPedersen
+////
+////func DEcompressElgamal
+//
+//func TestCommitment(cm ElGamalCommitment){
+//	var pcm PedersenCommitment
+//
+//	openings := []Opening{
+//		{Value: big.NewInt(1).Bytes(), Index: VALUE},
+//		{Value: RandBytes(32), Index: RAND},
+//	}
+//
+//	pcm.Commit(openings)
+//
+//	fmt.Printf("PedersenCommitment point: %+v\n", pcm.Commitment)
+//	commitBytes := pcm.Compress()
+//
+//	fmt.Printf("PedersenCommitment  bytes: %v\n", commitBytes)
+//
+//	cm.Commit()
+//	cm.Decommit()
+//	cm.Compress()
+//
+//	var cmBytes []byte
+//	var cmEl ElGamalCommitment
+//	cmEl.Decompress(cmBytes)
+//
+//	//DEcompressElgamal()
+//
+//
+//	//pcmParam := GetPedersenParams()
+//
+//
+//}
+////

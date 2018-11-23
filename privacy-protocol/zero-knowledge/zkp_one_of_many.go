@@ -16,9 +16,9 @@ type PKOneOfManyProtocol struct {
 
 // PKOneOfManyProof contains Proof's value
 type PKOneOfManyProof struct {
-	cl, ca, cb, cd [][]byte
-	f, za, zb      [][]byte
-	zd             []byte
+	cl, ca, cb, cd []privacy.EllipticPoint
+	f, za, zb      []privacy.EllipticPoint
+	zd             privacy.EllipticPoint
 	//val1 EllipticPoint
 }
 

@@ -643,7 +643,7 @@ func (ef *FeeEstimator) Save() FeeEstimatorState {
 		registered.serialize(w, observed)
 	}
 
-	// Commit the tx and return.
+	// CommitAll the tx and return.
 	return FeeEstimatorState(w.Bytes())
 }
 

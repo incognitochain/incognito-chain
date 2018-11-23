@@ -1,6 +1,6 @@
 package wire
 
-import (
+/*import (
 	"encoding/hex"
 	"encoding/json"
 
@@ -37,4 +37,4 @@ func (self MessageRegistration) JsonDeserialize(jsonStr string) error {
 
 func (self MessageRegistration) SetSenderID(senderID peer.ID) error {
 	return nil
-}
+}*/

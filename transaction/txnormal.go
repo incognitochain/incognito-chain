@@ -34,6 +34,11 @@ type Tx struct {
 	txId       *common.Hash
 	sigPrivKey *client.PrivateKey
 
+	// this one is a hash id of requested tx
+	// and is used inside response txs
+	// so that we can determine pair of req/res txs
+	// for example, BuySellRequestTx/BuySellResponseTx
+	RequestedTxID *common.Hash
 }
 
 func (tx *Tx) SetTxID(txId *common.Hash) {
@@ -282,7 +287,7 @@ func CreateTx(
 					}
 				}
 				if found == false {
-					return nil, fmt.Errorf("Commitment %x of input note isn't in commitments list of chain %d", input.InputNote.Cm, chainID)
+					return nil, fmt.Errorf("PedersenCommitment %x of input note isn't in commitments list of chain %d", input.InputNote.Cm, chainID)
 				}
 			}
 		}
@@ -549,11 +554,11 @@ func createDummyNote(spendingKey *privacy.SpendingKey) *client.Note {
 	copy(r[:], client.RandBits(32*8))
 
 	note := &client.Note{
-		Value:          0,
-		Apk: addr,
-		Rho:            rho[:],
-		R:              r[:],
-		Nf:             client.GetNullifier(*spendingKey, rho),
+		Value: 0,
+		Apk:   addr,
+		Rho:   rho[:],
+		R:     r[:],
+		Nf:    client.GetNullifier(*spendingKey, rho),
 	}
 	return note
 }
@@ -618,7 +623,7 @@ func GenerateProofForGenesisTx(
 	seed, phi []byte,
 	outputR [][]byte,
 	ephemeralPrivKey client.EphemeralPrivKey,
-//assetType string,
+	//assetType string,
 ) (*Tx, error) {
 	// Generate JoinSplit key pair to act as a dummy key (since we don't sign genesis tx)
 	privateSignKey := [32]byte{1}
@@ -727,9 +732,9 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	var sizeFee uint64 = 8      // uint64
 	var sizeDescs uint64        // uint64
 	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
 	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
 	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
@@ -762,4 +767,22 @@ func CreateEmptyTx(txType string) (*Tx, error) {
 		sigPrivKey: sigPrivKey,
 	}
 	return tx, nil
+}
+
+func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
+	initiatorPubKey := tx.JSPubKey
+	txValue := uint64(0)
+	var addr *privacy.PaymentAddress
+	for _, desc := range tx.Descs {
+		for _, note := range desc.Note {
+			if string(note.Apk[:]) == string(initiatorPubKey) {
+				continue
+			}
+			addr = &privacy.PaymentAddress{
+				Pk: note.Apk,
+			}
+			txValue += note.Value
+		}
+	}
+	return addr, txValue
 }

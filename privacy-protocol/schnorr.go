@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 )
+//1
 
 //SchnPubKey denoted Schnorr Publickey
 type SchnPubKey struct {

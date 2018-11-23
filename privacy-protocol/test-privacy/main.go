@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"runtime"
+
+	"github.com/ninjadotorg/constant/privacy-protocol"
 
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge-optimization"
 
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
@@ -68,49 +68,49 @@ func main() {
 	//
 	//tx, _ := transaction.CreateEmptyTxs()
 	//fmt.Printf("Transaction: %+v\n", tx)
-	//privacy.TestECC()
-	//privacy-protocol.Elcm.Setup()
+
+	//privacy-protocol.Pcm.Setup()
 	//privacy-protocol.TestProofIsZero()
 	//// fmt.Println("Done")
 	//a:= new(privacy-protocol.InputCommitments)
 	//
 	//privacy-protocol.TestProductCommitment()
-	//privacy-protocol.Elcm.Setup()
+	//privacy-protocol.Pcm.Setup()
 	// privacy-protocol.TestProofIsZero()
 	// fmt.Println("Done")
 	// privacy-protocol.TestPKComZeroOne()
 	//privacy-protocol.TestPKOneOfMany()
-	i := 0
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	privacy.Elcm.InitCommitment()
-	n := 500
-	for i = 0; i < n; i++ {
-
-		//  zkp.TestPKComZeroOne()
-
-		//for i := 0; i < 500; i++ {
-
-		if !zkp.TestPKOneOfMany() {
-			break
-		}
-		if !zkpoptimization.TestPKOneOfMany() {
-			break
-		}
-
-		fmt.Println("----------------------")
-	}
+	//i := 0
+	//runtime.GOMAXPROCS(runtime.NumCPU())
+	//privacy.Elcm.InitCommitment()
+	//n := 500
+	//for i = 0; i < n; i++ {
+	//
+	//	//  zkp.TestPKComZeroOne()
+	//
+	//	//for i := 0; i < 500; i++ {
+	//
+	//	if !zkp.TestPKOneOfMany() {
+	//		break
+	//	}
+	//	if !zkpoptimization.TestPKOneOfMany() {
+	//		break
+	//	}
+	//
+	//	fmt.Println("----------------------")
 	//}
-	if i == n {
-		fmt.Println("Well done")
-	} else {
-		fmt.Println("ewww")
-	}
+	////}
+	//if i == n {
+	//	fmt.Println("Well done")
+	//} else {
+	//	fmt.Println("ewww")
+	//}
 
 	//privacy.TestCommitment()
 
 	//zkp.TestPKMaxValue()
-	//privacy.Elcm.Setup()
-	//privacy.Elcm.TestFunction(00)
+	//privacy.Pcm.Setup()
+	//privacy.Pcm.TestFunction(00)
 
 	//var zk zkp.ZKProtocols
 	//
@@ -119,7 +119,7 @@ func main() {
 	//vInt.Mod(vInt, big.NewInt(2))
 	//rand := privacy.RandBytes(32)
 	//
-	//partialCommitment := privacy.Elcm.CommitSpecValue(vInt.Bytes(), rand, privacy.VALUE)
+	//partialCommitment := privacy.Pcm.CommitAtIndex(vInt.Bytes(), rand, privacy.VALUE)
 	//
 	//
 	//var witness zkp.PKComZeroOneWitness
@@ -154,5 +154,16 @@ func main() {
 	//fmt.Printf("\n %v\n", point.CompressPoint())
 	//zkp.TestPKComProduct()
 	//privacy.Curve.Params().G
+
+	//zkp.TestPKComZeroOne()
+
+	/*----------------- TEST PCM SINGLETON -----------------*/
+	privacy.Pcm = privacy.GetPedersenParams()
+	fmt.Printf("a1: %p\n", &privacy.Pcm)
+	privacy.Pcm = privacy.GetPedersenParams()
+	fmt.Printf("a1: %p\n", &privacy.Pcm)
+
+	/*----------------- TEST COMMITMENT -----------------*/
+	privacy.TestCommitment(01)
 
 }

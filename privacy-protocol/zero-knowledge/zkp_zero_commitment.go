@@ -4,12 +4,13 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
-/*Protocol for opening a Commitment to 0
+/*Protocol for opening a PedersenCommitment to 0
 Prove:
-	commitmentValue is Commitment value of Zero, that is statement needed to prove
+	commitmentValue is PedersenCommitment value of Zero, that is statement needed to prove
 	commitmentValue is calculated by Comm_ck(Value,PRDNumber)
 	commitmentRnd is PRDNumber, which is used to calculate commitmentValue
 	s <- Zp; P is privacy.Curve base point's order, is N
@@ -22,7 +23,7 @@ Prove:
 	return commitmentZeroS, z
 
 Verify:
-	commitmentValue is Commitment value of Zero, that is statement needed to prove
+	commitmentValue is PedersenCommitment value of Zero, that is statement needed to prove
 	commitmentValue is calculated by Comm_ck(Value,PRDNumber), a.k.a A
 	commitmentZeroS, z are output of Prove function, commitmentZeroS is a.k.a B
 	x <- Hash(G0||G1||G2||G3||commitmentvalue)
@@ -31,24 +32,24 @@ Verify:
 )
 */
 
-//ProveIsZero generate a Proof prove that the Commitment is zero
-func ProveIsZero(commitmentValue, commitmentRnd []byte, index byte) ([]byte, *big.Int) {
+//Prove generate a Proof prove that the PedersenCommitment is zero
+func Prove(commitmentValue, commitmentRnd *big.Int, index byte) (*big.Int), *big.Int) {
 	//var x big.Int
 	//s is a random number in Zp, with p is N, which is order of base point of privacy.Curve
-	sRnd, err := rand.Int(rand.Reader, privacy.Curve.Params().N)
-	if err != nil {
-		panic(err)
-	}
+	sRnd, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	//Generate zero number to commit
 	zeroInt := big.NewInt(0)
 
 	//Calculate B = commitmentZeroS = comm_ck(0,s,Index)
-	commitmentZeroS := privacy.Elcm.CommitSpecValue(zeroInt.Bytes(), sRnd.Bytes(), index)
+	commitmentZeroS := privacy.Pcm.CommitAtIndex(zeroInt.Bytes(), sRnd.Bytes(), index)
 
 	//Generate random x in Zp
 	xRnd := big.NewInt(0)
-	xRnd.SetBytes(privacy.Elcm.GetHashOfValues([][]byte{commitmentValue}))
+	xRnd.SetBytes(privacy.Pcm.GetHashOfValues([][]byte{commitmentValue}))
 	xRnd.Mod(xRnd, privacy.Curve.Params().N)
 
 	//Calculate z=r*x + s (mod N)
@@ -63,11 +64,11 @@ func ProveIsZero(commitmentValue, commitmentRnd []byte, index byte) ([]byte, *bi
 	return commitmentZeroS, z
 }
 
-//VerifyIsZero verify that under Commitment is zero
-func VerifyIsZero(commitmentValue, commitmentZeroS []byte, index byte, z *big.Int) bool {
+//Verify verify that under PedersenCommitment is zero
+func Verify(commitmentValue, commitmentZeroS []byte, index byte, z *big.Int) bool {
 	//Calculate x
 	xRnd := big.NewInt(0)
-	xRnd.SetBytes(privacy.Elcm.GetHashOfValues([][]byte{commitmentValue}))
+	xRnd.SetBytes(privacy.Pcm.GetHashOfValues([][]byte{commitmentValue}))
 	xRnd.Mod(xRnd, privacy.Curve.Params().N)
 
 	//convert commitmentValue []byte to Point in ECC
@@ -104,7 +105,7 @@ func VerifyIsZero(commitmentValue, commitmentZeroS []byte, index byte, z *big.In
 	zeroInt := big.NewInt(0)
 
 	//Calculate comm_ck(0,z, Index)
-	commitmentZeroZ := privacy.Elcm.CommitSpecValue(zeroInt.Bytes(), z.Bytes(), index)
+	commitmentZeroZ := privacy.Pcm.CommitAtIndex(zeroInt.Bytes(), z.Bytes(), index)
 
 	//convert result to point
 	commitmentZeroZPoint, err := privacy.DecompressCommitment(commitmentZeroZ)
@@ -127,9 +128,9 @@ func VerifyIsZero(commitmentValue, commitmentZeroS []byte, index byte, z *big.In
 
 //TestProofIsZero test prove and verify function
 func TestProofIsZero() bool {
-	//Generate a random Commitment
+	//Generate a random PedersenCommitment
 
-	//First, generate random value to commit and calculate two Commitment with different PRDNumber
+	//First, generate random value to commit and calculate two PedersenCommitment with different PRDNumber
 	//Random value
 	serialNumber := privacy.RandBytes(32)
 
@@ -145,9 +146,9 @@ func TestProofIsZero() bool {
 	r1 = r1Int.Bytes()
 	r2 = r2Int.Bytes()
 
-	//Calculate two Pedersen Commitment
-	committemp1 := privacy.Elcm.CommitSpecValue(serialNumber, r1, 0)
-	committemp2 := privacy.Elcm.CommitSpecValue(serialNumber, r2, 0)
+	//Calculate two Pedersen PedersenCommitment
+	committemp1 := privacy.Pcm.CommitAtIndex(serialNumber, r1, 0)
+	committemp2 := privacy.Pcm.CommitAtIndex(serialNumber, r2, 0)
 
 	//Converting them to ECC Point
 	committemp1Point, err := privacy.DecompressCommitment(committemp1)
@@ -170,7 +171,7 @@ func TestProofIsZero() bool {
 	inverse_committemp2Point.Y.SetBytes(committemp2Point.Y.Bytes())
 	inverse_committemp2Point.Y.Sub(privacy.Curve.Params().P, committemp2Point.Y)
 
-	//So, when we have A1+A2^-1, we need compute r = r1 - r2 (mod N), which is r of zero Commitment
+	//So, when we have A1+A2^-1, we need compute r = r1 - r2 (mod N), which is r of zero PedersenCommitment
 	rInt := big.NewInt(0)
 	rInt.Sub(r1Int, r2Int)
 	rInt.Mod(rInt, privacy.Curve.Params().N)
@@ -183,10 +184,10 @@ func TestProofIsZero() bool {
 	commitZero := resPoint.CompressPoint()
 
 	//Compute Proof
-	proofZero, z := ProveIsZero(commitZero, rInt.Bytes(), 0)
+	proofZero, z := Prove(commitZero, rInt.Bytes(), 0)
 
 	//verify Proof
-	boolValue := VerifyIsZero(commitZero, proofZero, 0, z)
+	boolValue := Verify(commitZero, proofZero, 0, z)
 	fmt.Println("Test ProofIsZero resulit: ", boolValue)
 	return boolValue
 }

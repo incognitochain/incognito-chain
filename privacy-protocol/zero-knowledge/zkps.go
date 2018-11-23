@@ -1,9 +1,13 @@
 package zkp
 
 type Proof interface {
+	GetID() byte
+	GetValue()
 }
 
 type Witness interface {
+	GetID() byte
+	GetValue()
 }
 
 // ZKProtocols interface
@@ -14,10 +18,8 @@ type ZKProtocols interface {
 	Verify() bool
 }
 
-
-func Prove(){
+func Prove() {
 	// Commit each component of coins being spent
-
 
 	// Summing all commitments into one commitment and proving the knowledge of its openings
 	// Proving one-out-of-N commitments is a commitment to the coins being spent

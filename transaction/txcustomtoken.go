@@ -87,7 +87,6 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 	}
 
 	for _, vout := range tx.TxTokenData.Vouts {
-		tokenDataSize += uint64(len(vout.BondID))
 		tokenDataSize += 8 // for value
 		tokenDataSize += uint64(vout.PaymentAddress.Size())
 	}

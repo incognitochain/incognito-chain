@@ -7,14 +7,15 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -42,8 +43,8 @@ var RpcHandler = map[string]commandHandler{
 
 	// transaction
 	ListTransactions:         RpcServer.handleListTransactions,
-	CreateTransaction:        RpcServer.handleCreateTransaction,
-	SendTransaction:          RpcServer.handleSendTransaction,
+	CreateRawTransaction:     RpcServer.handleCreateRawTransaction,
+	SendRawTransaction:       RpcServer.handleSendRawTransaction,
 	CreateAndSendTransaction: RpcServer.handlCreateAndSendTx,
 	GetMempoolInfo:           RpcServer.handleGetMempoolInfo,
 	GetTransactionByHash:     RpcServer.handleGetTransactionByHash,
@@ -53,13 +54,17 @@ var RpcHandler = map[string]commandHandler{
 	GetBlockProducerList:       RpcServer.handleGetBlockProducerList,
 
 	// custom token
-	CreateRawCustomTokenTransaction: RpcServer.handleCreateRawCustomTokenTransaction,
-	SendRawCustomTokenTransaction:   RpcServer.handleSendRawCustomTokenTransaction,
-	SendCustomTokenTransaction:      RpcServer.handleSendCustomTokenTransaction,
-	ListUnspentCustomToken:          RpcServer.handleListUnspentCustomTokenTransaction,
-	ListCustomToken:                 RpcServer.handleListCustomToken,
-	CustomToken:                     RpcServer.handleCustomTokenDetail,
-	GetListCustomTokenBalance:       RpcServer.handleGetListCustomTokenBalance,
+	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
+	SendRawCustomTokenTransaction:       RpcServer.handleSendRawCustomTokenTransaction,
+	CreateAndSendCustomTokenTransaction: RpcServer.handleCreateAndSendCustomTokenTransaction,
+	ListUnspentCustomToken:              RpcServer.handleListUnspentCustomTokenTransaction,
+	ListCustomToken:                     RpcServer.handleListCustomToken,
+	CustomToken:                         RpcServer.handleCustomTokenDetail,
+	GetListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
+
+	// Loan tx
+	"loanparams":             RpcServer.handleGetLoanParams,
+	CreateAndSendLoanRequest: RpcServer.handleCreateAndSendLoanRequest,
 
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -72,6 +77,14 @@ var RpcHandler = map[string]commandHandler{
 	GetListDCBBoard:                RpcServer.handleGetListDCBBoard,
 	GetListCBBoard:                 RpcServer.handleGetListCBBoard,
 	GetListGOVBoard:                RpcServer.handleGetListGOVBoard,
+
+	// vote
+	SendRawVoteBoardDCBTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
+	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
+	CreateAndSendVoteDCBBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
+	SendRawVoteBoardGOVTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
+	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
+	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
 }
 
 // Commands that are available to a limited user
@@ -872,7 +885,7 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(
 	return result, nil
 }
 
-// handleSendRawCustomTokenTransaction...
+// handleSendRawTransaction...
 func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
@@ -883,6 +896,7 @@ func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, cl
 		return nil, err
 	}
 	tx := transaction.TxCustomToken{}
+	//tx := transaction.TxCustomToken{}
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
@@ -903,14 +917,14 @@ func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, cl
 		return nil, err
 	}
 
-	txMsg.(*wire.MessageRegistration).Transaction = &tx
+	txMsg.(*wire.MessageTx).Transaction = &tx
 	self.config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil
 }
 
-// handleSendCustomTokenTransaction - create and send a tx which process on a custom token look like erc-20 on eth
-func (self RpcServer) handleSendCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+// handleCreateAndSendCustomTokenTransaction - create and send a tx which process on a custom token look like erc-20 on eth
+func (self RpcServer) handleCreateAndSendCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	data, err := self.handleCreateRawCustomTokenTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
@@ -929,7 +943,7 @@ func (self RpcServer) handleSendCustomTokenTransaction(params interface{}, close
 /*
 // handleCreateTransaction handles createtransaction commands.
 */
-func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 
 	// all params
@@ -1066,7 +1080,7 @@ Parameter #1—a serialized transaction to broadcast
 Parameter #2–whether to allow high fees
 Result—a TXID or error Message
 */
-func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	hexRawTx := arrayParams[0].(string)
@@ -1113,7 +1127,7 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 handlCreateAndSendTx - RPC creates transaction and send to network
 */
 func (self RpcServer) handlCreateAndSendTx(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	data, err := self.handleCreateTransaction(params, closeChan)
+	data, err := self.handleCreateRawTransaction(params, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -1124,7 +1138,7 @@ func (self RpcServer) handlCreateAndSendTx(params interface{}, closeChan <-chan 
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, hexStrOfTx)
-	sendResult, err := self.handleSendTransaction(newParam, closeChan)
+	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
