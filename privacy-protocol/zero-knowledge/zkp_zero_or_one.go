@@ -9,43 +9,45 @@ import (
 
 // PKComZeroOneProtocol is a protocol for Zero-knowledge Proof of Knowledge of committed zero or one
 // include Witness: CommitedValue, r []byte
-type PKComZeroOneProtocol struct {
-	Witness PKComZeroOneWitness
-	Proof   PKComZeroOneProof
-}
+//type PKComZeroOneProtocol struct {
+//	Witness PKComZeroOneWitness
+//	Proof   PKComZeroOneProof
+//}
 
 // PKComZeroOneProof contains Proof's value
 type PKComZeroOneProof struct {
-	ca, cb     EllipticPoint // 34 bytes
-	f, za, zb  []byte        //32 bytes
-	commitment []byte        // 34 bytes
+	ca, cb     *privacy.EllipticPoint
+	f, za, zb  *big.Int
+	//general info
+	commitment *privacy.EllipticPoint
 	index      byte
 }
 
 // PKComZeroOneProof contains Proof's value
 type PKComZeroOneWitness struct {
+	CommitedValue *big.Int
+	Rand          *big.Int
+	//general info
 	Commitment    privacy.EllipticPoint
-	CommitedValue []byte
-	Rand          []byte
 	Index         byte
 }
 
-// SetWitness sets Witness
-func (pro *PKComZeroOneProtocol) SetWitness(witness PKComZeroOneWitness) {
-	pro.Witness = witness
-}
-
-// SetWitness sets Witness
-func (pro *PKComZeroOneProtocol) SetProof(proof PKComZeroOneProof) {
-	pro.Proof = proof
-}
+//// SetWitness sets Witness
+//func (pro *PKComZeroOneProtocol) SetWitness(witness PKComZeroOneWitness) {
+//	pro.Witness = witness
+//}
+//
+//// SetWitness sets Witness
+//func (pro *PKComZeroOneProtocol) SetProof(proof PKComZeroOneProof) {
+//	pro.Proof = proof
+//}
 
 func getindex(bigint *big.Int) int {
 	return 32 - len(bigint.Bytes())
 }
 
 // Prove creates a Proof for PedersenCommitment to zero or one
-func (pro *PKComZeroOneProtocol) Prove() (*PKComZeroOneProof, error) {
+func (pro *PKComZeroOneWitness) Prove() (*PKComZeroOneProof, error) {
 	// Check Index
 	if pro.Witness.Index < 0 || pro.Witness.Index > 2 {
 		return nil, fmt.Errorf("Index must be between 0 and 2")
@@ -150,7 +152,7 @@ func (pro *PKComZeroOneProtocol) Prove() (*PKComZeroOneProof, error) {
 }
 
 // Verify verifies the Proof for PedersenCommitment to zero or one
-func (pro *PKComZeroOneProtocol) Verify() bool {
+func (pro *PKComZeroOneWitness) Verify() bool {
 	//Decompress PedersenCommitment  value
 	comPoint, err := privacy.DecompressCommitment(pro.Proof.commitment)
 	if err != nil {
