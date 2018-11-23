@@ -1,7 +1,6 @@
 package privacy
 
 import (
-	"fmt"
 	"math/big"
 )
 
@@ -57,7 +56,7 @@ type PCParams struct {
 //}
 
 // NewPedersenParams creates new generators
-func NewPedersenParams() PCParams {
+func newPedersenParams() PCParams {
 	var pcm PCParams
 	pcm.G = make([]EllipticPoint, PCM_CAPACITY)
 	pcm.G[0] = EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
@@ -67,7 +66,7 @@ func NewPedersenParams() PCParams {
 	return pcm
 }
 
-var PedCom = NewPedersenParams()
+var PedCom = newPedersenParams()
 
 //GetHashOfValues get hash of n points in G append with input values
 //return blake_2b(G[0]||G[1]||...||G[PCM_CAPACITY-1]||<values>)
@@ -207,54 +206,100 @@ func (com PCParams) CommitAtIndex(value, rand big.Int, index byte) EllipticPoint
 //testFunction allow we test each of function for PedersenCommitment
 //00: Test generate commitment for four random value and show that on console
 //01: Test generate commitment for special value and its random value in special index
-func TestCommitment(testCode byte) bool {
+// func TestCommitment(testCode byte) bool {
 
-	Pcm := NewPedersenParams()
-	switch testCode {
-	case 0: //Generate commitment for 4 random value
-		//Generate 4 random value
-		value1 := new(big.Int).SetBytes(RandBytes(32))
-		value2 := new(big.Int).SetBytes(RandBytes(32))
-		value3 := new(big.Int).SetBytes(RandBytes(32))
-		valuer := new(big.Int).SetBytes(RandBytes(32))
-		fmt.Println("Value 1: ", value1)
-		fmt.Println("Value 2: ", value2)
-		fmt.Println("Value 3: ", value3)
-		fmt.Println("Value r: ", valuer)
+// 	Pcm := NewPedersenParams()
+// 	switch testCode {
+// 	case 0: //Generate commitment for 4 random value
+// 		//Generate 4 random value
+// 		value1 := new(big.Int).SetBytes(RandBytes(32))
+// 		value2 := new(big.Int).SetBytes(RandBytes(32))
+// 		value3 := new(big.Int).SetBytes(RandBytes(32))
+// 		valuer := new(big.Int).SetBytes(RandBytes(32))
+// 		fmt.Println("Value 1: ", value1)
+// 		fmt.Println("Value 2: ", value2)
+// 		fmt.Println("Value 3: ", value3)
+// 		fmt.Println("Value r: ", valuer)
 
-		//Compute commitment for all value, 4 is value of constant PCM_CAPACITY
-		commitmentAll := Pcm.CommitAll([PCM_CAPACITY]big.Int{*value1, *value2, *value3, *valuer})
-		fmt.Println("Pedersen Commitment point: ", commitmentAll)
+// 		//Compute commitment for all value, 4 is value of constant PCM_CAPACITY
+// 		commitmentAll := Pcm.CommitAll([PCM_CAPACITY]big.Int{*value1, *value2, *value3, *valuer})
+// 		fmt.Println("Pedersen Commitment point: ", commitmentAll)
 
-		cmBytes := commitmentAll.Compress()
-		fmt.Println("Pedersen Commitment bytes: ", cmBytes)
+// 		cmBytes := commitmentAll.Compress()
+// 		fmt.Printfunc GenerateChallenge(values [][]byte) []byte {
+// 	appendStr := Elcm.G[0].CompressPoint()
+// 	for i := 1; i < CM_CAPACITY; i++ {
+// 		appendStr = append(appendStr, Elcm.G[i].CompressPoint()...)
+// 	}
+// 	for i := 0; i < len(values); i++ {
+// 		appendStr = append(appendStr, values[i]...)
+// 	}
+// 	hashFunc := blake2b.New256()
+// 	hashFunc.Write(appendStr)
+// 	hashValue := hashFunc.Sum(nil)
+// 	return hashValue
+// }("Pedersen Commitment bytes: ", cmBytes)
 
-		cmPoint := new(EllipticPoint)
-		cmPoint.Decompress(cmBytes)
-		fmt.Println("Pedersen Commitment decompress: ", cmPoint)
+// 		cmPoint :func GenerateChallenge(values [][]byte) []byte {
+// 	appendStr := Elcm.G[0].CompressPoint()
+// 	for i := 1; i < CM_CAPACITY; i++ {
+// 		appendStr = append(appendStr, Elcm.G[i].CompressPoint()...)
+// 	}
+// 	for i := 0; i < len(values); i++ {
+// 		appendStr = append(appendStr, values[i]...)
+// 	}
+// 	hashFunc := blake2b.New256()
+// 	hashFunc.Write(appendStr)
+// 	hashValue := hashFunc.Sum(nil)
+// 	return hashValue
+// }new(EllipticPoint)
+// 		cmPoint.Dfunc GenerateChallenge(values [][]byte) []byte {
+// 	appendStr := Elcm.G[0].CompressPoint()
+// 	for i := 1; i < CM_CAPACITY; i++ {
+// 		appendStr = append(appendStr, Elcm.G[i].CompressPoint()...)
+// 	}
+// 	for i := 0; i < len(values); i++ {
+// 		appendStr = append(appendStr, values[i]...)
+// 	}
+// 	hashFunc := blake2b.New256()
+// 	hashFunc.Write(appendStr)
+// 	hashValue := hashFunc.Sum(nil)
+// 	return hashValue
+// }ompress(cmBytes)
+// 		fmt.Printfunc GenerateChallenge(values [][]byte) []byte {
+// 	appendStr := Elcm.G[0].CompressPoint()
+// 	for i := 1; i < CM_CAPACITY; i++ {
+// 		appendStr = append(appendStr, Elcm.G[i].CompressPoint()...)
+// 	}
+// 	for i := 0; i < len(values); i++ {
+// 		appendStr = append(appendStr, values[i]...)
+// 	}
+// 	hashFunc := blake2b.New256()
+// 	hashFunc.Write(appendStr)
+// 	hashValue := hashFunc.Sum(nil)
+// 	return hashValue
+// }("Pedersen Commitment decompress: ", cmPoint)
 
-		break
-	case 1: //Generate commitment for special value and its random value
-		//Generate 2 random value
-		value1 := new(big.Int).SetBytes(RandBytes(32))
-		valuer := new(big.Int).SetBytes(RandBytes(32))
-		fmt.Println("Value 1: ", value1)
-		fmt.Println("Value r: ", valuer)
+// 		break
+// 	case 1: //Generate commitment for special value and its random value
+// 		//Generate 2 random value
+// 		value1 := new(big.Int).SetBytes(RandBytes(32))
+// 		valuer := new(big.Int).SetBytes(RandBytes(32))
+// 		fmt.Println("Value 1: ", value1)
+// 		fmt.Println("Value r: ", valuer)
 
-		//Compute commitment for special value with index 0
-		commitmentSpec := Pcm.CommitAtIndex(*value1, *valuer, 0)
+// 		//Compute commitment for special value with index 0
+// 		commitmentSpec := Pcm.CommitAtIndex(*value1, *valuer, 0)
 
-		fmt.Println("Pedersen Commitment value: ", commitmentSpec)
+// 		fmt.Println("Pedersen Commitment value: ", commitmentSpec)
 
-		cmBytes := commitmentSpec.Compress()
-		fmt.Println("Pedersen Commitment bytes: ", cmBytes)
+// 		cmBytes := commitmentSpec.Compress()
+// 		fmt.Println("Pedersen Commitment bytes: ", cmBytes)
 
-		cmPoint := new(EllipticPoint)
-		cmPoint.Decompress(cmBytes)
-		fmt.Println("Pedersen Commitment decompress: ", cmPoint)
-		break
-	}
-	return true
-}
-
-
+// 		cmPoint := new(EllipticPoint)
+// 		cmPoint.Decompress(cmBytes)
+// 		fmt.Println("Pedersen Commitment decompress: ", cmPoint)
+// 		break
+// 	}
+// 	return true
+// }
