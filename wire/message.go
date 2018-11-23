@@ -20,6 +20,8 @@ const (
 	CmdCustomToken        = "txtoken"
 	CmdCLoanRequestToken  = "txloanreq"
 	CmdCLoanResponseToken = "txloanres"
+	CmdCLoanWithdrawToken = "txloanwith"
+	CmdCLoanPayToken      = "txloanpay"
 	CmdGetBlocks          = "getblocks"
 	CmdInv                = "inv"
 	CmdGetData            = "getdata"
@@ -74,6 +76,16 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdCLoanResponseToken:
 		msg = &MessageTx{
 			Transaction: &transaction.TxLoanResponse{},
+		}
+		break
+	case CmdCLoanWithdrawToken:
+		msg = &MessageTx{
+			Transaction: &transaction.TxLoanWithdraw{},
+		}
+		break
+	case CmdCLoanPayToken:
+		msg = &MessageTx{
+			Transaction: &transaction.TxLoanPayment{},
 		}
 		break
 	case CmdGetBlocks:
