@@ -18,9 +18,9 @@ package zkp
 //}
 
 // ZKProof is big proof
-type ZKProof struct{
+// type ZKProof struct{
 
-}
+// }
 
 // Prove creates big proof
 //func Prove() {
@@ -33,6 +33,3 @@ type ZKProof struct{
 //	// Proving that sum of inputs equals sum of outputs
 //	// Proving ciphertexts encrypting for coins' details are well-formed
 //}
-
-
-

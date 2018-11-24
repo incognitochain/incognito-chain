@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	//"fmt"
 	//"github.com/ninjadotorg/constant/privacy-protocol"
 	//"math/big"

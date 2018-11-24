@@ -76,7 +76,7 @@ func BuildCoinbaseTx(pks, tks [][]byte, amounts []uint64, rt []byte, chainID byt
 	outputs[1].OutputNote = outNote2
 
 	// Generate proof and sign tx
-	tx, err := CreateEmptyTx(txType)
+	tx, err := CreateEmptyTx(txType, nil, true)
 	if err != nil {
 		return nil, err
 	}

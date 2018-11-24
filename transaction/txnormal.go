@@ -2,11 +2,9 @@ package transaction
 
 import (
 	"bytes"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"math"
-	"math/big"
 	"sort"
 	"strconv" // "crypto/sha256"
 	"time"
@@ -32,7 +30,7 @@ type Tx struct {
 	AddressLastByte byte `json:"AddressLastByte"`
 
 	txId       *common.Hash
-	sigPrivKey *client.PrivateKey
+	sigPrivKey *privacy.SpendingKey // is always private property of struct
 
 	// this one is a hash id of requested tx
 	// and is used inside response txs
@@ -211,7 +209,11 @@ func CreateTx(
 	senderFullKey.ImportFromPrivateKeyByte((*senderKey)[:])
 
 	// Create tx before adding js descs
-	tx, err := CreateEmptyTx(common.TxNormalType)
+	randomSignKey := true
+	if noPrivacy {
+		randomSignKey = false
+	}
+	tx, err := CreateEmptyTx(common.TxNormalType, senderKey, randomSignKey)
 	if err != nil {
 		return nil, err
 	}
@@ -576,15 +578,22 @@ func (tx *Tx) SignTx() error {
 	copy(data, hash[:])
 
 	// Sign
-	ecdsaSignature := new(client.EcdsaSignature)
+	/*ecdsaSignature := new(client.EcdsaSignature)
 	var err error
 	ecdsaSignature.R, ecdsaSignature.S, err = client.Sign(rand.Reader, tx.sigPrivKey, data[:])
+	if err != nil {
+		return err
+	}*/
+	keyset := cashec.KeySet{}
+	keyset.ImportFromPrivateKey(tx.sigPrivKey)
+	sign, err := keyset.Sign(data)
 	if err != nil {
 		return err
 	}
 
 	//Signature 64 bytes
-	tx.JSSig = JSSigToByteArray(ecdsaSignature)
+	//tx.JSSig = JSSigToByteArray(ecdsaSignature)
+	tx.JSSig = sign
 
 	return nil
 }
@@ -596,21 +605,27 @@ func (tx *Tx) VerifySign() (bool, error) {
 	}
 
 	// UnParse Public key
-	pubKey := new(client.PublicKey)
+	/*pubKey := new(client.PublicKey)
 	pubKey.X = new(big.Int).SetBytes(tx.JSPubKey[0:32])
-	pubKey.Y = new(big.Int).SetBytes(tx.JSPubKey[32:64])
+	pubKey.Y = new(big.Int).SetBytes(tx.JSPubKey[32:64])*/
 
 	// UnParse ECDSA signature
-	ecdsaSignature := new(client.EcdsaSignature)
+	/*ecdsaSignature := new(client.EcdsaSignature)
 	ecdsaSignature.R = new(big.Int).SetBytes(tx.JSSig[0:32])
-	ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])
+	ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])*/
 
 	// Hash origin transaction
 	hash := tx.GetTxID()
 	data := make([]byte, common.HashSize)
 	copy(data, hash[:])
 
-	valid := client.VerifySign(pubKey, data[:], ecdsaSignature.R, ecdsaSignature.S)
+	//valid := client.VerifySign(pubKey, data[:], ecdsaSignature.R, ecdsaSignature.S)
+	keyset := cashec.KeySet{}
+	keyset.PaymentAddress.Pk = tx.JSPubKey
+	valid, err := keyset.Verify(data[:], tx.JSSig)
+	if err != nil {
+		return false, err
+	}
 	return valid, nil
 }
 
@@ -623,7 +638,7 @@ func GenerateProofForGenesisTx(
 	seed, phi []byte,
 	outputR [][]byte,
 	ephemeralPrivKey client.EphemeralPrivKey,
-	//assetType string,
+//assetType string,
 ) (*Tx, error) {
 	// Generate JoinSplit key pair to act as a dummy key (since we don't sign genesis tx)
 	privateSignKey := [32]byte{1}
@@ -636,7 +651,7 @@ func GenerateProofForGenesisTx(
 	tempKeySet.ImportFromPrivateKey(inputs[0].Key)
 	addressLastByte := tempKeySet.PaymentAddress.Pk[len(tempKeySet.PaymentAddress.Pk)-1]
 
-	tx, err := CreateEmptyTx(common.TxNormalType)
+	tx, err := CreateEmptyTx(common.TxNormalType, nil, true)
 	if err != nil {
 		return nil, err
 	}
@@ -732,9 +747,9 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	var sizeFee uint64 = 8      // uint64
 	var sizeDescs uint64        // uint64
 	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
 	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
 	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
@@ -743,15 +758,23 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 }
 
 // CreateEmptyTx returns a new Tx initialized with default data
-func CreateEmptyTx(txType string) (*Tx, error) {
+func CreateEmptyTx(txType string, privKey *privacy.SpendingKey, randomSignKey bool) (*Tx, error) {
 	//Generate signing key 96 bytes
-	sigPrivKey, err := client.GenerateKey(rand.Reader)
+	var sigPrivKey *privacy.SpendingKey
+	var err error
+	if !randomSignKey {
+		sigPrivKey = privKey
+	} else {
+		temp := privacy.GenerateSpendingKey(privacy.RandBytes(32))
+		sigPrivKey = &temp
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
 	// Verification key 64 bytes
-	sigPubKey := PubKeyToByteArray(&sigPrivKey.PublicKey)
+	sigPubKey := privacy.GeneratePublicKey((*sigPrivKey)[:])
 
 	tx := &Tx{
 		Version:         TxVersion,

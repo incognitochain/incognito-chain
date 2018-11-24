@@ -13,11 +13,11 @@ type SNDerivator []byte
 
 // Coin represents a coin
 type Coin struct {
-	PublicKey      *EllipticPoint      	// 33 bytes
-	CoinCommitment *EllipticPoint 	// 33 bytes
-	SNDerivator    *big.Int   		// 32 bytes
-	Randomness     *big.Int         	// Random for coin commitment
-	Value          *big.Int          	// 32 bytes
+	PublicKey      *EllipticPoint
+	CoinCommitment *EllipticPoint
+	SNDerivator    *big.Int
+	Randomness     *big.Int
+	Value          *big.Int
 	Info           []byte
 }
 

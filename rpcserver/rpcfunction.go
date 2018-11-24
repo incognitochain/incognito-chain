@@ -63,8 +63,11 @@ var RpcHandler = map[string]commandHandler{
 	GetListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
 
 	// Loan tx
-	"loanparams":             RpcServer.handleGetLoanParams,
-	CreateAndSendLoanRequest: RpcServer.handleCreateAndSendLoanRequest,
+	"loanparams":              RpcServer.handleGetLoanParams,
+	CreateAndSendLoanRequest:  RpcServer.handleCreateAndSendLoanRequest,
+	CreateAndSendLoanResponse: RpcServer.handleCreateAndSendLoanResponse,
+	CreateAndSendLoanWithdraw: RpcServer.handleCreateAndSendLoanWithdraw,
+	CreateAndSendLoanPayment:  RpcServer.handleCreateAndSendLoanPayment,
 
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
