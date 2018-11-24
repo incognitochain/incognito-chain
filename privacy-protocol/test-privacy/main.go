@@ -5,8 +5,6 @@ import (
 	//"fmt"
 	//"github.com/ninjadotorg/constant/privacy-protocol"
 	//"math/big"
-
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
 func main() {

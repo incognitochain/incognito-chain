@@ -65,8 +65,16 @@ type Coin struct {
 //}
 
 // UnspentCoin represents a list of coins to be spent corresponding to spending key
-type UnspentCoin struct {
-	SpendingKey SpendingKey
-	//UnspentCoinList map[Coin]big.Int
+//type UnspentCoin struct {
+//	SpendingKey SpendingKey
+//	UnspentCoinList map[Coin]big.Int
+//}
+
+
+// InputCoin represents a input coin of transaction
+type InputCoin struct{
+	BlockHeight *big.Int
+	SpendingKey *big.Int
+	CoinInfo *Coin
 }
 

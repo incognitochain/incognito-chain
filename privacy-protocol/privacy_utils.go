@@ -3,6 +3,7 @@ package privacy
 import (
 	"crypto/rand"
 	"fmt"
+	"math/big"
 )
 
 // RandBytes generates random bytes
@@ -14,6 +15,14 @@ func RandBytes(n int) []byte {
 		return nil
 	}
 	return b
+}
+
+// RandInt generates a big int with value less than order of group of elliptic points
+func RandInt() *big.Int{
+	bytes := RandBytes(32)
+	res := new(big.Int).SetBytes(bytes)
+	res.Mod(res, Curve.Params().N)
+	return res
 }
 
 // IsPowerOfTwo checks whether n is power of two or not
