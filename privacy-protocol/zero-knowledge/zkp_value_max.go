@@ -58,10 +58,10 @@ package zkp
 //	//vBinary represent value in binary
 //	var vBinary []byte
 //
-//	// find Index of bit-length threshold in which i lies
+//	// find index of bit-length threshold in which i lies
 //	// nBitsValue: bit-length of value
 //	nBitsValue := 0
-//	// indexThreshold: Index of bit-length threshold in which i lies
+//	// indexThreshold: index of bit-length threshold in which i lies
 //	indexThreshold := 0
 //	for vIntTmp > 0 {
 //		vBinary = append(vBinary, byte(vIntTmp%2))
@@ -73,7 +73,7 @@ package zkp
 //	}
 //
 //	// Set Witness and commit
-//	privacy.Pcm.InitCommitment()
+//	privacy.PedCom.InitCommitment()
 //	witnesses := make([][][]byte, threshold[indexThreshold])
 //	proof.commitments = make([][]byte, threshold[indexThreshold])
 //	proof.proofZeroOneCommitments = make([]*PKComZeroOneProof, threshold[indexThreshold])
@@ -84,13 +84,13 @@ package zkp
 //		proof.commitments[i] = make([]byte, 34)
 //		fmt.Printf("witness[%v][0] : %v\n", i, witnesses[i][0])
 //		fmt.Printf("witness[%v][1] : %v\n", i, witnesses[i][1])
-//		proof.commitments[i] = privacy.Pcm.CommitAtIndex(witnesses[i][0], witnesses[i][1], privacy.VALUE)
+//		proof.commitments[i] = privacy.PedCom.CommitAtIndex(witnesses[i][0], witnesses[i][1], privacy.VALUE)
 //
 //		var witness PKComZeroOneWitness
-//		witness.Commitment = proof.commitments[i]
-//		witness.CommitedValue = witnesses[i][0]
-//		witness.Rand = witnesses[i][1]
-//		witness.Index = privacy.VALUE
+//		witness.commitment = proof.commitments[i]
+//		witness.commitedValue = witnesses[i][0]
+//		witness.rand = witnesses[i][1]
+//		witness.index = privacy.VALUE
 //		proof.PKComZeroOneProtocol[i] = new(PKComZeroOneProtocol)
 //		proof.PKComZeroOneProtocol[i].SetWitness(witness)
 //
@@ -104,13 +104,13 @@ package zkp
 //		proof.commitments[j] = make([]byte, 34)
 //		fmt.Printf("witness[%v][0] : %v\n", j, witnesses[j][0])
 //		fmt.Printf("witness[%v][1] : %v\n", j, witnesses[j][1])
-//		proof.commitments[j] = privacy.Pcm.CommitAtIndex(witnesses[j][0], witnesses[j][1], privacy.VALUE)
+//		proof.commitments[j] = privacy.PedCom.CommitAtIndex(witnesses[j][0], witnesses[j][1], privacy.VALUE)
 //
 //		var witness PKComZeroOneWitness
-//		witness.Commitment = proof.commitments[j]
-//		witness.CommitedValue = witnesses[j][0]
-//		witness.Rand = witnesses[j][1]
-//		witness.Index = privacy.VALUE
+//		witness.commitment = proof.commitments[j]
+//		witness.commitedValue = witnesses[j][0]
+//		witness.rand = witnesses[j][1]
+//		witness.index = privacy.VALUE
 //		proof.PKComZeroOneProtocol[j] = new(PKComZeroOneProtocol)
 //		proof.PKComZeroOneProtocol[j].SetWitness(witness)
 //

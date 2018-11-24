@@ -5,7 +5,7 @@ import (
 	//"github.com/ninjadotorg/constant/privacy-protocol"
 	//"math/big"
 
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
 func main() {
@@ -61,9 +61,11 @@ func main() {
 
 	// privacy.TestProofIsZero()
 
-	// privacy.TestPKComZeroOne()
+	zkp.TestPKComZeroOne()
 
 	// privacy.TestPKOneOfMany()
+
+	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
 	//i := 0
 	//runtime.GOMAXPROCS(runtime.NumCPU())
@@ -94,8 +96,8 @@ func main() {
 	//privacy.TestCommitment()
 
 	//zkp.TestPKMaxValue()
-	//privacy.Pcm.Setup()
-	//privacy.Pcm.TestFunction(00)
+	//privacy.PedCom.Setup()
+	//privacy.PedCom.TestFunction(00)
 
 	//var zk zkp.ZKProtocols
 	//
@@ -104,14 +106,14 @@ func main() {
 	//vInt.Mod(vInt, big.NewInt(2))
 	//rand := privacy.RandBytes(32)
 	//
-	//partialCommitment := privacy.Pcm.CommitAtIndex(vInt.Bytes(), rand, privacy.VALUE)
+	//partialCommitment := privacy.PedCom.CommitAtIndex(vInt.Bytes(), rand, privacy.VALUE)
 	//
 	//
 	//var witness zkp.PKComZeroOneWitness
-	//witness.CommitedValue = vInt.Bytes()
-	//witness.Rand = rand
-	//witness.Commitment = partialCommitment
-	//witness.Index = privacy.VALUE
+	//witness.commitedValue = vInt.Bytes()
+	//witness.rand = rand
+	//witness.commitment = partialCommitment
+	//witness.index = privacy.VALUE
 	//
 	//zk.SetWitness(witness)
 	//proof, _ := zk.Prove()
@@ -143,10 +145,10 @@ func main() {
 	//zkp.TestPKComZeroOne()
 
 	/*----------------- TEST PCM SINGLETON -----------------*/
-	//privacy.Pcm = privacy.GetPedersenParams()
-	//fmt.Printf("a1: %p\n", &privacy.Pcm)
-	//privacy.Pcm = privacy.GetPedersenParams()
-	//fmt.Printf("a1: %p\n", &privacy.Pcm)
+	//privacy.PedCom = privacy.GetPedersenParams()
+	//fmt.Printf("a1: %p\n", &privacy.PedCom)
+	//privacy.PedCom = privacy.GetPedersenParams()
+	//fmt.Printf("a1: %p\n", &privacy.PedCom)
 
 	/*----------------- TEST NEW PCM -----------------*/
 	//var generators []privacy.EllipticPoint
@@ -157,13 +159,13 @@ func main() {
 	//generators[1].ComputeYCoord()
 	//generators[2] = privacy.EllipticPoint{big.NewInt(45), big.NewInt(0)}
 	//generators[2].ComputeYCoord()
-	//newPcm := privacy.NewPedersenParams(generators)
-	//fmt.Printf("New Pcm: %+v\n", newPcm)
+	//newPedCom := privacy.NewPedersenParams(generators)
+	//fmt.Printf("New PedCom: %+v\n", newPedCom)
 
 	/*----------------- TEST COMMITMENT -----------------*/
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
-	privacy.TestSchn()
+	//privacy.TestSchn()
 
 }

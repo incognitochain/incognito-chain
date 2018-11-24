@@ -23,7 +23,7 @@ type DatabaseInterface interface {
 	GetIndexOfBlock(*common.Hash) (int32, byte, error)
 	GetBlockByIndex(int32, byte) (*common.Hash, error)
 
-	// Transaction Index
+	// Transaction index
 	StoreTransactionIndex(*common.Hash, *common.Hash, int) error
 	StoreTransactionLightMode(*privacy.SpendingKey, byte, int32, int, *transaction.Tx) error
 	GetTransactionIndexById(*common.Hash) (*common.Hash, int, error)

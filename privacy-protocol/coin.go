@@ -27,7 +27,7 @@ type Coin struct {
 //	values := [PCM_CAPACITY][]byte{coin.PublicKey, coin.Value, coin.SNDerivator, coin.Randomness}
 //	fmt.Printf("coin info: %v\n", values)
 //	coin.CoinCommitment = append(coin.CoinCommitment, FULL)
-//	coin.CoinCommitment = append(coin.CoinCommitment, Pcm.Commit(values)...)
+//	coin.CoinCommitment = append(coin.CoinCommitment, PedCom.Commit(values)...)
 //}
 //
 //// CommitPublicKey commits a public key's coin
@@ -38,7 +38,7 @@ type Coin struct {
 //
 //	var commitment []byte
 //	commitment = append(commitment, PK)
-//	commitment = append(commitment, Pcm.Commit(values)...)
+//	commitment = append(commitment, PedCom.Commit(values)...)
 //	return commitment
 //}
 //
@@ -49,7 +49,7 @@ type Coin struct {
 //
 //	var commitment []byte
 //	commitment = append(commitment, VALUE)
-//	commitment = append(commitment, Pcm.Commit(values)...)
+//	commitment = append(commitment, PedCom.Commit(values)...)
 //	return commitment
 //}
 //
@@ -60,13 +60,13 @@ type Coin struct {
 //
 //	var commitment []byte
 //	commitment = append(commitment, SND)
-//	commitment = append(commitment, Pcm.Commit(values)...)
+//	commitment = append(commitment, PedCom.Commit(values)...)
 //	return commitment
 //}
 
 // UnspentCoin represents a list of coins to be spent corresponding to spending key
 type UnspentCoin struct {
 	SpendingKey SpendingKey
-	UnspentCoinList map[Coin]big.Int
+	//UnspentCoinList map[Coin]big.Int
 }
 

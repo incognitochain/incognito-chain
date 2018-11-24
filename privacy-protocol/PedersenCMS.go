@@ -22,11 +22,11 @@ type PedersenCommitment interface {
 	// Params returns the parameters for the commitment
 	Params() *PCParams
 	// CommitAll commits
-	CommitAll(openings [PCM_CAPACITY]big.Int) EllipticPoint
+	CommitAll(openings [PCM_CAPACITY]*big.Int) *EllipticPoint
 	// CommitAtIndex commits value at index
-	CommitAtIndex(value big.Int, rand big.Int, index byte) EllipticPoint
+	CommitAtIndex(value *big.Int, rand *big.Int, index byte) *EllipticPoint
 	//CommitEllipticPoint commit a elliptic point
-	CommitEllipticPoint(point EllipticPoint, rand big.Int) EllipticPoint
+	CommitEllipticPoint(point *EllipticPoint, rand *big.Int) *EllipticPoint
 }
 
 // PCParams represents the parameters for the commitment
@@ -57,7 +57,7 @@ func (com PCParams) Params() PCParams {
 }
 
 // CommitAll commits a list of PCM_CAPACITY value(s)
-func (com PCParams) CommitAll(openings [PCM_CAPACITY]big.Int) EllipticPoint {
+func (com PCParams) CommitAll(openings [PCM_CAPACITY]*big.Int) *EllipticPoint {
 	temp := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 	commitment := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 
@@ -66,11 +66,11 @@ func (com PCParams) CommitAll(openings [PCM_CAPACITY]big.Int) EllipticPoint {
 		commitment.X, commitment.Y = Curve.Add(commitment.X, commitment.Y, temp.X, temp.Y)
 	}
 
-	return commitment
+	return &commitment
 }
 
 // CommitAtIndex commits specific value with index and returns 34 bytes
-func (com PCParams) CommitAtIndex(value, rand big.Int, index byte) EllipticPoint {
+func (com PCParams) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoint {
 	commitment := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 	temp := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 
@@ -79,7 +79,7 @@ func (com PCParams) CommitAtIndex(value, rand big.Int, index byte) EllipticPoint
 	temp.X, temp.Y = Curve.ScalarMult(com.G[index].X, com.G[index].Y, value.Bytes())
 	commitment.X, commitment.Y = Curve.Add(commitment.X, commitment.Y, temp.X, temp.Y)
 
-	return commitment
+	return &commitment
 }
 
 //func (com PCParams) CommitWithSpecPoint(G EllipticPoint, H EllipticPoint, value, sRnd []byte) []byte {
@@ -105,7 +105,7 @@ func (com PCParams) CommitAtIndex(value, rand big.Int, index byte) EllipticPoint
 //	if len(rands) != nBitsThreshold {
 //		return nil, fmt.Errorf("do not have enough random number to commit")
 //	}
-//	Pcm.InitCommitment()
+//	PedCom.InitCommitment()
 //
 //	commitments := make([][]byte, nBitsThreshold)
 //	commitmentPoints := make([]EllipticPoint, nBitsThreshold)
@@ -121,9 +121,9 @@ func (com PCParams) CommitAtIndex(value, rand big.Int, index byte) EllipticPoint
 //
 //		bit := value % 2
 //		if bit == 1 {
-//			commitments[i] = Pcm.CommitAtIndex(big.NewInt(1).Bytes(), rands[i], index)
+//			commitments[i] = PedCom.CommitAtIndex(big.NewInt(1).Bytes(), rands[i], index)
 //		} else {
-//			commitments[i] = Pcm.CommitAtIndex(big.NewInt(0).Bytes(), rands[i], index)
+//			commitments[i] = PedCom.CommitAtIndex(big.NewInt(0).Bytes(), rands[i], index)
 //		}
 //
 //		//Compress commitment to byte array
@@ -148,7 +148,7 @@ func (com PCParams) CommitAtIndex(value, rand big.Int, index byte) EllipticPoint
 //01: Test generate commitment for special value and its random value in special index
 // func TestCommitment(testCode byte) bool {
 
-// 	Pcm := NewPedersenParams()
+// 	PedCom := NewPedersenParams()
 // 	switch testCode {
 // 	case 0: //Generate commitment for 4 random value
 // 		//Generate 4 random value
@@ -162,8 +162,8 @@ func (com PCParams) CommitAtIndex(value, rand big.Int, index byte) EllipticPoint
 // 		fmt.Println("Value r: ", valuer)
 
 // 		//Compute commitment for all value, 4 is value of constant PCM_CAPACITY
-// 		commitmentAll := Pcm.CommitAll([PCM_CAPACITY]big.Int{*value1, *value2, *value3, *valuer})
-// 		fmt.Println("Pedersen Commitment point: ", commitmentAll)
+// 		commitmentAll := PedCom.CommitAll([PCM_CAPACITY]big.Int{*value1, *value2, *value3, *valuer})
+// 		fmt.Println("Pedersen commitment point: ", commitmentAll)
 
 // 		cmBytes := commitmentAll.Compress()
 // 		fmt.Printfunc GenerateChallenge(values [][]byte) []byte {
@@ -178,7 +178,7 @@ func (com PCParams) CommitAtIndex(value, rand big.Int, index byte) EllipticPoint
 // 	hashFunc.Write(appendStr)
 // 	hashValue := hashFunc.Sum(nil)
 // 	return hashValue
-// }("Pedersen Commitment bytes: ", cmBytes)
+// }("Pedersen commitment bytes: ", cmBytes)
 
 // 		cmPoint :func GenerateChallenge(values [][]byte) []byte {
 // 	appendStr := Elcm.G[0].CompressPoint()
@@ -218,7 +218,7 @@ func (com PCParams) CommitAtIndex(value, rand big.Int, index byte) EllipticPoint
 // 	hashFunc.Write(appendStr)
 // 	hashValue := hashFunc.Sum(nil)
 // 	return hashValue
-// }("Pedersen Commitment decompress: ", cmPoint)
+// }("Pedersen commitment decompress: ", cmPoint)
 
 // 		break
 // 	case 1: //Generate commitment for special value and its random value
@@ -229,16 +229,16 @@ func (com PCParams) CommitAtIndex(value, rand big.Int, index byte) EllipticPoint
 // 		fmt.Println("Value r: ", valuer)
 
 // 		//Compute commitment for special value with index 0
-// 		commitmentSpec := Pcm.CommitAtIndex(*value1, *valuer, 0)
+// 		commitmentSpec := PedCom.CommitAtIndex(*value1, *valuer, 0)
 
-// 		fmt.Println("Pedersen Commitment value: ", commitmentSpec)
+// 		fmt.Println("Pedersen commitment value: ", commitmentSpec)
 
 // 		cmBytes := commitmentSpec.Compress()
-// 		fmt.Println("Pedersen Commitment bytes: ", cmBytes)
+// 		fmt.Println("Pedersen commitment bytes: ", cmBytes)
 
 // 		cmPoint := new(EllipticPoint)
 // 		cmPoint.Decompress(cmBytes)
-// 		fmt.Println("Pedersen Commitment decompress: ", cmPoint)
+// 		fmt.Println("Pedersen commitment decompress: ", cmPoint)
 // 		break
 // 	}
 // 	return true

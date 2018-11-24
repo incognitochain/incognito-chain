@@ -248,7 +248,7 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 		bestHashStr := self.config.BlockChain.BestState[chainID].BestBlockHash.String()
 		Logger.log.Infof("Blockhash from message %s", blockHash.String())
 		Logger.log.Infof("Blockhash of bestChain in chainID %d - %s", chainID, bestHashStr)
-		Logger.log.Info("Index of block %d \n", senderBlockHeaderIndex)
+		Logger.log.Info("index of block %d \n", senderBlockHeaderIndex)
 		Logger.log.Info("chainId of block %d \n", chainID)
 		if bestHashStr != blockHash.String() {
 			// Send Blocks back to requestor

@@ -118,17 +118,17 @@ package zkp
 //	s := new(big.Int).SetBytes(privacy.RandBytes(32));
 //	s1 := new(big.Int).SetBytes(privacy.RandBytes(32));
 //	t := new(big.Int).SetBytes(privacy.RandBytes(32));
-//	pro.Witness.cmA = privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessA,pro.Witness.randA)
-//	pro.Witness.cmB = privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessB,pro.Witness.randB)
-//	pro.Witness.cmC = privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessAB,pro.Witness.randC)
+//	pro.Witness.cmA = privacy.PedCom.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessA,pro.Witness.randA)
+//	pro.Witness.cmB = privacy.PedCom.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessB,pro.Witness.randB)
+//	pro.Witness.cmC = privacy.PedCom.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H,pro.Witness.witnessAB,pro.Witness.randC)
 //	//Compute D factor of Proof
-//	D:= privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H, d.Bytes(),s.Bytes());
+//	D:= privacy.PedCom.CommitWithSpecPoint(proof.basePoint.G, proof.basePoint.H, d.Bytes(),s.Bytes());
 //	//Compute D' factor of Proof
 //	G1 := new(privacy.EllipticPoint)
 //	G1,_= privacy.DecompressCommitment(pro.Witness.cmB);
-//	D1:= privacy.Pcm.CommitWithSpecPoint(*G1,proof.basePoint.H, d.Bytes(),s1.Bytes());
+//	D1:= privacy.PedCom.CommitWithSpecPoint(*G1,proof.basePoint.H, d.Bytes(),s1.Bytes());
 //	//Compute E factor of Proof
-//	E:= privacy.Pcm.CommitWithSpecPoint(proof.basePoint.G,proof.basePoint.H, e.Bytes(),t.Bytes())
+//	E:= privacy.PedCom.CommitWithSpecPoint(proof.basePoint.G,proof.basePoint.H, e.Bytes(),t.Bytes())
 //	D_temp,_ :=privacy.DecompressCommitment(D)
 //	proof.D.X,proof.D.Y = D_temp.X, D_temp.Y
 //	E_temp,_ :=privacy.DecompressCommitment(E);
@@ -250,7 +250,7 @@ package zkp
 //	pts1.X, pts1.Y = privacy.Curve.ScalarMult(A.X, A.Y, x)
 //	pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, pro.Proof.D.X,pro.Proof.D.Y);
 //
-//	com1 := privacy.Pcm.CommitWithSpecPoint(pro.Proof.basePoint.G,pro.Proof.basePoint.H, pro.Proof.f1.Bytes(), pro.Proof.z1.Bytes())
+//	com1 := privacy.PedCom.CommitWithSpecPoint(pro.Proof.basePoint.G,pro.Proof.basePoint.H, pro.Proof.f1.Bytes(), pro.Proof.z1.Bytes())
 //	com1_temp,_:=privacy.DecompressCommitment(com1)
 //
 //	if (com1_temp.X.Cmp(pts1.X)==0 && com1_temp.Y.Cmp(pts1.Y)==0){
@@ -262,7 +262,7 @@ package zkp
 //	B,_ = privacy.DecompressCommitment(pro.Proof.cmB);
 //	pts1.X, pts1.Y = privacy.Curve.ScalarMult(B.X, B.Y, x)
 //	pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, pro.Proof.E.X,pro.Proof.E.Y);
-//	com2 := privacy.Pcm.CommitWithSpecPoint(pro.Proof.basePoint.G,pro.Proof.basePoint.H, pro.Proof.f2.Bytes(), pro.Proof.z2.Bytes())
+//	com2 := privacy.PedCom.CommitWithSpecPoint(pro.Proof.basePoint.G,pro.Proof.basePoint.H, pro.Proof.f2.Bytes(), pro.Proof.z2.Bytes())
 //	com2_temp,_:=privacy.DecompressCommitment(com2)
 //
 //	if (com2_temp.X.Cmp(pts1.X)==0 && com2_temp.Y.Cmp(pts1.Y)==0){
@@ -274,7 +274,7 @@ package zkp
 //	C,_ = privacy.DecompressCommitment(pro.Proof.cmC);
 //	pts1.X, pts1.Y = privacy.Curve.ScalarMult(C.X, C.Y, x)
 //	pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, pro.Proof.D1.X,pro.Proof.D1.Y);
-//	com3 := privacy.Pcm.CommitWithSpecPoint(pro.Proof.G1,pro.Proof.basePoint.H, pro.Proof.f1.Bytes(), pro.Proof.z3.Bytes())
+//	com3 := privacy.PedCom.CommitWithSpecPoint(pro.Proof.G1,pro.Proof.basePoint.H, pro.Proof.f1.Bytes(), pro.Proof.z3.Bytes())
 //	com3_temp,_:=privacy.DecompressCommitment(com3)
 //	if (com3_temp.X.Cmp(pts1.X)==0 && com3_temp.Y.Cmp(pts1.Y)==0){
 //		checkFlag +=1

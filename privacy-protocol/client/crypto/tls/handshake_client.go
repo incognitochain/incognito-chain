@@ -81,7 +81,7 @@ NextCipherSuite:
 
 	_, err := io.ReadFull(config.rand(), hello.random)
 	if err != nil {
-		return nil, errors.New("tls: short read from Rand: " + err.Error())
+		return nil, errors.New("tls: short read from rand: " + err.Error())
 	}
 
 	if hello.vers >= VersionTLS12 {
@@ -155,7 +155,7 @@ func (c *Conn) clientHandshake() error {
 		// (see RFC 5077).
 		hello.sessionId = make([]byte, 16)
 		if _, err := io.ReadFull(c.config.rand(), hello.sessionId); err != nil {
-			return errors.New("tls: short read from Rand: " + err.Error())
+			return errors.New("tls: short read from rand: " + err.Error())
 		}
 	}
 

@@ -122,7 +122,7 @@ var (
 // The first table contains (x,y) field element pairs for 16 multiples of the
 // base point, G.
 //
-//   Index  |  Index (binary) | Value
+//   index  |  index (binary) | Value
 //       0  |           0000  | 0G (all zeros, omitted)
 //       1  |           0001  | G
 //       2  |           0010  | 2**64G
