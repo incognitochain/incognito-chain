@@ -448,8 +448,8 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 	if bytes.Equal(saleData.BuyingAsset, BondTokenID[:]) {
 		for _, vout := range requestTx.TxTokenData.Vouts {
 			// Check if sending asset is correct
-			if vout.BuySellResponse.AssetID != saleData.BondID {
-				return fmt.Errorf("Received asset id %s instead of %s", vout.BuySellResponse.AssetID, saleData.BondID)
+			if vout.BuySellResponse.BondID != saleData.BondID {
+				return fmt.Errorf("Received asset id %s instead of %s", vout.BuySellResponse.BondID, saleData.BondID)
 			}
 
 			// Check if receiving address is DCB's
@@ -489,8 +489,8 @@ func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction,
 	if bytes.Equal(saleData.SellingAsset, BondTokenID[:]) {
 		for _, vout := range responseTx.TxTokenData.Vouts {
 			// Check if sending asset is correct
-			if vout.BuySellResponse.AssetID != saleData.BondID {
-				return fmt.Errorf("Sending asset id %s instead of %s", vout.BuySellResponse.AssetID, saleData.BondID)
+			if vout.BuySellResponse.BondID != saleData.BondID {
+				return fmt.Errorf("Sending asset id %s instead of %s", vout.BuySellResponse.BondID, saleData.BondID)
 			}
 		}
 	}
