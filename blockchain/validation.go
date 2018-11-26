@@ -110,6 +110,17 @@ func (self *BlockChain) ValidateTxLoanResponse(tx transaction.Transaction, chain
 		return fmt.Errorf("Fail parsing LoanResponse transaction")
 	}
 
+	// Check if only board members created this tx
+	isBoard := false
+	for _, gov := range self.BestState[chainID].BestBlock.Header.DCBGovernor.DCBBoardPubKeys {
+		if bytes.Equal([]byte(gov), txResponse.JSPubKey) {
+			isBoard = true
+		}
+	}
+	if !isBoard {
+		return fmt.Errorf("Tx must be created by DCB Governor")
+	}
+
 	// Check if a loan request with the same id exists on any chain
 	txHashes, err := self.config.DataBase.GetLoanTxs(txResponse.LoanID)
 	if err != nil {
@@ -126,7 +137,14 @@ func (self *BlockChain) ValidateTxLoanResponse(tx transaction.Transaction, chain
 		switch txOld.GetType() {
 		case common.TxLoanResponse:
 			{
-				return fmt.Errorf("Loan already had response")
+				txOldResp, ok := txOld.(*transaction.TxLoanResponse)
+				if !ok {
+					return fmt.Errorf("Error parsing old loan response tx")
+				}
+				// Check if the same user responses twice
+				if bytes.Equal(txOldResp.JSPubKey, txResponse.JSPubKey) {
+					return fmt.Errorf("Current user already responded to loan request")
+				}
 			}
 		case common.TxLoanRequest:
 			{
@@ -156,7 +174,7 @@ func (self *BlockChain) ValidateTxLoanPayment(tx transaction.Transaction, chainI
 	if err != nil {
 		return err
 	}
-	found := 0
+	found := uint8(0)
 	for _, txHash := range txHashes {
 		hash := &common.Hash{}
 		copy(hash[:], txHash)
