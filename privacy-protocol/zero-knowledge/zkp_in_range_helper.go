@@ -183,7 +183,7 @@ func InnerProductVerify(c *big.Int, P, U privacy.EllipticPoint, G, H []privacy.E
 	Pcalc3 := ux.ScalarMulPoint(ccalc)
 	Pcalc := Pcalc1.AddPoint(Pcalc2).AddPoint(Pcalc3)
 
-	if !Pprime.Equal(Pcalc) {
+	if !Pprime.IsEqual(Pcalc) {
 		fmt.Println("IPVerify - Final Commitment checking failed")
 		fmt.Printf("Final Pprime value: %s \n", Pprime)
 		fmt.Printf("Calculated Pprime value to check against: %s \n", Pcalc)
@@ -265,7 +265,7 @@ func InnerProductVerifyFast(c *big.Int, P, U privacy.EllipticPoint, G, H []priva
 	ccalc := new(big.Int).Mod(new(big.Int).Mul(ipp.A, ipp.B), privacy.Curve.Params().N)
 	lhs := TwoVectorPCommitWithGens(G, H, ScalarVectorMul(sScalars, ipp.A), ScalarVectorMul(invsScalars, ipp.B)).AddPoint(ux.ScalarMulPoint(ccalc))
 
-	if !rhs.Equal(lhs) {
+	if !rhs.IsEqual(lhs) {
 		fmt.Println("IPVerify - Final Commitment checking failed")
 		fmt.Printf("Final rhs value: %s \n", rhs)
 		fmt.Printf("Final lhs value: %s \n", lhs)
@@ -519,7 +519,6 @@ func TwoVectorPCommitWithGens(G, H []privacy.EllipticPoint, a, b []*big.Int) pri
 	for i := 0; i < len(G); i++ {
 		modA := new(big.Int).Mod(a[i], privacy.Curve.Params().N)
 		modB := new(big.Int).Mod(b[i], privacy.Curve.Params().N)
-
 		commitment = commitment.AddPoint(G[i].ScalarMulPoint(modA)).AddPoint(H[i].ScalarMulPoint(modB))
 	}
 

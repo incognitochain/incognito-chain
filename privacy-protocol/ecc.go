@@ -2,11 +2,8 @@ package privacy
 
 import (
 	"crypto/elliptic"
-	"errors"
 	"fmt"
 	"math/big"
-
-	"github.com/minio/blake2b-simd"
 )
 
 // Curve P256
@@ -27,8 +24,9 @@ type EllipticPointHelper interface {
 	IsSafe() bool
 	ComputeYCoord()
 	Hash() EllipticPoint
-	AddPoint(EllipticPoint) EllipticPoint
-	ScalarMulPoint(*big.Int) EllipticPoint
+	AddPoint(EllipticPoint) *EllipticPoint
+	ScalarMulPoint(*big.Int) *EllipticPoint
+	IsEqual(EllipticPoint) bool
 }
 
 // EllipticPoint represents an point of elliptic curve,
@@ -36,24 +34,12 @@ type EllipticPointHelper interface {
 type EllipticPoint struct {
 	X, Y *big.Int
 }
-func (eccPoint *EllipticPoint) AddPoint(p EllipticPoint) EllipticPoint{
-	var res EllipticPoint
-	res.X, res.Y = Curve.Add(eccPoint.X, eccPoint.Y, p.X, p.Y)
-	return res
-}
-func (eccPoint *EllipticPoint) ScalarMulPoint(factor *big.Int) EllipticPoint{
-	var res EllipticPoint
-	res.X, res.Y = Curve.ScalarMult(eccPoint.X, eccPoint.Y, factor.Bytes())
-	return res
-}
 //ComputeYCoord calculates Y coord from X
 func (eccPoint *EllipticPoint) ComputeYCoord() error {
 	if eccPoint.Y == nil {
 		eccPoint.Y = big.NewInt(0)
 	}
-
 	xTemp := new(big.Int)
-
 	// Y = +-sqrt(x^3 - 3*x + B)
 	x3 := new(big.Int).Mul(eccPoint.X, eccPoint.X)
 	x3.Mul(x3, eccPoint.X)
@@ -261,5 +247,25 @@ func TestECC() bool {
 		return false
 	}
 	return true
-
 }
+/****** Please not modify my functions.
+				These functions have worked for my range proof protocol
+				If there are any changes, please inform me first
+										TRONG-DAT														***********/
+func (eccPoint EllipticPoint) AddPoint(p EllipticPoint) EllipticPoint{
+	var res EllipticPoint
+	res.X, res.Y = Curve.Add(eccPoint.X, eccPoint.Y, p.X, p.Y)
+	return res
+}
+func (eccPoint EllipticPoint) IsEqual(p EllipticPoint) bool{
+	if (eccPoint.X.Cmp(p.X)==0 && eccPoint.Y.Cmp(p.Y)==0){
+		return true
+	}
+	return false
+}
+func (eccPoint EllipticPoint) ScalarMulPoint(factor *big.Int) EllipticPoint{
+	var res EllipticPoint
+	res.X, res.Y = Curve.ScalarMult(eccPoint.X, eccPoint.Y, factor.Bytes())
+	return res
+}
+/*******************************************************************************************/

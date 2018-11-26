@@ -345,7 +345,7 @@ func MRPVerify(mrp PKComMultiRangeProof) bool {
 		mrp.T1.ScalarMulPoint(cx)).AddPoint(
 		mrp.T2.ScalarMulPoint(new(big.Int).Mul(cx, cx))).AddPoint(CommPowers)
 
-	if !lhs.Equal(rhs) {
+	if !lhs.IsEqual(rhs) {
 		fmt.Println("MRPVerify - Uh oh! Check line (63) of verification")
 		fmt.Println(rhs)
 		fmt.Println(lhs)
@@ -379,7 +379,8 @@ func MRPVerify(mrp PKComMultiRangeProof) bool {
 
 	// without subtracting this value should equal muCH + l[i]G[i] + r[i]H'[i]
 	// we want to make sure that the innerproduct checks out, so we subtract it
-	P := mrp.A.AddPoint(mrp.S.ScalarMulPoint(cx)).AddPoint(tmp1).AddPoint(tmp2).AddPoint(RangeProofParams.H.ScalarMulPoint(mrp.Mu).Neg())
+	tmp,_:=RangeProofParams.H.ScalarMulPoint(mrp.Mu).Inverse()
+	P := mrp.A.AddPoint(mrp.S.ScalarMulPoint(cx)).AddPoint(tmp1).AddPoint(tmp2).AddPoint(*tmp)
 	//fmt.Println(P)
 
 	if !InnerProductVerifyFast(mrp.Th, P, RangeProofParams.U, RangeProofParams.BPG, HPrime, mrp.IPP) {
@@ -388,29 +389,29 @@ func MRPVerify(mrp PKComMultiRangeProof) bool {
 	}
 	return true
 }
-//func PKComMultiRangeTest() {
-//	test:=8
-//	values := make([]*big.Int,test)
-//	for i:=0;i<test;i++{
-//		values[i] = new(big.Int)
-//		x:=new(big.Int).SetBytes(privacy.RandBytes(9))
-//		fmt.Println(x)
-//		values[i]=x
-//	}
-//	//values := []*big.Int{big.NewInt(5136325419070411678), big.NewInt()}
-//	var witness PKComMultiRangeWitness
-//	witness.Values = values
-//	var zk PKComMultiRangeProtocol
-//	zk.SetWitness(witness)
-//	RangeProofParams = NewECPrimeGroupKey(64 * len(values))
-//	// Testing smallest number in range
-//	proof:=zk.Prove()
-//	if MRPVerify(proof) {
-//		fmt.Println("Multi Range Proof Verification works")
-//	} else {
-//		fmt.Println("***** Multi Range Proof FAILURE")
-//	}
-//}
+func PKComMultiRangeTest() {
+	test:=8
+	values := make([]*big.Int,test)
+	for i:=0;i<test;i++{
+		values[i] = new(big.Int)
+		x:=new(big.Int).SetBytes(privacy.RandBytes(8))
+		fmt.Println(x)
+		values[i]=x
+	}
+	//values := []*big.Int{big.NewInt(5136325419070411678), big.NewInt()}
+	var witness PKComMultiRangeWitness
+	witness.Values = values
+	var zk PKComMultiRangeProtocol
+	zk.SetWitness(witness)
+	RangeProofParams = NewECPrimeGroupKey(64 * len(values))
+	// Testing smallest number in range
+	proof:=zk.Prove()
+	if MRPVerify(proof) {
+		fmt.Println("Multi Range Proof Verification works")
+	} else {
+		fmt.Println("***** Multi Range Proof FAILURE")
+	}
+}
 
 
 
