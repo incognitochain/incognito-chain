@@ -103,7 +103,7 @@ func (wit PKComZeroWitness) Prove() (*PKComZeroProof, error) {
 	commitmentZeroS := privacy.PedCom.CommitAtIndex(big.NewInt(0), sRnd, *wit.index)
 
 	//Generate challenge x in Zp
-	xChallenge := GenerateChallenge([]*privacy.EllipticPoint{wit.commitmentValue})
+	xChallenge := GenerateChallengeFromPoint([]*privacy.EllipticPoint{wit.commitmentValue})
 
 	//Calculate z=r*x + s (mod N)
 	z := big.NewInt(0)
@@ -121,7 +121,7 @@ func (wit PKComZeroWitness) Prove() (*PKComZeroProof, error) {
 //Verify verify that under PedersenCommitment is zero
 func (pro *PKComZeroProof) Verify() bool {
 	//Generate challenge x in Zp
-	xChallenge := GenerateChallenge([]*privacy.EllipticPoint{pro.commitmentValue})
+	xChallenge := GenerateChallengeFromPoint([]*privacy.EllipticPoint{pro.commitmentValue})
 
 	//convert commitmentValue []byte to Point in ECC
 	// commitmentValuePoint, err := privacy.DecompressKey(commitmentValue)
