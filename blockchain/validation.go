@@ -156,7 +156,7 @@ func (self *BlockChain) ValidateTxLoanPayment(tx transaction.Transaction, chainI
 	if err != nil {
 		return err
 	}
-	found := false
+	found := 0
 	for _, txHash := range txHashes {
 		hash := &common.Hash{}
 		copy(hash[:], txHash)
@@ -167,13 +167,17 @@ func (self *BlockChain) ValidateTxLoanPayment(tx transaction.Transaction, chainI
 		switch txOld.GetType() {
 		case common.TxLoanResponse:
 			{
-				found = true
+				txResponse := tx.(*transaction.TxLoanResponse)
+				if txResponse.Response == transaction.Accept {
+					found += 1
+				}
 			}
 		}
 	}
 
-	if found == false {
-		return fmt.Errorf("Corresponding loan response not found")
+	minResponse := self.BestState[chainID].BestBlock.Header.DCBConstitution.DCBParams.MinLoanResponseRequire
+	if found < minResponse {
+		return fmt.Errorf("Not enough loan accepted response")
 	}
 	return nil
 }
@@ -219,11 +223,13 @@ func (self *BlockChain) ValidateTxLoanWithdraw(tx transaction.Transaction, chain
 				if !ok {
 					return fmt.Errorf("Error parsing corresponding loan response")
 				}
-				if txResponse.Response != transaction.Accept {
+				if self.BestState[chainID].BestBlock.Header.Height > txResponse.ValidUntil {
+					return fmt.Errorf("Deadline exceeded, cannot withdraw loan")
+				}
+				if txResponse.Response == transaction.Accept {
 					foundResponse = true
 				}
 			}
-
 		}
 	}
 
