@@ -175,7 +175,7 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 		txCustomToken.TxTokenData.Vins = tokenParams.vins
 		var VoutsTemp []TxTokenVout
 		for _, receiver := range tokenParams.Receiver {
-			receiverAmount := receiver.ValueZKProof
+			receiverAmount := receiver.Value
 			VoutsTemp = append(VoutsTemp, TxTokenVout{
 				PaymentAddress: receiver.PaymentAddress,
 				Value:          receiverAmount,
