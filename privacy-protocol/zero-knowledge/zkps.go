@@ -10,8 +10,18 @@ const (
 	CMListProve = 256
 )
 
+// BEGIN--------------------------------------------------------------------------------------------------------------------------------------------
+
+// ProofOfPayment contains all of PoK for sending coin
 type ProofOfPayment struct {
+	ComMultiRangeProof *PKComMultiRangeProof
+	ComOpeningsProof   *PKComOpeningsProof
+	ComZeroOneProof    *PKComZeroOneProof
+	ComZeroProof       *PKComZeroProof
+	InEqualOutProof    *PKInEqualOutProof
 }
+
+// END----------------------------------------------------------------------------------------------------------------------------------------------
 
 // Prove creates big proof
 func Prove(inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
@@ -81,7 +91,7 @@ func Prove(inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 	//------------
 	for i := 0; i < len(inputCoins); i++ {
 		cmValueIn.X, cmValueIn.Y = privacy.Curve.Add(cmValueIn.X, cmValueIn.Y, cmValue[i].X, cmValue[i].Y)
-		cmValueRndIn = cmValueRndIn.Add(cmValueRndIn, randValue)
+		cmValueRndIn = cmValueRndIn.Add(cmValueRndIn, randValue[i])
 		cmValueRndIn = cmValueRndIn.Mod(cmValueRndIn, privacy.Curve.Params().N)
 	}
 
@@ -94,9 +104,12 @@ func Prove(inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 	cmEqualValueRnd = cmEqualValueRnd.Mod(cmEqualValueRnd, privacy.Curve.Params().N)
 
 	witnessEqualValue := new(PKComZeroWitness)
-	witnessEqualValue.Set(cmEqualValue, &privacy.VALUE, cmValueRndIn)
+	var cmEqualIndex byte
+	cmEqualIndex = privacy.VALUE
+	witnessEqualValue.Set(cmEqualValue, &cmEqualIndex, cmEqualValueRnd)
 	proofEqualValue, _ := witnessEqualValue.Prove()
-	//END--------------------------------------------------------------------------------------------------------------------------------------------
+	proofEqualValue.Verify()
+	//END----------------------------------------------------------------------------------------------------------------------------------------------
 
 }
 
