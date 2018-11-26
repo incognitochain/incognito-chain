@@ -27,6 +27,8 @@ type EllipticPointHelper interface {
 	IsSafe() bool
 	ComputeYCoord()
 	Hash() EllipticPoint
+	AddPoint(EllipticPoint) EllipticPoint
+	ScalarMulPoint(*big.Int) EllipticPoint
 }
 
 // EllipticPoint represents an point of elliptic curve,
@@ -34,7 +36,16 @@ type EllipticPointHelper interface {
 type EllipticPoint struct {
 	X, Y *big.Int
 }
-
+func (eccPoint *EllipticPoint) AddPoint(p EllipticPoint) EllipticPoint{
+	var res EllipticPoint
+	res.X, res.Y = Curve.Add(eccPoint.X, eccPoint.Y, p.X, p.Y)
+	return res
+}
+func (eccPoint *EllipticPoint) ScalarMulPoint(factor *big.Int) EllipticPoint{
+	var res EllipticPoint
+	res.X, res.Y = Curve.ScalarMult(eccPoint.X, eccPoint.Y, factor.Bytes())
+	return res
+}
 //ComputeYCoord calculates Y coord from X
 func (eccPoint *EllipticPoint) ComputeYCoord() error {
 	if eccPoint.Y == nil {
