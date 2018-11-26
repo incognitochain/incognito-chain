@@ -3,6 +3,8 @@ package privacy
 import (
 	"crypto/elliptic"
 	"fmt"
+	"github.com/minio/blake2b-simd"
+	"github.com/pkg/errors"
 	"math/big"
 )
 

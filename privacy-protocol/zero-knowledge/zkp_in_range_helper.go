@@ -2,11 +2,9 @@ package zkp
 
 import (
 	"crypto/elliptic"
-	"encoding/binary"
 	"fmt"
 	"github.com/minio/blake2b-simd"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/client/crypto/ecdsa"
 	"math"
 	"math/big"
 	"strconv"
@@ -426,7 +424,6 @@ var VecLength int
 
 type CryptoParams struct {
 	C   elliptic.Curve      // curve
-
 	BPG []privacy.EllipticPoint           // slice of gen 1 for BP
 	BPH []privacy.EllipticPoint           // slice of gen 2 for BP
 	N   *big.Int            // scalar prime
@@ -449,26 +446,18 @@ func check(e error) {
 // NewECPrimeGroupKey returns the curve (field),
 // Generator 1 x&y, Generator 2 x&y, order of the generators
 func NewECPrimeGroupKey(n int) CryptoParams {
-	curValue := elliptic.P256().Params().Gx
-	s256 := blake2b.New256()
+
 	gen1Vals := make([]privacy.EllipticPoint, n)
 	gen2Vals := make([]privacy.EllipticPoint, n)
 	u := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
 	cg := privacy.EllipticPoint{}
 	ch := privacy.EllipticPoint{}
 
-	j := 0
 	confirmed := 0
+	var gen2 privacy.EllipticPoint
+	gen2.X, gen2.Y = privacy.Curve.Params().Gx, privacy.Curve.Params().Gy
 	for confirmed < (2*n + 3) {
-		s256.Write(new(big.Int).Add(curValue, big.NewInt(int64(j))).Bytes())
-
-		potentialXValue := make([]byte, 33)
-		binary.LittleEndian.PutUint32(potentialXValue, 2)
-		for i, elem := range s256.Sum(nil) {
-			potentialXValue[i+1] = elem
-		}
-		var gen2 ecdsa.PublicKey
-		gen2.X, gen2.Y = elliptic.P256().Params().Gx, elliptic.P256().Params().Gy
+				gen2 = gen2.Hash()
 		var err error
 		err = nil
 		if err == nil {
@@ -491,7 +480,6 @@ func NewECPrimeGroupKey(n int) CryptoParams {
 			}
 			confirmed += 1
 		}
-		j += 1
 	}
 	return CryptoParams{
 		privacy.Curve,
