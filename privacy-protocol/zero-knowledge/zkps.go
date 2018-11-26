@@ -9,6 +9,10 @@ const(
 	CMListProve = 256
 )
 
+type ProofOfPayment struct{
+
+}
+
 // Prove creates big proof
 func Prove(inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 	// Commit each component of coins being spent

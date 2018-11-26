@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
@@ -177,6 +175,6 @@ func main() {
 	//	fmt.Printf("Len rand: %v\n", len(rand.Bytes()))
 	//}
 
-	fmt.Println(zkp.TestProofIsZero())
-	fmt.Println(zkp.TestOpeningsProtocol())
+	//fmt.Println(zkp.TestProofIsZero())
+	//fmt.Println(zkp.TestOpeningsProtocol())
 }
