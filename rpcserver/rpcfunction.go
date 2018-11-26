@@ -88,6 +88,9 @@ var RpcHandler = map[string]commandHandler{
 	SendRawVoteBoardGOVTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
 	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
 	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
+
+	// gov
+	GetBondTypes: RpcServer.handleGetBondTypes,
 }
 
 // Commands that are available to a limited user

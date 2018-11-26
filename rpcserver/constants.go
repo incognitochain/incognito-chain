@@ -71,4 +71,7 @@ const (
 	SendRawVoteBoardGOVTx                = "sendrawvoteboardgovtx"
 	CreateRawVoteGOVBoardTx              = "createrawvotegovboardtx"
 	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
+
+	// gov
+	GetBondTypes = "getBondTypes"
 )
