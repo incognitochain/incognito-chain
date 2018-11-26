@@ -10,7 +10,6 @@ type Random []byte         //32 bytes
 type Value []byte          //32 bytes
 type SNDerivator []byte
 
-
 // Coin represents a coin
 type Coin struct {
 	PublicKey      *EllipticPoint
@@ -70,11 +69,9 @@ type Coin struct {
 //	UnspentCoinList map[Coin]big.Int
 //}
 
-
 // InputCoin represents a input coin of transaction
-type InputCoin struct{
+type InputCoin struct {
 	BlockHeight *big.Int
 	SpendingKey *big.Int
-	CoinInfo *Coin
+	CoinInfo    *Coin
 }
-
