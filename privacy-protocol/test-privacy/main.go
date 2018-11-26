@@ -166,4 +166,5 @@ func main() {
 	/*----------------- TEST SIGNATURE -----------------*/
 	//privacy.TestSchn()
 	fmt.Println(zkp.TestProofIsZero())
+	fmt.Println(zkp.TestSigmaProtocol())
 }

@@ -14,11 +14,13 @@ type PKComZeroProof struct {
 	z               *big.Int
 }
 
-type PKComZeroWitnees struct {
+type PKComZeroWitness struct {
 	commitmentValue *privacy.EllipticPoint //statement
 	index           *byte                  //statement
 	commitmentRnd   *big.Int
 }
+
+//Protocol for opening a commitment to 0 https://link.springer.com/chapter/10.1007/978-3-319-43005-8_1 (Fig. 5)
 
 /*Protocol for opening a PedersenCommitment to 0
 Prove:
@@ -45,14 +47,14 @@ Verify:
 */
 
 // randValue return random witness value for testing
-func (wit *PKComZeroWitnees) randValue(testcase bool) {
+func (wit *PKComZeroWitness) randValue(testcase bool) {
 	switch testcase {
 	case false:
 		commitmentValue := new(privacy.EllipticPoint)
 		commitmentValue.Randomize()
 		index := byte(3)
 		commitmentRnd, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
-		wit.SetValue(commitmentValue, &index, commitmentRnd)
+		wit.Set(commitmentValue, &index, commitmentRnd)
 		break
 	case true:
 		// commitmentValue := new(privacy.EllipticPoint)
@@ -60,14 +62,14 @@ func (wit *PKComZeroWitnees) randValue(testcase bool) {
 		index := byte(3)
 		commitmentRnd, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
 		commitmentValue := privacy.PedCom.CommitAtIndex(big.NewInt(0), commitmentRnd, index)
-		wit.SetValue(commitmentValue, &index, commitmentRnd)
+		wit.Set(commitmentValue, &index, commitmentRnd)
 		break
 	}
 
 }
 
-// SetValue dosomethings
-func (wit *PKComZeroWitnees) SetValue(
+// Set dosomethings
+func (wit *PKComZeroWitness) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
 	index *byte, //statement
 	commitmentRnd *big.Int) {
@@ -76,8 +78,8 @@ func (wit *PKComZeroWitnees) SetValue(
 	wit.index = index
 }
 
-// SetValue dosomethings
-func (pro *PKComZeroProof) SetValue(
+// Set dosomethings
+func (pro *PKComZeroProof) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
 	index *byte, //statement
 	commitmentZeroS *privacy.EllipticPoint,
@@ -89,7 +91,7 @@ func (pro *PKComZeroProof) SetValue(
 }
 
 //Prove generate a Proof prove that the PedersenCommitment is zero
-func (wit PKComZeroWitnees) Prove( /*commitmentValue *privacy.EllipticPoint, index byte*/ ) (*PKComZeroProof, error) { //???
+func (wit PKComZeroWitness) Prove() (*PKComZeroProof, error) {
 	//var x big.Int
 	//s is a random number in Zp, with p is N, which is order of base point of privacy.Curve
 	sRnd, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
@@ -112,7 +114,7 @@ func (wit PKComZeroWitnees) Prove( /*commitmentValue *privacy.EllipticPoint, ind
 	z.Mod(z, privacy.Curve.Params().N)
 
 	proof := new(PKComZeroProof)
-	proof.SetValue(wit.commitmentValue, wit.index, commitmentZeroS, z)
+	proof.Set(wit.commitmentValue, wit.index, commitmentZeroS, z)
 	return proof, nil
 }
 
@@ -160,7 +162,7 @@ func (pro *PKComZeroProof) Verify() bool {
 
 //TestProofIsZero test prove and verify function
 func TestProofIsZero() bool {
-	witness := new(PKComZeroWitnees)
+	witness := new(PKComZeroWitness)
 	witness.randValue(true)
 	proof, _ := witness.Prove()
 	return proof.Verify()

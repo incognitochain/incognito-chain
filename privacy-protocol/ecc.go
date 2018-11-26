@@ -3,9 +3,10 @@ package privacy
 import (
 	"crypto/elliptic"
 	"fmt"
+	"math/big"
+
 	"github.com/minio/blake2b-simd"
 	"github.com/pkg/errors"
-	"math/big"
 )
 
 // Curve P256
@@ -18,17 +19,21 @@ const (
 
 //EllipticPointHelper contain some function for elliptic point
 type EllipticPointHelper interface {
+	// <0xakk0r0kamui>
 	Inverse() (*EllipticPoint, error)
-	// RandPoint(x, y *big.Int) *EllipticPoint
 	Randomize()
 	Compress() []byte
 	Decompress(compressPointBytes []byte) error
 	IsSafe() bool
 	ComputeYCoord()
 	Hash() EllipticPoint
+	// </0xakk0r0kamui>
+
+	// <PTD>
 	AddPoint(EllipticPoint) *EllipticPoint
 	ScalarMulPoint(*big.Int) *EllipticPoint
 	IsEqual(EllipticPoint) bool
+	// </PTD>
 }
 
 // EllipticPoint represents an point of elliptic curve,
@@ -36,6 +41,7 @@ type EllipticPointHelper interface {
 type EllipticPoint struct {
 	X, Y *big.Int
 }
+
 //ComputeYCoord calculates Y coord from X
 func (eccPoint *EllipticPoint) ComputeYCoord() error {
 	if eccPoint.Y == nil {
@@ -250,24 +256,26 @@ func TestECC() bool {
 	}
 	return true
 }
+
 /****** Please not modify my functions.
-				These functions have worked for my range proof protocol
-				If there are any changes, please inform me first
-										TRONG-DAT														***********/
-func (eccPoint EllipticPoint) AddPoint(p EllipticPoint) EllipticPoint{
+These functions have worked for my range proof protocol
+If there are any changes, please inform me first
+						TRONG-DAT														***********/
+func (eccPoint EllipticPoint) AddPoint(p EllipticPoint) EllipticPoint {
 	var res EllipticPoint
 	res.X, res.Y = Curve.Add(eccPoint.X, eccPoint.Y, p.X, p.Y)
 	return res
 }
-func (eccPoint EllipticPoint) IsEqual(p EllipticPoint) bool{
-	if (eccPoint.X.Cmp(p.X)==0 && eccPoint.Y.Cmp(p.Y)==0){
+func (eccPoint EllipticPoint) IsEqual(p EllipticPoint) bool {
+	if eccPoint.X.Cmp(p.X) == 0 && eccPoint.Y.Cmp(p.Y) == 0 {
 		return true
 	}
 	return false
 }
-func (eccPoint EllipticPoint) ScalarMulPoint(factor *big.Int) EllipticPoint{
+func (eccPoint EllipticPoint) ScalarMulPoint(factor *big.Int) EllipticPoint {
 	var res EllipticPoint
 	res.X, res.Y = Curve.ScalarMult(eccPoint.X, eccPoint.Y, factor.Bytes())
 	return res
 }
+
 /*******************************************************************************************/
