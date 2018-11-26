@@ -10,8 +10,7 @@ const (
 	CMListProve = 256
 )
 
-type ProofOfPayment struct{
-
+type ProofOfPayment struct {
 }
 
 // Prove creates big proof
@@ -69,11 +68,17 @@ func Prove(inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 
 	// Proving that output values do not exceed v_max
 
+	//BEGIN--------------------------------------------------------------------------------------------------------------------------------------------
+	// Proving that sum of inputs equals sum of outputs
+	// prove ( cmvaluein cmvalueout) (commit + s...)
 	cmValueIn := new(privacy.EllipticPoint)
 	cmValueIn.X, cmValueIn.Y = big.NewInt(0), big.NewInt(0)
 	cmValueRndIn := big.NewInt(0)
+	//------------
 	cmValueOut := new(privacy.EllipticPoint)
 	cmValueOut.X, cmValueOut.Y = big.NewInt(0), big.NewInt(0)
+	cmValueRndOut := big.NewInt(0)
+	//------------
 	for i := 0; i < len(inputCoins); i++ {
 		cmValueIn.X, cmValueIn.Y = privacy.Curve.Add(cmValueIn.X, cmValueIn.Y, cmValue[i].X, cmValue[i].Y)
 		cmValueRndIn = cmValueRndIn.Add(cmValueRndIn, randValue)
@@ -83,13 +88,16 @@ func Prove(inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 	//cmEqualValue.X, cmEqualValue.Y = big.NewInt(0), big.NewInt(0)
 	cmEqualValue, _ := cmValueIn.Inverse()
 	cmEqualValue.X, cmEqualValue.Y = privacy.Curve.Add(cmEqualValue.X, cmEqualValue.Y, cmValueOut.X, cmValueOut.Y)
+	cmEqualValueRnd := big.NewInt(0)
+	*cmEqualValueRnd = *cmValueRndIn
+	cmEqualValueRnd = cmEqualValueRnd.Sub(cmEqualValueRnd, cmValueRndOut)
+	cmEqualValueRnd = cmEqualValueRnd.Mod(cmEqualValueRnd, privacy.Curve.Params().N)
 
 	witnessEqualValue := new(PKComZeroWitness)
 	witnessEqualValue.Set(cmEqualValue, &privacy.VALUE, cmValueRndIn)
 	proofEqualValue, _ := witnessEqualValue.Prove()
-	// Proving that sum of inputs equals sum of outputs
-	// @Hy
-	//prove ( cmvaluein cmvalueout) (commit + s...)
+	//END--------------------------------------------------------------------------------------------------------------------------------------------
+
 }
 
 // GetCMList returns list CMListProve (2^8) commitments that includes cm in blockHeight
