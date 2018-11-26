@@ -7,23 +7,23 @@ import (
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
-//Sigma protocol: https://courses.cs.ut.ee/MTAT.07.003/2017_fall/uploads/Main/0907-sigma-protocol-for-pedersen-commitment.pdf
+//Openings protocol: https://courses.cs.ut.ee/MTAT.07.003/2017_fall/uploads/Main/0907-sigma-protocol-for-pedersen-commitment.pdf
 
-// PKComSigmaProof contains PoK
-type PKComSigmaProof struct {
+// PKComOpeningsProof contains PoK
+type PKComOpeningsProof struct {
 	commitmentValue *privacy.EllipticPoint //statement
 	alpha           *privacy.EllipticPoint
 	gamma           []*big.Int
 }
 
-// PKComSigmaWitness contains witnesses which are used for generate proof
-type PKComSigmaWitness struct {
+// PKComOpeningsWitness contains witnesses which are used for generate proof
+type PKComOpeningsWitness struct {
 	commitmentValue *privacy.EllipticPoint //statement
 	m               []*big.Int
 }
 
 // randValue return random witness value for testing
-func (wit *PKComSigmaWitness) randValue(testcase bool) {
+func (wit *PKComOpeningsWitness) randValue(testcase bool) {
 	wit.m = make([]*big.Int, privacy.PCM_CAPACITY)
 	for i := 0; i < privacy.PCM_CAPACITY; i++ {
 		wit.m[i], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
@@ -32,7 +32,7 @@ func (wit *PKComSigmaWitness) randValue(testcase bool) {
 }
 
 // Set dosomethings
-func (wit *PKComSigmaWitness) Set(
+func (wit *PKComOpeningsWitness) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
 	m []*big.Int) {
 	wit.commitmentValue = commitmentValue
@@ -40,7 +40,7 @@ func (wit *PKComSigmaWitness) Set(
 }
 
 // Set dosomethings
-func (pro *PKComSigmaProof) Set(
+func (pro *PKComOpeningsProof) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
 	alpha *privacy.EllipticPoint,
 	gamma []*big.Int) {
@@ -50,7 +50,7 @@ func (pro *PKComSigmaProof) Set(
 }
 
 // Prove ... (for sender)
-func (wit *PKComSigmaWitness) Prove() (*PKComSigmaProof, error) {
+func (wit *PKComOpeningsWitness) Prove() (*PKComOpeningsProof, error) {
 	// r1Rand, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
 	// r2Rand, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
 	alpha := new(privacy.EllipticPoint)
@@ -66,13 +66,13 @@ func (wit *PKComSigmaWitness) Prove() (*PKComSigmaProof, error) {
 		gamma[i] = big.NewInt(0).Mul(wit.m[i], beta)
 		gamma[i] = gamma[i].Add(gamma[i], rRand)
 	}
-	proof := new(PKComSigmaProof)
+	proof := new(PKComOpeningsProof)
 	proof.Set(wit.commitmentValue, alpha, gamma)
 	return proof, nil
 }
 
 // Verify ... (for verifier)
-func (pro *PKComSigmaProof) Verify() bool {
+func (pro *PKComOpeningsProof) Verify() bool {
 	beta := GenerateChallenge([]*privacy.EllipticPoint{pro.commitmentValue})
 	rightPoint := new(privacy.EllipticPoint)
 	rightPoint.X, rightPoint.Y = privacy.Curve.ScalarMult(pro.commitmentValue.X, pro.commitmentValue.Y, beta.Bytes())
@@ -88,8 +88,8 @@ func (pro *PKComSigmaProof) Verify() bool {
 	return leftPoint.IsEqual(*rightPoint)
 }
 
-func TestSigmaProtocol() bool {
-	witness := new(PKComSigmaWitness)
+func TestOpeningsProtocol() bool {
+	witness := new(PKComOpeningsWitness)
 	witness.randValue(true)
 	proof, _ := witness.Prove()
 	return proof.Verify()
