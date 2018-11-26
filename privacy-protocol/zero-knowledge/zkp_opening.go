@@ -56,7 +56,7 @@ func (wit *PKComOpeningsWitness) Prove() (*PKComOpeningsProof, error) {
 	alpha := new(privacy.EllipticPoint)
 	alpha.X = big.NewInt(0)
 	alpha.Y = big.NewInt(0)
-	beta := GenerateChallenge([]*privacy.EllipticPoint{wit.commitmentValue})
+	beta := GenerateChallengeFromPoint([]*privacy.EllipticPoint{wit.commitmentValue})
 	gamma := make([]*big.Int, privacy.PCM_CAPACITY)
 	var gPowR privacy.EllipticPoint
 	for i := 0; i < privacy.PCM_CAPACITY; i++ {
@@ -73,7 +73,7 @@ func (wit *PKComOpeningsWitness) Prove() (*PKComOpeningsProof, error) {
 
 // Verify ... (for verifier)
 func (pro *PKComOpeningsProof) Verify() bool {
-	beta := GenerateChallenge([]*privacy.EllipticPoint{pro.commitmentValue})
+	beta := GenerateChallengeFromPoint([]*privacy.EllipticPoint{pro.commitmentValue})
 	rightPoint := new(privacy.EllipticPoint)
 	rightPoint.X, rightPoint.Y = privacy.Curve.ScalarMult(pro.commitmentValue.X, pro.commitmentValue.Y, beta.Bytes())
 	rightPoint.X, rightPoint.Y = privacy.Curve.Add(rightPoint.X, rightPoint.Y, pro.alpha.X, pro.alpha.Y)

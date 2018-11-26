@@ -469,14 +469,13 @@ package zkp
 //}
 //
 
-
 import (
-"crypto/rand"
-"fmt"
-"math/big"
-"time"
+	"crypto/rand"
+	"fmt"
+	"math/big"
+	"time"
 
-"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 //// PKOneOfManyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
@@ -491,12 +490,12 @@ type PKOneOfManyWitness struct {
 
 //// PKOneOfManyProof contains Proof's value
 type PKOneOfManyProof struct {
-	cl, ca, cb, cd 	[]*privacy.EllipticPoint
-	f, za, zb      	[]*big.Int
-	zd             	*big.Int
+	cl, ca, cb, cd []*privacy.EllipticPoint
+	f, za, zb      []*big.Int
+	zd             *big.Int
 	// general info
-	commitments 		[]*privacy.EllipticPoint
-	index       		byte
+	commitments []*privacy.EllipticPoint
+	index       byte
 }
 
 // Set sets Witness
@@ -504,7 +503,7 @@ func (wit *PKOneOfManyWitness) Set(
 	commitments []*privacy.EllipticPoint,
 	rand *big.Int,
 	indexIsZero *int,
-	index  byte) {
+	index byte) {
 
 	wit.commitments = commitments
 	wit.indexIsZero = indexIsZero
@@ -569,7 +568,7 @@ func (wit *PKOneOfManyWitness) Prove( /*commitments [][]byte, indexIsZero int, c
 	}
 
 	// Check Index
-	if wit.index < 0 || wit.index > privacy.PCM_CAPACITY - 1  {
+	if wit.index < 0 || wit.index > privacy.PCM_CAPACITY-1 {
 		return nil, fmt.Errorf("Index must be between 0 and pcm capacity - 1 ")
 	}
 
@@ -652,7 +651,7 @@ func (wit *PKOneOfManyWitness) Prove( /*commitments [][]byte, indexIsZero int, c
 	x := big.NewInt(0)
 
 	for j := 0; j <= n-1; j++ {
-		*x = *GenerateChallenge([][]byte{x.Bytes(), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
+		*x = *GenerateChallengeFromByte([][]byte{x.Bytes(), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
 		x.Mod(x, privacy.Curve.Params().N)
 	}
 
@@ -707,7 +706,7 @@ func (wit *PKOneOfManyWitness) Prove( /*commitments [][]byte, indexIsZero int, c
 	zd.Mod(zd, privacy.Curve.Params().N)
 	// zd = zdInt.Bytes()
 	var proof PKOneOfManyProof
-	proof.Set(&wit.commitments, &cl, &ca, &cb, &cd, &f, &za, &zb, &zd)
+	proof.Set(wit.commitments, cl, ca, cb, cd, f, za, zb, zd)
 	return &proof, nil
 }
 
@@ -734,7 +733,7 @@ func (pro *PKOneOfManyProof) Verify( /*commitments [][]byte, proof *PKOneOfManyP
 	// }
 
 	for j := 0; j <= n-1; j++ {
-		*x = *GenerateChallenge([][]byte{x.Bytes(), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
+		*x = *GenerateChallengeFromByte([][]byte{x.Bytes(), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
 		// x.SetBytes(privacy.Elcm.GetHashOfValues([][]byte{x.Bytes(), cl[j], ca[j], cb[j], cd[j]}))
 		x.Mod(x, privacy.Curve.Params().N)
 	}
@@ -927,4 +926,3 @@ func GetCoefficient(iBinary []byte, k int, n int, a []*big.Int, l []byte) *big.I
 	}
 	return res[k]
 }
-
