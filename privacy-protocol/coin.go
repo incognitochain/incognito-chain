@@ -78,3 +78,9 @@ type InputCoin struct{
 	CoinInfo *Coin
 }
 
+type OutputCoin struct{
+	CoinInfo *Coin
+}
+
+
+

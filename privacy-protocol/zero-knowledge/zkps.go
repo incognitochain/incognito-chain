@@ -9,30 +9,8 @@ const(
 	CMListProve = 256
 )
 
-//type Proof interface {
-//}
-//
-//type Witness interface {
-//}
-//
-//// ZKProtocols interface
-//type ZKProtocols interface {
-//	SetWitness(witness Witness)
-//
-//	Prove() (Proof, error)
-//
-//	SetProof(proof Proof)
-//
-//	Verify() bool
-//}
-
-// ZKProof is big proof
-// type ZKProof struct{
-
-// }
-
 // Prove creates big proof
-func Prove(inputCoins []*privacy.InputCoin) {
+func Prove(inputCoins []*privacy.InputCoin, outputCoins []*privacy.Coin) {
 	// Commit each component of coins being spent
 	cmSK := make([]*privacy.EllipticPoint, len(inputCoins))
 	cmValue := make([]*privacy.EllipticPoint, len(inputCoins))
@@ -64,6 +42,7 @@ func Prove(inputCoins []*privacy.InputCoin) {
 	// Proving one-out-of-N commitments is a commitment to the coins being spent
 	cmSumInverse := make([]*privacy.EllipticPoint, len(inputCoins))
 	cmLists := make([][]*privacy.EllipticPoint, len(inputCoins))
+	//witnessOneOutOfN := make([]*PKOne, len(inputCoins))
 	for i:=0; i<len(inputCoins); i++ {
 		// get sum commitment inverse
 		cmSumInverse[i], _ = cmSum[i].Inverse()
@@ -72,22 +51,30 @@ func Prove(inputCoins []*privacy.InputCoin) {
 		// Get all commitments in inputCoin[i]'s BlockHeight and other block (if needed)
 		cmLists[i] =  make([]*privacy.EllipticPoint, CMListProve)
 		cmLists[i] = GetCMList(inputCoins[i].CoinInfo.CoinCommitment, inputCoins[i].BlockHeight)
-		for j := 0; j< CMListProve; j++{
+		for j := 0; j < CMListProve; j++{
 			cmLists[i][j].X, cmLists[i][j].Y = privacy.Curve.Add(cmLists[i][j].X, cmLists[i][j].Y, cmSumInverse[i].X, cmSumInverse[i].Y)
 		}
 
-		// Prepare witness for protocol out-of-N
+		// Prepare witness for protocol one-out-of-N
+		//witnessOneOutOfN[i].Set()
+
 
 
 	}
 
 	// Proving that serial number is derived from the committed derivator
+
+
 	// Proving that output values do not exceed v_max
+
+
 	// Proving that sum of inputs equals sum of outputs
-	// Proving ciphertexts encrypting for coins' details are well-formed
+	// @Hy
+	//prove ( cmvaluein cmvalueout) (commit + s...)
 }
 
 
+// GetCMList returns list CMListProve (2^8) commitments that includes cm in blockHeight
 func GetCMList(cm *privacy.EllipticPoint, blockHeight *big.Int) []*privacy.EllipticPoint{
 	return nil
 }

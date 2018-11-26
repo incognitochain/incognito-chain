@@ -57,7 +57,8 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-	// privacy.TestPKOneOfMany()
+
+	zkp.TestPKOneOfMany()
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -161,5 +162,15 @@ func main() {
 
 	/*----------------- TEST SIGNATURE -----------------*/
 	//privacy.TestSchn()
-	zkp.PKComMultiRangeTest()
+	//zkp.PKComMultiRangeTest()
+
+	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
+	//for i :=0; i<1000; i++{
+	//	fmt.Printf("N: %v\n",privacy.Curve.Params().N)
+	//	rand, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
+	//
+	//	fmt.Printf("rand: %v\n", rand)
+	//	fmt.Printf("Len rand: %v\n", len(rand.Bytes()))
+	//}
+
 }

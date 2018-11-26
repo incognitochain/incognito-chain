@@ -3,6 +3,7 @@ package privacy
 import (
 	"crypto/rand"
 	"fmt"
+	"github.com/ninjadotorg/cash/privacy"
 	"math/big"
 )
 
@@ -19,9 +20,7 @@ func RandBytes(n int) []byte {
 
 // RandInt generates a big int with value less than order of group of elliptic points
 func RandInt() *big.Int{
-	bytes := RandBytes(32)
-	res := new(big.Int).SetBytes(bytes)
-	res.Mod(res, Curve.Params().N)
+	res, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
 	return res
 }
 
