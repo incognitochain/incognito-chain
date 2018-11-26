@@ -47,18 +47,23 @@ Verify:
 // randValue return random witness value for testing
 func (wit *PKComZeroWitnees) randValue(testcase bool) {
 	switch testcase {
-	case true:
-		commitmentValue := new(privacy.EllipticPoint)
-		commitmentValue.Randomize()
-		index := 3
-		commitmentRnd, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
-		break
 	case false:
 		commitmentValue := new(privacy.EllipticPoint)
 		commitmentValue.Randomize()
-		index := 3
+		index := byte(3)
 		commitmentRnd, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
+		wit.SetValue(commitmentValue, &index, commitmentRnd)
+		break
+	case true:
+		// commitmentValue := new(privacy.EllipticPoint)
+		// commitmentValue.Randomize()
+		index := byte(3)
+		commitmentRnd, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
+		commitmentValue := privacy.PedCom.CommitAtIndex(big.NewInt(0), commitmentRnd, index)
+		wit.SetValue(commitmentValue, &index, commitmentRnd)
+		break
 	}
+
 }
 
 // SetValue dosomethings
@@ -156,6 +161,7 @@ func (pro *PKComZeroProof) Verify() bool {
 //TestProofIsZero test prove and verify function
 func TestProofIsZero() bool {
 	witness := new(PKComZeroWitnees)
+	witness.randValue(true)
 	proof, _ := witness.Prove()
 	return proof.Verify()
 }

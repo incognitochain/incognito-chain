@@ -1,6 +1,10 @@
 package main
 
-import "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+import (
+	"fmt"
+
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+)
 
 func main() {
 
@@ -161,5 +165,5 @@ func main() {
 
 	/*----------------- TEST SIGNATURE -----------------*/
 	//privacy.TestSchn()
-	zkp.PKComMultiRangeTest()
+	fmt.Println(zkp.TestProofIsZero())
 }
