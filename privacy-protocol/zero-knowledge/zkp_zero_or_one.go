@@ -105,7 +105,7 @@ func (wit *PKComZeroOneWitness) Prove() (*PKComZeroOneProof, error) {
 	proof.cb = privacy.PedCom.CommitAtIndex(am, t, wit.index)
 
 	// Calculate x = hash (G0||G1||G2||G3||ca||cb||cm)
-	x := GenerateChallenge([]*privacy.EllipticPoint{proof.ca, proof.cb, wit.commitment})
+	x := GenerateChallengeFromPoint([]*privacy.EllipticPoint{proof.ca, proof.cb, wit.commitment})
 	x.Mod(x, privacy.Curve.Params().N)
 
 	// Calculate f = mx + a
@@ -174,7 +174,7 @@ func (proof *PKComZeroOneProof) Verify() bool {
 	fmt.Printf("verify proof ca: %v\n", proof.cb)
 	fmt.Printf("verify proof ca: %v\n", proof.commitment)
 
-	x := GenerateChallenge([]*privacy.EllipticPoint{proof.ca, proof.cb, proof.commitment})
+	x := GenerateChallengeFromPoint([]*privacy.EllipticPoint{proof.ca, proof.cb, proof.commitment})
 	x.Mod(x, privacy.Curve.Params().N)
 
 	//// Decompress ca, cb of Proof

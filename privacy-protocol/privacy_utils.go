@@ -36,7 +36,6 @@ func IsPowerOfTwo(n int) bool {
 		}
 	}
 	return true
-
 }
 
 // ConvertIntToBinary represents a integer number in binary
