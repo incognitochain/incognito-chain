@@ -10,7 +10,7 @@ const(
 )
 
 // Prove creates big proof
-func Prove(inputCoins []*privacy.InputCoin, outputCoins []*privacy.Coin) {
+func Prove(inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 	// Commit each component of coins being spent
 	cmSK := make([]*privacy.EllipticPoint, len(inputCoins))
 	cmValue := make([]*privacy.EllipticPoint, len(inputCoins))

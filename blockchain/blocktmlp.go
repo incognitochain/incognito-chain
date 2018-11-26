@@ -483,7 +483,7 @@ func buildSingleBuySellResponseTx(
 	}
 	buySellResponse := &transaction.BuySellResponse{
 		BuyBackInfo: buyBackInfo,
-		AssetID:     base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt))),
+		BondID:      base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt))),
 	}
 	return transaction.TxTokenVout{
 		Value:           buySellReqTx.Amount,

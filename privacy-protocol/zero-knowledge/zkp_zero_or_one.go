@@ -25,8 +25,8 @@ type PKComZeroOneWitness struct {
 
 // PKComZeroOneProof contains Proof's value
 type PKComZeroOneProof struct {
-	ca, cb     *privacy.EllipticPoint
-	f, za, zb  *big.Int
+	ca, cb    *privacy.EllipticPoint
+	f, za, zb *big.Int
 	//general info
 	commitment *privacy.EllipticPoint
 	index      byte
@@ -35,9 +35,9 @@ type PKComZeroOneProof struct {
 // Set sets Witness
 func (wit *PKComZeroOneWitness) Set(
 	commitedValue *big.Int,
-	rand          *big.Int,
-	commitment    *privacy.EllipticPoint,
-	index         byte) {
+	rand *big.Int,
+	commitment *privacy.EllipticPoint,
+	index byte) {
 
 	wit.commitedValue = commitedValue
 	wit.rand = rand
@@ -52,10 +52,10 @@ func (wit *PKComZeroOneWitness) Get() *PKComZeroOneWitness {
 
 // Set sets Proof
 func (proof *PKComZeroOneProof) Set(
-	ca, cb     *privacy.EllipticPoint,
-	f, za, zb  *big.Int,
+	ca, cb *privacy.EllipticPoint,
+	f, za, zb *big.Int,
 	commitment *privacy.EllipticPoint,
-	index      byte) {
+	index byte) {
 
 	proof.ca, proof.cb = ca, cb
 	proof.f, proof.za, proof.zb = f, za, zb
@@ -75,7 +75,7 @@ func getindex(bigint *big.Int) int {
 // Prove creates a Proof for PedersenCommitment to zero or one
 func (wit *PKComZeroOneWitness) Prove() (*PKComZeroOneProof, error) {
 	// Check index
-	if wit.index < 0 || wit.index > privacy.PCM_CAPACITY - 1 {
+	if wit.index < 0 || wit.index > privacy.PCM_CAPACITY-1 {
 		return nil, fmt.Errorf("index must be between 0 and pcm capacity - 1 ")
 	}
 
@@ -105,7 +105,7 @@ func (wit *PKComZeroOneWitness) Prove() (*PKComZeroOneProof, error) {
 	proof.cb = privacy.PedCom.CommitAtIndex(am, t, wit.index)
 
 	// Calculate x = hash (G0||G1||G2||G3||ca||cb||cm)
-	x := GenerateChallenge([][]byte{proof.ca.Compress(), proof.cb.Compress(), wit.commitment.Compress()})
+	x := GenerateChallenge([]*privacy.EllipticPoint{proof.ca, proof.cb, wit.commitment})
 	x.Mod(x, privacy.Curve.Params().N)
 
 	// Calculate f = mx + a
@@ -174,7 +174,7 @@ func (proof *PKComZeroOneProof) Verify() bool {
 	fmt.Printf("verify proof ca: %v\n", proof.cb)
 	fmt.Printf("verify proof ca: %v\n", proof.commitment)
 
-	x := GenerateChallenge([][]byte{proof.ca.Compress(), proof.cb.Compress(), proof.commitment.Compress()})
+	x := GenerateChallenge([]*privacy.EllipticPoint{proof.ca, proof.cb, proof.commitment})
 	x.Mod(x, privacy.Curve.Params().N)
 
 	//// Decompress ca, cb of Proof

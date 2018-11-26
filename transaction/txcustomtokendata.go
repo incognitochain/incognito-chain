@@ -18,7 +18,7 @@ type BuyBackInfo struct {
 
 type BuySellResponse struct {
 	BuyBackInfo *BuyBackInfo
-	AssetID     string // only bond for now - encoded string of compound values (Maturity + BuyBackPrice + StartSellingAt) from SellingBonds param
+	BondID      string // only bond for now - encoded string of compound values (Maturity + BuyBackPrice + StartSellingAt) from SellingBonds param
 }
 
 // TxTokenVin ...
