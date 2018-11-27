@@ -445,12 +445,9 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 		return fmt.Errorf("Sale ended")
 	}
 
-	if bytes.Equal(saleData.BuyingAsset, BondTokenID[:]) {
+	if bytes.Equal(saleData.BuyingAsset[:8], BondTokenID[:8]) {
 		for _, vout := range requestTx.TxTokenData.Vouts {
-			// Check if sending asset is correct
-			if vout.BuySellResponse.BondID != saleData.BondID {
-				return fmt.Errorf("Received asset id %s instead of %s", vout.BuySellResponse.BondID, saleData.BondID)
-			}
+			return fmt.Errorf("Received asset id %s instead of %s", append(BondTokenID[:8], vout.BuySellResponse.BondID...), saleData.BuyingAsset)
 
 			// Check if receiving address is DCB's
 			// TODO(@0xbunyip): compare full payment address
@@ -486,13 +483,8 @@ func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction,
 		return fmt.Errorf("Sale ended")
 	}
 
-	if bytes.Equal(saleData.SellingAsset, BondTokenID[:]) {
-		for _, vout := range responseTx.TxTokenData.Vouts {
-			// Check if sending asset is correct
-			if vout.BuySellResponse.BondID != saleData.BondID {
-				return fmt.Errorf("Sending asset id %s instead of %s", vout.BuySellResponse.BondID, saleData.BondID)
-			}
-		}
+	if !bytes.Equal(saleData.SellingAsset[:8], BondTokenID[:8]) {
+		return fmt.Errorf("Sending asset id %s instead of %s", BondTokenID, saleData.SellingAsset)
 	}
 
 	// TODO(@0xbunyip): validate amount of asset sent

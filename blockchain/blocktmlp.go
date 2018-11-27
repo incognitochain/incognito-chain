@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -481,9 +480,13 @@ func buildSingleBuySellResponseTx(
 		Maturity:     sellingBondsParam.Maturity,
 		BuyBackPrice: sellingBondsParam.BuyBackPrice,
 	}
+
+	bondID := fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt)
+	additionalSuffix := make([]byte, 24-len(bondID))
+	bondIDBytes := append([]byte(bondID), additionalSuffix...)
 	buySellResponse := &transaction.BuySellResponse{
 		BuyBackInfo: buyBackInfo,
-		BondID:      base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt))),
+		BondID:      bondIDBytes,
 	}
 	return transaction.TxTokenVout{
 		Value:           buySellReqTx.Amount,
@@ -527,10 +530,13 @@ func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 	for _, reqTx := range buySellReqTxs {
 		tx, _ := reqTx.(*transaction.TxBuySellRequest)
 		txTokenVout := buildSingleBuySellResponseTx(tx, sellingBondsParam)
+		bondIDBytes := txTokenVout.BuySellResponse.BondID
+		var propertyID [common.HashSize]byte
+		copy(propertyID[:], append(BondTokenID[0:8], bondIDBytes...))
 		txTokenData := transaction.TxTokenData{
 			Type:       transaction.CustomTokenInit,
 			Amount:     tx.Amount,
-			PropertyID: tx.AssetType,
+			PropertyID: common.Hash(propertyID),
 			Vins:       []transaction.TxTokenVin{},
 			Vouts:      []transaction.TxTokenVout{txTokenVout},
 			// PropertyName:   "",
@@ -722,17 +728,17 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*transaction.TxD
 
 		// Get price for asset bond
 		bondPrices := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
-		if bytes.Equal(saleData.SellingAsset, ConstantID[:]) {
-			txResponse, err := transaction.BuildResponseForCoin(tx, saleData.BondID, rt, chainID, bondPrices, tx.SaleID, DCBAddress)
+		if bytes.Equal(saleData.SellingAsset[:8], ConstantID[:8]) {
+			txResponse, err := transaction.BuildResponseForCoin(tx, saleData.SellingAsset, rt, chainID, bondPrices, tx.SaleID, DCBAddress)
 			if err != nil {
 				txsToRemove = append(txsToRemove, tx)
 			} else {
 				txsResponse = append(txsResponse, txResponse)
 			}
-		} else if bytes.Equal(saleData.SellingAsset, BondTokenID[:]) {
+		} else if bytes.Equal(saleData.SellingAsset[:8], BondTokenID[:8]) {
 			// Get unspent token UTXO to send to user
 			txResponse := &transaction.TxBuySellDCBResponse{}
-			txResponse, unspentTxTokenOuts, err = transaction.BuildResponseForBond(tx, saleData.BondID, rt, chainID, bondPrices, unspentTxTokenOuts, tx.SaleID, DCBAddress)
+			txResponse, unspentTxTokenOuts, err = transaction.BuildResponseForBond(tx, saleData.SellingAsset, rt, chainID, bondPrices, unspentTxTokenOuts, tx.SaleID, DCBAddress)
 			if err != nil {
 				txsToRemove = append(txsToRemove, tx)
 			} else {

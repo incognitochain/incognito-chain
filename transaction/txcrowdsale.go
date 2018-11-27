@@ -14,7 +14,7 @@ type TxBuySellDCBResponse struct {
 	SaleID         []byte
 }
 
-func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64, saleID []byte, dcbAddress []byte) (*TxBuySellDCBResponse, error) {
+func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID []byte, rt []byte, chainID byte, bondPrices map[string]uint64, saleID []byte, dcbAddress []byte) (*TxBuySellDCBResponse, error) {
 	// Mint and send Constant
 	pks := [][]byte{txRequest.PaymentAddress.Pk[:], txRequest.PaymentAddress.Pk[:]}
 	tks := [][]byte{txRequest.PaymentAddress.Tk[:], txRequest.PaymentAddress.Tk[:]}
@@ -26,7 +26,7 @@ func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte,
 			bonds += vout.Value
 		}
 	}
-	bondPrice := bondPrices[bondID]
+	bondPrice := bondPrices[string(bondID)]
 	amounts := []uint64{bonds * bondPrice, 0} // TODO(@0xbunyip): use correct unit of price and value here
 	tx, err := BuildCoinbaseTx(pks, tks, amounts, rt, chainID, common.TxBuySellDCBResponse)
 	if err != nil {
@@ -44,7 +44,7 @@ func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte,
 	return txResponse, nil
 }
 
-func BuildResponseForBond(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []TxTokenVout, saleID []byte, dcbAddress []byte) (*TxBuySellDCBResponse, []TxTokenVout, error) {
+func BuildResponseForBond(txRequest *TxBuySellRequest, bondID []byte, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []TxTokenVout, saleID []byte, dcbAddress []byte) (*TxBuySellDCBResponse, []TxTokenVout, error) {
 	// Get amount of Constant user sent
 	value := uint64(0)
 	userPk := privacy.PublicKey{}
@@ -56,7 +56,7 @@ func BuildResponseForBond(txRequest *TxBuySellRequest, bondID string, rt []byte,
 			}
 		}
 	}
-	bondPrice := bondPrices[bondID]
+	bondPrice := bondPrices[string(bondID)]
 	bonds := value / bondPrice
 	sumBonds := uint64(0)
 	usedID := 0
