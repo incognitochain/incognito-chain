@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
@@ -59,8 +61,7 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-
-	zkp.TestPKOneOfMany()
+	//zkp.TestPKOneOfMany()
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -177,4 +178,5 @@ func main() {
 
 	//fmt.Println(zkp.TestProofIsZero())
 	//fmt.Println(zkp.TestOpeningsProtocol())
+	fmt.Println(zkp.TestPKEqualityOfCommittedVal())
 }
