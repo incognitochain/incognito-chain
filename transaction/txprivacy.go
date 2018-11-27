@@ -5,19 +5,18 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
 type TxPrivacy struct{
-	Proof zkp.ZKProof
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
 
-	SigPubKey []byte           `json:"JSPubKey,omitempty"` // 64 bytes
-	Sig		    []byte           `json:"JSSig,omitempty"`    // 64 bytes
-
-	InputNotes
+	SigPubKey []byte           `json:"SigPubKey, omitempty"` // 64 bytes
+	Sig		    []byte           `json:"Sig, omitempty"`    // 64 bytes
+	Proof 		zkp.PaymentProof
 
 	PubKeyLastByte byte `json:"AddressLastByte"`
 
@@ -61,7 +60,7 @@ func (tx * TxPrivacy) CreateTx(
 		sumInputValue += coin.CoinDetails.Value
 	}
 
-	// Check if sum of input coins' value more than or equal to sum of output coins' value and tx fee
+	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if sumInputValue < sumOutputValue + fee {
 		return nil, fmt.Errorf("Input value less than output value")
 	}
@@ -69,6 +68,20 @@ func (tx * TxPrivacy) CreateTx(
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
+
+	// get public key last byte
+	pkLastByte := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
+	tx.PubKeyLastByte = pkLastByte
+
+	// create new output coins
+
+	// create zero knowledge proof of payment
+
+	// sign tx
+
+
+
+
 
 
 

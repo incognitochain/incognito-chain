@@ -127,7 +127,7 @@ func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
 	}
 
 	rv := new(EllipticPoint)
-	rv.X, rv.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, signature.S1.Bytes())
+	rv.X, rv.Y = Curve.ScalarMult(pub.G.X, pub.G.Y, signature.S1.Bytes())
 	tmp := new(EllipticPoint)
 	tmp.X, tmp.Y = Curve.ScalarMult(pub.H.X, pub.H.Y, signature.S2.Bytes())
 	rv.X, rv.Y = Curve.Add(rv.X, rv.Y, tmp.X, tmp.Y)
