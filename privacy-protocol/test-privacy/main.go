@@ -1,6 +1,11 @@
 package main
 
-import "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+import (
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	//"fmt"
+	//"github.com/ninjadotorg/constant/privacy-protocol"
+	//"math/big"
+)
 
 func main() {
 
@@ -11,18 +16,20 @@ func main() {
 	// fmt.Printf("Gy: %X\n", privacy-protocol.Curve.Params().Gy)
 	// fmt.Printf("BitSize: %X\n", privacy-protocol.Curve.Params().BitSize)
 
+	/*---------------------- TEST KEY SET ----------------------*/
 	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
 	//fmt.Printf("\nSpending key: %v\n", spendingKey)
 	//fmt.Println(len(spendingKey))
 
-	//address := privacy.GeneratePublicKey(spendingKey)
-	//fmt.Printf("\nAddress: %v\n", address)
-	//fmt.Println(len(address))
-	//point, err := privacy.DecompressKey(address)
+	// publicKey is compressed
+	//publicKey := privacy.GeneratePublicKey(spendingKey)
+	//fmt.Printf("\nPublic key: %v\n", publicKey)
+	//fmt.Printf("Len public key: %v\n", len(publicKey))
+	//point, err := privacy.DecompressKey(publicKey)
 	//if err != nil {
-	//	fmt.Println(err)
+	//fmt.Println(err)
 	//}
-	//fmt.Printf("Pk decom: %v\n", point)
+	//fmt.Printf("Public key decompress: %v\n", point)
 	//
 	//receivingKey := privacy.GenerateReceivingKey(spendingKey)
 	//fmt.Printf("\nReceiving key: %v\n", receivingKey)
@@ -45,40 +52,119 @@ func main() {
 	//
 	//fmt.Printf("spending key bytes: %v\n", spendingKey.String())
 
-	//msg := "hello, world"
-	//hash := sha256.Sum256([]byte(msg))
-	//
-	//signature, err := privacy-protocol.Sign(hash[:], spendingKey)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//fmt.Printf("signature: %v\n", signature)
-	//
-	//valid := privacy-protocol.Verify(signature, hash[:], address)
-	//fmt.Println("\nsignature verified:", valid)
-	//
-	//tx, _ := transaction.CreateEmptyTxs()
-	//fmt.Printf("Transaction: %+v\n", tx)
+	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
-	//privacy-protocol.Pcm.InitCommitment()
-	//privacy-protocol.TestProofIsZero()
-	//// fmt.Println("Done")
-	//a:= new(privacy-protocol.InputCommitments)
+	//privacy.TestProofIsZero()
+
+	//privacy.TestProductCommitment()
+
+	// privacy.TestProofIsZero()
+
+	zkp.TestPKComZeroOne()
+
+	// privacy.TestPKOneOfMany()
+
+	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
+
+	//i := 0
+	//runtime.GOMAXPROCS(runtime.NumCPU())
+	//privacy.Elcm.InitCommitment()
+	//n := 500
+	//for i = 0; i < n; i++ {
 	//
-	//privacy-protocol.TestProductCommitment()
-	//privacy-protocol.Pcm.InitCommitment()
-	// privacy-protocol.TestProofIsZero()
-	// fmt.Println("Done")
-	// privacy-protocol.TestPKComZeroOne()
-	//privacy-protocol.TestPKOneOfMany()
+	//	//  zkp.TestPKComZeroOne()
+	//
+	//	//for i := 0; i < 500; i++ {
+	//
+	//	if !zkp.TestPKOneOfMany() {
+	//		break
+	//	}
+	//	if !zkpoptimization.TestPKOneOfMany() {
+	//		break
+	//	}
+	//
+	//	fmt.Println("----------------------")
+	//}
+	////}
+	//if i == n {
+	//	fmt.Println("Well done")
+	//} else {
+	//	fmt.Println("ewww")
+	//}
+
+	//privacy.TestCommitment()
+
+	//zkp.TestPKMaxValue()
+	//privacy.PedCom.Setup()
+	//privacy.PedCom.TestFunction(00)
+
+	//var zk zkp.ZKProtocols
+	//
+	//valueRand := privacy.RandBytes(32)
+	//vInt := new(big.Int).SetBytes(valueRagit rend)
+	//vInt.Mod(vInt, big.NewInt(2))
+	//rand := privacy.RandBytes(32)
+	//
+	//partialCommitment := privacy.PedCom.CommitAtIndex(vInt.Bytes(), rand, privacy.VALUE)
+	//
+	//
+	//var witness zkp.PKComZeroOneWitness
+	//witness.commitedValue = vInt.Bytes()
+	//witness.rand = rand
+	//witness.commitment = partialCommitment
+	//witness.index = privacy.VALUE
+	//
+	//zk.SetWitness(witness)
+	//proof, _ := zk.Prove()
+	//zk.SetProof(proof)
+	//fmt.Println(zk.Verify())
+	//fmt.Printf("%v", privacy.TestECC())
+	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	//
+	//// publicKey is compressed
+	//publicKey := privacy.GeneratePublicKey(spendingKey)
+	//fmt.Printf("\nPublic key: %v\n", publicKey)
+	//fmt.Printf("Len public key: %v\n", len(publicKey))
+	//point := new(privacy.EllipticPoint)
+	//point, err := privacy.DecompressKey(publicKey)
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
+	//fmt.Printf("\n %v\n", point.CompressPoint())
+	//point, err = privacy.DecompressKey(point.CompressPoint())
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//fmt.Printf("Public key decompress: %v %v\n", point.X.Bytes(), point.Y.Bytes())
+	//fmt.Printf("\n %v\n", point.CompressPoint())
+	//zkp.TestPKComProduct()
+	//privacy.Curve.Params().G
 
 	//zkp.TestPKComZeroOne()
 
-	zkp.TestPKOneOfMany()
+	/*----------------- TEST PCM SINGLETON -----------------*/
+	//privacy.PedCom = privacy.GetPedersenParams()
+	//fmt.Printf("a1: %p\n", &privacy.PedCom)
+	//privacy.PedCom = privacy.GetPedersenParams()
+	//fmt.Printf("a1: %p\n", &privacy.PedCom)
 
-	//zkp.TestPKMaxValue()
-	zkp.TestPKComProduct()
-	//privacy-protocol.TestPKComZeroOne()
-	//privacy-protocol.TestProductCommitment()
-	//
+	/*----------------- TEST NEW PCM -----------------*/
+	//var generators []privacy.EllipticPoint
+	//generators := make([]privacy.EllipticPoint, 3)
+	//generators[0] = privacy.EllipticPoint{big.NewInt(23), big.NewInt(0)}
+	//generators[0].ComputeYCoord()
+	//generators[1] = privacy.EllipticPoint{big.NewInt(12), big.NewInt(0)}
+	//generators[1].ComputeYCoord()
+	//generators[2] = privacy.EllipticPoint{big.NewInt(45), big.NewInt(0)}
+	//generators[2].ComputeYCoord()
+	//newPedCom := privacy.NewPedersenParams(generators)
+	//fmt.Printf("New PedCom: %+v\n", newPedCom)
+
+	/*----------------- TEST COMMITMENT -----------------*/
+	//privacy.TestCommitment(01)
+
+	/*----------------- TEST SIGNATURE -----------------*/
+	//privacy.TestSchn()
+
 }

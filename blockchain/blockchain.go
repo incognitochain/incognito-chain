@@ -5,19 +5,18 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"sort"    //"strconv"
-	"strings" //"fmt"
-	//"time"
+	"sort"
+	"strings"
 	"sync"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 const (
@@ -89,7 +88,7 @@ func (self *BlockChain) Init(config *Config) error {
 
 	for chainIndex, bestState := range self.BestState {
 		Logger.log.Infof("BlockChain state for chain #%d (Height %d, Best block hash %+v, Total tx %d, Salary fund %d, Gov Param %+v)",
-			chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GOVParams)
+			chainIndex, bestState.Height, bestState.BestBlockHash.String(), bestState.TotalTxns, bestState.BestBlock.Header.SalaryFund, bestState.BestBlock.Header.GOVConstitution)
 	}
 
 	return nil
@@ -158,17 +157,12 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	self.BestState[chainId] = &BestState{}
 	self.BestState[chainId].Init(initBlock, tree)
 
-	// store block genesis
-	err := self.StoreBlock(initBlock)
+	err := self.ConnectBlock(initBlock)
 	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
+		Logger.log.Error(err)
+		return err
 	}
 
-	// store block hash by index and index by block hash
-	err = self.StoreBlockIndex(initBlock)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
 	// store best state
 	err = self.StoreBestState(chainId)
 	if err != nil {
@@ -208,6 +202,7 @@ func (self *BlockChain) GetBlockByBlockHeight(height int32, chainId byte) (*Bloc
 	block := Block{}
 	blockHeader := BlockHeader{}
 	if self.config.Light {
+		// with light node, we can only get data of header of block
 		err = json.Unmarshal(blockBytes, &blockHeader)
 		if err != nil {
 			return nil, err
@@ -233,6 +228,7 @@ func (self *BlockChain) GetBlockByBlockHash(hash *common.Hash) (*Block, error) {
 	block := Block{}
 	blockHeader := BlockHeader{}
 	if self.config.Light {
+		// with light node, we can only get data of header of block
 		err = json.Unmarshal(blockBytes, &blockHeader)
 		if err != nil {
 			return nil, err
@@ -418,6 +414,7 @@ func (self *BlockChain) GetAllBlocks() ([][]*Block, error) {
 			block := Block{}
 			blockHeader := BlockHeader{}
 			if self.config.Light {
+				// with light node, we can only get data of header of block
 				err = json.Unmarshal(blockBytes, &blockHeader)
 				if err != nil {
 					return nil, err
@@ -451,6 +448,7 @@ func (self *BlockChain) GetChainBlocks(chainID byte) ([]*Block, error) {
 		block := Block{}
 		blockHeader := BlockHeader{}
 		if self.config.Light {
+			// with light node, we can only get data of header of block
 			err = json.Unmarshal(blockBytes, &blockHeader)
 			if err != nil {
 				return nil, err
@@ -505,11 +503,21 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 		case common.TxDividendPayout:
 			{
 				tx := tx.(*transaction.TxDividendPayout)
+				tokenID := tx.TokenID
 				for _, desc := range tx.Descs {
 					for _, note := range desc.Note {
-						utxos := self.GetAccountUTXO(note.Apk[:])
+						// TODO(@0xbunyip): replace note.Apk with bytes of PaymentAddress, not just Pk
+						paymentAddress := (&privacy.PaymentAddress{}).FromBytes(note.Apk[:])
+						utxos, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, *paymentAddress)
+						if err != nil {
+							return err
+						}
 						for _, utxo := range utxos {
-							self.UpdateUTXOReward(utxo, tx.PayoutID)
+							txHash := utxo.GetTxCustomTokenID()
+							err := self.config.DataBase.UpdateRewardAccountUTXO(tokenID, *paymentAddress, &txHash, utxo.GetIndex())
+							if err != nil {
+								return err
+							}
 						}
 					}
 				}
@@ -522,13 +530,21 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetType() {
-		case common.TxCrowdsale:
+		case common.TxAcceptDCBProposal:
 			{
-				// Store saledata in db
-				tx := tx.(*transaction.TxCrowdsale)
-				err := self.config.DataBase.SaveCrowdsaleData(tx.SaleID, tx.BondID, tx.BaseAsset, tx.QuoteAsset, tx.Price, tx.EscrowAccount)
+				txAccepted := tx.(*transaction.TxAcceptDCBProposal)
+				_, _, _, getTx, err := self.GetTransactionByHash(txAccepted.DCBProposalTXID)
+				proposal := getTx.(*transaction.TxSubmitDCBProposal)
 				if err != nil {
 					return err
+				}
+
+				// Store saledata in db if needed
+				if proposal.DCBProposalData.DCBParams.SaleData != nil {
+					err := self.config.DataBase.SaveCrowdsaleData(proposal.DCBProposalData.DCBParams.SaleData)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -569,7 +585,7 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 		switch customTokenTx.TxTokenData.Type {
 		case transaction.CustomTokenInit:
 			{
-				Logger.log.Info("Store custom token when it is issued")
+				Logger.log.Info("Store custom token when it is issued", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
 				err = self.config.DataBase.StoreCustomToken(&customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
 				if err != nil {
 					return err
@@ -624,13 +640,8 @@ GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be 
 - Param #1: key - key set which contain readonly-key and pub-key
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType string) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx, 0)
-
-	// set default for params
-	if coinType == "" {
-		coinType = common.AssetTypeCoin
-	}
 
 	// lock chain
 	self.chainLock.Lock()
@@ -701,7 +712,6 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 					}
 					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
 				}
-				// TODO Voting
 			}
 			// detected some tx can be accepted
 			if len(txsInBlockAccepted) > 0 {
@@ -728,7 +738,102 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet, coinType s
 	return results, nil
 }
 
-func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *privacy.SpendingKey, block *Block, nullifiersInDb [][]byte, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullifiersInDb [][]byte, keys *cashec.KeySet) transaction.Tx {
+	tx := txInBlock.(*transaction.Tx)
+	copyTx := transaction.Tx{
+		Version:         tx.Version,
+		JSSig:           tx.JSSig,
+		JSPubKey:        tx.JSPubKey,
+		Fee:             tx.Fee,
+		Type:            tx.Type,
+		LockTime:        tx.LockTime,
+		Descs:           make([]*transaction.JoinSplitDesc, 0),
+		AddressLastByte: tx.AddressLastByte,
+	}
+	// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
+	listDesc := make([]*transaction.JoinSplitDesc, 0)
+	for _, desc := range tx.Descs {
+		copyDesc := &transaction.JoinSplitDesc{
+			Anchor:        desc.Anchor,
+			Reward:        desc.Reward,
+			Commitments:   make([][]byte, 0),
+			EncryptedData: make([][]byte, 0),
+		}
+		if desc.Proof != nil && len(desc.EncryptedData) > 0 {
+			// have privacy-protocol
+			for i, encData := range desc.EncryptedData {
+				var epk client.EphemeralPubKey
+				copy(epk[:], desc.EphemeralPubKey)
+				hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
+				note := new(client.Note)
+				note, err := client.DecryptNote(encData, keys.ReadonlyKey.Rk, keys.PaymentAddress.Tk, epk, hSig)
+				if err == nil && note != nil && note.Value > 0 {
+					// can decrypt data -> got candidate commitment
+					candidateCommitment := desc.Commitments[i]
+					if len(nullifiersInDb) > 0 {
+						// -> check commitment with db nullifiers
+						var rho [32]byte
+						copy(rho[:], note.Rho)
+						candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
+						if len(candidateNullifier) == 0 {
+							continue
+						}
+						checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
+						if err != nil || checkCandiateNullifier == true {
+							// candidate nullifier is not existed in db
+							continue
+						}
+					}
+					copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
+					copyDesc.AppendNote(note)
+					note.Cm = candidateCommitment
+					note.Apk = privacy.GeneratePublicKey(keys.PrivateKey)
+					copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
+				} else {
+					continue
+				}
+			}
+		} else {
+			for i, note := range desc.Note {
+				if bytes.Equal(note.Apk[:], keys.PaymentAddress.Pk[:]) && note.Value > 0 {
+					// no privacy-protocol
+					candidateCommitment := desc.Commitments[i]
+					if len(nullifiersInDb) > 0 {
+						// -> check commitment with db nullifiers
+						var rho [32]byte
+						copy(rho[:], note.Rho)
+						candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
+						if len(candidateNullifier) == 0 {
+							continue
+						}
+						checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
+						if err != nil || checkCandiateNullifier == true {
+							// candidate nullifier is not existed in db
+							continue
+						}
+					}
+					copyDesc.AppendNote(note)
+					note.Cm = candidateCommitment
+					note.Apk = privacy.GeneratePublicKey(keys.PrivateKey)
+					copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
+				} else {
+					continue
+				}
+			}
+		}
+		if len(copyDesc.Note) > 0 {
+			listDesc = append(listDesc, copyDesc)
+		}
+	}
+	if len(listDesc) > 0 {
+		copyTx.Descs = listDesc
+	}
+	return copyTx
+}
+
+// GetListUnspentTxByPrivateKeyInBlock - fetch block to get unspent tx commitment which privatekey can use it
+// return a list tx which contain commitment which can be used
+func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *privacy.SpendingKey, block *Block, nullifiersInDb [][]byte, returnFullTx bool) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx)
 
 	// Get set of keys from private keybyte
@@ -742,97 +847,16 @@ func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *privacy.
 	txsInBlockAccepted := make([]transaction.Tx, 0)
 	for _, txInBlock := range txsInBlock {
 		if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
-			tx := txInBlock.(*transaction.Tx)
-			copyTx := transaction.Tx{
-				Version:         tx.Version,
-				JSSig:           tx.JSSig,
-				JSPubKey:        tx.JSPubKey,
-				Fee:             tx.Fee,
-				Type:            tx.Type,
-				LockTime:        tx.LockTime,
-				Descs:           make([]*transaction.JoinSplitDesc, 0),
-				AddressLastByte: tx.AddressLastByte,
-			}
-			// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
-			listDesc := make([]*transaction.JoinSplitDesc, 0)
-			for _, desc := range tx.Descs {
-				copyDesc := &transaction.JoinSplitDesc{
-					Anchor:        desc.Anchor,
-					Reward:        desc.Reward,
-					Commitments:   make([][]byte, 0),
-					EncryptedData: make([][]byte, 0),
-				}
-				if desc.Proof != nil && len(desc.EncryptedData) > 0 {
-					// have privacy-protocol
-					for i, encData := range desc.EncryptedData {
-						var epk client.EphemeralPubKey
-						copy(epk[:], desc.EphemeralPubKey)
-						hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
-						note := new(client.Note)
-						note, err := client.DecryptNote(encData, keys.ReadonlyKey.Rk, keys.PaymentAddress.Tk, epk, hSig)
-						if err == nil && note != nil && note.Value > 0 {
-							// can decrypt data -> got candidate commitment
-							candidateCommitment := desc.Commitments[i]
-							if len(nullifiersInDb) > 0 {
-								// -> check commitment with db nullifiers
-								var rho [32]byte
-								copy(rho[:], note.Rho)
-								candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
-								if len(candidateNullifier) == 0 {
-									continue
-								}
-								checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
-								if err != nil || checkCandiateNullifier == true {
-									// candidate nullifier is not existed in db
-									continue
-								}
-							}
-							copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
-							copyDesc.AppendNote(note)
-							note.Cm = candidateCommitment
-							note.Apk = privacy.GeneratePaymentAddress(keys.PrivateKey).Pk
-							copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
-						} else {
-							continue
-						}
-					}
-				} else {
-					for i, note := range desc.Note {
-						if bytes.Equal(note.Apk[:], keys.PaymentAddress.Pk[:]) && note.Value > 0 {
-							// no privacy-protocol
-							candidateCommitment := desc.Commitments[i]
-							if len(nullifiersInDb) > 0 {
-								// -> check commitment with db nullifiers
-								var rho [32]byte
-								copy(rho[:], note.Rho)
-								candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
-								if len(candidateNullifier) == 0 {
-									continue
-								}
-								checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
-								if err != nil || checkCandiateNullifier == true {
-									// candidate nullifier is not existed in db
-									continue
-								}
-							}
-							copyDesc.AppendNote(note)
-							note.Cm = candidateCommitment
-							note.Apk = privacy.GeneratePaymentAddress(keys.PrivateKey).Pk
-							copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
-						} else {
-							continue
-						}
-					}
-				}
-				if len(copyDesc.Note) > 0 {
-					listDesc = append(listDesc, copyDesc)
-				}
-			}
-			if len(listDesc) > 0 {
-				copyTx.Descs = listDesc
-			}
+			// copyTx ONLY contains commitment which relate to keys
+			copyTx := self.DecryptTxByKey(txInBlock, nullifiersInDb, &keys)
 			if len(copyTx.Descs) > 0 {
-				txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
+				if !returnFullTx {
+					// only return copy tx which contain unspent commitment which relate with private key
+					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
+				} else {
+					// only return full tx which contain unspent commitment which relate with private key and other commitments
+					txsInBlockAccepted = append(txsInBlockAccepted, *txInBlock.(*transaction.Tx))
+				}
 			}
 		}
 	}
@@ -868,17 +892,26 @@ func (self *BlockChain) GetListUnspentTxByPrivateKey(privateKey *privacy.Spendin
 		}
 		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
 	}
-	/*if self.config.Light {
-		// Get unspent tx light mode
-		results, err := self.config.DataBase.GetTransactionLightModeByPrivateKey(privateKey)
-		//Logger.log.Infof("UTXO lightmode %+v", results)
+	if self.config.Light {
+		// Get unspent tx with light mode
+		fullTxs, err := self.config.DataBase.GetTransactionLightModeByPrivateKey(privateKey)
+		Logger.log.Infof("UTXO lightmode %+v", fullTxs)
 		if err != nil {
 			return nil, err
 		}
-		if results != nil {
+		// decrypt to get utxo with commitments with relate to private key
+		for chainID, txArrays := range fullTxs {
+			for _, tx := range txArrays {
+				keys := cashec.KeySet{}
+				keys.ImportFromPrivateKey(privateKey)
+				copyTx := self.DecryptTxByKey(&tx, nullifiersInDb, &keys)
+				results[chainID] = append(results[chainID], copyTx)
+			}
+		}
+		if len(results) > 0 {
 			return results, nil
 		}
-	}*/
+	}
 	// loop on all chains
 	for _, bestState := range self.BestState {
 		// get best block
@@ -889,7 +922,7 @@ func (self *BlockChain) GetListUnspentTxByPrivateKey(privateKey *privacy.Spendin
 		for blockHeight > 0 {
 			var err1 error
 			// fetch block to get tx
-			resultsInChain, err1 := self.GetListUnspentTxByPrivateKeyInBlock(privateKey, block, nullifiersInDb, sortType, sortAsc)
+			resultsInChain, err1 := self.GetListUnspentTxByPrivateKeyInBlock(privateKey, block, nullifiersInDb, false)
 			if err1 != nil {
 				// unlock chain
 				//self.chainLock.Unlock()
@@ -995,74 +1028,80 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 	return voutList, nil
 }
 
+func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (byte, *common.Hash, int, transaction.Transaction, error) {
+	const (
+		bigNumber   = 999999999
+		bigNumberTx = 999999999
+	)
+	var (
+		blockHeight uint32
+		txIndex     uint32
+		chainId     []byte
+	)
+	// Get transaction
+	tx := transaction.Tx{}
+	locationByte, txByte, err := self.config.DataBase.GetTransactionLightModeByHash(txHash)
+	Logger.log.Info("GetTransactionByHash - 1", locationByte, txByte, err)
+	if err != nil {
+		return byte(255), nil, -1, nil, err
+	}
+	err = json.Unmarshal(txByte, &tx)
+	if err != nil {
+		return byte(255), nil, -1, nil, err
+	}
+	// Handle string to get chainId, blockheight, txindex information
+	locations := strings.Split(string(locationByte), string("-"))
+	// Get Chain Id
+	chainId = []byte(locations[2])
+	// Get Block Height
+	tempBlockHeight := []byte(locations[3])
+	bufBlockHeight := bytes.NewBuffer(tempBlockHeight)
+	err = binary.Read(bufBlockHeight, binary.LittleEndian, &blockHeight)
+	if err != nil {
+		return byte(255), nil, -1, nil, err
+	}
+	blockHeight = uint32(bigNumber - blockHeight)
+	Logger.log.Info("Testing in GetTransactionByHash, blockHeight", blockHeight)
+	block, err := self.GetBlockByBlockHeight(int32(blockHeight), chainId[0])
+	if err != nil {
+		Logger.log.Error("ERROR in GetTransactionByHash, get Block by height", err)
+		return byte(255), nil, -1, nil, err
+	}
+	//Get txIndex
+	tempTxIndex := []byte(locations[4])
+	bufTxIndex := bytes.NewBuffer(tempTxIndex)
+	err = binary.Read(bufTxIndex, binary.LittleEndian, &txIndex)
+	if err != nil {
+		return byte(255), nil, -1, nil, err
+	}
+	txIndex = uint32(bigNumberTx - txIndex)
+	Logger.log.Info("Testing in GetTransactionByHash, blockHash, index, tx", block.Hash(), txIndex, tx)
+	return chainId[0], block.Hash(), int(txIndex), &tx, nil
+}
+
+// GetTransactionByHash - retrieve tx from txId(txHash)
 func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, transaction.Transaction, error) {
 	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
 		// check lightweight
 		if self.config.Light {
-			// TODO get data with light mode
-			Logger.log.Info("ERROR in GetTransactionByHash", err)
-			const (
-				bigNumber   = 999999999
-				bigNumberTx = 999999999
-			)
-			var (
-				blockHeight uint32
-				txIndex     uint32
-				chainId     []byte
-			)
-			// Get transaction
-			tx := transaction.Tx{}
-			locationByte, txByte, err := self.config.DataBase.GetTransactionLightModeByHash(txHash)
-			Logger.log.Info("GetTransactionByHash - 1", locationByte, txByte, err)
-			if err != nil {
-				return byte(255), nil, -1, nil, err
-			}
-			err = json.Unmarshal(txByte, &tx)
-			if err != nil {
-				return byte(255), nil, -1, nil, err
-			}
-			// Handle string to get chainId, blockheight, txindex information
-			locations := strings.Split(string(locationByte), string("-"))
-			// Get Chain Id
-			chainId = []byte(locations[2])
-			// Get Block Height
-			tempBlockHeight := []byte(locations[3])
-			bufBlockHeight := bytes.NewBuffer(tempBlockHeight)
-			err = binary.Read(bufBlockHeight, binary.LittleEndian, &blockHeight)
-			if err != nil {
-				return byte(255), nil, -1, nil, err
-			}
-			blockHeight = uint32(bigNumber - blockHeight)
-			Logger.log.Info("Testing in GetTransactionByHash, blockHeight", blockHeight)
-			block, err := self.GetBlockByBlockHeight(int32(blockHeight), chainId[0])
-			if err != nil {
-				Logger.log.Error("ERROR in GetTransactionByHash, get Block by height", err)
-				return byte(255), nil, -1, nil, err
-			}
-			//Get txIndex
-			tempTxIndex := []byte(locations[4])
-			bufTxIndex := bytes.NewBuffer(tempTxIndex)
-			err = binary.Read(bufTxIndex, binary.LittleEndian, &txIndex)
-			if err != nil {
-				return byte(255), nil, -1, nil, err
-			}
-			txIndex = uint32(bigNumberTx - txIndex)
-			Logger.log.Info("Testing in GetTransactionByHash, blockHash, index, tx", block.Hash(), txIndex, tx)
-			return chainId[0], block.Hash(), int(txIndex), &tx, nil
+			// with light node, we can try get data in light mode
+			Logger.log.Info("ERROR in GetTransactionByHash, change to get in light mode", err)
+			return self.GetTransactionByHashInLightMode(txHash)
 		}
 
 		return byte(255), nil, -1, nil, err
 	}
 	block, err := self.GetBlockByBlockHash(blockHash)
 	if err != nil {
-		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and Index", index, "contains", block.Transactions[index])
+		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
 		return byte(255), nil, -1, nil, err
 	}
-	Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and Index", index, "contains", block.Transactions[index])
+	Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
 	return block.Header.ChainID, blockHash, index, block.Transactions[index], nil
 }
 
+// ListCustomToken - return all custom token which existed in network
 func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomToken, error) {
 	data, err := self.config.DataBase.ListCustomToken()
 	if err != nil {
@@ -1114,7 +1153,7 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 	return result, nil
 }
 
-// TODO(@0xsirrush): implement
+// GetListTokenHolders - return list paymentaddress (in hexstring) of someone who hold custom token in network
 func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]uint64, error) {
 	result, err := self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(tokenID)
 	if err != nil {
@@ -1123,21 +1162,6 @@ func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]ui
 	return result, nil
 }
 
-// Cached data, not from newest block
-func (self *BlockChain) GetAccountUTXO(account []byte) [][]byte {
-	return nil
-}
-
-// New data from latest block
-func (self *BlockChain) GetUTXOReward(utxo []byte) (uint64, error) {
-	return 0, nil
-}
-
-// Update to data of latest block
-func (self *BlockChain) UpdateUTXOReward(utxo []byte, reward uint64) error {
-	return nil
-}
-
-func (self *BlockChain) GetCustomTokenRewardSnapshot() (map[string]uint64) {
+func (self *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {
 	return self.config.customTokenRewardSnapshot
 }

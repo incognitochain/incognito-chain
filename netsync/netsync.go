@@ -27,7 +27,7 @@ type NetSyncConfig struct {
 	BlockChain *blockchain.BlockChain
 	ChainParam *blockchain.Params
 	MemTxPool  *mempool.TxPool
-	Server     interface {
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, peer2.ID) error
 		PushMessageToAll(wire.Message) error
@@ -91,10 +91,10 @@ out:
 					{
 						self.HandleMessageTx(msg)
 					}
-				case *wire.MessageRegistration:
-					{
-						self.HandleMessageRegisteration(msg)
-					}
+					//case *wire.MessageRegistration:
+					//	{
+					//		self.HandleMessageRegisteration(msg)
+					//	}
 				case *wire.MessageBlock:
 					{
 						self.HandleMessageBlock(msg)
@@ -154,14 +154,14 @@ out:
 // QueueTx adds the passed transaction message and peer to the block handling
 // queue. Responds to the done channel argument after the tx message is
 // processed.
-func (self *NetSync) QueueRegisteration(peer *peer.Peer, msg *wire.MessageRegistration, done chan struct{}) {
+/*func (self *NetSync) QueueRegisteration(peer *peer.Peer, msg *wire.MessageRegistration, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
 	if atomic.LoadInt32(&self.shutdown) != 0 {
 		done <- struct{}{}
 		return
 	}
 	self.cMessage <- msg
-}
+}*/
 
 func (self *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
@@ -192,7 +192,7 @@ func (self *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 }
 
 // handleTxMsg handles transaction messages from all peers.
-func (self *NetSync) HandleMessageRegisteration(msg *wire.MessageRegistration) {
+/*func (self *NetSync) HandleMessageRegisteration(msg *wire.MessageRegistration) {
 	Logger.log.Info("Handling new message tx")
 	hash, txDesc, err := self.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
 
@@ -208,7 +208,7 @@ func (self *NetSync) HandleMessageRegisteration(msg *wire.MessageRegistration) {
 			Logger.log.Error(err)
 		}
 	}
-}
+}*/
 
 // QueueBlock adds the passed block message and peer to the block handling
 // queue. Responds to the done channel argument after the block message is
@@ -248,7 +248,7 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 		bestHashStr := self.config.BlockChain.BestState[chainID].BestBlockHash.String()
 		Logger.log.Infof("Blockhash from message %s", blockHash.String())
 		Logger.log.Infof("Blockhash of bestChain in chainID %d - %s", chainID, bestHashStr)
-		Logger.log.Info("Index of block %d \n", senderBlockHeaderIndex)
+		Logger.log.Info("index of block %d \n", senderBlockHeaderIndex)
 		Logger.log.Info("chainId of block %d \n", chainID)
 		if bestHashStr != blockHash.String() {
 			// Send Blocks back to requestor

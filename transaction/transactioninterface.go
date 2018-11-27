@@ -14,6 +14,7 @@ type Transaction interface {
 	GetTxVirtualSize() uint64
 	GetSenderAddrLastByte() byte
 	GetTxFee() uint64
+	ListNullifiers() [][]byte
 }
 
 // This is tx struct which is really saved in tx mempool

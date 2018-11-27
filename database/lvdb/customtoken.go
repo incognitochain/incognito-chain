@@ -2,17 +2,18 @@ package lvdb
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"strconv"
 	"strings"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/voting"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"encoding/hex"
 )
 
 func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
@@ -43,7 +44,9 @@ func (db *db) ListCustomToken() ([][]byte, error) {
 	result := make([][]byte, 0)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(tokenInitPrefix), nil)
 	for iter.Next() {
-		result = append(result, iter.Value())
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
+		result = append(result, value)
 	}
 	iter.Release()
 	return result, nil
@@ -287,7 +290,7 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddr
 /*
 	Update UTXO from unreward -> reward
 */
-func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress privacy.PaymentAddress, txHash *common.Hash, voutIndex int) (error) {
+func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress privacy.PaymentAddress, txHash *common.Hash, voutIndex int) error {
 	key := tokenPaymentAddressPrefix
 	key = append(key, splitter...)
 	key = append(key, (*tokenID)[:]...)
@@ -315,6 +318,10 @@ func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress priva
 	return nil
 }
 
-func (db *db) SaveCrowdsaleData(saleID, bondID []byte, baseAsset, quoteAsset string, price uint64, escrowAccount privacy.PaymentAddress) error {
+func (db *db) SaveCrowdsaleData(saleData *voting.SaleData) error {
 	return nil
+}
+
+func (db *db) LoadCrowdsaleData(saleID []byte) (*voting.SaleData, error) {
+	return nil, nil
 }

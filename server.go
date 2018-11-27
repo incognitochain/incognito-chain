@@ -189,6 +189,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	self.memPool.Init(&mempool.Config{
 		Policy: mempool.Policy{
 			MaxTxVersion: transaction.TxVersion + 1,
+			BlockChain:   self.blockChain,
 		},
 		BlockChain:   self.blockChain,
 		DataBase:     self.dataBase,
@@ -538,7 +539,7 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnGetChainState: self.OnGetChainState,
 			OnChainState:    self.OnChainState,
 			//
-			OnRegistration: self.OnRegistration,
+			//OnRegistration: self.OnRegistration,
 			OnSwapRequest:  self.OnSwapRequest,
 			OnSwapSig:      self.OnSwapSig,
 			OnSwapUpdate:   self.OnSwapUpdate,
@@ -585,14 +586,14 @@ func (self Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Info("Receive a new transaction END")
 }
 
-func (self Server) OnRegistration(peer *peer.PeerConn, msg *wire.MessageRegistration) {
+/*func (self Server) OnRegistration(peer *peer.PeerConn, msg *wire.MessageRegistration) {
 	Logger.log.Info("Receive a new registration START")
 	var txProcessed chan struct{}
 	self.netSync.QueueRegisteration(nil, msg, txProcessed)
 	//<-txProcessed
 
 	Logger.log.Info("Receive a new registration END")
-}
+}*/
 
 func (self Server) OnSwapRequest(peer *peer.PeerConn, msg *wire.MessageSwapRequest) {
 	Logger.log.Info("Receive a new request swap START")
@@ -720,7 +721,6 @@ func (self *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerAck) {
 }
 
 func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr) {
-	// TODO for ongetaddr message
 	Logger.log.Info("Receive getaddr message START")
 
 	// send message for addr
@@ -751,17 +751,7 @@ func (self *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGetAddr)
 }
 
 func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
-	// TODO for onaddr message
 	Logger.log.Infof("Receive addr message %v", msg.RawPeers)
-	//for _, rawPeer := range msg.RawPeers {
-	//	for _, listen := range self.connManager.ListeningPeers {
-	//		for _, _peerConn := range listen.PeerConns {
-	//			if _peerConn.RemotePeerID.Pretty() != self.connManager.GetPeerId(rawPeer.RemoteRawAddress) {
-	//				go self.connManager.Connect(rawPeer.RemoteRawAddress, rawPeer.PaymentAddress)
-	//			}
-	//		}
-	//	}
-	//}
 }
 
 func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageBlockSigReq) {

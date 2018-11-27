@@ -1,14 +1,12 @@
 package rpcserver
 
 import (
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 	"strconv"
-	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
@@ -18,7 +16,6 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
-	"golang.org/x/crypto/ed25519"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -45,26 +42,32 @@ var RpcHandler = map[string]commandHandler{
 	GetBlockHash:      RpcServer.handleGetBlockHash,
 
 	// transaction
-	ListTransactions:              RpcServer.handleListTransactions,
-	CreateTransaction:             RpcServer.handleCreateTransaction,
-	SendTransaction:               RpcServer.handleSendTransaction,
-	CreateAndSendTransaction:      RpcServer.handlCreateAndSendTx,
-	CreateActionParamsTransaction: RpcServer.handleCreateActionParamsTransaction,
-	GetMempoolInfo:                RpcServer.handleGetMempoolInfo,
-	GetTransactionByHash:          RpcServer.handleGetTransactionByHash,
+	ListTransactions:         RpcServer.handleListTransactions,
+	CreateRawTransaction:     RpcServer.handleCreateRawTransaction,
+	SendRawTransaction:       RpcServer.handleSendRawTransaction,
+	CreateAndSendTransaction: RpcServer.handlCreateAndSendTx,
+	GetMempoolInfo:           RpcServer.handleGetMempoolInfo,
+	GetTransactionByHash:     RpcServer.handleGetTransactionByHash,
 
 	GetCommitteeCandidateList:  RpcServer.handleGetCommitteeCandidateList,
 	RetrieveCommitteeCandidate: RpcServer.handleRetrieveCommiteeCandidate,
 	GetBlockProducerList:       RpcServer.handleGetBlockProducerList,
 
 	// custom token
-	CreateRawCustomTokenTransaction: RpcServer.handleCreateRawCustomTokenTransaction,
-	SendRawCustomTokenTransaction:   RpcServer.handleSendRawCustomTokenTransaction,
-	SendCustomTokenTransaction:      RpcServer.handleSendCustomTokenTransaction,
-	ListUnspentCustomToken:          RpcServer.handleListUnspentCustomTokenTransaction,
-	ListCustomToken:                 RpcServer.handleListCustomToken,
-	CustomToken:                     RpcServer.handleCustomTokenDetail,
-	GetListCustomTokenBalance:       RpcServer.handleGetListCustomTokenBalance,
+	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
+	SendRawCustomTokenTransaction:       RpcServer.handleSendRawCustomTokenTransaction,
+	CreateAndSendCustomTokenTransaction: RpcServer.handleCreateAndSendCustomTokenTransaction,
+	ListUnspentCustomToken:              RpcServer.handleListUnspentCustomTokenTransaction,
+	ListCustomToken:                     RpcServer.handleListCustomToken,
+	CustomToken:                         RpcServer.handleCustomTokenDetail,
+	GetListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
+
+	// Loan tx
+	GetLoanParams:             RpcServer.handleGetLoanParams,
+	CreateAndSendLoanRequest:  RpcServer.handleCreateAndSendLoanRequest,
+	CreateAndSendLoanResponse: RpcServer.handleCreateAndSendLoanResponse,
+	CreateAndSendLoanWithdraw: RpcServer.handleCreateAndSendLoanWithdraw,
+	CreateAndSendLoanPayment:  RpcServer.handleCreateAndSendLoanPayment,
 
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -77,12 +80,27 @@ var RpcHandler = map[string]commandHandler{
 	GetListDCBBoard:                RpcServer.handleGetListDCBBoard,
 	GetListCBBoard:                 RpcServer.handleGetListCBBoard,
 	GetListGOVBoard:                RpcServer.handleGetListGOVBoard,
+
+	// vote
+	SendRawVoteBoardDCBTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
+	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
+	CreateAndSendVoteDCBBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
+	SendRawVoteBoardGOVTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
+	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
+	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
+	GetGOVParams:                         RpcServer.handleGetGOVParams,
+	GetDCBParams:                         RpcServer.handleGetDCBParams,
+	GetDCBConstitution:                   RpcServer.handleGetDCBConstitution,
+	GetGOVConstitution:                   RpcServer.handleGetGOVConstitution,
+
+	// gov
+	GetBondTypes: RpcServer.handleGetBondTypes,
 }
 
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:           RpcServer.HandleListAccounts,
+	ListAccounts:           RpcServer.handleListAccounts,
 	GetAccount:             RpcServer.handleGetAccount,
 	GetAddressesByAccount:  RpcServer.handleGetAddressesByAccount,
 	GetAccountAddress:      RpcServer.handleGetAccountAddress,
@@ -312,14 +330,6 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 					}
 					transactionT.HexData = hex.EncodeToString(data)
 					transactionT.Locktime = txN.LockTime
-				} else if tx.GetType() == common.TxActionParamsType {
-					txA := tx.(*transaction.ActionParamTx)
-					data, err := json.Marshal(txA)
-					if err != nil {
-						return nil, NewRPCError(ErrUnexpected, err)
-					}
-					transactionT.HexData = hex.EncodeToString(data)
-					transactionT.Locktime = txA.LockTime
 				}
 				result.Txs = append(result.Txs, transactionT)
 			}
@@ -369,8 +379,8 @@ func (self RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-ch
 			Hash:             bestState.BestBlockHash.String(),
 			TotalTxs:         bestState.TotalTxns,
 			SalaryFund:       bestState.BestBlock.Header.SalaryFund,
-			BasicSalary:      bestState.BestBlock.Header.GOVParams.BasicSalary,
-			SalaryPerTx:      bestState.BestBlock.Header.GOVParams.SalaryPerTx,
+			BasicSalary:      bestState.BestBlock.Header.GOVConstitution.GOVParams.BasicSalary,
+			SalaryPerTx:      bestState.BestBlock.Header.GOVConstitution.GOVParams.SalaryPerTx,
 			BlockProducer:    bestState.BestBlock.BlockProducer,
 			BlockProducerSig: bestState.BestBlock.BlockProducerSig,
 		}
@@ -422,11 +432,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 
 	// get params
 	paramsArray := common.InterfaceSlice(params)
-	assetType := paramsArray[0].(string)
-	if ok, err := common.SliceExists(common.ListAsset, assetType); !ok || err != nil {
-		return nil, NewRPCError(ErrUnexpected, errors.New(fmt.Sprintf("Asset is not in list: ", common.ListAsset)))
-	}
-	listKeyParams := common.InterfaceSlice(paramsArray[1])
+	listKeyParams := common.InterfaceSlice(paramsArray[0])
 	for _, keyParam := range listKeyParams {
 		keys := keyParam.(map[string]interface{})
 
@@ -450,7 +456,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 			PaymentAddress: pubKey.KeySet.PaymentAddress,
 		}
 
-		txsMap, err := self.config.BlockChain.GetListTxByReadonlyKey(&keySet, assetType)
+		txsMap, err := self.config.BlockChain.GetListTxByReadonlyKey(&keySet)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -760,11 +766,12 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 					TxCustomTokenID: out.GetTxCustomTokenID(),
 					VoutIndex:       out.GetIndex(),
 				}
-				// TODO create signature -> base58check.encode of txtokenout double hash
+				// create signature by keyset -> base58check.encode of txtokenout double hash
 				signature, err := senderKey.KeySet.Sign(out.Hash()[:])
 				if err != nil {
 					return nil, NewRPCError(ErrUnexpected, err)
 				}
+				// add signature to TxTokenVin to use token utxo
 				item.Signature = base58.Base58Check{}.Encode(signature, 0)
 				txTokenIns = append(txTokenIns, item)
 				txTokenInsAmount += out.Value
@@ -888,7 +895,7 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(
 	return result, nil
 }
 
-// handleSendRawCustomTokenTransaction...
+// handleSendRawTransaction...
 func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
@@ -899,6 +906,7 @@ func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, cl
 		return nil, err
 	}
 	tx := transaction.TxCustomToken{}
+	//tx := transaction.TxCustomToken{}
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
@@ -919,14 +927,14 @@ func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, cl
 		return nil, err
 	}
 
-	txMsg.(*wire.MessageRegistration).Transaction = &tx
+	txMsg.(*wire.MessageTx).Transaction = &tx
 	self.config.Server.PushMessageToAll(txMsg)
 
 	return tx.Hash(), nil
 }
 
-// handleSendCustomTokenTransaction - create and send a tx which process on a custom token look like erc-20 on eth
-func (self RpcServer) handleSendCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+// handleCreateAndSendCustomTokenTransaction - create and send a tx which process on a custom token look like erc-20 on eth
+func (self RpcServer) handleCreateAndSendCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	data, err := self.handleCreateRawCustomTokenTransaction(params, closeChan)
 	if err != nil {
 		return nil, err
@@ -945,7 +953,7 @@ func (self RpcServer) handleSendCustomTokenTransaction(params interface{}, close
 /*
 // handleCreateTransaction handles createtransaction commands.
 */
-func (self RpcServer) handleCreateTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 
 	// all params
@@ -1082,7 +1090,7 @@ Parameter #1—a serialized transaction to broadcast
 Parameter #2–whether to allow high fees
 Result—a TXID or error Message
 */
-func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	hexRawTx := arrayParams[0].(string)
@@ -1129,7 +1137,7 @@ func (self RpcServer) handleSendTransaction(params interface{}, closeChan <-chan
 handlCreateAndSendTx - RPC creates transaction and send to network
 */
 func (self RpcServer) handlCreateAndSendTx(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	data, err := self.handleCreateTransaction(params, closeChan)
+	data, err := self.handleCreateRawTransaction(params, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -1140,7 +1148,7 @@ func (self RpcServer) handlCreateAndSendTx(params interface{}, closeChan <-chan 
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, hexStrOfTx)
-	sendResult, err := self.handleSendTransaction(newParam, closeChan)
+	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -1160,54 +1168,6 @@ func assertEligibleAgentIDs(eligibleAgentIDs interface{}) []string {
 }
 
 /*
-// handleCreateRawTransaction handles createrawtransaction commands.
-*/
-func (self RpcServer) handleCreateActionParamsTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	Logger.log.Info(params)
-	arrayParams := common.InterfaceSlice(params)
-	tx := transaction.ActionParamTx{
-		Version:  1,
-		Type:     common.TxActionParamsType,
-		LockTime: time.Now().Unix(),
-	}
-
-	param := arrayParams[0].(map[string]interface{})
-	tx.Param = &transaction.Param{
-		AgentID:          param["agentId"].(string),
-		AgentSig:         param["agentSig"].(string),
-		NumOfCoins:       param["numOfCoins"].(float64),
-		NumOfBonds:       param["numOfBonds"].(float64),
-		Tax:              param["tax"].(float64),
-		EligibleAgentIDs: assertEligibleAgentIDs(param["eligibleAgentIDs"]),
-	}
-
-	// check signed tx
-	message := map[string]interface{}{
-		"agentId":          tx.Param.AgentID,
-		"numOfCoins":       tx.Param.NumOfCoins,
-		"numOfBonds":       tx.Param.NumOfBonds,
-		"tax":              tx.Param.Tax,
-		"eligibleAgentIDs": tx.Param.EligibleAgentIDs,
-	}
-	pubKeyInBytes, _ := base64.StdEncoding.DecodeString(tx.Param.AgentID)
-	sigInBytes, _ := base64.StdEncoding.DecodeString(tx.Param.AgentSig)
-	messageInBytes, _ := json.Marshal(message)
-
-	isValid := ed25519.Verify(pubKeyInBytes, messageInBytes, sigInBytes)
-	fmt.Println("isValid: ", isValid)
-
-	_, _, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	// broadcast Message
-	// self.config.Server.PushTxMessage(hash)
-
-	return tx.Hash(), nil
-}
-
-/*
 listaccount RPC lists accounts and their balances.
 
 Parameter #1—the minimum number of confirmations a transaction must have
@@ -1215,7 +1175,7 @@ Parameter #2—whether to include watch-only addresses in results
 Result—a list of accounts and their balances
 
 */
-func (self RpcServer) HandleListAccounts(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	result := jsonresult.ListAccounts{
 		Accounts:   make(map[string]uint64),
 		WalletName: self.config.Wallet.Name,
@@ -1249,7 +1209,7 @@ getaccount RPC returns the name of the account associated with the given address
 */
 func (self RpcServer) handleGetAccount(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	for _, account := range self.config.Wallet.MasterAccount.Child {
-		address := account.Key.Base58CheckSerialize(wallet.PubKeyType)
+		address := account.Key.Base58CheckSerialize(wallet.PaymentAddressType)
 		if address == params.(string) {
 			return account.Name, nil
 		}
@@ -1306,7 +1266,7 @@ func (self RpcServer) handleImportAccount(params interface{}, closeChan <-chan s
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	return wallet.KeySerializedData{
-		PaymentAddress: account.Key.Base58CheckSerialize(wallet.PubKeyType),
+		PaymentAddress: account.Key.Base58CheckSerialize(wallet.PaymentAddressType),
 		ReadonlyKey:    account.Key.Base58CheckSerialize(wallet.ReadonlyKeyType),
 	}, nil
 }
@@ -1672,19 +1632,6 @@ func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, c
 		return nil, errors.New("Failed to sign the custom token")
 	}
 	return hex.EncodeToString(jsSignByteArray), nil
-}
-
-// handleGetListDCBBoard - return list payment address of DCB board
-func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.DCDParams.DCBBoardPubKeys, nil
-}
-
-func (self RpcServer) handleGetListCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.CBParams.CBBoardPubKeys, nil
-}
-
-func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVParams.GOVBoardPubKeys, nil
 }
 
 // payment address -> balance of all custom token

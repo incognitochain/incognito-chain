@@ -35,8 +35,8 @@ func printProof(proof *zksnark.PHGRProof) {
 }
 
 // Prove calls libsnark's Prove and return the proof
-// inputs: WitnessPath and Key must be set; InputeNote's Value, Apk, R and Rho must also be set before calling this function
-// outputs: EncKey, OutputNote's Apk and Value must be set before calling this function
+// inputs: WitnessPath and Key must be set; InputeNote's Value, PaymentAddress, R and Rho must also be set before calling this function
+// outputs: EncKey, OutputNote's PaymentAddress and Value must be set before calling this function
 // reward: for salary tx, this is the mining reward; for other tx, it must be 0
 // After this function, outputs' Rho and R and Cm will be updated
 func Prove(inputs []*JSInput,
@@ -101,9 +101,9 @@ func Prove(inputs []*JSInput,
 
 		// Compute cm for new notes to check for Note commitment integrity
 		fmt.Printf("Getting commitment for output note\n")
-		fmt.Printf("Apk: %x\n", output.OutputNote.Apk)
+		fmt.Printf("PaymentAddress: %x\n", output.OutputNote.Apk)
 		fmt.Printf("Rho: %x\n", output.OutputNote.Rho)
-		fmt.Printf("R: %x\n", output.OutputNote.R)
+		fmt.Printf("Randomness: %x\n", output.OutputNote.R)
 		output.OutputNote.Cm = GetCommitment(output.OutputNote)
 	}
 
@@ -150,19 +150,19 @@ func Prove(inputs []*JSInput,
 		fmt.Printf("zkInputs[%d].SpendingKey: %x\n", i, zkinput.SpendingKey)
 		fmt.Printf("zkInputs[%d].Note.Value: %v\n", i, zkinput.Note.Value)
 		fmt.Printf("zkInputs[%d].Note.Cm: %x\n", i, zkinput.Note.Cm)
-		fmt.Printf("zkInputs[%d].Note.R: %x\n", i, zkinput.Note.R)
+		fmt.Printf("zkInputs[%d].Note.Randomness: %x\n", i, zkinput.Note.R)
 		fmt.Printf("zkInputs[%d].Note.Nf: %x\n", i, zkinput.Note.Nf)
 		fmt.Printf("zkInputs[%d].Note.Rho: %x\n", i, zkinput.Note.Rho)
-		fmt.Printf("zkInputs[%d].Note.Apk: %x\n", i, zkinput.Note.Apk)
+		fmt.Printf("zkInputs[%d].Note.PaymentAddress: %x\n", i, zkinput.Note.Apk)
 	}
 
 	for i, zkout := range zkNotes {
 		fmt.Printf("zkNotes[%d].Note.Value: %v\n", i, zkout.Value)
 		fmt.Printf("zkNotes[%d].Note.Cm: %x\n", i, zkout.Cm)
-		fmt.Printf("zkNotes[%d].Note.R: %x\n", i, zkout.R)
+		fmt.Printf("zkNotes[%d].Note.Randomness: %x\n", i, zkout.R)
 		fmt.Printf("zkNotes[%d].Note.Nf: %x\n", i, zkout.Nf)
 		fmt.Printf("zkNotes[%d].Note.Rho: %x\n", i, zkout.Rho)
-		fmt.Printf("zkNotes[%d].Note.Apk: %x\n", i, zkout.Apk)
+		fmt.Printf("zkNotes[%d].Note.PaymentAddress: %x\n", i, zkout.Apk)
 	}
 
 	var r *zksnark.ProveReply;

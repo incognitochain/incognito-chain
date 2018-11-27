@@ -2,8 +2,9 @@ package database
 
 import (
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/voting"
 )
 
 // DatabaseInterface provides the interface that is used to store blocks.
@@ -11,7 +12,6 @@ type DatabaseInterface interface {
 	// Block
 	StoreBlock(interface{}, byte) error
 	StoreBlockHeader(interface{}, *common.Hash, byte) error
-	StoreTransactionLightMode(*privacy.SpendingKey, byte, int32, int, *transaction.Tx) error
 	FetchBlock(*common.Hash) ([]byte, error)
 	HasBlock(*common.Hash) (bool, error)
 	FetchAllBlocks() (map[byte][]*common.Hash, error)
@@ -23,11 +23,13 @@ type DatabaseInterface interface {
 	GetIndexOfBlock(*common.Hash) (int32, byte, error)
 	GetBlockByIndex(int32, byte) (*common.Hash, error)
 
-	// Transaction Index
+	// Transaction index
 	StoreTransactionIndex(*common.Hash, *common.Hash, int) error
+	StoreTransactionLightMode(*privacy.SpendingKey, byte, int32, int, *transaction.Tx) error
 	GetTransactionIndexById(*common.Hash) (*common.Hash, int, error)
 	GetTransactionLightModeByPrivateKey(*privacy.SpendingKey) (map[byte][]transaction.Tx, error)
 	GetTransactionLightModeByHash(*common.Hash) ([]byte, []byte, error)
+
 	// Best state of chain
 	StoreBestState(interface{}, byte) error
 	FetchBestState(byte) ([]byte, error)
@@ -39,7 +41,7 @@ type DatabaseInterface interface {
 	HasNullifier([]byte, byte) (bool, error)
 	CleanNullifiers() error
 
-	// Commitment
+	// PedersenCommitment
 	StoreCommitments([]byte, byte) error
 	FetchCommitments(byte) ([][]byte, error)
 	HasCommitment([]byte, byte) (bool, error)
@@ -59,6 +61,7 @@ type DatabaseInterface interface {
 	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error)                                          // get all account that have balance > 0 of a custom token
 	GetCustomTokenPaymentAddressUTXO(*common.Hash, privacy.PaymentAddress) ([]transaction.TxTokenVout, error) // get list of utxo of an account of a token
 	GetCustomTokenListPaymentAddressesBalance(*common.Hash) (map[string]uint64, error)                        // get balance of all payment address of a token (only return payment address with balance > 0)
+	UpdateRewardAccountUTXO(*common.Hash, privacy.PaymentAddress, *common.Hash, int) error
 
 	// Loans
 	StoreLoanRequest([]byte, []byte) error  // param: loanID, tx hash
@@ -66,7 +69,8 @@ type DatabaseInterface interface {
 	GetLoanTxs([]byte) ([][]byte, error)    // param: loanID
 
 	// Crowdsale
-	SaveCrowdsaleData([]byte, []byte, string, string, uint64, privacy.PaymentAddress) error // param: saleID, bondID, baseAsset, quoteAsset, price, escrowAccount
+	SaveCrowdsaleData(*voting.SaleData) error
+	LoadCrowdsaleData([]byte) (*voting.SaleData, error)
 
 	Close() error
 }

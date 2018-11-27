@@ -673,7 +673,7 @@ func TestCloneNonFuncFields(t *testing.T) {
 		// testing/quick can't handle functions or interfaces and so
 		// isn't used here.
 		switch fn := typ.Field(i).Name; fn {
-		case "Rand":
+		case "rand":
 			f.Set(reflect.ValueOf(io.Reader(os.Stdin)))
 		case "Time", "GetCertificate", "GetConfigForClient", "VerifyPeerCertificate", "GetClientCertificate":
 			// DeepEqual can't compare functions. If you add a

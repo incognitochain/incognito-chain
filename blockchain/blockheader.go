@@ -3,21 +3,27 @@ package blockchain
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/voting"
 )
 
 type GOVParams struct {
-	SalaryPerTx     uint64 // salary for each tx in block(mili constant)
-	BasicSalary     uint64 // basic salary per block(mili constant)
-	GOVBoardPubKeys []string
-	SellingBonds    *SellingBonds
+	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
+	BasicSalary  uint64 // basic salary per block(mili constant)
+	TxFee        uint64
+	SellingBonds *SellingBonds
+	RefundInfo   *RefundInfo
 }
 
-type DCDParams struct {
-	DCBBoardPubKeys []string
+type DCBParams struct {
+	SaleData *voting.SaleData
 }
 
 type CBParams struct {
-	CBBoardPubKeys []string
+}
+
+type RefundInfo struct {
+	ThresholdToLargeTx uint64
+	RefundAmount       uint64
 }
 
 type SellingBonds struct {
@@ -60,11 +66,16 @@ type BlockHeader struct {
 	SalaryFund uint64 // use to pay salary for miners(block producer or current leader) in chain
 	BankFund   uint64 // for DBank
 
-	GOVParams GOVParams // params which get from governance for network
-	DCDParams DCDParams
-	CBParams  CBParams
+	GOVConstitution GOVConstitution // params which get from governance for network
+	DCBConstitution DCBConstitution
+	CBParams        CBParams
 
-	LoanParams transaction.LoanParams // params for collateralized loans of Constant
+	// BOARD
+	DCBGovernor DCBGovernor
+	GOVGovernor GOVGovernor
+	CMBGovernor CMBGovernor
+
+	LoanParams []transaction.LoanParams // params for collateralized loans of Constant
 
 	//Block Height
 	Height int32

@@ -4,35 +4,34 @@ const (
 	EmptyString         = ""
 	MiliConstant        = 3 // 1 constant = 10^3 mili constant, we will use 1 miliconstant as minimum unit constant in tx
 	IncMerkleTreeHeight = 29
+	RefundPeriod        = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
 )
 
 const (
-	TxNormalType         = "n" // normal tx(send and receive coin)
-	TxSalaryType         = "s" // salary tx(gov pay salary for block producer)
-	TxActionParamsType   = "a" // action tx to edit params
-	TxCustomTokenType    = "t" // token  tx
+	TxSubmitDCBProposal = "pd"  // submit DCB proposal tx
+	TxSubmitGOVProposal = "pg"  // submit GOV proposal tx
+	TxVoteDCBProposal   = "vd"  // submit DCB proposal voted tx
+	TxVoteGOVProposal   = "vg"  // submit GOV proposal voted tx
+	TxVoteDCBBoard      = "vbd" // vote DCB board tx
+	TxVoteGOVBoard      = "vbg" // vote DCB board tx
+
+	TxAcceptDCBProposal  = "ad" // accept DCB proposal
+	TxAcceptGOVProposal  = "ag" // accept GOV proposal
+	TxNormalType         = "n"  // normal tx(send and receive coin)
+	TxSalaryType         = "s"  // salary tx(gov pay salary for block producer)
+	TxCustomTokenType    = "t"  // token  tx
 	TxLoanRequest        = "lr"
 	TxLoanResponse       = "ls"
 	TxLoanPayment        = "lp"
 	TxLoanWithdraw       = "lw"
 	TxDividendPayout     = "td"
-	TxCrowdsale          = "cs"
 	TxBuyFromGOVRequest  = "bgr"
 	TxBuySellDCBRequest  = "bsdr"
-	TxBuySellDCBResponse = "bsdrs"
+	TxBuySellDCBResponse = "bsds"
 	TxBuyFromGOVResponse = "bgrs"
+	TxBuyBackRequest     = "bbr"
+	TxBuyBackResponse    = "bbrs"
 )
-
-// unit type use in tx
-// coin or token or bond
-const (
-	AssetTypeCoin      = "c" // 'constant' coin
-	AssetTypeBond      = "b" // bond
-	AssetTypeGovToken  = "g" // government token
-	AssetTypeBankToken = "d" // decentralized central bank token
-)
-
-var ListAsset = []string{AssetTypeCoin, AssetTypeBond, AssetTypeGovToken, AssetTypeBankToken}
 
 // for mining consensus
 const (
@@ -54,10 +53,4 @@ const (
 const (
 	DCB = 1
 	GOV = 2
-)
-
-// board addresses
-var (
-	DCBAddress = []byte{}
-	GOVAddress = []byte{}
 )

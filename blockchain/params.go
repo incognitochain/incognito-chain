@@ -57,10 +57,24 @@ type Params struct {
 	GenerateSupported bool
 }
 
-var preSelectValidatorsMainnet = []string{
-
+type IcoParams struct {
+	InitialPaymentAddress string
+	InitFundSalary        uint64
+	InitialDCBToken       uint64
+	InitialCMBToken       uint64
+	InitialGOVToken       uint64
+	InitialBondToken      uint64
 }
 
+var preSelectValidatorsMainnet = []string{}
+var icoParamsMainnet = IcoParams{
+	InitialPaymentAddress: MainnetGenesisblockPaymentAddress,
+	InitFundSalary:        MainnetInitFundSalary,
+	InitialBondToken:      MainnetInitBondToken,
+	InitialCMBToken:       MainnetInitCmBToken,
+	InitialDCBToken:       MainnetInitDCBToken,
+	InitialGOVToken:       MainnetInitGovToken,
+}
 // MainNetParams defines the network parameters for the main coin network.
 var MainNetParams = Params{
 	Name:        MainetName,
@@ -68,7 +82,7 @@ var MainNetParams = Params{
 	DefaultPort: MainnetDefaultPort,
 
 	// blockChain parameters
-	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, MainnetGenesisblockPaymentAddress, preSelectValidatorsMainnet, MainnetInitFundSalary, 0, 0),
+	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, preSelectValidatorsMainnet, icoParamsMainnet, 0, 0),
 }
 
 var preSelectValidatorsTestnet = []string{
@@ -81,7 +95,7 @@ var preSelectValidatorsTestnet = []string{
 	"112hmH8nGFpJoqbevB7pmXGqyHenzxuP67tSyh4jfGqr5PbC4yNQ",
 	"12ixtJSwVqvLrB4x14ux9c3h2DyUgdfvyjt5XooHkxh6vbcZomW",
 	"1cizgU9GeDuEiH7GddwnV2YhPBB3aD1DMir3dynDQahjwQyqTk",
-	"13Ls2HCSLZUEW6oE53LZFuZiHdxQ4erCcsTacFHzBb4M7tggSJW", // me
+	"17EMNk6W3QpgmjxdtCaZAYmG7sBqN4XxC9bo6YfnAu587ASGv9g", // me
 	"1Jd94JYrqLGLUV6wEa43gdsDGc6JGcy2hYbsNptRuSS3iPz24e",
 	"1Q7P7QZGfJSrzC3US1Eqw2iPYDX5rqEG2T8ADsjrML5cQbSaU8",
 	"12mZfvHfV5h92TTF45EQgsKU7SkLNRZXLUf6WGLf24EcKfU5Xb6",
@@ -94,6 +108,14 @@ var preSelectValidatorsTestnet = []string{
 	"12k5BfodMQLMDZXmKNwd9gj7eqek3WQqmwYxyj37HBtJpMx1djR",
 }
 
+var icoParamsTestnet = IcoParams{
+	InitialPaymentAddress: TestnetGenesisBlockPaymentAddress,
+	InitFundSalary:        TestnetInitFundSalary,
+	InitialBondToken:      TestnetInitBondToken,
+	InitialCMBToken:       TestnetInitCmBToken,
+	InitialDCBToken:       TestnetInitDCBToken,
+	InitialGOVToken:       TestnetInitGovToken,
+}
 // TestNetParams defines the network parameters for the test coin network.
 var TestNetParams = Params{
 	Name:        TestnetName,
@@ -101,5 +123,5 @@ var TestNetParams = Params{
 	DefaultPort: TestnetDefaultPort,
 
 	// blockChain parameters
-	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, TestnetGenesisBlockPaymentAddress, preSelectValidatorsTestnet, TestnetInitFundSalary, 1000, 1000),
+	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, preSelectValidatorsTestnet, icoParamsTestnet, 1000, 1000),
 }

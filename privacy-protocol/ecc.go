@@ -2,37 +2,80 @@ package privacy
 
 import (
 	"crypto/elliptic"
+	"errors"
 	"fmt"
 	"math/big"
+
+	"github.com/minio/blake2b-simd"
 )
 
 // Curve P256
 var Curve = elliptic.P256()
 
 const (
-	PointBytesLenCompressed int  = 33
-	PointCompressed         byte = 0
+	pointBytesLenCompressed      = 33
+	pointCompressed         byte = 0x2
 )
 
 //EllipticPointHelper contain some function for elliptic point
 type EllipticPointHelper interface {
-	InversePoint() (*EllipticPoint, error)
-	RandPoint(x, y *big.Int) *EllipticPoint
-	CompressPoint() []byte
-	DecompressPoint(x *big.Int, ybit bool) (*big.Int, error)
+	Inverse() (*EllipticPoint, error)
+	// RandPoint(x, y *big.Int) *EllipticPoint
+	Randomize()
+	Compress() []byte
+	Decompress(compressPointBytes []byte) error
 	IsSafe() bool
+	ComputeYCoord()
+	Hash() EllipticPoint
 }
 
-// EllipticPoint represents an point of elliptic curve
+// EllipticPoint represents an point of elliptic curve,
+// which contains X, Y. X is Abscissa, Y is Ordinate
 type EllipticPoint struct {
 	X, Y *big.Int
 }
 
-// InversePoint return inverse point of ECC Point input
-func (eccPoint EllipticPoint) InversePoint() (*EllipticPoint, error) {
+//ComputeYCoord calculates Y coord from X
+func (eccPoint *EllipticPoint) ComputeYCoord() error {
+	if eccPoint.Y == nil {
+		eccPoint.Y = big.NewInt(0)
+	}
+
+	xTemp := new(big.Int)
+
+	// Y = +-sqrt(x^3 - 3*x + B)
+	x3 := new(big.Int).Mul(eccPoint.X, eccPoint.X)
+	x3.Mul(x3, eccPoint.X)
+	x3.Add(x3, Curve.Params().B)
+	x3.Sub(x3, xTemp.Mul(eccPoint.X, big.NewInt(3)))
+	x3.Mod(x3, Curve.Params().P)
+
+	// //check P = 3 mod 4?
+	// if temp.Mod(Q, new(big.Int).SetInt64(4)).Cmp(new(big.Int).SetInt64(3)) == 0 {
+	// 	//		fmt.Println("Ok!!!")
+	// }
+
+	// Now calculate sqrt mod p of x^3 - 3*x + B
+	// This code used to do a full sqrt based on tonelli/shanks,
+	// but this was replaced by the algorithms referenced in
+	// https://bitcointalk.org/index.php?topic=162805.msg1712294#msg1712294
+	eccPoint.Y = new(big.Int).Exp(x3, PAdd1Div4(Curve.Params().P), Curve.Params().P)
+	// Check that y is a square root of x^3  - 3*x + B.
+	y2 := new(big.Int).Mul(eccPoint.Y, eccPoint.Y)
+	y2.Mod(y2, Curve.Params().P)
+	//fmt.Printf("y2: %X\n", y2)
+	//fmt.Printf("x3: %X\n", x3)
+	if y2.Cmp(x3) != 0 {
+		return errors.New("Cant compute y")
+	}
+	return nil
+}
+
+// Inverse return inverse point of ECC Point input
+func (eccPoint EllipticPoint) Inverse() (*EllipticPoint, error) {
 	//Check that input is ECC point
 	if !Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
-		return nil, fmt.Errorf("Input is not ECC Point")
+		return nil, errors.New("Input is not ECC Point")
 	}
 	//Create result point
 	resPoint := new(EllipticPoint)
@@ -52,48 +95,23 @@ func (eccPoint EllipticPoint) InversePoint() (*EllipticPoint, error) {
 	return resPoint, nil
 }
 
-// RandPoint return pseudorandom point calculated by function F(x,y) = (x + y)^-1 * G, with G is genertor in Secp256k1
-func (eccPoint *EllipticPoint) RandPoint(x, y *big.Int) *EllipticPoint {
-	//Generate result point
-	res := new(EllipticPoint)
-	res.X = big.NewInt(0)
-	res.Y = big.NewInt(0)
-	//res <- G, we'll calculate res * (x + y)^-1 after.
-	res.X.SetBytes(Curve.Params().Gx.Bytes())
-	res.Y.SetBytes(Curve.Params().Gy.Bytes())
-
-	//intTemp is x + y (mod N)
-	intTemp := big.NewInt(0)
-	intTemp.SetBytes(x.Bytes())
-	intTemp.Add(intTemp, y)
-	intTemp.Mod(intTemp, Curve.Params().N)
-
-	//intTempInverse is (x + y)^-1 in (Zn)*
-	//Cuz intTempInverse * intTemp = 1 (int (Zn)*), so we use Euclid Theorem: a*x + b*y = GCD(a,b)
-	//in this case, we calculate GCD(intTemp,n) = intTemp*x + n*y
-	//if GCD(intTemp,n) = 1, we have intTemp*x + n*y = 1 (*)
-	//Mod (*) by n, we have intTemp*x = 1 (mod n)
-	//so intTempInverse = x
-	intTempInverse := big.NewInt(0)
-	intY := big.NewInt(0)
-	intGCD := big.NewInt(0)
-	intGCD = intGCD.GCD(intTempInverse, intY, intTemp, Curve.Params().N)
-
-	if intGCD.Cmp(big.NewInt(1)) != 0 {
-		//if GCD return value != 1, it mean we dont have (x + y)^-1 in Zn
-		return nil
-	}
-
-	//res = res * (x+y)^-1
-	res.X, res.Y = Curve.ScalarMult(res.X, res.Y, intTempInverse.Bytes())
-
+// Randomize make object's value to random
+func (eccPoint *EllipticPoint) Randomize() {
 	if eccPoint.X == nil {
-		eccPoint = res
-	} else {
-		eccPoint.X = res.X
-		eccPoint.Y = res.Y
+		eccPoint.X = big.NewInt(0)
 	}
-	return res
+	if eccPoint.Y == nil {
+		eccPoint.Y = big.NewInt(0)
+	}
+
+	for {
+		eccPoint.X.SetBytes(RandBytes(32))
+		err := eccPoint.ComputeYCoord()
+		if Curve.IsOnCurve(eccPoint.X, eccPoint.Y) && (err == nil) && (eccPoint.IsSafe()) {
+			break
+		}
+	}
+
 }
 
 // IsSafe return true if eccPoint*eccPoint is not at infinity
@@ -106,11 +124,11 @@ func (eccPoint EllipticPoint) IsSafe() bool {
 	return true
 }
 
-// CompressPoint compresses key from 64 bytes to PointBytesLenCompressed bytes
-func (eccPoint EllipticPoint) CompressPoint() []byte {
+// Compress compresses key from 64 bytes to PointBytesLenCompressed bytes
+func (eccPoint EllipticPoint) Compress() []byte {
 	if Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
-		b := make([]byte, 0, PointBytesLenCompressed)
-		format := PointCompressed
+		b := make([]byte, 0, pointBytesLenCompressed)
+		format := pointCompressed
 		if isOdd(eccPoint.Y) {
 			format |= 0x1
 		}
@@ -120,45 +138,46 @@ func (eccPoint EllipticPoint) CompressPoint() []byte {
 	return nil
 }
 
-// DecompressPoint decompresses a byte array, which was created by CompressPoint func,
+// Decompress decompresses a byte array, which was created by CompressPoint func,
 // to a point on the given curve.
-func (eccPoint *EllipticPoint) DecompressPoint(compressPointBytes []byte) error {
+func (eccPoint *EllipticPoint) Decompress(compressPointBytes []byte) error {
 	format := compressPointBytes[0]
+	ybit := (format & 0x1) == 0x1
 	format &= ^byte(0x1)
 
-	if format != PointCompressed {
-		return fmt.Errorf("invalid magic in compressed "+
-			"compressPoint bytes: %d", compressPointBytes[0])
+	if format != pointCompressed {
+		return errors.New("invalid magic in compressed compressPoint bytes")
 	}
-	ybit := (format & 0x1) == 0x1
+
 	var err error
 	if eccPoint.X == nil {
 		eccPoint.X = new(big.Int).SetBytes(compressPointBytes[1:33])
 	} else {
 		eccPoint.X.SetBytes(compressPointBytes[1:33])
 	}
-	eccPoint.Y, err = DecompressPoint(eccPoint.X, ybit)
+	eccPoint.Y, err = decompPoint(eccPoint.X, ybit)
 	return err
 }
 
-// DecompressPoint decompresses a point on the given curve given the X point and
+// DecompPoint decompresses a point on the given curve given the X point and
 // the solution to use.
-func DecompressPoint(x *big.Int, ybit bool) (*big.Int, error) {
+func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	Q := Curve.Params().P
-	temp := new(big.Int)
+	// temp := new(big.Int)
 	xTemp := new(big.Int)
 
 	// Y = +-sqrt(x^3 - 3*x + B)
 	xCube := new(big.Int).Mul(x, x)
 	xCube.Mul(xCube, x)
 	xCube.Add(xCube, Curve.Params().B)
+	xCube.Mod(xCube, Curve.Params().P)
 	xCube.Sub(xCube, xTemp.Mul(x, new(big.Int).SetInt64(3)))
 	xCube.Mod(xCube, Curve.Params().P)
 
 	//check P = 3 mod 4?
-	if temp.Mod(Q, new(big.Int).SetInt64(4)).Cmp(new(big.Int).SetInt64(3)) != 0 {
-		return nil, fmt.Errorf("parameter P must be congruent to 3 mod 4")
-	}
+	// if temp.Mod(Q, new(big.Int).SetInt64(4)).Cmp(new(big.Int).SetInt64(3)) != 0 {
+	// 	return nil, errors.New("parameter P must be congruent to 3 mod 4")
+	// }
 
 	// Now calculate sqrt mod p of x^3 - 3*x + B
 	// This code used to do a full sqrt based on tonelli/shanks,
@@ -174,15 +193,62 @@ func DecompressPoint(x *big.Int, ybit bool) (*big.Int, error) {
 	ySquare := new(big.Int).Mul(y, y)
 	ySquare.Mod(ySquare, Curve.Params().P)
 	if ySquare.Cmp(xCube) != 0 {
-		return nil, fmt.Errorf("invalid square root")
+		return nil, errors.New("invalid square root")
 	}
-
-	//fmt.Println(Curve.IsOnCurve(x, y))
 
 	// Verify that y-coord has expected parity.
 	if ybit != isOdd(y) {
-		return nil, fmt.Errorf("ybit doesn't match oddness")
+		return nil, errors.New("ybit doesn't match oddness")
 	}
 
 	return y, nil
+}
+
+// Hash derives new elliptic point from another elliptic point using hash function
+func (eccPoint EllipticPoint) Hash() EllipticPoint {
+	// res.X = hash(g.X), res.Y = sqrt(res.X^3 - 3X + B)
+	var res = new(EllipticPoint)
+	res.X = big.NewInt(0)
+	res.Y = big.NewInt(0)
+	res.X.SetBytes(eccPoint.X.Bytes())
+	for {
+		hashMachine := blake2b.New256()
+		hashMachine.Write(res.X.Bytes())
+		res.X.SetBytes(hashMachine.Sum(nil))
+		res.ComputeYCoord()
+		if (res.Y != nil) && (Curve.IsOnCurve(res.X, res.Y)) {
+			break
+		}
+	}
+	//check Point of degree 2
+	pointToChecked := new(EllipticPoint)
+	pointToChecked.X, pointToChecked.Y = Curve.Double(res.X, res.Y)
+
+	if pointToChecked.X == nil || pointToChecked.Y == nil {
+		//errors.New("Point at infinity")
+		return *new(EllipticPoint)
+	}
+	return *res
+}
+
+func TestECC() bool {
+	//Test compress && decompress
+	eccPoint := new(EllipticPoint)
+	eccPoint.Randomize()
+	if !Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
+		return false
+	}
+	fmt.Printf("On curve!")
+	if !eccPoint.IsSafe() {
+		return false
+	}
+	fmt.Printf("Safe!")
+	compressBytes := eccPoint.Compress()
+	eccPointDecompressed := new(EllipticPoint)
+	err := eccPointDecompressed.Decompress(compressBytes)
+	if err != nil {
+		return false
+	}
+	return true
+
 }

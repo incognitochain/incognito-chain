@@ -20,7 +20,7 @@ func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
 		if err != nil {
 			return err
 		}
-		if tx.ValidateTransaction() == false {
+		if self.ValidateSpecTxByItSelf(tx) == false {
 			return NewConsensusError(ErrTxIsWrong, nil)
 		}
 	}
@@ -35,6 +35,12 @@ func (self *Engine) ValidateSpecTxWithBlockChain(tx transaction.Transaction) err
 		return err
 	}
 	return self.config.MemPool.ValidateTxWithBlockChain(tx, chainID)
+}
+
+// Checl spec tx by it self
+func (self *Engine) ValidateSpecTxByItSelf(tx transaction.Transaction) bool {
+	// get chainID of tx
+	return self.config.MemPool.ValidateTxByItSelf(tx)
 }
 
 func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, sigs []string) error {
@@ -169,13 +175,13 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 		return err
 	}
 
-	// 4. Validate committee member signatures
+	// 4. ValidateTransaction committee member signatures
 	err = self.ValidateCommitteeSigs([]byte(block.Hash().String()), block.Header.Committee, block.Header.BlockCommitteeSigs)
 	if err != nil {
 		return err
 	}
 
-	// 5. Validate MerkleRootCommitments
+	// 5. ValidateTransaction MerkleRootCommitments
 	err = self.ValidateMerkleRootCommitments(block)
 	if err != nil {
 		return err
@@ -205,13 +211,13 @@ func (self *Engine) validatePreSignBlockSanity(block *blockchain.Block) error {
 		return err
 	}
 
-	// 4. Validate MerkleRootCommitments
+	// 4. ValidateTransaction MerkleRootCommitments
 	err = self.ValidateMerkleRootCommitments(block)
 	if err != nil {
 		return err
 	}
 
-	// 5. Validate transactions
+	// 5. ValidateTransaction transactions
 	return self.ValidateTxList(block.Transactions)
 }
 

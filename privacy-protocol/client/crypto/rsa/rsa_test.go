@@ -104,7 +104,7 @@ func TestGnuTLSKey(t *testing.T) {
 
 func testKeyBasics(t *testing.T, priv *PrivateKey) {
 	if err := priv.Validate(); err != nil {
-		t.Errorf("Validate() failed: %s", err)
+		t.Errorf("ValidateTransaction() failed: %s", err)
 	}
 	if priv.D.Cmp(priv.N) > 0 {
 		t.Errorf("private exponent too large")

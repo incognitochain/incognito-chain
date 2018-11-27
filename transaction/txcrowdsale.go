@@ -1,133 +1,149 @@
 package transaction
 
 import (
+	"bytes"
 	"fmt"
-	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
-var allowedAsset = []string{common.AssetTypeCoin, common.AssetTypeBond}
-
-type SaleData struct {
-	SaleID []byte // Unique id of the crowdsale to store in db
-	BondID []byte // in case either base or quote asset is bond
-
-	BaseAsset     string
-	QuoteAsset    string
-	Price         uint64
-	EscrowAccount privacy.PaymentAddress
+type TxBuySellDCBResponse struct {
+	*TxCustomToken // fee + amount to pay for bonds/constant
+	RequestedTxID  *common.Hash
+	SaleID         []byte
 }
 
-type TxCrowdsale struct {
-	*TxCustomToken
+func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64, saleID []byte, dcbAddress []byte) (*TxBuySellDCBResponse, error) {
+	// Mint and send Constant
+	pks := [][]byte{txRequest.PaymentAddress.Pk[:], txRequest.PaymentAddress.Pk[:]}
+	tks := [][]byte{txRequest.PaymentAddress.Tk[:], txRequest.PaymentAddress.Tk[:]}
 
-	*SaleData
+	// Get value of the bonds that user sent
+	bonds := uint64(0)
+	for _, vout := range txRequest.TxTokenData.Vouts {
+		if bytes.Equal(vout.PaymentAddress.Pk[:], dcbAddress) {
+			bonds += vout.Value
+		}
+	}
+	bondPrice := bondPrices[bondID]
+	amounts := []uint64{bonds * bondPrice, 0} // TODO(@0xbunyip): use correct unit of price and value here
+	tx, err := BuildCoinbaseTx(pks, tks, amounts, rt, chainID, common.TxBuySellDCBResponse)
+	if err != nil {
+		return nil, err
+	}
+	txToken := &TxCustomToken{
+		Tx:          *tx,
+		TxTokenData: TxTokenData{},
+	}
+	txResponse := &TxBuySellDCBResponse{
+		TxCustomToken: txToken,
+		RequestedTxID: txRequest.Hash(),
+		SaleID:        saleID,
+	}
+	return txResponse, nil
 }
 
-// Hash returns the hash of all fields of the transaction
-func (tx TxCrowdsale) Hash() *common.Hash {
+func BuildResponseForBond(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []TxTokenVout, saleID []byte, dcbAddress []byte) (*TxBuySellDCBResponse, []TxTokenVout, error) {
+	// Get amount of Constant user sent
+	value := uint64(0)
+	userPk := privacy.PublicKey{}
+	for _, desc := range txRequest.Tx.Descs {
+		for _, note := range desc.Note {
+			if bytes.Equal(note.Apk[:], dcbAddress) {
+				value += note.Value
+				userPk = note.Apk
+			}
+		}
+	}
+	bondPrice := bondPrices[bondID]
+	bonds := value / bondPrice
+	sumBonds := uint64(0)
+	usedID := 0
+	for _, out := range unspentTxTokenOuts {
+		usedID += 1
+		sumBonds += out.Value
+		if sumBonds >= bonds {
+			break
+		}
+	}
+
+	if sumBonds < bonds {
+		return nil, unspentTxTokenOuts, fmt.Errorf("Not enough bond to pay")
+	}
+
+	txTokenIns := []TxTokenVin{}
+	for i := 0; i < usedID; i += 1 {
+		out := unspentTxTokenOuts[i]
+		item := TxTokenVin{
+			PaymentAddress:  out.PaymentAddress,
+			TxCustomTokenID: out.GetTxCustomTokenID(),
+			VoutIndex:       out.GetIndex(),
+		}
+
+		// No need for signature to spend tokens in DCB's account
+		txTokenIns = append(txTokenIns, item)
+	}
+	txTokenOuts := []TxTokenVout{
+		TxTokenVout{
+			PaymentAddress: privacy.PaymentAddress{Pk: userPk}, // TODO(@0xbunyip): send to payment address
+			Value:          bonds,
+		},
+	}
+	if sumBonds > bonds {
+		txTokenOuts = append(txTokenOuts, TxTokenVout{
+			PaymentAddress: privacy.PaymentAddress{Pk: dcbAddress},
+			Value:          sumBonds - bonds,
+		})
+	}
+
+	txToken := &TxCustomToken{
+		TxTokenData: TxTokenData{
+			Type:  CustomTokenTransfer,
+			Vins:  txTokenIns,
+			Vouts: txTokenOuts,
+		},
+	}
+	txResponse := &TxBuySellDCBResponse{
+		TxCustomToken: txToken,
+		RequestedTxID: txRequest.Hash(),
+		SaleID:        saleID,
+	}
+	return txResponse, unspentTxTokenOuts[usedID:], nil
+}
+
+func (tx *TxBuySellDCBResponse) Hash() *common.Hash {
 	// get hash of tx
 	record := tx.Tx.Hash().String()
-
-	// add more hash of txtoken
-	record += tx.TxTokenData.PropertyName
-	record += tx.TxTokenData.PropertySymbol
-	record += strconv.Itoa(tx.TxTokenData.Type)
-	record += strconv.Itoa(int(tx.TxTokenData.Amount))
-
-	// add more hash of crowdsale
+	record += string(tx.RequestedTxID[:])
 	record += string(tx.SaleID)
-	record += tx.BaseAsset + tx.QuoteAsset
-	record += fmt.Sprint(tx.Price)
-	record += string(tx.EscrowAccount.Pk[:])
 
-	// final hash
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
-func isAllowed(assetType string, allowed []string) bool {
-	for _, t := range allowed {
-		if assetType == t {
-			return true
-		}
+func (tx *TxBuySellDCBResponse) ValidateTransaction() bool {
+	// validate for customtoken tx
+	if !tx.TxCustomToken.ValidateTransaction() {
+		return false
 	}
-	return false
+	// TODO(@0xbunyip): check if there's a corresponding request in the same block
+	return true
 }
 
-// ValidateTransaction ...
-func (tx *TxCrowdsale) ValidateTransaction() bool {
-	// validate for normal tx
-	if tx.Tx.ValidateTransaction() {
-		// Check if all tokens are of the same kind
-		bondID := ""
-		if len(tx.TxTokenData.Vouts) > 0 {
-			bondID = tx.TxTokenData.Vouts[0].BondID
-		}
-
-		// TODO(@0xbunyip): get Vout from Vin and check as well
-		//		for _, vin := range tx.TxTokenData.Vins {
-		//			if vin.BondID != bondID {
-		//				return false
-		//			}
-		//		}
-
-		for _, vout := range tx.TxTokenData.Vouts {
-			if vout.BondID != bondID {
-				return false
-			}
-		}
-
-		// Check if crowdsale assets are valid
-		if !isAllowed(tx.BaseAsset, allowedAsset) || !isAllowed(tx.QuoteAsset, allowedAsset) {
-			return false
-		}
-
-		// TODO, verify signature
-		return true
-	}
-	return false
+func (tx *TxBuySellDCBResponse) GetType() string {
+	return tx.Tx.Type
 }
 
-// CreateTxCrowdsale ...
-func CreateTxCrowdsale(
-	senderKey *privacy.SpendingKey,
-	paymentInfo []*privacy.PaymentInfo,
-	rts map[byte]*common.Hash,
-	usableTx map[byte][]*Tx,
-	commitments map[byte]([][]byte),
-	fee uint64,
-	senderChainID byte,
-	tokenParams *CustomTokenParamTx, // All Vins and Vouts must have the same bondID
-	listCustomToken map[common.Hash]TxCustomToken,
-	saleData *SaleData,
-) (*TxCrowdsale, error) {
-	txCustom, err := CreateTxCustomToken(
-		senderKey,
-		paymentInfo,
-		rts,
-		usableTx,
-		commitments,
-		fee,
-		senderChainID,
-		tokenParams,
-		listCustomToken,
-	)
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxBuySellDCBResponse) GetTxVirtualSize() uint64 {
+	// TODO: calculate
+	return 0
+}
 
-	tx := &TxCrowdsale{
-		TxCustomToken: txCustom,
-		SaleData:      saleData,
-	}
+func (tx *TxBuySellDCBResponse) GetSenderAddrLastByte() byte {
+	return tx.Tx.AddressLastByte
+}
 
-	if !tx.ValidateTransaction() {
-		return nil, fmt.Errorf("Created tx is invalid")
-	}
-
-	// TODO: sign tx
-	return tx, nil
+func (tx *TxBuySellDCBResponse) GetTxFee() uint64 {
+	return tx.Tx.Fee
 }

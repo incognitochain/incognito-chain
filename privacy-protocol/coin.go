@@ -1,68 +1,80 @@
 package privacy
 
-import "fmt"
+import (
+	"math/big"
+)
 
-type SerialNumber []byte   //32 bytes
-type CoinCommitment []byte //34 bytes
+type SerialNumber []byte   //33 bytes
+type CoinCommitment []byte //67 bytes
 type Random []byte         //32 bytes
 type Value []byte          //32 bytes
+type SNDerivator []byte
 
-// Check type of commitments
-const (
-	PK_CM    = byte(0x00)
-	VALUE_CM = byte(0x01)
-	SN_CM    = byte(0x02)
-	FULL_CM  = byte(0x03)
-)
 
 // Coin represents a coin
 type Coin struct {
-	PublicKey      PublicKey      // 33 bytes
-	SerialNumber   SerialNumber   // 32 bytes
-	CoinCommitment CoinCommitment // 34 bytes
-	R              Random         // Random for coin commitment
-	Value          Value          // 32 bytes
+	PublicKey      *EllipticPoint
+	CoinCommitment *EllipticPoint
+	SNDerivator    *big.Int
+	Randomness     *big.Int
+	Value          *big.Int
 	Info           []byte
 }
 
-// CommitAll commits a coin with 4 attributes (public key, value, serial number, r)
-func (coin *Coin) CommitAll() {
-	var values [CM_CAPACITY][]byte
-	values = [CM_CAPACITY][]byte{coin.PublicKey[:], coin.Value, coin.SerialNumber, coin.R}
-	fmt.Printf("coin info: %v\n", values)
-	coin.CoinCommitment = append(coin.CoinCommitment, FULL_CM)
-	coin.CoinCommitment = append(coin.CoinCommitment, Pcm.Commit(values)...)
+//CommitAll commits a coin with 4 attributes (public key, value, serial number, r)
+//func (coin *Coin) CommitAll() {
+//	//var values [PCM_CAPACITY-1][]byte
+//	values := [PCM_CAPACITY][]byte{coin.PublicKey, coin.Value, coin.SNDerivator, coin.Randomness}
+//	fmt.Printf("coin info: %v\n", values)
+//	coin.CoinCommitment = append(coin.CoinCommitment, FULL)
+//	coin.CoinCommitment = append(coin.CoinCommitment, PedCom.Commit(values)...)
+//}
+//
+//// CommitPublicKey commits a public key's coin
+//func (coin *Coin) CommitPublicKey() []byte {
+//	var values [PCM_CAPACITY-1][]byte
+//	values = [PCM_CAPACITY-1][]byte{coin.PublicKey, nil, nil, coin.Randomness}
+//
+//
+//	var commitment []byte
+//	commitment = append(commitment, PK)
+//	commitment = append(commitment, PedCom.Commit(values)...)
+//	return commitment
+//}
+//
+//// CommitValue commits a value's coin
+//func (coin *Coin) CommitValue() []byte {
+//	var values [PCM_CAPACITY-1][]byte
+//	values = [PCM_CAPACITY-1][]byte{nil, coin.Value, nil, coin.Randomness}
+//
+//	var commitment []byte
+//	commitment = append(commitment, VALUE)
+//	commitment = append(commitment, PedCom.Commit(values)...)
+//	return commitment
+//}
+//
+//// CommitSNDerivator commits a serial number's coin
+//func (coin *Coin) CommitSNDerivator() []byte {
+//	var values [PCM_CAPACITY-1][]byte
+//	values = [PCM_CAPACITY-1][]byte{nil, nil, coin.SNDerivator, coin.Randomness}
+//
+//	var commitment []byte
+//	commitment = append(commitment, SND)
+//	commitment = append(commitment, PedCom.Commit(values)...)
+//	return commitment
+//}
+
+// UnspentCoin represents a list of coins to be spent corresponding to spending key
+//type UnspentCoin struct {
+//	SpendingKey SpendingKey
+//	UnspentCoinList map[Coin]big.Int
+//}
+
+
+// InputCoin represents a input coin of transaction
+type InputCoin struct{
+	BlockHeight *big.Int
+	SpendingKey *big.Int
+	CoinInfo *Coin
 }
 
-// CommitPublicKey commits a public key's coin
-func (coin *Coin) CommitPublicKey() []byte {
-	var values [CM_CAPACITY][]byte
-	values = [CM_CAPACITY][]byte{coin.PublicKey[:], nil, nil, nil}
-
-	var commitment []byte
-	commitment = append(commitment, PK_CM)
-	commitment = append(commitment, Pcm.Commit(values)...)
-	return commitment
-}
-
-// CommitValue commits a value's coin
-func (coin *Coin) CommitValue() []byte {
-	var values [CM_CAPACITY][]byte
-	values = [CM_CAPACITY][]byte{nil, coin.Value, nil, nil}
-
-	var commitment []byte
-	commitment = append(commitment, VALUE_CM)
-	commitment = append(commitment, Pcm.Commit(values)...)
-	return commitment
-}
-
-// CommitSerialNumber commits a serial number's coin
-func (coin *Coin) CommitSerialNumber() []byte {
-	var values [CM_CAPACITY][]byte
-	values = [CM_CAPACITY][]byte{nil, nil, coin.SerialNumber, nil}
-
-	var commitment []byte
-	commitment = append(commitment, SN_CM)
-	commitment = append(commitment, Pcm.Commit(values)...)
-	return commitment
-}

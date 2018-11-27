@@ -2,20 +2,18 @@ package transaction
 
 import (
 	"bytes"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"math"
-	"math/big"
 	"sort"
 	"strconv" // "crypto/sha256"
 	"time"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/privacy-protocol/proto/zksnark"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 // Tx represents a coin-transfer-transaction stored in a block
@@ -32,7 +30,13 @@ type Tx struct {
 	AddressLastByte byte `json:"AddressLastByte"`
 
 	txId       *common.Hash
-	sigPrivKey *client.PrivateKey
+	sigPrivKey *privacy.SpendingKey // is always private property of struct
+
+	// this one is a hash id of requested tx
+	// and is used inside response txs
+	// so that we can determine pair of req/res txs
+	// for example, BuySellRequestTx/BuySellResponseTx
+	RequestedTxID *common.Hash
 }
 
 func (tx *Tx) SetTxID(txId *common.Hash) {
@@ -140,6 +144,14 @@ func (tx *Tx) GetSenderAddrLastByte() byte {
 	return tx.AddressLastByte
 }
 
+func (tx *Tx) ListNullifiers() [][]byte {
+	result := [][]byte{}
+	for _, d := range tx.Descs {
+		result = append(result, d.Nullifiers...)
+	}
+	return result
+}
+
 // CreateTx creates transaction with appropriate proof for a private payment
 // rts: mapping from the chainID to the root of the commitment merkle tree at current block
 // 		(the latest block of the node creating this tx)
@@ -162,7 +174,7 @@ func CreateTx(
 	var value uint64
 	for _, p := range paymentInfo {
 		value += p.Amount
-		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.Apk: %x\n", p.Amount, p.PaymentAddress.Pk)
+		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
 	}
 
 	type ChainNote struct {
@@ -197,7 +209,11 @@ func CreateTx(
 	senderFullKey.ImportFromPrivateKeyByte((*senderKey)[:])
 
 	// Create tx before adding js descs
-	tx, err := CreateEmptyTx(common.TxNormalType)
+	randomSignKey := true
+	if noPrivacy {
+		randomSignKey = false
+	}
+	tx, err := CreateEmptyTx(common.TxNormalType, senderKey, randomSignKey)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +289,7 @@ func CreateTx(
 					}
 				}
 				if found == false {
-					return nil, fmt.Errorf("Commitment %x of input note isn't in commitments list of chain %d", input.InputNote.Cm, chainID)
+					return nil, fmt.Errorf("PedersenCommitment %x of input note isn't in commitments list of chain %d", input.InputNote.Cm, chainID)
 				}
 			}
 		}
@@ -345,7 +361,7 @@ func CreateTx(
 
 				// Use the change note to continually send to receivers if needed
 				if len(paymentInfo) > 0 {
-					// outNote data (R and Rho) will be updated when building zk-proof
+					// outNote data (Randomness and Rho) will be updated when building zk-proof
 					chainNote := &ChainNote{note: outNote, chainID: senderChainID}
 					inputNotes = append(inputNotes, chainNote)
 					fmt.Printf("Reuse change note later\n")
@@ -461,11 +477,11 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	fmt.Printf("tranmissionKey[1]: %x\n", keys[1])
 	fmt.Printf("notes[0].Value: %+v\n", notes[0].Value)
 	fmt.Printf("notes[0].Rho: %x\n", notes[0].Rho)
-	fmt.Printf("notes[0].R: %x\n", notes[0].R)
+	fmt.Printf("notes[0].Randomness: %x\n", notes[0].R)
 	fmt.Printf("notes[0].Memo: %+v\n", notes[0].Memo)
 	fmt.Printf("notes[1].Value: %+v\n", notes[1].Value)
 	fmt.Printf("notes[1].Rho: %x\n", notes[1].Rho)
-	fmt.Printf("notes[1].R: %x\n", notes[1].R)
+	fmt.Printf("notes[1].Randomness: %x\n", notes[1].R)
 	fmt.Printf("notes[1].Memo: %+v\n", notes[1].Memo)
 	var noteciphers [][]byte
 	if proof != nil {
@@ -562,15 +578,22 @@ func (tx *Tx) SignTx() error {
 	copy(data, hash[:])
 
 	// Sign
-	ecdsaSignature := new(client.EcdsaSignature)
+	/*ecdsaSignature := new(client.EcdsaSignature)
 	var err error
 	ecdsaSignature.R, ecdsaSignature.S, err = client.Sign(rand.Reader, tx.sigPrivKey, data[:])
+	if err != nil {
+		return err
+	}*/
+	keyset := cashec.KeySet{}
+	keyset.ImportFromPrivateKey(tx.sigPrivKey)
+	sign, err := keyset.Sign(data)
 	if err != nil {
 		return err
 	}
 
 	//Signature 64 bytes
-	tx.JSSig = JSSigToByteArray(ecdsaSignature)
+	//tx.JSSig = JSSigToByteArray(ecdsaSignature)
+	tx.JSSig = sign
 
 	return nil
 }
@@ -582,21 +605,27 @@ func (tx *Tx) VerifySign() (bool, error) {
 	}
 
 	// UnParse Public key
-	pubKey := new(client.PublicKey)
+	/*pubKey := new(client.PublicKey)
 	pubKey.X = new(big.Int).SetBytes(tx.JSPubKey[0:32])
-	pubKey.Y = new(big.Int).SetBytes(tx.JSPubKey[32:64])
+	pubKey.Y = new(big.Int).SetBytes(tx.JSPubKey[32:64])*/
 
 	// UnParse ECDSA signature
-	ecdsaSignature := new(client.EcdsaSignature)
+	/*ecdsaSignature := new(client.EcdsaSignature)
 	ecdsaSignature.R = new(big.Int).SetBytes(tx.JSSig[0:32])
-	ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])
+	ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])*/
 
 	// Hash origin transaction
 	hash := tx.GetTxID()
 	data := make([]byte, common.HashSize)
 	copy(data, hash[:])
 
-	valid := client.VerifySign(pubKey, data[:], ecdsaSignature.R, ecdsaSignature.S)
+	//valid := client.VerifySign(pubKey, data[:], ecdsaSignature.R, ecdsaSignature.S)
+	keyset := cashec.KeySet{}
+	keyset.PaymentAddress.Pk = tx.JSPubKey
+	valid, err := keyset.Verify(data[:], tx.JSSig)
+	if err != nil {
+		return false, err
+	}
 	return valid, nil
 }
 
@@ -609,7 +638,7 @@ func GenerateProofForGenesisTx(
 	seed, phi []byte,
 	outputR [][]byte,
 	ephemeralPrivKey client.EphemeralPrivKey,
-	assetType string,
+//assetType string,
 ) (*Tx, error) {
 	// Generate JoinSplit key pair to act as a dummy key (since we don't sign genesis tx)
 	privateSignKey := [32]byte{1}
@@ -622,7 +651,7 @@ func GenerateProofForGenesisTx(
 	tempKeySet.ImportFromPrivateKey(inputs[0].Key)
 	addressLastByte := tempKeySet.PaymentAddress.Pk[len(tempKeySet.PaymentAddress.Pk)-1]
 
-	tx, err := CreateEmptyTx(common.TxNormalType)
+	tx, err := CreateEmptyTx(common.TxNormalType, nil, true)
 	if err != nil {
 		return nil, err
 	}
@@ -729,15 +758,23 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 }
 
 // CreateEmptyTx returns a new Tx initialized with default data
-func CreateEmptyTx(txType string) (*Tx, error) {
+func CreateEmptyTx(txType string, privKey *privacy.SpendingKey, randomSignKey bool) (*Tx, error) {
 	//Generate signing key 96 bytes
-	sigPrivKey, err := client.GenerateKey(rand.Reader)
+	var sigPrivKey *privacy.SpendingKey
+	var err error
+	if !randomSignKey {
+		sigPrivKey = privKey
+	} else {
+		temp := privacy.GenerateSpendingKey(privacy.RandBytes(32))
+		sigPrivKey = &temp
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
 	// Verification key 64 bytes
-	sigPubKey := PubKeyToByteArray(&sigPrivKey.PublicKey)
+	sigPubKey := privacy.GeneratePublicKey((*sigPrivKey)[:])
 
 	tx := &Tx{
 		Version:         TxVersion,
@@ -753,4 +790,22 @@ func CreateEmptyTx(txType string) (*Tx, error) {
 		sigPrivKey: sigPrivKey,
 	}
 	return tx, nil
+}
+
+func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
+	initiatorPubKey := tx.JSPubKey
+	txValue := uint64(0)
+	var addr *privacy.PaymentAddress
+	for _, desc := range tx.Descs {
+		for _, note := range desc.Note {
+			if string(note.Apk[:]) == string(initiatorPubKey) {
+				continue
+			}
+			addr = &privacy.PaymentAddress{
+				Pk: note.Apk,
+			}
+			txValue += note.Value
+		}
+	}
+	return addr, txValue
 }

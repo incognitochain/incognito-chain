@@ -152,11 +152,11 @@ type PrecomputedValues struct {
 // CRTValue contains the precomputed Chinese remainder theorem values.
 type CRTValue struct {
 	Exp   *big.Int // D mod (prime-1).
-	Coeff *big.Int // R·Coeff ≡ 1 mod Prime.
+	Coeff *big.Int // Randomness·Coeff ≡ 1 mod Prime.
 	R     *big.Int // product of primes prior to this (inc p and q).
 }
 
-// Validate performs basic sanity checks on the key.
+// ValidateTransaction performs basic sanity checks on the key.
 // It returns nil if the key is valid, or else an error describing a problem.
 func (priv *PrivateKey) Validate() error {
 	if err := checkPub(&priv.PublicKey); err != nil {

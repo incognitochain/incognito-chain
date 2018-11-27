@@ -4,8 +4,9 @@ import (
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/wallet"
+	"encoding/hex"
 )
 
 type FeeArgs struct {
@@ -19,30 +20,57 @@ type FeeArgs struct {
 }
 
 type LoanParams struct {
-	InterestRate     uint64 // basis points, e.g. 125 represents 1.25%
-	Maturity         uint64 // seconds
-	LiquidationStart uint64 // ratio between collateral and debt to start auto-liquidation, stored in basis points
+	InterestRate     uint64 `json:"InterestRate"`     // basis points, e.g. 125 represents 1.25%
+	Maturity         uint64 `json:"Maturity"`         // seconds
+	LiquidationStart uint64 `json:"LiquidationStart"` // ratio between collateral and debt to start auto-liquidation, stored in basis points
 }
 
 type LoanRequest struct {
-	Params           LoanParams
-	LoanID           []byte // 32 bytes
-	CollateralType   string
-	CollateralTx     []byte // Tx hash in case of ETH
-	CollateralAmount *big.Int
+	Params           LoanParams `json:"Params"`
+	LoanID           []byte     `json:"LoanID"` // 32 bytes
+	CollateralType   string     `json:"CollateralType"`
+	CollateralAmount *big.Int   `json:"CollateralAmount"`
 
-	LoanAmount     uint64
-	ReceiveAddress *client.PaymentAddress
+	LoanAmount     uint64                  `json:"LoanAmount"`
+	ReceiveAddress *privacy.PaymentAddress `json:"ReceiveAddress"`
 
-	KeyDigest []byte // 32 bytes, from sha256
+	KeyDigest []byte `json:"KeyDigest"` // 32 bytes, from sha256
 }
 
-type TxWithFee struct {
-	*Tx // for fee only
+func NewLoanRequest(data map[string]interface{}) *LoanRequest {
+	loanParams := data["Params"].(map[string]interface{})
+	result := LoanRequest{
+		Params: LoanParams{
+			InterestRate:     uint64(loanParams["InterestRate"].(float64)),
+			LiquidationStart: uint64(loanParams["LiquidationStart"].(float64)),
+			Maturity:         uint64(loanParams["Maturity"].(float64)),
+		},
+		CollateralType: data["CollateralType"].(string),
+		LoanAmount:     uint64(data["LoanAmount"].(float64)),
+	}
+	n := new(big.Int)
+	n, ok := n.SetString(data["CollateralAmount"].(string), 10)
+	if !ok {
+		return nil
+	}
+	result.CollateralAmount = n
+	key, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
+	if err != nil {
+		return nil
+	}
+	result.ReceiveAddress = &key.KeySet.PaymentAddress
+
+	s, err := hex.DecodeString(data["LoanID"].(string))
+	result.LoanID = s
+
+	s, err = hex.DecodeString(data["KeyDigest"].(string))
+	result.KeyDigest = s
+
+	return &result
 }
 
 type TxLoanRequest struct {
-	TxWithFee
+	Tx
 	*LoanRequest // data for a loan request
 }
 
@@ -68,7 +96,7 @@ func CreateTxLoanRequest(
 	}
 
 	txLoanRequest := &TxLoanRequest{
-		TxWithFee:   TxWithFee{Tx: tx},
+		Tx:          *tx,
 		LoanRequest: loanRequest,
 	}
 
@@ -82,7 +110,6 @@ func (tx *TxLoanRequest) Hash() *common.Hash {
 	// add more hash of collateral data
 	record += string(tx.LoanID)
 	record += tx.CollateralType
-	record += string(tx.CollateralTx)
 	record += tx.CollateralAmount.String()
 
 	// add more hash of loan data
@@ -114,21 +141,4 @@ func (tx *TxLoanRequest) ValidateTransaction() bool {
 
 func (tx *TxLoanRequest) GetType() string {
 	return common.TxLoanRequest
-}
-
-func (tx *TxWithFee) GetType() string {
-	return tx.Tx.Type
-}
-
-func (tx *TxWithFee) GetTxVirtualSize() uint64 {
-	// TODO: calculate
-	return 0
-}
-
-func (tx *TxWithFee) GetSenderAddrLastByte() byte {
-	return tx.Tx.AddressLastByte
-}
-
-func (tx *TxWithFee) GetTxFee() uint64 {
-	return tx.Tx.Fee
 }

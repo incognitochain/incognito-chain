@@ -237,7 +237,7 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 
 /*
 	Store Transaction in Light mode
-	1. Key -> value : prefix(privateky)privateKey-chainId-(999999999 - blockHeight)-(999999999 - txIndex) 		-> 		tx
+	1. Key -> value : prefix(privateky)privateKey-[-]-chainId-[-]-(999999999 - blockHeight)-[-]-(999999999 - txIndex) 		-> 		tx
 	2. Key -> value :							prefix(transaction)txHash 												->  	privateKey-chainId-blockHeight-txIndex
 
 */

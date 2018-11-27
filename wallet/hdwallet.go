@@ -96,18 +96,18 @@ func (key *Key) Serialize(keyType byte) ([]byte, error) {
 		keyBytes = append(keyBytes, byte(len(key.KeySet.PrivateKey))) // set length
 		keyBytes = append(keyBytes, key.KeySet.PrivateKey[:]...)      // set pri-key
 		buffer.Write(keyBytes)
-	} else if keyType == PubKeyType {
+	} else if keyType == PaymentAddressType {
 		keyBytes := make([]byte, 0)
-		keyBytes = append(keyBytes, byte(len(key.KeySet.PaymentAddress.Pk))) // set length Apk
-		keyBytes = append(keyBytes, key.KeySet.PaymentAddress.Pk[:]...)      // set Apk
+		keyBytes = append(keyBytes, byte(len(key.KeySet.PaymentAddress.Pk))) // set length PaymentAddress
+		keyBytes = append(keyBytes, key.KeySet.PaymentAddress.Pk[:]...)      // set PaymentAddress
 
 		keyBytes = append(keyBytes, byte(len(key.KeySet.PaymentAddress.Tk))) // set length Pkenc
 		keyBytes = append(keyBytes, key.KeySet.PaymentAddress.Tk[:]...)      // set Pkenc
 		buffer.Write(keyBytes)
 	} else if keyType == ReadonlyKeyType {
 		keyBytes := make([]byte, 0)
-		keyBytes = append(keyBytes, byte(len(key.KeySet.ReadonlyKey.Pk))) // set length Apk
-		keyBytes = append(keyBytes, key.KeySet.ReadonlyKey.Pk[:]...)      // set Apk
+		keyBytes = append(keyBytes, byte(len(key.KeySet.ReadonlyKey.Pk))) // set length PaymentAddress
+		keyBytes = append(keyBytes, key.KeySet.ReadonlyKey.Pk[:]...)      // set PaymentAddress
 
 		keyBytes = append(keyBytes, byte(len(key.KeySet.ReadonlyKey.Rk))) // set length Skenc
 		keyBytes = append(keyBytes, key.KeySet.ReadonlyKey.Rk[:]...)      // set Pkenc
@@ -145,7 +145,7 @@ func Deserialize(data []byte) (*Key, error) {
 		keyLength := int(data[38])
 		key.KeySet.PrivateKey = make([]byte, keyLength)
 		copy(key.KeySet.PrivateKey[:], data[39:39+keyLength])
-	} else if keyType == PubKeyType {
+	} else if keyType == PaymentAddressType {
 		apkKeyLength := int(data[1])
 		pkencKeyLength := int(data[apkKeyLength+2])
 		key.KeySet.PaymentAddress.Pk = make([]byte, apkKeyLength)

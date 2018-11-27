@@ -44,6 +44,8 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		if err != nil {
 			return NewBlockChainError(UnExpectedError, err)
 		}
+
+		Logger.log.Infof("Fetch Block %+v to get unspent tx of all accoutns in wallet", blockHash)
 		nullifiersInDb := make([][]byte, 0)
 		chainId := block.Header.ChainID
 		txViewPoint, err := self.FetchTxViewPoint(chainId)
@@ -52,7 +54,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		}
 		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
 		for _, account := range self.config.Wallet.MasterAccount.Child {
-			unspentTxs, err1 := self.GetListUnspentTxByPrivateKeyInBlock(&account.Key.KeySet.PrivateKey, block, nullifiersInDb, transaction.NoSort, true)
+			unspentTxs, err1 := self.GetListUnspentTxByPrivateKeyInBlock(&account.Key.KeySet.PrivateKey, block, nullifiersInDb, true)
 			if err1 != nil {
 				return NewBlockChainError(UnExpectedError, err1)
 			}
@@ -60,7 +62,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 			for chainId, txs := range unspentTxs {
 				for _, unspent := range txs {
 					var txIndex = -1
-					// Iterate to get Tx Index of transaction in a block
+					// Iterate to get Tx index of transaction in a block
 					for i, _ := range block.Transactions {
 						txHash := unspent.Hash().String()
 						blockTxHash := block.Transactions[i].(*transaction.Tx).Hash().String()
@@ -70,9 +72,9 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 							break
 						}
 					}
-					//if txIndex == -1 {
-					//	return NewBlockChainError(UnExpectedError, err)
-					//}
+					if txIndex == -1 {
+						return NewBlockChainError(UnExpectedError, err)
+					}
 					err := self.StoreUnspentTransactionLightMode(&account.Key.KeySet.PrivateKey, chainId, block.Header.Height, txIndex, &unspent)
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err)
@@ -90,10 +92,10 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		for index, tx := range block.Transactions {
 			err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
 			if err != nil {
-				Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and Index", index, ":", tx)
+				Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
 				return NewBlockChainError(UnExpectedError, err)
 			}
-			Logger.log.Infof("Transaction in block with hash", blockHash, "and Index", index, ":", tx)
+			Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
 		}
 		if err != nil {
 			return NewBlockChainError(UnExpectedError, err)

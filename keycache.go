@@ -1,15 +1,15 @@
 package main
 
 import (
-	"sync"
-	"os"
-	"fmt"
 	"encoding/json"
+	"fmt"
+	"os"
+	"sync"
 )
 
 /*
 This is a utility to save data key-value into file
- */
+*/
 type KeyCache struct {
 	mtx       sync.Mutex
 	cacheFile string

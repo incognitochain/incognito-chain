@@ -2,14 +2,22 @@ package transaction
 
 import (
 	"github.com/ninjadotorg/constant/common"
+	"encoding/hex"
 )
 
 type LoanPayment struct {
 	LoanID []byte
 }
 
+func NewLoanPayment(data map[string]interface{}) *LoanPayment {
+	result := LoanPayment{}
+	s, _ := hex.DecodeString(data["LoanID"].(string))
+	result.LoanID = s
+	return &result
+}
+
 type TxLoanPayment struct {
-	TxWithFee
+	Tx
 	*LoanPayment // data for a loan response
 }
 
@@ -33,7 +41,7 @@ func CreateTxLoanPayment(
 	}
 
 	txLoanPayment := &TxLoanPayment{
-		TxWithFee:   TxWithFee{Tx: tx},
+		Tx:          *tx,
 		LoanPayment: loanPayment,
 	}
 
