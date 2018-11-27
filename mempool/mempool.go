@@ -14,6 +14,7 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 // config is a descriptor containing the memory pool configuration.
@@ -308,7 +309,8 @@ func (tp *TxPool) validateSanityCustomTokenTxData(txCustomToken *transaction.TxC
 		if len(vin.PaymentAddress.Pk) == 0 {
 			return false, errors.New("Wrong input transaction")
 		}
-		if bytes.Equal(vin.PaymentAddress.Pk, blockchain.DCBAddress) {
+		dbcAccount, _ := wallet.Base58CheckDeserialize(blockchain.DCBAddress)
+		if bytes.Equal(vin.PaymentAddress.Pk, dbcAccount.KeySet.PaymentAddress.Pk) {
 			if !allowToUseDCBFund {
 				return false, errors.New("Cannot use DCB's fund here")
 			}

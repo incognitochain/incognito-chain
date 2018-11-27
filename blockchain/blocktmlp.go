@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 type BlkTmplGenerator struct {
@@ -698,11 +698,9 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*transaction.TxD
 	txsToRemove := []transaction.Transaction{}
 	txsResponse := []*transaction.TxBuySellDCBResponse{}
 	// Get unspent bond tx to spend if needed
-	keySet := cashec.KeySet{
-		PaymentAddress: privacy.PaymentAddress{
-			Pk: DCBAddress,
-		},
-	}
+	accountDCB, _ := wallet.Base58CheckDeserialize(DCBAddress)
+	keySet := accountDCB.KeySet
+
 	tokenID := &common.Hash{} // TODO(@0xbunyip): hard code bond token id here
 	unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keySet, tokenID)
 	if err != nil {

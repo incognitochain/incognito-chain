@@ -5,7 +5,8 @@ import (
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 type TxBuySellDCBResponse struct {
@@ -14,15 +15,16 @@ type TxBuySellDCBResponse struct {
 	SaleID         []byte
 }
 
-func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID []byte, rt []byte, chainID byte, bondPrices map[string]uint64, saleID []byte, dcbAddress []byte) (*TxBuySellDCBResponse, error) {
+func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID []byte, rt []byte, chainID byte, bondPrices map[string]uint64, saleID []byte, dcbAddress string) (*TxBuySellDCBResponse, error) {
 	// Mint and send Constant
 	pks := [][]byte{txRequest.PaymentAddress.Pk[:], txRequest.PaymentAddress.Pk[:]}
 	tks := [][]byte{txRequest.PaymentAddress.Tk[:], txRequest.PaymentAddress.Tk[:]}
 
 	// Get value of the bonds that user sent
 	bonds := uint64(0)
+	accountDCB, _ := wallet.Base58CheckDeserialize(dcbAddress)
 	for _, vout := range txRequest.TxTokenData.Vouts {
-		if bytes.Equal(vout.PaymentAddress.Pk[:], dcbAddress) {
+		if bytes.Equal(vout.PaymentAddress.Pk[:], accountDCB.KeySet.PaymentAddress.Pk) {
 			bonds += vout.Value
 		}
 	}
@@ -44,13 +46,14 @@ func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID []byte, rt []byte,
 	return txResponse, nil
 }
 
-func BuildResponseForBond(txRequest *TxBuySellRequest, bondID []byte, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []TxTokenVout, saleID []byte, dcbAddress []byte) (*TxBuySellDCBResponse, []TxTokenVout, error) {
+func BuildResponseForBond(txRequest *TxBuySellRequest, bondID []byte, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []TxTokenVout, saleID []byte, dcbAddress string) (*TxBuySellDCBResponse, []TxTokenVout, error) {
+	accountDCB, _ := wallet.Base58CheckDeserialize(dcbAddress)
 	// Get amount of Constant user sent
 	value := uint64(0)
 	userPk := privacy.PublicKey{}
 	for _, desc := range txRequest.Tx.Descs {
 		for _, note := range desc.Note {
-			if bytes.Equal(note.Apk[:], dcbAddress) {
+			if bytes.Equal(note.Apk[:], accountDCB.KeySet.PaymentAddress.Pk) {
 				value += note.Value
 				userPk = note.Apk
 			}
@@ -91,8 +94,9 @@ func BuildResponseForBond(txRequest *TxBuySellRequest, bondID []byte, rt []byte,
 		},
 	}
 	if sumBonds > bonds {
+		accountDCB, _ := wallet.Base58CheckDeserialize(dcbAddress)
 		txTokenOuts = append(txTokenOuts, TxTokenVout{
-			PaymentAddress: privacy.PaymentAddress{Pk: dcbAddress},
+			PaymentAddress: accountDCB.KeySet.PaymentAddress,
 			Value:          sumBonds - bonds,
 		})
 	}
