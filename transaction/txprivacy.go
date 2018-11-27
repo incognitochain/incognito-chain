@@ -60,8 +60,11 @@ func (tx * TxPrivacy) CreateTx(
 		sumInputValue += coin.CoinDetails.Value
 	}
 
+	// Calculate over balance, it will be returned to sender
+	overBalance := sumInputValue - sumOutputValue - fee
+
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
-	if sumInputValue < sumOutputValue + fee {
+	if overBalance < 0 {
 		return nil, fmt.Errorf("Input value less than output value")
 	}
 
@@ -74,21 +77,13 @@ func (tx * TxPrivacy) CreateTx(
 	tx.PubKeyLastByte = pkLastByte
 
 	// create new output coins
+	for pinfo := range paymentInfo{
+
+	}
 
 	// create zero knowledge proof of payment
 
 	// sign tx
-
-
-
-
-
-
-
-
-
-
-
 
 
 	return nil, nil
