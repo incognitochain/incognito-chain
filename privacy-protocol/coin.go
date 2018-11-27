@@ -4,11 +4,8 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-<<<<<<< HEAD
-=======
 	"fmt"
 	"golang.org/x/crypto/openpgp/elgamal"
->>>>>>> 627ebc99d8843dac2af0f8c4bbede2236786f7f9
 	"io"
 	"math/big"
 
@@ -37,15 +34,9 @@ type InputCoin struct {
 	CoinDetails *Coin
 }
 
-<<<<<<< HEAD
-type OutputCoin struct {
-	CoinDetails          *Coin
-	CoinDetailsEncrypted CoinDetailsEncrypted
-=======
 type OutputCoin struct{
 	CoinDetails   *Coin
 	CoinDetailsEncrypted *CoinDetailsEncrypted
->>>>>>> 627ebc99d8843dac2af0f8c4bbede2236786f7f9
 }
 
 type CoinDetailsEncrypted struct {
@@ -71,7 +62,7 @@ func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, er
 	// real.) If you want to convert a passphrase to a key, use a suitable
 	// package like bcrypt or scrypt.
 	//key, _ := hex.DecodeString("6368616e676520746869732070617373")
-	plaintext := coin.Randomness.Bytes()
+	plaintext := []byte("some plaintext")
 
 	block, err := aes.NewCipher(symKey)
 	if err != nil {
@@ -95,10 +86,6 @@ func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, er
 	// Encrypt symKey using Transmission key's receiver with ElGamal cryptosystem
 	// prepare public key for ElGamal cryptosystem
 	pubKey := new(elgamal.PublicKey)
-<<<<<<< HEAD
-
-	encryptedCoin.SymKeyEncrypted = elgamal.Encrypt(rand.Reader, receiverTK, symKey)
-=======
 	basePoint := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 	basePoint.X, basePoint.Y = Curve.Params().Gx, Curve.Params().Gy
 	pubKey.G = new(big.Int).SetBytes(basePoint.Compress())
@@ -113,58 +100,55 @@ func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, er
 	//encryptedCoin.SymKeyEncrypted = make([]byte, len(c1.Bytes()))
 	//encryptedCoin.SymKeyEncrypted = append(encryptedCoin.SymKeyEncrypted, c1.Bytes()...)
 	//encryptedCoin.SymKeyEncrypted = append(encryptedCoin.SymKeyEncrypted, c2.Bytes()...)
->>>>>>> 627ebc99d8843dac2af0f8c4bbede2236786f7f9
 
 	return encryptedCoin, nil
 }
 
+CommitAll commits a coin with 4 attributes (public key, value, serial number, r)
+func (coin *Coin) CommitAll() {
+	//var values [PCM_CAPACITY-1][]byte
+	values := [PCM_CAPACITY][]byte{coin.PublicKey, coin.Value, coin.SNDerivator, coin.Randomness}
+	fmt.Printf("coin info: %v\n", values)
+	coin.CoinCommitment = append(coin.CoinCommitment, FULL)
+	coin.CoinCommitment = append(coin.CoinCommitment, PedCom.Commit(values)...)
+}
+
+// CommitPublicKey commits a public key's coin
+func (coin *Coin) CommitPublicKey() []byte {
+	var values [PCM_CAPACITY-1][]byte
+	values = [PCM_CAPACITY-1][]byte{coin.PublicKey, nil, nil, coin.Randomness}
 
 
-//CommitAll commits a coin with 4 attributes (public key, value, serial number, r)
-//func (coin *Coin) CommitAll() {
-//	//var values [PCM_CAPACITY-1][]byte
-//	values := [PCM_CAPACITY][]byte{coin.PublicKey, coin.Value, coin.SNDerivator, coin.Randomness}
-//	fmt.Printf("coin info: %v\n", values)
-//	coin.CoinCommitment = append(coin.CoinCommitment, FULL)
-//	coin.CoinCommitment = append(coin.CoinCommitment, PedCom.Commit(values)...)
-//}
+	var commitment []byte
+	commitment = append(commitment, PK)
+	commitment = append(commitment, PedCom.Commit(values)...)
+	return commitment
+}
 
-//// CommitPublicKey commits a public key's coin
-//func (coin *Coin) CommitPublicKey() []byte {
-//	var values [PCM_CAPACITY-1][]byte
-//	values = [PCM_CAPACITY-1][]byte{coin.PublicKey, nil, nil, coin.Randomness}
-//
-//
-//	var commitment []byte
-//	commitment = append(commitment, PK)
-//	commitment = append(commitment, PedCom.Commit(values)...)
-//	return commitment
-//}
-//
-//// CommitValue commits a value's coin
-//func (coin *Coin) CommitValue() []byte {
-//	var values [PCM_CAPACITY-1][]byte
-//	values = [PCM_CAPACITY-1][]byte{nil, coin.Value, nil, coin.Randomness}
-//
-//	var commitment []byte
-//	commitment = append(commitment, VALUE)
-//	commitment = append(commitment, PedCom.Commit(values)...)
-//	return commitment
-//}
-//
-//// CommitSNDerivator commits a serial number's coin
-//func (coin *Coin) CommitSNDerivator() []byte {
-//	var values [PCM_CAPACITY-1][]byte
-//	values = [PCM_CAPACITY-1][]byte{nil, nil, coin.SNDerivator, coin.Randomness}
-//
-//	var commitment []byte
-//	commitment = append(commitment, SND)
-//	commitment = append(commitment, PedCom.Commit(values)...)
-//	return commitment
-//}
+// CommitValue commits a value's coin
+func (coin *Coin) CommitValue() []byte {
+	var values [PCM_CAPACITY-1][]byte
+	values = [PCM_CAPACITY-1][]byte{nil, coin.Value, nil, coin.Randomness}
 
-// UnspentCoin represents a list of coins to be spent corresponding to spending key
-//type UnspentCoin struct {
-//	SpendingKey SpendingKey
-//	UnspentCoinList map[Coin]big.Int
-//}
+	var commitment []byte
+	commitment = append(commitment, VALUE)
+	commitment = append(commitment, PedCom.Commit(values)...)
+	return commitment
+}
+
+// CommitSNDerivator commits a serial number's coin
+func (coin *Coin) CommitSNDerivator() []byte {
+	var values [PCM_CAPACITY-1][]byte
+	values = [PCM_CAPACITY-1][]byte{nil, nil, coin.SNDerivator, coin.Randomness}
+
+	var commitment []byte
+	commitment = append(commitment, SND)
+	commitment = append(commitment, PedCom.Commit(values)...)
+	return commitment
+}
+
+UnspentCoin represents a list of coins to be spent corresponding to spending key
+type UnspentCoin struct {
+	SpendingKey SpendingKey
+	UnspentCoinList map[Coin]big.Int
+}

@@ -1,33 +1,79 @@
 package privacy
 
+import (
+	"crypto/rand"
+	"math/big"
+)
+
 // ElGamalPublicKeyEncryption ...
 type ElGamalPublicKeyEncryption interface {
-	KeyGen() (*ElGamalPrivKey, *ElGamalPubKey)
+	PubKeyGen() *ElGamalPubKey
 	ElGamalEnc(plainPoint *EllipticPoint) *ElGamalCipherText
 	ElGamalDec(cipher *ElGamalCipherText) *EllipticPoint
 }
 
 // ElGamalPubKey ...
 type ElGamalPubKey struct {
-	value *EllipticPoint
+	Value *EllipticPoint
 }
 
 type ElGamalPrivKey struct {
+	Value *big.Int
 }
 
 type ElGamalCipherText struct {
+	R, C *EllipticPoint
+}
+
+func (elgamalCipher *ElGamalCipherText) Set(R, C *EllipticPoint) {
+	elgamalCipher.C = C
+	elgamalCipher.R = R
+}
+
+func (priv *ElGamalPrivKey) PubKeyGen() *ElGamalPubKey {
+	elGamalPubKey := new(ElGamalPubKey)
+	elGamalPubKey.Value = new(EllipticPoint)
+	elGamalPubKey.Value.X, elGamalPubKey.Value.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, priv.Value.Bytes())
+	return elGamalPubKey
 }
 
 func (pub *ElGamalPubKey) ElGamalEnc(plainPoint *EllipticPoint) *ElGamalCipherText {
-	return nil
+	rRnd, _ := rand.Int(rand.Reader, Curve.Params().N)
+	RRnd := new(EllipticPoint)
+	RRnd.X, RRnd.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, rRnd.Bytes())
+	Cipher := new(EllipticPoint)
+	Cipher.X, Cipher.Y = Curve.ScalarMult(pub.Value.X, pub.Value.Y, rRnd.Bytes())
+	Cipher.X, Cipher.Y = Curve.Add(Cipher.X, Cipher.Y, plainPoint.X, plainPoint.Y)
+	elgamalCipher := new(ElGamalCipherText)
+	elgamalCipher.Set(RRnd, Cipher)
+	return elgamalCipher
 }
 
 func (priv *ElGamalPrivKey) ElGamalDec(cipher *ElGamalCipherText) *EllipticPoint {
-	return nil
+
+	plainPoint := new(EllipticPoint)
+	inversePrivKey := new(big.Int)
+	inversePrivKey.Set(Curve.Params().N)
+	inversePrivKey.Sub(inversePrivKey, priv.Value)
+
+	// fmt.Println(big.NewInt(0).Mod(big.NewInt(0).Add(inversePrivKey, priv.Value), Curve.Params().N))
+	plainPoint.X, plainPoint.Y = Curve.ScalarMult(cipher.R.X, cipher.R.Y, inversePrivKey.Bytes())
+	plainPoint.X, plainPoint.Y = Curve.Add(plainPoint.X, plainPoint.Y, cipher.C.X, cipher.C.Y)
+	return plainPoint
 }
 
 func TestElGamalPubKeyEncryption() bool {
-	return true
+	privKey := new(ElGamalPrivKey)
+	privKey.Value, _ = rand.Int(rand.Reader, Curve.Params().N)
+	pubKey := privKey.PubKeyGen()
+
+	mess := new(EllipticPoint)
+	mess.Randomize()
+
+	cipher := pubKey.ElGamalEnc(mess)
+
+	decPoint := privKey.ElGamalDec(cipher)
+	return mess.IsEqual(*decPoint)
 }
 
 // // Copyright 2011 The Go Authors. All rights reserved.
