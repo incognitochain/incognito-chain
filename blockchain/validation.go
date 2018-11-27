@@ -423,7 +423,8 @@ func (bc *BlockChain) verifyByBoard(
 		address = string(DCBAddress)
 		pubKeys = bc.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys
 	} else if boardType == common.GOV {
-		address = string(GOVAddress)
+		govAccount, _ := wallet.Base58CheckDeserialize(GOVAddress)
+		address = string(govAccount.KeySet.PaymentAddress.Pk)
 		pubKeys = bc.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys
 	} else {
 		return false
@@ -469,23 +470,21 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 		return fmt.Errorf("Sale ended")
 	}
 
-	if bytes.Equal(saleData.BuyingAsset, BondTokenID[:]) {
+	dbcAccount, _ := wallet.Base58CheckDeserialize(DCBAddress)
+	if bytes.Equal(saleData.BuyingAsset[:8], BondTokenID[:8]) {
 		for _, vout := range requestTx.TxTokenData.Vouts {
-			// Check if sending asset is correct
-			if vout.BuySellResponse.BondID != saleData.BondID {
-				return fmt.Errorf("Received asset id %s instead of %s", vout.BuySellResponse.BondID, saleData.BondID)
-			}
+			return fmt.Errorf("Received asset id %s instead of %s", append(BondTokenID[:8], vout.BuySellResponse.BondID...), saleData.BuyingAsset)
 
 			// Check if receiving address is DCB's
 			// TODO(@0xbunyip): compare full payment address
-			if !bytes.Equal(vout.PaymentAddress.Pk[:], DCBAddress) {
+			if !bytes.Equal(vout.PaymentAddress.Pk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
 				return fmt.Errorf("Sending payment to %x instead of %x", vout.PaymentAddress.Pk[:], DCBAddress)
 			}
 		}
 	} else if bytes.Equal(saleData.BuyingAsset, ConstantID[:]) {
 		for _, desc := range requestTx.Tx.Descs {
 			for _, note := range desc.Note {
-				if !bytes.Equal(note.Apk[:], DCBAddress) {
+				if !bytes.Equal(note.Apk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
 					return fmt.Errorf("Sending payment to %x instead of %x", note.Apk[:], DCBAddress)
 				}
 			}
@@ -510,13 +509,8 @@ func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction,
 		return fmt.Errorf("Sale ended")
 	}
 
-	if bytes.Equal(saleData.SellingAsset, BondTokenID[:]) {
-		for _, vout := range responseTx.TxTokenData.Vouts {
-			// Check if sending asset is correct
-			if vout.BuySellResponse.BondID != saleData.BondID {
-				return fmt.Errorf("Sending asset id %s instead of %s", vout.BuySellResponse.BondID, saleData.BondID)
-			}
-		}
+	if !bytes.Equal(saleData.SellingAsset[:8], BondTokenID[:8]) {
+		return fmt.Errorf("Sending asset id %s instead of %s", BondTokenID, saleData.SellingAsset)
 	}
 
 	// TODO(@0xbunyip): validate amount of asset sent

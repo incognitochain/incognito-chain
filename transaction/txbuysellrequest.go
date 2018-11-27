@@ -13,7 +13,7 @@ type TxBuySellRequest struct {
 
 type RequestInfo struct {
 	PaymentAddress privacy.PaymentAddress
-	AssetType      common.Hash // token id
+	AssetType      common.Hash // token id (note: for bond, this one is just bond token id prefix)
 	Amount         uint64
 	BuyPrice       uint64 // in Constant unit
 
