@@ -43,7 +43,7 @@ var (
 	DCBTokenID  = [common.HashSize]byte{1}
 	GOVTokenID  = [common.HashSize]byte{2}
 	CMBTokenID  = [common.HashSize]byte{3}
-	BondTokenID = [common.HashSize]byte{4}
+	BondTokenID = [common.HashSize]byte{0, 0, 0, 0, 0, 0, 0, 0}
 )
 
 const (
