@@ -95,19 +95,20 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:           RpcServer.handleListAccounts,
-	GetAccount:             RpcServer.handleGetAccount,
-	GetAddressesByAccount:  RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:      RpcServer.handleGetAccountAddress,
-	DumpPrivkey:            RpcServer.handleDumpPrivkey,
-	ImportAccount:          RpcServer.handleImportAccount,
-	RemoveAccount:          RpcServer.handleRemoveAccount,
-	ListUnspent:            RpcServer.handleListUnspent,
-	GetBalance:             RpcServer.handleGetBalance,
-	GetBalanceByPrivatekey: RpcServer.handleGetBalanceByPrivatekey,
-	GetReceivedByAccount:   RpcServer.handleGetReceivedByAccount,
-	SetTxFee:               RpcServer.handleSetTxFee,
-	EncryptData:            RpcServer.handleEncryptDataByPaymentAddress,
+	ListAccounts:               RpcServer.handleListAccounts,
+	GetAccount:                 RpcServer.handleGetAccount,
+	GetAddressesByAccount:      RpcServer.handleGetAddressesByAccount,
+	GetAccountAddress:          RpcServer.handleGetAccountAddress,
+	DumpPrivkey:                RpcServer.handleDumpPrivkey,
+	ImportAccount:              RpcServer.handleImportAccount,
+	RemoveAccount:              RpcServer.handleRemoveAccount,
+	ListUnspent:                RpcServer.handleListUnspent,
+	GetBalance:                 RpcServer.handleGetBalance,
+	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
+	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
+	GetReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
+	SetTxFee:                   RpcServer.handleSetTxFee,
+	EncryptData:                RpcServer.handleEncryptDataByPaymentAddress,
 }
 
 /*

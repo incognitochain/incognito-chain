@@ -759,7 +759,10 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 			Commitments:   make([][]byte, 0),
 			EncryptedData: make([][]byte, 0),
 		}
-		if desc.Proof != nil && len(desc.EncryptedData) > 0 && len(keys.PrivateKey) > 0 {
+		if desc.Proof != nil && len(desc.EncryptedData) > 0 {
+			if len(keys.PrivateKey) == 0 || len(keys.ReadonlyKey.Rk) == 0 {
+				continue
+			}
 			// have privacy-protocol
 			for i, encData := range desc.EncryptedData {
 				var epk client.EphemeralPubKey
