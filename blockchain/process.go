@@ -54,7 +54,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		}
 		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
 		for _, account := range self.config.Wallet.MasterAccount.Child {
-			unspentTxs, err1 := self.GetListUnspentTxByPrivateKeyInBlock(&account.Key.KeySet, block, nullifiersInDb, true)
+			unspentTxs, err1 := self.GetListUnspentTxByKeysetInBlock(&account.Key.KeySet, block, nullifiersInDb, true)
 			if err1 != nil {
 				return NewBlockChainError(UnExpectedError, err1)
 			}
