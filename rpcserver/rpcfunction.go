@@ -38,6 +38,7 @@ var RpcHandler = map[string]commandHandler{
 	GetBlockCount:     RpcServer.handleGetBlockCount,
 	GetBlockHash:      RpcServer.handleGetBlockHash,
 	CheckHashValue:    RpcServer.handleCheckHashValue, // get data in blockchain from hash value
+	GetBlockHeader:    RpcServer.handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
 
 	// transaction
 	ListTransactions:         RpcServer.handleListTransactions,
@@ -89,9 +90,6 @@ var RpcHandler = map[string]commandHandler{
 	GetBondTypes:       RpcServer.handleGetBondTypes,
 	GetGOVConstitution: RpcServer.handleGetGOVConstitution,
 	GetGOVParams:       RpcServer.handleGetGOVParams,
-
-	//POS
-	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 }
 
 // Commands that are available to a limited user
@@ -110,52 +108,6 @@ var RpcLimited = map[string]commandHandler{
 	GetReceivedByAccount:   RpcServer.handleGetReceivedByAccount,
 	SetTxFee:               RpcServer.handleSetTxFee,
 	EncryptData:            RpcServer.handleEncryptDataByPaymentAddress,
-}
-
-func (self RpcServer) handleGetHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	Logger.log.Info(params)
-	result := jsonresult.GetHeaderResult{}
-
-	arrayParams := common.InterfaceSlice(params)
-	Logger.log.Info(arrayParams)
-	getBy := arrayParams[0].(string)
-	block := arrayParams[1].(string)
-	chainID := arrayParams[2].(float64)
-	switch getBy {
-	case "blockhash":
-		bhash := common.Hash{}
-		err := bhash.Decode(&bhash, block)
-		Logger.log.Info(bhash)
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, errors.New("Invalid blockhash format"))
-		}
-		block, err := self.config.BlockChain.GetBlockByBlockHash(&bhash)
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, errors.New("Block not exist"))
-		}
-		result.Header = block.Header
-		result.BlockNum = int(block.Header.Height) + 1
-		result.ChainID = uint8(chainID)
-		result.BlockHash = bhash.String()
-	case "blocknum":
-		bnum, err := strconv.Atoi(block)
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, errors.New("Invalid blocknum format"))
-		}
-		fmt.Println(chainID)
-		if int32(bnum-1) > self.config.BlockChain.BestState[uint8(chainID)].Height || bnum <= 0 {
-			return nil, NewRPCError(ErrUnexpected, errors.New("Block not exist"))
-		}
-		block, _ := self.config.BlockChain.GetBlockByBlockHeight(int32(bnum-1), uint8(chainID))
-		result.Header = block.Header
-		result.BlockNum = bnum
-		result.ChainID = uint8(chainID)
-		result.BlockHash = block.Hash().String()
-	default:
-		return nil, NewRPCError(ErrUnexpected, errors.New("Wrong request format"))
-	}
-
-	return result, nil
 }
 
 /*
