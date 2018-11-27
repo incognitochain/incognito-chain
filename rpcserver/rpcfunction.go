@@ -37,6 +37,7 @@ var RpcHandler = map[string]commandHandler{
 	GetBlockChainInfo: RpcServer.handleGetBlockChainInfo,
 	GetBlockCount:     RpcServer.handleGetBlockCount,
 	GetBlockHash:      RpcServer.handleGetBlockHash,
+	CheckHashValue:    RpcServer.handleCheckHashValue, // get data in blockchain from hash value
 
 	// transaction
 	ListTransactions:         RpcServer.handleListTransactions,
@@ -66,12 +67,6 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendLoanWithdraw: RpcServer.handleCreateAndSendLoanWithdraw,
 	CreateAndSendLoanPayment:  RpcServer.handleCreateAndSendLoanPayment,
 
-	//POS
-	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
-
-	//check hash value
-	CheckHashValue: RpcServer.handleCheckHashValue,
-
 	// multisig
 	CreateSignatureOnCustomTokenTx: RpcServer.handleCreateSignatureOnCustomTokenTx,
 	GetListDCBBoard:                RpcServer.handleGetListDCBBoard,
@@ -85,13 +80,18 @@ var RpcHandler = map[string]commandHandler{
 	SendRawVoteBoardGOVTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
 	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
 	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteGOVBoardTransaction,
-	GetGOVParams:                         RpcServer.handleGetGOVParams,
-	GetDCBParams:                         RpcServer.handleGetDCBParams,
-	GetDCBConstitution:                   RpcServer.handleGetDCBConstitution,
-	GetGOVConstitution:                   RpcServer.handleGetGOVConstitution,
+
+	// dcb
+	GetDCBParams:       RpcServer.handleGetDCBParams,
+	GetDCBConstitution: RpcServer.handleGetDCBConstitution,
 
 	// gov
-	GetBondTypes: RpcServer.handleGetBondTypes,
+	GetBondTypes:       RpcServer.handleGetBondTypes,
+	GetGOVConstitution: RpcServer.handleGetGOVConstitution,
+	GetGOVParams:       RpcServer.handleGetGOVParams,
+
+	//POS
+	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
 }
 
 // Commands that are available to a limited user
