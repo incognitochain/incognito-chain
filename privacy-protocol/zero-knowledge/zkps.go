@@ -36,7 +36,7 @@ func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.Input
 	wit.outputCoins = outputCoins
 }
 // Prove creates big proof
-func (wit *PaymentWitness) Prove() {
+func (wit *PaymentWitness) Prove() *PaymentProof{
 
 	numberInputCoin := len(wit.inputCoins)
 	// Commit each component of coins being spent
@@ -134,6 +134,7 @@ func (wit *PaymentWitness) Prove() {
 	proofEqualValue.Verify()
 	//END----------------------------------------------------------------------------------------------------------------------------------------------
 
+	return nil
 }
 
 func (pro PaymentProof) Verify() bool{

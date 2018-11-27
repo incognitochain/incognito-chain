@@ -6,6 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"math/big"
 )
 
 type TxPrivacy struct{
@@ -16,7 +17,7 @@ type TxPrivacy struct{
 
 	SigPubKey []byte           `json:"SigPubKey, omitempty"` // 64 bytes
 	Sig		    []byte           `json:"Sig, omitempty"`    // 64 bytes
-	Proof 		zkp.PaymentProof
+	Proof 		*zkp.PaymentProof
 
 	PubKeyLastByte byte `json:"AddressLastByte"`
 
@@ -89,21 +90,28 @@ func (tx * TxPrivacy) CreateTx(
 
 	// if overBalance > 0, create a output coin with pk is pk's sender and value is overBalance
 	if overBalance > 0{
-		changeMoney := new(privacy.OutputCoin)
-		changeMoney.CoinDetails.Value = overBalance
-		changeMoney.CoinDetails.PublicKey, _ = privacy.DecompressKey(senderFullKey.PaymentAddress.Pk)
-		changeMoney.CoinDetails.SNDerivator = privacy.RandInt()
+		changeCoin := new(privacy.OutputCoin)
+		changeCoin.CoinDetails.Value = overBalance
+		changeCoin.CoinDetails.PublicKey, _ = privacy.DecompressKey(senderFullKey.PaymentAddress.Pk)
+		changeCoin.CoinDetails.SNDerivator = privacy.RandInt()
+
+		outputCoins = append(outputCoins, changeCoin)
 	}
 
 	// create zero knowledge proof of payment
-
+	witness := new(zkp.PaymentWitness)
+	witness.Set(new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins)
+	tx.Proof = witness.Prove()
 
 	// encrypt coin details (Randomness)
+	for i:=0; i< len(outputCoins); i++{
+		outputCoins[i].CoinDetailsEncrypted = outputCoins[i].CoinDetails.Encrypt()
+	}
 
 	// sign tx
+	tx.SignTx(noPrivacy)
 
-
-	return nil, nil
+	return tx, nil
 }
 
 func (tx * TxPrivacy) SignTx(noPrivacy bool) error {

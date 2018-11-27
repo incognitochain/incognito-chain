@@ -49,7 +49,7 @@ func ParseJsonToNote(jsonnote []byte) (*Note, error) {
 	return &note, nil
 }
 
-func (coin *Coin) Encrypt() *OutputCoin{
+func (coin *Coin) Encrypt() []byte{
 	/**** Generate symmetric key of AES cryptosystem,
 				it is used for encryption coin details ****/
 	var point EllipticPoint
@@ -60,6 +60,7 @@ func (coin *Coin) Encrypt() *OutputCoin{
 	// Convert coin details from struct to bytes array
 
 	// Encrypt symKey using Transmission key's receiver with ElGamal cryptosystem
+	return nil
 
 }
 
