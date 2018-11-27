@@ -40,8 +40,8 @@ const (
 	CustomToken                         = "customtoken"
 	CheckHashValue                      = "checkhashvalue"
 	GetListCustomTokenBalance           = "getlistcustomtokenbalance"
-
-	GetHeader = "getheader"
+	GetLoanParams                       = "loanparams"
+	GetHeader                           = "getheader"
 
 	// Wallet rpc cmd
 	ListAccounts           = "listaccounts"

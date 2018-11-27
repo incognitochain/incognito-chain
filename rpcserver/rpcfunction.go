@@ -63,7 +63,7 @@ var RpcHandler = map[string]commandHandler{
 	GetListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
 
 	// Loan tx
-	"loanparams":              RpcServer.handleGetLoanParams,
+	GetLoanParams:             RpcServer.handleGetLoanParams,
 	CreateAndSendLoanRequest:  RpcServer.handleCreateAndSendLoanRequest,
 	CreateAndSendLoanResponse: RpcServer.handleCreateAndSendLoanResponse,
 	CreateAndSendLoanWithdraw: RpcServer.handleCreateAndSendLoanWithdraw,
