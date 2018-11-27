@@ -1,10 +1,12 @@
 package rpcserver
 
+// handleGetDCBParams - get dcb params
 func (self RpcServer) handleGetDCBParams(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	dcbParam := self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
 	return dcbParam, nil
 }
 
+// handleGetDCBConstitution - get dcb constitution
 func (self RpcServer) handleGetDCBConstitution(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	constitution := self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution
 	return constitution, nil

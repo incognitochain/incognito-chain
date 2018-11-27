@@ -63,6 +63,10 @@ const (
 	GetListDCBBoard                = "getlistdcbboard"
 	GetListCBBoard                 = "getlistcbboard"
 	GetListGOVBoard                = "getlistgovboard"
+	GetGOVParams                   = "getgovparams"
+	GetDCBParams                   = "getdcbparams"
+	GetGOVConstitution             = "getgovconstitution"
+	GetDCBConstitution             = "getdcbconstitution"
 
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"

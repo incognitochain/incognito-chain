@@ -88,6 +88,10 @@ var RpcHandler = map[string]commandHandler{
 	SendRawVoteBoardGOVTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
 	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
 	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
+	GetGOVParams:                         RpcServer.handleGetGOVParams,
+	GetDCBParams:                         RpcServer.handleGetDCBParams,
+	GetDCBConstitution:                   RpcServer.handleGetDCBConstitution,
+	GetGOVConstitution:                   RpcServer.handleGetGOVConstitution,
 
 	// gov
 	GetBondTypes: RpcServer.handleGetBondTypes,
