@@ -28,7 +28,7 @@ func (wit *PKComOpeningsWitness) randValue(testcase bool) {
 	for i := 0; i < privacy.PCM_CAPACITY; i++ {
 		wit.m[i], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
 	}
-	wit.commitmentValue = privacy.PedCom.CommitAll([4]*big.Int{wit.m[0], wit.m[1], wit.m[2], wit.m[3]})
+	wit.commitmentValue = privacy.PedCom.CommitAll([]*big.Int{wit.m[0], wit.m[1], wit.m[2], wit.m[3]})
 }
 
 // Set dosomethings
