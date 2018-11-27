@@ -481,7 +481,7 @@ func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeC
 		return nil, nil
 	}
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
-	result.Account = accountParam
+	result.PaymentAddress = accountParam
 	accountPaymentAddress := account.KeySet.PaymentAddress
 	temps, err := self.config.BlockChain.ListCustomToken()
 	if err != nil {
@@ -499,6 +499,7 @@ func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeC
 		}
 		item.Amount = res[hex.EncodeToString(accountPaymentAddress.Pk)]
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
+		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
 	return result, nil
 }

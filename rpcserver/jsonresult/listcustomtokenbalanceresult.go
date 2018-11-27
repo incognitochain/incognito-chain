@@ -8,6 +8,6 @@ type CustomTokenBalance struct {
 }
 
 type ListCustomTokenBalance struct {
-	Account                string               `json:"Address"`
+	PaymentAddress         string               `json:"PaymentAddress"`
 	ListCustomTokenBalance []CustomTokenBalance `json:"ListCustomTokenBalance"`
 }
