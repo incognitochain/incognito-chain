@@ -759,7 +759,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 			Commitments:   make([][]byte, 0),
 			EncryptedData: make([][]byte, 0),
 		}
-		if desc.Proof != nil && len(desc.EncryptedData) > 0 {
+		if desc.Proof != nil && len(desc.EncryptedData) > 0 && len(keys.PrivateKey) > 0 {
 			// have privacy-protocol
 			for i, encData := range desc.EncryptedData {
 				var epk client.EphemeralPubKey
@@ -833,12 +833,8 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 
 // GetListUnspentTxByPrivateKeyInBlock - fetch block to get unspent tx commitment which privatekey can use it
 // return a list tx which contain commitment which can be used
-func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *privacy.SpendingKey, block *Block, nullifiersInDb [][]byte, returnFullTx bool) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(keys *cashec.KeySet, block *Block, nullifiersInDb [][]byte, returnFullTx bool) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx)
-
-	// Get set of keys from private keybyte
-	keys := cashec.KeySet{}
-	keys.ImportFromPrivateKey(privateKey)
 
 	chainId := block.Header.ChainID
 	results[chainId] = make([]transaction.Tx, 0)
@@ -848,7 +844,7 @@ func (self *BlockChain) GetListUnspentTxByPrivateKeyInBlock(privateKey *privacy.
 	for _, txInBlock := range txsInBlock {
 		if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
 			// copyTx ONLY contains commitment which relate to keys
-			copyTx := self.DecryptTxByKey(txInBlock, nullifiersInDb, &keys)
+			copyTx := self.DecryptTxByKey(txInBlock, nullifiersInDb, keys)
 			if len(copyTx.Descs) > 0 {
 				if !returnFullTx {
 					// only return copy tx which contain unspent commitment which relate with private key
@@ -874,7 +870,7 @@ With private-key, we can check unspent tx by check nullifiers from database
 - Param #1: privateKey - byte[] of privatekey
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListUnspentTxByPrivateKey(privateKey *privacy.SpendingKey, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListUnspentTxByPrivateKey(keyset *cashec.KeySet, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx)
 
 	// lock chain
@@ -894,7 +890,7 @@ func (self *BlockChain) GetListUnspentTxByPrivateKey(privateKey *privacy.Spendin
 	}
 	if self.config.Light {
 		// Get unspent tx with light mode
-		fullTxs, err := self.config.DataBase.GetTransactionLightModeByPrivateKey(privateKey)
+		fullTxs, err := self.config.DataBase.GetTransactionLightModeByPrivateKey(&keyset.PrivateKey)
 		Logger.log.Infof("UTXO lightmode %+v", fullTxs)
 		if err != nil {
 			return nil, err
@@ -903,7 +899,7 @@ func (self *BlockChain) GetListUnspentTxByPrivateKey(privateKey *privacy.Spendin
 		for chainID, txArrays := range fullTxs {
 			for _, tx := range txArrays {
 				keys := cashec.KeySet{}
-				keys.ImportFromPrivateKey(privateKey)
+				keys.ImportFromPrivateKey(&keyset.PrivateKey)
 				copyTx := self.DecryptTxByKey(&tx, nullifiersInDb, &keys)
 				results[chainID] = append(results[chainID], copyTx)
 			}
@@ -922,7 +918,7 @@ func (self *BlockChain) GetListUnspentTxByPrivateKey(privateKey *privacy.Spendin
 		for blockHeight > 0 {
 			var err1 error
 			// fetch block to get tx
-			resultsInChain, err1 := self.GetListUnspentTxByPrivateKeyInBlock(privateKey, block, nullifiersInDb, false)
+			resultsInChain, err1 := self.GetListUnspentTxByPrivateKeyInBlock(keyset, block, nullifiersInDb, false)
 			if err1 != nil {
 				// unlock chain
 				//self.chainLock.Unlock()

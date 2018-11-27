@@ -23,7 +23,7 @@ func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan st
 	}
 	accounts := self.config.Wallet.ListAccounts()
 	for accountName, account := range accounts {
-		txsMap, err := self.config.BlockChain.GetListUnspentTxByPrivateKey(&account.Key.KeySet.PrivateKey, transaction.NoSort, false)
+		txsMap, err := self.config.BlockChain.GetListUnspentTxByPrivateKey(&account.Key.KeySet, transaction.NoSort, false)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -157,7 +157,7 @@ func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 
 	// get balance for accountName in wallet
-	txsMap, err := self.config.BlockChain.GetListUnspentTxByPrivateKey(&senderKey.KeySet.PrivateKey, transaction.NoSort, false)
+	txsMap, err := self.config.BlockChain.GetListUnspentTxByPrivateKey(&senderKey.KeySet, transaction.NoSort, false)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -208,7 +208,7 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 	if accountName == "*" {
 		// get balance for all accounts in wallet
 		for _, account := range self.config.Wallet.MasterAccount.Child {
-			txsMap, err := self.config.BlockChain.GetListUnspentTxByPrivateKey(&account.Key.KeySet.PrivateKey, transaction.NoSort, false)
+			txsMap, err := self.config.BlockChain.GetListUnspentTxByPrivateKey(&account.Key.KeySet, transaction.NoSort, false)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
@@ -227,7 +227,7 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 		for _, account := range self.config.Wallet.MasterAccount.Child {
 			if account.Name == accountName {
 				// get balance for accountName in wallet
-				txsMap, err := self.config.BlockChain.GetListUnspentTxByPrivateKey(&account.Key.KeySet.PrivateKey, transaction.NoSort, false)
+				txsMap, err := self.config.BlockChain.GetListUnspentTxByPrivateKey(&account.Key.KeySet, transaction.NoSort, false)
 				if err != nil {
 					return nil, NewRPCError(ErrUnexpected, err)
 				}
@@ -282,7 +282,7 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 	for _, account := range self.config.Wallet.MasterAccount.Child {
 		if account.Name == accountName {
 			// get balance for accountName in wallet
-			txsMap, err := self.config.BlockChain.GetListUnspentTxByPrivateKey(&account.Key.KeySet.PrivateKey, transaction.NoSort, false)
+			txsMap, err := self.config.BlockChain.GetListUnspentTxByPrivateKey(&account.Key.KeySet, transaction.NoSort, false)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
