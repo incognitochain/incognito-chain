@@ -1,4 +1,4 @@
-package Privvacy
+package privacy
 
 // ElGamalPublicKeyEncryption ...
 type ElGamalPublicKeyEncryption interface {
@@ -9,6 +9,7 @@ type ElGamalPublicKeyEncryption interface {
 
 // ElGamalPubKey ...
 type ElGamalPubKey struct {
+	value *EllipticPoint
 }
 
 type ElGamalPrivKey struct {
