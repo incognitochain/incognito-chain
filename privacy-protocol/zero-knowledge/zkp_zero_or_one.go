@@ -177,19 +177,6 @@ func (proof *PKComZeroOneProof) Verify() bool {
 	x := GenerateChallengeFromPoint([]*privacy.EllipticPoint{proof.ca, proof.cb, proof.commitment})
 	x.Mod(x, privacy.Curve.Params().N)
 
-	//// Decompress ca, cb of Proof
-	//caPoint, err := privacy.DecompressCommitment(proof.Proof.ca)
-	//if err != nil {
-	//	fmt.Printf("Can not decompress Proof ca to ECC point")
-	//	return false
-	//}
-	//cbPoint, err := privacy.DecompressCommitment(proof.Proof.cb)
-	//fmt.Printf("cb Point verify: %+v\n", cbPoint)
-	//if err != nil {
-	//	fmt.Printf("Can not decompress Proof cb to ECC point")
-	//	return false
-	//}
-
 	// Calculate leftPoint1 = c^x * ca
 	leftPoint1 := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
 	leftPoint1.X, leftPoint1.Y = privacy.Curve.ScalarMult(proof.commitment.X, proof.commitment.Y, x.Bytes())

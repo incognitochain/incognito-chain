@@ -15,7 +15,7 @@ type ProofOfPayment struct{
 }
 
 // Prove creates big proof
-func Prove(inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
+func Prove(spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 	// Commit each component of coins being spent
 	cmSK := make([]*privacy.EllipticPoint, len(inputCoins))
 	cmValue := make([]*privacy.EllipticPoint, len(inputCoins))
@@ -29,8 +29,8 @@ func Prove(inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 		randValue[i] = privacy.RandInt()
 		randSND[i] = privacy.RandInt()
 
-		cmSK[i] = privacy.PedCom.CommitAtIndex(inputCoin.SpendingKey, randSK[i], privacy.SK)
-		cmValue[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinInfo.Value, randValue[i], privacy.VALUE)
+		cmSK[i] = privacy.PedCom.CommitAtIndex(spendingKey, randSK[i], privacy.SK)
+		cmValue[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(inputCoin.CoinInfo.Value)), randValue[i], privacy.VALUE)
 		cmSND[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinInfo.SNDerivator, randSND[i], privacy.SND)
 	}
 

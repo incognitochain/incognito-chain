@@ -16,7 +16,7 @@ type Coin struct {
 	CoinCommitment *EllipticPoint
 	SNDerivator    *big.Int
 	Randomness     *big.Int
-	Value          *big.Int
+	Value          uint64
 	Info           []byte
 }
 
@@ -72,7 +72,6 @@ type Coin struct {
 // InputCoin represents a input coin of transaction
 type InputCoin struct {
 	BlockHeight *big.Int
-	SpendingKey *big.Int
 	CoinInfo    *Coin
 }
 

@@ -32,6 +32,7 @@ type PedersenCommitment interface {
 // PCParams represents the parameters for the commitment
 type PCParams struct {
 	G []EllipticPoint // generators
+	Capacity int
 	// G[0]: public key
 	// G[1]: Value
 	// G[2]: SNDerivator
@@ -41,9 +42,10 @@ type PCParams struct {
 // newPedersenParams creates new generators
 func newPedersenParams() PCParams {
 	var pcm PCParams
-	pcm.G = make([]EllipticPoint, PCM_CAPACITY)
+	pcm.Capacity = 4
+	pcm.G = make([]EllipticPoint, pcm.Capacity)
 	pcm.G[0] = EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
-	for i := 1; i < PCM_CAPACITY; i++ {
+	for i := 1; i < pcm.Capacity; i++ {
 		pcm.G[i] = pcm.G[i-1].Hash()
 	}
 	return pcm
@@ -57,11 +59,15 @@ func (com PCParams) Params() PCParams {
 }
 
 // CommitAll commits a list of PCM_CAPACITY value(s)
-func (com PCParams) CommitAll(openings [PCM_CAPACITY]*big.Int) *EllipticPoint {
+func (com PCParams) CommitAll(openings []*big.Int) *EllipticPoint {
+	if len(openings) != com.Capacity{
+		return nil
+	}
+
 	temp := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 	commitment := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 
-	for i := 0; i < PCM_CAPACITY; i++ {
+	for i := 0; i < com.Capacity; i++ {
 		temp.X, temp.Y = Curve.ScalarMult(com.G[i].X, com.G[i].Y, openings[i].Bytes())
 		commitment.X, commitment.Y = Curve.Add(commitment.X, commitment.Y, temp.X, temp.Y)
 	}
@@ -74,7 +80,7 @@ func (com PCParams) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoi
 	commitment := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 	temp := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 
-	temp.X, temp.Y = Curve.ScalarMult(com.G[PCM_CAPACITY-1].X, com.G[PCM_CAPACITY-1].Y, rand.Bytes())
+	temp.X, temp.Y = Curve.ScalarMult(com.G[com.Capacity-1].X, com.G[com.Capacity-1].Y, rand.Bytes())
 	commitment.X, commitment.Y = Curve.Add(commitment.X, commitment.Y, temp.X, temp.Y)
 	temp.X, temp.Y = Curve.ScalarMult(com.G[index].X, com.G[index].Y, value.Bytes())
 	commitment.X, commitment.Y = Curve.Add(commitment.X, commitment.Y, temp.X, temp.Y)

@@ -50,9 +50,8 @@ func (priKey *SchnPrivKey) KeyGen() {
 
 	priKey.PubKey = new(SchnPubKey)
 
-	genPoint := *new(EllipticPoint)
-	genPoint.X = Curve.Params().Gx
-	genPoint.Y = Curve.Params().Gy
+	priKey.PubKey.G = *new(EllipticPoint)
+	priKey.PubKey.G.X, priKey.PubKey.G.Y = Curve.Params().Gx, Curve.Params().Gy
 
 	priKey.PubKey.H = *new(EllipticPoint)
 	priKey.PubKey.H.X, priKey.PubKey.H.Y = Curve.ScalarBaseMult(RandBytes(32))
@@ -87,7 +86,7 @@ func (priKey SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
 
 	// t1 = G^k1
 	t1 := new(EllipticPoint)
-	t1.X, t1.Y = Curve.ScalarMult(Curve.Params().Gx, Curve.Params().Gy, k1.Bytes())
+	t1.X, t1.Y = Curve.ScalarMult(priKey.PubKey.G.X, priKey.PubKey.G.Y, k1.Bytes())
 
 	// t2 = H^k2
 	t2 := new(EllipticPoint)
