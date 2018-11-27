@@ -399,7 +399,8 @@ func (bc *BlockChain) verifyByBoard(
 		address = string(DCBAddress)
 		pubKeys = bc.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys
 	} else if boardType == common.GOV {
-		address = string(GOVAddress)
+		govAccount, _ := wallet.Base58CheckDeserialize(GOVAddress)
+		address = string(govAccount.KeySet.PaymentAddress.Pk)
 		pubKeys = bc.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys
 	} else {
 		return false
@@ -445,6 +446,7 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 		return fmt.Errorf("Sale ended")
 	}
 
+	dbcAccount, _ := wallet.Base58CheckDeserialize(DCBAddress)
 	if bytes.Equal(saleData.BuyingAsset, BondTokenID[:]) {
 		for _, vout := range requestTx.TxTokenData.Vouts {
 			// Check if sending asset is correct
@@ -454,14 +456,14 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 
 			// Check if receiving address is DCB's
 			// TODO(@0xbunyip): compare full payment address
-			if !bytes.Equal(vout.PaymentAddress.Pk[:], DCBAddress) {
+			if !bytes.Equal(vout.PaymentAddress.Pk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
 				return fmt.Errorf("Sending payment to %x instead of %x", vout.PaymentAddress.Pk[:], DCBAddress)
 			}
 		}
 	} else if bytes.Equal(saleData.BuyingAsset, ConstantID[:]) {
 		for _, desc := range requestTx.Tx.Descs {
 			for _, note := range desc.Note {
-				if !bytes.Equal(note.Apk[:], DCBAddress) {
+				if !bytes.Equal(note.Apk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
 					return fmt.Errorf("Sending payment to %x instead of %x", note.Apk[:], DCBAddress)
 				}
 			}
