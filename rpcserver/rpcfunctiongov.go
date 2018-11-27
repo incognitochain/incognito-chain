@@ -17,3 +17,17 @@ func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan st
 	}
 	return []jsonresult.GetBondTypeResult{tempRes1, tempRes2}, nil
 }
+
+func (self RpcServer) handleGetGOVParams(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	govParam := self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams
+	return govParam, nil
+}
+
+func (self RpcServer) handleGetGOVConstitution(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	constitution := self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution
+	return constitution, nil
+}
+
+func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys, nil
+}

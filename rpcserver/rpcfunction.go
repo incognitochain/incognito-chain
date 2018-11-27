@@ -1628,19 +1628,6 @@ func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, c
 	return hex.EncodeToString(jsSignByteArray), nil
 }
 
-// handleGetListDCBBoard - return list payment address of DCB board
-func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys, nil
-}
-
-func (self RpcServer) handleGetListCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.CBBoardPubKeys, nil
-}
-
-func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys, nil
-}
-
 // payment address -> balance of all custom token
 
 func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
