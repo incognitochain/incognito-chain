@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"encoding/json"
 	"math/big"
 )
 
@@ -20,6 +21,48 @@ type Coin struct {
 	Info           []byte
 }
 
+func (coin Coin) CoinToJson() []byte {
+	var tmpnote struct {
+		Value        uint64
+		Rho, R, Memo []byte
+	}
+	tmpnote.Value = note.Value
+	tmpnote.Rho = note.Rho
+	tmpnote.R = note.R
+	tmpnote.Memo = note.Memo
+
+	noteJson, err := json.Marshal(&tmpnote)
+	if err != nil {
+		return []byte{}
+	}
+	// fmt.Printf("%s", noteJson)
+	return noteJson
+}
+
+func ParseJsonToNote(jsonnote []byte) (*Note, error) {
+	var note Note
+	err := json.Unmarshal(jsonnote, &note)
+	if err != nil {
+		return nil, err
+	}
+	// fmt.Println(note)
+	return &note, nil
+}
+
+func (coin *Coin) Encrypt() *OutputCoin{
+	/**** Generate symmetric key of AES cryptosystem,
+				it is used for encryption coin details ****/
+	var point EllipticPoint
+	point.Randomize()
+	symKey := point.X.Bytes()
+
+	/**** Encrypt coin details using symKey ****/
+	// Convert coin details from struct to bytes array
+
+	// Encrypt symKey using Transmission key's receiver with ElGamal cryptosystem
+
+}
+
 //CommitAll commits a coin with 4 attributes (public key, value, serial number, r)
 //func (coin *Coin) CommitAll() {
 //	//var values [PCM_CAPACITY-1][]byte
@@ -28,7 +71,7 @@ type Coin struct {
 //	coin.CoinCommitment = append(coin.CoinCommitment, FULL)
 //	coin.CoinCommitment = append(coin.CoinCommitment, PedCom.Commit(values)...)
 //}
-//
+
 //// CommitPublicKey commits a public key's coin
 //func (coin *Coin) CommitPublicKey() []byte {
 //	var values [PCM_CAPACITY-1][]byte

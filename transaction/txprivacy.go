@@ -77,11 +77,28 @@ func (tx * TxPrivacy) CreateTx(
 	tx.PubKeyLastByte = pkLastByte
 
 	// create new output coins
-	for pinfo := range paymentInfo{
+	outputCoins := make([]*privacy.OutputCoin, len(paymentInfo))
 
+	// create new output coins with info: Pk, value, SND
+	for i, pInfo := range paymentInfo{
+		outputCoins[i] = new(privacy.OutputCoin)
+		outputCoins[i].CoinDetails.Value = pInfo.Amount
+		outputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
+		outputCoins[i].CoinDetails.SNDerivator = privacy.RandInt()
+	}
+
+	// if overBalance > 0, create a output coin with pk is pk's sender and value is overBalance
+	if overBalance > 0{
+		changeMoney := new(privacy.OutputCoin)
+		changeMoney.CoinDetails.Value = overBalance
+		changeMoney.CoinDetails.PublicKey, _ = privacy.DecompressKey(senderFullKey.PaymentAddress.Pk)
+		changeMoney.CoinDetails.SNDerivator = privacy.RandInt()
 	}
 
 	// create zero knowledge proof of payment
+
+
+	// encrypt coin details (Randomness)
 
 	// sign tx
 

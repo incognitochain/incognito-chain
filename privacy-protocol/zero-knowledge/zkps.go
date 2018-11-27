@@ -59,10 +59,15 @@ func (wit *PaymentWitness) Prove() {
 
 	// Summing all commitments of each input coin into one commitment and proving the knowledge of its openings
 	cmSum := make([]*privacy.EllipticPoint, numberInputCoin)
+	randSum := make([]*big.Int, numberInputCoin)
 	for i := 0; i < numberInputCoin; i++ {
 		cmSum[i] = cmSK[i]
 		cmSum[i].X, cmSum[i].Y = privacy.Curve.Add(cmSum[i].X, cmSum[i].Y, cmValue[i].X, cmValue[i].Y)
 		cmSum[i].X, cmSum[i].Y = privacy.Curve.Add(cmSum[i].X, cmSum[i].Y, cmSND[i].X, cmSND[i].Y)
+
+		randSum[i] = randSK[i]
+		randSum[i].Add(randSum[i], randValue[i])
+		randSum[i].Add(randSum[i], randSND[i])
 	}
 
 	// Call protocol proving knowledge of each sum commitment's openings
@@ -135,7 +140,7 @@ func (pro PaymentProof) Verify() bool{
 	return true
 }
 
-// GetCMList returns list CMRingSize (2^8) commitments that includes cm in blockHeight
+// GetCMList returns list CMRingSize (2^4) commitments that includes cm in blockHeight
 func GetCMList(cm *privacy.EllipticPoint, blockHeight *big.Int) []*privacy.EllipticPoint {
 	return nil
 }
