@@ -361,14 +361,14 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	genesisBlock.AddTransaction(&cmbTokenTx)
 
 	// Create genesis token tx for BOND
-	bondTokenTx := createSpecialTokenTx(
+	/*bondTokenTx := createSpecialTokenTx(
 		common.Hash(BondTokenID),
 		"Bond",
 		"BON",
 		icoParams.InitialBondToken,
 		key.KeySet.PaymentAddress,
 	)
-	genesisBlock.AddTransaction(&bondTokenTx)
+	genesisBlock.AddTransaction(&bondTokenTx)*/
 
 	// calculate merkle root tx for genesis block
 	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)

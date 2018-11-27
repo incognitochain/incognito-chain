@@ -6,6 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"math/big"
 )
 
 type TxPrivacy struct{
@@ -16,7 +17,7 @@ type TxPrivacy struct{
 
 	SigPubKey []byte           `json:"SigPubKey, omitempty"` // 64 bytes
 	Sig		    []byte           `json:"Sig, omitempty"`    // 64 bytes
-	Proof 		zkp.PaymentProof
+	Proof 		*zkp.PaymentProof
 
 	PubKeyLastByte byte `json:"AddressLastByte"`
 
@@ -60,8 +61,11 @@ func (tx * TxPrivacy) CreateTx(
 		sumInputValue += coin.CoinDetails.Value
 	}
 
+	// Calculate over balance, it will be returned to sender
+	overBalance := sumInputValue - sumOutputValue - fee
+
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
-	if sumInputValue < sumOutputValue + fee {
+	if overBalance < 0 {
 		return nil, fmt.Errorf("Input value less than output value")
 	}
 
@@ -74,24 +78,40 @@ func (tx * TxPrivacy) CreateTx(
 	tx.PubKeyLastByte = pkLastByte
 
 	// create new output coins
+	outputCoins := make([]*privacy.OutputCoin, len(paymentInfo))
+
+	// create new output coins with info: Pk, value, SND
+	for i, pInfo := range paymentInfo{
+		outputCoins[i] = new(privacy.OutputCoin)
+		outputCoins[i].CoinDetails.Value = pInfo.Amount
+		outputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
+		outputCoins[i].CoinDetails.SNDerivator = privacy.RandInt()
+	}
+
+	// if overBalance > 0, create a output coin with pk is pk's sender and value is overBalance
+	if overBalance > 0{
+		changeCoin := new(privacy.OutputCoin)
+		changeCoin.CoinDetails.Value = overBalance
+		changeCoin.CoinDetails.PublicKey, _ = privacy.DecompressKey(senderFullKey.PaymentAddress.Pk)
+		changeCoin.CoinDetails.SNDerivator = privacy.RandInt()
+
+		outputCoins = append(outputCoins, changeCoin)
+	}
 
 	// create zero knowledge proof of payment
+	witness := new(zkp.PaymentWitness)
+	witness.Set(new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins)
+	tx.Proof = witness.Prove()
+
+	// encrypt coin details (Randomness)
+	for i:=0; i< len(outputCoins); i++{
+		outputCoins[i].CoinDetailsEncrypted, _ = outputCoins[i].CoinDetails.Encrypt()
+	}
 
 	// sign tx
+	tx.SignTx(noPrivacy)
 
-
-
-
-
-
-
-
-
-
-
-
-
-	return nil, nil
+	return tx, nil
 }
 
 func (tx * TxPrivacy) SignTx(noPrivacy bool) error {

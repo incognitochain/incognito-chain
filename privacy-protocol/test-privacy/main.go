@@ -1,10 +1,14 @@
 package main
 
+<<<<<<< HEAD
 import (
 	"fmt"
 
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
+=======
+import "github.com/ninjadotorg/constant/privacy-protocol"
+>>>>>>> e529d6d7501f03faf9b6318fa162b0db96ecc263
 
 func main() {
 
@@ -19,8 +23,8 @@ func main() {
 	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
 	//fmt.Printf("\nSpending key: %v\n", spendingKey)
 	//fmt.Println(len(spendingKey))
-
-	// publicKey is compressed
+	//
+	////publicKey is compressed
 	//publicKey := privacy.GeneratePublicKey(spendingKey)
 	//fmt.Printf("\nPublic key: %v\n", publicKey)
 	//fmt.Printf("Len public key: %v\n", len(publicKey))
@@ -43,7 +47,7 @@ func main() {
 	//	fmt.Println(err)
 	//}
 	//fmt.Printf("Transmission key point decompress: %+v\n ", point)
-
+	//
 	//paymentAddress := privacy.GeneratePaymentAddress(spendingKey)
 	//fmt.Println(paymentAddress.ToBytes())
 	//fmt.Printf("tk: %v\n", paymentAddress.Tk)
@@ -164,7 +168,11 @@ func main() {
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
+<<<<<<< HEAD
 	// privacy.TestSchn()
+=======
+	//privacy.TestSchn()
+>>>>>>> e529d6d7501f03faf9b6318fa162b0db96ecc263
 	//zkp.PKComMultiRangeTest()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
@@ -176,7 +184,10 @@ func main() {
 	//	fmt.Printf("Len rand: %v\n", len(rand.Bytes()))
 	//}
 
+	/*----------------- TEST AES -----------------*/
+	privacy.TestAESCTR()
+
 	//fmt.Println(zkp.TestProofIsZero())
 	//fmt.Println(zkp.TestOpeningsProtocol())
-	fmt.Println(zkp.TestPKEqualityOfCommittedVal())
+	//fmt.Println(zkp.TestPKEqualityOfCommittedVal())
 }
