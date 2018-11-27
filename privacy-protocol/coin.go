@@ -4,6 +4,11 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+<<<<<<< HEAD
+=======
+	"fmt"
+	"golang.org/x/crypto/openpgp/elgamal"
+>>>>>>> 627ebc99d8843dac2af0f8c4bbede2236786f7f9
 	"io"
 	"math/big"
 
@@ -32,15 +37,24 @@ type InputCoin struct {
 	CoinDetails *Coin
 }
 
+<<<<<<< HEAD
 type OutputCoin struct {
 	CoinDetails          *Coin
 	CoinDetailsEncrypted CoinDetailsEncrypted
+=======
+type OutputCoin struct{
+	CoinDetails   *Coin
+	CoinDetailsEncrypted *CoinDetailsEncrypted
+>>>>>>> 627ebc99d8843dac2af0f8c4bbede2236786f7f9
 }
 
 type CoinDetailsEncrypted struct {
 	RandomEncrypted []byte
-	SymKeyEncrypted []byte
+	SymKeyEncrypted SymKeyEncrypted
 }
+ type SymKeyEncrypted struct{
+ 	C1, C2 *big.Int
+ }
 
 func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, error) {
 	/**** Generate symmetric key of AES cryptosystem,
@@ -48,6 +62,7 @@ func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, er
 	var point EllipticPoint
 	point.Randomize()
 	symKey := point.X.Bytes()
+	fmt.Printf("Len of symKey: %v\n", len(symKey))
 
 	/**** Encrypt coin details using symKey ****/
 	// just encrypt Randomness
@@ -80,12 +95,30 @@ func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, er
 	// Encrypt symKey using Transmission key's receiver with ElGamal cryptosystem
 	// prepare public key for ElGamal cryptosystem
 	pubKey := new(elgamal.PublicKey)
+<<<<<<< HEAD
 
 	encryptedCoin.SymKeyEncrypted = elgamal.Encrypt(rand.Reader, receiverTK, symKey)
+=======
+	basePoint := EllipticPoint{big.NewInt(0), big.NewInt(0)}
+	basePoint.X, basePoint.Y = Curve.Params().Gx, Curve.Params().Gy
+	pubKey.G = new(big.Int).SetBytes(basePoint.Compress())
+	pubKey.P = Curve.Params().N
+	pubKey.Y = new(big.Int).SetBytes(receiverTK)
+
+	encryptedCoin.SymKeyEncrypted.C1, encryptedCoin.SymKeyEncrypted.C2, err = elgamal.Encrypt(rand.Reader, pubKey, symKey)
+	if err != nil{
+		fmt.Println(err)
+		return nil, err
+	}
+	//encryptedCoin.SymKeyEncrypted = make([]byte, len(c1.Bytes()))
+	//encryptedCoin.SymKeyEncrypted = append(encryptedCoin.SymKeyEncrypted, c1.Bytes()...)
+	//encryptedCoin.SymKeyEncrypted = append(encryptedCoin.SymKeyEncrypted, c2.Bytes()...)
+>>>>>>> 627ebc99d8843dac2af0f8c4bbede2236786f7f9
 
 	return encryptedCoin, nil
-
 }
+
+
 
 //CommitAll commits a coin with 4 attributes (public key, value, serial number, r)
 //func (coin *Coin) CommitAll() {
