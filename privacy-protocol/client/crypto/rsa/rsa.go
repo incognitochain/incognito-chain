@@ -152,7 +152,7 @@ type PrecomputedValues struct {
 // CRTValue contains the precomputed Chinese remainder theorem values.
 type CRTValue struct {
 	Exp   *big.Int // D mod (prime-1).
-	Coeff *big.Int // R·Coeff ≡ 1 mod Prime.
+	Coeff *big.Int // Randomness·Coeff ≡ 1 mod Prime.
 	R     *big.Int // product of primes prior to this (inc p and q).
 }
 

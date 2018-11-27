@@ -59,8 +59,8 @@ var arrayPadding []MerkleHash
 
 // IncMerkleTree compactly represents a fixed height merkle tree
 type IncMerkleTree struct {
-	nodes       []MerkleHash // One hash for each height
-	left, right MerkleHash   // Leaf nodes
+	nodes       []MerkleHash // One hash for each height, hash is hash value of all nodes have same height
+	left, right MerkleHash   // Leaf nodes, they may not be appended to the tree
 }
 
 // MakeCopy creates a new merkle tree and copies data from the old one to it
@@ -125,6 +125,7 @@ func getPaddingAtDepth(d int) MerkleHash {
 
 // AddNewNode incrementally adds a new leaf node data to the merkle tree
 func (tree *IncMerkleTree) AddNewNode(hash MerkleHash) {
+
 	hashCopy := make([]byte, 32) // Make a copy to make sure the hash is not changed while using IncMerkleTree
 	copy(hashCopy, hash[:])
 	if tree.left == nil {
@@ -157,6 +158,7 @@ func (tree *IncMerkleTree) AddNewNode(hash MerkleHash) {
 			tree.nodes = append(tree.nodes, prevHash)
 		}
 	}
+	fmt.Printf("Number of nodes: %v\n", len(tree.nodes))
 }
 
 // GetRoot returns the merkle root of an unfinished tree; empty nodes are padded with default values

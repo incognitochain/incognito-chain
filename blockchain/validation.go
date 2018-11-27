@@ -472,8 +472,8 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 	if bytes.Equal(saleData.BuyingAsset, BondTokenID[:]) {
 		for _, vout := range requestTx.TxTokenData.Vouts {
 			// Check if sending asset is correct
-			if vout.BuySellResponse.AssetID != saleData.BondID {
-				return fmt.Errorf("Received asset id %s instead of %s", vout.BuySellResponse.AssetID, saleData.BondID)
+			if vout.BuySellResponse.BondID != saleData.BondID {
+				return fmt.Errorf("Received asset id %s instead of %s", vout.BuySellResponse.BondID, saleData.BondID)
 			}
 
 			// Check if receiving address is DCB's
@@ -513,8 +513,8 @@ func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction,
 	if bytes.Equal(saleData.SellingAsset, BondTokenID[:]) {
 		for _, vout := range responseTx.TxTokenData.Vouts {
 			// Check if sending asset is correct
-			if vout.BuySellResponse.AssetID != saleData.BondID {
-				return fmt.Errorf("Sending asset id %s instead of %s", vout.BuySellResponse.AssetID, saleData.BondID)
+			if vout.BuySellResponse.BondID != saleData.BondID {
+				return fmt.Errorf("Sending asset id %s instead of %s", vout.BuySellResponse.BondID, saleData.BondID)
 			}
 		}
 	}
@@ -582,5 +582,52 @@ func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCus
 			}
 		}
 	}
+	return nil
+}
+
+func (self *BlockChain) ValidateBuyFromGOVRequestTx(
+	tx transaction.Transaction,
+	chainID byte,
+) error {
+	buySellReqTx, ok := tx.(*transaction.TxBuySellRequest)
+	if !ok {
+		return fmt.Errorf("Fail parsing TxBuySellRequest transaction")
+	}
+
+	// check double spending on fee + amount tx
+	err := self.ValidateDoubleSpend(&buySellReqTx.Tx, chainID)
+	if err != nil {
+		return err
+	}
+
+	// TODO: support and validate for either bonds or govs buy requests
+
+	sellingBondsParams := self.BestState[chainID].BestBlock.Header.GOVConstitution.GOVParams.SellingBonds
+	if sellingBondsParams == nil {
+		return errors.New("SellingBonds params are not existed.")
+	}
+
+	// check if buy price againsts SellingBonds params' BondPrice is correct or not
+	if buySellReqTx.BuyPrice < sellingBondsParams.BondPrice {
+		return errors.New("Requested buy price is under SellingBonds params' buy price.")
+	}
+	return nil
+}
+
+func (self *BlockChain) ValidateBuyBackRequestTx(
+	tx transaction.Transaction,
+	chainID byte,
+) error {
+	buyBackReqTx, ok := tx.(*transaction.TxBuyBackRequest)
+	if !ok {
+		return fmt.Errorf("Fail parsing TxBuyBackRequest transaction")
+	}
+
+	// check double spending on fee + amount tx
+	err := self.ValidateDoubleSpend(buyBackReqTx.Tx, chainID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

@@ -62,7 +62,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 			for chainId, txs := range unspentTxs {
 				for _, unspent := range txs {
 					var txIndex = -1
-					// Iterate to get Tx Index of transaction in a block
+					// Iterate to get Tx index of transaction in a block
 					for i, _ := range block.Transactions {
 						txHash := unspent.Hash().String()
 						blockTxHash := block.Transactions[i].(*transaction.Tx).Hash().String()
@@ -92,10 +92,10 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		for index, tx := range block.Transactions {
 			err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
 			if err != nil {
-				Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and Index", index, ":", tx)
+				Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
 				return NewBlockChainError(UnExpectedError, err)
 			}
-			Logger.log.Infof("Transaction in block with hash", blockHash, "and Index", index, ":", tx)
+			Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
 		}
 		if err != nil {
 			return NewBlockChainError(UnExpectedError, err)

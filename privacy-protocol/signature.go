@@ -68,7 +68,7 @@ func GenerateKey() (privKey, pubKey []byte) {
 	}
 	var pubKeyPoint EllipticPoint
 	pubKeyPoint.X, pubKeyPoint.Y = Curve.ScalarBaseMult(privKey)
-	pubKey = pubKeyPoint.CompressPoint()
+	pubKey = pubKeyPoint.Compress()
 
 	return privKey, pubKey
 }

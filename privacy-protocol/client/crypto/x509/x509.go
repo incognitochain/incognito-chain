@@ -2048,7 +2048,7 @@ var emptyASN1Subject = []byte{0x30, 0}
 // The following members of template are used: AuthorityKeyId,
 // BasicConstraintsValid, DNSNames, ExcludedDNSDomains, ExtKeyUsage,
 // IsCA, KeyUsage, MaxPathLen, MaxPathLenZero, NotAfter, NotBefore,
-// PermittedDNSDomains, PermittedDNSDomainsCritical, SerialNumber,
+// PermittedDNSDomains, PermittedDNSDomainsCritical, SNDerivator,
 // SignatureAlgorithm, Subject, SubjectKeyId, and UnknownExtKeyUsage.
 //
 // The certificate is signed by parent. If parent is equal to template then the
@@ -2070,7 +2070,7 @@ func CreateCertificate(rand io.Reader, template, parent *Certificate, pub, priv 
 	}
 
 	if template.SerialNumber == nil {
-		return nil, errors.New("x509: no SerialNumber given")
+		return nil, errors.New("x509: no SNDerivator given")
 	}
 
 	hashFunc, signatureAlgorithm, err := signingParamsForPublicKey(key.Public(), template.SignatureAlgorithm)

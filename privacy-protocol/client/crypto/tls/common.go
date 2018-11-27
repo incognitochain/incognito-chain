@@ -329,8 +329,8 @@ const (
 // modified. A config may be reused; the tls package will also not
 // modify it.
 type Config struct {
-	// Rand provides the source of entropy for nonces and RSA blinding.
-	// If Rand is nil, TLS uses the cryptographic random reader in package
+	// rand provides the source of entropy for nonces and RSA blinding.
+	// If rand is nil, TLS uses the cryptographic random reader in package
 	// crypto/rand.
 	// The Reader must be safe for use by multiple goroutines.
 	Rand io.Reader

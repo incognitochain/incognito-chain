@@ -60,7 +60,7 @@ func (p *Poly) isZero() bool {
 	return false
 }
 
-// returns the degree
+// GetDegree returns the degree
 // if p = x^3 + 2x^2 + 5, GetDegree() returns 3
 func (p Poly) GetDegree() int {
 	return len(p) - 1

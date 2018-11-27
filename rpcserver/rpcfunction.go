@@ -63,8 +63,11 @@ var RpcHandler = map[string]commandHandler{
 	GetListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
 
 	// Loan tx
-	"loanparams":             RpcServer.handleGetLoanParams,
-	CreateAndSendLoanRequest: RpcServer.handleCreateAndSendLoanRequest,
+	GetLoanParams:             RpcServer.handleGetLoanParams,
+	CreateAndSendLoanRequest:  RpcServer.handleCreateAndSendLoanRequest,
+	CreateAndSendLoanResponse: RpcServer.handleCreateAndSendLoanResponse,
+	CreateAndSendLoanWithdraw: RpcServer.handleCreateAndSendLoanWithdraw,
+	CreateAndSendLoanPayment:  RpcServer.handleCreateAndSendLoanPayment,
 
 	//POS
 	GetHeader: RpcServer.handleGetHeader, // Current committee, next block committee and candidate is included in block header
@@ -85,6 +88,13 @@ var RpcHandler = map[string]commandHandler{
 	SendRawVoteBoardGOVTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
 	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
 	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
+	GetGOVParams:                         RpcServer.handleGetGOVParams,
+	GetDCBParams:                         RpcServer.handleGetDCBParams,
+	GetDCBConstitution:                   RpcServer.handleGetDCBConstitution,
+	GetGOVConstitution:                   RpcServer.handleGetGOVConstitution,
+
+	// gov
+	GetBondTypes: RpcServer.handleGetBondTypes,
 }
 
 // Commands that are available to a limited user
@@ -1620,19 +1630,6 @@ func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, c
 		return nil, errors.New("Failed to sign the custom token")
 	}
 	return hex.EncodeToString(jsSignByteArray), nil
-}
-
-// handleGetListDCBBoard - return list payment address of DCB board
-func (self RpcServer) handleGetListDCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys, nil
-}
-
-func (self RpcServer) handleGetListCBBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.CBBoardPubKeys, nil
-}
-
-func (self RpcServer) handleGetListGOVBoard(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys, nil
 }
 
 // payment address -> balance of all custom token

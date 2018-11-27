@@ -40,8 +40,8 @@ const (
 	CustomToken                         = "customtoken"
 	CheckHashValue                      = "checkhashvalue"
 	GetListCustomTokenBalance           = "getlistcustomtokenbalance"
-
-	GetHeader = "getheader"
+	GetLoanParams                       = "loanparams"
+	GetHeader                           = "getheader"
 
 	// Wallet rpc cmd
 	ListAccounts           = "listaccounts"
@@ -63,6 +63,10 @@ const (
 	GetListDCBBoard                = "getlistdcbboard"
 	GetListCBBoard                 = "getlistcbboard"
 	GetListGOVBoard                = "getlistgovboard"
+	GetGOVParams                   = "getgovparams"
+	GetDCBParams                   = "getdcbparams"
+	GetGOVConstitution             = "getgovconstitution"
+	GetDCBConstitution             = "getdcbconstitution"
 
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"
@@ -71,4 +75,7 @@ const (
 	SendRawVoteBoardGOVTx                = "sendrawvoteboardgovtx"
 	CreateRawVoteGOVBoardTx              = "createrawvotegovboardtx"
 	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
+
+	// gov
+	GetBondTypes = "getbondtypes"
 )

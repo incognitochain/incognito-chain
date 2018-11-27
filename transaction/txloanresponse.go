@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
+	"encoding/hex"
 )
 
 type ValidLoanResponse int
@@ -17,6 +18,18 @@ type LoanResponse struct {
 	LoanID     []byte
 	Response   ValidLoanResponse
 	ValidUntil int32
+}
+
+func NewLoanResponse(data map[string]interface{}) (*LoanResponse) {
+	result := LoanResponse{
+		ValidUntil: uint64(data["ValidUntil"].(float64)),
+	}
+	s, _ := hex.DecodeString(data["LoanID"].(string))
+	result.LoanID = s
+
+	result.Response = ValidLoanResponse(int(data["Response"].(float64)))
+
+	return &result
 }
 
 type TxLoanResponse struct {
