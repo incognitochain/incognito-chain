@@ -10,33 +10,35 @@ const (
 	CMRingSize = 16
 )
 
-type PaymentWitness struct{
+type PaymentWitness struct {
 	spendingKey *big.Int
-	inputCoins []*privacy.InputCoin
+	inputCoins  []*privacy.InputCoin
 	outputCoins []*privacy.OutputCoin
 }
 
 // BEGIN--------------------------------------------------------------------------------------------------------------------------------------------
 
-// ProofOfPayment contains all of PoK for sending coin
+// PaymentProof contains all of PoK for sending coin
 type PaymentProof struct {
 	ComMultiRangeProof *PKComMultiRangeProof
 	ComOpeningsProof   *PKComOpeningsProof
 	ComZeroOneProof    *PKComZeroOneProof
 	ComZeroProof       *PKComZeroProof
-	InEqualOutProof    *PKInEqualOutProof
+	// InEqualOutProof    *PKInEqualOutProof
+	EqualityOfCommittedValProof *PKEqualityOfCommittedValProof
+	OneOfManyProof              *PKOneOfManyProof
 }
 
 // END----------------------------------------------------------------------------------------------------------------------------------------------
 
-
-func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin){
+func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 	wit.spendingKey = spendingKey
 	wit.inputCoins = inputCoins
 	wit.outputCoins = outputCoins
 }
+
 // Prove creates big proof
-func (wit *PaymentWitness) Prove() *PaymentProof{
+func (wit *PaymentWitness) Prove() *PaymentProof {
 
 	numberInputCoin := len(wit.inputCoins)
 	// Commit each component of coins being spent
@@ -138,7 +140,23 @@ func (wit *PaymentWitness) Prove() *PaymentProof{
 	return nil
 }
 
-func (pro PaymentProof) Verify() bool{
+func (pro PaymentProof) Verify() bool {
+	if !pro.ComOpeningsProof.Verify() {
+		return false
+	}
+	//if !pro.ComMultiRangeProof
+	if !pro.ComZeroOneProof.Verify() {
+		return false
+	}
+	if !pro.ComZeroProof.Verify() {
+		return false
+	}
+	if !pro.EqualityOfCommittedValProof.Verify() {
+		return false
+	}
+	if !pro.OneOfManyProof.Verify() {
+		return false
+	}
 	return true
 }
 

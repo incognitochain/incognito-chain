@@ -4,9 +4,10 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"golang.org/x/crypto/openpgp/elgamal"
 	"io"
 	"math/big"
+
+	"golang.org/x/crypto/openpgp/elgamal"
 )
 
 type SerialNumber []byte   //33 bytes
@@ -31,20 +32,19 @@ type InputCoin struct {
 	CoinDetails *Coin
 }
 
-type OutputCoin struct{
-	CoinDetails   *Coin
+type OutputCoin struct {
+	CoinDetails          *Coin
 	CoinDetailsEncrypted CoinDetailsEncrypted
 }
 
-type CoinDetailsEncrypted struct{
+type CoinDetailsEncrypted struct {
 	RandomEncrypted []byte
 	SymKeyEncrypted []byte
 }
 
-
-func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, error){
+func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, error) {
 	/**** Generate symmetric key of AES cryptosystem,
-				it is used for encryption coin details ****/
+	it is used for encryption coin details ****/
 	var point EllipticPoint
 	point.Randomize()
 	symKey := point.X.Bytes()
@@ -82,7 +82,6 @@ func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, er
 	pubKey := new(elgamal.PublicKey)
 
 	encryptedCoin.SymKeyEncrypted = elgamal.Encrypt(rand.Reader, receiverTK, symKey)
-
 
 	return encryptedCoin, nil
 
@@ -136,6 +135,3 @@ func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, er
 //	SpendingKey SpendingKey
 //	UnspentCoinList map[Coin]big.Int
 //}
-
-
-

@@ -7,6 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
+// PKComZeroProof contains Proof's value
 type PKComZeroProof struct {
 	commitmentValue *privacy.EllipticPoint //statement
 	index           *byte                  //statement
@@ -14,6 +15,7 @@ type PKComZeroProof struct {
 	z               *big.Int
 }
 
+// PKComZeroWitness contains Witness's value
 type PKComZeroWitness struct {
 	commitmentValue *privacy.EllipticPoint //statement
 	index           *byte                  //statement
@@ -95,9 +97,6 @@ func (wit PKComZeroWitness) Prove() (*PKComZeroProof, error) {
 	//var x big.Int
 	//s is a random number in Zp, with p is N, which is order of base point of privacy.Curve
 	sRnd, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
-	// if err != nil {
-	// 	panic(err)
-	// }
 
 	//Calculate B = commitmentZeroS = comm_ck(0,s,Index)
 	commitmentZeroS := privacy.PedCom.CommitAtIndex(big.NewInt(0), sRnd, *wit.index)
@@ -107,7 +106,7 @@ func (wit PKComZeroWitness) Prove() (*PKComZeroProof, error) {
 
 	//Calculate z=r*x + s (mod N)
 	z := big.NewInt(0)
-	*z = *(wit.commitmentRnd)
+	z.Set(wit.commitmentRnd)
 	z.Mul(z, xChallenge)
 	z.Mod(z, privacy.Curve.Params().N)
 	z.Add(z, sRnd)
@@ -137,8 +136,8 @@ func (pro *PKComZeroProof) Verify() bool {
 	verifyPoint.X = big.NewInt(0)
 	verifyPoint.Y = big.NewInt(0)
 	//Set verifyPoint = A
-	*(verifyPoint.X) = *(pro.commitmentValue.X)
-	*(verifyPoint.Y) = *(pro.commitmentValue.Y)
+	verifyPoint.X.Set(pro.commitmentValue.X)
+	verifyPoint.Y.Set(pro.commitmentValue.Y)
 	//verifyPoint = verifyPoint.x
 	verifyPoint.X, verifyPoint.Y = privacy.Curve.ScalarMult(verifyPoint.X, verifyPoint.Y, xChallenge.Bytes())
 	//verifyPoint = verifyPoint + B

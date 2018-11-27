@@ -14,7 +14,7 @@ import (
 //	Proof   PKComZeroOneProof
 //}
 
-// PKComZeroOneProof contains Proof's value
+// PKComZeroOneWitness contains Witness's value
 type PKComZeroOneWitness struct {
 	commitedValue *big.Int
 	rand          *big.Int
