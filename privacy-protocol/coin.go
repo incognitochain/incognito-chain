@@ -72,10 +72,11 @@ type Coin struct {
 // InputCoin represents a input coin of transaction
 type InputCoin struct {
 	BlockHeight *big.Int
-	CoinInfo    *Coin
+	CoinDetails *Coin
 }
 
 type OutputCoin struct{
-	CoinInfo *Coin
+	CoinDetails   *Coin
+	CoinDetailsEncrypted []byte
 }
 

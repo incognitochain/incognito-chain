@@ -8,18 +8,18 @@ import (
 )
 
 type TxPrivacy struct{
-	//Proof zkp.ZKProof
-
+	Proof zkp.ZKProof
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
 
-	Descs    []*JoinSplitDesc `json:"Descs"`
-	JSPubKey []byte           `json:"JSPubKey,omitempty"` // 64 bytes
-	JSSig    []byte           `json:"JSSig,omitempty"`    // 64 bytes
+	SigPubKey []byte           `json:"JSPubKey,omitempty"` // 64 bytes
+	Sig		    []byte           `json:"JSSig,omitempty"`    // 64 bytes
 
-	AddressLastByte byte `json:"AddressLastByte"`
+	InputNotes
+
+	PubKeyLastByte byte `json:"AddressLastByte"`
 
 	txId       *common.Hash
 	sigPrivKey *privacy.SpendingKey // is always private property of struct
@@ -28,7 +28,10 @@ type TxPrivacy struct{
 	// and is used inside response txs
 	// so that we can determine pair of req/res txs
 	// for example, BuySellRequestTx/BuySellResponseTx
-	RequestedTxID *common.Hash
+	//RequestedTxID *common.Hash
+
+	// all input of verify function
+	// outputcoin []OutputCoin
 }
 
 func (tx * TxPrivacy) CreateTx(
@@ -55,7 +58,7 @@ func (tx * TxPrivacy) CreateTx(
 	// Calculate sum of all input coins' value
 	var sumInputValue uint64
 	for _, coin := range inputCoins {
-		sumInputValue += coin.CoinInfo.Value
+		sumInputValue += coin.CoinDetails.Value
 	}
 
 	// Check if sum of input coins' value more than or equal to sum of output coins' value and tx fee
@@ -77,3 +80,15 @@ func (tx * TxPrivacy) CreateTx(
 
 	return nil, nil
 }
+
+func (tx * TxPrivacy) SignTx(noPrivacy bool) error {
+	if noPrivacy{
+		//using ECDSA
+	} else{
+		//using Schnorr
+	}
+
+	return nil
+}
+
+
