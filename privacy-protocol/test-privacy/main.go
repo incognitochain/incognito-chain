@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"math/big"
 )
 
 func main() {
@@ -20,8 +20,8 @@ func main() {
 	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
 	//fmt.Printf("\nSpending key: %v\n", spendingKey)
 	//fmt.Println(len(spendingKey))
-
-	// publicKey is compressed
+	//
+	////publicKey is compressed
 	//publicKey := privacy.GeneratePublicKey(spendingKey)
 	//fmt.Printf("\nPublic key: %v\n", publicKey)
 	//fmt.Printf("Len public key: %v\n", len(publicKey))
@@ -44,7 +44,7 @@ func main() {
 	//	fmt.Println(err)
 	//}
 	//fmt.Printf("Transmission key point decompress: %+v\n ", point)
-
+	//
 	//paymentAddress := privacy.GeneratePaymentAddress(spendingKey)
 	//fmt.Println(paymentAddress.ToBytes())
 	//fmt.Printf("tk: %v\n", paymentAddress.Tk)
@@ -165,7 +165,7 @@ func main() {
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
-	privacy.TestSchn()
+	//privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
@@ -177,7 +177,25 @@ func main() {
 	//	fmt.Printf("Len rand: %v\n", len(rand.Bytes()))
 	//}
 
+	/*----------------- TEST AES -----------------*/
+	//privacy.TestAESCTR()
+
+	/*----------------- TEST ENCRYPT/DECRYPT COIN -----------------*/
+	coin := new(privacy.Coin)
+	coin.Randomness = privacy.RandInt()
+
+	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	//fmt.Printf("\nSpending key: %v\n", spendingKey)
+	//fmt.Println(len(spendingKey))
+	keySet := cashec.KeySet{}
+	keySet.ImportFromPrivateKey(&spendingKey)
+
+	encryptedData, _ := coin.Encrypt(keySet.PaymentAddress.Tk)
+
+	fmt.Printf("Encrypted data: %+v\n", encryptedData )
+
+	fmt.Printf("bit len N: %v\n", privacy.Curve.Params().N.BitLen())
 	//fmt.Println(zkp.TestProofIsZero())
 	//fmt.Println(zkp.TestOpeningsProtocol())
-	fmt.Println(zkp.TestPKEqualityOfCommittedVal())
+	//fmt.Println(zkp.TestPKEqualityOfCommittedVal())
 }

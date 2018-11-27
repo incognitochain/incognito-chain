@@ -33,8 +33,8 @@ const (
 
 // board addresses
 var (
-	DCBAddress = []byte{}
-	GOVAddress = []byte{}
+	DCBAddress = "1Uv1fjA1FjsLTp37i1j5ZVpghx3maaX6YM5WQkbtrJr26FyGwxKznAM7ZRN2AsE4iHwNjiWGLbcUt2JudBBek18cB5YV22EJ38PjcXqza"
+	GOVAddress = "1Uv1fjA1FjsLTp37i1j5ZVpghx3maaX6YM5WQkbtrJr26FyGwxKznAM7ZRN2AsE4iHwNjiWGLbcUt2JudBBek18cB5YV22EJ38PjcXqza"
 )
 
 // special token ids (aka. PropertyID in custom token)
@@ -43,7 +43,7 @@ var (
 	DCBTokenID  = [common.HashSize]byte{1}
 	GOVTokenID  = [common.HashSize]byte{2}
 	CMBTokenID  = [common.HashSize]byte{3}
-	BondTokenID = [common.HashSize]byte{4}
+	BondTokenID = [common.HashSize]byte{0, 0, 0, 0, 0, 0, 0, 0}
 )
 
 const (
