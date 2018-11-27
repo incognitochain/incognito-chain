@@ -135,7 +135,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByPrivateKey(&senderKey.KeySet.PrivateKey, transaction.SortByAmount, false)
+	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByPrivateKey(&senderKey.KeySet, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
@@ -481,7 +481,7 @@ func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeC
 		return nil, nil
 	}
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
-	result.Account = accountParam
+	result.PaymentAddress = accountParam
 	accountPaymentAddress := account.KeySet.PaymentAddress
 	temps, err := self.config.BlockChain.ListCustomToken()
 	if err != nil {
@@ -499,6 +499,7 @@ func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeC
 		}
 		item.Amount = res[hex.EncodeToString(accountPaymentAddress.Pk)]
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
+		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
 	return result, nil
 }
