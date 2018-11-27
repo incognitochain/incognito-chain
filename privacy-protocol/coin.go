@@ -71,7 +71,7 @@ func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, er
 	// real.) If you want to convert a passphrase to a key, use a suitable
 	// package like bcrypt or scrypt.
 	//key, _ := hex.DecodeString("6368616e676520746869732070617373")
-	plaintext := []byte("some plaintext")
+	plaintext := coin.Randomness.Bytes()
 
 	block, err := aes.NewCipher(symKey)
 	if err != nil {

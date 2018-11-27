@@ -27,16 +27,9 @@ type PKComMultiRangeWitness struct {
 	Values [] *big.Int
 }
 
-type PKComMultiRangeProtocol struct {
-	Witness PKComMultiRangeWitness
-	Proof   PKComMultiRangeProof
-}
-func (pro *PKComMultiRangeProtocol) SetWitness(witness PKComMultiRangeWitness) {
-	pro.Witness = witness
-	VecLength = 64*len(witness.Values)
-}
-func (pro *PKComMultiRangeProtocol) SetProof(proof PKComMultiRangeProof) {
-	pro.Proof = proof
+func (wit *PKComMultiRangeWitness) Set(v []*big.Int){
+	VecLength = 64*len(v)
+	wit.Values = v
 }
 
 
@@ -116,12 +109,12 @@ changes:
 {(g, h \in G, \textbf{V} \in G^m ; \textbf{v, \gamma} \in Z_p^m) :
 	V_j = h^{\gamma_j}g^{v_j} \wedge v_j \in [0, 2^n - 1] \forall j \in [1, m]}
 */
-func (pro *PKComMultiRangeProtocol) Prove() PKComMultiRangeProof {
+func (wit *PKComMultiRangeWitness) Prove() PKComMultiRangeProof {
 	// RangeProofParams.V has the total number of values and bits we can support
 
 	MRPResult := PKComMultiRangeProof{}
 
-	m := len(pro.Witness.Values)
+	m := len(wit.Values)
 	bitsPerValue := RangeProofParams.V / m
 
 	// we concatenate the binary representation of the values
@@ -133,8 +126,8 @@ func (pro *PKComMultiRangeProtocol) Prove() PKComMultiRangeProof {
 	aLConcat := make([]*big.Int, RangeProofParams.V)
 	aRConcat := make([]*big.Int, RangeProofParams.V)
 
-	for j := range pro.Witness.Values {
-		v := pro.Witness.Values[j]
+	for j := range wit.Values {
+		v := wit.Values[j]
 		if v.Cmp(big.NewInt(0)) == -1 {
 			fmt.Println("Value is below range! Not proving")
 		}
@@ -174,7 +167,7 @@ func (pro *PKComMultiRangeProtocol) Prove() PKComMultiRangeProof {
 	rho := new(big.Int).SetBytes(privacy.RandBytes(32))
 	rho.Mod(alpha,privacy.Curve.Params().N)
 
-	S := TwoVectorPCommitWithGens(RangeProofParams.BPG, RangeProofParams.BPH, sL, sR).AddPoint(RangeProofParams.H.ScalarMulPoint((rho)))
+	S := TwoVectorPCommitWithGens(RangeProofParams.BPG, RangeProofParams.BPH, sL, sR).AddPoint(RangeProofParams.H.ScalarMulPoint(rho))
 	MRPResult.S = S
 
 	chal1s256 := blake2b.Sum256([]byte(A.X.String() + A.Y.String()))
@@ -215,7 +208,7 @@ func (pro *PKComMultiRangeProtocol) Prove() PKComMultiRangeProof {
 		vz2 = new(big.Int).Add(vz2,
 			new(big.Int).Mul(
 				PowerOfCZ[j],
-				new(big.Int).Mul(pro.Witness.Values[j], z2)))
+				new(big.Int).Mul(wit.Values[j], z2)))
 		vz2 = new(big.Int).Mod(vz2, privacy.Curve.Params().N)
 	}
 
@@ -278,7 +271,7 @@ func (pro *PKComMultiRangeProtocol) Prove() PKComMultiRangeProof {
 	HPrime := make([]privacy.EllipticPoint, len(RangeProofParams.BPH))
 
 	for i := range HPrime {
-		HPrime[i] = RangeProofParams.BPH[i].ScalarMulPoint((new(big.Int).ModInverse(PowerOfCY[i], privacy.Curve.Params().N)))
+		HPrime[i] = RangeProofParams.BPH[i].ScalarMulPoint(new(big.Int).ModInverse(PowerOfCY[i], privacy.Curve.Params().N))
 	}
 
 	P := TwoVectorPCommitWithGens(RangeProofParams.BPG, HPrime, left, right)
@@ -294,9 +287,9 @@ PKComMultiRangeProof Verify
 Takes in a PKComMultiRangeProof and verifies its correctness
 
 */
-func MRPVerify(mrp PKComMultiRangeProof) bool {
+func (pro *PKComMultiRangeProof) Verify() bool {
 
-	m := len(mrp.Comms)
+	m := len(pro.Comms)
 	if (m==0) {
 		return false
 	}
@@ -307,21 +300,21 @@ func MRPVerify(mrp PKComMultiRangeProof) bool {
 	// check 2 commitment generation is also different
 
 	// verify the challenges
-	chal1s256 := blake2b.Sum256([]byte(mrp.A.X.String() + mrp.A.Y.String()))
+	chal1s256 := blake2b.Sum256([]byte(pro.A.X.String() + pro.A.Y.String()))
 	cy := new(big.Int).SetBytes(chal1s256[:])
-	if cy.Cmp(mrp.Cy) != 0 {
+	if cy.Cmp(pro.Cy) != 0 {
 		fmt.Println("MRPVerify - Challenge Cy failing!")
 		return false
 	}
-	chal2s256 := blake2b.Sum256([]byte(mrp.S.X.String() + mrp.S.Y.String()))
+	chal2s256 := blake2b.Sum256([]byte(pro.S.X.String() + pro.S.Y.String()))
 	cz := new(big.Int).SetBytes(chal2s256[:])
-	if cz.Cmp(mrp.Cz) != 0 {
+	if cz.Cmp(pro.Cz) != 0 {
 		fmt.Println("MRPVerify - Challenge Cz failing!")
 		return false
 	}
-	chal3s256 := blake2b.Sum256([]byte(mrp.T1.X.String() + mrp.T1.Y.String() + mrp.T2.X.String() + mrp.T2.Y.String()))
+	chal3s256 := blake2b.Sum256([]byte(pro.T1.X.String() + pro.T1.Y.String() + pro.T2.X.String() + pro.T2.Y.String()))
 	cx := new(big.Int).SetBytes(chal3s256[:])
-	if cx.Cmp(mrp.Cx) != 0 {
+	if cx.Cmp(pro.Cx) != 0 {
 		fmt.Println("RPVerify - Challenge Cx failing!")
 		return false
 	}
@@ -330,7 +323,7 @@ func MRPVerify(mrp PKComMultiRangeProof) bool {
 	PowersOfY := PowerVector(RangeProofParams.V, cy)
 
 	// t_hat * G + tau * H
-	lhs := RangeProofParams.G.ScalarMulPoint(mrp.Th).AddPoint(RangeProofParams.H.ScalarMulPoint(mrp.Tau))
+	lhs := RangeProofParams.G.ScalarMulPoint(pro.Th).AddPoint(RangeProofParams.H.ScalarMulPoint(pro.Tau))
 
 	// z^2 * \bold{z}^m \bold{V} + delta(y,z) * G + x * T1 + x^2 * T2
 	CommPowers := RangeProofParams.Zero()
@@ -338,12 +331,12 @@ func MRPVerify(mrp PKComMultiRangeProof) bool {
 	z2 := new(big.Int).Mod(new(big.Int).Mul(cz, cz), privacy.Curve.Params().N)
 
 	for j := 0; j < m; j++ {
-		CommPowers = CommPowers.AddPoint(mrp.Comms[j].ScalarMulPoint(new(big.Int).Mul(z2, PowersOfZ[j])))
+		CommPowers = CommPowers.AddPoint(pro.Comms[j].ScalarMulPoint(new(big.Int).Mul(z2, PowersOfZ[j])))
 	}
 
 	rhs := RangeProofParams.G.ScalarMulPoint(DeltaMRP(PowersOfY, cz, m)).AddPoint(
-		mrp.T1.ScalarMulPoint(cx)).AddPoint(
-		mrp.T2.ScalarMulPoint(new(big.Int).Mul(cx, cx))).AddPoint(CommPowers)
+		pro.T1.ScalarMulPoint(cx)).AddPoint(
+		pro.T2.ScalarMulPoint(new(big.Int).Mul(cx, cx))).AddPoint(CommPowers)
 
 	if !lhs.IsEqual(rhs) {
 		fmt.Println("MRPVerify - Uh oh! Check line (63) of verification")
@@ -379,17 +372,17 @@ func MRPVerify(mrp PKComMultiRangeProof) bool {
 
 	// without subtracting this value should equal muCH + l[i]G[i] + r[i]H'[i]
 	// we want to make sure that the innerproduct checks out, so we subtract it
-	tmp,_:=RangeProofParams.H.ScalarMulPoint(mrp.Mu).Inverse()
-	P := mrp.A.AddPoint(mrp.S.ScalarMulPoint(cx)).AddPoint(tmp1).AddPoint(tmp2).AddPoint(*tmp)
+	tmp,_:=RangeProofParams.H.ScalarMulPoint(pro.Mu).Inverse()
+	P := pro.A.AddPoint(pro.S.ScalarMulPoint(cx)).AddPoint(tmp1).AddPoint(tmp2).AddPoint(*tmp)
 	//fmt.Println(P)
 
-	if !InnerProductVerifyFast(mrp.Th, P, RangeProofParams.U, RangeProofParams.BPG, HPrime, mrp.IPP) {
+	if !InnerProductVerifyFast(pro.Th, P, RangeProofParams.U, RangeProofParams.BPG, HPrime, pro.IPP) {
 		fmt.Println("MRPVerify - Uh oh! Check line (65) of verification!")
 		return false
 	}
 	return true
 }
-func PKComMultiRangeTest() {
+func TestPKComMultiRange() {
 	test:=8
 	values := make([]*big.Int,test)
 	for i:=0;i<test;i++{
@@ -401,12 +394,10 @@ func PKComMultiRangeTest() {
 	//values := []*big.Int{big.NewInt(5136325419070411678), big.NewInt()}
 	var witness PKComMultiRangeWitness
 	witness.Values = values
-	var zk PKComMultiRangeProtocol
-	zk.SetWitness(witness)
-	RangeProofParams = NewECPrimeGroupKey(64 * len(values))
+		RangeProofParams = NewECPrimeGroupKey(64 * len(values))
 	// Testing smallest number in range
-	proof:=zk.Prove()
-	if MRPVerify(proof) {
+	proof:=witness.Prove()
+	if proof.Verify() {
 		fmt.Println("Multi Range Proof Verification works")
 	} else {
 		fmt.Println("***** Multi Range Proof FAILURE")
