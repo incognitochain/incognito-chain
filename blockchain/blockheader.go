@@ -70,9 +70,10 @@ type BlockHeader struct {
 	DCBConstitution DCBConstitution
 	CBParams        CBParams
 
-	DCBGovernor    DCBGovernor
-	GOVGovernor    GOVGovernor
-	CBBoardPubKeys []string
+	// BOARD
+	DCBGovernor DCBGovernor
+	GOVGovernor GOVGovernor
+	CMBGovernor CMBGovernor
 
 	LoanParams []transaction.LoanParams // params for collateralized loans of Constant
 

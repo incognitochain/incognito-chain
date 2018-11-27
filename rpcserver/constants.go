@@ -32,16 +32,16 @@ const (
 	CreateAndSendLoanWithdraw           = "createandsendloanwithdraw"
 	GetMempoolInfo                      = "getmempoolinfo"
 	GetCommitteeCandidateList           = "getcommitteecandidate"
-	RetrieveCommitteeCandidate          = "retrievecommitteecandidate"
-	GetBlockProducerList                = "getblockproducer"
-	ListUnspentCustomToken              = "listunspentcustomtoken"
-	GetTransactionByHash                = "gettransactionbyhash"
-	ListCustomToken                     = "listcustomtoken"
-	CustomToken                         = "customtoken"
-	CheckHashValue                      = "checkhashvalue"
-	GetListCustomTokenBalance           = "getlistcustomtokenbalance"
-
-	GetHeader = "getheader"
+	RetrieveCommitteeCandidate = "retrievecommitteecandidate"
+	GetBlockProducerList       = "getblockproducer"
+	ListUnspentCustomToken     = "listunspentcustomtoken"
+	GetTransactionByHash       = "gettransactionbyhash"
+	ListCustomToken            = "listcustomtoken"
+	CustomToken                = "customtoken"
+	CheckHashValue             = "checkhashvalue"
+	GetListCustomTokenBalance  = "getlistcustomtokenbalance"
+	GetLoanParams              = "loanparams"
+	GetBlockHeader             = "getheader"
 
 	// Wallet rpc cmd
 	ListAccounts           = "listaccounts"
@@ -63,6 +63,10 @@ const (
 	GetListDCBBoard                = "getlistdcbboard"
 	GetListCBBoard                 = "getlistcbboard"
 	GetListGOVBoard                = "getlistgovboard"
+	GetGOVParams                   = "getgovparams"
+	GetDCBParams                   = "getdcbparams"
+	GetGOVConstitution             = "getgovconstitution"
+	GetDCBConstitution             = "getdcbconstitution"
 
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"
@@ -71,4 +75,7 @@ const (
 	SendRawVoteBoardGOVTx                = "sendrawvoteboardgovtx"
 	CreateRawVoteGOVBoardTx              = "createrawvotegovboardtx"
 	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
+
+	// gov
+	GetBondTypes = "getbondtypes"
 )
