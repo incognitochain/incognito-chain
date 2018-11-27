@@ -1,5 +1,7 @@
 package main
 
+import "github.com/ninjadotorg/constant/privacy-protocol"
+
 func main() {
 
 	// fmt.Printf("N: %X\n", privacy-protocol.Curve.Params().N)
@@ -169,6 +171,9 @@ func main() {
 	//	fmt.Printf("rand: %v\n", rand)
 	//	fmt.Printf("Len rand: %v\n", len(rand.Bytes()))
 	//}
+
+	/*----------------- TEST AES -----------------*/
+	privacy.TestAESCTR()
 
 	//fmt.Println(zkp.TestProofIsZero())
 	//fmt.Println(zkp.TestOpeningsProtocol())

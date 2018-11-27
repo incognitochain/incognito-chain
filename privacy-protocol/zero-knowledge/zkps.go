@@ -96,6 +96,7 @@ func (wit *PaymentWitness) Prove() *PaymentProof{
 	// Proving that serial number is derived from the committed derivator
 
 	// Proving that output values do not exceed v_max
+	//
 
 	//BEGIN--------------------------------------------------------------------------------------------------------------------------------------------
 

@@ -105,7 +105,7 @@ func (tx * TxPrivacy) CreateTx(
 
 	// encrypt coin details (Randomness)
 	for i:=0; i< len(outputCoins); i++{
-		outputCoins[i].CoinDetailsEncrypted = outputCoins[i].CoinDetails.Encrypt()
+		outputCoins[i].CoinDetailsEncrypted, _ = outputCoins[i].CoinDetails.Encrypt()
 	}
 
 	// sign tx

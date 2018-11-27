@@ -9,7 +9,7 @@ import (
 	"crypto/cipher"
 )
 
-func ExampleNewCTR() {
+func TestAESCTR() {
 	// Load your secret key from a safe place and reuse it across multiple
 	// NewCipher calls. (Obviously don't use this example key for anything
 	// real.) If you want to convert a passphrase to a key, use a suitable

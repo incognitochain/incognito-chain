@@ -1,7 +1,11 @@
 package privacy
 
 import (
-	"encoding/json"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"golang.org/x/crypto/openpgp/elgamal"
+	"io"
 	"math/big"
 )
 
@@ -21,35 +25,24 @@ type Coin struct {
 	Info           []byte
 }
 
-func (coin Coin) CoinToJson() []byte {
-	var tmpnote struct {
-		Value        uint64
-		Rho, R, Memo []byte
-	}
-	tmpnote.Value = note.Value
-	tmpnote.Rho = note.Rho
-	tmpnote.R = note.R
-	tmpnote.Memo = note.Memo
-
-	noteJson, err := json.Marshal(&tmpnote)
-	if err != nil {
-		return []byte{}
-	}
-	// fmt.Printf("%s", noteJson)
-	return noteJson
+// InputCoin represents a input coin of transaction
+type InputCoin struct {
+	BlockHeight *big.Int
+	CoinDetails *Coin
 }
 
-func ParseJsonToNote(jsonnote []byte) (*Note, error) {
-	var note Note
-	err := json.Unmarshal(jsonnote, &note)
-	if err != nil {
-		return nil, err
-	}
-	// fmt.Println(note)
-	return &note, nil
+type OutputCoin struct{
+	CoinDetails   *Coin
+	CoinDetailsEncrypted CoinDetailsEncrypted
 }
 
-func (coin *Coin) Encrypt() []byte{
+type CoinDetailsEncrypted struct{
+	RandomEncrypted []byte
+	SymKeyEncrypted []byte
+}
+
+
+func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, error){
 	/**** Generate symmetric key of AES cryptosystem,
 				it is used for encryption coin details ****/
 	var point EllipticPoint
@@ -57,10 +50,41 @@ func (coin *Coin) Encrypt() []byte{
 	symKey := point.X.Bytes()
 
 	/**** Encrypt coin details using symKey ****/
-	// Convert coin details from struct to bytes array
+	// just encrypt Randomness
+	// Load your secret key from a safe place and reuse it across multiple
+	// NewCipher calls. (Obviously don't use this example key for anything
+	// real.) If you want to convert a passphrase to a key, use a suitable
+	// package like bcrypt or scrypt.
+	//key, _ := hex.DecodeString("6368616e676520746869732070617373")
+	plaintext := []byte("some plaintext")
+
+	block, err := aes.NewCipher(symKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// The IV needs to be unique, but not secure. Therefore it's common to
+	// include it at the beginning of the ciphertext.
+	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		panic(err)
+	}
+
+	stream := cipher.NewCTR(block, iv)
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintext)
+
+	encryptedCoin := new(CoinDetailsEncrypted)
+	encryptedCoin.RandomEncrypted = ciphertext
 
 	// Encrypt symKey using Transmission key's receiver with ElGamal cryptosystem
-	return nil
+	// prepare public key for ElGamal cryptosystem
+	pubKey := new(elgamal.PublicKey)
+
+	encryptedCoin.SymKeyEncrypted = elgamal.Encrypt(rand.Reader, receiverTK, symKey)
+
+
+	return encryptedCoin, nil
 
 }
 
@@ -113,14 +137,5 @@ func (coin *Coin) Encrypt() []byte{
 //	UnspentCoinList map[Coin]big.Int
 //}
 
-// InputCoin represents a input coin of transaction
-type InputCoin struct {
-	BlockHeight *big.Int
-	CoinDetails *Coin
-}
 
-type OutputCoin struct{
-	CoinDetails   *Coin
-	CoinDetailsEncrypted []byte
-}
 
