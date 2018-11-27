@@ -5,7 +5,14 @@ import (
 	"math/big"
 )
 
-// ElGamalPublicKeyEncryption ...
+// ElGamalPublicKeyEncryption
+// PrivateKey sk <-- Zn
+// PublicKey  pk <-- G*sk
+// Plaintext M is a EllipticPoint
+// Ciphertext contains 2 EllipticPoint R, C
+// R = G*k
+// C = pk*k + M
+// k <-- Zn is a secret random number
 type ElGamalPublicKeyEncryption interface {
 	PubKeyGen() *ElGamalPubKey
 	ElGamalEnc(plainPoint *EllipticPoint) *ElGamalCipherText
