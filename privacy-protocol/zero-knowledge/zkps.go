@@ -93,6 +93,10 @@ func (wit *PaymentWitness) Prove() {
 	// Proving that output values do not exceed v_max
 
 	//BEGIN--------------------------------------------------------------------------------------------------------------------------------------------
+
+	// Calculate COMM(sk,r1)+COMM(snd,r2)
+	// Calculate G[x]*(1/(sk+snd))
+
 	// Proving that sum of inputs equals sum of outputs
 	// prove ( cmvaluein cmvalueout) (commit + s...)
 	cmValueIn := new(privacy.EllipticPoint)
