@@ -110,15 +110,10 @@ func GenerateReceivingKey(spendingKey []byte) ReceivingKey {
 // GenerateTransmissionKey computes a transmission key corresponding with receivingKey
 // Tk : 33 bytes
 func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
-	var p, generator EllipticPoint
-	//random := RandBytes(256)
-	random := [32]byte{2}
-	//create new generator from base generator
-	generator.X, generator.Y = Curve.ScalarBaseMult(random[:])
+	var p EllipticPoint
 
-	p.X, p.Y = Curve.ScalarMult(generator.X, generator.Y, receivingKey)
+	p.X, p.Y = Curve.ScalarBaseMult(receivingKey)
 	fmt.Printf("Transmission key point: %+v\n ", p)
-	// transmissionKey := FromPointToByteArray(p)
 	transmissionKey := p.Compress()
 	return transmissionKey
 }
