@@ -143,3 +143,13 @@ func (self *Hash) Decode(dst *Hash, src string) error {
 
 	return nil
 }
+
+/* Compare compare two hash
+// hash = hash2 : return 0
+// hash > hash2 : return 1
+// hash < hahs2 : return -1
+// Todo: @0xakk0r0kamui
+*/
+func (hash *Hash) Compare(hash2 *Hash) int {
+	return 0
+}

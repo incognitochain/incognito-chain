@@ -39,50 +39,39 @@ type OutputCoin struct{
 
 type CoinDetailsEncrypted struct{
 	RandomEncrypted []byte
-	SymKeyEncrypted SymKeyEncrypted
+	SymKeyEncrypted []byte
 }
- type SymKeyEncrypted struct{
- 	C1, C2 *big.Int
- }
 
-
-func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, error){
+func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error{
 	/**** Generate symmetric key of AES cryptosystem,
 				it is used for encryption coin details ****/
-	var point EllipticPoint
-	point.Randomize()
-	symKey := point.X.Bytes()
-	fmt.Printf("Len of symKey: %v\n", len(symKey))
+	var symKeyPoint EllipticPoint
+	symKeyPoint.Randomize()
+	symKeyByte := symKeyPoint.X.Bytes()
+	fmt.Printf("Len of symKeyByte: %v\n", len(symKeyByte))
 
-	/**** Encrypt coin details using symKey ****/
-	// just encrypt Randomness
-	// Load your secret key from a safe place and reuse it across multiple
-	// NewCipher calls. (Obviously don't use this example key for anything
-	// real.) If you want to convert a passphrase to a key, use a suitable
-	// package like bcrypt or scrypt.
-	//key, _ := hex.DecodeString("6368616e676520746869732070617373")
-	plaintext := coin.Randomness.Bytes()
+	/**** Encrypt coin details using symKeyByte ****/
+	// just encrypt Randomness of coin
+	randomCoin := coin.CoinDetails.Randomness.Bytes()
 
-	block, err := aes.NewCipher(symKey)
+	block, err := aes.NewCipher(symKeyByte)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// The IV needs to be unique, but not secure. Therefore it's common to
 	// include it at the beginning of the ciphertext.
-	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
-	iv := ciphertext[:aes.BlockSize]
+	coin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
+	coin.CoinDetailsEncrypted.RandomEncrypted = make([]byte, aes.BlockSize+len(randomCoin))
+	iv := coin.CoinDetailsEncrypted.RandomEncrypted[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		panic(err)
 	}
 
 	stream := cipher.NewCTR(block, iv)
-	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintext)
+	stream.XORKeyStream(coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:], randomCoin)
 
-	encryptedCoin := new(CoinDetailsEncrypted)
-	encryptedCoin.RandomEncrypted = ciphertext
-
-	// Encrypt symKey using Transmission key's receiver with ElGamal cryptosystem
+	/****** Encrypt symKeyByte using Transmission key's receiver with ElGamal cryptosystem ****/
 	// prepare public key for ElGamal cryptosystem
 	pubKey := new(elgamal.PublicKey)
 	basePoint := EllipticPoint{big.NewInt(0), big.NewInt(0)}
@@ -91,17 +80,21 @@ func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, er
 	pubKey.P = Curve.Params().N
 	pubKey.Y = new(big.Int).SetBytes(receiverTK)
 
-	encryptedCoin.SymKeyEncrypted.C1, encryptedCoin.SymKeyEncrypted.C2, err = elgamal.Encrypt(rand.Reader, pubKey, symKey)
+	coin.CoinDetailsEncrypted.SymKeyEncrypted, err = ElGamalEncrypt(rand.Reader, pubKey, symKeyByte)
 	if err != nil{
 		fmt.Println(err)
-		return nil, err
+		return err
 	}
-	//encryptedCoin.SymKeyEncrypted = make([]byte, len(c1.Bytes()))
-	//encryptedCoin.SymKeyEncrypted = append(encryptedCoin.SymKeyEncrypted, c1.Bytes()...)
-	//encryptedCoin.SymKeyEncrypted = append(encryptedCoin.SymKeyEncrypted, c2.Bytes()...)
 
-	return encryptedCoin, nil
+	return nil
 }
+
+func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey){
+
+}
+
+
+
 
 
 

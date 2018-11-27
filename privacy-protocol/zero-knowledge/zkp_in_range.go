@@ -134,10 +134,10 @@ func (wit *PKComMultiRangeWitness) Prove() PKComMultiRangeProof {
 
 		if v.Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(bitsPerValue)), privacy.Curve.Params().N)) == 1 {
 			fmt.Println("Value is above range! Not proving.")
-			return *new(PKComMultiRangeProof)
-		}
+		return *new(PKComMultiRangeProof)
+	}
 
-		gamma:= new(big.Int).SetBytes(privacy.RandBytes(32))
+	gamma:= new(big.Int).SetBytes(privacy.RandBytes(32))
 		gamma.Mod(gamma,privacy.Curve.Params().N)
 
 		Comms[j] = RangeProofParams.G.ScalarMulPoint(v).AddPoint(RangeProofParams.H.ScalarMulPoint(gamma))

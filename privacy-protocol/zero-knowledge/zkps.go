@@ -1,13 +1,16 @@
 package zkp
 
 import (
+	"bytes"
 	"math/big"
+	"sort"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/common"
 )
 
 const (
-	CMRingSize = 16
+	CMRingSize = 8
 )
 
 type PaymentWitness struct{
@@ -24,7 +27,7 @@ type PaymentProof struct {
 	ComOpeningsProof   *PKComOpeningsProof
 	ComZeroOneProof    *PKComZeroOneProof
 	ComZeroProof       *PKComZeroProof
-	InEqualOutProof    *PKInEqualOutProof
+	//InEqualOutProof    *PKInEqualOutProof
 }
 
 // END----------------------------------------------------------------------------------------------------------------------------------------------
@@ -80,10 +83,10 @@ func (wit *PaymentWitness) Prove() *PaymentProof{
 		// get sum commitment inverse
 		cmSumInverse[i], _ = cmSum[i].Inverse()
 
-		// Prepare list of commitments for each commitmentSum that includes 2^8 commiments
+		// Prepare list of commitments for each commitmentSum that includes 2^3 commiments
 		// Get all commitments in inputCoin[i]'s BlockHeight and other block (if needed)
 		cmLists[i] = make([]*privacy.EllipticPoint, CMRingSize)
-		cmLists[i] = GetCMList(wit.inputCoins[i].CoinDetails.CoinCommitment, wit.inputCoins[i].BlockHeight)
+		cmLists[i] = GetCMList(wit.inputCoins[i].CoinDetails.CoinCommitment)
 		for j := 0; j < CMRingSize; j++ {
 			cmLists[i][j].X, cmLists[i][j].Y = privacy.Curve.Add(cmLists[i][j].X, cmLists[i][j].Y, cmSumInverse[i].X, cmSumInverse[i].Y)
 		}
@@ -142,7 +145,34 @@ func (pro PaymentProof) Verify() bool{
 	return true
 }
 
-// GetCMList returns list CMRingSize (2^4) commitments that includes cm in blockHeight
-func GetCMList(cm *privacy.EllipticPoint, blockHeight *big.Int) []*privacy.EllipticPoint {
-	return nil
+// GetCMList returns list of CMRingSize (2^4) commitments and list of corresponding cmIndexs that includes cm corresponding to cmIndex
+func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightCurrent *big.Int) ([]*privacy.CMIndex, []*privacy.EllipticPoint) {
+
+	cmIndexs := make([]*privacy.CMIndex, CMRingSize)
+	cms := make([]*privacy.EllipticPoint, CMRingSize)
+
+	// Random 7 triples (blockHeight, txID, cmIndex)
+	for i := 0; i < CMRingSize - 1 ; i++{
+		cmIndexs[i].Randomize(blockHeightCurrent)
+		//cms[i] = cmIndexs[i].GetCommitment()
+	}
+
+	// the last element in list is cm
+	cmIndexs[CMRingSize-1] = cmIndex
+	//cms[CMRingSize-1] = cm
+
+	// Sort list
+	sort.Slice(cmIndexs, func(i, j int) bool {
+		if cmIndexs[i].BlockHeight.Cmp(cmIndexs[j].BlockHeight) == -1 {
+			return true
+		}
+		if cmIndexs[i].BlockHeight.Cmp(cmIndexs[j].BlockHeight) == 1 {
+			return false
+		}
+		return cmIndexs[i].TxId.Compare(cmIndexs[j].TxId) == -1
+	})
+
+
+	return cmIndexs, cms
 }
+

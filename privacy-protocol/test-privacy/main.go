@@ -1,10 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"math/big"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
 func main() {
@@ -63,6 +60,8 @@ func main() {
 	/*****************zkp.TestPKComZeroOne()****************/
 
 	//zkp.TestPKOneOfMany()
+
+	zkp.TestPKComMultiRange()
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -181,21 +180,16 @@ func main() {
 	//privacy.TestAESCTR()
 
 	/*----------------- TEST ENCRYPT/DECRYPT COIN -----------------*/
-	coin := new(privacy.Coin)
-	coin.Randomness = privacy.RandInt()
-
-	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	//fmt.Printf("\nSpending key: %v\n", spendingKey)
-	//fmt.Println(len(spendingKey))
-	keySet := cashec.KeySet{}
-	keySet.ImportFromPrivateKey(&spendingKey)
-
-	encryptedData, _ := coin.Encrypt(keySet.PaymentAddress.Tk)
-
-	fmt.Printf("Encrypted data: %+v\n", encryptedData )
-
-	fmt.Printf("bit len N: %v\n", privacy.Curve.Params().N.BitLen())
-	//fmt.Println(zkp.TestProofIsZero())
-	//fmt.Println(zkp.TestOpeningsProtocol())
-	//fmt.Println(zkp.TestPKEqualityOfCommittedVal())
+	//coin := new(privacy.Coin)
+	//coin.Randomness = privacy.RandInt()
+	//
+	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	//keySet := cashec.KeySet{}
+	//keySet.ImportFromPrivateKey(&spendingKey)
+	//
+	//encryptedData, _ := coin.Encrypt(keySet.PaymentAddress.Tk)
+	//
+	//fmt.Printf("Encrypted data: %+v\n", encryptedData )
+	//
+	//fmt.Printf("bit len N: %v\n", privacy.Curve.Params().N.BitLen())
 }
