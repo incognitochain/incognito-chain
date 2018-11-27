@@ -96,6 +96,11 @@ func (tx * TxPrivacy) CreateTx(
 		changeCoin.CoinDetails.SNDerivator = privacy.RandInt()
 
 		outputCoins = append(outputCoins, changeCoin)
+
+		changePaymentInfo := new(privacy.PaymentInfo)
+		changePaymentInfo.Amount = overBalance
+		changePaymentInfo.PaymentAddress = senderFullKey.PaymentAddress
+		paymentInfo = append(paymentInfo, changePaymentInfo)
 	}
 
 	// create zero knowledge proof of payment
@@ -105,7 +110,7 @@ func (tx * TxPrivacy) CreateTx(
 
 	// encrypt coin details (Randomness)
 	for i:=0; i< len(outputCoins); i++{
-		outputCoins[i].CoinDetailsEncrypted, _ = outputCoins[i].CoinDetails.Encrypt()
+		outputCoins[i].CoinDetailsEncrypted, _ = outputCoins[i].CoinDetails.Encrypt(paymentInfo[i].PaymentAddress.Tk)
 	}
 
 	// sign tx
