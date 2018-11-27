@@ -156,7 +156,7 @@ func (wit *PKComProductWitness) Prove() (*PKComProductProof,error) {
 	//Compute D' factor of Proof
 	G1 := new(privacy.EllipticPoint)
 	*G1 = *proof.cmB
-	SpecCom2:=privacy.PCParams{[]privacy.EllipticPoint{proof.basePoint.G,
+	SpecCom2:=privacy.PCParams{[]privacy.EllipticPoint{*G1,
 		proof.basePoint.H},
 		2}
 	D1:= SpecCom2.CommitAtIndex(d,s1,0);
@@ -309,8 +309,6 @@ func (pro *PKComProductProof) Verify () bool {
 	//pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, pro.D1.X,pro.D1.Y);
 	*pts1 = pro.cmC.ScalarMulPoint(new(big.Int).SetBytes(x)).AddPoint(*pro.D1)
 	com3 := SpecCom2.CommitAtIndex(pro.f1, pro.z3,0)
-	fmt.Println(pts1)
-	fmt.Println(com3)
 	if (com3.X.Cmp(pts1.X)==0 && com3.Y.Cmp(pts1.Y)==0){
 		checkFlag +=1
 		fmt.Println("Passed test 3")
@@ -324,15 +322,13 @@ func (pro *PKComProductProof) Verify () bool {
 }
 func TestPKComProduct() {
 	res := true
-	for i:=0;i<10;i++ {
+	for i:=0;i<100;i++ {
 		witnessA := privacy.RandBytes(32)
 		witnessB := privacy.RandBytes(32)
 		C:= new(big.Int)
 		C.SetBytes(witnessA)
 		C.Mul(C, new(big.Int).SetBytes(witnessB))
 		witnessC := C.Bytes()
-
-
 		rA := privacy.RandBytes(32)
 		rB := privacy.RandBytes(32)
 		rC := privacy.RandBytes(32)

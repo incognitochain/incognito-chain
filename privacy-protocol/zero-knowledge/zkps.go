@@ -1,45 +1,45 @@
 package zkp
 
 import (
-	"bytes"
 	"math/big"
 	"sort"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/common"
 )
 
 const (
 	CMRingSize = 8
 )
 
-type PaymentWitness struct{
+type PaymentWitness struct {
 	spendingKey *big.Int
-	inputCoins []*privacy.InputCoin
+	inputCoins  []*privacy.InputCoin
 	outputCoins []*privacy.OutputCoin
 }
 
 // BEGIN--------------------------------------------------------------------------------------------------------------------------------------------
 
-// ProofOfPayment contains all of PoK for sending coin
+// PaymentProof contains all of PoK for sending coin
 type PaymentProof struct {
 	ComMultiRangeProof *PKComMultiRangeProof
 	ComOpeningsProof   *PKComOpeningsProof
 	ComZeroOneProof    *PKComZeroOneProof
 	ComZeroProof       *PKComZeroProof
-	//InEqualOutProof    *PKInEqualOutProof
+	// InEqualOutProof    *PKInEqualOutProof
+	EqualityOfCommittedValProof *PKEqualityOfCommittedValProof
+	OneOfManyProof              *PKOneOfManyProof
 }
 
 // END----------------------------------------------------------------------------------------------------------------------------------------------
 
-
-func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin){
+func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 	wit.spendingKey = spendingKey
 	wit.inputCoins = inputCoins
 	wit.outputCoins = outputCoins
 }
+
 // Prove creates big proof
-func (wit *PaymentWitness) Prove() *PaymentProof{
+func (wit *PaymentWitness) Prove() *PaymentProof {
 
 	numberInputCoin := len(wit.inputCoins)
 	// Commit each component of coins being spent
@@ -77,7 +77,7 @@ func (wit *PaymentWitness) Prove() *PaymentProof{
 
 	// Proving one-out-of-N commitments is a commitment to the coins being spent
 	cmSumInverse := make([]*privacy.EllipticPoint, numberInputCoin)
-	cmLists := make([][]*privacy.EllipticPoint, numberInputCoin)
+	//cmLists := make([][]*privacy.EllipticPoint, numberInputCoin)
 	//witnessOneOutOfN := make([]*PKOne, len(inputCoins))
 	for i := 0; i < numberInputCoin; i++ {
 		// get sum commitment inverse
@@ -85,11 +85,11 @@ func (wit *PaymentWitness) Prove() *PaymentProof{
 
 		// Prepare list of commitments for each commitmentSum that includes 2^3 commiments
 		// Get all commitments in inputCoin[i]'s BlockHeight and other block (if needed)
-		cmLists[i] = make([]*privacy.EllipticPoint, CMRingSize)
-		cmLists[i] = GetCMList(wit.inputCoins[i].CoinDetails.CoinCommitment)
-		for j := 0; j < CMRingSize; j++ {
-			cmLists[i][j].X, cmLists[i][j].Y = privacy.Curve.Add(cmLists[i][j].X, cmLists[i][j].Y, cmSumInverse[i].X, cmSumInverse[i].Y)
-		}
+		//cmLists[i] = make([]*privacy.EllipticPoint, CMRingSize)
+		//cmLists[i] = GetCMList(wit.inputCoins[i].CoinDetails.CoinCommitment)
+		//for j := 0; j < CMRingSize; j++ {
+		//	cmLists[i][j].X, cmLists[i][j].Y = privacy.Curve.Add(cmLists[i][j].X, cmLists[i][j].Y, cmSumInverse[i].X, cmSumInverse[i].Y)
+		//}
 
 		// Prepare witness for protocol one-out-of-N
 		//witnessOneOutOfN[i].Set()
@@ -141,7 +141,23 @@ func (wit *PaymentWitness) Prove() *PaymentProof{
 	return nil
 }
 
-func (pro PaymentProof) Verify() bool{
+func (pro PaymentProof) Verify() bool {
+	if !pro.ComOpeningsProof.Verify() {
+		return false
+	}
+	//if !pro.ComMultiRangeProof
+	if !pro.ComZeroOneProof.Verify() {
+		return false
+	}
+	if !pro.ComZeroProof.Verify() {
+		return false
+	}
+	if !pro.EqualityOfCommittedValProof.Verify() {
+		return false
+	}
+	if !pro.OneOfManyProof.Verify() {
+		return false
+	}
 	return true
 }
 

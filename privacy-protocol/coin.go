@@ -8,6 +8,7 @@ import (
 	"golang.org/x/crypto/openpgp/elgamal"
 	"io"
 	"math/big"
+
 )
 
 type SerialNumber []byte   //33 bytes
@@ -37,7 +38,7 @@ type OutputCoin struct{
 	CoinDetailsEncrypted *CoinDetailsEncrypted
 }
 
-type CoinDetailsEncrypted struct{
+type CoinDetailsEncrypted struct {
 	RandomEncrypted []byte
 	SymKeyEncrypted []byte
 }
@@ -55,6 +56,7 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error{
 	randomCoin := coin.CoinDetails.Randomness.Bytes()
 
 	block, err := aes.NewCipher(symKeyByte)
+
 	if err != nil {
 		return err
 	}
@@ -92,8 +94,6 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error{
 func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey){
 
 }
-
-
 
 
 
@@ -146,6 +146,3 @@ func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey){
 //	SpendingKey SpendingKey
 //	UnspentCoinList map[Coin]big.Int
 //}
-
-
-

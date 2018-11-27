@@ -2,6 +2,9 @@ package main
 
 import (
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"fmt"
+
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 func main() {
@@ -59,7 +62,7 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-	//zkp.TestPKOneOfMany()
+	// zkp.TestPKOneOfMany()
 
 	zkp.TestPKComMultiRange()
 
@@ -164,7 +167,7 @@ func main() {
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
-	//privacy.TestSchn()
+	// privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
@@ -180,6 +183,7 @@ func main() {
 	//privacy.TestAESCTR()
 
 	/*----------------- TEST ENCRYPT/DECRYPT COIN -----------------*/
+
 	//coin := new(privacy.Coin)
 	//coin.Randomness = privacy.RandInt()
 	//
@@ -192,4 +196,12 @@ func main() {
 	//fmt.Printf("Encrypted data: %+v\n", encryptedData )
 	//
 	//fmt.Printf("bit len N: %v\n", privacy.Curve.Params().N.BitLen())
+
+	/*----------------- TEST NDH -----------------*/
+	//fmt.Println(zkp.TestProofIsZero())
+	//fmt.Println(zkp.TestOpeningsProtocol())
+	//fmt.Println(zkp.TestPKEqualityOfCommittedVal())
+	fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
+	/*--------------------------------------------*/
+
 }
