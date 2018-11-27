@@ -1,10 +1,10 @@
 package transaction
 
 import (
+	"encoding/hex"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
-	"encoding/hex"
 )
 
 type ValidLoanResponse int
@@ -20,9 +20,9 @@ type LoanResponse struct {
 	ValidUntil int32
 }
 
-func NewLoanResponse(data map[string]interface{}) (*LoanResponse) {
+func NewLoanResponse(data map[string]interface{}) *LoanResponse {
 	result := LoanResponse{
-		ValidUntil: uint64(data["ValidUntil"].(float64)),
+		ValidUntil: int32(data["ValidUntil"].(float64)),
 	}
 	s, _ := hex.DecodeString(data["LoanID"].(string))
 	result.LoanID = s

@@ -473,10 +473,11 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 	dbcAccount, _ := wallet.Base58CheckDeserialize(DCBAddress)
 	if bytes.Equal(saleData.BuyingAsset[:8], BondTokenID[:8]) {
 		for _, vout := range requestTx.TxTokenData.Vouts {
-			return fmt.Errorf("Received asset id %s instead of %s", append(BondTokenID[:8], vout.BuySellResponse.BondID...), saleData.BuyingAsset)
+			if !bytes.Equal(vout.BuySellResponse.BondID, saleData.BuyingAsset[8:]) {
+				return fmt.Errorf("Received asset id %s instead of %s", append(BondTokenID[:8], vout.BuySellResponse.BondID...), saleData.BuyingAsset)
+			}
 
 			// Check if receiving address is DCB's
-			// TODO(@0xbunyip): compare full payment address
 			if !bytes.Equal(vout.PaymentAddress.Pk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
 				return fmt.Errorf("Sending payment to %x instead of %x", vout.PaymentAddress.Pk[:], DCBAddress)
 			}

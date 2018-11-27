@@ -50,12 +50,11 @@ func BuildResponseForBond(txRequest *TxBuySellRequest, bondID []byte, rt []byte,
 	accountDCB, _ := wallet.Base58CheckDeserialize(dcbAddress)
 	// Get amount of Constant user sent
 	value := uint64(0)
-	userPk := privacy.PublicKey{}
+	userPk := txRequest.Tx.JSPubKey
 	for _, desc := range txRequest.Tx.Descs {
 		for _, note := range desc.Note {
 			if bytes.Equal(note.Apk[:], accountDCB.KeySet.PaymentAddress.Pk) {
 				value += note.Value
-				userPk = note.Apk
 			}
 		}
 	}

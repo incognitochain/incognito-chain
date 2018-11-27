@@ -726,7 +726,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*transaction.TxD
 
 		// Get price for asset bond
 		bondPrices := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
-		if bytes.Equal(saleData.SellingAsset[:8], ConstantID[:8]) {
+		if bytes.Equal(saleData.SellingAsset, ConstantID[:]) {
 			txResponse, err := transaction.BuildResponseForCoin(tx, saleData.SellingAsset, rt, chainID, bondPrices, tx.SaleID, DCBAddress)
 			if err != nil {
 				txsToRemove = append(txsToRemove, tx)
