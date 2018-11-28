@@ -2,9 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/cashec"
+
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"math/big"
 )
 
 func main() {
@@ -184,20 +183,20 @@ func main() {
 
 	/*----------------- TEST ENCRYPT/DECRYPT COIN -----------------*/
 
-	coin := new(privacy.OutputCoin)
-	coin.CoinDetails = new(privacy.Coin)
-	coin.CoinDetails.Randomness = privacy.RandInt()
+	// coin := new(privacy.OutputCoin)
+	// coin.CoinDetails = new(privacy.Coin)
+	// coin.CoinDetails.Randomness = privacy.RandInt()
 
-	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	keySet := cashec.KeySet{}
-	keySet.ImportFromPrivateKey(&spendingKey)
+	// spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	// keySet := cashec.KeySet{}
+	// keySet.ImportFromPrivateKey(&spendingKey)
 
-	err := coin.Encrypt(keySet.PaymentAddress.Tk)
-	if err!= nil{
-		fmt.Println(err)
-	}
+	// err := coin.Encrypt(keySet.PaymentAddress.Tk)
+	// if err!= nil{
+	// 	fmt.Println(err)
+	// }
 
-	fmt.Printf("Encrypted data: %+v\n", coin.CoinDetailsEncrypted )
+	// fmt.Printf("Encrypted data: %+v\n", coin.CoinDetailsEncrypted )
 
 	//fmt.Printf("bit len N: %v\n", privacy.Curve.Params().N.BitLen())
 
@@ -205,7 +204,7 @@ func main() {
 	//fmt.Println(zkp.TestProofIsZero())
 	//fmt.Println(zkp.TestOpeningsProtocol())
 	//fmt.Println(zkp.TestPKEqualityOfCommittedVal())
-	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
+	fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
 	/*--------------------------------------------*/
 
 }
