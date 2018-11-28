@@ -79,7 +79,6 @@ func (tx *TxPrivacy) CreateTx(
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
 
 	// set private key for signing tx
-
 	tx.sigPrivKey = senderSK
 
 	// get public key last byte
@@ -113,8 +112,14 @@ func (tx *TxPrivacy) CreateTx(
 	}
 
 	// create zero knowledge proof of payment
+	// prepare witness for proving
+
+	// witness's part 1
 	witness := new(zkp.PaymentWitness)
 	witness.Set(new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins)
+
+	// witness's part 2
+
 	tx.Proof = witness.Prove()
 
 	// encrypt coin details (Randomness)
@@ -128,6 +133,8 @@ func (tx *TxPrivacy) CreateTx(
 
 	return tx, nil
 }
+
+
 
 func (tx * TxPrivacy) SignTx(hasPrivacy bool) error {
 	if !hasPrivacy{
