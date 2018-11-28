@@ -51,7 +51,9 @@ func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.Input
 }
 
 // Build prepares witnesses for all protocol need to be proved when create tx
-func (wit *PaymentWitness) Build(){
+// if hashPrivacy = false, witness includes spending key, input coins, output coins
+// otherwise, witness includes all attributes in PaymentWitness struct
+func (wit *PaymentWitness) Build(hashPrivacy bool){
 
 }
 

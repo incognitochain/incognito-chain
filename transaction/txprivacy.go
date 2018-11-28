@@ -113,14 +113,10 @@ func (tx *TxPrivacy) CreateTx(
 
 	// create zero knowledge proof of payment
 	// prepare witness for proving
-
-	// witness's part 1
 	witness := new(zkp.PaymentWitness)
-	witness.Set(new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins)
+	witness.Build(hasPrivacy)
 
-	// witness's part 2
 
-	tx.Proof = witness.Prove()
 
 	// encrypt coin details (Randomness)
 	for i := 0; i < len(outputCoins); i++ {
