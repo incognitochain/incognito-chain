@@ -14,8 +14,9 @@ type PKOneOfManyWitness struct {
 	rand        *big.Int
 	indexIsZero *int
 	// general info
-	commitments []*privacy.EllipticPoint
-	index       byte
+	commitments      []*privacy.EllipticPoint
+	commitmentIndexs *[]*privacy.CMIndex
+	index            byte
 }
 
 // PKOneOfManyProof contains Proof's value
@@ -31,10 +32,12 @@ type PKOneOfManyProof struct {
 // Set sets Witness
 func (wit *PKOneOfManyWitness) Set(
 	commitments []*privacy.EllipticPoint,
+	commitmentIndexs *[]*privacy.CMIndex,
 	rand *big.Int,
 	indexIsZero *int,
 	index byte) {
 
+	wit.commitmentIndexs = commitmentIndexs
 	wit.commitments = commitments
 	wit.indexIsZero = indexIsZero
 	wit.rand = rand
