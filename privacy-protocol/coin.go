@@ -5,7 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"fmt"
-	"golang.org/x/crypto/openpgp/elgamal"
+
 	"io"
 	"math/big"
 
@@ -40,13 +40,13 @@ type OutputCoin struct{
 
 type CoinDetailsEncrypted struct {
 	RandomEncrypted []byte
-	SymKeyEncrypted []byte
+	SymKeyEncrypted *ElGamalCipherText
 }
 
 func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error{
 	/**** Generate symmetric key of AES cryptosystem,
 				it is used for encryption coin details ****/
-	var symKeyPoint EllipticPoint
+	symKeyPoint:= new(EllipticPoint)
 	symKeyPoint.Randomize()
 	symKeyByte := symKeyPoint.X.Bytes()
 	fmt.Printf("Len of symKeyByte: %v\n", len(symKeyByte))
@@ -75,14 +75,11 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error{
 
 	/****** Encrypt symKeyByte using Transmission key's receiver with ElGamal cryptosystem ****/
 	// prepare public key for ElGamal cryptosystem
-	pubKey := new(elgamal.PublicKey)
-	basePoint := EllipticPoint{big.NewInt(0), big.NewInt(0)}
-	basePoint.X, basePoint.Y = Curve.Params().Gx, Curve.Params().Gy
-	pubKey.G = new(big.Int).SetBytes(basePoint.Compress())
-	pubKey.P = Curve.Params().N
-	pubKey.Y = new(big.Int).SetBytes(receiverTK)
+	pubKey := new(ElGamalPubKey)
+	pubKey.Value,_ = DecompressKey(receiverTK)
 
-	coin.CoinDetailsEncrypted.SymKeyEncrypted, err = ElGamalEncrypt(rand.Reader, pubKey, symKeyByte)
+
+	coin.CoinDetailsEncrypted.SymKeyEncrypted = pubKey.ElGamalEnc(symKeyPoint)
 	if err != nil{
 		fmt.Println(err)
 		return err
@@ -92,7 +89,9 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error{
 }
 
 func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey){
+	/*** Decrypt symKeyEncrypted using receiver's receiving key to get symKey ***/
 
+	/*** Decrypt Encrypted using receiver's receiving key to get symKey ***/
 }
 
 
