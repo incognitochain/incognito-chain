@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/ninjadotorg/constant/common"
 	"math/big"
 )
 
@@ -117,7 +118,7 @@ func (priKey SchnPrivKey) Sign(hash []byte) (*SchnSignature, error) {
 }
 
 //Verify is function which using for verify that the given signature was signed by by privatekey of the public key
-func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
+func (pub SchnPubKey) Verify(signature *SchnSignature, hash common.Hash) bool {
 	if len(hash) != 32 {
 		return false
 	}
