@@ -78,9 +78,6 @@ func (tx *TxPrivacy) CreateTx(
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
 
-	// set private key for signing tx
-	tx.sigPrivKey = senderSK
-
 	// get public key last byte
 	pkLastByte := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 	tx.PubKeyLastByte = pkLastByte
@@ -115,6 +112,15 @@ func (tx *TxPrivacy) CreateTx(
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
 	witness.Build(hasPrivacy)
+	tx.Proof = witness.Prove()
+
+	// set private key for signing tx
+	if hasPrivacy{
+		tx.sigPrivKey = append(*senderSK, witness.ComOpeningsWitness.Openings[privacy.RAND].Bytes()...)
+	}
+
+
+
 
 
 

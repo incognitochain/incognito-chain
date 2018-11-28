@@ -53,8 +53,10 @@ func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.Input
 // Build prepares witnesses for all protocol need to be proved when create tx
 // if hashPrivacy = false, witness includes spending key, input coins, output coins
 // otherwise, witness includes all attributes in PaymentWitness struct
-func (wit *PaymentWitness) Build(hashPrivacy bool){
-
+func (wit *PaymentWitness) Build(hashPrivacy bool, spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin){
+	wit.spendingKey = spendingKey
+	wit.inputCoins = inputCoins
+	wit.outputCoins = outputCoins
 }
 
 // Prove creates big proof
@@ -78,7 +80,7 @@ func (wit *PaymentWitness) Prove() *PaymentProof {
 		cmSND[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randSND[i], privacy.SND)
 	}
 
-	// Summing all commitments of each input coin into one commitment and proving the knowledge of its openings
+	// Summing all commitments of each input coin into one commitment and proving the knowledge of its Openings
 	cmSum := make([]*privacy.EllipticPoint, numberInputCoin)
 	randSum := make([]*big.Int, numberInputCoin)
 	for i := 0; i < numberInputCoin; i++ {
@@ -91,7 +93,7 @@ func (wit *PaymentWitness) Prove() *PaymentProof {
 		randSum[i].Add(randSum[i], randSND[i])
 	}
 
-	// Call protocol proving knowledge of each sum commitment's openings
+	// Call protocol proving knowledge of each sum commitment's Openings
 
 	// Proving one-out-of-N commitments is a commitment to the coins being spent
 	cmSumInverse := make([]*privacy.EllipticPoint, numberInputCoin)

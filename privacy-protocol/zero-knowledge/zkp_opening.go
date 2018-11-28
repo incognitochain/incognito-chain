@@ -19,16 +19,16 @@ type PKComOpeningsProof struct {
 // PKComOpeningsWitness contains witnesses which are used for generate proof
 type PKComOpeningsWitness struct {
 	commitmentValue *privacy.EllipticPoint //statement
-	openings        []*big.Int
+	Openings        []*big.Int
 }
 
 // randValue return random witness value for testing
 func (wit *PKComOpeningsWitness) randValue(testcase bool) {
-	wit.openings = make([]*big.Int, privacy.PedCom.Capacity)
+	wit.Openings = make([]*big.Int, privacy.PedCom.Capacity)
 	for i := 0; i < privacy.PedCom.Capacity; i++ {
-		wit.openings[i], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
+		wit.Openings[i], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
 	}
-	wit.commitmentValue = privacy.PedCom.CommitAll([]*big.Int{wit.openings[0], wit.openings[1], wit.openings[2], wit.openings[3]})
+	wit.commitmentValue = privacy.PedCom.CommitAll([]*big.Int{wit.Openings[0], wit.Openings[1], wit.Openings[2], wit.Openings[3]})
 }
 
 // Set dosomethings
@@ -36,7 +36,7 @@ func (wit *PKComOpeningsWitness) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
 	openings []*big.Int) {
 	wit.commitmentValue = commitmentValue
-	wit.openings = openings
+	wit.Openings = openings
 }
 
 // Set dosomethings
@@ -63,7 +63,7 @@ func (wit *PKComOpeningsWitness) Prove() (*PKComOpeningsProof, error) {
 		rRand, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
 		gPowR.X, gPowR.Y = privacy.Curve.ScalarMult(privacy.PedCom.G[i].X, privacy.PedCom.G[i].Y, rRand.Bytes())
 		alpha.X, alpha.Y = privacy.Curve.Add(alpha.X, alpha.Y, gPowR.X, gPowR.Y)
-		gamma[i] = big.NewInt(0).Mul(wit.openings[i], beta)
+		gamma[i] = big.NewInt(0).Mul(wit.Openings[i], beta)
 		gamma[i] = gamma[i].Add(gamma[i], rRand)
 	}
 	proof := new(PKComOpeningsProof)
