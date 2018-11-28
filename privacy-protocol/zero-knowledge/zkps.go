@@ -116,8 +116,14 @@ func (wit *PaymentWitness) Prove() *PaymentProof {
 
 	//cmLists := make([][]*privacy.EllipticPoint, numberInputCoin)
 	//witnessOneOutOfN := make([]*PKOne, len(inputCoins))
+<<<<<<< HEAD
 	// for i := 0; i < numberInputCoin; i++ {
 	// get sum commitment inverse
+=======
+	for i := 0; i < numberInputCoin; i++ {
+		// get sum commitment inverse
+
+>>>>>>> ade8d4ca8279d6fc96b6c22abd10c2a1f88e6196
 
 	// Prepare list of commitments for each commitmentSum that includes 2^3 commiments
 	// Get all commitments in inputCoin[i]'s BlockHeight and other block (if needed)

@@ -137,7 +137,7 @@ ipp : the proof
 */
 func InnerProductVerify(c *big.Int, P, U privacy.EllipticPoint, G, H []privacy.EllipticPoint, ipp InnerProdArg) bool {
 	//fmt.Println("Verifying Inner Product Argument")
-	//fmt.Printf("Commitment H: %s \n", P)
+	//fmt.Printf("Commitment Value: %s \n", P)
 	s1 := blake2b.Sum256([]byte(P.X.String() + P.Y.String()))
 	chal1 := new(big.Int).SetBytes(s1[:])
 	ux := U.ScalarMulPoint(chal1)
@@ -198,7 +198,7 @@ we replace n separate exponentiations with a single ScalarMulPointi-exponentiati
 
 func InnerProductVerifyFast(c *big.Int, P, U privacy.EllipticPoint, G, H []privacy.EllipticPoint, ipp InnerProdArg) bool {
 	//fmt.Println("Verifying Inner Product Argument")
-	//fmt.Printf("Commitment H: %s \n", P)
+	//fmt.Printf("Commitment Value: %s \n", P)
 	s1 := blake2b.Sum256([]byte(P.X.String() + P.Y.String()))
 	chal1 := new(big.Int).SetBytes(s1[:])
 	ux := U.ScalarMulPoint(chal1)
@@ -437,11 +437,6 @@ func (c CryptoParams) Zero() privacy.EllipticPoint {
 	return privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
 }
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
 
 // NewECPrimeGroupKey returns the curve (field),
 // Generator 1 x&y, Generator 2 x&y, order of the generators
@@ -450,37 +445,17 @@ func NewECPrimeGroupKey(n int) CryptoParams {
 	gen1Vals := make([]privacy.EllipticPoint, n)
 	gen2Vals := make([]privacy.EllipticPoint, n)
 	u := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
-	cg := privacy.EllipticPoint{}
-	ch := privacy.EllipticPoint{}
 
-	confirmed := 0
-	var gen2 privacy.EllipticPoint
-	gen2.X, gen2.Y = privacy.Curve.Params().Gx, privacy.Curve.Params().Gy
-	for confirmed < (2*n + 3) {
-				gen2 = gen2.Hash()
-		var err error
-		err = nil
-		if err == nil {
-			if confirmed == 2*n { // once we've generated all g and h values then assign this to u
-				u = privacy.EllipticPoint{gen2.X, gen2.Y}
-				//fmt.Println("Got that U value")
-			} else if confirmed == 2*n+1 {
-				cg = privacy.EllipticPoint{gen2.X, gen2.Y}
+	G:=privacy.PedCom.G[privacy.VALUE]
+	H:=privacy.PedCom.G[privacy.RAND]
 
-			} else if confirmed == 2*n+2 {
-				ch = privacy.EllipticPoint{gen2.X, gen2.Y}
-			} else {
-				if confirmed%2 == 0 {
-					gen1Vals[confirmed/2] = privacy.EllipticPoint{gen2.X, gen2.Y}
-					//fmt.Println("new G H")
-				} else {
-					gen2Vals[confirmed/2] = privacy.EllipticPoint{gen2.X, gen2.Y}
-					//fmt.Println("new H value")
-				}
-			}
-			confirmed += 1
-		}
+	for i:=0;i<n;i++{
+		gen1Vals[i]= G.Hash(0)
+		G=G.Hash(0)
+		gen2Vals[i]= H.Hash(0)
+		H = H.Hash(0)
 	}
+	u	= G.AddPoint(H).Hash(0)
 	return CryptoParams{
 		privacy.Curve,
 		gen1Vals,
@@ -488,8 +463,8 @@ func NewECPrimeGroupKey(n int) CryptoParams {
 		privacy.Curve.Params().N,
 		u,
 		n,
-		cg,
-		ch}
+		privacy.PedCom.G[privacy.VALUE],
+		privacy.PedCom.G[privacy.RAND]}
 }
 
 /*Perdersen commit for 2 vector*/
