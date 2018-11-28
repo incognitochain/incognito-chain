@@ -21,7 +21,7 @@ type SignScheme interface {
 
 //SchnPubKey denoted Schnorr Publickey
 type SchnPubKey struct {
-	PK, G, H EllipticPoint // PK = G^SK + H^Randomness
+	PK, G, H *EllipticPoint // PK = G^SK + H^Randomness
 }
 
 //SchnPrivKey denoted Schnorr Privatekey
@@ -50,15 +50,15 @@ func (priKey *SchnPrivKey) KeyGen() {
 
 	priKey.PubKey = new(SchnPubKey)
 
-	priKey.PubKey.G = *new(EllipticPoint)
+	priKey.PubKey.G = new(EllipticPoint)
 	priKey.PubKey.G.X, priKey.PubKey.G.Y = Curve.Params().Gx, Curve.Params().Gy
 
-	priKey.PubKey.H = *new(EllipticPoint)
+	priKey.PubKey.H = new(EllipticPoint)
 	priKey.PubKey.H.X, priKey.PubKey.H.Y = Curve.ScalarBaseMult(RandBytes(32))
 	rH := new(EllipticPoint)
 	rH.X, rH.Y = Curve.ScalarMult(priKey.PubKey.H.X, priKey.PubKey.H.Y, priKey.R.Bytes())
 
-	priKey.PubKey.PK = *new(EllipticPoint)
+	priKey.PubKey.PK = new(EllipticPoint)
 	priKey.PubKey.PK.X, priKey.PubKey.PK.Y = Curve.ScalarBaseMult(priKey.SK.Bytes())
 	priKey.PubKey.PK.X, priKey.PubKey.PK.Y = Curve.Add(priKey.PubKey.PK.X, priKey.PubKey.PK.Y, rH.X, rH.Y)
 }
@@ -140,6 +140,18 @@ func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
 	}
 
 	return false
+}
+
+func (sig *SchnSignature) ToBytes() []byte {
+	res := append(sig.E.Bytes(), sig.S1.Bytes()...)
+	res = append(res, sig.S2.Bytes()...)
+	return res
+}
+
+func (sig *SchnSignature) FromBytes(bytes []byte){
+	sig.E = new(big.Int).SetBytes(bytes[0:32])
+	sig.S1 = new(big.Int).SetBytes(bytes[32:66])
+	sig.S2 = new(big.Int).SetBytes(bytes[64:96])
 }
 
 // Hash calculates a hash concatenating a given message bytes with a given EC Point. H(p||m)

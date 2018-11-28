@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"crypto/ecdsa"
+	"crypto/rand"
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-
-	"crypto/ecdsa"
-	"crypto/rand"
 )
 
 type TxPrivacy struct {
@@ -27,7 +26,7 @@ type TxPrivacy struct {
 	PubKeyLastByte byte `json:"AddressLastByte"`
 
 	TxId       *common.Hash
-	sigPrivKey *privacy.SpendingKey // is always private property of struct
+	sigPrivKey []byte // is always private property of struct
 
 	// this one is a hash id of requested tx
 	// and is used inside response txs
@@ -111,18 +110,16 @@ func (tx *TxPrivacy) CreateTx(
 	// create zero knowledge proof of payment
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	witness.Build(hasPrivacy)
+	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins )
 	tx.Proof = witness.Prove()
 
 	// set private key for signing tx
 	if hasPrivacy{
+		tx.sigPrivKey = make([]byte, 64)
 		tx.sigPrivKey = append(*senderSK, witness.ComOpeningsWitness.Openings[privacy.RAND].Bytes()...)
+	} else{
+		tx.sigPrivKey = *senderSK
 	}
-
-
-
-
-
 
 	// encrypt coin details (Randomness)
 	for i := 0; i < len(outputCoins); i++ {
@@ -136,17 +133,49 @@ func (tx *TxPrivacy) CreateTx(
 	return tx, nil
 }
 
-
-
+// SignTx signs tx
 func (tx * TxPrivacy) SignTx(hasPrivacy bool) error {
-	if !hasPrivacy{
+	if hasPrivacy{
+		/****** using Schnorr *******/
+		// sign with sigPrivKey
+		// prepare private key for Schnorr
+		sigKey := new(privacy.SchnPrivKey)
+		sigKey.SK = new(big.Int).SetBytes(tx.sigPrivKey[:32])
+		sigKey.R = new(big.Int).SetBytes(tx.sigPrivKey[32:])
+
+		// save public key for verification signature tx
+		sigKey.PubKey = new(privacy.SchnPubKey)
+		sigKey.PubKey.G = new(privacy.EllipticPoint)
+		sigKey.PubKey.G.X, sigKey.PubKey.G.Y = privacy.Curve.Params().Gx, privacy.Curve.Params().Gy
+
+		sigKey.PubKey.H = new(privacy.EllipticPoint)
+		sigKey.PubKey.H.X, sigKey.PubKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
+
+		sigKey.PubKey.PK = &privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
+		tmp := new(privacy.EllipticPoint)
+		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.G.X, sigKey.PubKey.G.Y, sigKey.SK.Bytes())
+		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
+		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.H.X, sigKey.PubKey.H.Y, sigKey.R.Bytes())
+		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
+		tx.SigPubKey = sigKey.PubKey.PK.Compress()
+
+		// signing
+		signature, err := sigKey.Sign(tx.TxId[:])
+		if err != nil {
+			return err
+		}
+
+		// convert signature to byte array
+		tx.Sig = signature.ToBytes()
+
+	} else{
 		/***** using ECDSA ****/
 		// sign with sigPrivKey
 		// prepare private key for ECDSA
 		sigKey := new(ecdsa.PrivateKey)
 		sigKey.PublicKey.Curve = privacy.Curve
-		sigKey.D = new(big.Int).SetBytes(*tx.sigPrivKey)
-		sigKey.PublicKey.X, sigKey.PublicKey.Y = privacy.Curve.ScalarBaseMult(*tx.sigPrivKey)
+		sigKey.D = new(big.Int).SetBytes(tx.sigPrivKey)
+		sigKey.PublicKey.X, sigKey.PublicKey.Y = privacy.Curve.ScalarBaseMult(tx.sigPrivKey)
 
 		// save public key for verification signature tx
 		verKey:= new(privacy.EllipticPoint)
@@ -161,18 +190,22 @@ func (tx * TxPrivacy) SignTx(hasPrivacy bool) error {
 
 		// convert signature to byte array
 		tx.Sig = ECDSASigToByteArray(r, s)
-
-	} else{
-		/****** using Schnorr *******/
-		// sign with sigPrivKey
-		// prepare private key for Schnorr
-		sigKey := new(privacy.SchnPrivKey)
-		sigKey.SK = new(big.Int).SetBytes(*tx.sigPrivKey)
-		//sigKey.R =
-
 	}
 
 	return nil
+}
+
+func (tx *TxPrivacy) VerifySigTx(hasPrivacy bool) (bool, error){
+	// check input transaction
+	if tx.Sig == nil || tx.SigPubKey == nil {
+		return false, fmt.Errorf("input transaction must be an signed one!")
+	}
+
+
+	if hasPrivacy{
+
+	}
+	return false, nil
 }
 
 
@@ -190,6 +223,28 @@ func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
 	return
 }
 
+
+
+
+
+
+// ValidateTransaction returns true if transaction is valid:
+// - Signature matches the signing public key
+// - Output coins are valid
+// Note: This method doesn't check for double spending
+func (tx *TxPrivacy) ValidateTx(hasPrivacy bool) bool {
+	//Check tx signature
+
+	valid, err := tx.VerifySigTx(hasPrivacy)
+	if valid == false {
+		if err != nil {
+			fmt.Printf("Error verifying signature of tx: %+v", err)
+		}
+		return false
+	}
+
+	return false
+}
 
 func (tx *TxPrivacy) Hash() *common.Hash {
 	record := strconv.Itoa(int(tx.Version))
