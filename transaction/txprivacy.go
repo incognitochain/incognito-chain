@@ -73,6 +73,9 @@ func (tx * TxPrivacy) CreateTx(
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
 
+	// set private key for signing tx
+
+
 	// get public key last byte
 	pkLastByte := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 	tx.PubKeyLastByte = pkLastByte
@@ -122,6 +125,7 @@ func (tx * TxPrivacy) CreateTx(
 func (tx * TxPrivacy) SignTx(noPrivacy bool) error {
 	if noPrivacy{
 		//using ECDSA
+
 	} else{
 		//using Schnorr
 	}
