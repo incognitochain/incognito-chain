@@ -27,3 +27,9 @@ func (cmIndex * CMIndex)  RandCmId(blockHeight *big.Int, txID *common.Hash, numC
 func (cmIndex CMIndex) GetCommitment() *EllipticPoint{
 	return nil
 }
+
+// IsEqual return true if two cmIndexs is the same
+func (cmIndex CMIndex) IsEqual(target *CMIndex) bool{
+	//Todo: OxKraken
+	return true
+}

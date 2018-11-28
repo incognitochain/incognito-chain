@@ -182,7 +182,8 @@ func (pro PaymentProof) Verify() bool {
 }
 
 // GetCMList returns list of CMRingSize (2^4) commitments and list of corresponding cmIndexs that includes cm corresponding to cmIndex
-func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightCurrent *big.Int) ([]*privacy.CMIndex, []*privacy.EllipticPoint) {
+// Adnd return index of cm in list
+func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightCurrent *big.Int) ([]*privacy.CMIndex, []*privacy.EllipticPoint, byte) {
 
 	cmIndexs := make([]*privacy.CMIndex, CMRingSize)
 	cms := make([]*privacy.EllipticPoint, CMRingSize)
@@ -212,10 +213,16 @@ func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightC
 		return cmIndexs[i].CmId < cmIndexs[j].CmId
 	})
 
+	var index byte
+
 	// Get list of commitment from sorted cmIndexs
 	for i := 0; i < CMRingSize; i++ {
+		if cmIndexs[i].IsEqual(cmIndex){
+			cms[i] = cm
+			index = byte(i)
+		}
 		cms[i] = cmIndexs[i].GetCommitment()
 	}
 
-	return cmIndexs, cms
+	return cmIndexs, cms, index
 }
