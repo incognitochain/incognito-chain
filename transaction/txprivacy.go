@@ -19,14 +19,14 @@ type TxPrivacy struct {
 	LockTime int64  `json:"LockTime"`
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
 
-	SigPubKey []byte `json:"SigPubKey, omitempty"` // 64 bytes
+	SigPubKey []byte `json:"SigPubKey, omitempty"` // 33 bytes
 	Sig       []byte `json:"Sig, omitempty"`       // 64 bytes
 	Proof     *zkp.PaymentProof
 
 	PubKeyLastByte byte `json:"AddressLastByte"`
 
 	TxId       *common.Hash
-	sigPrivKey []byte // is always private property of struct
+	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 
 	// this one is a hash id of requested tx
 	// and is used inside response txs
@@ -135,6 +135,11 @@ func (tx *TxPrivacy) CreateTx(
 
 // SignTx signs tx
 func (tx * TxPrivacy) SignTx(hasPrivacy bool) error {
+	//Check input transaction
+	if tx.Sig != nil {
+		return fmt.Errorf("input transaction must be an unsigned one")
+	}
+
 	if hasPrivacy{
 		/****** using Schnorr *******/
 		// sign with sigPrivKey
@@ -200,9 +205,6 @@ func (tx *TxPrivacy) VerifySigTx(hasPrivacy bool) (bool, error){
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, fmt.Errorf("input transaction must be an signed one!")
 	}
-	// get hash tx
-	hashTx := make([]byte, common.HashSize)
-	copy(hashTx, tx.TxId[:])
 
 	var err error
 	res := false
@@ -226,7 +228,7 @@ func (tx *TxPrivacy) VerifySigTx(hasPrivacy bool) (bool, error){
 		signature.FromBytes(tx.Sig)
 
 		// verify signature
-		res = verKey.Verify(signature, hashTx)
+		res = verKey.Verify(signature, tx.TxId[:])
 
 
 	} else{
@@ -241,7 +243,7 @@ func (tx *TxPrivacy) VerifySigTx(hasPrivacy bool) (bool, error){
 		r, s  := FromByteArrayToECDSASig(tx.Sig)
 
 		// verify signature
-		res = ecdsa.Verify(verKey, hashTx, r, s)
+		res = ecdsa.Verify(verKey, tx.TxId[:], r, s)
 	}
 
 	return res, nil
@@ -263,18 +265,15 @@ func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
 }
 
 
-
-
-
-
 // ValidateTransaction returns true if transaction is valid:
-// - Signature matches the signing public key
-// - Output coins are valid
+// - Verify tx signature
+// - Verify the payment proof
 // Note: This method doesn't check for double spending
 func (tx *TxPrivacy) ValidateTx(hasPrivacy bool) bool {
-	//Check tx signature
-
-	valid, err := tx.VerifySigTx(hasPrivacy)
+	// Verify tx signature
+	var valid bool
+	var err error
+	valid, err = tx.VerifySigTx(hasPrivacy)
 	if valid == false {
 		if err != nil {
 			fmt.Printf("Error verifying signature of tx: %+v", err)
@@ -282,7 +281,14 @@ func (tx *TxPrivacy) ValidateTx(hasPrivacy bool) bool {
 		return false
 	}
 
-	return false
+	// Verify the payment proof
+	valid = tx.Proof.Verify()
+	if valid == false{
+		fmt.Printf("Error verifying the payment proof")
+		return false
+	}
+
+	return true
 }
 
 func (tx *TxPrivacy) Hash() *common.Hash {
