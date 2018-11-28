@@ -50,8 +50,8 @@ func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.Input
 	wit.outputCoins = outputCoins
 }
 
-// BuildWitnessProtocol prepare witnesses for all protocol need to be proved when create tx
-func (wit *PaymentWitness) BuildWitnessProtocol(){
+// Build prepares witnesses for all protocol need to be proved when create tx
+func (wit *PaymentWitness) Build(){
 
 }
 
