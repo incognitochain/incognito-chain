@@ -41,7 +41,7 @@ func newPedersenParams() PCParams {
 	pcm.G = make([]EllipticPoint, pcm.Capacity)
 	pcm.G[0] = EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
 	for i := 1; i < pcm.Capacity; i++ {
-		pcm.G[i] = pcm.G[i-1].Hash(i)
+		pcm.G[i] = pcm.G[0].Hash(i)
 	}
 	return pcm
 }
