@@ -137,7 +137,7 @@ ipp : the proof
 */
 func InnerProductVerify(c *big.Int, P, U privacy.EllipticPoint, G, H []privacy.EllipticPoint, ipp InnerProdArg) bool {
 	//fmt.Println("Verifying Inner Product Argument")
-	//fmt.Printf("Commitment Value: %s \n", P)
+	//fmt.Printf("Commitment H: %s \n", P)
 	s1 := blake2b.Sum256([]byte(P.X.String() + P.Y.String()))
 	chal1 := new(big.Int).SetBytes(s1[:])
 	ux := U.ScalarMulPoint(chal1)
@@ -198,7 +198,7 @@ we replace n separate exponentiations with a single ScalarMulPointi-exponentiati
 
 func InnerProductVerifyFast(c *big.Int, P, U privacy.EllipticPoint, G, H []privacy.EllipticPoint, ipp InnerProdArg) bool {
 	//fmt.Println("Verifying Inner Product Argument")
-	//fmt.Printf("Commitment Value: %s \n", P)
+	//fmt.Printf("Commitment H: %s \n", P)
 	s1 := blake2b.Sum256([]byte(P.X.String() + P.Y.String()))
 	chal1 := new(big.Int).SetBytes(s1[:])
 	ux := U.ScalarMulPoint(chal1)
@@ -472,7 +472,7 @@ func NewECPrimeGroupKey(n int) CryptoParams {
 			} else {
 				if confirmed%2 == 0 {
 					gen1Vals[confirmed/2] = privacy.EllipticPoint{gen2.X, gen2.Y}
-					//fmt.Println("new G Value")
+					//fmt.Println("new G H")
 				} else {
 					gen2Vals[confirmed/2] = privacy.EllipticPoint{gen2.X, gen2.Y}
 					//fmt.Println("new H value")

@@ -52,7 +52,7 @@ func (tx * TxPrivacy) CreateTx(
 	var sumOutputValue uint64
 	for _, p := range paymentInfo {
 		sumOutputValue += p.Amount
-		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
+		fmt.Printf("[CreateTx] paymentInfo.H: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
 	}
 
 	// Calculate sum of all input coins' value

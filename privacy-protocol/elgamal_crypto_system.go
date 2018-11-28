@@ -2,6 +2,7 @@ package privacy
 
 import (
 	"crypto/rand"
+	"github.com/ninjadotorg/constant/privacy-protocol/client/crypto/elliptic"
 	"math/big"
 )
 
@@ -20,14 +21,15 @@ type ElGamalPublicKeyEncryption interface {
 }
 
 // ElGamalPubKey ...
+// H = G^X
 type ElGamalPubKey struct {
-	G     *EllipticPoint
-	Value *EllipticPoint
+	H          	*EllipticPoint
+	Curve 			*elliptic.Curve
 }
 
 type ElGamalPrivKey struct {
-	G     *EllipticPoint
-	Value *big.Int
+	Curve 			*elliptic.Curve
+	X          	*big.Int
 }
 
 type ElGamalCipherText struct {
@@ -40,17 +42,17 @@ func (elgamalCipher *ElGamalCipherText) Set(R, C *EllipticPoint) {
 }
 
 func (pub *ElGamalPubKey) Set(
-	G *EllipticPoint,
-	Value *EllipticPoint) {
-	pub.G = G
-	pub.Value = Value
+	Curve *elliptic.Curve,
+	H *EllipticPoint) {
+	pub.Curve = Curve
+	pub.H = H
 }
 
 func (priv *ElGamalPrivKey) Set(
-	G *EllipticPoint,
+	Curve *elliptic.Curve,
 	Value *big.Int) {
-	priv.G = G
-	priv.Value = Value
+	priv.Curve = Curve
+	priv.X = Value
 }
 
 func (cipherText *ElGamalCipherText) Bytes() []byte {
@@ -60,7 +62,7 @@ func (cipherText *ElGamalCipherText) Bytes() []byte {
 func (priv *ElGamalPrivKey) PubKeyGen() *ElGamalPubKey {
 	elGamalPubKey := new(ElGamalPubKey)
 	publicKeyValue := new(EllipticPoint)
-	publicKeyValue.X, publicKeyValue.Y = Curve.ScalarMult(priv.G.X, priv.G.Y, priv.Value.Bytes())
+	publicKeyValue.X, publicKeyValue.Y = Curve.ScalarMult(priv.G.X, priv.G.Y, priv.X.Bytes())
 	publicKeyG := new(EllipticPoint)
 	publicKeyG.X = big.NewInt(0)
 	publicKeyG.Y = big.NewInt(0)
@@ -75,7 +77,7 @@ func (pub *ElGamalPubKey) ElGamalEnc(plainPoint *EllipticPoint) *ElGamalCipherTe
 	RRnd := new(EllipticPoint)
 	RRnd.X, RRnd.Y = Curve.ScalarMult(pub.G.X, pub.G.Y, rRnd.Bytes())
 	Cipher := new(EllipticPoint)
-	Cipher.X, Cipher.Y = Curve.ScalarMult(pub.Value.X, pub.Value.Y, rRnd.Bytes())
+	Cipher.X, Cipher.Y = Curve.ScalarMult(pub.H.X, pub.H.Y, rRnd.Bytes())
 	Cipher.X, Cipher.Y = Curve.Add(Cipher.X, Cipher.Y, plainPoint.X, plainPoint.Y)
 	elgamalCipher := new(ElGamalCipherText)
 	elgamalCipher.Set(RRnd, Cipher)
@@ -87,9 +89,9 @@ func (priv *ElGamalPrivKey) ElGamalDec(cipher *ElGamalCipherText) *EllipticPoint
 	plainPoint := new(EllipticPoint)
 	inversePrivKey := new(big.Int)
 	inversePrivKey.Set(Curve.Params().N)
-	inversePrivKey.Sub(inversePrivKey, priv.Value)
+	inversePrivKey.Sub(inversePrivKey, priv.X)
 
-	// fmt.Println(big.NewInt(0).Mod(big.NewInt(0).Add(inversePrivKey, priv.Value), Curve.Params().N))
+	// fmt.Println(big.NewInt(0).Mod(big.NewInt(0).Add(inversePrivKey, priv.H), Curve.Params().N))
 	plainPoint.X, plainPoint.Y = Curve.ScalarMult(cipher.R.X, cipher.R.Y, inversePrivKey.Bytes())
 	plainPoint.X, plainPoint.Y = Curve.Add(plainPoint.X, plainPoint.Y, cipher.C.X, cipher.C.Y)
 	return plainPoint
@@ -97,7 +99,7 @@ func (priv *ElGamalPrivKey) ElGamalDec(cipher *ElGamalCipherText) *EllipticPoint
 
 func TestElGamalPubKeyEncryption() bool {
 	privKey := new(ElGamalPrivKey)
-	privKey.Value, _ = rand.Int(rand.Reader, Curve.Params().N)
+	privKey.X, _ = rand.Int(rand.Reader, Curve.Params().N)
 	privKey.G = new(EllipticPoint)
 	privKey.G.X = big.NewInt(0)
 	privKey.G.Y = big.NewInt(0)

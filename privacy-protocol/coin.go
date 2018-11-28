@@ -76,7 +76,7 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error{
 	/****** Encrypt symKeyByte using Transmission key's receiver with ElGamal cryptosystem ****/
 	// prepare public key for ElGamal cryptosystem
 	pubKey := new(ElGamalPubKey)
-	pubKey.Value,_ = DecompressKey(receiverTK)
+	pubKey.H,_ = DecompressKey(receiverTK)
 
 
 	coin.CoinDetailsEncrypted.SymKeyEncrypted = pubKey.ElGamalEnc(symKeyPoint)
@@ -92,7 +92,7 @@ func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey){
 	/*** Decrypt symKeyEncrypted using receiver's receiving key to get symKey ***/
 	// prepare private key for Elgamal cryptosystem
 	privKey := new(ElGamalPrivKey)
-	privKey.Value = new(big.Int).SetBytes(receivingKey)
+	privKey.X = new(big.Int).SetBytes(receivingKey)
 
 	/*** Decrypt Encrypted using receiver's receiving key to get symKey ***/
 }
@@ -103,7 +103,7 @@ func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey){
 //CommitAll commits a coin with 4 attributes (public key, value, serial number, r)
 //func (coin *Coin) CommitAll() {
 //	//var values [PCM_CAPACITY-1][]byte
-//	values := [PCM_CAPACITY][]byte{coin.PublicKey, coin.Value, coin.SNDerivator, coin.Randomness}
+//	values := [PCM_CAPACITY][]byte{coin.PublicKey, coin.H, coin.SNDerivator, coin.Randomness}
 //	fmt.Printf("coin info: %v\n", values)
 //	coin.CoinCommitment = append(coin.CoinCommitment, FULL)
 //	coin.CoinCommitment = append(coin.CoinCommitment, PedCom.Commit(values)...)
@@ -124,7 +124,7 @@ func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey){
 //// CommitValue commits a value's coin
 //func (coin *Coin) CommitValue() []byte {
 //	var values [PCM_CAPACITY-1][]byte
-//	values = [PCM_CAPACITY-1][]byte{nil, coin.Value, nil, coin.Randomness}
+//	values = [PCM_CAPACITY-1][]byte{nil, coin.H, nil, coin.Randomness}
 //
 //	var commitment []byte
 //	commitment = append(commitment, VALUE)

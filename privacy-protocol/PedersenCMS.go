@@ -34,7 +34,7 @@ type PCParams struct {
 	G []EllipticPoint // generators
 	Capacity int
 	// G[0]: public key
-	// G[1]: Value
+	// G[1]: H
 	// G[2]: SNDerivator
 	// G[3]: Random
 }
@@ -162,10 +162,10 @@ func (com PCParams) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoi
 // 		value2 := new(big.Int).SetBytes(RandBytes(32))
 // 		value3 := new(big.Int).SetBytes(RandBytes(32))
 // 		valuer := new(big.Int).SetBytes(RandBytes(32))
-// 		fmt.Println("Value 1: ", value1)
-// 		fmt.Println("Value 2: ", value2)
-// 		fmt.Println("Value 3: ", value3)
-// 		fmt.Println("Value r: ", valuer)
+// 		fmt.Println("H 1: ", value1)
+// 		fmt.Println("H 2: ", value2)
+// 		fmt.Println("H 3: ", value3)
+// 		fmt.Println("H r: ", valuer)
 
 // 		//Compute commitment for all value, 4 is value of constant PCM_CAPACITY
 // 		commitmentAll := PedCom.CommitAll([PCM_CAPACITY]big.Int{*value1, *value2, *value3, *valuer})
@@ -231,8 +231,8 @@ func (com PCParams) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoi
 // 		//Generate 2 random value
 // 		value1 := new(big.Int).SetBytes(RandBytes(32))
 // 		valuer := new(big.Int).SetBytes(RandBytes(32))
-// 		fmt.Println("Value 1: ", value1)
-// 		fmt.Println("Value r: ", valuer)
+// 		fmt.Println("H 1: ", value1)
+// 		fmt.Println("H r: ", valuer)
 
 // 		//Compute commitment for special value with index 0
 // 		commitmentSpec := PedCom.CommitAtIndex(*value1, *valuer, 0)

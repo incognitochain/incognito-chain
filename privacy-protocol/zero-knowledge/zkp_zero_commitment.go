@@ -27,7 +27,7 @@ type PKComZeroWitness struct {
 /*Protocol for opening a PedersenCommitment to 0
 Prove:
 	commitmentValue is PedersenCommitment value of Zero, that is statement needed to prove
-	commitmentValue is calculated by Comm_ck(Value,PRDNumber)
+	commitmentValue is calculated by Comm_ck(H,PRDNumber)
 	commitmentRnd is PRDNumber, which is used to calculate commitmentValue
 	s <- Zp; P is privacy.Curve base point's order, is N
 	B <- Comm_ck(0,s);  Comm_ck is PedersenCommit function using public params - privacy.Curve.Params() (G0,G1...)
@@ -40,7 +40,7 @@ Prove:
 
 Verify:
 	commitmentValue is PedersenCommitment value of Zero, that is statement needed to prove
-	commitmentValue is calculated by Comm_ck(Value,PRDNumber), a.k.a A
+	commitmentValue is calculated by Comm_ck(H,PRDNumber), a.k.a A
 	commitmentZeroS, z are output of Prove function, commitmentZeroS is a.k.a B
 	x <- Hash(G0||G1||G2||G3||commitmentvalue)
 	boolValue <- (Comm_ck(0,z) == A.x + B); in this case, A and B needed to convert to privacy.privacy.EllipticPoint

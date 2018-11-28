@@ -129,11 +129,11 @@ func (wit *PKComMultiRangeWitness) Prove() PKComMultiRangeProof {
 	for j := range wit.Values {
 		v := wit.Values[j]
 		if v.Cmp(big.NewInt(0)) == -1 {
-			fmt.Println("Value is below range! Not proving")
+			fmt.Println("H is below range! Not proving")
 		}
 
 		if v.Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(bitsPerValue)), privacy.Curve.Params().N)) == 1 {
-			fmt.Println("Value is above range! Not proving.")
+			fmt.Println("H is above range! Not proving.")
 		return *new(PKComMultiRangeProof)
 	}
 

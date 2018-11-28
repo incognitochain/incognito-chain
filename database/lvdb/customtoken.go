@@ -70,7 +70,7 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 
 /*
 	Key: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
-  Value: value-spent/unspent-rewarded/unreward
+  H: value-spent/unspent-rewarded/unreward
 
 */
 func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *transaction.TxCustomToken) error {
@@ -137,7 +137,7 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		}
 		// init value: {value}-unspent-unreward
 		paymentAddressValue := strconv.Itoa(int(value)) + string(splitter) + string(unspent) + string(splitter) + string(unreward)
-		fmt.Println("Value in StoreCustomTokenPaymentAddresstHistory: ", paymentAddressValue)
+		fmt.Println("H in StoreCustomTokenPaymentAddresstHistory: ", paymentAddressValue)
 		if err := db.lvdb.Put(paymentAddressKey, []byte(paymentAddressValue), nil); err != nil {
 			return err
 		}
@@ -226,7 +226,7 @@ func (db *db) GetCustomTokenListPaymentAddressesBalance(tokenID *common.Hash) (m
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		key := string(iter.Key())
-		value := string(iter.Value())
+		value := string(iter.H())
 		keys := strings.Split(key, string(splitter))
 		values := strings.Split(value, string(splitter))
 		// get unspent and unreward transaction output
