@@ -15,6 +15,15 @@ type PaymentWitness struct {
 	spendingKey *big.Int
 	inputCoins  []*privacy.InputCoin
 	outputCoins []*privacy.OutputCoin
+
+	ComMultiRangeWitness 					*PKComMultiRangeWitness
+	ComOpeningsWitness   					*PKComOpeningsWitness
+	ComZeroOneWitness    					*PKComZeroOneWitness
+	ComZeroWitness      					*PKComZeroWitness
+	EqualityOfCommittedValWitness *PKEqualityOfCommittedValWitness
+	OneOfManyWitness              *PKOneOfManyWitness
+
+
 }
 
 // BEGIN--------------------------------------------------------------------------------------------------------------------------------------------
@@ -25,7 +34,6 @@ type PaymentProof struct {
 	ComOpeningsProof   *PKComOpeningsProof
 	ComZeroOneProof    *PKComZeroOneProof
 	ComZeroProof       *PKComZeroProof
-	// InEqualOutProof    *PKInEqualOutProof
 	EqualityOfCommittedValProof *PKEqualityOfCommittedValProof
 	OneOfManyProof              *PKOneOfManyProof
 }
@@ -47,19 +55,18 @@ func (wit *PaymentWitness) Prove() *PaymentProof {
 
 	numberInputCoin := len(wit.inputCoins)
 	// Commit each component of coins being spent
-	cmSK := make([]*privacy.EllipticPoint, numberInputCoin)
+	randSK := privacy.RandInt()
+	cmSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randSK, privacy.SK)
 	cmValue := make([]*privacy.EllipticPoint, numberInputCoin)
 	cmSND := make([]*privacy.EllipticPoint, numberInputCoin)
 
-	randSK := make([]*big.Int, numberInputCoin)
+
 	randValue := make([]*big.Int, numberInputCoin)
 	randSND := make([]*big.Int, numberInputCoin)
 	for i, inputCoin := range wit.inputCoins {
-		randSK[i] = privacy.RandInt()
 		randValue[i] = privacy.RandInt()
 		randSND[i] = privacy.RandInt()
 
-		cmSK[i] = privacy.PedCom.CommitAtIndex(wit.spendingKey, randSK[i], privacy.SK)
 		cmValue[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(inputCoin.CoinDetails.Value)), randValue[i], privacy.VALUE)
 		cmSND[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randSND[i], privacy.SND)
 	}
@@ -68,11 +75,11 @@ func (wit *PaymentWitness) Prove() *PaymentProof {
 	cmSum := make([]*privacy.EllipticPoint, numberInputCoin)
 	randSum := make([]*big.Int, numberInputCoin)
 	for i := 0; i < numberInputCoin; i++ {
-		cmSum[i] = cmSK[i]
+		cmSum[i] = cmSK
 		cmSum[i].X, cmSum[i].Y = privacy.Curve.Add(cmSum[i].X, cmSum[i].Y, cmValue[i].X, cmValue[i].Y)
 		cmSum[i].X, cmSum[i].Y = privacy.Curve.Add(cmSum[i].X, cmSum[i].Y, cmSND[i].X, cmSND[i].Y)
 
-		randSum[i] = randSK[i]
+		randSum[i] = randSK
 		randSum[i].Add(randSum[i], randValue[i])
 		randSum[i].Add(randSum[i], randSND[i])
 	}
