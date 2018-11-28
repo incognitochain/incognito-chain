@@ -2,22 +2,24 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
+	"strconv"
+
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-	"math/big"
 )
 
-type TxPrivacy struct{
+type TxPrivacy struct {
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
 
-	SigPubKey []byte           `json:"SigPubKey, omitempty"` // 64 bytes
-	Sig		    []byte           `json:"Sig, omitempty"`    // 64 bytes
-	Proof 		*zkp.PaymentProof
+	SigPubKey []byte `json:"SigPubKey, omitempty"` // 64 bytes
+	Sig       []byte `json:"Sig, omitempty"`       // 64 bytes
+	Proof     *zkp.PaymentProof
 
 	PubKeyLastByte byte `json:"AddressLastByte"`
 
@@ -34,13 +36,13 @@ type TxPrivacy struct{
 	// outputcoin []OutputCoin
 }
 
-func (tx * TxPrivacy) CreateTx(
+func (tx *TxPrivacy) CreateTx(
 	senderSK *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
 	inputCoins []*privacy.InputCoin,
 	fee uint64,
 	noPrivacy bool,
-) (*TxPrivacy, error){
+) (*TxPrivacy, error) {
 
 	// Print list of all input coins
 	fmt.Printf("List of all input coins before building tx:\n")
@@ -81,7 +83,7 @@ func (tx * TxPrivacy) CreateTx(
 	outputCoins := make([]*privacy.OutputCoin, len(paymentInfo))
 
 	// create new output coins with info: Pk, value, SND
-	for i, pInfo := range paymentInfo{
+	for i, pInfo := range paymentInfo {
 		outputCoins[i] = new(privacy.OutputCoin)
 		outputCoins[i].CoinDetails.Value = pInfo.Amount
 		outputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
@@ -89,7 +91,7 @@ func (tx * TxPrivacy) CreateTx(
 	}
 
 	// if overBalance > 0, create a output coin with pk is pk's sender and value is overBalance
-	if overBalance > 0{
+	if overBalance > 0 {
 		changeCoin := new(privacy.OutputCoin)
 		changeCoin.CoinDetails.Value = overBalance
 		changeCoin.CoinDetails.PublicKey, _ = privacy.DecompressKey(senderFullKey.PaymentAddress.Pk)
@@ -109,7 +111,7 @@ func (tx * TxPrivacy) CreateTx(
 	tx.Proof = witness.Prove()
 
 	// encrypt coin details (Randomness)
-	for i:=0; i< len(outputCoins); i++{
+	for i := 0; i < len(outputCoins); i++ {
 		outputCoins[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
 	}
 
@@ -119,14 +121,39 @@ func (tx * TxPrivacy) CreateTx(
 	return tx, nil
 }
 
-func (tx * TxPrivacy) SignTx(noPrivacy bool) error {
-	if noPrivacy{
+func (tx *TxPrivacy) SignTx(noPrivacy bool) error {
+	if noPrivacy {
 		//using ECDSA
-	} else{
+	} else {
 		//using Schnorr
 	}
 
 	return nil
 }
 
+func (tx *TxPrivacy) Hash() *common.Hash {
+	record := strconv.Itoa(int(tx.Version))
+	record += tx.Type
+	record += strconv.FormatInt(tx.LockTime, 10)
+	record += strconv.FormatUint(tx.Fee, 10)
+	record += string(tx.Proof.Bytes()[:])
+	record += string(tx.PubKeyLastByte)
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
 
+/*
+	Version  int8   `json:"Version"`
+	Type     string `json:"Type"` // Transaction type
+	LockTime int64  `json:"LockTime"`
+	Fee      uint64 `json:"Fee"` // Fee applies: always consant
+
+	SigPubKey []byte `json:"SigPubKey, omitempty"` // 64 bytes
+	Sig       []byte `json:"Sig, omitempty"`       // 64 bytes
+	Proof     *zkp.PaymentProof
+
+	PubKeyLastByte byte `json:"AddressLastByte"`
+
+	TxId       *common.Hash
+	sigPrivKey *privacy.SpendingKey
+*/
