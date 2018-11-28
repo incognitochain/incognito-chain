@@ -16,26 +16,24 @@ type PaymentWitness struct {
 	inputCoins  []*privacy.InputCoin
 	outputCoins []*privacy.OutputCoin
 
-	ComMultiRangeWitness 					*PKComMultiRangeWitness
-	ComOpeningsWitness   					*PKComOpeningsWitness
-	ComZeroOneWitness    					*PKComZeroOneWitness
-	ComZeroWitness      					*PKComZeroWitness
-	EqualityOfCommittedValWitness *PKEqualityOfCommittedValWitness
+	ComOpeningsWitness            []*PKComOpeningsWitness
 	OneOfManyWitness              *PKOneOfManyWitness
-
-
+	EqualityOfCommittedValWitness *PKEqualityOfCommittedValWitness
+	ComMultiRangeWitness          *PKComMultiRangeWitness
+	ComZeroWitness                *PKComZeroWitness
+	ComZeroOneWitness             *PKComZeroOneWitness
 }
 
 // BEGIN--------------------------------------------------------------------------------------------------------------------------------------------
 
 // PaymentProof contains all of PoK for sending coin
 type PaymentProof struct {
-	ComMultiRangeProof *PKComMultiRangeProof
-	ComOpeningsProof   *PKComOpeningsProof
-	ComZeroOneProof    *PKComZeroOneProof
-	ComZeroProof       *PKComZeroProof
-	EqualityOfCommittedValProof *PKEqualityOfCommittedValProof
+	ComOpeningsProof            []*PKComOpeningsProof
 	OneOfManyProof              *PKOneOfManyProof
+	EqualityOfCommittedValProof *PKEqualityOfCommittedValProof
+	ComMultiRangeProof          *PKComMultiRangeProof
+	ComZeroProof                *PKComZeroProof
+	ComZeroOneProof             *PKComZeroOneProof
 }
 
 func (paymentProof *PaymentProof) Bytes() []byte {
@@ -53,55 +51,67 @@ func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.Input
 // Build prepares witnesses for all protocol need to be proved when create tx
 // if hashPrivacy = false, witness includes spending key, input coins, output coins
 // otherwise, witness includes all attributes in PaymentWitness struct
-func (wit *PaymentWitness) Build(hashPrivacy bool, spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin){
+func (wit *PaymentWitness) Build(hashPrivacy bool, spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 	wit.spendingKey = spendingKey
 	wit.inputCoins = inputCoins
 	wit.outputCoins = outputCoins
-}
-
-// Prove creates big proof
-func (wit *PaymentWitness) Prove() *PaymentProof {
 
 	numberInputCoin := len(wit.inputCoins)
-	// Commit each component of coins being spent
 	randSK := privacy.RandInt()
 	cmSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randSK, privacy.SK)
 	cmValue := make([]*privacy.EllipticPoint, numberInputCoin)
 	cmSND := make([]*privacy.EllipticPoint, numberInputCoin)
-
-
+	// cmAll := make([]*privacy.EllipticPoint, numberInputCoin)
 	randValue := make([]*big.Int, numberInputCoin)
 	randSND := make([]*big.Int, numberInputCoin)
 	for i, inputCoin := range wit.inputCoins {
+		// cmAll[i] = privacy.PedCom.CommitAll([]*big.Int{spendingKey, big.NewInt(int64(inputCoin.CoinDetails.Value)), inputCoin.CoinDetails.SNDerivator, randValue})
 		randValue[i] = privacy.RandInt()
 		randSND[i] = privacy.RandInt()
-
 		cmValue[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(inputCoin.CoinDetails.Value)), randValue[i], privacy.VALUE)
 		cmSND[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randSND[i], privacy.SND)
 	}
 
 	// Summing all commitments of each input coin into one commitment and proving the knowledge of its Openings
 	cmSum := make([]*privacy.EllipticPoint, numberInputCoin)
+	cmSumInverse := make([]*privacy.EllipticPoint, numberInputCoin)
 	randSum := make([]*big.Int, numberInputCoin)
+	wit.ComOpeningsWitness = make([]*PKComOpeningsWitness, numberInputCoin)
 	for i := 0; i < numberInputCoin; i++ {
 		cmSum[i] = cmSK
 		cmSum[i].X, cmSum[i].Y = privacy.Curve.Add(cmSum[i].X, cmSum[i].Y, cmValue[i].X, cmValue[i].Y)
 		cmSum[i].X, cmSum[i].Y = privacy.Curve.Add(cmSum[i].X, cmSum[i].Y, cmSND[i].X, cmSND[i].Y)
-
+		cmSumInverse[i], _ = cmSum[i].Inverse()
 		randSum[i] = randSK
 		randSum[i].Add(randSum[i], randValue[i])
 		randSum[i].Add(randSum[i], randSND[i])
+		wit.ComOpeningsWitness[i].Set(cmSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randSum[i]})
+		cmRndIndexList, cmRndValue, indexIsZero := GetCMList(cmSum[i], privacy.GetCmIndex(cmSum[i]), GetCurrentBlockHeight())
+		rndIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness,randSum[i])
+		rndIsZero.Mod(rndIsZero, privacy.Curve.Params().N)
+		for j:=0; j<CMRingSize; j++{
+			cmRndValue[j].
+		}
+		wit.OneOfManyWitness.Set(cmRndValue,cmRndIndexList,
 	}
+	//todo
+
+}
+
+// Prove creates big proof
+func (wit *PaymentWitness) Prove() *PaymentProof {
+
+	// Commit each component of coins being spent
 
 	// Call protocol proving knowledge of each sum commitment's Openings
 
 	// Proving one-out-of-N commitments is a commitment to the coins being spent
-	cmSumInverse := make([]*privacy.EllipticPoint, numberInputCoin)
+	
 	//cmLists := make([][]*privacy.EllipticPoint, numberInputCoin)
 	//witnessOneOutOfN := make([]*PKOne, len(inputCoins))
 	for i := 0; i < numberInputCoin; i++ {
 		// get sum commitment inverse
-		cmSumInverse[i], _ = cmSum[i].Inverse()
+		
 
 		// Prepare list of commitments for each commitmentSum that includes 2^3 commiments
 		// Get all commitments in inputCoin[i]'s BlockHeight and other block (if needed)
@@ -217,7 +227,7 @@ func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightC
 
 	// Get list of commitment from sorted cmIndexs
 	for i := 0; i < CMRingSize; i++ {
-		if cmIndexs[i].IsEqual(cmIndex){
+		if cmIndexs[i].IsEqual(cmIndex) {
 			cms[i] = cm
 			index = byte(i)
 		}
@@ -225,4 +235,9 @@ func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightC
 	}
 
 	return cmIndexs, cms, index
+}
+
+func GetCurrentBlockHeight() *big.Int {
+	//TODO
+	return big.NewInt(1224)
 }
