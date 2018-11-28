@@ -200,12 +200,15 @@ func (tx *TxPrivacy) VerifySigTx(hasPrivacy bool) (bool, error){
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, fmt.Errorf("input transaction must be an signed one!")
 	}
+	// get hash tx
+	hashTx := make([]byte, common.HashSize)
+	copy(hashTx, tx.TxId[:])
 
 	var err error
 	res := false
 
 	if hasPrivacy{
-		// verify Schnorr signature
+		/****** verify Schnorr signature *****/
 		// prepare Public key for verification
 		verKey := new(privacy.SchnPubKey)
 		verKey.PK, err = privacy.DecompressKey(tx.SigPubKey)
@@ -223,11 +226,22 @@ func (tx *TxPrivacy) VerifySigTx(hasPrivacy bool) (bool, error){
 		signature.FromBytes(tx.Sig)
 
 		// verify signature
-		res = verKey.Verify(signature, *tx.TxId)
+		res = verKey.Verify(signature, hashTx)
 
 
 	} else{
-		// verify ECDSA signature
+		/****** verify ECDSA signature *****/
+		// prepare Public key for verification
+		verKey := new(ecdsa.PublicKey)
+		point := new(privacy.EllipticPoint)
+		point, _ = privacy.DecompressKey(tx.SigPubKey)
+		verKey.X, verKey.Y = point.X, point.Y
+
+		// convert signature from byte array to ECDSASign
+		r, s  := FromByteArrayToECDSASig(tx.Sig)
+
+		// verify signature
+		res = ecdsa.Verify(verKey, hashTx, r, s)
 	}
 
 	return res, nil
