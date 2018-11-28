@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/minio/blake2b-simd"
+	"github.com/ninjadotorg/constant/common"
+
 	"github.com/pkg/errors"
 )
 
 // Curve P256
 var Curve = elliptic.P256()
 
-const (
-	pointBytesLenCompressed      = 33
-	pointCompressed         byte = 0x2
-)
+// const (
+// 	pointBytesLenCompressed      = 33
+// 	pointCompressed         byte = 0x2
+// )
 
 //EllipticPointHelper contain some function for elliptic point
 type EllipticPointHelper interface {
@@ -210,29 +211,28 @@ func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 }
 
 // Hash derives new elliptic point from another elliptic point using hash function
-func (eccPoint EllipticPoint) Hash() EllipticPoint {
-	// res.X = hash(g.X), res.Y = sqrt(res.X^3 - 3X + B)
+func (eccPoint EllipticPoint) Hash(index int) EllipticPoint {
+	// res.X = hash(g.X || index), res.Y = sqrt(res.X^3 - 3X + B)
 	var res = new(EllipticPoint)
 	res.X = big.NewInt(0)
 	res.Y = big.NewInt(0)
 	res.X.SetBytes(eccPoint.X.Bytes())
+	res.X.Add(res.X, big.NewInt(int64(index)))
 	for {
-		hashMachine := blake2b.New256()
-		hashMachine.Write(res.X.Bytes())
-		res.X.SetBytes(hashMachine.Sum(nil))
+		res.X.SetBytes(common.DoubleHashB(res.X.Bytes()))
 		res.ComputeYCoord()
-		if (res.Y != nil) && (Curve.IsOnCurve(res.X, res.Y)) {
+		if (res.Y != nil) && (Curve.IsOnCurve(res.X, res.Y)) && (res.IsSafe()) {
 			break
 		}
 	}
-	//check Point of degree 2
-	pointToChecked := new(EllipticPoint)
-	pointToChecked.X, pointToChecked.Y = Curve.Double(res.X, res.Y)
+	// //check Point of degree 2
+	// pointToChecked := new(EllipticPoint)
+	// pointToChecked.X, pointToChecked.Y = Curve.Double(res.X, res.Y)
 
-	if pointToChecked.X == nil || pointToChecked.Y == nil {
-		//errors.New("Point at infinity")
-		return *new(EllipticPoint)
-	}
+	// if pointToChecked.X == nil || pointToChecked.Y == nil {
+	// 	//errors.New("Point at infinity")
+	// 	return *new(EllipticPoint)
+	// }
 	return *res
 }
 

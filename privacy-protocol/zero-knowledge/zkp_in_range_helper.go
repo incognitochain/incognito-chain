@@ -450,12 +450,12 @@ func NewECPrimeGroupKey(n int) CryptoParams {
 	H:=privacy.PedCom.G[privacy.RAND]
 
 	for i:=0;i<n;i++{
-		gen1Vals[i]= G.Hash()
-		G=G.Hash()
-		gen2Vals[i]= H.Hash()
-		H = H.Hash()
+		gen1Vals[i]= G.Hash(0)
+		G=G.Hash(0)
+		gen2Vals[i]= H.Hash(0)
+		H = H.Hash(0)
 	}
-	u	= G.AddPoint(H).Hash()
+	u	= G.AddPoint(H).Hash(0)
 	return CryptoParams{
 		privacy.Curve,
 		gen1Vals,

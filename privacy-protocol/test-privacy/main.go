@@ -1,10 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"math/big"
 )
 
 func main() {
@@ -62,7 +59,9 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-	//zkp.TestPKOneOfMany()
+	// zkp.TestPKOneOfMany()
+
+	//zkp.TestPKComMultiRange()
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -165,7 +164,7 @@ func main() {
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
-	//privacy.TestSchn()
+	privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
@@ -181,21 +180,35 @@ func main() {
 	//privacy.TestAESCTR()
 
 	/*----------------- TEST ENCRYPT/DECRYPT COIN -----------------*/
-	coin := new(privacy.Coin)
-	coin.Randomness = privacy.RandInt()
 
-	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	//fmt.Printf("\nSpending key: %v\n", spendingKey)
-	//fmt.Println(len(spendingKey))
-	keySet := cashec.KeySet{}
-	keySet.ImportFromPrivateKey(&spendingKey)
+	//coin := new(privacy.OutputCoin)
+	//coin.CoinDetails = new(privacy.Coin)
+	//coin.CoinDetails.Randomness = privacy.RandInt()
+	//fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+	//
+	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	//keySet := cashec.KeySet{}
+	//keySet.ImportFromPrivateKey(&spendingKey)
+	//
+	//err := coin.Encrypt(keySet.PaymentAddress.Tk)
+	//if err!= nil{
+	//	fmt.Println(err)
+	//}
+	//
+	//coin.Decrypt(keySet.ReadonlyKey.Rk)
+	//
+	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
 
-	encryptedData, _ := coin.Encrypt(keySet.PaymentAddress.Tk)
 
-	fmt.Printf("Encrypted data: %+v\n", encryptedData )
 
-	fmt.Printf("bit len N: %v\n", privacy.Curve.Params().N.BitLen())
+	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
 	//fmt.Println(zkp.TestOpeningsProtocol())
 	//fmt.Println(zkp.TestPKEqualityOfCommittedVal())
+	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
+	/*--------------------------------------------*/
+
+
+
+
 }

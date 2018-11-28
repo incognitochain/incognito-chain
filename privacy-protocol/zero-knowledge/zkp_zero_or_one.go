@@ -14,7 +14,7 @@ import (
 //	Proof   PKComZeroOneProof
 //}
 
-// PKComZeroOneProof contains Proof's value
+// PKComZeroOneWitness contains Witness's value
 type PKComZeroOneWitness struct {
 	commitedValue *big.Int
 	rand          *big.Int
@@ -75,8 +75,8 @@ func getindex(bigint *big.Int) int {
 // Prove creates a Proof for PedersenCommitment to zero or one
 func (wit *PKComZeroOneWitness) Prove() (*PKComZeroOneProof, error) {
 	// Check index
-	if wit.index < 0 || wit.index > privacy.PCM_CAPACITY-1 {
-		return nil, fmt.Errorf("index must be between 0 and pcm capacity - 1 ")
+	if wit.index < privacy.SK || wit.index > privacy.RAND {
+		return nil, fmt.Errorf("index must be between SK index and RAND index")
 	}
 
 	// Check whether commited value is zero or one or not
@@ -207,7 +207,7 @@ func (proof *PKComZeroOneProof) Verify() bool {
 func TestPKComZeroOne() {
 	res := true
 	for res {
-		// generate openings
+		// generate Openings
 		valueRand := privacy.RandBytes(32)
 		vInt := new(big.Int).SetBytes(valueRand)
 		vInt.Mod(vInt, big.NewInt(2))

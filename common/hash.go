@@ -143,3 +143,21 @@ func (self *Hash) Decode(dst *Hash, src string) error {
 
 	return nil
 }
+
+
+// Cmp compare two hash
+// hash = target : return 0
+// hash > target : return 1
+// hash < target : return -1
+func (hash *Hash) Cmp(target *Hash) int {
+	for i := 0; i < HashSize; i++ {
+		if hash[i] > target[i] {
+			return 1
+		}
+		if hash[i] < target[i] {
+			return -1
+		}
+	}
+	return 0
+}
+

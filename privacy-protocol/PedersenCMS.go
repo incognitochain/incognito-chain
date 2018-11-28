@@ -4,25 +4,20 @@ import (
 	"math/big"
 )
 
-const (
-	SK    = byte(0x00)
-	VALUE = byte(0x01)
-	SND   = byte(0x02)
-	RAND  = byte(0x03)
-	FULL  = byte(0x04)
-)
-
-const (
-	//PCM_CAPACITY ...
-	PCM_CAPACITY = 4
-)
+// const (
+// 	SK    = byte(0x00)
+// 	VALUE = byte(0x01)
+// 	SND   = byte(0x02)
+// 	RAND  = byte(0x03)
+// 	FULL  = byte(0x04)
+// )
 
 // PedersenCommitment represents a commitment that includes 4 generators
 type PedersenCommitment interface {
 	// Params returns the parameters for the commitment
 	Params() *PCParams
 	// CommitAll commits
-	CommitAll(openings [PCM_CAPACITY]*big.Int) *EllipticPoint
+	CommitAll(openings []*big.Int) *EllipticPoint
 	// CommitAtIndex commits value at index
 	CommitAtIndex(value *big.Int, rand *big.Int, index byte) *EllipticPoint
 	//CommitEllipticPoint commit a elliptic point
@@ -31,10 +26,10 @@ type PedersenCommitment interface {
 
 // PCParams represents the parameters for the commitment
 type PCParams struct {
-	G []EllipticPoint // generators
+	G        []EllipticPoint // generators
 	Capacity int
 	// G[0]: public key
-	// G[1]: Value
+	// G[1]: H
 	// G[2]: SNDerivator
 	// G[3]: Random
 }
@@ -46,7 +41,7 @@ func newPedersenParams() PCParams {
 	pcm.G = make([]EllipticPoint, pcm.Capacity)
 	pcm.G[0] = EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
 	for i := 1; i < pcm.Capacity; i++ {
-		pcm.G[i] = pcm.G[i-1].Hash()
+		pcm.G[i] = pcm.G[0].Hash(i)
 	}
 	return pcm
 }
@@ -60,7 +55,7 @@ func (com PCParams) Params() PCParams {
 
 // CommitAll commits a list of PCM_CAPACITY value(s)
 func (com PCParams) CommitAll(openings []*big.Int) *EllipticPoint {
-	if len(openings) != com.Capacity{
+	if len(openings) != com.Capacity {
 		return nil
 	}
 
@@ -80,7 +75,7 @@ func (com PCParams) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoi
 	commitment := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 	temp := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 
-	temp.X, temp.Y = Curve.ScalarMult(com.G[com.Capacity-1].X, com.G[com.Capacity-1].Y, rand.Bytes())
+	temp.X, temp.Y = Curve.ScalarMult(com.G[RAND].X, com.G[RAND].Y, rand.Bytes())
 	commitment.X, commitment.Y = Curve.Add(commitment.X, commitment.Y, temp.X, temp.Y)
 	temp.X, temp.Y = Curve.ScalarMult(com.G[index].X, com.G[index].Y, value.Bytes())
 	commitment.X, commitment.Y = Curve.Add(commitment.X, commitment.Y, temp.X, temp.Y)
@@ -162,10 +157,10 @@ func (com PCParams) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoi
 // 		value2 := new(big.Int).SetBytes(RandBytes(32))
 // 		value3 := new(big.Int).SetBytes(RandBytes(32))
 // 		valuer := new(big.Int).SetBytes(RandBytes(32))
-// 		fmt.Println("Value 1: ", value1)
-// 		fmt.Println("Value 2: ", value2)
-// 		fmt.Println("Value 3: ", value3)
-// 		fmt.Println("Value r: ", valuer)
+// 		fmt.Println("H 1: ", value1)
+// 		fmt.Println("H 2: ", value2)
+// 		fmt.Println("H 3: ", value3)
+// 		fmt.Println("H r: ", valuer)
 
 // 		//Compute commitment for all value, 4 is value of constant PCM_CAPACITY
 // 		commitmentAll := PedCom.CommitAll([PCM_CAPACITY]big.Int{*value1, *value2, *value3, *valuer})
@@ -231,8 +226,8 @@ func (com PCParams) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoi
 // 		//Generate 2 random value
 // 		value1 := new(big.Int).SetBytes(RandBytes(32))
 // 		valuer := new(big.Int).SetBytes(RandBytes(32))
-// 		fmt.Println("Value 1: ", value1)
-// 		fmt.Println("Value r: ", valuer)
+// 		fmt.Println("H 1: ", value1)
+// 		fmt.Println("H r: ", valuer)
 
 // 		//Compute commitment for special value with index 0
 // 		commitmentSpec := PedCom.CommitAtIndex(*value1, *valuer, 0)

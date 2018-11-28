@@ -9,18 +9,6 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
-// var curve *elliptic.Curve
-// var once sync.Once
-
-// func GetCurve() *elliptic.Curve {
-// 	once.Do(func() {
-// 		curve = (elliptic.Curve*)&elliptic.P256()
-// 	})
-
-// 	fmt.Printf("Pk curve: %v\n", &curve)
-// 	return &curve
-// }
-
 // const (
 // const (
 // 	P = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF
@@ -47,7 +35,7 @@ type SpendingKey []byte
 // Pk 33 bytes
 type PublicKey []byte
 
-// Rk 33 bytes
+// Rk 32 bytes
 type ReceivingKey []byte
 
 // Tk 33 bytes
