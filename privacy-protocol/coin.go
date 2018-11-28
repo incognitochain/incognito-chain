@@ -77,6 +77,7 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error{
 	// prepare public key for ElGamal cryptosystem
 	pubKey := new(ElGamalPubKey)
 	pubKey.H,_ = DecompressKey(receiverTK)
+	pubKey.Curve = &Curve
 
 
 	coin.CoinDetailsEncrypted.SymKeyEncrypted = pubKey.ElGamalEnc(symKeyPoint)
