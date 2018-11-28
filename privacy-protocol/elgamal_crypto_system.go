@@ -2,8 +2,9 @@ package privacy
 
 import (
 	"crypto/rand"
-	"github.com/ninjadotorg/constant/privacy-protocol/client/crypto/elliptic"
 	"math/big"
+
+	"github.com/ninjadotorg/constant/privacy-protocol/client/crypto/elliptic"
 )
 
 // ElGamalPublicKeyEncryption
@@ -23,13 +24,13 @@ type ElGamalPublicKeyEncryption interface {
 // ElGamalPubKey ...
 // H = G^X
 type ElGamalPubKey struct {
-	H          	*EllipticPoint
-	Curve 			*elliptic.Curve
+	Curve *elliptic.Curve
+	H     *EllipticPoint
 }
 
 type ElGamalPrivKey struct {
-	Curve 			*elliptic.Curve
-	X          	*big.Int
+	Curve *elliptic.Curve
+	X     *big.Int
 }
 
 type ElGamalCipherText struct {
@@ -62,7 +63,8 @@ func (cipherText *ElGamalCipherText) Bytes() []byte {
 func (priv *ElGamalPrivKey) PubKeyGen() *ElGamalPubKey {
 	elGamalPubKey := new(ElGamalPubKey)
 	publicKeyValue := new(EllipticPoint)
-	publicKeyValue.X, publicKeyValue.Y = Curve.ScalarMult(priv.G.X, priv.G.Y, priv.X.Bytes())
+
+	publicKeyValue.X, publicKeyValue.Y = Curve.ScalarMult((*priv.Curve).Params().Gx, (*priv.Curve).Params().Gx, priv.X.Bytes())
 	publicKeyG := new(EllipticPoint)
 	publicKeyG.X = big.NewInt(0)
 	publicKeyG.Y = big.NewInt(0)
