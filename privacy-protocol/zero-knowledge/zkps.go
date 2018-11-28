@@ -30,6 +30,10 @@ type PaymentProof struct {
 	OneOfManyProof              *PKOneOfManyProof
 }
 
+func (paymentProof *PaymentProof) Bytes() []byte {
+	return []byte{0}
+}
+
 // END----------------------------------------------------------------------------------------------------------------------------------------------
 
 func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
@@ -168,7 +172,7 @@ func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightC
 	cms := make([]*privacy.EllipticPoint, CMRingSize)
 
 	// Random 7 triples (blockHeight, txID, cmIndex)
-	for i := 0; i < CMRingSize - 1 ; i++{
+	for i := 0; i < CMRingSize-1; i++ {
 		cmIndexs[i].Randomize(blockHeightCurrent)
 	}
 
@@ -183,20 +187,19 @@ func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightC
 		if cmIndexs[i].BlockHeight.Cmp(cmIndexs[j].BlockHeight) == 1 {
 			return false
 		}
-		if cmIndexs[i].TxId.Cmp(cmIndexs[j].TxId) == -1{
+		if cmIndexs[i].TxId.Cmp(cmIndexs[j].TxId) == -1 {
 			return true
 		}
-		if cmIndexs[i].TxId.Cmp(cmIndexs[j].TxId) == 1{
+		if cmIndexs[i].TxId.Cmp(cmIndexs[j].TxId) == 1 {
 			return false
 		}
 		return cmIndexs[i].CmId < cmIndexs[j].CmId
 	})
 
 	// Get list of commitment from sorted cmIndexs
-	for i := 0; i < CMRingSize; i++{
+	for i := 0; i < CMRingSize; i++ {
 		cms[i] = cmIndexs[i].GetCommitment()
 	}
 
 	return cmIndexs, cms
 }
-
