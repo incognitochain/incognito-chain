@@ -24,7 +24,7 @@ type PaymentProof struct {
 	ComOpeningsProof   *PKComOpeningsProof
 	ComZeroOneProof    *PKComZeroOneProof
 	ComZeroProof       *PKComZeroProof
-	InEqualOutProof    *PKInEqualOutProof
+	//InEqualOutProof    *PKInEqualOutProof
 }
 
 // END----------------------------------------------------------------------------------------------------------------------------------------------
