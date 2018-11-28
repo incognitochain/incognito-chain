@@ -44,7 +44,7 @@ func (tx *TxPrivacy) CreateTx(
 	paymentInfo []*privacy.PaymentInfo,
 	inputCoins []*privacy.InputCoin,
 	fee uint64,
-	noPrivacy bool,
+	hasPrivacy bool,
 ) (*TxPrivacy, error) {
 
 	// Print list of all input coins
@@ -123,13 +123,14 @@ func (tx *TxPrivacy) CreateTx(
 	}
 
 	// sign tx
-	tx.SignTx(noPrivacy)
+	tx.Hash()
+	tx.SignTx(hasPrivacy)
 
 	return tx, nil
 }
 
-func (tx * TxPrivacy) SignTx(noPrivacy bool) error {
-	if noPrivacy{
+func (tx * TxPrivacy) SignTx(hasPrivacy bool) error {
+	if !hasPrivacy{
 		/***** using ECDSA ****/
 		// sign with sigPrivKey
 		// prepare private key for ECDSA
