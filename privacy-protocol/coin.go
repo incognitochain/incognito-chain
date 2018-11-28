@@ -113,7 +113,6 @@ func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey){
 	stream.XORKeyStream(randomness, coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:])
 
 	fmt.Printf("%s\n", randomness)
-
 }
 
 

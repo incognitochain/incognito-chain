@@ -75,6 +75,8 @@ func (tx *TxPrivacy) CreateTx(
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
 
+	// set private key for signing tx
+
 	// get public key last byte
 	pkLastByte := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 	tx.PubKeyLastByte = pkLastByte
@@ -124,6 +126,7 @@ func (tx *TxPrivacy) CreateTx(
 func (tx *TxPrivacy) SignTx(noPrivacy bool) error {
 	if noPrivacy {
 		//using ECDSA
+
 	} else {
 		//using Schnorr
 	}
@@ -141,19 +144,3 @@ func (tx *TxPrivacy) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
-
-/*
-	Version  int8   `json:"Version"`
-	Type     string `json:"Type"` // Transaction type
-	LockTime int64  `json:"LockTime"`
-	Fee      uint64 `json:"Fee"` // Fee applies: always consant
-
-	SigPubKey []byte `json:"SigPubKey, omitempty"` // 64 bytes
-	Sig       []byte `json:"Sig, omitempty"`       // 64 bytes
-	Proof     *zkp.PaymentProof
-
-	PubKeyLastByte byte `json:"AddressLastByte"`
-
-	TxId       *common.Hash
-	sigPrivKey *privacy.SpendingKey
-*/
