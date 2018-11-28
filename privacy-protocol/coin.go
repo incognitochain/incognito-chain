@@ -90,6 +90,9 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error{
 
 func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey){
 	/*** Decrypt symKeyEncrypted using receiver's receiving key to get symKey ***/
+	// prepare private key for Elgamal cryptosystem
+	privKey := new(ElGamalPrivKey)
+	privKey.Value = new(big.Int).SetBytes(receivingKey)
 
 	/*** Decrypt Encrypted using receiver's receiving key to get symKey ***/
 }

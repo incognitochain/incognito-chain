@@ -21,7 +21,7 @@ type TxPrivacy struct{
 
 	PubKeyLastByte byte `json:"AddressLastByte"`
 
-	txId       *common.Hash
+	TxId       *common.Hash
 	sigPrivKey *privacy.SpendingKey // is always private property of struct
 
 	// this one is a hash id of requested tx
