@@ -170,14 +170,12 @@ func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightC
 	// Random 7 triples (blockHeight, txID, cmIndex)
 	for i := 0; i < CMRingSize - 1 ; i++{
 		cmIndexs[i].Randomize(blockHeightCurrent)
-		//cms[i] = cmIndexs[i].GetCommitment()
 	}
 
-	// the last element in list is cm
+	// the last element in list is cmIndex
 	cmIndexs[CMRingSize-1] = cmIndex
-	//cms[CMRingSize-1] = cm
 
-	// Sort list
+	// Sort list cmIndexs
 	sort.Slice(cmIndexs, func(i, j int) bool {
 		if cmIndexs[i].BlockHeight.Cmp(cmIndexs[j].BlockHeight) == -1 {
 			return true
@@ -185,9 +183,19 @@ func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightC
 		if cmIndexs[i].BlockHeight.Cmp(cmIndexs[j].BlockHeight) == 1 {
 			return false
 		}
-		return cmIndexs[i].TxId.Compare(cmIndexs[j].TxId) == -1
+		if cmIndexs[i].TxId.Cmp(cmIndexs[j].TxId) == -1{
+			return true
+		}
+		if cmIndexs[i].TxId.Cmp(cmIndexs[j].TxId) == 1{
+			return false
+		}
+		return cmIndexs[i].CmId < cmIndexs[j].CmId
 	})
 
+	// Get list of commitment from sorted cmIndexs
+	for i := 0; i < CMRingSize; i++{
+		cms[i] = cmIndexs[i].GetCommitment()
+	}
 
 	return cmIndexs, cms
 }
