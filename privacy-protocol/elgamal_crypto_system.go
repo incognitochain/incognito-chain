@@ -2,7 +2,7 @@ package privacy
 
 import (
 	"crypto/rand"
-	"github.com/ninjadotorg/constant/privacy-protocol/client/crypto/elliptic"
+	"crypto/elliptic"
 	"math/big"
 )
 
