@@ -207,7 +207,7 @@ func (proof *PKComZeroOneProof) Verify() bool {
 func TestPKComZeroOne() {
 	res := true
 	for res {
-		// generate openings
+		// generate Openings
 		valueRand := privacy.RandBytes(32)
 		vInt := new(big.Int).SetBytes(valueRand)
 		vInt.Mod(vInt, big.NewInt(2))
