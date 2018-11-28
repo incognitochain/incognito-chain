@@ -7,6 +7,8 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"math/big"
+	"crypto/ecdsa"
+	"crypto/rand"
 )
 
 type TxPrivacy struct{
@@ -74,7 +76,7 @@ func (tx * TxPrivacy) CreateTx(
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
 
 	// set private key for signing tx
-
+	tx.sigPrivKey = senderSK
 
 	// get public key last byte
 	pkLastByte := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
@@ -124,13 +126,54 @@ func (tx * TxPrivacy) CreateTx(
 
 func (tx * TxPrivacy) SignTx(noPrivacy bool) error {
 	if noPrivacy{
-		//using ECDSA
+		/***** using ECDSA ****/
+		// sign with sigPrivKey
+		// prepare private key for ECDSA
+		sigKey := new(ecdsa.PrivateKey)
+		sigKey.PublicKey.Curve = privacy.Curve
+		sigKey.D = new(big.Int).SetBytes(*tx.sigPrivKey)
+		sigKey.PublicKey.X, sigKey.PublicKey.Y = privacy.Curve.ScalarBaseMult(*tx.sigPrivKey)
+
+		// save public key for verification signature tx
+		verKey:= new(privacy.EllipticPoint)
+		verKey.X, verKey.Y = sigKey.PublicKey.X, sigKey.PublicKey.Y
+		tx.SigPubKey = verKey.Compress()
+
+		// signing
+		r, s, err := ecdsa.Sign(rand.Reader, sigKey, tx.TxId[:])
+		if err != nil {
+			return err
+		}
+
+		// convert signature to byte array
+		tx.Sig = ECDSASigToByteArray(r, s)
 
 	} else{
-		//using Schnorr
+		/****** using Schnorr *******/
+		// sign with sigPrivKey
+		// prepare private key for Schnorr
+		sigKey := new(privacy.SchnPrivKey)
+		sigKey.SK = new(big.Int).SetBytes(*tx.sigPrivKey)
+		sigKey.R =
+
+
 	}
 
 	return nil
+}
+
+// ECDSASigToByteArray converts signature to byte array
+func ECDSASigToByteArray(r, s *big.Int) (sig []byte) {
+	sig = append(sig, r.Bytes()...)
+	sig = append(sig, s.Bytes()...)
+	return
+}
+
+// FromByteArrayToECDSASig converts a byte array to signature
+func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
+	r = new(big.Int).SetBytes(sig[0:32])
+	s = new(big.Int).SetBytes(sig[32:64])
+	return
 }
 
 

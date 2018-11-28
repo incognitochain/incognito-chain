@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"math/big"
 )
 
 func main() {
@@ -183,28 +184,34 @@ func main() {
 
 	/*----------------- TEST ENCRYPT/DECRYPT COIN -----------------*/
 
-	// coin := new(privacy.OutputCoin)
-	// coin.CoinDetails = new(privacy.Coin)
-	// coin.CoinDetails.Randomness = privacy.RandInt()
+	coin := new(privacy.OutputCoin)
+	coin.CoinDetails = new(privacy.Coin)
+	coin.CoinDetails.Randomness = privacy.RandInt()
+	fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
 
-	// spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	// keySet := cashec.KeySet{}
-	// keySet.ImportFromPrivateKey(&spendingKey)
+	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	keySet := cashec.KeySet{}
+	keySet.ImportFromPrivateKey(&spendingKey)
 
-	// err := coin.Encrypt(keySet.PaymentAddress.Tk)
-	// if err!= nil{
-	// 	fmt.Println(err)
-	// }
+	err := coin.Encrypt(keySet.PaymentAddress.Tk)
+	if err!= nil{
+		fmt.Println(err)
+	}
 
-	// fmt.Printf("Encrypted data: %+v\n", coin.CoinDetailsEncrypted )
+	//fmt.Printf("Encrypted plaintext 1: %+v\n", coin.CoinDetailsEncrypted.RandomEncrypted)
+	//fmt.Printf("Encrypted plaintext 2: %+v\n", coin.CoinDetailsEncrypted.SymKeyEncrypted)
 
-	// fmt.Printf("bit len N: %v\n", privacy.Curve.Params().N.BitLen())
+	coin.Decrypt(keySet.ReadonlyKey.Rk)
+
+	fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+
+
 
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
 	//fmt.Println(zkp.TestOpeningsProtocol())
 	//fmt.Println(zkp.TestPKEqualityOfCommittedVal())
-	fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
+	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
 	/*--------------------------------------------*/
 
 }

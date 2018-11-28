@@ -49,7 +49,7 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error{
 	symKeyPoint:= new(EllipticPoint)
 	symKeyPoint.Randomize()
 	symKeyByte := symKeyPoint.X.Bytes()
-	fmt.Printf("Len of symKeyByte: %v\n", len(symKeyByte))
+	//fmt.Printf("Plain text 2: symKey byte: %v\n", symKeyByte)
 
 	/**** Encrypt coin details using symKeyByte ****/
 	// just encrypt Randomness of coin
@@ -96,6 +96,8 @@ func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey){
 
 	symKeyPoint := privKey.ElGamalDec(coin.CoinDetailsEncrypted.SymKeyEncrypted)
 
+	//fmt.Printf("Decrypted plaintext 2: SymKey : %v\n", symKeyPoint.X.Bytes())
+
 	/*** Decrypt Encrypted using receiver's receiving key to get coin details (Randomness) ***/
 	randomness :=  make([]byte, 32)
 	// Set key to decrypt
@@ -111,8 +113,6 @@ func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey){
 
 	stream := cipher.NewCTR(block, iv)
 	stream.XORKeyStream(randomness, coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:])
-
-	fmt.Printf("%s\n", randomness)
 }
 
 
