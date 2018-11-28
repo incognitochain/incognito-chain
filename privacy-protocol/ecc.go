@@ -12,10 +12,10 @@ import (
 // Curve P256
 var Curve = elliptic.P256()
 
-const (
-	pointBytesLenCompressed      = 33
-	pointCompressed         byte = 0x2
-)
+// const (
+// 	pointBytesLenCompressed      = 33
+// 	pointCompressed         byte = 0x2
+// )
 
 //EllipticPointHelper contain some function for elliptic point
 type EllipticPointHelper interface {

@@ -4,13 +4,13 @@ import (
 	"math/big"
 )
 
-const (
-	SK    = byte(0x00)
-	VALUE = byte(0x01)
-	SND   = byte(0x02)
-	RAND  = byte(0x03)
-	FULL  = byte(0x04)
-)
+// const (
+// 	SK    = byte(0x00)
+// 	VALUE = byte(0x01)
+// 	SND   = byte(0x02)
+// 	RAND  = byte(0x03)
+// 	FULL  = byte(0x04)
+// )
 
 // PedersenCommitment represents a commitment that includes 4 generators
 type PedersenCommitment interface {
@@ -26,7 +26,7 @@ type PedersenCommitment interface {
 
 // PCParams represents the parameters for the commitment
 type PCParams struct {
-	G []EllipticPoint // generators
+	G        []EllipticPoint // generators
 	Capacity int
 	// G[0]: public key
 	// G[1]: H
@@ -55,7 +55,7 @@ func (com PCParams) Params() PCParams {
 
 // CommitAll commits a list of PCM_CAPACITY value(s)
 func (com PCParams) CommitAll(openings []*big.Int) *EllipticPoint {
-	if len(openings) != com.Capacity{
+	if len(openings) != com.Capacity {
 		return nil
 	}
 
