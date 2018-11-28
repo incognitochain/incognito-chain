@@ -67,4 +67,3 @@ func (hash *Hash) Cmp(target *Hash) int {
 	}
 	return 0
 }
-
