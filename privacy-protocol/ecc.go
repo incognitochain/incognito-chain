@@ -124,7 +124,7 @@ func (eccPoint *EllipticPoint) Randomize() {
 func (eccPoint EllipticPoint) IsSafe() bool {
 	var res EllipticPoint
 	res.X, res.Y = Curve.Double(eccPoint.X, eccPoint.Y)
-	if (res.X == nil) || (res.Y == nil) {
+	if res.X.Cmp(big.NewInt(0)) == 0 && res.Y.Cmp(big.NewInt(0)) == 0 {
 		return false
 	}
 	return true
