@@ -85,14 +85,21 @@ func (wit *PaymentWitness) Build(hashPrivacy bool, spendingKey *big.Int, inputCo
 		randSum[i] = randSK
 		randSum[i].Add(randSum[i], randValue[i])
 		randSum[i].Add(randSum[i], randSND[i])
+
+		// For ZKP Opening
 		wit.ComOpeningsWitness[i].Set(cmSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randSum[i]})
-		cmRndIndexList, cmRndValue, indexIsZero := GetCMList(cmSum[i], privacy.GetCmIndex(cmSum[i]), GetCurrentBlockHeight())
-		rndIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness,randSum[i])
+
+		// For ZKP One Of Many
+		cmRndIndex := new(privacy.CMIndex)
+		cmRndIndex.GetCmIndex(cmSum[i])
+		cmRndIndexList, cmRndValue, indexIsZero := GetCMList(cmSum[i], cmRndIndex, GetCurrentBlockHeight())
+		rndIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randSum[i])
 		rndIsZero.Mod(rndIsZero, privacy.Curve.Params().N)
-		for j:=0; j<CMRingSize; j++{
-			cmRndValue[j].
+		for j := 0; j < CMRingSize; j++ {
+			cmRndValue[j].X, cmRndValue[j].Y = privacy.Curve.Add(cmRndValue[j].X, cmRndValue[j].Y, cmSumInverse[j].X, cmSumInverse[j].Y)
 		}
-		wit.OneOfManyWitness.Set(cmRndValue,cmRndIndexList,
+		wit.OneOfManyWitness.Set(cmRndValue, &cmRndIndexList, rndIsZero, indexIsZero, privacy.SK)
+
 	}
 	//todo
 
@@ -106,25 +113,24 @@ func (wit *PaymentWitness) Prove() *PaymentProof {
 	// Call protocol proving knowledge of each sum commitment's Openings
 
 	// Proving one-out-of-N commitments is a commitment to the coins being spent
-	
+
 	//cmLists := make([][]*privacy.EllipticPoint, numberInputCoin)
 	//witnessOneOutOfN := make([]*PKOne, len(inputCoins))
-	for i := 0; i < numberInputCoin; i++ {
-		// get sum commitment inverse
-		
+	// for i := 0; i < numberInputCoin; i++ {
+	// get sum commitment inverse
 
-		// Prepare list of commitments for each commitmentSum that includes 2^3 commiments
-		// Get all commitments in inputCoin[i]'s BlockHeight and other block (if needed)
-		//cmLists[i] = make([]*privacy.EllipticPoint, CMRingSize)
-		//cmLists[i] = GetCMList(wit.inputCoins[i].CoinDetails.CoinCommitment)
-		//for j := 0; j < CMRingSize; j++ {
-		//	cmLists[i][j].X, cmLists[i][j].Y = privacy.Curve.Add(cmLists[i][j].X, cmLists[i][j].Y, cmSumInverse[i].X, cmSumInverse[i].Y)
-		//}
+	// Prepare list of commitments for each commitmentSum that includes 2^3 commiments
+	// Get all commitments in inputCoin[i]'s BlockHeight and other block (if needed)
+	//cmLists[i] = make([]*privacy.EllipticPoint, CMRingSize)
+	//cmLists[i] = GetCMList(wit.inputCoins[i].CoinDetails.CoinCommitment)
+	//for j := 0; j < CMRingSize; j++ {
+	//	cmLists[i][j].X, cmLists[i][j].Y = privacy.Curve.Add(cmLists[i][j].X, cmLists[i][j].Y, cmSumInverse[i].X, cmSumInverse[i].Y)
+	//}
 
-		// Prepare witness for protocol one-out-of-N
-		//witnessOneOutOfN[i].Set()
+	// Prepare witness for protocol one-out-of-N
+	//witnessOneOutOfN[i].Set()
 
-	}
+	// }
 
 	// Proving that serial number is derived from the committed derivator
 
@@ -138,41 +144,41 @@ func (wit *PaymentWitness) Prove() *PaymentProof {
 
 	// Proving that sum of inputs equals sum of outputs
 	// prove ( cmvaluein cmvalueout) (commit + s...)
-	cmValueIn := new(privacy.EllipticPoint)
-	cmValueIn.X, cmValueIn.Y = big.NewInt(0), big.NewInt(0)
-	cmValueRndIn := big.NewInt(0)
-	//------------
-	cmValueOut := new(privacy.EllipticPoint)
-	cmValueOut.X, cmValueOut.Y = big.NewInt(0), big.NewInt(0)
-	cmValueRndOut := big.NewInt(0)
-	//------------
-	for i := 0; i < numberInputCoin; i++ {
-		cmValueIn.X, cmValueIn.Y = privacy.Curve.Add(cmValueIn.X, cmValueIn.Y, cmValue[i].X, cmValue[i].Y)
-		cmValueRndIn = cmValueRndIn.Add(cmValueRndIn, randValue[i])
-		cmValueRndIn = cmValueRndIn.Mod(cmValueRndIn, privacy.Curve.Params().N)
-	}
+	// cmValueIn := new(privacy.EllipticPoint)
+	// cmValueIn.X, cmValueIn.Y = big.NewInt(0), big.NewInt(0)
+	// cmValueRndIn := big.NewInt(0)
+	// //------------
+	// cmValueOut := new(privacy.EllipticPoint)
+	// cmValueOut.X, cmValueOut.Y = big.NewInt(0), big.NewInt(0)
+	// cmValueRndOut := big.NewInt(0)
+	// //------------
+	// for i := 0; i < numberInputCoin; i++ {
+	// 	cmValueIn.X, cmValueIn.Y = privacy.Curve.Add(cmValueIn.X, cmValueIn.Y, cmValue[i].X, cmValue[i].Y)
+	// 	cmValueRndIn = cmValueRndIn.Add(cmValueRndIn, randValue[i])
+	// 	cmValueRndIn = cmValueRndIn.Mod(cmValueRndIn, privacy.Curve.Params().N)
+	// }
 
-	//cmEqualValue.X, cmEqualValue.Y = big.NewInt(0), big.NewInt(0)
-	cmEqualValue, _ := cmValueIn.Inverse()
-	cmEqualValue.X, cmEqualValue.Y = privacy.Curve.Add(cmEqualValue.X, cmEqualValue.Y, cmValueOut.X, cmValueOut.Y)
-	cmEqualValueRnd := big.NewInt(0)
-	*cmEqualValueRnd = *cmValueRndIn
-	cmEqualValueRnd = cmEqualValueRnd.Sub(cmEqualValueRnd, cmValueRndOut)
-	cmEqualValueRnd = cmEqualValueRnd.Mod(cmEqualValueRnd, privacy.Curve.Params().N)
+	// //cmEqualValue.X, cmEqualValue.Y = big.NewInt(0), big.NewInt(0)
+	// cmEqualValue, _ := cmValueIn.Inverse()
+	// cmEqualValue.X, cmEqualValue.Y = privacy.Curve.Add(cmEqualValue.X, cmEqualValue.Y, cmValueOut.X, cmValueOut.Y)
+	// cmEqualValueRnd := big.NewInt(0)
+	// *cmEqualValueRnd = *cmValueRndIn
+	// cmEqualValueRnd = cmEqualValueRnd.Sub(cmEqualValueRnd, cmValueRndOut)
+	// cmEqualValueRnd = cmEqualValueRnd.Mod(cmEqualValueRnd, privacy.Curve.Params().N)
 
-	witnessEqualValue := new(PKComZeroWitness)
-	var cmEqualIndex byte
-	cmEqualIndex = privacy.VALUE
-	witnessEqualValue.Set(cmEqualValue, &cmEqualIndex, cmEqualValueRnd)
-	proofEqualValue, _ := witnessEqualValue.Prove()
-	proofEqualValue.Verify()
-	//END----------------------------------------------------------------------------------------------------------------------------------------------
+	// witnessEqualValue := new(PKComZeroWitness)
+	// var cmEqualIndex byte
+	// cmEqualIndex = privacy.VALUE
+	// witnessEqualValue.Set(cmEqualValue, &cmEqualIndex, cmEqualValueRnd)
+	// proofEqualValue, _ := witnessEqualValue.Prove()
+	// proofEqualValue.Verify()
+	// //END----------------------------------------------------------------------------------------------------------------------------------------------
 
 	return nil
 }
 
 func (pro PaymentProof) Verify() bool {
-	if !pro.ComOpeningsProof.Verify() {
+	if !pro.ComOpeningsProof[0].Verify() {
 		return false
 	}
 	//if !pro.ComMultiRangeProof
@@ -193,7 +199,7 @@ func (pro PaymentProof) Verify() bool {
 
 // GetCMList returns list of CMRingSize (2^4) commitments and list of corresponding cmIndexs that includes cm corresponding to cmIndex
 // Adnd return index of cm in list
-func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightCurrent *big.Int) ([]*privacy.CMIndex, []*privacy.EllipticPoint, byte) {
+func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightCurrent *big.Int) ([]*privacy.CMIndex, []*privacy.EllipticPoint, *int) {
 
 	cmIndexs := make([]*privacy.CMIndex, CMRingSize)
 	cms := make([]*privacy.EllipticPoint, CMRingSize)
@@ -223,18 +229,18 @@ func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightC
 		return cmIndexs[i].CmId < cmIndexs[j].CmId
 	})
 
-	var index byte
+	var index int
 
 	// Get list of commitment from sorted cmIndexs
 	for i := 0; i < CMRingSize; i++ {
 		if cmIndexs[i].IsEqual(cmIndex) {
 			cms[i] = cm
-			index = byte(i)
+			index = i
 		}
 		cms[i] = cmIndexs[i].GetCommitment()
 	}
 
-	return cmIndexs, cms, index
+	return cmIndexs, cms, &index
 }
 
 func GetCurrentBlockHeight() *big.Int {
