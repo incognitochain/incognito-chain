@@ -13,7 +13,7 @@ import (
 // G[i] is list of all generator point of Curve
 func GenerateChallengeFromPoint(values []*privacy.EllipticPoint) *big.Int {
 	appendStr := privacy.PedCom.G[0].Compress()
-	for i := 1; i < privacy.PCM_CAPACITY; i++ {
+	for i := 1; i < privacy.PedCom.Capacity; i++ {
 		appendStr = append(appendStr, privacy.PedCom.G[i].Compress()...)
 	}
 	for i := 0; i < len(values); i++ {
@@ -33,7 +33,7 @@ func GenerateChallengeFromPoint(values []*privacy.EllipticPoint) *big.Int {
 // G[i] is list of all generator point of Curve
 func GenerateChallengeFromByte(values [][]byte) *big.Int {
 	appendStr := privacy.PedCom.G[0].Compress()
-	for i := 1; i < privacy.PCM_CAPACITY; i++ {
+	for i := 1; i < privacy.PedCom.Capacity; i++ {
 		appendStr = append(appendStr, privacy.PedCom.G[i].Compress()...)
 	}
 	for i := 0; i < len(values); i++ {

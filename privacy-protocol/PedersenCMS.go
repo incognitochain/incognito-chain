@@ -12,17 +12,12 @@ const (
 	FULL  = byte(0x04)
 )
 
-const (
-	//PCM_CAPACITY ...
-	PCM_CAPACITY = 4
-)
-
 // PedersenCommitment represents a commitment that includes 4 generators
 type PedersenCommitment interface {
 	// Params returns the parameters for the commitment
 	Params() *PCParams
 	// CommitAll commits
-	CommitAll(openings [PCM_CAPACITY]*big.Int) *EllipticPoint
+	CommitAll(openings []*big.Int) *EllipticPoint
 	// CommitAtIndex commits value at index
 	CommitAtIndex(value *big.Int, rand *big.Int, index byte) *EllipticPoint
 	//CommitEllipticPoint commit a elliptic point
@@ -80,7 +75,7 @@ func (com PCParams) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoi
 	commitment := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 	temp := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 
-	temp.X, temp.Y = Curve.ScalarMult(com.G[com.Capacity-1].X, com.G[com.Capacity-1].Y, rand.Bytes())
+	temp.X, temp.Y = Curve.ScalarMult(com.G[RAND].X, com.G[RAND].Y, rand.Bytes())
 	commitment.X, commitment.Y = Curve.Add(commitment.X, commitment.Y, temp.X, temp.Y)
 	temp.X, temp.Y = Curve.ScalarMult(com.G[index].X, com.G[index].Y, value.Bytes())
 	commitment.X, commitment.Y = Curve.Add(commitment.X, commitment.Y, temp.X, temp.Y)

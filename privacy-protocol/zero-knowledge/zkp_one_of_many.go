@@ -78,8 +78,8 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	}
 
 	// Check Index
-	if wit.index < 0 || wit.index > privacy.PCM_CAPACITY-1 {
-		return nil, fmt.Errorf("Index must be between 0 and pcm capacity - 1 ")
+	if wit.index < privacy.SK || wit.index > privacy.RAND {
+		return nil, fmt.Errorf("Index must be between index SK and index RAND")
 	}
 
 	// represent indexIsZero in binary

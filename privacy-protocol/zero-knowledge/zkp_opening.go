@@ -24,8 +24,8 @@ type PKComOpeningsWitness struct {
 
 // randValue return random witness value for testing
 func (wit *PKComOpeningsWitness) randValue(testcase bool) {
-	wit.m = make([]*big.Int, privacy.PCM_CAPACITY)
-	for i := 0; i < privacy.PCM_CAPACITY; i++ {
+	wit.m = make([]*big.Int, privacy.PedCom.Capacity)
+	for i := 0; i < privacy.PedCom.Capacity; i++ {
 		wit.m[i], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
 	}
 	wit.commitmentValue = privacy.PedCom.CommitAll([]*big.Int{wit.m[0], wit.m[1], wit.m[2], wit.m[3]})
@@ -57,9 +57,9 @@ func (wit *PKComOpeningsWitness) Prove() (*PKComOpeningsProof, error) {
 	alpha.X = big.NewInt(0)
 	alpha.Y = big.NewInt(0)
 	beta := GenerateChallengeFromPoint([]*privacy.EllipticPoint{wit.commitmentValue})
-	gamma := make([]*big.Int, privacy.PCM_CAPACITY)
+	gamma := make([]*big.Int, privacy.PedCom.Capacity)
 	var gPowR privacy.EllipticPoint
-	for i := 0; i < privacy.PCM_CAPACITY; i++ {
+	for i := 0; i < privacy.PedCom.Capacity; i++ {
 		rRand, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
 		gPowR.X, gPowR.Y = privacy.Curve.ScalarMult(privacy.PedCom.G[i].X, privacy.PedCom.G[i].Y, rRand.Bytes())
 		alpha.X, alpha.Y = privacy.Curve.Add(alpha.X, alpha.Y, gPowR.X, gPowR.Y)
@@ -81,7 +81,7 @@ func (pro *PKComOpeningsProof) Verify() bool {
 	leftPoint.X = big.NewInt(0)
 	leftPoint.Y = big.NewInt(0)
 	var gPowR privacy.EllipticPoint
-	for i := 0; i < privacy.PCM_CAPACITY; i++ {
+	for i := 0; i < privacy.PedCom.Capacity; i++ {
 		gPowR.X, gPowR.Y = privacy.Curve.ScalarMult(privacy.PedCom.G[i].X, privacy.PedCom.G[i].Y, pro.gamma[i].Bytes())
 		leftPoint.X, leftPoint.Y = privacy.Curve.Add(leftPoint.X, leftPoint.Y, gPowR.X, gPowR.Y)
 	}
