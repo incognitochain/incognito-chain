@@ -16,26 +16,24 @@ type PaymentWitness struct {
 	inputCoins  []*privacy.InputCoin
 	outputCoins []*privacy.OutputCoin
 
-	ComMultiRangeWitness 					*PKComMultiRangeWitness
-	ComOpeningsWitness   					*PKComOpeningsWitness
-	ComZeroOneWitness    					*PKComZeroOneWitness
-	ComZeroWitness      					*PKComZeroWitness
-	EqualityOfCommittedValWitness *PKEqualityOfCommittedValWitness
+	ComOpeningsWitness            *PKComOpeningsWitness
 	OneOfManyWitness              *PKOneOfManyWitness
-
-
+	EqualityOfCommittedValWitness *PKEqualityOfCommittedValWitness
+	ComMultiRangeWitness          *PKComMultiRangeWitness
+	ComZeroWitness                *PKComZeroWitness
+	ComZeroOneWitness             *PKComZeroOneWitness
 }
 
 // BEGIN--------------------------------------------------------------------------------------------------------------------------------------------
 
 // PaymentProof contains all of PoK for sending coin
 type PaymentProof struct {
-	ComMultiRangeProof *PKComMultiRangeProof
-	ComOpeningsProof   *PKComOpeningsProof
-	ComZeroOneProof    *PKComZeroOneProof
-	ComZeroProof       *PKComZeroProof
-	EqualityOfCommittedValProof *PKEqualityOfCommittedValProof
+	ComOpeningsProof            *PKComOpeningsProof
 	OneOfManyProof              *PKOneOfManyProof
+	EqualityOfCommittedValProof *PKEqualityOfCommittedValProof
+	ComMultiRangeProof          *PKComMultiRangeProof
+	ComZeroProof                *PKComZeroProof
+	ComZeroOneProof             *PKComZeroOneProof
 }
 
 func (paymentProof *PaymentProof) Bytes() []byte {
@@ -51,7 +49,7 @@ func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.Input
 }
 
 // Build prepares witnesses for all protocol need to be proved when create tx
-func (wit *PaymentWitness) Build(){
+func (wit *PaymentWitness) Build() {
 
 }
 
@@ -64,7 +62,6 @@ func (wit *PaymentWitness) Prove() *PaymentProof {
 	cmSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randSK, privacy.SK)
 	cmValue := make([]*privacy.EllipticPoint, numberInputCoin)
 	cmSND := make([]*privacy.EllipticPoint, numberInputCoin)
-
 
 	randValue := make([]*big.Int, numberInputCoin)
 	randSND := make([]*big.Int, numberInputCoin)
