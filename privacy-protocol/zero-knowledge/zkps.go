@@ -204,10 +204,10 @@ func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightC
 		if cmIndexs[i].BlockHeight.Cmp(cmIndexs[j].BlockHeight) == 1 {
 			return false
 		}
-		if cmIndexs[i].TxId.Cmp(cmIndexs[j].TxId) == -1 {
+		if cmIndexs[i].TxIndex.Cmp(cmIndexs[j].TxIndex) == -1 {
 			return true
 		}
-		if cmIndexs[i].TxId.Cmp(cmIndexs[j].TxId) == 1 {
+		if cmIndexs[i].TxIndex.Cmp(cmIndexs[j].TxIndex) == 1 {
 			return false
 		}
 		return cmIndexs[i].CmId < cmIndexs[j].CmId
