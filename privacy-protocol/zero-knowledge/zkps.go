@@ -106,12 +106,12 @@ func (wit *PaymentWitness) Prove() *PaymentProof {
 	// Call protocol proving knowledge of each sum commitment's Openings
 
 	// Proving one-out-of-N commitments is a commitment to the coins being spent
-	
+
 	//cmLists := make([][]*privacy.EllipticPoint, numberInputCoin)
 	//witnessOneOutOfN := make([]*PKOne, len(inputCoins))
 	for i := 0; i < numberInputCoin; i++ {
 		// get sum commitment inverse
-		
+
 
 		// Prepare list of commitments for each commitmentSum that includes 2^3 commiments
 		// Get all commitments in inputCoin[i]'s BlockHeight and other block (if needed)

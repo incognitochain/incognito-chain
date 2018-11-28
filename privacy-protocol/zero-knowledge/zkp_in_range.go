@@ -4,35 +4,69 @@ import (
 	"fmt"
 	"github.com/minio/blake2b-simd"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"math"
 	"math/big"
 )
 
 type PKComMultiRangeProof struct {
-	Comms []privacy.EllipticPoint
-	A     privacy.EllipticPoint
-	S     privacy.EllipticPoint
-	T1    privacy.EllipticPoint
-	T2    privacy.EllipticPoint
-	Tau   *big.Int
-	Th    *big.Int
-	Mu    *big.Int
-	IPP   InnerProdArg
-
+	Comms            []privacy.EllipticPoint
+	A                privacy.EllipticPoint
+	S                privacy.EllipticPoint
+	T1               privacy.EllipticPoint
+	T2               privacy.EllipticPoint
+	Tau              *big.Int
+	Th               *big.Int
+	Mu               *big.Int
+	IPP              InnerProdArg
 	// challenges
 	Cy *big.Int
 	Cz *big.Int
 	Cx *big.Int
 }
+const BitThreshold = 64
 type PKComMultiRangeWitness struct {
+	Comms  [] privacy.EllipticPoint
 	Values [] *big.Int
+	Rands  [] *big.Int
 }
-
+func pad(l int) int {
+	deg:=0
+	for l>0 {
+		if (l%2==0){
+			deg++
+			l = l/2
+		} else {break}
+	}
+	i:=0
+	for {
+		if (math.Pow(2,float64(i))< float64(l)){
+			i++
+		} else {
+			l = int(math.Pow(2,float64(i+deg)))
+			break
+		}
+	}
+	return l
+}
+func InitCommonParams(l int){
+	VecLength =  BitThreshold * pad(l)
+	RangeProofParams = NewECPrimeGroupKey(VecLength)
+}
 func (wit *PKComMultiRangeWitness) Set(v []*big.Int){
-	VecLength = 64*len(v)
-	wit.Values = v
+	l:=pad(len(v)+1)
+	wit.Values = make([]*big.Int,l)
+	for i:=0;i<l;i++{
+		wit.Values[i] = new(big.Int)
+		wit.Values[i].SetInt64(0)
+	}
+	total:=new(big.Int).SetUint64(0)
+	for i:=0;i<len(v);i++{
+		wit.Values[i] = new(big.Int)
+		*wit.Values[i] = *v[i]
+		total.Add(total,v[i])
+	}
+	*wit.Values[l-1] = *total
 }
-
-
 // Calculates (aL - z*1^n) + sL*x
 func CalculateLMRP(aL, sL []*big.Int, z, x *big.Int) []*big.Int {
 	result := make([]*big.Int, len(aL))
@@ -89,9 +123,7 @@ func DeltaMRP(y []*big.Int, z *big.Int, m int) *big.Int {
 		tmp1 := new(big.Int).Mod(new(big.Int).Mul(zp, po2sum), privacy.Curve.Params().N)
 		t3 = new(big.Int).Mod(new(big.Int).Add(t3, tmp1), privacy.Curve.Params().N)
 	}
-
 	result = new(big.Int).Mod(new(big.Int).Sub(t2, t3), privacy.Curve.Params().N)
-
 	return result
 }
 
@@ -111,47 +143,60 @@ changes:
 */
 func (wit *PKComMultiRangeWitness) Prove() PKComMultiRangeProof {
 	// RangeProofParams.V has the total number of values and bits we can support
-
+	InitCommonParams(len(wit.Values))
 	MRPResult := PKComMultiRangeProof{}
-
 	m := len(wit.Values)
+	fmt.Println(m)
 	bitsPerValue := RangeProofParams.V / m
 
 	// we concatenate the binary representation of the values
 
 	PowerOfTwos := PowerVector(bitsPerValue, big.NewInt(2))
-
 	Comms := make([]privacy.EllipticPoint, m)
 	gammas := make([]*big.Int, m)
+	wit.Rands=make([]*big.Int, m)
 	aLConcat := make([]*big.Int, RangeProofParams.V)
 	aRConcat := make([]*big.Int, RangeProofParams.V)
+
+	sumRand:=new (big.Int)
+	sumRand.SetUint64(0)
 
 	for j := range wit.Values {
 		v := wit.Values[j]
 		if v.Cmp(big.NewInt(0)) == -1 {
 			fmt.Println("H is below range! Not proving")
 		}
-
-		if v.Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(bitsPerValue)), privacy.Curve.Params().N)) == 1 {
-			fmt.Println("H is above range! Not proving.")
-		return *new(PKComMultiRangeProof)
-	}
-
+		if v.Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(BitThreshold), privacy.Curve.Params().N)) == 1 {
+			fmt.Println("Value is above range! Not proving.")
+			return *new(PKComMultiRangeProof)
+		}
 	gamma:= new(big.Int).SetBytes(privacy.RandBytes(32))
 		gamma.Mod(gamma,privacy.Curve.Params().N)
-
 		Comms[j] = RangeProofParams.G.ScalarMulPoint(v).AddPoint(RangeProofParams.H.ScalarMulPoint(gamma))
 		gammas[j] = gamma
+		wit.Rands[j] = gamma
+
+		//fmt.Println(gamma)
+		//if (j==len(wit.Values)-1){
+		//	sumRand.Sub(sumRand,gamma)
+		//}else{
+		//	sumRand.Add(sumRand,gamma)
+		//}
+
 
 		// break up v into its bitwise representation
 		aL := reverse(StrToBigIntArray(PadLeft(fmt.Sprintf("%b", v), "0", bitsPerValue)))
 		aR := VectorAddScalar(aL, big.NewInt(-1))
-
 		for i := range aR {
 			aLConcat[bitsPerValue*j+i] = aL[i]
 			aRConcat[bitsPerValue*j+i] = aR[i]
 		}
 	}
+
+	//fmt.Println(sumRand.Mod(sumRand,privacy.Curve.Params().N))
+
+
+
 
 	MRPResult.Comms = Comms
 
@@ -281,7 +326,65 @@ func (wit *PKComMultiRangeWitness) Prove() PKComMultiRangeProof {
 
 	return MRPResult
 }
+func (wit *PKComMultiRangeWitness) ProveSum() (*PKComZeroProof, error){
+	l := len(wit.Values)
+  sumComms := RangeProofParams.Zero()
+	sumRand := new(big.Int).SetInt64(0)
+	temp:=new(privacy.EllipticPoint)
+	for i:=0;i<l-1;i++ {
+		//fmt.Println(wit.Values[i])
+		temp = privacy.PedCom.CommitAtIndex(wit.Values[i], wit.Rands[i],privacy.VALUE)
+		//fmt.Println(temp)
+		//var point privacy.EllipticPoint
+		//point.X, point.Y = temp.X,temp.Y
+		//fmt.Println(wit.Rands[i])
+		sumComms = sumComms.AddPoint(*temp)
+		sumRand.Add(sumRand,new(big.Int).Set(wit.Rands[i]))
+	}
+	sumRand.Sub(sumRand,wit.Rands[l-1])
 
+
+
+	temp = privacy.PedCom.CommitAtIndex(wit.Values[l-1], wit.Rands[l-1],privacy.VALUE)
+	temp,_ = temp.Inverse()
+
+	sumComms = sumComms.AddPoint(*temp)
+	sumRand.Mod(sumRand,privacy.Curve.Params().N)
+
+
+
+	//
+	//randMulH:=privacy.PedCom.CommitAtIndex(new(big.Int).SetInt64(0),sumRand,privacy.VALUE)
+	//randMulH1:=RangeProofParams.H.ScalarMulPoint(sumRand)
+	//
+	//
+	//fmt.Println(randMulH)
+	//fmt.Println(randMulH1)
+	//fmt.Println(sumComms)
+
+	var zeroWit PKComZeroWitness
+	idx := new(byte)
+	*idx = privacy.VALUE
+	zeroWit.Set(&sumComms,idx,sumRand)
+	return zeroWit.Prove()
+}
+func (pro *PKComMultiRangeProof) VerifySum(zproof *PKComZeroProof) bool{
+
+	zeroCom:= RangeProofParams.Zero()
+	for i:=0;i<len(pro.Comms)-1;i++{
+
+		zeroCom = zeroCom.AddPoint(pro.Comms[i])
+
+	//fmt.Println(pro.Comms[i])
+	}
+	invSumCom,_:=pro.Comms[len(pro.Comms)-1].Inverse()
+	zeroCom = zeroCom.AddPoint(*invSumCom)
+	if (!zeroCom.IsEqual(*zproof.commitmentValue)){
+		return false
+	} else {
+		return zproof.Verify()
+	}
+}
 /*
 PKComMultiRangeProof Verify
 Takes in a PKComMultiRangeProof and verifies its correctness
@@ -290,6 +393,7 @@ Takes in a PKComMultiRangeProof and verifies its correctness
 func (pro *PKComMultiRangeProof) Verify() bool {
 
 	m := len(pro.Comms)
+	InitCommonParams(m)
 	if (m==0) {
 		return false
 	}
@@ -394,13 +498,41 @@ func TestPKComMultiRange() {
 	//values := []*big.Int{big.NewInt(5136325419070411678), big.NewInt()}
 	var witness PKComMultiRangeWitness
 	witness.Values = values
-		RangeProofParams = NewECPrimeGroupKey(64 * len(values))
+		RangeProofParams = NewECPrimeGroupKey(BitThreshold * len(values))
 	// Testing smallest number in range
 	proof:=witness.Prove()
 	if proof.Verify() {
 		fmt.Println("Multi Range Proof Verification works")
 	} else {
 		fmt.Println("***** Multi Range Proof FAILURE")
+	}
+}
+func Test1PKComMultiRange() {
+
+	test:= 5
+	values := make([]*big.Int,test)
+	for i:=0;i<test;i++{
+		values[i] = new(big.Int)
+		x:=new(big.Int).SetBytes(privacy.RandBytes(4))
+		//fmt.Println(x)
+		values[i] = x
+	}
+	//values := []*big.Int{big.NewInt(5136325419070411678), big.NewInt()}
+	var witness1 PKComMultiRangeWitness
+	witness1.Set(values)
+
+	// Testing smallest number in range
+	proof1:=witness1.Prove()
+	proof1_sum,_:=witness1.ProveSum()
+	if proof1.Verify() {
+		fmt.Println("Multi Range Proof 1 Verification works")
+	} else {
+		fmt.Println("***** Multi Range Proof FAILURE")
+	}
+	if proof1.VerifySum(proof1_sum) {
+		fmt.Println("Sum Proof 1 Verification works")
+	} else {
+		fmt.Println("***** Sum Proof FAILURE")
 	}
 }
 
