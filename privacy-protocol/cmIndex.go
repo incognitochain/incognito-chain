@@ -32,9 +32,17 @@ func (cmIndex *CMIndex) GetCmIndex(cm *EllipticPoint) {
 
 }
 
+// IsEqual returns true if two cmIndexs is the same
+func (cmIndex CMIndex) IsEqual(target *CMIndex) bool {
+	if cmIndex.BlockHeight.Cmp(target.BlockHeight) != 0 {
+		return false
+	}
+	if cmIndex.TxIndex != target.TxIndex {
+		return false
+	}
+	if cmIndex.CmId != target.CmId {
+		return false
+	}
 
-// IsEqual return true if two cmIndexs is the same
-func (cmIndex CMIndex) IsEqual(target *CMIndex) bool{
-	//Todo: OxKraken
 	return true
 }

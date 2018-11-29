@@ -107,7 +107,6 @@ func (wit *PaymentWitness) Build(hashPrivacy bool, spendingKey *big.Int, inputCo
 
 // Prove creates big proof
 func (wit *PaymentWitness) Prove() *PaymentProof {
-
 	// Commit each component of coins being spent
 
 	// Call protocol proving knowledge of each sum commitment's Openings
@@ -116,14 +115,12 @@ func (wit *PaymentWitness) Prove() *PaymentProof {
 
 	//cmLists := make([][]*privacy.EllipticPoint, numberInputCoin)
 	//witnessOneOutOfN := make([]*PKOne, len(inputCoins))
-<<<<<<< HEAD
-	// for i := 0; i < numberInputCoin; i++ {
-	// get sum commitment inverse
-=======
+
 	for i := 0; i < numberInputCoin; i++ {
+
+	}
 		// get sum commitment inverse
 
->>>>>>> ade8d4ca8279d6fc96b6c22abd10c2a1f88e6196
 
 	// Prepare list of commitments for each commitmentSum that includes 2^3 commiments
 	// Get all commitments in inputCoin[i]'s BlockHeight and other block (if needed)
@@ -204,7 +201,8 @@ func (pro PaymentProof) Verify() bool {
 }
 
 // GetCMList returns list of CMRingSize (2^4) commitments and list of corresponding cmIndexs that includes cm corresponding to cmIndex
-// Adnd return index of cm in list
+// And return index of cm in list
+// the list is sorted by blockHeight, txIndex, CmId
 func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightCurrent *big.Int) ([]*privacy.CMIndex, []*privacy.EllipticPoint, *int) {
 
 	cmIndexs := make([]*privacy.CMIndex, CMRingSize)
