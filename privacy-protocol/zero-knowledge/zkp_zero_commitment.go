@@ -80,6 +80,10 @@ func (wit *PKComZeroWitness) Set(
 	wit.index = index
 }
 
+func (pro *PKComZeroProof) Bytes() []byte {
+	return []byte{0}
+}
+
 // Set dosomethings
 func (pro *PKComZeroProof) Set(
 	commitmentValue *privacy.EllipticPoint, //statement

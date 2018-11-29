@@ -50,6 +50,10 @@ func (wit *PKComZeroOneWitness) Get() *PKComZeroOneWitness {
 	return wit
 }
 
+func (proof *PKComZeroOneProof) Bytes() []byte {
+	return []byte{0}
+}
+
 // Set sets Proof
 func (proof *PKComZeroOneProof) Set(
 	ca, cb *privacy.EllipticPoint,

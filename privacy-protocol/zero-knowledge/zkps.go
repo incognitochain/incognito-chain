@@ -19,7 +19,7 @@ type PaymentWitness struct {
 	ComInputOpeningsWitness       []*PKComOpeningsWitness
 	ComOutputOpeningsWitness      []*PKComOpeningsWitness
 	OneOfManyWitness              []*PKOneOfManyWitness
-	EqualityOfCommittedValWitness *PKEqualityOfCommittedValWitness
+	EqualityOfCommittedValWitness []*PKEqualityOfCommittedValWitness
 	ComMultiRangeWitness          *PKComMultiRangeWitness
 	ComZeroWitness                *PKComZeroWitness
 	ComZeroOneWitness             *PKComZeroOneWitness
@@ -32,7 +32,7 @@ type PaymentProof struct {
 	ComInputOpeningsProof       []*PKComOpeningsProof
 	ComOutputOpeningsProof      []*PKComOpeningsProof
 	OneOfManyProof              []*PKOneOfManyProof
-	EqualityOfCommittedValProof *PKEqualityOfCommittedValProof
+	EqualityOfCommittedValProof []*PKEqualityOfCommittedValProof
 	ComMultiRangeProof          *PKComMultiRangeProof
 	ComZeroProof                *PKComZeroProof
 	ComZeroOneProof             *PKComZeroOneProof
@@ -42,7 +42,65 @@ type PaymentProof struct {
 	InputCoins  []*privacy.InputCoin
 }
 
+// Bytes
+
+// SetBytes()
+
+type PaymentProofByte struct {
+	lenarrayComInputOpeningsProof       int
+	lenarrayComOutputOpeningsProof      int
+	lenarrayEqualityOfCommittedValProof int
+	lenarrayOneOfManyProof              int
+
+	//It should be constants
+	lenComInputOpeningsProof       int
+	lenComOutputOpeningsProof      int
+	lenOneOfManyProof              int
+	lenEqualityOfCommittedValProof int
+	lenComMultiRangeProof          int
+	lenComZeroProof                int
+	lenComZeroOneProof             int
+
+	ComInputOpeningsProof       []byte
+	ComOutputOpeningsProof      []byte
+	OneOfManyProof              []byte
+	EqualityOfCommittedValProof []byte
+
+	ComMultiRangeProof []byte
+	ComZeroProof       []byte
+	ComZeroOneProof    []byte
+}
+
 func (paymentProof *PaymentProof) Bytes() []byte {
+	byteArray := new(PaymentProofByte)
+	byteArray.lenarrayComInputOpeningsProof = len(paymentProof.ComInputOpeningsProof)
+	byteArray.lenarrayComOutputOpeningsProof = len(paymentProof.ComOutputOpeningsProof)
+	byteArray.lenarrayEqualityOfCommittedValProof = len(paymentProof.EqualityOfCommittedValProof)
+	byteArray.lenarrayOneOfManyProof = len(paymentProof.OneOfManyProof)
+
+	byteArray.ComInputOpeningsProof = paymentProof.ComInputOpeningsProof[0].Bytes()
+	for i := 1; i < byteArray.lenarrayComInputOpeningsProof; i++ {
+		byteArray.ComInputOpeningsProof = append(byteArray.ComInputOpeningsProof, paymentProof.ComInputOpeningsProof[0].Bytes()...)
+	}
+
+	byteArray.ComOutputOpeningsProof = paymentProof.ComOutputOpeningsProof[0].Bytes()
+	for i := 1; i < byteArray.lenarrayComOutputOpeningsProof; i++ {
+		byteArray.ComOutputOpeningsProof = append(byteArray.ComOutputOpeningsProof, paymentProof.ComOutputOpeningsProof[0].Bytes()...)
+	}
+
+	byteArray.EqualityOfCommittedValProof = paymentProof.EqualityOfCommittedValProof[0].Bytes()
+	for i := 1; i < byteArray.lenarrayEqualityOfCommittedValProof; i++ {
+		byteArray.EqualityOfCommittedValProof = append(byteArray.EqualityOfCommittedValProof, paymentProof.EqualityOfCommittedValProof[0].Bytes()...)
+	}
+
+	byteArray.OneOfManyProof = paymentProof.OneOfManyProof[0].Bytes()
+	for i := 1; i < byteArray.lenarrayOneOfManyProof; i++ {
+		byteArray.OneOfManyProof = append(byteArray.OneOfManyProof, paymentProof.OneOfManyProof[0].Bytes()...)
+	}
+
+	// byteArray.ComMultiRangeProof = paymentProof.ComMultiRangeProof.Bytes()
+	byteArray.ComZeroProof = paymentProof.ComZeroProof.Bytes()
+	byteArray.ComZeroOneProof = paymentProof.ComZeroOneProof.Bytes()
 	return []byte{0}
 }
 
@@ -245,7 +303,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool) bool {
 	if !pro.ComZeroProof.Verify() {
 		return false
 	}
-	if !pro.EqualityOfCommittedValProof.Verify() {
+	if !pro.EqualityOfCommittedValProof[0].Verify() {
 		return false
 	}
 	if !pro.OneOfManyProof[0].Verify() {
