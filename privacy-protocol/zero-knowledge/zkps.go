@@ -34,6 +34,10 @@ type PaymentProof struct {
 	ComMultiRangeProof          *PKComMultiRangeProof
 	ComZeroProof                *PKComZeroProof
 	ComZeroOneProof             *PKComZeroOneProof
+
+	// these following attributes just exist when tx is no privacy
+	OutputCoins									[]*privacy.OutputCoin
+	InputCoins									[]*privacy.InputCoin
 }
 
 func (paymentProof *PaymentProof) Bytes() []byte {
@@ -51,13 +55,14 @@ func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.Input
 // Build prepares witnesses for all protocol need to be proved when create tx
 // if hashPrivacy = false, witness includes spending key, input coins, output coins
 // otherwise, witness includes all attributes in PaymentWitness struct
-func (wit *PaymentWitness) Build(hashPrivacy bool, spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
+func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 	wit.spendingKey = spendingKey
 	wit.inputCoins = inputCoins
 	wit.outputCoins = outputCoins
 
 	numberInputCoin := len(wit.inputCoins)
 	randSK := privacy.RandInt()
+	// Commit each component of coins being spent
 	cmSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randSK, privacy.SK)
 	cmValue := make([]*privacy.EllipticPoint, numberInputCoin)
 	cmSND := make([]*privacy.EllipticPoint, numberInputCoin)
@@ -106,10 +111,14 @@ func (wit *PaymentWitness) Build(hashPrivacy bool, spendingKey *big.Int, inputCo
 }
 
 // Prove creates big proof
-func (wit *PaymentWitness) Prove() *PaymentProof {
-	// Commit each component of coins being spent
+func (wit *PaymentWitness) Prove(hasPrivacy bool) *PaymentProof {
+	// if no privacy, don't need to create the zero knowledge proof
+	if !hasPrivacy{
+
+	}
 
 	// Call protocol proving knowledge of each sum commitment's Openings
+
 
 	// Proving one-out-of-N commitments is a commitment to the coins being spent
 
@@ -180,7 +189,7 @@ func (wit *PaymentWitness) Prove() *PaymentProof {
 	return nil
 }
 
-func (pro PaymentProof) Verify() bool {
+func (pro PaymentProof) Verify(hasPrivacy bool) bool {
 	if !pro.ComOpeningsProof[0].Verify() {
 		return false
 	}

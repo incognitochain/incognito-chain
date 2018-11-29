@@ -23,7 +23,6 @@ type SellingBonds struct {
 
 type SaleData struct {
 	SaleID []byte // Unique id of the crowdsale to store in db
-	BondID string // in case either base or quote asset is bond
 
 	BuyingAsset  []byte
 	SellingAsset []byte

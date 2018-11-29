@@ -1,10 +1,10 @@
 package transaction
 
 import (
+	"encoding/hex"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
-	"encoding/hex"
 )
 
 type ValidLoanResponse int
@@ -17,12 +17,12 @@ const (
 type LoanResponse struct {
 	LoanID     []byte
 	Response   ValidLoanResponse
-	ValidUntil uint64
+	ValidUntil int32
 }
 
-func NewLoanResponse(data map[string]interface{}) (*LoanResponse) {
+func NewLoanResponse(data map[string]interface{}) *LoanResponse {
 	result := LoanResponse{
-		ValidUntil: uint64(data["ValidUntil"].(float64)),
+		ValidUntil: int32(data["ValidUntil"].(float64)),
 	}
 	s, _ := hex.DecodeString(data["LoanID"].(string))
 	result.LoanID = s
@@ -50,7 +50,7 @@ func CreateTxLoanResponse(
 		feeArgs.Commitments,
 		feeArgs.Fee,
 		feeArgs.SenderChainID,
-		false,
+		true,
 	)
 	if err != nil {
 		return nil, err
@@ -83,7 +83,13 @@ func (tx *TxLoanResponse) ValidateTransaction() bool {
 		return false
 	}
 
-	// TODO(@0xbunyip): check if only board members created this tx
+	// Check if this tx is transaparent (no privacy) to assure correct JSPubKey
+	for _, desc := range tx.Descs {
+		if desc.Proof != nil {
+			return false
+		}
+	}
+
 	if tx.Response != Accept || tx.Response != Reject {
 		return false
 	}

@@ -116,6 +116,42 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				_ = json.Unmarshal(txTempJson, &AcceptGovProposal)
 				self.Transactions = append(self.Transactions, AcceptGovProposal)
 			}
+		case common.TxLoanRequest:
+			{
+				tx := &transaction.TxLoanRequest{}
+				_ = json.Unmarshal(txTempJson, &tx)
+				self.Transactions = append(self.Transactions, tx)
+			}
+		case common.TxLoanResponse:
+			{
+				tx := &transaction.TxLoanResponse{}
+				_ = json.Unmarshal(txTempJson, &tx)
+				self.Transactions = append(self.Transactions, tx)
+			}
+		case common.TxLoanPayment:
+			{
+				tx := &transaction.TxLoanPayment{}
+				_ = json.Unmarshal(txTempJson, &tx)
+				self.Transactions = append(self.Transactions, tx)
+			}
+		case common.TxLoanWithdraw:
+			{
+				tx := &transaction.TxLoanWithdraw{}
+				_ = json.Unmarshal(txTempJson, &tx)
+				self.Transactions = append(self.Transactions, tx)
+			}
+		case common.TxBuySellDCBRequest:
+			{
+				tx := &transaction.TxBuySellRequest{}
+				_ = json.Unmarshal(txTempJson, &tx)
+				self.Transactions = append(self.Transactions, tx)
+			}
+		case common.TxBuySellDCBResponse:
+			{
+				tx := &transaction.TxBuySellDCBResponse{}
+				_ = json.Unmarshal(txTempJson, &tx)
+				self.Transactions = append(self.Transactions, tx)
+			}
 
 		default:
 			{
