@@ -4,6 +4,7 @@ import (
 	"crypto/elliptic"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ninjadotorg/constant/common"
 
@@ -240,6 +241,31 @@ func TestECC() bool {
 	//Test compress && decompress
 	eccPoint := new(EllipticPoint)
 	eccPoint.Randomize()
+	neg := 0
+	for i := 0; i < 2000; i++ {
+		eccPoint1 := new(EllipticPoint)
+		eccPoint1.Randomize()
+		eccPoint2 := new(EllipticPoint)
+		eccPoint2.Randomize()
+		eccPointX := new(EllipticPoint)
+		// eccPointX.Randomize()
+		start := time.Now()
+		eccPointX.X, eccPointX.Y = Curve.Add(eccPoint1.X, eccPoint1.Y, eccPoint2.X, eccPoint2.Y)
+		end := time.Now()
+		time1 := end.Sub(start)
+		start = time.Now()
+		eccPointX.X = big.NewInt(0)
+		eccPointX.Y = big.NewInt(0)
+		*eccPointX = (*eccPoint1).AddPoint(*eccPoint2)
+		end = time.Now()
+		time2 := end.Sub(start)
+		// fmt.Printf("%v %v \n", time1, time2)
+		if time1 > time2 {
+			neg++
+		}
+	}
+	fmt.Println(neg)
+
 	if !Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
 		return false
 	}

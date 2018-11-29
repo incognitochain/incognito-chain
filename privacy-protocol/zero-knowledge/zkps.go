@@ -16,7 +16,8 @@ type PaymentWitness struct {
 	inputCoins  []*privacy.InputCoin
 	outputCoins []*privacy.OutputCoin
 
-	ComOpeningsWitness            []*PKComOpeningsWitness
+	ComInputOpeningsWitness       []*PKComOpeningsWitness
+	ComOutputOpeningsWitness      []*PKComOpeningsWitness
 	OneOfManyWitness              []*PKOneOfManyWitness
 	EqualityOfCommittedValWitness *PKEqualityOfCommittedValWitness
 	ComMultiRangeWitness          *PKComMultiRangeWitness
@@ -28,7 +29,8 @@ type PaymentWitness struct {
 
 // PaymentProof contains all of PoK for sending coin
 type PaymentProof struct {
-	ComOpeningsProof            []*PKComOpeningsProof
+	ComInputOpeningsProof       []*PKComOpeningsProof
+	ComOutputOpeningsProof      []*PKComOpeningsProof
 	OneOfManyProof              []*PKOneOfManyProof
 	EqualityOfCommittedValProof *PKEqualityOfCommittedValProof
 	ComMultiRangeProof          *PKComMultiRangeProof
@@ -36,8 +38,8 @@ type PaymentProof struct {
 	ComZeroOneProof             *PKComZeroOneProof
 
 	// these following attributes just exist when tx doesn't have privacy
-	OutputCoins									[]*privacy.OutputCoin
-	InputCoins									[]*privacy.InputCoin
+	OutputCoins []*privacy.OutputCoin
+	InputCoins  []*privacy.InputCoin
 }
 
 func (paymentProof *PaymentProof) Bytes() []byte {
@@ -61,52 +63,83 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 	wit.outputCoins = outputCoins
 
 	numberInputCoin := len(wit.inputCoins)
-	randSK := privacy.RandInt()
-	// Commit each component of coins being spent
-	cmSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randSK, privacy.SK)
-	cmValue := make([]*privacy.EllipticPoint, numberInputCoin)
-	cmSND := make([]*privacy.EllipticPoint, numberInputCoin)
-	// cmAll := make([]*privacy.EllipticPoint, numberInputCoin)
-	randValue := make([]*big.Int, numberInputCoin)
-	randSND := make([]*big.Int, numberInputCoin)
+	randInputSK := privacy.RandInt()
+	cmInputSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randInputSK, privacy.SK)
+	cmInputValue := make([]*privacy.EllipticPoint, numberInputCoin)
+	cmInputSND := make([]*privacy.EllipticPoint, numberInputCoin)
+	randInputValue := make([]*big.Int, numberInputCoin)
+	randInputSND := make([]*big.Int, numberInputCoin)
+
 	for i, inputCoin := range wit.inputCoins {
-		// cmAll[i] = privacy.PedCom.CommitAll([]*big.Int{spendingKey, big.NewInt(int64(inputCoin.CoinDetails.Value)), inputCoin.CoinDetails.SNDerivator, randValue})
-		randValue[i] = privacy.RandInt()
-		randSND[i] = privacy.RandInt()
-		cmValue[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(inputCoin.CoinDetails.Value)), randValue[i], privacy.VALUE)
-		cmSND[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randSND[i], privacy.SND)
+		randInputValue[i] = privacy.RandInt()
+		randInputSND[i] = privacy.RandInt()
+		cmInputValue[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(inputCoin.CoinDetails.Value)), randInputValue[i], privacy.VALUE)
+		cmInputSND[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randInputSND[i], privacy.SND)
 	}
 
 	// Summing all commitments of each input coin into one commitment and proving the knowledge of its Openings
-	cmSum := make([]*privacy.EllipticPoint, numberInputCoin)
-	cmSumInverse := make([]*privacy.EllipticPoint, numberInputCoin)
-	randSum := make([]*big.Int, numberInputCoin)
-	wit.ComOpeningsWitness = make([]*PKComOpeningsWitness, numberInputCoin)
+	cmInputSum := make([]*privacy.EllipticPoint, numberInputCoin)
+	cmInputSumInverse := make([]*privacy.EllipticPoint, numberInputCoin)
+	randInputSum := make([]*big.Int, numberInputCoin)
+	wit.ComInputOpeningsWitness = make([]*PKComOpeningsWitness, numberInputCoin)
+
+	wit.OneOfManyWitness = make([]*PKOneOfManyWitness, numberInputCoin)
 	for i := 0; i < numberInputCoin; i++ {
-		cmSum[i] = cmSK
-		cmSum[i].X, cmSum[i].Y = privacy.Curve.Add(cmSum[i].X, cmSum[i].Y, cmValue[i].X, cmValue[i].Y)
-		cmSum[i].X, cmSum[i].Y = privacy.Curve.Add(cmSum[i].X, cmSum[i].Y, cmSND[i].X, cmSND[i].Y)
-		cmSumInverse[i], _ = cmSum[i].Inverse()
-		randSum[i] = randSK
-		randSum[i].Add(randSum[i], randValue[i])
-		randSum[i].Add(randSum[i], randSND[i])
+		cmInputSum[i] = cmInputSK
+		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputValue[i].X, cmInputValue[i].Y)
+		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputSND[i].X, cmInputSND[i].Y)
+		cmInputSumInverse[i], _ = cmInputSum[i].Inverse()
+		randInputSum[i] = randInputSK
+		randInputSum[i].Add(randInputSum[i], randInputValue[i])
+		randInputSum[i].Add(randInputSum[i], randInputSND[i])
 
 		// For ZKP Opening
-		wit.ComOpeningsWitness[i].Set(cmSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randSum[i]})
+		wit.ComInputOpeningsWitness[i].Set(cmInputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randInputSum[i]})
 
 		// For ZKP One Of Many
-		cmRndIndex := new(privacy.CMIndex)
-		cmRndIndex.GetCmIndex(cmSum[i])
-		cmRndIndexList, cmRndValue, indexIsZero := GetCMList(cmSum[i], cmRndIndex, GetCurrentBlockHeight())
-		rndIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randSum[i])
-		rndIsZero.Mod(rndIsZero, privacy.Curve.Params().N)
+		cmInputRndIndex := new(privacy.CMIndex)
+		cmInputRndIndex.GetCmIndex(cmInputSum[i])
+		cmInputRndIndexList, cmInputRndValue, indexInputIsZero := GetCMList(cmInputSum[i], cmInputRndIndex, GetCurrentBlockHeight())
+		rndInputIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randInputSum[i])
+		rndInputIsZero.Mod(rndInputIsZero, privacy.Curve.Params().N)
 		for j := 0; j < CMRingSize; j++ {
-			cmRndValue[j].X, cmRndValue[j].Y = privacy.Curve.Add(cmRndValue[j].X, cmRndValue[j].Y, cmSumInverse[j].X, cmSumInverse[j].Y)
+			cmInputRndValue[j].X, cmInputRndValue[j].Y = privacy.Curve.Add(cmInputRndValue[j].X, cmInputRndValue[j].Y, cmInputSumInverse[j].X, cmInputSumInverse[j].Y)
 		}
-		wit.OneOfManyWitness.Set(cmRndValue, &cmRndIndexList, rndIsZero, indexIsZero, privacy.SK)
+		wit.OneOfManyWitness[i].Set(cmInputRndValue, &cmInputRndIndexList, rndInputIsZero, indexInputIsZero, privacy.SK)
 
 	}
-	//todo
+
+	numberOutputCoin := len(wit.outputCoins)
+	randOutputSK := privacy.RandInt()
+	cmOutputSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randOutputSK, privacy.SK)
+	cmOutputValue := make([]*privacy.EllipticPoint, numberOutputCoin)
+	cmOutputSND := make([]*privacy.EllipticPoint, numberOutputCoin)
+	randOutputValue := make([]*big.Int, numberOutputCoin)
+	randOutputSND := make([]*big.Int, numberOutputCoin)
+
+	for i, outputCoin := range wit.outputCoins {
+		randOutputValue[i] = privacy.RandInt()
+		randOutputSND[i] = privacy.RandInt()
+		cmOutputValue[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(outputCoin.CoinDetails.Value)), randOutputValue[i], privacy.VALUE)
+		cmOutputSND[i] = privacy.PedCom.CommitAtIndex(outputCoin.CoinDetails.SNDerivator, randOutputSND[i], privacy.SND)
+	}
+
+	cmOutputSum := make([]*privacy.EllipticPoint, numberOutputCoin)
+	cmOutputSumInverse := make([]*privacy.EllipticPoint, numberOutputCoin)
+	randOutputSum := make([]*big.Int, numberOutputCoin)
+	wit.ComOutputOpeningsWitness = make([]*PKComOpeningsWitness, numberOutputCoin)
+	for i := 0; i < numberOutputCoin; i++ {
+		cmOutputSum[i] = cmOutputSK
+		cmOutputSum[i].X, cmOutputSum[i].Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputValue[i].X, cmOutputValue[i].Y)
+		cmOutputSum[i].X, cmOutputSum[i].Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputSND[i].X, cmOutputSND[i].Y)
+		cmOutputSumInverse[i], _ = cmOutputSum[i].Inverse()
+		randOutputSum[i] = randOutputSK
+		randOutputSum[i].Add(randOutputSum[i], randOutputValue[i])
+		randOutputSum[i].Add(randOutputSum[i], randOutputSND[i])
+
+		// For ZKP Opening
+		wit.ComOutputOpeningsWitness[i].Set(cmOutputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(outputCoins[i].CoinDetails.Value)), outputCoins[i].CoinDetails.SNDerivator, randOutputSum[i]})
+	}
 
 }
 
@@ -116,7 +149,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	// if hasPrivacy == false, don't need to create the zero knowledge proof
 	// proving user has spending key corresponding with public key in input coins
 	// is proved by signing with spending key
-	if !hasPrivacy{
+	if !hasPrivacy {
 		proof.InputCoins = wit.inputCoins
 		proof.OutputCoins = wit.outputCoins
 	}
@@ -129,16 +162,16 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	// Proving one-out-of-N commitments is a commitment to the coins being spent
 	proof.OneOfManyProof = make([]*PKOneOfManyProof, numInputCoins)
 
-	for i:=0; i < numInputCoins; i++{
+	for i := 0; i < numInputCoins; i++ {
 		proof.ComOpeningsProof[i] = new(PKComOpeningsProof)
 		proof.ComOpeningsProof[i], err = wit.ComOpeningsWitness[i].Prove()
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 
 		proof.OneOfManyProof[i] = new(PKOneOfManyProof)
 		proof.OneOfManyProof[i], err = wit.OneOfManyWitness[i].Prove()
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -148,18 +181,17 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 
 	// Proving that output values do not exceed v_max
 	proof.ComMultiRangeProof, err = wit.ComMultiRangeWitness.Prove()
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	// Proving that sum of all output values do not exceed v_max
 	// Todo: 0xKraken
 
-
 	return proof, nil
 }
 
-func (pro PaymentProof) Verify(hasPrivacy bool) bool {
-	if !pro.ComOpeningsProof[0].Verify() {
+func (pro PaymentProof) Verify() bool {
+	if !pro.ComInputOpeningsProof[0].Verify() {
 		return false
 	}
 	//if !pro.ComMultiRangeProof
@@ -172,7 +204,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool) bool {
 	if !pro.EqualityOfCommittedValProof.Verify() {
 		return false
 	}
-	if !pro.OneOfManyProof.Verify() {
+	if !pro.OneOfManyProof[0].Verify() {
 		return false
 	}
 	return true

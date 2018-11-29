@@ -166,7 +166,11 @@ func main() {
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
+<<<<<<< HEAD
+	// privacy.TestSchn()
+=======
 	//privacy.TestSchn()
+>>>>>>> 33048a6256d39a1a99631755d993b7dbd57614ef
 	//zkp.PKComMultiRangeTest()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
@@ -201,16 +205,22 @@ func main() {
 	//
 	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
 
+<<<<<<< HEAD
+=======
 
 
 
+>>>>>>> 33048a6256d39a1a99631755d993b7dbd57614ef
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
+	privacy.TestECC()
 	//fmt.Println(zkp.TestOpeningsProtocol())
 	//fmt.Println(zkp.TestPKEqualityOfCommittedVal())
 	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
 	/*--------------------------------------------*/
 
+<<<<<<< HEAD
+=======
 
 	/*----------------- TEST COMPRESS/DECOMPRESS POINT -----------------*/
 	//p := new(privacy.EllipticPoint)
@@ -237,4 +247,5 @@ func main() {
 
 	tkDecom, _ := privacy.DecompressKey(keySet.PaymentAddress.Tk)
 	fmt.Printf("Tk decompress: %+v\n\n", tkDecom)
+>>>>>>> 33048a6256d39a1a99631755d993b7dbd57614ef
 }
