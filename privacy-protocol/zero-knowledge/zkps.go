@@ -141,6 +141,9 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 		wit.ComOutputOpeningsWitness[i].Set(cmOutputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(outputCoins[i].CoinDetails.Value)), outputCoins[i].CoinDetails.SNDerivator, randOutputSum[i]})
 	}
 
+	//ToDo: build witness for proving sum of input values equal sum of output values
+	// using protocol zero commitment
+
 }
 
 // Prove creates big proof
@@ -156,21 +159,35 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 
 	// if hasPrivacy == true
 	var err error
-	numInputCoins := len(wit.ComOpeningsWitness)
-	// Proving the knowledge of input coins' Openings, output coins' openings
-	proof.ComOpeningsProof = make([]*PKComOpeningsProof, numInputCoins)
-	// Proving one-out-of-N commitments is a commitment to the coins being spent
+	numInputCoins := len(wit.ComInputOpeningsWitness)
+	numOutputCoins := len(wit.ComOutputOpeningsWitness)
+
+	proof.ComInputOpeningsProof = make([]*PKComOpeningsProof, numInputCoins)
+
+	proof.ComOutputOpeningsProof = make([]*PKComOpeningsProof, numOutputCoins)
+
 	proof.OneOfManyProof = make([]*PKOneOfManyProof, numInputCoins)
 
 	for i := 0; i < numInputCoins; i++ {
-		proof.ComOpeningsProof[i] = new(PKComOpeningsProof)
-		proof.ComOpeningsProof[i], err = wit.ComOpeningsWitness[i].Prove()
+		// Proving the knowledge of input coins' Openings, output coins' openings
+		proof.ComInputOpeningsProof[i] = new(PKComOpeningsProof)
+		proof.ComInputOpeningsProof[i], err = wit.ComInputOpeningsWitness[i].Prove()
 		if err != nil {
 			return nil, err
 		}
 
+		// Proving one-out-of-N commitments is a commitment to the coins being spent
 		proof.OneOfManyProof[i] = new(PKOneOfManyProof)
 		proof.OneOfManyProof[i], err = wit.OneOfManyWitness[i].Prove()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Proving the knowledge of output coins' openings
+	for i := 0; i < numOutputCoins; i++{
+		proof.ComOutputOpeningsProof[i] = new(PKComOpeningsProof)
+		proof.ComOutputOpeningsProof[i], err = wit.ComOutputOpeningsWitness[i].Prove()
 		if err != nil {
 			return nil, err
 		}
@@ -190,7 +207,10 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	return proof, nil
 }
 
-func (pro PaymentProof) Verify() bool {
+func (pro PaymentProof) Verify(hasPrivacy bool) bool {
+
+
+
 	if !pro.ComInputOpeningsProof[0].Verify() {
 		return false
 	}
