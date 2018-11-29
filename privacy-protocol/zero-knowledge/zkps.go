@@ -229,3 +229,15 @@ func GetCurrentBlockHeight() *big.Int {
 	//TODO
 	return big.NewInt(1224)
 }
+
+// ToBytes converts payment proof to byte array to send verifiers
+func(pro  PaymentProof) ToBytes() []byte {
+	//ToDo
+	return []byte{0}
+}
+
+// FromBytes reverts bytes array to payment proof for verifying
+func(pro * PaymentProof) FromBytes(bytes []byte)  {
+	//ToDo
+
+}
