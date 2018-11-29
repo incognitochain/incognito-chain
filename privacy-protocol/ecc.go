@@ -256,7 +256,7 @@ func TestECC() bool {
 		start = time.Now()
 		eccPointX.X = big.NewInt(0)
 		eccPointX.Y = big.NewInt(0)
-		*eccPointX = (*eccPoint1).AddPoint(*eccPoint2)
+		*eccPointX = (*eccPoint1).Add(*eccPoint2)
 		end = time.Now()
 		time2 := end.Sub(start)
 		// fmt.Printf("%v %v \n", time1, time2)
@@ -287,19 +287,19 @@ func TestECC() bool {
 These functions have worked for my range proof protocol
 If there are any changes, please inform me first
 						TRONG-DAT														***********/
-func (eccPoint EllipticPoint) AddPoint(p EllipticPoint) EllipticPoint {
-	var res EllipticPoint
+func (eccPoint EllipticPoint) Add(p *EllipticPoint) *EllipticPoint {
+	res := new(EllipticPoint)
 	res.X, res.Y = Curve.Add(eccPoint.X, eccPoint.Y, p.X, p.Y)
 	return res
 }
-func (eccPoint EllipticPoint) IsEqual(p EllipticPoint) bool {
+func (eccPoint EllipticPoint) IsEqual(p *EllipticPoint) bool {
 	if eccPoint.X.Cmp(p.X) == 0 && eccPoint.Y.Cmp(p.Y) == 0 {
 		return true
 	}
 	return false
 }
-func (eccPoint EllipticPoint) ScalarMulPoint(factor *big.Int) EllipticPoint {
-	var res EllipticPoint
+func (eccPoint EllipticPoint) ScalarMul(factor *big.Int) *EllipticPoint {
+	res := new(EllipticPoint)
 	res.X, res.Y = Curve.ScalarMult(eccPoint.X, eccPoint.Y, factor.Bytes())
 	return res
 }

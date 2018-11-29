@@ -172,7 +172,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof,error) {
 		}
 	gamma:= new(big.Int).SetBytes(privacy.RandBytes(32))
 		gamma.Mod(gamma,privacy.Curve.Params().N)
-		Comms[j] = RangeProofParams.G.ScalarMulPoint(v).AddPoint(RangeProofParams.H.ScalarMulPoint(gamma))
+		Comms[j] = RangeProofParams.G.ScalarMul(v).Add(RangeProofParams.H.ScalarMul(gamma))
 		gammas[j] = gamma
 		wit.Rands[j] = gamma
 		// break up v into its bitwise representation
@@ -188,7 +188,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof,error) {
 	alpha := new(big.Int).SetBytes(privacy.RandBytes(32))
 	alpha.Mod(alpha,privacy.Curve.Params().N)
 
-	A := TwoVectorPCommitWithGens(RangeProofParams.BPG, RangeProofParams.BPH, aLConcat, aRConcat).AddPoint(RangeProofParams.H.ScalarMulPoint((alpha)))
+	A := TwoVectorPCommitWithGens(RangeProofParams.BPG, RangeProofParams.BPH, aLConcat, aRConcat).Add(RangeProofParams.H.ScalarMul((alpha)))
 	MRProof.A = A
 
 	sL := RandVector(RangeProofParams.V)
@@ -197,7 +197,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof,error) {
 	rho := new(big.Int).SetBytes(privacy.RandBytes(32))
 	rho.Mod(alpha,privacy.Curve.Params().N)
 
-	S := TwoVectorPCommitWithGens(RangeProofParams.BPG, RangeProofParams.BPH, sL, sR).AddPoint(RangeProofParams.H.ScalarMulPoint(rho))
+	S := TwoVectorPCommitWithGens(RangeProofParams.BPG, RangeProofParams.BPH, sL, sR).Add(RangeProofParams.H.ScalarMul(rho))
 	MRProof.S = S
 
 	chal1s256 := blake2b.Sum256([]byte(A.X.String() + A.Y.String()))
@@ -250,8 +250,8 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof,error) {
 	tau2 := new(big.Int).SetBytes(privacy.RandBytes(32))
 	tau2.Mod(tau2,privacy.Curve.Params().N)
 
-	T1 := RangeProofParams.G.ScalarMulPoint(t1).AddPoint(RangeProofParams.H.ScalarMulPoint(tau1)) //commitment to t1
-	T2 := RangeProofParams.G.ScalarMulPoint(t2).AddPoint(RangeProofParams.H.ScalarMulPoint(tau2)) //commitment to t2
+	T1 := RangeProofParams.G.ScalarMul(t1).Add(RangeProofParams.H.ScalarMul(tau1)) //commitment to t1
+	T2 := RangeProofParams.G.ScalarMul(t2).Add(RangeProofParams.H.ScalarMul(tau2)) //commitment to t2
 
 	MRProof.T1 = T1
 	MRProof.T2 = T2
@@ -289,7 +289,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof,error) {
 	MRProof.Mu = mu
 	HPrime := make([]privacy.EllipticPoint, len(RangeProofParams.BPH))
 	for i := range HPrime {
-		HPrime[i] = RangeProofParams.BPH[i].ScalarMulPoint(new(big.Int).ModInverse(PowerOfCY[i], privacy.Curve.Params().N))
+		HPrime[i] = RangeProofParams.BPH[i].ScalarMul(new(big.Int).ModInverse(PowerOfCY[i], privacy.Curve.Params().N))
 	}
 	P := TwoVectorPCommitWithGens(RangeProofParams.BPG, HPrime, left, right)
 	MRProof.IPP = InnerProductProve(left, right, that, P, RangeProofParams.U, RangeProofParams.BPG, HPrime)
@@ -307,13 +307,13 @@ func (wit *PKComMultiRangeWitness) ProveSum() (*PKComZeroProof, error){
 	temp:=new(privacy.EllipticPoint)
 	for i:=0;i<l-1;i++ {
 		temp = privacy.PedCom.CommitAtIndex(wit.Values[i], wit.Rands[i],privacy.VALUE)
-		sumComms = sumComms.AddPoint(*temp)
+		sumComms = sumComms.Add(*temp)
 		sumRand.Add(sumRand,new(big.Int).Set(wit.Rands[i]))
 	}
 	sumRand.Sub(sumRand,wit.Rands[l-1])
 	temp = privacy.PedCom.CommitAtIndex(wit.Values[l-1], wit.Rands[l-1],privacy.VALUE)
 	temp,_ = temp.Inverse()
-	sumComms = sumComms.AddPoint(*temp)
+	sumComms = sumComms.Add(*temp)
 	sumRand.Mod(sumRand,privacy.Curve.Params().N)
 	var zeroWit PKComZeroWitness
 	idx := new(byte)
@@ -328,10 +328,10 @@ func (pro *PKComMultiRangeProof) VerifySum(zproof *PKComZeroProof) bool{
 	}
 	zeroCom:= RangeProofParams.Zero()
 	for i:=0;i<len(pro.Comms)-1;i++{
-		zeroCom = zeroCom.AddPoint(pro.Comms[i])
+		zeroCom = zeroCom.Add(pro.Comms[i])
 	}
 	invSumCom,_:=pro.Comms[len(pro.Comms)-1].Inverse()
-	zeroCom = zeroCom.AddPoint(*invSumCom)
+	zeroCom = zeroCom.Add(*invSumCom)
 	if (!zeroCom.IsEqual(*zproof.commitmentValue)){
 		return false
 	} else {
@@ -376,18 +376,18 @@ func (pro *PKComMultiRangeProof) Verify() bool {
 	// given challenges are correct, very range proof
 	PowersOfY := PowerVector(RangeProofParams.V, cy)
 	// t_hat * G + tau * H
-	lhs := RangeProofParams.G.ScalarMulPoint(pro.Th).AddPoint(RangeProofParams.H.ScalarMulPoint(pro.Tau))
+	lhs := RangeProofParams.G.ScalarMul(pro.Th).Add(RangeProofParams.H.ScalarMul(pro.Tau))
 	// z^2 * \bold{z}^m \bold{V} + delta(y,z) * G + x * T1 + x^2 * T2
 	CommPowers := RangeProofParams.Zero()
 	PowersOfZ := PowerVector(m, cz)
 	z2 := new(big.Int).Mod(new(big.Int).Mul(cz, cz), privacy.Curve.Params().N)
 
 	for j := 0; j < m; j++ {
-		CommPowers = CommPowers.AddPoint(pro.Comms[j].ScalarMulPoint(new(big.Int).Mul(z2, PowersOfZ[j])))
+		CommPowers = CommPowers.Add(pro.Comms[j].ScalarMul(new(big.Int).Mul(z2, PowersOfZ[j])))
 	}
-	rhs := RangeProofParams.G.ScalarMulPoint(DeltaMRP(PowersOfY, cz, m)).AddPoint(
-		pro.T1.ScalarMulPoint(cx)).AddPoint(
-		pro.T2.ScalarMulPoint(new(big.Int).Mul(cx, cx))).AddPoint(CommPowers)
+	rhs := RangeProofParams.G.ScalarMul(DeltaMRP(PowersOfY, cz, m)).Add(
+		pro.T1.ScalarMul(cx)).Add(
+		pro.T2.ScalarMul(new(big.Int).Mul(cx, cx))).Add(CommPowers)
 
 	if !lhs.IsEqual(rhs) {
 		fmt.Println("MRPVerify - Uh oh! Check line (63) of verification")
@@ -399,7 +399,7 @@ func (pro *PKComMultiRangeProof) Verify() bool {
 	tmp1 := RangeProofParams.Zero()
 	zneg := new(big.Int).Mod(new(big.Int).Neg(cz), privacy.Curve.Params().N)
 	for i := range RangeProofParams.BPG {
-		tmp1 = tmp1.AddPoint(RangeProofParams.BPG[i].ScalarMulPoint(zneg))
+		tmp1 = tmp1.Add(RangeProofParams.BPG[i].ScalarMul(zneg))
 	}
 	PowerOfTwos := PowerVector(bitsPerValue, big.NewInt(2))
 	tmp2 := RangeProofParams.Zero()
@@ -408,7 +408,7 @@ func (pro *PKComMultiRangeProof) Verify() bool {
 
 	for i := range HPrime {
 		mi := new(big.Int).ModInverse(PowersOfY[i], privacy.Curve.Params().N)
-		HPrime[i] = RangeProofParams.BPH[i].ScalarMulPoint(mi)
+		HPrime[i] = RangeProofParams.BPH[i].ScalarMul(mi)
 	}
 
 	for j := 0; j < m; j++ {
@@ -416,13 +416,13 @@ func (pro *PKComMultiRangeProof) Verify() bool {
 			val1 := new(big.Int).Mul(cz, PowersOfY[j*bitsPerValue+i])
 			zp := new(big.Int).Exp(cz, big.NewInt(2+int64(j)), privacy.Curve.Params().N)
 			val2 := new(big.Int).Mod(new(big.Int).Mul(zp, PowerOfTwos[i]), privacy.Curve.Params().N)
-			tmp2 = tmp2.AddPoint(HPrime[j*bitsPerValue+i].ScalarMulPoint(new(big.Int).Add(val1, val2)))
+			tmp2 = tmp2.Add(HPrime[j*bitsPerValue+i].ScalarMul(new(big.Int).Add(val1, val2)))
 		}
 	}
 	// without subtracting this value should equal muCH + l[i]G[i] + r[i]H'[i]
 	// we want to make sure that the innerproduct checks out, so we subtract it
-	tmp,_:=RangeProofParams.H.ScalarMulPoint(pro.Mu).Inverse()
-	P := pro.A.AddPoint(pro.S.ScalarMulPoint(cx)).AddPoint(tmp1).AddPoint(tmp2).AddPoint(*tmp)
+	tmp,_:=RangeProofParams.H.ScalarMul(pro.Mu).Inverse()
+	P := pro.A.Add(pro.S.ScalarMul(cx)).Add(tmp1).Add(tmp2).Add(*tmp)
 	//fmt.Println(P)
 
 	if !InnerProductVerifyFast(pro.Th, P, RangeProofParams.U, RangeProofParams.BPG, HPrime, pro.IPP) {

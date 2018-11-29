@@ -182,10 +182,11 @@ func (proof *PKComZeroOneProof) Verify() bool {
 	x.Mod(x, privacy.Curve.Params().N)
 
 	// Calculate leftPoint1 = c^x * ca
-	leftPoint1 := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
-	leftPoint1.X, leftPoint1.Y = privacy.Curve.ScalarMult(proof.commitment.X, proof.commitment.Y, x.Bytes())
-	leftPoint1.X, leftPoint1.Y = privacy.Curve.Add(leftPoint1.X, leftPoint1.Y, proof.ca.X, proof.ca.Y)
+	//leftPoint1 := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
+	//leftPoint1.X, leftPoint1.Y = privacy.Curve.ScalarMult(proof.commitment.X, proof.commitment.Y, x.Bytes())
+	//leftPoint1.X, leftPoint1.Y = privacy.Curve.Add(leftPoint1.X, leftPoint1.Y, proof.ca.X, proof.ca.Y)
 
+	leftPoint1:=proof.commitment.ScalarMul()
 	// Calculate rightPoint1 = Com(f, za)
 	rightPoint1 := privacy.PedCom.CommitAtIndex(proof.f, proof.za, proof.index)
 
@@ -208,31 +209,31 @@ func (proof *PKComZeroOneProof) Verify() bool {
 }
 
 // TestPKComZeroOne tests prove and verify function for PK for PedersenCommitment to zero or one
-func TestPKComZeroOne() {
-	res := true
-	for res {
-		// generate Openings
-		valueRand := privacy.RandBytes(32)
-		vInt := new(big.Int).SetBytes(valueRand)
-		vInt.Mod(vInt, big.NewInt(2))
-		rand := new(big.Int).SetBytes(privacy.RandBytes(32))
-
-		// CommitAll
-		cm := privacy.PedCom.CommitAtIndex(vInt, rand, privacy.VALUE)
-
-		// create witness for proving
-		var witness PKComZeroOneWitness
-		witness.Set(vInt, rand, cm, privacy.VALUE)
-
-		// Proving
-		proof, _ := witness.Prove()
-		fmt.Printf("Proof: %+v\n", proof)
-
-		// Set proof for verifying
-		Proof := new(PKComZeroOneProof)
-		Proof.Set(proof.ca, proof.cb, proof.f, proof.za, proof.zb, proof.commitment, proof.index)
-
-		res = Proof.Verify()
-		fmt.Println(res)
-	}
-}
+//func TestPKComZeroOne() {
+//	res := true
+//	for res {
+//		// generate Openings
+//		valueRand := privacy.RandBytes(32)
+//		vInt := new(big.Int).SetBytes(valueRand)
+//		vInt.Mod(vInt, big.NewInt(2))
+//		rand := new(big.Int).SetBytes(privacy.RandBytes(32))
+//
+//		// CommitAll
+//		cm := privacy.PedCom.CommitAtIndex(vInt, rand, privacy.VALUE)
+//
+//		// create witness for proving
+//		var witness PKComZeroOneWitness
+//		witness.Set(vInt, rand, cm, privacy.VALUE)
+//
+//		// Proving
+//		proof, _ := witness.Prove()
+//		fmt.Printf("Proof: %+v\n", proof)
+//
+//		// Set proof for verifying
+//		Proof := new(PKComZeroOneProof)
+//		Proof.Set(proof.ca, proof.cb, proof.f, proof.za, proof.zb, proof.commitment, proof.index)
+//
+//		res = Proof.Verify()
+//		fmt.Println(res)
+//	}
+//}

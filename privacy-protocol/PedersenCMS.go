@@ -63,7 +63,7 @@ func (com PCParams) CommitAll(openings []*big.Int) *EllipticPoint {
 	commitment := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 
 	for i := 0; i < com.Capacity; i++ {
-		commitment.AddPoint(com.G[i].ScalarMulPoint(openings[i]))
+		commitment.Add(com.G[i].ScalarMul(openings[i]))
 		//temp.X, temp.Y = Curve.ScalarMult(com.G[i].X, com.G[i].Y, openings[i].Bytes())
 		//commitment.X, commitment.Y = Curve.Add(commitment.X, commitment.Y, temp.X, temp.Y)
 	}
@@ -72,7 +72,7 @@ func (com PCParams) CommitAll(openings []*big.Int) *EllipticPoint {
 
 // CommitAtIndex commits specific value with index and returns 34 bytes
 func (com PCParams) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoint {
-	commitment:=com.G[com.Capacity-1].ScalarMulPoint(rand).AddPoint(com.G[index].ScalarMulPoint(value))
+	commitment:=com.G[com.Capacity-1].ScalarMul(rand).Add(com.G[index].ScalarMul(value))
 	return &commitment
 }
 
