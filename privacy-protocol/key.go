@@ -169,7 +169,7 @@ func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
 	return pubkey, nil
 }
 
-// PAdd1Div4 computes (p + 1) mod 4
+// PAdd1Div4 computes (p + 1) / 4
 func PAdd1Div4(p *big.Int) (res *big.Int) {
 	res = new(big.Int)
 	res.Add(p, new(big.Int).SetInt64(1))

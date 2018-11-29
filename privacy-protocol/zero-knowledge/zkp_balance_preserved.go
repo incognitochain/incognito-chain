@@ -157,7 +157,6 @@ func (wit *PKComMultiRangeWitness) Prove() PKComMultiRangeProof {
 	wit.Rands=make([]*big.Int, m)
 	aLConcat := make([]*big.Int, RangeProofParams.V)
 	aRConcat := make([]*big.Int, RangeProofParams.V)
-
 	sumRand:=new (big.Int)
 	sumRand.SetUint64(0)
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
@@ -201,6 +202,7 @@ func main() {
 
 
 
+
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
 	//fmt.Println(zkp.TestOpeningsProtocol())
@@ -209,6 +211,17 @@ func main() {
 	/*--------------------------------------------*/
 
 
+	/*----------------- TEST COMPRESS/DECOMPRESS POINT -----------------*/
+	p := new(privacy.EllipticPoint)
+	p.Randomize()
+	fmt.Printf("Point uncompress: %+v\n", p)
+
+	pBytes := p.Compress()
+	fmt.Printf("Point compressed: %v\n", pBytes)
+
+	p2, _ := privacy.DecompressKey(pBytes)
+	fmt.Printf("Point decompressed: %+v\n", p2)
+	/*-----------------------------------------------------------------*/
 
 
 }
