@@ -116,7 +116,7 @@ func (tx *TxPrivacy) CreateTx(
 	// set private key for signing tx
 	if hasPrivacy{
 		tx.sigPrivKey = make([]byte, 64)
-		tx.sigPrivKey = append(*senderSK, witness.ComOpeningsWitness.Openings[privacy.RAND].Bytes()...)
+		tx.sigPrivKey = append(*senderSK, witness.ComOpeningsWitness[0].Openings[privacy.RAND].Bytes()...)
 	} else{
 		tx.sigPrivKey = *senderSK
 	}
