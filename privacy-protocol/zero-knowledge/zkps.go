@@ -196,9 +196,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	numOutputCoins := len(wit.ComOutputOpeningsWitness)
 
 	proof.ComInputOpeningsProof = make([]*PKComOpeningsProof, numInputCoins)
-
 	proof.ComOutputOpeningsProof = make([]*PKComOpeningsProof, numOutputCoins)
-
 	proof.OneOfManyProof = make([]*PKOneOfManyProof, numInputCoins)
 
 	for i := 0; i < numInputCoins; i++ {
@@ -236,6 +234,9 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 		return nil, err
 	}
 	// Proving that sum of all output values do not exceed v_max
+	// Todo: 0xKraken
+
+	// Proving that sum of all input values is equal to sum of all output values
 	// Todo: 0xKraken
 
 	return proof, nil
@@ -278,9 +279,9 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 
 			// Check output coins' cm is calculated correctly
 			cmTmp := pro.OutputCoins[i].CoinDetails.PublicKey
-			cmTmp = cmTmp.AddPoint(privacy.PedCom.G[privacy.SND].ScalarMulPoint(pro.OutputCoins[i].CoinDetails.SNDerivator))
-			cmTmp = cmTmp.AddPoint(privacy.PedCom.G[privacy.VALUE].ScalarMulPoint(big.NewInt(int64(pro.OutputCoins[i].CoinDetails.Value))))
-			cmTmp = cmTmp.AddPoint(privacy.PedCom.G[privacy.RAND].ScalarMulPoint(pro.OutputCoins[i].CoinDetails.Randomness))
+			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMul(pro.OutputCoins[i].CoinDetails.SNDerivator))
+			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(pro.OutputCoins[i].CoinDetails.Value))))
+			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMul(pro.OutputCoins[i].CoinDetails.Randomness))
 			if !cmTmp.IsEqual(pro.OutputCoins[i].CoinDetails.CoinCommitment){
 				return false
 			}
@@ -323,6 +324,14 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 			return false
 		}
 	}
+
+	// Verify the proof that output values do not exceed v_max
+	if !pro.ComMultiRangeProof.Verify(){
+		return false
+	}
+
+	// Verify the proof that sum of all output values do not exceed v_max
+	//if !pro.ComMultiRangeProof
 
 	return true
 }
