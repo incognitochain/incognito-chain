@@ -14,7 +14,7 @@ import (
 //	Proof   PKComZeroOneProof
 //}
 
-// PKComZeroOneProof contains Proof's value
+// PKComZeroOneWitness contains Witness's value
 type PKComZeroOneWitness struct {
 	commitedValue *big.Int
 	rand          *big.Int
@@ -25,8 +25,8 @@ type PKComZeroOneWitness struct {
 
 // PKComZeroOneProof contains Proof's value
 type PKComZeroOneProof struct {
-	ca, cb     *privacy.EllipticPoint
-	f, za, zb  *big.Int
+	ca, cb    *privacy.EllipticPoint
+	f, za, zb *big.Int
 	//general info
 	commitment *privacy.EllipticPoint
 	index      byte
@@ -35,9 +35,9 @@ type PKComZeroOneProof struct {
 // Set sets Witness
 func (wit *PKComZeroOneWitness) Set(
 	commitedValue *big.Int,
-	rand          *big.Int,
-	commitment    *privacy.EllipticPoint,
-	index         byte) {
+	rand *big.Int,
+	commitment *privacy.EllipticPoint,
+	index byte) {
 
 	wit.commitedValue = commitedValue
 	wit.rand = rand
@@ -52,10 +52,10 @@ func (wit *PKComZeroOneWitness) Get() *PKComZeroOneWitness {
 
 // Set sets Proof
 func (proof *PKComZeroOneProof) Set(
-	ca, cb     *privacy.EllipticPoint,
-	f, za, zb  *big.Int,
+	ca, cb *privacy.EllipticPoint,
+	f, za, zb *big.Int,
 	commitment *privacy.EllipticPoint,
-	index      byte) {
+	index byte) {
 
 	proof.ca, proof.cb = ca, cb
 	proof.f, proof.za, proof.zb = f, za, zb
@@ -75,8 +75,8 @@ func getindex(bigint *big.Int) int {
 // Prove creates a Proof for PedersenCommitment to zero or one
 func (wit *PKComZeroOneWitness) Prove() (*PKComZeroOneProof, error) {
 	// Check index
-	if wit.index < 0 || wit.index > privacy.PCM_CAPACITY - 1 {
-		return nil, fmt.Errorf("index must be between 0 and pcm capacity - 1 ")
+	if wit.index < privacy.SK || wit.index > privacy.RAND {
+		return nil, fmt.Errorf("index must be between SK index and RAND index")
 	}
 
 	// Check whether commited value is zero or one or not
@@ -105,7 +105,7 @@ func (wit *PKComZeroOneWitness) Prove() (*PKComZeroOneProof, error) {
 	proof.cb = privacy.PedCom.CommitAtIndex(am, t, wit.index)
 
 	// Calculate x = hash (G0||G1||G2||G3||ca||cb||cm)
-	x := GenerateChallenge([][]byte{proof.ca.Compress(), proof.cb.Compress(), wit.commitment.Compress()})
+	x := GenerateChallengeFromPoint([]*privacy.EllipticPoint{proof.ca, proof.cb, wit.commitment})
 	x.Mod(x, privacy.Curve.Params().N)
 
 	// Calculate f = mx + a
@@ -174,21 +174,8 @@ func (proof *PKComZeroOneProof) Verify() bool {
 	fmt.Printf("verify proof ca: %v\n", proof.cb)
 	fmt.Printf("verify proof ca: %v\n", proof.commitment)
 
-	x := GenerateChallenge([][]byte{proof.ca.Compress(), proof.cb.Compress(), proof.commitment.Compress()})
+	x := GenerateChallengeFromPoint([]*privacy.EllipticPoint{proof.ca, proof.cb, proof.commitment})
 	x.Mod(x, privacy.Curve.Params().N)
-
-	//// Decompress ca, cb of Proof
-	//caPoint, err := privacy.DecompressCommitment(proof.Proof.ca)
-	//if err != nil {
-	//	fmt.Printf("Can not decompress Proof ca to ECC point")
-	//	return false
-	//}
-	//cbPoint, err := privacy.DecompressCommitment(proof.Proof.cb)
-	//fmt.Printf("cb Point verify: %+v\n", cbPoint)
-	//if err != nil {
-	//	fmt.Printf("Can not decompress Proof cb to ECC point")
-	//	return false
-	//}
 
 	// Calculate leftPoint1 = c^x * ca
 	leftPoint1 := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
@@ -220,7 +207,7 @@ func (proof *PKComZeroOneProof) Verify() bool {
 func TestPKComZeroOne() {
 	res := true
 	for res {
-		// generate openings
+		// generate Openings
 		valueRand := privacy.RandBytes(32)
 		vInt := new(big.Int).SetBytes(valueRand)
 		vInt.Mod(vInt, big.NewInt(2))

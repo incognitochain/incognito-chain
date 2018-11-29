@@ -32,7 +32,7 @@ func (self GenesisBlockGenerator) CalcMerkleRoot(txns []transaction.Transaction)
 	rho := [32]byte{byte(idx)}
 	r := [32]byte{byte(idx)}
 	note := &client.Note{
-		Value: 0,
+		H: 0,
 		Apk:   addr.Pk,
 		Rho:   rho[:],
 		R:     r[:],
@@ -64,8 +64,8 @@ Use to get hardcode for genesis block
 	if err != nil {
 		return nil, err
 	}
-	outNote := &client.Note{Value: initialCoin, Apk: key.KeySet.PaymentAddress.Pk}
-	placeHolderOutputNote := &client.Note{Value: 0, Apk: key.KeySet.PaymentAddress.Pk}
+	outNote := &client.Note{H: initialCoin, Apk: key.KeySet.PaymentAddress.Pk}
+	placeHolderOutputNote := &client.Note{H: 0, Apk: key.KeySet.PaymentAddress.Pk}
 
 	fmt.Printf("EncKey: %x\n", key.KeySet.PaymentAddress.Tk)
 
@@ -360,15 +360,15 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	)
 	genesisBlock.AddTransaction(&cmbTokenTx)
 
-	// Create genesis token tx for BOND
-	/*bondTokenTx := createSpecialTokenTx(
-		common.Hash(BondTokenID),
-		"Bond",
-		"BON",
+	// Create genesis token tx for BOND test
+	bondTokenTx := createSpecialTokenTx(
+		common.Hash([common.HashSize]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
+		"BondTest",
+		"BONTest",
 		icoParams.InitialBondToken,
 		key.KeySet.PaymentAddress,
 	)
-	genesisBlock.AddTransaction(&bondTokenTx)*/
+	genesisBlock.AddTransaction(&bondTokenTx)
 
 	// calculate merkle root tx for genesis block
 	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)

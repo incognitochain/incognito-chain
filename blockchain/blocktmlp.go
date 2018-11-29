@@ -684,6 +684,9 @@ func (blockgen *BlkTmplGenerator) buildRefundTxs(
 		addresses = append(addresses, addr)
 		estimatedRefundAmt += refundInfo.RefundAmount
 	}
+	if len(addresses) == 0 {
+		return []*transaction.Tx{}, 0
+	}
 	refundTxs, totalRefundAmt := calculateAmountOfRefundTxs(
 		addresses,
 		estimatedRefundAmt,

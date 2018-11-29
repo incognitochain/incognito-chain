@@ -63,7 +63,7 @@ func TestParsePKIXPublicKey(t *testing.T) {
 	}
 	rsaPub, ok := pub.(*rsa.PublicKey)
 	if !ok {
-		t.Errorf("Value returned from ParsePKIXPublicKey was not an RSA public key")
+		t.Errorf("H returned from ParsePKIXPublicKey was not an RSA public key")
 		return
 	}
 

@@ -26,8 +26,8 @@ const (
 	TestnetInitFundSalary             = 1000000000000000
 	TestnetInitDCBToken               = 10000
 	TestnetInitGovToken               = 10000
-	TestnetInitCmBToken               = 0
-	TestnetInitBondToken              = 0
+	TestnetInitCmBToken               = 10000
+	TestnetInitBondToken              = 10000
 	TestnetGenesisBlockPaymentAddress = "1Uv12YEcd5w5Qm79sTGHSHYnCfVKM2ui8mbapD1dgziUf9211b5cnCSdxVb1DoXyDD19V1THMSnaAWZ18sJtmaVnh56wVhwb1HuYpkTa4"
 )
 
