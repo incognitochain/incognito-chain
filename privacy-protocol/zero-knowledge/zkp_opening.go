@@ -49,6 +49,10 @@ func (pro *PKComOpeningsProof) Set(
 	pro.gamma = gamma
 }
 
+func (pro *PKComOpeningsProof) Bytes() []byte {
+	return []byte{0}
+}
+
 // Prove ... (for sender)
 func (wit *PKComOpeningsWitness) Prove() (*PKComOpeningsProof, error) {
 	// r1Rand, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
