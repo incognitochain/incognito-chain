@@ -19,7 +19,8 @@ type PaymentWitness struct {
 	ComInputOpeningsWitness       []*PKComOpeningsWitness
 	ComOutputOpeningsWitness      []*PKComOpeningsWitness
 	OneOfManyWitness              []*PKOneOfManyWitness
-	EqualityOfCommittedValWitness *PKEqualityOfCommittedValWitness
+	EqualityOfCommittedValWitness []*PKEqualityOfCommittedValWitness
+	ProductCommitmentWitness			[]*PKComProductWitness
 	ComMultiRangeWitness          *PKComMultiRangeWitness
 	ComZeroWitness                *PKComZeroWitness
 	ComZeroOneWitness             *PKComZeroOneWitness
@@ -32,10 +33,14 @@ type PaymentProof struct {
 	ComInputOpeningsProof       []*PKComOpeningsProof
 	ComOutputOpeningsProof      []*PKComOpeningsProof
 	OneOfManyProof              []*PKOneOfManyProof
-	EqualityOfCommittedValProof *PKEqualityOfCommittedValProof
+	EqualityOfCommittedValProof []*PKEqualityOfCommittedValProof
+	ProductCommitmentProof			[]*PKComProductProof
 	ComMultiRangeProof          *PKComMultiRangeProof
 	ComZeroProof                *PKComZeroProof
 	ComZeroOneProof             *PKComZeroOneProof
+
+
+	// add list input coins' SN to proof for serial number
 
 	// these following attributes just exist when tx doesn't have privacy
 	OutputCoins []*privacy.OutputCoin
@@ -58,6 +63,7 @@ func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.Input
 // if hashPrivacy = false, witness includes spending key, input coins, output coins
 // otherwise, witness includes all attributes in PaymentWitness struct
 func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
+
 	wit.spendingKey = spendingKey
 	wit.inputCoins = inputCoins
 	wit.outputCoins = outputCoins
@@ -155,6 +161,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	if !hasPrivacy {
 		proof.InputCoins = wit.inputCoins
 		proof.OutputCoins = wit.outputCoins
+		// Todo: create proof for input coins' serial number
 	}
 
 	// if hasPrivacy == true
@@ -169,7 +176,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	proof.OneOfManyProof = make([]*PKOneOfManyProof, numInputCoins)
 
 	for i := 0; i < numInputCoins; i++ {
-		// Proving the knowledge of input coins' Openings, output coins' openings
+		// Proving the knowledge of input coins' Openings
 		proof.ComInputOpeningsProof[i] = new(PKComOpeningsProof)
 		proof.ComInputOpeningsProof[i], err = wit.ComInputOpeningsWitness[i].Prove()
 		if err != nil {
@@ -186,6 +193,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 
 	// Proving the knowledge of output coins' openings
 	for i := 0; i < numOutputCoins; i++{
+		// Proving the knowledge of output coins' openings
 		proof.ComOutputOpeningsProof[i] = new(PKComOpeningsProof)
 		proof.ComOutputOpeningsProof[i], err = wit.ComOutputOpeningsWitness[i].Prove()
 		if err != nil {
@@ -207,26 +215,88 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	return proof, nil
 }
 
-func (pro PaymentProof) Verify(hasPrivacy bool) bool {
+func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
+	// if hasPrivacy == false,
+	//numInputCoin := len(pro.InputCoins)
+	pubKeyPoint, _ := privacy.DecompressKey(pubKey)
 
+	if !hasPrivacy{
+		var sumInputValue, sumOutputValue uint64
+		sumInputValue = 0
+		sumOutputValue = 0
 
+		for i := 0; i < len(pro.InputCoins); i++{
+			// check if input coin's public key is pubKey or not
+			// pubKey is the signing key for tx
+			if !pro.InputCoins[i].CoinDetails.PublicKey.IsEqual(pubKeyPoint) {
+				return false
+			}
 
-	if !pro.ComInputOpeningsProof[0].Verify() {
-		return false
+			// Check input coins' Serial number is created from input coins' SND and sender's spending key
+			if !pro.EqualityOfCommittedValProof[i].Verify() {
+				return false
+			}
+			if !pro.ProductCommitmentProof[i].Verify() {
+				return false
+			}
+
+			// Check input coins' cm
+
+			// Calculate sum of input values
+			sumInputValue += pro.InputCoins[i].CoinDetails.Value
+
+		}
+
+		for i := 0; i < len(pro.OutputCoins); i++{
+			// Check output coins' SND is not exists in SND list (Database)
+
+			// Check output coins' cm is calculated correctly
+			cmTmp := pro.OutputCoins[i].CoinDetails.PublicKey
+			cmTmp = cmTmp.AddPoint(privacy.PedCom.G[privacy.SND].ScalarMulPoint(pro.OutputCoins[i].CoinDetails.SNDerivator))
+			cmTmp = cmTmp.AddPoint(privacy.PedCom.G[privacy.VALUE].ScalarMulPoint(big.NewInt(int64(pro.OutputCoins[i].CoinDetails.Value))))
+			cmTmp = cmTmp.AddPoint(privacy.PedCom.G[privacy.RAND].ScalarMulPoint(pro.OutputCoins[i].CoinDetails.Randomness))
+			if !cmTmp.IsEqual(pro.OutputCoins[i].CoinDetails.CoinCommitment){
+				return false
+			}
+
+			// Calculate sum of output values
+			sumOutputValue += pro.OutputCoins[i].CoinDetails.Value
+		}
+
+		// check if sum of input values equal sum of output values
+		if sumInputValue != sumOutputValue{
+			return false
+		}
+		return true
 	}
-	//if !pro.ComMultiRangeProof
-	if !pro.ComZeroOneProof.Verify() {
-		return false
+
+	// if hasPrivacy == true
+	// verify for input coins
+	for i := 0; i< len(pro.ComInputOpeningsProof); i++{
+		// Verify the proof for knowledge of input coins' Openings
+		if !pro.ComInputOpeningsProof[i].Verify(){
+			return false
+		}
+		// Verify for the proof one-out-of-N commitments is a commitment to the coins being spent
+		if !pro.OneOfManyProof[i].Verify(){
+			return false
+		}
+		// Verify for the Proof that input coins' serial number is derived from the committed derivator
+		if !pro.EqualityOfCommittedValProof[i].Verify(){
+			return false
+		}
+		if !pro.ProductCommitmentProof[i].Verify(){
+			return false
+		}
 	}
-	if !pro.ComZeroProof.Verify() {
-		return false
+
+	// Verify the proof for knowledge of output coins' openings
+	for i := 0; i< len(pro.ComOutputOpeningsProof); i++{
+		if !pro.ComOutputOpeningsProof[i].Verify(){
+			return false
+		}
 	}
-	if !pro.EqualityOfCommittedValProof.Verify() {
-		return false
-	}
-	if !pro.OneOfManyProof[0].Verify() {
-		return false
-	}
+
 	return true
 }
 
