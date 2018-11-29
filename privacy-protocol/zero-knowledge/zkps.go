@@ -70,6 +70,8 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 	wit.inputCoins = inputCoins
 	wit.outputCoins = outputCoins
 
+	// Todo: cmInputPartialSK := g^(sk - last byte)
+
 	numberInputCoin := len(wit.inputCoins)
 	randInputSK := privacy.RandInt()
 	cmInputSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randInputSK, privacy.SK)
@@ -175,21 +177,25 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 	index := new(byte)
 	*index = privacy.VALUE
 	wit.ComZeroWitness.Set(cmEqualCoinValue, index, cmEqualCoinValueRnd)
-	//ToDo: build witness for proving sum of input values equal sum of output values
-	// using protocol zero commitment
-
 }
 
 // Prove creates big proof
 func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	proof := new(PaymentProof)
+
 	// if hasPrivacy == false, don't need to create the zero knowledge proof
 	// proving user has spending key corresponding with public key in input coins
 	// is proved by signing with spending key
 	if !hasPrivacy {
 		proof.InputCoins = wit.inputCoins
 		proof.OutputCoins = wit.outputCoins
-		// Todo: create proof for input coins' serial number
+		// Proving that serial number is derived from the committed derivator
+		for i := 0; i < len(wit.inputCoins); i++ {
+			proof.EqualityOfCommittedValProof[i] = new(PKEqualityOfCommittedValProof)
+			proof.EqualityOfCommittedValProof[i] = wit.EqualityOfCommittedValWitness[i].Prove()
+		}
+
+		return proof, nil
 	}
 
 	// if hasPrivacy == true
@@ -215,6 +221,11 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		// Proving that serial number is derived from the committed derivator
+		proof.EqualityOfCommittedValProof[i] = new(PKEqualityOfCommittedValProof)
+		proof.EqualityOfCommittedValProof[i] = wit.EqualityOfCommittedValWitness[i].Prove()
+
 	}
 
 	// Proving the knowledge of output coins' openings
@@ -227,19 +238,23 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 		}
 	}
 
-	// Proving that serial number is derived from the committed derivator
-	// Todo: 0xKraken
-
 	// Proving that output values do not exceed v_max
 	proof.ComMultiRangeProof, err = wit.ComMultiRangeWitness.Prove()
 	if err != nil {
 		return nil, err
 	}
+
 	// Proving that sum of all output values do not exceed v_max
-	// Todo: 0xKraken
+	proof.SumOutRangeProof, err = wit.SumOutRangeWitness.Prove()
+	if err != nil {
+		return nil, err
+	}
 
 	// Proving that sum of all input values is equal to sum of all output values
-	// Todo: 0xKraken
+	proof.ComZeroProof, err = wit.ComZeroWitness.Prove()
+	if err != nil {
+		return nil, err
+	}
 
 	return proof, nil
 }
@@ -269,7 +284,17 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 				return false
 			}
 
-			// Check input coins' cm
+			// Check input coins' cm is calculated correctly
+			cmTmp := pro.InputCoins[i].CoinDetails.PublicKey
+			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMul(pro.InputCoins[i].CoinDetails.SNDerivator))
+			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(pro.InputCoins[i].CoinDetails.Value))))
+			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMul(pro.InputCoins[i].CoinDetails.Randomness))
+			if !cmTmp.IsEqual(pro.InputCoins[i].CoinDetails.CoinCommitment){
+				return false
+			}
+
+			// Check input coins' cm is exists in cm list (Database)
+			//Todo
 
 			// Calculate sum of input values
 			sumInputValue += pro.InputCoins[i].CoinDetails.Value
@@ -278,6 +303,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 
 		for i := 0; i < len(pro.OutputCoins); i++{
 			// Check output coins' SND is not exists in SND list (Database)
+			// Todo
 
 			// Check output coins' cm is calculated correctly
 			cmTmp := pro.OutputCoins[i].CoinDetails.PublicKey
