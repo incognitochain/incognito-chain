@@ -22,6 +22,7 @@ type PaymentWitness struct {
 	EqualityOfCommittedValWitness []*PKEqualityOfCommittedValWitness
 	ProductCommitmentWitness			[]*PKComProductWitness
 	ComMultiRangeWitness          *PKComMultiRangeWitness
+	SumOutRangeWitness 						*PKComMultiRangeWitness
 	ComZeroWitness                *PKComZeroWitness
 	ComZeroOneWitness             *PKComZeroOneWitness
 }
@@ -36,6 +37,7 @@ type PaymentProof struct {
 	EqualityOfCommittedValProof []*PKEqualityOfCommittedValProof
 	ProductCommitmentProof			[]*PKComProductProof
 	ComMultiRangeProof          *PKComMultiRangeProof
+	SumOutRangeProof 						*PKComMultiRangeProof
 	ComZeroProof                *PKComZeroProof
 	ComZeroOneProof             *PKComZeroOneProof
 
@@ -331,7 +333,14 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 	}
 
 	// Verify the proof that sum of all output values do not exceed v_max
-	//if !pro.ComMultiRangeProof
+	if !pro.SumOutRangeProof.Verify() {
+		return false
+	}
+
+	// Verify the proof that sum of all input values is equal to sum of all output values
+	if !pro.ComZeroProof.Verify(){
+		return false
+	}
 
 	return true
 }
