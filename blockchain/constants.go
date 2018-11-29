@@ -26,8 +26,8 @@ const (
 	TestnetInitFundSalary             = 1000000000000000
 	TestnetInitDCBToken               = 10000
 	TestnetInitGovToken               = 10000
-	TestnetInitCmBToken               = 0
-	TestnetInitBondToken              = 0
+	TestnetInitCmBToken               = 10000
+	TestnetInitBondToken              = 10000
 	TestnetGenesisBlockPaymentAddress = "1Uv12YEcd5w5Qm79sTGHSHYnCfVKM2ui8mbapD1dgziUf9211b5cnCSdxVb1DoXyDD19V1THMSnaAWZ18sJtmaVnh56wVhwb1HuYpkTa4"
 )
 
@@ -39,11 +39,11 @@ var (
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	ConstantID  = [common.HashSize]byte{0} // To send Constant in custom token
+	BondTokenID = [common.HashSize]byte{0, 0, 0, 0, 0, 0, 0, 0}
 	DCBTokenID  = [common.HashSize]byte{1}
 	GOVTokenID  = [common.HashSize]byte{2}
 	CMBTokenID  = [common.HashSize]byte{3}
-	BondTokenID = [common.HashSize]byte{0, 0, 0, 0, 0, 0, 0, 0}
+	ConstantID  = [common.HashSize]byte{4} // To send Constant in custom token
 )
 
 const (

@@ -2,6 +2,9 @@ require('dotenv').config();
 require('babel-register');
 require('babel-polyfill');
 
+var HDWalletProvider = require("truffle-hdwallet-provider");
+var MNEMONIC = ""
+
 module.exports = {
   networks: {
     development: {
@@ -25,6 +28,14 @@ module.exports = {
       host: 'localhost',
       port: 7545,
       network_id: '*', // eslint-disable-line camelcase
+    },
+    rinkeby: {
+      provider: function() {
+        return new HDWalletProvider(MNEMONIC, "")
+      },
+      network_id: 4,
+      gas: 6500000,
+      skipDryRun: true,
     },
   },
   mocha: {

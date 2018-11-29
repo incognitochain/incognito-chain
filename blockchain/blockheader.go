@@ -15,7 +15,8 @@ type GOVParams struct {
 }
 
 type DCBParams struct {
-	SaleData *voting.SaleData
+	SaleData               *voting.SaleData
+	MinLoanResponseRequire uint8
 }
 
 type CBParams struct {
