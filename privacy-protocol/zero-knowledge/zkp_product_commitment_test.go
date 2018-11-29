@@ -20,7 +20,7 @@ func TestPKComProduct(t *testing.T) {
 		r1Int.Mod(r1Int, privacy.Curve.Params().N)
 		ipCm:= new(PKComProductWitness)
 		invAmulG:=new(privacy.EllipticPoint)
-		*invAmulG = G.ScalarMulPoint(x)
+		*invAmulG = G.ScalarMul(x)
 		ipCm.Set(witnessA,r1Int,invAmulG,&index)
 		//*ipCm.witnessA = *witnessA
 		//*ipCm.randA = *r1Int

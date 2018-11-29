@@ -178,10 +178,11 @@ func (proof *PKComZeroOneProof) Verify() bool {
 	x.Mod(x, privacy.Curve.Params().N)
 
 	// Calculate leftPoint1 = c^x * ca
-	leftPoint1 := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
-	leftPoint1.X, leftPoint1.Y = privacy.Curve.ScalarMult(proof.commitment.X, proof.commitment.Y, x.Bytes())
-	leftPoint1.X, leftPoint1.Y = privacy.Curve.Add(leftPoint1.X, leftPoint1.Y, proof.ca.X, proof.ca.Y)
+	//leftPoint1 := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
+	//leftPoint1.X, leftPoint1.Y = privacy.Curve.ScalarMult(proof.commitment.X, proof.commitment.Y, x.Bytes())
+	//leftPoint1.X, leftPoint1.Y = privacy.Curve.Add(leftPoint1.X, leftPoint1.Y, proof.ca.X, proof.ca.Y)
 
+	leftPoint1:=proof.commitment.ScalarMul()
 	// Calculate rightPoint1 = Com(f, za)
 	rightPoint1 := privacy.PedCom.CommitAtIndex(proof.f, proof.za, proof.index)
 
