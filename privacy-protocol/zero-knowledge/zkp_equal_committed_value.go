@@ -55,6 +55,10 @@ func (wit *PKEqualityOfCommittedValWitness) Set(
 	wit.X = X
 }
 
+func (pro *PKEqualityOfCommittedValProof) Bytes() []byte {
+	return []byte{0}
+}
+
 // Set - proof setter
 func (pro *PKEqualityOfCommittedValProof) Set(
 	C []*privacy.EllipticPoint, //Statement

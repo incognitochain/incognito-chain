@@ -20,8 +20,12 @@ type PaymentWitness struct {
 	ComOutputOpeningsWitness      []*PKComOpeningsWitness
 	OneOfManyWitness              []*PKOneOfManyWitness
 	EqualityOfCommittedValWitness []*PKEqualityOfCommittedValWitness
+<<<<<<< HEAD
+=======
 	ProductCommitmentWitness			[]*PKComProductWitness
+>>>>>>> af4adc1322998d8694ae27b858692b82e669f8d7
 	ComMultiRangeWitness          *PKComMultiRangeWitness
+	SumOutRangeWitness 						*PKComMultiRangeWitness
 	ComZeroWitness                *PKComZeroWitness
 	ComZeroOneWitness             *PKComZeroOneWitness
 }
@@ -34,8 +38,12 @@ type PaymentProof struct {
 	ComOutputOpeningsProof      []*PKComOpeningsProof
 	OneOfManyProof              []*PKOneOfManyProof
 	EqualityOfCommittedValProof []*PKEqualityOfCommittedValProof
+<<<<<<< HEAD
+=======
 	ProductCommitmentProof			[]*PKComProductProof
+>>>>>>> af4adc1322998d8694ae27b858692b82e669f8d7
 	ComMultiRangeProof          *PKComMultiRangeProof
+	SumOutRangeProof 						*PKComMultiRangeProof
 	ComZeroProof                *PKComZeroProof
 	ComZeroOneProof             *PKComZeroOneProof
 
@@ -47,7 +55,65 @@ type PaymentProof struct {
 	InputCoins  []*privacy.InputCoin
 }
 
+// Bytes
+
+// SetBytes()
+
+type PaymentProofByte struct {
+	lenarrayComInputOpeningsProof       int
+	lenarrayComOutputOpeningsProof      int
+	lenarrayEqualityOfCommittedValProof int
+	lenarrayOneOfManyProof              int
+
+	//It should be constants
+	lenComInputOpeningsProof       int
+	lenComOutputOpeningsProof      int
+	lenOneOfManyProof              int
+	lenEqualityOfCommittedValProof int
+	lenComMultiRangeProof          int
+	lenComZeroProof                int
+	lenComZeroOneProof             int
+
+	ComInputOpeningsProof       []byte
+	ComOutputOpeningsProof      []byte
+	OneOfManyProof              []byte
+	EqualityOfCommittedValProof []byte
+
+	ComMultiRangeProof []byte
+	ComZeroProof       []byte
+	ComZeroOneProof    []byte
+}
+
 func (paymentProof *PaymentProof) Bytes() []byte {
+	byteArray := new(PaymentProofByte)
+	byteArray.lenarrayComInputOpeningsProof = len(paymentProof.ComInputOpeningsProof)
+	byteArray.lenarrayComOutputOpeningsProof = len(paymentProof.ComOutputOpeningsProof)
+	byteArray.lenarrayEqualityOfCommittedValProof = len(paymentProof.EqualityOfCommittedValProof)
+	byteArray.lenarrayOneOfManyProof = len(paymentProof.OneOfManyProof)
+
+	byteArray.ComInputOpeningsProof = paymentProof.ComInputOpeningsProof[0].Bytes()
+	for i := 1; i < byteArray.lenarrayComInputOpeningsProof; i++ {
+		byteArray.ComInputOpeningsProof = append(byteArray.ComInputOpeningsProof, paymentProof.ComInputOpeningsProof[0].Bytes()...)
+	}
+
+	byteArray.ComOutputOpeningsProof = paymentProof.ComOutputOpeningsProof[0].Bytes()
+	for i := 1; i < byteArray.lenarrayComOutputOpeningsProof; i++ {
+		byteArray.ComOutputOpeningsProof = append(byteArray.ComOutputOpeningsProof, paymentProof.ComOutputOpeningsProof[0].Bytes()...)
+	}
+
+	byteArray.EqualityOfCommittedValProof = paymentProof.EqualityOfCommittedValProof[0].Bytes()
+	for i := 1; i < byteArray.lenarrayEqualityOfCommittedValProof; i++ {
+		byteArray.EqualityOfCommittedValProof = append(byteArray.EqualityOfCommittedValProof, paymentProof.EqualityOfCommittedValProof[0].Bytes()...)
+	}
+
+	byteArray.OneOfManyProof = paymentProof.OneOfManyProof[0].Bytes()
+	for i := 1; i < byteArray.lenarrayOneOfManyProof; i++ {
+		byteArray.OneOfManyProof = append(byteArray.OneOfManyProof, paymentProof.OneOfManyProof[0].Bytes()...)
+	}
+
+	// byteArray.ComMultiRangeProof = paymentProof.ComMultiRangeProof.Bytes()
+	byteArray.ComZeroProof = paymentProof.ComZeroProof.Bytes()
+	byteArray.ComZeroOneProof = paymentProof.ComZeroOneProof.Bytes()
 	return []byte{0}
 }
 
@@ -331,7 +397,14 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 	}
 
 	// Verify the proof that sum of all output values do not exceed v_max
-	//if !pro.ComMultiRangeProof
+	if !pro.SumOutRangeProof.Verify() {
+		return false
+	}
+
+	// Verify the proof that sum of all input values is equal to sum of all output values
+	if !pro.ComZeroProof.Verify(){
+		return false
+	}
 
 	return true
 }

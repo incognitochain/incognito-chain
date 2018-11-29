@@ -59,6 +59,10 @@ func (pro *PKOneOfManyProof) Set(
 	pro.index = index
 }
 
+func (pro *PKOneOfManyProof) Bytes() []byte {
+	return []byte{0}
+}
+
 // Prove creates proof for one out of many commitments containing 0
 func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	// Check the number of Commitment list's elements
