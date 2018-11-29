@@ -212,7 +212,7 @@ func (pro *PKComProductProof) Verify () bool {
 	com2:=pro.cmB.ScalarMulPoint(pro.f)
 	pts_cmp = privacy.PedCom.G[pro.index].ScalarMulPoint(x).AddPoint(*pro.E)
 	////Check witness 2: xB + E == 	CommitAll(f2,z2)
-	//pts_cmp = pro.cmB.ScalarMulPoint(x).AddPoint(*pro.E)
+	//pts_cmp = pro.cmB.ScalarMul(x).Add(*pro.E)
 	//com2 := SpecCom1.CommitAtIndex(pro.f2, pro.z2,0)
 	if (com2.IsEqual(pts_cmp)){
 		fmt.Println("Passed test 2")
@@ -224,7 +224,7 @@ func (pro *PKComProductProof) Verify () bool {
 	////  Check witness 3: xC + D1 == CommitAll'(f1,z3)
 	//SpecCom2:=privacy.PCParams{[]privacy.EllipticPoint{*pro.G1, pro.basePoint.H},
 	//	2}
-	//pts_cmp = pro.cmC.ScalarMulPoint(x).AddPoint(*pro.D1)
+	//pts_cmp = pro.cmC.ScalarMul(x).Add(*pro.D1)
 	//com3 := SpecCom2.CommitAtIndex(pro.f1, pro.z3,0)
 	//if (com3.IsEqual(pts_cmp)){
 	//	fmt.Println("Passed test 3")

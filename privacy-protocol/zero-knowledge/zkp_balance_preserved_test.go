@@ -19,7 +19,7 @@ func TestPKComMultiRange(t *testing.T) {
 	witness.Set(values,64)
 
 	// Testing smallest number in range
-	proof:= witness.Prove()
+	proof,_:= witness.Prove()
 	if proof.Verify() {
 		fmt.Println("Multi Range Proof Verification works")
 	} else {

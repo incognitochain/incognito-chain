@@ -143,7 +143,7 @@ changes:
 {(g, h \in G, \textbf{V} \in G^m ; \textbf{v, \gamma} \in Z_p^m) :
 	V_j = h^{\gamma_j}g^{v_j} \wedge v_j \in [0, 2^n - 1] \forall j \in [1, m]}
 */
-func (wit *PKComMultiRangeWitness) Prove() PKComMultiRangeProof {
+func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof,error) {
 	// RangeProofParams.V has the total number of values and bits we can support
 
 	InitCommonParams(len(wit.Values),wit.maxExp)
@@ -167,7 +167,8 @@ func (wit *PKComMultiRangeWitness) Prove() PKComMultiRangeProof {
 		}
 		if v.Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(wit.maxExp)), privacy.Curve.Params().N)) == 1 {
 			fmt.Println("Value is above range! Not proving.")
-			return *new(PKComMultiRangeProof)
+			err:= fmt.Errorf("Value is above range! Not proving.")
+			return new(PKComMultiRangeProof),err
 		}
 	gamma:= new(big.Int).SetBytes(privacy.RandBytes(32))
 		gamma.Mod(gamma,privacy.Curve.Params().N)
@@ -292,7 +293,7 @@ func (wit *PKComMultiRangeWitness) Prove() PKComMultiRangeProof {
 	}
 	P := TwoVectorPCommitWithGens(RangeProofParams.BPG, HPrime, left, right)
 	MRProof.IPP = InnerProductProve(left, right, that, P, RangeProofParams.U, RangeProofParams.BPG, HPrime)
-	return MRProof
+	return &MRProof,nil
 }
 func (wit *PKComMultiRangeWitness) ProveSum() (*PKComZeroProof, error){
 	l := len(wit.Comms)
