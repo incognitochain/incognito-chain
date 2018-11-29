@@ -164,7 +164,7 @@ func main() {
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
-	privacy.TestSchn()
+	// privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
@@ -199,16 +199,12 @@ func main() {
 	//
 	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
 
-
-
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
+	privacy.TestECC()
 	//fmt.Println(zkp.TestOpeningsProtocol())
 	//fmt.Println(zkp.TestPKEqualityOfCommittedVal())
 	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
 	/*--------------------------------------------*/
-
-
-
 
 }
