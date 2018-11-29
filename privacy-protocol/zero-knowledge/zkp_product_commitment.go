@@ -90,8 +90,8 @@ func (basePoint *BasePoint) InitBasePoint() {
 	P:= new(privacy.EllipticPoint)
 	P.X = privacy.Curve.Params().Gx
 	P.Y = privacy.Curve.Params().Gy
-	basePoint.G = P.Hash()
-	basePoint.H = basePoint.G.Hash()
+	basePoint.G = P.Hash(0)
+	basePoint.H = basePoint.G.Hash(0)
 }
 func computeHashString(data [][]byte) []byte{
 	str:=make([]byte, 0)
@@ -154,11 +154,8 @@ func (wit *PKComProductWitness) Prove() (*PKComProductProof,error) {
 	//Compute D factor of Proof
 	D:= SpecCom1.CommitAtIndex(d,s,0);
 	//Compute D' factor of Proof
-	G1 := new(privacy.EllipticPoint)
-	*G1 = *proof.cmB
-	SpecCom2:=privacy.PCParams{[]privacy.EllipticPoint{*G1,
-		proof.basePoint.H},
-		2}
+	SpecCom2:=privacy.PCParams{[]privacy.EllipticPoint{*proof.cmB, proof.basePoint.H},
+		                         2}
 	D1:= SpecCom2.CommitAtIndex(d,s1,0);
 	//Compute E factor of Proof
 	E:= SpecCom1.CommitAtIndex(e,t,0)
@@ -222,10 +219,11 @@ func (wit *PKComProductWitness) Prove() (*PKComProductProof,error) {
 	z3 = z3.Add(z3,s1)
 	z3 = z3.Mod(z3,privacy.Curve.Params().N)
 	*proof.z3 = *z3;
-	*proof.G1 = *G1
+	*proof.G1 = *proof.cmB
 	proof.cmA = SpecCom1.CommitAtIndex(wit.witnessA, wit.randA,0)
 	proof.cmB = SpecCom1.CommitAtIndex(wit.witnessB, wit.randB,0)
 	proof.cmC = SpecCom1.CommitAtIndex(wit.witnessAB,wit.randC,0)
+	
 	return proof,nil;
 }
 
@@ -243,7 +241,8 @@ func (pro *PKComProductProof) Verify () bool {
 	|	  Check if Com(f2,z2) under ck equals to x*B + E or not														|
 	|   Check if Com(f1,z3) under ck' equals to x*C + D' or not												  |
 	|----------------------------------------------------------------------------------*/
-	pts1 := new(privacy.EllipticPoint)
+
+	var pts_cmp privacy.EllipticPoint
 	data:=[][]byte{
 		pro.basePoint.G.X.Bytes(),
 		pro.basePoint.G.Y.Bytes(),
@@ -256,9 +255,7 @@ func (pro *PKComProductProof) Verify () bool {
 		pro.E.X.Bytes(),
 		pro.E.Y.Bytes(),
 	}
-	x:= computeHashString(data)
-	checkFlag:=0;
-
+	x:= new(big.Int).SetBytes(computeHashString(data))
 	//Check if D,D',E is on Curve
 	if !(privacy.Curve.IsOnCurve(pro.D.X, pro.D.Y) &&
 		privacy.Curve.IsOnCurve(pro.D1.X, pro.D1.Y) &&
@@ -276,82 +273,71 @@ func (pro *PKComProductProof) Verify () bool {
 	//Check witness 1: xA + D == 	CommitAll(f1,z1)
 	A:= new(privacy.EllipticPoint)
 	A = pro.cmA;
-	pts1.X, pts1.Y = privacy.Curve.ScalarMult(A.X, A.Y, x)
-	pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, pro.D.X,pro.D.Y);
+	pts_cmp = A.ScalarMulPoint(x).AddPoint(*pro.D)
 	SpecCom1:=privacy.PCParams{[]privacy.EllipticPoint{pro.basePoint.G, pro.basePoint.H},
-														2}
+														 2}
 	com1 := SpecCom1.CommitAtIndex(pro.f1, pro.z1,0)
-
-
-	if (com1.X.Cmp(pts1.X)==0 && com1.Y.Cmp(pts1.Y)==0){
-		checkFlag +=1
+	if (com1.IsEqual(pts_cmp)){
 		fmt.Println("Passed test 1")
+	} else {
+		fmt.Println("Failed test 1")
+		return false
 	}
 	//Check witness 2: xB + E == 	CommitAll(f2,z2)
-	B:= new(privacy.EllipticPoint)
-	*B = *pro.cmB;
-	pts1.X, pts1.Y = privacy.Curve.ScalarMult(B.X, B.Y, x)
-	pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, pro.E.X,pro.E.Y);
+	pts_cmp = pro.cmB.ScalarMulPoint(x).AddPoint(*pro.E)
 	com2 := SpecCom1.CommitAtIndex(pro.f2, pro.z2,0)
-	//com2_temp,_:=privacy.DecompressCommitment(com2)
-
-	if (com2.X.Cmp(pts1.X)==0 && com2.Y.Cmp(pts1.Y)==0){
-		checkFlag +=1
+	if (com2.IsEqual(pts_cmp)){
 		fmt.Println("Passed test 2")
+	}	else {
+		fmt.Println("Failed test 2")
+		return false
 	}
 	//  Check witness 3: xC + D1 == CommitAll'(f1,z3)
-	SpecCom2:=privacy.PCParams{[]privacy.EllipticPoint{*pro.G1,
-		pro.basePoint.H},
+	SpecCom2:=privacy.PCParams{[]privacy.EllipticPoint{*pro.G1, pro.basePoint.H},
 		2}
-	//C := new(privacy.EllipticPoint)
-	//*C = *pro.cmC;
-	//pts1.X, pts1.Y = privacy.Curve.ScalarMult(C.X, C.Y, x)
-	//pts1.X, pts1.Y = privacy.Curve.Add(pts1.X, pts1.Y, pro.D1.X,pro.D1.Y);
-	*pts1 = pro.cmC.ScalarMulPoint(new(big.Int).SetBytes(x)).AddPoint(*pro.D1)
+	pts_cmp = pro.cmC.ScalarMulPoint(x).AddPoint(*pro.D1)
 	com3 := SpecCom2.CommitAtIndex(pro.f1, pro.z3,0)
-	if (com3.X.Cmp(pts1.X)==0 && com3.Y.Cmp(pts1.Y)==0){
-		checkFlag +=1
+	if (com3.IsEqual(pts_cmp)){
 		fmt.Println("Passed test 3")
-	}
-	//println(checkFlag)
-	if(checkFlag == 3) {
 		fmt.Println("Passed all test. This proof is valid.")
-		return true;
+	}	else {
+		fmt.Println("Failed test 3")
+		return false
 	}
-	return false;
+	return true;
 }
-func TestPKComProduct() {
-	res := true
-	for i:=0;i<100;i++ {
-		witnessA := privacy.RandBytes(32)
-		witnessB := privacy.RandBytes(32)
-		C:= new(big.Int)
-		C.SetBytes(witnessA)
-		C.Mul(C, new(big.Int).SetBytes(witnessB))
-		witnessC := C.Bytes()
-		rA := privacy.RandBytes(32)
-		rB := privacy.RandBytes(32)
-		rC := privacy.RandBytes(32)
-		r1Int := new(big.Int).SetBytes(rA)
-		r2Int := new(big.Int).SetBytes(rB)
-		r3Int := new(big.Int).SetBytes(rC)
-		r1Int.Mod(r1Int, privacy.Curve.Params().N)
-		r2Int.Mod(r2Int, privacy.Curve.Params().N)
-		r3Int.Mod(r3Int, privacy.Curve.Params().N)
-
-		rA = r1Int.Bytes()
-		rB = r2Int.Bytes()
-		rC = r3Int.Bytes()
-		ipCm:= new(PKComProductWitness)
-		ipCm.witnessA = new(big.Int).SetBytes(witnessA)
-		ipCm.witnessB = new(big.Int).SetBytes(witnessB)
-		ipCm.witnessAB = new(big.Int).SetBytes(witnessC)
-		ipCm.randA = new(big.Int).SetBytes(rA)
-		ipCm.randB = new(big.Int).SetBytes(rB)
-		ipCm.randC = new(big.Int).SetBytes(rC)
-
-		proof,_:= ipCm.Prove()
-		res = proof.Verify();
-		fmt.Printf("Test %d %t\n",i,res)
-	}
-}
+//func TestPKComProduct() {
+//	res := true
+//	for i:=0;i<100;i++ {
+//		witnessA := privacy.RandBytes(32)
+//		witnessB := privacy.RandBytes(32)
+//		C:= new(big.Int)
+//		C.SetBytes(witnessA)
+//		C.Mul(C, new(big.Int).SetBytes(witnessB))
+//		witnessC := C.Bytes()
+//		rA := privacy.RandBytes(32)
+//		rB := privacy.RandBytes(32)
+//		rC := privacy.RandBytes(32)
+//		r1Int := new(big.Int).SetBytes(rA)
+//		r2Int := new(big.Int).SetBytes(rB)
+//		r3Int := new(big.Int).SetBytes(rC)
+//		r1Int.Mod(r1Int, privacy.Curve.Params().N)
+//		r2Int.Mod(r2Int, privacy.Curve.Params().N)
+//		r3Int.Mod(r3Int, privacy.Curve.Params().N)
+//
+//		rA = r1Int.Bytes()
+//		rB = r2Int.Bytes()
+//		rC = r3Int.Bytes()
+//		ipCm:= new(PKComProductWitness)
+//		ipCm.witnessA = new(big.Int).SetBytes(witnessA)
+//		ipCm.witnessB = new(big.Int).SetBytes(witnessB)
+//		ipCm.witnessAB = new(big.Int).SetBytes(witnessC)
+//		ipCm.randA = new(big.Int).SetBytes(rA)
+//		ipCm.randB = new(big.Int).SetBytes(rB)
+//		ipCm.randC = new(big.Int).SetBytes(rC)
+//
+//		proof,_:= ipCm.Prove()
+//		res = proof.Verify();
+//		fmt.Printf("Test %d is %t\n",i,res)
+//	}
+//}

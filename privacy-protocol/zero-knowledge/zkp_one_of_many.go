@@ -327,7 +327,7 @@ func TestPKOneOfMany() bool {
 	SNDerivators[indexIsZero] = big.NewInt(0)
 	commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(SNDerivators[indexIsZero], randoms[indexIsZero], privacy.SND)
 
-	witness.Set(commitments, randoms[indexIsZero], &indexIsZero, privacy.SND)
+	//witness.Set(commitments, randoms[indexIsZero], &indexIsZero, privacy.SND)
 	//start := time.Now()
 	proof, err := witness.Prove()
 
