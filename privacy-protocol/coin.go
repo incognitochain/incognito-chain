@@ -22,6 +22,7 @@ type Coin struct {
 	PublicKey      *EllipticPoint
 	CoinCommitment *EllipticPoint
 	SNDerivator    *big.Int
+	SerialNumber   *EllipticPoint
 	Randomness     *big.Int
 	Value          uint64
 	Info           []byte
