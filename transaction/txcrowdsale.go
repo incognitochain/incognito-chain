@@ -11,11 +11,11 @@ import (
 
 type TxBuySellDCBResponse struct {
 	*TxCustomToken // fee + amount to pay for bonds/constant
-	RequestedTxID *common.Hash
-	SaleID        []byte
+	RequestedTxID  *common.Hash
+	SaleID         []byte
 }
 
-func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64, saleID []byte, dcbAddress string) (*TxBuySellDCBResponse, error) {
+func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID []byte, rt []byte, chainID byte, bondPrices map[string]uint64, saleID []byte, dcbAddress string) (*TxBuySellDCBResponse, error) {
 	// Mint and send Constant
 	pks := [][]byte{txRequest.PaymentAddress.Pk[:], txRequest.PaymentAddress.Pk[:]}
 	tks := [][]byte{txRequest.PaymentAddress.Tk[:], txRequest.PaymentAddress.Tk[:]}
@@ -28,7 +28,7 @@ func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte,
 			bonds += vout.Value
 		}
 	}
-	bondPrice := bondPrices[bondID]
+	bondPrice := bondPrices[string(bondID)]
 	amounts := []uint64{bonds * bondPrice, 0} // TODO(@0xbunyip): use correct unit of price and value here
 	tx, err := BuildCoinbaseTx(pks, tks, amounts, rt, chainID, common.TxBuySellDCBResponse)
 	if err != nil {
@@ -46,20 +46,19 @@ func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte,
 	return txResponse, nil
 }
 
-func BuildResponseForBond(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []TxTokenVout, saleID []byte, dcbAddress string) (*TxBuySellDCBResponse, []TxTokenVout, error) {
+func BuildResponseForBond(txRequest *TxBuySellRequest, bondID []byte, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []TxTokenVout, saleID []byte, dcbAddress string) (*TxBuySellDCBResponse, []TxTokenVout, error) {
 	accountDCB, _ := wallet.Base58CheckDeserialize(dcbAddress)
 	// Get amount of Constant user sent
 	value := uint64(0)
-	userPk := privacy.PublicKey{}
+	userPk := txRequest.Tx.JSPubKey
 	for _, desc := range txRequest.Tx.Descs {
 		for _, note := range desc.Note {
 			if bytes.Equal(note.Apk[:], accountDCB.KeySet.PaymentAddress.Pk) {
 				value += note.Value
-				userPk = note.Apk
 			}
 		}
 	}
-	bondPrice := bondPrices[bondID]
+	bondPrice := bondPrices[string(bondID)]
 	bonds := value / bondPrice
 	sumBonds := uint64(0)
 	usedID := 0
