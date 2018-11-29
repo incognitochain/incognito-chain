@@ -111,7 +111,7 @@ func (tx *TxPrivacy) CreateTx(
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
 	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins )
-	tx.Proof = witness.Prove()
+	tx.Proof = witness.Prove(false)
 
 	// set private key for signing tx
 	if hasPrivacy{
@@ -282,7 +282,7 @@ func (tx *TxPrivacy) ValidateTx(hasPrivacy bool) bool {
 	}
 
 	// Verify the payment proof
-	valid = tx.Proof.Verify()
+	valid = tx.Proof.Verify(false)
 	if valid == false{
 		fmt.Printf("Error verifying the payment proof")
 		return false
