@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
@@ -164,7 +166,11 @@ func main() {
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
+<<<<<<< HEAD
 	// privacy.TestSchn()
+=======
+	//privacy.TestSchn()
+>>>>>>> 33048a6256d39a1a99631755d993b7dbd57614ef
 	//zkp.PKComMultiRangeTest()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
@@ -199,6 +205,12 @@ func main() {
 	//
 	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
 
+<<<<<<< HEAD
+=======
+
+
+
+>>>>>>> 33048a6256d39a1a99631755d993b7dbd57614ef
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
 	privacy.TestECC()
@@ -207,4 +219,33 @@ func main() {
 	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
 	/*--------------------------------------------*/
 
+<<<<<<< HEAD
+=======
+
+	/*----------------- TEST COMPRESS/DECOMPRESS POINT -----------------*/
+	//p := new(privacy.EllipticPoint)
+	//p.Randomize()
+	//fmt.Printf("Point uncompress: %+v\n", p)
+	//
+	//pBytes := p.Compress()
+	//fmt.Printf("Point compressed: %v\n", pBytes)
+	//
+	//p2, _ := privacy.DecompressKey(pBytes)
+	//fmt.Printf("Point decompressed: %+v\n", p2)
+	/*-----------------------------------------------------------------*/
+
+	/*----------------- TEST KEY SET -----------------*/
+	keySet := new(cashec.KeySet)
+	spendingKey := privacy.GenerateSpendingKey([]byte{123})
+	keySet.ImportFromPrivateKey(&spendingKey)
+
+	fmt.Printf("Key set %+v\n", keySet.PaymentAddress.Pk[0])
+
+	// decompress pk, tk
+	pkDecom, _ := privacy.DecompressKey(keySet.PaymentAddress.Pk)
+	fmt.Printf("Pk decompress: %+v\n\n", pkDecom)
+
+	tkDecom, _ := privacy.DecompressKey(keySet.PaymentAddress.Tk)
+	fmt.Printf("Tk decompress: %+v\n\n", tkDecom)
+>>>>>>> 33048a6256d39a1a99631755d993b7dbd57614ef
 }
