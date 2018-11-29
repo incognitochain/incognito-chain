@@ -125,9 +125,9 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) *PaymentProof {
 	//cmLists := make([][]*privacy.EllipticPoint, numberInputCoin)
 	//witnessOneOutOfN := make([]*PKOne, len(inputCoins))
 
-	for i := 0; i < numberInputCoin; i++ {
+	/*for i := 0; i < numberInputCoin; i++ {
 
-	}
+	}*/
 	// get sum commitment inverse
 
 
