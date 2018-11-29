@@ -34,14 +34,14 @@ func GenerateNewParams(G, H []privacy.EllipticPoint, x *big.Int, L, R, P privacy
 
 	for i := range Gprime {
 		//fmt.Printf("i: %d && i+nprime: %d\n", i, i+nprime)
-		Gprime[i] = G[i].ScalarMulPoint(xinv).AddPoint(G[i+nprime].ScalarMulPoint(x))
-		Hprime[i] = H[i].ScalarMulPoint(x).AddPoint(H[i+nprime].ScalarMulPoint(xinv))
+		Gprime[i] = G[i].ScalarMul(xinv).Add(G[i+nprime].ScalarMul(x))
+		Hprime[i] = H[i].ScalarMul(x).Add(H[i+nprime].ScalarMul(xinv))
 	}
 
 	x2 := new(big.Int).Mod(new(big.Int).Mul(x, x), privacy.Curve.Params().N)
 	xinv2 := new(big.Int).ModInverse(x2, privacy.Curve.Params().N)
 
-	Pprime := L.ScalarMulPoint(x2).AddPoint(P).AddPoint(R.ScalarMulPoint(xinv2)) // x^2 * L + P + xinv^2 * R
+	Pprime := L.ScalarMul(x2).Add(P).Add(R.ScalarMul(xinv2)) // x^2 * L + P + xinv^2 * R
 
 	return Gprime, Hprime, Pprime
 }
@@ -70,8 +70,8 @@ func InnerProductProveSub(proof InnerProdArg, G, H []privacy.EllipticPoint, a []
 	//fmt.Println(len(H))
 	cl := InnerProduct(a[:nprime], b[nprime:]) // either this line
 	cr := InnerProduct(a[nprime:], b[:nprime]) // or this line
-	L := TwoVectorPCommitWithGens(G[nprime:], H[:nprime], a[:nprime], b[nprime:]).AddPoint(u.ScalarMulPoint(cl))
-	R := TwoVectorPCommitWithGens(G[:nprime], H[nprime:], a[nprime:], b[:nprime]).AddPoint(u.ScalarMulPoint(cr))
+	L := TwoVectorPCommitWithGens(G[nprime:], H[:nprime], a[:nprime], b[nprime:]).Add(u.ScalarMul(cl))
+	R := TwoVectorPCommitWithGens(G[:nprime], H[nprime:], a[nprime:], b[:nprime]).Add(u.ScalarMul(cr))
 
 	proof.L[curIt] = L
 	proof.R[curIt] = R
@@ -119,8 +119,8 @@ func InnerProductProve(a []*big.Int, b []*big.Int, c *big.Int, P, U privacy.Elli
 
 	runningProof.Challenges[loglen] = new(big.Int).SetBytes(x[:])
 
-	Pprime := P.AddPoint(U.ScalarMulPoint(new(big.Int).Mul(new(big.Int).SetBytes(x[:]), c)))
-	ux := U.ScalarMulPoint(new(big.Int).SetBytes(x[:]))
+	Pprime := P.Add(U.ScalarMul(new(big.Int).Mul(new(big.Int).SetBytes(x[:]), c)))
+	ux := U.ScalarMul(new(big.Int).SetBytes(x[:]))
 	//fmt.Printf("Prover Pprime value to run sub off of: %s\n", Pprime)
 	return InnerProductProveSub(runningProof, G, H, a, b, ux, Pprime)
 }
@@ -140,7 +140,7 @@ func InnerProductVerify(c *big.Int, P, U privacy.EllipticPoint, G, H []privacy.E
 	//fmt.Printf("Commitment Value: %s \n", P)
 	s1 := blake2b.Sum256([]byte(P.X.String() + P.Y.String()))
 	chal1 := new(big.Int).SetBytes(s1[:])
-	ux := U.ScalarMulPoint(chal1)
+	ux := U.ScalarMul(chal1)
 	curIt := len(ipp.Challenges) - 1
 
 	if ipp.Challenges[curIt].Cmp(chal1) != 0 {
@@ -152,7 +152,7 @@ func InnerProductVerify(c *big.Int, P, U privacy.EllipticPoint, G, H []privacy.E
 
 	Gprime := G
 	Hprime := H
-	Pprime := P.AddPoint(ux.ScalarMulPoint(c)) // line 6 from protocol 1
+	Pprime := P.Add(ux.ScalarMul(c)) // line 6 from protocol 1
 	//fmt.Printf("New Commitment value with u^cx: %s \n", Pprime)
 
 	for curIt >= 0 {
@@ -176,10 +176,10 @@ func InnerProductVerify(c *big.Int, P, U privacy.EllipticPoint, G, H []privacy.E
 	}
 	ccalc := new(big.Int).Mod(new(big.Int).Mul(ipp.A, ipp.B), privacy.Curve.Params().N)
 
-	Pcalc1 := Gprime[0].ScalarMulPoint(ipp.A)
-	Pcalc2 := Hprime[0].ScalarMulPoint(ipp.B)
-	Pcalc3 := ux.ScalarMulPoint(ccalc)
-	Pcalc := Pcalc1.AddPoint(Pcalc2).AddPoint(Pcalc3)
+	Pcalc1 := Gprime[0].ScalarMul(ipp.A)
+	Pcalc2 := Hprime[0].ScalarMul(ipp.B)
+	Pcalc3 := ux.ScalarMul(ccalc)
+	Pcalc := Pcalc1.Add(Pcalc2).Add(Pcalc3)
 
 	if !Pprime.IsEqual(Pcalc) {
 		fmt.Println("IPVerify - Final Commitment checking failed")
@@ -201,7 +201,7 @@ func InnerProductVerifyFast(c *big.Int, P, U privacy.EllipticPoint, G, H []priva
 	//fmt.Printf("Commitment Value: %s \n", P)
 	s1 := blake2b.Sum256([]byte(P.X.String() + P.Y.String()))
 	chal1 := new(big.Int).SetBytes(s1[:])
-	ux := U.ScalarMulPoint(chal1)
+	ux := U.ScalarMul(chal1)
 	curIt := len(ipp.Challenges) - 1
 
 	// check all challenges
@@ -229,17 +229,17 @@ func InnerProductVerifyFast(c *big.Int, P, U privacy.EllipticPoint, G, H []priva
 	// begin computing
 
 	curIt -= 1
-	Pprime := P.AddPoint(ux.ScalarMulPoint(c)) // line 6 from protocol 1
+	Pprime := P.Add(ux.ScalarMul(c)) // line 6 from protocol 1
 
 	tmp1 := RangeProofParams.Zero()
 	for j := curIt; j >= 0; j-- {
 		x2 := new(big.Int).Exp(ipp.Challenges[j], big.NewInt(2), privacy.Curve.Params().N)
 		x2i := new(big.Int).ModInverse(x2, privacy.Curve.Params().N)
 		//fmt.Println(tmp1)
-		tmp1 = ipp.L[j].ScalarMulPoint(x2).AddPoint(ipp.R[j].ScalarMulPoint(x2i)).AddPoint(tmp1)
+		tmp1 = ipp.L[j].ScalarMul(x2).Add(ipp.R[j].ScalarMul(x2i)).Add(tmp1)
 		//fmt.Println(tmp1)
 	}
-	rhs := Pprime.AddPoint(tmp1)
+	rhs := Pprime.Add(tmp1)
 
 	sScalars := make([]*big.Int, RangeProofParams.V)
 	invsScalars := make([]*big.Int, RangeProofParams.V)
@@ -261,7 +261,7 @@ func InnerProductVerifyFast(c *big.Int, P, U privacy.EllipticPoint, G, H []priva
 	}
 
 	ccalc := new(big.Int).Mod(new(big.Int).Mul(ipp.A, ipp.B), privacy.Curve.Params().N)
-	lhs := TwoVectorPCommitWithGens(G, H, ScalarVectorMul(sScalars, ipp.A), ScalarVectorMul(invsScalars, ipp.B)).AddPoint(ux.ScalarMulPoint(ccalc))
+	lhs := TwoVectorPCommitWithGens(G, H, ScalarVectorMul(sScalars, ipp.A), ScalarVectorMul(invsScalars, ipp.B)).Add(ux.ScalarMul(ccalc))
 
 	if !rhs.IsEqual(lhs) {
 		fmt.Println("IPVerify - Final Commitment checking failed")
@@ -455,7 +455,7 @@ func NewECPrimeGroupKey(n int) CryptoParams {
 		gen2Vals[i]= H.Hash(0)
 		H = H.Hash(0)
 	}
-	u	= G.AddPoint(H).Hash(0)
+	u	= G.Add(H).Hash(0)
 	return CryptoParams{
 		privacy.Curve,
 		gen1Vals,
@@ -482,7 +482,7 @@ func TwoVectorPCommitWithGens(G, H []privacy.EllipticPoint, a, b []*big.Int) pri
 	for i := 0; i < len(G); i++ {
 		modA := new(big.Int).Mod(a[i], privacy.Curve.Params().N)
 		modB := new(big.Int).Mod(b[i], privacy.Curve.Params().N)
-		commitment = commitment.AddPoint(G[i].ScalarMulPoint(modA)).AddPoint(H[i].ScalarMulPoint(modB))
+		commitment = commitment.Add(G[i].ScalarMul(modA)).Add(H[i].ScalarMul(modB))
 	}
 
 	return commitment

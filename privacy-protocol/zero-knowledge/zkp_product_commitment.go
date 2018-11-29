@@ -115,7 +115,7 @@ func (wit *PKComProductWitness) Prove() (*PKComProductProof,error) {
 
 	proof.cmA = privacy.PedCom.CommitAtIndex(wit.witnessA, wit.randA ,wit.index)
 	D:= privacy.PedCom.CommitAtIndex(d,s,wit.index);
-	E:= wit.cmB.ScalarMulPoint(d)
+	E:= wit.cmB.ScalarMul(d)
 	*proof.D = *D
 	*proof.E = E
 	// x = hash(G||H||D||D1||E)
@@ -198,7 +198,7 @@ func (pro *PKComProductProof) Verify () bool {
 	//Check witness 1: xA + D == 	CommitAll(f1,z1)
 	//A:= new(privacy.EllipticPoint)
 	A := pro.cmA
-	pts_cmp = A.ScalarMulPoint(x).AddPoint(*pro.D)
+	pts_cmp = A.ScalarMul(x).Add(*pro.D)
 	//SpecCom1:=privacy.PCParams{[]privacy.EllipticPoint{pro.basePoint.G, pro.basePoint.H},
 	//													 2}
 	com1 := privacy.PedCom.CommitAtIndex(pro.f, pro.z,pro.index)
@@ -209,8 +209,8 @@ func (pro *PKComProductProof) Verify () bool {
 		return false
 	}
 
-	com2:=pro.cmB.ScalarMulPoint(pro.f)
-	pts_cmp = privacy.PedCom.G[pro.index].ScalarMulPoint(x).AddPoint(*pro.E)
+	com2:=pro.cmB.ScalarMul(pro.f)
+	pts_cmp = privacy.PedCom.G[pro.index].ScalarMul(x).Add(*pro.E)
 	////Check witness 2: xB + E == 	CommitAll(f2,z2)
 	//pts_cmp = pro.cmB.ScalarMul(x).Add(*pro.E)
 	//com2 := SpecCom1.CommitAtIndex(pro.f2, pro.z2,0)

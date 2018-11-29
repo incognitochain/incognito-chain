@@ -89,16 +89,23 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 	randInputSum := make([]*big.Int, numberInputCoin)
 	wit.ComInputOpeningsWitness = make([]*PKComOpeningsWitness, numberInputCoin)
 
+	cmInputSumAll := new(privacy.EllipticPoint)
+	cmInputSumAll.X = big.NewInt(0)
+	cmInputSumAll.Y = big.NewInt(0)
+	cmInputRndAll := big.NewInt(0)
+
 	wit.OneOfManyWitness = make([]*PKOneOfManyWitness, numberInputCoin)
 	for i := 0; i < numberInputCoin; i++ {
 		cmInputSum[i] = cmInputSK
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputValue[i].X, cmInputValue[i].Y)
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputSND[i].X, cmInputSND[i].Y)
 		cmInputSumInverse[i], _ = cmInputSum[i].Inverse()
+		cmInputSumAll.X, cmInputSumAll.Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputSumAll.X, cmInputSumAll.Y)
 		randInputSum[i] = randInputSK
 		randInputSum[i].Add(randInputSum[i], randInputValue[i])
 		randInputSum[i].Add(randInputSum[i], randInputSND[i])
-
+		cmInputRndAll.Add(cmInputRndAll, randInputSum[i])
+		cmInputRndAll.Mod(cmInputRndAll, privacy.Curve.Params().N)
 		// For ZKP Opening
 		wit.ComInputOpeningsWitness[i].Set(cmInputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randInputSum[i]})
 
@@ -131,22 +138,41 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 	}
 
 	cmOutputSum := make([]*privacy.EllipticPoint, numberOutputCoin)
-	cmOutputSumInverse := make([]*privacy.EllipticPoint, numberOutputCoin)
 	randOutputSum := make([]*big.Int, numberOutputCoin)
 	wit.ComOutputOpeningsWitness = make([]*PKComOpeningsWitness, numberOutputCoin)
+
+	cmOutputSumAll := new(privacy.EllipticPoint)
+	cmOutputSumAll.X = big.NewInt(0)
+	cmOutputSumAll.Y = big.NewInt(0)
+	cmOutputSumAllInverse := new(privacy.EllipticPoint)
+	cmOutputRndAll := big.NewInt(0)
+
 	for i := 0; i < numberOutputCoin; i++ {
 		cmOutputSum[i] = cmOutputSK
 		cmOutputSum[i].X, cmOutputSum[i].Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputValue[i].X, cmOutputValue[i].Y)
 		cmOutputSum[i].X, cmOutputSum[i].Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputSND[i].X, cmOutputSND[i].Y)
-		cmOutputSumInverse[i], _ = cmOutputSum[i].Inverse()
+		cmOutputSumAll.X, cmOutputSumAll.Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputSumAll.X, cmOutputSumAll.Y)
+
+		// cmOutputSumInverse[i], _ = cmOutputSum[i].Inverse()
 		randOutputSum[i] = randOutputSK
 		randOutputSum[i].Add(randOutputSum[i], randOutputValue[i])
 		randOutputSum[i].Add(randOutputSum[i], randOutputSND[i])
-
+		cmOutputRndAll.Add(cmOutputRndAll, randOutputSum[i])
+		cmOutputRndAll.Mod(cmOutputRndAll, privacy.Curve.Params().N)
 		// For ZKP Opening
 		wit.ComOutputOpeningsWitness[i].Set(cmOutputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(outputCoins[i].CoinDetails.Value)), outputCoins[i].CoinDetails.SNDerivator, randOutputSum[i]})
 	}
+	cmOutputSumAllInverse, _ = cmOutputSumAll.Inverse()
+	cmEqualCoinValue := new(privacy.EllipticPoint)
+	cmEqualCoinValue.X, cmEqualCoinValue.Y = privacy.Curve.Add(cmInputSumAll.X, cmInputSumAll.Y, cmOutputSumAllInverse.X, cmOutputSumAllInverse.Y)
+	cmEqualCoinValueRnd := big.NewInt(0)
+	cmEqualCoinValueRnd.Sub(cmInputRndAll, cmOutputRndAll)
+	cmEqualCoinValueRnd.Mod(cmEqualCoinValueRnd, privacy.Curve.Params().N)
 
+	wit.ComZeroWitness = new(PKComZeroWitness)
+	index := new(byte)
+	*index = privacy.VALUE
+	wit.ComZeroWitness.Set(cmEqualCoinValue, index, cmEqualCoinValueRnd)
 	//ToDo: build witness for proving sum of input values equal sum of output values
 	// using protocol zero commitment
 
@@ -268,6 +294,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 			return false
 		}
 		return true
+
 	}
 
 	// if hasPrivacy == true
@@ -353,13 +380,13 @@ func GetCurrentBlockHeight() *big.Int {
 }
 
 // ToBytes converts payment proof to byte array to send verifiers
-func(pro  PaymentProof) ToBytes() []byte {
+func (pro PaymentProof) ToBytes() []byte {
 	//ToDo
 	return []byte{0}
 }
 
 // FromBytes reverts bytes array to payment proof for verifying
-func(pro * PaymentProof) FromBytes(bytes []byte)  {
+func (pro *PaymentProof) FromBytes(bytes []byte) {
 	//ToDo
 
 }
