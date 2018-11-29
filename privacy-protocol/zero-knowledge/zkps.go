@@ -20,10 +20,7 @@ type PaymentWitness struct {
 	ComOutputOpeningsWitness      []*PKComOpeningsWitness
 	OneOfManyWitness              []*PKOneOfManyWitness
 	EqualityOfCommittedValWitness []*PKEqualityOfCommittedValWitness
-<<<<<<< HEAD
-=======
 	ProductCommitmentWitness			[]*PKComProductWitness
->>>>>>> af4adc1322998d8694ae27b858692b82e669f8d7
 	ComMultiRangeWitness          *PKComMultiRangeWitness
 	SumOutRangeWitness 						*PKComMultiRangeWitness
 	ComZeroWitness                *PKComZeroWitness
@@ -38,10 +35,7 @@ type PaymentProof struct {
 	ComOutputOpeningsProof      []*PKComOpeningsProof
 	OneOfManyProof              []*PKOneOfManyProof
 	EqualityOfCommittedValProof []*PKEqualityOfCommittedValProof
-<<<<<<< HEAD
-=======
 	ProductCommitmentProof			[]*PKComProductProof
->>>>>>> af4adc1322998d8694ae27b858692b82e669f8d7
 	ComMultiRangeProof          *PKComMultiRangeProof
 	SumOutRangeProof 						*PKComMultiRangeProof
 	ComZeroProof                *PKComZeroProof
