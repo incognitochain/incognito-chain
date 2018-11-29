@@ -16,7 +16,7 @@ func TestPKComMultiRange(t *testing.T) {
 		values[i] = x
 	}
 	var witness PKComMultiRangeWitness
-	witness.Set(values,32)
+	witness.Set(values,64)
 
 	// Testing smallest number in range
 	proof:= witness.Prove()
