@@ -128,7 +128,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) *PaymentProof {
 	for i := 0; i < numberInputCoin; i++ {
 
 	}
-		// get sum commitment inverse
+	// get sum commitment inverse
 
 
 	// Prepare list of commitments for each commitmentSum that includes 2^3 commiments
