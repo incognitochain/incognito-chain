@@ -229,6 +229,8 @@ func main() {
 	spendingKey := privacy.GenerateSpendingKey([]byte{123})
 	keySet.ImportFromPrivateKey(&spendingKey)
 
+	fmt.Printf("Key set %+v\n", keySet.PaymentAddress.Pk[0])
+
 	// decompress pk, tk
 	pkDecom, _ := privacy.DecompressKey(keySet.PaymentAddress.Pk)
 	fmt.Printf("Pk decompress: %+v\n\n", pkDecom)
