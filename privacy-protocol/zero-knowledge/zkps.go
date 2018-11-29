@@ -17,7 +17,7 @@ type PaymentWitness struct {
 	outputCoins []*privacy.OutputCoin
 
 	ComOpeningsWitness            []*PKComOpeningsWitness
-	OneOfManyWitness              *PKOneOfManyWitness
+	OneOfManyWitness              []*PKOneOfManyWitness
 	EqualityOfCommittedValWitness *PKEqualityOfCommittedValWitness
 	ComMultiRangeWitness          *PKComMultiRangeWitness
 	ComZeroWitness                *PKComZeroWitness
@@ -29,13 +29,13 @@ type PaymentWitness struct {
 // PaymentProof contains all of PoK for sending coin
 type PaymentProof struct {
 	ComOpeningsProof            []*PKComOpeningsProof
-	OneOfManyProof              *PKOneOfManyProof
+	OneOfManyProof              []*PKOneOfManyProof
 	EqualityOfCommittedValProof *PKEqualityOfCommittedValProof
 	ComMultiRangeProof          *PKComMultiRangeProof
 	ComZeroProof                *PKComZeroProof
 	ComZeroOneProof             *PKComZeroOneProof
 
-	// these following attributes just exist when tx is no privacy
+	// these following attributes just exist when tx doesn't have privacy
 	OutputCoins									[]*privacy.OutputCoin
 	InputCoins									[]*privacy.InputCoin
 }
@@ -111,82 +111,51 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 }
 
 // Prove creates big proof
-func (wit *PaymentWitness) Prove(hasPrivacy bool) *PaymentProof {
-	// if no privacy, don't need to create the zero knowledge proof
+func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
+	proof := new(PaymentProof)
+	// if hasPrivacy == false, don't need to create the zero knowledge proof
+	// proving user has spending key corresponding with public key in input coins
+	// is proved by signing with spending key
 	if !hasPrivacy{
-
+		proof.InputCoins = wit.inputCoins
+		proof.OutputCoins = wit.outputCoins
 	}
 
-	// Call protocol proving knowledge of each sum commitment's Openings
-
-
+	// if hasPrivacy == true
+	var err error
+	numInputCoins := len(wit.ComOpeningsWitness)
+	// Proving the knowledge of input coins' Openings, output coins' openings
+	proof.ComOpeningsProof = make([]*PKComOpeningsProof, numInputCoins)
 	// Proving one-out-of-N commitments is a commitment to the coins being spent
+	proof.OneOfManyProof = make([]*PKOneOfManyProof, numInputCoins)
 
-	//cmLists := make([][]*privacy.EllipticPoint, numberInputCoin)
-	//witnessOneOutOfN := make([]*PKOne, len(inputCoins))
+	for i:=0; i < numInputCoins; i++{
+		proof.ComOpeningsProof[i] = new(PKComOpeningsProof)
+		proof.ComOpeningsProof[i], err = wit.ComOpeningsWitness[i].Prove()
+		if err != nil{
+			return nil, err
+		}
 
-	for i := 0; i < numberInputCoin; i++ {
-
+		proof.OneOfManyProof[i] = new(PKOneOfManyProof)
+		proof.OneOfManyProof[i], err = wit.OneOfManyWitness[i].Prove()
+		if err != nil{
+			return nil, err
+		}
 	}
-	// get sum commitment inverse
-
-
-	// Prepare list of commitments for each commitmentSum that includes 2^3 commiments
-	// Get all commitments in inputCoin[i]'s BlockHeight and other block (if needed)
-	//cmLists[i] = make([]*privacy.EllipticPoint, CMRingSize)
-	//cmLists[i] = GetCMList(wit.inputCoins[i].CoinDetails.CoinCommitment)
-	//for j := 0; j < CMRingSize; j++ {
-	//	cmLists[i][j].X, cmLists[i][j].Y = privacy.Curve.Add(cmLists[i][j].X, cmLists[i][j].Y, cmSumInverse[i].X, cmSumInverse[i].Y)
-	//}
-
-	// Prepare witness for protocol one-out-of-N
-	//witnessOneOutOfN[i].Set()
-
-	// }
 
 	// Proving that serial number is derived from the committed derivator
+	// Todo: 0xKraken
 
 	// Proving that output values do not exceed v_max
-	//
+	proof.ComMultiRangeProof, err = wit.ComMultiRangeWitness.Prove()
+	if err != nil{
+		return nil, err
+	}
+	// Proving that sum of all output values do not exceed v_max
+	// Todo: 0xKraken
 
-	//BEGIN--------------------------------------------------------------------------------------------------------------------------------------------
 
-	// Calculate COMM(sk,r1)+COMM(snd,r2)
-	// Calculate G[x]*(1/(sk+snd))
-
-	// Proving that sum of inputs equals sum of outputs
-	// prove ( cmvaluein cmvalueout) (commit + s...)
-	// cmValueIn := new(privacy.EllipticPoint)
-	// cmValueIn.X, cmValueIn.Y = big.NewInt(0), big.NewInt(0)
-	// cmValueRndIn := big.NewInt(0)
-	// //------------
-	// cmValueOut := new(privacy.EllipticPoint)
-	// cmValueOut.X, cmValueOut.Y = big.NewInt(0), big.NewInt(0)
-	// cmValueRndOut := big.NewInt(0)
-	// //------------
-	// for i := 0; i < numberInputCoin; i++ {
-	// 	cmValueIn.X, cmValueIn.Y = privacy.Curve.Add(cmValueIn.X, cmValueIn.Y, cmValue[i].X, cmValue[i].Y)
-	// 	cmValueRndIn = cmValueRndIn.Add(cmValueRndIn, randValue[i])
-	// 	cmValueRndIn = cmValueRndIn.Mod(cmValueRndIn, privacy.Curve.Params().N)
-	// }
-
-	// //cmEqualValue.X, cmEqualValue.Y = big.NewInt(0), big.NewInt(0)
-	// cmEqualValue, _ := cmValueIn.Inverse()
-	// cmEqualValue.X, cmEqualValue.Y = privacy.Curve.Add(cmEqualValue.X, cmEqualValue.Y, cmValueOut.X, cmValueOut.Y)
-	// cmEqualValueRnd := big.NewInt(0)
-	// *cmEqualValueRnd = *cmValueRndIn
-	// cmEqualValueRnd = cmEqualValueRnd.Sub(cmEqualValueRnd, cmValueRndOut)
-	// cmEqualValueRnd = cmEqualValueRnd.Mod(cmEqualValueRnd, privacy.Curve.Params().N)
-
-	// witnessEqualValue := new(PKComZeroWitness)
-	// var cmEqualIndex byte
-	// cmEqualIndex = privacy.VALUE
-	// witnessEqualValue.Set(cmEqualValue, &cmEqualIndex, cmEqualValueRnd)
-	// proofEqualValue, _ := witnessEqualValue.Prove()
-	// proofEqualValue.Verify()
-	// //END----------------------------------------------------------------------------------------------------------------------------------------------
-
-	return nil
+	return proof, nil
 }
 
 func (pro PaymentProof) Verify(hasPrivacy bool) bool {
