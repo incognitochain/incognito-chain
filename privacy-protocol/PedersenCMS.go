@@ -18,7 +18,7 @@ type PedersenCommitment interface {
 
 // PCParams represents the parameters for the commitment
 type PCParams struct {
-	G        []EllipticPoint // generators
+	G        [] *EllipticPoint // generators
 	Capacity int
 	// G[0]: public key
 	// G[1]: H
@@ -30,8 +30,10 @@ type PCParams struct {
 func newPedersenParams() PCParams {
 	var pcm PCParams
 	pcm.Capacity = 4
-	pcm.G = make([]EllipticPoint, pcm.Capacity)
-	pcm.G[0] = EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
+	pcm.G = make([]*EllipticPoint, pcm.Capacity)
+	//pcm.G[0] := EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
+	pcm.G[0] = new(EllipticPoint)
+	pcm.G[0].X,pcm.G[0].Y = Curve.Params().Gx,Curve.Params().Gy
 	for i := 1; i < pcm.Capacity; i++ {
 		pcm.G[i] = pcm.G[0].Hash(i)
 	}
@@ -50,21 +52,19 @@ func (com PCParams) CommitAll(openings []*big.Int) *EllipticPoint {
 	if len(openings) != com.Capacity {
 		return nil
 	}
-
-	//temp := EllipticPoint{big.NewInt(0), big.NewInt(0)}
-	commitment := EllipticPoint{big.NewInt(0), big.NewInt(0)}
+	commitment := new(EllipticPoint)
 
 	for i := 0; i < com.Capacity; i++ {
-		commitment.Add(com.G[i].ScalarMul(openings[i]))
+		*commitment = *commitment.Add(com.G[i].ScalarMul(openings[i]))
 		//temp.X, temp.Y = Curve.ScalarMult(com.G[i].X, com.G[i].Y, openings[i].Bytes())
 		//commitment.X, commitment.Y = Curve.Add(commitment.X, commitment.Y, temp.X, temp.Y)
 	}
-	return &commitment
+	return commitment
 }
 
 // CommitAtIndex commits specific value with index and returns 34 bytes
 func (com PCParams) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoint {
-	commitment:=com.G[com.Capacity-1].ScalarMul(rand).Add(com.G[index].ScalarMul(value))
+	commitment := com.G[com.Capacity-1].ScalarMul(rand).Add(com.G[index].ScalarMul(value))
 	return commitment
 }
 

@@ -161,9 +161,9 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 	wit.EqualityOfCommittedValWitness = make([]*PKEqualityOfCommittedValWitness, numberInputCoin)
 	indexZKPEqual := make([]*byte, 2)
 	indexZKPEqual[0] = new(byte)
-	indexZKPEqual[0] = privacy.SK
+	*indexZKPEqual[0] = privacy.SK
 	indexZKPEqual[1] = new(byte)
-	indexZKPEqual[1] = privacy.SND
+	*indexZKPEqual[1] = privacy.SND
 	for i := 0; i < numberInputCoin; i++ {
 		cmInputSum[i] = cmInputSK
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputValue[i].X, cmInputValue[i].Y)
@@ -499,7 +499,7 @@ func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightC
 
 func GetCurrentBlockHeight() *big.Int {
 	//TODO
-	return big.NewInt(1224)
+	return big.NewInt(0)
 }
 
 // ToBytes converts payment proof to byte array to send verifiers
