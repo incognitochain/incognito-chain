@@ -3,11 +3,11 @@ package privacy
 import "github.com/ninjadotorg/constant/common"
 
 type PrivacyLogger struct {
-	log common.Logger
+	Log common.Logger
 }
 
 func (self *PrivacyLogger) Init(inst common.Logger) {
-	self.log = inst
+	self.Log = inst
 }
 
 // Global instant to use
