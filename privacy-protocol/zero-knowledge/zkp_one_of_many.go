@@ -59,7 +59,7 @@ func (pro *PKOneOfManyProof) Set(
 	pro.index = index
 }
 
-func (pro *PKOneOfManyProof) Bytes() []byte {
+func (pro *PKOneOfManyProof) Bytes() ([]byte, int) {
 	n := privacy.CMRingSizeExp
 	N := privacy.CMRingSize
 	var bytes []byte
@@ -116,8 +116,14 @@ func (pro *PKOneOfManyProof) Bytes() []byte {
 		cmIndex[i] = new(privacy.CMIndex)
 		cmIndex[i].GetCmIndex(pro.commitments[i])
 
-		bytes = append(bytes, cmIndex[i].Bytes()...)
-		nBytes += privacy.LenCmIndexBytes
+		// because length of cm index bytes is not specified
+		// need to save length of cm index bytes
+
+		cmIndexBytes := cmIndex[i].Bytes()
+		bytes = append(bytes, byte(len(cmIndexBytes)))
+		nBytes += 1
+		bytes = append(bytes, cmIndexBytes...)
+		nBytes += len(cmIndex[i].Bytes())
 	}
 
 	// append index
@@ -126,7 +132,7 @@ func (pro *PKOneOfManyProof) Bytes() []byte {
 
 	fmt.Printf("Len of proof bytes: %v\n", nBytes)
 
-	return bytes
+	return bytes, nBytes
 }
 
 // Prove creates proof for one out of many commitments containing 0
@@ -405,6 +411,11 @@ func TestPKOneOfMany() bool {
 	witness.Set(commitments, nil, randoms[indexIsZero], &indexIsZero, privacy.SND)
 	//start := time.Now()
 	proof, err := witness.Prove()
+
+	// Convert proof to bytes array
+	proofBytes, _ := proof.Bytes()
+	fmt.Printf("Proof bytes: %v\n", proofBytes)
+	fmt.Printf("Proof bytes len: %v\n", len(proofBytes))
 
 	if err != nil {
 		fmt.Println(err)

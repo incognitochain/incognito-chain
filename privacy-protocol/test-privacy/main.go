@@ -1,8 +1,6 @@
 package main
 
-import (
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-)
+import "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 
 func main() {
 
@@ -232,4 +230,17 @@ func main() {
 	//
 	//tkDecom, _ := privacy.DecompressKey(keySet.PaymentAddress.Tk)
 	//fmt.Printf("Tk decompress: %+v\n\n", tkDecom)
+
+	/*----------------- TEST CM INDEX -----------------*/
+	//cmIndex := new(privacy.CMIndex)
+	//cmIndex.BlockHeight = big.NewInt(10)
+	//cmIndex.TxIndex = 10
+	//cmIndex.CmId = 10
+	//
+	//cmIndexBytes := cmIndex.Bytes()
+	//fmt.Printf("cm index bytes: %v\n", cmIndexBytes)
+	//fmt.Printf("len cm index: %v\n", len(cmIndexBytes))
+	//
+	//cmIndex2 := new(privacy.CMIndex)
+	//cmIndex2.SetBytes(cmIndexBytes)
 }
