@@ -7,9 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
-const (
-
-)
+const ()
 
 type PaymentWitness struct {
 	spendingKey *big.Int
@@ -177,7 +175,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 		cmInputRndAll.Mod(cmInputRndAll, privacy.Curve.Params().N)
 		// For ZKP Opening
 		wit.ComInputOpeningsWitness[i].Set(cmInputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randInputSum[i]})
-
+		// ---------------
 		// For ZKP One Of Many
 		cmInputRndIndex := new(privacy.CMIndex)
 		cmInputRndIndex.GetCmIndex(cmInputSum[i])
@@ -188,9 +186,10 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 			cmInputRndValue[j].X, cmInputRndValue[j].Y = privacy.Curve.Add(cmInputRndValue[j].X, cmInputRndValue[j].Y, cmInputSumInverse[j].X, cmInputSumInverse[j].Y)
 		}
 		wit.OneOfManyWitness[i].Set(cmInputRndValue, &cmInputRndIndexList, rndInputIsZero, indexInputIsZero, privacy.SK)
-
+		// -------------------
 		// For ZKP Equal Commitment Value
 		wit.EqualityOfCommittedValWitness[i].Set([]*privacy.EllipticPoint{cmInputSNDIndexSK[i], cmInputSND[i]}, indexZKPEqual, []*big.Int{inputCoins[i].CoinDetails.SNDerivator, randInputSK, randInputSND[i]})
+		// ------------------------------
 	}
 
 	numberOutputCoin := len(wit.outputCoins)
@@ -233,18 +232,25 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 		cmOutputRndAll.Mod(cmOutputRndAll, privacy.Curve.Params().N)
 		// For ZKP Opening
 		wit.ComOutputOpeningsWitness[i].Set(cmOutputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(outputCoins[i].CoinDetails.Value)), outputCoins[i].CoinDetails.SNDerivator, randOutputSum[i]})
+		// ---------------
 	}
 
 	// For Multi Range Protocol
 	// proving each output value is less than vmax
 	// proving sum of output values is less than vmax
 	// TODO wit.ComOutputMultiRangeWitness.Set(???)
+	outputValue := make([]*big.Int, numberOutputCoin)
+	for i := 0; i < numberOutputCoin; i++ {
+		outputValue[i] = big.NewInt(int64(outputCoins[i].CoinDetails.Value))
+	}
+	wit.ComOutputMultiRangeWitness.Set(outputValue, 64)
+	// ------------------------
 
 	// TODO Product Commitment
 
 	// TODO Zero Or One
 
-	// todo: comment
+	// For check Sum(Input's value) == Sum(Output's Value)
 	cmOutputSumAllInverse, _ = cmOutputSumAll.Inverse()
 	cmEqualCoinValue := new(privacy.EllipticPoint)
 	cmEqualCoinValue.X, cmEqualCoinValue.Y = privacy.Curve.Add(cmInputSumAll.X, cmInputSumAll.Y, cmOutputSumAllInverse.X, cmOutputSumAllInverse.Y)
@@ -256,6 +262,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 	index := new(byte)
 	*index = privacy.VALUE
 	wit.ComZeroWitness.Set(cmEqualCoinValue, index, cmEqualCoinValueRnd)
+	// ---------------------------------------------------
 }
 
 // Prove creates big proof
@@ -318,10 +325,10 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	}
 
 	// Proving that output values do not exceed v_max
-	proof.ComMultiRangeProof, err = wit.ComMultiRangeWitness.Prove()
-	if err != nil {
-		return nil, err
-	}
+	// proof.ComMultiRangeProof, err = wit.ComMultiRangeWitness.Prove()
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// Proving that sum of all output values do not exceed v_max
 	proof.SumOutRangeProof, err = wit.SumOutRangeWitness.Prove()
@@ -433,9 +440,9 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 	}
 
 	// Verify the proof that output values do not exceed v_max
-	if !pro.ComMultiRangeProof.Verify() {
-		return false
-	}
+	// if !pro.ComMultiRangeProof.Verify() {
+	// 	return false
+	// }
 
 	// Verify the proof that sum of all output values do not exceed v_max
 	if !pro.SumOutRangeProof.Verify() {

@@ -1,66 +1,69 @@
 package zkp
-//
+
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/minio/blake2b-simd"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"math/big"
 )
+
 /*The protocol is used for opening the commitments of product of 2 values*/
 /*------------------------------------------------------*/
 /*-------DECLARE INNER INGREDIENT FOR THE PROTOCOL------*/
 
 type PKComProductProof struct {
 	//basePoint BasePoint
-	D 				*privacy.EllipticPoint
-	E 				*privacy.EllipticPoint
-	f 				*big.Int
-	z 				*big.Int
-	cmA 			*privacy.EllipticPoint
-	cmB 			*privacy.EllipticPoint
-	index   	byte
+	D     *privacy.EllipticPoint
+	E     *privacy.EllipticPoint
+	f     *big.Int
+	z     *big.Int
+	cmA   *privacy.EllipticPoint
+	cmB   *privacy.EllipticPoint
+	index byte
 }
 type PKComProductWitness struct {
-	witnessA  *big.Int
-	randA     *big.Int
-	cmB 			*privacy.EllipticPoint
-	index   	byte
+	witnessA *big.Int
+	randA    *big.Int
+	cmB      *privacy.EllipticPoint
+	index    byte
 }
 
 /*-----------------END OF DECLARATION-------------------*/
 /*------------------------------------------------------*/
 func (wit *PKComProductWitness) Set(
-	witA 	*big.Int,
+	witA *big.Int,
 	randA *big.Int,
-	cmB 	*privacy.EllipticPoint,
-	idx 	*byte){
+	cmB *privacy.EllipticPoint,
+	idx *byte) {
 
-		wit.witnessA 	= new(big.Int)
-	  wit.randA 		= new(big.Int)
-	  wit.cmB 			= new(privacy.EllipticPoint)
-		*wit.witnessA = *witA
-		*wit.randA 		= *randA
-		*wit.cmB 			= *cmB
-		wit.index 		= *idx
+	wit.witnessA = new(big.Int)
+	wit.randA = new(big.Int)
+	wit.cmB = new(privacy.EllipticPoint)
+	*wit.witnessA = *witA
+	*wit.randA = *randA
+	*wit.cmB = *cmB
+	wit.index = *idx
 }
-func (pro *PKComProductProof)  Init(){
+func (pro *PKComProductProof) Init() {
 	pro.D = new(privacy.EllipticPoint)
 	pro.E = new(privacy.EllipticPoint)
-	pro.f= new(big.Int)
-	pro.z= new(big.Int)
+	pro.f = new(big.Int)
+	pro.z = new(big.Int)
 	pro.cmA = new(privacy.EllipticPoint)
 	pro.cmB = new(privacy.EllipticPoint)
 }
 func (wit *PKComProductWitness) Get() *PKComProductWitness {
 	return wit
 }
+
 /*------------------------------------------------------*/
 /*------IMPLEMENT INNER INGREDIENT FOR THE PROTOCOL-----*/
 /*Init 2 point G and H for calculate the commitment*/
-func computeHashString(data [][]byte) []byte{
-	str:=make([]byte, 0)
-	for i:=0;i<len(data);i++{
-		str = append(str,data[i]...)
+func computeHashString(data [][]byte) []byte {
+	str := make([]byte, 0)
+	for i := 0; i < len(data); i++ {
+		str = append(str, data[i]...)
 	}
 	hashFunc := blake2b.New256()
 	hashFunc.Write(str)
@@ -68,7 +71,7 @@ func computeHashString(data [][]byte) []byte{
 	return hashValue
 }
 
-func (wit *PKComProductWitness) Prove() (*PKComProductProof,error) {
+func (wit *PKComProductWitness) Prove() (*PKComProductProof, error) {
 
 	/*---------------------------------------------------------------------------------|
 	| INPUT: ck: PedersenCommitment Key                                                |
@@ -98,26 +101,26 @@ func (wit *PKComProductWitness) Prove() (*PKComProductProof,error) {
 	|	Send f1, f2, z, z2, z3 to the verifier (included in the Proof)                  |
 	|---------------------------------------------------------------------------------*/
 	/* ---------------------------------------------------------------------------------------------------------------|
-|		THE LINK OF ORIGINAL PAPER FOR THIS PROTOCOL: https://link.springer.com/chapter/10.1007%2F978-3-319-43005-8_1 |
-|   WE CHANGE FROM INTERACTIVE TO NON-INTERACTIVE SCHEME VIA FIAT-SHAMIR HEURISTIC														      |
-|----------------------------------------------------------------------------------------------------------------*/
-	proof :=  new(PKComProductProof)
+	|		THE LINK OF ORIGINAL PAPER FOR THIS PROTOCOL: https://link.springer.com/chapter/10.1007%2F978-3-319-43005-8_1 |
+	|   WE CHANGE FROM INTERACTIVE TO NON-INTERACTIVE SCHEME VIA FIAT-SHAMIR HEURISTIC														      |
+	|----------------------------------------------------------------------------------------------------------------*/
+	proof := new(PKComProductProof)
 	proof.Init()
 	proof.index = wit.index
 	//proof.Init()
 	//SpecCom1:=privacy.PCParams{[]privacy.EllipticPoint{proof.basePoint.G,
 	//																										  proof.basePoint.H},
 	//																										  2}
-	d := new(big.Int).SetBytes(privacy.RandBytes(32));
-	s := new(big.Int).SetBytes(privacy.RandBytes(32));
+	d := new(big.Int).SetBytes(privacy.RandBytes(32))
+	s := new(big.Int).SetBytes(privacy.RandBytes(32))
 
-	proof.cmA = privacy.PedCom.CommitAtIndex(wit.witnessA, wit.randA ,wit.index)
-	D:= privacy.PedCom.CommitAtIndex(d,s,wit.index);
-	E:= wit.cmB.ScalarMul(d)
+	proof.cmA = privacy.PedCom.CommitAtIndex(wit.witnessA, wit.randA, wit.index)
+	D := privacy.PedCom.CommitAtIndex(d, s, wit.index)
+	E := wit.cmB.ScalarMul(d)
 	*proof.D = *D
 	*proof.E = *E
 	// x = hash(G||H||D||D1||E)
-	data:=[][]byte{
+	data := [][]byte{
 		privacy.PedCom.G[wit.index].X.Bytes(),
 		privacy.PedCom.G[wit.index].Y.Bytes(),
 		privacy.PedCom.G[privacy.RAND].Y.Bytes(),
@@ -127,32 +130,32 @@ func (wit *PKComProductWitness) Prove() (*PKComProductProof,error) {
 		proof.E.X.Bytes(),
 		proof.E.Y.Bytes(),
 	}
-	x:=new(big.Int)
+	x := new(big.Int)
 	x.SetBytes(computeHashString(data))
 
 	//compute f
-	a:= new(big.Int)
+	a := new(big.Int)
 	a.Set(wit.witnessA)
-	f:= a.Mul(a,x)
-	f = f.Add(f,d)
-	f = f.Mod(f,privacy.Curve.Params().N);
-	*proof.f = *f;
+	f := a.Mul(a, x)
+	f = f.Add(f, d)
+	f = f.Mod(f, privacy.Curve.Params().N)
+	*proof.f = *f
 
 	//compute z
-	ra:= new(big.Int)
+	ra := new(big.Int)
 	ra.Set(wit.randA)
-	z := ra.Mul(ra,x)
-	z = z.Add(z,s)
-	z = z.Mod(z,privacy.Curve.Params().N)
-	*proof.z = *z;
+	z := ra.Mul(ra, x)
+	z = z.Add(z, s)
+	z = z.Mod(z, privacy.Curve.Params().N)
+	*proof.z = *z
 
-	proof.cmA = privacy.PedCom.CommitAtIndex(wit.witnessA, wit.randA,wit.index)
+	proof.cmA = privacy.PedCom.CommitAtIndex(wit.witnessA, wit.randA, wit.index)
 	proof.cmB = wit.cmB
 
-	return proof,nil;
+	return proof, nil
 }
 
-func (pro *PKComProductProof) Verify () bool {
+func (pro *PKComProductProof) Verify() bool {
 
 	/*------------------------------------------------------|
 	|	INPUT: The Proof received from the prover							|
@@ -167,8 +170,8 @@ func (pro *PKComProductProof) Verify () bool {
 	|   Check if Com(f1,z3) under ck' equals to x*C + D' or not												  |
 	|----------------------------------------------------------------------------------*/
 
-	pts_cmp:= new(privacy.EllipticPoint)
-	data:=[][]byte{
+	pts_cmp := new(privacy.EllipticPoint)
+	data := [][]byte{
 		privacy.PedCom.G[pro.index].X.Bytes(),
 		privacy.PedCom.G[pro.index].Y.Bytes(),
 		privacy.PedCom.G[privacy.RAND].Y.Bytes(),
@@ -178,22 +181,22 @@ func (pro *PKComProductProof) Verify () bool {
 		pro.E.X.Bytes(),
 		pro.E.Y.Bytes(),
 	}
-	x:= new(big.Int).SetBytes(computeHashString(data))
+	x := new(big.Int).SetBytes(computeHashString(data))
 	//Check if D,E is on Curve
 	if !(privacy.Curve.IsOnCurve(pro.D.X, pro.D.Y) &&
-		privacy.Curve.IsOnCurve(pro.E.X, pro.E.Y)){
-		return false;
+		privacy.Curve.IsOnCurve(pro.E.X, pro.E.Y)) {
+		return false
 	}
 	//Check if f,z in Zp
-	if (pro.f.Cmp(privacy.Curve.Params().P)==1 ||
-		pro.z.Cmp(privacy.Curve.Params().P)==1){
-		return false;
+	if pro.f.Cmp(privacy.Curve.Params().P) == 1 ||
+		pro.z.Cmp(privacy.Curve.Params().P) == 1 {
+		return false
 	}
 	//Check witness 1: xA + D == 	CommitAll(f,z)
 	A := pro.cmA
 	pts_cmp = A.ScalarMul(x).Add(pro.D)
-	com1 := privacy.PedCom.CommitAtIndex(pro.f, pro.z,pro.index)
-	if (com1.IsEqual(pts_cmp)){
+	com1 := privacy.PedCom.CommitAtIndex(pro.f, pro.z, pro.index)
+	if com1.IsEqual(pts_cmp) {
 		fmt.Println("Passed test 1")
 	} else {
 		fmt.Println("Failed test 1")
@@ -201,15 +204,14 @@ func (pro *PKComProductProof) Verify () bool {
 	}
 
 	//Check witness 2: xB + E == 	CommitAll(f2,z2)
-	com2:=pro.cmB.ScalarMul(pro.f)
+	com2 := pro.cmB.ScalarMul(pro.f)
 	pts_cmp = privacy.PedCom.G[pro.index].ScalarMul(x).Add(pro.E)
-	if (com2.IsEqual(pts_cmp)){
+	if com2.IsEqual(pts_cmp) {
 		fmt.Println("Passed test 2")
 		fmt.Println("Passed all test. This proof is valid.")
-	}	else {
+	} else {
 		fmt.Println("Failed test 2")
 		return false
 	}
-	return true;
+	return true
 }
-
