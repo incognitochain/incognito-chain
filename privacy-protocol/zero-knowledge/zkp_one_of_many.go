@@ -275,14 +275,15 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 }
 
 func (pro *PKOneOfManyProof) Verify() bool {
-	N := len(pro.commitments)
+	N := privacy.CMRingSize
+	n:= privacy.CMRingSizeExp
 
-	temp := 1
-	n := 0
-	for temp < N {
-		temp = temp << 1
-		n++
-	}
+	//temp := 1
+	//n := 0
+	//for temp < N {
+	//	temp = temp << 1
+	//	n++
+	//}
 	// Calculate x
 	x := big.NewInt(0)
 
@@ -384,14 +385,14 @@ func (pro *PKOneOfManyProof) Verify() bool {
 func TestPKOneOfMany() bool {
 	witness := new(PKOneOfManyWitness)
 
-	indexIsZero := 23
+	indexIsZero := 2
 
 	// list of commitments
-	commitments := make([]*privacy.EllipticPoint, 32)
-	SNDerivators := make([]*big.Int, 32)
-	randoms := make([]*big.Int, 32)
+	commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
+	SNDerivators := make([]*big.Int, privacy.CMRingSize)
+	randoms := make([]*big.Int, privacy.CMRingSize)
 
-	for i := 0; i < 32; i++ {
+	for i := 0; i < privacy.CMRingSize; i++ {
 		SNDerivators[i] = privacy.RandInt()
 		randoms[i] = privacy.RandInt()
 		commitments[i] = privacy.PedCom.CommitAtIndex(SNDerivators[i], randoms[i], privacy.SND)
