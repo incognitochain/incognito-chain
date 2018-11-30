@@ -9,7 +9,7 @@ import (
 
 func TestPKComZeroOne(t *testing.T) {
 	res := true
-	for res {
+	for i:=0;i<100;i++{
 		// generate Openings
 		valueRand := privacy.RandBytes(32)
 		vInt := new(big.Int).SetBytes(valueRand)

@@ -133,17 +133,16 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	for k := 0; k < n; k++ {
 		// Calculate pi,k which is coefficient of x^k in polynomial pi(x)
 		res := privacy.EllipticPoint{X: big.NewInt(0), Y: big.NewInt(0)}
-		tmp := privacy.EllipticPoint{X: big.NewInt(0), Y: big.NewInt(0)}
+		//tmp := privacy.EllipticPoint{X: big.NewInt(0), Y: big.NewInt(0)}
 
 		for i := 0; i < N; i++ {
 			iBinary := privacy.ConvertIntToBinary(i, n)
 			pik := GetCoefficient(iBinary, k, n, a, indexIsZeroBinary)
-			tmp.X, tmp.Y = privacy.Curve.ScalarMult(wit.commitments[i].X, wit.commitments[i].Y, pik.Bytes())
-			res.X, res.Y = privacy.Curve.Add(res.X, res.Y, tmp.X, tmp.Y)
+			res = res.Add(wit.commitments[i].ScalarMul(pik))
 		}
 
 		comZero := privacy.PedCom.CommitAtIndex(big.NewInt(0), u[k], wit.index)
-		res.X, res.Y = privacy.Curve.Add(res.X, res.Y, comZero.X, comZero.Y)
+		res = res.Add(*comZero)
 		cd[k] = &res
 	}
 
@@ -226,9 +225,10 @@ func (pro *PKOneOfManyProof) Verify() bool {
 
 	for i := 0; i < n; i++ {
 		// Check cl^x * ca = Com(f, za)
-		leftPoint1 := new(privacy.EllipticPoint)
-		leftPoint1.X, leftPoint1.Y = privacy.Curve.ScalarMult(pro.cl[i].X, pro.cl[i].Y, x.Bytes())
-		leftPoint1.X, leftPoint1.Y = privacy.Curve.Add(leftPoint1.X, leftPoint1.Y, pro.ca[i].X, pro.ca[i].Y)
+		//leftPoint1 := new(privacy.EllipticPoint)
+		//leftPoint1.X, leftPoint1.Y = privacy.Curve.ScalarMult(pro.cl[i].X, pro.cl[i].Y, x.Bytes())
+		//leftPoint1.X, leftPoint1.Y = privacy.Curve.Add(leftPoint1.X, leftPoint1.Y, pro.ca[i].X, pro.ca[i].Y)
+		leftPoint1 := pro.cl[i].ScalarMul(x).Add(*pro.ca[i])
 
 		rightPoint1 := privacy.PedCom.CommitAtIndex(pro.f[i], pro.za[i], pro.index)
 		fmt.Printf("Left point 1 X: %v\n", leftPoint1.X)
@@ -236,26 +236,28 @@ func (pro *PKOneOfManyProof) Verify() bool {
 		fmt.Printf("Left point 1 Y: %v\n", leftPoint1.Y)
 		fmt.Printf("Right point 1 Y: %v\n", rightPoint1.Y)
 
-		if leftPoint1.X.Cmp(rightPoint1.X) != 0 || leftPoint1.Y.Cmp(rightPoint1.Y) != 0 {
+		if !leftPoint1.IsEqual(*rightPoint1) {
 			return false
 		}
 
 		// Check cl^(x-f) * cb = Com(0, zb)
-		leftPoint2 := new(privacy.EllipticPoint)
+
 		xSubF := new(big.Int)
 		xSubF.Sub(x, pro.f[i])
 		xSubF.Mod(xSubF, privacy.Curve.Params().N)
 
-		leftPoint2.X, leftPoint2.Y = privacy.Curve.ScalarMult(pro.cl[i].X, pro.cl[i].Y, xSubF.Bytes())
-		leftPoint2.X, leftPoint2.Y = privacy.Curve.Add(leftPoint2.X, leftPoint2.Y, pro.cb[i].X, pro.cb[i].Y)
+		leftPoint2 := pro.cl[i].ScalarMul(xSubF).Add(*pro.cb[i])
+		//	new(privacy.EllipticPoint)
+		//leftPoint2.X, leftPoint2.Y = privacy.Curve.ScalarMult(pro.cl[i].X, pro.cl[i].Y, xSubF.Bytes())
+		//leftPoint2.X, leftPoint2.Y = privacy.Curve.Add(leftPoint2.X, leftPoint2.Y, pro.cb[i].X, pro.cb[i].Y)
 		rightPoint2 := privacy.PedCom.CommitAtIndex(big.NewInt(0), pro.zb[i], pro.index)
 
-		fmt.Printf("Left point 2 X: %v\n", leftPoint2.X)
-		fmt.Printf("Right point 2 X: %v\n", rightPoint2.X)
-		fmt.Printf("Left point 2 Y: %v\n", leftPoint2.Y)
-		fmt.Printf("Right point 2 Y: %v\n", rightPoint2.Y)
+		//fmt.Printf("Left point 2 X: %v\n", leftPoint2.X)
+		//fmt.Printf("Right point 2 X: %v\n", rightPoint2.X)
+		//fmt.Printf("Left point 2 Y: %v\n", leftPoint2.Y)
+		//fmt.Printf("Right point 2 Y: %v\n", rightPoint2.Y)
 
-		if leftPoint2.X.Cmp(rightPoint2.X) != 0 || leftPoint2.Y.Cmp(rightPoint2.Y) != 0 {
+		if !leftPoint2.IsEqual(*rightPoint2) {
 			return false
 		}
 	}
@@ -311,42 +313,42 @@ func (pro *PKOneOfManyProof) Verify() bool {
 }
 
 //TestPKOneOfMany test protocol for one of many Commitment is Commitment to zero
-func TestPKOneOfMany() bool {
-	witness := new(PKOneOfManyWitness)
-
-	indexIsZero := 23
-
-	// list of commitments
-	commitments := make([]*privacy.EllipticPoint, 32)
-	SNDerivators := make([]*big.Int, 32)
-	randoms := make([]*big.Int, 32)
-
-	for i := 0; i < 32; i++ {
-		SNDerivators[i] = privacy.RandInt()
-		randoms[i] = privacy.RandInt()
-		commitments[i] = privacy.PedCom.CommitAtIndex(SNDerivators[i], randoms[i], privacy.SND)
-	}
-
-	// create Commitment to zero at indexIsZero
-	SNDerivators[indexIsZero] = big.NewInt(0)
-	commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(SNDerivators[indexIsZero], randoms[indexIsZero], privacy.SND)
-
-	witness.Set(commitments, nil, randoms[indexIsZero], &indexIsZero, privacy.SND)
-	//start := time.Now()
-	proof, err := witness.Prove()
-
-	if err != nil {
-		fmt.Println(err)
-	}
-	res := proof.Verify()
-
-	//end := time.Now()
-	//fmt.Printf("%v_+_\n", end.Sub(start))
-	fmt.Println(res)
-	return res
-}
-
-// Get coefficient of x^k in polynomial pi(x)
+//func TestPKOneOfMany() bool {
+//	witness := new(PKOneOfManyWitness)
+//
+//	indexIsZero := 23
+//
+//	// list of commitments
+//	commitments := make([]*privacy.EllipticPoint, 32)
+//	SNDerivators := make([]*big.Int, 32)
+//	randoms := make([]*big.Int, 32)
+//
+//	for i := 0; i < 32; i++ {
+//		SNDerivators[i] = privacy.RandInt()
+//		randoms[i] = privacy.RandInt()
+//		commitments[i] = privacy.PedCom.CommitAtIndex(SNDerivators[i], randoms[i], privacy.SND)
+//	}
+//
+//	// create Commitment to zero at indexIsZero
+//	SNDerivators[indexIsZero] = big.NewInt(0)
+//	commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(SNDerivators[indexIsZero], randoms[indexIsZero], privacy.SND)
+//
+//	witness.Set(commitments, nil, randoms[indexIsZero], &indexIsZero, privacy.SND)
+//	//start := time.Now()
+//	proof, err := witness.Prove()
+//
+//	if err != nil {
+//		fmt.Println(err)
+//	}
+//	res := proof.Verify()
+//
+//	//end := time.Now()
+//	//fmt.Printf("%v_+_\n", end.Sub(start))
+//	fmt.Println(res)
+//	return res
+//}
+//
+//// Get coefficient of x^k in polynomial pi(x)
 func GetCoefficient(iBinary []byte, k int, n int, a []*big.Int, l []byte) *big.Int {
 	res := privacy.Poly{big.NewInt(1)}
 	var fji privacy.Poly
