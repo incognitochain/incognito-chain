@@ -148,7 +148,7 @@ func (sig *SchnSignature) ToBytes() []byte {
 	return res
 }
 
-func (sig *SchnSignature) FromBytes(bytes []byte){
+func (sig *SchnSignature) FromBytes(bytes []byte) {
 	sig.E = new(big.Int).SetBytes(bytes[0:32])
 	sig.S1 = new(big.Int).SetBytes(bytes[32:66])
 	sig.S2 = new(big.Int).SetBytes(bytes[64:96])

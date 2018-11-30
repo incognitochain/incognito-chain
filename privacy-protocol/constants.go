@@ -9,7 +9,18 @@ const (
 	RAND                         = byte(0x03)
 	FULL                         = byte(0x04)
 
-	CMRingSize 					= 8 // 2^3
-	CMRingSizeExp			 	= 3
-	LenCmIndexBytes 		= 10
+	CMRingSize      = 8 // 2^3
+	CMRingSizeExp   = 3
+	LenCmIndexBytes = 10
+
+	ComInputOpeningsProofSize       = 0
+	ComOutputOpeningsProofSize      = 0
+	OneOfManyProofSize              = 0
+	EqualityOfCommittedValProofSize = 0
+	ComMultiRangeProofSize          = 0
+	ComZeroProofSize                = 0
+	ComZeroOneProofSize             = 0
+	EllipticPointCompressSize       = 33
+	CommitmentSize                  = 0
+	BigIntSize                      = 32
 )
