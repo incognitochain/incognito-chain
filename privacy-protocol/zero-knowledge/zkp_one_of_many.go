@@ -135,6 +135,73 @@ func (pro *PKOneOfManyProof) Bytes() ([]byte, int) {
 	return bytes, nBytes
 }
 
+func (pro *PKOneOfManyProof) SetBytes(bytes []byte){
+	n := privacy.CMRingSizeExp
+	N := privacy.CMRingSize
+
+	// get cl array
+	pro.cl = make([]*privacy.EllipticPoint, n)
+	for i := 0; i < n; i++{
+		pro.cl[i] = new(privacy.EllipticPoint)
+		pro.cl[i], _ = privacy.DecompressKey(bytes[33*i : 33*i + 33])
+	}
+	// get ca array
+	pro.ca = make([]*privacy.EllipticPoint, n)
+	for i := 0; i < n; i++{
+		pro.ca[i] = new(privacy.EllipticPoint)
+		pro.ca[i], _ = privacy.DecompressKey(bytes[33*n + 33*i : 33*n + 33*i + 33])
+	}
+	// get cb array
+	pro.cb = make([]*privacy.EllipticPoint, n)
+	for i := 0; i < n; i++{
+		pro.cb[i] = new(privacy.EllipticPoint)
+		pro.cb[i], _ = privacy.DecompressKey(bytes[66*n + 33*i : 66*n + 33*i + 33])
+	}
+
+	// get cd array
+	pro.cd = make([]*privacy.EllipticPoint, n)
+	for i := 0; i < n; i++{
+		pro.cd[i] = new(privacy.EllipticPoint)
+		pro.cd[i], _ = privacy.DecompressKey(bytes[99*n + 33*i : 99*n + 33*i + 33])
+	}
+
+	// get f array
+	pro.f = make([]*big.Int, n)
+	for i := 0; i < n; i++{
+		pro.f[i] = new(big.Int).SetBytes(bytes[4*n*33 + 32*i: 4*n*33 + 32*i + 32])
+	}
+
+	// get za array
+	pro.za = make([]*big.Int, n)
+	for i := 0; i < n; i++{
+		pro.za[i] = new(big.Int).SetBytes(bytes[4*n*33 + 32*n + 32*i: 4*n*33 + 32*n + 32*i + 32])
+	}
+
+	// get zb array
+	pro.zb = make([]*big.Int, n)
+	for i := 0; i < n; i++{
+		pro.zb[i] = new(big.Int).SetBytes(bytes[4*n*33 + 64*n + 32*i: 4*n*33 + 64*n + 32*i + 32])
+	}
+
+	// get zd
+	pro.zd = new(big.Int).SetBytes(bytes[4*n*33 + 3*n*32 : 4*n*33 + 3*n*32 + 32])
+
+	// get commitments list
+	pro.commitments = make([]*privacy.EllipticPoint, N)
+	for i := 0; i < N; i++{
+		// get length of cm index
+		cmIndexBytesLen := int(bytes[4*n*33 + 3*n*32 + 32])
+		cmIndex := new(privacy.CMIndex)
+		cmIndex.SetBytes(bytes[4*n*33 + 3*n*32 + 32 + 1 + i*cmIndexBytesLen : 4*n*33 + 3*n*32 + 32 + 1 + i*cmIndexBytesLen + cmIndexBytesLen])
+
+		pro.commitments[i] = cmIndex.GetCommitment()
+	}
+
+	//get index
+	pro.index = bytes[len(bytes)-1]
+
+}
+
 // Prove creates proof for one out of many commitments containing 0
 func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	// Check the number of Commitment list's elements

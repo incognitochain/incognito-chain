@@ -11,7 +11,6 @@ const (
 
 	CMRingSize      = 8 // 2^3
 	CMRingSizeExp   = 3
-	LenCmIndexBytes = 10
 
 	ComInputOpeningsProofSize       = 0
 	ComOutputOpeningsProofSize      = 0
