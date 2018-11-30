@@ -27,6 +27,15 @@ func (cmIndex * CMIndex)  RandCmId(blockHeight *big.Int, txIndex uint64, numCms 
 
 // GetCommitment returns commitment with cmIndex
 func (cmIndex CMIndex) GetCommitment() *EllipticPoint{
+	// for testing
+	//point := new(EllipticPoint)
+	//if rand{
+	//	point.Randomize()
+	//	return point
+	//}
+	//
+	//return comZero
+
 	return nil
 }
 

@@ -188,17 +188,26 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte){
 
 	// get commitments list
 	pro.commitments = make([]*privacy.EllipticPoint, N)
+	lenPre := 4*n*33 + 3*n*32 + 32
 	for i := 0; i < N; i++{
 		// get length of cm index
-		cmIndexBytesLen := int(bytes[4*n*33 + 3*n*32 + 32])
+		cmIndexBytesLen := int(bytes[lenPre])
 		cmIndex := new(privacy.CMIndex)
-		cmIndex.SetBytes(bytes[4*n*33 + 3*n*32 + 32 + 1 + i*cmIndexBytesLen : 4*n*33 + 3*n*32 + 32 + 1 + i*cmIndexBytesLen + cmIndexBytesLen])
+		cmIndex.SetBytes(bytes[lenPre + 1 : lenPre + 1 + cmIndexBytesLen])
 
+		// for testing
+		//rand := true
+		//if i == 2 {
+		//	rand = false
+		//}
 		pro.commitments[i] = cmIndex.GetCommitment()
+
+		lenPre = lenPre + 1 + cmIndexBytesLen
 	}
 
 	//get index
 	pro.index = bytes[len(bytes)-1]
+	fmt.Printf("proof index setbytes: %v\n", pro.index)
 
 }
 
@@ -465,6 +474,8 @@ func TestPKOneOfMany() bool {
 	SNDerivators := make([]*big.Int, privacy.CMRingSize)
 	randoms := make([]*big.Int, privacy.CMRingSize)
 
+
+
 	for i := 0; i < privacy.CMRingSize; i++ {
 		SNDerivators[i] = privacy.RandInt()
 		randoms[i] = privacy.RandInt()
@@ -483,6 +494,10 @@ func TestPKOneOfMany() bool {
 	proofBytes, _ := proof.Bytes()
 	fmt.Printf("Proof bytes: %v\n", proofBytes)
 	fmt.Printf("Proof bytes len: %v\n", len(proofBytes))
+
+	// revert bytes array to proof
+	proof2 := new(PKOneOfManyProof)
+	proof2.SetBytes(proofBytes)
 
 	if err != nil {
 		fmt.Println(err)

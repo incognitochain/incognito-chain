@@ -36,6 +36,8 @@ type TxPrivacy struct {
 
 	// all input of verify function
 	// outputcoin []OutputCoin
+
+	Metadata interface{}
 }
 
 func (tx *TxPrivacy) CreateTx(
@@ -111,12 +113,12 @@ func (tx *TxPrivacy) CreateTx(
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
 	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins )
-	tx.Proof = witness.Prove(false)
+	tx.Proof, _ = witness.Prove(false)
 
 	// set private key for signing tx
 	if hasPrivacy{
 		tx.sigPrivKey = make([]byte, 64)
-		tx.sigPrivKey = append(*senderSK, witness.ComOpeningsWitness[0].Openings[privacy.RAND].Bytes()...)
+		tx.sigPrivKey = append(*senderSK, witness.ComInputOpeningsWitness[0].Openings[privacy.RAND].Bytes()...)
 	} else{
 		tx.sigPrivKey = *senderSK
 	}
@@ -282,7 +284,7 @@ func (tx *TxPrivacy) ValidateTx(hasPrivacy bool) bool {
 	}
 
 	// Verify the payment proof
-	valid = tx.Proof.Verify(false)
+	valid = tx.Proof.Verify(false, tx.SigPubKey)
 	if valid == false{
 		fmt.Printf("Error verifying the payment proof")
 		return false

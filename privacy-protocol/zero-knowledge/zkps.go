@@ -498,7 +498,7 @@ func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightC
 			cms[i] = cm
 			index = i
 		}
-		cms[i] = cmIndexs[i].GetCommitment()
+		//cms[i] = cmIndexs[i].GetCommitment()
 	}
 
 	return cmIndexs, cms, &index
