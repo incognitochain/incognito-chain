@@ -1,7 +1,9 @@
-package temp
+package zkp
 
 import (
 	"fmt"
+
+	//"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"math"
 	"math/big"
 
@@ -10,11 +12,11 @@ import (
 )
 
 type PKComMultiRangeProof struct {
-	Comms  []privacy.EllipticPoint
-	A      privacy.EllipticPoint
-	S      privacy.EllipticPoint
-	T1     privacy.EllipticPoint
-	T2     privacy.EllipticPoint
+	Comms  []*privacy.EllipticPoint
+	A      *privacy.EllipticPoint
+	S      *privacy.EllipticPoint
+	T1     *privacy.EllipticPoint
+	T2     *privacy.EllipticPoint
 	Tau    *big.Int
 	Th     *big.Int
 	Mu     *big.Int
@@ -27,7 +29,7 @@ type PKComMultiRangeProof struct {
 }
 
 type PKComMultiRangeWitness struct {
-	Comms  []privacy.EllipticPoint
+	Comms  []*privacy.EllipticPoint
 	Values []*big.Int
 	Rands  []*big.Int
 	maxExp int
@@ -159,7 +161,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 	bitsPerValue := RangeProofParams.V / m
 	// we concatenate the binary representation of the values
 	PowerOfTwos := PowerVector(bitsPerValue, big.NewInt(2))
-	Comms := make([]privacy.EllipticPoint, m)
+	Comms := make([]*privacy.EllipticPoint, m)
 	gammas := make([]*big.Int, m)
 	wit.Rands = make([]*big.Int, m)
 	aLConcat := make([]*big.Int, RangeProofParams.V)
@@ -293,7 +295,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 	MRProof.Tau = taux
 	mu := new(big.Int).Mod(new(big.Int).Add(alpha, new(big.Int).Mul(rho, cx)), privacy.Curve.Params().N)
 	MRProof.Mu = mu
-	HPrime := make([]privacy.EllipticPoint, len(RangeProofParams.BPH))
+	HPrime := make([]*privacy.EllipticPoint, len(RangeProofParams.BPH))
 	for i := range HPrime {
 		HPrime[i] = RangeProofParams.BPH[i].ScalarMul(new(big.Int).ModInverse(PowerOfCY[i], privacy.Curve.Params().N))
 	}
@@ -313,18 +315,18 @@ func (wit *PKComMultiRangeWitness) ProveSum() (*PKComZeroProof, error) {
 	temp := new(privacy.EllipticPoint)
 	for i := 0; i < l-1; i++ {
 		temp = privacy.PedCom.CommitAtIndex(wit.Values[i], wit.Rands[i], privacy.VALUE)
-		sumComms = sumComms.Add(*temp)
+		sumComms = sumComms.Add(temp)
 		sumRand.Add(sumRand, new(big.Int).Set(wit.Rands[i]))
 	}
 	sumRand.Sub(sumRand, wit.Rands[l-1])
 	temp = privacy.PedCom.CommitAtIndex(wit.Values[l-1], wit.Rands[l-1], privacy.VALUE)
 	temp, _ = temp.Inverse()
-	sumComms = sumComms.Add(*temp)
+	sumComms = sumComms.Add(temp)
 	sumRand.Mod(sumRand, privacy.Curve.Params().N)
 	var zeroWit PKComZeroWitness
 	idx := new(byte)
 	*idx = privacy.VALUE
-	zeroWit.Set(&sumComms, idx, sumRand)
+	zeroWit.Set(sumComms, idx, sumRand)
 	return zeroWit.Prove()
 }
 func (pro *PKComMultiRangeProof) VerifySum(zproof *PKComZeroProof) bool {
@@ -337,8 +339,8 @@ func (pro *PKComMultiRangeProof) VerifySum(zproof *PKComZeroProof) bool {
 		zeroCom = zeroCom.Add(pro.Comms[i])
 	}
 	invSumCom, _ := pro.Comms[len(pro.Comms)-1].Inverse()
-	zeroCom = zeroCom.Add(*invSumCom)
-	if !zeroCom.IsEqual(*zproof.commitmentValue) {
+	zeroCom = zeroCom.Add(invSumCom)
+	if !zeroCom.IsEqual(zproof.commitmentValue) {
 		return false
 	} else {
 		return zproof.Verify()
@@ -411,7 +413,7 @@ func (pro *PKComMultiRangeProof) Verify() bool {
 	PowerOfTwos := PowerVector(bitsPerValue, big.NewInt(2))
 	tmp2 := RangeProofParams.Zero()
 	// generate h'
-	HPrime := make([]privacy.EllipticPoint, len(RangeProofParams.BPH))
+	HPrime := make([]*privacy.EllipticPoint, len(RangeProofParams.BPH))
 
 	for i := range HPrime {
 		mi := new(big.Int).ModInverse(PowersOfY[i], privacy.Curve.Params().N)
@@ -426,10 +428,8 @@ func (pro *PKComMultiRangeProof) Verify() bool {
 			tmp2 = tmp2.Add(HPrime[j*bitsPerValue+i].ScalarMul(new(big.Int).Add(val1, val2)))
 		}
 	}
-	// without subtracting this value should equal muCH + l[i]G[i] + r[i]H'[i]
-	// we want to make sure that the innerproduct checks out, so we subtract it
 	tmp, _ := RangeProofParams.H.ScalarMul(pro.Mu).Inverse()
-	P := pro.A.Add(pro.S.ScalarMul(cx)).Add(tmp1).Add(tmp2).Add(*tmp)
+	P := pro.A.Add(pro.S.ScalarMul(cx)).Add(tmp1).Add(tmp2).Add(tmp)
 	//fmt.Println(P)
 
 	if !InnerProductVerifyFast(pro.Th, P, RangeProofParams.U, RangeProofParams.BPG, HPrime, pro.IPP) {

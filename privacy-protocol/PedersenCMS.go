@@ -18,7 +18,7 @@ type PedersenCommitment interface {
 
 // PCParams represents the parameters for the commitment
 type PCParams struct {
-	G        [] *EllipticPoint // generators
+	G        []*EllipticPoint // generators
 	Capacity int
 	// G[0]: public key
 	// G[1]: H
@@ -33,7 +33,7 @@ func newPedersenParams() PCParams {
 	pcm.G = make([]*EllipticPoint, pcm.Capacity)
 	//pcm.G[0] := EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
 	pcm.G[0] = new(EllipticPoint)
-	pcm.G[0].X,pcm.G[0].Y = Curve.Params().Gx,Curve.Params().Gy
+	pcm.G[0].X, pcm.G[0].Y = Curve.Params().Gx, Curve.Params().Gy
 	for i := 1; i < pcm.Capacity; i++ {
 		pcm.G[i] = pcm.G[0].Hash(i)
 	}
