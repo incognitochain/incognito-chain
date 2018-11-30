@@ -18,6 +18,7 @@ type TxCustomToken struct {
 	BoardType   uint8 // 1: DCB, 2: GOV
 	BoardSigns  map[string][]byte
 
+	// Template data variable to process logic
 	listUtxo map[common.Hash]TxCustomToken
 }
 
