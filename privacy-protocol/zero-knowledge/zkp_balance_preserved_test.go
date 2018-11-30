@@ -1,5 +1,4 @@
-package temp
-
+package zkp
 import (
 	"fmt"
 	"github.com/ninjadotorg/constant/privacy-protocol"

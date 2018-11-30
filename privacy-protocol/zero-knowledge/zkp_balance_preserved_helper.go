@@ -1,5 +1,4 @@
-package temp
-
+package zkp
 import (
 	"crypto/elliptic"
 	"fmt"
@@ -13,19 +12,19 @@ var RangeProofParams CryptoParams
 
 /* ------------ Inner Product Functions ---------------*/
 type InnerProdArg struct {
-	L []privacy.EllipticPoint
-	R []privacy.EllipticPoint
+	L []*privacy.EllipticPoint
+	R []*privacy.EllipticPoint
 	A *big.Int
 	B *big.Int
 
 	Challenges []*big.Int
 }
 
-func GenerateNewParams(G, H []privacy.EllipticPoint, x *big.Int, L, R, P privacy.EllipticPoint) ([]privacy.EllipticPoint, []privacy.EllipticPoint, privacy.EllipticPoint) {
+func GenerateNewParams(G, H []*privacy.EllipticPoint, x *big.Int, L, R, P *privacy.EllipticPoint) ([]*privacy.EllipticPoint, []*privacy.EllipticPoint, *privacy.EllipticPoint) {
 	nprime := len(G) / 2
 
-	Gprime := make([]privacy.EllipticPoint, nprime)
-	Hprime := make([]privacy.EllipticPoint, nprime)
+	Gprime := make([]*privacy.EllipticPoint, nprime)
+	Hprime := make([]*privacy.EllipticPoint, nprime)
 
 	xinv := new(big.Int).ModInverse(x, privacy.Curve.Params().N)
 
@@ -53,7 +52,7 @@ Proves that <a,b>=c
 This is a building block for BulletProofs
 
 */
-func InnerProductProveSub(proof InnerProdArg, G, H []privacy.EllipticPoint, a []*big.Int, b []*big.Int, u privacy.EllipticPoint, P privacy.EllipticPoint) InnerProdArg {
+func InnerProductProveSub(proof InnerProdArg, G, H []*privacy.EllipticPoint, a []*big.Int, b []*big.Int, u *privacy.EllipticPoint, P *privacy.EllipticPoint) InnerProdArg {
 	//fmt.Printf("Proof so far: %s\n", proof)
 	if len(a) == 1 {
 		// Prover sends a & b
@@ -100,12 +99,12 @@ func InnerProductProveSub(proof InnerProdArg, G, H []privacy.EllipticPoint, a []
 	return InnerProductProveSub(proof, Gprime, Hprime, aprime, bprime, u, Pprime)
 }
 
-func InnerProductProve(a []*big.Int, b []*big.Int, c *big.Int, P, U privacy.EllipticPoint, G, H []privacy.EllipticPoint) InnerProdArg {
+func InnerProductProve(a []*big.Int, b []*big.Int, c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy.EllipticPoint) InnerProdArg {
 	loglen := int(math.Log2(float64(len(a))))
 
 	challenges := make([]*big.Int, loglen+1)
-	Lvals := make([]privacy.EllipticPoint, loglen)
-	Rvals := make([]privacy.EllipticPoint, loglen)
+	Lvals := make([]*privacy.EllipticPoint, loglen)
+	Rvals := make([]*privacy.EllipticPoint, loglen)
 
 	runningProof := InnerProdArg{
 		Lvals,
@@ -135,7 +134,7 @@ P : the Pedersen commitment we are verifying is a commitment to the innner produ
 ipp : the proof
 
 */
-func InnerProductVerify(c *big.Int, P, U privacy.EllipticPoint, G, H []privacy.EllipticPoint, ipp InnerProdArg) bool {
+func InnerProductVerify(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy.EllipticPoint, ipp InnerProdArg) bool {
 	//fmt.Println("Verifying Inner Product Argument")
 	//fmt.Printf("Commitment Value: %s \n", P)
 	s1 := blake2b.Sum256([]byte(P.X.String() + P.Y.String()))
@@ -196,7 +195,7 @@ Given a inner product proof, verifies the correctness of the proof. Does the sam
 we replace n separate exponentiations with a single ScalarMulPointi-exponentiation.
 */
 
-func InnerProductVerifyFast(c *big.Int, P, U privacy.EllipticPoint, G, H []privacy.EllipticPoint, ipp InnerProdArg) bool {
+func InnerProductVerifyFast(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy.EllipticPoint, ipp InnerProdArg) bool {
 	//fmt.Println("Verifying Inner Product Argument")
 	//fmt.Printf("Commitment Value: %s \n", P)
 	s1 := blake2b.Sum256([]byte(P.X.String() + P.Y.String()))
@@ -424,17 +423,21 @@ var VecLength int
 
 type CryptoParams struct {
 	C   elliptic.Curve      // curve
-	BPG []privacy.EllipticPoint           // slice of gen 1 for BP
-	BPH []privacy.EllipticPoint           // slice of gen 2 for BP
+	BPG []*privacy.EllipticPoint           // slice of gen 1 for BP
+	BPH []*privacy.EllipticPoint           // slice of gen 2 for BP
 	N   *big.Int            // scalar prime
-	U   privacy.EllipticPoint             // a point that is a fixed group element with an unknown discrete-log relative to g,h
+	U   *privacy.EllipticPoint             // a point that is a fixed group element with an unknown discrete-log relative to g,h
 	V   int                 // Vector length
-	G   privacy.EllipticPoint             // G value for commitments of a single value
-	H   privacy.EllipticPoint             // H value for commitments of a single value
+	G   *privacy.EllipticPoint             // G value for commitments of a single value
+	H   *privacy.EllipticPoint             // H value for commitments of a single value
 }
 
-func (c CryptoParams) Zero() privacy.EllipticPoint {
-	return privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
+func (c CryptoParams) Zero() *privacy.EllipticPoint {
+	zeroPoint:=new(privacy.EllipticPoint)
+	zeroPoint.X= new(big.Int).SetInt64(0)
+	zeroPoint.Y= new(big.Int).SetInt64(0)
+	return zeroPoint
+	//*privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
 }
 
 
@@ -442,10 +445,9 @@ func (c CryptoParams) Zero() privacy.EllipticPoint {
 // Generator 1 x&y, Generator 2 x&y, order of the generators
 func NewECPrimeGroupKey(n int) CryptoParams {
 
-	gen1Vals := make([]privacy.EllipticPoint, n)
-	gen2Vals := make([]privacy.EllipticPoint, n)
-	u := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
-
+	gen1Vals := make([]*privacy.EllipticPoint, n)
+	gen2Vals := make([]*privacy.EllipticPoint, n)
+	u := CryptoParams{}.Zero()
 	G:=privacy.PedCom.G[privacy.VALUE]
 	H:=privacy.PedCom.G[privacy.RAND]
 
@@ -468,7 +470,7 @@ func NewECPrimeGroupKey(n int) CryptoParams {
 }
 
 /*Perdersen commit for 2 vector*/
-func TwoVectorPCommitWithGens(G, H []privacy.EllipticPoint, a, b []*big.Int) privacy.EllipticPoint {
+func TwoVectorPCommitWithGens(G, H []*privacy.EllipticPoint, a, b []*big.Int) *privacy.EllipticPoint {
 	if len(G) != len(H) || len(G) != len(a) || len(a) != len(b) {
 		fmt.Println("TwoVectorPCommitWithGens: Uh oh! Arrays not of the same length")
 		fmt.Printf("len(G): %d\n", len(G))
@@ -477,8 +479,9 @@ func TwoVectorPCommitWithGens(G, H []privacy.EllipticPoint, a, b []*big.Int) pri
 		fmt.Printf("len(b): %d\n", len(b))
 	}
 
-	commitment := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
+	//commitment := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
 
+	commitment := CryptoParams{}.Zero()
 	for i := 0; i < len(G); i++ {
 		modA := new(big.Int).Mod(a[i], privacy.Curve.Params().N)
 		modB := new(big.Int).Mod(b[i], privacy.Curve.Params().N)
