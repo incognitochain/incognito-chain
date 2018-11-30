@@ -1,14 +1,16 @@
-package temp
+package zkp
 
 import (
 	"crypto/elliptic"
 	"fmt"
-	"github.com/minio/blake2b-simd"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 	"math"
 	"math/big"
 	"strconv"
+
+	"github.com/minio/blake2b-simd"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
+
 var RangeProofParams CryptoParams
 
 /* ------------ Inner Product Functions ---------------*/
@@ -271,6 +273,7 @@ func InnerProductVerifyFast(c *big.Int, P, U privacy.EllipticPoint, G, H []priva
 	}
 	return true
 }
+
 /*-----------------------------Vector Functions-----------------------------*/
 // The length here always has to be a power of two
 func InnerProduct(a []*big.Int, b []*big.Int) *big.Int {
@@ -401,8 +404,8 @@ func RandVector(l int) []*big.Int {
 	result := make([]*big.Int, l)
 
 	for i := 0; i < l; i++ {
-		x:= new(big.Int).SetBytes(privacy.RandBytes(32))
-		x.Mod(x,privacy.Curve.Params().N)
+		x := new(big.Int).SetBytes(privacy.RandBytes(32))
+		x.Mod(x, privacy.Curve.Params().N)
 		result[i] = x
 	}
 
@@ -418,25 +421,25 @@ func VectorSum(y []*big.Int) *big.Int {
 
 	return result
 }
+
 /*-----------------------Crypto Params Functions------------------*/
 
 var VecLength int
 
 type CryptoParams struct {
-	C   elliptic.Curve      // curve
-	BPG []privacy.EllipticPoint           // slice of gen 1 for BP
-	BPH []privacy.EllipticPoint           // slice of gen 2 for BP
-	N   *big.Int            // scalar prime
-	U   privacy.EllipticPoint             // a point that is a fixed group element with an unknown discrete-log relative to g,h
-	V   int                 // Vector length
-	G   privacy.EllipticPoint             // G value for commitments of a single value
-	H   privacy.EllipticPoint             // H value for commitments of a single value
+	C   elliptic.Curve          // curve
+	BPG []privacy.EllipticPoint // slice of gen 1 for BP
+	BPH []privacy.EllipticPoint // slice of gen 2 for BP
+	N   *big.Int                // scalar prime
+	U   privacy.EllipticPoint   // a point that is a fixed group element with an unknown discrete-log relative to g,h
+	V   int                     // Vector length
+	G   privacy.EllipticPoint   // G value for commitments of a single value
+	H   privacy.EllipticPoint   // H value for commitments of a single value
 }
 
 func (c CryptoParams) Zero() privacy.EllipticPoint {
 	return privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
 }
-
 
 // NewECPrimeGroupKey returns the curve (field),
 // Generator 1 x&y, Generator 2 x&y, order of the generators
@@ -446,16 +449,16 @@ func NewECPrimeGroupKey(n int) CryptoParams {
 	gen2Vals := make([]privacy.EllipticPoint, n)
 	u := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
 
-	G:=privacy.PedCom.G[privacy.VALUE]
-	H:=privacy.PedCom.G[privacy.RAND]
+	G := privacy.PedCom.G[privacy.VALUE]
+	H := privacy.PedCom.G[privacy.RAND]
 
-	for i:=0;i<n;i++{
-		gen1Vals[i]= G.Hash(0)
-		G=G.Hash(0)
-		gen2Vals[i]= H.Hash(0)
+	for i := 0; i < n; i++ {
+		gen1Vals[i] = G.Hash(0)
+		G = G.Hash(0)
+		gen2Vals[i] = H.Hash(0)
 		H = H.Hash(0)
 	}
-	u	= G.Add(H).Hash(0)
+	u = G.Add(H).Hash(0)
 	return CryptoParams{
 		privacy.Curve,
 		gen1Vals,
