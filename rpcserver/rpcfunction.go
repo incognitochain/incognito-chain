@@ -2,7 +2,6 @@ package rpcserver
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -231,21 +230,6 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 			}
 			result.ListUnspentResultItems[priKeyStr][chainId] = listTxs
 		}
-	}
-	return result, nil
-}
-
-// handleListCustomToken - return list all custom token in network
-func (self RpcServer) handleListCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	temps, err := self.config.BlockChain.ListCustomToken()
-	if err != nil {
-		return nil, err
-	}
-	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
-	for _, token := range temps {
-		item := jsonresult.CustomToken{}
-		item.Init(token)
-		result.ListCustomToken = append(result.ListCustomToken, item)
 	}
 	return result, nil
 }
@@ -546,39 +530,6 @@ func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan str
 		}
 	}
 	return result, nil
-}
-
-// handleCreateSignatureOnCustomTokenTx - return a signature which is signed on raw custom token tx
-func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	Logger.log.Info(params)
-	arrayParams := common.InterfaceSlice(params)
-	hexRawTx := arrayParams[0].(string)
-	rawTxBytes, err := hex.DecodeString(hexRawTx)
-
-	if err != nil {
-		return nil, err
-	}
-	tx := transaction.TxCustomToken{}
-	// Logger.log.Info(string(rawTxBytes))
-	err = json.Unmarshal(rawTxBytes, &tx)
-	if err != nil {
-		return nil, err
-	}
-	senderKeyParam := arrayParams[1]
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	jsSignByteArray, err := tx.GetTxCustomTokenSignature(senderKey.KeySet)
-	if err != nil {
-		return nil, errors.New("Failed to sign the custom token")
-	}
-	return hex.EncodeToString(jsSignByteArray), nil
 }
 
 // payment address -> balance of all custom token
