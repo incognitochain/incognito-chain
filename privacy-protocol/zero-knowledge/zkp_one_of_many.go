@@ -60,15 +60,73 @@ func (pro *PKOneOfManyProof) Set(
 }
 
 func (pro *PKOneOfManyProof) Bytes() []byte {
-	n := len(pro.commitments)
+	n := privacy.CMRingSizeExp
+	N := privacy.CMRingSize
 	var bytes []byte
-	//nBytes := 0
+	nBytes := 0
 
-	// convert cl to  bytes array
-	for i:=0; i< n; i++{
+	// convert array cl to bytes array
+	for i:=0; i < n; i++{
 		bytes = append(bytes, pro.cl[i].Compress()...)
+		nBytes += privacy.LenPointBytesCompressed
 	}
-	return []byte{0}
+	// convert array ca to bytes array
+	for i:=0; i < n; i++{
+		bytes = append(bytes, pro.ca[i].Compress()...)
+		nBytes += privacy.LenPointBytesCompressed
+	}
+
+	// convert array cb to bytes array
+	for i:=0; i < n; i++{
+		bytes = append(bytes, pro.cb[i].Compress()...)
+		nBytes += privacy.LenPointBytesCompressed
+	}
+
+	// convert array cd to bytes array
+	for i:=0; i < n; i++{
+		bytes = append(bytes, pro.cd[i].Compress()...)
+		nBytes += privacy.LenPointBytesCompressed
+	}
+
+	// convert array f to bytes array
+	for i:=0; i < n; i++{
+		bytes = append(bytes, pro.f[i].Bytes()...)
+		nBytes += 32
+	}
+
+	// convert array za to bytes array
+	for i:=0; i < n; i++{
+		bytes = append(bytes, pro.za[i].Bytes()...)
+		nBytes += 32
+	}
+
+	// convert array zb to bytes array
+	for i:=0; i < n; i++{
+		bytes = append(bytes, pro.zb[i].Bytes()...)
+		nBytes += 32
+	}
+
+	// convert array zd to bytes array
+	bytes = append(bytes, pro.zd.Bytes()...)
+	nBytes += 32
+
+	// get commitment's cmIndex
+	cmIndex := make([]*privacy.CMIndex, N)
+	for i := 0; i < N; i++{
+		cmIndex[i] = new(privacy.CMIndex)
+		cmIndex[i].GetCmIndex(pro.commitments[i])
+
+		bytes = append(bytes, cmIndex[i].Bytes()...)
+		nBytes += privacy.LenCmIndexBytes
+	}
+
+	// append index
+	bytes = append(bytes, pro.index)
+	nBytes += 1
+
+	fmt.Printf("Len of proof bytes: %v\n", nBytes)
+
+	return bytes
 }
 
 // Prove creates proof for one out of many commitments containing 0
