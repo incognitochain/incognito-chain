@@ -37,6 +37,8 @@ type Tx struct {
 	// so that we can determine pair of req/res txs
 	// for example, BuySellRequestTx/BuySellResponseTx
 	RequestedTxID *common.Hash
+
+	Metadata interface{}
 }
 
 func (tx *Tx) SetTxID(txId *common.Hash) {
