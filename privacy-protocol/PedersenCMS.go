@@ -4,14 +4,6 @@ import (
 	"math/big"
 )
 
-// const (
-// 	SK    = byte(0x00)
-// 	VALUE = byte(0x01)
-// 	SND   = byte(0x02)
-// 	RAND  = byte(0x03)
-// 	FULL  = byte(0x04)
-// )
-
 // PedersenCommitment represents a commitment that includes 4 generators
 type PedersenCommitment interface {
 	// Params returns the parameters for the commitment
