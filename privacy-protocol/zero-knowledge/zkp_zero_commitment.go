@@ -81,8 +81,16 @@ func (wit *PKComZeroWitness) Set(
 }
 
 func (pro *PKComZeroProof) Bytes() []byte {
-	return []byte{0}
+	var res []byte
+	res = append(pro.commitmentValue.Compress(), []byte{*pro.index}, pro.commitmentZeroS.Compress(), pro.z.Bytes())
+
+	return res
 }
+
+// func (pro *PKComZeroProof) SetBytes([]byte) bool{
+
+// 	return true
+// }
 
 // Set dosomethings
 func (pro *PKComZeroProof) Set(
