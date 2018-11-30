@@ -4,14 +4,6 @@ import (
 	"math/big"
 )
 
-// const (
-// 	SK    = byte(0x00)
-// 	VALUE = byte(0x01)
-// 	SND   = byte(0x02)
-// 	RAND  = byte(0x03)
-// 	FULL  = byte(0x04)
-// )
-
 // PedersenCommitment represents a commitment that includes 4 generators
 type PedersenCommitment interface {
 	// Params returns the parameters for the commitment
@@ -73,7 +65,7 @@ func (com PCParams) CommitAll(openings []*big.Int) *EllipticPoint {
 // CommitAtIndex commits specific value with index and returns 34 bytes
 func (com PCParams) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoint {
 	commitment:=com.G[com.Capacity-1].ScalarMul(rand).Add(com.G[index].ScalarMul(value))
-	return &commitment
+	return commitment
 }
 
 //func (com PCParams) CommitWithSpecPoint(G EllipticPoint, H EllipticPoint, value, sRnd []byte) []byte {

@@ -1,9 +1,8 @@
 package main
 
 import (
-	"fmt"
-	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
 func main() {
@@ -61,7 +60,7 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-	// zkp.TestPKOneOfMany()
+	zkp.TestPKOneOfMany()
 
 	//zkp.TestPKComMultiRange()
 
@@ -224,17 +223,17 @@ func main() {
 	/*-----------------------------------------------------------------*/
 
 	/*----------------- TEST KEY SET -----------------*/
-	keySet := new(cashec.KeySet)
-	spendingKey := privacy.GenerateSpendingKey([]byte{123})
-	keySet.ImportFromPrivateKey(&spendingKey)
-
-	fmt.Printf("Key set %+v\n", keySet.PaymentAddress.Pk[0])
-
-	// decompress pk, tk
-	pkDecom, _ := privacy.DecompressKey(keySet.PaymentAddress.Pk)
-	fmt.Printf("Pk decompress: %+v\n\n", pkDecom)
-
-	tkDecom, _ := privacy.DecompressKey(keySet.PaymentAddress.Tk)
-	fmt.Printf("Tk decompress: %+v\n\n", tkDecom)
+	//keySet := new(cashec.KeySet)
+	//spendingKey := privacy.GenerateSpendingKey([]byte{123})
+	//keySet.ImportFromPrivateKey(&spendingKey)
+	//
+	//fmt.Printf("Key set %+v\n", keySet.PaymentAddress.Pk[0])
+	//
+	//// decompress pk, tk
+	//pkDecom, _ := privacy.DecompressKey(keySet.PaymentAddress.Pk)
+	//fmt.Printf("Pk decompress: %+v\n\n", pkDecom)
+	//
+	//tkDecom, _ := privacy.DecompressKey(keySet.PaymentAddress.Tk)
+	//fmt.Printf("Tk decompress: %+v\n\n", tkDecom)
 
 }
