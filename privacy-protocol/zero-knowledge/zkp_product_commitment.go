@@ -30,18 +30,18 @@ type PKComProductWitness struct {
 /*-----------------END OF DECLARATION-------------------*/
 /*------------------------------------------------------*/
 func (wit *PKComProductWitness) Set(
-	witA *big.Int,
+	witA 	*big.Int,
 	randA *big.Int,
-	cmB *privacy.EllipticPoint,
-	idx *byte){
+	cmB 	*privacy.EllipticPoint,
+	idx 	*byte){
 
-		wit.witnessA = new(big.Int)
-	  wit.randA = new(big.Int)
-	  wit.cmB = new(privacy.EllipticPoint)
+		wit.witnessA 	= new(big.Int)
+	  wit.randA 		= new(big.Int)
+	  wit.cmB 			= new(privacy.EllipticPoint)
 		*wit.witnessA = *witA
-		*wit.randA = *randA
-		*wit.cmB = *cmB
-		wit.index = *idx
+		*wit.randA 		= *randA
+		*wit.cmB 			= *cmB
+		wit.index 		= *idx
 }
 func (pro *PKComProductProof)  Init(){
 	pro.D = new(privacy.EllipticPoint)
@@ -54,8 +54,6 @@ func (pro *PKComProductProof)  Init(){
 func (wit *PKComProductWitness) Get() *PKComProductWitness {
 	return wit
 }
-
-
 /*------------------------------------------------------*/
 /*------IMPLEMENT INNER INGREDIENT FOR THE PROTOCOL-----*/
 /*Init 2 point G and H for calculate the commitment*/
@@ -117,7 +115,7 @@ func (wit *PKComProductWitness) Prove() (*PKComProductProof,error) {
 	D:= privacy.PedCom.CommitAtIndex(d,s,wit.index);
 	E:= wit.cmB.ScalarMul(d)
 	*proof.D = *D
-	*proof.E = E
+	*proof.E = *E
 	// x = hash(G||H||D||D1||E)
 	data:=[][]byte{
 		privacy.PedCom.G[wit.index].X.Bytes(),
@@ -169,7 +167,7 @@ func (pro *PKComProductProof) Verify () bool {
 	|   Check if Com(f1,z3) under ck' equals to x*C + D' or not												  |
 	|----------------------------------------------------------------------------------*/
 
-	var pts_cmp privacy.EllipticPoint
+	pts_cmp:= new(privacy.EllipticPoint)
 	data:=[][]byte{
 		privacy.PedCom.G[pro.index].X.Bytes(),
 		privacy.PedCom.G[pro.index].Y.Bytes(),
@@ -181,26 +179,19 @@ func (pro *PKComProductProof) Verify () bool {
 		pro.E.Y.Bytes(),
 	}
 	x:= new(big.Int).SetBytes(computeHashString(data))
-	//Check if D,D',E is on Curve
+	//Check if D,E is on Curve
 	if !(privacy.Curve.IsOnCurve(pro.D.X, pro.D.Y) &&
-		//privacy.Curve.IsOnCurve(pro.D1.X, pro.D1.Y) &&
 		privacy.Curve.IsOnCurve(pro.E.X, pro.E.Y)){
 		return false;
 	}
-	//Check if f1,f2,z1,z2,z3 in Zp
+	//Check if f,z in Zp
 	if (pro.f.Cmp(privacy.Curve.Params().P)==1 ||
-		//pro.f2.Cmp(privacy.Curve.Params().P)==1 ||
 		pro.z.Cmp(privacy.Curve.Params().P)==1){
-		//pro.z2.Cmp(privacy.Curve.Params().P)==1 ||
-		//pro.z3.Cmp(privacy.Curve.Params().P)==1){
 		return false;
 	}
-	//Check witness 1: xA + D == 	CommitAll(f1,z1)
-	//A:= new(privacy.EllipticPoint)
+	//Check witness 1: xA + D == 	CommitAll(f,z)
 	A := pro.cmA
-	pts_cmp = A.ScalarMul(x).Add(*pro.D)
-	//SpecCom1:=privacy.PCParams{[]privacy.EllipticPoint{pro.basePoint.G, pro.basePoint.H},
-	//													 2}
+	pts_cmp = A.ScalarMul(x).Add(pro.D)
 	com1 := privacy.PedCom.CommitAtIndex(pro.f, pro.z,pro.index)
 	if (com1.IsEqual(pts_cmp)){
 		fmt.Println("Passed test 1")
@@ -209,11 +200,9 @@ func (pro *PKComProductProof) Verify () bool {
 		return false
 	}
 
+	//Check witness 2: xB + E == 	CommitAll(f2,z2)
 	com2:=pro.cmB.ScalarMul(pro.f)
-	pts_cmp = privacy.PedCom.G[pro.index].ScalarMul(x).Add(*pro.E)
-	////Check witness 2: xB + E == 	CommitAll(f2,z2)
-	//pts_cmp = pro.cmB.ScalarMul(x).Add(*pro.E)
-	//com2 := SpecCom1.CommitAtIndex(pro.f2, pro.z2,0)
+	pts_cmp = privacy.PedCom.G[pro.index].ScalarMul(x).Add(pro.E)
 	if (com2.IsEqual(pts_cmp)){
 		fmt.Println("Passed test 2")
 		fmt.Println("Passed all test. This proof is valid.")
@@ -221,18 +210,6 @@ func (pro *PKComProductProof) Verify () bool {
 		fmt.Println("Failed test 2")
 		return false
 	}
-	////  Check witness 3: xC + D1 == CommitAll'(f1,z3)
-	//SpecCom2:=privacy.PCParams{[]privacy.EllipticPoint{*pro.G1, pro.basePoint.H},
-	//	2}
-	//pts_cmp = pro.cmC.ScalarMul(x).Add(*pro.D1)
-	//com3 := SpecCom2.CommitAtIndex(pro.f1, pro.z3,0)
-	//if (com3.IsEqual(pts_cmp)){
-	//	fmt.Println("Passed test 3")
-	//	fmt.Println("Passed all test. This proof is valid.")
-	//}	else {
-	//	fmt.Println("Failed test 3")
-	//	return false
-	//}
 	return true;
 }
 
