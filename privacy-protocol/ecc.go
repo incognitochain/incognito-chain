@@ -26,7 +26,7 @@ type EllipticPointHelper interface {
 	Decompress(compressPointBytes []byte) error
 	IsSafe() bool
 	ComputeYCoord()
-	Hash() EllipticPoint
+	Hash() *EllipticPoint
 	// </0xakk0r0kamui>
 
 	// <PTD>
@@ -210,7 +210,7 @@ func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 }
 
 // Hash derives new elliptic point from another elliptic point using hash function
-func (eccPoint EllipticPoint) Hash(index int) EllipticPoint {
+func (eccPoint EllipticPoint) Hash(index int) *EllipticPoint {
 	// res.X = hash(g.X || index), res.Y = sqrt(res.X^3 - 3X + B)
 	var res = new(EllipticPoint)
 	res.X = big.NewInt(0)
@@ -232,7 +232,7 @@ func (eccPoint EllipticPoint) Hash(index int) EllipticPoint {
 	// 	//errors.New("Point at infinity")
 	// 	return *new(EllipticPoint)
 	// }
-	return *res
+	return res
 }
 
 func TestECC() bool {

@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
 func main() {
@@ -168,8 +170,6 @@ func main() {
 	/*----------------- TEST SIGNATURE -----------------*/
 	// privacy.TestSchn()
 
-
-
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
 	//for i :=0; i<1000; i++{
 	//	fmt.Printf("N: %v\n",privacy.Curve.Params().N)
@@ -210,7 +210,6 @@ func main() {
 	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
 	/*--------------------------------------------*/
 
-
 	/*----------------- TEST COMPRESS/DECOMPRESS POINT -----------------*/
 	//p := new(privacy.EllipticPoint)
 	//p.Randomize()
@@ -233,6 +232,8 @@ func main() {
 	// decompress pk, tk
 	pkDecom, _ := privacy.DecompressKey(keySet.PaymentAddress.Pk)
 	fmt.Printf("Pk decompress: %+v\n\n", pkDecom)
+
+	zkp.GetCurrentBlockHeight()
 
 	tkDecom, _ := privacy.DecompressKey(keySet.PaymentAddress.Tk)
 	fmt.Printf("Tk decompress: %+v\n\n", tkDecom)
