@@ -13,7 +13,7 @@ import (
 var Curve = elliptic.P256()
 
 // const (
-// 	pointBytesLenCompressed      = 33
+// 	LenPointBytesCompressed      = 33
 // 	pointCompressed         byte = 0x2
 // )
 
@@ -132,7 +132,7 @@ func (eccPoint EllipticPoint) IsSafe() bool {
 // Compress compresses key from 64 bytes to PointBytesLenCompressed bytes
 func (eccPoint EllipticPoint) Compress() []byte {
 	if Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
-		b := make([]byte, 0, pointBytesLenCompressed)
+		b := make([]byte, 0, LenPointBytesCompressed)
 		format := pointCompressed
 		if isOdd(eccPoint.Y) {
 			format |= 0x1

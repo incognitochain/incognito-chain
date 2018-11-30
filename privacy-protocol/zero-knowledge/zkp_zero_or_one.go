@@ -190,7 +190,7 @@ func (proof *PKComZeroOneProof) Verify() bool {
 	xSubF.Sub(x, proof.f)
 	xSubF.Mod(xSubF, privacy.Curve.Params().N)
 	leftPoint2 := proof.commitment.ScalarMul(xSubF).Add(proof.cb)
-	// Calculate rightPoint1 = Com(0, zb)
+	// Calculate rightPoint2 = Com(0, zb)
 	rightPoint2 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zb, proof.index)
 	if leftPoint1.IsEqual(rightPoint1) && leftPoint2.IsEqual(rightPoint2) {
 		return true

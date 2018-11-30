@@ -1,7 +1,7 @@
 package privacy
 
 const (
-	pointBytesLenCompressed      = 33
+	LenPointBytesCompressed      = 33
 	pointCompressed         byte = 0x2
 	SK                           = byte(0x00)
 	VALUE                        = byte(0x01)
@@ -9,8 +9,9 @@ const (
 	RAND                         = byte(0x03)
 	FULL                         = byte(0x04)
 
-	CMRingSize    = 8 // 2^3
-	CMRingSizeExp = 3
+	CMRingSize      = 8 // 2^3
+	CMRingSizeExp   = 3
+	LenCmIndexBytes = 10
 
 	ComInputOpeningsProofSize       = 0
 	ComOutputOpeningsProofSize      = 0
