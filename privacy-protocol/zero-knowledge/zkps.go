@@ -20,9 +20,9 @@ type PaymentWitness struct {
 	ComOutputOpeningsWitness      []*PKComOpeningsWitness
 	OneOfManyWitness              []*PKOneOfManyWitness
 	EqualityOfCommittedValWitness []*PKEqualityOfCommittedValWitness
-	ProductCommitmentWitness			[]*PKComProductWitness
+	ProductCommitmentWitness      []*PKComProductWitness
 	ComMultiRangeWitness          *PKComMultiRangeWitness
-	SumOutRangeWitness 						*PKComMultiRangeWitness
+	SumOutRangeWitness            *PKComMultiRangeWitness
 	ComZeroWitness                *PKComZeroWitness
 	ComZeroOneWitness             *PKComZeroOneWitness
 }
@@ -35,12 +35,11 @@ type PaymentProof struct {
 	ComOutputOpeningsProof      []*PKComOpeningsProof
 	OneOfManyProof              []*PKOneOfManyProof
 	EqualityOfCommittedValProof []*PKEqualityOfCommittedValProof
-	ProductCommitmentProof			[]*PKComProductProof
+	ProductCommitmentProof      []*PKComProductProof
 	ComMultiRangeProof          *PKComMultiRangeProof
-	SumOutRangeProof 						*PKComMultiRangeProof
+	SumOutRangeProof            *PKComMultiRangeProof
 	ComZeroProof                *PKComZeroProof
 	ComZeroOneProof             *PKComZeroOneProof
-
 
 	// add list input coins' SN to proof for serial number
 
@@ -135,6 +134,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 	cmInputSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randInputSK, privacy.SK)
 	cmInputValue := make([]*privacy.EllipticPoint, numberInputCoin)
 	cmInputSND := make([]*privacy.EllipticPoint, numberInputCoin)
+	cmInputSNDIndexSK := make([]*privacy.EllipticPoint, numberInputCoin)
 	randInputValue := make([]*big.Int, numberInputCoin)
 	randInputSND := make([]*big.Int, numberInputCoin)
 
@@ -143,6 +143,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 		randInputSND[i] = privacy.RandInt()
 		cmInputValue[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(inputCoin.CoinDetails.Value)), randInputValue[i], privacy.VALUE)
 		cmInputSND[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randInputSND[i], privacy.SND)
+		cmInputSNDIndexSK[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randInputSK, privacy.SK)
 	}
 
 	// Summing all commitments of each input coin into one commitment and proving the knowledge of its Openings
@@ -157,6 +158,12 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 	cmInputRndAll := big.NewInt(0)
 
 	wit.OneOfManyWitness = make([]*PKOneOfManyWitness, numberInputCoin)
+	wit.EqualityOfCommittedValWitness = make([]*PKEqualityOfCommittedValWitness, numberInputCoin)
+	indexZKPEqual := make([]*byte, 2)
+	indexZKPEqual[0] = new(byte)
+	indexZKPEqual[0] = privacy.SK
+	indexZKPEqual[1] = new(byte)
+	indexZKPEqual[1] = privacy.SND
 	for i := 0; i < numberInputCoin; i++ {
 		cmInputSum[i] = cmInputSK
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputValue[i].X, cmInputValue[i].Y)
@@ -182,6 +189,8 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 		}
 		wit.OneOfManyWitness[i].Set(cmInputRndValue, &cmInputRndIndexList, rndInputIsZero, indexInputIsZero, privacy.SK)
 
+		// For ZKP Equal Commitment Value
+		wit.EqualityOfCommittedValWitness[i].Set([]*privacy.EllipticPoint{cmInputSNDIndexSK[i], cmInputSND[i]}, indexZKPEqual, []*big.Int{inputCoins[i].CoinDetails.SNDerivator, randInputSK, randInputSND[i]})
 	}
 
 	numberOutputCoin := len(wit.outputCoins)
@@ -287,7 +296,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	}
 
 	// Proving the knowledge of output coins' openings
-	for i := 0; i < numOutputCoins; i++{
+	for i := 0; i < numOutputCoins; i++ {
 		// Proving the knowledge of output coins' openings
 		proof.ComOutputOpeningsProof[i] = new(PKComOpeningsProof)
 		proof.ComOutputOpeningsProof[i], err = wit.ComOutputOpeningsWitness[i].Prove()
@@ -322,12 +331,12 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 	//numInputCoin := len(pro.InputCoins)
 	pubKeyPoint, _ := privacy.DecompressKey(pubKey)
 
-	if !hasPrivacy{
+	if !hasPrivacy {
 		var sumInputValue, sumOutputValue uint64
 		sumInputValue = 0
 		sumOutputValue = 0
 
-		for i := 0; i < len(pro.InputCoins); i++{
+		for i := 0; i < len(pro.InputCoins); i++ {
 			// check if input coin's public key is pubKey or not
 			// pubKey is the signing key for tx
 			if !pro.InputCoins[i].CoinDetails.PublicKey.IsEqual(pubKeyPoint) {
@@ -347,7 +356,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMul(pro.InputCoins[i].CoinDetails.SNDerivator))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(pro.InputCoins[i].CoinDetails.Value))))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMul(pro.InputCoins[i].CoinDetails.Randomness))
-			if !cmTmp.IsEqual(pro.InputCoins[i].CoinDetails.CoinCommitment){
+			if !cmTmp.IsEqual(pro.InputCoins[i].CoinDetails.CoinCommitment) {
 				return false
 			}
 
@@ -359,7 +368,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 
 		}
 
-		for i := 0; i < len(pro.OutputCoins); i++{
+		for i := 0; i < len(pro.OutputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
 			// Todo
 
@@ -368,7 +377,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMul(pro.OutputCoins[i].CoinDetails.SNDerivator))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(pro.OutputCoins[i].CoinDetails.Value))))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMul(pro.OutputCoins[i].CoinDetails.Randomness))
-			if !cmTmp.IsEqual(pro.OutputCoins[i].CoinDetails.CoinCommitment){
+			if !cmTmp.IsEqual(pro.OutputCoins[i].CoinDetails.CoinCommitment) {
 				return false
 			}
 
@@ -377,7 +386,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 		}
 
 		// check if sum of input values equal sum of output values
-		if sumInputValue != sumOutputValue{
+		if sumInputValue != sumOutputValue {
 			return false
 		}
 		return true
@@ -386,33 +395,33 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 
 	// if hasPrivacy == true
 	// verify for input coins
-	for i := 0; i< len(pro.ComInputOpeningsProof); i++{
+	for i := 0; i < len(pro.ComInputOpeningsProof); i++ {
 		// Verify the proof for knowledge of input coins' Openings
-		if !pro.ComInputOpeningsProof[i].Verify(){
+		if !pro.ComInputOpeningsProof[i].Verify() {
 			return false
 		}
 		// Verify for the proof one-out-of-N commitments is a commitment to the coins being spent
-		if !pro.OneOfManyProof[i].Verify(){
+		if !pro.OneOfManyProof[i].Verify() {
 			return false
 		}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
-		if !pro.EqualityOfCommittedValProof[i].Verify(){
+		if !pro.EqualityOfCommittedValProof[i].Verify() {
 			return false
 		}
-		if !pro.ProductCommitmentProof[i].Verify(){
+		if !pro.ProductCommitmentProof[i].Verify() {
 			return false
 		}
 	}
 
 	// Verify the proof for knowledge of output coins' openings
-	for i := 0; i< len(pro.ComOutputOpeningsProof); i++{
-		if !pro.ComOutputOpeningsProof[i].Verify(){
+	for i := 0; i < len(pro.ComOutputOpeningsProof); i++ {
+		if !pro.ComOutputOpeningsProof[i].Verify() {
 			return false
 		}
 	}
 
 	// Verify the proof that output values do not exceed v_max
-	if !pro.ComMultiRangeProof.Verify(){
+	if !pro.ComMultiRangeProof.Verify() {
 		return false
 	}
 
@@ -422,7 +431,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 	}
 
 	// Verify the proof that sum of all input values is equal to sum of all output values
-	if !pro.ComZeroProof.Verify(){
+	if !pro.ComZeroProof.Verify() {
 		return false
 	}
 

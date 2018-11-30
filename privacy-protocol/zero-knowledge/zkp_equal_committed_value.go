@@ -56,7 +56,19 @@ func (wit *PKEqualityOfCommittedValWitness) Set(
 }
 
 func (pro *PKEqualityOfCommittedValProof) Bytes() []byte {
-	return []byte{0}
+	var res []byte
+	res = append(pro.C[0].Compress(), pro.C[1].Compress()...)
+	res = append(res, []byte{*pro.Index[0], *pro.Index[1]}...)
+
+	for i := 0; i < len(pro.T); i++ {
+		res = append(res, pro.T[i].Compress()...)
+	}
+
+	for i := 0; i < len(pro.Z); i++ {
+		res = append(res, pro.Z[i].Compress()...)
+	}
+
+	return res
 }
 
 // Set - proof setter

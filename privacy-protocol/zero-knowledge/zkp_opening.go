@@ -50,7 +50,12 @@ func (pro *PKComOpeningsProof) Set(
 }
 
 func (pro *PKComOpeningsProof) Bytes() []byte {
-	return []byte{0}
+	// var res []byte
+	res := append(pro.commitmentValue.Compress(), pro.alpha.Compress()...)
+	for i := 0; i < len(pro.gamma); i++ {
+		res = append(res, pro.gamma[i].Bytes()...)
+	}
+	return res
 }
 
 // Prove ... (for sender)
