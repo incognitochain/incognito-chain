@@ -21,7 +21,7 @@ type PaymentWitness struct {
 	OneOfManyWitness              []*PKOneOfManyWitness
 	EqualityOfCommittedValWitness []*PKEqualityOfCommittedValWitness
 	ProductCommitmentWitness      []*PKComProductWitness
-	ComMultiRangeWitness          *PKComMultiRangeWitness
+	ComOutputMultiRangeWitness    *PKComMultiRangeWitness
 	SumOutRangeWitness            *PKComMultiRangeWitness
 	ComZeroWitness                *PKComZeroWitness
 	ComZeroOneWitness             *PKComZeroOneWitness
@@ -36,7 +36,7 @@ type PaymentProof struct {
 	OneOfManyProof              []*PKOneOfManyProof
 	EqualityOfCommittedValProof []*PKEqualityOfCommittedValProof
 	ProductCommitmentProof      []*PKComProductProof
-	ComMultiRangeProof          *PKComMultiRangeProof
+	ComOutputMultiRangeProof    *PKComMultiRangeProof
 	SumOutRangeProof            *PKComMultiRangeProof
 	ComZeroProof                *PKComZeroProof
 	ComZeroOneProof             *PKComZeroOneProof
@@ -211,6 +211,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 	cmOutputSum := make([]*privacy.EllipticPoint, numberOutputCoin)
 	randOutputSum := make([]*big.Int, numberOutputCoin)
 	wit.ComOutputOpeningsWitness = make([]*PKComOpeningsWitness, numberOutputCoin)
+	wit.ComOutputMultiRangeWitness = new(PKComMultiRangeWitness)
 
 	cmOutputSumAll := new(privacy.EllipticPoint)
 	cmOutputSumAll.X = big.NewInt(0)
@@ -233,6 +234,14 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 		// For ZKP Opening
 		wit.ComOutputOpeningsWitness[i].Set(cmOutputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(outputCoins[i].CoinDetails.Value)), outputCoins[i].CoinDetails.SNDerivator, randOutputSum[i]})
 	}
+
+	// For Multi Range Protocol
+	// TODO wit.ComOutputMultiRangeWitness.Set(???)
+
+	// TODO Product Commitment
+
+	// TODO Zero Or One
+
 	cmOutputSumAllInverse, _ = cmOutputSumAll.Inverse()
 	cmEqualCoinValue := new(privacy.EllipticPoint)
 	cmEqualCoinValue.X, cmEqualCoinValue.Y = privacy.Curve.Add(cmInputSumAll.X, cmInputSumAll.Y, cmOutputSumAllInverse.X, cmOutputSumAllInverse.Y)
