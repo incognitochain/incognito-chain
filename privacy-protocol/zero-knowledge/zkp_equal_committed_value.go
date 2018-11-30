@@ -115,7 +115,7 @@ func (pro *PKEqualityOfCommittedValProof) Verify() bool {
 		rightPoint.X, rightPoint.Y = privacy.Curve.Add(rightPoint.X, rightPoint.Y, tmpPoint.X, tmpPoint.Y)
 		tmpPoint.X, tmpPoint.Y = privacy.Curve.ScalarMult(pro.C[i].X, pro.C[i].Y, xChallenge.Bytes())
 		rightPoint.X, rightPoint.Y = privacy.Curve.Add(rightPoint.X, rightPoint.Y, tmpPoint.X, tmpPoint.Y)
-		if !rightPoint.IsEqual(*pro.T[i]) {
+		if !rightPoint.IsEqual(pro.T[i]) {
 			return false
 		}
 	}

@@ -7,9 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
-const (
-
-)
+const ()
 
 type PaymentWitness struct {
 	spendingKey *big.Int
@@ -252,11 +250,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 
 	// TODO Zero Or One
 
-<<<<<<< HEAD
 	// For check Sum(Input's value) == Sum(Output's Value)
-=======
-	// todo: comment
->>>>>>> c0c36c7217ecab6f7c210147c8cca8bb86cf7f65
 	cmOutputSumAllInverse, _ = cmOutputSumAll.Inverse()
 	cmEqualCoinValue := new(privacy.EllipticPoint)
 	cmEqualCoinValue.X, cmEqualCoinValue.Y = privacy.Curve.Add(cmInputSumAll.X, cmInputSumAll.Y, cmOutputSumAllInverse.X, cmOutputSumAllInverse.Y)
@@ -331,10 +325,10 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	}
 
 	// Proving that output values do not exceed v_max
-	proof.ComMultiRangeProof, err = wit.ComMultiRangeWitness.Prove()
-	if err != nil {
-		return nil, err
-	}
+	// proof.ComMultiRangeProof, err = wit.ComMultiRangeWitness.Prove()
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// Proving that sum of all output values do not exceed v_max
 	proof.SumOutRangeProof, err = wit.SumOutRangeWitness.Prove()
@@ -446,9 +440,9 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 	}
 
 	// Verify the proof that output values do not exceed v_max
-	if !pro.ComMultiRangeProof.Verify() {
-		return false
-	}
+	// if !pro.ComMultiRangeProof.Verify() {
+	// 	return false
+	// }
 
 	// Verify the proof that sum of all output values do not exceed v_max
 	if !pro.SumOutRangeProof.Verify() {

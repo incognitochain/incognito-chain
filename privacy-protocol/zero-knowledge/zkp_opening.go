@@ -94,7 +94,7 @@ func (pro *PKComOpeningsProof) Verify() bool {
 		gPowR.X, gPowR.Y = privacy.Curve.ScalarMult(privacy.PedCom.G[i].X, privacy.PedCom.G[i].Y, pro.gamma[i].Bytes())
 		leftPoint.X, leftPoint.Y = privacy.Curve.Add(leftPoint.X, leftPoint.Y, gPowR.X, gPowR.Y)
 	}
-	return leftPoint.IsEqual(*rightPoint)
+	return leftPoint.IsEqual(rightPoint)
 }
 
 func TestOpeningsProtocol() bool {
