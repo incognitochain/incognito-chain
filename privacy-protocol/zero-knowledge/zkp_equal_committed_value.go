@@ -65,7 +65,7 @@ func (pro *PKEqualityOfCommittedValProof) Bytes() []byte {
 	}
 
 	for i := 0; i < len(pro.Z); i++ {
-		res = append(res, pro.Z[i].Compress()...)
+		res = append(res, pro.Z[i].Bytes()...)
 	}
 
 	return res
