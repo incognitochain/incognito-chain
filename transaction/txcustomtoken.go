@@ -17,7 +17,7 @@ import (
 // In particular of constant network, some special token (DCB token, GOV token, BOND token, ....) used this class tx to implement something
 type TxCustomToken struct {
 	Tx                      // inherit from normal tx of constant(supporting privacy)
-	TxTokenData TxTokenData // v
+	TxTokenData TxTokenData // vin - vout format
 	BoardType   uint8       // 1: DCB, 2: GOV
 	BoardSigns  map[string][]byte
 
