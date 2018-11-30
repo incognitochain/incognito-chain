@@ -17,10 +17,10 @@ import (
 // )
 
 // These constants define the lengths of serialized public keys.
-const (
-	PubKeyBytesLenCompressed      = 33
-	pubkeyCompressed         byte = 0x2 // y_bit + x coord
-)
+//const (
+//	PubKeyBytesLenCompressed      = 33
+//	pubkeyCompressed         byte = 0x2 // y_bit + x coord
+//)
 
 // fmt.Printf("N: %v\n", curve.N)
 // fmt.Printf("P: %v\n", curve.P)
@@ -199,8 +199,8 @@ func (addr *PaymentAddress) Size() int {
 func (addr *PaymentAddress) FromBytes(data []byte) *PaymentAddress {
 	addr.Pk = make([]byte, 33)
 	addr.Tk = make([]byte, 33)
-	copy(addr.Pk[:], data[:33]) // First 32 bytes are PaymentAddress's
-	copy(addr.Tk[:], data[33:]) // Last 32 bytes are Pkenc's
+	copy(addr.Pk[:], data[:33]) // First 33 bytes are PaymentAddress's
+	copy(addr.Tk[:], data[33:]) // Last 33 bytes are Pkenc's
 	return addr
 }
 

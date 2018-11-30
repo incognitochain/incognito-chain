@@ -8,4 +8,7 @@ const (
 	SND                          = byte(0x02)
 	RAND                         = byte(0x03)
 	FULL                         = byte(0x04)
+
+	CMRingSize = 8 // 2^3
+	CMRingSizeExp = 3
 )

@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestPKOneOfMany(t *testing.T) {
+func TestPKOneOfMany1(t *testing.T) {
 	witness := new(PKOneOfManyWitness)
 
 	indexIsZero := 23

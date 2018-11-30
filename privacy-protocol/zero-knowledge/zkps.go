@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	CMRingSize = 8
+
 )
 
 type PaymentWitness struct {
@@ -184,7 +184,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 		cmInputRndIndexList, cmInputRndValue, indexInputIsZero := GetCMList(cmInputSum[i], cmInputRndIndex, GetCurrentBlockHeight())
 		rndInputIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randInputSum[i])
 		rndInputIsZero.Mod(rndInputIsZero, privacy.Curve.Params().N)
-		for j := 0; j < CMRingSize; j++ {
+		for j := 0; j < privacy.CMRingSize; j++ {
 			cmInputRndValue[j].X, cmInputRndValue[j].Y = privacy.Curve.Add(cmInputRndValue[j].X, cmInputRndValue[j].Y, cmInputSumInverse[j].X, cmInputSumInverse[j].Y)
 		}
 		wit.OneOfManyWitness[i].Set(cmInputRndValue, &cmInputRndIndexList, rndInputIsZero, indexInputIsZero, privacy.SK)
@@ -238,6 +238,8 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 	}
 
 	// For Multi Range Protocol
+	// proving each output value is less than vmax
+	// proving sum of output values is less than vmax
 	// TODO wit.ComOutputMultiRangeWitness.Set(???)
 	outputValue := make([]*big.Int, numberOutputCoin)
 	for i := 0; i < numberOutputCoin; i++ {
@@ -250,7 +252,11 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 
 	// TODO Zero Or One
 
+<<<<<<< HEAD
 	// For check Sum(Input's value) == Sum(Output's Value)
+=======
+	// todo: comment
+>>>>>>> c0c36c7217ecab6f7c210147c8cca8bb86cf7f65
 	cmOutputSumAllInverse, _ = cmOutputSumAll.Inverse()
 	cmEqualCoinValue := new(privacy.EllipticPoint)
 	cmEqualCoinValue.X, cmEqualCoinValue.Y = privacy.Curve.Add(cmInputSumAll.X, cmInputSumAll.Y, cmOutputSumAllInverse.X, cmOutputSumAllInverse.Y)
@@ -462,16 +468,16 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 // the list is sorted by blockHeight, txIndex, CmId
 func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightCurrent *big.Int) ([]*privacy.CMIndex, []*privacy.EllipticPoint, *int) {
 
-	cmIndexs := make([]*privacy.CMIndex, CMRingSize)
-	cms := make([]*privacy.EllipticPoint, CMRingSize)
+	cmIndexs := make([]*privacy.CMIndex, privacy.CMRingSize)
+	cms := make([]*privacy.EllipticPoint, privacy.CMRingSize)
 
 	// Random 7 triples (blockHeight, txID, cmIndex)
-	for i := 0; i < CMRingSize-1; i++ {
+	for i := 0; i < privacy.CMRingSize-1; i++ {
 		cmIndexs[i].Randomize(blockHeightCurrent)
 	}
 
 	// the last element in list is cmIndex
-	cmIndexs[CMRingSize-1] = cmIndex
+	cmIndexs[privacy.CMRingSize-1] = cmIndex
 
 	// Sort list cmIndexs
 	sort.Slice(cmIndexs, func(i, j int) bool {
@@ -493,7 +499,7 @@ func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightC
 	var index int
 
 	// Get list of commitment from sorted cmIndexs
-	for i := 0; i < CMRingSize; i++ {
+	for i := 0; i < privacy.CMRingSize; i++ {
 		if cmIndexs[i].IsEqual(cmIndex) {
 			cms[i] = cm
 			index = i
