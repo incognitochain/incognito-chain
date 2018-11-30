@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
@@ -201,7 +200,7 @@ func main() {
 
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
-	privacy.TestECC()
+	//privacy.TestECC()
 	//fmt.Println(zkp.TestOpeningsProtocol())
 	//fmt.Println(zkp.TestPKEqualityOfCommittedVal())
 	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())

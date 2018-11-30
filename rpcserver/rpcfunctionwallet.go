@@ -6,6 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/common"
 	"errors"
+	"log"
 )
 
 /*
@@ -143,6 +144,7 @@ func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan str
 
 // handleGetBalanceByPrivatekey -  return balance of private key
 func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	log.Println(params)
 	balance := uint64(0)
 
 	// all params

@@ -46,3 +46,8 @@ func (cmIndex CMIndex) IsEqual(target *CMIndex) bool {
 
 	return true
 }
+
+func (cmIndex CMIndex) Bytes() []byte{
+	return []byte{0}
+}
+
