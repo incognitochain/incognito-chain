@@ -1,12 +1,13 @@
 package cashec
 
 import (
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
-	"github.com/ninjadotorg/constant/common/base58"
 	"encoding/json"
 	"errors"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
 )
 
 type KeySet struct {
@@ -55,6 +56,14 @@ func (self *KeySet) Sign(data []byte) ([]byte, error) {
 	hash := common.HashB(data)
 	signature, err := privacy.Sign(hash[:], self.PrivateKey)
 	return signature, err
+}
+
+func (self *KeySet) SignBase58(data []byte) (string, error) {
+	signatureByte, err := self.Sign(data)
+	if err != nil {
+		return common.EmptyString, errors.New("Can't sign data. " + err.Error())
+	}
+	return base58.Base58Check{}.Encode(signatureByte, byte(0x00)), nil
 }
 
 func (self *KeySet) Encrypt(data []byte) ([]byte, error) {

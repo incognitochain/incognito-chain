@@ -102,7 +102,7 @@ type config struct {
 	WalletName       string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
 	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
 
-	FastStartup bool `long:"faststartup" description:"Load existed shard/chain dependencies instead of rebuild from block data"`
+	// FastStartup bool `long:"faststartup" description:"Load existed shard/chain dependencies instead of rebuild from block data"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -274,7 +274,7 @@ func loadConfig() (*config, []string, error) {
 		TestNet:              false,
 		DiscoverPeersAddress: "35.230.8.182:9339",
 		NodeRole:             defaultNodeRole,
-		FastStartup:          defaultFastStartup,
+		// FastStartup:          defaultFastStartup,
 	}
 
 	// Service options which are only added on Windows.

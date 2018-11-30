@@ -9,6 +9,7 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wire"
 )
@@ -19,7 +20,7 @@ func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
 		if err != nil {
 			return err
 		}
-		if tx.ValidateTransaction() == false {
+		if self.ValidateSpecTxByItSelf(tx) == false {
 			return NewConsensusError(ErrTxIsWrong, nil)
 		}
 	}
@@ -36,6 +37,12 @@ func (self *Engine) ValidateSpecTxWithBlockChain(tx transaction.Transaction) err
 	return self.config.MemPool.ValidateTxWithBlockChain(tx, chainID)
 }
 
+// Checl spec tx by it self
+func (self *Engine) ValidateSpecTxByItSelf(tx transaction.Transaction) bool {
+	// get chainID of tx
+	return self.config.MemPool.ValidateTxByItSelf(tx)
+}
+
 func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, sigs []string) error {
 	validatedSigs := 0
 	for idx, validator := range committee {
@@ -44,8 +51,10 @@ func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, 
 			Logger.log.Error(err)
 			continue
 		}
-		k := cashec.KeySetProducer{
-			SpublicKey: decPubkey,
+		k := cashec.KeySet{
+			PaymentAddress: privacy.PaymentAddress{
+				Pk: decPubkey,
+			},
 		}
 		decSig, _, err := base58.Base58Check{}.Decode(sigs[idx])
 		if err != nil {
@@ -84,17 +93,6 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 		for _, blockTx := range block.Transactions {
 			if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
 				tx, ok := blockTx.(*transaction.Tx)
-				if ok == false {
-					Logger.log.Errorf("Transaction in block not valid")
-				}
-
-				for _, desc := range tx.Descs {
-					for _, cm := range desc.Commitments {
-						Logger.log.Infof("%x", cm[:])
-					}
-				}
-			} else if blockTx.GetType() == common.TxRegisterCandidateType {
-				tx, ok := blockTx.(*transaction.TxRegisterCandidate)
 				if ok == false {
 					Logger.log.Errorf("Transaction in block not valid")
 				}
@@ -177,19 +175,19 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 		return err
 	}
 
-	// 4. Validate committee member signatures
+	// 4. ValidateTransaction committee member signatures
 	err = self.ValidateCommitteeSigs([]byte(block.Hash().String()), block.Header.Committee, block.Header.BlockCommitteeSigs)
 	if err != nil {
 		return err
 	}
 
-	// 5. Validate MerkleRootCommitments
+	// 5. ValidateTransaction MerkleRootCommitments
 	err = self.ValidateMerkleRootCommitments(block)
 	if err != nil {
 		return err
 	}
 
-	// 7. Validate transactions
+	// 6. Validate transactions
 	return self.ValidateTxList(block.Transactions)
 
 }
@@ -213,12 +211,14 @@ func (self *Engine) validatePreSignBlockSanity(block *blockchain.Block) error {
 		return err
 	}
 
-	// 4. Validate MerkleRootCommitments
+	// 4. ValidateTransaction MerkleRootCommitments
 	err = self.ValidateMerkleRootCommitments(block)
 	if err != nil {
 		return err
 	}
 
-	// 5. Validate transactions
+	// 5. ValidateTransaction transactions
 	return self.ValidateTxList(block.Transactions)
 }
+
+// func (self *Engine) ValidateSalary(block )

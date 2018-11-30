@@ -13,12 +13,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	peer2 "github.com/libp2p/go-libp2p-peer"
+	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/addrmanager"
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/connmanager"
+	"github.com/ninjadotorg/constant/consensus/constantpos"
 	"github.com/ninjadotorg/constant/consensus/ppos"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/mempool"
@@ -46,7 +47,7 @@ type Server struct {
 	netSync         *netsync.NetSync
 	addrManager     *addrmanager.AddrManager
 	wallet          *wallet.Wallet
-	consensusEngine *ppos.Engine
+	consensusEngine *constantpos.Engine
 	blockgen        *blockchain.BlkTmplGenerator
 	rewardAgent     *rewardagent.RewardAgent
 	// The fee estimator keeps track of how long transactions are left in
@@ -145,7 +146,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 
 	// Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
-	if cfg.FastStartup {
+	if false {
 		Logger.log.Info("Load chain dependencies from DB")
 		self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 		for _, bestState := range self.blockChain.BestState {
@@ -540,9 +541,9 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnChainState:    self.OnChainState,
 			//
 			//OnRegistration: self.OnRegistration,
-			OnSwapRequest:  self.OnSwapRequest,
-			OnSwapSig:      self.OnSwapSig,
-			OnSwapUpdate:   self.OnSwapUpdate,
+			OnSwapRequest: self.OnSwapRequest,
+			OnSwapSig:     self.OnSwapSig,
+			OnSwapUpdate:  self.OnSwapUpdate,
 		},
 	}
 	if len(KeySetUser.PrivateKey) != 0 {
@@ -788,8 +789,8 @@ func (self *Server) OnChainState(_ *peer.PeerConn, msg *wire.MessageChainState) 
 	Logger.log.Info("Receive a chainstate END")
 }
 
-func (self *Server) GetPeerIDsFromPublicKey(pubKey string) []peer2.ID {
-	result := []peer2.ID{}
+func (self *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
+	result := []libp2p.ID{}
 
 	for _, listener := range self.connManager.Config.ListenerPeers {
 		for _, peerConn := range listener.PeerConns {
@@ -828,7 +829,7 @@ func (self *Server) PushMessageToAll(msg wire.Message) error {
 /*
 PushMessageToPeer push msg to peer
 */
-func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
+func (self *Server) PushMessageToPeer(msg wire.Message, peerId libp2p.ID) error {
 	Logger.log.Info("Push msg to ", peerId)
 	var dc chan<- struct{}
 	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
