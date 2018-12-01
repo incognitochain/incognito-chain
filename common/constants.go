@@ -20,10 +20,11 @@ const (
 	TxNormalType         = "n"  // normal tx(send and receive coin)
 	TxSalaryType         = "s"  // salary tx(gov pay salary for block producer)
 	TxCustomTokenType    = "t"  // token  tx
-	TxLoanRequest        = "lr"
-	TxLoanResponse       = "ls"
-	TxLoanPayment        = "lp"
-	TxLoanWithdraw       = "lw"
+	TxLoanRequest        = "lr" // user requests a loan
+	TxLoanResponse       = "ls" // DCB accept/reject a loan request
+	TxLoanPayment        = "lp" // user makes payment of a loan
+	TxLoanWithdraw       = "lw" // user provides key to withdraw locked constant
+	TxLoanUnlock         = "lu" // DCB unlock the constant and send to user as coinbase tx
 	TxDividendPayout     = "td"
 	TxBuyFromGOVRequest  = "bgr"
 	TxBuySellDCBRequest  = "bsdr"

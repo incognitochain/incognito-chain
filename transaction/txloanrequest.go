@@ -1,12 +1,12 @@
 package transaction
 
 import (
+	"encoding/hex"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/wallet"
-	"encoding/hex"
 )
 
 type FeeArgs struct {
@@ -21,7 +21,7 @@ type FeeArgs struct {
 
 type LoanParams struct {
 	InterestRate     uint64 `json:"InterestRate"`     // basis points, e.g. 125 represents 1.25%
-	Maturity         uint64 `json:"Maturity"`         // seconds
+	Maturity         uint32 `json:"Maturity"`         // in number of blocks
 	LiquidationStart uint64 `json:"LiquidationStart"` // ratio between collateral and debt to start auto-liquidation, stored in basis points
 }
 
@@ -43,7 +43,7 @@ func NewLoanRequest(data map[string]interface{}) *LoanRequest {
 		Params: LoanParams{
 			InterestRate:     uint64(loanParams["InterestRate"].(float64)),
 			LiquidationStart: uint64(loanParams["LiquidationStart"].(float64)),
-			Maturity:         uint64(loanParams["Maturity"].(float64)),
+			Maturity:         uint32(loanParams["Maturity"].(float64)),
 		},
 		CollateralType: data["CollateralType"].(string),
 		LoanAmount:     uint64(data["LoanAmount"].(float64)),

@@ -175,6 +175,8 @@ func (self *BlockChain) ValidateTxLoanPayment(tx transaction.Transaction, chainI
 		return err
 	}
 	found := uint8(0)
+	txRequest := &transaction.TxLoanRequest{}
+	foundRequest := false
 	for _, txHash := range txHashes {
 		hash := &common.Hash{}
 		copy(hash[:], txHash)
@@ -190,12 +192,29 @@ func (self *BlockChain) ValidateTxLoanPayment(tx transaction.Transaction, chainI
 					found += 1
 				}
 			}
+		case common.TxLoanRequest:
+			{
+				txRequest = tx.(*transaction.TxLoanRequest)
+				foundRequest = true
+			}
 		}
 	}
 
 	minResponse := self.BestState[chainID].BestBlock.Header.DCBConstitution.DCBParams.MinLoanResponseRequire
 	if found < minResponse {
 		return fmt.Errorf("Not enough loan accepted response")
+	}
+
+	// Check if payment amount is correct
+	if !foundRequest {
+		return fmt.Errorf("Loan request not found")
+	}
+	_, _, deadline, err := self.config.DataBase.GetLoanPayment(txPayment.LoanID)
+	if err != nil {
+		return err
+	}
+	if uint32(self.BestState[chainID].Height)+txRequest.Params.Maturity >= deadline && txPayment.PayPrinciple {
+		return fmt.Errorf("Interest must be fully paid before paying principle")
 	}
 	return nil
 }
