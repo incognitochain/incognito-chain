@@ -11,6 +11,7 @@ import (
 	"github.com/ninjadotorg/constant/wire"
 	"encoding/json"
 	"strconv"
+	"errors"
 )
 
 /*
@@ -539,4 +540,37 @@ func (self RpcServer) handleListUnspentCustomTokenTransaction(params interface{}
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	return unspentTxTokenOuts, err
+}
+
+// handleCreateSignatureOnCustomTokenTx - return a signature which is signed on raw custom token tx
+func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	Logger.log.Info(params)
+	arrayParams := common.InterfaceSlice(params)
+	hexRawTx := arrayParams[0].(string)
+	rawTxBytes, err := hex.DecodeString(hexRawTx)
+
+	if err != nil {
+		return nil, err
+	}
+	tx := transaction.TxCustomToken{}
+	// Logger.log.Info(string(rawTxBytes))
+	err = json.Unmarshal(rawTxBytes, &tx)
+	if err != nil {
+		return nil, err
+	}
+	senderKeyParam := arrayParams[1]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	jsSignByteArray, err := tx.GetTxCustomTokenSignature(senderKey.KeySet)
+	if err != nil {
+		return nil, errors.New("Failed to sign the custom token")
+	}
+	return hex.EncodeToString(jsSignByteArray), nil
 }

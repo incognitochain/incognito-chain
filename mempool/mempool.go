@@ -640,7 +640,11 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 	return errors.New("No check Tx")
 }
 
-func (tp *TxPool) GetListUTXOForCustomToken(txCustomToken *transaction.TxCustomToken) bool {
+// GetListUTXOFromTxCustomToken - get list utxo with related to vins of a TxCustomToken
+// from vins list of custom token
+// loop and get all older tx custom token which are contained in vins list
+// return map[hash]{instant of custom token tx} for vin of given TxCustomToken
+func (tp *TxPool) GetListUTXOFromTxCustomToken(txCustomToken *transaction.TxCustomToken) bool {
 	data := make(map[common.Hash]transaction.TxCustomToken)
 	for _, vin := range txCustomToken.TxTokenData.Vins {
 		_, _, _, utxo, err := tp.config.BlockChain.GetTransactionByHash(&vin.TxCustomTokenID)
@@ -658,13 +662,15 @@ func (tp *TxPool) GetListUTXOForCustomToken(txCustomToken *transaction.TxCustomT
 	return true
 }
 
+// ValidateTxByItSelf - Each of Tx instance should be validated by it self
+
 func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
 	switch tx.GetType() {
 	case common.TxCustomTokenType:
 		{
 			// with custom token tx, we need to get utxo for custom token and for validation
 			txCustomToken := tx.(*transaction.TxCustomToken)
-			ok := tp.GetListUTXOForCustomToken(txCustomToken)
+			ok := tp.GetListUTXOFromTxCustomToken(txCustomToken)
 			if ok == false {
 				return false
 			}
@@ -674,7 +680,7 @@ func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
 		{
 			txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
 			txCustomToken := txVoteDCBBoard.TxCustomToken
-			ok := tp.GetListUTXOForCustomToken(&txCustomToken)
+			ok := tp.GetListUTXOFromTxCustomToken(&txCustomToken)
 			if ok == false {
 				return false
 			}
@@ -684,7 +690,7 @@ func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
 		{
 			txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
 			txCustomToken := txVoteGOVBoard.TxCustomToken
-			ok := tp.GetListUTXOForCustomToken(&txCustomToken)
+			ok := tp.GetListUTXOFromTxCustomToken(&txCustomToken)
 			if ok == false {
 				return false
 			}
