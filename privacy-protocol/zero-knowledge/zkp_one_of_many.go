@@ -68,24 +68,24 @@ func (pro *PKOneOfManyProof) Bytes() ([]byte, int) {
 	// convert array cl to bytes array
 	for i:=0; i < n; i++{
 		bytes = append(bytes, pro.cl[i].Compress()...)
-		nBytes += privacy.LenPointBytesCompressed
+		nBytes += privacy.CompressedPointSize
 	}
 	// convert array ca to bytes array
 	for i:=0; i < n; i++{
 		bytes = append(bytes, pro.ca[i].Compress()...)
-		nBytes += privacy.LenPointBytesCompressed
+		nBytes += privacy.CompressedPointSize
 	}
 
 	// convert array cb to bytes array
 	for i:=0; i < n; i++{
 		bytes = append(bytes, pro.cb[i].Compress()...)
-		nBytes += privacy.LenPointBytesCompressed
+		nBytes += privacy.CompressedPointSize
 	}
 
 	// convert array cd to bytes array
 	for i:=0; i < n; i++{
 		bytes = append(bytes, pro.cd[i].Compress()...)
-		nBytes += privacy.LenPointBytesCompressed
+		nBytes += privacy.CompressedPointSize
 	}
 
 	// convert array f to bytes array

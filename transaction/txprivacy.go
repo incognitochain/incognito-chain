@@ -24,7 +24,7 @@ type TxPrivacy struct {
 	Proof     *zkp.PaymentProof
 
 	PubKeyLastByteSender byte `json:"PubKeyLastByteSender"`
-	PubKeyLastByteReceiver []byte `json:"PubKeyLastByteReceiver"`
+	PubKeyLastByteReceivers []byte `json:"PubKeyLastByteReceivers"`
 
 	TxId       *common.Hash
 	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
@@ -80,9 +80,7 @@ func (tx *TxPrivacy) CreateTx(
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
 
-	// get public key last byte of sender
-	pkLastByte := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
-	tx.PubKeyLastByteSender = pkLastByte
+
 
 	// create new output coins
 	outputCoins := make([]*privacy.OutputCoin, len(paymentInfo))
@@ -109,6 +107,17 @@ func (tx *TxPrivacy) CreateTx(
 		changePaymentInfo.PaymentAddress = senderFullKey.PaymentAddress
 		paymentInfo = append(paymentInfo, changePaymentInfo)
 	}
+
+	// get public key last byte of sender
+	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
+	tx.PubKeyLastByteSender = pkLastByteSender
+
+	// get public key last byte of receivers
+	pkLastByteReceivers := make([]byte, len(paymentInfo))
+	for i, payInfo := range  paymentInfo{
+		pkLastByteReceivers[i] = payInfo.PaymentAddress.Pk[len(payInfo.PaymentAddress.Pk)-1]
+	}
+	tx.PubKeyLastByteReceivers = pkLastByteReceivers
 
 	// create zero knowledge proof of payment
 	// prepare witness for proving

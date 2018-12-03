@@ -76,13 +76,13 @@ func (pro *PKComProductProof)  SetBytes(proofBytes []byte)  {
 	pro.Init()
 	offset := 0
 	pro.cmA.Decompress(proofBytes[offset:])
-	offset+=privacy.LenPointBytesCompressed
+	offset+=privacy.CompressedPointSize
 	pro.cmB.Decompress(proofBytes[offset:])
-	offset+=privacy.LenPointBytesCompressed
+	offset+=privacy.CompressedPointSize
 	pro.D.Decompress(proofBytes[offset:])
-	offset+=privacy.LenPointBytesCompressed
+	offset+=privacy.CompressedPointSize
 	pro.E.Decompress(proofBytes[offset:])
-	offset+=privacy.LenPointBytesCompressed
+	offset+=privacy.CompressedPointSize
 	pro.f.SetBytes(proofBytes[offset:offset+32])
 	offset+=32
 	pro.z.SetBytes(proofBytes[offset:offset+32])

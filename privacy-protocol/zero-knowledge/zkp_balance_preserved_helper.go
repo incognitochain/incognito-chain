@@ -57,7 +57,7 @@ func (IPA *InnerProdArg) SetBytes(IPA_byte []byte){
 	offset:=0
 	l:=(len(IPA_byte) - 96)/98
 	IPA.Init(l)
-	L_array_length:=l*privacy.LenPointBytesCompressed
+	L_array_length:=l*privacy.CompressedPointSize
 	R_array_length:=L_array_length
 	C_array_length:=32*(l+1)
 	L_array:=IPA_byte[0:L_array_length]
@@ -70,12 +70,12 @@ func (IPA *InnerProdArg) SetBytes(IPA_byte []byte){
 
 	for i:=0;i<l;i++{
 		IPA.L[i].Decompress(L_array[offsetL:])
-		offsetL+=privacy.LenPointBytesCompressed
+		offsetL+=privacy.CompressedPointSize
 	}
 	offsetR := 0
 	for i:=0;i<l;i++{
 		IPA.R[i].Decompress(R_array[offsetR:])
-		offsetR+=privacy.LenPointBytesCompressed
+		offsetR+=privacy.CompressedPointSize
 	}
 	offsetC := 0
 	for i:=0;i<l+1;i++{

@@ -112,6 +112,10 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	byteArray.ComZeroProof = paymentProof.ComZeroProof.Bytes()
 	//byteArray.ComZeroOneProof = paymentProof.ComZeroOneProof.Bytes()
 	return []byte{0}
+
+	//Todo: thunderbird
+	//
+
 }
 
 // END----------------------------------------------------------------------------------------------------------------------------------------------

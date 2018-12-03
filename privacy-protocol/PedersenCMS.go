@@ -23,13 +23,14 @@ type PCParams struct {
 	// G[0]: public key
 	// G[1]: H
 	// G[2]: SNDerivator
-	// G[3]: Random
+	// G[3]: ShardID
+	// G[4]: Random
 }
 
 // newPedersenParams creates new generators
 func newPedersenParams() PCParams {
 	var pcm PCParams
-	pcm.Capacity = 4
+	pcm.Capacity = 5
 	pcm.G = make([]*EllipticPoint, pcm.Capacity)
 	//pcm.G[0] := EllipticPoint{new(big.Int).SetBytes(Curve.Params().Gx.Bytes()), new(big.Int).SetBytes(Curve.Params().Gy.Bytes())}
 	pcm.G[0] = new(EllipticPoint)
