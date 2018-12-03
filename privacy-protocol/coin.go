@@ -39,6 +39,16 @@ type OutputCoin struct{
 	CoinDetailsEncrypted *CoinDetailsEncrypted
 }
 
+func (outputCoin* OutputCoin) Bytes(){
+
+}
+
+func (outputCoin* OutputCoin) SetBytes(){
+
+}
+
+
+
 type CoinDetailsEncrypted struct {
 	RandomEncrypted []byte
 	SymKeyEncrypted *ElGamalCipherText

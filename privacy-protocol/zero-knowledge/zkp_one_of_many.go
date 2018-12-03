@@ -59,7 +59,7 @@ func (pro *PKOneOfManyProof) Set(
 	pro.index = index
 }
 
-func (pro *PKOneOfManyProof) Bytes() ([]byte, int) {
+func (pro *PKOneOfManyProof) Bytes() []byte {
 	n := privacy.CMRingSizeExp
 	N := privacy.CMRingSize
 	var bytes []byte
@@ -132,7 +132,7 @@ func (pro *PKOneOfManyProof) Bytes() ([]byte, int) {
 
 	fmt.Printf("Len of proof bytes: %v\n", nBytes)
 
-	return bytes, nBytes
+	return bytes
 }
 
 func (pro *PKOneOfManyProof) SetBytes(bytes []byte){
