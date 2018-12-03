@@ -4,6 +4,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"errors"
 	"fmt"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 type TxTokenPrivacyData struct {
@@ -28,4 +29,34 @@ func (self TxTokenPrivacyData) Hash() (*common.Hash, error) {
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
 	return &hash, nil
+}
+
+// CustomTokenParamTx - use for rpc request json body
+type CustomTokenPrivacyParamTx struct {
+	PropertyID     string        `json:"TokenID"`
+	PropertyName   string        `json:"TokenName"`
+	PropertySymbol string        `json:"TokenSymbol"`
+	Amount         uint64        `json:"TokenAmount"`
+	TokenTxType    int           `json:"TokenTxType"`
+	Receiver       []TxTokenVout `json:"TokenReceiver"`
+
+	// temp variable to process coding
+	vins       []TxTokenVin
+	vinsAmount uint64
+}
+
+// CreateCustomTokenReceiverArray - parse data frm rpc request to create a list vout for preparing to create a custom token tx
+// data interface is a map[paymentt-address]{transferring-amount}
+func CreateCustomTokenPrivacyReceiverArray(data interface{}) []TxTokenVout {
+	result := []TxTokenVout{}
+	receivers := data.(map[string]interface{})
+	for key, value := range receivers {
+		key, _ := wallet.Base58CheckDeserialize(key)
+		temp := TxTokenVout{
+			PaymentAddress: key.KeySet.PaymentAddress,
+			Value:          uint64(value.(float64)),
+		}
+		result = append(result, temp)
+	}
+	return result
 }
