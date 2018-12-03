@@ -66,21 +66,21 @@ func (pro *PKComMultiRangeProof) SetBytes(proofbytes []byte) {
 	offset:=2
 	for i:=0;i<int(pro.Counter);i++{
 		pro.Comms[i] = new(privacy.EllipticPoint)
-		pro.Comms[i].Decompress(proofbytes[offset:offset+privacy.LenPointBytesCompressed])
+		pro.Comms[i].Decompress(proofbytes[offset:])
 		//fmt.Println(pro.Comms[i])
 		offset+=privacy.LenPointBytesCompressed
 	}
 	pro.A = new(privacy.EllipticPoint)
-	pro.A.Decompress(proofbytes[offset:offset+privacy.LenPointBytesCompressed])
+	pro.A.Decompress(proofbytes[offset:])
 	offset+=privacy.LenPointBytesCompressed
 	pro.S = new(privacy.EllipticPoint)
-	pro.S.Decompress(proofbytes[offset:offset+privacy.LenPointBytesCompressed])
+	pro.S.Decompress(proofbytes[offset:])
 	offset+=privacy.LenPointBytesCompressed
 	pro.T1 = new(privacy.EllipticPoint)
-	pro.T1.Decompress(proofbytes[offset:offset+privacy.LenPointBytesCompressed])
+	pro.T1.Decompress(proofbytes[offset:])
 	offset+=privacy.LenPointBytesCompressed
 	pro.T2 = new(privacy.EllipticPoint)
-	pro.T2.Decompress(proofbytes[offset:offset+privacy.LenPointBytesCompressed])
+	pro.T2.Decompress(proofbytes[offset:])
 	offset+=privacy.LenPointBytesCompressed
 	pro.Tau = new(big.Int)
 	pro.Tau.SetBytes(proofbytes[offset:offset+32])

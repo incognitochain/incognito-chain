@@ -53,6 +53,13 @@ func (pro *PKComProductProof) Init() {
 	pro.cmA = new(privacy.EllipticPoint)
 	pro.cmB = new(privacy.EllipticPoint)
 }
+func (pro *PKComProductProof) Print() {
+	fmt.Println(pro.D)
+	fmt.Println(pro.E)
+	fmt.Println(pro.f)
+	fmt.Println(pro.cmA)
+	fmt.Println(pro.cmB)
+}
 func (pro *PKComProductProof)  Bytes() []byte {
 	var proofbytes []byte
 	proofbytes = append(proofbytes, pro.cmA.Compress()...) // 33 bytes
@@ -64,17 +71,18 @@ func (pro *PKComProductProof)  Bytes() []byte {
 	proofbytes = append(proofbytes, pro.index)
 	return proofbytes
 }
+
 func (pro *PKComProductProof)  SetBytes(proofBytes []byte)  {
 	pro.Init()
 	offset := 0
-	pro.cmA.Decompress(proofBytes[offset:offset+33])
-	offset+=33
-	pro.cmB.Decompress(proofBytes[offset:offset+3])
-	offset+=33
-	pro.D.Decompress(proofBytes[offset:offset+33])
-	offset+=33
-	pro.E.Decompress(proofBytes[offset:offset+33])
-	offset+=33
+	pro.cmA.Decompress(proofBytes[offset:])
+	offset+=privacy.LenPointBytesCompressed
+	pro.cmB.Decompress(proofBytes[offset:])
+	offset+=privacy.LenPointBytesCompressed
+	pro.D.Decompress(proofBytes[offset:])
+	offset+=privacy.LenPointBytesCompressed
+	pro.E.Decompress(proofBytes[offset:])
+	offset+=privacy.LenPointBytesCompressed
 	pro.f.SetBytes(proofBytes[offset:offset+32])
 	offset+=32
 	pro.z.SetBytes(proofBytes[offset:offset+32])
