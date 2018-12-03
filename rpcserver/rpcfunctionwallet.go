@@ -348,3 +348,18 @@ func (self RpcServer) handleSetTxFee(params interface{}, closeChan <-chan struct
 	err := self.config.Wallet.Save(self.config.Wallet.PassPhrase)
 	return err == nil, NewRPCError(ErrUnexpected, err)
 }
+
+// handleListCustomToken - return list all custom token in network
+func (self RpcServer) handleListCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	temps, err := self.config.BlockChain.ListCustomToken()
+	if err != nil {
+		return nil, err
+	}
+	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
+	for _, token := range temps {
+		item := jsonresult.CustomToken{}
+		item.Init(token)
+		result.ListCustomToken = append(result.ListCustomToken, item)
+	}
+	return result, nil
+}
