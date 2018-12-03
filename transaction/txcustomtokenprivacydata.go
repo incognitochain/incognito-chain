@@ -19,7 +19,7 @@ type TxTokenPrivacyData struct {
 // Hash - return hash of token data, be used as Token ID
 func (self TxTokenPrivacyData) Hash() (*common.Hash, error) {
 	if self.Descs == nil {
-		return nil, errors.New("Vout is empty")
+		return nil, errors.New("Privacy data is empty")
 	}
 	record := self.PropertyName + self.PropertySymbol + fmt.Sprintf("%d", self.Amount)
 	for _, out := range self.Descs {

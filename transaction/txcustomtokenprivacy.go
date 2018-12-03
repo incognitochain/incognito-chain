@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"github.com/ninjadotorg/constant/common"
-	"strconv"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"errors"
 )
@@ -22,14 +21,9 @@ func (tx TxCustomTokenPrivacy) Hash() *common.Hash {
 	// get hash of tx
 	record := tx.Tx.Hash().String()
 
-	// add more hash of tx custom token privacy
-	record += tx.TxTokenPrivacyData.PropertyName
-	record += tx.TxTokenPrivacyData.PropertySymbol
-	record += strconv.Itoa(tx.TxTokenPrivacyData.Type)
-	record += strconv.Itoa(int(tx.TxTokenPrivacyData.Amount))
-	for _, desc := range tx.TxTokenPrivacyData.Descs {
-		record += desc.toString()
-	}
+	// add more hash of tx custom token data privacy
+	txTokenPtivacyDataHash, _ := tx.TxTokenPrivacyData.Hash()
+	record += txTokenPtivacyDataHash.String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
@@ -57,7 +51,7 @@ func (tx *TxCustomTokenPrivacy) GetTxVirtualSize() uint64 {
 	tokenDataSize += uint64(len(tx.TxTokenPrivacyData.PropertyID))
 	tokenDataSize += 4 // for TxTokenData.Type
 
-	// TODO
+	// TODO for txcustomtokendata
 
 	return normalTxSize + tokenDataSize
 }
