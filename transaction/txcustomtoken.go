@@ -4,23 +4,26 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"strconv"
-
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
-// TxCustomToken ...
+// TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
+// and contain data(vin, vout) to support issuing and transfer a custom token(token from end-user, look like erc-20)
+// Dev or end-user can use this class tx to create an token type which use personal purpose
+// In particular of constant network, some special token (DCB token, GOV token, BOND token, ....) used this class tx to implement something
 type TxCustomToken struct {
-	Tx
-	TxTokenData TxTokenData
-	BoardType   uint8 // 1: DCB, 2: GOV
+	Tx                      // inherit from normal tx of constant(supporting privacy)
+	TxTokenData TxTokenData // vin - vout format
+	BoardType   uint8       // 1: DCB, 2: GOV
 	BoardSigns  map[string][]byte
 
+	// Template data variable to process logic
 	listUtxo map[common.Hash]TxCustomToken
 }
 
+// Set listUtxo, which is used to contain a list old TxCustomToken relate to itself
 func (tx *TxCustomToken) SetListUtxo(data map[common.Hash]TxCustomToken) {
 	tx.listUtxo = data
 }
@@ -30,18 +33,17 @@ func (tx TxCustomToken) Hash() *common.Hash {
 	// get hash of tx
 	record := tx.Tx.Hash().String()
 
-	// add more hash of txtoken
-	record += tx.TxTokenData.PropertyName
-	record += tx.TxTokenData.PropertySymbol
-	record += strconv.Itoa(tx.TxTokenData.Type)
-	record += strconv.Itoa(int(tx.TxTokenData.Amount))
+	// add more hash of txtokendata
+	txTokenDataHash, _ := tx.TxTokenData.Hash()
+	record += txTokenDataHash.String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
-// ValidateTransaction ...
+// ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
+// if pass normal tx validation, it continue check signature on (vin-vout) custom token data
 func (tx *TxCustomToken) ValidateTransaction() bool {
 	// validate for normal tx
 	if tx.Tx.ValidateTransaction() {
@@ -69,6 +71,7 @@ func (tx *TxCustomToken) ValidateTransaction() bool {
 }
 
 // GetTxVirtualSize computes the virtual size of a given transaction
+// size of this tx = (normal Tx size) + (custom token data size)
 func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 	normalTxSize := tx.Tx.GetTxVirtualSize()
 
