@@ -2,11 +2,9 @@ package zkp
 
 import (
 	"crypto/elliptic"
-	"encoding/binary"
 	"fmt"
 	"github.com/minio/blake2b-simd"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/client/crypto/ecdsa"
 	"math"
 	"math/big"
 	"strconv"
@@ -183,7 +181,7 @@ func InnerProductVerify(c *big.Int, P, U privacy.EllipticPoint, G, H []privacy.E
 	Pcalc3 := ux.ScalarMulPoint(ccalc)
 	Pcalc := Pcalc1.AddPoint(Pcalc2).AddPoint(Pcalc3)
 
-	if !Pprime.Equal(Pcalc) {
+	if !Pprime.IsEqual(Pcalc) {
 		fmt.Println("IPVerify - Final Commitment checking failed")
 		fmt.Printf("Final Pprime value: %s \n", Pprime)
 		fmt.Printf("Calculated Pprime value to check against: %s \n", Pcalc)
@@ -265,7 +263,7 @@ func InnerProductVerifyFast(c *big.Int, P, U privacy.EllipticPoint, G, H []priva
 	ccalc := new(big.Int).Mod(new(big.Int).Mul(ipp.A, ipp.B), privacy.Curve.Params().N)
 	lhs := TwoVectorPCommitWithGens(G, H, ScalarVectorMul(sScalars, ipp.A), ScalarVectorMul(invsScalars, ipp.B)).AddPoint(ux.ScalarMulPoint(ccalc))
 
-	if !rhs.Equal(lhs) {
+	if !rhs.IsEqual(lhs) {
 		fmt.Println("IPVerify - Final Commitment checking failed")
 		fmt.Printf("Final rhs value: %s \n", rhs)
 		fmt.Printf("Final lhs value: %s \n", lhs)
@@ -426,7 +424,6 @@ var VecLength int
 
 type CryptoParams struct {
 	C   elliptic.Curve      // curve
-
 	BPG []privacy.EllipticPoint           // slice of gen 1 for BP
 	BPH []privacy.EllipticPoint           // slice of gen 2 for BP
 	N   *big.Int            // scalar prime
@@ -440,59 +437,25 @@ func (c CryptoParams) Zero() privacy.EllipticPoint {
 	return privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
 }
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
 
 // NewECPrimeGroupKey returns the curve (field),
 // Generator 1 x&y, Generator 2 x&y, order of the generators
 func NewECPrimeGroupKey(n int) CryptoParams {
-	curValue := elliptic.P256().Params().Gx
-	s256 := blake2b.New256()
+
 	gen1Vals := make([]privacy.EllipticPoint, n)
 	gen2Vals := make([]privacy.EllipticPoint, n)
 	u := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
-	cg := privacy.EllipticPoint{}
-	ch := privacy.EllipticPoint{}
 
-	j := 0
-	confirmed := 0
-	for confirmed < (2*n + 3) {
-		s256.Write(new(big.Int).Add(curValue, big.NewInt(int64(j))).Bytes())
+	G:=privacy.PedCom.G[privacy.VALUE]
+	H:=privacy.PedCom.G[privacy.RAND]
 
-		potentialXValue := make([]byte, 33)
-		binary.LittleEndian.PutUint32(potentialXValue, 2)
-		for i, elem := range s256.Sum(nil) {
-			potentialXValue[i+1] = elem
-		}
-		var gen2 ecdsa.PublicKey
-		gen2.X, gen2.Y = elliptic.P256().Params().Gx, elliptic.P256().Params().Gy
-		var err error
-		err = nil
-		if err == nil {
-			if confirmed == 2*n { // once we've generated all g and h values then assign this to u
-				u = privacy.EllipticPoint{gen2.X, gen2.Y}
-				//fmt.Println("Got that U value")
-			} else if confirmed == 2*n+1 {
-				cg = privacy.EllipticPoint{gen2.X, gen2.Y}
-
-			} else if confirmed == 2*n+2 {
-				ch = privacy.EllipticPoint{gen2.X, gen2.Y}
-			} else {
-				if confirmed%2 == 0 {
-					gen1Vals[confirmed/2] = privacy.EllipticPoint{gen2.X, gen2.Y}
-					//fmt.Println("new G Value")
-				} else {
-					gen2Vals[confirmed/2] = privacy.EllipticPoint{gen2.X, gen2.Y}
-					//fmt.Println("new H value")
-				}
-			}
-			confirmed += 1
-		}
-		j += 1
+	for i:=0;i<n;i++{
+		gen1Vals[i]= G.Hash(0)
+		G=G.Hash(0)
+		gen2Vals[i]= H.Hash(0)
+		H = H.Hash(0)
 	}
+	u	= G.AddPoint(H).Hash(0)
 	return CryptoParams{
 		privacy.Curve,
 		gen1Vals,
@@ -500,8 +463,8 @@ func NewECPrimeGroupKey(n int) CryptoParams {
 		privacy.Curve.Params().N,
 		u,
 		n,
-		cg,
-		ch}
+		privacy.PedCom.G[privacy.VALUE],
+		privacy.PedCom.G[privacy.RAND]}
 }
 
 /*Perdersen commit for 2 vector*/
@@ -519,7 +482,6 @@ func TwoVectorPCommitWithGens(G, H []privacy.EllipticPoint, a, b []*big.Int) pri
 	for i := 0; i < len(G); i++ {
 		modA := new(big.Int).Mod(a[i], privacy.Curve.Params().N)
 		modB := new(big.Int).Mod(b[i], privacy.Curve.Params().N)
-
 		commitment = commitment.AddPoint(G[i].ScalarMulPoint(modA)).AddPoint(H[i].ScalarMulPoint(modB))
 	}
 

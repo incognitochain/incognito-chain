@@ -1,10 +1,7 @@
 package main
 
 import (
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-	//"fmt"
-	//"github.com/ninjadotorg/constant/privacy-protocol"
-	//"math/big"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 func main() {
@@ -20,8 +17,8 @@ func main() {
 	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
 	//fmt.Printf("\nSpending key: %v\n", spendingKey)
 	//fmt.Println(len(spendingKey))
-
-	// publicKey is compressed
+	//
+	////publicKey is compressed
 	//publicKey := privacy.GeneratePublicKey(spendingKey)
 	//fmt.Printf("\nPublic key: %v\n", publicKey)
 	//fmt.Printf("Len public key: %v\n", len(publicKey))
@@ -44,7 +41,7 @@ func main() {
 	//	fmt.Println(err)
 	//}
 	//fmt.Printf("Transmission key point decompress: %+v\n ", point)
-
+	//
 	//paymentAddress := privacy.GeneratePaymentAddress(spendingKey)
 	//fmt.Println(paymentAddress.ToBytes())
 	//fmt.Printf("tk: %v\n", paymentAddress.Tk)
@@ -60,9 +57,11 @@ func main() {
 
 	// privacy.TestProofIsZero()
 
-	zkp.TestPKComZeroOne()
+	/*****************zkp.TestPKComZeroOne()****************/
 
-	// privacy.TestPKOneOfMany()
+	// zkp.TestPKOneOfMany()
+
+	//zkp.TestPKComMultiRange()
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -165,6 +164,51 @@ func main() {
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
-	//privacy.TestSchn()
+	privacy.TestSchn()
+	//zkp.PKComMultiRangeTest()
+
+	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
+	//for i :=0; i<1000; i++{
+	//	fmt.Printf("N: %v\n",privacy.Curve.Params().N)
+	//	rand, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
+	//
+	//	fmt.Printf("rand: %v\n", rand)
+	//	fmt.Printf("Len rand: %v\n", len(rand.Bytes()))
+	//}
+
+	/*----------------- TEST AES -----------------*/
+	//privacy.TestAESCTR()
+
+	/*----------------- TEST ENCRYPT/DECRYPT COIN -----------------*/
+
+	//coin := new(privacy.OutputCoin)
+	//coin.CoinDetails = new(privacy.Coin)
+	//coin.CoinDetails.Randomness = privacy.RandInt()
+	//fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+	//
+	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	//keySet := cashec.KeySet{}
+	//keySet.ImportFromPrivateKey(&spendingKey)
+	//
+	//err := coin.Encrypt(keySet.PaymentAddress.Tk)
+	//if err!= nil{
+	//	fmt.Println(err)
+	//}
+	//
+	//coin.Decrypt(keySet.ReadonlyKey.Rk)
+	//
+	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+
+
+
+	/*----------------- TEST NDH -----------------*/
+	//fmt.Println(zkp.TestProofIsZero())
+	//fmt.Println(zkp.TestOpeningsProtocol())
+	//fmt.Println(zkp.TestPKEqualityOfCommittedVal())
+	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
+	/*--------------------------------------------*/
+
+
+
 
 }

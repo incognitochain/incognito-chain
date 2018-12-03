@@ -9,6 +9,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 func (self RpcServer) buildRawVoteDCBBoardTransaction(
@@ -16,10 +17,12 @@ func (self RpcServer) buildRawVoteDCBBoardTransaction(
 ) (*transaction.TxVoteDCBBoard, error) {
 	arrayParams := common.InterfaceSlice(params)
 	tx, err := self.buildRawCustomTokenTransaction(params)
+	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
+	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
 	newTx := transaction.TxVoteDCBBoard{
 		TxCustomToken: *tx,
 		VoteDCBBoardData: transaction.VoteDCBBoardData{
-			arrayParams[len(arrayParams)-1].(string),
+			string(account.KeySet.PaymentAddress.Pk),
 		},
 	}
 	return &newTx, err

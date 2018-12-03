@@ -21,7 +21,7 @@ type Tx struct {
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
-	Fee      uint64 `json:"Fee"` // Fee applies: always consant
+	Fee      uint64 `json:"Fee"` // Fee applies: always constant
 
 	Descs    []*JoinSplitDesc `json:"Descs"`
 	JSPubKey []byte           `json:"JSPubKey,omitempty"` // 64 bytes
@@ -29,7 +29,9 @@ type Tx struct {
 
 	AddressLastByte byte `json:"AddressLastByte"`
 
-	txId       *common.Hash
+	// temp variable to view id of itself
+	txId *common.Hash // is always private property of struct
+	// temp variable to view sign priv key which use in tx
 	sigPrivKey *privacy.SpendingKey // is always private property of struct
 
 	// this one is a hash id of requested tx
@@ -37,6 +39,8 @@ type Tx struct {
 	// so that we can determine pair of req/res txs
 	// for example, BuySellRequestTx/BuySellResponseTx
 	RequestedTxID *common.Hash
+
+	Metadata interface{}
 }
 
 func (tx *Tx) SetTxID(txId *common.Hash) {
@@ -174,7 +178,7 @@ func CreateTx(
 	var value uint64
 	for _, p := range paymentInfo {
 		value += p.Amount
-		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
+		fmt.Printf("[CreateTx] paymentInfo.H: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
 	}
 
 	type ChainNote struct {
@@ -190,7 +194,7 @@ func CreateTx(
 				for _, note := range desc.Note {
 					chainNote := &ChainNote{note: note, chainID: chainID}
 					inputNotes = append(inputNotes, chainNote)
-					fmt.Printf("[CreateTx] inputNote.Value: %+v\n", note.Value)
+					fmt.Printf("[CreateTx] inputNote.H: %+v\n", note.Value)
 				}
 			}
 		}
@@ -475,11 +479,11 @@ func (tx *Tx) buildJSDescAndEncrypt(
 	fmt.Printf("ephemeralPubKey: %x\n", *ephemeralPubKey)
 	fmt.Printf("tranmissionKey[0]: %x\n", keys[0])
 	fmt.Printf("tranmissionKey[1]: %x\n", keys[1])
-	fmt.Printf("notes[0].Value: %+v\n", notes[0].Value)
+	fmt.Printf("notes[0].H: %+v\n", notes[0].Value)
 	fmt.Printf("notes[0].Rho: %x\n", notes[0].Rho)
 	fmt.Printf("notes[0].Randomness: %x\n", notes[0].R)
 	fmt.Printf("notes[0].Memo: %+v\n", notes[0].Memo)
-	fmt.Printf("notes[1].Value: %+v\n", notes[1].Value)
+	fmt.Printf("notes[1].H: %+v\n", notes[1].Value)
 	fmt.Printf("notes[1].Rho: %x\n", notes[1].Rho)
 	fmt.Printf("notes[1].Randomness: %x\n", notes[1].R)
 	fmt.Printf("notes[1].Memo: %+v\n", notes[1].Memo)

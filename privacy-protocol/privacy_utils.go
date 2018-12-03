@@ -18,10 +18,8 @@ func RandBytes(n int) []byte {
 }
 
 // RandInt generates a big int with value less than order of group of elliptic points
-func RandInt() *big.Int{
-	bytes := RandBytes(32)
-	res := new(big.Int).SetBytes(bytes)
-	res.Mod(res, Curve.Params().N)
+func RandInt() *big.Int {
+	res, _ := rand.Int(rand.Reader, Curve.Params().N)
 	return res
 }
 
@@ -38,7 +36,6 @@ func IsPowerOfTwo(n int) bool {
 		}
 	}
 	return true
-
 }
 
 // ConvertIntToBinary represents a integer number in binary
@@ -52,3 +49,5 @@ func ConvertIntToBinary(inum int, n int) []byte {
 
 	return binary
 }
+
+//

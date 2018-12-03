@@ -9,18 +9,6 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
-// var curve *elliptic.Curve
-// var once sync.Once
-
-// func GetCurve() *elliptic.Curve {
-// 	once.Do(func() {
-// 		curve = (elliptic.Curve*)&elliptic.P256()
-// 	})
-
-// 	fmt.Printf("Pk curve: %v\n", &curve)
-// 	return &curve
-// }
-
 // const (
 // const (
 // 	P = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF
@@ -47,7 +35,7 @@ type SpendingKey []byte
 // Pk 33 bytes
 type PublicKey []byte
 
-// Rk 33 bytes
+// Rk 32 bytes
 type ReceivingKey []byte
 
 // Tk 33 bytes
@@ -110,15 +98,10 @@ func GenerateReceivingKey(spendingKey []byte) ReceivingKey {
 // GenerateTransmissionKey computes a transmission key corresponding with receivingKey
 // Tk : 33 bytes
 func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
-	var p, generator EllipticPoint
-	//random := RandBytes(256)
-	random := [32]byte{2}
-	//create new generator from base generator
-	generator.X, generator.Y = Curve.ScalarBaseMult(random[:])
+	var p EllipticPoint
 
-	p.X, p.Y = Curve.ScalarMult(generator.X, generator.Y, receivingKey)
+	p.X, p.Y = Curve.ScalarBaseMult(receivingKey)
 	fmt.Printf("Transmission key point: %+v\n ", p)
-	// transmissionKey := FromPointToByteArray(p)
 	transmissionKey := p.Compress()
 	return transmissionKey
 }

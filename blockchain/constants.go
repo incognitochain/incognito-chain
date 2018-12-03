@@ -26,15 +26,15 @@ const (
 	TestnetInitFundSalary             = 1000000000000000
 	TestnetInitDCBToken               = 10000
 	TestnetInitGovToken               = 10000
-	TestnetInitCmBToken               = 0
-	TestnetInitBondToken              = 0
-	TestnetGenesisBlockPaymentAddress = "1Uv12YEcd5w5Qm79sTGHSHYnCfVKM2ui8mbapD1dgziUf9211b5cnCSdxVb1DoXyDD19V1THMSnaAWZ18sJtmaVnh56wVhwb1HuYpkTa4"
+	TestnetInitCmBToken               = 10000
+	TestnetInitBondToken              = 10000
+	TestnetGenesisBlockPaymentAddress = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
 )
 
 // board addresses
 var (
-	DCBAddress = "1Uv1fjA1FjsLTp37i1j5ZVpghx3maaX6YM5WQkbtrJr26FyGwxKznAM7ZRN2AsE4iHwNjiWGLbcUt2JudBBek18cB5YV22EJ38PjcXqza"
-	GOVAddress = "1Uv1fjA1FjsLTp37i1j5ZVpghx3maaX6YM5WQkbtrJr26FyGwxKznAM7ZRN2AsE4iHwNjiWGLbcUt2JudBBek18cB5YV22EJ38PjcXqza"
+	DCBAddress = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
+	GOVAddress = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
 )
 
 // special token ids (aka. PropertyID in custom token)
