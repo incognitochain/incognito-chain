@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"strconv"
-
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -35,11 +33,9 @@ func (tx TxCustomToken) Hash() *common.Hash {
 	// get hash of tx
 	record := tx.Tx.Hash().String()
 
-	// add more hash of txtoken
-	record += tx.TxTokenData.PropertyName
-	record += tx.TxTokenData.PropertySymbol
-	record += strconv.Itoa(tx.TxTokenData.Type)
-	record += strconv.Itoa(int(tx.TxTokenData.Amount))
+	// add more hash of txtokendata
+	txTokenDataHash, _ := tx.TxTokenData.Hash()
+	record += txTokenDataHash.String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
