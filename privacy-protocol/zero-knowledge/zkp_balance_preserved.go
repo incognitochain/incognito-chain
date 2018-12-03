@@ -2,7 +2,6 @@ package zkp
 
 import (
 	"fmt"
-
 	//"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"math"
 	"math/big"
@@ -12,28 +11,115 @@ import (
 )
 
 type PKComMultiRangeProof struct {
-	Comms  []*privacy.EllipticPoint
-	A      *privacy.EllipticPoint
-	S      *privacy.EllipticPoint
-	T1     *privacy.EllipticPoint
-	T2     *privacy.EllipticPoint
-	Tau    *big.Int
-	Th     *big.Int
-	Mu     *big.Int
-	IPP    InnerProdArg
-	maxExp int
+	Counter byte
+	Comms   []*privacy.EllipticPoint
+	A       *privacy.EllipticPoint
+	S       *privacy.EllipticPoint
+	T1      *privacy.EllipticPoint
+	T2      *privacy.EllipticPoint
+	Tau     *big.Int
+	Th      *big.Int
+	Mu      *big.Int
+	IPP     InnerProdArg
+	maxExp  byte
 	// challenges
-	Cy *big.Int
-	Cz *big.Int
-	Cx *big.Int
+	Cy 		 *big.Int
+	Cz 		 *big.Int
+	Cx 		 *big.Int
 }
 
 type PKComMultiRangeWitness struct {
 	Comms  []*privacy.EllipticPoint
 	Values []*big.Int
 	Rands  []*big.Int
-	maxExp int
+	maxExp byte
 }
+
+func (pro *PKComMultiRangeProof) Bytes() []byte{
+	var res []byte
+	res = append(res, pro.Counter)
+	res = append(res, pro.maxExp)
+	for i:=0;i<int(pro.Counter);i++{
+		//fmt.Println(pro.Comms[i])
+		res = append(res, pro.Comms[i].Compress()...)
+
+	}
+	res = append(res, pro.A.Compress()...)
+	res = append(res, pro.S.Compress()...)
+	res = append(res, pro.T1.Compress()...)
+	res = append(res, pro.T2.Compress()...)
+	res = append(res, pro.Tau.Bytes()...)
+	res = append(res, pro.Th.Bytes()...)
+	res = append(res, pro.Mu.Bytes()...)
+	res = append(res, pro.Cx.Bytes()...)
+	res = append(res, pro.Cy.Bytes()...)
+	res = append(res, pro.Cz.Bytes()...)
+	res = append(res, pro.IPP.Bytes()...)
+	//fmt.Println(res)
+	return res
+
+}
+func (pro *PKComMultiRangeProof) SetBytes(proofbytes []byte) {
+	pro.Counter =  proofbytes[0]
+	pro.maxExp  =  proofbytes[1]
+	pro.Comms = make([]*privacy.EllipticPoint,pro.Counter)
+	offset:=2
+	for i:=0;i<int(pro.Counter);i++{
+		pro.Comms[i] = new(privacy.EllipticPoint)
+		pro.Comms[i].Decompress(proofbytes[offset:])
+		//fmt.Println(pro.Comms[i])
+		offset+=privacy.LenPointBytesCompressed
+	}
+	pro.A = new(privacy.EllipticPoint)
+	pro.A.Decompress(proofbytes[offset:])
+	offset+=privacy.LenPointBytesCompressed
+	pro.S = new(privacy.EllipticPoint)
+	pro.S.Decompress(proofbytes[offset:])
+	offset+=privacy.LenPointBytesCompressed
+	pro.T1 = new(privacy.EllipticPoint)
+	pro.T1.Decompress(proofbytes[offset:])
+	offset+=privacy.LenPointBytesCompressed
+	pro.T2 = new(privacy.EllipticPoint)
+	pro.T2.Decompress(proofbytes[offset:])
+	offset+=privacy.LenPointBytesCompressed
+	pro.Tau = new(big.Int)
+	pro.Tau.SetBytes(proofbytes[offset:offset+32])
+	offset+=32
+	pro.Th = new(big.Int)
+	pro.Th.SetBytes(proofbytes[offset:offset+32])
+	offset+=32
+	pro.Mu = new(big.Int)
+	pro.Mu.SetBytes(proofbytes[offset:offset+32])
+	offset+=32
+	pro.Cx = new(big.Int)
+	pro.Cx.SetBytes(proofbytes[offset:offset+32])
+	offset+=32
+	pro.Cy = new(big.Int)
+	pro.Cy.SetBytes(proofbytes[offset:offset+32])
+	offset+=32
+	pro.Cz = new(big.Int)
+	pro.Cz.SetBytes(proofbytes[offset:offset+32])
+	offset+=32
+	end:=len(proofbytes)
+	pro.IPP.SetBytes(proofbytes[offset:end])
+}
+func (pro *PKComMultiRangeProof) Print() {
+	fmt.Println(pro.Counter)
+	fmt.Println(pro.Comms)
+	fmt.Println(pro.A)
+	fmt.Println(pro.S)
+	fmt.Println(pro.T1)
+	fmt.Println(pro.T2)
+	fmt.Println(pro.Tau)
+	fmt.Println(pro.Th)
+	fmt.Println(pro.Mu)
+	fmt.Println(pro.IPP)
+	fmt.Println(pro.maxExp)
+	fmt.Println(pro.Cy)
+	fmt.Println(pro.Cz)
+	fmt.Println(pro.Cx)
+}
+
 
 func pad(l int) int {
 	deg := 0
@@ -56,11 +142,11 @@ func pad(l int) int {
 	}
 	return l
 }
-func InitCommonParams(l int, maxExp int) {
-	VecLength = maxExp * pad(l)
+func InitCommonParams(l int, maxExp byte) {
+	VecLength = int(maxExp) * pad(l)
 	RangeProofParams = NewECPrimeGroupKey(VecLength)
 }
-func (wit *PKComMultiRangeWitness) Set(v []*big.Int, maxExp int) {
+func (wit *PKComMultiRangeWitness) Set(v []*big.Int, maxExp byte) {
 	l := pad(len(v) + 1)
 	wit.Values = make([]*big.Int, l)
 	for i := 0; i < l; i++ {
@@ -74,6 +160,7 @@ func (wit *PKComMultiRangeWitness) Set(v []*big.Int, maxExp int) {
 		total.Add(total, v[i])
 	}
 	*wit.Values[l-1] = *total
+
 	wit.maxExp = maxExp
 }
 
@@ -158,6 +245,7 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 	MRProof := PKComMultiRangeProof{}
 	MRProof.maxExp = wit.maxExp
 	m := len(wit.Values)
+	MRProof.Counter = byte(m)
 	bitsPerValue := RangeProofParams.V / m
 	// we concatenate the binary representation of the values
 	PowerOfTwos := PowerVector(bitsPerValue, big.NewInt(2))

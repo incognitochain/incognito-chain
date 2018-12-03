@@ -1,4 +1,5 @@
 package zkp
+
 import (
 	"fmt"
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -7,7 +8,7 @@ import (
 )
 
 func TestPKComMultiRange(t *testing.T) {
-	testNum:= 14
+	testNum:= 3
 	values := make([]*big.Int, testNum)
 	for i:=0;i< testNum;i++{
 		values[i] = new(big.Int)
@@ -19,7 +20,12 @@ func TestPKComMultiRange(t *testing.T) {
 
 	// Testing smallest number in range
 	proof,_:= witness.Prove()
-	if proof.Verify() {
+	b:=proof.Bytes()
+
+	Vproof:=new(PKComMultiRangeProof)
+	Vproof.SetBytes(b)
+
+	if Vproof.Verify() {
 		fmt.Println("Multi Range Proof Verification works")
 	} else {
 		fmt.Println("***** Multi Range Proof FAILURE")

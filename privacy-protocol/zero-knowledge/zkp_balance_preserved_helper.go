@@ -16,10 +16,75 @@ type InnerProdArg struct {
 	R []*privacy.EllipticPoint
 	A *big.Int
 	B *big.Int
-
 	Challenges []*big.Int
 }
+func (IPA *InnerProdArg) Init(l int) {
+	IPA.L= make([]*privacy.EllipticPoint,l)
+	IPA.R= make([]*privacy.EllipticPoint,l)
+	for i:=0;i<l;i++ {
+		IPA.L[i] = new(privacy.EllipticPoint)
+		IPA.R[i] = new(privacy.EllipticPoint)
+	}
+	IPA.A = new(big.Int)
+	IPA.B = new(big.Int)
+	IPA.Challenges = make([]*big.Int, l+1)
+	for i:=0;i<l+1;i++{
+		IPA.Challenges[i] = new(big.Int)
+	}
+}
+func (IPA InnerProdArg) Print(){
+	for i:=0;i<len(IPA.Challenges);i++{
+		fmt.Println(IPA.Challenges[i])
+		//fmt.Println(IPA.R[i])
+	}
+}
+func (IPA *InnerProdArg) Bytes() []byte{
+	var res []byte
+	for i:=0;i<len(IPA.L);i++{
+		res = append(res, IPA.L[i].Compress()...)
+	}
+	for i:=0;i<len(IPA.R);i++{
+		res = append(res, IPA.R[i].Compress()...)
+	}
+	for i:=0;i<len(IPA.Challenges);i++{
+		res = append(res, IPA.Challenges[i].Bytes()...)
+	}
+	res = append(res,IPA.A.Bytes()...)
+	res = append(res,IPA.B.Bytes()...)
+	return res
+}
+func (IPA *InnerProdArg) SetBytes(IPA_byte []byte){
+	offset:=0
+	l:=(len(IPA_byte) - 96)/98
+	IPA.Init(l)
+	L_array_length:=l*privacy.LenPointBytesCompressed
+	R_array_length:=L_array_length
+	C_array_length:=32*(l+1)
+	L_array:=IPA_byte[0:L_array_length]
+	offset = L_array_length
+	R_array:=IPA_byte[offset:offset+R_array_length]
+	offset+=R_array_length
+	C_array:=IPA_byte[offset:offset+C_array_length]
+	offset+=C_array_length
+	offsetL:=0
 
+	for i:=0;i<l;i++{
+		IPA.L[i].Decompress(L_array[offsetL:])
+		offsetL+=privacy.LenPointBytesCompressed
+	}
+	offsetR := 0
+	for i:=0;i<l;i++{
+		IPA.R[i].Decompress(R_array[offsetR:])
+		offsetR+=privacy.LenPointBytesCompressed
+	}
+	offsetC := 0
+	for i:=0;i<l+1;i++{
+		IPA.Challenges[i].SetBytes(C_array[offsetC:offsetC+32])
+		offsetC+=32
+	}
+	IPA.A.SetBytes(IPA_byte[offset:offset+32])
+	IPA.B.SetBytes(IPA_byte[offset+32:offset+64])
+}
 func GenerateNewParams(G, H []*privacy.EllipticPoint, x *big.Int, L, R, P *privacy.EllipticPoint) ([]*privacy.EllipticPoint, []*privacy.EllipticPoint, *privacy.EllipticPoint) {
 	nprime := len(G) / 2
 
