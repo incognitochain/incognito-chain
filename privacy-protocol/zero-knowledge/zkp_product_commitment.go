@@ -20,7 +20,7 @@ type PKComProductProof struct {
 	z     *big.Int
 	cmA   *privacy.EllipticPoint
 	cmB   *privacy.EllipticPoint
-	index byte
+	index  byte
 }
 type PKComProductWitness struct {
 	witnessA *big.Int
@@ -52,6 +52,36 @@ func (pro *PKComProductProof) Init() {
 	pro.z = new(big.Int)
 	pro.cmA = new(privacy.EllipticPoint)
 	pro.cmB = new(privacy.EllipticPoint)
+}
+func (pro *PKComProductProof)  Bytes() []byte {
+	var proofbytes []byte
+	proofbytes = append(proofbytes, pro.cmA.Compress()...) // 33 bytes
+	proofbytes = append(proofbytes, pro.cmB.Compress()...) // 33 bytes
+	proofbytes = append(proofbytes, pro.D.Compress()...)   // 33 bytes
+	proofbytes = append(proofbytes, pro.E.Compress()...)   // 33 bytes
+	proofbytes = append(proofbytes, pro.f.Bytes()...)      // 32 bytes
+	proofbytes = append(proofbytes, pro.z.Bytes()...)      // 32 bytes
+	proofbytes = append(proofbytes, pro.index)
+	return proofbytes
+}
+func (pro *PKComProductProof)  SetBytes(proofBytes []byte)  {
+	pro.Init()
+	offset := 0
+	pro.cmA.Decompress(proofBytes[offset:offset+33])
+	offset+=33
+	pro.cmB.Decompress(proofBytes[offset:offset+3])
+
+	offset+=33
+	pro.D.Decompress(proofBytes[offset:offset+33])
+
+	offset+=33
+	pro.E.Decompress(proofBytes[offset:offset+33])
+	offset+=33
+	pro.f.SetBytes(proofBytes[offset:offset+32])
+	offset+=32
+	pro.z.SetBytes(proofBytes[offset:offset+32])
+	offset+=32
+	pro.index = proofBytes[offset]
 }
 func (wit *PKComProductWitness) Get() *PKComProductWitness {
 	return wit
@@ -119,6 +149,7 @@ func (wit *PKComProductWitness) Prove() (*PKComProductProof, error) {
 	E := wit.cmB.ScalarMul(d)
 	*proof.D = *D
 	*proof.E = *E
+
 	// x = hash(G||H||D||D1||E)
 	data := [][]byte{
 		privacy.PedCom.G[wit.index].X.Bytes(),
@@ -132,6 +163,7 @@ func (wit *PKComProductWitness) Prove() (*PKComProductProof, error) {
 	}
 	x := new(big.Int)
 	x.SetBytes(computeHashString(data))
+
 
 	//compute f
 	a := new(big.Int)
@@ -182,6 +214,8 @@ func (pro *PKComProductProof) Verify() bool {
 		pro.E.Y.Bytes(),
 	}
 	x := new(big.Int).SetBytes(computeHashString(data))
+
+
 	//Check if D,E is on Curve
 	if !(privacy.Curve.IsOnCurve(pro.D.X, pro.D.Y) &&
 		privacy.Curve.IsOnCurve(pro.E.X, pro.E.Y)) {

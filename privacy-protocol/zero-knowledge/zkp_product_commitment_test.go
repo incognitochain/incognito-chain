@@ -9,7 +9,7 @@ import (
 
 func TestPKComProduct(t *testing.T) {
 	res := true
-	for i:=0;i<100;i++ {
+	for i:=0;i<1;i++ {
 		index := privacy.VALUE
 		G:=privacy.PedCom.G[index]
 		witnessA := new(big.Int).SetBytes(privacy.RandBytes(32))
@@ -22,9 +22,17 @@ func TestPKComProduct(t *testing.T) {
 		invAmulG:=new(privacy.EllipticPoint)
 		*invAmulG = *G.ScalarMul(x)
 		ipCm.Set(witnessA,r1Int,invAmulG,&index)
-
 		proof,_:= ipCm.Prove()
-		res = proof.Verify();
+		//fmt.Println(proof.index)
+		//fmt.Println()
+		proof_bytes:= proof.Bytes()
+
+		Vproof:=new(PKComProductProof)
+		Vproof.SetBytes(proof_bytes)
+		//fmt.Println(Vproof.index)
+
+
+		res = Vproof.Verify();
 		fmt.Printf("Test %d is %t\n",i,res)
 	}
 }

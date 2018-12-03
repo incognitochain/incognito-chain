@@ -8,6 +8,11 @@ const (
 )
 
 const (
+	TxNormalType             = "n" // normal tx(send and receive coin)
+	TxSalaryType             = "s" // salary tx(gov pay salary for block producer)
+	TxCustomTokenType        = "t" // token  tx with no supporting privacy
+	TxCustomTokenPrivacyType = "t" // token  tx with supporting privacy
+
 	TxSubmitDCBProposal = "pd"  // submit DCB proposal tx
 	TxSubmitGOVProposal = "pg"  // submit GOV proposal tx
 	TxVoteDCBProposal   = "vd"  // submit DCB proposal voted tx
@@ -15,11 +20,9 @@ const (
 	TxVoteDCBBoard      = "vbd" // vote DCB board tx
 	TxVoteGOVBoard      = "vbg" // vote DCB board tx
 
-	TxAcceptDCBProposal  = "ad" // accept DCB proposal
-	TxAcceptGOVProposal  = "ag" // accept GOV proposal
-	TxNormalType         = "n"  // normal tx(send and receive coin)
-	TxSalaryType         = "s"  // salary tx(gov pay salary for block producer)
-	TxCustomTokenType    = "t"  // token  tx
+	TxAcceptDCBProposal = "ad" // accept DCB proposal
+	TxAcceptGOVProposal = "ag" // accept GOV proposal
+
 	TxLoanRequest        = "lr"
 	TxLoanResponse       = "ls"
 	TxLoanPayment        = "lp"

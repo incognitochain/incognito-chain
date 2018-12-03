@@ -7,7 +7,6 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
-const ()
 
 type PaymentWitness struct {
 	spendingKey *big.Int
@@ -97,9 +96,10 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		byteArray.EqualityOfCommittedValProof = append(byteArray.EqualityOfCommittedValProof, paymentProof.EqualityOfCommittedValProof[0].Bytes()...)
 	}
 
-	byteArray.OneOfManyProof = paymentProof.OneOfManyProof[0].Bytes()
+	byteArray.OneOfManyProof, _ = paymentProof.OneOfManyProof[0].Bytes()
 	for i := 1; i < byteArray.lenarrayOneOfManyProof; i++ {
-		byteArray.OneOfManyProof = append(byteArray.OneOfManyProof, paymentProof.OneOfManyProof[0].Bytes()...)
+		outOfManyProofBytes, _ :=  paymentProof.OneOfManyProof[0].Bytes()
+		byteArray.OneOfManyProof = append(byteArray.OneOfManyProof, outOfManyProofBytes...)
 	}
 
 	// byteArray.ComMultiRangeProof = paymentProof.ComMultiRangeProof.Bytes()
