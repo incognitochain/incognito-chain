@@ -803,9 +803,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 					candidateCommitment := desc.Commitments[i]
 					if len(nullifiersInDb) > 0 {
 						// -> check commitment with db nullifiers
-						var rho [32]byte
-						copy(rho[:], note.Rho)
-						candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
+						candidateNullifier := desc.Nullifiers
 						if len(candidateNullifier) == 0 {
 							continue
 						}
