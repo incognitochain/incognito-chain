@@ -7,36 +7,39 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
-
+// PaymentWitness contains all of witness for proving when spending coins
 type PaymentWitness struct {
 	spendingKey *big.Int
 	inputCoins  []*privacy.InputCoin
 	outputCoins []*privacy.OutputCoin
 
 	ComInputOpeningsWitness       []*PKComOpeningsWitness
-	ComOutputOpeningsWitness      []*PKComOpeningsWitness
 	OneOfManyWitness              []*PKOneOfManyWitness
 	EqualityOfCommittedValWitness []*PKEqualityOfCommittedValWitness
 	ProductCommitmentWitness      []*PKComProductWitness
+
+	ComOutputOpeningsWitness      []*PKComOpeningsWitness
 	ComOutputMultiRangeWitness    *PKComMultiRangeWitness
 	SumOutRangeWitness            *PKComMultiRangeWitness
+
 	ComZeroWitness                *PKComZeroWitness
-	ComZeroOneWitness             *PKComZeroOneWitness
+	//ComZeroOneWitness             *PKComZeroOneWitness
 }
 
-// BEGIN--------------------------------------------------------------------------------------------------------------------------------------------
-
-// PaymentProof contains all of PoK for sending coin
+// PaymentProof contains all of PoK for spending coin
 type PaymentProof struct {
+	// for input coins
 	ComInputOpeningsProof       []*PKComOpeningsProof
-	ComOutputOpeningsProof      []*PKComOpeningsProof
 	OneOfManyProof              []*PKOneOfManyProof
 	EqualityOfCommittedValProof []*PKEqualityOfCommittedValProof
-	ProductCommitmentProof      []*PKComProductProof
-	ComOutputMultiRangeProof    *PKComMultiRangeProof
-	SumOutRangeProof            *PKComMultiRangeProof
-	ComZeroProof                *PKComZeroProof
-	ComZeroOneProof             *PKComZeroOneProof
+	ProductCommitmentProof			[]*PKComProductProof
+	// for output coins
+	ComOutputOpeningsProof      []*PKComOpeningsProof
+	ComOutputMultiRangeProof 		*PKComMultiRangeProof
+	SumOutRangeProof						*PKComMultiRangeProof
+
+	// for input = output
+	ComZeroProof       					*PKComZeroProof
 
 	// add list input coins' SN to proof for serial number
 
@@ -44,10 +47,6 @@ type PaymentProof struct {
 	OutputCoins []*privacy.OutputCoin
 	InputCoins  []*privacy.InputCoin
 }
-
-// Bytes
-
-// SetBytes()
 
 type PaymentProofByte struct {
 	lenarrayComInputOpeningsProof       int
@@ -64,16 +63,23 @@ type PaymentProofByte struct {
 	lenComZeroProof                int
 	lenComZeroOneProof             int
 
+	/**** proof ****/
+	// for input coins
 	ComInputOpeningsProof       []byte
-	ComOutputOpeningsProof      []byte
 	OneOfManyProof              []byte
 	EqualityOfCommittedValProof []byte
+	ProductCommitmentProof			[]byte
+	// for output coins
+	ComOutputOpeningsProof      []byte
+	ComOutputMultiRangeProof 		[]byte
+	SumOutRangeProof						[]byte
 
-	ComMultiRangeProof []byte
+	// for input = output
 	ComZeroProof       []byte
-	ComZeroOneProof    []byte
+	//ComZeroOneProof    []byte
 }
 
+// Bytes converts payment proof to byte array to send verifiers
 func (paymentProof *PaymentProof) Bytes() []byte {
 	byteArray := new(PaymentProofByte)
 	byteArray.lenarrayComInputOpeningsProof = len(paymentProof.ComInputOpeningsProof)
@@ -83,28 +89,28 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 
 	byteArray.ComInputOpeningsProof = paymentProof.ComInputOpeningsProof[0].Bytes()
 	for i := 1; i < byteArray.lenarrayComInputOpeningsProof; i++ {
-		byteArray.ComInputOpeningsProof = append(byteArray.ComInputOpeningsProof, paymentProof.ComInputOpeningsProof[0].Bytes()...)
+		byteArray.ComInputOpeningsProof = append(byteArray.ComInputOpeningsProof, paymentProof.ComInputOpeningsProof[i].Bytes()...)
 	}
 
 	byteArray.ComOutputOpeningsProof = paymentProof.ComOutputOpeningsProof[0].Bytes()
 	for i := 1; i < byteArray.lenarrayComOutputOpeningsProof; i++ {
-		byteArray.ComOutputOpeningsProof = append(byteArray.ComOutputOpeningsProof, paymentProof.ComOutputOpeningsProof[0].Bytes()...)
+		byteArray.ComOutputOpeningsProof = append(byteArray.ComOutputOpeningsProof, paymentProof.ComOutputOpeningsProof[i].Bytes()...)
 	}
 
 	byteArray.EqualityOfCommittedValProof = paymentProof.EqualityOfCommittedValProof[0].Bytes()
 	for i := 1; i < byteArray.lenarrayEqualityOfCommittedValProof; i++ {
-		byteArray.EqualityOfCommittedValProof = append(byteArray.EqualityOfCommittedValProof, paymentProof.EqualityOfCommittedValProof[0].Bytes()...)
+		byteArray.EqualityOfCommittedValProof = append(byteArray.EqualityOfCommittedValProof, paymentProof.EqualityOfCommittedValProof[i].Bytes()...)
 	}
 
 	byteArray.OneOfManyProof, _ = paymentProof.OneOfManyProof[0].Bytes()
 	for i := 1; i < byteArray.lenarrayOneOfManyProof; i++ {
-		outOfManyProofBytes, _ :=  paymentProof.OneOfManyProof[0].Bytes()
+		outOfManyProofBytes, _ :=  paymentProof.OneOfManyProof[i].Bytes()
 		byteArray.OneOfManyProof = append(byteArray.OneOfManyProof, outOfManyProofBytes...)
 	}
 
 	// byteArray.ComMultiRangeProof = paymentProof.ComMultiRangeProof.Bytes()
 	byteArray.ComZeroProof = paymentProof.ComZeroProof.Bytes()
-	byteArray.ComZeroOneProof = paymentProof.ComZeroOneProof.Bytes()
+	//byteArray.ComZeroOneProof = paymentProof.ComZeroOneProof.Bytes()
 	return []byte{0}
 }
 
@@ -268,6 +274,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool, spendingKey *big.Int, inputCoi
 // Prove creates big proof
 func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	proof := new(PaymentProof)
+	var err error
 
 	// if hasPrivacy == false, don't need to create the zero knowledge proof
 	// proving user has spending key corresponding with public key in input coins
@@ -278,14 +285,19 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 		// Proving that serial number is derived from the committed derivator
 		for i := 0; i < len(wit.inputCoins); i++ {
 			proof.EqualityOfCommittedValProof[i] = new(PKEqualityOfCommittedValProof)
+			proof.ProductCommitmentProof[i] = new(PKComProductProof)
 			proof.EqualityOfCommittedValProof[i] = wit.EqualityOfCommittedValWitness[i].Prove()
+			proof.ProductCommitmentProof[i], err = wit.ProductCommitmentWitness[i].Prove()
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		return proof, nil
 	}
 
 	// if hasPrivacy == true
-	var err error
+
 	numInputCoins := len(wit.ComInputOpeningsWitness)
 	numOutputCoins := len(wit.ComOutputOpeningsWitness)
 
@@ -310,8 +322,12 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 
 		// Proving that serial number is derived from the committed derivator
 		proof.EqualityOfCommittedValProof[i] = new(PKEqualityOfCommittedValProof)
+		proof.ProductCommitmentProof[i] = new(PKComProductProof)
 		proof.EqualityOfCommittedValProof[i] = wit.EqualityOfCommittedValWitness[i].Prove()
-
+		proof.ProductCommitmentProof[i], err = wit.ProductCommitmentWitness[i].Prove()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Proving the knowledge of output coins' openings
@@ -324,13 +340,13 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 		}
 	}
 
-	// Proving that output values do not exceed v_max
-	// proof.ComMultiRangeProof, err = wit.ComMultiRangeWitness.Prove()
-	// if err != nil {
-	// 	return nil, err
-	// }
+	// Proving that each output values does not exceed v_max
+	proof.ComOutputMultiRangeProof, err = wit.ComOutputMultiRangeWitness.Prove()
+	if err != nil {
+		return nil, err
+	}
 
-	// Proving that sum of all output values do not exceed v_max
+	// Proving that sum of all output values does not exceed v_max
 	proof.SumOutRangeProof, err = wit.SumOutRangeWitness.Prove()
 	if err != nil {
 		return nil, err

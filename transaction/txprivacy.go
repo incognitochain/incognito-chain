@@ -23,7 +23,8 @@ type TxPrivacy struct {
 	Sig       []byte `json:"Sig, omitempty"`       // 64 bytes
 	Proof     *zkp.PaymentProof
 
-	PubKeyLastByte byte `json:"AddressLastByte"`
+	PubKeyLastByteSender byte `json:"PubKeyLastByteSender"`
+	PubKeyLastByteReceiver []byte `json:"PubKeyLastByteReceiver"`
 
 	TxId       *common.Hash
 	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
@@ -79,9 +80,9 @@ func (tx *TxPrivacy) CreateTx(
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
 
-	// get public key last byte
+	// get public key last byte of sender
 	pkLastByte := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
-	tx.PubKeyLastByte = pkLastByte
+	tx.PubKeyLastByteSender = pkLastByte
 
 	// create new output coins
 	outputCoins := make([]*privacy.OutputCoin, len(paymentInfo))
@@ -299,7 +300,7 @@ func (tx *TxPrivacy) Hash() *common.Hash {
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
 	record += string(tx.Proof.Bytes()[:])
-	record += string(tx.PubKeyLastByte)
+	record += string(tx.PubKeyLastByteSender)
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
