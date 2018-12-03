@@ -14,7 +14,7 @@ type TxTokenPrivacyData struct {
 
 	Type   int    // action type
 	Amount uint64 // init amount
-	Descs  []*JoinSplitDesc `json:"Descs"`
+	Descs  []JoinSplitDesc `json:"Descs"`
 }
 
 // Hash - return hash of token data, be used as Token ID
@@ -39,10 +39,6 @@ type CustomTokenPrivacyParamTx struct {
 	Amount         uint64        `json:"TokenAmount"`
 	TokenTxType    int           `json:"TokenTxType"`
 	Receiver       []TxTokenVout `json:"TokenReceiver"`
-
-	// temp variable to process coding
-	vins       []TxTokenVin
-	vinsAmount uint64
 }
 
 // CreateCustomTokenReceiverArray - parse data frm rpc request to create a list vout for preparing to create a custom token tx
