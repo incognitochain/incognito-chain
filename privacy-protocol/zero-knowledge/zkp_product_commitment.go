@@ -70,10 +70,8 @@ func (pro *PKComProductProof)  SetBytes(proofBytes []byte)  {
 	pro.cmA.Decompress(proofBytes[offset:offset+33])
 	offset+=33
 	pro.cmB.Decompress(proofBytes[offset:offset+3])
-
 	offset+=33
 	pro.D.Decompress(proofBytes[offset:offset+33])
-
 	offset+=33
 	pro.E.Decompress(proofBytes[offset:offset+33])
 	offset+=33
