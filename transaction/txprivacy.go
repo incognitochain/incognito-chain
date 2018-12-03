@@ -122,7 +122,7 @@ func (tx *TxPrivacy) CreateTx(
 	// create zero knowledge proof of payment
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins )
+	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers)
 	tx.Proof, _ = witness.Prove(false)
 
 	// set private key for signing tx
