@@ -83,5 +83,5 @@ func (db *db) StoreLoanPayment(loanID []byte, principle, interest uint64, deadli
 
 func (db *db) GetLoanPayment(loanID []byte) (uint64, uint64, uint32, error) {
 	// TODO(@0xbunyip): implement
-	return nil, 0, 0, nil
+	return 0, 0, 0, nil
 }

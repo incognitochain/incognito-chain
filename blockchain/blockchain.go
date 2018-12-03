@@ -501,6 +501,41 @@ func (self *BlockChain) getLoanRequest(loanID []byte) (*transaction.TxLoanReques
 	return nil, nil
 }
 
+func (self *BlockChain) ProcessLoanPayment(tx *transaction.TxLoanPayment) error {
+	value := uint64(0)
+	for _, desc := range tx.Descs {
+		for _, note := range desc.Note {
+			accountDCB, _ := wallet.Base58CheckDeserialize(DCBAddress)
+			dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+			if bytes.Equal(note.Apk[:], dcbPk) {
+				value += note.Value
+			}
+		}
+	}
+	principle, interest, deadline, err := self.config.DataBase.GetLoanPayment(tx.LoanID)
+	if tx.PayPrinciple {
+		if err != nil {
+			return err
+		}
+		if principle < value {
+			value = principle
+		}
+		principle -= value
+	} else {
+		txRequest, _ := self.getLoanRequest(tx.LoanID)
+		interestPerPeriod := GetInterestAmount(principle, txRequest.Params.InterestRate)
+		periodInc := uint32(0)
+		if value < interest {
+			interest -= value
+		} else {
+			periodInc = 1 + uint32((value-interest)/interestPerPeriod)
+			interest = interestPerPeriod - (value-interest)%interestPerPeriod
+		}
+		deadline = deadline + periodInc*txRequest.Params.Maturity
+	}
+	return self.config.DataBase.StoreLoanPayment(tx.LoanID, principle, interest, deadline)
+}
+
 func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetType() {
@@ -518,16 +553,15 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 			{
 				// Update loan payment info after withdrawing Constant
 				tx := tx.(*transaction.TxLoanUnlock)
-				txRequest, err := self.getLoanRequest(tx.LoanID)
-				if err != nil {
-					return err
-				}
+				txRequest, _ := self.getLoanRequest(tx.LoanID)
 				principle := txRequest.LoanAmount
 				interest := GetInterestAmount(principle, txRequest.Params.InterestRate)
 				self.config.DataBase.StoreLoanPayment(tx.LoanID, principle, interest, uint32(block.Header.Height))
 			}
 		case common.TxLoanPayment:
 			{
+				tx := tx.(*transaction.TxLoanPayment)
+				self.ProcessLoanPayment(tx)
 			}
 		}
 	}
