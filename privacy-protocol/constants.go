@@ -13,14 +13,14 @@ const (
 	CMRingSizeExp   = 3
 	LenCmIndexBytes = 10
 
-	ComInputOpeningsProofSize       = 0
-	ComOutputOpeningsProofSize      = 0
-	OneOfManyProofSize              = 0
+	ComInputOpeningsProofSize  = 0
+	ComOutputOpeningsProofSize = 0
+	// OneOfManyProofSize              = 0
 	EqualityOfCommittedValProofSize = 0
 	ComMultiRangeProofSize          = 0
 	ComZeroProofSize                = 0
 	ComZeroOneProofSize             = 0
-	EllipticPointCompressSize       = 33
-	CommitmentSize                  = 0
-	BigIntSize                      = 32
+	// EllipticPointCompressSize       = 33
+	CommitmentSize = 0
+	BigIntSize     = 32
 )

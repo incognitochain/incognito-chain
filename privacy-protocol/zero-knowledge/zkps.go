@@ -59,7 +59,7 @@ type PaymentProofByte struct {
 	//It should be constants
 	lenComInputOpeningsProof       int
 	lenComOutputOpeningsProof      int
-	lenOneOfManyProof              int
+	lenOneOfManyProof              int //
 	lenEqualityOfCommittedValProof int
 	lenComMultiRangeProof          int
 	lenComZeroProof                int
