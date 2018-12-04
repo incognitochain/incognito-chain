@@ -355,8 +355,8 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
 	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
-	candidateTxs := make([]*transaction.Tx, 0)
-	candidateTxsMap := make(map[byte][]*transaction.Tx)
+	candidateTxs := make([]*transaction.TxNormal, 0)
+	candidateTxsMap := make(map[byte][]*transaction.TxNormal)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
 			for _, desc := range temp.Descs {
@@ -374,7 +374,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		}
 	}
 
-	// check real fee per Tx
+	// check real fee per TxNormal
 	var realFee uint64
 	if int64(estimateFeeCoinPerKb) == -1 {
 		temp, _ := self.config.FeeEstimator[chainIdSender].EstimateFee(numBlock)
@@ -387,7 +387,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	// list unspent tx for create tx
 	totalAmmount += int64(realFee)
 	if totalAmmount > 0 {
-		candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
+		candidateTxsMap = make(map[byte][]*transaction.TxNormal, 0)
 		for chainId, usableTxs := range usableTxsMap {
 			for _, temp := range usableTxs {
 				for _, desc := range temp.Descs {

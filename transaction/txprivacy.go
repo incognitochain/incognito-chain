@@ -13,7 +13,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
-type TxPrivacy struct {
+type Tx struct {
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
@@ -41,13 +41,23 @@ type TxPrivacy struct {
 	Metadata interface{}
 }
 
-func (tx *TxPrivacy) CreateTx(
+// commitments: list of (CMRingSize * numInput) random commitments
+// cmIndices:
+
+
+
+func (tx *Tx) CreateTx(
 	senderSK *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
-	inputCoins []*privacy.InputCoin,
+	usableTx map[byte][]*TxNormal,
 	fee uint64,
+	commitments [][]byte,
+	randCmIndices []privacy.CMIndex,
+	myCmIndices []uint32,
 	hasPrivacy bool,
-) (*TxPrivacy, error) {
+) (*Tx, error) {
+
+	var inputCoins []*privacy.InputCoin
 
 	// Print list of all input coins
 	fmt.Printf("List of all input coins before building tx:\n")
@@ -146,7 +156,7 @@ func (tx *TxPrivacy) CreateTx(
 }
 
 // SignTx signs tx
-func (tx * TxPrivacy) SignTx(hasPrivacy bool) error {
+func (tx *Tx) SignTx(hasPrivacy bool) error {
 	//Check input transaction
 	if tx.Sig != nil {
 		return fmt.Errorf("input transaction must be an unsigned one")
@@ -212,7 +222,7 @@ func (tx * TxPrivacy) SignTx(hasPrivacy bool) error {
 	return nil
 }
 
-func (tx *TxPrivacy) VerifySigTx(hasPrivacy bool) (bool, error){
+func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error){
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, fmt.Errorf("input transaction must be an signed one!")
@@ -281,7 +291,7 @@ func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
 // - Verify tx signature
 // - Verify the payment proof
 // Note: This method doesn't check for double spending
-func (tx *TxPrivacy) ValidateTx(hasPrivacy bool) bool {
+func (tx *Tx) ValidateTx(hasPrivacy bool) bool {
 	// Verify tx signature
 	var valid bool
 	var err error
@@ -303,7 +313,7 @@ func (tx *TxPrivacy) ValidateTx(hasPrivacy bool) bool {
 	return true
 }
 
-func (tx *TxPrivacy) Hash() *common.Hash {
+func (tx *Tx) Hash() *common.Hash {
 	record := strconv.Itoa(int(tx.Version))
 	record += tx.Type
 	record += strconv.FormatInt(tx.LockTime, 10)

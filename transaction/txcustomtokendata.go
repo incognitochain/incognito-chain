@@ -24,8 +24,8 @@ type BuySellResponse struct {
 // TxTokenVin - vin format for custom token data
 // It look like vin format of bitcoin
 type TxTokenVin struct {
-	TxCustomTokenID common.Hash            // Tx-id(or hash) of before tx, which is used as a input for current tx as a pre-utxo
-	VoutIndex       int                    // index in vouts array of before Tx-id
+	TxCustomTokenID common.Hash            // TxNormal-id(or hash) of before tx, which is used as a input for current tx as a pre-utxo
+	VoutIndex       int                    // index in vouts array of before TxNormal-id
 	Signature       string                 // Signature to verify owning before tx(pre-utxo)
 	PaymentAddress  privacy.PaymentAddress // use to verify signature of pre-utxo of token
 }

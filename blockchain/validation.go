@@ -24,7 +24,7 @@ IsSalaryTx determines whether or not a transaction is a salary.
 func (self *BlockChain) IsSalaryTx(tx transaction.Transaction) bool {
 	// Check normal tx(not an action tx)
 	if tx.GetType() != common.TxSalaryType {
-		normalTx, ok := tx.(*transaction.Tx)
+		normalTx, ok := tx.(*transaction.TxNormal)
 		if !ok {
 			return false
 		}
@@ -54,7 +54,7 @@ func (self *BlockChain) ValidateDoubleSpend(tx transaction.Transaction, chainID 
 	nullifierDb := txViewPoint.ListNullifiers()
 	var descs []*transaction.JoinSplitDesc
 	if tx.GetType() == common.TxNormalType {
-		descs = tx.(*transaction.Tx).Descs
+		descs = tx.(*transaction.TxNormal).Descs
 	}
 	for _, desc := range descs {
 		for _, nullifer := range desc.Nullifiers {
@@ -118,7 +118,7 @@ func (self *BlockChain) ValidateTxLoanResponse(tx transaction.Transaction, chain
 		}
 	}
 	if !isBoard {
-		return fmt.Errorf("Tx must be created by DCB Governor")
+		return fmt.Errorf("TxNormal must be created by DCB Governor")
 	}
 
 	// Check if a loan request with the same id exists on any chain
@@ -483,7 +483,7 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 			}
 		}
 	} else if bytes.Equal(saleData.BuyingAsset, ConstantID[:]) {
-		for _, desc := range requestTx.Tx.Descs {
+		for _, desc := range requestTx.TxNormal.Descs {
 			for _, note := range desc.Note {
 				if !bytes.Equal(note.Apk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
 					return fmt.Errorf("Sending payment to %x instead of %x", note.Apk[:], DCBAddress)
@@ -590,7 +590,7 @@ func (self *BlockChain) ValidateBuyFromGOVRequestTx(
 	}
 
 	// check double spending on fee + amount tx
-	err := self.ValidateDoubleSpend(&buySellReqTx.Tx, chainID)
+	err := self.ValidateDoubleSpend(&buySellReqTx.TxNormal, chainID)
 	if err != nil {
 		return err
 	}
@@ -619,7 +619,7 @@ func (self *BlockChain) ValidateBuyBackRequestTx(
 	}
 
 	// check double spending on fee + amount tx
-	err := self.ValidateDoubleSpend(buyBackReqTx.Tx, chainID)
+	err := self.ValidateDoubleSpend(buyBackReqTx.TxNormal, chainID)
 	if err != nil {
 		return err
 	}

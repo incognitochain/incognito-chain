@@ -21,7 +21,7 @@ func NewLoanWithdraw(data map[string]interface{}) *LoanWithdraw {
 }
 
 type TxLoanWithdraw struct {
-	Tx
+	TxNormal
 	*LoanWithdraw // data for a loan response
 }
 
@@ -45,7 +45,7 @@ func CreateTxLoanWithdraw(
 	}
 
 	txLoanWithdraw := &TxLoanWithdraw{
-		Tx:           *tx,
+		TxNormal:     *tx,
 		LoanWithdraw: loanWithdraw,
 	}
 
@@ -54,7 +54,7 @@ func CreateTxLoanWithdraw(
 
 func (tx *TxLoanWithdraw) Hash() *common.Hash {
 	// get hash of tx
-	record := tx.Tx.Hash().String()
+	record := tx.TxNormal.Hash().String()
 
 	// add more hash of loan response data
 	record += string(tx.LoanID)
@@ -67,7 +67,7 @@ func (tx *TxLoanWithdraw) Hash() *common.Hash {
 
 func (tx *TxLoanWithdraw) ValidateTransaction() bool {
 	// validate for normal tx
-	if !tx.Tx.ValidateTransaction() {
+	if !tx.TxNormal.ValidateTransaction() {
 		return false
 	}
 

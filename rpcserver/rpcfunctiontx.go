@@ -137,8 +137,8 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
 	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
-	candidateTxs := make([]*transaction.Tx, 0)
-	candidateTxsMap := make(map[byte][]*transaction.Tx)
+	candidateTxs := make([]*transaction.TxNormal, 0)
+	candidateTxsMap := make(map[byte][]*transaction.TxNormal)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
 			for _, desc := range temp.Descs {
@@ -156,7 +156,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		}
 	}
 
-	// check real fee per Tx
+	// check real fee per TxNormal
 	var realFee uint64
 	if int64(estimateFeeCoinPerKb) == -1 {
 		temp, _ := self.config.FeeEstimator[chainIdSender].EstimateFee(numBlock)
@@ -169,7 +169,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 	// list unspent tx for create tx
 	totalAmmount += int64(realFee)
 	estimateTotalAmount = totalAmmount
-	candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
+	candidateTxsMap = make(map[byte][]*transaction.TxNormal, 0)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
 			for _, desc := range temp.Descs {
@@ -238,7 +238,7 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	var tx transaction.Tx
+	var tx transaction.TxNormal
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
@@ -324,7 +324,7 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 	switch tx.GetType() {
 	case common.TxNormalType:
 		{
-			tempTx := tx.(*transaction.Tx)
+			tempTx := tx.(*transaction.TxNormal)
 			result = jsonresult.TransactionDetail{
 				BlockHash:       blockHash.String(),
 				Index:           uint64(index),

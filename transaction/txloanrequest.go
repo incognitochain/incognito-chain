@@ -13,7 +13,7 @@ type FeeArgs struct {
 	SenderKey     *privacy.SpendingKey
 	PaymentInfo   []*privacy.PaymentInfo
 	Rts           map[byte]*common.Hash
-	UsableTx      map[byte][]*Tx
+	UsableTx      map[byte][]*TxNormal
 	Commitments   map[byte]([][]byte)
 	Fee           uint64
 	SenderChainID byte
@@ -70,7 +70,7 @@ func NewLoanRequest(data map[string]interface{}) *LoanRequest {
 }
 
 type TxLoanRequest struct {
-	Tx
+	TxNormal
 	*LoanRequest // data for a loan request
 }
 
@@ -96,7 +96,7 @@ func CreateTxLoanRequest(
 	}
 
 	txLoanRequest := &TxLoanRequest{
-		Tx:          *tx,
+		TxNormal:    *tx,
 		LoanRequest: loanRequest,
 	}
 
@@ -105,7 +105,7 @@ func CreateTxLoanRequest(
 
 func (tx *TxLoanRequest) Hash() *common.Hash {
 	// get hash of tx
-	record := tx.Tx.Hash().String()
+	record := tx.TxNormal.Hash().String()
 
 	// add more hash of collateral data
 	record += string(tx.LoanID)
@@ -123,7 +123,7 @@ func (tx *TxLoanRequest) Hash() *common.Hash {
 
 func (tx *TxLoanRequest) ValidateTransaction() bool {
 	// validate for normal tx
-	if !tx.Tx.ValidateTransaction() {
+	if !tx.TxNormal.ValidateTransaction() {
 		return false
 	}
 

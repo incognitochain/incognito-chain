@@ -207,12 +207,12 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.Block) error {
 	ef.numBlocksRegistered++
 
 	// Randomly order txs in block.
-	transactions := make(map[*transaction.Tx]struct{})
+	transactions := make(map[*transaction.TxNormal]struct{})
 	for _, t := range block.Transactions {
 		switch t.GetType() {
 		case common.TxNormalType, common.TxSalaryType:
 			{
-				transactions[t.(*transaction.Tx)] = struct{}{}
+				transactions[t.(*transaction.TxNormal)] = struct{}{}
 			}
 		}
 	}

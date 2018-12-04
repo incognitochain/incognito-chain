@@ -93,7 +93,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdTx:
 		msg = &MessageTx{
-			Transaction: &transaction.Tx{},
+			Transaction: &transaction.TxNormal{},
 		}
 		break
 	case CmdVersion:
