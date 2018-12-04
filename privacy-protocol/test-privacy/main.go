@@ -1,9 +1,13 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+
+	cashec "github.com/ninjadotorg/constant/cashec"
 )
 
 func main() {
@@ -142,7 +146,7 @@ func main() {
 	//zkp.TestPKComProduct()
 	//privacy.Curve.Params().G
 
-	//zkp.TestPKComZeroOne()
+	// zkp.TestPKComZeroOne()
 
 	/*----------------- TEST PCM SINGLETON -----------------*/
 	//privacy.PedCom = privacy.GetPedersenParams()
@@ -201,10 +205,10 @@ func main() {
 	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
 
 	/*----------------- TEST NDH -----------------*/
-	//fmt.Println(zkp.TestProofIsZero())
+	fmt.Println(zkp.TestProofIsZero())
 	//privacy.TestECC()
 	//fmt.Println(zkp.TestOpeningsProtocol())
-	fmt.Println(zkp.TestPKEqualityOfCommittedVal())
+	// fmt.Println(zkp.TestPKEqualityOfCommittedVal())
 	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
 	/*--------------------------------------------*/
 
@@ -222,6 +226,26 @@ func main() {
 
 	/*----------------- TEST KEY SET -----------------*/
 
+	keySet := new(cashec.KeySet)
+	// fmt.Println(keySet)
+	spendingKey := privacy.GenerateSpendingKey([]byte{byte(0), byte(1), byte(23), byte(235)})
+	keySet.ImportFromPrivateKey(&spendingKey)
+
+	data := []byte{0}
+	signature, _ := keySet.Sign(data)
+	// // if err != nil {
+	// // 	fmt.Println(err)
+	// // }
+	fmt.Println(hex.EncodeToString(signature))
+
+	signature, _ = hex.DecodeString("5d9f5e9c350a877ddbbe227b40c19b00c040e715924740f2d92cc9dc02da5937ba433dbca431f2a0a447e21fd096d894f869a9e31b8217ee0cf9c33f8b032ade")
+	//
+	res, _ := keySet.Verify(data, signature)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+
+	fmt.Println(res)
 	//keySet := new(cashec.KeySet)
 	//spendingKey := privacy.GenerateSpendingKey([]byte{123})
 	//keySet.ImportFromPrivateKey(&spendingKey)
