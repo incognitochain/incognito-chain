@@ -66,42 +66,42 @@ func (pro *PKOneOfManyProof) Bytes() []byte {
 	nBytes := 0
 
 	// convert array cl to bytes array
-	for i:=0; i < n; i++{
+	for i := 0; i < n; i++ {
 		bytes = append(bytes, pro.cl[i].Compress()...)
 		nBytes += privacy.CompressedPointSize
 	}
 	// convert array ca to bytes array
-	for i:=0; i < n; i++{
+	for i := 0; i < n; i++ {
 		bytes = append(bytes, pro.ca[i].Compress()...)
 		nBytes += privacy.CompressedPointSize
 	}
 
 	// convert array cb to bytes array
-	for i:=0; i < n; i++{
+	for i := 0; i < n; i++ {
 		bytes = append(bytes, pro.cb[i].Compress()...)
 		nBytes += privacy.CompressedPointSize
 	}
 
 	// convert array cd to bytes array
-	for i:=0; i < n; i++{
+	for i := 0; i < n; i++ {
 		bytes = append(bytes, pro.cd[i].Compress()...)
 		nBytes += privacy.CompressedPointSize
 	}
 
 	// convert array f to bytes array
-	for i:=0; i < n; i++{
+	for i := 0; i < n; i++ {
 		bytes = append(bytes, pro.f[i].Bytes()...)
 		nBytes += 32
 	}
 
 	// convert array za to bytes array
-	for i:=0; i < n; i++{
+	for i := 0; i < n; i++ {
 		bytes = append(bytes, pro.za[i].Bytes()...)
 		nBytes += 32
 	}
 
 	// convert array zb to bytes array
-	for i:=0; i < n; i++{
+	for i := 0; i < n; i++ {
 		bytes = append(bytes, pro.zb[i].Bytes()...)
 		nBytes += 32
 	}
@@ -112,7 +112,7 @@ func (pro *PKOneOfManyProof) Bytes() []byte {
 
 	// get commitment's cmIndex
 	cmIndex := make([]*privacy.CMIndex, N)
-	for i := 0; i < N; i++{
+	for i := 0; i < N; i++ {
 		cmIndex[i] = new(privacy.CMIndex)
 		cmIndex[i].GetCmIndex(pro.commitments[i])
 
@@ -135,65 +135,65 @@ func (pro *PKOneOfManyProof) Bytes() []byte {
 	return bytes
 }
 
-func (pro *PKOneOfManyProof) SetBytes(bytes []byte){
+func (pro *PKOneOfManyProof) SetBytes(bytes []byte) {
 	n := privacy.CMRingSizeExp
 	N := privacy.CMRingSize
 
 	// get cl array
 	pro.cl = make([]*privacy.EllipticPoint, n)
-	for i := 0; i < n; i++{
+	for i := 0; i < n; i++ {
 		pro.cl[i] = new(privacy.EllipticPoint)
-		pro.cl[i], _ = privacy.DecompressKey(bytes[33*i : 33*i + 33])
+		pro.cl[i], _ = privacy.DecompressKey(bytes[33*i: 33*i+33])
 	}
 	// get ca array
 	pro.ca = make([]*privacy.EllipticPoint, n)
-	for i := 0; i < n; i++{
+	for i := 0; i < n; i++ {
 		pro.ca[i] = new(privacy.EllipticPoint)
-		pro.ca[i], _ = privacy.DecompressKey(bytes[33*n + 33*i : 33*n + 33*i + 33])
+		pro.ca[i], _ = privacy.DecompressKey(bytes[33*n+33*i: 33*n+33*i+33])
 	}
 	// get cb array
 	pro.cb = make([]*privacy.EllipticPoint, n)
-	for i := 0; i < n; i++{
+	for i := 0; i < n; i++ {
 		pro.cb[i] = new(privacy.EllipticPoint)
-		pro.cb[i], _ = privacy.DecompressKey(bytes[66*n + 33*i : 66*n + 33*i + 33])
+		pro.cb[i], _ = privacy.DecompressKey(bytes[66*n+33*i: 66*n+33*i+33])
 	}
 
 	// get cd array
 	pro.cd = make([]*privacy.EllipticPoint, n)
-	for i := 0; i < n; i++{
+	for i := 0; i < n; i++ {
 		pro.cd[i] = new(privacy.EllipticPoint)
-		pro.cd[i], _ = privacy.DecompressKey(bytes[99*n + 33*i : 99*n + 33*i + 33])
+		pro.cd[i], _ = privacy.DecompressKey(bytes[99*n+33*i: 99*n+33*i+33])
 	}
 
 	// get f array
 	pro.f = make([]*big.Int, n)
-	for i := 0; i < n; i++{
-		pro.f[i] = new(big.Int).SetBytes(bytes[4*n*33 + 32*i: 4*n*33 + 32*i + 32])
+	for i := 0; i < n; i++ {
+		pro.f[i] = new(big.Int).SetBytes(bytes[4*n*33+32*i: 4*n*33+32*i+32])
 	}
 
 	// get za array
 	pro.za = make([]*big.Int, n)
-	for i := 0; i < n; i++{
-		pro.za[i] = new(big.Int).SetBytes(bytes[4*n*33 + 32*n + 32*i: 4*n*33 + 32*n + 32*i + 32])
+	for i := 0; i < n; i++ {
+		pro.za[i] = new(big.Int).SetBytes(bytes[4*n*33+32*n+32*i: 4*n*33+32*n+32*i+32])
 	}
 
 	// get zb array
 	pro.zb = make([]*big.Int, n)
-	for i := 0; i < n; i++{
-		pro.zb[i] = new(big.Int).SetBytes(bytes[4*n*33 + 64*n + 32*i: 4*n*33 + 64*n + 32*i + 32])
+	for i := 0; i < n; i++ {
+		pro.zb[i] = new(big.Int).SetBytes(bytes[4*n*33+64*n+32*i: 4*n*33+64*n+32*i+32])
 	}
 
 	// get zd
-	pro.zd = new(big.Int).SetBytes(bytes[4*n*33 + 3*n*32 : 4*n*33 + 3*n*32 + 32])
+	pro.zd = new(big.Int).SetBytes(bytes[4*n*33+3*n*32: 4*n*33+3*n*32+32])
 
 	// get commitments list
 	pro.commitments = make([]*privacy.EllipticPoint, N)
 	lenPre := 4*n*33 + 3*n*32 + 32
-	for i := 0; i < N; i++{
+	for i := 0; i < N; i++ {
 		// get length of cm index
 		cmIndexBytesLen := int(bytes[lenPre])
 		cmIndex := new(privacy.CMIndex)
-		cmIndex.SetBytes(bytes[lenPre + 1 : lenPre + 1 + cmIndexBytesLen])
+		cmIndex.SetBytes(bytes[lenPre+1: lenPre+1+cmIndexBytesLen])
 
 		// for testing
 		//rand := true
@@ -358,7 +358,7 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 
 func (pro *PKOneOfManyProof) Verify() bool {
 	N := privacy.CMRingSize
-	n:= privacy.CMRingSizeExp
+	n := privacy.CMRingSizeExp
 
 	//temp := 1
 	//n := 0
@@ -473,9 +473,6 @@ func TestPKOneOfMany() bool {
 	commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
 	SNDerivators := make([]*big.Int, privacy.CMRingSize)
 	randoms := make([]*big.Int, privacy.CMRingSize)
-
-
-
 	for i := 0; i < privacy.CMRingSize; i++ {
 		SNDerivators[i] = privacy.RandInt()
 		randoms[i] = privacy.RandInt()

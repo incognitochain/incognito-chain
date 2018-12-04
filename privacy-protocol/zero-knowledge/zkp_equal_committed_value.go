@@ -96,7 +96,7 @@ func (wit *PKEqualityOfCommittedValWitness) Prove() *PKEqualityOfCommittedValPro
 	t := make([]*privacy.EllipticPoint, 2)
 	for i := 0; i < 2; i++ {
 		t[i] = new(privacy.EllipticPoint)
-		t[i].X, t[i].Y = privacy.Curve.Add(privacy.PedCom.G[*wit.Index[i]].X, privacy.PedCom.G[*wit.Index[i]].Y, privacy.PedCom.G[3].X, privacy.PedCom.G[3].Y)
+		t[i].X, t[i].Y = privacy.Curve.Add(privacy.PedCom.G[*wit.Index[i]].X, privacy.PedCom.G[*wit.Index[i]].Y, privacy.PedCom.G[privacy.PedCom.Capacity-1].X, privacy.PedCom.G[privacy.PedCom.Capacity-1].Y)
 		t[i].X, t[i].Y = privacy.Curve.ScalarMult(t[i].X, t[i].Y, wRand.Bytes())
 	}
 	proof := new(PKEqualityOfCommittedValProof)
@@ -110,9 +110,12 @@ func (pro *PKEqualityOfCommittedValProof) Verify() bool {
 	for i := 0; i < 2; i++ {
 		rightPoint := new(privacy.EllipticPoint)
 		rightPoint.X, rightPoint.Y = privacy.Curve.ScalarMult(privacy.PedCom.G[*pro.Index[i]].X, privacy.PedCom.G[*pro.Index[i]].Y, pro.Z[0].Bytes())
+
 		tmpPoint := new(privacy.EllipticPoint)
-		tmpPoint.X, tmpPoint.Y = privacy.Curve.ScalarMult(privacy.PedCom.G[3].X, privacy.PedCom.G[3].Y, pro.Z[i+1].Bytes())
+
+		tmpPoint.X, tmpPoint.Y = privacy.Curve.ScalarMult(privacy.PedCom.G[privacy.PedCom.Capacity-1].X, privacy.PedCom.G[privacy.PedCom.Capacity-1].Y, pro.Z[i+1].Bytes())
 		rightPoint.X, rightPoint.Y = privacy.Curve.Add(rightPoint.X, rightPoint.Y, tmpPoint.X, tmpPoint.Y)
+
 		tmpPoint.X, tmpPoint.Y = privacy.Curve.ScalarMult(pro.C[i].X, pro.C[i].Y, xChallenge.Bytes())
 		rightPoint.X, rightPoint.Y = privacy.Curve.Add(rightPoint.X, rightPoint.Y, tmpPoint.X, tmpPoint.Y)
 		if !rightPoint.IsEqual(pro.T[i]) {
@@ -124,9 +127,11 @@ func (pro *PKEqualityOfCommittedValProof) Verify() bool {
 
 // TestPKEqualityOfCommittedVal ...
 func TestPKEqualityOfCommittedVal() bool {
+
 	witness := new(PKEqualityOfCommittedValWitness)
 	witness.randValue()
 	proof := new(PKEqualityOfCommittedValProof)
 	proof = witness.Prove()
+
 	return proof.Verify()
 }
