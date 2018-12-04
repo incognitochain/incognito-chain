@@ -491,7 +491,7 @@ func TestPKOneOfMany() bool {
 	proof, err := witness.Prove()
 
 	// Convert proof to bytes array
-	proofBytes, _ := proof.Bytes()
+	proofBytes := proof.Bytes()
 	fmt.Printf("Proof bytes: %v\n", proofBytes)
 	fmt.Printf("Proof bytes len: %v\n", len(proofBytes))
 

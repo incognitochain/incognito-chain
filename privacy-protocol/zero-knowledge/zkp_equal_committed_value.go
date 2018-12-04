@@ -12,8 +12,8 @@ import (
 
 // PKEqualityOfCommittedValProof contains...
 type PKEqualityOfCommittedValProof struct {
-	C     []*privacy.EllipticPoint //Statement
-	Index []*byte                  //Statement
+	C     []*privacy.EllipticPoint //Statement    // 2*sz(EcPoint)
+	Index []*byte                  //Statement		// 2*sz(byte)
 	T     []*privacy.EllipticPoint
 	Z     []*big.Int
 }

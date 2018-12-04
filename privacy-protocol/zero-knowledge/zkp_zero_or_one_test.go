@@ -8,8 +8,8 @@ import (
 )
 
 func TestPKComZeroOne(t *testing.T) {
-	res := true
-	for i:=0;i<100;i++{
+	var res bool
+	for i:=0;i<2;i++{
 		// generate Openings
 		valueRand := privacy.RandBytes(32)
 		vInt := new(big.Int).SetBytes(valueRand)
@@ -25,13 +25,14 @@ func TestPKComZeroOne(t *testing.T) {
 
 		// Proving
 		proof, _ := witness.Prove()
-		fmt.Printf("Proof: %+v\n", proof)
+		fmt.Println(len(proof.Bytes()))
+		//fmt.Printf("Proof: %+v\n", proof)
 
 		// Set proof for verifying
-		Proof := new(PKComZeroOneProof)
-		Proof.Set(proof.ca, proof.cb, proof.f, proof.za, proof.zb, proof.commitment, proof.index)
-
-		res = Proof.Verify()
+		//Proof := new(PKComZeroOneProof)
+		//Proof.Set(proof.ca, proof.cb, proof.f, proof.za, proof.zb, proof.commitment, proof.index)
+		//
+		//res = Proof.Verify()
 		fmt.Println(res)
 	}
 }

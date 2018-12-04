@@ -12,20 +12,15 @@ type PaymentWitness struct {
 	spendingKey *big.Int
 	inputCoins  []*privacy.InputCoin
 	outputCoins []*privacy.OutputCoin
-
 	pkLastByteSender  			byte
 	pkLastByteReceivers			[]byte
-
-
 	ComInputOpeningsWitness       []*PKComOpeningsWitness
 	OneOfManyWitness              []*PKOneOfManyWitness
 	EqualityOfCommittedValWitness []*PKEqualityOfCommittedValWitness
 	ProductCommitmentWitness      []*PKComProductWitness
-
 	ComOutputOpeningsWitness      []*PKComOpeningsWitness
 	ComOutputMultiRangeWitness    *PKComMultiRangeWitness
 	SumOutRangeWitness            *PKComMultiRangeWitness
-
 	ComZeroWitness                *PKComZeroWitness
 	//ComZeroOneWitness             *PKComZeroOneWitness
 }
@@ -33,16 +28,16 @@ type PaymentWitness struct {
 // PaymentProof contains all of PoK for spending coin
 type PaymentProof struct {
 	// for input coins
-	ComInputOpeningsProof       []*PKComOpeningsProof               //flag -1,-2
-	OneOfManyProof              []*PKOneOfManyProof                 //flag -3,-4
-	EqualityOfCommittedValProof []*PKEqualityOfCommittedValProof    //flag -5,-6
-	ProductCommitmentProof			[]*PKComProductProof                //flag -7,-8
+	ComInputOpeningsProof       []*PKComOpeningsProof
+	OneOfManyProof              []*PKOneOfManyProof
+	EqualityOfCommittedValProof []*PKEqualityOfCommittedValProof
+	ProductCommitmentProof			[]*PKComProductProof
 	// for output coins
-	ComOutputOpeningsProof      []*PKComOpeningsProof								//flag -9,-10
-	ComOutputMultiRangeProof 		*PKComMultiRangeProof								//flag -11,-12
-	SumOutRangeProof						*PKComMultiRangeProof								//flag -13,-14
+	ComOutputOpeningsProof      []*PKComOpeningsProof
+	ComOutputMultiRangeProof 		*PKComMultiRangeProof
+	SumOutRangeProof						*PKComMultiRangeProof
 	// for input = output
-	ComZeroProof       					*PKComZeroProof											//flag -15,-16
+	ComZeroProof       					*PKComZeroProof
 	// add list input coins' SN to proof for serial number
 	// these following attributes just exist when tx doesn't have privacy
 	OutputCoins []*privacy.OutputCoin
@@ -50,95 +45,49 @@ type PaymentProof struct {
 }
 func (paymentProof *PaymentProof) Bytes() []byte {
 	var proofbytes []byte
-
-  // OpeningsProof in total proof
-  // len(openingProof)|| -1 || openingsProof1 || -1 || openingsProof2 || -1 || openingsProof3 || -1 || openingsProof4.....||-2
-	var elementsFlag byte
-	elementsFlag = -1
-	var mainFlag byte
-	mainFlag = -2
-	proofbytes = append(proofbytes,byte(len(paymentProof.ComInputOpeningsProof)))
-	for i:=0;i<len(paymentProof.ComInputOpeningsProof);i++{
-		proofbytes = append(proofbytes, elementsFlag)
-		proofbytes = append(proofbytes, paymentProof.ComInputOpeningsProof[i].Bytes()...)
+	//
+	proofbytes = append(proofbytes, byte(len(paymentProof.ComInputOpeningsProof)))
+	for i:=0; i<len(paymentProof.ComInputOpeningsProof);i++{
+		proofbytes = append(proofbytes,paymentProof.ComInputOpeningsProof[i].Bytes()...)
 	}
-	proofbytes = append(proofbytes, mainFlag)
-
-	// OpeningsProof in total proof
-	// len(openingProof)|| -1 || openingsProof1 || -1 || openingsProof2 || -1 || openingsProof3 || -1 || openingsProof4.....||-2
-	// OneOfManyProof
-	elementsFlag = -3
-	mainFlag = -4
-	proofbytes = append(proofbytes,byte(len(paymentProof.OneOfManyProof)))
-	for i:=0;i<len(paymentProof.OneOfManyProof);i++{
-		proofbytes = append(proofbytes, elementsFlag)
-		proofbytes = append(proofbytes, paymentProof.OneOfManyProof[i].Bytes()...)
+	//
+	proofbytes = append(proofbytes, byte(len(paymentProof.OneOfManyProof)))
+	for i:=0; i<len(paymentProof.OneOfManyProof);i++{
+		proofbytes = append(proofbytes, byte(len(paymentProof.OneOfManyProof[i].Bytes())))
+		proofbytes = append(proofbytes,paymentProof.OneOfManyProof[i].Bytes()...)
 	}
-	proofbytes = append(proofbytes, mainFlag)
-
-	// EqualityOfCommittedValProof
-	elementsFlag = -5
-	mainFlag = -6
+	//
 	proofbytes = append(proofbytes,byte(len(paymentProof.EqualityOfCommittedValProof)))
-	for i:=0;i<len(paymentProof.EqualityOfCommittedValProof);i++{
-		proofbytes = append(proofbytes, elementsFlag)
-		proofbytes = append(proofbytes, paymentProof.EqualityOfCommittedValProof[i].Bytes()...)
+	for i:=0; i<len(paymentProof.EqualityOfCommittedValProof);i++{
+		proofbytes = append(proofbytes, byte(len(paymentProof.EqualityOfCommittedValProof[i].Bytes())))
+		proofbytes = append(proofbytes,paymentProof.EqualityOfCommittedValProof[i].Bytes()...)
 	}
-	proofbytes = append(proofbytes, mainFlag)
+	//
+	proofbytes = append(proofbytes,byte(len(paymentProof.EqualityOfCommittedValProof)))
+	for i:=0; i<len(paymentProof.EqualityOfCommittedValProof);i++{
+		proofbytes = append(proofbytes, byte(len(paymentProof.EqualityOfCommittedValProof[i].Bytes())))
+		proofbytes = append(proofbytes,paymentProof.EqualityOfCommittedValProof[i].Bytes()...)
+	}
 
-	// ProductCommitmentProof
-	elementsFlag = -7
-	mainFlag = -8
-	proofbytes = append(proofbytes,byte(len(paymentProof.ProductCommitmentProof)))
-	for i:=0;i<len(paymentProof.ProductCommitmentProof);i++{
-		proofbytes = append(proofbytes, elementsFlag)
-		proofbytes = append(proofbytes, paymentProof.ProductCommitmentProof[i].Bytes()...)
-	}
-	proofbytes = append(proofbytes, mainFlag)
 
-	// ProductCommitmentProof
-	elementsFlag = -7
-	mainFlag = -8
-	proofbytes = append(proofbytes,byte(len(paymentProof.ProductCommitmentProof)))
-	for i:=0;i<len(paymentProof.ProductCommitmentProof);i++{
-		proofbytes = append(proofbytes, elementsFlag)
-		proofbytes = append(proofbytes, paymentProof.ProductCommitmentProof[i].Bytes()...)
-	}
-	proofbytes = append(proofbytes, mainFlag)
 
-	// ComOutputOpeningsProof
-	elementsFlag = -9
-	mainFlag = -10
-	proofbytes = append(proofbytes,byte(len(paymentProof.ComOutputOpeningsProof)))
-	for i:=0;i<len(paymentProof.ComOutputOpeningsProof);i++{
-		proofbytes = append(proofbytes, elementsFlag)
-		proofbytes = append(proofbytes, paymentProof.ComOutputOpeningsProof[i].Bytes()...)
-	}
-	proofbytes = append(proofbytes, mainFlag)
-	// ComOutputMultiRangeProof
-	elementsFlag = -11
-	mainFlag = -12
-	proofbytes = append(proofbytes,byte(len(paymentProof.ComOutputMultiRangeProof.Bytes())))
-	proofbytes = append(proofbytes, elementsFlag)
-	proofbytes = append(proofbytes, paymentProof.ComOutputMultiRangeProof.Bytes()...)
-	proofbytes = append(proofbytes, mainFlag)
-	// SumOutRangeProof
-	elementsFlag = -13
-	mainFlag = -14
-	proofbytes = append(proofbytes,byte(len(paymentProof.SumOutRangeProof.Bytes())))
-	proofbytes = append(proofbytes, elementsFlag)
-	proofbytes = append(proofbytes, paymentProof.SumOutRangeProof.Bytes()...)
-	proofbytes = append(proofbytes, mainFlag)
-	// ComZeroProof
-	elementsFlag = -15
-	mainFlag = -16
-	proofbytes = append(proofbytes,byte(len(paymentProof.SumOutRangeProof.Bytes())))
-	proofbytes = append(proofbytes, elementsFlag)
-	proofbytes = append(proofbytes, paymentProof.SumOutRangeProof.Bytes()...)
-	proofbytes = append(proofbytes, mainFlag)
 	return proofbytes
 }
-
+func findFirst(v byte, slice []byte) byte{
+	for i:=0;i<len(slice);i++ {
+		if (slice[i] == v) {
+			return byte(i)
+		}
+	}
+	return 0
+}
+func (paymentProof *PaymentProof) SetBytes(proofbytes []byte){
+	flagPos :=make([]byte,20)
+	for i:=0;i<len(flagPos);i++{
+		flagPos[i] = findFirst(byte(-i-1),proofbytes)
+	}
+	
+}
 type PaymentProofByte struct {
 	lenarrayComInputOpeningsProof       int
 	lenarrayComOutputOpeningsProof      int
