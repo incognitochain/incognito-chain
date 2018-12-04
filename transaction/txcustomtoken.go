@@ -29,6 +29,40 @@ func (tx *TxCustomToken) SetListUtxo(data map[common.Hash]TxCustomToken) {
 	tx.listUtxo = data
 }
 
+func (customTokentx *TxCustomToken) validateDoubleSpendCustomTokenOnTx(txInBlock Transaction) error {
+	temp := txInBlock.(*TxCustomToken)
+	for _, vin := range temp.TxTokenData.Vins {
+		for _, item := range customTokentx.TxTokenData.Vins {
+			if vin.TxCustomTokenID.String() == item.TxCustomTokenID.String() {
+				if vin.VoutIndex == item.VoutIndex {
+					return errors.New("Double spend")
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (customTokenTx *TxCustomToken) ValidateTxWithCurrentMempool(mr MempoolRetriever) error {
+	if customTokenTx.Type == common.TxSalaryType {
+		return errors.New("Can not receive a salary tx from other node, this is a violation")
+	}
+
+	normalTx := customTokenTx.Tx
+	err := normalTx.ValidateTxWithCurrentMempool(mr)
+	if err != nil {
+		return err
+	}
+	txsInMem := mr.GetTxsInMem()
+	for _, txInMem := range txsInMem {
+		err := customTokenTx.validateDoubleSpendCustomTokenOnTx(txInMem.Tx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Hash returns the hash of all fields of the transaction
 func (tx TxCustomToken) Hash() *common.Hash {
 	// get hash of tx

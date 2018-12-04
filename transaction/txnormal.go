@@ -101,7 +101,9 @@ func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.
 }
 
 func (tx *Tx) ValidateTxWithCurrentMempool(mr MempoolRetriever) error {
-	// TODO: add more logic
+	if tx.Type == common.TxSalaryType {
+		return errors.New("Can not receive a salary tx from other node, this is a violation")
+	}
 	poolNullifiers := mr.GetPoolNullifiers()
 	return tx.validateDoubleSpendTxWithCurrentMempool(poolNullifiers)
 }

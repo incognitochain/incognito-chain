@@ -8,6 +8,7 @@ import (
 
 type MempoolRetriever interface {
 	GetPoolNullifiers() map[common.Hash][][]byte
+	GetTxsInMem() map[common.Hash]TxDesc
 }
 
 // Interface for all type of transaction
