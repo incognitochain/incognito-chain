@@ -39,27 +39,6 @@ type OutputCoin struct {
 	CoinDetailsEncrypted *CoinDetailsEncrypted
 }
 
-<<<<<<< HEAD
-func (outputCoin* OutputCoin) Bytes(){
-
-}
-
-func (outputCoin* OutputCoin) SetBytes(){
-
-}
-
-
-
-type CoinDetailsEncrypted struct {
-	RandomEncrypted []byte
-	SymKeyEncrypted *ElGamalCipherText
-}
-
-func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error{
-	/**** Generate symmetric key of AES cryptosystem,
-				it is used for encryption coin details ****/
-	symKeyPoint:= new(EllipticPoint)
-=======
 func (outputCoin *OutputCoin) Bytes() {
 
 }
@@ -77,7 +56,6 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {
 	/**** Generate symmetric key of AES cryptosystem,
 				it is used for encryption coin details ****/
 	symKeyPoint := new(EllipticPoint)
->>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 	symKeyPoint.Randomize()
 	symKeyByte := symKeyPoint.X.Bytes()
 	//fmt.Printf("Plain text 2: symKey byte: %v\n", symKeyByte)
@@ -107,45 +85,6 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {
 	/****** Encrypt symKeyByte using Transmission key's receiver with ElGamal cryptosystem ****/
 	// prepare public key for ElGamal cryptosystem
 	pubKey := new(ElGamalPubKey)
-<<<<<<< HEAD
-	pubKey.H,_ = DecompressKey(receiverTK)
-	pubKey.Curve = &Curve
-
-	coin.CoinDetailsEncrypted.SymKeyEncrypted = pubKey.ElGamalEnc(symKeyPoint)
-	if err != nil{
-		fmt.Println(err)
-		return err
-	}
-
-	return nil
-}
-
-func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey){
-	/*** Decrypt symKeyEncrypted using receiver's receiving key to get symKey ***/
-	// prepare private key for Elgamal cryptosystem
-	privKey := new(ElGamalPrivKey)
-	privKey.Set(&Curve, new(big.Int).SetBytes(receivingKey))
-
-	symKeyPoint := privKey.ElGamalDec(coin.CoinDetailsEncrypted.SymKeyEncrypted)
-
-	//fmt.Printf("Decrypted plaintext 2: SymKey : %v\n", symKeyPoint.X.Bytes())
-
-	/*** Decrypt Encrypted using receiver's receiving key to get coin details (Randomness) ***/
-	randomness :=  make([]byte, 32)
-	// Set key to decrypt
-	block, err := aes.NewCipher(symKeyPoint.X.Bytes())
-	if err != nil {
-		panic(err)
-	}
-
-	iv := coin.CoinDetailsEncrypted.RandomEncrypted[:aes.BlockSize]
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		panic(err)
-	}
-
-	stream := cipher.NewCTR(block, iv)
-	stream.XORKeyStream(randomness, coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:])
-=======
 	pubKey.H, _ = DecompressKey(receiverTK)
 	pubKey.Curve = &Curve
 
@@ -156,7 +95,6 @@ func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey){
 	}
 
 	return nil
->>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 }
 
 func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey) error {

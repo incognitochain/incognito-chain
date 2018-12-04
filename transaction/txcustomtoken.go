@@ -14,11 +14,7 @@ import (
 // Dev or end-user can use this class tx to create an token type which use personal purpose
 // In particular of constant network, some special token (DCB token, GOV token, BOND token, ....) used this class tx to implement something
 type TxCustomToken struct {
-<<<<<<< HEAD
-	TxNormal                // inherit from normal tx of constant(supporting privacy)
-=======
 	Tx                      // inherit from normal tx of constant(supporting privacy)
->>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 	TxTokenData TxTokenData // vin - vout format
 	BoardType   uint8       // 1: DCB, 2: GOV
 	BoardSigns  map[string][]byte
@@ -129,11 +125,7 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 	normalTx.Type = common.TxCustomTokenType
 
 	txCustomToken := &TxCustomToken{
-<<<<<<< HEAD
-		TxNormal:    *normalTx,
-=======
 		Tx:          normalTx,
->>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 		TxTokenData: TxTokenData{},
 	}
 

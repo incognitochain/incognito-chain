@@ -7,23 +7,14 @@ type ListUnspentResult struct {
 }
 
 type ListUnspentResultItem struct {
-<<<<<<< HEAD
-	TxId          string          `json:"TxIndex"`
-	JoinSplitDesc []JoinSplitDesc `json:"JoinSplitDesc"`
-=======
 	TxId     string    `json:"TxIndex"`
 	OutCoins []OutCoin `json:"JoinSplitDesc"`
->>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 }
 
 /*func (self *ListUnspentResultItem) Init(data interface{}) {
 	mapData := data.(map[string]interface{})
 	self.TxId = mapData["TxIndex"].(string)
-<<<<<<< HEAD
-	self.JoinSplitDesc = make([]JoinSplitDesc, 0)
-=======
 	self.JoinSplitDesc = make([]OutCoin, 0)
->>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 	temps := mapData["JoinSplitDesc"].([]interface{})
 	for _, temp := range temps {
 		item := OutCoin{}

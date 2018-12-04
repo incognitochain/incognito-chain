@@ -1,10 +1,6 @@
 package blockchain
 
 import (
-<<<<<<< HEAD
-	"bytes"
-=======
->>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 	"encoding/hex"
 	"encoding/json"
 	"fmt"

@@ -1,6 +1,10 @@
 package main
 
-import "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+import (
+	"fmt"
+
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+)
 
 func main() {
 
@@ -57,7 +61,7 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-	zkp.TestPKOneOfMany()
+	// zkp.TestPKOneOfMany()
 
 	//zkp.TestPKComMultiRange()
 
@@ -200,7 +204,7 @@ func main() {
 	//fmt.Println(zkp.TestProofIsZero())
 	//privacy.TestECC()
 	//fmt.Println(zkp.TestOpeningsProtocol())
-	//fmt.Println(zkp.TestPKEqualityOfCommittedVal())
+	fmt.Println(zkp.TestPKEqualityOfCommittedVal())
 	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
 	/*--------------------------------------------*/
 

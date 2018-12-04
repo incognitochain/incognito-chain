@@ -12,10 +12,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"errors"
-<<<<<<< HEAD
-=======
 	"github.com/ninjadotorg/constant/common/base58"
->>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 )
 
 /*

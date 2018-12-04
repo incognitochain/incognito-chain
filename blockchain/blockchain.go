@@ -657,17 +657,6 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 			txsInBlockAccepted := make([]transaction.TxNormal, 0)
 			for _, txInBlock := range txsInBlock {
 				if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
-<<<<<<< HEAD
-					tx := txInBlock.(*transaction.TxNormal)
-					copyTx := transaction.TxNormal{
-						Version:  tx.Version,
-						JSSig:    tx.JSSig,
-						JSPubKey: tx.JSPubKey,
-						Fee:      tx.Fee,
-						Type:     tx.Type,
-						LockTime: tx.LockTime,
-						Descs:    make([]*transaction.JoinSplitDesc, 0),
-=======
 					tx := txInBlock.(*transaction.Tx)
 					copyTx := transaction.Tx{
 						Version:                 tx.Version,
@@ -691,7 +680,6 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 							OutputCoins:                 []*privacy.OutputCoin{},
 						},
 						Metadata: tx.Metadata,
->>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 					}
 					// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
 					isPrivacy := tx.Proof.ComInputOpeningsProof != nil
@@ -744,19 +732,6 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 	return results, nil
 }
 
-<<<<<<< HEAD
-func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullifiersInDb [][]byte, keys *cashec.KeySet) transaction.TxNormal {
-	tx := txInBlock.(*transaction.TxNormal)
-	copyTx := transaction.TxNormal{
-		Version:         tx.Version,
-		JSSig:           tx.JSSig,
-		JSPubKey:        tx.JSPubKey,
-		Fee:             tx.Fee,
-		Type:            tx.Type,
-		LockTime:        tx.LockTime,
-		Descs:           make([]*transaction.JoinSplitDesc, 0),
-		AddressLastByte: tx.AddressLastByte,
-=======
 func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serialNumberInDB [][]byte, keys *cashec.KeySet) transaction.Tx {
 	tx := txInBlock.(*transaction.Tx)
 	copyTx := transaction.Tx{
@@ -781,7 +756,6 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 			OutputCoins:                 []*privacy.OutputCoin{},
 		},
 		Metadata: tx.Metadata,
->>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 	}
 	// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
 	isPrivacy := tx.Proof.ComInputOpeningsProof != nil
@@ -807,35 +781,12 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 				copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outCoin)
 			}
 		} else {
-<<<<<<< HEAD
-			for i, note := range desc.Note {
-				if bytes.Equal(note.Apk[:], keys.PaymentAddress.Pk[:]) && note.Value > 0 {
-					// no privacy-protocol
-					candidateCommitment := desc.Commitments[i]
-					candidateNullifier := desc.Nullifiers[i]
-					if len(nullifiersInDb) > 0 {
-						// -> check commitment with db nullifiers
-						if len(keys.PrivateKey) > 0 {
-							var rho [32]byte
-							copy(rho[:], note.Rho)
-							candidateNullifier = client.GetNullifier(keys.PrivateKey, rho)
-							if len(candidateNullifier) == 0 {
-								continue
-							}
-						}
-						checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
-						if err != nil || checkCandiateNullifier == true {
-							// candidate nullifier is not existed in db
-							continue
-						}
-=======
 			if bytes.Equal(outCoinTemp.CoinDetails.PublicKey.Compress(), keys.PaymentAddress.Pk[:]) {
 				if len(serialNumberInDB) > 0 {
 					checkCandiateNullifier, err := common.SliceBytesExists(serialNumberInDB, outCoinTemp.CoinDetails.SerialNumber.Compress())
 					if err != nil || checkCandiateNullifier == true {
 						// candidate nullifier is not existed in db
 						continue
->>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 					}
 				}
 			}
