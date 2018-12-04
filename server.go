@@ -17,7 +17,6 @@ import (
 	"github.com/ninjadotorg/constant/addrmanager"
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/connmanager"
 	"github.com/ninjadotorg/constant/consensus/ppos"
 	"github.com/ninjadotorg/constant/database"
@@ -460,7 +459,6 @@ func (self Server) Start() {
 			return
 		}
 		self.consensusEngine.StartProducer(*producerKeySet)
-		self.consensusEngine.StartSwap()
 	}
 }
 
@@ -521,9 +519,9 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 // newPeerConfig returns the configuration for the listening RemotePeer.
 */
 func (self *Server) NewPeerConfig() *peer.Config {
-	KeySetProducer, err := cfg.GetProducerKeySet()
+	producerKeySet, err := cfg.GetProducerKeySet()
 	if err != nil {
-		Logger.log.Critical(err)
+		Logger.log.Critical("cfg GetProducerKeySet error", err)
 	}
 	config := &peer.Config{
 		MessageListeners: peer.MessageListeners{
@@ -543,14 +541,15 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnChainState:    self.OnChainState,
 			//
 			//OnRegistration: self.OnRegistration,
-			OnSwapRequest:  self.OnSwapRequest,
-			OnSwapSig:      self.OnSwapSig,
-			OnSwapUpdate:   self.OnSwapUpdate,
+			OnSwapRequest: self.OnSwapRequest,
+			OnSwapSig:     self.OnSwapSig,
+			OnSwapUpdate:  self.OnSwapUpdate,
 		},
 	}
-	if len(KeySetProducer.PrivateKey) != 0 {
-		config.ProducerPrvKey = base58.Base58Check{}.Encode(KeySetProducer.PrivateKey, byte(0x00))
-	}
+
+	config.ProducerKeySet = producerKeySet
+	Logger.log.Info("producerKeySet", producerKeySet.PrivateKey)
+
 	return config
 }
 
@@ -892,13 +891,8 @@ func (self Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).ProtocolVersion = self.protocolVersion
 
 	// ValidateTransaction Public Key from ProducerPrvKey
-	if peerConn.ListenerPeer.Config.ProducerPrvKey != "" {
-		keySet, err := cfg.GetProducerKeySet()
-		if err != nil {
-			Logger.log.Critical("Invalid producer's private key")
-			return err
-		}
-		msg.(*wire.MessageVersion).PublicKey = base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, byte(0x00))
+	if peerConn.ListenerPeer.Config.ProducerKeySet != nil {
+		msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.Config.ProducerKeySet.GetPublicKeyB58()
 	}
 
 	if err != nil {

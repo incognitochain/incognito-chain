@@ -14,11 +14,8 @@ import (
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/constant/bootnode/server"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/peer"
 	"github.com/ninjadotorg/constant/wire"
-	"github.com/ninjadotorg/constant/wallet"
 )
 
 // ConnState represents the state of the requested connection.
@@ -320,23 +317,16 @@ listen:
 			for _, listener := range self.Config.ListenerPeers {
 				var response []wire.RawPeer
 
-				var publicKey string
-				var keySet *cashec.KeySet
-				signCheckData := ""
-				if listener.Config.ProducerPrvKey != EmptyString {
-					keySet = &cashec.KeySet{}
-					key, _ := wallet.Base58CheckDeserialize(listener.Config.ProducerPrvKey)
-					keySet.ImportFromPrivateKey(&key.KeySet.PrivateKey)
-					if err == nil {
-						publicKey = base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, byte(0x00))
-					}
+				var pbkB58 string
+				signDataB58 := ""
+				if listener.Config.ProducerKeySet != nil {
+					pbkB58 = listener.Config.ProducerKeySet.GetPublicKeyB58()
 					// sign data
-					signCheckData, err = keySet.SignData([]byte{0})
+					signDataB58, err = listener.Config.ProducerKeySet.SignDataB58([]byte{byte(0x00)})
 					if err != nil {
 						Logger.log.Error(err)
 					}
 				}
-
 				// remove later
 				rawAddress := listener.RawAddress
 
@@ -350,8 +340,8 @@ listen:
 
 				args := &server.PingArgs{
 					RawAddress: rawAddress,
-					PublicKey:  publicKey,
-					SignData:   signCheckData,
+					PublicKey:  pbkB58,
+					SignData:   signDataB58,
 				}
 				Logger.log.Infof("[Exchange Peers] Ping", args)
 

@@ -16,7 +16,7 @@ type PingArgs struct {
 }
 
 func (s Handler) Ping(args *PingArgs, peers *[]wire.RawPeer) error {
-	fmt.Println("Ping", args.PublicKey, args.RawAddress)
+	fmt.Println("Ping", args)
 	// update peer information to server
 	s.server.AddOrUpdatePeer(args.RawAddress, args.PublicKey, args.SignData)
 	// return note list

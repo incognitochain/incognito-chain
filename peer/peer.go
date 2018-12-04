@@ -20,6 +20,7 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/wire"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 // ConnState represents the state of the requested connection.
@@ -69,7 +70,7 @@ type NewStreamMsg struct {
 // config is the struct to hold configuration options useful to RemotePeer.
 type Config struct {
 	MessageListeners MessageListeners
-	ProducerPrvKey   string
+	ProducerKeySet   *cashec.KeySet
 	MaxOutbound      int
 	MaxInbound       int
 }
@@ -107,9 +108,9 @@ type MessageListeners struct {
 	OnGetChainState func(p *PeerConn, msg *wire.MessageGetChainState)
 	OnChainState    func(p *PeerConn, msg *wire.MessageChainState)
 	//OnRegistration  func(p *PeerConn, msg *wire.MessageRegistration)
-	OnSwapRequest   func(p *PeerConn, msg *wire.MessageSwapRequest)
-	OnSwapSig       func(p *PeerConn, msg *wire.MessageSwapSig)
-	OnSwapUpdate    func(p *PeerConn, msg *wire.MessageSwapUpdate)
+	OnSwapRequest func(p *PeerConn, msg *wire.MessageSwapRequest)
+	OnSwapSig     func(p *PeerConn, msg *wire.MessageSwapSig)
+	OnSwapUpdate  func(p *PeerConn, msg *wire.MessageSwapUpdate)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal

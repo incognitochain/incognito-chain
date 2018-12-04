@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/rpc"
 	"time"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 const (
@@ -58,23 +59,26 @@ func (self *RpcServer) Start() {
 	server.Accept(l)
 }
 
-func (self *RpcServer) AddOrUpdatePeer(rawAddress string, publicKey string, signData string) {
-	//if signData != "" {
-	//	err := cashec.ValidateDataB58(publicKey, signData, []byte{0})
-	//	if err == nil {
-	//		self.Peers[publicKey] = &Peer{ID: self.CombineID(rawAddress, publicKey),
-	//			RawAddress: rawAddress,
-	//			PublicKey: publicKey,
-	//			FirstPing: time.Now().Local(),
-	//			LastPing: time.Now().Local(),
-	//		}
-	//	}
-	//}
-	self.Peers[publicKey] = &Peer{ID: self.CombineID(rawAddress, publicKey),
-		RawAddress: rawAddress,
-		PublicKey: publicKey,
-		FirstPing: time.Now().Local(),
-		LastPing: time.Now().Local(),
+func (self *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 string, signDataB58 string) {
+	if signDataB58 != "" {
+		err := cashec.ValidateDataB58(publicKeyB58, signDataB58, []byte{0x00})
+		if err == nil {
+			self.Peers[publicKeyB58] = &Peer{ID: self.CombineID(rawAddress, publicKeyB58),
+				RawAddress: rawAddress,
+				PublicKey: publicKeyB58,
+				FirstPing: time.Now().Local(),
+				LastPing: time.Now().Local(),
+			}
+		} else {
+			log.Println("AddOrUpdatePeer error:", err)
+			// for testing
+			self.Peers[publicKeyB58] = &Peer{ID: self.CombineID(rawAddress, publicKeyB58),
+				RawAddress: rawAddress,
+				PublicKey: publicKeyB58,
+				FirstPing: time.Now().Local(),
+				LastPing: time.Now().Local(),
+			}
+		}
 	}
 }
 
