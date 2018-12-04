@@ -30,7 +30,7 @@ type Coin struct {
 
 // InputCoin represents a input coin of transaction
 type InputCoin struct {
-	BlockHeight *big.Int
+	ShardId *big.Int
 	CoinDetails *Coin
 }
 

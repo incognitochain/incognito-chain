@@ -1,7 +1,5 @@
 package main
 
-import "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-
 func main() {
 
 	// fmt.Printf("N: %X\n", privacy-protocol.Curve.Params().N)
@@ -57,9 +55,11 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-	zkp.TestPKOneOfMany()
+	//zkp.TestPKOneOfMany()
 
 	//zkp.TestPKComMultiRange()
+
+	//zkp.TestPKEqualityOfCommittedVal()
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -219,9 +219,27 @@ func main() {
 	/*----------------- TEST KEY SET -----------------*/
 
 	//keySet := new(cashec.KeySet)
-	//spendingKey := privacy.GenerateSpendingKey([]byte{123})
+	//spendingKey := privacy.GenerateSpendingKey([]byte{0, 1, 23, 235})
 	//keySet.ImportFromPrivateKey(&spendingKey)
 	//
+	//data := []byte{0}
+	//signature, err := keySet.Sign(data)
+	//if err != nil{
+	//	fmt.Println(err)
+	//}
+	//fmt.Println(hex.EncodeToString(signature))
+	//
+	////signature , _:= hex.DecodeString("5d9f5e9c350a877ddbbe227b40c19b00c040e715924740f2d92cc9dc02da5937ba433dbca431f2a0a447e21fd096d894f869a9e31b8217ee0cf9c33f8b032ade")
+	////
+	//res, err := keySet.Verify(data, signature)
+	//if err != nil{
+	//	fmt.Println(err)
+	//}
+	//
+	//fmt.Println(res)
+
+
+
 	//fmt.Printf("Key set %+v\n", keySet.PaymentAddress.Pk[0])
 	//
 	//// decompress pk, tk

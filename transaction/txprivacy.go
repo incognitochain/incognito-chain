@@ -51,7 +51,7 @@ func (tx *Tx) CreateTx(
 	fee uint64,
 	commitments [][]byte,
 	randCmIndices []privacy.CMIndex,
-	myCmIndices []uint32,
+	myCmPos []uint32,
 	hasPrivacy bool,
 ) (*Tx, error) {
 
@@ -61,6 +61,16 @@ func (tx *Tx) CreateTx(
 	fmt.Printf("List of all input coins before building tx:\n")
 	for _, coin := range inputCoins {
 		fmt.Printf("%+v\n", coin)
+	}
+
+	// Check number of list of random commitments, list of random commitment indices
+	if len(commitments) != len(inputCoins) * privacy.CMRingSize || len(randCmIndices) != len(inputCoins) * privacy.CMRingSize {
+		return nil, fmt.Errorf("Number of list commitments and list random commitment indices must be corresponding with number of input coins")
+	}
+
+	// Check  number of my cm indices
+	if len(myCmPos) != len(inputCoins){
+		return nil, fmt.Errorf("Number of list my commitment indices must be equal to number of input coins")
 	}
 
 	// Calculate sum of all output coins' value
@@ -87,8 +97,6 @@ func (tx *Tx) CreateTx(
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
-
-
 
 	// create new output coins
 	outputCoins := make([]*privacy.OutputCoin, len(paymentInfo))
@@ -130,7 +138,7 @@ func (tx *Tx) CreateTx(
 	// create zero knowledge proof of payment
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers)
+	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitments, randCmIndices, myCmPos)
 	tx.Proof, _ = witness.Prove(false)
 
 	// set private key for signing tx
