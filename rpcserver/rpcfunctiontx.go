@@ -1,17 +1,19 @@
 package rpcserver
 
 import (
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 	"encoding/hex"
-	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/wire"
 	"encoding/json"
-	"strconv"
 	"errors"
+	"strconv"
+
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
+	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/wire"
 )
 
 /*
@@ -573,4 +575,44 @@ func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, c
 		return nil, errors.New("Failed to sign the custom token")
 	}
 	return hex.EncodeToString(jsSignByteArray), nil
+}
+
+func (self RpcServer) handleCreateRawTxWithBuySellRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+	tx, err := self.buildRawCustomTokenTransaction(params)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	// Req param #4: buy/sell request info
+	buySellReq := arrayParams[4].(map[string]interface{})
+	tx.Tx.Metadata = metadata.NewBuySellRequest(buySellReq)
+
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	hexData := hex.EncodeToString(byteArrays)
+	result := jsonresult.CreateTransactionResult{
+		HexData: hexData,
+	}
+	return result, nil
+}
+
+func (self RpcServer) handleCreateAndSendTxWithBuySellRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	data, err := self.handleCreateRawTxWithBuySellRequest(params, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	hexStrOfTx := tx.HexData
+	if err != nil {
+		return nil, err
+	}
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, hexStrOfTx)
+	txId, err := self.handleSendRawCustomTokenTransaction(newParam, closeChan)
+	return txId, err
 }

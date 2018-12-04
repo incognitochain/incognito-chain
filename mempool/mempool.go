@@ -63,6 +63,13 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.poolNullifiers = make(map[common.Hash][][]byte)
 }
 
+// ----------- transaction.MempoolRetriever's implementation -----------------
+func (tp *TxPool) GetPoolNullifiers() map[common.Hash][][]byte {
+	return tp.poolNullifiers
+}
+
+// ----------- end of transaction.MempoolRetriever's implementation -----------------
+
 // check transaction in pool
 func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	if _, exists := tp.pool[*hash]; exists {
@@ -128,7 +135,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	// nextBlockHeight := bestHeight + 1
 	// Check tx with policy
 	// check version
-	ok := tp.config.Policy.CheckTxVersion(&tx)
+	ok := tx.CheckTxVersion(tp.config.Policy.MaxTxVersion)
 	if !ok {
 		err := MempoolTxError{}
 		err.Init(RejectVersion, errors.New(fmt.Sprintf("%+v's version is invalid", txHash.String())))
@@ -136,14 +143,19 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	}
 
 	// check fee of tx
-	txFee, err := tp.CheckTransactionFee(tx)
-	if err != nil {
+	minFee := tp.config.Policy.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.TxFee
+	txFee := tx.GetTxFee()
+	ok = tx.CheckTransactionFee(minFee)
+	if !ok {
+		err := MempoolTxError{}
+		err.Init(RejectVersion, errors.New(fmt.Sprintf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, minFee)))
 		return nil, nil, err
 	}
 	// end check with policy
 
 	// check tx with all txs in current mempool
-	err = tp.ValidateTxWithCurrentMempool(tx)
+	err = tx.ValidateTxWithCurrentMempool(tp)
+	// err = tp.ValidateTxWithCurrentMempool(tx)
 	if err != nil {
 		return nil, nil, err
 	}

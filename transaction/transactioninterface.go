@@ -6,6 +6,10 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
+type MempoolRetriever interface {
+	GetPoolNullifiers() map[common.Hash][][]byte
+}
+
 // Interface for all type of transaction
 type Transaction interface {
 	Hash() *common.Hash
@@ -15,6 +19,10 @@ type Transaction interface {
 	GetSenderAddrLastByte() byte
 	GetTxFee() uint64
 	ListNullifiers() [][]byte
+	CheckTxVersion(int8) bool
+	CheckTransactionFee(uint64) bool
+	IsSalaryTx() bool
+	ValidateTxWithCurrentMempool(MempoolRetriever) error
 }
 
 // This is tx struct which is really saved in tx mempool

@@ -11,6 +11,7 @@ import (
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/privacy-protocol/proto/zksnark"
@@ -40,7 +41,7 @@ type Tx struct {
 	// for example, BuySellRequestTx/BuySellResponseTx
 	RequestedTxID *common.Hash
 
-	Metadata interface{}
+	Metadata metadata.Metadata
 }
 
 func (tx *Tx) SetTxID(txId *common.Hash) {
@@ -49,6 +50,60 @@ func (tx *Tx) SetTxID(txId *common.Hash) {
 
 func (tx *Tx) GetTxID() *common.Hash {
 	return tx.txId
+}
+
+func (tx *Tx) CheckTxVersion(maxTxVersion int8) bool {
+	if tx.Version > maxTxVersion {
+		return false
+	}
+	return true
+}
+
+func (tx *Tx) CheckTransactionFee(minFee uint64) bool {
+	if tx.IsSalaryTx() {
+		return true
+	}
+	if tx.Metadata != nil {
+		return tx.Metadata.CheckTransactionFee(tx, minFee)
+	}
+	if tx.Fee < minFee {
+		return false
+	}
+	return true
+}
+
+func (tx *Tx) IsSalaryTx() bool {
+	if tx.Type != common.TxSalaryType {
+		return false
+	}
+	// Check nullifiers in every Descs
+	descs := tx.Descs
+	if len(descs) != 1 {
+		return false
+	}
+	if descs[0].Reward <= 0 {
+		return false
+	}
+	return true
+}
+
+func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {
+	for _, temp1 := range poolNullifiers {
+		for _, desc := range tx.Descs {
+			for _, nullifier := range desc.Nullifiers {
+				if ok, err := common.SliceBytesExists(temp1, nullifier); !ok || err != nil {
+					return errors.New("Double spend")
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (tx *Tx) ValidateTxWithCurrentMempool(mr MempoolRetriever) error {
+	// TODO: add more logic
+	poolNullifiers := mr.GetPoolNullifiers()
+	return tx.validateDoubleSpendTxWithCurrentMempool(poolNullifiers)
 }
 
 // Hash returns the hash of all fields of the transaction
@@ -642,7 +697,7 @@ func GenerateProofForGenesisTx(
 	seed, phi []byte,
 	outputR [][]byte,
 	ephemeralPrivKey client.EphemeralPrivKey,
-//assetType string,
+	//assetType string,
 ) (*Tx, error) {
 	// Generate JoinSplit key pair to act as a dummy key (since we don't sign genesis tx)
 	privateSignKey := [32]byte{1}
@@ -751,9 +806,9 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	var sizeFee uint64 = 8      // uint64
 	var sizeDescs uint64        // uint64
 	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
 	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
 	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
