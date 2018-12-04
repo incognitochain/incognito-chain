@@ -801,13 +801,16 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 				if bytes.Equal(note.Apk[:], keys.PaymentAddress.Pk[:]) && note.Value > 0 {
 					// no privacy-protocol
 					candidateCommitment := desc.Commitments[i]
+					candidateNullifier := desc.Nullifiers[i]
 					if len(nullifiersInDb) > 0 {
 						// -> check commitment with db nullifiers
-						var rho [32]byte
-						copy(rho[:], note.Rho)
-						candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
-						if len(candidateNullifier) == 0 {
-							continue
+						if len(keys.PrivateKey) > 0 {
+							var rho [32]byte
+							copy(rho[:], note.Rho)
+							candidateNullifier = client.GetNullifier(keys.PrivateKey, rho)
+							if len(candidateNullifier) == 0 {
+								continue
+							}
 						}
 						checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
 						if err != nil || checkCandiateNullifier == true {
