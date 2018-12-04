@@ -65,12 +65,11 @@ func (tx *Tx) CreateTx(
 	}
 
 	// Check number of list of random commitments, list of random commitment indices
-	if len(commitments) != len(inputCoins) * privacy.CMRingSize || len(randCmIndices) != len(inputCoins) * privacy.CMRingSize {
+	if len(commitments) != len(inputCoins)*privacy.CMRingSize || len(randCmIndices) != len(inputCoins)*privacy.CMRingSize {
 		return fmt.Errorf("Number of list commitments and list random commitment indices must be corresponding with number of input coins")
 	}
 
-	// Check  number of my cm indices
-	if len(myCmPos) != len(inputCoins){
+	if len(myCmPos) != len(inputCoins) {
 		return fmt.Errorf("Number of list my commitment indices must be equal to number of input coins")
 	}
 

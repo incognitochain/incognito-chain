@@ -16,6 +16,7 @@ type PaymentWitness struct {
 	randCmIndices []*privacy.CMIndex
 	myCmPos 			[]uint32
 
+
 	pkLastByteSender    byte
 	pkLastByteReceivers []byte
 
@@ -67,7 +68,6 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, paymentProof.ComInputOpeningsProof[i].Bytes()...)
 	}
 	proofbytes = append(proofbytes, mainFlag)
-
 	// OpeningsProof in total proof
 	// len(openingProof)|| -1 || openingsProof1 || -1 || openingsProof2 || -1 || openingsProof3 || -1 || openingsProof4.....||-2
 	// OneOfManyProof
@@ -79,7 +79,6 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, paymentProof.OneOfManyProof[i].Bytes()...)
 	}
 	proofbytes = append(proofbytes, mainFlag)
-
 	// EqualityOfCommittedValProof
 	elementsFlag = -5
 	mainFlag = -6
@@ -89,7 +88,6 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, paymentProof.EqualityOfCommittedValProof[i].Bytes()...)
 	}
 	proofbytes = append(proofbytes, mainFlag)
-
 	// ProductCommitmentProof
 	elementsFlag = -7
 	mainFlag = -8
@@ -99,7 +97,6 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, paymentProof.ProductCommitmentProof[i].Bytes()...)
 	}
 	proofbytes = append(proofbytes, mainFlag)
-
 	// ProductCommitmentProof
 	elementsFlag = -7
 	mainFlag = -8
@@ -109,7 +106,6 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, paymentProof.ProductCommitmentProof[i].Bytes()...)
 	}
 	proofbytes = append(proofbytes, mainFlag)
-
 	// ComOutputOpeningsProof
 	elementsFlag = -9
 	mainFlag = -10
@@ -307,14 +303,13 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		cmInputRndIndex := new(privacy.CMIndex)
 		cmInputRndIndex.GetCmIndex(cmInputSum[i])
 		//cmInputRndIndexList, cmInputRndValue, indexInputIsZero := GetCMList(cmInputSum[i], cmInputRndIndex, GetCurrentBlockHeight())
-		commitmentTemps := make([]*privacy.EllipticPoint, numInputCoin*privacy.CMRingSize)
-		rndInputIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randInputSum[i])
-		rndInputIsZero.Mod(rndInputIsZero, privacy.Curve.Params().N)
-		for j := 0; j < numInputCoin*privacy.CMRingSize; j++ {
-			commitmentTemps[j].X, commitmentTemps[j].Y = privacy.Curve.Add(commitments[j].X, commitments[j].Y, cmInputSumInverse[j].X, cmInputSumInverse[j].Y)
-		}
-
-		wit.OneOfManyWitness[i].Set(commitmentTemps, randCmIndices, rndInputIsZero, myCmPos[i], privacy.SK)
+		//commitmentTemps := new(privacy.EllipticPoint)
+		//rndInputIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randInputSum[i])
+		//rndInputIsZero.Mod(rndInputIsZero, privacy.Curve.Params().N)
+		//for j := 0; j < privacy.CMRingSize; j++ {
+		//	cmInputRndValue[j].X, cmInputRndValue[j].Y = privacy.Curve.Add(commitments[j].X, commitments[j].Y, cmInputSumInverse[j].X, cmInputSumInverse[j].Y)
+		//}
+		//wit.OneOfManyWitness[i].Set(cmInputRndValue, &cmInputRndIndexList, rndInputIsZero, indexInputIsZero, privacy.SK)
 		// -------------------
 		// For ZKP Equal Commitment Value
 		wit.EqualityOfCommittedValWitness[i].Set([]*privacy.EllipticPoint{cmInputSNDIndexSK[i], cmInputSND[i]}, indexZKPEqual, []*big.Int{inputCoins[i].CoinDetails.SNDerivator, randInputSK, randInputSND[i]})

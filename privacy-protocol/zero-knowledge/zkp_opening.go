@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"math/big"
 
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 //Openings protocol: https://courses.cs.ut.ee/MTAT.07.003/2017_fall/uploads/Main/0907-sigma-protocol-for-pedersen-commitment.pdf
@@ -101,5 +101,6 @@ func TestOpeningsProtocol() bool {
 	witness := new(PKComOpeningsWitness)
 	witness.randValue(true)
 	proof, _ := witness.Prove()
+	//fmt.Println(len(proof.Bytes()))
 	return proof.Verify()
 }
