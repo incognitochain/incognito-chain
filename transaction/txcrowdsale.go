@@ -1,5 +1,6 @@
 package transaction
 
+/*
 import (
 	"bytes"
 	"fmt"
@@ -150,3 +151,4 @@ func (tx *TxBuySellDCBResponse) GetSenderAddrLastByte() byte {
 func (tx *TxBuySellDCBResponse) GetTxFee() uint64 {
 	return tx.TxNormal.Fee
 }
+*/

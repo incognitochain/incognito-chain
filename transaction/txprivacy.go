@@ -11,6 +11,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"math"
 )
 
 type Tx struct {
@@ -353,4 +354,22 @@ func (tx *Tx) ListNullifiers() [][]byte {
 // Note: This method doesn't check for double spending
 func (tx *Tx) ValidateTransaction() bool {
 	return true
+}
+
+// EstimateTxSize returns the estimated size of the tx in kilobyte
+func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
+	var sizeVersion uint64 = 1  // int8
+	var sizeType uint64 = 8     // string
+	var sizeLockTime uint64 = 8 // int64
+	var sizeFee uint64 = 8      // uint64
+	var sizeDescs uint64        // uint64
+	if payments != nil {
+		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+	} else {
+		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
+	}
+	var sizejSPubKey uint64 = 64 // [64]byte
+	var sizejSSig uint64 = 64    // [64]byte
+	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
+	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }

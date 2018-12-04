@@ -1,6 +1,6 @@
 package transaction
 
-import (
+/*import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
@@ -94,4 +94,4 @@ func (tx *TxBuySellRequest) GetSenderAddrLastByte() byte {
 
 func (tx *TxBuySellRequest) GetTxFee() uint64 {
 	return tx.TxNormal.Fee
-}
+}*/

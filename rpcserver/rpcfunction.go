@@ -354,15 +354,13 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
 	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
-	candidateTxs := make([]*transaction.TxNormal, 0)
-	candidateTxsMap := make(map[byte][]*transaction.TxNormal)
+	candidateTxs := make([]*transaction.Tx, 0)
+	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
-			for _, desc := range temp.Descs {
-				for _, note := range desc.GetNote() {
-					amount := note.Value
-					estimateTotalAmount -= int64(amount)
-				}
+			for _, note := range temp.Proof.OutputCoins {
+				amount := note.CoinDetails.Value
+				estimateTotalAmount -= int64(amount)
 			}
 			txData := temp
 			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
@@ -386,14 +384,12 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	// list unspent tx for create tx
 	totalAmmount += int64(realFee)
 	if totalAmmount > 0 {
-		candidateTxsMap = make(map[byte][]*transaction.TxNormal, 0)
+		candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
 		for chainId, usableTxs := range usableTxsMap {
 			for _, temp := range usableTxs {
-				for _, desc := range temp.Descs {
-					for _, note := range desc.GetNote() {
-						amount := note.Value
-						estimateTotalAmount -= int64(amount)
-					}
+				for _, note := range temp.Proof.OutputCoins {
+					amount := note.CoinDetails.Value
+					estimateTotalAmount -= int64(amount)
 				}
 				txData := temp
 				candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)

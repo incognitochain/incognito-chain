@@ -9,7 +9,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -641,8 +640,8 @@ GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be 
 - Param #1: key - key set which contain readonly-key and pub-key
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte][]transaction.TxNormal, error) {
-	results := make(map[byte][]transaction.TxNormal, 0)
+func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte][]transaction.Tx, error) {
+	results := make(map[byte][]transaction.Tx, 0)
 
 	// lock chain
 	self.chainLock.Lock()
@@ -655,61 +654,55 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 
 		for blockHeight > 0 {
 			txsInBlock := bestBlock.Transactions
-			txsInBlockAccepted := make([]transaction.TxNormal, 0)
+			txsInBlockAccepted := make([]transaction.Tx, 0)
 			for _, txInBlock := range txsInBlock {
 				if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
-					tx := txInBlock.(*transaction.TxNormal)
-					copyTx := transaction.TxNormal{
-						Version:  tx.Version,
-						JSSig:    tx.JSSig,
-						JSPubKey: tx.JSPubKey,
-						Fee:      tx.Fee,
-						Type:     tx.Type,
-						LockTime: tx.LockTime,
-						Descs:    make([]*transaction.JoinSplitDesc, 0),
+					tx := txInBlock.(*transaction.Tx)
+					copyTx := transaction.Tx{
+						Version:                 tx.Version,
+						Sig:                     tx.Sig,
+						SigPubKey:               tx.SigPubKey,
+						Fee:                     tx.Fee,
+						Type:                    tx.Type,
+						LockTime:                tx.LockTime,
+						PubKeyLastByteSender:    tx.PubKeyLastByteSender,
+						PubKeyLastByteReceivers: tx.PubKeyLastByteReceivers,
+						Proof: &zkp.PaymentProof{
+							ComInputOpeningsProof:       tx.Proof.ComInputOpeningsProof,
+							ComOutputMultiRangeProof:    tx.Proof.ComOutputMultiRangeProof,
+							ComOutputOpeningsProof:      tx.Proof.ComOutputOpeningsProof,
+							EqualityOfCommittedValProof: tx.Proof.EqualityOfCommittedValProof,
+							ComZeroProof:                tx.Proof.ComZeroProof,
+							ProductCommitmentProof:      tx.Proof.ProductCommitmentProof,
+							SumOutRangeProof:            tx.Proof.SumOutRangeProof,
+							OneOfManyProof:              tx.Proof.OneOfManyProof,
+							InputCoins:                  tx.Proof.InputCoins,
+							OutputCoins:                 []*privacy.OutputCoin{},
+						},
+						Metadata: tx.Metadata,
 					}
 					// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
-					listDesc := make([]*transaction.JoinSplitDesc, 0)
-					for _, desc := range tx.Descs {
-						copyDesc := &transaction.JoinSplitDesc{
-							Anchor:        desc.Anchor,
-							Commitments:   make([][]byte, 0),
-							EncryptedData: make([][]byte, 0),
-						}
-						if desc.Proof != nil && len(desc.EncryptedData) > 0 {
-							// privacy-protocol
-							for i, encData := range desc.EncryptedData {
-								var epk client.EphemeralPubKey
-								copy(epk[:], desc.EphemeralPubKey)
-								// var hSig []byte
-								// copy(hSig, desc.HSigSeed)
-								hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
-								note := new(client.Note)
-								note, err := client.DecryptNote(encData, keySet.ReadonlyKey.Rk, keySet.PaymentAddress.Tk, epk, hSig)
-								spew.Dump(note)
-								if err == nil && note != nil {
-									copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
-									copyDesc.AppendNote(note)
-									copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
-								} else {
-									continue
+					isPrivacy := tx.Proof.ComInputOpeningsProof != nil
+					for _, outcoinTemp := range tx.Proof.OutputCoins {
+						if isPrivacy {
+							err := outcoinTemp.Decrypt(keySet.ReadonlyKey.Rk)
+							if err != nil {
+								outcoin := &privacy.OutputCoin{
+									CoinDetails:          outcoinTemp.CoinDetails,
+									CoinDetailsEncrypted: outcoinTemp.CoinDetailsEncrypted,
 								}
+								copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outcoin)
 							}
 						} else {
 							// no privacy-protocol
-							for i, note := range desc.Note {
-								if bytes.Equal(note.Apk[:], keySet.PaymentAddress.Pk[:]) {
-									copyDesc.AppendNote(note)
-									copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
+							if bytes.Equal(outcoinTemp.CoinDetails.PublicKey.Compress()[:], keySet.PaymentAddress.Pk[:]) {
+								outcoin := &privacy.OutputCoin{
+									CoinDetails:          outcoinTemp.CoinDetails,
+									CoinDetailsEncrypted: outcoinTemp.CoinDetailsEncrypted,
 								}
+								copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outcoin)
 							}
 						}
-						if len(copyDesc.Note) > 0 {
-							listDesc = append(listDesc, copyDesc)
-						}
-					}
-					if len(listDesc) > 0 {
-						copyTx.Descs = listDesc
 					}
 					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
 				}

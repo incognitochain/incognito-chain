@@ -14,7 +14,7 @@ import (
 // Dev or end-user can use this class tx to create an token type which use personal purpose
 // In particular of constant network, some special token (DCB token, GOV token, BOND token, ....) used this class tx to implement something
 type TxCustomToken struct {
-	TxNormal                // inherit from normal tx of constant(supporting privacy)
+	Tx                      // inherit from normal tx of constant(supporting privacy)
 	TxTokenData TxTokenData // vin - vout format
 	BoardType   uint8       // 1: DCB, 2: GOV
 	BoardSigns  map[string][]byte
@@ -31,7 +31,7 @@ func (tx *TxCustomToken) SetListUtxo(data map[common.Hash]TxCustomToken) {
 // Hash returns the hash of all fields of the transaction
 func (tx TxCustomToken) Hash() *common.Hash {
 	// get hash of tx
-	record := tx.TxNormal.Hash().String()
+	record := tx.Tx.Hash().String()
 
 	// add more hash of txtokendata
 	txTokenDataHash, _ := tx.TxTokenData.Hash()
@@ -46,7 +46,7 @@ func (tx TxCustomToken) Hash() *common.Hash {
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
 func (tx *TxCustomToken) ValidateTransaction() bool {
 	// validate for normal tx
-	if tx.TxNormal.ValidateTransaction() {
+	if tx.Tx.ValidateTransaction() {
 		if len(tx.listUtxo) == 0 {
 			return false
 		}
@@ -73,7 +73,7 @@ func (tx *TxCustomToken) ValidateTransaction() bool {
 // GetTxVirtualSize computes the virtual size of a given transaction
 // size of this tx = (normal TxNormal size) + (custom token data size)
 func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
-	normalTxSize := tx.TxNormal.GetTxVirtualSize()
+	normalTxSize := tx.Tx.GetTxVirtualSize()
 
 	tokenDataSize := uint64(0)
 
@@ -101,7 +101,7 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
 	rts map[byte]*common.Hash,
-	usableTx map[byte][]*TxNormal,
+	usableTx map[byte][]*Tx,
 	commitments map[byte]([][]byte),
 	fee uint64,
 	senderChainID byte,
@@ -109,7 +109,9 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 	listCustomTokens map[common.Hash]TxCustomToken,
 ) (*TxCustomToken, error) {
 	// create normal txCustomToken
-	normalTx, err := CreateTx(senderKey, paymentInfo, rts, usableTx, commitments, fee, senderChainID, true)
+	normalTx := Tx{}
+	var err error
+	normalTx, err = normalTx.CreateTx(senderKey, paymentInfo, rts, usableTx, commitments, fee, senderChainID, true)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +119,7 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 	normalTx.Type = common.TxCustomTokenType
 
 	txCustomToken := &TxCustomToken{
-		TxNormal:    *normalTx,
+		Tx:          normalTx,
 		TxTokenData: TxTokenData{},
 	}
 
