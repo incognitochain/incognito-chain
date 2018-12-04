@@ -17,6 +17,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
 const (
@@ -281,7 +282,7 @@ func (self *BlockChain) StoreBlockHeader(block *Block) error {
 /*
 	Store Transaction in Light mode
 */
-func (self *BlockChain) StoreUnspentTransactionLightMode(privatKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.TxNormal) error {
+func (self *BlockChain) StoreUnspentTransactionLightMode(privatKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
 	return self.config.DataBase.StoreTransactionLightMode(privatKey, chainId, blockHeight, txIndex, tx)
 }
 
@@ -738,126 +739,90 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 	return results, nil
 }
 
-func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullifiersInDb [][]byte, keys *cashec.KeySet) transaction.TxNormal {
-	tx := txInBlock.(*transaction.TxNormal)
-	copyTx := transaction.TxNormal{
-		Version:         tx.Version,
-		JSSig:           tx.JSSig,
-		JSPubKey:        tx.JSPubKey,
-		Fee:             tx.Fee,
-		Type:            tx.Type,
-		LockTime:        tx.LockTime,
-		Descs:           make([]*transaction.JoinSplitDesc, 0),
-		AddressLastByte: tx.AddressLastByte,
+func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serialNumberInDB [][]byte, keys *cashec.KeySet) transaction.Tx {
+	tx := txInBlock.(*transaction.Tx)
+	copyTx := transaction.Tx{
+		Version:                 tx.Version,
+		Sig:                     tx.Sig,
+		SigPubKey:               tx.SigPubKey,
+		Fee:                     tx.Fee,
+		Type:                    tx.Type,
+		LockTime:                tx.LockTime,
+		PubKeyLastByteSender:    tx.PubKeyLastByteSender,
+		PubKeyLastByteReceivers: tx.PubKeyLastByteReceivers,
+		Proof: &zkp.PaymentProof{
+			ComInputOpeningsProof:       tx.Proof.ComInputOpeningsProof,
+			ComOutputMultiRangeProof:    tx.Proof.ComOutputMultiRangeProof,
+			ComOutputOpeningsProof:      tx.Proof.ComOutputOpeningsProof,
+			EqualityOfCommittedValProof: tx.Proof.EqualityOfCommittedValProof,
+			ComZeroProof:                tx.Proof.ComZeroProof,
+			ProductCommitmentProof:      tx.Proof.ProductCommitmentProof,
+			SumOutRangeProof:            tx.Proof.SumOutRangeProof,
+			OneOfManyProof:              tx.Proof.OneOfManyProof,
+			InputCoins:                  tx.Proof.InputCoins,
+			OutputCoins:                 []*privacy.OutputCoin{},
+		},
+		Metadata: tx.Metadata,
 	}
 	// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
-	listDesc := make([]*transaction.JoinSplitDesc, 0)
-	for _, desc := range tx.Descs {
-		copyDesc := &transaction.JoinSplitDesc{
-			Anchor:        desc.Anchor,
-			Reward:        desc.Reward,
-			Commitments:   make([][]byte, 0),
-			EncryptedData: make([][]byte, 0),
-		}
-		if desc.Proof != nil && len(desc.EncryptedData) > 0 {
+	isPrivacy := tx.Proof.ComInputOpeningsProof != nil
+	for _, outCoinTemp := range tx.Proof.OutputCoins {
+		if isPrivacy {
+			// have privacy-protocol
 			if len(keys.PrivateKey) == 0 || len(keys.ReadonlyKey.Rk) == 0 {
 				continue
 			}
-			// have privacy-protocol
-			for i, encData := range desc.EncryptedData {
-				var epk client.EphemeralPubKey
-				copy(epk[:], desc.EphemeralPubKey)
-				hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
-				note := new(client.Note)
-				note, err := client.DecryptNote(encData, keys.ReadonlyKey.Rk, keys.PaymentAddress.Tk, epk, hSig)
-				if err == nil && note != nil && note.Value > 0 {
-					// can decrypt data -> got candidate commitment
-					candidateCommitment := desc.Commitments[i]
-					if len(nullifiersInDb) > 0 {
-						// -> check commitment with db nullifiers
-						var rho [32]byte
-						copy(rho[:], note.Rho)
-						candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
-						if len(candidateNullifier) == 0 {
-							continue
-						}
-						checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
-						if err != nil || checkCandiateNullifier == true {
-							// candidate nullifier is not existed in db
-							continue
-						}
-					}
-					copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
-					copyDesc.AppendNote(note)
-					note.Cm = candidateCommitment
-					note.Apk = privacy.GeneratePublicKey(keys.PrivateKey)
-					copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
-				} else {
-					continue
+			err := outCoinTemp.Decrypt(keys.ReadonlyKey.Rk)
+			if err == nil {
+				outCoin := &privacy.OutputCoin{
+					CoinDetails:          outCoinTemp.CoinDetails,
+					CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
 				}
+				if len(serialNumberInDB) > 0 {
+					checkCandiateSerialNumber, err := common.SliceBytesExists(serialNumberInDB, outCoin.CoinDetails.SerialNumber.Compress())
+					if err != nil || checkCandiateSerialNumber == true {
+						// candidate serialNumber is not existed in db
+						continue
+					}
+				}
+				copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outCoin)
 			}
 		} else {
-			for i, note := range desc.Note {
-				if bytes.Equal(note.Apk[:], keys.PaymentAddress.Pk[:]) && note.Value > 0 {
-					// no privacy-protocol
-					candidateCommitment := desc.Commitments[i]
-					candidateNullifier := desc.Nullifiers[i]
-					if len(nullifiersInDb) > 0 {
-						// -> check commitment with db nullifiers
-						if len(keys.PrivateKey) > 0 {
-							var rho [32]byte
-							copy(rho[:], note.Rho)
-							candidateNullifier = client.GetNullifier(keys.PrivateKey, rho)
-							if len(candidateNullifier) == 0 {
-								continue
-							}
-						}
-						checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
-						if err != nil || checkCandiateNullifier == true {
-							// candidate nullifier is not existed in db
-							continue
-						}
+			if bytes.Equal(outCoinTemp.CoinDetails.PublicKey.Compress(), keys.PaymentAddress.Pk[:]) {
+				if len(serialNumberInDB) > 0 {
+					checkCandiateNullifier, err := common.SliceBytesExists(serialNumberInDB, outCoinTemp.CoinDetails.SerialNumber.Compress())
+					if err != nil || checkCandiateNullifier == true {
+						// candidate nullifier is not existed in db
+						continue
 					}
-					copyDesc.AppendNote(note)
-					note.Cm = candidateCommitment
-					note.Apk = privacy.GeneratePublicKey(keys.PrivateKey)
-					copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
-				} else {
-					continue
 				}
 			}
 		}
-		if len(copyDesc.Note) > 0 {
-			listDesc = append(listDesc, copyDesc)
-		}
-	}
-	if len(listDesc) > 0 {
-		copyTx.Descs = listDesc
 	}
 	return copyTx
 }
 
 // GetListUnspentTxByKeysetInBlock - fetch block to get unspent tx commitment which privatekey can use it
 // return a list tx which contain commitment which can be used
-func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, block *Block, nullifiersInDb [][]byte, returnFullTx bool) (map[byte][]transaction.TxNormal, error) {
-	results := make(map[byte][]transaction.TxNormal)
+func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, block *Block, nullifiersInDb [][]byte, returnFullTx bool) (map[byte][]transaction.Tx, error) {
+	results := make(map[byte][]transaction.Tx)
 
 	chainId := block.Header.ChainID
-	results[chainId] = make([]transaction.TxNormal, 0)
+	results[chainId] = make([]transaction.Tx, 0)
 
 	txsInBlock := block.Transactions
-	txsInBlockAccepted := make([]transaction.TxNormal, 0)
+	txsInBlockAccepted := make([]transaction.Tx, 0)
 	for _, txInBlock := range txsInBlock {
 		if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
 			// copyTx ONLY contains commitment which relate to keys
 			copyTx := self.DecryptTxByKey(txInBlock, nullifiersInDb, keys)
-			if len(copyTx.Descs) > 0 {
+			if len(copyTx.Proof.OutputCoins) > 0 {
 				if !returnFullTx {
 					// only return copy tx which contain unspent commitment which relate with private key
 					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
 				} else {
 					// only return full tx which contain unspent commitment which relate with private key and other commitments
-					txsInBlockAccepted = append(txsInBlockAccepted, *txInBlock.(*transaction.TxNormal))
+					txsInBlockAccepted = append(txsInBlockAccepted, *txInBlock.(*transaction.Tx))
 				}
 			}
 		}
@@ -876,8 +841,8 @@ With private-key, we can check unspent tx by check nullifiers from database
 - Param #1: privateKey - byte[] of privatekey
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType int, sortAsc bool) (map[byte][]transaction.TxNormal, error) {
-	results := make(map[byte][]transaction.TxNormal)
+func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
+	results := make(map[byte][]transaction.Tx)
 
 	// lock chain
 	self.chainLock.Lock()
@@ -949,7 +914,8 @@ func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType
 			}
 		}
 		// sort txs
-		transaction.SortArrayTxs(results[chainId], sortType, sortAsc)
+		// TODO
+		//transaction.SortArrayTxs(results[chainId], sortType, sortAsc)
 	}
 
 	// unlock chain

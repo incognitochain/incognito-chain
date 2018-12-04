@@ -203,19 +203,18 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 		for chainId, txs := range txsMap {
 			for _, tx := range txs {
 				item := jsonresult.ListUnspentResultItem{
-					TxId:          tx.Hash().String(),
-					JoinSplitDesc: make([]jsonresult.JoinSplitDesc, 0),
+					TxId:     tx.Hash().String(),
+					OutCoins: make([]jsonresult.OutCoin, 0),
 				}
-				for _, desc := range tx.Descs {
-					notes := desc.GetNote()
-					amounts := make([]uint64, 0)
-					for _, note := range notes {
-						amounts = append(amounts, note.Value)
-					}
-					item.JoinSplitDesc = append(item.JoinSplitDesc, jsonresult.JoinSplitDesc{
-						Anchors:     desc.Anchor,
-						Commitments: desc.Commitments,
-						Amounts:     amounts,
+				for _, outCoin := range tx.Proof.OutputCoins {
+					item.OutCoins = append(item.OutCoins, jsonresult.OutCoin{
+						SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), byte(0x00)),
+						PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), byte(0x00)),
+						Value:          outCoin.CoinDetails.Value,
+						Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info, byte(0x00)),
+						CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), byte(0x00)),
+						Randomness:     *outCoin.CoinDetails.Randomness,
+						SNDerivator:    *outCoin.CoinDetails.SNDerivator,
 					})
 				}
 				listTxs = append(listTxs, item)

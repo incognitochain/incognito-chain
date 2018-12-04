@@ -200,7 +200,9 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 	//missing flag for privacy-protocol
 	// false by default
 	flag := false
-	tx, err := transaction.CreateTx(&senderKey.KeySet.PrivateKey, paymentInfos,
+	tx := transaction.Tx{}
+	tx, err = tx.CreateTx(&senderKey.KeySet.PrivateKey,
+		paymentInfos,
 		merkleRootCommitments,
 		candidateTxsMap,
 		commitmentsDb,
