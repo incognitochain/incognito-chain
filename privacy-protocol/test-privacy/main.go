@@ -1,5 +1,10 @@
 package main
 
+import (
+	//"fmt"
+	//
+	//"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+)
 func main() {
 
 	// fmt.Printf("N: %X\n", privacy-protocol.Curve.Params().N)
@@ -56,6 +61,7 @@ func main() {
 	/*****************zkp.TestPKComZeroOne()****************/
 
 	//zkp.TestPKOneOfMany()
+
 
 	//zkp.TestPKComMultiRange()
 

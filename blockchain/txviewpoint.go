@@ -6,6 +6,9 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"math/big"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
 type TxViewPoint struct {
@@ -43,28 +46,25 @@ func (view *TxViewPoint) CurrentBestBlockHash() *common.Hash {
 }
 
 // fetch from desc of tx to get nullifiers and commitments
-func (view *TxViewPoint) processFetchTxViewPoint(block *Block, db database.DatabaseInterface, desc *transaction.JoinSplitDesc) ([][]byte, [][]byte, error) {
-	acceptedNullifiers := make([][]byte, 0)
-	acceptedCommitments := make([][]byte, 0)
-	for _, item := range desc.Nullifiers {
-		temp, err := db.HasNullifier(item, block.Header.ChainID)
-		if err != nil {
-			return nil, nil, err
-		}
-		if !temp {
-			acceptedNullifiers = append(acceptedNullifiers, item)
-		}
+func (view *TxViewPoint) processFetchTxViewPoint(block *Block, db database.DatabaseInterface, proof *zkp.PaymentProof) ([]byte, []byte, big.Int, error) {
+	acceptedNullifiers := []byte{}
+	acceptedCommitments := []byte{}
+	acceptedSnD := big.Int{}
+	temp, err := db.HasNullifier(proof.InputCoins.SerialNumber.Compress(), block.Header.ChainID)
+	if err != nil {
+		return nil, nil, 0, err
 	}
-	for _, item := range desc.Commitments {
-		temp, err := db.HasCommitment(item, block.Header.ChainID)
-		if err != nil {
-			return nil, nil, err
-		}
-		if !temp {
-			acceptedCommitments = append(acceptedCommitments, item)
-		}
+	if !temp {
+		acceptedNullifiers = outcoin.CoinDetails.SerialNumber.Compress()
 	}
-	return acceptedNullifiers, acceptedCommitments, nil
+	temp, err = db.HasCommitment(outcoin.CoinDetails.CoinCommitment.Compress(), block.Header.ChainID)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	if !temp {
+		acceptedCommitments = outcoin.CoinDetails.CoinCommitment.Compress()
+	}
+	return acceptedNullifiers, acceptedCommitments, outcoin.CoinDetails., nil
 }
 
 /*
@@ -105,8 +105,8 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 		case common.TxCustomTokenType:
 			{
 				tx := tx.(*transaction.TxCustomToken)
-				for _, desc := range tx.Descs {
-					temp1, temp2, err := view.processFetchTxViewPoint(block, db, desc)
+				for _, outcoin := range tx.Proof.OutputCoins {
+					temp1, temp2, err := view.processFetchTxViewPoint(block, db, outcoin)
 					acceptedNullifiers = append(acceptedNullifiers, temp1...)
 					acceptedCommitments = append(acceptedCommitments, temp2...)
 					if err != nil {

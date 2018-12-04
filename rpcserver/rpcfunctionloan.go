@@ -56,11 +56,9 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 	candidateTxsMap := make(map[byte][]*transaction.TxNormal)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
-			for _, desc := range temp.Descs {
-				for _, note := range desc.GetNote() {
-					amount := note.Value
-					estimateTotalAmount -= uint64(amount)
-				}
+			for _, note := range temp.Proof.OutputCoins {
+				amount := note.CoinDetails.Value
+				estimateTotalAmount -= uint64(amount)
 			}
 			txData := temp
 			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
@@ -83,9 +81,9 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
 	tx, err := transaction.CreateTxLoanRequest(transaction.FeeArgs{
-		Fee:           fee,
-		Commitments:   commitmentsDb,
-		UsableTx:      candidateTxsMap,
+		Fee:         fee,
+		Commitments: commitmentsDb,
+		//UsableTx:      candidateTxsMap,
 		PaymentInfo:   nil,
 		Rts:           merkleRootCommitments,
 		SenderChainID: chainIdSender,
@@ -200,11 +198,9 @@ func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan 
 	candidateTxsMap := make(map[byte][]*transaction.TxNormal)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
-			for _, desc := range temp.Descs {
-				for _, note := range desc.GetNote() {
-					amount := note.Value
-					estimateTotalAmount -= uint64(amount)
-				}
+			for _, note := range temp.Proof.OutputCoins {
+				amount := note.CoinDetails.Value
+				estimateTotalAmount -= uint64(amount)
 			}
 			txData := temp
 			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
@@ -227,9 +223,9 @@ func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan 
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
 	tx, err := transaction.CreateTxLoanResponse(transaction.FeeArgs{
-		Fee:           fee,
-		Commitments:   commitmentsDb,
-		UsableTx:      candidateTxsMap,
+		Fee:         fee,
+		Commitments: commitmentsDb,
+		//UsableTx:      candidateTxsMap,
 		PaymentInfo:   nil,
 		Rts:           merkleRootCommitments,
 		SenderChainID: chainIdSender,
@@ -342,11 +338,9 @@ func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan 
 	candidateTxsMap := make(map[byte][]*transaction.TxNormal)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
-			for _, desc := range temp.Descs {
-				for _, note := range desc.GetNote() {
-					amount := note.Value
-					estimateTotalAmount -= uint64(amount)
-				}
+			for _, note := range temp.Proof.OutputCoins {
+				amount := note.CoinDetails.Value
+				estimateTotalAmount -= uint64(amount)
 			}
 			txData := temp
 			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
@@ -369,9 +363,9 @@ func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan 
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
 	tx, err := transaction.CreateTxLoanWithdraw(transaction.FeeArgs{
-		Fee:           fee,
-		Commitments:   commitmentsDb,
-		UsableTx:      candidateTxsMap,
+		Fee:         fee,
+		Commitments: commitmentsDb,
+		//UsableTx:      candidateTxsMap,
 		PaymentInfo:   nil,
 		Rts:           merkleRootCommitments,
 		SenderChainID: chainIdSender,
@@ -484,11 +478,9 @@ func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <
 	candidateTxsMap := make(map[byte][]*transaction.TxNormal)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
-			for _, desc := range temp.Descs {
-				for _, note := range desc.GetNote() {
-					amount := note.Value
-					estimateTotalAmount -= uint64(amount)
-				}
+			for _, note := range temp.Proof.OutputCoins {
+				amount := note.CoinDetails.Value
+				estimateTotalAmount -= uint64(amount)
 			}
 			txData := temp
 			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
@@ -511,9 +503,9 @@ func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
 	tx, err := transaction.CreateTxLoanPayment(transaction.FeeArgs{
-		Fee:           fee,
-		Commitments:   commitmentsDb,
-		UsableTx:      candidateTxsMap,
+		Fee:         fee,
+		Commitments: commitmentsDb,
+		//UsableTx:      candidateTxsMap,
 		PaymentInfo:   nil,
 		Rts:           merkleRootCommitments,
 		SenderChainID: chainIdSender,
