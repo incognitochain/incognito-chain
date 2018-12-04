@@ -21,7 +21,6 @@ func TestPKComMultiRange(t *testing.T) {
 	// Testing smallest number in range
 	proof,_:= witness.Prove()
 	b:=proof.Bytes()
-
 	Vproof:=new(PKComMultiRangeProof)
 	Vproof.SetBytes(b)
 

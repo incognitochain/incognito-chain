@@ -9,7 +9,7 @@ import (
 
 func TestPKComProduct(t *testing.T) {
 	res := true
-	for i:=0;i<1;i++ {
+	for i:=0;i<100;i++ {
 		index := privacy.VALUE
 		G:=privacy.PedCom.G[index]
 		witnessA := new(big.Int).SetBytes(privacy.RandBytes(32))
@@ -27,6 +27,7 @@ func TestPKComProduct(t *testing.T) {
 		//fmt.Println(proof.index)
 		//fmt.Println()
 		proof_bytes:= proof.Bytes()
+		fmt.Println(len(proof_bytes))
 		Vproof:=new(PKComProductProof)
 		Vproof.SetBytes(proof_bytes)
 		fmt.Println("------------------------------------")
