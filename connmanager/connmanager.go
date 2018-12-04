@@ -321,13 +321,19 @@ listen:
 				var response []wire.RawPeer
 
 				var publicKey string
-
+				var keySet *cashec.KeySet
+				signCheckData := ""
 				if listener.Config.ProducerPrvKey != EmptyString {
-					keySet := &cashec.KeySet{}
+					keySet = &cashec.KeySet{}
 					key, _ := wallet.Base58CheckDeserialize(listener.Config.ProducerPrvKey)
 					keySet.ImportFromPrivateKey(&key.KeySet.PrivateKey)
 					if err == nil {
 						publicKey = base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, byte(0x00))
+					}
+					// sign data
+					signCheckData, err = keySet.SignData([]byte{0})
+					if err != nil {
+						Logger.log.Error(err)
 					}
 				}
 
@@ -342,7 +348,11 @@ listen:
 					}
 				}
 
-				args := &server.PingArgs{rawAddress, publicKey}
+				args := &server.PingArgs{
+					RawAddress: rawAddress,
+					PublicKey:  publicKey,
+					SignData:   signCheckData,
+				}
 				Logger.log.Infof("[Exchange Peers] Ping", args)
 
 				Logger.log.Info("Dump PeerConns", len(listener.PeerConns))

@@ -5,13 +5,12 @@ import (
 	"log"
 	"net"
 	"net/rpc"
-	"sort"
 	"time"
 )
 
 const (
 	heartbeatInterval = 5
-	heartbeatTimeout = 60
+	heartbeatTimeout  = 60
 )
 
 // timeZeroVal is simply the zero value for a time.Time and is used to avoid
@@ -23,16 +22,16 @@ var timeZeroVal time.Time
 type UsageFlag uint32
 
 type Peer struct {
-	ID string
+	ID         string
 	RawAddress string
-	PublicKey string
-	FirstPing time.Time
-	LastPing time.Time
+	PublicKey  string
+	FirstPing  time.Time
+	LastPing   time.Time
 }
 
 // rpcServer provides a concurrent safe RPC server to a chain server.
 type RpcServer struct {
-	Peers []*Peer
+	Peers map[string]*Peer
 
 	Config RpcServerConfig
 }
@@ -43,7 +42,7 @@ type RpcServerConfig struct {
 
 func (self *RpcServer) Init(config *RpcServerConfig) (error) {
 	self.Config = *config
-	self.Peers = make([]*Peer, 0)
+	self.Peers = make(map[string]*Peer)
 	go self.PeerHeartBeat()
 	return nil
 }
@@ -59,38 +58,28 @@ func (self *RpcServer) Start() {
 	server.Accept(l)
 }
 
-func (self *RpcServer) AddOrUpdatePeer(rawAddress string, publicKey string) {
-	exist := false
-	for _, peer := range self.Peers {
-		if self.CombineID(rawAddress, publicKey) == peer.ID {
-			exist = true
-			peer.LastPing = time.Now().Local()
-		}
-	}
-
-	if !exist {
-		self.Peers = append(self.Peers, &Peer{self.CombineID(rawAddress, publicKey), rawAddress, publicKey,time.Now().Local(), time.Now().Local()})
-		sort.Slice(self.Peers, func(i, j int) bool {
-			return self.Peers[i].FirstPing.Sub(self.Peers[j].FirstPing) <= 0
-		})
-	}
-}
-
-func (self *RpcServer) RemovePeer(ID string) {
-	removeIdx := -1
-	for idx, peer := range self.Peers {
-		if peer.ID == ID {
-			removeIdx = idx
-		}
-	}
-
-	if removeIdx != -1 {
-		self.RemovePeerByIdx(removeIdx)
+func (self *RpcServer) AddOrUpdatePeer(rawAddress string, publicKey string, signData string) {
+	//if signData != "" {
+	//	err := cashec.ValidateDataB58(publicKey, signData, []byte{0})
+	//	if err == nil {
+	//		self.Peers[publicKey] = &Peer{ID: self.CombineID(rawAddress, publicKey),
+	//			RawAddress: rawAddress,
+	//			PublicKey: publicKey,
+	//			FirstPing: time.Now().Local(),
+	//			LastPing: time.Now().Local(),
+	//		}
+	//	}
+	//}
+	self.Peers[publicKey] = &Peer{ID: self.CombineID(rawAddress, publicKey),
+		RawAddress: rawAddress,
+		PublicKey: publicKey,
+		FirstPing: time.Now().Local(),
+		LastPing: time.Now().Local(),
 	}
 }
 
-func (self *RpcServer) RemovePeerByIdx(idx int) {
-	self.Peers = append(self.Peers[:idx], self.Peers[idx+1:]...)
+func (self *RpcServer) RemovePeerByPbk(publicKey string) {
+	delete(self.Peers, publicKey)
 }
 
 func (self *RpcServer) CombineID(rawAddress string, publicKey string) string {
@@ -102,9 +91,9 @@ func (self *RpcServer) PeerHeartBeat() {
 		now := time.Now().Local()
 		if len(self.Peers) > 0 {
 		loop:
-			for idx, peer := range self.Peers {
+			for publicKey, peer := range self.Peers {
 				if now.Sub(peer.LastPing).Seconds() > heartbeatTimeout {
-					self.RemovePeerByIdx(idx)
+					self.RemovePeerByPbk(publicKey)
 					goto loop
 				}
 			}

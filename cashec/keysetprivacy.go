@@ -110,3 +110,11 @@ func ValidateDataB58(pubkey string, sig string, data []byte) error {
 	}
 	return nil
 }
+
+func (self *KeySet) SignData(data []byte) (string, error) {
+	signatureByte, err := self.Sign(data)
+	if err != nil {
+		return common.EmptyString, errors.New("Can't sign data. " + err.Error())
+	}
+	return base58.Base58Check{}.Encode(signatureByte, byte(0x00)), nil
+}
