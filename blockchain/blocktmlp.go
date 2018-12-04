@@ -166,10 +166,6 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 		}
 	}
 
-	for _, tx := range txToRemove {
-		blockgen.txPool.RemoveTx(tx)
-	}
-
 	// check len of txs in block
 	if len(txsToAdd) == 0 {
 		// return nil, errors.New("no transaction available for this chain")
@@ -180,6 +176,7 @@ concludeBlock:
 	rt := prevBlock.Header.MerkleRootCommitments.CloneBytes()
 	blockHeight := prevBlock.Header.Height + 1
 
+	// TODO(@0xbunyip): cap #tx to common.MaxTxsInBlock
 	// Process dividend payout for DCB if needed
 	bankDivTxs, bankPayoutAmount, err := blockgen.processBankDividend(rt, chainID, blockHeight)
 	if err != nil {
@@ -242,7 +239,16 @@ concludeBlock:
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd + incomeFromBonds - (totalSalary + buyBackCoins)
 	refundTxs, totalRefundAmt := blockgen.buildRefundTxs(chainID, remainingFund)
 
+	// Get loan payment amount to add to DCB fund
+	loanPaymentAmount, unlockTxs, removableTxs := blockgen.processLoan(sourceTxns, rt, chainID)
+	for _, tx := range removableTxs {
+		txToRemove = append(txToRemove, tx)
+	}
+
 	coinbases := []transaction.Transaction{salaryTx}
+	for _, tx := range unlockTxs {
+		coinbases = append(coinbases, tx)
+	}
 	for _, resTx := range buySellResTxs {
 		coinbases = append(coinbases, resTx)
 	}
@@ -254,13 +260,17 @@ concludeBlock:
 	}
 	txsToAdd = append(coinbases, txsToAdd...)
 
+	for _, tx := range txToRemove {
+		blockgen.txPool.RemoveTx(tx)
+	}
+
 	// Check for final balance of DCB and GOV
 	if currentSalaryFund+totalFee+salaryFundAdd+incomeFromBonds < totalSalary+govPayoutAmount+buyBackCoins+totalRefundAmt {
 		return nil, fmt.Errorf("Gov fund is not enough for salary and dividend payout")
 	}
 
 	currentBankFund := prevBlock.Header.BankFund
-	if currentBankFund < bankPayoutAmount {
+	if currentBankFund < bankPayoutAmount { // Can't spend loan payment just received in this block
 		return nil, fmt.Errorf("Bank fund is not enough for dividend payout")
 	}
 
@@ -281,7 +291,7 @@ concludeBlock:
 		Committee:             make([]string, common.TotalValidators),
 		ChainID:               chainID,
 		SalaryFund:            currentSalaryFund + incomeFromBonds + totalFee + salaryFundAdd - totalSalary - govPayoutAmount - buyBackCoins - totalRefundAmt,
-		BankFund:              prevBlock.Header.BankFund - bankPayoutAmount,
+		BankFund:              prevBlock.Header.BankFund + loanPaymentAmount - bankPayoutAmount,
 		GOVConstitution:       prevBlock.Header.GOVConstitution, // TODO: need get from gov-params tx
 		DCBConstitution:       prevBlock.Header.DCBConstitution, // TODO: need get from dcb-params tx
 		LoanParams:            prevBlock.Header.LoanParams,
@@ -750,4 +760,51 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*transaction.TxD
 		}
 	}
 	return txsResponse, txsToRemove, nil
+}
+
+func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*transaction.TxDesc, rt []byte, chainID byte) (uint64, []*transaction.TxLoanUnlock, []transaction.Transaction) {
+	amount := uint64(0)
+	loanUnlockTxs := []*transaction.TxLoanUnlock{}
+	removableTxs := []transaction.Transaction{}
+	for _, txDesc := range sourceTxns {
+		if txDesc.Tx.GetType() == common.TxLoanPayment {
+			tx := (txDesc.Tx).(*transaction.TxLoanPayment)
+			_, _, _, err := blockgen.chain.config.DataBase.GetLoanPayment(tx.LoanID)
+			if err != nil {
+				removableTxs = append(removableTxs, tx)
+				continue
+			}
+			paymentAmount := uint64(0)
+			for _, desc := range tx.Descs {
+				for _, note := range desc.Note {
+					paymentAmount += note.Value
+				}
+			}
+			if !tx.PayPrinciple { // Only keep interest
+				amount += paymentAmount
+			}
+		} else if txDesc.Tx.GetType() == common.TxLoanWithdraw {
+			tx := txDesc.Tx.(*transaction.TxLoanRequest)
+			txRequest, err := blockgen.chain.getLoanRequest(tx.LoanID)
+			if err != nil {
+				removableTxs = append(removableTxs, tx)
+				continue
+			}
+			pks := [][]byte{txRequest.ReceiveAddress.Pk[:], make([]byte, 33)}
+			tks := [][]byte{txRequest.ReceiveAddress.Tk[:], make([]byte, 33)}
+			amounts := []uint64{txRequest.LoanAmount, 0}
+			txNormal, err := transaction.BuildCoinbaseTx(pks, tks, amounts, rt, chainID, common.TxLoanUnlock)
+			if err != nil {
+				removableTxs = append(removableTxs, tx)
+				continue
+			}
+			txUnlock := &transaction.TxLoanUnlock{
+				Tx:     *txNormal,
+				LoanID: make([]byte, len(tx.LoanID)),
+			}
+			copy(txUnlock.LoanID, tx.LoanID)
+			loanUnlockTxs = append(loanUnlockTxs, txUnlock)
+		}
+	}
+	return amount, loanUnlockTxs, removableTxs
 }

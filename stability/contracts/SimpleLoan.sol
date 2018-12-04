@@ -14,8 +14,6 @@ contract SimpleLoan {
         uint256 amount; // in Wei
         uint256 request; // amount to loan, in CONST
         uint256 principle; // amount of loan's principle left to pay back, in CONST
-        uint256 interest; // amount of interest left for current maturity cycle, in CONST
-        uint256 maturityDate; // if principle is fully paid, borrower can withdraw escrow before this deadline
         uint256 escrowDeadline; // if lender doesn't accept, ETH escrow will end and collateral can be withdrawn after this deadline
         bytes stableCoinReceiver; // address to receive CONST
     }
@@ -28,8 +26,8 @@ contract SimpleLoan {
     event __acceptLoan(bytes32 lid, bytes32 key, bytes32 offchain);
     event __rejectLoan(bytes32 lid, bytes32 offchain);
     event __refundCollateral(bytes32 lid, uint256 amount, bytes32 offchain);
-    event __addPayment(bytes32 lid, bytes32 offchain);
     event __liquidate(bytes32 lid, uint256 amount, bytes32 offchain);
+    event __wipeDebt(bytes32 lid, bytes32 offchain);
     event __update(bytes32 name, uint256 value, bytes32 offchain);
 
     modifier onlyLender() {
@@ -114,17 +112,16 @@ contract SimpleLoan {
     }
 
     function acceptLoan(bytes32 lid, bytes32 key, bytes32 offchain) public lenderOrOwner {
+        // TODO: loan hasn't passed escrow deadline?
         require(loans[lid].state == State.Inited, "state must be inited");
         require(keccak256(abi.encodePacked(key)) == loans[lid].digest, "key does not match digest");
         loans[lid].state = State.Accepted;
         uint256 request = loans[lid].request;
         loans[lid].principle = request;
-        loans[lid].interest = part(request, params["interestRate"]);
-        loans[lid].maturityDate = now + params["loanMaturity"];
         emit __acceptLoan(lid, key, offchain);
     }
 
-    function rejectLoan(bytes32 lid, bytes32 offchain) public onlyLender {
+    function rejectLoan(bytes32 lid, bytes32 offchain) public lenderOrOwner {
         require(loans[lid].state == State.Inited);
         loans[lid].state = State.Rejected;
         emit __rejectLoan(lid, offchain);
@@ -143,37 +140,16 @@ contract SimpleLoan {
         emit __refundCollateral(lid, amount, offchain);
     }
 
-    function addPayment(bytes32 lid, uint256 amount, bytes32 offchain) public lenderOrOwner {
+    function wipeDebt(bytes32 lid, bytes32 offchain) public lenderOrOwner {
         require(loans[lid].state == State.Accepted);
-        uint256 interest = loans[lid].interest;
-        uint256 principle = loans[lid].principle;
-
-        // Pay interest first if needed
-        uint256 newInterest = interest;
-        uint256 loanMaturity = params["loanMaturity"];
-        if (now + loanMaturity >= loans[lid].maturityDate) {
-            newInterest = interest > amount ? interest - amount : 0;
-            amount -= interest - newInterest; // left-over goes to principle
-        }
-
-        // Pay principle
-        uint256 newPrinciple = principle > amount ? principle - amount : 0;
-        loans[lid].principle = newPrinciple;
-
-        if (newInterest != 0) {
-            loans[lid].interest = newInterest;
-        } else {
-            loans[lid].maturityDate += loanMaturity;
-            loans[lid].interest = part(newPrinciple, params["interestRate"]);
-        }
-        emit __addPayment(lid, offchain);
+        loans[lid].principle = 0;
+        emit __wipeDebt(lid, offchain);
     }
 
-    function liquidate(bytes32 lid, uint256 collateralPrice, uint256 assetPrice, bytes32 offchain) public lenderOrOwner {
-        uint256 debt = loans[lid].principle + loans[lid].interest;
+    function liquidate(bytes32 lid, uint256 interest, uint256 collateralPrice, uint256 assetPrice, bytes32 offchain) public lenderOrOwner {
+        uint256 debt = loans[lid].principle + interest;
         require(loans[lid].state == State.Accepted && loans[lid].principle > 0 &&
-                (now > loans[lid].maturityDate || // interest wasn't paid on time
-                 !safelyCollateralized(loans[lid].amount, debt, collateralPrice, assetPrice))); // collateral is not enough
+                !safelyCollateralized(loans[lid].amount, debt, collateralPrice, assetPrice)); // collateral is not enough
 
         uint256 base = debt * assetPrice * 10 ** 18 / collateralPrice; // Wei amount needed to buy back enough Constant at current price
         uint256 penalty = part(base, params["liquidationPenalty"]);
@@ -182,8 +158,7 @@ contract SimpleLoan {
         if (liquidationAmount > collateralAmount) {
             liquidationAmount = collateralAmount; // TODO: not enough collateral?
         }
-        loans[lid].principle = base;
-        loans[lid].interest = penalty;
+        loans[lid].principle = 0;
         loans[lid].amount -= liquidationAmount;
         loans[lid].state = State.Liquidated;
         owner.transfer(liquidationAmount); // TODO: transfer penalty to somewhere else?

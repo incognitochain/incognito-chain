@@ -478,7 +478,65 @@ func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 	return data, err
 }
 
-func (self *BlockChain) SaveLoanTxsForBlock(block *Block) error {
+func (self *BlockChain) getLoanRequest(loanID []byte) (*transaction.TxLoanRequest, error) {
+	txs, err := self.config.DataBase.GetLoanTxs(loanID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, txHash := range txs {
+		hash := &common.Hash{}
+		copy(hash[:], txHash)
+		_, _, _, tx, err := self.GetTransactionByHash(hash)
+		if err != nil {
+			return nil, err
+		}
+		if tx.GetType() == common.TxLoanRequest {
+			txRequest := tx.(*transaction.TxLoanRequest)
+			if bytes.Equal(txRequest.LoanID, loanID) {
+				return txRequest, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+func (self *BlockChain) ProcessLoanPayment(tx *transaction.TxLoanPayment) error {
+	value := uint64(0)
+	for _, desc := range tx.Descs {
+		for _, note := range desc.Note {
+			accountDCB, _ := wallet.Base58CheckDeserialize(DCBAddress)
+			dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+			if bytes.Equal(note.Apk[:], dcbPk) {
+				value += note.Value
+			}
+		}
+	}
+	principle, interest, deadline, err := self.config.DataBase.GetLoanPayment(tx.LoanID)
+	if tx.PayPrinciple {
+		if err != nil {
+			return err
+		}
+		if principle < value {
+			value = principle
+		}
+		principle -= value
+	} else {
+		txRequest, _ := self.getLoanRequest(tx.LoanID)
+		interestPerPeriod := GetInterestAmount(principle, txRequest.Params.InterestRate)
+		periodInc := uint32(0)
+		if value < interest {
+			interest -= value
+		} else {
+			periodInc = 1 + uint32((value-interest)/interestPerPeriod)
+			interest = interestPerPeriod - (value-interest)%interestPerPeriod
+		}
+		deadline = deadline + periodInc*txRequest.Params.Maturity
+	}
+	return self.config.DataBase.StoreLoanPayment(tx.LoanID, principle, interest, deadline)
+}
+
+func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetType() {
 		case common.TxLoanRequest:
@@ -491,9 +549,22 @@ func (self *BlockChain) SaveLoanTxsForBlock(block *Block) error {
 				tx := tx.(*transaction.TxLoanResponse)
 				self.config.DataBase.StoreLoanResponse(tx.LoanID, tx.Hash()[:])
 			}
+		case common.TxLoanUnlock:
+			{
+				// Update loan payment info after withdrawing Constant
+				tx := tx.(*transaction.TxLoanUnlock)
+				txRequest, _ := self.getLoanRequest(tx.LoanID)
+				principle := txRequest.LoanAmount
+				interest := GetInterestAmount(principle, txRequest.Params.InterestRate)
+				self.config.DataBase.StoreLoanPayment(tx.LoanID, principle, interest, uint32(block.Header.Height))
+			}
+		case common.TxLoanPayment:
+			{
+				tx := tx.(*transaction.TxLoanPayment)
+				self.ProcessLoanPayment(tx)
+			}
 		}
 	}
-
 	return nil
 }
 
