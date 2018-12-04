@@ -124,6 +124,9 @@ func (tx *Tx) CreateTx(
 		paymentInfo = append(paymentInfo, changePaymentInfo)
 	}
 
+	// assign fee tx
+	tx.Fee = fee
+
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 	tx.PubKeyLastByteSender = pkLastByteSender
