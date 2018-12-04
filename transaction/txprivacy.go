@@ -44,8 +44,6 @@ type Tx struct {
 // commitments: list of (CMRingSize * numInput) random commitments
 // cmIndices:
 
-
-
 func (tx *Tx) CreateTx(
 	senderSK *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
