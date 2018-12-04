@@ -2,20 +2,20 @@ package privacy
 
 import (
 	"crypto/elliptic"
-	"fmt"
 	"math/big"
 
-	"github.com/minio/blake2b-simd"
+	"github.com/ninjadotorg/constant/common"
+
 	"github.com/pkg/errors"
 )
 
 // Curve P256
 var Curve = elliptic.P256()
 
-const (
-	pointBytesLenCompressed      = 33
-	pointCompressed         byte = 0x2
-)
+// const (
+// 	CompressedPointSize      = 33
+// 	PointCompressed         byte = 0x2
+// )
 
 //EllipticPointHelper contain some function for elliptic point
 type EllipticPointHelper interface {
@@ -26,7 +26,7 @@ type EllipticPointHelper interface {
 	Decompress(compressPointBytes []byte) error
 	IsSafe() bool
 	ComputeYCoord()
-	Hash() EllipticPoint
+	Hash() *EllipticPoint
 	// </0xakk0r0kamui>
 
 	// <PTD>
@@ -123,7 +123,7 @@ func (eccPoint *EllipticPoint) Randomize() {
 func (eccPoint EllipticPoint) IsSafe() bool {
 	var res EllipticPoint
 	res.X, res.Y = Curve.Double(eccPoint.X, eccPoint.Y)
-	if (res.X == nil) || (res.Y == nil) {
+	if res.X.Cmp(big.NewInt(0)) == 0 && res.Y.Cmp(big.NewInt(0)) == 0 {
 		return false
 	}
 	return true
@@ -132,8 +132,8 @@ func (eccPoint EllipticPoint) IsSafe() bool {
 // Compress compresses key from 64 bytes to PointBytesLenCompressed bytes
 func (eccPoint EllipticPoint) Compress() []byte {
 	if Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
-		b := make([]byte, 0, pointBytesLenCompressed)
-		format := pointCompressed
+		b := make([]byte, 0, CompressedPointSize)
+		format := PointCompressed
 		if isOdd(eccPoint.Y) {
 			format |= 0x1
 		}
@@ -150,7 +150,7 @@ func (eccPoint *EllipticPoint) Decompress(compressPointBytes []byte) error {
 	ybit := (format & 0x1) == 0x1
 	format &= ^byte(0x1)
 
-	if format != pointCompressed {
+	if format != PointCompressed {
 		return errors.New("invalid magic in compressed compressPoint bytes")
 	}
 
@@ -210,50 +210,74 @@ func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 }
 
 // Hash derives new elliptic point from another elliptic point using hash function
-func (eccPoint EllipticPoint) Hash() EllipticPoint {
-	// res.X = hash(g.X), res.Y = sqrt(res.X^3 - 3X + B)
+func (eccPoint EllipticPoint) Hash(index int) *EllipticPoint {
+	// res.X = hash(g.X || index), res.Y = sqrt(res.X^3 - 3X + B)
 	var res = new(EllipticPoint)
 	res.X = big.NewInt(0)
 	res.Y = big.NewInt(0)
 	res.X.SetBytes(eccPoint.X.Bytes())
+	res.X.Add(res.X, big.NewInt(int64(index)))
 	for {
-		hashMachine := blake2b.New256()
-		hashMachine.Write(res.X.Bytes())
-		res.X.SetBytes(hashMachine.Sum(nil))
+		res.X.SetBytes(common.DoubleHashB(res.X.Bytes()))
 		res.ComputeYCoord()
-		if (res.Y != nil) && (Curve.IsOnCurve(res.X, res.Y)) {
+		if (res.Y != nil) && (Curve.IsOnCurve(res.X, res.Y)) && (res.IsSafe()) {
 			break
 		}
 	}
-	//check Point of degree 2
-	pointToChecked := new(EllipticPoint)
-	pointToChecked.X, pointToChecked.Y = Curve.Double(res.X, res.Y)
+	// //check Point of degree 2
+	// pointToChecked := new(EllipticPoint)
+	// pointToChecked.X, pointToChecked.Y = Curve.Double(res.X, res.Y)
 
-	if pointToChecked.X == nil || pointToChecked.Y == nil {
-		//errors.New("Point at infinity")
-		return *new(EllipticPoint)
-	}
-	return *res
+	// if pointToChecked.X == nil || pointToChecked.Y == nil {
+	// 	//errors.New("Point at infinity")
+	// 	return *new(EllipticPoint)
+	// }
+	return res
 }
 
 func TestECC() bool {
-	//Test compress && decompress
-	eccPoint := new(EllipticPoint)
-	eccPoint.Randomize()
-	if !Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
-		return false
-	}
-	fmt.Printf("On curve!")
-	if !eccPoint.IsSafe() {
-		return false
-	}
-	fmt.Printf("Safe!")
-	compressBytes := eccPoint.Compress()
-	eccPointDecompressed := new(EllipticPoint)
-	err := eccPointDecompressed.Decompress(compressBytes)
-	if err != nil {
-		return false
-	}
+	// //Test compress && decompress
+	// eccPoint := new(EllipticPoint)
+	// eccPoint.Randomize()
+	// neg := 0
+	// for i := 0; i < 2000; i++ {
+	// 	eccPoint1 := new(EllipticPoint)
+	// 	eccPoint1.Randomize()
+	// 	eccPoint2 := new(EllipticPoint)
+	// 	eccPoint2.Randomize()
+	// 	eccPointX := new(EllipticPoint)
+	// 	// eccPointX.Randomize()
+	// 	start := time.Now()
+	// 	eccPointX.X, eccPointX.Y = Curve.Add(eccPoint1.X, eccPoint1.Y, eccPoint2.X, eccPoint2.Y)
+	// 	end := time.Now()
+	// 	time1 := end.Sub(start)
+	// 	start = time.Now()
+	// 	eccPointX.X = big.NewInt(0)
+	// 	eccPointX.Y = big.NewInt(0)
+	// 	*eccPointX = (*eccPoint1).Add(*eccPoint2)
+	// 	end = time.Now()
+	// 	time2 := end.Sub(start)
+	// 	// fmt.Printf("%v %v \n", time1, time2)
+	// 	if time1 > time2 {
+	// 		neg++
+	// 	}
+	// }
+	// fmt.Println(neg)
+
+	// if !Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
+	// 	return false
+	// }
+	// fmt.Printf("On curve!")
+	// if !eccPoint.IsSafe() {
+	// 	return false
+	// }
+	// fmt.Printf("Safe!")
+	// compressBytes := eccPoint.Compress()
+	// eccPointDecompressed := new(EllipticPoint)
+	// err := eccPointDecompressed.Decompress(compressBytes)
+	// if err != nil {
+	// 	return false
+	// }
 	return true
 }
 
@@ -261,19 +285,19 @@ func TestECC() bool {
 These functions have worked for my range proof protocol
 If there are any changes, please inform me first
 						TRONG-DAT														***********/
-func (eccPoint EllipticPoint) AddPoint(p EllipticPoint) EllipticPoint {
-	var res EllipticPoint
+func (eccPoint EllipticPoint) Add(p *EllipticPoint) *EllipticPoint {
+	res := new(EllipticPoint)
 	res.X, res.Y = Curve.Add(eccPoint.X, eccPoint.Y, p.X, p.Y)
 	return res
 }
-func (eccPoint EllipticPoint) IsEqual(p EllipticPoint) bool {
+func (eccPoint EllipticPoint) IsEqual(p *EllipticPoint) bool {
 	if eccPoint.X.Cmp(p.X) == 0 && eccPoint.Y.Cmp(p.Y) == 0 {
 		return true
 	}
 	return false
 }
-func (eccPoint EllipticPoint) ScalarMulPoint(factor *big.Int) EllipticPoint {
-	var res EllipticPoint
+func (eccPoint EllipticPoint) ScalarMul(factor *big.Int) *EllipticPoint {
+	res := new(EllipticPoint)
 	res.X, res.Y = Curve.ScalarMult(eccPoint.X, eccPoint.Y, factor.Bytes())
 	return res
 }

@@ -35,8 +35,8 @@ func printProof(proof *zksnark.PHGRProof) {
 }
 
 // Prove calls libsnark's Prove and return the proof
-// inputs: WitnessPath and Key must be set; InputeNote's Value, PaymentAddress, R and Rho must also be set before calling this function
-// outputs: EncKey, OutputNote's PaymentAddress and Value must be set before calling this function
+// inputs: WitnessPath and Key must be set; InputeNote's H, PaymentAddress, R and Rho must also be set before calling this function
+// outputs: EncKey, OutputNote's PaymentAddress and H must be set before calling this function
 // reward: for salary tx, this is the mining reward; for other tx, it must be 0
 // After this function, outputs' Rho and R and Cm will be updated
 func Prove(inputs []*JSInput,
@@ -148,7 +148,7 @@ func Prove(inputs []*JSInput,
 	fmt.Printf("last byte: %d\n", addressLastByte)
 	for i, zkinput := range zkInputs {
 		fmt.Printf("zkInputs[%d].SpendingKey: %x\n", i, zkinput.SpendingKey)
-		fmt.Printf("zkInputs[%d].Note.Value: %v\n", i, zkinput.Note.Value)
+		fmt.Printf("zkInputs[%d].Note.H: %v\n", i, zkinput.Note.Value)
 		fmt.Printf("zkInputs[%d].Note.Cm: %x\n", i, zkinput.Note.Cm)
 		fmt.Printf("zkInputs[%d].Note.Randomness: %x\n", i, zkinput.Note.R)
 		fmt.Printf("zkInputs[%d].Note.Nf: %x\n", i, zkinput.Note.Nf)
@@ -157,7 +157,7 @@ func Prove(inputs []*JSInput,
 	}
 
 	for i, zkout := range zkNotes {
-		fmt.Printf("zkNotes[%d].Note.Value: %v\n", i, zkout.Value)
+		fmt.Printf("zkNotes[%d].Note.H: %v\n", i, zkout.Value)
 		fmt.Printf("zkNotes[%d].Note.Cm: %x\n", i, zkout.Cm)
 		fmt.Printf("zkNotes[%d].Note.Randomness: %x\n", i, zkout.R)
 		fmt.Printf("zkNotes[%d].Note.Nf: %x\n", i, zkout.Nf)

@@ -281,7 +281,7 @@ func (self *BlockChain) StoreBlockHeader(block *Block) error {
 /*
 	Store Transaction in Light mode
 */
-func (self *BlockChain) StoreUnspentTransactionLightMode(privatKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
+func (self *BlockChain) StoreUnspentTransactionLightMode(privatKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.TxNormal) error {
 	return self.config.DataBase.StoreTransactionLightMode(privatKey, chainId, blockHeight, txIndex, tx)
 }
 
@@ -358,7 +358,7 @@ func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte,
 Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
 this is a list tx-out which are used by a new tx
 */
-func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
+func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.TxNormal) error {
 	for _, desc := range tx.Descs {
 		for _, nullifier := range desc.Nullifiers {
 			chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
@@ -378,7 +378,7 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
 Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
 this is a list tx-in which are used by a new tx
 */
-func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
+func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.TxNormal) error {
 	for _, desc := range tx.Descs {
 		for _, item := range desc.Commitments {
 			chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
@@ -640,8 +640,8 @@ GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be 
 - Param #1: key - key set which contain readonly-key and pub-key
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte][]transaction.Tx, error) {
-	results := make(map[byte][]transaction.Tx, 0)
+func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte][]transaction.TxNormal, error) {
+	results := make(map[byte][]transaction.TxNormal, 0)
 
 	// lock chain
 	self.chainLock.Lock()
@@ -654,11 +654,11 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 
 		for blockHeight > 0 {
 			txsInBlock := bestBlock.Transactions
-			txsInBlockAccepted := make([]transaction.Tx, 0)
+			txsInBlockAccepted := make([]transaction.TxNormal, 0)
 			for _, txInBlock := range txsInBlock {
 				if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
-					tx := txInBlock.(*transaction.Tx)
-					copyTx := transaction.Tx{
+					tx := txInBlock.(*transaction.TxNormal)
+					copyTx := transaction.TxNormal{
 						Version:  tx.Version,
 						JSSig:    tx.JSSig,
 						JSPubKey: tx.JSPubKey,
@@ -738,9 +738,9 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 	return results, nil
 }
 
-func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullifiersInDb [][]byte, keys *cashec.KeySet) transaction.Tx {
-	tx := txInBlock.(*transaction.Tx)
-	copyTx := transaction.Tx{
+func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullifiersInDb [][]byte, keys *cashec.KeySet) transaction.TxNormal {
+	tx := txInBlock.(*transaction.TxNormal)
+	copyTx := transaction.TxNormal{
 		Version:         tx.Version,
 		JSSig:           tx.JSSig,
 		JSPubKey:        tx.JSPubKey,
@@ -801,13 +801,16 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 				if bytes.Equal(note.Apk[:], keys.PaymentAddress.Pk[:]) && note.Value > 0 {
 					// no privacy-protocol
 					candidateCommitment := desc.Commitments[i]
+					candidateNullifier := desc.Nullifiers[i]
 					if len(nullifiersInDb) > 0 {
 						// -> check commitment with db nullifiers
-						var rho [32]byte
-						copy(rho[:], note.Rho)
-						candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
-						if len(candidateNullifier) == 0 {
-							continue
+						if len(keys.PrivateKey) > 0 {
+							var rho [32]byte
+							copy(rho[:], note.Rho)
+							candidateNullifier = client.GetNullifier(keys.PrivateKey, rho)
+							if len(candidateNullifier) == 0 {
+								continue
+							}
 						}
 						checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
 						if err != nil || checkCandiateNullifier == true {
@@ -836,14 +839,14 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullif
 
 // GetListUnspentTxByKeysetInBlock - fetch block to get unspent tx commitment which privatekey can use it
 // return a list tx which contain commitment which can be used
-func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, block *Block, nullifiersInDb [][]byte, returnFullTx bool) (map[byte][]transaction.Tx, error) {
-	results := make(map[byte][]transaction.Tx)
+func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, block *Block, nullifiersInDb [][]byte, returnFullTx bool) (map[byte][]transaction.TxNormal, error) {
+	results := make(map[byte][]transaction.TxNormal)
 
 	chainId := block.Header.ChainID
-	results[chainId] = make([]transaction.Tx, 0)
+	results[chainId] = make([]transaction.TxNormal, 0)
 
 	txsInBlock := block.Transactions
-	txsInBlockAccepted := make([]transaction.Tx, 0)
+	txsInBlockAccepted := make([]transaction.TxNormal, 0)
 	for _, txInBlock := range txsInBlock {
 		if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
 			// copyTx ONLY contains commitment which relate to keys
@@ -854,7 +857,7 @@ func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, blo
 					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
 				} else {
 					// only return full tx which contain unspent commitment which relate with private key and other commitments
-					txsInBlockAccepted = append(txsInBlockAccepted, *txInBlock.(*transaction.Tx))
+					txsInBlockAccepted = append(txsInBlockAccepted, *txInBlock.(*transaction.TxNormal))
 				}
 			}
 		}
@@ -873,8 +876,8 @@ With private-key, we can check unspent tx by check nullifiers from database
 - Param #1: privateKey - byte[] of privatekey
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
-	results := make(map[byte][]transaction.Tx)
+func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType int, sortAsc bool) (map[byte][]transaction.TxNormal, error) {
+	results := make(map[byte][]transaction.TxNormal)
 
 	// lock chain
 	self.chainLock.Lock()
@@ -1038,7 +1041,7 @@ func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (by
 		chainId     []byte
 	)
 	// Get transaction
-	tx := transaction.Tx{}
+	tx := transaction.TxNormal{}
 	locationByte, txByte, err := self.config.DataBase.GetTransactionLightModeByHash(txHash)
 	Logger.log.Info("GetTransactionByHash - 1", locationByte, txByte, err)
 	if err != nil {

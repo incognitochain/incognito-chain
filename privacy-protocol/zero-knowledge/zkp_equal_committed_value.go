@@ -55,6 +55,22 @@ func (wit *PKEqualityOfCommittedValWitness) Set(
 	wit.X = X
 }
 
+func (pro *PKEqualityOfCommittedValProof) Bytes() []byte {
+	var res []byte
+	res = append(pro.C[0].Compress(), pro.C[1].Compress()...)
+	res = append(res, []byte{*pro.Index[0], *pro.Index[1]}...)
+
+	for i := 0; i < len(pro.T); i++ {
+		res = append(res, pro.T[i].Compress()...)
+	}
+
+	for i := 0; i < len(pro.Z); i++ {
+		res = append(res, pro.Z[i].Bytes()...)
+	}
+
+	return res
+}
+
 // Set - proof setter
 func (pro *PKEqualityOfCommittedValProof) Set(
 	C []*privacy.EllipticPoint, //Statement
@@ -80,10 +96,8 @@ func (wit *PKEqualityOfCommittedValWitness) Prove() *PKEqualityOfCommittedValPro
 	t := make([]*privacy.EllipticPoint, 2)
 	for i := 0; i < 2; i++ {
 		t[i] = new(privacy.EllipticPoint)
-		//t[i].Y = new(big.Int)
 		t[i].X, t[i].Y = privacy.Curve.Add(privacy.PedCom.G[*wit.Index[i]].X, privacy.PedCom.G[*wit.Index[i]].Y, privacy.PedCom.G[3].X, privacy.PedCom.G[3].Y)
 		t[i].X, t[i].Y = privacy.Curve.ScalarMult(t[i].X, t[i].Y, wRand.Bytes())
-		// t[1].X, t[1].Y = privacy.Curve.Add(privacy.PedCom.G[*wit.Index[0]].X, privacy.PedCom.G[*wit.Index[0]].Y, privacy.PedCom.G[*wit.Index[3]].X, privacy.PedCom.G[*wit.Index[3]].Y)
 	}
 	proof := new(PKEqualityOfCommittedValProof)
 	proof.Set(wit.C, wit.Index, t, z)
@@ -101,7 +115,7 @@ func (pro *PKEqualityOfCommittedValProof) Verify() bool {
 		rightPoint.X, rightPoint.Y = privacy.Curve.Add(rightPoint.X, rightPoint.Y, tmpPoint.X, tmpPoint.Y)
 		tmpPoint.X, tmpPoint.Y = privacy.Curve.ScalarMult(pro.C[i].X, pro.C[i].Y, xChallenge.Bytes())
 		rightPoint.X, rightPoint.Y = privacy.Curve.Add(rightPoint.X, rightPoint.Y, tmpPoint.X, tmpPoint.Y)
-		if !rightPoint.IsEqual(*pro.T[i]) {
+		if !rightPoint.IsEqual(pro.T[i]) {
 			return false
 		}
 	}

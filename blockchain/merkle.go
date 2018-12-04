@@ -135,7 +135,7 @@ func (self Merkle) hashMerkleBranches(left *common.Hash, right *common.Hash) *co
 func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 	for _, blockTx := range block.Transactions {
 		if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
-			tx, ok := blockTx.(*transaction.Tx)
+			tx, ok := blockTx.(*transaction.TxNormal)
 			if ok == false {
 				return NewBlockChainError(UnExpectedError, fmt.Errorf("Transaction in block not valid"))
 			}

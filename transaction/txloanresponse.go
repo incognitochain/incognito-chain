@@ -1,10 +1,10 @@
 package transaction
 
 import (
+	"encoding/hex"
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
-	"encoding/hex"
 )
 
 type ValidLoanResponse int
@@ -17,12 +17,12 @@ const (
 type LoanResponse struct {
 	LoanID     []byte
 	Response   ValidLoanResponse
-	ValidUntil uint64
+	ValidUntil int32
 }
 
-func NewLoanResponse(data map[string]interface{}) (*LoanResponse) {
+func NewLoanResponse(data map[string]interface{}) *LoanResponse {
 	result := LoanResponse{
-		ValidUntil: uint64(data["ValidUntil"].(float64)),
+		ValidUntil: int32(data["ValidUntil"].(float64)),
 	}
 	s, _ := hex.DecodeString(data["LoanID"].(string))
 	result.LoanID = s
@@ -33,7 +33,7 @@ func NewLoanResponse(data map[string]interface{}) (*LoanResponse) {
 }
 
 type TxLoanResponse struct {
-	Tx
+	TxNormal
 	*LoanResponse // data for a loan response
 }
 
@@ -50,14 +50,14 @@ func CreateTxLoanResponse(
 		feeArgs.Commitments,
 		feeArgs.Fee,
 		feeArgs.SenderChainID,
-		false,
+		true,
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	txLoanResponse := &TxLoanResponse{
-		Tx:           *tx,
+		TxNormal:     *tx,
 		LoanResponse: loanResponse,
 	}
 
@@ -66,7 +66,7 @@ func CreateTxLoanResponse(
 
 func (tx *TxLoanResponse) Hash() *common.Hash {
 	// get hash of tx
-	record := tx.Tx.Hash().String()
+	record := tx.TxNormal.Hash().String()
 
 	// add more hash of loan response data
 	record += string(tx.LoanID)
@@ -79,11 +79,17 @@ func (tx *TxLoanResponse) Hash() *common.Hash {
 
 func (tx *TxLoanResponse) ValidateTransaction() bool {
 	// validate for normal tx
-	if !tx.Tx.ValidateTransaction() {
+	if !tx.TxNormal.ValidateTransaction() {
 		return false
 	}
 
-	// TODO(@0xbunyip): check if only board members created this tx
+	// Check if this tx is transaparent (no privacy) to assure correct JSPubKey
+	for _, desc := range tx.Descs {
+		if desc.Proof != nil {
+			return false
+		}
+	}
+
 	if tx.Response != Accept || tx.Response != Reject {
 		return false
 	}

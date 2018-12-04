@@ -5,13 +5,13 @@ type ListUnspentResult struct {
 }
 
 type ListUnspentResultItem struct {
-	TxId          string          `json:"TxId"`
+	TxId          string          `json:"TxIndex"`
 	JoinSplitDesc []JoinSplitDesc `json:"JoinSplitDesc"`
 }
 
 func (self *ListUnspentResultItem) Init(data interface{}) {
 	mapData := data.(map[string]interface{})
-	self.TxId = mapData["TxId"].(string)
+	self.TxId = mapData["TxIndex"].(string)
 	self.JoinSplitDesc = make([]JoinSplitDesc, 0)
 	temps := mapData["JoinSplitDesc"].([]interface{})
 	for _, temp := range temps {

@@ -62,10 +62,10 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 			for chainId, txs := range unspentTxs {
 				for _, unspent := range txs {
 					var txIndex = -1
-					// Iterate to get Tx index of transaction in a block
+					// Iterate to get TxNormal index of transaction in a block
 					for i, _ := range block.Transactions {
 						txHash := unspent.Hash().String()
-						blockTxHash := block.Transactions[i].(*transaction.Tx).Hash().String()
+						blockTxHash := block.Transactions[i].(*transaction.TxNormal).Hash().String()
 						if strings.Compare(txHash, blockTxHash) == 0 {
 							txIndex = i
 							fmt.Println("Found Transaction i", unspent.Hash(), i)

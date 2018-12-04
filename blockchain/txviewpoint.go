@@ -80,7 +80,7 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 		switch tx.GetType() {
 		case common.TxNormalType:
 			{
-				normalTx := tx.(*transaction.Tx)
+				normalTx := tx.(*transaction.TxNormal)
 				for _, desc := range normalTx.Descs {
 					temp1, temp2, err := view.processFetchTxViewPoint(block, db, desc)
 					acceptedNullifiers = append(acceptedNullifiers, temp1...)
@@ -92,7 +92,7 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 			}
 		case common.TxSalaryType:
 			{
-				normalTx := tx.(*transaction.Tx)
+				normalTx := tx.(*transaction.TxNormal)
 				for _, desc := range normalTx.Descs {
 					temp1, temp2, err := view.processFetchTxViewPoint(block, db, desc)
 					acceptedNullifiers = append(acceptedNullifiers, temp1...)
@@ -117,7 +117,7 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 			}
 		default:
 			{
-				return NewBlockChainError(UnExpectedError, errors.New("Tx type is invalid"))
+				return NewBlockChainError(UnExpectedError, errors.New("TxNormal type is invalid"))
 			}
 		}
 	}
@@ -134,7 +134,7 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 }
 
 /*
-Create a Tx view point, which contains data about nullifiers and commitments
+Create a TxNormal view point, which contains data about nullifiers and commitments
 */
 func NewTxViewPoint(chainId byte) *TxViewPoint {
 	return &TxViewPoint{

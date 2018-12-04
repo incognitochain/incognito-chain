@@ -27,7 +27,7 @@ type Block struct {
 }
 
 /*
-Customize UnmarshalJSON to parse list Tx
+Customize UnmarshalJSON to parse list TxNormal
 because we have many types of block, so we can need to customize data from marshal from json string to build a block
 */
 func (self *Block) UnmarshalJSON(data []byte) error {
@@ -48,17 +48,17 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 	// process tx from tx interface of temp
 	for _, txTemp := range temp.Transactions {
 		txTempJson, _ := json.MarshalIndent(txTemp, "", "\t")
-		Logger.log.Debugf("Tx json data: ", string(txTempJson))
+		Logger.log.Debugf("TxNormal json data: ", string(txTempJson))
 		switch txTemp["Type"].(string) {
 		case common.TxNormalType:
 			{
-				txNormal := &transaction.Tx{}
+				txNormal := &transaction.TxNormal{}
 				_ = json.Unmarshal(txTempJson, &txNormal)
 				self.Transactions = append(self.Transactions, txNormal)
 			}
 		case common.TxSalaryType:
 			{
-				txNormal := &transaction.Tx{}
+				txNormal := &transaction.TxNormal{}
 				_ = json.Unmarshal(txTempJson, &txNormal)
 				self.Transactions = append(self.Transactions, txNormal)
 			}
@@ -115,6 +115,42 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				AcceptGovProposal := &transaction.TxAcceptGOVProposal{}
 				_ = json.Unmarshal(txTempJson, &AcceptGovProposal)
 				self.Transactions = append(self.Transactions, AcceptGovProposal)
+			}
+		case common.TxLoanRequest:
+			{
+				tx := &transaction.TxLoanRequest{}
+				_ = json.Unmarshal(txTempJson, &tx)
+				self.Transactions = append(self.Transactions, tx)
+			}
+		case common.TxLoanResponse:
+			{
+				tx := &transaction.TxLoanResponse{}
+				_ = json.Unmarshal(txTempJson, &tx)
+				self.Transactions = append(self.Transactions, tx)
+			}
+		case common.TxLoanPayment:
+			{
+				tx := &transaction.TxLoanPayment{}
+				_ = json.Unmarshal(txTempJson, &tx)
+				self.Transactions = append(self.Transactions, tx)
+			}
+		case common.TxLoanWithdraw:
+			{
+				tx := &transaction.TxLoanWithdraw{}
+				_ = json.Unmarshal(txTempJson, &tx)
+				self.Transactions = append(self.Transactions, tx)
+			}
+		case common.TxBuySellDCBRequest:
+			{
+				tx := &transaction.TxBuySellRequest{}
+				_ = json.Unmarshal(txTempJson, &tx)
+				self.Transactions = append(self.Transactions, tx)
+			}
+		case common.TxBuySellDCBResponse:
+			{
+				tx := &transaction.TxBuySellDCBResponse{}
+				_ = json.Unmarshal(txTempJson, &tx)
+				self.Transactions = append(self.Transactions, tx)
 			}
 
 		default:

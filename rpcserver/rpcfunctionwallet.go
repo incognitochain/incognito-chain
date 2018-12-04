@@ -6,6 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/common"
 	"errors"
+	"log"
 )
 
 /*
@@ -143,6 +144,7 @@ func (self RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan str
 
 // handleGetBalanceByPrivatekey -  return balance of private key
 func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	log.Println(params)
 	balance := uint64(0)
 
 	// all params
@@ -345,4 +347,19 @@ func (self RpcServer) handleSetTxFee(params interface{}, closeChan <-chan struct
 	self.config.Wallet.Config.IncrementalFee = uint64(params.(float64))
 	err := self.config.Wallet.Save(self.config.Wallet.PassPhrase)
 	return err == nil, NewRPCError(ErrUnexpected, err)
+}
+
+// handleListCustomToken - return list all custom token in network
+func (self RpcServer) handleListCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	temps, err := self.config.BlockChain.ListCustomToken()
+	if err != nil {
+		return nil, err
+	}
+	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
+	for _, token := range temps {
+		item := jsonresult.CustomToken{}
+		item.Init(token)
+		result.ListCustomToken = append(result.ListCustomToken, item)
+	}
+	return result, nil
 }

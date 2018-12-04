@@ -6,29 +6,29 @@ import (
 )
 
 type TxSubmitGOVProposal struct {
-	Tx
+	TxNormal
 	GOVProposalData voting.GOVProposalData
 }
 
 type TxSubmitDCBProposal struct {
-	Tx
+	TxNormal
 	DCBProposalData voting.DCBProposalData
 }
 
 func (thisTx TxSubmitDCBProposal) Hash() *common.Hash {
-	record := string(common.ToBytes(thisTx.Tx.Hash()))
+	record := string(common.ToBytes(thisTx.TxNormal.Hash()))
 	record += string(common.ToBytes(thisTx.DCBProposalData.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (thisTx TxSubmitGOVProposal) Hash() *common.Hash {
-	record := string(common.ToBytes(thisTx.Tx.Hash()))
+	record := string(common.ToBytes(thisTx.TxNormal.Hash()))
 	record += string(common.ToBytes(thisTx.GOVProposalData.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (thisTx TxSubmitDCBProposal) ValidateTransaction() bool {
-	return thisTx.Tx.ValidateTransaction() && thisTx.DCBProposalData.Validate()
+	return thisTx.TxNormal.ValidateTransaction() && thisTx.DCBProposalData.Validate()
 }

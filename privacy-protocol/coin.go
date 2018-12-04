@@ -5,9 +5,10 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"fmt"
-	"golang.org/x/crypto/openpgp/elgamal"
+
 	"io"
 	"math/big"
+
 )
 
 type SerialNumber []byte   //33 bytes
@@ -21,6 +22,7 @@ type Coin struct {
 	PublicKey      *EllipticPoint
 	CoinCommitment *EllipticPoint
 	SNDerivator    *big.Int
+	SerialNumber   *EllipticPoint
 	Randomness     *big.Int
 	Value          uint64
 	Info           []byte
@@ -37,78 +39,100 @@ type OutputCoin struct{
 	CoinDetailsEncrypted *CoinDetailsEncrypted
 }
 
-type CoinDetailsEncrypted struct{
-	RandomEncrypted []byte
-	SymKeyEncrypted SymKeyEncrypted
+func (outputCoin* OutputCoin) Bytes(){
+
 }
- type SymKeyEncrypted struct{
- 	C1, C2 *big.Int
- }
+
+func (outputCoin* OutputCoin) SetBytes(){
+
+}
 
 
-func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, error){
+
+type CoinDetailsEncrypted struct {
+	RandomEncrypted []byte
+	SymKeyEncrypted *ElGamalCipherText
+}
+
+func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error{
 	/**** Generate symmetric key of AES cryptosystem,
 				it is used for encryption coin details ****/
-	var point EllipticPoint
-	point.Randomize()
-	symKey := point.X.Bytes()
-	fmt.Printf("Len of symKey: %v\n", len(symKey))
+	symKeyPoint:= new(EllipticPoint)
+	symKeyPoint.Randomize()
+	symKeyByte := symKeyPoint.X.Bytes()
+	//fmt.Printf("Plain text 2: symKey byte: %v\n", symKeyByte)
 
-	/**** Encrypt coin details using symKey ****/
-	// just encrypt Randomness
-	// Load your secret key from a safe place and reuse it across multiple
-	// NewCipher calls. (Obviously don't use this example key for anything
-	// real.) If you want to convert a passphrase to a key, use a suitable
-	// package like bcrypt or scrypt.
-	//key, _ := hex.DecodeString("6368616e676520746869732070617373")
-	plaintext := coin.Randomness.Bytes()
+	/**** Encrypt coin details using symKeyByte ****/
+	// just encrypt Randomness of coin
+	randomCoin := coin.CoinDetails.Randomness.Bytes()
 
-	block, err := aes.NewCipher(symKey)
+	block, err := aes.NewCipher(symKeyByte)
+
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// The IV needs to be unique, but not secure. Therefore it's common to
 	// include it at the beginning of the ciphertext.
-	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
-	iv := ciphertext[:aes.BlockSize]
+	coin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
+	coin.CoinDetailsEncrypted.RandomEncrypted = make([]byte, aes.BlockSize+len(randomCoin))
+	iv := coin.CoinDetailsEncrypted.RandomEncrypted[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		panic(err)
 	}
 
 	stream := cipher.NewCTR(block, iv)
-	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintext)
+	stream.XORKeyStream(coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:], randomCoin)
 
-	encryptedCoin := new(CoinDetailsEncrypted)
-	encryptedCoin.RandomEncrypted = ciphertext
-
-	// Encrypt symKey using Transmission key's receiver with ElGamal cryptosystem
+	/****** Encrypt symKeyByte using Transmission key's receiver with ElGamal cryptosystem ****/
 	// prepare public key for ElGamal cryptosystem
-	pubKey := new(elgamal.PublicKey)
-	basePoint := EllipticPoint{big.NewInt(0), big.NewInt(0)}
-	basePoint.X, basePoint.Y = Curve.Params().Gx, Curve.Params().Gy
-	pubKey.G = new(big.Int).SetBytes(basePoint.Compress())
-	pubKey.P = Curve.Params().N
-	pubKey.Y = new(big.Int).SetBytes(receiverTK)
+	pubKey := new(ElGamalPubKey)
+	pubKey.H,_ = DecompressKey(receiverTK)
+	pubKey.Curve = &Curve
 
-	encryptedCoin.SymKeyEncrypted.C1, encryptedCoin.SymKeyEncrypted.C2, err = elgamal.Encrypt(rand.Reader, pubKey, symKey)
+	coin.CoinDetailsEncrypted.SymKeyEncrypted = pubKey.ElGamalEnc(symKeyPoint)
 	if err != nil{
 		fmt.Println(err)
-		return nil, err
+		return err
 	}
-	//encryptedCoin.SymKeyEncrypted = make([]byte, len(c1.Bytes()))
-	//encryptedCoin.SymKeyEncrypted = append(encryptedCoin.SymKeyEncrypted, c1.Bytes()...)
-	//encryptedCoin.SymKeyEncrypted = append(encryptedCoin.SymKeyEncrypted, c2.Bytes()...)
 
-	return encryptedCoin, nil
+	return nil
 }
+
+func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey){
+	/*** Decrypt symKeyEncrypted using receiver's receiving key to get symKey ***/
+	// prepare private key for Elgamal cryptosystem
+	privKey := new(ElGamalPrivKey)
+	privKey.Set(&Curve, new(big.Int).SetBytes(receivingKey))
+
+	symKeyPoint := privKey.ElGamalDec(coin.CoinDetailsEncrypted.SymKeyEncrypted)
+
+	//fmt.Printf("Decrypted plaintext 2: SymKey : %v\n", symKeyPoint.X.Bytes())
+
+	/*** Decrypt Encrypted using receiver's receiving key to get coin details (Randomness) ***/
+	randomness :=  make([]byte, 32)
+	// Set key to decrypt
+	block, err := aes.NewCipher(symKeyPoint.X.Bytes())
+	if err != nil {
+		panic(err)
+	}
+
+	iv := coin.CoinDetailsEncrypted.RandomEncrypted[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		panic(err)
+	}
+
+	stream := cipher.NewCTR(block, iv)
+	stream.XORKeyStream(randomness, coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:])
+}
+
 
 
 
 //CommitAll commits a coin with 4 attributes (public key, value, serial number, r)
 //func (coin *Coin) CommitAll() {
 //	//var values [PCM_CAPACITY-1][]byte
-//	values := [PCM_CAPACITY][]byte{coin.PublicKey, coin.Value, coin.SNDerivator, coin.Randomness}
+//	values := [PCM_CAPACITY][]byte{coin.PublicKey, coin.H, coin.SNDerivator, coin.Randomness}
 //	fmt.Printf("coin info: %v\n", values)
 //	coin.CoinCommitment = append(coin.CoinCommitment, FULL)
 //	coin.CoinCommitment = append(coin.CoinCommitment, PedCom.Commit(values)...)
@@ -129,7 +153,7 @@ func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, er
 //// CommitValue commits a value's coin
 //func (coin *Coin) CommitValue() []byte {
 //	var values [PCM_CAPACITY-1][]byte
-//	values = [PCM_CAPACITY-1][]byte{nil, coin.Value, nil, coin.Randomness}
+//	values = [PCM_CAPACITY-1][]byte{nil, coin.H, nil, coin.Randomness}
 //
 //	var commitment []byte
 //	commitment = append(commitment, VALUE)
@@ -153,6 +177,3 @@ func (coin *Coin) Encrypt(receiverTK TransmissionKey) (*CoinDetailsEncrypted, er
 //	SpendingKey SpendingKey
 //	UnspentCoinList map[Coin]big.Int
 //}
-
-
-

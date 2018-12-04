@@ -11,11 +11,11 @@ import (
 
 type TxBuySellDCBResponse struct {
 	*TxCustomToken // fee + amount to pay for bonds/constant
-	RequestedTxID *common.Hash
-	SaleID        []byte
+	RequestedTxID  *common.Hash
+	SaleID         []byte
 }
 
-func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64, saleID []byte, dcbAddress string) (*TxBuySellDCBResponse, error) {
+func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID []byte, rt []byte, chainID byte, bondPrices map[string]uint64, saleID []byte, dcbAddress string) (*TxBuySellDCBResponse, error) {
 	// Mint and send Constant
 	pks := [][]byte{txRequest.PaymentAddress.Pk[:], txRequest.PaymentAddress.Pk[:]}
 	tks := [][]byte{txRequest.PaymentAddress.Tk[:], txRequest.PaymentAddress.Tk[:]}
@@ -28,14 +28,14 @@ func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte,
 			bonds += vout.Value
 		}
 	}
-	bondPrice := bondPrices[bondID]
+	bondPrice := bondPrices[string(bondID)]
 	amounts := []uint64{bonds * bondPrice, 0} // TODO(@0xbunyip): use correct unit of price and value here
 	tx, err := BuildCoinbaseTx(pks, tks, amounts, rt, chainID, common.TxBuySellDCBResponse)
 	if err != nil {
 		return nil, err
 	}
 	txToken := &TxCustomToken{
-		Tx:          *tx,
+		TxNormal:    *tx,
 		TxTokenData: TxTokenData{},
 	}
 	txResponse := &TxBuySellDCBResponse{
@@ -46,20 +46,19 @@ func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID string, rt []byte,
 	return txResponse, nil
 }
 
-func BuildResponseForBond(txRequest *TxBuySellRequest, bondID string, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []TxTokenVout, saleID []byte, dcbAddress string) (*TxBuySellDCBResponse, []TxTokenVout, error) {
+func BuildResponseForBond(txRequest *TxBuySellRequest, bondID []byte, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []TxTokenVout, saleID []byte, dcbAddress string) (*TxBuySellDCBResponse, []TxTokenVout, error) {
 	accountDCB, _ := wallet.Base58CheckDeserialize(dcbAddress)
 	// Get amount of Constant user sent
 	value := uint64(0)
-	userPk := privacy.PublicKey{}
-	for _, desc := range txRequest.Tx.Descs {
+	userPk := txRequest.TxNormal.JSPubKey
+	for _, desc := range txRequest.TxNormal.Descs {
 		for _, note := range desc.Note {
 			if bytes.Equal(note.Apk[:], accountDCB.KeySet.PaymentAddress.Pk) {
 				value += note.Value
-				userPk = note.Apk
 			}
 		}
 	}
-	bondPrice := bondPrices[bondID]
+	bondPrice := bondPrices[string(bondID)]
 	bonds := value / bondPrice
 	sumBonds := uint64(0)
 	usedID := 0
@@ -118,7 +117,7 @@ func BuildResponseForBond(txRequest *TxBuySellRequest, bondID string, rt []byte,
 
 func (tx *TxBuySellDCBResponse) Hash() *common.Hash {
 	// get hash of tx
-	record := tx.Tx.Hash().String()
+	record := tx.TxNormal.Hash().String()
 	record += string(tx.RequestedTxID[:])
 	record += string(tx.SaleID)
 
@@ -136,7 +135,7 @@ func (tx *TxBuySellDCBResponse) ValidateTransaction() bool {
 }
 
 func (tx *TxBuySellDCBResponse) GetType() string {
-	return tx.Tx.Type
+	return tx.TxNormal.Type
 }
 
 func (tx *TxBuySellDCBResponse) GetTxVirtualSize() uint64 {
@@ -145,9 +144,9 @@ func (tx *TxBuySellDCBResponse) GetTxVirtualSize() uint64 {
 }
 
 func (tx *TxBuySellDCBResponse) GetSenderAddrLastByte() byte {
-	return tx.Tx.AddressLastByte
+	return tx.TxNormal.AddressLastByte
 }
 
 func (tx *TxBuySellDCBResponse) GetTxFee() uint64 {
-	return tx.Tx.Fee
+	return tx.TxNormal.Fee
 }

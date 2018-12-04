@@ -92,7 +92,7 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 		Logger.log.Errorf("MerkleRootCommitments diff!! \n%x\n%x\n%x", rtOld, rt[:], block.Header.MerkleRootCommitments[:])
 		for _, blockTx := range block.Transactions {
 			if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
-				tx, ok := blockTx.(*transaction.Tx)
+				tx, ok := blockTx.(*transaction.TxNormal)
 				if ok == false {
 					Logger.log.Errorf("Transaction in block not valid")
 				}

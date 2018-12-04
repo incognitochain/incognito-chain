@@ -17,7 +17,7 @@ func CreateTxSalary(
 	receiverAddr *privacy.PaymentAddress,
 	rt []byte,
 	chainID byte,
-) (*Tx, error) {
+) (*TxNormal, error) {
 	// Create Proof for the joinsplit op
 	inputs := make([]*client.JSInput, 2)
 	inputs[0] = CreateRandomJSInput(nil)

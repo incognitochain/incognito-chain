@@ -32,7 +32,7 @@ func (self GenesisBlockGenerator) CalcMerkleRoot(txns []transaction.Transaction)
 	rho := [32]byte{byte(idx)}
 	r := [32]byte{byte(idx)}
 	note := &client.Note{
-		Value: 0,
+		H: 0,
 		Apk:   addr.Pk,
 		Rho:   rho[:],
 		R:     r[:],
@@ -53,7 +53,7 @@ func (self GenesisBlockGenerator) CalcMerkleRoot(txns []transaction.Transaction)
 Use to get hardcode for genesis block
 */
 
-/*func (self GenesisBlockGenerator) createGenesisTx(initialCoin uint64, initialAddress string) (*transaction.Tx, error) {
+/*func (self GenesisBlockGenerator) createGenesisTx(initialCoin uint64, initialAddress string) (*transaction.TxNormal, error) {
 	// Create deterministic inputs (note, receiver's address and rho)
 	var inputs []*client.JSInput
 	inputs = append(inputs, createGenesisJSInput(0))
@@ -64,8 +64,8 @@ Use to get hardcode for genesis block
 	if err != nil {
 		return nil, err
 	}
-	outNote := &client.Note{Value: initialCoin, Apk: key.KeySet.PaymentAddress.Pk}
-	placeHolderOutputNote := &client.Note{Value: 0, Apk: key.KeySet.PaymentAddress.Pk}
+	outNote := &client.Note{H: initialCoin, Apk: key.KeySet.PaymentAddress.Pk}
+	placeHolderOutputNote := &client.Note{H: 0, Apk: key.KeySet.PaymentAddress.Pk}
 
 	fmt.Printf("EncKey: %x\n", key.KeySet.PaymentAddress.Tk)
 
@@ -95,7 +95,7 @@ Use to get hardcode for genesis block
 	return tx, err
 }*/
 
-/*func (self GenesisBlockGenerator) getGenesisTx(genesisBlockReward uint64) (*transaction.Tx, error) {
+/*func (self GenesisBlockGenerator) getGenesisTx(genesisBlockReward uint64) (*transaction.TxNormal, error) {
 	// Convert zk-proof from hex string to byte array
 	gA, _ := hex.DecodeString(GENESIS_BLOCK_G_A)
 	gAPrime, _ := hex.DecodeString(GENESIS_BLOCK_G_APrime)
@@ -189,7 +189,7 @@ Use to get hardcode for genesis block
 	//tempKeySet, _ := wallet.Base58CheckDeserialize(GENESIS_BLOCK_PAYMENT_ADDR)
 	//lastByte := tempKeySet.KeySet.PaymentAddress.PaymentAddress[len(tempKeySet.KeySet.PaymentAddress.PaymentAddress)-1]
 
-	tx := &transaction.Tx{
+	tx := &transaction.TxNormal{
 		Version:  transaction.TxVersion,
 		Type:     common.TxNormalType,
 		LockTime: 0,
@@ -202,7 +202,7 @@ Use to get hardcode for genesis block
 	return tx, nil
 }*/
 
-func (self GenesisBlockGenerator) calcCommitmentMerkleRoot(tx *transaction.Tx) common.Hash {
+func (self GenesisBlockGenerator) calcCommitmentMerkleRoot(tx *transaction.TxNormal) common.Hash {
 	tree := new(client.IncMerkleTree)
 	for _, desc := range tx.Descs {
 		for _, cm := range desc.Commitments {
@@ -360,15 +360,15 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	)
 	genesisBlock.AddTransaction(&cmbTokenTx)
 
-	// Create genesis token tx for BOND
-	/*bondTokenTx := createSpecialTokenTx(
-		common.Hash(BondTokenID),
-		"Bond",
-		"BON",
+	// Create genesis token tx for BOND test
+	bondTokenTx := createSpecialTokenTx(
+		common.Hash([common.HashSize]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
+		"BondTest",
+		"BONTest",
 		icoParams.InitialBondToken,
 		key.KeySet.PaymentAddress,
 	)
-	genesisBlock.AddTransaction(&bondTokenTx)*/
+	genesisBlock.AddTransaction(&bondTokenTx)
 
 	// calculate merkle root tx for genesis block
 	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)

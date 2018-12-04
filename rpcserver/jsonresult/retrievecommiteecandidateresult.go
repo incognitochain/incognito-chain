@@ -3,7 +3,7 @@ package jsonresult
 import "github.com/ninjadotorg/constant/blockchain"
 
 type RetrieveCommitteecCandidateResult struct {
-	Value     uint64 `json:"Value"`
+	Value     uint64 `json:"H"`
 	Timestamp int64  `json:"Timestamp"`
 	ChainID   byte   `json:"ChainID"`
 }

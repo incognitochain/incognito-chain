@@ -64,7 +64,7 @@ module.exports = {
                         jsonrpc: "2.0",
                         method: "evm_increaseTime",
                         params: [seconds], id: 0
-                })
+                }, () => {})
         },
 
         assertRevert: async function (promise) {
@@ -136,7 +136,7 @@ module.exports = {
         })
 
         args = args.join('')
-        return web3.sha3(args, { encoding: 'hex' })
+        return web3.utils.sha3(args, { encoding: 'hex' })
     },
 
     roc: function (tx, abi, event, key) {
@@ -146,14 +146,14 @@ module.exports = {
             if (item.type != "event") continue;
             if (item.name != event) continue;
             var signature = item.name + "(" + item.inputs.map(function(input) {return input.type;}).join(",") + ")";
-            hash = web3.sha3(signature);
+            hash = web3.utils.sha3(signature);
             a = abi[i].inputs;
             break;
         }
 
         if (a != null) {
             let result = null
-            tx.receipt.logs.forEach(function(log) {
+            tx.receipt.rawLogs.forEach(function(log) {
                 if (log.topics[0] == hash) {
                     let r = ww.eth.abi.decodeLog(a, log.data, log.topics);
                     result = r[key]

@@ -24,7 +24,7 @@ IsSalaryTx determines whether or not a transaction is a salary.
 func (self *BlockChain) IsSalaryTx(tx transaction.Transaction) bool {
 	// Check normal tx(not an action tx)
 	if tx.GetType() != common.TxSalaryType {
-		normalTx, ok := tx.(*transaction.Tx)
+		normalTx, ok := tx.(*transaction.TxNormal)
 		if !ok {
 			return false
 		}
@@ -54,7 +54,7 @@ func (self *BlockChain) ValidateDoubleSpend(tx transaction.Transaction, chainID 
 	nullifierDb := txViewPoint.ListNullifiers()
 	var descs []*transaction.JoinSplitDesc
 	if tx.GetType() == common.TxNormalType {
-		descs = tx.(*transaction.Tx).Descs
+		descs = tx.(*transaction.TxNormal).Descs
 	}
 	for _, desc := range descs {
 		for _, nullifer := range desc.Nullifiers {
@@ -110,6 +110,17 @@ func (self *BlockChain) ValidateTxLoanResponse(tx transaction.Transaction, chain
 		return fmt.Errorf("Fail parsing LoanResponse transaction")
 	}
 
+	// Check if only board members created this tx
+	isBoard := false
+	for _, gov := range self.BestState[chainID].BestBlock.Header.DCBGovernor.DCBBoardPubKeys {
+		if bytes.Equal([]byte(gov), txResponse.JSPubKey) {
+			isBoard = true
+		}
+	}
+	if !isBoard {
+		return fmt.Errorf("TxNormal must be created by DCB Governor")
+	}
+
 	// Check if a loan request with the same id exists on any chain
 	txHashes, err := self.config.DataBase.GetLoanTxs(txResponse.LoanID)
 	if err != nil {
@@ -126,7 +137,14 @@ func (self *BlockChain) ValidateTxLoanResponse(tx transaction.Transaction, chain
 		switch txOld.GetType() {
 		case common.TxLoanResponse:
 			{
-				return fmt.Errorf("Loan already had response")
+				txOldResp, ok := txOld.(*transaction.TxLoanResponse)
+				if !ok {
+					return fmt.Errorf("Error parsing old loan response tx")
+				}
+				// Check if the same user responses twice
+				if bytes.Equal(txOldResp.JSPubKey, txResponse.JSPubKey) {
+					return fmt.Errorf("Current user already responded to loan request")
+				}
 			}
 		case common.TxLoanRequest:
 			{
@@ -156,7 +174,7 @@ func (self *BlockChain) ValidateTxLoanPayment(tx transaction.Transaction, chainI
 	if err != nil {
 		return err
 	}
-	found := false
+	found := uint8(0)
 	for _, txHash := range txHashes {
 		hash := &common.Hash{}
 		copy(hash[:], txHash)
@@ -167,13 +185,17 @@ func (self *BlockChain) ValidateTxLoanPayment(tx transaction.Transaction, chainI
 		switch txOld.GetType() {
 		case common.TxLoanResponse:
 			{
-				found = true
+				txResponse := tx.(*transaction.TxLoanResponse)
+				if txResponse.Response == transaction.Accept {
+					found += 1
+				}
 			}
 		}
 	}
 
-	if found == false {
-		return fmt.Errorf("Corresponding loan response not found")
+	minResponse := self.BestState[chainID].BestBlock.Header.DCBConstitution.DCBParams.MinLoanResponseRequire
+	if found < minResponse {
+		return fmt.Errorf("Not enough loan accepted response")
 	}
 	return nil
 }
@@ -219,11 +241,13 @@ func (self *BlockChain) ValidateTxLoanWithdraw(tx transaction.Transaction, chain
 				if !ok {
 					return fmt.Errorf("Error parsing corresponding loan response")
 				}
-				if txResponse.Response != transaction.Accept {
+				if self.BestState[chainID].BestBlock.Header.Height > txResponse.ValidUntil {
+					return fmt.Errorf("Deadline exceeded, cannot withdraw loan")
+				}
+				if txResponse.Response == transaction.Accept {
 					foundResponse = true
 				}
 			}
-
 		}
 	}
 
@@ -447,21 +471,19 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 	}
 
 	dbcAccount, _ := wallet.Base58CheckDeserialize(DCBAddress)
-	if bytes.Equal(saleData.BuyingAsset, BondTokenID[:]) {
+	if bytes.Equal(saleData.BuyingAsset[:8], BondTokenID[:8]) {
 		for _, vout := range requestTx.TxTokenData.Vouts {
-			// Check if sending asset is correct
-			if vout.BuySellResponse.BondID != saleData.BondID {
-				return fmt.Errorf("Received asset id %s instead of %s", vout.BuySellResponse.BondID, saleData.BondID)
+			if !bytes.Equal(vout.BuySellResponse.BondID, saleData.BuyingAsset[8:]) {
+				return fmt.Errorf("Received asset id %s instead of %s", append(BondTokenID[:8], vout.BuySellResponse.BondID...), saleData.BuyingAsset)
 			}
 
 			// Check if receiving address is DCB's
-			// TODO(@0xbunyip): compare full payment address
 			if !bytes.Equal(vout.PaymentAddress.Pk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
 				return fmt.Errorf("Sending payment to %x instead of %x", vout.PaymentAddress.Pk[:], DCBAddress)
 			}
 		}
 	} else if bytes.Equal(saleData.BuyingAsset, ConstantID[:]) {
-		for _, desc := range requestTx.Tx.Descs {
+		for _, desc := range requestTx.TxNormal.Descs {
 			for _, note := range desc.Note {
 				if !bytes.Equal(note.Apk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
 					return fmt.Errorf("Sending payment to %x instead of %x", note.Apk[:], DCBAddress)
@@ -488,13 +510,8 @@ func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction,
 		return fmt.Errorf("Sale ended")
 	}
 
-	if bytes.Equal(saleData.SellingAsset, BondTokenID[:]) {
-		for _, vout := range responseTx.TxTokenData.Vouts {
-			// Check if sending asset is correct
-			if vout.BuySellResponse.BondID != saleData.BondID {
-				return fmt.Errorf("Sending asset id %s instead of %s", vout.BuySellResponse.BondID, saleData.BondID)
-			}
-		}
+	if !bytes.Equal(saleData.SellingAsset[:8], BondTokenID[:8]) {
+		return fmt.Errorf("Sending asset id %s instead of %s", BondTokenID, saleData.SellingAsset)
 	}
 
 	// TODO(@0xbunyip): validate amount of asset sent
@@ -573,7 +590,7 @@ func (self *BlockChain) ValidateBuyFromGOVRequestTx(
 	}
 
 	// check double spending on fee + amount tx
-	err := self.ValidateDoubleSpend(&buySellReqTx.Tx, chainID)
+	err := self.ValidateDoubleSpend(&buySellReqTx.TxNormal, chainID)
 	if err != nil {
 		return err
 	}
@@ -602,7 +619,7 @@ func (self *BlockChain) ValidateBuyBackRequestTx(
 	}
 
 	// check double spending on fee + amount tx
-	err := self.ValidateDoubleSpend(buyBackReqTx.Tx, chainID)
+	err := self.ValidateDoubleSpend(buyBackReqTx.TxNormal, chainID)
 	if err != nil {
 		return err
 	}

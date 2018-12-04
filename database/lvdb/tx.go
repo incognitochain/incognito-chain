@@ -191,13 +191,13 @@ func (db *db) CleanFeeEstimator() error {
 	StoreTransactionIndex
 	Store tx detail location
   Key: prefixTx-txHash
-	Value: blockHash-blockIndex
+	H: blockHash-blockIndex
 */
 func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, index int) error {
 	key := string(transactionKeyPrefix) + txId.String()
 	value := blockHash.String() + string(splitter) + strconv.Itoa(index)
 	fmt.Println("Key in StoreTransactionIndex", key)
-	fmt.Println("Value in StoreTransactionIndex", value)
+	fmt.Println("H in StoreTransactionIndex", value)
 	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
 		return err
 	}
@@ -241,7 +241,7 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 	2. Key -> value :							prefix(transaction)txHash 												->  	privateKey-chainId-blockHeight-txIndex
 
 */
-func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, unspentTx *transaction.Tx) error {
+func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, unspentTx *transaction.TxNormal) error {
 	tempChainId := []byte{}
 	tempChainId = append(tempChainId, chainId)
 	temp3ChainId := int(chainId)
@@ -298,10 +298,10 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 	1. Key -> value : prefix(privateky)-privateKey-chainId-(999999999 - blockHeight)-(999999999 - txIndex) 		-> 		tx
 
 */
-func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKey) (map[byte][]transaction.Tx, error) {
+func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKey) (map[byte][]transaction.TxNormal, error) {
 	prefix := []byte(string(privateKeyPrefix) + privateKey.String())
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
-	results := make(map[byte][]transaction.Tx)
+	results := make(map[byte][]transaction.TxNormal)
 	for iter.Next() {
 		key := iter.Key()
 		value := iter.Value()
@@ -310,7 +310,7 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKe
 		tempChainId, _ := strconv.Atoi(reses[2])
 		chainId := byte(tempChainId)
 		fmt.Println("GetTransactionLightModeByPrivateKey, chainId", chainId)
-		tx := transaction.Tx{}
+		tx := transaction.TxNormal{}
 		err := json.Unmarshal(value, &tx)
 		if err != nil {
 			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
@@ -323,7 +323,7 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKe
 
 /*
 	Key: transactionPrefix-txHash
-  Value: txLocation
+  H: txLocation
   tx: tx object in byte
 */
 func (db *db) GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, error) {
