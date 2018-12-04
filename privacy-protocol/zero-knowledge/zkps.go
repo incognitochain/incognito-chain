@@ -13,9 +13,8 @@ type PaymentWitness struct {
 	inputCoins  	[]*privacy.InputCoin
 	outputCoins 	[]*privacy.OutputCoin
 	commitments 	[]*privacy.EllipticPoint
-	randCmIndices []privacy.CMIndex
+	randCmIndices []*privacy.CMIndex
 	myCmPos 			[]uint32
-
 
 	pkLastByteSender    byte
 	pkLastByteReceivers []byte
@@ -228,7 +227,7 @@ func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.Input
 func (wit *PaymentWitness) Build(hasPrivacy bool,
 	spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin,
 	pkLastByteSender byte, pkLastByteReceivers []byte,
-	commitments []*privacy.EllipticPoint, randCmIndices []privacy.CMIndex, myCmPos []uint32) {
+	commitments []*privacy.EllipticPoint, randCmIndices []*privacy.CMIndex, myCmPos []uint32) {
 
 	wit.spendingKey = spendingKey
 	wit.inputCoins = inputCoins
@@ -308,13 +307,14 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		cmInputRndIndex := new(privacy.CMIndex)
 		cmInputRndIndex.GetCmIndex(cmInputSum[i])
 		//cmInputRndIndexList, cmInputRndValue, indexInputIsZero := GetCMList(cmInputSum[i], cmInputRndIndex, GetCurrentBlockHeight())
-		//commitmentTemps := new(privacy.EllipticPoint)
-		//rndInputIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randInputSum[i])
-		//rndInputIsZero.Mod(rndInputIsZero, privacy.Curve.Params().N)
-		//for j := 0; j < privacy.CMRingSize; j++ {
-		//	cmInputRndValue[j].X, cmInputRndValue[j].Y = privacy.Curve.Add(commitments[j].X, commitments[j].Y, cmInputSumInverse[j].X, cmInputSumInverse[j].Y)
-		//}
-		//wit.OneOfManyWitness[i].Set(cmInputRndValue, &cmInputRndIndexList, rndInputIsZero, indexInputIsZero, privacy.SK)
+		commitmentTemps := make([]*privacy.EllipticPoint, numInputCoin*privacy.CMRingSize)
+		rndInputIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randInputSum[i])
+		rndInputIsZero.Mod(rndInputIsZero, privacy.Curve.Params().N)
+		for j := 0; j < numInputCoin*privacy.CMRingSize; j++ {
+			commitmentTemps[j].X, commitmentTemps[j].Y = privacy.Curve.Add(commitments[j].X, commitments[j].Y, cmInputSumInverse[j].X, cmInputSumInverse[j].Y)
+		}
+
+		wit.OneOfManyWitness[i].Set(commitmentTemps, randCmIndices, rndInputIsZero, myCmPos[i], privacy.SK)
 		// -------------------
 		// For ZKP Equal Commitment Value
 		wit.EqualityOfCommittedValWitness[i].Set([]*privacy.EllipticPoint{cmInputSNDIndexSK[i], cmInputSND[i]}, indexZKPEqual, []*big.Int{inputCoins[i].CoinDetails.SNDerivator, randInputSK, randInputSND[i]})
