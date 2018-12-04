@@ -743,6 +743,7 @@ func SortArrayTxs(data []TxNormal, sortType int, sortAsc bool) {
 	}
 }
 
+<<<<<<< HEAD
 // EstimateTxSize returns the estimated size of the tx in kilobyte
 func EstimateTxSize(usableTx []*TxNormal, payments []*privacy.PaymentInfo) uint64 {
 	var sizeVersion uint64 = 1  // int8
@@ -761,6 +762,8 @@ func EstimateTxSize(usableTx []*TxNormal, payments []*privacy.PaymentInfo) uint6
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }
 
+=======
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 // CreateEmptyTx returns a new TxNormal initialized with default data
 func CreateEmptyTx(txType string, privKey *privacy.SpendingKey, randomSignKey bool) (*TxNormal, error) {
 	//Generate signing key 96 bytes

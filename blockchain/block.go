@@ -140,6 +140,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				_ = json.Unmarshal(txTempJson, &tx)
 				self.Transactions = append(self.Transactions, tx)
 			}
+<<<<<<< HEAD
 		case common.TxBuySellDCBRequest:
 			{
 				tx := &transaction.TxBuySellRequest{}
@@ -152,6 +153,20 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				_ = json.Unmarshal(txTempJson, &tx)
 				self.Transactions = append(self.Transactions, tx)
 			}
+=======
+			/*case common.TxBuySellDCBRequest:
+			  {
+				  tx := &transaction.TxBuySellRequest{}
+				  _ = json.Unmarshal(txTempJson, &tx)
+				  self.Transactions = append(self.Transactions, tx)
+			  }
+		  case common.TxBuySellDCBResponse:
+			  {
+				  tx := &transaction.TxBuySellDCBResponse{}
+				  _ = json.Unmarshal(txTempJson, &tx)
+				  self.Transactions = append(self.Transactions, tx)
+			  }*/
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 
 		default:
 			{

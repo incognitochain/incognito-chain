@@ -11,6 +11,10 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+<<<<<<< HEAD
+=======
+	"math"
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 )
 
 type Tx struct {
@@ -23,10 +27,17 @@ type Tx struct {
 	Sig       []byte `json:"Sig, omitempty"`       // 64 bytes
 	Proof     *zkp.PaymentProof
 
+<<<<<<< HEAD
 	PubKeyLastByteSender byte `json:"PubKeyLastByteSender"`
 	PubKeyLastByteReceivers []byte `json:"PubKeyLastByteReceivers"`
 
 	TxId       *common.Hash
+=======
+	PubKeyLastByteSender    byte   `json:"PubKeyLastByteSender"`
+	PubKeyLastByteReceivers []byte `json:"PubKeyLastByteReceivers"`
+
+	txId       *common.Hash
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 
 	// this one is a hash id of requested tx
@@ -35,8 +46,13 @@ type Tx struct {
 	// for example, BuySellRequestTx/BuySellResponseTx
 	//RequestedTxID *common.Hash
 
+<<<<<<< HEAD
 	// all input of verify function
 	// outputcoin []OutputCoin
+=======
+	// temp variable to validate tx
+	snDerivator []*big.Int
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 
 	Metadata interface{}
 }
@@ -47,6 +63,7 @@ type Tx struct {
 func (tx *Tx) CreateTx(
 	senderSK *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
+<<<<<<< HEAD
 	usableTx map[byte][]*TxNormal,
 	fee uint64,
 	commitments [][]byte,
@@ -54,6 +71,15 @@ func (tx *Tx) CreateTx(
 	myCmIndices []uint32,
 	hasPrivacy bool,
 ) (*Tx, error) {
+=======
+	useableTx map[byte][]*Tx,
+	fee uint64,
+	commitments map[byte][][]byte,
+	randCmIndices []privacy.CMIndex,
+	myCmIndices []uint32,
+	hasPrivacy bool,
+) (error) {
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 
 	var inputCoins []*privacy.InputCoin
 
@@ -81,15 +107,18 @@ func (tx *Tx) CreateTx(
 
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 {
-		return nil, fmt.Errorf("Input value less than output value")
+		return fmt.Errorf("Input value less than output value")
 	}
 
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 	// create new output coins
 	outputCoins := make([]*privacy.OutputCoin, len(paymentInfo))
 
@@ -122,7 +151,11 @@ func (tx *Tx) CreateTx(
 
 	// get public key last byte of receivers
 	pkLastByteReceivers := make([]byte, len(paymentInfo))
+<<<<<<< HEAD
 	for i, payInfo := range  paymentInfo{
+=======
+	for i, payInfo := range paymentInfo {
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 		pkLastByteReceivers[i] = payInfo.PaymentAddress.Pk[len(payInfo.PaymentAddress.Pk)-1]
 	}
 	tx.PubKeyLastByteReceivers = pkLastByteReceivers
@@ -134,10 +167,17 @@ func (tx *Tx) CreateTx(
 	tx.Proof, _ = witness.Prove(false)
 
 	// set private key for signing tx
+<<<<<<< HEAD
 	if hasPrivacy{
 		tx.sigPrivKey = make([]byte, 64)
 		tx.sigPrivKey = append(*senderSK, witness.ComInputOpeningsWitness[0].Openings[privacy.RAND].Bytes()...)
 	} else{
+=======
+	if hasPrivacy {
+		tx.sigPrivKey = make([]byte, 64)
+		tx.sigPrivKey = append(*senderSK, witness.ComInputOpeningsWitness[0].Openings[privacy.RAND].Bytes()...)
+	} else {
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 		tx.sigPrivKey = *senderSK
 	}
 
@@ -150,7 +190,11 @@ func (tx *Tx) CreateTx(
 	tx.Hash()
 	tx.SignTx(hasPrivacy)
 
-	return tx, nil
+	if hasPrivacy {
+		//tx.Proof.InputCoins = nil
+		// TODO
+	}
+	return nil
 }
 
 // SignTx signs tx
@@ -160,7 +204,11 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		return fmt.Errorf("input transaction must be an unsigned one")
 	}
 
+<<<<<<< HEAD
 	if hasPrivacy{
+=======
+	if hasPrivacy {
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 		/****** using Schnorr *******/
 		// sign with sigPrivKey
 		// prepare private key for Schnorr
@@ -185,7 +233,11 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 		// signing
+<<<<<<< HEAD
 		signature, err := sigKey.Sign(tx.TxId[:])
+=======
+		signature, err := sigKey.Sign(tx.Hash()[:])
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 		if err != nil {
 			return err
 		}
@@ -193,7 +245,11 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		// convert signature to byte array
 		tx.Sig = signature.ToBytes()
 
+<<<<<<< HEAD
 	} else{
+=======
+	} else {
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 		/***** using ECDSA ****/
 		// sign with sigPrivKey
 		// prepare private key for ECDSA
@@ -203,12 +259,20 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		sigKey.PublicKey.X, sigKey.PublicKey.Y = privacy.Curve.ScalarBaseMult(tx.sigPrivKey)
 
 		// save public key for verification signature tx
+<<<<<<< HEAD
 		verKey:= new(privacy.EllipticPoint)
+=======
+		verKey := new(privacy.EllipticPoint)
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 		verKey.X, verKey.Y = sigKey.PublicKey.X, sigKey.PublicKey.Y
 		tx.SigPubKey = verKey.Compress()
 
 		// signing
+<<<<<<< HEAD
 		r, s, err := ecdsa.Sign(rand.Reader, sigKey, tx.TxId[:])
+=======
+		r, s, err := ecdsa.Sign(rand.Reader, sigKey, tx.Hash()[:])
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 		if err != nil {
 			return err
 		}
@@ -220,7 +284,11 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 	return nil
 }
 
+<<<<<<< HEAD
 func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error){
+=======
+func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, fmt.Errorf("input transaction must be an signed one!")
@@ -228,6 +296,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error){
 
 	var err error
 	res := false
+<<<<<<< HEAD
 
 	if hasPrivacy{
 		/****** verify Schnorr signature *****/
@@ -320,4 +389,148 @@ func (tx *Tx) Hash() *common.Hash {
 	record += string(tx.PubKeyLastByteSender)
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
+=======
+
+	if hasPrivacy {
+		/****** verify Schnorr signature *****/
+		// prepare Public key for verification
+		verKey := new(privacy.SchnPubKey)
+		verKey.PK, err = privacy.DecompressKey(tx.SigPubKey)
+		if err != nil {
+			return false, err
+		}
+		verKey.G = new(privacy.EllipticPoint)
+		verKey.G.X, verKey.G.Y = privacy.Curve.Params().Gx, privacy.Curve.Params().Gy
+
+		verKey.H = new(privacy.EllipticPoint)
+		verKey.H.X, verKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
+
+		// convert signature from byte array to SchnorrSign
+		signature := new(privacy.SchnSignature)
+		signature.FromBytes(tx.Sig)
+
+		// verify signature
+		res = verKey.Verify(signature, tx.Hash()[:])
+
+	} else {
+		/****** verify ECDSA signature *****/
+		// prepare Public key for verification
+		verKey := new(ecdsa.PublicKey)
+		point := new(privacy.EllipticPoint)
+		point, _ = privacy.DecompressKey(tx.SigPubKey)
+		verKey.X, verKey.Y = point.X, point.Y
+
+		// convert signature from byte array to ECDSASign
+		r, s := FromByteArrayToECDSASig(tx.Sig)
+
+		// verify signature
+		res = ecdsa.Verify(verKey, tx.Hash()[:], r, s)
+	}
+
+	return res, nil
+}
+
+// ECDSASigToByteArray converts signature to byte array
+func ECDSASigToByteArray(r, s *big.Int) (sig []byte) {
+	sig = append(sig, r.Bytes()...)
+	sig = append(sig, s.Bytes()...)
+	return
+}
+
+// FromByteArrayToECDSASig converts a byte array to signature
+func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
+	r = new(big.Int).SetBytes(sig[0:32])
+	s = new(big.Int).SetBytes(sig[32:64])
+	return
+}
+
+// ValidateTransaction returns true if transaction is valid:
+// - Verify tx signature
+// - Verify the payment proof
+// Note: This method doesn't check for double spending
+func (tx *Tx) ValidateTx(hasPrivacy bool) bool {
+	// Verify tx signature
+	var valid bool
+	var err error
+	valid, err = tx.VerifySigTx(hasPrivacy)
+	if valid == false {
+		if err != nil {
+			fmt.Printf("Error verifying signature of tx: %+v", err)
+		}
+		return false
+	}
+
+	// Verify the payment proof
+	valid = tx.Proof.Verify(false, tx.SigPubKey)
+	if valid == false {
+		fmt.Printf("Error verifying the payment proof")
+		return false
+	}
+
+	return true
+}
+
+func (tx *Tx) Hash() *common.Hash {
+	record := strconv.Itoa(int(tx.Version))
+	record += tx.Type
+	record += strconv.FormatInt(tx.LockTime, 10)
+	record += strconv.FormatUint(tx.Fee, 10)
+	record += string(tx.Proof.Bytes()[:])
+	record += string(tx.PubKeyLastByteSender)
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+func (tx *Tx) GetSenderAddrLastByte() byte {
+	return tx.PubKeyLastByteSender
+}
+
+func (tx *Tx) GetTxFee() uint64 {
+	return tx.Fee
+}
+
+// GetTxVirtualSize computes the virtual size of a given transaction
+func (tx *Tx) GetTxVirtualSize() uint64 {
+	// TODO 0xkraken
+	return 0
+}
+
+// GetType returns the type of the transaction
+func (tx *Tx) GetType() string {
+	return tx.Type
+}
+
+func (tx *Tx) ListNullifiers() [][]byte {
+	result := [][]byte{}
+	for _, d := range tx.Proof.InputCoins {
+		result = append(result, d.CoinDetails.SerialNumber.Compress())
+	}
+	return result
+}
+
+// ValidateTransaction returns true if transaction is valid:
+// - Signature matches the signing public key
+// - JSDescriptions are valid (zk-snark proof satisfied)
+// Note: This method doesn't check for double spending
+func (tx *Tx) ValidateTransaction() bool {
+	return true
+}
+
+// EstimateTxSize returns the estimated size of the tx in kilobyte
+func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
+	var sizeVersion uint64 = 1  // int8
+	var sizeType uint64 = 8     // string
+	var sizeLockTime uint64 = 8 // int64
+	var sizeFee uint64 = 8      // uint64
+	var sizeDescs uint64        // uint64
+	if payments != nil {
+		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+	} else {
+		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
+	}
+	var sizejSPubKey uint64 = 64 // [64]byte
+	var sizejSSig uint64 = 64    // [64]byte
+	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
+	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
+>>>>>>> 11987acd2d9351ec7e456c55fe5c9ba23f2cef2d
 }

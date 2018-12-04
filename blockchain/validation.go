@@ -454,7 +454,7 @@ func (bc *BlockChain) VerifyCustomTokenSigns(tx transaction.Transaction) bool {
 	return bc.verifyByBoard(boardType, customToken)
 }
 
-func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, chainID byte) error {
+/*func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, chainID byte) error {
 	// Check if crowdsale existed
 	requestTx, ok := tx.(*transaction.TxBuySellRequest)
 	if !ok {
@@ -492,9 +492,9 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 		}
 	}
 	return nil
-}
+}*/
 
-func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction, chainID byte) error {
+/*func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction, chainID byte) error {
 	// Check if crowdsale existed
 	responseTx, ok := tx.(*transaction.TxBuySellDCBResponse)
 	if !ok {
@@ -516,7 +516,7 @@ func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction,
 
 	// TODO(@0xbunyip): validate amount of asset sent
 	return nil
-}
+}*/
 
 //validate voting transaction
 func (bc *BlockChain) ValidateTxSubmitDCBProposal(tx transaction.Transaction, chainID byte) error {
@@ -580,7 +580,7 @@ func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCus
 	return nil
 }
 
-func (self *BlockChain) ValidateBuyFromGOVRequestTx(
+/*func (self *BlockChain) ValidateBuyFromGOVRequestTx(
 	tx transaction.Transaction,
 	chainID byte,
 ) error {
@@ -607,7 +607,7 @@ func (self *BlockChain) ValidateBuyFromGOVRequestTx(
 		return errors.New("Requested buy price is under SellingBonds params' buy price.")
 	}
 	return nil
-}
+}*/
 
 func (self *BlockChain) ValidateBuyBackRequestTx(
 	tx transaction.Transaction,
