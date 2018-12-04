@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -10,7 +9,6 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/wallet"
 )
 
 type BlkTmplGenerator struct {
@@ -138,7 +136,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 			continue
 		}
 
-		if tx.GetType() == common.TxBuyFromGOVRequest {
+		/*if tx.GetType() == common.TxBuyFromGOVRequest {
 			income, soldAmt, addable := blockgen.checkBuyFromGOVReqTx(chainID, tx, bondsSold)
 			if !addable {
 				txToRemove = append(txToRemove, tx)
@@ -157,7 +155,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 			}
 			buyBackCoins += txTokenVout.Value * txTokenVout.BuySellResponse.BuyBackInfo.BuyBackPrice
 			txTokenVouts[buyBackReqTxID] = txTokenVout
-		}
+		}*/
 
 		totalFee += tx.GetTxFee()
 		txsToAdd = append(txsToAdd, tx)
@@ -199,7 +197,7 @@ concludeBlock:
 	}
 
 	// Process crowdsale for DCB
-	dcbSaleTxs, removableTxs, err := blockgen.processCrowdsale(sourceTxns, rt, chainID)
+	/*dcbSaleTxs, removableTxs, err := blockgen.processCrowdsale(sourceTxns, rt, chainID)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +206,7 @@ concludeBlock:
 	}
 	for _, tx := range removableTxs {
 		txToRemove = append(txToRemove, tx)
-	}
+	}*/
 
 	// Get blocksalary fund from txs
 	salaryFundAdd := uint64(0)
@@ -472,7 +470,7 @@ func (blockgen *BlkTmplGenerator) processGovDividend(rt []byte, chainID byte, bl
 	return blockgen.processDividend(rt, chainID, proposal, blockHeight)
 }
 
-func buildSingleBuySellResponseTx(
+/*func buildSingleBuySellResponseTx(
 	buySellReqTx *transaction.TxBuySellRequest,
 	sellingBondsParam *SellingBonds,
 ) transaction.TxTokenVout {
@@ -493,9 +491,9 @@ func buildSingleBuySellResponseTx(
 		PaymentAddress:  buySellReqTx.PaymentAddress,
 		BuySellResponse: buySellResponse,
 	}
-}
+}*/
 
-func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
+/*func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 	chainID byte,
 	tx transaction.Transaction,
 	bondsSold uint64,
@@ -514,7 +512,7 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 		return 0, 0, false
 	}
 	return reqTx.Amount * reqTx.BuyPrice, reqTx.Amount, true
-}
+}*/
 
 // buildBuySellResponsesTx
 // the tx is to distribute tokens (bond, gov, ...) to token requesters
@@ -527,7 +525,7 @@ func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 		return nil
 	}
 	var resTxs []*transaction.TxCustomToken
-	for _, reqTx := range buySellReqTxs {
+	/*for _, reqTx := range buySellReqTxs {
 		tx, _ := reqTx.(*transaction.TxBuySellRequest)
 		txTokenVout := buildSingleBuySellResponseTx(tx, sellingBondsParam)
 		bondIDBytes := txTokenVout.BuySellResponse.BondID
@@ -548,7 +546,7 @@ func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 		resTx.Type = coinbaseTxType
 		resTx.RequestedTxID = tx.Hash()
 		resTxs = append(resTxs, resTx)
-	}
+	}*/
 	return resTxs
 }
 
@@ -697,6 +695,7 @@ func (blockgen *BlkTmplGenerator) buildRefundTxs(
 	return refundTxs, totalRefundAmt
 }
 
+/*
 func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*transaction.TxDesc, rt []byte, chainID byte) ([]*transaction.TxBuySellDCBResponse, []transaction.Transaction, error) {
 	txsToRemove := []transaction.Transaction{}
 	txsResponse := []*transaction.TxBuySellDCBResponse{}
@@ -751,3 +750,4 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*transaction.TxD
 	}
 	return txsResponse, txsToRemove, nil
 }
+*/

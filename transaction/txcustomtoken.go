@@ -110,8 +110,14 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 ) (*TxCustomToken, error) {
 	// create normal txCustomToken
 	normalTx := Tx{}
-	var err error
-	normalTx, err = normalTx.CreateTx(senderKey, paymentInfo, rts, usableTx, commitments, fee, senderChainID, true)
+	err := normalTx.CreateTx(senderKey,
+		paymentInfo,
+		usableTx,
+		fee,
+		commitments,
+		nil,
+		nil,
+		true)
 	if err != nil {
 		return nil, err
 	}

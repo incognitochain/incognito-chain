@@ -48,13 +48,13 @@ type Tx struct {
 func (tx *Tx) CreateTx(
 	senderSK *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
-	preOutputCoins []*privacy.OutputCoin,
+	useableTx map[byte][]*Tx,
 	fee uint64,
-	commitments [][]byte,
+	commitments map[byte][][]byte,
 	randCmIndices []privacy.CMIndex,
 	myCmIndices []uint32,
 	hasPrivacy bool,
-) (*Tx, error) {
+) (error) {
 
 	var inputCoins []*privacy.InputCoin
 
@@ -82,7 +82,7 @@ func (tx *Tx) CreateTx(
 
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 {
-		return nil, fmt.Errorf("Input value less than output value")
+		return fmt.Errorf("Input value less than output value")
 	}
 
 	// create sender's key set from sender's spending key
@@ -150,9 +150,10 @@ func (tx *Tx) CreateTx(
 	tx.SignTx(hasPrivacy)
 
 	if hasPrivacy {
-		tx.Proof.InputCoins = nil
+		//tx.Proof.InputCoins = nil
+		// TODO
 	}
-	return tx, nil
+	return nil
 }
 
 // SignTx signs tx
