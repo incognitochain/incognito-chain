@@ -313,6 +313,20 @@ func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
 }
 
 /*
+Uses an existing database to update the set of used tx by saving list SNDerivator of privacy-protocol,
+this is a list tx-out which are used by a new tx
+*/
+func (self *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint) error {
+	for _, item1 := range view.listSnD {
+		err := self.config.DataBase.StoreSNDerivators(item1, view.chainID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+/*
 Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
 this is a list tx-in which are used by a new tx
 */
@@ -568,11 +582,15 @@ func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 		return nil, err
 	}
 	view.listNullifiers = nullifiers
-	// view.SetBestHash(self.BestState.BestBlockHash)
+	snDerivators, err := self.config.DataBase.FetchSNDerivator(chainId)
+	if err != nil {
+		return nil, err
+	}
+	view.listSnD = snDerivators
 	return view, nil
 }
 
-func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
+func (self *BlockChain) createAndSaveTxViewPointFromBlock(block *Block) error {
 	view := NewTxViewPoint(block.Header.ChainID)
 
 	err := view.fetchTxViewPointFromBlock(self.config.DataBase, block)
@@ -628,6 +646,11 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 	}
 
 	err = self.StoreCommitmentsFromTxViewPoint(*view)
+	if err != nil {
+		return err
+	}
+
+	err = self.StoreSNDerivatorsFromTxViewPoint(*view)
 	if err != nil {
 		return err
 	}
