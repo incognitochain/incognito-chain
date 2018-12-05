@@ -45,40 +45,37 @@ type Tx struct {
 
 // randomCommitmentsProcess - process list commitments and useable tx to create
 // a list commitment random which be used to create a proof for new tx
-func randomCommitmentsProcess(commitmentsDB map[byte]([][]byte), useableTx map[byte][]*Tx, randNum int) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+func randomCommitmentsProcess(commitments [][]byte, useableTx map[byte][]*Tx, randNum int) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
 	commitmentIndexs = []uint64{}
 	myCommitmentIndexs = []uint64{}
 	if randNum == 0 {
 		randNum = 7
 	}
 	listCommitmentsInUsableTx := [][]byte{}
+	mapIndexCommitmentsInUsableTx := make(map[string]uint64)
 	for _, txs := range useableTx {
 		for _, tx := range txs {
 			for _, out := range tx.Proof.OutputCoins {
 				listCommitmentsInUsableTx = append(listCommitmentsInUsableTx, out.CoinDetails.CoinCommitment.Compress())
+				index, _ := common.SliceBytesExists(commitments, out.CoinDetails.CoinCommitment.Compress())
+				mapIndexCommitmentsInUsableTx[string(out.CoinDetails.CoinCommitment.Compress())] = uint64(index)
 			}
 		}
 	}
-	for chainID, txs := range useableTx {
-		commitments := commitmentsDB[chainID]
-		for _, tx := range txs {
-			tempArray := []uint64{}
-			for _, _ = range tx.Proof.OutputCoins {
-				cpRandNum := randNum
-				for true {
-					index := rand2.Int63n(int64(len(commitments)))
-					choosenCommitment := commitments[index]
-					if k, err := common.SliceBytesExists(listCommitmentsInUsableTx, choosenCommitment); k != -1 && err != nil {
-						tempArray = append(tempArray, uint64(index))
-					} else {
-						continue
-					}
-					cpRandNum--
-				}
+	cpRandNum := (len(listCommitmentsInUsableTx) * randNum) - len(listCommitmentsInUsableTx)
+	for i := 0; i < cpRandNum; i++ {
+		for true {
+			index := rand2.Int63n(int64(len(commitments)))
+			choosenCommitment := commitments[index]
+			if k, err := common.SliceBytesExists(listCommitmentsInUsableTx, choosenCommitment); k != -1 && err != nil {
+				commitmentIndexs = append(commitmentIndexs, uint64(index))
+			} else {
+				continue
 			}
-			commitmentIndexs = append(commitmentIndexs, tempArray...)
-
 		}
+	}
+	for _, temp := range listCommitmentsInUsableTx {
+		key := string(temp)
 	}
 	return nil, nil
 }
@@ -88,8 +85,8 @@ func (tx *Tx) CreateTx(
 	paymentInfo []*privacy.PaymentInfo,
 	useableTx map[byte][]*Tx,
 	fee uint64,
-	commitmentsDB map[byte]([][]byte),
-	snDerivators map[byte][]big.Int,
+	commitmentsDB [][]byte,
+	snDerivators []big.Int,
 	hasPrivacy bool,
 ) (error) {
 
@@ -227,8 +224,6 @@ func (tx *Tx) CreateTx(
 	} else {
 		tx.sigPrivKey = *senderSK
 	}
-
-
 
 	// sign tx
 	tx.Hash()
