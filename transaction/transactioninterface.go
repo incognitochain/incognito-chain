@@ -11,6 +11,22 @@ type MempoolRetriever interface {
 	GetTxsInMem() map[common.Hash]TxDesc
 }
 
+type BlockchainRetriever interface {
+	GetNulltifiersList(byte) ([][]byte, error)
+	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
+}
+
+type TxRetriever interface {
+	GetTxFee() uint64
+}
+
+type Metadata interface {
+	Validate() error
+	Process() error
+	CheckTransactionFee(TxRetriever, uint64) bool
+	ValidateTxWithBlockChain(BlockchainRetriever, byte) (bool, error)
+}
+
 // Interface for all type of transaction
 type Transaction interface {
 	Hash() *common.Hash
@@ -24,6 +40,7 @@ type Transaction interface {
 	CheckTransactionFee(uint64) bool
 	IsSalaryTx() bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
+	ValidateTxWithBlockChain(BlockchainRetriever, byte) error
 }
 
 // This is tx struct which is really saved in tx mempool

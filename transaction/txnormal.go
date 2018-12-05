@@ -11,7 +11,6 @@ import (
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/privacy-protocol/proto/zksnark"
@@ -41,7 +40,7 @@ type Tx struct {
 	// for example, BuySellRequestTx/BuySellResponseTx
 	RequestedTxID *common.Hash
 
-	Metadata metadata.Metadata
+	Metadata Metadata
 }
 
 func (tx *Tx) SetTxID(txId *common.Hash) {
@@ -106,6 +105,44 @@ func (tx *Tx) ValidateTxWithCurrentMempool(mr MempoolRetriever) error {
 	}
 	poolNullifiers := mr.GetPoolNullifiers()
 	return tx.validateDoubleSpendTxWithCurrentMempool(poolNullifiers)
+}
+
+// ValidateDoubleSpend - check double spend for any transaction type
+func (tx *Tx) validateDoubleSpendWithBlockchain(bcr BlockchainRetriever, chainID byte) error {
+	txHash := tx.Hash()
+	nullifierDb, err := bcr.GetNulltifiersList(chainID)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Can not check double spend for tx"))
+	}
+	descs := tx.Descs
+	for _, desc := range descs {
+		for _, nullifer := range desc.Nullifiers {
+			existed, err := common.SliceBytesExists(nullifierDb, nullifer)
+			if err != nil {
+				return errors.New(fmt.Sprintf("Can not check double spend for tx"))
+			}
+			if existed {
+				return errors.New(fmt.Sprintf("Nullifiers of transaction %+v already existed", txHash.String()))
+			}
+		}
+	}
+	return nil
+}
+
+func (tx *Tx) ValidateTxWithBlockChain(bcr BlockchainRetriever, chainID byte) error {
+	if tx.GetType() == common.TxSalaryType {
+		return nil
+	}
+	if tx.Metadata != nil {
+		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(bcr, chainID)
+		if err != nil {
+			return err
+		}
+		if !isContinued {
+			return nil
+		}
+	}
+	return tx.validateDoubleSpendWithBlockchain(bcr, chainID)
 }
 
 // Hash returns the hash of all fields of the transaction

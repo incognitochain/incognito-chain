@@ -3,6 +3,7 @@ package metadata
 import (
 	"github.com/ninjadotorg/constant/common"
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 type BuySellRequest struct {
@@ -32,10 +33,14 @@ func (bsReq *BuySellRequest) Process() error {
 	return nil
 }
 
-func (bsReq *BuySellRequest) CheckTransactionFee(tr TxRetriever, minFee uint64) bool {
+func (bsReq *BuySellRequest) CheckTransactionFee(tr transaction.TxRetriever, minFee uint64) bool {
 	txFee := tr.GetTxFee()
 	if txFee < minFee {
 		return false
 	}
 	return true
+}
+
+func (bsReq *BuySellRequest) ValidateTxWithBlockChain(bcr transaction.BlockchainRetriever, chainID byte) (bool, error) {
+	return true, nil
 }

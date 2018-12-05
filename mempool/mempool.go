@@ -168,7 +168,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	}
 
 	// validate tx with data of blockchain
-	err = tp.ValidateTxWithBlockChain(tx, chainID)
+	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, chainID)
+	// err = tp.ValidateTxWithBlockChain(tx, chainID)
 	if err != nil {
 		return nil, nil, err
 	}
