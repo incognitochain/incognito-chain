@@ -45,48 +45,66 @@ type PaymentProof struct {
 }
 func (paymentProof *PaymentProof) Bytes() []byte {
 	var proofbytes []byte
-	//
+	// ComInputOpeningsProof
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComInputOpeningsProof)))
 	for i:=0; i<len(paymentProof.ComInputOpeningsProof);i++{
 		proofbytes = append(proofbytes,paymentProof.ComInputOpeningsProof[i].Bytes()...)
 	}
-	//
+	// OneOfManyProof
 	proofbytes = append(proofbytes, byte(len(paymentProof.OneOfManyProof)))
 	for i:=0; i<len(paymentProof.OneOfManyProof);i++{
 		proofbytes = append(proofbytes, byte(len(paymentProof.OneOfManyProof[i].Bytes())))
 		proofbytes = append(proofbytes,paymentProof.OneOfManyProof[i].Bytes()...)
 	}
-	//
+	// EqualityOfCommittedValProof
 	proofbytes = append(proofbytes,byte(len(paymentProof.EqualityOfCommittedValProof)))
 	for i:=0; i<len(paymentProof.EqualityOfCommittedValProof);i++{
-		proofbytes = append(proofbytes, byte(len(paymentProof.EqualityOfCommittedValProof[i].Bytes())))
 		proofbytes = append(proofbytes,paymentProof.EqualityOfCommittedValProof[i].Bytes()...)
 	}
-	//
-	proofbytes = append(proofbytes,byte(len(paymentProof.EqualityOfCommittedValProof)))
-	for i:=0; i<len(paymentProof.EqualityOfCommittedValProof);i++{
-		proofbytes = append(proofbytes, byte(len(paymentProof.EqualityOfCommittedValProof[i].Bytes())))
-		proofbytes = append(proofbytes,paymentProof.EqualityOfCommittedValProof[i].Bytes()...)
+	// ProductCommitmentProof
+	proofbytes = append(proofbytes,byte(len(paymentProof.ProductCommitmentProof)))
+	for i:=0; i<len(paymentProof.ProductCommitmentProof);i++{
+		proofbytes = append(proofbytes,paymentProof.ProductCommitmentProof[i].Bytes()...)
 	}
-
-
 
 	return proofbytes
 }
-func findFirst(v byte, slice []byte) byte{
-	for i:=0;i<len(slice);i++ {
-		if (slice[i] == v) {
-			return byte(i)
-		}
-	}
-	return 0
-}
 func (paymentProof *PaymentProof) SetBytes(proofbytes []byte){
-	flagPos :=make([]byte,20)
-	for i:=0;i<len(flagPos);i++{
-		flagPos[i] = findFirst(byte(-i-1),proofbytes)
+	offset:=0
+	// Set ComInputOpeningsProof
+	lenComInputOpeningsProofArray := int(proofbytes[offset])
+	ComInputOpeningsProof:=make([]*PKComOpeningsProof,lenComInputOpeningsProofArray)
+	for i:=0;i<lenComInputOpeningsProofArray ; i++ {
+		ComInputOpeningsProof[i] = new(PKComOpeningsProof)
+		ComInputOpeningsProof[i].SetBytes(proofbytes[offset:offset+privacy.ComInputOpeningsProofSize])
+		offset+=privacy.ComInputOpeningsProofSize
 	}
-
+	// Set OneOfManyProof
+	lenOneOfManyProofArray:= int(proofbytes[offset])
+	OneOfManyProof :=make([]*PKOneOfManyProof, lenOneOfManyProofArray)
+	for i:=0;i<lenComInputOpeningsProofArray ; i++ {
+		offset+=1
+		size:=int(proofbytes[offset])
+		OneOfManyProof[i] = new(PKOneOfManyProof)
+		OneOfManyProof[i].SetBytes(proofbytes[offset:offset+size])
+		offset+=size
+	}
+	// Set EqualityOfCommittedValProof
+	lenEqualityOfCommittedValProof:=int(proofbytes[offset])
+	EqualityOfCommittedValProof:=make([]*PKEqualityOfCommittedValProof,lenEqualityOfCommittedValProof)
+	for i:=0;i<lenEqualityOfCommittedValProof ; i++ {
+		EqualityOfCommittedValProof[i] = new(PKEqualityOfCommittedValProof)
+		EqualityOfCommittedValProof[i].SetBytes(proofbytes[offset:offset+privacy.EqualityOfCommittedValProofSize])
+		offset+=privacy.EqualityOfCommittedValProofSize
+	}
+	// Set ProductCommitmentProof
+	lenProductCommitmentProofArray:=int(proofbytes[offset])
+	ProductCommitmentProof :=make([]*PKComProductProof,lenProductCommitmentProofArray)
+	for i:=0;i<lenProductCommitmentProofArray;i++{
+		ProductCommitmentProof[i] = new(PKComProductProof)
+		ProductCommitmentProof[i].SetBytes(proofbytes[offset:offset+privacy.ProductCommitmentProofSize])
+		offset+=privacy.ProductCommitmentProofSize
+	}
 }
 type PaymentProofByte struct {
 	lenarrayComInputOpeningsProof       int
@@ -596,5 +614,4 @@ func (pro PaymentProof) ToBytes() []byte {
 // FromBytes reverts bytes array to payment proof for verifying
 func (pro *PaymentProof) FromBytes(bytes []byte) {
 	//ToDo
-
 }

@@ -55,7 +55,7 @@ func (pro *PKComProductProof) Init() {
 }
 func PadFuckingBigInt(fckBigInt *big.Int) []byte{
 	idx:=getindex(fckBigInt)
-	paddedBig:=make([]byte, 32)
+	paddedBig:=make([]byte, privacy.BigIntSize)
 	for i:=0;i<idx;i++{
 		paddedBig[i] = byte(0x00)
 	}

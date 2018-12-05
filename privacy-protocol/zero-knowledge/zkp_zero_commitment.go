@@ -173,10 +173,4 @@ func (pro *PKComZeroProof) Verify() bool {
 	return true
 }
 
-//TestProofIsZero test prove and verify function
-func TestProofIsZero() bool {
-	witness := new(PKComZeroWitness)
-	witness.randValue(true)
-	proof, _ := witness.Prove()
-	return proof.Verify()
-}
+

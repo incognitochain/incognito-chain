@@ -54,7 +54,8 @@ func (com PCParams) CommitAll(openings []*big.Int) *EllipticPoint {
 		return nil
 	}
 	commitment := new(EllipticPoint)
-
+	commitment.X = new(big.Int).SetInt64(0)
+	commitment.Y = new(big.Int).SetInt64(0)
 	for i := 0; i < com.Capacity; i++ {
 		*commitment = *commitment.Add(com.G[i].ScalarMul(openings[i]))
 		//temp.X, temp.Y = Curve.ScalarMult(com.G[i].X, com.G[i].Y, openings[i].Bytes())

@@ -122,6 +122,9 @@ func (eccPoint *EllipticPoint) Randomize() {
 // IsSafe return true if eccPoint*eccPoint is not at infinity
 func (eccPoint EllipticPoint) IsSafe() bool {
 	var res EllipticPoint
+	if !Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
+		return false
+	}
 	res.X, res.Y = Curve.Double(eccPoint.X, eccPoint.Y)
 	if res.X.Cmp(big.NewInt(0)) == 0 && res.Y.Cmp(big.NewInt(0)) == 0 {
 		return false
