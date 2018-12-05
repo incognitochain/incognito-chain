@@ -144,13 +144,21 @@ func (tx *Tx) CreateTx(
 	// create new output coins
 	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, len(paymentInfo))
 
+
+	ok := true
+
 	// create new output coins with info: Pk, value, SND
 	for i, pInfo := range paymentInfo {
 		tx.Proof.OutputCoins[i] = new(privacy.OutputCoin)
 		tx.Proof.OutputCoins[i].CoinDetails.Value = pInfo.Amount
 		tx.Proof.OutputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
-		// Todo: check whether SND existed in list SNDs or not
-		tx.Proof.OutputCoins[i].CoinDetails.SNDerivator = privacy.RandInt()
+		sndOut := new(big.Int)
+		for ok {
+			sndOut = privacy.RandInt()
+			ok = CheckSNDExistence(snDerivators, sndOut)
+		}
+		snDerivators = append(snDerivators, *sndOut)
+		tx.Proof.OutputCoins[i].CoinDetails.SNDerivator = sndOut
 	}
 
 	// if overBalance > 0, create a output coin with pk is pk's sender and value is overBalance
@@ -159,7 +167,14 @@ func (tx *Tx) CreateTx(
 		changeCoin.CoinDetails.Value = overBalance
 		changeCoin.CoinDetails.PublicKey, _ = privacy.DecompressKey(senderFullKey.PaymentAddress.Pk)
 		// Todo: check whether SND existed in list SNDs or not
-		changeCoin.CoinDetails.SNDerivator = privacy.RandInt()
+
+		sndOut := new(big.Int)
+		for ok {
+			sndOut = privacy.RandInt()
+			ok = CheckSNDExistence(snDerivators, sndOut)
+		}
+		snDerivators = append(snDerivators, *sndOut)
+		changeCoin.CoinDetails.SNDerivator = sndOut
 
 		tx.Proof.OutputCoins = append(tx.Proof.OutputCoins, changeCoin)
 
@@ -189,7 +204,7 @@ func (tx *Tx) CreateTx(
 	commitmentProving := make([]*privacy.EllipticPoint, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
 		commitmentProving[i] = new(privacy.EllipticPoint)
-		commitmentProving[i], _ = privacy.DecompressKey(commitments[cmIndex])
+		commitmentProving[i], _ = privacy.DecompressKey(commitmentsDB[cmIndex])
 	}
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
@@ -442,4 +457,10 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	var sizejSSig uint64 = 64    // [64]byte
 	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
+}
+
+// todo: thunderbird
+// CheckSND return true if snd exists in snDerivators list
+func CheckSNDExistence (snDerivators []big.Int, snd *big.Int) bool {
+	return false
 }
