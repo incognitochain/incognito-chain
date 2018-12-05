@@ -388,7 +388,7 @@ func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
 // - Verify tx signature
 // - Verify the payment proof
 // Note: This method doesn't check for double spending
-func (tx *Tx) ValidateTx(hasPrivacy bool) bool {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool) bool {
 	// Verify tx signature
 	var valid bool
 	var err error
@@ -447,14 +447,6 @@ func (tx *Tx) ListNullifiers() [][]byte {
 	return result
 }
 
-// ValidateTransaction returns true if transaction is valid:
-// - Signature matches the signing public key
-// - JSDescriptions are valid (zk-snark proof satisfied)
-// Note: This method doesn't check for double spending
-func (tx *Tx) ValidateTransaction() bool {
-	return true
-}
-
 // EstimateTxSize returns the estimated size of the tx in kilobyte
 func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	var sizeVersion uint64 = 1  // int8
@@ -476,5 +468,6 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 // todo: thunderbird
 // CheckSND return true if snd exists in snDerivators list
 func CheckSNDExistence(snDerivators []big.Int, snd *big.Int) bool {
-	return false
+	isExisted,_ := common.SliceBytesExists(snDerivators,snd)
+	return isExisted>=0
 }
