@@ -13,7 +13,6 @@ import (
 func CreateTxSalary(
 	salary uint64,
 	receiverAddr *privacy.PaymentAddress,
-	rt []byte,
 	chainID byte,
 	hasPrivacy bool,
 ) (*Tx, error) {

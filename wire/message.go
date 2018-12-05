@@ -72,32 +72,32 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 			Transaction: &transaction.TxCustomToken{},
 		}
 		break
-	case CmdCLoanRequestToken:
-		msg = &MessageTx{
-			Transaction: &transaction.TxLoanRequest{},
-		}
-		break
-	case CmdCLoanResponseToken:
-		msg = &MessageTx{
-			Transaction: &transaction.TxLoanResponse{},
-		}
-		break
-	case CmdCLoanWithdrawToken:
-		msg = &MessageTx{
-			Transaction: &transaction.TxLoanWithdraw{},
-		}
-		break
-	case CmdCLoanPayToken:
-		msg = &MessageTx{
-			Transaction: &transaction.TxLoanPayment{},
-		}
-		break
+		/*case CmdCLoanRequestToken:
+		  msg = &MessageTx{
+			  Transaction: &transaction.TxLoanRequest{},
+		  }
+		  break
+	  case CmdCLoanResponseToken:
+		  msg = &MessageTx{
+			  Transaction: &transaction.TxLoanResponse{},
+		  }
+		  break
+	  case CmdCLoanWithdrawToken:
+		  msg = &MessageTx{
+			  Transaction: &transaction.TxLoanWithdraw{},
+		  }
+		  break
+	  case CmdCLoanPayToken:
+		  msg = &MessageTx{
+			  Transaction: &transaction.TxLoanPayment{},
+		  }
+		  break*/
 	case CmdGetBlocks:
 		msg = &MessageGetBlocks{}
 		break
 	case CmdTx:
 		msg = &MessageTx{
-			Transaction: &transaction.TxNormal{},
+			Transaction: &transaction.Tx{},
 		}
 		break
 	case CmdVersion:

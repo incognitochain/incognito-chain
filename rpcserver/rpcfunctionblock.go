@@ -121,7 +121,7 @@ func (self RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan s
 
 				transactionT.Hash = tx.Hash().String()
 				if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxSalaryType {
-					txN := tx.(*transaction.TxNormal)
+					txN := tx.(*transaction.Tx)
 					data, err := json.Marshal(txN)
 					if err != nil {
 						return nil, err

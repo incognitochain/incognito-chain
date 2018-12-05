@@ -5,8 +5,6 @@ Use these function to validate common data in blockchain
 */
 
 import (
-	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math"
@@ -15,7 +13,6 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"golang.org/x/crypto/sha3"
 )
 
 /*
@@ -24,20 +21,14 @@ IsSalaryTx determines whether or not a transaction is a salary.
 func (self *BlockChain) IsSalaryTx(tx transaction.Transaction) bool {
 	// Check normal tx(not an action tx)
 	if tx.GetType() != common.TxSalaryType {
-		normalTx, ok := tx.(*transaction.TxNormal)
+		normalTx, ok := tx.(*transaction.Tx)
 		if !ok {
 			return false
 		}
 		// Check nullifiers in every Descs
-		descs := normalTx.Descs
-		if len(descs) != 1 {
-			return false
-		} else {
-			if descs[0].Reward > 0 {
-				return true
-			}
+		if len(normalTx.Proof.InputCoins) == 0 {
+			return true
 		}
-		return false
 	}
 	return false
 }
@@ -52,29 +43,27 @@ func (self *BlockChain) ValidateDoubleSpend(tx transaction.Transaction, chainID 
 		return err
 	}
 	nullifierDb := txViewPoint.ListNullifiers()
-	var descs []*transaction.JoinSplitDesc
+	var ins []*privacy.InputCoin
 	if tx.GetType() == common.TxNormalType {
-		descs = tx.(*transaction.TxNormal).Descs
+		ins = tx.(*transaction.Tx).Proof.InputCoins
 	}
-	for _, desc := range descs {
-		for _, nullifer := range desc.Nullifiers {
-			existed, err := common.SliceBytesExists(nullifierDb, nullifer)
-			if err != nil {
-				str := fmt.Sprintf("Can not check double spend for tx")
-				err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
-				return err
-			}
-			if existed != -1 {
-				str := fmt.Sprintf("Nullifiers of transaction %+v already existed", txHash.String())
-				err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
-				return err
-			}
+	for _, in := range ins {
+		existed, err := common.SliceBytesExists(nullifierDb, in.CoinDetails.SerialNumber.Compress())
+		if err != nil {
+			str := fmt.Sprintf("Can not check double spend for tx")
+			err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
+			return err
+		}
+		if existed != -1 {
+			str := fmt.Sprintf("Nullifiers of transaction %+v already existed", txHash.String())
+			err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
+			return err
 		}
 	}
 	return nil
 }
 
-func (self *BlockChain) ValidateTxLoanRequest(tx transaction.Transaction, chainID byte) error {
+/*func (self *BlockChain) ValidateTxLoanRequest(tx transaction.Transaction, chainID byte) error {
 	txLoan, ok := tx.(*transaction.TxLoanRequest)
 	if !ok {
 		return fmt.Errorf("Fail parsing LoanRequest transaction")
@@ -347,7 +336,7 @@ func (self *BlockChain) ValidateTxDividendPayout(tx transaction.Transaction, cha
 	}
 
 	return nil
-}
+}*/
 
 func isAnyBoardAddressInVins(customToken *transaction.TxCustomToken) bool {
 	GOVAddressStr := string(GOVAddress)
@@ -609,6 +598,7 @@ func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCus
 	return nil
 }*/
 
+/*
 func (self *BlockChain) ValidateBuyBackRequestTx(
 	tx transaction.Transaction,
 	chainID byte,
@@ -626,3 +616,4 @@ func (self *BlockChain) ValidateBuyBackRequestTx(
 
 	return nil
 }
+*/
