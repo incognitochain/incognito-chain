@@ -400,7 +400,9 @@ func (tx *Tx) Hash() *common.Hash {
 	record += tx.Type
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
-	record += string(tx.Proof.Bytes()[:])
+	if tx.Proof != nil {
+		record += string(tx.Proof.Bytes()[:])
+	}
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
