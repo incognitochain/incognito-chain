@@ -38,16 +38,6 @@ func (view *TxViewPoint) ListCommitments() [][]byte {
 	return view.listCommitments
 }
 
-func (view *TxViewPoint) ListCommitmentsEclipsePoint() []*privacy.EllipticPoint {
-	result := []*privacy.EllipticPoint{}
-	for _, commitment := range view.listCommitments {
-		point := &privacy.EllipticPoint{}
-		point.Decompress(commitment)
-		result = append(result, point)
-	}
-	return result
-}
-
 func (view *TxViewPoint) ListNullifiersEclipsePoint() []*privacy.EllipticPoint {
 	result := []*privacy.EllipticPoint{}
 	for _, commitment := range view.listNullifiers {
