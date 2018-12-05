@@ -412,7 +412,7 @@ func (tp *TxPool) ValidateDoubleSpendTxWithCurrentMempool(txNormal transaction.T
 	for _, temp1 := range tp.poolNullifiers {
 		for _, desc := range txNormal.Descs {
 			for _, nullifier := range desc.Nullifiers {
-				if ok, err := common.SliceBytesExists(temp1, nullifier); !ok || err != nil {
+				if ok, err := common.SliceBytesExists(temp1, nullifier); ok == -1 || err != nil {
 					return errors.New("Double spend")
 				}
 			}
