@@ -590,7 +590,7 @@ func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 	return view, nil
 }
 
-func (self *BlockChain) createAndSaveTxViewPointFromBlock(block *Block) error {
+func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	view := NewTxViewPoint(block.Header.ChainID)
 
 	err := view.fetchTxViewPointFromBlock(self.config.DataBase, block)
