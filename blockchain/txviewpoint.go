@@ -102,10 +102,10 @@ func (view *TxViewPoint) processFetchTxViewPoint(block *Block, db database.Datab
 }
 
 /*
-fetchTxViewPoint get list nullifiers and commitments from txs in block and check if they are not in Main chain db
+fetchTxViewPointFromBlock get list nullifiers and commitments from txs in block and check if they are not in Main chain db
 return a tx view point which contains list new nullifiers and new commitments from block
 */
-func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *Block) error {
+func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface, block *Block) error {
 	transactions := block.Transactions
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedNullifiers := make([][]byte, 0)
@@ -160,6 +160,9 @@ func (view *TxViewPoint) fetchTxViewPoint(db database.DatabaseInterface, block *
 		}
 		for _, item := range acceptedCommitments {
 			view.listCommitments = append(view.listCommitments, item)
+		}
+		for _, item := range acceptedSnD {
+			view.listSnD = append(view.listSnD, item)
 		}
 	}
 	return nil
