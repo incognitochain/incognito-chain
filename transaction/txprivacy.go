@@ -153,7 +153,7 @@ func (tx *Tx) CreateTx(
 			sndOut = privacy.RandInt()
 			ok = CheckSNDExistence(snDerivators, sndOut)
 		}
-		snDerivators := append(snDerivators, sndOut)
+		snDerivators = append(snDerivators, *sndOut)
 		tx.Proof.OutputCoins[i].CoinDetails.SNDerivator = sndOut
 	}
 
@@ -169,7 +169,7 @@ func (tx *Tx) CreateTx(
 			sndOut = privacy.RandInt()
 			ok = CheckSNDExistence(snDerivators, sndOut)
 		}
-		snDerivators := append(snDerivators, sndOut)
+		snDerivators = append(snDerivators, *sndOut)
 		changeCoin.CoinDetails.SNDerivator = sndOut
 
 		tx.Proof.OutputCoins = append(tx.Proof.OutputCoins, changeCoin)
@@ -200,7 +200,7 @@ func (tx *Tx) CreateTx(
 	commitmentProving := make([]*privacy.EllipticPoint, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
 		commitmentProving[i] = new(privacy.EllipticPoint)
-		commitmentProving[i], _ = privacy.DecompressKey(commitments[cmIndex])
+		commitmentProving[i], _ = privacy.DecompressKey(commitmentsDB[cmIndex])
 	}
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
@@ -456,7 +456,7 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 }
 
 // todo: thunderbird
-// CheckSND return true if
-func CheckSNDExistence (snDerivators map[byte][]big.Int, snd *big.Int) bool {
+// CheckSND return true if snd exists in snDerivators list
+func CheckSNDExistence (snDerivators []big.Int, snd *big.Int) bool {
 	return false
 }
