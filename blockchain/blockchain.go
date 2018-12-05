@@ -507,7 +507,7 @@ func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 	return nil
 }*/
 
-func (self *BlockChain) UpdateDividendPayout(block *Block) error {
+/*func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetType() {
 		case common.TxDividendPayout:
@@ -535,9 +535,9 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 		}
 	}
 	return nil
-}
+}*/
 
-func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
+/*func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetType() {
 		case common.TxAcceptDCBProposal:
@@ -560,7 +560,7 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 		}
 	}
 	return nil
-}
+}*/
 
 /*
 FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
@@ -678,14 +678,12 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 				if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
 					tx := txInBlock.(*transaction.Tx)
 					copyTx := transaction.Tx{
-						Version:                 tx.Version,
-						Sig:                     tx.Sig,
-						SigPubKey:               tx.SigPubKey,
-						Fee:                     tx.Fee,
-						Type:                    tx.Type,
-						LockTime:                tx.LockTime,
-						PubKeyLastByteSender:    tx.PubKeyLastByteSender,
-						PubKeyLastByteReceivers: tx.PubKeyLastByteReceivers,
+						Version:   tx.Version,
+						Sig:       tx.Sig,
+						SigPubKey: tx.SigPubKey,
+						Fee:       tx.Fee,
+						Type:      tx.Type,
+						LockTime:  tx.LockTime,
 						Proof: &zkp.PaymentProof{
 							ComInputOpeningsProof:       tx.Proof.ComInputOpeningsProof,
 							ComOutputMultiRangeProof:    tx.Proof.ComOutputMultiRangeProof,
@@ -697,6 +695,10 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 							OneOfManyProof:              tx.Proof.OneOfManyProof,
 							InputCoins:                  tx.Proof.InputCoins,
 							OutputCoins:                 []*privacy.OutputCoin{},
+							PubKeyLastByteSender:        tx.Proof.PubKeyLastByteSender,
+							ComInputSK:                  tx.Proof.ComInputSK,
+							ComInputSND:                 tx.Proof.ComInputSND,
+							ComInputValue:               tx.Proof.ComInputValue,
 						},
 						Metadata: tx.Metadata,
 					}
@@ -707,8 +709,9 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 							err := outcoinTemp.Decrypt(keySet.ReadonlyKey.Rk)
 							if err != nil {
 								outcoin := &privacy.OutputCoin{
-									CoinDetails:          outcoinTemp.CoinDetails,
-									CoinDetailsEncrypted: outcoinTemp.CoinDetailsEncrypted,
+									CoinDetails:            outcoinTemp.CoinDetails,
+									CoinDetailsEncrypted:   outcoinTemp.CoinDetailsEncrypted,
+									PubKeyLastByteReceiver: outcoinTemp.PubKeyLastByteReceiver,
 								}
 								copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outcoin)
 							}
@@ -754,14 +757,12 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serialNumberInDB [][]byte, keys *cashec.KeySet) transaction.Tx {
 	tx := txInBlock.(*transaction.Tx)
 	copyTx := transaction.Tx{
-		Version:                 tx.Version,
-		Sig:                     tx.Sig,
-		SigPubKey:               tx.SigPubKey,
-		Fee:                     tx.Fee,
-		Type:                    tx.Type,
-		LockTime:                tx.LockTime,
-		PubKeyLastByteSender:    tx.PubKeyLastByteSender,
-		PubKeyLastByteReceivers: tx.PubKeyLastByteReceivers,
+		Version:   tx.Version,
+		Sig:       tx.Sig,
+		SigPubKey: tx.SigPubKey,
+		Fee:       tx.Fee,
+		Type:      tx.Type,
+		LockTime:  tx.LockTime,
 		Proof: &zkp.PaymentProof{
 			ComInputOpeningsProof:       tx.Proof.ComInputOpeningsProof,
 			ComOutputMultiRangeProof:    tx.Proof.ComOutputMultiRangeProof,
@@ -773,6 +774,10 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 			OneOfManyProof:              tx.Proof.OneOfManyProof,
 			InputCoins:                  tx.Proof.InputCoins,
 			OutputCoins:                 []*privacy.OutputCoin{},
+			PubKeyLastByteSender:        tx.Proof.PubKeyLastByteSender,
+			ComInputSK:                  tx.Proof.ComInputSK,
+			ComInputSND:                 tx.Proof.ComInputSND,
+			ComInputValue:               tx.Proof.ComInputValue,
 		},
 		Metadata: tx.Metadata,
 	}
@@ -787,8 +792,9 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 			err := outCoinTemp.Decrypt(keys.ReadonlyKey.Rk)
 			if err == nil {
 				outCoin := &privacy.OutputCoin{
-					CoinDetails:          outCoinTemp.CoinDetails,
-					CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
+					CoinDetails:            outCoinTemp.CoinDetails,
+					CoinDetailsEncrypted:   outCoinTemp.CoinDetailsEncrypted,
+					PubKeyLastByteReceiver: outCoinTemp.PubKeyLastByteReceiver,
 				}
 				if len(serialNumberInDB) > 0 {
 					checkCandiateSerialNumber, err := common.SliceBytesExists(serialNumberInDB, outCoin.CoinDetails.SerialNumber.Compress())
@@ -1019,7 +1025,7 @@ func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (by
 		chainId     []byte
 	)
 	// Get transaction
-	tx := transaction.TxNormal{}
+	tx := transaction.Tx{}
 	locationByte, txByte, err := self.config.DataBase.GetTransactionLightModeByHash(txHash)
 	Logger.log.Info("GetTransactionByHash - 1", locationByte, txByte, err)
 	if err != nil {

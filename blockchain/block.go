@@ -52,13 +52,13 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 		switch txTemp["Type"].(string) {
 		case common.TxNormalType:
 			{
-				txNormal := &transaction.TxNormal{}
+				txNormal := &transaction.Tx{}
 				_ = json.Unmarshal(txTempJson, &txNormal)
 				self.Transactions = append(self.Transactions, txNormal)
 			}
 		case common.TxSalaryType:
 			{
-				txNormal := &transaction.TxNormal{}
+				txNormal := &transaction.Tx{}
 				_ = json.Unmarshal(txTempJson, &txNormal)
 				self.Transactions = append(self.Transactions, txNormal)
 			}
@@ -74,72 +74,72 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				  _ = json.Unmarshal(txTempJson, &buySellReqTx)
 				  self.Transactions = append(self.Transactions, buySellReqTx)
 			  }*/
-		case common.TxBuyFromGOVResponse:
-			{
-				buyFromGOVResTx := &transaction.TxCustomToken{}
-				_ = json.Unmarshal(txTempJson, &buyFromGOVResTx)
-				self.Transactions = append(self.Transactions, buyFromGOVResTx)
-			}
-		case common.TxSubmitDCBProposal:
-			{
-				submitDCBProposalTx := &transaction.TxSubmitDCBProposal{}
-				_ = json.Unmarshal(txTempJson, &submitDCBProposalTx)
-				self.Transactions = append(self.Transactions, submitDCBProposalTx)
-			}
-		case common.TxSubmitGOVProposal:
-			{
-				submitGOVProposalTx := &transaction.TxSubmitGOVProposal{}
-				_ = json.Unmarshal(txTempJson, &submitGOVProposalTx)
-				self.Transactions = append(self.Transactions, submitGOVProposalTx)
-			}
-		case common.TxVoteDCBProposal:
-			{
-				VoteDCBProposalTx := &transaction.TxVoteDCBProposal{}
-				_ = json.Unmarshal(txTempJson, &VoteDCBProposalTx)
-				self.Transactions = append(self.Transactions, VoteDCBProposalTx)
-			}
-		case common.TxVoteGOVProposal:
-			{
-				VoteDcbProposalTx := &transaction.TxVoteGOVProposal{}
-				_ = json.Unmarshal(txTempJson, &VoteDcbProposalTx)
-				self.Transactions = append(self.Transactions, VoteDcbProposalTx)
-			}
-		case common.TxAcceptDCBProposal:
-			{
-				AcceptDCBProposal := &transaction.TxAcceptDCBProposal{}
-				_ = json.Unmarshal(txTempJson, &AcceptDCBProposal)
-				self.Transactions = append(self.Transactions, AcceptDCBProposal)
-			}
-		case common.TxAcceptGOVProposal:
-			{
-				AcceptGovProposal := &transaction.TxAcceptGOVProposal{}
-				_ = json.Unmarshal(txTempJson, &AcceptGovProposal)
-				self.Transactions = append(self.Transactions, AcceptGovProposal)
-			}
-		case common.TxLoanRequest:
-			{
-				tx := &transaction.TxLoanRequest{}
-				_ = json.Unmarshal(txTempJson, &tx)
-				self.Transactions = append(self.Transactions, tx)
-			}
-		case common.TxLoanResponse:
-			{
-				tx := &transaction.TxLoanResponse{}
-				_ = json.Unmarshal(txTempJson, &tx)
-				self.Transactions = append(self.Transactions, tx)
-			}
-		case common.TxLoanPayment:
-			{
-				tx := &transaction.TxLoanPayment{}
-				_ = json.Unmarshal(txTempJson, &tx)
-				self.Transactions = append(self.Transactions, tx)
-			}
-		case common.TxLoanWithdraw:
-			{
-				tx := &transaction.TxLoanWithdraw{}
-				_ = json.Unmarshal(txTempJson, &tx)
-				self.Transactions = append(self.Transactions, tx)
-			}
+			/*case common.TxBuyFromGOVResponse:
+			  {
+				  buyFromGOVResTx := &transaction.TxCustomToken{}
+				  _ = json.Unmarshal(txTempJson, &buyFromGOVResTx)
+				  self.Transactions = append(self.Transactions, buyFromGOVResTx)
+			  }
+		  case common.TxSubmitDCBProposal:
+			  {
+				  submitDCBProposalTx := &transaction.TxSubmitDCBProposal{}
+				  _ = json.Unmarshal(txTempJson, &submitDCBProposalTx)
+				  self.Transactions = append(self.Transactions, submitDCBProposalTx)
+			  }
+		  case common.TxSubmitGOVProposal:
+			  {
+				  submitGOVProposalTx := &transaction.TxSubmitGOVProposal{}
+				  _ = json.Unmarshal(txTempJson, &submitGOVProposalTx)
+				  self.Transactions = append(self.Transactions, submitGOVProposalTx)
+			  }
+		  case common.TxVoteDCBProposal:
+			  {
+				  VoteDCBProposalTx := &transaction.TxVoteDCBProposal{}
+				  _ = json.Unmarshal(txTempJson, &VoteDCBProposalTx)
+				  self.Transactions = append(self.Transactions, VoteDCBProposalTx)
+			  }
+		  case common.TxVoteGOVProposal:
+			  {
+				  VoteDcbProposalTx := &transaction.TxVoteGOVProposal{}
+				  _ = json.Unmarshal(txTempJson, &VoteDcbProposalTx)
+				  self.Transactions = append(self.Transactions, VoteDcbProposalTx)
+			  }
+		  case common.TxAcceptDCBProposal:
+			  {
+				  AcceptDCBProposal := &transaction.TxAcceptDCBProposal{}
+				  _ = json.Unmarshal(txTempJson, &AcceptDCBProposal)
+				  self.Transactions = append(self.Transactions, AcceptDCBProposal)
+			  }
+		  case common.TxAcceptGOVProposal:
+			  {
+				  AcceptGovProposal := &transaction.TxAcceptGOVProposal{}
+				  _ = json.Unmarshal(txTempJson, &AcceptGovProposal)
+				  self.Transactions = append(self.Transactions, AcceptGovProposal)
+			  }
+		  case common.TxLoanRequest:
+			  {
+				  tx := &transaction.TxLoanRequest{}
+				  _ = json.Unmarshal(txTempJson, &tx)
+				  self.Transactions = append(self.Transactions, tx)
+			  }
+		  case common.TxLoanResponse:
+			  {
+				  tx := &transaction.TxLoanResponse{}
+				  _ = json.Unmarshal(txTempJson, &tx)
+				  self.Transactions = append(self.Transactions, tx)
+			  }
+		  case common.TxLoanPayment:
+			  {
+				  tx := &transaction.TxLoanPayment{}
+				  _ = json.Unmarshal(txTempJson, &tx)
+				  self.Transactions = append(self.Transactions, tx)
+			  }
+		  case common.TxLoanWithdraw:
+			  {
+				  tx := &transaction.TxLoanWithdraw{}
+				  _ = json.Unmarshal(txTempJson, &tx)
+				  self.Transactions = append(self.Transactions, tx)
+			  }*/
 			/*case common.TxBuySellDCBRequest:
 			  {
 				  tx := &transaction.TxBuySellRequest{}
@@ -215,7 +215,7 @@ func (self Block) Hash() *common.Hash {
 	return self.blockHash
 }
 
-func (block *Block) updateDCBConstitution(tx transaction.Transaction, blockgen *BlkTmplGenerator) error {
+/*func (block *Block) updateDCBConstitution(tx transaction.Transaction, blockgen *BlkTmplGenerator) error {
 	txAcceptDCBProposal := tx.(transaction.TxAcceptDCBProposal)
 	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(txAcceptDCBProposal.DCBProposalTXID)
 	DCBProposal := getTx.(*transaction.TxSubmitDCBProposal)
@@ -263,4 +263,4 @@ func (block *Block) updateGOVConstitution(tx transaction.Transaction, blockgen *
 		},
 	}
 	return nil
-}
+}*/
