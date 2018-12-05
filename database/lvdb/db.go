@@ -25,6 +25,7 @@ var (
 	privateKeyPrefix          = []byte("prk-")
 	nullifiersPrefix          = []byte("nullifiers-")
 	commitmentsPrefix         = []byte("commitments-")
+	snderivatorsPrefix        = []byte("snderivators-")
 	bestBlockKey              = []byte("bestBlock")
 	feeEstimator              = []byte("feeEstimator")
 	splitter                  = []byte("-[-]-")
@@ -79,6 +80,8 @@ func (db db) getKey(keyType string, key interface{}) []byte {
 		dbkey = append(nullifiersPrefix, []byte(key.(string))...)
 	case string(commitmentsPrefix):
 		dbkey = append(commitmentsPrefix, []byte(key.(string))...)
+	case string(snderivatorsPrefix):
+		dbkey = append(snderivatorsPrefix, []byte(key.(string))...)
 	case string(tokenPrefix):
 		dbkey = append(tokenPrefix, key.(*common.Hash)[:]...)
 	case string(tokenInitPrefix):

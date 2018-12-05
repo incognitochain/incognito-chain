@@ -50,12 +50,10 @@ func (tx *Tx) CreateTx(
 	paymentInfo []*privacy.PaymentInfo,
 	useableTx map[byte][]*Tx,
 	fee uint64,
-	commitments map[byte][]*privacy.EllipticPoint,
-	randCmIndices []*privacy.CMIndex,
-	myCmPos []uint32,
+	commitmentIndexs []uint64,   // array index random of commitments in db
+	myCommitmentIndexs []uint64, // index in array index random of commitment in db
 	hasPrivacy bool,
 ) (error) {
-
 	var inputCoins []*privacy.InputCoin
 
 	// Print list of all input coins

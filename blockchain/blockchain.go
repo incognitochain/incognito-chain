@@ -281,7 +281,7 @@ func (self *BlockChain) StoreBlockHeader(block *Block) error {
 /*
 	Store Transaction in Light mode
 */
-func (self *BlockChain) StoreUnspentTransactionLightMode(privatKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.TxNormal) error {
+func (self *BlockChain) StoreUnspentTransactionLightMode(privatKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
 	return self.config.DataBase.StoreTransactionLightMode(privatKey, chainId, blockHeight, txIndex, tx)
 }
 
@@ -619,7 +619,7 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 		}
 	}
 
-	// Update the list nullifiers and commitment set using the state of the used tx view point. This
+	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.
 	err = self.StoreNullifiersFromTxViewPoint(*view)

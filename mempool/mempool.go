@@ -202,7 +202,7 @@ func (tp *TxPool) removeTx(tx *transaction.Transaction) error {
 }
 
 // ValidateTransaction sanity for normal tx data
-func (tp *TxPool) validateSanityNormalTxData(tx *transaction.TxNormal, allowReward bool) (bool, error) {
+func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx, allowReward bool) (bool, error) {
 	txN := tx
 	//check version
 	if txN.Version > transaction.TxVersion {
@@ -299,7 +299,7 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.TxNormal, allowRewa
 }
 
 func (tp *TxPool) validateSanityCustomTokenTxData(txCustomToken *transaction.TxCustomToken, allowToUseDCBFund bool) (bool, error) {
-	ok, err := tp.validateSanityNormalTxData(&txCustomToken.TxNormal, allowToUseDCBFund)
+	ok, err := tp.validateSanityNormalTxData(&txCustomToken.Tx, allowToUseDCBFund)
 	if err != nil || !ok {
 		return ok, err
 	}
