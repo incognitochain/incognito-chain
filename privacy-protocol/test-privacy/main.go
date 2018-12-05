@@ -1,10 +1,5 @@
 package main
 
-import (
-	"fmt"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-
-)
 
 func main() {
 
@@ -65,8 +60,6 @@ func main() {
 
 
 	//zkp.TestPKComMultiRange()
-
-	//zkp.TestPKEqualityOfCommittedVal()
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -169,7 +162,8 @@ func main() {
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
-	// privacy.TestSchn()
+	//privacy.TestSchn()
+	//zkp.PKComMultiRangeTest()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
 	//for i :=0; i<1000; i++{
@@ -203,49 +197,14 @@ func main() {
 	//
 	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
 
+
+
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
-	//privacy.TestECC()
 	//fmt.Println(zkp.TestOpeningsProtocol())
 	//fmt.Println(zkp.TestPKEqualityOfCommittedVal())
 	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
 	/*--------------------------------------------*/
-
-	/*----------------- TEST COMPRESS/DECOMPRESS POINT -----------------*/
-	//p := new(privacy.EllipticPoint)
-	//p.Randomize()
-	//fmt.Printf("Point uncompress: %+v\n", p)
-	//
-	//pBytes := p.Compress()
-	//fmt.Printf("Point compressed: %v\n", pBytes)
-	//
-	//p2, _ := privacy.DecompressKey(pBytes)
-	//fmt.Printf("Point decompressed: %+v\n", p2)
-	/*-----------------------------------------------------------------*/
-
-	/*----------------- TEST KEY SET -----------------*/
-
-	//keySet := new(cashec.KeySet)
-	//spendingKey := privacy.GenerateSpendingKey([]byte{0, 1, 23, 235})
-	//keySet.ImportFromPrivateKey(&spendingKey)
-	//
-	//data := []byte{0}
-	//signature, err := keySet.Sign(data)
-	//if err != nil{
-	//	fmt.Println(err)
-	//}
-	//fmt.Println(hex.EncodeToString(signature))
-	//
-	////signature , _:= hex.DecodeString("5d9f5e9c350a877ddbbe227b40c19b00c040e715924740f2d92cc9dc02da5937ba433dbca431f2a0a447e21fd096d894f869a9e31b8217ee0cf9c33f8b032ade")
-	////
-	//res, err := keySet.Verify(data, signature)
-	//if err != nil{
-	//	fmt.Println(err)
-	//}
-	//
-	//fmt.Println(res)
-
-
 
 	//fmt.Printf("Key set %+v\n", keySet.PaymentAddress.Pk[0])
 	//
@@ -268,7 +227,6 @@ func main() {
 	//
 	//cmIndex2 := new(privacy.CMIndex)
 	//cmIndex2.SetBytes(cmIndexBytes)
-	fmt.Println(zkp.TestOpeningsProtocol())
 	//keySet := new(cashec.KeySet)
 	//spendingKey := privacy.GenerateSpendingKey([]byte{0, 1, 23, 235})
 	//keySet.ImportFromPrivateKey(&spendingKey)
@@ -288,4 +246,8 @@ func main() {
 	//}
 	//
 	//fmt.Println(res)
+
+
+
+
 }

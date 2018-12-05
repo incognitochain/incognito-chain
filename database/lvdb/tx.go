@@ -16,6 +16,7 @@ import (
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"math/big"
 )
 
 func (db *db) StoreNullifiers(nullifier []byte, chainId byte) error {
@@ -157,6 +158,75 @@ func (db *db) CleanCommitments() error {
 	return nil
 }
 
+func (db *db) StoreSNDerivators(data big.Int, chainID byte) error {
+	key := db.getKey(string(snderivatorsPrefix), "")
+	key = append(key, chainID)
+	res, err := db.lvdb.Get(key, nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+
+	var txs []big.Int
+	if len(res) > 0 {
+		if err := json.Unmarshal(res, &txs); err != nil {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
+		}
+	}
+	txs = append(txs, data)
+	b, err := json.Marshal(txs)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+	}
+	if err := db.lvdb.Put(key, b, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *db) FetchSNDerivator(chainID byte) ([]big.Int, error) {
+	key := db.getKey(string(snderivatorsPrefix), "")
+	key = append(key, chainID)
+	res, err := db.lvdb.Get(key, nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return make([]big.Int, 0), database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+
+	var txs []big.Int
+	if len(res) > 0 {
+		if err := json.Unmarshal(res, &txs); err != nil {
+			return make([]big.Int, 0), errors.Wrap(err, "json.Unmarshal")
+		}
+	}
+	return txs, nil
+}
+func (db *db) HasSNDerivator(data big.Int, chainID byte) (bool, error) {
+	listSNDDerivators, err := db.FetchSNDerivator(chainID)
+	if err != nil {
+		return false, database.NewDatabaseError(database.UnexpectedError, err)
+	}
+	for _, item := range listSNDDerivators {
+		if item.Cmp(&data) == 0 {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (db *db) CleanSNDerivator() error {
+	iter := db.lvdb.NewIterator(util.BytesPrefix(snderivatorsPrefix), nil)
+	for iter.Next() {
+		err := db.lvdb.Delete(iter.Key(), nil)
+		if err != nil {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+	}
+	iter.Release()
+	if err := iter.Error(); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
+	}
+	return nil
+}
+
 func (db *db) StoreFeeEstimator(val []byte, chainId byte) error {
 	if err := db.put(append(feeEstimator, chainId), val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.put"))
@@ -241,7 +311,7 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 	2. Key -> value :							prefix(transaction)txHash 												->  	privateKey-chainId-blockHeight-txIndex
 
 */
-func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, unspentTx *transaction.TxNormal) error {
+func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, unspentTx *transaction.Tx) error {
 	tempChainId := []byte{}
 	tempChainId = append(tempChainId, chainId)
 	temp3ChainId := int(chainId)
@@ -298,10 +368,10 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 	1. Key -> value : prefix(privateky)-privateKey-chainId-(999999999 - blockHeight)-(999999999 - txIndex) 		-> 		tx
 
 */
-func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKey) (map[byte][]transaction.TxNormal, error) {
+func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKey) (map[byte][]transaction.Tx, error) {
 	prefix := []byte(string(privateKeyPrefix) + privateKey.String())
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
-	results := make(map[byte][]transaction.TxNormal)
+	results := make(map[byte][]transaction.Tx)
 	for iter.Next() {
 		key := iter.Key()
 		value := iter.Value()
@@ -310,7 +380,7 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKe
 		tempChainId, _ := strconv.Atoi(reses[2])
 		chainId := byte(tempChainId)
 		fmt.Println("GetTransactionLightModeByPrivateKey, chainId", chainId)
-		tx := transaction.TxNormal{}
+		tx := transaction.Tx{}
 		err := json.Unmarshal(value, &tx)
 		if err != nil {
 			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))

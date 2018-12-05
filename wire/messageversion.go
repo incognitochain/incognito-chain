@@ -23,6 +23,7 @@ type MessageVersion struct {
 	RawLocalAddress  string
 	LocalPeerId      peer.ID
 	PublicKey        string
+	SignDataB58      string
 }
 
 func (self MessageVersion) MessageType() string {

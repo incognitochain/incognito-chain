@@ -50,11 +50,13 @@ func (tx *Tx) CreateTx(
 	paymentInfo []*privacy.PaymentInfo,
 	useableTx map[byte][]*Tx,
 	fee uint64,
-	commitments map[byte][][]byte,
-	randCmIndices []privacy.CMIndex,
-	myCmPos []uint32,
+	commitments map[byte]([][]byte),
+	snDs map[byte][]big.Int,
 	hasPrivacy bool,
 ) (error) {
+
+	var commitmentIndexs []uint64   // array index random of commitments in db
+	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
 	var inputCoins []*privacy.InputCoin
 
@@ -69,7 +71,6 @@ func (tx *Tx) CreateTx(
 		return fmt.Errorf("Number of list commitments and list random commitment indices must be corresponding with number of input coins")
 	}
 
-	// Check  number of my cm indices
 	if len(myCmPos) != len(inputCoins) {
 		return fmt.Errorf("Number of list my commitment indices must be equal to number of input coins")
 	}
@@ -124,6 +125,9 @@ func (tx *Tx) CreateTx(
 		changePaymentInfo.PaymentAddress = senderFullKey.PaymentAddress
 		paymentInfo = append(paymentInfo, changePaymentInfo)
 	}
+
+	// assign fee tx
+	tx.Fee = fee
 
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]

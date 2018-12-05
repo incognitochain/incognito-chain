@@ -9,22 +9,29 @@ import (
 
 // PaymentWitness contains all of witness for proving when spending coins
 type PaymentWitness struct {
-	spendingKey *big.Int
-	inputCoins  []*privacy.InputCoin
-	outputCoins []*privacy.OutputCoin
-	pkLastByteSender  			byte
-	pkLastByteReceivers			[]byte
+	spendingKey 	*big.Int
+	inputCoins  	[]*privacy.InputCoin
+	outputCoins 	[]*privacy.OutputCoin
+	commitments 	[]*privacy.EllipticPoint
+	randCmIndices []*privacy.CMIndex
+	myCmPos 			[]uint32
+
+
+	pkLastByteSender    byte
+	pkLastByteReceivers []byte
+
 	ComInputOpeningsWitness       []*PKComOpeningsWitness
 	OneOfManyWitness              []*PKOneOfManyWitness
 	EqualityOfCommittedValWitness []*PKEqualityOfCommittedValWitness
 	ProductCommitmentWitness      []*PKComProductWitness
-	ComOutputOpeningsWitness      []*PKComOpeningsWitness
-	ComOutputMultiRangeWitness    *PKComMultiRangeWitness
-	SumOutRangeWitness            *PKComMultiRangeWitness
-	ComZeroWitness                *PKComZeroWitness
+
+	ComOutputOpeningsWitness   []*PKComOpeningsWitness
+	ComOutputMultiRangeWitness *PKComMultiRangeWitness
+	SumOutRangeWitness         *PKComMultiRangeWitness
+
+	ComZeroWitness *PKComZeroWitness
 	//ComZeroOneWitness             *PKComZeroOneWitness
 }
-
 // PaymentProof contains all of PoK for spending coin
 type PaymentProof struct {
 	// for input coins
@@ -189,11 +196,15 @@ func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.Input
 // otherwise, witness includes all attributes in PaymentWitness struct
 func (wit *PaymentWitness) Build(hasPrivacy bool,
 	spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin,
-	pkLastByteSender byte, pkLastByteReceivers []byte) {
+	pkLastByteSender byte, pkLastByteReceivers []byte,
+	commitments []*privacy.EllipticPoint, randCmIndices []*privacy.CMIndex, myCmPos []uint32) {
 
 	wit.spendingKey = spendingKey
 	wit.inputCoins = inputCoins
 	wit.outputCoins = outputCoins
+	wit.commitments= commitments
+	wit.randCmIndices = randCmIndices
+	wit.myCmPos = myCmPos
 
 	// Todo: cmInputPartialSK := g^(sk - last byte)
 
@@ -212,16 +223,17 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 	randInputValue := make([]*big.Int, numInputCoin)
 	randInputSND := make([]*big.Int, numInputCoin)
+	randInputSNDIndexSK := make([]*big.Int, numInputCoin)
 
 	// commit each component of coin commitment
 	for i, inputCoin := range wit.inputCoins {
 		randInputValue[i] = privacy.RandInt()
 		randInputSND[i] = privacy.RandInt()
+		randInputSNDIndexSK[i] = privacy.RandInt()
+
 		cmInputValue[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(inputCoin.CoinDetails.Value)), randInputValue[i], privacy.VALUE)
 		cmInputSND[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randInputSND[i], privacy.SND)
-
-		// Todo: using randInputSK or randInputSND
-		cmInputSNDIndexSK[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randInputSK, privacy.SK)
+		cmInputSNDIndexSK[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randInputSNDIndexSK[i], privacy.SK)
 	}
 
 	// Summing all commitments of each input coin into one commitment and proving the knowledge of its Openings
@@ -259,22 +271,25 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 		randInputSumAll.Add(randInputSumAll, randInputSum[i])
 		randInputSumAll.Mod(randInputSumAll, privacy.Curve.Params().N)
-		// Build witness for proving the knowledge of input coins' Openings
+		/***** Build witness for proving the knowledge of input coins' Openings  *****/
 		wit.ComInputOpeningsWitness[i].Set(cmInputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, big.NewInt(int64(pkLastByteSender)), randInputSum[i]})
-		// ---------------
-		//  Build witness for proving one-out-of-N commitments is a commitment to the coins being spent
+
+		/***** Build witness for proving one-out-of-N commitments is a commitment to the coins being spent *****/
 		cmInputRndIndex := new(privacy.CMIndex)
 		cmInputRndIndex.GetCmIndex(cmInputSum[i])
-		cmInputRndIndexList, cmInputRndValue, indexInputIsZero := GetCMList(cmInputSum[i], cmInputRndIndex, GetCurrentBlockHeight())
+		// commitmentTemps is a list of commitments for protocol one-out-of-N
+		commitmentTemps := make([]*privacy.EllipticPoint, numInputCoin*privacy.CMRingSize)
 		rndInputIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randInputSum[i])
 		rndInputIsZero.Mod(rndInputIsZero, privacy.Curve.Params().N)
-		for j := 0; j < privacy.CMRingSize; j++ {
-			cmInputRndValue[j].X, cmInputRndValue[j].Y = privacy.Curve.Add(cmInputRndValue[j].X, cmInputRndValue[j].Y, cmInputSumInverse[j].X, cmInputSumInverse[j].Y)
+		for j := 0; j < numInputCoin*privacy.CMRingSize; j++ {
+			commitmentTemps[j].X, commitmentTemps[j].Y = privacy.Curve.Add(commitments[j].X, commitments[j].Y, cmInputSumInverse[j].X, cmInputSumInverse[j].Y)
 		}
-		wit.OneOfManyWitness[i].Set(cmInputRndValue, &cmInputRndIndexList, rndInputIsZero, indexInputIsZero, privacy.SK)
-		// -------------------
-		// For ZKP Equal Commitment Value
+		wit.OneOfManyWitness[i].Set(commitmentTemps, randCmIndices, rndInputIsZero, myCmPos[i], privacy.SK)
+
+		/***** Build witness for proving that serial number is derived from the committed derivator *****/
 		wit.EqualityOfCommittedValWitness[i].Set([]*privacy.EllipticPoint{cmInputSNDIndexSK[i], cmInputSND[i]}, indexZKPEqual, []*big.Int{inputCoins[i].CoinDetails.SNDerivator, randInputSK, randInputSND[i]})
+		// TODO Product Commitment
+		// Todo: 0xthunderbird
 		// ------------------------------
 	}
 
@@ -325,14 +340,13 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	// proving each output value is less than vmax
 	// proving sum of output values is less than vmax
 	// TODO wit.ComOutputMultiRangeWitness.Set(???)
+	// Todo: 0xthunderbird
 	outputValue := make([]*big.Int, numberOutputCoin)
 	for i := 0; i < numberOutputCoin; i++ {
 		outputValue[i] = big.NewInt(int64(outputCoins[i].CoinDetails.Value))
 	}
 	wit.ComOutputMultiRangeWitness.Set(outputValue, 64)
 	// ------------------------
-
-	// TODO Product Commitment
 
 	// TODO Zero Or One
 
@@ -614,4 +628,5 @@ func (pro PaymentProof) ToBytes() []byte {
 // FromBytes reverts bytes array to payment proof for verifying
 func (pro *PaymentProof) FromBytes(bytes []byte) {
 	//ToDo
+
 }

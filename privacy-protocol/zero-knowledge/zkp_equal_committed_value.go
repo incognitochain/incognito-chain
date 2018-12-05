@@ -64,9 +64,41 @@ func (pro *PKEqualityOfCommittedValProof) Bytes() []byte {
 		res = append(res, pro.T[i].Compress()...)
 	}
 	for i := 0; i < len(pro.Z); i++ {
-		res = append(res, pro.Z[i].Bytes()...)
+		temp := pro.Z[i].Bytes()
+		for j := 0; j < privacy.BigIntSize-len(temp); j++ {
+			temp = append([]byte{0}, temp...)
+		}
+		res = append(res, temp...)
 	}
 	return res
+}
+
+func (pro *PKEqualityOfCommittedValProof) SetBytes(bytestr []byte) bool {
+	pro.C = make([]*privacy.EllipticPoint, 2)
+	for i := 0; i < len(pro.C); i++ {
+		pro.C[i].Decompress(bytestr[i*privacy.CompressedPointSize : (i+1)*privacy.CompressedPointSize])
+		if !pro.C[i].IsSafe() {
+			return false
+		}
+	}
+	pro.Index = make([]*byte, 2)
+	for i := 0; i < len(pro.Index); i++ {
+		pro.Index[i] = new(byte)
+		*pro.Index[i] = bytestr[i+len(pro.C)*privacy.CompressedPointSize]
+	}
+	pro.T = make([]*privacy.EllipticPoint, 2)
+	for i := 0; i < len(pro.T); i++ {
+		pro.T[i].Decompress(bytestr[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+i*privacy.CompressedPointSize : len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+(i+1)*privacy.CompressedPointSize])
+		if !pro.T[i].IsSafe() {
+			return false
+		}
+	}
+	pro.Z = make([]*big.Int, 3)
+	for i := 0; i < len(pro.Z); i++ {
+		pro.Z[i] = big.NewInt(0)
+		pro.Z[i].SetBytes(bytestr[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+i*privacy.BigIntSize : len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+(i+1)*privacy.BigIntSize])
+	}
+	return true
 }
 
 // Set - proof setter
