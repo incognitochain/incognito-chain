@@ -25,9 +25,6 @@ type Tx struct {
 	Sig       []byte `json:"Sig, omitempty"`       // 64 bytes
 	Proof     *zkp.PaymentProof
 
-	PubKeyLastByteSender    byte   `json:"PubKeyLastByteSender"`
-	PubKeyLastByteReceivers []byte `json:"PubKeyLastByteReceivers"`
-
 	txId       *common.Hash
 	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 
@@ -186,14 +183,13 @@ func (tx *Tx) CreateTx(
 
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
-	tx.PubKeyLastByteSender = pkLastByteSender
+	tx.Proof.PubKeyLastByteSender = pkLastByteSender
 
 	// get public key last byte of receivers
 	pkLastByteReceivers := make([]byte, len(paymentInfo))
 	for i, payInfo := range paymentInfo {
 		pkLastByteReceivers[i] = payInfo.PaymentAddress.Pk[len(payInfo.PaymentAddress.Pk)-1]
 	}
-	tx.PubKeyLastByteReceivers = pkLastByteReceivers
 
 	// create zero knowledge proof of payment
 
@@ -221,6 +217,7 @@ func (tx *Tx) CreateTx(
 			tx.Proof.OutputCoins[i].CoinDetails.Value = 0
 			tx.Proof.OutputCoins[i].CoinDetails.PublicKey = nil
 			tx.Proof.OutputCoins[i].CoinDetails.Randomness = nil
+			tx.Proof.OutputCoins[i].PubKeyLastByteReceiver = tx.Proof.OutputCoins[i].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[i].CoinDetails.PublicKey.Compress())-1]
 		}
 
 		// hide information of input coins except serial number of input coins
@@ -404,13 +401,12 @@ func (tx *Tx) Hash() *common.Hash {
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
 	record += string(tx.Proof.Bytes()[:])
-	record += string(tx.PubKeyLastByteSender)
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (tx *Tx) GetSenderAddrLastByte() byte {
-	return tx.PubKeyLastByteSender
+	return tx.Proof.PubKeyLastByteSender
 }
 
 func (tx *Tx) GetTxFee() uint64 {

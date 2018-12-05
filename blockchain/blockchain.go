@@ -372,17 +372,15 @@ func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte,
 Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
 this is a list tx-out which are used by a new tx
 */
-func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.TxNormal) error {
-	for _, desc := range tx.Descs {
-		for _, nullifier := range desc.Nullifiers {
-			chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
-			if err != nil {
-				return err
-			}
-			err = self.config.DataBase.StoreNullifiers(nullifier, chainId)
-			if err != nil {
-				return err
-			}
+func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
+	for _, desc := range tx.Proof.InputCoins {
+		chainId, err := common.GetTxSenderChain(tx.Proof.PubKeyLastByteSender)
+		if err != nil {
+			return err
+		}
+		err = self.config.DataBase.StoreNullifiers(desc.CoinDetails.SerialNumber.Compress(), chainId)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -392,17 +390,15 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.TxNormal) error {
 Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
 this is a list tx-in which are used by a new tx
 */
-func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.TxNormal) error {
-	for _, desc := range tx.Descs {
-		for _, item := range desc.Commitments {
-			chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
-			if err != nil {
-				return err
-			}
-			err = self.config.DataBase.StoreCommitments(item, chainId)
-			if err != nil {
-				return err
-			}
+func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
+	for _, desc := range tx.Proof.OutputCoins {
+		chainId, err := common.GetTxSenderChain(desc.PubKeyLastByteReceiver)
+		if err != nil {
+			return err
+		}
+		err = self.config.DataBase.StoreCommitments(desc.CoinDetails.CoinCommitment.Compress(), chainId)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -492,7 +488,7 @@ func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 	return data, err
 }
 
-func (self *BlockChain) SaveLoanTxsForBlock(block *Block) error {
+/*func (self *BlockChain) SaveLoanTxsForBlock(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetType() {
 		case common.TxLoanRequest:
@@ -509,7 +505,7 @@ func (self *BlockChain) SaveLoanTxsForBlock(block *Block) error {
 	}
 
 	return nil
-}
+}*/
 
 func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 	for _, tx := range block.Transactions {

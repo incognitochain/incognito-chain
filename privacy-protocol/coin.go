@@ -8,7 +8,6 @@ import (
 
 	"io"
 	"math/big"
-
 )
 
 type SerialNumber []byte   //33 bytes
@@ -36,8 +35,9 @@ type InputCoin struct {
 }
 
 type OutputCoin struct {
-	CoinDetails          *Coin
-	CoinDetailsEncrypted *CoinDetailsEncrypted
+	PubKeyLastByteReceiver byte
+	CoinDetails            *Coin
+	CoinDetailsEncrypted   *CoinDetailsEncrypted
 }
 
 func (outputCoin *OutputCoin) Bytes() {
@@ -125,7 +125,6 @@ func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey) error {
 	stream.XORKeyStream(randomness, coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:])
 	return nil
 }
-
 
 //CommitAll commits a coin with 4 attributes (public key, value, serial number, r)
 //func (coin *Coin) CommitAll() {
