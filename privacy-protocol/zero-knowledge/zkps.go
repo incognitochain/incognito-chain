@@ -220,7 +220,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	cmInputSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randInputSK, privacy.SK)
 
 	randInputShardID := privacy.RandInt()
-	//cmInputShardID := privacy.PedCom.CommitAtIndex(big.NewInt(int64(wit.pkLastByteSender)), randInputShardID, privacy.SHARDID)
+	cmInputShardID := privacy.PedCom.CommitAtIndex(big.NewInt(int64(wit.pkLastByteSender)), randInputShardID, privacy.SHARDID)
 
 	cmInputValue := make([]*privacy.EllipticPoint, numInputCoin)
 	cmInputSND := make([]*privacy.EllipticPoint, numInputCoin)
@@ -266,14 +266,14 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		cmInputSum[i] = cmInputSK
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputValue[i].X, cmInputValue[i].Y)
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputSND[i].X, cmInputSND[i].Y)
-		//cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputShardID.X, cmInputShardID.Y)
-		cmInputSumInverse[i], _ = cmInputSum[i].Inverse()
+
+
 		cmInputSumAll.X, cmInputSumAll.Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputSumAll.X, cmInputSumAll.Y)
 
 		randInputSum[i] = randInputSK
 		randInputSum[i].Add(randInputSum[i], randInputValue[i])
 		randInputSum[i].Add(randInputSum[i], randInputSND[i])
-		randInputSum[i].Add(randInputSum[i], randInputShardID)
+		//randInputSum[i].Add(randInputSum[i], randInputShardID)
 
 		randInputSumAll.Add(randInputSumAll, randInputSum[i])
 		randInputSumAll.Mod(randInputSumAll, privacy.Curve.Params().N)
@@ -286,9 +286,14 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		rndInputIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randInputSum[i])
 		rndInputIsZero.Mod(rndInputIsZero, privacy.Curve.Params().N)
 
+		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputShardID.X, cmInputShardID.Y)
+		cmInputSumInverse[i], _ = cmInputSum[i].Inverse()
+
 		for j := 0; j < numInputCoin*privacy.CMRingSize; j++ {
 			commitmentTemps[j].X, commitmentTemps[j].Y = privacy.Curve.Add(commitments[j].X, commitments[j].Y, cmInputSumInverse[j].X, cmInputSumInverse[j].Y)
 		}
+
+
 		wit.OneOfManyWitness[i].Set(commitmentTemps, commitmentIndexs, rndInputIsZero, myCommitmentIndexs[i], privacy.SK)
 
 		/***** Build witness for proving that serial number is derived from the committed derivator *****/
