@@ -53,10 +53,22 @@ func (pro *PKComProductProof) Init() {
 	pro.cmA = new(privacy.EllipticPoint)
 	pro.cmB = new(privacy.EllipticPoint)
 }
+func PadFuckingBigInt(fckBigInt *big.Int) []byte{
+	idx:=getindex(fckBigInt)
+	paddedBig:=make([]byte, 32)
+	for i:=0;i<idx;i++{
+		paddedBig[i] = byte(0x00)
+	}
+	for i:=idx;i<privacy.BigIntSize;i++{
+		paddedBig[i] = fckBigInt.Bytes()[i-idx]
+	}
+	return paddedBig
+}
 func (pro *PKComProductProof) Print() {
 	fmt.Println(pro.D)
 	fmt.Println(pro.E)
-	fmt.Println(pro.f)
+	fmt.Println(len(pro.f.Bytes()))
+	fmt.Println(len(pro.z.Bytes()))
 	fmt.Println(pro.cmA)
 	fmt.Println(pro.cmB)
 }
@@ -66,8 +78,8 @@ func (pro *PKComProductProof)  Bytes() []byte {
 	proofbytes = append(proofbytes, pro.cmB.Compress()...) // 33 bytes
 	proofbytes = append(proofbytes, pro.D.Compress()...)   // 33 bytes
 	proofbytes = append(proofbytes, pro.E.Compress()...)   // 33 bytes
-	proofbytes = append(proofbytes, pro.f.Bytes()...)      // 32 bytes
-	proofbytes = append(proofbytes, pro.z.Bytes()...)      // 32 bytes
+	proofbytes = append(proofbytes, PadFuckingBigInt(pro.f)...)      // 32 bytes
+	proofbytes = append(proofbytes, PadFuckingBigInt(pro.z)...)      // 32 bytes
 	proofbytes = append(proofbytes, pro.index)
 	return proofbytes
 }

@@ -50,9 +50,9 @@ func (tx *Tx) CreateTx(
 	paymentInfo []*privacy.PaymentInfo,
 	useableTx map[byte][]*Tx,
 	fee uint64,
-	commitments map[byte][][]byte,
-	randCmIndices []privacy.CMIndex,
-	myCmIndices []uint32,
+	commitments map[byte][]*privacy.EllipticPoint,
+	randCmIndices []*privacy.CMIndex,
+	myCmPos []uint32,
 	hasPrivacy bool,
 ) (error) {
 
@@ -62,6 +62,15 @@ func (tx *Tx) CreateTx(
 	fmt.Printf("List of all input coins before building tx:\n")
 	for _, coin := range inputCoins {
 		fmt.Printf("%+v\n", coin)
+	}
+
+	// Check number of list of random commitments, list of random commitment indices
+	if len(commitments) != len(inputCoins)*privacy.CMRingSize || len(randCmIndices) != len(inputCoins)*privacy.CMRingSize {
+		return fmt.Errorf("Number of list commitments and list random commitment indices must be corresponding with number of input coins")
+	}
+
+	if len(myCmPos) != len(inputCoins) {
+		return fmt.Errorf("Number of list my commitment indices must be equal to number of input coins")
 	}
 
 	// Calculate sum of all output coins' value
@@ -115,6 +124,9 @@ func (tx *Tx) CreateTx(
 		paymentInfo = append(paymentInfo, changePaymentInfo)
 	}
 
+	// assign fee tx
+	tx.Fee = fee
+
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 	tx.PubKeyLastByteSender = pkLastByteSender
@@ -129,7 +141,7 @@ func (tx *Tx) CreateTx(
 	// create zero knowledge proof of payment
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers)
+	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitments, randCmIndices, myCmPos)
 	tx.Proof, _ = witness.Prove(false)
 
 	// set private key for signing tx
