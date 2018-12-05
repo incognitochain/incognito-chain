@@ -28,6 +28,7 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 type Server struct {
@@ -625,16 +626,18 @@ func (self Server) OnSwapUpdate(peer *peer.PeerConn, msg *wire.MessageSwapUpdate
 func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion) {
 	Logger.log.Info("Receive version message START")
 
+	pbk := ""
+	err := cashec.ValidateDataB58(msg.PublicKey, msg.SignDataB58, []byte{0x00})
+	if err == nil {
+		pbk = msg.PublicKey
+	}
 	remotePeer := &peer.Peer{
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
 		PeerID:           msg.LocalPeerId,
-		PublicKey:        msg.PublicKey,
+		PublicKey:        pbk,
 	}
-
-	if msg.PublicKey != "" {
-		peerConn.RemotePeer.PublicKey = msg.PublicKey
-	}
+	peerConn.RemotePeer.PublicKey = pbk
 
 	self.cNewPeers <- remotePeer
 	valid := false
@@ -904,7 +907,6 @@ GetChainState - send a getchainstate msg to connected peer
 */
 func (self *Server) PushMessageGetChainState() error {
 	Logger.log.Infof("Send a GetChainState")
-	var dc chan<- struct{}
 	for _, listener := range self.connManager.Config.ListenerPeers {
 		msg, err := wire.MakeEmptyMessage(wire.CmdGetChainState)
 		if err != nil {
@@ -913,12 +915,12 @@ func (self *Server) PushMessageGetChainState() error {
 		msg.(*wire.MessageGetChainState).Timestamp = time.Unix(time.Now().Unix(), 0)
 		msg.SetSenderID(listener.PeerID)
 		Logger.log.Infof("Send a GetChainState from %s", listener.RawAddress)
-		listener.QueueMessageWithEncoding(msg, dc)
+		listener.QueueMessageWithEncoding(msg, nil)
 	}
 	return nil
 }
 
-func (self Server) PushVersionMessage(peerConn *peer.PeerConn) error {
+func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	// push message version
 	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
 	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
@@ -933,12 +935,14 @@ func (self Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	// ValidateTransaction Public Key from ProducerPrvKey
 	if peerConn.ListenerPeer.Config.ProducerKeySet != nil {
 		msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.Config.ProducerKeySet.GetPublicKeyB58()
+		signDataB58, err := peerConn.ListenerPeer.Config.ProducerKeySet.SignDataB58([]byte{0x00})
+		if err == nil {
+			msg.(*wire.MessageVersion).SignDataB58 = signDataB58
+		}
 	}
-
 	if err != nil {
 		return err
 	}
-	var dc chan<- struct{}
-	peerConn.QueueMessageWithEncoding(msg, dc)
+	peerConn.QueueMessageWithEncoding(msg, nil)
 	return nil
 }

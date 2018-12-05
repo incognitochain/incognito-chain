@@ -68,6 +68,13 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			return
 		}
 
+		// disconnect when received spam message
+		if len(str) >= SPAM_MESSAGE_SIZE {
+			Logger.log.Errorf("InMessageHandler received spam message")
+			self.Close()
+			continue
+		}
+
 		if str != DelimMessageStr {
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
@@ -256,6 +263,7 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 
 				Logger.log.Infof("QueueMessageWithEncoding HEAVY_MESSAGE_SIZE %s %s", hash, msg.MessageType())
 
+				// new model for received response
 				self.cMsgHash[hash] = make(chan bool)
 				cTimeOut := make(chan struct{})
 				bOk := false

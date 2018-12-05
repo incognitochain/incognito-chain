@@ -27,6 +27,7 @@ import (
 type ConnState uint8
 
 var HEAVY_MESSAGE_SIZE = 512 * 1024
+var SPAM_MESSAGE_SIZE = 50 * 1024 * 1024
 var MESSAGE_HASH_POOL_SIZE = 1000
 
 // RemotePeer is present for libp2p node data
