@@ -7,6 +7,7 @@ import (
 
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
@@ -23,7 +24,7 @@ type Policy struct {
 /*
 
  */
-func (self *Policy) CheckTxVersion(tx *transaction.Transaction) bool {
+func (self *Policy) CheckTxVersion(tx *metadata.Transaction) bool {
 	txType := (*tx).GetType()
 	switch txType {
 	case common.TxSalaryType:

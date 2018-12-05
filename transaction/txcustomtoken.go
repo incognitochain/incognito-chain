@@ -7,6 +7,7 @@ import (
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
@@ -30,7 +31,7 @@ func (tx *TxCustomToken) SetListUtxo(data map[common.Hash]TxCustomToken) {
 }
 
 func (customTokentx *TxCustomToken) validateDoubleSpendCustomTokenOnTx(
-	txInBlock Transaction,
+	txInBlock metadata.Transaction,
 ) error {
 	temp := txInBlock.(*TxCustomToken)
 	for _, vin := range temp.TxTokenData.Vins {
@@ -46,7 +47,7 @@ func (customTokentx *TxCustomToken) validateDoubleSpendCustomTokenOnTx(
 }
 
 func (customTokenTx *TxCustomToken) ValidateTxWithCurrentMempool(
-	mr MempoolRetriever,
+	mr metadata.MempoolRetriever,
 ) error {
 	if customTokenTx.Type == common.TxSalaryType {
 		return errors.New("Can not receive a salary tx from other node, this is a violation")
@@ -68,7 +69,7 @@ func (customTokenTx *TxCustomToken) ValidateTxWithCurrentMempool(
 }
 
 func (customTokenTx *TxCustomToken) validateDoubleSpendCustomTokenWithBlockchain(
-	bcr BlockchainRetriever,
+	bcr metadata.BlockchainRetriever,
 ) error {
 	listTxs, err := bcr.GetCustomTokenTxs(&customTokenTx.TxTokenData.PropertyID)
 	if err != nil {
@@ -93,7 +94,7 @@ func (customTokenTx *TxCustomToken) validateDoubleSpendCustomTokenWithBlockchain
 }
 
 func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
-	bcr BlockchainRetriever,
+	bcr metadata.BlockchainRetriever,
 	chainID byte,
 ) error {
 	if customTokenTx.GetType() == common.TxSalaryType {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
@@ -59,7 +60,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdBlock:
 		msg = &MessageBlock{
 			Block: blockchain.Block{
-				Transactions: make([]transaction.Transaction, 0),
+				Transactions: make([]metadata.Transaction, 0),
 			},
 		}
 		break
