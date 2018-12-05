@@ -136,7 +136,7 @@ func (self ConnManager) GetPeerIDStr(addr string) (string, error) {
 		Logger.log.Error(err)
 		return EmptyString, err
 	}
-	return peerId.String(), nil
+	return peerId.Pretty(), nil
 }
 
 // Connect assigns an id and dials a connection to the address of the

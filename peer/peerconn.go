@@ -60,9 +60,9 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 		if err != nil {
 			self.IsConnected = false
 			Logger.log.Error("---------------------------------------------------------------------")
-			Logger.log.Errorf("InMessageHandler ERROR %s %s", self.RemotePeerID, self.RemotePeer.RawAddress)
+			Logger.log.Errorf("InMessageHandler ERROR %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
 			Logger.log.Error(err)
-			Logger.log.Errorf("InMessageHandler QUIT %s %s", self.RemotePeerID, self.RemotePeer.RawAddress)
+			Logger.log.Errorf("InMessageHandler QUIT %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
 			Logger.log.Error("---------------------------------------------------------------------")
 			close(self.cWrite)
 			return
@@ -233,7 +233,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				}
 			}
 		case <-self.cWrite:
-			Logger.log.Infof("OutMessageHandler QUIT %s %s", self.RemotePeerID, self.RemotePeer.RawAddress)
+			Logger.log.Infof("OutMessageHandler QUIT %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
 
 			self.IsConnected = false
 

@@ -833,7 +833,7 @@ func (self *Server) PushMessageToAll(msg wire.Message) error {
 PushMessageToPeer push msg to peer
 */
 func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
-	Logger.log.Infof("Push msg to peer %s", peerId.String())
+	Logger.log.Infof("Push msg to peer %s", peerId.Pretty())
 	var dc chan<- struct{}
 	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
 		peerConn := self.connManager.Config.ListenerPeers[index].GetPeerConnByPeerID(peerId.Pretty())
