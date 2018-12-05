@@ -9,13 +9,12 @@ import (
 
 // PaymentWitness contains all of witness for proving when spending coins
 type PaymentWitness struct {
-	spendingKey 	*big.Int
-	inputCoins  	[]*privacy.InputCoin
-	outputCoins 	[]*privacy.OutputCoin
-	commitments 	[]*privacy.EllipticPoint
+	spendingKey   *big.Int
+	inputCoins    []*privacy.InputCoin
+	outputCoins   []*privacy.OutputCoin
+	commitments   []*privacy.EllipticPoint
 	randCmIndices []*privacy.CMIndex
-	myCmPos 			[]uint32
-
+	myCmPos       []uint32
 
 	pkLastByteSender    byte
 	pkLastByteReceivers []byte
@@ -51,9 +50,11 @@ type PaymentProof struct {
 	OutputCoins []*privacy.OutputCoin
 	InputCoins  []*privacy.InputCoin
 
-	ComInputSK []*privacy.EllipticPoint
+	ComInputSK    []*privacy.EllipticPoint
 	ComInputValue []*privacy.EllipticPoint
-	ComInputSND []*privacy.EllipticPoint
+	ComInputSND   []*privacy.EllipticPoint
+
+	PubKeyLastByteSender byte
 }
 
 func (paymentProof *PaymentProof) Bytes() []byte {
@@ -232,7 +233,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	wit.spendingKey = spendingKey
 	wit.inputCoins = inputCoins
 	wit.outputCoins = outputCoins
-	wit.commitments= commitments
+	wit.commitments = commitments
 	wit.randCmIndices = randCmIndices
 	wit.myCmPos = myCmPos
 
