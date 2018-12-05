@@ -52,8 +52,8 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
 	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
-	candidateTxs := make([]*transaction.TxNormal, 0)
-	candidateTxsMap := make(map[byte][]*transaction.TxNormal)
+	candidateTxs := make([]*transaction.Tx, 0)
+	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
 			for _, note := range temp.Proof.OutputCoins {
@@ -194,8 +194,8 @@ func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
 	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
-	candidateTxs := make([]*transaction.TxNormal, 0)
-	candidateTxsMap := make(map[byte][]*transaction.TxNormal)
+	candidateTxs := make([]*transaction.Tx, 0)
+	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
 			for _, note := range temp.Proof.OutputCoins {
@@ -334,8 +334,8 @@ func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
 	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
-	candidateTxs := make([]*transaction.TxNormal, 0)
-	candidateTxsMap := make(map[byte][]*transaction.TxNormal)
+	candidateTxs := make([]*transaction.Tx, 0)
+	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
 			for _, note := range temp.Proof.OutputCoins {
@@ -474,8 +474,8 @@ func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
 	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
-	candidateTxs := make([]*transaction.TxNormal, 0)
-	candidateTxsMap := make(map[byte][]*transaction.TxNormal)
+	candidateTxs := make([]*transaction.Tx, 0)
+	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
 			for _, note := range temp.Proof.OutputCoins {

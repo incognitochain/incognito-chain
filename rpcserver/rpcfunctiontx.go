@@ -194,6 +194,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
 		commitmentsDb[chainId] = txViewPoint.ListNullifiers()
+		snDerivatorsDb[chainId] = txViewPoint.ListSnDerivators()
 	}
 	//missing flag for privacy-protocol
 	// false by default

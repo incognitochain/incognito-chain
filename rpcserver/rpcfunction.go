@@ -12,6 +12,7 @@ import (
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
+	"math/big"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -354,8 +355,8 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
 	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
-	candidateTxs := make([]*transaction.TxNormal, 0)
-	candidateTxsMap := make(map[byte][]*transaction.TxNormal)
+	candidateTxs := make([]*transaction.Tx, 0)
+	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
 			for _, note := range temp.Proof.OutputCoins {
@@ -384,7 +385,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	// list unspent tx for create tx
 	totalAmmount += int64(realFee)
 	if totalAmmount > 0 {
-		candidateTxsMap = make(map[byte][]*transaction.TxNormal, 0)
+		candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
 		for chainId, usableTxs := range usableTxsMap {
 			for _, temp := range usableTxs {
 				for _, note := range temp.Proof.OutputCoins {
@@ -403,6 +404,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	// get merkleroot commitments, nullifers db, commitments db for every chain
 	nullifiersDb := make(map[byte]([][]byte))
 	commitmentsDb := make(map[byte]([][]byte))
+	snDerivatorsDb := make(map[byte]([]big.Int))
 	merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
 		merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
@@ -410,6 +412,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
+		snDerivatorsDb[chainId] = txViewPoint.ListSnDerivators()
 	}
 
 	// get list custom token
@@ -420,9 +423,9 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		nil,
 		merkleRootCommitments,
 		candidateTxsMap,
-		commitmentsDb,
+		commitmentsDb[chainIdSender],
+		snDerivatorsDb[chainIdSender],
 		realFee,
-		chainIdSender,
 		tokenParams,
 		listCustomTokens,
 	)
