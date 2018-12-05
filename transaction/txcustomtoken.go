@@ -29,6 +29,95 @@ func (tx *TxCustomToken) SetListUtxo(data map[common.Hash]TxCustomToken) {
 	tx.listUtxo = data
 }
 
+func (customTokentx *TxCustomToken) validateDoubleSpendCustomTokenOnTx(
+	txInBlock Transaction,
+) error {
+	temp := txInBlock.(*TxCustomToken)
+	for _, vin := range temp.TxTokenData.Vins {
+		for _, item := range customTokentx.TxTokenData.Vins {
+			if vin.TxCustomTokenID.String() == item.TxCustomTokenID.String() {
+				if vin.VoutIndex == item.VoutIndex {
+					return errors.New("Double spend")
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (customTokenTx *TxCustomToken) ValidateTxWithCurrentMempool(
+	mr MempoolRetriever,
+) error {
+	if customTokenTx.Type == common.TxSalaryType {
+		return errors.New("Can not receive a salary tx from other node, this is a violation")
+	}
+
+	normalTx := customTokenTx.Tx
+	err := normalTx.ValidateTxWithCurrentMempool(mr)
+	if err != nil {
+		return err
+	}
+	txsInMem := mr.GetTxsInMem()
+	for _, txInMem := range txsInMem {
+		err := customTokenTx.validateDoubleSpendCustomTokenOnTx(txInMem.Tx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (customTokenTx *TxCustomToken) validateDoubleSpendCustomTokenWithBlockchain(
+	bcr BlockchainRetriever,
+) error {
+	listTxs, err := bcr.GetCustomTokenTxs(&customTokenTx.TxTokenData.PropertyID)
+	if err != nil {
+		return err
+	}
+
+	if len(listTxs) == 0 {
+		if customTokenTx.TxTokenData.Type != CustomTokenInit {
+			return errors.New("Not exist tx for this ")
+		}
+	}
+
+	if len(listTxs) > 0 {
+		for _, txInBlocks := range listTxs {
+			err := customTokenTx.validateDoubleSpendCustomTokenOnTx(txInBlocks)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
+	bcr BlockchainRetriever,
+	chainID byte,
+) error {
+	if customTokenTx.GetType() == common.TxSalaryType {
+		return nil
+	}
+	if customTokenTx.Metadata != nil {
+		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(bcr, chainID)
+		if err != nil {
+			return err
+		}
+		if !isContinued {
+			return nil
+		}
+	}
+
+	// TODO: add validate signs for multisig tx
+
+	err := customTokenTx.Tx.validateDoubleSpendWithBlockchain(bcr, chainID)
+	if err != nil {
+		return err
+	}
+	return customTokenTx.validateDoubleSpendCustomTokenWithBlockchain(bcr)
+}
+
 // Hash returns the hash of all fields of the transaction
 func (tx TxCustomToken) Hash() *common.Hash {
 	// get hash of tx

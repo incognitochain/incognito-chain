@@ -103,6 +103,35 @@ func (self *BlockChain) Init(config *Config) error {
 	return nil
 }
 
+// -------------- Blockchain retriever's implementation --------------
+func (self *BlockChain) GetNulltifiersList(chainId byte) ([][]byte, error) {
+	txViewPoint, err := self.FetchTxViewPoint(chainId)
+	if err != nil {
+		return nil, err
+	}
+	nullifierDb := txViewPoint.ListNullifiers()
+	return nullifierDb, nil
+}
+
+// GetCustomTokenTxsHash - return list of tx which relate to custom token
+func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]transaction.Transaction, error) {
+	txHashesInByte, err := self.config.DataBase.CustomTokenTxs(tokenID)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[common.Hash]transaction.Transaction)
+	for _, temp := range txHashesInByte {
+		_, _, _, tx, err := self.GetTransactionByHash(temp)
+		if err != nil {
+			return nil, err
+		}
+		result[*tx.Hash()] = tx
+	}
+	return result, nil
+}
+
+// -------------- End of Blockchain retriever's implementation --------------
+
 /*
 // initChainState attempts to load and initialize the chain state from the
 // database.  When the db does not yet contain any chain state, both it and the
@@ -1214,23 +1243,6 @@ func (self *BlockChain) GetCustomTokenTxsHash(tokenID *common.Hash) ([]common.Ha
 	result := []common.Hash{}
 	for _, temp := range txHashesInByte {
 		result = append(result, *temp)
-	}
-	return result, nil
-}
-
-// GetCustomTokenTxsHash - return list of tx which relate to custom token
-func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]transaction.Transaction, error) {
-	txHashesInByte, err := self.config.DataBase.CustomTokenTxs(tokenID)
-	if err != nil {
-		return nil, err
-	}
-	result := make(map[common.Hash]transaction.Transaction)
-	for _, temp := range txHashesInByte {
-		_, _, _, tx, err := self.GetTransactionByHash(temp)
-		if err != nil {
-			return nil, err
-		}
-		result[*tx.Hash()] = tx
 	}
 	return result, nil
 }

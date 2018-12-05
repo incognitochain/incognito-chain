@@ -3,9 +3,33 @@ package transaction
 import (
 	"time"
 
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/metadata"
 )
+
+type MempoolRetriever interface {
+	GetPoolNullifiers() map[common.Hash][][]byte
+	GetTxsInMem() map[common.Hash]TxDesc
+}
+
+type BlockchainRetriever interface {
+	GetNulltifiersList(byte) ([][]byte, error)
+	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
+
+	GetDCBParams() params.DCBParams
+	GetLoanTxs([]byte) ([][]byte, error)
+}
+
+type TxRetriever interface {
+	GetTxFee() uint64
+}
+
+type Metadata interface {
+	Validate() error
+	Process() error
+	CheckTransactionFee(TxRetriever, uint64) bool
+	ValidateTxWithBlockChain(BlockchainRetriever, byte) (bool, error)
+}
 
 // Interface for all type of transaction
 type Transaction interface {
@@ -19,7 +43,8 @@ type Transaction interface {
 	CheckTxVersion(int8) bool
 	CheckTransactionFee(uint64) bool
 	IsSalaryTx() bool
-	ValidateTxWithCurrentMempool(metadata.MempoolRetriever) error
+	ValidateTxWithCurrentMempool(MempoolRetriever) error
+	ValidateTxWithBlockChain(BlockchainRetriever, byte) error
 }
 
 // This is tx struct which is really saved in tx mempool

@@ -68,6 +68,14 @@ func (tp *TxPool) GetPoolNullifiers() map[common.Hash][][]byte {
 	return tp.poolNullifiers
 }
 
+func (tp *TxPool) GetTxsInMem() map[common.Hash]transaction.TxDesc {
+	txsInMem := make(map[common.Hash]transaction.TxDesc)
+	for hash, txDesc := range tp.pool {
+		txsInMem[hash] = txDesc.Desc
+	}
+	return txsInMem
+}
+
 // ----------- end of transaction.MempoolRetriever's implementation -----------------
 
 // check transaction in pool
@@ -155,13 +163,13 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 
 	// check tx with all txs in current mempool
 	err = tx.ValidateTxWithCurrentMempool(tp)
-	// err = tp.ValidateTxWithCurrentMempool(tx)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// validate tx with data of blockchain
-	err = tp.ValidateTxWithBlockChain(tx, chainID)
+	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, chainID)
+	// err = tp.ValidateTxWithBlockChain(tx, chainID)
 	if err != nil {
 		return nil, nil, err
 	}
