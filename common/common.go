@@ -209,21 +209,22 @@ func SliceExists(slice interface{}, item interface{}) (bool, error) {
 /*
 SliceBytesExists - Check slice []byte contain item
 */
-func SliceBytesExists(slice interface{}, item interface{}) (bool, error) {
+func SliceBytesExists(slice interface{}, item interface{}) (int64, error) {
 	s := reflect.ValueOf(slice)
 
 	if s.Kind() != reflect.Slice {
-		return false, errors.New("SliceBytesExists() given a non-slice type")
+		return -1, errors.New("SliceBytesExists() given a non-slice type")
 	}
 
+	// TODO upgrade
 	for i := 0; i < s.Len(); i++ {
 		interfacea := s.Index(i).Interface()
 		if bytes.Equal(interfacea.([]byte), item.([]byte)) {
-			return true, nil
+			return int64(i), nil
 		}
 	}
 
-	return false, nil
+	return -1, nil
 }
 
 func GetTxSenderChain(senderLastByte byte) (byte, error) {

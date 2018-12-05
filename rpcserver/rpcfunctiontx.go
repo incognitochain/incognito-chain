@@ -185,7 +185,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
 	nullifiersDb := make(map[byte]([][]byte))
-	snDsDb := make(map[byte]([]big.Int))
+	snDerivatorsDb := make(map[byte]([]big.Int))
 	commitmentsDb := make(map[byte]([][]byte))
 	merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
@@ -204,7 +204,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		candidateTxsMap,
 		realFee,
 		commitmentsDb,
-		snDsDb,
+		snDerivatorsDb,
 		true)
 	if err != nil {
 		Logger.log.Critical(err)

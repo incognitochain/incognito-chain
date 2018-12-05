@@ -64,7 +64,7 @@ func (self *BlockChain) ValidateDoubleSpend(tx transaction.Transaction, chainID 
 				err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
 				return err
 			}
-			if existed {
+			if existed != -1 {
 				str := fmt.Sprintf("Nullifiers of transaction %+v already existed", txHash.String())
 				err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
 				return err

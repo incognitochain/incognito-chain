@@ -12,6 +12,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"math"
+	rand2 "math/rand"
 )
 
 type Tx struct {
@@ -42,21 +43,60 @@ type Tx struct {
 	Metadata interface{}
 }
 
-// commitments: list of (CMRingSize * numInput) random commitments
-// cmIndices:
+// randomCommitmentsProcess - process list commitments and useable tx to create
+// a list commitment random which be used to create a proof for new tx
+func randomCommitmentsProcess(commitmentsDB map[byte]([][]byte), useableTx map[byte][]*Tx, randNum int) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+	commitmentIndexs = []uint64{}
+	myCommitmentIndexs = []uint64{}
+	if randNum == 0 {
+		randNum = 7
+	}
+	listCommitmentsInUsableTx := [][]byte{}
+	for _, txs := range useableTx {
+		for _, tx := range txs {
+			for _, out := range tx.Proof.OutputCoins {
+				listCommitmentsInUsableTx = append(listCommitmentsInUsableTx, out.CoinDetails.CoinCommitment.Compress())
+			}
+		}
+	}
+	for chainID, txs := range useableTx {
+		commitments := commitmentsDB[chainID]
+		for _, tx := range txs {
+			tempArray := []uint64{}
+			for _, _ = range tx.Proof.OutputCoins {
+				cpRandNum := randNum
+				for true {
+					index := rand2.Int63n(int64(len(commitments)))
+					choosenCommitment := commitments[index]
+					if k, err := common.SliceBytesExists(listCommitmentsInUsableTx, choosenCommitment); k != -1 && err != nil {
+						tempArray = append(tempArray, uint64(index))
+					} else {
+						continue
+					}
+					cpRandNum--
+				}
+			}
+			commitmentIndexs = append(commitmentIndexs, tempArray...)
+
+		}
+	}
+	return nil, nil
+}
 
 func (tx *Tx) CreateTx(
 	senderSK *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
 	useableTx map[byte][]*Tx,
 	fee uint64,
-	commitments map[byte]([][]byte),
-	snDs map[byte][]big.Int,
+	commitmentsDB map[byte]([][]byte),
+	snDerivators map[byte][]big.Int,
 	hasPrivacy bool,
 ) (error) {
 
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
+
+	commitmentIndexs, myCommitmentIndexs = randomCommitmentsProcess(commitmentsDB, useableTx, 7)
 
 	var inputCoins []*privacy.InputCoin
 
