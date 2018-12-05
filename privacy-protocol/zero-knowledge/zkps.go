@@ -1,7 +1,6 @@
 package zkp
 
 import (
-	"github.com/ninjadotorg/constant/transaction"
 	"math/big"
 	"sort"
 
@@ -202,12 +201,10 @@ func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.Input
 // Build prepares witnesses for all protocol need to be proved when create tx
 // if hashPrivacy = false, witness includes spending key, input coins, output coins
 // otherwise, witness includes all attributes in PaymentWitness struct
-func (wit *PaymentWitness) Build(tx *transaction.Tx, hasPrivacy bool,
+func (wit *PaymentWitness) Build(hasPrivacy bool,
 	spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin,
 	pkLastByteSender byte, pkLastByteReceivers []byte,
 	commitments []*privacy.EllipticPoint, commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
-
-	tx.Proof = new(PaymentProof)
 
 	wit.spendingKey = spendingKey
 	wit.inputCoins = inputCoins
