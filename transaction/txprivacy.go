@@ -35,7 +35,7 @@ type Tx struct {
 	//RequestedTxID *common.Hash
 
 	// temp variable to validate tx
-	snDerivator []*big.Int
+	snDerivators []*big.Int
 
 	Metadata interface{}
 }
@@ -98,7 +98,7 @@ func (tx *Tx) CreateTx(
 	usableTx []*Tx,
 	fee uint64,
 	commitmentsDB [][]byte,
-	snDerivators []big.Int,
+	snDerivators []*big.Int,
 	hasPrivacy bool,
 ) (error) {
 
@@ -165,23 +165,24 @@ func (tx *Tx) CreateTx(
 			sndOut = privacy.RandInt()
 			ok = CheckSNDExistence(snDerivators, sndOut)
 		}
-		snDerivators = append(snDerivators, *sndOut)
+		snDerivators = append(snDerivators, sndOut)
 		tx.Proof.OutputCoins[i].CoinDetails.SNDerivator = sndOut
 	}
+
+	ok = true
 
 	// if overBalance > 0, create a output coin with pk is pk's sender and value is overBalance
 	if overBalance > 0 {
 		changeCoin := new(privacy.OutputCoin)
 		changeCoin.CoinDetails.Value = overBalance
 		changeCoin.CoinDetails.PublicKey, _ = privacy.DecompressKey(senderFullKey.PaymentAddress.Pk)
-		// Todo: check whether SND existed in list SNDs or not
 
 		sndOut := new(big.Int)
 		for ok {
 			sndOut = privacy.RandInt()
 			ok = CheckSNDExistence(snDerivators, sndOut)
 		}
-		snDerivators = append(snDerivators, *sndOut)
+		snDerivators = append(snDerivators, sndOut)
 		changeCoin.CoinDetails.SNDerivator = sndOut
 
 		tx.Proof.OutputCoins = append(tx.Proof.OutputCoins, changeCoin)
@@ -468,7 +469,7 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 
 // todo: thunderbird
 // CheckSND return true if snd exists in snDerivators list
-func CheckSNDExistence(snDerivators []big.Int, snd *big.Int) bool {
+func CheckSNDExistence(snDerivators []*big.Int, snd *big.Int) bool {
 	isExisted, _ := common.SliceBytesExists(snDerivators, snd)
 	return isExisted >= 0
 }

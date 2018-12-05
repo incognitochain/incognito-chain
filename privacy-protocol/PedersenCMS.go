@@ -21,7 +21,7 @@ type PCParams struct {
 	G        []*EllipticPoint // generators
 	Capacity int
 	// G[0]: public key
-	// G[1]: H
+	// G[1]: Value
 	// G[2]: SNDerivator
 	// G[3]: ShardID
 	// G[4]: Random
