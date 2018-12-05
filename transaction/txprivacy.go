@@ -45,13 +45,14 @@ type Tx struct {
 
 // randomCommitmentsProcess - process list commitments and useable tx to create
 // a list commitment random which be used to create a proof for new tx
-func randomCommitmentsProcess(commitmentsDB map[byte]([][]byte), useableTx map[byte][]*Tx, randNum int) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+func randomCommitmentsProcess(commitments [][]byte, useableTx map[byte][]*Tx, randNum int) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
 	commitmentIndexs = []uint64{}
 	myCommitmentIndexs = []uint64{}
 	if randNum == 0 {
 		randNum = 7
 	}
 	listCommitmentsInUsableTx := [][]byte{}
+	mapIndexCommitmentsInUsableTx := make(map[string]uint64)
 	for _, txs := range useableTx {
 		for _, tx := range txs {
 			for _, out := range tx.Proof.OutputCoins {
@@ -59,8 +60,13 @@ func randomCommitmentsProcess(commitmentsDB map[byte]([][]byte), useableTx map[b
 			}
 		}
 	}
-	for chainID, txs := range useableTx {
-		commitments := commitmentsDB[chainID]
+	for _, txs := range useableTx {
+		for _, tx := range txs {
+			for _, out := range tx.Proof.OutputCoins {
+				index, _ := common.SliceBytesExists(commitments, out.CoinDetails.CoinCommitment.Compress())
+				mapIndexCommitmentsInUsableTx[string(out.CoinDetails.CoinCommitment.Compress())] = uint64(index)
+			}
+		}
 		for _, tx := range txs {
 			tempArray := []uint64{}
 			for _, _ = range tx.Proof.OutputCoins {
@@ -90,13 +96,14 @@ func (tx *Tx) CreateTx(
 	fee uint64,
 	commitmentsDB map[byte]([][]byte),
 	snDerivators map[byte][]big.Int,
+	chainIdSender byte,
 	hasPrivacy bool,
 ) (error) {
 
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
-	commitmentIndexs, myCommitmentIndexs = randomCommitmentsProcess(commitmentsDB, useableTx, 7)
+	commitmentIndexs, myCommitmentIndexs = randomCommitmentsProcess(commitmentsDB[chainIdSender], useableTx, 7)
 
 	var inputCoins []*privacy.InputCoin
 
@@ -212,8 +219,6 @@ func (tx *Tx) CreateTx(
 	} else {
 		tx.sigPrivKey = *senderSK
 	}
-
-
 
 	// sign tx
 	tx.Hash()
