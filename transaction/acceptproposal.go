@@ -1,6 +1,6 @@
 package transaction
 
-import "github.com/ninjadotorg/constant/common"
+/*import "github.com/ninjadotorg/constant/common"
 
 type TxAcceptGOVProposal struct {
 	*TxNormal
@@ -42,4 +42,4 @@ func (thisTx TxAcceptDCBProposal) ValidateTransaction() bool {
 
 func (thisTx TxAcceptGOVProposal) ValidateTransaction() bool {
 	return thisTx.TxNormal.ValidateTransaction() && ValidateGOVTXID(thisTx.GOVProposalTXID)
-}
+}*/

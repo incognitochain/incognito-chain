@@ -1,6 +1,6 @@
 package transaction
 
-import (
+/*import (
 	"github.com/ninjadotorg/constant/common"
 	"encoding/hex"
 )
@@ -77,4 +77,4 @@ func (tx *TxLoanPayment) ValidateTransaction() bool {
 
 func (tx *TxLoanPayment) GetType() string {
 	return common.TxLoanPayment
-}
+}*/

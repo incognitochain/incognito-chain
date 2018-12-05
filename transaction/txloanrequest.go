@@ -3,13 +3,12 @@ package transaction
 import (
 	"math/big"
 
-	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/wallet"
 	"encoding/hex"
 )
 
-type FeeArgs struct {
+/*type FeeArgs struct {
 	SenderKey     *privacy.SpendingKey
 	PaymentInfo   []*privacy.PaymentInfo
 	Rts           map[byte]*common.Hash
@@ -17,7 +16,7 @@ type FeeArgs struct {
 	Commitments   map[byte]([][]byte)
 	Fee           uint64
 	SenderChainID byte
-}
+}*/
 
 type LoanParams struct {
 	InterestRate     uint64 `json:"InterestRate"`     // basis points, e.g. 125 represents 1.25%
@@ -69,7 +68,7 @@ func NewLoanRequest(data map[string]interface{}) *LoanRequest {
 	return &result
 }
 
-type TxLoanRequest struct {
+/*ype TxLoanRequest struct {
 	TxNormal
 	*LoanRequest // data for a loan request
 }
@@ -141,4 +140,4 @@ func (tx *TxLoanRequest) ValidateTransaction() bool {
 
 func (tx *TxLoanRequest) GetType() string {
 	return common.TxLoanRequest
-}
+}*/

@@ -1,5 +1,6 @@
 package transaction
 
+/*
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/voting"
@@ -32,3 +33,4 @@ func (thisTx TxSubmitGOVProposal) Hash() *common.Hash {
 func (thisTx TxSubmitDCBProposal) ValidateTransaction() bool {
 	return thisTx.TxNormal.ValidateTransaction() && thisTx.DCBProposalData.Validate()
 }
+*/
