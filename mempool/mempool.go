@@ -584,14 +584,6 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 			txCustomToken := txVoteGOVBoard.TxCustomToken
 			return tp.ValidateTxCustomTokenBlockChain(&txCustomToken, chainID)
 		}
-	case common.TxLoanRequest:
-		{
-			return blockChain.ValidateTxLoanRequest(tx, chainID)
-		}
-	case common.TxLoanResponse:
-		{
-			return blockChain.ValidateTxLoanResponse(tx, chainID)
-		}
 	case common.TxLoanPayment:
 		{
 			return blockChain.ValidateTxLoanPayment(tx, chainID)

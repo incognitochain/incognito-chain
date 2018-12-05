@@ -2,8 +2,6 @@ package blockchain
 
 import (
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/voting"
 )
 
 type GOVParams struct {
@@ -12,11 +10,6 @@ type GOVParams struct {
 	TxFee        uint64
 	SellingBonds *SellingBonds
 	RefundInfo   *RefundInfo
-}
-
-type DCBParams struct {
-	SaleData               *voting.SaleData
-	MinLoanResponseRequire uint8
 }
 
 type CBParams struct {
@@ -75,8 +68,6 @@ type BlockHeader struct {
 	DCBGovernor DCBGovernor
 	GOVGovernor GOVGovernor
 	CMBGovernor CMBGovernor
-
-	LoanParams []transaction.LoanParams // params for collateralized loans of Constant
 
 	//Block Height
 	Height int32

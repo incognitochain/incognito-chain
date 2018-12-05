@@ -100,7 +100,7 @@ func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.
 	return nil
 }
 
-func (tx *Tx) ValidateTxWithCurrentMempool(mr MempoolRetriever) error {
+func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	// TODO: add more logic
 	poolNullifiers := mr.GetPoolNullifiers()
 	return tx.validateDoubleSpendTxWithCurrentMempool(poolNullifiers)

@@ -74,36 +74,6 @@ func (self *BlockChain) ValidateDoubleSpend(tx transaction.Transaction, chainID 
 	return nil
 }
 
-func (self *BlockChain) ValidateTxLoanRequest(tx transaction.Transaction, chainID byte) error {
-	txLoan, ok := tx.(*transaction.TxLoanRequest)
-	if !ok {
-		return fmt.Errorf("Fail parsing LoanRequest transaction")
-	}
-
-	// Check if loan's params are correct
-	currentParams := self.BestState[chainID].BestBlock.Header.LoanParams
-	ok = false
-	for _, temp := range currentParams {
-		if txLoan.Params == temp {
-			ok = true
-		}
-	}
-	if !ok {
-		return fmt.Errorf("LoanRequest transaction has incorrect params")
-	}
-
-	// Check if loan id is unique across all chains
-	// TODO(@0xbunyip): should we check in db/chain or only in best state?
-	for chainID, bestState := range self.BestState {
-		for _, id := range bestState.LoanIDs {
-			if bytes.Equal(txLoan.LoanID, id) {
-				return fmt.Errorf("LoanID already existed on chain %d", chainID)
-			}
-		}
-	}
-	return nil
-}
-
 func (self *BlockChain) ValidateTxLoanResponse(tx transaction.Transaction, chainID byte) error {
 	txResponse, ok := tx.(*transaction.TxLoanResponse)
 	if !ok {

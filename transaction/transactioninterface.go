@@ -4,11 +4,8 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 )
-
-type MempoolRetriever interface {
-	GetPoolNullifiers() map[common.Hash][][]byte
-}
 
 // Interface for all type of transaction
 type Transaction interface {
@@ -22,7 +19,7 @@ type Transaction interface {
 	CheckTxVersion(int8) bool
 	CheckTransactionFee(uint64) bool
 	IsSalaryTx() bool
-	ValidateTxWithCurrentMempool(MempoolRetriever) error
+	ValidateTxWithCurrentMempool(metadata.MempoolRetriever) error
 }
 
 // This is tx struct which is really saved in tx mempool

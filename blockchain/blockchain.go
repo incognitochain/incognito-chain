@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -63,6 +64,14 @@ type Config struct {
 	Wallet *wallet.Wallet
 	//snapshot reward
 	customTokenRewardSnapshot map[string]uint64
+}
+
+func (self *BlockChain) GetDCBParams() params.DCBParams {
+	return self.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
+}
+
+func (self *BlockChain) GetLoanTxs(loanID []byte) ([][]byte, error) {
+	return self.config.DataBase.GetLoanTxs(loanID)
 }
 
 /*
