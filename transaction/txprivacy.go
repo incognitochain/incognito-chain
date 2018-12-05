@@ -50,7 +50,7 @@ func (tx *Tx) CreateTx(
 	paymentInfo []*privacy.PaymentInfo,
 	useableTx map[byte][]*Tx,
 	fee uint64,
-	commitments []*privacy.EllipticPoint,
+	commitments map[byte][]*privacy.EllipticPoint,
 	randCmIndices []*privacy.CMIndex,
 	myCmPos []uint32,
 	hasPrivacy bool,

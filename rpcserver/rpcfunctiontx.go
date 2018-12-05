@@ -137,8 +137,8 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
 	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
-	candidateTxs := make([]*transaction.TxNormal, 0)
-	candidateTxsMap := make(map[byte][]*transaction.TxNormal)
+	candidateTxs := make([]*transaction.Tx, 0)
+	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
 			for _, note := range temp.Proof.OutputCoins {
@@ -167,7 +167,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 	// list unspent tx for create tx
 	totalAmmount += int64(realFee)
 	estimateTotalAmount = totalAmmount
-	candidateTxsMap = make(map[byte][]*transaction.TxNormal, 0)
+	candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
 			for _, note := range temp.Proof.OutputCoins {
@@ -184,18 +184,17 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
 	nullifiersDb := make(map[byte]([][]byte))
-	commitmentsDb := make(map[byte]([][]byte))
+	commitmentsDb := make(map[byte]([]*privacy.EllipticPoint))
 	merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
 		merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
 		// get tx view point
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
-		commitmentsDb[chainId] = txViewPoint.ListCommitments()
+		commitmentsDb[chainId] = txViewPoint.ListCommitmentsEclipsePoint()
 	}
 	//missing flag for privacy-protocol
 	// false by default
-	flag := false
 	tx := transaction.Tx{}
 	err = tx.CreateTx(
 		&senderKey.KeySet.PrivateKey,
@@ -323,7 +322,7 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 	switch tx.GetType() {
 	case common.TxNormalType:
 		{
-			tempTx := tx.(*transaction.TxNormal)
+			tempTx := tx.(*transaction.Tx)
 			result = jsonresult.TransactionDetail{
 				BlockHash:               blockHash.String(),
 				Index:                   uint64(index),

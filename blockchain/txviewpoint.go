@@ -8,6 +8,7 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"math/big"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type TxViewPoint struct {
@@ -30,11 +31,31 @@ func (view *TxViewPoint) ListNullifiers() [][]byte {
 }
 
 /*
-ListNullifiers returns list nullifers which is contained in TxViewPoint
+ListNullifiers returns list commitments which is contained in TxViewPoint
 */
 // #1: joinSplitDescType is "Coin" Or "Bond"
 func (view *TxViewPoint) ListCommitments() [][]byte {
 	return view.listCommitments
+}
+
+func (view *TxViewPoint) ListCommitmentsEclipsePoint() []*privacy.EllipticPoint {
+	result := []*privacy.EllipticPoint{}
+	for _, commitment := range view.listCommitments {
+		point := &privacy.EllipticPoint{}
+		point.Decompress(commitment)
+		result = append(result, point)
+	}
+	return result
+}
+
+func (view *TxViewPoint) ListNullifiersEclipsePoint() []*privacy.EllipticPoint {
+	result := []*privacy.EllipticPoint{}
+	for _, commitment := range view.listNullifiers {
+		point := &privacy.EllipticPoint{}
+		point.Decompress(commitment)
+		result = append(result, point)
+	}
+	return result
 }
 
 /*
