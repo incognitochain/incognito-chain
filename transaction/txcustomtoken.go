@@ -103,10 +103,9 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
 	rts map[byte]*common.Hash,
 	usableTx map[byte][]*Tx,
-	commitments map[byte]([][]byte),
-	snDs map[byte][]big.Int,
+	commitments [][]byte,
+	snDs []big.Int,
 	fee uint64,
-	senderChainID byte,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
 ) (*TxCustomToken, error) {
@@ -118,7 +117,6 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 		fee,
 		commitments,
 		snDs,
-		senderChainID,
 		true)
 	if err != nil {
 		return nil, err

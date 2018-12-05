@@ -79,7 +79,7 @@ func randomCommitmentsProcess(commitments [][]byte, useableTx map[byte][]*Tx, ra
 		index := mapIndexCommitmentsInUsableTx[key]
 		i := rand2.Int63n(int64(len(commitmentIndexs)))
 		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index}, commitmentIndexs[i:]...)...)
-		myCommitmentIndexs = append(myCommitmentIndexs, i)
+		myCommitmentIndexs = append(myCommitmentIndexs, uint64(i))
 	}
 	return nil, nil
 }
@@ -143,7 +143,6 @@ func (tx *Tx) CreateTx(
 
 	// create new output coins
 	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, len(paymentInfo))
-
 
 	ok := true
 
@@ -461,6 +460,6 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 
 // todo: thunderbird
 // CheckSND return true if snd exists in snDerivators list
-func CheckSNDExistence (snDerivators []big.Int, snd *big.Int) bool {
+func CheckSNDExistence(snDerivators []big.Int, snd *big.Int) bool {
 	return false
 }
