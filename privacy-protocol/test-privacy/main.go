@@ -1,11 +1,5 @@
 package main
 
-import (
-	"encoding/hex"
-	"fmt"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-)
 
 func main() {
 
@@ -62,7 +56,8 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-	// zkp.TestPKOneOfMany()
+	//zkp.TestPKOneOfMany()
+
 
 	//zkp.TestPKComMultiRange()
 
@@ -211,27 +206,47 @@ func main() {
 	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
 	/*--------------------------------------------*/
 
-
-	keySet := new(cashec.KeySet)
-	//spendingKey := privacy.GenerateSpendingKey([]byte{0, 1, 23, 235})
-	spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	keySet.ImportFromPrivateKey(&spendingKey)
-
-	data := []byte{0}
-	signature, err := keySet.Sign(data)
-	if err != nil{
-		fmt.Println(err)
-	}
-	fmt.Println(hex.EncodeToString(signature))
-
-	//signature , _:= hex.DecodeString("5d9f5e9c350a877ddbbe227b40c19b00c040e715924740f2d92cc9dc02da5937ba433dbca431f2a0a447e21fd096d894f869a9e31b8217ee0cf9c33f8b032ade")
+	//fmt.Printf("Key set %+v\n", keySet.PaymentAddress.Pk[0])
 	//
-	res, err := keySet.Verify(data, signature)
-	if err != nil{
-		fmt.Println(err)
-	}
+	//// decompress pk, tk
+	//pkDecom, _ := privacy.DecompressKey(keySet.PaymentAddress.Pk)
+	//fmt.Printf("Pk decompress: %+v\n\n", pkDecom)
+	//
+	//tkDecom, _ := privacy.DecompressKey(keySet.PaymentAddress.Tk)
+	//fmt.Printf("Tk decompress: %+v\n\n", tkDecom)
 
-	fmt.Println(res)
+	/*----------------- TEST CM INDEX -----------------*/
+	//cmIndex := new(privacy.CMIndex)
+	//cmIndex.BlockHeight = big.NewInt(10)
+	//cmIndex.TxIndex = 10
+	//cmIndex.CmId = 10
+	//
+	//cmIndexBytes := cmIndex.Bytes()
+	//fmt.Printf("cm index bytes: %v\n", cmIndexBytes)
+	//fmt.Printf("len cm index: %v\n", len(cmIndexBytes))
+	//
+	//cmIndex2 := new(privacy.CMIndex)
+	//cmIndex2.SetBytes(cmIndexBytes)
+	//keySet := new(cashec.KeySet)
+	//spendingKey := privacy.GenerateSpendingKey([]byte{0, 1, 23, 235})
+	//keySet.ImportFromPrivateKey(&spendingKey)
+	//
+	//data := []byte{0}
+	//signature, err := keySet.Sign(data)
+	//if err != nil{
+	//	fmt.Println(err)
+	//}
+	//fmt.Println(hex.EncodeToString(signature))
+	//
+	////signature , _:= hex.DecodeString(“5d9f5e9c350a877ddbbe227b40c19b00c040e715924740f2d92cc9dc02da5937ba433dbca431f2a0a447e21fd096d894f869a9e31b8217ee0cf9c33f8b032ade”)
+	////
+	//res, err := keySet.Verify(data, signature)
+	//if err != nil{
+	//	fmt.Println(err)
+	//}
+	//
+	//fmt.Println(res)
+
 
 
 

@@ -63,7 +63,6 @@ func (pro *PKEqualityOfCommittedValProof) Bytes() []byte {
 	for i := 0; i < len(pro.T); i++ {
 		res = append(res, pro.T[i].Compress()...)
 	}
-
 	for i := 0; i < len(pro.Z); i++ {
 		temp := pro.Z[i].Bytes()
 		for j := 0; j < privacy.BigIntSize-len(temp); j++ {
@@ -71,7 +70,6 @@ func (pro *PKEqualityOfCommittedValProof) Bytes() []byte {
 		}
 		res = append(res, temp...)
 	}
-
 	return res
 }
 
@@ -158,12 +156,4 @@ func (pro *PKEqualityOfCommittedValProof) Verify() bool {
 }
 
 // TestPKEqualityOfCommittedVal ...
-func TestPKEqualityOfCommittedVal() bool {
 
-	witness := new(PKEqualityOfCommittedValWitness)
-	witness.randValue()
-	proof := new(PKEqualityOfCommittedValProof)
-	proof = witness.Prove()
-
-	return proof.Verify()
-}

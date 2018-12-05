@@ -107,11 +107,11 @@ func (tx *Tx) CreateTx(
 	}
 
 	// Check number of list of random commitments, list of random commitment indices
-	if len(commitments) != len(inputCoins)*privacy.CMRingSize || len(randCmIndices) != len(inputCoins)*privacy.CMRingSize {
-		return fmt.Errorf("Number of list commitments and list random commitment indices must be corresponding with number of input coins")
+	if len(commitmentIndexs) != len(inputCoins)*privacy.CMRingSize {
+		return fmt.Errorf("Number of list commitments indices must be corresponding with number of input coins")
 	}
 
-	if len(myCmPos) != len(inputCoins) {
+	if len(myCommitmentIndexs) != len(inputCoins) {
 		return fmt.Errorf("Number of list my commitment indices must be equal to number of input coins")
 	}
 
@@ -141,14 +141,15 @@ func (tx *Tx) CreateTx(
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
 
 	// create new output coins
-	outputCoins := make([]*privacy.OutputCoin, len(paymentInfo))
+	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, len(paymentInfo))
 
 	// create new output coins with info: Pk, value, SND
 	for i, pInfo := range paymentInfo {
-		outputCoins[i] = new(privacy.OutputCoin)
-		outputCoins[i].CoinDetails.Value = pInfo.Amount
-		outputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
-		outputCoins[i].CoinDetails.SNDerivator = privacy.RandInt()
+		tx.Proof.OutputCoins[i] = new(privacy.OutputCoin)
+		tx.Proof.OutputCoins[i].CoinDetails.Value = pInfo.Amount
+		tx.Proof.OutputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
+		// Todo: check whether SND existed in list SNDs or not
+		tx.Proof.OutputCoins[i].CoinDetails.SNDerivator = privacy.RandInt()
 	}
 
 	// if overBalance > 0, create a output coin with pk is pk's sender and value is overBalance
@@ -156,9 +157,10 @@ func (tx *Tx) CreateTx(
 		changeCoin := new(privacy.OutputCoin)
 		changeCoin.CoinDetails.Value = overBalance
 		changeCoin.CoinDetails.PublicKey, _ = privacy.DecompressKey(senderFullKey.PaymentAddress.Pk)
+		// Todo: check whether SND existed in list SNDs or not
 		changeCoin.CoinDetails.SNDerivator = privacy.RandInt()
 
-		outputCoins = append(outputCoins, changeCoin)
+		tx.Proof.OutputCoins = append(tx.Proof.OutputCoins, changeCoin)
 
 		changePaymentInfo := new(privacy.PaymentInfo)
 		changePaymentInfo.Amount = overBalance
@@ -181,23 +183,37 @@ func (tx *Tx) CreateTx(
 	tx.PubKeyLastByteReceivers = pkLastByteReceivers
 
 	// create zero knowledge proof of payment
+
+	// get list of commitments for proving one-out-of-many from commitmentIndexs
+	commitmentProving := make([]*privacy.EllipticPoint, len(commitmentIndexs))
+	for i, cmIndex := range commitmentIndexs {
+		commitmentProving[i] = new(privacy.EllipticPoint)
+		commitmentProving[i], _ = privacy.DecompressKey(commitments[cmIndex])
+	}
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitments, randCmIndices, myCmPos)
+	witness.Build(tx, hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, tx.Proof.OutputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs)
 	tx.Proof, _ = witness.Prove(false)
 
 	// set private key for signing tx
 	if hasPrivacy {
 		tx.sigPrivKey = make([]byte, 64)
 		tx.sigPrivKey = append(*senderSK, witness.ComInputOpeningsWitness[0].Openings[privacy.RAND].Bytes()...)
+
+		// encrypt coin details (Randomness)
+		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
+			tx.Proof.OutputCoins[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
+			tx.Proof.OutputCoins[i].CoinDetails.SerialNumber = nil
+			tx.Proof.OutputCoins[i].CoinDetails.Value = 0
+			tx.Proof.OutputCoins[i].CoinDetails.SNDerivator = nil
+			tx.Proof.OutputCoins[i].CoinDetails.PublicKey = nil
+			tx.Proof.OutputCoins[i].CoinDetails.Randomness = nil
+		}
 	} else {
 		tx.sigPrivKey = *senderSK
 	}
 
-	// encrypt coin details (Randomness)
-	for i := 0; i < len(outputCoins); i++ {
-		outputCoins[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
-	}
+
 
 	// sign tx
 	tx.Hash()
