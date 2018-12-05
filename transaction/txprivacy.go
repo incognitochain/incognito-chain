@@ -216,14 +216,24 @@ func (tx *Tx) CreateTx(
 		tx.sigPrivKey = append(*senderSK, witness.ComInputOpeningsWitness[0].Openings[privacy.RAND].Bytes()...)
 
 		// encrypt coin details (Randomness)
+		// hide information of output coins except coin commitments, last byte of public key, snDerivators
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			tx.Proof.OutputCoins[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
 			tx.Proof.OutputCoins[i].CoinDetails.SerialNumber = nil
 			tx.Proof.OutputCoins[i].CoinDetails.Value = 0
-			tx.Proof.OutputCoins[i].CoinDetails.SNDerivator = nil
 			tx.Proof.OutputCoins[i].CoinDetails.PublicKey = nil
 			tx.Proof.OutputCoins[i].CoinDetails.Randomness = nil
 		}
+
+		// hide information of input coins except serial number of input coins
+		for i := 0; i < len(tx.Proof.InputCoins); i++ {
+			tx.Proof.InputCoins[i].CoinDetails.CoinCommitment = nil
+			tx.Proof.InputCoins[i].CoinDetails.Value = 0
+			tx.Proof.InputCoins[i].CoinDetails.SNDerivator = nil
+			tx.Proof.InputCoins[i].CoinDetails.PublicKey = nil
+			tx.Proof.InputCoins[i].CoinDetails.Randomness = nil
+		}
+
 	} else {
 		tx.sigPrivKey = *senderSK
 	}
@@ -231,11 +241,7 @@ func (tx *Tx) CreateTx(
 	// sign tx
 	tx.Hash()
 	tx.SignTx(hasPrivacy)
-
-	if hasPrivacy {
-		//tx.Proof.InputCoins = nil
-		// TODO
-	}
+	
 	return nil
 }
 
