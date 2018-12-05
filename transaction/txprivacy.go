@@ -79,7 +79,7 @@ func randomCommitmentsProcess(commitments [][]byte, useableTx []*Tx, randNum int
 	return nil, nil
 }
 
-func getInputCoins(usableTx []*Tx) []*privacy.InputCoin{
+func getInputCoins(usableTx []*Tx) []*privacy.InputCoin {
 	var inputCoins []*privacy.InputCoin
 	inCoin := new(privacy.InputCoin)
 
@@ -109,7 +109,6 @@ func (tx *Tx) CreateTx(
 
 	inputCoins := getInputCoins(usableTx)
 	//Get input coins from usableTX
-
 
 	// Print list of all input coins
 	fmt.Printf("List of all input coins before building tx:\n")
@@ -415,7 +414,9 @@ func (tx *Tx) Hash() *common.Hash {
 	record += tx.Type
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
-	record += string(tx.Proof.Bytes()[:])
+	if tx.Proof != nil {
+		record += string(tx.Proof.Bytes()[:])
+	}
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -468,6 +469,6 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 // todo: thunderbird
 // CheckSND return true if snd exists in snDerivators list
 func CheckSNDExistence(snDerivators []big.Int, snd *big.Int) bool {
-	isExisted,_ := common.SliceBytesExists(snDerivators,snd)
-	return isExisted>=0
+	isExisted, _ := common.SliceBytesExists(snDerivators, snd)
+	return isExisted >= 0
 }

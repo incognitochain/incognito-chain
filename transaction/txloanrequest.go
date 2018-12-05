@@ -72,7 +72,7 @@ func NewLoanRequest(data map[string]interface{}) *LoanRequest {
 	TxNormal
 	*LoanRequest // data for a loan request
 }
-
+/*
 // CreateTxLoanRequest
 // senderKey and paymentInfo is for paying fee
 func CreateTxLoanRequest(

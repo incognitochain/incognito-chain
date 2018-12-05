@@ -91,7 +91,7 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 	// Record this tx for fee estimation if enabled. only apply for normal tx
 	if tx.GetType() == common.TxNormalType {
 		if tp.config.FeeEstimator != nil {
-			chainId, err := common.GetTxSenderChain(tx.(*transaction.TxNormal).AddressLastByte)
+			chainId, err := common.GetTxSenderChain(tx.(*transaction.Tx).Proof.PubKeyLastByteSender)
 			if err == nil {
 				tp.config.FeeEstimator[chainId].ObserveTransaction(txD)
 			} else {
@@ -593,31 +593,31 @@ func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
 			if ok == false {
 				return false
 			}
-			return txCustomToken.ValidateTransaction()
+			return txCustomToken.ValidateTransaction(txCustomToken.Tx.Proof.ComInputOpeningsProof != nil)
 		}
-	case common.TxVoteDCBBoard:
-		{
-			txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
-			txCustomToken := txVoteDCBBoard.TxCustomToken
-			ok := tp.GetListUTXOFromTxCustomToken(&txCustomToken)
-			if ok == false {
-				return false
-			}
-			return txCustomToken.ValidateTransaction() && txVoteDCBBoard.Validate()
-		}
-	case common.TxVoteGOVBoard:
-		{
-			txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
-			txCustomToken := txVoteGOVBoard.TxCustomToken
-			ok := tp.GetListUTXOFromTxCustomToken(&txCustomToken)
-			if ok == false {
-				return false
-			}
-			return txCustomToken.ValidateTransaction() && txVoteGOVBoard.Validate()
-		}
+		/*case common.TxVoteDCBBoard:
+		  {
+			  txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
+			  txCustomToken := txVoteDCBBoard.TxCustomToken
+			  ok := tp.GetListUTXOFromTxCustomToken(&txCustomToken)
+			  if ok == false {
+				  return false
+			  }
+			  return txCustomToken.ValidateTransaction() && txVoteDCBBoard.Validate()
+		  }
+	  case common.TxVoteGOVBoard:
+		  {
+			  txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
+			  txCustomToken := txVoteGOVBoard.TxCustomToken
+			  ok := tp.GetListUTXOFromTxCustomToken(&txCustomToken)
+			  if ok == false {
+				  return false
+			  }
+			  return txCustomToken.ValidateTransaction() && txVoteGOVBoard.Validate()
+		  }*/
 
 	default:
-		return tx.ValidateTransaction()
+		return tx.ValidateTransaction(false)
 	}
 	return false
 }
@@ -732,7 +732,7 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 		}
 	case common.TxNormalType:
 		{
-			normalTx := tx.(*transaction.TxNormal)
+			normalTx := tx.(*transaction.Tx)
 			err := tp.config.Policy.CheckTransactionFee(normalTx)
 			return normalTx.Fee, err
 		}

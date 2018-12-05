@@ -13,7 +13,6 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
@@ -149,13 +148,13 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	}
 	initBlock.Header.Height = 1
 
-	tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
+	/*tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
 	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
 		return NewBlockChainError(UpdateMerkleTreeForBlockError, err)
-	}
+	}*/
 
 	self.BestState[chainId] = &BestState{}
-	self.BestState[chainId].Init(initBlock, tree)
+	//self.BestState[chainId].Init(initBlock, tree)
 
 	err := self.ConnectBlock(initBlock)
 	if err != nil {
