@@ -205,7 +205,6 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		realFee,
 		commitmentsDb[chainIdSender],
 		snDerivatorsDb[chainIdSender],
-		chainIdSender,
 		true)
 	if err != nil {
 		Logger.log.Critical(err)

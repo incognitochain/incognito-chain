@@ -87,7 +87,6 @@ func (tx *Tx) CreateTx(
 	fee uint64,
 	commitmentsDB [][]byte,
 	snDerivators []big.Int,
-	chainIdSender byte,
 	hasPrivacy bool,
 ) (error) {
 
