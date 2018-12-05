@@ -76,6 +76,10 @@ func randomCommitmentsProcess(commitments [][]byte, useableTx map[byte][]*Tx, ra
 	}
 	for _, temp := range listCommitmentsInUsableTx {
 		key := string(temp)
+		index := mapIndexCommitmentsInUsableTx[key]
+		i := rand2.Int63n(int64(len(commitmentIndexs)))
+		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index}, commitmentIndexs[i:]...)...)
+		myCommitmentIndexs = append(myCommitmentIndexs, i)
 	}
 	return nil, nil
 }
