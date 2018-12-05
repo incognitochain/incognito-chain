@@ -91,19 +91,24 @@ func (self *KeySet) GetViewingKey() (privacy.ViewingKey, error) {
 	return self.ReadonlyKey, nil
 }
 
-func ValidateDataB58(pubkey string, sig string, data []byte) error {
-	decPubkey, _, err := base58.Base58Check{}.Decode(pubkey)
+func (self *KeySet) GetPublicKeyB58() string {
+	return base58.Base58Check{}.Encode(self.PaymentAddress.Pk, byte(0x00))
+}
+
+func ValidateDataB58(pbkB58 string, sigB58 string, data []byte) error {
+	decPubkey, _, err := base58.Base58Check{}.Decode(pbkB58)
 	if err != nil {
 		return errors.New("can't decode public key:" + err.Error())
 	}
 
 	validatorKp := KeySet{}
+	validatorKp.PaymentAddress.Pk = make([]byte, len(decPubkey))
 	copy(validatorKp.PaymentAddress.Pk[:], decPubkey)
-	decSig, _, err := base58.Base58Check{}.Decode(sig)
+
+	decSig, _, err := base58.Base58Check{}.Decode(sigB58)
 	if err != nil {
 		return errors.New("can't decode signature: " + err.Error())
 	}
-
 	isValid, err := validatorKp.Verify(data, decSig)
 	if err != nil {
 		return errors.New("error when verify data: " + err.Error())
@@ -112,4 +117,12 @@ func ValidateDataB58(pubkey string, sig string, data []byte) error {
 		return errors.New("Invalid signature")
 	}
 	return nil
+}
+
+func (self *KeySet) SignDataB58(data []byte) (string, error) {
+	signatureByte, err := self.Sign(data)
+	if err != nil {
+		return common.EmptyString, errors.New("Can't sign data. " + err.Error())
+	}
+	return base58.Base58Check{}.Encode(signatureByte, byte(0x00)), nil
 }

@@ -138,6 +138,8 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 		CandidateListMerkleHash: common.EmptyString,
 		ChainsHeight:            self.validatedChainsHeight.Heights,
 	}
+	newMsg.(*wire.MessageChainState).Timestamp = time.Unix(time.Now().Unix(), 0)
+
 	peerID, _ := peer2.IDB58Decode(msg.SenderID)
 	self.config.Server.PushMessageToPeer(newMsg, peerID)
 	return
