@@ -12,6 +12,7 @@ import (
 	"math"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
@@ -21,7 +22,7 @@ import (
 /*
 IsSalaryTx determines whether or not a transaction is a salary.
 */
-func (self *BlockChain) IsSalaryTx(tx transaction.Transaction) bool {
+func (self *BlockChain) IsSalaryTx(tx metadata.Transaction) bool {
 	// Check normal tx(not an action tx)
 	if tx.GetType() != common.TxSalaryType {
 		normalTx, ok := tx.(*transaction.Tx)
@@ -43,7 +44,7 @@ func (self *BlockChain) IsSalaryTx(tx transaction.Transaction) bool {
 }
 
 // ValidateDoubleSpend - check double spend for any transaction type
-func (self *BlockChain) ValidateDoubleSpend(tx transaction.Transaction, chainID byte) error {
+func (self *BlockChain) ValidateDoubleSpend(tx metadata.Transaction, chainID byte) error {
 	txHash := tx.Hash()
 	txViewPoint, err := self.FetchTxViewPoint(chainID)
 	if err != nil {
@@ -74,7 +75,7 @@ func (self *BlockChain) ValidateDoubleSpend(tx transaction.Transaction, chainID 
 	return nil
 }
 
-func (self *BlockChain) ValidateTxLoanRequest(tx transaction.Transaction, chainID byte) error {
+func (self *BlockChain) ValidateTxLoanRequest(tx metadata.Transaction, chainID byte) error {
 	txLoan, ok := tx.(*transaction.TxLoanRequest)
 	if !ok {
 		return fmt.Errorf("Fail parsing LoanRequest transaction")
@@ -104,7 +105,7 @@ func (self *BlockChain) ValidateTxLoanRequest(tx transaction.Transaction, chainI
 	return nil
 }
 
-func (self *BlockChain) ValidateTxLoanResponse(tx transaction.Transaction, chainID byte) error {
+func (self *BlockChain) ValidateTxLoanResponse(tx metadata.Transaction, chainID byte) error {
 	txResponse, ok := tx.(*transaction.TxLoanResponse)
 	if !ok {
 		return fmt.Errorf("Fail parsing LoanResponse transaction")
@@ -163,7 +164,7 @@ func (self *BlockChain) ValidateTxLoanResponse(tx transaction.Transaction, chain
 	return nil
 }
 
-func (self *BlockChain) ValidateTxLoanPayment(tx transaction.Transaction, chainID byte) error {
+func (self *BlockChain) ValidateTxLoanPayment(tx metadata.Transaction, chainID byte) error {
 	txPayment, ok := tx.(*transaction.TxLoanPayment)
 	if !ok {
 		return fmt.Errorf("Fail parsing LoanPayment transaction")
@@ -200,7 +201,7 @@ func (self *BlockChain) ValidateTxLoanPayment(tx transaction.Transaction, chainI
 	return nil
 }
 
-func (self *BlockChain) ValidateTxLoanWithdraw(tx transaction.Transaction, chainID byte) error {
+func (self *BlockChain) ValidateTxLoanWithdraw(tx metadata.Transaction, chainID byte) error {
 	txWithdraw, ok := tx.(*transaction.TxLoanWithdraw)
 	if !ok {
 		return fmt.Errorf("Fail parsing LoanResponse transaction")
@@ -295,7 +296,7 @@ func (self *BlockChain) GetAmountPerAccount(proposal *transaction.PayoutProposal
 	return totalTokenSupply, rewardHolders, amounts, nil
 }
 
-func (self *BlockChain) ValidateTxDividendPayout(tx transaction.Transaction, chainID byte) error {
+func (self *BlockChain) ValidateTxDividendPayout(tx metadata.Transaction, chainID byte) error {
 	txPayout, ok := tx.(*transaction.TxDividendPayout)
 	if !ok {
 		return fmt.Errorf("Fail parsing DividendPayout transaction")
@@ -437,7 +438,7 @@ func (bc *BlockChain) verifyByBoard(
 }
 
 // VerifyMultiSigByBoard: verify multisig if the tx is for board's spending
-func (bc *BlockChain) VerifyCustomTokenSigns(tx transaction.Transaction) bool {
+func (bc *BlockChain) VerifyCustomTokenSigns(tx metadata.Transaction) bool {
 	customToken, ok := tx.(*transaction.TxCustomToken)
 	if !ok {
 		return false
@@ -454,7 +455,7 @@ func (bc *BlockChain) VerifyCustomTokenSigns(tx transaction.Transaction) bool {
 	return bc.verifyByBoard(boardType, customToken)
 }
 
-func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, chainID byte) error {
+func (self *BlockChain) ValidateTxBuySellDCBRequest(tx metadata.Transaction, chainID byte) error {
 	// Check if crowdsale existed
 	requestTx, ok := tx.(*transaction.TxBuySellRequest)
 	if !ok {
@@ -494,7 +495,7 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 	return nil
 }
 
-func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction, chainID byte) error {
+func (self *BlockChain) ValidateTxBuySellDCBResponse(tx metadata.Transaction, chainID byte) error {
 	// Check if crowdsale existed
 	responseTx, ok := tx.(*transaction.TxBuySellDCBResponse)
 	if !ok {
@@ -519,27 +520,27 @@ func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction,
 }
 
 //validate voting transaction
-func (bc *BlockChain) ValidateTxSubmitDCBProposal(tx transaction.Transaction, chainID byte) error {
+func (bc *BlockChain) ValidateTxSubmitDCBProposal(tx metadata.Transaction, chainID byte) error {
 	return nil
 }
 
-func (bc *BlockChain) ValidateTxAcceptDCBProposal(tx transaction.Transaction, chainID byte) error {
+func (bc *BlockChain) ValidateTxAcceptDCBProposal(tx metadata.Transaction, chainID byte) error {
 	return nil
 }
 
-func (bc *BlockChain) ValidateTxVoteDCBProposal(tx transaction.Transaction, chainID byte) error {
+func (bc *BlockChain) ValidateTxVoteDCBProposal(tx metadata.Transaction, chainID byte) error {
 	return nil
 }
 
-func (bc *BlockChain) ValidateTxSubmitGOVProposal(tx transaction.Transaction, chainID byte) error {
+func (bc *BlockChain) ValidateTxSubmitGOVProposal(tx metadata.Transaction, chainID byte) error {
 	return nil
 }
 
-func (bc *BlockChain) ValidateTxAcceptGOVProposal(tx transaction.Transaction, chainID byte) error {
+func (bc *BlockChain) ValidateTxAcceptGOVProposal(tx metadata.Transaction, chainID byte) error {
 	return nil
 }
 
-func (bc *BlockChain) ValidateTxVoteGOVProposal(tx transaction.Transaction, chainID byte) error {
+func (bc *BlockChain) ValidateTxVoteGOVProposal(tx metadata.Transaction, chainID byte) error {
 	return nil
 }
 
@@ -566,7 +567,7 @@ func (self *BlockChain) ValidateDoubleSpendCustomToken(tx *transaction.TxCustomT
 	return nil
 }
 
-func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCustomToken, txInBlock transaction.Transaction) error {
+func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCustomToken, txInBlock metadata.Transaction) error {
 	temp := txInBlock.(*transaction.TxCustomToken)
 	for _, vin := range temp.TxTokenData.Vins {
 		for _, item := range tx.TxTokenData.Vins {
@@ -581,7 +582,7 @@ func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCus
 }
 
 func (self *BlockChain) ValidateBuyFromGOVRequestTx(
-	tx transaction.Transaction,
+	tx metadata.Transaction,
 	chainID byte,
 ) error {
 	buySellReqTx, ok := tx.(*transaction.TxBuySellRequest)
@@ -610,7 +611,7 @@ func (self *BlockChain) ValidateBuyFromGOVRequestTx(
 }
 
 func (self *BlockChain) ValidateBuyBackRequestTx(
-	tx transaction.Transaction,
+	tx metadata.Transaction,
 	chainID byte,
 ) error {
 	buyBackReqTx, ok := tx.(*transaction.TxBuyBackRequest)

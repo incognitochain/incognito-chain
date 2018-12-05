@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
@@ -21,10 +22,10 @@ type BlkTmplGenerator struct {
 
 type ConstitutionHelper interface {
 	GetStartedBlockHeight(generator *BlkTmplGenerator, chainID byte) int32
-	CheckSubmitProposalType(tx transaction.Transaction) bool
-	CheckVotingProposalType(tx transaction.Transaction) bool
-	GetAmountVoteToken(tx transaction.Transaction) uint32
-	TxAcceptProposal(originTx transaction.Transaction) transaction.Transaction
+	CheckSubmitProposalType(tx metadata.Transaction) bool
+	CheckVotingProposalType(tx metadata.Transaction) bool
+	GetAmountVoteToken(tx metadata.Transaction) uint32
+	TxAcceptProposal(originTx metadata.Transaction) metadata.Transaction
 }
 
 // txPool represents a source of transactions to consider for inclusion in
@@ -39,20 +40,20 @@ type TxPool interface {
 
 	// MiningDescs returns a slice of mining descriptors for all the
 	// transactions in the source pool.
-	MiningDescs() []*transaction.TxDesc
+	MiningDescs() []*metadata.TxDesc
 
 	// HaveTransaction returns whether or not the passed transaction hash
 	// exists in the source pool.
 	HaveTransaction(hash *common.Hash) bool
 
 	// RemoveTx remove tx from tx resource
-	RemoveTx(tx transaction.Transaction) error
+	RemoveTx(tx metadata.Transaction) error
 
 	//CheckTransactionFee
-	CheckTransactionFee(tx transaction.Transaction) (uint64, error)
+	CheckTransactionFee(tx metadata.Transaction) (uint64, error)
 
 	// Check tx validate by it self
-	ValidateTxByItSelf(tx transaction.Transaction) bool
+	ValidateTxByItSelf(tx metadata.Transaction) bool
 }
 
 type RewardAgent interface {
@@ -75,9 +76,9 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 	prevCmTree := blockgen.chain.BestState[chainID].CmTree.MakeCopy()
 	sourceTxns := blockgen.txPool.MiningDescs()
 
-	var txsToAdd []transaction.Transaction
-	var txToRemove []transaction.Transaction
-	var buySellReqTxs []transaction.Transaction
+	var txsToAdd []metadata.Transaction
+	var txToRemove []metadata.Transaction
+	var buySellReqTxs []metadata.Transaction
 	var txTokenVouts map[*common.Hash]*transaction.TxTokenVout
 	bondsSold := uint64(0)
 	incomeFromBonds := uint64(0)
@@ -134,7 +135,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 		// ValidateTransaction vote and propose transaction
 
 		if !blockgen.txPool.ValidateTxByItSelf(tx) {
-			txToRemove = append(txToRemove, transaction.Transaction(tx))
+			txToRemove = append(txToRemove, metadata.Transaction(tx))
 			continue
 		}
 
@@ -242,7 +243,7 @@ concludeBlock:
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd + incomeFromBonds - (totalSalary + buyBackCoins)
 	refundTxs, totalRefundAmt := blockgen.buildRefundTxs(chainID, remainingFund)
 
-	coinbases := []transaction.Transaction{salaryTx}
+	coinbases := []metadata.Transaction{salaryTx}
 	for _, resTx := range buySellResTxs {
 		coinbases = append(coinbases, resTx)
 	}
@@ -268,7 +269,7 @@ concludeBlock:
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 
 	block := Block{
-		Transactions: make([]transaction.Transaction, 0),
+		Transactions: make([]metadata.Transaction, 0),
 	}
 	block.Header = BlockHeader{
 		Height:                prevBlock.Header.Height + 1,
@@ -349,12 +350,12 @@ func (blockgen *BlkTmplGenerator) neededNewGovConstitution(chainID byte) bool {
 func (blockgen *BlkTmplGenerator) createRequestConstitutionTxDecs(
 	chainID byte,
 	ConstitutionHelper ConstitutionHelper,
-) (*transaction.TxDesc, error) {
+) (*metadata.TxDesc, error) {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 
 	// count vote from lastConstitution.StartedBlockHeight to Bestblock height
 	CountVote := make(map[common.Hash]int64)
-	Transaction := make(map[common.Hash]*transaction.Transaction)
+	Transaction := make(map[common.Hash]*metadata.Transaction)
 	for blockHeight := ConstitutionHelper.GetStartedBlockHeight(blockgen, chainID); blockHeight < BestBlock.Header.Height; blockHeight += 1 {
 		//retrieve block from block's height
 		hashBlock, err := blockgen.chain.config.DataBase.GetBlockByIndex(blockHeight, chainID)
@@ -402,7 +403,7 @@ func (blockgen *BlkTmplGenerator) createRequestConstitutionTxDecs(
 
 	acceptedSubmitProposalTransaction := ConstitutionHelper.TxAcceptProposal(*Transaction[res])
 
-	AcceptedTransactionDesc := transaction.TxDesc{
+	AcceptedTransactionDesc := metadata.TxDesc{
 		Tx:     acceptedSubmitProposalTransaction,
 		Added:  time.Now(),
 		Height: BestBlock.Header.Height,
@@ -497,7 +498,7 @@ func buildSingleBuySellResponseTx(
 
 func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 	chainID byte,
-	tx transaction.Transaction,
+	tx metadata.Transaction,
 	bondsSold uint64,
 ) (uint64, uint64, bool) {
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
@@ -520,7 +521,7 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 // the tx is to distribute tokens (bond, gov, ...) to token requesters
 func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 	coinbaseTxType string,
-	buySellReqTxs []transaction.Transaction,
+	buySellReqTxs []metadata.Transaction,
 	sellingBondsParam *SellingBonds,
 ) []*transaction.TxCustomToken {
 	if len(buySellReqTxs) == 0 {
@@ -554,7 +555,7 @@ func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 
 func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
 	chainID byte,
-	tx transaction.Transaction,
+	tx metadata.Transaction,
 	buyBackConsts uint64,
 ) (*transaction.TxTokenVout, *common.Hash, bool) {
 	txBuyBackReq, ok := tx.(*transaction.TxBuyBackRequest)
@@ -697,8 +698,8 @@ func (blockgen *BlkTmplGenerator) buildRefundTxs(
 	return refundTxs, totalRefundAmt
 }
 
-func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*transaction.TxDesc, rt []byte, chainID byte) ([]*transaction.TxBuySellDCBResponse, []transaction.Transaction, error) {
-	txsToRemove := []transaction.Transaction{}
+func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc, rt []byte, chainID byte) ([]*transaction.TxBuySellDCBResponse, []metadata.Transaction, error) {
+	txsToRemove := []metadata.Transaction{}
 	txsResponse := []*transaction.TxBuySellDCBResponse{}
 	// Get unspent bond tx to spend if needed
 	accountDCB, _ := wallet.Base58CheckDeserialize(DCBAddress)

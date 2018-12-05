@@ -11,6 +11,7 @@ import (
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/privacy-protocol/proto/zksnark"
@@ -40,7 +41,7 @@ type Tx struct {
 	// for example, BuySellRequestTx/BuySellResponseTx
 	RequestedTxID *common.Hash
 
-	Metadata Metadata
+	Metadata metadata.Metadata
 }
 
 func (tx *Tx) SetTxID(txId *common.Hash) {
@@ -99,7 +100,7 @@ func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.
 	return nil
 }
 
-func (tx *Tx) ValidateTxWithCurrentMempool(mr MempoolRetriever) error {
+func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	if tx.Type == common.TxSalaryType {
 		return errors.New("Can not receive a salary tx from other node, this is a violation")
 	}
@@ -108,7 +109,7 @@ func (tx *Tx) ValidateTxWithCurrentMempool(mr MempoolRetriever) error {
 }
 
 // ValidateDoubleSpend - check double spend for any transaction type
-func (tx *Tx) validateDoubleSpendWithBlockchain(bcr BlockchainRetriever, chainID byte) error {
+func (tx *Tx) validateDoubleSpendWithBlockchain(bcr metadata.BlockchainRetriever, chainID byte) error {
 	txHash := tx.Hash()
 	nullifierDb, err := bcr.GetNulltifiersList(chainID)
 	if err != nil {
@@ -129,7 +130,7 @@ func (tx *Tx) validateDoubleSpendWithBlockchain(bcr BlockchainRetriever, chainID
 	return nil
 }
 
-func (tx *Tx) ValidateTxWithBlockChain(bcr BlockchainRetriever, chainID byte) error {
+func (tx *Tx) ValidateTxWithBlockChain(bcr metadata.BlockchainRetriever, chainID byte) error {
 	if tx.GetType() == common.TxSalaryType {
 		return nil
 	}

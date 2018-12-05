@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
@@ -19,7 +20,7 @@ block contains many types of transaction
 */
 type Block struct {
 	Header           BlockHeader
-	Transactions     []transaction.Transaction
+	Transactions     []metadata.Transaction
 	BlockProducer    string // in base58check.encode
 	BlockProducerSig string
 
@@ -168,7 +169,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 AddTransaction adds a new transaction into block
 */
 // #1 - tx
-func (self *Block) AddTransaction(tx transaction.Transaction) error {
+func (self *Block) AddTransaction(tx metadata.Transaction) error {
 	if self.Transactions == nil {
 		return NewBlockChainError(UnExpectedError, errors.New("Not init tx arrays"))
 	}
@@ -215,7 +216,7 @@ func (self Block) Hash() *common.Hash {
 	return self.blockHash
 }
 
-func (block *Block) updateDCBConstitution(tx transaction.Transaction, blockgen *BlkTmplGenerator) error {
+func (block *Block) updateDCBConstitution(tx metadata.Transaction, blockgen *BlkTmplGenerator) error {
 	txAcceptDCBProposal := tx.(transaction.TxAcceptDCBProposal)
 	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(txAcceptDCBProposal.DCBProposalTXID)
 	DCBProposal := getTx.(*transaction.TxSubmitDCBProposal)
@@ -232,7 +233,7 @@ func (block *Block) updateDCBConstitution(tx transaction.Transaction, blockgen *
 	return nil
 }
 
-func (block *Block) updateGOVConstitution(tx transaction.Transaction, blockgen *BlkTmplGenerator) error {
+func (block *Block) updateGOVConstitution(tx metadata.Transaction, blockgen *BlkTmplGenerator) error {
 	txAcceptGOVProposal := tx.(transaction.TxAcceptGOVProposal)
 	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(txAcceptGOVProposal.GOVProposalTXID)
 	GOVProposal := getTx.(*transaction.TxSubmitGOVProposal)

@@ -13,6 +13,7 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
@@ -105,12 +106,12 @@ func (self *BlockChain) GetNulltifiersList(chainId byte) ([][]byte, error) {
 }
 
 // GetCustomTokenTxsHash - return list of tx which relate to custom token
-func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]transaction.Transaction, error) {
+func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]metadata.Transaction, error) {
 	txHashesInByte, err := self.config.DataBase.CustomTokenTxs(tokenID)
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[common.Hash]transaction.Transaction)
+	result := make(map[common.Hash]metadata.Transaction)
 	for _, temp := range txHashesInByte {
 		_, _, _, tx, err := self.GetTransactionByHash(temp)
 		if err != nil {
@@ -767,7 +768,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 	return results, nil
 }
 
-func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, nullifiersInDb [][]byte, keys *cashec.KeySet) transaction.Tx {
+func (self *BlockChain) DecryptTxByKey(txInBlock metadata.Transaction, nullifiersInDb [][]byte, keys *cashec.KeySet) transaction.Tx {
 	tx := txInBlock.(*transaction.Tx)
 	copyTx := transaction.Tx{
 		Version:         tx.Version,
@@ -1059,7 +1060,7 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 	return voutList, nil
 }
 
-func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (byte, *common.Hash, int, transaction.Transaction, error) {
+func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
 	const (
 		bigNumber   = 999999999
 		bigNumberTx = 999999999
@@ -1111,7 +1112,7 @@ func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (by
 }
 
 // GetTransactionByHash - retrieve tx from txId(txHash)
-func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, transaction.Transaction, error) {
+func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
 	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
 		// check lightweight

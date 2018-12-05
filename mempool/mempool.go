@@ -12,6 +12,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
@@ -38,7 +39,7 @@ type Config struct {
 // TxDesc is transaction description in mempool
 type TxDesc struct {
 	// transaction details
-	Desc transaction.TxDesc
+	Desc metadata.TxDesc
 
 	StartingPriority int
 }
@@ -68,8 +69,8 @@ func (tp *TxPool) GetPoolNullifiers() map[common.Hash][][]byte {
 	return tp.poolNullifiers
 }
 
-func (tp *TxPool) GetTxsInMem() map[common.Hash]transaction.TxDesc {
-	txsInMem := make(map[common.Hash]transaction.TxDesc)
+func (tp *TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
+	txsInMem := make(map[common.Hash]metadata.TxDesc)
 	for hash, txDesc := range tp.pool {
 		txsInMem[hash] = txDesc.Desc
 	}
@@ -89,9 +90,9 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 /*
 // add transaction into pool
 */
-func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *TxDesc {
+func (tp *TxPool) addTx(tx metadata.Transaction, height int32, fee uint64) *TxDesc {
 	txD := &TxDesc{
-		Desc: transaction.TxDesc{
+		Desc: metadata.TxDesc{
 			Tx:     tx,
 			Added:  time.Now(),
 			Height: height,
@@ -126,7 +127,7 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 //
 // This function MUST be called with the mempool lock held (for writes).
 */
-func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
+func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	txHash := tx.Hash()
 
 	// that make sure transaction is accepted when passed any rules
@@ -183,7 +184,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 	}
 
 	// A standalone transaction must not be a salary transaction.
-	if tp.config.BlockChain.IsSalaryTx(tx) {
+	// if tp.config.BlockChain.IsSalaryTx(tx) {
+	if tx.IsSalaryTx() {
 		err := MempoolTxError{}
 		err.Init(RejectSalaryTx, errors.New(fmt.Sprintf("%+v is salary tx", txHash.String())))
 		return nil, nil, err
@@ -209,7 +211,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 }
 
 // remove transaction for pool
-func (tp *TxPool) removeTx(tx *transaction.Transaction) error {
+func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 	Logger.log.Infof((*tx).Hash().String())
 	if _, exists := tp.pool[*(*tx).Hash()]; exists {
 		delete(tp.pool, *(*tx).Hash())
@@ -420,7 +422,7 @@ func (tp *TxPool) validateSanityVoteGOVBoardTx(voteGOVBoard *transaction.TxVoteG
 // be added to the orphan pool.
 //
 // This function is safe for concurrent access.
-func (tp *TxPool) MaybeAcceptTransaction(tx transaction.Transaction) (*common.Hash, *TxDesc, error) {
+func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
 	hash, txDesc, err := tp.maybeAcceptTransaction(tx)
 	tp.mtx.Unlock()
@@ -442,7 +444,7 @@ func (tp *TxPool) ValidateDoubleSpendTxWithCurrentMempool(txNormal transaction.T
 }
 
 // ValidateTxWithCurrentMempool - check new tx with all txs in mempool
-func (tp *TxPool) ValidateTxWithCurrentMempool(tx transaction.Transaction) error {
+func (tp *TxPool) ValidateTxWithCurrentMempool(tx metadata.Transaction) error {
 	switch tx.GetType() {
 	case common.TxNormalType:
 		{
@@ -520,7 +522,7 @@ func (tp *TxPool) ValidateTxWithCurrentMempool(tx transaction.Transaction) error
 	return errors.New("No check tx")
 }
 
-func (tp *TxPool) validateTxCustomTokenInPool(tx transaction.Transaction) error {
+func (tp *TxPool) validateTxCustomTokenInPool(tx metadata.Transaction) error {
 	txCustomToken := tx.(*transaction.TxCustomToken)
 	txNormal := txCustomToken.Tx
 	err := tp.ValidateDoubleSpendTxWithCurrentMempool(txNormal)
@@ -537,7 +539,7 @@ func (tp *TxPool) validateTxCustomTokenInPool(tx transaction.Transaction) error 
 	return nil
 }
 
-func (tp *TxPool) ValidateTxCustomTokenBlockChain(tx transaction.Transaction, chainID byte) error {
+func (tp *TxPool) ValidateTxCustomTokenBlockChain(tx metadata.Transaction, chainID byte) error {
 	blockChain := tp.config.BlockChain
 	if !blockChain.VerifyCustomTokenSigns(tx) {
 		return errors.New("Custom token signs validation is not passed.")
@@ -558,7 +560,7 @@ func (tp *TxPool) ValidateTxCustomTokenBlockChain(tx transaction.Transaction, ch
 
 // ValidateTxWithBlockChain - process validation of tx with old data in blockchain
 // - check double spend
-func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID byte) error {
+func (tp *TxPool) ValidateTxWithBlockChain(tx metadata.Transaction, chainID byte) error {
 	blockChain := tp.config.BlockChain
 	switch tx.GetType() {
 	case common.TxNormalType:
@@ -684,7 +686,7 @@ func (tp *TxPool) GetListUTXOFromTxCustomToken(txCustomToken *transaction.TxCust
 
 // ValidateTxByItSelf - Each of Tx instance should be validated by it self
 
-func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
+func (tp *TxPool) ValidateTxByItSelf(tx metadata.Transaction) bool {
 	switch tx.GetType() {
 	case common.TxCustomTokenType:
 		{
@@ -724,7 +726,7 @@ func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
 }
 
 // RemoveTx safe remove transaction for pool
-func (tp *TxPool) RemoveTx(tx transaction.Transaction) error {
+func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
 	tp.mtx.Lock()
 	err := tp.removeTx(&tx)
 	tp.mtx.Unlock()
@@ -732,7 +734,7 @@ func (tp *TxPool) RemoveTx(tx transaction.Transaction) error {
 }
 
 // GetTx get transaction info by hash
-func (tp *TxPool) GetTx(txHash *common.Hash) (transaction.Transaction, error) {
+func (tp *TxPool) GetTx(txHash *common.Hash) (metadata.Transaction, error) {
 	tp.mtx.Lock()
 	Logger.log.Info(txHash.String())
 	txDesc, exists := tp.pool[*txHash]
@@ -746,8 +748,8 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (transaction.Transaction, error) {
 
 // // MiningDescs returns a slice of mining descriptors for all the transactions
 // // in the pool.
-func (tp *TxPool) MiningDescs() []*transaction.TxDesc {
-	descs := []*transaction.TxDesc{}
+func (tp *TxPool) MiningDescs() []*metadata.TxDesc {
+	descs := []*metadata.TxDesc{}
 	tp.mtx.Lock()
 	for _, desc := range tp.pool {
 		descs = append(descs, &desc.Desc)
@@ -815,7 +817,7 @@ func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
 /*
 CheckTransactionFee - check fee of tx
 */
-func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error) {
+func (tp *TxPool) CheckTransactionFee(tx metadata.Transaction) (uint64, error) {
 	// Salary transactions have no inputs.
 	if tp.config.BlockChain.IsSalaryTx(tx) {
 		return 0, nil
@@ -858,7 +860,7 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 /*
 ValidateSanityData - validate sansity data of tx
 */
-func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
+func (tp *TxPool) ValidateSanityData(tx metadata.Transaction) (bool, error) {
 	switch tx.GetType() {
 	case common.TxNormalType, common.TxSalaryType:
 		{

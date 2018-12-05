@@ -3,23 +3,25 @@ package blockchain
 import (
 	"time"
 
+	"log"
+
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"log"
 )
 
 type GenesisBlockGenerator struct {
 }
 
-func (self GenesisBlockGenerator) CalcMerkleRoot(txns []transaction.Transaction) common.Hash {
+func (self GenesisBlockGenerator) CalcMerkleRoot(txns []metadata.Transaction) common.Hash {
 	if len(txns) == 0 {
 		return common.Hash{}
 	}
 
-	utilTxns := make([]transaction.Transaction, 0, len(txns))
+	utilTxns := make([]metadata.Transaction, 0, len(txns))
 	for _, tx := range txns {
 		utilTxns = append(utilTxns, tx)
 	}
@@ -290,7 +292,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	loc, _ := time.LoadLocation("America/New_York")
 	time := time.Date(2018, 8, 1, 0, 0, 0, 0, loc)
 	genesisBlock := Block{
-		Transactions: []transaction.Transaction{},
+		Transactions: []metadata.Transaction{},
 	}
 	genesisBlock.Header = BlockHeader{}
 
