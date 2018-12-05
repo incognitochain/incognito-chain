@@ -235,25 +235,25 @@ func (self *ConnManager) listenHandler(listen *peer.Peer) {
 }
 
 func (self *ConnManager) handleConnected(peerConn *peer.PeerConn) {
-	Logger.log.Infof("handleConnected %s", peerConn.RemotePeerID.String())
+	Logger.log.Infof("handleConnected %s", peerConn.RemotePeerID.Pretty())
 	if peerConn.IsOutbound {
-		Logger.log.Infof("handleConnected OUTBOUND %s", peerConn.RemotePeerID.String())
+		Logger.log.Infof("handleConnected OUTBOUND %s", peerConn.RemotePeerID.Pretty())
 
 		if self.Config.OnOutboundConnection != nil {
 			self.Config.OnOutboundConnection(peerConn)
 		}
 
 	} else {
-		Logger.log.Infof("handleConnected INBOUND %s", peerConn.RemotePeerID.String())
+		Logger.log.Infof("handleConnected INBOUND %s", peerConn.RemotePeerID.Pretty())
 	}
 }
 
 func (p *ConnManager) handleDisconnected(peerConn *peer.PeerConn) {
-	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.String())
+	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.Pretty())
 }
 
 func (self *ConnManager) handleFailed(peerConn *peer.PeerConn) {
-	Logger.log.Infof("handleFailed %s", peerConn.RemotePeerID.String())
+	Logger.log.Infof("handleFailed %s", peerConn.RemotePeerID.Pretty())
 }
 
 /*func (self *ConnManager) SeedFromDNS(hosts []string, seedFn func(addrs []string)) {
@@ -387,8 +387,10 @@ listen:
 
 					goto listen
 				}
+				// make connection same shards
+				// make connection other shards
 				for _, rawPeer := range response {
-					if rawPeer.PublicKey != EmptyString && !strings.Contains(rawPeer.RawAddress, listener.PeerID.String()) {
+					if rawPeer.PublicKey != EmptyString && !strings.Contains(rawPeer.RawAddress, listener.PeerID.Pretty()) {
 						_, exist := self.discoveredPeers[rawPeer.PublicKey]
 						//Logger.log.Info("Discovered peer", rawPeer.PaymentAddress, rawPeer.RemoteRawAddress, exist)
 						if !exist {

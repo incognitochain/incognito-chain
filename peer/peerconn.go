@@ -55,7 +55,7 @@ Handle all in message
 func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	self.IsConnected = true
 	for {
-		Logger.log.Infof("PEER %s (address: %s) Reading stream", self.RemotePeer.PeerID.String(), self.RemotePeer.RawAddress)
+		Logger.log.Infof("PEER %s (address: %s) Reading stream", self.RemotePeer.PeerID.Pretty(), self.RemotePeer.RawAddress)
 		str, err := rw.ReadString(DelimMessageByte)
 		if err != nil {
 			self.IsConnected = false
@@ -220,7 +220,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				message += DelimMessageStr
 
 				// send on p2p stream
-				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.RemotePeer.PeerID.String())
+				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.RemotePeer.PeerID.Pretty())
 				_, err = rw.Writer.WriteString(message)
 				if err != nil {
 					Logger.log.Critical("DM ERROR", err)

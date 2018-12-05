@@ -324,7 +324,7 @@ func (self *Server) InboundPeerConnected(peerConn *peer.PeerConn) {
 // manager of the attempt.
 */
 func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
-	Logger.log.Info("Outbound PEER connected with PEER Id - " + peerConn.RemotePeerID.String())
+	Logger.log.Info("Outbound PEER connected with PEER Id - " + peerConn.RemotePeerID.Pretty())
 	err := self.PushVersionMessage(peerConn)
 	if err != nil {
 		Logger.log.Error(err)
@@ -836,11 +836,11 @@ func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
 	Logger.log.Infof("Push msg to peer %s", peerId.String())
 	var dc chan<- struct{}
 	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
-		peerConn := self.connManager.Config.ListenerPeers[index].GetPeerConnByPeerID(peerId.String())
+		peerConn := self.connManager.Config.ListenerPeers[index].GetPeerConnByPeerID(peerId.Pretty())
 		if peerConn != nil {
 			msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
 			peerConn.QueueMessageWithEncoding(msg, dc)
-			Logger.log.Infof("Pushed peer %s", peerId.String())
+			Logger.log.Infof("Pushed peer %s", peerId.Pretty())
 			return nil
 		} else {
 			Logger.log.Error("RemotePeer not exist!")
