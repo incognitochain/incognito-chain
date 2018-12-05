@@ -60,24 +60,18 @@ func (self *RpcServer) Start() {
 }
 
 func (self *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 string, signDataB58 string) {
-	if signDataB58 != "" {
+	if signDataB58 != "" && publicKeyB58 != "" && rawAddress != "" {
 		err := cashec.ValidateDataB58(publicKeyB58, signDataB58, []byte{0x00})
 		if err == nil {
-			self.Peers[publicKeyB58] = &Peer{ID: self.CombineID(rawAddress, publicKeyB58),
+			self.Peers[publicKeyB58] = &Peer{
+				ID:         self.CombineID(rawAddress, publicKeyB58),
 				RawAddress: rawAddress,
-				PublicKey: publicKeyB58,
-				FirstPing: time.Now().Local(),
-				LastPing: time.Now().Local(),
+				PublicKey:  publicKeyB58,
+				FirstPing:  time.Now().Local(),
+				LastPing:   time.Now().Local(),
 			}
 		} else {
-			log.Println("AddOrUpdatePeer error:", err)
-			// for testing
-			self.Peers[publicKeyB58] = &Peer{ID: self.CombineID(rawAddress, publicKeyB58),
-				RawAddress: rawAddress,
-				PublicKey: publicKeyB58,
-				FirstPing: time.Now().Local(),
-				LastPing: time.Now().Local(),
-			}
+			log.Println("AddOrUpdatePeer error", err)
 		}
 	}
 }

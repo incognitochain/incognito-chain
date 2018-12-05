@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/libp2p/go-libp2p-peer"
+	"time"
 )
 
 const (
@@ -11,6 +12,7 @@ const (
 )
 
 type MessageChainState struct {
+	Timestamp time.Time
 	ChainInfo interface{}
 	SenderID  string
 }

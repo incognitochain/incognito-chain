@@ -26,8 +26,12 @@ import (
 // ConnState represents the state of the requested connection.
 type ConnState uint8
 
+var HEAVY_MESSAGE_SIZE = 512 * 1024
+var MESSAGE_HASH_POOL_SIZE = 1000
+
 // RemotePeer is present for libp2p node data
 type Peer struct {
+	messagePool       map[string]bool
 	peerConnMutex     sync.Mutex
 	pendingPeersMutex sync.Mutex
 
@@ -48,6 +52,7 @@ type Peer struct {
 
 	Seed   int64
 	Config Config
+	Shard  byte
 
 	PeerConns    map[string]*PeerConn
 	PendingPeers map[string]*Peer
@@ -120,6 +125,21 @@ type outMsg struct {
 	message  wire.Message
 	doneChan chan<- struct{}
 	//encoding wire.MessageEncoding
+}
+
+func (self *Peer) ReceivedHashMessage(hash string) {
+	if self.messagePool == nil {
+		self.messagePool = make(map[string]bool)
+	}
+	self.messagePool[hash] = true
+}
+
+func (self *Peer) CheckHashMessage(hash string) (bool) {
+	if self.messagePool == nil {
+		self.messagePool = make(map[string]bool)
+	}
+	ok, _ := self.messagePool[hash]
+	return ok
 }
 
 /*
@@ -320,6 +340,39 @@ func (self *Peer) NumOutbound() int {
 	return ret
 }
 
+func (self *Peer) GetPeerConnByPeerID(peerID string) (*PeerConn) {
+	peerConn, ok := self.PeerConns[peerID]
+	if ok {
+		return peerConn
+	}
+	return nil
+}
+
+func (self *Peer) GetPeerConnByPbk(pbk string) (*PeerConn) {
+	for _, peerConn := range self.PeerConns {
+		if peerConn.RemotePeer.PublicKey == pbk {
+			return peerConn
+		}
+	}
+	return nil
+}
+
+func (self *Peer) GetListPeerConnByShard(shard byte) ([]*PeerConn) {
+	peerConns := make([]*PeerConn, 0)
+	for _, peerConn := range self.PeerConns {
+		if peerConn.RemotePeer.Shard == shard {
+			peerConns = append(peerConns, peerConn)
+		}
+	}
+	return peerConns
+}
+
+func (self *Peer) UpdateShardForPeerConn() {
+	for _, peerConn := range self.PeerConns {
+		_ = peerConn
+	}
+}
+
 func (self *Peer) SetPeerConn(peerConn *PeerConn) {
 	internalConnPeer, ok := self.PeerConns[peerConn.RemotePeer.PeerID.String()]
 	if ok && internalConnPeer != peerConn {
@@ -404,6 +457,7 @@ func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error
 		cClose:             make(chan struct{}),
 		cRead:              make(chan struct{}),
 		cWrite:             make(chan struct{}),
+		cMsgHash:           make(map[string]chan bool),
 		sendMessageQueue:   make(chan outMsg),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,
@@ -486,6 +540,7 @@ func (self *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 		cClose:             make(chan struct{}),
 		cRead:              make(chan struct{}),
 		cWrite:             make(chan struct{}),
+		cMsgHash:           make(map[string]chan bool),
 		sendMessageQueue:   make(chan outMsg),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,

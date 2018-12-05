@@ -41,6 +41,7 @@ type ConnManager struct {
 }
 
 type Config struct {
+	ExternalAddress string
 	// ListenerPeers defines a slice of listeners for which the connection
 	// manager will take ownership of and accept connections.  When a
 	// connection is accepted, the OnAccept handler will be invoked with the
@@ -321,16 +322,33 @@ listen:
 				signDataB58 := ""
 				if listener.Config.ProducerKeySet != nil {
 					pbkB58 = listener.Config.ProducerKeySet.GetPublicKeyB58()
+					Logger.log.Info("Start Discover Peers", pbkB58)
 					// sign data
 					signDataB58, err = listener.Config.ProducerKeySet.SignDataB58([]byte{byte(0x00)})
 					if err != nil {
 						Logger.log.Error(err)
 					}
+					//sig, err := listener.Config.ProducerKeySet.Sign([]byte{byte(0x00)})
+					//if err != nil {
+					//	Logger.log.Error(err)
+					//}
+					//ok, err := listener.Config.ProducerKeySet.Verify([]byte{byte(0x00)}, sig)
+					//if err != nil {
+					//	Logger.log.Error(err)
+					//}
+					//if ok {
+					//	Logger.log.Info("Verify OK")
+					//} else {
+					//	Logger.log.Info("Verify Not OK")
+					//}
 				}
 				// remove later
 				rawAddress := listener.RawAddress
 
-				externalAddress := os.Getenv("EXTERNAL_ADDRESS")
+				externalAddress := self.Config.ExternalAddress
+				if externalAddress == EmptyString {
+					externalAddress = os.Getenv("EXTERNAL_ADDRESS")
+				}
 				if externalAddress != EmptyString {
 					host, _, err := net.SplitHostPort(externalAddress)
 					if err == nil && host != EmptyString {
