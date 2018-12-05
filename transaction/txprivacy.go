@@ -84,6 +84,19 @@ func randomCommitmentsProcess(commitments [][]byte, useableTx map[byte][]*Tx, ra
 	return nil, nil
 }
 
+func getInputCoins(usableTx []*Tx) []*privacy.InputCoin{
+	var inputCoins []*privacy.InputCoin
+	inCoin := new(privacy.InputCoin)
+
+	for _, tx := range usableTx {
+		for _, coin := range tx.Proof.OutputCoins {
+			inCoin.CoinDetails = coin.CoinDetails
+			inputCoins = append(inputCoins, inCoin)
+		}
+	}
+	return inputCoins
+}
+
 func (tx *Tx) CreateTx(
 	senderSK *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
@@ -99,7 +112,9 @@ func (tx *Tx) CreateTx(
 
 	commitmentIndexs, myCommitmentIndexs = randomCommitmentsProcess(commitmentsDB, useableTx, 7)
 
-	var inputCoins []*privacy.InputCoin
+	inputCoins := getInputCoins(usableTx)
+	//Get input coins from usableTX
+
 
 	// Print list of all input coins
 	fmt.Printf("List of all input coins before building tx:\n")
