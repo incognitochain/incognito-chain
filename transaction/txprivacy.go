@@ -45,7 +45,7 @@ type Tx struct {
 
 // randomCommitmentsProcess - process list commitments and useable tx to create
 // a list commitment random which be used to create a proof for new tx
-func randomCommitmentsProcess(commitments [][]byte, useableTx map[byte][]*Tx, randNum int) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+func randomCommitmentsProcess(commitments [][]byte, useableTx []*Tx, randNum int) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
 	commitmentIndexs = []uint64{}
 	myCommitmentIndexs = []uint64{}
 	if randNum == 0 {
@@ -53,13 +53,11 @@ func randomCommitmentsProcess(commitments [][]byte, useableTx map[byte][]*Tx, ra
 	}
 	listCommitmentsInUsableTx := [][]byte{}
 	mapIndexCommitmentsInUsableTx := make(map[string]uint64)
-	for _, txs := range useableTx {
-		for _, tx := range txs {
-			for _, out := range tx.Proof.OutputCoins {
-				listCommitmentsInUsableTx = append(listCommitmentsInUsableTx, out.CoinDetails.CoinCommitment.Compress())
-				index, _ := common.SliceBytesExists(commitments, out.CoinDetails.CoinCommitment.Compress())
-				mapIndexCommitmentsInUsableTx[string(out.CoinDetails.CoinCommitment.Compress())] = uint64(index)
-			}
+	for _, tx := range useableTx {
+		for _, out := range tx.Proof.OutputCoins {
+			listCommitmentsInUsableTx = append(listCommitmentsInUsableTx, out.CoinDetails.CoinCommitment.Compress())
+			index, _ := common.SliceBytesExists(commitments, out.CoinDetails.CoinCommitment.Compress())
+			mapIndexCommitmentsInUsableTx[string(out.CoinDetails.CoinCommitment.Compress())] = uint64(index)
 		}
 	}
 	cpRandNum := (len(listCommitmentsInUsableTx) * randNum) - len(listCommitmentsInUsableTx)
@@ -87,7 +85,7 @@ func randomCommitmentsProcess(commitments [][]byte, useableTx map[byte][]*Tx, ra
 func (tx *Tx) CreateTx(
 	senderSK *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
-	useableTx map[byte][]*Tx,
+	usableTx []*Tx,
 	fee uint64,
 	commitmentsDB [][]byte,
 	snDerivators []big.Int,
@@ -97,7 +95,7 @@ func (tx *Tx) CreateTx(
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
-	commitmentIndexs, myCommitmentIndexs = randomCommitmentsProcess(commitmentsDB, useableTx, 7)
+	commitmentIndexs, myCommitmentIndexs = randomCommitmentsProcess(commitmentsDB, usableTx, 7)
 
 	var inputCoins []*privacy.InputCoin
 
@@ -241,7 +239,7 @@ func (tx *Tx) CreateTx(
 	// sign tx
 	tx.Hash()
 	tx.SignTx(hasPrivacy)
-	
+
 	return nil
 }
 

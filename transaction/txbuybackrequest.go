@@ -1,6 +1,6 @@
 package transaction
 
-import (
+/*import (
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -78,4 +78,4 @@ func (tx *TxBuyBackRequest) GetSenderAddrLastByte() byte {
 
 func (tx *TxBuyBackRequest) GetTxFee() uint64 {
 	return tx.TxNormal.Fee
-}
+}*/

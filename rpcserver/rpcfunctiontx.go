@@ -202,7 +202,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 	err = tx.CreateTx(
 		&senderKey.KeySet.PrivateKey,
 		paymentInfos,
-		candidateTxsMap,
+		candidateTxsMap[chainIdSender],
 		realFee,
 		commitmentsDb[chainIdSender],
 		snDerivatorsDb[chainIdSender],
@@ -238,7 +238,7 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	var tx transaction.TxNormal
+	var tx transaction.Tx
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {

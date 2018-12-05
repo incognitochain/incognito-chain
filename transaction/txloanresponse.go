@@ -1,6 +1,6 @@
 package transaction
 
-import (
+/*import (
 	"encoding/hex"
 	"strconv"
 
@@ -99,4 +99,4 @@ func (tx *TxLoanResponse) ValidateTransaction() bool {
 
 func (tx *TxLoanResponse) GetType() string {
 	return common.TxLoanResponse
-}
+}*/

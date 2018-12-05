@@ -2,8 +2,6 @@ package transaction
 
 import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
-	"github.com/ninjadotorg/constant/common"
 )
 
 // CreateTxSalary
@@ -17,9 +15,9 @@ func CreateTxSalary(
 	receiverAddr *privacy.PaymentAddress,
 	rt []byte,
 	chainID byte,
-) (*TxNormal, error) {
-	// Create Proof for the joinsplit op
-	inputs := make([]*client.JSInput, 2)
+) (*Tx, error) {
+	/*// Create Proof for the joinsplit op
+	*//*inputs := make([]*client.JSInput, 2)
 	inputs[0] = CreateRandomJSInput(nil)
 	inputs[1] = CreateRandomJSInput(inputs[0].Key)
 	dummyAddress := client.GenPaymentAddress(*inputs[0].Key)
@@ -51,6 +49,7 @@ func CreateTxSalary(
 	err = tx.SignTx()
 	if err != nil {
 		return nil, err
-	}
-	return tx, nil
+	}*//*
+	return tx, nil*/
+	return nil, nil
 }

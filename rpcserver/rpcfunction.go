@@ -422,7 +422,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		&senderKey.KeySet.PrivateKey,
 		nil,
 		merkleRootCommitments,
-		candidateTxsMap,
+		candidateTxsMap[chainIdSender],
 		commitmentsDb[chainIdSender],
 		snDerivatorsDb[chainIdSender],
 		realFee,
