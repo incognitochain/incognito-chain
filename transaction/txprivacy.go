@@ -199,7 +199,7 @@ func (tx *Tx) CreateTx(
 	}
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	witness.Build(tx, hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, tx.Proof.OutputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs)
+	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, tx.Proof.OutputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs)
 	tx.Proof, _ = witness.Prove(false)
 
 	// set private key for signing tx
