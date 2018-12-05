@@ -796,7 +796,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 				}
 				if len(serialNumberInDB) > 0 {
 					checkCandiateSerialNumber, err := common.SliceBytesExists(serialNumberInDB, outCoin.CoinDetails.SerialNumber.Compress())
-					if err != nil || checkCandiateSerialNumber == true {
+					if err != nil || checkCandiateSerialNumber != -1 {
 						// candidate serialNumber is not existed in db
 						continue
 					}
@@ -807,7 +807,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 			if bytes.Equal(outCoinTemp.CoinDetails.PublicKey.Compress(), keys.PaymentAddress.Pk[:]) {
 				if len(serialNumberInDB) > 0 {
 					checkCandiateNullifier, err := common.SliceBytesExists(serialNumberInDB, outCoinTemp.CoinDetails.SerialNumber.Compress())
-					if err != nil || checkCandiateNullifier == true {
+					if err != nil || checkCandiateNullifier != -1 {
 						// candidate nullifier is not existed in db
 						continue
 					}
