@@ -10,6 +10,8 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/wire"
+	"github.com/ninjadotorg/constant/common"
+	"time"
 )
 
 type PeerConn struct {
@@ -24,6 +26,7 @@ type PeerConn struct {
 	cRead            chan struct{}
 	cWrite           chan struct{}
 	cClose           chan struct{}
+	cMsgHash         map[string]chan bool
 
 	RetryCount int32
 
@@ -86,6 +89,10 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 				// Parse Message body
 				messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
+				// cache message hash S
+				hashMsg := common.HashH(messageBody).String()
+				self.ListenerPeer.ReceivedHashMessage(hashMsg)
+				// cache message hash E
 				err = json.Unmarshal(messageBody, &message)
 				if err != nil {
 					Logger.log.Error("Can not parse struct from json message")
@@ -163,6 +170,10 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnSwapUpdate != nil {
 						self.Config.MessageListeners.OnSwapUpdate(self, message.(*wire.MessageSwapUpdate))
 					}
+				case reflect.TypeOf(&wire.MessageMsgCheck{}):
+					self.handleMsgCheck(message.(*wire.MessageMsgCheck))
+				case reflect.TypeOf(&wire.MessageMsgCheckResp{}):
+					self.handleMsgCheckResp(message.(*wire.MessageMsgCheckResp))
 				default:
 					Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, self)
 				}
@@ -237,8 +248,81 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 //
 // This function is safe for concurrent access.
 func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
-	if self.IsConnected {
-		self.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
+	go func() {
+		if self.IsConnected {
+			data, _ := msg.JsonSerialize()
+			if len(data) >= HEAVY_MESSAGE_SIZE && msg.MessageType() != wire.CmdMsgCheck && msg.MessageType() != wire.CmdMsgCheckResp {
+				hash := common.HashH(data).String()
+
+				Logger.log.Infof("QueueMessageWithEncoding HEAVY_MESSAGE_SIZE %s %s", hash, msg.MessageType())
+
+				self.cMsgHash[hash] = make(chan bool)
+				cTimeOut := make(chan struct{})
+				bOk := false
+				// send msg for check hash
+				go func() {
+					msgCheck, _ := wire.MakeEmptyMessage(wire.CmdMsgCheck)
+					msgCheck.(*wire.MessageMsgCheck).Hash = hash
+					self.QueueMessageWithEncoding(msgCheck, nil)
+				}()
+				Logger.log.Infof("QueueMessageWithEncoding WAIT result check hash %s", hash)
+				for {
+					select {
+					case accept := <-self.cMsgHash[hash]:
+						Logger.log.Infof("QueueMessageWithEncoding RECEIVED hash %s accept %s", hash, accept)
+						bOk = accept
+						cTimeOut = nil
+						break
+					case <-cTimeOut:
+						Logger.log.Infof("QueueMessageWithEncoding RECEIVED time out")
+						cTimeOut = nil
+						break
+					}
+					if cTimeOut == nil {
+						delete(self.cMsgHash, hash)
+						break
+					}
+				}
+				Logger.log.Infof("QueueMessageWithEncoding FINISHED check hash %s %s", hash, bOk)
+				// set time out for check message
+				go func() {
+					select {
+					case <-time.NewTimer(10 * time.Second).C:
+						if cTimeOut != nil {
+							Logger.log.Infof("QueueMessageWithEncoding TIMER time out %s", hash)
+							close(cTimeOut)
+						}
+						return
+					}
+				}()
+				if bOk {
+					self.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
+				}
+			} else {
+				self.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
+			}
+		}
+	}()
+}
+
+func (p *PeerConn) handleMsgCheck(msg *wire.MessageMsgCheck) {
+	Logger.log.Infof("handleMsgCheck %s", msg.Hash)
+	msgResp, _ := wire.MakeEmptyMessage(wire.CmdMsgCheckResp)
+	if p.ListenerPeer.CheckHashMessage(msg.Hash) {
+		msgResp.(*wire.MessageMsgCheckResp).Hash = msg.Hash
+		msgResp.(*wire.MessageMsgCheckResp).Accept = false
+	} else {
+		msgResp.(*wire.MessageMsgCheckResp).Hash = msg.Hash
+		msgResp.(*wire.MessageMsgCheckResp).Accept = true
+	}
+	p.QueueMessageWithEncoding(msgResp, nil)
+}
+
+func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) {
+	Logger.log.Infof("handleMsgCheckResp %s", msg.Hash)
+	m, ok := p.cMsgHash[msg.Hash]
+	if ok {
+		m <- msg.Accept
 	}
 }
 
