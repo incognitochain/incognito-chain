@@ -45,9 +45,9 @@ func (tx TxCustomToken) Hash() *common.Hash {
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
-func (tx *TxCustomToken) ValidateTransaction() bool {
+func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool) bool {
 	// validate for normal tx
-	if tx.Tx.ValidateTransaction() {
+	if tx.Tx.ValidateTransaction(hasPrivacy) {
 		if len(tx.listUtxo) == 0 {
 			return false
 		}

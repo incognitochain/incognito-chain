@@ -593,31 +593,31 @@ func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
 			if ok == false {
 				return false
 			}
-			return txCustomToken.ValidateTransaction()
+			return txCustomToken.ValidateTransaction(txCustomToken.Tx.Proof.ComInputOpeningsProof != nil)
 		}
-	case common.TxVoteDCBBoard:
-		{
-			txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
-			txCustomToken := txVoteDCBBoard.TxCustomToken
-			ok := tp.GetListUTXOFromTxCustomToken(&txCustomToken)
-			if ok == false {
-				return false
-			}
-			return txCustomToken.ValidateTransaction() && txVoteDCBBoard.Validate()
-		}
-	case common.TxVoteGOVBoard:
-		{
-			txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
-			txCustomToken := txVoteGOVBoard.TxCustomToken
-			ok := tp.GetListUTXOFromTxCustomToken(&txCustomToken)
-			if ok == false {
-				return false
-			}
-			return txCustomToken.ValidateTransaction() && txVoteGOVBoard.Validate()
-		}
+		/*case common.TxVoteDCBBoard:
+		  {
+			  txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
+			  txCustomToken := txVoteDCBBoard.TxCustomToken
+			  ok := tp.GetListUTXOFromTxCustomToken(&txCustomToken)
+			  if ok == false {
+				  return false
+			  }
+			  return txCustomToken.ValidateTransaction() && txVoteDCBBoard.Validate()
+		  }
+	  case common.TxVoteGOVBoard:
+		  {
+			  txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
+			  txCustomToken := txVoteGOVBoard.TxCustomToken
+			  ok := tp.GetListUTXOFromTxCustomToken(&txCustomToken)
+			  if ok == false {
+				  return false
+			  }
+			  return txCustomToken.ValidateTransaction() && txVoteGOVBoard.Validate()
+		  }*/
 
 	default:
-		return tx.ValidateTransaction()
+		return tx.ValidateTransaction(false)
 	}
 	return false
 }
