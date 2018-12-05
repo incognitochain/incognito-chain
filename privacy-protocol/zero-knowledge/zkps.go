@@ -1,7 +1,6 @@
 package zkp
 
 import (
-	"github.com/ninjadotorg/constant/transaction"
 	"math/big"
 	"sort"
 
@@ -202,12 +201,10 @@ func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.Input
 // Build prepares witnesses for all protocol need to be proved when create tx
 // if hashPrivacy = false, witness includes spending key, input coins, output coins
 // otherwise, witness includes all attributes in PaymentWitness struct
-func (wit *PaymentWitness) Build(tx *transaction.Tx, hasPrivacy bool,
+func (wit *PaymentWitness) Build(hasPrivacy bool,
 	spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin,
 	pkLastByteSender byte, pkLastByteReceivers []byte,
 	commitments []*privacy.EllipticPoint, commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
-
-	tx.Proof = new(PaymentProof)
 
 	wit.spendingKey = spendingKey
 	wit.inputCoins = inputCoins
@@ -223,7 +220,7 @@ func (wit *PaymentWitness) Build(tx *transaction.Tx, hasPrivacy bool,
 	cmInputSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randInputSK, privacy.SK)
 
 	randInputShardID := privacy.RandInt()
-	cmInputShardID := privacy.PedCom.CommitAtIndex(big.NewInt(int64(wit.pkLastByteSender)), randInputShardID, privacy.SHARDID)
+	//cmInputShardID := privacy.PedCom.CommitAtIndex(big.NewInt(int64(wit.pkLastByteSender)), randInputShardID, privacy.SHARDID)
 
 	cmInputValue := make([]*privacy.EllipticPoint, numInputCoin)
 	cmInputSND := make([]*privacy.EllipticPoint, numInputCoin)
@@ -269,7 +266,7 @@ func (wit *PaymentWitness) Build(tx *transaction.Tx, hasPrivacy bool,
 		cmInputSum[i] = cmInputSK
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputValue[i].X, cmInputValue[i].Y)
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputSND[i].X, cmInputSND[i].Y)
-		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputShardID.X, cmInputShardID.Y)
+		//cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputShardID.X, cmInputShardID.Y)
 		cmInputSumInverse[i], _ = cmInputSum[i].Inverse()
 		cmInputSumAll.X, cmInputSumAll.Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputSumAll.X, cmInputSumAll.Y)
 

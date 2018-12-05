@@ -1,5 +1,6 @@
 package transaction
 
+/*
 import (
 	"bytes"
 	"errors"
@@ -582,12 +583,14 @@ func (tx *TxNormal) SignTx() error {
 	copy(data, hash[:])
 
 	// Sign
-	/*ecdsaSignature := new(client.EcdsaSignature)
+	*/
+/*ecdsaSignature := new(client.EcdsaSignature)
 	var err error
 	ecdsaSignature.R, ecdsaSignature.S, err = client.Sign(rand.Reader, tx.sigPrivKey, data[:])
 	if err != nil {
 		return err
-	}*/
+	}*//*
+
 	keyset := cashec.KeySet{}
 	keyset.ImportFromPrivateKey(tx.sigPrivKey)
 	sign, err := keyset.Sign(data)
@@ -609,14 +612,18 @@ func (tx *TxNormal) VerifySign() (bool, error) {
 	}
 
 	// UnParse Public key
-	/*pubKey := new(client.PublicKey)
+	*/
+/*pubKey := new(client.PublicKey)
 	pubKey.X = new(big.Int).SetBytes(tx.JSPubKey[0:32])
-	pubKey.Y = new(big.Int).SetBytes(tx.JSPubKey[32:64])*/
+	pubKey.Y = new(big.Int).SetBytes(tx.JSPubKey[32:64])*//*
+
 
 	// UnParse ECDSA signature
-	/*ecdsaSignature := new(client.EcdsaSignature)
+	*/
+/*ecdsaSignature := new(client.EcdsaSignature)
 	ecdsaSignature.R = new(big.Int).SetBytes(tx.JSSig[0:32])
-	ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])*/
+	ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])*//*
+
 
 	// Hash origin transaction
 	hash := tx.GetTxID()
@@ -795,3 +802,4 @@ func (tx *TxNormal) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
 	}
 	return addr, txValue
 }
+*/

@@ -1,11 +1,8 @@
 package blockchain
 
 import (
-	"fmt"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
-	"github.com/ninjadotorg/constant/transaction"
 )
 
 // BestState houses information about the current best block and other info
@@ -72,10 +69,11 @@ func (self *BestState) Update(block *Block) error {
 	}
 
 	// Update list of loan ids
-	err = self.UpdateLoanIDs(block)
+	// TODO
+	/*err = self.UpdateLoanIDs(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
-	}
+	}*/
 	return nil
 }
 
@@ -86,7 +84,7 @@ func (self *BestState) RemoveCandidate(producerPbk string) {
 	}
 }
 
-func (self *BestState) UpdateLoanIDs(block *Block) error {
+/*func (self *BestState) UpdateLoanIDs(block *Block) error {
 	for _, blockTx := range block.Transactions {
 		if blockTx.GetType() == common.TxLoanRequest {
 			tx, ok := blockTx.(*transaction.TxLoanRequest)
@@ -98,4 +96,4 @@ func (self *BestState) UpdateLoanIDs(block *Block) error {
 		}
 	}
 	return nil
-}
+}*/

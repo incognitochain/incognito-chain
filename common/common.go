@@ -236,7 +236,6 @@ func SliceBytesExists(slice interface{}, item interface{}) (int64, error) {
 		if bytes.Compare(GetBytes(item),GetBytes(max)) == 1 {
 			return int64(high + 1), nil
 		}
-
 		// make a guess of the location
 		var guess int64
 		if high == low {

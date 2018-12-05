@@ -1,5 +1,6 @@
 package transaction
 
+/*
 import (
 	"github.com/ninjadotorg/constant/common"
 	"encoding/hex"
@@ -80,3 +81,4 @@ func (tx *TxLoanWithdraw) ValidateTransaction() bool {
 func (tx *TxLoanWithdraw) GetType() string {
 	return common.TxLoanWithdraw
 }
+*/

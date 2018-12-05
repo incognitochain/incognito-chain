@@ -194,6 +194,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
 		commitmentsDb[chainId] = txViewPoint.ListNullifiers()
+		snDerivatorsDb[chainId] = txViewPoint.ListSnDerivators()
 	}
 	//missing flag for privacy-protocol
 	// false by default
@@ -201,10 +202,10 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 	err = tx.CreateTx(
 		&senderKey.KeySet.PrivateKey,
 		paymentInfos,
-		candidateTxsMap,
+		candidateTxsMap[chainIdSender],
 		realFee,
-		commitmentsDb,
-		snDerivatorsDb,
+		commitmentsDb[chainIdSender],
+		snDerivatorsDb[chainIdSender],
 		true)
 	if err != nil {
 		Logger.log.Critical(err)
@@ -237,7 +238,7 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	var tx transaction.TxNormal
+	var tx transaction.Tx
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {

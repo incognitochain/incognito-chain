@@ -176,25 +176,27 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 
 concludeBlock:
 	rt := prevBlock.Header.MerkleRootCommitments.CloneBytes()
-	blockHeight := prevBlock.Header.Height + 1
+	_ = prevBlock.Header.Height + 1
 
+	// TODO
 	// Process dividend payout for DCB if needed
-	bankDivTxs, bankPayoutAmount, err := blockgen.processBankDividend(rt, chainID, blockHeight)
+	/*bankDivTxs, bankPayoutAmount, err := blockgen.processBankDividend(rt, chainID, blockHeight)
 	if err != nil {
 		return nil, err
 	}
 	for _, tx := range bankDivTxs {
 		txsToAdd = append(txsToAdd, tx)
-	}
+	}*/
 
+	// TODO
 	// Process dividend payout for GOV if needed
-	govDivTxs, govPayoutAmount, err := blockgen.processGovDividend(rt, chainID, blockHeight)
+	/*govDivTxs, govPayoutAmount, err := blockgen.processGovDividend(rt, chainID, blockHeight)
 	if err != nil {
 		return nil, err
 	}
 	for _, tx := range govDivTxs {
 		txsToAdd = append(txsToAdd, tx)
-	}
+	}*/
 
 	// Process crowdsale for DCB
 	/*dcbSaleTxs, removableTxs, err := blockgen.processCrowdsale(sourceTxns, rt, chainID)
@@ -233,7 +235,8 @@ concludeBlock:
 		buySellReqTxs,
 		blockgen.chain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.SellingBonds,
 	)
-	// create buy-back response txs to distribute constants to buy-back requesters
+	/*
+	TODO // create buy-back response txs to distribute constants to buy-back requesters
 	buyBackResTxs, err := blockgen.buildBuyBackResponsesTx(common.TxBuyBackResponse, txTokenVouts, chainID)
 	// create refund txs
 	currentSalaryFund := prevBlock.Header.SalaryFund
@@ -251,6 +254,9 @@ concludeBlock:
 		coinbases = append(coinbases, refundTx)
 	}
 	txsToAdd = append(coinbases, txsToAdd...)
+	*/
+	govPayoutAmount := 0
+	totalRefundAmt := 0
 
 	// Check for final balance of DCB and GOV
 	if currentSalaryFund+totalFee+salaryFundAdd+incomeFromBonds < totalSalary+govPayoutAmount+buyBackCoins+totalRefundAmt {

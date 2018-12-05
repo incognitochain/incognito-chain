@@ -1,5 +1,6 @@
 package transaction
 
+/*
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -131,3 +132,4 @@ func CreateTxCustomTokenPrivacy(senderKey *privacy.SpendingKey,
 	}
 	return txCustomToken, nil
 }
+*/
