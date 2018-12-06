@@ -702,7 +702,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc
 	txsToRemove := []metadata.Transaction{}
 	txsResponse := []*transaction.TxBuySellDCBResponse{}
 	// Get unspent bond tx to spend if needed
-	accountDCB, _ := wallet.Base58CheckDeserialize(DCBAddress)
+	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	keySet := accountDCB.KeySet
 
 	tokenID := &common.Hash{} // TODO(@0xbunyip): hard code bond token id here
@@ -731,7 +731,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc
 		// Get price for asset bond
 		bondPrices := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
 		if bytes.Equal(saleData.SellingAsset, ConstantID[:]) {
-			txResponse, err := transaction.BuildResponseForCoin(tx, saleData.SellingAsset, rt, chainID, bondPrices, tx.SaleID, DCBAddress)
+			txResponse, err := transaction.BuildResponseForCoin(tx, saleData.SellingAsset, rt, chainID, bondPrices, tx.SaleID, common.DCBAddress)
 			if err != nil {
 				txsToRemove = append(txsToRemove, tx)
 			} else {
@@ -740,7 +740,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc
 		} else if bytes.Equal(saleData.SellingAsset[:8], BondTokenID[:8]) {
 			// Get unspent token UTXO to send to user
 			txResponse := &transaction.TxBuySellDCBResponse{}
-			txResponse, unspentTxTokenOuts, err = transaction.BuildResponseForBond(tx, saleData.SellingAsset, rt, chainID, bondPrices, unspentTxTokenOuts, tx.SaleID, DCBAddress)
+			txResponse, unspentTxTokenOuts, err = transaction.BuildResponseForBond(tx, saleData.SellingAsset, rt, chainID, bondPrices, unspentTxTokenOuts, tx.SaleID, common.DCBAddress)
 			if err != nil {
 				txsToRemove = append(txsToRemove, tx)
 			} else {

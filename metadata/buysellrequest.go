@@ -43,3 +43,11 @@ func (bsReq *BuySellRequest) CheckTransactionFee(tr TxRetriever, minFee uint64) 
 func (bsReq *BuySellRequest) ValidateTxWithBlockChain(bcr BlockchainRetriever, chainID byte) (bool, error) {
 	return true, nil
 }
+
+func (bsReq *BuySellRequest) ValidateSanityData() (bool, bool, error) {
+	return true, true, nil
+}
+
+func (bsReq *BuySellRequest) ValidateMetadataByItself() bool {
+	return true
+}
