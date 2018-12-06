@@ -22,26 +22,26 @@ import (
 /*
 IsSalaryTx determines whether or not a transaction is a salary.
 */
-func (self *BlockChain) IsSalaryTx(tx metadata.Transaction) bool {
-	// Check normal tx(not an action tx)
-	if tx.GetType() != common.TxSalaryType {
-		normalTx, ok := tx.(*transaction.Tx)
-		if !ok {
-			return false
-		}
-		// Check nullifiers in every Descs
-		descs := normalTx.Descs
-		if len(descs) != 1 {
-			return false
-		} else {
-			if descs[0].Reward > 0 {
-				return true
-			}
-		}
-		return false
-	}
-	return false
-}
+// func (self *BlockChain) IsSalaryTx(tx metadata.Transaction) bool {
+// 	// Check normal tx(not an action tx)
+// 	if tx.GetType() != common.TxSalaryType {
+// 		normalTx, ok := tx.(*transaction.Tx)
+// 		if !ok {
+// 			return false
+// 		}
+// 		// Check nullifiers in every Descs
+// 		descs := normalTx.Descs
+// 		if len(descs) != 1 {
+// 			return false
+// 		} else {
+// 			if descs[0].Reward > 0 {
+// 				return true
+// 			}
+// 		}
+// 		return false
+// 	}
+// 	return false
+// }
 
 // ValidateDoubleSpend - check double spend for any transaction type
 func (self *BlockChain) ValidateDoubleSpend(tx metadata.Transaction, chainID byte) error {

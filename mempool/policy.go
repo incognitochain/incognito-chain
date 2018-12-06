@@ -6,8 +6,6 @@ import (
 	"errors"
 
 	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
@@ -24,26 +22,26 @@ type Policy struct {
 /*
 
  */
-func (self *Policy) CheckTxVersion(tx *metadata.Transaction) bool {
-	txType := (*tx).GetType()
-	switch txType {
-	case common.TxSalaryType:
-		{
-			temp := (*tx).(*transaction.Tx)
-			if temp.Version > self.MaxTxVersion {
-				return false
-			}
-		}
-	case common.TxNormalType:
-		{
-			temp := (*tx).(*transaction.Tx)
-			if temp.Version > self.MaxTxVersion {
-				return false
-			}
-		}
-	}
-	return true
-}
+// func (self *Policy) CheckTxVersion(tx *metadata.Transaction) bool {
+// 	txType := (*tx).GetType()
+// 	switch txType {
+// 	case common.TxSalaryType:
+// 		{
+// 			temp := (*tx).(*transaction.Tx)
+// 			if temp.Version > self.MaxTxVersion {
+// 				return false
+// 			}
+// 		}
+// 	case common.TxNormalType:
+// 		{
+// 			temp := (*tx).(*transaction.Tx)
+// 			if temp.Version > self.MaxTxVersion {
+// 				return false
+// 			}
+// 		}
+// 	}
+// 	return true
+// }
 
 // return min transacton fee required for a transaction that we accepted into the memmory pool and replayed.
 func (self *Policy) calcMinFeeTxCustomTokenAccepted(tx *transaction.TxCustomToken) uint64 {

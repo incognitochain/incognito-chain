@@ -50,10 +50,10 @@ type TxPool interface {
 	RemoveTx(tx metadata.Transaction) error
 
 	//CheckTransactionFee
-	CheckTransactionFee(tx metadata.Transaction) (uint64, error)
+	// CheckTransactionFee(tx metadata.Transaction) (uint64, error)
 
 	// Check tx validate by it self
-	ValidateTxByItSelf(tx metadata.Transaction) bool
+	// ValidateTxByItSelf(tx metadata.Transaction) bool
 }
 
 type RewardAgent interface {
@@ -134,7 +134,8 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 		}
 		// ValidateTransaction vote and propose transaction
 
-		if !blockgen.txPool.ValidateTxByItSelf(tx) {
+		// if !blockgen.txPool.ValidateTxByItSelf(tx) {
+		if !tx.ValidateTxByItself(blockgen.chain) {
 			txToRemove = append(txToRemove, metadata.Transaction(tx))
 			continue
 		}
