@@ -293,8 +293,9 @@ func (self *Engine) StopProducer() {
 func (self *Engine) createBlock() (*blockchain.Block, error) {
 	Logger.log.Info("Start creating block...")
 	myChainID := self.getMyChain()
-	paymentAddress, err := self.config.ProducerKeySet.GetPaymentAddress()
-	newblock, err := self.config.BlockGen.NewBlockTemplate(paymentAddress, myChainID)
+	paymentAddress := self.config.ProducerKeySet.PaymentAddress
+	privatekey := self.config.ProducerKeySet.PrivateKey
+	newblock, err := self.config.BlockGen.NewBlockTemplate(&paymentAddress, &privatekey, myChainID)
 	if err != nil {
 		return &blockchain.Block{}, err
 	}

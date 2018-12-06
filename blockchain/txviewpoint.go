@@ -65,6 +65,9 @@ func (view *TxViewPoint) processFetchTxViewPoint(block *Block, db database.Datab
 	acceptedNullifiers := make([][]byte, 0)
 	acceptedCommitments := make([][]byte, 0)
 	acceptedSnD := make([]big.Int, 0)
+	if proof == nil {
+		return acceptedNullifiers, acceptedCommitments, acceptedSnD, nil
+	}
 	for _, item := range proof.InputCoins {
 		serialNum := item.CoinDetails.SerialNumber.Compress()
 		temp, err := db.HasNullifier(serialNum, block.Header.ChainID)

@@ -26,7 +26,6 @@ type Coin struct {
 	Value          uint64
 	Info           []byte
 	PubKeyLastByte byte
-
 }
 
 // InputCoin represents a input coin of transaction

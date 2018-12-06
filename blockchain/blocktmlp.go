@@ -65,7 +65,7 @@ func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent 
 	}, nil
 }
 
-func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentAddress, chainID byte) (*Block, error) {
+func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, chainID byte) (*Block, error) {
 
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 	prevBlockHash := blockgen.chain.BestState[chainID].BestBlock.Hash()
@@ -224,7 +224,7 @@ concludeBlock:
 	// ------------------------------------------------------------------------
 	totalSalary := salaryMULTP*salaryPerTx + basicSalary
 	// create salary tx to pay constant for block producer
-	salaryTx, err := transaction.CreateTxSalary(totalSalary, &payToAddress, chainID, false)
+	salaryTx, err := transaction.CreateTxSalary(totalSalary, payToAddress, privatekey)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
