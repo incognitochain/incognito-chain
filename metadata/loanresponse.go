@@ -82,6 +82,14 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 				if bytes.Equal(txOld.GetJSPubKey(), txr.GetJSPubKey()) {
 					return false, fmt.Errorf("Current board member already responded to loan request")
 				}
+				meta := txOld.GetMetadata()
+				if meta == nil {
+					continue
+				}
+				metaOld := meta.(*LoanResponse)
+				if lr.ValidUntil != metaOld.ValidUntil {
+					return false, fmt.Errorf("Valid deadline of all responses of a loan must be the same")
+				}
 			}
 		case LoanRequestMeta:
 			{
