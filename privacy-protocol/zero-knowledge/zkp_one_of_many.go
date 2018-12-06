@@ -12,10 +12,10 @@ import (
 // include Witness: CommitedValue, r []byte
 type PKOneOfManyWitness struct {
 	rand        *big.Int
-	indexIsZero uint32
+	indexIsZero uint64
 	// general info
 	commitments      []*privacy.EllipticPoint
-	commitmentIndexs []*privacy.CMIndex
+	commitmentIndexs []uint64
 	index            byte
 }
 
@@ -32,9 +32,9 @@ type PKOneOfManyProof struct {
 // Set sets Witness
 func (wit *PKOneOfManyWitness) Set(
 	commitments []*privacy.EllipticPoint,
-	commitmentIndexs []*privacy.CMIndex,
+	commitmentIndexs []uint64,
 	rand *big.Int,
-	indexIsZero uint32,
+	indexIsZero uint64,
 	index byte) {
 
 	wit.commitmentIndexs = commitmentIndexs
@@ -230,7 +230,7 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	n := privacy.CMRingSizeExp
 
 	// Check indexIsZero
-	if wit.indexIsZero > uint32(N) || wit.indexIsZero < 0 {
+	if wit.indexIsZero > uint64(N) || wit.indexIsZero < 0 {
 		return nil, fmt.Errorf("Index is zero must be Index in list of commitments")
 	}
 
@@ -483,7 +483,7 @@ func TestPKOneOfMany() bool {
 	SNDerivators[indexIsZero] = big.NewInt(0)
 	commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(SNDerivators[indexIsZero], randoms[indexIsZero], privacy.SND)
 
-	witness.Set(commitments, nil, randoms[indexIsZero], uint32(indexIsZero), privacy.SND)
+	witness.Set(commitments, nil, randoms[indexIsZero], uint64(indexIsZero), privacy.SND)
 	//start := time.Now()
 	proof, err := witness.Prove()
 

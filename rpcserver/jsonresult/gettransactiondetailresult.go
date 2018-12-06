@@ -18,7 +18,5 @@ type TransactionDetail struct {
 	SigPubKey []byte            `json:"SigPubKey,omitempty"` // 64 bytes
 	Sig       []byte            `json:"Sig,omitempty"`       // 64 bytes
 
-	PubKeyLastByteSender    byte   `json:"PubKeyLastByteSender"`
-	PubKeyLastByteReceivers []byte `json:"PubKeyLastByteReceivers"`
-	MetaData                string `json:"MetaData"`
+	MetaData string `json:"MetaData"`
 }

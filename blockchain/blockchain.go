@@ -13,7 +13,6 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
@@ -149,13 +148,13 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	}
 	initBlock.Header.Height = 1
 
-	tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
+	/*tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
 	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
 		return NewBlockChainError(UpdateMerkleTreeForBlockError, err)
-	}
+	}*/
 
 	self.BestState[chainId] = &BestState{}
-	self.BestState[chainId].Init(initBlock, tree)
+	//self.BestState[chainId].Init(initBlock, tree)
 
 	err := self.ConnectBlock(initBlock)
 	if err != nil {
@@ -372,17 +371,15 @@ func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte,
 Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
 this is a list tx-out which are used by a new tx
 */
-func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.TxNormal) error {
-	for _, desc := range tx.Descs {
-		for _, nullifier := range desc.Nullifiers {
-			chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
-			if err != nil {
-				return err
-			}
-			err = self.config.DataBase.StoreNullifiers(nullifier, chainId)
-			if err != nil {
-				return err
-			}
+func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
+	for _, desc := range tx.Proof.InputCoins {
+		chainId, err := common.GetTxSenderChain(tx.Proof.PubKeyLastByteSender)
+		if err != nil {
+			return err
+		}
+		err = self.config.DataBase.StoreNullifiers(desc.CoinDetails.SerialNumber.Compress(), chainId)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -392,17 +389,15 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.TxNormal) error {
 Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
 this is a list tx-in which are used by a new tx
 */
-func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.TxNormal) error {
-	for _, desc := range tx.Descs {
-		for _, item := range desc.Commitments {
-			chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
-			if err != nil {
-				return err
-			}
-			err = self.config.DataBase.StoreCommitments(item, chainId)
-			if err != nil {
-				return err
-			}
+func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
+	for _, desc := range tx.Proof.OutputCoins {
+		chainId, err := common.GetTxSenderChain(desc.PubKeyLastByteReceiver)
+		if err != nil {
+			return err
+		}
+		err = self.config.DataBase.StoreCommitments(desc.CoinDetails.CoinCommitment.Compress(), chainId)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -492,7 +487,7 @@ func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 	return data, err
 }
 
-func (self *BlockChain) SaveLoanTxsForBlock(block *Block) error {
+/*func (self *BlockChain) SaveLoanTxsForBlock(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetType() {
 		case common.TxLoanRequest:
@@ -509,9 +504,9 @@ func (self *BlockChain) SaveLoanTxsForBlock(block *Block) error {
 	}
 
 	return nil
-}
+}*/
 
-func (self *BlockChain) UpdateDividendPayout(block *Block) error {
+/*func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetType() {
 		case common.TxDividendPayout:
@@ -539,9 +534,9 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 		}
 	}
 	return nil
-}
+}*/
 
-func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
+/*func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetType() {
 		case common.TxAcceptDCBProposal:
@@ -564,7 +559,7 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 		}
 	}
 	return nil
-}
+}*/
 
 /*
 FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
@@ -590,7 +585,7 @@ func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 	return view, nil
 }
 
-func (self *BlockChain) createAndSaveTxViewPointFromBlock(block *Block) error {
+func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	view := NewTxViewPoint(block.Header.ChainID)
 
 	err := view.fetchTxViewPointFromBlock(self.config.DataBase, block)
@@ -682,14 +677,12 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 				if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
 					tx := txInBlock.(*transaction.Tx)
 					copyTx := transaction.Tx{
-						Version:                 tx.Version,
-						Sig:                     tx.Sig,
-						SigPubKey:               tx.SigPubKey,
-						Fee:                     tx.Fee,
-						Type:                    tx.Type,
-						LockTime:                tx.LockTime,
-						PubKeyLastByteSender:    tx.PubKeyLastByteSender,
-						PubKeyLastByteReceivers: tx.PubKeyLastByteReceivers,
+						Version:   tx.Version,
+						Sig:       tx.Sig,
+						SigPubKey: tx.SigPubKey,
+						Fee:       tx.Fee,
+						Type:      tx.Type,
+						LockTime:  tx.LockTime,
 						Proof: &zkp.PaymentProof{
 							ComInputOpeningsProof:       tx.Proof.ComInputOpeningsProof,
 							ComOutputMultiRangeProof:    tx.Proof.ComOutputMultiRangeProof,
@@ -701,6 +694,10 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 							OneOfManyProof:              tx.Proof.OneOfManyProof,
 							InputCoins:                  tx.Proof.InputCoins,
 							OutputCoins:                 []*privacy.OutputCoin{},
+							PubKeyLastByteSender:        tx.Proof.PubKeyLastByteSender,
+							ComInputSK:                  tx.Proof.ComInputSK,
+							ComInputSND:                 tx.Proof.ComInputSND,
+							ComInputValue:               tx.Proof.ComInputValue,
 						},
 						Metadata: tx.Metadata,
 					}
@@ -711,8 +708,9 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 							err := outcoinTemp.Decrypt(keySet.ReadonlyKey.Rk)
 							if err != nil {
 								outcoin := &privacy.OutputCoin{
-									CoinDetails:          outcoinTemp.CoinDetails,
-									CoinDetailsEncrypted: outcoinTemp.CoinDetailsEncrypted,
+									CoinDetails:            outcoinTemp.CoinDetails,
+									CoinDetailsEncrypted:   outcoinTemp.CoinDetailsEncrypted,
+									PubKeyLastByteReceiver: outcoinTemp.PubKeyLastByteReceiver,
 								}
 								copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outcoin)
 							}
@@ -758,14 +756,12 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serialNumberInDB [][]byte, keys *cashec.KeySet) transaction.Tx {
 	tx := txInBlock.(*transaction.Tx)
 	copyTx := transaction.Tx{
-		Version:                 tx.Version,
-		Sig:                     tx.Sig,
-		SigPubKey:               tx.SigPubKey,
-		Fee:                     tx.Fee,
-		Type:                    tx.Type,
-		LockTime:                tx.LockTime,
-		PubKeyLastByteSender:    tx.PubKeyLastByteSender,
-		PubKeyLastByteReceivers: tx.PubKeyLastByteReceivers,
+		Version:   tx.Version,
+		Sig:       tx.Sig,
+		SigPubKey: tx.SigPubKey,
+		Fee:       tx.Fee,
+		Type:      tx.Type,
+		LockTime:  tx.LockTime,
 		Proof: &zkp.PaymentProof{
 			ComInputOpeningsProof:       tx.Proof.ComInputOpeningsProof,
 			ComOutputMultiRangeProof:    tx.Proof.ComOutputMultiRangeProof,
@@ -777,6 +773,10 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 			OneOfManyProof:              tx.Proof.OneOfManyProof,
 			InputCoins:                  tx.Proof.InputCoins,
 			OutputCoins:                 []*privacy.OutputCoin{},
+			PubKeyLastByteSender:        tx.Proof.PubKeyLastByteSender,
+			ComInputSK:                  tx.Proof.ComInputSK,
+			ComInputSND:                 tx.Proof.ComInputSND,
+			ComInputValue:               tx.Proof.ComInputValue,
 		},
 		Metadata: tx.Metadata,
 	}
@@ -791,12 +791,13 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 			err := outCoinTemp.Decrypt(keys.ReadonlyKey.Rk)
 			if err == nil {
 				outCoin := &privacy.OutputCoin{
-					CoinDetails:          outCoinTemp.CoinDetails,
-					CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
+					CoinDetails:            outCoinTemp.CoinDetails,
+					CoinDetailsEncrypted:   outCoinTemp.CoinDetailsEncrypted,
+					PubKeyLastByteReceiver: outCoinTemp.PubKeyLastByteReceiver,
 				}
 				if len(serialNumberInDB) > 0 {
 					checkCandiateSerialNumber, err := common.SliceBytesExists(serialNumberInDB, outCoin.CoinDetails.SerialNumber.Compress())
-					if err != nil || checkCandiateSerialNumber == true {
+					if err != nil || checkCandiateSerialNumber != -1 {
 						// candidate serialNumber is not existed in db
 						continue
 					}
@@ -807,7 +808,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 			if bytes.Equal(outCoinTemp.CoinDetails.PublicKey.Compress(), keys.PaymentAddress.Pk[:]) {
 				if len(serialNumberInDB) > 0 {
 					checkCandiateNullifier, err := common.SliceBytesExists(serialNumberInDB, outCoinTemp.CoinDetails.SerialNumber.Compress())
-					if err != nil || checkCandiateNullifier == true {
+					if err != nil || checkCandiateNullifier != -1 {
 						// candidate nullifier is not existed in db
 						continue
 					}
@@ -1023,7 +1024,7 @@ func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (by
 		chainId     []byte
 	)
 	// Get transaction
-	tx := transaction.TxNormal{}
+	tx := transaction.Tx{}
 	locationByte, txByte, err := self.config.DataBase.GetTransactionLightModeByHash(txHash)
 	Logger.log.Info("GetTransactionByHash - 1", locationByte, txByte, err)
 	if err != nil {

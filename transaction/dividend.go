@@ -1,5 +1,6 @@
 package transaction
 
+/*
 import (
 	"fmt"
 
@@ -130,3 +131,4 @@ func BuildDividendTxs(
 	}
 	return txs, nil
 }
+*/

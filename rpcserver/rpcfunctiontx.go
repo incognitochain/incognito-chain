@@ -185,15 +185,16 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
 	nullifiersDb := make(map[byte]([][]byte))
-	snDsDb := make(map[byte]([]big.Int))
+	snDerivatorsDb := make(map[byte]([]big.Int))
 	commitmentsDb := make(map[byte]([][]byte))
-	merkleRootCommitments := make(map[byte]*common.Hash)
+	//merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
-		merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
+		//merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
 		// get tx view point
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
 		commitmentsDb[chainId] = txViewPoint.ListNullifiers()
+		snDerivatorsDb[chainId] = txViewPoint.ListSnDerivators()
 	}
 	//missing flag for privacy-protocol
 	// false by default
@@ -201,10 +202,10 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 	err = tx.CreateTx(
 		&senderKey.KeySet.PrivateKey,
 		paymentInfos,
-		candidateTxsMap,
+		candidateTxsMap[chainIdSender],
 		realFee,
-		commitmentsDb,
-		snDsDb,
+		commitmentsDb[chainIdSender],
+		snDerivatorsDb[chainIdSender],
 		true)
 	if err != nil {
 		Logger.log.Critical(err)
@@ -237,7 +238,7 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	var tx transaction.TxNormal
+	var tx transaction.Tx
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
@@ -325,38 +326,34 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 		{
 			tempTx := tx.(*transaction.Tx)
 			result = jsonresult.TransactionDetail{
-				BlockHash:               blockHash.String(),
-				Index:                   uint64(index),
-				ChainId:                 chainId,
-				Hash:                    tx.Hash().String(),
-				Version:                 tempTx.Version,
-				Type:                    tempTx.Type,
-				LockTime:                tempTx.LockTime,
-				Fee:                     tempTx.Fee,
-				Proof:                   tempTx.Proof,
-				SigPubKey:               tempTx.SigPubKey,
-				Sig:                     tempTx.Sig,
-				PubKeyLastByteSender:    tempTx.PubKeyLastByteSender,
-				PubKeyLastByteReceivers: tempTx.PubKeyLastByteReceivers,
+				BlockHash: blockHash.String(),
+				Index:     uint64(index),
+				ChainId:   chainId,
+				Hash:      tx.Hash().String(),
+				Version:   tempTx.Version,
+				Type:      tempTx.Type,
+				LockTime:  tempTx.LockTime,
+				Fee:       tempTx.Fee,
+				Proof:     tempTx.Proof,
+				SigPubKey: tempTx.SigPubKey,
+				Sig:       tempTx.Sig,
 			}
 		}
 	case common.TxCustomTokenType:
 		{
 			tempTx := tx.(*transaction.TxCustomToken)
 			result = jsonresult.TransactionDetail{
-				BlockHash:               blockHash.String(),
-				Index:                   uint64(index),
-				ChainId:                 chainId,
-				Hash:                    tx.Hash().String(),
-				Version:                 tempTx.Version,
-				Type:                    tempTx.Type,
-				LockTime:                tempTx.LockTime,
-				Fee:                     tempTx.Fee,
-				Proof:                   tempTx.Proof,
-				SigPubKey:               tempTx.SigPubKey,
-				Sig:                     tempTx.Sig,
-				PubKeyLastByteSender:    tempTx.PubKeyLastByteSender,
-				PubKeyLastByteReceivers: tempTx.PubKeyLastByteReceivers,
+				BlockHash: blockHash.String(),
+				Index:     uint64(index),
+				ChainId:   chainId,
+				Hash:      tx.Hash().String(),
+				Version:   tempTx.Version,
+				Type:      tempTx.Type,
+				LockTime:  tempTx.LockTime,
+				Fee:       tempTx.Fee,
+				Proof:     tempTx.Proof,
+				SigPubKey: tempTx.SigPubKey,
+				Sig:       tempTx.Sig,
 			}
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
 			result.MetaData = string(txCustomData)

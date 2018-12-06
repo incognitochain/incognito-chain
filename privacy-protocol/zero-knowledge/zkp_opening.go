@@ -2,7 +2,6 @@ package zkp
 
 import (
 	"crypto/rand"
-	"fmt"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -125,13 +124,13 @@ func (pro *PKComOpeningsProof) Verify() bool {
 	return leftPoint.IsEqual(rightPoint)
 }
 
-func TestOpeningsProtocol() bool {
-	witness := new(PKComOpeningsWitness)
-	witness.randValue(true)
-	proof, _ := witness.Prove()
-	for i := 0; i < len(proof.gamma); i++ {
-		fmt.Println(len(proof.gamma[i].Bytes()))
-	}
-	//fmt.Println(len(proof.Bytes()))
-	return proof.Verify()
-}
+//func TestOpeningsProtocol() bool {
+//	witness := new(PKComOpeningsWitness)
+//	witness.randValue(true)
+//	proof, _ := witness.Prove()
+//	for i := 0; i < len(proof.gamma); i++ {
+//		fmt.Println(len(proof.gamma[i].Bytes()))
+//	}
+//	//fmt.Println(len(proof.Bytes()))
+//	return proof.Verify()
+//}

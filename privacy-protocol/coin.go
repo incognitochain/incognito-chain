@@ -8,7 +8,6 @@ import (
 
 	"io"
 	"math/big"
-
 )
 
 type SerialNumber []byte   //33 bytes
@@ -26,6 +25,8 @@ type Coin struct {
 	Randomness     *big.Int
 	Value          uint64
 	Info           []byte
+	PubKeyLastByte byte
+
 }
 
 // InputCoin represents a input coin of transaction
@@ -36,8 +37,9 @@ type InputCoin struct {
 }
 
 type OutputCoin struct {
-	CoinDetails          *Coin
-	CoinDetailsEncrypted *CoinDetailsEncrypted
+	PubKeyLastByteReceiver byte
+	CoinDetails            *Coin
+	CoinDetailsEncrypted   *CoinDetailsEncrypted
 }
 
 func (outputCoin *OutputCoin) Bytes() {
@@ -126,15 +128,13 @@ func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey) error {
 	return nil
 }
 
-
 //CommitAll commits a coin with 4 attributes (public key, value, serial number, r)
-//func (coin *Coin) CommitAll() {
-//	//var values [PCM_CAPACITY-1][]byte
-//	values := [PCM_CAPACITY][]byte{coin.PublicKey, coin.H, coin.SNDerivator, coin.Randomness}
-//	fmt.Printf("coin info: %v\n", values)
-//	coin.CoinCommitment = append(coin.CoinCommitment, FULL)
-//	coin.CoinCommitment = append(coin.CoinCommitment, PedCom.Commit(values)...)
-//}
+func (coin *Coin) CommitAll() {
+	values := []*big.Int{nil, big.NewInt(int64(coin.Value)), coin.SNDerivator, new(big.Int).SetBytes([]byte{coin.PubKeyLastByte}), coin.Randomness}
+	//fmt.Printf("coin info: %v\n", values)
+	coin.CoinCommitment = PedCom.CommitAll(values)
+	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)
+}
 
 //// CommitPublicKey commits a public key's coin
 //func (coin *Coin) CommitPublicKey() []byte {

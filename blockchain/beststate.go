@@ -1,11 +1,8 @@
 package blockchain
 
 import (
-	"fmt"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
-	"github.com/ninjadotorg/constant/transaction"
 )
 
 // BestState houses information about the current best block and other info
@@ -21,7 +18,7 @@ type BestState struct {
 	BestBlockHash *common.Hash // The hash of the block.
 	BestBlock     *Block       // The hash of the block.
 
-	CmTree *client.IncMerkleTree // The commitments merkle tree of the best block
+	//CmTree *client.IncMerkleTree // The commitments merkle tree of the best block
 
 	Height     int32  // The height of the block.
 	NumTxns    uint64 // The number of txns in the block.
@@ -39,7 +36,7 @@ func (self *BestState) Init(block *Block, tree *client.IncMerkleTree) {
 	bestBlockHash := block.Hash()
 	self.BestBlock = block
 	self.BestBlockHash = bestBlockHash
-	self.CmTree = tree
+	//self.CmTree = tree
 
 	self.TotalTxns += uint64(len(block.Transactions))
 	self.NumTxns = uint64(len(block.Transactions))
@@ -54,15 +51,15 @@ func (self *BestState) Init(block *Block, tree *client.IncMerkleTree) {
 }
 
 func (self *BestState) Update(block *Block) error {
-	tree := self.CmTree
-	err := UpdateMerkleTreeForBlock(tree, block)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
+	//tree := self.CmTree
+	//err := UpdateMerkleTreeForBlock(tree, block)
+	//if err != nil {
+	//	return NewBlockChainError(UnExpectedError, err)
+	//}
 	bestBlockHash := block.Hash()
 	self.BestBlock = block
 	self.BestBlockHash = bestBlockHash
-	self.CmTree = tree
+	//self.CmTree = tree
 
 	self.TotalTxns += uint64(len(block.Transactions))
 	self.NumTxns = uint64(len(block.Transactions))
@@ -72,10 +69,11 @@ func (self *BestState) Update(block *Block) error {
 	}
 
 	// Update list of loan ids
-	err = self.UpdateLoanIDs(block)
+	// TODO
+	/*err = self.UpdateLoanIDs(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
-	}
+	}*/
 	return nil
 }
 
@@ -86,7 +84,7 @@ func (self *BestState) RemoveCandidate(producerPbk string) {
 	}
 }
 
-func (self *BestState) UpdateLoanIDs(block *Block) error {
+/*func (self *BestState) UpdateLoanIDs(block *Block) error {
 	for _, blockTx := range block.Transactions {
 		if blockTx.GetType() == common.TxLoanRequest {
 			tx, ok := blockTx.(*transaction.TxLoanRequest)
@@ -98,4 +96,4 @@ func (self *BestState) UpdateLoanIDs(block *Block) error {
 		}
 	}
 	return nil
-}
+}*/

@@ -83,10 +83,6 @@ func (self *KeySet) DecodeToKeySet(keystring string) (*KeySet, error) {
 	return self, nil
 }
 
-func (self *KeySet) GetPaymentAddress() (privacy.PaymentAddress, error) {
-	return self.PaymentAddress, nil
-}
-
 func (self *KeySet) GetViewingKey() (privacy.ViewingKey, error) {
 	return self.ReadonlyKey, nil
 }

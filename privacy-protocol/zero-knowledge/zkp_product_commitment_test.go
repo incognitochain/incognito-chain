@@ -23,15 +23,15 @@ func TestPKComProduct(t *testing.T) {
 		*invAmulG = *G.ScalarMul(x)
 		ipCm.Set(witnessA,r1Int,invAmulG,&index)
 		proof,_:= ipCm.Prove()
-		proof.Print()
+		//proof.Print()
 		//fmt.Println(proof.index)
 		//fmt.Println()
 		proof_bytes:= proof.Bytes()
 		fmt.Println(len(proof_bytes))
 		Vproof:=new(PKComProductProof)
 		Vproof.SetBytes(proof_bytes)
-		fmt.Println("------------------------------------")
-		Vproof.Print()
+		//fmt.Println("------------------------------------")
+		//Vproof.Print()
 		//fmt.Println(Vproof.index)
 
 

@@ -65,7 +65,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 					// Iterate to get TxNormal index of transaction in a block
 					for i, _ := range block.Transactions {
 						txHash := unspent.Hash().String()
-						blockTxHash := block.Transactions[i].(*transaction.TxNormal).Hash().String()
+						blockTxHash := block.Transactions[i].(*transaction.Tx).Hash().String()
 						if strings.Compare(txHash, blockTxHash) == 0 {
 							txIndex = i
 							fmt.Println("Found Transaction i", unspent.Hash(), i)
@@ -107,12 +107,12 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 	// fetch nullifiers and commitments(utxo) from block and save
-	err = self.createAndSaveTxViewPointFromBlock(block)
+	err = self.CreateAndSaveTxViewPointFromBlock(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
-	// Save loan txs
+	/*// Save loan txs TODO
 	err = self.SaveLoanTxsForBlock(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
@@ -128,7 +128,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	err = self.ProcessCrowdsaleTxs(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
-	}
+	}*/
 
 	Logger.log.Infof("Accepted block %s", blockHash)
 

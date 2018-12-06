@@ -5,7 +5,6 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"log"
@@ -202,7 +201,7 @@ Use to get hardcode for genesis block
 	return tx, nil
 }*/
 
-func (self GenesisBlockGenerator) calcCommitmentMerkleRoot(tx *transaction.TxNormal) common.Hash {
+/*func (self GenesisBlockGenerator) calcCommitmentMerkleRoot(tx *transaction.Tx) common.Hash {
 	tree := new(client.IncMerkleTree)
 	for _, desc := range tx.Descs {
 		for _, cm := range desc.Commitments {
@@ -214,7 +213,7 @@ func (self GenesisBlockGenerator) calcCommitmentMerkleRoot(tx *transaction.TxNor
 	hash := common.Hash{}
 	copy(hash[:], rt[:])
 	return hash
-}
+}*/
 
 /*func (self GenesisBlockGenerator) CreateGenesisBlock(
 	time time.Time,
