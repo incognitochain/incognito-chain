@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
 )
 
 // BestState houses information about the current best block and other info
@@ -32,7 +31,7 @@ Init create a beststate data from block and commitment tree
 */
 // #1 - block
 // #2 - commitment merkle tree
-func (self *BestState) Init(block *Block, tree *client.IncMerkleTree) {
+func (self *BestState) Init(block *Block /*, tree *client.IncMerkleTree*/) {
 	bestBlockHash := block.Hash()
 	self.BestBlock = block
 	self.BestBlockHash = bestBlockHash

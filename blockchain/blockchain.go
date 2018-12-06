@@ -154,7 +154,7 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	}*/
 
 	self.BestState[chainId] = &BestState{}
-	//self.BestState[chainId].Init(initBlock, tree)
+	self.BestState[chainId].Init(initBlock /*, tree*/)
 
 	err := self.ConnectBlock(initBlock)
 	if err != nil {
