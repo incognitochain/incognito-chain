@@ -251,6 +251,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		ListenerPeers:        peers,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
+		ExternalAddress:      cfg.ExternalAddress,
 	})
 	self.connManager = connManager
 
@@ -870,6 +871,7 @@ func (self *Server) PushMessageGetChainState() error {
 		if err != nil {
 			return err
 		}
+		msg.(*wire.MessageGetChainState).Timestamp = time.Unix(time.Now().Unix(), 0)
 		msg.SetSenderID(listener.PeerID)
 		Logger.log.Infof("Send a GetChainState from %s", listener.RawAddress)
 		listener.QueueMessageWithEncoding(msg, dc)

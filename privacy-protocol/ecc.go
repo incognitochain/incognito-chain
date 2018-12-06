@@ -148,8 +148,8 @@ func (eccPoint EllipticPoint) Compress() []byte {
 // to a point on the given curve.
 func (eccPoint *EllipticPoint) Decompress(compressPointBytes []byte) error {
 	format := compressPointBytes[0]
-	format &= ^byte(0x1)
 	ybit := (format & 0x1) == 0x1
+	format &= ^byte(0x1)
 
 	if format != pointCompressed {
 		return errors.New("invalid magic in compressed compressPoint bytes")

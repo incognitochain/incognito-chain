@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/libp2p/go-libp2p-peer"
+	"time"
 )
 
 const (
@@ -11,7 +12,8 @@ const (
 )
 
 type MessageGetChainState struct {
-	SenderID string
+	Timestamp time.Time
+	SenderID  string
 }
 
 func (self *MessageGetChainState) MessageType() string {
