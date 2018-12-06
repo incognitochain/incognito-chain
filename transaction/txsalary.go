@@ -16,7 +16,6 @@ func CreateTxSalary(
 	salary uint64,
 	receiverAddr *privacy.PaymentAddress,
 	privKey *privacy.SpendingKey,
-	snDerivators []*big.Int,
 ) (*Tx, error) {
 
 	tx := new(Tx)
@@ -39,7 +38,6 @@ func CreateTxSalary(
 	for CheckSNDExistence(sndOut) {
 		sndOut = privacy.RandInt()
 	}
-	snDerivators = append(snDerivators, sndOut)
 
 	tx.Proof.OutputCoins[0].CoinDetails.SNDerivator = sndOut
 
