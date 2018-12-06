@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -485,7 +486,7 @@ func (blockgen *BlkTmplGenerator) processGovDividend(rt []byte, chainID byte, bl
 
 func buildSingleBuySellResponseTx(
 	buySellReqTx *transaction.TxBuySellRequest,
-	sellingBondsParam *SellingBonds,
+	sellingBondsParam *params.SellingBonds,
 ) transaction.TxTokenVout {
 	buyBackInfo := &transaction.BuyBackInfo{
 		Maturity:     sellingBondsParam.Maturity,
@@ -532,7 +533,7 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 	coinbaseTxType string,
 	buySellReqTxs []metadata.Transaction,
-	sellingBondsParam *SellingBonds,
+	sellingBondsParam *params.SellingBonds,
 ) []*transaction.TxCustomToken {
 	if len(buySellReqTxs) == 0 {
 		return nil

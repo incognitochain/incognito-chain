@@ -235,11 +235,11 @@ func (block *Block) updateGOVConstitution(tx metadata.Transaction, blockgen *Blk
 	block.Header.GOVConstitution.CurrentGOVNationalWelfare = GetOracleGOVNationalWelfare()
 
 	proposalParams := GOVProposal.GOVProposalData.GOVParams
-	block.Header.GOVConstitution.GOVParams = GOVParams{
+	block.Header.GOVConstitution.GOVParams = params.GOVParams{
 		proposalParams.SalaryPerTx,
 		proposalParams.BasicSalary,
 		proposalParams.TxFee,
-		&SellingBonds{
+		&params.SellingBonds{
 			proposalParams.SellingBonds.BondsToSell,
 			proposalParams.SellingBonds.BondPrice,
 			proposalParams.SellingBonds.Maturity,
@@ -247,7 +247,7 @@ func (block *Block) updateGOVConstitution(tx metadata.Transaction, blockgen *Blk
 			proposalParams.SellingBonds.StartSellingAt,
 			proposalParams.SellingBonds.SellingWithin,
 		},
-		&RefundInfo{
+		&params.RefundInfo{
 			proposalParams.RefundInfo.ThresholdToLargeTx,
 			proposalParams.RefundInfo.RefundAmount,
 		},

@@ -102,17 +102,14 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	}
 	if customTokenTx.Metadata != nil {
 		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, chainID)
-		if err != nil {
+		if err != nil || !isContinued {
 			return err
-		}
-		if !isContinued {
-			return nil
 		}
 	}
 
 	// TODO: add validate signs for multisig tx
 
-	err := customTokenTx.Tx.validateDoubleSpendWithBlockchain(bcr, chainID)
+	err := customTokenTx.Tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID)
 	if err != nil {
 		return err
 	}
@@ -158,7 +155,7 @@ func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData() (bool, err
 
 func (customTokenTx *TxCustomToken) ValidateSanityData() (bool, error) {
 	if customTokenTx.Metadata != nil {
-		isContinued, ok, err := customTokenTx.Metadata.ValidateSanityData()
+		isContinued, ok, err := customTokenTx.Metadata.ValidateSanityData(customTokenTx)
 		if err != nil || !ok || !isContinued {
 			return ok, err
 		}
@@ -239,6 +236,9 @@ func (tx TxCustomToken) Hash() *common.Hash {
 	// add more hash of txtokendata
 	txTokenDataHash, _ := tx.TxTokenData.Hash()
 	record += txTokenDataHash.String()
+	if tx.Metadata != nil {
+		record += string(tx.Metadata.Hash()[:])
+	}
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

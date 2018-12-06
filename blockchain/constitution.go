@@ -16,7 +16,7 @@ type ConstitutionInfo struct {
 type GOVConstitution struct {
 	ConstitutionInfo
 	CurrentGOVNationalWelfare int32
-	GOVParams                 GOVParams
+	GOVParams                 params.GOVParams
 }
 
 type DCBConstitution struct {

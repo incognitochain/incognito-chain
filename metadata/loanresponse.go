@@ -100,7 +100,7 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	return true, nil
 }
 
-func (lr *LoanResponse) ValidateSanityData() (bool, bool, error) {
+func (lr *LoanResponse) ValidateSanityData(txr Transaction) (bool, bool, error) {
 	return false, false, nil
 }
 

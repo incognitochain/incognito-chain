@@ -79,6 +79,10 @@ func (self *BlockChain) GetDCBParams() params.DCBParams {
 	return self.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
 }
 
+func (self *BlockChain) GetGOVParams() params.GOVParams {
+	return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams
+}
+
 func (self *BlockChain) GetLoanTxs(loanID []byte) ([][]byte, error) {
 	return self.config.DataBase.GetLoanTxs(loanID)
 }

@@ -302,11 +302,11 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	genesisBlock.Header.Committee = make([]string, len(preSelectValidators))
 
 	// Gov param
-	genesisBlock.Header.GOVConstitution.GOVParams = GOVParams{
+	genesisBlock.Header.GOVConstitution.GOVParams = params.GOVParams{
 		SalaryPerTx:  salaryPerTx,
 		BasicSalary:  basicSalary,
-		SellingBonds: &SellingBonds{},
-		RefundInfo:   &RefundInfo{},
+		SellingBonds: &params.SellingBonds{},
+		RefundInfo:   &params.RefundInfo{},
 	}
 	// Decentralize central bank params
 	loanParams := []params.LoanParams{
