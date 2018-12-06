@@ -60,7 +60,7 @@ type Server struct {
 // setupRPCListeners returns a slice of listeners that are configured for use
 // with the RPC server depending on the configuration settings for listen
 // addresses and TLS.
-func (self Server) setupRPCListeners() ([]net.Listener, error) {
+func (self *Server) setupRPCListeners() ([]net.Listener, error) {
 	// Setup TLS if not disabled.
 	listenFunc := net.Listen
 	if !cfg.DisableTLS {
@@ -334,15 +334,15 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 /*
 // WaitForShutdown blocks until the main listener and peer handlers are stopped.
 */
-func (self Server) WaitForShutdown() {
+func (self *Server) WaitForShutdown() {
 	self.waitGroup.Wait()
 }
 
 /*
 // Stop gracefully shuts down the connection manager.
 */
-func (self Server) Stop() error {
-	// stop connection manager
+func (self *Server) Stop() error {
+	// stop connManager
 	self.connManager.Stop()
 
 	// Shutdown the RPC server if it's not disabled.
@@ -375,7 +375,7 @@ func (self Server) Stop() error {
 // peers to and from the server, banning peers, and broadcasting messages to
 // peers.  It must be run in a goroutine.
 */
-func (self Server) peerHandler() {
+func (self *Server) peerHandler() {
 	// Start the address manager and sync manager, both of which are needed
 	// by peers.  This is done here since their lifecycle is closely tied
 	// to this handler and rather than adding more channels to sychronize
@@ -579,7 +579,7 @@ func (self *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
 // until the transaction has been fully processed.  Unlock the block
 // handler this does not serialize all transactions through a single thread
 // transactions don't rely on the previous one in a linear fashion like blocks.
-func (self Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
+func (self *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Info("Receive a new transaction START")
 	var txProcessed chan struct{}
 	self.netSync.QueueTx(nil, msg, txProcessed)
@@ -588,7 +588,7 @@ func (self Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Info("Receive a new transaction END")
 }
 
-/*func (self Server) OnRegistration(peer *peer.PeerConn, msg *wire.MessageRegistration) {
+/*func (self *Server) OnRegistration(peer *peer.PeerConn, msg *wire.MessageRegistration) {
 	Logger.log.Info("Receive a new registration START")
 	var txProcessed chan struct{}
 	self.netSync.QueueRegisteration(nil, msg, txProcessed)
@@ -597,21 +597,21 @@ func (self Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Info("Receive a new registration END")
 }*/
 
-func (self Server) OnSwapRequest(peer *peer.PeerConn, msg *wire.MessageSwapRequest) {
+func (self *Server) OnSwapRequest(peer *peer.PeerConn, msg *wire.MessageSwapRequest) {
 	Logger.log.Info("Receive a new request swap START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a new request swap END")
 }
 
-func (self Server) OnSwapSig(peer *peer.PeerConn, msg *wire.MessageSwapSig) {
+func (self *Server) OnSwapSig(peer *peer.PeerConn, msg *wire.MessageSwapSig) {
 	Logger.log.Info("Receive a new sign swap START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a new sign swap END")
 }
 
-func (self Server) OnSwapUpdate(peer *peer.PeerConn, msg *wire.MessageSwapUpdate) {
+func (self *Server) OnSwapUpdate(peer *peer.PeerConn, msg *wire.MessageSwapUpdate) {
 	Logger.log.Info("Receive a new update swap START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)

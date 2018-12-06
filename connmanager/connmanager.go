@@ -74,7 +74,7 @@ type DiscoverPeerInfo struct {
 }
 
 // Stop gracefully shuts down the connection manager.
-func (self ConnManager) Stop() {
+func (self *ConnManager) Stop() {
 	if atomic.AddInt32(&self.stop, 1) != 1 {
 		Logger.log.Error("Connection manager already stopped")
 		return
@@ -101,7 +101,7 @@ func (self ConnManager) New(cfg *Config) *ConnManager {
 	return &self
 }
 
-func (self ConnManager) GetPeerId(addr string) string {
+func (self *ConnManager) GetPeerId(addr string) string {
 	ipfsAddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
 		log.Print(err)
@@ -120,7 +120,7 @@ func (self ConnManager) GetPeerId(addr string) string {
 	return peerId.Pretty()
 }
 
-func (self ConnManager) GetPeerIDStr(addr string) (string, error) {
+func (self *ConnManager) GetPeerIDStr(addr string) (string, error) {
 	ipfsaddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
 		Logger.log.Error(err)
