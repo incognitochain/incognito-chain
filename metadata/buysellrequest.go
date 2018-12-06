@@ -26,14 +26,6 @@ func NewBuySellRequest(bsReqData map[string]interface{}) *BuySellRequest {
 	}
 }
 
-func (bsReq *BuySellRequest) Validate() error {
-	return nil
-}
-
-func (bsReq *BuySellRequest) Process() error {
-	return nil
-}
-
 func (bsReq *BuySellRequest) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	txFee := tr.GetTxFee()
 	if txFee < minFee {
@@ -46,17 +38,18 @@ func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr Block
 	return true, nil
 }
 
+func (bsReq *BuySellRequest) ValidateSanityData() (bool, bool, error) {
+	return true, true, nil
+}
+
+func (bsReq *BuySellRequest) ValidateMetadataByItself() bool {
+	return true
+}
+
 func (bsReq *BuySellRequest) GetType() int {
 	return BuySellRequestMeta
 }
 
 func (bsReq *BuySellRequest) Hash() *common.Hash {
-	record := string(bsReq.PaymentAddress.ToBytes())
-	record += string(bsReq.AssetType[:])
-	record += string(bsReq.Amount)
-	record += string(bsReq.SaleID)
-
-	// final hash
-	hash := common.DoubleHashH([]byte(record))
-	return &hash
+	return &common.Hash{}
 }

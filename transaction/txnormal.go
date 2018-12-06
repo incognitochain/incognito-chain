@@ -146,24 +146,124 @@ func (tx *Tx) ValidateTxWithBlockChain(bcr metadata.BlockchainRetriever, chainID
 	return tx.validateDoubleSpendWithBlockchain(bcr, chainID)
 }
 
-// Hash returns the hash of all fields of the transaction
-func (tx Tx) Hash() *common.Hash {
-	record := strconv.Itoa(int(tx.Version))
-	record += tx.Type
-	record += strconv.FormatInt(tx.LockTime, 10)
-	record += strconv.FormatUint(tx.Fee, 10)
-	record += strconv.Itoa(len(tx.Descs))
-	for _, desc := range tx.Descs {
-		record += desc.toString()
+func (tx *Tx) validateNormalTxSanityData() (bool, error) {
+	txN := tx
+	//check version
+	if txN.Version > TxVersion {
+		return false, errors.New("Wrong tx version")
 	}
-	record += string(tx.JSPubKey)
-	// record += string(tx.JSSig)
-	record += string(tx.AddressLastByte)
+	// check LockTime before now
+	if int64(txN.LockTime) > time.Now().Unix() {
+		return false, errors.New("Wrong tx locktime")
+	}
+	// check Type is normal or salary tx
+	if len(txN.Type) != 1 || (txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType) { // only 1 byte
+		return false, errors.New("Wrong tx type")
+	}
+	// check length of JSPubKey
+	if len(txN.JSPubKey) != 64 {
+		return false, errors.New("Wrong tx jspubkey")
+	}
+	// check length of JSSig
+	if len(txN.JSSig) != 64 {
+		return false, errors.New("Wrong tx jssig")
+	}
+	//check Descs
+
+	for _, desc := range txN.Descs {
+		// check length of Anchor
+		if len(desc.Anchor) != 2 {
+			return false, errors.New("Wrong tx desc's anchor")
+		}
+		// check length of EphemeralPubKey
+		if len(desc.EphemeralPubKey) != client.EphemeralKeyLength {
+			return false, errors.New("Wrong tx desc's ephemeralpubkey")
+		}
+		// check length of HSigSeed
+		if len(desc.HSigSeed) != 32 {
+			return false, errors.New("Wrong tx desc's hsigseed")
+		}
+		// check length of Nullifiers
+		if len(desc.Nullifiers) != 2 {
+			return false, errors.New("Wrong tx desc's nullifiers")
+		}
+		if len(desc.Nullifiers[0]) != 32 {
+			return false, errors.New("Wrong tx desc's nullifiers")
+		}
+		if len(desc.Nullifiers[1]) != 32 {
+			return false, errors.New("Wrong tx desc's nullifiers")
+		}
+		// check length of Commitments
+		if len(desc.Commitments) != 2 {
+			return false, errors.New("Wrong tx desc's commitments")
+		}
+		if len(desc.Commitments[0]) != 32 {
+			return false, errors.New("Wrong tx desc's commitments")
+		}
+		if len(desc.Commitments[1]) != 32 {
+			return false, errors.New("Wrong tx desc's commitments")
+		}
+		// check length of Vmacs
+		if len(desc.Vmacs) != 2 {
+			return false, errors.New("Wrong tx desc's vmacs")
+		}
+		if len(desc.Vmacs[0]) != 32 {
+			return false, errors.New("Wrong tx desc's vmacs")
+		}
+		if len(desc.Vmacs[1]) != 32 {
+			return false, errors.New("Wrong tx desc's vmacs")
+		}
+		//
+		if desc.Proof == nil && len(desc.Note) == 0 {
+			return false, errors.New("Wrong tx desc's proof")
+		}
+		if desc.Proof != nil {
+			// check length of Proof
+			if len(desc.Proof.G_A) != 33 ||
+				len(desc.Proof.G_APrime) != 33 ||
+				len(desc.Proof.G_B) != 65 ||
+				len(desc.Proof.G_BPrime) != 33 ||
+				len(desc.Proof.G_C) != 33 ||
+				len(desc.Proof.G_CPrime) != 33 ||
+				len(desc.Proof.G_K) != 33 ||
+				len(desc.Proof.G_H) != 33 {
+				return false, errors.New("Wrong tx desc's proof")
+			}
+			//
+			if len(desc.EncryptedData) != 2 {
+				return false, errors.New("Wrong tx desc's encryptedData")
+			}
+		}
+		// // TODO: @0xbunyip - should move logic below to BuySellDCBResponse metadata type's logic
+		// check nulltifier is existed in DB
+		// if desc.Reward != 0 && !allowReward {
+		// 	return false, errors.New("Wrong tx desc's reward")
+		// }
+	}
+	return true, nil
+}
+
+func (tx *Tx) ValidateSanityData() (bool, error) {
 	if tx.Metadata != nil {
-		record += string(tx.Metadata.Hash()[:])
+		isContinued, ok, err := tx.Metadata.ValidateSanityData()
+		if err != nil || !ok || !isContinued {
+			return ok, err
+		}
 	}
-	hash := common.DoubleHashH([]byte(record))
-	return &hash
+	return tx.validateNormalTxSanityData()
+}
+
+func (tx *Tx) ValidateTxByItself(
+	bcr metadata.BlockchainRetriever,
+) bool {
+	ok := tx.ValidateTransaction()
+	if !ok {
+		return false
+	}
+	if tx.Metadata != nil {
+		return tx.Metadata.ValidateMetadataByItself()
+	}
+	return true
 }
 
 // ValidateTransaction returns true if transaction is valid:
@@ -218,6 +318,27 @@ func (tx *Tx) ValidateTransaction() bool {
 	}
 
 	return true
+}
+
+// Hash returns the hash of all fields of the transaction
+func (tx Tx) Hash() *common.Hash {
+	record := strconv.Itoa(int(tx.Version))
+	record += tx.Type
+	record += strconv.FormatInt(tx.LockTime, 10)
+	record += strconv.FormatUint(tx.Fee, 10)
+	record += strconv.Itoa(len(tx.Descs))
+	for _, desc := range tx.Descs {
+		record += desc.toString()
+	}
+
+	record += string(tx.JSPubKey)
+	// record += string(tx.JSSig)
+	record += string(tx.AddressLastByte)
+	if tx.Metadata != nil {
+		record += string(tx.Metadata.Hash()[:])
+	}
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
 }
 
 // GetType returns the type of the transaction

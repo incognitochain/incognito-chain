@@ -559,7 +559,7 @@ func (self *BlockChain) ProcessLoanPayment(tx *transaction.TxLoanPayment) error 
 	value := uint64(0)
 	for _, desc := range tx.Descs {
 		for _, note := range desc.Note {
-			accountDCB, _ := wallet.Base58CheckDeserialize(DCBAddress)
+			accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 			dcbPk := accountDCB.KeySet.PaymentAddress.Pk
 			if bytes.Equal(note.Apk[:], dcbPk) {
 				value += note.Value

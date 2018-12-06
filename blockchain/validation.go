@@ -259,8 +259,8 @@ func (self *BlockChain) ValidateTxDividendPayout(tx metadata.Transaction, chainI
 }
 
 func isAnyBoardAddressInVins(customToken *transaction.TxCustomToken) bool {
-	GOVAddressStr := string(GOVAddress)
-	DCBAddressStr := string(DCBAddress)
+	GOVAddressStr := string(common.GOVAddress)
+	DCBAddressStr := string(common.DCBAddress)
 	for _, vin := range customToken.TxTokenData.Vins {
 		apkStr := string(vin.PaymentAddress.Pk[:])
 		if apkStr == GOVAddressStr || apkStr == DCBAddressStr {
@@ -329,10 +329,10 @@ func (bc *BlockChain) verifyByBoard(
 	var address string
 	var pubKeys []string
 	if boardType == common.DCB {
-		address = string(DCBAddress)
+		address = string(common.DCBAddress)
 		pubKeys = bc.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys
 	} else if boardType == common.GOV {
-		govAccount, _ := wallet.Base58CheckDeserialize(GOVAddress)
+		govAccount, _ := wallet.Base58CheckDeserialize(common.GOVAddress)
 		address = string(govAccount.KeySet.PaymentAddress.Pk)
 		pubKeys = bc.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys
 	} else {
@@ -379,7 +379,7 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx metadata.Transaction, cha
 		return fmt.Errorf("Sale ended")
 	}
 
-	dbcAccount, _ := wallet.Base58CheckDeserialize(DCBAddress)
+	dbcAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	if bytes.Equal(saleData.BuyingAsset[:8], BondTokenID[:8]) {
 		for _, vout := range requestTx.TxTokenData.Vouts {
 			if !bytes.Equal(vout.BuySellResponse.BondID, saleData.BuyingAsset[8:]) {
@@ -388,14 +388,14 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx metadata.Transaction, cha
 
 			// Check if receiving address is DCB's
 			if !bytes.Equal(vout.PaymentAddress.Pk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
-				return fmt.Errorf("Sending payment to %x instead of %x", vout.PaymentAddress.Pk[:], DCBAddress)
+				return fmt.Errorf("Sending payment to %x instead of %x", vout.PaymentAddress.Pk[:], common.DCBAddress)
 			}
 		}
 	} else if bytes.Equal(saleData.BuyingAsset, ConstantID[:]) {
 		for _, desc := range requestTx.Tx.Descs {
 			for _, note := range desc.Note {
 				if !bytes.Equal(note.Apk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
-					return fmt.Errorf("Sending payment to %x instead of %x", note.Apk[:], DCBAddress)
+					return fmt.Errorf("Sending payment to %x instead of %x", note.Apk[:], common.DCBAddress)
 				}
 			}
 		}

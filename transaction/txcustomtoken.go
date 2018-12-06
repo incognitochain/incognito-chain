@@ -119,18 +119,51 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	return customTokenTx.validateDoubleSpendCustomTokenWithBlockchain(bcr)
 }
 
-// Hash returns the hash of all fields of the transaction
-func (tx TxCustomToken) Hash() *common.Hash {
-	// get hash of tx
-	record := tx.Tx.Hash().String()
+func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData() (bool, error) {
+	ok, err := txCustomToken.Tx.ValidateSanityData()
+	if err != nil || !ok {
+		return ok, err
+	}
+	vins := txCustomToken.TxTokenData.Vins
+	zeroHash := common.Hash{}
+	for _, vin := range vins {
+		if len(vin.PaymentAddress.Pk) == 0 {
+			return false, errors.New("Wrong input transaction")
+		}
+		// TODO: @0xbunyip - should move logic below to BuySellDCBResponse metadata's logic
+		// dbcAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+		// if bytes.Equal(vin.PaymentAddress.Pk, dbcAccount.KeySet.PaymentAddress.Pk) {
+		// 	if !allowToUseDCBFund {
+		// 		return false, errors.New("Cannot use DCB's fund here")
+		// 	}
+		// }
+		if vin.Signature == "" {
+			return false, errors.New("Wrong signature")
+		}
+		if vin.TxCustomTokenID.String() == zeroHash.String() {
+			return false, errors.New("Wrong input transaction")
+		}
+	}
+	vouts := txCustomToken.TxTokenData.Vouts
+	for _, vout := range vouts {
+		if len(vout.PaymentAddress.Pk) == 0 {
+			return false, errors.New("Wrong input transaction")
+		}
+		if vout.Value == 0 {
+			return false, errors.New("Wrong input transaction")
+		}
+	}
+	return true, nil
+}
 
-	// add more hash of txtokendata
-	txTokenDataHash, _ := tx.TxTokenData.Hash()
-	record += txTokenDataHash.String()
-
-	// final hash
-	hash := common.DoubleHashH([]byte(record))
-	return &hash
+func (customTokenTx *TxCustomToken) ValidateSanityData() (bool, error) {
+	if customTokenTx.Metadata != nil {
+		isContinued, ok, err := customTokenTx.Metadata.ValidateSanityData()
+		if err != nil || !ok || !isContinued {
+			return ok, err
+		}
+	}
+	return customTokenTx.validateCustomTokenTxSanityData()
 }
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
@@ -159,6 +192,57 @@ func (tx *TxCustomToken) ValidateTransaction() bool {
 		return true
 	}
 	return false
+}
+
+func (customTokenTx *TxCustomToken) getListUTXOFromTxCustomToken(
+	bcr metadata.BlockchainRetriever,
+) bool {
+	data := make(map[common.Hash]TxCustomToken)
+	for _, vin := range customTokenTx.TxTokenData.Vins {
+		_, _, _, utxo, err := bcr.GetTransactionByHash(&vin.TxCustomTokenID)
+		if err != nil {
+			// Logger.log.Error(err)
+			return false
+		}
+		data[vin.TxCustomTokenID] = *(utxo.(*TxCustomToken))
+	}
+	if len(data) == 0 {
+		// Logger.log.Error(errors.New("Can not find any utxo for TxCustomToken"))
+		return false
+	}
+	customTokenTx.SetListUtxo(data)
+	return true
+}
+
+func (customTokenTx *TxCustomToken) ValidateTxByItself(
+	bcr metadata.BlockchainRetriever,
+) bool {
+	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
+	if !ok {
+		return false
+	}
+	ok = customTokenTx.ValidateTransaction()
+	if !ok {
+		return false
+	}
+	if customTokenTx.Metadata != nil {
+		return customTokenTx.Metadata.ValidateMetadataByItself()
+	}
+	return true
+}
+
+// Hash returns the hash of all fields of the transaction
+func (tx TxCustomToken) Hash() *common.Hash {
+	// get hash of tx
+	record := tx.Tx.Hash().String()
+
+	// add more hash of txtokendata
+	txTokenDataHash, _ := tx.TxTokenData.Hash()
+	record += txTokenDataHash.String()
+
+	// final hash
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
 }
 
 // GetTxVirtualSize computes the virtual size of a given transaction

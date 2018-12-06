@@ -77,20 +77,6 @@ func (lr *LoanRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (lr *LoanRequest) Validate() error {
-	//// TODO: save and check type on-chain
-	//if tx.CollateralType != "ETH" {
-	//	return false
-	//}
-
-	//if len(tx.KeyDigest) != LoanKeyDigestLen {
-	//	return false
-	//}
-
-	//return true
-	return nil
-}
-
 func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
 	// Check if loan's params are correct
 	dcbParams := bcr.GetDCBParams()
@@ -116,6 +102,10 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 	return true, nil
 }
 
-func (lr *LoanRequest) Process() error {
-	return nil
+func (lr *LoanRequest) ValidateSanityData() (bool, bool, error) {
+	return true, true, nil
+}
+
+func (lr *LoanRequest) ValidateMetadataByItself() bool {
+	return true
 }

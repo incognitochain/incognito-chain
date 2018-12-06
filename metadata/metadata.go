@@ -54,6 +54,7 @@ type BlockchainRetriever interface {
 	GetHeight() int32
 	GetNulltifiersList(byte) ([][]byte, error)
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
+	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
 	GetDCBParams() params.DCBParams
 	GetDCBBoardPubKeys() []string
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
@@ -63,10 +64,10 @@ type BlockchainRetriever interface {
 type Metadata interface {
 	GetType() int
 	Hash() *common.Hash
-	Validate() error
-	Process() error
 	CheckTransactionFee(Transaction, uint64) bool
 	ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte) (bool, error)
+	ValidateSanityData() (bool, bool, error)
+	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
 }
 
 // Interface for all type of transaction
@@ -85,5 +86,7 @@ type Transaction interface {
 	IsSalaryTx() bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
 	ValidateTxWithBlockChain(BlockchainRetriever, byte) error
+	ValidateSanityData() (bool, error)
+	ValidateTxByItself(BlockchainRetriever) bool
 	GetMetadata() Metadata
 }

@@ -192,15 +192,17 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 
 	// sanity data
-	if validate, errS := tp.ValidateSanityData(tx); !validate {
+	// if validate, errS := tp.ValidateSanityData(tx); !validate {
+	if validated, errS := tx.ValidateSanityData(); !validated {
 		err := MempoolTxError{}
 		err.Init(RejectSansityTx, errors.New(fmt.Sprintf("transaction's sansity %v is error %v", txHash.String(), errS.Error())))
 		return nil, nil, err
 	}
 
 	// ValidateTransaction tx by it self
-	validate := tp.ValidateTxByItSelf(tx)
-	if !validate {
+	// validate := tp.ValidateTxByItSelf(tx)
+	validated := tx.ValidateTxByItself(tp.config.BlockChain)
+	if !validated {
 		err := MempoolTxError{}
 		err.Init(RejectInvalidTx, errors.New("Invalid tx"))
 		return nil, nil, err
@@ -331,7 +333,7 @@ func (tp *TxPool) validateSanityCustomTokenTxData(txCustomToken *transaction.TxC
 		if len(vin.PaymentAddress.Pk) == 0 {
 			return false, errors.New("Wrong input transaction")
 		}
-		dbcAccount, _ := wallet.Base58CheckDeserialize(blockchain.DCBAddress)
+		dbcAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 		if bytes.Equal(vin.PaymentAddress.Pk, dbcAccount.KeySet.PaymentAddress.Pk) {
 			if !allowToUseDCBFund {
 				return false, errors.New("Cannot use DCB's fund here")
