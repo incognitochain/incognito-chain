@@ -13,12 +13,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	peer2 "github.com/libp2p/go-libp2p-peer"
+	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/addrmanager"
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/connmanager"
-	"github.com/ninjadotorg/constant/consensus/ppos"
+	"github.com/ninjadotorg/constant/consensus/constantpos"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/mempool"
 	"github.com/ninjadotorg/constant/netsync"
@@ -45,7 +45,7 @@ type Server struct {
 	netSync         *netsync.NetSync
 	addrManager     *addrmanager.AddrManager
 	wallet          *wallet.Wallet
-	consensusEngine *ppos.Engine
+	consensusEngine *constantpos.Engine
 	blockgen        *blockchain.BlkTmplGenerator
 	rewardAgent     *rewardagent.RewardAgent
 	// The fee estimator keeps track of how long transactions are left in
@@ -122,21 +122,21 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	var err error
 
 	// Create a new block chain instance with the appropriate configuration.9
-	if cfg.Light {
-		if self.wallet == nil {
-			return errors.New("Wallet NOT FOUND. Light Mode required Wallet with at least one child account")
-		}
-		if len(self.wallet.MasterAccount.Child) < 1 {
-			return errors.New("No child account in wallet. Light Mode required Wallet with at least one child account")
-		}
-	}
+	// if cfg.Light {
+	// 	if self.wallet == nil {
+	// 		return errors.New("Wallet NOT FOUND. Light Mode required Wallet with at least one child account")
+	// 	}
+	// 	if len(self.wallet.MasterAccount.Child) < 1 {
+	// 		return errors.New("No child account in wallet. Light Mode required Wallet with at least one child account")
+	// 	}
+	// }
 	self.blockChain = &blockchain.BlockChain{}
 	err = self.blockChain.Init(&blockchain.Config{
 		ChainParams: self.chainParams,
 		DataBase:    self.dataBase,
 		Interrupt:   interrupt,
-		Light:       cfg.Light,
-		Wallet:      self.wallet,
+		// Light:       cfg.Light,
+		Wallet: self.wallet,
 	})
 	if err != nil {
 		return err
@@ -144,7 +144,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 
 	// Search for a feeEstimator state in the database. If none can be found
 	// or if it cannot be loaded, create a new one.
-	if cfg.FastMode {
+	if false {
 		Logger.log.Info("Load chain dependencies from DB")
 		self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 		for _, bestState := range self.blockChain.BestState {
@@ -209,14 +209,13 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	if err != nil {
 		return err
 	}
-	self.consensusEngine, err = ppos.Engine{}.Init(&ppos.EngineConfig{
-		ChainParams:  self.chainParams,
-		BlockChain:   self.blockChain,
-		ConnManager:  self.connManager,
-		MemPool:      self.memPool,
-		Server:       self,
-		FeeEstimator: self.feeEstimator,
-		BlockGen:     self.blockgen,
+	self.consensusEngine, err = constantpos.Engine{}.Init(&constantpos.EngineConfig{
+		ChainParams: self.chainParams,
+		BlockChain:  self.blockChain,
+		ConnManager: self.connManager,
+		MemPool:     self.memPool,
+		Server:      self,
+		BlockGen:    self.blockgen,
 	})
 	if err != nil {
 		return err
@@ -275,22 +274,23 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		}
 
 		rpcConfig := rpcserver.RpcServerConfig{
-			Listenters:      rpcListeners,
-			RPCQuirks:       cfg.RPCQuirks,
-			RPCMaxClients:   cfg.RPCMaxClients,
-			ChainParams:     chainParams,
-			BlockChain:      self.blockChain,
-			TxMemPool:       self.memPool,
-			Server:          self,
-			Wallet:          self.wallet,
-			ConnMgr:         self.connManager,
-			AddrMgr:         self.addrManager,
-			RPCUser:         cfg.RPCUser,
-			RPCPass:         cfg.RPCPass,
-			RPCLimitUser:    cfg.RPCLimitUser,
-			RPCLimitPass:    cfg.RPCLimitPass,
-			DisableAuth:     cfg.RPCDisableAuth,
-			IsGenerateNode:  cfg.Generate,
+			Listenters:    rpcListeners,
+			RPCQuirks:     cfg.RPCQuirks,
+			RPCMaxClients: cfg.RPCMaxClients,
+			ChainParams:   chainParams,
+			BlockChain:    self.blockChain,
+			TxMemPool:     self.memPool,
+			Server:        self,
+			Wallet:        self.wallet,
+			ConnMgr:       self.connManager,
+			AddrMgr:       self.addrManager,
+			RPCUser:       cfg.RPCUser,
+			RPCPass:       cfg.RPCPass,
+			RPCLimitUser:  cfg.RPCLimitUser,
+			RPCLimitPass:  cfg.RPCLimitPass,
+			DisableAuth:   cfg.RPCDisableAuth,
+			// IsGenerateNode:  cfg.Generate,
+			NodeRole:        cfg.NodeRole,
 			FeeEstimator:    self.feeEstimator,
 			ProtocolVersion: self.protocolVersion,
 		}
@@ -350,17 +350,17 @@ func (self Server) Stop() error {
 	}
 
 	// Save fee estimator in the db
-	for chainId, feeEstimator := range self.feeEstimator {
-		feeEstimatorData := feeEstimator.Save()
-		if len(feeEstimatorData) > 0 {
-			err := self.dataBase.StoreFeeEstimator(feeEstimatorData, chainId)
-			if err != nil {
-				Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", chainId, err)
-			} else {
-				Logger.log.Infof("Save fee estimator data on chain #%d", chainId)
-			}
-		}
-	}
+	// for chainId, feeEstimator := range self.feeEstimator {
+	// 	feeEstimatorData := feeEstimator.Save()
+	// 	if len(feeEstimatorData) > 0 {
+	// 		err := self.dataBase.StoreFeeEstimator(feeEstimatorData, chainId)
+	// 		if err != nil {
+	// 			Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", chainId, err)
+	// 		} else {
+	// 			Logger.log.Infof("Save fee estimator data on chain #%d", chainId)
+	// 		}
+	// 	}
+	// }
 
 	self.consensusEngine.Stop()
 
@@ -443,24 +443,21 @@ func (self Server) Start() {
 		self.rpcServer.Start()
 	}
 
-	// //creat mining
-	// if cfg.Generate == true && (len(cfg.MiningAddrs) > 0) {
-	// 	self.Miner.Start()
-	// }
 	err := self.consensusEngine.Start()
 	if err != nil {
 		Logger.log.Error(err)
 		go self.Stop()
 		return
 	}
-	if cfg.Generate == true && (len(cfg.ProducerSpendingKey) > 0) {
-		producerKeySet, err := cfg.GetProducerKeySet()
-		if err != nil {
-			Logger.log.Critical(err)
-			return
-		}
-		self.consensusEngine.StartProducer(*producerKeySet)
-	}
+	// if cfg.Generate == true && (len(cfg.UserPrvKey) > 0) {
+	// 	userKeySet, err := cfg.GetProducerKeySet()
+	// 	if err != nil {
+	// 		Logger.log.Critical(err)
+	// 		return
+	// 	}
+	// 	self.consensusEngine.StartProducer(*producerKeySet)
+	// 	self.consensusEngine.StartSwap()
+	// }
 }
 
 /*
@@ -520,9 +517,9 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 // newPeerConfig returns the configuration for the listening RemotePeer.
 */
 func (self *Server) NewPeerConfig() *peer.Config {
-	producerKeySet, err := cfg.GetProducerKeySet()
+	KeySetUser, err := cfg.GetUserKeySet()
 	if err != nil {
-		Logger.log.Critical("cfg GetProducerKeySet error", err)
+		Logger.log.Critical(err)
 	}
 	config := &peer.Config{
 		MessageListeners: peer.MessageListeners{
@@ -547,8 +544,9 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnSwapUpdate:  self.OnSwapUpdate,
 		},
 	}
-	config.ProducerKeySet = producerKeySet
-
+	if len(KeySetUser.PrivateKey) != 0 {
+		config.UserKeySet = KeySetUser
+	}
 	return config
 }
 
@@ -789,8 +787,8 @@ func (self *Server) OnChainState(_ *peer.PeerConn, msg *wire.MessageChainState) 
 	Logger.log.Info("Receive a chainstate END")
 }
 
-func (self *Server) GetPeerIDsFromPublicKey(pubKey string) []peer2.ID {
-	result := []peer2.ID{}
+func (self *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
+	result := []libp2p.ID{}
 
 	for _, listener := range self.connManager.Config.ListenerPeers {
 		for _, peerConn := range listener.PeerConns {
@@ -829,7 +827,7 @@ func (self *Server) PushMessageToAll(msg wire.Message) error {
 /*
 PushMessageToPeer push msg to peer
 */
-func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
+func (self *Server) PushMessageToPeer(msg wire.Message, peerId libp2p.ID) error {
 	Logger.log.Infof("Push msg to peer %s", peerId.String())
 	var dc chan<- struct{}
 	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
@@ -929,11 +927,16 @@ func (self Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.RawAddress
 	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
 	msg.(*wire.MessageVersion).ProtocolVersion = self.protocolVersion
-
-	// ValidateTransaction Public Key from ProducerPrvKey
-	if peerConn.ListenerPeer.Config.ProducerKeySet != nil {
-		msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.Config.ProducerKeySet.GetPublicKeyB58()
-	}
+	msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.Config.UserKeySet.GetPublicKeyB58()
+	// Validate Public Key from UserPrvKey
+	// if peerConn.ListenerPeer.Config.UserKeySet != "" {
+	// 	// keySet, err := cfg.GetUserKeySet()
+	// 	// if err != nil {
+	// 	// 	Logger.log.Critical("Invalid producer's private key")
+	// 	// 	return err
+	// 	// }
+	// 	msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.Config.UserKeySet.GetPublicKeyB58()
+	// }
 
 	if err != nil {
 		return err

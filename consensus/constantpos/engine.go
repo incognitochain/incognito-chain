@@ -13,24 +13,25 @@ import (
 
 type Engine struct {
 	sync.Mutex
-	started         bool
-	producerStarted bool
-	committeeMutex  sync.Mutex
+	started          bool
+	producerStarted  bool
+	cmWatcherStarted bool
 
 	// channel
-	cQuit         chan struct{}
-	cQuitProducer chan struct{}
-	cBlockSig     chan blockSig
-	cQuitSwap     chan struct{}
-	cSwapChain    chan byte
-	cSwapSig      chan swapSig
-	cNewBlock     chan blockchain.Block
+	cQuit                 chan struct{}
+	cQuitProducer         chan struct{}
+	cBlockSig             chan blockSig
+	cQuitSwap             chan struct{}
+	cSwapChain            chan byte
+	cSwapSig              chan swapSig
+	cNewBlock             chan blockchain.Block
+	cQuitCommitteeWatcher chan struct{}
 
 	config                EngineConfig
 	knownChainsHeight     chainsHeight
 	validatedChainsHeight chainsHeight
 
-	committee committeeStruct
+	Committee CommitteeStruct
 }
 
 type EngineConfig struct {
@@ -52,12 +53,15 @@ type EngineConfig struct {
 //Init apply configuration to consensus engine
 func (self Engine) Init(cfg *EngineConfig) (*Engine, error) {
 	return &Engine{
-		committeeMutex: sync.Mutex{},
-		config:         *cfg,
+		config: *cfg,
 	}, nil
 }
 
-func (self *Engine) Start() {
+func (self *Engine) Start() error {
+	return nil
+}
+
+func (self *Engine) Stop() {
 
 }
 
@@ -91,5 +95,5 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Header.Height)
 	self.validatedChainsHeight.Unlock()
 
-	self.committee.UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)
+	self.Committee.UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)
 }

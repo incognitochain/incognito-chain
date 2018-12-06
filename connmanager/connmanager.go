@@ -320,19 +320,19 @@ listen:
 
 				var pbkB58 string
 				signDataB58 := ""
-				if listener.Config.ProducerKeySet != nil {
-					pbkB58 = listener.Config.ProducerKeySet.GetPublicKeyB58()
+				if listener.Config.UserKeySet != nil {
+					pbkB58 = listener.Config.UserKeySet.GetPublicKeyB58()
 					Logger.log.Info("Start Discover Peers", pbkB58)
 					// sign data
-					signDataB58, err = listener.Config.ProducerKeySet.SignDataB58([]byte{byte(0x00)})
+					signDataB58, err = listener.Config.UserKeySet.SignDataB58([]byte{byte(0x00)})
 					if err != nil {
 						Logger.log.Error(err)
 					}
-					//sig, err := listener.Config.ProducerKeySet.Sign([]byte{byte(0x00)})
+					//sig, err := listener.Config.UserKeySet.Sign([]byte{byte(0x00)})
 					//if err != nil {
 					//	Logger.log.Error(err)
 					//}
-					//ok, err := listener.Config.ProducerKeySet.Verify([]byte{byte(0x00)}, sig)
+					//ok, err := listener.Config.UserKeySet.Verify([]byte{byte(0x00)}, sig)
 					//if err != nil {
 					//	Logger.log.Error(err)
 					//}

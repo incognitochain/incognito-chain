@@ -134,7 +134,7 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 		return
 	}
 	newMsg.(*wire.MessageChainState).ChainInfo = ChainInfo{
-		CurrentCommittee:        self.committee.GetCommittee(),
+		CurrentCommittee:        self.Committee.GetCommittee(),
 		CandidateListMerkleHash: common.EmptyString,
 		ChainsHeight:            self.validatedChainsHeight.Heights,
 	}
@@ -150,7 +150,7 @@ func (self *Engine) OnSwapRequest(msg *wire.MessageSwapRequest) {
 		return
 	}
 
-	committee := self.committee.GetCommittee()
+	committee := self.Committee.GetCommittee()
 
 	if common.IndexOfStr(msg.Requester, committee) < 0 {
 		Logger.log.Error("ERROR OnSwapRequest is not existed committee")
@@ -218,7 +218,7 @@ func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
 		return
 	}
 
-	committee := self.committee.GetCommittee()
+	committee := self.Committee.GetCommittee()
 
 	if common.IndexOfStr(msg.Candidate, committee) >= 0 {
 		Logger.log.Error("ERROR OnSwapUpdate is existed committee")
@@ -245,7 +245,7 @@ func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
 		return
 	}
 	//TODO update committee list
-	self.updateCommittee(msg.Candidate, msg.ChainID)
+	self.Committee.UpdateCommittee(msg.Candidate, msg.ChainID)
 
 	return
 }

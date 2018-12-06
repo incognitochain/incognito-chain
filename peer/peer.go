@@ -18,9 +18,9 @@ import (
 	"github.com/libp2p/go-libp2p-net"
 	"github.com/libp2p/go-libp2p-peer"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/wire"
-	"github.com/ninjadotorg/constant/cashec"
 )
 
 // ConnState represents the state of the requested connection.
@@ -75,7 +75,7 @@ type NewStreamMsg struct {
 // config is the struct to hold configuration options useful to RemotePeer.
 type Config struct {
 	MessageListeners MessageListeners
-	ProducerKeySet   *cashec.KeySet
+	UserKeySet       *cashec.KeySet
 	MaxOutbound      int
 	MaxInbound       int
 }
@@ -140,7 +140,7 @@ func (self *Peer) ReceivedHashMessage(hash string) {
 	}
 }
 
-func (self *Peer) CheckHashMessage(hash string) (bool) {
+func (self *Peer) CheckHashMessage(hash string) bool {
 	if self.messagePool == nil {
 		self.messagePool = make(map[string]bool)
 	}
@@ -346,7 +346,7 @@ func (self *Peer) NumOutbound() int {
 	return ret
 }
 
-func (self *Peer) GetPeerConnByPeerID(peerID string) (*PeerConn) {
+func (self *Peer) GetPeerConnByPeerID(peerID string) *PeerConn {
 	peerConn, ok := self.PeerConns[peerID]
 	if ok {
 		return peerConn
@@ -354,7 +354,7 @@ func (self *Peer) GetPeerConnByPeerID(peerID string) (*PeerConn) {
 	return nil
 }
 
-func (self *Peer) GetPeerConnByPbk(pbk string) (*PeerConn) {
+func (self *Peer) GetPeerConnByPbk(pbk string) *PeerConn {
 	for _, peerConn := range self.PeerConns {
 		if peerConn.RemotePeer.PublicKey == pbk {
 			return peerConn
@@ -363,7 +363,7 @@ func (self *Peer) GetPeerConnByPbk(pbk string) (*PeerConn) {
 	return nil
 }
 
-func (self *Peer) GetListPeerConnByShard(shard byte) ([]*PeerConn) {
+func (self *Peer) GetListPeerConnByShard(shard byte) []*PeerConn {
 	peerConns := make([]*PeerConn, 0)
 	for _, peerConn := range self.PeerConns {
 		if peerConn.RemotePeer.Shard == shard {
