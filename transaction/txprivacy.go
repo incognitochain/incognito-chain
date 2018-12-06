@@ -153,23 +153,31 @@ func (tx *Tx) CreateTx(
 	// create new output coins
 	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, len(paymentInfo))
 
+	var sndOuts []*big.Int
+	sndOut := new(big.Int)
 	ok := true
 
-	// create new output coins with info: Pk, value, SND
+	// create new output coins with info: SND
+	for ok {
+		sndOuts := make([]*big.Int, len(paymentInfo))
+
+		for i := 0; i < len(paymentInfo); i++ {
+			sndOut = privacy.RandInt()
+			for CheckSNDExistence(sndOut) {
+				sndOut = privacy.RandInt()
+			}
+			sndOuts = append(sndOuts, sndOut)
+		}
+	}
+
+	// create new output coins with info: Pk, value, last byte of pk
 	for i, pInfo := range paymentInfo {
 		tx.Proof.OutputCoins[i] = new(privacy.OutputCoin)
 		tx.Proof.OutputCoins[i].CoinDetails.Value = pInfo.Amount
 		tx.Proof.OutputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
-		sndOut := new(big.Int)
-		for ok {
-			sndOut = privacy.RandInt()
-			ok = CheckSNDExistence( sndOut)
-		}
-		snDerivators = append(snDerivators, sndOut)
-		tx.Proof.OutputCoins[i].CoinDetails.SNDerivator = sndOut
+		tx.Proof.OutputCoins[i].CoinDetails.PubKeyLastByte = pInfo.PaymentAddress.Pk[len(pInfo.PaymentAddress.Pk)-1]
+		tx.Proof.OutputCoins[i].CoinDetails.SNDerivator = sndOuts[i]
 	}
-
-	ok = true
 
 	// if overBalance > 0, create a output coin with pk is pk's sender and value is overBalance
 	if overBalance > 0 {
@@ -177,18 +185,18 @@ func (tx *Tx) CreateTx(
 		changeCoin.CoinDetails.Value = overBalance
 		changeCoin.CoinDetails.PublicKey, _ = privacy.DecompressKey(senderFullKey.PaymentAddress.Pk)
 
-		sndOut := privacy.RandInt()
-		for CheckSNDExistence(sndOut)  || CheckDuplicate(sndOut, sndTmps){
+		var sndOut *big.Int
+
+		for ok {
+			sndOuts = nil
 			sndOut = privacy.RandInt()
+			for CheckSNDExistence(sndOut)  {
+				sndOut = privacy.RandInt()
+			}
+			sndOuts = append(sndOuts, sndOut)
+			ok = CheckDuplicate(sndOuts)
 		}
-		snDerivators = append(snDerivators, sndOut)
-
-
-
 		//
-
-
-
 		changeCoin.CoinDetails.SNDerivator = sndOut
 
 		tx.Proof.OutputCoins = append(tx.Proof.OutputCoins, changeCoin)
@@ -477,5 +485,10 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 // CheckSND return true if snd exists in snDerivators list
 func CheckSNDExistence(snd *big.Int) bool {
 	//todo: query from db to get snDerivators
+	return false
+}
+
+// CheckDuplicate returns true if there are at least 2 elements in array have same values
+func CheckDuplicate(arr []*big.Int) bool {
 	return false
 }
