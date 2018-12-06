@@ -19,6 +19,7 @@ func RandBytes(n int) []byte {
 
 // RandInt generates a big int with value less than order of group of elliptic points
 func RandInt() *big.Int {
+	//Todo: thunderbird
 	res, _ := rand.Int(rand.Reader, Curve.Params().N)
 	return res
 }

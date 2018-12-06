@@ -177,12 +177,18 @@ func (tx *Tx) CreateTx(
 		changeCoin.CoinDetails.Value = overBalance
 		changeCoin.CoinDetails.PublicKey, _ = privacy.DecompressKey(senderFullKey.PaymentAddress.Pk)
 
-		sndOut := new(big.Int)
-		for ok {
+		sndOut := privacy.RandInt()
+		for CheckSNDExistence(sndOut)  || CheckDuplicate(sndOut, sndTmps){
 			sndOut = privacy.RandInt()
-			ok = CheckSNDExistence(snDerivators, sndOut)
 		}
 		snDerivators = append(snDerivators, sndOut)
+
+
+
+		//
+
+
+
 		changeCoin.CoinDetails.SNDerivator = sndOut
 
 		tx.Proof.OutputCoins = append(tx.Proof.OutputCoins, changeCoin)
@@ -471,9 +477,5 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 // CheckSND return true if snd exists in snDerivators list
 func CheckSNDExistence(snd *big.Int) bool {
 	//todo: query from db to get snDerivators
-	//hard code to test
-	//isExisted, _ := common.SliceBytesExists(snDerivators, snd)
-	//return isExisted >= 0
-
 	return false
 }
