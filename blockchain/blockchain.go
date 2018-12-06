@@ -596,15 +596,6 @@ func (self *BlockChain) ProcessLoanPayment(tx *transaction.TxLoanPayment) error 
 func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetType() {
-		case common.TxLoanUnlock:
-			{
-				// Update loan payment info after withdrawing Constant
-				tx := tx.(*transaction.TxLoanUnlock)
-				meta, _ := self.getLoanRequestMeta(tx.LoanID)
-				principle := meta.LoanAmount
-				interest := GetInterestAmount(principle, meta.Params.InterestRate)
-				self.config.DataBase.StoreLoanPayment(tx.LoanID, principle, interest, uint32(block.Header.Height))
-			}
 		case common.TxLoanPayment:
 			{
 				tx := tx.(*transaction.TxLoanPayment)
@@ -625,6 +616,16 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 				tx := tx.(*transaction.Tx)
 				meta := tx.Metadata.(*metadata.LoanResponse)
 				self.config.DataBase.StoreLoanResponse(meta.LoanID, tx.Hash()[:])
+			}
+		case metadata.LoanUnlockMeta:
+			{
+				// Update loan payment info after withdrawing Constant
+				tx := tx.(*transaction.Tx)
+				meta := tx.GetMetadata().(*metadata.LoanUnlock)
+				requestMeta, _ := self.getLoanRequestMeta(meta.LoanID)
+				principle := requestMeta.LoanAmount
+				interest := GetInterestAmount(principle, requestMeta.Params.InterestRate)
+				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint32(block.Header.Height))
 			}
 		}
 	}
