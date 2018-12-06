@@ -100,12 +100,12 @@ func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	return true, nil
 }
 
-func (lr *LoanResponse) Process() error {
-	return nil
+func (lr *LoanResponse) ValidateSanityData() (bool, bool, error) {
+	return false, false, nil
 }
 
-func (lr *LoanResponse) Validate() error {
-	return nil
+func (lr *LoanResponse) ValidateMetadataByItself() bool {
+	return false
 }
 
 // CheckTransactionFee returns true since loan response tx doesn't have fee

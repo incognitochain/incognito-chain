@@ -54,7 +54,6 @@ type BlockchainRetriever interface {
 	GetHeight() int32
 	GetNulltifiersList(byte) ([][]byte, error)
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
-	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
 	GetDCBParams() params.DCBParams
 	GetDCBBoardPubKeys() []string
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
