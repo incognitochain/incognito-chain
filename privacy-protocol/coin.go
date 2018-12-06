@@ -130,7 +130,6 @@ func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey) error {
 
 //CommitAll commits a coin with 4 attributes (public key, value, serial number, r)
 func (coin *Coin) CommitAll() {
-	//var values [PCM_CAPACITY-1][]byte
 	values := []*big.Int{nil, big.NewInt(int64(coin.Value)), coin.SNDerivator, new(big.Int).SetBytes([]byte{coin.PubKeyLastByte}), coin.Randomness}
 	//fmt.Printf("coin info: %v\n", values)
 	coin.CoinCommitment = PedCom.CommitAll(values)

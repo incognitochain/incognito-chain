@@ -35,7 +35,7 @@ type Tx struct {
 	//RequestedTxID *common.Hash
 
 	// temp variable to validate tx
-	snDerivators []*big.Int
+	//snDerivators []*big.Int
 
 	Metadata interface{}
 }
@@ -163,7 +163,7 @@ func (tx *Tx) CreateTx(
 		sndOut := new(big.Int)
 		for ok {
 			sndOut = privacy.RandInt()
-			ok = CheckSNDExistence(snDerivators, sndOut)
+			ok = CheckSNDExistence( sndOut)
 		}
 		snDerivators = append(snDerivators, sndOut)
 		tx.Proof.OutputCoins[i].CoinDetails.SNDerivator = sndOut
@@ -469,7 +469,11 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 
 // todo: thunderbird
 // CheckSND return true if snd exists in snDerivators list
-func CheckSNDExistence(snDerivators []*big.Int, snd *big.Int) bool {
-	isExisted, _ := common.SliceBytesExists(snDerivators, snd)
-	return isExisted >= 0
+func CheckSNDExistence(snd *big.Int) bool {
+	//todo: query from db to get snDerivators
+	//hard code to test
+	//isExisted, _ := common.SliceBytesExists(snDerivators, snd)
+	//return isExisted >= 0
+
+	return false
 }
