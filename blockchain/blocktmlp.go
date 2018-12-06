@@ -783,11 +783,11 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, rt 
 			if !tx.PayPrinciple { // Only keep interest
 				amount += paymentAmount
 			}
-		} else if txDesc.Tx.GetType() == common.TxLoanWithdraw {
-			tx := txDesc.Tx.(*transaction.TxLoanWithdraw)
-			meta, err := blockgen.chain.getLoanRequestMeta(tx.LoanID)
+		} else if txDesc.Tx.GetMetadataType() == metadata.LoanWithdrawMeta {
+			withdrawMeta := txDesc.Tx.GetMetadata().(*metadata.LoanWithdraw)
+			meta, err := blockgen.chain.getLoanRequestMeta(withdrawMeta.LoanID)
 			if err != nil {
-				removableTxs = append(removableTxs, tx)
+				removableTxs = append(removableTxs, txDesc.Tx)
 				continue
 			}
 			pks := [][]byte{meta.ReceiveAddress.Pk[:], make([]byte, 33)}
@@ -795,14 +795,14 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, rt 
 			amounts := []uint64{meta.LoanAmount, 0}
 			txNormal, err := transaction.BuildCoinbaseTx(pks, tks, amounts, rt, chainID, common.TxLoanUnlock)
 			if err != nil {
-				removableTxs = append(removableTxs, tx)
+				removableTxs = append(removableTxs, txDesc.Tx)
 				continue
 			}
 			txUnlock := &transaction.TxLoanUnlock{
 				Tx:     *txNormal,
-				LoanID: make([]byte, len(tx.LoanID)),
+				LoanID: make([]byte, len(withdrawMeta.LoanID)),
 			}
-			copy(txUnlock.LoanID, tx.LoanID)
+			copy(txUnlock.LoanID, withdrawMeta.LoanID)
 			loanUnlockTxs = append(loanUnlockTxs, txUnlock)
 		}
 	}

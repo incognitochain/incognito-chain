@@ -22,9 +22,8 @@ const (
 	TxAcceptDCBProposal = "ad"  // accept DCB proposal
 	TxAcceptGOVProposal = "ag"  // accept GOV proposal
 
-	TxLoanPayment  = "lp" // user makes payment of a loan
-	TxLoanWithdraw = "lw" // user provides key to withdraw locked constant
-	TxLoanUnlock   = "lu" // DCB unlock the constant and send to user as coinbase tx
+	TxLoanPayment = "lp" // user makes payment of a loan
+	TxLoanUnlock  = "lu" // DCB unlock the constant and send to user as coinbase tx
 
 	TxDividendPayout     = "td"
 	TxBuyFromGOVRequest  = "bgr"

@@ -600,10 +600,6 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx metadata.Transaction, chainID byte
 		{
 			return blockChain.ValidateTxLoanPayment(tx, chainID)
 		}
-	case common.TxLoanWithdraw:
-		{
-			return blockChain.ValidateTxLoanWithdraw(tx, chainID)
-		}
 	case common.TxDividendPayout:
 		{
 			return blockChain.ValidateTxDividendPayout(tx, chainID)
