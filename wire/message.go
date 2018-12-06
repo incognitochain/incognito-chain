@@ -71,7 +71,9 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdCLoanRequestToken:
 		msg = &MessageTx{
-			Transaction: &transaction.TxLoanRequest{},
+			Transaction: &transaction.Tx{
+				Metadata: &metadata.LoanRequest{},
+			},
 		}
 		break
 	case CmdCLoanResponseToken:

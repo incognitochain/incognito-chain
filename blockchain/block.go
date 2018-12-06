@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
@@ -117,12 +118,6 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				_ = json.Unmarshal(txTempJson, &AcceptGovProposal)
 				self.Transactions = append(self.Transactions, AcceptGovProposal)
 			}
-		case common.TxLoanRequest:
-			{
-				tx := &transaction.TxLoanRequest{}
-				_ = json.Unmarshal(txTempJson, &tx)
-				self.Transactions = append(self.Transactions, tx)
-			}
 		case common.TxLoanResponse:
 			{
 				tx := &transaction.TxLoanResponse{}
@@ -229,7 +224,7 @@ func (block *Block) updateDCBConstitution(tx metadata.Transaction, blockgen *Blk
 	block.Header.DCBConstitution.CurrentDCBNationalWelfare = GetOracleDCBNationalWelfare()
 
 	//	proposalParams := DCBProposal.DCBProposalData.DCBParams // not use yet
-	block.Header.DCBConstitution.DCBParams = DCBParams{}
+	block.Header.DCBConstitution.DCBParams = params.DCBParams{}
 	return nil
 }
 

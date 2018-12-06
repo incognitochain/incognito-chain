@@ -19,14 +19,14 @@ const (
 	TxVoteGOVProposal   = "vg"  // submit GOV proposal voted tx
 	TxVoteDCBBoard      = "vbd" // vote DCB board tx
 	TxVoteGOVBoard      = "vbg" // vote DCB board tx
+	TxAcceptDCBProposal = "ad"  // accept DCB proposal
+	TxAcceptGOVProposal = "ag"  // accept GOV proposal
 
-	TxAcceptDCBProposal = "ad" // accept DCB proposal
-	TxAcceptGOVProposal = "ag" // accept GOV proposal
+	TxLoanResponse = "ls" // DCB accept/reject a loan request
+	TxLoanPayment  = "lp" // user makes payment of a loan
+	TxLoanWithdraw = "lw" // user provides key to withdraw locked constant
+	TxLoanUnlock   = "lu" // DCB unlock the constant and send to user as coinbase tx
 
-	TxLoanRequest        = "lr"
-	TxLoanResponse       = "ls"
-	TxLoanPayment        = "lp"
-	TxLoanWithdraw       = "lw"
 	TxDividendPayout     = "td"
 	TxBuyFromGOVRequest  = "bgr"
 	TxBuySellDCBRequest  = "bsdr"

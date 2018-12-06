@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -64,6 +65,14 @@ type Config struct {
 	Wallet *wallet.Wallet
 	//snapshot reward
 	customTokenRewardSnapshot map[string]uint64
+}
+
+func (self *BlockChain) GetDCBParams() params.DCBParams {
+	return self.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
+}
+
+func (self *BlockChain) GetLoanTxs(loanID []byte) ([][]byte, error) {
+	return self.config.DataBase.GetLoanTxs(loanID)
 }
 
 /*
@@ -508,22 +517,108 @@ func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 	return data, err
 }
 
-func (self *BlockChain) SaveLoanTxsForBlock(block *Block) error {
+func (self *BlockChain) getLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
+	txs, err := self.config.DataBase.GetLoanTxs(loanID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, txHash := range txs {
+		hash := &common.Hash{}
+		copy(hash[:], txHash)
+		_, _, _, tx, err := self.GetTransactionByHash(hash)
+		if err != nil {
+			return nil, err
+		}
+		if tx.GetMetadataType() == metadata.LoanRequestMeta {
+			meta := tx.GetMetadata()
+			if meta == nil {
+				continue
+			}
+			requestMeta, ok := meta.(*metadata.LoanRequest)
+			if !ok {
+				continue
+			}
+			if bytes.Equal(requestMeta.LoanID, loanID) {
+				return requestMeta, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+func (self *BlockChain) ProcessLoanPayment(tx *transaction.TxLoanPayment) error {
+	value := uint64(0)
+	for _, desc := range tx.Descs {
+		for _, note := range desc.Note {
+			accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+			dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+			if bytes.Equal(note.Apk[:], dcbPk) {
+				value += note.Value
+			}
+		}
+	}
+	principle, interest, deadline, err := self.config.DataBase.GetLoanPayment(tx.LoanID)
+	if tx.PayPrinciple {
+		if err != nil {
+			return err
+		}
+		if principle < value {
+			value = principle
+		}
+		principle -= value
+	} else {
+		meta, err := self.getLoanRequestMeta(tx.LoanID)
+		if err != nil {
+			return err
+		}
+		interestPerPeriod := GetInterestAmount(principle, meta.Params.InterestRate)
+		periodInc := uint32(0)
+		if value < interest {
+			interest -= value
+		} else {
+			periodInc = 1 + uint32((value-interest)/interestPerPeriod)
+			interest = interestPerPeriod - (value-interest)%interestPerPeriod
+		}
+		deadline = deadline + periodInc*meta.Params.Maturity
+	}
+	return self.config.DataBase.StoreLoanPayment(tx.LoanID, principle, interest, deadline)
+}
+
+func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetType() {
-		case common.TxLoanRequest:
-			{
-				tx := tx.(*transaction.TxLoanRequest)
-				self.config.DataBase.StoreLoanRequest(tx.LoanID, tx.Hash()[:])
-			}
 		case common.TxLoanResponse:
 			{
 				tx := tx.(*transaction.TxLoanResponse)
 				self.config.DataBase.StoreLoanResponse(tx.LoanID, tx.Hash()[:])
 			}
+		case common.TxLoanUnlock:
+			{
+				// Update loan payment info after withdrawing Constant
+				tx := tx.(*transaction.TxLoanUnlock)
+				meta, _ := self.getLoanRequestMeta(tx.LoanID)
+				principle := meta.LoanAmount
+				interest := GetInterestAmount(principle, meta.Params.InterestRate)
+				self.config.DataBase.StoreLoanPayment(tx.LoanID, principle, interest, uint32(block.Header.Height))
+			}
+		case common.TxLoanPayment:
+			{
+				tx := tx.(*transaction.TxLoanPayment)
+				self.ProcessLoanPayment(tx)
+			}
 		}
 	}
-
+	for _, tx := range block.Transactions {
+		switch tx.GetMetadataType() {
+		case metadata.LoanRequestMeta:
+			{
+				tx := tx.(*transaction.Tx)
+				meta := tx.Metadata.(*metadata.LoanRequest)
+				self.config.DataBase.StoreLoanRequest(meta.LoanID, tx.Hash()[:])
+			}
+		}
+	}
 	return nil
 }
 

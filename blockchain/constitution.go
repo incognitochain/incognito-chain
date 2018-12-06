@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
@@ -21,7 +22,7 @@ type GOVConstitution struct {
 type DCBConstitution struct {
 	ConstitutionInfo
 	CurrentDCBNationalWelfare int32
-	DCBParams                 DCBParams
+	DCBParams                 params.DCBParams
 }
 
 type DCBConstitutionHelper struct{}

@@ -12,6 +12,8 @@ type BuySellRequest struct {
 	BuyPrice       uint64 // in Constant unit
 
 	SaleID []byte // only when requesting to DCB
+
+	MetadataBase
 }
 
 func NewBuySellRequest(bsReqData map[string]interface{}) *BuySellRequest {
@@ -22,14 +24,6 @@ func NewBuySellRequest(bsReqData map[string]interface{}) *BuySellRequest {
 		BuyPrice:       uint64(bsReqData["buyPrice"].(float64)),
 		SaleID:         bsReqData["saleId"].([]byte),
 	}
-}
-
-func (bsReq *BuySellRequest) Validate() error {
-	return nil
-}
-
-func (bsReq *BuySellRequest) Process() error {
-	return nil
 }
 
 func (bsReq *BuySellRequest) CheckTransactionFee(tr TxRetriever, minFee uint64) bool {
@@ -50,4 +44,12 @@ func (bsReq *BuySellRequest) ValidateSanityData() (bool, bool, error) {
 
 func (bsReq *BuySellRequest) ValidateMetadataByItself() bool {
 	return true
+}
+
+func (bsReq *BuySellRequest) GetType() int {
+	return BuySellRequestMeta
+}
+
+func (bsReq *BuySellRequest) Hash() *common.Hash {
+	return &common.Hash{}
 }

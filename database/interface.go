@@ -64,9 +64,11 @@ type DatabaseInterface interface {
 	UpdateRewardAccountUTXO(*common.Hash, privacy.PaymentAddress, *common.Hash, int) error
 
 	// Loans
-	StoreLoanRequest([]byte, []byte) error  // param: loanID, tx hash
-	StoreLoanResponse([]byte, []byte) error // param: loanID, tx hash
-	GetLoanTxs([]byte) ([][]byte, error)    // param: loanID
+	StoreLoanRequest([]byte, []byte) error                 // param: loanID, tx hash
+	StoreLoanResponse([]byte, []byte) error                // param: loanID, tx hash
+	GetLoanTxs([]byte) ([][]byte, error)                   // param: loanID
+	StoreLoanPayment([]byte, uint64, uint64, uint32) error // param: loanID, principle, interest, deadline
+	GetLoanPayment([]byte) (uint64, uint64, uint32, error) // param: loanID; return: principle, interest, deadline
 
 	// Crowdsale
 	SaveCrowdsaleData(*voting.SaleData) error

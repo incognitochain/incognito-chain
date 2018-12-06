@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
@@ -13,7 +14,7 @@ import (
 )
 
 func (self RpcServer) handleGetLoanParams(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.BlockChain.BestState[0].BestBlock.Header.LoanParams, nil
+	return self.config.BlockChain.BestState[0].BestBlock.Header.DCBConstitution.DCBParams.LoanParams, nil
 }
 
 func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -44,7 +45,7 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 
 	// param #3: loan params
 	loanParams := arrayParams[2].(map[string]interface{})
-	loanRequest := transaction.NewLoanRequest(loanParams)
+	loanRequest := metadata.NewLoanRequest(loanParams)
 	if loanRequest == nil {
 		return nil, errors.New("Miss data")
 	}
@@ -82,15 +83,17 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
-	tx, err := transaction.CreateTxLoanRequest(transaction.FeeArgs{
-		Fee:           fee,
-		Commitments:   commitmentsDb,
-		UsableTx:      candidateTxsMap,
-		PaymentInfo:   nil,
-		Rts:           merkleRootCommitments,
-		SenderChainID: chainIdSender,
-		SenderKey:     &senderKey.KeySet.PrivateKey,
-	}, loanRequest)
+	noPrivacy := false
+	tx, err := transaction.CreateTx(
+		&senderKey.KeySet.PrivateKey,
+		nil,
+		merkleRootCommitments,
+		candidateTxsMap,
+		commitmentsDb,
+		fee,
+		chainIdSender,
+		noPrivacy,
+	)
 	if err != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -116,7 +119,7 @@ func (self RpcServer) handleSendRawLoanRequest(params interface{}, closeChan <-c
 	if err != nil {
 		return nil, err
 	}
-	tx := transaction.TxLoanRequest{}
+	tx := transaction.Tx{}
 	//tx := transaction.TxCustomToken{}
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)

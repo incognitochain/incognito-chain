@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type ValidLoanResponse int
@@ -13,6 +14,16 @@ const (
 	Accept ValidLoanResponse = iota
 	Reject
 )
+
+type FeeArgs struct {
+	SenderKey     *privacy.SpendingKey
+	PaymentInfo   []*privacy.PaymentInfo
+	Rts           map[byte]*common.Hash
+	UsableTx      map[byte][]*Tx
+	Commitments   map[byte]([][]byte)
+	Fee           uint64
+	SenderChainID byte
+}
 
 type LoanResponse struct {
 	LoanID     []byte

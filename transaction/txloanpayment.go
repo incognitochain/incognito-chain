@@ -1,18 +1,22 @@
 package transaction
 
 import (
-	"github.com/ninjadotorg/constant/common"
 	"encoding/hex"
+	"strconv"
+
+	"github.com/ninjadotorg/constant/common"
 )
 
 type LoanPayment struct {
-	LoanID []byte
+	LoanID       []byte
+	PayPrinciple bool
 }
 
 func NewLoanPayment(data map[string]interface{}) *LoanPayment {
 	result := LoanPayment{}
 	s, _ := hex.DecodeString(data["LoanID"].(string))
 	result.LoanID = s
+	result.PayPrinciple = data["PayPrinciple"].(bool)
 	return &result
 }
 
@@ -52,8 +56,9 @@ func (tx *TxLoanPayment) Hash() *common.Hash {
 	// get hash of tx
 	record := tx.Tx.Hash().String()
 
-	// add more hash of loan response data
+	// add more hash of loan payment data
 	record += string(tx.LoanID)
+	record += string(strconv.FormatBool(tx.PayPrinciple))
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
