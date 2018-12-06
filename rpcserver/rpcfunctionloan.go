@@ -98,6 +98,7 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+	tx.Metadata = loanRequest
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		// return hex for a new tx
@@ -191,7 +192,7 @@ func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan 
 
 	// param #3: loan params
 	loanParams := arrayParams[2].(map[string]interface{})
-	loanResponse := transaction.NewLoanResponse(loanParams)
+	loanResponse := metadata.NewLoanResponse(loanParams)
 	if loanResponse == nil {
 		return nil, errors.New("Miss data")
 	}
@@ -229,19 +230,22 @@ func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan 
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
-	tx, err := transaction.CreateTxLoanResponse(transaction.FeeArgs{
-		Fee:           fee,
-		Commitments:   commitmentsDb,
-		UsableTx:      candidateTxsMap,
-		PaymentInfo:   nil,
-		Rts:           merkleRootCommitments,
-		SenderChainID: chainIdSender,
-		SenderKey:     &senderKey.KeySet.PrivateKey,
-	}, loanResponse)
+	noPrivacy := false
+	tx, err := transaction.CreateTx(
+		&senderKey.KeySet.PrivateKey,
+		nil,
+		merkleRootCommitments,
+		candidateTxsMap,
+		commitmentsDb,
+		fee,
+		chainIdSender,
+		noPrivacy,
+	)
 	if err != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+	tx.Metadata = loanResponse
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		// return hex for a new tx
@@ -263,7 +267,7 @@ func (self RpcServer) handleSendRawLoanResponse(params interface{}, closeChan <-
 	if err != nil {
 		return nil, err
 	}
-	tx := transaction.TxLoanResponse{}
+	tx := transaction.Tx{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		return nil, err

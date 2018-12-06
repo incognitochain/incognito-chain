@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"github.com/ninjadotorg/constant/common"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type TxBuyBackRequest struct {
@@ -13,6 +14,16 @@ type TxBuyBackRequest struct {
 type BuyBackRequestInfo struct {
 	BuyBackFromTxID *common.Hash
 	VoutIndex       int
+}
+
+type FeeArgs struct {
+	SenderKey     *privacy.SpendingKey
+	PaymentInfo   []*privacy.PaymentInfo
+	Rts           map[byte]*common.Hash
+	UsableTx      map[byte][]*Tx
+	Commitments   map[byte]([][]byte)
+	Fee           uint64
+	SenderChainID byte
 }
 
 // CreateTxBuyBackRequest

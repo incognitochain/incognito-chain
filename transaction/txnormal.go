@@ -135,7 +135,7 @@ func (tx *Tx) ValidateTxWithBlockChain(bcr metadata.BlockchainRetriever, chainID
 		return nil
 	}
 	if tx.Metadata != nil {
-		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(bcr, chainID)
+		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, chainID)
 		if err != nil {
 			return err
 		}
@@ -253,6 +253,10 @@ func (tx *Tx) GetTxVirtualSize() uint64 {
 
 func (tx *Tx) GetTxFee() uint64 {
 	return tx.Fee
+}
+
+func (tx *Tx) GetJSPubKey() []byte {
+	return tx.JSPubKey
 }
 
 func (tx *Tx) GetSenderAddrLastByte() byte {

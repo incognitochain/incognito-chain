@@ -75,67 +75,6 @@ func (self *BlockChain) ValidateDoubleSpend(tx metadata.Transaction, chainID byt
 	return nil
 }
 
-func (self *BlockChain) ValidateTxLoanResponse(tx metadata.Transaction, chainID byte) error {
-	txResponse, ok := tx.(*transaction.TxLoanResponse)
-	if !ok {
-		return fmt.Errorf("Fail parsing LoanResponse transaction")
-	}
-
-	// Check if only board members created this tx
-	isBoard := false
-	for _, gov := range self.BestState[chainID].BestBlock.Header.DCBGovernor.DCBBoardPubKeys {
-		if bytes.Equal([]byte(gov), txResponse.JSPubKey) {
-			isBoard = true
-		}
-	}
-	if !isBoard {
-		return fmt.Errorf("Tx must be created by DCB Governor")
-	}
-
-	// Check if a loan request with the same id exists on any chain
-	txHashes, err := self.config.DataBase.GetLoanTxs(txResponse.LoanID)
-	if err != nil {
-		return err
-	}
-	found := false
-	for _, txHash := range txHashes {
-		hash := &common.Hash{}
-		copy(hash[:], txHash)
-		_, _, _, txOld, err := self.GetTransactionByHash(hash)
-		if txOld == nil || err != nil {
-			return fmt.Errorf("Error finding corresponding loan request")
-		}
-		switch txOld.GetType() {
-		case common.TxLoanResponse:
-			{
-				txOldResp, ok := txOld.(*transaction.TxLoanResponse)
-				if !ok {
-					return fmt.Errorf("Error parsing old loan response tx")
-				}
-				// Check if the same user responses twice
-				if bytes.Equal(txOldResp.JSPubKey, txResponse.JSPubKey) {
-					return fmt.Errorf("Current user already responded to loan request")
-				}
-			}
-		}
-		switch txOld.GetMetadataType() {
-		case metadata.LoanRequestMeta:
-			{
-				meta := tx.GetMetadata()
-				if meta == nil {
-					return fmt.Errorf("Error parsing loan request tx")
-				}
-				found = true
-			}
-		}
-	}
-
-	if found == false {
-		return fmt.Errorf("Corresponding loan request not found")
-	}
-	return nil
-}
-
 func (self *BlockChain) ValidateTxLoanPayment(tx metadata.Transaction, chainID byte) error {
 	txPayment, ok := tx.(*transaction.TxLoanPayment)
 	if !ok {
@@ -143,32 +82,9 @@ func (self *BlockChain) ValidateTxLoanPayment(tx metadata.Transaction, chainID b
 	}
 
 	// Check if a loan request with the same id exists on any chain
-	txHashes, err := self.config.DataBase.GetLoanTxs(txPayment.LoanID)
+	_, err := self.config.DataBase.GetLoanTxs(txPayment.LoanID)
 	if err != nil {
 		return err
-	}
-	found := uint8(0)
-	for _, txHash := range txHashes {
-		hash := &common.Hash{}
-		copy(hash[:], txHash)
-		_, _, _, txOld, err := self.GetTransactionByHash(hash)
-		if txOld == nil || err != nil {
-			return fmt.Errorf("Error finding corresponding loan request")
-		}
-		switch txOld.GetType() {
-		case common.TxLoanResponse:
-			{
-				txResponse := tx.(*transaction.TxLoanResponse)
-				if txResponse.Response == transaction.Accept {
-					found += 1
-				}
-			}
-		}
-	}
-
-	minResponse := self.BestState[chainID].BestBlock.Header.DCBConstitution.DCBParams.MinLoanResponseRequire
-	if found < minResponse {
-		return fmt.Errorf("Not enough loan accepted response")
 	}
 
 	// Check if payment amount is correct
@@ -180,7 +96,7 @@ func (self *BlockChain) ValidateTxLoanPayment(tx metadata.Transaction, chainID b
 	if err != nil {
 		return err
 	}
-	if uint32(self.BestState[chainID].Height)+requestMeta.Params.Maturity >= deadline && txPayment.PayPrinciple {
+	if txPayment.PayPrinciple && uint32(self.BestState[chainID].Height)+requestMeta.Params.Maturity >= deadline {
 		return fmt.Errorf("Interest must be fully paid before paying principle")
 	}
 	return nil
@@ -197,7 +113,7 @@ func (self *BlockChain) ValidateTxLoanWithdraw(tx metadata.Transaction, chainID 
 	if err != nil {
 		return err
 	}
-	foundResponse := false
+	foundResponse := 0
 	keyCorrect := false
 	for _, txHash := range txHashes {
 		hash := &common.Hash{}
@@ -224,28 +140,29 @@ func (self *BlockChain) ValidateTxLoanWithdraw(tx metadata.Transaction, chainID 
 					keyCorrect = true
 				}
 			}
-		}
-		switch txOld.GetType() {
-		case common.TxLoanResponse:
+		case metadata.LoanResponseMeta:
 			{
 				// Check if loan is accepted
-				txResponse, ok := tx.(*transaction.TxLoanResponse)
+				meta := tx.GetMetadata()
+				if meta == nil {
+					continue
+				}
+				responseMeta, ok := meta.(*metadata.LoanResponse)
 				if !ok {
-					return fmt.Errorf("Error parsing corresponding loan response")
+					continue
 				}
-				if self.BestState[chainID].BestBlock.Header.Height > txResponse.ValidUntil {
-					return fmt.Errorf("Deadline exceeded, cannot withdraw loan")
-				}
-				if txResponse.Response == transaction.Accept {
-					foundResponse = true
+				if responseMeta.Response == metadata.Accept {
+					foundResponse += 1
 				}
 			}
 		}
 	}
 
-	if !foundResponse {
-		return fmt.Errorf("Corresponding loan response not found")
-	} else if !keyCorrect {
+	minResponse := self.BestState[chainID].BestBlock.Header.DCBConstitution.DCBParams.MinLoanResponseRequire
+	if foundResponse < int(minResponse) {
+		return fmt.Errorf("Not enough loan accepted response")
+	}
+	if !keyCorrect {
 		return fmt.Errorf("Provided key is incorrect")
 	}
 	return nil

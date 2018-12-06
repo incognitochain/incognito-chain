@@ -91,7 +91,7 @@ func (lr *LoanRequest) Validate() error {
 	return nil
 }
 
-func (lr *LoanRequest) ValidateTxWithBlockChain(bcr BlockchainRetriever, chainID byte) (bool, error) {
+func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
 	// Check if loan's params are correct
 	dcbParams := bcr.GetDCBParams()
 	validLoanParams := dcbParams.LoanParams

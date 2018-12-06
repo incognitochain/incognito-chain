@@ -118,12 +118,6 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 				_ = json.Unmarshal(txTempJson, &AcceptGovProposal)
 				self.Transactions = append(self.Transactions, AcceptGovProposal)
 			}
-		case common.TxLoanResponse:
-			{
-				tx := &transaction.TxLoanResponse{}
-				_ = json.Unmarshal(txTempJson, &tx)
-				self.Transactions = append(self.Transactions, tx)
-			}
 		case common.TxLoanPayment:
 			{
 				tx := &transaction.TxLoanPayment{}

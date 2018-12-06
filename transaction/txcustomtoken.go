@@ -101,7 +101,7 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 		return nil
 	}
 	if customTokenTx.Metadata != nil {
-		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(bcr, chainID)
+		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, chainID)
 		if err != nil {
 			return err
 		}

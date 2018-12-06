@@ -18,7 +18,7 @@ func (mb *MetadataBase) Process() error {
 	return nil
 }
 
-func (mb *MetadataBase) CheckTransactionFee(tr TxRetriever, minFee uint64) bool {
+func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	txFee := tr.GetTxFee()
 	if txFee < minFee {
 		return false
@@ -51,14 +51,13 @@ type MempoolRetriever interface {
 }
 
 type BlockchainRetriever interface {
+	GetHeight() int32
 	GetNulltifiersList(byte) ([][]byte, error)
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetDCBParams() params.DCBParams
+	GetDCBBoardPubKeys() []string
+	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
 	GetLoanTxs([]byte) ([][]byte, error)
-}
-
-type TxRetriever interface {
-	GetTxFee() uint64
 }
 
 type Metadata interface {
@@ -66,8 +65,8 @@ type Metadata interface {
 	Hash() *common.Hash
 	Validate() error
 	Process() error
-	CheckTransactionFee(TxRetriever, uint64) bool
-	ValidateTxWithBlockChain(BlockchainRetriever, byte) (bool, error)
+	CheckTransactionFee(Transaction, uint64) bool
+	ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte) (bool, error)
 }
 
 // Interface for all type of transaction
@@ -79,6 +78,7 @@ type Transaction interface {
 	GetTxVirtualSize() uint64
 	GetSenderAddrLastByte() byte
 	GetTxFee() uint64
+	GetJSPubKey() []byte
 	ListNullifiers() [][]byte
 	CheckTxVersion(int8) bool
 	CheckTransactionFee(uint64) bool

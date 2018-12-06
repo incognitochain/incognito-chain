@@ -67,6 +67,14 @@ type Config struct {
 	customTokenRewardSnapshot map[string]uint64
 }
 
+func (self *BlockChain) GetHeight() int32 {
+	return self.BestState[0].BestBlock.Header.Height
+}
+
+func (self *BlockChain) GetDCBBoardPubKeys() []string {
+	return self.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys
+}
+
 func (self *BlockChain) GetDCBParams() params.DCBParams {
 	return self.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
 }
@@ -588,11 +596,6 @@ func (self *BlockChain) ProcessLoanPayment(tx *transaction.TxLoanPayment) error 
 func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetType() {
-		case common.TxLoanResponse:
-			{
-				tx := tx.(*transaction.TxLoanResponse)
-				self.config.DataBase.StoreLoanResponse(tx.LoanID, tx.Hash()[:])
-			}
 		case common.TxLoanUnlock:
 			{
 				// Update loan payment info after withdrawing Constant
@@ -616,6 +619,12 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 				tx := tx.(*transaction.Tx)
 				meta := tx.Metadata.(*metadata.LoanRequest)
 				self.config.DataBase.StoreLoanRequest(meta.LoanID, tx.Hash()[:])
+			}
+		case metadata.LoanResponseMeta:
+			{
+				tx := tx.(*transaction.Tx)
+				meta := tx.Metadata.(*metadata.LoanResponse)
+				self.config.DataBase.StoreLoanResponse(meta.LoanID, tx.Hash()[:])
 			}
 		}
 	}
