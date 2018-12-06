@@ -246,7 +246,7 @@ concludeBlock:
 		txToRemove = append(txToRemove, tx)
 	}
 
-	coinbases := []transaction.Transaction{salaryTx}
+	coinbases := []metadata.Transaction{salaryTx}
 	for _, tx := range unlockTxs {
 		coinbases = append(coinbases, tx)
 	}
@@ -295,7 +295,6 @@ concludeBlock:
 		BankFund:              prevBlock.Header.BankFund + loanPaymentAmount - bankPayoutAmount,
 		GOVConstitution:       prevBlock.Header.GOVConstitution, // TODO: need get from gov-params tx
 		DCBConstitution:       prevBlock.Header.DCBConstitution, // TODO: need get from dcb-params tx
-		LoanParams:            prevBlock.Header.LoanParams,
 	}
 	if block.Header.GOVConstitution.GOVParams.SellingBonds != nil {
 		block.Header.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= bondsSold
@@ -763,10 +762,10 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc
 	return txsResponse, txsToRemove, nil
 }
 
-func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*transaction.TxDesc, rt []byte, chainID byte) (uint64, []*transaction.TxLoanUnlock, []transaction.Transaction) {
+func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, rt []byte, chainID byte) (uint64, []*transaction.TxLoanUnlock, []metadata.Transaction) {
 	amount := uint64(0)
 	loanUnlockTxs := []*transaction.TxLoanUnlock{}
-	removableTxs := []transaction.Transaction{}
+	removableTxs := []metadata.Transaction{}
 	for _, txDesc := range sourceTxns {
 		if txDesc.Tx.GetType() == common.TxLoanPayment {
 			tx := (txDesc.Tx).(*transaction.TxLoanPayment)
@@ -785,15 +784,15 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*transaction.TxDesc, 
 				amount += paymentAmount
 			}
 		} else if txDesc.Tx.GetType() == common.TxLoanWithdraw {
-			tx := txDesc.Tx.(*transaction.TxLoanRequest)
-			txRequest, err := blockgen.chain.getLoanRequest(tx.LoanID)
+			tx := txDesc.Tx.(*transaction.TxLoanWithdraw)
+			meta, err := blockgen.chain.getLoanRequestMeta(tx.LoanID)
 			if err != nil {
 				removableTxs = append(removableTxs, tx)
 				continue
 			}
-			pks := [][]byte{txRequest.ReceiveAddress.Pk[:], make([]byte, 33)}
-			tks := [][]byte{txRequest.ReceiveAddress.Tk[:], make([]byte, 33)}
-			amounts := []uint64{txRequest.LoanAmount, 0}
+			pks := [][]byte{meta.ReceiveAddress.Pk[:], make([]byte, 33)}
+			tks := [][]byte{meta.ReceiveAddress.Tk[:], make([]byte, 33)}
+			amounts := []uint64{meta.LoanAmount, 0}
 			txNormal, err := transaction.BuildCoinbaseTx(pks, tks, amounts, rt, chainID, common.TxLoanUnlock)
 			if err != nil {
 				removableTxs = append(removableTxs, tx)

@@ -75,36 +75,6 @@ func (self *BlockChain) ValidateDoubleSpend(tx metadata.Transaction, chainID byt
 	return nil
 }
 
-func (self *BlockChain) ValidateTxLoanRequest(tx metadata.Transaction, chainID byte) error {
-	txLoan, ok := tx.(*transaction.TxLoanRequest)
-	if !ok {
-		return fmt.Errorf("Fail parsing LoanRequest transaction")
-	}
-
-	// Check if loan's params are correct
-	currentParams := self.BestState[chainID].BestBlock.Header.LoanParams
-	ok = false
-	for _, temp := range currentParams {
-		if txLoan.Params == temp {
-			ok = true
-		}
-	}
-	if !ok {
-		return fmt.Errorf("LoanRequest transaction has incorrect params")
-	}
-
-	// Check if loan id is unique across all chains
-	// TODO(@0xbunyip): should we check in db/chain or only in best state?
-	for chainID, bestState := range self.BestState {
-		for _, id := range bestState.LoanIDs {
-			if bytes.Equal(txLoan.LoanID, id) {
-				return fmt.Errorf("LoanID already existed on chain %d", chainID)
-			}
-		}
-	}
-	return nil
-}
-
 func (self *BlockChain) ValidateTxLoanResponse(tx metadata.Transaction, chainID byte) error {
 	txResponse, ok := tx.(*transaction.TxLoanResponse)
 	if !ok {
@@ -147,10 +117,12 @@ func (self *BlockChain) ValidateTxLoanResponse(tx metadata.Transaction, chainID 
 					return fmt.Errorf("Current user already responded to loan request")
 				}
 			}
-		case common.TxLoanRequest:
+		}
+		switch txOld.GetMetadataType() {
+		case metadata.LoanRequestMeta:
 			{
-				_, ok := txOld.(*transaction.TxLoanRequest)
-				if !ok {
+				meta := tx.GetMetadata()
+				if meta == nil {
 					return fmt.Errorf("Error parsing loan request tx")
 				}
 				found = true
@@ -176,8 +148,6 @@ func (self *BlockChain) ValidateTxLoanPayment(tx metadata.Transaction, chainID b
 		return err
 	}
 	found := uint8(0)
-	txRequest := &transaction.TxLoanRequest{}
-	foundRequest := false
 	for _, txHash := range txHashes {
 		hash := &common.Hash{}
 		copy(hash[:], txHash)
@@ -193,11 +163,6 @@ func (self *BlockChain) ValidateTxLoanPayment(tx metadata.Transaction, chainID b
 					found += 1
 				}
 			}
-		case common.TxLoanRequest:
-			{
-				txRequest = tx.(*transaction.TxLoanRequest)
-				foundRequest = true
-			}
 		}
 	}
 
@@ -207,14 +172,15 @@ func (self *BlockChain) ValidateTxLoanPayment(tx metadata.Transaction, chainID b
 	}
 
 	// Check if payment amount is correct
-	if !foundRequest {
-		return fmt.Errorf("Loan request not found")
+	requestMeta, err := self.getLoanRequestMeta(txPayment.LoanID)
+	if err != nil {
+		return err
 	}
 	_, _, deadline, err := self.config.DataBase.GetLoanPayment(txPayment.LoanID)
 	if err != nil {
 		return err
 	}
-	if uint32(self.BestState[chainID].Height)+txRequest.Params.Maturity >= deadline && txPayment.PayPrinciple {
+	if uint32(self.BestState[chainID].Height)+requestMeta.Params.Maturity >= deadline && txPayment.PayPrinciple {
 		return fmt.Errorf("Interest must be fully paid before paying principle")
 	}
 	return nil
@@ -240,20 +206,26 @@ func (self *BlockChain) ValidateTxLoanWithdraw(tx metadata.Transaction, chainID 
 		if txOld == nil || err != nil {
 			return fmt.Errorf("Error finding corresponding loan request")
 		}
-		switch txOld.GetType() {
-		case common.TxLoanRequest:
+		switch txOld.GetMetadataType() {
+		case metadata.LoanRequestMeta:
 			{
 				// Check if key is correct
-				txRequest, ok := tx.(*transaction.TxLoanRequest)
+				meta := tx.GetMetadata()
+				if meta == nil {
+					return fmt.Errorf("Loan request metadata of tx loan withdraw is nil")
+				}
+				requestMeta, ok := meta.(*metadata.LoanRequest)
 				if !ok {
-					return fmt.Errorf("Error parsing corresponding loan request")
+					return fmt.Errorf("Error parsing loan request of tx loan withdraw")
 				}
 				h := make([]byte, 32)
 				sha3.ShakeSum256(h, txWithdraw.Key)
-				if bytes.Equal(h, txRequest.KeyDigest) {
+				if bytes.Equal(h, requestMeta.KeyDigest) {
 					keyCorrect = true
 				}
 			}
+		}
+		switch txOld.GetType() {
 		case common.TxLoanResponse:
 			{
 				// Check if loan is accepted

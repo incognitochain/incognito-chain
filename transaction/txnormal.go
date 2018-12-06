@@ -159,6 +159,9 @@ func (tx Tx) Hash() *common.Hash {
 	record += string(tx.JSPubKey)
 	// record += string(tx.JSSig)
 	record += string(tx.AddressLastByte)
+	if tx.Metadata != nil {
+		record += string(tx.Metadata.Hash()[:])
+	}
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -220,6 +223,19 @@ func (tx *Tx) ValidateTransaction() bool {
 // GetType returns the type of the transaction
 func (tx *Tx) GetType() string {
 	return tx.Type
+}
+
+// GetMetadataType returns the type of underlying metadata if is existed
+func (tx *Tx) GetMetadataType() int {
+	if tx.Metadata != nil {
+		return tx.Metadata.GetType()
+	}
+	return metadata.InvalidMeta
+}
+
+// GetMetadata returns metadata of tx is existed
+func (tx *Tx) GetMetadata() metadata.Metadata {
+	return tx.Metadata
 }
 
 // GetTxVirtualSize computes the virtual size of a given transaction

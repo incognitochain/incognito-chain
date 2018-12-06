@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
@@ -223,7 +224,7 @@ func (block *Block) updateDCBConstitution(tx metadata.Transaction, blockgen *Blk
 	block.Header.DCBConstitution.CurrentDCBNationalWelfare = GetOracleDCBNationalWelfare()
 
 	//	proposalParams := DCBProposal.DCBProposalData.DCBParams // not use yet
-	block.Header.DCBConstitution.DCBParams = DCBParams{}
+	block.Header.DCBConstitution.DCBParams = params.DCBParams{}
 	return nil
 }
 

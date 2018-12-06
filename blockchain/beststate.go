@@ -1,11 +1,8 @@
 package blockchain
 
 import (
-	"fmt"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
-	"github.com/ninjadotorg/constant/transaction"
 )
 
 // BestState houses information about the current best block and other info
@@ -27,7 +24,6 @@ type BestState struct {
 	NumTxns    uint64 // The number of txns in the block.
 	TotalTxns  uint64 // The total number of txns in the chain.
 	Candidates map[string]CommitteeCandidateInfo
-	LoanIDs    [][]byte // Unique IDs of all loans requested.
 }
 
 /*
@@ -46,10 +42,6 @@ func (self *BestState) Init(block *Block, tree *client.IncMerkleTree) {
 	self.Height = block.Header.Height
 	if self.Candidates == nil {
 		self.Candidates = make(map[string]CommitteeCandidateInfo)
-	}
-
-	if self.LoanIDs == nil {
-		self.LoanIDs = make([][]byte, 0)
 	}
 }
 
@@ -71,8 +63,6 @@ func (self *BestState) Update(block *Block) error {
 		self.Candidates = make(map[string]CommitteeCandidateInfo)
 	}
 
-	// Update list of loan ids
-	err = self.UpdateLoanIDs(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
@@ -84,18 +74,4 @@ func (self *BestState) RemoveCandidate(producerPbk string) {
 	if ok {
 		delete(self.Candidates, producerPbk)
 	}
-}
-
-func (self *BestState) UpdateLoanIDs(block *Block) error {
-	for _, blockTx := range block.Transactions {
-		if blockTx.GetType() == common.TxLoanRequest {
-			tx, ok := blockTx.(*transaction.TxLoanRequest)
-			if ok == false {
-				return NewBlockChainError(UnExpectedError, fmt.Errorf("Transaction in block not valid, expected TxLoanRequest"))
-			}
-
-			self.LoanIDs = append(self.LoanIDs, tx.LoanID)
-		}
-	}
-	return nil
 }

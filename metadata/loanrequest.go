@@ -57,6 +57,10 @@ func NewLoanRequest(data map[string]interface{}) *LoanRequest {
 	return &result
 }
 
+func (lr *LoanRequest) GetType() int {
+	return LoanRequestMeta
+}
+
 func (lr *LoanRequest) Hash() *common.Hash {
 	record := string(lr.LoanID)
 	record += string(lr.Params.InterestRate)
@@ -87,7 +91,7 @@ func (lr *LoanRequest) Validate() error {
 	return nil
 }
 
-func (lr *LoanRequest) ValidateWithBlockChain(bcr BlockchainRetriever) error {
+func (lr *LoanRequest) ValidateTxWithBlockChain(bcr BlockchainRetriever, chainID byte) (bool, error) {
 	// Check if loan's params are correct
 	dcbParams := bcr.GetDCBParams()
 	validLoanParams := dcbParams.LoanParams
@@ -98,20 +102,18 @@ func (lr *LoanRequest) ValidateWithBlockChain(bcr BlockchainRetriever) error {
 		}
 	}
 	if !ok {
-		return fmt.Errorf("LoanRequest has incorrect params")
+		return false, fmt.Errorf("LoanRequest has incorrect params")
 	}
 
-	// Check if loan id is unique across
-	// TODO(@0xbunyip): should we check in db/chain or only in best state?
 	txs, err := bcr.GetLoanTxs(lr.LoanID)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if len(txs) > 0 {
-		return fmt.Errorf("LoanID already existed")
+		return false, fmt.Errorf("LoanID already existed")
 	}
-	return nil
+	return true, nil
 }
 
 func (lr *LoanRequest) Process() error {

@@ -45,3 +45,18 @@ func (bsReq *BuySellRequest) CheckTransactionFee(tr TxRetriever, minFee uint64) 
 func (bsReq *BuySellRequest) ValidateTxWithBlockChain(bcr BlockchainRetriever, chainID byte) (bool, error) {
 	return true, nil
 }
+
+func (bsReq *BuySellRequest) GetType() int {
+	return BuySellRequestMeta
+}
+
+func (bsReq *BuySellRequest) Hash() *common.Hash {
+	record := string(bsReq.PaymentAddress.ToBytes())
+	record += string(bsReq.AssetType[:])
+	record += string(bsReq.Amount)
+	record += string(bsReq.SaleID)
+
+	// final hash
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}

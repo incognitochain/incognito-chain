@@ -517,7 +517,7 @@ func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 	return data, err
 }
 
-func (self *BlockChain) getLoanRequest(loanID []byte) (*transaction.TxLoanRequest, error) {
+func (self *BlockChain) getLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
 	txs, err := self.config.DataBase.GetLoanTxs(loanID)
 	if err != nil {
 		return nil, err
@@ -530,10 +530,17 @@ func (self *BlockChain) getLoanRequest(loanID []byte) (*transaction.TxLoanReques
 		if err != nil {
 			return nil, err
 		}
-		if tx.GetType() == common.TxLoanRequest {
-			txRequest := tx.(*transaction.TxLoanRequest)
-			if bytes.Equal(txRequest.LoanID, loanID) {
-				return txRequest, nil
+		if tx.GetMetadataType() == metadata.LoanRequestMeta {
+			meta := tx.GetMetadata()
+			if meta == nil {
+				continue
+			}
+			requestMeta, ok := meta.(*metadata.LoanRequest)
+			if !ok {
+				continue
+			}
+			if bytes.Equal(requestMeta.LoanID, loanID) {
+				return requestMeta, nil
 			}
 		}
 	}
@@ -561,8 +568,11 @@ func (self *BlockChain) ProcessLoanPayment(tx *transaction.TxLoanPayment) error 
 		}
 		principle -= value
 	} else {
-		txRequest, _ := self.getLoanRequest(tx.LoanID)
-		interestPerPeriod := GetInterestAmount(principle, txRequest.Params.InterestRate)
+		meta, err := self.getLoanRequestMeta(tx.LoanID)
+		if err != nil {
+			return err
+		}
+		interestPerPeriod := GetInterestAmount(principle, meta.Params.InterestRate)
 		periodInc := uint32(0)
 		if value < interest {
 			interest -= value
@@ -570,7 +580,7 @@ func (self *BlockChain) ProcessLoanPayment(tx *transaction.TxLoanPayment) error 
 			periodInc = 1 + uint32((value-interest)/interestPerPeriod)
 			interest = interestPerPeriod - (value-interest)%interestPerPeriod
 		}
-		deadline = deadline + periodInc*txRequest.Params.Maturity
+		deadline = deadline + periodInc*meta.Params.Maturity
 	}
 	return self.config.DataBase.StoreLoanPayment(tx.LoanID, principle, interest, deadline)
 }
@@ -578,11 +588,6 @@ func (self *BlockChain) ProcessLoanPayment(tx *transaction.TxLoanPayment) error 
 func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetType() {
-		case common.TxLoanRequest:
-			{
-				tx := tx.(*transaction.TxLoanRequest)
-				self.config.DataBase.StoreLoanRequest(tx.LoanID, tx.Hash()[:])
-			}
 		case common.TxLoanResponse:
 			{
 				tx := tx.(*transaction.TxLoanResponse)
@@ -592,15 +597,25 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 			{
 				// Update loan payment info after withdrawing Constant
 				tx := tx.(*transaction.TxLoanUnlock)
-				txRequest, _ := self.getLoanRequest(tx.LoanID)
-				principle := txRequest.LoanAmount
-				interest := GetInterestAmount(principle, txRequest.Params.InterestRate)
+				meta, _ := self.getLoanRequestMeta(tx.LoanID)
+				principle := meta.LoanAmount
+				interest := GetInterestAmount(principle, meta.Params.InterestRate)
 				self.config.DataBase.StoreLoanPayment(tx.LoanID, principle, interest, uint32(block.Header.Height))
 			}
 		case common.TxLoanPayment:
 			{
 				tx := tx.(*transaction.TxLoanPayment)
 				self.ProcessLoanPayment(tx)
+			}
+		}
+	}
+	for _, tx := range block.Transactions {
+		switch tx.GetMetadataType() {
+		case metadata.LoanRequestMeta:
+			{
+				tx := tx.(*transaction.Tx)
+				meta := tx.Metadata.(*metadata.LoanRequest)
+				self.config.DataBase.StoreLoanRequest(meta.LoanID, tx.Hash()[:])
 			}
 		}
 	}

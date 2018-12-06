@@ -1,10 +1,10 @@
 package blockchain
 
 import (
+	"log"
 	"time"
 
-	"log"
-
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -308,17 +308,17 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		SellingBonds: &SellingBonds{},
 		RefundInfo:   &RefundInfo{},
 	}
-	genesisBlock.Header.LoanParams = []transaction.LoanParams{}
-	genesisBlock.Header.LoanParams = append(genesisBlock.Header.LoanParams,
-		transaction.LoanParams{
+	// Decentralize central bank params
+	loanParams := []params.LoanParams{
+		params.LoanParams{
 			InterestRate:     0,
 			Maturity:         7776000, // 3 months in seconds
 			LiquidationStart: 15000,   // 150%
 		},
-	)
-
-	// Decentralize central bank params
-	genesisBlock.Header.DCBConstitution.DCBParams = DCBParams{}
+	}
+	genesisBlock.Header.DCBConstitution.DCBParams = params.DCBParams{
+		LoanParams: loanParams,
+	}
 
 	// Commercial bank params
 	genesisBlock.Header.CBParams = CBParams{}
