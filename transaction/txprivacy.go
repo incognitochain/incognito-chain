@@ -98,7 +98,7 @@ func (tx *Tx) CreateTx(
 	usableTx []*Tx,
 	fee uint64,
 	commitmentsDB [][]byte,
-	snDerivators []*big.Int,
+	snDerivators []big.Int,
 	hasPrivacy bool,
 ) (error) {
 
@@ -190,7 +190,7 @@ func (tx *Tx) CreateTx(
 		for ok {
 			sndOuts = nil
 			sndOut = privacy.RandInt()
-			for CheckSNDExistence(sndOut)  {
+			for CheckSNDExistence(sndOut) {
 				sndOut = privacy.RandInt()
 			}
 			sndOuts = append(sndOuts, sndOut)
