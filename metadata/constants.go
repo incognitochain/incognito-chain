@@ -13,4 +13,10 @@ const (
 	LoanUnlockMeta
 	LoanPaymentMeta
 	BuySellRequestMeta
+	DividendMeta
+)
+
+const (
+	MaxDivTxsPerBlock = 1000
+	PayoutFrequency   = 1000 // Payout dividend every 1000 blocks
 )

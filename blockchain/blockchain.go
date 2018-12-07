@@ -639,11 +639,12 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 
 func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 	for _, tx := range block.Transactions {
-		switch tx.GetType() {
-		case common.TxDividendPayout:
+		switch tx.GetMetadataType() {
+		case metadata.DividendMeta:
 			{
-				tx := tx.(*transaction.TxDividendPayout)
-				tokenID := tx.TokenID
+				tx := tx.(*transaction.Tx)
+				meta := tx.Metadata.(*metadata.Dividend)
+				tokenID := meta.TokenID
 				for _, desc := range tx.Descs {
 					for _, note := range desc.Note {
 						// TODO(@0xbunyip): replace note.Apk with bytes of PaymentAddress, not just Pk

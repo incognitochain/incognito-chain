@@ -87,22 +87,25 @@ func (tx *Tx) IsSalaryTx() bool {
 	return true
 }
 
-func (tx *Tx) GetReceiverPubKeys() [][]byte {
+func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 	pubkeys := [][]byte{}
+	amounts := []uint64{}
 	for _, desc := range tx.Descs {
 		for _, note := range desc.Note {
 			added := false
-			for _, key := range pubkeys {
+			for i, key := range pubkeys {
 				if bytes.Equal(note.Apk[:], key) {
 					added = true
+					amounts[i] += note.Value
 				}
 			}
 			if !added {
 				pubkeys = append(pubkeys, note.Apk[:])
+				amounts = append(amounts, note.Value)
 			}
 		}
 	}
-	return pubkeys
+	return pubkeys, amounts
 }
 
 func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {

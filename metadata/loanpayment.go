@@ -38,7 +38,7 @@ func (lp *LoanPayment) Hash() *common.Hash {
 }
 
 func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
-	receivers := txr.GetReceiverPubKeys()
+	receivers, _ := txr.GetReceivers()
 	if len(receivers) == 0 {
 		return false, fmt.Errorf("Loan payment must be sent to DCB address")
 	}

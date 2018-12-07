@@ -74,7 +74,7 @@ func (self *BlockChain) ValidateDoubleSpend(tx metadata.Transaction, chainID byt
 	return nil
 }
 
-func (self *BlockChain) GetAmountPerAccount(proposal *transaction.PayoutProposal) (uint64, []string, []uint64, error) {
+func (self *BlockChain) GetAmountPerAccount(proposal *metadata.DividendProposal) (uint64, []string, []uint64, error) {
 	// TODO(@0xsirrush): cache list so that list of receivers is fixed across blocks
 	tokenHolders, err := self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(proposal.TokenID)
 	if err != nil {
@@ -108,60 +108,6 @@ func (self *BlockChain) GetAmountPerAccount(proposal *transaction.PayoutProposal
 		}
 	}
 	return totalTokenSupply, rewardHolders, amounts, nil
-}
-
-func (self *BlockChain) ValidateTxDividendPayout(tx metadata.Transaction, chainID byte) error {
-	txPayout, ok := tx.(*transaction.TxDividendPayout)
-	if !ok {
-		return fmt.Errorf("Fail parsing DividendPayout transaction")
-	}
-
-	// Check if there's a proposal to pay dividend
-	// TODO(@0xbunyip): get current proposal and check if it is dividend payout
-	proposal := &transaction.PayoutProposal{}
-	_, tokenHolders, amounts, err := self.GetAmountPerAccount(proposal)
-	if err != nil {
-		return err
-	}
-
-	// Check if user is not rewarded and amount is correct
-	for _, desc := range txPayout.Descs {
-		for _, note := range desc.Note {
-			// Check if user is not rewarded
-			found := false
-			for _, holder := range tokenHolders {
-				temp, _ := hex.DecodeString(holder)
-				paymentAddress := (&privacy.PaymentAddress{}).FromBytes(temp)
-				if bytes.Equal(paymentAddress.Pk[:], note.Apk[:]) {
-					found = true
-				}
-			}
-			if !found { // All utxos of a user are rewarded at the same time
-				return fmt.Errorf("User not eligible for dividend payment")
-			}
-
-			// Check amount
-			count := 0
-			for i, holder := range tokenHolders {
-				temp, _ := hex.DecodeString(holder)
-				paymentAddress := (&privacy.PaymentAddress{}).FromBytes(temp)
-				if bytes.Equal(paymentAddress.Pk[:], note.Apk[:]) {
-					count += 1
-					if amounts[i] != note.Value {
-						return fmt.Errorf("Payment amount for user %s incorrect, found %d instead of %d", holder, note.Value, amounts[i])
-					}
-				}
-			}
-
-			if count == 0 {
-				return fmt.Errorf("User %s isn't eligible for receiving dividend", note.Apk[:])
-			} else if count > 1 {
-				return fmt.Errorf("Multiple dividend payments found for user %s", note.Apk[:])
-			}
-		}
-	}
-
-	return nil
 }
 
 func isAnyBoardAddressInVins(customToken *transaction.TxCustomToken) bool {

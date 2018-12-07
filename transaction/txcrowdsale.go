@@ -30,10 +30,14 @@ func BuildResponseForCoin(txRequest *TxBuySellRequest, bondID []byte, rt []byte,
 	}
 	bondPrice := bondPrices[string(bondID)]
 	amounts := []uint64{bonds * bondPrice, 0} // TODO(@0xbunyip): use correct unit of price and value here
-	tx, err := BuildCoinbaseTx(pks, tks, amounts, rt, chainID, common.TxBuySellDCBResponse)
-	if err != nil {
-		return nil, err
-	}
+	tx := &Tx{}
+	_ = pks
+	_ = tks
+	_ = amounts
+	//	tx, err := BuildCoinbaseTx(pks, tks, amounts, rt, chainID, common.TxBuySellDCBResponse)
+	//	if err != nil {
+	//		return nil, err
+	//	}
 	txToken := &TxCustomToken{
 		Tx:          *tx,
 		TxTokenData: TxTokenData{},

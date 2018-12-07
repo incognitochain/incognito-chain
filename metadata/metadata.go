@@ -63,6 +63,9 @@ type BlockchainRetriever interface {
 	GetLoanTxs([]byte) ([][]byte, error)
 	GetLoanPayment([]byte) (uint64, uint64, uint32, error)
 	GetLoanRequestMeta([]byte) (*LoanRequest, error)
+
+	// For validating dividend
+	GetAmountPerAccount(*DividendProposal) (uint64, []string, []uint64, error)
 }
 
 type Metadata interface {
@@ -83,8 +86,6 @@ type Transaction interface {
 	GetTxVirtualSize() uint64
 	GetSenderAddrLastByte() byte
 	GetTxFee() uint64
-	GetJSPubKey() []byte
-	GetReceiverPubKeys() [][]byte
 	ListNullifiers() [][]byte
 	CheckTxVersion(int8) bool
 	CheckTransactionFee(uint64) bool
@@ -95,4 +96,7 @@ type Transaction interface {
 	ValidateTxByItself(BlockchainRetriever) bool
 	GetMetadata() Metadata
 	ValidateConstDoubleSpendWithBlockchain(BlockchainRetriever, byte) error
+
+	GetJSPubKey() []byte
+	GetReceivers() ([][]byte, []uint64)
 }

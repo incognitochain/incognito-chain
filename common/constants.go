@@ -22,7 +22,6 @@ const (
 	TxAcceptDCBProposal = "ad"  // accept DCB proposal
 	TxAcceptGOVProposal = "ag"  // accept GOV proposal
 
-	TxDividendPayout     = "td"
 	TxBuyFromGOVRequest  = "bgr"
 	TxBuySellDCBRequest  = "bsdr"
 	TxBuySellDCBResponse = "bsds"
