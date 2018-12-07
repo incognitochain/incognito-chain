@@ -4,6 +4,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"math/big"
+	"github.com/ninjadotorg/constant/common"
 )
 
 // CreateTxSalary
@@ -20,7 +21,7 @@ func CreateTxSalary(
 
 	tx := new(Tx)
 	// Todo: check
-	tx.Type = "Salary"
+	tx.Type = common.TxSalaryType
 	// assign fee tx = 0
 	tx.Fee = 0
 
