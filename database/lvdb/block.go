@@ -75,7 +75,7 @@ func (db *db) HasBlock(hash *common.Hash) (bool, error) {
 }
 
 func (db *db) FetchBlock(hash *common.Hash) ([]byte, error) {
-	block, err := db.lvdb.Get(db.getKey(string(blockKeyPrefix), hash), nil)
+	block, err := db.Get(db.getKey(string(blockKeyPrefix), hash))
 	if err != nil {
 		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
@@ -114,16 +114,16 @@ func (db *db) StoreBestState(v interface{}, chainID byte) error {
 	}
 	key := append(bestBlockKey, chainID)
 	if err := db.Put(key, val); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.put"))
 	}
 	return nil
 }
 
 func (db *db) FetchBestState(chainID byte) ([]byte, error) {
 	key := append(bestBlockKey, chainID)
-	block, err := db.lvdb.Get(key, nil)
+	block, err := db.Get(key)
 	if err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.get"))
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.get"))
 	}
 	return block, nil
 }
@@ -133,7 +133,7 @@ func (db *db) CleanBestState() error {
 		key := append(bestBlockKey, chainID)
 		err := db.lvdb.Delete(key, nil)
 		if err != nil {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.delete"))
 		}
 	}
 	return nil
