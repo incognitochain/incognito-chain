@@ -148,7 +148,7 @@ var verifyTests = []verifyTest{
 		roots:       []string{smimeIntermediate},
 		currentTime: 1339436154,
 
-		// Key usage not implemented for Windows yet.
+		// PubKey usage not implemented for Windows yet.
 		systemSkip:    true,
 		errorCallback: expectUsageError,
 	},
@@ -158,7 +158,7 @@ var verifyTests = []verifyTest{
 		currentTime: 1339436154,
 		keyUsages:   []ExtKeyUsage{ExtKeyUsageServerAuth},
 
-		// Key usage not implemented for Windows yet.
+		// PubKey usage not implemented for Windows yet.
 		systemSkip:    true,
 		errorCallback: expectUsageError,
 	},
@@ -168,7 +168,7 @@ var verifyTests = []verifyTest{
 		currentTime: 1339436154,
 		keyUsages:   []ExtKeyUsage{ExtKeyUsageEmailProtection},
 
-		// Key usage not implemented for Windows yet.
+		// PubKey usage not implemented for Windows yet.
 		systemSkip: true,
 		expectedChains: [][]string{
 			{"Ryan Hurst", "GlobalSign PersonalSign 2 CA - G2"},
@@ -1241,9 +1241,9 @@ Certificate:
             Not Before: Jan  1 00:00:00 2015 GMT
             Not After : Jan  1 00:00:00 2025 GMT
         Subject: O=Golang, CN=Root ca
-        Subject Public Key Info:
-            Public Key Algorithm: rsaEncryption
-                Public-Key: (1024 bit)
+        Subject Public PubKey Info:
+            Public PubKey Algorithm: rsaEncryption
+                Public-PubKey: (1024 bit)
                 Modulus:
                     00:e9:0e:7f:11:0c:e6:5a:e6:86:83:70:f6:51:07:
                     2e:02:78:11:f5:b2:24:92:38:ee:26:62:02:c7:94:
@@ -1256,13 +1256,13 @@ Certificate:
                     21:29:a9:ae:94:5b:4a:f9:9f
                 Exponent: 65537 (0x10001)
         X509v3 extensions:
-            X509v3 Key Usage: critical
+            X509v3 PubKey Usage: critical
                 Certificate Sign
-            X509v3 Extended Key Usage:
+            X509v3 Extended PubKey Usage:
                 TLS Web Server Authentication, TLS Web Client Authentication
             X509v3 Basic Constraints: critical
                 CA:TRUE
-            X509v3 Subject Key Identifier:
+            X509v3 Subject PubKey Identifier:
                 40:37:D7:01:FB:40:2F:B8:1C:7E:54:04:27:8C:59:01
     Signature Algorithm: sha256WithRSAEncryption
          6f:84:df:49:e0:99:d4:71:66:1d:32:86:56:cb:ea:5a:6b:0e:
@@ -1299,9 +1299,9 @@ Certificate:
             Not Before: Jan  1 00:00:00 2015 GMT
             Not After : Jan  1 00:00:00 2025 GMT
         Subject: O=Golang, CN=Leaf
-        Subject Public Key Info:
-            Public Key Algorithm: rsaEncryption
-                Public-Key: (1024 bit)
+        Subject Public PubKey Info:
+            Public PubKey Algorithm: rsaEncryption
+                Public-PubKey: (1024 bit)
                 Modulus:
                     00:db:46:7d:93:2e:12:27:06:48:bc:06:28:21:ab:
                     7e:c4:b6:a2:5d:fe:1e:52:45:88:7a:36:47:a5:08:
@@ -1314,15 +1314,15 @@ Certificate:
                     97:a7:75:62:f4:14:c8:52:d7
                 Exponent: 65537 (0x10001)
         X509v3 extensions:
-            X509v3 Key Usage: critical
-                Digital Signature, Key Encipherment
-            X509v3 Extended Key Usage:
+            X509v3 PubKey Usage: critical
+                Digital Signature, PubKey Encipherment
+            X509v3 Extended PubKey Usage:
                 TLS Web Server Authentication, TLS Web Client Authentication
             X509v3 Basic Constraints: critical
                 CA:FALSE
-            X509v3 Subject Key Identifier:
+            X509v3 Subject PubKey Identifier:
                 9F:91:16:1F:43:43:3E:49:A6:DE:6D:B6:80:D7:9F:60
-            X509v3 Authority Key Identifier:
+            X509v3 Authority PubKey Identifier:
                 keyid:40:37:D7:01:FB:40:2F:B8:1C:7E:54:04:27:8C:59:01
 
     Signature Algorithm: sha256WithRSAEncryption

@@ -13,15 +13,6 @@ const (
 	TxCustomTokenType        = "t" // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "t" // token  tx with supporting privacy
 
-	TxSubmitDCBProposal = "pd"  // submit DCB proposal tx
-	TxSubmitGOVProposal = "pg"  // submit GOV proposal tx
-	TxVoteDCBProposal   = "vd"  // submit DCB proposal voted tx
-	TxVoteGOVProposal   = "vg"  // submit GOV proposal voted tx
-	TxVoteDCBBoard      = "vbd" // vote DCB board tx
-	TxVoteGOVBoard      = "vbg" // vote DCB board tx
-	TxAcceptDCBProposal = "ad"  // accept DCB proposal
-	TxAcceptGOVProposal = "ag"  // accept GOV proposal
-
 	TxBuyFromGOVRequest  = "bgr"
 	TxBuySellDCBRequest  = "bsdr"
 	TxBuySellDCBResponse = "bsds"
@@ -32,6 +23,8 @@ const (
 
 // for mining consensus
 const (
+	DurationOfTermDCB     = 1000    //number of block one DCB board in charge
+	DurationOfTermGOV     = 1000    //number of block one GOV board in charge
 	MaxBlockSize          = 5000000 //byte 5MB
 	MaxTxsInBlock         = 1000
 	MinTxsInBlock         = 10                    // minium txs for block to get immediate process (meaning no wait time)
@@ -44,6 +37,10 @@ const (
 	MinBlockSigs          = (TotalValidators / 2) + 1
 	GetChainStateInterval = 10 //second
 	MaxBlockTime          = 10 //second Maximum for a chain to grow
+
+	// voting
+	SumOfVoteDCBToken = 100000000
+	SumOfVoteGOVToken = 100000000
 )
 
 // board types
@@ -54,6 +51,7 @@ const (
 
 // board addresses
 const (
-	DCBAddress = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
-	GOVAddress = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
+	DCBAddress  = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
+	GOVAddress  = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
+	VoteAddress = ""
 )

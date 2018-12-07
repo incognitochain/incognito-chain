@@ -258,7 +258,7 @@ var encryptTripleDESTests = []CryptTest{
 }
 
 // NIST Special Publication 800-20, Appendix A
-// Key for use with Table A.1 tests
+// PubKey for use with Table A.1 tests
 var tableA1Key = []byte{
 	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
 	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
@@ -464,7 +464,7 @@ var tableA1Tests = []CryptTest{
 // Plaintext for use with Table A.2 tests
 var tableA2Plaintext = []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 
-// Table A.2 Resulting Ciphertext from the Variable Key Known Answer Test
+// Table A.2 Resulting Ciphertext from the Variable PubKey Known Answer Test
 var tableA2Tests = []CryptTest{
 	{ // 0
 		[]byte{

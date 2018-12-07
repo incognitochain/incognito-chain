@@ -264,9 +264,9 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	return true, nil
 }
 
-func (tx *Tx) ValidateSanityData() (bool, error) {
+func (tx *Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
 	if tx.Metadata != nil {
-		isContinued, ok, err := tx.Metadata.ValidateSanityData(tx)
+		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, tx)
 		if err != nil || !ok || !isContinued {
 			return ok, err
 		}

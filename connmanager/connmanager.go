@@ -17,8 +17,8 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/peer"
-	"github.com/ninjadotorg/constant/wire"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/wire"
 )
 
 // ConnState represents the state of the requested connection.
@@ -353,7 +353,7 @@ listen:
 							result = append(result, peerConn.RemotePeer.PeerID.Pretty())
 						}
 					}
-					Logger.log.Infof("Public Key %s, %s, %s", pubK, info.PeerID.Pretty(), result)
+					Logger.log.Infof("Public PubKey %s, %s, %s", pubK, info.PeerID.Pretty(), result)
 				}
 
 				for _, peerConn := range listener.PeerConns {

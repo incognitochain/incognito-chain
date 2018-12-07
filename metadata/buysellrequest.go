@@ -51,8 +51,8 @@ func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr Block
 	return false, nil
 }
 
-func (bsReq *BuySellRequest) ValidateSanityData(txr Transaction) (bool, bool, error) {
-	ok, err := txr.ValidateSanityData()
+func (bsReq *BuySellRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+	ok, err := txr.ValidateSanityData(bcr)
 	if err != nil || !ok {
 		return false, ok, err
 	}

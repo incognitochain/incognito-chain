@@ -891,7 +891,7 @@ func (self Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
 	msg.(*wire.MessageVersion).ProtocolVersion = self.protocolVersion
 
-	// ValidateTransaction Public Key from ProducerPrvKey
+	// ValidateTransaction Public PubKey from ProducerPrvKey
 	if peerConn.ListenerPeer.Config.ProducerPrvKey != "" {
 		keySet, err := cfg.GetProducerKeySet()
 		if err != nil {

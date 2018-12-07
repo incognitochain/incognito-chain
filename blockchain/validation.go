@@ -137,7 +137,7 @@ func isAllBoardAddressesInVins(
 
 func verifySignatures(
 	tx *transaction.TxCustomToken,
-	boardPubKeys []string,
+	boardPubKeys [][]byte,
 ) bool {
 	boardLen := len(boardPubKeys)
 	if boardLen == 0 {
@@ -149,11 +149,11 @@ func verifySignatures(
 	tx.BoardSigns = nil
 
 	for _, pubKey := range boardPubKeys {
-		sign, ok := signs[pubKey]
+		sign, ok := signs[string(pubKey)]
 		if !ok {
 			continue
 		}
-		keyObj, err := wallet.Base58CheckDeserialize(pubKey)
+		keyObj, err := wallet.Base58CheckDeserialize(string(pubKey))
 		if err != nil {
 			Logger.log.Info(err)
 			continue
@@ -179,7 +179,7 @@ func (bc *BlockChain) verifyByBoard(
 	customToken *transaction.TxCustomToken,
 ) bool {
 	var address string
-	var pubKeys []string
+	var pubKeys [][]byte
 	if boardType == common.DCB {
 		address = string(common.DCBAddress)
 		pubKeys = bc.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys

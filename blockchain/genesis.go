@@ -46,7 +46,7 @@ func (self GenesisBlockGenerator) CalcMerkleRoot(txns []metadata.Transaction) co
 	spendingKey := &privacy.SpendingKey{} // SpendingKey for input of genesis transaction is 0x0
 	input := new(client.JSInput)
 	input.InputNote = createGenesisInputNote(spendingKey, idx)
-	input.Key = spendingKey
+	input.PubKey = spendingKey
 	input.WitnessPath = (&client.MerklePath{}).CreateDummyPath()
 	return input
 }*/
@@ -371,6 +371,26 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		key.KeySet.PaymentAddress,
 	)
 	genesisBlock.AddTransaction(&bondTokenTx)
+
+	// Create genesis vote token tx for DCB
+	VoteDCBTokenTx := createSpecialTokenTx(
+		common.Hash(VoteDCBTokenID),
+		"Bond",
+		"BON",
+		icoParams.InitialVoteDCBToken,
+		key.KeySet.PaymentAddress,
+	)
+	genesisBlock.AddTransaction(&VoteDCBTokenTx)
+
+	// Create genesis vote token tx for GOV
+	VoteGOVTokenTx := createSpecialTokenTx(
+		common.Hash(VoteGOVTokenID),
+		"Bond",
+		"BON",
+		icoParams.InitialVoteGOVToken,
+		key.KeySet.PaymentAddress,
+	)
+	genesisBlock.AddTransaction(&VoteGOVTokenTx)
 
 	// calculate merkle root tx for genesis block
 	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)

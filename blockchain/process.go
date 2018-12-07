@@ -101,6 +101,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 			return NewBlockChainError(UnExpectedError, err)
 		}
 	}
+	// TODO: @0xankylosaurus optimize for loop once instead of multiple times
 	// save index of block
 	err := self.StoreBlockIndex(block)
 	if err != nil {
@@ -120,6 +121,19 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 
 	// Update utxo reward for dividends
 	err = self.UpdateDividendPayout(block)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+
+	// Update vote DCB Vote Count
+	err = self.UpdateVoteCountBoard(block)
+	//Update database for vote board
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+
+	err = self.UpdateVoteCountBoard(block)
+	//Update database for vote board
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}

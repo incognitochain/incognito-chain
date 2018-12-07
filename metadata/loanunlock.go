@@ -35,7 +35,7 @@ func (lu *LoanUnlock) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRe
 	return true, nil
 }
 
-func (lu *LoanUnlock) ValidateSanityData(txr Transaction) (bool, bool, error) {
+func (lu *LoanUnlock) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	return true, true, nil // continue checking for fee
 }
 
