@@ -23,7 +23,7 @@ var (
 	blockKeyIdxPrefix         = []byte("i-")
 	transactionKeyPrefix      = []byte("tx-")
 	privateKeyPrefix          = []byte("prk-")
-	serialNumbersPrefix       = []byte("nullifiers-")
+	serialNumbersPrefix       = []byte("serinalnumbers-")
 	commitmentsPrefix         = []byte("commitments-")
 	snderivatorsPrefix        = []byte("snderivators-")
 	bestBlockKey              = []byte("bestBlock")

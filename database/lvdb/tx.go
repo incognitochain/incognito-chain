@@ -62,11 +62,11 @@ func (db *db) FetchSerialNumbers(chainID byte) ([][]byte, error) {
 }
 
 func (db *db) HasSerialNumber(serialNumber []byte, chainID byte) (bool, error) {
-	listNullifiers, err := db.FetchSerialNumbers(chainID)
+	listSerialNumbers, err := db.FetchSerialNumbers(chainID)
 	if err != nil {
 		return false, database.NewDatabaseError(database.UnexpectedError, err)
 	}
-	for _, item := range listNullifiers {
+	for _, item := range listSerialNumbers {
 		if bytes.Equal(item, serialNumber) {
 			return true, nil
 		}
