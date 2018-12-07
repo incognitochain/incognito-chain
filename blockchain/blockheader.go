@@ -4,30 +4,30 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
-type GOVParams struct {
-	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
-	BasicSalary  uint64 // basic salary per block(mili constant)
-	TxFee        uint64
-	SellingBonds *SellingBonds
-	RefundInfo   *RefundInfo
-}
+// type GOVParams struct {
+// 	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
+// 	BasicSalary  uint64 // basic salary per block(mili constant)
+// 	TxFee        uint64
+// 	SellingBonds *SellingBonds
+// 	RefundInfo   *RefundInfo
+// }
 
 type CBParams struct {
 }
 
-type RefundInfo struct {
-	ThresholdToLargeTx uint64
-	RefundAmount       uint64
-}
+// type RefundInfo struct {
+// 	ThresholdToLargeTx uint64
+// 	RefundAmount       uint64
+// }
 
-type SellingBonds struct {
-	BondsToSell    uint64
-	BondPrice      uint64 // in Constant unit
-	Maturity       uint32
-	BuyBackPrice   uint64 // in Constant unit
-	StartSellingAt uint32 // start selling bonds at block height
-	SellingWithin  uint32 // selling bonds within n blocks
-}
+// type SellingBonds struct {
+// 	BondsToSell    uint64
+// 	BondPrice      uint64 // in Constant unit
+// 	Maturity       uint32
+// 	BuyBackPrice   uint64 // in Constant unit
+// 	StartSellingAt uint32 // start selling bonds at block height
+// 	SellingWithin  uint32 // selling bonds within n blocks
+// }
 
 type Oracle struct {
 	Bonds map[string]uint64 // key: bondTypeID, value: price

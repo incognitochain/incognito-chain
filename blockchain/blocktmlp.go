@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -50,10 +51,10 @@ type TxPool interface {
 	RemoveTx(tx metadata.Transaction) error
 
 	//CheckTransactionFee
-	CheckTransactionFee(tx metadata.Transaction) (uint64, error)
+	// CheckTransactionFee(tx metadata.Transaction) (uint64, error)
 
 	// Check tx validate by it self
-	ValidateTxByItSelf(tx metadata.Transaction) bool
+	// ValidateTxByItSelf(tx metadata.Transaction) bool
 }
 
 type RewardAgent interface {
@@ -134,7 +135,8 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 		}
 		// ValidateTransaction vote and propose transaction
 
-		if !blockgen.txPool.ValidateTxByItSelf(tx) {
+		// if !blockgen.txPool.ValidateTxByItSelf(tx) {
+		if !tx.ValidateTxByItself(blockgen.chain) {
 			txToRemove = append(txToRemove, metadata.Transaction(tx))
 			continue
 		}
@@ -484,7 +486,7 @@ func (blockgen *BlkTmplGenerator) processGovDividend(rt []byte, chainID byte, bl
 
 func buildSingleBuySellResponseTx(
 	buySellReqTx *transaction.TxBuySellRequest,
-	sellingBondsParam *SellingBonds,
+	sellingBondsParam *params.SellingBonds,
 ) transaction.TxTokenVout {
 	buyBackInfo := &transaction.BuyBackInfo{
 		Maturity:     sellingBondsParam.Maturity,
@@ -531,7 +533,7 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 	coinbaseTxType string,
 	buySellReqTxs []metadata.Transaction,
-	sellingBondsParam *SellingBonds,
+	sellingBondsParam *params.SellingBonds,
 ) []*transaction.TxCustomToken {
 	if len(buySellReqTxs) == 0 {
 		return nil

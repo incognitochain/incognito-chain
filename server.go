@@ -543,9 +543,9 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnChainState:    self.OnChainState,
 			//
 			//OnRegistration: self.OnRegistration,
-			OnSwapRequest:  self.OnSwapRequest,
-			OnSwapSig:      self.OnSwapSig,
-			OnSwapUpdate:   self.OnSwapUpdate,
+			OnSwapRequest: self.OnSwapRequest,
+			OnSwapSig:     self.OnSwapSig,
+			OnSwapUpdate:  self.OnSwapUpdate,
 		},
 	}
 	if len(KeySetProducer.PrivateKey) != 0 {

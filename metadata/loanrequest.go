@@ -102,7 +102,7 @@ func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 	return true, nil
 }
 
-func (lr *LoanRequest) ValidateSanityData() (bool, bool, error) {
+func (lr *LoanRequest) ValidateSanityData(txr Transaction) (bool, bool, error) {
 	if len(lr.KeyDigest) != LoanKeyDigestLength {
 		return false, false, nil
 	}

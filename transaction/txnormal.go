@@ -127,7 +127,7 @@ func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 }
 
 // ValidateDoubleSpend - check double spend for any transaction type
-func (tx *Tx) validateDoubleSpendWithBlockchain(bcr metadata.BlockchainRetriever, chainID byte) error {
+func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(bcr metadata.BlockchainRetriever, chainID byte) error {
 	txHash := tx.Hash()
 	nullifierDb, err := bcr.GetNulltifiersList(chainID)
 	if err != nil {
@@ -161,7 +161,7 @@ func (tx *Tx) ValidateTxWithBlockChain(bcr metadata.BlockchainRetriever, chainID
 			return nil
 		}
 	}
-	return tx.validateDoubleSpendWithBlockchain(bcr, chainID)
+	return tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID)
 }
 
 func (tx *Tx) validateNormalTxSanityData() (bool, error) {
@@ -263,7 +263,7 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 
 func (tx *Tx) ValidateSanityData() (bool, error) {
 	if tx.Metadata != nil {
-		isContinued, ok, err := tx.Metadata.ValidateSanityData()
+		isContinued, ok, err := tx.Metadata.ValidateSanityData(tx)
 		if err != nil || !ok || !isContinued {
 			return ok, err
 		}

@@ -1,12 +1,13 @@
 package rpcserver
 
 import (
+	"errors"
+	"log"
+
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/common"
-	"errors"
-	"log"
 )
 
 /*
@@ -323,7 +324,8 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 			}
 			for _, txs := range txsMap {
 				for _, tx := range txs {
-					if self.config.BlockChain.IsSalaryTx(&tx) {
+					// if self.config.BlockChain.IsSalaryTx(&tx) {
+					if tx.IsSalaryTx() {
 						continue
 					}
 					for _, desc := range tx.Descs {
