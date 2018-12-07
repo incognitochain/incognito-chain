@@ -174,7 +174,7 @@ func (tx *Tx) CreateTx(
 
 		for i := 0; i < len(paymentInfo); i++ {
 			sndOut = privacy.RandInt()
-			for CheckSNDExistence(sndOut) {
+			for common.CheckSNDExistence(sndOut) {
 				sndOut = privacy.RandInt()
 			}
 			sndOuts = append(sndOuts, sndOut)
