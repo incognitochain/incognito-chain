@@ -146,8 +146,8 @@ func (tx *Tx) CreateTx(
 	}
 
 	// tx.proof.Input
-	tx.Proof = new(zkp.PaymentProof)
-	tx.Proof.InputCoins = inputCoins
+	//tx.Proof = new(zkp.PaymentProof)
+	//tx.Proof.InputCoins = inputCoins
 
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
@@ -162,7 +162,7 @@ func (tx *Tx) CreateTx(
 	}
 
 	// create new output coins
-	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, len(paymentInfo))
+	outputCoins := make([]*privacy.OutputCoin, len(paymentInfo))
 
 	var sndOuts []*big.Int
 	sndOut := new(big.Int)
@@ -185,11 +185,11 @@ func (tx *Tx) CreateTx(
 
 	// create new output coins with info: Pk, value, last byte of pk, snd
 	for i, pInfo := range paymentInfo {
-		tx.Proof.OutputCoins[i] = new(privacy.OutputCoin)
-		tx.Proof.OutputCoins[i].CoinDetails.Value = pInfo.Amount
-		tx.Proof.OutputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
-		tx.Proof.OutputCoins[i].CoinDetails.PubKeyLastByte = pInfo.PaymentAddress.Pk[len(pInfo.PaymentAddress.Pk)-1]
-		tx.Proof.OutputCoins[i].CoinDetails.SNDerivator = sndOuts[i]
+		outputCoins[i] = new(privacy.OutputCoin)
+		outputCoins[i].CoinDetails.Value = pInfo.Amount
+		outputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
+		outputCoins[i].CoinDetails.PubKeyLastByte = pInfo.PaymentAddress.Pk[len(pInfo.PaymentAddress.Pk)-1]
+		outputCoins[i].CoinDetails.SNDerivator = sndOuts[i]
 	}
 
 	// assign fee tx
@@ -216,7 +216,7 @@ func (tx *Tx) CreateTx(
 
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), tx.Proof, commitmentProving, commitmentIndexs, myCommitmentIndexs)
+	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs)
 	tx.Proof, _ = witness.Prove(false)
 
 	// set private key for signing tx

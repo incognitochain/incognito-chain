@@ -49,7 +49,7 @@ type PaymentProof struct {
 	OutputCoins []*privacy.OutputCoin
 	InputCoins  []*privacy.InputCoin
 
-	ComInputSK    []*privacy.EllipticPoint
+	ComInputSK    *privacy.EllipticPoint
 	ComInputValue []*privacy.EllipticPoint
 	ComInputSND   []*privacy.EllipticPoint
 
@@ -198,12 +198,13 @@ func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.Input
 // otherwise, witness includes all attributes in PaymentWitness struct
 func (wit *PaymentWitness) Build(hasPrivacy bool,
 	spendingKey *big.Int,
-	proof *PaymentProof,
+	inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin,
+	pkLastByteSender byte, pkLastByteReceivers []byte,
 	commitments []*privacy.EllipticPoint, commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
 
 	wit.spendingKey = spendingKey
-	wit.inputCoins = proof.InputCoins
-	wit.outputCoins = proof.OutputCoins
+	wit.inputCoins = inputCoins
+	wit.outputCoins = outputCoins
 	wit.commitmentIndexs = commitmentIndexs
 	wit.myCommitmentIndexs = myCommitmentIndexs
 
@@ -267,13 +268,13 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		randInputSum[i].Add(randInputSum[i], randInputValue[i])
 		randInputSum[i].Add(randInputSum[i], randInputSND[i])
 
-		wit.ComInputOpeningsWitness[i].Set(cmInputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(proof.InputCoins[i].CoinDetails.Value)), proof.InputCoins[i].CoinDetails.SNDerivator, randInputSum[i]})
+		wit.ComInputOpeningsWitness[i].Set(cmInputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randInputSum[i]})
 
 		/***** Build witness for proving one-out-of-N commitments is a commitment to the coins being spent *****/
 		// commitmentTemps is a list of commitments for protocol one-out-of-N
 		commitmentTemps := make([]*privacy.EllipticPoint, numInputCoin*privacy.CMRingSize)
 		randInputSum[i].Add(randInputSum[i], randInputShardID)
-		rndInputIsZero := big.NewInt(0).Sub(proof.InputCoins[i].CoinDetails.Randomness, randInputSum[i])
+		rndInputIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randInputSum[i])
 		rndInputIsZero.Mod(rndInputIsZero, privacy.Curve.Params().N)
 
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputShardID.X, cmInputShardID.Y)
@@ -306,18 +307,8 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	cmOutputValue := make([]*privacy.EllipticPoint, numOutputCoin)
 	cmOutputSND := make([]*privacy.EllipticPoint, numOutputCoin)
 
-	for i, outputCoin := range wit.outputCoins {
-		randOutputValue[i] = privacy.RandInt()
-		randOutputSND[i] = privacy.RandInt()
-		cmOutputValue[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(outputCoin.CoinDetails.Value)), randOutputValue[i], privacy.VALUE)
-		cmOutputSND[i] = privacy.PedCom.CommitAtIndex(outputCoin.CoinDetails.SNDerivator, randOutputSND[i], privacy.SND)
-	}
-
-	/***** Build witness for proving the knowledge of output coins' Openings  *****/
 	cmOutputSum := make([]*privacy.EllipticPoint, numOutputCoin)
 	randOutputSum := make([]*big.Int, numOutputCoin)
-	wit.ComOutputOpeningsWitness = make([]*PKComOpeningsWitness, numOutputCoin)
-	wit.ComOutputMultiRangeWitness = new(PKComMultiRangeWitness)
 
 	cmOutputSumAll := new(privacy.EllipticPoint)
 	cmOutputSumAll.X = big.NewInt(0)
@@ -325,20 +316,50 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	cmOutputSumAllInverse := new(privacy.EllipticPoint)
 	cmOutputRndAll := big.NewInt(0)
 
-	for i := 0; i < numOutputCoin; i++ {
-		//cmOutputSum[i] = cmOutputSK
+	wit.ComOutputOpeningsWitness = make([]*PKComOpeningsWitness, numOutputCoin)
+
+	for i, outputCoin := range wit.outputCoins {
+		randOutputValue[i] = privacy.RandInt()
+		randOutputSND[i] = privacy.RandInt()
+		cmOutputValue[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(outputCoin.CoinDetails.Value)), randOutputValue[i], privacy.VALUE)
+		cmOutputSND[i] = privacy.PedCom.CommitAtIndex(outputCoin.CoinDetails.SNDerivator, randOutputSND[i], privacy.SND)
+
+		randOutputSum[i] = randOutputValue[i]
+		randOutputSum[i].Add(randOutputSum[i], randOutputSND[i])
+
 		cmOutputSum[i].X, cmOutputSum[i].Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputValue[i].X, cmOutputValue[i].Y)
 		cmOutputSum[i].X, cmOutputSum[i].Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputSND[i].X, cmOutputSND[i].Y)
+
+		/***** Build witness for proving the knowledge of output coins' Openings (value, snd, randomness) *****/
+		wit.ComOutputOpeningsWitness[i].Set(cmOutputSum[i], []*big.Int{big.NewInt(int64(outputCoins[i].CoinDetails.Value)), outputCoins[i].CoinDetails.SNDerivator, randOutputSum[i]})
+	}
+
+	randOutputShardID := make([]*big.Int, numOutputCoin)
+	cmOutputShardID := make([]*privacy.EllipticPoint, numOutputCoin)
+
+	for i := 0; i < numOutputCoin; i++ {
+		// calculate final commitment for output coins
+		randOutputShardID[i] = privacy.RandInt()
+		cmOutputShardID[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(outputCoins[i].CoinDetails.PubKeyLastByte)), randOutputShardID[i], privacy.SHARDID)
+
+		cmOutputSum[i].Add(outputCoins[i].CoinDetails.PublicKey)
+		cmOutputSum[i].Add(cmOutputShardID[i])
+
+		randOutputSum[i].Add(randOutputSum[i], randOutputShardID[i])
+
+		outputCoins[i].CoinDetails.CoinCommitment = cmOutputSum[i]
+		outputCoins[i].CoinDetails.Randomness = randOutputSum[i]
+
 		cmOutputSumAll.X, cmOutputSumAll.Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputSumAll.X, cmOutputSumAll.Y)
 
 		// cmOutputSumInverse[i], _ = cmOutputSum[i].Inverse()
 		//randOutputSum[i] = randOutputSK
-		randOutputSum[i].Add(randOutputSum[i], randOutputValue[i])
-		randOutputSum[i].Add(randOutputSum[i], randOutputSND[i])
-		cmOutputRndAll.Add(cmOutputRndAll, randOutputSum[i])
-		cmOutputRndAll.Mod(cmOutputRndAll, privacy.Curve.Params().N)
+
+
+		//cmOutputRndAll.Add(cmOutputRndAll, randOutputSum[i])
+		//cmOutputRndAll.Mod(cmOutputRndAll, privacy.Curve.Params().N)
 		// For ZKP Opening
-		wit.ComOutputOpeningsWitness[i].Set(cmOutputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(proof.OutputCoins[i].CoinDetails.Value)), proof.OutputCoins[i].CoinDetails.SNDerivator, randOutputSum[i]})
+
 		// ---------------
 	}
 
@@ -347,15 +368,16 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	// proving sum of output values is less than vmax
 	// TODO wit.ComOutputMultiRangeWitness.Set(???)
 	// Todo: 0xthunderbird
+	wit.ComOutputMultiRangeWitness = new(PKComMultiRangeWitness)
 	outputValue := make([]*big.Int, numOutputCoin)
 	for i := 0; i < numOutputCoin; i++ {
-		outputValue[i] = big.NewInt(int64(proof.OutputCoins[i].CoinDetails.Value))
+		outputValue[i] = big.NewInt(int64(outputCoins[i].CoinDetails.Value))
 	}
 	wit.ComOutputMultiRangeWitness.Set(outputValue, 64)
 	// ------------------------
 
 	// Build witness for proving Sum(Input's value) == Sum(Output's Value)
-	cmOutputSumAllInverse, _ = cmOutputSumAll.Inverse()
+	//cmOutputSumAllInverse, _ = cmOutputSumAll.Inverse()
 	cmEqualCoinValue := new(privacy.EllipticPoint)
 	cmEqualCoinValue.X, cmEqualCoinValue.Y = privacy.Curve.Add(cmInputSumAll.X, cmInputSumAll.Y, cmOutputSumAllInverse.X, cmOutputSumAllInverse.Y)
 	cmEqualCoinValueRnd := big.NewInt(0)
