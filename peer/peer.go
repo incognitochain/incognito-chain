@@ -79,6 +79,8 @@ type Config struct {
 	ProducerKeySet   *cashec.KeySet
 	MaxOutbound      int
 	MaxInbound       int
+
+	GetShardByPbk func(pbk string) *byte
 }
 
 type WrappedStream struct {
@@ -367,7 +369,8 @@ func (self *Peer) GetPeerConnByPbk(pbk string) (*PeerConn) {
 func (self *Peer) GetListPeerConnByShard(shard byte) ([]*PeerConn) {
 	peerConns := make([]*PeerConn, 0)
 	for _, peerConn := range self.PeerConns {
-		if peerConn.RemotePeer.Shard == shard {
+		shardT := self.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
+		if shardT != nil && *shardT == shard {
 			peerConns = append(peerConns, peerConn)
 		}
 	}

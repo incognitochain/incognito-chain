@@ -247,6 +247,8 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	connManager := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
+		GetCurrentShard:      self.GetCurrentShard,
+		GetPbksOfShard:       self.GetPbksOfShard,
 		ListenerPeers:        peers,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
@@ -547,6 +549,8 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnSwapSig:     self.OnSwapSig,
 			OnSwapUpdate:  self.OnSwapUpdate,
 		},
+
+		GetShardByPbk: self.GetShardByPbk,
 	}
 	config.ProducerKeySet = producerKeySet
 
@@ -945,4 +949,27 @@ func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	}
 	peerConn.QueueMessageWithEncoding(msg, nil)
 	return nil
+}
+
+func (self *Server) GetShardByPbk(pbk string) *byte {
+	ret := byte(0x00)
+	return &ret
+}
+
+func (self *Server) GetCurrentPbk() *string {
+	ks, err := cfg.GetProducerKeySet()
+	if err != nil {
+		return nil
+	}
+	pbk := ks.GetPublicKeyB58()
+	return &pbk
+}
+
+func (self *Server) GetCurrentShard() *byte {
+	ret := byte(0x00)
+	return &ret
+}
+
+func (self *Server) GetPbksOfShard(shard byte) []string {
+	return []string{}
 }
