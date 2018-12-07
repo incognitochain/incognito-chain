@@ -615,7 +615,7 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 		}
 		// save tx which relate to custom token
 		// Reject Double spend UTXO before enter this state
-		err = self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
+		err = self.StoreCustomTokenPaymentAddresstHistory(customTokenTx)
 		// TODO: detect/cactch/revert/skip double spend tx
 		if err != nil {
 			// Skip double spend
@@ -655,6 +655,10 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	}
 
 	return nil
+}
+
+func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken) error {
+	return self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
 }
 
 /*

@@ -88,11 +88,11 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
 		paymentAddressKey = append(paymentAddressKey, splitter...)
 		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
-		fmt.Println(string(paymentAddressKey))
-		ok, err := db.hasValue(paymentAddressKey)
-		fmt.Println("Finding VIN in StoreCustomTokenPaymentAddresstHistory ", ok)
+		//fmt.Println(string(paymentAddressKey))
+		_, err := db.HasValue(paymentAddressKey)
+		//fmt.Println("Finding VIN in StoreCustomTokenPaymentAddresstHistory ", ok)
 		if err != nil {
-			fmt.Println("ERROR finding vin in DB, StoreCustomTokenPaymentAddresstHistory", tx.Hash(), err)
+			//fmt.Println("ERROR finding vin in DB, StoreCustomTokenPaymentAddresstHistory", tx.Hash(), err)
 			return err
 		}
 		value, err := db.lvdb.Get(paymentAddressKey, nil)
@@ -101,13 +101,13 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		}
 		// old value: {value}-unspent-unreward/reward
 		values := strings.Split(string(value), string(splitter))
-		fmt.Println("OldValues in StoreCustomTokenPaymentAddresstHistory", string(value))
+		//fmt.Println("OldValues in StoreCustomTokenPaymentAddresstHistory", string(value))
 		if strings.Compare(values[1], string(unspent)) != 0 {
 			return errors.New("Double Spend Detected")
 		}
 		// new value: {value}-spent-unreward/reward
 		newValues := values[0] + string(splitter) + string(spent) + string(splitter) + values[2]
-		fmt.Println("NewValues in StoreCustomTokenPaymentAddresstHistory", newValues)
+		//fmt.Println("NewValues in StoreCustomTokenPaymentAddresstHistory", newValues)
 		if err := db.lvdb.Put(paymentAddressKey, []byte(newValues), nil); err != nil {
 			return err
 		}
@@ -126,7 +126,7 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		paymentAddressKey = append(paymentAddressKey, splitter...)
 		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
 		fmt.Println(string(paymentAddressKey))
-		ok, err := db.hasValue(paymentAddressKey)
+		ok, err := db.HasValue(paymentAddressKey)
 		// Vout already exist
 		if ok {
 			return errors.New("UTXO already exist")
@@ -137,7 +137,7 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		}
 		// init value: {value}-unspent-unreward
 		paymentAddressValue := strconv.Itoa(int(value)) + string(splitter) + string(unspent) + string(splitter) + string(unreward)
-		fmt.Println("H in StoreCustomTokenPaymentAddresstHistory: ", paymentAddressValue)
+		//fmt.Println("H in StoreCustomTokenPaymentAddresstHistory: ", paymentAddressValue)
 		if err := db.lvdb.Put(paymentAddressKey, []byte(paymentAddressValue), nil); err != nil {
 			return err
 		}
@@ -300,7 +300,7 @@ func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress priva
 	key = append(key, (*txHash)[:]...)
 	key = append(key, splitter...)
 	key = append(key, byte(voutIndex))
-	_, err := db.hasValue([]byte(key))
+	_, err := db.HasValue([]byte(key))
 	if err != nil {
 		fmt.Println("ERROR finding key in DB, UpdateRewardAccountUTXO", err)
 		return err

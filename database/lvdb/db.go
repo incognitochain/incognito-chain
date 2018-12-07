@@ -54,7 +54,7 @@ func (db *db) Close() error {
 	return errors.Wrap(db.lvdb.Close(), "db.lvdb.Close")
 }
 
-func (db *db) hasValue(key []byte) (bool, error) {
+func (db *db) HasValue(key []byte) (bool, error) {
 	ret, err := db.lvdb.Has(key, nil)
 	if err != nil {
 		return false, database.NewDatabaseError(database.NotExistValue, err)

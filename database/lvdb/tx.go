@@ -298,7 +298,7 @@ func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, i
 func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, error) {
 	fmt.Println("TxID in GetTransactionById", txId.String())
 	key := string(transactionKeyPrefix) + txId.String()
-	_, err := db.hasValue([]byte(key))
+	_, err := db.HasValue([]byte(key))
 	if err != nil {
 		fmt.Println("ERROR in finding transaction id", txId.String(), err)
 		return nil, -1, err
@@ -355,10 +355,10 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 	key1 := string(privateKeyPrefix) + privateKey.String() + string(splitter) + string(int(chainId)) + string(splitter) + string(reverseBlockHeight) + string(splitter) + string(reverseTxIndex)
 	key2 := string(transactionKeyPrefix) + unspentTxHash.String()
 
-	if ok, _ := db.hasValue([]byte(key1)); ok {
+	if ok, _ := db.HasValue([]byte(key1)); ok {
 		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("tx %s already exists", key1))
 	}
-	if ok, _ := db.hasValue([]byte(key2)); ok {
+	if ok, _ := db.HasValue([]byte(key2)); ok {
 		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("tx %s already exists", key2))
 	}
 
@@ -421,7 +421,7 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKe
 func (db *db) GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, error) {
 	key := string(transactionKeyPrefix) + txId.String()
 	fmt.Println("GetTransactionLightModeByHash - key", key)
-	_, err := db.hasValue([]byte(key))
+	_, err := db.HasValue([]byte(key))
 	if err != nil {
 		fmt.Println("ERROR in finding transaction id", txId.String(), err)
 		return nil, nil, err
@@ -431,7 +431,7 @@ func (db *db) GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, 
 	if err != nil {
 		return nil, nil, err;
 	}
-	_, err1 := db.hasValue([]byte(value))
+	_, err1 := db.HasValue([]byte(value))
 	if err1 != nil {
 		fmt.Println("ERROR in finding location transaction id", txId.String(), err1)
 		return nil, nil, err

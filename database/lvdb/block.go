@@ -23,7 +23,7 @@ func (db *db) StoreBlock(v interface{}, chainID byte) error {
 		keyB = append(blockKeyPrefix, hash[:]...)
 		// key should look like this {b-blockhash}:block
 	)
-	if ok, _ := db.hasValue(key); ok {
+	if ok, _ := db.HasValue(key); ok {
 		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("block %s already exists", hash.String()))
 	}
 	val, err := json.Marshal(v)
@@ -48,7 +48,7 @@ func (db *db) StoreBlockHeader(v interface{}, hash *common.Hash, chainID byte) e
 		keyB = append(blockKeyPrefix, hash[:]...)
 		// key should look like this {bh-blockhash}:block
 	)
-	if ok, _ := db.hasValue(key); ok {
+	if ok, _ := db.HasValue(key); ok {
 		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("block %s already exists", hash.String()))
 	}
 	val, err := json.Marshal(v)
@@ -66,7 +66,7 @@ func (db *db) StoreBlockHeader(v interface{}, hash *common.Hash, chainID byte) e
 }
 
 func (db *db) HasBlock(hash *common.Hash) (bool, error) {
-	exists, err := db.hasValue(db.getKey(string(blockKeyPrefix), hash))
+	exists, err := db.HasValue(db.getKey(string(blockKeyPrefix), hash))
 	if err != nil {
 		return false, err
 	} else {
