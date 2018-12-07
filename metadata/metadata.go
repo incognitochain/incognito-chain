@@ -63,7 +63,11 @@ type BlockchainRetriever interface {
 	GetDCBBoardPubKeys() []string
 	GetGOVParams() params.GOVParams
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
+
+	// For validating loan metadata
 	GetLoanTxs([]byte) ([][]byte, error)
+	GetLoanPayment([]byte) (uint64, uint64, uint32, error)
+	GetLoanRequestMeta([]byte) (*LoanRequest, error)
 }
 
 type Metadata interface {
@@ -85,6 +89,7 @@ type Transaction interface {
 	GetSenderAddrLastByte() byte
 	GetTxFee() uint64
 	GetJSPubKey() []byte
+	GetReceiverPubKeys() [][]byte
 	ListNullifiers() [][]byte
 	CheckTxVersion(int8) bool
 	CheckTransactionFee(uint64) bool

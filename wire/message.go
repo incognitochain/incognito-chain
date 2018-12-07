@@ -85,12 +85,16 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdCLoanWithdrawToken:
 		msg = &MessageTx{
-			Transaction: &transaction.TxLoanPayment{},
+			Transaction: &transaction.Tx{
+				Metadata: &metadata.LoanWithdraw{},
+			},
 		}
 		break
 	case CmdCLoanPayToken:
 		msg = &MessageTx{
-			Transaction: &transaction.TxLoanPayment{},
+			Transaction: &transaction.Tx{
+				Metadata: &metadata.LoanPayment{},
+			},
 		}
 		break
 	case CmdGetBlocks:

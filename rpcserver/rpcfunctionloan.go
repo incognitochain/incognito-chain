@@ -337,7 +337,7 @@ func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan 
 
 	// param #3: loan params
 	loanParams := arrayParams[2].(map[string]interface{})
-	loanWithdraw := transaction.NewLoanWithdraw(loanParams)
+	loanWithdraw := metadata.NewLoanWithdraw(loanParams)
 	if loanWithdraw == nil {
 		return nil, errors.New("Miss data")
 	}
@@ -375,19 +375,22 @@ func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan 
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
-	tx, err := transaction.CreateTxLoanWithdraw(transaction.FeeArgs{
-		Fee:           fee,
-		Commitments:   commitmentsDb,
-		UsableTx:      candidateTxsMap,
-		PaymentInfo:   nil,
-		Rts:           merkleRootCommitments,
-		SenderChainID: chainIdSender,
-		SenderKey:     &senderKey.KeySet.PrivateKey,
-	}, loanWithdraw)
+	noPrivacy := false
+	tx, err := transaction.CreateTx(
+		&senderKey.KeySet.PrivateKey,
+		nil,
+		merkleRootCommitments,
+		candidateTxsMap,
+		commitmentsDb,
+		fee,
+		chainIdSender,
+		noPrivacy,
+	)
 	if err != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+	tx.Metadata = loanWithdraw
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		// return hex for a new tx
@@ -409,7 +412,7 @@ func (self RpcServer) handleSendRawLoanWithdraw(params interface{}, closeChan <-
 	if err != nil {
 		return nil, err
 	}
-	tx := transaction.TxLoanWithdraw{}
+	tx := transaction.Tx{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		return nil, err
@@ -479,7 +482,7 @@ func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <
 
 	// param #3: loan params
 	loanParams := arrayParams[2].(map[string]interface{})
-	loanPayment := transaction.NewLoanPayment(loanParams)
+	loanPayment := metadata.NewLoanPayment(loanParams)
 	if loanPayment == nil {
 		return nil, errors.New("Miss data")
 	}
@@ -517,19 +520,22 @@ func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
-	tx, err := transaction.CreateTxLoanPayment(transaction.FeeArgs{
-		Fee:           fee,
-		Commitments:   commitmentsDb,
-		UsableTx:      candidateTxsMap,
-		PaymentInfo:   nil,
-		Rts:           merkleRootCommitments,
-		SenderChainID: chainIdSender,
-		SenderKey:     &senderKey.KeySet.PrivateKey,
-	}, loanPayment)
+	noPrivacy := false
+	tx, err := transaction.CreateTx(
+		&senderKey.KeySet.PrivateKey,
+		nil,
+		merkleRootCommitments,
+		candidateTxsMap,
+		commitmentsDb,
+		fee,
+		chainIdSender,
+		noPrivacy,
+	)
 	if err != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+	tx.Metadata = loanPayment
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		// return hex for a new tx
@@ -551,7 +557,7 @@ func (self RpcServer) handleSendRawLoanPayment(params interface{}, closeChan <-c
 	if err != nil {
 		return nil, err
 	}
-	tx := transaction.TxLoanWithdraw{}
+	tx := transaction.Tx{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		return nil, err
