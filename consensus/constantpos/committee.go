@@ -2,20 +2,19 @@ package constantpos
 
 import (
 	"errors"
-	"fmt"
 	"sync"
-	"time"
 
 	"encoding/binary"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
 )
 
 type CommitteeStruct struct {
-	ValidatorBlkNum      map[string]int //track the number of block created by each validator
-	ValidatorReliablePts map[string]int //track how reliable is the validator node
-	CurrentCommittee     []string
+	ValidatorBlkNum       map[string]int //track the number of block created by each validator
+	ValidatorReliablePts  map[string]int //track how reliable is the validator node
+	CurrentCommittee      []string
+	cQuitCommitteeWatcher chan struct{}
+	cmWatcherStarted      bool
 
 	sync.Mutex
 	LastUpdate int64
@@ -82,40 +81,40 @@ func (self *CommitteeStruct) UpdateCommittee(producerPbk string, chanId byte) er
 	return nil
 }
 
-func (self *Engine) StartCommitteeWatcher() {
-	if self.cmWatcherStarted {
-		Logger.log.Error("Producer already started")
-		return
-	}
-	self.cmWatcherStarted = true
-	Logger.log.Info("Committee watcher started")
-	for {
-		select {
-		case <-self.cQuitCommitteeWatcher:
-			Logger.log.Info("Committee watcher stopped")
-			return
-		case _ = <-self.cNewBlock:
+func (self *CommitteeStruct) StartCommitteeWatcher() {
+	// if self.cmWatcherStarted {
+	// 	Logger.log.Error("Producer already started")
+	// 	return
+	// }
+	// self.cmWatcherStarted = true
+	// Logger.log.Info("Committee watcher started")
+	// for {
+	// 	select {
+	// 	case <-self.cQuitCommitteeWatcher:
+	// 		Logger.log.Info("Committee watcher stopped")
+	// 		return
+	// 	case _ = <-self.cNewBlock:
 
-		case <-time.After(common.MaxBlockTime * time.Second):
-			self.Lock()
-			myPubKey := base58.Base58Check{}.Encode(self.config.ProducerKeySet.PaymentAddress.Pk, byte(0x00))
-			fmt.Println(myPubKey, common.IndexOfStr(myPubKey, self.Committee.CurrentCommittee))
-			if common.IndexOfStr(myPubKey, self.Committee.CurrentCommittee) != -1 {
-				for idx := 0; idx < common.TotalValidators && self.Committee.CurrentCommittee[idx] != myPubKey; idx++ {
-					blkTime := time.Since(time.Unix(self.config.BlockChain.BestState[idx].BestBlock.Header.Timestamp, 0))
-					fmt.Println(blkTime)
-					if blkTime > common.MaxBlockTime*time.Second {
+	// 	case <-time.After(common.MaxBlockTime * time.Second):
+	// 		self.Lock()
+	// 		myPubKey := base58.Base58Check{}.Encode(self.config.ProducerKeySet.PaymentAddress.Pk, byte(0x00))
+	// 		fmt.Println(myPubKey, common.IndexOfStr(myPubKey, self.Committee.CurrentCommittee))
+	// 		if common.IndexOfStr(myPubKey, self.Committee.CurrentCommittee) != -1 {
+	// 			for idx := 0; idx < common.TotalValidators && self.Committee.CurrentCommittee[idx] != myPubKey; idx++ {
+	// 				blkTime := time.Since(time.Unix(self.config.BlockChain.BestState[idx].BestBlock.Header.Timestamp, 0))
+	// 				fmt.Println(blkTime)
+	// 				if blkTime > common.MaxBlockTime*time.Second {
 
-					}
-				}
-			}
+	// 				}
+	// 			}
+	// 		}
 
-			self.Unlock()
-		}
-	}
+	// 		self.Unlock()
+	// 	}
+	// }
 }
 
-func (self *Engine) StopCommitteeWatcher() {
+func (self *CommitteeStruct) StopCommitteeWatcher() {
 	if self.cmWatcherStarted {
 		Logger.log.Info("Stopping Committee watcher...")
 		close(self.cQuitCommitteeWatcher)
@@ -123,7 +122,7 @@ func (self *Engine) StopCommitteeWatcher() {
 	}
 }
 
-func (self *Engine) getRawBytesForSwap(lockTime int64, requesterPbk string, chainId byte, producerPbk string) []byte {
+func getRawBytesForSwap(lockTime int64, requesterPbk string, chainId byte, producerPbk string) []byte {
 	rawBytes := []byte{}
 	bTime := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bTime, uint64(lockTime))

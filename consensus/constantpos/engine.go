@@ -13,35 +13,29 @@ import (
 
 type Engine struct {
 	sync.Mutex
-	started          bool
-	producerStarted  bool
-	cmWatcherStarted bool
+	started bool
 
 	// channel
-	cQuit                 chan struct{}
-	cQuitProducer         chan struct{}
-	cBlockSig             chan blockSig
-	cQuitSwap             chan struct{}
-	cSwapChain            chan byte
-	cSwapSig              chan swapSig
-	cNewBlock             chan blockchain.Block
-	cQuitCommitteeWatcher chan struct{}
+	cQuit      chan struct{}
+	cBlockSig  chan blockSig
+	cQuitSwap  chan struct{}
+	cSwapChain chan byte
+	cSwapSig   chan swapSig
+	cNewBlock  chan blockchain.Block
 
 	config                EngineConfig
 	knownChainsHeight     chainsHeight
 	validatedChainsHeight chainsHeight
-
-	Committee CommitteeStruct
 }
 
 type EngineConfig struct {
-	BlockChain     *blockchain.BlockChain
-	ConnManager    *connmanager.ConnManager
-	ChainParams    *blockchain.Params
-	BlockGen       *blockchain.BlkTmplGenerator
-	MemPool        *mempool.TxPool
-	ProducerKeySet cashec.KeySet
-	Server         interface {
+	BlockChain  *blockchain.BlockChain
+	ConnManager *connmanager.ConnManager
+	ChainParams *blockchain.Params
+	BlockGen    *blockchain.BlkTmplGenerator
+	MemPool     *mempool.TxPool
+	UserKeySet  cashec.KeySet
+	Server      interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []libp2p.ID
 		PushMessageToAll(wire.Message) error
@@ -95,5 +89,9 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Header.Height)
 	self.validatedChainsHeight.Unlock()
 
-	self.Committee.UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)
+	self.Committee().UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)
+}
+
+func (self *Engine) Committee() *CommitteeStruct {
+	return &CommitteeStruct{}
 }

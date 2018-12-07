@@ -1,14 +1,14 @@
 package constantpos
 
-type Layerbeacon struct {
+type Layershard struct {
 	cQuit     chan struct{}
 	Committee CommitteeStruct
 	started   bool
 }
 
-func (self *Layerbeacon) Start() {
+func (self *Layershard) Start() {
 
 }
-func (self *Layerbeacon) Stop() {
+func (self *Layershard) Stop() {
 
 }

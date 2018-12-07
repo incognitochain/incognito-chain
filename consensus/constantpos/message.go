@@ -29,10 +29,10 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageBlockSigReq) {
 			Reason:    err.Error(),
 			BlockHash: block.Hash().String(),
 			ChainID:   block.Header.ChainID,
-			Validator: base58.Base58Check{}.Encode(self.config.ProducerKeySet.PaymentAddress.Pk, byte(0x00)),
+			Validator: base58.Base58Check{}.Encode(self.config.UserKeySet.PaymentAddress.Pk, byte(0x00)),
 		}
 		dataByte, _ := invalidBlockMsg.JsonSerialize()
-		invalidBlockMsg.ValidatorSig, err = self.config.ProducerKeySet.SignBase58(dataByte)
+		invalidBlockMsg.ValidatorSig, err = self.config.UserKeySet.SignBase58(dataByte)
 		if err != nil {
 			Logger.log.Error(err)
 			return
@@ -46,14 +46,14 @@ func (self *Engine) OnRequestSign(msgBlock *wire.MessageBlockSigReq) {
 		return
 	}
 
-	sig, err := self.config.ProducerKeySet.SignBase58([]byte(block.Hash().String()))
+	sig, err := self.config.UserKeySet.SignBase58([]byte(block.Hash().String()))
 	if err != nil {
 		Logger.log.Error("Can't sign block ", err)
 		// TODO something went terribly wrong
 		return
 	}
 	blockSigMsg := wire.MessageBlockSig{
-		Validator: base58.Base58Check{}.Encode(self.config.ProducerKeySet.PaymentAddress.Pk, byte(0x00)),
+		Validator: base58.Base58Check{}.Encode(self.config.UserKeySet.PaymentAddress.Pk, byte(0x00)),
 		BlockSig:  sig,
 	}
 	peerID, err := libp2p.IDB58Decode(msgBlock.SenderID)
@@ -134,7 +134,7 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 		return
 	}
 	newMsg.(*wire.MessageChainState).ChainInfo = ChainInfo{
-		CurrentCommittee:        self.Committee.GetCommittee(),
+		CurrentCommittee:        self.Committee().GetCommittee(),
 		CandidateListMerkleHash: common.EmptyString,
 		ChainsHeight:            self.validatedChainsHeight.Heights,
 	}
@@ -150,7 +150,7 @@ func (self *Engine) OnSwapRequest(msg *wire.MessageSwapRequest) {
 		return
 	}
 
-	committee := self.Committee.GetCommittee()
+	committee := self.Committee().GetCommittee()
 
 	if common.IndexOfStr(msg.Requester, committee) < 0 {
 		Logger.log.Error("ERROR OnSwapRequest is not existed committee")
@@ -176,7 +176,7 @@ func (self *Engine) OnSwapRequest(msg *wire.MessageSwapRequest) {
 		return
 	}
 
-	sig, err := self.config.ProducerKeySet.SignBase58(msg.GetMsgByte())
+	sig, err := self.config.UserKeySet.SignBase58(msg.GetMsgByte())
 	if err != nil {
 		Logger.log.Error("Can't sign swap ", err)
 		return
@@ -189,7 +189,7 @@ func (self *Engine) OnSwapRequest(msg *wire.MessageSwapRequest) {
 	// messageSigMsg.(*wire.MessageSwapSig).RequesterPbk = msg.RequesterPbk
 	// messageSigMsg.(*wire.MessageSwapSig).ChainID = msg.ChainID
 	// messageSigMsg.(*wire.MessageSwapSig).ProducerPbk = msg.ProducerPbk
-	messageSigMsg.(*wire.MessageSwapSig).Validator = base58.Base58Check{}.Encode(self.config.ProducerKeySet.PaymentAddress.Pk, byte(0x00))
+	messageSigMsg.(*wire.MessageSwapSig).Validator = base58.Base58Check{}.Encode(self.config.UserKeySet.PaymentAddress.Pk, byte(0x00))
 	messageSigMsg.(*wire.MessageSwapSig).SwapSig = sig
 
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
@@ -218,7 +218,7 @@ func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
 		return
 	}
 
-	committee := self.Committee.GetCommittee()
+	committee := self.Committee().GetCommittee()
 
 	if common.IndexOfStr(msg.Candidate, committee) >= 0 {
 		Logger.log.Error("ERROR OnSwapUpdate is existed committee")
@@ -226,7 +226,7 @@ func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
 	}
 
 	//verify signatures
-	rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.Requester, msg.ChainID, msg.Candidate)
+	rawBytes := getRawBytesForSwap(msg.LockTime, msg.Requester, msg.ChainID, msg.Candidate)
 	cLeader := 0
 	for leaderPbk, leaderSig := range msg.Signatures {
 		if common.IndexOfStr(leaderPbk, committee) >= 0 {
@@ -245,7 +245,7 @@ func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
 		return
 	}
 	//TODO update committee list
-	self.Committee.UpdateCommittee(msg.Candidate, msg.ChainID)
+	self.Committee().UpdateCommittee(msg.Candidate, msg.ChainID)
 
 	return
 }
