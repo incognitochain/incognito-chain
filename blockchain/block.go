@@ -59,7 +59,11 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 		case common.TxSalaryType:
 			{
 				txNormal := &transaction.Tx{}
-				_ = json.Unmarshal(txTempJson, &txNormal)
+				err := json.Unmarshal(txTempJson, &txNormal)
+				if err != nil {
+					Logger.log.Error(err)
+					panic(err)
+				}
 				self.Transactions = append(self.Transactions, txNormal)
 			}
 		case common.TxCustomTokenType:

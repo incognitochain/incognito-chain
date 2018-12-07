@@ -7,6 +7,8 @@ import (
 	"github.com/ninjadotorg/constant/common"
 
 	"github.com/pkg/errors"
+	"encoding/json"
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
 // Curve P256
@@ -40,6 +42,23 @@ type EllipticPointHelper interface {
 // which contains X, Y. X is Abscissa, Y is Ordinate
 type EllipticPoint struct {
 	X, Y *big.Int
+}
+
+func (self *EllipticPoint) UnmarshalJSON(data []byte) error {
+	dataStr := ""
+	_ = json.Unmarshal(data, &dataStr)
+	temp, _, err := base58.Base58Check{}.Decode(dataStr)
+	if err != nil {
+		return err
+	}
+	self.Decompress(temp)
+	return nil
+}
+
+func (self EllipticPoint) MarshalJSON() ([]byte, error) {
+	data := self.Compress()
+	temp := base58.Base58Check{}.Encode(data, byte(0x00))
+	return json.Marshal(temp)
 }
 
 //ComputeYCoord calculates Y coord from X

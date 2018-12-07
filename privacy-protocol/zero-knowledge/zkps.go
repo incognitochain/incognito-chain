@@ -91,7 +91,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComZeroProof.Bytes())))
 	proofbytes = append(proofbytes, paymentProof.ComZeroProof.Bytes()...)
 *///	OutputCoins
-	proofbytes = append(proofbytes, byte(len(paymentProof.OutputCoins)))
+	/*proofbytes = append(proofbytes, byte(len(paymentProof.OutputCoins)))
 	for i := 0; i < len(paymentProof.OutputCoins); i++ {
 		proofbytes = append(proofbytes, paymentProof.OutputCoins[i].Bytes()...)
 	}
@@ -101,7 +101,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, paymentProof.InputCoins[i].Bytes()...)
 	}
 	// ComInputSK
-	proofbytes = append(proofbytes, byte(len(paymentProof.ComInputSK)))
+	proofbytes = append(proofbytes, byte(len(paymentProof.ComInputSK)))*/
 
 	return proofbytes
 }
