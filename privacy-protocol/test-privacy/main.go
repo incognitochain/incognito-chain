@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 func main() {
