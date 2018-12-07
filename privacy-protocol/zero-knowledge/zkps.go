@@ -241,7 +241,6 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	cmInputSum := make([]*privacy.EllipticPoint, numInputCoin)
 	cmInputSumInverse := make([]*privacy.EllipticPoint, numInputCoin)
 	randInputSum := make([]*big.Int, numInputCoin)
-	wit.ComInputOpeningsWitness = make([]*PKComOpeningsWitness, numInputCoin)
 
 	// cmInputSumAll is sum of all coin commitments
 	cmInputSumAll := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
@@ -249,6 +248,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	// randInputSumAll is sum of all randomess of coin commitments
 	randInputSumAll := big.NewInt(0)
 
+	wit.ComInputOpeningsWitness = make([]*PKComOpeningsWitness, numInputCoin)
 	wit.OneOfManyWitness = make([]*PKOneOfManyWitness, numInputCoin)
 	wit.EqualityOfCommittedValWitness = make([]*PKEqualityOfCommittedValWitness, numInputCoin)
 	indexZKPEqual := make([]*byte, 2)
@@ -267,13 +267,13 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		randInputSum[i].Add(randInputSum[i], randInputValue[i])
 		randInputSum[i].Add(randInputSum[i], randInputSND[i])
 
-		wit.ComInputOpeningsWitness[i].Set(cmInputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randInputSum[i]})
+		wit.ComInputOpeningsWitness[i].Set(cmInputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(proof.InputCoins[i].CoinDetails.Value)), proof.InputCoins[i].CoinDetails.SNDerivator, randInputSum[i]})
 
 		/***** Build witness for proving one-out-of-N commitments is a commitment to the coins being spent *****/
 		// commitmentTemps is a list of commitments for protocol one-out-of-N
 		commitmentTemps := make([]*privacy.EllipticPoint, numInputCoin*privacy.CMRingSize)
 		randInputSum[i].Add(randInputSum[i], randInputShardID)
-		rndInputIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randInputSum[i])
+		rndInputIsZero := big.NewInt(0).Sub(proof.InputCoins[i].CoinDetails.Randomness, randInputSum[i])
 		rndInputIsZero.Mod(rndInputIsZero, privacy.Curve.Params().N)
 
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputShardID.X, cmInputShardID.Y)
@@ -298,8 +298,8 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	}
 
 	numOutputCoin := len(wit.outputCoins)
-	randOutputSK := privacy.RandInt()
-	cmOutputSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randOutputSK, privacy.SK)
+	//randOutputSK := privacy.RandInt()
+	//cmOutputSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randOutputSK, privacy.SK)
 
 	randOutputValue := make([]*big.Int, numOutputCoin)
 	randOutputSND := make([]*big.Int, numOutputCoin)
@@ -326,19 +326,19 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	cmOutputRndAll := big.NewInt(0)
 
 	for i := 0; i < numOutputCoin; i++ {
-		cmOutputSum[i] = cmOutputSK
+		//cmOutputSum[i] = cmOutputSK
 		cmOutputSum[i].X, cmOutputSum[i].Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputValue[i].X, cmOutputValue[i].Y)
 		cmOutputSum[i].X, cmOutputSum[i].Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputSND[i].X, cmOutputSND[i].Y)
 		cmOutputSumAll.X, cmOutputSumAll.Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputSumAll.X, cmOutputSumAll.Y)
 
 		// cmOutputSumInverse[i], _ = cmOutputSum[i].Inverse()
-		randOutputSum[i] = randOutputSK
+		//randOutputSum[i] = randOutputSK
 		randOutputSum[i].Add(randOutputSum[i], randOutputValue[i])
 		randOutputSum[i].Add(randOutputSum[i], randOutputSND[i])
 		cmOutputRndAll.Add(cmOutputRndAll, randOutputSum[i])
 		cmOutputRndAll.Mod(cmOutputRndAll, privacy.Curve.Params().N)
 		// For ZKP Opening
-		wit.ComOutputOpeningsWitness[i].Set(cmOutputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(outputCoins[i].CoinDetails.Value)), outputCoins[i].CoinDetails.SNDerivator, randOutputSum[i]})
+		wit.ComOutputOpeningsWitness[i].Set(cmOutputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(proof.OutputCoins[i].CoinDetails.Value)), proof.OutputCoins[i].CoinDetails.SNDerivator, randOutputSum[i]})
 		// ---------------
 	}
 
@@ -349,7 +349,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	// Todo: 0xthunderbird
 	outputValue := make([]*big.Int, numOutputCoin)
 	for i := 0; i < numOutputCoin; i++ {
-		outputValue[i] = big.NewInt(int64(outputCoins[i].CoinDetails.Value))
+		outputValue[i] = big.NewInt(int64(proof.OutputCoins[i].CoinDetails.Value))
 	}
 	wit.ComOutputMultiRangeWitness.Set(outputValue, 64)
 	// ------------------------
