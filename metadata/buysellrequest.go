@@ -31,7 +31,6 @@ func NewBuySellRequest(bsReqData map[string]interface{}) *BuySellRequest {
 func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
 
 	// check double spending on fee + buy/sell amount tx
-	// err := self.ValidateDoubleSpend(&buySellReqTx.Tx, chainID)
 	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID)
 	if err != nil {
 		return false, err
@@ -76,10 +75,6 @@ func (bsReq *BuySellRequest) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
 	return true
 }
-
-// func (bsReq *BuySellRequest) GetType() int {
-// 	return BuySellRequestMeta
-// }
 
 func (bsReq *BuySellRequest) Hash() *common.Hash {
 	record := string(bsReq.PaymentAddress.ToBytes())

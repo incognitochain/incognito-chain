@@ -115,11 +115,11 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 		if parseErr != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, parseErr)
 		}
-		metadata, parseErr := parseMetadata(txTemp["Metadata"])
+		meta, parseErr := parseMetadata(txTemp["Metadata"])
 		if parseErr != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, parseErr)
 		}
-		tx.SetMetadata(metadata)
+		tx.SetMetadata(meta)
 		self.Transactions = append(self.Transactions, tx)
 	}
 
