@@ -707,8 +707,8 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 							err := outcoinTemp.Decrypt(keySet.ReadonlyKey.Rk)
 							if err != nil {
 								outcoin := &privacy.OutputCoin{
-									CoinDetails:            outcoinTemp.CoinDetails,
-									CoinDetailsEncrypted:   outcoinTemp.CoinDetailsEncrypted,
+									CoinDetails:          outcoinTemp.CoinDetails,
+									CoinDetailsEncrypted: outcoinTemp.CoinDetailsEncrypted,
 								}
 								copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outcoin)
 							}
@@ -788,8 +788,8 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 			err := outCoinTemp.Decrypt(keys.ReadonlyKey.Rk)
 			if err == nil {
 				outCoin := &privacy.OutputCoin{
-					CoinDetails:            outCoinTemp.CoinDetails,
-					CoinDetailsEncrypted:   outCoinTemp.CoinDetailsEncrypted,
+					CoinDetails:          outCoinTemp.CoinDetails,
+					CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
 				}
 				if len(serialNumberInDB) > 0 {
 					checkCandiateSerialNumber, err := common.SliceBytesExists(serialNumberInDB, outCoin.CoinDetails.SerialNumber.Compress())
@@ -801,7 +801,12 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 				copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outCoin)
 			}
 		} else {
-			if bytes.Equal(outCoinTemp.CoinDetails.PublicKey.Compress(), keys.PaymentAddress.Pk[:]) {
+			pubkeyCompress := outCoinTemp.CoinDetails.PublicKey.Compress()
+			if bytes.Equal(pubkeyCompress, keys.PaymentAddress.Pk[:]) {
+				outCoin := &privacy.OutputCoin{
+					CoinDetails:          outCoinTemp.CoinDetails,
+					CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
+				}
 				if len(serialNumberInDB) > 0 {
 					checkCandiateNullifier, err := common.SliceBytesExists(serialNumberInDB, outCoinTemp.CoinDetails.SerialNumber.Compress())
 					if err != nil || checkCandiateNullifier != -1 {
@@ -809,6 +814,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 						continue
 					}
 				}
+				copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outCoin)
 			}
 		}
 	}
