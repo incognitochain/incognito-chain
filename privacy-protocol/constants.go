@@ -23,7 +23,4 @@ const (
 	CommitmentSize 									= 0
 	BigIntSize     									= 32
 
-
-
-	InfoLength= 512
 )

@@ -26,7 +26,7 @@ type Coin struct {
 	SerialNumber   *EllipticPoint
 	Randomness     *big.Int
 	Value          uint64
-	Info           [512]byte //512 bytes
+	Info           []byte //512 bytes
 	PubKeyLastByte byte
 }
 
@@ -67,7 +67,7 @@ func (coin *Coin) Bytes() []byte {
 	Value := PadBigInt(new(big.Int).SetUint64(coin.Value), 2*BigIntSize)
 	coin_bytes = append(coin_bytes, Value...)
 	Info := coin.Info
-	coin_bytes = append(coin_bytes, Info[:]...)
+	coin_bytes = append(coin_bytes, Info...)
 	coin_bytes = append(coin_bytes, coin.PubKeyLastByte)
 	return coin_bytes
 }
@@ -98,9 +98,9 @@ func (coin *Coin) SetBytes(coin_byte []byte) {
 	coin.Value = x.Uint64()
 	offset += 2 * BigIntSize
 
-	copy(coin.Info[:], coin_byte[offset:offset+InfoLength])
-	offset += InfoLength
-	coin.PubKeyLastByte = coin_byte[offset]
+	L := len(coin_byte)
+	copy(coin.Info[:], coin_byte[offset:L-2])
+	coin.PubKeyLastByte = coin_byte[L-1]
 }
 
 // InputCoin represents a input coin of transaction
