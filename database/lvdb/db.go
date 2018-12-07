@@ -70,13 +70,13 @@ func (db *db) Put(key, value []byte) error {
 	return nil
 }
 
-func (db *db) Get(key []byte) []byte {
+func (db *db) Get(key []byte) ([]byte, error) {
 	value, err := db.lvdb.Get(key, nil)
 	if err != nil {
 		log.Println(err)
-		return nil
+		return nil, err
 	}
-	return value
+	return value, nil
 }
 
 func (db db) getKey(keyType string, key interface{}) []byte {
