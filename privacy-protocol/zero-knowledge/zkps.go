@@ -352,15 +352,6 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 		cmOutputSumAll.X, cmOutputSumAll.Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputSumAll.X, cmOutputSumAll.Y)
 
-		// cmOutputSumInverse[i], _ = cmOutputSum[i].Inverse()
-		//randOutputSum[i] = randOutputSK
-
-
-		//cmOutputRndAll.Add(cmOutputRndAll, randOutputSum[i])
-		//cmOutputRndAll.Mod(cmOutputRndAll, privacy.Curve.Params().N)
-		// For ZKP Opening
-
-		// ---------------
 	}
 
 	// For Multi Range Protocol
@@ -412,7 +403,6 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 				return nil, err
 			}
 		}
-
 		return proof, nil
 	}
 
