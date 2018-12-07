@@ -180,7 +180,7 @@ func (tx *Tx) CreateTx(
 			sndOuts = append(sndOuts, sndOut)
 		}
 
-		ok = common.CheckDuplicate(sndOuts)
+		ok = common.CheckDuplicateBigInt(sndOuts)
 	}
 
 	// create new output coins with info: Pk, value, last byte of pk, snd
@@ -468,4 +468,8 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 }
 
 // todo: thunderbird
-
+// CheckSND return true if snd exists in snDerivators list
+func CheckSNDExistence(snd *big.Int) bool {
+	//todo: query from db to get snDerivators
+	return false
+}

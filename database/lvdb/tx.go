@@ -28,14 +28,14 @@ func (db *db) StoreSerialNumbers(serialNumber []byte, chainId byte) error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
-	var txs [][]byte
+	var arrayData [][]byte
 	if len(res) > 0 {
-		if err := json.Unmarshal(res, &txs); err != nil {
+		if err := json.Unmarshal(res, &arrayData); err != nil {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
-	txs = append(txs, serialNumber)
-	b, err := json.Marshal(txs)
+	arrayData = append(arrayData, serialNumber)
+	b, err := json.Marshal(arrayData)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
@@ -54,13 +54,13 @@ func (db *db) FetchSerialNumbers(chainID byte) ([][]byte, error) {
 		return make([][]byte, 0), database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
-	var txs [][]byte
+	var arrayData [][]byte
 	if len(res) > 0 {
-		if err := json.Unmarshal(res, &txs); err != nil {
+		if err := json.Unmarshal(res, &arrayData); err != nil {
 			return make([][]byte, 0), errors.Wrap(err, "json.Unmarshal")
 		}
 	}
-	return txs, nil
+	return arrayData, nil
 }
 
 // HasSerialNumber - Check serialNumber in list SerialNumbers by chainID
@@ -176,14 +176,14 @@ func (db *db) StoreSNDerivators(data big.Int, chainID byte) error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
-	var txs []big.Int
+	var arrData []big.Int
 	if len(res) > 0 {
-		if err := json.Unmarshal(res, &txs); err != nil {
+		if err := json.Unmarshal(res, &arrData); err != nil {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
-	txs = append(txs, data)
-	b, err := json.Marshal(txs)
+	arrData = append(arrData, data)
+	b, err := json.Marshal(arrData)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
