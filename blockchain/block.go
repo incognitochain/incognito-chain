@@ -103,7 +103,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 			}
 		case common.TxCustomTokenType:
 			{
-				tx := &transaction.TxCustomToken{}
+				tx = &transaction.TxCustomToken{}
 				parseErr = json.Unmarshal(txTempJson, &tx)
 			}
 		default:
