@@ -26,7 +26,7 @@ type Coin struct {
 	SerialNumber   *EllipticPoint
 	Randomness     *big.Int
 	Value          uint64
-	Info           []byte //512 bytes
+	Info           [512]byte //512 bytes //512 bytes
 	PubKeyLastByte byte
 }
 
@@ -43,56 +43,66 @@ func (self *Coin) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	// TODO
-
-	_ = temp
+	self.SetBytes(temp)
 	return nil
 }
 
 func (coin *Coin) Bytes() []byte {
 	var coin_bytes []byte
-	coin_bytes = append(coin_bytes, coin.PublicKey.Compress()...)
-	coin_bytes = append(coin_bytes, coin.CoinCommitment.Compress()...)
-	coin_bytes = append(coin_bytes, PadBigInt(coin.SNDerivator, BigIntSize)...)
-	coin_bytes = append(coin_bytes, coin.SerialNumber.Compress()...)
-	coin_bytes = append(coin_bytes, PadBigInt(coin.Randomness, 2*BigIntSize)...)
-	coin_bytes = append(coin_bytes, PadBigInt(new(big.Int).SetUint64(coin.Value),2*BigIntSize)...)
-	coin_bytes = append(coin_bytes, coin.Info...)
+	PublicKey := coin.PublicKey.Compress()
+	coin_bytes = append(coin_bytes, PublicKey...)
+	CoinCommitment := coin.CoinCommitment.Compress()
+	coin_bytes = append(coin_bytes, CoinCommitment...)
+	SNDerivator := PadBigInt(coin.SNDerivator, BigIntSize)
+	coin_bytes = append(coin_bytes, SNDerivator...)
+	SerialNumber := coin.SerialNumber.Compress()
+	if len(SerialNumber) == 0 {
+		SerialNumber := [33]byte{}
+		coin_bytes = append(coin_bytes, SerialNumber[:]...)
+	} else {
+		coin_bytes = append(coin_bytes, SerialNumber...)
+	}
+	Randomness := PadBigInt(coin.Randomness, 2*BigIntSize)
+	coin_bytes = append(coin_bytes, Randomness...)
+	Value := PadBigInt(new(big.Int).SetUint64(coin.Value), 2*BigIntSize)
+	coin_bytes = append(coin_bytes, Value...)
+	Info := coin.Info
+	coin_bytes = append(coin_bytes, Info[:]...)
 	coin_bytes = append(coin_bytes, coin.PubKeyLastByte)
 	return coin_bytes
 }
-func (coin *Coin) SetBytes(coin_byte []byte){
-	offset:=0
+func (coin *Coin) SetBytes(coin_byte []byte) {
+	offset := 0
 	coin.PublicKey = new(EllipticPoint)
 	coin.PublicKey.Decompress(coin_byte[offset:])
-	offset+=CompressedPointSize
+	offset += CompressedPointSize
 
 	coin.CoinCommitment = new(EllipticPoint)
 	coin.CoinCommitment.Decompress(coin_byte[offset:])
-	offset+=CompressedPointSize
+	offset += CompressedPointSize
 
 	coin.SNDerivator = new(big.Int)
 	coin.SNDerivator.SetBytes(coin_byte[offset:offset+BigIntSize])
-	offset+=BigIntSize
+	offset += BigIntSize
 
 	coin.SerialNumber = new(EllipticPoint)
 	coin.SerialNumber.Decompress(coin_byte[offset:])
-	offset+=CompressedPointSize
+	offset += CompressedPointSize
 
-	coin.SNDerivator = new(big.Int)
-	coin.SNDerivator.SetBytes(coin_byte[offset:offset+2*BigIntSize])
-	offset+=2*BigIntSize
+	coin.Randomness = new(big.Int)
+	coin.Randomness.SetBytes(coin_byte[offset:offset+2*BigIntSize])
+	offset += 2 * BigIntSize
 
 	x := new(big.Int)
 	x.SetBytes(coin_byte[offset:offset+2*BigIntSize])
 	coin.Value = x.Uint64()
-	offset+=2*BigIntSize
+	offset += 2 * BigIntSize
 
-
-	coin.Info = coin_byte[offset:offset+InfoLength]
-	offset+=InfoLength
+	copy(coin.Info[:], coin_byte[offset:offset+InfoLength])
+	offset += InfoLength
 	coin.PubKeyLastByte = coin_byte[offset]
 }
+
 // InputCoin represents a input coin of transaction
 type InputCoin struct {
 	//ShardId *big.Int

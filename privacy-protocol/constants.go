@@ -14,16 +14,13 @@ const (
 	CMRingSize      = 8 // 2^3
 	CMRingSizeExp   = 3
 
-
-	ComInputOpeningsProofSize  			=	226
-	EqualityOfCommittedValProofSize = 230
+	InfoLength 										 	 = 512
+	ComInputOpeningsProofSize  			 =	226
+	EqualityOfCommittedValProofSize  = 230
 	ProductCommitmentProofSize 			= 197
 	ComOutputOpeningsProofSize 			= 226
 	ComZeroProofSize                = 99
 	CommitmentSize 									= 0
 	BigIntSize     									= 32
 
-
-
-	InfoLength= 512
 )
