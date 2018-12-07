@@ -12,7 +12,6 @@ import (
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"math/big"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -212,7 +211,7 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 						SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), byte(0x00)),
 						PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), byte(0x00)),
 						Value:          outCoin.CoinDetails.Value,
-						Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info, byte(0x00)),
+						Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], byte(0x00)),
 						CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), byte(0x00)),
 						Randomness:     *outCoin.CoinDetails.Randomness,
 						SNDerivator:    *outCoin.CoinDetails.SNDerivator,
@@ -404,7 +403,6 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	// get merkleroot commitments, nullifers db, commitments db for every chain
 	nullifiersDb := make(map[byte]([][]byte))
 	commitmentsDb := make(map[byte]([][]byte))
-	snDerivatorsDb := make(map[byte]([]big.Int))
 	merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
 		//merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
@@ -412,7 +410,6 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
-		snDerivatorsDb[chainId] = txViewPoint.ListSnDerivators()
 	}
 
 	// get list custom token
@@ -424,7 +421,6 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		merkleRootCommitments,
 		candidateTxsMap[chainIdSender],
 		commitmentsDb[chainIdSender],
-		snDerivatorsDb[chainIdSender],
 		realFee,
 		tokenParams,
 		listCustomTokens,

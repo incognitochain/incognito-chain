@@ -303,7 +303,7 @@ this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
 	for _, item1 := range view.listNullifiers {
-		err := self.config.DataBase.StoreNullifiers(item1, view.chainID)
+		err := self.config.DataBase.StoreSerialNumbers(item1, view.chainID)
 		if err != nil {
 			return err
 		}
@@ -345,7 +345,7 @@ this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, chainId byte) error {
 	for _, nullifier := range nullifiers {
-		err := self.config.DataBase.StoreNullifiers(nullifier, chainId)
+		err := self.config.DataBase.StoreSerialNumbers(nullifier, chainId)
 		if err != nil {
 			return err
 		}
@@ -377,7 +377,7 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
 		if err != nil {
 			return err
 		}
-		err = self.config.DataBase.StoreNullifiers(desc.CoinDetails.SerialNumber.Compress(), chainId)
+		err = self.config.DataBase.StoreSerialNumbers(desc.CoinDetails.SerialNumber.Compress(), chainId)
 		if err != nil {
 			return err
 		}
@@ -391,7 +391,7 @@ this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
 	for _, desc := range tx.Proof.OutputCoins {
-		chainId, err := common.GetTxSenderChain(desc.PubKeyLastByteReceiver)
+		chainId, err := common.GetTxSenderChain(desc.CoinDetails.PubKeyLastByte)
 		if err != nil {
 			return err
 		}
@@ -572,7 +572,7 @@ func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 		return nil, err
 	}
 	view.listCommitments = commitments
-	nullifiers, err := self.config.DataBase.FetchNullifiers(chainId)
+	nullifiers, err := self.config.DataBase.FetchSerialNumbers(chainId)
 	if err != nil {
 		return nil, err
 	}
@@ -690,7 +690,6 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 							EqualityOfCommittedValProof: tx.Proof.EqualityOfCommittedValProof,
 							ComZeroProof:                tx.Proof.ComZeroProof,
 							ProductCommitmentProof:      tx.Proof.ProductCommitmentProof,
-							SumOutRangeProof:            tx.Proof.SumOutRangeProof,
 							OneOfManyProof:              tx.Proof.OneOfManyProof,
 							InputCoins:                  tx.Proof.InputCoins,
 							OutputCoins:                 []*privacy.OutputCoin{},
@@ -708,9 +707,8 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 							err := outcoinTemp.Decrypt(keySet.ReadonlyKey.Rk)
 							if err != nil {
 								outcoin := &privacy.OutputCoin{
-									CoinDetails:            outcoinTemp.CoinDetails,
-									CoinDetailsEncrypted:   outcoinTemp.CoinDetailsEncrypted,
-									PubKeyLastByteReceiver: outcoinTemp.PubKeyLastByteReceiver,
+									CoinDetails:          outcoinTemp.CoinDetails,
+									CoinDetailsEncrypted: outcoinTemp.CoinDetailsEncrypted,
 								}
 								copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outcoin)
 							}
@@ -769,7 +767,6 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 			EqualityOfCommittedValProof: tx.Proof.EqualityOfCommittedValProof,
 			ComZeroProof:                tx.Proof.ComZeroProof,
 			ProductCommitmentProof:      tx.Proof.ProductCommitmentProof,
-			SumOutRangeProof:            tx.Proof.SumOutRangeProof,
 			OneOfManyProof:              tx.Proof.OneOfManyProof,
 			InputCoins:                  tx.Proof.InputCoins,
 			OutputCoins:                 []*privacy.OutputCoin{},
@@ -791,9 +788,8 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 			err := outCoinTemp.Decrypt(keys.ReadonlyKey.Rk)
 			if err == nil {
 				outCoin := &privacy.OutputCoin{
-					CoinDetails:            outCoinTemp.CoinDetails,
-					CoinDetailsEncrypted:   outCoinTemp.CoinDetailsEncrypted,
-					PubKeyLastByteReceiver: outCoinTemp.PubKeyLastByteReceiver,
+					CoinDetails:          outCoinTemp.CoinDetails,
+					CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
 				}
 				if len(serialNumberInDB) > 0 {
 					checkCandiateSerialNumber, err := common.SliceBytesExists(serialNumberInDB, outCoin.CoinDetails.SerialNumber.Compress())
@@ -805,7 +801,12 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 				copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outCoin)
 			}
 		} else {
-			if bytes.Equal(outCoinTemp.CoinDetails.PublicKey.Compress(), keys.PaymentAddress.Pk[:]) {
+			pubkeyCompress := outCoinTemp.CoinDetails.PublicKey.Compress()
+			if bytes.Equal(pubkeyCompress, keys.PaymentAddress.Pk[:]) {
+				outCoin := &privacy.OutputCoin{
+					CoinDetails:          outCoinTemp.CoinDetails,
+					CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
+				}
 				if len(serialNumberInDB) > 0 {
 					checkCandiateNullifier, err := common.SliceBytesExists(serialNumberInDB, outCoinTemp.CoinDetails.SerialNumber.Compress())
 					if err != nil || checkCandiateNullifier != -1 {
@@ -813,6 +814,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 						continue
 					}
 				}
+				copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outCoin)
 			}
 		}
 	}

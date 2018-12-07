@@ -36,11 +36,11 @@ type DatabaseInterface interface {
 	FetchBestState(byte) ([]byte, error)
 	CleanBestState() error
 
-	// Nullifier
-	StoreNullifiers([]byte, byte) error
-	FetchNullifiers(byte) ([][]byte, error)
-	HasNullifier([]byte, byte) (bool, error)
-	CleanNullifiers() error
+	// SerialNumber
+	StoreSerialNumbers([]byte, byte) error
+	FetchSerialNumbers(byte) ([][]byte, error)
+	HasSerialNumber([]byte, byte) (bool, error)
+	CleanSerialNumbers() error
 
 	// PedersenCommitment
 	StoreCommitments([]byte, byte) error

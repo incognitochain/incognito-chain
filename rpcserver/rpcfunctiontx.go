@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"errors"
 	"github.com/ninjadotorg/constant/common/base58"
-	"math/big"
 )
 
 /*
@@ -75,7 +74,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 						SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), byte(0x00)),
 						PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), byte(0x00)),
 						Value:          outCoin.CoinDetails.Value,
-						Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info, byte(0x00)),
+						Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], byte(0x00)),
 						CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), byte(0x00)),
 						Randomness:     *outCoin.CoinDetails.Randomness,
 						SNDerivator:    *outCoin.CoinDetails.SNDerivator,
@@ -185,7 +184,6 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
 	nullifiersDb := make(map[byte]([][]byte))
-	snDerivatorsDb := make(map[byte]([]big.Int))
 	commitmentsDb := make(map[byte]([][]byte))
 	//merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
@@ -194,7 +192,6 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
 		commitmentsDb[chainId] = txViewPoint.ListNullifiers()
-		snDerivatorsDb[chainId] = txViewPoint.ListSnDerivators()
 	}
 	//missing flag for privacy-protocol
 	// false by default
@@ -205,7 +202,6 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		candidateTxsMap[chainIdSender],
 		realFee,
 		commitmentsDb[chainIdSender],
-		snDerivatorsDb[chainIdSender],
 		true)
 	if err != nil {
 		Logger.log.Critical(err)

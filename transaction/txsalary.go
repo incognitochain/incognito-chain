@@ -4,6 +4,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"math/big"
+	"github.com/ninjadotorg/constant/common"
 )
 
 // CreateTxSalary
@@ -20,7 +21,7 @@ func CreateTxSalary(
 
 	tx := new(Tx)
 	// Todo: check
-	tx.Type = "Salary"
+	tx.Type = common.TxSalaryType
 	// assign fee tx = 0
 	tx.Fee = 0
 
@@ -29,6 +30,7 @@ func CreateTxSalary(
 	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, 1)
 	tx.Proof.OutputCoins[0] = new(privacy.OutputCoin)
 	tx.Proof.OutputCoins[0].CoinDetails = new(privacy.Coin)
+	tx.Proof.OutputCoins[0].CoinDetails.SerialNumber = &privacy.EllipticPoint{X: big.NewInt(int64(0)), Y: big.NewInt(int64(0))}
 	tx.Proof.OutputCoins[0].CoinDetails.Value = salary
 	tx.Proof.OutputCoins[0].CoinDetails.PublicKey, _ = privacy.DecompressKey(receiverAddr.Pk)
 	tx.Proof.OutputCoins[0].CoinDetails.PubKeyLastByte = tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
@@ -36,7 +38,7 @@ func CreateTxSalary(
 
 	//sndOut := new(big.Int)
 	sndOut := privacy.RandInt()
-	for CheckSNDExistence(sndOut) {
+	for common.CheckSNDExistence(sndOut) {
 		sndOut = privacy.RandInt()
 	}
 
@@ -62,7 +64,7 @@ func ValidateTxSalary(
 ) bool {
 
 	// check whether output coin's SND exists in SND list or not
-	if CheckSNDExistence(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator) {
+	if common.CheckSNDExistence(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator) {
 		return false
 	}
 

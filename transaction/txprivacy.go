@@ -98,7 +98,6 @@ func (tx *Tx) CreateTx(
 	usableTx []*Tx,
 	fee uint64,
 	commitmentsDB [][]byte,
-	snDerivators []big.Int,
 	hasPrivacy bool,
 ) (error) {
 
@@ -146,9 +145,21 @@ func (tx *Tx) CreateTx(
 		return fmt.Errorf("Input value less than output value")
 	}
 
+	// tx.proof.Input
+	tx.Proof = new(zkp.PaymentProof)
+	tx.Proof.InputCoins = inputCoins
+
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
+
+	// if overBalance > 0, create a new payment info with pk is sender's pk and amount is overBalance
+	if overBalance > 0 {
+		changePaymentInfo := new(privacy.PaymentInfo)
+		changePaymentInfo.Amount = overBalance
+		changePaymentInfo.PaymentAddress = senderFullKey.PaymentAddress
+		paymentInfo = append(paymentInfo, changePaymentInfo)
+	}
 
 	// create new output coins
 	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, len(paymentInfo))
@@ -157,54 +168,28 @@ func (tx *Tx) CreateTx(
 	sndOut := new(big.Int)
 	ok := true
 
-	// create new output coins with info: SND
+	// create SNDs for output coins
 	for ok {
 		sndOuts := make([]*big.Int, len(paymentInfo))
 
 		for i := 0; i < len(paymentInfo); i++ {
 			sndOut = privacy.RandInt()
-			for CheckSNDExistence(sndOut) {
+			for common.CheckSNDExistence(sndOut) {
 				sndOut = privacy.RandInt()
 			}
 			sndOuts = append(sndOuts, sndOut)
 		}
+
+		ok = common.CheckDuplicateBigInt(sndOuts)
 	}
 
-	// create new output coins with info: Pk, value, last byte of pk
+	// create new output coins with info: Pk, value, last byte of pk, snd
 	for i, pInfo := range paymentInfo {
 		tx.Proof.OutputCoins[i] = new(privacy.OutputCoin)
 		tx.Proof.OutputCoins[i].CoinDetails.Value = pInfo.Amount
 		tx.Proof.OutputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
 		tx.Proof.OutputCoins[i].CoinDetails.PubKeyLastByte = pInfo.PaymentAddress.Pk[len(pInfo.PaymentAddress.Pk)-1]
 		tx.Proof.OutputCoins[i].CoinDetails.SNDerivator = sndOuts[i]
-	}
-
-	// if overBalance > 0, create a output coin with pk is pk's sender and value is overBalance
-	if overBalance > 0 {
-		changeCoin := new(privacy.OutputCoin)
-		changeCoin.CoinDetails.Value = overBalance
-		changeCoin.CoinDetails.PublicKey, _ = privacy.DecompressKey(senderFullKey.PaymentAddress.Pk)
-
-		var sndOut *big.Int
-
-		for ok {
-			sndOuts = nil
-			sndOut = privacy.RandInt()
-			for CheckSNDExistence(sndOut) {
-				sndOut = privacy.RandInt()
-			}
-			sndOuts = append(sndOuts, sndOut)
-			ok = CheckDuplicate(sndOuts)
-		}
-		//
-		changeCoin.CoinDetails.SNDerivator = sndOut
-
-		tx.Proof.OutputCoins = append(tx.Proof.OutputCoins, changeCoin)
-
-		changePaymentInfo := new(privacy.PaymentInfo)
-		changePaymentInfo.Amount = overBalance
-		changePaymentInfo.PaymentAddress = senderFullKey.PaymentAddress
-		paymentInfo = append(paymentInfo, changePaymentInfo)
 	}
 
 	// assign fee tx
@@ -228,9 +213,10 @@ func (tx *Tx) CreateTx(
 		commitmentProving[i] = new(privacy.EllipticPoint)
 		commitmentProving[i], _ = privacy.DecompressKey(commitmentsDB[cmIndex])
 	}
+
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, tx.Proof.OutputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs)
+	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), tx.Proof, commitmentProving, commitmentIndexs, myCommitmentIndexs)
 	tx.Proof, _ = witness.Prove(false)
 
 	// set private key for signing tx
@@ -246,7 +232,7 @@ func (tx *Tx) CreateTx(
 			tx.Proof.OutputCoins[i].CoinDetails.Value = 0
 			tx.Proof.OutputCoins[i].CoinDetails.PublicKey = nil
 			tx.Proof.OutputCoins[i].CoinDetails.Randomness = nil
-			tx.Proof.OutputCoins[i].PubKeyLastByteReceiver = tx.Proof.OutputCoins[i].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[i].CoinDetails.PublicKey.Compress())-1]
+			tx.Proof.OutputCoins[i].CoinDetails.PubKeyLastByte = tx.Proof.OutputCoins[i].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[i].CoinDetails.PublicKey.Compress())-1]
 		}
 
 		// hide information of input coins except serial number of input coins
@@ -485,10 +471,5 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 // CheckSND return true if snd exists in snDerivators list
 func CheckSNDExistence(snd *big.Int) bool {
 	//todo: query from db to get snDerivators
-	return false
-}
-
-// CheckDuplicate returns true if there are at least 2 elements in array have same values
-func CheckDuplicate(arr []*big.Int) bool {
 	return false
 }
