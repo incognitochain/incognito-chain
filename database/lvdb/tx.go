@@ -19,8 +19,8 @@ import (
 	"math/big"
 )
 
-func (db *db) StoreSerialNumbers(nullifier []byte, chainId byte) error {
-	key := db.getKey(string(nullifiersPrefix), "")
+func (db *db) StoreSerialNumbers(serialNumber []byte, chainId byte) error {
+	key := db.getKey(string(serialNumbersPrefix), "")
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -33,7 +33,7 @@ func (db *db) StoreSerialNumbers(nullifier []byte, chainId byte) error {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
-	txs = append(txs, nullifier)
+	txs = append(txs, serialNumber)
 	b, err := json.Marshal(txs)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
@@ -45,7 +45,7 @@ func (db *db) StoreSerialNumbers(nullifier []byte, chainId byte) error {
 }
 
 func (db *db) FetchSerialNumbers(chainID byte) ([][]byte, error) {
-	key := db.getKey(string(nullifiersPrefix), "")
+	key := db.getKey(string(serialNumbersPrefix), "")
 	key = append(key, chainID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -61,13 +61,13 @@ func (db *db) FetchSerialNumbers(chainID byte) ([][]byte, error) {
 	return txs, nil
 }
 
-func (db *db) HasSerialNumber(nullifier []byte, chainID byte) (bool, error) {
+func (db *db) HasSerialNumber(serialNumber []byte, chainID byte) (bool, error) {
 	listNullifiers, err := db.FetchSerialNumbers(chainID)
 	if err != nil {
 		return false, database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	for _, item := range listNullifiers {
-		if bytes.Equal(item, nullifier) {
+		if bytes.Equal(item, serialNumber) {
 			return true, nil
 		}
 	}
@@ -75,7 +75,7 @@ func (db *db) HasSerialNumber(nullifier []byte, chainID byte) (bool, error) {
 }
 
 func (db *db) CleanSerialNumbers() error {
-	iter := db.lvdb.NewIterator(util.BytesPrefix(nullifiersPrefix), nil)
+	iter := db.lvdb.NewIterator(util.BytesPrefix(serialNumbersPrefix), nil)
 	for iter.Next() {
 		err := db.lvdb.Delete(iter.Key(), nil)
 		if err != nil {
