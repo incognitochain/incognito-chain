@@ -8,6 +8,8 @@ import (
 
 	"io"
 	"math/big"
+	"github.com/ninjadotorg/constant/common/base58"
+	"encoding/json"
 )
 
 type SerialNumber []byte   //33 bytes
@@ -27,18 +29,38 @@ type Coin struct {
 	Info           []byte
 	PubKeyLastByte byte
 }
+
+func (self Coin) MarshalJSON() ([]byte, error) {
+	data := self.Bytes()
+	temp := base58.Base58Check{}.Encode(data, byte(0x00))
+	return json.Marshal(temp)
+}
+
+func (self *Coin) UnmarshalJSON(data []byte) error {
+	dataStr := ""
+	_ = json.Unmarshal(data, &dataStr)
+	temp, _, err := base58.Base58Check{}.Decode(dataStr)
+	if err != nil {
+		return err
+	}
+	// TODO
+	_ = temp
+	return nil
+}
+
 func (coin *Coin) Bytes() []byte {
 	var coin_bytes []byte
 	coin_bytes = append(coin_bytes, coin.PublicKey.Compress()...)
 	coin_bytes = append(coin_bytes, coin.CoinCommitment.Compress()...)
-	coin_bytes = append(coin_bytes, PadFuckingBigInt(coin.SNDerivator,BigIntSize)...)
+	coin_bytes = append(coin_bytes, PadFuckingBigInt(coin.SNDerivator, BigIntSize)...)
 	coin_bytes = append(coin_bytes, coin.SerialNumber.Compress()...)
-	coin_bytes = append(coin_bytes, PadFuckingBigInt(coin.Randomness,2*BigIntSize)...)
+	coin_bytes = append(coin_bytes, PadFuckingBigInt(coin.Randomness, 2*BigIntSize)...)
 	coin_bytes = append(coin_bytes, new(big.Int).SetUint64(coin.Value).Bytes()...)
 	coin_bytes = append(coin_bytes, coin.Info...)
 	coin_bytes = append(coin_bytes, coin.PubKeyLastByte)
 	return coin_bytes
 }
+
 // InputCoin represents a input coin of transaction
 type InputCoin struct {
 	//ShardId *big.Int
@@ -56,11 +78,11 @@ type OutputCoin struct {
 	CoinDetailsEncrypted   *CoinDetailsEncrypted
 }
 
-func (outputCoin *OutputCoin) Bytes() []byte{
+func (outputCoin *OutputCoin) Bytes() []byte {
 	var out_coin_bytes []byte
-	out_coin_bytes = append(out_coin_bytes,outputCoin.PubKeyLastByteReceiver)
-	out_coin_bytes = append(out_coin_bytes,outputCoin.CoinDetails.Bytes()...)
-	out_coin_bytes = append(out_coin_bytes,outputCoin.CoinDetailsEncrypted.Bytes()...)
+	out_coin_bytes = append(out_coin_bytes, outputCoin.PubKeyLastByteReceiver)
+	out_coin_bytes = append(out_coin_bytes, outputCoin.CoinDetails.Bytes()...)
+	out_coin_bytes = append(out_coin_bytes, outputCoin.CoinDetailsEncrypted.Bytes()...)
 	return out_coin_bytes
 }
 
@@ -75,10 +97,10 @@ type CoinDetailsEncrypted struct {
 
 func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() [] byte {
 	var res []byte
-	res = append(res,coinDetailsEncrypted.RandomEncrypted...)
-	res = append(res,coinDetailsEncrypted.SymKeyEncrypted.Bytes()...)
+	res = append(res, coinDetailsEncrypted.RandomEncrypted...)
+	res = append(res, coinDetailsEncrypted.SymKeyEncrypted.Bytes()...)
 	return res
-	}
+}
 
 func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {
 	/**** Generate symmetric key of AES cryptosystem,
@@ -160,8 +182,6 @@ func (coin *Coin) CommitAll() {
 	coin.CoinCommitment = PedCom.CommitAll(values)
 	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)
 }
-
-
 
 //// CommitPublicKey commits a public key's coin
 //func (coin *Coin) CommitPublicKey() []byte {
