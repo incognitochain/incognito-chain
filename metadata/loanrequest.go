@@ -54,12 +54,9 @@ func NewLoanRequest(data map[string]interface{}) *LoanRequest {
 	s, err = hex.DecodeString(data["KeyDigest"].(string))
 	result.KeyDigest = s
 
+	result.Type = LoanRequestMeta
 	return &result
 }
-
-// func (lr *LoanRequest) GetType() int {
-// 	return LoanRequestMeta
-// }
 
 func (lr *LoanRequest) Hash() *common.Hash {
 	record := string(lr.LoanID)
