@@ -92,7 +92,7 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		if err != nil {
 			return err
 		}
-		value, err := db.lvdb.Get(paymentAddressKey, nil)
+		value, err := db.Get(paymentAddressKey)
 		if err != nil {
 			return err
 		}
@@ -296,7 +296,7 @@ func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress priva
 		fmt.Println("ERROR finding key in DB, UpdateRewardAccountUTXO", err)
 		return err
 	}
-	res, err := db.lvdb.Get([]byte(key), nil)
+	res, err := db.Get([]byte(key))
 	if err != nil {
 		return err
 	}
