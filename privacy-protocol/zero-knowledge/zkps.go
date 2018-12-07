@@ -197,13 +197,13 @@ func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.Input
 // if hashPrivacy = false, witness includes spending key, input coins, output coins
 // otherwise, witness includes all attributes in PaymentWitness struct
 func (wit *PaymentWitness) Build(hasPrivacy bool,
-	spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin,
-	pkLastByteSender byte, pkLastByteReceivers []byte,
+	spendingKey *big.Int,
+	proof *PaymentProof,
 	commitments []*privacy.EllipticPoint, commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
 
 	wit.spendingKey = spendingKey
-	wit.inputCoins = inputCoins
-	wit.outputCoins = outputCoins
+	wit.inputCoins = proof.InputCoins
+	wit.outputCoins = proof.OutputCoins
 	wit.commitmentIndexs = commitmentIndexs
 	wit.myCommitmentIndexs = myCommitmentIndexs
 
