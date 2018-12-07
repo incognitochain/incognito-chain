@@ -132,6 +132,12 @@ func (self *Peer) ReceivedHashMessage(hash string) {
 		self.messagePool = make(map[string]bool)
 	}
 	self.messagePool[hash] = true
+	if len(self.messagePool) > MESSAGE_HASH_POOL_SIZE {
+		for k, _ := range self.messagePool {
+			delete(self.messagePool, k)
+			break
+		}
+	}
 }
 
 func (self *Peer) CheckHashMessage(hash string) (bool) {
