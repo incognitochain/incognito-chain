@@ -98,7 +98,6 @@ func (tx *Tx) CreateTx(
 	usableTx []*Tx,
 	fee uint64,
 	commitmentsDB [][]byte,
-	snDerivators []big.Int,
 	hasPrivacy bool,
 ) (error) {
 
@@ -146,6 +145,10 @@ func (tx *Tx) CreateTx(
 		return fmt.Errorf("Input value less than output value")
 	}
 
+	// tx.proof.Input
+	tx.Proof = new(zkp.PaymentProof)
+	tx.Proof.InputCoins = inputCoins
+
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
@@ -171,13 +174,13 @@ func (tx *Tx) CreateTx(
 
 		for i := 0; i < len(paymentInfo); i++ {
 			sndOut = privacy.RandInt()
-			for CheckSNDExistence(sndOut) {
+			for common.CheckSNDExistence(sndOut) {
 				sndOut = privacy.RandInt()
 			}
 			sndOuts = append(sndOuts, sndOut)
 		}
 
-		ok = CheckDuplicate(sndOuts)
+		ok = common.CheckDuplicateBigInt(sndOuts)
 	}
 
 	// create new output coins with info: Pk, value, last byte of pk, snd
@@ -188,8 +191,6 @@ func (tx *Tx) CreateTx(
 		tx.Proof.OutputCoins[i].CoinDetails.PubKeyLastByte = pInfo.PaymentAddress.Pk[len(pInfo.PaymentAddress.Pk)-1]
 		tx.Proof.OutputCoins[i].CoinDetails.SNDerivator = sndOuts[i]
 	}
-
-
 
 	// assign fee tx
 	tx.Fee = fee
@@ -212,9 +213,10 @@ func (tx *Tx) CreateTx(
 		commitmentProving[i] = new(privacy.EllipticPoint)
 		commitmentProving[i], _ = privacy.DecompressKey(commitmentsDB[cmIndex])
 	}
+
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, tx.Proof.OutputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs)
+	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), tx.Proof, commitmentProving, commitmentIndexs, myCommitmentIndexs)
 	tx.Proof, _ = witness.Prove(false)
 
 	// set private key for signing tx
@@ -469,10 +471,5 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 // CheckSND return true if snd exists in snDerivators list
 func CheckSNDExistence(snd *big.Int) bool {
 	//todo: query from db to get snDerivators
-	return false
-}
-
-// CheckDuplicate returns true if there are at least 2 elements in array have same values
-func CheckDuplicate(arr []*big.Int) bool {
 	return false
 }

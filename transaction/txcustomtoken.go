@@ -7,7 +7,6 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"math/big"
 )
 
 // TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -104,7 +103,6 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 	rts map[byte]*common.Hash,
 	usableTx []*Tx,
 	commitments [][]byte,
-	snDs []big.Int,
 	fee uint64,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
@@ -116,7 +114,6 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 		usableTx,
 		fee,
 		commitments,
-		snDs,
 		true)
 	if err != nil {
 		return nil, err

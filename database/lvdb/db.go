@@ -23,7 +23,7 @@ var (
 	blockKeyIdxPrefix         = []byte("i-")
 	transactionKeyPrefix      = []byte("tx-")
 	privateKeyPrefix          = []byte("prk-")
-	nullifiersPrefix          = []byte("nullifiers-")
+	serialNumbersPrefix       = []byte("serinalnumbers-")
 	commitmentsPrefix         = []byte("commitments-")
 	snderivatorsPrefix        = []byte("snderivators-")
 	bestBlockKey              = []byte("bestBlock")
@@ -54,7 +54,7 @@ func (db *db) Close() error {
 	return errors.Wrap(db.lvdb.Close(), "db.lvdb.Close")
 }
 
-func (db *db) hasValue(key []byte) (bool, error) {
+func (db *db) HasValue(key []byte) (bool, error) {
 	ret, err := db.lvdb.Has(key, nil)
 	if err != nil {
 		return false, database.NewDatabaseError(database.NotExistValue, err)
@@ -76,8 +76,8 @@ func (db db) getKey(keyType string, key interface{}) []byte {
 		dbkey = append(blockKeyPrefix, key.(*common.Hash)[:]...)
 	case string(blockKeyIdxPrefix):
 		dbkey = append(blockKeyIdxPrefix, key.(*common.Hash)[:]...)
-	case string(nullifiersPrefix):
-		dbkey = append(nullifiersPrefix, []byte(key.(string))...)
+	case string(serialNumbersPrefix):
+		dbkey = append(serialNumbersPrefix, []byte(key.(string))...)
 	case string(commitmentsPrefix):
 		dbkey = append(commitmentsPrefix, []byte(key.(string))...)
 	case string(snderivatorsPrefix):

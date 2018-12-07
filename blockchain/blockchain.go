@@ -281,7 +281,11 @@ func (self *BlockChain) StoreBlockHeader(block *Block) error {
 	Store Transaction in Light mode
 */
 func (self *BlockChain) StoreUnspentTransactionLightMode(privatKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
-	return self.config.DataBase.StoreTransactionLightMode(privatKey, chainId, blockHeight, txIndex, tx)
+	txJsonBytes, err := json.Marshal(tx)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, errors.New("json.Marshal"))
+	}
+	return self.config.DataBase.StoreTransactionLightMode(privatKey, chainId, blockHeight, txIndex, *(tx.Hash()), txJsonBytes)
 }
 
 /*
@@ -303,7 +307,7 @@ this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
 	for _, item1 := range view.listNullifiers {
-		err := self.config.DataBase.StoreNullifiers(item1, view.chainID)
+		err := self.config.DataBase.StoreSerialNumbers(item1, view.chainID)
 		if err != nil {
 			return err
 		}
@@ -345,7 +349,7 @@ this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, chainId byte) error {
 	for _, nullifier := range nullifiers {
-		err := self.config.DataBase.StoreNullifiers(nullifier, chainId)
+		err := self.config.DataBase.StoreSerialNumbers(nullifier, chainId)
 		if err != nil {
 			return err
 		}
@@ -377,7 +381,7 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
 		if err != nil {
 			return err
 		}
-		err = self.config.DataBase.StoreNullifiers(desc.CoinDetails.SerialNumber.Compress(), chainId)
+		err = self.config.DataBase.StoreSerialNumbers(desc.CoinDetails.SerialNumber.Compress(), chainId)
 		if err != nil {
 			return err
 		}
@@ -572,7 +576,7 @@ func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 		return nil, err
 	}
 	view.listCommitments = commitments
-	nullifiers, err := self.config.DataBase.FetchNullifiers(chainId)
+	nullifiers, err := self.config.DataBase.FetchSerialNumbers(chainId)
 	if err != nil {
 		return nil, err
 	}
@@ -611,7 +615,7 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 		}
 		// save tx which relate to custom token
 		// Reject Double spend UTXO before enter this state
-		err = self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
+		err = self.StoreCustomTokenPaymentAddresstHistory(customTokenTx)
 		// TODO: detect/cactch/revert/skip double spend tx
 		if err != nil {
 			// Skip double spend
@@ -651,6 +655,10 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	}
 
 	return nil
+}
+
+func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken) error {
+	return self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
 }
 
 /*
@@ -887,9 +895,14 @@ func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType
 		}
 		// decrypt to get utxo with commitments with relate to private key
 		for chainID, txArrays := range fullTxs {
-			for _, tx := range txArrays {
+			for _, txBytes := range txArrays {
 				keys := cashec.KeySet{}
 				keys.ImportFromPrivateKey(&keyset.PrivateKey)
+				tx := transaction.Tx{}
+				err := json.Unmarshal(txBytes, &tx)
+				if err != nil {
+					return nil, NewBlockChainError(UnExpectedError, errors.New("json.Unmarshal"))
+				}
 				copyTx := self.DecryptTxByKey(&tx, nullifiersInDb, &keys)
 				results[chainID] = append(results[chainID], copyTx)
 			}

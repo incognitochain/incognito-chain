@@ -216,18 +216,18 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	// Check the number of Commitment list's elements
 
 	N := len(wit.commitments)
-	//temp := 1
-	//n := 0
-	//for temp < N {
-	//	temp = temp << 1
-	//	n++
-	//}
+	temp := 1
+	n := 0
+	for temp < N {
+		temp = temp << 1
+		n++
+	}
 
-	if N != privacy.CMRingSize {
+	if temp != N {
 		return nil, fmt.Errorf("the number of Commitment list's elements must be equal to CMRingSize")
 	}
 
-	n := privacy.CMRingSizeExp
+	//n := privacy.CMRingSizeExp
 
 	// Check indexIsZero
 	if wit.indexIsZero > uint64(N) || wit.indexIsZero < 0 {
