@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/transaction"
 	"strconv"
 	"strings"
 
@@ -243,8 +242,8 @@ func (db *db) CleanSNDerivator() error {
 
 // StoreFeeEstimator - Store data for FeeEstimator object
 func (db *db) StoreFeeEstimator(val []byte, chainId byte) error {
-	if err := db.put(append(feeEstimator, chainId), val); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.put"))
+	if err := db.Put(append(feeEstimator, chainId), val); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 	return nil
 }
@@ -299,7 +298,7 @@ func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, i
 func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, error) {
 	fmt.Println("TxID in GetTransactionById", txId.String())
 	key := string(transactionKeyPrefix) + txId.String()
-	_, err := db.hasValue([]byte(key))
+	_, err := db.HasValue([]byte(key))
 	if err != nil {
 		fmt.Println("ERROR in finding transaction id", txId.String(), err)
 		return nil, -1, err
@@ -328,7 +327,7 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 	2. Key -> value :							prefix(transaction)txHash 												->  	privateKey-chainId-blockHeight-txIndex
 
 */
-func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, unspentTx *transaction.Tx) error {
+func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, unspentTxHash common.Hash, unspentTx []byte) error {
 	tempChainId := []byte{}
 	tempChainId = append(tempChainId, chainId)
 	temp3ChainId := int(chainId)
@@ -354,23 +353,24 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 	binary.LittleEndian.PutUint32(reverseTxIndex, uint32(bigNumberTx-int32(txIndex)))
 
 	key1 := string(privateKeyPrefix) + privateKey.String() + string(splitter) + string(int(chainId)) + string(splitter) + string(reverseBlockHeight) + string(splitter) + string(reverseTxIndex)
-	key2 := string(transactionKeyPrefix) + unspentTx.Hash().String()
+	key2 := string(transactionKeyPrefix) + unspentTxHash.String()
 
-	if ok, _ := db.hasValue([]byte(key1)); ok {
+	if ok, _ := db.HasValue([]byte(key1)); ok {
 		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("tx %s already exists", key1))
 	}
-	if ok, _ := db.hasValue([]byte(key2)); ok {
+	if ok, _ := db.HasValue([]byte(key2)); ok {
 		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("tx %s already exists", key2))
 	}
 
-	value, err := json.Marshal(unspentTx)
+	/*value, err := json.Marshal(unspentTx)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-	}
-	if err := db.put([]byte(key1), value); err != nil {
+	}*/
+	value := unspentTx
+	if err := db.Put([]byte(key1), value); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
-	if err := db.put([]byte(key2), []byte(key1)); err != nil {
+	if err := db.Put([]byte(key2), []byte(key1)); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 
@@ -385,25 +385,30 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 	1. Key -> value : prefix(privateky)-privateKey-chainId-(999999999 - blockHeight)-(999999999 - txIndex) 		-> 		tx
 
 */
-func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKey) (map[byte][]transaction.Tx, error) {
+func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKey) (map[byte]([]([]byte)), error) {
 	prefix := []byte(string(privateKeyPrefix) + privateKey.String())
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
-	results := make(map[byte][]transaction.Tx)
+
+	results := make(map[byte]([]([]byte)))
 	for iter.Next() {
 		key := iter.Key()
 		value := iter.Value()
+
 		fmt.Println("GetTransactionLightModeByPrivateKey, key", string(key))
 		reses := strings.Split(string(key), string(splitter))
 		tempChainId, _ := strconv.Atoi(reses[2])
 		chainId := byte(tempChainId)
 		fmt.Println("GetTransactionLightModeByPrivateKey, chainId", chainId)
-		tx := transaction.Tx{}
+		/*tx := transaction.Tx{}
 		err := json.Unmarshal(value, &tx)
 		if err != nil {
 			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-		}
-		results[chainId] = append(results[chainId], tx)
+		}*/
+		data := make([]byte, len(value))
+		copy(data[:], value[:])
+		results[chainId] = append(results[chainId], data)
 	}
+
 	iter.Release()
 	return results, nil
 }
@@ -416,7 +421,7 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKe
 func (db *db) GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, error) {
 	key := string(transactionKeyPrefix) + txId.String()
 	fmt.Println("GetTransactionLightModeByHash - key", key)
-	_, err := db.hasValue([]byte(key))
+	_, err := db.HasValue([]byte(key))
 	if err != nil {
 		fmt.Println("ERROR in finding transaction id", txId.String(), err)
 		return nil, nil, err
@@ -426,7 +431,7 @@ func (db *db) GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, 
 	if err != nil {
 		return nil, nil, err;
 	}
-	_, err1 := db.hasValue([]byte(value))
+	_, err1 := db.HasValue([]byte(value))
 	if err1 != nil {
 		fmt.Println("ERROR in finding location transaction id", txId.String(), err1)
 		return nil, nil, err
