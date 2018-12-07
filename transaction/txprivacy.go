@@ -98,7 +98,6 @@ func (tx *Tx) CreateTx(
 	usableTx []*Tx,
 	fee uint64,
 	commitmentsDB [][]byte,
-	snDerivators []big.Int,
 	hasPrivacy bool,
 ) (error) {
 
@@ -146,6 +145,10 @@ func (tx *Tx) CreateTx(
 		return fmt.Errorf("Input value less than output value")
 	}
 
+	// tx.proof.Input
+	tx.Proof = new(zkp.PaymentProof)
+	tx.Proof.InputCoins = inputCoins
+
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
@@ -189,8 +192,6 @@ func (tx *Tx) CreateTx(
 		tx.Proof.OutputCoins[i].CoinDetails.SNDerivator = sndOuts[i]
 	}
 
-
-
 	// assign fee tx
 	tx.Fee = fee
 
@@ -212,9 +213,10 @@ func (tx *Tx) CreateTx(
 		commitmentProving[i] = new(privacy.EllipticPoint)
 		commitmentProving[i], _ = privacy.DecompressKey(commitmentsDB[cmIndex])
 	}
+
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, tx.Proof.OutputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs)
+	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), tx.Proof, commitmentProving, commitmentIndexs, myCommitmentIndexs)
 	tx.Proof, _ = witness.Prove(false)
 
 	// set private key for signing tx
