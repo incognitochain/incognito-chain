@@ -391,7 +391,7 @@ this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
 	for _, desc := range tx.Proof.OutputCoins {
-		chainId, err := common.GetTxSenderChain(desc.PubKeyLastByteReceiver)
+		chainId, err := common.GetTxSenderChain(desc.CoinDetails.PubKeyLastByte)
 		if err != nil {
 			return err
 		}
@@ -709,7 +709,6 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 								outcoin := &privacy.OutputCoin{
 									CoinDetails:            outcoinTemp.CoinDetails,
 									CoinDetailsEncrypted:   outcoinTemp.CoinDetailsEncrypted,
-									PubKeyLastByteReceiver: outcoinTemp.PubKeyLastByteReceiver,
 								}
 								copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outcoin)
 							}
@@ -791,7 +790,6 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 				outCoin := &privacy.OutputCoin{
 					CoinDetails:            outCoinTemp.CoinDetails,
 					CoinDetailsEncrypted:   outCoinTemp.CoinDetailsEncrypted,
-					PubKeyLastByteReceiver: outCoinTemp.PubKeyLastByteReceiver,
 				}
 				if len(serialNumberInDB) > 0 {
 					checkCandiateSerialNumber, err := common.SliceBytesExists(serialNumberInDB, outCoin.CoinDetails.SerialNumber.Compress())

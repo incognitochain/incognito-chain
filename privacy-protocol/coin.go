@@ -115,14 +115,12 @@ func (inputCoin *InputCoin) Bytes() []byte {
 }
 
 type OutputCoin struct {
-	PubKeyLastByteReceiver byte
 	CoinDetails            *Coin
 	CoinDetailsEncrypted   *CoinDetailsEncrypted
 }
 
 func (outputCoin *OutputCoin) Bytes() []byte {
 	var out_coin_bytes []byte
-	out_coin_bytes = append(out_coin_bytes, outputCoin.PubKeyLastByteReceiver)
 	out_coin_bytes = append(out_coin_bytes, outputCoin.CoinDetails.Bytes()...)
 	out_coin_bytes = append(out_coin_bytes, outputCoin.CoinDetailsEncrypted.Bytes()...)
 	return out_coin_bytes
