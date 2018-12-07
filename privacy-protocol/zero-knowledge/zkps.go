@@ -85,12 +85,12 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, paymentProof.ComOutputOpeningsProof[i].Bytes()...)
 	}
 	// ComOutputMultiRangeProof
-	proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputMultiRangeProof.Bytes())))
+	/*proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputMultiRangeProof.Bytes())))
 	proofbytes = append(proofbytes, paymentProof.ComOutputMultiRangeProof.Bytes()...)
 	// ComZeroProof
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComZeroProof.Bytes())))
 	proofbytes = append(proofbytes, paymentProof.ComZeroProof.Bytes()...)
-	//	OutputCoins
+*///	OutputCoins
 	proofbytes = append(proofbytes, byte(len(paymentProof.OutputCoins)))
 	for i := 0; i < len(paymentProof.OutputCoins); i++ {
 		proofbytes = append(proofbytes, paymentProof.OutputCoins[i].Bytes()...)
@@ -291,7 +291,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		wit.OneOfManyWitness[i].Set(commitmentTemps, commitmentIndexs, rndInputIsZero, myCommitmentIndexs[i], privacy.SK)
 
 		/***** Build witness for proving that serial number is derived from the committed derivator *****/
-		wit.EqualityOfCommittedValWitness[i].Set([]*privacy.EllipticPoint{cmInputSNDIndexSK[i], cmInputSND[i]}, indexZKPEqual, []*big.Int{inputCoins[i].CoinDetails.SNDerivator, randInputSK, randInputSND[i]})
+		//wit.EqualityOfCommittedValWitness[i].Set([]*privacy.EllipticPoint{cmInputSNDIndexSK[i], cmInputSND[i]}, indexZKPEqual, []*big.Int{inputCoins[i].CoinDetails.SNDerivator, randInputSK, randInputSND[i]})
 		// TODO Product Commitment
 		// Todo: 0xthunderbird
 		// ------------------------------
@@ -441,10 +441,10 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	}
 
 	// Proving that each output values does not exceed v_max
-	proof.ComOutputMultiRangeProof, err = wit.ComOutputMultiRangeWitness.Prove()
+	/*proof.ComOutputMultiRangeProof, err = wit.ComOutputMultiRangeWitness.Prove()
 	if err != nil {
 		return nil, err
-	}
+	}*/
 
 	// Proving that sum of all output values does not exceed v_max
 	//proof.SumOutRangeProof, err = wit.SumOutRangeWitness.Prove()
@@ -453,10 +453,10 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	//}
 
 	// Proving that sum of all input values is equal to sum of all output values
-	proof.ComZeroProof, err = wit.ComZeroWitness.Prove()
+	/*proof.ComZeroProof, err = wit.ComZeroWitness.Prove()
 	if err != nil {
 		return nil, err
-	}
+	}*/
 
 	return proof, nil
 }
