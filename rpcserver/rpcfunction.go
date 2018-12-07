@@ -212,7 +212,7 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 						SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), byte(0x00)),
 						PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), byte(0x00)),
 						Value:          outCoin.CoinDetails.Value,
-						Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info, byte(0x00)),
+						Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], byte(0x00)),
 						CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), byte(0x00)),
 						Randomness:     *outCoin.CoinDetails.Randomness,
 						SNDerivator:    *outCoin.CoinDetails.SNDerivator,
