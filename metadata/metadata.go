@@ -8,6 +8,7 @@ import (
 )
 
 type MetadataBase struct {
+	Type int
 }
 
 func (mb *MetadataBase) Validate() error {
@@ -16,6 +17,10 @@ func (mb *MetadataBase) Validate() error {
 
 func (mb *MetadataBase) Process() error {
 	return nil
+}
+
+func (mb *MetadataBase) GetType() int {
+	return mb.Type
 }
 
 func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFee uint64) bool {
@@ -95,6 +100,7 @@ type Transaction interface {
 	ValidateSanityData() (bool, error)
 	ValidateTxByItself(BlockchainRetriever) bool
 	GetMetadata() Metadata
+	SetMetadata(Metadata)
 	ValidateConstDoubleSpendWithBlockchain(BlockchainRetriever, byte) error
 
 	GetJSPubKey() []byte

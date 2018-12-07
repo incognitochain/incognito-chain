@@ -77,9 +77,9 @@ func (bsReq *BuySellRequest) ValidateMetadataByItself() bool {
 	return true
 }
 
-func (bsReq *BuySellRequest) GetType() int {
-	return BuySellRequestMeta
-}
+// func (bsReq *BuySellRequest) GetType() int {
+// 	return BuySellRequestMeta
+// }
 
 func (bsReq *BuySellRequest) Hash() *common.Hash {
 	record := string(bsReq.PaymentAddress.ToBytes())
