@@ -27,12 +27,27 @@ type Coin struct {
 	Info           []byte
 	PubKeyLastByte byte
 }
-
+func (coin *Coin) Bytes() []byte {
+	var coin_bytes []byte
+	coin_bytes = append(coin_bytes, coin.PublicKey.Compress()...)
+	coin_bytes = append(coin_bytes, coin.CoinCommitment.Compress()...)
+	coin_bytes = append(coin_bytes, PadFuckingBigInt(coin.SNDerivator,BigIntSize)...)
+	coin_bytes = append(coin_bytes, coin.SerialNumber.Compress()...)
+	coin_bytes = append(coin_bytes, PadFuckingBigInt(coin.Randomness,2*BigIntSize)...)
+	coin_bytes = append(coin_bytes, new(big.Int).SetUint64(coin.Value).Bytes()...)
+	coin_bytes = append(coin_bytes, coin.Info...)
+	coin_bytes = append(coin_bytes, coin.PubKeyLastByte)
+	return coin_bytes
+}
 // InputCoin represents a input coin of transaction
 type InputCoin struct {
 	//ShardId *big.Int
 	//BlockHeight *big.Int
 	CoinDetails *Coin
+}
+
+func (inputCoin *InputCoin) Bytes() []byte {
+	return inputCoin.CoinDetails.Bytes()
 }
 
 type OutputCoin struct {
@@ -41,8 +56,12 @@ type OutputCoin struct {
 	CoinDetailsEncrypted   *CoinDetailsEncrypted
 }
 
-func (outputCoin *OutputCoin) Bytes() {
-
+func (outputCoin *OutputCoin) Bytes() []byte{
+	var out_coin_bytes []byte
+	out_coin_bytes = append(out_coin_bytes,outputCoin.PubKeyLastByteReceiver)
+	out_coin_bytes = append(out_coin_bytes,outputCoin.CoinDetails.Bytes()...)
+	out_coin_bytes = append(out_coin_bytes,outputCoin.CoinDetailsEncrypted.Bytes()...)
+	return out_coin_bytes
 }
 
 func (outputCoin *OutputCoin) SetBytes() {
@@ -53,6 +72,13 @@ type CoinDetailsEncrypted struct {
 	RandomEncrypted []byte
 	SymKeyEncrypted *ElGamalCipherText
 }
+
+func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() [] byte {
+	var res []byte
+	res = append(res,coinDetailsEncrypted.RandomEncrypted...)
+	res = append(res,coinDetailsEncrypted.SymKeyEncrypted.Bytes()...)
+	return res
+	}
 
 func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {
 	/**** Generate symmetric key of AES cryptosystem,
@@ -134,6 +160,8 @@ func (coin *Coin) CommitAll() {
 	coin.CoinCommitment = PedCom.CommitAll(values)
 	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)
 }
+
+
 
 //// CommitPublicKey commits a public key's coin
 //func (coin *Coin) CommitPublicKey() []byte {

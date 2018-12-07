@@ -72,9 +72,7 @@ func (proof *PKComZeroOneProof) Get() *PKComZeroOneProof {
 	return proof
 }
 
-func getindex(bigint *big.Int) int {
-	return 32 - len(bigint.Bytes())
-}
+
 
 // Prove creates a Proof for PedersenCommitment to zero or one
 func (wit *PKComZeroOneWitness) Prove() (*PKComZeroOneProof, error) {

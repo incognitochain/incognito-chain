@@ -58,11 +58,7 @@ func TestRandInt(a *big.Int) bool{
 			zero_count++
 		}
 	}
-	//fmt.Println(zero_count)
-	//fmt.Println(one_count)
-	//fmt.Println(float64(zero_count)/float64(one_count))
 	if math.Abs(1-float64(zero_count)/float64(one_count))<=threshold_test{
-		//fmt.Println("True random")
 		return true
 	}
 	return false
@@ -93,5 +89,18 @@ func ConvertIntToBinary(inum int, n int) []byte {
 
 	return binary
 }
-
+func getindex(bigint *big.Int, stableSz int) int {
+	return  stableSz - len(bigint.Bytes())
+}
+func PadFuckingBigInt(fckBigInt *big.Int, stableSz int) []byte{
+	idx:=getindex(fckBigInt,stableSz)
+	paddedBig:=make([]byte, stableSz)
+	for i:=0;i<idx;i++{
+		paddedBig[i] = byte(0x00)
+	}
+	for i:=idx;i<stableSz;i++{
+		paddedBig[i] = fckBigInt.Bytes()[i-idx]
+	}
+	return paddedBig
+}
 //
