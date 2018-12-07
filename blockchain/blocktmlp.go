@@ -767,25 +767,30 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, rt 
 	loanUnlockTxs := []*transaction.Tx{}
 	removableTxs := []metadata.Transaction{}
 	for _, txDesc := range sourceTxns {
-		if txDesc.Tx.GetType() == common.TxLoanPayment {
-			tx := (txDesc.Tx).(*transaction.TxLoanPayment)
-			_, _, _, err := blockgen.chain.config.DataBase.GetLoanPayment(tx.LoanID)
+		if txDesc.Tx.GetMetadataType() == metadata.LoanPaymentMeta {
+			paymentMeta := txDesc.Tx.GetMetadata().(*metadata.LoanPayment)
+			_, _, _, err := blockgen.chain.config.DataBase.GetLoanPayment(paymentMeta.LoanID)
 			if err != nil {
-				removableTxs = append(removableTxs, tx)
+				removableTxs = append(removableTxs, txDesc.Tx)
 				continue
 			}
 			paymentAmount := uint64(0)
-			for _, desc := range tx.Descs {
+			accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+			dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+			txNormal := txDesc.Tx.(*transaction.Tx)
+			for _, desc := range txNormal.Descs {
 				for _, note := range desc.Note {
-					paymentAmount += note.Value
+					if bytes.Equal(note.Apk[:], dcbPk) {
+						paymentAmount += note.Value
+					}
 				}
 			}
-			if !tx.PayPrinciple { // Only keep interest
+			if !paymentMeta.PayPrinciple { // Only keep interest
 				amount += paymentAmount
 			}
 		} else if txDesc.Tx.GetMetadataType() == metadata.LoanWithdrawMeta {
 			withdrawMeta := txDesc.Tx.GetMetadata().(*metadata.LoanWithdraw)
-			meta, err := blockgen.chain.getLoanRequestMeta(withdrawMeta.LoanID)
+			meta, err := blockgen.chain.GetLoanRequestMeta(withdrawMeta.LoanID)
 			if err != nil {
 				removableTxs = append(removableTxs, txDesc.Tx)
 				continue

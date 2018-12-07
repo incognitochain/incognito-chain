@@ -74,33 +74,6 @@ func (self *BlockChain) ValidateDoubleSpend(tx metadata.Transaction, chainID byt
 	return nil
 }
 
-func (self *BlockChain) ValidateTxLoanPayment(tx metadata.Transaction, chainID byte) error {
-	txPayment, ok := tx.(*transaction.TxLoanPayment)
-	if !ok {
-		return fmt.Errorf("Fail parsing LoanPayment transaction")
-	}
-
-	// Check if a loan request with the same id exists on any chain
-	_, err := self.config.DataBase.GetLoanTxs(txPayment.LoanID)
-	if err != nil {
-		return err
-	}
-
-	// Check if payment amount is correct
-	requestMeta, err := self.getLoanRequestMeta(txPayment.LoanID)
-	if err != nil {
-		return err
-	}
-	_, _, deadline, err := self.config.DataBase.GetLoanPayment(txPayment.LoanID)
-	if err != nil {
-		return err
-	}
-	if txPayment.PayPrinciple && uint32(self.BestState[chainID].Height)+requestMeta.Params.Maturity >= deadline {
-		return fmt.Errorf("Interest must be fully paid before paying principle")
-	}
-	return nil
-}
-
 func (self *BlockChain) GetAmountPerAccount(proposal *transaction.PayoutProposal) (uint64, []string, []uint64, error) {
 	// TODO(@0xsirrush): cache list so that list of receivers is fixed across blocks
 	tokenHolders, err := self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(proposal.TokenID)

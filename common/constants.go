@@ -22,8 +22,6 @@ const (
 	TxAcceptDCBProposal = "ad"  // accept DCB proposal
 	TxAcceptGOVProposal = "ag"  // accept GOV proposal
 
-	TxLoanPayment = "lp" // user makes payment of a loan
-
 	TxDividendPayout     = "td"
 	TxBuyFromGOVRequest  = "bgr"
 	TxBuySellDCBRequest  = "bsdr"

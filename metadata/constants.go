@@ -11,5 +11,6 @@ const (
 	LoanResponseMeta
 	LoanWithdrawMeta
 	LoanUnlockMeta
+	LoanPaymentMeta
 	BuySellRequestMeta
 )

@@ -18,27 +18,27 @@ func NewLoanUnlock(data map[string]interface{}) *LoanUnlock {
 	return &result
 }
 
-func (lw *LoanUnlock) GetType() int {
+func (lu *LoanUnlock) GetType() int {
 	return LoanUnlockMeta
 }
 
-func (lw *LoanUnlock) Hash() *common.Hash {
-	record := string(lw.LoanID)
+func (lu *LoanUnlock) Hash() *common.Hash {
+	record := string(lu.LoanID)
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
-func (lw *LoanUnlock) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
+func (lu *LoanUnlock) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
 	// TODO(@0xbunyip): validate that there's a corresponding TxLoanWithdraw in the same block
 	return true, nil
 }
 
-func (lw *LoanUnlock) ValidateSanityData() (bool, bool, error) {
+func (lu *LoanUnlock) ValidateSanityData() (bool, bool, error) {
 	return true, true, nil // continue checking for fee
 }
 
-func (lw *LoanUnlock) ValidateMetadataByItself() bool {
+func (lu *LoanUnlock) ValidateMetadataByItself() bool {
 	return true
 }
