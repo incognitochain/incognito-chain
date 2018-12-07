@@ -19,7 +19,7 @@ import (
 	"math/big"
 )
 
-func (db *db) StoreNullifiers(nullifier []byte, chainId byte) error {
+func (db *db) StoreSerialNumbers(nullifier []byte, chainId byte) error {
 	key := db.getKey(string(nullifiersPrefix), "")
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
@@ -44,7 +44,7 @@ func (db *db) StoreNullifiers(nullifier []byte, chainId byte) error {
 	return nil
 }
 
-func (db *db) FetchNullifiers(chainID byte) ([][]byte, error) {
+func (db *db) FetchSerialNumbers(chainID byte) ([][]byte, error) {
 	key := db.getKey(string(nullifiersPrefix), "")
 	key = append(key, chainID)
 	res, err := db.lvdb.Get(key, nil)
@@ -61,8 +61,8 @@ func (db *db) FetchNullifiers(chainID byte) ([][]byte, error) {
 	return txs, nil
 }
 
-func (db *db) HasNullifier(nullifier []byte, chainID byte) (bool, error) {
-	listNullifiers, err := db.FetchNullifiers(chainID)
+func (db *db) HasSerialNumber(nullifier []byte, chainID byte) (bool, error) {
+	listNullifiers, err := db.FetchSerialNumbers(chainID)
 	if err != nil {
 		return false, database.NewDatabaseError(database.UnexpectedError, err)
 	}
@@ -74,7 +74,7 @@ func (db *db) HasNullifier(nullifier []byte, chainID byte) (bool, error) {
 	return false, nil
 }
 
-func (db *db) CleanNullifiers() error {
+func (db *db) CleanSerialNumbers() error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(nullifiersPrefix), nil)
 	for iter.Next() {
 		err := db.lvdb.Delete(iter.Key(), nil)

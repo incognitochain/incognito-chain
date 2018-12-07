@@ -169,7 +169,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			Logger.log.Error(err)
 			return err
 		}
-		err = self.dataBase.CleanNullifiers()
+		err = self.dataBase.CleanSerialNumbers()
 		if err != nil {
 			Logger.log.Error(err)
 			return err
