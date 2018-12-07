@@ -6,6 +6,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"log"
 )
 
 type db struct {
@@ -62,11 +63,20 @@ func (db *db) HasValue(key []byte) (bool, error) {
 	return ret, nil
 }
 
-func (db *db) put(key, value []byte) error {
+func (db *db) Put(key, value []byte) error {
 	if err := db.lvdb.Put(key, value, nil); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Put"))
 	}
 	return nil
+}
+
+func (db *db) Get(key []byte) []byte {
+	value, err := db.lvdb.Get(key, nil)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	return value
 }
 
 func (db db) getKey(keyType string, key interface{}) []byte {

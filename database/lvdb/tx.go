@@ -242,8 +242,8 @@ func (db *db) CleanSNDerivator() error {
 
 // StoreFeeEstimator - Store data for FeeEstimator object
 func (db *db) StoreFeeEstimator(val []byte, chainId byte) error {
-	if err := db.put(append(feeEstimator, chainId), val); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.put"))
+	if err := db.Put(append(feeEstimator, chainId), val); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 	return nil
 }
@@ -367,10 +367,10 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}*/
 	value := unspentTx
-	if err := db.put([]byte(key1), value); err != nil {
+	if err := db.Put([]byte(key1), value); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
-	if err := db.put([]byte(key2), []byte(key1)); err != nil {
+	if err := db.Put([]byte(key2), []byte(key1)); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 

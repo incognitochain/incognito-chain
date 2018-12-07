@@ -30,10 +30,10 @@ func (db *db) StoreBlock(v interface{}, chainID byte) error {
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
-	if err := db.put(key, keyB); err != nil {
+	if err := db.Put(key, keyB); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
-	if err := db.put(keyB, val); err != nil {
+	if err := db.Put(keyB, val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 	//fmt.Println("Test Store Block keyB: ", string(keyB))
@@ -43,7 +43,7 @@ func (db *db) StoreBlock(v interface{}, chainID byte) error {
 func (db *db) StoreBlockHeader(v interface{}, hash *common.Hash, chainID byte) error {
 	//fmt.Println("Log in StoreBlockHeader", v, hash, chainID)
 	var (
-		key  = append(append(chainIDPrefix, chainID), append(blockKeyPrefix, hash[:]...)...)
+		key = append(append(chainIDPrefix, chainID), append(blockKeyPrefix, hash[:]...)...)
 		// key should look like this c10{bh-[blockhash]}:{bh-[blockhash]}
 		keyB = append(blockKeyPrefix, hash[:]...)
 		// key should look like this {bh-blockhash}:block
@@ -55,10 +55,10 @@ func (db *db) StoreBlockHeader(v interface{}, hash *common.Hash, chainID byte) e
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
-	if err := db.put(key, keyB); err != nil {
+	if err := db.Put(key, keyB); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
-	if err := db.put(keyB, val); err != nil {
+	if err := db.Put(keyB, val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 	//fmt.Println("Test StoreBlockHeader keyB: ", string(keyB))
@@ -113,7 +113,7 @@ func (db *db) StoreBestState(v interface{}, chainID byte) error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
 	key := append(bestBlockKey, chainID)
-	if err := db.put(key, val); err != nil {
+	if err := db.Put(key, val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
