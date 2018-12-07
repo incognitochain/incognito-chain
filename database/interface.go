@@ -36,7 +36,7 @@ type DatabaseInterface interface {
 	FetchBestState(byte) ([]byte, error)
 	CleanBestState() error
 
-	// Nullifier
+	// SerialNumber
 	StoreSerialNumbers([]byte, byte) error
 	FetchSerialNumbers(byte) ([][]byte, error)
 	HasSerialNumber([]byte, byte) (bool, error)

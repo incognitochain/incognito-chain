@@ -19,8 +19,9 @@ import (
 	"math/big"
 )
 
-func (db *db) StoreSerialNumbers(nullifier []byte, chainId byte) error {
-	key := db.getKey(string(nullifiersPrefix), "")
+// StoreSerialNumbers - store list serialNumbers by chainID
+func (db *db) StoreSerialNumbers(serialNumber []byte, chainId byte) error {
+	key := db.getKey(string(serialNumbersPrefix), "")
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -33,7 +34,7 @@ func (db *db) StoreSerialNumbers(nullifier []byte, chainId byte) error {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
-	txs = append(txs, nullifier)
+	txs = append(txs, serialNumber)
 	b, err := json.Marshal(txs)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
@@ -44,8 +45,9 @@ func (db *db) StoreSerialNumbers(nullifier []byte, chainId byte) error {
 	return nil
 }
 
+// FetchSerialNumbers - Get list SerialNumbers by chainID
 func (db *db) FetchSerialNumbers(chainID byte) ([][]byte, error) {
-	key := db.getKey(string(nullifiersPrefix), "")
+	key := db.getKey(string(serialNumbersPrefix), "")
 	key = append(key, chainID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -61,21 +63,23 @@ func (db *db) FetchSerialNumbers(chainID byte) ([][]byte, error) {
 	return txs, nil
 }
 
-func (db *db) HasSerialNumber(nullifier []byte, chainID byte) (bool, error) {
-	listNullifiers, err := db.FetchSerialNumbers(chainID)
+// HasSerialNumber - Check serialNumber in list SerialNumbers by chainID
+func (db *db) HasSerialNumber(serialNumber []byte, chainID byte) (bool, error) {
+	listSerialNumbers, err := db.FetchSerialNumbers(chainID)
 	if err != nil {
 		return false, database.NewDatabaseError(database.UnexpectedError, err)
 	}
-	for _, item := range listNullifiers {
-		if bytes.Equal(item, nullifier) {
+	for _, item := range listSerialNumbers {
+		if bytes.Equal(item, serialNumber) {
 			return true, nil
 		}
 	}
 	return false, nil
 }
 
+// CleanSerialNumbers - clear all list serialNumber in DB
 func (db *db) CleanSerialNumbers() error {
-	iter := db.lvdb.NewIterator(util.BytesPrefix(nullifiersPrefix), nil)
+	iter := db.lvdb.NewIterator(util.BytesPrefix(serialNumbersPrefix), nil)
 	for iter.Next() {
 		err := db.lvdb.Delete(iter.Key(), nil)
 		if err != nil {
@@ -89,6 +93,7 @@ func (db *db) CleanSerialNumbers() error {
 	return nil
 }
 
+// StoreCommitments - store list commitments by chainID
 func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
 	key := db.getKey(string(commitmentsPrefix), "")
 	key = append(key, chainId)
@@ -114,6 +119,7 @@ func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
 	return nil
 }
 
+// FetchCommitments - Get list commitments by chainID
 func (db *db) FetchCommitments(chainId byte) ([][]byte, error) {
 	key := db.getKey(string(commitmentsPrefix), "")
 	key = append(key, chainId)
@@ -130,6 +136,8 @@ func (db *db) FetchCommitments(chainId byte) ([][]byte, error) {
 	}
 	return txs, nil
 }
+
+// HasCommitment - Check commitment in list commitments by chainID
 func (db *db) HasCommitment(commitment []byte, chainId byte) (bool, error) {
 	listCommitments, err := db.FetchCommitments(chainId)
 	if err != nil {
@@ -143,6 +151,7 @@ func (db *db) HasCommitment(commitment []byte, chainId byte) (bool, error) {
 	return false, nil
 }
 
+// CleanCommitments - clear all list commitments in DB
 func (db *db) CleanCommitments() error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(commitmentsPrefix), nil)
 	for iter.Next() {
@@ -158,6 +167,7 @@ func (db *db) CleanCommitments() error {
 	return nil
 }
 
+// StoreSerialNumbers - store list serialNumbers by chainID
 func (db *db) StoreSNDerivators(data big.Int, chainID byte) error {
 	key := db.getKey(string(snderivatorsPrefix), "")
 	key = append(key, chainID)
@@ -183,6 +193,7 @@ func (db *db) StoreSNDerivators(data big.Int, chainID byte) error {
 	return nil
 }
 
+// FetchSerialNumbers - Get list all SnDerivators by chainID
 func (db *db) FetchSNDerivator(chainID byte) ([]big.Int, error) {
 	key := db.getKey(string(snderivatorsPrefix), "")
 	key = append(key, chainID)
@@ -199,6 +210,8 @@ func (db *db) FetchSNDerivator(chainID byte) ([]big.Int, error) {
 	}
 	return txs, nil
 }
+
+// HasSNDerivator - Check SnDerivator in list SnDerivators by chainID
 func (db *db) HasSNDerivator(data big.Int, chainID byte) (bool, error) {
 	listSNDDerivators, err := db.FetchSNDerivator(chainID)
 	if err != nil {
@@ -212,6 +225,7 @@ func (db *db) HasSNDerivator(data big.Int, chainID byte) (bool, error) {
 	return false, nil
 }
 
+// CleanCommitments - clear all list commitments in DB
 func (db *db) CleanSNDerivator() error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(snderivatorsPrefix), nil)
 	for iter.Next() {
@@ -227,6 +241,7 @@ func (db *db) CleanSNDerivator() error {
 	return nil
 }
 
+// StoreFeeEstimator - Store data for FeeEstimator object
 func (db *db) StoreFeeEstimator(val []byte, chainId byte) error {
 	if err := db.put(append(feeEstimator, chainId), val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.put"))
@@ -234,6 +249,7 @@ func (db *db) StoreFeeEstimator(val []byte, chainId byte) error {
 	return nil
 }
 
+// GetFeeEstimator - Get data for FeeEstimator object as a json in byte format
 func (db *db) GetFeeEstimator(chainId byte) ([]byte, error) {
 	b, err := db.lvdb.Get(append(feeEstimator, chainId), nil)
 	if err != nil {
@@ -242,6 +258,7 @@ func (db *db) GetFeeEstimator(chainId byte) ([]byte, error) {
 	return b, err
 }
 
+// CleanFeeEstimator - Clear FeeEstimator
 func (db *db) CleanFeeEstimator() error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(feeEstimator), nil)
 	for iter.Next() {

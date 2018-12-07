@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"errors"
 	"github.com/ninjadotorg/constant/common/base58"
-	"math/big"
 )
 
 /*
@@ -185,7 +184,6 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
 	nullifiersDb := make(map[byte]([][]byte))
-	snDerivatorsDb := make(map[byte]([]big.Int))
 	commitmentsDb := make(map[byte]([][]byte))
 	//merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
@@ -194,7 +192,6 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
 		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
 		commitmentsDb[chainId] = txViewPoint.ListNullifiers()
-		snDerivatorsDb[chainId] = txViewPoint.ListSnDerivators()
 	}
 	//missing flag for privacy-protocol
 	// false by default
@@ -205,7 +202,6 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		candidateTxsMap[chainIdSender],
 		realFee,
 		commitmentsDb[chainIdSender],
-		snDerivatorsDb[chainIdSender],
 		true)
 	if err != nil {
 		Logger.log.Critical(err)
