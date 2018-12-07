@@ -40,9 +40,9 @@ type PaymentProof struct {
 	ProductCommitmentProof      []*PKComProductProof
 	// for output coins
 	ComOutputOpeningsProof   []*PKComOpeningsProof
+	// for proving each value and sum of them are less than a threshold value
 	ComOutputMultiRangeProof *PKComMultiRangeProof
-	SumOutRangeProof         *PKComMultiRangeProof
-	// for input = output
+		// for input = output
 	ComZeroProof *PKComZeroProof
 	// add list input coins' SN to proof for serial number
 	// these following attributes just exist when tx doesn't have privacy
@@ -79,6 +79,32 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	for i := 0; i < len(paymentProof.ProductCommitmentProof); i++ {
 		proofbytes = append(proofbytes, paymentProof.ProductCommitmentProof[i].Bytes()...)
 	}
+	//ComOutputOpeningsProof
+	proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputOpeningsProof)))
+	for i := 0; i < len(paymentProof.ComOutputOpeningsProof); i++ {
+		proofbytes = append(proofbytes, paymentProof.ComOutputOpeningsProof[i].Bytes()...)
+	}
+	// ComOutputMultiRangeProof
+	proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputMultiRangeProof.Bytes())))
+	proofbytes = append(proofbytes, paymentProof.ComOutputMultiRangeProof.Bytes()...)
+	// ComZeroProof
+	proofbytes = append(proofbytes, byte(len(paymentProof.ComZeroProof.Bytes())))
+	proofbytes = append(proofbytes, paymentProof.ComZeroProof.Bytes()...)
+	//	OutputCoins
+	proofbytes = append(proofbytes, byte(len(paymentProof.OutputCoins))
+	for i := 0; i < len(paymentProof.OutputCoins); i++ {
+		proofbytes = append(proofbytes, paymentProof.OutputCoins[i].Bytes()...)
+	}
+	//	InputCoins
+	proofbytes = append(proofbytes, byte(len(paymentProof.InputCoins)))
+	for i := 0; i < len(paymentProof.InputCoins); i++ {
+		proofbytes = append(proofbytes, paymentProof.InputCoins[i].Bytes()...)
+	}
+	// ComInputSK
+	proofbytes = append(proofbytes, byte(len(paymentProof.ComInputSK)))
+	for
+
+
 
 	return proofbytes
 }
@@ -118,6 +144,17 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 		ProductCommitmentProof[i].SetBytes(proofbytes[offset:offset+privacy.ProductCommitmentProofSize])
 		offset += privacy.ProductCommitmentProofSize
 	}
+	//Set ComOutputOpeningsProof
+	lenComOutputOpeningsProofArray:=int(proofbytes[offset])
+	ComOutputOpeningsProof:=make([]*PKComOpeningsProof, lenComOutputOpeningsProofArray)
+	for i := 0; i < lenComOutputOpeningsProofArray; i++ {
+		ComOutputOpeningsProof[i] = new(PKComOpeningsProof)
+		ComOutputOpeningsProof[i].SetBytes(proofbytes[offset:offset+privacy.ComOutputOpeningsProofSize])
+		offset += privacy.ComOutputOpeningsProofSize
+	}
+
+	// Set InputCoin
+
 }
 
 type PaymentProofByte struct {
@@ -151,44 +188,6 @@ type PaymentProofByte struct {
 	//ComZeroOneProof    []byte
 }
 
-// Bytes converts payment proof to byte array to send verifiers
-//func (paymentProof *PaymentProof) Bytes() []byte {
-//	byteArray := new(PaymentProofByte)
-//	byteArray.lenarrayComInputOpeningsProof = len(paymentProof.ComInputOpeningsProof)
-//	byteArray.lenarrayComOutputOpeningsProof = len(paymentProof.ComOutputOpeningsProof)
-//	byteArray.lenarrayEqualityOfCommittedValProof = len(paymentProof.EqualityOfCommittedValProof)
-//	byteArray.lenarrayOneOfManyProof = len(paymentProof.OneOfManyProof)
-//
-//	byteArray.ComInputOpeningsProof = paymentProof.ComInputOpeningsProof[0].Bytes()
-//	for i := 1; i < byteArray.lenarrayComInputOpeningsProof; i++ {
-//		byteArray.ComInputOpeningsProof = append(byteArray.ComInputOpeningsProof, paymentProof.ComInputOpeningsProof[i].Bytes()...)
-//	}
-//
-//	byteArray.ComOutputOpeningsProof = paymentProof.ComOutputOpeningsProof[0].Bytes()
-//	for i := 1; i < byteArray.lenarrayComOutputOpeningsProof; i++ {
-//		byteArray.ComOutputOpeningsProof = append(byteArray.ComOutputOpeningsProof, paymentProof.ComOutputOpeningsProof[i].Bytes()...)
-//	}
-//
-//	byteArray.EqualityOfCommittedValProof = paymentProof.EqualityOfCommittedValProof[0].Bytes()
-//	for i := 1; i < byteArray.lenarrayEqualityOfCommittedValProof; i++ {
-//		byteArray.EqualityOfCommittedValProof = append(byteArray.EqualityOfCommittedValProof, paymentProof.EqualityOfCommittedValProof[i].Bytes()...)
-//	}
-//
-//	byteArray.OneOfManyProof, _ = paymentProof.OneOfManyProof[0].Bytes()
-//	for i := 1; i < byteArray.lenarrayOneOfManyProof; i++ {
-//		outOfManyProofBytes, _ :=  paymentProof.OneOfManyProof[i].Bytes()
-//		byteArray.OneOfManyProof = append(byteArray.OneOfManyProof, outOfManyProofBytes...)
-//	}
-//
-//	// byteArray.ComMultiRangeProof = paymentProof.ComMultiRangeProof.Bytes()
-//	byteArray.ComZeroProof = paymentProof.ComZeroProof.Bytes()
-//	//byteArray.ComZeroOneProof = paymentProof.ComZeroOneProof.Bytes()
-//	return []byte{0}
-//
-//	//Todo: thunderbird
-//	//
-//
-//}
 
 // END----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -289,7 +288,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 		cmInputSumAll.X, cmInputSumAll.Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputSumAll.X, cmInputSumAll.Y)
 
-		for j := 0; j < numInputCoin*privacy.CMRingSize; j++ {
+		for j := 0; j < numInputCoin*privacy.CMRingSize; j++{
 			commitmentTemps[j].X, commitmentTemps[j].Y = privacy.Curve.Add(commitments[j].X, commitments[j].Y, cmInputSumInverse[j].X, cmInputSumInverse[j].Y)
 		}
 
@@ -452,10 +451,10 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	}
 
 	// Proving that sum of all output values does not exceed v_max
-	proof.SumOutRangeProof, err = wit.SumOutRangeWitness.Prove()
-	if err != nil {
-		return nil, err
-	}
+	//proof.SumOutRangeProof, err = wit.SumOutRangeWitness.Prove()
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	// Proving that sum of all input values is equal to sum of all output values
 	proof.ComZeroProof, err = wit.ComZeroWitness.Prove()
@@ -569,9 +568,9 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 	// }
 
 	// Verify the proof that sum of all output values do not exceed v_max
-	if !pro.SumOutRangeProof.Verify() {
-		return false
-	}
+	//if !pro.SumOutRangeProof.Verify() {
+	//	return false
+	//}
 
 	// Verify the proof that sum of all input values is equal to sum of all output values
 	if !pro.ComZeroProof.Verify() {
