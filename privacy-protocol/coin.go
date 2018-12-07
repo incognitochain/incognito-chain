@@ -26,7 +26,6 @@ type Coin struct {
 	Value          uint64
 	Info           []byte
 	PubKeyLastByte byte
-
 }
 func (coin *Coin) Bytes() []byte {
 	var coin_bytes []byte
@@ -154,9 +153,9 @@ func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey) error {
 	return nil
 }
 
-//CommitAll commits a coin with 4 attributes (public key, value, serial number, r)
+//CommitAll commits a coin with 5 attributes (public key, value, serial number derivator, last byte pk, r)
 func (coin *Coin) CommitAll() {
-	values := []*big.Int{nil, big.NewInt(int64(coin.Value)), coin.SNDerivator, new(big.Int).SetBytes([]byte{coin.PubKeyLastByte}), coin.Randomness}
+	values := []*big.Int{big.NewInt(0), big.NewInt(int64(coin.Value)), coin.SNDerivator, new(big.Int).SetBytes([]byte{coin.PubKeyLastByte}), coin.Randomness}
 	//fmt.Printf("coin info: %v\n", values)
 	coin.CoinCommitment = PedCom.CommitAll(values)
 	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)

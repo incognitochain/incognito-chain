@@ -84,6 +84,9 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		}
 	} else {
 		err := self.StoreBlock(block)
+		if err != nil {
+			return NewBlockChainError(UnExpectedError, err)
+		}
 		if len(block.Transactions) < 1 {
 			Logger.log.Infof("No transaction in this block")
 		} else {
@@ -96,9 +99,6 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 				return NewBlockChainError(UnExpectedError, err)
 			}
 			Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
-		}
-		if err != nil {
-			return NewBlockChainError(UnExpectedError, err)
 		}
 	}
 	// save index of block

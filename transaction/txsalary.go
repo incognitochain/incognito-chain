@@ -16,7 +16,6 @@ func CreateTxSalary(
 	salary uint64,
 	receiverAddr *privacy.PaymentAddress,
 	privKey *privacy.SpendingKey,
-	snDerivators []*big.Int,
 ) (*Tx, error) {
 
 	tx := new(Tx)
@@ -29,9 +28,10 @@ func CreateTxSalary(
 	tx.Proof = new(zkp.PaymentProof)
 	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, 1)
 	tx.Proof.OutputCoins[0] = new(privacy.OutputCoin)
+	tx.Proof.OutputCoins[0].CoinDetails = new(privacy.Coin)
 	tx.Proof.OutputCoins[0].CoinDetails.Value = salary
 	tx.Proof.OutputCoins[0].CoinDetails.PublicKey, _ = privacy.DecompressKey(receiverAddr.Pk)
-	tx.Proof.OutputCoins[0].CoinDetails.PubKeyLastByte = tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()) - 1]
+	tx.Proof.OutputCoins[0].CoinDetails.PubKeyLastByte = tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
 	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
 
 	//sndOut := new(big.Int)
@@ -39,7 +39,6 @@ func CreateTxSalary(
 	for CheckSNDExistence(sndOut) {
 		sndOut = privacy.RandInt()
 	}
-	snDerivators = append(snDerivators, sndOut)
 
 	tx.Proof.OutputCoins[0].CoinDetails.SNDerivator = sndOut
 
@@ -51,7 +50,7 @@ func CreateTxSalary(
 	tx.SigPubKey = receiverAddr.Pk
 	tx.sigPrivKey = *privKey
 	err = tx.SignTx(false)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -77,7 +76,5 @@ func ValidateTxSalary(
 		return false
 	}
 
- return true
+	return true
 }
-
-
