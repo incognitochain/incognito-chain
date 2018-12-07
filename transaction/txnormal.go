@@ -359,6 +359,11 @@ func (tx *Tx) GetMetadata() metadata.Metadata {
 	return tx.Metadata
 }
 
+// SetMetadata sets metadata to tx
+func (tx *Tx) SetMetadata(meta metadata.Metadata) {
+	tx.Metadata = meta
+}
+
 // GetTxVirtualSize computes the virtual size of a given transaction
 func (tx *Tx) GetTxVirtualSize() uint64 {
 	var sizeVersion uint64 = 1  // int8

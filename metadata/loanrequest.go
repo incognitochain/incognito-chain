@@ -57,9 +57,9 @@ func NewLoanRequest(data map[string]interface{}) *LoanRequest {
 	return &result
 }
 
-func (lr *LoanRequest) GetType() int {
-	return LoanRequestMeta
-}
+// func (lr *LoanRequest) GetType() int {
+// 	return LoanRequestMeta
+// }
 
 func (lr *LoanRequest) Hash() *common.Hash {
 	record := string(lr.LoanID)
