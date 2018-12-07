@@ -303,7 +303,7 @@ this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
 	for _, item1 := range view.listNullifiers {
-		err := self.config.DataBase.StoreNullifiers(item1, view.chainID)
+		err := self.config.DataBase.StoreSerialNumbers(item1, view.chainID)
 		if err != nil {
 			return err
 		}
@@ -345,7 +345,7 @@ this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, chainId byte) error {
 	for _, nullifier := range nullifiers {
-		err := self.config.DataBase.StoreNullifiers(nullifier, chainId)
+		err := self.config.DataBase.StoreSerialNumbers(nullifier, chainId)
 		if err != nil {
 			return err
 		}
@@ -377,7 +377,7 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
 		if err != nil {
 			return err
 		}
-		err = self.config.DataBase.StoreNullifiers(desc.CoinDetails.SerialNumber.Compress(), chainId)
+		err = self.config.DataBase.StoreSerialNumbers(desc.CoinDetails.SerialNumber.Compress(), chainId)
 		if err != nil {
 			return err
 		}
@@ -572,7 +572,7 @@ func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 		return nil, err
 	}
 	view.listCommitments = commitments
-	nullifiers, err := self.config.DataBase.FetchNullifiers(chainId)
+	nullifiers, err := self.config.DataBase.FetchSerialNumbers(chainId)
 	if err != nil {
 		return nil, err
 	}

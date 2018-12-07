@@ -70,7 +70,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(block *Block, db database.Datab
 	}
 	for _, item := range proof.InputCoins {
 		serialNum := item.CoinDetails.SerialNumber.Compress()
-		temp, err := db.HasNullifier(serialNum, block.Header.ChainID)
+		temp, err := db.HasSerialNumber(serialNum, block.Header.ChainID)
 		if err != nil {
 			return nil, nil, nil, err
 		}
