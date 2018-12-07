@@ -38,7 +38,7 @@ func CreateTxSalary(
 
 	//sndOut := new(big.Int)
 	sndOut := privacy.RandInt()
-	for CheckSNDExistence(sndOut) {
+	for common.CheckSNDExistence(sndOut) {
 		sndOut = privacy.RandInt()
 	}
 
@@ -64,7 +64,7 @@ func ValidateTxSalary(
 ) bool {
 
 	// check whether output coin's SND exists in SND list or not
-	if CheckSNDExistence(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator) {
+	if common.CheckSNDExistence(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator) {
 		return false
 	}
 

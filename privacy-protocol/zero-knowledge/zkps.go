@@ -354,9 +354,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	wit.ComOutputMultiRangeWitness.Set(outputValue, 64)
 	// ------------------------
 
-	// TODO Zero Or One
-
-	// For check Sum(Input's value) == Sum(Output's Value)
+	// Build witness for proving Sum(Input's value) == Sum(Output's Value)
 	cmOutputSumAllInverse, _ = cmOutputSumAll.Inverse()
 	cmEqualCoinValue := new(privacy.EllipticPoint)
 	cmEqualCoinValue.X, cmEqualCoinValue.Y = privacy.Curve.Add(cmInputSumAll.X, cmInputSumAll.Y, cmOutputSumAllInverse.X, cmOutputSumAllInverse.Y)

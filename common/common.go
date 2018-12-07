@@ -359,3 +359,14 @@ func ToBytes(obj interface{}) []byte {
 	json.NewEncoder(buff).Encode(obj)
 	return buff.Bytes()
 }
+
+// CheckSND return true if snd exists in snDerivators list
+func CheckSNDExistence(snd *big.Int) bool {
+	//todo: query from db to get snDerivators
+	return false
+}
+
+// CheckDuplicate returns true if there are at least 2 elements in array have same values
+func CheckDuplicate(arr []*big.Int) bool {
+	return false
+}

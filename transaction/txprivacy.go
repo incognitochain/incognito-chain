@@ -174,13 +174,13 @@ func (tx *Tx) CreateTx(
 
 		for i := 0; i < len(paymentInfo); i++ {
 			sndOut = privacy.RandInt()
-			for CheckSNDExistence(sndOut) {
+			for common.CheckSNDExistence(sndOut) {
 				sndOut = privacy.RandInt()
 			}
 			sndOuts = append(sndOuts, sndOut)
 		}
 
-		ok = CheckDuplicate(sndOuts)
+		ok = common.CheckDuplicate(sndOuts)
 	}
 
 	// create new output coins with info: Pk, value, last byte of pk, snd
@@ -468,13 +468,4 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 }
 
 // todo: thunderbird
-// CheckSND return true if snd exists in snDerivators list
-func CheckSNDExistence(snd *big.Int) bool {
-	//todo: query from db to get snDerivators
-	return false
-}
 
-// CheckDuplicate returns true if there are at least 2 elements in array have same values
-func CheckDuplicate(arr []*big.Int) bool {
-	return false
-}
