@@ -7,8 +7,6 @@ import (
 )
 
 func TestRand(t* testing.T){
-	for i:=0;i<100;i++{
 	a:=privacy.RandInt()
-	fmt.Println(a)
-	}
+	fmt.Println(a.Sub(a,privacy.Curve.Params().N))
 }

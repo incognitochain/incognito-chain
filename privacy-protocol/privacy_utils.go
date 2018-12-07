@@ -40,7 +40,7 @@ func RandInt() *big.Int {
 		Int_bytes[i] = RandByte()
 		}
 		randNum :=new(big.Int).SetBytes(Int_bytes)
-		if(TestRandInt(randNum)){
+		if(TestRandInt(randNum) && randNum.Cmp(Curve.Params().N)==-1){
 			return randNum
 		}
 	}

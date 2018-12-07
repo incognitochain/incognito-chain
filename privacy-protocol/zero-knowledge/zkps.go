@@ -24,8 +24,8 @@ type PaymentWitness struct {
 	ProductCommitmentWitness      []*PKComProductWitness
 
 	ComOutputOpeningsWitness   []*PKComOpeningsWitness
+
 	ComOutputMultiRangeWitness *PKComMultiRangeWitness
-	SumOutRangeWitness         *PKComMultiRangeWitness
 
 	ComZeroWitness *PKComZeroWitness
 	//ComZeroOneWitness             *PKComZeroOneWitness
@@ -42,6 +42,8 @@ type PaymentProof struct {
 	ComOutputOpeningsProof []*PKComOpeningsProof
 	// for proving each value and sum of them are less than a threshold value
 	ComOutputMultiRangeProof *PKComMultiRangeProof
+	// for proving that the last element of output array is really the sum of all other values
+	SumOutRangeProof 				 *PKComZeroProof
 	// for input = output
 	ComZeroProof *PKComZeroProof
 	// add list input coins' SN to proof for serial number
@@ -100,11 +102,17 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	for i := 0; i < len(paymentProof.InputCoins); i++ {
 		proofbytes = append(proofbytes, paymentProof.InputCoins[i].Bytes()...)
 	}
-	// ComInputSK
+	//
+
+
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComInputSK)))*/
 
 	return proofbytes
 }
+
+
+
+
 func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 	offset := 0
 	// Set ComInputOpeningsProof
@@ -149,43 +157,14 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 		ComOutputOpeningsProof[i].SetBytes(proofbytes[offset:offset+privacy.ComOutputOpeningsProofSize])
 		offset += privacy.ComOutputOpeningsProofSize
 	}
-
 	// Set InputCoin
-
 }
-
-type PaymentProofByte struct {
-	lenarrayComInputOpeningsProof       int
-	lenarrayComOutputOpeningsProof      int
-	lenarrayEqualityOfCommittedValProof int
-	lenarrayOneOfManyProof              int
-
-	//It should be constants
-	lenComInputOpeningsProof       int
-	lenComOutputOpeningsProof      int
-	lenOneOfManyProof              int //
-	lenEqualityOfCommittedValProof int
-	lenComMultiRangeProof          int
-	lenComZeroProof                int
-	lenComZeroOneProof             int
-
-	/**** proof ****/
-	// for input coins
-	ComInputOpeningsProof       []byte
-	OneOfManyProof              []byte
-	EqualityOfCommittedValProof []byte
-	ProductCommitmentProof      []byte
-	// for output coins
-	ComOutputOpeningsProof   []byte
-	ComOutputMultiRangeProof []byte
-	SumOutRangeProof         []byte
-
-	// for input = output
-	ComZeroProof []byte
-	//ComZeroOneProof    []byte
-}
-
 // END----------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
 
 func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 	wit.spendingKey = spendingKey
@@ -291,9 +270,22 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		wit.OneOfManyWitness[i].Set(commitmentTemps, commitmentIndexs, rndInputIsZero, myCommitmentIndexs[i], privacy.SK)
 
 		/***** Build witness for proving that serial number is derived from the committed derivator *****/
-		//wit.EqualityOfCommittedValWitness[i].Set([]*privacy.EllipticPoint{cmInputSNDIndexSK[i], cmInputSND[i]}, indexZKPEqual, []*big.Int{inputCoins[i].CoinDetails.SNDerivator, randInputSK, randInputSND[i]})
+		wit.EqualityOfCommittedValWitness[i].Set([]*privacy.EllipticPoint{cmInputSNDIndexSK[i], cmInputSND[i]}, indexZKPEqual, []*big.Int{inputCoins[i].CoinDetails.SNDerivator, randInputSK, randInputSND[i]})
 		// TODO Product Commitment
 		// Todo: 0xthunderbird
+		// Thunderbird have built witness for product commitment
+		/****Build witness for proving that the commitment of serial number is equivalent to Mul(com(sk), com(snd))****/
+		witnesssA := new(big.Int)
+		witnesssA.Add(wit.spendingKey,inputCoins[i].CoinDetails.SNDerivator)
+		randA:=new(big.Int)
+		randA.Add(randInputSK,randInputSND[i])
+		witnessAInverse:=new(big.Int)
+		witnessAInverse.ModInverse(witnesssA,privacy.Curve.Params().N)
+		randAInverse:=privacy.RandInt()
+		cmInputInverseSum:=privacy.PedCom.CommitAtIndex(witnessAInverse,randAInverse,privacy.SK)
+		witIndex:=new(byte)
+		*witIndex = privacy.SK
+		wit.ProductCommitmentWitness[i].Set(witnesssA,randA,cmInputInverseSum,witIndex)
 		// ------------------------------
 	}
 
@@ -345,8 +337,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	// For Multi Range Protocol
 	// proving each output value is less than vmax
 	// proving sum of output values is less than vmax
-	// TODO wit.ComOutputMultiRangeWitness.Set(???)
-	// Todo: 0xthunderbird
+
 	outputValue := make([]*big.Int, numOutputCoin)
 	for i := 0; i < numOutputCoin; i++ {
 		outputValue[i] = big.NewInt(int64(proof.OutputCoins[i].CoinDetails.Value))
@@ -438,17 +429,16 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 		}
 	}
 
-	// Proving that each output values does not exceed v_max
-	/*proof.ComOutputMultiRangeProof, err = wit.ComOutputMultiRangeWitness.Prove()
-	if err != nil {
+	// Proving that each output values and sum of them does not exceed v_max
+	proof.ComOutputMultiRangeProof, err = wit.ComOutputMultiRangeWitness.Prove()
+	var err1 error
+	proof.SumOutRangeProof, err = wit.ComOutputMultiRangeWitness.ProveSum()
+	if err != nil && err1 != nil{
 		return nil, err
-	}*/
+	}
 
-	// Proving that sum of all output values does not exceed v_max
-	//proof.SumOutRangeProof, err = wit.SumOutRangeWitness.Prove()
-	//if err != nil {
-	//	return nil, err
-	//}
+
+
 
 	// Proving that sum of all input values is equal to sum of all output values
 	/*proof.ComZeroProof, err = wit.ComZeroWitness.Prove()
@@ -555,17 +545,14 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey) bool {
 			return false
 		}
 	}
-
-	// Verify the proof that output values do not exceed v_max
-	// if !pro.ComMultiRangeProof.Verify() {
-	// 	return false
-	// }
-
-	// Verify the proof that sum of all output values do not exceed v_max
-	//if !pro.SumOutRangeProof.Verify() {
-	//	return false
-	//}
-
+	//Verify the proof that output values and sum of them do not exceed v_max
+	if !pro.ComOutputMultiRangeProof.Verify() {
+		return false
+	}
+	// Verify the last values of array is really the sum of all output value
+	if !pro.ComOutputMultiRangeProof.VerifySum(pro.SumOutRangeProof){
+		return false
+	}
 	// Verify the proof that sum of all input values is equal to sum of all output values
 	if !pro.ComZeroProof.Verify() {
 		return false
