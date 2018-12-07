@@ -178,8 +178,8 @@ type VerifyOptions struct {
 	Intermediates *CertPool
 	Roots         *CertPool // if nil, the system roots are used
 	CurrentTime   time.Time // if zero, the current time is used
-	// KeyUsage specifies which Extended Key Usage values are acceptable.
-	// An empty list means ExtKeyUsageServerAuth. Key usage is considered a
+	// KeyUsage specifies which Extended PubKey Usage values are acceptable.
+	// An empty list means ExtKeyUsageServerAuth. PubKey usage is considered a
 	// constraint down the chain which mirrors Windows CryptoAPI behavior,
 	// but not the spec. To accept any key usage, include ExtKeyUsageAny.
 	KeyUsages []ExtKeyUsage
@@ -787,7 +787,7 @@ func (c *Certificate) isValid(certType int, currentChain []*Certificate, opts *V
 // the name being validated. Note that DirectoryName constraints are not
 // supported.
 //
-// Extended Key Usage values are enforced down a chain, so an intermediate or
+// Extended PubKey Usage values are enforced down a chain, so an intermediate or
 // root that enumerates EKUs prevents a leaf from asserting an EKU not in that
 // list.
 //

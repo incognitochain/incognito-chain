@@ -9,23 +9,28 @@ const (
 	ThresholdRatioOfGovCrisis = 90
 
 	// Mainnet
-	Mainnet                           = 0x01
-	MainetName                        = "mainnet"
-	MainnetDefaultPort                = "9333"
-	MainnetInitFundSalary             = 0
-	MainnetInitDCBToken               = 0
-	MainnetInitGovToken               = 0
-	MainnetInitCmBToken               = 0
-	MainnetInitBondToken              = 0
+	Mainnet               = 0x01
+	MainetName            = "mainnet"
+	MainnetDefaultPort    = "9333"
+	MainnetInitFundSalary = 0
+	MainnetInitDCBToken   = 0
+	MainnetInitGovToken   = 0
+	MainnetInitCmBToken   = 0
+	MainnetInitBondToken  = 0
+	MainnetVote
 	MainnetGenesisblockPaymentAddress = "1UuyYcHgVFLMd8Qy7T1ZWRmfFvaEgogF7cEsqY98ubQjoQUy4VozTqyfSNjkjhjR85C6GKBmw1JKekgMwCeHtHex25XSKwzb9QPQ2g6a3"
 
 	// Testnet
-	Testnet                           = 0x02
-	TestnetName                       = "testnet"
-	TestnetDefaultPort                = "9444"
-	TestnetInitFundSalary             = 1000000000000000
-	TestnetInitDCBToken               = 10000
-	TestnetInitGovToken               = 10000
+	Testnet               = 0x02
+	TestnetName           = "testnet"
+	TestnetDefaultPort    = "9444"
+	TestnetInitFundSalary = 1000000000000000
+	TestnetInitDCBToken   = 10000
+	TestnetInitGovToken   = 10000
+
+	//board and proposal parameters
+	NumberOfDCBGovernors              = 50
+	NumberOfGOVGovernors              = 50
 	TestnetInitCmBToken               = 10000
 	TestnetInitBondToken              = 10000
 	TestnetGenesisBlockPaymentAddress = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
@@ -33,11 +38,13 @@ const (
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	BondTokenID = [common.HashSize]byte{0, 0, 0, 0, 0, 0, 0, 0}
-	DCBTokenID  = [common.HashSize]byte{1}
-	GOVTokenID  = [common.HashSize]byte{2}
-	CMBTokenID  = [common.HashSize]byte{3}
-	ConstantID  = [common.HashSize]byte{4} // To send Constant in custom token
+	BondTokenID    = [common.HashSize]byte{0, 0, 0, 0, 0, 0, 0, 0}
+	DCBTokenID     = [common.HashSize]byte{1}
+	GOVTokenID     = [common.HashSize]byte{2}
+	CMBTokenID     = [common.HashSize]byte{3}
+	ConstantID     = [common.HashSize]byte{4} // To send Constant in custom token
+	VoteDCBTokenID = [common.HashSize]byte{5}
+	VoteGOVTokenID = [common.HashSize]byte{6}
 )
 
 const (

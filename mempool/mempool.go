@@ -190,7 +190,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 
 	// sanity data
 	// if validate, errS := tp.ValidateSanityData(tx); !validate {
-	if validated, errS := tx.ValidateSanityData(); !validated {
+	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
 		err := MempoolTxError{}
 		err.Init(RejectSansityTx, errors.New(fmt.Sprintf("transaction's sansity %v is error %v", txHash.String(), errS.Error())))
 		return nil, nil, err
@@ -613,7 +613,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 // 		{
 // 			return blockChain.ValidateTxBuySellDCBResponse(tx, chainID)
 // 		}
-// 	case common.TxSubmitDCBProposal:
+// 	case common.SubmitDCBProposal:
 // 		{
 // 			return blockChain.ValidateTxSubmitDCBProposal(tx, chainID)
 // 		}
@@ -621,11 +621,11 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 // 		{
 // 			return blockChain.ValidateTxAcceptDCBProposal(tx, chainID)
 // 		}
-// 	case common.TxVoteDCBProposal:
+// 	case common.VoteDCBProposal:
 // 		{
 // 			return blockChain.ValidateTxVoteDCBProposal(tx, chainID)
 // 		}
-// 	case common.TxSubmitGOVProposal:
+// 	case common.SubmitGOVProposal:
 // 		{
 // 			return blockChain.ValidateTxSubmitGOVProposal(tx, chainID)
 // 		}
@@ -633,7 +633,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 // 		{
 // 			return blockChain.ValidateTxAcceptGOVProposal(tx, chainID)
 // 		}
-// 	case common.TxVoteGOVProposal:
+// 	case common.VoteGOVProposal:
 // 		{
 // 			return blockChain.ValidateTxVoteGOVProposal(tx, chainID)
 // 		}

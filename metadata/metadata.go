@@ -60,12 +60,14 @@ type BlockchainRetriever interface {
 	GetNulltifiersList(byte) ([][]byte, error)
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetDCBParams() params.DCBParams
-	GetDCBBoardPubKeys() []string
+	GetDCBBoardPubKeys() [][]byte
 	GetGOVParams() params.GOVParams
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
 
 	// For validating loan metadata
 	GetLoanTxs([]byte) ([][]byte, error)
+	GetNumberOfDCBGovernors() int
+	GetNumberOfGOVGovernors() int
 	GetLoanPayment([]byte) (uint64, uint64, uint32, error)
 	GetLoanRequestMeta([]byte) (*LoanRequest, error)
 
@@ -78,7 +80,7 @@ type Metadata interface {
 	Hash() *common.Hash
 	CheckTransactionFee(Transaction, uint64) bool
 	ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte) (bool, error)
-	ValidateSanityData(Transaction) (bool, bool, error)
+	ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
 }
 
@@ -97,7 +99,7 @@ type Transaction interface {
 	IsSalaryTx() bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
 	ValidateTxWithBlockChain(BlockchainRetriever, byte) error
-	ValidateSanityData() (bool, error)
+	ValidateSanityData(BlockchainRetriever) (bool, error)
 	ValidateTxByItself(BlockchainRetriever) bool
 	GetMetadata() Metadata
 	SetMetadata(Metadata)

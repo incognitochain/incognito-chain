@@ -105,7 +105,7 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	return true, nil
 }
 
-func (lw *LoanWithdraw) ValidateSanityData(txr Transaction) (bool, bool, error) {
+func (lw *LoanWithdraw) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(lw.Key) != LoanKeyLength {
 		return false, false, nil
 	}

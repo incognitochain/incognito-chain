@@ -14,6 +14,19 @@ const (
 	LoanPaymentMeta
 	BuySellRequestMeta
 	DividendMeta
+
+	//Voting
+	SubmitDCBProposalMeta
+	VoteDCBProposalMeta
+	VoteDCBBoardMeta
+	AcceptDCBProposalMeta
+	AcceptDCBBoardMeta
+
+	SubmitGOVProposalMeta
+	VoteGOVProposalMeta
+	VoteGOVBoardMeta
+	AcceptGOVProposalMeta
+	AcceptGOVBoardMeta
 )
 
 const (

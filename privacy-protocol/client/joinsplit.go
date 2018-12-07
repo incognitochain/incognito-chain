@@ -7,9 +7,9 @@ import (
 	"log"
 	"time"
 
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/proto/zksnark"
 	"google.golang.org/grpc"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type JSInput struct {
@@ -165,7 +165,7 @@ func Prove(inputs []*JSInput,
 		fmt.Printf("zkNotes[%d].Note.PaymentAddress: %x\n", i, zkout.Apk)
 	}
 
-	var r *zksnark.ProveReply;
+	var r *zksnark.ProveReply
 	if !noPrivacy {
 		r, err = c.Prove(ctx, proveRequest)
 	} else {
@@ -280,7 +280,7 @@ func JSInputs2ZkInputs(inputs []*JSInput) []*zksnark.JSInput {
 			zkinput.WitnessPath.AuthPath = append(zkinput.WitnessPath.AuthPath, &zksnark.MerkleHash{Hash: hash})
 		}
 		copy(zkinput.SpendingKey, (*input.Key)[:])
-		// fmt.Printf("zkinput.SpendingKey: %x %x\n", zkinput.SpendingKey, input.Key)
+		// fmt.Printf("zkinput.SpendingKey: %x %x\n", zkinput.SpendingKey, input.PubKey)
 
 		zkinput.Note = Note2ZksnarkNote(input.InputNote)
 

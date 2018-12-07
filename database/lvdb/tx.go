@@ -5,21 +5,22 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/transaction"
 	"strconv"
 	"strings"
 
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/transaction"
+
 	"github.com/ninjadotorg/constant/database"
 
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 func (db *db) StoreNullifiers(nullifier []byte, chainId byte) error {
-	key := db.getKey(string(nullifiersPrefix), "")
+	key := db.GetKey(string(nullifiersPrefix), "")
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -44,7 +45,7 @@ func (db *db) StoreNullifiers(nullifier []byte, chainId byte) error {
 }
 
 func (db *db) FetchNullifiers(chainID byte) ([][]byte, error) {
-	key := db.getKey(string(nullifiersPrefix), "")
+	key := db.GetKey(string(nullifiersPrefix), "")
 	key = append(key, chainID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -89,7 +90,7 @@ func (db *db) CleanNullifiers() error {
 }
 
 func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
-	key := db.getKey(string(commitmentsPrefix), "")
+	key := db.GetKey(string(commitmentsPrefix), "")
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -114,7 +115,7 @@ func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
 }
 
 func (db *db) FetchCommitments(chainId byte) ([][]byte, error) {
-	key := db.getKey(string(commitmentsPrefix), "")
+	key := db.GetKey(string(commitmentsPrefix), "")
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -220,16 +221,16 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 
 	res, err := db.lvdb.Get([]byte(key), nil)
 	if err != nil {
-		return nil, -1, err;
+		return nil, -1, err
 	}
 	reses := strings.Split(string(res), (string(splitter)))
 	hash, err := common.Hash{}.NewHashFromStr(reses[0])
 	if err != nil {
-		return nil, -1, err;
+		return nil, -1, err
 	}
 	index, err := strconv.Atoi(reses[1])
 	if err != nil {
-		return nil, -1, err;
+		return nil, -1, err
 	}
 	fmt.Println("BlockHash", hash, "Transaction index", index)
 	return hash, index, nil
@@ -237,8 +238,8 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 
 /*
 	Store Transaction in Light mode
-	1. Key -> value : prefix(privateky)privateKey-[-]-chainId-[-]-(999999999 - blockHeight)-[-]-(999999999 - txIndex) 		-> 		tx
-	2. Key -> value :							prefix(transaction)txHash 												->  	privateKey-chainId-blockHeight-txIndex
+	1. PubKey -> VoteAmount : prefix(privateky)privateKey-[-]-chainId-[-]-(999999999 - blockHeight)-[-]-(999999999 - txIndex) 		-> 		tx
+	2. PubKey -> VoteAmount :							prefix(transaction)txHash 												->  	privateKey-chainId-blockHeight-txIndex
 
 */
 func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, unspentTx *transaction.Tx) error {
@@ -252,13 +253,13 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 
 	// Uncomment this to test little endian encoding and decoding
 	/*
-	buf := bytes.NewBuffer(reverseBlockHeight)
-	var temp uint32
-	err1 := binary.Read(buf, binary.LittleEndian, &temp)
-	if err1 != nil {
-		return err1
-	}
-	fmt.Println("Testing encoding and decoding uint32 little endian", uint32(999999999-temp), blockHeight)
+		buf := bytes.NewBuffer(reverseBlockHeight)
+		var temp uint32
+		err1 := binary.Read(buf, binary.LittleEndian, &temp)
+		if err1 != nil {
+			return err1
+		}
+		fmt.Println("Testing encoding and decoding uint32 little endian", uint32(999999999-temp), blockHeight)
 	*/
 
 	//fmt.Println("StoreTransactionLightMode reverseBlockHeight in byte", reverseBlockHeight, []byte(string(reverseBlockHeight)))
@@ -295,7 +296,7 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 /*
 	Get Transaction in Light mode
 	Get transaction by prefix(privateKey)privateKey, this prefix help to get all transaction belong to that privatekey
-	1. Key -> value : prefix(privateky)-privateKey-chainId-(999999999 - blockHeight)-(999999999 - txIndex) 		-> 		tx
+	1. PubKey -> VoteAmount : prefix(privateky)-privateKey-chainId-(999999999 - blockHeight)-(999999999 - txIndex) 		-> 		tx
 
 */
 func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKey) (map[byte][]transaction.Tx, error) {
@@ -305,7 +306,7 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKe
 	for iter.Next() {
 		key := iter.Key()
 		value := iter.Value()
-		fmt.Println("GetTransactionLightModeByPrivateKey, key", string(key))
+		fmt.Println("GetTransactionLightModeByPrivateKey, PubKey", string(key))
 		reses := strings.Split(string(key), string(splitter))
 		tempChainId, _ := strconv.Atoi(reses[2])
 		chainId := byte(tempChainId)
@@ -328,16 +329,16 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKe
 */
 func (db *db) GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, error) {
 	key := string(transactionKeyPrefix) + txId.String()
-	fmt.Println("GetTransactionLightModeByHash - key", key)
+	fmt.Println("GetTransactionLightModeByHash - PubKey", key)
 	_, err := db.hasValue([]byte(key))
 	if err != nil {
 		fmt.Println("ERROR in finding transaction id", txId.String(), err)
 		return nil, nil, err
 	}
 	value, err := db.lvdb.Get([]byte(key), nil)
-	fmt.Println("GetTransactionLightModeByHash - value", value)
+	fmt.Println("GetTransactionLightModeByHash - VoteAmount", value)
 	if err != nil {
-		return nil, nil, err;
+		return nil, nil, err
 	}
 	_, err1 := db.hasValue([]byte(value))
 	if err1 != nil {
@@ -346,7 +347,7 @@ func (db *db) GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, 
 	}
 	tx, err := db.lvdb.Get([]byte(value), nil)
 	if err != nil {
-		return nil, nil, err;
+		return nil, nil, err
 	}
 	return value, tx, nil
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 // TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -116,8 +117,8 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	return customTokenTx.validateDoubleSpendCustomTokenWithBlockchain(bcr)
 }
 
-func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData() (bool, error) {
-	ok, err := txCustomToken.Tx.ValidateSanityData()
+func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
+	ok, err := txCustomToken.Tx.ValidateSanityData(bcr)
 	if err != nil || !ok {
 		return ok, err
 	}
@@ -153,14 +154,14 @@ func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData() (bool, err
 	return true, nil
 }
 
-func (customTokenTx *TxCustomToken) ValidateSanityData() (bool, error) {
+func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
 	if customTokenTx.Metadata != nil {
-		isContinued, ok, err := customTokenTx.Metadata.ValidateSanityData(customTokenTx)
+		isContinued, ok, err := customTokenTx.Metadata.ValidateSanityData(bcr, customTokenTx)
 		if err != nil || !ok || !isContinued {
 			return ok, err
 		}
 	}
-	return customTokenTx.validateCustomTokenTxSanityData()
+	return customTokenTx.validateCustomTokenTxSanityData(bcr)
 }
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
@@ -376,4 +377,16 @@ func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset cashec.KeySet) ([]byte
 	buff := new(bytes.Buffer)
 	json.NewEncoder(buff).Encode(tx)
 	return keyset.Sign(buff.Bytes())
+}
+
+func (tx *TxCustomToken) GetAmountOfVote() uint64 {
+	sum := uint64(0)
+	for _, vout := range tx.TxTokenData.Vouts {
+		voteAccount, _ := wallet.Base58CheckDeserialize(common.VoteAddress)
+		pubKey := string(voteAccount.KeySet.PaymentAddress.Pk)
+		if string(vout.PaymentAddress.Pk) == string(pubKey) {
+			sum += vout.Value
+		}
+	}
+	return sum
 }

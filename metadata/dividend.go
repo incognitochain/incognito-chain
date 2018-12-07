@@ -83,7 +83,7 @@ func (div *Dividend) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRet
 	return false, nil
 }
 
-func (div *Dividend) ValidateSanityData(txr Transaction) (bool, bool, error) {
+func (div *Dividend) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	return false, true, nil // No need to check for fee
 }
 

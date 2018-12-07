@@ -71,7 +71,7 @@ func (self *BlockChain) GetHeight() int32 {
 	return self.BestState[0].BestBlock.Header.Height
 }
 
-func (self *BlockChain) GetDCBBoardPubKeys() []string {
+func (self *BlockChain) GetDCBBoardPubKeys() [][]byte {
 	return self.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys
 }
 
@@ -668,10 +668,40 @@ func (self *BlockChain) UpdateDividendPayout(block *Block) error {
 	return nil
 }
 
+func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
+	DCBEndedBlock := block.Header.DCBGovernor.EndBlock
+	GOVEndedBlock := block.Header.GOVGovernor.EndBlock
+	for _, tx := range block.Transactions {
+		switch tx.GetMetadataType() {
+		case metadata.VoteDCBBoardMeta:
+			{
+				tx := tx.(*transaction.TxCustomToken)
+				voteAmount := tx.GetAmountOfVote()
+				voteDCBBoardMetadata := tx.Metadata.(*metadata.VoteDCBBoardMetadata)
+				err := self.config.DataBase.AddVoteDCBBoard(DCBEndedBlock, tx.TxTokenData.Vins[0].PaymentAddress.Pk, voteDCBBoardMetadata.CandidatePubKey, voteAmount)
+				if err != nil {
+					return err
+				}
+			}
+		case metadata.VoteGOVBoardMeta:
+			{
+				tx := tx.(*transaction.TxCustomToken)
+				voteAmount := tx.GetAmountOfVote()
+				voteGOVBoardMetadata := tx.Metadata.(*metadata.VoteGOVBoardMetadata)
+				err := self.config.DataBase.AddVoteGOVBoard(GOVEndedBlock, tx.TxTokenData.Vins[0].PaymentAddress.Pk, voteGOVBoardMetadata.CandidatePubKey, voteAmount)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
 func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 	for _, tx := range block.Transactions {
-		switch tx.GetType() {
-		case common.TxAcceptDCBProposal:
+		switch tx.GetMetadataType() {
+		case metadata.VoteDCBBoardMeta:
 			{
 				txAccepted := tx.(*transaction.TxAcceptDCBProposal)
 				_, _, _, getTx, err := self.GetTransactionByHash(txAccepted.DCBProposalTXID)
@@ -808,7 +838,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 						LockTime: tx.LockTime,
 						Descs:    make([]*transaction.JoinSplitDesc, 0),
 					}
-					// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
+					// try to decrypt each of desc in tx with readonly PubKey and add to txsInBlockAccepted
 					listDesc := make([]*transaction.JoinSplitDesc, 0)
 					for _, desc := range tx.Descs {
 						copyDesc := &transaction.JoinSplitDesc{
@@ -891,7 +921,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock metadata.Transaction, nullifier
 		Descs:           make([]*transaction.JoinSplitDesc, 0),
 		AddressLastByte: tx.AddressLastByte,
 	}
-	// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
+	// try to decrypt each of desc in tx with readonly PubKey and add to txsInBlockAccepted
 	listDesc := make([]*transaction.JoinSplitDesc, 0)
 	for _, desc := range tx.Descs {
 		copyDesc := &transaction.JoinSplitDesc{
@@ -1290,4 +1320,11 @@ func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]ui
 
 func (self *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {
 	return self.config.customTokenRewardSnapshot
+}
+
+func (self *BlockChain) GetNumberOfDCBGovernors() int {
+	return NumberOfDCBGovernors
+}
+func (self *BlockChain) GetNumberOfGOVGovernors() int {
+	return NumberOfGOVGovernors
 }
