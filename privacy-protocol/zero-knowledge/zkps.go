@@ -39,10 +39,10 @@ type PaymentProof struct {
 	EqualityOfCommittedValProof []*PKEqualityOfCommittedValProof
 	ProductCommitmentProof      []*PKComProductProof
 	// for output coins
-	ComOutputOpeningsProof   []*PKComOpeningsProof
+	ComOutputOpeningsProof []*PKComOpeningsProof
 	// for proving each value and sum of them are less than a threshold value
 	ComOutputMultiRangeProof *PKComMultiRangeProof
-		// for input = output
+	// for input = output
 	ComZeroProof *PKComZeroProof
 	// add list input coins' SN to proof for serial number
 	// these following attributes just exist when tx doesn't have privacy
@@ -91,7 +91,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComZeroProof.Bytes())))
 	proofbytes = append(proofbytes, paymentProof.ComZeroProof.Bytes()...)
 	//	OutputCoins
-	proofbytes = append(proofbytes, byte(len(paymentProof.OutputCoins))
+	proofbytes = append(proofbytes, byte(len(paymentProof.OutputCoins)))
 	for i := 0; i < len(paymentProof.OutputCoins); i++ {
 		proofbytes = append(proofbytes, paymentProof.OutputCoins[i].Bytes()...)
 	}
@@ -102,9 +102,6 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	}
 	// ComInputSK
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComInputSK)))
-	for
-
-
 
 	return proofbytes
 }
@@ -145,8 +142,8 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 		offset += privacy.ProductCommitmentProofSize
 	}
 	//Set ComOutputOpeningsProof
-	lenComOutputOpeningsProofArray:=int(proofbytes[offset])
-	ComOutputOpeningsProof:=make([]*PKComOpeningsProof, lenComOutputOpeningsProofArray)
+	lenComOutputOpeningsProofArray := int(proofbytes[offset])
+	ComOutputOpeningsProof := make([]*PKComOpeningsProof, lenComOutputOpeningsProofArray)
 	for i := 0; i < lenComOutputOpeningsProofArray; i++ {
 		ComOutputOpeningsProof[i] = new(PKComOpeningsProof)
 		ComOutputOpeningsProof[i].SetBytes(proofbytes[offset:offset+privacy.ComOutputOpeningsProofSize])
@@ -187,7 +184,6 @@ type PaymentProofByte struct {
 	ComZeroProof []byte
 	//ComZeroOneProof    []byte
 }
-
 
 // END----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -288,7 +284,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 		cmInputSumAll.X, cmInputSumAll.Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputSumAll.X, cmInputSumAll.Y)
 
-		for j := 0; j < numInputCoin*privacy.CMRingSize; j++{
+		for j := 0; j < numInputCoin*privacy.CMRingSize; j++ {
 			commitmentTemps[j].X, commitmentTemps[j].Y = privacy.Curve.Add(commitments[j].X, commitments[j].Y, cmInputSumInverse[j].X, cmInputSumInverse[j].Y)
 		}
 
