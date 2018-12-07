@@ -92,7 +92,7 @@ func ConvertIntToBinary(inum int, n int) []byte {
 func getindex(bigint *big.Int, stableSz int) int {
 	return  stableSz - len(bigint.Bytes())
 }
-func PadFuckingBigInt(fckBigInt *big.Int, stableSz int) []byte{
+func PadBigInt(fckBigInt *big.Int, stableSz int) []byte{
 	idx:=getindex(fckBigInt,stableSz)
 	paddedBig:=make([]byte, stableSz)
 	for i:=0;i<idx;i++{

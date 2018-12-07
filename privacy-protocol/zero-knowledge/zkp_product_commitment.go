@@ -64,12 +64,12 @@ func (pro *PKComProductProof) Print() {
 }
 func (pro *PKComProductProof)  Bytes() []byte {
 	var proofbytes []byte
-	proofbytes = append(proofbytes, pro.cmA.Compress()...) // 33 bytes
-	proofbytes = append(proofbytes, pro.cmB.Compress()...) // 33 bytes
-	proofbytes = append(proofbytes, pro.D.Compress()...)   // 33 bytes
-	proofbytes = append(proofbytes, pro.E.Compress()...)   // 33 bytes
-	proofbytes = append(proofbytes, privacy.PadFuckingBigInt(pro.f,privacy.BigIntSize)...)      // 32 bytes
-	proofbytes = append(proofbytes, privacy.PadFuckingBigInt(pro.z,privacy.BigIntSize)...)      // 32 bytes
+	proofbytes = append(proofbytes, pro.cmA.Compress()...)                          // 33 bytes
+	proofbytes = append(proofbytes, pro.cmB.Compress()...)                          // 33 bytes
+	proofbytes = append(proofbytes, pro.D.Compress()...)                            // 33 bytes
+	proofbytes = append(proofbytes, pro.E.Compress()...)                            // 33 bytes
+	proofbytes = append(proofbytes, privacy.PadBigInt(pro.f,privacy.BigIntSize)...) // 32 bytes
+	proofbytes = append(proofbytes, privacy.PadBigInt(pro.z,privacy.BigIntSize)...) // 32 bytes
 	proofbytes = append(proofbytes, pro.index)
 	return proofbytes
 }
