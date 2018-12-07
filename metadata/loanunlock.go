@@ -15,11 +15,8 @@ func NewLoanUnlock(data map[string]interface{}) *LoanUnlock {
 	result := LoanUnlock{}
 	s, _ := hex.DecodeString(data["LoanID"].(string))
 	result.LoanID = s
+	result.Type = LoanUnlockMeta
 	return &result
-}
-
-func (lu *LoanUnlock) GetType() int {
-	return LoanUnlockMeta
 }
 
 func (lu *LoanUnlock) Hash() *common.Hash {

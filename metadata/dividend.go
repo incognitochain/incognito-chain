@@ -33,6 +33,7 @@ func NewDividend(data map[string]interface{}) *Dividend {
 	}
 	s, _ := hex.DecodeString(data["TokenID"].(string))
 	copy(result.TokenID[:], s)
+	result.Type = DividendMeta
 	return &result
 }
 

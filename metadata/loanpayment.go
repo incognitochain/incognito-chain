@@ -21,11 +21,8 @@ func NewLoanPayment(data map[string]interface{}) *LoanPayment {
 	s, _ := hex.DecodeString(data["LoanID"].(string))
 	result.LoanID = s
 	result.PayPrinciple = data["PayPrinciple"].(bool)
+	result.Type = LoanPaymentMeta
 	return &result
-}
-
-func (lp *LoanPayment) GetType() int {
-	return LoanPaymentMeta
 }
 
 func (lp *LoanPayment) Hash() *common.Hash {

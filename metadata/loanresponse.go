@@ -31,6 +31,7 @@ func NewLoanResponse(data map[string]interface{}) *LoanResponse {
 	result.LoanID = s
 
 	result.Response = ValidLoanResponse(int(data["Response"].(float64)))
+	result.Type = LoanResponseMeta
 
 	return &result
 }
