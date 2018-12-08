@@ -24,19 +24,19 @@ func (db *db) StoreLoanRequest(loanID, txHash []byte) error {
 	keyLoanID := string(loanIDKeyPrefix) + string(loanID) + string(loanRequestPostfix)
 	valueLoanID := string(txHash)
 
-	if ok, _ := db.hasValue([]byte(keyLoanID)); ok {
+	if ok, _ := db.HasValue([]byte(keyLoanID)); ok {
 		return database.NewDatabaseError(database.KeyExisted, errors.Errorf("loan ID existed %+v", keyLoanID))
 	}
-	if err := db.put([]byte(keyLoanID), []byte(valueLoanID)); err != nil {
+	if err := db.Put([]byte(keyLoanID), []byte(valueLoanID)); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 
 	keyTxHash := string(loanTxKeyPrefix) + string(txHash)
 	valueTxHash := string(loanID) + string(loanRequestPostfix)
-	if ok, _ := db.hasValue([]byte(keyTxHash)); ok {
+	if ok, _ := db.HasValue([]byte(keyTxHash)); ok {
 		return database.NewDatabaseError(database.KeyExisted, errors.Errorf("loan transaction hash existed %+v", keyTxHash))
 	}
-	if err := db.put([]byte(keyTxHash), []byte(valueTxHash)); err != nil {
+	if err := db.Put([]byte(keyTxHash), []byte(valueTxHash)); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 	return nil
@@ -45,19 +45,19 @@ func (db *db) StoreLoanRequest(loanID, txHash []byte) error {
 func (db *db) StoreLoanResponse(loanID, txHash []byte) error {
 	keyLoanID := string(loanIDKeyPrefix) + string(loanID) + string(loanResponsePostfix)
 	valueLoanID := string(txHash)
-	if ok, _ := db.hasValue([]byte(keyLoanID)); ok {
+	if ok, _ := db.HasValue([]byte(keyLoanID)); ok {
 		return database.NewDatabaseError(database.KeyExisted, errors.Errorf("loan ID existed %+v", keyLoanID))
 	}
-	if err := db.put([]byte(keyLoanID), []byte(valueLoanID)); err != nil {
+	if err := db.Put([]byte(keyLoanID), []byte(valueLoanID)); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 
 	keyTxHash := string(loanTxKeyPrefix) + string(txHash)
 	valueTxHash := string(loanID) + string(loanResponsePostfix)
-	if ok, _ := db.hasValue([]byte(keyTxHash)); ok {
+	if ok, _ := db.HasValue([]byte(keyTxHash)); ok {
 		return database.NewDatabaseError(database.KeyExisted, errors.Errorf("loan transaction hash existed %+v", keyTxHash))
 	}
-	if err := db.put([]byte(keyTxHash), []byte(valueTxHash)); err != nil {
+	if err := db.Put([]byte(keyTxHash), []byte(valueTxHash)); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 	return nil

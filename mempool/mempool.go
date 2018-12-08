@@ -12,7 +12,6 @@ import (
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 )
@@ -92,7 +91,7 @@ func (tp *TxPool) addTx(tx transaction.Transaction, height int32, fee uint64) *T
 	// Record this tx for fee estimation if enabled. only apply for normal tx
 	if tx.GetType() == common.TxNormalType {
 		if tp.config.FeeEstimator != nil {
-			chainId, err := common.GetTxSenderChain(tx.(*transaction.Tx).AddressLastByte)
+			chainId, err := common.GetTxSenderChain(tx.(*transaction.Tx).Proof.PubKeyLastByteSender)
 			if err == nil {
 				tp.config.FeeEstimator[chainId].ObserveTransaction(txD)
 			} else {
@@ -216,85 +215,7 @@ func (tp *TxPool) validateSanityNormalTxData(tx *transaction.Tx, allowReward boo
 	if len(txN.Type) != 1 || (txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType) { // only 1 byte
 		return false, errors.New("Wrong tx type")
 	}
-	// check length of JSPubKey
-	if len(txN.JSPubKey) != 64 {
-		return false, errors.New("Wrong tx jspubkey")
-	}
-	// check length of JSSig
-	if len(txN.JSSig) != 64 {
-		return false, errors.New("Wrong tx jssig")
-	}
-	//check Descs
 
-	for _, desc := range txN.Descs {
-		// check length of Anchor
-		if len(desc.Anchor) != 2 {
-			return false, errors.New("Wrong tx desc's anchor")
-		}
-		// check length of EphemeralPubKey
-		if len(desc.EphemeralPubKey) != client.EphemeralKeyLength {
-			return false, errors.New("Wrong tx desc's ephemeralpubkey")
-		}
-		// check length of HSigSeed
-		if len(desc.HSigSeed) != 32 {
-			return false, errors.New("Wrong tx desc's hsigseed")
-		}
-		// check length of Nullifiers
-		if len(desc.Nullifiers) != 2 {
-			return false, errors.New("Wrong tx desc's nullifiers")
-		}
-		if len(desc.Nullifiers[0]) != 32 {
-			return false, errors.New("Wrong tx desc's nullifiers")
-		}
-		if len(desc.Nullifiers[1]) != 32 {
-			return false, errors.New("Wrong tx desc's nullifiers")
-		}
-		// check length of Commitments
-		if len(desc.Commitments) != 2 {
-			return false, errors.New("Wrong tx desc's commitments")
-		}
-		if len(desc.Commitments[0]) != 32 {
-			return false, errors.New("Wrong tx desc's commitments")
-		}
-		if len(desc.Commitments[1]) != 32 {
-			return false, errors.New("Wrong tx desc's commitments")
-		}
-		// check length of Vmacs
-		if len(desc.Vmacs) != 2 {
-			return false, errors.New("Wrong tx desc's vmacs")
-		}
-		if len(desc.Vmacs[0]) != 32 {
-			return false, errors.New("Wrong tx desc's vmacs")
-		}
-		if len(desc.Vmacs[1]) != 32 {
-			return false, errors.New("Wrong tx desc's vmacs")
-		}
-		//
-		if desc.Proof == nil && len(desc.Note) == 0 {
-			return false, errors.New("Wrong tx desc's proof")
-		}
-		if desc.Proof != nil {
-			// check length of Proof
-			if len(desc.Proof.G_A) != 33 ||
-				len(desc.Proof.G_APrime) != 33 ||
-				len(desc.Proof.G_B) != 65 ||
-				len(desc.Proof.G_BPrime) != 33 ||
-				len(desc.Proof.G_C) != 33 ||
-				len(desc.Proof.G_CPrime) != 33 ||
-				len(desc.Proof.G_K) != 33 ||
-				len(desc.Proof.G_H) != 33 {
-				return false, errors.New("Wrong tx desc's proof")
-			}
-			//
-			if len(desc.EncryptedData) != 2 {
-				return false, errors.New("Wrong tx desc's encryptedData")
-			}
-		}
-		// check nulltifier is existed in DB
-		if desc.Reward != 0 && !allowReward {
-			return false, errors.New("Wrong tx desc's reward")
-		}
-	}
 	return true, nil
 }
 
@@ -333,8 +254,8 @@ func (tp *TxPool) validateSanityCustomTokenTxData(txCustomToken *transaction.TxC
 	return true, nil
 }
 
-func (tp *TxPool) validateBuySellReqTxSanity(buySellReqTx *transaction.TxBuySellRequest, allowToUseDCBFund bool) (bool, error) {
-	ok, err := tp.validateSanityNormalTxData(&buySellReqTx.Tx, allowToUseDCBFund)
+/*func (tp *TxPool) validateBuySellReqTxSanity(buySellReqTx *transaction.TxBuySellRequest, allowToUseDCBFund bool) (bool, error) {
+	ok, err := tp.validateSanityNormalTxData(&buySellReqTx.TxNormal, allowToUseDCBFund)
 	if err != nil || !ok {
 		return ok, err
 	}
@@ -351,10 +272,10 @@ func (tp *TxPool) validateBuySellReqTxSanity(buySellReqTx *transaction.TxBuySell
 		return false, errors.New("Wrong request info's asset type")
 	}
 	return true, nil
-}
+}*/
 
-func (tp *TxPool) validateBuyBackReqTxSanity(buyBackRequestTx *transaction.TxBuyBackRequest, allowToUseDCBFund bool) (bool, error) {
-	ok, err := tp.validateSanityNormalTxData(buyBackRequestTx.Tx, allowToUseDCBFund)
+/*func (tp *TxPool) validateBuyBackReqTxSanity(buyBackRequestTx *transaction.TxBuyBackRequest, allowToUseDCBFund bool) (bool, error) {
+	ok, err := tp.validateSanityNormalTxData(buyBackRequestTx.TxNormal, allowToUseDCBFund)
 	if err != nil || !ok {
 		return ok, err
 	}
@@ -365,7 +286,7 @@ func (tp *TxPool) validateBuyBackReqTxSanity(buyBackRequestTx *transaction.TxBuy
 		return false, errors.New("Wrong request info's BuyBackFromTxID")
 	}
 	return true, nil
-}
+}*/
 
 func (tp *TxPool) validateSanityVoteDCBBoardTx(voteDCBBoard *transaction.TxVoteDCBBoard) (bool, error) {
 	ok, err := tp.validateSanityCustomTokenTxData(&voteDCBBoard.TxCustomToken, false)
@@ -410,11 +331,9 @@ func (tp *TxPool) MaybeAcceptTransaction(tx transaction.Transaction) (*common.Ha
 // ValidateDoubleSpendTxWithCurrentMempool - check double spend for new tx with all txs in mempool
 func (tp *TxPool) ValidateDoubleSpendTxWithCurrentMempool(txNormal transaction.Tx) error {
 	for _, temp1 := range tp.poolNullifiers {
-		for _, desc := range txNormal.Descs {
-			for _, nullifier := range desc.Nullifiers {
-				if ok, err := common.SliceBytesExists(temp1, nullifier); !ok || err != nil {
-					return errors.New("Double spend")
-				}
+		for _, desc := range txNormal.Proof.InputCoins {
+			if ok, err := common.SliceBytesExists(temp1, desc.CoinDetails.SerialNumber.Compress()); ok == -1 || err != nil {
+				return errors.New("Double spend")
 			}
 		}
 	}
@@ -442,56 +361,56 @@ func (tp *TxPool) ValidateTxWithCurrentMempool(tx transaction.Transaction) error
 			err := tp.validateTxCustomTokenInPool(tx)
 			return err
 		}
-	case common.TxVoteDCBBoard:
-		{
-			txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
-			txCustomToKen := txVoteDCBBoard.TxCustomToken
-			err := tp.validateTxCustomTokenInPool(&txCustomToKen)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-	case common.TxVoteGOVBoard:
-		{
-			txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
-			txCustomToKen := txVoteGOVBoard.TxCustomToken
-			err := tp.validateTxCustomTokenInPool(&txCustomToKen)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-	case common.TxBuyFromGOVRequest:
-		{
-			reqTx := tx.(*transaction.TxBuySellRequest)
-			normalTx := reqTx.Tx
-			err := tp.ValidateDoubleSpendTxWithCurrentMempool(normalTx)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-	case common.TxBuyBackRequest:
-		{
-			reqTx := tx.(*transaction.TxBuyBackRequest)
-			normalTx := reqTx.Tx
-			err := tp.ValidateDoubleSpendTxWithCurrentMempool(*normalTx)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-	case common.TxBuySellDCBRequest:
-		{
-			txRequest := tx.(*transaction.TxBuySellRequest)
-			return tp.validateTxCustomTokenInPool(txRequest.TxCustomToken)
-		}
-	case common.TxBuySellDCBResponse:
-		{
-			txResponse := tx.(*transaction.TxBuySellDCBResponse)
-			return tp.validateTxCustomTokenInPool(txResponse.TxCustomToken)
-		}
+		/*case common.TxVoteDCBBoard:
+		  {
+			  txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
+			  txCustomToKen := txVoteDCBBoard.TxCustomToken
+			  err := tp.validateTxCustomTokenInPool(&txCustomToKen)
+			  if err != nil {
+				  return err
+			  }
+			  return nil
+		  }
+	  case common.TxVoteGOVBoard:
+		  {
+			  txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
+			  txCustomToKen := txVoteGOVBoard.TxCustomToken
+			  err := tp.validateTxCustomTokenInPool(&txCustomToKen)
+			  if err != nil {
+				  return err
+			  }
+			  return nil
+		  }
+	  case common.TxBuyFromGOVRequest:
+		  {
+			  reqTx := tx.(*transaction.TxBuySellRequest)
+			  normalTx := reqTx.TxNormal
+			  err := tp.ValidateDoubleSpendTxWithCurrentMempool(normalTx)
+			  if err != nil {
+				  return err
+			  }
+			  return nil
+		  }
+	  case common.TxBuyBackRequest:
+		  {
+			  reqTx := tx.(*transaction.TxBuyBackRequest)
+			  normalTx := reqTx.TxNormal
+			  err := tp.ValidateDoubleSpendTxWithCurrentMempool(*normalTx)
+			  if err != nil {
+				  return err
+			  }
+			  return nil
+		  }
+	  case common.TxBuySellDCBRequest:
+		  {
+			  txRequest := tx.(*transaction.TxBuySellRequest)
+			  return tp.validateTxCustomTokenInPool(txRequest.TxCustomToken)
+		  }
+	  case common.TxBuySellDCBResponse:
+		  {
+			  txResponse := tx.(*transaction.TxBuySellDCBResponse)
+			  return tp.validateTxCustomTokenInPool(txResponse.TxCustomToken)
+		  }*/
 	default:
 		{
 			return errors.New("Wrong tx type")
@@ -560,84 +479,84 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 			return tp.ValidateTxCustomTokenBlockChain(tx, chainID)
 			// verify custom token signs
 		}
-	case common.TxVoteDCBBoard:
-		{
-			txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
-			txCustomToken := txVoteDCBBoard.TxCustomToken
-			return tp.ValidateTxCustomTokenBlockChain(&txCustomToken, chainID)
-		}
-	case common.TxVoteGOVBoard:
-		{
-			txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
-			txCustomToken := txVoteGOVBoard.TxCustomToken
-			return tp.ValidateTxCustomTokenBlockChain(&txCustomToken, chainID)
-		}
-	case common.TxLoanRequest:
-		{
-			return blockChain.ValidateTxLoanRequest(tx, chainID)
-		}
-	case common.TxLoanResponse:
-		{
-			return blockChain.ValidateTxLoanResponse(tx, chainID)
-		}
-	case common.TxLoanPayment:
-		{
-			return blockChain.ValidateTxLoanPayment(tx, chainID)
-		}
-	case common.TxLoanWithdraw:
-		{
-			return blockChain.ValidateTxLoanWithdraw(tx, chainID)
-		}
-	case common.TxDividendPayout:
-		{
-			return blockChain.ValidateTxDividendPayout(tx, chainID)
-		}
-	case common.TxBuySellDCBRequest:
-		{
-			return blockChain.ValidateTxBuySellDCBRequest(tx, chainID)
-		}
-	case common.TxBuySellDCBResponse:
-		{
-			return blockChain.ValidateTxBuySellDCBResponse(tx, chainID)
-		}
-	case common.TxSubmitDCBProposal:
-		{
-			return blockChain.ValidateTxSubmitDCBProposal(tx, chainID)
-		}
-	case common.TxAcceptDCBProposal:
-		{
-			return blockChain.ValidateTxAcceptDCBProposal(tx, chainID)
-		}
-	case common.TxVoteDCBProposal:
-		{
-			return blockChain.ValidateTxVoteDCBProposal(tx, chainID)
-		}
-	case common.TxSubmitGOVProposal:
-		{
-			return blockChain.ValidateTxSubmitGOVProposal(tx, chainID)
-		}
-	case common.TxAcceptGOVProposal:
-		{
-			return blockChain.ValidateTxAcceptGOVProposal(tx, chainID)
-		}
-	case common.TxVoteGOVProposal:
-		{
-			return blockChain.ValidateTxVoteGOVProposal(tx, chainID)
-		}
-	case common.TxBuyFromGOVRequest:
-		{
-			return blockChain.ValidateBuyFromGOVRequestTx(tx, chainID)
-		}
-	case common.TxBuyBackRequest:
-		{
-			return blockChain.ValidateBuyBackRequestTx(tx, chainID)
-		}
+		/*case common.TxVoteDCBBoard:
+		  {
+			  txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
+			  txCustomToken := txVoteDCBBoard.TxCustomToken
+			  return tp.ValidateTxCustomTokenBlockChain(&txCustomToken, chainID)
+		  }
+	  case common.TxVoteGOVBoard:
+		  {
+			  txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
+			  txCustomToken := txVoteGOVBoard.TxCustomToken
+			  return tp.ValidateTxCustomTokenBlockChain(&txCustomToken, chainID)
+		  }
+	  case common.TxLoanRequest:
+		  {
+			  return blockChain.ValidateTxLoanRequest(tx, chainID)
+		  }
+	  case common.TxLoanResponse:
+		  {
+			  return blockChain.ValidateTxLoanResponse(tx, chainID)
+		  }
+	  case common.TxLoanPayment:
+		  {
+			  return blockChain.ValidateTxLoanPayment(tx, chainID)
+		  }
+	  case common.TxLoanWithdraw:
+		  {
+			  return blockChain.ValidateTxLoanWithdraw(tx, chainID)
+		  }
+	  case common.TxDividendPayout:
+		  {
+			  return blockChain.ValidateTxDividendPayout(tx, chainID)
+		  }
+	  case common.TxBuySellDCBRequest:
+		  {
+			  return blockChain.ValidateTxBuySellDCBRequest(tx, chainID)
+		  }
+	  case common.TxBuySellDCBResponse:
+		  {
+			  return blockChain.ValidateTxBuySellDCBResponse(tx, chainID)
+		  }
+	  case common.TxSubmitDCBProposal:
+		  {
+			  return blockChain.ValidateTxSubmitDCBProposal(tx, chainID)
+		  }
+	  case common.TxAcceptDCBProposal:
+		  {
+			  return blockChain.ValidateTxAcceptDCBProposal(tx, chainID)
+		  }
+	  case common.TxVoteDCBProposal:
+		  {
+			  return blockChain.ValidateTxVoteDCBProposal(tx, chainID)
+		  }
+	  case common.TxSubmitGOVProposal:
+		  {
+			  return blockChain.ValidateTxSubmitGOVProposal(tx, chainID)
+		  }
+	  case common.TxAcceptGOVProposal:
+		  {
+			  return blockChain.ValidateTxAcceptGOVProposal(tx, chainID)
+		  }
+	  case common.TxVoteGOVProposal:
+		  {
+			  return blockChain.ValidateTxVoteGOVProposal(tx, chainID)
+		  }
+	  case common.TxBuyFromGOVRequest:
+		  {
+			  return blockChain.ValidateBuyFromGOVRequestTx(tx, chainID)
+		  }
+	  case common.TxBuyBackRequest:
+		  {
+			  return blockChain.ValidateBuyBackRequestTx(tx, chainID)
+		  }*/
 	default:
 		{
 			return errors.New("Wrong tx type")
 		}
 	}
-	return errors.New("No check Tx")
+	return errors.New("No check TxNormal")
 }
 
 // GetListUTXOFromTxCustomToken - get list utxo with related to vins of a TxCustomToken
@@ -662,7 +581,7 @@ func (tp *TxPool) GetListUTXOFromTxCustomToken(txCustomToken *transaction.TxCust
 	return true
 }
 
-// ValidateTxByItSelf - Each of Tx instance should be validated by it self
+// ValidateTxByItSelf - Each of TxNormal instance should be validated by it self
 
 func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
 	switch tx.GetType() {
@@ -674,31 +593,31 @@ func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
 			if ok == false {
 				return false
 			}
-			return txCustomToken.ValidateTransaction()
+			return txCustomToken.ValidateTransaction(txCustomToken.Tx.Proof.ComInputOpeningsProof != nil)
 		}
-	case common.TxVoteDCBBoard:
-		{
-			txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
-			txCustomToken := txVoteDCBBoard.TxCustomToken
-			ok := tp.GetListUTXOFromTxCustomToken(&txCustomToken)
-			if ok == false {
-				return false
-			}
-			return txCustomToken.ValidateTransaction() && txVoteDCBBoard.Validate()
-		}
-	case common.TxVoteGOVBoard:
-		{
-			txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
-			txCustomToken := txVoteGOVBoard.TxCustomToken
-			ok := tp.GetListUTXOFromTxCustomToken(&txCustomToken)
-			if ok == false {
-				return false
-			}
-			return txCustomToken.ValidateTransaction() && txVoteGOVBoard.Validate()
-		}
+		/*case common.TxVoteDCBBoard:
+		  {
+			  txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
+			  txCustomToken := txVoteDCBBoard.TxCustomToken
+			  ok := tp.GetListUTXOFromTxCustomToken(&txCustomToken)
+			  if ok == false {
+				  return false
+			  }
+			  return txCustomToken.ValidateTransaction() && txVoteDCBBoard.Validate()
+		  }
+	  case common.TxVoteGOVBoard:
+		  {
+			  txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
+			  txCustomToken := txVoteGOVBoard.TxCustomToken
+			  ok := tp.GetListUTXOFromTxCustomToken(&txCustomToken)
+			  if ok == false {
+				  return false
+			  }
+			  return txCustomToken.ValidateTransaction() && txVoteGOVBoard.Validate()
+		  }*/
 
 	default:
-		return tx.ValidateTransaction()
+		return tx.ValidateTransaction(false)
 	}
 	return false
 }
@@ -819,9 +738,9 @@ func (tp *TxPool) CheckTransactionFee(tx transaction.Transaction) (uint64, error
 		}
 	case common.TxBuySellDCBRequest:
 		{
-			tx := tx.(*transaction.TxBuySellRequest)
+			/*tx := tx.(*transaction.TxBuySellRequest)
 			err := tp.config.Policy.CheckCustomTokenTransactionFee(tx.TxCustomToken)
-			return tx.TxCustomToken.Fee, err
+			return tx.TxCustomToken.Fee, err*/
 		}
 	case common.TxBuySellDCBResponse:
 		{
@@ -852,40 +771,40 @@ func (tp *TxPool) ValidateSanityData(tx transaction.Transaction) (bool, error) {
 			ok, err := tp.validateSanityCustomTokenTxData(txCustomToken, false)
 			return ok, err
 		}
-	case common.TxVoteDCBBoard:
-		{
-			txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
-			ok, err := tp.validateSanityVoteDCBBoardTx(txVoteDCBBoard)
-			return ok, err
-		}
-	case common.TxVoteGOVBoard:
-		{
-			txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
-			ok, err := tp.validateSanityVoteGOVBoardTx(txVoteGOVBoard)
-			return ok, err
-		}
-	case common.TxBuyFromGOVRequest:
-		{
-			buySellReqTx := tx.(*transaction.TxBuySellRequest)
-			ok, err := tp.validateBuySellReqTxSanity(buySellReqTx, false)
-			return ok, err
-		}
-	case common.TxBuyBackRequest:
-		{
-			buyBackReqTx := tx.(*transaction.TxBuyBackRequest)
-			ok, err := tp.validateBuyBackReqTxSanity(buyBackReqTx, false)
-			return ok, err
-		}
-	case common.TxBuySellDCBRequest:
-		{
-			txRequest := tx.(*transaction.TxBuySellRequest)
-			return tp.validateSanityCustomTokenTxData(txRequest.TxCustomToken, false)
-		}
-	case common.TxBuySellDCBResponse:
-		{
-			txResponse := tx.(*transaction.TxBuySellDCBResponse)
-			return tp.validateSanityCustomTokenTxData(txResponse.TxCustomToken, true)
-		}
+		/*case common.TxVoteDCBBoard:
+		  {
+			  txVoteDCBBoard := tx.(*transaction.TxVoteDCBBoard)
+			  ok, err := tp.validateSanityVoteDCBBoardTx(txVoteDCBBoard)
+			  return ok, err
+		  }
+	  case common.TxVoteGOVBoard:
+		  {
+			  txVoteGOVBoard := tx.(*transaction.TxVoteGOVBoard)
+			  ok, err := tp.validateSanityVoteGOVBoardTx(txVoteGOVBoard)
+			  return ok, err
+		  }
+	  case common.TxBuyFromGOVRequest:
+		  {
+			  //buySellReqTx := tx.(*transaction.TxBuySellRequest)
+			  //ok, err := tp.validateBuySellReqTxSanity(buySellReqTx, false)
+			  //return ok, err
+		  }
+	  case common.TxBuyBackRequest:
+		  {
+			  buyBackReqTx := tx.(*transaction.TxBuyBackRequest)
+			  ok, err := tp.validateBuyBackReqTxSanity(buyBackReqTx, false)
+			  return ok, err
+		  }
+	  case common.TxBuySellDCBRequest:
+		  {
+			  *//*txRequest := tx.(*transaction.TxBuySellRequest)
+			  return tp.validateSanityCustomTokenTxData(txRequest.TxCustomToken, false)*//*
+		  }
+	  case common.TxBuySellDCBResponse:
+		  {
+			  *//*txResponse := tx.(*transaction.TxBuySellDCBResponse)
+			  return tp.validateSanityCustomTokenTxData(txResponse.TxCustomToken, true)*//*
+		  }*/
 	default:
 		{
 			return false, errors.New("Wrong tx type")

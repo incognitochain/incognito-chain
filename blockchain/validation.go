@@ -5,8 +5,6 @@ Use these function to validate common data in blockchain
 */
 
 import (
-	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math"
@@ -15,7 +13,6 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"golang.org/x/crypto/sha3"
 )
 
 /*
@@ -29,15 +26,9 @@ func (self *BlockChain) IsSalaryTx(tx transaction.Transaction) bool {
 			return false
 		}
 		// Check nullifiers in every Descs
-		descs := normalTx.Descs
-		if len(descs) != 1 {
-			return false
-		} else {
-			if descs[0].Reward > 0 {
-				return true
-			}
+		if len(normalTx.Proof.InputCoins) == 0 {
+			return true
 		}
-		return false
 	}
 	return false
 }
@@ -52,29 +43,27 @@ func (self *BlockChain) ValidateDoubleSpend(tx transaction.Transaction, chainID 
 		return err
 	}
 	nullifierDb := txViewPoint.ListNullifiers()
-	var descs []*transaction.JoinSplitDesc
+	var ins []*privacy.InputCoin
 	if tx.GetType() == common.TxNormalType {
-		descs = tx.(*transaction.Tx).Descs
+		ins = tx.(*transaction.Tx).Proof.InputCoins
 	}
-	for _, desc := range descs {
-		for _, nullifer := range desc.Nullifiers {
-			existed, err := common.SliceBytesExists(nullifierDb, nullifer)
-			if err != nil {
-				str := fmt.Sprintf("Can not check double spend for tx")
-				err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
-				return err
-			}
-			if existed {
-				str := fmt.Sprintf("Nullifiers of transaction %+v already existed", txHash.String())
-				err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
-				return err
-			}
+	for _, in := range ins {
+		existed, err := common.SliceBytesExists(nullifierDb, in.CoinDetails.SerialNumber.Compress())
+		if err != nil {
+			str := fmt.Sprintf("Can not check double spend for tx")
+			err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
+			return err
+		}
+		if existed != -1 {
+			str := fmt.Sprintf("Nullifiers of transaction %+v already existed", txHash.String())
+			err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
+			return err
 		}
 	}
 	return nil
 }
 
-func (self *BlockChain) ValidateTxLoanRequest(tx transaction.Transaction, chainID byte) error {
+/*func (self *BlockChain) ValidateTxLoanRequest(tx transaction.Transaction, chainID byte) error {
 	txLoan, ok := tx.(*transaction.TxLoanRequest)
 	if !ok {
 		return fmt.Errorf("Fail parsing LoanRequest transaction")
@@ -118,7 +107,7 @@ func (self *BlockChain) ValidateTxLoanResponse(tx transaction.Transaction, chain
 		}
 	}
 	if !isBoard {
-		return fmt.Errorf("Tx must be created by DCB Governor")
+		return fmt.Errorf("TxNormal must be created by DCB Governor")
 	}
 
 	// Check if a loan request with the same id exists on any chain
@@ -347,7 +336,7 @@ func (self *BlockChain) ValidateTxDividendPayout(tx transaction.Transaction, cha
 	}
 
 	return nil
-}
+}*/
 
 func isAnyBoardAddressInVins(customToken *transaction.TxCustomToken) bool {
 	GOVAddressStr := string(GOVAddress)
@@ -454,7 +443,7 @@ func (bc *BlockChain) VerifyCustomTokenSigns(tx transaction.Transaction) bool {
 	return bc.verifyByBoard(boardType, customToken)
 }
 
-func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, chainID byte) error {
+/*func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, chainID byte) error {
 	// Check if crowdsale existed
 	requestTx, ok := tx.(*transaction.TxBuySellRequest)
 	if !ok {
@@ -483,7 +472,7 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 			}
 		}
 	} else if bytes.Equal(saleData.BuyingAsset, ConstantID[:]) {
-		for _, desc := range requestTx.Tx.Descs {
+		for _, desc := range requestTx.TxNormal.Descs {
 			for _, note := range desc.Note {
 				if !bytes.Equal(note.Apk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
 					return fmt.Errorf("Sending payment to %x instead of %x", note.Apk[:], DCBAddress)
@@ -492,9 +481,9 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx transaction.Transaction, 
 		}
 	}
 	return nil
-}
+}*/
 
-func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction, chainID byte) error {
+/*func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction, chainID byte) error {
 	// Check if crowdsale existed
 	responseTx, ok := tx.(*transaction.TxBuySellDCBResponse)
 	if !ok {
@@ -516,7 +505,7 @@ func (self *BlockChain) ValidateTxBuySellDCBResponse(tx transaction.Transaction,
 
 	// TODO(@0xbunyip): validate amount of asset sent
 	return nil
-}
+}*/
 
 //validate voting transaction
 func (bc *BlockChain) ValidateTxSubmitDCBProposal(tx transaction.Transaction, chainID byte) error {
@@ -580,7 +569,7 @@ func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCus
 	return nil
 }
 
-func (self *BlockChain) ValidateBuyFromGOVRequestTx(
+/*func (self *BlockChain) ValidateBuyFromGOVRequestTx(
 	tx transaction.Transaction,
 	chainID byte,
 ) error {
@@ -590,7 +579,7 @@ func (self *BlockChain) ValidateBuyFromGOVRequestTx(
 	}
 
 	// check double spending on fee + amount tx
-	err := self.ValidateDoubleSpend(&buySellReqTx.Tx, chainID)
+	err := self.ValidateDoubleSpend(&buySellReqTx.TxNormal, chainID)
 	if err != nil {
 		return err
 	}
@@ -607,8 +596,9 @@ func (self *BlockChain) ValidateBuyFromGOVRequestTx(
 		return errors.New("Requested buy price is under SellingBonds params' buy price.")
 	}
 	return nil
-}
+}*/
 
+/*
 func (self *BlockChain) ValidateBuyBackRequestTx(
 	tx transaction.Transaction,
 	chainID byte,
@@ -619,10 +609,11 @@ func (self *BlockChain) ValidateBuyBackRequestTx(
 	}
 
 	// check double spending on fee + amount tx
-	err := self.ValidateDoubleSpend(buyBackReqTx.Tx, chainID)
+	err := self.ValidateDoubleSpend(buyBackReqTx.TxNormal, chainID)
 	if err != nil {
 		return err
 	}
 
 	return nil
 }
+*/

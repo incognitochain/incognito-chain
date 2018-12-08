@@ -6,6 +6,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"log"
 )
 
 type db struct {
@@ -23,8 +24,9 @@ var (
 	blockKeyIdxPrefix         = []byte("i-")
 	transactionKeyPrefix      = []byte("tx-")
 	privateKeyPrefix          = []byte("prk-")
-	nullifiersPrefix          = []byte("nullifiers-")
+	serialNumbersPrefix       = []byte("serinalnumbers-")
 	commitmentsPrefix         = []byte("commitments-")
+	snderivatorsPrefix        = []byte("snderivators-")
 	bestBlockKey              = []byte("bestBlock")
 	feeEstimator              = []byte("feeEstimator")
 	splitter                  = []byte("-[-]-")
@@ -53,7 +55,7 @@ func (db *db) Close() error {
 	return errors.Wrap(db.lvdb.Close(), "db.lvdb.Close")
 }
 
-func (db *db) hasValue(key []byte) (bool, error) {
+func (db *db) HasValue(key []byte) (bool, error) {
 	ret, err := db.lvdb.Has(key, nil)
 	if err != nil {
 		return false, database.NewDatabaseError(database.NotExistValue, err)
@@ -61,11 +63,20 @@ func (db *db) hasValue(key []byte) (bool, error) {
 	return ret, nil
 }
 
-func (db *db) put(key, value []byte) error {
+func (db *db) Put(key, value []byte) error {
 	if err := db.lvdb.Put(key, value, nil); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Put"))
 	}
 	return nil
+}
+
+func (db *db) Get(key []byte) ([]byte, error) {
+	value, err := db.lvdb.Get(key, nil)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return value, nil
 }
 
 func (db db) getKey(keyType string, key interface{}) []byte {
@@ -75,10 +86,12 @@ func (db db) getKey(keyType string, key interface{}) []byte {
 		dbkey = append(blockKeyPrefix, key.(*common.Hash)[:]...)
 	case string(blockKeyIdxPrefix):
 		dbkey = append(blockKeyIdxPrefix, key.(*common.Hash)[:]...)
-	case string(nullifiersPrefix):
-		dbkey = append(nullifiersPrefix, []byte(key.(string))...)
+	case string(serialNumbersPrefix):
+		dbkey = append(serialNumbersPrefix, []byte(key.(string))...)
 	case string(commitmentsPrefix):
 		dbkey = append(commitmentsPrefix, []byte(key.(string))...)
+	case string(snderivatorsPrefix):
+		dbkey = append(snderivatorsPrefix, []byte(key.(string))...)
 	case string(tokenPrefix):
 		dbkey = append(tokenPrefix, key.(*common.Hash)[:]...)
 	case string(tokenInitPrefix):

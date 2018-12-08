@@ -1,10 +1,7 @@
 package main
 
 import (
-	"encoding/hex"
-	"fmt"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 func main() {
@@ -62,7 +59,7 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-	// zkp.TestPKOneOfMany()
+	//zkp.TestPKOneOfMany()
 
 	//zkp.TestPKComMultiRange()
 
@@ -202,8 +199,6 @@ func main() {
 	//
 	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
 
-
-
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
 	//fmt.Println(zkp.TestOpeningsProtocol())
@@ -211,28 +206,27 @@ func main() {
 	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
 	/*--------------------------------------------*/
 
+	// keySet := new(cashec.KeySet)
+	// //spendingKey := privacy.GenerateSpendingKey([]byte{0, 1, 23, 235})
+	// spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	// keySet.ImportFromPrivateKey(&spendingKey)
 
-	keySet := new(cashec.KeySet)
-	//spendingKey := privacy.GenerateSpendingKey([]byte{0, 1, 23, 235})
-	spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	keySet.ImportFromPrivateKey(&spendingKey)
+	// data := []byte{0}
+	// signature, err := keySet.Sign(data)
+	// if err != nil{
+	// 	fmt.Println(err)
+	// }
+	// fmt.Println(hex.EncodeToString(signature))
 
-	data := []byte{0}
-	signature, err := keySet.Sign(data)
-	if err != nil{
-		fmt.Println(err)
-	}
-	fmt.Println(hex.EncodeToString(signature))
+	// //signature , _:= hex.DecodeString("5d9f5e9c350a877ddbbe227b40c19b00c040e715924740f2d92cc9dc02da5937ba433dbca431f2a0a447e21fd096d894f869a9e31b8217ee0cf9c33f8b032ade")
+	// //
+	// res, err := keySet.Verify(data, signature)
+	// if err != nil{
+	// 	fmt.Println(err)
+	// }
 
-	//signature , _:= hex.DecodeString("5d9f5e9c350a877ddbbe227b40c19b00c040e715924740f2d92cc9dc02da5937ba433dbca431f2a0a447e21fd096d894f869a9e31b8217ee0cf9c33f8b032ade")
-	//
-	res, err := keySet.Verify(data, signature)
-	if err != nil{
-		fmt.Println(err)
-	}
+	// fmt.Println(res)
 
-	fmt.Println(res)
-
-
+	privacy.TestMultiSig()
 
 }

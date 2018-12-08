@@ -7,7 +7,6 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 )
@@ -54,7 +53,7 @@ func (self GenesisBlockGenerator) CalcMerkleRoot(txns []transaction.Transaction)
 Use to get hardcode for genesis block
 */
 
-/*func (self GenesisBlockGenerator) createGenesisTx(initialCoin uint64, initialAddress string) (*transaction.Tx, error) {
+/*func (self GenesisBlockGenerator) createGenesisTx(initialCoin uint64, initialAddress string) (*transaction.TxNormal, error) {
 	// Create deterministic inputs (note, receiver's address and rho)
 	var inputs []*client.JSInput
 	inputs = append(inputs, createGenesisJSInput(0))
@@ -96,7 +95,7 @@ Use to get hardcode for genesis block
 	return tx, err
 }*/
 
-/*func (self GenesisBlockGenerator) getGenesisTx(genesisBlockReward uint64) (*transaction.Tx, error) {
+/*func (self GenesisBlockGenerator) getGenesisTx(genesisBlockReward uint64) (*transaction.TxNormal, error) {
 	// Convert zk-proof from hex string to byte array
 	gA, _ := hex.DecodeString(GENESIS_BLOCK_G_A)
 	gAPrime, _ := hex.DecodeString(GENESIS_BLOCK_G_APrime)
@@ -190,7 +189,7 @@ Use to get hardcode for genesis block
 	//tempKeySet, _ := wallet.Base58CheckDeserialize(GENESIS_BLOCK_PAYMENT_ADDR)
 	//lastByte := tempKeySet.KeySet.PaymentAddress.PaymentAddress[len(tempKeySet.KeySet.PaymentAddress.PaymentAddress)-1]
 
-	tx := &transaction.Tx{
+	tx := &transaction.TxNormal{
 		Version:  transaction.TxVersion,
 		Type:     common.TxNormalType,
 		LockTime: 0,
@@ -203,7 +202,7 @@ Use to get hardcode for genesis block
 	return tx, nil
 }*/
 
-func (self GenesisBlockGenerator) calcCommitmentMerkleRoot(tx *transaction.Tx) common.Hash {
+/*func (self GenesisBlockGenerator) calcCommitmentMerkleRoot(tx *transaction.Tx) common.Hash {
 	tree := new(client.IncMerkleTree)
 	for _, desc := range tx.Descs {
 		for _, cm := range desc.Commitments {
@@ -215,7 +214,7 @@ func (self GenesisBlockGenerator) calcCommitmentMerkleRoot(tx *transaction.Tx) c
 	hash := common.Hash{}
 	copy(hash[:], rt[:])
 	return hash
-}
+}*/
 
 /*func (self GenesisBlockGenerator) CreateGenesisBlock(
 	time time.Time,

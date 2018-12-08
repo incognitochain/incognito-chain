@@ -1,5 +1,6 @@
 package transaction
 
+/*
 import (
 	"bytes"
 	"errors"
@@ -16,8 +17,8 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol/proto/zksnark"
 )
 
-// Tx represents a coin-transfer-transaction stored in a block
-type Tx struct {
+// TxNormal represents a coin-transfer-transaction stored in a block
+type TxNormal struct {
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
@@ -43,16 +44,16 @@ type Tx struct {
 	Metadata interface{}
 }
 
-func (tx *Tx) SetTxID(txId *common.Hash) {
+func (tx *TxNormal) SetTxID(txId *common.Hash) {
 	tx.txId = txId
 }
 
-func (tx *Tx) GetTxID() *common.Hash {
+func (tx *TxNormal) GetTxID() *common.Hash {
 	return tx.txId
 }
 
 // Hash returns the hash of all fields of the transaction
-func (tx Tx) Hash() *common.Hash {
+func (tx TxNormal) Hash() *common.Hash {
 	record := strconv.Itoa(int(tx.Version))
 	record += tx.Type
 	record += strconv.FormatInt(tx.LockTime, 10)
@@ -72,7 +73,7 @@ func (tx Tx) Hash() *common.Hash {
 // - Signature matches the signing public key
 // - JSDescriptions are valid (zk-snark proof satisfied)
 // Note: This method doesn't check for double spending
-func (tx *Tx) ValidateTransaction() bool {
+func (tx *TxNormal) ValidateTransaction() bool {
 	return true
 
 	// Check for tx signature
@@ -123,12 +124,12 @@ func (tx *Tx) ValidateTransaction() bool {
 }
 
 // GetType returns the type of the transaction
-func (tx *Tx) GetType() string {
+func (tx *TxNormal) GetType() string {
 	return tx.Type
 }
 
 // GetTxVirtualSize computes the virtual size of a given transaction
-func (tx *Tx) GetTxVirtualSize() uint64 {
+func (tx *TxNormal) GetTxVirtualSize() uint64 {
 	var sizeVersion uint64 = 1  // int8
 	var sizeType uint64 = 8     // string
 	var sizeLockTime uint64 = 8 // int64
@@ -140,15 +141,15 @@ func (tx *Tx) GetTxVirtualSize() uint64 {
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }
 
-func (tx *Tx) GetTxFee() uint64 {
+func (tx *TxNormal) GetTxFee() uint64 {
 	return tx.Fee
 }
 
-func (tx *Tx) GetSenderAddrLastByte() byte {
+func (tx *TxNormal) GetSenderAddrLastByte() byte {
 	return tx.AddressLastByte
 }
 
-func (tx *Tx) ListNullifiers() [][]byte {
+func (tx *TxNormal) ListNullifiers() [][]byte {
 	result := [][]byte{}
 	for _, d := range tx.Descs {
 		result = append(result, d.Nullifiers...)
@@ -163,12 +164,12 @@ func CreateTx(
 	senderKey *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
 	rts map[byte]*common.Hash,
-	usableTx map[byte][]*Tx,
+	usableTx map[byte][]*TxNormal,
 	commitments map[byte]([][]byte),
 	fee uint64,
 	senderChainID byte,
 	noPrivacy bool,
-) (*Tx, error) {
+) (*TxNormal, error) {
 	fmt.Printf("List of all commitments before building tx:\n")
 	fmt.Printf("rts: %+v\n", rts)
 	for _, cm := range commitments {
@@ -410,7 +411,7 @@ func CreateTx(
 }
 
 // BuildNewJSDesc creates zk-proof for a js desc and add it to the transaction
-func (tx *Tx) BuildNewJSDesc(
+func (tx *TxNormal) BuildNewJSDesc(
 	inputMap map[byte][]*client.JSInput,
 	outputs []*client.JSOutput,
 	rtMap map[byte][]byte,
@@ -452,7 +453,7 @@ func (tx *Tx) BuildNewJSDesc(
 	return nil
 }
 
-func (tx *Tx) buildJSDescAndEncrypt(
+func (tx *TxNormal) buildJSDescAndEncrypt(
 	inputs []*client.JSInput,
 	outputs []*client.JSOutput,
 	proof *zksnark.PHGRProof,
@@ -569,7 +570,7 @@ func createDummyNote(spendingKey *privacy.SpendingKey) *client.Note {
 	return note
 }
 
-func (tx *Tx) SignTx() error {
+func (tx *TxNormal) SignTx() error {
 	//Check input transaction
 	if tx.JSSig != nil {
 		return errors.New("Input transaction must be an unsigned one")
@@ -582,12 +583,14 @@ func (tx *Tx) SignTx() error {
 	copy(data, hash[:])
 
 	// Sign
-	/*ecdsaSignature := new(client.EcdsaSignature)
+	*/
+/*ecdsaSignature := new(client.EcdsaSignature)
 	var err error
 	ecdsaSignature.R, ecdsaSignature.S, err = client.Sign(rand.Reader, tx.sigPrivKey, data[:])
 	if err != nil {
 		return err
-	}*/
+	}*//*
+
 	keyset := cashec.KeySet{}
 	keyset.ImportFromPrivateKey(tx.sigPrivKey)
 	sign, err := keyset.Sign(data)
@@ -602,21 +605,25 @@ func (tx *Tx) SignTx() error {
 	return nil
 }
 
-func (tx *Tx) VerifySign() (bool, error) {
+func (tx *TxNormal) VerifySign() (bool, error) {
 	//Check input transaction
 	if tx.JSSig == nil || tx.JSPubKey == nil {
 		return false, errors.New("Input transaction must be an signed one!")
 	}
 
 	// UnParse Public key
-	/*pubKey := new(client.PublicKey)
+	*/
+/*pubKey := new(client.PublicKey)
 	pubKey.X = new(big.Int).SetBytes(tx.JSPubKey[0:32])
-	pubKey.Y = new(big.Int).SetBytes(tx.JSPubKey[32:64])*/
+	pubKey.Y = new(big.Int).SetBytes(tx.JSPubKey[32:64])*//*
+
 
 	// UnParse ECDSA signature
-	/*ecdsaSignature := new(client.EcdsaSignature)
+	*/
+/*ecdsaSignature := new(client.EcdsaSignature)
 	ecdsaSignature.R = new(big.Int).SetBytes(tx.JSSig[0:32])
-	ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])*/
+	ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])*//*
+
 
 	// Hash origin transaction
 	hash := tx.GetTxID()
@@ -643,7 +650,7 @@ func GenerateProofForGenesisTx(
 	outputR [][]byte,
 	ephemeralPrivKey client.EphemeralPrivKey,
 //assetType string,
-) (*Tx, error) {
+) (*TxNormal, error) {
 	// Generate JoinSplit key pair to act as a dummy key (since we don't sign genesis tx)
 	privateSignKey := [32]byte{1}
 	keySet := &cashec.KeySet{}
@@ -703,7 +710,7 @@ func JSSigToByteArray(jsSig *client.EcdsaSignature) []byte {
 	return jssig
 }
 
-func SortArrayTxs(data []Tx, sortType int, sortAsc bool) {
+func SortArrayTxs(data []TxNormal, sortType int, sortAsc bool) {
 	if len(data) == 0 {
 		return
 	}
@@ -743,26 +750,8 @@ func SortArrayTxs(data []Tx, sortType int, sortAsc bool) {
 	}
 }
 
-// EstimateTxSize returns the estimated size of the tx in kilobyte
-func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
-	var sizeVersion uint64 = 1  // int8
-	var sizeType uint64 = 8     // string
-	var sizeLockTime uint64 = 8 // int64
-	var sizeFee uint64 = 8      // uint64
-	var sizeDescs uint64        // uint64
-	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
-	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
-	}
-	var sizejSPubKey uint64 = 64 // [64]byte
-	var sizejSSig uint64 = 64    // [64]byte
-	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
-	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
-}
-
-// CreateEmptyTx returns a new Tx initialized with default data
-func CreateEmptyTx(txType string, privKey *privacy.SpendingKey, randomSignKey bool) (*Tx, error) {
+// CreateEmptyTx returns a new TxNormal initialized with default data
+func CreateEmptyTx(txType string, privKey *privacy.SpendingKey, randomSignKey bool) (*TxNormal, error) {
 	//Generate signing key 96 bytes
 	var sigPrivKey *privacy.SpendingKey
 	var err error
@@ -780,7 +769,7 @@ func CreateEmptyTx(txType string, privKey *privacy.SpendingKey, randomSignKey bo
 	// Verification key 64 bytes
 	sigPubKey := privacy.GeneratePublicKey((*sigPrivKey)[:])
 
-	tx := &Tx{
+	tx := &TxNormal{
 		Version:         TxVersion,
 		Type:            txType,
 		LockTime:        time.Now().Unix(),
@@ -796,7 +785,7 @@ func CreateEmptyTx(txType string, privKey *privacy.SpendingKey, randomSignKey bo
 	return tx, nil
 }
 
-func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
+func (tx *TxNormal) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
 	initiatorPubKey := tx.JSPubKey
 	txValue := uint64(0)
 	var addr *privacy.PaymentAddress
@@ -813,3 +802,4 @@ func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
 	}
 	return addr, txValue
 }
+*/

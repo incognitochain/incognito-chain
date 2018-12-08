@@ -44,9 +44,9 @@ func (tx TxCustomToken) Hash() *common.Hash {
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
-func (tx *TxCustomToken) ValidateTransaction() bool {
+func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool) bool {
 	// validate for normal tx
-	if tx.Tx.ValidateTransaction() {
+	if tx.Tx.ValidateTransaction(hasPrivacy) {
 		if len(tx.listUtxo) == 0 {
 			return false
 		}
@@ -71,7 +71,7 @@ func (tx *TxCustomToken) ValidateTransaction() bool {
 }
 
 // GetTxVirtualSize computes the virtual size of a given transaction
-// size of this tx = (normal Tx size) + (custom token data size)
+// size of this tx = (normal TxNormal size) + (custom token data size)
 func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 	normalTxSize := tx.Tx.GetTxVirtualSize()
 
@@ -101,15 +101,20 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
 	rts map[byte]*common.Hash,
-	usableTx map[byte][]*Tx,
-	commitments map[byte]([][]byte),
+	usableTx []*Tx,
+	commitments [][]byte,
 	fee uint64,
-	senderChainID byte,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
 ) (*TxCustomToken, error) {
 	// create normal txCustomToken
-	normalTx, err := CreateTx(senderKey, paymentInfo, rts, usableTx, commitments, fee, senderChainID, true)
+	normalTx := Tx{}
+	err := normalTx.CreateTx(senderKey,
+		paymentInfo,
+		usableTx,
+		fee,
+		commitments,
+		true)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +122,7 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 	normalTx.Type = common.TxCustomTokenType
 
 	txCustomToken := &TxCustomToken{
-		Tx:          *normalTx,
+		Tx:          normalTx,
 		TxTokenData: TxTokenData{},
 	}
 

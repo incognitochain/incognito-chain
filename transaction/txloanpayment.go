@@ -1,6 +1,6 @@
 package transaction
 
-import (
+/*import (
 	"github.com/ninjadotorg/constant/common"
 	"encoding/hex"
 )
@@ -17,7 +17,7 @@ func NewLoanPayment(data map[string]interface{}) *LoanPayment {
 }
 
 type TxLoanPayment struct {
-	Tx
+	TxNormal
 	*LoanPayment // data for a loan response
 }
 
@@ -41,7 +41,7 @@ func CreateTxLoanPayment(
 	}
 
 	txLoanPayment := &TxLoanPayment{
-		Tx:          *tx,
+		TxNormal:    *tx,
 		LoanPayment: loanPayment,
 	}
 
@@ -50,7 +50,7 @@ func CreateTxLoanPayment(
 
 func (tx *TxLoanPayment) Hash() *common.Hash {
 	// get hash of tx
-	record := tx.Tx.Hash().String()
+	record := tx.TxNormal.Hash().String()
 
 	// add more hash of loan response data
 	record += string(tx.LoanID)
@@ -62,11 +62,11 @@ func (tx *TxLoanPayment) Hash() *common.Hash {
 
 func (tx *TxLoanPayment) ValidateTransaction() bool {
 	// validate for normal tx
-	if !tx.Tx.ValidateTransaction() {
+	if !tx.TxNormal.ValidateTransaction() {
 		return false
 	}
 
-	for _, desc := range tx.Tx.Descs {
+	for _, desc := range tx.TxNormal.Descs {
 		if desc.Note == nil {
 			// TODO(@0xbunyip): check if payment is sent to DCB
 			return false // Loan payment tx must be non-privacy-protocol
@@ -77,4 +77,4 @@ func (tx *TxLoanPayment) ValidateTransaction() bool {
 
 func (tx *TxLoanPayment) GetType() string {
 	return common.TxLoanPayment
-}
+}*/

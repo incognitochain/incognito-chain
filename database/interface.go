@@ -5,6 +5,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/voting"
+	"math/big"
 )
 
 // DatabaseInterface provides the interface that is used to store blocks.
@@ -25,9 +26,9 @@ type DatabaseInterface interface {
 
 	// Transaction index
 	StoreTransactionIndex(*common.Hash, *common.Hash, int) error
-	StoreTransactionLightMode(*privacy.SpendingKey, byte, int32, int, *transaction.Tx) error
+	StoreTransactionLightMode(*privacy.SpendingKey, byte, int32, int, common.Hash, []byte) error
 	GetTransactionIndexById(*common.Hash) (*common.Hash, int, error)
-	GetTransactionLightModeByPrivateKey(*privacy.SpendingKey) (map[byte][]transaction.Tx, error)
+	GetTransactionLightModeByPrivateKey(*privacy.SpendingKey) (map[byte]([]([]byte)), error)
 	GetTransactionLightModeByHash(*common.Hash) ([]byte, []byte, error)
 
 	// Best state of chain
@@ -35,17 +36,23 @@ type DatabaseInterface interface {
 	FetchBestState(byte) ([]byte, error)
 	CleanBestState() error
 
-	// Nullifier
-	StoreNullifiers([]byte, byte) error
-	FetchNullifiers(byte) ([][]byte, error)
-	HasNullifier([]byte, byte) (bool, error)
-	CleanNullifiers() error
+	// SerialNumber
+	StoreSerialNumbers([]byte, byte) error
+	FetchSerialNumbers(byte) ([][]byte, error)
+	HasSerialNumber([]byte, byte) (bool, error)
+	CleanSerialNumbers() error
 
 	// PedersenCommitment
 	StoreCommitments([]byte, byte) error
 	FetchCommitments(byte) ([][]byte, error)
 	HasCommitment([]byte, byte) (bool, error)
 	CleanCommitments() error
+
+	// SNDerivator
+	StoreSNDerivators(big.Int, byte) error
+	FetchSNDerivator(byte) ([]big.Int, error)
+	HasSNDerivator(big.Int, byte) (bool, error)
+	CleanSNDerivator() error
 
 	// Fee estimator
 	StoreFeeEstimator([]byte, byte) error

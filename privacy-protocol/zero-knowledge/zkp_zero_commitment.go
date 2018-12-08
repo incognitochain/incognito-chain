@@ -80,6 +80,20 @@ func (wit *PKComZeroWitness) Set(
 	wit.index = index
 }
 
+func (pro *PKComZeroProof) Bytes() []byte {
+	var res []byte
+	res = append(pro.commitmentValue.Compress(), []byte{*pro.index}...)
+	res = append(res, pro.commitmentZeroS.Compress()...)
+	res = append(res, pro.z.Bytes()...)
+
+	return res
+}
+
+// func (pro *PKComZeroProof) SetBytes([]byte) bool{
+
+// 	return true
+// }
+
 // Set dosomethings
 func (pro *PKComZeroProof) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
@@ -159,10 +173,4 @@ func (pro *PKComZeroProof) Verify() bool {
 	return true
 }
 
-//TestProofIsZero test prove and verify function
-func TestProofIsZero() bool {
-	witness := new(PKComZeroWitness)
-	witness.randValue(true)
-	proof, _ := witness.Prove()
-	return proof.Verify()
-}
+

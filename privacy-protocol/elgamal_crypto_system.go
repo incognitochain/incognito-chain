@@ -118,7 +118,7 @@ func TestElGamalPubKeyEncryption() bool {
 	ciphernew := new(ElGamalCipherText)
 	ciphernew.SetBytes(cipher.Bytes())
 	decPoint := privKey.ElGamalDec(ciphernew)
-	return mess.IsEqual(*decPoint)
+	return mess.IsEqual(decPoint)
 }
 
 // // Copyright 2011 The Go Authors. All rights reserved.
