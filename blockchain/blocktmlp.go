@@ -590,7 +590,7 @@ func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 		txTokenVout := buildSingleBuySellResponseTx(tx, sellingBondsParam)
 		bondIDBytes := txTokenVout.BuySellResponse.BondID
 		var propertyID [common.HashSize]byte
-		copy(propertyID[:], append(BondTokenID[0:8], bondIDBytes...))
+		copy(propertyID[:], append(common.BondTokenID[0:8], bondIDBytes...))
 		txTokenData := transaction.TxTokenData{
 			Type:       transaction.CustomTokenInit,
 			Amount:     tx.Amount,
@@ -755,9 +755,9 @@ func (blockgen *BlkTmplGenerator) buildRefundTxs(
 	return refundTxs, totalRefundAmt
 }
 
-func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc, rt []byte, chainID byte) ([]*transaction.TxBuySellDCBResponse, []metadata.Transaction, error) {
+func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc, rt []byte, chainID byte) ([]*transaction.TxCustomToken, []metadata.Transaction, error) {
 	txsToRemove := []metadata.Transaction{}
-	txsResponse := []*transaction.TxBuySellDCBResponse{}
+	txsResponse := []*transaction.TxCustomToken{}
 	// Get unspent bond tx to spend if needed
 	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	keySet := accountDCB.KeySet
@@ -797,16 +797,16 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc
 
 		// Get price for asset bond
 		bondPrices := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
-		if bytes.Equal(saleData.SellingAsset, ConstantID[:]) {
+		if bytes.Equal(saleData.SellingAsset, common.ConstantID[:]) {
 			txResponse, err := buildResponseForCoin(tx, saleData.SellingAsset, rt, chainID, bondPrices, metaRequest.SaleID, common.DCBAddress)
 			if err != nil {
 				txsToRemove = append(txsToRemove, tx)
 			} else {
 				txsResponse = append(txsResponse, txResponse)
 			}
-		} else if bytes.Equal(saleData.SellingAsset[:8], BondTokenID[:8]) {
+		} else if bytes.Equal(saleData.SellingAsset[:8], common.BondTokenID[:8]) {
 			// Get unspent token UTXO to send to user
-			txResponse := &transaction.TxBuySellDCBResponse{}
+			txResponse := &transaction.TxCustomToken{}
 			txResponse, unspentTxTokenOuts, err = buildResponseForBond(tx, saleData.SellingAsset, rt, chainID, bondPrices, unspentTxTokenOuts, metaRequest.SaleID, common.DCBAddress)
 			if err != nil {
 				txsToRemove = append(txsToRemove, tx)

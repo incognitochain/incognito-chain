@@ -334,7 +334,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	}
 	// Create genesis token tx for DCB
 	dcbTokenTx := createSpecialTokenTx( // DCB
-		common.Hash(DCBTokenID),
+		common.Hash(common.DCBTokenID),
 		"Decentralized central bank token",
 		"DCB",
 		icoParams.InitialDCBToken,
@@ -344,7 +344,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 
 	// Create genesis token tx for GOV
 	govTokenTx := createSpecialTokenTx(
-		common.Hash(GOVTokenID),
+		common.Hash(common.GOVTokenID),
 		"Government token",
 		"GOV",
 		icoParams.InitialGOVToken,
@@ -354,7 +354,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 
 	// Create genesis token tx for CMB
 	cmbTokenTx := createSpecialTokenTx(
-		common.Hash(CMBTokenID),
+		common.Hash(common.CMBTokenID),
 		"Commercial bank token",
 		"CMB",
 		icoParams.InitialCMBToken,
@@ -374,7 +374,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 
 	// Create genesis vote token tx for DCB
 	VoteDCBTokenTx := createSpecialTokenTx(
-		common.Hash(VoteDCBTokenID),
+		common.Hash(common.VoteDCBTokenID),
 		"Bond",
 		"BON",
 		icoParams.InitialVoteDCBToken,
@@ -384,7 +384,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 
 	// Create genesis vote token tx for GOV
 	VoteGOVTokenTx := createSpecialTokenTx(
-		common.Hash(VoteGOVTokenID),
+		common.Hash(common.VoteGOVTokenID),
 		"Bond",
 		"BON",
 		icoParams.InitialVoteGOVToken,

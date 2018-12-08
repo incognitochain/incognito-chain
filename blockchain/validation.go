@@ -232,10 +232,10 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx metadata.Transaction, cha
 	}
 
 	dbcAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	if bytes.Equal(saleData.BuyingAsset[:8], BondTokenID[:8]) {
+	if bytes.Equal(saleData.BuyingAsset[:8], common.BondTokenID[:8]) {
 		for _, vout := range requestTx.TxTokenData.Vouts {
 			if !bytes.Equal(vout.BuySellResponse.BondID, saleData.BuyingAsset[8:]) {
-				return fmt.Errorf("Received asset id %s instead of %s", append(BondTokenID[:8], vout.BuySellResponse.BondID...), saleData.BuyingAsset)
+				return fmt.Errorf("Received asset id %s instead of %s", append(common.BondTokenID[:8], vout.BuySellResponse.BondID...), saleData.BuyingAsset)
 			}
 
 			// Check if receiving address is DCB's
@@ -243,7 +243,7 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx metadata.Transaction, cha
 				return fmt.Errorf("Sending payment to %x instead of %x", vout.PaymentAddress.Pk[:], common.DCBAddress)
 			}
 		}
-	} else if bytes.Equal(saleData.BuyingAsset, ConstantID[:]) {
+	} else if bytes.Equal(saleData.BuyingAsset, common.ConstantID[:]) {
 		for _, desc := range requestTx.Tx.Descs {
 			for _, note := range desc.Note {
 				if !bytes.Equal(note.Apk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
@@ -252,30 +252,6 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx metadata.Transaction, cha
 			}
 		}
 	}
-	return nil
-}
-
-func (self *BlockChain) ValidateTxBuySellDCBResponse(tx metadata.Transaction, chainID byte) error {
-	// Check if crowdsale existed
-	responseTx, ok := tx.(*transaction.TxBuySellDCBResponse)
-	if !ok {
-		return fmt.Errorf("Error parsing TxBuySellDCBResponse")
-	}
-	saleData, err := self.config.DataBase.LoadCrowdsaleData(responseTx.SaleID)
-	if err != nil {
-		return fmt.Errorf("SaleID not found")
-	}
-
-	// Check if sale is still valid
-	if self.BestState[chainID].Height >= saleData.EndBlock {
-		return fmt.Errorf("Sale ended")
-	}
-
-	if !bytes.Equal(saleData.SellingAsset[:8], BondTokenID[:8]) {
-		return fmt.Errorf("Sending asset id %s instead of %s", BondTokenID, saleData.SellingAsset)
-	}
-
-	// TODO(@0xbunyip): validate amount of asset sent
 	return nil
 }
 

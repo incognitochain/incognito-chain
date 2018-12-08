@@ -1,7 +1,5 @@
 package blockchain
 
-import "github.com/ninjadotorg/constant/common"
-
 // constant for network
 const (
 	//Network fixed params
@@ -34,17 +32,6 @@ const (
 	TestnetInitCmBToken               = 10000
 	TestnetInitBondToken              = 10000
 	TestnetGenesisBlockPaymentAddress = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
-)
-
-// special token ids (aka. PropertyID in custom token)
-var (
-	BondTokenID    = [common.HashSize]byte{0, 0, 0, 0, 0, 0, 0, 0}
-	DCBTokenID     = [common.HashSize]byte{1}
-	GOVTokenID     = [common.HashSize]byte{2}
-	CMBTokenID     = [common.HashSize]byte{3}
-	ConstantID     = [common.HashSize]byte{4} // To send Constant in custom token
-	VoteDCBTokenID = [common.HashSize]byte{5}
-	VoteGOVTokenID = [common.HashSize]byte{6}
 )
 
 const (

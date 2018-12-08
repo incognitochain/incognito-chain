@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
-func buildResponseForCoin(txRequest *transaction.TxCustomToken, bondID []byte, rt []byte, chainID byte, bondPrices map[string]uint64, saleID []byte, dcbAddress string) (*transaction.TxBuySellDCBResponse, error) {
+func buildResponseForCoin(txRequest *transaction.TxCustomToken, bondID []byte, rt []byte, chainID byte, bondPrices map[string]uint64, saleID []byte, dcbAddress string) (*transaction.TxCustomToken, error) {
 	// Mint and send Constant
 	meta := txRequest.Metadata.(*metadata.CrowdsaleRequest)
 	pks := [][]byte{meta.PaymentAddress.Pk[:], meta.PaymentAddress.Pk[:]}
@@ -30,19 +31,22 @@ func buildResponseForCoin(txRequest *transaction.TxCustomToken, bondID []byte, r
 	if err != nil {
 		return nil, err
 	}
+	metaRes := &metadata.CrowdsaleResponse{
+		RequestedTxID: &common.Hash{},
+		SaleID:        make([]byte, len(saleID)),
+	}
+	hash := txRequest.Hash()
+	copy(metaRes.RequestedTxID[:], hash[:])
+	copy(metaRes.SaleID, saleID)
 	txToken := &transaction.TxCustomToken{
 		Tx:          *tx,
 		TxTokenData: transaction.TxTokenData{},
 	}
-	txResponse := &transaction.TxBuySellDCBResponse{
-		TxCustomToken: txToken,
-		RequestedTxID: txRequest.Hash(),
-		SaleID:        saleID,
-	}
-	return txResponse, nil
+	txToken.Metadata = metaRes
+	return txToken, nil
 }
 
-func buildResponseForBond(txRequest *transaction.TxCustomToken, bondID []byte, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []transaction.TxTokenVout, saleID []byte, dcbAddress string) (*transaction.TxBuySellDCBResponse, []transaction.TxTokenVout, error) {
+func buildResponseForBond(txRequest *transaction.TxCustomToken, bondID []byte, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []transaction.TxTokenVout, saleID []byte, dcbAddress string) (*transaction.TxCustomToken, []transaction.TxTokenVout, error) {
 	accountDCB, _ := wallet.Base58CheckDeserialize(dcbAddress)
 	// Get amount of Constant user sent
 	value := uint64(0)
@@ -96,6 +100,13 @@ func buildResponseForBond(txRequest *transaction.TxCustomToken, bondID []byte, r
 		})
 	}
 
+	metaRes := &metadata.CrowdsaleResponse{
+		RequestedTxID: &common.Hash{},
+		SaleID:        make([]byte, len(saleID)),
+	}
+	hash := txRequest.Hash()
+	copy(metaRes.RequestedTxID[:], hash[:])
+	copy(metaRes.SaleID, saleID)
 	txToken := &transaction.TxCustomToken{
 		TxTokenData: transaction.TxTokenData{
 			Type:  transaction.CustomTokenTransfer,
@@ -103,10 +114,6 @@ func buildResponseForBond(txRequest *transaction.TxCustomToken, bondID []byte, r
 			Vouts: txTokenOuts,
 		},
 	}
-	txResponse := &transaction.TxBuySellDCBResponse{
-		TxCustomToken: txToken,
-		RequestedTxID: txRequest.Hash(),
-		SaleID:        saleID,
-	}
-	return txResponse, unspentTxTokenOuts[usedID:], nil
+	txToken.Metadata = metaRes
+	return txToken, unspentTxTokenOuts[usedID:], nil
 }
