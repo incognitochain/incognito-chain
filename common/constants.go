@@ -14,7 +14,6 @@ const (
 	TxCustomTokenPrivacyType = "t" // token  tx with supporting privacy
 
 	TxBuyFromGOVRequest  = "bgr"
-	TxBuySellDCBRequest  = "bsdr"
 	TxBuySellDCBResponse = "bsds"
 	TxBuyFromGOVResponse = "bgrs"
 	TxBuyBackRequest     = "bbr"
