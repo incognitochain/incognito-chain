@@ -628,7 +628,7 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 		// replace 1000 with proper value for snapshot
 		if block.Header.Height%1000 == 0 {
 			// list of unreward-utxo
-			self.config.customTokenRewardSnapshot, err = self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(&customTokenTx.TxTokenData.PropertyID)
+			self.config.customTokenRewardSnapshot, err = self.config.DataBase.GetCustomTokenPaymentAddressesBalance(&customTokenTx.TxTokenData.PropertyID)
 			if err != nil {
 				return err
 			}
@@ -1185,7 +1185,7 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 
 // GetListTokenHolders - return list paymentaddress (in hexstring) of someone who hold custom token in network
 func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]uint64, error) {
-	result, err := self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(tokenID)
+	result, err := self.config.DataBase.GetCustomTokenPaymentAddressesBalance(tokenID)
 	if err != nil {
 		return nil, err
 	}

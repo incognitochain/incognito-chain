@@ -139,7 +139,7 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 /*
 	Return a list of all address with balance > 0
 */
-func (db *db) GetCustomTokenListPaymentAddress(tokenID *common.Hash) ([][]byte, error) {
+/*func (db *db) GetCustomTokenListPaymentAddress(tokenID *common.Hash) ([][]byte, error) {
 	results := [][]byte{}
 	tempsResult := make(map[string]bool)
 	prefix := tokenPaymentAddressPrefix
@@ -163,25 +163,25 @@ func (db *db) GetCustomTokenListPaymentAddress(tokenID *common.Hash) ([][]byte, 
 	}
 	iter.Release()
 	return results, nil
-}
+}*/
 
 /*
 	Return a list of all address with balance > 0
 */
-func (db *db) GetCustomTokenListPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error) {
+func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error) {
 	results := make(map[string]uint64)
 	//tempsResult := make(map[string]bool)
 	prefix := tokenPaymentAddressPrefix
 	prefix = append(prefix, splitter...)
 	prefix = append(prefix, (*tokenID)[:]...)
-	//fmt.Println("GetCustomTokenListPaymentAddressesBalance, prefix", prefix)
+	//fmt.Println("GetCustomTokenPaymentAddressesBalance, prefix", prefix)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		key := string(iter.Key())
 		value := string(iter.Value())
 		keys := strings.Split(key, string(splitter))
 		values := strings.Split(value, string(splitter))
-		fmt.Println("GetCustomTokenListPaymentAddressesBalance, utxo information", value)
+		fmt.Println("GetCustomTokenPaymentAddressesBalance, utxo information", value)
 		if strings.Compare(values[1], string(unspent)) == 0 {
 			// Uncomment this to get balance of all account
 			paymentAddress := privacy.PaymentAddress{}

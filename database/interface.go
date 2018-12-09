@@ -60,14 +60,14 @@ type DatabaseInterface interface {
 	CleanFeeEstimator() error
 
 	// Custom token
-	StoreCustomToken(*common.Hash, []byte) error                       // param: tokenID, txInitToken-id, data tx
-	StoreCustomTokenTx(*common.Hash, byte, int32, int32, []byte) error // param: tokenID, chainID, block height, tx-id, data tx
-	ListCustomToken() ([][]byte, error)
-	CustomTokenTxs(*common.Hash) ([]*common.Hash, error)                                              // token id
-	StoreCustomTokenPaymentAddresstHistory(*common.Hash, *transaction.TxCustomToken) error            // store account history of custom token
-	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error)                                  // get all account that have balance > 0 of a custom token
-	GetCustomTokenPaymentAddressUTXO(*common.Hash, privacy.PaymentAddress) (map[string]string, error) // get list of utxo of an account of a token
-	GetCustomTokenListPaymentAddressesBalance(*common.Hash) (map[string]uint64, error)                // get balance of all payment address of a token (only return payment address with balance > 0)
+	StoreCustomToken(*common.Hash, []byte) error                                           // store custom token. Param: tokenID, txInitToken-id, data tx
+	StoreCustomTokenTx(*common.Hash, byte, int32, int32, []byte) error                     // store custom token tx. Param: tokenID, chainID, block height, tx-id, data tx
+	ListCustomToken() ([][]byte, error)                                                    // get list all custom token which issued in network
+	CustomTokenTxs(*common.Hash) ([]*common.Hash, error)                                   // from token id get all custom txs
+	StoreCustomTokenPaymentAddresstHistory(*common.Hash, *transaction.TxCustomToken) error // store account history of custom token
+	//GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error)                                  // get all paymentaddress owner that have balance > 0 of a custom token
+	GetCustomTokenPaymentAddressUTXO(*common.Hash, privacy.PaymentAddress) (map[string]string, error) // get list of utxo of an paymentaddress of a token
+	GetCustomTokenPaymentAddressesBalance(*common.Hash) (map[string]uint64, error)                    // get balance of all paymentaddress of a token (only return payment address with balance > 0)
 	UpdateRewardAccountUTXO(*common.Hash, privacy.PaymentAddress, *common.Hash, int) error
 
 	// Loans
