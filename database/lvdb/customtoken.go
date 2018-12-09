@@ -237,12 +237,12 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 	Get a list of UTXO of one address
 	Return a list of UTXO, each UTXO has format: txHash-index
 */
-func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddress privacy.PaymentAddress) (map[string]string, error) {
+func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []byte) (map[string]string, error) {
 	prefix := tokenPaymentAddressPrefix
 	prefix = append(prefix, splitter...)
 	prefix = append(prefix, (*tokenID)[:]...)
 	prefix = append(prefix, splitter...)
-	prefix = append(prefix, paymentAddress.Pk...)
+	prefix = append(prefix, pubkey...)
 	log.Println(hex.EncodeToString(prefix))
 	results := make(map[string]string)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
@@ -259,12 +259,12 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddr
 /*
 	Update UTXO from unreward -> reward
 */
-func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress privacy.PaymentAddress, txHash *common.Hash, voutIndex int) error {
+/*func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, pubkey []byte, txHash *common.Hash, voutIndex int) error {
 	key := tokenPaymentAddressPrefix
 	key = append(key, splitter...)
 	key = append(key, (*tokenID)[:]...)
 	key = append(key, splitter...)
-	key = append(key, (paymentAddress.Pk)[:]...)
+	key = append(key, pubkey...)
 	key = append(key, splitter...)
 	key = append(key, (*txHash)[:]...)
 	key = append(key, splitter...)
@@ -285,7 +285,7 @@ func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress priva
 		return err
 	}
 	return nil
-}
+}*/
 
 func (db *db) SaveCrowdsaleData(saleData *voting.SaleData) error {
 	return nil

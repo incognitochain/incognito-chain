@@ -66,9 +66,9 @@ type DatabaseInterface interface {
 	CustomTokenTxs(*common.Hash) ([]*common.Hash, error)                                   // from token id get all custom txs
 	StoreCustomTokenPaymentAddresstHistory(*common.Hash, *transaction.TxCustomToken) error // store account history of custom token
 	//GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error)                                  // get all paymentaddress owner that have balance > 0 of a custom token
-	GetCustomTokenPaymentAddressUTXO(*common.Hash, privacy.PaymentAddress) (map[string]string, error) // get list of utxo of an paymentaddress of a token
-	GetCustomTokenPaymentAddressesBalance(*common.Hash) (map[string]uint64, error)                    // get balance of all paymentaddress of a token (only return payment address with balance > 0)
-	UpdateRewardAccountUTXO(*common.Hash, privacy.PaymentAddress, *common.Hash, int) error
+	GetCustomTokenPaymentAddressUTXO(*common.Hash, []byte) (map[string]string, error) // get list of utxo of an paymentaddress.pubkey of a token
+	GetCustomTokenPaymentAddressesBalance(*common.Hash) (map[string]uint64, error)    // get balance of all paymentaddress of a token (only return payment address with balance > 0)
+	//UpdateRewardAccountUTXO(*common.Hash, []byte, *common.Hash, int) error
 
 	// Loans
 	StoreLoanRequest([]byte, []byte) error  // param: loanID, tx hash
