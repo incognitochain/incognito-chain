@@ -82,6 +82,7 @@ func (bsReq *BuySellRequest) Hash() *common.Hash {
 	record += string(bsReq.Amount)
 	record += string(bsReq.BuyPrice)
 	record += string(bsReq.SaleID)
+	record += string(bsReq.MetadataBase.Hash()[:])
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

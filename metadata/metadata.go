@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/ninjadotorg/constant/blockchain/params"
@@ -21,6 +22,12 @@ func (mb *MetadataBase) Process() error {
 
 func (mb *MetadataBase) GetType() int {
 	return mb.Type
+}
+
+func (mb *MetadataBase) Hash() *common.Hash {
+	record := strconv.Itoa(mb.Type)
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
 }
 
 func (mb *MetadataBase) CheckTransactionFee(tr Transaction, minFee uint64) bool {
