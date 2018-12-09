@@ -78,12 +78,12 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 	tokenKey = append(tokenKey, splitter...)
 	tokenKey = append(tokenKey, (*tokenID)[:]...)
 	for _, vin := range tx.TxTokenData.Vins {
-		paymentAddress := vin.PaymentAddress.Pk
+		paymentAddressPubkey := vin.PaymentAddress.Pk
 		utxoHash := &vin.TxCustomTokenID
 		voutIndex := vin.VoutIndex
 		paymentAddressKey := tokenKey
 		paymentAddressKey = append(paymentAddressKey, splitter...)
-		paymentAddressKey = append(paymentAddressKey, paymentAddress...)
+		paymentAddressKey = append(paymentAddressKey, paymentAddressPubkey...)
 		paymentAddressKey = append(paymentAddressKey, splitter...)
 		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
 		paymentAddressKey = append(paymentAddressKey, splitter...)
@@ -108,13 +108,13 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		}
 	}
 	for _, vout := range tx.TxTokenData.Vouts {
-		paymentAddress := vout.PaymentAddress.Pk
+		paymentAddressPubkey := vout.PaymentAddress.Pk
 		utxoHash := tx.Hash()
 		voutIndex := vout.GetIndex()
 		value := vout.Value
 		paymentAddressKey := tokenKey
 		paymentAddressKey = append(paymentAddressKey, splitter...)
-		paymentAddressKey = append(paymentAddressKey, paymentAddress...)
+		paymentAddressKey = append(paymentAddressKey, paymentAddressPubkey...)
 		paymentAddressKey = append(paymentAddressKey, splitter...)
 		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
 		paymentAddressKey = append(paymentAddressKey, splitter...)
