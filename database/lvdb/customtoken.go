@@ -237,42 +237,20 @@ func (db *db) GetCustomTokenListPaymentAddressesBalance(tokenID *common.Hash) (m
 	Get a list of UTXO of one address
 	Return a list of UTXO, each UTXO has format: txHash-index
 */
-func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddress privacy.PaymentAddress) ([]transaction.TxTokenVout, error) {
+func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddress privacy.PaymentAddress) (map[string]string, error) {
 	prefix := tokenPaymentAddressPrefix
 	prefix = append(prefix, splitter...)
 	prefix = append(prefix, (*tokenID)[:]...)
 	prefix = append(prefix, splitter...)
 	prefix = append(prefix, paymentAddress.Pk...)
 	log.Println(hex.EncodeToString(prefix))
-	results := []transaction.TxTokenVout{}
+	results := make(map[string]string)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		key := string(iter.Key())
 		// token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
 		value := string(iter.Value())
-		keys := strings.Split(key, string(splitter))
-		values := strings.Split(value, string(splitter))
-		// get unspent and unreward transaction output
-		if strings.Compare(values[1], string(unspent)) == 0 {
-
-			vout := transaction.TxTokenVout{}
-			vout.PaymentAddress = paymentAddress
-			txHash, err := common.Hash{}.NewHash([]byte(keys[3]))
-			if err != nil {
-				return nil, err
-			}
-			vout.SetTxCustomTokenID(*txHash)
-			voutIndexByte := []byte(keys[4])[0]
-			voutIndex := int(voutIndexByte)
-			vout.SetIndex(voutIndex)
-			value, err := strconv.Atoi(values[0])
-			if err != nil {
-				return nil, err
-			}
-			vout.Value = uint64(value)
-			fmt.Println("GetCustomTokenPaymentAddressUTXO VOUT", vout)
-			results = append(results, vout)
-		}
+		results[key] = value
 	}
 	iter.Release()
 	return results, nil

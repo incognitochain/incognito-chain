@@ -63,11 +63,11 @@ type DatabaseInterface interface {
 	StoreCustomToken(*common.Hash, []byte) error                       // param: tokenID, txInitToken-id, data tx
 	StoreCustomTokenTx(*common.Hash, byte, int32, int32, []byte) error // param: tokenID, chainID, block height, tx-id, data tx
 	ListCustomToken() ([][]byte, error)
-	CustomTokenTxs(*common.Hash) ([]*common.Hash, error)                                                      // token id
-	StoreCustomTokenPaymentAddresstHistory(*common.Hash, *transaction.TxCustomToken) error                    // store account history of custom token
-	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error)                                          // get all account that have balance > 0 of a custom token
-	GetCustomTokenPaymentAddressUTXO(*common.Hash, privacy.PaymentAddress) ([]transaction.TxTokenVout, error) // get list of utxo of an account of a token
-	GetCustomTokenListPaymentAddressesBalance(*common.Hash) (map[string]uint64, error)                        // get balance of all payment address of a token (only return payment address with balance > 0)
+	CustomTokenTxs(*common.Hash) ([]*common.Hash, error)                                              // token id
+	StoreCustomTokenPaymentAddresstHistory(*common.Hash, *transaction.TxCustomToken) error            // store account history of custom token
+	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error)                                  // get all account that have balance > 0 of a custom token
+	GetCustomTokenPaymentAddressUTXO(*common.Hash, privacy.PaymentAddress) (map[string]string, error) // get list of utxo of an account of a token
+	GetCustomTokenListPaymentAddressesBalance(*common.Hash) (map[string]uint64, error)                // get balance of all payment address of a token (only return payment address with balance > 0)
 	UpdateRewardAccountUTXO(*common.Hash, privacy.PaymentAddress, *common.Hash, int) error
 
 	// Loans

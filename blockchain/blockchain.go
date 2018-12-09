@@ -16,6 +16,8 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"fmt"
+	"strconv"
 )
 
 const (
@@ -1021,9 +1023,37 @@ func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCand
 
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
 func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
-	voutList, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress)
+	data, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress)
 	if err != nil {
 		return nil, err
+	}
+	splitter := []byte("-[-]-")
+	unspent := []byte("unspent")
+	voutList := []transaction.TxTokenVout{}
+	for key, value := range data {
+		keys := strings.Split(key, string(splitter))
+		values := strings.Split(value, string(splitter))
+		// get unspent and unreward transaction output
+		if strings.Compare(values[1], string(unspent)) == 0 {
+
+			vout := transaction.TxTokenVout{}
+			vout.PaymentAddress = receiverKeyset.PaymentAddress
+			txHash, err := common.Hash{}.NewHash([]byte(keys[3]))
+			if err != nil {
+				return nil, err
+			}
+			vout.SetTxCustomTokenID(*txHash)
+			voutIndexByte := []byte(keys[4])[0]
+			voutIndex := int(voutIndexByte)
+			vout.SetIndex(voutIndex)
+			value, err := strconv.Atoi(values[0])
+			if err != nil {
+				return nil, err
+			}
+			vout.Value = uint64(value)
+			fmt.Println("GetCustomTokenPaymentAddressUTXO VOUT", vout)
+			voutList = append(voutList, vout)
+		}
 	}
 	return voutList, nil
 }
