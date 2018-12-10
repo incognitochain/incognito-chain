@@ -103,7 +103,7 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		}
 		// new value: {value}-spent-unreward/reward
 		newValues := values[0] + string(Splitter) + string(spent) + string(Splitter) + values[2]
-		if err := db.lvdb.Put(paymentAddressKey, []byte(newValues), nil); err != nil {
+		if err := db.Put(paymentAddressKey, []byte(newValues)); err != nil {
 			return err
 		}
 	}
@@ -129,7 +129,7 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		}
 		// init value: {value}-unspent-unreward
 		paymentAddressValue := strconv.Itoa(int(value)) + string(Splitter) + string(unspent) + string(Splitter) + string(unreward)
-		if err := db.lvdb.Put(paymentAddressKey, []byte(paymentAddressValue), nil); err != nil {
+		if err := db.Put(paymentAddressKey, []byte(paymentAddressValue)); err != nil {
 			return err
 		}
 	}
