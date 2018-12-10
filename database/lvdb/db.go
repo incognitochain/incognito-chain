@@ -38,8 +38,8 @@ var (
 	loanRequestPostfix        = []byte("-req")
 	loanResponsePostfix       = []byte("-res")
 	rewared                   = []byte("reward")
-	unreward                  = []byte("unreward")
-	spent                     = []byte("spent")
+	Unreward                  = []byte("unreward")
+	Spent                     = []byte("spent")
 	Unspent                   = []byte("unspent")
 )
 

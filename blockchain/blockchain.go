@@ -18,6 +18,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"fmt"
 	"strconv"
+	"github.com/ninjadotorg/constant/database/lvdb"
 )
 
 const (
@@ -664,11 +665,11 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
   H: value-spent/unspent-rewarded/unreward
 */
 func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken) error {
-	Splitter := []byte("-[-]-")
-	TokenPaymentAddressPrefix := []byte("token-paymentaddress-")
-	unspent := []byte("unspent")
-	spent := []byte("spent")
-	unreward := []byte("unreward")
+	Splitter := lvdb.Splitter
+	TokenPaymentAddressPrefix := lvdb.TokenPaymentAddressPrefix
+	unspent := lvdb.Unspent
+	spent := lvdb.Spent
+	unreward := lvdb.Unreward
 
 	tokenKey := TokenPaymentAddressPrefix
 	tokenKey = append(tokenKey, Splitter...)
