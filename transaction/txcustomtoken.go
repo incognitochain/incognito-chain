@@ -101,9 +101,7 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 // CreateTxCustomToken ...
 func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
-	rts map[byte]*common.Hash,
 	usableTx []*Tx,
-	commitments [][]byte,
 	fee uint64,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
@@ -114,7 +112,6 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 		paymentInfo,
 		usableTx,
 		fee,
-		commitments,
 		true,
 		nil)
 	if err != nil {

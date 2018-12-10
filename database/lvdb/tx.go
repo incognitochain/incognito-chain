@@ -34,13 +34,13 @@ func (db *db) StoreSerialNumbers(serialNumber []byte, chainId byte) error {
 	}
 
 	lenData := int64(len(arrayData))
-	lenBytes := big.NewInt(lenData).Bytes()
+	newIndex := big.NewInt(lenData).Bytes()
 	if lenData == 0 {
-		lenBytes = []byte{0}
+		newIndex = []byte{0}
 	}
-	keySpec := make([]byte, len(key))
-	keySpec = append(keySpec, lenBytes...)
-	if err := db.lvdb.Put(keySpec, serialNumber, nil); err != nil {
+	keySpec1 := make([]byte, len(key))
+	keySpec1 = append(key, serialNumber...)
+	if err := db.lvdb.Put(keySpec1, newIndex, nil); err != nil {
 		return err
 	}
 
@@ -80,7 +80,8 @@ func (db *db) HasSerialNumber(serialNumber []byte, chainID byte) (bool, error) {
 	keySpec := append(key, serialNumber...)
 	_, err := db.Get(keySpec)
 	if err != nil {
-		return false, err
+		fmt.Println(err)
+		return false, nil
 	} else {
 		return true, nil
 	}
@@ -88,7 +89,7 @@ func (db *db) HasSerialNumber(serialNumber []byte, chainID byte) (bool, error) {
 }
 
 // HasSerialNumberIndex - Check serialNumber in list SerialNumbers by chainID
-func (db *db) HasSerialNumberIndex(serialNumberIndex int64, chainID byte) (bool, error) {
+/*func (db *db) HasSerialNumberIndex(serialNumberIndex int64, chainID byte) (bool, error) {
 	key := db.getKey(string(serialNumbersPrefix), "")
 	key = append(key, chainID)
 	keySpec := append(key, big.NewInt(serialNumberIndex).Bytes()...)
@@ -99,9 +100,9 @@ func (db *db) HasSerialNumberIndex(serialNumberIndex int64, chainID byte) (bool,
 		return true, nil
 	}
 	return false, nil
-}
+}*/
 
-func (db *db) GetSerialNumberByIndex(serialNumberIndex int64, chainID byte) ([]byte, error) {
+/*func (db *db) GetSerialNumberByIndex(serialNumberIndex int64, chainID byte) ([]byte, error) {
 	key := db.getKey(string(serialNumbersPrefix), "")
 	key = append(key, chainID)
 	keySpec := append(key, big.NewInt(serialNumberIndex).Bytes()...)
@@ -112,7 +113,7 @@ func (db *db) GetSerialNumberByIndex(serialNumberIndex int64, chainID byte) ([]b
 		return data, nil
 	}
 	return data, nil
-}
+}*/
 
 // CleanSerialNumbers - clear all list serialNumber in DB
 func (db *db) CleanSerialNumbers() error {
@@ -147,13 +148,13 @@ func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
 	}
 
 	// use for create proof random
-	lenData := int64(len(arrData))
-	lenBytes := big.NewInt(lenData).Bytes()
+	lenData := uint64(len(arrData))
+	newIndex := new(big.Int).SetUint64(lenData).Bytes()
 	if lenData == 0 {
-		lenBytes = []byte{0}
+		newIndex = []byte{0}
 	}
 	keySpec1 := make([]byte, len(key))
-	keySpec1 = append(key, lenBytes...)
+	keySpec1 = append(key, newIndex...)
 	if err := db.lvdb.Put(keySpec1, commitments, nil); err != nil {
 		return err
 	}
@@ -161,7 +162,14 @@ func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
 	// use for validate
 	keySpec2 := make([]byte, len(key))
 	keySpec2 = append(key, commitments...)
-	if err := db.lvdb.Put(keySpec2, []byte{}, nil); err != nil {
+	if err := db.lvdb.Put(keySpec2, newIndex, nil); err != nil {
+		return err
+	}
+
+	// store length of array commitment
+	keySpec3 := make([]byte, len(key))
+	keySpec3 = append(key, []byte("len")...)
+	if err := db.lvdb.Put(keySpec3, newIndex, nil); err != nil {
 		return err
 	}
 
@@ -211,7 +219,7 @@ func (db *db) HasCommitment(commitment []byte, chainId byte) (bool, error) {
 	keySpec := append(key, commitment...)
 	_, err := db.Get(keySpec)
 	if err != nil {
-		return false, err
+		return false, nil
 	} else {
 		return true, nil
 	}
@@ -231,10 +239,10 @@ func (db *db) HasCommitmentIndex(commitmentIndex int64, chainId byte) (bool, err
 	return false, nil
 }
 
-func (db *db) GetCommitmentByIndex(commitmentIndex int64, chainId byte) ([]byte, error) {
+func (db *db) GetCommitmentByIndex(commitmentIndex uint64, chainId byte) ([]byte, error) {
 	key := db.getKey(string(commitmentsPrefix), "")
 	key = append(key, chainId)
-	keySpec := append(key, big.NewInt(commitmentIndex).Bytes()...)
+	keySpec := append(key, new(big.Int).SetUint64(commitmentIndex).Bytes()...)
 	data, err := db.Get(keySpec)
 	if err != nil {
 		return data, err
@@ -242,6 +250,36 @@ func (db *db) GetCommitmentByIndex(commitmentIndex int64, chainId byte) ([]byte,
 		return data, nil
 	}
 	return data, nil
+}
+
+// GetCommitmentIndex - return index of commitment in db list
+func (db *db) GetCommitmentIndex(commitment []byte, chainId byte) (*big.Int, error) {
+	key := db.getKey(string(commitmentsPrefix), "")
+	key = append(key, chainId)
+	keySpec := append(key, commitment...)
+	data, err := db.Get(keySpec)
+	if err != nil {
+		return nil, err
+	} else {
+		return new(big.Int).SetBytes(data), nil
+	}
+	return nil, nil
+}
+
+// GetCommitmentIndex - return index of commitment in db list
+func (db *db) GetCommitmentLength(chainId byte) (*big.Int, error) {
+	key := db.getKey(string(commitmentsPrefix), "")
+	key = append(key, chainId)
+	keySpec := append(key, []byte("len")...)
+	data, err := db.Get(keySpec)
+	if err != nil {
+		return nil, err
+	} else {
+		lenArray := new(big.Int).SetBytes(data)
+		lenArray = lenArray.Add(lenArray, new(big.Int).SetInt64(1))
+		return lenArray, nil
+	}
+	return nil, nil
 }
 
 // CleanCommitments - clear all list commitments in DB
@@ -326,7 +364,7 @@ func (db *db) HasSNDerivator(data big.Int, chainID byte) (bool, error) {
 	keySpec := append(key, snderivatorData...)
 	_, err := db.Get(keySpec)
 	if err != nil {
-		return false, err
+		return false, nil
 	} else {
 		return true, nil
 	}

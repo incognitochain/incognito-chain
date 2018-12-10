@@ -43,27 +43,28 @@ type Tx struct {
 
 // randomCommitmentsProcess - process list commitments and useable tx to create
 // a list commitment random which be used to create a proof for new tx
-func randomCommitmentsProcess(commitments [][]byte, useableTx []*Tx, randNum int) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+func randomCommitmentsProcess(useableTx []*Tx, randNum int, db database.DatabaseInterface, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
 	commitmentIndexs = []uint64{}
 	myCommitmentIndexs = []uint64{}
 	if randNum == 0 {
 		randNum = 7
 	}
 	listCommitmentsInUsableTx := [][]byte{}
-	mapIndexCommitmentsInUsableTx := make(map[string]uint64)
+	mapIndexCommitmentsInUsableTx := make(map[string]*big.Int)
 	for _, tx := range useableTx {
 		for _, out := range tx.Proof.OutputCoins {
-			listCommitmentsInUsableTx = append(listCommitmentsInUsableTx, out.CoinDetails.CoinCommitment.Compress())
-			index, _ := common.SliceBytesExists(commitments, out.CoinDetails.CoinCommitment.Compress())
-			mapIndexCommitmentsInUsableTx[string(out.CoinDetails.CoinCommitment.Compress())] = uint64(index)
+			commitment := out.CoinDetails.CoinCommitment.Compress()
+			listCommitmentsInUsableTx = append(listCommitmentsInUsableTx, commitment)
+			index, _ := db.GetCommitmentIndex(commitment, chainID)
+			mapIndexCommitmentsInUsableTx[string(commitment)] = index
 		}
 	}
 	cpRandNum := (len(listCommitmentsInUsableTx) * randNum) - len(listCommitmentsInUsableTx)
 	for i := 0; i < cpRandNum; i++ {
 		for true {
-			index := rand2.Int63n(int64(len(commitments)))
-			choosenCommitment := commitments[index]
-			if k, err := common.SliceBytesExists(listCommitmentsInUsableTx, choosenCommitment); k != -1 && err != nil {
+			lenCommitment, _ := db.GetCommitmentLength(chainID)
+			index := rand2.Int63n(lenCommitment.Int64())
+			if ok, err := db.HasCommitmentIndex(index, chainID); !ok && err != nil {
 				commitmentIndexs = append(commitmentIndexs, uint64(index))
 			} else {
 				continue
@@ -74,7 +75,7 @@ func randomCommitmentsProcess(commitments [][]byte, useableTx []*Tx, randNum int
 		key := string(temp)
 		index := mapIndexCommitmentsInUsableTx[key]
 		i := rand2.Int63n(int64(len(commitmentIndexs)))
-		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index}, commitmentIndexs[i:]...)...)
+		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)
 		myCommitmentIndexs = append(myCommitmentIndexs, uint64(i))
 	}
 	return nil, nil
@@ -98,15 +99,15 @@ func (tx *Tx) CreateTx(
 	paymentInfo []*privacy.PaymentInfo,
 	usableTx []*Tx,
 	fee uint64,
-	commitmentsDB [][]byte,
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 ) (error) {
 
+	chainID := byte(14)
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
-	commitmentIndexs, myCommitmentIndexs = randomCommitmentsProcess(commitmentsDB, usableTx, 7)
+	commitmentIndexs, myCommitmentIndexs = randomCommitmentsProcess(usableTx, 7, db, chainID)
 
 	inputCoins := getInputCoins(usableTx)
 	//Get input coins from usableTX
@@ -223,7 +224,8 @@ func (tx *Tx) CreateTx(
 	commitmentProving := make([]*privacy.EllipticPoint, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
 		commitmentProving[i] = new(privacy.EllipticPoint)
-		commitmentProving[i], _ = privacy.DecompressKey(commitmentsDB[cmIndex])
+		temp, _ := db.GetCommitmentByIndex(cmIndex, chainID)
+		commitmentProving[i], _ = privacy.DecompressKey(temp)
 	}
 
 	// prepare witness for proving
