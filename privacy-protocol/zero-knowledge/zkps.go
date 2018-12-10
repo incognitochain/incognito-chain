@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"math/big"
 	"sort"
 
@@ -454,7 +455,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	return proof, nil
 }
 
-func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commitmentsDB []*privacy.EllipticPoint) bool {
+func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commitmentsDB []*privacy.EllipticPoint, db database.DatabaseInterface) bool {
 	// if hasPrivacy == false,
 	//numInputCoin := len(pro.InputCoins)
 
@@ -492,7 +493,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commit
 
 		for i := 0; i < len(pro.OutputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
-			if common.CheckSNDExistence(pro.OutputCoins[i].CoinDetails.SNDerivator){
+			if common.CheckSNDExistence(pro.OutputCoins[i].CoinDetails.SNDerivator, db){
 				return false
 			}
 
