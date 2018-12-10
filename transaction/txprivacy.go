@@ -418,6 +418,16 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 	}
 
+	if !hasPrivacy{
+		// Check input coins' cm is exists in cm list (Database)
+		for i:=0; i<len(tx.Proof.InputCoins); i++{
+			ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment, db)
+			if !ok || err != nil{
+				return false
+			}
+		}
+	}
+
 	// Verify the payment proof
 	valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, nil)
 	if valid == false {
@@ -485,11 +495,17 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }
 
-// CheckSND return true if snd exists in snDerivators list
+// CheckSNDExistence return true if snd exists in snDerivators list
 func (tx Tx) CheckSNDExistence(snd *big.Int, db database.DatabaseInterface) (bool, error) {
 	ok, err := db.HasSNDerivator(*snd, 14)
 	if err != nil {
 		return false, err
 	}
 	return ok, nil
+}
+
+// CheckCMExistence returns true if cm exists in cm list
+func (tx Tx) CheckCMExistence(cm *privacy.EllipticPoint, db database.DatabaseInterface) (bool, error) {
+	// Todo:
+	return true, nil
 }

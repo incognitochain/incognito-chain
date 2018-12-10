@@ -1,11 +1,8 @@
 package zkp
 
 import (
-
-	"math/big"
-	"sort"
-
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"math/big"
 )
 
 // PaymentWitness contains all of witness for proving when spending coins
@@ -55,10 +52,6 @@ type PaymentProof struct {
 	// these following attributes just exist when tx doesn't have privacy
 	OutputCoins []*privacy.OutputCoin
 	InputCoins  []*privacy.InputCoin
-
-	ComInputSK    *privacy.EllipticPoint
-	ComInputValue []*privacy.EllipticPoint
-	ComInputSND   []*privacy.EllipticPoint
 
 	ComOutputValue 		[]*privacy.EllipticPoint
 	ComOutputSND   		[]*privacy.EllipticPoint
@@ -503,9 +496,6 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commit
 				return false
 			}
 
-			// Check input coins' cm is exists in cm list (Database)
-			// Todo
-
 			// Calculate sum of input values
 			sumInputValue += pro.InputCoins[i].CoinDetails.Value
 		}
@@ -585,68 +575,4 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commit
 	}
 
 	return true
-}
-
-// GetCMList returns list of CMRingSize (2^3) commitments and list of corresponding cmIndexs that includes cm corresponding to cmIndex
-// And return index of cm in list
-// the list is sorted by blockHeight, txIndex, CmId
-func GetCMList(cm *privacy.EllipticPoint, cmIndex *privacy.CMIndex, blockHeightCurrent *big.Int) ([]*privacy.CMIndex, []*privacy.EllipticPoint, *int) {
-
-	cmIndexs := make([]*privacy.CMIndex, privacy.CMRingSize)
-	cms := make([]*privacy.EllipticPoint, privacy.CMRingSize)
-
-	// Random 7 triples (blockHeight, txID, cmIndex)
-	for i := 0; i < privacy.CMRingSize-1; i++ {
-		cmIndexs[i].Randomize(blockHeightCurrent)
-	}
-
-	// the last element in list is cmIndex
-	cmIndexs[privacy.CMRingSize-1] = cmIndex
-
-	// Sort list cmIndexs
-	sort.Slice(cmIndexs, func(i, j int) bool {
-		if cmIndexs[i].BlockHeight.Cmp(cmIndexs[j].BlockHeight) == -1 {
-			return true
-		}
-		if cmIndexs[i].BlockHeight.Cmp(cmIndexs[j].BlockHeight) == 1 {
-			return false
-		}
-		if cmIndexs[i].TxIndex < cmIndexs[j].TxIndex {
-			return true
-		}
-		if cmIndexs[i].TxIndex < cmIndexs[j].TxIndex {
-			return false
-		}
-		return cmIndexs[i].CmId < cmIndexs[j].CmId
-	})
-
-	var index int
-
-	// Get list of commitment from sorted cmIndexs
-	for i := 0; i < privacy.CMRingSize; i++ {
-		if cmIndexs[i].IsEqual(cmIndex) {
-			cms[i] = cm
-			index = i
-		}
-		//cms[i] = cmIndexs[i].GetCommitment()
-	}
-
-	return cmIndexs, cms, &index
-}
-
-func GetCurrentBlockHeight() *big.Int {
-	//TODO
-	return big.NewInt(0)
-}
-
-// ToBytes converts payment proof to byte array to send verifiers
-func (pro PaymentProof) ToBytes() []byte {
-	//ToDo
-	return []byte{0}
-}
-
-// FromBytes reverts bytes array to payment proof for verifying
-func (pro *PaymentProof) FromBytes(bytes []byte) {
-	//ToDo
-
 }
