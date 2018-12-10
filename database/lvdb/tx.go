@@ -33,6 +33,13 @@ func (db *db) StoreSerialNumbers(serialNumber []byte, chainId byte) error {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
+
+	len := int64(len(arrayData))
+	keySpec := append(key, big.NewInt(len).Bytes()...)
+	if err := db.lvdb.Put(keySpec, serialNumber, nil); err != nil {
+		return err
+	}
+
 	arrayData = append(arrayData, serialNumber)
 	b, err := json.Marshal(arrayData)
 	if err != nil {
@@ -76,6 +83,43 @@ func (db *db) HasSerialNumber(serialNumber []byte, chainID byte) (bool, error) {
 	return false, nil
 }
 
+// HasSerialNumberIndex - Check serialNumber in list SerialNumbers by chainID
+func (db *db) HasSerialNumberIndex(serialNumberIndex int64, chainID byte) (bool, error) {
+	/*listSerialNumbers, err := db.FetchSerialNumbers(chainID)
+	if err != nil {
+		return false, database.NewDatabaseError(database.UnexpectedError, err)
+	}
+	for _, item := range listSerialNumbers {
+		if bytes.Equal(item, serialNumber) {
+			return true, nil
+		}
+	}
+	return false, nil*/
+	key := db.getKey(string(serialNumbersPrefix), "")
+	key = append(key, chainID)
+	keySpec := append(key, big.NewInt(serialNumberIndex).Bytes()...)
+	_, err := db.Get(keySpec)
+	if err != nil {
+		return false, err
+	} else {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (db *db) GetSerialNumberByIndex(serialNumberIndex int64, chainID byte) ([]byte, error) {
+	key := db.getKey(string(serialNumbersPrefix), "")
+	key = append(key, chainID)
+	keySpec := append(key, big.NewInt(serialNumberIndex).Bytes()...)
+	data, err := db.Get(keySpec)
+	if err != nil {
+		return data, err
+	} else {
+		return data, nil
+	}
+	return data, nil
+}
+
 // CleanSerialNumbers - clear all list serialNumber in DB
 func (db *db) CleanSerialNumbers() error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(serialNumbersPrefix), nil)
@@ -108,8 +152,11 @@ func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
 		}
 	}
 
-	/*big.Int{}.
-	keySpec := append(key, )*/
+	len := int64(len(arrData))
+	keySpec := append(key, big.NewInt(len).Bytes()...)
+	if err := db.lvdb.Put(keySpec, commitments, nil); err != nil {
+		return err
+	}
 
 	arrData = append(arrData, commitments)
 	b, err := json.Marshal(arrData)
@@ -154,6 +201,32 @@ func (db *db) HasCommitment(commitment []byte, chainId byte) (bool, error) {
 	return false, nil
 }
 
+func (db *db) HasCommitmentIndex(commitmentIndex int64, chainId byte) (bool, error) {
+	key := db.getKey(string(commitmentsPrefix), "")
+	key = append(key, chainId)
+	keySpec := append(key, big.NewInt(commitmentIndex).Bytes()...)
+	_, err := db.Get(keySpec)
+	if err != nil {
+		return false, err
+	} else {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (db *db) GetCommitmentByIndex(commitmentIndex int64, chainId byte) ([]byte, error) {
+	key := db.getKey(string(commitmentsPrefix), "")
+	key = append(key, chainId)
+	keySpec := append(key, big.NewInt(commitmentIndex).Bytes()...)
+	data, err := db.Get(keySpec)
+	if err != nil {
+		return data, err
+	} else {
+		return data, nil
+	}
+	return data, nil
+}
+
 // CleanCommitments - clear all list commitments in DB
 func (db *db) CleanCommitments() error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(commitmentsPrefix), nil)
@@ -170,7 +243,7 @@ func (db *db) CleanCommitments() error {
 	return nil
 }
 
-// StoreSerialNumbers - store list serialNumbers by chainID
+// StoreSNDerivators - store list serialNumbers by chainID
 func (db *db) StoreSNDerivators(data big.Int, chainID byte) error {
 	key := db.getKey(string(snderivatorsPrefix), "")
 	key = append(key, chainID)
