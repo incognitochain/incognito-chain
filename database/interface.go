@@ -46,9 +46,10 @@ type DatabaseInterface interface {
 	CleanSerialNumbers() error
 
 	// PedersenCommitment
-	StoreCommitments([]byte, byte) error
-	FetchCommitments(byte) ([][]byte, error)
-	HasCommitment([]byte, byte) (bool, error)
+	StoreCommitments(commitment []byte, chainID byte) error
+	FetchCommitments(chainID byte) ([][]byte, error)
+	HasCommitment(commitment []byte, chainID byte) (bool, error)
+	HasCommitmentIndex(commitmentIndex int64, chainID byte) (bool, error)
 	CleanCommitments() error
 
 	// SNDerivator

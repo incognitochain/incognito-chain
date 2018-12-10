@@ -108,8 +108,11 @@ func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
 		}
 	}
 
-	/*big.Int{}.
-	keySpec := append(key, )*/
+	len := int64(len(arrData))
+	keySpec := append(key, big.NewInt(len).Bytes()...)
+	if err := db.lvdb.Put(keySpec, commitments, nil); err != nil {
+		return err
+	}
 
 	arrData = append(arrData, commitments)
 	b, err := json.Marshal(arrData)
@@ -150,6 +153,19 @@ func (db *db) HasCommitment(commitment []byte, chainId byte) (bool, error) {
 		if bytes.Equal(item, commitment) {
 			return true, nil
 		}
+	}
+	return false, nil
+}
+
+func (db *db) HasCommitmentIndex(commitmentIndex int64, chainId byte) (bool, error) {
+	key := db.getKey(string(commitmentsPrefix), "")
+	key = append(key, chainId)
+	keySpec := append(key, big.NewInt(commitmentIndex).Bytes()...)
+	_, err := db.Get(keySpec)
+	if err != nil {
+		return false, err
+	} else {
+		return true, nil
 	}
 	return false, nil
 }
