@@ -398,7 +398,7 @@ this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
 	for _, desc := range tx.Proof.OutputCoins {
-		chainId, err := common.GetTxSenderChain(desc.CoinDetails.PubKeyLastByte)
+		chainId, err := common.GetTxSenderChain(desc.CoinDetails.GetPubKeyLastByte())
 		if err != nil {
 			return err
 		}
@@ -785,7 +785,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 					isPrivacy := tx.Proof.ComInputOpeningsProof != nil
 					for _, outcoinTemp := range tx.Proof.OutputCoins {
 						if isPrivacy {
-							err := outcoinTemp.Decrypt(keySet.ReadonlyKey.Rk)
+							err := outcoinTemp.Decrypt(keySet.ReadonlyKey)
 							if err != nil {
 								outcoin := &privacy.OutputCoin{
 									CoinDetails:          outcoinTemp.CoinDetails,
@@ -866,7 +866,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 			if len(keys.PrivateKey) == 0 || len(keys.ReadonlyKey.Rk) == 0 {
 				continue
 			}
-			err := outCoinTemp.Decrypt(keys.ReadonlyKey.Rk)
+			err := outCoinTemp.Decrypt(keys.ReadonlyKey)
 			if err == nil {
 				outCoin := &privacy.OutputCoin{
 					CoinDetails:          outCoinTemp.CoinDetails,

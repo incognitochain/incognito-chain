@@ -1,7 +1,10 @@
 package main
 
 import (
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"fmt"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 func main() {
@@ -166,6 +169,7 @@ func main() {
 	/*----------------- TEST SIGNATURE -----------------*/
 	//privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
+	//privacy.TestMultiSig()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
 	//for i :=0; i<1000; i++{
@@ -227,6 +231,22 @@ func main() {
 
 	// fmt.Println(res)
 
-	privacy.TestMultiSig()
+	/*----------------- TEST TX SALARY -----------------*/
+
+	keySet := new(cashec.KeySet)
+	spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	keySet.ImportFromPrivateKey(&spendingKey)
+
+	tx, err := transaction.CreateTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey)
+	if err != nil{
+		fmt.Println(err)
+	}
+	fmt.Printf("Tx: %+v\n", tx)
+
+	res := transaction.ValidateTxSalary(tx)
+
+	fmt.Printf("Res: %v\n", res)
+
+
 
 }

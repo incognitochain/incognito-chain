@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"fmt"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"math/big"
@@ -36,7 +37,6 @@ func CreateTxSalary(
 	tx.Proof.OutputCoins[0].CoinDetails.SerialNumber = &privacy.EllipticPoint{X: big.NewInt(int64(0)), Y: big.NewInt(int64(0))}
 	tx.Proof.OutputCoins[0].CoinDetails.Value = salary
 	tx.Proof.OutputCoins[0].CoinDetails.PublicKey, _ = privacy.DecompressKey(receiverAddr.Pk)
-	tx.Proof.OutputCoins[0].CoinDetails.PubKeyLastByte = tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
 	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
 
 	//sndOut := new(big.Int)
@@ -74,6 +74,15 @@ func ValidateTxSalary(
 	tx *Tx,
 	db database.DatabaseInterface,
 ) bool {
+	// verify signature
+	res, err := tx.VerifySigTx(false)
+	if err != nil{
+		fmt.Println(err)
+		return false
+	}
+	if !res {
+		return false
+	}
 
 	// check whether output coin's SND exists in SND list or not
 	if ok, err := tx.CheckSNDExistence(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, db); ok || err != nil {
@@ -84,7 +93,7 @@ func ValidateTxSalary(
 	cmTmp := tx.Proof.OutputCoins[0].CoinDetails.PublicKey
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(tx.Proof.OutputCoins[0].CoinDetails.Value))))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMul(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator))
-	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMul(new(big.Int).SetBytes([]byte{tx.Proof.OutputCoins[0].CoinDetails.PubKeyLastByte})))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMul(new(big.Int).SetBytes([]byte{tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte()})))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMul(tx.Proof.OutputCoins[0].CoinDetails.Randomness))
 	if !cmTmp.IsEqual(tx.Proof.OutputCoins[0].CoinDetails.CoinCommitment) {
 		return false

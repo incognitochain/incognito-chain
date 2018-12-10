@@ -128,6 +128,7 @@ func (tx *Tx) CreateTx(
 
 	// Calculate sum of all output coins' value
 	var sumOutputValue uint64
+	sumOutputValue = 0
 	for _, p := range paymentInfo {
 		sumOutputValue += p.Amount
 		fmt.Printf("[CreateTx] paymentInfo.H: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
@@ -135,6 +136,7 @@ func (tx *Tx) CreateTx(
 
 	// Calculate sum of all input coins' value
 	var sumInputValue uint64
+	sumInputValue = 0
 	for _, coin := range inputCoins {
 		sumInputValue += coin.CoinDetails.Value
 	}
@@ -147,9 +149,6 @@ func (tx *Tx) CreateTx(
 		return fmt.Errorf("Input value less than output value")
 	}
 
-	// tx.proof.Input
-	//tx.Proof = new(zkp.PaymentProof)
-	//tx.Proof.InputCoins = inputCoins
 
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
@@ -161,6 +160,11 @@ func (tx *Tx) CreateTx(
 		changePaymentInfo.Amount = overBalance
 		changePaymentInfo.PaymentAddress = senderFullKey.PaymentAddress
 		paymentInfo = append(paymentInfo, changePaymentInfo)
+	}
+
+	// calculate serial number from SND and spending key
+	for _, inputCoin := range inputCoins{
+		inputCoin.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(*senderSK), inputCoin.CoinDetails.SNDerivator)
 	}
 
 	// create new output coins
@@ -198,7 +202,6 @@ func (tx *Tx) CreateTx(
 		outputCoins[i] = new(privacy.OutputCoin)
 		outputCoins[i].CoinDetails.Value = pInfo.Amount
 		outputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
-		outputCoins[i].CoinDetails.PubKeyLastByte = pInfo.PaymentAddress.Pk[len(pInfo.PaymentAddress.Pk)-1]
 		outputCoins[i].CoinDetails.SNDerivator = sndOuts[i]
 	}
 
@@ -235,14 +238,12 @@ func (tx *Tx) CreateTx(
 		tx.sigPrivKey = append(*senderSK, witness.ComInputOpeningsWitness[0].Openings[privacy.RAND].Bytes()...)
 
 		// encrypt coin details (Randomness)
-		// hide information of output coins except coin commitments, last byte of public key, snDerivators
+		// hide information of output coins except coin commitments, public key, snDerivators
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			tx.Proof.OutputCoins[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
 			tx.Proof.OutputCoins[i].CoinDetails.SerialNumber = nil
 			tx.Proof.OutputCoins[i].CoinDetails.Value = 0
-			tx.Proof.OutputCoins[i].CoinDetails.PublicKey = nil
 			tx.Proof.OutputCoins[i].CoinDetails.Randomness = nil
-			tx.Proof.OutputCoins[i].CoinDetails.PubKeyLastByte = tx.Proof.OutputCoins[i].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[i].CoinDetails.PublicKey.Compress())-1]
 		}
 
 		// hide information of input coins except serial number of input coins
@@ -369,6 +370,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		point := new(privacy.EllipticPoint)
 		point, _ = privacy.DecompressKey(tx.SigPubKey)
 		verKey.X, verKey.Y = point.X, point.Y
+		verKey.Curve = privacy.Curve
 
 		// convert signature from byte array to ECDSASign
 		r, s := FromByteArrayToECDSASig(tx.Sig)
