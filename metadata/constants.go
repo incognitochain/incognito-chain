@@ -12,7 +12,10 @@ const (
 	LoanWithdrawMeta
 	LoanUnlockMeta
 	LoanPaymentMeta
-	BuySellRequestMeta
+	BuyFromGOVRequestMeta
+	BuyFromGOVResponseMeta
+	BuyBackRequestMeta
+	BuyBackResponseMeta
 	DividendMeta
 
 	//Voting

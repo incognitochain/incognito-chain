@@ -44,8 +44,17 @@ func parseMetadata(meta interface{}) (metadata.Metadata, error) {
 	}
 	var md metadata.Metadata
 	switch int(mtTemp["Type"].(float64)) {
-	case metadata.BuySellRequestMeta:
+	case metadata.BuyFromGOVRequestMeta:
 		md = &metadata.BuySellRequest{}
+
+	case metadata.BuyBackRequestMeta:
+		md = &metadata.BuyBackRequest{}
+
+	case metadata.BuyFromGOVResponseMeta:
+		md = &metadata.BuySellResponse{}
+
+	case metadata.BuyBackResponseMeta:
+		md = &metadata.BuyBackResponse{}
 
 	case metadata.LoanRequestMeta:
 		md = &metadata.LoanRequest{}

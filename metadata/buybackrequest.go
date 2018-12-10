@@ -14,9 +14,13 @@ type BuyBackRequest struct {
 }
 
 func NewBuyBackRequest(bbReqData map[string]interface{}) *BuyBackRequest {
+	metadataBase := MetadataBase{
+		Type: int(bbReqData["type"].(float64)),
+	}
 	return &BuyBackRequest{
 		BuyBackFromTxID: bbReqData["buyBackFromTxId"].(common.Hash),
 		VoutIndex:       bbReqData["voutIndex"].(int),
+		MetadataBase:    metadataBase,
 	}
 }
 

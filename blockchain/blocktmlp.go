@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"time"
@@ -64,6 +65,13 @@ type RewardAgent interface {
 	GetSalaryPerTx(chainID byte) uint64
 }
 
+type buyBackFromInfo struct {
+	paymentAddress privacy.PaymentAddress
+	buyBackPrice   uint64
+	value          uint64
+	requestedTxID  *common.Hash
+}
+
 func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent) (*BlkTmplGenerator, error) {
 	return &BlkTmplGenerator{
 		txPool:      txPool,
@@ -82,7 +90,8 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 	var txsToAdd []metadata.Transaction
 	var txToRemove []metadata.Transaction
 	var buySellReqTxs []metadata.Transaction
-	var txTokenVouts map[*common.Hash]*transaction.TxTokenVout
+	// var txTokenVouts map[*common.Hash]*transaction.TxTokenVout
+	var buyBackFromInfos []*buyBackFromInfo
 	bondsSold := uint64(0)
 	incomeFromBonds := uint64(0)
 	totalFee := uint64(0)
@@ -123,7 +132,8 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 			continue
 		}
 
-		if tx.GetType() == common.TxBuyFromGOVRequest {
+		// if tx.GetType() == common.TxBuyFromGOVRequest {
+		if tx.GetMetadataType() == metadata.BuyFromGOVRequestMeta {
 			income, soldAmt, addable := blockgen.checkBuyFromGOVReqTx(chainID, tx, bondsSold)
 			if !addable {
 				txToRemove = append(txToRemove, tx)
@@ -134,14 +144,15 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 			buySellReqTxs = append(buySellReqTxs, tx)
 		}
 
-		if tx.GetType() == common.TxBuyBackRequest {
-			txTokenVout, buyBackReqTxID, addable := blockgen.checkBuyBackReqTx(chainID, tx, buyBackCoins)
+		// if tx.GetType() == common.TxBuyBackRequest {
+		if tx.GetMetadataType() == metadata.BuyBackRequestMeta {
+			buyBackFromInfo, addable := blockgen.checkBuyBackReqTx(chainID, tx, buyBackCoins)
 			if !addable {
 				txToRemove = append(txToRemove, tx)
 				continue
 			}
-			buyBackCoins += txTokenVout.Value * txTokenVout.BuySellResponse.BuyBackInfo.BuyBackPrice
-			txTokenVouts[buyBackReqTxID] = txTokenVout
+			buyBackCoins += (buyBackFromInfo.buyBackPrice + buyBackFromInfo.value)
+			buyBackFromInfos = append(buyBackFromInfos, buyBackFromInfo)
 		}
 
 		totalFee += tx.GetTxFee()
@@ -212,13 +223,16 @@ concludeBlock:
 		return nil, err
 	}
 	// create buy/sell response txs to distribute bonds/govs to requesters
-	buySellResTxs := blockgen.buildBuySellResponsesTx(
-		common.TxBuyFromGOVResponse,
+	buySellResTxs, err := blockgen.buildBuySellResponsesTx(
 		buySellReqTxs,
 		blockgen.chain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.SellingBonds,
 	)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
 	// create buy-back response txs to distribute constants to buy-back requesters
-	buyBackResTxs, err := blockgen.buildBuyBackResponsesTx(common.TxBuyBackResponse, txTokenVouts, chainID)
+	buyBackResTxs, err := blockgen.buildBuyBackResponsesTx(buyBackFromInfos, chainID)
 	// create refund txs
 	currentSalaryFund := prevBlock.Header.SalaryFund
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd + incomeFromBonds - (totalSalary + buyBackCoins)
@@ -609,26 +623,54 @@ func (blockgen *BlkTmplGenerator) processGovDividend(rt []byte, chainID byte, bl
 }
 
 func buildSingleBuySellResponseTx(
-	buySellReqTx *transaction.TxBuySellRequest,
+	buySellReqTx metadata.Transaction,
 	sellingBondsParam *params.SellingBonds,
-) transaction.TxTokenVout {
-	buyBackInfo := &transaction.BuyBackInfo{
-		Maturity:     sellingBondsParam.Maturity,
-		BuyBackPrice: sellingBondsParam.BuyBackPrice,
-	}
-
+) (*transaction.TxCustomToken, error) {
 	bondID := fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt)
 	additionalSuffix := make([]byte, 24-len(bondID))
 	bondIDBytes := append([]byte(bondID), additionalSuffix...)
-	buySellResponse := &transaction.BuySellResponse{
-		BuyBackInfo: buyBackInfo,
-		BondID:      bondIDBytes,
+
+	// metaBase := metadata.MetadataBase{
+	// 	Type: metadata.BuyFromGOVResponseMeta,
+	// }
+	buySellRes := metadata.BuySellResponse{
+		RequestedTxID:  buySellReqTx.Hash(),
+		StartSellingAt: sellingBondsParam.StartSellingAt,
+		Maturity:       sellingBondsParam.Maturity,
+		BuyBackPrice:   sellingBondsParam.BuyBackPrice,
+		BondID:         bondIDBytes,
 	}
-	return transaction.TxTokenVout{
-		Value:           buySellReqTx.Amount,
-		PaymentAddress:  buySellReqTx.PaymentAddress,
-		BuySellResponse: buySellResponse,
+	buySellRes.Type = metadata.BuyFromGOVResponseMeta
+
+	buySellReqMeta := buySellReqTx.GetMetadata()
+	buySellReq, ok := buySellReqMeta.(*metadata.BuySellRequest)
+	if !ok {
+		return nil, errors.New("Could not assert BuySellRequest metadata.")
 	}
+	txTokenVout := transaction.TxTokenVout{
+		Value:          buySellReq.Amount,
+		PaymentAddress: buySellReq.PaymentAddress,
+	}
+
+	var propertyID [common.HashSize]byte
+	copy(propertyID[:], append(BondTokenID[0:8], bondIDBytes...))
+	txTokenData := transaction.TxTokenData{
+		Type:       transaction.CustomTokenInit,
+		Amount:     buySellReq.Amount,
+		PropertyID: common.Hash(propertyID),
+		Vins:       []transaction.TxTokenVin{},
+		Vouts:      []transaction.TxTokenVout{txTokenVout},
+		// PropertyName:   "",
+		// PropertySymbol: coinbaseTxType,
+	}
+	resTx := &transaction.TxCustomToken{
+		TxTokenData: txTokenData,
+		// buySellRes,
+		// common.TxCustomTokenType,
+	}
+	resTx.Type = common.TxCustomTokenType
+	resTx.Metadata = &buySellRes
+	return resTx, nil
 }
 
 func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
@@ -642,110 +684,109 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 		return 0, 0, false
 	}
 
-	reqTx, ok := tx.(*transaction.TxBuySellRequest)
+	buySellReqMeta := tx.GetMetadata()
+	req, ok := buySellReqMeta.(*metadata.BuySellRequest)
 	if !ok {
 		return 0, 0, false
 	}
-	if bondsSold+reqTx.Amount > sellingBondsParams.BondsToSell { // run out of bonds for selling
+
+	if bondsSold+req.Amount > sellingBondsParams.BondsToSell { // run out of bonds for selling
 		return 0, 0, false
 	}
-	return reqTx.Amount * reqTx.BuyPrice, reqTx.Amount, true
+	return req.Amount * req.BuyPrice, req.Amount, true
 }
 
 // buildBuySellResponsesTx
 // the tx is to distribute tokens (bond, gov, ...) to token requesters
 func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
-	coinbaseTxType string,
 	buySellReqTxs []metadata.Transaction,
 	sellingBondsParam *params.SellingBonds,
-) []*transaction.TxCustomToken {
+) ([]*transaction.TxCustomToken, error) {
 	if len(buySellReqTxs) == 0 {
-		return nil
+		return []*transaction.TxCustomToken{}, nil
 	}
 	var resTxs []*transaction.TxCustomToken
 	for _, reqTx := range buySellReqTxs {
-		tx, _ := reqTx.(*transaction.TxBuySellRequest)
-		txTokenVout := buildSingleBuySellResponseTx(tx, sellingBondsParam)
-		bondIDBytes := txTokenVout.BuySellResponse.BondID
-		var propertyID [common.HashSize]byte
-		copy(propertyID[:], append(BondTokenID[0:8], bondIDBytes...))
-		txTokenData := transaction.TxTokenData{
-			Type:       transaction.CustomTokenInit,
-			Amount:     tx.Amount,
-			PropertyID: common.Hash(propertyID),
-			Vins:       []transaction.TxTokenVin{},
-			Vouts:      []transaction.TxTokenVout{txTokenVout},
-			// PropertyName:   "",
-			// PropertySymbol: coinbaseTxType,
+		resTx, err := buildSingleBuySellResponseTx(reqTx, sellingBondsParam)
+		if err != nil {
+			return []*transaction.TxCustomToken{}, err
 		}
-		resTx := &transaction.TxCustomToken{
-			TxTokenData: txTokenData,
-		}
-		resTx.Type = coinbaseTxType
-		resTx.RequestedTxID = tx.Hash()
 		resTxs = append(resTxs, resTx)
 	}
-	return resTxs
+	return resTxs, nil
 }
 
 func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
 	chainID byte,
 	tx metadata.Transaction,
 	buyBackConsts uint64,
-) (*transaction.TxTokenVout, *common.Hash, bool) {
-	txBuyBackReq, ok := tx.(*transaction.TxBuyBackRequest)
+) (*buyBackFromInfo, bool) {
+	buyBackReqMeta := tx.GetMetadata()
+	buyBackReq, ok := buyBackReqMeta.(*metadata.BuyBackRequest)
 	if !ok {
-		return nil, nil, false
+		Logger.log.Error(errors.New("Could not parse BuyBackRequest metadata."))
+		return nil, false
 	}
-	_, _, _, fromTx, err := blockgen.chain.GetTransactionByHash(txBuyBackReq.BuyBackFromTxID)
+	_, _, _, fromTx, err := blockgen.chain.GetTransactionByHash(&buyBackReq.BuyBackFromTxID)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil, nil, false
+		return nil, false
 	}
 	customTokenTx, ok := fromTx.(*transaction.TxCustomToken)
 	if !ok {
-		return nil, nil, false
+		Logger.log.Error(errors.New("Could not parse TxCustomToken."))
+		return nil, false
 	}
-	vout := customTokenTx.TxTokenData.Vouts[txBuyBackReq.VoutIndex]
-	buyBackInfo := vout.BuySellResponse.BuyBackInfo
-	if buyBackInfo == nil {
-		Logger.log.Error("Missing buy-back info")
-		return nil, nil, false
+	fromTxMeta := fromTx.GetMetadata()
+	buySellRes, ok := fromTxMeta.(*metadata.BuySellResponse)
+	if !ok {
+		Logger.log.Error(errors.New("Could not parse BuySellResponse metadata."))
+		return nil, false
 	}
+
+	vout := customTokenTx.TxTokenData.Vouts[buyBackReq.VoutIndex]
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 
-	if buyBackInfo.StartSellingAt+buyBackInfo.Maturity > uint32(prevBlock.Header.Height)+1 {
+	if buySellRes.StartSellingAt+buySellRes.Maturity > uint32(prevBlock.Header.Height)+1 {
 		Logger.log.Error("The token is not overdued yet.")
-		return nil, nil, false
+		return nil, false
 	}
-	// check remaining constants in GOV fun is enough or not
-	buyBackAmount := vout.Value * vout.BuySellResponse.BuyBackInfo.BuyBackPrice
+	// check remaining constants in GOV fund is enough or not
+	buyBackAmount := vout.Value * buySellRes.BuyBackPrice
 	if buyBackConsts+buyBackAmount > prevBlock.Header.SalaryFund {
-		return nil, nil, false
+		return nil, false
 	}
-	return &vout, tx.Hash(), true
+	buyBackFromInfo := &buyBackFromInfo{
+		paymentAddress: vout.PaymentAddress,
+		buyBackPrice:   buySellRes.BuyBackPrice,
+		value:          vout.Value,
+		requestedTxID:  tx.Hash(),
+	}
+	return buyBackFromInfo, true
 }
 
 func (blockgen *BlkTmplGenerator) buildBuyBackResponsesTx(
-	coinbaseTxType string,
-	txTokenReqVouts map[*common.Hash]*transaction.TxTokenVout,
+	buyBackFromInfos []*buyBackFromInfo,
 	chainID byte,
 ) ([]*transaction.Tx, error) {
-	if len(txTokenReqVouts) == 0 {
+	if len(buyBackFromInfos) == 0 {
 		return []*transaction.Tx{}, nil
 	}
 
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 	rt := prevBlock.Header.MerkleRootCommitments.CloneBytes()
 	var buyBackResTxs []*transaction.Tx
-	for buyBackReqTxID, txTokenReqVout := range txTokenReqVouts {
-		buyBackAmount := txTokenReqVout.Value * txTokenReqVout.BuySellResponse.BuyBackInfo.BuyBackPrice
-		buyBackResTx, err := transaction.CreateTxSalary(buyBackAmount, &txTokenReqVout.PaymentAddress, rt, chainID)
+	for _, buyBackFromInfo := range buyBackFromInfos {
+		buyBackAmount := buyBackFromInfo.value * buyBackFromInfo.buyBackPrice
+		buyBackResTx, err := transaction.CreateTxSalary(buyBackAmount, &buyBackFromInfo.paymentAddress, rt, chainID)
 		if err != nil {
 			return []*transaction.Tx{}, err
 		}
-		buyBackResTx.RequestedTxID = buyBackReqTxID
-		buyBackResTx.Type = coinbaseTxType
+		buyBackRes := &metadata.BuyBackResponse{
+			RequestedTxID: buyBackFromInfo.requestedTxID,
+		}
+		buyBackRes.Type = metadata.BuyBackResponseMeta
+		buyBackResTx.SetMetadata(buyBackRes)
 		buyBackResTxs = append(buyBackResTxs, buyBackResTx)
 	}
 	return buyBackResTxs, nil
