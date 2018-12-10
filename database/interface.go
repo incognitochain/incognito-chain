@@ -43,6 +43,8 @@ type DatabaseInterface interface {
 	StoreSerialNumbers([]byte, byte) error
 	FetchSerialNumbers(byte) ([][]byte, error)
 	HasSerialNumber([]byte, byte) (bool, error)
+	HasSerialNumberIndex(serialNumberIndex int64, chainID byte) (bool, error)
+	GetSerialNumberByIndex(serialNumberIndex int64, chainID byte) ([]byte, error)
 	CleanSerialNumbers() error
 
 	// PedersenCommitment
