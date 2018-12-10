@@ -1,12 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/transaction"
-)
+import privacy "github.com/ninjadotorg/constant/privacy-protocol"
 
 func main() {
 
@@ -170,7 +164,7 @@ func main() {
 	/*----------------- TEST SIGNATURE -----------------*/
 	//privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
-	//privacy.TestMultiSig()
+	privacy.TestMultiSig()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
 	//for i :=0; i<1000; i++{
@@ -234,22 +228,20 @@ func main() {
 
 	/*----------------- TEST TX SALARY -----------------*/
 
-	keySet := new(cashec.KeySet)
-	spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	keySet.ImportFromPrivateKey(&spendingKey)
+	// keySet := new(cashec.KeySet)
+	// spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	// keySet.ImportFromPrivateKey(&spendingKey)
 
-	var db database.DatabaseInterface
+	// var db database.DatabaseInterface
 
-	tx, err := transaction.CreateTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
-	if err != nil{
-		fmt.Println(err)
-	}
-	fmt.Printf("Tx: %+v\n", tx)
+	// tx, err := transaction.CreateTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
+	// if err != nil{
+	// 	fmt.Println(err)
+	// }
+	// fmt.Printf("Tx: %+v\n", tx)
 
-	res := transaction.ValidateTxSalary(tx, db)
+	// res := transaction.ValidateTxSalary(tx, db)
 
-	fmt.Printf("Res: %v\n", res)
-
-
+	// fmt.Printf("Res: %v\n", res)
 
 }
