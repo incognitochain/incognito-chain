@@ -174,7 +174,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin,
 	pkLastByteSender byte, pkLastByteReceivers []byte,
 	commitments []*privacy.EllipticPoint, commitmentIndexs []uint64, myCommitmentIndexs []uint64,
-	fee uint64) {
+	fee uint64) (err error){
 
 	wit.spendingKey = spendingKey
 	wit.inputCoins = inputCoins
@@ -271,9 +271,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 		/***** Build witness for proving that serial number is derived from the committed derivator *****/
 		wit.EqualityOfCommittedValWitness[i].Set([]*privacy.EllipticPoint{cmInputSNDIndexSK[i], cmInputSND[i]}, indexZKPEqual, []*big.Int{inputCoins[i].CoinDetails.SNDerivator, randInputSK, randInputSND[i]})
-		// TODO Product Commitment
-		// Todo: 0xthunderbird
-		// Thunderbird have built witness for product commitment
+
 		/****Build witness for proving that the commitment of serial number is equivalent to Mul(com(sk), com(snd))****/
 		witnesssA := new(big.Int)
 		witnesssA.Add(wit.spendingKey, inputCoins[i].CoinDetails.SNDerivator)
@@ -360,7 +358,10 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 	// Build witness for proving Sum(Input's value) == Sum(Output's Value)
 	cmOutputValueAll.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(fee))))
-	cmOutputValueAllInverse, _ := cmOutputValueAll.Inverse()
+	cmOutputValueAllInverse, err := cmOutputValueAll.Inverse()
+	if err != nil{
+		return err
+	}
 
 	cmEqualCoinValue := new(privacy.EllipticPoint)
 	cmEqualCoinValue = cmInputValueAll.Add(cmOutputValueAllInverse)
