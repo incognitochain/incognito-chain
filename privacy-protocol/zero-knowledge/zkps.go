@@ -3,7 +3,6 @@ package zkp
 import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"math/big"
-	"fmt"
 )
 
 // PaymentWitness contains all of witness for proving when spending coins
@@ -362,8 +361,10 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	// ------------------------
 
 	// Build witness for proving Sum(Input's value) == Sum(Output's Value)
-	fmt.Println(privacy.PedCom.G[privacy.VALUE])
-	cmOutputValueAll.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(fee))))
+	if fee > 0{
+		cmOutputValueAll.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(fee))))
+	}
+
 	cmOutputValueAllInverse, err := cmOutputValueAll.Inverse()
 	if err != nil {
 		return err
