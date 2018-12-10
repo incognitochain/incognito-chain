@@ -147,9 +147,6 @@ func (tx *Tx) CreateTx(
 		return fmt.Errorf("Input value less than output value")
 	}
 
-	// tx.proof.Input
-	//tx.Proof = new(zkp.PaymentProof)
-	//tx.Proof.InputCoins = inputCoins
 
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
@@ -161,6 +158,11 @@ func (tx *Tx) CreateTx(
 		changePaymentInfo.Amount = overBalance
 		changePaymentInfo.PaymentAddress = senderFullKey.PaymentAddress
 		paymentInfo = append(paymentInfo, changePaymentInfo)
+	}
+
+	// calculate serial number from SND and spending key
+	for _, inputCoin := range inputCoins{
+		inputCoin.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(*senderSK), inputCoin.CoinDetails.SNDerivator)
 	}
 
 	// create new output coins
