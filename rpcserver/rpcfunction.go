@@ -74,12 +74,20 @@ var RpcHandler = map[string]commandHandler{
 	GetListGOVBoard:                RpcServer.handleGetListGOVBoard,
 
 	// vote
-	SendRawVoteBoardDCBTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
-	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
 	CreateAndSendVoteDCBBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
-	SendRawVoteBoardGOVTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
-	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
+	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
+	SendRawVoteBoardDCBTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
 	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteGOVBoardTransaction,
+	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
+	SendRawVoteBoardGOVTx:                RpcServer.handleSendRawVoteBoardDCBTransaction,
+
+	// Submit Proposal:
+	CreateAndSendSubmitDCBProposalTx: RpcServer.handleCreateAndSendSubmitDCBProposalTransaction,
+	CreateRawSubmitDCBProposalTx:     RpcServer.handleCreateRawSubmitDCBProposalTransaction,
+	SendRawSubmitDCBProposalTx:       RpcServer.handleSendRawSubmitDCBProposalTransaction,
+	CreateAndSendSubmitGOVProposalTx: RpcServer.handleCreateAndSendSubmitGOVProposalTransaction,
+	CreateRawSubmitGOVProposalTx:     RpcServer.handleCreateRawSubmitGOVProposalTransaction,
+	SendRawSubmitGOVProposalTx:       RpcServer.handleSendRawSubmitGOVProposalTransaction,
 
 	// dcb
 	GetDCBParams:       RpcServer.handleGetDCBParams,

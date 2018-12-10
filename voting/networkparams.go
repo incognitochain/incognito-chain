@@ -1,9 +1,8 @@
 package voting
 
-import (
-	"github.com/ninjadotorg/constant/common"
-)
+import "github.com/ninjadotorg/constant/common"
 
+// Todo: @0xjackalope, @0xbunyip Check logic in Hash and Validate and rpcfunction because other will change params struct without modified these function
 type GOVVotingParams struct {
 	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
 	BasicSalary  uint64 // basic salary per block(mili constant)
@@ -44,6 +43,7 @@ func (DCBParams DCBVotingParams) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
 func (GOVParams GOVVotingParams) Hash() *common.Hash {
 	record := string(GOVParams.SalaryPerTx)
 	record += string(GOVParams.BasicSalary)
@@ -68,5 +68,15 @@ func (GOVParams GOVVotingParams) Validate() bool {
 	return true
 }
 func (DCBParams DCBVotingParams) Validate() bool {
+	return true
+}
+
+func (DCBVotingParams DCBVotingParams) ValidateSanityData() bool {
+	// Todo: @0xbunyip
+	return true
+}
+
+func (GOVVotingParams GOVVotingParams) ValidateSanityData() bool {
+	// Todo: @0xankylosaurus
 	return true
 }

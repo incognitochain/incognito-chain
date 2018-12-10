@@ -84,6 +84,7 @@ type Metadata interface {
 	Hash() *common.Hash
 	CheckTransactionFee(Transaction, uint64) bool
 	ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte) (bool, error)
+	// isContinue, ok, err
 	ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
 }
