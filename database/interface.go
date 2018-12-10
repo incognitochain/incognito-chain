@@ -43,8 +43,8 @@ type DatabaseInterface interface {
 	StoreSerialNumbers([]byte, byte) error
 	FetchSerialNumbers(byte) ([][]byte, error)
 	HasSerialNumber([]byte, byte) (bool, error)
-	HasSerialNumberIndex(serialNumberIndex int64, chainID byte) (bool, error)
-	GetSerialNumberByIndex(serialNumberIndex int64, chainID byte) ([]byte, error)
+	//HasSerialNumberIndex(serialNumberIndex int64, chainID byte) (bool, error)
+	//GetSerialNumberByIndex(serialNumberIndex int64, chainID byte) ([]byte, error)
 	CleanSerialNumbers() error
 
 	// PedersenCommitment
@@ -52,7 +52,9 @@ type DatabaseInterface interface {
 	FetchCommitments(chainID byte) ([][]byte, error)
 	HasCommitment(commitment []byte, chainID byte) (bool, error)
 	HasCommitmentIndex(commitmentIndex int64, chainID byte) (bool, error)
-	GetCommitmentByIndex(commitmentIndex int64, chainID byte) ([]byte, error)
+	GetCommitmentByIndex(commitmentIndex uint64, chainID byte) ([]byte, error)
+	GetCommitmentIndex(commitment []byte, chainId byte) (*big.Int, error)
+	GetCommitmentLength(chainId byte) (*big.Int, error)
 	CleanCommitments() error
 
 	// SNDerivator
