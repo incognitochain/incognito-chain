@@ -1,7 +1,6 @@
 package constantpos
 
 import (
-	"bytes"
 	"encoding/json"
 	"time"
 
@@ -79,33 +78,33 @@ func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, 
 }
 
 func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error {
-	rtOld := self.config.BlockChain.BestState[block.Header.ChainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
-	newTree := self.config.BlockChain.BestState[block.Header.ChainID].CmTree.MakeCopy()
-	Logger.log.Infof("[validateblock] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
-	err := blockchain.UpdateMerkleTreeForBlock(newTree, block)
-	if err != nil {
-		return err
-	}
-	rt := newTree.GetRoot(common.IncMerkleTreeHeight)
-	Logger.log.Infof("[validateblock] updated tree rt: %x\n", rt)
-	if !bytes.Equal(rt[:], block.Header.MerkleRootCommitments.CloneBytes()) {
-		Logger.log.Errorf("MerkleRootCommitments diff!! \n%x\n%x\n%x", rtOld, rt[:], block.Header.MerkleRootCommitments[:])
-		for _, blockTx := range block.Transactions {
-			if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
-				tx, ok := blockTx.(*transaction.Tx)
-				if ok == false {
-					Logger.log.Errorf("Transaction in block not valid")
-				}
+	// rtOld := self.config.BlockChain.BestState[block.Header.ChainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
+	// newTree := self.config.BlockChain.BestState[block.Header.ChainID].CmTree.MakeCopy()
+	// Logger.log.Infof("[validateblock] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
+	// err := blockchain.UpdateMerkleTreeForBlock(newTree, block)
+	// if err != nil {
+	// 	return err
+	// }
+	// rt := newTree.GetRoot(common.IncMerkleTreeHeight)
+	// Logger.log.Infof("[validateblock] updated tree rt: %x\n", rt)
+	// if !bytes.Equal(rt[:], block.Header.MerkleRootCommitments.CloneBytes()) {
+	// 	Logger.log.Errorf("MerkleRootCommitments diff!! \n%x\n%x\n%x", rtOld, rt[:], block.Header.MerkleRootCommitments[:])
+	// 	for _, blockTx := range block.Transactions {
+	// 		if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
+	// 			tx, ok := blockTx.(*transaction.Tx)
+	// 			if ok == false {
+	// 				Logger.log.Errorf("Transaction in block not valid")
+	// 			}
 
-				for _, desc := range tx.Descs {
-					for _, cm := range desc.Commitments {
-						Logger.log.Infof("%x", cm[:])
-					}
-				}
-			}
-		}
-		return NewConsensusError(ErrMerkleRootCommitments, nil)
-	}
+	// 			for _, desc := range tx.Descs {
+	// 				for _, cm := range desc.Commitments {
+	// 					Logger.log.Infof("%x", cm[:])
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// 	return NewConsensusError(ErrMerkleRootCommitments, nil)
+	// }
 	return nil
 }
 

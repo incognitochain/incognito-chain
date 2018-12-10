@@ -2,15 +2,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/database"
-	_ "github.com/ninjadotorg/constant/database/lvdb"
-	"github.com/ninjadotorg/constant/limits"
-	"github.com/ninjadotorg/constant/wallet"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+
+	"github.com/ninjadotorg/constant/database"
+	_ "github.com/ninjadotorg/constant/database/lvdb"
+	"github.com/ninjadotorg/constant/limits"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 var (
@@ -137,7 +138,6 @@ func main() {
 			os.Exit(0)
 		}
 	}
-
 	// Work around defer not working after os.Exit()
 	if err := mainMaster(nil); err != nil {
 		os.Exit(1)

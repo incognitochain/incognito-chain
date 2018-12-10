@@ -432,7 +432,6 @@ func (self Server) Start() {
 	self.waitGroup.Add(1)
 
 	go self.peerHandler()
-
 	if !cfg.DisableRPC && self.rpcServer != nil {
 		self.waitGroup.Add(1)
 
