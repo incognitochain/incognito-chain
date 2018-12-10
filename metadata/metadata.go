@@ -6,6 +6,7 @@ import (
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/voting"
 )
 
 type MetadataBase struct {
@@ -80,6 +81,9 @@ type BlockchainRetriever interface {
 
 	// For validating dividend
 	GetAmountPerAccount(*DividendProposal) (uint64, []string, []uint64, error)
+
+	// For validating crowdsale
+	GetCrowdsaleData([]byte) (*voting.SaleData, error)
 }
 
 type Metadata interface {
@@ -87,6 +91,7 @@ type Metadata interface {
 	Hash() *common.Hash
 	CheckTransactionFee(Transaction, uint64) bool
 	ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte) (bool, error)
+	// isContinue, ok, err
 	ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
 }

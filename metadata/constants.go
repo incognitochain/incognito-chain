@@ -7,6 +7,7 @@ const (
 
 const (
 	InvalidMeta = iota
+
 	LoanRequestMeta
 	LoanResponseMeta
 	LoanWithdrawMeta
@@ -17,6 +18,8 @@ const (
 	BuyBackRequestMeta
 	BuyBackResponseMeta
 	DividendMeta
+
+	CrowdsaleRequestMeta
 
 	//Voting
 	SubmitDCBProposalMeta

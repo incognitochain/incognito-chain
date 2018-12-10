@@ -15,8 +15,6 @@ const (
 	TxCustomTokenPrivacyType = "t"  // token  tx with supporting privacy
 
 	TxBuyFromGOVRequest  = "bgr"
-	TxBuySellDCBRequest  = "bsdr"
-	TxBuySellDCBResponse = "bsds"
 	TxBuyFromGOVResponse = "bgrs"
 	TxBuyBackRequest     = "bbr"
 	TxBuyBackResponse    = "bbrs"
@@ -39,15 +37,32 @@ const (
 	GetChainStateInterval = 10 //second
 	MaxBlockTime          = 10 //second Maximum for a chain to grow
 
-	// voting
-	SumOfVoteDCBToken = 100000000
-	SumOfVoteGOVToken = 100000000
+)
+
+// for voting parameter
+const (
+	SumOfVoteDCBToken                 = 100000000
+	SumOfVoteGOVToken                 = 100000000
+	MinimumBlockOfProposalDuration    = 50
+	MaximumBlockOfProposalDuration    = 200
+	MaximumProposalExplainationLength = 1000
 )
 
 // board types
 const (
 	DCB = 1
 	GOV = 2
+)
+
+// special token ids (aka. PropertyID in custom token)
+var (
+	BondTokenID    = [HashSize]byte{0, 0, 0, 0, 0, 0, 0, 0}
+	DCBTokenID     = [HashSize]byte{1}
+	GOVTokenID     = [HashSize]byte{2}
+	CMBTokenID     = [HashSize]byte{3}
+	ConstantID     = [HashSize]byte{4} // To send Constant in custom token
+	VoteDCBTokenID = [HashSize]byte{5}
+	VoteGOVTokenID = [HashSize]byte{6}
 )
 
 // board addresses

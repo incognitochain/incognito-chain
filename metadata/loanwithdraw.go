@@ -23,11 +23,8 @@ func NewLoanWithdraw(data map[string]interface{}) *LoanWithdraw {
 	s, _ = hex.DecodeString(data["Key"].(string))
 	result.Key = s
 
+	result.Type = LoanWithdrawMeta
 	return &result
-}
-
-func (lw *LoanWithdraw) GetType() int {
-	return LoanWithdrawMeta
 }
 
 func (lw *LoanWithdraw) Hash() *common.Hash {

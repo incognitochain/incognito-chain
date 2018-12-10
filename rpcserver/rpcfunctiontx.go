@@ -91,10 +91,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 	return result, nil
 }
 
-/*
-// handleCreateTransaction handles createtransaction commands.
-*/
-func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, error) {
 	Logger.log.Info(params)
 
 	// all params
@@ -209,6 +206,14 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		realFee,
 		chainIdSender,
 		flag)
+	return tx, err
+}
+
+/*
+// handleCreateTransaction handles createtransaction commands.
+*/
+func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	tx, err := self.buildRawTransaction(params)
 	if err != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrUnexpected, err)

@@ -84,7 +84,7 @@ func (blockgen *BlkTmplGenerator) createSingleSendDCBVoteTokenTx(chainID byte, p
 	txTokenData := transaction.TxTokenData{
 		Type:       transaction.InitVoteDCBToken,
 		Amount:     amount,
-		PropertyID: VoteDCBTokenID,
+		PropertyID: common.VoteDCBTokenID,
 		Vins:       []transaction.TxTokenVin{},
 		Vouts:      []transaction.TxTokenVout{txTokenVout},
 	}
@@ -108,7 +108,7 @@ func (blockgen *BlkTmplGenerator) createSingleSendGOVVoteTokenTx(chainID byte, p
 	txTokenData := transaction.TxTokenData{
 		Type:       transaction.InitVoteGOVToken,
 		Amount:     amount,
-		PropertyID: VoteGOVTokenID,
+		PropertyID: common.VoteGOVTokenID,
 		Vins:       []transaction.TxTokenVin{},
 		Vouts:      []transaction.TxTokenVout{txTokenVout},
 	}
@@ -224,7 +224,7 @@ func createSingleSendDCBVoteTokenFail(pubKey []byte, amount uint64) metadata.Tra
 		TxTokenData: transaction.TxTokenData{
 			Type:       transaction.SendBackDCBTokenVoteFail,
 			Amount:     amount,
-			PropertyID: DCBTokenID,
+			PropertyID: common.DCBTokenID,
 			Vins:       []transaction.TxTokenVin{},
 			Vouts:      []transaction.TxTokenVout{txTokenVout},
 		},
@@ -244,7 +244,7 @@ func createSingleSendGOVVoteTokenFail(pubKey []byte, amount uint64) metadata.Tra
 		TxTokenData: transaction.TxTokenData{
 			Type:       transaction.SendBackGOVTokenVoteFail,
 			Amount:     amount,
-			PropertyID: GOVTokenID,
+			PropertyID: common.GOVTokenID,
 			Vins:       []transaction.TxTokenVin{},
 			Vouts:      []transaction.TxTokenVout{txTokenVout},
 		},

@@ -18,6 +18,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/voting"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -89,6 +90,10 @@ func (self *BlockChain) GetLoanTxs(loanID []byte) ([][]byte, error) {
 
 func (self *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint32, error) {
 	return self.config.DataBase.GetLoanPayment(loanID)
+}
+
+func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*voting.SaleData, error) {
+	return self.config.DataBase.LoadCrowdsaleData(saleID)
 }
 
 /*
