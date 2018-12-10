@@ -34,8 +34,13 @@ func (db *db) StoreSerialNumbers(serialNumber []byte, chainId byte) error {
 		}
 	}
 
-	len := int64(len(arrayData))
-	keySpec := append(key, big.NewInt(len).Bytes()...)
+	lenData := int64(len(arrayData))
+	lenBytes := big.NewInt(lenData).Bytes()
+	if lenData == 0 {
+		lenBytes = []byte{0}
+	}
+	keySpec := make([]byte, len(key))
+	keySpec = append(keySpec, lenBytes...)
 	if err := db.lvdb.Put(keySpec, serialNumber, nil); err != nil {
 		return err
 	}
@@ -152,9 +157,22 @@ func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
 		}
 	}
 
-	len := int64(len(arrData))
-	keySpec := append(key, big.NewInt(len).Bytes()...)
-	if err := db.lvdb.Put(keySpec, commitments, nil); err != nil {
+	// use for create proof random
+	lenData := int64(len(arrData))
+	lenBytes := big.NewInt(lenData).Bytes()
+	if lenData == 0 {
+		lenBytes = []byte{0}
+	}
+	keySpec1 := make([]byte, len(key))
+	keySpec1 = append(key, lenBytes...)
+	if err := db.lvdb.Put(keySpec1, commitments, nil); err != nil {
+		return err
+	}
+
+	// use for validate
+	keySpec2 := make([]byte, len(key))
+	keySpec2 = append(key, commitments...)
+	if err := db.lvdb.Put(keySpec2, []byte{}, nil); err != nil {
 		return err
 	}
 
@@ -252,8 +270,10 @@ func (db *db) StoreSNDerivators(data big.Int, chainID byte) error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
+	// "snderivator-data:data"
 	snderivatorData := data.Bytes()
-	keySpec := append(key, snderivatorData...)
+	keySpec := make([]byte, len(key))
+	keySpec = append(key, snderivatorData...)
 	if err := db.lvdb.Put(keySpec, snderivatorData, nil); err != nil {
 		return err
 	}
