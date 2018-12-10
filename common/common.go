@@ -223,55 +223,60 @@ func SliceBytesExists(slice interface{}, item interface{}) (int64, error) {
 	if s.Kind() != reflect.Slice {
 		return -1, errors.New("SliceBytesExists() given a non-slice type")
 	}
-
-	// TODO upgrade
-	min, max := s.Index(0).Interface(), s.Index(s.Len() - 1).Interface()
-	var low, high int64
-	low, high = 0, int64(s.Len()-1)
-	for {
-		if bytes.Compare(GetBytes(item), GetBytes(min)) == -1 {
-			return int64(low), nil
-		}
-
-		if bytes.Compare(GetBytes(item), GetBytes(max)) == 1 {
-			return int64(high + 1), nil
-		}
-		// make a guess of the location
-		var guess int64
-		if high == low {
-			guess = high
-		} else {
-			size := high - low
-			item_Int := new(big.Int).SetBytes(GetBytes(item))
-			min_Int := new(big.Int).SetBytes(GetBytes(min))
-			max_Int := new(big.Int).SetBytes(GetBytes(max))
-			SizeSub1 := new(big.Int).SetInt64(int64(size - 1))
-			item_Int.Sub(item_Int, min_Int)
-			max_Int.Sub(max_Int, min_Int)
-			div := item_Int.Div(item_Int, max_Int)
-			offset := SizeSub1.Mul(SizeSub1, div).Int64()
-			guess = low + offset
-		}
-		// maybe we found it?
-		x := s.Index(int(guess)).Interface()
-		if bytes.Equal(GetBytes(x), GetBytes(item)) {
-			//array[guess] == key {
-			// scan backwards for start of value range
-			temp := s.Index(int(guess) - 1).Interface()
-			for guess > 0 && bytes.Equal(GetBytes(temp), GetBytes(item)) {
-				guess--
-			}
-			return int64(guess), nil
-		}
-		// if we guessed to high, guess lower or vice versa
-		if bytes.Compare(GetBytes(x), GetBytes(item)) == 1 {
-			high = guess - 1
-			max = s.Index(int(high)).Interface()
-		} else {
-			low = guess + 1
-			min = s.Index(int(low)).Interface()
+	for i := 0; i < s.Len(); i++ {
+		interfacea := s.Index(i).Interface()
+		if bytes.Equal(interfacea.([]byte), item.([]byte)) {
+			return int64(i), nil
 		}
 	}
+	// TODO upgrade
+	//min, max := s.Index(0).Interface(), s.Index(s.Len() - 1).Interface()
+	//var low, high int64
+	//low, high = 0, int64(s.Len()-1)
+	//for {
+	//	if bytes.Compare(GetBytes(item), GetBytes(min)) == -1 {
+	//		return int64(low), nil
+	//	}
+	//
+	//	if bytes.Compare(GetBytes(item), GetBytes(max)) == 1 {
+	//		return int64(high + 1), nil
+	//	}
+	//	// make a guess of the location
+	//	var guess int64
+	//	if high == low {
+	//		guess = high
+	//	} else {
+	//		size := high - low
+	//		item_Int := new(big.Int).SetBytes(GetBytes(item))
+	//		min_Int := new(big.Int).SetBytes(GetBytes(min))
+	//		max_Int := new(big.Int).SetBytes(GetBytes(max))
+	//		SizeSub1 := new(big.Int).SetInt64(int64(size - 1))
+	//		item_Int.Sub(item_Int, min_Int)
+	//		max_Int.Sub(max_Int, min_Int)
+	//		div := item_Int.Div(item_Int, max_Int)
+	//		offset := SizeSub1.Mul(SizeSub1, div).Int64()
+	//		guess = low + offset
+	//	}
+	//	// maybe we found it?
+	//	x := s.Index(int(guess)).Interface()
+	//	if bytes.Equal(GetBytes(x), GetBytes(item)) {
+	//		//array[guess] == key {
+	//		// scan backwards for start of value range
+	//		temp := s.Index(int(guess) - 1).Interface()
+	//		for guess > 0 && bytes.Equal(GetBytes(temp), GetBytes(item)) {
+	//			guess--
+	//		}
+	//		return int64(guess), nil
+	//	}
+	//	// if we guessed to high, guess lower or vice versa
+	//	if bytes.Compare(GetBytes(x), GetBytes(item)) == 1 {
+	//		high = guess - 1
+	//		max = s.Index(int(high)).Interface()
+	//	} else {
+	//		low = guess + 1
+	//		min = s.Index(int(low)).Interface()
+	//	}
+	//}
 	return -1, nil
 }
 
