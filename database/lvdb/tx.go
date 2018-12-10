@@ -1,7 +1,6 @@
 package lvdb
 
 import (
-	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -76,30 +75,20 @@ func (db *db) FetchSerialNumbers(chainID byte) ([][]byte, error) {
 
 // HasSerialNumber - Check serialNumber in list SerialNumbers by chainID
 func (db *db) HasSerialNumber(serialNumber []byte, chainID byte) (bool, error) {
-	listSerialNumbers, err := db.FetchSerialNumbers(chainID)
+	key := db.getKey(string(serialNumbersPrefix), "")
+	key = append(key, chainID)
+	keySpec := append(key, serialNumber...)
+	_, err := db.Get(keySpec)
 	if err != nil {
-		return false, database.NewDatabaseError(database.UnexpectedError, err)
-	}
-	for _, item := range listSerialNumbers {
-		if bytes.Equal(item, serialNumber) {
-			return true, nil
-		}
+		return false, err
+	} else {
+		return true, nil
 	}
 	return false, nil
 }
 
 // HasSerialNumberIndex - Check serialNumber in list SerialNumbers by chainID
 func (db *db) HasSerialNumberIndex(serialNumberIndex int64, chainID byte) (bool, error) {
-	/*listSerialNumbers, err := db.FetchSerialNumbers(chainID)
-	if err != nil {
-		return false, database.NewDatabaseError(database.UnexpectedError, err)
-	}
-	for _, item := range listSerialNumbers {
-		if bytes.Equal(item, serialNumber) {
-			return true, nil
-		}
-	}
-	return false, nil*/
 	key := db.getKey(string(serialNumbersPrefix), "")
 	key = append(key, chainID)
 	keySpec := append(key, big.NewInt(serialNumberIndex).Bytes()...)
@@ -207,7 +196,7 @@ func (db *db) FetchCommitments(chainId byte) ([][]byte, error) {
 
 // HasCommitment - Check commitment in list commitments by chainID
 func (db *db) HasCommitment(commitment []byte, chainId byte) (bool, error) {
-	listCommitments, err := db.FetchCommitments(chainId)
+	/*listCommitments, err := db.FetchCommitments(chainId)
 	if err != nil {
 		return false, database.NewDatabaseError(database.UnexpectedError, err)
 	}
@@ -215,6 +204,16 @@ func (db *db) HasCommitment(commitment []byte, chainId byte) (bool, error) {
 		if bytes.Equal(item, commitment) {
 			return true, nil
 		}
+	}
+	return false, nil*/
+	key := db.getKey(string(commitmentsPrefix), "")
+	key = append(key, chainId)
+	keySpec := append(key, commitment...)
+	_, err := db.Get(keySpec)
+	if err != nil {
+		return false, err
+	} else {
+		return true, nil
 	}
 	return false, nil
 }
@@ -321,16 +320,6 @@ func (db *db) FetchSNDerivator(chainID byte) ([]big.Int, error) {
 
 // HasSNDerivator - Check SnDerivator in list SnDerivators by chainID
 func (db *db) HasSNDerivator(data big.Int, chainID byte) (bool, error) {
-	/*listSNDDerivators, err := db.FetchSNDerivator(chainID)
-	if err != nil {
-		return false, database.NewDatabaseError(database.UnexpectedError, err)
-	}
-	for _, item := range listSNDDerivators {
-		if item.Cmp(&data) == 0 {
-			return true, nil
-		}
-	}
-	return false, nil*/
 	key := db.getKey(string(snderivatorsPrefix), "")
 	key = append(key, chainID)
 	snderivatorData := data.Bytes()
