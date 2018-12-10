@@ -170,6 +170,19 @@ func (db *db) HasCommitmentIndex(commitmentIndex int64, chainId byte) (bool, err
 	return false, nil
 }
 
+func (db *db) GetCommitmentByIndex(commitmentIndex int64, chainId byte) ([]byte, error) {
+	key := db.getKey(string(commitmentsPrefix), "")
+	key = append(key, chainId)
+	keySpec := append(key, big.NewInt(commitmentIndex).Bytes()...)
+	data, err := db.Get(keySpec)
+	if err != nil {
+		return data, err
+	} else {
+		return data, nil
+	}
+	return data, nil
+}
+
 // CleanCommitments - clear all list commitments in DB
 func (db *db) CleanCommitments() error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(commitmentsPrefix), nil)

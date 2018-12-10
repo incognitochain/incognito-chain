@@ -50,6 +50,7 @@ type DatabaseInterface interface {
 	FetchCommitments(chainID byte) ([][]byte, error)
 	HasCommitment(commitment []byte, chainID byte) (bool, error)
 	HasCommitmentIndex(commitmentIndex int64, chainID byte) (bool, error)
+	GetCommitmentByIndex(commitmentIndex int64, chainID byte) ([]byte, error)
 	CleanCommitments() error
 
 	// SNDerivator
