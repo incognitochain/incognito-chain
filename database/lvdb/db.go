@@ -29,7 +29,7 @@ var (
 	snderivatorsPrefix        = []byte("snderivators-")
 	bestBlockKey              = []byte("bestBlock")
 	feeEstimator              = []byte("feeEstimator")
-	splitter                  = []byte("-[-]-")
+	Splitter                  = []byte("-[-]-")
 	tokenPrefix               = []byte("token-")
 	tokenPaymentAddressPrefix = []byte("token-paymentaddress-")
 	tokenInitPrefix           = []byte("token-init-")

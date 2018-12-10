@@ -281,7 +281,7 @@ func (db *db) CleanFeeEstimator() error {
 */
 func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, index int) error {
 	key := string(transactionKeyPrefix) + txId.String()
-	value := blockHash.String() + string(splitter) + strconv.Itoa(index)
+	value := blockHash.String() + string(Splitter) + strconv.Itoa(index)
 	fmt.Println("Key in StoreTransactionIndex", key)
 	fmt.Println("H in StoreTransactionIndex", value)
 	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
@@ -308,7 +308,7 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 	if err != nil {
 		return nil, -1, err;
 	}
-	reses := strings.Split(string(res), (string(splitter)))
+	reses := strings.Split(string(res), (string(Splitter)))
 	hash, err := common.Hash{}.NewHashFromStr(reses[0])
 	if err != nil {
 		return nil, -1, err;
@@ -352,7 +352,7 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 	reverseTxIndex := make([]byte, 4)
 	binary.LittleEndian.PutUint32(reverseTxIndex, uint32(bigNumberTx-int32(txIndex)))
 
-	key1 := string(privateKeyPrefix) + privateKey.String() + string(splitter) + string(int(chainId)) + string(splitter) + string(reverseBlockHeight) + string(splitter) + string(reverseTxIndex)
+	key1 := string(privateKeyPrefix) + privateKey.String() + string(Splitter) + string(int(chainId)) + string(Splitter) + string(reverseBlockHeight) + string(Splitter) + string(reverseTxIndex)
 	key2 := string(transactionKeyPrefix) + unspentTxHash.String()
 
 	if ok, _ := db.HasValue([]byte(key1)); ok {
@@ -395,7 +395,7 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKe
 		value := iter.Value()
 
 		fmt.Println("GetTransactionLightModeByPrivateKey, key", string(key))
-		reses := strings.Split(string(key), string(splitter))
+		reses := strings.Split(string(key), string(Splitter))
 		tempChainId, _ := strconv.Atoi(reses[2])
 		chainId := byte(tempChainId)
 		fmt.Println("GetTransactionLightModeByPrivateKey, chainId", chainId)

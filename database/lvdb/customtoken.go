@@ -75,18 +75,18 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 */
 func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *transaction.TxCustomToken) error {
 	tokenKey := tokenPaymentAddressPrefix
-	tokenKey = append(tokenKey, splitter...)
+	tokenKey = append(tokenKey, Splitter...)
 	tokenKey = append(tokenKey, (*tokenID)[:]...)
 	for _, vin := range tx.TxTokenData.Vins {
 		paymentAddressPubkey := vin.PaymentAddress.Pk
 		utxoHash := &vin.TxCustomTokenID
 		voutIndex := vin.VoutIndex
 		paymentAddressKey := tokenKey
-		paymentAddressKey = append(paymentAddressKey, splitter...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
 		paymentAddressKey = append(paymentAddressKey, paymentAddressPubkey...)
-		paymentAddressKey = append(paymentAddressKey, splitter...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
 		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
-		paymentAddressKey = append(paymentAddressKey, splitter...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
 		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
 		_, err := db.HasValue(paymentAddressKey)
 		if err != nil {
@@ -97,12 +97,12 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 			return err
 		}
 		// old value: {value}-unspent-unreward/reward
-		values := strings.Split(string(value), string(splitter))
+		values := strings.Split(string(value), string(Splitter))
 		if strings.Compare(values[1], string(unspent)) != 0 {
 			return errors.New("Double Spend Detected")
 		}
 		// new value: {value}-spent-unreward/reward
-		newValues := values[0] + string(splitter) + string(spent) + string(splitter) + values[2]
+		newValues := values[0] + string(Splitter) + string(spent) + string(Splitter) + values[2]
 		if err := db.lvdb.Put(paymentAddressKey, []byte(newValues), nil); err != nil {
 			return err
 		}
@@ -113,11 +113,11 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		voutIndex := vout.GetIndex()
 		value := vout.Value
 		paymentAddressKey := tokenKey
-		paymentAddressKey = append(paymentAddressKey, splitter...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
 		paymentAddressKey = append(paymentAddressKey, paymentAddressPubkey...)
-		paymentAddressKey = append(paymentAddressKey, splitter...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
 		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
-		paymentAddressKey = append(paymentAddressKey, splitter...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
 		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
 		ok, err := db.HasValue(paymentAddressKey)
 		// Vout already exist
@@ -128,7 +128,7 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 			return err
 		}
 		// init value: {value}-unspent-unreward
-		paymentAddressValue := strconv.Itoa(int(value)) + string(splitter) + string(unspent) + string(splitter) + string(unreward)
+		paymentAddressValue := strconv.Itoa(int(value)) + string(Splitter) + string(unspent) + string(Splitter) + string(unreward)
 		if err := db.lvdb.Put(paymentAddressKey, []byte(paymentAddressValue), nil); err != nil {
 			return err
 		}
@@ -143,14 +143,14 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 	results := [][]byte{}
 	tempsResult := make(map[string]bool)
 	prefix := tokenPaymentAddressPrefix
-	prefix = append(prefix, splitter...)
+	prefix = append(prefix, Splitter...)
 	prefix = append(prefix, (*tokenID)[:]...)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		key := string(iter.Key())
 		value := string(iter.Value())
-		keys := strings.Split(key, string(splitter))
-		values := strings.Split(value, string(splitter))
+		keys := strings.Split(key, string(Splitter))
+		values := strings.Split(value, string(Splitter))
 		if strings.Compare(values[1], string(unspent)) == 0 {
 			paymentAddressStr := keys[2]
 			tempsResult[paymentAddressStr] = true
@@ -172,15 +172,15 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 	results := make(map[string]uint64)
 	//tempsResult := make(map[string]bool)
 	prefix := tokenPaymentAddressPrefix
-	prefix = append(prefix, splitter...)
+	prefix = append(prefix, Splitter...)
 	prefix = append(prefix, (*tokenID)[:]...)
 	//fmt.Println("GetCustomTokenPaymentAddressesBalance, prefix", prefix)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		key := string(iter.Key())
 		value := string(iter.Value())
-		keys := strings.Split(key, string(splitter))
-		values := strings.Split(value, string(splitter))
+		keys := strings.Split(key, string(Splitter))
+		values := strings.Split(value, string(Splitter))
 		fmt.Println("GetCustomTokenPaymentAddressesBalance, utxo information", value)
 		if strings.Compare(values[1], string(unspent)) == 0 {
 			// Uncomment this to get balance of all account
@@ -212,19 +212,19 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 
 	results := make(map[client.PaymentAddress][][]byte)
 	prefix := tokenPaymentAddressPrefix
-	prefix = append(prefix, splitter...)
+	prefix = append(prefix, Splitter...)
 	prefix = append(prefix, (*tokenID)[:]...)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		key := string(iter.Key())
 		value := string(iter.H())
-		keys := strings.Split(key, string(splitter))
-		values := strings.Split(value, string(splitter))
+		keys := strings.Split(key, string(Splitter))
+		values := strings.Split(value, string(Splitter))
 		// get unspent and unreward transaction output
 		if (strings.Compare(values[1], string(unspent)) == 0) && (strings.Compare(values[2], string(unreward)) == 0) {
 			paymentAddress := client.PaymentAddress{}
 			paymentAddress.FromBytes([]byte(keys[2]))
-			utxo := keys[4] + string(splitter) + keys[5]
+			utxo := keys[4] + string(Splitter) + keys[5]
 			//utxo := append([]byte(keys[4]), []byte(keys[5])[:]...)
 			results[paymentAddress] = append(results[paymentAddress], []byte(utxo))
 		}
@@ -239,9 +239,9 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 */
 func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []byte) (map[string]string, error) {
 	prefix := tokenPaymentAddressPrefix
-	prefix = append(prefix, splitter...)
+	prefix = append(prefix, Splitter...)
 	prefix = append(prefix, (*tokenID)[:]...)
-	prefix = append(prefix, splitter...)
+	prefix = append(prefix, Splitter...)
 	prefix = append(prefix, pubkey...)
 	log.Println(hex.EncodeToString(prefix))
 	results := make(map[string]string)
@@ -261,13 +261,13 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []by
 */
 /*func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, pubkey []byte, txHash *common.Hash, voutIndex int) error {
 	key := tokenPaymentAddressPrefix
-	key = append(key, splitter...)
+	key = append(key, Splitter...)
 	key = append(key, (*tokenID)[:]...)
-	key = append(key, splitter...)
+	key = append(key, Splitter...)
 	key = append(key, pubkey...)
-	key = append(key, splitter...)
+	key = append(key, Splitter...)
 	key = append(key, (*txHash)[:]...)
-	key = append(key, splitter...)
+	key = append(key, Splitter...)
 	key = append(key, byte(voutIndex))
 	_, err := db.HasValue([]byte(key))
 	if err != nil {
@@ -278,7 +278,7 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []by
 	if err != nil {
 		return err
 	}
-	reses := strings.Split(string(res), string(splitter))
+	reses := strings.Split(string(res), string(Splitter))
 	// {value}-unspent-unreward
 	value := reses[0] + reses[1] + string(rewared)
 	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
