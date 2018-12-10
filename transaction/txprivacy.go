@@ -464,6 +464,7 @@ func (tx *Tx) Hash() *common.Hash {
 	if tx.Proof != nil {
 		record += string(tx.Proof.Bytes()[:])
 	}
+	//record += string{tx.Metadata}
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
