@@ -47,6 +47,9 @@ func (pro *PKComOpeningsProof) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
 	alpha *privacy.EllipticPoint,
 	gamma []*big.Int) {
+	if pro == nil {
+		pro = new(PKComOpeningsProof)
+	}
 	pro.commitmentValue = commitmentValue
 	pro.alpha = alpha
 	pro.gamma = gamma

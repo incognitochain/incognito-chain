@@ -104,6 +104,10 @@ func (pro *PKComZeroProof) Set(
 	index *byte, //statement
 	commitmentZeroS *privacy.EllipticPoint,
 	z *big.Int) {
+
+	if pro == nil{
+		pro = new(PKComZeroProof)
+	}
 	pro.commitmentValue = commitmentValue
 	pro.commitmentZeroS = commitmentZeroS
 	pro.index = index
