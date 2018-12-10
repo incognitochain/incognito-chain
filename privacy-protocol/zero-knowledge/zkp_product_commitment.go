@@ -74,6 +74,7 @@ func (pro *PKComProductProof)  Bytes() []byte {
 	return proofbytes
 }
 
+
 func (pro *PKComProductProof)  SetBytes(proofBytes []byte)  {
 	pro.Init()
 	offset := 0

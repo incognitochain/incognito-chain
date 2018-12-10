@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"fmt"
 	"math/big"
 )
@@ -274,13 +275,20 @@ func main() {
 	//tx := new(transaction.Tx)
 	//tx.CreateTx(keySetSender.PrivateKey, paymentInfo, )
 
-	a := 0
-	aInt := big.NewInt(int64(a))
-	aIntBytes := aInt.Bytes()
-	fmt.Printf("aInt: %v\n", aIntBytes)
+	//a := 0
+	//aInt := big.NewInt(int64(a))
+	//aIntBytes := aInt.Bytes()
+	//fmt.Printf("aInt: %v\n", aIntBytes)
+	//
+	//if aInt.Cmp(big.NewInt(0)) == 0{
+	//	fmt.Println("equal")
+	//}
 
-	if aInt.Cmp(big.NewInt(0)) == 0{
-		fmt.Println("equal")
+	for true{
+		res, _ := rand.Int(rand.Reader, big.NewInt(10))
+
+		fmt.Println(res)
 	}
+
 
 }

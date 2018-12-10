@@ -75,6 +75,10 @@ func (wit *PKComZeroWitness) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
 	index *byte, //statement
 	commitmentRnd *big.Int) {
+	if wit == nil{
+		wit = new(PKComZeroWitness)
+	}
+
 	wit.commitmentRnd = commitmentRnd
 	wit.commitmentValue = commitmentValue
 	wit.index = index
