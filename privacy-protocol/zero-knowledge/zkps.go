@@ -1,7 +1,6 @@
 package zkp
 
 import (
-	"github.com/ninjadotorg/constant/common"
 	"math/big"
 	"sort"
 
@@ -24,7 +23,7 @@ type PaymentWitness struct {
 	EqualityOfCommittedValWitness []*PKEqualityOfCommittedValWitness
 	ProductCommitmentWitness      []*PKComProductWitness
 
-	ComOutputOpeningsWitness   []*PKComOpeningsWitness
+	ComOutputOpeningsWitness []*PKComOpeningsWitness
 
 	ComOutputMultiRangeWitness *PKComMultiRangeWitness
 
@@ -44,7 +43,7 @@ type PaymentProof struct {
 	// for proving each value and sum of them are less than a threshold value
 	ComOutputMultiRangeProof *PKComMultiRangeProof
 	// for proving that the last element of output array is really the sum of all other values
-	SumOutRangeProof 				 *PKComZeroProof
+	SumOutRangeProof *PKComZeroProof
 	// for input = output
 	ComZeroProof *PKComZeroProof
 	// add list input coins' SN to proof for serial number
@@ -111,9 +110,6 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	return proofbytes
 }
 
-
-
-
 func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 	offset := 0
 	// Set ComInputOpeningsProof
@@ -160,8 +156,8 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 	}
 	// Set InputCoin
 }
-// END----------------------------------------------------------------------------------------------------------------------------------------------
 
+// END----------------------------------------------------------------------------------------------------------------------------------------------
 
 func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 	wit.spendingKey = spendingKey
@@ -272,16 +268,16 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		// Thunderbird have built witness for product commitment
 		/****Build witness for proving that the commitment of serial number is equivalent to Mul(com(sk), com(snd))****/
 		witnesssA := new(big.Int)
-		witnesssA.Add(wit.spendingKey,inputCoins[i].CoinDetails.SNDerivator)
-		randA:=new(big.Int)
-		randA.Add(randInputSK,randInputSND[i])
-		witnessAInverse:=new(big.Int)
-		witnessAInverse.ModInverse(witnesssA,privacy.Curve.Params().N)
-		randAInverse:=privacy.RandInt()
-		cmInputInverseSum:=privacy.PedCom.CommitAtIndex(witnessAInverse,randAInverse,privacy.SK)
-		witIndex:=new(byte)
+		witnesssA.Add(wit.spendingKey, inputCoins[i].CoinDetails.SNDerivator)
+		randA := new(big.Int)
+		randA.Add(randInputSK, randInputSND[i])
+		witnessAInverse := new(big.Int)
+		witnessAInverse.ModInverse(witnesssA, privacy.Curve.Params().N)
+		randAInverse := privacy.RandInt()
+		cmInputInverseSum := privacy.PedCom.CommitAtIndex(witnessAInverse, randAInverse, privacy.SK)
+		witIndex := new(byte)
 		*witIndex = privacy.SK
-		wit.ProductCommitmentWitness[i].Set(witnesssA,randA,cmInputInverseSum,witIndex)
+		wit.ProductCommitmentWitness[i].Set(witnesssA, randA, cmInputInverseSum, witIndex)
 		// ------------------------------
 	}
 
@@ -439,7 +435,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	proof.ComOutputMultiRangeProof, err = wit.ComOutputMultiRangeWitness.Prove()
 	var err1 error
 	proof.SumOutRangeProof, err = wit.ComOutputMultiRangeWitness.ProveSum()
-	if err != nil && err1 != nil{
+	if err != nil && err1 != nil {
 		return nil, err
 	}
 
@@ -491,11 +487,6 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commit
 		}
 
 		for i := 0; i < len(pro.OutputCoins); i++ {
-			// Check output coins' SND is not exists in SND list (Database)
-			if common.CheckSNDExistence(pro.OutputCoins[i].CoinDetails.SNDerivator){
-				return false
-			}
-
 			// Check output coins' cm is calculated correctly
 			cmTmp := pro.OutputCoins[i].CoinDetails.PublicKey
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(pro.OutputCoins[i].CoinDetails.Value))))
@@ -552,7 +543,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commit
 		return false
 	}
 	// Verify the last values of array is really the sum of all output value
-	if !pro.ComOutputMultiRangeProof.VerifySum(pro.SumOutRangeProof){
+	if !pro.ComOutputMultiRangeProof.VerifySum(pro.SumOutRangeProof) {
 		return false
 	}
 	// Verify the proof that sum of all input values is equal to sum of all output values

@@ -364,3 +364,14 @@ func ToBytes(obj interface{}) []byte {
 func CheckDuplicateBigInt(arr []*big.Int) bool {
 	return false
 }
+
+// CheckSND return true if snd exists in snDerivators list
+/*
+func CheckSNDExistence(snd *big.Int, db database.DatabaseInterface) (bool, error) {
+	ok, err := db.HasSNDerivator(*snd, 14)
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
+}
+*/

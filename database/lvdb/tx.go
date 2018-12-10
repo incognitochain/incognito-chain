@@ -101,14 +101,18 @@ func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
-	var txs [][]byte
+	var arrData [][]byte
 	if len(res) > 0 {
-		if err := json.Unmarshal(res, &txs); err != nil {
+		if err := json.Unmarshal(res, &arrData); err != nil {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
-	txs = append(txs, commitments)
-	b, err := json.Marshal(txs)
+
+	/*big.Int{}.
+	keySpec := append(key, )*/
+
+	arrData = append(arrData, commitments)
+	b, err := json.Marshal(arrData)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}

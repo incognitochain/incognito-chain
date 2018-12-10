@@ -149,7 +149,6 @@ func (tx *Tx) CreateTx(
 		return fmt.Errorf("Input value less than output value")
 	}
 
-
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
@@ -163,7 +162,7 @@ func (tx *Tx) CreateTx(
 	}
 
 	// calculate serial number from SND and spending key
-	for _, inputCoin := range inputCoins{
+	for _, inputCoin := range inputCoins {
 		inputCoin.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(*senderSK), inputCoin.CoinDetails.SNDerivator)
 	}
 
@@ -400,7 +399,7 @@ func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
 // - Verify tx signature
 // - Verify the payment proof
 // Note: This method doesn't check for double spending
-func (tx *Tx) ValidateTransaction(hasPrivacy bool) bool {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface) bool {
 	// Verify tx signature
 	var valid bool
 	var err error
@@ -413,6 +412,13 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool) bool {
 	}
 
 	// Verify the payment proof
+
+	for i := 0; i < len(tx.Proof.OutputCoins); i++ {
+		// Check output coins' SND is not exists in SND list (Database)
+		if ok, err := tx.CheckSNDExistence(tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, db); ok || err != nil {
+			return false
+		}
+	}
 	valid = tx.Proof.Verify(false, tx.SigPubKey, nil)
 	if valid == false {
 		fmt.Printf("Error verifying the payment proof")
