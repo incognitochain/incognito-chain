@@ -659,8 +659,78 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	return nil
 }
 
+/*
+	Key: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
+  H: value-spent/unspent-rewarded/unreward
+*/
 func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken) error {
-	return self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
+	Splitter := []byte("-[-]-")
+	TokenPaymentAddressPrefix := []byte("token-paymentaddress-")
+	unspent := []byte("unspent")
+	spent := []byte("spent")
+	unreward := []byte("unreward")
+
+	tokenKey := TokenPaymentAddressPrefix
+	tokenKey = append(tokenKey, Splitter...)
+	tokenKey = append(tokenKey, (customTokenTx.TxTokenData.PropertyID)[:]...)
+	for _, vin := range customTokenTx.TxTokenData.Vins {
+		paymentAddressPubkey := vin.PaymentAddress.Pk
+		utxoHash := &vin.TxCustomTokenID
+		voutIndex := vin.VoutIndex
+		paymentAddressKey := tokenKey
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, paymentAddressPubkey...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
+		_, err := self.config.DataBase.HasValue(paymentAddressKey)
+		if err != nil {
+			return err
+		}
+		value, err := self.config.DataBase.Get(paymentAddressKey)
+		if err != nil {
+			return err
+		}
+		// old value: {value}-unspent-unreward/reward
+		values := strings.Split(string(value), string(Splitter))
+		if strings.Compare(values[1], string(unspent)) != 0 {
+			return errors.New("Double Spend Detected")
+		}
+		// new value: {value}-spent-unreward/reward
+		newValues := values[0] + string(Splitter) + string(spent) + string(Splitter) + values[2]
+		if err := self.config.DataBase.Put(paymentAddressKey, []byte(newValues)); err != nil {
+			return err
+		}
+	}
+	for _, vout := range customTokenTx.TxTokenData.Vouts {
+		paymentAddressPubkey := vout.PaymentAddress.Pk
+		utxoHash := customTokenTx.Hash()
+		voutIndex := vout.GetIndex()
+		value := vout.Value
+		paymentAddressKey := tokenKey
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, paymentAddressPubkey...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
+		ok, err := self.config.DataBase.HasValue(paymentAddressKey)
+		// Vout already exist
+		if ok {
+			return errors.New("UTXO already exist")
+		}
+		if err != nil {
+			return err
+		}
+		// init value: {value}-unspent-unreward
+		paymentAddressValue := strconv.Itoa(int(value)) + string(Splitter) + string(unspent) + string(Splitter) + string(unreward)
+		if err := self.config.DataBase.Put(paymentAddressKey, []byte(paymentAddressValue)); err != nil {
+			return err
+		}
+	}
+	return nil
+	//return self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
 }
 
 /*

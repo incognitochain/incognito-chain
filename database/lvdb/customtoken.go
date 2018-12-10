@@ -10,9 +10,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/voting"
-	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -71,9 +69,8 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 /*
 	Key: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
   H: value-spent/unspent-rewarded/unreward
-
 */
-func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *transaction.TxCustomToken) error {
+/*func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *transaction.TxCustomToken) error {
 	tokenKey := TokenPaymentAddressPrefix
 	tokenKey = append(tokenKey, Splitter...)
 	tokenKey = append(tokenKey, (*tokenID)[:]...)
@@ -98,7 +95,7 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 		}
 		// old value: {value}-unspent-unreward/reward
 		values := strings.Split(string(value), string(Splitter))
-		if strings.Compare(values[1], string(unspent)) != 0 {
+		if strings.Compare(values[1], string(Unspent)) != 0 {
 			return errors.New("Double Spend Detected")
 		}
 		// new value: {value}-spent-unreward/reward
@@ -128,13 +125,13 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 			return err
 		}
 		// init value: {value}-unspent-unreward
-		paymentAddressValue := strconv.Itoa(int(value)) + string(Splitter) + string(unspent) + string(Splitter) + string(unreward)
+		paymentAddressValue := strconv.Itoa(int(value)) + string(Splitter) + string(Unspent) + string(Splitter) + string(unreward)
 		if err := db.Put(paymentAddressKey, []byte(paymentAddressValue)); err != nil {
 			return err
 		}
 	}
 	return nil
-}
+}*/
 
 /*
 	Return a list of all address with balance > 0
@@ -182,7 +179,7 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 		keys := strings.Split(key, string(Splitter))
 		values := strings.Split(value, string(Splitter))
 		fmt.Println("GetCustomTokenPaymentAddressesBalance, utxo information", value)
-		if strings.Compare(values[1], string(unspent)) == 0 {
+		if strings.Compare(values[1], string(Unspent)) == 0 {
 			// Uncomment this to get balance of all account
 			paymentAddress := privacy.PaymentAddress{}
 			paymentAddress.FromBytes([]byte(keys[2]))

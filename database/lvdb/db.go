@@ -40,7 +40,7 @@ var (
 	rewared                   = []byte("reward")
 	unreward                  = []byte("unreward")
 	spent                     = []byte("spent")
-	unspent                   = []byte("unspent")
+	Unspent                   = []byte("unspent")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {

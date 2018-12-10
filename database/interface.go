@@ -3,7 +3,6 @@ package database
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/voting"
 	"math/big"
 )
@@ -64,13 +63,13 @@ type DatabaseInterface interface {
 	CleanFeeEstimator() error
 
 	// Custom token
-	StoreCustomToken(tokenID *common.Hash, data []byte) error                                                        // store custom token. Param: tokenID, txInitToken-id, data tx
-	StoreCustomTokenTx(tokenID *common.Hash, chainID byte, blockHeight int32, txIndex int32, data []byte) error      // store custom token tx. Param: tokenID, chainID, block height, tx-id, data tx
-	ListCustomToken() ([][]byte, error)                                                                              // get list all custom token which issued in network
-	CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error)                                                     // from token id get all custom txs
-	StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, customTokenTxData *transaction.TxCustomToken) error // store account history of custom token
-	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []byte) (map[string]string, error)                 // get list of utxo of an paymentaddress.pubkey of a token
-	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)                           // get balance of all paymentaddress of a token (only return payment address with balance > 0)
+	StoreCustomToken(tokenID *common.Hash, data []byte) error                                                   // store custom token. Param: tokenID, txInitToken-id, data tx
+	StoreCustomTokenTx(tokenID *common.Hash, chainID byte, blockHeight int32, txIndex int32, data []byte) error // store custom token tx. Param: tokenID, chainID, block height, tx-id, data tx
+	ListCustomToken() ([][]byte, error)                                                                         // get list all custom token which issued in network
+	CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error)                                                // from token id get all custom txs
+	//StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, customTokenTxData *transaction.TxCustomToken) error // store account history of custom token
+	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []byte) (map[string]string, error) // get list of utxo of an paymentaddress.pubkey of a token
+	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)           // get balance of all paymentaddress of a token (only return payment address with balance > 0)
 	//UpdateRewardAccountUTXO(*common.Hash, []byte, *common.Hash, int) error
 	//GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error)                                  // get all paymentaddress owner that have balance > 0 of a custom token
 
