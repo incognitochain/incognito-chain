@@ -398,7 +398,7 @@ this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
 	for _, desc := range tx.Proof.OutputCoins {
-		chainId, err := common.GetTxSenderChain(desc.CoinDetails.PubKeyLastByte)
+		chainId, err := common.GetTxSenderChain(desc.CoinDetails.GetPubKeyLastByte())
 		if err != nil {
 			return err
 		}
@@ -775,9 +775,10 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 							InputCoins:                  tx.Proof.InputCoins,
 							OutputCoins:                 []*privacy.OutputCoin{},
 							PubKeyLastByteSender:        tx.Proof.PubKeyLastByteSender,
-							ComInputSK:                  tx.Proof.ComInputSK,
-							ComInputSND:                 tx.Proof.ComInputSND,
-							ComInputValue:               tx.Proof.ComInputValue,
+							ComOutputValue: 							tx.Proof.ComOutputValue,
+							ComOutputSND:   							tx.Proof.ComOutputSND,
+							ComOutputShardID:  						tx.Proof.ComOutputShardID,
+
 						},
 						Metadata: tx.Metadata,
 					}
@@ -852,9 +853,9 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 			InputCoins:                  tx.Proof.InputCoins,
 			OutputCoins:                 []*privacy.OutputCoin{},
 			PubKeyLastByteSender:        tx.Proof.PubKeyLastByteSender,
-			ComInputSK:                  tx.Proof.ComInputSK,
-			ComInputSND:                 tx.Proof.ComInputSND,
-			ComInputValue:               tx.Proof.ComInputValue,
+			ComOutputValue: 							tx.Proof.ComOutputValue,
+			ComOutputSND:   							tx.Proof.ComOutputSND,
+			ComOutputShardID:  						tx.Proof.ComOutputShardID,
 		},
 		Metadata: tx.Metadata,
 	}

@@ -26,24 +26,28 @@ type Coin struct {
 	SerialNumber   *EllipticPoint
 	Randomness     *big.Int
 	Value          uint64
-	Info           [512]byte //512 bytes //512 bytes
-	PubKeyLastByte byte
+	Info           [512]byte //512 bytes
 }
 
-func (self Coin) MarshalJSON() ([]byte, error) {
-	data := self.Bytes()
+func (coin *Coin) GetPubKeyLastByte() byte{
+	pubKeyBytes := coin.PublicKey.Compress()
+	return pubKeyBytes[len(pubKeyBytes) - 1]
+}
+
+func (coin Coin) MarshalJSON() ([]byte, error) {
+	data := coin.Bytes()
 	temp := base58.Base58Check{}.Encode(data, byte(0x00))
 	return json.Marshal(temp)
 }
 
-func (self *Coin) UnmarshalJSON(data []byte) error {
+func (coin *Coin) UnmarshalJSON(data []byte) error {
 	dataStr := ""
 	_ = json.Unmarshal(data, &dataStr)
 	temp, _, err := base58.Base58Check{}.Decode(dataStr)
 	if err != nil {
 		return err
 	}
-	self.SetBytes(temp)
+	coin.SetBytes(temp)
 	return nil
 }
 
@@ -68,7 +72,6 @@ func (coin *Coin) Bytes() []byte {
 	coin_bytes = append(coin_bytes, Value...)
 	Info := coin.Info
 	coin_bytes = append(coin_bytes, Info[:]...)
-	coin_bytes = append(coin_bytes, coin.PubKeyLastByte)
 	return coin_bytes
 }
 func (coin *Coin) SetBytes(coin_byte []byte) {
@@ -100,7 +103,6 @@ func (coin *Coin) SetBytes(coin_byte []byte) {
 
 	copy(coin.Info[:], coin_byte[offset:offset+InfoLength])
 	offset += InfoLength
-	coin.PubKeyLastByte = coin_byte[offset]
 }
 
 // InputCoin represents a input coin of transaction
@@ -217,7 +219,7 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	// Calculate value of coin
 	gRandom := PedCom.G[RAND].ScalarMul(coin.CoinDetails.Randomness)
 	gRandomInverse, _ := gRandom.Inverse()
-	gShardID := PedCom.G[SHARDID].ScalarMul(big.NewInt(int64(coin.CoinDetails.PubKeyLastByte)))
+	gShardID := PedCom.G[SHARDID].ScalarMul(big.NewInt(int64(coin.CoinDetails.GetPubKeyLastByte())))
 	gShardIDInverse, _ := gShardID.Inverse()
 	gSND := PedCom.G[SND].ScalarMul(coin.CoinDetails.SNDerivator)
 	gSNDInverse, _ := gSND.Inverse()
@@ -247,7 +249,7 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 
 //CommitAll commits a coin with 5 attributes (public key, value, serial number derivator, last byte pk, r)
 func (coin *Coin) CommitAll() {
-	values := []*big.Int{big.NewInt(0), big.NewInt(int64(coin.Value)), coin.SNDerivator, new(big.Int).SetBytes([]byte{coin.PubKeyLastByte}), coin.Randomness}
+	values := []*big.Int{big.NewInt(0), big.NewInt(int64(coin.Value)), coin.SNDerivator, new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}), coin.Randomness}
 	//fmt.Printf("coin info: %v\n", values)
 	coin.CoinCommitment = PedCom.CommitAll(values)
 	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)

@@ -7,12 +7,13 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 
-	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"math"
 	rand2 "math/rand"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 type Tx struct {
@@ -42,27 +43,28 @@ type Tx struct {
 
 // randomCommitmentsProcess - process list commitments and useable tx to create
 // a list commitment random which be used to create a proof for new tx
-func randomCommitmentsProcess(commitments [][]byte, useableTx []*Tx, randNum int) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+func randomCommitmentsProcess(useableTx []*Tx, randNum int, db database.DatabaseInterface, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
 	commitmentIndexs = []uint64{}
 	myCommitmentIndexs = []uint64{}
 	if randNum == 0 {
 		randNum = 7
 	}
 	listCommitmentsInUsableTx := [][]byte{}
-	mapIndexCommitmentsInUsableTx := make(map[string]uint64)
+	mapIndexCommitmentsInUsableTx := make(map[string]*big.Int)
 	for _, tx := range useableTx {
 		for _, out := range tx.Proof.OutputCoins {
-			listCommitmentsInUsableTx = append(listCommitmentsInUsableTx, out.CoinDetails.CoinCommitment.Compress())
-			index, _ := common.SliceBytesExists(commitments, out.CoinDetails.CoinCommitment.Compress())
-			mapIndexCommitmentsInUsableTx[string(out.CoinDetails.CoinCommitment.Compress())] = uint64(index)
+			commitment := out.CoinDetails.CoinCommitment.Compress()
+			listCommitmentsInUsableTx = append(listCommitmentsInUsableTx, commitment)
+			index, _ := db.GetCommitmentIndex(commitment, chainID)
+			mapIndexCommitmentsInUsableTx[string(commitment)] = index
 		}
 	}
 	cpRandNum := (len(listCommitmentsInUsableTx) * randNum) - len(listCommitmentsInUsableTx)
 	for i := 0; i < cpRandNum; i++ {
 		for true {
-			index := rand2.Int63n(int64(len(commitments)))
-			choosenCommitment := commitments[index]
-			if k, err := common.SliceBytesExists(listCommitmentsInUsableTx, choosenCommitment); k != -1 && err != nil {
+			lenCommitment, _ := db.GetCommitmentLength(chainID)
+			index := rand2.Int63n(lenCommitment.Int64())
+			if ok, err := db.HasCommitmentIndex(index, chainID); !ok && err != nil {
 				commitmentIndexs = append(commitmentIndexs, uint64(index))
 			} else {
 				continue
@@ -73,7 +75,7 @@ func randomCommitmentsProcess(commitments [][]byte, useableTx []*Tx, randNum int
 		key := string(temp)
 		index := mapIndexCommitmentsInUsableTx[key]
 		i := rand2.Int63n(int64(len(commitmentIndexs)))
-		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index}, commitmentIndexs[i:]...)...)
+		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)
 		myCommitmentIndexs = append(myCommitmentIndexs, uint64(i))
 	}
 	return nil, nil
@@ -97,14 +99,15 @@ func (tx *Tx) CreateTx(
 	paymentInfo []*privacy.PaymentInfo,
 	usableTx []*Tx,
 	fee uint64,
-	commitmentsDB [][]byte,
 	hasPrivacy bool,
+	db database.DatabaseInterface,
 ) (error) {
 
+	chainID := byte(14)
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
-	commitmentIndexs, myCommitmentIndexs = randomCommitmentsProcess(commitmentsDB, usableTx, 7)
+	commitmentIndexs, myCommitmentIndexs = randomCommitmentsProcess(usableTx, 7, db, chainID)
 
 	inputCoins := getInputCoins(usableTx)
 	//Get input coins from usableTX
@@ -147,7 +150,6 @@ func (tx *Tx) CreateTx(
 		return fmt.Errorf("Input value less than output value")
 	}
 
-
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
@@ -161,7 +163,7 @@ func (tx *Tx) CreateTx(
 	}
 
 	// calculate serial number from SND and spending key
-	for _, inputCoin := range inputCoins{
+	for _, inputCoin := range inputCoins {
 		inputCoin.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(*senderSK), inputCoin.CoinDetails.SNDerivator)
 	}
 
@@ -178,8 +180,16 @@ func (tx *Tx) CreateTx(
 
 		for i := 0; i < len(paymentInfo); i++ {
 			sndOut = privacy.RandInt()
-			for common.CheckSNDExistence(sndOut) {
-				sndOut = privacy.RandInt()
+			for true {
+				ok, err := tx.CheckSNDExistence(sndOut, db)
+				if err != nil {
+					fmt.Println(err)
+				}
+				if !ok {
+					sndOut = privacy.RandInt()
+				} else {
+					break
+				}
 			}
 			sndOuts = append(sndOuts, sndOut)
 		}
@@ -192,7 +202,6 @@ func (tx *Tx) CreateTx(
 		outputCoins[i] = new(privacy.OutputCoin)
 		outputCoins[i].CoinDetails.Value = pInfo.Amount
 		outputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
-		outputCoins[i].CoinDetails.PubKeyLastByte = pInfo.PaymentAddress.Pk[len(pInfo.PaymentAddress.Pk)-1]
 		outputCoins[i].CoinDetails.SNDerivator = sndOuts[i]
 	}
 
@@ -215,12 +224,13 @@ func (tx *Tx) CreateTx(
 	commitmentProving := make([]*privacy.EllipticPoint, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
 		commitmentProving[i] = new(privacy.EllipticPoint)
-		commitmentProving[i], _ = privacy.DecompressKey(commitmentsDB[cmIndex])
+		temp, _ := db.GetCommitmentByIndex(cmIndex, chainID)
+		commitmentProving[i], _ = privacy.DecompressKey(temp)
 	}
 
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs)
+	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
 	tx.Proof, _ = witness.Prove(false)
 
 	// set private key for signing tx
@@ -229,14 +239,12 @@ func (tx *Tx) CreateTx(
 		tx.sigPrivKey = append(*senderSK, witness.ComInputOpeningsWitness[0].Openings[privacy.RAND].Bytes()...)
 
 		// encrypt coin details (Randomness)
-		// hide information of output coins except coin commitments, last byte of public key, snDerivators
+		// hide information of output coins except coin commitments, public key, snDerivators
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			tx.Proof.OutputCoins[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
 			tx.Proof.OutputCoins[i].CoinDetails.SerialNumber = nil
 			tx.Proof.OutputCoins[i].CoinDetails.Value = 0
-			tx.Proof.OutputCoins[i].CoinDetails.PublicKey = nil
 			tx.Proof.OutputCoins[i].CoinDetails.Randomness = nil
-			tx.Proof.OutputCoins[i].CoinDetails.PubKeyLastByte = tx.Proof.OutputCoins[i].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[i].CoinDetails.PublicKey.Compress())-1]
 		}
 
 		// hide information of input coins except serial number of input coins
@@ -363,6 +371,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		point := new(privacy.EllipticPoint)
 		point, _ = privacy.DecompressKey(tx.SigPubKey)
 		verKey.X, verKey.Y = point.X, point.Y
+		verKey.Curve = privacy.Curve
 
 		// convert signature from byte array to ECDSASign
 		r, s := FromByteArrayToECDSASig(tx.Sig)
@@ -392,7 +401,7 @@ func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
 // - Verify tx signature
 // - Verify the payment proof
 // Note: This method doesn't check for double spending
-func (tx *Tx) ValidateTransaction(hasPrivacy bool) bool {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface) bool {
 	// Verify tx signature
 	var valid bool
 	var err error
@@ -404,8 +413,25 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool) bool {
 		return false
 	}
 
+	for i := 0; i < len(tx.Proof.OutputCoins); i++ {
+		// Check output coins' SND is not exists in SND list (Database)
+		if ok, err := tx.CheckSNDExistence(tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, db); ok || err != nil {
+			return false
+		}
+	}
+
+	if !hasPrivacy{
+		// Check input coins' cm is exists in cm list (Database)
+		for i:=0; i<len(tx.Proof.InputCoins); i++{
+			ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment, db)
+			if !ok || err != nil{
+				return false
+			}
+		}
+	}
+
 	// Verify the payment proof
-	valid = tx.Proof.Verify(false, tx.SigPubKey, nil)
+	valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, nil)
 	if valid == false {
 		fmt.Printf("Error verifying the payment proof")
 		return false
@@ -471,9 +497,17 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }
 
-// todo: thunderbird
-// CheckSND return true if snd exists in snDerivators list
-func CheckSNDExistence(snd *big.Int) bool {
-	//todo: query from db to get snDerivators
-	return false
+// CheckSNDExistence return true if snd exists in snDerivators list
+func (tx Tx) CheckSNDExistence(snd *big.Int, db database.DatabaseInterface) (bool, error) {
+	ok, err := db.HasSNDerivator(*snd, 14)
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
+}
+
+// CheckCMExistence returns true if cm exists in cm list
+func (tx Tx) CheckCMExistence(cm *privacy.EllipticPoint, db database.DatabaseInterface) (bool, error) {
+	// Todo:
+	return true, nil
 }
