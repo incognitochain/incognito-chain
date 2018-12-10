@@ -398,7 +398,7 @@ this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
 	for _, desc := range tx.Proof.OutputCoins {
-		chainId, err := common.GetTxSenderChain(desc.CoinDetails.PubKeyLastByte)
+		chainId, err := common.GetTxSenderChain(desc.CoinDetails.GetPubKeyLastByte())
 		if err != nil {
 			return err
 		}

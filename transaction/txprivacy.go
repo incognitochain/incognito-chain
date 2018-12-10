@@ -192,7 +192,6 @@ func (tx *Tx) CreateTx(
 		outputCoins[i] = new(privacy.OutputCoin)
 		outputCoins[i].CoinDetails.Value = pInfo.Amount
 		outputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
-		outputCoins[i].CoinDetails.PubKeyLastByte = pInfo.PaymentAddress.Pk[len(pInfo.PaymentAddress.Pk)-1]
 		outputCoins[i].CoinDetails.SNDerivator = sndOuts[i]
 	}
 
@@ -229,14 +228,12 @@ func (tx *Tx) CreateTx(
 		tx.sigPrivKey = append(*senderSK, witness.ComInputOpeningsWitness[0].Openings[privacy.RAND].Bytes()...)
 
 		// encrypt coin details (Randomness)
-		// hide information of output coins except coin commitments, last byte of public key, snDerivators
+		// hide information of output coins except coin commitments, public key, snDerivators
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			tx.Proof.OutputCoins[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
 			tx.Proof.OutputCoins[i].CoinDetails.SerialNumber = nil
 			tx.Proof.OutputCoins[i].CoinDetails.Value = 0
-			tx.Proof.OutputCoins[i].CoinDetails.PublicKey = nil
 			tx.Proof.OutputCoins[i].CoinDetails.Randomness = nil
-			tx.Proof.OutputCoins[i].CoinDetails.PubKeyLastByte = tx.Proof.OutputCoins[i].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[i].CoinDetails.PublicKey.Compress())-1]
 		}
 
 		// hide information of input coins except serial number of input coins

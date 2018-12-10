@@ -327,7 +327,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	for i := 0; i < numOutputCoin; i++ {
 		// calculate final commitment for output coins
 		randOutputShardID[i] = privacy.RandInt()
-		cmOutputShardID[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(outputCoins[i].CoinDetails.PubKeyLastByte)), randOutputShardID[i], privacy.SHARDID)
+		cmOutputShardID[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(outputCoins[i].CoinDetails.GetPubKeyLastByte())), randOutputShardID[i], privacy.SHARDID)
 
 		cmOutputSum[i].Add(outputCoins[i].CoinDetails.PublicKey)
 		cmOutputSum[i].Add(cmOutputShardID[i])
@@ -500,7 +500,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commit
 			cmTmp := pro.OutputCoins[i].CoinDetails.PublicKey
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(pro.OutputCoins[i].CoinDetails.Value))))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMul(pro.OutputCoins[i].CoinDetails.SNDerivator))
-			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMul(new(big.Int).SetBytes([]byte{pro.OutputCoins[i].CoinDetails.PubKeyLastByte})))
+			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMul(new(big.Int).SetBytes([]byte{pro.OutputCoins[i].CoinDetails.GetPubKeyLastByte()})))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMul(pro.OutputCoins[i].CoinDetails.Randomness))
 			if !cmTmp.IsEqual(pro.OutputCoins[i].CoinDetails.CoinCommitment) {
 				return false
@@ -544,6 +544,8 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commit
 			return false
 		}
 	}
+
+	// verify
 
 	//Verify the proof that output values and sum of them do not exceed v_max
 	if !pro.ComOutputMultiRangeProof.Verify() {
