@@ -232,7 +232,12 @@ func (db *db) HasCommitmentIndex(commitmentIndex uint64, chainId byte) (bool, er
 func (db *db) GetCommitmentByIndex(commitmentIndex uint64, chainId byte) ([]byte, error) {
 	key := db.getKey(string(commitmentsPrefix), "")
 	key = append(key, chainId)
-	keySpec := append(key, new(big.Int).SetUint64(commitmentIndex).Bytes()...)
+	keySpec := make([]byte, len(key))
+	if commitmentIndex == 0 {
+		keySpec = append(key, byte(0))
+	} else {
+		keySpec = append(key, new(big.Int).SetUint64(commitmentIndex).Bytes()...)
+	}
 	data, err := db.Get(keySpec)
 	if err != nil {
 		return data, err

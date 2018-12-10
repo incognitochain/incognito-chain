@@ -3,6 +3,7 @@ package zkp
 import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"math/big"
+	"fmt"
 )
 
 // PaymentWitness contains all of witness for proving when spending coins
@@ -174,7 +175,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin,
 	pkLastByteSender byte, pkLastByteReceivers []byte,
 	commitments []*privacy.EllipticPoint, commitmentIndexs []uint64, myCommitmentIndexs []uint64,
-	fee uint64) (err error){
+	fee uint64) (err error) {
 
 	wit.spendingKey = spendingKey
 	wit.inputCoins = inputCoins
@@ -228,6 +229,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 	wit.ComInputOpeningsWitness = make([]*PKComOpeningsWitness, numInputCoin)
 	wit.OneOfManyWitness = make([]*PKOneOfManyWitness, numInputCoin)
+	wit.ProductCommitmentWitness = make([]*PKComProductWitness, numInputCoin)
 	wit.EqualityOfCommittedValWitness = make([]*PKEqualityOfCommittedValWitness, numInputCoin)
 	indexZKPEqual := make([]*byte, 2)
 	indexZKPEqual[0] = new(byte)
@@ -318,7 +320,8 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		randOutputSum[i] = randOutputValue[i]
 		randOutputSum[i].Add(randOutputSum[i], randOutputSND[i])
 
-		cmOutputSum[i].X, cmOutputSum[i].Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputValue[i].X, cmOutputValue[i].Y)
+		cmOutputSum[i] = new(privacy.EllipticPoint)
+		cmOutputSum[i].X, cmOutputSum[i].Y = cmOutputValue[i].X, cmOutputValue[i].Y
 		cmOutputSum[i].X, cmOutputSum[i].Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputSND[i].X, cmOutputSND[i].Y)
 
 		cmOutputValueAll.Add(cmOutputValue[i])
@@ -359,9 +362,10 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	// ------------------------
 
 	// Build witness for proving Sum(Input's value) == Sum(Output's Value)
+	fmt.Println(privacy.PedCom.G[privacy.VALUE])
 	cmOutputValueAll.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(fee))))
 	cmOutputValueAllInverse, err := cmOutputValueAll.Inverse()
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
