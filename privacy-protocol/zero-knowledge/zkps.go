@@ -309,7 +309,6 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	cmOutputSumAll := new(privacy.EllipticPoint)
 	cmOutputSumAll.X = big.NewInt(0)
 	cmOutputSumAll.Y = big.NewInt(0)
-	cmOutputRndAll := big.NewInt(0)
 
 	// cmOutputValueAll is sum of all value coin commitments
 	cmOutputValueAll := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
