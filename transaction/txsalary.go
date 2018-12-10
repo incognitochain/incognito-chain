@@ -5,6 +5,8 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"math/big"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
+	"fmt"
 )
 
 // CreateTxSalary
@@ -17,6 +19,7 @@ func CreateTxSalary(
 	salary uint64,
 	receiverAddr *privacy.PaymentAddress,
 	privKey *privacy.SpendingKey,
+	db database.DatabaseInterface,
 ) (*Tx, error) {
 
 	tx := new(Tx)
@@ -38,8 +41,16 @@ func CreateTxSalary(
 
 	//sndOut := new(big.Int)
 	sndOut := privacy.RandInt()
-	for common.CheckSNDExistence(sndOut) {
-		sndOut = privacy.RandInt()
+	for true {
+		ok, err := tx.CheckSNDExistence(sndOut, db)
+		if err != nil {
+			fmt.Println(err)
+		}
+		if !ok {
+			sndOut = privacy.RandInt()
+		} else {
+			break
+		}
 	}
 
 	tx.Proof.OutputCoins[0].CoinDetails.SNDerivator = sndOut
@@ -61,10 +72,11 @@ func CreateTxSalary(
 
 func ValidateTxSalary(
 	tx *Tx,
+	db database.DatabaseInterface,
 ) bool {
 
 	// check whether output coin's SND exists in SND list or not
-	if common.CheckSNDExistence(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator) {
+	if ok, err := tx.CheckSNDExistence(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, db); ok || err != nil {
 		return false
 	}
 

@@ -175,13 +175,19 @@ func (db *db) StoreSNDerivators(data big.Int, chainID byte) error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
-	var arrData []big.Int
+	snderivatorData := data.Bytes()
+	keySpec := append(key, snderivatorData...)
+	if err := db.lvdb.Put(keySpec, snderivatorData, nil); err != nil {
+		return err
+	}
+
+	var arrData []string
 	if len(res) > 0 {
 		if err := json.Unmarshal(res, &arrData); err != nil {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
-	arrData = append(arrData, data)
+	arrData = append(arrData, string(snderivatorData))
 	b, err := json.Marshal(arrData)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
@@ -201,18 +207,24 @@ func (db *db) FetchSNDerivator(chainID byte) ([]big.Int, error) {
 		return make([]big.Int, 0), database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
-	var txs []big.Int
+	var arrData []string
 	if len(res) > 0 {
-		if err := json.Unmarshal(res, &txs); err != nil {
+		if err := json.Unmarshal(res, &arrData); err != nil {
 			return make([]big.Int, 0), errors.Wrap(err, "json.Unmarshal")
 		}
 	}
-	return txs, nil
+	result := []big.Int{}
+	for _, data := range arrData {
+		temp := big.Int{}
+		temp.SetBytes([]byte(data))
+		result = append(result, temp)
+	}
+	return result, nil
 }
 
 // HasSNDerivator - Check SnDerivator in list SnDerivators by chainID
 func (db *db) HasSNDerivator(data big.Int, chainID byte) (bool, error) {
-	listSNDDerivators, err := db.FetchSNDerivator(chainID)
+	/*listSNDDerivators, err := db.FetchSNDerivator(chainID)
 	if err != nil {
 		return false, database.NewDatabaseError(database.UnexpectedError, err)
 	}
@@ -220,6 +232,17 @@ func (db *db) HasSNDerivator(data big.Int, chainID byte) (bool, error) {
 		if item.Cmp(&data) == 0 {
 			return true, nil
 		}
+	}
+	return false, nil*/
+	key := db.getKey(string(snderivatorsPrefix), "")
+	key = append(key, chainID)
+	snderivatorData := data.Bytes()
+	keySpec := append(key, snderivatorData...)
+	_, err := db.Get(keySpec)
+	if err != nil {
+		return false, err
+	} else {
+		return true, nil
 	}
 	return false, nil
 }

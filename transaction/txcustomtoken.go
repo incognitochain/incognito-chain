@@ -114,7 +114,8 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 		usableTx,
 		fee,
 		commitments,
-		true)
+		true,
+		nil)
 	if err != nil {
 		return nil, err
 	}

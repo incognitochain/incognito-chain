@@ -7,12 +7,13 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 
-	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"math"
 	rand2 "math/rand"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 type Tx struct {
@@ -99,6 +100,7 @@ func (tx *Tx) CreateTx(
 	fee uint64,
 	commitmentsDB [][]byte,
 	hasPrivacy bool,
+	db database.DatabaseInterface,
 ) (error) {
 
 	var commitmentIndexs []uint64   // array index random of commitments in db
@@ -174,8 +176,16 @@ func (tx *Tx) CreateTx(
 
 		for i := 0; i < len(paymentInfo); i++ {
 			sndOut = privacy.RandInt()
-			for common.CheckSNDExistence(sndOut) {
-				sndOut = privacy.RandInt()
+			for true {
+				ok, err := tx.CheckSNDExistence(sndOut, db)
+				if err != nil {
+					fmt.Println(err)
+				}
+				if !ok {
+					sndOut = privacy.RandInt()
+				} else {
+					break
+				}
 			}
 			sndOuts = append(sndOuts, sndOut)
 		}
@@ -467,9 +477,11 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }
 
-// todo: thunderbird
 // CheckSND return true if snd exists in snDerivators list
-func CheckSNDExistence(snd *big.Int) bool {
-	//todo: query from db to get snDerivators
-	return false
+func (tx Tx) CheckSNDExistence(snd *big.Int, db database.DatabaseInterface) (bool, error) {
+	ok, err := db.HasSNDerivator(*snd, 14)
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
 }
