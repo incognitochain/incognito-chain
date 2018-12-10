@@ -344,7 +344,7 @@ func CleanAndExpandPath(path string, defaultHomeDir string) string {
 }
 
 func ConstantToMiliConstant(constant uint64) uint64 {
-	return constant * uint64(math.Pow(10, MiliConstant))
+	return constant * uint64(math.Pow(10, NanoConstant))
 }
 
 func Max(x, y int) int {
