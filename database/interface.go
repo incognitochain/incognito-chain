@@ -10,6 +10,10 @@ import (
 
 // DatabaseInterface provides the interface that is used to store blocks.
 type DatabaseInterface interface {
+	Put(key, value []byte) error
+	Get(key []byte) ([]byte, error)
+	HasValue(key []byte) (bool, error)
+
 	// Block
 	StoreBlock(interface{}, byte) error
 	StoreBlockHeader(interface{}, *common.Hash, byte) error
