@@ -398,7 +398,7 @@ func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
-// Note: This method doesn't check for double spending
+// - Check double spending
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface) bool {
 	// Verify tx signature
 	var valid bool
@@ -409,6 +409,15 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			fmt.Printf("Error verifying signature of tx: %+v", err)
 		}
 		return false
+	}
+
+	// Check input coins' serial number is not exists in spent serial number list (Database)
+	// Check double spending
+	for i:=0; i<len(tx.Proof.InputCoins); i++{
+		ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.SerialNumber, db)
+		if ok || err != nil{
+			return false
+		}
 	}
 
 	for i := 0; i < len(tx.Proof.OutputCoins); i++ {
@@ -508,4 +517,10 @@ func (tx Tx) CheckSNDExistence(snd *big.Int, db database.DatabaseInterface) (boo
 func (tx Tx) CheckCMExistence(cm *privacy.EllipticPoint, db database.DatabaseInterface) (bool, error) {
 	// Todo:
 	return true, nil
+}
+
+// CheckCMExistence returns true if cm exists in cm list
+func (tx Tx) CheckSNExistence(serialNumber *privacy.EllipticPoint, db database.DatabaseInterface) (bool, error) {
+	// Todo:
+	return false, nil
 }
