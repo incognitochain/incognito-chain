@@ -182,17 +182,6 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		}
 	}
 
-	// get merkleroot commitments, nullifers db, commitments db for every chain
-	nullifiersDb := make(map[byte]([][]byte))
-	commitmentsDb := make(map[byte]([][]byte))
-	//merkleRootCommitments := make(map[byte]*common.Hash)
-	for chainId, _ := range candidateTxsMap {
-		//merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
-		// get tx view point
-		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
-		commitmentsDb[chainId] = txViewPoint.ListNullifiers()
-	}
 	//missing flag for privacy-protocol
 	// false by default
 	tx := transaction.Tx{}
@@ -201,7 +190,6 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		paymentInfos,
 		candidateTxsMap[chainIdSender],
 		realFee,
-		commitmentsDb[chainIdSender],
 		true,
 		*self.config.Database)
 	if err != nil {

@@ -40,6 +40,10 @@ func (wit *PKOneOfManyWitness) Set(
 	indexIsZero uint64,
 	index byte) {
 
+	if wit == nil{
+		wit = new(PKOneOfManyWitness)
+	}
+
 	wit.commitmentIndexs = commitmentIndexs
 	wit.commitments = commitments
 	wit.indexIsZero = indexIsZero
@@ -54,6 +58,10 @@ func (pro *PKOneOfManyProof) Set(
 	f, za, zb []*big.Int,
 	zd *big.Int,
 	index byte) {
+
+	if pro == nil{
+		pro = new(PKOneOfManyProof)
+	}
 
 	pro.commitmentIndexs = commitmentIndexs
 	pro.cl, pro.ca, pro.cb, pro.cd = cl, ca, cb, cd

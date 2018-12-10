@@ -20,7 +20,7 @@ type PKComProductProof struct {
 	z     *big.Int
 	cmA   *privacy.EllipticPoint
 	cmB   *privacy.EllipticPoint
-	index  byte
+	index byte
 }
 type PKComProductWitness struct {
 	witnessA *big.Int
@@ -37,6 +37,9 @@ func (wit *PKComProductWitness) Set(
 	cmB *privacy.EllipticPoint,
 	idx *byte) {
 
+	if wit == nil {
+		wit = new(PKComProductWitness)
+	}
 	wit.witnessA = new(big.Int)
 	wit.randA = new(big.Int)
 	wit.cmB = new(privacy.EllipticPoint)
@@ -62,33 +65,33 @@ func (pro *PKComProductProof) Print() {
 	fmt.Println(pro.cmA)
 	fmt.Println(pro.cmB)
 }
-func (pro *PKComProductProof)  Bytes() []byte {
+func (pro *PKComProductProof) Bytes() []byte {
 	var proofbytes []byte
-	proofbytes = append(proofbytes, pro.cmA.Compress()...)                          // 33 bytes
-	proofbytes = append(proofbytes, pro.cmB.Compress()...)                          // 33 bytes
-	proofbytes = append(proofbytes, pro.D.Compress()...)                            // 33 bytes
-	proofbytes = append(proofbytes, pro.E.Compress()...)                            // 33 bytes
-	proofbytes = append(proofbytes, privacy.PadBigInt(pro.f,privacy.BigIntSize)...) // 32 bytes
-	proofbytes = append(proofbytes, privacy.PadBigInt(pro.z,privacy.BigIntSize)...) // 32 bytes
+	proofbytes = append(proofbytes, pro.cmA.Compress()...)                           // 33 bytes
+	proofbytes = append(proofbytes, pro.cmB.Compress()...)                           // 33 bytes
+	proofbytes = append(proofbytes, pro.D.Compress()...)                             // 33 bytes
+	proofbytes = append(proofbytes, pro.E.Compress()...)                             // 33 bytes
+	proofbytes = append(proofbytes, privacy.PadBigInt(pro.f, privacy.BigIntSize)...) // 32 bytes
+	proofbytes = append(proofbytes, privacy.PadBigInt(pro.z, privacy.BigIntSize)...) // 32 bytes
 	proofbytes = append(proofbytes, pro.index)
 	return proofbytes
 }
 
-func (pro *PKComProductProof)  SetBytes(proofBytes []byte)  {
+func (pro *PKComProductProof) SetBytes(proofBytes []byte) {
 	pro.Init()
 	offset := 0
 	pro.cmA.Decompress(proofBytes[offset:])
-	offset+=privacy.CompressedPointSize
+	offset += privacy.CompressedPointSize
 	pro.cmB.Decompress(proofBytes[offset:])
-	offset+=privacy.CompressedPointSize
+	offset += privacy.CompressedPointSize
 	pro.D.Decompress(proofBytes[offset:])
-	offset+=privacy.CompressedPointSize
+	offset += privacy.CompressedPointSize
 	pro.E.Decompress(proofBytes[offset:])
-	offset+=privacy.CompressedPointSize
+	offset += privacy.CompressedPointSize
 	pro.f.SetBytes(proofBytes[offset:offset+32])
-	offset+=32
+	offset += 32
 	pro.z.SetBytes(proofBytes[offset:offset+32])
-	offset+=32
+	offset += 32
 	pro.index = proofBytes[offset]
 }
 func (wit *PKComProductWitness) Get() *PKComProductWitness {
@@ -172,7 +175,6 @@ func (wit *PKComProductWitness) Prove() (*PKComProductProof, error) {
 	x := new(big.Int)
 	x.SetBytes(computeHashString(data))
 
-
 	//compute f
 	a := new(big.Int)
 	a.Set(wit.witnessA)
@@ -222,7 +224,6 @@ func (pro *PKComProductProof) Verify() bool {
 		pro.E.Y.Bytes(),
 	}
 	x := new(big.Int).SetBytes(computeHashString(data))
-
 
 	//Check if D,E is on Curve
 	if !(privacy.Curve.IsOnCurve(pro.D.X, pro.D.Y) &&
