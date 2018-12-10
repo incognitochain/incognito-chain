@@ -25,7 +25,7 @@ func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
 }
 
 func (db *db) StoreCustomTokenTx(tokenID *common.Hash, chainID byte, blockHeight int32, txIndex int32, txHash []byte) error {
-	key := db.getKey(string(tokenPrefix), tokenID) // token-{tokenID}-chainID-(999999999-blockHeight)-(999999999-txIndex)
+	key := db.getKey(string(TokenPrefix), tokenID) // token-{tokenID}-chainID-(999999999-blockHeight)-(999999999-txIndex)
 	key = append(key, chainID)
 	bs := make([]byte, 4)
 	binary.LittleEndian.PutUint32(bs, uint32(bigNumber-blockHeight))
@@ -54,7 +54,7 @@ func (db *db) ListCustomToken() ([][]byte, error) {
 
 func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 	result := make([]*common.Hash, 0)
-	key := db.getKey(string(tokenPrefix), tokenID)
+	key := db.getKey(string(TokenPrefix), tokenID)
 	// key = token-{tokenID}
 	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
 	log.Println(string(key))
@@ -74,7 +74,7 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 
 */
 func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *transaction.TxCustomToken) error {
-	tokenKey := tokenPaymentAddressPrefix
+	tokenKey := TokenPaymentAddressPrefix
 	tokenKey = append(tokenKey, Splitter...)
 	tokenKey = append(tokenKey, (*tokenID)[:]...)
 	for _, vin := range tx.TxTokenData.Vins {
@@ -142,7 +142,7 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 /*func (db *db) GetCustomTokenListPaymentAddress(tokenID *common.Hash) ([][]byte, error) {
 	results := [][]byte{}
 	tempsResult := make(map[string]bool)
-	prefix := tokenPaymentAddressPrefix
+	prefix := TokenPaymentAddressPrefix
 	prefix = append(prefix, Splitter...)
 	prefix = append(prefix, (*tokenID)[:]...)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
@@ -171,7 +171,7 @@ func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *t
 func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error) {
 	results := make(map[string]uint64)
 	//tempsResult := make(map[string]bool)
-	prefix := tokenPaymentAddressPrefix
+	prefix := TokenPaymentAddressPrefix
 	prefix = append(prefix, Splitter...)
 	prefix = append(prefix, (*tokenID)[:]...)
 	//fmt.Println("GetCustomTokenPaymentAddressesBalance, prefix", prefix)
@@ -211,7 +211,7 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 /*func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[client.PaymentAddress][][]byte, error) {
 
 	results := make(map[client.PaymentAddress][][]byte)
-	prefix := tokenPaymentAddressPrefix
+	prefix := TokenPaymentAddressPrefix
 	prefix = append(prefix, Splitter...)
 	prefix = append(prefix, (*tokenID)[:]...)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
@@ -238,7 +238,7 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 	Return a list of UTXO, each UTXO has format: txHash-index
 */
 func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []byte) (map[string]string, error) {
-	prefix := tokenPaymentAddressPrefix
+	prefix := TokenPaymentAddressPrefix
 	prefix = append(prefix, Splitter...)
 	prefix = append(prefix, (*tokenID)[:]...)
 	prefix = append(prefix, Splitter...)
@@ -260,7 +260,7 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []by
 	Update UTXO from unreward -> reward
 */
 /*func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, pubkey []byte, txHash *common.Hash, voutIndex int) error {
-	key := tokenPaymentAddressPrefix
+	key := TokenPaymentAddressPrefix
 	key = append(key, Splitter...)
 	key = append(key, (*tokenID)[:]...)
 	key = append(key, Splitter...)

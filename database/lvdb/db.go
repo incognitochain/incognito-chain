@@ -30,8 +30,8 @@ var (
 	bestBlockKey              = []byte("bestBlock")
 	feeEstimator              = []byte("feeEstimator")
 	Splitter                  = []byte("-[-]-")
-	tokenPrefix               = []byte("token-")
-	tokenPaymentAddressPrefix = []byte("token-paymentaddress-")
+	TokenPrefix               = []byte("token-")
+	TokenPaymentAddressPrefix = []byte("token-paymentaddress-")
 	tokenInitPrefix           = []byte("token-init-")
 	loanIDKeyPrefix           = []byte("loanID-")
 	loanTxKeyPrefix           = []byte("loanTx-")
@@ -92,8 +92,8 @@ func (db db) getKey(keyType string, key interface{}) []byte {
 		dbkey = append(commitmentsPrefix, []byte(key.(string))...)
 	case string(snderivatorsPrefix):
 		dbkey = append(snderivatorsPrefix, []byte(key.(string))...)
-	case string(tokenPrefix):
-		dbkey = append(tokenPrefix, key.(*common.Hash)[:]...)
+	case string(TokenPrefix):
+		dbkey = append(TokenPrefix, key.(*common.Hash)[:]...)
 	case string(tokenInitPrefix):
 		dbkey = append(tokenInitPrefix, key.(*common.Hash)[:]...)
 	}
