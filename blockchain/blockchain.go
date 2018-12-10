@@ -16,6 +16,9 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"fmt"
+	"strconv"
+	"github.com/ninjadotorg/constant/database/lvdb"
 )
 
 const (
@@ -626,7 +629,7 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 		// replace 1000 with proper value for snapshot
 		if block.Header.Height%1000 == 0 {
 			// list of unreward-utxo
-			self.config.customTokenRewardSnapshot, err = self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(&customTokenTx.TxTokenData.PropertyID)
+			self.config.customTokenRewardSnapshot, err = self.config.DataBase.GetCustomTokenPaymentAddressesBalance(&customTokenTx.TxTokenData.PropertyID)
 			if err != nil {
 				return err
 			}
@@ -657,8 +660,78 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	return nil
 }
 
+/*
+	Key: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
+  H: value-spent/unspent-rewarded/unreward
+*/
 func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken) error {
-	return self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
+	Splitter := lvdb.Splitter
+	TokenPaymentAddressPrefix := lvdb.TokenPaymentAddressPrefix
+	unspent := lvdb.Unspent
+	spent := lvdb.Spent
+	unreward := lvdb.Unreward
+
+	tokenKey := TokenPaymentAddressPrefix
+	tokenKey = append(tokenKey, Splitter...)
+	tokenKey = append(tokenKey, (customTokenTx.TxTokenData.PropertyID)[:]...)
+	for _, vin := range customTokenTx.TxTokenData.Vins {
+		paymentAddressPubkey := vin.PaymentAddress.Pk
+		utxoHash := &vin.TxCustomTokenID
+		voutIndex := vin.VoutIndex
+		paymentAddressKey := tokenKey
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, paymentAddressPubkey...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
+		_, err := self.config.DataBase.HasValue(paymentAddressKey)
+		if err != nil {
+			return err
+		}
+		value, err := self.config.DataBase.Get(paymentAddressKey)
+		if err != nil {
+			return err
+		}
+		// old value: {value}-unspent-unreward/reward
+		values := strings.Split(string(value), string(Splitter))
+		if strings.Compare(values[1], string(unspent)) != 0 {
+			return errors.New("Double Spend Detected")
+		}
+		// new value: {value}-spent-unreward/reward
+		newValues := values[0] + string(Splitter) + string(spent) + string(Splitter) + values[2]
+		if err := self.config.DataBase.Put(paymentAddressKey, []byte(newValues)); err != nil {
+			return err
+		}
+	}
+	for _, vout := range customTokenTx.TxTokenData.Vouts {
+		paymentAddressPubkey := vout.PaymentAddress.Pk
+		utxoHash := customTokenTx.Hash()
+		voutIndex := vout.GetIndex()
+		value := vout.Value
+		paymentAddressKey := tokenKey
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, paymentAddressPubkey...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
+		ok, err := self.config.DataBase.HasValue(paymentAddressKey)
+		// Vout already exist
+		if ok {
+			return errors.New("UTXO already exist")
+		}
+		if err != nil {
+			return err
+		}
+		// init value: {value}-unspent-unreward
+		paymentAddressValue := strconv.Itoa(int(value)) + string(Splitter) + string(unspent) + string(Splitter) + string(unreward)
+		if err := self.config.DataBase.Put(paymentAddressKey, []byte(paymentAddressValue)); err != nil {
+			return err
+		}
+	}
+	return nil
+	//return self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
 }
 
 /*
@@ -1021,9 +1094,37 @@ func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCand
 
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
 func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
-	voutList, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress)
+	data, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress.Pk)
 	if err != nil {
 		return nil, err
+	}
+	splitter := []byte("-[-]-")
+	unspent := []byte("unspent")
+	voutList := []transaction.TxTokenVout{}
+	for key, value := range data {
+		keys := strings.Split(key, string(splitter))
+		values := strings.Split(value, string(splitter))
+		// get unspent and unreward transaction output
+		if strings.Compare(values[1], string(unspent)) == 0 {
+
+			vout := transaction.TxTokenVout{}
+			vout.PaymentAddress = receiverKeyset.PaymentAddress
+			txHash, err := common.Hash{}.NewHash([]byte(keys[3]))
+			if err != nil {
+				return nil, err
+			}
+			vout.SetTxCustomTokenID(*txHash)
+			voutIndexByte := []byte(keys[4])[0]
+			voutIndex := int(voutIndexByte)
+			vout.SetIndex(voutIndex)
+			value, err := strconv.Atoi(values[0])
+			if err != nil {
+				return nil, err
+			}
+			vout.Value = uint64(value)
+			fmt.Println("GetCustomTokenPaymentAddressUTXO VOUT", vout)
+			voutList = append(voutList, vout)
+		}
 	}
 	return voutList, nil
 }
@@ -1155,7 +1256,7 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 
 // GetListTokenHolders - return list paymentaddress (in hexstring) of someone who hold custom token in network
 func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]uint64, error) {
-	result, err := self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(tokenID)
+	result, err := self.config.DataBase.GetCustomTokenPaymentAddressesBalance(tokenID)
 	if err != nil {
 		return nil, err
 	}

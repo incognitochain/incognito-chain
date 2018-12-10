@@ -403,7 +403,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool) bool {
 	}
 
 	// Verify the payment proof
-	valid = tx.Proof.Verify(false, tx.SigPubKey)
+	valid = tx.Proof.Verify(false, tx.SigPubKey, nil)
 	if valid == false {
 		fmt.Printf("Error verifying the payment proof")
 		return false

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/pkg/errors"
@@ -189,7 +188,7 @@ func (db *db) GetBlockByIndex(idx int32, chainID byte) (*common.Hash, error) {
 
 func (db *db) FetchAllBlocks() (map[byte][]*common.Hash, error) {
 	var keys map[byte][]*common.Hash
-	for chainID := byte(0); chainID < blockchain.ChainCount; chainID++ {
+	for chainID := byte(0); chainID < 20; chainID++ {
 		prefix := append(append(chainIDPrefix, chainID), blockKeyPrefix...)
 		// prefix {c10{b-......}}
 		iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
