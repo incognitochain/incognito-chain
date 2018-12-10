@@ -246,6 +246,9 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		randInputSum[i].Add(randInputSum[i], randInputValue[i])
 		randInputSum[i].Add(randInputSum[i], randInputSND[i])
 
+		if wit.ComInputOpeningsWitness[i] == nil {
+			wit.ComInputOpeningsWitness[i] = new(PKComOpeningsWitness)
+		}
 		wit.ComInputOpeningsWitness[i].Set(cmInputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randInputSum[i]})
 
 		/***** Build witness for proving one-out-of-N commitments is a commitment to the coins being spent *****/
@@ -327,6 +330,9 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		randOutputValueAll.Add(randOutputValueAll, randOutputValue[i])
 
 		/***** Build witness for proving the knowledge of output coins' Openings (value, snd, randomness) *****/
+		if wit.ComOutputOpeningsWitness[i] == nil {
+			wit.ComOutputOpeningsWitness[i] = new(PKComOpeningsWitness)
+		}
 		wit.ComOutputOpeningsWitness[i].Set(cmOutputSum[i], []*big.Int{big.NewInt(int64(outputCoins[i].CoinDetails.Value)), outputCoins[i].CoinDetails.SNDerivator, randOutputSum[i]})
 	}
 
@@ -361,7 +367,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	// ------------------------
 
 	// Build witness for proving Sum(Input's value) == Sum(Output's Value)
-	if fee > 0{
+	if fee > 0 {
 		cmOutputValueAll.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(fee))))
 	}
 

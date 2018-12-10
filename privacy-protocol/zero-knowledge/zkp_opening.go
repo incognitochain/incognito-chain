@@ -35,9 +35,6 @@ func (wit *PKComOpeningsWitness) randValue(testcase bool) {
 func (wit *PKComOpeningsWitness) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
 	openings []*big.Int) {
-	if wit == nil {
-		wit = new(PKComOpeningsWitness)
-	}
 	wit.commitmentValue = commitmentValue
 	wit.Openings = openings
 }

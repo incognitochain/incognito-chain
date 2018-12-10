@@ -238,7 +238,7 @@ func (tx *Tx) CreateTx(
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
 	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
-	tx.Proof, _ = witness.Prove(false)
+	tx.Proof, _ = witness.Prove(hasPrivacy)
 
 	// set private key for signing tx
 	if hasPrivacy {
@@ -422,9 +422,9 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 	// Check input coins' serial number is not exists in spent serial number list (Database)
 	// Check double spending
-	for i:=0; i<len(tx.Proof.InputCoins); i++{
+	for i := 0; i < len(tx.Proof.InputCoins); i++ {
 		ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.SerialNumber, db)
-		if ok || err != nil{
+		if ok || err != nil {
 			return false
 		}
 	}
