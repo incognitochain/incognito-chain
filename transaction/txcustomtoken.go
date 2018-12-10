@@ -7,6 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/database"
 )
 
 // TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -44,9 +45,9 @@ func (tx TxCustomToken) Hash() *common.Hash {
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
-func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool) bool {
+func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface) bool {
 	// validate for normal tx
-	if tx.Tx.ValidateTransaction(hasPrivacy) {
+	if tx.Tx.ValidateTransaction(hasPrivacy, db) {
 		if len(tx.listUtxo) == 0 {
 			return false
 		}
@@ -114,7 +115,8 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 		usableTx,
 		fee,
 		commitments,
-		true)
+		true,
+		nil)
 	if err != nil {
 		return nil, err
 	}

@@ -26,24 +26,28 @@ type Coin struct {
 	SerialNumber   *EllipticPoint
 	Randomness     *big.Int
 	Value          uint64
-	Info           [512]byte //512 bytes //512 bytes
-	PubKeyLastByte byte
+	Info           [512]byte //512 bytes
 }
 
-func (self Coin) MarshalJSON() ([]byte, error) {
-	data := self.Bytes()
+func (coin *Coin) GetPubKeyLastByte() byte{
+	pubKeyBytes := coin.PublicKey.Compress()
+	return pubKeyBytes[len(pubKeyBytes) - 1]
+}
+
+func (coin Coin) MarshalJSON() ([]byte, error) {
+	data := coin.Bytes()
 	temp := base58.Base58Check{}.Encode(data, byte(0x00))
 	return json.Marshal(temp)
 }
 
-func (self *Coin) UnmarshalJSON(data []byte) error {
+func (coin *Coin) UnmarshalJSON(data []byte) error {
 	dataStr := ""
 	_ = json.Unmarshal(data, &dataStr)
 	temp, _, err := base58.Base58Check{}.Decode(dataStr)
 	if err != nil {
 		return err
 	}
-	self.SetBytes(temp)
+	coin.SetBytes(temp)
 	return nil
 }
 
@@ -68,7 +72,6 @@ func (coin *Coin) Bytes() []byte {
 	coin_bytes = append(coin_bytes, Value...)
 	Info := coin.Info
 	coin_bytes = append(coin_bytes, Info[:]...)
-	coin_bytes = append(coin_bytes, coin.PubKeyLastByte)
 	return coin_bytes
 }
 func (coin *Coin) SetBytes(coin_byte []byte) {
@@ -100,7 +103,6 @@ func (coin *Coin) SetBytes(coin_byte []byte) {
 
 	copy(coin.Info[:], coin_byte[offset:offset+InfoLength])
 	offset += InfoLength
-	coin.PubKeyLastByte = coin_byte[offset]
 }
 
 // InputCoin represents a input coin of transaction
@@ -131,14 +133,14 @@ func (outputCoin *OutputCoin) SetBytes() {
 }
 
 type CoinDetailsEncrypted struct {
-	RandomEncrypted []byte
-	SymKeyEncrypted *ElGamalCipherText
+	RandomEncrypted []byte				// 48 bytes
+	SymKeyEncrypted []byte				// 66 bytes
 }
 
 func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() [] byte {
 	var res []byte
 	res = append(res, coinDetailsEncrypted.RandomEncrypted...)
-	res = append(res, coinDetailsEncrypted.SymKeyEncrypted.Bytes()...)
+	res = append(res, coinDetailsEncrypted.SymKeyEncrypted...)
 	return res
 }
 
@@ -148,11 +150,10 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {
 	symKeyPoint := new(EllipticPoint)
 	symKeyPoint.Randomize()
 	symKeyByte := symKeyPoint.X.Bytes()
-	//fmt.Printf("Plain text 2: symKey byte: %v\n", symKeyByte)
 
 	/**** Encrypt coin details using symKeyByte ****/
 	// just encrypt Randomness of coin
-	randomCoin := coin.CoinDetails.Randomness.Bytes()
+	randomnessBytes := coin.CoinDetails.Randomness.Bytes()
 
 	block, err := aes.NewCipher(symKeyByte)
 
@@ -163,14 +164,14 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {
 	// The IV needs to be unique, but not secure. Therefore it's common to
 	// include it at the beginning of the ciphertext.
 	coin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
-	coin.CoinDetailsEncrypted.RandomEncrypted = make([]byte, aes.BlockSize+len(randomCoin))
+	coin.CoinDetailsEncrypted.RandomEncrypted = make([]byte, aes.BlockSize+len(randomnessBytes))
 	iv := coin.CoinDetailsEncrypted.RandomEncrypted[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		panic(err)
 	}
 
 	stream := cipher.NewCTR(block, iv)
-	stream.XORKeyStream(coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:], randomCoin)
+	stream.XORKeyStream(coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:], randomnessBytes)
 
 	/****** Encrypt symKeyByte using Transmission key's receiver with ElGamal cryptosystem ****/
 	// prepare public key for ElGamal cryptosystem
@@ -178,7 +179,7 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {
 	pubKey.H, _ = DecompressKey(receiverTK)
 	pubKey.Curve = &Curve
 
-	coin.CoinDetailsEncrypted.SymKeyEncrypted = pubKey.ElGamalEnc(symKeyPoint)
+	coin.CoinDetailsEncrypted.SymKeyEncrypted = pubKey.ElGamalEnc(symKeyPoint).Bytes()
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -187,15 +188,16 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {
 	return nil
 }
 
-func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey) error {
+func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	/*** Decrypt symKeyEncrypted using receiver's receiving key to get symKey ***/
 	// prepare private key for Elgamal cryptosystem
 	privKey := new(ElGamalPrivKey)
-	privKey.Set(&Curve, new(big.Int).SetBytes(receivingKey))
+	privKey.Set(&Curve, new(big.Int).SetBytes(viewingKey.Rk))
 
-	symKeyPoint := privKey.ElGamalDec(coin.CoinDetailsEncrypted.SymKeyEncrypted)
-
-	//fmt.Printf("Decrypted plaintext 2: SymKey : %v\n", symKeyPoint.X.Bytes())
+	// convert byte array to ElGamalCipherText
+	symKeyCipher := new(ElGamalCipherText)
+	symKeyCipher.SetBytes(coin.CoinDetailsEncrypted.SymKeyEncrypted)
+	symKeyPoint := privKey.ElGamalDec(symKeyCipher)
 
 	/*** Decrypt Encrypted using receiver's receiving key to get coin details (Randomness) ***/
 	randomness := make([]byte, 32)
@@ -212,12 +214,42 @@ func (coin *OutputCoin) Decrypt(receivingKey ReceivingKey) error {
 
 	stream := cipher.NewCTR(block, iv)
 	stream.XORKeyStream(randomness, coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:])
+
+	coin.CoinDetails.Randomness = new(big.Int).SetBytes(randomness)
+	// Calculate value of coin
+	gRandom := PedCom.G[RAND].ScalarMul(coin.CoinDetails.Randomness)
+	gRandomInverse, _ := gRandom.Inverse()
+	gShardID := PedCom.G[SHARDID].ScalarMul(big.NewInt(int64(coin.CoinDetails.GetPubKeyLastByte())))
+	gShardIDInverse, _ := gShardID.Inverse()
+	gSND := PedCom.G[SND].ScalarMul(coin.CoinDetails.SNDerivator)
+	gSNDInverse, _ := gSND.Inverse()
+
+	PublicKeyPoint, _ := DecompressKey(viewingKey.Pk)
+	PublicKeyPointInverse, _ := PublicKeyPoint.Inverse()
+
+	gValue := coin.CoinDetails.CoinCommitment.Add(gRandomInverse)
+	gValue = gValue.Add(gShardIDInverse)
+	gValue = gValue.Add(gSNDInverse)
+	gValue = gValue.Add(PublicKeyPointInverse)
+
+	// brute force to find value
+	for v:=0; ;v++ {
+		gv := PedCom.G[VALUE].ScalarMul(big.NewInt(int64(v)))
+		if gv.IsEqual(gValue){
+			coin.CoinDetails.Value = uint64(v)
+			break
+		}
+	}
+
+	// assign public key to coin detail
+	coin.CoinDetails.PublicKey = PublicKeyPoint
+
 	return nil
 }
 
 //CommitAll commits a coin with 5 attributes (public key, value, serial number derivator, last byte pk, r)
 func (coin *Coin) CommitAll() {
-	values := []*big.Int{big.NewInt(0), big.NewInt(int64(coin.Value)), coin.SNDerivator, new(big.Int).SetBytes([]byte{coin.PubKeyLastByte}), coin.Randomness}
+	values := []*big.Int{big.NewInt(0), big.NewInt(int64(coin.Value)), coin.SNDerivator, new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}), coin.Randomness}
 	//fmt.Printf("coin info: %v\n", values)
 	coin.CoinCommitment = PedCom.CommitAll(values)
 	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)

@@ -33,6 +33,13 @@ func (db *db) StoreSerialNumbers(serialNumber []byte, chainId byte) error {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
+
+	len := int64(len(arrayData))
+	keySpec := append(key, big.NewInt(len).Bytes()...)
+	if err := db.lvdb.Put(keySpec, serialNumber, nil); err != nil {
+		return err
+	}
+
 	arrayData = append(arrayData, serialNumber)
 	b, err := json.Marshal(arrayData)
 	if err != nil {
@@ -76,6 +83,43 @@ func (db *db) HasSerialNumber(serialNumber []byte, chainID byte) (bool, error) {
 	return false, nil
 }
 
+// HasSerialNumberIndex - Check serialNumber in list SerialNumbers by chainID
+func (db *db) HasSerialNumberIndex(serialNumberIndex int64, chainID byte) (bool, error) {
+	/*listSerialNumbers, err := db.FetchSerialNumbers(chainID)
+	if err != nil {
+		return false, database.NewDatabaseError(database.UnexpectedError, err)
+	}
+	for _, item := range listSerialNumbers {
+		if bytes.Equal(item, serialNumber) {
+			return true, nil
+		}
+	}
+	return false, nil*/
+	key := db.getKey(string(serialNumbersPrefix), "")
+	key = append(key, chainID)
+	keySpec := append(key, big.NewInt(serialNumberIndex).Bytes()...)
+	_, err := db.Get(keySpec)
+	if err != nil {
+		return false, err
+	} else {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (db *db) GetSerialNumberByIndex(serialNumberIndex int64, chainID byte) ([]byte, error) {
+	key := db.getKey(string(serialNumbersPrefix), "")
+	key = append(key, chainID)
+	keySpec := append(key, big.NewInt(serialNumberIndex).Bytes()...)
+	data, err := db.Get(keySpec)
+	if err != nil {
+		return data, err
+	} else {
+		return data, nil
+	}
+	return data, nil
+}
+
 // CleanSerialNumbers - clear all list serialNumber in DB
 func (db *db) CleanSerialNumbers() error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(serialNumbersPrefix), nil)
@@ -101,14 +145,21 @@ func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
-	var txs [][]byte
+	var arrData [][]byte
 	if len(res) > 0 {
-		if err := json.Unmarshal(res, &txs); err != nil {
+		if err := json.Unmarshal(res, &arrData); err != nil {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
-	txs = append(txs, commitments)
-	b, err := json.Marshal(txs)
+
+	len := int64(len(arrData))
+	keySpec := append(key, big.NewInt(len).Bytes()...)
+	if err := db.lvdb.Put(keySpec, commitments, nil); err != nil {
+		return err
+	}
+
+	arrData = append(arrData, commitments)
+	b, err := json.Marshal(arrData)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
@@ -150,6 +201,32 @@ func (db *db) HasCommitment(commitment []byte, chainId byte) (bool, error) {
 	return false, nil
 }
 
+func (db *db) HasCommitmentIndex(commitmentIndex int64, chainId byte) (bool, error) {
+	key := db.getKey(string(commitmentsPrefix), "")
+	key = append(key, chainId)
+	keySpec := append(key, big.NewInt(commitmentIndex).Bytes()...)
+	_, err := db.Get(keySpec)
+	if err != nil {
+		return false, err
+	} else {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (db *db) GetCommitmentByIndex(commitmentIndex int64, chainId byte) ([]byte, error) {
+	key := db.getKey(string(commitmentsPrefix), "")
+	key = append(key, chainId)
+	keySpec := append(key, big.NewInt(commitmentIndex).Bytes()...)
+	data, err := db.Get(keySpec)
+	if err != nil {
+		return data, err
+	} else {
+		return data, nil
+	}
+	return data, nil
+}
+
 // CleanCommitments - clear all list commitments in DB
 func (db *db) CleanCommitments() error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(commitmentsPrefix), nil)
@@ -166,7 +243,7 @@ func (db *db) CleanCommitments() error {
 	return nil
 }
 
-// StoreSerialNumbers - store list serialNumbers by chainID
+// StoreSNDerivators - store list serialNumbers by chainID
 func (db *db) StoreSNDerivators(data big.Int, chainID byte) error {
 	key := db.getKey(string(snderivatorsPrefix), "")
 	key = append(key, chainID)
@@ -175,13 +252,19 @@ func (db *db) StoreSNDerivators(data big.Int, chainID byte) error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
-	var arrData []big.Int
+	snderivatorData := data.Bytes()
+	keySpec := append(key, snderivatorData...)
+	if err := db.lvdb.Put(keySpec, snderivatorData, nil); err != nil {
+		return err
+	}
+
+	var arrData []string
 	if len(res) > 0 {
 		if err := json.Unmarshal(res, &arrData); err != nil {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
-	arrData = append(arrData, data)
+	arrData = append(arrData, string(snderivatorData))
 	b, err := json.Marshal(arrData)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
@@ -201,18 +284,24 @@ func (db *db) FetchSNDerivator(chainID byte) ([]big.Int, error) {
 		return make([]big.Int, 0), database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
-	var txs []big.Int
+	var arrData []string
 	if len(res) > 0 {
-		if err := json.Unmarshal(res, &txs); err != nil {
+		if err := json.Unmarshal(res, &arrData); err != nil {
 			return make([]big.Int, 0), errors.Wrap(err, "json.Unmarshal")
 		}
 	}
-	return txs, nil
+	result := []big.Int{}
+	for _, data := range arrData {
+		temp := big.Int{}
+		temp.SetBytes([]byte(data))
+		result = append(result, temp)
+	}
+	return result, nil
 }
 
 // HasSNDerivator - Check SnDerivator in list SnDerivators by chainID
 func (db *db) HasSNDerivator(data big.Int, chainID byte) (bool, error) {
-	listSNDDerivators, err := db.FetchSNDerivator(chainID)
+	/*listSNDDerivators, err := db.FetchSNDerivator(chainID)
 	if err != nil {
 		return false, database.NewDatabaseError(database.UnexpectedError, err)
 	}
@@ -220,6 +309,17 @@ func (db *db) HasSNDerivator(data big.Int, chainID byte) (bool, error) {
 		if item.Cmp(&data) == 0 {
 			return true, nil
 		}
+	}
+	return false, nil*/
+	key := db.getKey(string(snderivatorsPrefix), "")
+	key = append(key, chainID)
+	snderivatorData := data.Bytes()
+	keySpec := append(key, snderivatorData...)
+	_, err := db.Get(keySpec)
+	if err != nil {
+		return false, err
+	} else {
+		return true, nil
 	}
 	return false, nil
 }
@@ -281,7 +381,7 @@ func (db *db) CleanFeeEstimator() error {
 */
 func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, index int) error {
 	key := string(transactionKeyPrefix) + txId.String()
-	value := blockHash.String() + string(splitter) + strconv.Itoa(index)
+	value := blockHash.String() + string(Splitter) + strconv.Itoa(index)
 	fmt.Println("Key in StoreTransactionIndex", key)
 	fmt.Println("H in StoreTransactionIndex", value)
 	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
@@ -308,7 +408,7 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 	if err != nil {
 		return nil, -1, err;
 	}
-	reses := strings.Split(string(res), (string(splitter)))
+	reses := strings.Split(string(res), (string(Splitter)))
 	hash, err := common.Hash{}.NewHashFromStr(reses[0])
 	if err != nil {
 		return nil, -1, err;
@@ -352,7 +452,7 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 	reverseTxIndex := make([]byte, 4)
 	binary.LittleEndian.PutUint32(reverseTxIndex, uint32(bigNumberTx-int32(txIndex)))
 
-	key1 := string(privateKeyPrefix) + privateKey.String() + string(splitter) + string(int(chainId)) + string(splitter) + string(reverseBlockHeight) + string(splitter) + string(reverseTxIndex)
+	key1 := string(privateKeyPrefix) + privateKey.String() + string(Splitter) + string(int(chainId)) + string(Splitter) + string(reverseBlockHeight) + string(Splitter) + string(reverseTxIndex)
 	key2 := string(transactionKeyPrefix) + unspentTxHash.String()
 
 	if ok, _ := db.HasValue([]byte(key1)); ok {
@@ -395,7 +495,7 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKe
 		value := iter.Value()
 
 		fmt.Println("GetTransactionLightModeByPrivateKey, key", string(key))
-		reses := strings.Split(string(key), string(splitter))
+		reses := strings.Split(string(key), string(Splitter))
 		tempChainId, _ := strconv.Atoi(reses[2])
 		chainId := byte(tempChainId)
 		fmt.Println("GetTransactionLightModeByPrivateKey, chainId", chainId)

@@ -7,12 +7,13 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 
-	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"math"
 	rand2 "math/rand"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 type Tx struct {
@@ -99,6 +100,7 @@ func (tx *Tx) CreateTx(
 	fee uint64,
 	commitmentsDB [][]byte,
 	hasPrivacy bool,
+	db database.DatabaseInterface,
 ) (error) {
 
 	var commitmentIndexs []uint64   // array index random of commitments in db
@@ -126,6 +128,7 @@ func (tx *Tx) CreateTx(
 
 	// Calculate sum of all output coins' value
 	var sumOutputValue uint64
+	sumOutputValue = 0
 	for _, p := range paymentInfo {
 		sumOutputValue += p.Amount
 		fmt.Printf("[CreateTx] paymentInfo.H: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
@@ -133,6 +136,7 @@ func (tx *Tx) CreateTx(
 
 	// Calculate sum of all input coins' value
 	var sumInputValue uint64
+	sumInputValue = 0
 	for _, coin := range inputCoins {
 		sumInputValue += coin.CoinDetails.Value
 	}
@@ -145,10 +149,6 @@ func (tx *Tx) CreateTx(
 		return fmt.Errorf("Input value less than output value")
 	}
 
-	// tx.proof.Input
-	//tx.Proof = new(zkp.PaymentProof)
-	//tx.Proof.InputCoins = inputCoins
-
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
@@ -159,6 +159,11 @@ func (tx *Tx) CreateTx(
 		changePaymentInfo.Amount = overBalance
 		changePaymentInfo.PaymentAddress = senderFullKey.PaymentAddress
 		paymentInfo = append(paymentInfo, changePaymentInfo)
+	}
+
+	// calculate serial number from SND and spending key
+	for _, inputCoin := range inputCoins {
+		inputCoin.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(*senderSK), inputCoin.CoinDetails.SNDerivator)
 	}
 
 	// create new output coins
@@ -174,8 +179,16 @@ func (tx *Tx) CreateTx(
 
 		for i := 0; i < len(paymentInfo); i++ {
 			sndOut = privacy.RandInt()
-			for common.CheckSNDExistence(sndOut) {
-				sndOut = privacy.RandInt()
+			for true {
+				ok, err := tx.CheckSNDExistence(sndOut, db)
+				if err != nil {
+					fmt.Println(err)
+				}
+				if !ok {
+					sndOut = privacy.RandInt()
+				} else {
+					break
+				}
 			}
 			sndOuts = append(sndOuts, sndOut)
 		}
@@ -188,7 +201,6 @@ func (tx *Tx) CreateTx(
 		outputCoins[i] = new(privacy.OutputCoin)
 		outputCoins[i].CoinDetails.Value = pInfo.Amount
 		outputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
-		outputCoins[i].CoinDetails.PubKeyLastByte = pInfo.PaymentAddress.Pk[len(pInfo.PaymentAddress.Pk)-1]
 		outputCoins[i].CoinDetails.SNDerivator = sndOuts[i]
 	}
 
@@ -225,14 +237,12 @@ func (tx *Tx) CreateTx(
 		tx.sigPrivKey = append(*senderSK, witness.ComInputOpeningsWitness[0].Openings[privacy.RAND].Bytes()...)
 
 		// encrypt coin details (Randomness)
-		// hide information of output coins except coin commitments, last byte of public key, snDerivators
+		// hide information of output coins except coin commitments, public key, snDerivators
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			tx.Proof.OutputCoins[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
 			tx.Proof.OutputCoins[i].CoinDetails.SerialNumber = nil
 			tx.Proof.OutputCoins[i].CoinDetails.Value = 0
-			tx.Proof.OutputCoins[i].CoinDetails.PublicKey = nil
 			tx.Proof.OutputCoins[i].CoinDetails.Randomness = nil
-			tx.Proof.OutputCoins[i].CoinDetails.PubKeyLastByte = tx.Proof.OutputCoins[i].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[i].CoinDetails.PublicKey.Compress())-1]
 		}
 
 		// hide information of input coins except serial number of input coins
@@ -359,6 +369,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		point := new(privacy.EllipticPoint)
 		point, _ = privacy.DecompressKey(tx.SigPubKey)
 		verKey.X, verKey.Y = point.X, point.Y
+		verKey.Curve = privacy.Curve
 
 		// convert signature from byte array to ECDSASign
 		r, s := FromByteArrayToECDSASig(tx.Sig)
@@ -388,7 +399,7 @@ func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
 // - Verify tx signature
 // - Verify the payment proof
 // Note: This method doesn't check for double spending
-func (tx *Tx) ValidateTransaction(hasPrivacy bool) bool {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface) bool {
 	// Verify tx signature
 	var valid bool
 	var err error
@@ -400,8 +411,15 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool) bool {
 		return false
 	}
 
+	for i := 0; i < len(tx.Proof.OutputCoins); i++ {
+		// Check output coins' SND is not exists in SND list (Database)
+		if ok, err := tx.CheckSNDExistence(tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, db); ok || err != nil {
+			return false
+		}
+	}
+
 	// Verify the payment proof
-	valid = tx.Proof.Verify(false, tx.SigPubKey, nil)
+	valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, nil)
 	if valid == false {
 		fmt.Printf("Error verifying the payment proof")
 		return false
@@ -467,9 +485,11 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }
 
-// todo: thunderbird
 // CheckSND return true if snd exists in snDerivators list
-func CheckSNDExistence(snd *big.Int) bool {
-	//todo: query from db to get snDerivators
-	return false
+func (tx Tx) CheckSNDExistence(snd *big.Int, db database.DatabaseInterface) (bool, error) {
+	ok, err := db.HasSNDerivator(*snd, 14)
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
 }

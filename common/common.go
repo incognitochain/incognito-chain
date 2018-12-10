@@ -344,7 +344,7 @@ func CleanAndExpandPath(path string, defaultHomeDir string) string {
 }
 
 func ConstantToMiliConstant(constant uint64) uint64 {
-	return constant * uint64(math.Pow(10, MiliConstant))
+	return constant * uint64(math.Pow(10, NanoConstant))
 }
 
 func Max(x, y int) int {
@@ -360,13 +360,18 @@ func ToBytes(obj interface{}) []byte {
 	return buff.Bytes()
 }
 
-// CheckSND return true if snd exists in snDerivators list
-func CheckSNDExistence(snd *big.Int) bool {
-	//todo: query from db to get snDerivators
-	return false
-}
-
 // CheckDuplicate returns true if there are at least 2 elements in array have same values
 func CheckDuplicateBigInt(arr []*big.Int) bool {
 	return false
 }
+
+// CheckSND return true if snd exists in snDerivators list
+/*
+func CheckSNDExistence(snd *big.Int, db database.DatabaseInterface) (bool, error) {
+	ok, err := db.HasSNDerivator(*snd, 14)
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
+}
+*/

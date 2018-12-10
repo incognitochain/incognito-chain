@@ -30,7 +30,7 @@ Customize UnmarshalJSON to parse list TxNormal
 because we have many types of block, so we can need to customize data from marshal from json string to build a block
 */
 func (self *Block) UnmarshalJSON(data []byte) error {
-	Logger.log.Info("UnmarshalJSON of block")
+	//Logger.log.Info("UnmarshalJSON of block")
 	type Alias Block
 	temp := &struct {
 		Transactions []map[string]interface{}

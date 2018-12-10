@@ -29,18 +29,18 @@ var (
 	snderivatorsPrefix        = []byte("snderivators-")
 	bestBlockKey              = []byte("bestBlock")
 	feeEstimator              = []byte("feeEstimator")
-	splitter                  = []byte("-[-]-")
-	tokenPrefix               = []byte("token-")
-	tokenPaymentAddressPrefix = []byte("token-paymentaddress-")
+	Splitter                  = []byte("-[-]-")
+	TokenPrefix               = []byte("token-")
+	TokenPaymentAddressPrefix = []byte("token-paymentaddress-")
 	tokenInitPrefix           = []byte("token-init-")
 	loanIDKeyPrefix           = []byte("loanID-")
 	loanTxKeyPrefix           = []byte("loanTx-")
 	loanRequestPostfix        = []byte("-req")
 	loanResponsePostfix       = []byte("-res")
 	rewared                   = []byte("reward")
-	unreward                  = []byte("unreward")
-	spent                     = []byte("spent")
-	unspent                   = []byte("unspent")
+	Unreward                  = []byte("unreward")
+	Spent                     = []byte("spent")
+	Unspent                   = []byte("unspent")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {
@@ -92,8 +92,8 @@ func (db db) getKey(keyType string, key interface{}) []byte {
 		dbkey = append(commitmentsPrefix, []byte(key.(string))...)
 	case string(snderivatorsPrefix):
 		dbkey = append(snderivatorsPrefix, []byte(key.(string))...)
-	case string(tokenPrefix):
-		dbkey = append(tokenPrefix, key.(*common.Hash)[:]...)
+	case string(TokenPrefix):
+		dbkey = append(TokenPrefix, key.(*common.Hash)[:]...)
 	case string(tokenInitPrefix):
 		dbkey = append(tokenInitPrefix, key.(*common.Hash)[:]...)
 	}
