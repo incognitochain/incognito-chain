@@ -2,11 +2,11 @@ package transaction
 
 import (
 	"fmt"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"math/big"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
 )
 
 // CreateTxSalary
@@ -23,7 +23,6 @@ func CreateTxSalary(
 ) (*Tx, error) {
 
 	tx := new(Tx)
-	// Todo: check
 	tx.Type = common.TxSalaryType
 	// assign fee tx = 0
 	tx.Fee = 0
@@ -38,14 +37,13 @@ func CreateTxSalary(
 	tx.Proof.OutputCoins[0].CoinDetails.PublicKey, _ = privacy.DecompressKey(receiverAddr.Pk)
 	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
 
-	//sndOut := new(big.Int)
 	sndOut := privacy.RandInt()
 	for true {
 		ok, err := tx.CheckSNDExistence(sndOut, db)
 		if err != nil {
 			fmt.Println(err)
 		}
-		if !ok {
+		if ok {
 			sndOut = privacy.RandInt()
 		} else {
 			break

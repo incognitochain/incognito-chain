@@ -29,7 +29,11 @@ type PaymentWitness struct {
 	ComOutputMultiRangeWitness *PKComMultiRangeWitness
 
 	ComZeroWitness *PKComZeroWitness
-	//ComZeroOneWitness             *PKComZeroOneWitness
+
+	ComOutputValue 		[]*privacy.EllipticPoint
+	ComOutputSND   		[]*privacy.EllipticPoint
+	ComOutputShardID  []*privacy.EllipticPoint
+
 }
 
 // PaymentProof contains all of PoK for spending coin
@@ -55,6 +59,10 @@ type PaymentProof struct {
 	ComInputSK    *privacy.EllipticPoint
 	ComInputValue []*privacy.EllipticPoint
 	ComInputSND   []*privacy.EllipticPoint
+
+	ComOutputValue 		[]*privacy.EllipticPoint
+	ComOutputSND   		[]*privacy.EllipticPoint
+	ComOutputShardID  []*privacy.EllipticPoint
 
 	PubKeyLastByteSender byte
 }
@@ -283,8 +291,6 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	}
 
 	numOutputCoin := len(wit.outputCoins)
-	//randOutputSK := privacy.RandInt()
-	//cmOutputSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randOutputSK, privacy.SK)
 
 	randOutputValue := make([]*big.Int, numOutputCoin)
 	randOutputSND := make([]*big.Int, numOutputCoin)
@@ -361,6 +367,11 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	*index = privacy.VALUE
 	wit.ComZeroWitness.Set(cmEqualCoinValue, index, cmEqualCoinValueRnd)
 	// ---------------------------------------------------
+
+	// save partial commitments (value, snd, shardID)
+	wit.ComOutputValue = cmOutputValue
+	wit.ComOutputSND = cmOutputSND
+	wit.ComOutputShardID = cmOutputShardID
 }
 
 // Prove creates big proof
@@ -452,9 +463,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 }
 
 func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commitmentsDB []*privacy.EllipticPoint) bool {
-	// if hasPrivacy == false,
-	//numInputCoin := len(pro.InputCoins)
-
+	// has no privacy
 	if !hasPrivacy {
 		var sumInputValue, sumOutputValue uint64
 		sumInputValue = 0
@@ -488,12 +497,6 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commit
 		}
 
 		for i := 0; i < len(pro.OutputCoins); i++ {
-
-			// Check output coins' SND is not exists in SND list (Database)
-			//if common.CheckSNDExistence(pro.OutputCoins[i].CoinDetails.SNDerivator, db){
-			//	return false
-			//}
-
 			// Check output coins' cm is calculated correctly
 			cmTmp := pro.OutputCoins[i].CoinDetails.PublicKey
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(pro.OutputCoins[i].CoinDetails.Value))))
@@ -513,7 +516,6 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commit
 			return false
 		}
 		return true
-
 	}
 
 	// if hasPrivacy == true
@@ -543,9 +545,19 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commit
 		}
 	}
 
-	// verify
+	// Check output coins' cm is calculated correctly
+	for i := 0; i < len(pro.OutputCoins); i++ {
+		cmTmp := pro.OutputCoins[i].CoinDetails.PublicKey
+		cmTmp = cmTmp.Add(pro.ComOutputValue[i])
+		cmTmp = cmTmp.Add(pro.ComOutputSND[i])
+		cmTmp = cmTmp.Add(pro.ComOutputShardID[i])
 
-	//Verify the proof that output values and sum of them do not exceed v_max
+		if !cmTmp.IsEqual(pro.OutputCoins[i].CoinDetails.CoinCommitment) {
+			return false
+		}
+	}
+
+	// Verify the proof that output values and sum of them do not exceed v_max
 	if !pro.ComOutputMultiRangeProof.Verify() {
 		return false
 	}
