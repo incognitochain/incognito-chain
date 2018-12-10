@@ -264,6 +264,8 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 		for j := 0; j < numInputCoin*privacy.CMRingSize; j++ {
 			commitmentTemps[j] = new(privacy.EllipticPoint)
+			commitmentTemps[j].X = big.NewInt(0)
+			commitmentTemps[j].Y = big.NewInt(0)
 			commitmentTemps[j].X, commitmentTemps[j].Y = privacy.Curve.Add(commitments[j].X, commitments[j].Y, cmInputSumInverse[i].X, cmInputSumInverse[i].Y)
 		}
 
