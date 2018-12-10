@@ -27,10 +27,9 @@ type PaymentWitness struct {
 
 	ComZeroWitness *PKComZeroWitness
 
-	ComOutputValue 		[]*privacy.EllipticPoint
-	ComOutputSND   		[]*privacy.EllipticPoint
-	ComOutputShardID  []*privacy.EllipticPoint
-
+	ComOutputValue   []*privacy.EllipticPoint
+	ComOutputSND     []*privacy.EllipticPoint
+	ComOutputShardID []*privacy.EllipticPoint
 }
 
 // PaymentProof contains all of PoK for spending coin
@@ -53,9 +52,9 @@ type PaymentProof struct {
 	OutputCoins []*privacy.OutputCoin
 	InputCoins  []*privacy.InputCoin
 
-	ComOutputValue 		[]*privacy.EllipticPoint
-	ComOutputSND   		[]*privacy.EllipticPoint
-	ComOutputShardID  []*privacy.EllipticPoint
+	ComOutputValue   []*privacy.EllipticPoint
+	ComOutputSND     []*privacy.EllipticPoint
+	ComOutputShardID []*privacy.EllipticPoint
 
 	PubKeyLastByteSender byte
 }
@@ -264,6 +263,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		//cmInputSumAll.X, cmInputSumAll.Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputSumAll.X, cmInputSumAll.Y)
 
 		for j := 0; j < numInputCoin*privacy.CMRingSize; j++ {
+			commitmentTemps[j] = new(privacy.EllipticPoint)
 			commitmentTemps[j].X, commitmentTemps[j].Y = privacy.Curve.Add(commitments[j].X, commitments[j].Y, cmInputSumInverse[j].X, cmInputSumInverse[j].Y)
 		}
 

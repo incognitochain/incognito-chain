@@ -51,7 +51,7 @@ type DatabaseInterface interface {
 	StoreCommitments(commitment []byte, chainID byte) error
 	FetchCommitments(chainID byte) ([][]byte, error)
 	HasCommitment(commitment []byte, chainID byte) (bool, error)
-	HasCommitmentIndex(commitmentIndex int64, chainID byte) (bool, error)
+	HasCommitmentIndex(commitmentIndex uint64, chainID byte) (bool, error)
 	GetCommitmentByIndex(commitmentIndex uint64, chainID byte) ([]byte, error)
 	GetCommitmentIndex(commitment []byte, chainId byte) (*big.Int, error)
 	GetCommitmentLength(chainId byte) (*big.Int, error)

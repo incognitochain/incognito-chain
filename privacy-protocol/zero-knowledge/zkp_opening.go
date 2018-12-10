@@ -35,6 +35,9 @@ func (wit *PKComOpeningsWitness) randValue(testcase bool) {
 func (wit *PKComOpeningsWitness) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
 	openings []*big.Int) {
+	if wit == nil {
+		wit = new(PKComOpeningsWitness)
+	}
 	wit.commitmentValue = commitmentValue
 	wit.Openings = openings
 }
@@ -72,14 +75,14 @@ func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) bool {
 		return false
 	}
 	pro.alpha = new(privacy.EllipticPoint)
-	pro.alpha.Decompress(bytestr[privacy.CompressedPointSize : privacy.CompressedPointSize*2])
+	pro.alpha.Decompress(bytestr[privacy.CompressedPointSize: privacy.CompressedPointSize*2])
 	if !pro.alpha.IsSafe() {
 		return false
 	}
 	pro.gamma = make([]*big.Int, privacy.PedCom.Capacity)
 	for i := 0; i < 2; i++ {
 		pro.gamma[i] = big.NewInt(0)
-		pro.gamma[i].SetBytes(bytestr[privacy.CompressedPointSize*2+i*privacy.BigIntSize : privacy.CompressedPointSize*2+(i+1)*privacy.BigIntSize])
+		pro.gamma[i].SetBytes(bytestr[privacy.CompressedPointSize*2+i*privacy.BigIntSize: privacy.CompressedPointSize*2+(i+1)*privacy.BigIntSize])
 	}
 	return true
 }

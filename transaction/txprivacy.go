@@ -47,7 +47,7 @@ func randomCommitmentsProcess(useableTx []*Tx, randNum int, db database.Database
 	commitmentIndexs = []uint64{}
 	myCommitmentIndexs = []uint64{}
 	if randNum == 0 {
-		randNum = 7
+		randNum = 8
 	}
 	listCommitmentsInUsableTx := [][]byte{}
 	mapIndexCommitmentsInUsableTx := make(map[string]*big.Int)
@@ -63,9 +63,14 @@ func randomCommitmentsProcess(useableTx []*Tx, randNum int, db database.Database
 	for i := 0; i < cpRandNum; i++ {
 		for true {
 			lenCommitment, _ := db.GetCommitmentLength(chainID)
-			index := rand2.Int63n(lenCommitment.Int64())
-			if ok, err := db.HasCommitmentIndex(index, chainID); !ok && err != nil {
-				commitmentIndexs = append(commitmentIndexs, uint64(index))
+			index, _ := common.RandBigIntN(lenCommitment)
+			ok, err := db.HasCommitmentIndex(index.Uint64(), chainID)
+			if ok && err == nil {
+				temp, _ := db.GetCommitmentByIndex(index.Uint64(), chainID)
+				if index2, err := common.SliceBytesExists(listCommitmentsInUsableTx, temp); index2 == -1 && err == nil {
+					commitmentIndexs = append(commitmentIndexs, index.Uint64())
+					break
+				}
 			} else {
 				continue
 			}
@@ -78,7 +83,7 @@ func randomCommitmentsProcess(useableTx []*Tx, randNum int, db database.Database
 		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)
 		myCommitmentIndexs = append(myCommitmentIndexs, uint64(i))
 	}
-	return nil, nil
+	return commitmentIndexs, myCommitmentIndexs
 }
 
 func getInputCoins(usableTx []*Tx) []*privacy.InputCoin {
@@ -107,7 +112,7 @@ func (tx *Tx) CreateTx(
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
-	commitmentIndexs, myCommitmentIndexs = randomCommitmentsProcess(usableTx, 7, db, chainID)
+	commitmentIndexs, myCommitmentIndexs = randomCommitmentsProcess(usableTx, 8, db, chainID)
 
 	inputCoins := getInputCoins(usableTx)
 	//Get input coins from usableTX
@@ -152,7 +157,7 @@ func (tx *Tx) CreateTx(
 
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
-	senderFullKey.ImportFromPrivateKeyByte((*senderSK)[:])
+	senderFullKey.ImportFromPrivateKey(senderSK)
 
 	// if overBalance > 0, create a new payment info with pk is sender's pk and amount is overBalance
 	if overBalance > 0 {
@@ -170,22 +175,19 @@ func (tx *Tx) CreateTx(
 	// create new output coins
 	outputCoins := make([]*privacy.OutputCoin, len(paymentInfo))
 
-	var sndOuts []*big.Int
-	sndOut := new(big.Int)
-	ok := true
-
 	// create SNDs for output coins
+	ok := true
+	sndOuts := make([]*big.Int, 0)
 	for ok {
-		sndOuts := make([]*big.Int, len(paymentInfo))
-
+		sndOut := new(big.Int)
 		for i := 0; i < len(paymentInfo); i++ {
 			sndOut = privacy.RandInt()
 			for true {
-				ok, err := tx.CheckSNDExistence(sndOut, db)
+				ok1, err := tx.CheckSNDExistence(sndOut, db)
 				if err != nil {
 					fmt.Println(err)
 				}
-				if !ok {
+				if ok1 {
 					sndOut = privacy.RandInt()
 				} else {
 					break
@@ -195,11 +197,15 @@ func (tx *Tx) CreateTx(
 		}
 
 		ok = common.CheckDuplicateBigInt(sndOuts)
+		if ok {
+			sndOuts = make([]*big.Int, 0)
+		}
 	}
 
 	// create new output coins with info: Pk, value, last byte of pk, snd
 	for i, pInfo := range paymentInfo {
 		outputCoins[i] = new(privacy.OutputCoin)
+		outputCoins[i].CoinDetails = new(privacy.Coin)
 		outputCoins[i].CoinDetails.Value = pInfo.Amount
 		outputCoins[i].CoinDetails.PublicKey, _ = privacy.DecompressKey(pInfo.PaymentAddress.Pk)
 		outputCoins[i].CoinDetails.SNDerivator = sndOuts[i]
@@ -210,6 +216,7 @@ func (tx *Tx) CreateTx(
 
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
+	tx.Proof = &zkp.PaymentProof{}
 	tx.Proof.PubKeyLastByteSender = pkLastByteSender
 
 	// get public key last byte of receivers
@@ -420,11 +427,11 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 	}
 
-	if !hasPrivacy{
+	if !hasPrivacy {
 		// Check input coins' cm is exists in cm list (Database)
-		for i:=0; i<len(tx.Proof.InputCoins); i++{
+		for i := 0; i < len(tx.Proof.InputCoins); i++ {
 			ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment, db)
-			if !ok || err != nil{
+			if !ok || err != nil {
 				return false
 			}
 		}
