@@ -363,6 +363,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		point := new(privacy.EllipticPoint)
 		point, _ = privacy.DecompressKey(tx.SigPubKey)
 		verKey.X, verKey.Y = point.X, point.Y
+		verKey.Curve = privacy.Curve
 
 		// convert signature from byte array to ECDSASign
 		r, s := FromByteArrayToECDSASig(tx.Sig)

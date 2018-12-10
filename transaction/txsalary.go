@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"fmt"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"math/big"
@@ -62,6 +63,15 @@ func CreateTxSalary(
 func ValidateTxSalary(
 	tx *Tx,
 ) bool {
+	// verify signature
+	res, err := tx.VerifySigTx(false)
+	if err != nil{
+		fmt.Println(err)
+		return false
+	}
+	if !res {
+		return false
+	}
 
 	// check whether output coin's SND exists in SND list or not
 	if common.CheckSNDExistence(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator) {
