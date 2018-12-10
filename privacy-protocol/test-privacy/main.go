@@ -249,7 +249,7 @@ func main() {
 	res := transaction.ValidateTxSalary(tx, db)
 
 	fmt.Printf("Res: %v\n", res)
-	
+
 
 
 }

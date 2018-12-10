@@ -411,14 +411,14 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		return false
 	}
 
-	// Verify the payment proof
-
 	for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 		// Check output coins' SND is not exists in SND list (Database)
 		if ok, err := tx.CheckSNDExistence(tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, db); ok || err != nil {
 			return false
 		}
 	}
+
+	// Verify the payment proof
 	valid = tx.Proof.Verify(false, tx.SigPubKey, nil)
 	if valid == false {
 		fmt.Printf("Error verifying the payment proof")
