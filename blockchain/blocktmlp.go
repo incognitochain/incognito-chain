@@ -630,9 +630,6 @@ func buildSingleBuySellResponseTx(
 	additionalSuffix := make([]byte, 24-len(bondID))
 	bondIDBytes := append([]byte(bondID), additionalSuffix...)
 
-	// metaBase := metadata.MetadataBase{
-	// 	Type: metadata.BuyFromGOVResponseMeta,
-	// }
 	buySellRes := metadata.BuySellResponse{
 		RequestedTxID:  buySellReqTx.Hash(),
 		StartSellingAt: sellingBondsParam.StartSellingAt,
@@ -665,8 +662,6 @@ func buildSingleBuySellResponseTx(
 	}
 	resTx := &transaction.TxCustomToken{
 		TxTokenData: txTokenData,
-		// buySellRes,
-		// common.TxCustomTokenType,
 	}
 	resTx.Type = common.TxCustomTokenType
 	resTx.Metadata = &buySellRes
@@ -814,6 +809,7 @@ func calculateAmountOfRefundTxs(
 			Logger.log.Error(err)
 			continue
 		}
+		refundTx.Type = common.TxRefundType
 		refundTxs = append(refundTxs, refundTx)
 	}
 	return refundTxs, amt

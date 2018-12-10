@@ -8,10 +8,11 @@ const (
 )
 
 const (
-	TxNormalType             = "n" // normal tx(send and receive coin)
-	TxSalaryType             = "s" // salary tx(gov pay salary for block producer)
-	TxCustomTokenType        = "t" // token  tx with no supporting privacy
-	TxCustomTokenPrivacyType = "t" // token  tx with supporting privacy
+	TxNormalType             = "n"  // normal tx(send and receive coin)
+	TxSalaryType             = "s"  // salary tx(gov pay salary for block producer)
+	TxRefundType             = "rf" // refund tx(gov does refund to end users for small txs)
+	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
+	TxCustomTokenPrivacyType = "t"  // token  tx with supporting privacy
 
 	TxBuyFromGOVRequest  = "bgr"
 	TxBuySellDCBRequest  = "bsdr"
