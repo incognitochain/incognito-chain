@@ -4,12 +4,13 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 )
 
 // Interface for all type of transaction
 type Transaction interface {
 	Hash() *common.Hash
-	ValidateTransaction(hasPrivacy bool) bool
+	ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface) bool
 	GetType() string
 	GetTxVirtualSize() uint64
 	GetSenderAddrLastByte() byte

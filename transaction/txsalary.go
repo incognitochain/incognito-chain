@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"fmt"
 )
 
 // CreateTxSalary
@@ -76,7 +75,7 @@ func ValidateTxSalary(
 ) bool {
 	// verify signature
 	res, err := tx.VerifySigTx(false)
-	if err != nil{
+	if err != nil {
 		fmt.Println(err)
 		return false
 	}

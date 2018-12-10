@@ -6,7 +6,6 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
-	"math/big"
 )
 
 func main() {
@@ -250,9 +249,7 @@ func main() {
 	res := transaction.ValidateTxSalary(tx, db)
 
 	fmt.Printf("Res: %v\n", res)
-
-
-	a:= 10
 	
+
 
 }
