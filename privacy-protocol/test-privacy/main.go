@@ -250,6 +250,31 @@ func main() {
 
 	fmt.Printf("Res: %v\n", res)
 
+	/*----------------- TEST TX PRIVACY -----------------*/
+	//keySet := new(cashec.KeySet)
+	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	//keySet.ImportFromPrivateKey(&spendingKey)
+	//
+	//
+	//// create payment info of receivers
+	//paymentInfo := make([]*privacy.PaymentInfo, 2)
+	//paymentAddr := make([]privacy.PaymentAddress, 2)
+	//for i:=0; i<len(paymentInfo); i++{
+	//	//generate payment address of receivers
+	//	spendingKey := privacy.GenerateSpendingKey([]byte{byte(i)})
+	//	paymentAddr[i] = *new(privacy.PaymentAddress)
+	//	paymentAddr[i] = privacy.GeneratePaymentAddress(spendingKey)
+	//
+	//	paymentInfo[i] = new(privacy.PaymentInfo)
+	//	paymentInfo[i].Amount = 1
+	//	paymentInfo[i].PaymentAddress = paymentAddr[i]
+	//}
+
+	//
+
+	//tx := new(transaction.Tx)
+	//tx.CreateTx(keySet.PrivateKey, paymentInfo, )
+
 
 
 }
