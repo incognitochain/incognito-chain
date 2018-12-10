@@ -380,6 +380,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	wit.ComOutputValue = cmOutputValue
 	wit.ComOutputSND = cmOutputSND
 	wit.ComOutputShardID = cmOutputShardID
+	return nil
 }
 
 // Prove creates big proof
