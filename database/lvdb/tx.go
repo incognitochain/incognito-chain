@@ -204,16 +204,6 @@ func (db *db) FetchCommitments(chainId byte) ([][]byte, error) {
 
 // HasCommitment - Check commitment in list commitments by chainID
 func (db *db) HasCommitment(commitment []byte, chainId byte) (bool, error) {
-	/*listCommitments, err := db.FetchCommitments(chainId)
-	if err != nil {
-		return false, database.NewDatabaseError(database.UnexpectedError, err)
-	}
-	for _, item := range listCommitments {
-		if bytes.Equal(item, commitment) {
-			return true, nil
-		}
-	}
-	return false, nil*/
 	key := db.getKey(string(commitmentsPrefix), "")
 	key = append(key, chainId)
 	keySpec := append(key, commitment...)
@@ -226,10 +216,10 @@ func (db *db) HasCommitment(commitment []byte, chainId byte) (bool, error) {
 	return false, nil
 }
 
-func (db *db) HasCommitmentIndex(commitmentIndex int64, chainId byte) (bool, error) {
+func (db *db) HasCommitmentIndex(commitmentIndex uint64, chainId byte) (bool, error) {
 	key := db.getKey(string(commitmentsPrefix), "")
 	key = append(key, chainId)
-	keySpec := append(key, big.NewInt(commitmentIndex).Bytes()...)
+	keySpec := append(key, new(big.Int).SetUint64(commitmentIndex).Bytes()...)
 	_, err := db.Get(keySpec)
 	if err != nil {
 		return false, err
