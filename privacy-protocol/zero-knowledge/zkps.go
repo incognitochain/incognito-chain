@@ -1,6 +1,7 @@
 package zkp
 
 import (
+	"github.com/ninjadotorg/constant/common"
 	"math/big"
 	"sort"
 
@@ -162,10 +163,6 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 // END----------------------------------------------------------------------------------------------------------------------------------------------
 
 
-
-
-
-
 func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 	wit.spendingKey = spendingKey
 	wit.inputCoins = inputCoins
@@ -186,8 +183,6 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	wit.outputCoins = outputCoins
 	wit.commitmentIndexs = commitmentIndexs
 	wit.myCommitmentIndexs = myCommitmentIndexs
-
-	// Todo: cmInputPartialSK := g^(sk - last byte)
 
 	numInputCoin := len(wit.inputCoins)
 
@@ -376,12 +371,13 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	proof := new(PaymentProof)
 	var err error
 
+	proof.InputCoins = wit.inputCoins
+	proof.OutputCoins = wit.outputCoins
+
 	// if hasPrivacy == false, don't need to create the zero knowledge proof
 	// proving user has spending key corresponding with public key in input coins
 	// is proved by signing with spending key
 	if !hasPrivacy {
-		proof.InputCoins = wit.inputCoins
-		proof.OutputCoins = wit.outputCoins
 		// Proving that serial number is derived from the committed derivator
 		for i := 0; i < len(wit.inputCoins); i++ {
 			proof.EqualityOfCommittedValProof[i] = new(PKEqualityOfCommittedValProof)
@@ -447,14 +443,13 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 		return nil, err
 	}
 
-
-
-
 	// Proving that sum of all input values is equal to sum of all output values
-	/*proof.ComZeroProof, err = wit.ComZeroWitness.Prove()
+	proof.ComZeroProof, err = wit.ComZeroWitness.Prove()
 	if err != nil {
 		return nil, err
-	}*/
+	}
+
+	// hide
 
 	return proof, nil
 }
@@ -462,7 +457,6 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commitmentsDB []*privacy.EllipticPoint) bool {
 	// if hasPrivacy == false,
 	//numInputCoin := len(pro.InputCoins)
-	pubKeyPoint, _ := privacy.DecompressKey(pubKey)
 
 	if !hasPrivacy {
 		var sumInputValue, sumOutputValue uint64
@@ -470,14 +464,8 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commit
 		sumOutputValue = 0
 
 		for i := 0; i < len(pro.InputCoins); i++ {
-			// check if input coin's public key is pubKey or not
-			// pubKey is the signing key for tx
-			if !pro.InputCoins[i].CoinDetails.PublicKey.IsEqual(pubKeyPoint) {
-				return false
-			}
-
-			// Todo: check
 			// Check input coins' Serial number is created from input coins' SND and sender's spending key
+			// Todo: check
 			if !pro.EqualityOfCommittedValProof[i].Verify() {
 				return false
 			}
@@ -496,16 +484,17 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commit
 			}
 
 			// Check input coins' cm is exists in cm list (Database)
-			//Todo
+			// Todo
 
 			// Calculate sum of input values
 			sumInputValue += pro.InputCoins[i].CoinDetails.Value
-
 		}
 
 		for i := 0; i < len(pro.OutputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
-			// Todo
+			if common.CheckSNDExistence(pro.OutputCoins[i].CoinDetails.SNDerivator){
+				return false
+			}
 
 			// Check output coins' cm is calculated correctly
 			cmTmp := pro.OutputCoins[i].CoinDetails.PublicKey
@@ -555,6 +544,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commit
 			return false
 		}
 	}
+
 	//Verify the proof that output values and sum of them do not exceed v_max
 	if !pro.ComOutputMultiRangeProof.Verify() {
 		return false

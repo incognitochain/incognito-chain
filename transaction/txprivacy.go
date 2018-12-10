@@ -126,6 +126,7 @@ func (tx *Tx) CreateTx(
 
 	// Calculate sum of all output coins' value
 	var sumOutputValue uint64
+	sumOutputValue = 0
 	for _, p := range paymentInfo {
 		sumOutputValue += p.Amount
 		fmt.Printf("[CreateTx] paymentInfo.H: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
@@ -133,6 +134,7 @@ func (tx *Tx) CreateTx(
 
 	// Calculate sum of all input coins' value
 	var sumInputValue uint64
+	sumInputValue = 0
 	for _, coin := range inputCoins {
 		sumInputValue += coin.CoinDetails.Value
 	}
