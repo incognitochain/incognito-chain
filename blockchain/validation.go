@@ -5,7 +5,6 @@ Use these function to validate common data in blockchain
 */
 
 import (
-	"bytes"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -215,45 +214,45 @@ func (bc *BlockChain) VerifyCustomTokenSigns(tx metadata.Transaction) bool {
 	return bc.verifyByBoard(boardType, customToken)
 }
 
-func (self *BlockChain) ValidateTxBuySellDCBRequest(tx metadata.Transaction, chainID byte) error {
-	// Check if crowdsale existed
-	requestTx, ok := tx.(*transaction.TxBuySellRequest)
-	if !ok {
-		return fmt.Errorf("Error parsing TxBuySellDCBRequest")
-	}
-	saleData, err := self.config.DataBase.LoadCrowdsaleData(requestTx.SaleID)
-	if err != nil {
-		return fmt.Errorf("SaleID not found")
-	}
+// func (self *BlockChain) ValidateTxBuySellDCBRequest(tx metadata.Transaction, chainID byte) error {
+// 	// Check if crowdsale existed
+// 	requestTx, ok := tx.(*transaction.TxBuySellRequest)
+// 	if !ok {
+// 		return fmt.Errorf("Error parsing TxBuySellDCBRequest")
+// 	}
+// 	saleData, err := self.config.DataBase.LoadCrowdsaleData(requestTx.SaleID)
+// 	if err != nil {
+// 		return fmt.Errorf("SaleID not found")
+// 	}
 
-	// Check if sale is still valid
-	if self.BestState[chainID].Height >= saleData.EndBlock {
-		return fmt.Errorf("Sale ended")
-	}
+// 	// Check if sale is still valid
+// 	if self.BestState[chainID].Height >= saleData.EndBlock {
+// 		return fmt.Errorf("Sale ended")
+// 	}
 
-	dbcAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	if bytes.Equal(saleData.BuyingAsset[:8], common.BondTokenID[:8]) {
-		for _, vout := range requestTx.TxTokenData.Vouts {
-			if !bytes.Equal(vout.BuySellResponse.BondID, saleData.BuyingAsset[8:]) {
-				return fmt.Errorf("Received asset id %s instead of %s", append(common.BondTokenID[:8], vout.BuySellResponse.BondID...), saleData.BuyingAsset)
-			}
+// 	dbcAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+// 	if bytes.Equal(saleData.BuyingAsset[:8], common.BondTokenID[:8]) {
+// 		for _, vout := range requestTx.TxTokenData.Vouts {
+// 			if !bytes.Equal(vout.BuySellResponse.BondID, saleData.BuyingAsset[8:]) {
+// 				return fmt.Errorf("Received asset id %s instead of %s", append(common.BondTokenID[:8], vout.BuySellResponse.BondID...), saleData.BuyingAsset)
+// 			}
 
-			// Check if receiving address is DCB's
-			if !bytes.Equal(vout.PaymentAddress.Pk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
-				return fmt.Errorf("Sending payment to %x instead of %x", vout.PaymentAddress.Pk[:], common.DCBAddress)
-			}
-		}
-	} else if bytes.Equal(saleData.BuyingAsset, common.ConstantID[:]) {
-		for _, desc := range requestTx.Tx.Descs {
-			for _, note := range desc.Note {
-				if !bytes.Equal(note.Apk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
-					return fmt.Errorf("Sending payment to %x instead of %x", note.Apk[:], common.DCBAddress)
-				}
-			}
-		}
-	}
-	return nil
-}
+// 			// Check if receiving address is DCB's
+// 			if !bytes.Equal(vout.PaymentAddress.Pk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
+// 				return fmt.Errorf("Sending payment to %x instead of %x", vout.PaymentAddress.Pk[:], common.DCBAddress)
+// 			}
+// 		}
+// 	} else if bytes.Equal(saleData.BuyingAsset, common.ConstantID[:]) {
+// 		for _, desc := range requestTx.Tx.Descs {
+// 			for _, note := range desc.Note {
+// 				if !bytes.Equal(note.Apk[:], dbcAccount.KeySet.PaymentAddress.Pk) {
+// 					return fmt.Errorf("Sending payment to %x instead of %x", note.Apk[:], common.DCBAddress)
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }
 
 //validate voting transaction
 func (bc *BlockChain) ValidateTxSubmitDCBProposal(tx metadata.Transaction, chainID byte) error {

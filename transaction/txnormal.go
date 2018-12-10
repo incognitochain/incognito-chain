@@ -35,12 +35,6 @@ type Tx struct {
 	// temp variable to view sign priv key which use in tx
 	sigPrivKey *privacy.SpendingKey // is always private property of struct
 
-	// this one is a hash id of requested tx
-	// and is used inside response txs
-	// so that we can determine pair of req/res txs
-	// for example, BuySellRequestTx/BuySellResponseTx
-	RequestedTxID *common.Hash
-
 	Metadata metadata.Metadata
 }
 

@@ -260,9 +260,8 @@ func createSpecialTokenTx(
 	log.Printf("Init token %s: %s \n", tokenSymbol, tokenID.String())
 	paymentAddr := initialAddress
 	vout := transaction.TxTokenVout{
-		Value:           amount,
-		PaymentAddress:  paymentAddr,
-		BuySellResponse: nil,
+		Value:          amount,
+		PaymentAddress: paymentAddr,
 	}
 	vout.SetIndex(0)
 	txTokenData := transaction.TxTokenData{
