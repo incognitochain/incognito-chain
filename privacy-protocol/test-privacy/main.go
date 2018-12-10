@@ -1,14 +1,8 @@
 package main
 
-<<<<<<< HEAD
-import privacy "github.com/ninjadotorg/constant/privacy-protocol"
-=======
 import (
-	"crypto/rand"
-	"fmt"
-	"math/big"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
->>>>>>> 04e82173bd5468413903f9c0c4bd0adc411c94d6
 
 func main() {
 
@@ -68,6 +62,8 @@ func main() {
 	//zkp.TestPKOneOfMany()
 
 	//zkp.TestPKComMultiRange()
+
+	zkp.TestOpeningsProtocol()
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -172,7 +168,7 @@ func main() {
 	/*----------------- TEST SIGNATURE -----------------*/
 	//privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
-	privacy.TestMultiSig()
+	//privacy.TestMultiSig()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
 	//for i :=0; i<1000; i++{
@@ -236,21 +232,6 @@ func main() {
 
 	/*----------------- TEST TX SALARY -----------------*/
 
-<<<<<<< HEAD
-	// keySet := new(cashec.KeySet)
-	// spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	// keySet.ImportFromPrivateKey(&spendingKey)
-
-	// var db database.DatabaseInterface
-
-	// tx, err := transaction.CreateTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
-	// if err != nil{
-	// 	fmt.Println(err)
-	// }
-	// fmt.Printf("Tx: %+v\n", tx)
-
-	// res := transaction.ValidateTxSalary(tx, db)
-=======
 	//keySetSender := new(cashec.KeySet)
 	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
 	//keySetSender.ImportFromPrivateKey(&spendingKey)
@@ -302,13 +283,6 @@ func main() {
 	//if aInt.Cmp(big.NewInt(0)) == 0{
 	//	fmt.Println("equal")
 	//}
-
-	for true{
-		res, _ := rand.Int(rand.Reader, big.NewInt(10))
-
-		fmt.Println(res)
-	}
->>>>>>> 04e82173bd5468413903f9c0c4bd0adc411c94d6
 
 	// fmt.Printf("Res: %v\n", res)
 

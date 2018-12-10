@@ -249,7 +249,9 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		if wit.ComInputOpeningsWitness[i] == nil {
 			wit.ComInputOpeningsWitness[i] = new(PKComOpeningsWitness)
 		}
-		wit.ComInputOpeningsWitness[i].Set(cmInputSum[i], []*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randInputSum[i]})
+		wit.ComInputOpeningsWitness[i].Set(cmInputSum[i],
+			[]*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randInputSum[i]},
+			[]byte{privacy.SK, privacy.VALUE, privacy.SND, privacy.RAND})
 
 		/***** Build witness for proving one-out-of-N commitments is a commitment to the coins being spent *****/
 		// commitmentTemps is a list of commitments for protocol one-out-of-N
@@ -273,9 +275,15 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 			commitmentTemps[j].X, commitmentTemps[j].Y = privacy.Curve.Add(commitments[j].X, commitments[j].Y, cmInputSumInverse[i].X, cmInputSumInverse[i].Y)
 		}
 
+		if wit.OneOfManyWitness[i] == nil {
+			wit.OneOfManyWitness[i] = new(PKOneOfManyWitness)
+		}
 		wit.OneOfManyWitness[i].Set(commitmentTemps, commitmentIndexs, rndInputIsZero, myCommitmentIndexs[i], privacy.SK)
 
 		/***** Build witness for proving that serial number is derived from the committed derivator *****/
+		if wit.EqualityOfCommittedValWitness[i] == nil {
+			wit.EqualityOfCommittedValWitness[i] = new(PKEqualityOfCommittedValWitness)
+		}
 		wit.EqualityOfCommittedValWitness[i].Set([]*privacy.EllipticPoint{cmInputSNDIndexSK[i], cmInputSND[i]}, indexZKPEqual, []*big.Int{inputCoins[i].CoinDetails.SNDerivator, randInputSK, randInputSND[i]})
 
 		/****Build witness for proving that the commitment of serial number is equivalent to Mul(com(sk), com(snd))****/
@@ -289,6 +297,9 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		cmInputInverseSum := privacy.PedCom.CommitAtIndex(witnessAInverse, randAInverse, privacy.SK)
 		witIndex := new(byte)
 		*witIndex = privacy.SK
+		if wit.ProductCommitmentWitness[i] == nil {
+			wit.ProductCommitmentWitness[i] = new(PKComProductWitness)
+		}
 		wit.ProductCommitmentWitness[i].Set(witnesssA, randA, cmInputInverseSum, witIndex)
 		// ------------------------------
 	}
@@ -333,7 +344,9 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		if wit.ComOutputOpeningsWitness[i] == nil {
 			wit.ComOutputOpeningsWitness[i] = new(PKComOpeningsWitness)
 		}
-		wit.ComOutputOpeningsWitness[i].Set(cmOutputSum[i], []*big.Int{big.NewInt(int64(outputCoins[i].CoinDetails.Value)), outputCoins[i].CoinDetails.SNDerivator, randOutputSum[i]})
+		wit.ComOutputOpeningsWitness[i].Set(cmOutputSum[i],
+			[]*big.Int{big.NewInt(int64(outputCoins[i].CoinDetails.Value)), outputCoins[i].CoinDetails.SNDerivator, randOutputSum[i]},
+			[]byte{privacy.VALUE, privacy.SND, privacy.RAND})
 	}
 
 	randOutputShardID := make([]*big.Int, numOutputCoin)
@@ -362,6 +375,9 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	outputValue := make([]*big.Int, numOutputCoin)
 	for i := 0; i < numOutputCoin; i++ {
 		outputValue[i] = big.NewInt(int64(outputCoins[i].CoinDetails.Value))
+	}
+	if wit.ComOutputMultiRangeWitness == nil {
+		wit.ComOutputMultiRangeWitness = new(PKComMultiRangeWitness)
 	}
 	wit.ComOutputMultiRangeWitness.Set(outputValue, 64)
 	// ------------------------

@@ -1,11 +1,12 @@
 package zkp
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
 
-	blake2b "github.com/minio/blake2b-simd"
+	"github.com/minio/blake2b-simd"
 )
 
 // GenerateChallengeFromPoint get hash of n points in G append with input values
@@ -16,6 +17,9 @@ func GenerateChallengeFromPoint(values []*privacy.EllipticPoint) *big.Int {
 	for i := 1; i < privacy.PedCom.Capacity; i++ {
 		appendStr = append(appendStr, privacy.PedCom.G[i].Compress()...)
 	}
+	fmt.Printf("len values: %v\n", len(values))
+
+	fmt.Printf("values[0]: %v\n", values[0])
 	for i := 0; i < len(values); i++ {
 		appendStr = append(appendStr, values[i].Compress()...)
 	}
