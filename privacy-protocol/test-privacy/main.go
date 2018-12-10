@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 )
@@ -237,13 +238,15 @@ func main() {
 	spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
 	keySet.ImportFromPrivateKey(&spendingKey)
 
-	tx, err := transaction.CreateTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey)
+	var db database.DatabaseInterface
+
+	tx, err := transaction.CreateTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
 	if err != nil{
 		fmt.Println(err)
 	}
 	fmt.Printf("Tx: %+v\n", tx)
 
-	res := transaction.ValidateTxSalary(tx)
+	res := transaction.ValidateTxSalary(tx, db)
 
 	fmt.Printf("Res: %v\n", res)
 
