@@ -29,6 +29,12 @@ type MultiSigSchemeInterface interface {
 	CombineMultiSig(listSignatures []*SchnMultiSig) *SchnMultiSig
 }
 
+// MultiSigScheme ...
+type MultiSigScheme struct {
+	Keyset    *MultiSigKeyset
+	Signature *SchnMultiSig
+}
+
 // MultiSigKeyset contains keyset for EC Schnorr MultiSig Scheme
 type MultiSigKeyset struct {
 	priKey *SpendingKey
@@ -144,7 +150,7 @@ func (multiSig *SchnMultiSig) VerifyMultiSig(data []byte, listPK []*PublicKey, p
 	return GSPoint.IsEqual(RXCPoint)
 }
 
-func generateRandom() (*EllipticPoint, *big.Int) {
+func (multisigScheme *MultiSigScheme) GenerateRandom() (*EllipticPoint, *big.Int) {
 	r := RandInt()
 	GPoint := new(EllipticPoint)
 	GPoint.X, GPoint.Y = big.NewInt(0), big.NewInt(0)
@@ -200,7 +206,7 @@ func generateCommonParams(pubKey *PublicKey, listPubkey []*PublicKey, R *Ellipti
 }
 
 // CombineMultiSig Combining all EC Schnorr MultiSig in given list
-func CombineMultiSig(listSignatures []*SchnMultiSig) *SchnMultiSig {
+func (multisigScheme *MultiSigScheme) CombineMultiSig(listSignatures []*SchnMultiSig) *SchnMultiSig {
 	res := new(SchnMultiSig)
 	res.R = new(EllipticPoint)
 	res.R.X, res.R.Y = big.NewInt(0), big.NewInt(0)
