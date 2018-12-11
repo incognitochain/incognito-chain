@@ -28,7 +28,7 @@ func CreateTxSalary(
 	tx.Fee = 0
 
 	// create new output coins with info: Pk, value, SND, randomness, last byte pk, coin commitment
-	tx.Proof = new(zkp.PaymentProof)
+	tx.Proof = zkp.CreatePaymentProof()
 	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, 1)
 	tx.Proof.OutputCoins[0] = new(privacy.OutputCoin)
 	tx.Proof.OutputCoins[0].CoinDetails = new(privacy.Coin)
