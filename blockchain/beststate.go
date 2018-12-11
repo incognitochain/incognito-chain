@@ -25,11 +25,11 @@ type BestStateNew struct {
 
 type BestStateBeacon struct {
 	BestBlockHash common.Hash // The hash of the block.
-	BestBlock     *BlockV2    // The hash of the block.
+	BestBlock     *BlockV2    // The block.
 }
 type BestStateShard struct {
 	BestBlockHash common.Hash // The hash of the block.
-	BestBlock     *BlockV2    // The hash of the block.
+	BestBlock     *BlockV2    // The block.
 
 	NumTxns   uint64 // The number of txns in the block.
 	TotalTxns uint64 // The total number of txns in the chain.
