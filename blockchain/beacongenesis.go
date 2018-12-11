@@ -8,6 +8,8 @@ func (self *BeaconBlockGenerator) createBeaconGenesisBlock() *BlockV2 {
 	loc, _ := time.LoadLocation("America/New_York")
 	time := time.Date(2018, 8, 1, 0, 0, 0, 0, loc)
 
+	//TODO: build param
+
 	body := &BeaconBlockBody{ShardState: nil, StateInstruction: nil}
 	header := &BeaconBlockHeader{
 		BlockHeaderGeneric: BlockHeaderGeneric{

@@ -26,7 +26,9 @@ type BestStateNew struct {
 type BestStateBeacon struct {
 	BestBlockHash common.Hash // The hash of the block.
 	BestBlock     *BlockV2    // The block.
+	BestShardHash map[byte]common.Hash
 }
+
 type BestStateShard struct {
 	BestBlockHash common.Hash // The hash of the block.
 	BestBlock     *BlockV2    // The block.

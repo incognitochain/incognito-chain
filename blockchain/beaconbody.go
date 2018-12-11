@@ -6,25 +6,25 @@ import (
 )
 
 type BeaconBlockBody struct {
-	ShardState       map[string]([]common.Hash)
-	StateInstruction map[string]string
+	ShardState   [][]common.Hash
+	Instructions [][]string
 }
 
 func (self *BeaconBlockBody) toString() string {
 	res := ""
-	if self.ShardState != nil {
-		for s, l := range self.ShardState {
-			res += s
-			for _, h := range l {
-				res += h.String()
-			}
-		}
-	}
-	if self.StateInstruction != nil {
-		for s, i := range self.StateInstruction {
-			res += s + i
-		}
-	}
+	//if self.ShardState != nil {
+	//	for s, l := range self.ShardState {
+	//		res += string(s)
+	//		for _, h := range l {
+	//			res += h.String()
+	//		}
+	//	}
+	//}
+	//if self.StateInstruction != nil {
+	//	for s, i := range self.StateInstruction {
+	//		res += s + i
+	//	}
+	//}
 	return res
 }
 
