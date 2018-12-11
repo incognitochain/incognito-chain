@@ -65,28 +65,37 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	// ComInputOpeningsProof
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComInputOpeningsProof)))
 	for i := 0; i < len(paymentProof.ComInputOpeningsProof); i++ {
-		proofbytes = append(proofbytes, paymentProof.ComInputOpeningsProof[i].Bytes()...)
+		comInputOpeningProof := paymentProof.ComInputOpeningsProof[i].Bytes()
+		proofbytes = append(proofbytes, byte(len(comInputOpeningProof)))
+		proofbytes = append(proofbytes, comInputOpeningProof...)
 	}
 	// OneOfManyProof
 	proofbytes = append(proofbytes, byte(len(paymentProof.OneOfManyProof)))
 	for i := 0; i < len(paymentProof.OneOfManyProof); i++ {
-		proofbytes = append(proofbytes, byte(len(paymentProof.OneOfManyProof[i].Bytes())))
-		proofbytes = append(proofbytes, paymentProof.OneOfManyProof[i].Bytes()...)
+		oneOfManyProof := paymentProof.OneOfManyProof[i].Bytes()
+		proofbytes = append(proofbytes, byte(len(oneOfManyProof)))
+		proofbytes = append(proofbytes, oneOfManyProof...)
 	}
 	// EqualityOfCommittedValProof
 	proofbytes = append(proofbytes, byte(len(paymentProof.EqualityOfCommittedValProof)))
 	for i := 0; i < len(paymentProof.EqualityOfCommittedValProof); i++ {
-		proofbytes = append(proofbytes, paymentProof.EqualityOfCommittedValProof[i].Bytes()...)
+		equalityOfCommittedValProof := paymentProof.EqualityOfCommittedValProof[i].Bytes()
+		proofbytes = append(proofbytes, byte(len(equalityOfCommittedValProof)))
+		proofbytes = append(proofbytes, equalityOfCommittedValProof...)
 	}
 	// ProductCommitmentProof
 	proofbytes = append(proofbytes, byte(len(paymentProof.ProductCommitmentProof)))
 	for i := 0; i < len(paymentProof.ProductCommitmentProof); i++ {
+		equalityOfCommittedValProof := paymentProof.EqualityOfCommittedValProof[i].Bytes()
+		proofbytes = append(proofbytes, byte(len(equalityOfCommittedValProof)))
 		proofbytes = append(proofbytes, paymentProof.ProductCommitmentProof[i].Bytes()...)
 	}
 	//ComOutputOpeningsProof
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputOpeningsProof)))
 	for i := 0; i < len(paymentProof.ComOutputOpeningsProof); i++ {
-		proofbytes = append(proofbytes, paymentProof.ComOutputOpeningsProof[i].Bytes()...)
+		comOutputOpeningsProof := paymentProof.ComOutputOpeningsProof[i].Bytes()
+		proofbytes = append(proofbytes, byte(len(comOutputOpeningsProof)))
+		proofbytes = append(proofbytes, comOutputOpeningsProof...)
 	}
 	// ComOutputMultiRangeProof
 	/*proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputMultiRangeProof.Bytes())))
