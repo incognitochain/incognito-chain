@@ -40,12 +40,13 @@ var RpcHandler = map[string]commandHandler{
 	GetBlockHeader:    RpcServer.handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
 
 	// transaction
-	ListTransactions:         RpcServer.handleListTransactions,
-	CreateRawTransaction:     RpcServer.handleCreateRawTransaction,
-	SendRawTransaction:       RpcServer.handleSendRawTransaction,
-	CreateAndSendTransaction: RpcServer.handlCreateAndSendTx,
-	GetMempoolInfo:           RpcServer.handleGetMempoolInfo,
-	GetTransactionByHash:     RpcServer.handleGetTransactionByHash,
+	ListUnspentTxByPaymentAddress: RpcServer.handleListUnspentTxByPaymentAddress,
+	ListTransactions:              RpcServer.handleListTransactions,
+	CreateRawTransaction:          RpcServer.handleCreateRawTransaction,
+	SendRawTransaction:            RpcServer.handleSendRawTransaction,
+	CreateAndSendTransaction:      RpcServer.handlCreateAndSendTx,
+	GetMempoolInfo:                RpcServer.handleGetMempoolInfo,
+	GetTransactionByHash:          RpcServer.handleGetTransactionByHash,
 
 	GetCommitteeCandidateList:  RpcServer.handleGetCommitteeCandidateList,
 	RetrieveCommitteeCandidate: RpcServer.handleRetrieveCommiteeCandidate,
@@ -103,7 +104,7 @@ var RpcLimited = map[string]commandHandler{
 	DumpPrivkey:                RpcServer.handleDumpPrivkey,
 	ImportAccount:              RpcServer.handleImportAccount,
 	RemoveAccount:              RpcServer.handleRemoveAccount,
-	ListUnspentTx:              RpcServer.handleListUnspentTx,
+	ListUnspentTxByPrivatekey:  RpcServer.handleListUnspentTxByPrivatekey,
 	GetBalance:                 RpcServer.handleGetBalance,
 	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
 	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
@@ -171,7 +172,7 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 //Parameter #2—the maximum number of confirmations an output may have
 //Parameter #3—the list readonly which be used to view utxo
 //
-func (self RpcServer) handleListUnspentTx(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleListUnspentTxByPrivatekey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	result := jsonresult.ListUnspentResult{
 		ListUnspentResultItems: make(map[string]map[byte][]jsonresult.ListUnspentResultItem),
@@ -189,11 +190,11 @@ func (self RpcServer) handleListUnspentTx(params interface{}, closeChan <-chan s
 
 		// get keyset only contain pri-key by deserializing
 		priKeyStr := keys["PrivateKey"].(string)
-		readonlyKey, err := wallet.Base58CheckDeserialize(priKeyStr)
+		key, err := wallet.Base58CheckDeserialize(priKeyStr)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		txsMap, err := self.config.BlockChain.GetListUnspentTxByKeyset(&readonlyKey.KeySet, transaction.NoSort, false)
+		txsMap, err := self.config.BlockChain.GetListUnspentTxByKeyset(&key.KeySet, transaction.NoSort, false)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -226,6 +227,76 @@ func (self RpcServer) handleListUnspentTx(params interface{}, closeChan <-chan s
 				result.ListUnspentResultItems[priKeyStr][chainId] = []jsonresult.ListUnspentResultItem{}
 			}
 			result.ListUnspentResultItems[priKeyStr][chainId] = listTxs
+		}
+	}
+	return result, nil
+}
+
+//handleListUnspentTx - use private key to get all tx which contains output coin of account
+// because we only have payment-address, it can not return full tx outputcoin with amount and receiver address in txs, we only have public data(commitments, pubkey...)
+//params:
+//Parameter #1—the minimum number of confirmations an output must have
+//Parameter #2—the maximum number of confirmations an output may have
+//Parameter #3—the list readonly which be used to view utxo
+//
+func (self RpcServer) handleListUnspentTxByPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	Logger.log.Info(params)
+	result := jsonresult.ListUnspentResult{
+		ListUnspentResultItems: make(map[string]map[byte][]jsonresult.ListUnspentResultItem),
+	}
+
+	// get params
+	paramsArray := common.InterfaceSlice(params)
+	min := int(paramsArray[0].(float64))
+	max := int(paramsArray[1].(float64))
+	_ = min
+	_ = max
+	listKeyParams := common.InterfaceSlice(paramsArray[2])
+	for _, keyParam := range listKeyParams {
+		keys := keyParam.(map[string]interface{})
+
+		// get keyset only contain payment-address by deserializing
+		paymentAddressStr := keys["PaymentAddress"].(string)
+		key, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		txsMap, err := self.config.BlockChain.GetListUnspentTxByKeyset(&key.KeySet, transaction.NoSort, false)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		listTxs := make([]jsonresult.ListUnspentResultItem, 0)
+		for chainId, txs := range txsMap {
+			for _, tx := range txs {
+				item := jsonresult.ListUnspentResultItem{
+					TxId:     tx.Hash().String(),
+					OutCoins: make([]jsonresult.OutCoin, 0),
+				}
+				for _, outCoin := range tx.Proof.OutputCoins {
+					temp := jsonresult.OutCoin{
+						SNDerivator: *outCoin.CoinDetails.SNDerivator,
+					}
+					temp.PublicKey = base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), byte(0x00))
+					temp.CoinCommitment = base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), byte(0x00))
+					/*if outCoin.CoinDetails.SerialNumber != nil {
+						temp.SerialNumber = base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), byte(0x00))
+					}
+					if outCoin.CoinDetails.Info != nil && len(outCoin.CoinDetails.Info) > 0 {
+						temp.Info = base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], byte(0x00))
+					}*/
+					item.OutCoins = append(item.OutCoins, temp)
+				}
+				listTxs = append(listTxs, item)
+			}
+			//fmt.Println("listTxs in handleListUnspent", listTxs)
+
+			if result.ListUnspentResultItems[paymentAddressStr] == nil {
+				result.ListUnspentResultItems[paymentAddressStr] = map[byte][]jsonresult.ListUnspentResultItem{}
+			}
+			if result.ListUnspentResultItems[paymentAddressStr][chainId] == nil {
+				result.ListUnspentResultItems[paymentAddressStr][chainId] = []jsonresult.ListUnspentResultItem{}
+			}
+			result.ListUnspentResultItems[paymentAddressStr][chainId] = listTxs
 		}
 	}
 	return result, nil
