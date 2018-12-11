@@ -24,9 +24,6 @@ type BlockHeaderGeneric struct {
 	// Hash of the previous block header in the block chain.
 	PrevBlockHash common.Hash `json:"PrevBlockHash"`
 
-	// Merkle tree reference to hash of all transactions for the block.
-	MerkleRoot common.Hash `json:"MerkleRoot"`
-
 	//Block Height
 	Height int32 `json:"Height"`
 
@@ -65,22 +62,18 @@ func (self *BlockV2) UnmarshalJSON(data []byte) error {
 
 	switch self.Type {
 	case "beacon":
-		type AliasHeader BlockHeaderBeacon
-		blkHeader := &AliasHeader{}
-		err := json.Unmarshal(*tempBlk.Header, &blkHeader)
+		self.Header = &BeaconBlockHeader{}
+		err := json.Unmarshal(*tempBlk.Header, self.Header)
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
 		}
-		var blkBody BlockBodyBeacon
-		err = json.Unmarshal(*tempBlk.Body, &blkBody)
+
+		self.Body = &BeaconBlockBody{}
+		err = json.Unmarshal(*tempBlk.Body, self.Body)
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
 		}
-		self.Header = BlockHeaderBeacon{
-			BlockHeaderGeneric: blkHeader.BlockHeaderGeneric,
-			TestParam:          blkHeader.TestParam,
-		}
-		self.Body = blkBody
+
 	case "shard":
 		type AliasHeader BlockHeaderShard
 		blkHeader := &AliasHeader{}
