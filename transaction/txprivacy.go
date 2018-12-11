@@ -84,7 +84,7 @@ func (tx *Tx) randomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, ra
 	return commitmentIndexs, myCommitmentIndexs
 }
 
-func (tx *Tx) CreateTx(
+func (tx *Tx) Init(
 	senderSK *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
 	inputCoins []*privacy.InputCoin,

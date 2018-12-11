@@ -405,7 +405,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateTxsMap[chainIdSender])
 	tx := &transaction.TxCustomToken{}
-	err = tx.CreateTxCustomToken(
+	err = tx.Init(
 		&senderKey.KeySet.PrivateKey,
 		nil,
 		inputCoins,

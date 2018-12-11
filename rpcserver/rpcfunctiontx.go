@@ -186,7 +186,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 	// false by default
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateTxsMap[chainIdSender])
 	tx := transaction.Tx{}
-	err = tx.CreateTx(
+	err = tx.Init(
 		&senderKey.KeySet.PrivateKey,
 		paymentInfos,
 		inputCoins,

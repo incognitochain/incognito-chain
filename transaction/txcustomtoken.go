@@ -99,7 +99,7 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 }
 
 // CreateTxCustomToken ...
-func (txCustomToken *TxCustomToken) CreateTxCustomToken(senderKey *privacy.SpendingKey,
+func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
 	inputCoin []*privacy.InputCoin,
 	fee uint64,
@@ -108,7 +108,7 @@ func (txCustomToken *TxCustomToken) CreateTxCustomToken(senderKey *privacy.Spend
 ) (error) {
 	// create normal txCustomToken
 	normalTx := Tx{}
-	err := normalTx.CreateTx(senderKey,
+	err := normalTx.Init(senderKey,
 		paymentInfo,
 		inputCoin,
 		fee,
