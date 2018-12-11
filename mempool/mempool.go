@@ -593,7 +593,7 @@ func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
 			if ok == false {
 				return false
 			}
-			return txCustomToken.ValidateTransaction(txCustomToken.Tx.Proof.ComInputOpeningsProof != nil, tp.config.DataBase)
+			return txCustomToken.ValidateTransaction(txCustomToken.Tx.Proof.ComInputOpeningsProof != nil, tp.config.DataBase, 14)
 		}
 		/*case common.TxVoteDCBBoard:
 		  {
@@ -617,7 +617,7 @@ func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
 		  }*/
 
 	default:
-		return tx.ValidateTransaction(false, tp.config.DataBase)
+		return tx.ValidateTransaction(false, tp.config.DataBase, 14)
 	}
 	return false
 }
