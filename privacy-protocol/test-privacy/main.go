@@ -1,8 +1,12 @@
 package main
 
+<<<<<<< HEAD
+import privacy "github.com/ninjadotorg/constant/privacy-protocol"
+=======
 import (
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
+>>>>>>> f8a7a7826027403f46de9dcf9774fd206f83904f
 
 func main() {
 
@@ -232,6 +236,21 @@ func main() {
 
 	/*----------------- TEST TX SALARY -----------------*/
 
+<<<<<<< HEAD
+	// keySet := new(cashec.KeySet)
+	// spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	// keySet.ImportFromPrivateKey(&spendingKey)
+
+	// var db database.DatabaseInterface
+
+	// tx, err := transaction.CreateTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
+	// if err != nil{
+	// 	fmt.Println(err)
+	// }
+	// fmt.Printf("Tx: %+v\n", tx)
+
+	// res := transaction.ValidateTxSalary(tx, db)
+=======
 	//keySetSender := new(cashec.KeySet)
 	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
 	//keySetSender.ImportFromPrivateKey(&spendingKey)
@@ -283,6 +302,7 @@ func main() {
 	//if aInt.Cmp(big.NewInt(0)) == 0{
 	//	fmt.Println("equal")
 	//}
+>>>>>>> f8a7a7826027403f46de9dcf9774fd206f83904f
 
 	// fmt.Printf("Res: %v\n", res)
 

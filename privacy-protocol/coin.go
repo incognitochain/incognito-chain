@@ -29,9 +29,9 @@ type Coin struct {
 	Info           [512]byte //512 bytes
 }
 
-func (coin *Coin) GetPubKeyLastByte() byte{
+func (coin *Coin) GetPubKeyLastByte() byte {
 	pubKeyBytes := coin.PublicKey.Compress()
-	return pubKeyBytes[len(pubKeyBytes) - 1]
+	return pubKeyBytes[len(pubKeyBytes)-1]
 }
 
 func (coin Coin) MarshalJSON() ([]byte, error) {
@@ -60,7 +60,10 @@ func (coin *Coin) Bytes() []byte {
 	coin_bytes = append(coin_bytes, CoinCommitment...)
 	SNDerivator := PadBigInt(coin.SNDerivator, BigIntSize)
 	coin_bytes = append(coin_bytes, SNDerivator...)
-	SerialNumber := coin.SerialNumber.Compress()
+	SerialNumber := []byte{}
+	if coin.SerialNumber != nil {
+		SerialNumber = coin.SerialNumber.Compress()
+	}
 	if len(SerialNumber) == 0 {
 		SerialNumber := [33]byte{}
 		coin_bytes = append(coin_bytes, SerialNumber[:]...)
@@ -75,6 +78,7 @@ func (coin *Coin) Bytes() []byte {
 	coin_bytes = append(coin_bytes, Info[:]...)
 	return coin_bytes
 }
+
 func (coin *Coin) SetBytes(coin_byte []byte) {
 	offset := 0
 	coin.PublicKey = new(EllipticPoint)
@@ -118,8 +122,8 @@ func (inputCoin *InputCoin) Bytes() []byte {
 }
 
 type OutputCoin struct {
-	CoinDetails            *Coin
-	CoinDetailsEncrypted   *CoinDetailsEncrypted
+	CoinDetails          *Coin
+	CoinDetailsEncrypted *CoinDetailsEncrypted
 }
 
 func (outputCoin *OutputCoin) Bytes() []byte {
@@ -134,8 +138,8 @@ func (outputCoin *OutputCoin) SetBytes() {
 }
 
 type CoinDetailsEncrypted struct {
-	RandomEncrypted []byte				// 48 bytes
-	SymKeyEncrypted []byte				// 66 bytes
+	RandomEncrypted []byte // 48 bytes
+	SymKeyEncrypted []byte // 66 bytes
 }
 
 func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() [] byte {
@@ -234,9 +238,9 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	gValue = gValue.Add(PublicKeyPointInverse)
 
 	// brute force to find value
-	for v:=0; ;v++ {
+	for v := 0; ; v++ {
 		gv := PedCom.G[VALUE].ScalarMul(big.NewInt(int64(v)))
-		if gv.IsEqual(gValue){
+		if gv.IsEqual(gValue) {
 			coin.CoinDetails.Value = uint64(v)
 			break
 		}

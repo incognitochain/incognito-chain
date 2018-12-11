@@ -237,13 +237,18 @@ func (tx *Tx) CreateTx(
 
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
+	err := witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
+	if err != nil {
+		return err
+	}
 	tx.Proof, _ = witness.Prove(hasPrivacy)
 
 	// set private key for signing tx
 	if hasPrivacy {
 		tx.sigPrivKey = make([]byte, 64)
-		tx.sigPrivKey = append(*senderSK, witness.ComInputOpeningsWitness[0].Openings[privacy.RAND].Bytes()...)
+		openings := witness.ComInputOpeningsWitness[0].Openings
+		lastOpening := openings[len(openings)-1]
+		tx.sigPrivKey = append(*senderSK, lastOpening.Bytes()...)
 
 		// encrypt coin details (Randomness)
 		// hide information of output coins except coin commitments, public key, snDerivators
