@@ -338,7 +338,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		cmOutputSum[i].X, cmOutputSum[i].Y = cmOutputValue[i].X, cmOutputValue[i].Y
 		cmOutputSum[i].X, cmOutputSum[i].Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputSND[i].X, cmOutputSND[i].Y)
 
-		cmOutputValueAll.Add(cmOutputValue[i])
+		cmOutputValueAll = *(cmOutputValueAll.Add(cmOutputValue[i]))
 		randOutputValueAll.Add(randOutputValueAll, randOutputValue[i])
 
 		/***** Build witness for proving the knowledge of output coins' Openings (value, snd, randomness) *****/
@@ -415,7 +415,22 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 // Prove creates big proof
 func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
-	proof := new(PaymentProof)
+	proof := &PaymentProof{
+		InputCoins:                  []*privacy.InputCoin{},
+		PubKeyLastByteSender:        byte(0x00),
+		OutputCoins:                 []*privacy.OutputCoin{},
+		OneOfManyProof:              []*PKOneOfManyProof{},
+		SumOutRangeProof:            &PKComZeroProof{},
+		ProductCommitmentProof:      []*PKComProductProof{},
+		ComZeroProof:                &PKComZeroProof{},
+		EqualityOfCommittedValProof: []*PKEqualityOfCommittedValProof{},
+		ComOutputOpeningsProof:      []*PKComOpeningsProof{},
+		ComOutputMultiRangeProof:    &PKComMultiRangeProof{},
+		ComInputOpeningsProof:       []*PKComOpeningsProof{},
+		ComOutputShardID:            []*privacy.EllipticPoint{},
+		ComOutputSND:                []*privacy.EllipticPoint{},
+		ComOutputValue:              []*privacy.EllipticPoint{},
+	}
 	var err error
 
 	proof.InputCoins = wit.inputCoins
@@ -443,43 +458,56 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	numInputCoins := len(wit.ComInputOpeningsWitness)
 	numOutputCoins := len(wit.ComOutputOpeningsWitness)
 
-	proof.ComInputOpeningsProof = make([]*PKComOpeningsProof, numInputCoins)
+	/*proof.ComInputOpeningsProof = make([]*PKComOpeningsProof, numInputCoins)
 	proof.ComOutputOpeningsProof = make([]*PKComOpeningsProof, numOutputCoins)
-	proof.OneOfManyProof = make([]*PKOneOfManyProof, numInputCoins)
+	proof.EqualityOfCommittedValProof = make([]*PKEqualityOfCommittedValProof, numInputCoins)
+	proof.ProductCommitmentProof = make([]*PKComProductProof, numInputCoins)
+	proof.OneOfManyProof = make([]*PKOneOfManyProof, numInputCoins)*/
 
 	for i := 0; i < numInputCoins; i++ {
 		// Proving the knowledge of input coins' Openings
-		proof.ComInputOpeningsProof[i] = new(PKComOpeningsProof)
-		proof.ComInputOpeningsProof[i], err = wit.ComInputOpeningsWitness[i].Prove()
+
+		ComInputOpeningsProof, err := wit.ComInputOpeningsWitness[i].Prove()
 		if err != nil {
 			return nil, err
 		}
+		proof.ComInputOpeningsProof = append(proof.ComInputOpeningsProof, ComInputOpeningsProof)
+		/*proof.ComInputOpeningsProof[i] = new(PKComOpeningsProof)
+		proof.ComInputOpeningsProof[i], err = wit.ComInputOpeningsWitness[i].Prove()*/
 
 		// Proving one-out-of-N commitments is a commitment to the coins being spent
-		proof.OneOfManyProof[i] = new(PKOneOfManyProof)
-		proof.OneOfManyProof[i], err = wit.OneOfManyWitness[i].Prove()
+		/*proof.OneOfManyProof[i] = new(PKOneOfManyProof)
+		proof.OneOfManyProof[i], err = wit.OneOfManyWitness[i].Prove()*/
+		OneOfManyProof, err := wit.OneOfManyWitness[i].Prove()
+		proof.OneOfManyProof = append(proof.OneOfManyProof, OneOfManyProof)
 		if err != nil {
 			return nil, err
 		}
 
 		// Proving that serial number is derived from the committed derivator
-		proof.EqualityOfCommittedValProof[i] = new(PKEqualityOfCommittedValProof)
-		proof.ProductCommitmentProof[i] = new(PKComProductProof)
-		proof.EqualityOfCommittedValProof[i] = wit.EqualityOfCommittedValWitness[i].Prove()
-		proof.ProductCommitmentProof[i], err = wit.ProductCommitmentWitness[i].Prove()
+		/*proof.EqualityOfCommittedValProof[i] = new(PKEqualityOfCommittedValProof)
+		proof.EqualityOfCommittedValProof[i] = wit.EqualityOfCommittedValWitness[i].Prove()*/
+		EqualityOfCommittedValProof := wit.EqualityOfCommittedValWitness[i].Prove()
+		proof.EqualityOfCommittedValProof = append(proof.EqualityOfCommittedValProof, EqualityOfCommittedValProof)
+		/*proof.ProductCommitmentProof[i] = new(PKComProductProof)
+		proof.ProductCommitmentProof[i], err = wit.ProductCommitmentWitness[i].Prove()*/
+		ProductCommitmentProof, err := wit.ProductCommitmentWitness[i].Prove()
 		if err != nil {
 			return nil, err
 		}
+		proof.ProductCommitmentProof = append(proof.ProductCommitmentProof, ProductCommitmentProof)
 	}
 
 	// Proving the knowledge of output coins' openings
 	for i := 0; i < numOutputCoins; i++ {
 		// Proving the knowledge of output coins' openings
-		proof.ComOutputOpeningsProof[i] = new(PKComOpeningsProof)
-		proof.ComOutputOpeningsProof[i], err = wit.ComOutputOpeningsWitness[i].Prove()
+		/*proof.ComOutputOpeningsProof[i] = new(PKComOpeningsProof)
+		proof.ComOutputOpeningsProof[i], err = wit.ComOutputOpeningsWitness[i].Prove()*/
+		ComOutputOpeningsProof, err := wit.ComOutputOpeningsWitness[i].Prove()
 		if err != nil {
 			return nil, err
 		}
+		proof.ComOutputOpeningsProof = append(proof.ComOutputOpeningsProof, ComOutputOpeningsProof)
 	}
 
 	// Proving that each output values and sum of them does not exceed v_max
