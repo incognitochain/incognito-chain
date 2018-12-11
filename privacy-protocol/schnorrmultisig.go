@@ -72,7 +72,7 @@ func (multiSig *SchnMultiSig) Bytes() []byte {
 }
 
 // SignMultiSig ...
-func (keyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicKey, listR []*EllipticPoint, r *big.Int) *SchnMultiSig {
+func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicKey, listR []*EllipticPoint, r *big.Int) *SchnMultiSig {
 	//R = R0+R1+R2+R3+...+Rn
 	R := new(EllipticPoint)
 	R.X = big.NewInt(0)
@@ -88,7 +88,7 @@ func (keyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicKey, lis
 	aggKey, C, _ := generateCommonParams(nil, listPK, R, data)
 	//recalculate a0
 	selfPK := new(EllipticPoint)
-	selfPK.Decompress(*keyset.pubKey)
+	selfPK.Decompress(*multiSigKeyset.pubKey)
 	temp := aggKey.Add(selfPK)
 	a := common.DoubleHashB(temp.Compress())
 	aInt := big.NewInt(0)
@@ -100,7 +100,7 @@ func (keyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicKey, lis
 	sig.Set(aInt)
 	sig.Mul(sig, C)
 	sig.Mod(sig, Curve.Params().N)
-	sig.Mul(sig, new(big.Int).SetBytes(*keyset.priKey))
+	sig.Mul(sig, new(big.Int).SetBytes(*multiSigKeyset.priKey))
 	sig.Mod(sig, Curve.Params().N)
 	sig.Add(sig, r)
 	sig.Mod(sig, Curve.Params().N)
