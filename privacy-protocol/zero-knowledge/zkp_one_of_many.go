@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
+	"github.com/ninjadotorg/constant/database"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -27,7 +28,7 @@ type PKOneOfManyProof struct {
 	zd             *big.Int
 	// general info
 	// just send to verifier commitmentIndexs, don't send commitments list
-	commitments []*privacy.EllipticPoint
+	//commitments []*privacy.EllipticPoint
 	commitmentIndexs []uint64
 	index       byte
 }
@@ -372,7 +373,7 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	return &proof, nil
 }
 
-func (pro *PKOneOfManyProof) Verify(commitmentsDB []*privacy.EllipticPoint) bool {
+func (pro *PKOneOfManyProof) Verify(db database.DatabaseInterface, chainId byte) bool {
 	N := len(pro.commitmentIndexs)
 	// Calculate n
 	temp := 1
@@ -383,9 +384,18 @@ func (pro *PKOneOfManyProof) Verify(commitmentsDB []*privacy.EllipticPoint) bool
 	}
 
 	// get commitments list from commitmentIndexs
-	pro.commitments = make([]*privacy.EllipticPoint, N)
+	commitments := make([]*privacy.EllipticPoint, N)
 	for i := 0; i < N; i++{
-		pro.commitments[i] = commitmentsDB[pro.commitmentIndexs[i]]
+		commitmentBytes, err := db.GetCommitmentByIndex(pro.commitmentIndexs[i], chainId)
+		if err != nil{
+			fmt.Printf("Error when verify: %v\n", err)
+			return false
+		}
+		commitments[i], err = privacy.DecompressKey(commitmentBytes)
+		if err != nil{
+			fmt.Printf("Error when verify: %v\n", err)
+			return false
+		}
 	}
 
 	//Calculate x
@@ -456,7 +466,7 @@ func (pro *PKOneOfManyProof) Verify(commitmentsDB []*privacy.EllipticPoint) bool
 			exp.Mod(exp, privacy.Curve.Params().N)
 		}
 
-		tmpPoint.X, tmpPoint.Y = privacy.Curve.ScalarMult(pro.commitments[i].X, pro.commitments[i].Y, exp.Bytes())
+		tmpPoint.X, tmpPoint.Y = privacy.Curve.ScalarMult(commitments[i].X, commitments[i].Y, exp.Bytes())
 		leftPoint3.X, leftPoint3.Y = privacy.Curve.Add(leftPoint3.X, leftPoint3.Y, tmpPoint.X, tmpPoint.Y)
 	}
 

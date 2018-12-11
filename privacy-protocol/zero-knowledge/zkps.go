@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/database"
 	"math/big"
 	"github.com/ninjadotorg/constant/common/base58"
 	"encoding/json"
@@ -547,7 +548,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	return proof, nil
 }
 
-func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commitmentsDB []*privacy.EllipticPoint) bool {
+func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db database.DatabaseInterface, chainId byte) bool {
 	// has no privacy
 	if !hasPrivacy {
 		var sumInputValue, sumOutputValue uint64
@@ -608,7 +609,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, commit
 			return false
 		}
 		// Verify for the proof one-out-of-N commitments is a commitment to the coins being spent
-		if !pro.OneOfManyProof[i].Verify(commitmentsDB) {
+		if !pro.OneOfManyProof[i].Verify(db, chainId) {
 			return false
 		}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
