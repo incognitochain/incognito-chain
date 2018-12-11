@@ -184,7 +184,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 
 	//missing flag for privacy-protocol
 	// false by default
-	inputCoins := transaction.GetInputCoins(candidateTxsMap[chainIdSender])
+	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateTxsMap[chainIdSender])
 	tx := transaction.Tx{}
 	err = tx.CreateTx(
 		&senderKey.KeySet.PrivateKey,
