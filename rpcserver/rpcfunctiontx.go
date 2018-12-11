@@ -58,7 +58,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 			PaymentAddress: pubKey.KeySet.PaymentAddress,
 		}
 
-		txsMap, err := self.config.BlockChain.GetListTxByReadonlyKey(&keySet)
+		txsMap, err := self.config.BlockChain.GetListTxByKeyset(&keySet, transaction.SortByAmount, false)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -136,7 +136,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
+	usableTxsMap, _ := self.config.BlockChain.GetListTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {

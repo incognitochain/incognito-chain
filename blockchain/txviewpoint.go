@@ -12,26 +12,26 @@ import (
 )
 
 type TxViewPoint struct {
-	chainID         byte
-	listNullifiers  [][]byte
-	listCommitments [][]byte
-	listSnD         []big.Int
-	customTokenTxs  map[int32]*transaction.TxCustomToken
+	chainID           byte
+	listSerialNumbers [][]byte
+	listCommitments   [][]byte
+	listSnD           []big.Int
+	customTokenTxs    map[int32]*transaction.TxCustomToken
 
 	// hash of best block in current
 	currentBestBlockHash common.Hash
 }
 
 /*
-ListNullifiers returns list nullifers which is contained in TxViewPoint
+ListSerialNumbers returns list nullifers which is contained in TxViewPoint
 */
 // #1: joinSplitDescType is "Coin" Or "Bond" or other token
-func (view *TxViewPoint) ListNullifiers() [][]byte {
-	return view.listNullifiers
+func (view *TxViewPoint) ListSerialNumbers() [][]byte {
+	return view.listSerialNumbers
 }
 
 /*
-ListNullifiers returns list commitments which is contained in TxViewPoint
+ListCommitments returns list commitments which is contained in TxViewPoint
 */
 // #1: joinSplitDescType is "Coin" Or "Bond"
 func (view *TxViewPoint) ListCommitments() [][]byte {
@@ -42,9 +42,9 @@ func (view *TxViewPoint) ListSnDerivators() []big.Int {
 	return view.listSnD
 }
 
-func (view *TxViewPoint) ListNullifiersEclipsePoint() []*privacy.EllipticPoint {
+func (view *TxViewPoint) ListSerialNumnbersEclipsePoint() []*privacy.EllipticPoint {
 	result := []*privacy.EllipticPoint{}
-	for _, commitment := range view.listNullifiers {
+	for _, commitment := range view.listSerialNumbers {
 		point := &privacy.EllipticPoint{}
 		point.Decompress(commitment)
 		result = append(result, point)
@@ -153,7 +153,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 
 	if len(acceptedNullifiers) > 0 {
 		for _, item := range acceptedNullifiers {
-			view.listNullifiers = append(view.listNullifiers, item)
+			view.listSerialNumbers = append(view.listSerialNumbers, item)
 		}
 	}
 	if len(acceptedCommitments) > 0 {
@@ -174,10 +174,10 @@ Create a TxNormal view point, which contains data about nullifiers and commitmen
 */
 func NewTxViewPoint(chainId byte) *TxViewPoint {
 	return &TxViewPoint{
-		chainID:         chainId,
-		listNullifiers:  make([][]byte, 0),
-		listCommitments: make([][]byte, 0),
-		listSnD:         make([]big.Int, 0),
-		customTokenTxs:  make(map[int32]*transaction.TxCustomToken, 0),
+		chainID:           chainId,
+		listSerialNumbers: make([][]byte, 0),
+		listCommitments:   make([][]byte, 0),
+		listSnD:           make([]big.Int, 0),
+		customTokenTxs:    make(map[int32]*transaction.TxCustomToken, 0),
 	}
 }

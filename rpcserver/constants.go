@@ -19,7 +19,6 @@ const (
 	GetBlockCount     = "getblockcount"
 	GetBlockHash      = "getblockhash"
 
-	ListUnspentTxByPaymentAddress       = "listunspentbypaymentaddress"
 	ListTransactions                    = "listtransactions"
 	CreateRawTransaction                = "createtransaction"
 	SendRawTransaction                  = "sendtransaction"
