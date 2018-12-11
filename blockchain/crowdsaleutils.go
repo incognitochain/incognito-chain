@@ -13,7 +13,7 @@ import (
 )
 
 // getTxTokenValue converts total tokens in a tx to Constant
-func getTxTokenValue(tokenData transaction.TxTokenData, tokenID []byte, pk []byte, prices map[string]uint64) uint64 {
+func getTxTokenValue(tokenData transaction.TxTokenData, tokenID []byte, pk []byte, prices map[string]uint64) (uint64, uint64) {
 	amount := uint64(0)
 	if bytes.Equal(tokenData.PropertyID[:], tokenID) {
 		for _, vout := range tokenData.Vouts {
@@ -22,11 +22,11 @@ func getTxTokenValue(tokenData transaction.TxTokenData, tokenID []byte, pk []byt
 			}
 		}
 	}
-	return amount * prices[string(tokenID)]
+	return amount, amount * prices[string(tokenID)]
 }
 
 // getTxValue converts total Constants in a tx to another token
-func getTxValue(tx *transaction.Tx, tokenID []byte, pk []byte, prices map[string]uint64) uint64 {
+func getTxValue(tx *transaction.Tx, tokenID []byte, pk []byte, prices map[string]uint64) (uint64, uint64) {
 	// Get amount of Constant user sent
 	value := uint64(0)
 	for _, desc := range tx.Descs {
@@ -38,7 +38,7 @@ func getTxValue(tx *transaction.Tx, tokenID []byte, pk []byte, prices map[string
 	}
 	assetPrice := prices[string(tokenID)]
 	amounts := value / assetPrice
-	return amounts
+	return value, amounts
 }
 
 func buildResponseForCoin(
