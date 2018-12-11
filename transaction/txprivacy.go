@@ -26,7 +26,6 @@ type Tx struct {
 	Sig       []byte `json:"Sig, omitempty"`       // 64 bytes
 	Proof     *zkp.PaymentProof
 
-	txId       *common.Hash
 	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 
 	// this one is a hash id of requested tx
@@ -256,10 +255,9 @@ func (tx *Tx) Init(
 	}
 
 	// sign tx
-	tx.Hash()
-	tx.SignTx(hasPrivacy)
+	err = tx.SignTx(hasPrivacy)
 
-	return nil
+	return err
 }
 
 // SignTx signs tx
