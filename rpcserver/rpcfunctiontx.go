@@ -184,11 +184,12 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 
 	//missing flag for privacy-protocol
 	// false by default
+	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateTxsMap[chainIdSender])
 	tx := transaction.Tx{}
-	err = tx.CreateTx(
+	err = tx.Init(
 		&senderKey.KeySet.PrivateKey,
 		paymentInfos,
-		candidateTxsMap[chainIdSender],
+		inputCoins,
 		realFee,
 		true,
 		*self.config.Database)
@@ -556,4 +557,9 @@ func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, c
 		return nil, errors.New("Failed to sign the custom token")
 	}
 	return hex.EncodeToString(jsSignByteArray), nil
+}
+
+func (self RpcServer) handleRandomCommitments(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// TODO 0xsirrush
+	return nil, nil
 }

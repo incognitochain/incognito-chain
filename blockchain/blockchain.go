@@ -775,10 +775,9 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 							InputCoins:                  tx.Proof.InputCoins,
 							OutputCoins:                 []*privacy.OutputCoin{},
 							PubKeyLastByteSender:        tx.Proof.PubKeyLastByteSender,
-							ComOutputValue: 							tx.Proof.ComOutputValue,
-							ComOutputSND:   							tx.Proof.ComOutputSND,
-							ComOutputShardID:  						tx.Proof.ComOutputShardID,
-
+							ComOutputValue:              tx.Proof.ComOutputValue,
+							ComOutputSND:                tx.Proof.ComOutputSND,
+							ComOutputShardID:            tx.Proof.ComOutputShardID,
 						},
 						Metadata: tx.Metadata,
 					}
@@ -833,7 +832,7 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 	return results, nil
 }
 
-func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serialNumberInDB [][]byte, keys *cashec.KeySet) transaction.Tx {
+func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, keys *cashec.KeySet) transaction.Tx {
 	tx := txInBlock.(*transaction.Tx)
 	copyTx := transaction.Tx{
 		Version:   tx.Version,
@@ -853,51 +852,27 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 			InputCoins:                  tx.Proof.InputCoins,
 			OutputCoins:                 []*privacy.OutputCoin{},
 			PubKeyLastByteSender:        tx.Proof.PubKeyLastByteSender,
-			ComOutputValue: 							tx.Proof.ComOutputValue,
-			ComOutputSND:   							tx.Proof.ComOutputSND,
-			ComOutputShardID:  						tx.Proof.ComOutputShardID,
+			ComOutputValue:              tx.Proof.ComOutputValue,
+			ComOutputSND:                tx.Proof.ComOutputSND,
+			ComOutputShardID:            tx.Proof.ComOutputShardID,
 		},
 		Metadata: tx.Metadata,
 	}
-	// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
-	isPrivacy := tx.Proof.ComInputOpeningsProof != nil
 	for _, outCoinTemp := range tx.Proof.OutputCoins {
-		if isPrivacy {
-			// have privacy-protocol
-			if len(keys.PrivateKey) == 0 || len(keys.ReadonlyKey.Rk) == 0 {
-				continue
+		pubkeyCompress := outCoinTemp.CoinDetails.PublicKey.Compress()
+		if bytes.Equal(pubkeyCompress, keys.PaymentAddress.Pk[:]) {
+			outCoin := &privacy.OutputCoin{
+				CoinDetails:          outCoinTemp.CoinDetails,
+				CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
 			}
-			err := outCoinTemp.Decrypt(keys.ReadonlyKey)
-			if err == nil {
-				outCoin := &privacy.OutputCoin{
-					CoinDetails:          outCoinTemp.CoinDetails,
-					CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
+			if len(keys.PrivateKey) > 0 || len(keys.ReadonlyKey.Rk) > 0 {
+				// try to decrypt to get more data
+				err := outCoinTemp.Decrypt(keys.ReadonlyKey)
+				if err == nil {
+					outCoin.CoinDetails = outCoinTemp.CoinDetails
 				}
-				if len(serialNumberInDB) > 0 {
-					checkCandiateSerialNumber, err := common.SliceBytesExists(serialNumberInDB, outCoin.CoinDetails.SerialNumber.Compress())
-					if err != nil || checkCandiateSerialNumber != -1 {
-						// candidate serialNumber is not existed in db
-						continue
-					}
-				}
-				copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outCoin)
 			}
-		} else {
-			pubkeyCompress := outCoinTemp.CoinDetails.PublicKey.Compress()
-			if bytes.Equal(pubkeyCompress, keys.PaymentAddress.Pk[:]) {
-				outCoin := &privacy.OutputCoin{
-					CoinDetails:          outCoinTemp.CoinDetails,
-					CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
-				}
-				if len(serialNumberInDB) > 0 {
-					checkCandiateNullifier, err := common.SliceBytesExists(serialNumberInDB, outCoinTemp.CoinDetails.SerialNumber.Compress())
-					if err != nil || checkCandiateNullifier != -1 {
-						// candidate nullifier is not existed in db
-						continue
-					}
-				}
-				copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outCoin)
-			}
+			copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outCoin)
 		}
 	}
 	return copyTx
