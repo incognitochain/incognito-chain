@@ -43,7 +43,7 @@ type Tx struct {
 
 // randomCommitmentsProcess - process list commitments and useable tx to create
 // a list commitment random which be used to create a proof for new tx
-func randomCommitmentsProcess(useableTx []*Tx, randNum int, db database.DatabaseInterface, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+func (tx *Tx) randomCommitmentsProcess(inputCoins []*privacy.InputCoin, randNum int, db database.DatabaseInterface, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
 	commitmentIndexs = []uint64{}
 	myCommitmentIndexs = []uint64{}
 	if randNum == 0 {
@@ -51,13 +51,11 @@ func randomCommitmentsProcess(useableTx []*Tx, randNum int, db database.Database
 	}
 	listCommitmentsInUsableTx := [][]byte{}
 	mapIndexCommitmentsInUsableTx := make(map[string]*big.Int)
-	for _, tx := range useableTx {
-		for _, out := range tx.Proof.OutputCoins {
-			commitment := out.CoinDetails.CoinCommitment.Compress()
-			listCommitmentsInUsableTx = append(listCommitmentsInUsableTx, commitment)
-			index, _ := db.GetCommitmentIndex(commitment, chainID)
-			mapIndexCommitmentsInUsableTx[string(commitment)] = index
-		}
+	for _, in := range inputCoins {
+		commitment := in.CoinDetails.CoinCommitment.Compress()
+		listCommitmentsInUsableTx = append(listCommitmentsInUsableTx, commitment)
+		index, _ := db.GetCommitmentIndex(commitment, chainID)
+		mapIndexCommitmentsInUsableTx[string(commitment)] = index
 	}
 	cpRandNum := (len(listCommitmentsInUsableTx) * randNum) - len(listCommitmentsInUsableTx)
 	for i := 0; i < cpRandNum; i++ {
@@ -86,23 +84,10 @@ func randomCommitmentsProcess(useableTx []*Tx, randNum int, db database.Database
 	return commitmentIndexs, myCommitmentIndexs
 }
 
-func getInputCoins(usableTx []*Tx) []*privacy.InputCoin {
-	var inputCoins []*privacy.InputCoin
-	inCoin := new(privacy.InputCoin)
-
-	for _, tx := range usableTx {
-		for _, coin := range tx.Proof.OutputCoins {
-			inCoin.CoinDetails = coin.CoinDetails
-			inputCoins = append(inputCoins, inCoin)
-		}
-	}
-	return inputCoins
-}
-
 func (tx *Tx) CreateTx(
 	senderSK *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
-	usableTx []*Tx,
+	inputCoins []*privacy.InputCoin,
 	fee uint64,
 	hasPrivacy bool,
 	db database.DatabaseInterface,
@@ -112,10 +97,7 @@ func (tx *Tx) CreateTx(
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
-	commitmentIndexs, myCommitmentIndexs = randomCommitmentsProcess(usableTx, 8, db, chainID)
-
-	inputCoins := getInputCoins(usableTx)
-	//Get input coins from usableTX
+	commitmentIndexs, myCommitmentIndexs = tx.randomCommitmentsProcess(inputCoins, 8, db, chainID)
 
 	// Print list of all input coins
 	fmt.Printf("List of all input coins before building tx:\n")
