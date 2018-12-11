@@ -52,7 +52,7 @@ const (
 	DumpPrivkey                = "dumpprivkey"
 	ImportAccount              = "importaccount"
 	RemoveAccount              = "removeaccount"
-	ListUnspent                = "listunspent"
+	ListUnspentTx              = "listunspent"
 	GetBalance                 = "getbalance"
 	GetBalanceByPrivatekey     = "getbalancebyprivatekey"
 	GetBalanceByPaymentAddress = "getbalancebypaymentaddress"

@@ -103,7 +103,7 @@ var RpcLimited = map[string]commandHandler{
 	DumpPrivkey:                RpcServer.handleDumpPrivkey,
 	ImportAccount:              RpcServer.handleImportAccount,
 	RemoveAccount:              RpcServer.handleRemoveAccount,
-	ListUnspent:                RpcServer.handleListUnspent,
+	ListUnspentTx:              RpcServer.handleListUnspentTx,
 	GetBalance:                 RpcServer.handleGetBalance,
 	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
 	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
@@ -164,18 +164,14 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 	return result, nil
 }
 
-/*
-// handleList returns a slice of objects representing the unspent wallet
-// transactions fitting the given criteria. The confirmations will be more than
-// minconf, less than maxconf and if addresses is populated only the addresses
-// contained within it will be considered.  If we know nothing about a
-// transaction an empty array will be returned.
-// params:
-Parameter #1—the minimum number of confirmations an output must have
-Parameter #2—the maximum number of confirmations an output may have
-Parameter #3—the list readonly which be used to view utxo
-*/
-func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+//handleListUnspentTx - use private key to get all tx which contains output coin of account
+// by private key, it return full tx outputcoin with amount and receiver address in txs
+//params:
+//Parameter #1—the minimum number of confirmations an output must have
+//Parameter #2—the maximum number of confirmations an output may have
+//Parameter #3—the list readonly which be used to view utxo
+//
+func (self RpcServer) handleListUnspentTx(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	result := jsonresult.ListUnspentResult{
 		ListUnspentResultItems: make(map[string]map[byte][]jsonresult.ListUnspentResultItem),
