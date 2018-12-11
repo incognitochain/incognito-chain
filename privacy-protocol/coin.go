@@ -60,7 +60,6 @@ func (coin *Coin) Bytes() []byte {
 	} else {
 		coin_bytes = append(coin_bytes, byte(0))
 	}
-
 	if coin.CoinCommitment != nil {
 		CoinCommitment := coin.CoinCommitment.Compress()
 		coin_bytes = append(coin_bytes, byte(len(CoinCommitment)))
@@ -190,6 +189,9 @@ type InputCoin struct {
 func (inputCoin *InputCoin) Bytes() []byte {
 	return inputCoin.CoinDetails.Bytes()
 }
+func (inputCoin *InputCoin) SetBytes(bytes []byte) {
+	inputCoin.CoinDetails.SetBytes(bytes)
+}
 
 type OutputCoin struct {
 	CoinDetails          *Coin
@@ -198,13 +200,16 @@ type OutputCoin struct {
 
 func (outputCoin *OutputCoin) Bytes() []byte {
 	var out_coin_bytes []byte
-	out_coin_bytes = append(out_coin_bytes, outputCoin.CoinDetails.Bytes()...)
+	out_coin_bytes = append(out_coin_bytes, byte(len(outputCoin.CoinDetailsEncrypted.Bytes()))) //112 bytes
 	out_coin_bytes = append(out_coin_bytes, outputCoin.CoinDetailsEncrypted.Bytes()...)
+	out_coin_bytes = append(out_coin_bytes, outputCoin.CoinDetails.Bytes()...)
 	return out_coin_bytes
 }
 
-func (outputCoin *OutputCoin) SetBytes() {
-
+func (outputCoin *OutputCoin) SetBytes(b []byte) {
+	length:=int(b[0])
+	outputCoin.CoinDetailsEncrypted.SetBytes(b[0:length])
+	outputCoin.CoinDetails.SetBytes(b[length:])
 }
 
 
@@ -218,6 +223,10 @@ func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() [] byte {
 	res = append(res, coinDetailsEncrypted.RandomEncrypted...)
 	res = append(res, coinDetailsEncrypted.SymKeyEncrypted...)
 	return res
+}
+func(coinDetailsEncrypted *CoinDetailsEncrypted) SetBytes(bytes []byte){
+	coinDetailsEncrypted.RandomEncrypted = bytes[0:48]
+	coinDetailsEncrypted.SymKeyEncrypted = bytes[48:48+66]
 }
 
 func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {

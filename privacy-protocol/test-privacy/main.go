@@ -1,12 +1,8 @@
 package main
 
-<<<<<<< HEAD
-import privacy "github.com/ninjadotorg/constant/privacy-protocol"
-=======
 import (
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	zkp "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
->>>>>>> f8a7a7826027403f46de9dcf9774fd206f83904f
 
 func main() {
 
@@ -236,7 +232,6 @@ func main() {
 
 	/*----------------- TEST TX SALARY -----------------*/
 
-<<<<<<< HEAD
 	// keySet := new(cashec.KeySet)
 	// spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
 	// keySet.ImportFromPrivateKey(&spendingKey)
@@ -250,59 +245,6 @@ func main() {
 	// fmt.Printf("Tx: %+v\n", tx)
 
 	// res := transaction.ValidateTxSalary(tx, db)
-=======
-	//keySetSender := new(cashec.KeySet)
-	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	//keySetSender.ImportFromPrivateKey(&spendingKey)
-	//
-	//var db database.DatabaseInterface
-	//
-	//tx, err := transaction.CreateTxSalary(10, &keySetSender.PaymentAddress, &keySetSender.PrivateKey, db)
-	//if err != nil{
-	//	fmt.Println(err)
-	//}
-	//fmt.Printf("Tx: %+v\n", tx)
-	//
-	//res := transaction.ValidateTxSalary(tx, db)
-	//
-	//fmt.Printf("Res: %v\n", res)
-
-	/*----------------- TEST TX PRIVACY -----------------*/
-	//keySetSender := new(cashec.KeySet)
-	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	//keySetSender.ImportFromPrivateKey(&spendingKey)
-	//
-	//
-	//// create payment info of receivers
-	//paymentInfo := make([]*privacy.PaymentInfo, 2)
-	//paymentAddr := make([]privacy.PaymentAddress, 2)
-	//for i:=0; i<len(paymentInfo); i++{
-	//	//generate payment address of receivers
-	//	spendingKey := privacy.GenerateSpendingKey([]byte{byte(i)})
-	//	paymentAddr[i] = *new(privacy.PaymentAddress)
-	//	paymentAddr[i] = privacy.GeneratePaymentAddress(spendingKey)
-	//
-	//	paymentInfo[i] = new(privacy.PaymentInfo)
-	//	paymentInfo[i].Amount = 1
-	//	paymentInfo[i].PaymentAddress = paymentAddr[i]
-	//}
-
-	// generates some input coins of sender
-	//inputCoins := make([]*privacy.InputCoin)
-
-
-	//tx := new(transaction.Tx)
-	//tx.CreateTx(keySetSender.PrivateKey, paymentInfo, )
-
-	//a := 0
-	//aInt := big.NewInt(int64(a))
-	//aIntBytes := aInt.Bytes()
-	//fmt.Printf("aInt: %v\n", aIntBytes)
-	//
-	//if aInt.Cmp(big.NewInt(0)) == 0{
-	//	fmt.Println("equal")
-	//}
->>>>>>> f8a7a7826027403f46de9dcf9774fd206f83904f
 
 	// fmt.Printf("Res: %v\n", res)
 
