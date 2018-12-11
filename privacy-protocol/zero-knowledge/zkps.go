@@ -73,7 +73,7 @@ func CreatePaymentProof() *PaymentProof {
 		ComZeroProof:                &PKComZeroProof{},
 		EqualityOfCommittedValProof: []*PKEqualityOfCommittedValProof{},
 		ComOutputOpeningsProof:      []*PKComOpeningsProof{},
-		ComOutputMultiRangeProof:    &PKComMultiRangeProof{},
+		ComOutputMultiRangeProof:    CreatePKComMultiRangeProof(),
 		ComInputOpeningsProof:       []*PKComOpeningsProof{},
 		ComOutputShardID:            []*privacy.EllipticPoint{},
 		ComOutputSND:                []*privacy.EllipticPoint{},
