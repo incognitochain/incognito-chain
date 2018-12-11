@@ -396,7 +396,7 @@ func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
 // - Verify tx signature
 // - Verify the payment proof
 // - Check double spending
-func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface) bool {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte) bool {
 	// Verify tx signature
 	var valid bool
 	var err error
@@ -435,7 +435,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	}
 
 	// Verify the payment proof
-	valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db)
+	valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db, chainId)
 	if valid == false {
 		fmt.Printf("Error verifying the payment proof")
 		return false

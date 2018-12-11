@@ -73,21 +73,22 @@ func (pro *PKOneOfManyProof) Set(
 
 func (pro *PKOneOfManyProof) Bytes() []byte {
 	// N = 2^n
-	N := len(pro.commitmentIndexs)
-	temp := 1
-	n := 0
-	for temp < N {
-		temp = temp << 1
-		n++
-	}
+	N := privacy.CMRingSize
+	n := privacy.CMRingSizeExp
+	//temp := 1
+	//n := 0
+	//for temp < N {
+	//	temp = temp << 1
+	//	n++
+	//}
 
 	var bytes []byte
 	nBytes := 0
 
-	// save N to the first byte
-	bytes = append(bytes, byte(N))
-	// save n to the second byte
-	bytes = append(bytes, byte(n))
+	//// save N to the first byte
+	//bytes = append(bytes, byte(N))
+	//// save n to the second byte
+	//bytes = append(bytes, byte(n))
 
 	// convert array cl to bytes array
 	for i := 0; i < n; i++ {
@@ -153,12 +154,15 @@ func (pro *PKOneOfManyProof) Bytes() []byte {
 
 // SetBytes convert from bytes array to PKOneOfManyProof
 func (pro *PKOneOfManyProof) SetBytes(bytes []byte) {
-	// get N
-	N := int(bytes[0])
-	// get n
-	n := int(bytes[1])
+	//// get N
+	//N := int(bytes[0])
+	//// get n
+	//n := int(bytes[1])
+	// N = 2^n
+	N := privacy.CMRingSize
+	n := privacy.CMRingSizeExp
 
-	offset := 2
+	offset := 0
 
 	// get cl array
 	pro.cl = make([]*privacy.EllipticPoint, n)
@@ -233,18 +237,18 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	// Check the number of Commitment list's elements
 
 	N := len(wit.commitments)
-	temp := 1
-	n := 0
-	for temp < N {
-		temp = temp << 1
-		n++
-	}
+	//temp := 1
+	//n := 0
+	//for temp < N {
+	//	temp = temp << 1
+	//	n++
+	//}
 
-	if temp != N {
+	if N != privacy.CMRingSize {
 		return nil, fmt.Errorf("the number of Commitment list's elements must be equal to CMRingSize")
 	}
 
-	//n := privacy.CMRingSizeExp
+	n := privacy.CMRingSizeExp
 
 	// Check indexIsZero
 	if wit.indexIsZero > uint64(N) || wit.indexIsZero < 0 {
@@ -376,12 +380,17 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 func (pro *PKOneOfManyProof) Verify(db database.DatabaseInterface, chainId byte) bool {
 	N := len(pro.commitmentIndexs)
 	// Calculate n
-	temp := 1
-	n := 0
-	for temp < N {
-		temp = temp << 1
-		n++
+	//temp := 1
+	//n := 0
+	//for temp < N {
+	//	temp = temp << 1
+	//	n++
+	//}
+	if N != privacy.CMRingSize {
+		fmt.Errorf("the number of Commitment list's elements must be equal to CMRingSize")
+		return false
 	}
+	n := privacy.CMRingSizeExp
 
 	// get commitments list from commitmentIndexs
 	commitments := make([]*privacy.EllipticPoint, N)
