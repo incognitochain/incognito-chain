@@ -293,7 +293,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			RPCLimitUser:    cfg.RPCLimitUser,
 			RPCLimitPass:    cfg.RPCLimitPass,
 			DisableAuth:     cfg.RPCDisableAuth,
-			IsGenerateNode:  cfg.Generate,
+			//IsGenerateNode:  cfg.Generate,
 			FeeEstimator:    self.feeEstimator,
 			ProtocolVersion: self.protocolVersion,
 		}

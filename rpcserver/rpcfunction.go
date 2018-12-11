@@ -462,23 +462,25 @@ func (self RpcServer) handleGetConnectionCount(params interface{}, closeChan <-c
 handleGetGenerate - RPC returns true if the node is set to generate blocks using its CPU
 */
 func (self RpcServer) handleGetGenerate(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	return self.config.IsGenerateNode, nil
+	// return self.config.IsGenerateNode, nil
+	return false, nil
 }
 
 /*
 handleGetMiningInfo - RPC returns various mining-related info
 */
 func (self RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	if !self.config.IsGenerateNode {
-		return nil, NewRPCError(ErrUnexpected, errors.New("Not mining"))
-	}
-	chainId := byte(int(params.(float64)))
-	result := jsonresult.GetMiningInfoResult{}
-	result.Blocks = uint64(self.config.BlockChain.BestState[chainId].BestBlock.Header.Height + 1)
-	result.PoolSize = self.config.TxMemPool.Count()
-	result.Chain = self.config.ChainParams.Name
-	result.CurrentBlockTx = len(self.config.BlockChain.BestState[chainId].BestBlock.Transactions)
-	return result, nil
+	// TODO update code to new consensus
+	// if !self.config.IsGenerateNode {
+	// 	return nil, NewRPCError(ErrUnexpected, errors.New("Not mining"))
+	// }
+	// chainId := byte(int(params.(float64)))
+	// result := jsonresult.GetMiningInfoResult{}
+	// result.Blocks = uint64(self.config.BlockChain.BestState[chainId].BestBlock.Header.Height + 1)
+	// result.PoolSize = self.config.TxMemPool.Count()
+	// result.Chain = self.config.ChainParams.Name
+	// result.CurrentBlockTx = len(self.config.BlockChain.BestState[chainId].BestBlock.Transactions)
+	return jsonresult.GetMiningInfoResult{}, nil
 }
 
 /*

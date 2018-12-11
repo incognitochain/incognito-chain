@@ -3,12 +3,13 @@ package blockchain
 import (
 	"time"
 
+	"log"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"log"
 )
 
 type GenesisBlockGenerator struct {
@@ -279,7 +280,7 @@ func createSpecialTokenTx(
 	return result
 }
 
-func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
+func (self GenesisBlockGenerator) CreateGenesisBlock(
 	version int,
 	preSelectValidators []string,
 	icoParams IcoParams,

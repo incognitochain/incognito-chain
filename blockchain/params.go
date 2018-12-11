@@ -1,9 +1,5 @@
 package blockchain
 
-import (
-	"time"
-)
-
 /*
 Params defines a network by its params. These params may be used by Applications
 to differentiate network as well as addresses and keys for one network
@@ -21,40 +17,6 @@ type Params struct {
 
 	// GenesisBlock defines the first block of the chain.
 	GenesisBlock *Block
-
-	// SubsidyReductionInterval is the interval of blocks before the subsidy
-	// is reduced.
-	SubsidyReductionInterval int32
-
-	// TargetTimespan is the desired amount of time that should elapse
-	// before the block difficulty requirement is examined to determine how
-	// it should be changed in order to maintain the desired block
-	// generation rate.
-	TargetTimespan time.Duration
-
-	// TargetTimePerBlock is the desired amount of time to generate each
-	// block.
-	TargetTimePerBlock time.Duration
-
-	// RetargetAdjustmentFactor is the adjustment factor used to limit
-	// the minimum and maximum amount of adjustment that can occur between
-	// difficulty retargets.
-	RetargetAdjustmentFactor int64
-
-	// ReduceMinDifficulty defines whether the network should reduce the
-	// minimum required difficulty after a long enough period of time has
-	// passed without finding a block.  This is really only useful for test
-	// networks and should not be set on a main network.
-	ReduceMinDifficulty bool
-
-	// MinDiffReductionTime is the amount of time after which the minimum
-	// required difficulty should be reduced when a block hasn't been found.
-	//
-	// NOTE: This only applies if ReduceMinDifficulty is true.
-	MinDiffReductionTime time.Duration
-
-	// GenerateSupported specifies whether or not CPU mining is allowed.
-	GenerateSupported bool
 }
 
 type IcoParams struct {
@@ -75,6 +37,7 @@ var icoParamsMainnet = IcoParams{
 	InitialDCBToken:       MainnetInitDCBToken,
 	InitialGOVToken:       MainnetInitGovToken,
 }
+
 // MainNetParams defines the network parameters for the main coin network.
 var MainNetParams = Params{
 	Name:        MainetName,
@@ -82,7 +45,7 @@ var MainNetParams = Params{
 	DefaultPort: MainnetDefaultPort,
 
 	// blockChain parameters
-	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, preSelectValidatorsMainnet, icoParamsMainnet, 0, 0),
+	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlock(1, preSelectValidatorsMainnet, icoParamsMainnet, 0, 0),
 }
 
 var preSelectValidatorsTestnet = []string{
@@ -116,6 +79,7 @@ var icoParamsTestnet = IcoParams{
 	InitialDCBToken:       TestnetInitDCBToken,
 	InitialGOVToken:       TestnetInitGovToken,
 }
+
 // TestNetParams defines the network parameters for the test coin network.
 var TestNetParams = Params{
 	Name:        TestnetName,
@@ -123,5 +87,5 @@ var TestNetParams = Params{
 	DefaultPort: TestnetDefaultPort,
 
 	// blockChain parameters
-	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlockPoSParallel(1, preSelectValidatorsTestnet, icoParamsTestnet, 1000, 1000),
+	GenesisBlock: GenesisBlockGenerator{}.CreateGenesisBlock(1, preSelectValidatorsTestnet, icoParamsTestnet, 1000, 1000),
 }
