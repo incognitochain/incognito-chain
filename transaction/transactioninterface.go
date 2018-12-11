@@ -10,7 +10,7 @@ import (
 // Interface for all type of transaction
 type Transaction interface {
 	Hash() *common.Hash
-	ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface) bool
+	ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainID byte) bool
 	GetType() string
 	GetTxVirtualSize() uint64
 	GetSenderAddrLastByte() byte

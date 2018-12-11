@@ -891,7 +891,7 @@ func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, blo
 	for _, txInBlock := range txsInBlock {
 		if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
 			// copyTx ONLY contains commitment which relate to keys
-			copyTx := self.DecryptTxByKey(txInBlock, nullifiersInDb, keys)
+			copyTx := self.DecryptTxByKey(txInBlock, keys)
 			if len(copyTx.Proof.OutputCoins) > 0 {
 				if !returnFullTx {
 					// only return copy tx which contain unspent commitment which relate with private key
@@ -952,7 +952,7 @@ func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType
 				if err != nil {
 					return nil, NewBlockChainError(UnExpectedError, errors.New("json.Unmarshal"))
 				}
-				copyTx := self.DecryptTxByKey(&tx, nullifiersInDb, &keys)
+				copyTx := self.DecryptTxByKey(&tx, &keys)
 				results[chainID] = append(results[chainID], copyTx)
 			}
 		}
