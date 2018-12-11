@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strconv"
 	"github.com/ninjadotorg/constant/database/lvdb"
+	"math/big"
 )
 
 const (
@@ -870,6 +871,11 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, keys *
 				err := outCoinTemp.Decrypt(keys.ReadonlyKey)
 				if err == nil {
 					outCoin.CoinDetails = outCoinTemp.CoinDetails
+					outCoin.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(keys.PrivateKey), outCoin.CoinDetails.SNDerivator)
+					ok, err := self.config.DataBase.HasSerialNumber(outCoin.CoinDetails.SerialNumber.Compress(), 14)
+					if ok || err != nil {
+						continue
+					}
 				}
 			}
 			copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outCoin)
@@ -880,7 +886,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, keys *
 
 // GetListUnspentTxByKeysetInBlock - fetch block to get unspent tx commitment which privatekey can use it
 // return a list tx which contain commitment which can be used
-func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, block *Block, nullifiersInDb [][]byte, returnFullTx bool) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, block *Block, returnFullTx bool) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx)
 
 	chainId := block.Header.ChainID
@@ -924,17 +930,6 @@ func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 
-	// get list nullifiers from db to check spending
-	nullifiersInDb := make([][]byte, 0)
-	for _, bestState := range self.BestState {
-		bestBlock := bestState.BestBlock
-		chainId := bestBlock.Header.ChainID
-		txViewPoint, err := self.FetchTxViewPoint(chainId)
-		if err != nil {
-			return nil, err
-		}
-		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
-	}
 	if self.config.Light {
 		// Get unspent tx with light mode
 		fullTxs, err := self.config.DataBase.GetTransactionLightModeByPrivateKey(&keyset.PrivateKey)
@@ -970,7 +965,7 @@ func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType
 		for blockHeight > 0 {
 			var err1 error
 			// fetch block to get tx
-			resultsInChain, err1 := self.GetListUnspentTxByKeysetInBlock(keyset, block, nullifiersInDb, false)
+			resultsInChain, err1 := self.GetListUnspentTxByKeysetInBlock(keyset, block, false)
 			if err1 != nil {
 				// unlock chain
 				//self.chainLock.Unlock()
