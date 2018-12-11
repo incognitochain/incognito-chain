@@ -254,6 +254,7 @@ func TestMultiSig() {
 		}(i)
 	}
 	wg.Wait()
+
 	aggSig := CombineMultiSig(Sig)
 	for i := 0; i < Numbs; i++ {
 		R = R.Add(RTest[i])

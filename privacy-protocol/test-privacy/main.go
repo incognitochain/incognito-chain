@@ -1,5 +1,9 @@
 package main
 
+import (
+	zkp "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+)
+
 func main() {
 
 	// fmt.Printf("N: %X\n", privacy-protocol.Curve.Params().N)
