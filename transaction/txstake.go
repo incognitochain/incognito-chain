@@ -36,10 +36,9 @@ func (tx *Tx) CreateStakeTx(
 	senderSK *privacy.SpendingKey,
 	usableTx []*Tx,
 	fee uint64,
-	commitmentsDB [][]byte,
 	db database.DatabaseInterface,
 ) error {
-	err := tx.CreateTx(senderSK, stakingInfo, usableTx, fee, commitmentsDB, false, db)
+	err := tx.CreateTx(senderSK, stakingInfo, usableTx, fee, false, db)
 	tx.Metadata = stakeTx{flag: "stake"}
 	if err != nil {
 		return err
