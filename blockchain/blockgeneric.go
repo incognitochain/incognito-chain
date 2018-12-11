@@ -24,9 +24,6 @@ type BlockHeaderGeneric struct {
 	// Hash of the previous block header in the block chain.
 	PrevBlockHash common.Hash `json:"PrevBlockHash"`
 
-	// Merkle tree reference to hash of all transactions for the block.
-	MerkleRoot common.Hash `json:"MerkleRoot"`
-
 	//Block Height
 	Height int32 `json:"Height"`
 
@@ -43,6 +40,13 @@ type BlockV2 struct {
 
 	Header BlockHeaderV2
 	Body   BlockBodyV2
+}
+
+func (self *BlockV2) Hash() common.Hash {
+	record := common.EmptyString
+	record += self.self.Header.Hash().String() + string(self.AggregatedSig) + string(self.ValidatorsIdx) + string(self.ProducerSig) + self.Type
+
+	return common.DoubleHashH([]byte(record))
 }
 
 func (self *BlockV2) UnmarshalJSON(data []byte) error {
@@ -82,9 +86,8 @@ func (self *BlockV2) UnmarshalJSON(data []byte) error {
 		}
 		self.Body = blkBody
 	case "shard":
-		type AliasHeader BlockHeaderShard
-		blkHeader := &AliasHeader{}
-		err := json.Unmarshal(*tempBlk.Header, &blkHeader)
+		blkHeader := &BlockHeaderShard{}
+		err := blkHeader.UnmarshalJSON(*tempBlk.Header)
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
 		}
