@@ -43,7 +43,7 @@ type Tx struct {
 
 // randomCommitmentsProcess - process list commitments and useable tx to create
 // a list commitment random which be used to create a proof for new tx
-func (tx *Tx) randomCommitmentsProcess(inputCoins []*privacy.InputCoin, randNum int, db database.DatabaseInterface, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+func (tx *Tx) randomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, db database.DatabaseInterface, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
 	commitmentIndexs = []uint64{}
 	myCommitmentIndexs = []uint64{}
 	if randNum == 0 {
@@ -51,7 +51,7 @@ func (tx *Tx) randomCommitmentsProcess(inputCoins []*privacy.InputCoin, randNum 
 	}
 	listUsableCommitments := [][]byte{}
 	mapIndexCommitmentsInUsableTx := make(map[string]*big.Int)
-	for _, in := range inputCoins {
+	for _, in := range usableInputCoins {
 		usableCommitment := in.CoinDetails.CoinCommitment.Compress()
 		listUsableCommitments = append(listUsableCommitments, usableCommitment)
 		index, _ := db.GetCommitmentIndex(usableCommitment, chainID)
