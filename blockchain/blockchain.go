@@ -963,7 +963,7 @@ func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType
 	if self.config.Light {
 		// Get unspent tx with light mode
 		fullTxs, err := self.config.DataBase.GetTransactionLightModeByPrivateKey(&keyset.PrivateKey)
-		common.Logger.log.Infof("UTXO lightmode %+v", fullTxs)
+		// common.Logger.Infof("UTXO lightmode %+v", fullTxs)
 		if err != nil {
 			return nil, err
 		}
