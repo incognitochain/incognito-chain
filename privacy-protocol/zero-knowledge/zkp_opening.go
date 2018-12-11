@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -11,14 +12,16 @@ import (
 
 // PKComOpeningsProof contains PoK
 type PKComOpeningsProof struct {
-	commitmentValue *privacy.EllipticPoint //statement
+	commitmentValue *privacy.EllipticPoint 	//statement
+	indexs    			[]byte									//statement
 	alpha           *privacy.EllipticPoint
 	gamma           []*big.Int
 }
 
 // PKComOpeningsWitness contains witnesses which are used for generate proof
 type PKComOpeningsWitness struct {
-	commitmentValue *privacy.EllipticPoint //statement
+	commitmentValue *privacy.EllipticPoint 	//statement
+	indexs    			[]byte									//statement
 	Openings        []*big.Int
 }
 
@@ -29,30 +32,32 @@ func (wit *PKComOpeningsWitness) randValue(testcase bool) {
 		wit.Openings[i], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
 	}
 	wit.commitmentValue = privacy.PedCom.CommitAll(wit.Openings)
+	wit.indexs = []byte{privacy.SK, privacy.VALUE, privacy.SND, privacy.SHARDID, privacy.RAND}
 }
 
 // Set dosomethings
 func (wit *PKComOpeningsWitness) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
-	openings []*big.Int) {
-	if wit == nil {
-		wit = new(PKComOpeningsWitness)
-	}
+	openings []*big.Int,
+	indexs []byte) {
 	wit.commitmentValue = commitmentValue
 	wit.Openings = openings
+	wit.indexs = indexs
 }
 
 // Set dosomethings
 func (pro *PKComOpeningsProof) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
 	alpha *privacy.EllipticPoint,
-	gamma []*big.Int) {
+	gamma []*big.Int,
+	indexs []byte) {
 	if pro == nil {
 		pro = new(PKComOpeningsProof)
 	}
 	pro.commitmentValue = commitmentValue
 	pro.alpha = alpha
 	pro.gamma = gamma
+	pro.indexs = indexs
 }
 
 func (pro *PKComOpeningsProof) Bytes() []byte {
@@ -98,18 +103,19 @@ func (wit *PKComOpeningsWitness) Prove() (*PKComOpeningsProof, error) {
 	alpha.X = big.NewInt(0)
 	alpha.Y = big.NewInt(0)
 	beta := GenerateChallengeFromPoint([]*privacy.EllipticPoint{wit.commitmentValue})
-	gamma := make([]*big.Int, privacy.PedCom.Capacity)
-	var gPowR privacy.EllipticPoint
-	for i := 0; i < privacy.PedCom.Capacity; i++ {
+	gamma := make([]*big.Int, len(wit.Openings))
+	//var gPowR privacy.EllipticPoint
+	gPowR := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
+	for i := 0; i < len(wit.Openings); i++ {
 		rRand, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
-		gPowR.X, gPowR.Y = privacy.Curve.ScalarMult(privacy.PedCom.G[i].X, privacy.PedCom.G[i].Y, rRand.Bytes())
+		gPowR.X, gPowR.Y = privacy.Curve.ScalarMult(privacy.PedCom.G[wit.indexs[i]].X, privacy.PedCom.G[wit.indexs[i]].Y, rRand.Bytes())
 		alpha.X, alpha.Y = privacy.Curve.Add(alpha.X, alpha.Y, gPowR.X, gPowR.Y)
 		gamma[i] = big.NewInt(0).Mul(wit.Openings[i], beta)
 		gamma[i] = gamma[i].Add(gamma[i], rRand)
 		gamma[i] = gamma[i].Mod(gamma[i], privacy.Curve.Params().N)
 	}
 	proof := new(PKComOpeningsProof)
-	proof.Set(wit.commitmentValue, alpha, gamma)
+	proof.Set(wit.commitmentValue, alpha, gamma, wit.indexs)
 	return proof, nil
 }
 
@@ -123,20 +129,23 @@ func (pro *PKComOpeningsProof) Verify() bool {
 	leftPoint.X = big.NewInt(0)
 	leftPoint.Y = big.NewInt(0)
 	var gPowR privacy.EllipticPoint
-	for i := 0; i < privacy.PedCom.Capacity; i++ {
-		gPowR.X, gPowR.Y = privacy.Curve.ScalarMult(privacy.PedCom.G[i].X, privacy.PedCom.G[i].Y, pro.gamma[i].Bytes())
+	for i := 0; i < len(pro.gamma); i++ {
+		gPowR.X, gPowR.Y = privacy.Curve.ScalarMult(privacy.PedCom.G[pro.indexs[i]].X, privacy.PedCom.G[pro.indexs[i]].Y, pro.gamma[i].Bytes())
 		leftPoint.X, leftPoint.Y = privacy.Curve.Add(leftPoint.X, leftPoint.Y, gPowR.X, gPowR.Y)
 	}
 	return leftPoint.IsEqual(rightPoint)
 }
 
-//func TestOpeningsProtocol() bool {
-//	witness := new(PKComOpeningsWitness)
-//	witness.randValue(true)
-//	proof, _ := witness.Prove()
-//	for i := 0; i < len(proof.gamma); i++ {
-//		fmt.Println(len(proof.gamma[i].Bytes()))
-//	}
-//	//fmt.Println(len(proof.Bytes()))
-//	return proof.Verify()
-//}
+func TestOpeningsProtocol() bool {
+	witness := new(PKComOpeningsWitness)
+	witness.randValue(true)
+	fmt.Printf("Witness: %+v\n", witness)
+	proof, _ := witness.Prove()
+	for i := 0; i < len(proof.gamma); i++ {
+		fmt.Println(len(proof.gamma[i].Bytes()))
+	}
+	//fmt.Println(len(proof.Bytes()))
+	res := proof.Verify()
+	fmt.Println(res)
+	return res
+}
