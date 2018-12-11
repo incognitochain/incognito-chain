@@ -193,7 +193,7 @@ func (self RpcServer) handleListUnspentTxByPrivatekey(params interface{}, closeC
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		txsMap, err := self.config.BlockChain.GetListUnspentTxByKeyset(&key.KeySet, transaction.NoSort, false)
+		txsMap, err := self.config.BlockChain.GetListTxByKeyset(&key.KeySet, transaction.NoSort, false)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -351,7 +351,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
+	usableTxsMap, _ := self.config.BlockChain.GetListTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
