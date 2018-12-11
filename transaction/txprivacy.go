@@ -325,7 +325,7 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		}
 
 		// convert signature to byte array
-		tx.Sig = ECDSASigToByteArray(r, s)
+		tx.Sig = common.ECDSASigToByteArray(r, s)
 	}
 
 	return nil
@@ -371,7 +371,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		verKey.Curve = privacy.Curve
 
 		// convert signature from byte array to ECDSASign
-		r, s := FromByteArrayToECDSASig(tx.Sig)
+		r, s := common.FromByteArrayToECDSASig(tx.Sig)
 
 		// verify signature
 		res = ecdsa.Verify(verKey, tx.Hash()[:], r, s)
