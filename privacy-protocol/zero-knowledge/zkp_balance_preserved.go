@@ -23,9 +23,33 @@ type PKComMultiRangeProof struct {
 	IPP     InnerProdArg
 	maxExp  byte
 	// challenges
-	Cy 		 *big.Int
-	Cz 		 *big.Int
-	Cx 		 *big.Int
+	Cy *big.Int
+	Cz *big.Int
+	Cx *big.Int
+}
+
+func CreatePKComMultiRangeProof() *PKComMultiRangeProof {
+	return &PKComMultiRangeProof{
+		Counter: byte(0x00),
+		Comms:   []*privacy.EllipticPoint{},
+		A:       new(privacy.EllipticPoint),
+		S:       new(privacy.EllipticPoint),
+		T1:      new(privacy.EllipticPoint),
+		T2:      new(privacy.EllipticPoint),
+		Tau:     new(big.Int),
+		Th:      new(big.Int),
+		Mu:      new(big.Int),
+		IPP: InnerProdArg{
+			A:          new(big.Int),
+			B:          new(big.Int),
+			Challenges: []*big.Int{},
+			L:          []*privacy.EllipticPoint{},
+			R:          []*privacy.EllipticPoint{},
+		},
+		Cx: new(big.Int),
+		Cy: new(big.Int),
+		Cz: new(big.Int),
+	}
 }
 
 type PKComMultiRangeWitness struct {
@@ -35,11 +59,11 @@ type PKComMultiRangeWitness struct {
 	maxExp byte
 }
 
-func (pro PKComMultiRangeProof) Bytes() []byte{
+func (pro PKComMultiRangeProof) Bytes() []byte {
 	var res []byte
 	res = append(res, pro.Counter)
 	res = append(res, pro.maxExp)
-	for i:=0;i<int(pro.Counter);i++{
+	for i := 0; i < int(pro.Counter); i++ {
 		//fmt.Println(pro.Comms[i])
 		res = append(res, pro.Comms[i].Compress()...)
 
@@ -60,47 +84,47 @@ func (pro PKComMultiRangeProof) Bytes() []byte{
 
 }
 func (pro *PKComMultiRangeProof) SetBytes(proofbytes []byte) {
-	pro.Counter =  proofbytes[0]
-	pro.maxExp  =  proofbytes[1]
-	pro.Comms = make([]*privacy.EllipticPoint,pro.Counter)
-	offset:=2
-	for i:=0;i<int(pro.Counter);i++{
+	pro.Counter = proofbytes[0]
+	pro.maxExp = proofbytes[1]
+	pro.Comms = make([]*privacy.EllipticPoint, pro.Counter)
+	offset := 2
+	for i := 0; i < int(pro.Counter); i++ {
 		pro.Comms[i] = new(privacy.EllipticPoint)
 		pro.Comms[i].Decompress(proofbytes[offset:])
 		//fmt.Println(pro.Comms[i])
-		offset+=privacy.CompressedPointSize
+		offset += privacy.CompressedPointSize
 	}
 	pro.A = new(privacy.EllipticPoint)
 	pro.A.Decompress(proofbytes[offset:])
-	offset+=privacy.CompressedPointSize
+	offset += privacy.CompressedPointSize
 	pro.S = new(privacy.EllipticPoint)
 	pro.S.Decompress(proofbytes[offset:])
-	offset+=privacy.CompressedPointSize
+	offset += privacy.CompressedPointSize
 	pro.T1 = new(privacy.EllipticPoint)
 	pro.T1.Decompress(proofbytes[offset:])
-	offset+=privacy.CompressedPointSize
+	offset += privacy.CompressedPointSize
 	pro.T2 = new(privacy.EllipticPoint)
 	pro.T2.Decompress(proofbytes[offset:])
-	offset+=privacy.CompressedPointSize
+	offset += privacy.CompressedPointSize
 	pro.Tau = new(big.Int)
 	pro.Tau.SetBytes(proofbytes[offset:offset+32])
-	offset+=32
+	offset += 32
 	pro.Th = new(big.Int)
 	pro.Th.SetBytes(proofbytes[offset:offset+32])
-	offset+=32
+	offset += 32
 	pro.Mu = new(big.Int)
 	pro.Mu.SetBytes(proofbytes[offset:offset+32])
-	offset+=32
+	offset += 32
 	pro.Cx = new(big.Int)
 	pro.Cx.SetBytes(proofbytes[offset:offset+32])
-	offset+=32
+	offset += 32
 	pro.Cy = new(big.Int)
 	pro.Cy.SetBytes(proofbytes[offset:offset+32])
-	offset+=32
+	offset += 32
 	pro.Cz = new(big.Int)
 	pro.Cz.SetBytes(proofbytes[offset:offset+32])
-	offset+=32
-	end:=len(proofbytes)
+	offset += 32
+	end := len(proofbytes)
 	pro.IPP.SetBytes(proofbytes[offset:end])
 }
 func (pro *PKComMultiRangeProof) Print() {
@@ -119,7 +143,6 @@ func (pro *PKComMultiRangeProof) Print() {
 	fmt.Println(pro.Cz)
 	fmt.Println(pro.Cx)
 }
-
 
 func pad(l int) int {
 	deg := 0
@@ -147,7 +170,7 @@ func InitCommonParams(l int, maxExp byte) {
 	RangeProofParams = NewECPrimeGroupKey(VecLength)
 }
 func (wit *PKComMultiRangeWitness) Set(v []*big.Int, maxExp byte) {
-	if wit == nil{
+	if wit == nil {
 		wit = new(PKComMultiRangeWitness)
 	}
 	l := pad(len(v) + 1)
