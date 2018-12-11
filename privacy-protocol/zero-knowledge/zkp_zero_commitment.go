@@ -48,6 +48,9 @@ Verify:
 )
 */
 
+func (pro *PKComZeroProof) Init() {
+}
+
 // randValue return random witness value for testing
 func (wit *PKComZeroWitness) randValue(testcase bool) {
 	switch testcase {

@@ -25,6 +25,9 @@ type PKComOpeningsWitness struct {
 	Openings        []*big.Int
 }
 
+func (pro * PKComOpeningsProof) Init()  {
+}
+
 // randValue return random witness value for testing
 func (wit *PKComOpeningsWitness) randValue(testcase bool) {
 	wit.Openings = make([]*big.Int, privacy.PedCom.Capacity)
