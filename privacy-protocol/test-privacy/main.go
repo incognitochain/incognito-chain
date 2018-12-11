@@ -4,11 +4,9 @@ package main
 import privacy "github.com/ninjadotorg/constant/privacy-protocol"
 =======
 import (
-	"crypto/rand"
-	"fmt"
-	"math/big"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
->>>>>>> 04e82173bd5468413903f9c0c4bd0adc411c94d6
+>>>>>>> f8a7a7826027403f46de9dcf9774fd206f83904f
 
 func main() {
 
@@ -68,6 +66,8 @@ func main() {
 	//zkp.TestPKOneOfMany()
 
 	//zkp.TestPKComMultiRange()
+
+	zkp.TestOpeningsProtocol()
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -172,7 +172,7 @@ func main() {
 	/*----------------- TEST SIGNATURE -----------------*/
 	//privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
-	privacy.TestMultiSig()
+	//privacy.TestMultiSig()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
 	//for i :=0; i<1000; i++{
@@ -302,13 +302,7 @@ func main() {
 	//if aInt.Cmp(big.NewInt(0)) == 0{
 	//	fmt.Println("equal")
 	//}
-
-	for true{
-		res, _ := rand.Int(rand.Reader, big.NewInt(10))
-
-		fmt.Println(res)
-	}
->>>>>>> 04e82173bd5468413903f9c0c4bd0adc411c94d6
+>>>>>>> f8a7a7826027403f46de9dcf9774fd206f83904f
 
 	// fmt.Printf("Res: %v\n", res)
 

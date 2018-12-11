@@ -99,31 +99,29 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 }
 
 // CreateTxCustomToken ...
-func CreateTxCustomToken(senderKey *privacy.SpendingKey,
+func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
-	usableTx []*Tx,
+	inputCoin []*privacy.InputCoin,
 	fee uint64,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
-) (*TxCustomToken, error) {
+) (error) {
 	// create normal txCustomToken
 	normalTx := Tx{}
-	err := normalTx.CreateTx(senderKey,
+	err := normalTx.Init(senderKey,
 		paymentInfo,
-		usableTx,
+		inputCoin,
 		fee,
 		true,
 		nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// override txCustomToken type
 	normalTx.Type = common.TxCustomTokenType
 
-	txCustomToken := &TxCustomToken{
-		Tx:          normalTx,
-		TxTokenData: TxTokenData{},
-	}
+	txCustomToken.Tx = normalTx
+	txCustomToken.TxTokenData = TxTokenData{}
 
 	var handled = false
 
@@ -152,12 +150,12 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 			txCustomToken.TxTokenData.Vouts = VoutsTemp
 			hashInitToken, err := txCustomToken.TxTokenData.Hash()
 			if err != nil {
-				return nil, errors.New("Can't handle this TokenTxType")
+				return errors.New("Can't handle this TokenTxType")
 			}
 			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
 				if hashInitToken.String() == customTokenID.String() {
-					return nil, errors.New("This token is existed in network")
+					return errors.New("This token is existed in network")
 				}
 			}
 			txCustomToken.TxTokenData.PropertyID = *hashInitToken
@@ -196,9 +194,9 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 	}
 
 	if handled != true {
-		return nil, errors.New("Can't handle this TokenTxType")
+		return errors.New("Can't handle this TokenTxType")
 	}
-	return txCustomToken, nil
+	return nil
 }
 
 func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset cashec.KeySet) ([]byte, error) {
