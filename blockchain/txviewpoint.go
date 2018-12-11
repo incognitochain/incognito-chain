@@ -155,9 +155,13 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		for _, item := range acceptedNullifiers {
 			view.listNullifiers = append(view.listNullifiers, item)
 		}
+	}
+	if len(acceptedCommitments) > 0 {
 		for _, item := range acceptedCommitments {
 			view.listCommitments = append(view.listCommitments, item)
 		}
+	}
+	if len(acceptedSnD) > 0 {
 		for _, item := range acceptedSnD {
 			view.listSnD = append(view.listSnD, item)
 		}

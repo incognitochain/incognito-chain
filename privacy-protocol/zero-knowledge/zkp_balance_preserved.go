@@ -147,6 +147,9 @@ func InitCommonParams(l int, maxExp byte) {
 	RangeProofParams = NewECPrimeGroupKey(VecLength)
 }
 func (wit *PKComMultiRangeWitness) Set(v []*big.Int, maxExp byte) {
+	if wit == nil{
+		wit = new(PKComMultiRangeWitness)
+	}
 	l := pad(len(v) + 1)
 	wit.Values = make([]*big.Int, l)
 	for i := 0; i < l; i++ {

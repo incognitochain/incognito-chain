@@ -400,27 +400,13 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		}
 	}
 
-	// get merkleroot commitments, nullifers db, commitments db for every chain
-	nullifiersDb := make(map[byte]([][]byte))
-	commitmentsDb := make(map[byte]([][]byte))
-	merkleRootCommitments := make(map[byte]*common.Hash)
-	for chainId, _ := range candidateTxsMap {
-		//merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
-		// get tx view point
-		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
-		commitmentsDb[chainId] = txViewPoint.ListCommitments()
-	}
-
 	// get list custom token
 	listCustomTokens, err := self.config.BlockChain.ListCustomToken()
 
 	tx, err := transaction.CreateTxCustomToken(
 		&senderKey.KeySet.PrivateKey,
 		nil,
-		merkleRootCommitments,
 		candidateTxsMap[chainIdSender],
-		commitmentsDb[chainIdSender],
 		realFee,
 		tokenParams,
 		listCustomTokens,
