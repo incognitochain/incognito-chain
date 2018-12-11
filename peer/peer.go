@@ -26,6 +26,7 @@ import (
 // ConnState represents the state of the requested connection.
 type ConnState uint8
 
+var MAX_RETRIES_CHECK_HASH_MESSAGE = 5
 var HEAVY_MESSAGE_SIZE = 512 * 1024
 var SPAM_MESSAGE_SIZE = 50 * 1024 * 1024
 var MESSAGE_HASH_POOL_SIZE = 1000
@@ -638,7 +639,7 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.Pretty())
 	peerConn.updateConnState(ConnCanceled)
 	self.RemovePeerConn(peerConn)
-	if peerConn.IsOutbound {
+	if peerConn.IsOutbound && !peerConn.IsForceClose {
 		go self.retryPeerConnection(peerConn)
 	}
 
@@ -700,4 +701,24 @@ func (self *Peer) renewPeerConnection() {
 		Logger.log.Infof("*end - Creating peer conn to %d pending peers", len(self.PendingPeers))
 		self.pendingPeersMutex.Unlock()
 	}
+}
+
+func (self *Peer) ClosePeerConnsOfShard(shard byte) {
+	for _, peerConn := range self.PeerConns {
+		sh := self.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
+		if sh != nil && *sh == shard {
+			peerConn.ForceClose()
+		}
+	}
+}
+
+func (self *Peer) CountPeerConnOfShard(shard byte) int {
+	c := 0
+	for _, peerConn := range self.PeerConns {
+		sh := self.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
+		if sh != nil && *sh == shard {
+			c++
+		}
+	}
+	return c
 }

@@ -19,6 +19,10 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
+var MAX_PEERS_SAME_SHARD = 10
+var MAX_PEERS_OTHER_SHARD = 2
+var MAX_PEERS_OTHER = 100
+
 // ConnState represents the state of the requested connection.
 type ConnState uint8
 
@@ -39,6 +43,9 @@ type ConnManager struct {
 	Config Config
 
 	ListeningPeers map[libpeer.ID]*peer.Peer
+
+	CurrentShard *byte
+	OtherShards  []byte
 }
 
 type Config struct {
@@ -435,18 +442,9 @@ listen:
 					}
 				}
 				// connect to same shard
-				shard := self.Config.GetCurrentShard()
-				if shard != nil {
-					samePeers := self.getRandPeersOfShard(*shard, 10, mPeers)
-					for _, rawPeer := range samePeers {
-						go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
-					}
-				}
+				self.connectRandPeersOfShard(self.CurrentShard, MAX_PEERS_SAME_SHARD, mPeers)
 				// connect to other shard
-				otherPeers := self.getRandPeersOfOtherShard(shard, 10, 2, mPeers)
-				for _, rawPeer := range otherPeers {
-					go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
-				}
+				self.connectRandPeersOfOtherShard(self.CurrentShard, MAX_PEERS_OTHER_SHARD, MAX_PEERS_OTHER, mPeers)
 			}
 		}
 		time.Sleep(time.Second * 60)
@@ -477,8 +475,33 @@ func (self *ConnManager) getPeerIdsFromPublicKey(pubKey string) []libpeer.ID {
 	return result
 }
 
+func (self *ConnManager) countPeerConnByShard(shard *byte) int {
+	if shard == nil {
+		return 0
+	}
+	c := 0
+	for _, listener := range self.Config.ListenerPeers {
+		c += listener.CountPeerConnOfShard(*shard)
+	}
+	return c
+}
+
+func (self *ConnManager) checkPeerConnByPbk(pubKey string) bool {
+	for _, listener := range self.Config.ListenerPeers {
+		for _, peerConn := range listener.PeerConns {
+			if peerConn.RemotePeer.PublicKey == pubKey {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (self *ConnManager) getRandPeersOfShard(shard byte, maxPeers int, mPeers map[string]*wire.RawPeer) []*wire.RawPeer {
 	retPs := make([]*wire.RawPeer, 0)
+	if maxPeers <= 0 {
+		return retPs
+	}
 	pbks := self.Config.GetPbksOfShard(shard)
 	for len(pbks) > 0 {
 		randN := common.RandInt() % len(pbks)
@@ -486,7 +509,10 @@ func (self *ConnManager) getRandPeersOfShard(shard byte, maxPeers int, mPeers ma
 		pbks = append(pbks[:randN], pbks[randN+1:]...)
 		peerI, ok := mPeers[pbk]
 		if ok {
-			retPs = append(retPs, peerI)
+			// if existed conn then not append to array
+			if !self.checkPeerConnByPbk(pbk) {
+				retPs = append(retPs, peerI)
+			}
 			if len(retPs) > maxPeers {
 				return retPs
 			}
@@ -499,7 +525,8 @@ func (self *ConnManager) getRandPeersOfOtherShard(shard *byte, maxShards int, ma
 	retPs := make([]*wire.RawPeer, 0)
 	randShards := self.getRandShards(shard, maxShards)
 	for _, randShard := range randShards {
-		randPeers := self.getRandPeersOfShard(randShard, maxShardPeers, mPeers)
+		cPeerShard := self.countPeerConnByShard(&randShard)
+		randPeers := self.getRandPeersOfShard(randShard, maxShardPeers-cPeerShard, mPeers)
 		retPs = append(retPs, randPeers...)
 	}
 	return retPs
@@ -524,4 +551,49 @@ func (self *ConnManager) getRandShards(shard *byte, maxShards int) []byte {
 		shardsRet = shardBytes
 	}
 	return shardsRet
+}
+
+func (self *ConnManager) closePeerConnOfShard(shard byte) {
+	for _, listener := range self.Config.ListenerPeers {
+		listener.ClosePeerConnsOfShard(shard)
+	}
+}
+
+func (self *ConnManager) connectRandPeersOfShard(shard *byte, maxPeers int, mPeers map[string]*wire.RawPeer) int {
+	if shard == nil {
+		return 0
+	}
+	countPeerShard := self.countPeerConnByShard(shard)
+	pBKs := self.Config.GetPbksOfShard(*shard)
+	for len(pBKs) > 0 {
+		randN := common.RandInt() % len(pBKs)
+		pbk := pBKs[randN]
+		pBKs = append(pBKs[:randN], pBKs[randN+1:]...)
+		peerI, ok := mPeers[pbk]
+		if ok {
+			// if existed conn then not append to array
+			if !self.checkPeerConnByPbk(pbk) {
+				go self.Connect(peerI.RawAddress, peerI.PublicKey)
+				countPeerShard ++
+			}
+			if countPeerShard >= maxPeers {
+				return countPeerShard
+			}
+		}
+	}
+	return countPeerShard
+}
+
+func (self *ConnManager) connectRandPeersOfOtherShard(cShard *byte, maxShardPeers int, maxPeers int, mPeers map[string]*wire.RawPeer) int {
+	countPeer := 0
+	for _, shard := range self.OtherShards {
+		if cShard != nil && *cShard != shard {
+			cPeer := self.connectRandPeersOfShard(&shard, maxShardPeers, mPeers)
+			countPeer += cPeer
+			if countPeer >= maxPeers {
+				return countPeer
+			}
+		}
+	}
+	return countPeer
 }

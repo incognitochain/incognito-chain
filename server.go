@@ -973,3 +973,17 @@ func (self *Server) GetCurrentShard() *byte {
 func (self *Server) GetPbksOfShard(shard byte) []string {
 	return []string{}
 }
+
+func (self *Server) getCurrentShardInfoByPbk() (*byte, string) {
+	ret := byte(0x00)
+	return &ret, ""
+}
+
+func (self *Server) getShardInfoByPbk(pbk string) (*byte, string) {
+	ret := byte(0x00)
+	return &ret, ""
+}
+
+func (self *Server) shardChanged(oldShard *byte, newShard *byte) {
+	// update shard connection, random peers, drop peers and new peers
+}
