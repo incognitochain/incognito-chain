@@ -160,13 +160,13 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, comOutputShardID...)
 	}
 	// PubKeyLastByteSender
-	proofbytes = append(proofbytes, byte(1))
+	//proofbytes = append(proofbytes, byte(1))
 	proofbytes = append(proofbytes, paymentProof.PubKeyLastByteSender)
 
 	return proofbytes
 }
 
-func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
+func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	offset := 0
 	// Set ComInputOpeningsProof
 	lenComInputOpeningsProofArray := int(proofbytes[offset])
@@ -266,11 +266,50 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 		offset += lenOutputCoin
 	}
 	//ComOutputValue   []*privacy.EllipticPoint
+	lenComOutputValueArray := int(proofbytes[offset])
+	offset += 1
+	paymentProof.ComOutputValue = make([]*privacy.EllipticPoint, lenComOutputValueArray)
+	for i := 0; i < lenComOutputValueArray; i++ {
+		lenComOutputValue := int(proofbytes[offset])
+		offset += 1
+		paymentProof.ComOutputValue[i] = new(privacy.EllipticPoint)
+		paymentProof.ComOutputValue[i], err = privacy.DecompressKey(proofbytes[offset:offset+lenComOutputValue])
+		if err != nil{
+			return err
+		}
+		offset += lenComOutputValue
+	}
 	//ComOutputSND     []*privacy.EllipticPoint
+	lenComOutputSNDArray := int(proofbytes[offset])
+	offset += 1
+	paymentProof.ComOutputSND = make([]*privacy.EllipticPoint, lenComOutputSNDArray)
+	for i := 0; i < lenComOutputSNDArray; i++ {
+		lenComOutputValue := int(proofbytes[offset])
+		offset += 1
+		paymentProof.ComOutputSND[i] = new(privacy.EllipticPoint)
+		paymentProof.ComOutputSND[i], err = privacy.DecompressKey(proofbytes[offset:offset+lenComOutputValue])
+		if err != nil{
+			return err
+		}
+		offset += lenComOutputValue
+	}
 	//ComOutputShardID []*privacy.EllipticPoint
-	//
+	lenComOutputShardIdArray := int(proofbytes[offset])
+	offset += 1
+	paymentProof.ComOutputShardID = make([]*privacy.EllipticPoint, lenComOutputShardIdArray)
+	for i := 0; i < lenComOutputShardIdArray; i++ {
+		lenComOutputShardId := int(proofbytes[offset])
+		offset += 1
+		paymentProof.ComOutputShardID[i] = new(privacy.EllipticPoint)
+		paymentProof.ComOutputShardID[i], err = privacy.DecompressKey(proofbytes[offset:offset+lenComOutputShardId])
+		if err != nil{
+			return err
+		}
+		offset += lenComOutputShardId
+	}
 	//PubKeyLastByteSender byte
-	// Set InputCoin
+	paymentProof.PubKeyLastByteSender = proofbytes[offset]
+	return nil
 
 }
 
