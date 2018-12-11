@@ -18,7 +18,11 @@ func (self BlkTmplGeneratorNew) Init(txPool TxPool, chain *BlockChain, rewardAge
 	}, nil
 }
 
-func (blockgen *BlkTmplGeneratorNew) NewBlockTemplate(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, chainID byte, blockType string) (*BlockV2, error) {
+// func (self *BlkTmplGeneratorNew) NewBlockShard() (*BlockV2, error) {
+// 	return
+// }
+
+func (blockgen *BlkTmplGeneratorNew) NewBlockTemplate(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, chainID byte) (*BlockV2, error) {
 
 	// 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 	// 	prevBlockHash := blockgen.chain.BestState[chainID].BestBlock.Hash()
