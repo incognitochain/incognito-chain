@@ -33,7 +33,7 @@ type PKOneOfManyProof struct {
 	index       byte
 }
 
-func (pro * PKOneOfManyProof) Init()  {
+func (pro * PKOneOfManyProof) Init() * PKOneOfManyProof {
 }
 
 // Set sets Witness

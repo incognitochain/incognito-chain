@@ -59,13 +59,12 @@ type PKComMultiRangeWitness struct {
 	maxExp byte
 }
 
-func (pro * PKComMultiRangeProof) Init(){
+func (pro * PKComMultiRangeProof) Init() * PKComMultiRangeProof{
 
 }
 
 func (pro PKComMultiRangeProof) Bytes() []byte {
 	var res []byte
-	if
 
 	res = append(res, pro.Counter)
 	res = append(res, pro.maxExp)

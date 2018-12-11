@@ -186,6 +186,11 @@ type InputCoin struct {
 	CoinDetails *Coin
 }
 
+func (inputCoin *InputCoin) Init() *InputCoin {
+	//Todo:
+	return inputCoin
+}
+
 func (inputCoin *InputCoin) Bytes() []byte {
 	return inputCoin.CoinDetails.Bytes()
 }
@@ -193,9 +198,15 @@ func (inputCoin *InputCoin) SetBytes(bytes []byte) {
 	inputCoin.CoinDetails.SetBytes(bytes)
 }
 
+
 type OutputCoin struct {
 	CoinDetails          *Coin
 	CoinDetailsEncrypted *CoinDetailsEncrypted
+}
+
+func (outputCoin *OutputCoin) Init() *OutputCoin {
+	//Todo:
+	return outputCoin
 }
 
 func (outputCoin *OutputCoin) Bytes() []byte {

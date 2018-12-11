@@ -25,7 +25,7 @@ type PKComOpeningsWitness struct {
 	Openings        []*big.Int
 }
 
-func (pro * PKComOpeningsProof) Init()  {
+func (pro * PKComOpeningsProof) Init() * PKComOpeningsProof {
 }
 
 // randValue return random witness value for testing

@@ -25,7 +25,7 @@ type PKEqualityOfCommittedValWitness struct {
 	X     []*big.Int
 }
 
-func (pro * PKEqualityOfCommittedValProof) Init()  {
+func (pro * PKEqualityOfCommittedValProof) Init() * PKEqualityOfCommittedValProof {
 	//return &PKEqualityOfCommittedValProof{
 	//	C: 			[]*privacy.EllipticPoint{},
 	//	Index: 	[]byte{},
@@ -143,7 +143,7 @@ func (wit *PKEqualityOfCommittedValWitness) Prove() *PKEqualityOfCommittedValPro
 		t[i].X, t[i].Y = privacy.Curve.Add(privacy.PedCom.G[wit.Index[i]].X, privacy.PedCom.G[wit.Index[i]].Y, privacy.PedCom.G[privacy.PedCom.Capacity-1].X, privacy.PedCom.G[privacy.PedCom.Capacity-1].Y)
 		t[i].X, t[i].Y = privacy.Curve.ScalarMult(t[i].X, t[i].Y, wRand.Bytes())
 	}
-	proof := new(PKEqualityOfCommittedValProof)
+	proof := new(PKEqualityOfCommittedValProof).Init()
 	proof.Set(wit.C, wit.Index, t, z)
 	return proof
 }

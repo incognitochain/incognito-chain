@@ -48,13 +48,14 @@ func (wit *PKComProductWitness) Set(
 	*wit.cmB = *cmB
 	wit.index = *idx
 }
-func (pro *PKComProductProof) Init() {
+func (pro *PKComProductProof) Init() * PKComProductProof {
 	pro.D = new(privacy.EllipticPoint)
 	pro.E = new(privacy.EllipticPoint)
 	pro.f = new(big.Int)
 	pro.z = new(big.Int)
 	pro.cmA = new(privacy.EllipticPoint)
 	pro.cmB = new(privacy.EllipticPoint)
+	return pro
 }
 
 func (pro *PKComProductProof) Print() {

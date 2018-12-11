@@ -48,7 +48,7 @@ Verify:
 )
 */
 
-func (pro *PKComZeroProof) Init() {
+func (pro *PKComZeroProof) Init() *PKComZeroProof {
 }
 
 // randValue return random witness value for testing
