@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
@@ -73,29 +74,19 @@ func buildResponseForCoin(
 	return txToken, nil
 }
 
-func buildResponseForToken(
-	txRequest *transaction.TxCustomToken,
-	tokens uint64,
-	tokenID []byte,
-	rt []byte,
-	chainID byte,
-	unspentTokenMap map[string]([]transaction.TxTokenVout),
-	saleID []byte,
-	mint bool,
-) (*transaction.TxCustomToken, error) {
+func transferTxToken(tokenAmount uint64, unspentTxTokenOuts []transaction.TxTokenVout, tokenID, receiverPk []byte) (*transaction.TxCustomToken, int, error) {
 	sumTokens := uint64(0)
 	usedID := 0
-	unspentTxTokenOuts := unspentTokenMap[string(tokenID)]
 	for _, out := range unspentTxTokenOuts {
 		usedID += 1
 		sumTokens += out.Value
-		if sumTokens >= tokens {
+		if sumTokens >= tokenAmount {
 			break
 		}
 	}
 
-	if sumTokens < tokens {
-		return nil, fmt.Errorf("Not enough bond to pay")
+	if sumTokens < tokenAmount {
+		return nil, 0, fmt.Errorf("Not enough tokens to pay in this block")
 	}
 
 	txTokenIns := []transaction.TxTokenVin{}
@@ -112,16 +103,74 @@ func buildResponseForToken(
 	}
 	txTokenOuts := []transaction.TxTokenVout{
 		transaction.TxTokenVout{
-			PaymentAddress: privacy.PaymentAddress{Pk: txRequest.Tx.JSPubKey}, // TODO(@0xbunyip): send to payment address
-			Value:          tokens,
+			PaymentAddress: privacy.PaymentAddress{Pk: receiverPk}, // TODO(@0xbunyip): send to payment address
+			Value:          tokenAmount,
 		},
 	}
-	if sumTokens > tokens {
+	if sumTokens > tokenAmount {
 		accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 		txTokenOuts = append(txTokenOuts, transaction.TxTokenVout{
 			PaymentAddress: accountDCB.KeySet.PaymentAddress,
-			Value:          sumTokens - tokens,
+			Value:          sumTokens - tokenAmount,
 		})
+	}
+
+	propertyID := common.Hash{}
+	copy(propertyID[:], tokenID)
+	txToken := &transaction.TxCustomToken{
+		TxTokenData: transaction.TxTokenData{
+			Type:       transaction.CustomTokenTransfer,
+			Amount:     sumTokens,
+			PropertyID: propertyID,
+			Vins:       txTokenIns,
+			Vouts:      txTokenOuts,
+		},
+	}
+	return txToken, usedID, nil
+}
+
+func mintTxToken(tokenAmount uint64, tokenID, receiverPk []byte) *transaction.TxCustomToken {
+	txTokenOuts := []transaction.TxTokenVout{
+		transaction.TxTokenVout{
+			PaymentAddress: privacy.PaymentAddress{Pk: receiverPk}, // TODO(@0xbunyip): send to payment address
+			Value:          tokenAmount,
+		},
+	}
+	propertyID := common.Hash{}
+	copy(propertyID[:], tokenID)
+	txToken := &transaction.TxCustomToken{
+		TxTokenData: transaction.TxTokenData{
+			Type:       transaction.CustomTokenInit,
+			Amount:     tokenAmount,
+			PropertyID: propertyID,
+			Vins:       []transaction.TxTokenVin{},
+			Vouts:      txTokenOuts,
+		},
+	}
+	return txToken
+}
+
+func buildResponseForToken(
+	txRequest *transaction.TxCustomToken,
+	tokenAmount uint64,
+	tokenID []byte,
+	rt []byte,
+	chainID byte,
+	unspentTokenMap map[string]([]transaction.TxTokenVout),
+	saleID []byte,
+	mint bool,
+) (*transaction.TxCustomToken, error) {
+	unspentTxTokenOuts := unspentTokenMap[string(tokenID)]
+	var txToken *transaction.TxCustomToken
+	usedID := -1
+	err := errors.New("")
+	if mint {
+		txToken = mintTxToken(tokenAmount, tokenID, txRequest.Tx.JSPubKey)
+	} else {
+		txToken, usedID, err = transferTxToken(tokenAmount, unspentTxTokenOuts, tokenID, txRequest.Tx.JSPubKey)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	metaRes := &metadata.CrowdsaleResponse{
@@ -131,16 +180,11 @@ func buildResponseForToken(
 	hash := txRequest.Hash()
 	copy(metaRes.RequestedTxID[:], hash[:])
 	copy(metaRes.SaleID, saleID)
-	txToken := &transaction.TxCustomToken{
-		TxTokenData: transaction.TxTokenData{
-			Type:  transaction.CustomTokenTransfer,
-			Vins:  txTokenIns,
-			Vouts: txTokenOuts,
-		},
-	}
 	txToken.Metadata = metaRes
 
 	// Update list of token available for next request
-	unspentTokenMap[string(tokenID)] = unspentTxTokenOuts[usedID:]
+	if usedID >= 0 && !mint {
+		unspentTokenMap[string(tokenID)] = unspentTxTokenOuts[usedID:]
+	}
 	return txToken, nil
 }
