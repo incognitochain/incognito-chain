@@ -42,6 +42,7 @@ const (
 	GetListCustomTokenBalance           = "getlistcustomtokenbalance"
 	GetLoanParams                       = "loanparams"
 	GetBlockHeader                      = "getheader"
+	RandomCommitments                   = "randomcommitments"
 
 	// Wallet rpc cmd
 	ListAccounts               = "listaccounts"

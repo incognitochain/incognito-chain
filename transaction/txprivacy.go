@@ -17,17 +17,19 @@ import (
 )
 
 type Tx struct {
+	// Basic data
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
 
+	// Sign and Privacy proof
 	SigPubKey []byte `json:"SigPubKey, omitempty"` // 33 bytes
 	Sig       []byte `json:"Sig, omitempty"`       // 64 bytes
 	Proof     *zkp.PaymentProof
 
-	txId       *common.Hash
-	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+	// Metadata
+	Metadata interface{}
 
 	// this one is a hash id of requested tx
 	// and is used inside response txs
@@ -35,15 +37,12 @@ type Tx struct {
 	// for example, BuySellRequestTx/BuySellResponseTx
 	//RequestedTxID *common.Hash
 
-	// temp variable to validate tx
-	//snDerivators []*big.Int
-
-	Metadata interface{}
+	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 }
 
 // randomCommitmentsProcess - process list commitments and useable tx to create
 // a list commitment random which be used to create a proof for new tx
-func (tx *Tx) randomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, db database.DatabaseInterface, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+func (tx *Tx) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, db database.DatabaseInterface, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
 	commitmentIndexs = []uint64{}
 	myCommitmentIndexs = []uint64{}
 	if randNum == 0 {
@@ -85,6 +84,10 @@ func (tx *Tx) randomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, ra
 	return commitmentIndexs, myCommitmentIndexs
 }
 
+// Init - init value for tx from inputcoin(old output coin from old tx)
+// create new outputcoin and build privacy proof
+// if not want to create a privacy tx proof, set hashPrivacy = false
+// database is used like an interface which use to query info from db in building tx
 func (tx *Tx) Init(
 	senderSK *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
@@ -98,7 +101,7 @@ func (tx *Tx) Init(
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
-	commitmentIndexs, myCommitmentIndexs = tx.randomCommitmentsProcess(inputCoins, 8, db, chainID)
+	commitmentIndexs, myCommitmentIndexs = tx.RandomCommitmentsProcess(inputCoins, 8, db, chainID)
 
 	// Print list of all input coins
 	fmt.Printf("List of all input coins before building tx:\n")
@@ -256,13 +259,12 @@ func (tx *Tx) Init(
 	}
 
 	// sign tx
-	tx.Hash()
-	tx.SignTx(hasPrivacy)
+	err = tx.SignTx(hasPrivacy)
 
-	return nil
+	return err
 }
 
-// SignTx signs tx
+// SignTx - signs tx
 func (tx *Tx) SignTx(hasPrivacy bool) error {
 	//Check input transaction
 	if tx.Sig != nil {
@@ -323,7 +325,7 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		}
 
 		// convert signature to byte array
-		tx.Sig = ECDSASigToByteArray(r, s)
+		tx.Sig = common.ECDSASigToByteArray(r, s)
 	}
 
 	return nil
@@ -369,27 +371,13 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		verKey.Curve = privacy.Curve
 
 		// convert signature from byte array to ECDSASign
-		r, s := FromByteArrayToECDSASig(tx.Sig)
+		r, s := common.FromByteArrayToECDSASig(tx.Sig)
 
 		// verify signature
 		res = ecdsa.Verify(verKey, tx.Hash()[:], r, s)
 	}
 
 	return res, nil
-}
-
-// ECDSASigToByteArray converts signature to byte array
-func ECDSASigToByteArray(r, s *big.Int) (sig []byte) {
-	sig = append(sig, r.Bytes()...)
-	sig = append(sig, s.Bytes()...)
-	return
-}
-
-// FromByteArrayToECDSASig converts a byte array to signature
-func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
-	r = new(big.Int).SetBytes(sig[0:32])
-	s = new(big.Int).SetBytes(sig[32:64])
-	return
 }
 
 // ValidateTransaction returns true if transaction is valid:

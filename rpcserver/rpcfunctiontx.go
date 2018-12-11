@@ -558,3 +558,8 @@ func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, c
 	}
 	return hex.EncodeToString(jsSignByteArray), nil
 }
+
+func (self RpcServer) handleRandomCommitments(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	// TODO 0xsirrush
+	return nil, nil
+}
