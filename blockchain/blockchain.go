@@ -310,7 +310,7 @@ Uses an existing database to update the set of used tx by saving list nullifier 
 this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
-	for _, item1 := range view.listNullifiers {
+	for _, item1 := range view.listSerialNumbers {
 		err := self.config.DataBase.StoreSerialNumbers(item1, view.chainID)
 		if err != nil {
 			return err
@@ -584,7 +584,7 @@ func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 	if err != nil {
 		return nil, err
 	}
-	view.listNullifiers = nullifiers
+	view.listSerialNumbers = nullifiers
 	snDerivators, err := self.config.DataBase.FetchSNDerivator(chainId)
 	if err != nil {
 		return nil, err

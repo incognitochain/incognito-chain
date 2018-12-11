@@ -77,7 +77,7 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 	for chainId, _ := range candidateTxsMap {
 		// get tx view point
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
+		nullifiersDb[chainId] = txViewPoint.ListSerialNumbers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
 	/*tx, err := transaction.CreateTxLoanRequest(transaction.FeeArgs{
@@ -221,7 +221,7 @@ func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan 
 		//merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
 		// get tx view point
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
+		nullifiersDb[chainId] = txViewPoint.ListSerialNumbers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
 	/*tx, err := transaction.CreateTxLoanResponse(transaction.FeeArgs{
@@ -363,7 +363,7 @@ func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan 
 		//merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
 		// get tx view point
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
+		nullifiersDb[chainId] = txViewPoint.ListSerialNumbers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
 	//tx, err := transaction.CreateTxLoanWithdraw(transaction.FeeArgs{
@@ -505,7 +505,7 @@ func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <
 		//merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
 		// get tx view point
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
+		nullifiersDb[chainId] = txViewPoint.ListSerialNumbers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
 	/*tx, err := transaction.CreateTxLoanPayment(transaction.FeeArgs{
