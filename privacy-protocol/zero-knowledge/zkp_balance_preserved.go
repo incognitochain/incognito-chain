@@ -59,14 +59,19 @@ type PKComMultiRangeWitness struct {
 	maxExp byte
 }
 
+func (pro * PKComMultiRangeProof) Init(){
+
+}
+
 func (pro PKComMultiRangeProof) Bytes() []byte {
 	var res []byte
+	if
+
 	res = append(res, pro.Counter)
 	res = append(res, pro.maxExp)
 	for i := 0; i < int(pro.Counter); i++ {
 		//fmt.Println(pro.Comms[i])
 		res = append(res, pro.Comms[i].Compress()...)
-
 	}
 	res = append(res, pro.A.Compress()...)
 	res = append(res, pro.S.Compress()...)
@@ -84,6 +89,7 @@ func (pro PKComMultiRangeProof) Bytes() []byte {
 
 }
 func (pro *PKComMultiRangeProof) SetBytes(proofbytes []byte) {
+
 	pro.Counter = proofbytes[0]
 	pro.maxExp = proofbytes[1]
 	pro.Comms = make([]*privacy.EllipticPoint, pro.Counter)

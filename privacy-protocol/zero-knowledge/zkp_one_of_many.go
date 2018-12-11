@@ -33,6 +33,9 @@ type PKOneOfManyProof struct {
 	index       byte
 }
 
+func (pro * PKOneOfManyProof) Init()  {
+}
+
 // Set sets Witness
 func (wit *PKOneOfManyWitness) Set(
 	commitments []*privacy.EllipticPoint,
