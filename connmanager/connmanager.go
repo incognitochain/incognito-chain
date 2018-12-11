@@ -17,6 +17,7 @@ import (
 	"github.com/ninjadotorg/constant/peer"
 	"github.com/ninjadotorg/constant/wire"
 	"github.com/ninjadotorg/constant/common"
+	"math"
 )
 
 var MAX_PEERS_SAME_SHARD = 10
@@ -442,9 +443,9 @@ listen:
 					}
 				}
 				// connect to same shard
-				self.connectRandPeersOfShard(self.CurrentShard, MAX_PEERS_SAME_SHARD, mPeers)
+				self.handleRandPeersOfShard(self.CurrentShard, MAX_PEERS_SAME_SHARD, mPeers)
 				// connect to other shard
-				self.connectRandPeersOfOtherShard(self.CurrentShard, MAX_PEERS_OTHER_SHARD, MAX_PEERS_OTHER, mPeers)
+				self.handleRandPeersOfOtherShard(self.CurrentShard, MAX_PEERS_OTHER_SHARD, MAX_PEERS_OTHER, mPeers)
 			}
 		}
 		time.Sleep(time.Second * 60)
@@ -559,7 +560,7 @@ func (self *ConnManager) closePeerConnOfShard(shard byte) {
 	}
 }
 
-func (self *ConnManager) connectRandPeersOfShard(shard *byte, maxPeers int, mPeers map[string]*wire.RawPeer) int {
+func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeers map[string]*wire.RawPeer) int {
 	if shard == nil {
 		return 0
 	}
@@ -584,16 +585,19 @@ func (self *ConnManager) connectRandPeersOfShard(shard *byte, maxPeers int, mPee
 	return countPeerShard
 }
 
-func (self *ConnManager) connectRandPeersOfOtherShard(cShard *byte, maxShardPeers int, maxPeers int, mPeers map[string]*wire.RawPeer) int {
-	countPeer := 0
+func (self *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers int, maxPeers int, mPeers map[string]*wire.RawPeer) int {
+	countPeers := 0
 	for _, shard := range self.OtherShards {
 		if cShard != nil && *cShard != shard {
-			cPeer := self.connectRandPeersOfShard(&shard, maxShardPeers, mPeers)
-			countPeer += cPeer
-			if countPeer >= maxPeers {
-				return countPeer
+			if countPeers < maxPeers {
+				mP := int(math.Min(float64(maxShardPeers), float64(maxPeers-countPeers)))
+				cPeer := self.handleRandPeersOfShard(&shard, mP, mPeers)
+				countPeers += cPeer
 			}
 		}
+		if countPeers >= maxPeers {
+			self.closePeerConnOfShard(shard)
+		}
 	}
-	return countPeer
+	return countPeers
 }
