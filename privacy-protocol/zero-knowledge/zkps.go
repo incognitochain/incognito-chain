@@ -52,8 +52,8 @@ type PaymentProof struct {
 	ComZeroProof *PKComZeroProof
 	// add list input coins' SN to proof for serial number
 	// these following attributes just exist when tx doesn't have privacy
-	OutputCoins []*privacy.OutputCoin
 	InputCoins  []*privacy.InputCoin
+	OutputCoins []*privacy.OutputCoin
 
 	ComOutputValue   []*privacy.EllipticPoint
 	ComOutputSND     []*privacy.EllipticPoint
@@ -117,25 +117,51 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, comOutputOpeningsProof...)
 	}
 	// ComOutputMultiRangeProof
-	/*proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputMultiRangeProof.Bytes())))
-	proofbytes = append(proofbytes, paymentProof.ComOutputMultiRangeProof.Bytes()...)
+	comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
+	proofbytes = append(proofbytes, byte(len(comOutputMultiRangeProof)))
+	proofbytes = append(proofbytes, comOutputMultiRangeProof...)
 	// ComZeroProof
-	proofbytes = append(proofbytes, byte(len(paymentProof.ComZeroProof.Bytes())))
-	proofbytes = append(proofbytes, paymentProof.ComZeroProof.Bytes()...)
-*///	OutputCoins
-	/*proofbytes = append(proofbytes, byte(len(paymentProof.OutputCoins)))
-	for i := 0; i < len(paymentProof.OutputCoins); i++ {
-		proofbytes = append(proofbytes, paymentProof.OutputCoins[i].Bytes()...)
-	}
-	//	InputCoins
+	comZeroProof := paymentProof.ComZeroProof.Bytes()
+	proofbytes = append(proofbytes, byte(len(comZeroProof)))
+	proofbytes = append(proofbytes, comZeroProof...)
+	// InputCoins
 	proofbytes = append(proofbytes, byte(len(paymentProof.InputCoins)))
 	for i := 0; i < len(paymentProof.InputCoins); i++ {
-		proofbytes = append(proofbytes, paymentProof.InputCoins[i].Bytes()...)
+		inputCoins := paymentProof.InputCoins[i].Bytes()
+		proofbytes = append(proofbytes, byte(len(inputCoins)))
+		proofbytes = append(proofbytes, inputCoins...)
 	}
-	//
-
-
-	proofbytes = append(proofbytes, byte(len(paymentProof.ComInputSK)))*/
+	// OutputCoins
+	proofbytes = append(proofbytes, byte(len(paymentProof.OutputCoins)))
+	for i := 0; i < len(paymentProof.OutputCoins); i++ {
+		outputCoins := paymentProof.OutputCoins[i].Bytes()
+		proofbytes = append(proofbytes, byte(len(outputCoins)))
+		proofbytes = append(proofbytes, outputCoins...)
+	}
+	// ComOutputValue
+	proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputValue)))
+	for i := 0; i < len(paymentProof.ComOutputValue); i++ {
+		comOutputValue := paymentProof.ComOutputValue[i].Compress()
+		proofbytes = append(proofbytes, byte(len(comOutputValue)))
+		proofbytes = append(proofbytes, comOutputValue...)
+	}
+	// ComOutputSND
+	proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputSND)))
+	for i := 0; i < len(paymentProof.ComOutputSND); i++ {
+		comOutputSND := paymentProof.ComOutputSND[i].Compress()
+		proofbytes = append(proofbytes, byte(len(comOutputSND)))
+		proofbytes = append(proofbytes, comOutputSND...)
+	}
+	// ComOutputShardID
+	proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputShardID)))
+	for i := 0; i < len(paymentProof.ComOutputShardID); i++ {
+		comOutputShardID := paymentProof.ComOutputShardID[i].Compress()
+		proofbytes = append(proofbytes, byte(len(comOutputShardID)))
+		proofbytes = append(proofbytes, comOutputShardID...)
+	}
+	// PubKeyLastByteSender
+	proofbytes = append(proofbytes, byte(1))
+	proofbytes = append(proofbytes, paymentProof.PubKeyLastByteSender)
 
 	return proofbytes
 }
@@ -463,6 +489,9 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 
 	proof.InputCoins = wit.inputCoins
 	proof.OutputCoins = wit.outputCoins
+	proof.ComOutputValue = wit.ComOutputValue
+	proof.ComOutputSND = wit.ComOutputSND
+	proof.ComOutputShardID = wit.ComOutputShardID
 
 	// if hasPrivacy == false, don't need to create the zero knowledge proof
 	// proving user has spending key corresponding with public key in input coins
