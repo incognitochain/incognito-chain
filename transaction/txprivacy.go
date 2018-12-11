@@ -84,6 +84,10 @@ func (tx *Tx) randomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, ra
 	return commitmentIndexs, myCommitmentIndexs
 }
 
+// Init - init value for tx from inputcoin(old output coin from old tx)
+// create new outputcoin and build privacy proof
+// if not want to create a privacy tx proof, set hashPrivacy = false
+// database is used like an interface which use to query info from db in building tx
 func (tx *Tx) Init(
 	senderSK *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
@@ -260,7 +264,7 @@ func (tx *Tx) Init(
 	return err
 }
 
-// SignTx signs tx
+// SignTx - signs tx
 func (tx *Tx) SignTx(hasPrivacy bool) error {
 	//Check input transaction
 	if tx.Sig != nil {
@@ -374,20 +378,6 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 	}
 
 	return res, nil
-}
-
-// ECDSASigToByteArray converts signature to byte array
-func ECDSASigToByteArray(r, s *big.Int) (sig []byte) {
-	sig = append(sig, r.Bytes()...)
-	sig = append(sig, s.Bytes()...)
-	return
-}
-
-// FromByteArrayToECDSASig converts a byte array to signature
-func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
-	r = new(big.Int).SetBytes(sig[0:32])
-	s = new(big.Int).SetBytes(sig[32:64])
-	return
 }
 
 // ValidateTransaction returns true if transaction is valid:
