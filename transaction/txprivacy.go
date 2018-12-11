@@ -92,7 +92,7 @@ func (tx *Tx) Init(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 ) (error) {
-
+	tx.Type = common.TxNormalType
 	chainID := byte(14)
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db

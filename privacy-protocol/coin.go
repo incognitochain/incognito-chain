@@ -57,7 +57,7 @@ func (coin *Coin) Bytes() []byte {
 		PublicKey := coin.PublicKey.Compress()
 		coin_bytes = append(coin_bytes, byte(len(PublicKey)))
 		coin_bytes = append(coin_bytes, PublicKey...)
-	} else{
+	} else {
 		coin_bytes = append(coin_bytes, byte(0))
 	}
 
@@ -65,7 +65,7 @@ func (coin *Coin) Bytes() []byte {
 		CoinCommitment := coin.CoinCommitment.Compress()
 		coin_bytes = append(coin_bytes, byte(len(CoinCommitment)))
 		coin_bytes = append(coin_bytes, CoinCommitment...)
-	} else{
+	} else {
 		coin_bytes = append(coin_bytes, byte(0))
 	}
 
@@ -73,7 +73,7 @@ func (coin *Coin) Bytes() []byte {
 		SNDerivator := coin.SNDerivator.Bytes()
 		coin_bytes = append(coin_bytes, byte(len(SNDerivator)))
 		coin_bytes = append(coin_bytes, SNDerivator...)
-	} else{
+	} else {
 		coin_bytes = append(coin_bytes, byte(0))
 	}
 
@@ -91,21 +91,21 @@ func (coin *Coin) Bytes() []byte {
 		SerialNumber := coin.SerialNumber.Compress()
 		coin_bytes = append(coin_bytes, byte(len(SerialNumber)))
 		coin_bytes = append(coin_bytes, SerialNumber...)
-	} else{
+	} else {
 		coin_bytes = append(coin_bytes, byte(0))
 	}
 	if coin.Randomness != nil {
 		Randomness := coin.Randomness.Bytes()
 		coin_bytes = append(coin_bytes, byte(len(Randomness)))
 		coin_bytes = append(coin_bytes, Randomness...)
-	} else{
+	} else {
 		coin_bytes = append(coin_bytes, byte(0))
 	}
-	if (coin.Value>0) {
+	if (coin.Value > 0) {
 		Value := new(big.Int).SetUint64(coin.Value).Bytes()
 		coin_bytes = append(coin_bytes, byte(len(Value)))
 		coin_bytes = append(coin_bytes, Value...)
-	}else{
+	} else {
 		coin_bytes = append(coin_bytes, byte(0))
 	}
 	Info := coin.Info
@@ -117,68 +117,69 @@ func (coin *Coin) Bytes() []byte {
 func (coin *Coin) SetBytes(coin_byte []byte) {
 	offset := 0
 	//Parse PubKey
-	lenField:=coin_byte[offset]
+	lenField := coin_byte[offset]
 	offset++
-	if (lenField!=0) {
+	if (lenField != 0) {
 		coin.PublicKey = new(EllipticPoint)
 		coin.PublicKey.Decompress(coin_byte[offset:offset+int(lenField)])
 	}
 	offset += int(lenField)
 
 	// Parse CoinCommitment
-	lenField=coin_byte[offset]
+	lenField = coin_byte[offset]
 	offset++
-	if (lenField!=0) {
+	if (lenField != 0) {
 		coin.CoinCommitment = new(EllipticPoint)
 		coin.CoinCommitment.Decompress(coin_byte[offset:offset+int(lenField)])
 	}
 	offset += int(lenField)
 
 	// Parse SNDerivator
-	lenField=coin_byte[offset]
+	lenField = coin_byte[offset]
 	offset++
-	if (lenField!=0) {
+	if (lenField != 0) {
 		coin.SNDerivator = new(big.Int)
-		coin.SNDerivator.SetBytes(coin_byte[offset : offset+int(lenField)])
+		coin.SNDerivator.SetBytes(coin_byte[offset: offset+int(lenField)])
 	}
 	offset += int(lenField)
 
 	//Parse SN
-	lenField=coin_byte[offset]
+	lenField = coin_byte[offset]
 	offset++
-	if (lenField!=0) {
+	if (lenField != 0) {
 		coin.SerialNumber = new(EllipticPoint)
 		coin.SerialNumber.Decompress(coin_byte[offset:offset+int(lenField)])
 	}
 	offset += int(lenField)
 	// Parse Randomness
-	lenField=coin_byte[offset]
+	lenField = coin_byte[offset]
 	offset++
-	if (lenField!=0) {
+	if (lenField != 0) {
 		coin.Randomness = new(big.Int)
-		coin.Randomness.SetBytes(coin_byte[offset : offset+int(lenField)])
+		coin.Randomness.SetBytes(coin_byte[offset: offset+int(lenField)])
 	}
 	offset += int(lenField)
 
 	// Parse Value
-	lenField=coin_byte[offset]
+	lenField = coin_byte[offset]
 	offset++
-	if (lenField!=0) {
-	x := new(big.Int)
-	x.SetBytes(coin_byte[offset:offset+int(lenField)])
-	coin.Value = x.Uint64()
+	if (lenField != 0) {
+		x := new(big.Int)
+		x.SetBytes(coin_byte[offset:offset+int(lenField)])
+		coin.Value = x.Uint64()
 	}
 	offset += int(lenField)
 
-  // Parse Info
-	lenField=coin_byte[offset]
+	// Parse Info
+	lenField = coin_byte[offset]
 	offset++
-	if (lenField!=0) {
+	if (lenField != 0) {
 		lenField = coin_byte[offset]
 		copy(coin.Info, coin_byte[offset:offset+int(lenField)])
 		offset += int(lenField)
 	}
 }
+
 // InputCoin represents a input coin of transaction
 type InputCoin struct {
 	//ShardId *big.Int
