@@ -676,7 +676,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	// Proving that each output values and sum of them does not exceed v_max
 	proof.ComOutputMultiRangeProof, err = wit.ComOutputMultiRangeWitness.Prove()
 	var err1 error
-	proof.SumOutRangeProof, err = wit.ComOutputMultiRangeWitness.ProveSum()
+	proof.SumOutRangeProof, err1 = wit.ComOutputMultiRangeWitness.ProveSum()
 	if err != nil && err1 != nil {
 		return nil, err
 	}
