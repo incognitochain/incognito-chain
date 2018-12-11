@@ -74,10 +74,11 @@ func (tx *Tx) randomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, ra
 			}
 		}
 	}
-	for _, temp := range listUsableCommitments {
+	for j, temp := range listUsableCommitments {
 		key := string(temp)
 		index := mapIndexCommitmentsInUsableTx[key]
-		i := rand2.Int63n(int64(len(commitmentIndexs)))
+		i := rand2.Int63n(int64(randNum))
+		i += int64(j*(randNum-1)) + 1
 		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)
 		myCommitmentIndexs = append(myCommitmentIndexs, uint64(i))
 	}
