@@ -13,16 +13,18 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 	"unicode"
 
 	"log"
 	"math"
 
+	"crypto/rand"
+
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
-	"crypto/rand"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -212,7 +214,7 @@ func SliceExists(slice interface{}, item interface{}) (bool, error) {
 /*
 SliceBytesExists - Check slice []byte contain item
 */
-func GetBytes(key interface{}) ([]byte) {
+func GetBytes(key interface{}) []byte {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	enc.Encode(key)
@@ -329,4 +331,17 @@ func CheckDuplicateBigInt(arr []*big.Int) bool {
 
 func RandBigIntN(max *big.Int) (*big.Int, error) {
 	return rand.Int(rand.Reader, max)
+}
+
+func IntArrayToString(A []int, delim string) string {
+
+	var buffer bytes.Buffer
+	for i := 0; i < len(A); i++ {
+		buffer.WriteString(strconv.Itoa(A[i]))
+		if i != len(A)-1 {
+			buffer.WriteString(delim)
+		}
+	}
+
+	return buffer.String()
 }

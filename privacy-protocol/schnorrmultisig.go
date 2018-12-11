@@ -1,10 +1,8 @@
 package privacy
 
 import (
-	"fmt"
 	"math/big"
 	"sync"
-	"time"
 
 	"github.com/ninjadotorg/constant/common"
 )
@@ -235,56 +233,56 @@ func broadcastR(R *EllipticPoint) {
 }
 
 // TestMultiSig EC Schnorr MultiSig Scheme
-func TestMultiSig() {
-	isTesting = true
-	Numbs = 20
-	counter = 0
-	listSigners := make([]*MultiSigKeyset, Numbs)
-	pubkeyTest = make([]*PublicKey, Numbs)
-	RTest = make([]*EllipticPoint, Numbs)
-	// REachSigner := make([]*EllipticPoint, Numbs)
-	Sig := make([]*SchnMultiSig, Numbs)
-	R := new(EllipticPoint)
-	R.X = big.NewInt(0)
-	R.Y = big.NewInt(0)
-	for i := 0; i < Numbs; i++ {
-		listSigners[i] = new(MultiSigKeyset)
-		listSigners[i].priKey = new(SpendingKey)
-		*listSigners[i].priKey = GenerateSpendingKey(RandInt().Bytes())
-		pubkeyTest[i] = new(PublicKey)
-		listSigners[i].pubKey = new(PublicKey)
-		*pubkeyTest[i] = GeneratePublicKey(*listSigners[i].priKey)
-		listSigners[i].pubKey = pubkeyTest[i]
-	}
-	for i := 0; i < Numbs; i++ {
-		wg.Add(1)
-		go func(j int) {
-			defer wg.Done()
-			Ri, ri := generateRandom()
-			broadcastR(Ri)
-			time.Sleep(500 * time.Millisecond)
-			for counter < Numbs {
-			}
-			Sig[j] = listSigners[j].SignMultiSig([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, pubkeyTest, RTest, ri)
-		}(i)
-	}
-	wg.Wait()
-	aggSig := CombineMultiSig(Sig)
-	for i := 0; i < Numbs; i++ {
-		R = R.Add(RTest[i])
-		fmt.Printf("\n**********************************************************************************************************************************************************************************")
-		fmt.Printf("\n* Signature of signer %v\n", i)
-		fmt.Printf("*\tR  [%v]: %v\n", i, Sig[i].R)
-		fmt.Printf("*\tSig[%v]: %v\n", i, Sig[i].S)
-		fmt.Printf("* Verifing... ")
-		fmt.Printf("Signature %v is %v\n", i, Sig[i].VerifyMultiSig([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, pubkeyTest, pubkeyTest[i], aggSig.R))
-		fmt.Println("**********************************************************************************************************************************************************************************")
-	}
+// func TestMultiSig() {
+// 	isTesting = true
+// 	Numbs = 20
+// 	counter = 0
+// 	listSigners := make([]*MultiSigKeyset, Numbs)
+// 	pubkeyTest = make([]*PublicKey, Numbs)
+// 	RTest = make([]*EllipticPoint, Numbs)
+// 	// REachSigner := make([]*EllipticPoint, Numbs)
+// 	Sig := make([]*SchnMultiSig, Numbs)
+// 	R := new(EllipticPoint)
+// 	R.X = big.NewInt(0)
+// 	R.Y = big.NewInt(0)
+// 	for i := 0; i < Numbs; i++ {
+// 		listSigners[i] = new(MultiSigKeyset)
+// 		listSigners[i].priKey = new(SpendingKey)
+// 		*listSigners[i].priKey = GenerateSpendingKey(RandInt().Bytes())
+// 		pubkeyTest[i] = new(PublicKey)
+// 		listSigners[i].pubKey = new(PublicKey)
+// 		*pubkeyTest[i] = GeneratePublicKey(*listSigners[i].priKey)
+// 		listSigners[i].pubKey = pubkeyTest[i]
+// 	}
+// 	for i := 0; i < Numbs; i++ {
+// 		wg.Add(1)
+// 		go func(j int) {
+// 			defer wg.Done()
+// 			Ri, ri := generateRandom()
+// 			broadcastR(Ri)
+// 			time.Sleep(500 * time.Millisecond)
+// 			for counter < Numbs {
+// 			}
+// 			Sig[j] = listSigners[j].SignMultiSig([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, pubkeyTest, RTest, ri)
+// 		}(i)
+// 	}
+// 	wg.Wait()
+// 	aggSig := CombineMultiSig(Sig)
+// 	for i := 0; i < Numbs; i++ {
+// 		R = R.Add(RTest[i])
+// 		fmt.Printf("\n**********************************************************************************************************************************************************************************")
+// 		fmt.Printf("\n* Signature of signer %v\n", i)
+// 		fmt.Printf("*\tR  [%v]: %v\n", i, Sig[i].R)
+// 		fmt.Printf("*\tSig[%v]: %v\n", i, Sig[i].S)
+// 		fmt.Printf("* Verifing... ")
+// 		fmt.Printf("Signature %v is %v\n", i, Sig[i].VerifyMultiSig([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, pubkeyTest, pubkeyTest[i], aggSig.R))
+// 		fmt.Println("**********************************************************************************************************************************************************************************")
+// 	}
 
-	fmt.Println("\tAggregate:")
-	fmt.Printf("\t\tAggSignature: %v\n", aggSig.S)
-	fmt.Printf("\t\tAggR        : %v\n", aggSig.R)
-	fmt.Printf("\tVerify result: %v\n", aggSig.VerifyMultiSig([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, pubkeyTest, nil, nil))
-}
+// 	fmt.Println("\tAggregate:")
+// 	fmt.Printf("\t\tAggSignature: %v\n", aggSig.S)
+// 	fmt.Printf("\t\tAggR        : %v\n", aggSig.R)
+// 	fmt.Printf("\tVerify result: %v\n", aggSig.VerifyMultiSig([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, pubkeyTest, nil, nil))
+// }
 
 // -------------------------------------------------------------------------------------------------

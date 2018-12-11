@@ -33,9 +33,9 @@ type BlockHeaderGeneric struct {
 }
 
 type BlockV2 struct {
-	AggregatedSig []byte
+	AggregatedSig string // aggregated signature in base58
 	ValidatorsIdx []int
-	ProducerSig   []byte
+	ProducerSig   string // block producer signature in base58
 	Type          string
 
 	Header BlockHeaderV2
@@ -44,16 +44,16 @@ type BlockV2 struct {
 
 func (self *BlockV2) Hash() common.Hash {
 	record := common.EmptyString
-	record += self.self.Header.Hash().String() + string(self.AggregatedSig) + string(self.ValidatorsIdx) + string(self.ProducerSig) + self.Type
+	record += self.Header.Hash().String() + string(self.AggregatedSig) + common.IntArrayToString(self.ValidatorsIdx, ",") + self.ProducerSig + self.Type
 
 	return common.DoubleHashH([]byte(record))
 }
 
 func (self *BlockV2) UnmarshalJSON(data []byte) error {
 	tempBlk := &struct {
-		AggregatedSig []byte
+		AggregatedSig string
 		ValidatorsIdx []int
-		ProducerSig   []byte
+		ProducerSig   string
 		Type          string
 		Header        *json.RawMessage
 		Body          *json.RawMessage
@@ -86,20 +86,20 @@ func (self *BlockV2) UnmarshalJSON(data []byte) error {
 		}
 		self.Body = blkBody
 	case "shard":
-		blkHeader := &BlockHeaderShard{}
+		blkHeader := BlockHeaderShard{}
 		err := blkHeader.UnmarshalJSON(*tempBlk.Header)
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
 		}
-		var blkBody BlockBodyShard
+		blkBody := BlockBodyShard{}
 		err = blkBody.UnmarshalJSON(*tempBlk.Body)
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
 		}
-		self.Header = BlockHeaderShard{
+		self.Header = &BlockHeaderShard{
 			BlockHeaderGeneric: blkHeader.BlockHeaderGeneric,
 		}
-		self.Body = blkBody
+		self.Body = &blkBody
 	default:
 		return NewBlockChainError(UnmashallJsonBlockError, errors.New("Unknown block type "+self.Type))
 	}

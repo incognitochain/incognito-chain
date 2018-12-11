@@ -28,13 +28,18 @@ func (self BlockHeaderShard) Hash() common.Hash {
 	return common.DoubleHashH([]byte(record))
 }
 
-func (self *BlockHeaderShard) UnmarshalJSON([]byte) error {
+func (self *BlockHeaderShard) UnmarshalJSON(data []byte) error {
 	type AliasHeader BlockHeaderShard
 	temp := &AliasHeader{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
-	self = temp
+	self.BlockHeaderGeneric = temp.BlockHeaderGeneric
+	self.MerkleRoot = temp.MerkleRoot
+	self.MerkleRootShard = temp.MerkleRootShard
+	self.Actions = temp.Actions
+	self.ShardID = temp.ShardID
+
 	return nil
 }
