@@ -14,8 +14,8 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 type BestStateNew struct {
-	Beacon *BestStateBeacon
-	Shards []*BestStateShard
+	Beacon *BestStateBeacon         //Beacon node & shard node allow access this
+	Shards map[byte]*BestStateShard //Only shard node allow to access this
 }
 
 type BestStateBeacon struct {
@@ -37,22 +37,25 @@ Init create a beststate data from block and commitment tree
 */
 // #1 - block
 // #2 - commitment merkle tree
-// func (self *BestStateNew) Init(block *BlockV2) {
-// 	bestBlockHash := block.Hash()
-// 	self.BestBlock = block
-// 	self.BestBlockHash = bestBlockHash
+func (self *BestStateNew) Init(shardsBlock map[byte]*BlockV2, beaconBlock *BlockV2) {
+	//shards beststate
+	for shardID, block := range shardsBlock {
+		bestShardBlock := &BestStateShard{
+			BestBlockHash: block.Hash(),
+			BestBlock:     block,
+			TotalTxns:     uint64(len(block.Body.(*BlockBodyShard).Transactions)),
+			NumTxns:       uint64(len(block.Body.(*BlockBodyShard).Transactions)),
+		}
+		self.Shards[shardID] = bestShardBlock
+	}
 
-// 	// self.  += uint64(len(block.Transactions))
-// 	self.NumTxns = uint64(len(block.Transactions))
-// 	self.Height = block.Header.Height
-// 	if self.Candidates == nil {
-// 		self.Candidates = make(map[string]CommitteeCandidateInfo)
-// 	}
+	//beacon beststate
+	self.Beacon = &BestStateBeacon{
+		BestBlockHash: beaconBlock.Hash(),
+		BestBlock:     beaconBlock,
+	}
 
-// 	if self.LoanIDs == nil {
-// 		self.LoanIDs = make([][]byte, 0)
-// 	}
-// }
+}
 
 // func (self *BestStateNew) Update(block *BlockV2) error {
 // 	//tree := self.CmTree
