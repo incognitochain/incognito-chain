@@ -9,16 +9,17 @@ import (
 	"strings"
 	"sync"
 
+	"fmt"
+	"strconv"
+
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/database/lvdb"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-	"fmt"
-	"strconv"
-	"github.com/ninjadotorg/constant/database/lvdb"
 )
 
 const (
@@ -775,9 +776,9 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 							InputCoins:                  tx.Proof.InputCoins,
 							OutputCoins:                 []*privacy.OutputCoin{},
 							PubKeyLastByteSender:        tx.Proof.PubKeyLastByteSender,
-							ComInputSK:                  tx.Proof.ComInputSK,
-							ComInputSND:                 tx.Proof.ComInputSND,
-							ComInputValue:               tx.Proof.ComInputValue,
+							ComOutputValue:              tx.Proof.ComOutputValue,
+							ComOutputSND:                tx.Proof.ComOutputSND,
+							ComOutputShardID:            tx.Proof.ComOutputShardID,
 						},
 						Metadata: tx.Metadata,
 					}
@@ -852,9 +853,9 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serial
 			InputCoins:                  tx.Proof.InputCoins,
 			OutputCoins:                 []*privacy.OutputCoin{},
 			PubKeyLastByteSender:        tx.Proof.PubKeyLastByteSender,
-			ComInputSK:                  tx.Proof.ComInputSK,
-			ComInputSND:                 tx.Proof.ComInputSND,
-			ComInputValue:               tx.Proof.ComInputValue,
+			ComOutputValue:              tx.Proof.ComOutputValue,
+			ComOutputSND:                tx.Proof.ComOutputSND,
+			ComOutputShardID:            tx.Proof.ComOutputShardID,
 		},
 		Metadata: tx.Metadata,
 	}
@@ -962,7 +963,7 @@ func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType
 	if self.config.Light {
 		// Get unspent tx with light mode
 		fullTxs, err := self.config.DataBase.GetTransactionLightModeByPrivateKey(&keyset.PrivateKey)
-		Logger.log.Infof("UTXO lightmode %+v", fullTxs)
+		common.Logger.log.Infof("UTXO lightmode %+v", fullTxs)
 		if err != nil {
 			return nil, err
 		}

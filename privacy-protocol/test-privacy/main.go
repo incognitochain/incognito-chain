@@ -1,12 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/transaction"
-)
+import privacy "github.com/ninjadotorg/constant/privacy-protocol"
 
 func main() {
 
@@ -170,7 +164,7 @@ func main() {
 	/*----------------- TEST SIGNATURE -----------------*/
 	//privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
-	//privacy.TestMultiSig()
+	privacy.TestMultiSig()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
 	//for i :=0; i<1000; i++{
@@ -192,15 +186,15 @@ func main() {
 	//fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
 	//
 	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	//keySet := cashec.KeySet{}
-	//keySet.ImportFromPrivateKey(&spendingKey)
+	//keySetSender := cashec.KeySet{}
+	//keySetSender.ImportFromPrivateKey(&spendingKey)
 	//
-	//err := coin.Encrypt(keySet.PaymentAddress.Tk)
+	//err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
 	//if err!= nil{
 	//	fmt.Println(err)
 	//}
 	//
-	//coin.Decrypt(keySet.ReadonlyKey.Rk)
+	//coin.Decrypt(keySetSender.ReadonlyKey.Rk)
 	//
 	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
 
@@ -211,13 +205,13 @@ func main() {
 	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
 	/*--------------------------------------------*/
 
-	// keySet := new(cashec.KeySet)
+	// keySetSender := new(cashec.KeySet)
 	// //spendingKey := privacy.GenerateSpendingKey([]byte{0, 1, 23, 235})
 	// spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	// keySet.ImportFromPrivateKey(&spendingKey)
+	// keySetSender.ImportFromPrivateKey(&spendingKey)
 
 	// data := []byte{0}
-	// signature, err := keySet.Sign(data)
+	// signature, err := keySetSender.Sign(data)
 	// if err != nil{
 	// 	fmt.Println(err)
 	// }
@@ -225,7 +219,7 @@ func main() {
 
 	// //signature , _:= hex.DecodeString("5d9f5e9c350a877ddbbe227b40c19b00c040e715924740f2d92cc9dc02da5937ba433dbca431f2a0a447e21fd096d894f869a9e31b8217ee0cf9c33f8b032ade")
 	// //
-	// res, err := keySet.Verify(data, signature)
+	// res, err := keySetSender.Verify(data, signature)
 	// if err != nil{
 	// 	fmt.Println(err)
 	// }
@@ -234,22 +228,20 @@ func main() {
 
 	/*----------------- TEST TX SALARY -----------------*/
 
-	keySet := new(cashec.KeySet)
-	spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	keySet.ImportFromPrivateKey(&spendingKey)
+	// keySet := new(cashec.KeySet)
+	// spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	// keySet.ImportFromPrivateKey(&spendingKey)
 
-	var db database.DatabaseInterface
+	// var db database.DatabaseInterface
 
-	tx, err := transaction.CreateTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
-	if err != nil{
-		fmt.Println(err)
-	}
-	fmt.Printf("Tx: %+v\n", tx)
+	// tx, err := transaction.CreateTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
+	// if err != nil{
+	// 	fmt.Println(err)
+	// }
+	// fmt.Printf("Tx: %+v\n", tx)
 
-	res := transaction.ValidateTxSalary(tx, db)
+	// res := transaction.ValidateTxSalary(tx, db)
 
-	fmt.Printf("Res: %v\n", res)
-
-
+	// fmt.Printf("Res: %v\n", res)
 
 }

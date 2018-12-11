@@ -50,6 +50,10 @@ func (wit *PKEqualityOfCommittedValWitness) Set(
 	C []*privacy.EllipticPoint, //Statement
 	Index []*byte, //Statement
 	X []*big.Int) {
+
+	if wit == nil{
+		wit = new(PKEqualityOfCommittedValWitness)
+	}
 	wit.C = C
 	wit.Index = Index
 	wit.X = X
@@ -107,6 +111,10 @@ func (pro *PKEqualityOfCommittedValProof) Set(
 	Index []*byte, //Statement
 	T []*privacy.EllipticPoint,
 	Z []*big.Int) {
+
+	if pro == nil{
+		pro = new(PKEqualityOfCommittedValProof)
+	}
 	pro.C = C
 	pro.Index = Index
 	pro.T = T

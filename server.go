@@ -293,6 +293,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			NodeRole:        cfg.NodeRole,
 			FeeEstimator:    self.feeEstimator,
 			ProtocolVersion: self.protocolVersion,
+			Database:        &self.dataBase,
 		}
 		self.rpcServer = &rpcserver.RpcServer{}
 		self.rpcServer.Init(&rpcConfig)
