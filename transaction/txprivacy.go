@@ -74,10 +74,11 @@ func (tx *Tx) randomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, ra
 			}
 		}
 	}
-	for _, temp := range listUsableCommitments {
+	for j, temp := range listUsableCommitments {
 		key := string(temp)
 		index := mapIndexCommitmentsInUsableTx[key]
-		i := rand2.Int63n(int64(len(commitmentIndexs)))
+		i := rand2.Int63n(int64(randNum))
+		i += int64(j*(randNum-1)) + 1
 		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)
 		myCommitmentIndexs = append(myCommitmentIndexs, uint64(i))
 	}
@@ -92,7 +93,7 @@ func (tx *Tx) Init(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 ) (error) {
-
+	tx.Type = common.TxNormalType
 	chainID := byte(14)
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db

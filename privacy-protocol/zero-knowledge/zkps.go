@@ -4,6 +4,8 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/database"
 	"math/big"
+	"github.com/ninjadotorg/constant/common/base58"
+	"encoding/json"
 )
 
 // PaymentWitness contains all of witness for proving when spending coins
@@ -58,6 +60,23 @@ type PaymentProof struct {
 	ComOutputShardID []*privacy.EllipticPoint
 
 	PubKeyLastByteSender byte
+}
+
+func (proof PaymentProof) MarshalJSON() ([]byte, error) {
+	data := proof.Bytes()
+	temp := base58.Base58Check{}.Encode(data, byte(0x00))
+	return json.Marshal(temp)
+}
+
+func (proof *PaymentProof) UnmarshalJSON(data []byte) error {
+	dataStr := ""
+	_ = json.Unmarshal(data, &dataStr)
+	temp, _, err := base58.Base58Check{}.Decode(dataStr)
+	if err != nil {
+		return err
+	}
+	proof.SetBytes(temp)
+	return nil
 }
 
 func (paymentProof *PaymentProof) Bytes() []byte {
