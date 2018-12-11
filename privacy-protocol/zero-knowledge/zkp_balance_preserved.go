@@ -35,7 +35,7 @@ type PKComMultiRangeWitness struct {
 	maxExp byte
 }
 
-func (pro *PKComMultiRangeProof) Bytes() []byte{
+func (pro PKComMultiRangeProof) Bytes() []byte{
 	var res []byte
 	res = append(res, pro.Counter)
 	res = append(res, pro.maxExp)

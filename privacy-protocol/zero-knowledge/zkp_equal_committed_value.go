@@ -59,7 +59,7 @@ func (wit *PKEqualityOfCommittedValWitness) Set(
 	wit.X = X
 }
 
-func (pro *PKEqualityOfCommittedValProof) Bytes() []byte {
+func (pro PKEqualityOfCommittedValProof) Bytes() []byte {
 	var res []byte
 	res = append(pro.C[0].Compress(), pro.C[1].Compress()...)
 	res = append(res, []byte{*pro.Index[0], *pro.Index[1]}...)

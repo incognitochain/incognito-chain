@@ -60,7 +60,7 @@ func (pro *PKComOpeningsProof) Set(
 	pro.indexs = indexs
 }
 
-func (pro *PKComOpeningsProof) Bytes() []byte {
+func (pro PKComOpeningsProof) Bytes() []byte {
 	// var res []byte
 	res := append(pro.commitmentValue.Compress(), pro.alpha.Compress()...)
 	for i := 0; i < len(pro.gamma); i++ {

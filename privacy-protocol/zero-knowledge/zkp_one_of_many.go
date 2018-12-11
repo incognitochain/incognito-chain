@@ -71,7 +71,7 @@ func (pro *PKOneOfManyProof) Set(
 	pro.index = index
 }
 
-func (pro *PKOneOfManyProof) Bytes() []byte {
+func (pro PKOneOfManyProof) Bytes() []byte {
 	// N = 2^n
 	N := privacy.CMRingSize
 	n := privacy.CMRingSizeExp

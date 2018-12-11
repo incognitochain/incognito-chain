@@ -65,7 +65,7 @@ func (pro *PKComProductProof) Print() {
 	fmt.Println(pro.cmA)
 	fmt.Println(pro.cmB)
 }
-func (pro *PKComProductProof) Bytes() []byte {
+func (pro PKComProductProof) Bytes() []byte {
 	var proofbytes []byte
 	proofbytes = append(proofbytes, pro.cmA.Compress()...)                           // 33 bytes
 	proofbytes = append(proofbytes, pro.cmB.Compress()...)                           // 33 bytes

@@ -310,7 +310,6 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	//PubKeyLastByteSender byte
 	paymentProof.PubKeyLastByteSender = proofbytes[offset]
 	return nil
-
 }
 
 // END----------------------------------------------------------------------------------------------------------------------------------------------
