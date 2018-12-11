@@ -36,9 +36,17 @@ func GetNonceByTimestamp(timestamp int64) (int64, error) {
 		chain := make(map[string]interface{})
 		json.Unmarshal(chainBytes, &chain)
 		chainHeight := int(chain["height"].(float64))
-		blockHeight = int(chain["height"].(float64))
+		chainTimestamp, err := makeTimestamp2(chain["time"].(string))
+		if err != nil {
+			return -1, err
+		}
+		blockHeight, err := estimateBlockHeight(timestamp, chainHeight, chainTimestamp)
+		if err != nil {
+			return -1, err
+		}
 		// TODO: 0xmerman calculate timestamp to get the right nonce
 		// get list of block with timestamp > given timestamp then get block with min timestamp value
+		fmt.Println("BlockTimestamp 0", blockTimestamp, blockHeight, timestamp)
 		_, blockTimestamp, err = GetNonceOrTimeStampByBlock(strconv.Itoa(blockHeight), false)
 		if err != nil {
 			fmt.Println(err)
@@ -47,10 +55,10 @@ func GetNonceByTimestamp(timestamp int64) (int64, error) {
 		if blockTimestamp == MAX_TIMESTAMP {
 			return -1, errors.New("API error")
 		}
-		// fmt.Println("BlockTimestamp 1", blockTimestamp, blockHeight, timestamp)
+		fmt.Println("BlockTimestamp 1", blockTimestamp, blockHeight, timestamp)
 		if blockTimestamp > timestamp {
 			for blockTimestamp > timestamp {
-				// fmt.Println("BlockTimestamp 2", blockTimestamp, blockHeight, timestamp)
+				fmt.Println("BlockTimestamp 2", blockTimestamp, blockHeight, timestamp)
 				blockHeight--
 				_, blockTimestamp, err = GetNonceOrTimeStampByBlock(strconv.Itoa(blockHeight), false)
 				if err != nil {
@@ -61,14 +69,14 @@ func GetNonceByTimestamp(timestamp int64) (int64, error) {
 					return -1, errors.New("API error")
 				}
 				if blockTimestamp <= timestamp {
-					// fmt.Println("BlockTimestamp 2-2", blockTimestamp, blockHeight, timestamp)
+					fmt.Println("BlockTimestamp 2-2", blockTimestamp, blockHeight, timestamp)
 					blockHeight++
 					break
 				}
 			}
 		} else {
 			for blockTimestamp <= timestamp {
-				// fmt.Println("BlockTimestamp 3", blockTimestamp, blockHeight, timestamp)
+				fmt.Println("BlockTimestamp 3", blockTimestamp, blockHeight, timestamp)
 				blockHeight++
 				if blockHeight > chainHeight {
 					return -1, errors.New("Timestamp is greater than timestamp of highest block")
@@ -133,4 +141,31 @@ func GetNonceOrTimeStampByBlock(blockHeight string, nonceOrTime bool) (int64, in
 // use t.UnixNano() / int64(time.Millisecond) for milisecond
 func makeTimestamp(t time.Time) int64 {
 	return t.Unix()
+}
+
+// convert time.RFC3339 -> int64 value
+// t,_ := time.Parse(time.RFC3339, "2006-01-02T15:04:05Z")
+func makeTimestamp2(t string) (int64, error) {
+	res, err := time.Parse(time.RFC3339, t)
+	if err != nil {
+		return -1, err
+	}
+	return makeTimestamp(res), nil
+}
+
+// assume that each block will be produced in 10 mins ~= 600s
+// this function will based on the given #param1 timestamp and #param3 chainTimestamp
+// to calculate blockheight with approximate timestamp with #param1
+// blockHeight = chainHeight - (chainTimestamp - timestamp) / 600
+func estimateBlockHeight(timestamp int64, chainHeight int, chainTimestamp int64) (int, error) {
+	fmt.Printf("EstimateBlockHeight timestamp %d, chainHeight %d, chainTimestamp %d\n", timestamp, chainHeight, chainTimestamp)
+	offsetSeconds := timestamp - chainTimestamp
+	if offsetSeconds > 0 {
+		return chainHeight, nil
+	} else {
+		// diff is negative
+		diff := int(offsetSeconds / 600)
+		fmt.Printf("EstimateBlockHeight estimated block %d \n", chainHeight+diff)
+		return chainHeight + diff, nil
+	}
 }
