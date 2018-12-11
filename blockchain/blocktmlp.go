@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/voting"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -755,18 +757,52 @@ func (blockgen *BlkTmplGenerator) buildRefundTxs(
 	return refundTxs, totalRefundAmt
 }
 
+func (blockgen *BlkTmplGenerator) buildResponseForCrowdsale(
+	tx *transaction.TxCustomToken,
+	saleData *voting.SaleData,
+	unspentTokenMap map[string]([]transaction.TxTokenVout),
+	rt []byte,
+	chainID byte,
+) (*transaction.TxCustomToken, error) {
+	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+
+	// Get price for asset
+	prices := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
+	// TODO(@0xbunyip): validate sale data in proposal to admit only valid pair of assets
+	txResponse := &transaction.TxCustomToken{}
+	err := errors.New("")
+	sellingAsset := &common.Hash{}
+	copy(sellingAsset[:], saleData.SellingAsset)
+	if bytes.Equal(sellingAsset[:], common.ConstantID[:]) {
+		if bytes.Equal(saleData.BuyingAsset, common.OffchainAssetID[:]) {
+			return nil, nil // no response for offchain asset
+		}
+
+		valuesInConstant := getTxTokenValue(tx.TxTokenData, saleData.BuyingAsset, dcbPk, prices)
+		txResponse, err = buildResponseForCoin(tx, valuesInConstant, rt, chainID, saleData.SaleID)
+	} else if bytes.Equal(sellingAsset[:8], common.BondTokenID[:8]) || bytes.Equal(sellingAsset[:], common.DCBTokenID[:]) {
+		// Get unspent token UTXO to send to user
+		if _, ok := unspentTokenMap[string(sellingAsset[:])]; !ok {
+			unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(accountDCB.KeySet, sellingAsset)
+			if err == nil {
+				unspentTokenMap[string(sellingAsset[:])] = unspentTxTokenOuts
+			} else {
+				unspentTokenMap[string(sellingAsset[:])] = []transaction.TxTokenVout{}
+			}
+		}
+		mint := bytes.Equal(sellingAsset[:], common.DCBTokenID[:]) // Mint DCB token, transfer bonds
+		valuesInToken := getTxValue(&tx.Tx, sellingAsset[:], dcbPk, prices)
+		txResponse, err = buildResponseForToken(tx, valuesInToken, sellingAsset[:], rt, chainID, unspentTokenMap, saleData.SaleID, mint)
+	}
+	return txResponse, err
+}
+
 func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc, rt []byte, chainID byte) ([]*transaction.TxCustomToken, []metadata.Transaction, error) {
 	txsToRemove := []metadata.Transaction{}
 	txsResponse := []*transaction.TxCustomToken{}
 	// Get unspent bond tx to spend if needed
-	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	keySet := accountDCB.KeySet
-
-	tokenID := &common.Hash{} // TODO(@0xbunyip): hard code bond token id here
-	unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keySet, tokenID)
-	if err != nil {
-		unspentTxTokenOuts = []transaction.TxTokenVout{}
-	}
+	unspentTokenMap := map[string]([]transaction.TxTokenVout){}
 	for _, txDesc := range sourceTxns {
 		if txDesc.Tx.GetMetadataType() != metadata.CrowdsaleRequestMeta {
 			continue
@@ -789,32 +825,17 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc
 			txsToRemove = append(txsToRemove, tx)
 			continue
 		}
-		saleData, err := blockgen.chain.config.DataBase.LoadCrowdsaleData(metaRequest.SaleID)
+		saleData, err := blockgen.chain.GetCrowdsaleData(metaRequest.SaleID)
 		if err != nil {
 			txsToRemove = append(txsToRemove, tx)
 			continue
 		}
 
-		// Get price for asset bond
-		bondPrices := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
-		if bytes.Equal(saleData.SellingAsset, common.ConstantID[:]) {
-			txResponse, err := buildResponseForCoin(tx, saleData.SellingAsset, rt, chainID, bondPrices, metaRequest.SaleID, common.DCBAddress)
-			if err != nil {
-				txsToRemove = append(txsToRemove, tx)
-			} else {
-				txsResponse = append(txsResponse, txResponse)
-			}
-		} else if bytes.Equal(saleData.SellingAsset[:8], common.BondTokenID[:8]) {
-			// Get unspent token UTXO to send to user
-			txResponse := &transaction.TxCustomToken{}
-			txResponse, unspentTxTokenOuts, err = buildResponseForBond(tx, saleData.SellingAsset, rt, chainID, bondPrices, unspentTxTokenOuts, metaRequest.SaleID, common.DCBAddress)
-			if err != nil {
-				txsToRemove = append(txsToRemove, tx)
-			} else {
-				txsResponse = append(txsResponse, txResponse)
-			}
-		} else {
+		txResponse, err := blockgen.buildResponseForCrowdsale(tx, saleData, unspentTokenMap, rt, chainID)
+		if err != nil {
 			txsToRemove = append(txsToRemove, tx)
+		} else if txResponse != nil {
+			txsResponse = append(txsResponse, txResponse)
 		}
 	}
 	return txsResponse, txsToRemove, nil

@@ -11,7 +11,6 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/voting"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
@@ -318,10 +317,10 @@ func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress priva
 	return nil
 }
 
-func (db *db) SaveCrowdsaleData(saleData *voting.SaleData) error {
+func (db *db) SaveCrowdsaleData(saleID []byte, endBlock int32, buyingAsset []byte, amountBuying uint64, sellingAsset []byte, amountSelling uint64) error {
 	return nil
 }
 
-func (db *db) LoadCrowdsaleData(saleID []byte) (*voting.SaleData, error) {
-	return nil, nil
+func (db *db) LoadCrowdsaleData(saleID []byte) (int32, []byte, uint64, []byte, uint64, error) {
+	return 0, nil, 0, nil, 0, nil
 }

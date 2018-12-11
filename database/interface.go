@@ -4,7 +4,6 @@ import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/voting"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -74,8 +73,8 @@ type DatabaseInterface interface {
 	GetLoanPayment([]byte) (uint64, uint64, uint32, error) // param: loanID; return: principle, interest, deadline
 
 	// Crowdsale
-	SaveCrowdsaleData(*voting.SaleData) error
-	LoadCrowdsaleData([]byte) (*voting.SaleData, error)
+	SaveCrowdsaleData([]byte, int32, []byte, uint64, []byte, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
+	LoadCrowdsaleData([]byte) (int32, []byte, uint64, []byte, uint64, error)
 
 	//Vote
 	AddVoteDCBBoard(uint32, []byte, []byte, uint64) error

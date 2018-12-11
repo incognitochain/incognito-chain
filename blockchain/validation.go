@@ -221,7 +221,8 @@ func (self *BlockChain) ValidateTxBuySellDCBRequest(tx metadata.Transaction, cha
 	if !ok {
 		return fmt.Errorf("Error parsing TxBuySellDCBRequest")
 	}
-	saleData, err := self.config.DataBase.LoadCrowdsaleData(requestTx.SaleID)
+	saleData, err := self.GetCrowdsaleData(requestTx.SaleID)
+	//	saleData, err := self.config.DataBase.LoadCrowdsaleData(requestTx.SaleID)
 	if err != nil {
 		return fmt.Errorf("SaleID not found")
 	}

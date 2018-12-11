@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -93,7 +94,19 @@ func (self *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint32, e
 }
 
 func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*voting.SaleData, error) {
-	return self.config.DataBase.LoadCrowdsaleData(saleID)
+	endBlock, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := self.config.DataBase.LoadCrowdsaleData(saleID)
+	var saleData *voting.SaleData
+	if err != nil {
+		saleData = &voting.SaleData{
+			SaleID:        saleID,
+			EndBlock:      endBlock,
+			BuyingAsset:   buyingAsset,
+			BuyingAmount:  buyingAmount,
+			SellingAsset:  sellingAsset,
+			SellingAmount: sellingAmount,
+		}
+	}
+	return saleData, err
 }
 
 /*
@@ -717,8 +730,18 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 
 				// Store saledata in db if needed
 				if proposal.DCBProposalData.DCBParams.SaleData != nil {
-					err := self.config.DataBase.SaveCrowdsaleData(proposal.DCBProposalData.DCBParams.SaleData)
-					if err != nil {
+					saleData := proposal.DCBProposalData.DCBParams.SaleData
+					if _, _, _, _, _, err := self.config.DataBase.LoadCrowdsaleData(saleData.SaleID); err == nil {
+						return fmt.Errorf("SaleID not unique")
+					}
+					if err := self.config.DataBase.SaveCrowdsaleData(
+						saleData.SaleID,
+						saleData.EndBlock,
+						saleData.BuyingAsset,
+						saleData.BuyingAmount,
+						saleData.SellingAsset,
+						saleData.SellingAmount,
+					); err != nil {
 						return err
 					}
 				}
