@@ -17,16 +17,19 @@ import (
 )
 
 type Tx struct {
+	// Basic data
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
 
+	// Sign and Privacy proof
 	SigPubKey []byte `json:"SigPubKey, omitempty"` // 33 bytes
 	Sig       []byte `json:"Sig, omitempty"`       // 64 bytes
 	Proof     *zkp.PaymentProof
 
-	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+	// Metadata
+	Metadata interface{}
 
 	// this one is a hash id of requested tx
 	// and is used inside response txs
@@ -34,10 +37,7 @@ type Tx struct {
 	// for example, BuySellRequestTx/BuySellResponseTx
 	//RequestedTxID *common.Hash
 
-	// temp variable to validate tx
-	//snDerivators []*big.Int
-
-	Metadata interface{}
+	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 }
 
 // randomCommitmentsProcess - process list commitments and useable tx to create
