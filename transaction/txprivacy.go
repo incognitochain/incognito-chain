@@ -49,15 +49,15 @@ func (tx *Tx) randomCommitmentsProcess(inputCoins []*privacy.InputCoin, randNum 
 	if randNum == 0 {
 		randNum = 8
 	}
-	listCommitmentsInUsableTx := [][]byte{}
+	listUsableCommitments := [][]byte{}
 	mapIndexCommitmentsInUsableTx := make(map[string]*big.Int)
 	for _, in := range inputCoins {
-		commitment := in.CoinDetails.CoinCommitment.Compress()
-		listCommitmentsInUsableTx = append(listCommitmentsInUsableTx, commitment)
-		index, _ := db.GetCommitmentIndex(commitment, chainID)
-		mapIndexCommitmentsInUsableTx[string(commitment)] = index
+		usableCommitment := in.CoinDetails.CoinCommitment.Compress()
+		listUsableCommitments = append(listUsableCommitments, usableCommitment)
+		index, _ := db.GetCommitmentIndex(usableCommitment, chainID)
+		mapIndexCommitmentsInUsableTx[string(usableCommitment)] = index
 	}
-	cpRandNum := (len(listCommitmentsInUsableTx) * randNum) - len(listCommitmentsInUsableTx)
+	cpRandNum := (len(listUsableCommitments) * randNum) - len(listUsableCommitments)
 	for i := 0; i < cpRandNum; i++ {
 		for true {
 			lenCommitment, _ := db.GetCommitmentLength(chainID)
@@ -65,7 +65,7 @@ func (tx *Tx) randomCommitmentsProcess(inputCoins []*privacy.InputCoin, randNum 
 			ok, err := db.HasCommitmentIndex(index.Uint64(), chainID)
 			if ok && err == nil {
 				temp, _ := db.GetCommitmentByIndex(index.Uint64(), chainID)
-				if index2, err := common.SliceBytesExists(listCommitmentsInUsableTx, temp); index2 == -1 && err == nil {
+				if index2, err := common.SliceBytesExists(listUsableCommitments, temp); index2 == -1 && err == nil {
 					commitmentIndexs = append(commitmentIndexs, index.Uint64())
 					break
 				}
@@ -74,7 +74,7 @@ func (tx *Tx) randomCommitmentsProcess(inputCoins []*privacy.InputCoin, randNum 
 			}
 		}
 	}
-	for _, temp := range listCommitmentsInUsableTx {
+	for _, temp := range listUsableCommitments {
 		key := string(temp)
 		index := mapIndexCommitmentsInUsableTx[key]
 		i := rand2.Int63n(int64(len(commitmentIndexs)))
