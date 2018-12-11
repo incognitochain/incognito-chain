@@ -384,7 +384,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 // - Verify tx signature
 // - Verify the payment proof
 // - Check double spending
-func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface) bool {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte) bool {
 	// Verify tx signature
 	var valid bool
 	var err error
@@ -394,15 +394,6 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			fmt.Printf("Error verifying signature of tx: %+v", err)
 		}
 		return false
-	}
-
-	// Check input coins' serial number is not exists in spent serial number list (Database)
-	// Check double spending
-	for i := 0; i < len(tx.Proof.InputCoins); i++ {
-		ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.SerialNumber, db)
-		if ok || err != nil {
-			return false
-		}
 	}
 
 	for i := 0; i < len(tx.Proof.OutputCoins); i++ {
@@ -415,7 +406,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	if !hasPrivacy {
 		// Check input coins' cm is exists in cm list (Database)
 		for i := 0; i < len(tx.Proof.InputCoins); i++ {
-			ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment, db)
+			ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, chainId)
 			if !ok || err != nil {
 				return false
 			}
@@ -423,7 +414,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	}
 
 	// Verify the payment proof
-	valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db)
+	valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db, chainId)
 	if valid == false {
 		fmt.Printf("Error verifying the payment proof")
 		return false
@@ -500,13 +491,7 @@ func (tx Tx) CheckSNDExistence(snd *big.Int, db database.DatabaseInterface) (boo
 }
 
 // CheckCMExistence returns true if cm exists in cm list
-func (tx Tx) CheckCMExistence(cm *privacy.EllipticPoint, db database.DatabaseInterface) (bool, error) {
-	// Todo:
-	return true, nil
-}
-
-// CheckCMExistence returns true if cm exists in cm list
-func (tx Tx) CheckSNExistence(serialNumber *privacy.EllipticPoint, db database.DatabaseInterface) (bool, error) {
-	// Todo:
-	return false, nil
+func (tx Tx) CheckCMExistence(cm []byte, db database.DatabaseInterface, chainID byte) (bool, error) {
+	ok, err := db.HasCommitment(cm, chainID)
+	return ok, err
 }

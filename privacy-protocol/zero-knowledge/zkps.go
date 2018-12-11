@@ -170,47 +170,108 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 	offset := 0
 	// Set ComInputOpeningsProof
 	lenComInputOpeningsProofArray := int(proofbytes[offset])
-	ComInputOpeningsProof := make([]*PKComOpeningsProof, lenComInputOpeningsProofArray)
+	offset += 1
+	paymentProof.ComInputOpeningsProof = make([]*PKComOpeningsProof, lenComInputOpeningsProofArray)
 	for i := 0; i < lenComInputOpeningsProofArray; i++ {
-		ComInputOpeningsProof[i] = new(PKComOpeningsProof)
-		ComInputOpeningsProof[i].SetBytes(proofbytes[offset:offset+privacy.ComInputOpeningsProofSize])
-		offset += privacy.ComInputOpeningsProofSize
+		lenComInputOpeningsProof := int(proofbytes[offset])
+		offset += 1
+		paymentProof.ComInputOpeningsProof[i] = new(PKComOpeningsProof)
+		paymentProof.ComInputOpeningsProof[i].SetBytes(proofbytes[offset:offset+lenComInputOpeningsProof])
+		offset += lenComInputOpeningsProof
 	}
 	// Set OneOfManyProof
 	lenOneOfManyProofArray := int(proofbytes[offset])
-	OneOfManyProof := make([]*PKOneOfManyProof, lenOneOfManyProofArray)
-	for i := 0; i < lenComInputOpeningsProofArray; i++ {
+	offset += 1
+	paymentProof.OneOfManyProof = make([]*PKOneOfManyProof, lenOneOfManyProofArray)
+	for i := 0; i < lenOneOfManyProofArray; i++ {
+		lenOneOfManyProof := int(proofbytes[offset])
 		offset += 1
-		size := int(proofbytes[offset])
-		OneOfManyProof[i] = new(PKOneOfManyProof)
-		OneOfManyProof[i].SetBytes(proofbytes[offset:offset+size])
-		offset += size
+		paymentProof.OneOfManyProof[i] = new(PKOneOfManyProof)
+		paymentProof.OneOfManyProof[i].SetBytes(proofbytes[offset:offset+lenOneOfManyProof])
+		offset += lenOneOfManyProof
 	}
 	// Set EqualityOfCommittedValProof
-	lenEqualityOfCommittedValProof := int(proofbytes[offset])
-	EqualityOfCommittedValProof := make([]*PKEqualityOfCommittedValProof, lenEqualityOfCommittedValProof)
-	for i := 0; i < lenEqualityOfCommittedValProof; i++ {
-		EqualityOfCommittedValProof[i] = new(PKEqualityOfCommittedValProof)
-		EqualityOfCommittedValProof[i].SetBytes(proofbytes[offset:offset+privacy.EqualityOfCommittedValProofSize])
-		offset += privacy.EqualityOfCommittedValProofSize
+	lenEqualityOfCommittedValProofArray := int(proofbytes[offset])
+	offset += 1
+	paymentProof.EqualityOfCommittedValProof = make([]*PKEqualityOfCommittedValProof, lenEqualityOfCommittedValProofArray)
+	for i := 0; i < lenEqualityOfCommittedValProofArray; i++ {
+		lenEqualityOfCommittedValProof := int(proofbytes[offset])
+		offset += 1
+		paymentProof.EqualityOfCommittedValProof[i] = new(PKEqualityOfCommittedValProof)
+		paymentProof.EqualityOfCommittedValProof[i].SetBytes(proofbytes[offset:offset+lenEqualityOfCommittedValProof])
+		offset += lenEqualityOfCommittedValProof
 	}
 	// Set ProductCommitmentProof
 	lenProductCommitmentProofArray := int(proofbytes[offset])
-	ProductCommitmentProof := make([]*PKComProductProof, lenProductCommitmentProofArray)
+	offset += 1
+	paymentProof.ProductCommitmentProof = make([]*PKComProductProof, lenProductCommitmentProofArray)
 	for i := 0; i < lenProductCommitmentProofArray; i++ {
-		ProductCommitmentProof[i] = new(PKComProductProof)
-		ProductCommitmentProof[i].SetBytes(proofbytes[offset:offset+privacy.ProductCommitmentProofSize])
-		offset += privacy.ProductCommitmentProofSize
+		lenProductCommitmentProof := int(proofbytes[offset])
+		offset += 1
+		paymentProof.ProductCommitmentProof[i] = new(PKComProductProof)
+		paymentProof.ProductCommitmentProof[i].SetBytes(proofbytes[offset:offset+lenProductCommitmentProof])
+		offset += lenProductCommitmentProof
 	}
 	//Set ComOutputOpeningsProof
 	lenComOutputOpeningsProofArray := int(proofbytes[offset])
-	ComOutputOpeningsProof := make([]*PKComOpeningsProof, lenComOutputOpeningsProofArray)
+	offset += 1
+	paymentProof.ComOutputOpeningsProof = make([]*PKComOpeningsProof, lenComOutputOpeningsProofArray)
 	for i := 0; i < lenComOutputOpeningsProofArray; i++ {
-		ComOutputOpeningsProof[i] = new(PKComOpeningsProof)
-		ComOutputOpeningsProof[i].SetBytes(proofbytes[offset:offset+privacy.ComOutputOpeningsProofSize])
-		offset += privacy.ComOutputOpeningsProofSize
+		lenComOutputOpeningsProof := int(proofbytes[offset])
+		offset += 1
+		paymentProof.ComOutputOpeningsProof[i] = new(PKComOpeningsProof)
+		paymentProof.ComOutputOpeningsProof[i].SetBytes(proofbytes[offset:offset+lenComOutputOpeningsProof])
+		offset += lenComOutputOpeningsProof
 	}
+
+	//ComOutputMultiRangeProof *PKComMultiRangeProof
+	lenComOutputMultiRangeProof := int(proofbytes[offset])
+	offset += 1
+	paymentProof.ComOutputMultiRangeProof = new(PKComMultiRangeProof)
+	paymentProof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset:offset+lenComOutputMultiRangeProof])
+	offset += lenComOutputMultiRangeProof
+	//SumOutRangeProof *PKComZeroProof
+	lenSumOutRangeProof := int(proofbytes[offset])
+	offset += 1
+	paymentProof.SumOutRangeProof = new(PKComZeroProof)
+	paymentProof.SumOutRangeProof.SetBytes(proofbytes[offset:offset+lenSumOutRangeProof])
+	offset += lenSumOutRangeProof
+	//ComZeroProof *PKComZeroProof
+	lenComZeroProof := int(proofbytes[offset])
+	offset += 1
+	paymentProof.SumOutRangeProof = new(PKComZeroProof)
+	paymentProof.SumOutRangeProof.SetBytes(proofbytes[offset:offset+lenComZeroProof])
+	offset += lenComZeroProof
+
+	//InputCoins  []*privacy.InputCoin
+	lenInputCoinsArray := int(proofbytes[offset])
+	offset += 1
+	paymentProof.InputCoins = make([]*privacy.InputCoin, lenInputCoinsArray)
+	for i := 0; i < lenInputCoinsArray; i++ {
+		lenInputCoin := int(proofbytes[offset])
+		offset += 1
+		paymentProof.InputCoins[i] = new(privacy.InputCoin)
+		paymentProof.InputCoins[i].SetBytes(proofbytes[offset:offset+lenInputCoin])
+		offset += lenInputCoin
+	}
+	//OutputCoins []*privacy.OutputCoin
+	lenOutputCoinsArray := int(proofbytes[offset])
+	offset += 1
+	paymentProof.OutputCoins = make([]*privacy.OutputCoin, lenOutputCoinsArray)
+	for i := 0; i < lenOutputCoinsArray; i++ {
+		lenOutputCoin := int(proofbytes[offset])
+		offset += 1
+		paymentProof.OutputCoins[i] = new(privacy.OutputCoin)
+		paymentProof.OutputCoins[i].SetBytes(proofbytes[offset:offset+lenOutputCoin])
+		offset += lenOutputCoin
+	}
+	//ComOutputValue   []*privacy.EllipticPoint
+	//ComOutputSND     []*privacy.EllipticPoint
+	//ComOutputShardID []*privacy.EllipticPoint
+	//
+	//PubKeyLastByteSender byte
 	// Set InputCoin
+
 }
 
 // END----------------------------------------------------------------------------------------------------------------------------------------------
@@ -291,6 +352,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	indexZKPEqual[1] = new(byte)
 	*indexZKPEqual[1] = privacy.SND
 
+	preIndex := 0
 	for i := 0; i < numInputCoin; i++ {
 		/***** Build witness for proving the knowledge of input coins' Openings  *****/
 		cmInputSum[i] = cmInputSK
@@ -310,7 +372,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 		/***** Build witness for proving one-out-of-N commitments is a commitment to the coins being spent *****/
 		// commitmentTemps is a list of commitments for protocol one-out-of-N
-		commitmentTemps := make([]*privacy.EllipticPoint, numInputCoin*privacy.CMRingSize)
+		commitmentTemps := make([]*privacy.EllipticPoint, privacy.CMRingSize)
 		randInputSum[i].Add(randInputSum[i], randInputShardID)
 		rndInputIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randInputSum[i])
 		rndInputIsZero.Mod(rndInputIsZero, privacy.Curve.Params().N)
@@ -323,12 +385,13 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 		//cmInputSumAll.X, cmInputSumAll.Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputSumAll.X, cmInputSumAll.Y)
 
-		for j := 0; j < numInputCoin*privacy.CMRingSize; j++ {
+		for j := 0; j < privacy.CMRingSize; j++ {
 			commitmentTemps[j] = new(privacy.EllipticPoint)
 			commitmentTemps[j].X = big.NewInt(0)
 			commitmentTemps[j].Y = big.NewInt(0)
-			commitmentTemps[j].X, commitmentTemps[j].Y = privacy.Curve.Add(commitments[j].X, commitments[j].Y, cmInputSumInverse[i].X, cmInputSumInverse[i].Y)
+			commitmentTemps[j].X, commitmentTemps[j].Y = privacy.Curve.Add(commitments[preIndex + j].X, commitments[preIndex + j].Y, cmInputSumInverse[i].X, cmInputSumInverse[i].Y)
 		}
+		preIndex = privacy.CMRingSize*(i+1)
 
 		if wit.OneOfManyWitness[i] == nil {
 			wit.OneOfManyWitness[i] = new(PKOneOfManyWitness)

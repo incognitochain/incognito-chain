@@ -6,11 +6,9 @@ Use these function to validate common data in blockchain
 
 import (
 	"errors"
-	"fmt"
 	"math"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 )
@@ -35,32 +33,24 @@ func (self *BlockChain) IsSalaryTx(tx transaction.Transaction) bool {
 
 // ValidateDoubleSpend - check double spend for any transaction type
 func (self *BlockChain) ValidateDoubleSpend(tx transaction.Transaction, chainID byte) error {
-	txHash := tx.Hash()
-	txViewPoint, err := self.FetchTxViewPoint(chainID)
-	if err != nil {
-		str := fmt.Sprintf("Can not check double spend for tx")
-		err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
-		return err
-	}
-	nullifierDb := txViewPoint.ListNullifiers()
-	var ins []*privacy.InputCoin
-	if tx.GetType() == common.TxNormalType {
-		ins = tx.(*transaction.Tx).Proof.InputCoins
-	}
-	for _, in := range ins {
-		existed, err := common.SliceBytesExists(nullifierDb, in.CoinDetails.SerialNumber.Compress())
-		if err != nil {
-			str := fmt.Sprintf("Can not check double spend for tx")
-			err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
-			return err
+	switch tx.GetType() {
+	case common.TxNormalType:
+		{
+			txNormal := tx.(*transaction.Tx)
+			for i := 0; i < len(txNormal.Proof.InputCoins); i++ {
+				serialNumber := txNormal.Proof.InputCoins[i].CoinDetails.SerialNumber.Compress()
+				ok, err := self.config.DataBase.HasSerialNumber(serialNumber, chainID)
+				if ok || err != nil {
+					return errors.New("Double spend")
+				}
+			}
 		}
-		if existed != -1 {
-			str := fmt.Sprintf("Nullifiers of transaction %+v already existed", txHash.String())
-			err := NewBlockChainError(CanNotCheckDoubleSpendError, errors.New(str))
-			return err
+	default:
+		{
+			return errors.New("Wrong tx type")
 		}
 	}
-	return nil
+	return errors.New("Wrong tx type")
 }
 
 /*func (self *BlockChain) ValidateTxLoanRequest(tx transaction.Transaction, chainID byte) error {

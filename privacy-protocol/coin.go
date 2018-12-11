@@ -212,6 +212,7 @@ func (outputCoin *OutputCoin) SetBytes(b []byte) {
 	outputCoin.CoinDetails.SetBytes(b[length:])
 }
 
+
 type CoinDetailsEncrypted struct {
 	RandomEncrypted []byte // 48 bytes
 	SymKeyEncrypted []byte // 66 bytes
