@@ -9,25 +9,38 @@ import (
 )
 
 type BlockBodyShard struct {
+	RefBlocks    []BlockRef
 	Transactions []transaction.Transaction
 }
 
-func (f BlockBodyShard) Hash() common.Hash {
-	return common.Hash{}
+type BlockRef struct {
+	ShardID byte
+	Block   common.Hash
+}
+
+func (self *BlockBodyShard) Hash() common.Hash {
+	record := common.EmptyString
+	for _, ref := range self.RefBlocks {
+		record += string(ref.ShardID) + ref.Block.String()
+	}
+	for _, tx := range self.Transactions {
+		record += tx.Hash().String()
+	}
+	return common.DoubleHashH([]byte(record))
 }
 
 /*
 Customize UnmarshalJSON to parse list TxNormal
 because we have many types of block, so we can need to customize data from marshal from json string to build a block
 */
-func (self BlockBodyShard) UnmarshalJSON(data []byte) error {
+func (self *BlockBodyShard) UnmarshalJSON(data []byte) error {
 	Logger.log.Info("UnmarshalJSON of block")
 	type Alias BlockBodyShard
 	temp := &struct {
 		Transactions []map[string]interface{}
 		*Alias
 	}{
-		Alias: (*Alias)(&self),
+		Alias: (*Alias)(self),
 	}
 
 	err := json.Unmarshal(data, &temp)
@@ -154,4 +167,11 @@ func (self BlockBodyShard) UnmarshalJSON(data []byte) error {
 		}
 	}
 	return nil
+}
+
+func (self *BlockBodyShard) CalcMerkleRootShard() {
+
+}
+func (self *BlockBodyShard) CalcMerkleRootTx() {
+
 }
