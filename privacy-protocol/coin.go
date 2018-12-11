@@ -54,6 +54,7 @@ func (coin *Coin) UnmarshalJSON(data []byte) error {
 func (coin *Coin) Bytes() []byte {
 	var coin_bytes []byte
 	PublicKey := coin.PublicKey.Compress()
+
 	coin_bytes = append(coin_bytes, PublicKey...)
 	CoinCommitment := coin.CoinCommitment.Compress()
 	coin_bytes = append(coin_bytes, CoinCommitment...)
