@@ -67,9 +67,6 @@ func (pro *PKComOpeningsProof) Set(
 }
 
 func (pro PKComOpeningsProof) Bytes() []byte {
-	if len(pro.gamma) == 0 {
-		return []byte{}
-	}
 	if (pro.commitmentValue == nil) || (pro.alpha == nil) || (pro.indexs == nil) || (pro.gamma == nil) {
 		return []byte{}
 	}
