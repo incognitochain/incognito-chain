@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -577,7 +578,11 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	// proving sum of output values is less than vmax
 	outputValue := make([]*big.Int, numOutputCoin)
 	for i := 0; i < numOutputCoin; i++ {
-		outputValue[i] = big.NewInt(int64(outputCoins[i].CoinDetails.Value))
+		if outputCoins[i].CoinDetails.Value > 0 {
+			outputValue[i] = big.NewInt(int64(outputCoins[i].CoinDetails.Value))
+		} else{
+			return errors.New("output coin's value is less than 0")
+		}
 	}
 	if wit.ComOutputMultiRangeWitness == nil {
 		wit.ComOutputMultiRangeWitness = new(PKComMultiRangeWitness)
