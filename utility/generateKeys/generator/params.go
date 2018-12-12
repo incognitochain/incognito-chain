@@ -1,37 +1,17 @@
-package blockchain
+package generator
 
-/*
-Params defines a network by its params. These params may be used by Applications
-to differentiate network as well as addresses and keys for one network
-from those intended for use on another network
-*/
-type ParamsNew struct {
-	// Name defines a human-readable identifier for the network.
-	Name string
-
-	// Net defines the magic bytes used to identify the network.
-	Net uint32
-
-	// DefaultPort defines the default peer-to-peer port for the network.
-	DefaultPort string
-
-	// GenesisBlock defines the first block of the chain.
-	GenesisBlock *BlockV2
-}
-
-var preSelectBeaconNodeTestnetSerializedPubkey = []string{
+var PreSelectBeaconNodeTestnetSerializedPubkey = []string{
 	"1Uv23eJExNd3rumtpviranhEaKHdfccksyPucLMyaDePhJPNSuKKyfhSYDKPojPJjsvCN9fKWMRksEkGBJZiV2QyWTmM2asD5RdtRHeNA",
 	"1Uv4BGuq4FmYqTMEffqhVhYpFPmo6kNBeRiCtSqZCJfduoxixftH67fxzyDgSKL45STpxzciHsNSf7eP3iDQzVZhPFzHknXtpSxgsq5bu",
 	"1Uv3vqr76QGCVMRLbZ9vgDZU7mTUHLZcFv7Dy1pHxiswYXnXaABEhXrzjTWDbspeN4UQjYfUbsyQBRWvvjd8X1NytXwuM4bzP2mdWsUGg",
 }
-
-var preSelectBeaconNodeTestnet = []string{
+var PreSelectBeaconNodeTestnet = []string{
 	"124sf2tJ4K6iVD6PS4dZzs3BNYuYmHmup3Q9MfhorDrJ6aiSr46",
 	"1WG3ys2tsZKpAYV7UEMirmALrMe7wDijnZfTp2Nnd9Ei6upGhc",
 	"12K2poTdqzStNZjKdvYzdTBihhigTRWimHWVd7nZ5wRjEPVEZ8n",
 }
 
-var preSelectShardNodeTestnetSerializedPubkey = []string{
+var PreSelectShardNodeTestnetSerializedPubkey = []string{
 	"1Uv3Df2nCnm8MgzCyScbVzCKiBCJG1DbdXKN8sayDX3KwaMDEH1Vw2LmxqZzNfqxoz6jooBVj4M87GgtMfAnErNLYbjLzUpUyM4W7tNCC",
 	"1Uv4CPh9RxmZK4kYzAWYDgnRJCjnZ41kqvXiETqfhYsRGKH9NidXTygWUug3nisX9NpfV96Jf2GsxT49Fa2htjQjEQezqLoE5Gg3USzRo",
 	"1Uv3dihoiDhShGNn9RxayCkStfhhtrZ9tCn3mJZQmr3nQ8HhtfQn3tqctVm98knugikoxuMtqXMPf5icgR5nd34JMjGA1VAAkCAa7Pj8b",
@@ -50,8 +30,7 @@ var preSelectShardNodeTestnetSerializedPubkey = []string{
 	"1Uv3aNz1LEitNTyQjtfKhofM3WfEZffbHSacMvA5JroZi7dDAXyUJVUsUquNz5UuwkCkDRwTrGbgEJXXiuZRctKAqhZztrTVPMYEGk5in",
 	"1Uv28rhQaNhh4fJNcRKLkCbrcRLd7W21WV1pmWBMQ4FTBSLcrL8Zk3K8D92VDK86EPWdHcf37RsZh1k9oWWejNxXgrPTgk6PcGwiu8qow",
 }
-
-var preSelectShardNodeTestnet = []string{
+var PreSelectShardNodeTestnet = []string{
 	"12VGen58VjKC8cT3hGhSohdb8n4kz3huXka9UNcYFbUzGdgnXKZ",
 	"12nVJxbZnexTmkbqcs9huztH9kN4DBCbjZewHgoyH6kHsLnf9uE",
 	"12TZJQbucHA97TJNVtp8xud2BUbrzt1Mgq8Kif1BEdf51BVPFwR",
@@ -69,22 +48,4 @@ var preSelectShardNodeTestnet = []string{
 	"1AH2pPWpF9TjmMaaAUT26WgfSJw31EhdyssHUecxKCmCzZGMB3",
 	"12obfKTP2yTtQVx3mcHk2pKBZBoZEeyjmmcfA7SgtNwCFhHKLrB",
 	"12k5BfodMQLMDZXmKNwd9gj7eqek3WQqmwYxyj37HBtJpMx1djR",
-}
-
-var icoParamsTestnetNew = IcoParams{
-	InitialPaymentAddress: TestnetGenesisBlockPaymentAddress,
-	InitFundSalary:        TestnetInitFundSalary,
-	InitialBondToken:      TestnetInitBondToken,
-	InitialCMBToken:       TestnetInitCmBToken,
-	InitialDCBToken:       TestnetInitDCBToken,
-	InitialGOVToken:       TestnetInitGovToken,
-}
-
-var TestNetParamsNew = ParamsNew{
-	Name:        TestnetName,
-	Net:         Testnet,
-	DefaultPort: TestnetDefaultPort,
-
-	// blockChain parameters
-	GenesisBlock: BeaconBlockGenerator{}.CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnet, preSelectShardNodeTestnet, icoParamsTestnetNew, 1000, 1000),
 }

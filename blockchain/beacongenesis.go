@@ -24,9 +24,18 @@ func (self *BeaconBlockGenerator) CreateBeaconGenesisBlock(
 	//TODO: build param
 	inst := [][]string{}
 	// build validator beacon
-	inst = append(inst, []string{"assign", "...", "beacon"})
-	// build validator shard
-	inst = append(inst, []string{"assign", "...", "shard"})
+	// test generate public key in utility/generateKeys
+	// CHANGE preSelectBeaconNodeTestnetSerializedPubkey to beaconNodes in param
+	// CHANGE preSelectShardNodeTestnetSerializedPubkey to shardNodes in param
+	strBeacon := []string{"assign"}
+	strBeacon = append(strBeacon, preSelectBeaconNodeTestnetSerializedPubkey...)
+	strBeacon = append(strBeacon, "beacon")
+
+	strShard := []string{"assign"}
+	strShard = append(strShard, preSelectShardNodeTestnetSerializedPubkey...)
+	strShard = append(strShard, "shard")
+	inst = append(inst, strBeacon)
+	inst = append(inst, strShard)
 	// build network param
 	inst = append(inst, []string{"set", "salaryPerTx", fmt.Sprintf("%v", salaryPerTx)})
 	inst = append(inst, []string{"set", "basicSalary", fmt.Sprintf("%v", basicSalary)})
