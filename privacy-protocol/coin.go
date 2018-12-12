@@ -246,13 +246,16 @@ func (outputCoin *OutputCoin) Init() *OutputCoin {
 func (outputCoin *OutputCoin) Bytes() []byte {
 	var outCoinBytes []byte
 	if outputCoin.CoinDetailsEncrypted != nil{
-		outCoinBytes = append(outCoinBytes, byte(len(outputCoin.CoinDetailsEncrypted.Bytes()))) //112 bytes
-		outCoinBytes = append(outCoinBytes, outputCoin.CoinDetailsEncrypted.Bytes()...)
+		coinDetailsEncryptedBytes := outputCoin.CoinDetailsEncrypted.Bytes()
+		outCoinBytes = append(outCoinBytes, byte(len(coinDetailsEncryptedBytes))) //112 bytes
+		outCoinBytes = append(outCoinBytes, coinDetailsEncryptedBytes...)
 	} else {
 		outCoinBytes = append(outCoinBytes, byte(0))
 	}
 
-	outCoinBytes = append(outCoinBytes, outputCoin.CoinDetails.Bytes()...)
+	coinDetailBytes := outputCoin.CoinDetails.Bytes()
+	outCoinBytes = append(outCoinBytes, byte(len(coinDetailBytes)))
+	outCoinBytes = append(outCoinBytes, coinDetailBytes...)
 	return outCoinBytes
 }
 
@@ -260,13 +263,19 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) {
 	if len(bytes) == 0{
 		return
 	}
-	length := int(bytes[0])
-	if length > 0 {
+	offset := 0
+	lenCoinDetailEncrypted := int(bytes[0])
+	offset += 1
+	if lenCoinDetailEncrypted > 0 {
 		outputCoin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
-		outputCoin.CoinDetailsEncrypted.SetBytes(bytes[0:length])
+		outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset:offset +lenCoinDetailEncrypted])
+		offset += lenCoinDetailEncrypted
 	}
+
+	lenCoinDetail := int(bytes[offset])
+	offset += 1
 	outputCoin.CoinDetails = new(Coin)
-	outputCoin.CoinDetails.SetBytes(bytes[length:])
+	outputCoin.CoinDetails.SetBytes(bytes[offset:offset + lenCoinDetail])
 }
 
 type CoinDetailsEncrypted struct {
