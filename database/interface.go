@@ -49,7 +49,7 @@ type DatabaseInterface interface {
 
 	// PedersenCommitment
 	StoreCommitments(pubkey []byte, commitment []byte, chainID byte) error
-
+	StoreOutputCoins(pubkey []byte, outputcoin []byte, chainID byte) error
 	FetchCommitments(chainID byte) ([][]byte, error)
 	HasCommitment(commitment []byte, chainID byte) (bool, error)
 	HasCommitmentIndex(commitmentIndex uint64, chainID byte) (bool, error)
