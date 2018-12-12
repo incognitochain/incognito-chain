@@ -28,14 +28,15 @@ func getTxTokenValue(tokenData transaction.TxTokenData, tokenID []byte, pk []byt
 // getTxValue converts total Constants in a tx to another token
 func getTxValue(tx *transaction.Tx, tokenID []byte, pk []byte, prices map[string]uint64) (uint64, uint64) {
 	// Get amount of Constant user sent
+	// TODO(@0xbunyip): get value from new privacy tx here
 	value := uint64(0)
-	for _, desc := range tx.Descs {
-		for _, note := range desc.Note {
-			if bytes.Equal(note.Apk[:], pk) {
-				value += note.Value
-			}
-		}
-	}
+	//	for _, desc := range tx.Descs {
+	//		for _, note := range desc.Note {
+	//			if bytes.Equal(note.Apk[:], pk) {
+	//				value += note.Value
+	//			}
+	//		}
+	//	}
 	assetPrice := prices[string(tokenID)]
 	amounts := value / assetPrice
 	return value, amounts
@@ -79,9 +80,10 @@ func transferTxToken(tokenAmount uint64, unspentTxTokenOuts []transaction.TxToke
 	// TODO:@bunnyip  need to double check here
 	// accountDCB, _ := wallet.Base58CheckDeserialize(dcbAddress)
 	// Get amount of Constant user sent
-	value := uint64(0)
+	//	value := uint64(0)
 	// userPk := txRequest.Tx.JSPubKey
-	userPk := txRequest.Tx.SigPubKey
+	//	userPk := []byte{}
+	//	userPk := txRequest.Tx.SigPubKey
 	// for _, desc := range txRequest.Tx.Descs {
 	// 	for _, note := range desc.Note {
 	// 		if bytes.Equal(note.Apk[:], accountDCB.KeySet.PaymentAddress.Pk) {
@@ -89,9 +91,6 @@ func transferTxToken(tokenAmount uint64, unspentTxTokenOuts []transaction.TxToke
 	// 		}
 	// 	}
 	// }
-	bondPrice := bondPrices[string(bondID)]
-	bonds := value / bondPrice
-	sumBonds := uint64(0)
 	usedID := 0
 	for _, out := range unspentTxTokenOuts {
 		usedID += 1
@@ -180,10 +179,12 @@ func buildResponseForToken(
 	var txToken *transaction.TxCustomToken
 	usedID := -1
 	err := errors.New("")
+	pubkey := []byte{}
 	if mint {
-		txToken = mintTxToken(tokenAmount, tokenID, txRequest.Tx.JSPubKey)
+		// TODO(@0xbunyip): get sender here
+		txToken = mintTxToken(tokenAmount, tokenID, pubkey)
 	} else {
-		txToken, usedID, err = transferTxToken(tokenAmount, unspentTxTokenOuts, tokenID, txRequest.Tx.JSPubKey)
+		txToken, usedID, err = transferTxToken(tokenAmount, unspentTxTokenOuts, tokenID, pubkey)
 		if err != nil {
 			return nil, err
 		}

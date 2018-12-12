@@ -740,18 +740,18 @@ func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
 func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 	for _, tx := range block.Transactions {
 		switch tx.GetMetadataType() {
-		case metadata.VoteDCBBoardMeta:
+		case metadata.AcceptDCBProposalMeta:
 			{
-				txAccepted := tx.(*transaction.TxAcceptDCBProposal)
-				_, _, _, getTx, err := self.GetTransactionByHash(txAccepted.DCBProposalTXID)
-				proposal := getTx.(*transaction.TxSubmitDCBProposal)
+				meta := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
+				_, _, _, getTx, err := self.GetTransactionByHash(meta.DCBProposalTXID)
+				proposal := getTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
 				if err != nil {
 					return err
 				}
 
 				// Store saledata in db if needed
-				if proposal.DCBProposalData.DCBParams.SaleData != nil {
-					saleData := proposal.DCBProposalData.DCBParams.SaleData
+				if proposal.DCBVotingParams.SaleData != nil {
+					saleData := proposal.DCBVotingParams.SaleData
 					if _, _, _, _, _, err := self.config.DataBase.LoadCrowdsaleData(saleData.SaleID); err == nil {
 						return fmt.Errorf("SaleID not unique")
 					}
