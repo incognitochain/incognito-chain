@@ -29,7 +29,6 @@ type Coin struct {
 	Info           []byte //512 bytes
 }
 
-
 func (coin *Coin) GetPubKeyLastByte() byte {
 	pubKeyBytes := coin.PublicKey.Compress()
 	return pubKeyBytes[len(pubKeyBytes)-1]
@@ -52,7 +51,7 @@ func (coin *Coin) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (coin * Coin) Init() * Coin{
+func (coin *Coin) Init() *Coin {
 	coin.PublicKey = new(EllipticPoint).Zero()
 	coin.CoinCommitment = new(EllipticPoint).Zero()
 	coin.SNDerivator = new(big.Int)
@@ -125,7 +124,7 @@ func (coin *Coin) Bytes() []byte {
 }
 
 func (coin *Coin) SetBytes(coinBytes []byte) error {
-	if len(coinBytes) == 0{
+	if len(coinBytes) == 0 {
 		return nil
 	}
 	var err error
@@ -136,7 +135,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	if (lenField != 0) {
 		coin.PublicKey = new(EllipticPoint)
 		coin.PublicKey, err = DecompressKey(coinBytes[offset:offset+int(lenField)])
-		if err != nil{
+		if err != nil {
 			return err
 		}
 		offset += int(lenField)
@@ -148,7 +147,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	if (lenField != 0) {
 		coin.CoinCommitment = new(EllipticPoint)
 		coin.CoinCommitment, err = DecompressKey(coinBytes[offset:offset+int(lenField)])
-		if err != nil{
+		if err != nil {
 			return err
 		}
 		offset += int(lenField)
@@ -169,7 +168,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	if (lenField != 0) {
 		coin.SerialNumber = new(EllipticPoint)
 		coin.SerialNumber, err = DecompressKey(coinBytes[offset:offset+int(lenField)])
-		if err != nil{
+		if err != nil {
 			return err
 		}
 		offset += int(lenField)
@@ -189,7 +188,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if (lenField != 0) {
 		x := new(big.Int)
-		x.SetBytes(coinBytes[offset : offset+int(lenField)])
+		x.SetBytes(coinBytes[offset: offset+int(lenField)])
 		coin.Value = x.Uint64()
 		offset += int(lenField)
 	}
@@ -213,7 +212,7 @@ type InputCoin struct {
 }
 
 func (inputCoin *InputCoin) Init() *InputCoin {
-	if(inputCoin.CoinDetails!=nil) {
+	if (inputCoin.CoinDetails != nil) {
 		inputCoin.CoinDetails.Init()
 	}
 	return inputCoin
@@ -223,7 +222,7 @@ func (inputCoin *InputCoin) Bytes() []byte {
 	return inputCoin.CoinDetails.Bytes()
 }
 func (inputCoin *InputCoin) SetBytes(bytes []byte) {
-	if len(bytes) == 0{
+	if len(bytes) == 0 {
 		return
 	}
 	inputCoin.CoinDetails = new(Coin)
@@ -236,7 +235,7 @@ type OutputCoin struct {
 }
 
 func (outputCoin *OutputCoin) Init() *OutputCoin {
-	if (outputCoin.CoinDetails!=nil) {
+	if (outputCoin.CoinDetails != nil) {
 		outputCoin.CoinDetails.Init()
 	}
 	outputCoin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
@@ -245,7 +244,7 @@ func (outputCoin *OutputCoin) Init() *OutputCoin {
 
 func (outputCoin *OutputCoin) Bytes() []byte {
 	var outCoinBytes []byte
-	if outputCoin.CoinDetailsEncrypted != nil{
+	if outputCoin.CoinDetailsEncrypted != nil {
 		coinDetailsEncryptedBytes := outputCoin.CoinDetailsEncrypted.Bytes()
 		outCoinBytes = append(outCoinBytes, byte(len(coinDetailsEncryptedBytes))) //112 bytes
 		outCoinBytes = append(outCoinBytes, coinDetailsEncryptedBytes...)
@@ -260,7 +259,7 @@ func (outputCoin *OutputCoin) Bytes() []byte {
 }
 
 func (outputCoin *OutputCoin) SetBytes(bytes []byte) {
-	if len(bytes) == 0{
+	if len(bytes) == 0 {
 		return
 	}
 	offset := 0
@@ -268,14 +267,14 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) {
 	offset += 1
 	if lenCoinDetailEncrypted > 0 {
 		outputCoin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
-		outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset:offset +lenCoinDetailEncrypted])
+		outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset:offset+lenCoinDetailEncrypted])
 		offset += lenCoinDetailEncrypted
 	}
 
 	lenCoinDetail := int(bytes[offset])
 	offset += 1
 	outputCoin.CoinDetails = new(Coin)
-	outputCoin.CoinDetails.SetBytes(bytes[offset:offset + lenCoinDetail])
+	outputCoin.CoinDetails.SetBytes(bytes[offset:offset+lenCoinDetail])
 }
 
 type CoinDetailsEncrypted struct {
@@ -289,15 +288,14 @@ func (self *CoinDetailsEncrypted) Init() *CoinDetailsEncrypted {
 	return self
 }
 func (coinDetailsEncrypted *CoinDetailsEncrypted) IsNil() bool {
-	if coinDetailsEncrypted.SymKeyEncrypted == nil{
+	if coinDetailsEncrypted.SymKeyEncrypted == nil {
 		return true
 	}
-	if coinDetailsEncrypted.RandomEncrypted == nil{
+	if coinDetailsEncrypted.RandomEncrypted == nil {
 		return true
 	}
 	return false
 }
-
 
 func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() [] byte {
 	if coinDetailsEncrypted.IsNil() {
@@ -309,7 +307,7 @@ func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() [] byte {
 	return res
 }
 func (coinDetailsEncrypted *CoinDetailsEncrypted) SetBytes(bytes []byte) {
-	if len(bytes) == 0{
+	if len(bytes) == 0 {
 		return
 	}
 	coinDetailsEncrypted.RandomEncrypted = bytes[0:48]
