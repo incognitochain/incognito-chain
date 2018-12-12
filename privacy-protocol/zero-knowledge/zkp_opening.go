@@ -79,6 +79,9 @@ func (pro PKComOpeningsProof) Bytes() []byte {
 		}
 		res = append(res, temp...)
 	}
+	for i := 0; i < len(pro.indexs); i++ {
+		res = append(res, []byte{pro.indexs[i]}...)
+	}
 	return res
 }
 
@@ -98,10 +101,19 @@ func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) error {
 	if !pro.alpha.IsSafe() {
 		return errors.New("Decompressed failed!")
 	}
-	pro.gamma = make([]*big.Int, privacy.PedCom.Capacity)
-	for i := 0; i < 2; i++ {
+	// pro.gamma = make([]*big.Int, privacy.PedCom.Capacity)
+	// for i := 0; i < privacy.PedCom.Capacity; i++ {
+	// 	pro.gamma[i] = big.NewInt(0)
+	// 	pro.gamma[i].SetBytes(bytestr[privacy.CompressedPointSize*2+i*privacy.BigIntSize : privacy.CompressedPointSize*2+(i+1)*privacy.BigIntSize])
+	// }
+	pro.gamma = make([]*big.Int, (len(bytestr)-privacy.CompressedPointSize*2)/privacy.BigIntSize)
+	for i := 0; i < len(pro.gamma); i++ {
 		pro.gamma[i] = big.NewInt(0)
 		pro.gamma[i].SetBytes(bytestr[privacy.CompressedPointSize*2+i*privacy.BigIntSize : privacy.CompressedPointSize*2+(i+1)*privacy.BigIntSize])
+	}
+	pro.indexs = make([]byte, len(pro.gamma))
+	for i := 0; i < len(pro.indexs); i++ {
+		pro.indexs[i] = bytestr[privacy.CompressedPointSize*2+len(pro.gamma)*privacy.BigIntSize]
 	}
 	return nil
 }
