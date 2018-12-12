@@ -279,7 +279,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	for i := 0; i < lenInputCoinsArray; i++ {
 		lenInputCoin := int(proofbytes[offset])
 		offset += 1
-		proof.InputCoins[i] = new(privacy.InputCoin).Init()
+		proof.InputCoins[i] = new(privacy.InputCoin)
 		proof.InputCoins[i].SetBytes(proofbytes[offset : offset+lenInputCoin])
 		offset += lenInputCoin
 	}
@@ -290,7 +290,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	for i := 0; i < lenOutputCoinsArray; i++ {
 		lenOutputCoin := int(proofbytes[offset])
 		offset += 1
-		proof.OutputCoins[i] = new(privacy.OutputCoin).Init()
+		proof.OutputCoins[i] = new(privacy.OutputCoin)
 		proof.OutputCoins[i].SetBytes(proofbytes[offset : offset+lenOutputCoin])
 		offset += lenOutputCoin
 	}

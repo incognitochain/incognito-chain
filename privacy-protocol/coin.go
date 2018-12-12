@@ -51,18 +51,15 @@ func (coin *Coin) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-//func (coin * Coin) Init() * Coin{
-//	if(coin == nil){
-//		coin = new(Coin)
-//	}
-//	coin.PublicKey = new(EllipticPoint)
-//	coin.CoinCommitment = new(EllipticPoint)
-//	coin.SNDerivator = new(big.Int)
-//	coin.SerialNumber = new(EllipticPoint)
-//	coin.Randomness = new(big.Int)
-//	coin.Value = 0
-//	return coin
-//}
+func (coin * Coin) Init() * Coin{
+	coin.PublicKey = new(EllipticPoint)
+	coin.CoinCommitment = new(EllipticPoint)
+	coin.SNDerivator = new(big.Int)
+	coin.SerialNumber = new(EllipticPoint)
+	coin.Randomness = new(big.Int)
+	coin.Value = 0
+	return coin
+}
 
 func (coin *Coin) Bytes() []byte {
 	var coin_bytes []byte
@@ -223,6 +220,10 @@ func (inputCoin *InputCoin) Bytes() []byte {
 	return inputCoin.CoinDetails.Bytes()
 }
 func (inputCoin *InputCoin) SetBytes(bytes []byte) {
+	if len(bytes) == 0{
+		return
+	}
+	inputCoin.CoinDetails = new(Coin)
 	inputCoin.CoinDetails.SetBytes(bytes)
 }
 
@@ -249,8 +250,13 @@ func (outputCoin *OutputCoin) Bytes() []byte {
 }
 
 func (outputCoin *OutputCoin) SetBytes(bytes []byte) {
+	if len(bytes) == 0{
+		return
+	}
 	length := int(bytes[0])
-	outputCoin.CoinDetailsEncrypted.SetBytes(bytes[0:length])
+	if length > 0 {
+		outputCoin.CoinDetailsEncrypted.SetBytes(bytes[0:length])
+	}
 	outputCoin.CoinDetails.SetBytes(bytes[length:])
 }
 
