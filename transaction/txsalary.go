@@ -27,21 +27,25 @@ func CreateTxSalary(
 	// assign fee tx = 0
 	tx.Fee = 0
 
+	var err error
 	// create new output coins with info: Pk, value, SND, randomness, last byte pk, coin commitment
-	tx.Proof = new(zkp.PaymentProof).Init()
+	tx.Proof = new(zkp.PaymentProof)
 	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, 1)
 	tx.Proof.OutputCoins[0] = new(privacy.OutputCoin)
-	tx.Proof.OutputCoins[0].CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted).Init()
+	//tx.Proof.OutputCoins[0].CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted).Init()
 	tx.Proof.OutputCoins[0].CoinDetails = new(privacy.Coin)
 	tx.Proof.OutputCoins[0].CoinDetails.Value = salary
-	tx.Proof.OutputCoins[0].CoinDetails.PublicKey, _ = privacy.DecompressKey(receiverAddr.Pk)
+	tx.Proof.OutputCoins[0].CoinDetails.PublicKey, err = privacy.DecompressKey(receiverAddr.Pk)
+	if err != nil {
+		return nil, err
+	}
 	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
 
 	sndOut := privacy.RandInt()
 	for true {
 		ok, err := tx.CheckSNDExistence(sndOut, db)
 		if err != nil {
-			fmt.Println(err)
+			return nil, err
 		}
 		if ok {
 			sndOut = privacy.RandInt()
@@ -56,7 +60,6 @@ func CreateTxSalary(
 	tx.Proof.OutputCoins[0].CoinDetails.CommitAll()
 
 	// sign Tx
-	var err error
 	tx.SigPubKey = receiverAddr.Pk
 	tx.sigPrivKey = *privKey
 	err = tx.SignTx(false)
