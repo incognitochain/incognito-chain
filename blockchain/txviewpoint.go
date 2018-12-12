@@ -17,6 +17,7 @@ type TxViewPoint struct {
 	listSerialNumbers [][]byte // array serialNumbers
 	listCommitments   [][]byte
 	mapCommitments    map[string][][]byte //map[base58check.encode{pubkey}]([]([]byte-commitment))
+	mapOutputCoins    map[string][]privacy.OutputCoin
 
 	listSnD        []big.Int
 	customTokenTxs map[int32]*transaction.TxCustomToken
@@ -67,6 +68,7 @@ func (view *TxViewPoint) CurrentBestBlockHash() *common.Hash {
 func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.DatabaseInterface, proof *zkp.PaymentProof) ([][]byte, map[string][][]byte, []big.Int, error) {
 	acceptedNullifiers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
+	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
 	acceptedSnD := make([]big.Int, 0)
 	if proof == nil {
 		return acceptedNullifiers, acceptedCommitments, acceptedSnD, nil
@@ -94,12 +96,16 @@ func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.Datab
 				acceptedCommitments[temp] = make([][]byte, 0)
 			}
 			acceptedCommitments[temp] = append(acceptedCommitments[temp], item.CoinDetails.CoinCommitment.Compress())
+			if acceptedOutputcoins[temp] == nil {
+				acceptedOutputcoins[temp] = make([]privacy.OutputCoin, 0)
+			}
+			acceptedOutputcoins[temp] = append(acceptedOutputcoins[temp], *item)
 		}
 
 		snD := item.CoinDetails.SNDerivator
 		// TODO
-		//temp, err := db.HasSND(snD, block.Header.ChainID)
-		if !temp {
+		temp, err = db.HasSNDerivator(*snD, chainID)
+		if !temp && err != nil {
 			acceptedSnD = append(acceptedSnD, *snD)
 		}
 	}
@@ -195,6 +201,7 @@ func NewTxViewPoint(chainId byte) *TxViewPoint {
 		listSerialNumbers: make([][]byte, 0),
 		listCommitments:   make([][]byte, 0),
 		mapCommitments:    make(map[string][][]byte, 0),
+		mapOutputCoins:    make(map[string][]privacy.OutputCoin, 0),
 		listSnD:           make([]big.Int, 0),
 		customTokenTxs:    make(map[int32]*transaction.TxCustomToken, 0),
 	}

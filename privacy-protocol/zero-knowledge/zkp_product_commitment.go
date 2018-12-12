@@ -47,15 +47,30 @@ func (wit *PKComProductWitness) Set(
 	*wit.cmB = *cmB
 	wit.index = *idx
 }
-func (pro *PKComProductProof) IsNull() bool{
-	if (pro.D==nil){return true}
-	if (pro.E==nil){return true}
-	if (pro.f==nil){return true}
-	if (pro.z==nil){return true}
-	if (pro.cmA==nil){return true}
-	if (pro.cmB==nil){return true}
+
+func (pro *PKComProductProof) IsNull() bool {
+	if (pro.D == nil) {
+		return true
+	}
+	if (pro.E == nil) {
+		return true
+	}
+	if (pro.f == nil) {
+		return true
+	}
+	if (pro.z == nil) {
+		return true
+	}
+	if (pro.cmA == nil) {
+		return true
+	}
+	if (pro.cmB == nil) {
+		return true
+	}
+	return false
 }
-func (pro *PKComProductProof) Init() * PKComProductProof {
+
+func (pro *PKComProductProof) Init() *PKComProductProof {
 	pro.D = new(privacy.EllipticPoint).Zero()
 	pro.E = new(privacy.EllipticPoint).Zero()
 	pro.f = new(big.Int)
@@ -93,7 +108,7 @@ func (pro PKComProductProof) Bytes() []byte {
 }
 
 func (pro *PKComProductProof) SetBytes(proofBytes []byte) error {
-	if pro == nil{
+	if pro == nil {
 		pro = pro.Init()
 	}
 

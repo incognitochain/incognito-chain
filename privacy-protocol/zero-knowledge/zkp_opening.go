@@ -31,6 +31,13 @@ func (pro *PKComOpeningsProof) Init() *PKComOpeningsProof {
 	return pro
 }
 
+func (pro *PKComOpeningsProof) IsNil() bool {
+	if (len(pro.gamma) == 0) || (pro.commitmentValue == nil) || (pro.alpha == nil) || (pro.indexs == nil) || (pro.gamma == nil) {
+		return true
+	}
+	return false
+}
+
 // randValue return random witness value for testing
 func (wit *PKComOpeningsWitness) randValue(testcase bool) {
 	wit.Openings = make([]*big.Int, privacy.PedCom.Capacity)
@@ -67,7 +74,7 @@ func (pro *PKComOpeningsProof) Set(
 }
 
 func (pro PKComOpeningsProof) Bytes() []byte {
-	if (pro.commitmentValue == nil) || (pro.alpha == nil) || (pro.indexs == nil) || (pro.gamma == nil) {
+	if pro.IsNil() {
 		return []byte{}
 	}
 

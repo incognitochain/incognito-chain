@@ -1,11 +1,7 @@
 package blockchain
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/transaction"
 )
 
 // ProcessBlock is the main workhorse for handling insertion of new blocks into
@@ -39,7 +35,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	// such as making blocks that never become part of the main chain or
 	// blocks that fail to connect available for further analysis.
 	if self.config.Light {
-		Logger.log.Infof("Storing Block Header of Block %+v", blockHash)
+		/*Logger.log.Infof("Storing Block Header of Block %+v", blockHash)
 		err := self.StoreBlockHeader(block)
 		if err != nil {
 			return NewBlockChainError(UnExpectedError, err)
@@ -47,7 +43,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 
 		Logger.log.Infof("Fetch Block %+v to get unspent tx of all accoutns in wallet", blockHash)
 		for _, account := range self.config.Wallet.MasterAccount.Child {
-			unspentTxs, err1 := self.GetListUnspentTxByKeysetInBlock(&account.Key.KeySet, block, true)
+			unspentTxs, err1 := self.GetListUnspentTxByKeysetInBlock(&account.Key.KeySet, block.Header.ChainID, block.Transactions, true)
 			if err1 != nil {
 				return NewBlockChainError(UnExpectedError, err1)
 			}
@@ -74,7 +70,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 					}
 				}
 			}
-		}
+		}*/
 	} else {
 		err := self.StoreBlock(block)
 		if err != nil {

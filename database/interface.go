@@ -49,6 +49,7 @@ type DatabaseInterface interface {
 
 	// PedersenCommitment
 	StoreCommitments(pubkey []byte, commitment []byte, chainID byte) error
+
 	FetchCommitments(chainID byte) ([][]byte, error)
 	HasCommitment(commitment []byte, chainID byte) (bool, error)
 	HasCommitmentIndex(commitmentIndex uint64, chainID byte) (bool, error)
@@ -56,6 +57,7 @@ type DatabaseInterface interface {
 	GetCommitmentIndex(commitment []byte, chainId byte) (*big.Int, error)
 	GetCommitmentLength(chainId byte) (*big.Int, error)
 	GetCommitmentIndexsByPubkey(pubkey []byte, chainID byte) ([][]byte, error)
+	GetOutcoinsByPubkey(pubkey []byte, chainID byte) ([][]byte, error)
 	CleanCommitments() error
 
 	// SNDerivator

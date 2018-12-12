@@ -41,7 +41,7 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 	if fee == 0 {
 		fee = self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.BasicSalary
 	}
-	totalAmmount := fee
+	//totalAmmount := fee
 
 	// param #3: loan params
 	loanParams := arrayParams[2].(map[string]interface{})
@@ -51,7 +51,7 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 	}
 
 	// list unspent tx for estimation fee
-	estimateTotalAmount := totalAmmount
+	/*estimateTotalAmount := totalAmmount
 	usableTxsMap, _ := self.config.BlockChain.GetListTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
@@ -68,7 +68,7 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 				break
 			}
 		}
-	}
+	}*/
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
 	/*nullifiersDb := make(map[byte]([][]byte))
@@ -184,7 +184,7 @@ func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan 
 	if fee == 0 {
 		fee = self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.BasicSalary
 	}
-	totalAmmount := fee
+	//totalAmmount := fee
 
 	// param #3: loan params
 	//loanParams := arrayParams[2].(map[string]interface{})
@@ -194,7 +194,7 @@ func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan 
 	}*/
 
 	// list unspent tx for estimation fee
-	estimateTotalAmount := totalAmmount
+	/*estimateTotalAmount := totalAmmount
 	usableTxsMap, _ := self.config.BlockChain.GetListTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
@@ -211,7 +211,7 @@ func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan 
 				break
 			}
 		}
-	}
+	}*/
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
 	/*nullifiersDb := make(map[byte]([][]byte))
@@ -326,7 +326,7 @@ func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan 
 	if fee == 0 {
 		fee = self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.BasicSalary
 	}
-	totalAmmount := fee
+	//totalAmmount := fee
 
 	// param #3: loan params
 	/*loanParams := arrayParams[2].(map[string]interface{})
@@ -336,7 +336,7 @@ func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan 
 	}*/
 
 	// list unspent tx for estimation fee
-	estimateTotalAmount := totalAmmount
+	/*estimateTotalAmount := totalAmmount
 	usableTxsMap, _ := self.config.BlockChain.GetListTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
@@ -353,7 +353,7 @@ func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan 
 				break
 			}
 		}
-	}
+	}*/
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
 	/*nullifiersDb := make(map[byte]([][]byte))
@@ -468,7 +468,7 @@ func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <
 	if fee == 0 {
 		fee = self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.BasicSalary
 	}
-	totalAmmount := fee
+	//totalAmmount := fee
 
 	// param #3: loan params
 	/*loanParams := arrayParams[2].(map[string]interface{})
@@ -478,7 +478,7 @@ func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <
 	}*/
 
 	// list unspent tx for estimation fee
-	estimateTotalAmount := totalAmmount
+	/*estimateTotalAmount := totalAmmount
 	usableTxsMap, _ := self.config.BlockChain.GetListTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
@@ -495,7 +495,7 @@ func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <
 				break
 			}
 		}
-	}
+	}*/
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
 	/*nullifiersDb := make(map[byte]([][]byte))

@@ -56,6 +56,13 @@ func (pro *PKComZeroProof) Init() *PKComZeroProof {
 	return pro
 }
 
+func (pro *PKComZeroProof) IsNil() bool {
+	if (pro.commitmentValue == nil) || (pro.commitmentZeroS == nil) || (pro.index == nil) || (pro.z == nil) {
+		return true
+	}
+	return false
+}
+
 // randValue return random witness value for testing
 func (wit *PKComZeroWitness) randValue(testcase bool) {
 	switch testcase {
@@ -94,10 +101,9 @@ func (wit *PKComZeroWitness) Set(
 
 // Bytes ...
 func (pro PKComZeroProof) Bytes() []byte {
-	if (pro.commitmentValue == nil) || (pro.commitmentZeroS == nil) || (pro.index == nil) || (pro.z == nil) {
+	if pro.IsNil() {
 		return []byte{}
 	}
-
 	var res []byte
 	res = append(pro.commitmentValue.Compress(), []byte{*pro.index}...)
 	res = append(res, pro.commitmentZeroS.Compress()...)

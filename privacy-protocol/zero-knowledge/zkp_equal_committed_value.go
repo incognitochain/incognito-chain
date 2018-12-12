@@ -36,6 +36,13 @@ func (pro *PKEqualityOfCommittedValProof) Init() *PKEqualityOfCommittedValProof 
 	return pro
 }
 
+func (pro *PKEqualityOfCommittedValProof) IsNil() bool {
+	if (len(pro.C) == 0) || (len(pro.Index) == 0) || (pro.T == nil) || (pro.Z == nil) {
+		return true
+	}
+	return false
+}
+
 // randValue ...
 func (wit *PKEqualityOfCommittedValWitness) randValue() {
 	X := make([]*big.Int, 3)
@@ -69,14 +76,10 @@ func (wit *PKEqualityOfCommittedValWitness) Set(
 }
 
 func (pro PKEqualityOfCommittedValProof) Bytes() []byte {
+	if pro.IsNil() {
+		return []byte{}
+	}
 	var res []byte
-
-	if len(pro.C) == 0 {
-		return []byte{}
-	}
-	if (len(pro.Index) == 0) || (pro.T == nil) || (pro.Z == nil) {
-		return []byte{}
-	}
 
 	res = append(pro.C[0].Compress(), pro.C[1].Compress()...)
 	res = append(res, []byte{pro.Index[0], pro.Index[1]}...)
