@@ -249,6 +249,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		OnOutboundConnection: self.OutboundPeerConnected,
 		GetCurrentShard:      self.GetCurrentShard,
 		GetPbksOfShard:       self.GetPbksOfShard,
+		GetCurrentPbk:        self.GetCurrentPbk,
 		ListenerPeers:        peers,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
@@ -278,21 +279,21 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		}
 
 		rpcConfig := rpcserver.RpcServerConfig{
-			Listenters:      rpcListeners,
-			RPCQuirks:       cfg.RPCQuirks,
-			RPCMaxClients:   cfg.RPCMaxClients,
-			ChainParams:     chainParams,
-			BlockChain:      self.blockChain,
-			TxMemPool:       self.memPool,
-			Server:          self,
-			Wallet:          self.wallet,
-			ConnMgr:         self.connManager,
-			AddrMgr:         self.addrManager,
-			RPCUser:         cfg.RPCUser,
-			RPCPass:         cfg.RPCPass,
-			RPCLimitUser:    cfg.RPCLimitUser,
-			RPCLimitPass:    cfg.RPCLimitPass,
-			DisableAuth:     cfg.RPCDisableAuth,
+			Listenters:    rpcListeners,
+			RPCQuirks:     cfg.RPCQuirks,
+			RPCMaxClients: cfg.RPCMaxClients,
+			ChainParams:   chainParams,
+			BlockChain:    self.blockChain,
+			TxMemPool:     self.memPool,
+			Server:        self,
+			Wallet:        self.wallet,
+			ConnMgr:       self.connManager,
+			AddrMgr:       self.addrManager,
+			RPCUser:       cfg.RPCUser,
+			RPCPass:       cfg.RPCPass,
+			RPCLimitUser:  cfg.RPCLimitUser,
+			RPCLimitPass:  cfg.RPCLimitPass,
+			DisableAuth:   cfg.RPCDisableAuth,
 			//IsGenerateNode:  cfg.Generate,
 			FeeEstimator:    self.feeEstimator,
 			ProtocolVersion: self.protocolVersion,
@@ -952,8 +953,11 @@ func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 }
 
 func (self *Server) GetShardByPbk(pbk string) *byte {
-	ret := byte(0x00)
-	return &ret
+	shard, ok := mPBK[pbk]
+	if ok {
+		return &shard
+	}
+	return nil
 }
 
 func (self *Server) GetCurrentPbk() *string {
@@ -966,12 +970,26 @@ func (self *Server) GetCurrentPbk() *string {
 }
 
 func (self *Server) GetCurrentShard() *byte {
-	ret := byte(0x00)
-	return &ret
+	ks, err := cfg.GetProducerKeySet()
+	if err != nil {
+		return nil
+	}
+	pbk := ks.GetPublicKeyB58()
+	shard, ok := mPBK[pbk]
+	if ok {
+		return &shard
+	}
+	return nil
 }
 
 func (self *Server) GetPbksOfShard(shard byte) []string {
-	return []string{}
+	pBKs := []string{}
+	for k, v := range mPBK {
+		if v == shard {
+			pBKs = append(pBKs, k)
+		}
+	}
+	return pBKs
 }
 
 func (self *Server) getCurrentShardInfoByPbk() (*byte, string) {
@@ -986,4 +1004,22 @@ func (self *Server) getShardInfoByPbk(pbk string) (*byte, string) {
 
 func (self *Server) shardChanged(oldShard *byte, newShard *byte) {
 	// update shard connection, random peers, drop peers and new peers
+}
+
+var mPBK = map[string]byte{
+	"15Z7uGSzG4ZR5ENDnBE6PuGcquNGYj7PqPFj4ojEEGk8QQNZoN6": 0,
+	"15CfJ8vH78zw8PT2FbBeNssFWcHMW1sSxoJ6RKv2hZ6nztp4mCQ": 1,
+	"17PnJ3sjHvFLp3Sck12FaHfvk4AghGctecTG54bdLNFVGygi8DN": 2,
+	"17qiWdX7ubTHpVu5eMDxMCCwesYYcLWKE1KTP62LQK3ALrQ6A5T": 3,
+	"18mxtXGaaRkfkLS9L7eNGTjawpxTnqZSBqKXLSDc4Un8VLGgVPg": 4,
+	"17W59bSax64ykVeGPk8nnXQAoWmiDfPGtVQMVvqJSSep3Py2Jxn": 5,
+	"15nvyVJvmrzp3KK7SF8xMcsffZyvV2BTBmnR4kx8XszdtXhqUm9": 6,
+	"15VmkDTBgFs86h8fD7c9Bk41xndCGA3qXKmqMjy2dJpC6UVWNhZ": 7,
+	"159DQTsMrzrKyF1787R2iK8RA9X8GMXjgwLqPsVR1a129RjSAi5": 8,
+	"18fk4aLAT7F8aTf4Uo784DiGgEBJajC3u8SqcY766FcRPPLHPBz": 9,
+	"15ma6n91BbgyCJNeWa9TzG5gQGCERLZ9F9jaYB1mMPGsJGKhmB7": 10,
+	"18NwuP2PqDNcAWyhAgPpcRgFeS8h7LWv8LX7vzRgfaVmTzBERBZ": 11,
+	"165RABeGBuYYX72S6w8wJqvSgZE7JZ32YVG8ApSwUW38Lm3RrEt": 12,
+	"15yDGFUwf5r7rZcfEzEmpcNvMfC5zi1g454AeHMZNSGEiBFacvt": 13,
+	"16C6356Xst2bKnAuXYM3Ezfz7ZwG9kiKmHAPTFMupQs3wzQfaoM": 14,
 }

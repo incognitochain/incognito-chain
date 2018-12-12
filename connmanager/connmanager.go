@@ -77,6 +77,8 @@ type Config struct {
 
 	GetCurrentShard func() *byte
 	GetPbksOfShard  func(shard byte) []string
+	GetPbksOfBeacon func() []string
+	GetCurrentPbk   func() *string
 }
 
 type DiscoverPeerInfo struct {
@@ -316,6 +318,9 @@ func (self *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 	var client *rpc.Client
 	var err error
 
+	self.CurrentShard = self.Config.GetCurrentShard()
+	self.OtherShards = self.randShards(256)
+
 listen:
 	for {
 		//Logger.log.Infof("Peers", self.discoveredPeers)
@@ -340,19 +345,6 @@ listen:
 					if err != nil {
 						Logger.log.Error(err)
 					}
-					//sig, err := listener.Config.ProducerKeySet.Sign([]byte{byte(0x00)})
-					//if err != nil {
-					//	Logger.log.Error(err)
-					//}
-					//ok, err := listener.Config.ProducerKeySet.Verify([]byte{byte(0x00)}, sig)
-					//if err != nil {
-					//	Logger.log.Error(err)
-					//}
-					//if ok {
-					//	Logger.log.Info("Verify OK")
-					//} else {
-					//	Logger.log.Info("Verify Not OK")
-					//}
 				}
 				// remove later
 				rawAddress := listener.RawAddress
@@ -402,46 +394,45 @@ listen:
 				// make models
 				mPeers := make(map[string]*wire.RawPeer)
 				for _, rawPeer := range response {
-					mPeers[rawPeer.PublicKey] = &rawPeer
+					p := rawPeer
+					mPeers[rawPeer.PublicKey] = &p
 				}
-				// make connection same shards
-				// make connection other shards
-				for _, rawPeer := range response {
-					if rawPeer.PublicKey != EmptyString && !strings.Contains(rawPeer.RawAddress, listener.PeerID.Pretty()) {
-						_, exist := self.discoveredPeers[rawPeer.PublicKey]
-						//Logger.log.Info("Discovered peer", rawPeer.PaymentAddress, rawPeer.RemoteRawAddress, exist)
-						if !exist {
-							// The following code extracts target's peer Id from the
-							// given multiaddress
-							ipfsaddr, err := ma.NewMultiaddr(rawPeer.RawAddress)
-							if err != nil {
-								Logger.log.Error(err)
-								return
-							}
-
-							pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
-							if err != nil {
-								Logger.log.Error(err)
-								return
-							}
-
-							peerId, err := libpeer.IDB58Decode(pid)
-							if err != nil {
-								Logger.log.Error(err)
-								return
-							}
-
-							self.discoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
-							//Logger.log.Info("Start connect to peer", rawPeer.PaymentAddress, rawPeer.RemoteRawAddress, exist)
-							go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
-						} else {
-							peerIds := self.getPeerIdsFromPublicKey(rawPeer.PublicKey)
-							if len(peerIds) == 0 {
-								go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
-							}
-						}
-					}
-				}
+				//for _, rawPeer := range response {
+				//	if rawPeer.PublicKey != EmptyString && !strings.Contains(rawPeer.RawAddress, listener.PeerID.Pretty()) {
+				//		_, exist := self.discoveredPeers[rawPeer.PublicKey]
+				//		//Logger.log.Info("Discovered peer", rawPeer.PaymentAddress, rawPeer.RemoteRawAddress, exist)
+				//		if !exist {
+				//			// The following code extracts target's peer Id from the
+				//			// given multiaddress
+				//			ipfsaddr, err := ma.NewMultiaddr(rawPeer.RawAddress)
+				//			if err != nil {
+				//				Logger.log.Error(err)
+				//				return
+				//			}
+				//
+				//			pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
+				//			if err != nil {
+				//				Logger.log.Error(err)
+				//				return
+				//			}
+				//
+				//			peerId, err := libpeer.IDB58Decode(pid)
+				//			if err != nil {
+				//				Logger.log.Error(err)
+				//				return
+				//			}
+				//
+				//			self.discoveredPeers[rawPeer.PublicKey] = &DiscoverPeerInfo{rawPeer.PublicKey, rawPeer.RawAddress, peerId}
+				//			//Logger.log.Info("Start connect to peer", rawPeer.PaymentAddress, rawPeer.RemoteRawAddress, exist)
+				//			go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
+				//		} else {
+				//			peerIds := self.getPeerIdsFromPublicKey(rawPeer.PublicKey)
+				//			if len(peerIds) == 0 {
+				//				go self.Connect(rawPeer.RawAddress, rawPeer.PublicKey)
+				//			}
+				//		}
+				//	}
+				//}
 				// connect to same shard
 				self.handleRandPeersOfShard(self.CurrentShard, MAX_PEERS_SAME_SHARD, mPeers)
 				// connect to other shard
@@ -564,6 +555,8 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 	if shard == nil {
 		return 0
 	}
+	Logger.log.Info("handleRandPeersOfShard", *shard)
+	//Logger.log.Info("handleRandPeersOfShard", *shard)
 	countPeerShard := self.countPeerConnByShard(shard)
 	pBKs := self.Config.GetPbksOfShard(*shard)
 	for len(pBKs) > 0 {
@@ -572,8 +565,9 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 		pBKs = append(pBKs[:randN], pBKs[randN+1:]...)
 		peerI, ok := mPeers[pbk]
 		if ok {
+			cPbk := self.Config.GetCurrentPbk()
 			// if existed conn then not append to array
-			if !self.checkPeerConnByPbk(pbk) {
+			if !self.checkPeerConnByPbk(pbk) && (cPbk == nil || *cPbk != pbk) {
 				go self.Connect(peerI.RawAddress, peerI.PublicKey)
 				countPeerShard ++
 			}
@@ -586,6 +580,7 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 }
 
 func (self *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers int, maxPeers int, mPeers map[string]*wire.RawPeer) int {
+	Logger.log.Info("handleRandPeersOfOtherShard", maxShardPeers, maxPeers)
 	countPeers := 0
 	for _, shard := range self.OtherShards {
 		if cShard != nil && *cShard != shard {
@@ -593,11 +588,29 @@ func (self *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers
 				mP := int(math.Min(float64(maxShardPeers), float64(maxPeers-countPeers)))
 				cPeer := self.handleRandPeersOfShard(&shard, mP, mPeers)
 				countPeers += cPeer
+				if countPeers >= maxPeers {
+					continue
+				}
 			}
-		}
-		if countPeers >= maxPeers {
-			self.closePeerConnOfShard(shard)
+			if countPeers >= maxPeers {
+				self.closePeerConnOfShard(shard)
+			}
 		}
 	}
 	return countPeers
+}
+
+func (self *ConnManager) randShards(maxShards int) []byte {
+	shardBytes := make([]byte, 0)
+	for i := 0; i < 15; i++ {
+		shardBytes = append(shardBytes, byte(i))
+	}
+	shardsRet := make([]byte, 0)
+	for len(shardsRet) < maxShards && len(shardBytes) > 0 {
+		randN := common.RandInt() % len(shardBytes)
+		shardV := shardBytes[randN]
+		shardBytes = append(shardBytes[:randN], shardBytes[randN+1:]...)
+		shardsRet = append(shardsRet, shardV)
+	}
+	return shardsRet
 }
