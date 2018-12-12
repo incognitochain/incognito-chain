@@ -132,7 +132,7 @@ func (db *db) CleanSerialNumbers() error {
 }
 
 // StoreCommitments - store list commitments by chainID
-func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
+func (db *db) StoreCommitments(pubkey []byte, commitments []byte, chainId byte) error {
 	key := db.getKey(string(commitmentsPrefix), "")
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)

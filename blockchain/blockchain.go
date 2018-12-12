@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"github.com/ninjadotorg/constant/database/lvdb"
 	"math/big"
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
 const (
@@ -309,7 +310,7 @@ func (self *BlockChain) StoreTransactionIndex(txHash *common.Hash, blockHash *co
 Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
 this is a list tx-out which are used by a new tx
 */
-func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
+func (self *BlockChain) StoreSerialNumbersFromTxViewPoint(view TxViewPoint) error {
 	for _, item1 := range view.listSerialNumbers {
 		err := self.config.DataBase.StoreSerialNumbers(item1, view.chainID)
 		if err != nil {
@@ -338,10 +339,16 @@ Uses an existing database to update the set of not used tx by saving list commit
 this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
-	for _, item1 := range view.listCommitments {
-		err := self.config.DataBase.StoreCommitments(item1, view.chainID)
+	for pubkey, item1 := range view.mapCommitments {
+		temp, _, err := base58.Base58Check{}.Decode(pubkey)
 		if err != nil {
 			return err
+		}
+		for _, com := range item1 {
+			err = self.config.DataBase.StoreCommitments(temp, com, view.chainID)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -365,7 +372,7 @@ func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, ch
 Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
 this is a list tx-in which are used by a new tx
 */
-func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, chainId byte) error {
+/*func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, chainId byte) error {
 	for _, item := range commitments {
 		err := self.config.DataBase.StoreCommitments(item, chainId)
 		if err != nil {
@@ -373,7 +380,7 @@ func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte,
 		}
 	}
 	return nil
-}
+}*/
 
 /*
 Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
@@ -397,7 +404,7 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
 Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
 this is a list tx-in which are used by a new tx
 */
-func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
+/*func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
 	for _, desc := range tx.Proof.OutputCoins {
 		chainId, err := common.GetTxSenderChain(desc.CoinDetails.GetPubKeyLastByte())
 		if err != nil {
@@ -409,7 +416,7 @@ func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
 		}
 	}
 	return nil
-}
+}*/
 
 /*
 Get all blocks in chain
@@ -573,7 +580,7 @@ func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
 Param coinType - COIN or BOND
 */
-func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
+/*func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 	view := NewTxViewPoint(chainId)
 	commitments, err := self.config.DataBase.FetchCommitments(chainId)
 	if err != nil {
@@ -591,7 +598,7 @@ func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 	}
 	view.listSnD = snDerivators
 	return view, nil
-}
+}*/
 
 func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	view := NewTxViewPoint(block.Header.ChainID)
@@ -643,7 +650,7 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.
-	err = self.StoreNullifiersFromTxViewPoint(*view)
+	err = self.StoreSerialNumbersFromTxViewPoint(*view)
 	if err != nil {
 		return err
 	}
