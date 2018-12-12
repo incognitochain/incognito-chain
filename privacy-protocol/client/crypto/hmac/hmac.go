@@ -13,7 +13,7 @@ timing side-channels:
 
 	// CheckMAC reports whether messageMAC is a valid HMAC tag for message.
 	func CheckMAC(message, messageMAC, key []byte) bool {
-		mac := hmac.New(sha256.New, key)
+		mac := hmac.Zero(sha256.Zero, key)
 		mac.Write(message)
 		expectedMAC := mac.Sum(nil)
 		return hmac.Equal(messageMAC, expectedMAC)
@@ -63,7 +63,7 @@ func (h *hmac) Reset() {
 	h.inner.Write(h.ipad)
 }
 
-// New returns a new HMAC hash using the given hash.Hash type and key.
+// Zero returns a new HMAC hash using the given hash.Hash type and key.
 // Note that unlike other hash implementations in the standard library,
 // the returned Hash does not implement encoding.BinaryMarshaler
 // or encoding.BinaryUnmarshaler.

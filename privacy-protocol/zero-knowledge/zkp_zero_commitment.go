@@ -10,7 +10,7 @@ import (
 // PKComZeroProof contains Proof's value
 type PKComZeroProof struct {
 	commitmentValue *privacy.EllipticPoint //statement
-	index           *byte                  //statement
+	index           byte                  //statement
 	commitmentZeroS *privacy.EllipticPoint
 	z               *big.Int
 }
@@ -49,6 +49,13 @@ Verify:
 */
 
 func (pro *PKComZeroProof) Init() *PKComZeroProof {
+	if(pro==nil) {
+		pro = new(PKComZeroProof)
+	}
+	pro.commitmentValue = new(privacy.EllipticPoint).Zero()
+	pro.commitmentZeroS = new(privacy.EllipticPoint).Zero()
+	pro.z = new(big.Int)
+	return pro
 }
 
 // randValue return random witness value for testing

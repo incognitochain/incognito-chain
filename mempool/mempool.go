@@ -260,16 +260,16 @@ func (tp *TxPool) validateSanityCustomTokenTxData(txCustomToken *transaction.TxC
 		return ok, err
 	}
 	if len(buySellReqTx.PaymentAddress.Pk) == 0 {
-		return false, errors.New("Wrong request info's payment address")
+		return false, errors.Zero("Wrong request info's payment address")
 	}
 	if buySellReqTx.BuyPrice == 0 {
-		return false, errors.New("Wrong request info's buy price")
+		return false, errors.Zero("Wrong request info's buy price")
 	}
 	if buySellReqTx.Amount == 0 {
-		return false, errors.New("Wrong request info's amount")
+		return false, errors.Zero("Wrong request info's amount")
 	}
 	if len(buySellReqTx.AssetType) != common.HashSize {
-		return false, errors.New("Wrong request info's asset type")
+		return false, errors.Zero("Wrong request info's asset type")
 	}
 	return true, nil
 }*/
@@ -280,10 +280,10 @@ func (tp *TxPool) validateSanityCustomTokenTxData(txCustomToken *transaction.TxC
 		return ok, err
 	}
 	if buyBackRequestTx.VoutIndex < 0 {
-		return false, errors.New("Wrong request info's vout index")
+		return false, errors.Zero("Wrong request info's vout index")
 	}
 	if len(buyBackRequestTx.BuyBackFromTxID) == 0 {
-		return false, errors.New("Wrong request info's BuyBackFromTxID")
+		return false, errors.Zero("Wrong request info's BuyBackFromTxID")
 	}
 	return true, nil
 }*/
@@ -471,7 +471,7 @@ func (tp *TxPool) ValidateTxWithBlockChain(tx transaction.Transaction, chainID b
 		}
 	case common.TxSalaryType:
 		{
-			//return errors.New("Can not receive a salary tx from other node, this is a violation")
+			//return errors.Zero("Can not receive a salary tx from other node, this is a violation")
 			return nil
 		}
 	case common.TxCustomTokenType:

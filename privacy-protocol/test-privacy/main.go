@@ -160,7 +160,7 @@ func main() {
 	//generators[2] = privacy.EllipticPoint{big.NewInt(45), big.NewInt(0)}
 	//generators[2].ComputeYCoord()
 	//newPedCom := privacy.NewPedersenParams(generators)
-	//fmt.Printf("New PedCom: %+v\n", newPedCom)
+	//fmt.Printf("Zero PedCom: %+v\n", newPedCom)
 
 	/*----------------- TEST COMMITMENT -----------------*/
 	//privacy.TestCommitment(01)

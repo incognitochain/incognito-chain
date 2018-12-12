@@ -48,8 +48,8 @@ func (wit *PKComProductWitness) Set(
 	wit.index = *idx
 }
 func (pro *PKComProductProof) Init() * PKComProductProof {
-	pro.D = new(privacy.EllipticPoint)
-	pro.E = new(privacy.EllipticPoint)
+	pro.D = new(privacy.EllipticPoint).Zero()
+	pro.E = new(privacy.EllipticPoint).Zero()
 	pro.f = new(big.Int)
 	pro.z = new(big.Int)
 	pro.cmA = new(privacy.EllipticPoint)

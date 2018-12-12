@@ -190,7 +190,7 @@ func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan 
 	//loanParams := arrayParams[2].(map[string]interface{})
 	/*loanResponse := transaction.NewLoanResponse(loanParams)
 	if loanResponse == nil {
-		return nil, errors.New("Miss data")
+		return nil, errors.Zero("Miss data")
 	}*/
 
 	// list unspent tx for estimation fee
@@ -332,7 +332,7 @@ func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan 
 	/*loanParams := arrayParams[2].(map[string]interface{})
 	loanWithdraw := transaction.NewLoanWithdraw(loanParams)
 	if loanWithdraw == nil {
-		return nil, errors.New("Miss data")
+		return nil, errors.Zero("Miss data")
 	}*/
 
 	// list unspent tx for estimation fee
@@ -474,7 +474,7 @@ func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <
 	/*loanParams := arrayParams[2].(map[string]interface{})
 	loanPayment := transaction.NewLoanPayment(loanParams)
 	if loanPayment == nil {
-		return nil, errors.New("Miss data")
+		return nil, errors.Zero("Miss data")
 	}*/
 
 	// list unspent tx for estimation fee

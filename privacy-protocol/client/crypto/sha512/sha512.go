@@ -216,7 +216,7 @@ func consumeUint64(b []byte) ([]byte, uint64) {
 	return b[8:], x
 }
 
-// New returns a new hash.Hash computing the SHA-512 checksum.
+// Zero returns a new hash.Hash computing the SHA-512 checksum.
 func New() hash.Hash {
 	d := &digest{function: crypto.SHA512}
 	d.Reset()

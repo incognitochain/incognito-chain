@@ -34,6 +34,11 @@ type PKOneOfManyProof struct {
 }
 
 func (pro * PKOneOfManyProof) Init() * PKOneOfManyProof {
+	if(pro==nil){
+		pro = new(PKOneOfManyProof)
+	}
+	pro.zd = new(big.Int)
+	return pro
 }
 
 // Set sets Witness

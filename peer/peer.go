@@ -661,7 +661,7 @@ retryPeerConnection - retry to connect to peer when being disconnected
 */
 func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 	time.AfterFunc(RetryConnDuration, func() {
-		Logger.log.Infof("Retry New RemotePeer Connection %s", peerConn.RemoteRawAddress)
+		Logger.log.Infof("Retry Zero RemotePeer Connection %s", peerConn.RemoteRawAddress)
 		peerConn.RetryCount += 1
 
 		if peerConn.RetryCount < MaxRetryConn {

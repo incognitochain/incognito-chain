@@ -32,6 +32,7 @@ func (pro * PKEqualityOfCommittedValProof) Init() * PKEqualityOfCommittedValProo
 	//	T: 			[]*privacy.EllipticPoint{},
 	//	Z: 			[]*big.Int{},
 	//}
+	return pro
 }
 
 // randValue ...

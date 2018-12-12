@@ -28,29 +28,29 @@ type PKComMultiRangeProof struct {
 	Cx *big.Int
 }
 
-func CreatePKComMultiRangeProof() *PKComMultiRangeProof {
-	return &PKComMultiRangeProof{
-		Counter: byte(0x00),
-		Comms:   []*privacy.EllipticPoint{},
-		A:       new(privacy.EllipticPoint),
-		S:       new(privacy.EllipticPoint),
-		T1:      new(privacy.EllipticPoint),
-		T2:      new(privacy.EllipticPoint),
-		Tau:     new(big.Int),
-		Th:      new(big.Int),
-		Mu:      new(big.Int),
-		IPP: InnerProdArg{
-			A:          new(big.Int),
-			B:          new(big.Int),
-			Challenges: []*big.Int{},
-			L:          []*privacy.EllipticPoint{},
-			R:          []*privacy.EllipticPoint{},
-		},
-		Cx: new(big.Int),
-		Cy: new(big.Int),
-		Cz: new(big.Int),
-	}
-}
+//func CreatePKComMultiRangeProof() *PKComMultiRangeProof {
+//	return &PKComMultiRangeProof{
+//		Counter: byte(0x00),
+//		Comms:   []*privacy.EllipticPoint{},
+//		A:       new(privacy.EllipticPoint).Zero(),
+//		S:       new(privacy.EllipticPoint).Zero(),
+//		T1:      new(privacy.EllipticPoint).Zero(),
+//		T2:      new(privacy.EllipticPoint).Zero(),
+//		Tau:     new(big.Int),
+//		Th:      new(big.Int),
+//		Mu:      new(big.Int),
+//		IPP: InnerProdArg{
+//			A:          new(big.Int),
+//			B:          new(big.Int),
+//			Challenges: []*big.Int{},
+//			L:          []*privacy.EllipticPoint{},
+//			R:          []*privacy.EllipticPoint{},
+//		},
+//		Cx: new(big.Int),
+//		Cy: new(big.Int),
+//		Cz: new(big.Int),
+//	}
+//}
 
 type PKComMultiRangeWitness struct {
 	Comms  []*privacy.EllipticPoint
@@ -60,7 +60,22 @@ type PKComMultiRangeWitness struct {
 }
 
 func (pro * PKComMultiRangeProof) Init() * PKComMultiRangeProof{
-
+	if (pro==nil) {
+		pro = new(PKComMultiRangeProof)
+	}
+	pro.A  = new(privacy.EllipticPoint).Zero()
+	pro.S  = new(privacy.EllipticPoint).Zero()
+	pro.T1  = new(privacy.EllipticPoint).Zero()
+	pro.T2  = new(privacy.EllipticPoint).Zero()
+	pro.Tau = new(big.Int)
+	pro.Th = new(big.Int)
+	pro.Mu = new(big.Int)
+	pro.Cx = new(big.Int)
+	pro.Cy = new(big.Int)
+	pro.Cz = new(big.Int)
+	pro.IPP.A = new(big.Int)
+	pro.IPP.B = new(big.Int)
+	return pro
 }
 
 func (pro PKComMultiRangeProof) Bytes() []byte {

@@ -74,11 +74,9 @@ func (proof * PaymentProof) Init() * PaymentProof{
 		ComZeroProof:                new(PKComZeroProof).Init(),
 		InputCoins:                  []*privacy.InputCoin{},
 		OutputCoins:                 []*privacy.OutputCoin{},
-
 		ComOutputValue:   []*privacy.EllipticPoint{},
 		ComOutputSND:     []*privacy.EllipticPoint{},
 		ComOutputShardID: []*privacy.EllipticPoint{},
-
 		PubKeyLastByteSender: byte(0x00),
 	}
 	return proof
@@ -250,7 +248,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	//ComOutputMultiRangeProof *PKComMultiRangeProof
 	lenComOutputMultiRangeProof := int(proofbytes[offset])
 	offset += 1
-	proof.ComOutputMultiRangeProof = CreatePKComMultiRangeProof()
+	proof.ComOutputMultiRangeProof.Init()
 	proof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset:offset+lenComOutputMultiRangeProof])
 	offset += lenComOutputMultiRangeProof
 	//SumOutRangeProof *PKComZeroProof

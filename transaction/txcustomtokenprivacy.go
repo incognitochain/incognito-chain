@@ -97,12 +97,12 @@ func CreateTxCustomTokenPrivacy(senderKey *privacy.SpendingKey,
 			// TODO create descs
 			hashInitToken, err := txCustomToken.TxTokenPrivacyData.Hash()
 			if err != nil {
-				return nil, errors.New("Can't handle this TokenTxType")
+				return nil, errors.Zero("Can't handle this TokenTxType")
 			}
 			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
 				if hashInitToken.String() == customTokenID.String() {
-					return nil, errors.New("This token is existed in network")
+					return nil, errors.Zero("This token is existed in network")
 				}
 			}
 			txCustomToken.TxTokenPrivacyData.PropertyID = *hashInitToken
@@ -128,7 +128,7 @@ func CreateTxCustomTokenPrivacy(senderKey *privacy.SpendingKey,
 	}
 
 	if handled != true {
-		return nil, errors.New("Can't handle this TokenTxType")
+		return nil, errors.Zero("Can't handle this TokenTxType")
 	}
 	return txCustomToken, nil
 }

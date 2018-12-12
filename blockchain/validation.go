@@ -578,12 +578,12 @@ func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCus
 
 	sellingBondsParams := self.BestState[chainID].BestBlock.Header.GOVConstitution.GOVParams.SellingBonds
 	if sellingBondsParams == nil {
-		return errors.New("SellingBonds params are not existed.")
+		return errors.Zero("SellingBonds params are not existed.")
 	}
 
 	// check if buy price againsts SellingBonds params' BondPrice is correct or not
 	if buySellReqTx.BuyPrice < sellingBondsParams.BondPrice {
-		return errors.New("Requested buy price is under SellingBonds params' buy price.")
+		return errors.Zero("Requested buy price is under SellingBonds params' buy price.")
 	}
 	return nil
 }*/

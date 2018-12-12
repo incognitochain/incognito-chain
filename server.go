@@ -895,7 +895,7 @@ func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {
 	if peer == nil {
 		return false
 	}
-	Logger.log.Info("New peer have just sent a message version")
+	Logger.log.Info("Zero peer have just sent a message version")
 	Logger.log.Info(peer)
 	return true
 }
