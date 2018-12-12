@@ -14,22 +14,27 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 type BestStateNew struct {
-	Beacon *BestStateBeacon         //Beacon node & shard node allow access this
-	Shards map[byte]*BestStateShard //Only shard node allow to access this
+	BestBlockHash common.Hash // The hash of the block.
+	BestBlock     *BlockV2    // The hash of the block.
+
+	Height           int32    // The height of the block.
+	NumTxns          uint64   // The number of txns in the block.
+	TotalTxns        uint64   // The total number of txns in the chain.
+	PendingValidator []string //pending validators pubkey in base58
 }
 
 type BestStateBeacon struct {
 	BestBlockHash common.Hash // The hash of the block.
 	BestBlock     *BlockV2    // The block.
-	// PendingValidator []string    //pending validators pubkey in base58
+	BestShardHash map[byte]common.Hash
 }
+
 type BestStateShard struct {
 	BestBlockHash common.Hash // The hash of the block.
 	BestBlock     *BlockV2    // The block.
 
 	NumTxns   uint64 // The number of txns in the block.
 	TotalTxns uint64 // The total number of txns in the chain.
-	// PendingValidator []string //pending validators pubkey in base58
 }
 
 /*
@@ -37,25 +42,22 @@ Init create a beststate data from block and commitment tree
 */
 // #1 - block
 // #2 - commitment merkle tree
-func (self *BestStateNew) Init(shardsBlock map[byte]*BlockV2, beaconBlock *BlockV2) {
-	//shards beststate
-	for shardID, block := range shardsBlock {
-		bestShardBlock := &BestStateShard{
-			BestBlockHash: block.Hash(),
-			BestBlock:     block,
-			TotalTxns:     uint64(len(block.Body.(*BlockBodyShard).Transactions)),
-			NumTxns:       uint64(len(block.Body.(*BlockBodyShard).Transactions)),
-		}
-		self.Shards[shardID] = bestShardBlock
-	}
+// func (self *BestStateNew) Init(block *BlockV2) {
+// 	bestBlockHash := block.Hash()
+// 	self.BestBlock = block
+// 	self.BestBlockHash = bestBlockHash
 
-	//beacon beststate
-	self.Beacon = &BestStateBeacon{
-		BestBlockHash: beaconBlock.Hash(),
-		BestBlock:     beaconBlock,
-	}
+// 	// self.  += uint64(len(block.Transactions))
+// 	self.NumTxns = uint64(len(block.Transactions))
+// 	self.Height = block.Header.Height
+// 	if self.Candidates == nil {
+// 		self.Candidates = make(map[string]CommitteeCandidateInfo)
+// 	}
 
-}
+// 	if self.LoanIDs == nil {
+// 		self.LoanIDs = make([][]byte, 0)
+// 	}
+// }
 
 // func (self *BestStateNew) Update(block *BlockV2) error {
 // 	//tree := self.CmTree

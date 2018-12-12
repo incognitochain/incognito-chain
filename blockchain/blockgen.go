@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"github.com/ninjadotorg/constant/common"
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
@@ -21,6 +22,37 @@ func (self BlkTmplGeneratorNew) Init(txPool TxPool, chain *BlockChain, rewardAge
 // func (self *BlkTmplGeneratorNew) NewBlockShard() (*BlockV2, error) {
 // 	return
 // }
+type BlockPool interface {
+	RemoveBlock(shard int, blockHeight int) error
+	GetNewShardBlock() map[byte]([]common.Hash)
+}
+
+type BlockPoolImp struct {
+	//blocks map[common.Hash]
+}
+
+func (self BlockPoolImp) GetNewShardBlock() map[byte]([]common.Hash) {
+	//TODO: implementation
+	return nil
+}
+
+func (blockgen *BlkTmplGeneratorNew) NewBlockBeacon(blockPool BlockPool, bestState BestStateBeacon) (*BlockV2, error) {
+	block := &BlockV2{}
+	block.ProducerSig = ""
+	block.AggregatedSig = ""
+	block.ValidatorsIdx = nil
+
+	//bodyBlk := BeaconBlockBody{}
+	//shardBlock := blockPool.GetNewShardBlock()
+	//TODO: get hash from shardBlock & build shard state
+	//bodyBlk.ShardState = shardState
+
+	// TODO: build param from shardBlock
+
+	//block.Body = bodyBlk
+	// TODO: build header
+	return block, nil
+}
 
 func (blockgen *BlkTmplGeneratorNew) NewBlockTemplate(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, chainID byte) (*BlockV2, error) {
 

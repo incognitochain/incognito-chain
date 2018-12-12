@@ -1,16 +1,36 @@
 package blockchain
 
-import "github.com/ninjadotorg/constant/common"
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/ninjadotorg/constant/common"
+)
 
-type BlockHeaderBeacon struct {
+type BeaconBlockHeader struct {
 	BlockHeaderGeneric
-	TestParam string
+	DataHash common.Hash `json:"DataHash"`
 }
 
-func (f BlockHeaderBeacon) Hash() common.Hash {
-	return common.Hash{}
+func (self *BeaconBlockHeader) toString() string {
+	res := ""
+	res += fmt.Sprintf("%v", self.BlockHeaderGeneric.Version)
+	res += fmt.Sprintf("%v", self.BlockHeaderGeneric.Height)
+	res += fmt.Sprintf("%v", self.BlockHeaderGeneric.Timestamp)
+	res += self.BlockHeaderGeneric.PrevBlockHash.String()
+	res += self.DataHash.String()
+	return res
 }
 
-func (f BlockHeaderBeacon) UnmarshalJSON([]byte) error {
+func (self *BeaconBlockHeader) Hash() common.Hash {
+	return common.DoubleHashH([]byte(self.toString()))
+}
+
+func (self *BeaconBlockHeader) UnmarshalJSON(data []byte) error {
+	blkHeader := &BeaconBlockHeader{}
+	err := json.Unmarshal(data, blkHeader)
+	if err != nil {
+		return NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	self = blkHeader
 	return nil
 }

@@ -69,22 +69,18 @@ func (self *BlockV2) UnmarshalJSON(data []byte) error {
 
 	switch self.Type {
 	case "beacon":
-		type AliasHeader BlockHeaderBeacon
-		blkHeader := &AliasHeader{}
-		err := json.Unmarshal(*tempBlk.Header, &blkHeader)
+		self.Header = &BeaconBlockHeader{}
+		err := json.Unmarshal(*tempBlk.Header, self.Header)
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
 		}
-		var blkBody BlockBodyBeacon
-		err = json.Unmarshal(*tempBlk.Body, &blkBody)
+
+		self.Body = &BeaconBlockBody{}
+		err = json.Unmarshal(*tempBlk.Body, self.Body)
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
 		}
-		self.Header = BlockHeaderBeacon{
-			BlockHeaderGeneric: blkHeader.BlockHeaderGeneric,
-			TestParam:          blkHeader.TestParam,
-		}
-		self.Body = blkBody
+
 	case "shard":
 		blkHeader := BlockHeaderShard{}
 		err := blkHeader.UnmarshalJSON(*tempBlk.Header)
@@ -105,3 +101,118 @@ func (self *BlockV2) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
+/*@Hung
+type BeaconHeader struct {
+	Version int 				`json:"Version"`
+	ParentHash common.Hash 		`json:"ParentBlockHash"`
+	Height uint64 				`json:"Height"`
+	//epoch length should be config in consensus
+	Epoch uint64				`json:"Epoch"`
+	Timestamp int64 			`json:"Timestamp"`
+
+	AggregatedSig string 		`json:"AggregatedSig"`
+	ValidatorsIdx []int 		`json:"ValidatorsIdx"`
+	ProducerSig   string 		`json:"BlockProducerSignature"`
+	Type          string		`json:"TypeOf..."`
+
+	Random		int64			`json:"RandomNumber"`
+	//Validator list will be store in database/memory (locally)
+	ValidatorsRoot common.Hash 	`json:"CurrentValidatorRootHash"`
+	//Candidate = unassigned_validator list will be store in database/memory (locally)
+	CandidateRoot common.Hash 	`json:"CandidateListRootHash"`
+	// Store these two list make sure all node process the same data
+
+	// each shard will have a list of blockHash
+	// shardRoot is hash of all list
+	shardRoot	common.Hash 	`json:"ShardListRootHash"`
+	// hash of all parameters
+	paramHash	common.Hash 	`json:"ParameterHash"`
+}
+
+type BeaconBlock struct {
+	Header 			*BeaconHeader
+
+	ShardBlocks  	[]*common.Hash
+	Actions 		[]interface{}
+
+	// size of block should be store
+	size 		...(unknown type)
+
+	// These fields are used to track if needed
+	// inter-peer block relay.
+	ReceivedAt   	time.Time
+	ReceivedFrom 	interface{}
+}
+
+type ActionParams interface {
+	//TODO
+}
+func (h *Header) Hash() common.Hash {
+	//TODO
+}
+
+// define size in common
+func (h *Header) Size() common.StorageSize {
+	//TODO
+}
+
+func NewBlock(...) (*BeaconBlock, error) {
+	//TODO
+}
+
+func NewBlockWithHeader(header *BeaconHeader) *BeaconBlock {
+	//TODO
+}
+
+type ShardHeader struct {
+	Version int 				`json:"Version"`
+	ParentHash common.Hash 		`json:"ParentBlockHash"`
+
+	Height uint64 				`json:"Height"`
+	Epoch uint64				`json:"Epoch"`
+	Timestamp int64 			`json:"Timestamp"`
+
+	MerkleRoot      common.Hash	`json:"MerkleRoot"`
+	MerkleRootShard common.Hash	`json:"MerkleRootShard"`
+
+	ShardID         byte		`json:"ShardID"`
+
+	AggregatedSig string 		`json:"AggregatedSig"`
+	ValidatorsIdx []int 		`json:"ValidatorsIdx"`
+	ProducerSig   string 		`json:"BlockProducerSignature"`
+	Type          string		`json:"TypeOf..."`
+
+	//Validator list will be store in database/memory (locally)
+	ValidatorsRoot common.Hash 	`json:"CurrentValidatorRootHash"`
+	//Candidate = pending validator list will be store in database/memory (locally)
+	CandidateRoot common.Hash 	`json:"CandidateListRootHash"`
+	// Store these two list make sure all node process the same data
+}
+
+type ShardBlock struct {
+	Header 			*ShardHeader
+
+	transactions	map[byte][]*Transaction
+
+	Actions 		[]interface{}
+
+	// cache
+	// size of block should be store
+	size 		...(unknown type)
+	merklePath		map[byte][]byte
+
+	// These fields are used to track if needed
+	// inter-peer block relay.
+	ReceivedAt   	time.Time
+	ReceivedFrom 	interface{}
+}
+// add function process txstake transaction to output a list of candidate for beacon block
+
+*/
+
+/*@HUNG
+type Blockchain Struct {
+
+}
+*/
