@@ -71,7 +71,7 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 	}
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
-	nullifiersDb := make(map[byte]([][]byte))
+	/*nullifiersDb := make(map[byte]([][]byte))
 	commitmentsDb := make(map[byte]([][]byte))
 	//merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
@@ -79,7 +79,7 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
 		nullifiersDb[chainId] = txViewPoint.ListSerialNumbers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
-	}
+	}*/
 	/*tx, err := transaction.CreateTxLoanRequest(transaction.FeeArgs{
 		Fee:         fee,
 		Commitments: commitmentsDb,
@@ -214,7 +214,7 @@ func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan 
 	}
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
-	nullifiersDb := make(map[byte]([][]byte))
+	/*nullifiersDb := make(map[byte]([][]byte))
 	commitmentsDb := make(map[byte]([][]byte))
 	//merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
@@ -223,7 +223,7 @@ func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan 
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
 		nullifiersDb[chainId] = txViewPoint.ListSerialNumbers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
-	}
+	}*/
 	/*tx, err := transaction.CreateTxLoanResponse(transaction.FeeArgs{
 		Fee:         fee,
 		Commitments: commitmentsDb,
@@ -356,7 +356,7 @@ func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan 
 	}
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
-	nullifiersDb := make(map[byte]([][]byte))
+	/*nullifiersDb := make(map[byte]([][]byte))
 	commitmentsDb := make(map[byte]([][]byte))
 	//merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
@@ -365,7 +365,7 @@ func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan 
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
 		nullifiersDb[chainId] = txViewPoint.ListSerialNumbers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
-	}
+	}*/
 	//tx, err := transaction.CreateTxLoanWithdraw(transaction.FeeArgs{
 	//	Fee:         fee,
 	//	Commitments: commitmentsDb,
@@ -498,7 +498,7 @@ func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <
 	}
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
-	nullifiersDb := make(map[byte]([][]byte))
+	/*nullifiersDb := make(map[byte]([][]byte))
 	commitmentsDb := make(map[byte]([][]byte))
 	//merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
@@ -507,7 +507,7 @@ func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
 		nullifiersDb[chainId] = txViewPoint.ListSerialNumbers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
-	}
+	}*/
 	/*tx, err := transaction.CreateTxLoanPayment(transaction.FeeArgs{
 		Fee:         fee,
 		Commitments: commitmentsDb,
