@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"crypto/rand"
+	"errors"
 	"math/big"
 
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
@@ -90,19 +91,19 @@ func (pro PKEqualityOfCommittedValProof) Bytes() []byte {
 	return res
 }
 
-func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) bool {
-	if pro == nil{
+func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) error {
+	if pro == nil {
 		pro = pro.Init()
 	}
 
 	if len(proofbytes) == 0 {
-		return true
+		return nil
 	}
 	pro.C = make([]*privacy.EllipticPoint, 2)
 	for i := 0; i < len(pro.C); i++ {
 		pro.C[i].Decompress(proofbytes[i*privacy.CompressedPointSize : (i+1)*privacy.CompressedPointSize])
 		if !pro.C[i].IsSafe() {
-			return false
+			return errors.New("Decompressed failed!")
 		}
 	}
 	pro.Index = make([]byte, 2)
@@ -113,7 +114,7 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) bool {
 	for i := 0; i < len(pro.T); i++ {
 		pro.T[i].Decompress(proofbytes[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+i*privacy.CompressedPointSize : len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+(i+1)*privacy.CompressedPointSize])
 		if !pro.T[i].IsSafe() {
-			return false
+			return errors.New("Decompressed failed!")
 		}
 	}
 	pro.Z = make([]*big.Int, 3)
@@ -121,7 +122,7 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) bool {
 		pro.Z[i] = big.NewInt(0)
 		pro.Z[i].SetBytes(proofbytes[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+i*privacy.BigIntSize : len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+(i+1)*privacy.BigIntSize])
 	}
-	return true
+	return nil
 }
 
 // Set - proof setter

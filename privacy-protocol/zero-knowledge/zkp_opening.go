@@ -2,30 +2,31 @@ package zkp
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
 
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 //Openings protocol: https://courses.cs.ut.ee/MTAT.07.003/2017_fall/uploads/Main/0907-sigma-protocol-for-pedersen-commitment.pdf
 
 // PKComOpeningsProof contains PoK
 type PKComOpeningsProof struct {
-	commitmentValue *privacy.EllipticPoint 	//statement
-	indexs    			[]byte									//statement
+	commitmentValue *privacy.EllipticPoint //statement
+	indexs          []byte                 //statement
 	alpha           *privacy.EllipticPoint
 	gamma           []*big.Int
 }
 
 // PKComOpeningsWitness contains witnesses which are used for generate proof
 type PKComOpeningsWitness struct {
-	commitmentValue *privacy.EllipticPoint 	//statement
-	indexs    			[]byte									//statement
+	commitmentValue *privacy.EllipticPoint //statement
+	indexs          []byte                 //statement
 	Openings        []*big.Int
 }
 
-func (pro * PKComOpeningsProof) Init() * PKComOpeningsProof {
+func (pro *PKComOpeningsProof) Init() *PKComOpeningsProof {
 	pro.commitmentValue = new(privacy.EllipticPoint).Zero()
 	return pro
 }
@@ -81,27 +82,27 @@ func (pro PKComOpeningsProof) Bytes() []byte {
 	return res
 }
 
-func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) bool {
-	pro.Init()
+func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) error {
+
 	if len(bytestr) != privacy.ComInputOpeningsProofSize {
-		return false
+		return errors.New("Wrong length!")
 	}
 	pro.commitmentValue = new(privacy.EllipticPoint)
 	pro.commitmentValue.Decompress(bytestr[0:privacy.CompressedPointSize])
 	if !pro.commitmentValue.IsSafe() {
-		return false
+		return errors.New("Decompressed failed!")
 	}
 	pro.alpha = new(privacy.EllipticPoint)
-	pro.alpha.Decompress(bytestr[privacy.CompressedPointSize: privacy.CompressedPointSize*2])
+	pro.alpha.Decompress(bytestr[privacy.CompressedPointSize : privacy.CompressedPointSize*2])
 	if !pro.alpha.IsSafe() {
-		return false
+		return errors.New("Decompressed failed!")
 	}
 	pro.gamma = make([]*big.Int, privacy.PedCom.Capacity)
 	for i := 0; i < 2; i++ {
 		pro.gamma[i] = big.NewInt(0)
-		pro.gamma[i].SetBytes(bytestr[privacy.CompressedPointSize*2+i*privacy.BigIntSize: privacy.CompressedPointSize*2+(i+1)*privacy.BigIntSize])
+		pro.gamma[i].SetBytes(bytestr[privacy.CompressedPointSize*2+i*privacy.BigIntSize : privacy.CompressedPointSize*2+(i+1)*privacy.BigIntSize])
 	}
-	return true
+	return nil
 }
 
 // Prove ... (for sender)
