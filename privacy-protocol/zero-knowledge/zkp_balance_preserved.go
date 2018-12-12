@@ -237,7 +237,6 @@ func CalculateLMRP(aL, sL []*big.Int, z, x *big.Int) []*big.Int {
 
 	tmp1 := VectorAddScalar(aL, new(big.Int).Neg(z))
 	tmp2 := ScalarVectorMul(sL, x)
-tod
 	result = VectorAdd(tmp1, tmp2)
 
 	return result
