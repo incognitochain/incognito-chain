@@ -25,11 +25,12 @@ type BlockHeaderGeneric struct {
 	PrevBlockHash common.Hash `json:"PrevBlockHash"`
 
 	//Block Height
-	Height int32 `json:"Height"`
+	Height uint64 `json:"Height"`
 
 	// Time the block was created.  This is, unfortunately, encoded as a
 	// uint64 on the wire and therefore is limited to 2106.
-	Timestamp int64 `json:"Timestamp"`
+	Timestamp int64  `json:"Timestamp"`
+	Epoch     uint64 `json:"Epoch"`
 }
 
 type BlockV2 struct {
