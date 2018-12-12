@@ -107,6 +107,14 @@ func GetNonceByTimestamp(timestamp int64) (int64, error) {
 	return -1, errors.New("ERROR Getting Nonce By Timestamp Bitcoin")
 }
 
+func VerifyNonceWithTimestamp(timestamp int64, nonce int64) (bool, error) {
+	res, err := GetNonceByTimestamp(timestamp)
+	if err != nil {
+		return false, err
+	}
+	return res == nonce, nil
+}
+
 //true for nonce, false for time
 // return param:
 // #param 1: nonce -> flag true
