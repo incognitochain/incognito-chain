@@ -82,7 +82,13 @@ func (pro PKComOpeningsProof) Bytes() []byte {
 }
 
 func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) bool {
-	pro.Init()
+	if pro == nil{
+		pro = pro.Init()
+	}
+
+	if len(bytestr) == 0 {
+		return nil
+	}
 	if len(bytestr) != privacy.ComInputOpeningsProofSize {
 		return false
 	}
