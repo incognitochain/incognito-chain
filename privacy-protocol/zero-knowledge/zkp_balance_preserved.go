@@ -87,11 +87,6 @@ func (pro *PKComMultiRangeProof) IsNil() bool{
 	return false
 }
 
-// IsGeneratorElement check pro is generator elements or not
-func (pro *PKComMultiRangeProof) IsGeneratorElement() bool{
-	return true
-}
-
 func (pro PKComMultiRangeProof) Bytes() []byte {
 	var res []byte
 
