@@ -93,9 +93,6 @@ func (pro PKComMultiRangeProof) Bytes() []byte {
 	if pro.IsNil() == true {
 		return []byte{}
 	}
-	if pro.Counter == 0 {
-		return []byte{}
-	}
 	res = append(res, pro.Counter)
 	res = append(res, pro.maxExp)
 	for i := 0; i < int(pro.Counter); i++ {
@@ -113,7 +110,6 @@ func (pro PKComMultiRangeProof) Bytes() []byte {
 	res = append(res, pro.Cy.Bytes()...)
 	res = append(res, pro.Cz.Bytes()...)
 	res = append(res, pro.IPP.Bytes()...)
-	//fmt.Println(res)
 	return res
 
 }
