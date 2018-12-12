@@ -29,6 +29,7 @@ type Coin struct {
 	Info           []byte //512 bytes
 }
 
+
 func (coin *Coin) GetPubKeyLastByte() byte {
 	pubKeyBytes := coin.PublicKey.Compress()
 	return pubKeyBytes[len(pubKeyBytes)-1]
@@ -52,10 +53,10 @@ func (coin *Coin) UnmarshalJSON(data []byte) error {
 }
 
 func (coin * Coin) Init() * Coin{
-	coin.PublicKey = new(EllipticPoint)
-	coin.CoinCommitment = new(EllipticPoint)
+	coin.PublicKey = new(EllipticPoint).Zero()
+	coin.CoinCommitment = new(EllipticPoint).Zero()
 	coin.SNDerivator = new(big.Int)
-	coin.SerialNumber = new(EllipticPoint)
+	coin.SerialNumber = new(EllipticPoint).Zero()
 	coin.Randomness = new(big.Int)
 	coin.Value = 0
 	return coin
@@ -212,7 +213,9 @@ type InputCoin struct {
 }
 
 func (inputCoin *InputCoin) Init() *InputCoin {
-	//Todo:
+	if(inputCoin.CoinDetails!=nil) {
+		inputCoin.CoinDetails.Init()
+	}
 	return inputCoin
 }
 
@@ -233,6 +236,10 @@ type OutputCoin struct {
 }
 
 func (outputCoin *OutputCoin) Init() *OutputCoin {
+	if (outputCoin.CoinDetails!=nil) {
+		outputCoin.CoinDetails.Init()
+	}
+	outputCoin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
 	return outputCoin
 }
 
