@@ -74,6 +74,9 @@ func (pro PKEqualityOfCommittedValProof) Bytes() []byte {
 	if len(pro.C) == 0 {
 		return []byte{}
 	}
+	if (len(pro.Index) == 0) || (pro.T == nil) || (pro.Z == nil) {
+		return []byte{}
+	}
 
 	res = append(pro.C[0].Compress(), pro.C[1].Compress()...)
 	res = append(res, []byte{pro.Index[0], pro.Index[1]}...)
