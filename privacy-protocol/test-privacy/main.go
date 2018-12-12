@@ -1,9 +1,5 @@
 package main
 
-import (
-	zkp "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-)
-
 func main() {
 
 	// fmt.Printf("N: %X\n", privacy-protocol.Curve.Params().N)
@@ -63,7 +59,7 @@ func main() {
 
 	//zkp.TestPKComMultiRange()
 
-	zkp.TestOpeningsProtocol()
+	//zkp.TestOpeningsProtocol()
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -247,5 +243,14 @@ func main() {
 	// res := transaction.ValidateTxSalary(tx, db)
 
 	// fmt.Printf("Res: %v\n", res)
+
+	/*----------------- TEST IS NIL -----------------*/
+	//zkp := new(zkp.PKOneOfManyProof)
+	//fmt.Printf("len zkp.cl: %v\n", len(zkp.cl))
+	//fmt.Println(zkp.IsNil())
+
+	//coin := new(privacy.Coin).Init()
+	//fmt.Println(coin.SerialNumber == nil)
+	//fmt.Printf("coin.Serial numbre: %v\n", coin.SerialNumber)
 
 }
