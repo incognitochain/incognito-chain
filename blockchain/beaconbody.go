@@ -26,19 +26,6 @@ func (self *BeaconBlockBody) toString() string {
 		}
 	}
 
-	//if self.ShardState != nil {
-	//	for s, l := range self.ShardState {
-	//		res += string(s)
-	//		for _, h := range l {
-	//			res += h.String()
-	//		}
-	//	}
-	//}
-	//if self.StateInstruction != nil {
-	//	for s, i := range self.StateInstruction {
-	//		res += s + i
-	//	}
-	//}
 	return res
 }
 
