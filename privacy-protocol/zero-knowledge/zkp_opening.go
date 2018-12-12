@@ -27,7 +27,7 @@ type PKComOpeningsWitness struct {
 
 func (pro * PKComOpeningsProof) Init() * PKComOpeningsProof {
 	pro.commitmentValue = new(privacy.EllipticPoint).Zero()
-
+	return pro
 }
 
 // randValue return random witness value for testing

@@ -10,7 +10,7 @@ import (
 // PKComZeroProof contains Proof's value
 type PKComZeroProof struct {
 	commitmentValue *privacy.EllipticPoint //statement
-	index           byte                  //statement
+	index           *byte                  //statement
 	commitmentZeroS *privacy.EllipticPoint
 	z               *big.Int
 }

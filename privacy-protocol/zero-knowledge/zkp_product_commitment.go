@@ -47,6 +47,14 @@ func (wit *PKComProductWitness) Set(
 	*wit.cmB = *cmB
 	wit.index = *idx
 }
+//func (pro *PKComProductProof) IsNil() bool{
+//	if (pro==nil){
+//		return true
+//	}
+//	else if {
+//
+//	}
+//}
 func (pro *PKComProductProof) Init() * PKComProductProof {
 	pro.D = new(privacy.EllipticPoint).Zero()
 	pro.E = new(privacy.EllipticPoint).Zero()
