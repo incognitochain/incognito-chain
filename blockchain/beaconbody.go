@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -12,6 +13,19 @@ type BeaconBlockBody struct {
 
 func (self *BeaconBlockBody) toString() string {
 	res := ""
+
+	for _, l := range self.ShardState {
+		for _, r := range l {
+			res += r.String()
+		}
+	}
+
+	for _, l := range self.Instructions {
+		for _, r := range l {
+			res += r
+		}
+	}
+
 	//if self.ShardState != nil {
 	//	for s, l := range self.ShardState {
 	//		res += string(s)
