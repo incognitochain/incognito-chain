@@ -2,27 +2,33 @@ package zkp
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
 
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 //Openings protocol: https://courses.cs.ut.ee/MTAT.07.003/2017_fall/uploads/Main/0907-sigma-protocol-for-pedersen-commitment.pdf
 
 // PKComOpeningsProof contains PoK
 type PKComOpeningsProof struct {
-	commitmentValue *privacy.EllipticPoint 	//statement
-	indexs    			[]byte									//statement
+	commitmentValue *privacy.EllipticPoint //statement
+	indexs          []byte                 //statement
 	alpha           *privacy.EllipticPoint
 	gamma           []*big.Int
 }
 
 // PKComOpeningsWitness contains witnesses which are used for generate proof
 type PKComOpeningsWitness struct {
-	commitmentValue *privacy.EllipticPoint 	//statement
-	indexs    			[]byte									//statement
+	commitmentValue *privacy.EllipticPoint //statement
+	indexs          []byte                 //statement
 	Openings        []*big.Int
+}
+
+func (pro *PKComOpeningsProof) Init() *PKComOpeningsProof {
+	pro.commitmentValue = new(privacy.EllipticPoint).Zero()
+	return pro
 }
 
 // randValue return random witness value for testing
@@ -60,7 +66,10 @@ func (pro *PKComOpeningsProof) Set(
 	pro.indexs = indexs
 }
 
-func (pro *PKComOpeningsProof) Bytes() []byte {
+func (pro PKComOpeningsProof) Bytes() []byte {
+	if len(pro.gamma) == 0 {
+		return []byte{}
+	}
 	// var res []byte
 	res := append(pro.commitmentValue.Compress(), pro.alpha.Compress()...)
 	for i := 0; i < len(pro.gamma); i++ {
@@ -70,29 +79,43 @@ func (pro *PKComOpeningsProof) Bytes() []byte {
 		}
 		res = append(res, temp...)
 	}
+	for i := 0; i < len(pro.indexs); i++ {
+		res = append(res, []byte{pro.indexs[i]}...)
+	}
 	return res
 }
 
-func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) bool {
-	if len(bytestr) != privacy.ComInputOpeningsProofSize {
-		return false
+func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) error {
+
+	if len(bytestr) == 0 {
+		return nil
 	}
+
 	pro.commitmentValue = new(privacy.EllipticPoint)
 	pro.commitmentValue.Decompress(bytestr[0:privacy.CompressedPointSize])
 	if !pro.commitmentValue.IsSafe() {
-		return false
+		return errors.New("Decompressed failed!")
 	}
 	pro.alpha = new(privacy.EllipticPoint)
-	pro.alpha.Decompress(bytestr[privacy.CompressedPointSize: privacy.CompressedPointSize*2])
+	pro.alpha.Decompress(bytestr[privacy.CompressedPointSize : privacy.CompressedPointSize*2])
 	if !pro.alpha.IsSafe() {
-		return false
+		return errors.New("Decompressed failed!")
 	}
-	pro.gamma = make([]*big.Int, privacy.PedCom.Capacity)
-	for i := 0; i < 2; i++ {
+	// pro.gamma = make([]*big.Int, privacy.PedCom.Capacity)
+	// for i := 0; i < privacy.PedCom.Capacity; i++ {
+	// 	pro.gamma[i] = big.NewInt(0)
+	// 	pro.gamma[i].SetBytes(bytestr[privacy.CompressedPointSize*2+i*privacy.BigIntSize : privacy.CompressedPointSize*2+(i+1)*privacy.BigIntSize])
+	// }
+	pro.gamma = make([]*big.Int, (len(bytestr)-privacy.CompressedPointSize*2)/privacy.BigIntSize)
+	for i := 0; i < len(pro.gamma); i++ {
 		pro.gamma[i] = big.NewInt(0)
-		pro.gamma[i].SetBytes(bytestr[privacy.CompressedPointSize*2+i*privacy.BigIntSize: privacy.CompressedPointSize*2+(i+1)*privacy.BigIntSize])
+		pro.gamma[i].SetBytes(bytestr[privacy.CompressedPointSize*2+i*privacy.BigIntSize : privacy.CompressedPointSize*2+(i+1)*privacy.BigIntSize])
 	}
-	return true
+	pro.indexs = make([]byte, len(pro.gamma))
+	for i := 0; i < len(pro.indexs); i++ {
+		pro.indexs[i] = bytestr[privacy.CompressedPointSize*2+len(pro.gamma)*privacy.BigIntSize]
+	}
+	return nil
 }
 
 // Prove ... (for sender)

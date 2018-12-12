@@ -1,6 +1,8 @@
 package transaction
 
-import "github.com/ninjadotorg/constant/privacy-protocol"
+import (
+	"github.com/ninjadotorg/constant/privacy-protocol"
+)
 
 // ConvertOutputCoinToInputCoin - convert output coin from old tx to input coin for new tx
 func ConvertOutputCoinToInputCoin(usableTxOfOld []*Tx) []*privacy.InputCoin {

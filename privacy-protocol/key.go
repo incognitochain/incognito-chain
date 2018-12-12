@@ -76,7 +76,7 @@ func GenerateSpendingKey(seed []byte) SpendingKey {
 func GeneratePublicKey(spendingKey []byte) PublicKey {
 	var p EllipticPoint
 	p.X, p.Y = Curve.ScalarBaseMult(spendingKey)
-	fmt.Printf("Public key is not compressed: %+v\n\n", p)
+	//fmt.Printf("Public key is not compressed: %+v\n\n", p)
 	publicKey := p.Compress()
 
 	return publicKey
@@ -97,7 +97,7 @@ func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
 	var p EllipticPoint
 
 	p.X, p.Y = Curve.ScalarBaseMult(receivingKey)
-	fmt.Printf("Transmission key is not compressed: %+v\n\n", p)
+	//fmt.Printf("Transmission key is not compressed: %+v\n\n", p)
 	transmissionKey := p.Compress()
 	return transmissionKey
 }

@@ -17,17 +17,19 @@ import (
 )
 
 type Tx struct {
+	// Basic data
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
 
+	// Sign and Privacy proof
 	SigPubKey []byte `json:"SigPubKey, omitempty"` // 33 bytes
 	Sig       []byte `json:"Sig, omitempty"`       // 64 bytes
 	Proof     *zkp.PaymentProof
 
-	txId       *common.Hash
-	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+	// Metadata
+	Metadata interface{}
 
 	// this one is a hash id of requested tx
 	// and is used inside response txs
@@ -35,15 +37,12 @@ type Tx struct {
 	// for example, BuySellRequestTx/BuySellResponseTx
 	//RequestedTxID *common.Hash
 
-	// temp variable to validate tx
-	//snDerivators []*big.Int
-
-	Metadata interface{}
+	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 }
 
 // randomCommitmentsProcess - process list commitments and useable tx to create
 // a list commitment random which be used to create a proof for new tx
-func (tx *Tx) randomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, db database.DatabaseInterface, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+func (tx *Tx) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, db database.DatabaseInterface, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
 	commitmentIndexs = []uint64{}
 	myCommitmentIndexs = []uint64{}
 	if randNum == 0 {
@@ -74,16 +73,21 @@ func (tx *Tx) randomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, ra
 			}
 		}
 	}
-	for _, temp := range listUsableCommitments {
+	for j, temp := range listUsableCommitments {
 		key := string(temp)
 		index := mapIndexCommitmentsInUsableTx[key]
-		i := rand2.Int63n(int64(len(commitmentIndexs)))
+		i := rand2.Int63n(int64(randNum))
+		i += int64(j*(randNum-1)) + 1
 		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)
 		myCommitmentIndexs = append(myCommitmentIndexs, uint64(i))
 	}
 	return commitmentIndexs, myCommitmentIndexs
 }
 
+// Init - init value for tx from inputcoin(old output coin from old tx)
+// create new outputcoin and build privacy proof
+// if not want to create a privacy tx proof, set hashPrivacy = false
+// database is used like an interface which use to query info from db in building tx
 func (tx *Tx) Init(
 	senderSK *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
@@ -92,12 +96,12 @@ func (tx *Tx) Init(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 ) (error) {
-
+	tx.Type = common.TxNormalType
 	chainID := byte(14)
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
-	commitmentIndexs, myCommitmentIndexs = tx.randomCommitmentsProcess(inputCoins, 8, db, chainID)
+	commitmentIndexs, myCommitmentIndexs = tx.RandomCommitmentsProcess(inputCoins, 8, db, chainID)
 
 	// Print list of all input coins
 	fmt.Printf("List of all input coins before building tx:\n")
@@ -255,13 +259,12 @@ func (tx *Tx) Init(
 	}
 
 	// sign tx
-	tx.Hash()
-	tx.SignTx(hasPrivacy)
+	err = tx.SignTx(hasPrivacy)
 
-	return nil
+	return err
 }
 
-// SignTx signs tx
+// SignTx - signs tx
 func (tx *Tx) SignTx(hasPrivacy bool) error {
 	//Check input transaction
 	if tx.Sig != nil {
@@ -322,7 +325,7 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		}
 
 		// convert signature to byte array
-		tx.Sig = ECDSASigToByteArray(r, s)
+		tx.Sig = common.ECDSASigToByteArray(r, s)
 	}
 
 	return nil
@@ -368,7 +371,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		verKey.Curve = privacy.Curve
 
 		// convert signature from byte array to ECDSASign
-		r, s := FromByteArrayToECDSASig(tx.Sig)
+		r, s := common.FromByteArrayToECDSASig(tx.Sig)
 
 		// verify signature
 		res = ecdsa.Verify(verKey, tx.Hash()[:], r, s)
@@ -377,25 +380,11 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 	return res, nil
 }
 
-// ECDSASigToByteArray converts signature to byte array
-func ECDSASigToByteArray(r, s *big.Int) (sig []byte) {
-	sig = append(sig, r.Bytes()...)
-	sig = append(sig, s.Bytes()...)
-	return
-}
-
-// FromByteArrayToECDSASig converts a byte array to signature
-func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
-	r = new(big.Int).SetBytes(sig[0:32])
-	s = new(big.Int).SetBytes(sig[32:64])
-	return
-}
-
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
 // - Check double spending
-func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface) bool {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte) bool {
 	// Verify tx signature
 	var valid bool
 	var err error
@@ -405,15 +394,6 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			fmt.Printf("Error verifying signature of tx: %+v", err)
 		}
 		return false
-	}
-
-	// Check input coins' serial number is not exists in spent serial number list (Database)
-	// Check double spending
-	for i := 0; i < len(tx.Proof.InputCoins); i++ {
-		ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.SerialNumber, db)
-		if ok || err != nil {
-			return false
-		}
 	}
 
 	for i := 0; i < len(tx.Proof.OutputCoins); i++ {
@@ -426,7 +406,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	if !hasPrivacy {
 		// Check input coins' cm is exists in cm list (Database)
 		for i := 0; i < len(tx.Proof.InputCoins); i++ {
-			ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment, db)
+			ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, chainId)
 			if !ok || err != nil {
 				return false
 			}
@@ -434,7 +414,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	}
 
 	// Verify the payment proof
-	valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, nil)
+	valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db, chainId)
 	if valid == false {
 		fmt.Printf("Error verifying the payment proof")
 		return false
@@ -511,13 +491,7 @@ func (tx Tx) CheckSNDExistence(snd *big.Int, db database.DatabaseInterface) (boo
 }
 
 // CheckCMExistence returns true if cm exists in cm list
-func (tx Tx) CheckCMExistence(cm *privacy.EllipticPoint, db database.DatabaseInterface) (bool, error) {
-	// Todo:
-	return true, nil
-}
-
-// CheckCMExistence returns true if cm exists in cm list
-func (tx Tx) CheckSNExistence(serialNumber *privacy.EllipticPoint, db database.DatabaseInterface) (bool, error) {
-	// Todo:
-	return false, nil
+func (tx Tx) CheckCMExistence(cm []byte, db database.DatabaseInterface, chainID byte) (bool, error) {
+	ok, err := db.HasCommitment(cm, chainID)
+	return ok, err
 }

@@ -51,6 +51,8 @@ var RpcHandler = map[string]commandHandler{
 	RetrieveCommitteeCandidate: RpcServer.handleRetrieveCommiteeCandidate,
 	GetBlockProducerList:       RpcServer.handleGetBlockProducerList,
 
+	RandomCommitments: RpcServer.handleRandomCommitments,
+
 	// custom token
 	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
 	SendRawCustomTokenTransaction:       RpcServer.handleSendRawCustomTokenTransaction,
@@ -101,7 +103,7 @@ var RpcLimited = map[string]commandHandler{
 	DumpPrivkey:                RpcServer.handleDumpPrivkey,
 	ImportAccount:              RpcServer.handleImportAccount,
 	RemoveAccount:              RpcServer.handleRemoveAccount,
-	ListUnspent:                RpcServer.handleListUnspent,
+	ListUnspentTxByPrivatekey:  RpcServer.handleListUnspentTxByPrivatekey,
 	GetBalance:                 RpcServer.handleGetBalance,
 	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
 	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
@@ -162,18 +164,14 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 	return result, nil
 }
 
-/*
-// handleList returns a slice of objects representing the unspent wallet
-// transactions fitting the given criteria. The confirmations will be more than
-// minconf, less than maxconf and if addresses is populated only the addresses
-// contained within it will be considered.  If we know nothing about a
-// transaction an empty array will be returned.
-// params:
-Parameter #1—the minimum number of confirmations an output must have
-Parameter #2—the maximum number of confirmations an output may have
-Parameter #3—the list readonly which be used to view utxo
-*/
-func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+//handleListUnspentTx - use private key to get all tx which contains output coin of account
+// by private key, it return full tx outputcoin with amount and receiver address in txs
+//params:
+//Parameter #1—the minimum number of confirmations an output must have
+//Parameter #2—the maximum number of confirmations an output may have
+//Parameter #3—the list readonly which be used to view utxo
+//
+func (self RpcServer) handleListUnspentTxByPrivatekey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	result := jsonresult.ListUnspentResult{
 		ListUnspentResultItems: make(map[string]map[byte][]jsonresult.ListUnspentResultItem),
@@ -191,11 +189,11 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 
 		// get keyset only contain pri-key by deserializing
 		priKeyStr := keys["PrivateKey"].(string)
-		readonlyKey, err := wallet.Base58CheckDeserialize(priKeyStr)
+		key, err := wallet.Base58CheckDeserialize(priKeyStr)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		txsMap, err := self.config.BlockChain.GetListUnspentTxByKeyset(&readonlyKey.KeySet, transaction.NoSort, false)
+		txsMap, err := self.config.BlockChain.GetListTxByKeyset(&key.KeySet, transaction.NoSort, false)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -353,7 +351,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
+	usableTxsMap, _ := self.config.BlockChain.GetListTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {

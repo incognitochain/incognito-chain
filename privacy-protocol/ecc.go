@@ -43,7 +43,11 @@ type EllipticPointHelper interface {
 type EllipticPoint struct {
 	X, Y *big.Int
 }
-
+func (self *EllipticPoint) Zero() *EllipticPoint{
+	self.X = new(big.Int).SetInt64(0)
+	self.Y = new(big.Int).SetInt64(0)
+	return self
+}
 func (self *EllipticPoint) UnmarshalJSON(data []byte) error {
 	dataStr := ""
 	_ = json.Unmarshal(data, &dataStr)
@@ -203,7 +207,7 @@ func decompPoint(x *big.Int, ybit bool) (*big.Int, error) {
 
 	//check P = 3 mod 4?
 	// if temp.Mod(Q, new(big.Int).SetInt64(4)).Cmp(new(big.Int).SetInt64(3)) != 0 {
-	// 	return nil, errors.New("parameter P must be congruent to 3 mod 4")
+	// 	return nil, errors.Zero("parameter P must be congruent to 3 mod 4")
 	// }
 
 	// Now calculate sqrt mod p of x^3 - 3*x + B
@@ -251,7 +255,7 @@ func (eccPoint EllipticPoint) Hash(index int) *EllipticPoint {
 	// pointToChecked.X, pointToChecked.Y = Curve.Double(res.X, res.Y)
 
 	// if pointToChecked.X == nil || pointToChecked.Y == nil {
-	// 	//errors.New("Point at infinity")
+	// 	//errors.Zero("Point at infinity")
 	// 	return *new(EllipticPoint)
 	// }
 	return res

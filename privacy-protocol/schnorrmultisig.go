@@ -22,7 +22,13 @@ var Numbs int
 
 //#endif
 
-//MultiSigScheme define all of function for create EC Schnorr signature which could be combine by adding with another EC Schnorr Signature
+//MultiSigSchemeInterface define all of function for create EC Schnorr signature which could be combine by adding with another EC Schnorr Signature
+type MultiSigSchemeInterface interface {
+	SignMultiSig(data []byte) *SchnMultiSig
+	VerifyMultiSig(data []byte, listPK []*PublicKey) bool
+	CombineMultiSig(listSignatures []*SchnMultiSig) *SchnMultiSig
+}
+
 type MultiSigScheme interface {
 	SignMultiSig(data []byte) *SchnMultiSig
 	VerifyMultiSig(data []byte, listPK []*PublicKey) bool
@@ -248,6 +254,7 @@ func TestMultiSig() {
 		}(i)
 	}
 	wg.Wait()
+
 	aggSig := CombineMultiSig(Sig)
 	for i := 0; i < Numbs; i++ {
 		R = R.Add(RTest[i])

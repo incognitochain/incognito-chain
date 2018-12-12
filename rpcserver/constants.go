@@ -42,6 +42,7 @@ const (
 	GetListCustomTokenBalance           = "getlistcustomtokenbalance"
 	GetLoanParams                       = "loanparams"
 	GetBlockHeader                      = "getheader"
+	RandomCommitments                   = "randomcommitments"
 
 	// Wallet rpc cmd
 	ListAccounts               = "listaccounts"
@@ -51,7 +52,7 @@ const (
 	DumpPrivkey                = "dumpprivkey"
 	ImportAccount              = "importaccount"
 	RemoveAccount              = "removeaccount"
-	ListUnspent                = "listunspent"
+	ListUnspentTxByPrivatekey  = "listunspentbyprivatekey"
 	GetBalance                 = "getbalance"
 	GetBalanceByPrivatekey     = "getbalancebyprivatekey"
 	GetBalanceByPaymentAddress = "getbalancebypaymentaddress"

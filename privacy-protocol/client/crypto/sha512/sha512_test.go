@@ -743,7 +743,7 @@ func TestGoldenMarshal(t *testing.T) {
 				}
 
 				if string(state) != test.halfState {
-					t.Errorf("New%s(%q) state = %q, want %q", tt.name, test.in, state, test.halfState)
+					t.Errorf("Zero%s(%q) state = %q, want %q", tt.name, test.in, state, test.halfState)
 					continue
 				}
 
@@ -756,7 +756,7 @@ func TestGoldenMarshal(t *testing.T) {
 				io.WriteString(h2, test.in[len(test.in)/2:])
 
 				if actual, actual2 := h.Sum(nil), h2.Sum(nil); !bytes.Equal(actual, actual2) {
-					t.Errorf("New%s(%q) = 0x%x != marshaled 0x%x", tt.name, test.in, actual, actual2)
+					t.Errorf("Zero%s(%q) = 0x%x != marshaled 0x%x", tt.name, test.in, actual, actual2)
 				}
 			}
 		})
