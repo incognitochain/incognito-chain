@@ -17,7 +17,6 @@ import (
 	"github.com/ninjadotorg/constant/addrmanager"
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/connmanager"
 	"github.com/ninjadotorg/constant/consensus/ppos"
 	"github.com/ninjadotorg/constant/database"
@@ -170,7 +169,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			Logger.log.Error(err)
 			return err
 		}
-		err = self.dataBase.CleanNullifiers()
+		err = self.dataBase.CleanSerialNumbers()
 		if err != nil {
 			Logger.log.Error(err)
 			return err
@@ -250,6 +249,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		ListenerPeers:        peers,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
+		ExternalAddress:      cfg.ExternalAddress,
 	})
 	self.connManager = connManager
 
@@ -293,6 +293,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			IsGenerateNode:  cfg.Generate,
 			FeeEstimator:    self.feeEstimator,
 			ProtocolVersion: self.protocolVersion,
+			Database:        &self.dataBase,
 		}
 		self.rpcServer = &rpcserver.RpcServer{}
 		self.rpcServer.Init(&rpcConfig)
@@ -460,7 +461,6 @@ func (self Server) Start() {
 			return
 		}
 		self.consensusEngine.StartProducer(*producerKeySet)
-		self.consensusEngine.StartSwap()
 	}
 }
 
@@ -521,9 +521,9 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 // newPeerConfig returns the configuration for the listening RemotePeer.
 */
 func (self *Server) NewPeerConfig() *peer.Config {
-	KeySetProducer, err := cfg.GetProducerKeySet()
+	producerKeySet, err := cfg.GetProducerKeySet()
 	if err != nil {
-		Logger.log.Critical(err)
+		Logger.log.Critical("cfg GetProducerKeySet error", err)
 	}
 	config := &peer.Config{
 		MessageListeners: peer.MessageListeners{
@@ -548,9 +548,8 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnSwapUpdate:  self.OnSwapUpdate,
 		},
 	}
-	if len(KeySetProducer.PrivateKey) != 0 {
-		config.ProducerPrvKey = base58.Base58Check{}.Encode(KeySetProducer.PrivateKey, byte(0x00))
-	}
+	config.ProducerKeySet = producerKeySet
+
 	return config
 }
 
@@ -832,22 +831,62 @@ func (self *Server) PushMessageToAll(msg wire.Message) error {
 PushMessageToPeer push msg to peer
 */
 func (self *Server) PushMessageToPeer(msg wire.Message, peerId peer2.ID) error {
-	Logger.log.Info("Push msg to ", peerId)
+	Logger.log.Infof("Push msg to peer %s", peerId.String())
 	var dc chan<- struct{}
 	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
-		peerConn, exist := self.connManager.Config.ListenerPeers[index].PeerConns[peerId.String()]
-		if exist {
+		peerConn := self.connManager.Config.ListenerPeers[index].GetPeerConnByPeerID(peerId.String())
+		if peerConn != nil {
 			msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
 			peerConn.QueueMessageWithEncoding(msg, dc)
-			Logger.log.Info("Pushed")
+			Logger.log.Infof("Pushed peer %s", peerId.String())
 			return nil
 		} else {
-			fmt.Println()
-			Logger.log.Critical("RemotePeer not exist!")
-			fmt.Println()
+			Logger.log.Error("RemotePeer not exist!")
 		}
 	}
 	return errors.New("RemotePeer not found")
+}
+
+/*
+PushMessageToPeer push msg to pbk
+*/
+func (self *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
+	Logger.log.Infof("Push msg to pbk %s", pbk)
+	var dc chan<- struct{}
+	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
+		peerConn := self.connManager.Config.ListenerPeers[index].GetPeerConnByPbk(pbk)
+		if peerConn != nil {
+			msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
+			peerConn.QueueMessageWithEncoding(msg, dc)
+			Logger.log.Infof("Pushed pbk %s", pbk)
+			return nil
+		} else {
+			Logger.log.Error("RemotePeer not exist!")
+		}
+	}
+	return errors.New("RemotePeer not found")
+}
+
+/*
+PushMessageToPeer push msg to pbk
+*/
+func (self *Server) PushMessageToShard(msg wire.Message, shard byte) error {
+	Logger.log.Infof("Push msg to shard %d", shard)
+	var dc chan<- struct{}
+	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
+		peerConns := self.connManager.Config.ListenerPeers[index].GetListPeerConnByShard(shard)
+		if peerConns != nil && len(peerConns) > 0 {
+			for _, peerConn := range peerConns {
+				msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
+				peerConn.QueueMessageWithEncoding(msg, dc)
+			}
+			Logger.log.Infof("Pushed shard %d", shard)
+			return nil
+		} else {
+			Logger.log.Error("RemotePeer of shard not exist!")
+		}
+	}
+	return errors.New("RemotePeer of shard not found")
 }
 
 // handleAddPeerMsg deals with adding new peers.  It is invoked from the
@@ -872,6 +911,7 @@ func (self *Server) PushMessageGetChainState() error {
 		if err != nil {
 			return err
 		}
+		msg.(*wire.MessageGetChainState).Timestamp = time.Unix(time.Now().Unix(), 0)
 		msg.SetSenderID(listener.PeerID)
 		Logger.log.Infof("Send a GetChainState from %s", listener.RawAddress)
 		listener.QueueMessageWithEncoding(msg, dc)
@@ -891,14 +931,9 @@ func (self Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
 	msg.(*wire.MessageVersion).ProtocolVersion = self.protocolVersion
 
-	// ValidateTransaction Public PubKey from ProducerPrvKey
-	if peerConn.ListenerPeer.Config.ProducerPrvKey != "" {
-		keySet, err := cfg.GetProducerKeySet()
-		if err != nil {
-			Logger.log.Critical("Invalid producer's private key")
-			return err
-		}
-		msg.(*wire.MessageVersion).PublicKey = base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, byte(0x00))
+	// ValidateTransaction Public Key from ProducerPrvKey
+	if peerConn.ListenerPeer.Config.ProducerKeySet != nil {
+		msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.Config.ProducerKeySet.GetPublicKeyB58()
 	}
 
 	if err != nil {

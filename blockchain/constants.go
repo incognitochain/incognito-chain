@@ -27,8 +27,6 @@ const (
 	TestnetInitGovToken   = 10000
 
 	//board and proposal parameters
-	NumberOfDCBGovernors              = 50
-	NumberOfGOVGovernors              = 50
 	TestnetInitCmBToken               = 10000
 	TestnetInitBondToken              = 10000
 	TestnetGenesisBlockPaymentAddress = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"

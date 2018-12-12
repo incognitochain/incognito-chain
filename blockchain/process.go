@@ -62,7 +62,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 			for chainId, txs := range unspentTxs {
 				for _, unspent := range txs {
 					var txIndex = -1
-					// Iterate to get Tx index of transaction in a block
+					// Iterate to get TxNormal index of transaction in a block
 					for i, _ := range block.Transactions {
 						txHash := unspent.Hash().String()
 						blockTxHash := block.Transactions[i].(*transaction.Tx).Hash().String()
@@ -84,6 +84,9 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		}
 	} else {
 		err := self.StoreBlock(block)
+		if err != nil {
+			return NewBlockChainError(UnExpectedError, err)
+		}
 		if len(block.Transactions) < 1 {
 			Logger.log.Infof("No transaction in this block")
 		} else {
@@ -97,9 +100,6 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 			}
 			Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
 		}
-		if err != nil {
-			return NewBlockChainError(UnExpectedError, err)
-		}
 	}
 	// TODO: @0xankylosaurus optimize for loop once instead of multiple times
 	// save index of block
@@ -108,7 +108,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 	// fetch nullifiers and commitments(utxo) from block and save
-	err = self.CreateAndSaveTxViewPoint(block)
+	err = self.CreateAndSaveTxViewPointFromBlock(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}

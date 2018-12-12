@@ -7,6 +7,7 @@ import (
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/wallet"
@@ -166,9 +167,9 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
-func (tx *TxCustomToken) ValidateTransaction() bool {
+func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface) bool {
 	// validate for normal tx
-	if tx.Tx.ValidateTransaction() {
+	if tx.Tx.ValidateTransaction(hasPrivacy, db) {
 		if len(tx.listUtxo) == 0 {
 			return false
 		}
@@ -213,13 +214,15 @@ func (customTokenTx *TxCustomToken) getListUTXOFromTxCustomToken(
 }
 
 func (customTokenTx *TxCustomToken) ValidateTxByItself(
+	hasPrivacy bool,
+	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
 ) bool {
 	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
 	if !ok {
 		return false
 	}
-	ok = customTokenTx.ValidateTransaction()
+	ok = customTokenTx.ValidateTransaction(hasPrivacy, db)
 	if !ok {
 		return false
 	}
@@ -247,7 +250,7 @@ func (tx TxCustomToken) Hash() *common.Hash {
 }
 
 // GetTxVirtualSize computes the virtual size of a given transaction
-// size of this tx = (normal Tx size) + (custom token data size)
+// size of this tx = (normal TxNormal size) + (custom token data size)
 func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 	normalTxSize := tx.Tx.GetTxVirtualSize()
 
@@ -276,16 +279,19 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 // CreateTxCustomToken ...
 func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
-	rts map[byte]*common.Hash,
-	usableTx map[byte][]*Tx,
-	commitments map[byte]([][]byte),
+	usableTx []*Tx,
 	fee uint64,
-	senderChainID byte,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
 ) (*TxCustomToken, error) {
 	// create normal txCustomToken
-	normalTx, err := CreateTx(senderKey, paymentInfo, rts, usableTx, commitments, fee, senderChainID, true)
+	normalTx := Tx{}
+	err := normalTx.CreateTx(senderKey,
+		paymentInfo,
+		usableTx,
+		fee,
+		true,
+		nil)
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +299,7 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 	normalTx.Type = common.TxCustomTokenType
 
 	txCustomToken := &TxCustomToken{
-		Tx:          *normalTx,
+		Tx:          normalTx,
 		TxTokenData: TxTokenData{},
 	}
 
@@ -389,4 +395,9 @@ func (tx *TxCustomToken) GetAmountOfVote() uint64 {
 		}
 	}
 	return sum
+}
+
+func (tx *TxCustomToken) IsPrivacy() bool {
+	// TODO: update here
+	return false
 }

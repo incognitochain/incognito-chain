@@ -2,7 +2,7 @@ package common
 
 const (
 	EmptyString         = ""
-	MiliConstant        = 3 // 1 constant = 10^3 mili constant, we will use 1 miliconstant as minimum unit constant in tx
+	NanoConstant        = 2 // 1 constant = 10^2 nano constant, we will use 1 miliconstant as minimum unit constant in tx
 	IncMerkleTreeHeight = 29
 	RefundPeriod        = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
 )
@@ -46,6 +46,8 @@ const (
 	MinimumBlockOfProposalDuration    = 50
 	MaximumBlockOfProposalDuration    = 200
 	MaximumProposalExplainationLength = 1000
+	NumberOfDCBGovernors              = 50
+	NumberOfGOVGovernors              = 50
 )
 
 // board types

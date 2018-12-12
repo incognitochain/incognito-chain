@@ -1,5 +1,6 @@
 package transaction
 
+/*
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -12,14 +13,14 @@ import (
 // TxCustomTokenPrivacy is an advance format of TxCustomToken
 // so that user need to spend a lot fee to create this class tx
 type TxCustomTokenPrivacy struct {
-	Tx                                    // inherit from normal tx of constant(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
+	TxNormal                              // inherit from normal tx of constant(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
 	TxTokenPrivacyData TxTokenPrivacyData // supporting privacy format
 }
 
 // Hash returns the hash of all fields of the transaction
 func (tx TxCustomTokenPrivacy) Hash() *common.Hash {
 	// get hash of tx
-	record := tx.Tx.Hash().String()
+	record := tx.TxNormal.Hash().String()
 
 	// add more hash of tx custom token data privacy
 	txTokenPtivacyDataHash, _ := tx.TxTokenPrivacyData.Hash()
@@ -32,7 +33,7 @@ func (tx TxCustomTokenPrivacy) Hash() *common.Hash {
 
 func (tx *TxCustomTokenPrivacy) ValidateTransaction() bool {
 	// validate for normal tx
-	if tx.Tx.ValidateTransaction() {
+	if tx.TxNormal.ValidateTransaction() {
 		// TODO
 		return true
 	}
@@ -40,9 +41,9 @@ func (tx *TxCustomTokenPrivacy) ValidateTransaction() bool {
 }
 
 // GetTxVirtualSize computes the virtual size of a given transaction
-// size of this tx = (normal Tx size) + (custom token data size)
+// size of this tx = (normal TxNormal size) + (custom token data size)
 func (tx *TxCustomTokenPrivacy) GetTxVirtualSize() uint64 {
-	normalTxSize := tx.Tx.GetTxVirtualSize()
+	normalTxSize := tx.TxNormal.GetTxVirtualSize()
 
 	tokenDataSize := uint64(0)
 
@@ -60,7 +61,7 @@ func (tx *TxCustomTokenPrivacy) GetTxVirtualSize() uint64 {
 func CreateTxCustomTokenPrivacy(senderKey *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
 	rts map[byte]*common.Hash,
-	usableTx map[byte][]*Tx,
+	usableTx map[byte][]*TxNormal,
 	commitments map[byte]([][]byte),
 	fee uint64,
 	senderChainID byte,
@@ -76,7 +77,7 @@ func CreateTxCustomTokenPrivacy(senderKey *privacy.SpendingKey,
 	normalTx.Type = common.TxCustomTokenType
 
 	txCustomToken := &TxCustomTokenPrivacy{
-		Tx:                 *normalTx,
+		TxNormal:           *normalTx,
 		TxTokenPrivacyData: TxTokenPrivacyData{},
 	}
 
@@ -131,3 +132,4 @@ func CreateTxCustomTokenPrivacy(senderKey *privacy.SpendingKey,
 	}
 	return txCustomToken, nil
 }
+*/

@@ -47,17 +47,19 @@ func buildResponseForCoin(txRequest *transaction.TxCustomToken, bondID []byte, r
 }
 
 func buildResponseForBond(txRequest *transaction.TxCustomToken, bondID []byte, rt []byte, chainID byte, bondPrices map[string]uint64, unspentTxTokenOuts []transaction.TxTokenVout, saleID []byte, dcbAddress string) (*transaction.TxCustomToken, []transaction.TxTokenVout, error) {
-	accountDCB, _ := wallet.Base58CheckDeserialize(dcbAddress)
+	// TODO:@bunnyip  need to double check here
+	// accountDCB, _ := wallet.Base58CheckDeserialize(dcbAddress)
 	// Get amount of Constant user sent
 	value := uint64(0)
-	userPk := txRequest.Tx.JSPubKey
-	for _, desc := range txRequest.Tx.Descs {
-		for _, note := range desc.Note {
-			if bytes.Equal(note.Apk[:], accountDCB.KeySet.PaymentAddress.Pk) {
-				value += note.Value
-			}
-		}
-	}
+	// userPk := txRequest.Tx.JSPubKey
+	userPk := txRequest.Tx.SigPubKey
+	// for _, desc := range txRequest.Tx.Descs {
+	// 	for _, note := range desc.Note {
+	// 		if bytes.Equal(note.Apk[:], accountDCB.KeySet.PaymentAddress.Pk) {
+	// 			value += note.Value
+	// 		}
+	// 	}
+	// }
 	bondPrice := bondPrices[string(bondID)]
 	bonds := value / bondPrice
 	sumBonds := uint64(0)

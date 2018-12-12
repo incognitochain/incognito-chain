@@ -211,19 +211,18 @@ func (self RpcServer) handleListUnspent(params interface{}, closeChan <-chan str
 		for chainId, txs := range txsMap {
 			for _, tx := range txs {
 				item := jsonresult.ListUnspentResultItem{
-					TxId:          tx.Hash().String(),
-					JoinSplitDesc: make([]jsonresult.JoinSplitDesc, 0),
+					TxId:     tx.Hash().String(),
+					OutCoins: make([]jsonresult.OutCoin, 0),
 				}
-				for _, desc := range tx.Descs {
-					notes := desc.GetNote()
-					amounts := make([]uint64, 0)
-					for _, note := range notes {
-						amounts = append(amounts, note.Value)
-					}
-					item.JoinSplitDesc = append(item.JoinSplitDesc, jsonresult.JoinSplitDesc{
-						Anchors:     desc.Anchor,
-						Commitments: desc.Commitments,
-						Amounts:     amounts,
+				for _, outCoin := range tx.Proof.OutputCoins {
+					item.OutCoins = append(item.OutCoins, jsonresult.OutCoin{
+						SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), byte(0x00)),
+						PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), byte(0x00)),
+						Value:          outCoin.CoinDetails.Value,
+						Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], byte(0x00)),
+						CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), byte(0x00)),
+						Randomness:     *outCoin.CoinDetails.Randomness,
+						SNDerivator:    *outCoin.CoinDetails.SNDerivator,
 					})
 				}
 				listTxs = append(listTxs, item)
@@ -367,11 +366,9 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
 		for _, temp := range usableTxs {
-			for _, desc := range temp.Descs {
-				for _, note := range desc.GetNote() {
-					amount := note.Value
-					estimateTotalAmount -= int64(amount)
-				}
+			for _, note := range temp.Proof.OutputCoins {
+				amount := note.CoinDetails.Value
+				estimateTotalAmount -= int64(amount)
 			}
 			txData := temp
 			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
@@ -382,7 +379,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		}
 	}
 
-	// check real fee per Tx
+	// check real fee per TxNormal
 	var realFee uint64
 	if int64(estimateFeeCoinPerKb) == -1 {
 		temp, _ := self.config.FeeEstimator[chainIdSender].EstimateFee(numBlock)
@@ -398,11 +395,9 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
 		for chainId, usableTxs := range usableTxsMap {
 			for _, temp := range usableTxs {
-				for _, desc := range temp.Descs {
-					for _, note := range desc.GetNote() {
-						amount := note.Value
-						estimateTotalAmount -= int64(amount)
-					}
+				for _, note := range temp.Proof.OutputCoins {
+					amount := note.CoinDetails.Value
+					estimateTotalAmount -= int64(amount)
 				}
 				txData := temp
 				candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
@@ -413,29 +408,14 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		}
 	}
 
-	// get merkleroot commitments, nullifers db, commitments db for every chain
-	nullifiersDb := make(map[byte]([][]byte))
-	commitmentsDb := make(map[byte]([][]byte))
-	merkleRootCommitments := make(map[byte]*common.Hash)
-	for chainId, _ := range candidateTxsMap {
-		merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
-		// get tx view point
-		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
-		commitmentsDb[chainId] = txViewPoint.ListCommitments()
-	}
-
 	// get list custom token
 	listCustomTokens, err := self.config.BlockChain.ListCustomToken()
 
 	tx, err := transaction.CreateTxCustomToken(
 		&senderKey.KeySet.PrivateKey,
 		nil,
-		merkleRootCommitments,
-		candidateTxsMap,
-		commitmentsDb,
+		candidateTxsMap[chainIdSender],
 		realFee,
-		chainIdSender,
 		tokenParams,
 		listCustomTokens,
 	)

@@ -3,8 +3,10 @@ package common
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"net"
 	"os"
 	"os/user"
@@ -20,6 +22,7 @@ import (
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
+	"crypto/rand"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -209,21 +212,29 @@ func SliceExists(slice interface{}, item interface{}) (bool, error) {
 /*
 SliceBytesExists - Check slice []byte contain item
 */
-func SliceBytesExists(slice interface{}, item interface{}) (bool, error) {
+func GetBytes(key interface{}) ([]byte) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	enc.Encode(key)
+	return buf.Bytes()
+}
+
+func SliceBytesExists(slice interface{}, item interface{}) (int64, error) {
 	s := reflect.ValueOf(slice)
 
 	if s.Kind() != reflect.Slice {
-		return false, errors.New("SliceBytesExists() given a non-slice type")
+		return -1, errors.New("SliceBytesExists() given a non-slice type")
 	}
 
+	// TODO upgrade
 	for i := 0; i < s.Len(); i++ {
 		interfacea := s.Index(i).Interface()
-		if bytes.Equal(interfacea.([]byte), item.([]byte)) {
-			return true, nil
+		if bytes.Compare(interfacea.([]byte), item.([]byte)) == 0 {
+			return int64(i), nil
 		}
 	}
 
-	return false, nil
+	return -1, nil
 }
 
 func GetTxSenderChain(senderLastByte byte) (byte, error) {
@@ -295,7 +306,7 @@ func CleanAndExpandPath(path string, defaultHomeDir string) string {
 }
 
 func ConstantToMiliConstant(constant uint64) uint64 {
-	return constant * uint64(math.Pow(10, MiliConstant))
+	return constant * uint64(math.Pow(10, NanoConstant))
 }
 
 func Max(x, y int) int {
@@ -309,4 +320,13 @@ func ToBytes(obj interface{}) []byte {
 	buff := new(bytes.Buffer)
 	json.NewEncoder(buff).Encode(obj)
 	return buff.Bytes()
+}
+
+// CheckDuplicate returns true if there are at least 2 elements in array have same values
+func CheckDuplicateBigInt(arr []*big.Int) bool {
+	return false
+}
+
+func RandBigIntN(max *big.Int) (*big.Int, error) {
+	return rand.Int(rand.Reader, max)
 }

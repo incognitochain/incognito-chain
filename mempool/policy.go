@@ -22,17 +22,10 @@ type Policy struct {
 /*
 
  */
-// func (self *Policy) CheckTxVersion(tx *metadata.Transaction) bool {
-// 	txType := (*tx).GetType()
+// func (self *Policy) CheckTxVersion(tx metadata.Transaction) bool {
+// 	txType := tx.GetType()
 // 	switch txType {
-// 	case common.TxSalaryType:
-// 		{
-// 			temp := (*tx).(*transaction.Tx)
-// 			if temp.Version > self.MaxTxVersion {
-// 				return false
-// 			}
-// 		}
-// 	case common.TxNormalType:
+// 	case common.TxSalaryType, common.TxNormalType:
 // 		{
 // 			temp := (*tx).(*transaction.Tx)
 // 			if temp.Version > self.MaxTxVersion {

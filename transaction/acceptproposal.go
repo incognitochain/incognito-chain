@@ -1,26 +1,26 @@
 package transaction
 
-import "github.com/ninjadotorg/constant/common"
+/*import "github.com/ninjadotorg/constant/common"
 
 type TxAcceptGOVProposal struct {
-	*Tx
+	*TxNormal
 	GOVProposalTXID *common.Hash
 }
 
 type TxAcceptDCBProposal struct {
-	*Tx
+	*TxNormal
 	DCBProposalTXID *common.Hash
 }
 
 func (thisTx TxAcceptDCBProposal) Hash() *common.Hash {
-	record := string(common.ToBytes(thisTx.Tx.Hash()))
+	record := string(common.ToBytes(thisTx.TxNormal.Hash()))
 	record += string(common.ToBytes(thisTx.DCBProposalTXID))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (thisTx TxAcceptGOVProposal) Hash() *common.Hash {
-	record := string(common.ToBytes(thisTx.Tx.Hash()))
+	record := string(common.ToBytes(thisTx.TxNormal.Hash()))
 	record += string(common.ToBytes(thisTx.GOVProposalTXID))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -37,9 +37,9 @@ func ValidateGOVTXID(GOVProposalTXID *common.Hash) bool {
 }
 
 func (thisTx TxAcceptDCBProposal) ValidateTransaction() bool {
-	return thisTx.Tx.ValidateTransaction() && ValidateDCBTXID(thisTx.DCBProposalTXID)
+	return thisTx.TxNormal.ValidateTransaction() && ValidateDCBTXID(thisTx.DCBProposalTXID)
 }
 
 func (thisTx TxAcceptGOVProposal) ValidateTransaction() bool {
-	return thisTx.Tx.ValidateTransaction() && ValidateGOVTXID(thisTx.GOVProposalTXID)
-}
+	return thisTx.TxNormal.ValidateTransaction() && ValidateGOVTXID(thisTx.GOVProposalTXID)
+}*/

@@ -32,11 +32,8 @@ func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan st
 		amount := uint64(0)
 		for _, txs := range txsMap {
 			for _, tx := range txs {
-				for _, desc := range tx.Descs {
-					notes := desc.GetNote()
-					for _, note := range notes {
-						amount += note.Value
-					}
+				for _, out := range tx.Proof.OutputCoins {
+					amount += out.CoinDetails.Value
 				}
 			}
 		}
@@ -166,11 +163,8 @@ func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan
 	}
 	for _, txs := range txsMap {
 		for _, tx := range txs {
-			for _, desc := range tx.Descs {
-				notes := desc.GetNote()
-				for _, note := range notes {
-					balance += note.Value
-				}
+			for _, out := range tx.Proof.OutputCoins {
+				balance += out.CoinDetails.Value
 			}
 		}
 	}
@@ -199,11 +193,8 @@ func (self RpcServer) handleGetBalanceByPaymentAddress(params interface{}, close
 	}
 	for _, txs := range txsMap {
 		for _, tx := range txs {
-			for _, desc := range tx.Descs {
-				notes := desc.GetNote()
-				for _, note := range notes {
-					balance += note.Value
-				}
+			for _, out := range tx.Proof.OutputCoins {
+				balance += out.CoinDetails.Value
 			}
 		}
 	}
@@ -250,11 +241,8 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 			}
 			for _, txs := range txsMap {
 				for _, tx := range txs {
-					for _, desc := range tx.Descs {
-						notes := desc.GetNote()
-						for _, note := range notes {
-							balance += note.Value
-						}
+					for _, out := range tx.Proof.OutputCoins {
+						balance += out.CoinDetails.Value
 					}
 				}
 			}
@@ -269,11 +257,8 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 				}
 				for _, txs := range txsMap {
 					for _, tx := range txs {
-						for _, desc := range tx.Descs {
-							notes := desc.GetNote()
-							for _, note := range notes {
-								balance += note.Value
-							}
+						for _, out := range tx.Proof.OutputCoins {
+							balance += out.CoinDetails.Value
 						}
 					}
 				}
@@ -328,11 +313,8 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 					if tx.IsSalaryTx() {
 						continue
 					}
-					for _, desc := range tx.Descs {
-						notes := desc.GetNote()
-						for _, note := range notes {
-							balance += note.Value
-						}
+					for _, out := range tx.Proof.OutputCoins {
+						balance += out.CoinDetails.Value
 					}
 				}
 			}

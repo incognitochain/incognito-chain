@@ -1,10 +1,8 @@
 package blockchain
 
 import (
-	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
@@ -14,42 +12,44 @@ func buildCoinbaseTx(
 	rt []byte,
 	chainID byte,
 ) (*transaction.Tx, error) {
+	// TODO: @bunnyip - need to update here
+	return nil, nil
 	// Create Proof for the joinsplit op
-	inputs := make([]*client.JSInput, 2)
-	inputs[0] = transaction.CreateRandomJSInput(nil)
-	inputs[1] = transaction.CreateRandomJSInput(inputs[0].Key)
-	dummyAddress := privacy.GeneratePaymentAddress(*inputs[0].Key)
+	// inputs := make([]*client.JSInput, 2)
+	// inputs[0] = transaction.CreateRandomJSInput(nil)
+	// inputs[1] = transaction.CreateRandomJSInput(inputs[0].Key)
+	// dummyAddress := privacy.GeneratePaymentAddress(*inputs[0].Key)
 
-	// Create new notes to send to 2 token holders at the same time
-	outNote1 := &client.Note{Value: amounts[0], Apk: pks[0]}
-	outNote2 := &client.Note{Value: amounts[1], Apk: pks[1]}
-	totalAmount := outNote1.Value + outNote2.Value
+	// // Create new notes to send to 2 token holders at the same time
+	// outNote1 := &client.Note{Value: amounts[0], Apk: pks[0]}
+	// outNote2 := &client.Note{Value: amounts[1], Apk: pks[1]}
+	// totalAmount := outNote1.Value + outNote2.Value
 
-	outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
-	outputs[0].EncKey = tks[0]
-	outputs[0].OutputNote = outNote1
-	outputs[1].EncKey = tks[1]
-	outputs[1].OutputNote = outNote2
+	// outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
+	// outputs[0].EncKey = tks[0]
+	// outputs[0].OutputNote = outNote1
+	// outputs[1].EncKey = tks[1]
+	// outputs[1].OutputNote = outNote2
 
-	// Generate proof and sign tx
-	tx, err := transaction.CreateEmptyTx(common.TxNormalType, nil, true)
-	if err != nil {
-		return nil, err
-	}
+	// // Generate proof and sign tx
+	// tx, err := transaction.CreateEmptyTx(common.TxNormalType, nil, true)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	tx.AddressLastByte = dummyAddress.Pk[len(dummyAddress.Pk)-1]
-	rtMap := map[byte][]byte{chainID: rt}
-	inputMap := map[byte][]*client.JSInput{chainID: inputs}
+	// tx.AddressLastByte = dummyAddress.Pk[len(dummyAddress.Pk)-1]
+	// rtMap := map[byte][]byte{chainID: rt}
+	// inputMap := map[byte][]*client.JSInput{chainID: inputs}
 
-	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, totalAmount, 0, true)
-	if err != nil {
-		return nil, err
-	}
-	err = tx.SignTx()
-	if err != nil {
-		return nil, err
-	}
-	return tx, nil
+	// err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, totalAmount, 0, true)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// err = tx.SignTx()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// return tx, nil
 }
 
 func buildDividendTxs(

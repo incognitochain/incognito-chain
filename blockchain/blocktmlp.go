@@ -11,6 +11,7 @@ import (
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
@@ -79,17 +80,16 @@ func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent 
 	}, nil
 }
 
-func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentAddress, chainID byte) (*Block, error) {
+func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, chainID byte) (*Block, error) {
 
 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
 	prevBlockHash := blockgen.chain.BestState[chainID].BestBlock.Hash()
-	prevCmTree := blockgen.chain.BestState[chainID].CmTree.MakeCopy()
+	//prevCmTree := blockgen.chain.BestState[chainID].CmTree.MakeCopy()
 	sourceTxns := blockgen.txPool.MiningDescs()
 
 	var txsToAdd []metadata.Transaction
 	var txToRemove []metadata.Transaction
 	var buySellReqTxs []metadata.Transaction
-	// var txTokenVouts map[*common.Hash]*transaction.TxTokenVout
 	var buyBackFromInfos []*buyBackFromInfo
 	bondsSold := uint64(0)
 	incomeFromBonds := uint64(0)
@@ -110,7 +110,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 			<-time.Tick(common.MaxBlockWaitTime * time.Second)
 			sourceTxns = blockgen.txPool.MiningDescs()
 			if len(sourceTxns) == 0 {
-				// return nil, errors.New("No Tx")
+				// return nil, errors.New("No TxNormal")
 				Logger.log.Info("Creating empty block...")
 				goto concludeBlock
 			}
@@ -125,13 +125,12 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 		}
 		// ValidateTransaction vote and propose transaction
 
-		// if !blockgen.txPool.ValidateTxByItSelf(tx) {
-		if !tx.ValidateTxByItself(blockgen.chain) {
+		// TODO: need to determine a tx is in privacy format or not
+		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain) {
 			txToRemove = append(txToRemove, metadata.Transaction(tx))
 			continue
 		}
 
-		// if tx.GetType() == common.TxBuyFromGOVRequest {
 		if tx.GetMetadataType() == metadata.BuyFromGOVRequestMeta {
 			income, soldAmt, addable := blockgen.checkBuyFromGOVReqTx(chainID, tx, bondsSold)
 			if !addable {
@@ -143,7 +142,6 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 			buySellReqTxs = append(buySellReqTxs, tx)
 		}
 
-		// if tx.GetType() == common.TxBuyBackRequest {
 		if tx.GetMetadataType() == metadata.BuyBackRequestMeta {
 			buyBackFromInfo, addable := blockgen.checkBuyBackReqTx(chainID, tx, buyBackCoins)
 			if !addable {
@@ -168,7 +166,8 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress privacy.PaymentA
 	}
 
 concludeBlock:
-	rt := prevBlock.Header.MerkleRootCommitments.CloneBytes()
+	// rt := prevBlock.Header.MerkleRootCommitments.CloneBytes()
+	rt := []byte{}
 	blockHeight := prevBlock.Header.Height + 1
 
 	// TODO(@0xbunyip): cap #tx to common.MaxTxsInBlock
@@ -216,7 +215,7 @@ concludeBlock:
 	// ------------------------------------------------------------------------
 	totalSalary := salaryMULTP*salaryPerTx + basicSalary
 	// create salary tx to pay constant for block producer
-	salaryTx, err := transaction.CreateTxSalary(totalSalary, &payToAddress, rt, chainID)
+	salaryTx, err := transaction.CreateTxSalary(totalSalary, payToAddress, privatekey, blockgen.chain.config.DataBase)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -231,11 +230,12 @@ concludeBlock:
 		return nil, err
 	}
 	// create buy-back response txs to distribute constants to buy-back requesters
-	buyBackResTxs, err := blockgen.buildBuyBackResponsesTx(buyBackFromInfos, chainID)
+	buyBackResTxs, err := blockgen.buildBuyBackResponsesTx(buyBackFromInfos, chainID, privatekey)
+
 	// create refund txs
 	currentSalaryFund := prevBlock.Header.SalaryFund
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd + incomeFromBonds - (totalSalary + buyBackCoins)
-	refundTxs, totalRefundAmt := blockgen.buildRefundTxs(chainID, remainingFund)
+	refundTxs, totalRefundAmt := blockgen.buildRefundTxs(chainID, remainingFund, privatekey)
 
 	// Get loan payment amount to add to DCB fund
 	loanPaymentAmount, unlockTxs, removableTxs := blockgen.processLoan(sourceTxns, rt, chainID)
@@ -266,7 +266,7 @@ concludeBlock:
 	}
 
 	if int32(prevBlock.Header.DCBGovernor.EndBlock) == prevBlock.Header.Height+1 {
-		newBoardList, _ := blockgen.chain.config.DataBase.GetTopMostVoteDCBGovernor(NumberOfDCBGovernors)
+		newBoardList, _ := blockgen.chain.config.DataBase.GetTopMostVoteDCBGovernor(common.NumberOfDCBGovernors)
 		sort.Sort(newBoardList)
 		sumOfVote := uint64(0)
 		var newDCBBoardPubKey [][]byte
@@ -284,7 +284,7 @@ concludeBlock:
 	}
 
 	if int32(prevBlock.Header.GOVGovernor.EndBlock) == prevBlock.Header.Height+1 {
-		newBoardList, _ := blockgen.chain.config.DataBase.GetTopMostVoteGOVGovernor(NumberOfGOVGovernors)
+		newBoardList, _ := blockgen.chain.config.DataBase.GetTopMostVoteGOVGovernor(common.NumberOfGOVGovernors)
 		sort.Sort(newBoardList)
 		sumOfVote := uint64(0)
 		var newGOVBoardPubKey [][]byte
@@ -337,19 +337,19 @@ concludeBlock:
 	}
 
 	block.Header = BlockHeader{
-		Height:                prevBlock.Header.Height + 1,
-		Version:               BlockVersion,
-		PrevBlockHash:         *prevBlockHash,
-		MerkleRoot:            *merkleRoot,
-		MerkleRootCommitments: common.Hash{},
-		Timestamp:             time.Now().Unix(),
-		BlockCommitteeSigs:    make([]string, common.TotalValidators),
-		Committee:             make([]string, common.TotalValidators),
-		ChainID:               chainID,
-		SalaryFund:            currentSalaryFund + incomeFromBonds + totalFee + salaryFundAdd - totalSalary - govPayoutAmount - buyBackCoins - totalRefundAmt,
-		BankFund:              prevBlock.Header.BankFund + loanPaymentAmount - bankPayoutAmount,
-		GOVConstitution:       prevBlock.Header.GOVConstitution, // TODO: need get from gov-params tx
-		DCBConstitution:       prevBlock.Header.DCBConstitution, // TODO: need get from dcb-params tx
+		Height:        prevBlock.Header.Height + 1,
+		Version:       BlockVersion,
+		PrevBlockHash: *prevBlockHash,
+		MerkleRoot:    *merkleRoot,
+		// MerkleRootCommitments: common.Hash{},
+		Timestamp:          time.Now().Unix(),
+		BlockCommitteeSigs: make([]string, common.TotalValidators),
+		Committee:          make([]string, common.TotalValidators),
+		ChainID:            chainID,
+		SalaryFund:         currentSalaryFund + incomeFromBonds + totalFee + salaryFundAdd - totalSalary - govPayoutAmount - buyBackCoins - totalRefundAmt,
+		BankFund:           prevBlock.Header.BankFund + loanPaymentAmount - bankPayoutAmount,
+		GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: need get from gov-params tx
+		DCBConstitution:    prevBlock.Header.DCBConstitution, // TODO: need get from dcb-params tx
 	}
 	if block.Header.GOVConstitution.GOVParams.SellingBonds != nil {
 		block.Header.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= bondsSold
@@ -375,17 +375,15 @@ concludeBlock:
 	}
 
 	// Add new commitments to merkle tree and save the root
-	newTree := prevCmTree
+	/*newTree := prevCmTree
 	err = UpdateMerkleTreeForBlock(newTree, &block)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
 	}
 	rt = newTree.GetRoot(common.IncMerkleTreeHeight)
-	copy(block.Header.MerkleRootCommitments[:], rt)
+	copy(block.Header.MerkleRootCommitments[:], rt)*/
 
-	//update the latest AgentDataPoints to block
-	// block.AgentDataPoints = agentDataPoints
 	return &block, nil
 }
 
@@ -685,17 +683,17 @@ func (blockgen *BlkTmplGenerator) checkBuyBackReqTx(
 func (blockgen *BlkTmplGenerator) buildBuyBackResponsesTx(
 	buyBackFromInfos []*buyBackFromInfo,
 	chainID byte,
+	privatekey *privacy.SpendingKey,
 ) ([]*transaction.Tx, error) {
 	if len(buyBackFromInfos) == 0 {
 		return []*transaction.Tx{}, nil
 	}
 
-	prevBlock := blockgen.chain.BestState[chainID].BestBlock
-	rt := prevBlock.Header.MerkleRootCommitments.CloneBytes()
+	// prevBlock := blockgen.chain.BestState[chainID].BestBlock
 	var buyBackResTxs []*transaction.Tx
 	for _, buyBackFromInfo := range buyBackFromInfos {
 		buyBackAmount := buyBackFromInfo.value * buyBackFromInfo.buyBackPrice
-		buyBackResTx, err := transaction.CreateTxSalary(buyBackAmount, &buyBackFromInfo.paymentAddress, rt, chainID)
+		buyBackResTx, err := transaction.CreateTxSalary(buyBackAmount, &buyBackFromInfo.paymentAddress, privatekey, blockgen.chain.GetDatabase())
 		if err != nil {
 			return []*transaction.Tx{}, err
 		}
@@ -713,8 +711,8 @@ func calculateAmountOfRefundTxs(
 	addresses []*privacy.PaymentAddress,
 	estimatedRefundAmt uint64,
 	remainingFund uint64,
-	rt []byte,
-	chainID byte,
+	db database.DatabaseInterface,
+	privatekey *privacy.SpendingKey,
 ) ([]*transaction.Tx, uint64) {
 	amt := uint64(0)
 	if estimatedRefundAmt <= remainingFund {
@@ -726,7 +724,7 @@ func calculateAmountOfRefundTxs(
 	var refundTxs []*transaction.Tx
 	for i := 0; i < len(addresses); i++ {
 		addr := addresses[i]
-		refundTx, err := transaction.CreateTxSalary(actualRefundAmt, addr, rt, chainID)
+		refundTx, err := transaction.CreateTxSalary(actualRefundAmt, addr, privatekey, db)
 		if err != nil {
 			Logger.log.Error(err)
 			continue
@@ -740,6 +738,7 @@ func calculateAmountOfRefundTxs(
 func (blockgen *BlkTmplGenerator) buildRefundTxs(
 	chainID byte,
 	remainingFund uint64,
+	privatekey *privacy.SpendingKey,
 ) ([]*transaction.Tx, uint64) {
 	if remainingFund <= 0 {
 		Logger.log.Info("GOV fund is not enough for refund.")
@@ -786,8 +785,8 @@ func (blockgen *BlkTmplGenerator) buildRefundTxs(
 		addresses,
 		estimatedRefundAmt,
 		remainingFund,
-		prevBlock.Header.MerkleRootCommitments.CloneBytes(),
-		chainID,
+		blockgen.chain.GetDatabase(),
+		privatekey,
 	)
 	return refundTxs, totalRefundAmt
 }
@@ -795,6 +794,7 @@ func (blockgen *BlkTmplGenerator) buildRefundTxs(
 func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc, rt []byte, chainID byte) ([]*transaction.TxCustomToken, []metadata.Transaction, error) {
 	txsToRemove := []metadata.Transaction{}
 	txsResponse := []*transaction.TxCustomToken{}
+
 	// Get unspent bond tx to spend if needed
 	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	keySet := accountDCB.KeySet
@@ -870,16 +870,17 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, rt 
 				continue
 			}
 			paymentAmount := uint64(0)
-			accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-			dcbPk := accountDCB.KeySet.PaymentAddress.Pk
-			txNormal := txDesc.Tx.(*transaction.Tx)
-			for _, desc := range txNormal.Descs {
-				for _, note := range desc.Note {
-					if bytes.Equal(note.Apk[:], dcbPk) {
-						paymentAmount += note.Value
-					}
-				}
-			}
+			// TODO: @bunnyip update new fields here
+			// accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+			// dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+			// txNormal := txDesc.Tx.(*transaction.Tx)
+			// for _, desc := range txNormal.Descs {
+			// 	for _, note := range desc.Note {
+			// 		if bytes.Equal(note.Apk[:], dcbPk) {
+			// 			paymentAmount += note.Value
+			// 		}
+			// 	}
+			// }
 			if !paymentMeta.PayPrinciple { // Only keep interest
 				amount += paymentAmount
 			}

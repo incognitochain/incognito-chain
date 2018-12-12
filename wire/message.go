@@ -43,6 +43,10 @@ const (
 	CmdSwapRequest = "swaprequest"
 	CmdSwapSig     = "swapsig"
 	CmdSwapUpdate  = "swapupdate"
+
+	// heavy message check cmd
+	CmdMsgCheck     = "msgcheck"
+	CmdMsgCheckResp = "msgcheckresp"
 )
 
 // Interface for message wire on P2P network
@@ -144,6 +148,12 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 			Signatures: make(map[string]string),
 		}
 		break
+	case CmdMsgCheck:
+		msg = &MessageMsgCheck{}
+		break
+	case CmdMsgCheckResp:
+		msg = &MessageMsgCheckResp{}
+		break
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}
@@ -186,6 +196,10 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdSwapSig, nil
 	case reflect.TypeOf(&MessageSwapUpdate{}):
 		return CmdSwapUpdate, nil
+	case reflect.TypeOf(&MessageMsgCheck{}):
+		return CmdMsgCheck, nil
+	case reflect.TypeOf(&MessageMsgCheckResp{}):
+		return CmdMsgCheckResp, nil
 	default:
 		return "", fmt.Errorf("unhandled this message type [%s]", msgType)
 	}

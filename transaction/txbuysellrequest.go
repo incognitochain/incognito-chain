@@ -1,6 +1,6 @@
 package transaction
 
-import (
+/*import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 )
@@ -26,7 +26,7 @@ func CreateBuySellRequestTx(
 	senderKey *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
 	rts map[byte]*common.Hash,
-	usableTx map[byte][]*Tx,
+	usableTx map[byte][]*TxNormal,
 	commitments map[byte]([][]byte),
 	fee uint64,
 	senderChainID byte,
@@ -60,7 +60,7 @@ func CreateBuySellRequestTx(
 
 func (tx *TxBuySellRequest) Hash() *common.Hash {
 	// get hash of tx
-	record := tx.Tx.Hash().String()
+	record := tx.TxNormal.Hash().String()
 
 	record += tx.AssetType.String()
 	record += string(tx.Amount)
@@ -80,7 +80,7 @@ func (tx *TxBuySellRequest) ValidateTransaction() bool {
 }
 
 func (tx *TxBuySellRequest) GetType() string {
-	return tx.Tx.Type
+	return tx.TxNormal.Type
 }
 
 func (tx *TxBuySellRequest) GetTxVirtualSize() uint64 {
@@ -89,9 +89,9 @@ func (tx *TxBuySellRequest) GetTxVirtualSize() uint64 {
 }
 
 func (tx *TxBuySellRequest) GetSenderAddrLastByte() byte {
-	return tx.Tx.AddressLastByte
+	return tx.TxNormal.AddressLastByte
 }
 
 func (tx *TxBuySellRequest) GetTxFee() uint64 {
-	return tx.Tx.Fee
-}
+	return tx.TxNormal.Fee
+}*/

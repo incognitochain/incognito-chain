@@ -1,12 +1,13 @@
 package cashec
 
 import (
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
-	"github.com/ninjadotorg/constant/common/base58"
+	// "github.com/ninjadotorg/constant/privacy-protocol/client"
 	"encoding/json"
 	"errors"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type KeySet struct {
@@ -58,13 +59,15 @@ func (self *KeySet) Sign(data []byte) ([]byte, error) {
 }
 
 func (self *KeySet) Encrypt(data []byte) ([]byte, error) {
-	encryptText := client.Encrypt(self.PaymentAddress.Pk[:], data)
+	// encryptText := client.Encrypt(self.PaymentAddress.Pk[:], data)
+	encryptText := []byte{0}
 	return encryptText, nil
 }
 
 func (self *KeySet) Decrypt(data []byte) ([]byte, error) {
-	data, err := client.Decrypt(self.PrivateKey[:], data)
-	return data, err
+	// data, err := client.Decrypt(self.PrivateKey[:], data)
+	data = []byte{0}
+	return data, nil
 }
 
 func (self *KeySet) EncodeToString() string {
@@ -80,27 +83,28 @@ func (self *KeySet) DecodeToKeySet(keystring string) (*KeySet, error) {
 	return self, nil
 }
 
-func (self *KeySet) GetPaymentAddress() (privacy.PaymentAddress, error) {
-	return self.PaymentAddress, nil
-}
-
 func (self *KeySet) GetViewingKey() (privacy.ViewingKey, error) {
 	return self.ReadonlyKey, nil
 }
 
-func ValidateDataB58(pubkey string, sig string, data []byte) error {
-	decPubkey, _, err := base58.Base58Check{}.Decode(pubkey)
+func (self *KeySet) GetPublicKeyB58() string {
+	return base58.Base58Check{}.Encode(self.PaymentAddress.Pk, byte(0x00))
+}
+
+func ValidateDataB58(pbkB58 string, sigB58 string, data []byte) error {
+	decPubkey, _, err := base58.Base58Check{}.Decode(pbkB58)
 	if err != nil {
 		return errors.New("can't decode public key:" + err.Error())
 	}
 
 	validatorKp := KeySet{}
+	validatorKp.PaymentAddress.Pk = make([]byte, len(decPubkey))
 	copy(validatorKp.PaymentAddress.Pk[:], decPubkey)
-	decSig, _, err := base58.Base58Check{}.Decode(sig)
+
+	decSig, _, err := base58.Base58Check{}.Decode(sigB58)
 	if err != nil {
 		return errors.New("can't decode signature: " + err.Error())
 	}
-
 	isValid, err := validatorKp.Verify(data, decSig)
 	if err != nil {
 		return errors.New("error when verify data: " + err.Error())
@@ -109,4 +113,12 @@ func ValidateDataB58(pubkey string, sig string, data []byte) error {
 		return errors.New("Invalid signature")
 	}
 	return nil
+}
+
+func (self *KeySet) SignDataB58(data []byte) (string, error) {
+	signatureByte, err := self.Sign(data)
+	if err != nil {
+		return common.EmptyString, errors.New("Can't sign data. " + err.Error())
+	}
+	return base58.Base58Check{}.Encode(signatureByte, byte(0x00)), nil
 }
