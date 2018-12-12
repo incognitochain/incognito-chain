@@ -84,9 +84,10 @@ func (pro PKComOpeningsProof) Bytes() []byte {
 
 func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) error {
 
-	if len(bytestr) != privacy.ComInputOpeningsProofSize {
-		return errors.New("Wrong length!")
+	if len(bytestr) == 0 {
+		return nil
 	}
+
 	pro.commitmentValue = new(privacy.EllipticPoint)
 	pro.commitmentValue.Decompress(bytestr[0:privacy.CompressedPointSize])
 	if !pro.commitmentValue.IsSafe() {
