@@ -48,11 +48,7 @@ Verify:
 	return boolValue
 )
 */
-
 func (pro *PKComZeroProof) Init() *PKComZeroProof {
-	if pro == nil {
-		pro = new(PKComZeroProof)
-	}
 	pro.index = new(byte)
 	pro.commitmentValue = new(privacy.EllipticPoint).Zero()
 	pro.commitmentZeroS = new(privacy.EllipticPoint).Zero()

@@ -204,7 +204,6 @@ type OutputCoin struct {
 }
 
 func (outputCoin *OutputCoin) Init() *OutputCoin {
-	//Todo:
 	return outputCoin
 }
 

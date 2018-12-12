@@ -60,9 +60,6 @@ type PKComMultiRangeWitness struct {
 }
 
 func (pro *PKComMultiRangeProof) Init() *PKComMultiRangeProof {
-	if (pro == nil) {
-		pro = new(PKComMultiRangeProof)
-	}
 	pro.A = new(privacy.EllipticPoint).Zero()
 	pro.S = new(privacy.EllipticPoint).Zero()
 	pro.T1 = new(privacy.EllipticPoint).Zero()
@@ -77,7 +74,21 @@ func (pro *PKComMultiRangeProof) Init() *PKComMultiRangeProof {
 	pro.IPP.B = new(big.Int)
 	return pro
 }
-
+func (pro *PKComMultiRangeProof) IsNull() bool{
+	if (pro.A==nil) {return true}
+	if (pro.S==nil) {return true}
+	if (pro.T1==nil){return true}
+	if (pro.T2==nil){return true}
+	if (pro.Tau==nil){return true}
+	if (pro.Th==nil){return true}
+	if (pro.Mu==nil){return true}
+	if (pro.Cx==nil){return true}
+	if (pro.Cy==nil){return true}
+	if (pro.Cz==nil){return true}
+	if (pro.IPP.A==nil){return true}
+	if (pro.IPP.B==nil){return true}
+	return false
+}
 func (pro PKComMultiRangeProof) Bytes() []byte {
 	var res []byte
 
@@ -107,10 +118,9 @@ func (pro PKComMultiRangeProof) Bytes() []byte {
 }
 func (pro *PKComMultiRangeProof) SetBytes(proofbytes []byte) {
 
-	if pro == nil{
+	if pro.IsNull(){
 		pro = pro.Init()
 	}
-
 	if len(proofbytes) == 0{
 		return
 	}
