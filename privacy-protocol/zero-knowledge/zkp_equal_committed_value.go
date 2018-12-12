@@ -86,6 +86,7 @@ func (pro PKEqualityOfCommittedValProof) Bytes() []byte {
 }
 
 func (pro *PKEqualityOfCommittedValProof) SetBytes(bytestr []byte) bool {
+	pro.Init()
 	pro.C = make([]*privacy.EllipticPoint, 2)
 	for i := 0; i < len(pro.C); i++ {
 		pro.C[i].Decompress(bytestr[i*privacy.CompressedPointSize : (i+1)*privacy.CompressedPointSize])

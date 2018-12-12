@@ -111,6 +111,7 @@ func (pro PKComZeroProof) Bytes() []byte {
 
 // SetBytes ...
 func (pro *PKComZeroProof) SetBytes(bytestr []byte) bool {
+	pro.Init()
 	if pro.commitmentValue == nil {
 		pro.commitmentValue = new(privacy.EllipticPoint)
 	}
