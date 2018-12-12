@@ -8,7 +8,7 @@ import (
 )
 
 func TestPKComMultiRange(t *testing.T) {
-	testNum:= 3
+	testNum:= 9
 	values := make([]*big.Int, testNum)
 	for i:=0;i< testNum;i++{
 		values[i] = new(big.Int)
@@ -21,6 +21,7 @@ func TestPKComMultiRange(t *testing.T) {
 	// Testing smallest number in range
 	proof,_:= witness.Prove()
 	b:=proof.Bytes()
+	fmt.Printf("len b: %v\n", len(b))
 	Vproof:=new(PKComMultiRangeProof)
 	Vproof.SetBytes(b)
 

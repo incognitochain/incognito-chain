@@ -146,6 +146,15 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, byte(0))
 	}
 
+	// SumOutRangeProof
+	if paymentProof.SumOutRangeProof != nil{
+		sumOutRangeProof := paymentProof.SumOutRangeProof.Bytes()
+		proofbytes = append(proofbytes, byte(len(sumOutRangeProof)))
+		proofbytes = append(proofbytes, sumOutRangeProof...)
+	} else{
+		proofbytes = append(proofbytes, byte(0))
+	}
+
 	// ComZeroProof
 	if paymentProof.ComZeroProof != nil{
 		comZeroProof := paymentProof.ComZeroProof.Bytes()
