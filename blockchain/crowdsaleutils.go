@@ -76,6 +76,22 @@ func buildResponseForCoin(
 
 func transferTxToken(tokenAmount uint64, unspentTxTokenOuts []transaction.TxTokenVout, tokenID, receiverPk []byte) (*transaction.TxCustomToken, int, error) {
 	sumTokens := uint64(0)
+	// TODO:@bunnyip  need to double check here
+	// accountDCB, _ := wallet.Base58CheckDeserialize(dcbAddress)
+	// Get amount of Constant user sent
+	value := uint64(0)
+	// userPk := txRequest.Tx.JSPubKey
+	userPk := txRequest.Tx.SigPubKey
+	// for _, desc := range txRequest.Tx.Descs {
+	// 	for _, note := range desc.Note {
+	// 		if bytes.Equal(note.Apk[:], accountDCB.KeySet.PaymentAddress.Pk) {
+	// 			value += note.Value
+	// 		}
+	// 	}
+	// }
+	bondPrice := bondPrices[string(bondID)]
+	bonds := value / bondPrice
+	sumBonds := uint64(0)
 	usedID := 0
 	for _, out := range unspentTxTokenOuts {
 		usedID += 1

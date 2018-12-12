@@ -2,16 +2,17 @@ package common
 
 const (
 	EmptyString         = ""
-	MiliConstant        = 3 // 1 constant = 10^3 mili constant, we will use 1 miliconstant as minimum unit constant in tx
+	NanoConstant        = 2 // 1 constant = 10^2 nano constant, we will use 1 miliconstant as minimum unit constant in tx
 	IncMerkleTreeHeight = 29
 	RefundPeriod        = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
 )
 
 const (
-	TxNormalType             = "n" // normal tx(send and receive coin)
-	TxSalaryType             = "s" // salary tx(gov pay salary for block producer)
-	TxCustomTokenType        = "t" // token  tx with no supporting privacy
-	TxCustomTokenPrivacyType = "t" // token  tx with supporting privacy
+	TxNormalType             = "n"  // normal tx(send and receive coin)
+	TxSalaryType             = "s"  // salary tx(gov pay salary for block producer)
+	TxRefundType             = "rf" // refund tx(gov does refund to end users for small txs)
+	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
+	TxCustomTokenPrivacyType = "t"  // token  tx with supporting privacy
 
 	TxBuyFromGOVRequest  = "bgr"
 	TxBuyFromGOVResponse = "bgrs"
@@ -36,9 +37,17 @@ const (
 	GetChainStateInterval = 10 //second
 	MaxBlockTime          = 10 //second Maximum for a chain to grow
 
-	// voting
-	SumOfVoteDCBToken = 100000000
-	SumOfVoteGOVToken = 100000000
+)
+
+// for voting parameter
+const (
+	SumOfVoteDCBToken                 = 100000000
+	SumOfVoteGOVToken                 = 100000000
+	MinimumBlockOfProposalDuration    = 50
+	MaximumBlockOfProposalDuration    = 200
+	MaximumProposalExplainationLength = 1000
+	NumberOfDCBGovernors              = 50
+	NumberOfGOVGovernors              = 50
 )
 
 // board types

@@ -1,13 +1,10 @@
 package blockchain
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
-	"github.com/ninjadotorg/constant/transaction"
 )
 
 type Merkle struct {
@@ -133,10 +130,10 @@ func (self Merkle) hashMerkleBranches(left *common.Hash, right *common.Hash) *co
 /*
 // UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
 */
-func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
+/*func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 	for _, blockTx := range block.Transactions {
 		if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
-			tx, ok := blockTx.(*transaction.Tx)
+			tx, ok := blockTx.(*transaction.TxNormal)
 			if ok == false {
 				return NewBlockChainError(UnExpectedError, fmt.Errorf("Transaction in block not valid"))
 			}
@@ -149,4 +146,4 @@ func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 		}
 	}
 	return nil
-}
+}*/

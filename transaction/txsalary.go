@@ -1,56 +1,99 @@
 package transaction
 
 import (
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
+	"fmt"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"math/big"
 )
 
 // CreateTxSalary
 // Blockchain use this tx to pay a reward(salary) to miner of chain
 // #1 - salary:
 // #2 - receiverAddr:
-// #3 - rt
-// #4 - chainID
+// #3 - privKey:
+// #4 - snDerivators:
 func CreateTxSalary(
 	salary uint64,
 	receiverAddr *privacy.PaymentAddress,
-	rt []byte,
-	chainID byte,
+	privKey *privacy.SpendingKey,
+	db database.DatabaseInterface,
 ) (*Tx, error) {
-	// Create Proof for the joinsplit op
-	inputs := make([]*client.JSInput, 2)
-	inputs[0] = CreateRandomJSInput(nil)
-	inputs[1] = CreateRandomJSInput(inputs[0].Key)
-	dummyAddress := client.GenPaymentAddress(*inputs[0].Key)
 
-	// Create new notes: first one is salary UTXO, second one has 0 value
-	outNote := &client.Note{Value: salary, Apk: receiverAddr.Pk}
-	placeHolderOutputNote := &client.Note{Value: 0, Apk: receiverAddr.Pk}
+	tx := new(Tx)
+	tx.Type = common.TxSalaryType
+	// assign fee tx = 0
+	tx.Fee = 0
 
-	outputs := []*client.JSOutput{&client.JSOutput{}, &client.JSOutput{}}
-	outputs[0].EncKey = receiverAddr.Tk
-	outputs[0].OutputNote = outNote
-	outputs[1].EncKey = receiverAddr.Tk
-	outputs[1].OutputNote = placeHolderOutputNote
+	// create new output coins with info: Pk, value, SND, randomness, last byte pk, coin commitment
+	tx.Proof = new(zkp.PaymentProof)
+	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, 1)
+	tx.Proof.OutputCoins[0] = new(privacy.OutputCoin)
+	tx.Proof.OutputCoins[0].CoinDetails = new(privacy.Coin)
+	tx.Proof.OutputCoins[0].CoinDetails.SerialNumber = &privacy.EllipticPoint{X: big.NewInt(int64(0)), Y: big.NewInt(int64(0))}
+	tx.Proof.OutputCoins[0].CoinDetails.Value = salary
+	tx.Proof.OutputCoins[0].CoinDetails.PublicKey, _ = privacy.DecompressKey(receiverAddr.Pk)
+	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
 
-	// Generate proof and sign tx
-	tx, err := CreateEmptyTx(common.TxSalaryType, nil, true)
+	sndOut := privacy.RandInt()
+	for true {
+		ok, err := tx.CheckSNDExistence(sndOut, db)
+		if err != nil {
+			fmt.Println(err)
+		}
+		if ok {
+			sndOut = privacy.RandInt()
+		} else {
+			break
+		}
+	}
+
+	tx.Proof.OutputCoins[0].CoinDetails.SNDerivator = sndOut
+
+	// create coin commitment
+	tx.Proof.OutputCoins[0].CoinDetails.CommitAll()
+
+	// sign Tx
+	var err error
+	tx.SigPubKey = receiverAddr.Pk
+	tx.sigPrivKey = *privKey
+	err = tx.SignTx(false)
 	if err != nil {
 		return nil, err
 	}
-	tx.AddressLastByte = dummyAddress.Apk[len(dummyAddress.Apk)-1]
-	rtMap := map[byte][]byte{chainID: rt}
-	inputMap := map[byte][]*client.JSInput{chainID: inputs}
 
-	// NOTE: always pay salary with constant coin
-	err = tx.BuildNewJSDesc(inputMap, outputs, rtMap, salary, 0, true)
-	if err != nil {
-		return nil, err
-	}
-	err = tx.SignTx()
-	if err != nil {
-		return nil, err
-	}
 	return tx, nil
+}
+
+func ValidateTxSalary(
+	tx *Tx,
+	db database.DatabaseInterface,
+) bool {
+	// verify signature
+	valid, err := tx.VerifySigTx(false)
+	if valid == false {
+		if err != nil {
+			fmt.Printf("Error verifying signature of tx: %+v", err)
+		}
+		return false
+	}
+
+	// check whether output coin's SND exists in SND list or not
+	if ok, err := tx.CheckSNDExistence(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, db); ok || err != nil {
+		return false
+	}
+
+	// check output coin's coin commitment is calculated correctly
+	cmTmp := tx.Proof.OutputCoins[0].CoinDetails.PublicKey
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(tx.Proof.OutputCoins[0].CoinDetails.Value))))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMul(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMul(new(big.Int).SetBytes([]byte{tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte()})))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMul(tx.Proof.OutputCoins[0].CoinDetails.Randomness))
+	if !cmTmp.IsEqual(tx.Proof.OutputCoins[0].CoinDetails.CoinCommitment) {
+		return false
+	}
+
+	return true
 }

@@ -14,10 +14,7 @@ import (
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/constant/bootnode/server"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/peer"
-	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
 )
 
@@ -44,6 +41,7 @@ type ConnManager struct {
 }
 
 type Config struct {
+	ExternalAddress string
 	// ListenerPeers defines a slice of listeners for which the connection
 	// manager will take ownership of and accept connections.  When a
 	// connection is accepted, the OnAccept handler will be invoked with the
@@ -320,21 +318,37 @@ listen:
 			for _, listener := range self.Config.ListenerPeers {
 				var response []wire.RawPeer
 
-				var publicKey string
-
-				if listener.Config.ProducerPrvKey != EmptyString {
-					keySet := &cashec.KeySet{}
-					key, _ := wallet.Base58CheckDeserialize(listener.Config.ProducerPrvKey)
-					keySet.ImportFromPrivateKey(&key.KeySet.PrivateKey)
-					if err == nil {
-						publicKey = base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, byte(0x00))
+				var pbkB58 string
+				signDataB58 := ""
+				if listener.Config.ProducerKeySet != nil {
+					pbkB58 = listener.Config.ProducerKeySet.GetPublicKeyB58()
+					Logger.log.Info("Start Discover Peers", pbkB58)
+					// sign data
+					signDataB58, err = listener.Config.ProducerKeySet.SignDataB58([]byte{byte(0x00)})
+					if err != nil {
+						Logger.log.Error(err)
 					}
+					//sig, err := listener.Config.ProducerKeySet.Sign([]byte{byte(0x00)})
+					//if err != nil {
+					//	Logger.log.Error(err)
+					//}
+					//ok, err := listener.Config.ProducerKeySet.Verify([]byte{byte(0x00)}, sig)
+					//if err != nil {
+					//	Logger.log.Error(err)
+					//}
+					//if ok {
+					//	Logger.log.Info("Verify OK")
+					//} else {
+					//	Logger.log.Info("Verify Not OK")
+					//}
 				}
-
 				// remove later
 				rawAddress := listener.RawAddress
 
-				externalAddress := os.Getenv("EXTERNAL_ADDRESS")
+				externalAddress := self.Config.ExternalAddress
+				if externalAddress == EmptyString {
+					externalAddress = os.Getenv("EXTERNAL_ADDRESS")
+				}
 				if externalAddress != EmptyString {
 					host, _, err := net.SplitHostPort(externalAddress)
 					if err == nil && host != EmptyString {
@@ -342,7 +356,11 @@ listen:
 					}
 				}
 
-				args := &server.PingArgs{rawAddress, publicKey}
+				args := &server.PingArgs{
+					RawAddress: rawAddress,
+					PublicKey:  pbkB58,
+					SignData:   signDataB58,
+				}
 				Logger.log.Infof("[Exchange Peers] Ping", args)
 
 				Logger.log.Info("Dump PeerConns", len(listener.PeerConns))

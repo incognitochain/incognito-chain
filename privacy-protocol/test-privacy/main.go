@@ -1,8 +1,14 @@
 package main
 
+<<<<<<< HEAD
+import privacy "github.com/ninjadotorg/constant/privacy-protocol"
+=======
 import (
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	"crypto/rand"
+	"fmt"
+	"math/big"
 )
+>>>>>>> 04e82173bd5468413903f9c0c4bd0adc411c94d6
 
 func main() {
 
@@ -59,7 +65,7 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-	// zkp.TestPKOneOfMany()
+	//zkp.TestPKOneOfMany()
 
 	//zkp.TestPKComMultiRange()
 
@@ -164,8 +170,9 @@ func main() {
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
-	privacy.TestSchn()
+	//privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
+	privacy.TestMultiSig()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
 	//for i :=0; i<1000; i++{
@@ -187,19 +194,17 @@ func main() {
 	//fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
 	//
 	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	//keySet := cashec.KeySet{}
-	//keySet.ImportFromPrivateKey(&spendingKey)
+	//keySetSender := cashec.KeySet{}
+	//keySetSender.ImportFromPrivateKey(&spendingKey)
 	//
-	//err := coin.Encrypt(keySet.PaymentAddress.Tk)
+	//err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
 	//if err!= nil{
 	//	fmt.Println(err)
 	//}
 	//
-	//coin.Decrypt(keySet.ReadonlyKey.Rk)
+	//coin.Decrypt(keySetSender.ReadonlyKey.Rk)
 	//
 	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
-
-
 
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
@@ -208,7 +213,103 @@ func main() {
 	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
 	/*--------------------------------------------*/
 
+	// keySetSender := new(cashec.KeySet)
+	// //spendingKey := privacy.GenerateSpendingKey([]byte{0, 1, 23, 235})
+	// spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	// keySetSender.ImportFromPrivateKey(&spendingKey)
+
+	// data := []byte{0}
+	// signature, err := keySetSender.Sign(data)
+	// if err != nil{
+	// 	fmt.Println(err)
+	// }
+	// fmt.Println(hex.EncodeToString(signature))
+
+	// //signature , _:= hex.DecodeString("5d9f5e9c350a877ddbbe227b40c19b00c040e715924740f2d92cc9dc02da5937ba433dbca431f2a0a447e21fd096d894f869a9e31b8217ee0cf9c33f8b032ade")
+	// //
+	// res, err := keySetSender.Verify(data, signature)
+	// if err != nil{
+	// 	fmt.Println(err)
+	// }
+
+	// fmt.Println(res)
+
+	/*----------------- TEST TX SALARY -----------------*/
+
+<<<<<<< HEAD
+	// keySet := new(cashec.KeySet)
+	// spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	// keySet.ImportFromPrivateKey(&spendingKey)
+
+	// var db database.DatabaseInterface
+
+	// tx, err := transaction.CreateTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
+	// if err != nil{
+	// 	fmt.Println(err)
+	// }
+	// fmt.Printf("Tx: %+v\n", tx)
+
+	// res := transaction.ValidateTxSalary(tx, db)
+=======
+	//keySetSender := new(cashec.KeySet)
+	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	//keySetSender.ImportFromPrivateKey(&spendingKey)
+	//
+	//var db database.DatabaseInterface
+	//
+	//tx, err := transaction.CreateTxSalary(10, &keySetSender.PaymentAddress, &keySetSender.PrivateKey, db)
+	//if err != nil{
+	//	fmt.Println(err)
+	//}
+	//fmt.Printf("Tx: %+v\n", tx)
+	//
+	//res := transaction.ValidateTxSalary(tx, db)
+	//
+	//fmt.Printf("Res: %v\n", res)
+
+	/*----------------- TEST TX PRIVACY -----------------*/
+	//keySetSender := new(cashec.KeySet)
+	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	//keySetSender.ImportFromPrivateKey(&spendingKey)
+	//
+	//
+	//// create payment info of receivers
+	//paymentInfo := make([]*privacy.PaymentInfo, 2)
+	//paymentAddr := make([]privacy.PaymentAddress, 2)
+	//for i:=0; i<len(paymentInfo); i++{
+	//	//generate payment address of receivers
+	//	spendingKey := privacy.GenerateSpendingKey([]byte{byte(i)})
+	//	paymentAddr[i] = *new(privacy.PaymentAddress)
+	//	paymentAddr[i] = privacy.GeneratePaymentAddress(spendingKey)
+	//
+	//	paymentInfo[i] = new(privacy.PaymentInfo)
+	//	paymentInfo[i].Amount = 1
+	//	paymentInfo[i].PaymentAddress = paymentAddr[i]
+	//}
+
+	// generates some input coins of sender
+	//inputCoins := make([]*privacy.InputCoin)
 
 
+	//tx := new(transaction.Tx)
+	//tx.CreateTx(keySetSender.PrivateKey, paymentInfo, )
+
+	//a := 0
+	//aInt := big.NewInt(int64(a))
+	//aIntBytes := aInt.Bytes()
+	//fmt.Printf("aInt: %v\n", aIntBytes)
+	//
+	//if aInt.Cmp(big.NewInt(0)) == 0{
+	//	fmt.Println("equal")
+	//}
+
+	for true{
+		res, _ := rand.Int(rand.Reader, big.NewInt(10))
+
+		fmt.Println(res)
+	}
+>>>>>>> 04e82173bd5468413903f9c0c4bd0adc411c94d6
+
+	// fmt.Printf("Res: %v\n", res)
 
 }

@@ -127,7 +127,7 @@ func getAmountOfVoteToken(sumAmount uint64, voteAmount uint64) uint64 {
 func (blockgen *BlkTmplGenerator) CreateSendDCBVoteTokenToGovernorTx(chainID byte, newDCBList database.CandidateList, sumAmountDCB uint64) []metadata.Transaction {
 	var SendVoteTx []metadata.Transaction
 	var newTx metadata.Transaction
-	for i := 0; i <= NumberOfDCBGovernors; i++ {
+	for i := 0; i <= common.NumberOfDCBGovernors; i++ {
 		newTx, _ = blockgen.createSingleSendDCBVoteTokenTx(chainID, newDCBList[i].PubKey, getAmountOfVoteToken(sumAmountDCB, newDCBList[i].VoteAmount))
 		SendVoteTx = append(SendVoteTx, newTx)
 	}
@@ -137,7 +137,7 @@ func (blockgen *BlkTmplGenerator) CreateSendDCBVoteTokenToGovernorTx(chainID byt
 func (blockgen *BlkTmplGenerator) CreateSendGOVVoteTokenToGovernorTx(chainID byte, newGOVList database.CandidateList, sumAmountGOV uint64) []metadata.Transaction {
 	var SendVoteTx []metadata.Transaction
 	var newTx metadata.Transaction
-	for i := 0; i <= NumberOfGOVGovernors; i++ {
+	for i := 0; i <= common.NumberOfGOVGovernors; i++ {
 		newTx, _ = blockgen.createSingleSendGOVVoteTokenTx(chainID, newGOVList[i].PubKey, getAmountOfVoteToken(sumAmountGOV, newGOVList[i].VoteAmount))
 		SendVoteTx = append(SendVoteTx, newTx)
 	}

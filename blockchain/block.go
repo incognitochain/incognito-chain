@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
@@ -44,8 +43,17 @@ func parseMetadata(meta interface{}) (metadata.Metadata, error) {
 	}
 	var md metadata.Metadata
 	switch int(mtTemp["Type"].(float64)) {
-	case metadata.BuySellRequestMeta:
+	case metadata.BuyFromGOVRequestMeta:
 		md = &metadata.BuySellRequest{}
+
+	case metadata.BuyBackRequestMeta:
+		md = &metadata.BuyBackRequest{}
+
+	case metadata.BuyFromGOVResponseMeta:
+		md = &metadata.BuySellResponse{}
+
+	case metadata.BuyBackResponseMeta:
+		md = &metadata.BuyBackResponse{}
 
 	case metadata.LoanRequestMeta:
 		md = &metadata.LoanRequest{}
@@ -65,7 +73,7 @@ func parseMetadata(meta interface{}) (metadata.Metadata, error) {
 }
 
 /*
-Customize UnmarshalJSON to parse list Tx
+Customize UnmarshalJSON to parse list TxNormal
 because we have many types of block, so we can need to customize data from marshal from json string to build a block
 */
 func (self *Block) UnmarshalJSON(data []byte) error {
@@ -153,7 +161,7 @@ func (self Block) Hash() *common.Hash {
 	record += strconv.FormatInt(self.Header.Timestamp, 10) +
 		string(self.Header.ChainID) +
 		self.Header.MerkleRoot.String() +
-		self.Header.MerkleRootCommitments.String() +
+		//self.Header.MerkleRootCommitments.String() +
 		self.Header.PrevBlockHash.String() +
 		strconv.Itoa(int(self.Header.SalaryFund)) +
 		strconv.Itoa(int(self.Header.GOVConstitution.GOVParams.SalaryPerTx)) +
@@ -178,51 +186,51 @@ func (self Block) Hash() *common.Hash {
 }
 
 func (block *Block) updateDCBConstitution(tx metadata.Transaction, blockgen *BlkTmplGenerator) error {
-	txAcceptDCBProposal := tx.(transaction.TxAcceptDCBProposal)
-	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(txAcceptDCBProposal.DCBProposalTXID)
-	DCBProposal := getTx.(*transaction.TxSubmitDCBProposal)
-	if err != nil {
-		return err
-	}
-	block.Header.DCBConstitution.StartedBlockHeight = block.Header.Height
-	block.Header.DCBConstitution.ExecuteDuration = DCBProposal.DCBProposalData.ExecuteDuration
-	block.Header.DCBConstitution.ProposalTXID = txAcceptDCBProposal.DCBProposalTXID
-	block.Header.DCBConstitution.CurrentDCBNationalWelfare = GetOracleDCBNationalWelfare()
+	// txAcceptDCBProposal := tx.(transaction.TxAcceptDCBProposal)
+	// _, _, _, getTx, err := blockgen.chain.GetTransactionByHash(txAcceptDCBProposal.DCBProposalTXID)
+	// DCBProposal := getTx.(*transaction.TxSubmitDCBProposal)
+	// if err != nil {
+	// 	return err
+	// }
+	// block.Header.DCBConstitution.StartedBlockHeight = block.Header.Height
+	// block.Header.DCBConstitution.ExecuteDuration = DCBProposal.DCBProposalData.ExecuteDuration
+	// block.Header.DCBConstitution.ProposalTXID = txAcceptDCBProposal.DCBProposalTXID
+	// block.Header.DCBConstitution.CurrentDCBNationalWelfare = GetOracleDCBNationalWelfare()
 
-	//	proposalParams := DCBProposal.DCBProposalData.DCBParams // not use yet
-	block.Header.DCBConstitution.DCBParams = params.DCBParams{}
+	// //	proposalParams := DCBProposal.DCBProposalData.DCBParams // not use yet
+	// block.Header.DCBConstitution.DCBParams = params.DCBParams{}
 	return nil
 }
 
 func (block *Block) updateGOVConstitution(tx metadata.Transaction, blockgen *BlkTmplGenerator) error {
-	txAcceptGOVProposal := tx.(transaction.TxAcceptGOVProposal)
-	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(txAcceptGOVProposal.GOVProposalTXID)
-	GOVProposal := getTx.(*transaction.TxSubmitGOVProposal)
-	if err != nil {
-		return err
-	}
-	block.Header.GOVConstitution.StartedBlockHeight = block.Header.Height
-	block.Header.GOVConstitution.ExecuteDuration = GOVProposal.GOVProposalData.ExecuteDuration
-	block.Header.GOVConstitution.ProposalTXID = txAcceptGOVProposal.GOVProposalTXID
-	block.Header.GOVConstitution.CurrentGOVNationalWelfare = GetOracleGOVNationalWelfare()
+	// txAcceptGOVProposal := tx.(transaction.TxAcceptGOVProposal)
+	// _, _, _, getTx, err := blockgen.chain.GetTransactionByHash(txAcceptGOVProposal.GOVProposalTXID)
+	// GOVProposal := getTx.(*transaction.TxSubmitGOVProposal)
+	// if err != nil {
+	// 	return err
+	// }
+	// block.Header.GOVConstitution.StartedBlockHeight = block.Header.Height
+	// block.Header.GOVConstitution.ExecuteDuration = GOVProposal.GOVProposalData.ExecuteDuration
+	// block.Header.GOVConstitution.ProposalTXID = txAcceptGOVProposal.GOVProposalTXID
+	// block.Header.GOVConstitution.CurrentGOVNationalWelfare = GetOracleGOVNationalWelfare()
 
-	proposalParams := GOVProposal.GOVProposalData.GOVParams
-	block.Header.GOVConstitution.GOVParams = params.GOVParams{
-		proposalParams.SalaryPerTx,
-		proposalParams.BasicSalary,
-		proposalParams.TxFee,
-		&params.SellingBonds{
-			proposalParams.SellingBonds.BondsToSell,
-			proposalParams.SellingBonds.BondPrice,
-			proposalParams.SellingBonds.Maturity,
-			proposalParams.SellingBonds.BuyBackPrice,
-			proposalParams.SellingBonds.StartSellingAt,
-			proposalParams.SellingBonds.SellingWithin,
-		},
-		&params.RefundInfo{
-			proposalParams.RefundInfo.ThresholdToLargeTx,
-			proposalParams.RefundInfo.RefundAmount,
-		},
-	}
+	// proposalParams := GOVProposal.GOVProposalData.GOVParams
+	// block.Header.GOVConstitution.GOVParams = params.GOVParams{
+	// 	proposalParams.SalaryPerTx,
+	// 	proposalParams.BasicSalary,
+	// 	proposalParams.TxFee,
+	// 	&params.SellingBonds{
+	// 		proposalParams.SellingBonds.BondsToSell,
+	// 		proposalParams.SellingBonds.BondPrice,
+	// 		proposalParams.SellingBonds.Maturity,
+	// 		proposalParams.SellingBonds.BuyBackPrice,
+	// 		proposalParams.SellingBonds.StartSellingAt,
+	// 		proposalParams.SellingBonds.SellingWithin,
+	// 	},
+	// 	&params.RefundInfo{
+	// 		proposalParams.RefundInfo.ThresholdToLargeTx,
+	// 		proposalParams.RefundInfo.RefundAmount,
+	// 	},
+	// }
 	return nil
 }

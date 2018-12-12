@@ -20,13 +20,18 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/wire"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 // ConnState represents the state of the requested connection.
 type ConnState uint8
 
+var HEAVY_MESSAGE_SIZE = 512 * 1024
+var MESSAGE_HASH_POOL_SIZE = 1000
+
 // RemotePeer is present for libp2p node data
 type Peer struct {
+	messagePool       map[string]bool
 	peerConnMutex     sync.Mutex
 	pendingPeersMutex sync.Mutex
 
@@ -47,6 +52,7 @@ type Peer struct {
 
 	Seed   int64
 	Config Config
+	Shard  byte
 
 	PeerConns    map[string]*PeerConn
 	PendingPeers map[string]*Peer
@@ -69,7 +75,7 @@ type NewStreamMsg struct {
 // config is the struct to hold configuration options useful to RemotePeer.
 type Config struct {
 	MessageListeners MessageListeners
-	ProducerPrvKey   string
+	ProducerKeySet   *cashec.KeySet
 	MaxOutbound      int
 	MaxInbound       int
 }
@@ -107,9 +113,9 @@ type MessageListeners struct {
 	OnGetChainState func(p *PeerConn, msg *wire.MessageGetChainState)
 	OnChainState    func(p *PeerConn, msg *wire.MessageChainState)
 	//OnRegistration  func(p *PeerConn, msg *wire.MessageRegistration)
-	OnSwapRequest   func(p *PeerConn, msg *wire.MessageSwapRequest)
-	OnSwapSig       func(p *PeerConn, msg *wire.MessageSwapSig)
-	OnSwapUpdate    func(p *PeerConn, msg *wire.MessageSwapUpdate)
+	OnSwapRequest func(p *PeerConn, msg *wire.MessageSwapRequest)
+	OnSwapSig     func(p *PeerConn, msg *wire.MessageSwapSig)
+	OnSwapUpdate  func(p *PeerConn, msg *wire.MessageSwapUpdate)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal
@@ -119,6 +125,27 @@ type outMsg struct {
 	message  wire.Message
 	doneChan chan<- struct{}
 	//encoding wire.MessageEncoding
+}
+
+func (self *Peer) ReceivedHashMessage(hash string) {
+	if self.messagePool == nil {
+		self.messagePool = make(map[string]bool)
+	}
+	self.messagePool[hash] = true
+	if len(self.messagePool) > MESSAGE_HASH_POOL_SIZE {
+		for k, _ := range self.messagePool {
+			delete(self.messagePool, k)
+			break
+		}
+	}
+}
+
+func (self *Peer) CheckHashMessage(hash string) (bool) {
+	if self.messagePool == nil {
+		self.messagePool = make(map[string]bool)
+	}
+	ok, _ := self.messagePool[hash]
+	return ok
 }
 
 /*
@@ -319,6 +346,39 @@ func (self *Peer) NumOutbound() int {
 	return ret
 }
 
+func (self *Peer) GetPeerConnByPeerID(peerID string) (*PeerConn) {
+	peerConn, ok := self.PeerConns[peerID]
+	if ok {
+		return peerConn
+	}
+	return nil
+}
+
+func (self *Peer) GetPeerConnByPbk(pbk string) (*PeerConn) {
+	for _, peerConn := range self.PeerConns {
+		if peerConn.RemotePeer.PublicKey == pbk {
+			return peerConn
+		}
+	}
+	return nil
+}
+
+func (self *Peer) GetListPeerConnByShard(shard byte) ([]*PeerConn) {
+	peerConns := make([]*PeerConn, 0)
+	for _, peerConn := range self.PeerConns {
+		if peerConn.RemotePeer.Shard == shard {
+			peerConns = append(peerConns, peerConn)
+		}
+	}
+	return peerConns
+}
+
+func (self *Peer) UpdateShardForPeerConn() {
+	for _, peerConn := range self.PeerConns {
+		_ = peerConn
+	}
+}
+
 func (self *Peer) SetPeerConn(peerConn *PeerConn) {
 	internalConnPeer, ok := self.PeerConns[peerConn.RemotePeer.PeerID.String()]
 	if ok && internalConnPeer != peerConn {
@@ -403,6 +463,7 @@ func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error
 		cClose:             make(chan struct{}),
 		cRead:              make(chan struct{}),
 		cWrite:             make(chan struct{}),
+		cMsgHash:           make(map[string]chan bool),
 		sendMessageQueue:   make(chan outMsg),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,
@@ -485,6 +546,7 @@ func (self *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 		cClose:             make(chan struct{}),
 		cRead:              make(chan struct{}),
 		cWrite:             make(chan struct{}),
+		cMsgHash:           make(map[string]chan bool),
 		sendMessageQueue:   make(chan outMsg),
 		HandleConnected:    self.handleConnected,
 		HandleDisconnected: self.handleDisconnected,

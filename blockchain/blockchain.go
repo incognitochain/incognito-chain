@@ -7,17 +7,18 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/database/lvdb"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/voting"
 	"github.com/ninjadotorg/constant/wallet"
@@ -67,6 +68,10 @@ type Config struct {
 	Wallet *wallet.Wallet
 	//snapshot reward
 	customTokenRewardSnapshot map[string]uint64
+}
+
+func (self *BlockChain) GetDatabase() database.DatabaseInterface {
+	return self.config.DataBase
 }
 
 func (self *BlockChain) GetHeight() int32 {
@@ -222,13 +227,13 @@ func (self *BlockChain) createChainState(chainId byte) error {
 	}
 	initBlock.Header.Height = 1
 
-	tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
+	/*tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
 	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
 		return NewBlockChainError(UpdateMerkleTreeForBlockError, err)
-	}
+	}*/
 
 	self.BestState[chainId] = &BestState{}
-	self.BestState[chainId].Init(initBlock, tree)
+	self.BestState[chainId].Init(initBlock /*, tree*/)
 
 	err := self.ConnectBlock(initBlock)
 	if err != nil {
@@ -355,7 +360,11 @@ func (self *BlockChain) StoreBlockHeader(block *Block) error {
 	Store Transaction in Light mode
 */
 func (self *BlockChain) StoreUnspentTransactionLightMode(privatKey *privacy.SpendingKey, chainId byte, blockHeight int32, txIndex int, tx *transaction.Tx) error {
-	return self.config.DataBase.StoreTransactionLightMode(privatKey, chainId, blockHeight, txIndex, tx)
+	txJsonBytes, err := json.Marshal(tx)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, errors.New("json.Marshal"))
+	}
+	return self.config.DataBase.StoreTransactionLightMode(privatKey, chainId, blockHeight, txIndex, *(tx.Hash()), txJsonBytes)
 }
 
 /*
@@ -377,7 +386,21 @@ this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
 	for _, item1 := range view.listNullifiers {
-		err := self.config.DataBase.StoreNullifiers(item1, view.chainID)
+		err := self.config.DataBase.StoreSerialNumbers(item1, view.chainID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+/*
+Uses an existing database to update the set of used tx by saving list SNDerivator of privacy-protocol,
+this is a list tx-out which are used by a new tx
+*/
+func (self *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint) error {
+	for _, item1 := range view.listSnD {
+		err := self.config.DataBase.StoreSNDerivators(item1, view.chainID)
 		if err != nil {
 			return err
 		}
@@ -405,7 +428,7 @@ this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, chainId byte) error {
 	for _, nullifier := range nullifiers {
-		err := self.config.DataBase.StoreNullifiers(nullifier, chainId)
+		err := self.config.DataBase.StoreSerialNumbers(nullifier, chainId)
 		if err != nil {
 			return err
 		}
@@ -432,16 +455,14 @@ Uses an existing database to update the set of used tx by saving list nullifier 
 this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
-	for _, desc := range tx.Descs {
-		for _, nullifier := range desc.Nullifiers {
-			chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
-			if err != nil {
-				return err
-			}
-			err = self.config.DataBase.StoreNullifiers(nullifier, chainId)
-			if err != nil {
-				return err
-			}
+	for _, desc := range tx.Proof.InputCoins {
+		chainId, err := common.GetTxSenderChain(tx.Proof.PubKeyLastByteSender)
+		if err != nil {
+			return err
+		}
+		err = self.config.DataBase.StoreSerialNumbers(desc.CoinDetails.SerialNumber.Compress(), chainId)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -452,16 +473,14 @@ Uses an existing database to update the set of not used tx by saving list commit
 this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
-	for _, desc := range tx.Descs {
-		for _, item := range desc.Commitments {
-			chainId, err := common.GetTxSenderChain(tx.AddressLastByte)
-			if err != nil {
-				return err
-			}
-			err = self.config.DataBase.StoreCommitments(item, chainId)
-			if err != nil {
-				return err
-			}
+	for _, desc := range tx.Proof.OutputCoins {
+		chainId, err := common.GetTxSenderChain(desc.CoinDetails.GetPubKeyLastByte())
+		if err != nil {
+			return err
+		}
+		err = self.config.DataBase.StoreCommitments(desc.CoinDetails.CoinCommitment.Compress(), chainId)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -583,16 +602,17 @@ func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest
 
 func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 	value := uint64(0)
-	txNormal := tx.(*transaction.Tx)
-	for _, desc := range txNormal.Descs {
-		for _, note := range desc.Note {
-			accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-			dcbPk := accountDCB.KeySet.PaymentAddress.Pk
-			if bytes.Equal(note.Apk[:], dcbPk) {
-				value += note.Value
-			}
-		}
-	}
+	//TODO: need to update to new txprivacy's fields
+	// txNormal := tx.(*transaction.Tx)
+	// for _, desc := range txNormal.Descs {
+	// 	for _, note := range desc.Note {
+	// 		accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	// 		dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+	// 		if bytes.Equal(note.Apk[:], dcbPk) {
+	// 			value += note.Value
+	// 		}
+	// 	}
+	// }
 	meta := tx.GetMetadata().(*metadata.LoanPayment)
 	principle, interest, deadline, err := self.config.DataBase.GetLoanPayment(meta.LoanID)
 	if meta.PayPrinciple {
@@ -656,33 +676,34 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 }
 
 func (self *BlockChain) UpdateDividendPayout(block *Block) error {
-	for _, tx := range block.Transactions {
-		switch tx.GetMetadataType() {
-		case metadata.DividendMeta:
-			{
-				tx := tx.(*transaction.Tx)
-				meta := tx.Metadata.(*metadata.Dividend)
-				tokenID := meta.TokenID
-				for _, desc := range tx.Descs {
-					for _, note := range desc.Note {
-						// TODO(@0xbunyip): replace note.Apk with bytes of PaymentAddress, not just Pk
-						paymentAddress := (&privacy.PaymentAddress{}).FromBytes(note.Apk[:])
-						utxos, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, *paymentAddress)
-						if err != nil {
-							return err
-						}
-						for _, utxo := range utxos {
-							txHash := utxo.GetTxCustomTokenID()
-							err := self.config.DataBase.UpdateRewardAccountUTXO(tokenID, *paymentAddress, &txHash, utxo.GetIndex())
-							if err != nil {
-								return err
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+	// TODO: update to new txprivacy fields
+	// for _, tx := range block.Transactions {
+	// 	switch tx.GetMetadataType() {
+	// 	case metadata.DividendMeta:
+	// 		{
+	// 			tx := tx.(*transaction.Tx)
+	// 			meta := tx.Metadata.(*metadata.Dividend)
+	// 			tokenID := meta.TokenID
+	// 			for _, desc := range tx.Descs {
+	// 				for _, note := range desc.Note {
+	// 					// TODO(@0xbunyip): replace note.Apk with bytes of PaymentAddress, not just Pk
+	// 					paymentAddress := (&privacy.PaymentAddress{}).FromBytes(note.Apk[:])
+	// 					utxos, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, *paymentAddress)
+	// 					if err != nil {
+	// 						return err
+	// 					}
+	// 					for _, utxo := range utxos {
+	// 						txHash := utxo.GetTxCustomTokenID()
+	// 						err := self.config.DataBase.UpdateRewardAccountUTXO(tokenID, *paymentAddress, &txHash, utxo.GetIndex())
+	// 						if err != nil {
+	// 							return err
+	// 						}
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 	return nil
 }
 
@@ -762,19 +783,23 @@ func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 		return nil, err
 	}
 	view.listCommitments = commitments
-	nullifiers, err := self.config.DataBase.FetchNullifiers(chainId)
+	nullifiers, err := self.config.DataBase.FetchSerialNumbers(chainId)
 	if err != nil {
 		return nil, err
 	}
 	view.listNullifiers = nullifiers
-	// view.SetBestHash(self.BestState.BestBlockHash)
+	snDerivators, err := self.config.DataBase.FetchSNDerivator(chainId)
+	if err != nil {
+		return nil, err
+	}
+	view.listSnD = snDerivators
 	return view, nil
 }
 
-func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
+func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	view := NewTxViewPoint(block.Header.ChainID)
 
-	err := view.fetchTxViewPoint(self.config.DataBase, block)
+	err := view.fetchTxViewPointFromBlock(self.config.DataBase, block)
 	if err != nil {
 		return err
 	}
@@ -797,7 +822,7 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 		}
 		// save tx which relate to custom token
 		// Reject Double spend UTXO before enter this state
-		err = self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
+		err = self.StoreCustomTokenPaymentAddresstHistory(customTokenTx)
 		// TODO: detect/cactch/revert/skip double spend tx
 		if err != nil {
 			// Skip double spend
@@ -808,7 +833,7 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 		// replace 1000 with proper value for snapshot
 		if block.Header.Height%1000 == 0 {
 			// list of unreward-utxo
-			self.config.customTokenRewardSnapshot, err = self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(&customTokenTx.TxTokenData.PropertyID)
+			self.config.customTokenRewardSnapshot, err = self.config.DataBase.GetCustomTokenPaymentAddressesBalance(&customTokenTx.TxTokenData.PropertyID)
 			if err != nil {
 				return err
 			}
@@ -818,7 +843,7 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 		}
 	}
 
-	// Update the list nullifiers and commitment set using the state of the used tx view point. This
+	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.
 	err = self.StoreNullifiersFromTxViewPoint(*view)
@@ -831,7 +856,86 @@ func (self *BlockChain) CreateAndSaveTxViewPoint(block *Block) error {
 		return err
 	}
 
+	err = self.StoreSNDerivatorsFromTxViewPoint(*view)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+// /*
+// 	Key: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
+//   H: value-spent/unspent-rewarded/unreward
+// */
+func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken) error {
+	Splitter := lvdb.Splitter
+	TokenPaymentAddressPrefix := lvdb.TokenPaymentAddressPrefix
+	unspent := lvdb.Unspent
+	spent := lvdb.Spent
+	unreward := lvdb.Unreward
+
+	tokenKey := TokenPaymentAddressPrefix
+	tokenKey = append(tokenKey, Splitter...)
+	tokenKey = append(tokenKey, (customTokenTx.TxTokenData.PropertyID)[:]...)
+	for _, vin := range customTokenTx.TxTokenData.Vins {
+		paymentAddressPubkey := vin.PaymentAddress.Pk
+		utxoHash := &vin.TxCustomTokenID
+		voutIndex := vin.VoutIndex
+		paymentAddressKey := tokenKey
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, paymentAddressPubkey...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
+		_, err := self.config.DataBase.HasValue(paymentAddressKey)
+		if err != nil {
+			return err
+		}
+		value, err := self.config.DataBase.Get(paymentAddressKey)
+		if err != nil {
+			return err
+		}
+		// old value: {value}-unspent-unreward/reward
+		values := strings.Split(string(value), string(Splitter))
+		if strings.Compare(values[1], string(unspent)) != 0 {
+			return errors.New("Double Spend Detected")
+		}
+		// new value: {value}-spent-unreward/reward
+		newValues := values[0] + string(Splitter) + string(spent) + string(Splitter) + values[2]
+		if err := self.config.DataBase.Put(paymentAddressKey, []byte(newValues)); err != nil {
+			return err
+		}
+	}
+	for _, vout := range customTokenTx.TxTokenData.Vouts {
+		paymentAddressPubkey := vout.PaymentAddress.Pk
+		utxoHash := customTokenTx.Hash()
+		voutIndex := vout.GetIndex()
+		value := vout.Value
+		paymentAddressKey := tokenKey
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, paymentAddressPubkey...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
+		paymentAddressKey = append(paymentAddressKey, Splitter...)
+		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
+		ok, err := self.config.DataBase.HasValue(paymentAddressKey)
+		// Vout already exist
+		if ok {
+			return errors.New("UTXO already exist")
+		}
+		if err != nil {
+			return err
+		}
+		// init value: {value}-unspent-unreward
+		paymentAddressValue := strconv.Itoa(int(value)) + string(Splitter) + string(unspent) + string(Splitter) + string(unreward)
+		if err := self.config.DataBase.Put(paymentAddressKey, []byte(paymentAddressValue)); err != nil {
+			return err
+		}
+	}
+	return nil
+	//return self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
 }
 
 /*
@@ -858,56 +962,51 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 				if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
 					tx := txInBlock.(*transaction.Tx)
 					copyTx := transaction.Tx{
-						Version:  tx.Version,
-						JSSig:    tx.JSSig,
-						JSPubKey: tx.JSPubKey,
-						Fee:      tx.Fee,
-						Type:     tx.Type,
-						LockTime: tx.LockTime,
-						Descs:    make([]*transaction.JoinSplitDesc, 0),
+						Version:   tx.Version,
+						Sig:       tx.Sig,
+						SigPubKey: tx.SigPubKey,
+						Fee:       tx.Fee,
+						Type:      tx.Type,
+						LockTime:  tx.LockTime,
+						Proof: &zkp.PaymentProof{
+							ComInputOpeningsProof:       tx.Proof.ComInputOpeningsProof,
+							ComOutputMultiRangeProof:    tx.Proof.ComOutputMultiRangeProof,
+							ComOutputOpeningsProof:      tx.Proof.ComOutputOpeningsProof,
+							EqualityOfCommittedValProof: tx.Proof.EqualityOfCommittedValProof,
+							ComZeroProof:                tx.Proof.ComZeroProof,
+							ProductCommitmentProof:      tx.Proof.ProductCommitmentProof,
+							OneOfManyProof:              tx.Proof.OneOfManyProof,
+							InputCoins:                  tx.Proof.InputCoins,
+							OutputCoins:                 []*privacy.OutputCoin{},
+							PubKeyLastByteSender:        tx.Proof.PubKeyLastByteSender,
+							ComOutputValue:              tx.Proof.ComOutputValue,
+							ComOutputSND:                tx.Proof.ComOutputSND,
+							ComOutputShardID:            tx.Proof.ComOutputShardID,
+						},
+						Metadata: tx.Metadata,
 					}
-					// try to decrypt each of desc in tx with readonly PubKey and add to txsInBlockAccepted
-					listDesc := make([]*transaction.JoinSplitDesc, 0)
-					for _, desc := range tx.Descs {
-						copyDesc := &transaction.JoinSplitDesc{
-							Anchor:        desc.Anchor,
-							Commitments:   make([][]byte, 0),
-							EncryptedData: make([][]byte, 0),
-						}
-						if desc.Proof != nil && len(desc.EncryptedData) > 0 {
-							// privacy-protocol
-							for i, encData := range desc.EncryptedData {
-								var epk client.EphemeralPubKey
-								copy(epk[:], desc.EphemeralPubKey)
-								// var hSig []byte
-								// copy(hSig, desc.HSigSeed)
-								hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
-								note := new(client.Note)
-								note, err := client.DecryptNote(encData, keySet.ReadonlyKey.Rk, keySet.PaymentAddress.Tk, epk, hSig)
-								spew.Dump(note)
-								if err == nil && note != nil {
-									copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
-									copyDesc.AppendNote(note)
-									copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
-								} else {
-									continue
+					// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
+					isPrivacy := tx.Proof.ComInputOpeningsProof != nil
+					for _, outcoinTemp := range tx.Proof.OutputCoins {
+						if isPrivacy {
+							err := outcoinTemp.Decrypt(keySet.ReadonlyKey)
+							if err != nil {
+								outcoin := &privacy.OutputCoin{
+									CoinDetails:          outcoinTemp.CoinDetails,
+									CoinDetailsEncrypted: outcoinTemp.CoinDetailsEncrypted,
 								}
+								copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outcoin)
 							}
 						} else {
 							// no privacy-protocol
-							for i, note := range desc.Note {
-								if bytes.Equal(note.Apk[:], keySet.PaymentAddress.Pk[:]) {
-									copyDesc.AppendNote(note)
-									copyDesc.Commitments = append(copyDesc.Commitments, desc.Commitments[i])
+							if bytes.Equal(outcoinTemp.CoinDetails.PublicKey.Compress()[:], keySet.PaymentAddress.Pk[:]) {
+								outcoin := &privacy.OutputCoin{
+									CoinDetails:          outcoinTemp.CoinDetails,
+									CoinDetailsEncrypted: outcoinTemp.CoinDetailsEncrypted,
 								}
+								copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outcoin)
 							}
 						}
-						if len(copyDesc.Note) > 0 {
-							listDesc = append(listDesc, copyDesc)
-						}
-					}
-					if len(listDesc) > 0 {
-						copyTx.Descs = listDesc
 					}
 					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
 				}
@@ -937,101 +1036,74 @@ func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte]
 	return results, nil
 }
 
-func (self *BlockChain) DecryptTxByKey(txInBlock metadata.Transaction, nullifiersInDb [][]byte, keys *cashec.KeySet) transaction.Tx {
+// func (self *BlockChain) DecryptTxByKey(txInBlock metadata.Transaction, nullifiersInDb [][]byte, keys *cashec.KeySet) transaction.Tx {
+func (self *BlockChain) DecryptTxByKey(txInBlock metadata.Transaction, serialNumberInDB [][]byte, keys *cashec.KeySet) transaction.Tx {
 	tx := txInBlock.(*transaction.Tx)
 	copyTx := transaction.Tx{
-		Version:         tx.Version,
-		JSSig:           tx.JSSig,
-		JSPubKey:        tx.JSPubKey,
-		Fee:             tx.Fee,
-		Type:            tx.Type,
-		LockTime:        tx.LockTime,
-		Descs:           make([]*transaction.JoinSplitDesc, 0),
-		AddressLastByte: tx.AddressLastByte,
+		Version:   tx.Version,
+		Sig:       tx.Sig,
+		SigPubKey: tx.SigPubKey,
+		Fee:       tx.Fee,
+		Type:      tx.Type,
+		LockTime:  tx.LockTime,
+		Proof: &zkp.PaymentProof{
+			ComInputOpeningsProof:       tx.Proof.ComInputOpeningsProof,
+			ComOutputMultiRangeProof:    tx.Proof.ComOutputMultiRangeProof,
+			ComOutputOpeningsProof:      tx.Proof.ComOutputOpeningsProof,
+			EqualityOfCommittedValProof: tx.Proof.EqualityOfCommittedValProof,
+			ComZeroProof:                tx.Proof.ComZeroProof,
+			ProductCommitmentProof:      tx.Proof.ProductCommitmentProof,
+			OneOfManyProof:              tx.Proof.OneOfManyProof,
+			InputCoins:                  tx.Proof.InputCoins,
+			OutputCoins:                 []*privacy.OutputCoin{},
+			PubKeyLastByteSender:        tx.Proof.PubKeyLastByteSender,
+			ComOutputValue:              tx.Proof.ComOutputValue,
+			ComOutputSND:                tx.Proof.ComOutputSND,
+			ComOutputShardID:            tx.Proof.ComOutputShardID,
+		},
+		Metadata: tx.Metadata,
 	}
-	// try to decrypt each of desc in tx with readonly PubKey and add to txsInBlockAccepted
-	listDesc := make([]*transaction.JoinSplitDesc, 0)
-	for _, desc := range tx.Descs {
-		copyDesc := &transaction.JoinSplitDesc{
-			Anchor:        desc.Anchor,
-			Reward:        desc.Reward,
-			Commitments:   make([][]byte, 0),
-			EncryptedData: make([][]byte, 0),
-		}
-		if desc.Proof != nil && len(desc.EncryptedData) > 0 {
+
+	// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
+	isPrivacy := tx.Proof.ComInputOpeningsProof != nil
+	for _, outCoinTemp := range tx.Proof.OutputCoins {
+		if isPrivacy {
+			// have privacy-protocol
 			if len(keys.PrivateKey) == 0 || len(keys.ReadonlyKey.Rk) == 0 {
 				continue
 			}
-			// have privacy-protocol
-			for i, encData := range desc.EncryptedData {
-				var epk client.EphemeralPubKey
-				copy(epk[:], desc.EphemeralPubKey)
-				hSig := client.HSigCRH(desc.HSigSeed, desc.Nullifiers[0], desc.Nullifiers[1], copyTx.JSPubKey)
-				note := new(client.Note)
-				note, err := client.DecryptNote(encData, keys.ReadonlyKey.Rk, keys.PaymentAddress.Tk, epk, hSig)
-				if err == nil && note != nil && note.Value > 0 {
-					// can decrypt data -> got candidate commitment
-					candidateCommitment := desc.Commitments[i]
-					if len(nullifiersInDb) > 0 {
-						// -> check commitment with db nullifiers
-						var rho [32]byte
-						copy(rho[:], note.Rho)
-						candidateNullifier := client.GetNullifier(keys.PrivateKey, rho)
-						if len(candidateNullifier) == 0 {
-							continue
-						}
-						checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
-						if err != nil || checkCandiateNullifier == true {
-							// candidate nullifier is not existed in db
-							continue
-						}
-					}
-					copyDesc.EncryptedData = append(copyDesc.EncryptedData, encData)
-					copyDesc.AppendNote(note)
-					note.Cm = candidateCommitment
-					note.Apk = privacy.GeneratePublicKey(keys.PrivateKey)
-					copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
-				} else {
-					continue
+			err := outCoinTemp.Decrypt(keys.ReadonlyKey)
+			if err == nil {
+				outCoin := &privacy.OutputCoin{
+					CoinDetails:          outCoinTemp.CoinDetails,
+					CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
 				}
+				if len(serialNumberInDB) > 0 {
+					checkCandiateSerialNumber, err := common.SliceBytesExists(serialNumberInDB, outCoin.CoinDetails.SerialNumber.Compress())
+					if err != nil || checkCandiateSerialNumber != -1 {
+						// candidate serialNumber is not existed in db
+						continue
+					}
+				}
+				copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outCoin)
 			}
 		} else {
-			for i, note := range desc.Note {
-				if bytes.Equal(note.Apk[:], keys.PaymentAddress.Pk[:]) && note.Value > 0 {
-					// no privacy-protocol
-					candidateCommitment := desc.Commitments[i]
-					candidateNullifier := desc.Nullifiers[i]
-					if len(nullifiersInDb) > 0 {
-						// -> check commitment with db nullifiers
-						if len(keys.PrivateKey) > 0 {
-							var rho [32]byte
-							copy(rho[:], note.Rho)
-							candidateNullifier = client.GetNullifier(keys.PrivateKey, rho)
-							if len(candidateNullifier) == 0 {
-								continue
-							}
-						}
-						checkCandiateNullifier, err := common.SliceBytesExists(nullifiersInDb, candidateNullifier)
-						if err != nil || checkCandiateNullifier == true {
-							// candidate nullifier is not existed in db
-							continue
-						}
-					}
-					copyDesc.AppendNote(note)
-					note.Cm = candidateCommitment
-					note.Apk = privacy.GeneratePublicKey(keys.PrivateKey)
-					copyDesc.Commitments = append(copyDesc.Commitments, candidateCommitment)
-				} else {
-					continue
+			pubkeyCompress := outCoinTemp.CoinDetails.PublicKey.Compress()
+			if bytes.Equal(pubkeyCompress, keys.PaymentAddress.Pk[:]) {
+				outCoin := &privacy.OutputCoin{
+					CoinDetails:          outCoinTemp.CoinDetails,
+					CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
 				}
+				if len(serialNumberInDB) > 0 {
+					checkCandiateNullifier, err := common.SliceBytesExists(serialNumberInDB, outCoinTemp.CoinDetails.SerialNumber.Compress())
+					if err != nil || checkCandiateNullifier != -1 {
+						// candidate nullifier is not existed in db
+						continue
+					}
+				}
+				copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outCoin)
 			}
 		}
-		if len(copyDesc.Note) > 0 {
-			listDesc = append(listDesc, copyDesc)
-		}
-	}
-	if len(listDesc) > 0 {
-		copyTx.Descs = listDesc
 	}
 	return copyTx
 }
@@ -1050,7 +1122,7 @@ func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, blo
 		if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
 			// copyTx ONLY contains commitment which relate to keys
 			copyTx := self.DecryptTxByKey(txInBlock, nullifiersInDb, keys)
-			if len(copyTx.Descs) > 0 {
+			if len(copyTx.Proof.OutputCoins) > 0 {
 				if !returnFullTx {
 					// only return copy tx which contain unspent commitment which relate with private key
 					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
@@ -1102,9 +1174,14 @@ func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType
 		}
 		// decrypt to get utxo with commitments with relate to private key
 		for chainID, txArrays := range fullTxs {
-			for _, tx := range txArrays {
+			for _, txBytes := range txArrays {
 				keys := cashec.KeySet{}
 				keys.ImportFromPrivateKey(&keyset.PrivateKey)
+				tx := transaction.Tx{}
+				err := json.Unmarshal(txBytes, &tx)
+				if err != nil {
+					return nil, NewBlockChainError(UnExpectedError, errors.New("json.Unmarshal"))
+				}
 				copyTx := self.DecryptTxByKey(&tx, nullifiersInDb, &keys)
 				results[chainID] = append(results[chainID], copyTx)
 			}
@@ -1148,7 +1225,8 @@ func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType
 			}
 		}
 		// sort txs
-		transaction.SortArrayTxs(results[chainId], sortType, sortAsc)
+		// TODO
+		//transaction.SortArrayTxs(results[chainId], sortType, sortAsc)
 	}
 
 	// unlock chain
@@ -1222,9 +1300,37 @@ func (self *BlockChain) GetCommitteeCandidateInfo(nodeAddr string) CommitteeCand
 
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
 func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
-	voutList, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress)
+	data, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, receiverKeyset.PaymentAddress.Pk)
 	if err != nil {
 		return nil, err
+	}
+	splitter := []byte("-[-]-")
+	unspent := []byte("unspent")
+	voutList := []transaction.TxTokenVout{}
+	for key, value := range data {
+		keys := strings.Split(key, string(splitter))
+		values := strings.Split(value, string(splitter))
+		// get unspent and unreward transaction output
+		if strings.Compare(values[1], string(unspent)) == 0 {
+
+			vout := transaction.TxTokenVout{}
+			vout.PaymentAddress = receiverKeyset.PaymentAddress
+			txHash, err := common.Hash{}.NewHash([]byte(keys[3]))
+			if err != nil {
+				return nil, err
+			}
+			vout.SetTxCustomTokenID(*txHash)
+			voutIndexByte := []byte(keys[4])[0]
+			voutIndex := int(voutIndexByte)
+			vout.SetIndex(voutIndex)
+			value, err := strconv.Atoi(values[0])
+			if err != nil {
+				return nil, err
+			}
+			vout.Value = uint64(value)
+			fmt.Println("GetCustomTokenPaymentAddressUTXO VOUT", vout)
+			voutList = append(voutList, vout)
+		}
 	}
 	return voutList, nil
 }
@@ -1339,7 +1445,7 @@ func (self *BlockChain) GetCustomTokenTxsHash(tokenID *common.Hash) ([]common.Ha
 
 // GetListTokenHolders - return list paymentaddress (in hexstring) of someone who hold custom token in network
 func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]uint64, error) {
-	result, err := self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(tokenID)
+	result, err := self.config.DataBase.GetCustomTokenPaymentAddressesBalance(tokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -1351,8 +1457,8 @@ func (self *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {
 }
 
 func (self *BlockChain) GetNumberOfDCBGovernors() int {
-	return NumberOfDCBGovernors
+	return common.NumberOfDCBGovernors
 }
 func (self *BlockChain) GetNumberOfGOVGovernors() int {
-	return NumberOfGOVGovernors
+	return common.NumberOfGOVGovernors
 }

@@ -1,13 +1,13 @@
 package transaction
 
-import (
+/*import (
 	"github.com/ninjadotorg/constant/common"
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type TxBuyBackRequest struct {
 	*BuyBackRequestInfo
-	*Tx // fee
+	*TxNormal // fee
 	// TODO: signature?
 }
 
@@ -49,7 +49,7 @@ func CreateTxBuyBackRequest(
 
 	txBuyBackRequest := &TxBuyBackRequest{
 		BuyBackRequestInfo: buyBackRequestInfo,
-		Tx:                 tx,
+		TxNormal:           tx,
 	}
 	txBuyBackRequest.Type = common.TxBuyBackRequest
 	return txBuyBackRequest, nil
@@ -57,7 +57,7 @@ func CreateTxBuyBackRequest(
 
 func (tx *TxBuyBackRequest) Hash() *common.Hash {
 	// get hash of tx
-	record := tx.Tx.Hash().String()
+	record := tx.TxNormal.Hash().String()
 	record += tx.BuyBackFromTxID.String()
 	record += string(tx.VoutIndex)
 
@@ -68,14 +68,14 @@ func (tx *TxBuyBackRequest) Hash() *common.Hash {
 
 func (tx *TxBuyBackRequest) ValidateTransaction() bool {
 	// validate for normal tx
-	if !tx.Tx.ValidateTransaction() {
+	if !tx.TxNormal.ValidateTransaction() {
 		return false
 	}
 	return true
 }
 
 func (tx *TxBuyBackRequest) GetType() string {
-	return tx.Tx.Type
+	return tx.TxNormal.Type
 }
 
 func (tx *TxBuyBackRequest) GetTxVirtualSize() uint64 {
@@ -84,9 +84,9 @@ func (tx *TxBuyBackRequest) GetTxVirtualSize() uint64 {
 }
 
 func (tx *TxBuyBackRequest) GetSenderAddrLastByte() byte {
-	return tx.Tx.AddressLastByte
+	return tx.TxNormal.AddressLastByte
 }
 
 func (tx *TxBuyBackRequest) GetTxFee() uint64 {
-	return tx.Tx.Fee
-}
+	return tx.TxNormal.Fee
+}*/

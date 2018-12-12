@@ -1,46 +1,68 @@
 package metadata
 
-// import "github.com/ninjadotorg/constant/common"
+import (
+	"errors"
+	"strconv"
 
-// type BuyBackRequest struct {
-// 	BuyBackFromTxID common.Hash
-// 	VoutIndex       int
-// }
+	"github.com/ninjadotorg/constant/common"
+)
 
-// func NewBuyBackRequest(bbReqData map[string]interface{}) *BuyBackRequest {
-// 	return &BuyBackRequest{
-// 		BuyBackFromTxID: bbReqData["buyBackFromTxId"].(common.Hash),
-// 		VoutIndex:       bbReqData["voutIndex"].(int),
-// 	}
-// }
+type BuyBackRequest struct {
+	BuyBackFromTxID common.Hash
+	VoutIndex       int
+	MetadataBase
+}
 
-// func (bbReq *BuyBackRequest) ValidateTxWithBlockChain(
-// 	txr Transaction,
-// 	bcr BlockchainRetriever,
-// 	chainID byte,
-// ) (bool, error) {
+func NewBuyBackRequest(bbReqData map[string]interface{}) *BuyBackRequest {
+	metadataBase := MetadataBase{
+		Type: int(bbReqData["type"].(float64)),
+	}
+	return &BuyBackRequest{
+		BuyBackFromTxID: bbReqData["buyBackFromTxId"].(common.Hash),
+		VoutIndex:       bbReqData["voutIndex"].(int),
+		MetadataBase:    metadataBase,
+	}
+}
 
-// }
+func (bbReq *BuyBackRequest) ValidateTxWithBlockChain(
+	txr Transaction,
+	bcr BlockchainRetriever,
+	chainID byte,
+) (bool, error) {
+	// check double spending on fee tx
+	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
 
-// func (bbReq *BuyBackRequest) ValidateSanityData(
-// 	txr Transaction,
-// ) (bool, bool, error) {
+func (bbReq *BuyBackRequest) ValidateSanityData(
+	bcr BlockchainRetriever,
+	txr Transaction,
+) (bool, bool, error) {
+	ok, err := txr.ValidateSanityData(bcr)
+	if err != nil || !ok {
+		return false, ok, err
+	}
+	if bbReq.VoutIndex < 0 {
+		return false, false, errors.New("Wrong request info's vout index")
+	}
+	if len(bbReq.BuyBackFromTxID) == 0 {
+		return false, false, errors.New("Wrong request info's BuyBackFromTxID")
+	}
+	return false, true, nil
+}
 
-// }
+func (bbReq *BuyBackRequest) ValidateMetadataByItself() bool {
+	// The validation just need to check at tx level, so returning true here
+	return true
+}
 
-// func (bsReq *BuyBackRequest) ValidateMetadataByItself() bool {
-// 	// The validation just need to check at tx level, so returning true here
-// 	return true
-// }
-
-// func (bsReq *BuyBackRequest) Hash() *common.Hash {
-// 	record := string(bsReq.PaymentAddress.ToBytes())
-// 	record += bsReq.AssetType.String()
-// 	record += string(bsReq.Amount)
-// 	record += string(bsReq.BuyPrice)
-// 	record += string(bsReq.SaleID)
-
-// 	// final hash
-// 	hash := common.DoubleHashH([]byte(record))
-// 	return &hash
-// }
+func (bbReq *BuyBackRequest) Hash() *common.Hash {
+	record := bbReq.BuyBackFromTxID.String()
+	record += strconv.Itoa(bbReq.VoutIndex)
+	record += string(bbReq.MetadataBase.Hash()[:])
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}

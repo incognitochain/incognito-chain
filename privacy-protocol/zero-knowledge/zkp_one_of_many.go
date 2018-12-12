@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"crypto/rand"
+	"encoding/binary"
 	"fmt"
 	"math/big"
 
@@ -12,10 +13,10 @@ import (
 // include Witness: CommitedValue, r []byte
 type PKOneOfManyWitness struct {
 	rand        *big.Int
-	indexIsZero *int
+	indexIsZero uint64
 	// general info
 	commitments      []*privacy.EllipticPoint
-	commitmentIndexs *[]*privacy.CMIndex
+	commitmentIndexs []uint64
 	index            byte
 }
 
@@ -25,17 +26,23 @@ type PKOneOfManyProof struct {
 	f, za, zb      []*big.Int
 	zd             *big.Int
 	// general info
+	// just send to verifier commitmentIndexs, don't send commitments list
 	commitments []*privacy.EllipticPoint
+	commitmentIndexs []uint64
 	index       byte
 }
 
 // Set sets Witness
 func (wit *PKOneOfManyWitness) Set(
 	commitments []*privacy.EllipticPoint,
-	commitmentIndexs *[]*privacy.CMIndex,
+	commitmentIndexs []uint64,
 	rand *big.Int,
-	indexIsZero *int,
+	indexIsZero uint64,
 	index byte) {
+
+	if wit == nil{
+		wit = new(PKOneOfManyWitness)
+	}
 
 	wit.commitmentIndexs = commitmentIndexs
 	wit.commitments = commitments
@@ -46,23 +53,184 @@ func (wit *PKOneOfManyWitness) Set(
 
 // Set sets Proof
 func (pro *PKOneOfManyProof) Set(
-	commitments []*privacy.EllipticPoint,
+	commitmentIndexs []uint64,
 	cl, ca, cb, cd []*privacy.EllipticPoint,
 	f, za, zb []*big.Int,
 	zd *big.Int,
 	index byte) {
 
-	pro.commitments = commitments
+	if pro == nil{
+		pro = new(PKOneOfManyProof)
+	}
+
+	pro.commitmentIndexs = commitmentIndexs
 	pro.cl, pro.ca, pro.cb, pro.cd = cl, ca, cb, cd
 	pro.f, pro.za, pro.zb = f, za, zb
 	pro.zd = zd
 	pro.index = index
 }
 
+func (pro *PKOneOfManyProof) Bytes() []byte {
+	// N = 2^n
+	N := len(pro.commitmentIndexs)
+	temp := 1
+	n := 0
+	for temp < N {
+		temp = temp << 1
+		n++
+	}
+
+	var bytes []byte
+	nBytes := 0
+
+	// save N to the first byte
+	bytes = append(bytes, byte(N))
+	// save n to the second byte
+	bytes = append(bytes, byte(n))
+
+	// convert array cl to bytes array
+	for i := 0; i < n; i++ {
+		bytes = append(bytes, pro.cl[i].Compress()...)
+		nBytes += privacy.CompressedPointSize
+	}
+	// convert array ca to bytes array
+	for i := 0; i < n; i++ {
+		bytes = append(bytes, pro.ca[i].Compress()...)
+		nBytes += privacy.CompressedPointSize
+	}
+
+	// convert array cb to bytes array
+	for i := 0; i < n; i++ {
+		bytes = append(bytes, pro.cb[i].Compress()...)
+		nBytes += privacy.CompressedPointSize
+	}
+
+	// convert array cd to bytes array
+	for i := 0; i < n; i++ {
+		bytes = append(bytes, pro.cd[i].Compress()...)
+		nBytes += privacy.CompressedPointSize
+	}
+
+	// convert array f to bytes array
+	for i := 0; i < n; i++ {
+		bytes = append(bytes, pro.f[i].Bytes()...)
+		nBytes += 32
+	}
+
+	// convert array za to bytes array
+	for i := 0; i < n; i++ {
+		bytes = append(bytes, pro.za[i].Bytes()...)
+		nBytes += 32
+	}
+
+	// convert array zb to bytes array
+	for i := 0; i < n; i++ {
+		bytes = append(bytes, pro.zb[i].Bytes()...)
+		nBytes += 32
+	}
+
+	// convert array zd to bytes array
+	bytes = append(bytes, pro.zd.Bytes()...)
+	nBytes += 32
+
+	// convert commitment index to bytes array
+	for i := 0; i < N; i++ {
+		commitmentIndexBytes := make([]byte, 8)
+		binary.LittleEndian.PutUint64(commitmentIndexBytes, pro.commitmentIndexs[i])
+		bytes = append(bytes, commitmentIndexBytes...)
+		nBytes += 8
+	}
+
+	// append index
+	bytes = append(bytes, pro.index)
+	nBytes += 1
+
+	fmt.Printf("Len of proof bytes: %v\n", nBytes)
+
+	return bytes
+}
+
+// SetBytes convert from bytes array to PKOneOfManyProof
+func (pro *PKOneOfManyProof) SetBytes(bytes []byte) {
+	// get N
+	N := int(bytes[0])
+	// get n
+	n := int(bytes[1])
+
+	offset := 2
+
+	// get cl array
+	pro.cl = make([]*privacy.EllipticPoint, n)
+	for i := 0; i < n; i++ {
+		pro.cl[i] = new(privacy.EllipticPoint)
+		pro.cl[i], _ = privacy.DecompressKey(bytes[offset : offset+33])
+		offset = offset + 33
+	}
+	// get ca array
+	pro.ca = make([]*privacy.EllipticPoint, n)
+	for i := 0; i < n; i++ {
+		pro.ca[i] = new(privacy.EllipticPoint)
+		pro.ca[i], _ = privacy.DecompressKey(bytes[offset : offset+33])
+		offset = offset + 33
+	}
+	// get cb array
+	pro.cb = make([]*privacy.EllipticPoint, n)
+	for i := 0; i < n; i++ {
+		pro.cb[i] = new(privacy.EllipticPoint)
+		pro.cb[i], _ = privacy.DecompressKey(bytes[offset : offset+33])
+		offset = offset + 33
+	}
+
+	// get cd array
+	pro.cd = make([]*privacy.EllipticPoint, n)
+	for i := 0; i < n; i++ {
+		pro.cd[i] = new(privacy.EllipticPoint)
+		pro.cd[i], _ = privacy.DecompressKey(bytes[offset : offset+33])
+		offset = offset + 33
+	}
+
+	// get f array
+	pro.f = make([]*big.Int, n)
+	for i := 0; i < n; i++ {
+		pro.f[i] = new(big.Int).SetBytes(bytes[offset : offset+32])
+		offset = offset + 32
+	}
+
+	// get za array
+	pro.za = make([]*big.Int, n)
+	for i := 0; i < n; i++ {
+		pro.za[i] = new(big.Int).SetBytes(bytes[offset : offset+32])
+		offset = offset + 32
+	}
+
+	// get zb array
+	pro.zb = make([]*big.Int, n)
+	for i := 0; i < n; i++ {
+		pro.zb[i] = new(big.Int).SetBytes(bytes[offset : offset+32])
+		offset = offset + 32
+	}
+
+	// get zd
+	pro.zd = new(big.Int).SetBytes(bytes[offset : offset+32])
+	offset = offset + 32
+
+	// get commitments list
+	pro.commitmentIndexs = make([]uint64, N)
+	for i := 0; i < N; i++ {
+		pro.commitmentIndexs[i] = binary.LittleEndian.Uint64(bytes[offset : offset+8])
+		offset = offset + 8
+	}
+
+	//get index
+	pro.index = bytes[len(bytes)-1]
+	fmt.Printf("proof index setbytes: %v\n", pro.index)
+
+}
+
 // Prove creates proof for one out of many commitments containing 0
 func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	// Check the number of Commitment list's elements
-	// N = 2^n
+
 	N := len(wit.commitments)
 	temp := 1
 	n := 0
@@ -72,11 +240,13 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	}
 
 	if temp != N {
-		return nil, fmt.Errorf("the number of Commitment list's elements must be power of two")
+		return nil, fmt.Errorf("the number of Commitment list's elements must be equal to CMRingSize")
 	}
 
+	//n := privacy.CMRingSizeExp
+
 	// Check indexIsZero
-	if *wit.indexIsZero > N || *wit.indexIsZero < 0 {
+	if wit.indexIsZero > uint64(N) || wit.indexIsZero < 0 {
 		return nil, fmt.Errorf("Index is zero must be Index in list of commitments")
 	}
 
@@ -86,7 +256,7 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	}
 
 	// represent indexIsZero in binary
-	indexIsZeroBinary := privacy.ConvertIntToBinary(*wit.indexIsZero, n)
+	indexIsZeroBinary := privacy.ConvertIntToBinary(int(wit.indexIsZero), n)
 
 	//
 	r := make([]*big.Int, n)
@@ -128,19 +298,18 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	// Calculate: cd_k = ci^pi,k
 	for k := 0; k < n; k++ {
 		// Calculate pi,k which is coefficient of x^k in polynomial pi(x)
-		res := privacy.EllipticPoint{X: big.NewInt(0), Y: big.NewInt(0)}
-		tmp := privacy.EllipticPoint{X: big.NewInt(0), Y: big.NewInt(0)}
+		res := &privacy.EllipticPoint{X: big.NewInt(0), Y: big.NewInt(0)}
+		//tmp := privacy.EllipticPoint{X: big.NewInt(0), Y: big.NewInt(0)}
 
 		for i := 0; i < N; i++ {
 			iBinary := privacy.ConvertIntToBinary(i, n)
 			pik := GetCoefficient(iBinary, k, n, a, indexIsZeroBinary)
-			tmp.X, tmp.Y = privacy.Curve.ScalarMult(wit.commitments[i].X, wit.commitments[i].Y, pik.Bytes())
-			res.X, res.Y = privacy.Curve.Add(res.X, res.Y, tmp.X, tmp.Y)
+			res = res.Add(wit.commitments[i].ScalarMul(pik))
 		}
 
 		comZero := privacy.PedCom.CommitAtIndex(big.NewInt(0), u[k], wit.index)
-		res.X, res.Y = privacy.Curve.Add(res.X, res.Y, comZero.X, comZero.Y)
-		cd[k] = &res
+		res = res.Add(comZero)
+		cd[k] = res
 	}
 
 	// Calculate x
@@ -198,21 +367,28 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	zd.Add(zd, sumInt)
 	zd.Mod(zd, privacy.Curve.Params().N)
 	var proof PKOneOfManyProof
-	proof.Set(wit.commitments, cl, ca, cb, cd, f, za, zb, zd, wit.index)
+	proof.Set(wit.commitmentIndexs, cl, ca, cb, cd, f, za, zb, zd, wit.index)
 
 	return &proof, nil
 }
 
-func (pro *PKOneOfManyProof) Verify() bool {
-	N := len(pro.commitments)
-
+func (pro *PKOneOfManyProof) Verify(commitmentsDB []*privacy.EllipticPoint) bool {
+	N := len(pro.commitmentIndexs)
+	// Calculate n
 	temp := 1
 	n := 0
 	for temp < N {
 		temp = temp << 1
 		n++
 	}
-	// Calculate x
+
+	// get commitments list from commitmentIndexs
+	pro.commitments = make([]*privacy.EllipticPoint, N)
+	for i := 0; i < N; i++{
+		pro.commitments[i] = commitmentsDB[pro.commitmentIndexs[i]]
+	}
+
+	//Calculate x
 	x := big.NewInt(0)
 
 	for j := 0; j <= n-1; j++ {
@@ -222,9 +398,10 @@ func (pro *PKOneOfManyProof) Verify() bool {
 
 	for i := 0; i < n; i++ {
 		// Check cl^x * ca = Com(f, za)
-		leftPoint1 := new(privacy.EllipticPoint)
-		leftPoint1.X, leftPoint1.Y = privacy.Curve.ScalarMult(pro.cl[i].X, pro.cl[i].Y, x.Bytes())
-		leftPoint1.X, leftPoint1.Y = privacy.Curve.Add(leftPoint1.X, leftPoint1.Y, pro.ca[i].X, pro.ca[i].Y)
+		//leftPoint1 := new(privacy.EllipticPoint)
+		//leftPoint1.X, leftPoint1.Y = privacy.Curve.ScalarMult(pro.cl[i].X, pro.cl[i].Y, x.Bytes())
+		//leftPoint1.X, leftPoint1.Y = privacy.Curve.Add(leftPoint1.X, leftPoint1.Y, pro.ca[i].X, pro.ca[i].Y)
+		leftPoint1 := pro.cl[i].ScalarMul(x).Add(pro.ca[i])
 
 		rightPoint1 := privacy.PedCom.CommitAtIndex(pro.f[i], pro.za[i], pro.index)
 		fmt.Printf("Left point 1 X: %v\n", leftPoint1.X)
@@ -232,26 +409,28 @@ func (pro *PKOneOfManyProof) Verify() bool {
 		fmt.Printf("Left point 1 Y: %v\n", leftPoint1.Y)
 		fmt.Printf("Right point 1 Y: %v\n", rightPoint1.Y)
 
-		if leftPoint1.X.Cmp(rightPoint1.X) != 0 || leftPoint1.Y.Cmp(rightPoint1.Y) != 0 {
+		if !leftPoint1.IsEqual(rightPoint1) {
 			return false
 		}
 
 		// Check cl^(x-f) * cb = Com(0, zb)
-		leftPoint2 := new(privacy.EllipticPoint)
+
 		xSubF := new(big.Int)
 		xSubF.Sub(x, pro.f[i])
 		xSubF.Mod(xSubF, privacy.Curve.Params().N)
 
-		leftPoint2.X, leftPoint2.Y = privacy.Curve.ScalarMult(pro.cl[i].X, pro.cl[i].Y, xSubF.Bytes())
-		leftPoint2.X, leftPoint2.Y = privacy.Curve.Add(leftPoint2.X, leftPoint2.Y, pro.cb[i].X, pro.cb[i].Y)
+		leftPoint2 := pro.cl[i].ScalarMul(xSubF).Add(pro.cb[i])
+		//	new(privacy.EllipticPoint)
+		//leftPoint2.X, leftPoint2.Y = privacy.Curve.ScalarMult(pro.cl[i].X, pro.cl[i].Y, xSubF.Bytes())
+		//leftPoint2.X, leftPoint2.Y = privacy.Curve.Add(leftPoint2.X, leftPoint2.Y, pro.cb[i].X, pro.cb[i].Y)
 		rightPoint2 := privacy.PedCom.CommitAtIndex(big.NewInt(0), pro.zb[i], pro.index)
 
-		fmt.Printf("Left point 2 X: %v\n", leftPoint2.X)
-		fmt.Printf("Right point 2 X: %v\n", rightPoint2.X)
-		fmt.Printf("Left point 2 Y: %v\n", leftPoint2.Y)
-		fmt.Printf("Right point 2 Y: %v\n", rightPoint2.Y)
+		//fmt.Printf("Left point 2 X: %v\n", leftPoint2.X)
+		//fmt.Printf("Right point 2 X: %v\n", rightPoint2.X)
+		//fmt.Printf("Left point 2 Y: %v\n", leftPoint2.Y)
+		//fmt.Printf("Right point 2 Y: %v\n", rightPoint2.Y)
 
-		if leftPoint2.X.Cmp(rightPoint2.X) != 0 || leftPoint2.Y.Cmp(rightPoint2.Y) != 0 {
+		if !leftPoint2.IsEqual(rightPoint2) {
 			return false
 		}
 	}
@@ -310,14 +489,13 @@ func (pro *PKOneOfManyProof) Verify() bool {
 func TestPKOneOfMany() bool {
 	witness := new(PKOneOfManyWitness)
 
-	indexIsZero := 23
+	indexIsZero := 2
 
 	// list of commitments
-	commitments := make([]*privacy.EllipticPoint, 32)
-	SNDerivators := make([]*big.Int, 32)
-	randoms := make([]*big.Int, 32)
-
-	for i := 0; i < 32; i++ {
+	commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
+	SNDerivators := make([]*big.Int, privacy.CMRingSize)
+	randoms := make([]*big.Int, privacy.CMRingSize)
+	for i := 0; i < privacy.CMRingSize; i++ {
 		SNDerivators[i] = privacy.RandInt()
 		randoms[i] = privacy.RandInt()
 		commitments[i] = privacy.PedCom.CommitAtIndex(SNDerivators[i], randoms[i], privacy.SND)
@@ -327,22 +505,31 @@ func TestPKOneOfMany() bool {
 	SNDerivators[indexIsZero] = big.NewInt(0)
 	commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(SNDerivators[indexIsZero], randoms[indexIsZero], privacy.SND)
 
-	witness.Set(commitments, nil, randoms[indexIsZero], &indexIsZero, privacy.SND)
+	witness.Set(commitments, nil, randoms[indexIsZero], uint64(indexIsZero), privacy.SND)
 	//start := time.Now()
 	proof, err := witness.Prove()
+
+	// Convert proof to bytes array
+	proofBytes := proof.Bytes()
+	fmt.Printf("Proof bytes: %v\n", proofBytes)
+	fmt.Printf("Proof bytes len: %v\n", len(proofBytes))
+
+	// revert bytes array to proof
+	proof2 := new(PKOneOfManyProof)
+	proof2.SetBytes(proofBytes)
 
 	if err != nil {
 		fmt.Println(err)
 	}
-	res := proof.Verify()
+	//res := proof.Verify()
 
 	//end := time.Now()
 	//fmt.Printf("%v_+_\n", end.Sub(start))
-	fmt.Println(res)
-	return res
+	//fmt.Println(res)
+	return false
 }
 
-// Get coefficient of x^k in polynomial pi(x)
+//// Get coefficient of x^k in polynomial pi(x)
 func GetCoefficient(iBinary []byte, k int, n int, a []*big.Int, l []byte) *big.Int {
 	res := privacy.Poly{big.NewInt(1)}
 	var fji privacy.Poly

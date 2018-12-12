@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"sort"
 
-	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
@@ -16,14 +16,14 @@ func (db *db) AddVoteDCBBoard(StartedBlockInt uint32, VoterPubKey []byte, Candid
 	StartedBlock := uint32(StartedBlockInt)
 	//add to sum amount of vote token to this candidate
 	key := db.GetKey(string(voteDCBBoardSumPrefix), string(StartedBlock)+string(CandidatePubKey))
-	ok, err := db.hasValue(key)
+	ok, err := db.HasValue(key)
 	if err != nil {
 		return err
 	}
 	if !ok {
 		zeroInBytes := make([]byte, 8)
 		binary.LittleEndian.PutUint64(zeroInBytes, uint64(0))
-		db.put(key, zeroInBytes)
+		db.Put(key, zeroInBytes)
 	}
 
 	currentVoteInBytes, err := db.lvdb.Get(key, nil)
@@ -32,7 +32,7 @@ func (db *db) AddVoteDCBBoard(StartedBlockInt uint32, VoterPubKey []byte, Candid
 
 	newVoteInBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(newVoteInBytes, newVote)
-	err = db.put(key, newVoteInBytes)
+	err = db.Put(key, newVoteInBytes)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
@@ -47,7 +47,7 @@ func (db *db) AddVoteDCBBoard(StartedBlockInt uint32, VoterPubKey []byte, Candid
 	newCount := currentCount + 1
 	newCountInByte := make([]byte, 4)
 	binary.LittleEndian.PutUint32(newCountInByte, newCount)
-	err = db.put(key, newCountInByte)
+	err = db.Put(key, newCountInByte)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
@@ -57,7 +57,7 @@ func (db *db) AddVoteDCBBoard(StartedBlockInt uint32, VoterPubKey []byte, Candid
 	amountInByte := make([]byte, 8)
 	binary.LittleEndian.PutUint64(amountInByte, amount)
 	valueInByte := append([]byte(VoterPubKey), amountInByte...)
-	err = db.put(key, valueInByte)
+	err = db.Put(key, valueInByte)
 
 	return nil
 }
@@ -66,14 +66,14 @@ func (db *db) AddVoteGOVBoard(StartedBlockInt uint32, VoterPubKey []byte, Candid
 	StartedBlock := uint32(StartedBlockInt)
 	//add to sum amount of vote token to this candidate
 	key := db.GetKey(string(voteGOVBoardSumPrefix), string(StartedBlock)+string(CandidatePubKey))
-	ok, err := db.hasValue(key)
+	ok, err := db.HasValue(key)
 	if err != nil {
 		return err
 	}
 	if !ok {
 		zeroInBytes := make([]byte, 8)
 		binary.LittleEndian.PutUint64(zeroInBytes, uint64(0))
-		db.put(key, zeroInBytes)
+		db.Put(key, zeroInBytes)
 	}
 
 	currentVoteInBytes, err := db.lvdb.Get(key, nil)
@@ -82,7 +82,7 @@ func (db *db) AddVoteGOVBoard(StartedBlockInt uint32, VoterPubKey []byte, Candid
 
 	newVoteInBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(newVoteInBytes, newVote)
-	err = db.put(key, newVoteInBytes)
+	err = db.Put(key, newVoteInBytes)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
@@ -97,7 +97,7 @@ func (db *db) AddVoteGOVBoard(StartedBlockInt uint32, VoterPubKey []byte, Candid
 	newCount := currentCount + 1
 	newCountInByte := make([]byte, 4)
 	binary.LittleEndian.PutUint32(newCountInByte, newCount)
-	err = db.put(key, newCountInByte)
+	err = db.Put(key, newCountInByte)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
@@ -107,7 +107,7 @@ func (db *db) AddVoteGOVBoard(StartedBlockInt uint32, VoterPubKey []byte, Candid
 	amountInByte := make([]byte, 8)
 	binary.LittleEndian.PutUint64(amountInByte, amount)
 	valueInByte := append([]byte(VoterPubKey), amountInByte...)
-	err = db.put(key, valueInByte)
+	err = db.Put(key, valueInByte)
 
 	return nil
 }
@@ -125,11 +125,11 @@ func (db *db) GetTopMostVoteDCBGovernor(StartedBlock uint32) (database.Candidate
 		candidateList = append(candidateList, database.CandidateElement{pubKey, value})
 	}
 	sort.Sort(candidateList)
-	if len(candidateList) < blockchain.NumberOfDCBGovernors {
+	if len(candidateList) < common.NumberOfDCBGovernors {
 		return nil, database.NewDatabaseError(database.NotEnoughCandidateDCB, errors.Errorf("not enough DCB Candidate"))
 	}
 
-	return candidateList[len(candidateList)-blockchain.NumberOfDCBGovernors:], nil
+	return candidateList[len(candidateList)-common.NumberOfDCBGovernors:], nil
 }
 
 func (db *db) GetTopMostVoteGOVGovernor(StartedBlock uint32) (database.CandidateList, error) {
@@ -145,11 +145,11 @@ func (db *db) GetTopMostVoteGOVGovernor(StartedBlock uint32) (database.Candidate
 		candidateList = append(candidateList, database.CandidateElement{pubKey, value})
 	}
 	sort.Sort(candidateList)
-	if len(candidateList) < blockchain.NumberOfGOVGovernors {
+	if len(candidateList) < common.NumberOfGOVGovernors {
 		return nil, database.NewDatabaseError(database.NotEnoughCandidateGOV, errors.Errorf("not enough GOV Candidate"))
 	}
 
-	return candidateList[len(candidateList)-blockchain.NumberOfGOVGovernors:], nil
+	return candidateList[len(candidateList)-common.NumberOfGOVGovernors:], nil
 }
 
 func (db *db) NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.Iterator {

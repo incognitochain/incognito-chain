@@ -10,22 +10,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-type BuyBackInfo struct {
-	StartSellingAt uint32
-	Maturity       uint32
-	BuyBackPrice   uint64 // in Constant unit
-}
-
-type BuySellResponse struct {
-	BuyBackInfo *BuyBackInfo
-	BondID      []byte // 24 bytes as compound value of (Maturity + BuyBackPrice + StartSellingAt) from SellingBonds param
-}
-
 // TxTokenVin - vin format for custom token data
 // It look like vin format of bitcoin
 type TxTokenVin struct {
-	TxCustomTokenID common.Hash            // Tx-id(or hash) of before tx, which is used as a input for current tx as a pre-utxo
-	VoutIndex       int                    // index in vouts array of before Tx-id
+	TxCustomTokenID common.Hash            // TxNormal-id(or hash) of before tx, which is used as a input for current tx as a pre-utxo
+	VoutIndex       int                    // index in vouts array of before TxNormal-id
 	Signature       string                 // Signature to verify owning before tx(pre-utxo)
 	PaymentAddress  privacy.PaymentAddress // use to verify signature of pre-utxo of token
 }
@@ -52,7 +41,7 @@ type TxTokenVout struct {
 	index int
 	// temp variable to know what is id of tx which contain itself
 	txCustomTokenID common.Hash
-	BuySellResponse *BuySellResponse
+	// BuySellResponse *BuySellResponse
 }
 
 // Hash - return hash data of TxTokenVout
