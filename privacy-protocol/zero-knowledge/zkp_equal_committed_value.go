@@ -73,6 +73,7 @@ func (pro PKEqualityOfCommittedValProof) Bytes() []byte {
 	if len(pro.C) == 0 {
 		return []byte{}
 	}
+
 	res = append(pro.C[0].Compress(), pro.C[1].Compress()...)
 	res = append(res, []byte{pro.Index[0], pro.Index[1]}...)
 
@@ -89,22 +90,28 @@ func (pro PKEqualityOfCommittedValProof) Bytes() []byte {
 	return res
 }
 
-func (pro *PKEqualityOfCommittedValProof) SetBytes(bytestr []byte) bool {
-	pro.Init()
+func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) bool {
+	if pro == nil{
+		pro = pro.Init()
+	}
+
+	if len(proofbytes) == 0 {
+		return true
+	}
 	pro.C = make([]*privacy.EllipticPoint, 2)
 	for i := 0; i < len(pro.C); i++ {
-		pro.C[i].Decompress(bytestr[i*privacy.CompressedPointSize : (i+1)*privacy.CompressedPointSize])
+		pro.C[i].Decompress(proofbytes[i*privacy.CompressedPointSize : (i+1)*privacy.CompressedPointSize])
 		if !pro.C[i].IsSafe() {
 			return false
 		}
 	}
 	pro.Index = make([]byte, 2)
 	for i := 0; i < len(pro.Index); i++ {
-		pro.Index[i] = bytestr[i+len(pro.C)*privacy.CompressedPointSize]
+		pro.Index[i] = proofbytes[i+len(pro.C)*privacy.CompressedPointSize]
 	}
 	pro.T = make([]*privacy.EllipticPoint, 2)
 	for i := 0; i < len(pro.T); i++ {
-		pro.T[i].Decompress(bytestr[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+i*privacy.CompressedPointSize : len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+(i+1)*privacy.CompressedPointSize])
+		pro.T[i].Decompress(proofbytes[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+i*privacy.CompressedPointSize : len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+(i+1)*privacy.CompressedPointSize])
 		if !pro.T[i].IsSafe() {
 			return false
 		}
@@ -112,7 +119,7 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(bytestr []byte) bool {
 	pro.Z = make([]*big.Int, 3)
 	for i := 0; i < len(pro.Z); i++ {
 		pro.Z[i] = big.NewInt(0)
-		pro.Z[i].SetBytes(bytestr[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+i*privacy.BigIntSize : len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+(i+1)*privacy.BigIntSize])
+		pro.Z[i].SetBytes(proofbytes[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+i*privacy.BigIntSize : len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+(i+1)*privacy.BigIntSize])
 	}
 	return true
 }
