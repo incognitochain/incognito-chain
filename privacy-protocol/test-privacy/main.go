@@ -1,5 +1,10 @@
 package main
 
+import (
+	"fmt"
+	"math/big"
+)
+
 func main() {
 
 	// fmt.Printf("N: %X\n", privacy-protocol.Curve.Params().N)
@@ -252,5 +257,10 @@ func main() {
 	//coin := new(privacy.Coin).Init()
 	//fmt.Println(coin.SerialNumber == nil)
 	//fmt.Printf("coin.Serial numbre: %v\n", coin.SerialNumber)
+
+	h := new(big.Int)
+	h.SetInt64(-12)
+	h2 := new(big.Int).Set(h)
+	fmt.Println(h2.Cmp(big.NewInt(0)))
 
 }

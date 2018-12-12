@@ -2,11 +2,12 @@ package zkp
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 // PaymentWitness contains all of witness for proving when spending coins
@@ -138,29 +139,29 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, comOutputOpeningsProof...)
 	}
 	// ComOutputMultiRangeProof
-	if paymentProof.ComOutputMultiRangeProof != nil{
+	if paymentProof.ComOutputMultiRangeProof != nil {
 		comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
 		proofbytes = append(proofbytes, byte(len(comOutputMultiRangeProof)))
 		proofbytes = append(proofbytes, comOutputMultiRangeProof...)
-	} else{
+	} else {
 		proofbytes = append(proofbytes, byte(0))
 	}
 
 	// SumOutRangeProof
-	if paymentProof.SumOutRangeProof != nil{
+	if paymentProof.SumOutRangeProof != nil {
 		sumOutRangeProof := paymentProof.SumOutRangeProof.Bytes()
 		proofbytes = append(proofbytes, byte(len(sumOutRangeProof)))
 		proofbytes = append(proofbytes, sumOutRangeProof...)
-	} else{
+	} else {
 		proofbytes = append(proofbytes, byte(0))
 	}
 
 	// ComZeroProof
-	if paymentProof.ComZeroProof != nil{
+	if paymentProof.ComZeroProof != nil {
 		comZeroProof := paymentProof.ComZeroProof.Bytes()
 		proofbytes = append(proofbytes, byte(len(comZeroProof)))
 		proofbytes = append(proofbytes, comZeroProof...)
-	} else{
+	} else {
 		proofbytes = append(proofbytes, byte(0))
 	}
 
@@ -285,7 +286,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	//ComZeroProof *PKComZeroProof
 	lenComZeroProof := int(proofbytes[offset])
 	offset += 1
-	if lenComZeroProof > 0{
+	if lenComZeroProof > 0 {
 		proof.SumOutRangeProof = new(PKComZeroProof).Init()
 		proof.SumOutRangeProof.SetBytes(proofbytes[offset : offset+lenComZeroProof])
 		offset += lenComZeroProof
@@ -624,6 +625,11 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	proof.ComOutputValue = wit.ComOutputValue
 	proof.ComOutputSND = wit.ComOutputSND
 	proof.ComOutputShardID = wit.ComOutputShardID
+
+	//printf output's value to test
+	for i, outCoin := range wit.outputCoins{
+		fmt.Printf("Output coin's value %v: %v\n", i, outCoin.CoinDetails.Value)
+	}
 
 	// if hasPrivacy == false, don't need to create the zero knowledge proof
 	// proving user has spending key corresponding with public key in input coins

@@ -2,17 +2,17 @@ package zkp
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 	"math/big"
 	"testing"
 )
 
 func TestPKComMultiRange(t *testing.T) {
-	testNum:= 100
+	testNum:= 15
 	values := make([]*big.Int, testNum)
 	for i:=0;i< testNum;i++{
 		values[i] = new(big.Int)
-		x:=new(big.Int).SetBytes(privacy.RandBytes(4))
+		//x:=new(big.Int).SetBytes(privacy.RandBytes(9))
+		x:=new(big.Int).SetInt64(-1)
 		values[i] = x
 	}
 	var witness PKComMultiRangeWitness
@@ -36,7 +36,7 @@ func TestPKComMultiRange(t *testing.T) {
 	} else {
 		fmt.Println("***** Sum Proof FAILURE")
 	}
-	fmt.Println(privacy.IntTo_2_Byte_Array(1000))
-	fmt.Println(privacy.IntTo_2_Byte_Array(200))
+	//fmt.Println(privacy.IntTo_2_Byte_Array(1000))
+	//fmt.Println(privacy.IntTo_2_Byte_Array(200))
 }
 
