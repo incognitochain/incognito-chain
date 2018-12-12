@@ -138,13 +138,23 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, comOutputOpeningsProof...)
 	}
 	// ComOutputMultiRangeProof
-	comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
-	proofbytes = append(proofbytes, byte(len(comOutputMultiRangeProof)))
-	proofbytes = append(proofbytes, comOutputMultiRangeProof...)
+	if paymentProof.ComOutputMultiRangeProof != nil{
+		comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
+		proofbytes = append(proofbytes, byte(len(comOutputMultiRangeProof)))
+		proofbytes = append(proofbytes, comOutputMultiRangeProof...)
+	} else{
+		proofbytes = append(proofbytes, byte(0))
+	}
+
 	// ComZeroProof
-	comZeroProof := paymentProof.ComZeroProof.Bytes()
-	proofbytes = append(proofbytes, byte(len(comZeroProof)))
-	proofbytes = append(proofbytes, comZeroProof...)
+	if paymentProof.ComZeroProof != nil{
+		comZeroProof := paymentProof.ComZeroProof.Bytes()
+		proofbytes = append(proofbytes, byte(len(comZeroProof)))
+		proofbytes = append(proofbytes, comZeroProof...)
+	} else{
+		proofbytes = append(proofbytes, byte(0))
+	}
+
 	// InputCoins
 	proofbytes = append(proofbytes, byte(len(paymentProof.InputCoins)))
 	for i := 0; i < len(paymentProof.InputCoins); i++ {
