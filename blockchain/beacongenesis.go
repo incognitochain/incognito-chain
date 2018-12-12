@@ -1,6 +1,9 @@
 package blockchain
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type BeaconBlockGenerator struct{}
 
@@ -24,6 +27,8 @@ func (self *BeaconBlockGenerator) CreateBeaconGenesisBlock(
 	// build validator shard
 	inst = append(inst, []string{"assign", "...", "shard"})
 	// build network param
+	inst = append(inst, []string{"set", "salaryPerTx", fmt.Sprintf("%v", salaryPerTx)})
+	inst = append(inst, []string{"set", "basicSalary", fmt.Sprintf("%v", basicSalary)})
 
 	body := &BeaconBlockBody{ShardState: nil, Instructions: nil}
 	header := &BeaconBlockHeader{
