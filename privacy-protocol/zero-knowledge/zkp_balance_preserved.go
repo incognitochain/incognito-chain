@@ -78,9 +78,26 @@ func (pro *PKComMultiRangeProof) Init() *PKComMultiRangeProof {
 	return pro
 }
 
+
+//
+func (pro *PKComMultiRangeProof) IsNil() bool{
+	if pro.A == nil{
+		return true
+	}
+	return false
+}
+
+// IsGeneratorElement check pro is generator elements or not
+func (pro *PKComMultiRangeProof) IsGeneratorElement() bool{
+	return true
+}
+
 func (pro PKComMultiRangeProof) Bytes() []byte {
 	var res []byte
 
+	if pro.IsNil() == true {
+		return []byte{}
+	}
 	if pro.Counter == 0 {
 		return []byte{}
 	}

@@ -99,7 +99,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
-	// fetch nullifiers and commitments(utxo) from block and save
+	// fetch serialNumbers and commitments(utxo) from block and save
 	err = self.CreateAndSaveTxViewPointFromBlock(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
