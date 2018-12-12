@@ -743,14 +743,14 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 }
 
 // DecryptTxByKey - process tx to get outputcoin which relate to keyset
-func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, keySet *cashec.KeySet) transaction.Tx {
+func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Tx, keySet *cashec.KeySet) transaction.Tx {
 	/*
 	- Param keyset - (priv-key, payment-address, readonlykey)
 	in case priv-key: return unspent outputcoin tx
 	in case readonly-key: return all outputcoin tx with amount value
 	in case payment-address: return all outputcoin tx with no amount value
  */
-	tx := txInBlock.(*transaction.Tx)
+	tx := txInBlock
 	copyTx := transaction.Tx{
 		Version:   tx.Version,
 		Sig:       tx.Sig,
@@ -822,7 +822,7 @@ func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, blo
 	for _, txInBlock := range txsInBlock {
 		if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
 			// copyTx ONLY contains commitment which relate to keys
-			copyTx := self.DecryptTxByKey(txInBlock, keys)
+			copyTx := self.DecryptTxByKey(*txInBlock.(*transaction.Tx), keys)
 			if len(copyTx.Proof.OutputCoins) > 0 {
 				if !returnFullTx {
 					// only return copy tx which contain unspent commitment which relate with private key
@@ -875,7 +875,7 @@ func (self *BlockChain) GetListTxByKeyset(keyset *cashec.KeySet, sortType int, s
 				if err != nil {
 					return nil, NewBlockChainError(UnExpectedError, errors.New("json.Unmarshal"))
 				}
-				copyTx := self.DecryptTxByKey(&tx, &keys)
+				copyTx := self.DecryptTxByKey(tx, &keys)
 				results[chainID] = append(results[chainID], copyTx)
 			}
 		}
