@@ -1,11 +1,12 @@
 package zkp
 
 import (
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/database"
-	"math/big"
-	"github.com/ninjadotorg/constant/common/base58"
 	"encoding/json"
+	"math/big"
+
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/database"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 // PaymentWitness contains all of witness for proving when spending coins
@@ -176,7 +177,7 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 		lenComInputOpeningsProof := int(proofbytes[offset])
 		offset += 1
 		paymentProof.ComInputOpeningsProof[i] = new(PKComOpeningsProof)
-		paymentProof.ComInputOpeningsProof[i].SetBytes(proofbytes[offset:offset+lenComInputOpeningsProof])
+		paymentProof.ComInputOpeningsProof[i].SetBytes(proofbytes[offset : offset+lenComInputOpeningsProof])
 		offset += lenComInputOpeningsProof
 	}
 	// Set OneOfManyProof
@@ -187,7 +188,7 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 		lenOneOfManyProof := int(proofbytes[offset])
 		offset += 1
 		paymentProof.OneOfManyProof[i] = new(PKOneOfManyProof)
-		paymentProof.OneOfManyProof[i].SetBytes(proofbytes[offset:offset+lenOneOfManyProof])
+		paymentProof.OneOfManyProof[i].SetBytes(proofbytes[offset : offset+lenOneOfManyProof])
 		offset += lenOneOfManyProof
 	}
 	// Set EqualityOfCommittedValProof
@@ -198,7 +199,7 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 		lenEqualityOfCommittedValProof := int(proofbytes[offset])
 		offset += 1
 		paymentProof.EqualityOfCommittedValProof[i] = new(PKEqualityOfCommittedValProof)
-		paymentProof.EqualityOfCommittedValProof[i].SetBytes(proofbytes[offset:offset+lenEqualityOfCommittedValProof])
+		paymentProof.EqualityOfCommittedValProof[i].SetBytes(proofbytes[offset : offset+lenEqualityOfCommittedValProof])
 		offset += lenEqualityOfCommittedValProof
 	}
 	// Set ProductCommitmentProof
@@ -209,7 +210,7 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 		lenProductCommitmentProof := int(proofbytes[offset])
 		offset += 1
 		paymentProof.ProductCommitmentProof[i] = new(PKComProductProof)
-		paymentProof.ProductCommitmentProof[i].SetBytes(proofbytes[offset:offset+lenProductCommitmentProof])
+		paymentProof.ProductCommitmentProof[i].SetBytes(proofbytes[offset : offset+lenProductCommitmentProof])
 		offset += lenProductCommitmentProof
 	}
 	//Set ComOutputOpeningsProof
@@ -220,7 +221,7 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 		lenComOutputOpeningsProof := int(proofbytes[offset])
 		offset += 1
 		paymentProof.ComOutputOpeningsProof[i] = new(PKComOpeningsProof)
-		paymentProof.ComOutputOpeningsProof[i].SetBytes(proofbytes[offset:offset+lenComOutputOpeningsProof])
+		paymentProof.ComOutputOpeningsProof[i].SetBytes(proofbytes[offset : offset+lenComOutputOpeningsProof])
 		offset += lenComOutputOpeningsProof
 	}
 
@@ -228,19 +229,19 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 	lenComOutputMultiRangeProof := int(proofbytes[offset])
 	offset += 1
 	paymentProof.ComOutputMultiRangeProof = new(PKComMultiRangeProof)
-	paymentProof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset:offset+lenComOutputMultiRangeProof])
+	paymentProof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
 	offset += lenComOutputMultiRangeProof
 	//SumOutRangeProof *PKComZeroProof
 	lenSumOutRangeProof := int(proofbytes[offset])
 	offset += 1
 	paymentProof.SumOutRangeProof = new(PKComZeroProof)
-	paymentProof.SumOutRangeProof.SetBytes(proofbytes[offset:offset+lenSumOutRangeProof])
+	paymentProof.SumOutRangeProof.SetBytes(proofbytes[offset : offset+lenSumOutRangeProof])
 	offset += lenSumOutRangeProof
 	//ComZeroProof *PKComZeroProof
 	lenComZeroProof := int(proofbytes[offset])
 	offset += 1
 	paymentProof.SumOutRangeProof = new(PKComZeroProof)
-	paymentProof.SumOutRangeProof.SetBytes(proofbytes[offset:offset+lenComZeroProof])
+	paymentProof.SumOutRangeProof.SetBytes(proofbytes[offset : offset+lenComZeroProof])
 	offset += lenComZeroProof
 
 	//InputCoins  []*privacy.InputCoin
@@ -251,7 +252,7 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 		lenInputCoin := int(proofbytes[offset])
 		offset += 1
 		paymentProof.InputCoins[i] = new(privacy.InputCoin)
-		paymentProof.InputCoins[i].SetBytes(proofbytes[offset:offset+lenInputCoin])
+		paymentProof.InputCoins[i].SetBytes(proofbytes[offset : offset+lenInputCoin])
 		offset += lenInputCoin
 	}
 	//OutputCoins []*privacy.OutputCoin
@@ -262,7 +263,7 @@ func (paymentProof *PaymentProof) SetBytes(proofbytes []byte) {
 		lenOutputCoin := int(proofbytes[offset])
 		offset += 1
 		paymentProof.OutputCoins[i] = new(privacy.OutputCoin)
-		paymentProof.OutputCoins[i].SetBytes(proofbytes[offset:offset+lenOutputCoin])
+		paymentProof.OutputCoins[i].SetBytes(proofbytes[offset : offset+lenOutputCoin])
 		offset += lenOutputCoin
 	}
 	//ComOutputValue   []*privacy.EllipticPoint
@@ -389,9 +390,9 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 			commitmentTemps[j] = new(privacy.EllipticPoint)
 			commitmentTemps[j].X = big.NewInt(0)
 			commitmentTemps[j].Y = big.NewInt(0)
-			commitmentTemps[j].X, commitmentTemps[j].Y = privacy.Curve.Add(commitments[preIndex + j].X, commitments[preIndex + j].Y, cmInputSumInverse[i].X, cmInputSumInverse[i].Y)
+			commitmentTemps[j].X, commitmentTemps[j].Y = privacy.Curve.Add(commitments[preIndex+j].X, commitments[preIndex+j].Y, cmInputSumInverse[i].X, cmInputSumInverse[i].Y)
 		}
-		preIndex = privacy.CMRingSize*(i+1)
+		preIndex = privacy.CMRingSize * (i + 1)
 
 		if wit.OneOfManyWitness[i] == nil {
 			wit.OneOfManyWitness[i] = new(PKOneOfManyWitness)
