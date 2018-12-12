@@ -339,24 +339,24 @@ this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
 	for pubkey, item1 := range view.mapCommitments {
-		temp, _, err := base58.Base58Check{}.Decode(pubkey)
+		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
 		if err != nil {
 			return err
 		}
 		for _, com := range item1 {
-			err = self.config.DataBase.StoreCommitments(temp, com, view.chainID)
+			err = self.config.DataBase.StoreCommitments(pubkeyBytes, com, view.chainID)
 			if err != nil {
 				return err
 			}
 		}
 	}
 	for pubkey, item1 := range view.mapOutputCoins {
-		temp, _, err := base58.Base58Check{}.Decode(pubkey)
+		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
 		if err != nil {
 			return err
 		}
 		for _, com := range item1 {
-			err = self.config.DataBase.StoreCommitments(temp, com.Bytes(), view.chainID)
+			err = self.config.DataBase.StoreOutputCoins(pubkeyBytes, com.Bytes(), view.chainID)
 			if err != nil {
 				return err
 			}

@@ -65,19 +65,19 @@ func (view *TxViewPoint) CurrentBestBlockHash() *common.Hash {
 }
 
 // fetch from desc of tx to get nullifiers and commitments
-func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.DatabaseInterface, proof *zkp.PaymentProof) ([][]byte, map[string][][]byte, []big.Int, error) {
+func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.DatabaseInterface, proof *zkp.PaymentProof) ([][]byte, map[string][][]byte, map[string][]privacy.OutputCoin, []big.Int, error) {
 	acceptedNullifiers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
 	acceptedSnD := make([]big.Int, 0)
 	if proof == nil {
-		return acceptedNullifiers, acceptedCommitments, acceptedSnD, nil
+		return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 	}
 	for _, item := range proof.InputCoins {
 		serialNum := item.CoinDetails.SerialNumber.Compress()
 		temp, err := db.HasSerialNumber(serialNum, chainID)
 		if err != nil {
-			return nil, nil, nil, err
+			return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
 		if !temp {
 			acceptedNullifiers = append(acceptedNullifiers, serialNum)
@@ -88,7 +88,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.Datab
 		pubkey := item.CoinDetails.PublicKey.Compress()
 		temp, err := db.HasCommitment(commitment, chainID)
 		if err != nil {
-			return nil, nil, nil, err
+			return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
 		if !temp {
 			temp := base58.Base58Check{}.Encode(pubkey, byte(0x00))
@@ -103,13 +103,12 @@ func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.Datab
 		}
 
 		snD := item.CoinDetails.SNDerivator
-		// TODO
 		temp, err = db.HasSNDerivator(*snD, chainID)
 		if !temp && err != nil {
 			acceptedSnD = append(acceptedSnD, *snD)
 		}
 	}
-	return acceptedNullifiers, acceptedCommitments, acceptedSnD, nil
+	return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 }
 
 /*
@@ -121,19 +120,26 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedSerialNumbers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
+	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
 	acceptedSnD := make([]big.Int, 0)
 	for indexTx, tx := range transactions {
 		switch tx.GetType() {
 		case common.TxNormalType:
 			{
 				normalTx := tx.(*transaction.Tx)
-				temp1, temp2, temp3, err := view.processFetchTxViewPoint(block.Header.ChainID, db, normalTx.Proof)
+				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.ChainID, db, normalTx.Proof)
 				acceptedSerialNumbers = append(acceptedSerialNumbers, temp1...)
 				for pubkey, data := range temp2 {
 					if acceptedCommitments[pubkey] == nil {
 						acceptedCommitments[pubkey] = make([][]byte, 0)
 					}
 					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
+				}
+				for pubkey, data := range temp22 {
+					if acceptedOutputcoins[pubkey] == nil {
+						acceptedOutputcoins[pubkey] = make([]privacy.OutputCoin, 0)
+					}
+					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
 				}
 				acceptedSnD = append(acceptedSnD, temp3...)
 				if err != nil {
@@ -143,13 +149,19 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		case common.TxSalaryType:
 			{
 				normalTx := tx.(*transaction.Tx)
-				temp1, temp2, temp3, err := view.processFetchTxViewPoint(block.Header.ChainID, db, normalTx.Proof)
+				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.ChainID, db, normalTx.Proof)
 				acceptedSerialNumbers = append(acceptedSerialNumbers, temp1...)
 				for pubkey, data := range temp2 {
 					if acceptedCommitments[pubkey] == nil {
 						acceptedCommitments[pubkey] = make([][]byte, 0)
 					}
 					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
+				}
+				for pubkey, data := range temp22 {
+					if acceptedOutputcoins[pubkey] == nil {
+						acceptedOutputcoins[pubkey] = make([]privacy.OutputCoin, 0)
+					}
+					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
 				}
 				acceptedSnD = append(acceptedSnD, temp3...)
 				if err != nil {
@@ -159,13 +171,19 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		case common.TxCustomTokenType:
 			{
 				tx := tx.(*transaction.TxCustomToken)
-				temp1, temp2, temp3, err := view.processFetchTxViewPoint(block.Header.ChainID, db, tx.Proof)
+				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.ChainID, db, tx.Proof)
 				acceptedSerialNumbers = append(acceptedSerialNumbers, temp1...)
 				for pubkey, data := range temp2 {
 					if acceptedCommitments[pubkey] == nil {
 						acceptedCommitments[pubkey] = make([][]byte, 0)
 					}
 					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
+				}
+				for pubkey, data := range temp22 {
+					if acceptedOutputcoins[pubkey] == nil {
+						acceptedOutputcoins[pubkey] = make([]privacy.OutputCoin, 0)
+					}
+					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
 				}
 				acceptedSnD = append(acceptedSnD, temp3...)
 				if err != nil {
@@ -185,6 +203,9 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 	}
 	if len(acceptedCommitments) > 0 {
 		view.mapCommitments = acceptedCommitments
+	}
+	if len(acceptedOutputcoins) > 0 {
+		view.mapOutputCoins = acceptedOutputcoins
 	}
 	if len(acceptedSnD) > 0 {
 		view.listSnD = acceptedSnD
