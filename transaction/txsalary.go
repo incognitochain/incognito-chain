@@ -33,7 +33,6 @@ func CreateTxSalary(
 	tx.Proof.OutputCoins[0] = new(privacy.OutputCoin)
 	tx.Proof.OutputCoins[0].CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted).Init()
 	tx.Proof.OutputCoins[0].CoinDetails = new(privacy.Coin)
-	//tx.Proof.OutputCoins[0].CoinDetails.SerialNumber = &privacy.EllipticPoint{X: big.NewInt(int64(0)), Y: big.NewInt(int64(0))}
 	tx.Proof.OutputCoins[0].CoinDetails.Value = salary
 	tx.Proof.OutputCoins[0].CoinDetails.PublicKey, _ = privacy.DecompressKey(receiverAddr.Pk)
 	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
