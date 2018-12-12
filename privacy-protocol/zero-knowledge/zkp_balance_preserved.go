@@ -74,7 +74,7 @@ func (pro *PKComMultiRangeProof) Init() *PKComMultiRangeProof {
 	pro.IPP.B = new(big.Int)
 	return pro
 }
-func (pro *PKComMultiRangeProof) IsNull() bool{
+func (pro *PKComMultiRangeProof) IsNil() bool{
 	if (pro.A==nil) {return true}
 	if (pro.S==nil) {return true}
 	if (pro.T1==nil){return true}
@@ -89,10 +89,11 @@ func (pro *PKComMultiRangeProof) IsNull() bool{
 	if (pro.IPP.B==nil){return true}
 	return false
 }
+
 func (pro PKComMultiRangeProof) Bytes() []byte {
 	var res []byte
 
-	if pro.Counter == 0 {
+	if pro.IsNil() == true {
 		return []byte{}
 	}
 	res = append(res, pro.Counter)
@@ -112,13 +113,12 @@ func (pro PKComMultiRangeProof) Bytes() []byte {
 	res = append(res, pro.Cy.Bytes()...)
 	res = append(res, pro.Cz.Bytes()...)
 	res = append(res, pro.IPP.Bytes()...)
-	//fmt.Println(res)
 	return res
 
 }
 func (pro *PKComMultiRangeProof) SetBytes(proofbytes []byte) {
 
-	if pro.IsNull(){
+	if pro.IsNil(){
 		pro = pro.Init()
 	}
 	if len(proofbytes) == 0{

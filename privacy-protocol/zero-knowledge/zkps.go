@@ -188,7 +188,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 }
 
 func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
-	proof.Init()
+	//proof.Init()
 	offset := 0
 	// Set ComInputOpeningsProof
 	lenComInputOpeningsProofArray := int(proofbytes[offset])
@@ -249,23 +249,28 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	//ComOutputMultiRangeProof *PKComMultiRangeProof
 	lenComOutputMultiRangeProof := int(proofbytes[offset])
 	offset += 1
-	proof.ComOutputMultiRangeProof.Init()
-	if len(proofbytes[offset:offset+lenComOutputMultiRangeProof]) > 0 {
+	if lenComOutputMultiRangeProof > 0 {
+		proof.ComOutputMultiRangeProof.Init()
 		proof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
+		offset += lenComOutputMultiRangeProof
 	}
-	offset += lenComOutputMultiRangeProof
 	//SumOutRangeProof *PKComZeroProof
 	lenSumOutRangeProof := int(proofbytes[offset])
 	offset += 1
-	proof.SumOutRangeProof = new(PKComZeroProof).Init()
-	proof.SumOutRangeProof.SetBytes(proofbytes[offset : offset+lenSumOutRangeProof])
-	offset += lenSumOutRangeProof
+	if lenSumOutRangeProof > 0 {
+		proof.SumOutRangeProof = new(PKComZeroProof).Init()
+		proof.SumOutRangeProof.SetBytes(proofbytes[offset : offset+lenSumOutRangeProof])
+		offset += lenSumOutRangeProof
+	}
+
 	//ComZeroProof *PKComZeroProof
 	lenComZeroProof := int(proofbytes[offset])
 	offset += 1
-	proof.SumOutRangeProof = new(PKComZeroProof).Init()
-	proof.SumOutRangeProof.SetBytes(proofbytes[offset : offset+lenComZeroProof])
-	offset += lenComZeroProof
+	if lenComZeroProof > 0{
+		proof.SumOutRangeProof = new(PKComZeroProof).Init()
+		proof.SumOutRangeProof.SetBytes(proofbytes[offset : offset+lenComZeroProof])
+		offset += lenComZeroProof
+	}
 
 	//InputCoins  []*privacy.InputCoin
 	lenInputCoinsArray := int(proofbytes[offset])

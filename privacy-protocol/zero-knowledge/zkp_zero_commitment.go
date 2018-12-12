@@ -94,7 +94,7 @@ func (wit *PKComZeroWitness) Set(
 
 // Bytes ...
 func (pro PKComZeroProof) Bytes() []byte {
-	if pro.commitmentValue.IsEqual(new(privacy.EllipticPoint).Zero()) {
+	if (pro.commitmentValue == nil) || (pro.commitmentZeroS == nil) || (pro.index == nil) || (pro.z == nil) {
 		return []byte{}
 	}
 
@@ -113,7 +113,7 @@ func (pro PKComZeroProof) Bytes() []byte {
 // SetBytes ...
 func (pro *PKComZeroProof) SetBytes(bytestr []byte) error {
 	pro.Init()
-	if pro == nil{
+	if pro == nil {
 		pro = pro.Init()
 	}
 

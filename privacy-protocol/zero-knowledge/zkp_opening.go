@@ -67,10 +67,10 @@ func (pro *PKComOpeningsProof) Set(
 }
 
 func (pro PKComOpeningsProof) Bytes() []byte {
-	if len(pro.gamma) == 0 {
+	if (pro.commitmentValue == nil) || (pro.alpha == nil) || (pro.indexs == nil) || (pro.gamma == nil) {
 		return []byte{}
 	}
-	// var res []byte
+
 	res := append(pro.commitmentValue.Compress(), pro.alpha.Compress()...)
 	for i := 0; i < len(pro.gamma); i++ {
 		temp := pro.gamma[i].Bytes()
@@ -90,7 +90,12 @@ func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) error {
 	if len(bytestr) == 0 {
 		return nil
 	}
-
+	// if len(pro.gamma) == 0 {
+	// 	return nil
+	// }
+	// if (pro.commitmentValue == nil) || (pro.alpha == nil) || (pro.indexs == nil) || (pro.gamma == nil){
+	// 	return nil
+	// }
 	pro.commitmentValue = new(privacy.EllipticPoint)
 	pro.commitmentValue.Decompress(bytestr[0:privacy.CompressedPointSize])
 	if !pro.commitmentValue.IsSafe() {
