@@ -12,6 +12,7 @@ import (
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -174,7 +175,7 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 func (self RpcServer) handleListUnspentTxByPrivatekey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	result := jsonresult.ListUnspentResult{
-		ListUnspentResultItems: make(map[string]map[byte][]jsonresult.ListUnspentResultItem),
+		ListUnspentResultItems: make(map[string][]jsonresult.ListUnspentResultItem),
 	}
 
 	// get params
@@ -193,39 +194,33 @@ func (self RpcServer) handleListUnspentTxByPrivatekey(params interface{}, closeC
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		txsMap, err := self.config.BlockChain.GetListTxByKeyset(&key.KeySet, transaction.NoSort, false)
+		outCoins, err := self.config.BlockChain.GetListTxByKeyset(&key.KeySet, 14)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		listTxs := make([]jsonresult.ListUnspentResultItem, 0)
-		for chainId, txs := range txsMap {
-			for _, tx := range txs {
-				item := jsonresult.ListUnspentResultItem{
-					TxId:     tx.Hash().String(),
-					OutCoins: make([]jsonresult.OutCoin, 0),
-				}
-				for _, outCoin := range tx.Proof.OutputCoins {
-					item.OutCoins = append(item.OutCoins, jsonresult.OutCoin{
-						SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), byte(0x00)),
-						PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), byte(0x00)),
-						Value:          outCoin.CoinDetails.Value,
-						Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], byte(0x00)),
-						CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), byte(0x00)),
-						Randomness:     *outCoin.CoinDetails.Randomness,
-						SNDerivator:    *outCoin.CoinDetails.SNDerivator,
-					})
-				}
-				listTxs = append(listTxs, item)
-			}
-			//fmt.Println("listTxs in handleListUnspent", listTxs)
+		item := jsonresult.ListUnspentResultItem{
+			OutCoins: make([]jsonresult.OutCoin, 0),
+		}
+		for _, outCoin := range outCoins {
+			item.OutCoins = append(item.OutCoins, jsonresult.OutCoin{
+				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), byte(0x00)),
+				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), byte(0x00)),
+				Value:          outCoin.CoinDetails.Value,
+				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], byte(0x00)),
+				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), byte(0x00)),
+				Randomness:     *outCoin.CoinDetails.Randomness,
+				SNDerivator:    *outCoin.CoinDetails.SNDerivator,
+			})
+			listTxs = append(listTxs, item)
 
 			if result.ListUnspentResultItems[priKeyStr] == nil {
-				result.ListUnspentResultItems[priKeyStr] = map[byte][]jsonresult.ListUnspentResultItem{}
+				result.ListUnspentResultItems[priKeyStr] = []jsonresult.ListUnspentResultItem{}
 			}
-			if result.ListUnspentResultItems[priKeyStr][chainId] == nil {
-				result.ListUnspentResultItems[priKeyStr][chainId] = []jsonresult.ListUnspentResultItem{}
+			if result.ListUnspentResultItems[priKeyStr] == nil {
+				result.ListUnspentResultItems[priKeyStr] = []jsonresult.ListUnspentResultItem{}
 			}
-			result.ListUnspentResultItems[priKeyStr][chainId] = listTxs
+			result.ListUnspentResultItems[priKeyStr] = listTxs
 		}
 	}
 	return result, nil
@@ -351,22 +346,15 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
-	candidateTxs := make([]*transaction.Tx, 0)
-	candidateTxsMap := make(map[byte][]*transaction.Tx)
-	for chainId, usableTxs := range usableTxsMap {
-		for _, temp := range usableTxs {
-			for _, note := range temp.Proof.OutputCoins {
-				amount := note.CoinDetails.Value
-				estimateTotalAmount -= int64(amount)
-			}
-			txData := temp
-			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
-			candidateTxs = append(candidateTxs, &txData)
-			if estimateTotalAmount <= 0 {
-				break
-			}
+	outCoins, _ := self.config.BlockChain.GetListTxByKeyset(&senderKey.KeySet, chainIdSender)
+	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
+	for _, note := range outCoins {
+		amount := note.CoinDetails.Value
+		estimateTotalAmount -= int64(amount)
+		if estimateTotalAmount <= 0 {
+			break
 		}
+		candidateOutputCoins = append(candidateOutputCoins, note)
 	}
 
 	// check real fee per TxNormal
@@ -376,32 +364,29 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		estimateFeeCoinPerKb = int64(temp)
 	}
 	estimateFeeCoinPerKb += int64(self.config.Wallet.Config.IncrementalFee)
-	estimateTxSizeInKb := transaction.EstimateTxSize(candidateTxs, nil)
+	// TODO
+	estimateTxSizeInKb := 0
+	//estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, nil)
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 
 	// list unspent tx for create tx
 	totalAmmount += int64(realFee)
 	if totalAmmount > 0 {
-		candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
-		for chainId, usableTxs := range usableTxsMap {
-			for _, temp := range usableTxs {
-				for _, note := range temp.Proof.OutputCoins {
-					amount := note.CoinDetails.Value
-					estimateTotalAmount -= int64(amount)
-				}
-				txData := temp
-				candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
-				if estimateTotalAmount <= 0 {
-					break
-				}
+		candidateOutputCoins = make([]*privacy.OutputCoin, 0)
+		for _, note := range outCoins {
+			amount := note.CoinDetails.Value
+			estimateTotalAmount -= int64(amount)
+			if estimateTotalAmount <= 0 {
+				break
 			}
+			candidateOutputCoins = append(candidateOutputCoins, note)
 		}
 	}
 
 	// get list custom token
 	listCustomTokens, err := self.config.BlockChain.ListCustomToken()
 
-	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateTxsMap[chainIdSender])
+	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
 	tx := &transaction.TxCustomToken{}
 	err = tx.Init(
 		&senderKey.KeySet.PrivateKey,

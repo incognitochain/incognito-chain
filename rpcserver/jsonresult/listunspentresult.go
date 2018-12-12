@@ -3,11 +3,10 @@ package jsonresult
 import "math/big"
 
 type ListUnspentResult struct {
-	ListUnspentResultItems map[string]map[byte][]ListUnspentResultItem `json:"ListUnspentResultItems"`
+	ListUnspentResultItems map[string][]ListUnspentResultItem `json:"ListUnspentResultItems"`
 }
 
 type ListUnspentResultItem struct {
-	TxId     string    `json:"TxIndex"`
 	OutCoins []OutCoin `json:"JoinSplitDesc"`
 }
 
