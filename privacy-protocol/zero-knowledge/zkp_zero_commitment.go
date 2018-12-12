@@ -48,6 +48,9 @@ Verify:
 )
 */
 
+func (pro *PKComZeroProof) Init() *PKComZeroProof {
+}
+
 // randValue return random witness value for testing
 func (wit *PKComZeroWitness) randValue(testcase bool) {
 	switch testcase {
@@ -85,7 +88,7 @@ func (wit *PKComZeroWitness) Set(
 }
 
 // Bytes ...
-func (pro *PKComZeroProof) Bytes() []byte {
+func (pro PKComZeroProof) Bytes() []byte {
 	var res []byte
 	res = append(pro.commitmentValue.Compress(), []byte{*pro.index}...)
 	res = append(res, pro.commitmentZeroS.Compress()...)

@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strconv"
 	"github.com/ninjadotorg/constant/database/lvdb"
+	"math/big"
 )
 
 const (
@@ -309,7 +310,7 @@ Uses an existing database to update the set of used tx by saving list nullifier 
 this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
-	for _, item1 := range view.listNullifiers {
+	for _, item1 := range view.listSerialNumbers {
 		err := self.config.DataBase.StoreSerialNumbers(item1, view.chainID)
 		if err != nil {
 			return err
@@ -583,7 +584,7 @@ func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 	if err != nil {
 		return nil, err
 	}
-	view.listNullifiers = nullifiers
+	view.listSerialNumbers = nullifiers
 	snDerivators, err := self.config.DataBase.FetchSNDerivator(chainId)
 	if err != nil {
 		return nil, err
@@ -734,104 +735,6 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 	//return self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
 }
 
-/*
-GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key
-- Param #1: key - key set which contain readonly-key and pub-key
-- Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
-*/
-func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte][]transaction.Tx, error) {
-	results := make(map[byte][]transaction.Tx, 0)
-
-	// lock chain
-	self.chainLock.Lock()
-
-	for _, bestState := range self.BestState {
-		// get best block
-		bestBlock := bestState.BestBlock
-		chainId := bestState.BestBlock.Header.ChainID
-		blockHeight := bestBlock.Header.Height
-
-		for blockHeight > 0 {
-			txsInBlock := bestBlock.Transactions
-			txsInBlockAccepted := make([]transaction.Tx, 0)
-			for _, txInBlock := range txsInBlock {
-				if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
-					tx := txInBlock.(*transaction.Tx)
-					copyTx := transaction.Tx{
-						Version:   tx.Version,
-						Sig:       tx.Sig,
-						SigPubKey: tx.SigPubKey,
-						Fee:       tx.Fee,
-						Type:      tx.Type,
-						LockTime:  tx.LockTime,
-						Proof: &zkp.PaymentProof{
-							ComInputOpeningsProof:       tx.Proof.ComInputOpeningsProof,
-							ComOutputMultiRangeProof:    tx.Proof.ComOutputMultiRangeProof,
-							ComOutputOpeningsProof:      tx.Proof.ComOutputOpeningsProof,
-							EqualityOfCommittedValProof: tx.Proof.EqualityOfCommittedValProof,
-							ComZeroProof:                tx.Proof.ComZeroProof,
-							ProductCommitmentProof:      tx.Proof.ProductCommitmentProof,
-							OneOfManyProof:              tx.Proof.OneOfManyProof,
-							InputCoins:                  tx.Proof.InputCoins,
-							OutputCoins:                 []*privacy.OutputCoin{},
-							PubKeyLastByteSender:        tx.Proof.PubKeyLastByteSender,
-							ComOutputValue:              tx.Proof.ComOutputValue,
-							ComOutputSND:                tx.Proof.ComOutputSND,
-							ComOutputShardID:            tx.Proof.ComOutputShardID,
-						},
-						Metadata: tx.Metadata,
-					}
-					// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
-					isPrivacy := tx.Proof.ComInputOpeningsProof != nil
-					for _, outcoinTemp := range tx.Proof.OutputCoins {
-						if isPrivacy {
-							err := outcoinTemp.Decrypt(keySet.ReadonlyKey)
-							if err != nil {
-								outcoin := &privacy.OutputCoin{
-									CoinDetails:          outcoinTemp.CoinDetails,
-									CoinDetailsEncrypted: outcoinTemp.CoinDetailsEncrypted,
-								}
-								copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outcoin)
-							}
-						} else {
-							// no privacy-protocol
-							if bytes.Equal(outcoinTemp.CoinDetails.PublicKey.Compress()[:], keySet.PaymentAddress.Pk[:]) {
-								outcoin := &privacy.OutputCoin{
-									CoinDetails:          outcoinTemp.CoinDetails,
-									CoinDetailsEncrypted: outcoinTemp.CoinDetailsEncrypted,
-								}
-								copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outcoin)
-							}
-						}
-					}
-					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
-				}
-			}
-			// detected some tx can be accepted
-			if len(txsInBlockAccepted) > 0 {
-				// add to result
-				results[chainId] = append(results[chainId], txsInBlockAccepted...)
-			}
-
-			// continue with previous block
-			blockHeight--
-			if blockHeight > 0 {
-				// not is genesis block
-				preBlockHash := bestBlock.Header.PrevBlockHash
-				bestBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-				if blockHeight != bestBlock.Header.Height || err != nil {
-					// pre-block is not the same block-height with calculation -> invalid blockchain
-					return nil, errors.New("Invalid blockchain")
-				}
-			}
-		}
-	}
-
-	// unlock chain
-	self.chainLock.Unlock()
-	return results, nil
-}
-
 func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, keys *cashec.KeySet) transaction.Tx {
 	tx := txInBlock.(*transaction.Tx)
 	copyTx := transaction.Tx{
@@ -870,6 +773,14 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, keys *
 				err := outCoinTemp.Decrypt(keys.ReadonlyKey)
 				if err == nil {
 					outCoin.CoinDetails = outCoinTemp.CoinDetails
+					if len(keys.PrivateKey) > 0 {
+						// check spent with private-key
+						outCoin.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(keys.PrivateKey), outCoin.CoinDetails.SNDerivator)
+						ok, err := self.config.DataBase.HasSerialNumber(outCoin.CoinDetails.SerialNumber.Compress(), 14)
+						if ok || err != nil {
+							continue
+						}
+					}
 				}
 			}
 			copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outCoin)
@@ -880,7 +791,7 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, keys *
 
 // GetListUnspentTxByKeysetInBlock - fetch block to get unspent tx commitment which privatekey can use it
 // return a list tx which contain commitment which can be used
-func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, block *Block, nullifiersInDb [][]byte, returnFullTx bool) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, block *Block, returnFullTx bool) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx)
 
 	chainId := block.Header.ChainID
@@ -891,7 +802,7 @@ func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, blo
 	for _, txInBlock := range txsInBlock {
 		if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
 			// copyTx ONLY contains commitment which relate to keys
-			copyTx := self.DecryptTxByKey(txInBlock, nullifiersInDb, keys)
+			copyTx := self.DecryptTxByKey(txInBlock, keys)
 			if len(copyTx.Proof.OutputCoins) > 0 {
 				if !returnFullTx {
 					// only return copy tx which contain unspent commitment which relate with private key
@@ -914,27 +825,19 @@ func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, blo
 /*
 GetListTxByPrivateKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
 With private-key, we can check unspent tx by check nullifiers from database
-- Param #1: privateKey - byte[] of privatekey
+- Param #1: keyset - (priv-key, payment-address, readonlykey)
+in case priv-key: return unspent outputcoin tx
+in case readonly-key: return all outputcoin tx with amount value
+in case payment-address: return all outputcoin tx with no amount value
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
+func (self *BlockChain) GetListTxByKeyset(keyset *cashec.KeySet, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
 	results := make(map[byte][]transaction.Tx)
 
 	// lock chain
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 
-	// get list nullifiers from db to check spending
-	nullifiersInDb := make([][]byte, 0)
-	for _, bestState := range self.BestState {
-		bestBlock := bestState.BestBlock
-		chainId := bestBlock.Header.ChainID
-		txViewPoint, err := self.FetchTxViewPoint(chainId)
-		if err != nil {
-			return nil, err
-		}
-		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
-	}
 	if self.config.Light {
 		// Get unspent tx with light mode
 		fullTxs, err := self.config.DataBase.GetTransactionLightModeByPrivateKey(&keyset.PrivateKey)
@@ -952,7 +855,7 @@ func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType
 				if err != nil {
 					return nil, NewBlockChainError(UnExpectedError, errors.New("json.Unmarshal"))
 				}
-				copyTx := self.DecryptTxByKey(&tx, nullifiersInDb, &keys)
+				copyTx := self.DecryptTxByKey(&tx, &keys)
 				results[chainID] = append(results[chainID], copyTx)
 			}
 		}
@@ -970,7 +873,7 @@ func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType
 		for blockHeight > 0 {
 			var err1 error
 			// fetch block to get tx
-			resultsInChain, err1 := self.GetListUnspentTxByKeysetInBlock(keyset, block, nullifiersInDb, false)
+			resultsInChain, err1 := self.GetListUnspentTxByKeysetInBlock(keyset, block, false)
 			if err1 != nil {
 				// unlock chain
 				//self.chainLock.Unlock()

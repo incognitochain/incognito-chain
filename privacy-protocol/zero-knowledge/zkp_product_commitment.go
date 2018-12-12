@@ -47,13 +47,14 @@ func (wit *PKComProductWitness) Set(
 	*wit.cmB = *cmB
 	wit.index = *idx
 }
-func (pro *PKComProductProof) Init() {
+func (pro *PKComProductProof) Init() * PKComProductProof {
 	pro.D = new(privacy.EllipticPoint)
 	pro.E = new(privacy.EllipticPoint)
 	pro.f = new(big.Int)
 	pro.z = new(big.Int)
 	pro.cmA = new(privacy.EllipticPoint)
 	pro.cmB = new(privacy.EllipticPoint)
+	return pro
 }
 
 func (pro *PKComProductProof) Print() {
@@ -64,8 +65,12 @@ func (pro *PKComProductProof) Print() {
 	fmt.Println(pro.cmA)
 	fmt.Println(pro.cmB)
 }
-func (pro *PKComProductProof) Bytes() []byte {
+
+func (pro PKComProductProof) Bytes() []byte {
 	var proofbytes []byte
+	//if pro.cmA == nil || pro.cmB == nil || {
+	//
+	//}
 	proofbytes = append(proofbytes, pro.cmA.Compress()...)                           // 33 bytes
 	proofbytes = append(proofbytes, pro.cmB.Compress()...)                           // 33 bytes
 	proofbytes = append(proofbytes, pro.D.Compress()...)                             // 33 bytes
