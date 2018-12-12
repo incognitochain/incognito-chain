@@ -11,7 +11,7 @@ func (self *BeaconBlockGenerator) createBeaconGenesisBlock() *BlockV2 {
 
 	//TODO: build param
 
-	body := &BeaconBlockBody{ShardState: nil, StateInstruction: nil}
+	body := &BeaconBlockBody{ShardState: nil, Instructions: nil}
 	header := &BeaconBlockHeader{
 		BlockHeaderGeneric: BlockHeaderGeneric{
 			PrevBlockHash: nil,
