@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -29,6 +30,12 @@ func (self *BeaconBlockGenerator) CreateBeaconGenesisBlock(
 	// build network param
 	inst = append(inst, []string{"set", "salaryPerTx", fmt.Sprintf("%v", salaryPerTx)})
 	inst = append(inst, []string{"set", "basicSalary", fmt.Sprintf("%v", basicSalary)})
+	inst = append(inst, []string{"set", "initialPaymentAddress", icoParams.InitialPaymentAddress})
+	inst = append(inst, []string{"set", "initFundSalary", strconv.Itoa(int(icoParams.InitFundSalary))})
+	inst = append(inst, []string{"set", "initialDCBToken", strconv.Itoa(int(icoParams.InitialDCBToken))})
+	inst = append(inst, []string{"set", "initialCMBToken", strconv.Itoa(int(icoParams.InitialCMBToken))})
+	inst = append(inst, []string{"set", "initialGOVToken", strconv.Itoa(int(icoParams.InitialGOVToken))})
+	inst = append(inst, []string{"set", "initialBondToken", strconv.Itoa(int(icoParams.InitialBondToken))})
 
 	body := &BeaconBlockBody{ShardState: nil, Instructions: nil}
 	header := &BeaconBlockHeader{
