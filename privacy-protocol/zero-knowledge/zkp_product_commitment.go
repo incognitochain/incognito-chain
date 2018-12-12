@@ -36,7 +36,6 @@ func (wit *PKComProductWitness) Set(
 	randA *big.Int,
 	cmB *privacy.EllipticPoint,
 	idx *byte) {
-
 	if wit == nil {
 		wit = new(PKComProductWitness)
 	}
