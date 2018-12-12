@@ -62,7 +62,7 @@ type PaymentProof struct {
 	PubKeyLastByteSender byte
 }
 
-func (proof * PaymentProof) Init() * PaymentProof{
+func (proof *PaymentProof) Init() *PaymentProof {
 	proof = &PaymentProof{
 		ComInputOpeningsProof:       []*PKComOpeningsProof{},
 		OneOfManyProof:              []*PKOneOfManyProof{},
@@ -74,10 +74,10 @@ func (proof * PaymentProof) Init() * PaymentProof{
 		ComZeroProof:                new(PKComZeroProof).Init(),
 		InputCoins:                  []*privacy.InputCoin{},
 		OutputCoins:                 []*privacy.OutputCoin{},
-		ComOutputValue:   []*privacy.EllipticPoint{},
-		ComOutputSND:     []*privacy.EllipticPoint{},
-		ComOutputShardID: []*privacy.EllipticPoint{},
-		PubKeyLastByteSender: byte(0x00),
+		ComOutputValue:              []*privacy.EllipticPoint{},
+		ComOutputSND:                []*privacy.EllipticPoint{},
+		ComOutputShardID:            []*privacy.EllipticPoint{},
+		PubKeyLastByteSender:        byte(0x00),
 	}
 	return proof
 }
@@ -249,7 +249,9 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	lenComOutputMultiRangeProof := int(proofbytes[offset])
 	offset += 1
 	proof.ComOutputMultiRangeProof.Init()
-	proof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset:offset+lenComOutputMultiRangeProof])
+	if len(proofbytes[offset:offset+lenComOutputMultiRangeProof]) > 0 {
+		proof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset:offset+lenComOutputMultiRangeProof])
+	}
 	offset += lenComOutputMultiRangeProof
 	//SumOutRangeProof *PKComZeroProof
 	lenSumOutRangeProof := int(proofbytes[offset])
