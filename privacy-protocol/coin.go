@@ -262,8 +262,10 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) {
 	}
 	length := int(bytes[0])
 	if length > 0 {
+		outputCoin.CoinDetailsEncrypted = new(CoinDetailsEncrypted)
 		outputCoin.CoinDetailsEncrypted.SetBytes(bytes[0:length])
 	}
+	outputCoin.CoinDetails = new(Coin)
 	outputCoin.CoinDetails.SetBytes(bytes[length:])
 }
 
