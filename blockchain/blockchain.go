@@ -742,7 +742,14 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 	//return self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
 }
 
-func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, keys *cashec.KeySet) transaction.Tx {
+// DecryptTxByKey - process tx to get outputcoin which relate to keyset
+func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, keySet *cashec.KeySet) transaction.Tx {
+	/*
+	- Param keyset - (priv-key, payment-address, readonlykey)
+	in case priv-key: return unspent outputcoin tx
+	in case readonly-key: return all outputcoin tx with amount value
+	in case payment-address: return all outputcoin tx with no amount value
+ */
 	tx := txInBlock.(*transaction.Tx)
 	copyTx := transaction.Tx{
 		Version:   tx.Version,
@@ -770,19 +777,19 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, keys *
 	}
 	for _, outCoinTemp := range tx.Proof.OutputCoins {
 		pubkeyCompress := outCoinTemp.CoinDetails.PublicKey.Compress()
-		if bytes.Equal(pubkeyCompress, keys.PaymentAddress.Pk[:]) {
+		if bytes.Equal(pubkeyCompress, keySet.PaymentAddress.Pk[:]) {
 			outCoin := &privacy.OutputCoin{
 				CoinDetails:          outCoinTemp.CoinDetails,
 				CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
 			}
-			if len(keys.PrivateKey) > 0 || len(keys.ReadonlyKey.Rk) > 0 {
+			if len(keySet.PrivateKey) > 0 || len(keySet.ReadonlyKey.Rk) > 0 {
 				// try to decrypt to get more data
-				err := outCoinTemp.Decrypt(keys.ReadonlyKey)
+				err := outCoinTemp.Decrypt(keySet.ReadonlyKey)
 				if err == nil {
 					outCoin.CoinDetails = outCoinTemp.CoinDetails
-					if len(keys.PrivateKey) > 0 {
+					if len(keySet.PrivateKey) > 0 {
 						// check spent with private-key
-						outCoin.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(keys.PrivateKey), outCoin.CoinDetails.SNDerivator)
+						outCoin.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(keySet.PrivateKey), outCoin.CoinDetails.SNDerivator)
 						ok, err := self.config.DataBase.HasSerialNumber(outCoin.CoinDetails.SerialNumber.Compress(), 14)
 						if ok || err != nil {
 							continue
@@ -799,6 +806,12 @@ func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, keys *
 // GetListUnspentTxByKeysetInBlock - fetch block to get unspent tx commitment which privatekey can use it
 // return a list tx which contain commitment which can be used
 func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, block *Block, returnFullTx bool) (map[byte][]transaction.Tx, error) {
+	/*
+	- Param keyset - (priv-key, payment-address, readonlykey)
+	in case priv-key: return unspent outputcoin tx
+	in case readonly-key: return all outputcoin tx with amount value
+	in case payment-address: return all outputcoin tx with no amount value
+ */
 	results := make(map[byte][]transaction.Tx)
 
 	chainId := block.Header.ChainID
@@ -908,9 +921,6 @@ func (self *BlockChain) GetListTxByKeyset(keyset *cashec.KeySet, sortType int, s
 		// TODO
 		//transaction.SortArrayTxs(results[chainId], sortType, sortAsc)
 	}
-
-	// unlock chain
-	//self.chainLock.Unlock()
 
 	return results, nil
 }
