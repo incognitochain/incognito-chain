@@ -55,6 +55,7 @@ type DatabaseInterface interface {
 	GetCommitmentByIndex(commitmentIndex uint64, chainID byte) ([]byte, error)
 	GetCommitmentIndex(commitment []byte, chainId byte) (*big.Int, error)
 	GetCommitmentLength(chainId byte) (*big.Int, error)
+	GetCommitmentIndexsByPubkey(pubkey []byte, chainID byte) ([][]byte, error)
 	CleanCommitments() error
 
 	// SNDerivator
