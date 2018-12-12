@@ -162,6 +162,7 @@ func (pro PKOneOfManyProof) Bytes() []byte {
 
 // SetBytes convert from bytes array to PKOneOfManyProof
 func (pro *PKOneOfManyProof) SetBytes(bytes []byte) {
+	pro.Init()
 	//// get N
 	//N := int(bytes[0])
 	//// get n

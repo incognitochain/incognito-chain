@@ -103,7 +103,7 @@ func (pro PKComMultiRangeProof) Bytes() []byte {
 
 }
 func (pro *PKComMultiRangeProof) SetBytes(proofbytes []byte) {
-
+	pro.Init()
 	pro.Counter = proofbytes[0]
 	pro.maxExp = proofbytes[1]
 	pro.Comms = make([]*privacy.EllipticPoint, pro.Counter)
