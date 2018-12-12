@@ -157,7 +157,7 @@ func (wit *PKEqualityOfCommittedValWitness) Prove() *PKEqualityOfCommittedValPro
 		t[i].X, t[i].Y = privacy.Curve.Add(privacy.PedCom.G[wit.Index[i]].X, privacy.PedCom.G[wit.Index[i]].Y, privacy.PedCom.G[privacy.PedCom.Capacity-1].X, privacy.PedCom.G[privacy.PedCom.Capacity-1].Y)
 		t[i].X, t[i].Y = privacy.Curve.ScalarMult(t[i].X, t[i].Y, wRand.Bytes())
 	}
-	proof := new(PKEqualityOfCommittedValProof).Init()
+	proof := new(PKEqualityOfCommittedValProof)
 	proof.Set(wit.C, wit.Index, t, z)
 	return proof
 }

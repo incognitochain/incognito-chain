@@ -92,8 +92,14 @@ func (pro PKComProductProof) Bytes() []byte {
 	return proofbytes
 }
 
-func (pro *PKComProductProof) SetBytes(proofBytes []byte) {
-	pro.Init()
+func (pro *PKComProductProof) SetBytes(proofBytes []byte) error {
+	if pro == nil{
+		pro = pro.Init()
+	}
+
+	if len(proofBytes) == 0 {
+		return nil
+	}
 	offset := 0
 	pro.cmA.Decompress(proofBytes[offset:])
 	offset += privacy.CompressedPointSize
@@ -108,6 +114,7 @@ func (pro *PKComProductProof) SetBytes(proofBytes []byte) {
 	pro.z.SetBytes(proofBytes[offset:offset+32])
 	offset += 32
 	pro.index = proofBytes[offset]
+	return nil
 }
 func (wit *PKComProductWitness) Get() *PKComProductWitness {
 	return wit

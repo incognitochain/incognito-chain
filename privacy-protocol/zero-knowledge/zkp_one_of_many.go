@@ -164,8 +164,14 @@ func (pro PKOneOfManyProof) Bytes() []byte {
 }
 
 // SetBytes convert from bytes array to PKOneOfManyProof
-func (pro *PKOneOfManyProof) SetBytes(bytes []byte) {
-	pro.Init()
+func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
+	if pro == nil{
+		pro = pro.Init()
+	}
+
+	if len(bytes) == 0 {
+		return nil
+	}
 	//// get N
 	//N := int(bytes[0])
 	//// get n
@@ -175,26 +181,36 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) {
 	n := privacy.CMRingSizeExp
 
 	offset := 0
+	var err error
 
 	// get cl array
 	pro.cl = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
 		pro.cl[i] = new(privacy.EllipticPoint)
-		pro.cl[i], _ = privacy.DecompressKey(bytes[offset : offset+33])
+		pro.cl[i], err = privacy.DecompressKey(bytes[offset : offset+33])
+		if err != nil{
+			return err
+		}
 		offset = offset + 33
 	}
 	// get ca array
 	pro.ca = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
 		pro.ca[i] = new(privacy.EllipticPoint)
-		pro.ca[i], _ = privacy.DecompressKey(bytes[offset : offset+33])
+		pro.ca[i], err = privacy.DecompressKey(bytes[offset : offset+33])
+		if err != nil{
+			return err
+		}
 		offset = offset + 33
 	}
 	// get cb array
 	pro.cb = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
 		pro.cb[i] = new(privacy.EllipticPoint)
-		pro.cb[i], _ = privacy.DecompressKey(bytes[offset : offset+33])
+		pro.cb[i], err = privacy.DecompressKey(bytes[offset : offset+33])
+		if err != nil{
+			return err
+		}
 		offset = offset + 33
 	}
 
@@ -202,7 +218,10 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) {
 	pro.cd = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
 		pro.cd[i] = new(privacy.EllipticPoint)
-		pro.cd[i], _ = privacy.DecompressKey(bytes[offset : offset+33])
+		pro.cd[i], err = privacy.DecompressKey(bytes[offset : offset+33])
+		if err != nil{
+			return err
+		}
 		offset = offset + 33
 	}
 
@@ -241,7 +260,7 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) {
 	//get index
 	pro.index = bytes[len(bytes)-1]
 	fmt.Printf("proof index setbytes: %v\n", pro.index)
-
+	return nil
 }
 
 // Prove creates proof for one out of many commitments containing 0
