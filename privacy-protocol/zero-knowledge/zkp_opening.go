@@ -25,6 +25,11 @@ type PKComOpeningsWitness struct {
 	Openings        []*big.Int
 }
 
+func (pro * PKComOpeningsProof) Init() * PKComOpeningsProof {
+	pro.commitmentValue = new(privacy.EllipticPoint).Zero()
+	return pro
+}
+
 // randValue return random witness value for testing
 func (wit *PKComOpeningsWitness) randValue(testcase bool) {
 	wit.Openings = make([]*big.Int, privacy.PedCom.Capacity)
@@ -60,7 +65,7 @@ func (pro *PKComOpeningsProof) Set(
 	pro.indexs = indexs
 }
 
-func (pro *PKComOpeningsProof) Bytes() []byte {
+func (pro PKComOpeningsProof) Bytes() []byte {
 	// var res []byte
 	res := append(pro.commitmentValue.Compress(), pro.alpha.Compress()...)
 	for i := 0; i < len(pro.gamma); i++ {

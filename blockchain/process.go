@@ -46,15 +46,8 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		}
 
 		Logger.log.Infof("Fetch Block %+v to get unspent tx of all accoutns in wallet", blockHash)
-		nullifiersInDb := make([][]byte, 0)
-		chainId := block.Header.ChainID
-		txViewPoint, err := self.FetchTxViewPoint(chainId)
-		if err != nil {
-			return NewBlockChainError(UnExpectedError, err)
-		}
-		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
 		for _, account := range self.config.Wallet.MasterAccount.Child {
-			unspentTxs, err1 := self.GetListUnspentTxByKeysetInBlock(&account.Key.KeySet, block, nullifiersInDb, true)
+			unspentTxs, err1 := self.GetListUnspentTxByKeysetInBlock(&account.Key.KeySet, block, true)
 			if err1 != nil {
 				return NewBlockChainError(UnExpectedError, err1)
 			}

@@ -33,6 +33,14 @@ type PKOneOfManyProof struct {
 	index       byte
 }
 
+func (pro * PKOneOfManyProof) Init() * PKOneOfManyProof {
+	if(pro==nil){
+		pro = new(PKOneOfManyProof)
+	}
+	pro.zd = new(big.Int)
+	return pro
+}
+
 // Set sets Witness
 func (wit *PKOneOfManyWitness) Set(
 	commitments []*privacy.EllipticPoint,
@@ -71,7 +79,7 @@ func (pro *PKOneOfManyProof) Set(
 	pro.index = index
 }
 
-func (pro *PKOneOfManyProof) Bytes() []byte {
+func (pro PKOneOfManyProof) Bytes() []byte {
 	// N = 2^n
 	N := privacy.CMRingSize
 	n := privacy.CMRingSizeExp

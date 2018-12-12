@@ -96,7 +96,7 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 		// old value: {value}-unspent-unreward/reward
 		values := strings.Split(string(value), string(Splitter))
 		if strings.Compare(values[1], string(Unspent)) != 0 {
-			return errors.New("Double Spend Detected")
+			return errors.Zero("Double Spend Detected")
 		}
 		// new value: {value}-spent-unreward/reward
 		newValues := values[0] + string(Splitter) + string(spent) + string(Splitter) + values[2]
@@ -119,7 +119,7 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 		ok, err := db.HasValue(paymentAddressKey)
 		// Vout already exist
 		if ok {
-			return errors.New("UTXO already exist")
+			return errors.Zero("UTXO already exist")
 		}
 		if err != nil {
 			return err

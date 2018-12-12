@@ -48,6 +48,16 @@ Verify:
 )
 */
 
+func (pro *PKComZeroProof) Init() *PKComZeroProof {
+	if(pro==nil) {
+		pro = new(PKComZeroProof)
+	}
+	pro.commitmentValue = new(privacy.EllipticPoint).Zero()
+	pro.commitmentZeroS = new(privacy.EllipticPoint).Zero()
+	pro.z = new(big.Int)
+	return pro
+}
+
 // randValue return random witness value for testing
 func (wit *PKComZeroWitness) randValue(testcase bool) {
 	switch testcase {
@@ -85,7 +95,7 @@ func (wit *PKComZeroWitness) Set(
 }
 
 // Bytes ...
-func (pro *PKComZeroProof) Bytes() []byte {
+func (pro PKComZeroProof) Bytes() []byte {
 	var res []byte
 	res = append(pro.commitmentValue.Compress(), []byte{*pro.index}...)
 	res = append(res, pro.commitmentZeroS.Compress()...)
