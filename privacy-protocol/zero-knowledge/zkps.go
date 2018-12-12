@@ -250,7 +250,9 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	lenComOutputMultiRangeProof := int(proofbytes[offset])
 	offset += 1
 	proof.ComOutputMultiRangeProof.Init()
-	proof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
+	if len(proofbytes[offset:offset+lenComOutputMultiRangeProof]) > 0 {
+		proof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
+	}
 	offset += lenComOutputMultiRangeProof
 	//SumOutRangeProof *PKComZeroProof
 	lenSumOutRangeProof := int(proofbytes[offset])

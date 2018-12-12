@@ -80,6 +80,9 @@ func (pro *PKOneOfManyProof) Set(
 }
 
 func (pro PKOneOfManyProof) Bytes() []byte {
+	if len(pro.cl) == 0 {
+		return []byte{}
+	}
 	// N = 2^n
 	N := privacy.CMRingSize
 	n := privacy.CMRingSizeExp
@@ -162,6 +165,7 @@ func (pro PKOneOfManyProof) Bytes() []byte {
 
 // SetBytes convert from bytes array to PKOneOfManyProof
 func (pro *PKOneOfManyProof) SetBytes(bytes []byte) {
+	pro.Init()
 	//// get N
 	//N := int(bytes[0])
 	//// get n

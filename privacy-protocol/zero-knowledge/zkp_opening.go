@@ -66,6 +66,9 @@ func (pro *PKComOpeningsProof) Set(
 }
 
 func (pro PKComOpeningsProof) Bytes() []byte {
+	if len(pro.gamma) == 0 {
+		return []byte{}
+	}
 	// var res []byte
 	res := append(pro.commitmentValue.Compress(), pro.alpha.Compress()...)
 	for i := 0; i < len(pro.gamma); i++ {
@@ -79,6 +82,7 @@ func (pro PKComOpeningsProof) Bytes() []byte {
 }
 
 func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) bool {
+	pro.Init()
 	if len(bytestr) != privacy.ComInputOpeningsProofSize {
 		return false
 	}

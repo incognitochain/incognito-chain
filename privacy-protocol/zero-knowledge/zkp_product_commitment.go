@@ -75,6 +75,9 @@ func (pro *PKComProductProof) Print() {
 }
 
 func (pro PKComProductProof) Bytes() []byte {
+	if pro.D.IsEqual(new(privacy.EllipticPoint).Zero()) {
+		return []byte{}
+	}
 	var proofbytes []byte
 	//if pro.cmA == nil || pro.cmB == nil || {
 	//

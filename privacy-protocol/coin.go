@@ -198,7 +198,6 @@ func (inputCoin *InputCoin) SetBytes(bytes []byte) {
 	inputCoin.CoinDetails.SetBytes(bytes)
 }
 
-
 type OutputCoin struct {
 	CoinDetails          *Coin
 	CoinDetailsEncrypted *CoinDetailsEncrypted
@@ -218,15 +217,20 @@ func (outputCoin *OutputCoin) Bytes() []byte {
 }
 
 func (outputCoin *OutputCoin) SetBytes(b []byte) {
-	length:=int(b[0])
+	length := int(b[0])
 	outputCoin.CoinDetailsEncrypted.SetBytes(b[0:length])
 	outputCoin.CoinDetails.SetBytes(b[length:])
 }
 
-
 type CoinDetailsEncrypted struct {
 	RandomEncrypted []byte // 48 bytes
 	SymKeyEncrypted []byte // 66 bytes
+}
+
+func (self *CoinDetailsEncrypted) Init() *CoinDetailsEncrypted {
+	self.RandomEncrypted = []byte{}
+	self.SymKeyEncrypted = []byte{}
+	return self
 }
 
 func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() [] byte {
@@ -235,7 +239,7 @@ func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() [] byte {
 	res = append(res, coinDetailsEncrypted.SymKeyEncrypted...)
 	return res
 }
-func(coinDetailsEncrypted *CoinDetailsEncrypted) SetBytes(bytes []byte){
+func (coinDetailsEncrypted *CoinDetailsEncrypted) SetBytes(bytes []byte) {
 	coinDetailsEncrypted.RandomEncrypted = bytes[0:48]
 	coinDetailsEncrypted.SymKeyEncrypted = bytes[48:48+66]
 }

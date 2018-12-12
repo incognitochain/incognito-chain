@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"math/big"
 
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 // PKComZeroProof contains Proof's value
@@ -49,9 +49,10 @@ Verify:
 */
 
 func (pro *PKComZeroProof) Init() *PKComZeroProof {
-	if(pro==nil) {
+	if (pro == nil) {
 		pro = new(PKComZeroProof)
 	}
+	pro.index = new(byte)
 	pro.commitmentValue = new(privacy.EllipticPoint).Zero()
 	pro.commitmentZeroS = new(privacy.EllipticPoint).Zero()
 	pro.z = new(big.Int)
@@ -83,7 +84,7 @@ func (wit *PKComZeroWitness) randValue(testcase bool) {
 // Set dosomethings
 func (wit *PKComZeroWitness) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
-	index *byte, //statement
+	index *byte,                            //statement
 	commitmentRnd *big.Int) {
 	if wit == nil {
 		wit = new(PKComZeroWitness)
@@ -96,6 +97,10 @@ func (wit *PKComZeroWitness) Set(
 
 // Bytes ...
 func (pro PKComZeroProof) Bytes() []byte {
+	if pro.commitmentValue.IsEqual(new(privacy.EllipticPoint).Zero()){
+		return []byte{}
+	}
+
 	var res []byte
 	res = append(pro.commitmentValue.Compress(), []byte{*pro.index}...)
 	res = append(res, pro.commitmentZeroS.Compress()...)
@@ -110,6 +115,7 @@ func (pro PKComZeroProof) Bytes() []byte {
 
 // SetBytes ...
 func (pro *PKComZeroProof) SetBytes(bytestr []byte) bool {
+	pro.Init()
 	if pro.commitmentValue == nil {
 		pro.commitmentValue = new(privacy.EllipticPoint)
 	}
@@ -127,11 +133,11 @@ func (pro *PKComZeroProof) SetBytes(bytestr []byte) bool {
 	if err != nil {
 		return false
 	}
-	err = pro.commitmentZeroS.Decompress(bytestr[privacy.CompressedPointSize : 2*privacy.CompressedPointSize])
+	err = pro.commitmentZeroS.Decompress(bytestr[privacy.CompressedPointSize: 2*privacy.CompressedPointSize])
 	if err != nil {
 		return false
 	}
-	pro.z.SetBytes(bytestr[2*privacy.CompressedPointSize : 2*privacy.CompressedPointSize+privacy.BigIntSize])
+	pro.z.SetBytes(bytestr[2*privacy.CompressedPointSize: 2*privacy.CompressedPointSize+privacy.BigIntSize])
 	*pro.index = bytestr[2*privacy.CompressedPointSize+privacy.BigIntSize]
 	return true
 }
@@ -142,7 +148,7 @@ func (pro *PKComZeroProof) SetBytes(bytestr []byte) bool {
 // Set dosomethings
 func (pro *PKComZeroProof) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
-	index *byte, //statement
+	index *byte,                            //statement
 	commitmentZeroS *privacy.EllipticPoint,
 	z *big.Int) {
 

@@ -59,14 +59,14 @@ type PKComMultiRangeWitness struct {
 	maxExp byte
 }
 
-func (pro * PKComMultiRangeProof) Init() * PKComMultiRangeProof{
-	if (pro==nil) {
+func (pro *PKComMultiRangeProof) Init() *PKComMultiRangeProof {
+	if (pro == nil) {
 		pro = new(PKComMultiRangeProof)
 	}
-	pro.A  = new(privacy.EllipticPoint).Zero()
-	pro.S  = new(privacy.EllipticPoint).Zero()
-	pro.T1  = new(privacy.EllipticPoint).Zero()
-	pro.T2  = new(privacy.EllipticPoint).Zero()
+	pro.A = new(privacy.EllipticPoint).Zero()
+	pro.S = new(privacy.EllipticPoint).Zero()
+	pro.T1 = new(privacy.EllipticPoint).Zero()
+	pro.T2 = new(privacy.EllipticPoint).Zero()
 	pro.Tau = new(big.Int)
 	pro.Th = new(big.Int)
 	pro.Mu = new(big.Int)
@@ -81,6 +81,9 @@ func (pro * PKComMultiRangeProof) Init() * PKComMultiRangeProof{
 func (pro PKComMultiRangeProof) Bytes() []byte {
 	var res []byte
 
+	if pro.Counter == 0 {
+		return []byte{}
+	}
 	res = append(res, pro.Counter)
 	res = append(res, pro.maxExp)
 	for i := 0; i < int(pro.Counter); i++ {
@@ -103,6 +106,14 @@ func (pro PKComMultiRangeProof) Bytes() []byte {
 
 }
 func (pro *PKComMultiRangeProof) SetBytes(proofbytes []byte) {
+
+	if pro == nil{
+		pro = pro.Init()
+	}
+
+	if len(proofbytes) == 0{
+		return
+	}
 
 	pro.Counter = proofbytes[0]
 	pro.maxExp = proofbytes[1]
