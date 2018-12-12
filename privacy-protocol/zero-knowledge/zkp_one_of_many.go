@@ -33,6 +33,37 @@ type PKOneOfManyProof struct {
 	index       byte
 }
 
+func (pro * PKOneOfManyProof) IsNil() bool {
+	if pro.cl == nil{
+		return true
+	}
+	if pro.ca == nil{
+		return true
+	}
+	if pro.cb == nil{
+		return true
+	}
+	if pro.cd == nil{
+		return true
+	}
+	if pro.f == nil{
+		return true
+	}
+	if pro.za == nil{
+		return true
+	}
+	if pro.zb == nil{
+		return true
+	}
+	if pro.zd == nil{
+		return true
+	}
+	if pro.commitmentIndexs == nil{
+		return true
+	}
+	return false
+}
+
 func (pro * PKOneOfManyProof) Init() * PKOneOfManyProof {
 	if(pro==nil){
 		pro = new(PKOneOfManyProof)
@@ -79,8 +110,8 @@ func (pro *PKOneOfManyProof) Set(
 	pro.index = index
 }
 
-func (pro PKOneOfManyProof) Bytes() []byte {
-	if len(pro.cl) == 0 {
+func (pro * PKOneOfManyProof) Bytes() []byte {
+	if pro.IsNil() {
 		return []byte{}
 	}
 	// N = 2^n
@@ -402,10 +433,10 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 
 	zd.Add(zd, sumInt)
 	zd.Mod(zd, privacy.Curve.Params().N)
-	var proof PKOneOfManyProof
+	proof := new(PKOneOfManyProof).Init()
 	proof.Set(wit.commitmentIndexs, cl, ca, cb, cd, f, za, zb, zd, wit.index)
 
-	return &proof, nil
+	return proof, nil
 }
 
 func (pro *PKOneOfManyProof) Verify(db database.DatabaseInterface, chainId byte) bool {
