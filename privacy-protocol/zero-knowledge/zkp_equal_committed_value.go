@@ -2,9 +2,10 @@ package zkp
 
 import (
 	"crypto/rand"
+	"errors"
 	"math/big"
 
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 // Protocol proving in ZK ... https://link.springer.com/chapter/10.1007/3-540-48910-X_8
@@ -13,7 +14,7 @@ import (
 // PKEqualityOfCommittedValProof contains...
 type PKEqualityOfCommittedValProof struct {
 	C     []*privacy.EllipticPoint //Statement    // 2*sz(EcPoint)
-	Index []byte                  //Statement		// 2*sz(byte)
+	Index []byte                   //Statement		// 2*sz(byte)
 	T     []*privacy.EllipticPoint
 	Z     []*big.Int
 }
@@ -21,11 +22,11 @@ type PKEqualityOfCommittedValProof struct {
 // PKEqualityOfCommittedValWitness contains...
 type PKEqualityOfCommittedValWitness struct {
 	C     []*privacy.EllipticPoint //Statement
-	Index []byte                  //Statement
+	Index []byte                   //Statement
 	X     []*big.Int
 }
 
-func (pro * PKEqualityOfCommittedValProof) Init() * PKEqualityOfCommittedValProof {
+func (pro *PKEqualityOfCommittedValProof) Init() *PKEqualityOfCommittedValProof {
 	//return &PKEqualityOfCommittedValProof{
 	//	C: 			[]*privacy.EllipticPoint{},
 	//	Index: 	[]byte{},
@@ -59,7 +60,7 @@ func (wit *PKEqualityOfCommittedValWitness) Set(
 	Index []byte, //Statement
 	X []*big.Int) {
 
-	if wit == nil{
+	if wit == nil {
 		wit = new(PKEqualityOfCommittedValWitness)
 	}
 	wit.C = C
@@ -90,19 +91,19 @@ func (pro PKEqualityOfCommittedValProof) Bytes() []byte {
 	return res
 }
 
-func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) bool {
-	if pro == nil{
+func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) error {
+	if pro == nil {
 		pro = pro.Init()
 	}
 
 	if len(proofbytes) == 0 {
-		return true
+		return nil
 	}
 	pro.C = make([]*privacy.EllipticPoint, 2)
 	for i := 0; i < len(pro.C); i++ {
 		pro.C[i].Decompress(proofbytes[i*privacy.CompressedPointSize : (i+1)*privacy.CompressedPointSize])
 		if !pro.C[i].IsSafe() {
-			return false
+			return errors.New("Decompressed failed!")
 		}
 	}
 	pro.Index = make([]byte, 2)
@@ -113,7 +114,7 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) bool {
 	for i := 0; i < len(pro.T); i++ {
 		pro.T[i].Decompress(proofbytes[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+i*privacy.CompressedPointSize : len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+(i+1)*privacy.CompressedPointSize])
 		if !pro.T[i].IsSafe() {
-			return false
+			return errors.New("Decompressed failed!")
 		}
 	}
 	pro.Z = make([]*big.Int, 3)
@@ -121,7 +122,7 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) bool {
 		pro.Z[i] = big.NewInt(0)
 		pro.Z[i].SetBytes(proofbytes[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+i*privacy.BigIntSize : len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+(i+1)*privacy.BigIntSize])
 	}
-	return true
+	return nil
 }
 
 // Set - proof setter
@@ -131,7 +132,7 @@ func (pro *PKEqualityOfCommittedValProof) Set(
 	T []*privacy.EllipticPoint,
 	Z []*big.Int) {
 
-	if pro == nil{
+	if pro == nil {
 		pro = new(PKEqualityOfCommittedValProof)
 	}
 	pro.C = C
@@ -183,4 +184,3 @@ func (pro *PKEqualityOfCommittedValProof) Verify() bool {
 }
 
 // TestPKEqualityOfCommittedVal ...
-
