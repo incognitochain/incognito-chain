@@ -8,7 +8,7 @@ import (
 )
 
 func TestPKComMultiRange(t *testing.T) {
-	testNum:= 9
+	testNum:= 100
 	values := make([]*big.Int, testNum)
 	for i:=0;i< testNum;i++{
 		values[i] = new(big.Int)
@@ -36,5 +36,7 @@ func TestPKComMultiRange(t *testing.T) {
 	} else {
 		fmt.Println("***** Sum Proof FAILURE")
 	}
+	fmt.Println(privacy.IntTo_2_Byte_Array(1000))
+	fmt.Println(privacy.IntTo_2_Byte_Array(200))
 }
 
