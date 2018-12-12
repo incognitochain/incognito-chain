@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -111,6 +112,7 @@ func GetNonceByTimestamp(timestamp int64) (int64, error) {
 // #param 1: nonce -> flag true
 // #param 2: timestamp -> flag false
 func GetNonceOrTimeStampByBlock(blockHeight string, nonceOrTime bool) (int64, int64, error) {
+	time.Sleep(5 * time.Second)
 	resp, err := http.Get("https://api.blockcypher.com/v1/btc/test3/blocks/" + blockHeight + "?start=1&limit=1")
 	if err != nil {
 		return -1, MAX_TIMESTAMP, err
@@ -158,14 +160,32 @@ func makeTimestamp2(t string) (int64, error) {
 // to calculate blockheight with approximate timestamp with #param1
 // blockHeight = chainHeight - (chainTimestamp - timestamp) / 600
 func estimateBlockHeight(timestamp int64, chainHeight int, chainTimestamp int64) (int, error) {
+	var estimateBlockHeight int
 	fmt.Printf("EstimateBlockHeight timestamp %d, chainHeight %d, chainTimestamp %d\n", timestamp, chainHeight, chainTimestamp)
 	offsetSeconds := timestamp - chainTimestamp
 	if offsetSeconds > 0 {
 		return chainHeight, nil
 	} else {
+		estimateBlockHeight = chainHeight
 		// diff is negative
-		diff := int(offsetSeconds / 600)
-		fmt.Printf("EstimateBlockHeight estimated block %d \n", chainHeight+diff)
-		return chainHeight + diff, nil
+		for true {
+			diff := int(offsetSeconds / 600)
+			estimateBlockHeight = estimateBlockHeight + diff
+			fmt.Printf("Estimate blockHeight %d \n", estimateBlockHeight)
+			if math.Abs(float64(diff)) < 3 {
+				return estimateBlockHeight, nil
+			}
+			_, blockTimestamp, err := GetNonceOrTimeStampByBlock(strconv.Itoa(estimateBlockHeight), false)
+			fmt.Printf("Try to estimate block with timestamp %d \n", blockTimestamp)
+			if err != nil {
+				fmt.Println(err)
+				return -1, err
+			}
+			if blockTimestamp == MAX_TIMESTAMP {
+				return -1, errors.New("API error")
+			}
+			offsetSeconds = timestamp - blockTimestamp
+		}
 	}
+	return chainHeight, errors.New("Can't estimate block")
 }
