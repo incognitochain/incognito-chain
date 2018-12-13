@@ -767,19 +767,21 @@ func (self *BlockChain) DecryptTxByKey(outCoinTemp *privacy.OutputCoin, keySet *
 			CoinDetails:          outCoinTemp.CoinDetails,
 			CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
 		}
-		if len(keySet.PrivateKey) > 0 || len(keySet.ReadonlyKey.Rk) > 0 {
-			// try to decrypt to get more data
-			err := outCoinTemp.Decrypt(keySet.ReadonlyKey)
-			if err == nil {
-				result.CoinDetails = outCoinTemp.CoinDetails
-				if len(keySet.PrivateKey) > 0 {
-					// check spent with private-key
-					result.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(keySet.PrivateKey), result.CoinDetails.SNDerivator)
-					ok, err := self.config.DataBase.HasSerialNumber(result.CoinDetails.SerialNumber.Compress(), 14)
-					if ok || err != nil {
-						return nil
-					}
+		if result.CoinDetailsEncrypted != nil {
+			if len(keySet.PrivateKey) > 0 || len(keySet.ReadonlyKey.Rk) > 0 {
+				// try to decrypt to get more data
+				err := result.Decrypt(keySet.ReadonlyKey)
+				if err == nil {
+					result.CoinDetails = outCoinTemp.CoinDetails
 				}
+			}
+		}
+		if len(keySet.PrivateKey) > 0 {
+			// check spent with private-key
+			result.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(keySet.PrivateKey), result.CoinDetails.SNDerivator)
+			ok, err := self.config.DataBase.HasSerialNumber(result.CoinDetails.SerialNumber.Compress(), 14)
+			if ok || err != nil {
+				return nil
 			}
 		}
 		return result
