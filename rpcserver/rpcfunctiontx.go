@@ -62,7 +62,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		outputCoins, err := self.config.BlockChain.GetListTxByKeyset(&keySet, chainIdSender)
+		outputCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, chainIdSender)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -135,7 +135,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	outCoins, _ := self.config.BlockChain.GetListTxByKeyset(&senderKey.KeySet, chainIdSender)
+	outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender)
 	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, note := range outCoins {
 		amount := note.CoinDetails.Value
