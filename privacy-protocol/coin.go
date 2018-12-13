@@ -29,7 +29,6 @@ type Coin struct {
 	Info           []byte //512 bytes
 }
 
-
 func (coin *Coin) GetPubKeyLastByte() byte {
 	pubKeyBytes := coin.PublicKey.Compress()
 	return pubKeyBytes[len(pubKeyBytes)-1]
