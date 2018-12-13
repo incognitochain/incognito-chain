@@ -227,7 +227,10 @@ func (tx *Tx) Init(
 	if err != nil {
 		return err
 	}
-	tx.Proof, _ = witness.Prove(hasPrivacy)
+	tx.Proof, err = witness.Prove(hasPrivacy)
+	if err != nil {
+		return err
+	}
 
 	// set private key for signing tx
 	if hasPrivacy {

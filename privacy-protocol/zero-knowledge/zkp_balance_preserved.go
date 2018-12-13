@@ -60,9 +60,6 @@ type PKComMultiRangeWitness struct {
 }
 
 func (pro *PKComMultiRangeProof) Init() *PKComMultiRangeProof {
-	if (pro == nil) {
-		pro = new(PKComMultiRangeProof)
-	}
 	pro.A = new(privacy.EllipticPoint).Zero()
 	pro.S = new(privacy.EllipticPoint).Zero()
 	pro.T1 = new(privacy.EllipticPoint).Zero()
@@ -77,11 +74,26 @@ func (pro *PKComMultiRangeProof) Init() *PKComMultiRangeProof {
 	pro.IPP.B = new(big.Int)
 	return pro
 }
+func (pro *PKComMultiRangeProof) IsNil() bool{
+	if (pro.A==nil) {return true}
+	if (pro.S==nil) {return true}
+	if (pro.T1==nil){return true}
+	if (pro.T2==nil){return true}
+	if (pro.Tau==nil){return true}
+	if (pro.Th==nil){return true}
+	if (pro.Mu==nil){return true}
+	if (pro.Cx==nil){return true}
+	if (pro.Cy==nil){return true}
+	if (pro.Cz==nil){return true}
+	if (pro.IPP.A==nil){return true}
+	if (pro.IPP.B==nil){return true}
+	return false
+}
 
 func (pro PKComMultiRangeProof) Bytes() []byte {
 	var res []byte
 
-	if pro.Counter == 0 {
+	if pro.IsNil() == true {
 		return []byte{}
 	}
 	res = append(res, pro.Counter)
@@ -101,16 +113,14 @@ func (pro PKComMultiRangeProof) Bytes() []byte {
 	res = append(res, pro.Cy.Bytes()...)
 	res = append(res, pro.Cz.Bytes()...)
 	res = append(res, pro.IPP.Bytes()...)
-	//fmt.Println(res)
 	return res
 
 }
 func (pro *PKComMultiRangeProof) SetBytes(proofbytes []byte) {
 
-	if pro == nil{
+	if pro.IsNil(){
 		pro = pro.Init()
 	}
-
 	if len(proofbytes) == 0{
 		return
 	}
@@ -227,7 +237,6 @@ func CalculateLMRP(aL, sL []*big.Int, z, x *big.Int) []*big.Int {
 
 	tmp1 := VectorAddScalar(aL, new(big.Int).Neg(z))
 	tmp2 := ScalarVectorMul(sL, x)
-
 	result = VectorAdd(tmp1, tmp2)
 
 	return result

@@ -48,13 +48,16 @@ type DatabaseInterface interface {
 	CleanSerialNumbers() error
 
 	// PedersenCommitment
-	StoreCommitments(commitment []byte, chainID byte) error
+	StoreCommitments(pubkey []byte, commitment []byte, chainID byte) error
+	StoreOutputCoins(pubkey []byte, outputcoin []byte, chainID byte) error
 	FetchCommitments(chainID byte) ([][]byte, error)
 	HasCommitment(commitment []byte, chainID byte) (bool, error)
 	HasCommitmentIndex(commitmentIndex uint64, chainID byte) (bool, error)
 	GetCommitmentByIndex(commitmentIndex uint64, chainID byte) ([]byte, error)
 	GetCommitmentIndex(commitment []byte, chainId byte) (*big.Int, error)
 	GetCommitmentLength(chainId byte) (*big.Int, error)
+	GetCommitmentIndexsByPubkey(pubkey []byte, chainID byte) ([][]byte, error)
+	GetOutcoinsByPubkey(pubkey []byte, chainID byte) ([][]byte, error)
 	CleanCommitments() error
 
 	// SNDerivator

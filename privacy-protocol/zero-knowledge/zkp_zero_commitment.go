@@ -48,16 +48,19 @@ Verify:
 	return boolValue
 )
 */
-
 func (pro *PKComZeroProof) Init() *PKComZeroProof {
-	if pro == nil {
-		pro = new(PKComZeroProof)
-	}
 	pro.index = new(byte)
 	pro.commitmentValue = new(privacy.EllipticPoint).Zero()
 	pro.commitmentZeroS = new(privacy.EllipticPoint).Zero()
 	pro.z = new(big.Int)
 	return pro
+}
+
+func (pro *PKComZeroProof) IsNil() bool {
+	if (pro.commitmentValue == nil) || (pro.commitmentZeroS == nil) || (pro.index == nil) || (pro.z == nil) {
+		return true
+	}
+	return false
 }
 
 // randValue return random witness value for testing
@@ -98,10 +101,9 @@ func (wit *PKComZeroWitness) Set(
 
 // Bytes ...
 func (pro PKComZeroProof) Bytes() []byte {
-	if pro.commitmentValue.IsEqual(new(privacy.EllipticPoint).Zero()) {
+	if pro.IsNil() {
 		return []byte{}
 	}
-
 	var res []byte
 	res = append(pro.commitmentValue.Compress(), []byte{*pro.index}...)
 	res = append(res, pro.commitmentZeroS.Compress()...)
@@ -117,7 +119,7 @@ func (pro PKComZeroProof) Bytes() []byte {
 // SetBytes ...
 func (pro *PKComZeroProof) SetBytes(bytestr []byte) error {
 	pro.Init()
-	if pro == nil{
+	if pro == nil {
 		pro = pro.Init()
 	}
 

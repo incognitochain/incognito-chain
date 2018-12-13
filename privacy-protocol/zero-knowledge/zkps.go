@@ -2,11 +2,13 @@ package zkp
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 // PaymentWitness contains all of witness for proving when spending coins
@@ -138,13 +140,32 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, comOutputOpeningsProof...)
 	}
 	// ComOutputMultiRangeProof
-	comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
-	proofbytes = append(proofbytes, byte(len(comOutputMultiRangeProof)))
-	proofbytes = append(proofbytes, comOutputMultiRangeProof...)
+	if paymentProof.ComOutputMultiRangeProof != nil {
+		comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
+		proofbytes = append(proofbytes, byte(len(comOutputMultiRangeProof)))
+		proofbytes = append(proofbytes, comOutputMultiRangeProof...)
+	} else {
+		proofbytes = append(proofbytes, byte(0))
+	}
+
+	// SumOutRangeProof
+	if paymentProof.SumOutRangeProof != nil {
+		sumOutRangeProof := paymentProof.SumOutRangeProof.Bytes()
+		proofbytes = append(proofbytes, byte(len(sumOutRangeProof)))
+		proofbytes = append(proofbytes, sumOutRangeProof...)
+	} else {
+		proofbytes = append(proofbytes, byte(0))
+	}
+
 	// ComZeroProof
-	comZeroProof := paymentProof.ComZeroProof.Bytes()
-	proofbytes = append(proofbytes, byte(len(comZeroProof)))
-	proofbytes = append(proofbytes, comZeroProof...)
+	if paymentProof.ComZeroProof != nil {
+		comZeroProof := paymentProof.ComZeroProof.Bytes()
+		proofbytes = append(proofbytes, byte(len(comZeroProof)))
+		proofbytes = append(proofbytes, comZeroProof...)
+	} else {
+		proofbytes = append(proofbytes, byte(0))
+	}
+
 	// InputCoins
 	proofbytes = append(proofbytes, byte(len(paymentProof.InputCoins)))
 	for i := 0; i < len(paymentProof.InputCoins); i++ {
@@ -188,7 +209,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 }
 
 func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
-	proof.Init()
+	//proof.Init()
 	offset := 0
 	// Set ComInputOpeningsProof
 	lenComInputOpeningsProofArray := int(proofbytes[offset])
@@ -249,23 +270,28 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	//ComOutputMultiRangeProof *PKComMultiRangeProof
 	lenComOutputMultiRangeProof := int(proofbytes[offset])
 	offset += 1
-	proof.ComOutputMultiRangeProof.Init()
-	if len(proofbytes[offset:offset+lenComOutputMultiRangeProof]) > 0 {
+	if lenComOutputMultiRangeProof > 0 {
+		proof.ComOutputMultiRangeProof.Init()
 		proof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
+		offset += lenComOutputMultiRangeProof
 	}
-	offset += lenComOutputMultiRangeProof
 	//SumOutRangeProof *PKComZeroProof
 	lenSumOutRangeProof := int(proofbytes[offset])
 	offset += 1
-	proof.SumOutRangeProof = new(PKComZeroProof).Init()
-	proof.SumOutRangeProof.SetBytes(proofbytes[offset : offset+lenSumOutRangeProof])
-	offset += lenSumOutRangeProof
+	if lenSumOutRangeProof > 0 {
+		proof.SumOutRangeProof = new(PKComZeroProof).Init()
+		proof.SumOutRangeProof.SetBytes(proofbytes[offset : offset+lenSumOutRangeProof])
+		offset += lenSumOutRangeProof
+	}
+
 	//ComZeroProof *PKComZeroProof
 	lenComZeroProof := int(proofbytes[offset])
 	offset += 1
-	proof.SumOutRangeProof = new(PKComZeroProof).Init()
-	proof.SumOutRangeProof.SetBytes(proofbytes[offset : offset+lenComZeroProof])
-	offset += lenComZeroProof
+	if lenComZeroProof > 0 {
+		proof.SumOutRangeProof = new(PKComZeroProof).Init()
+		proof.SumOutRangeProof.SetBytes(proofbytes[offset : offset+lenComZeroProof])
+		offset += lenComZeroProof
+	}
 
 	//InputCoins  []*privacy.InputCoin
 	lenInputCoinsArray := int(proofbytes[offset])
@@ -274,7 +300,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	for i := 0; i < lenInputCoinsArray; i++ {
 		lenInputCoin := int(proofbytes[offset])
 		offset += 1
-		proof.InputCoins[i] = new(privacy.InputCoin).Init()
+		proof.InputCoins[i] = new(privacy.InputCoin)
 		proof.InputCoins[i].SetBytes(proofbytes[offset : offset+lenInputCoin])
 		offset += lenInputCoin
 	}
@@ -285,7 +311,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	for i := 0; i < lenOutputCoinsArray; i++ {
 		lenOutputCoin := int(proofbytes[offset])
 		offset += 1
-		proof.OutputCoins[i] = new(privacy.OutputCoin).Init()
+		proof.OutputCoins[i] = new(privacy.OutputCoin)
 		proof.OutputCoins[i].SetBytes(proofbytes[offset : offset+lenOutputCoin])
 		offset += lenOutputCoin
 	}
@@ -552,7 +578,11 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	// proving sum of output values is less than vmax
 	outputValue := make([]*big.Int, numOutputCoin)
 	for i := 0; i < numOutputCoin; i++ {
-		outputValue[i] = big.NewInt(int64(outputCoins[i].CoinDetails.Value))
+		if outputCoins[i].CoinDetails.Value > 0 {
+			outputValue[i] = big.NewInt(int64(outputCoins[i].CoinDetails.Value))
+		} else{
+			return errors.New("output coin's value is less than 0")
+		}
 	}
 	if wit.ComOutputMultiRangeWitness == nil {
 		wit.ComOutputMultiRangeWitness = new(PKComMultiRangeWitness)
@@ -600,6 +630,11 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	proof.ComOutputValue = wit.ComOutputValue
 	proof.ComOutputSND = wit.ComOutputSND
 	proof.ComOutputShardID = wit.ComOutputShardID
+
+	//printf output's value to test
+	for i, outCoin := range wit.outputCoins{
+		fmt.Printf("Output coin's value %v: %v\n", i, outCoin.CoinDetails.Value)
+	}
 
 	// if hasPrivacy == false, don't need to create the zero knowledge proof
 	// proving user has spending key corresponding with public key in input coins
