@@ -64,18 +64,3 @@ func (self BeaconBlockGenerator) CreateBeaconGenesisBlock(
 
 	return block
 }
-
-func BuildNextState(beaconBestState *BestStateBeacon, blk *BlockV2) {
-	//TODO: build candidate
-
-	//TODO: Param "set" "del"
-	instructions := blk.Body.(*BeaconBlockBody).Instructions
-	for _, l := range instructions {
-		if l[0] == "set" || l[0] == "assign" {
-			beaconBestState.Params[l[1]] = l[2]
-		}
-		if l[0] == "del" {
-			delete(beaconBestState.Params, l[1])
-		}
-	}
-}
