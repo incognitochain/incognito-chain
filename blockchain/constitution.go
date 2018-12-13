@@ -40,9 +40,9 @@ func (DCBConstitutionHelper) CheckVotingProposalType(tx transaction.Transaction)
 	return tx.GetType() == common.TxVoteDCBProposal
 }
 
-func (DCBConstitutionHelper) GetAmountVoteToken(tx transaction.Transaction) uint32 {
+/*func (DCBConstitutionHelper) GetAmountVoteToken(tx transaction.Transaction) uint32 {
 	return tx.(*transaction.TxVoteDCBProposal).VoteDCBProposalData.AmountVoteToken
-}
+}*/
 
 func (GOVConstitutionHelper) GetStartedBlockHeight(blockgen *BlkTmplGenerator, chainID byte) int32 {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
@@ -58,6 +58,7 @@ func (GOVConstitutionHelper) CheckVotingProposalType(tx transaction.Transaction)
 	return tx.GetType() == common.TxVoteGOVProposal
 }
 
+/*
 func (GOVConstitutionHelper) GetAmountVoteToken(tx transaction.Transaction) uint32 {
 	return tx.(*transaction.TxVoteGOVProposal).VoteGOVProposalData.AmountVoteToken
 }
@@ -79,3 +80,4 @@ func (GOVConstitutionHelper) TxAcceptProposal(originTx transaction.Transaction) 
 	AcceptTx.Type = common.TxAcceptGOVProposal
 	return AcceptTx
 }
+*/

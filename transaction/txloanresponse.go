@@ -1,6 +1,6 @@
 package transaction
 
-import (
+/*import (
 	"encoding/hex"
 	"strconv"
 
@@ -33,7 +33,7 @@ func NewLoanResponse(data map[string]interface{}) *LoanResponse {
 }
 
 type TxLoanResponse struct {
-	Tx
+	TxNormal
 	*LoanResponse // data for a loan response
 }
 
@@ -57,7 +57,7 @@ func CreateTxLoanResponse(
 	}
 
 	txLoanResponse := &TxLoanResponse{
-		Tx:           *tx,
+		TxNormal:     *tx,
 		LoanResponse: loanResponse,
 	}
 
@@ -66,7 +66,7 @@ func CreateTxLoanResponse(
 
 func (tx *TxLoanResponse) Hash() *common.Hash {
 	// get hash of tx
-	record := tx.Tx.Hash().String()
+	record := tx.TxNormal.Hash().String()
 
 	// add more hash of loan response data
 	record += string(tx.LoanID)
@@ -79,7 +79,7 @@ func (tx *TxLoanResponse) Hash() *common.Hash {
 
 func (tx *TxLoanResponse) ValidateTransaction() bool {
 	// validate for normal tx
-	if !tx.Tx.ValidateTransaction() {
+	if !tx.TxNormal.ValidateTransaction() {
 		return false
 	}
 
@@ -99,4 +99,4 @@ func (tx *TxLoanResponse) ValidateTransaction() bool {
 
 func (tx *TxLoanResponse) GetType() string {
 	return common.TxLoanResponse
-}
+}*/

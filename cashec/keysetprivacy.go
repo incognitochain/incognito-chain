@@ -1,6 +1,7 @@
 package cashec
 
 import (
+	// "github.com/ninjadotorg/constant/privacy-protocol/client"
 	"encoding/json"
 	"errors"
 
@@ -8,6 +9,8 @@ import (
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
+	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type KeySet struct {
@@ -67,13 +70,15 @@ func (self *KeySet) SignBase58(data []byte) (string, error) {
 }
 
 func (self *KeySet) Encrypt(data []byte) ([]byte, error) {
-	encryptText := client.Encrypt(self.PaymentAddress.Pk[:], data)
+	// encryptText := client.Encrypt(self.PaymentAddress.Pk[:], data)
+	encryptText := []byte{0}
 	return encryptText, nil
 }
 
 func (self *KeySet) Decrypt(data []byte) ([]byte, error) {
-	data, err := client.Decrypt(self.PrivateKey[:], data)
-	return data, err
+	// data, err := client.Decrypt(self.PrivateKey[:], data)
+	data = []byte{0}
+	return data, nil
 }
 
 func (self *KeySet) EncodeToString() string {
@@ -87,10 +92,6 @@ func (self *KeySet) DecodeToKeySet(keystring string) (*KeySet, error) {
 	keyBytes, _, _ := base58C.Decode(keystring)
 	json.Unmarshal(keyBytes, self)
 	return self, nil
-}
-
-func (self *KeySet) GetPaymentAddress() (privacy.PaymentAddress, error) {
-	return self.PaymentAddress, nil
 }
 
 func (self *KeySet) GetViewingKey() (privacy.ViewingKey, error) {

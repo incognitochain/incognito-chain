@@ -20,13 +20,13 @@ func TestNew(t *testing.T) {
 	assert.Equal(t, mempool.Count(), 0, "mempool was started")
 }
 
-func (m *TxMockedObject) GetTransaction() transaction.Tx {
+func (m *TxMockedObject) GetTransaction() transaction.TxNormal {
 
 	//hash, error := common.Hash{}.NewHash([]byte("12345678901234567890123456789012"))
 	//if error != nil {
 	//
 	//}
-	return transaction.Tx{
+	return transaction.TxNormal{
 		Version:  0,
 		TxIn:     nil,
 		TxOut:    nil,
@@ -39,7 +39,7 @@ func TestTxPool_CanAcceptTransaction(t *testing.T) {
 	mempool := New(&Config{
 		Policy: Policy{},
 	})
-	tx := transaction.Tx{
+	tx := transaction.TxNormal{
 		Version:  0,
 		TxIn:     nil,
 		TxOut:    nil,

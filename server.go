@@ -170,7 +170,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			Logger.log.Error(err)
 			return err
 		}
-		err = self.dataBase.CleanNullifiers()
+		err = self.dataBase.CleanSerialNumbers()
 		if err != nil {
 			Logger.log.Error(err)
 			return err
@@ -297,6 +297,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			//IsGenerateNode:  cfg.Generate,
 			FeeEstimator:    self.feeEstimator,
 			ProtocolVersion: self.protocolVersion,
+			Database:        &self.dataBase,
 		}
 		self.rpcServer = &rpcserver.RpcServer{}
 		self.rpcServer.Init(&rpcConfig)

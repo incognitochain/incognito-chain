@@ -3,21 +3,20 @@ package transaction
 import (
 	"math/big"
 
-	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/wallet"
 	"encoding/hex"
 )
 
-type FeeArgs struct {
+/*type FeeArgs struct {
 	SenderKey     *privacy.SpendingKey
 	PaymentInfo   []*privacy.PaymentInfo
 	Rts           map[byte]*common.Hash
-	UsableTx      map[byte][]*Tx
+	UsableTx      map[byte][]*TxNormal
 	Commitments   map[byte]([][]byte)
 	Fee           uint64
 	SenderChainID byte
-}
+}*/
 
 type LoanParams struct {
 	InterestRate     uint64 `json:"InterestRate"`     // basis points, e.g. 125 represents 1.25%
@@ -69,11 +68,11 @@ func NewLoanRequest(data map[string]interface{}) *LoanRequest {
 	return &result
 }
 
-type TxLoanRequest struct {
-	Tx
+/*ype TxLoanRequest struct {
+	TxNormal
 	*LoanRequest // data for a loan request
 }
-
+/*
 // CreateTxLoanRequest
 // senderKey and paymentInfo is for paying fee
 func CreateTxLoanRequest(
@@ -96,7 +95,7 @@ func CreateTxLoanRequest(
 	}
 
 	txLoanRequest := &TxLoanRequest{
-		Tx:          *tx,
+		TxNormal:    *tx,
 		LoanRequest: loanRequest,
 	}
 
@@ -105,7 +104,7 @@ func CreateTxLoanRequest(
 
 func (tx *TxLoanRequest) Hash() *common.Hash {
 	// get hash of tx
-	record := tx.Tx.Hash().String()
+	record := tx.TxNormal.Hash().String()
 
 	// add more hash of collateral data
 	record += string(tx.LoanID)
@@ -123,7 +122,7 @@ func (tx *TxLoanRequest) Hash() *common.Hash {
 
 func (tx *TxLoanRequest) ValidateTransaction() bool {
 	// validate for normal tx
-	if !tx.Tx.ValidateTransaction() {
+	if !tx.TxNormal.ValidateTransaction() {
 		return false
 	}
 
@@ -141,4 +140,4 @@ func (tx *TxLoanRequest) ValidateTransaction() bool {
 
 func (tx *TxLoanRequest) GetType() string {
 	return common.TxLoanRequest
-}
+}*/

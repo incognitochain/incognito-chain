@@ -1,5 +1,6 @@
 package transaction
 
+/*
 import (
 	"fmt"
 
@@ -17,13 +18,13 @@ type DividendPayout struct {
 }
 
 type TxDividendPayout struct {
-	*Tx
+	*TxNormal
 	DividendPayout
 }
 
 func (tx *TxDividendPayout) Hash() *common.Hash {
 	// get hash of tx
-	record := tx.Tx.Hash().String()
+	record := tx.TxNormal.Hash().String()
 
 	record += fmt.Sprintf("%d", tx.PayoutID)
 	record += string(tx.TokenID[:])
@@ -35,7 +36,7 @@ func (tx *TxDividendPayout) Hash() *common.Hash {
 
 func (tx *TxDividendPayout) ValidateTransaction() bool {
 	// validate for normal tx
-	if !tx.Tx.ValidateTransaction() {
+	if !tx.TxNormal.ValidateTransaction() {
 		return false
 	}
 
@@ -57,7 +58,7 @@ type DividendInfo struct {
 	Amount      uint64
 }
 
-func BuildCoinbaseTx(pks, tks [][]byte, amounts []uint64, rt []byte, chainID byte, txType string) (*Tx, error) {
+func BuildCoinbaseTx(pks, tks [][]byte, amounts []uint64, rt []byte, chainID byte, txType string) (*TxNormal, error) {
 	// Create Proof for the joinsplit op
 	inputs := make([]*client.JSInput, 2)
 	inputs[0] = CreateRandomJSInput(nil)
@@ -125,8 +126,9 @@ func BuildDividendTxs(
 				PayoutID: proposal.PayoutID,
 				TokenID:  proposal.TokenID,
 			},
-			Tx: tx,
+			TxNormal: tx,
 		})
 	}
 	return txs, nil
 }
+*/

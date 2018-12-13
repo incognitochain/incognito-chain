@@ -7,6 +7,7 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/database"
 )
 
 // TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -44,9 +45,9 @@ func (tx TxCustomToken) Hash() *common.Hash {
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
-func (tx *TxCustomToken) ValidateTransaction() bool {
+func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface) bool {
 	// validate for normal tx
-	if tx.Tx.ValidateTransaction() {
+	if tx.Tx.ValidateTransaction(hasPrivacy, db) {
 		if len(tx.listUtxo) == 0 {
 			return false
 		}
@@ -71,7 +72,7 @@ func (tx *TxCustomToken) ValidateTransaction() bool {
 }
 
 // GetTxVirtualSize computes the virtual size of a given transaction
-// size of this tx = (normal Tx size) + (custom token data size)
+// size of this tx = (normal TxNormal size) + (custom token data size)
 func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 	normalTxSize := tx.Tx.GetTxVirtualSize()
 
@@ -98,28 +99,29 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 }
 
 // CreateTxCustomToken ...
-func CreateTxCustomToken(senderKey *privacy.SpendingKey,
+func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
-	rts map[byte]*common.Hash,
-	usableTx map[byte][]*Tx,
-	commitments map[byte]([][]byte),
+	inputCoin []*privacy.InputCoin,
 	fee uint64,
-	senderChainID byte,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
-) (*TxCustomToken, error) {
+) (error) {
 	// create normal txCustomToken
-	normalTx, err := CreateTx(senderKey, paymentInfo, rts, usableTx, commitments, fee, senderChainID, true)
+	normalTx := Tx{}
+	err := normalTx.Init(senderKey,
+		paymentInfo,
+		inputCoin,
+		fee,
+		true,
+		nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// override txCustomToken type
 	normalTx.Type = common.TxCustomTokenType
 
-	txCustomToken := &TxCustomToken{
-		Tx:          *normalTx,
-		TxTokenData: TxTokenData{},
-	}
+	txCustomToken.Tx = normalTx
+	txCustomToken.TxTokenData = TxTokenData{}
 
 	var handled = false
 
@@ -148,12 +150,12 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 			txCustomToken.TxTokenData.Vouts = VoutsTemp
 			hashInitToken, err := txCustomToken.TxTokenData.Hash()
 			if err != nil {
-				return nil, errors.New("Can't handle this TokenTxType")
+				return errors.New("Can't handle this TokenTxType")
 			}
 			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
 				if hashInitToken.String() == customTokenID.String() {
-					return nil, errors.New("This token is existed in network")
+					return errors.New("This token is existed in network")
 				}
 			}
 			txCustomToken.TxTokenData.PropertyID = *hashInitToken
@@ -192,9 +194,9 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 	}
 
 	if handled != true {
-		return nil, errors.New("Can't handle this TokenTxType")
+		return errors.New("Can't handle this TokenTxType")
 	}
-	return txCustomToken, nil
+	return nil
 }
 
 func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset cashec.KeySet) ([]byte, error) {

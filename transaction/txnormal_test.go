@@ -32,7 +32,7 @@ func TestSpendGenesisTx(t *testing.T) {
 		R:              r[:],
 	}}
 	desc := []*JoinSplitDesc{&JoinSplitDesc{note: note}}
-	usableTx := []*Tx{&Tx{Descs: desc}}
+	usableTx := []*TxNormal{&TxNormal{Descs: desc}}
 
 	cm1, _ := hex.DecodeString("d26356e6f726dfb4c0a395f3af134851139ce1c64cfed3becc3530c8c8ad5660")
 	cm2, _ := hex.DecodeString("5aaf71f995db014006d630dedf7ffcbfa8854055e6a8cc9ef153629e3045b7e1")

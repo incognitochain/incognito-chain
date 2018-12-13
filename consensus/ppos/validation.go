@@ -1,7 +1,6 @@
 package ppos
 
 import (
-	"bytes"
 	"encoding/json"
 	"time"
 
@@ -78,7 +77,7 @@ func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, 
 	return nil
 }
 
-func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error {
+/*func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error {
 	rtOld := self.config.BlockChain.BestState[block.Header.ChainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
 	newTree := self.config.BlockChain.BestState[block.Header.ChainID].CmTree.MakeCopy()
 	Logger.log.Infof("[validateblock] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
@@ -92,7 +91,7 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 		Logger.log.Errorf("MerkleRootCommitments diff!! \n%x\n%x\n%x", rtOld, rt[:], block.Header.MerkleRootCommitments[:])
 		for _, blockTx := range block.Transactions {
 			if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
-				tx, ok := blockTx.(*transaction.Tx)
+				tx, ok := blockTx.(*transaction.TxNormal)
 				if ok == false {
 					Logger.log.Errorf("Transaction in block not valid")
 				}
@@ -107,7 +106,7 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 		return NewConsensusError(ErrMerkleRootCommitments, nil)
 	}
 	return nil
-}
+}*/
 
 func (self *Engine) CheckBlockSize(block *blockchain.Block) error {
 	blockBytes, err := json.Marshal(*block)
@@ -182,10 +181,10 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 	}
 
 	// 5. ValidateTransaction MerkleRootCommitments
-	err = self.ValidateMerkleRootCommitments(block)
+	/*err = self.ValidateMerkleRootCommitments(block)
 	if err != nil {
 		return err
-	}
+	}*/
 
 	// 6. Validate transactions
 	return self.ValidateTxList(block.Transactions)
@@ -212,10 +211,10 @@ func (self *Engine) validatePreSignBlockSanity(block *blockchain.Block) error {
 	}
 
 	// 4. ValidateTransaction MerkleRootCommitments
-	err = self.ValidateMerkleRootCommitments(block)
+	/*err = self.ValidateMerkleRootCommitments(block)
 	if err != nil {
 		return err
-	}
+	}*/
 
 	// 5. ValidateTransaction transactions
 	return self.ValidateTxList(block.Transactions)

@@ -1,14 +1,15 @@
 package transaction
 
+/*
 import "github.com/ninjadotorg/constant/common"
 
 type TxVoteDCBProposal struct {
-	Tx
+	TxNormal
 	VoteDCBProposalData VoteDCBProposalData
 }
 
 type TxVoteGOVProposal struct {
-	Tx
+	TxNormal
 	VoteGOVProposalData VoteGOVProposalData
 }
 
@@ -51,23 +52,24 @@ func (VoteGOVProposalData VoteGOVProposalData) Hash() *common.Hash {
 }
 
 func (thisTx TxVoteDCBProposal) Hash() *common.Hash {
-	record := string(common.ToBytes(thisTx.Tx.Hash()))
+	record := string(common.ToBytes(thisTx.TxNormal.Hash()))
 	record += string(common.ToBytes(thisTx.VoteDCBProposalData.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (thisTx TxVoteGOVProposal) Hash() *common.Hash {
-	record := string(common.ToBytes(thisTx.Tx.Hash()))
+	record := string(common.ToBytes(thisTx.TxNormal.Hash()))
 	record += string(common.ToBytes(thisTx.VoteGOVProposalData.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
 func (thisTx TxVoteDCBProposal) Validate() bool {
-	return thisTx.Tx.ValidateTransaction() && thisTx.VoteDCBProposalData.Validate()
+	return thisTx.TxNormal.ValidateTransaction() && thisTx.VoteDCBProposalData.Validate()
 }
 
 func (thisTx TxVoteGOVProposal) Validate() bool {
-	return thisTx.Tx.ValidateTransaction() && thisTx.VoteGOVProposalData.Validate()
+	return thisTx.TxNormal.ValidateTransaction() && thisTx.VoteGOVProposalData.Validate()
 }
+*/
