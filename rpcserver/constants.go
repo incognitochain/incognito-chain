@@ -43,6 +43,7 @@ const (
 	GetLoanParams                       = "loanparams"
 	GetBlockHeader                      = "getheader"
 	RandomCommitments                   = "randomcommitments"
+	HasSerialNumbers                    = "hasserialnumbers"
 
 	// Wallet rpc cmd
 	ListAccounts               = "listaccounts"

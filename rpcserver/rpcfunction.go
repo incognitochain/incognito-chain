@@ -53,7 +53,7 @@ var RpcHandler = map[string]commandHandler{
 	GetBlockProducerList:       RpcServer.handleGetBlockProducerList,
 
 	RandomCommitments: RpcServer.handleRandomCommitments,
-
+	HasSerialNumbers:  RpcServer.handleRandomCommitments,
 
 	// custom token
 	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
