@@ -472,7 +472,11 @@ func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeC
 		if err != nil {
 			return nil, err
 		}
-		item.Amount = res[hex.EncodeToString(accountPaymentAddress.Pk)]
+		pubkey := hex.EncodeToString(accountPaymentAddress.Pk)
+		item.Amount = res[pubkey]
+		if item.Amount == 0 {
+			continue
+		}
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
