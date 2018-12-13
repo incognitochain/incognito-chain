@@ -28,9 +28,11 @@ type BestStateBeacon struct {
 	BestBlock     *BlockV2    // The block.
 	BestShardHash []common.Hash
 
-	BeaconHeight    uint64
-	BeaconCandidate []string
-	ShardCandidate  map[byte][]string
+	BeaconHeight           uint64
+	BeaconCandidate        []string
+	BeaconPendingCandidate []string
+	ShardCandidate         map[byte][]string
+	ShardPendingCandidate  map[byte][]string
 
 	UnassignBeaconCandidate []string
 	UnassignShardCandidate  []string
