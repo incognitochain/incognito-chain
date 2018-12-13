@@ -553,9 +553,55 @@ func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, c
 	return hex.EncodeToString(jsSignByteArray), nil
 }
 
+// handleRandomCommitments - from input of outputcoin, random to create data for create new tx
 func (self RpcServer) handleRandomCommitments(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	// TODO 0xsirrush
-	return nil, nil
+	arrayParams := common.InterfaceSlice(params)
+
+	// #1: payment address
+	paymentAddressStr := arrayParams[0].(string)
+	key, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+	if err != nil {
+		return nil, err
+	}
+	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+
+	// #2: available inputCoin from old outputcoin
+	data := jsonresult.ListUnspentResultItem{}
+	data.Init(arrayParams[0])
+	usableOutputCoins := []*privacy.OutputCoin{}
+	for _, item := range data.OutCoins {
+		i := &privacy.OutputCoin{
+			CoinDetails: &privacy.Coin{
+				Value:       item.Value,
+				Randomness:  &item.Randomness,
+				SNDerivator: &item.SNDerivator,
+			},
+		}
+		i.CoinDetails.Info, _, _ = base58.Base58Check{}.Decode(item.Info)
+
+		CoinCommitmentBytes, _, _ := base58.Base58Check{}.Decode(item.CoinCommitment)
+		CoinCommitment := &privacy.EllipticPoint{}
+		_ = CoinCommitment.Decompress(CoinCommitmentBytes)
+		i.CoinDetails.CoinCommitment = CoinCommitment
+
+		PublicKeyBytes, _, _ := base58.Base58Check{}.Decode(item.PublicKey)
+		PublicKey := &privacy.EllipticPoint{}
+		_ = PublicKey.Decompress(PublicKeyBytes)
+		i.CoinDetails.PublicKey = PublicKey
+
+		InfoBytes, _, _ := base58.Base58Check{}.Decode(item.Info)
+		i.CoinDetails.Info = InfoBytes
+
+		usableOutputCoins = append(usableOutputCoins, i)
+	}
+	usableInputCoins := transaction.ConvertOutputCoinToInputCoin(usableOutputCoins)
+	commitmentIndexs, myCommitmentIndexs := self.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, chainIdSender)
+	result := make(map[string]interface{})
+	result["CommitmentIndexs"] = commitmentIndexs
+	result["MyCommitmentIndexs"] = myCommitmentIndexs
+
+	return result, nil
 }
 
 // handleHasSerialNumbers - check list serial numbers existed in db of node
