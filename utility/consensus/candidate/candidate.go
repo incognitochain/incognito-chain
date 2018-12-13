@@ -13,18 +13,19 @@ func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock
 	// update BestShardHash, BestBlock, BestBlockHash
 	// unassign -> remove out the candidate
 
-	// TODO: build candidate at epoch time
 	if beaconBestState.BeaconHeight%200 == 1 {
-		//newBeaconNode, newShardNode := GetStakingCandidate(newBlock)
-		// GetStakingCandidate -> UnassignCandidate
-		// UnassignCandidate -> AssignCandidate base on next random number
+		newBeaconNode, newShardNode := GetStakingCandidate(newBlock)
+		beaconBestState.UnassignBeaconCandidate = append(beaconBestState.UnassignBeaconCandidate, newBeaconNode...)
+		beaconBestState.UnassignShardCandidate = append(beaconBestState.UnassignShardCandidate, newShardNode...)
+		//TODO: assign unAssignCandidate to assignCandidate	& clear UnassignShardCandidate
 
-		// Set current random number = next random number
-
+		// update random number for new epoch
+		beaconBestState.CurrentRandomNumber = beaconBestState.NextRandomNumber
 	} else {
 		// GetStakingCandidate -> UnassignCandidate
-		//newBeaconNode, newShardNode := GetStakingCandidate(newBlock)
-
+		newBeaconNode, newShardNode := GetStakingCandidate(newBlock)
+		beaconBestState.UnassignBeaconCandidate = append(beaconBestState.UnassignBeaconCandidate, newBeaconNode...)
+		beaconBestState.UnassignShardCandidate = append(beaconBestState.UnassignShardCandidate, newShardNode...)
 	}
 	// TODO: Param "set" "del"
 
@@ -38,7 +39,6 @@ func GetStakingCandidate(beaconBlock *blockchain.BlockV2) (beacon []string, shar
 			if v[0] == "assign" && v[2] == "beacon" {
 				beacon = strings.Split(v[1], ",")
 			}
-
 			if v[0] == "assign" && v[2] == "shard" {
 				shard = strings.Split(v[1], ",")
 			}
@@ -46,7 +46,6 @@ func GetStakingCandidate(beaconBlock *blockchain.BlockV2) (beacon []string, shar
 	} else {
 		panic("GetStakingCandidate not from beacon block")
 	}
-
 	return beacon, shard
 }
 
