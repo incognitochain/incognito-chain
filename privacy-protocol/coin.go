@@ -120,6 +120,7 @@ func (coin *Coin) Bytes() []byte {
 	Info := coin.Info
 	coin_bytes = append(coin_bytes, byte(len(Info)))
 	coin_bytes = append(coin_bytes, Info...)
+	fmt.Printf("len coin bytes : %v\n", len(coin_bytes))
 	return coin_bytes
 }
 
