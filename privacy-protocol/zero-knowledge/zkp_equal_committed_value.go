@@ -108,7 +108,8 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) error {
 	}
 	pro.C = make([]*privacy.EllipticPoint, 2)
 	for i := 0; i < len(pro.C); i++ {
-		fmt.Println(proofbytes[i*privacy.CompressedPointSize: (i+1)*privacy.CompressedPointSize])
+		pro.C[i] = new(privacy.EllipticPoint)
+		//fmt.Println(proofbytes[i*privacy.CompressedPointSize: (i+1)*privacy.CompressedPointSize])
 		err := pro.C[i].Decompress(proofbytes[i*privacy.CompressedPointSize: (i+1)*privacy.CompressedPointSize])
 		if err != nil{
 			return err
@@ -123,6 +124,7 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) error {
 	}
 	pro.T = make([]*privacy.EllipticPoint, 2)
 	for i := 0; i < len(pro.T); i++ {
+		pro.T[i] = new(privacy.EllipticPoint)
 		pro.T[i].Decompress(proofbytes[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+i*privacy.CompressedPointSize: len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+(i+1)*privacy.CompressedPointSize])
 		if !pro.T[i].IsSafe() {
 			return errors.New("Decompressed failed!")
@@ -133,6 +135,7 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) error {
 		pro.Z[i] = big.NewInt(0)
 		pro.Z[i].SetBytes(proofbytes[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+i*privacy.BigIntSize: len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+(i+1)*privacy.BigIntSize])
 	}
+	fmt.Printf("Done set byte!!!!!")
 	return nil
 }
 
