@@ -9,6 +9,7 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/voting"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -303,8 +304,8 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	genesisBlock.Header.GOVConstitution.GOVParams = params.GOVParams{
 		SalaryPerTx:  salaryPerTx,
 		BasicSalary:  basicSalary,
-		SellingBonds: &params.SellingBonds{},
-		RefundInfo:   &params.RefundInfo{},
+		SellingBonds: &voting.SellingBonds{},
+		RefundInfo:   &voting.RefundInfo{},
 	}
 	// Decentralize central bank params
 	loanParams := []params.LoanParams{

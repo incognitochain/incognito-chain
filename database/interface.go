@@ -103,6 +103,13 @@ type DatabaseInterface interface {
 	GetKey(string, interface{}) []byte
 	GetVoteDCBBoardListPrefix() []byte
 	GetVoteGOVBoardListPrefix() []byte
+	SendInitDCBVoteToken(uint32, []byte, uint64) error
+	SendInitGOVVoteToken(uint32, []byte, uint64) error
+	AddVoteLv3Proposal(string, uint32, *common.Hash) error
+	AddVoteLv1or2Proposal(string, uint32, *common.Hash) error
+	AddVoteNormalProposalFromOwner(string, uint32, *common.Hash) error
+	AddVoteNormalProposalFromSealer(string, uint32, *common.Hash) error
+
 	ReverseGetKey(string, []byte) (interface{}, error)
 
 	Close() error

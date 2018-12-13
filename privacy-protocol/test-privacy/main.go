@@ -1,14 +1,12 @@
 package main
 
-<<<<<<< HEAD
-import privacy "github.com/ninjadotorg/constant/privacy-protocol"
-=======
 import (
-	"crypto/rand"
 	"fmt"
 	"math/big"
+
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/client/crypto/rand"
 )
->>>>>>> 04e82173bd5468413903f9c0c4bd0adc411c94d6
 
 func main() {
 
@@ -236,21 +234,6 @@ func main() {
 
 	/*----------------- TEST TX SALARY -----------------*/
 
-<<<<<<< HEAD
-	// keySet := new(cashec.KeySet)
-	// spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	// keySet.ImportFromPrivateKey(&spendingKey)
-
-	// var db database.DatabaseInterface
-
-	// tx, err := transaction.CreateTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
-	// if err != nil{
-	// 	fmt.Println(err)
-	// }
-	// fmt.Printf("Tx: %+v\n", tx)
-
-	// res := transaction.ValidateTxSalary(tx, db)
-=======
 	//keySetSender := new(cashec.KeySet)
 	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
 	//keySetSender.ImportFromPrivateKey(&spendingKey)
@@ -290,7 +273,6 @@ func main() {
 	// generates some input coins of sender
 	//inputCoins := make([]*privacy.InputCoin)
 
-
 	//tx := new(transaction.Tx)
 	//tx.CreateTx(keySetSender.PrivateKey, paymentInfo, )
 
@@ -303,12 +285,11 @@ func main() {
 	//	fmt.Println("equal")
 	//}
 
-	for true{
+	for true {
 		res, _ := rand.Int(rand.Reader, big.NewInt(10))
 
 		fmt.Println(res)
 	}
->>>>>>> 04e82173bd5468413903f9c0c4bd0adc411c94d6
 
 	// fmt.Printf("Res: %v\n", res)
 

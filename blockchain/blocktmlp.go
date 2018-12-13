@@ -9,12 +9,12 @@ import (
 	"sort"
 	"time"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/voting"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -25,7 +25,7 @@ type BlkTmplGenerator struct {
 }
 
 type ConstitutionHelper interface {
-	GetStartedBlockHeight(generator *BlkTmplGenerator, chainID byte) int32
+	GetStartedNormalVote(generator *BlkTmplGenerator, chainID byte) int32
 	CheckSubmitProposalType(tx metadata.Transaction) bool
 	CheckVotingProposalType(tx metadata.Transaction) bool
 	GetAmountVoteToken(tx metadata.Transaction) uint64
@@ -101,6 +101,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(chainID)
 	// Get basic salary on block
 	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
+	currentBlockHeight := prevBlock.Header.Height + 1
 
 	if len(sourceTxns) < common.MinTxsInBlock {
 		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
@@ -132,25 +133,78 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 			continue
 		}
 
-		if tx.GetMetadataType() == metadata.BuyFromGOVRequestMeta {
-			income, soldAmt, addable := blockgen.checkBuyFromGOVReqTx(chainID, tx, bondsSold)
-			if !addable {
-				txToRemove = append(txToRemove, tx)
+		startedDCBPivot := prevBlock.Header.DCBConstitution.StartedBlockHeight
+		endedDCBPivot := prevBlock.Header.DCBConstitution.GetEndedBlockHeight()
+		lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
+		lv2DCBPivot := lv3DCBPivot - common.EncryptionPhaseDuration
+		lv1DCBPivot := lv2DCBPivot - common.EncryptionPhaseDuration
+		startedGOVPivot := prevBlock.Header.GOVConstitution.StartedBlockHeight
+		endedGOVPivot := prevBlock.Header.GOVConstitution.GetEndedBlockHeight()
+		lv3GOVPivot := endedGOVPivot - common.EncryptionPhaseDuration
+		lv2GOVPivot := lv3GOVPivot - common.EncryptionPhaseDuration
+		lv1GOVPivot := lv2GOVPivot - common.EncryptionPhaseDuration
+		switch tx.GetMetadataType() {
+		case metadata.BuyFromGOVRequestMeta:
+			{
+				income, soldAmt, addable := blockgen.checkBuyFromGOVReqTx(chainID, tx, bondsSold)
+				if !addable {
+					txToRemove = append(txToRemove, tx)
+					continue
+				}
+				bondsSold += soldAmt
+				incomeFromBonds += income
+				buySellReqTxs = append(buySellReqTxs, tx)
+			}
+		case metadata.BuyBackRequestMeta:
+			{
+				buyBackFromInfo, addable := blockgen.checkBuyBackReqTx(chainID, tx, buyBackCoins)
+				if !addable {
+					txToRemove = append(txToRemove, tx)
+					continue
+				}
+				buyBackCoins += (buyBackFromInfo.buyBackPrice + buyBackFromInfo.value)
+				buyBackFromInfos = append(buyBackFromInfos, buyBackFromInfo)
+			}
+		case metadata.NormalDCBBallotMetaFromSealer:
+			if !(currentBlockHeight < endedDCBPivot && currentBlockHeight >= lv1DCBPivot) {
 				continue
 			}
-			bondsSold += soldAmt
-			incomeFromBonds += income
-			buySellReqTxs = append(buySellReqTxs, tx)
-		}
-
-		if tx.GetMetadataType() == metadata.BuyBackRequestMeta {
-			buyBackFromInfo, addable := blockgen.checkBuyBackReqTx(chainID, tx, buyBackCoins)
-			if !addable {
-				txToRemove = append(txToRemove, tx)
+		case metadata.NormalDCBBallotMetaFromOwner:
+			if !(currentBlockHeight < endedDCBPivot && currentBlockHeight >= lv1DCBPivot) {
 				continue
 			}
-			buyBackCoins += (buyBackFromInfo.buyBackPrice + buyBackFromInfo.value)
-			buyBackFromInfos = append(buyBackFromInfos, buyBackFromInfo)
+		case metadata.SealedLv1DCBBallotMeta:
+			if !(currentBlockHeight < lv1DCBPivot && currentBlockHeight >= lv2DCBPivot) {
+				continue
+			}
+		case metadata.SealedLv2DCBBallotMeta:
+			if !(currentBlockHeight < lv2DCBPivot && currentBlockHeight >= lv3DCBPivot) {
+				continue
+			}
+		case metadata.SealedLv3DCBBallotMeta:
+			if !(currentBlockHeight < lv3DCBPivot && currentBlockHeight >= startedDCBPivot) {
+				continue
+			}
+		case metadata.NormalGOVBallotMetaFromSealer:
+			if !(currentBlockHeight < endedGOVPivot && currentBlockHeight >= lv1GOVPivot) {
+				continue
+			}
+		case metadata.NormalGOVBallotMetaFromOwner:
+			if !(currentBlockHeight < endedGOVPivot && currentBlockHeight >= lv1GOVPivot) {
+				continue
+			}
+		case metadata.SealedLv1GOVBallotMeta:
+			if !(currentBlockHeight < lv1GOVPivot && currentBlockHeight >= lv2GOVPivot) {
+				continue
+			}
+		case metadata.SealedLv2GOVBallotMeta:
+			if !(currentBlockHeight < lv2GOVPivot && currentBlockHeight >= lv3GOVPivot) {
+				continue
+			}
+		case metadata.SealedLv3GOVBallotMeta:
+			if !(currentBlockHeight < lv3GOVPivot && currentBlockHeight >= startedGOVPivot) {
+				continue
+			}
 		}
 
 		if tx.GetMetadataType() == metadata.IssuingRequestMeta {
@@ -436,7 +490,7 @@ func (blockgen *BlkTmplGenerator) createRequestConstitutionTxDecs(
 	// count vote from lastConstitution.StartedBlockHeight to Bestblock height
 	CountVote := make(map[common.Hash]int64)
 	Transaction := make(map[common.Hash]*metadata.Transaction)
-	for blockHeight := ConstitutionHelper.GetStartedBlockHeight(blockgen, chainID); blockHeight < BestBlock.Header.Height; blockHeight += 1 {
+	for blockHeight := ConstitutionHelper.GetStartedNormalVote(blockgen, chainID); blockHeight < BestBlock.Header.Height; blockHeight += 1 {
 		//retrieve block from block's height
 		hashBlock, err := blockgen.chain.config.DataBase.GetBlockByIndex(blockHeight, chainID)
 		if err != nil {
@@ -554,7 +608,7 @@ func (blockgen *BlkTmplGenerator) processGovDividend(rt []byte, chainID byte, bl
 
 func buildSingleBuySellResponseTx(
 	buySellReqTx metadata.Transaction,
-	sellingBondsParam *params.SellingBonds,
+	sellingBondsParam *voting.SellingBonds,
 ) (*transaction.TxCustomToken, error) {
 	bondID := fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt)
 	additionalSuffix := make([]byte, 24-len(bondID))
@@ -625,7 +679,7 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 // the tx is to distribute tokens (bond, gov, ...) to token requesters
 func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 	buySellReqTxs []metadata.Transaction,
-	sellingBondsParam *params.SellingBonds,
+	sellingBondsParam *voting.SellingBonds,
 ) ([]*transaction.TxCustomToken, error) {
 	if len(buySellReqTxs) == 0 {
 		return []*transaction.TxCustomToken{}, nil

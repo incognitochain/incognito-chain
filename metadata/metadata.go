@@ -71,6 +71,7 @@ type BlockchainRetriever interface {
 	GetDCBParams() params.DCBParams
 	GetDCBBoardPubKeys() [][]byte
 	GetGOVParams() params.GOVParams
+	GetGOVBoardPubKeys() [][]byte
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
 
 	// For validating loan metadata
