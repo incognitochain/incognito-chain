@@ -326,11 +326,14 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 		v := wit.Values[j]
 		if v.Cmp(big.NewInt(0)) == -1 {
 			fmt.Println("H is below range! Not proving")
+			err := fmt.Errorf("H is below range! Not proving")
+			return nil, err
+			//err := fmt.Errorf("Value is above range! Not proving.")
 		}
 		if v.Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(wit.maxExp)), privacy.Curve.Params().N)) == 1 {
 			fmt.Println("Value is above range! Not proving.")
 			err := fmt.Errorf("Value is above range! Not proving.")
-			return new(PKComMultiRangeProof), err
+			return nil, err
 		}
 		gamma := new(big.Int).SetBytes(privacy.RandBytes(32))
 		gamma.Mod(gamma, privacy.Curve.Params().N)
