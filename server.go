@@ -635,6 +635,9 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	err := cashec.ValidateDataB58(msg.PublicKey, msg.SignDataB58, []byte{0x00})
 	if err == nil {
 		pbk = msg.PublicKey
+	} else {
+		peerConn.ForceClose()
+		return
 	}
 	remotePeer := &peer.Peer{
 		ListeningAddress: msg.LocalAddress,
@@ -648,6 +651,11 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	valid := false
 	if msg.ProtocolVersion == self.protocolVersion {
 		valid = true
+	}
+
+	if !peerConn.CheckAccepted() {
+		peerConn.ForceClose()
+		return
 	}
 
 	msgV, err := wire.MakeEmptyMessage(wire.CmdVerack)

@@ -602,7 +602,7 @@ func (self *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers
 
 func (self *ConnManager) randShards(maxShards int) []byte {
 	shardBytes := make([]byte, 0)
-	for i := 0; i < 15; i++ {
+	for i := 0; i < 256; i++ {
 		shardBytes = append(shardBytes, byte(i))
 	}
 	shardsRet := make([]byte, 0)

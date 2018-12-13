@@ -372,3 +372,10 @@ func (p *PeerConn) ForceClose() {
 	p.IsForceClose = true
 	close(p.cClose)
 }
+
+func (p *PeerConn) CheckAccepted() bool {
+	// check max conn
+	// check max shard conn
+	// check max unknown shard conn
+	return true
+}

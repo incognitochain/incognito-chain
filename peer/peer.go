@@ -214,7 +214,7 @@ func (self Peer) NewPeer() (*Peer, error) {
 		return &self, NewPeerError(GetPeerIdFromProtocolErr, err, &self)
 	}
 
-	self.RawAddress = fullAddr.String()
+	self.RawAddress = fmt.Sprintf("%s%s", listeningAddressString, mulAddrStr)
 	self.Host = basicHost
 	self.TargetAddress = fullAddr
 	self.PeerID = peerID
