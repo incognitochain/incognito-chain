@@ -23,9 +23,12 @@ type Engine struct {
 	cSwapSig   chan swapSig
 	cNewBlock  chan blockchain.Block
 
-	config                EngineConfig
-	knownChainsHeight     chainsHeight
-	validatedChainsHeight chainsHeight
+	config EngineConfig
+	Layers struct {
+		Beacon *Layerbeacon
+		Shard  *Layershard
+	}
+	CurrentRole string
 }
 
 type EngineConfig struct {
@@ -79,19 +82,24 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	}
 	self.config.BlockChain.StoreBestState(block.Header.ChainID)
 
-	self.knownChainsHeight.Lock()
-	if self.knownChainsHeight.Heights[block.Header.ChainID] < int(block.Header.Height) {
-		self.knownChainsHeight.Heights[block.Header.ChainID] = int(block.Header.Height)
-		self.sendBlockMsg(block)
-	}
-	self.knownChainsHeight.Unlock()
-	self.validatedChainsHeight.Lock()
-	self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Header.Height)
-	self.validatedChainsHeight.Unlock()
+	// self.knownChainsHeight.Lock()
+	// if self.knownChainsHeight.Heights[block.Header.ChainID] < int(block.Header.Height) {
+	// 	self.knownChainsHeight.Heights[block.Header.ChainID] = int(block.Header.Height)
+	// 	self.sendBlockMsg(block)
+	// }
+	// self.knownChainsHeight.Unlock()
+	// self.validatedChainsHeight.Lock()
+	// self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Header.Height)
+	// self.validatedChainsHeight.Unlock()
 
-	self.Committee().UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)
+	// self.Committee().UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)
 }
 
 func (self *Engine) Committee() *CommitteeStruct {
 	return &CommitteeStruct{}
+}
+
+func (self *Engine) createTmplBlock() *blockchain.BlockV2 {
+
+	return nil
 }

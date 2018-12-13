@@ -1,8 +1,8 @@
 package constantpos
 
 const (
-	SigPointAdd = 1
-	SigPointMin = -1
-	BlkPointAdd = 5
-	BlkPointMin = -5
+	ListenTimeout  = 40 //in second
+	PrepareTimeout = 20
+	CommitTimeout  = 20
+	ReplyTimeout   = 20
 )

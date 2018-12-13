@@ -2,7 +2,6 @@ package constantpos
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/cashec"
@@ -10,7 +9,6 @@ import (
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/wire"
 )
 
 func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
@@ -120,37 +118,37 @@ func (self *Engine) CheckBlockSize(block *blockchain.Block) error {
 }
 
 func (self *Engine) IsEnoughData(block *blockchain.Block) error {
-	if self.validatedChainsHeight.Heights[block.Header.ChainID] == (int(block.Header.Height) - 1) {
-		notFullySync := false
-		for i := 0; i < common.TotalValidators; i++ {
-			if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
-				notFullySync = true
-				getBlkMsg := &wire.MessageGetBlocks{
-					LastBlockHash: self.config.BlockChain.BestState[i].BestBlockHash.String(),
-				}
-				go func(chainLeader string) {
-					peerIDs := self.config.Server.GetPeerIDsFromPublicKey(chainLeader)
-					if len(peerIDs) != 0 {
-						Logger.log.Info("Send getblock to "+peerIDs[0], chainLeader)
-						self.config.Server.PushMessageToPeer(getBlkMsg, peerIDs[0])
-					} else {
-						Logger.log.Error("Validator's peer not found!", chainLeader)
-					}
-				}(block.BlockProducer)
-			}
-		}
-		if notFullySync {
-			timer := time.NewTimer(common.MaxSyncChainTime * time.Second)
-			<-timer.C
-			for i := 0; i < common.TotalValidators; i++ {
-				if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
-					return NewConsensusError(ErrChainNotFullySynced, nil)
-				}
-			}
-		}
-	} else {
-		return NewConsensusError(ErrChainNotFullySynced, nil)
-	}
+	// if self.validatedChainsHeight.Heights[block.Header.ChainID] == (int(block.Header.Height) - 1) {
+	// 	notFullySync := false
+	// 	for i := 0; i < common.TotalValidators; i++ {
+	// 		if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
+	// 			notFullySync = true
+	// 			getBlkMsg := &wire.MessageGetBlocks{
+	// 				LastBlockHash: self.config.BlockChain.BestState[i].BestBlockHash.String(),
+	// 			}
+	// 			go func(chainLeader string) {
+	// 				peerIDs := self.config.Server.GetPeerIDsFromPublicKey(chainLeader)
+	// 				if len(peerIDs) != 0 {
+	// 					Logger.log.Info("Send getblock to "+peerIDs[0], chainLeader)
+	// 					self.config.Server.PushMessageToPeer(getBlkMsg, peerIDs[0])
+	// 				} else {
+	// 					Logger.log.Error("Validator's peer not found!", chainLeader)
+	// 				}
+	// 			}(block.BlockProducer)
+	// 		}
+	// 	}
+	// 	if notFullySync {
+	// 		timer := time.NewTimer(common.MaxSyncChainTime * time.Second)
+	// 		<-timer.C
+	// 		for i := 0; i < common.TotalValidators; i++ {
+	// 			if self.validatedChainsHeight.Heights[i] < (block.Header.ChainsHeight[i]) && (i != int(block.Header.ChainID)) {
+	// 				return NewConsensusError(ErrChainNotFullySynced, nil)
+	// 			}
+	// 		}
+	// 	}
+	// } else {
+	// 	return NewConsensusError(ErrChainNotFullySynced, nil)
+	// }
 	return nil
 }
 
