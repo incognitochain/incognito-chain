@@ -97,7 +97,7 @@ type config struct {
 	// Light bool `long:"light" description:"Default 'false'', when node run with mode 'light'', we only save block-header and a transactions database which relate to accounts in wallet"`
 
 	UserPrvKey string `long:"userprvkey" description:"User private key used for operation in consensus"`
-	NodeRole   string `long:"noderole" description:"Role of this node (beacon/producer/data/wallet/relay | default role is relay) for more detail please check github doc repo"`
+	NodeRole   string `long:"noderole" description:"Role of this node (beacon/producer/wallet/relay/auto | default role is 'relay', 'auto' mode will switch between 'beacon/producer' and 'replay') for more detail please check github doc repo"`
 
 	// For Wallet
 	Wallet           bool   `long:"enablewallet" description:"Enable wallet"`
