@@ -1078,3 +1078,7 @@ func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]ui
 func (self *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {
 	return self.config.customTokenRewardSnapshot
 }
+
+func (self *BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+	return transaction.RandomCommitmentsProcess(usableInputCoins, randNum, self.config.DataBase, chainID)
+}
