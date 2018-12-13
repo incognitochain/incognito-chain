@@ -26,7 +26,7 @@ Parameter #1—the minimum number of confirmations an output must have
 Parameter #2—the maximum number of confirmations an output may have
 Parameter #3—the list readonly which be used to view utxo
 */
-func (self RpcServer) handleListTransactions(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	result := jsonresult.ListUnspentResult{
 		ListUnspentResultItems: make(map[string][]jsonresult.ListUnspentResultItem),

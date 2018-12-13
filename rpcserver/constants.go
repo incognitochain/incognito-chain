@@ -19,7 +19,7 @@ const (
 	GetBlockCount     = "getblockcount"
 	GetBlockHash      = "getblockhash"
 
-	ListTransactions                    = "listtransactions"
+	ListOutputCoins                     = "listoutputcoins"
 	CreateRawTransaction                = "createtransaction"
 	SendRawTransaction                  = "sendtransaction"
 	CreateAndSendTransaction            = "createandsendtransaction"
@@ -52,7 +52,7 @@ const (
 	DumpPrivkey                = "dumpprivkey"
 	ImportAccount              = "importaccount"
 	RemoveAccount              = "removeaccount"
-	ListUnspentTxByPrivatekey  = "listunspentbyprivatekey"
+	ListUnspentOutputCoins     = "listunspentoutputcoins"
 	GetBalance                 = "getbalance"
 	GetBalanceByPrivatekey     = "getbalancebyprivatekey"
 	GetBalanceByPaymentAddress = "getbalancebypaymentaddress"

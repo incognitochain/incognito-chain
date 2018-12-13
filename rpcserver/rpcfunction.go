@@ -41,7 +41,7 @@ var RpcHandler = map[string]commandHandler{
 	GetBlockHeader:    RpcServer.handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
 
 	// transaction
-	ListTransactions:         RpcServer.handleListTransactions,
+	ListOutputCoins:          RpcServer.handleListOutputCoins,
 	CreateRawTransaction:     RpcServer.handleCreateRawTransaction,
 	SendRawTransaction:       RpcServer.handleSendRawTransaction,
 	CreateAndSendTransaction: RpcServer.handlCreateAndSendTx,
@@ -104,7 +104,7 @@ var RpcLimited = map[string]commandHandler{
 	DumpPrivkey:                RpcServer.handleDumpPrivkey,
 	ImportAccount:              RpcServer.handleImportAccount,
 	RemoveAccount:              RpcServer.handleRemoveAccount,
-	ListUnspentTxByPrivatekey:  RpcServer.handleListUnspentTxByPrivatekey,
+	ListUnspentOutputCoins:     RpcServer.handleListUnspentOutputCoins,
 	GetBalance:                 RpcServer.handleGetBalance,
 	GetBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
 	GetBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
@@ -172,7 +172,7 @@ func (self RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan 
 //Parameter #2—the maximum number of confirmations an output may have
 //Parameter #3—the list readonly which be used to view utxo
 //
-func (self RpcServer) handleListUnspentTxByPrivatekey(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleListUnspentOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	result := jsonresult.ListUnspentResult{
 		ListUnspentResultItems: make(map[string][]jsonresult.ListUnspentResultItem),
