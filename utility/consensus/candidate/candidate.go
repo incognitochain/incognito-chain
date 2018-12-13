@@ -3,6 +3,7 @@ package candidate
 import (
 	"crypto/sha256"
 	"errors"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -11,6 +12,11 @@ import (
 )
 
 func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock *blockchain.BlockV2) (*blockchain.BestStateBeacon, error) {
+	//variable
+	// swap 3 validators each time
+	const offset = int(3)
+	shardSwapValidator := make(map[byte][]string)
+	beaconSwapValidator := []string{}
 	// TODO:
 	// update BestShardHash, BestBlock, BestBlockHash
 	beaconBestState.BestBlockHash = newBlock.Hash()
@@ -39,13 +45,10 @@ func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock
 		if err != nil {
 			return beaconBestState, err
 		}
-
-		// swap 3 validators each time
-		const offset = int(3)
 		for i := 0; i < 256; i++ {
 			shardID := byte(i)
 			//swap validator for each shard
-			beaconBestState.ShardPendingCandidate[shardID], beaconBestState.ShardCandidate[shardID], err = SwapValidator(beaconBestState.ShardPendingCandidate[shardID], beaconBestState.ShardCandidate[shardID], offset)
+			beaconBestState.ShardPendingCandidate[shardID], beaconBestState.ShardCandidate[shardID], shardSwapValidator[shardID], err = SwapValidator(beaconBestState.ShardPendingCandidate[shardID], beaconBestState.ShardCandidate[shardID], offset)
 			if err != nil {
 				return beaconBestState, err
 			}
@@ -60,11 +63,12 @@ func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock
 		// reset UnassignBeaconCandidate
 		beaconBestState.UnassignBeaconCandidate = []string{}
 		//swap validator in beacon
-		beaconBestState.BeaconPendingCandidate, beaconBestState.BeaconCandidate, err = SwapValidator(beaconBestState.BeaconPendingCandidate, beaconBestState.BeaconCandidate, offset)
+		beaconBestState.BeaconPendingCandidate, beaconBestState.BeaconCandidate, beaconSwapValidator, err = SwapValidator(beaconBestState.BeaconPendingCandidate, beaconBestState.BeaconCandidate, offset)
 		if err != nil {
 			return beaconBestState, err
 		}
 		// update random number for new epoch
+		fmt.Println(beaconSwapValidator)
 		beaconBestState.CurrentRandomNumber = beaconBestState.NextRandomNumber
 	} else {
 		// GetStakingCandidate -> UnassignCandidate
@@ -89,7 +93,7 @@ func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock
 		}
 	}
 
-	return beaconBestState
+	return beaconBestState, nil
 }
 
 func GetStakingCandidate(beaconBlock *blockchain.BlockV2) (beacon []string, shard []string) {
@@ -156,10 +160,10 @@ func calculateHash(candidate string, rand int64) (shardID byte) {
 // consider these list as queue structure
 // unqueue a number of validator out of currentValidators list
 // enqueue a number of validator into currentValidators list <=> unqueue a number of validator out of pendingValidators list
-// return value: #1 remaining pendingValidators, #2 new currentValidators
-func SwapValidator(pendingValidators []string, currentValidators []string, offset int) ([]string, []string, error) {
+// return value: #1 remaining pendingValidators, #2 new currentValidators # swap validator
+func SwapValidator(pendingValidators []string, currentValidators []string, offset int) ([]string, []string, []string, error) {
 	if offset == 0 {
-		return pendingValidators, currentValidators, errors.New("Can't not swap 0 validator")
+		return pendingValidators, currentValidators, nil, errors.New("Can't not swap 0 validator")
 	}
 	// if number of pending validator is less or equal than offset, set offset equal to number of pending validator
 	if offset > len(pendingValidators) {
@@ -167,11 +171,12 @@ func SwapValidator(pendingValidators []string, currentValidators []string, offse
 	}
 	// do nothing
 	if offset == 0 {
-		return pendingValidators, currentValidators, errors.New("No pending validator for swapping")
+		return pendingValidators, currentValidators, nil, errors.New("No pending validator for swapping")
 	}
 	if offset > len(currentValidators) {
-		return pendingValidators, currentValidators, errors.New("Trying to swap too many validator")
+		return pendingValidators, currentValidators, nil, errors.New("Trying to swap too many validator")
 	}
+	swapValidator := currentValidators[:offset]
 	// unqueue validator with index from 0 to offset-1 from currentValidators list
 	currentValidators = currentValidators[offset:]
 	// unqueue validator with index from 0 to offset-1 from currentValidators list
@@ -181,7 +186,7 @@ func SwapValidator(pendingValidators []string, currentValidators []string, offse
 
 	// enqueue new validator to the remaning of current validators list
 	currentValidators = append(currentValidators, tempValidators...)
-	return pendingValidators, currentValidators, nil
+	return pendingValidators, currentValidators, swapValidator, nil
 }
 
 func ShuffleCandidate(candidates []string, rand int64) ([]string, error) {
