@@ -90,6 +90,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	var txsToAdd []metadata.Transaction
 	var txToRemove []metadata.Transaction
 	var buySellReqTxs []metadata.Transaction
+	var issuingReqTxs []metadata.Transaction
 	var buyBackFromInfos []*buyBackFromInfo
 	bondsSold := uint64(0)
 	incomeFromBonds := uint64(0)
@@ -150,6 +151,15 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 			}
 			buyBackCoins += (buyBackFromInfo.buyBackPrice + buyBackFromInfo.value)
 			buyBackFromInfos = append(buyBackFromInfos, buyBackFromInfo)
+		}
+
+		if tx.GetMetadataType() == metadata.IssuingRequestMeta {
+			addable := blockgen.checkIssuingReqTx(chainID, tx)
+			if !addable {
+				txToRemove = append(txToRemove, tx)
+				continue
+			}
+			issuingReqTxs = append(issuingReqTxs, tx)
 		}
 
 		totalFee += tx.GetTxFee()
@@ -705,6 +715,73 @@ func (blockgen *BlkTmplGenerator) buildBuyBackResponsesTx(
 		buyBackResTxs = append(buyBackResTxs, buyBackResTx)
 	}
 	return buyBackResTxs, nil
+}
+
+func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
+	chainID byte,
+	tx metadata.Transaction,
+) bool {
+	// TODO: add more logic here
+	return true
+}
+
+func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
+	chainID byte,
+	issuingReqTxs []metadata.Transaction,
+	privatekey *privacy.SpendingKey,
+) ([]metadata.Transaction, error) {
+	prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	oracleParams := prevBlock.Header.Oracle
+
+	issuingResTxs := []metadata.Transaction{}
+	for _, issuingReqTx := range issuingReqTxs {
+		meta := issuingReqTx.GetMetadata()
+		issuingReq, ok := meta.(*metadata.IssuingRequest)
+		if !ok {
+			return []metadata.Transaction{}, errors.New("Could not parse IssuingRequest metadata.")
+		}
+		if issuingReq.AssetType == common.DCBTokenID {
+			issuingRes := metadata.IssuingResponse{
+				RequestedTxID: issuingReqTx.Hash(),
+			}
+			issuingRes.Type = metadata.IssuingResponseMeta
+			issuingAmt := issuingReq.DepositedAmount / oracleParams.DCBToken
+			txTokenVout := transaction.TxTokenVout{
+				Value:          issuingAmt,
+				PaymentAddress: issuingReq.ReceiverAddress,
+			}
+			txTokenData := transaction.TxTokenData{
+				Type:       transaction.CustomTokenInit,
+				Amount:     issuingAmt,
+				PropertyID: common.Hash(common.DCBTokenID),
+				Vins:       []transaction.TxTokenVin{},
+				Vouts:      []transaction.TxTokenVout{txTokenVout},
+				// PropertyName:   "",
+				// PropertySymbol: coinbaseTxType,
+			}
+			resTx := &transaction.TxCustomToken{
+				TxTokenData: txTokenData,
+			}
+			resTx.Type = common.TxCustomTokenType
+			resTx.Metadata = &issuingRes
+			issuingResTxs = append(issuingResTxs, resTx)
+			continue
+		}
+		if issuingReq.AssetType == common.ConstantID {
+			issuingAmt := issuingReq.DepositedAmount / oracleParams.Constant
+			resTx, err := transaction.CreateTxSalary(issuingAmt, &issuingReq.ReceiverAddress, privatekey, blockgen.chain.GetDatabase())
+			if err != nil {
+				return []metadata.Transaction{}, err
+			}
+			issuingRes := &metadata.IssuingResponse{
+				RequestedTxID: issuingReqTx.Hash(),
+			}
+			issuingRes.Type = metadata.IssuingResponseMeta
+			resTx.SetMetadata(issuingRes)
+			issuingResTxs = append(issuingResTxs, resTx)
+		}
+	}
+	return issuingResTxs, nil
 }
 
 func calculateAmountOfRefundTxs(

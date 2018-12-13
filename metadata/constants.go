@@ -17,6 +17,8 @@ const (
 	BuyFromGOVResponseMeta
 	BuyBackRequestMeta
 	BuyBackResponseMeta
+	IssuingRequestMeta
+	IssuingResponseMeta
 	DividendMeta
 
 	CrowdsaleRequestMeta

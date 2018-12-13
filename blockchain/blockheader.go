@@ -30,7 +30,9 @@ type CBParams struct {
 // }
 
 type Oracle struct {
-	Bonds map[string]uint64 // key: bondTypeID, value: price
+	Bonds    map[string]uint64 // key: bondTypeID, value: price
+	DCBToken uint64            // against USD
+	Constant uint64            // against USD
 }
 
 type BlockHeader struct {
