@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-	"math/big"
 )
 
 func main() {
@@ -260,9 +260,14 @@ func main() {
 	//fmt.Println(coin.SerialNumber == nil)
 	//fmt.Printf("coin.Serial numbre: %v\n", coin.SerialNumber)
 
-	h := new(big.Int)
-	h.SetInt64(-12)
-	h2 := new(big.Int).Set(h)
-	fmt.Println(h2.Cmp(big.NewInt(0)))
+	num := 12
+	bytes := privacy.IntToByteArr(num)
+	fmt.Printf("bytes: %v\n", bytes)
+
+	num2 := privacy.ByteArrToInt(bytes)
+	fmt.Printf("num2: %v\n", num2)
+
+
+
 
 }

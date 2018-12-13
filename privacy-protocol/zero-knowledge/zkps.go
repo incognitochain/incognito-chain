@@ -107,29 +107,30 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	// ComInputOpeningsProof
 	lenComInputOpeningsProofArray := len(paymentProof.ComInputOpeningsProof)
 	proofbytes = append(proofbytes, byte(lenComInputOpeningsProofArray))
-	//fmt.Printf("Byte - lenComInputOpeningsProofArray: %v\n", lenComInputOpeningsProofArray)
+	fmt.Printf("Byte - lenComInputOpeningsProofArray: %v\n", lenComInputOpeningsProofArray)
 
 	for i := 0; i < len(paymentProof.ComInputOpeningsProof); i++ {
 		comInputOpeningProof := paymentProof.ComInputOpeningsProof[i].Bytes()
-		//fmt.Printf("Byte - lenComInputOpeningsProof: %v\n", len(comInputOpeningProof))
-		//fmt.Printf("Byte - ComInputOpeningsProof: %v\n", comInputOpeningProof)
+		fmt.Printf("Byte - lenComInputOpeningsProof: %v\n", len(comInputOpeningProof))
+		fmt.Printf("Byte - ComInputOpeningsProof: %v\n", comInputOpeningProof)
 
 		proofbytes = append(proofbytes, byte(len(comInputOpeningProof)))
 		proofbytes = append(proofbytes, comInputOpeningProof...)
 	}
 	// OneOfManyProof
 	lenOneOfManyProofArray := len(paymentProof.OneOfManyProof)
-	proofbytes = append(proofbytes, privacy.IntToByteArr(lenOneOfManyProofArray)...)
+	proofbytes = append(proofbytes, byte(lenOneOfManyProofArray))
 	fmt.Printf("Byte - lenOneOfManyProofArray: %v\n", lenOneOfManyProofArray)
 
 
 	proofbytes = append(proofbytes, byte(len(paymentProof.OneOfManyProof)))
 	for i := 0; i < len(paymentProof.OneOfManyProof); i++ {
 		oneOfManyProof := paymentProof.OneOfManyProof[i].Bytes()
+
 		fmt.Printf("Byte - lenOneOfManyProof: %v\n", len(oneOfManyProof))
 		fmt.Printf("Byte - OneOfManyProof: %v\n", oneOfManyProof)
 
-		proofbytes = append(proofbytes, byte(len(oneOfManyProof)))
+		proofbytes = append(proofbytes, privacy.IntToByteArr(len(oneOfManyProof))...)
 		proofbytes = append(proofbytes, oneOfManyProof...)
 	}
 	// EqualityOfCommittedValProof
@@ -155,14 +156,21 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	}
 	//ComOutputOpeningsProof
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputOpeningsProof)))
+	fmt.Printf("Byte - lenComOutputOpeningsProofArray: %v\n", len(paymentProof.ComOutputOpeningsProof))
 	for i := 0; i < len(paymentProof.ComOutputOpeningsProof); i++ {
 		comOutputOpeningsProof := paymentProof.ComOutputOpeningsProof[i].Bytes()
+		fmt.Printf("Byte - LencomOutputOpeningsProof: %v\n", len(comOutputOpeningsProof))
+		fmt.Printf("Byte - comOutputOpeningsProof: %v\n", comOutputOpeningsProof)
+
 		proofbytes = append(proofbytes, byte(len(comOutputOpeningsProof)))
 		proofbytes = append(proofbytes, comOutputOpeningsProof...)
 	}
 	// ComOutputMultiRangeProof
 	if paymentProof.ComOutputMultiRangeProof != nil {
 		comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
+		fmt.Printf("Byte - LencomOutputMultiRangeProof: %v\n", len(comOutputMultiRangeProof))
+		fmt.Printf("Byte - comOutputMultiRangeProof: %v\n", comOutputMultiRangeProof)
+
 		proofbytes = append(proofbytes, privacy.IntToByteArr(len(comOutputMultiRangeProof))...)
 		proofbytes = append(proofbytes, comOutputMultiRangeProof...)
 	} else {
@@ -171,7 +179,10 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 
 	// SumOutRangeProof
 	if paymentProof.SumOutRangeProof != nil {
+
 		sumOutRangeProof := paymentProof.SumOutRangeProof.Bytes()
+		fmt.Printf("Byte - LensumOutRangeProof: %v\n", len(sumOutRangeProof))
+		fmt.Printf("Byte - sumOutRangeProof: %v\n", sumOutRangeProof)
 		proofbytes = append(proofbytes, byte(len(sumOutRangeProof)))
 		proofbytes = append(proofbytes, sumOutRangeProof...)
 	} else {
@@ -181,6 +192,8 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	// ComZeroProof
 	if paymentProof.ComZeroProof != nil {
 		comZeroProof := paymentProof.ComZeroProof.Bytes()
+		fmt.Printf("Byte - LencomZeroProof: %v\n", len(comZeroProof))
+		fmt.Printf("Byte - comZeroProof: %v\n", comZeroProof)
 		proofbytes = append(proofbytes, byte(len(comZeroProof)))
 		proofbytes = append(proofbytes, comZeroProof...)
 	} else {
@@ -189,22 +202,32 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 
 	// InputCoins
 	proofbytes = append(proofbytes, byte(len(paymentProof.InputCoins)))
+	fmt.Printf("Byte - LeninputCoinsArray: %v\n", len(paymentProof.InputCoins))
+
 	for i := 0; i < len(paymentProof.InputCoins); i++ {
 		inputCoins := paymentProof.InputCoins[i].Bytes()
+		fmt.Printf("Byte - LeninputCoins: %v\n", len(inputCoins))
+		fmt.Printf("Byte - inputCoins: %v\n", inputCoins)
 		proofbytes = append(proofbytes, byte(len(inputCoins)))
 		proofbytes = append(proofbytes, inputCoins...)
 	}
 	// OutputCoins
 	proofbytes = append(proofbytes, byte(len(paymentProof.OutputCoins)))
+	fmt.Printf("Byte - LeninputCoinsArray: %v\n", len(paymentProof.OutputCoins))
 	for i := 0; i < len(paymentProof.OutputCoins); i++ {
 		outputCoins := paymentProof.OutputCoins[i].Bytes()
+		fmt.Printf("Byte - LenoutputCoins: %v\n", len(outputCoins))
+		fmt.Printf("Byte - outputCoins: %v\n", outputCoins)
 		proofbytes = append(proofbytes, byte(len(outputCoins)))
 		proofbytes = append(proofbytes, outputCoins...)
 	}
 	// ComOutputValue
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputValue)))
+	fmt.Printf("Byte - LenComOutputValueArray: %v\n", len(paymentProof.ComOutputValue))
 	for i := 0; i < len(paymentProof.ComOutputValue); i++ {
 		comOutputValue := paymentProof.ComOutputValue[i].Compress()
+		fmt.Printf("Byte - LenComOutputValue: %v\n", len(comOutputValue))
+		fmt.Printf("Byte - ComOutputValue: %v\n", comOutputValue)
 		proofbytes = append(proofbytes, byte(len(comOutputValue)))
 		proofbytes = append(proofbytes, comOutputValue...)
 	}

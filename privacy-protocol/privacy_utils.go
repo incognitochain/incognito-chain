@@ -116,6 +116,11 @@ func IntToByteArr(n int) []byte{
 }
 //
 
-func ByteArrToInt(byte []byte) int{
-	return 0
+func ByteArrToInt(bytesArr []byte) int{
+	if len(bytesArr) != 2{
+		return 0
+	}
+	numInt := new(big.Int).SetBytes(bytesArr)
+	return int(numInt.Int64())
+
 }
