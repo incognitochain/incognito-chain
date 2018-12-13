@@ -115,3 +115,7 @@ func IntToByteArr(n int) []byte{
 	return a.Bytes()
 }
 //
+
+func ByteArrToInt(byte []byte) int{
+	return 0
+}

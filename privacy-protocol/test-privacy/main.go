@@ -63,6 +63,7 @@ func main() {
 
 	zkp.TestPKOneOfMany()
 
+
 	//zkp.TestPKComMultiRange()
 
 	//zkp.TestOpeningsProtocol()

@@ -253,8 +253,8 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	fmt.Printf("Set Byte - lenOneOfManyProofArray: %v\n", lenOneOfManyProofArray)
 	proof.OneOfManyProof = make([]*PKOneOfManyProof, lenOneOfManyProofArray)
 	for i := 0; i < lenOneOfManyProofArray; i++ {
-		lenOneOfManyProof := int(proofbytes[offset])
-		offset += 1
+		lenOneOfManyProof := privacy.ByteArrToInt(proofbytes[offset: offset+1])
+		offset += 2
 		fmt.Printf("Set Byte - lenOneOfManyProof: %v\n", lenOneOfManyProof)
 		fmt.Printf("Set Byte - OneOfManyProof: %v\n", proofbytes[offset: offset+lenOneOfManyProof])
 
@@ -312,8 +312,8 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	}
 
 	//ComOutputMultiRangeProof *PKComMultiRangeProof
-	lenComOutputMultiRangeProof := int(proofbytes[offset])
-	offset += 1
+	lenComOutputMultiRangeProof := privacy.ByteArrToInt(proofbytes[offset: offset+1])
+	offset += 2
 	fmt.Printf("Set Byte - lenComOutputMultiRangeProof: %v\n", lenComOutputMultiRangeProof)
 	if lenComOutputMultiRangeProof > 0 {
 		fmt.Printf("Set Byte - ComOutputMultiRangeProof: %v\n", proofbytes[offset: offset+lenComOutputMultiRangeProof])
