@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"math/big"
 )
 
@@ -60,7 +61,7 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-	//zkp.TestPKOneOfMany()
+	zkp.TestPKOneOfMany()
 
 	//zkp.TestPKComMultiRange()
 
