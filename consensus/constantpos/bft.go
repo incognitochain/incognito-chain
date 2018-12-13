@@ -3,25 +3,32 @@ package constantpos
 import (
 	"errors"
 	"sync"
+	"time"
+
+	"github.com/ninjadotorg/constant/blockchain"
 )
+
+type BlockGenFn func() *blockchain.BlockV2
 
 type BFTProtocol struct {
 	sync.Mutex
-	Phase   string
-	cQuit   chan struct{}
+	Phase    string
+	cQuit    chan struct{}
 	cTimeout chan struct{}
-	started bool
+
+	BlockGenFn BlockGenFn
+	started    bool
 }
 
-func (self *BFTProtocol) Start() {
+func (self *BFTProtocol) Start() error {
 	self.Lock()
-	defer.Unlock()
+	defer self.Unlock()
 	if self.started {
-		return errors.New("Consensus engine is already started")
+		return errors.New("Protocol is already started")
 	}
 	self.started = true
 	self.cQuit = make(chan struct{})
-	go func ()  {
+	go func() {
 		for {
 			self.cTimeout = make(chan struct{})
 			select {
@@ -30,35 +37,47 @@ func (self *BFTProtocol) Start() {
 			default:
 				switch self.Phase {
 				case "propose":
-					
-					<-self.cTimeout 
+
 				case "listen":
-	
-					<-self.cTimeout 
+					time.AfterFunc(ListenTimeout*time.Second, func() {
+						close(self.cTimeout)
+					})
+
+					<-self.cTimeout
 				case "prepare":
+					time.AfterFunc(PrepareTimeout*time.Second, func() {
+						close(self.cTimeout)
+					})
 
-					<-self.cTimeout 
+					<-self.cTimeout
 				case "commit":
+					time.AfterFunc(CommitTimeout*time.Second, func() {
+						close(self.cTimeout)
+					})
 
-					<-self.cTimeout 
+					<-self.cTimeout
 				case "reply":
+					time.AfterFunc(ReplyTimeout*time.Second, func() {
+						close(self.cTimeout)
+					})
 
-					<-self.cTimeout 
+					<-self.cTimeout
 				}
 			}
-	
-		}
-	}
 
+		}
+	}()
+	return nil
 }
 
-func (self *BFTProtocol) Stop() {
+func (self *BFTProtocol) Stop() error {
 	self.Lock()
-	defer.Unlock()
+	defer self.Unlock()
 	if !self.started {
-		return errors.New("Consensus engine is already started")
+		return errors.New("Protocol is already stopped")
 	}
 	self.started = false
 	close(self.cTimeout)
 	close(self.cQuit)
+	return nil
 }

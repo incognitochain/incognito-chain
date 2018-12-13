@@ -42,20 +42,20 @@ func (self *CommitteeStruct) getChainIdByPbk(pbk string) byte {
 	return byte(common.IndexOfStr(pbk, committee))
 }
 
-func (self *CommitteeStruct) UpdateCommitteePoint(chainLeader string, validatorSig []string) {
-	self.Lock()
-	defer self.Unlock()
-	self.ValidatorBlkNum[chainLeader]++
-	self.ValidatorReliablePts[chainLeader] += BlkPointAdd
-	for idx, sig := range validatorSig {
-		if sig != common.EmptyString {
-			self.ValidatorReliablePts[self.CurrentCommittee[idx]] += SigPointAdd
-		}
-	}
-	for validator := range self.ValidatorReliablePts {
-		self.ValidatorReliablePts[validator] += SigPointMin
-	}
-}
+// func (self *CommitteeStruct) UpdateCommitteePoint(chainLeader string, validatorSig []string) {
+// 	self.Lock()
+// 	defer self.Unlock()
+// 	self.ValidatorBlkNum[chainLeader]++
+// 	self.ValidatorReliablePts[chainLeader] += BlkPointAdd
+// 	for idx, sig := range validatorSig {
+// 		if sig != common.EmptyString {
+// 			self.ValidatorReliablePts[self.CurrentCommittee[idx]] += SigPointAdd
+// 		}
+// 	}
+// 	for validator := range self.ValidatorReliablePts {
+// 		self.ValidatorReliablePts[validator] += SigPointMin
+// 	}
+// }
 
 func (self *CommitteeStruct) UpdateCommittee(producerPbk string, chanId byte) error {
 	self.Lock()
