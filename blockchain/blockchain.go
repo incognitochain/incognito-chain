@@ -754,7 +754,7 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 }
 
 // DecryptTxByKey - process outputcoin to get outputcoin data which relate to keyset
-func (self *BlockChain) DecryptTxByKey(outCoinTemp *privacy.OutputCoin, keySet *cashec.KeySet) *privacy.OutputCoin {
+func (self *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.OutputCoin, keySet *cashec.KeySet, chainID byte) *privacy.OutputCoin {
 	/*
 	- Param keyset - (priv-key, payment-address, readonlykey)
 	in case priv-key: return unspent outputcoin tx
@@ -779,7 +779,7 @@ func (self *BlockChain) DecryptTxByKey(outCoinTemp *privacy.OutputCoin, keySet *
 		if len(keySet.PrivateKey) > 0 {
 			// check spent with private-key
 			result.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(keySet.PrivateKey), result.CoinDetails.SNDerivator)
-			ok, err := self.config.DataBase.HasSerialNumber(result.CoinDetails.SerialNumber.Compress(), 14)
+			ok, err := self.config.DataBase.HasSerialNumber(result.CoinDetails.SerialNumber.Compress(), chainID)
 			if ok || err != nil {
 				return nil
 			}
@@ -789,32 +789,8 @@ func (self *BlockChain) DecryptTxByKey(outCoinTemp *privacy.OutputCoin, keySet *
 	return nil
 }
 
-// GetListUnspentTxByKeysetInBlock - fetch block to get unspent tx commitment which privatekey can use it
-// return a list tx which contain commitment which can be used
-func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, outputCoins []*privacy.OutputCoin, returnFullTx bool) ([]*privacy.OutputCoin, error) {
-	/*
-	- Param keyset - (priv-key, payment-address, readonlykey)
-	in case priv-key: return unspent outputcoin tx
-	in case readonly-key: return all outputcoin tx with amount value
-	in case payment-address: return all outputcoin tx with no amount value
- */
-	results := make([]*privacy.OutputCoin, 0)
-	for _, out := range outputCoins {
-		pubkeyCompress := out.CoinDetails.PublicKey.Compress()
-		if bytes.Equal(pubkeyCompress, keys.PaymentAddress.Pk[:]) {
-			out = self.DecryptTxByKey(out, keys)
-			if out == nil {
-				continue
-			} else {
-				results = append(results, out)
-			}
-		}
-	}
-	return results, nil
-}
-
 /*
-GetListTxByPrivateKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
+GetListOutputCoinsByKeyset - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
 With private-key, we can check unspent tx by check nullifiers from database
 - Param #1: keyset - (priv-key, payment-address, readonlykey)
 in case priv-key: return unspent outputcoin tx
@@ -822,7 +798,7 @@ in case readonly-key: return all outputcoin tx with amount value
 in case payment-address: return all outputcoin tx with no amount value
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListTxByKeyset(keyset *cashec.KeySet, chainID byte) ([]*privacy.OutputCoin, error) {
+func (self *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, chainID byte) ([]*privacy.OutputCoin, error) {
 	// lock chain
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
@@ -831,20 +807,33 @@ func (self *BlockChain) GetListTxByKeyset(keyset *cashec.KeySet, chainID byte) (
 		// Get unspent tx with light mode
 		// TODO
 	}
+	// get list outputcoin of pubkey from db
 	outCointsInBytes, err := self.config.DataBase.GetOutcoinsByPubkey(keyset.PaymentAddress.Pk[:], chainID)
 	if err != nil {
 		return nil, err
 	}
-	temps := make([]*privacy.OutputCoin, 0)
+	// convert from []byte to object
+	outCoints := make([]*privacy.OutputCoin, 0)
 	for _, item := range outCointsInBytes {
 		outcoin := &privacy.OutputCoin{}
 		outcoin.Init()
 		outcoin.SetBytes(item)
-		temps = append(temps, outcoin)
+		outCoints = append(outCoints, outcoin)
 	}
 
-	// loop on all chains
-	results, err := self.GetListUnspentTxByKeysetInBlock(keyset, temps, false)
+	// loop on all outputcoin to decrypt data
+	results := make([]*privacy.OutputCoin, 0)
+	for _, out := range outCoints {
+		pubkeyCompress := out.CoinDetails.PublicKey.Compress()
+		if bytes.Equal(pubkeyCompress, keyset.PaymentAddress.Pk[:]) {
+			out = self.DecryptOutputCoinByKey(out, keyset, chainID)
+			if out == nil {
+				continue
+			} else {
+				results = append(results, out)
+			}
+		}
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -26,7 +26,7 @@ Parameter #1—the minimum number of confirmations an output must have
 Parameter #2—the maximum number of confirmations an output may have
 Parameter #3—the list readonly which be used to view utxo
 */
-func (self RpcServer) handleListTransactions(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	result := jsonresult.ListUnspentResult{
 		ListUnspentResultItems: make(map[string][]jsonresult.ListUnspentResultItem),
@@ -62,7 +62,7 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		outputCoins, err := self.config.BlockChain.GetListTxByKeyset(&keySet, chainIdSender)
+		outputCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, chainIdSender)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -135,7 +135,7 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	outCoins, _ := self.config.BlockChain.GetListTxByKeyset(&senderKey.KeySet, chainIdSender)
+	outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender)
 	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, note := range outCoins {
 		amount := note.CoinDetails.Value
@@ -556,4 +556,37 @@ func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, c
 func (self RpcServer) handleRandomCommitments(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// TODO 0xsirrush
 	return nil, nil
+}
+
+// handleHasSerialNumbers - check list serial numbers existed in db of node
+func (self RpcServer) handleHasSerialNumbers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+
+	// #1: payment address
+	paymentAddressStr := arrayParams[0].(string)
+	key, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+	if err != nil {
+		return nil, err
+	}
+	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+
+	//#2: list serialnumbers in base58check encode string
+	serialNumbersStr := arrayParams[1].([]interface{})
+
+	result := make(map[byte][]string)
+	result[0] = []string{}
+	result[1] = []string{}
+	for _, item := range serialNumbersStr {
+		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
+		db := *(self.config.Database)
+		ok, err := db.HasSerialNumber(serialNumber, chainIdSender)
+		if ok && err != nil {
+			result[0] = append(result[0], item.(string))
+		} else {
+			result[1] = append(result[1], item.(string))
+		}
+	}
+
+	return result, nil
 }
