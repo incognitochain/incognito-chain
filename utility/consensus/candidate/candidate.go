@@ -3,15 +3,22 @@ package candidate
 import (
 	"crypto/sha256"
 	"errors"
-	"github.com/ninjadotorg/constant/blockchain"
 	"strconv"
 	"strings"
+
+	"github.com/ninjadotorg/constant/blockchain"
 )
 
 func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock *blockchain.BlockV2) *blockchain.BestStateBeacon {
 	// TODO:
 	// update BestShardHash, BestBlock, BestBlockHash
 	// unassign -> remove out the candidate
+	beaconBestState.BestBlockHash = newBlock.Hash()
+	beaconBestState.BestBlock = newBlock
+	shardState := newBlock.Body.(*blockchain.BeaconBlockBody).ShardState
+	for idx, l := range shardState {
+		beaconBestState.BestShardHash[idx] = l[len(l)-1]
+	}
 
 	if beaconBestState.BeaconHeight%200 == 1 {
 		newBeaconNode, newShardNode := GetStakingCandidate(newBlock)
