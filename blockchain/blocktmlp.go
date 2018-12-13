@@ -173,7 +173,7 @@ concludeBlock:
 
 	// TODO(@0xbunyip): cap #tx to common.MaxTxsInBlock
 	// Process dividend payout for DCB if needed
-	bankDivTxs, bankPayoutAmount, err := blockgen.processBankDividend(rt, chainID, blockHeight)
+	bankDivTxs, bankPayoutAmount, err := blockgen.processBankDividend(blockHeight, privatekey)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +182,7 @@ concludeBlock:
 	}
 
 	// Process dividend payout for GOV if needed
-	govDivTxs, govPayoutAmount, err := blockgen.processGovDividend(rt, chainID, blockHeight)
+	govDivTxs, govPayoutAmount, err := blockgen.processGovDividend(blockHeight, privatekey)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ concludeBlock:
 	}
 
 	// Process crowdsale for DCB
-	dcbSaleTxs, removableTxs, err := blockgen.processCrowdsale(sourceTxns, rt, chainID)
+	dcbSaleTxs, removableTxs, err := blockgen.processCrowdsale(sourceTxns, rt, chainID, privatekey)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ concludeBlock:
 	refundTxs, totalRefundAmt := blockgen.buildRefundTxs(chainID, remainingFund, privatekey)
 
 	// Get loan payment amount to add to DCB fund
-	loanPaymentAmount, unlockTxs, removableTxs := blockgen.processLoan(sourceTxns, rt, chainID)
+	loanPaymentAmount, unlockTxs, removableTxs := blockgen.processLoan(sourceTxns, privatekey)
 	for _, tx := range removableTxs {
 		txToRemove = append(txToRemove, tx)
 	}
@@ -484,15 +484,14 @@ func (blockgen *BlkTmplGenerator) createRequestConstitutionTxDecs(
 }
 
 func (blockgen *BlkTmplGenerator) processDividend(
-	rt []byte,
-	chainID byte,
 	proposal *metadata.DividendProposal,
 	blockHeight int32,
+	producerPrivateKey *privacy.SpendingKey,
 ) ([]*transaction.Tx, uint64, error) {
 	payoutAmount := uint64(0)
 	// TODO(@0xbunyip): how to execute payout dividend proposal
 	dividendTxs := []*transaction.Tx{}
-	if false && chainID == 0 && blockHeight%metadata.PayoutFrequency == 0 { // only chain 0 process dividend proposals
+	if false && blockHeight%metadata.PayoutFrequency == 0 { // only chain 0 process dividend proposals
 		totalTokenSupply, tokenHolders, amounts, err := blockgen.chain.GetAmountPerAccount(proposal)
 		if err != nil {
 			return nil, 0, err
@@ -519,7 +518,7 @@ func (blockgen *BlkTmplGenerator) processDividend(
 			}
 		}
 
-		dividendTxs, err = buildDividendTxs(infos, rt, chainID, proposal)
+		dividendTxs, err = buildDividendTxs(infos, proposal, producerPrivateKey, blockgen.chain.GetDatabase())
 		if err != nil {
 			return nil, 0, err
 		}
@@ -527,20 +526,20 @@ func (blockgen *BlkTmplGenerator) processDividend(
 	return dividendTxs, payoutAmount, nil
 }
 
-func (blockgen *BlkTmplGenerator) processBankDividend(rt []byte, chainID byte, blockHeight int32) ([]*transaction.Tx, uint64, error) {
-	tokenID := &common.Hash{} // TODO(@0xbunyip): hard-code tokenID of BANK token and get proposal
+func (blockgen *BlkTmplGenerator) processBankDividend(blockHeight int32, producerPrivateKey *privacy.SpendingKey) ([]*transaction.Tx, uint64, error) {
+	tokenID, _ := (&common.Hash{}).NewHash(common.DCBTokenID[:])
 	proposal := &metadata.DividendProposal{
 		TokenID: tokenID,
 	}
-	return blockgen.processDividend(rt, chainID, proposal, blockHeight)
+	return blockgen.processDividend(proposal, blockHeight, producerPrivateKey)
 }
 
-func (blockgen *BlkTmplGenerator) processGovDividend(rt []byte, chainID byte, blockHeight int32) ([]*transaction.Tx, uint64, error) {
-	tokenID := &common.Hash{} // TODO(@0xbunyip): hard-code tokenID of GOV token and get proposal
+func (blockgen *BlkTmplGenerator) processGovDividend(blockHeight int32, producerPrivateKey *privacy.SpendingKey) ([]*transaction.Tx, uint64, error) {
+	tokenID, _ := (&common.Hash{}).NewHash(common.GOVTokenID[:])
 	proposal := &metadata.DividendProposal{
 		TokenID: tokenID,
 	}
-	return blockgen.processDividend(rt, chainID, proposal, blockHeight)
+	return blockgen.processDividend(proposal, blockHeight, producerPrivateKey)
 }
 
 func buildSingleBuySellResponseTx(
@@ -799,6 +798,7 @@ func (blockgen *BlkTmplGenerator) buildResponseForCrowdsale(
 	rt []byte,
 	chainID byte,
 	saleID []byte,
+	producerPrivateKey *privacy.SpendingKey,
 ) (*transaction.TxCustomToken, error) {
 	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
@@ -824,7 +824,7 @@ func (blockgen *BlkTmplGenerator) buildResponseForCrowdsale(
 		// Update amount of buying/selling asset of the crowdsale
 		saleData.BuyingAmount -= tokenAmount
 		saleData.SellingAmount -= valuesInConstant
-		txResponse, err = buildResponseForCoin(tx, valuesInConstant, rt, chainID, saleData.SaleID)
+		txResponse, err = buildResponseForCoin(tx, valuesInConstant, saleData.SaleID, producerPrivateKey, blockgen.chain.GetDatabase())
 	} else if bytes.Equal(sellingAsset[:8], common.BondTokenID[:8]) || bytes.Equal(sellingAsset[:], common.DCBTokenID[:]) {
 		// Get unspent token UTXO to send to user
 		if _, ok := unspentTokenMap[string(sellingAsset[:])]; !ok {
@@ -847,7 +847,7 @@ func (blockgen *BlkTmplGenerator) buildResponseForCrowdsale(
 	return txResponse, err
 }
 
-func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc, rt []byte, chainID byte) ([]*transaction.TxCustomToken, []metadata.Transaction, error) {
+func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc, rt []byte, chainID byte, producerPrivateKey *privacy.SpendingKey) ([]*transaction.TxCustomToken, []metadata.Transaction, error) {
 	txsToRemove := []metadata.Transaction{}
 	txsResponse := []*transaction.TxCustomToken{}
 
@@ -885,7 +885,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc
 
 			saleDataMap[string(metaRequest.SaleID)] = saleData
 		}
-		txResponse, err := blockgen.buildResponseForCrowdsale(tx, saleDataMap, unspentTokenMap, rt, chainID, metaRequest.SaleID)
+		txResponse, err := blockgen.buildResponseForCrowdsale(tx, saleDataMap, unspentTokenMap, rt, chainID, metaRequest.SaleID, producerPrivateKey)
 		if err != nil {
 			txsToRemove = append(txsToRemove, tx)
 		} else if txResponse != nil {
@@ -895,7 +895,7 @@ func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc
 	return txsResponse, txsToRemove, nil
 }
 
-func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, rt []byte, chainID byte) (uint64, []*transaction.Tx, []metadata.Transaction) {
+func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, producerPrivateKey *privacy.SpendingKey) (uint64, []*transaction.Tx, []metadata.Transaction) {
 	amount := uint64(0)
 	loanUnlockTxs := []*transaction.Tx{}
 	removableTxs := []metadata.Transaction{}
@@ -908,17 +908,14 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, rt 
 				continue
 			}
 			paymentAmount := uint64(0)
-			// TODO: @bunnyip update new fields here
-			// accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-			// dcbPk := accountDCB.KeySet.PaymentAddress.Pk
-			// txNormal := txDesc.Tx.(*transaction.Tx)
-			// for _, desc := range txNormal.Descs {
-			// 	for _, note := range desc.Note {
-			// 		if bytes.Equal(note.Apk[:], dcbPk) {
-			// 			paymentAmount += note.Value
-			// 		}
-			// 	}
-			// }
+			accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+			dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+			txNormal := txDesc.Tx.(*transaction.Tx)
+			for _, coin := range txNormal.Proof.OutputCoins {
+				if bytes.Equal(coin.CoinDetails.PublicKey.Compress(), dcbPk) {
+					paymentAmount += coin.CoinDetails.Value
+				}
+			}
 			if !paymentMeta.PayPrinciple { // Only keep interest
 				amount += paymentAmount
 			}
@@ -929,10 +926,10 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, rt 
 				removableTxs = append(removableTxs, txDesc.Tx)
 				continue
 			}
-			pks := [][]byte{meta.ReceiveAddress.Pk[:], make([]byte, 33)}
-			tks := [][]byte{meta.ReceiveAddress.Tk[:], make([]byte, 33)}
-			amounts := []uint64{meta.LoanAmount, 0}
-			txNormal, err := buildCoinbaseTx(pks, tks, amounts, rt, chainID)
+			pks := [][]byte{meta.ReceiveAddress.Pk[:]}
+			tks := [][]byte{meta.ReceiveAddress.Tk[:]}
+			amounts := []uint64{meta.LoanAmount}
+			txNormals, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, blockgen.chain.GetDatabase())
 			if err != nil {
 				removableTxs = append(removableTxs, txDesc.Tx)
 				continue
@@ -941,8 +938,8 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, rt 
 				LoanID: make([]byte, len(withdrawMeta.LoanID)),
 			}
 			copy(unlockMeta.LoanID, withdrawMeta.LoanID)
-			txNormal.Metadata = unlockMeta
-			loanUnlockTxs = append(loanUnlockTxs, txNormal)
+			txNormals[0].Metadata = unlockMeta
+			loanUnlockTxs = append(loanUnlockTxs, txNormals[0]) // There's only one tx
 		}
 	}
 	return amount, loanUnlockTxs, removableTxs

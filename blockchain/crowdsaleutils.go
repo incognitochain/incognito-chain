@@ -2,10 +2,10 @@ package blockchain
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
@@ -28,15 +28,12 @@ func getTxTokenValue(tokenData transaction.TxTokenData, tokenID []byte, pk []byt
 // getTxValue converts total Constants in a tx to another token
 func getTxValue(tx *transaction.Tx, tokenID []byte, pk []byte, prices map[string]uint64) (uint64, uint64) {
 	// Get amount of Constant user sent
-	// TODO(@0xbunyip): get value from new privacy tx here
 	value := uint64(0)
-	//	for _, desc := range tx.Descs {
-	//		for _, note := range desc.Note {
-	//			if bytes.Equal(note.Apk[:], pk) {
-	//				value += note.Value
-	//			}
-	//		}
-	//	}
+	for _, coin := range tx.Proof.OutputCoins {
+		if bytes.Equal(coin.CoinDetails.PublicKey.Compress(), pk) {
+			value += coin.CoinDetails.Value
+		}
+	}
 	assetPrice := prices[string(tokenID)]
 	amounts := value / assetPrice
 	return value, amounts
@@ -45,18 +42,16 @@ func getTxValue(tx *transaction.Tx, tokenID []byte, pk []byte, prices map[string
 func buildResponseForCoin(
 	txRequest *transaction.TxCustomToken,
 	amount uint64,
-	rt []byte,
-	chainID byte,
 	saleID []byte,
+	producerPrivateKey *privacy.SpendingKey,
+	db database.DatabaseInterface,
 ) (*transaction.TxCustomToken, error) {
 	// Mint and send Constant
 	meta := txRequest.Metadata.(*metadata.CrowdsaleRequest)
-	pks := [][]byte{meta.PaymentAddress.Pk[:], meta.PaymentAddress.Pk[:]}
-	tks := [][]byte{meta.PaymentAddress.Tk[:], meta.PaymentAddress.Tk[:]}
-
-	// Get value of the bonds that user sent
-	amounts := []uint64{amount, 0}
-	tx, err := buildCoinbaseTx(pks, tks, amounts, rt, chainID)
+	amounts := []uint64{amount}
+	pks := [][]byte{meta.PaymentAddress.Pk[:]}
+	tks := [][]byte{meta.PaymentAddress.Tk[:]}
+	txs, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db) // There's only one tx in txs
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +63,7 @@ func buildResponseForCoin(
 	copy(metaRes.RequestedTxID[:], hash[:])
 	copy(metaRes.SaleID, saleID)
 	txToken := &transaction.TxCustomToken{
-		Tx:          *tx,
+		Tx:          *(txs[0]),
 		TxTokenData: transaction.TxTokenData{},
 	}
 	txToken.Metadata = metaRes
@@ -77,20 +72,6 @@ func buildResponseForCoin(
 
 func transferTxToken(tokenAmount uint64, unspentTxTokenOuts []transaction.TxTokenVout, tokenID, receiverPk []byte) (*transaction.TxCustomToken, int, error) {
 	sumTokens := uint64(0)
-	// TODO:@bunnyip  need to double check here
-	// accountDCB, _ := wallet.Base58CheckDeserialize(dcbAddress)
-	// Get amount of Constant user sent
-	//	value := uint64(0)
-	// userPk := txRequest.Tx.JSPubKey
-	//	userPk := []byte{}
-	//	userPk := txRequest.Tx.SigPubKey
-	// for _, desc := range txRequest.Tx.Descs {
-	// 	for _, note := range desc.Note {
-	// 		if bytes.Equal(note.Apk[:], accountDCB.KeySet.PaymentAddress.Pk) {
-	// 			value += note.Value
-	// 		}
-	// 	}
-	// }
 	usedID := 0
 	for _, out := range unspentTxTokenOuts {
 		usedID += 1
@@ -175,13 +156,16 @@ func buildResponseForToken(
 	saleID []byte,
 	mint bool,
 ) (*transaction.TxCustomToken, error) {
-	unspentTxTokenOuts := unspentTokenMap[string(tokenID)]
 	var txToken *transaction.TxCustomToken
+	var err error
+	unspentTxTokenOuts := unspentTokenMap[string(tokenID)]
 	usedID := -1
-	err := errors.New("")
-	pubkey := []byte{}
+	if len(txRequest.Tx.Proof.InputCoins) == 0 {
+		return nil, fmt.Errorf("Found no sender in request tx")
+	}
+	pubkey := txRequest.Tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+
 	if mint {
-		// TODO(@0xbunyip): get sender here
 		txToken = mintTxToken(tokenAmount, tokenID, pubkey)
 	} else {
 		txToken, usedID, err = transferTxToken(tokenAmount, unspentTxTokenOuts, tokenID, pubkey)

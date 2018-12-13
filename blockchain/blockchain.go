@@ -675,35 +675,66 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 	return nil
 }
 
+// parseCustomTokenUTXO helper method for parsing UTXO data for updating dividend payout
+func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte) ([]transaction.TxTokenVout, error) {
+	utxoData, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, pubkey)
+	if err != nil {
+		return nil, err
+	}
+	var finalErr error
+	vouts := []transaction.TxTokenVout{}
+	for key, value := range utxoData {
+		keys := strings.Split(key, string(lvdb.Splitter))
+		values := strings.Split(value, string(lvdb.Splitter))
+		// get unspent and unreward transaction output
+		if strings.Compare(values[1], string(lvdb.Unspent)) == 0 {
+			vout := transaction.TxTokenVout{}
+			vout.PaymentAddress = privacy.PaymentAddress{Pk: pubkey}
+			txHash, err := common.Hash{}.NewHash([]byte(keys[3]))
+			if err != nil {
+				finalErr = err
+				continue
+			}
+			vout.SetTxCustomTokenID(*txHash)
+			voutIndexByte := []byte(keys[4])[0]
+			voutIndex := int(voutIndexByte)
+			vout.SetIndex(voutIndex)
+			value, err := strconv.Atoi(values[0])
+			if err != nil {
+				finalErr = err
+				continue
+			}
+			vout.Value = uint64(value)
+			vouts = append(vouts, vout)
+		}
+	}
+	return vouts, finalErr
+}
+
 func (self *BlockChain) UpdateDividendPayout(block *Block) error {
-	// TODO: update to new txprivacy fields
-	// for _, tx := range block.Transactions {
-	// 	switch tx.GetMetadataType() {
-	// 	case metadata.DividendMeta:
-	// 		{
-	// 			tx := tx.(*transaction.Tx)
-	// 			meta := tx.Metadata.(*metadata.Dividend)
-	// 			tokenID := meta.TokenID
-	// 			for _, desc := range tx.Descs {
-	// 				for _, note := range desc.Note {
-	// 					// TODO(@0xbunyip): replace note.Apk with bytes of PaymentAddress, not just Pk
-	// 					paymentAddress := (&privacy.PaymentAddress{}).FromBytes(note.Apk[:])
-	// 					utxos, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, *paymentAddress)
-	// 					if err != nil {
-	// 						return err
-	// 					}
-	// 					for _, utxo := range utxos {
-	// 						txHash := utxo.GetTxCustomTokenID()
-	// 						err := self.config.DataBase.UpdateRewardAccountUTXO(tokenID, *paymentAddress, &txHash, utxo.GetIndex())
-	// 						if err != nil {
-	// 							return err
-	// 						}
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
+	for _, tx := range block.Transactions {
+		switch tx.GetMetadataType() {
+		case metadata.DividendMeta:
+			{
+				tx := tx.(*transaction.Tx)
+				meta := tx.Metadata.(*metadata.Dividend)
+				for _, coin := range tx.Proof.OutputCoins {
+					pubkey := coin.CoinDetails.PublicKey.Compress()
+					vouts, err := self.parseCustomTokenUTXO(meta.TokenID, pubkey)
+					if err != nil {
+						return err
+					}
+					for _, vout := range vouts {
+						txHash := vout.GetTxCustomTokenID()
+						err := self.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, pubkey, &txHash, vout.GetIndex())
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 
