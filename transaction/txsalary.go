@@ -43,7 +43,9 @@ func CreateTxSalary(
 
 	sndOut := privacy.RandInt()
 	for true {
-		ok, err := tx.CheckSNDExistence(sndOut, db)
+		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
+		chainIdSender, err := common.GetTxSenderChain(lastByte)
+		ok, err := CheckSNDExistence(sndOut, chainIdSender, db)
 		if err != nil {
 			return nil, err
 		}
@@ -58,8 +60,8 @@ func CreateTxSalary(
 
 	// create coin commitment
 	tx.Proof.OutputCoins[0].CoinDetails.CommitAll()
-	// get last byte 
-	tx.Proof.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk) - 1]
+	// get last byte
+	tx.Proof.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
 
 	// sign Tx
 	tx.SigPubKey = receiverAddr.Pk
@@ -86,7 +88,9 @@ func ValidateTxSalary(
 	}
 
 	// check whether output coin's SND exists in SND list or not
-	if ok, err := tx.CheckSNDExistence(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, db); ok || err != nil {
+	lastByte := tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	if ok, err := CheckSNDExistence(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, chainIdSender, db); ok || err != nil {
 		return false
 	}
 
