@@ -3,12 +3,13 @@ package candidate
 import (
 	"crypto/sha256"
 	"errors"
-	"fmt"
 	"strconv"
 )
 
 // Assumption:
 // validator and candidate public key encode as base58 string
+// assume that candidates are already been checked
+// Check validation of candidate in transaction
 func AssignValidator(candidates []string, rand int64) (map[byte][]string, error) {
 	pendingValidators := make(map[byte][]string)
 	for _, candidate := range candidates {
@@ -26,13 +27,16 @@ func VerifyValidator(candidate string, rand int64, shardID byte) (bool, error) {
 		return false, nil
 	}
 }
+
+// Formula ShardID: LSB[hash(candidatePubKey+randomNumber)]
+// Last byte of hash(candidatePubKey+randomNumber)
 func calculateHash(candidate string, rand int64) (shardID byte) {
 	seed := candidate + strconv.Itoa(int(rand))
 	hash := sha256.Sum256([]byte(seed))
-	fmt.Println("Candidate public key", candidate)
-	fmt.Println("Hash of candidate serialized pubkey and random number", hash)
+	// fmt.Println("Candidate public key", candidate)
+	// fmt.Println("Hash of candidate serialized pubkey and random number", hash)
 	// fmt.Printf("\"%d\",\n", hash[len(hash)-1])
-	fmt.Println("Shard to be assign", hash[len(hash)-1])
+	// fmt.Println("Shard to be assign", hash[len(hash)-1])
 	shardID = hash[len(hash)-1]
 	return shardID
 }
