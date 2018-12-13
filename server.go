@@ -1001,13 +1001,24 @@ func (self *Server) GetPbksOfShard(shard byte) []string {
 }
 
 func (self *Server) getCurrentShardInfoByPbk() (*byte, string) {
-	ret := byte(0x00)
-	return &ret, ""
+	ks, err := cfg.GetProducerKeySet()
+	if err != nil {
+		return nil, ""
+	}
+	pbk := ks.GetPublicKeyB58()
+	shard, ok := mPBK[pbk]
+	if ok {
+		return &shard, ""
+	}
+	return nil, ""
 }
 
 func (self *Server) getShardInfoByPbk(pbk string) (*byte, string) {
-	ret := byte(0x00)
-	return &ret, ""
+	shard, ok := mPBK[pbk]
+	if ok {
+		return &shard, ""
+	}
+	return nil, ""
 }
 
 func (self *Server) shardChanged(oldShard *byte, newShard *byte) {
