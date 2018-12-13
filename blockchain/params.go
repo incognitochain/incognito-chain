@@ -89,5 +89,5 @@ var TestNetParamsNew = ParamsNew{
 	DefaultPort: TestnetDefaultPort,
 
 	// blockChain parameters
-	GenesisBlockBeacon: BeaconBlockGenerator{}.CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnet, preSelectShardNodeTestnet, icoParamsTestnetNew, 1000, 1000),
+	GenesisBlockBeacon: BeaconBlockGenerator{}.CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey, preSelectShardNodeTestnetSerializedPubkey, icoParamsTestnetNew, 1000, 1000),
 }

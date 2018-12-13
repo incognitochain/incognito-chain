@@ -3,8 +3,52 @@ package candidate
 import (
 	"crypto/sha256"
 	"errors"
+	"github.com/ninjadotorg/constant/blockchain"
 	"strconv"
+	"strings"
 )
+
+func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock *blockchain.BlockV2) *blockchain.BestStateBeacon {
+	// TODO:
+	// update BestShardHash, BestBlock, BestBlockHash
+	// unassign -> remove out the candidate
+
+	// TODO: build candidate at epoch time
+	if beaconBestState.BeaconHeight%200 == 1 {
+		//newBeaconNode, newShardNode := GetStakingCandidate(newBlock)
+		// GetStakingCandidate -> UnassignCandidate
+		// UnassignCandidate -> AssignCandidate base on next random number
+
+		// Set current random number = next random number
+
+	} else {
+		// GetStakingCandidate -> UnassignCandidate
+		//newBeaconNode, newShardNode := GetStakingCandidate(newBlock)
+
+	}
+	// TODO: Param "set" "del"
+
+	return beaconBestState
+}
+
+func GetStakingCandidate(beaconBlock *blockchain.BlockV2) (beacon []string, shard []string) {
+	if beaconBlock.Type == "beacon" {
+		beaconBlockBody := beaconBlock.Body.(*blockchain.BeaconBlockBody)
+		for _, v := range beaconBlockBody.Instructions {
+			if v[0] == "assign" && v[2] == "beacon" {
+				beacon = strings.Split(v[1], ",")
+			}
+
+			if v[0] == "assign" && v[2] == "shard" {
+				shard = strings.Split(v[1], ",")
+			}
+		}
+	} else {
+		panic("GetStakingCandidate not from beacon block")
+	}
+
+	return beacon, shard
+}
 
 // Assumption:
 // validator and candidate public key encode as base58 string
