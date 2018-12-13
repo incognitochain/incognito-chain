@@ -143,6 +143,14 @@ func (self *Engine) OnGetChainState(msg *wire.MessageGetChainState) {
 	return
 }
 
+func (self *Engine) OnBeaconStateReceived(msg *wire.MessageChainState) {
+
+}
+
+func (self *Engine) OnGetBeaconState(msg *wire.MessageChainState) {
+
+}
+
 func (self *Engine) OnSwapRequest(msg *wire.MessageSwapRequest) {
 	Logger.log.Info("Received a MessageSwapRequest")
 

@@ -3,7 +3,6 @@ package constantpos
 import (
 	"sync"
 
-	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/connmanager"
@@ -17,6 +16,7 @@ type Engine struct {
 
 	// channel
 	cQuit      chan struct{}
+	cBFTMsg    chan wire.Message
 	cBlockSig  chan blockSig
 	cQuitSwap  chan struct{}
 	cSwapChain chan byte
@@ -38,13 +38,8 @@ type EngineConfig struct {
 	BlockGen    *blockchain.BlkTmplGenerator
 	MemPool     *mempool.TxPool
 	UserKeySet  cashec.KeySet
-	Server      interface {
-		// list functions callback which are assigned from Server struct
-		GetPeerIDsFromPublicKey(string) []libp2p.ID
-		PushMessageToAll(wire.Message) error
-		PushMessageToPeer(wire.Message, libp2p.ID) error
-		PushMessageGetChainState() error
-	}
+	RoleMode    string
+	Server      serverInterface
 }
 
 //Init apply configuration to consensus engine

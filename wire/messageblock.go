@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	MaxBlockPayload = 4000000 // 4 Mb
+	MaxBlockPayload = 1000000 // 1 Mb
 )
 
 type MessageBlock struct {

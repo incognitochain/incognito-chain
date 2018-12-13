@@ -2,6 +2,7 @@ package constantpos
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -17,6 +18,7 @@ type BFTProtocol struct {
 	cTimeout chan struct{}
 
 	BlockGenFn BlockGenFn
+	Server     serverInterface
 	started    bool
 }
 
@@ -37,7 +39,8 @@ func (self *BFTProtocol) Start() error {
 			default:
 				switch self.Phase {
 				case "propose":
-
+					newBlock := self.BlockGenFn()
+					fmt.Println(newBlock)
 				case "listen":
 					time.AfterFunc(ListenTimeout*time.Second, func() {
 						close(self.cTimeout)
