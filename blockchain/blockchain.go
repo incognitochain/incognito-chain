@@ -1083,6 +1083,6 @@ func (self BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.Inpu
 	return transaction.RandomCommitmentsProcess(usableInputCoins, randNum, self.config.DataBase, chainID)
 }
 
-func (self BlockChain) CheckSNDExistence(snd *big.Int, chainID byte) (bool, error) {
-	return transaction.CheckSNDExistence(snd, chainID, self.config.DataBase)
+func (self BlockChain) CheckSNDerivatorExistence(snd *big.Int, chainID byte) (bool, error) {
+	return transaction.CheckSNDerivatorExistence(snd, chainID, self.config.DataBase)
 }
