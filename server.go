@@ -667,6 +667,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	}
 
 	msgV.(*wire.MessageVerAck).Valid = valid
+	msgV.(*wire.MessageVerAck).Timestamp = time.Now()
 
 	peerConn.QueueMessageWithEncoding(msgV, nil)
 
