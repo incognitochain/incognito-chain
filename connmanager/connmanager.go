@@ -23,6 +23,8 @@ import (
 var MAX_PEERS_SAME_SHARD = 10
 var MAX_PEERS_OTHER_SHARD = 2
 var MAX_PEERS_OTHER = 100
+var MAX_PEERS = 200
+var MAX_PEERS_NOSHARD = 100
 
 // ConnState represents the state of the requested connection.
 type ConnState uint8
@@ -79,6 +81,7 @@ type Config struct {
 	GetPbksOfShard  func(shard byte) []string
 	GetPbksOfBeacon func() []string
 	GetCurrentPbk   func() *string
+	GetShardByPbk   func(pbk string) *byte
 }
 
 type DiscoverPeerInfo struct {
@@ -556,8 +559,10 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 		return 0
 	}
 	Logger.log.Info("handleRandPeersOfShard", *shard)
-	//Logger.log.Info("handleRandPeersOfShard", *shard)
 	countPeerShard := self.countPeerConnByShard(shard)
+	if countPeerShard >= maxPeers {
+		return countPeerShard
+	}
 	pBKs := self.Config.GetPbksOfShard(*shard)
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
@@ -613,4 +618,30 @@ func (self *ConnManager) randShards(maxShards int) []byte {
 		shardsRet = append(shardsRet, shardV)
 	}
 	return shardsRet
+}
+
+func (self *ConnManager) CheckAcceptConn(peerConn *peer.PeerConn) bool {
+	if peerConn == nil {
+		return false
+	}
+	// check max conn
+	// check max shard conn
+	sh := self.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
+	if sh != nil && self.CurrentShard != nil && *sh == *self.CurrentShard {
+		//	same shard
+		countPeerShard := self.countPeerConnByShard(sh)
+		if countPeerShard > MAX_PEERS_SAME_SHARD {
+			return false
+		}
+	} else if sh != nil {
+		//	order shard
+		countPeerShard := self.countPeerConnByShard(sh)
+		if countPeerShard > MAX_PEERS_OTHER_SHARD {
+			return false
+		}
+	} else {
+	  // none shard
+	}
+	// check max unknown shard conn
+	return true
 }

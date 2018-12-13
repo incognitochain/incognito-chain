@@ -250,6 +250,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		GetCurrentShard:      self.GetCurrentShard,
 		GetPbksOfShard:       self.GetPbksOfShard,
 		GetCurrentPbk:        self.GetCurrentPbk,
+		GetShardByPbk:        self.GetShardByPbk,
 		ListenerPeers:        peers,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
@@ -654,7 +655,8 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 		valid = true
 	}
 
-	if !peerConn.CheckAccepted() {
+	// check for accept connection
+	if !self.connManager.CheckAcceptConn(peerConn) {
 		peerConn.ForceClose()
 		return
 	}
