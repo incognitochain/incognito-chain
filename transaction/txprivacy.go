@@ -137,7 +137,7 @@ func (tx *Tx) Init(
 		for i := 0; i < len(paymentInfo); i++ {
 			sndOut = privacy.RandInt()
 			for true {
-				ok1, err := CheckSNDExistence(sndOut, db)
+				ok1, err := CheckSNDExistence(sndOut, chainID, db)
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -369,7 +369,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 	for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 		// Check output coins' SND is not exists in SND list (Database)
-		if ok, err := CheckSNDExistence(tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, db); ok || err != nil {
+		if ok, err := CheckSNDExistence(tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, chainId, db); ok || err != nil {
 			return false
 		}
 	}
