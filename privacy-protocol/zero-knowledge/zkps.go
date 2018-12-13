@@ -218,7 +218,11 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	fmt.Printf("Byte - LenoutputCoinsArray: %v\n", len(paymentProof.OutputCoins))
 	for i := 0; i < len(paymentProof.OutputCoins); i++ {
 		outputCoins := paymentProof.OutputCoins[i].Bytes()
-		fmt.Printf("Byte - LenoutputCoins: %v\n", len(outputCoins))
+		lenOutputCoins := len(outputCoins)
+		//if lenOutputCoins != 222{
+		//
+		//}
+		fmt.Printf("Byte - LenoutputCoins: %v\n", lenOutputCoins)
 		//fmt.Printf("Byte - outputCoins: %v\n", outputCoins)
 		proofbytes = append(proofbytes, byte(len(outputCoins)))
 		proofbytes = append(proofbytes, outputCoins...)
@@ -400,7 +404,10 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		offset += 1
 		fmt.Printf("Set Byte - lenOutputCoin: %v\n", lenOutputCoin)
 		proof.OutputCoins[i] = new(privacy.OutputCoin)
-		proof.OutputCoins[i].SetBytes(proofbytes[offset: offset+lenOutputCoin])
+		err := proof.OutputCoins[i].SetBytes(proofbytes[offset: offset+lenOutputCoin])
+		if err != nil{
+			return err
+		}
 		offset += lenOutputCoin
 	}
 	//ComOutputValue   []*privacy.EllipticPoint
@@ -518,6 +525,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 		cmInputValueAll.Add(cmInputValue[i])
 		randInputValueAll.Add(randInputValueAll, randInputValue[i])
+		randInputValueAll.Mod(randInputValueAll, privacy.Curve.Params().N)
 	}
 
 	// Summing all commitments of each input coin into one commitment and proving the knowledge of its Openings
@@ -547,6 +555,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		randInputSum[i] = randInputSK
 		randInputSum[i].Add(randInputSum[i], randInputValue[i])
 		randInputSum[i].Add(randInputSum[i], randInputSND[i])
+		randInputSum[i].Mod(randInputSum[i], privacy.Curve.Params().N)
 
 		if wit.ComInputOpeningsWitness[i] == nil {
 			wit.ComInputOpeningsWitness[i] = new(PKComOpeningsWitness)
@@ -635,6 +644,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 		randOutputSum[i] = randOutputValue[i]
 		randOutputSum[i].Add(randOutputSum[i], randOutputSND[i])
+		randOutputSum[i].Mod(randOutputSum[i], privacy.Curve.Params().N)
 
 		cmOutputSum[i] = new(privacy.EllipticPoint)
 		cmOutputSum[i].X, cmOutputSum[i].Y = cmOutputValue[i].X, cmOutputValue[i].Y
@@ -642,6 +652,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 		cmOutputValueAll = *(cmOutputValueAll.Add(cmOutputValue[i]))
 		randOutputValueAll.Add(randOutputValueAll, randOutputValue[i])
+
 
 		/***** Build witness for proving the knowledge of output coins' Openings (value, snd, randomness) *****/
 		if wit.ComOutputOpeningsWitness[i] == nil {
@@ -664,6 +675,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		cmOutputSum[i].Add(cmOutputShardID[i])
 
 		randOutputSum[i].Add(randOutputSum[i], randOutputShardID[i])
+		randOutputSum[i].Mod(randOutputSum[i], privacy.Curve.Params().N)
 
 		outputCoins[i].CoinDetails.CoinCommitment = cmOutputSum[i]
 		outputCoins[i].CoinDetails.Randomness = randOutputSum[i]
