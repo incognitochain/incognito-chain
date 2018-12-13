@@ -16,7 +16,10 @@ type ParamsNew struct {
 	DefaultPort string
 
 	// GenesisBlock defines the first block of the chain.
-	GenesisBlock *BlockV2
+	GenesisBlockBeacon *BlockV2
+
+	// GenesisBlock defines the first block of the chain.
+	GenesisBlockShard *BlockV2
 }
 
 var preSelectBeaconNodeTestnetSerializedPubkey = []string{
@@ -86,5 +89,5 @@ var TestNetParamsNew = ParamsNew{
 	DefaultPort: TestnetDefaultPort,
 
 	// blockChain parameters
-	GenesisBlock: BeaconBlockGenerator{}.CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnet, preSelectShardNodeTestnet, icoParamsTestnetNew, 1000, 1000),
+	GenesisBlockBeacon: BeaconBlockGenerator{}.CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnet, preSelectShardNodeTestnet, icoParamsTestnetNew, 1000, 1000),
 }
