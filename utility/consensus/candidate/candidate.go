@@ -10,9 +10,8 @@ import (
 )
 
 func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock *blockchain.BlockV2) *blockchain.BestStateBeacon {
-	// TODO:
+
 	// update BestShardHash, BestBlock, BestBlockHash
-	// unassign -> remove out the candidate
 	beaconBestState.BestBlockHash = newBlock.Hash()
 	beaconBestState.BestBlock = newBlock
 	shardState := newBlock.Body.(*blockchain.BeaconBlockBody).ShardState
@@ -34,14 +33,19 @@ func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock
 		beaconBestState.UnassignBeaconCandidate = append(beaconBestState.UnassignBeaconCandidate, newBeaconNode...)
 		beaconBestState.UnassignShardCandidate = append(beaconBestState.UnassignShardCandidate, newShardNode...)
 	}
+
 	// update param
 	instructions := newBlock.Body.(*blockchain.BeaconBlockBody).Instructions
+
 	for _, l := range instructions {
 		if l[0] == "set" {
 			beaconBestState.Params[l[1]] = l[2]
 		}
 		if l[0] == "del" {
 			delete(beaconBestState.Params, l[1])
+		}
+		if l[0] == "swap" {
+			//TODO: remove from candidate list
 		}
 	}
 
