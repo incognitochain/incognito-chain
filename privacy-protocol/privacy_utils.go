@@ -104,7 +104,7 @@ func PadBigInt(fckBigInt *big.Int, stableSz int) []byte{
 	return paddedBig
 }
 
-func IntTo_2_Byte_Array(n int) []byte{
+func IntToByteArr(n int) []byte{
 	a:=big.NewInt(int64(n))
 	if len(a.Bytes())>2{
 		return []byte{}

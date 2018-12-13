@@ -334,13 +334,30 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	cb := make([]*privacy.EllipticPoint, n)
 	cd := make([]*privacy.EllipticPoint, n)
 
+	var err error
+
 	for j := n - 1; j >= 0; j-- {
 		// Generate random numbers
-		r[j], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
-		a[j], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
-		s[j], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
-		t[j], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
-		u[j], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
+		r[j], err = rand.Int(rand.Reader, privacy.Curve.Params().N)
+		if err != nil{
+			return nil, err
+		}
+		a[j], err = rand.Int(rand.Reader, privacy.Curve.Params().N)
+		if err != nil{
+			return nil, err
+		}
+		s[j], err = rand.Int(rand.Reader, privacy.Curve.Params().N)
+		if err != nil{
+			return nil, err
+		}
+		t[j], err = rand.Int(rand.Reader, privacy.Curve.Params().N)
+		if err != nil{
+			return nil, err
+		}
+		u[j], err = rand.Int(rand.Reader, privacy.Curve.Params().N)
+		if err != nil{
+			return nil, err
+		}
 
 		// convert indexIsZeroBinary[j] to big.Int
 		indexInt := big.NewInt(int64(indexIsZeroBinary[j]))
@@ -586,20 +603,23 @@ func TestPKOneOfMany() bool {
 	witness.Set(commitments, nil, randoms[indexIsZero], uint64(indexIsZero), privacy.SND)
 	//start := time.Now()
 	proof, err := witness.Prove()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("Proof when prove: %v\n", proof)
 
 	// Convert proof to bytes array
 	proofBytes := proof.Bytes()
-	fmt.Printf("Proof bytes: %v\n", proofBytes)
+	fmt.Printf("Proof bytes when prove: %v\n", proof)
 	fmt.Printf("Proof bytes len: %v\n", len(proofBytes))
 
 	// revert bytes array to proof
 	proof2 := new(PKOneOfManyProof)
 	proof2.SetBytes(proofBytes)
+	fmt.Printf("Proof when set bytes: %v\n", proof)
 
-	if err != nil {
-		fmt.Println(err)
-	}
-	//res := proof.Verify()
+
+	//res := proof.Verify(db)
 
 	//end := time.Now()
 	//fmt.Printf("%v_+_\n", end.Sub(start))
