@@ -29,8 +29,8 @@ type BestStateBeacon struct {
 	BestShardHash []common.Hash
 
 	BeaconHeight    uint64
-	BeaconCandidate [][]string
-	ShardCandidate  [][]string
+	BeaconCandidate []string
+	ShardCandidate  map[byte][]string
 
 	UnassignBeaconCandidate []string
 	UnassignShardCandidate  []string
