@@ -105,20 +105,20 @@ func (pro PKComZeroProof) Bytes() []byte {
 		return []byte{}
 	}
 	var res []byte
-	res = append(pro.commitmentValue.Compress(), []byte{*pro.index}...)
-	res = append(res, pro.commitmentZeroS.Compress()...)
+	res = append(pro.commitmentValue.Compress(), pro.commitmentZeroS.Compress()...)
+
 	temp := pro.z.Bytes()
 	for j := 0; j < privacy.BigIntSize-len(temp); j++ {
 		temp = append([]byte{0}, temp...)
 	}
 	res = append(res, temp...)
+	//res = append(res, *pro.index)
 	res = append(res, []byte{*pro.index}...)
 	return res
 }
 
 // SetBytes ...
 func (pro *PKComZeroProof) SetBytes(bytestr []byte) error {
-	pro.Init()
 	if pro == nil {
 		pro = pro.Init()
 	}
