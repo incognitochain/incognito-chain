@@ -13,7 +13,12 @@ import (
 func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock *blockchain.BlockV2) (*blockchain.BestStateBeacon, error) {
 	// TODO:
 	// update BestShardHash, BestBlock, BestBlockHash
-	// unassign -> remove out the candidate
+	beaconBestState.BestBlockHash = newBlock.Hash()
+	beaconBestState.BestBlock = newBlock
+	shardState := newBlock.Body.(*blockchain.BeaconBlockBody).ShardState
+	for idx, l := range shardState {
+		beaconBestState.BestShardHash[idx] = l[len(l)-1]
+	}
 
 	if beaconBestState.BeaconHeight%200 == 1 {
 		newBeaconNode, newShardNode := GetStakingCandidate(newBlock)
@@ -67,9 +72,24 @@ func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock
 		beaconBestState.UnassignBeaconCandidate = append(beaconBestState.UnassignBeaconCandidate, newBeaconNode...)
 		beaconBestState.UnassignShardCandidate = append(beaconBestState.UnassignShardCandidate, newShardNode...)
 	}
-	// TODO: Param "set" "del"
 
 	return beaconBestState, nil
+	// update param
+	instructions := newBlock.Body.(*blockchain.BeaconBlockBody).Instructions
+
+	for _, l := range instructions {
+		if l[0] == "set" {
+			beaconBestState.Params[l[1]] = l[2]
+		}
+		if l[0] == "del" {
+			delete(beaconBestState.Params, l[1])
+		}
+		if l[0] == "swap" {
+			//TODO: remove from candidate list
+		}
+	}
+
+	return beaconBestState
 }
 
 func GetStakingCandidate(beaconBlock *blockchain.BlockV2) (beacon []string, shard []string) {
