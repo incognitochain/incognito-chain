@@ -137,7 +137,7 @@ func (tx *Tx) Init(
 		for i := 0; i < len(paymentInfo); i++ {
 			sndOut = privacy.RandInt()
 			for true {
-				ok1, err := tx.CheckSNDExistence(sndOut, db)
+				ok1, err := CheckSNDExistence(sndOut, db)
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -369,7 +369,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 	for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 		// Check output coins' SND is not exists in SND list (Database)
-		if ok, err := tx.CheckSNDExistence(tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, db); ok || err != nil {
+		if ok, err := CheckSNDExistence(tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, db); ok || err != nil {
 			return false
 		}
 	}
@@ -450,15 +450,6 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	var sizejSSig uint64 = 64    // [64]byte
 	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
 	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
-}
-
-// CheckSNDExistence return true if snd exists in snDerivators list
-func (tx Tx) CheckSNDExistence(snd *big.Int, db database.DatabaseInterface) (bool, error) {
-	ok, err := db.HasSNDerivator(*snd, 14)
-	if err != nil {
-		return false, err
-	}
-	return ok, nil
 }
 
 // CheckCMExistence returns true if cm exists in cm list

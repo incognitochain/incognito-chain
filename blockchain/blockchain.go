@@ -1079,6 +1079,10 @@ func (self *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {
 	return self.config.customTokenRewardSnapshot
 }
 
-func (self *BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+func (self BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
 	return transaction.RandomCommitmentsProcess(usableInputCoins, randNum, self.config.DataBase, chainID)
+}
+
+func (self BlockChain) CheckSNDExistence(snd *big.Int) (bool, error) {
+	return transaction.CheckSNDExistence(snd, self.config.DataBase)
 }

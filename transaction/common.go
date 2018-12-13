@@ -74,3 +74,12 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	}
 	return commitmentIndexs, myCommitmentIndexs
 }
+
+// CheckSNDExistence return true if snd exists in snDerivators list
+func CheckSNDExistence(snd *big.Int, db database.DatabaseInterface) (bool, error) {
+	ok, err := db.HasSNDerivator(*snd, 14)
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
+}
