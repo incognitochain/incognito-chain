@@ -54,6 +54,7 @@ var RpcHandler = map[string]commandHandler{
 
 	RandomCommitments: RpcServer.handleRandomCommitments,
 
+
 	// custom token
 	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
 	SendRawCustomTokenTransaction:       RpcServer.handleSendRawCustomTokenTransaction,
