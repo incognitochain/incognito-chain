@@ -260,7 +260,7 @@ func main() {
 	//fmt.Println(coin.SerialNumber == nil)
 	//fmt.Printf("coin.Serial numbre: %v\n", coin.SerialNumber)
 
-	num := 12456
+	num := 0
 	bytes := privacy.IntToByteArr(num)
 	fmt.Printf("bytes: %v\n", bytes)
 

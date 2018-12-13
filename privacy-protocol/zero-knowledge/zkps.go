@@ -404,16 +404,19 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	offset += 1
 	proof.ComOutputSND = make([]*privacy.EllipticPoint, lenComOutputSNDArray)
 	for i := 0; i < lenComOutputSNDArray; i++ {
-		lenComOutputValue := int(proofbytes[offset])
+		lenComOutputSND := int(proofbytes[offset])
 		offset += 1
 		proof.ComOutputSND[i] = new(privacy.EllipticPoint)
-		proof.ComOutputSND[i], err = privacy.DecompressKey(proofbytes[offset: offset+lenComOutputValue])
+		proof.ComOutputSND[i], err = privacy.DecompressKey(proofbytes[offset: offset+lenComOutputSND])
 		if err != nil {
 			return err
 		}
-		offset += lenComOutputValue
+		offset += lenComOutputSND
 	}
 	//ComOutputShardID []*privacy.EllipticPoint
+	if len(proof.ComInputOpeningsProof)==0 {
+		offset -= 1
+	}
 	lenComOutputShardIdArray := int(proofbytes[offset])
 	offset += 1
 	proof.ComOutputShardID = make([]*privacy.EllipticPoint, lenComOutputShardIdArray)
@@ -429,6 +432,8 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	}
 	//PubKeyLastByteSender byte
 	proof.PubKeyLastByteSender = proofbytes[offset]
+
+	fmt.Println("**************SET BYTE DONE!!!")
 	return nil
 }
 

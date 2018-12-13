@@ -109,8 +109,11 @@ func IntToByteArr(n int) []byte{
 	if len(a.Bytes())>2{
 		return []byte{}
 	}
-	if len(a.Bytes())==1 {
+	if (len(a.Bytes())==1) {
 		return []byte{0,a.Bytes()[0]}
+	}
+	if (n==0){
+		return []byte{0,0}
 	}
 	return a.Bytes()
 }
