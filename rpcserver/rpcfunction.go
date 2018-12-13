@@ -350,11 +350,11 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, note := range outCoins {
 		amount := note.CoinDetails.Value
+		candidateOutputCoins = append(candidateOutputCoins, note)
 		estimateTotalAmount -= int64(amount)
 		if estimateTotalAmount <= 0 {
 			break
 		}
-		candidateOutputCoins = append(candidateOutputCoins, note)
 	}
 
 	// check real fee per TxNormal
@@ -375,11 +375,11 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 		candidateOutputCoins = make([]*privacy.OutputCoin, 0)
 		for _, note := range outCoins {
 			amount := note.CoinDetails.Value
+			candidateOutputCoins = append(candidateOutputCoins, note)
 			estimateTotalAmount -= int64(amount)
 			if estimateTotalAmount <= 0 {
 				break
 			}
-			candidateOutputCoins = append(candidateOutputCoins, note)
 		}
 	}
 

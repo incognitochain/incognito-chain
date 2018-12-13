@@ -325,6 +325,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	genesisBlock.Header.SalaryFund = icoParams.InitFundSalary
 
 	// Get Ico payment address
+	log.Printf("Ico payment address:", icoParams.InitialPaymentAddress)
 	key, err := wallet.Base58CheckDeserialize(icoParams.InitialPaymentAddress)
 	if err != nil {
 		panic(err)

@@ -139,11 +139,11 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, note := range outCoins {
 		amount := note.CoinDetails.Value
+		candidateOutputCoins = append(candidateOutputCoins, note)
 		estimateTotalAmount -= int64(amount)
 		if estimateTotalAmount <= 0 {
 			break
 		}
-		candidateOutputCoins = append(candidateOutputCoins, note)
 	}
 
 	// check real fee per TxNormal
@@ -164,11 +164,11 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		candidateOutputCoins = make([]*privacy.OutputCoin, 0)
 		for _, note := range outCoins {
 			amount := note.CoinDetails.Value
+			candidateOutputCoins = append(candidateOutputCoins, note)
 			estimateTotalAmount -= int64(amount)
 			if estimateTotalAmount <= 0 {
 				break
 			}
-			candidateOutputCoins = append(candidateOutputCoins, note)
 		}
 	}
 
@@ -472,7 +472,11 @@ func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeC
 		if err != nil {
 			return nil, err
 		}
-		item.Amount = res[hex.EncodeToString(accountPaymentAddress.Pk)]
+		pubkey := hex.EncodeToString(accountPaymentAddress.Pk)
+		item.Amount = res[pubkey]
+		if item.Amount == 0 {
+			continue
+		}
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}

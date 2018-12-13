@@ -96,6 +96,19 @@ func (tx *Tx) Init(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 ) (error) {
+
+	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy{
+		fmt.Printf("CREATE TX CUSTOM TOKEN\n")
+		tx.Fee = fee
+		tx.sigPrivKey = *senderSK
+
+		err := tx.SignTx(hasPrivacy)
+		if err != nil{
+			return err
+		}
+		return nil
+	}
+
 	tx.Type = common.TxNormalType
 	chainID := byte(14)
 	var commitmentIndexs []uint64   // array index random of commitments in db

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"math/big"
 
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 // Protocol proving in ZK ... https://link.springer.com/chapter/10.1007/3-540-48910-X_8
@@ -64,7 +64,7 @@ func (wit *PKEqualityOfCommittedValWitness) randValue() {
 // Set - witness setter
 func (wit *PKEqualityOfCommittedValWitness) Set(
 	C []*privacy.EllipticPoint, //Statement
-	Index []byte, //Statement
+	Index []byte,               //Statement
 	X []*big.Int) {
 
 	if wit == nil {
@@ -107,7 +107,10 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) error {
 	}
 	pro.C = make([]*privacy.EllipticPoint, 2)
 	for i := 0; i < len(pro.C); i++ {
-		pro.C[i].Decompress(proofbytes[i*privacy.CompressedPointSize : (i+1)*privacy.CompressedPointSize])
+		err := pro.C[i].Decompress(proofbytes[i*privacy.CompressedPointSize: (i+1)*privacy.CompressedPointSize])
+		if err != nil {
+			return err
+		}
 		if !pro.C[i].IsSafe() {
 			return errors.New("Decompressed failed!")
 		}
@@ -118,7 +121,7 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) error {
 	}
 	pro.T = make([]*privacy.EllipticPoint, 2)
 	for i := 0; i < len(pro.T); i++ {
-		pro.T[i].Decompress(proofbytes[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+i*privacy.CompressedPointSize : len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+(i+1)*privacy.CompressedPointSize])
+		pro.T[i].Decompress(proofbytes[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+i*privacy.CompressedPointSize: len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+(i+1)*privacy.CompressedPointSize])
 		if !pro.T[i].IsSafe() {
 			return errors.New("Decompressed failed!")
 		}
@@ -126,7 +129,7 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) error {
 	pro.Z = make([]*big.Int, 3)
 	for i := 0; i < len(pro.Z); i++ {
 		pro.Z[i] = big.NewInt(0)
-		pro.Z[i].SetBytes(proofbytes[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+i*privacy.BigIntSize : len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+(i+1)*privacy.BigIntSize])
+		pro.Z[i].SetBytes(proofbytes[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+i*privacy.BigIntSize: len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+(i+1)*privacy.BigIntSize])
 	}
 	return nil
 }
@@ -134,7 +137,7 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) error {
 // Set - proof setter
 func (pro *PKEqualityOfCommittedValProof) Set(
 	C []*privacy.EllipticPoint, //Statement
-	Index []byte, //Statement
+	Index []byte,               //Statement
 	T []*privacy.EllipticPoint,
 	Z []*big.Int) {
 
