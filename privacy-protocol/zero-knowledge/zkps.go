@@ -570,7 +570,6 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		outputCoins[i].CoinDetails.Randomness = randOutputSum[i]
 
 		cmOutputSumAll.X, cmOutputSumAll.Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputSumAll.X, cmOutputSumAll.Y)
-
 	}
 
 	// For Multi Range Protocol
