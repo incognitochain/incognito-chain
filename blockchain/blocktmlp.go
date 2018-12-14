@@ -323,16 +323,16 @@ concludeBlock:
 	// 1. newNW < lastNW * 0.9
 	// 2. current block height == last Constitution start time + last Constitution execute duration
 	if blockgen.neededNewDCBConstitution(chainID) {
-		tx, err := blockgen.createAcceptConstitutionTx(chainID, DCBConstitutionHelper{})
-		coinbases = append(coinbases, *tx)
+		tx, err := blockgen.createAcceptConstitutionAndPunishTx(chainID, DCBConstitutionHelper{})
+		coinbases = append(coinbases, tx...)
 		if err != nil {
 			Logger.log.Error(err)
 			return nil, err
 		}
 	}
 	if blockgen.neededNewGOVConstitution(chainID) {
-		tx, err := blockgen.createAcceptConstitutionTx(chainID, GOVConstitutionHelper{})
-		coinbases = append(coinbases, *tx)
+		tx, err := blockgen.createAcceptConstitutionAndPunishTx(chainID, GOVConstitutionHelper{})
+		coinbases = append(coinbases, tx...)
 		if err != nil {
 			Logger.log.Error(err)
 			return nil, err

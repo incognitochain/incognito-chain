@@ -10,7 +10,7 @@ import (
 type ConstitutionInfo struct {
 	StartedBlockHeight int32
 	ExecuteDuration    int32
-	ProposalTXID       *common.Hash
+	ProposalTXID       common.Hash
 }
 
 type GOVConstitution struct {
@@ -75,7 +75,7 @@ func (GOVConstitutionHelper) GetAmountVoteToken(tx metadata.Transaction) uint64 
 func (DCBConstitutionHelper) TxAcceptProposal(originTx metadata.Transaction) metadata.Transaction {
 	acceptTx := transaction.Tx{
 		Metadata: &metadata.AcceptDCBProposalMetadata{
-			DCBProposalTXID: originTx.Hash(),
+			DCBProposalTXID: *originTx.Hash(),
 		},
 	}
 	return &acceptTx
@@ -84,7 +84,7 @@ func (DCBConstitutionHelper) TxAcceptProposal(originTx metadata.Transaction) met
 func (GOVConstitutionHelper) TxAcceptProposal(originTx metadata.Transaction) metadata.Transaction {
 	acceptTx := transaction.Tx{
 		Metadata: &metadata.AcceptGOVProposalMetadata{
-			GOVProposalTXID: originTx.Hash(),
+			GOVProposalTXID: *originTx.Hash(),
 		},
 	}
 	return &acceptTx

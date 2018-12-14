@@ -164,9 +164,13 @@ func (db *db) GetVoteGOVBoardListPrefix() []byte {
 	return VoteGOVBoardListPrefix
 }
 
+func (db *db) GetThreePhraseLv3CryptoPrefix() []byte {
+	return threePhraseCryptolv3Prefix
+}
+
 func (db *db) AddVoteLv3Proposal(boardType string, startedBlock uint32, txID *common.Hash) error {
 	//init sealer
-	keySealer := db.GetKey(string(threePhraseCryptoSealerPrefix), boardType+string(startedBlock)+string(common.ToBytes(txID)))
+	keySealer := db.GetKey(string(threePhraseCryptoSealerPrefix), boardType+string(startedBlock)+string(common.ToBytes(*txID)))
 	ok, err := db.HasValue(keySealer)
 	if err != nil {
 		return err
@@ -179,7 +183,7 @@ func (db *db) AddVoteLv3Proposal(boardType string, startedBlock uint32, txID *co
 	db.Put(keySealer, zeroInBytes)
 
 	// init owner
-	keyOwner := db.GetKey(string(threePhraseCryptoOwnerPrefix), boardType+string(startedBlock)+string(common.ToBytes(txID)))
+	keyOwner := db.GetKey(string(threePhraseCryptoOwnerPrefix), boardType+string(startedBlock)+string(common.ToBytes(*txID)))
 	ok, err = db.HasValue(keyOwner)
 	if err != nil {
 		return err
@@ -188,11 +192,16 @@ func (db *db) AddVoteLv3Proposal(boardType string, startedBlock uint32, txID *co
 		return errors.Errorf("duplicate txid")
 	}
 	db.Put(keyOwner, zeroInBytes)
+
+	// Set lv3 entry = true
+	key := db.GetKey(string(threePhraseCryptolv3Prefix), boardType+string(startedBlock)+string(common.ToBytes(*txID)))
+	db.Put(key, zeroInBytes)
+
 	return nil
 }
 
 func (db *db) AddVoteLv1or2Proposal(boardType string, startedBlock uint32, txID *common.Hash) error {
-	keySealer := db.GetKey(string(threePhraseCryptoSealerPrefix), boardType+string(startedBlock)+string(common.ToBytes(txID)))
+	keySealer := db.GetKey(string(threePhraseCryptoSealerPrefix), boardType+string(startedBlock)+string(common.ToBytes(*txID)))
 	ok, err := db.HasValue(keySealer)
 	if err != nil {
 		return err
@@ -221,7 +230,7 @@ func (db *db) AddVoteNormalProposalFromSealer(boardType string, startedBlock uin
 }
 
 func (db *db) AddVoteNormalProposalFromOwner(boardType string, startedBlock uint32, txID *common.Hash) error {
-	keyOwner := db.GetKey(string(threePhraseCryptoOwnerPrefix), boardType+string(startedBlock)+string(common.ToBytes(txID)))
+	keyOwner := db.GetKey(string(threePhraseCryptoOwnerPrefix), boardType+string(startedBlock)+string(common.ToBytes(*txID)))
 	ok, err := db.HasValue(keyOwner)
 	if err != nil {
 		return err
@@ -238,6 +247,6 @@ func (db *db) AddVoteNormalProposalFromOwner(boardType string, startedBlock uint
 	newValueInByte := make([]byte, 4)
 	binary.LittleEndian.PutUint32(newValueInByte, newValue)
 	db.Put(keyOwner, newValueInByte)
-	return nil
 
+	return nil
 }

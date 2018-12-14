@@ -26,7 +26,7 @@ type GOVParams struct {
 }
 
 func (dcbParams *DCBParams) Hash() *common.Hash {
-	record := string(common.ToBytes(dcbParams.SaleData.Hash()))
+	record := string(common.ToBytes(*dcbParams.SaleData.Hash()))
 	record += string(dcbParams.MinLoanResponseRequire)
 	for _, i := range dcbParams.LoanParams {
 		record += string(i.InterestRate)
@@ -41,8 +41,8 @@ func (govParams *GOVParams) Hash() *common.Hash {
 	record := string(govParams.SalaryPerTx)
 	record += string(govParams.BasicSalary)
 	record += string(govParams.TxFee)
-	record += string(common.ToBytes(govParams.SellingBonds.Hash()))
-	record += string(common.ToBytes(govParams.RefundInfo.Hash()))
+	record += string(common.ToBytes(*govParams.SellingBonds.Hash()))
+	record += string(common.ToBytes(*govParams.RefundInfo.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

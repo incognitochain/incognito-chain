@@ -21,8 +21,8 @@ type VoteGOVBoardData struct {
 }
 
 func (thisTx TxVoteDCBBoard) Hash() *common.Hash {
-	record := string(common.ToBytes(thisTx.TxCustomToken.Hash()))
-	record += string(common.ToBytes(thisTx.VoteDCBBoardData.Hash()))
+	record := string(common.ToBytes(*thisTx.TxCustomToken.Hash()))
+	record += string(common.ToBytes(*thisTx.VoteDCBBoardData.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -34,8 +34,8 @@ func (VoteDCBBoardData VoteDCBBoardData) Hash() *common.Hash {
 }
 
 func (thisTx TxVoteGOVBoard) Hash() *common.Hash {
-	record := string(common.ToBytes(thisTx.TxCustomToken.Hash()))
-	record += string(common.ToBytes(thisTx.VoteGOVBoardData.Hash()))
+	record := string(common.ToBytes(*thisTx.TxCustomToken.Hash()))
+	record += string(common.ToBytes(*thisTx.VoteGOVBoardData.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

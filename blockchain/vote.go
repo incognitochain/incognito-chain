@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"encoding/binary"
-	"encoding/json"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -12,64 +11,102 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
+//func parseKeyVoteLv3Proposal(keyType string, key []byte) (string, string, string, string) {
+//	realKey :=
+//	return
+//}
+
 //Todo: @0xjackalope count by database
-func (blockgen *BlkTmplGenerator) createAcceptConstitutionTx(
+func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTx(
 	chainID byte,
 	ConstitutionHelper ConstitutionHelper,
-) (*metadata.Transaction, error) {
-	BestBlock := blockgen.chain.BestState[chainID].BestBlock
-
-	// count vote from lastConstitution.StartedBlockHeight to Bestblock height
-	CountVote := make(map[common.Hash]int64)
-	Transaction := make(map[common.Hash]*metadata.Transaction)
-	for blockHeight := ConstitutionHelper.GetStartedNormalVote(blockgen, chainID); blockHeight <= BestBlock.Header.Height; blockHeight++ {
-		//retrieve block from block's height
-		hashBlock, err := blockgen.chain.config.DataBase.GetBlockByIndex(blockHeight, chainID)
-		if err != nil {
-			return nil, err
-		}
-		blockBytes, err := blockgen.chain.config.DataBase.FetchBlock(hashBlock)
-		if err != nil {
-			return nil, err
-		}
-		block := Block{}
-		err = json.Unmarshal(blockBytes, &block)
-		if err != nil {
-			return nil, err
-		}
-		//count vote of this block
-		for _, tx := range block.Transactions {
-			_, exist := CountVote[*tx.Hash()]
-			if ConstitutionHelper.CheckSubmitProposalType(tx) {
-				if exist {
-					return nil, err
-				}
-				CountVote[*tx.Hash()] = 0
-				Transaction[*tx.Hash()] = &tx
-			} else {
-				if ConstitutionHelper.CheckVotingProposalType(tx) {
-					if !exist {
-						return nil, err
-					}
-					CountVote[*tx.Hash()] += int64(ConstitutionHelper.GetAmountVoteToken(tx))
-				}
-			}
-		}
-	}
-
-	// get transaction and create transaction desc
-	var maxVote int64
-	var res common.Hash
-	for key, value := range CountVote {
-		if value > maxVote {
-			maxVote = value
-			res = key
-		}
-	}
-
-	acceptedSubmitProposalTransaction := ConstitutionHelper.TxAcceptProposal(*Transaction[res])
-
-	return &acceptedSubmitProposalTransaction, nil
+) ([]metadata.Transaction, error) {
+	//BestBlock := blockgen.chain.BestState[chainID].BestBlock
+	//
+	//// count vote from lastConstitution.StartedBlockHeight to Bestblock height
+	//CountVote := make(map[common.Hash]int64)
+	//Transaction := make(map[common.Hash]*metadata.Transaction)
+	//resTx := make([]metadata.Transaction, 0)
+	//for blockHeight := ConstitutionHelper.GetStartedNormalVote(blockgen, chainID); blockHeight <= BestBlock.Header.Height; blockHeight++ {
+	//	//retrieve block from block's height
+	//	hashBlock, err := blockgen.chain.config.DataBase.GetBlockByIndex(blockHeight, chainID)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	blockBytes, err := blockgen.chain.config.DataBase.FetchBlock(hashBlock)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	block := Block{}
+	//	err = json.Unmarshal(blockBytes, &block)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	db := blockgen.chain.config.DataBase
+	//	begin := db.GetKey(string(db.GetThreePhraseLv3CryptoPrefix()), ConstitutionHelper.GetLowerCaseBoardType() + string(0))))
+	//	end := db.GetKey(string(db.GetThreePhraseLv3CryptoPrefix()), ConstitutionHelper.GetLowerCaseBoardType() + string(ConstitutionHelper.GetEndedOfConstitution())))
+	//
+	//	searchrange := util.Range{
+	//		Start: begin,
+	//		Limit: end,
+	//	}
+	//	iter := db.NewIterator(&searchrange, nil)
+	//	rightStartedBlock := BestBlock.Header.Height + 1
+	//	for iter.Next(){
+	//		key := iter.Key()
+	//		_, _, startedBlock ,transactionID := parseKeyVoteLv3Proposal(db.GetThreePhraseLv3CryptoPrefix(), key)
+	//		if (startedBlock != rightStartedBlock) {
+	//			db.Delete(key)
+	//			continue
+	//		}
+	//
+	//	}
+	//
+	//	for _, tx := range block.Transactions {
+	//		if ConstitutionHelper.CheckNormalVoteProposaFromOwnerType(tx) {
+	//		}
+	//		if ConstitutionHelper.CheckNormalVoteProposaFromSealerType(tx) {
+	//			blockgen.chain.config.DataBase.SetDecryptedFromSealertx(tx.Hash())
+	//		}
+	//	}
+	//	//count vote of this block
+	//	for _, tx := range block.Transactions {
+	//		_, exist := CountVote[*tx.Hash()]
+	//		if ConstitutionHelper.CheckSubmitProposalType(tx) {
+	//			if exist {
+	//				return nil, err
+	//			}
+	//			CountVote[*tx.Hash()] = 0
+	//			Transaction[*tx.Hash()] = &tx
+	//		} else if ConstitutionHelper.CheckVotingProposalType(tx) {
+	//			if !exist {
+	//				return nil, err
+	//			}
+	//			CountVote[*tx.Hash()] += int64(ConstitutionHelper.GetAmountVoteToken(tx))
+	//		}
+	//	}
+	//	for i, j := range CountVote {
+	//		unSealLv := blockgen.chain.config.DataBase.GetUnsealLv(i)
+	//		resTx = append(resTx, createPunishEncryptionTx(i, unSealLv))
+	//	}
+	//}
+	//
+	//// get transaction and create transaction desc
+	//var maxVote int64
+	//var res common.Hash
+	//for key, value := range CountVote {
+	//	if value > maxVote {
+	//		maxVote = value
+	//		res = key
+	//	}
+	//}
+	//
+	//acceptedSubmitProposalTransaction := ConstitutionHelper.TxAcceptProposal(*Transaction[res])
+	//resTx = append(resTx, acceptedSubmitProposalTransaction)
+	//
+	//return resTx, nil
+	return nil, nil
 }
 
 func (blockgen *BlkTmplGenerator) createSingleSendDCBVoteTokenTx(chainID byte, pubKey []byte, amount uint64) (metadata.Transaction, error) {
