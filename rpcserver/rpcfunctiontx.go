@@ -254,7 +254,7 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 	result := jsonresult.CreateTransactionResult{
 		TxID: txID,
 	}
-	return result, nil
+ 	return result, nil
 }
 
 /*
