@@ -1,14 +1,10 @@
 package main
 
-<<<<<<< HEAD
-import privacy "github.com/ninjadotorg/constant/privacy-protocol"
-=======
 import (
-	"crypto/rand"
 	"fmt"
-	"math/big"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
->>>>>>> 04e82173bd5468413903f9c0c4bd0adc411c94d6
 
 func main() {
 
@@ -65,9 +61,12 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-	//zkp.TestPKOneOfMany()
+	zkp.TestPKOneOfMany()
+
 
 	//zkp.TestPKComMultiRange()
+
+	//zkp.TestOpeningsProtocol()
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -164,7 +163,7 @@ func main() {
 	//generators[2] = privacy.EllipticPoint{big.NewInt(45), big.NewInt(0)}
 	//generators[2].ComputeYCoord()
 	//newPedCom := privacy.NewPedersenParams(generators)
-	//fmt.Printf("New PedCom: %+v\n", newPedCom)
+	//fmt.Printf("Zero PedCom: %+v\n", newPedCom)
 
 	/*----------------- TEST COMMITMENT -----------------*/
 	//privacy.TestCommitment(01)
@@ -172,7 +171,7 @@ func main() {
 	/*----------------- TEST SIGNATURE -----------------*/
 	//privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
-	privacy.TestMultiSig()
+	//privacy.TestMultiSig()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
 	//for i :=0; i<1000; i++{
@@ -236,7 +235,6 @@ func main() {
 
 	/*----------------- TEST TX SALARY -----------------*/
 
-<<<<<<< HEAD
 	// keySet := new(cashec.KeySet)
 	// spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
 	// keySet.ImportFromPrivateKey(&spendingKey)
@@ -250,66 +248,26 @@ func main() {
 	// fmt.Printf("Tx: %+v\n", tx)
 
 	// res := transaction.ValidateTxSalary(tx, db)
-=======
-	//keySetSender := new(cashec.KeySet)
-	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	//keySetSender.ImportFromPrivateKey(&spendingKey)
-	//
-	//var db database.DatabaseInterface
-	//
-	//tx, err := transaction.CreateTxSalary(10, &keySetSender.PaymentAddress, &keySetSender.PrivateKey, db)
-	//if err != nil{
-	//	fmt.Println(err)
-	//}
-	//fmt.Printf("Tx: %+v\n", tx)
-	//
-	//res := transaction.ValidateTxSalary(tx, db)
-	//
-	//fmt.Printf("Res: %v\n", res)
-
-	/*----------------- TEST TX PRIVACY -----------------*/
-	//keySetSender := new(cashec.KeySet)
-	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	//keySetSender.ImportFromPrivateKey(&spendingKey)
-	//
-	//
-	//// create payment info of receivers
-	//paymentInfo := make([]*privacy.PaymentInfo, 2)
-	//paymentAddr := make([]privacy.PaymentAddress, 2)
-	//for i:=0; i<len(paymentInfo); i++{
-	//	//generate payment address of receivers
-	//	spendingKey := privacy.GenerateSpendingKey([]byte{byte(i)})
-	//	paymentAddr[i] = *new(privacy.PaymentAddress)
-	//	paymentAddr[i] = privacy.GeneratePaymentAddress(spendingKey)
-	//
-	//	paymentInfo[i] = new(privacy.PaymentInfo)
-	//	paymentInfo[i].Amount = 1
-	//	paymentInfo[i].PaymentAddress = paymentAddr[i]
-	//}
-
-	// generates some input coins of sender
-	//inputCoins := make([]*privacy.InputCoin)
-
-
-	//tx := new(transaction.Tx)
-	//tx.CreateTx(keySetSender.PrivateKey, paymentInfo, )
-
-	//a := 0
-	//aInt := big.NewInt(int64(a))
-	//aIntBytes := aInt.Bytes()
-	//fmt.Printf("aInt: %v\n", aIntBytes)
-	//
-	//if aInt.Cmp(big.NewInt(0)) == 0{
-	//	fmt.Println("equal")
-	//}
-
-	for true{
-		res, _ := rand.Int(rand.Reader, big.NewInt(10))
-
-		fmt.Println(res)
-	}
->>>>>>> 04e82173bd5468413903f9c0c4bd0adc411c94d6
 
 	// fmt.Printf("Res: %v\n", res)
+
+	/*----------------- TEST IS NIL -----------------*/
+	//zkp := new(zkp.PKOneOfManyProof)
+	//fmt.Printf("len zkp.cl: %v\n", len(zkp.cl))
+	//fmt.Println(zkp.IsNil())
+
+	//coin := new(privacy.Coin).Init()
+	//fmt.Println(coin.SerialNumber == nil)
+	//fmt.Printf("coin.Serial numbre: %v\n", coin.SerialNumber)
+
+	num := 0
+	bytes := privacy.IntToByteArr(num)
+	fmt.Printf("bytes: %v\n", bytes)
+
+	num2 := privacy.ByteArrToInt(bytes)
+	fmt.Printf("num2: %v\n", num2)
+
+
+
 
 }

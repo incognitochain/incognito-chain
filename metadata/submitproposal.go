@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/voting"
 )
 
@@ -25,7 +26,7 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) Hash() *common.Hash 
 	return &hash
 }
 
-func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte) (bool, error) {
+func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
 	return true, nil
 }
 
@@ -63,7 +64,7 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash 
 	return &hash
 }
 
-func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte) (bool, error) {
+func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
 	return true, nil
 }
 

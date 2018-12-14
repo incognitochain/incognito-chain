@@ -217,7 +217,7 @@ func InnerProductVerify(c *big.Int, P, U *privacy.EllipticPoint, G, H []*privacy
 	Gprime := G
 	Hprime := H
 	Pprime := P.Add(ux.ScalarMul(c)) // line 6 from protocol 1
-	//fmt.Printf("New Commitment value with u^cx: %s \n", Pprime)
+	//fmt.Printf("Zero Commitment value with u^cx: %s \n", Pprime)
 
 	for curIt >= 0 {
 		Lval := ipp.L[curIt]

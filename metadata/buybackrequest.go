@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 )
 
 type BuyBackRequest struct {
@@ -28,9 +29,10 @@ func (bbReq *BuyBackRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	chainID byte,
+	db database.DatabaseInterface,
 ) (bool, error) {
 	// check double spending on fee tx
-	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID)
+	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
 	if err != nil {
 		return false, err
 	}

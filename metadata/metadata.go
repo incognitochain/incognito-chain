@@ -66,7 +66,7 @@ type MempoolRetriever interface {
 
 type BlockchainRetriever interface {
 	GetHeight() int32
-	GetNulltifiersList(byte) ([][]byte, error)
+	// GetNulltifiersList(byte) ([][]byte, error)
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetDCBParams() params.DCBParams
 	GetDCBBoardPubKeys() [][]byte
@@ -91,7 +91,7 @@ type Metadata interface {
 	GetType() int
 	Hash() *common.Hash
 	CheckTransactionFee(Transaction, uint64) bool
-	ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte) (bool, error)
+	ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error)
 	// isContinue, ok, err
 	ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
@@ -100,7 +100,7 @@ type Metadata interface {
 // Interface for all type of transaction
 type Transaction interface {
 	Hash() *common.Hash
-	ValidateTransaction(bool, database.DatabaseInterface) bool
+	ValidateTransaction(bool, database.DatabaseInterface, byte) bool
 	GetMetadataType() int
 	GetType() string
 	GetTxVirtualSize() uint64
@@ -111,12 +111,12 @@ type Transaction interface {
 	CheckTransactionFee(uint64) bool
 	IsSalaryTx() bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
-	ValidateTxWithBlockChain(BlockchainRetriever, byte) error
+	ValidateTxWithBlockChain(BlockchainRetriever, byte, database.DatabaseInterface) error
 	ValidateSanityData(BlockchainRetriever) (bool, error)
-	ValidateTxByItself(bool, database.DatabaseInterface, BlockchainRetriever) bool
+	ValidateTxByItself(bool, database.DatabaseInterface, BlockchainRetriever, byte) bool
 	GetMetadata() Metadata
 	SetMetadata(Metadata)
-	ValidateConstDoubleSpendWithBlockchain(BlockchainRetriever, byte) error
+	ValidateConstDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface) error
 
 	GetJSPubKey() []byte
 	GetReceivers() ([][]byte, []uint64)

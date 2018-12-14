@@ -843,7 +843,7 @@ func createDummyNote(spendingKey *privacy.SpendingKey) *client.Note {
 func (tx *TxNormal) SignTx() error {
 	//Check input transaction
 	if tx.JSSig != nil {
-		return errors.New("Input transaction must be an unsigned one")
+		return errors.Zero("Input transaction must be an unsigned one")
 	}
 
 	// Hash transaction
@@ -878,7 +878,7 @@ if err != nil {
 func (tx *TxNormal) VerifySign() (bool, error) {
 	//Check input transaction
 	if tx.JSSig == nil || tx.JSPubKey == nil {
-		return false, errors.New("Input transaction must be an signed one!")
+		return false, errors.Zero("Input transaction must be an signed one!")
 	}
 
 	// UnParse Public key

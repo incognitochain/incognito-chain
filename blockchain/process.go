@@ -1,11 +1,7 @@
 package blockchain
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/transaction"
 )
 
 // ProcessBlock is the main workhorse for handling insertion of new blocks into
@@ -39,22 +35,15 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	// such as making blocks that never become part of the main chain or
 	// blocks that fail to connect available for further analysis.
 	if self.config.Light {
-		Logger.log.Infof("Storing Block Header of Block %+v", blockHash)
+		/*Logger.log.Infof("Storing Block Header of Block %+v", blockHash)
 		err := self.StoreBlockHeader(block)
 		if err != nil {
 			return NewBlockChainError(UnExpectedError, err)
 		}
 
 		Logger.log.Infof("Fetch Block %+v to get unspent tx of all accoutns in wallet", blockHash)
-		nullifiersInDb := make([][]byte, 0)
-		chainId := block.Header.ChainID
-		txViewPoint, err := self.FetchTxViewPoint(chainId)
-		if err != nil {
-			return NewBlockChainError(UnExpectedError, err)
-		}
-		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
 		for _, account := range self.config.Wallet.MasterAccount.Child {
-			unspentTxs, err1 := self.GetListUnspentTxByKeysetInBlock(&account.Key.KeySet, block, nullifiersInDb, true)
+			unspentTxs, err1 := self.GetListUnspentTxByKeysetInBlock(&account.Key.KeySet, block.Header.ChainID, block.Transactions, true)
 			if err1 != nil {
 				return NewBlockChainError(UnExpectedError, err1)
 			}
@@ -81,7 +70,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 					}
 				}
 			}
-		}
+		}*/
 	} else {
 		err := self.StoreBlock(block)
 		if err != nil {
@@ -107,7 +96,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
-	// fetch nullifiers and commitments(utxo) from block and save
+	// fetch serialNumbers and commitments(utxo) from block and save
 	err = self.CreateAndSaveTxViewPointFromBlock(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)

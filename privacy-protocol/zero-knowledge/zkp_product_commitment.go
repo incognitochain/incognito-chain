@@ -36,7 +36,6 @@ func (wit *PKComProductWitness) Set(
 	randA *big.Int,
 	cmB *privacy.EllipticPoint,
 	idx *byte) {
-
 	if wit == nil {
 		wit = new(PKComProductWitness)
 	}
@@ -48,13 +47,37 @@ func (wit *PKComProductWitness) Set(
 	*wit.cmB = *cmB
 	wit.index = *idx
 }
-func (pro *PKComProductProof) Init() {
-	pro.D = new(privacy.EllipticPoint)
-	pro.E = new(privacy.EllipticPoint)
+
+func (pro *PKComProductProof) IsNull() bool {
+	if (pro.D == nil) {
+		return true
+	}
+	if (pro.E == nil) {
+		return true
+	}
+	if (pro.f == nil) {
+		return true
+	}
+	if (pro.z == nil) {
+		return true
+	}
+	if (pro.cmA == nil) {
+		return true
+	}
+	if (pro.cmB == nil) {
+		return true
+	}
+	return false
+}
+
+func (pro *PKComProductProof) Init() *PKComProductProof {
+	pro.D = new(privacy.EllipticPoint).Zero()
+	pro.E = new(privacy.EllipticPoint).Zero()
 	pro.f = new(big.Int)
 	pro.z = new(big.Int)
-	pro.cmA = new(privacy.EllipticPoint)
-	pro.cmB = new(privacy.EllipticPoint)
+	pro.cmA = new(privacy.EllipticPoint).Zero()
+	pro.cmB = new(privacy.EllipticPoint).Zero()
+	return pro
 }
 
 func (pro *PKComProductProof) Print() {
@@ -65,8 +88,15 @@ func (pro *PKComProductProof) Print() {
 	fmt.Println(pro.cmA)
 	fmt.Println(pro.cmB)
 }
-func (pro *PKComProductProof) Bytes() []byte {
+
+func (pro PKComProductProof) Bytes() []byte {
+	if pro.D.IsEqual(new(privacy.EllipticPoint).Zero()) {
+		return []byte{}
+	}
 	var proofbytes []byte
+	//if pro.cmA == nil || pro.cmB == nil || {
+	//
+	//}
 	proofbytes = append(proofbytes, pro.cmA.Compress()...)                           // 33 bytes
 	proofbytes = append(proofbytes, pro.cmB.Compress()...)                           // 33 bytes
 	proofbytes = append(proofbytes, pro.D.Compress()...)                             // 33 bytes
@@ -77,8 +107,14 @@ func (pro *PKComProductProof) Bytes() []byte {
 	return proofbytes
 }
 
-func (pro *PKComProductProof) SetBytes(proofBytes []byte) {
-	pro.Init()
+func (pro *PKComProductProof) SetBytes(proofBytes []byte) error {
+	if pro == nil {
+		pro = pro.Init()
+	}
+
+	if len(proofBytes) == 0 {
+		return nil
+	}
 	offset := 0
 	pro.cmA.Decompress(proofBytes[offset:])
 	offset += privacy.CompressedPointSize
@@ -93,6 +129,7 @@ func (pro *PKComProductProof) SetBytes(proofBytes []byte) {
 	pro.z.SetBytes(proofBytes[offset:offset+32])
 	offset += 32
 	pro.index = proofBytes[offset]
+	return nil
 }
 func (wit *PKComProductWitness) Get() *PKComProductWitness {
 	return wit

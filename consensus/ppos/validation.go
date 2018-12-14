@@ -34,14 +34,15 @@ func (self *Engine) ValidateSpecTxWithBlockChain(tx metadata.Transaction) error 
 		return err
 	}
 	// return self.config.MemPool.ValidateTxWithBlockChain(tx, chainID)
-	return tx.ValidateTxWithBlockChain(self.config.BlockChain, chainID)
+	return tx.ValidateTxWithBlockChain(self.config.BlockChain, chainID, self.config.BlockChain.GetDatabase())
 }
 
 // Checl spec tx by it self
 func (self *Engine) ValidateSpecTxByItSelf(tx metadata.Transaction) bool {
 	// get chainID of tx
 	// return self.config.MemPool.ValidateTxByItSelf(tx)
-	return tx.ValidateTxByItself(tx.IsPrivacy(), self.config.BlockChain.GetDatabase(), self.config.BlockChain)
+	chainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	return tx.ValidateTxByItself(tx.IsPrivacy(), self.config.BlockChain.GetDatabase(), self.config.BlockChain, chainID)
 }
 
 func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, sigs []string) error {

@@ -111,7 +111,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 			<-time.Tick(common.MaxBlockWaitTime * time.Second)
 			sourceTxns = blockgen.txPool.MiningDescs()
 			if len(sourceTxns) == 0 {
-				// return nil, errors.New("No TxNormal")
+				// return nil, errors.Zero("No TxNormal")
 				Logger.log.Info("Creating empty block...")
 				goto concludeBlock
 			}
@@ -127,7 +127,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 		// ValidateTransaction vote and propose transaction
 
 		// TODO: need to determine a tx is in privacy format or not
-		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain) {
+		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain, chainID) {
 			txToRemove = append(txToRemove, metadata.Transaction(tx))
 			continue
 		}
@@ -171,7 +171,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 
 	// check len of txs in block
 	if len(txsToAdd) == 0 {
-		// return nil, errors.New("no transaction available for this chain")
+		// return nil, errors.Zero("no transaction available for this chain")
 		Logger.log.Info("Creating empty block...")
 	}
 

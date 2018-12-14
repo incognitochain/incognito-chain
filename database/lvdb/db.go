@@ -27,6 +27,7 @@ var (
 	privateKeyPrefix          = []byte("prk-")
 	serialNumbersPrefix       = []byte("serinalnumbers-")
 	commitmentsPrefix         = []byte("commitments-")
+	outcoinsPrefix            = []byte("outcoins-")
 	snderivatorsPrefix        = []byte("snderivators-")
 	bestBlockKey              = []byte("bestBlock")
 	feeEstimator              = []byte("feeEstimator")
@@ -100,6 +101,8 @@ func (db db) GetKey(keyType string, key interface{}) []byte {
 		dbkey = append(serialNumbersPrefix, []byte(key.(string))...)
 	case string(commitmentsPrefix):
 		dbkey = append(commitmentsPrefix, []byte(key.(string))...)
+	case string(outcoinsPrefix):
+		dbkey = append(outcoinsPrefix, []byte(key.(string))...)
 	case string(snderivatorsPrefix):
 		dbkey = append(snderivatorsPrefix, []byte(key.(string))...)
 	case string(TokenPrefix):

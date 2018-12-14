@@ -330,3 +330,17 @@ func CheckDuplicateBigInt(arr []*big.Int) bool {
 func RandBigIntN(max *big.Int) (*big.Int, error) {
 	return rand.Int(rand.Reader, max)
 }
+
+// ECDSASigToByteArray converts signature to byte array
+func ECDSASigToByteArray(r, s *big.Int) (sig []byte) {
+	sig = append(sig, r.Bytes()...)
+	sig = append(sig, s.Bytes()...)
+	return
+}
+
+// FromByteArrayToECDSASig converts a byte array to signature
+func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
+	r = new(big.Int).SetBytes(sig[0:32])
+	s = new(big.Int).SetBytes(sig[32:64])
+	return
+}

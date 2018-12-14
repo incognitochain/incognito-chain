@@ -77,7 +77,7 @@ func (h Hash) Size() int {
 
 var hashes = make([]func() hash.Hash, maxHash)
 
-// New returns a new hash.Hash calculating the given hash function. New panics
+// Zero returns a new hash.Hash calculating the given hash function. Zero panics
 // if the hash function is not linked into the binary.
 func (h Hash) New() hash.Hash {
 	if h > 0 && h < maxHash {

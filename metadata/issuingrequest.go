@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
@@ -37,9 +38,10 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	chainID byte,
+	db database.DatabaseInterface,
 ) (bool, error) {
 	// check double spending on fee tx
-	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID)
+	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
 	if err != nil {
 		return false, err
 	}

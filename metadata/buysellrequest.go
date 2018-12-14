@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
@@ -32,10 +33,10 @@ func NewBuySellRequest(bsReqData map[string]interface{}) *BuySellRequest {
 	}
 }
 
-func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
+func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 
 	// check double spending on fee + buy/sell amount tx
-	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID)
+	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
 	if err != nil {
 		return false, err
 	}

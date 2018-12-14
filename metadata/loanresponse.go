@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 )
 
 type ValidLoanResponse int
@@ -46,7 +47,7 @@ func (lr *LoanResponse) Hash() *common.Hash {
 	return &hash
 }
 
-func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
+func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if only board members created this tx
 	isBoard := false
 	for _, gov := range bcr.GetDCBBoardPubKeys() {

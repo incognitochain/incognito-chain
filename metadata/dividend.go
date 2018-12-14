@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
@@ -50,7 +51,7 @@ func (div *Dividend) Hash() *common.Hash {
 	return &hash
 }
 
-func (div *Dividend) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
+func (div *Dividend) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if there's a proposal to pay dividend
 	// TODO(@0xbunyip): get current proposal and check if it is dividend payout
 	proposal := &DividendProposal{}

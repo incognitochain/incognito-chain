@@ -42,7 +42,7 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 	if fee == 0 {
 		fee = self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.BasicSalary
 	}
-	totalAmmount := fee
+	//totalAmmount := fee
 
 	// param #3: loan params
 	loanParams := arrayParams[2].(map[string]interface{})
@@ -52,8 +52,8 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 	}
 
 	// list unspent tx for estimation fee
-	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
+	/*estimateTotalAmount := totalAmmount
+	usableTxsMap, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
@@ -69,35 +69,33 @@ func (self RpcServer) handleCreateRawLoanRequest(params interface{}, closeChan <
 				break
 			}
 		}
-	}
+	}*/
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
-	nullifiersDb := make(map[byte]([][]byte))
+	/*nullifiersDb := make(map[byte]([][]byte))
 	commitmentsDb := make(map[byte]([][]byte))
 	//merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
 		// get tx view point
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
+		nullifiersDb[chainId] = txViewPoint.ListSerialNumbers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
-	}
-	//// noPrivacy := false
+	}*/
+	/*tx, err := transaction.CreateTxLoanRequest(transaction.FeeArgs{
+		Fee:         fee,
+		Commitments: commitmentsDb,
+		//UsableTx:      candidateTxsMap,
+		PaymentInfo:   nil,
+		Rts:           merkleRootCommitments,
+		SenderChainID: chainIdSender,
+		SenderKey:     &senderKey.KeySet.PrivateKey,
+	}, loanRequest)*/
+	// if err != nil {
+	// 	Logger.log.Critical(err)
+	// 	return nil, NewRPCError(ErrUnexpected, err)
+	// }
+	// TODO: @bunyip - update here
 	tx := transaction.Tx{}
-	// TODO: bunyip - update here
-	// err = tx.CreateTx(
-	// 	&senderKey.KeySet.PrivateKey,
-	// 	nil,
-	// 	merkleRootCommitments,
-	// 	candidateTxsMap,
-	// 	commitmentsDb,
-	// 	fee,
-	// 	chainIdSender,
-	// 	noPrivacy,
-	// )
-	if err != nil {
-		Logger.log.Critical(err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
 	tx.Metadata = loanRequest
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
@@ -189,18 +187,18 @@ func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan 
 	if fee == 0 {
 		fee = self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.BasicSalary
 	}
-	totalAmmount := fee
+	//totalAmmount := fee
 
 	// param #3: loan params
 	loanParams := arrayParams[2].(map[string]interface{})
 	loanResponse := metadata.NewLoanResponse(loanParams)
-	/*if loanResponse == nil {
+	if loanResponse == nil {
 		return nil, errors.New("Miss data")
-	}*/
+	}
 
 	// list unspent tx for estimation fee
-	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
+	/*estimateTotalAmount := totalAmmount
+	usableTxsMap, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
@@ -216,37 +214,31 @@ func (self RpcServer) handleCreateRawLoanResponse(params interface{}, closeChan 
 				break
 			}
 		}
-	}
+	}*/
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
-	nullifiersDb := make(map[byte]([][]byte))
+	/*nullifiersDb := make(map[byte]([][]byte))
 	commitmentsDb := make(map[byte]([][]byte))
 	//merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
 		//merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
 		// get tx view point
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
+		nullifiersDb[chainId] = txViewPoint.ListSerialNumbers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
-	//noPrivacy := false
-
-	// TODO: bunyip - update here
+	}*/
+	/*tx, err := transaction.CreateTxLoanResponse(transaction.FeeArgs{
+		Fee:         fee,
+		Commitments: commitmentsDb,
+		//UsableTx:      candidateTxsMap,
+		PaymentInfo:   nil,
+		Rts:           merkleRootCommitments,
+		SenderChainID: chainIdSender,
+		SenderKey:     &senderKey.KeySet.PrivateKey,
+	}, loanResponse)*/
+	// TODO: @bunyip - update here
 	tx := transaction.Tx{}
-	// tx, err := transaction.CreateTx(
-	// 	&senderKey.KeySet.PrivateKey,
-	// 	nil,
-	// 	merkleRootCommitments,
-	// 	candidateTxsMap,
-	// 	commitmentsDb,
-	// 	fee,
-	// 	chainIdSender,
-	// 	noPrivacy,
-	// )
-	// if err != nil {
-	// 	Logger.log.Critical(err)
-	// 	return nil, NewRPCError(ErrUnexpected, err)
-	// }
 	tx.Metadata = loanResponse
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
@@ -336,18 +328,18 @@ func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan 
 	if fee == 0 {
 		fee = self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.BasicSalary
 	}
-	totalAmmount := fee
+	//totalAmmount := fee
 
 	// param #3: loan params
 	loanParams := arrayParams[2].(map[string]interface{})
 	loanWithdraw := metadata.NewLoanWithdraw(loanParams)
-	/*if loanWithdraw == nil {
+	if loanWithdraw == nil {
 		return nil, errors.New("Miss data")
-	}*/
+	}
 
 	// list unspent tx for estimation fee
-	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
+	/*estimateTotalAmount := totalAmmount
+	usableTxsMap, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
@@ -363,35 +355,30 @@ func (self RpcServer) handleCreateRawLoanWithdraw(params interface{}, closeChan 
 				break
 			}
 		}
-	}
+	}*/
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
-	nullifiersDb := make(map[byte]([][]byte))
+	/*nullifiersDb := make(map[byte]([][]byte))
 	commitmentsDb := make(map[byte]([][]byte))
 	//merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
 		//merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
 		// get tx view point
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
+		nullifiersDb[chainId] = txViewPoint.ListSerialNumbers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
 	}
-	//// noPrivacy := false
+	}*/
+	//tx, err := transaction.CreateTxLoanWithdraw(transaction.FeeArgs{
+	//	Fee:         fee,
+	//	Commitments: commitmentsDb,
+	//	//UsableTx:      candidateTxsMap,
+	//	PaymentInfo:   nil,
+	//	Rts:           merkleRootCommitments,
+	//	SenderChainID: chainIdSender,
+	//	SenderKey:     &senderKey.KeySet.PrivateKey,
+	//}, loanWithdraw)
 	tx := transaction.Tx{}
-	// tx, err := transaction.CreateTx(
-	// 	&senderKey.KeySet.PrivateKey,
-	// 	nil,
-	// 	merkleRootCommitments,
-	// 	candidateTxsMap,
-	// 	commitmentsDb,
-	// 	fee,
-	// 	chainIdSender,
-	// 	noPrivacy,
-	// )
-	// if err != nil {
-	// 	Logger.log.Critical(err)
-	// 	return nil, NewRPCError(ErrUnexpected, err)
-	// }
 	tx.Metadata = loanWithdraw
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
@@ -481,18 +468,18 @@ func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <
 	if fee == 0 {
 		fee = self.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.BasicSalary
 	}
-	totalAmmount := fee
+	//totalAmmount := fee
 
 	// param #3: loan params
 	loanParams := arrayParams[2].(map[string]interface{})
 	loanPayment := metadata.NewLoanPayment(loanParams)
-	/*if loanPayment == nil {
+	if loanPayment == nil {
 		return nil, errors.New("Miss data")
-	}*/
+	}
 
 	// list unspent tx for estimation fee
-	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
+	/*estimateTotalAmount := totalAmmount
+	usableTxsMap, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
 	candidateTxs := make([]*transaction.Tx, 0)
 	candidateTxsMap := make(map[byte][]*transaction.Tx)
 	for chainId, usableTxs := range usableTxsMap {
@@ -508,35 +495,29 @@ func (self RpcServer) handleCreateRawLoanPayment(params interface{}, closeChan <
 				break
 			}
 		}
-	}
+	}*/
 
 	// get merkleroot commitments, nullifers db, commitments db for every chain
-	nullifiersDb := make(map[byte]([][]byte))
+	/*nullifiersDb := make(map[byte]([][]byte))
 	commitmentsDb := make(map[byte]([][]byte))
 	//merkleRootCommitments := make(map[byte]*common.Hash)
 	for chainId, _ := range candidateTxsMap {
 		//merkleRootCommitments[chainId] = &self.config.BlockChain.BestState[chainId].BestBlock.Header.MerkleRootCommitments
 		// get tx view point
 		txViewPoint, _ := self.config.BlockChain.FetchTxViewPoint(chainId)
-		nullifiersDb[chainId] = txViewPoint.ListNullifiers()
+		nullifiersDb[chainId] = txViewPoint.ListSerialNumbers()
 		commitmentsDb[chainId] = txViewPoint.ListCommitments()
-	}
-	//noPrivacy := false
+	}*/
+	/*tx, err := transaction.CreateTxLoanPayment(transaction.FeeArgs{
+		Fee:         fee,
+		Commitments: commitmentsDb,
+		//UsableTx:      candidateTxsMap,
+		PaymentInfo:   nil,
+		Rts:           merkleRootCommitments,
+		SenderChainID: chainIdSender,
+		SenderKey:     &senderKey.KeySet.PrivateKey,
+	}, loanPayment)*/
 	tx := transaction.Tx{}
-	// tx, err := transaction.CreateTx(
-	// 	&senderKey.KeySet.PrivateKey,
-	// 	nil,
-	// 	merkleRootCommitments,
-	// 	candidateTxsMap,
-	// 	commitmentsDb,
-	// 	fee,
-	// 	chainIdSender,
-	// 	noPrivacy,
-	// )
-	// if err != nil {
-	// 	Logger.log.Critical(err)
-	// 	return nil, NewRPCError(ErrUnexpected, err)
-	// }
 	tx.Metadata = loanPayment
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {

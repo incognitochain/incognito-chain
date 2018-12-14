@@ -1,6 +1,9 @@
 package metadata
 
-import "github.com/ninjadotorg/constant/common"
+import (
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
+)
 
 type AcceptDCBProposalMetadata struct {
 	DCBProposalTXID *common.Hash
@@ -14,7 +17,7 @@ func NewAcceptDCBProposalMetadata(voteDCBBoardMetadata map[string]interface{}) *
 	}
 }
 
-func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
+func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	_, _, _, tx, err := bcr.GetTransactionByHash(acceptDCBProposalMetadata.DCBProposalTXID)
 	if err != nil {
 		return false, err
@@ -55,7 +58,7 @@ func NewAcceptGOVProposalMetadata(voteGOVBoardMetadata map[string]interface{}) *
 	}
 }
 
-func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
+func (acceptGOVProposalMetadata *AcceptGOVProposalMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	_, _, _, tx, err := bcr.GetTransactionByHash(acceptGOVProposalMetadata.GOVProposalTXID)
 	if err != nil {
 		return false, err
