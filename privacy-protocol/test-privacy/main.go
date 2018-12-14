@@ -5,10 +5,8 @@ import (
 	"math/big"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-
-	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client/crypto/rand"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 func main() {
@@ -67,7 +65,6 @@ func main() {
 	/*****************zkp.TestPKComZeroOne()****************/
 
 	//zkp.TestPKOneOfMany()
-
 
 	//zkp.TestPKComMultiRange()
 
@@ -285,7 +282,7 @@ func main() {
 	//fmt.Printf("bytes: %v\n", bytes)
 	//tx := new(transaction.Tx)
 	//tx.CreateTx(keySetSender.PrivateKey, paymentInfo, )
-	
+
 	//num2 := privacy.ByteArrToInt(bytes)
 	//fmt.Printf("num2: %v\n", num2)
 	for true {
@@ -307,7 +304,6 @@ func main() {
 	coin.CommitAll()
 	coin.Value = 0
 
-
 	outCoin := new(privacy.OutputCoin)
 	outCoin.CoinDetails = coin
 	outCoin.CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted)
@@ -318,10 +314,5 @@ func main() {
 
 	fmt.Printf("Out coin bytes: %v\n", outCoinBytes)
 	fmt.Printf("Len Out coin bytes: %v\n", len(outCoinBytes))
-
-
-
-
-
 
 }
