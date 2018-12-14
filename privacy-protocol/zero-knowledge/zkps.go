@@ -596,7 +596,8 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		if wit.OneOfManyWitness[i] == nil {
 			wit.OneOfManyWitness[i] = new(PKOneOfManyWitness)
 		}
-		wit.OneOfManyWitness[i].Set(commitmentTemps, commitmentIndexs, rndInputIsZero, myCommitmentIndexs[i], privacy.SK)
+		indexIsZero := myCommitmentIndexs[i] % privacy.CMRingSize
+		wit.OneOfManyWitness[i].Set(commitmentTemps, commitmentIndexs, rndInputIsZero, indexIsZero, privacy.SK)
 
 		/***** Build witness for proving that serial number is derived from the committed derivator *****/
 		if wit.EqualityOfCommittedValWitness[i] == nil {
