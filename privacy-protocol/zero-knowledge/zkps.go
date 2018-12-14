@@ -554,7 +554,10 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		cmInputSum[i] = cmInputSK
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputValue[i].X, cmInputValue[i].Y)
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputSND[i].X, cmInputSND[i].Y)
-
+		cmInputSumOpening := new(privacy.EllipticPoint)
+		cmInputSumOpening.X, cmInputSumOpening.Y = big.NewInt(0), big.NewInt(0)
+		cmInputSumOpening.X.Set(cmInputSum[i].X)
+		cmInputSumOpening.Y.Set(cmInputSum[i].Y)
 		randInputSum[i] = randInputSK
 		randInputSum[i].Add(randInputSum[i], randInputValue[i])
 		randInputSum[i].Add(randInputSum[i], randInputSND[i])
@@ -564,7 +567,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		if wit.ComInputOpeningsWitness[i] == nil {
 			wit.ComInputOpeningsWitness[i] = new(PKComOpeningsWitness)
 		}
-		wit.ComInputOpeningsWitness[i].Set(cmInputSum[i],
+		wit.ComInputOpeningsWitness[i].Set(cmInputSumOpening,
 			[]*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randInputOpening},
 			[]byte{privacy.SK, privacy.VALUE, privacy.SND, privacy.RAND})
 
