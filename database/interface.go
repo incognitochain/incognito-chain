@@ -5,7 +5,6 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/voting"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -80,11 +79,11 @@ type DatabaseInterface interface {
 	StoreCustomTokenTx(tokenID *common.Hash, chainID byte, blockHeight int32, txIndex int32, data []byte) error // store custom token tx. Param: tokenID, chainID, block height, tx-id, data tx
 	ListCustomToken() ([][]byte, error)                                                                         // get list all custom token which issued in network
 	CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error)                                                // from token id get all custom txs
-	//StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, customTokenTxData *transaction.TxCustomToken) error // store account history of custom token
+	//	StoreCustomTokenPaymentAddressHistory(tokenID *common.Hash, customTokenTxData *transaction.TxCustomToken) error // store account history of custom token
 	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []byte) (map[string]string, error) // get list of utxo of an paymentaddress.pubkey of a token
 	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)           // get balance of all paymentaddress of a token (only return payment address with balance > 0)
-	//UpdateRewardAccountUTXO(*common.Hash, []byte, *common.Hash, int) error
-	//GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error)                                  // get all paymentaddress owner that have balance > 0 of a custom token
+	UpdateRewardAccountUTXO(*common.Hash, []byte, *common.Hash, int) error
+	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error) // get all paymentaddress owner that have balance > 0 of a custom token
 
 	// Loans
 	StoreLoanRequest([]byte, []byte) error                 // param: loanID, tx hash
@@ -94,8 +93,8 @@ type DatabaseInterface interface {
 	GetLoanPayment([]byte) (uint64, uint64, uint32, error) // param: loanID; return: principle, interest, deadline
 
 	// Crowdsale
-	SaveCrowdsaleData(*voting.SaleData) error
-	LoadCrowdsaleData([]byte) (*voting.SaleData, error)
+	SaveCrowdsaleData([]byte, int32, []byte, uint64, []byte, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
+	LoadCrowdsaleData([]byte) (int32, []byte, uint64, []byte, uint64, error)
 
 	//Vote
 	AddVoteDCBBoard(uint32, []byte, []byte, uint64) error

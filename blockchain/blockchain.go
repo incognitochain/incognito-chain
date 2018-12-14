@@ -104,7 +104,19 @@ func (self *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint32, e
 }
 
 func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*voting.SaleData, error) {
-	return self.config.DataBase.LoadCrowdsaleData(saleID)
+	endBlock, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := self.config.DataBase.LoadCrowdsaleData(saleID)
+	var saleData *voting.SaleData
+	if err != nil {
+		saleData = &voting.SaleData{
+			SaleID:        saleID,
+			EndBlock:      endBlock,
+			BuyingAsset:   buyingAsset,
+			BuyingAmount:  buyingAmount,
+			SellingAsset:  sellingAsset,
+			SellingAmount: sellingAmount,
+		}
+	}
+	return saleData, err
 }
 
 /*
@@ -686,35 +698,66 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 	return nil
 }
 
+// parseCustomTokenUTXO helper method for parsing UTXO data for updating dividend payout
+func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte) ([]transaction.TxTokenVout, error) {
+	utxoData, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, pubkey)
+	if err != nil {
+		return nil, err
+	}
+	var finalErr error
+	vouts := []transaction.TxTokenVout{}
+	for key, value := range utxoData {
+		keys := strings.Split(key, string(lvdb.Splitter))
+		values := strings.Split(value, string(lvdb.Splitter))
+		// get unspent and unreward transaction output
+		if strings.Compare(values[1], string(lvdb.Unspent)) == 0 {
+			vout := transaction.TxTokenVout{}
+			vout.PaymentAddress = privacy.PaymentAddress{Pk: pubkey}
+			txHash, err := common.Hash{}.NewHash([]byte(keys[3]))
+			if err != nil {
+				finalErr = err
+				continue
+			}
+			vout.SetTxCustomTokenID(*txHash)
+			voutIndexByte := []byte(keys[4])[0]
+			voutIndex := int(voutIndexByte)
+			vout.SetIndex(voutIndex)
+			value, err := strconv.Atoi(values[0])
+			if err != nil {
+				finalErr = err
+				continue
+			}
+			vout.Value = uint64(value)
+			vouts = append(vouts, vout)
+		}
+	}
+	return vouts, finalErr
+}
+
 func (self *BlockChain) UpdateDividendPayout(block *Block) error {
-	// TODO: update to new txprivacy fields
-	// for _, tx := range block.Transactions {
-	// 	switch tx.GetMetadataType() {
-	// 	case metadata.DividendMeta:
-	// 		{
-	// 			tx := tx.(*transaction.Tx)
-	// 			meta := tx.Metadata.(*metadata.Dividend)
-	// 			tokenID := meta.TokenID
-	// 			for _, desc := range tx.Descs {
-	// 				for _, note := range desc.Note {
-	// 					// TODO(@0xbunyip): replace note.Apk with bytes of PaymentAddress, not just Pk
-	// 					paymentAddress := (&privacy.PaymentAddress{}).FromBytes(note.Apk[:])
-	// 					utxos, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, *paymentAddress)
-	// 					if err != nil {
-	// 						return err
-	// 					}
-	// 					for _, utxo := range utxos {
-	// 						txHash := utxo.GetTxCustomTokenID()
-	// 						err := self.config.DataBase.UpdateRewardAccountUTXO(tokenID, *paymentAddress, &txHash, utxo.GetIndex())
-	// 						if err != nil {
-	// 							return err
-	// 						}
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
+	for _, tx := range block.Transactions {
+		switch tx.GetMetadataType() {
+		case metadata.DividendMeta:
+			{
+				tx := tx.(*transaction.Tx)
+				meta := tx.Metadata.(*metadata.Dividend)
+				for _, coin := range tx.Proof.OutputCoins {
+					pubkey := coin.CoinDetails.PublicKey.Compress()
+					vouts, err := self.parseCustomTokenUTXO(meta.TokenID, pubkey)
+					if err != nil {
+						return err
+					}
+					for _, vout := range vouts {
+						txHash := vout.GetTxCustomTokenID()
+						err := self.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, pubkey, &txHash, vout.GetIndex())
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -801,27 +844,37 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 }
 
 func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
-	// for _, tx := range block.Transactions {
-	// 	switch tx.GetMetadataType() {
-	// 	case metadata.VoteDCBBoardMeta:
-	// 		{
-	// 			txAccepted := tx.(*transaction.TxAcceptDCBProposal)
-	// 			_, _, _, getTx, err := self.GetTransactionByHash(txAccepted.DCBProposalTXID)
-	// 			proposal := getTx.(*transaction.TxSubmitDCBProposal)
-	// 			if err != nil {
-	// 				return err
-	// 			}
+	for _, tx := range block.Transactions {
+		switch tx.GetMetadataType() {
+		case metadata.AcceptDCBProposalMeta:
+			{
+				meta := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
+				_, _, _, getTx, err := self.GetTransactionByHash(meta.DCBProposalTXID)
+				proposal := getTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
+				if err != nil {
+					return err
+				}
 
-	// 			// Store saledata in db if needed
-	// 			if proposal.DCBProposalData.DCBParams.SaleData != nil {
-	// 				err := self.config.DataBase.SaveCrowdsaleData(proposal.DCBProposalData.DCBParams.SaleData)
-	// 				if err != nil {
-	// 					return err
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
+				// Store saledata in db if needed
+				if proposal.DCBParams.SaleData != nil {
+					saleData := proposal.DCBParams.SaleData
+					if _, _, _, _, _, err := self.config.DataBase.LoadCrowdsaleData(saleData.SaleID); err == nil {
+						return fmt.Errorf("SaleID not unique")
+					}
+					if err := self.config.DataBase.SaveCrowdsaleData(
+						saleData.SaleID,
+						saleData.EndBlock,
+						saleData.BuyingAsset,
+						saleData.BuyingAmount,
+						saleData.SellingAsset,
+						saleData.SellingAmount,
+					); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 

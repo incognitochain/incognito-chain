@@ -13,11 +13,14 @@ type SellingBonds struct {
 }
 
 type SaleData struct {
-	SaleID []byte // Unique id of the crowdsale to store in db
+	SaleID   []byte // Unique id of the crowdsale to store in db
+	EndBlock int32
 
 	BuyingAsset  []byte
-	SellingAsset []byte
-	EndBlock     int32
+	BuyingAmount uint64
+
+	SellingAsset  []byte
+	SellingAmount uint64
 }
 
 type RefundInfo struct {

@@ -30,6 +30,7 @@ type CBParams struct {
 // }
 
 type Oracle struct {
+	// TODO(@0xankylosaurus): generic prices (ETH, BTC, ...) instead of just bonds
 	Bonds    map[string]uint64 // key: bondTypeID, value: price
 	DCBToken uint64            // against USD
 	Constant uint64            // against USD

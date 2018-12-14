@@ -5,51 +5,50 @@ Use these function to validate common data in blockchain
 */
 
 import (
+	"encoding/hex"
 	"math"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
 func (self *BlockChain) GetAmountPerAccount(proposal *metadata.DividendProposal) (uint64, []string, []uint64, error) {
-	// TODO: @bunyip update here
-	return 0, []string{}, []uint64{}, nil
-
 	// TODO(@0xsirrush): cache list so that list of receivers is fixed across blocks
-	// tokenHolders, err := self.config.DataBase.GetCustomTokenListPaymentAddressesBalance(proposal.TokenID)
-	// if err != nil {
-	// 	return 0, nil, nil, err
-	// }
+	tokenHolders, err := self.config.DataBase.GetCustomTokenPaymentAddressesBalance(proposal.TokenID)
+	if err != nil {
+		return 0, nil, nil, err
+	}
 
-	// // Get total token supply
-	// totalTokenSupply := uint64(0)
-	// for _, value := range tokenHolders {
-	// 	totalTokenSupply += value
-	// }
+	// Get total token supply
+	totalTokenSupply := uint64(0)
+	for _, value := range tokenHolders {
+		totalTokenSupply += value
+	}
 
-	// // Get amount per account (only count unrewarded utxo)
-	// rewardHolders := []string{}
-	// amounts := []uint64{}
-	// for holder, _ := range tokenHolders {
-	// 	temp, _ := hex.DecodeString(holder)
-	// 	paymentAddress := (&privacy.PaymentAddress{}).FromBytes(temp)
-	// 	utxos, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(proposal.TokenID, paymentAddress.Pk)
-	// 	if err != nil {
-	// 		return 0, nil, nil, err
-	// 	}
-	// 	amount := uint64(0)
-	// 	for _, vout := range utxos {
-	// 		amount += vout.Value
-	// 	}
+	// Get amount per account (only count unrewarded utxo)
+	rewardHolders := []string{}
+	amounts := []uint64{}
+	for holder, _ := range tokenHolders {
+		temp, _ := hex.DecodeString(holder)
+		paymentAddress := (&privacy.PaymentAddress{}).FromBytes(temp)
+		vouts, err := self.parseCustomTokenUTXO(proposal.TokenID, paymentAddress.Pk)
+		if err != nil {
+			return 0, nil, nil, err
+		}
+		amount := uint64(0)
+		for _, vout := range vouts {
+			amount += vout.Value
+		}
 
-	// 	if amount > 0 {
-	// 		rewardHolders = append(rewardHolders, holder)
-	// 		amounts = append(amounts, amount)
-	// 	}
-	// }
-	// return totalTokenSupply, rewardHolders, amounts, nil
+		if amount > 0 {
+			rewardHolders = append(rewardHolders, holder)
+			amounts = append(amounts, amount)
+		}
+	}
+	return totalTokenSupply, rewardHolders, amounts, nil
 }
 
 func isAnyBoardAddressInVins(customToken *transaction.TxCustomToken) bool {
