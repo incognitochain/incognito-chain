@@ -844,7 +844,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 }
 
 func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db database.DatabaseInterface, chainId byte) bool {
-	return true
+	//return true
 	// has no privacy
 	if !hasPrivacy {
 		var sumInputValue, sumOutputValue uint64
@@ -907,16 +907,16 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 			return false
 		}
 		// Verify for the proof one-out-of-N commitments is a commitment to the coins being spent
-		if !pro.OneOfManyProof[i].Verify(db, chainId) {
-			return false
-		}
+		//if !pro.OneOfManyProof[i].Verify(db, chainId) {
+		//	return false
+		//}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
 		if !pro.EqualityOfCommittedValProof[i].Verify() {
 			return false
 		}
-		if !pro.ProductCommitmentProof[i].Verify() {
-			return false
-		}
+		//if !pro.ProductCommitmentProof[i].Verify() {
+		//	return false
+		//}
 	}
 
 	// Verify the proof for knowledge of output coins' openings

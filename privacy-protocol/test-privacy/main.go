@@ -322,6 +322,7 @@ func main() {
 	tx.PubKeyLastByteSender = keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk) - 1]
 	tx.SetSigPrivKey(spendingKey, randSK)
 
+
 	tx.SignTx(true)
 
 	res, err := tx.VerifySigTx(true)
