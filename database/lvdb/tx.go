@@ -133,8 +133,33 @@ func (db *db) CleanSerialNumbers() error {
 	return nil
 }
 
+func (db *db) StoreOutputCoins(pubkey []byte, outputcoin []byte, chainID byte) error {
+	key := db.GetKey(string(outcoinsPrefix), "")
+	key = append(key, chainID)
+
+	// store for pubkey:[outcoint1, outcoint2, ...]
+	key = append(key, pubkey...)
+	var arrDatabyPubkey [][]byte
+	resByPubkey, err := db.lvdb.Get(key, nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+	if len(resByPubkey) > 0 {
+		if err := json.Unmarshal(resByPubkey, &arrDatabyPubkey); err != nil {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
+		}
+	}
+	arrDatabyPubkey = append(arrDatabyPubkey, outputcoin)
+	resByPubkey, err = json.Marshal(arrDatabyPubkey)
+	if err := db.lvdb.Put(key, resByPubkey, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // StoreCommitments - store list commitments by chainID
-func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
+func (db *db) StoreCommitments(pubkey []byte, commitments []byte, chainId byte) error {
 	key := db.GetKey(string(commitmentsPrefix), "")
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
@@ -172,6 +197,25 @@ func (db *db) StoreCommitments(commitments []byte, chainId byte) error {
 	keySpec3 := make([]byte, len(key))
 	keySpec3 = append(key, []byte("len")...)
 	if err := db.lvdb.Put(keySpec3, newIndex, nil); err != nil {
+		return err
+	}
+
+	// store for pubkey:[newindex1, newindex2]
+	keySpec4 := make([]byte, len(key))
+	keySpec4 = append(key, pubkey...)
+	var arrDatabyPubkey [][]byte
+	resByPubkey, err := db.lvdb.Get(keySpec4, nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+	if len(resByPubkey) > 0 {
+		if err := json.Unmarshal(resByPubkey, &arrDatabyPubkey); err != nil {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
+		}
+	}
+	arrDatabyPubkey = append(arrDatabyPubkey, newIndex)
+	resByPubkey, err = json.Marshal(arrDatabyPubkey)
+	if err := db.lvdb.Put(keySpec4, resByPubkey, nil); err != nil {
 		return err
 	}
 
@@ -277,6 +321,43 @@ func (db *db) GetCommitmentLength(chainId byte) (*big.Int, error) {
 		return lenArray, nil
 	}
 	return nil, nil
+}
+
+func (db *db) GetCommitmentIndexsByPubkey(pubkey []byte, chainID byte) ([][]byte, error) {
+	key := db.GetKey(string(commitmentsPrefix), "")
+	key = append(key, chainID)
+
+	keySpec4 := make([]byte, len(key))
+	keySpec4 = append(key, pubkey...)
+	var arrDatabyPubkey [][]byte
+	resByPubkey, err := db.lvdb.Get(keySpec4, nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+	if len(resByPubkey) > 0 {
+		if err := json.Unmarshal(resByPubkey, &arrDatabyPubkey); err != nil {
+			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
+		}
+	}
+	return arrDatabyPubkey, nil
+}
+
+func (db *db) GetOutcoinsByPubkey(pubkey []byte, chainID byte) ([][]byte, error) {
+	key := db.GetKey(string(outcoinsPrefix), "")
+	key = append(key, chainID)
+
+	key = append(key, pubkey...)
+	var arrDatabyPubkey [][]byte
+	resByPubkey, err := db.lvdb.Get(key, nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+	if len(resByPubkey) > 0 {
+		if err := json.Unmarshal(resByPubkey, &arrDatabyPubkey); err != nil {
+			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
+		}
+	}
+	return arrDatabyPubkey, nil
 }
 
 // CleanCommitments - clear all list commitments in DB

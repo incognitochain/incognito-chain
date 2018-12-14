@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 )
 
 type AcceptDCBBoardMetadata struct {
@@ -25,7 +26,7 @@ func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) Hash() *common.Hash {
 	return &hash
 }
 
-func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte) (bool, error) {
+func (acceptDCBBoardMetadata *AcceptDCBBoardMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
 	return true, nil
 }
 
@@ -66,7 +67,7 @@ func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) Hash() *common.Hash {
 	return &hash
 }
 
-func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte) (bool, error) {
+func (acceptGOVBoardMetadata *AcceptGOVBoardMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
 	return true, nil
 }
 

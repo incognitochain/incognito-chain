@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 )
 
 type BuyBackResponse struct {
@@ -14,7 +15,7 @@ func (bbRes *BuyBackResponse) CheckTransactionFee(tr Transaction, minFee uint64)
 	return true
 }
 
-func (bbRes *BuyBackResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
+func (bbRes *BuyBackResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requeste tx (via RequestedTxID) in current block
 	return false, nil
 }

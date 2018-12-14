@@ -6,7 +6,6 @@ Use these function to validate common data in blockchain
 
 import (
 	"encoding/hex"
-	"errors"
 	"math"
 
 	"github.com/ninjadotorg/constant/common"
@@ -155,66 +154,4 @@ func (bc *BlockChain) VerifyCustomTokenSigns(tx metadata.Transaction) bool {
 	}
 
 	return bc.verifyByBoard(boardType, customToken)
-}
-
-//validate voting transaction
-func (bc *BlockChain) ValidateTxSubmitDCBProposal(tx metadata.Transaction, chainID byte) error {
-	return nil
-}
-
-func (bc *BlockChain) ValidateTxAcceptDCBProposal(tx metadata.Transaction, chainID byte) error {
-	return nil
-}
-
-func (bc *BlockChain) ValidateTxVoteDCBProposal(tx metadata.Transaction, chainID byte) error {
-	return nil
-}
-
-func (bc *BlockChain) ValidateTxSubmitGOVProposal(tx metadata.Transaction, chainID byte) error {
-	return nil
-}
-
-func (bc *BlockChain) ValidateTxAcceptGOVProposal(tx metadata.Transaction, chainID byte) error {
-	return nil
-}
-
-func (bc *BlockChain) ValidateTxVoteGOVProposal(tx metadata.Transaction, chainID byte) error {
-	return nil
-}
-
-func (self *BlockChain) ValidateDoubleSpendCustomToken(tx *transaction.TxCustomToken) error {
-	listTxs, err := self.GetCustomTokenTxs(&tx.TxTokenData.PropertyID)
-	if err != nil {
-		return err
-	}
-
-	if len(listTxs) == 0 {
-		if tx.TxTokenData.Type != transaction.CustomTokenInit {
-			return errors.New("Not exist tx for this ")
-		}
-	}
-
-	if len(listTxs) > 0 {
-		for _, txInBlocks := range listTxs {
-			err := self.ValidateDoubleSpendCustomTokenOnTx(tx, txInBlocks)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func (self *BlockChain) ValidateDoubleSpendCustomTokenOnTx(tx *transaction.TxCustomToken, txInBlock metadata.Transaction) error {
-	temp := txInBlock.(*transaction.TxCustomToken)
-	for _, vin := range temp.TxTokenData.Vins {
-		for _, item := range tx.TxTokenData.Vins {
-			if vin.TxCustomTokenID.String() == item.TxCustomTokenID.String() {
-				if vin.VoutIndex == item.VoutIndex {
-					return errors.New("Double spend")
-				}
-			}
-		}
-	}
-	return nil
 }

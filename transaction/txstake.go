@@ -4,7 +4,7 @@ package transaction
 // 	"fmt"
 
 // 	"github.com/ninjadotorg/constant/database"
-// 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+// 	"github.com/ninjadotorg/constant/privacy-protocol"
 // )
 
 // // count in miliconstant
@@ -39,16 +39,16 @@ package transaction
 // 	commitmentsDB [][]byte,
 // 	db database.DatabaseInterface,
 // ) error {
-// 	err := tx.CreateTx(senderSK, stakingInfo, usableTx, fee, commitmentsDB, false, db)
+// 	/*err := tx.CreateTx(senderSK, stakingInfo, usableTx, fee, commitmentsDB, false, db)
 // 	tx.Metadata = stakeTx{flag: "stake"}
 // 	if err != nil {
 // 		return err
-// 	}
+// 	}*/
 // 	return nil
 // }
 
-// func (tx *Tx) ValidateTxStake(db database.DatabaseInterface) bool {
-// 	valid := tx.ValidateTransaction(false, db)
+// func (tx *Tx) ValidateTxStake(db database.DatabaseInterface, chainID byte) bool {
+// 	valid := tx.ValidateTransaction(false, db, chainID)
 // 	if valid == false {
 // 		fmt.Printf("Error validate transaction")
 // 		return false

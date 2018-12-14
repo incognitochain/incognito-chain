@@ -355,7 +355,7 @@ func encrypt(c *big.Int, pub *PublicKey, m *big.Int) *big.Int {
 //
 // OAEP is parameterised by a hash function that is used as a random oracle.
 // Encryption and decryption of a given message must use the same hash function
-// and sha256.New() is a reasonable choice.
+// and sha256.Zero() is a reasonable choice.
 //
 // The random parameter is used as a source of entropy to ensure that
 // encrypting the same message twice doesn't result in the same ciphertext.
@@ -575,7 +575,7 @@ func decryptAndCheck(random io.Reader, priv *PrivateKey, c *big.Int) (m *big.Int
 
 // OAEP is parameterised by a hash function that is used as a random oracle.
 // Encryption and decryption of a given message must use the same hash function
-// and sha256.New() is a reasonable choice.
+// and sha256.Zero() is a reasonable choice.
 //
 // The random parameter, if not nil, is used to blind the private-key operation
 // and avoid timing side-channel attacks. Blinding is purely internal to this

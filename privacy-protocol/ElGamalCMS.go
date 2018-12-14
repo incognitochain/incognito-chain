@@ -107,7 +107,7 @@ package privacy
 //		com.G[i] = com.G[i-1].HashPoint()
 //	}
 //
-//	//TODO: hard code parameters
+//
 //}
 //
 //// CommitAll commits a list of CM_CAPACITY value(s)

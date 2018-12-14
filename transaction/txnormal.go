@@ -47,46 +47,6 @@ func (tx *TxNormal) GetTxID() *common.Hash {
 	return tx.txId
 }
 
-<<<<<<< HEAD
-func (tx *Tx) CheckTxVersion(maxTxVersion int8) bool {
-	if tx.Version > maxTxVersion {
-		return false
-	}
-	return true
-}
-
-func (tx *Tx) CheckTransactionFee(minFee uint64) bool {
-	if tx.IsSalaryTx() {
-		return true
-	}
-	if tx.Metadata != nil {
-		return tx.Metadata.CheckTransactionFee(tx, minFee)
-	}
-	if tx.Fee < minFee {
-		return false
-	}
-	return true
-}
-
-func (tx *Tx) IsSalaryTx() bool {
-	if tx.Type != common.TxSalaryType {
-		return false
-	}
-	// Check nullifiers in every Descs
-	descs := tx.Descs
-	if len(descs) != 1 {
-		return false
-	}
-	if descs[0].Reward <= 0 {
-		return false
-	}
-	return true
-}
-
-func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
-	pubkeys := [][]byte{}
-	amounts := []uint64{}
-=======
 // Hash returns the hash of all fields of the transaction
 func (tx TxNormal) Hash() *common.Hash {
 	record := strconv.Itoa(int(tx.Version))
@@ -94,7 +54,6 @@ func (tx TxNormal) Hash() *common.Hash {
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
 	record += strconv.Itoa(len(tx.Descs))
->>>>>>> master
 	for _, desc := range tx.Descs {
 		for _, note := range desc.Note {
 			added := false
@@ -407,15 +366,7 @@ func (tx *TxNormal) GetTxFee() uint64 {
 	return tx.Fee
 }
 
-<<<<<<< HEAD
-func (tx *Tx) GetJSPubKey() []byte {
-	return tx.JSPubKey
-}
-
-func (tx *Tx) GetSenderAddrLastByte() byte {
-=======
 func (tx *TxNormal) GetSenderAddrLastByte() byte {
->>>>>>> master
 	return tx.AddressLastByte
 }
 
@@ -843,7 +794,7 @@ func createDummyNote(spendingKey *privacy.SpendingKey) *client.Note {
 func (tx *TxNormal) SignTx() error {
 	//Check input transaction
 	if tx.JSSig != nil {
-		return errors.New("Input transaction must be an unsigned one")
+		return errors.Zero("Input transaction must be an unsigned one")
 	}
 
 	// Hash transaction
@@ -878,7 +829,7 @@ if err != nil {
 func (tx *TxNormal) VerifySign() (bool, error) {
 	//Check input transaction
 	if tx.JSSig == nil || tx.JSPubKey == nil {
-		return false, errors.New("Input transaction must be an signed one!")
+		return false, errors.Zero("Input transaction must be an signed one!")
 	}
 
 	// UnParse Public key
@@ -919,13 +870,8 @@ func GenerateProofForGenesisTx(
 	seed, phi []byte,
 	outputR [][]byte,
 	ephemeralPrivKey client.EphemeralPrivKey,
-<<<<<<< HEAD
-	//assetType string,
-) (*Tx, error) {
-=======
 //assetType string,
 ) (*TxNormal, error) {
->>>>>>> master
 	// Generate JoinSplit key pair to act as a dummy key (since we don't sign genesis tx)
 	privateSignKey := [32]byte{1}
 	keySet := &cashec.KeySet{}
@@ -1025,31 +971,8 @@ func SortArrayTxs(data []TxNormal, sortType int, sortAsc bool) {
 	}
 }
 
-<<<<<<< HEAD
-// EstimateTxSize returns the estimated size of the tx in kilobyte
-func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
-	var sizeVersion uint64 = 1  // int8
-	var sizeType uint64 = 8     // string
-	var sizeLockTime uint64 = 8 // int64
-	var sizeFee uint64 = 8      // uint64
-	var sizeDescs uint64        // uint64
-	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
-	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
-	}
-	var sizejSPubKey uint64 = 64 // [64]byte
-	var sizejSSig uint64 = 64    // [64]byte
-	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
-	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
-}
-
-// CreateEmptyTx returns a new Tx initialized with default data
-func CreateEmptyTx(txType string, privKey *privacy.SpendingKey, randomSignKey bool) (*Tx, error) {
-=======
 // CreateEmptyTx returns a new TxNormal initialized with default data
 func CreateEmptyTx(txType string, privKey *privacy.SpendingKey, randomSignKey bool) (*TxNormal, error) {
->>>>>>> master
 	//Generate signing key 96 bytes
 	var sigPrivKey *privacy.SpendingKey
 	var err error

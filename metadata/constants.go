@@ -17,6 +17,8 @@ const (
 	BuyFromGOVResponseMeta
 	BuyBackRequestMeta
 	BuyBackResponseMeta
+	IssuingRequestMeta
+	IssuingResponseMeta
 	DividendMeta
 
 	CrowdsaleRequestMeta
@@ -33,6 +35,18 @@ const (
 	VoteGOVBoardMeta
 	AcceptGOVProposalMeta
 	AcceptGOVBoardMeta
+	SendInitDCBVoteTokenMeta
+	SendInitGOVVoteTokenMeta
+	SealedLv1DCBBallotMeta
+	SealedLv2DCBBallotMeta
+	SealedLv3DCBBallotMeta
+	NormalDCBBallotMetaFromSealer
+	NormalDCBBallotMetaFromOwner
+	SealedLv1GOVBallotMeta
+	SealedLv2GOVBallotMeta
+	SealedLv3GOVBallotMeta
+	NormalGOVBallotMetaFromSealer
+	NormalGOVBallotMetaFromOwner
 )
 
 const (

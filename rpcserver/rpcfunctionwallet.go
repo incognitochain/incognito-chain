@@ -6,7 +6,6 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
-	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -25,17 +24,15 @@ func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan st
 	}
 	accounts := self.config.Wallet.ListAccounts()
 	for accountName, account := range accounts {
-		txsMap, err := self.config.BlockChain.GetListUnspentTxByKeyset(&account.Key.KeySet, transaction.NoSort, false)
+		lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
+		chainIdSender, err := common.GetTxSenderChain(lastByte)
+		outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		amount := uint64(0)
-		for _, txs := range txsMap {
-			for _, tx := range txs {
-				for _, out := range tx.Proof.OutputCoins {
-					amount += out.CoinDetails.Value
-				}
-			}
+		for _, out := range outCoins {
+			amount += out.CoinDetails.Value
 		}
 		result.Accounts[accountName] = amount
 	}
@@ -157,22 +154,20 @@ func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 
 	// get balance for accountName in wallet
-	txsMap, err := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.NoSort, false)
+	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	outcoints, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	for _, txs := range txsMap {
-		for _, tx := range txs {
-			for _, out := range tx.Proof.OutputCoins {
-				balance += out.CoinDetails.Value
-			}
-		}
+	for _, out := range outcoints {
+		balance += out.CoinDetails.Value
 	}
 
 	return balance, nil
 }
 
-// handleGetBalanceByPrivatekey -  return balance of private key
+// handleGetBalanceByPaymentAddress -  return balance of private key
 func (self RpcServer) handleGetBalanceByPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	balance := uint64(0)
 
@@ -187,16 +182,14 @@ func (self RpcServer) handleGetBalanceByPaymentAddress(params interface{}, close
 	}
 
 	// get balance for accountName in wallet
-	txsMap, err := self.config.BlockChain.GetListUnspentTxByKeyset(&accountWithPaymentAddress.KeySet, transaction.NoSort, false)
+	lastByte := accountWithPaymentAddress.KeySet.PaymentAddress.Pk[len(accountWithPaymentAddress.KeySet.PaymentAddress.Pk)-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	outcoints, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&accountWithPaymentAddress.KeySet, chainIdSender)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	for _, txs := range txsMap {
-		for _, tx := range txs {
-			for _, out := range tx.Proof.OutputCoins {
-				balance += out.CoinDetails.Value
-			}
-		}
+	for _, out := range outcoints {
+		balance += out.CoinDetails.Value
 	}
 
 	return balance, nil
@@ -235,32 +228,28 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 	if accountName == "*" {
 		// get balance for all accounts in wallet
 		for _, account := range self.config.Wallet.MasterAccount.Child {
-			txsMap, err := self.config.BlockChain.GetListUnspentTxByKeyset(&account.Key.KeySet, transaction.NoSort, false)
+			lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
+			chainIdSender, err := common.GetTxSenderChain(lastByte)
+			outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
-			for _, txs := range txsMap {
-				for _, tx := range txs {
-					for _, out := range tx.Proof.OutputCoins {
-						balance += out.CoinDetails.Value
-					}
-				}
+			for _, out := range outCoins {
+				balance += out.CoinDetails.Value
 			}
 		}
 	} else {
 		for _, account := range self.config.Wallet.MasterAccount.Child {
 			if account.Name == accountName {
 				// get balance for accountName in wallet
-				txsMap, err := self.config.BlockChain.GetListUnspentTxByKeyset(&account.Key.KeySet, transaction.NoSort, false)
+				lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
+				chainIdSender, err := common.GetTxSenderChain(lastByte)
+				outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender)
 				if err != nil {
 					return nil, NewRPCError(ErrUnexpected, err)
 				}
-				for _, txs := range txsMap {
-					for _, tx := range txs {
-						for _, out := range tx.Proof.OutputCoins {
-							balance += out.CoinDetails.Value
-						}
-					}
+				for _, out := range outCoins {
+					balance += out.CoinDetails.Value
 				}
 				break
 			}
@@ -303,20 +292,14 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 	for _, account := range self.config.Wallet.MasterAccount.Child {
 		if account.Name == accountName {
 			// get balance for accountName in wallet
-			txsMap, err := self.config.BlockChain.GetListUnspentTxByKeyset(&account.Key.KeySet, transaction.NoSort, false)
+			lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
+			chainIdSender, err := common.GetTxSenderChain(lastByte)
+			outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
-			for _, txs := range txsMap {
-				for _, tx := range txs {
-					// if self.config.BlockChain.IsSalaryTx(&tx) {
-					if tx.IsSalaryTx() {
-						continue
-					}
-					for _, out := range tx.Proof.OutputCoins {
-						balance += out.CoinDetails.Value
-					}
-				}
+			for _, out := range outCoins {
+				balance += out.CoinDetails.Value
 			}
 			break
 		}

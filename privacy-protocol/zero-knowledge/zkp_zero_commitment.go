@@ -2,9 +2,10 @@ package zkp
 
 import (
 	"crypto/rand"
+	"errors"
 	"math/big"
 
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 // PKComZeroProof contains Proof's value
@@ -47,6 +48,20 @@ Verify:
 	return boolValue
 )
 */
+func (pro *PKComZeroProof) Init() *PKComZeroProof {
+	pro.index = new(byte)
+	pro.commitmentValue = new(privacy.EllipticPoint).Zero()
+	pro.commitmentZeroS = new(privacy.EllipticPoint).Zero()
+	pro.z = new(big.Int)
+	return pro
+}
+
+func (pro *PKComZeroProof) IsNil() bool {
+	if (pro.commitmentValue == nil) || (pro.commitmentZeroS == nil) || (pro.index == nil) || (pro.z == nil) {
+		return true
+	}
+	return false
+}
 
 // randValue return random witness value for testing
 func (wit *PKComZeroWitness) randValue(testcase bool) {
@@ -75,7 +90,7 @@ func (wit *PKComZeroWitness) Set(
 	commitmentValue *privacy.EllipticPoint, //statement
 	index *byte, //statement
 	commitmentRnd *big.Int) {
-	if wit == nil{
+	if wit == nil {
 		wit = new(PKComZeroWitness)
 	}
 
@@ -84,19 +99,58 @@ func (wit *PKComZeroWitness) Set(
 	wit.index = index
 }
 
-func (pro *PKComZeroProof) Bytes() []byte {
+// Bytes ...
+func (pro PKComZeroProof) Bytes() []byte {
+	if pro.IsNil() {
+		return []byte{}
+	}
 	var res []byte
-	res = append(pro.commitmentValue.Compress(), []byte{*pro.index}...)
-	res = append(res, pro.commitmentZeroS.Compress()...)
-	res = append(res, pro.z.Bytes()...)
+	res = append(pro.commitmentValue.Compress(), pro.commitmentZeroS.Compress()...)
 
+	temp := pro.z.Bytes()
+	for j := 0; j < privacy.BigIntSize-len(temp); j++ {
+		temp = append([]byte{0}, temp...)
+	}
+	res = append(res, temp...)
+	//res = append(res, *pro.index)
+	res = append(res, []byte{*pro.index}...)
 	return res
 }
 
-// func (pro *PKComZeroProof) SetBytes([]byte) bool{
+// SetBytes ...
+func (pro *PKComZeroProof) SetBytes(bytestr []byte) error {
+	if pro == nil {
+		pro = pro.Init()
+	}
 
-// 	return true
-// }
+	if len(bytestr) == 0 {
+		return nil
+	}
+	if pro.commitmentValue == nil {
+		pro.commitmentValue = new(privacy.EllipticPoint)
+	}
+	if pro.commitmentZeroS == nil {
+		pro.commitmentZeroS = new(privacy.EllipticPoint)
+	}
+	if pro.z == nil {
+		pro.z = big.NewInt(0)
+	}
+	if pro.index == nil {
+		pro.index = new(byte)
+	}
+
+	err := pro.commitmentValue.Decompress(bytestr[0:privacy.CompressedPointSize])
+	if err != nil {
+		return errors.New("Decompressed failed!")
+	}
+	err = pro.commitmentZeroS.Decompress(bytestr[privacy.CompressedPointSize : 2*privacy.CompressedPointSize])
+	if err != nil {
+		return errors.New("Decompressed failed!")
+	}
+	pro.z.SetBytes(bytestr[2*privacy.CompressedPointSize : 2*privacy.CompressedPointSize+privacy.BigIntSize])
+	*pro.index = bytestr[2*privacy.CompressedPointSize+privacy.BigIntSize]
+	return nil
+}
 
 // Set dosomethings
 func (pro *PKComZeroProof) Set(
@@ -105,7 +159,7 @@ func (pro *PKComZeroProof) Set(
 	commitmentZeroS *privacy.EllipticPoint,
 	z *big.Int) {
 
-	if pro == nil{
+	if pro == nil {
 		pro = new(PKComZeroProof)
 	}
 	pro.commitmentValue = commitmentValue
@@ -180,5 +234,3 @@ func (pro *PKComZeroProof) Verify() bool {
 
 	return true
 }
-
-

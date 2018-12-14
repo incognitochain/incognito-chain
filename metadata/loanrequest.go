@@ -7,6 +7,7 @@ import (
 
 	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/wallet"
 )
@@ -74,7 +75,7 @@ func (lr *LoanRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
+func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if loan's params are correct
 	dcbParams := bcr.GetDCBParams()
 	validLoanParams := dcbParams.LoanParams

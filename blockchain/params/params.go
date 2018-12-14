@@ -1,6 +1,7 @@
 package params
 
 import (
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/voting"
 )
 
@@ -20,20 +21,45 @@ type GOVParams struct {
 	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
 	BasicSalary  uint64 // basic salary per block(mili constant)
 	TxFee        uint64
-	SellingBonds *SellingBonds
-	RefundInfo   *RefundInfo
+	SellingBonds *voting.SellingBonds
+	RefundInfo   *voting.RefundInfo
 }
 
-type RefundInfo struct {
-	ThresholdToLargeTx uint64
-	RefundAmount       uint64
+func (dcbParams *DCBParams) Hash() *common.Hash {
+	record := string(common.ToBytes(dcbParams.SaleData.Hash()))
+	record += string(dcbParams.MinLoanResponseRequire)
+	for _, i := range dcbParams.LoanParams {
+		record += string(i.InterestRate)
+		record += string(i.Maturity)
+		record += string(i.LiquidationStart)
+	}
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
 }
 
-type SellingBonds struct {
-	BondsToSell    uint64
-	BondPrice      uint64 // in Constant unit
-	Maturity       uint32
-	BuyBackPrice   uint64 // in Constant unit
-	StartSellingAt uint32 // start selling bonds at block height
-	SellingWithin  uint32 // selling bonds within n blocks
+func (govParams *GOVParams) Hash() *common.Hash {
+	record := string(govParams.SalaryPerTx)
+	record += string(govParams.BasicSalary)
+	record += string(govParams.TxFee)
+	record += string(common.ToBytes(govParams.SellingBonds.Hash()))
+	record += string(common.ToBytes(govParams.RefundInfo.Hash()))
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+func (GOVParams GOVParams) Validate() bool {
+	return true
+}
+func (DCBParams DCBParams) Validate() bool {
+	return true
+}
+
+func (DCBParams DCBParams) ValidateSanityData() bool {
+	// Todo: @0xbunyip
+	return true
+}
+
+func (GOVParams GOVParams) ValidateSanityData() bool {
+	// Todo: @0xankylosaurus
+	return true
 }

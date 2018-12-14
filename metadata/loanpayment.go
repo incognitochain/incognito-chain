@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -34,7 +35,7 @@ func (lp *LoanPayment) Hash() *common.Hash {
 	return &hash
 }
 
-func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
+func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	receivers, _ := txr.GetReceivers()
 	if len(receivers) == 0 {
 		return false, fmt.Errorf("Loan payment must be sent to DCB address")

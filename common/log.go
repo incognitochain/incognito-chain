@@ -76,7 +76,7 @@ type Logger interface {
 
 // defaultFlags specifies changes to the default logger behavior.  It is set
 // during package init and configured using the LOGFLAGS environment variable.
-// New logger backends can override these default flags using WithFlags.
+// Zero logger backends can override these default flags using WithFlags.
 var defaultFlags uint32
 
 // Flags to modify Backend's behavior.

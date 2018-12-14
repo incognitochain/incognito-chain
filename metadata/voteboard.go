@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 )
 
 type VoteDCBBoardMetadata struct {
@@ -16,7 +17,7 @@ func NewVoteDCBBoardMetadata(voteDCBBoardMetadata map[string]interface{}) *VoteD
 	}
 }
 
-func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
+func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	return true, nil
 }
 
@@ -31,6 +32,9 @@ func (voteDCBBoardMetadata *VoteDCBBoardMetadata) Hash() *common.Hash {
 }
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
+	if len(voteDCBBoardMetadata.CandidatePubKey) != common.HashSize {
+		return true, false, nil
+	}
 	return true, true, nil
 }
 
@@ -50,7 +54,7 @@ func NewVoteGOVBoardMetadata(voteGOVBoardMetadata map[string]interface{}) *VoteG
 	}
 }
 
-func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
+func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	return true, nil
 }
 
@@ -64,6 +68,9 @@ func (voteGOVBoardMetadata *VoteGOVBoardMetadata) Hash() *common.Hash {
 }
 
 func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
+	if len(voteGOVBoardMetadata.CandidatePubKey) != common.HashSize {
+		return true, false, nil
+	}
 	return true, true, nil
 }
 

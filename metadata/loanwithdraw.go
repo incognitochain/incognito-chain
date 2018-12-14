@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -36,7 +37,7 @@ func (lw *LoanWithdraw) Hash() *common.Hash {
 	return &hash
 }
 
-func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
+func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if a loan response with the same id exists on any chain
 	txHashes, err := bcr.GetLoanTxs(lw.LoanID)
 	if err != nil {

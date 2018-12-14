@@ -28,10 +28,10 @@ Parameter #1—the minimum number of confirmations an output must have
 Parameter #2—the maximum number of confirmations an output may have
 Parameter #3—the list readonly which be used to view utxo
 */
-func (self RpcServer) handleListTransactions(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func (self RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	result := jsonresult.ListUnspentResult{
-		ListUnspentResultItems: make(map[string]map[byte][]jsonresult.ListUnspentResultItem),
+		ListUnspentResultItems: make(map[string][]jsonresult.ListUnspentResultItem),
 	}
 
 	// get params
@@ -59,32 +59,31 @@ func (self RpcServer) handleListTransactions(params interface{}, closeChan <-cha
 			ReadonlyKey:    readonlyKey.KeySet.ReadonlyKey,
 			PaymentAddress: pubKey.KeySet.PaymentAddress,
 		}
-
-		txsMap, err := self.config.BlockChain.GetListTxByReadonlyKey(&keySet)
+		lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
+		chainIdSender, err := common.GetTxSenderChain(lastByte)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		outputCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, chainIdSender)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		listTxs := make([]jsonresult.ListUnspentResultItem, 0)
-		for chainId, txs := range txsMap {
-			for _, tx := range txs {
-				item := jsonresult.ListUnspentResultItem{
-					TxId:     tx.Hash().String(),
-					OutCoins: make([]jsonresult.OutCoin, 0),
-				}
-				for _, outCoin := range tx.Proof.OutputCoins {
-					item.OutCoins = append(item.OutCoins, jsonresult.OutCoin{
-						SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), byte(0x00)),
-						PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), byte(0x00)),
-						Value:          outCoin.CoinDetails.Value,
-						Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], byte(0x00)),
-						CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), byte(0x00)),
-						Randomness:     *outCoin.CoinDetails.Randomness,
-						SNDerivator:    *outCoin.CoinDetails.SNDerivator,
-					})
-				}
-				listTxs = append(listTxs, item)
-			}
-			result.ListUnspentResultItems[readonlyKeyStr][chainId] = listTxs
+		item := jsonresult.ListUnspentResultItem{
+			OutCoins: make([]jsonresult.OutCoin, 0),
+		}
+		for _, outCoin := range outputCoins {
+			item.OutCoins = append(item.OutCoins, jsonresult.OutCoin{
+				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), byte(0x00)),
+				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), byte(0x00)),
+				Value:          outCoin.CoinDetails.Value,
+				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], byte(0x00)),
+				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), byte(0x00)),
+				Randomness:     *outCoin.CoinDetails.Randomness,
+				SNDerivator:    *outCoin.CoinDetails.SNDerivator,
+			})
+			listTxs = append(listTxs, item)
+			result.ListUnspentResultItems[readonlyKeyStr] = listTxs
 		}
 	}
 
@@ -135,21 +134,14 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	usableTxsMap, _ := self.config.BlockChain.GetListUnspentTxByKeyset(&senderKey.KeySet, transaction.SortByAmount, false)
-	candidateTxs := make([]*transaction.Tx, 0)
-	candidateTxsMap := make(map[byte][]*transaction.Tx)
-	for chainId, usableTxs := range usableTxsMap {
-		for _, temp := range usableTxs {
-			for _, note := range temp.Proof.OutputCoins {
-				amount := note.CoinDetails.Value
-				estimateTotalAmount -= int64(amount)
-			}
-			txData := temp
-			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
-			candidateTxs = append(candidateTxs, &txData)
-			if estimateTotalAmount <= 0 {
-				break
-			}
+	outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender)
+	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
+	for _, note := range outCoins {
+		amount := note.CoinDetails.Value
+		candidateOutputCoins = append(candidateOutputCoins, note)
+		estimateTotalAmount -= int64(amount)
+		if estimateTotalAmount <= 0 {
+			break
 		}
 	}
 
@@ -160,21 +152,19 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 		estimateFeeCoinPerKb = int64(temp)
 	}
 	estimateFeeCoinPerKb += int64(self.config.Wallet.Config.IncrementalFee)
-	estimateTxSizeInKb := transaction.EstimateTxSize(candidateTxs, paymentInfos)
+	// TODO
+	estimateTxSizeInKb := 0
+	//estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, nil)
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 
 	// list unspent tx for create tx
 	totalAmmount += int64(realFee)
-	estimateTotalAmount = totalAmmount
-	candidateTxsMap = make(map[byte][]*transaction.Tx, 0)
-	for chainId, usableTxs := range usableTxsMap {
-		for _, temp := range usableTxs {
-			for _, note := range temp.Proof.OutputCoins {
-				amount := note.CoinDetails.Value
-				estimateTotalAmount -= int64(amount)
-			}
-			txData := temp
-			candidateTxsMap[chainId] = append(candidateTxsMap[chainId], &txData)
+	if totalAmmount > 0 {
+		candidateOutputCoins = make([]*privacy.OutputCoin, 0)
+		for _, note := range outCoins {
+			amount := note.CoinDetails.Value
+			candidateOutputCoins = append(candidateOutputCoins, note)
+			estimateTotalAmount -= int64(amount)
 			if estimateTotalAmount <= 0 {
 				break
 			}
@@ -183,11 +173,12 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 
 	//missing flag for privacy-protocol
 	// false by default
+	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
 	tx := transaction.Tx{}
-	err = tx.CreateTx(
+	err = tx.Init(
 		&senderKey.KeySet.PrivateKey,
 		paymentInfos,
-		candidateTxsMap[chainIdSender],
+		inputCoins,
 		realFee,
 		true,
 		*self.config.Database,
@@ -489,7 +480,11 @@ func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeC
 		if err != nil {
 			return nil, err
 		}
-		item.Amount = res[hex.EncodeToString(accountPaymentAddress.Pk)]
+		pubkey := hex.EncodeToString(accountPaymentAddress.Pk)
+		item.Amount = res[pubkey]
+		if item.Amount == 0 {
+			continue
+		}
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
@@ -604,4 +599,88 @@ func (self RpcServer) handleCreateAndSendTxWithBuySellRequest(params interface{}
 	newParam = append(newParam, hexStrOfTx)
 	txId, err := self.handleSendRawCustomTokenTransaction(newParam, closeChan)
 	return txId, err
+}
+
+// handleRandomCommitments - from input of outputcoin, random to create data for create new tx
+func (self RpcServer) handleRandomCommitments(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+
+	// #1: payment address
+	paymentAddressStr := arrayParams[0].(string)
+	key, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+	if err != nil {
+		return nil, err
+	}
+	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+
+	// #2: available inputCoin from old outputcoin
+	data := jsonresult.ListUnspentResultItem{}
+	data.Init(arrayParams[0])
+	usableOutputCoins := []*privacy.OutputCoin{}
+	for _, item := range data.OutCoins {
+		i := &privacy.OutputCoin{
+			CoinDetails: &privacy.Coin{
+				Value:       item.Value,
+				Randomness:  &item.Randomness,
+				SNDerivator: &item.SNDerivator,
+			},
+		}
+		i.CoinDetails.Info, _, _ = base58.Base58Check{}.Decode(item.Info)
+
+		CoinCommitmentBytes, _, _ := base58.Base58Check{}.Decode(item.CoinCommitment)
+		CoinCommitment := &privacy.EllipticPoint{}
+		_ = CoinCommitment.Decompress(CoinCommitmentBytes)
+		i.CoinDetails.CoinCommitment = CoinCommitment
+
+		PublicKeyBytes, _, _ := base58.Base58Check{}.Decode(item.PublicKey)
+		PublicKey := &privacy.EllipticPoint{}
+		_ = PublicKey.Decompress(PublicKeyBytes)
+		i.CoinDetails.PublicKey = PublicKey
+
+		InfoBytes, _, _ := base58.Base58Check{}.Decode(item.Info)
+		i.CoinDetails.Info = InfoBytes
+
+		usableOutputCoins = append(usableOutputCoins, i)
+	}
+	usableInputCoins := transaction.ConvertOutputCoinToInputCoin(usableOutputCoins)
+	commitmentIndexs, myCommitmentIndexs := self.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, chainIdSender)
+	result := make(map[string]interface{})
+	result["CommitmentIndexs"] = commitmentIndexs
+	result["MyCommitmentIndexs"] = myCommitmentIndexs
+
+	return result, nil
+}
+
+// handleHasSerialNumbers - check list serial numbers existed in db of node
+func (self RpcServer) handleHasSerialNumbers(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+
+	// #1: payment address
+	paymentAddressStr := arrayParams[0].(string)
+	key, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+	if err != nil {
+		return nil, err
+	}
+	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+
+	//#2: list serialnumbers in base58check encode string
+	serialNumbersStr := arrayParams[1].([]interface{})
+
+	result := make(map[byte][]string)
+	result[0] = []string{}
+	result[1] = []string{}
+	for _, item := range serialNumbersStr {
+		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
+		db := *(self.config.Database)
+		ok, err := db.HasSerialNumber(serialNumber, chainIdSender)
+		if ok && err != nil {
+			result[0] = append(result[0], item.(string))
+		} else {
+			result[1] = append(result[1], item.(string))
+		}
+	}
+
+	return result, nil
 }

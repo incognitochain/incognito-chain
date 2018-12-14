@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -30,7 +31,7 @@ func NewCrowdsaleResponse(csResData map[string]interface{}) *CrowdsaleResponse {
 	return result
 }
 
-func (csRes *CrowdsaleResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
+func (csRes *CrowdsaleResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// TODO: check if there's a corresponding request in the same block
 	// Check if sale exists
 	saleData, err := bcr.GetCrowdsaleData(csRes.SaleID)

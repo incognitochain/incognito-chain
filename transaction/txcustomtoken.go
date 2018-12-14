@@ -98,12 +98,13 @@ func (customTokenTx *TxCustomToken) validateDoubleSpendCustomTokenWithBlockchain
 func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	bcr metadata.BlockchainRetriever,
 	chainID byte,
+	db database.DatabaseInterface,
 ) error {
 	if customTokenTx.GetType() == common.TxSalaryType {
 		return nil
 	}
 	if customTokenTx.Metadata != nil {
-		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, chainID)
+		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, chainID, db)
 		if err != nil || !isContinued {
 			return err
 		}
@@ -111,7 +112,7 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 
 	// TODO: add validate signs for multisig tx
 
-	err := customTokenTx.Tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID)
+	err := customTokenTx.Tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
 	if err != nil {
 		return err
 	}
@@ -167,9 +168,9 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
-func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface) bool {
+func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainID byte) bool {
 	// validate for normal tx
-	if tx.Tx.ValidateTransaction(hasPrivacy, db) {
+	if tx.Tx.ValidateTransaction(hasPrivacy, db, chainID) {
 		if len(tx.listUtxo) == 0 {
 			return false
 		}
@@ -217,12 +218,13 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
+	chainID byte,
 ) bool {
 	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
 	if !ok {
 		return false
 	}
-	ok = customTokenTx.ValidateTransaction(hasPrivacy, db)
+	ok = customTokenTx.ValidateTransaction(hasPrivacy, db, chainID)
 	if !ok {
 		return false
 	}
@@ -277,31 +279,29 @@ func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
 }
 
 // CreateTxCustomToken ...
-func CreateTxCustomToken(senderKey *privacy.SpendingKey,
+func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
-	usableTx []*Tx,
+	inputCoin []*privacy.InputCoin,
 	fee uint64,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
-) (*TxCustomToken, error) {
+) error {
 	// create normal txCustomToken
 	normalTx := Tx{}
-	err := normalTx.CreateTx(senderKey,
+	err := normalTx.Init(senderKey,
 		paymentInfo,
-		usableTx,
+		inputCoin,
 		fee,
 		true,
 		nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// override txCustomToken type
 	normalTx.Type = common.TxCustomTokenType
 
-	txCustomToken := &TxCustomToken{
-		Tx:          normalTx,
-		TxTokenData: TxTokenData{},
-	}
+	txCustomToken.Tx = normalTx
+	txCustomToken.TxTokenData = TxTokenData{}
 
 	var handled = false
 
@@ -330,12 +330,12 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 			txCustomToken.TxTokenData.Vouts = VoutsTemp
 			hashInitToken, err := txCustomToken.TxTokenData.Hash()
 			if err != nil {
-				return nil, errors.New("Can't handle this TokenTxType")
+				return errors.New("Can't handle this TokenTxType")
 			}
 			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
 				if hashInitToken.String() == customTokenID.String() {
-					return nil, errors.New("This token is existed in network")
+					return errors.New("This token is existed in network")
 				}
 			}
 			txCustomToken.TxTokenData.PropertyID = *hashInitToken
@@ -374,9 +374,9 @@ func CreateTxCustomToken(senderKey *privacy.SpendingKey,
 	}
 
 	if handled != true {
-		return nil, errors.New("Can't handle this TokenTxType")
+		return errors.New("Can't handle this TokenTxType")
 	}
-	return txCustomToken, nil
+	return nil
 }
 
 func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset cashec.KeySet) ([]byte, error) {

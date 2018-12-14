@@ -9,7 +9,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/metadata"
@@ -26,7 +25,7 @@ type BlkTmplGenerator struct {
 }
 
 type ConstitutionHelper interface {
-	GetStartedBlockHeight(generator *BlkTmplGenerator, chainID byte) int32
+	GetStartedNormalVote(generator *BlkTmplGenerator, chainID byte) int32
 	CheckSubmitProposalType(tx metadata.Transaction) bool
 	CheckVotingProposalType(tx metadata.Transaction) bool
 	GetAmountVoteToken(tx metadata.Transaction) uint64
@@ -91,6 +90,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	var txsToAdd []metadata.Transaction
 	var txToRemove []metadata.Transaction
 	var buySellReqTxs []metadata.Transaction
+	var issuingReqTxs []metadata.Transaction
 	var buyBackFromInfos []*buyBackFromInfo
 	bondsSold := uint64(0)
 	incomeFromBonds := uint64(0)
@@ -101,6 +101,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(chainID)
 	// Get basic salary on block
 	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
+	currentBlockHeight := prevBlock.Header.Height + 1
 
 	if len(sourceTxns) < common.MinTxsInBlock {
 		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
@@ -111,7 +112,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 			<-time.Tick(common.MaxBlockWaitTime * time.Second)
 			sourceTxns = blockgen.txPool.MiningDescs()
 			if len(sourceTxns) == 0 {
-				// return nil, errors.New("No TxNormal")
+				// return nil, errors.Zero("No TxNormal")
 				Logger.log.Info("Creating empty block...")
 				goto concludeBlock
 			}
@@ -127,30 +128,92 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 		// ValidateTransaction vote and propose transaction
 
 		// TODO: need to determine a tx is in privacy format or not
-		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain) {
+		if !tx.ValidateTxByItself(tx.IsPrivacy(), blockgen.chain.config.DataBase, blockgen.chain, chainID) {
 			txToRemove = append(txToRemove, metadata.Transaction(tx))
 			continue
 		}
 
-		if tx.GetMetadataType() == metadata.BuyFromGOVRequestMeta {
-			income, soldAmt, addable := blockgen.checkBuyFromGOVReqTx(chainID, tx, bondsSold)
-			if !addable {
-				txToRemove = append(txToRemove, tx)
+		startedDCBPivot := prevBlock.Header.DCBConstitution.StartedBlockHeight
+		endedDCBPivot := prevBlock.Header.DCBConstitution.GetEndedBlockHeight()
+		lv3DCBPivot := endedDCBPivot - common.EncryptionPhaseDuration
+		lv2DCBPivot := lv3DCBPivot - common.EncryptionPhaseDuration
+		lv1DCBPivot := lv2DCBPivot - common.EncryptionPhaseDuration
+		startedGOVPivot := prevBlock.Header.GOVConstitution.StartedBlockHeight
+		endedGOVPivot := prevBlock.Header.GOVConstitution.GetEndedBlockHeight()
+		lv3GOVPivot := endedGOVPivot - common.EncryptionPhaseDuration
+		lv2GOVPivot := lv3GOVPivot - common.EncryptionPhaseDuration
+		lv1GOVPivot := lv2GOVPivot - common.EncryptionPhaseDuration
+		switch tx.GetMetadataType() {
+		case metadata.BuyFromGOVRequestMeta:
+			{
+				income, soldAmt, addable := blockgen.checkBuyFromGOVReqTx(chainID, tx, bondsSold)
+				if !addable {
+					txToRemove = append(txToRemove, tx)
+					continue
+				}
+				bondsSold += soldAmt
+				incomeFromBonds += income
+				buySellReqTxs = append(buySellReqTxs, tx)
+			}
+		case metadata.BuyBackRequestMeta:
+			{
+				buyBackFromInfo, addable := blockgen.checkBuyBackReqTx(chainID, tx, buyBackCoins)
+				if !addable {
+					txToRemove = append(txToRemove, tx)
+					continue
+				}
+				buyBackCoins += (buyBackFromInfo.buyBackPrice + buyBackFromInfo.value)
+				buyBackFromInfos = append(buyBackFromInfos, buyBackFromInfo)
+			}
+		case metadata.NormalDCBBallotMetaFromSealer:
+			if !(currentBlockHeight < endedDCBPivot && currentBlockHeight >= lv1DCBPivot) {
 				continue
 			}
-			bondsSold += soldAmt
-			incomeFromBonds += income
-			buySellReqTxs = append(buySellReqTxs, tx)
+		case metadata.NormalDCBBallotMetaFromOwner:
+			if !(currentBlockHeight < endedDCBPivot && currentBlockHeight >= lv1DCBPivot) {
+				continue
+			}
+		case metadata.SealedLv1DCBBallotMeta:
+			if !(currentBlockHeight < lv1DCBPivot && currentBlockHeight >= lv2DCBPivot) {
+				continue
+			}
+		case metadata.SealedLv2DCBBallotMeta:
+			if !(currentBlockHeight < lv2DCBPivot && currentBlockHeight >= lv3DCBPivot) {
+				continue
+			}
+		case metadata.SealedLv3DCBBallotMeta:
+			if !(currentBlockHeight < lv3DCBPivot && currentBlockHeight >= startedDCBPivot) {
+				continue
+			}
+		case metadata.NormalGOVBallotMetaFromSealer:
+			if !(currentBlockHeight < endedGOVPivot && currentBlockHeight >= lv1GOVPivot) {
+				continue
+			}
+		case metadata.NormalGOVBallotMetaFromOwner:
+			if !(currentBlockHeight < endedGOVPivot && currentBlockHeight >= lv1GOVPivot) {
+				continue
+			}
+		case metadata.SealedLv1GOVBallotMeta:
+			if !(currentBlockHeight < lv1GOVPivot && currentBlockHeight >= lv2GOVPivot) {
+				continue
+			}
+		case metadata.SealedLv2GOVBallotMeta:
+			if !(currentBlockHeight < lv2GOVPivot && currentBlockHeight >= lv3GOVPivot) {
+				continue
+			}
+		case metadata.SealedLv3GOVBallotMeta:
+			if !(currentBlockHeight < lv3GOVPivot && currentBlockHeight >= startedGOVPivot) {
+				continue
+			}
 		}
 
-		if tx.GetMetadataType() == metadata.BuyBackRequestMeta {
-			buyBackFromInfo, addable := blockgen.checkBuyBackReqTx(chainID, tx, buyBackCoins)
+		if tx.GetMetadataType() == metadata.IssuingRequestMeta {
+			addable := blockgen.checkIssuingReqTx(chainID, tx)
 			if !addable {
 				txToRemove = append(txToRemove, tx)
 				continue
 			}
-			buyBackCoins += (buyBackFromInfo.buyBackPrice + buyBackFromInfo.value)
-			buyBackFromInfos = append(buyBackFromInfos, buyBackFromInfo)
+			issuingReqTxs = append(issuingReqTxs, tx)
 		}
 
 		totalFee += tx.GetTxFee()
@@ -162,7 +225,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 
 	// check len of txs in block
 	if len(txsToAdd) == 0 {
-		// return nil, errors.New("no transaction available for this chain")
+		// return nil, errors.Zero("no transaction available for this chain")
 		Logger.log.Info("Creating empty block...")
 	}
 
@@ -427,7 +490,7 @@ func (blockgen *BlkTmplGenerator) createRequestConstitutionTxDecs(
 	// count vote from lastConstitution.StartedBlockHeight to Bestblock height
 	CountVote := make(map[common.Hash]int64)
 	Transaction := make(map[common.Hash]*metadata.Transaction)
-	for blockHeight := ConstitutionHelper.GetStartedBlockHeight(blockgen, chainID); blockHeight < BestBlock.Header.Height; blockHeight += 1 {
+	for blockHeight := ConstitutionHelper.GetStartedNormalVote(blockgen, chainID); blockHeight < BestBlock.Header.Height; blockHeight += 1 {
 		//retrieve block from block's height
 		hashBlock, err := blockgen.chain.config.DataBase.GetBlockByIndex(blockHeight, chainID)
 		if err != nil {
@@ -544,7 +607,7 @@ func (blockgen *BlkTmplGenerator) processGovDividend(blockHeight int32, producer
 
 func buildSingleBuySellResponseTx(
 	buySellReqTx metadata.Transaction,
-	sellingBondsParam *params.SellingBonds,
+	sellingBondsParam *voting.SellingBonds,
 ) (*transaction.TxCustomToken, error) {
 	bondID := fmt.Sprintf("%s%s%s", sellingBondsParam.Maturity, sellingBondsParam.BuyBackPrice, sellingBondsParam.StartSellingAt)
 	additionalSuffix := make([]byte, 24-len(bondID))
@@ -615,7 +678,7 @@ func (blockgen *BlkTmplGenerator) checkBuyFromGOVReqTx(
 // the tx is to distribute tokens (bond, gov, ...) to token requesters
 func (blockgen *BlkTmplGenerator) buildBuySellResponsesTx(
 	buySellReqTxs []metadata.Transaction,
-	sellingBondsParam *params.SellingBonds,
+	sellingBondsParam *voting.SellingBonds,
 ) ([]*transaction.TxCustomToken, error) {
 	if len(buySellReqTxs) == 0 {
 		return []*transaction.TxCustomToken{}, nil
@@ -705,6 +768,73 @@ func (blockgen *BlkTmplGenerator) buildBuyBackResponsesTx(
 		buyBackResTxs = append(buyBackResTxs, buyBackResTx)
 	}
 	return buyBackResTxs, nil
+}
+
+func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
+	chainID byte,
+	tx metadata.Transaction,
+) bool {
+	// TODO: add more logic here
+	return true
+}
+
+func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
+	chainID byte,
+	issuingReqTxs []metadata.Transaction,
+	privatekey *privacy.SpendingKey,
+) ([]metadata.Transaction, error) {
+	prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	oracleParams := prevBlock.Header.Oracle
+
+	issuingResTxs := []metadata.Transaction{}
+	for _, issuingReqTx := range issuingReqTxs {
+		meta := issuingReqTx.GetMetadata()
+		issuingReq, ok := meta.(*metadata.IssuingRequest)
+		if !ok {
+			return []metadata.Transaction{}, errors.New("Could not parse IssuingRequest metadata.")
+		}
+		if issuingReq.AssetType == common.DCBTokenID {
+			issuingRes := metadata.IssuingResponse{
+				RequestedTxID: issuingReqTx.Hash(),
+			}
+			issuingRes.Type = metadata.IssuingResponseMeta
+			issuingAmt := issuingReq.DepositedAmount / oracleParams.DCBToken
+			txTokenVout := transaction.TxTokenVout{
+				Value:          issuingAmt,
+				PaymentAddress: issuingReq.ReceiverAddress,
+			}
+			txTokenData := transaction.TxTokenData{
+				Type:       transaction.CustomTokenInit,
+				Amount:     issuingAmt,
+				PropertyID: common.Hash(common.DCBTokenID),
+				Vins:       []transaction.TxTokenVin{},
+				Vouts:      []transaction.TxTokenVout{txTokenVout},
+				// PropertyName:   "",
+				// PropertySymbol: coinbaseTxType,
+			}
+			resTx := &transaction.TxCustomToken{
+				TxTokenData: txTokenData,
+			}
+			resTx.Type = common.TxCustomTokenType
+			resTx.Metadata = &issuingRes
+			issuingResTxs = append(issuingResTxs, resTx)
+			continue
+		}
+		if issuingReq.AssetType == common.ConstantID {
+			issuingAmt := issuingReq.DepositedAmount / oracleParams.Constant
+			resTx, err := transaction.CreateTxSalary(issuingAmt, &issuingReq.ReceiverAddress, privatekey, blockgen.chain.GetDatabase())
+			if err != nil {
+				return []metadata.Transaction{}, err
+			}
+			issuingRes := &metadata.IssuingResponse{
+				RequestedTxID: issuingReqTx.Hash(),
+			}
+			issuingRes.Type = metadata.IssuingResponseMeta
+			resTx.SetMetadata(issuingRes)
+			issuingResTxs = append(issuingResTxs, resTx)
+		}
+	}
+	return issuingResTxs, nil
 }
 
 func calculateAmountOfRefundTxs(

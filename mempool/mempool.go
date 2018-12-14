@@ -166,7 +166,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 
 	// validate tx with data of blockchain
-	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, chainID)
+	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, chainID, tp.config.BlockChain.GetDatabase())
 	// err = tp.ValidateTxWithBlockChain(tx, chainID)
 	if err != nil {
 		return nil, nil, err
@@ -198,7 +198,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 
 	// ValidateTransaction tx by it self
 	// validate := tp.ValidateTxByItSelf(tx)
-	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain)
+	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, chainID)
 	if !validated {
 		err := MempoolTxError{}
 		err.Init(RejectInvalidTx, errors.New("Invalid tx"))

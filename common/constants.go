@@ -48,6 +48,7 @@ const (
 	MaximumProposalExplainationLength = 1000
 	NumberOfDCBGovernors              = 50
 	NumberOfGOVGovernors              = 50
+	EncryptionPhaseDuration           = 5
 )
 
 // board types

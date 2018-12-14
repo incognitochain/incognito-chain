@@ -27,6 +27,7 @@ var (
 	privateKeyPrefix          = []byte("prk-")
 	serialNumbersPrefix       = []byte("serinalnumbers-")
 	commitmentsPrefix         = []byte("commitments-")
+	outcoinsPrefix            = []byte("outcoins-")
 	snderivatorsPrefix        = []byte("snderivators-")
 	bestBlockKey              = []byte("bestBlock")
 	feeEstimator              = []byte("feeEstimator")
@@ -41,12 +42,16 @@ var (
 	rewared                   = []byte("reward")
 
 	//vote prefix
-	voteDCBBoardSumPrefix   = []byte("votedcbsumboard-")
-	voteGOVBoardSumPrefix   = []byte("votegovsumboard-")
-	voteDCBBoardCountPrefix = []byte("votedcbcountboard-")
-	voteGOVBoardCountPrefix = []byte("votegovcountboard-")
-	VoteDCBBoardListPrefix  = []byte("votedcblistboard-")
-	VoteGOVBoardListPrefix  = []byte("votegovlistboard-")
+	voteDCBBoardSumPrefix         = []byte("votedcbsumboard-")
+	voteGOVBoardSumPrefix         = []byte("votegovsumboard-")
+	voteDCBBoardCountPrefix       = []byte("votedcbcountboard-")
+	voteGOVBoardCountPrefix       = []byte("votegovcountboard-")
+	VoteDCBBoardListPrefix        = []byte("votedcblistboard-")
+	VoteGOVBoardListPrefix        = []byte("votegovlistboard-")
+	DCBVoteTokenAmountPrefix      = []byte("dcbvotetokenamount-")
+	GOVVoteTokenAmountPrefix      = []byte("govvotetokenamount-")
+	threePhraseCryptoOwnerPrefix  = []byte("threephrasecryptoownerprefix-")
+	threePhraseCryptoSealerPrefix = []byte("threephrasecryptosealerprefix-")
 
 	Unreward = []byte("unreward")
 	Spent    = []byte("spent")
@@ -100,6 +105,8 @@ func (db db) GetKey(keyType string, key interface{}) []byte {
 		dbkey = append(serialNumbersPrefix, []byte(key.(string))...)
 	case string(commitmentsPrefix):
 		dbkey = append(commitmentsPrefix, []byte(key.(string))...)
+	case string(outcoinsPrefix):
+		dbkey = append(outcoinsPrefix, []byte(key.(string))...)
 	case string(snderivatorsPrefix):
 		dbkey = append(snderivatorsPrefix, []byte(key.(string))...)
 	case string(TokenPrefix):
@@ -126,6 +133,12 @@ func (db db) GetKey(keyType string, key interface{}) []byte {
 	case string(VoteGOVBoardListPrefix):
 		postfix := []byte(key.(string))
 		dbkey = append(VoteGOVBoardListPrefix, postfix...)
+	case string(DCBVoteTokenAmountPrefix):
+		postfix := []byte(key.(string))
+		dbkey = append(DCBVoteTokenAmountPrefix, postfix...)
+	case string(GOVVoteTokenAmountPrefix):
+		postfix := []byte(key.(string))
+		dbkey = append(GOVVoteTokenAmountPrefix, postfix...)
 	}
 	return dbkey
 }

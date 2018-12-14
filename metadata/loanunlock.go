@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/database"
 )
 
 type LoanUnlock struct {
@@ -27,7 +28,7 @@ func (lu *LoanUnlock) Hash() *common.Hash {
 	return &hash
 }
 
-func (lu *LoanUnlock) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte) (bool, error) {
+func (lu *LoanUnlock) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
 	// TODO(@0xbunyip): validate that there's a corresponding TxLoanWithdraw in the same block
 	return true, nil
 }

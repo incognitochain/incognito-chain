@@ -19,7 +19,7 @@ const (
 	GetBlockCount     = "getblockcount"
 	GetBlockHash      = "getblockhash"
 
-	ListTransactions                    = "listtransactions"
+	ListOutputCoins                     = "listoutputcoins"
 	CreateRawTransaction                = "createtransaction"
 	SendRawTransaction                  = "sendtransaction"
 	CreateAndSendTransaction            = "createandsendtransaction"
@@ -42,6 +42,8 @@ const (
 	GetListCustomTokenBalance           = "getlistcustomtokenbalance"
 	GetLoanParams                       = "loanparams"
 	GetBlockHeader                      = "getheader"
+	RandomCommitments                   = "randomcommitments"
+	HasSerialNumbers                    = "hasserialnumbers"
 
 	// Wallet rpc cmd
 	ListAccounts               = "listaccounts"
@@ -51,7 +53,7 @@ const (
 	DumpPrivkey                = "dumpprivkey"
 	ImportAccount              = "importaccount"
 	RemoveAccount              = "removeaccount"
-	ListUnspent                = "listunspent"
+	ListUnspentOutputCoins     = "listunspentoutputcoins"
 	GetBalance                 = "getbalance"
 	GetBalanceByPrivatekey     = "getbalancebyprivatekey"
 	GetBalanceByPaymentAddress = "getbalancebypaymentaddress"

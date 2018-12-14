@@ -1,27 +1,26 @@
 package jsonresult
 
-import "math/big"
+import (
+	"math/big"
+	"encoding/json"
+)
 
 type ListUnspentResult struct {
-	ListUnspentResultItems map[string]map[byte][]ListUnspentResultItem `json:"ListUnspentResultItems"`
+	ListUnspentResultItems map[string][]ListUnspentResultItem `json:"ListUnspentResultItems"`
 }
 
 type ListUnspentResultItem struct {
-	TxId     string    `json:"TxIndex"`
-	OutCoins []OutCoin `json:"JoinSplitDesc"`
+	OutCoins []OutCoin `json:"OutCoins"`
 }
 
-/*func (self *ListUnspentResultItem) Init(data interface{}) {
-	mapData := data.(map[string]interface{})
-	self.TxId = mapData["TxIndex"].(string)
-	self.JoinSplitDesc = make([]OutCoin, 0)
-	temps := mapData["JoinSplitDesc"].([]interface{})
-	for _, temp := range temps {
-		item := OutCoin{}
-		item.Init(temp)
-		self.JoinSplitDesc = append(self.JoinSplitDesc, item)
+func (self *ListUnspentResultItem) Init(data interface{}) {
+	self.OutCoins = []OutCoin{}
+	for _, item := range data.([]interface{}) {
+		i := OutCoin{}
+		i.Init(item)
+		self.OutCoins = append(self.OutCoins, i)
 	}
-}*/
+}
 
 type OutCoin struct {
 	PublicKey      string
@@ -33,7 +32,10 @@ type OutCoin struct {
 	Info           string
 }
 
-/*func (self *OutCoin) Init(data interface{}) {
-	mapData := data.(map[string]interface{})
-
-}*/
+func (self *OutCoin) Init(data interface{}) {
+	temp, err := json.Marshal(data)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(temp, self)
+}

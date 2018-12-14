@@ -23,10 +23,34 @@ type PKComMultiRangeProof struct {
 	IPP     InnerProdArg
 	maxExp  byte
 	// challenges
-	Cy 		 *big.Int
-	Cz 		 *big.Int
-	Cx 		 *big.Int
+	Cy *big.Int
+	Cz *big.Int
+	Cx *big.Int
 }
+
+//func CreatePKComMultiRangeProof() *PKComMultiRangeProof {
+//	return &PKComMultiRangeProof{
+//		Counter: byte(0x00),
+//		Comms:   []*privacy.EllipticPoint{},
+//		A:       new(privacy.EllipticPoint).Zero(),
+//		S:       new(privacy.EllipticPoint).Zero(),
+//		T1:      new(privacy.EllipticPoint).Zero(),
+//		T2:      new(privacy.EllipticPoint).Zero(),
+//		Tau:     new(big.Int),
+//		Th:      new(big.Int),
+//		Mu:      new(big.Int),
+//		IPP: InnerProdArg{
+//			A:          new(big.Int),
+//			B:          new(big.Int),
+//			Challenges: []*big.Int{},
+//			L:          []*privacy.EllipticPoint{},
+//			R:          []*privacy.EllipticPoint{},
+//		},
+//		Cx: new(big.Int),
+//		Cy: new(big.Int),
+//		Cz: new(big.Int),
+//	}
+//}
 
 type PKComMultiRangeWitness struct {
 	Comms  []*privacy.EllipticPoint
@@ -35,14 +59,48 @@ type PKComMultiRangeWitness struct {
 	maxExp byte
 }
 
-func (pro *PKComMultiRangeProof) Bytes() []byte{
+func (pro *PKComMultiRangeProof) Init() *PKComMultiRangeProof {
+	pro.A = new(privacy.EllipticPoint).Zero()
+	pro.S = new(privacy.EllipticPoint).Zero()
+	pro.T1 = new(privacy.EllipticPoint).Zero()
+	pro.T2 = new(privacy.EllipticPoint).Zero()
+	pro.Tau = new(big.Int)
+	pro.Th = new(big.Int)
+	pro.Mu = new(big.Int)
+	pro.Cx = new(big.Int)
+	pro.Cy = new(big.Int)
+	pro.Cz = new(big.Int)
+	pro.IPP.A = new(big.Int)
+	pro.IPP.B = new(big.Int)
+	return pro
+}
+func (pro *PKComMultiRangeProof) IsNil() bool{
+	if (pro.A==nil) {return true}
+	if (pro.S==nil) {return true}
+	if (pro.T1==nil){return true}
+	if (pro.T2==nil){return true}
+	if (pro.Tau==nil){return true}
+	if (pro.Th==nil){return true}
+	if (pro.Mu==nil){return true}
+	if (pro.Cx==nil){return true}
+	if (pro.Cy==nil){return true}
+	if (pro.Cz==nil){return true}
+	if (pro.IPP.A==nil){return true}
+	if (pro.IPP.B==nil){return true}
+	return false
+}
+
+func (pro PKComMultiRangeProof) Bytes() []byte {
 	var res []byte
+
+	if pro.IsNil() == true {
+		return []byte{}
+	}
 	res = append(res, pro.Counter)
 	res = append(res, pro.maxExp)
-	for i:=0;i<int(pro.Counter);i++{
+	for i := 0; i < int(pro.Counter); i++ {
 		//fmt.Println(pro.Comms[i])
 		res = append(res, pro.Comms[i].Compress()...)
-
 	}
 	res = append(res, pro.A.Compress()...)
 	res = append(res, pro.S.Compress()...)
@@ -55,52 +113,59 @@ func (pro *PKComMultiRangeProof) Bytes() []byte{
 	res = append(res, pro.Cy.Bytes()...)
 	res = append(res, pro.Cz.Bytes()...)
 	res = append(res, pro.IPP.Bytes()...)
-	//fmt.Println(res)
 	return res
 
 }
 func (pro *PKComMultiRangeProof) SetBytes(proofbytes []byte) {
-	pro.Counter =  proofbytes[0]
-	pro.maxExp  =  proofbytes[1]
-	pro.Comms = make([]*privacy.EllipticPoint,pro.Counter)
-	offset:=2
-	for i:=0;i<int(pro.Counter);i++{
+
+	if pro.IsNil(){
+		pro = pro.Init()
+	}
+	if len(proofbytes) == 0{
+		return
+	}
+
+	pro.Counter = proofbytes[0]
+	pro.maxExp = proofbytes[1]
+	pro.Comms = make([]*privacy.EllipticPoint, pro.Counter)
+	offset := 2
+	for i := 0; i < int(pro.Counter); i++ {
 		pro.Comms[i] = new(privacy.EllipticPoint)
 		pro.Comms[i].Decompress(proofbytes[offset:])
 		//fmt.Println(pro.Comms[i])
-		offset+=privacy.CompressedPointSize
+		offset += privacy.CompressedPointSize
 	}
 	pro.A = new(privacy.EllipticPoint)
 	pro.A.Decompress(proofbytes[offset:])
-	offset+=privacy.CompressedPointSize
+	offset += privacy.CompressedPointSize
 	pro.S = new(privacy.EllipticPoint)
 	pro.S.Decompress(proofbytes[offset:])
-	offset+=privacy.CompressedPointSize
+	offset += privacy.CompressedPointSize
 	pro.T1 = new(privacy.EllipticPoint)
 	pro.T1.Decompress(proofbytes[offset:])
-	offset+=privacy.CompressedPointSize
+	offset += privacy.CompressedPointSize
 	pro.T2 = new(privacy.EllipticPoint)
 	pro.T2.Decompress(proofbytes[offset:])
-	offset+=privacy.CompressedPointSize
+	offset += privacy.CompressedPointSize
 	pro.Tau = new(big.Int)
 	pro.Tau.SetBytes(proofbytes[offset:offset+32])
-	offset+=32
+	offset += 32
 	pro.Th = new(big.Int)
 	pro.Th.SetBytes(proofbytes[offset:offset+32])
-	offset+=32
+	offset += 32
 	pro.Mu = new(big.Int)
 	pro.Mu.SetBytes(proofbytes[offset:offset+32])
-	offset+=32
+	offset += 32
 	pro.Cx = new(big.Int)
 	pro.Cx.SetBytes(proofbytes[offset:offset+32])
-	offset+=32
+	offset += 32
 	pro.Cy = new(big.Int)
 	pro.Cy.SetBytes(proofbytes[offset:offset+32])
-	offset+=32
+	offset += 32
 	pro.Cz = new(big.Int)
 	pro.Cz.SetBytes(proofbytes[offset:offset+32])
-	offset+=32
-	end:=len(proofbytes)
+	offset += 32
+	end := len(proofbytes)
 	pro.IPP.SetBytes(proofbytes[offset:end])
 }
 func (pro *PKComMultiRangeProof) Print() {
@@ -119,7 +184,6 @@ func (pro *PKComMultiRangeProof) Print() {
 	fmt.Println(pro.Cz)
 	fmt.Println(pro.Cx)
 }
-
 
 func pad(l int) int {
 	deg := 0
@@ -147,7 +211,7 @@ func InitCommonParams(l int, maxExp byte) {
 	RangeProofParams = NewECPrimeGroupKey(VecLength)
 }
 func (wit *PKComMultiRangeWitness) Set(v []*big.Int, maxExp byte) {
-	if wit == nil{
+	if wit == nil {
 		wit = new(PKComMultiRangeWitness)
 	}
 	l := pad(len(v) + 1)
@@ -173,7 +237,6 @@ func CalculateLMRP(aL, sL []*big.Int, z, x *big.Int) []*big.Int {
 
 	tmp1 := VectorAddScalar(aL, new(big.Int).Neg(z))
 	tmp2 := ScalarVectorMul(sL, x)
-
 	result = VectorAdd(tmp1, tmp2)
 
 	return result
@@ -263,11 +326,14 @@ func (wit *PKComMultiRangeWitness) Prove() (*PKComMultiRangeProof, error) {
 		v := wit.Values[j]
 		if v.Cmp(big.NewInt(0)) == -1 {
 			fmt.Println("H is below range! Not proving")
+			err := fmt.Errorf("H is below range! Not proving")
+			return nil, err
+			//err := fmt.Errorf("Value is above range! Not proving.")
 		}
 		if v.Cmp(new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(wit.maxExp)), privacy.Curve.Params().N)) == 1 {
 			fmt.Println("Value is above range! Not proving.")
 			err := fmt.Errorf("Value is above range! Not proving.")
-			return new(PKComMultiRangeProof), err
+			return nil, err
 		}
 		gamma := new(big.Int).SetBytes(privacy.RandBytes(32))
 		gamma.Mod(gamma, privacy.Curve.Params().N)
