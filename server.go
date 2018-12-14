@@ -248,13 +248,18 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
 		GetCurrentShard:      self.GetCurrentShard,
-		GetPbksOfShard:       self.GetPbksOfShard,
 		GetCurrentPbk:        self.GetCurrentPbk,
+		GetPbksOfShard:       self.GetPbksOfShard,
 		GetShardByPbk:        self.GetShardByPbk,
 		ListenerPeers:        peers,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
 		ExternalAddress:      cfg.ExternalAddress,
+		// config for connection of shard
+		MaxPeerSameShard:  cfg.MaxPeerSameShard,
+		MaxPeerOtherShard: cfg.MaxPeerOtherShard,
+		MaxPeerOther:      cfg.MaxPeerOther,
+		MaxPeerNoShard:    cfg.MaxPeerNoShard,
 	})
 	self.connManager = connManager
 

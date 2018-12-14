@@ -9,7 +9,6 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
-
 	libpeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
@@ -53,7 +52,11 @@ type ConnManager struct {
 }
 
 type Config struct {
-	ExternalAddress string
+	ExternalAddress   string
+	MaxPeerSameShard  int
+	MaxPeerOtherShard int
+	MaxPeerOther      int
+	MaxPeerNoShard    int
 	// ListenerPeers defines a slice of listeners for which the connection
 	// manager will take ownership of and accept connections.  When a
 	// connection is accepted, the OnAccept handler will be invoked with the
@@ -115,6 +118,19 @@ func (self ConnManager) New(cfg *Config) *ConnManager {
 	self.discoveredPeers = make(map[string]*DiscoverPeerInfo)
 
 	self.ListeningPeers = map[libpeer.ID]*peer.Peer{}
+	// set default config
+	if self.Config.MaxPeerSameShard <= 0 {
+		self.Config.MaxPeerSameShard = MAX_PEERS_SAME_SHARD
+	}
+	if self.Config.MaxPeerOtherShard <= 0 {
+		self.Config.MaxPeerOtherShard = MAX_PEERS_OTHER_SHARD
+	}
+	if self.Config.MaxPeerOther <= 0 {
+		self.Config.MaxPeerOther = MAX_PEERS_OTHER
+	}
+	if self.Config.MaxPeerNoShard <= 0 {
+		self.Config.MaxPeerNoShard = MAX_PEERS_NOSHARD
+	}
 
 	return &self
 }
@@ -593,19 +609,19 @@ func (self *ConnManager) CheckAcceptConn(peerConn *peer.PeerConn) bool {
 	if sh != nil && self.CurrentShard != nil && *sh == *self.CurrentShard {
 		//	same shard
 		countPeerShard := self.countPeerConnByShard(sh)
-		if countPeerShard > MAX_PEERS_SAME_SHARD {
+		if countPeerShard > self.Config.MaxPeerSameShard {
 			return false
 		}
 	} else if sh != nil {
 		//	order shard
 		countPeerShard := self.countPeerConnByShard(sh)
-		if countPeerShard > MAX_PEERS_OTHER_SHARD {
+		if countPeerShard > self.Config.MaxPeerOtherShard {
 			return false
 		}
 	} else if sh == nil {
 		// none shard
 		countPeerShard := self.countPeerConnByShard(sh)
-		if countPeerShard > MAX_PEERS_NOSHARD {
+		if countPeerShard > self.Config.MaxPeerNoShard {
 			return false
 		}
 	}
