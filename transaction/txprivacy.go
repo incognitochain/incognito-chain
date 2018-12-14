@@ -524,7 +524,7 @@ func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {
 	for _, temp1 := range poolNullifiers {
 		for _, desc := range tx.Proof.InputCoins {
-			if ok, err := common.SliceBytesExists(temp1, desc.CoinDetails.SerialNumber.Compress()); ok == -1 || err != nil {
+			if ok, err := common.SliceBytesExists(temp1, desc.CoinDetails.SerialNumber.Compress()); ok > -1 || err != nil {
 				return errors.New("Double spend")
 			}
 		}
