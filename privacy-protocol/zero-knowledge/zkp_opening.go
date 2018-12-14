@@ -93,7 +93,6 @@ func (pro PKComOpeningsProof) Bytes() []byte {
 }
 
 func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) error {
-	fmt.Printf("HYYYYYYYYYYYYYYYYYYYYYY %v\n", bytestr)
 	if len(bytestr) == 0 {
 		return nil
 	}
@@ -127,7 +126,6 @@ func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) error {
 	for i := 0; i < len(pro.indexs); i++ {
 		pro.indexs[i] = bytestr[privacy.CompressedPointSize*2+len(pro.gamma)*privacy.BigIntSize + i]
 	}
-	fmt.Printf("HYYYYYYYYYYYYYYY %v\n", pro.indexs)
 	return nil
 }
 

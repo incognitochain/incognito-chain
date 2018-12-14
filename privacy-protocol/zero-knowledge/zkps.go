@@ -173,26 +173,30 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 
 		proofbytes = append(proofbytes, privacy.IntToByteArr(len(comOutputMultiRangeProof))...)
 		proofbytes = append(proofbytes, comOutputMultiRangeProof...)
+
+		fmt.Println("DATTTTTTTTTTTTTTTTTTTT - BYTE: ", comOutputMultiRangeProof)
 	} else {
 		proofbytes = append(proofbytes, byte(0))
 	}
 
 
 	// SumOutRangeProof
-	paymentProof.SumOutRangeProof = nil
+	//paymentProof.SumOutRangeProof = nil
 	if paymentProof.SumOutRangeProof != nil {
 		sumOutRangeProof := paymentProof.SumOutRangeProof.Bytes()
 		fmt.Printf("Byte - LensumOutRangeProof: %v\n", len(sumOutRangeProof))
 		//fmt.Printf("Byte - sumOutRangeProof: %v\n", sumOutRangeProof)
 		proofbytes = append(proofbytes, byte(len(sumOutRangeProof)))
 		proofbytes = append(proofbytes, sumOutRangeProof...)
+
+		fmt.Println("HYYYYYYYYYYYYYYYYYYYY - BYTE: ", sumOutRangeProof)
 	} else {
 		proofbytes = append(proofbytes, byte(0))
 	}
 
 
 	// ComZeroProof
-	paymentProof.ComZeroProof = nil
+	//paymentProof.ComZeroProof = nil
 	if paymentProof.ComZeroProof != nil {
 		comZeroProof := paymentProof.ComZeroProof.Bytes()
 		fmt.Printf("Byte - LencomZeroProof: %v\n", len(comZeroProof))
@@ -357,7 +361,9 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		proof.ComOutputMultiRangeProof = new(PKComMultiRangeProof).Init()
 		proof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset: offset+lenComOutputMultiRangeProof])
 		offset += lenComOutputMultiRangeProof
+		fmt.Println("DATTTTTTTTTTTTTTTTTTTT - SET BYTE: ", proof.ComOutputMultiRangeProof.Bytes())
 	}
+
 
 	//SumOutRangeProof *PKComZeroProof
 	lenSumOutRangeProof := int(proofbytes[offset])
@@ -368,6 +374,8 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		proof.SumOutRangeProof = new(PKComZeroProof).Init()
 		proof.SumOutRangeProof.SetBytes(proofbytes[offset: offset+lenSumOutRangeProof])
 		offset += lenSumOutRangeProof
+
+		fmt.Println("HYYYYYYYYYYYYYYYYYYYY - SET BYTE: ", proof.SumOutRangeProof.Bytes())
 	}
 
 	//ComZeroProof *PKComZeroProof
@@ -376,8 +384,8 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	fmt.Printf("Set Byte - lenComZeroProof: %v\n", lenComZeroProof)
 	if lenComZeroProof > 0 {
 		//fmt.Printf("Set Byte - ComZeroProof: %v\n", proofbytes[offset: offset+lenComZeroProof])
-		proof.SumOutRangeProof = new(PKComZeroProof).Init()
-		proof.SumOutRangeProof.SetBytes(proofbytes[offset: offset+lenComZeroProof])
+		proof.ComZeroProof = new(PKComZeroProof).Init()
+		proof.ComZeroProof.SetBytes(proofbytes[offset: offset+lenComZeroProof])
 		offset += lenComZeroProof
 	}
 
