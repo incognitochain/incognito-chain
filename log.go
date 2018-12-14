@@ -10,7 +10,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/connmanager"
-	"github.com/ninjadotorg/constant/consensus/ppos"
+	"github.com/ninjadotorg/constant/consensus/constantpos"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/mempool"
 	"github.com/ninjadotorg/constant/netsync"
@@ -61,7 +61,7 @@ func init() {
 	database.Logger.Init(dbLogger)
 	wallet.Logger.Init(walletLogger)
 	blockchain.Logger.Init(blockchainLogger)
-	ppos.Logger.Init(consensusLogger)
+	constantpos.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
 }
 

@@ -21,52 +21,52 @@ func (self *Engine) sendBlockMsg(block *blockchain.Block) {
 	self.config.Server.PushMessageToAll(blockMsg)
 }
 
-func (self *Engine) OnRequestSign(msgBlock *wire.MessageBlockSigReq) {
-	block := &msgBlock.Block
-	err := self.validatePreSignBlockSanity(block)
-	if err != nil {
-		invalidBlockMsg := &wire.MessageInvalidBlock{
-			Reason:    err.Error(),
-			BlockHash: block.Hash().String(),
-			ChainID:   block.Header.ChainID,
-			Validator: base58.Base58Check{}.Encode(self.config.UserKeySet.PaymentAddress.Pk, byte(0x00)),
-		}
-		dataByte, _ := invalidBlockMsg.JsonSerialize()
-		invalidBlockMsg.ValidatorSig, err = self.config.UserKeySet.SignBase58(dataByte)
-		if err != nil {
-			Logger.log.Error(err)
-			return
-		}
-		Logger.log.Critical("Invalid block msg", invalidBlockMsg)
-		err = self.config.Server.PushMessageToAll(invalidBlockMsg)
-		if err != nil {
-			Logger.log.Error(err)
-			return
-		}
-		return
-	}
+// func (self *Engine) OnRequestSign(msgBlock *wire.MessageBlockSigReq) {
+// 	block := &msgBlock.Block
+// 	err := self.validatePreSignBlockSanity(block)
+// 	if err != nil {
+// 		invalidBlockMsg := &wire.MessageInvalidBlock{
+// 			Reason:    err.Error(),
+// 			BlockHash: block.Hash().String(),
+// 			ChainID:   block.Header.ChainID,
+// 			Validator: base58.Base58Check{}.Encode(self.config.UserKeySet.PaymentAddress.Pk, byte(0x00)),
+// 		}
+// 		dataByte, _ := invalidBlockMsg.JsonSerialize()
+// 		invalidBlockMsg.ValidatorSig, err = self.config.UserKeySet.SignBase58(dataByte)
+// 		if err != nil {
+// 			Logger.log.Error(err)
+// 			return
+// 		}
+// 		Logger.log.Critical("Invalid block msg", invalidBlockMsg)
+// 		err = self.config.Server.PushMessageToAll(invalidBlockMsg)
+// 		if err != nil {
+// 			Logger.log.Error(err)
+// 			return
+// 		}
+// 		return
+// 	}
 
-	sig, err := self.config.UserKeySet.SignBase58([]byte(block.Hash().String()))
-	if err != nil {
-		Logger.log.Error("Can't sign block ", err)
-		// TODO something went terribly wrong
-		return
-	}
-	blockSigMsg := wire.MessageBlockSig{
-		Validator: base58.Base58Check{}.Encode(self.config.UserKeySet.PaymentAddress.Pk, byte(0x00)),
-		BlockSig:  sig,
-	}
-	peerID, err := libp2p.IDB58Decode(msgBlock.SenderID)
-	if err != nil {
-		Logger.log.Error("ERROR", msgBlock.SenderID, peerID, err)
-	}
-	Logger.log.Info(block.Hash().String(), blockSigMsg)
-	err = self.config.Server.PushMessageToPeer(&blockSigMsg, peerID)
-	if err != nil {
-		Logger.log.Error(err)
-	}
-	return
-}
+// 	sig, err := self.config.UserKeySet.SignBase58([]byte(block.Hash().String()))
+// 	if err != nil {
+// 		Logger.log.Error("Can't sign block ", err)
+// 		// TODO something went terribly wrong
+// 		return
+// 	}
+// 	blockSigMsg := wire.MessageBlockSig{
+// 		Validator: base58.Base58Check{}.Encode(self.config.UserKeySet.PaymentAddress.Pk, byte(0x00)),
+// 		BlockSig:  sig,
+// 	}
+// 	peerID, err := libp2p.IDB58Decode(msgBlock.SenderID)
+// 	if err != nil {
+// 		Logger.log.Error("ERROR", msgBlock.SenderID, peerID, err)
+// 	}
+// 	Logger.log.Info(block.Hash().String(), blockSigMsg)
+// 	err = self.config.Server.PushMessageToPeer(&blockSigMsg, peerID)
+// 	if err != nil {
+// 		Logger.log.Error(err)
+// 	}
+// 	return
+// }
 
 func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 	if self.config.BlockChain.BestState[block.Header.ChainID].Height < block.Header.Height {
@@ -88,13 +88,23 @@ func (self *Engine) OnBlockReceived(block *blockchain.Block) {
 	return
 }
 
-func (self *Engine) OnBlockSigReceived(validator string, sig string) {
-	Logger.log.Info("Received a block signature")
-	self.cBlockSig <- blockSig{
-		Validator: validator,
-		BlockSig:  sig,
-	}
+func (self *Engine) OnBFTPropose(msg *wire.MessageBFTPropose) {
 	return
+}
+
+func (self *Engine) OnBFTPrepare(msg *wire.MessageBFTPrepare) {
+	return
+
+}
+
+func (self *Engine) OnBFTCommit(msg *wire.MessageBFTCommit) {
+	return
+
+}
+
+func (self *Engine) OnBFTReply(msg *wire.MessageBFTReply) {
+	return
+
 }
 
 func (self *Engine) OnInvalidBlockReceived(blockHash string, chainID byte, reason string) {

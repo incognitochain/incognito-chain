@@ -12,16 +12,18 @@ const (
 )
 
 type MessageBFTPropose struct {
-	Phase string
-	Block blockchain.BlockV2
+	AggregatedSig string
+	ValidatorsIdx []int
+	Block         blockchain.BlockV2
+	MsgSig        string
 }
 
 func (self *MessageBFTPropose) MessageType() string {
-	return CmdBlockSig
+	return CmdBFTPropose
 }
 
 func (self *MessageBFTPropose) MaxPayloadLength(pver int) int {
-	return MaxBlockSigPayload
+	return MaxBFTProposePayload
 }
 
 func (self *MessageBFTPropose) JsonSerialize() ([]byte, error) {

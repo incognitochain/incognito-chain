@@ -4,24 +4,24 @@ import (
 	"encoding/json"
 
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/blockchain"
 )
 
 const (
-	MaxBFTReplyPayload = 1000 // 1 Kb
+	MaxBFTReplyPayload = 5000 // 5 Kb
 )
 
 type MessageBFTReply struct {
-	Phase string
-	Block blockchain.BlockV2
+	BlockHash     string
+	AggregatedSig string
+	ValidatorsIdx []int
 }
 
 func (self *MessageBFTReply) MessageType() string {
-	return CmdBlockSig
+	return CmdBFTReply
 }
 
 func (self *MessageBFTReply) MaxPayloadLength(pver int) int {
-	return MaxBlockSigPayload
+	return MaxBFTReplyPayload
 }
 
 func (self *MessageBFTReply) JsonSerialize() ([]byte, error) {

@@ -107,9 +107,11 @@ type MessageListeners struct {
 	OnAddr      func(p *PeerConn, msg *wire.MessageAddr)
 
 	//PoS
-	OnRequestSign   func(p *PeerConn, msg *wire.MessageBlockSigReq)
+	OnBFTPropose    func(p *PeerConn, msg *wire.MessageBFTPropose)
+	OnBFTPrepare    func(p *PeerConn, msg *wire.MessageBFTPrepare)
+	OnBFTCommit     func(p *PeerConn, msg *wire.MessageBFTCommit)
+	OnBFTReply      func(p *PeerConn, msg *wire.MessageBFTReply)
 	OnInvalidBlock  func(p *PeerConn, msg *wire.MessageInvalidBlock)
-	OnBlockSig      func(p *PeerConn, msg *wire.MessageBlockSig)
 	OnGetChainState func(p *PeerConn, msg *wire.MessageGetChainState)
 	OnChainState    func(p *PeerConn, msg *wire.MessageChainState)
 	//OnRegistration  func(p *PeerConn, msg *wire.MessageRegistration)

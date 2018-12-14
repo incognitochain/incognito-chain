@@ -32,8 +32,10 @@ const (
 	CmdPing               = "ping"
 
 	// POS Cmd
-	CmdBlockSigReq   = "blocksigreq"
-	CmdBlockSig      = "blocksig"
+	CmdBFTPropose    = "bftpropose"
+	CmdBFTPrepare    = "bftprepare"
+	CmdBFTCommit     = "bftcommit"
+	CmdBFTReply      = "bftreply"
 	CmdInvalidBlock  = "invalidblock"
 	CmdGetChainState = "getchstate"
 	CmdChainState    = "chainstate"
@@ -73,25 +75,25 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		}
 		break
 		/*case CmdCLoanRequestToken:
-		  msg = &MessageTx{
-			  Transaction: &transaction.TxLoanRequest{},
-		  }
-		  break
-	  case CmdCLoanResponseToken:
-		  msg = &MessageTx{
-			  Transaction: &transaction.TxLoanResponse{},
-		  }
-		  break
-	  case CmdCLoanWithdrawToken:
-		  msg = &MessageTx{
-			  Transaction: &transaction.TxLoanWithdraw{},
-		  }
-		  break
-	  case CmdCLoanPayToken:
-		  msg = &MessageTx{
-			  Transaction: &transaction.TxLoanPayment{},
-		  }
-		  break*/
+			  msg = &MessageTx{
+				  Transaction: &transaction.TxLoanRequest{},
+			  }
+			  break
+		  case CmdCLoanResponseToken:
+			  msg = &MessageTx{
+				  Transaction: &transaction.TxLoanResponse{},
+			  }
+			  break
+		  case CmdCLoanWithdrawToken:
+			  msg = &MessageTx{
+				  Transaction: &transaction.TxLoanWithdraw{},
+			  }
+			  break
+		  case CmdCLoanPayToken:
+			  msg = &MessageTx{
+				  Transaction: &transaction.TxLoanPayment{},
+			  }
+			  break*/
 	case CmdGetBlocks:
 		msg = &MessageGetBlocks{}
 		break
@@ -106,12 +108,14 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdVerack:
 		msg = &MessageVerAck{}
 		break
-	case CmdBlockSig:
-		msg = &MessageBlockSig{}
-		break
-	case CmdBlockSigReq:
-		msg = &MessageBlockSigReq{}
-		break
+	case CmdBFTPropose:
+		msg = &MessageBFTPropose{}
+	case CmdBFTPrepare:
+		msg = &MessageBFTPrepare{}
+	case CmdBFTCommit:
+		msg = &MessageBFTCommit{}
+	case CmdBFTReply:
+		msg = &MessageBFTReply{}
 	case CmdInvalidBlock:
 		msg = &MessageInvalidBlock{}
 		break
@@ -171,10 +175,14 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdAddr, nil
 	case reflect.TypeOf(&MessagePing{}):
 		return CmdPing, nil
-	case reflect.TypeOf(&MessageBlockSig{}):
-		return CmdBlockSig, nil
-	case reflect.TypeOf(&MessageBlockSigReq{}):
-		return CmdBlockSigReq, nil
+	case reflect.TypeOf(&MessageBFTPropose{}):
+		return CmdBFTPropose, nil
+	case reflect.TypeOf(&MessageBFTPrepare{}):
+		return CmdBFTPrepare, nil
+	case reflect.TypeOf(&MessageBFTCommit{}):
+		return CmdBFTCommit, nil
+	case reflect.TypeOf(&MessageBFTReply{}):
+		return CmdBFTReply, nil
 	case reflect.TypeOf(&MessageInvalidBlock{}):
 		return CmdInvalidBlock, nil
 	case reflect.TypeOf(&MessageGetChainState{}):

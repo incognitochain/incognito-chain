@@ -27,15 +27,17 @@ type NetSyncConfig struct {
 	BlockChain *blockchain.BlockChain
 	ChainParam *blockchain.Params
 	MemTxPool  *mempool.TxPool
-	Server interface {
+	Server     interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, peer2.ID) error
 		PushMessageToAll(wire.Message) error
 	}
 	Consensus interface {
 		OnBlockReceived(*blockchain.Block)
-		OnRequestSign(*wire.MessageBlockSigReq)
-		OnBlockSigReceived(string, string)
+		OnBFTPropose(*wire.MessageBFTPropose)
+		OnBFTPrepare(*wire.MessageBFTPrepare)
+		OnBFTCommit(*wire.MessageBFTCommit)
+		OnBFTReply(*wire.MessageBFTReply)
 		OnInvalidBlockReceived(string, byte, string)
 		OnGetChainState(*wire.MessageGetChainState)
 		OnChainStateReceived(*wire.MessageChainState)
@@ -86,58 +88,68 @@ out:
 		select {
 		case msgChan := <-self.cMessage:
 			{
-				switch msg := msgChan.(type) {
-				case *wire.MessageTx:
-					{
-						self.HandleMessageTx(msg)
+				go func(msgC interface{}) {
+					switch msg := msgC.(type) {
+					case *wire.MessageTx:
+						{
+							self.HandleMessageTx(msg)
+						}
+						//case *wire.MessageRegistration:
+						//	{
+						//		self.HandleMessageRegisteration(msg)
+						//	}
+					case *wire.MessageBlock:
+						{
+							self.HandleMessageBlock(msg)
+						}
+					case *wire.MessageGetBlocks:
+						{
+							self.HandleMessageGetBlocks(msg)
+						}
+					case *wire.MessageBFTPropose:
+						{
+							self.HandleMessageBFTPropose(msg)
+						}
+					case *wire.MessageBFTPrepare:
+						{
+							self.HandleMessageBFTPrepare(msg)
+						}
+					case *wire.MessageBFTCommit:
+						{
+							self.HandleMessageBFTCommit(msg)
+						}
+					case *wire.MessageBFTReply:
+						{
+							self.HandleMessageBFTReply(msg)
+						}
+					case *wire.MessageInvalidBlock:
+						{
+							self.HandleMessageInvalidBlock(msg)
+						}
+					case *wire.MessageGetChainState:
+						{
+							self.HandleMessageGetChainState(msg)
+						}
+					case *wire.MessageChainState:
+						{
+							self.HandleMessageChainState(msg)
+						}
+					case *wire.MessageSwapRequest:
+						{
+							self.HandleMessageSwapRequest(msg)
+						}
+					case *wire.MessageSwapSig:
+						{
+							self.HandleMessageSwapSig(msg)
+						}
+					case *wire.MessageSwapUpdate:
+						{
+							self.HandleMessageSwapUpdate(msg)
+						}
+					default:
+						Logger.log.Infof("Invalid message type in block "+"handler: %T", msg)
 					}
-					//case *wire.MessageRegistration:
-					//	{
-					//		self.HandleMessageRegisteration(msg)
-					//	}
-				case *wire.MessageBlock:
-					{
-						self.HandleMessageBlock(msg)
-					}
-				case *wire.MessageGetBlocks:
-					{
-						self.HandleMessageGetBlocks(msg)
-					}
-				case *wire.MessageBlockSig:
-					{
-						self.HandleMessageBlockSig(msg)
-					}
-				case *wire.MessageInvalidBlock:
-					{
-						self.HandleMessageInvalidBlock(msg)
-					}
-				case *wire.MessageBlockSigReq:
-					{
-						self.HandleMessageRequestSign(msg)
-					}
-				case *wire.MessageGetChainState:
-					{
-						self.HandleMessageGetChainState(msg)
-					}
-				case *wire.MessageChainState:
-					{
-						self.HandleMessageChainState(msg)
-					}
-				case *wire.MessageSwapRequest:
-					{
-						self.HandleMessageSwapRequest(msg)
-					}
-				case *wire.MessageSwapSig:
-					{
-						self.HandleMessageSwapSig(msg)
-					}
-				case *wire.MessageSwapUpdate:
-					{
-						self.HandleMessageSwapUpdate(msg)
-					}
-				default:
-					Logger.log.Infof("Invalid message type in block "+"handler: %T", msg)
-				}
+				}(msgChan)
 			}
 		case msgChan := <-self.cQuit:
 			{
@@ -296,18 +308,29 @@ func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
 	self.config.Consensus.OnBlockReceived(&msg.Block)
 }
 
-func (self *NetSync) HandleMessageBlockSig(msg *wire.MessageBlockSig) {
-	Logger.log.Info("Handling new message BlockSig")
-	self.config.Consensus.OnBlockSigReceived(msg.Validator, msg.BlockSig)
+func (self *NetSync) HandleMessageBFTPropose(msg *wire.MessageBFTPropose) {
+	Logger.log.Info("Handling new message BFTPropose")
+	self.config.Consensus.OnBFTPropose(msg)
 }
+
+func (self *NetSync) HandleMessageBFTPrepare(msg *wire.MessageBFTPrepare) {
+	Logger.log.Info("Handling new message BFTPrepare")
+	self.config.Consensus.OnBFTPrepare(msg)
+}
+
+func (self *NetSync) HandleMessageBFTCommit(msg *wire.MessageBFTCommit) {
+	Logger.log.Info("Handling new message BFTCommit")
+	self.config.Consensus.OnBFTCommit(msg)
+}
+
+func (self *NetSync) HandleMessageBFTReply(msg *wire.MessageBFTReply) {
+	Logger.log.Info("Handling new message BFTReply")
+	self.config.Consensus.OnBFTReply(msg)
+}
+
 func (self *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
 	Logger.log.Info("Handling new message invalidblock")
 	self.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.ChainID, msg.Reason)
-}
-
-func (self *NetSync) HandleMessageRequestSign(msg *wire.MessageBlockSigReq) {
-	Logger.log.Info("Handling new message requestsign")
-	self.config.Consensus.OnRequestSign(msg)
 }
 
 func (self *NetSync) HandleMessageGetChainState(msg *wire.MessageGetChainState) {

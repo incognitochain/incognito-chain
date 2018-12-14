@@ -531,10 +531,12 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnGetAddr:   self.OnGetAddr,
 			OnAddr:      self.OnAddr,
 
-			//ppos
-			OnRequestSign:   self.OnRequestSign,
+			//constantpos
+			OnBFTPropose:    self.OnBFTPropose,
+			OnBFTPrepare:    self.OnBFTPrepare,
+			OnBFTCommit:     self.OnBFTCommit,
+			OnBFTReply:      self.OnBFTReply,
 			OnInvalidBlock:  self.OnInvalidBlock,
-			OnBlockSig:      self.OnBlockSig,
 			OnGetChainState: self.OnGetChainState,
 			OnChainState:    self.OnChainState,
 			//
@@ -753,24 +755,38 @@ func (self *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) {
 	Logger.log.Infof("Receive addr message %v", msg.RawPeers)
 }
 
-func (self *Server) OnRequestSign(_ *peer.PeerConn, msg *wire.MessageBlockSigReq) {
+func (self *Server) OnBFTPropose(_ *peer.PeerConn, msg *wire.MessageBFTPropose) {
 	Logger.log.Info("Receive a requestsign START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a requestsign END")
 }
 
+func (self *Server) OnBFTPrepare(_ *peer.PeerConn, msg *wire.MessageBFTPrepare) {
+	Logger.log.Info("Receive a requestsign START")
+	var txProcessed chan struct{}
+	self.netSync.QueueMessage(nil, msg, txProcessed)
+	Logger.log.Info("Receive a requestsign END")
+}
+
+func (self *Server) OnBFTCommit(_ *peer.PeerConn, msg *wire.MessageBFTCommit) {
+	Logger.log.Info("Receive a requestsign START")
+	var txProcessed chan struct{}
+	self.netSync.QueueMessage(nil, msg, txProcessed)
+	Logger.log.Info("Receive a requestsign END")
+}
+
+func (self *Server) OnBFTReply(_ *peer.PeerConn, msg *wire.MessageBFTReply) {
+	Logger.log.Info("Receive a requestsign START")
+	var txProcessed chan struct{}
+	self.netSync.QueueMessage(nil, msg, txProcessed)
+	Logger.log.Info("Receive a requestsign END")
+}
 func (self *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {
 	Logger.log.Info("Receive a invalidblock START", msg)
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a invalidblock END", msg)
-}
-
-func (self *Server) OnBlockSig(_ *peer.PeerConn, msg *wire.MessageBlockSig) {
-	Logger.log.Info("Receive a BlockSig")
-	var txProcessed chan struct{}
-	self.netSync.QueueMessage(nil, msg, txProcessed)
 }
 
 func (self *Server) OnGetChainState(_ *peer.PeerConn, msg *wire.MessageGetChainState) {

@@ -8,10 +8,11 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/wire"
-	"github.com/ninjadotorg/constant/common"
 	"time"
+
+	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/wire"
 )
 
 type PeerConn struct {
@@ -134,17 +135,25 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnGetAddr != nil {
 						self.Config.MessageListeners.OnAddr(self, message.(*wire.MessageAddr))
 					}
-				case reflect.TypeOf(&wire.MessageBlockSigReq{}):
-					if self.Config.MessageListeners.OnRequestSign != nil {
-						self.Config.MessageListeners.OnRequestSign(self, message.(*wire.MessageBlockSigReq))
+				case reflect.TypeOf(&wire.MessageBFTPropose{}):
+					if self.Config.MessageListeners.OnBFTPropose != nil {
+						self.Config.MessageListeners.OnBFTPropose(self, message.(*wire.MessageBFTPropose))
+					}
+				case reflect.TypeOf(&wire.MessageBFTPrepare{}):
+					if self.Config.MessageListeners.OnBFTPrepare != nil {
+						self.Config.MessageListeners.OnBFTPrepare(self, message.(*wire.MessageBFTPrepare))
+					}
+				case reflect.TypeOf(&wire.MessageBFTCommit{}):
+					if self.Config.MessageListeners.OnBFTCommit != nil {
+						self.Config.MessageListeners.OnBFTCommit(self, message.(*wire.MessageBFTCommit))
+					}
+				case reflect.TypeOf(&wire.MessageBFTReply{}):
+					if self.Config.MessageListeners.OnBFTReply != nil {
+						self.Config.MessageListeners.OnBFTReply(self, message.(*wire.MessageBFTReply))
 					}
 				case reflect.TypeOf(&wire.MessageInvalidBlock{}):
 					if self.Config.MessageListeners.OnInvalidBlock != nil {
 						self.Config.MessageListeners.OnInvalidBlock(self, message.(*wire.MessageInvalidBlock))
-					}
-				case reflect.TypeOf(&wire.MessageBlockSig{}):
-					if self.Config.MessageListeners.OnBlockSig != nil {
-						self.Config.MessageListeners.OnBlockSig(self, message.(*wire.MessageBlockSig))
 					}
 				case reflect.TypeOf(&wire.MessageGetChainState{}):
 					if self.Config.MessageListeners.OnGetChainState != nil {

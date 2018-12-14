@@ -3,8 +3,9 @@ package wire
 import (
 	"encoding/json"
 
+	"github.com/ninjadotorg/constant/privacy-protocol"
+
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/blockchain"
 )
 
 const (
@@ -12,16 +13,19 @@ const (
 )
 
 type MessageBFTCommit struct {
-	Phase string
-	Block blockchain.BlockV2
+	CommitSig     string
+	R             privacy.EllipticPoint
+	ValidatorsIdx []int
+	Pubkey        string
+	MsgSig        string
 }
 
 func (self *MessageBFTCommit) MessageType() string {
-	return CmdBlockSig
+	return CmdBFTCommit
 }
 
 func (self *MessageBFTCommit) MaxPayloadLength(pver int) int {
-	return MaxBlockSigPayload
+	return MaxBFTCommitPayload
 }
 
 func (self *MessageBFTCommit) JsonSerialize() ([]byte, error) {

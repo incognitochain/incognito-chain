@@ -3,8 +3,9 @@ package wire
 import (
 	"encoding/json"
 
+	"github.com/ninjadotorg/constant/privacy-protocol"
+
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/blockchain"
 )
 
 const (
@@ -12,16 +13,17 @@ const (
 )
 
 type MessageBFTPrepare struct {
-	Phase string
-	Block blockchain.BlockV2
+	Ri     privacy.EllipticPoint
+	Pubkey string
+	MsgSig string
 }
 
 func (self *MessageBFTPrepare) MessageType() string {
-	return CmdBlockSig
+	return CmdBFTPrepare
 }
 
 func (self *MessageBFTPrepare) MaxPayloadLength(pver int) int {
-	return MaxBlockSigPayload
+	return MaxBFTPreparePayload
 }
 
 func (self *MessageBFTPrepare) JsonSerialize() ([]byte, error) {
