@@ -48,7 +48,7 @@ type committeeStruct struct {
 	CurrentCommittee     []string
 	cmWatcherStarted     bool
 	sync.Mutex
-	LastUpdate           int64
+	LastUpdate int64
 }
 
 type ChainInfo struct {
@@ -70,7 +70,7 @@ type EngineConfig struct {
 	BlockGen       *blockchain.BlkTmplGenerator
 	MemPool        *mempool.TxPool
 	ProducerKeySet cashec.KeySet
-	Server interface {
+	Server         interface {
 		// list functions callback which are assigned from Server struct
 		GetPeerIDsFromPublicKey(string) []peer2.ID
 		PushMessageToAll(wire.Message) error

@@ -1,11 +1,12 @@
 package rpcserver
 
 import (
-	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
-	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/common"
 	"errors"
 	"log"
+
+	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 /*

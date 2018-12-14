@@ -4,9 +4,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 
+	"log"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"log"
 )
 
 type db struct {
@@ -39,9 +40,22 @@ var (
 	loanRequestPostfix        = []byte("-req")
 	loanResponsePostfix       = []byte("-res")
 	rewared                   = []byte("reward")
-	Unreward                  = []byte("unreward")
-	Spent                     = []byte("spent")
-	Unspent                   = []byte("unspent")
+
+	//vote prefix
+	voteDCBBoardSumPrefix         = []byte("votedcbsumboard-")
+	voteGOVBoardSumPrefix         = []byte("votegovsumboard-")
+	voteDCBBoardCountPrefix       = []byte("votedcbcountboard-")
+	voteGOVBoardCountPrefix       = []byte("votegovcountboard-")
+	VoteDCBBoardListPrefix        = []byte("votedcblistboard-")
+	VoteGOVBoardListPrefix        = []byte("votegovlistboard-")
+	DCBVoteTokenAmountPrefix      = []byte("dcbvotetokenamount-")
+	GOVVoteTokenAmountPrefix      = []byte("govvotetokenamount-")
+	threePhraseCryptoOwnerPrefix  = []byte("threephrasecryptoownerprefix-")
+	threePhraseCryptoSealerPrefix = []byte("threephrasecryptosealerprefix-")
+
+	Unreward = []byte("unreward")
+	Spent    = []byte("spent")
+	Unspent  = []byte("unspent")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {
@@ -80,7 +94,7 @@ func (db *db) Get(key []byte) ([]byte, error) {
 	return value, nil
 }
 
-func (db db) getKey(keyType string, key interface{}) []byte {
+func (db db) GetKey(keyType string, key interface{}) []byte {
 	var dbkey []byte
 	switch keyType {
 	case string(blockKeyPrefix):
@@ -99,6 +113,54 @@ func (db db) getKey(keyType string, key interface{}) []byte {
 		dbkey = append(TokenPrefix, key.(*common.Hash)[:]...)
 	case string(tokenInitPrefix):
 		dbkey = append(tokenInitPrefix, key.(*common.Hash)[:]...)
+
+	// Voting case
+	case string(voteDCBBoardSumPrefix):
+		postfix := []byte(key.(string))
+		dbkey = append(voteDCBBoardSumPrefix, postfix...)
+	case string(voteDCBBoardCountPrefix):
+		postfix := []byte(key.(string))
+		dbkey = append(voteDCBBoardCountPrefix, postfix...)
+	case string(VoteDCBBoardListPrefix):
+		postfix := []byte(key.(string))
+		dbkey = append(VoteDCBBoardListPrefix, postfix...)
+	case string(voteGOVBoardSumPrefix):
+		postfix := []byte(key.(string))
+		dbkey = append(voteGOVBoardSumPrefix, postfix...)
+	case string(voteGOVBoardCountPrefix):
+		postfix := []byte(key.(string))
+		dbkey = append(voteGOVBoardCountPrefix, postfix...)
+	case string(VoteGOVBoardListPrefix):
+		postfix := []byte(key.(string))
+		dbkey = append(VoteGOVBoardListPrefix, postfix...)
+	case string(DCBVoteTokenAmountPrefix):
+		postfix := []byte(key.(string))
+		dbkey = append(DCBVoteTokenAmountPrefix, postfix...)
+	case string(GOVVoteTokenAmountPrefix):
+		postfix := []byte(key.(string))
+		dbkey = append(GOVVoteTokenAmountPrefix, postfix...)
 	}
 	return dbkey
+}
+
+// get real PubKey from dbkey
+func (db db) ReverseGetKey(keyType string, dbkey []byte) (interface{}, error) {
+	var key interface{}
+	switch keyType {
+	case string(voteDCBBoardSumPrefix):
+		key = string(dbkey[len(voteDCBBoardSumPrefix):])
+	case string(voteDCBBoardCountPrefix):
+		key = string(dbkey[len(voteDCBBoardCountPrefix):])
+	case string(VoteDCBBoardListPrefix):
+		key = string(dbkey[len(VoteDCBBoardListPrefix):])
+	case string(voteGOVBoardSumPrefix):
+		key = string(dbkey[len(voteGOVBoardSumPrefix):])
+	case string(voteGOVBoardCountPrefix):
+		key = string(dbkey[len(voteGOVBoardCountPrefix):])
+	case string(VoteGOVBoardListPrefix):
+		key = string(dbkey[len(VoteGOVBoardListPrefix):])
+	default:
+		return nil, errors.New("This keyType is not handled yet")
+	}
+	return key, nil
 }

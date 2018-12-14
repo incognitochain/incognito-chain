@@ -4,7 +4,7 @@ import (
 	"math"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/metadata"
 )
 
 type Merkle struct {
@@ -43,7 +43,7 @@ type Merkle struct {
 // using witness transaction id's rather than regular transaction id's. This
 // also presents an additional case wherein the wtxid of the salary transaction
 // is the zeroHash.
-func (self Merkle) BuildMerkleTreeStore(transactions []transaction.Transaction) []*common.Hash {
+func (self Merkle) BuildMerkleTreeStore(transactions []metadata.Transaction) []*common.Hash {
 	// Calculate how many entries are required to hold the binary merkle
 	// tree as a linear array and create an array of that size.
 	nextPoT := self.nextPowerOfTwo(len(transactions))
