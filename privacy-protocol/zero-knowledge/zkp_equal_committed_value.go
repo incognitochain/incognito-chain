@@ -3,6 +3,7 @@ package zkp
 import (
 	"crypto/rand"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -102,6 +103,8 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) error {
 		pro = pro.Init()
 	}
 
+	fmt.Printf("HYYYYYYYYYYYYYYYYYYY %v:\n ", proofbytes)
+
 	if len(proofbytes) == 0 {
 		return nil
 	}
@@ -121,6 +124,7 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) error {
 	for i := 0; i < len(pro.Index); i++ {
 		pro.Index[i] = proofbytes[i+len(pro.C)*privacy.CompressedPointSize]
 	}
+
 	pro.T = make([]*privacy.EllipticPoint, 2)
 	for i := 0; i < len(pro.T); i++ {
 		pro.T[i] = new(privacy.EllipticPoint)
@@ -134,6 +138,7 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) error {
 		pro.Z[i] = big.NewInt(0)
 		pro.Z[i].SetBytes(proofbytes[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+i*privacy.BigIntSize: len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+(i+1)*privacy.BigIntSize])
 	}
+	fmt.Printf("HYYYYYYYYYYYYY %v\n", pro.Index)
 	return nil
 }
 
