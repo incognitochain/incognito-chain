@@ -398,7 +398,6 @@ func (tx *TxCustomToken) GetAmountOfVote() uint64 {
 }
 
 func (tx *TxCustomToken) IsPrivacy() bool {
-	// TODO: update here
 	return false
 }
 
