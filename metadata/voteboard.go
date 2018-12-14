@@ -32,6 +32,9 @@ func (voteDCBBoardMetadata *VoteDCBBoardMetadata) Hash() *common.Hash {
 }
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
+	if len(voteDCBBoardMetadata.CandidatePubKey) != common.HashSize {
+		return true, false, nil
+	}
 	return true, true, nil
 }
 
@@ -65,6 +68,9 @@ func (voteGOVBoardMetadata *VoteGOVBoardMetadata) Hash() *common.Hash {
 }
 
 func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
+	if len(voteGOVBoardMetadata.CandidatePubKey) != common.HashSize {
+		return true, false, nil
+	}
 	return true, true, nil
 }
 

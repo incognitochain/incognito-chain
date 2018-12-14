@@ -83,6 +83,10 @@ func (self *BlockChain) GetDCBBoardPubKeys() [][]byte {
 	return self.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys
 }
 
+func (self *BlockChain) GetGOVBoardPubKeys() [][]byte {
+	return self.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys
+}
+
 func (self *BlockChain) GetDCBParams() params.DCBParams {
 	return self.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
 }
@@ -739,6 +743,58 @@ func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
 					return err
 				}
 			}
+		}
+	}
+	return nil
+}
+
+func (self *BlockChain) UpdateVoteTokenHolder(block *Block) error {
+	for _, tx := range block.Transactions {
+		switch tx.GetMetadataType() {
+		case metadata.SendInitDCBVoteTokenMeta:
+			{
+				meta := tx.GetMetadata().(*metadata.SendInitDCBVoteTokenMetadata)
+				err := self.config.DataBase.SendInitDCBVoteToken(uint32(block.Header.Height), meta.ReceiverPubKey, meta.Amount)
+				if err != nil {
+					return err
+				}
+			}
+		case metadata.SendInitGOVVoteTokenMeta:
+			{
+				meta := tx.GetMetadata().(*metadata.SendInitDCBVoteTokenMetadata)
+				err := self.config.DataBase.SendInitDCBVoteToken(uint32(block.Header.Height), meta.ReceiverPubKey, meta.Amount)
+				if err != nil {
+					return err
+				}
+			}
+
+		}
+	}
+	return nil
+}
+
+func (self *BlockChain) ProcessVoteProposal(block *Block) error {
+	nextDCBConstitutionBlockHeight := uint32(block.Header.DCBConstitution.GetEndedBlockHeight())
+	for _, tx := range block.Transactions {
+		meta := tx.GetMetadata()
+		switch tx.GetMetadataType() {
+		case metadata.SealedLv3DCBBallotMeta:
+			underlieMetadata := meta.(*metadata.SealedLv3DCBBallotMetadata)
+			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.Hash())
+		case metadata.SealedLv2DCBBallotMeta:
+			underlieMetadata := meta.(*metadata.SealedLv2DCBBallotMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.PointerToLv3Ballot)
+		case metadata.SealedLv1DCBBallotMeta:
+			underlieMetadata := meta.(*metadata.SealedLv1DCBBallotMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.PointerToLv3Ballot)
+		case metadata.NormalDCBBallotMetaFromOwner:
+			underlieMetadata := meta.(*metadata.NormalDCBBallotFromOwnerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.PointerToLv3Ballot)
+		case metadata.NormalDCBBallotMetaFromSealer:
+			underlieMetadata := meta.(*metadata.NormalDCBBallotFromSealerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.PointerToLv3Ballot)
+			// todo: gov
+
 		}
 	}
 	return nil

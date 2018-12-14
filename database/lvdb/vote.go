@@ -163,3 +163,81 @@ func (db *db) GetVoteDCBBoardListPrefix() []byte {
 func (db *db) GetVoteGOVBoardListPrefix() []byte {
 	return VoteGOVBoardListPrefix
 }
+
+func (db *db) AddVoteLv3Proposal(boardType string, startedBlock uint32, txID *common.Hash) error {
+	//init sealer
+	keySealer := db.GetKey(string(threePhraseCryptoSealerPrefix), boardType+string(startedBlock)+string(common.ToBytes(txID)))
+	ok, err := db.HasValue(keySealer)
+	if err != nil {
+		return err
+	}
+	if ok {
+		return errors.Errorf("duplicate txid")
+	}
+	zeroInBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(zeroInBytes, 0)
+	db.Put(keySealer, zeroInBytes)
+
+	// init owner
+	keyOwner := db.GetKey(string(threePhraseCryptoOwnerPrefix), boardType+string(startedBlock)+string(common.ToBytes(txID)))
+	ok, err = db.HasValue(keyOwner)
+	if err != nil {
+		return err
+	}
+	if ok {
+		return errors.Errorf("duplicate txid")
+	}
+	db.Put(keyOwner, zeroInBytes)
+	return nil
+}
+
+func (db *db) AddVoteLv1or2Proposal(boardType string, startedBlock uint32, txID *common.Hash) error {
+	keySealer := db.GetKey(string(threePhraseCryptoSealerPrefix), boardType+string(startedBlock)+string(common.ToBytes(txID)))
+	ok, err := db.HasValue(keySealer)
+	if err != nil {
+		return err
+	}
+	if ok {
+		return errors.Errorf("duplicate txid")
+	}
+	valueInBytes, err := db.Get(keySealer)
+	if err != nil {
+		return err
+	}
+	value := binary.LittleEndian.Uint32(valueInBytes)
+	newValue := value + 1
+	newValueInByte := make([]byte, 4)
+	binary.LittleEndian.PutUint32(newValueInByte, newValue)
+	db.Put(keySealer, newValueInByte)
+	return nil
+}
+
+func (db *db) AddVoteNormalProposalFromSealer(boardType string, startedBlock uint32, txID *common.Hash) error {
+	err := db.AddVoteLv1or2Proposal(boardType, startedBlock, txID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *db) AddVoteNormalProposalFromOwner(boardType string, startedBlock uint32, txID *common.Hash) error {
+	keyOwner := db.GetKey(string(threePhraseCryptoOwnerPrefix), boardType+string(startedBlock)+string(common.ToBytes(txID)))
+	ok, err := db.HasValue(keyOwner)
+	if err != nil {
+		return err
+	}
+	if ok {
+		return errors.Errorf("duplicate txid")
+	}
+	valueInBytes, err := db.Get(keyOwner)
+	if err != nil {
+		return err
+	}
+	value := binary.LittleEndian.Uint32(valueInBytes)
+	newValue := value + 1
+	newValueInByte := make([]byte, 4)
+	binary.LittleEndian.PutUint32(newValueInByte, newValue)
+	db.Put(keyOwner, newValueInByte)
+	return nil
+
+}

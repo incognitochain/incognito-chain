@@ -93,18 +93,6 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 		if err != nil {
 			return err
 		}
-<<<<<<< HEAD
-		// old VoteAmount: {VoteAmount}-unspent-unreward/reward
-		values := strings.Split(string(value), string(splitter))
-		fmt.Println("OldValues in StoreCustomTokenPaymentAddresstHistory", string(value))
-		if strings.Compare(values[1], string(unspent)) != 0 {
-			return errors.New("Double Spend Detected")
-		}
-		// new VoteAmount: {VoteAmount}-spent-unreward/reward
-		newValues := values[0] + string(splitter) + string(spent) + string(splitter) + values[2]
-		fmt.Println("NewValues in StoreCustomTokenPaymentAddresstHistory", newValues)
-		if err := db.lvdb.Put(paymentAddressKey, []byte(newValues), nil); err != nil {
-=======
 		// old value: {value}-unspent-unreward/reward
 		values := strings.Split(string(value), string(Splitter))
 		if strings.Compare(values[1], string(Unspent)) != 0 {
@@ -113,7 +101,6 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 		// new value: {value}-spent-unreward/reward
 		newValues := values[0] + string(Splitter) + string(spent) + string(Splitter) + values[2]
 		if err := db.Put(paymentAddressKey, []byte(newValues)); err != nil {
->>>>>>> master
 			return err
 		}
 	}
@@ -137,16 +124,9 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 		if err != nil {
 			return err
 		}
-<<<<<<< HEAD
-		// init VoteAmount: {VoteAmount}-unspent-unreward
-		paymentAddressValue := strconv.Itoa(int(value)) + string(splitter) + string(unspent) + string(splitter) + string(unreward)
-		fmt.Println("H in StoreCustomTokenPaymentAddresstHistory: ", paymentAddressValue)
-		if err := db.lvdb.Put(paymentAddressKey, []byte(paymentAddressValue), nil); err != nil {
-=======
 		// init value: {value}-unspent-unreward
 		paymentAddressValue := strconv.Itoa(int(value)) + string(Splitter) + string(Unspent) + string(Splitter) + string(unreward)
 		if err := db.Put(paymentAddressKey, []byte(paymentAddressValue)); err != nil {
->>>>>>> master
 			return err
 		}
 	}
@@ -295,13 +275,8 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []by
 	if err != nil {
 		return err
 	}
-<<<<<<< HEAD
-	reses := strings.Split(string(res), string(splitter))
-	// {VoteAmount}-unspent-unreward
-=======
 	reses := strings.Split(string(res), string(Splitter))
 	// {value}-unspent-unreward
->>>>>>> master
 	value := reses[0] + reses[1] + string(rewared)
 	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
 		return err

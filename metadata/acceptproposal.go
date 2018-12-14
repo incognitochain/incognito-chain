@@ -13,7 +13,7 @@ type AcceptDCBProposalMetadata struct {
 
 func NewAcceptDCBProposalMetadata(voteDCBBoardMetadata map[string]interface{}) *AcceptDCBProposalMetadata {
 	return &AcceptDCBProposalMetadata{
-		DCBProposalTXID: voteDCBBoardMetadata["dCBProposalTXID"].(*common.Hash),
+		DCBProposalTXID: voteDCBBoardMetadata["DCBProposalTXID"].(*common.Hash),
 	}
 }
 
@@ -54,7 +54,7 @@ type AcceptGOVProposalMetadata struct {
 
 func NewAcceptGOVProposalMetadata(voteGOVBoardMetadata map[string]interface{}) *AcceptGOVProposalMetadata {
 	return &AcceptGOVProposalMetadata{
-		GOVProposalTXID: voteGOVBoardMetadata["dCBProposalTXID"].(*common.Hash),
+		GOVProposalTXID: voteGOVBoardMetadata["GOVProposalTXID"].(*common.Hash),
 	}
 }
 

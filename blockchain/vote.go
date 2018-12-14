@@ -22,7 +22,7 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionTx(
 	// count vote from lastConstitution.StartedBlockHeight to Bestblock height
 	CountVote := make(map[common.Hash]int64)
 	Transaction := make(map[common.Hash]*metadata.Transaction)
-	for blockHeight := ConstitutionHelper.GetStartedBlockHeight(blockgen, chainID); blockHeight < BestBlock.Header.Height; blockHeight += 1 {
+	for blockHeight := ConstitutionHelper.GetStartedNormalVote(blockgen, chainID); blockHeight <= BestBlock.Header.Height; blockHeight++ {
 		//retrieve block from block's height
 		hashBlock, err := blockgen.chain.config.DataBase.GetBlockByIndex(blockHeight, chainID)
 		if err != nil {
@@ -73,49 +73,23 @@ func (blockgen *BlkTmplGenerator) createAcceptConstitutionTx(
 }
 
 func (blockgen *BlkTmplGenerator) createSingleSendDCBVoteTokenTx(chainID byte, pubKey []byte, amount uint64) (metadata.Transaction, error) {
-
-	paymentAddress := privacy.PaymentAddress{
-		Pk: pubKey,
+	data := map[string]interface{}{
+		"Amount":         amount,
+		"ReceiverPubkey": pubKey,
 	}
-	txTokenVout := transaction.TxTokenVout{
-		Value:          amount,
-		PaymentAddress: paymentAddress,
-	}
-	txTokenData := transaction.TxTokenData{
-		Type:       transaction.InitVoteDCBToken,
-		Amount:     amount,
-		PropertyID: common.VoteDCBTokenID,
-		Vins:       []transaction.TxTokenVin{},
-		Vouts:      []transaction.TxTokenVout{txTokenVout},
-	}
-	sendDCBVoteTokenTransaction := transaction.TxSendInitDCBVoteToken{
-		TxCustomToken: transaction.TxCustomToken{
-			TxTokenData: txTokenData,
-		},
+	sendDCBVoteTokenTransaction := transaction.Tx{
+		Metadata: metadata.NewSendInitDCBVoteTokenMetadata(data),
 	}
 	return &sendDCBVoteTokenTransaction, nil
 }
 
 func (blockgen *BlkTmplGenerator) createSingleSendGOVVoteTokenTx(chainID byte, pubKey []byte, amount uint64) (metadata.Transaction, error) {
-
-	paymentAddress := privacy.PaymentAddress{
-		Pk: pubKey,
+	data := map[string]interface{}{
+		"Amount":         amount,
+		"ReceiverPubkey": pubKey,
 	}
-	txTokenVout := transaction.TxTokenVout{
-		Value:          amount,
-		PaymentAddress: paymentAddress,
-	}
-	txTokenData := transaction.TxTokenData{
-		Type:       transaction.InitVoteGOVToken,
-		Amount:     amount,
-		PropertyID: common.VoteGOVTokenID,
-		Vins:       []transaction.TxTokenVin{},
-		Vouts:      []transaction.TxTokenVout{txTokenVout},
-	}
-	sendGOVVoteTokenTransaction := transaction.TxSendInitGOVVoteToken{
-		TxCustomToken: transaction.TxCustomToken{
-			TxTokenData: txTokenData,
-		},
+	sendGOVVoteTokenTransaction := transaction.Tx{
+		Metadata: metadata.NewSendInitGOVVoteTokenMetadata(data),
 	}
 	return &sendGOVVoteTokenTransaction, nil
 }

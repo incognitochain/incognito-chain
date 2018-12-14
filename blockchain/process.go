@@ -90,7 +90,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 			Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
 		}
 	}
-	// TODO: @0xankylosaurus optimize for loop once instead of multiple times
+	// TODO: @0xankylosaurus optimize for loop once instead of multiple times ; metadata.process
 	// save index of block
 	err := self.StoreBlockIndex(block)
 	if err != nil {
@@ -114,18 +114,20 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
-	// Update vote DCB Vote Count
-	err = self.UpdateVoteCountBoard(block)
 	//Update database for vote board
+	err = self.UpdateVoteCountBoard(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
-	err = self.UpdateVoteCountBoard(block)
-	//Update database for vote board
+	//Update amount of token of each holder
+	err = self.UpdateVoteTokenHolder(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
+
+	// Update database for vote proposal
+	err = self.ProcessVoteProposal(block)
 
 	// Process crowdsale tx
 	err = self.ProcessCrowdsaleTxs(block)

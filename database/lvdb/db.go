@@ -42,12 +42,16 @@ var (
 	rewared                   = []byte("reward")
 
 	//vote prefix
-	voteDCBBoardSumPrefix   = []byte("votedcbsumboard-")
-	voteGOVBoardSumPrefix   = []byte("votegovsumboard-")
-	voteDCBBoardCountPrefix = []byte("votedcbcountboard-")
-	voteGOVBoardCountPrefix = []byte("votegovcountboard-")
-	VoteDCBBoardListPrefix  = []byte("votedcblistboard-")
-	VoteGOVBoardListPrefix  = []byte("votegovlistboard-")
+	voteDCBBoardSumPrefix         = []byte("votedcbsumboard-")
+	voteGOVBoardSumPrefix         = []byte("votegovsumboard-")
+	voteDCBBoardCountPrefix       = []byte("votedcbcountboard-")
+	voteGOVBoardCountPrefix       = []byte("votegovcountboard-")
+	VoteDCBBoardListPrefix        = []byte("votedcblistboard-")
+	VoteGOVBoardListPrefix        = []byte("votegovlistboard-")
+	DCBVoteTokenAmountPrefix      = []byte("dcbvotetokenamount-")
+	GOVVoteTokenAmountPrefix      = []byte("govvotetokenamount-")
+	threePhraseCryptoOwnerPrefix  = []byte("threephrasecryptoownerprefix-")
+	threePhraseCryptoSealerPrefix = []byte("threephrasecryptosealerprefix-")
 
 	Unreward = []byte("unreward")
 	Spent    = []byte("spent")
@@ -129,6 +133,12 @@ func (db db) GetKey(keyType string, key interface{}) []byte {
 	case string(VoteGOVBoardListPrefix):
 		postfix := []byte(key.(string))
 		dbkey = append(VoteGOVBoardListPrefix, postfix...)
+	case string(DCBVoteTokenAmountPrefix):
+		postfix := []byte(key.(string))
+		dbkey = append(DCBVoteTokenAmountPrefix, postfix...)
+	case string(GOVVoteTokenAmountPrefix):
+		postfix := []byte(key.(string))
+		dbkey = append(GOVVoteTokenAmountPrefix, postfix...)
 	}
 	return dbkey
 }
