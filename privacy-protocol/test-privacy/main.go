@@ -1,10 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-)
+import "github.com/ninjadotorg/constant/privacy-protocol"
 
 func main() {
 
@@ -169,7 +165,7 @@ func main() {
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
-	//privacy.TestSchn()
+	privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
 	//privacy.TestMultiSig()
 
@@ -269,30 +265,30 @@ func main() {
 
 	/*----------------- TEST COIN BYTES -----------------*/
 
-	keySet := new(cashec.KeySet)
-	spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	keySet.ImportFromPrivateKey(&spendingKey)
-
-	coin := new(privacy.Coin)
-	coin.PublicKey, _ = privacy.DecompressKey(keySet.PaymentAddress.Pk)
-
-	coin.Value = 10
-	coin.SNDerivator = privacy.RandInt()
-	coin.Randomness = privacy.RandInt()
-	coin.CommitAll()
-	coin.Value = 0
-
-
-	outCoin := new(privacy.OutputCoin)
-	outCoin.CoinDetails = coin
-	outCoin.CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted)
-	outCoin.Encrypt(keySet.PaymentAddress.Tk)
-	coin.Randomness = nil
-
-	outCoinBytes := outCoin.Bytes()
-
-	fmt.Printf("Out coin bytes: %v\n", outCoinBytes)
-	fmt.Printf("Len Out coin bytes: %v\n", len(outCoinBytes))
+	//keySet := new(cashec.KeySet)
+	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	//keySet.ImportFromPrivateKey(&spendingKey)
+	//
+	//coin := new(privacy.Coin)
+	//coin.PublicKey, _ = privacy.DecompressKey(keySet.PaymentAddress.Pk)
+	//
+	//coin.Value = 10
+	//coin.SNDerivator = privacy.RandInt()
+	//coin.Randomness = privacy.RandInt()
+	//coin.CommitAll()
+	//coin.Value = 0
+	//
+	//
+	//outCoin := new(privacy.OutputCoin)
+	//outCoin.CoinDetails = coin
+	//outCoin.CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted)
+	//outCoin.Encrypt(keySet.PaymentAddress.Tk)
+	//coin.Randomness = nil
+	//
+	//outCoinBytes := outCoin.Bytes()
+	//
+	//fmt.Printf("Out coin bytes: %v\n", outCoinBytes)
+	//fmt.Printf("Len Out coin bytes: %v\n", len(outCoinBytes))
 
 
 
