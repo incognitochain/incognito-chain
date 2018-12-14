@@ -220,6 +220,9 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	bcr metadata.BlockchainRetriever,
 	chainID byte,
 ) bool {
+	if customTokenTx.TxTokenData.Type == CustomTokenInit {
+		return true
+	}
 	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
 	if !ok {
 		return false
@@ -398,7 +401,6 @@ func (tx *TxCustomToken) GetAmountOfVote() uint64 {
 }
 
 func (tx *TxCustomToken) IsPrivacy() bool {
-	// TODO: update here
 	return false
 }
 

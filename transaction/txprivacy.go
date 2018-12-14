@@ -434,8 +434,10 @@ func (tx *Tx) GetType() string {
 
 func (tx *Tx) ListNullifiers() [][]byte {
 	result := [][]byte{}
-	for _, d := range tx.Proof.InputCoins {
-		result = append(result, d.CoinDetails.SerialNumber.Compress())
+	if tx.Proof != nil {
+		for _, d := range tx.Proof.InputCoins {
+			result = append(result, d.CoinDetails.SerialNumber.Compress())
+		}
 	}
 	return result
 }
@@ -448,9 +450,9 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	var sizeFee uint64 = 8      // uint64
 	var sizeDescs uint64        // uint64
 	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
 	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
 	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
@@ -546,7 +548,8 @@ func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
 	chainID byte,
 	db database.DatabaseInterface,
 ) error {
-	for i := 0; i < len(tx.Proof.InputCoins); i++ {
+
+	for i := 0; tx.Proof != nil && i < len(tx.Proof.InputCoins); i++ {
 		serialNumber := tx.Proof.InputCoins[i].CoinDetails.SerialNumber.Compress()
 		ok, err := db.HasSerialNumber(serialNumber, chainID)
 		if ok || err != nil {
@@ -587,9 +590,9 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 		return false, errors.New("Wrong tx locktime")
 	}
 	// check Type is normal or salary tx
-	if len(txN.Type) != 1 || (txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType) { // only 1 byte
+	/*if len(txN.Type) != 1 || (txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType) { // only 1 byte
 		return false, errors.New("Wrong tx type")
-	}
+	}*/
 
 	return true, nil
 }
