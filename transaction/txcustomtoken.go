@@ -401,3 +401,7 @@ func (tx *TxCustomToken) IsPrivacy() bool {
 	// TODO: update here
 	return false
 }
+
+func (tx *TxCustomToken) ValidateType() bool {
+	return tx.Type == common.TxCustomTokenType
+}

@@ -149,15 +149,6 @@ func (self *BlockChain) Init(config *Config) error {
 }
 
 // -------------- Blockchain retriever's implementation --------------
-// func (self *BlockChain) GetNulltifiersList(chainId byte) ([][]byte, error) {
-// 	txViewPoint, err := self.FetchTxViewPoint(chainId)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	nullifierDb := txViewPoint.ListNullifiers()
-// 	return nullifierDb, nil
-// }
-
 // GetCustomTokenTxsHash - return list of tx which relate to custom token
 func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]metadata.Transaction, error) {
 	txHashesInByte, err := self.config.DataBase.CustomTokenTxs(tokenID)
@@ -173,6 +164,11 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 		result[*tx.Hash()] = tx
 	}
 	return result, nil
+}
+
+// GetOracleParams returns oracle params
+func (self *BlockChain) GetOracleParams() *params.Oracle {
+	return self.BestState[0].BestBlock.Header.Oracle
 }
 
 // -------------- End of Blockchain retriever's implementation --------------

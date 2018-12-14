@@ -444,9 +444,9 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	var sizeFee uint64 = 8      // uint64
 	var sizeDescs uint64        // uint64
 	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
 	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
 	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
@@ -666,4 +666,8 @@ func (tx *Tx) IsPrivacy() bool {
 	default:
 		return true
 	}
+}
+
+func (tx *Tx) ValidateType() bool {
+	return tx.Type == common.TxNormalType || tx.Type == common.TxSalaryType
 }
