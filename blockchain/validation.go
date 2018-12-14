@@ -50,7 +50,7 @@ func (self *BlockChain) ValidateDoubleSpend(tx transaction.Transaction, chainID 
 			return errors.New("Wrong tx type")
 		}
 	}
-	return errors.New("Wrong tx type")
+	return nil
 }
 
 /*func (self *BlockChain) ValidateTxLoanRequest(tx transaction.Transaction, chainID byte) error {

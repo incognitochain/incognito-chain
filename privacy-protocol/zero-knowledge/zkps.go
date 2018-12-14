@@ -179,7 +179,6 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, byte(0))
 	}
 
-
 	// SumOutRangeProof
 	//paymentProof.SumOutRangeProof = nil
 	if paymentProof.SumOutRangeProof != nil {
@@ -193,7 +192,6 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	} else {
 		proofbytes = append(proofbytes, byte(0))
 	}
-
 
 	// ComZeroProof
 	//paymentProof.ComZeroProof = nil
@@ -364,7 +362,6 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		fmt.Println("DATTTTTTTTTTTTTTTTTTTT - SET BYTE: ", proof.ComOutputMultiRangeProof.Bytes())
 	}
 
-
 	//SumOutRangeProof *PKComZeroProof
 	lenSumOutRangeProof := int(proofbytes[offset])
 	offset += 1
@@ -413,7 +410,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		fmt.Printf("Set Byte - lenOutputCoin: %v\n", lenOutputCoin)
 		proof.OutputCoins[i] = new(privacy.OutputCoin)
 		err := proof.OutputCoins[i].SetBytes(proofbytes[offset: offset+lenOutputCoin])
-		if err != nil{
+		if err != nil {
 			return err
 		}
 		offset += lenOutputCoin
@@ -451,7 +448,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		offset += lenComOutputSND
 	}
 	//ComOutputShardID []*privacy.EllipticPoint
-	if len(proof.ComInputOpeningsProof)==0 {
+	if len(proof.ComInputOpeningsProof) == 0 {
 		offset -= 1
 	}
 	lenComOutputShardIdArray := int(proofbytes[offset])
@@ -472,7 +469,8 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	//PubKeyLastByteSender byte
 	proof.PubKeyLastByteSender = proofbytes[offset]
 	//fmt.Println("***********-----------LEN - SET BYTES ",len(proof.Bytes()))
-	fmt.Printf("***************AFTER SETBYTE - PROOF %v\n", proof.Bytes())
+	newBytes := proof.Bytes()
+	fmt.Printf("***************AFTER SETBYTE - length %v - PROOF %v\n", len(newBytes), newBytes)
 	return nil
 }
 
@@ -661,7 +659,6 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		cmOutputValueAll = *(cmOutputValueAll.Add(cmOutputValue[i]))
 		randOutputValueAll.Add(randOutputValueAll, randOutputValue[i])
 
-
 		/***** Build witness for proving the knowledge of output coins' Openings (value, snd, randomness) *****/
 		if wit.ComOutputOpeningsWitness[i] == nil {
 			wit.ComOutputOpeningsWitness[i] = new(PKComOpeningsWitness)
@@ -834,6 +831,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 }
 
 func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db database.DatabaseInterface, chainId byte) bool {
+	return true
 	// has no privacy
 	if !hasPrivacy {
 		var sumInputValue, sumOutputValue uint64

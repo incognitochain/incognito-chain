@@ -617,7 +617,7 @@ func (tp *TxPool) ValidateTxByItSelf(tx transaction.Transaction) bool {
 		  }*/
 
 	default:
-		return tx.ValidateTransaction(false, tp.config.DataBase, 14)
+		return tx.ValidateTransaction(true, tp.config.DataBase, 14)
 	}
 	return false
 }
