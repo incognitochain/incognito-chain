@@ -639,7 +639,7 @@ func (self *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.Pretty())
 	peerConn.updateConnState(ConnCanceled)
 	self.RemovePeerConn(peerConn)
-	if peerConn.IsOutbound && !peerConn.IsForceClose {
+	if peerConn.IsOutbound && !peerConn.isForceClose {
 		go self.retryPeerConnection(peerConn)
 	}
 
@@ -712,11 +712,11 @@ func (self *Peer) ClosePeerConnsOfShard(shard byte) {
 	}
 }
 
-func (self *Peer) CountPeerConnOfShard(shard byte) int {
+func (self *Peer) CountPeerConnOfShard(shard *byte) int {
 	c := 0
 	for _, peerConn := range self.PeerConns {
 		sh := self.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
-		if sh != nil && *sh == shard {
+		if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 			c++
 		}
 	}

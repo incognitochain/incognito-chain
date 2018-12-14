@@ -35,7 +35,7 @@ type PeerConn struct {
 	RemotePeerID     peer.ID
 	RemoteRawAddress string
 	IsOutbound       bool
-	IsForceClose     bool
+	isForceClose     bool
 
 	ReaderWriterStream *bufio.ReadWriter
 	VerValid           bool
@@ -369,7 +369,7 @@ func (p *PeerConn) Close() {
 }
 
 func (p *PeerConn) ForceClose() {
-	p.IsForceClose = true
+	p.isForceClose = true
 	close(p.cClose)
 }
 

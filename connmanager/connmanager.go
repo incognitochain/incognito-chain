@@ -476,7 +476,7 @@ func (self *ConnManager) countPeerConnByShard(shard *byte) int {
 	}
 	c := 0
 	for _, listener := range self.Config.ListenerPeers {
-		c += listener.CountPeerConnOfShard(*shard)
+		c += listener.CountPeerConnOfShard(shard)
 	}
 	return c
 }
@@ -492,66 +492,76 @@ func (self *ConnManager) checkPeerConnByPbk(pubKey string) bool {
 	return false
 }
 
-func (self *ConnManager) getRandPeersOfShard(shard byte, maxPeers int, mPeers map[string]*wire.RawPeer) []*wire.RawPeer {
-	retPs := make([]*wire.RawPeer, 0)
-	if maxPeers <= 0 {
-		return retPs
-	}
-	pbks := self.Config.GetPbksOfShard(shard)
-	for len(pbks) > 0 {
-		randN := common.RandInt() % len(pbks)
-		pbk := pbks[randN]
-		pbks = append(pbks[:randN], pbks[randN+1:]...)
-		peerI, ok := mPeers[pbk]
-		if ok {
-			// if existed conn then not append to array
-			if !self.checkPeerConnByPbk(pbk) {
-				retPs = append(retPs, peerI)
-			}
-			if len(retPs) > maxPeers {
-				return retPs
-			}
-		}
-	}
-	return retPs
-}
-
-func (self *ConnManager) getRandPeersOfOtherShard(shard *byte, maxShards int, maxShardPeers int, mPeers map[string]*wire.RawPeer) []*wire.RawPeer {
-	retPs := make([]*wire.RawPeer, 0)
-	randShards := self.getRandShards(shard, maxShards)
-	for _, randShard := range randShards {
-		cPeerShard := self.countPeerConnByShard(&randShard)
-		randPeers := self.getRandPeersOfShard(randShard, maxShardPeers-cPeerShard, mPeers)
-		retPs = append(retPs, randPeers...)
-	}
-	return retPs
-}
-
-func (self *ConnManager) getRandShards(shard *byte, maxShards int) []byte {
-	shardBytes := make([]byte, 0)
-	for i := 0; i < 256; i++ {
-		if shard != nil && *shard != byte(i) {
-			shardBytes = append(shardBytes, byte(i))
-		}
-	}
-	shardsRet := make([]byte, 0)
-	if len(shardBytes) > maxShards {
-		for len(shardsRet) < maxShards {
-			randN := common.RandInt() % len(shardBytes)
-			shardV := shardBytes[randN]
-			shardBytes = append(shardBytes[:randN], shardBytes[randN+1:]...)
-			shardsRet = append(shardsRet, shardV)
-		}
-	} else {
-		shardsRet = shardBytes
-	}
-	return shardsRet
-}
+//func (self *ConnManager) getRandPeersOfShard(shard byte, maxPeers int, mPeers map[string]*wire.RawPeer) []*wire.RawPeer {
+//	retPs := make([]*wire.RawPeer, 0)
+//	if maxPeers <= 0 {
+//		return retPs
+//	}
+//	pbks := self.Config.GetPbksOfShard(shard)
+//	for len(pbks) > 0 {
+//		randN := common.RandInt() % len(pbks)
+//		pbk := pbks[randN]
+//		pbks = append(pbks[:randN], pbks[randN+1:]...)
+//		peerI, ok := mPeers[pbk]
+//		if ok {
+//			// if existed conn then not append to array
+//			if !self.checkPeerConnByPbk(pbk) {
+//				retPs = append(retPs, peerI)
+//			}
+//			if len(retPs) > maxPeers {
+//				return retPs
+//			}
+//		}
+//	}
+//	return retPs
+//}
+//
+//func (self *ConnManager) getRandPeersOfOtherShard(shard *byte, maxShards int, maxShardPeers int, mPeers map[string]*wire.RawPeer) []*wire.RawPeer {
+//	retPs := make([]*wire.RawPeer, 0)
+//	randShards := self.getRandShards(shard, maxShards)
+//	for _, randShard := range randShards {
+//		cPeerShard := self.countPeerConnByShard(&randShard)
+//		randPeers := self.getRandPeersOfShard(randShard, maxShardPeers-cPeerShard, mPeers)
+//		retPs = append(retPs, randPeers...)
+//	}
+//	return retPs
+//}
+//
+//func (self *ConnManager) getRandShards(shard *byte, maxShards int) []byte {
+//	shardBytes := make([]byte, 0)
+//	for i := 0; i < 256; i++ {
+//		if shard != nil && *shard != byte(i) {
+//			shardBytes = append(shardBytes, byte(i))
+//		}
+//	}
+//	shardsRet := make([]byte, 0)
+//	if len(shardBytes) > maxShards {
+//		for len(shardsRet) < maxShards {
+//			randN := common.RandInt() % len(shardBytes)
+//			shardV := shardBytes[randN]
+//			shardBytes = append(shardBytes[:randN], shardBytes[randN+1:]...)
+//			shardsRet = append(shardsRet, shardV)
+//		}
+//	} else {
+//		shardsRet = shardBytes
+//	}
+//	return shardsRet
+//}
 
 func (self *ConnManager) closePeerConnOfShard(shard byte) {
-	for _, listener := range self.Config.ListenerPeers {
-		listener.ClosePeerConnsOfShard(shard)
+	cPeers := self.GetPeerConnOfShard(&shard)
+	for _, p := range cPeers {
+		p.ForceClose()
 	}
+}
+
+func (self *ConnManager) GetPeerConnOfShard(shard *byte) []*peer.PeerConn {
+	c := make([]*peer.PeerConn, 0)
+	for _, listener := range self.Config.ListenerPeers {
+		cT := listener.GetPeerConnOfShard(shard)
+		c = append(c, cT...)
+	}
+	return c
 }
 
 func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeers map[string]*wire.RawPeer) int {
@@ -561,7 +571,15 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 	Logger.log.Info("handleRandPeersOfShard", *shard)
 	countPeerShard := self.countPeerConnByShard(shard)
 	if countPeerShard >= maxPeers {
-		return countPeerShard
+		// close if over max conn
+		if countPeerShard > maxPeers {
+			cPeers := self.GetPeerConnOfShard(shard)
+			lPeers := len(cPeers)
+			for idx := maxPeers; idx < lPeers; idx++ {
+				cPeers[idx].ForceClose()
+			}
+		}
+		return maxPeers
 	}
 	pBKs := self.Config.GetPbksOfShard(*shard)
 	for len(pBKs) > 0 {
@@ -639,8 +657,12 @@ func (self *ConnManager) CheckAcceptConn(peerConn *peer.PeerConn) bool {
 		if countPeerShard > MAX_PEERS_OTHER_SHARD {
 			return false
 		}
-	} else {
-	  // none shard
+	} else if sh == nil {
+		// none shard
+		countPeerShard := self.countPeerConnByShard(sh)
+		if countPeerShard > MAX_PEERS_NOSHARD {
+			return false
+		}
 	}
 	// check max unknown shard conn
 	return true

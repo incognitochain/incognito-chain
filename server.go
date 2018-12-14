@@ -965,6 +965,9 @@ func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 }
 
 func (self *Server) GetShardByPbk(pbk string) *byte {
+	if pbk == "" {
+		return nil
+	}
 	shard, ok := mPBK[pbk]
 	if ok {
 		return &shard
@@ -995,7 +998,7 @@ func (self *Server) GetCurrentShard() *byte {
 }
 
 func (self *Server) GetPbksOfShard(shard byte) []string {
-	pBKs := []string{}
+	pBKs := make([]string, 0)
 	for k, v := range mPBK {
 		if v == shard {
 			pBKs = append(pBKs, k)
