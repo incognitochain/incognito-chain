@@ -548,24 +548,6 @@ func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
 	chainID byte,
 	db database.DatabaseInterface,
 ) error {
-	// txHash := tx.Hash()
-	// nullifierDb, err := bcr.GetNulltifiersList(chainID)
-	// if err != nil {
-	// 	return errors.New(fmt.Sprintf("Can not check double spend for tx"))
-	// }
-
-	// ins := tx.Proof.InputCoins
-	// for _, in := range ins {
-	// 	existed, err := common.SliceBytesExists(nullifierDb, in.CoinDetails.SerialNumber.Compress())
-	// 	if err != nil {
-	// 		return errors.New(fmt.Sprintf("Can not check double spend for tx"))
-	// 	}
-	// 	if existed != -1 {
-	// 		return errors.New(fmt.Sprintf("Nullifiers of transaction %+v already existed", txHash.String()))
-	// 	}
-	// }
-	// return nil
-
 	for i := 0; i < len(tx.Proof.InputCoins); i++ {
 		serialNumber := tx.Proof.InputCoins[i].CoinDetails.SerialNumber.Compress()
 		ok, err := db.HasSerialNumber(serialNumber, chainID)

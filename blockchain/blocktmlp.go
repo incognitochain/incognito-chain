@@ -295,11 +295,21 @@ concludeBlock:
 	}
 	// create buy-back response txs to distribute constants to buy-back requesters
 	buyBackResTxs, err := blockgen.buildBuyBackResponsesTx(buyBackFromInfos, chainID, privatekey)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
 
 	// create refund txs
 	currentSalaryFund := prevBlock.Header.SalaryFund
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd + incomeFromBonds - (totalSalary + buyBackCoins)
 	refundTxs, totalRefundAmt := blockgen.buildRefundTxs(chainID, remainingFund, privatekey)
+
+	issuingResTxs, err := blockgen.buildIssuingResTxs(chainID, issuingReqTxs, privatekey)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
 
 	// Get loan payment amount to add to DCB fund
 	loanPaymentAmount, unlockTxs, removableTxs := blockgen.processLoan(sourceTxns, rt, chainID)
@@ -374,9 +384,13 @@ concludeBlock:
 	for _, resTx := range buyBackResTxs {
 		coinbases = append(coinbases, resTx)
 	}
+	for _, resTx := range issuingResTxs {
+		coinbases = append(coinbases, resTx)
+	}
 	for _, refundTx := range refundTxs {
 		coinbases = append(coinbases, refundTx)
 	}
+
 	txsToAdd = append(coinbases, txsToAdd...)
 
 	for _, tx := range txToRemove {

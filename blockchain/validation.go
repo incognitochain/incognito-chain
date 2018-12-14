@@ -100,7 +100,7 @@ func verifySignatures(
 			Logger.log.Info(err)
 			continue
 		}
-		isValid, err := keyObj.KeySet.Verify(common.ToBytes(tx), common.ToBytes(sign))
+		isValid, err := keyObj.KeySet.Verify(common.ToBytes(*tx), common.ToBytes(sign))
 		if err != nil {
 			Logger.log.Info(err)
 			continue
