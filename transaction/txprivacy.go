@@ -204,9 +204,12 @@ func (tx *Tx) Init(
 	// set private key for signing tx
 	if hasPrivacy {
 		tx.sigPrivKey = make([]byte, 64)
-		openings := witness.ComInputOpeningsWitness[0].Openings
-		lastOpening := openings[len(openings)-1]
-		tx.sigPrivKey = append(*senderSK, lastOpening.Bytes()...)
+		randSK := witness.RandSK
+		tx.sigPrivKey = append(*senderSK, randSK.Bytes()...)
+		//gSK := privacy.PedCom.G[privacy.SK].ScalarMul(new(big.Int).SetBytes(*senderSK))
+		//gRandSK := privacy.PedCom.G[privacy.RAND].ScalarMul(randSK)
+		//pubKeyPoint := gSK.Add(gRandSK)
+		//tx.SigPubKey = pubKeyPoint.Compress()
 
 		// encrypt coin details (Randomness)
 		// hide information of output coins except coin commitments, public key, snDerivators
@@ -228,6 +231,7 @@ func (tx *Tx) Init(
 
 	} else {
 		tx.sigPrivKey = *senderSK
+		//tx.SigPubKey = senderFullKey.PaymentAddress.Pk
 	}
 
 	// sign tx
@@ -255,7 +259,7 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		// save public key for verification signature tx
 		sigKey.PubKey = new(privacy.SchnPubKey)
 		sigKey.PubKey.G = new(privacy.EllipticPoint)
-		sigKey.PubKey.G.X, sigKey.PubKey.G.Y = privacy.Curve.Params().Gx, privacy.Curve.Params().Gy
+		sigKey.PubKey.G.X, sigKey.PubKey.G.Y = privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y
 
 		sigKey.PubKey.H = new(privacy.EllipticPoint)
 		sigKey.PubKey.H.X, sigKey.PubKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
@@ -324,7 +328,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 			return false, err
 		}
 		verKey.G = new(privacy.EllipticPoint)
-		verKey.G.X, verKey.G.Y = privacy.Curve.Params().Gx, privacy.Curve.Params().Gy
+		verKey.G.X, verKey.G.Y = privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y
 
 		verKey.H = new(privacy.EllipticPoint)
 		verKey.H.X, verKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
@@ -336,6 +340,9 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		// verify signature
 		fmt.Printf(tx.Hash().String())
 		res = verKey.Verify(signature, tx.Hash()[:])
+		if !res{
+			fmt.Println("HIENNNNNNNNNNNNNNNNNNNNN - FAILED VERIFICATION SIGNATURE")
+		}
 
 	} else {
 		/****** verify ECDSA signature *****/
@@ -679,6 +686,11 @@ func (tx *Tx) IsPrivacy() bool {
 	default:
 		return true
 	}
+}
+
+
+func (tx* Tx) SetSigPrivKey(privKey []byte, randSK *big.Int) {
+	tx.sigPrivKey = append(privKey, randSK.Bytes()...)
 }
 
 func (tx *Tx) ValidateType() bool {
