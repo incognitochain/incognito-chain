@@ -61,8 +61,6 @@ type PaymentProof struct {
 	ComOutputValue   []*privacy.EllipticPoint
 	ComOutputSND     []*privacy.EllipticPoint
 	ComOutputShardID []*privacy.EllipticPoint
-
-	PubKeyLastByteSender byte
 }
 
 func (proof *PaymentProof) Init() *PaymentProof {
@@ -80,7 +78,6 @@ func (proof *PaymentProof) Init() *PaymentProof {
 		ComOutputValue:              []*privacy.EllipticPoint{},
 		ComOutputSND:                []*privacy.EllipticPoint{},
 		ComOutputShardID:            []*privacy.EllipticPoint{},
-		PubKeyLastByteSender:        byte(0x00),
 	}
 	return proof
 }
@@ -259,7 +256,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	}
 	// PubKeyLastByteSender
 	//proofbytes = append(proofbytes, byte(1))
-	proofbytes = append(proofbytes, paymentProof.PubKeyLastByteSender)
+	//proofbytes = append(proofbytes, paymentProof.PubKeyLastByteSender)
 	//fmt.Println("********************** LEN - BYTES ",len(proofbytes))
 	fmt.Printf("***************BYTE - PROOF %v\n", proofbytes)
 	return proofbytes
@@ -467,10 +464,10 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		offset += lenComOutputShardId
 	}
 	//PubKeyLastByteSender byte
-	proof.PubKeyLastByteSender = proofbytes[offset]
+	//proof.PubKeyLastByteSender = proofbytes[offset]
 	//fmt.Println("***********-----------LEN - SET BYTES ",len(proof.Bytes()))
-	newBytes := proof.Bytes()
-	fmt.Printf("***************AFTER SETBYTE - length %v - PROOF %v\n", len(newBytes), newBytes)
+	//newBytes :=
+	fmt.Printf("***************AFTER SETBYTE - PROOF %v\n",  proof.Bytes())
 	return nil
 }
 
@@ -849,11 +846,13 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 				return false
 			}
 
+			pubKeyLastByteSender := pubKey[len(pubKey)-1]
+
 			// Check input coins' cm is calculated correctly
 			cmTmp := pro.InputCoins[i].CoinDetails.PublicKey
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(pro.InputCoins[i].CoinDetails.Value))))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMul(pro.InputCoins[i].CoinDetails.SNDerivator))
-			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMul(new(big.Int).SetBytes([]byte{pro.PubKeyLastByteSender})))
+			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMul(new(big.Int).SetBytes([]byte{pubKeyLastByteSender})))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMul(pro.InputCoins[i].CoinDetails.Randomness))
 			if !cmTmp.IsEqual(pro.InputCoins[i].CoinDetails.CoinCommitment) {
 				return false

@@ -30,6 +30,8 @@ type Tx struct {
 	Sig       []byte `json:"Sig, omitempty"`       // 64 bytes
 	Proof     *zkp.PaymentProof
 
+	PubKeyLastByteSender byte
+
 	// Metadata
 	Metadata metadata.Metadata
 
@@ -228,7 +230,7 @@ func (tx *Tx) Init(
 	}
 
 	// sign tx
-	tx.Proof.PubKeyLastByteSender = pkLastByteSender
+	tx.PubKeyLastByteSender = pkLastByteSender
 	err = tx.SignTx(hasPrivacy)
 
 	return err
@@ -412,7 +414,7 @@ func (tx *Tx) Hash() *common.Hash {
 }
 
 func (tx *Tx) GetSenderAddrLastByte() byte {
-	return tx.Proof.PubKeyLastByteSender
+	return tx.PubKeyLastByteSender
 }
 
 func (tx *Tx) GetTxFee() uint64 {
