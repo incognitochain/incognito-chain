@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 	"math/big"
+
+	"github.com/ninjadotorg/constant/cashec"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	zkp "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
 func main() {
@@ -64,10 +66,9 @@ func main() {
 
 	//zkp.TestPKOneOfMany()
 
-
 	//zkp.TestPKComMultiRange()
 
-	//zkp.TestOpeningsProtocol()
+	zkp.TestOpeningsProtocol()
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -170,7 +171,7 @@ func main() {
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
-	privacy.TestSchn()
+	// privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
 	//privacy.TestMultiSig()
 
@@ -198,28 +199,26 @@ func main() {
 	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
 	keySetSender := cashec.KeySet{}
 	keySetSender.ImportFromPrivateKey(&spendingKey)
-	coin.CoinDetails.PublicKey, _= privacy.DecompressKey(keySetSender.PaymentAddress.Pk)
+	coin.CoinDetails.PublicKey, _ = privacy.DecompressKey(keySetSender.PaymentAddress.Pk)
 
-		err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
-	if err!= nil{
+	err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
+	if err != nil {
 		fmt.Println(err)
 	}
 
-	coinByte:= coin.Bytes()
+	coinByte := coin.Bytes()
 
 	fmt.Printf("Coin encrypt bytes: %v\n", coinByte)
 	coin2 := new(privacy.OutputCoin)
 	err = coin2.SetBytes(coinByte)
-	if err != nil{
-		fmt.Printf("Coin encrypt setbytes: %+v\n", coin2 )
+	if err != nil {
+		fmt.Printf("Coin encrypt setbytes: %+v\n", coin2)
 	}
 
 	coin.Decrypt(keySetSender.ReadonlyKey)
 	//outCoin := new(privacy.OutputCoin)
 	//outCoin.CoinDetails = coin
 	//outCoin.CoinDetailsEncrypted = coin.Encrypt(keySetSender.PaymentAddress.Tk)
-
-
 
 	fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
 	fmt.Printf("DEcrypted Plain text 1: Value : %v\n", coin.CoinDetails.Value)
@@ -312,10 +311,5 @@ func main() {
 	//
 	//fmt.Printf("Out coin bytes: %v\n", outCoinBytes)
 	//fmt.Printf("Len Out coin bytes: %v\n", len(outCoinBytes))
-
-
-
-
-
 
 }

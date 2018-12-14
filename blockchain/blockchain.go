@@ -436,7 +436,9 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 			return err
 		}
 		for _, com := range item1 {
-			err = self.config.DataBase.StoreOutputCoins(pubkeyBytes, com.Bytes(), view.chainID)
+			lastByte := pubkeyBytes[len(pubkeyBytes)-1]
+			chainID, err := common.GetTxSenderChain(lastByte)
+			err = self.config.DataBase.StoreOutputCoins(pubkeyBytes, com.Bytes(), chainID)
 			if err != nil {
 				return err
 			}
