@@ -24,6 +24,7 @@ var MAX_PEERS_OTHER_SHARD = 2
 var MAX_PEERS_OTHER = 100
 var MAX_PEERS = 200
 var MAX_PEERS_NOSHARD = 100
+var MAX_PEERS_BEACON = 20
 var SHARD_NUMBER = 256
 
 // ConnState represents the state of the requested connection.
@@ -57,6 +58,7 @@ type Config struct {
 	MaxPeerOtherShard int
 	MaxPeerOther      int
 	MaxPeerNoShard    int
+	MaxPeerBeacon     int
 	// ListenerPeers defines a slice of listeners for which the connection
 	// manager will take ownership of and accept connections.  When a
 	// connection is accepted, the OnAccept handler will be invoked with the
@@ -130,6 +132,9 @@ func (self ConnManager) New(cfg *Config) *ConnManager {
 	}
 	if self.Config.MaxPeerNoShard <= 0 {
 		self.Config.MaxPeerNoShard = MAX_PEERS_NOSHARD
+	}
+	if self.Config.MaxPeerBeacon <= 0 {
+		self.Config.MaxPeerBeacon = MAX_PEERS_BEACON
 	}
 
 	return &self
@@ -454,9 +459,9 @@ listen:
 				//	}
 				//}
 				// connect to same shard
-				self.handleRandPeersOfShard(self.CurrentShard, MAX_PEERS_SAME_SHARD, mPeers)
+				self.handleRandPeersOfShard(self.CurrentShard, self.Config.MaxPeerSameShard, mPeers)
 				// connect to other shard
-				self.handleRandPeersOfOtherShard(self.CurrentShard, MAX_PEERS_OTHER_SHARD, MAX_PEERS_OTHER, mPeers)
+				self.handleRandPeersOfOtherShard(self.CurrentShard, self.Config.MaxPeerOtherShard, self.Config.MaxPeerOther, mPeers)
 			}
 		}
 		time.Sleep(time.Second * 60)
@@ -597,6 +602,30 @@ func (self *ConnManager) randShards(maxShards int) []byte {
 		shardsRet = append(shardsRet, shardV)
 	}
 	return shardsRet
+}
+
+func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[string]*wire.RawPeer) int {
+	Logger.log.Info("handleRandPeersOfBeacon")
+	countPeerShard := 0
+	pBKs := self.Config.GetPbksOfBeacon()
+	for len(pBKs) > 0 {
+		randN := common.RandInt() % len(pBKs)
+		pbk := pBKs[randN]
+		pBKs = append(pBKs[:randN], pBKs[randN+1:]...)
+		peerI, ok := mPeers[pbk]
+		if ok {
+			cPbk := self.Config.GetCurrentPbk()
+			// if existed conn then not append to array
+			if !self.checkPeerConnByPbk(pbk) && (cPbk == nil || *cPbk != pbk) {
+				go self.Connect(peerI.RawAddress, peerI.PublicKey)
+			}
+			countPeerShard ++
+			if countPeerShard >= maxBeaconPeers {
+				return countPeerShard
+			}
+		}
+	}
+	return countPeerShard
 }
 
 func (self *ConnManager) CheckAcceptConn(peerConn *peer.PeerConn) bool {
