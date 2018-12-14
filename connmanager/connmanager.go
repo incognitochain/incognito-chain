@@ -7,17 +7,19 @@ import (
 	"net/rpc"
 	"os"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
+
+	"math"
 
 	libpeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/ninjadotorg/constant/bootnode/server"
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/peer"
 	"github.com/ninjadotorg/constant/wire"
-	"github.com/ninjadotorg/constant/common"
-	"math"
 )
 
 var MAX_PEERS_SAME_SHARD = 10
@@ -78,17 +80,31 @@ type Config struct {
 	DiscoverPeers        bool
 	DiscoverPeersAddress string
 
-	GetCurrentShard func() *byte
-	GetPbksOfShard  func(shard byte) []string
-	GetPbksOfBeacon func() []string
-	GetCurrentPbk   func() *string
-	GetShardByPbk   func(pbk string) *byte
+	ConsensusState struct {
+		sync.Mutex
+		Role            string
+		CurrentShard    byte
+		BeaconCommittee []string
+		ShardCommittee  map[byte][]string
+		UserPbk         string
+	}
 }
 
 type DiscoverPeerInfo struct {
 	PublicKey  string
 	RawAddress string
 	PeerID     libpeer.ID
+}
+
+func (self *ConnManager) UpdateConsensusState(role string, userPbk string, currentShard byte, beaconCmte []string, shardCmte map[byte][]string) {
+	self.Config.ConsensusState.Lock()
+	defer self.Config.ConsensusState.Unlock()
+	self.Config.ConsensusState.Role = role
+	self.Config.ConsensusState.CurrentShard = currentShard
+	self.Config.ConsensusState.BeaconCommittee = beaconCmte
+	self.Config.ConsensusState.ShardCommittee = shardCmte
+	self.Config.ConsensusState.UserPbk = userPbk
+	return
 }
 
 // Stop gracefully shuts down the connection manager.
@@ -322,7 +338,7 @@ func (self *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 	var client *rpc.Client
 	var err error
 
-	self.CurrentShard = self.Config.GetCurrentShard()
+	self.CurrentShard = &self.Config.ConsensusState.CurrentShard
 	self.OtherShards = self.randShards(SHARD_NUMBER)
 
 listen:
@@ -526,18 +542,18 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 		}
 		return maxPeers
 	}
-	pBKs := self.Config.GetPbksOfShard(*shard)
+	pBKs := self.Config.ConsensusState.ShardCommittee[*shard]
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
 		pbk := pBKs[randN]
 		pBKs = append(pBKs[:randN], pBKs[randN+1:]...)
 		peerI, ok := mPeers[pbk]
 		if ok {
-			cPbk := self.Config.GetCurrentPbk()
+			cPbk := &self.Config.ConsensusState.UserPbk
 			// if existed conn then not append to array
 			if !self.checkPeerConnByPbk(pbk) && (cPbk == nil || *cPbk != pbk) {
 				go self.Connect(peerI.RawAddress, peerI.PublicKey)
-				countPeerShard ++
+				countPeerShard++
 			}
 			if countPeerShard >= maxPeers {
 				return countPeerShard
@@ -589,7 +605,7 @@ func (self *ConnManager) CheckAcceptConn(peerConn *peer.PeerConn) bool {
 	}
 	// check max conn
 	// check max shard conn
-	sh := self.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
+	sh := self.getShardByPbk(peerConn.RemotePeer.PublicKey)
 	if sh != nil && self.CurrentShard != nil && *sh == *self.CurrentShard {
 		//	same shard
 		countPeerShard := self.countPeerConnByShard(sh)
@@ -610,4 +626,8 @@ func (self *ConnManager) CheckAcceptConn(peerConn *peer.PeerConn) bool {
 		}
 	}
 	return true
+}
+
+func (self *ConnManager) getShardByPbk(pbk string) *byte {
+	return nil
 }
