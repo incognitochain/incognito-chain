@@ -358,35 +358,35 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
-// - Check double spending
+// - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte) bool {
 	// Verify tx signature
 	var valid bool
-	//var err error
-	//valid, err = tx.VerifySigTx(hasPrivacy)
-	//if valid == false {
-	//	if err != nil {
-	//		fmt.Printf("Error verifying signature of tx: %+v", err)
-	//	}
-	//	return false
-	//}
-	//
-	//for i := 0; i < len(tx.Proof.OutputCoins); i++ {
-	//	// Check output coins' SND is not exists in SND list (Database)
-	//	if ok, err := CheckSNDerivatorExistence(tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, chainId, db); ok || err != nil {
-	//		return false
-	//	}
-	//}
-	//
-	//if !hasPrivacy {
-	//	// Check input coins' cm is exists in cm list (Database)
-	//	for i := 0; i < len(tx.Proof.InputCoins); i++ {
-	//		ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, chainId)
-	//		if !ok || err != nil {
-	//			return false
-	//		}
-	//	}
-	//}
+	var err error
+	valid, err = tx.VerifySigTx(hasPrivacy)
+	if valid == false {
+		if err != nil {
+			fmt.Printf("Error verifying signature of tx: %+v", err)
+		}
+		return false
+	}
+
+	for i := 0; i < len(tx.Proof.OutputCoins); i++ {
+		// Check output coins' SND is not exists in SND list (Database)
+		if ok, err := CheckSNDerivatorExistence(tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, chainId, db); ok || err != nil {
+			return false
+		}
+	}
+
+	if !hasPrivacy {
+		// Check input coins' cm is exists in cm list (Database)
+		for i := 0; i < len(tx.Proof.InputCoins); i++ {
+			ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, chainId)
+			if !ok || err != nil {
+				return false
+			}
+		}
+	}
 
 	// Verify the payment proof
 	valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db, chainId)
@@ -448,9 +448,9 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	var sizeFee uint64 = 8      // uint64
 	var sizeDescs uint64        // uint64
 	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
 	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
 	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
@@ -670,4 +670,8 @@ func (tx *Tx) IsPrivacy() bool {
 	default:
 		return true
 	}
+}
+
+func (tx *Tx) ValidateType() bool {
+	return tx.Type == common.TxNormalType || tx.Type == common.TxSalaryType
 }

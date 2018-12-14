@@ -66,13 +66,13 @@ type MempoolRetriever interface {
 
 type BlockchainRetriever interface {
 	GetHeight() int32
-	// GetNulltifiersList(byte) ([][]byte, error)
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetDCBParams() params.DCBParams
 	GetDCBBoardPubKeys() [][]byte
 	GetGOVParams() params.GOVParams
 	GetGOVBoardPubKeys() [][]byte
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
+	GetOracleParams() *params.Oracle
 
 	// For validating loan metadata
 	GetLoanTxs([]byte) ([][]byte, error)
@@ -115,6 +115,7 @@ type Transaction interface {
 	ValidateTxWithBlockChain(BlockchainRetriever, byte, database.DatabaseInterface) error
 	ValidateSanityData(BlockchainRetriever) (bool, error)
 	ValidateTxByItself(bool, database.DatabaseInterface, BlockchainRetriever, byte) bool
+	ValidateType() bool
 	GetMetadata() Metadata
 	SetMetadata(Metadata)
 	ValidateConstDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface) error

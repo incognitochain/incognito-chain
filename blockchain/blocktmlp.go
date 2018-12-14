@@ -787,9 +787,32 @@ func (blockgen *BlkTmplGenerator) buildBuyBackResponsesTx(
 func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
 	chainID byte,
 	tx metadata.Transaction,
+	// dcbTokensSold uint64,
 ) bool {
-	// TODO: add more logic here
 	return true
+
+	// issuingReqMeta := tx.GetMetadata()
+	// issuingReq, ok := issuingReqMeta.(*metadata.IssuingRequest)
+	// if issuingReq.AssetType == common.DCBTokenID {
+
+	// }
+
+	// prevBlock := blockgen.chain.BestState[chainID].BestBlock
+	// sellingBondsParams := prevBlock.Header.GOVConstitution.GOVParams.SellingBonds
+	// if uint32(prevBlock.Header.Height)+1 > sellingBondsParams.StartSellingAt+sellingBondsParams.SellingWithin {
+	// 	return 0, 0, false
+	// }
+
+	// buySellReqMeta := tx.GetMetadata()
+	// req, ok := buySellReqMeta.(*metadata.BuySellRequest)
+	// if !ok {
+	// 	return 0, 0, false
+	// }
+
+	// if bondsSold+req.Amount > sellingBondsParams.BondsToSell { // run out of bonds for selling
+	// 	return 0, 0, false
+	// }
+	// return req.Amount * req.BuyPrice, req.Amount, true
 }
 
 func (blockgen *BlkTmplGenerator) buildIssuingResTxs(

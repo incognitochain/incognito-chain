@@ -159,6 +159,11 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	// end check with policy
 
+	ok = tx.ValidateType()
+	if !ok {
+		return nil, nil, errors.New("Wrong tx type")
+	}
+
 	// check tx with all txs in current mempool
 	err = tx.ValidateTxWithCurrentMempool(tp)
 	if err != nil {
