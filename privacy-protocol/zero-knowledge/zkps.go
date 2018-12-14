@@ -633,7 +633,9 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	cmOutputSND := make([]*privacy.EllipticPoint, numOutputCoin)
 
 	cmOutputSum := make([]*privacy.EllipticPoint, numOutputCoin)
+	cmOutputSumwithoutShardID := make([]*privacy.EllipticPoint, numOutputCoin)
 	randOutputSum := make([]*big.Int, numOutputCoin)
+	randOutputSumwithoutShardID := make([]*big.Int, numOutputCoin)
 
 	cmOutputSumAll := new(privacy.EllipticPoint)
 	cmOutputSumAll.X = big.NewInt(0)
@@ -654,11 +656,15 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		randOutputSum[i] = randOutputValue[i]
 		randOutputSum[i].Add(randOutputSum[i], randOutputSND[i])
 		randOutputSum[i].Mod(randOutputSum[i], privacy.Curve.Params().N)
+		randOutputSumwithoutShardID[i] = big.NewInt(0)
+		randOutputSumwithoutShardID[i].Set(randOutputSum[i])
 
 		cmOutputSum[i] = new(privacy.EllipticPoint)
 		cmOutputSum[i].X, cmOutputSum[i].Y = cmOutputValue[i].X, cmOutputValue[i].Y
 		cmOutputSum[i].X, cmOutputSum[i].Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputSND[i].X, cmOutputSND[i].Y)
-
+		cmOutputSumwithoutShardID[i].X, cmOutputSumwithoutShardID[i].Y = big.NewInt(0), big.NewInt(0)
+		cmOutputSumwithoutShardID[i].X.Set(cmOutputSum[i].X)
+		cmOutputSumwithoutShardID[i].Y.Set(cmOutputSum[i].Y)
 		cmOutputValueAll = *(cmOutputValueAll.Add(cmOutputValue[i]))
 		randOutputValueAll.Add(randOutputValueAll, randOutputValue[i])
 
@@ -666,8 +672,8 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		if wit.ComOutputOpeningsWitness[i] == nil {
 			wit.ComOutputOpeningsWitness[i] = new(PKComOpeningsWitness)
 		}
-		wit.ComOutputOpeningsWitness[i].Set(cmOutputSum[i],
-			[]*big.Int{big.NewInt(int64(outputCoins[i].CoinDetails.Value)), outputCoins[i].CoinDetails.SNDerivator, randOutputSum[i]},
+		wit.ComOutputOpeningsWitness[i].Set(cmOutputSumwithoutShardID[i],
+			[]*big.Int{big.NewInt(int64(outputCoins[i].CoinDetails.Value)), outputCoins[i].CoinDetails.SNDerivator, randOutputSumwithoutShardID[i]},
 			[]byte{privacy.VALUE, privacy.SND, privacy.RAND})
 	}
 
