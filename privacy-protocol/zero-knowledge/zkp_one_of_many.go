@@ -186,6 +186,7 @@ func (pro * PKOneOfManyProof) Bytes() []byte {
 	bytes = append(bytes, pro.index)
 	nBytes += 1
 
+	fmt.Printf("Len of proof bytes: %v\n", len(bytes))
 	fmt.Printf("Len of proof bytes: %v\n", nBytes)
 
 	return bytes

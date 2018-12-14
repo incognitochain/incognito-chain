@@ -3,7 +3,6 @@ package zkp
 import (
 	"crypto/rand"
 	"errors"
-	"fmt"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -135,7 +134,6 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) error {
 		pro.Z[i] = big.NewInt(0)
 		pro.Z[i].SetBytes(proofbytes[len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+i*privacy.BigIntSize: len(pro.Index)+len(pro.C)*privacy.CompressedPointSize+len(pro.T)*privacy.CompressedPointSize+(i+1)*privacy.BigIntSize])
 	}
-	fmt.Printf("Done set byte!!!!!")
 	return nil
 }
 
