@@ -292,7 +292,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.SpendingKey,
 		paymentInfo,
 		inputCoin,
 		fee,
-		true,
+		false,
 		nil)
 	if err != nil {
 		return err

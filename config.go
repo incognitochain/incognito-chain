@@ -69,6 +69,11 @@ type config struct {
 	MaxInPeers           int      `long:"maxinpeers" description:"Max number of inbound peers"`
 	DiscoverPeers        bool     `long:"discoverpeers" description:"Enable discover peers"`
 	DiscoverPeersAddress string   `long:"discoverpeersaddress" description:"Url to connect discover peers server"`
+	MaxPeerSameShard     int      `long:"maxpeersameshard" description:"Max peers in same shard for connection"`
+	MaxPeerOtherShard    int      `long:"maxpeerothershard" description:"Max peers in other shard for connection"`
+	MaxPeerOther         int      `long:"maxpeerother" description:"Max peers in other for connection"`
+	MaxPeerNoShard       int      `long:"maxpeernoshard" description:"Max peers in no shard for connection"`
+	MaxPeerBeacon        int      `long:"maxpeerbeacon" description:"Max peers in beacon for connection"`
 
 	ExternalAddress string `long:"externaladdress" description:"External address"`
 

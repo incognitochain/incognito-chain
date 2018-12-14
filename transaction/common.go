@@ -12,9 +12,9 @@ import (
 // ConvertOutputCoinToInputCoin - convert output coin from old tx to input coin for new tx
 func ConvertOutputCoinToInputCoin(usableOutputsOfOld []*privacy.OutputCoin) []*privacy.InputCoin {
 	var inputCoins []*privacy.InputCoin
-	inCoin := new(privacy.InputCoin)
 
 	for _, coin := range usableOutputsOfOld {
+		inCoin := new(privacy.InputCoin)
 		inCoin.CoinDetails = coin.CoinDetails
 		inputCoins = append(inputCoins, inCoin)
 	}

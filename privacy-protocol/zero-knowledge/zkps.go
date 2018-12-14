@@ -8,7 +8,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 // PaymentWitness contains all of witness for proving when spending coins
@@ -61,8 +61,6 @@ type PaymentProof struct {
 	ComOutputValue   []*privacy.EllipticPoint
 	ComOutputSND     []*privacy.EllipticPoint
 	ComOutputShardID []*privacy.EllipticPoint
-
-	PubKeyLastByteSender byte
 }
 
 func (proof *PaymentProof) Init() *PaymentProof {
@@ -80,7 +78,6 @@ func (proof *PaymentProof) Init() *PaymentProof {
 		ComOutputValue:              []*privacy.EllipticPoint{},
 		ComOutputSND:                []*privacy.EllipticPoint{},
 		ComOutputShardID:            []*privacy.EllipticPoint{},
-		PubKeyLastByteSender:        byte(0x00),
 	}
 	return proof
 }
@@ -259,7 +256,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 	}
 	// PubKeyLastByteSender
 	//proofbytes = append(proofbytes, byte(1))
-	proofbytes = append(proofbytes, paymentProof.PubKeyLastByteSender)
+	//proofbytes = append(proofbytes, paymentProof.PubKeyLastByteSender)
 	//fmt.Println("********************** LEN - BYTES ",len(proofbytes))
 	fmt.Printf("***************BYTE - PROOF %v\n", proofbytes)
 	return proofbytes
@@ -467,10 +464,10 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		offset += lenComOutputShardId
 	}
 	//PubKeyLastByteSender byte
-	proof.PubKeyLastByteSender = proofbytes[offset]
+	//proof.PubKeyLastByteSender = proofbytes[offset]
 	//fmt.Println("***********-----------LEN - SET BYTES ",len(proof.Bytes()))
-	newBytes := proof.Bytes()
-	fmt.Printf("***************AFTER SETBYTE - length %v - PROOF %v\n", len(newBytes), newBytes)
+	//newBytes :=
+	fmt.Printf("***************AFTER SETBYTE - PROOF %v\n", proof.Bytes())
 	return nil
 }
 
@@ -562,12 +559,13 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		randInputSum[i].Add(randInputSum[i], randInputValue[i])
 		randInputSum[i].Add(randInputSum[i], randInputSND[i])
 		randInputSum[i].Mod(randInputSum[i], privacy.Curve.Params().N)
-
+		randInputOpening := big.NewInt(0)
+		randInputOpening.Set(randInputSum[i])
 		if wit.ComInputOpeningsWitness[i] == nil {
 			wit.ComInputOpeningsWitness[i] = new(PKComOpeningsWitness)
 		}
 		wit.ComInputOpeningsWitness[i].Set(cmInputSum[i],
-			[]*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randInputSum[i]},
+			[]*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randInputOpening},
 			[]byte{privacy.SK, privacy.VALUE, privacy.SND, privacy.RAND})
 
 		/***** Build witness for proving one-out-of-N commitments is a commitment to the coins being spent *****/
@@ -596,7 +594,8 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		if wit.OneOfManyWitness[i] == nil {
 			wit.OneOfManyWitness[i] = new(PKOneOfManyWitness)
 		}
-		wit.OneOfManyWitness[i].Set(commitmentTemps, commitmentIndexs, rndInputIsZero, myCommitmentIndexs[i], privacy.SK)
+		indexIsZero := myCommitmentIndexs[i] % privacy.CMRingSize
+		wit.OneOfManyWitness[i].Set(commitmentTemps, commitmentIndexs, rndInputIsZero, indexIsZero, privacy.SK)
 
 		/***** Build witness for proving that serial number is derived from the committed derivator *****/
 		if wit.EqualityOfCommittedValWitness[i] == nil {
@@ -848,11 +847,13 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 				return false
 			}
 
+			pubKeyLastByteSender := pubKey[len(pubKey)-1]
+
 			// Check input coins' cm is calculated correctly
 			cmTmp := pro.InputCoins[i].CoinDetails.PublicKey
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMul(big.NewInt(int64(pro.InputCoins[i].CoinDetails.Value))))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMul(pro.InputCoins[i].CoinDetails.SNDerivator))
-			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMul(new(big.Int).SetBytes([]byte{pro.PubKeyLastByteSender})))
+			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMul(new(big.Int).SetBytes([]byte{pubKeyLastByteSender})))
 			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMul(pro.InputCoins[i].CoinDetails.Randomness))
 			if !cmTmp.IsEqual(pro.InputCoins[i].CoinDetails.CoinCommitment) {
 				return false

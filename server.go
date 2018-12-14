@@ -248,13 +248,20 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
 		GetCurrentShard:      self.GetCurrentShard,
-		GetPbksOfShard:       self.GetPbksOfShard,
 		GetCurrentPbk:        self.GetCurrentPbk,
+		GetPbksOfShard:       self.GetPbksOfShard,
 		GetShardByPbk:        self.GetShardByPbk,
+		GetPbksOfBeacon:      self.GetPbksOfBeacon,
 		ListenerPeers:        peers,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
 		ExternalAddress:      cfg.ExternalAddress,
+		// config for connection of shard
+		MaxPeerSameShard:  cfg.MaxPeerSameShard,
+		MaxPeerOtherShard: cfg.MaxPeerOtherShard,
+		MaxPeerOther:      cfg.MaxPeerOther,
+		MaxPeerNoShard:    cfg.MaxPeerNoShard,
+		MaxPeerBeacon:     cfg.MaxPeerBeacon,
 	})
 	self.connManager = connManager
 
@@ -1004,6 +1011,11 @@ func (self *Server) GetPbksOfShard(shard byte) []string {
 			pBKs = append(pBKs, k)
 		}
 	}
+	return pBKs
+}
+
+func (self *Server) GetPbksOfBeacon() []string {
+	pBKs := make([]string, 0)
 	return pBKs
 }
 
