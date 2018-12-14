@@ -13,15 +13,17 @@ const (
 	LoanWithdrawMeta
 	LoanUnlockMeta
 	LoanPaymentMeta
+	DividendMeta
+	CrowdsaleRequestMeta
+	CrowdsaleResponseMeta
+	CrowdsalePaymentMeta
+
 	BuyFromGOVRequestMeta
 	BuyFromGOVResponseMeta
 	BuyBackRequestMeta
 	BuyBackResponseMeta
 	IssuingRequestMeta
 	IssuingResponseMeta
-	DividendMeta
-
-	CrowdsaleRequestMeta
 
 	//Voting
 	SubmitDCBProposalMeta

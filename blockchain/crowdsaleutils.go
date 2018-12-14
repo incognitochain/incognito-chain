@@ -55,7 +55,7 @@ func buildResponseForCoin(
 	if err != nil {
 		return nil, err
 	}
-	metaRes := &metadata.CrowdsaleResponse{
+	metaRes := &metadata.CrowdsalePayment{
 		RequestedTxID: &common.Hash{},
 		SaleID:        make([]byte, len(saleID)),
 	}
@@ -174,7 +174,7 @@ func buildResponseForToken(
 		}
 	}
 
-	metaRes := &metadata.CrowdsaleResponse{
+	metaRes := &metadata.CrowdsalePayment{
 		RequestedTxID: &common.Hash{},
 		SaleID:        make([]byte, len(saleID)),
 	}

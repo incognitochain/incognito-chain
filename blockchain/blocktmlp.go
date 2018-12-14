@@ -941,11 +941,13 @@ func (blockgen *BlkTmplGenerator) buildResponseForCrowdsale(
 	err := errors.New("Incorrect assets for crowdsale")
 	sellingAsset := &common.Hash{}
 	copy(sellingAsset[:], saleData.SellingAsset)
-	if bytes.Equal(sellingAsset[:], common.ConstantID[:]) {
-		if bytes.Equal(saleData.BuyingAsset, common.OffchainAssetID[:]) {
-			return nil, nil // no response for offchain asset
-		}
 
+	// Skip response if either selling or buying asset is offchain (needs confirmation)
+	if bytes.Equal(saleData.SellingAsset[:8], common.OffchainAssetID[:8]) || bytes.Equal(saleData.BuyingAsset[:8], common.OffchainAssetID[:8]) {
+		return nil, nil
+	}
+
+	if bytes.Equal(sellingAsset[:], common.ConstantID[:]) {
 		tokenAmount, valuesInConstant := getTxTokenValue(tx.TxTokenData, saleData.BuyingAsset, dcbPk, prices)
 		if tokenAmount > saleData.BuyingAmount || valuesInConstant > saleData.SellingAmount {
 			// User sent too many token, reject request

@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 
 	"github.com/ninjadotorg/constant/common"
@@ -12,18 +13,28 @@ import (
 
 type CrowdsaleRequest struct {
 	PaymentAddress privacy.PaymentAddress
-	Amount         uint64
 	SaleID         []byte // only when requesting to DCB
+	Info           []byte // offchain payment info (e.g. ETH/BTC txhash)
 
 	MetadataBase
 }
 
 func NewCrowdsaleRequest(csReqData map[string]interface{}) *CrowdsaleRequest {
-	return &CrowdsaleRequest{
-		PaymentAddress: csReqData["paymentAddress"].(privacy.PaymentAddress),
-		Amount:         uint64(csReqData["amount"].(float64)),
-		SaleID:         csReqData["saleId"].([]byte),
+	saleID, err := hex.DecodeString(csReqData["SaleId"].(string))
+	if err != nil {
+		return nil
 	}
+	info, err := hex.DecodeString(csReqData["Info"].(string))
+	if err != nil {
+		return nil
+	}
+	result := &CrowdsaleRequest{
+		PaymentAddress: csReqData["PaymentAddress"].(privacy.PaymentAddress),
+		SaleID:         saleID,
+		Info:           info,
+	}
+	result.Type = CrowdsaleRequestMeta
+	return result
 }
 
 func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
@@ -58,9 +69,6 @@ func (csReq *CrowdsaleRequest) ValidateSanityData(bcr BlockchainRetriever, txr T
 	if len(csReq.PaymentAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's payment address")
 	}
-	if csReq.Amount == 0 {
-		return false, false, errors.New("Wrong request info's amount")
-	}
 	return false, true, nil
 }
 
@@ -71,8 +79,8 @@ func (csReq *CrowdsaleRequest) ValidateMetadataByItself() bool {
 
 func (csReq *CrowdsaleRequest) Hash() *common.Hash {
 	record := string(csReq.PaymentAddress.ToBytes())
-	record += string(csReq.Amount)
 	record += string(csReq.SaleID)
+	record += string(csReq.Info)
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))

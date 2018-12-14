@@ -679,8 +679,15 @@ func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
 	// return addr, txValue
 }
 
+// GetJSPubKey returns public key of sender (privacy must be off)
 func (tx *Tx) GetJSPubKey() []byte {
-	return tx.SigPubKey
+	result := []byte{}
+	if len(tx.Proof.InputCoins) > 0 {
+		pubkey := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+		result = make([]byte, len(pubkey))
+		copy(result, pubkey)
+	}
+	return result
 }
 
 func (tx *Tx) IsPrivacy() bool {

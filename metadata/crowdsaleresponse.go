@@ -3,78 +3,88 @@ package metadata
 import (
 	"bytes"
 	"encoding/hex"
-	"errors"
 	"fmt"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/wallet"
 )
 
 type CrowdsaleResponse struct {
 	RequestedTxID *common.Hash
-	SaleID        []byte
 
 	MetadataBase
 }
 
-func NewCrowdsaleResponse(csResData map[string]interface{}) *CrowdsaleResponse {
-	s, err := hex.DecodeString(csResData["RequestedTxID"].(string))
+func NewCrowdsaleResponse(data map[string]interface{}) *CrowdsaleResponse {
+	s, err := hex.DecodeString(data["RequestedTxID"].(string))
 	if err != nil {
 		return nil
 	}
 	result := &CrowdsaleResponse{
 		RequestedTxID: &common.Hash{},
-		SaleID:        csResData["saleId"].([]byte),
 	}
+	result.Type = CrowdsaleResponseMeta
 	copy(result.RequestedTxID[:], s)
 	return result
 }
 
-func (csRes *CrowdsaleResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
-	// TODO: check if there's a corresponding request in the same block
-	// Check if sale exists
-	saleData, err := bcr.GetCrowdsaleData(csRes.SaleID)
-	if err != nil {
-		return false, err
-	}
-
-	// Check if sending address is DCB's
-	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	if bytes.Equal(saleData.SellingAsset, common.ConstantID[:]) {
-		if !bytes.Equal(txr.GetJSPubKey(), accountDCB.KeySet.PaymentAddress.Pk[:]) {
-			return false, fmt.Errorf("Crowdsale response must send Constant from DCB address")
-		}
-	} else if bytes.Equal(saleData.SellingAsset[:8], common.BondTokenID[:8]) {
-		// check double spending if selling bond
-		return true, nil
-	}
-
-	// TODO(@0xbunyip): validate amount of asset sent
-	return false, nil
-}
-
-func (csRes *CrowdsaleResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	ok, err := txr.ValidateSanityData(bcr)
-	if err != nil || !ok {
-		return false, ok, err
-	}
-	if len(csRes.SaleID) == 0 {
-		return false, false, errors.New("Wrong request info's SaleID")
-	}
-	return false, true, nil
-}
-
-func (csRes *CrowdsaleResponse) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning true here
-	return true
-}
-
-func (csRes *CrowdsaleResponse) Hash() *common.Hash {
-	record := string(csRes.RequestedTxID[:])
-	record += string(csRes.SaleID)
+func (cr *CrowdsaleResponse) Hash() *common.Hash {
+	record := string(cr.RequestedTxID[:])
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
+}
+
+func (cr *CrowdsaleResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+	// Check if only board members created this tx
+	isBoard := false
+	for _, gov := range bcr.GetDCBBoardPubKeys() {
+		// TODO(@0xbunyip): change gov to []byte or use Base58Decode for entire payment address of governors
+		if bytes.Equal([]byte(gov), txr.GetJSPubKey()) {
+			isBoard = true
+		}
+	}
+	if !isBoard {
+		return false, fmt.Errorf("Tx must be created by DCB Governor")
+	}
+
+	// Check if crowdsale request exists
+	txHashes, err := bcr.GetCrowdsaleTxs(cr.RequestedTxID[:])
+	if err != nil {
+		return false, err
+	}
+	if len(txHashes) == 0 {
+		return false, fmt.Errorf("Found no request for current crowdsale response")
+	}
+	for _, txHash := range txHashes {
+		hash, _ := (&common.Hash{}).NewHash(txHash)
+		_, _, _, txOld, err := bcr.GetTransactionByHash(hash)
+		if txOld == nil || err != nil {
+			return false, fmt.Errorf("Error finding corresponding loan request")
+		}
+		switch txOld.GetMetadataType() {
+		case CrowdsaleResponseMeta:
+			{
+				// Check if the same user responses twice
+				if bytes.Equal(txOld.GetJSPubKey(), txr.GetJSPubKey()) {
+					return false, fmt.Errorf("Current board member already responded to crowdsale request")
+				}
+			}
+		}
+	}
+	return true, nil
+}
+
+func (cr *CrowdsaleResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+	return false, true, nil // No need to check for fee
+}
+
+func (cr *CrowdsaleResponse) ValidateMetadataByItself() bool {
+	return true
+}
+
+// CheckTransactionFee returns true since loan response tx doesn't have fee
+func (cr *CrowdsaleResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+	return true
 }
