@@ -58,6 +58,14 @@ func (self *KeySet) Sign(data []byte) ([]byte, error) {
 	return signature, err
 }
 
+func (self *KeySet) SignBase58(data []byte) (string, error) {
+	signatureByte, err := self.Sign(data)
+	if err != nil {
+		return common.EmptyString, errors.New("Can't sign data. " + err.Error())
+	}
+	return base58.Base58Check{}.Encode(signatureByte, byte(0x00)), nil
+}
+
 func (self *KeySet) Encrypt(data []byte) ([]byte, error) {
 	// encryptText := client.Encrypt(self.PaymentAddress.Pk[:], data)
 	encryptText := []byte{0}
