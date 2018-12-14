@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
-	"math/big"
-
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/client/crypto/rand"
+	"math/big"
 )
 
 func main() {
@@ -65,6 +63,7 @@ func main() {
 	/*****************zkp.TestPKComZeroOne()****************/
 
 	//zkp.TestPKOneOfMany()
+
 
 	//zkp.TestPKComMultiRange()
 
@@ -189,23 +188,25 @@ func main() {
 
 	/*----------------- TEST ENCRYPT/DECRYPT COIN -----------------*/
 
-	//coin := new(privacy.OutputCoin)
-	//coin.CoinDetails = new(privacy.Coin)
-	//coin.CoinDetails.Randomness = privacy.RandInt()
-	//fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
-	//
-	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	//keySetSender := cashec.KeySet{}
-	//keySetSender.ImportFromPrivateKey(&spendingKey)
-	//
-	//err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
-	//if err!= nil{
-	//	fmt.Println(err)
-	//}
-	//
-	//coin.Decrypt(keySetSender.ReadonlyKey.Rk)
-	//
-	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+	coin := new(privacy.OutputCoin)
+	coin.CoinDetails = new(privacy.Coin)
+	coin.CoinDetails.Randomness = privacy.RandInt()
+	coin.CoinDetails.Value = 100000
+	fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+
+	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	keySetSender := cashec.KeySet{}
+	keySetSender.ImportFromPrivateKey(&spendingKey)
+
+	err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
+	if err!= nil{
+		fmt.Println(err)
+	}
+
+	coin.Decrypt(keySetSender.ReadonlyKey)
+
+	fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+	fmt.Printf("DEcrypted Plain text 1: Value : %v\n", coin.CoinDetails.Value)
 
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
@@ -250,21 +251,6 @@ func main() {
 	// fmt.Printf("Tx: %+v\n", tx)
 
 	// res := transaction.ValidateTxSalary(tx, db)
-	//keySetSender := new(cashec.KeySet)
-	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	//keySetSender.ImportFromPrivateKey(&spendingKey)
-	//
-	//var db database.DatabaseInterface
-	//
-	//tx, err := transaction.CreateTxSalary(10, &keySetSender.PaymentAddress, &keySetSender.PrivateKey, db)
-	//if err != nil{
-	//	fmt.Println(err)
-	//}
-	//fmt.Printf("Tx: %+v\n", tx)
-	//
-	//res := transaction.ValidateTxSalary(tx, db)
-	//
-	//fmt.Printf("Res: %v\n", res)
 
 	// fmt.Printf("Res: %v\n", res)
 
@@ -280,38 +266,40 @@ func main() {
 	//num := 0
 	//bytes := privacy.IntToByteArr(num)
 	//fmt.Printf("bytes: %v\n", bytes)
-	//tx := new(transaction.Tx)
-	//tx.CreateTx(keySetSender.PrivateKey, paymentInfo, )
-
+	//
 	//num2 := privacy.ByteArrToInt(bytes)
 	//fmt.Printf("num2: %v\n", num2)
-	for true {
-		res, _ := rand.Int(rand.Reader, big.NewInt(10))
-		fmt.Println(res)
-	}
+
 	/*----------------- TEST COIN BYTES -----------------*/
 
-	keySet := new(cashec.KeySet)
-	spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	keySet.ImportFromPrivateKey(&spendingKey)
+	//keySet := new(cashec.KeySet)
+	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	//keySet.ImportFromPrivateKey(&spendingKey)
+	//
+	//coin := new(privacy.Coin)
+	//coin.PublicKey, _ = privacy.DecompressKey(keySet.PaymentAddress.Pk)
+	//
+	//coin.Value = 10
+	//coin.SNDerivator = privacy.RandInt()
+	//coin.Randomness = privacy.RandInt()
+	//coin.CommitAll()
+	//coin.Value = 0
+	//
+	//
+	//outCoin := new(privacy.OutputCoin)
+	//outCoin.CoinDetails = coin
+	//outCoin.CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted)
+	//outCoin.Encrypt(keySet.PaymentAddress.Tk)
+	//coin.Randomness = nil
+	//
+	//outCoinBytes := outCoin.Bytes()
+	//
+	//fmt.Printf("Out coin bytes: %v\n", outCoinBytes)
+	//fmt.Printf("Len Out coin bytes: %v\n", len(outCoinBytes))
 
-	coin := new(privacy.Coin)
-	coin.PublicKey, _ = privacy.DecompressKey(keySet.PaymentAddress.Pk)
 
-	coin.Value = 10
-	coin.SNDerivator = privacy.RandInt()
-	coin.Randomness = privacy.RandInt()
-	coin.CommitAll()
-	coin.Value = 0
 
-	outCoin := new(privacy.OutputCoin)
-	outCoin.CoinDetails = coin
-	outCoin.CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted)
-	outCoin.Encrypt(keySet.PaymentAddress.Tk)
-	coin.Randomness = nil
 
-	outCoinBytes := outCoin.Bytes()
 
-	fmt.Printf("Out coin bytes: %v\n", outCoinBytes)
-	fmt.Printf("Len Out coin bytes: %v\n", len(outCoinBytes))
+
 }
