@@ -187,7 +187,7 @@ func (self Block) Hash() *common.Hash {
 
 func (block *Block) updateDCBConstitution(tx metadata.Transaction, blockgen *BlkTmplGenerator) error {
 	metadataAcceptDCBProposal := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
-	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(metadataAcceptDCBProposal.DCBProposalTXID)
+	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(&metadataAcceptDCBProposal.DCBProposalTXID)
 	DCBProposal := getTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
 	if err != nil {
 		return err
@@ -203,7 +203,7 @@ func (block *Block) updateDCBConstitution(tx metadata.Transaction, blockgen *Blk
 
 func (block *Block) updateGOVConstitution(tx metadata.Transaction, blockgen *BlkTmplGenerator) error {
 	metadataAcceptGOVProposal := tx.GetMetadata().(*metadata.AcceptGOVProposalMetadata)
-	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(metadataAcceptGOVProposal.GOVProposalTXID)
+	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(&metadataAcceptGOVProposal.GOVProposalTXID)
 	GOVProposal := getTx.GetMetadata().(*metadata.SubmitGOVProposalMetadata)
 	if err != nil {
 		return err

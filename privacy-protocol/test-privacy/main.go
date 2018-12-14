@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client/crypto/rand"
-	"github.com/ninjadotorg/constant/cashec"
 )
 
 func main() {

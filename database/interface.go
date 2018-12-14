@@ -14,6 +14,7 @@ import (
 type DatabaseInterface interface {
 	Put(key, value []byte) error
 	Get(key []byte) ([]byte, error)
+	Delete(key []byte) error
 	HasValue(key []byte) (bool, error)
 
 	// Block
@@ -105,6 +106,7 @@ type DatabaseInterface interface {
 	GetKey(string, interface{}) []byte
 	GetVoteDCBBoardListPrefix() []byte
 	GetVoteGOVBoardListPrefix() []byte
+	GetThreePhraseLv3CryptoPrefix() []byte
 	SendInitDCBVoteToken(uint32, []byte, uint64) error
 	SendInitGOVVoteToken(uint32, []byte, uint64) error
 	AddVoteLv3Proposal(string, uint32, *common.Hash) error

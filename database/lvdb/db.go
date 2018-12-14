@@ -52,6 +52,7 @@ var (
 	GOVVoteTokenAmountPrefix      = []byte("govvotetokenamount-")
 	threePhraseCryptoOwnerPrefix  = []byte("threephrasecryptoownerprefix-")
 	threePhraseCryptoSealerPrefix = []byte("threephrasecryptosealerprefix-")
+	threePhraseCryptolv3Prefix    = []byte("threephrasecryptolv3prefix")
 
 	Unreward = []byte("unreward")
 	Spent    = []byte("spent")
@@ -81,6 +82,14 @@ func (db *db) HasValue(key []byte) (bool, error) {
 func (db *db) Put(key, value []byte) error {
 	if err := db.lvdb.Put(key, value, nil); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Put"))
+	}
+	return nil
+}
+
+func (db *db) Delete(key []byte) error {
+	err := db.lvdb.Delete(key, nil)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
 	}
 	return nil
 }

@@ -48,7 +48,7 @@ func NewSubmitDCBProposalMetadataFromJson(jsonData map[string]interface{}) *Subm
 }
 
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) Hash() *common.Hash {
-	record := string(common.ToBytes(submitDCBProposalMetadata.DCBParams.Hash()))
+	record := string(common.ToBytes(*submitDCBProposalMetadata.DCBParams.Hash()))
 	record += string(submitDCBProposalMetadata.ExecuteDuration)
 	record += submitDCBProposalMetadata.Explanation
 	hash := common.DoubleHashH([]byte(record))
@@ -115,7 +115,7 @@ func NewSubmitGOVProposalMetadataFromJson(jsonData map[string]interface{}) *Subm
 }
 
 func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash {
-	record := string(common.ToBytes(submitGOVProposalMetadata.GOVParams.Hash()))
+	record := string(common.ToBytes(*submitGOVProposalMetadata.GOVParams.Hash()))
 	record += string(submitGOVProposalMetadata.ExecuteDuration)
 	record += submitGOVProposalMetadata.Explaination
 	hash := common.DoubleHashH([]byte(record))

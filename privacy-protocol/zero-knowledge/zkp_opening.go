@@ -124,7 +124,7 @@ func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) error {
 	}
 	pro.indexs = make([]byte, len(pro.gamma))
 	for i := 0; i < len(pro.indexs); i++ {
-		pro.indexs[i] = bytestr[privacy.CompressedPointSize*2+len(pro.gamma)*privacy.BigIntSize + i]
+		pro.indexs[i] = bytestr[privacy.CompressedPointSize*2+len(pro.gamma)*privacy.BigIntSize+i]
 	}
 	return nil
 }

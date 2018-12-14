@@ -826,16 +826,16 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.Hash())
 		case metadata.SealedLv2DCBBallotMeta:
 			underlieMetadata := meta.(*metadata.SealedLv2DCBBallotMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.PointerToLv3Ballot)
+			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
 		case metadata.SealedLv1DCBBallotMeta:
 			underlieMetadata := meta.(*metadata.SealedLv1DCBBallotMetadata)
-			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.PointerToLv3Ballot)
+			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
 		case metadata.NormalDCBBallotMetaFromOwner:
 			underlieMetadata := meta.(*metadata.NormalDCBBallotFromOwnerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.PointerToLv3Ballot)
+			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
 		case metadata.NormalDCBBallotMetaFromSealer:
 			underlieMetadata := meta.(*metadata.NormalDCBBallotFromSealerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.PointerToLv3Ballot)
+			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
 			// todo: gov
 
 		}
@@ -849,7 +849,7 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 		case metadata.AcceptDCBProposalMeta:
 			{
 				meta := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
-				_, _, _, getTx, err := self.GetTransactionByHash(meta.DCBProposalTXID)
+				_, _, _, getTx, err := self.GetTransactionByHash(&meta.DCBProposalTXID)
 				proposal := getTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
 				if err != nil {
 					return err

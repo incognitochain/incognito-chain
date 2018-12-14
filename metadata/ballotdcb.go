@@ -64,8 +64,8 @@ func (sealDCBBallotMetadata *SealedDCBBallotMetadata) ValidateMetadataByItself()
 
 type SealedLv1DCBBallotMetadata struct {
 	SealedDCBBallotMetadata
-	PointerToLv2Ballot *common.Hash
-	PointerToLv3Ballot *common.Hash
+	PointerToLv2Ballot common.Hash
+	PointerToLv3Ballot common.Hash
 }
 
 func NewSealedLv1DCBBallotMetadata(data map[string]interface{}) *SealedLv1DCBBallotMetadata {
@@ -77,13 +77,13 @@ func NewSealedLv1DCBBallotMetadata(data map[string]interface{}) *SealedLv1DCBBal
 				Type: SealedLv1DCBBallotMeta,
 			},
 		},
-		PointerToLv2Ballot: data["PointerToLv2Ballot"].(*common.Hash),
-		PointerToLv3Ballot: data["PointerToLv3Ballot"].(*common.Hash),
+		PointerToLv2Ballot: data["PointerToLv2Ballot"].(common.Hash),
+		PointerToLv3Ballot: data["PointerToLv3Ballot"].(common.Hash),
 	}
 }
 
 func (sealedLv1DCBBallotMetadata *SealedLv1DCBBallotMetadata) Hash() *common.Hash {
-	record := string(common.ToBytes(sealedLv1DCBBallotMetadata.SealedDCBBallotMetadata.Hash()))
+	record := string(common.ToBytes(*sealedLv1DCBBallotMetadata.SealedDCBBallotMetadata.Hash()))
 	record += string(common.ToBytes(sealedLv1DCBBallotMetadata.PointerToLv2Ballot))
 	record += string(common.ToBytes(sealedLv1DCBBallotMetadata.PointerToLv3Ballot))
 	hash := common.DoubleHashH([]byte(record))
@@ -98,11 +98,11 @@ func (sealedLv1DCBBallotMetadata *SealedLv1DCBBallotMetadata) ValidateTxWithBloc
 	}
 
 	//Check precede transaction type
-	_, _, _, lv2Tx, _ := bcr.GetTransactionByHash(sealedLv1DCBBallotMetadata.PointerToLv2Ballot)
+	_, _, _, lv2Tx, _ := bcr.GetTransactionByHash(&sealedLv1DCBBallotMetadata.PointerToLv2Ballot)
 	if lv2Tx.GetMetadataType() != SealedLv2DCBBallotMeta {
 		return false, nil
 	}
-	_, _, _, lv3Tx, _ := bcr.GetTransactionByHash(sealedLv1DCBBallotMetadata.PointerToLv3Ballot)
+	_, _, _, lv3Tx, _ := bcr.GetTransactionByHash(&sealedLv1DCBBallotMetadata.PointerToLv3Ballot)
 	if lv3Tx.GetMetadataType() != SealedLv3DCBBallotMeta {
 		return false, nil
 	}
@@ -124,7 +124,7 @@ func (sealedLv1DCBBallotMetadata *SealedLv1DCBBallotMetadata) ValidateTxWithBloc
 
 type SealedLv2DCBBallotMetadata struct {
 	SealedDCBBallotMetadata
-	PointerToLv3Ballot *common.Hash
+	PointerToLv3Ballot common.Hash
 }
 
 func NewSealedLv2DCBBallotMetadata(data map[string]interface{}) *SealedLv2DCBBallotMetadata {
@@ -136,12 +136,12 @@ func NewSealedLv2DCBBallotMetadata(data map[string]interface{}) *SealedLv2DCBBal
 				Type: SealedLv2DCBBallotMeta,
 			},
 		},
-		PointerToLv3Ballot: data["PointerToLv3Ballot"].(*common.Hash),
+		PointerToLv3Ballot: data["PointerToLv3Ballot"].(common.Hash),
 	}
 }
 
 func (sealedLv2DCBBallotMetadata *SealedLv2DCBBallotMetadata) Hash() *common.Hash {
-	record := string(common.ToBytes(sealedLv2DCBBallotMetadata.SealedDCBBallotMetadata.Hash()))
+	record := string(common.ToBytes(*sealedLv2DCBBallotMetadata.SealedDCBBallotMetadata.Hash()))
 	record += string(common.ToBytes(sealedLv2DCBBallotMetadata.PointerToLv3Ballot))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
@@ -155,7 +155,7 @@ func (sealedLv2DCBBallotMetadata *SealedLv2DCBBallotMetadata) ValidateTxWithBloc
 	}
 
 	//Check precede transaction type
-	_, _, _, lv3Tx, _ := bcr.GetTransactionByHash(sealedLv2DCBBallotMetadata.PointerToLv3Ballot)
+	_, _, _, lv3Tx, _ := bcr.GetTransactionByHash(&sealedLv2DCBBallotMetadata.PointerToLv3Ballot)
 	if lv3Tx.GetMetadataType() != SealedLv3DCBBallotMeta {
 		return false, nil
 	}
@@ -194,8 +194,8 @@ func NewSealedLv3DCBBallotMetadata(data map[string]interface{}) *SealedLv3DCBBal
 type NormalDCBBallotFromSealerMetadata struct {
 	Ballot             []byte
 	LockerPubKey       [][]byte
-	PointerToLv1Ballot *common.Hash
-	PointerToLv3Ballot *common.Hash
+	PointerToLv1Ballot common.Hash
+	PointerToLv3Ballot common.Hash
 	MetadataBase
 }
 
@@ -225,8 +225,8 @@ func NewNormalDCBBallotFromSealerMetadata(data map[string]interface{}) *NormalDC
 	return &NormalDCBBallotFromSealerMetadata{
 		Ballot:             data["Ballot"].([]byte),
 		LockerPubKey:       data["LockerPubKey"].([][]byte),
-		PointerToLv1Ballot: data["PointerToLv1Ballot"].(*common.Hash),
-		PointerToLv3Ballot: data["PointerToLv3Ballot"].(*common.Hash),
+		PointerToLv1Ballot: data["PointerToLv1Ballot"].(common.Hash),
+		PointerToLv3Ballot: data["PointerToLv3Ballot"].(common.Hash),
 		MetadataBase: MetadataBase{
 			Type: NormalDCBBallotMetaFromSealer,
 		},
@@ -261,11 +261,11 @@ func (normalDCBBallotFromSealerMetadata *NormalDCBBallotFromSealerMetadata) Vali
 	}
 
 	//Check precede transaction type
-	_, _, _, lv1Tx, _ := bcr.GetTransactionByHash(normalDCBBallotFromSealerMetadata.PointerToLv1Ballot)
+	_, _, _, lv1Tx, _ := bcr.GetTransactionByHash(&normalDCBBallotFromSealerMetadata.PointerToLv1Ballot)
 	if lv1Tx.GetMetadataType() != SealedLv1DCBBallotMeta {
 		return false, nil
 	}
-	_, _, _, lv3Tx, _ := bcr.GetTransactionByHash(normalDCBBallotFromSealerMetadata.PointerToLv3Ballot)
+	_, _, _, lv3Tx, _ := bcr.GetTransactionByHash(&normalDCBBallotFromSealerMetadata.PointerToLv3Ballot)
 	if lv3Tx.GetMetadataType() != SealedLv3DCBBallotMeta {
 		return false, nil
 	}
@@ -288,7 +288,7 @@ func (normalDCBBallotFromSealerMetadata *NormalDCBBallotFromSealerMetadata) Vali
 type NormalDCBBallotFromOwnerMetadata struct {
 	Ballot             []byte
 	LockerPubKey       [][]byte
-	PointerToLv3Ballot *common.Hash
+	PointerToLv3Ballot common.Hash
 	MetadataBase
 }
 
@@ -296,7 +296,7 @@ func NewNormalDCBBallotFromOwnerMetadata(data map[string]interface{}) *NormalDCB
 	return &NormalDCBBallotFromOwnerMetadata{
 		Ballot:             data["Ballot"].([]byte),
 		LockerPubKey:       data["LockerPubKey"].([][]byte),
-		PointerToLv3Ballot: data["PointerToLv3Ballot"].(*common.Hash),
+		PointerToLv3Ballot: data["PointerToLv3Ballot"].(common.Hash),
 		MetadataBase: MetadataBase{
 			Type: NormalDCBBallotMetaFromOwner,
 		},
@@ -330,7 +330,7 @@ func (normalDCBBallotFromOwnerMetadata *NormalDCBBallotFromOwnerMetadata) Valida
 	}
 
 	//Check precede transaction type
-	_, _, _, lv3Tx, _ := bcr.GetTransactionByHash(normalDCBBallotFromOwnerMetadata.PointerToLv3Ballot)
+	_, _, _, lv3Tx, _ := bcr.GetTransactionByHash(&normalDCBBallotFromOwnerMetadata.PointerToLv3Ballot)
 	if lv3Tx.GetMetadataType() != SealedLv3DCBBallotMeta {
 		return false, nil
 	}
