@@ -609,6 +609,5 @@ func (self *ConnManager) CheckAcceptConn(peerConn *peer.PeerConn) bool {
 			return false
 		}
 	}
-	// check max unknown shard conn
 	return true
 }
