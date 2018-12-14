@@ -28,6 +28,7 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 type Server struct {
@@ -59,7 +60,7 @@ type Server struct {
 // setupRPCListeners returns a slice of listeners that are configured for use
 // with the RPC server depending on the configuration settings for listen
 // addresses and TLS.
-func (self Server) setupRPCListeners() ([]net.Listener, error) {
+func (self *Server) setupRPCListeners() ([]net.Listener, error) {
 	// Setup TLS if not disabled.
 	listenFunc := net.Listen
 	if !cfg.DisableTLS {
@@ -245,6 +246,10 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	connManager := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
+		GetCurrentShard:      self.GetCurrentShard,
+		GetPbksOfShard:       self.GetPbksOfShard,
+		GetCurrentPbk:        self.GetCurrentPbk,
+		GetShardByPbk:        self.GetShardByPbk,
 		ListenerPeers:        peers,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
@@ -324,7 +329,7 @@ func (self *Server) InboundPeerConnected(peerConn *peer.PeerConn) {
 // manager of the attempt.
 */
 func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
-	Logger.log.Info("Outbound PEER connected with PEER Id - " + peerConn.RemotePeerID.String())
+	Logger.log.Info("Outbound PEER connected with PEER Id - " + peerConn.RemotePeerID.Pretty())
 	err := self.PushVersionMessage(peerConn)
 	if err != nil {
 		Logger.log.Error(err)
@@ -334,15 +339,15 @@ func (self *Server) OutboundPeerConnected(peerConn *peer.PeerConn) {
 /*
 // WaitForShutdown blocks until the main listener and peer handlers are stopped.
 */
-func (self Server) WaitForShutdown() {
+func (self *Server) WaitForShutdown() {
 	self.waitGroup.Wait()
 }
 
 /*
 // Stop gracefully shuts down the connection manager.
 */
-func (self Server) Stop() error {
-	// stop connection manager
+func (self *Server) Stop() error {
+	// stop connManager
 	self.connManager.Stop()
 
 	// Shutdown the RPC server if it's not disabled.
@@ -375,7 +380,7 @@ func (self Server) Stop() error {
 // peers to and from the server, banning peers, and broadcasting messages to
 // peers.  It must be run in a goroutine.
 */
-func (self Server) peerHandler() {
+func (self *Server) peerHandler() {
 	// Start the address manager and sync manager, both of which are needed
 	// by peers.  This is done here since their lifecycle is closely tied
 	// to this handler and rather than adding more channels to sychronize
@@ -545,6 +550,8 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnSwapSig:     self.OnSwapSig,
 			OnSwapUpdate:  self.OnSwapUpdate,
 		},
+
+		GetShardByPbk: self.GetShardByPbk,
 	}
 	if len(KeySetUser.PrivateKey) != 0 {
 		config.UserKeySet = KeySetUser
@@ -578,7 +585,7 @@ func (self *Server) OnGetBlocks(_ *peer.PeerConn, msg *wire.MessageGetBlocks) {
 // until the transaction has been fully processed.  Unlock the block
 // handler this does not serialize all transactions through a single thread
 // transactions don't rely on the previous one in a linear fashion like blocks.
-func (self Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
+func (self *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Info("Receive a new transaction START")
 	var txProcessed chan struct{}
 	self.netSync.QueueTx(nil, msg, txProcessed)
@@ -587,7 +594,7 @@ func (self Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Info("Receive a new transaction END")
 }
 
-/*func (self Server) OnRegistration(peer *peer.PeerConn, msg *wire.MessageRegistration) {
+/*func (self *Server) OnRegistration(peer *peer.PeerConn, msg *wire.MessageRegistration) {
 	Logger.log.Info("Receive a new registration START")
 	var txProcessed chan struct{}
 	self.netSync.QueueRegisteration(nil, msg, txProcessed)
@@ -596,21 +603,21 @@ func (self Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Info("Receive a new registration END")
 }*/
 
-func (self Server) OnSwapRequest(peer *peer.PeerConn, msg *wire.MessageSwapRequest) {
+func (self *Server) OnSwapRequest(peer *peer.PeerConn, msg *wire.MessageSwapRequest) {
 	Logger.log.Info("Receive a new request swap START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a new request swap END")
 }
 
-func (self Server) OnSwapSig(peer *peer.PeerConn, msg *wire.MessageSwapSig) {
+func (self *Server) OnSwapSig(peer *peer.PeerConn, msg *wire.MessageSwapSig) {
 	Logger.log.Info("Receive a new sign swap START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a new sign swap END")
 }
 
-func (self Server) OnSwapUpdate(peer *peer.PeerConn, msg *wire.MessageSwapUpdate) {
+func (self *Server) OnSwapUpdate(peer *peer.PeerConn, msg *wire.MessageSwapUpdate) {
 	Logger.log.Info("Receive a new update swap START")
 	var txProcessed chan struct{}
 	self.netSync.QueueMessage(nil, msg, txProcessed)
@@ -625,21 +632,32 @@ func (self Server) OnSwapUpdate(peer *peer.PeerConn, msg *wire.MessageSwapUpdate
 func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion) {
 	Logger.log.Info("Receive version message START")
 
+	pbk := ""
+	err := cashec.ValidateDataB58(msg.PublicKey, msg.SignDataB58, []byte{0x00})
+	if err == nil {
+		pbk = msg.PublicKey
+	} else {
+		peerConn.ForceClose()
+		return
+	}
 	remotePeer := &peer.Peer{
 		ListeningAddress: msg.LocalAddress,
 		RawAddress:       msg.RawLocalAddress,
 		PeerID:           msg.LocalPeerId,
-		PublicKey:        msg.PublicKey,
+		PublicKey:        pbk,
 	}
-
-	if msg.PublicKey != "" {
-		peerConn.RemotePeer.PublicKey = msg.PublicKey
-	}
+	peerConn.RemotePeer.PublicKey = pbk
 
 	self.cNewPeers <- remotePeer
 	valid := false
 	if msg.ProtocolVersion == self.protocolVersion {
 		valid = true
+	}
+
+	// check for accept connection
+	if !self.connManager.CheckAcceptConn(peerConn) {
+		peerConn.ForceClose()
+		return
 	}
 
 	msgV, err := wire.MakeEmptyMessage(wire.CmdVerack)
@@ -648,6 +666,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	}
 
 	msgV.(*wire.MessageVerAck).Valid = valid
+	msgV.(*wire.MessageVerAck).Timestamp = time.Now()
 
 	peerConn.QueueMessageWithEncoding(msgV, nil)
 
@@ -847,11 +866,11 @@ func (self *Server) PushMessageToPeer(msg wire.Message, peerId libp2p.ID) error 
 	Logger.log.Infof("Push msg to peer %s", peerId.String())
 	var dc chan<- struct{}
 	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
-		peerConn := self.connManager.Config.ListenerPeers[index].GetPeerConnByPeerID(peerId.String())
+		peerConn := self.connManager.Config.ListenerPeers[index].GetPeerConnByPeerID(peerId.Pretty())
 		if peerConn != nil {
 			msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
 			peerConn.QueueMessageWithEncoding(msg, dc)
-			Logger.log.Infof("Pushed peer %s", peerId.String())
+			Logger.log.Infof("Pushed peer %s", peerId.Pretty())
 			return nil
 		} else {
 			Logger.log.Error("RemotePeer not exist!")
@@ -918,7 +937,6 @@ GetChainState - send a getchainstate msg to connected peer
 */
 func (self *Server) PushMessageGetChainState() error {
 	Logger.log.Infof("Send a GetChainState")
-	var dc chan<- struct{}
 	for _, listener := range self.connManager.Config.ListenerPeers {
 		msg, err := wire.MakeEmptyMessage(wire.CmdGetChainState)
 		if err != nil {
@@ -927,12 +945,12 @@ func (self *Server) PushMessageGetChainState() error {
 		msg.(*wire.MessageGetChainState).Timestamp = time.Unix(time.Now().Unix(), 0)
 		msg.SetSenderID(listener.PeerID)
 		Logger.log.Infof("Send a GetChainState from %s", listener.RawAddress)
-		listener.QueueMessageWithEncoding(msg, dc)
+		listener.QueueMessageWithEncoding(msg, nil)
 	}
 	return nil
 }
 
-func (self Server) PushVersionMessage(peerConn *peer.PeerConn) error {
+func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	// push message version
 	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
 	msg.(*wire.MessageVersion).Timestamp = time.Unix(time.Now().Unix(), 0)
@@ -954,10 +972,103 @@ func (self Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	// 	msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.Config.UserKeySet.GetPublicKeyB58()
 	// }
 
+	// ValidateTransaction Public Key from ProducerPrvKey
+	if peerConn.ListenerPeer.Config.ProducerKeySet != nil {
+		msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.Config.ProducerKeySet.GetPublicKeyB58()
+		signDataB58, err := peerConn.ListenerPeer.Config.ProducerKeySet.SignDataB58([]byte{0x00})
+		if err == nil {
+			msg.(*wire.MessageVersion).SignDataB58 = signDataB58
+		}
+	}
 	if err != nil {
 		return err
 	}
-	var dc chan<- struct{}
-	peerConn.QueueMessageWithEncoding(msg, dc)
+	peerConn.QueueMessageWithEncoding(msg, nil)
 	return nil
+}
+
+func (self *Server) GetShardByPbk(pbk string) *byte {
+	if pbk == "" {
+		return nil
+	}
+	shard, ok := mPBK[pbk]
+	if ok {
+		return &shard
+	}
+	return nil
+}
+
+func (self *Server) GetCurrentPbk() *string {
+	ks, err := cfg.GetProducerKeySet()
+	if err != nil {
+		return nil
+	}
+	pbk := ks.GetPublicKeyB58()
+	return &pbk
+}
+
+func (self *Server) GetCurrentShard() *byte {
+	ks, err := cfg.GetProducerKeySet()
+	if err != nil {
+		return nil
+	}
+	pbk := ks.GetPublicKeyB58()
+	shard, ok := mPBK[pbk]
+	if ok {
+		return &shard
+	}
+	return nil
+}
+
+func (self *Server) GetPbksOfShard(shard byte) []string {
+	pBKs := make([]string, 0)
+	for k, v := range mPBK {
+		if v == shard {
+			pBKs = append(pBKs, k)
+		}
+	}
+	return pBKs
+}
+
+func (self *Server) getCurrentShardInfoByPbk() (*byte, string) {
+	ks, err := cfg.GetProducerKeySet()
+	if err != nil {
+		return nil, ""
+	}
+	pbk := ks.GetPublicKeyB58()
+	shard, ok := mPBK[pbk]
+	if ok {
+		return &shard, ""
+	}
+	return nil, ""
+}
+
+func (self *Server) getShardInfoByPbk(pbk string) (*byte, string) {
+	shard, ok := mPBK[pbk]
+	if ok {
+		return &shard, ""
+	}
+	return nil, ""
+}
+
+func (self *Server) shardChanged(oldShard *byte, newShard *byte) {
+	// update shard connection, random peers, drop peers and new peers
+}
+
+var mPBK = map[string]byte{
+	"15Z7uGSzG4ZR5ENDnBE6PuGcquNGYj7PqPFj4ojEEGk8QQNZoN6": 0,
+	"15CfJ8vH78zw8PT2FbBeNssFWcHMW1sSxoJ6RKv2hZ6nztp4mCQ": 1,
+	"17PnJ3sjHvFLp3Sck12FaHfvk4AghGctecTG54bdLNFVGygi8DN": 2,
+	"17qiWdX7ubTHpVu5eMDxMCCwesYYcLWKE1KTP62LQK3ALrQ6A5T": 3,
+	"18mxtXGaaRkfkLS9L7eNGTjawpxTnqZSBqKXLSDc4Un8VLGgVPg": 4,
+	"17W59bSax64ykVeGPk8nnXQAoWmiDfPGtVQMVvqJSSep3Py2Jxn": 5,
+	"15nvyVJvmrzp3KK7SF8xMcsffZyvV2BTBmnR4kx8XszdtXhqUm9": 6,
+	"15VmkDTBgFs86h8fD7c9Bk41xndCGA3qXKmqMjy2dJpC6UVWNhZ": 7,
+	"159DQTsMrzrKyF1787R2iK8RA9X8GMXjgwLqPsVR1a129RjSAi5": 8,
+	"18fk4aLAT7F8aTf4Uo784DiGgEBJajC3u8SqcY766FcRPPLHPBz": 9,
+	"15ma6n91BbgyCJNeWa9TzG5gQGCERLZ9F9jaYB1mMPGsJGKhmB7": 10,
+	"18NwuP2PqDNcAWyhAgPpcRgFeS8h7LWv8LX7vzRgfaVmTzBERBZ": 11,
+	"165RABeGBuYYX72S6w8wJqvSgZE7JZ32YVG8ApSwUW38Lm3RrEt": 12,
+	"15yDGFUwf5r7rZcfEzEmpcNvMfC5zi1g454AeHMZNSGEiBFacvt": 13,
+	"16C6356Xst2bKnAuXYM3Ezfz7ZwG9kiKmHAPTFMupQs3wzQfaoM": 14,
 }

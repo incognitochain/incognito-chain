@@ -66,7 +66,7 @@ func (self *AddrManager) savePeers() error {
 	for k, v := range self.addrIndex {
 		ska := new(serializedKnownAddress)
 		ska.Addr = k
-		ska.Src = v.PeerID.String()
+		ska.Src = v.PeerID.Pretty()
 		ska.PublicKey = v.PublicKey
 
 		sam.Addresses[i] = ska
