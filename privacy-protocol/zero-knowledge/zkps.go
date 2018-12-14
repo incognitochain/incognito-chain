@@ -8,7 +8,7 @@ import (
 
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 // PaymentWitness contains all of witness for proving when spending coins
@@ -467,7 +467,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 	//proof.PubKeyLastByteSender = proofbytes[offset]
 	//fmt.Println("***********-----------LEN - SET BYTES ",len(proof.Bytes()))
 	//newBytes :=
-	fmt.Printf("***************AFTER SETBYTE - PROOF %v\n",  proof.Bytes())
+	fmt.Printf("***************AFTER SETBYTE - PROOF %v\n", proof.Bytes())
 	return nil
 }
 
@@ -559,12 +559,13 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		randInputSum[i].Add(randInputSum[i], randInputValue[i])
 		randInputSum[i].Add(randInputSum[i], randInputSND[i])
 		randInputSum[i].Mod(randInputSum[i], privacy.Curve.Params().N)
-
+		randInputOpening := big.NewInt(0)
+		randInputOpening.Set(randInputSum[i])
 		if wit.ComInputOpeningsWitness[i] == nil {
 			wit.ComInputOpeningsWitness[i] = new(PKComOpeningsWitness)
 		}
 		wit.ComInputOpeningsWitness[i].Set(cmInputSum[i],
-			[]*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randInputSum[i]},
+			[]*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randInputOpening},
 			[]byte{privacy.SK, privacy.VALUE, privacy.SND, privacy.RAND})
 
 		/***** Build witness for proving one-out-of-N commitments is a commitment to the coins being spent *****/
