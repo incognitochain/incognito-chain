@@ -3,6 +3,7 @@ package blockchain
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -18,8 +19,7 @@ func (self BeaconBlockGenerator) CreateBeaconGenesisBlock(
 	basicSalary uint64,
 ) *BlockV2 {
 
-	loc, _ := time.LoadLocation("America/New_York")
-	time := time.Date(2018, 8, 1, 0, 0, 0, 0, loc)
+	time := time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC)
 
 	//TODO: build param
 	inst := [][]string{}
@@ -28,11 +28,11 @@ func (self BeaconBlockGenerator) CreateBeaconGenesisBlock(
 	// CHANGE preSelectBeaconNodeTestnetSerializedPubkey to beaconNodes in param
 	// CHANGE preSelectShardNodeTestnetSerializedPubkey to shardNodes in param
 	strBeacon := []string{"assign"}
-	strBeacon = append(strBeacon, preSelectBeaconNodeTestnetSerializedPubkey...)
+	strBeacon = append(strBeacon, strings.Join(preSelectBeaconNodeTestnetSerializedPubkey, ","))
 	strBeacon = append(strBeacon, "beacon")
 
 	strShard := []string{"assign"}
-	strShard = append(strShard, preSelectShardNodeTestnetSerializedPubkey...)
+	strShard = append(strShard, strings.Join(preSelectShardNodeTestnetSerializedPubkey, ","))
 	strShard = append(strShard, "shard")
 	inst = append(inst, strBeacon)
 	inst = append(inst, strShard)
@@ -63,10 +63,4 @@ func (self BeaconBlockGenerator) CreateBeaconGenesisBlock(
 	}
 
 	return block
-}
-
-func BuildNextState(beaconBestState *BestStateBeacon, blk *BlockV2) {
-	//TODO: build candidate
-
-	//TODO: Param "set" "del"
 }
