@@ -1,18 +1,21 @@
 package transaction
 
 import (
-	"fmt"
-	"math/big"
-	"strconv"
 	"crypto/ecdsa"
 	"crypto/rand"
+	"errors"
+	"fmt"
+	"math"
+	"math/big"
+	"strconv"
+	"time"
 
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-	"math"
-	"github.com/ninjadotorg/constant/cashec"
 )
 
 type Tx struct {
@@ -28,13 +31,7 @@ type Tx struct {
 	Proof     *zkp.PaymentProof
 
 	// Metadata
-	Metadata interface{}
-
-	// this one is a hash id of requested tx
-	// and is used inside response txs
-	// so that we can determine pair of req/res txs
-	// for example, BuySellRequestTx/BuySellResponseTx
-	//RequestedTxID *common.Hash
+	Metadata metadata.Metadata
 
 	sigPrivKey []byte // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 }
@@ -50,7 +47,7 @@ func (tx *Tx) Init(
 	fee uint64,
 	hasPrivacy bool,
 	db database.DatabaseInterface,
-) (error) {
+) error {
 
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
 		fmt.Printf("CREATE TX CUSTOM TOKEN\n")
@@ -405,7 +402,9 @@ func (tx *Tx) Hash() *common.Hash {
 	if tx.Proof != nil {
 		record += string(tx.Proof.Bytes()[:])
 	}
-	//record += string{tx.Metadata}
+	if tx.Metadata != nil {
+		record += string(tx.Metadata.Hash()[:])
+	}
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -445,9 +444,9 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	var sizeFee uint64 = 8      // uint64
 	var sizeDescs uint64        // uint64
 	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
 	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
 	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
@@ -459,4 +458,208 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 func (tx Tx) CheckCMExistence(cm []byte, db database.DatabaseInterface, chainID byte) (bool, error) {
 	ok, err := db.HasCommitment(cm, chainID)
 	return ok, err
+}
+
+func (tx *Tx) CheckTxVersion(maxTxVersion int8) bool {
+	if tx.Version > maxTxVersion {
+		return false
+	}
+	return true
+}
+
+func (tx *Tx) CheckTransactionFee(minFee uint64) bool {
+	if tx.IsSalaryTx() {
+		return true
+	}
+	if tx.Metadata != nil {
+		return tx.Metadata.CheckTransactionFee(tx, minFee)
+	}
+	if tx.Fee < minFee {
+		return false
+	}
+	return true
+}
+
+func (tx *Tx) IsSalaryTx() bool {
+	// Check normal tx(not an action tx)
+	if tx.GetType() != common.TxSalaryType {
+		return false
+	}
+	// Check nullifiers in every Descs
+	if len(tx.Proof.InputCoins) == 0 {
+		return true
+	}
+	return false
+}
+
+func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
+	pubkeys := [][]byte{}
+	amounts := []uint64{}
+	return pubkeys, amounts
+
+	// TODO: @bunyip - update logic here
+
+	// for _, desc := range tx.Descs {
+	// 	for _, note := range desc.Note {
+	// 		added := false
+	// 		for i, key := range pubkeys {
+	// 			if bytes.Equal(note.Apk[:], key) {
+	// 				added = true
+	// 				amounts[i] += note.Value
+	// 			}
+	// 		}
+	// 		if !added {
+	// 			pubkeys = append(pubkeys, note.Apk[:])
+	// 			amounts = append(amounts, note.Value)
+	// 		}
+	// 	}
+	// }
+	// return pubkeys, amounts
+}
+
+func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {
+	for _, temp1 := range poolNullifiers {
+		for _, desc := range tx.Proof.InputCoins {
+			if ok, err := common.SliceBytesExists(temp1, desc.CoinDetails.SerialNumber.Compress()); ok == -1 || err != nil {
+				return errors.New("Double spend")
+			}
+		}
+	}
+	return nil
+}
+
+func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
+	if tx.Type == common.TxSalaryType {
+		return errors.New("Can not receive a salary tx from other node, this is a violation")
+	}
+	poolNullifiers := mr.GetPoolNullifiers()
+	return tx.validateDoubleSpendTxWithCurrentMempool(poolNullifiers)
+}
+
+// ValidateDoubleSpend - check double spend for any transaction type
+func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
+	bcr metadata.BlockchainRetriever,
+	chainID byte,
+	db database.DatabaseInterface,
+) error {
+	for i := 0; i < len(tx.Proof.InputCoins); i++ {
+		serialNumber := tx.Proof.InputCoins[i].CoinDetails.SerialNumber.Compress()
+		ok, err := db.HasSerialNumber(serialNumber, chainID)
+		if ok || err != nil {
+			return errors.New("Double spend")
+		}
+	}
+	return nil
+}
+
+func (tx *Tx) ValidateTxWithBlockChain(
+	bcr metadata.BlockchainRetriever,
+	chainID byte,
+	db database.DatabaseInterface,
+) error {
+	if tx.GetType() == common.TxSalaryType {
+		return nil
+	}
+	if tx.Metadata != nil {
+		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, chainID, db)
+		if err != nil {
+			return err
+		}
+		if !isContinued {
+			return nil
+		}
+	}
+	return tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
+}
+
+func (tx *Tx) validateNormalTxSanityData() (bool, error) {
+	txN := tx
+	//check version
+	if txN.Version > TxVersion {
+		return false, errors.New("Wrong tx version")
+	}
+	// check LockTime before now
+	if int64(txN.LockTime) > time.Now().Unix() {
+		return false, errors.New("Wrong tx locktime")
+	}
+	// check Type is normal or salary tx
+	if len(txN.Type) != 1 || (txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType) { // only 1 byte
+		return false, errors.New("Wrong tx type")
+	}
+
+	return true, nil
+}
+
+func (tx *Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
+	if tx.Metadata != nil {
+		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, tx)
+		if err != nil || !ok || !isContinued {
+			return ok, err
+		}
+	}
+	return tx.validateNormalTxSanityData()
+}
+
+func (tx *Tx) ValidateTxByItself(
+	hasPrivacy bool,
+	db database.DatabaseInterface,
+	bcr metadata.BlockchainRetriever,
+	chainID byte,
+) bool {
+	ok := tx.ValidateTransaction(hasPrivacy, db, chainID)
+	if !ok {
+		return false
+	}
+	if tx.Metadata != nil {
+		return tx.Metadata.ValidateMetadataByItself()
+	}
+	return true
+}
+
+// GetMetadataType returns the type of underlying metadata if is existed
+func (tx *Tx) GetMetadataType() int {
+	if tx.Metadata != nil {
+		return tx.Metadata.GetType()
+	}
+	return metadata.InvalidMeta
+}
+
+// GetMetadata returns metadata of tx is existed
+func (tx *Tx) GetMetadata() metadata.Metadata {
+	return tx.Metadata
+}
+
+// SetMetadata sets metadata to tx
+func (tx *Tx) SetMetadata(meta metadata.Metadata) {
+	tx.Metadata = meta
+}
+
+func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
+	// TODO: 0xankylosaurus - update here
+	return nil, 0
+
+	// initiatorPubKey := tx.JSPubKey
+	// txValue := uint64(0)
+	// var addr *privacy.PaymentAddress
+	// for _, desc := range tx.Descs {
+	// 	for _, note := range desc.Note {
+	// 		if string(note.Apk[:]) == string(initiatorPubKey) {
+	// 			continue
+	// 		}
+	// 		addr = &privacy.PaymentAddress{
+	// 			Pk: note.Apk,
+	// 		}
+	// 		txValue += note.Value
+	// 	}
+	// }
+	// return addr, txValue
+}
+
+func (tx *Tx) GetJSPubKey() []byte {
+	return tx.SigPubKey
+}
+
+func (tx *Tx) IsPrivacy() bool {
+	// TODO: @0xankylosaurus - update here
+	return false
 }

@@ -90,6 +90,7 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 			Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
 		}
 	}
+	// TODO: @0xankylosaurus optimize for loop once instead of multiple times ; metadata.process
 	// save index of block
 	err := self.StoreBlockIndex(block)
 	if err != nil {
@@ -101,8 +102,8 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
-	/*// Save loan txs TODO
-	err = self.SaveLoanTxsForBlock(block)
+	// Save loan txs
+	err = self.ProcessLoanForBlock(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
@@ -113,11 +114,26 @@ func (self *BlockChain) ConnectBlock(block *Block) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
+	//Update database for vote board
+	err = self.UpdateVoteCountBoard(block)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+
+	//Update amount of token of each holder
+	err = self.UpdateVoteTokenHolder(block)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+
+	// Update database for vote proposal
+	err = self.ProcessVoteProposal(block)
+
 	// Process crowdsale tx
 	err = self.ProcessCrowdsaleTxs(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
-	}*/
+	}
 
 	Logger.log.Infof("Accepted block %s", blockHash)
 

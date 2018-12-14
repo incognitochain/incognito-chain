@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
@@ -19,11 +20,56 @@ block contains many types of transaction
 */
 type Block struct {
 	Header           BlockHeader
-	Transactions     []transaction.Transaction
+	Transactions     []metadata.Transaction
 	BlockProducer    string // in base58check.encode
 	BlockProducerSig string
 
 	blockHash *common.Hash
+}
+
+func parseMetadata(meta interface{}) (metadata.Metadata, error) {
+	if meta == nil {
+		return nil, nil
+	}
+
+	mtTemp := map[string]interface{}{}
+	metaInBytes, err := json.Marshal(meta)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(metaInBytes, &mtTemp)
+	if err != nil {
+		return nil, err
+	}
+	var md metadata.Metadata
+	switch int(mtTemp["Type"].(float64)) {
+	case metadata.BuyFromGOVRequestMeta:
+		md = &metadata.BuySellRequest{}
+
+	case metadata.BuyBackRequestMeta:
+		md = &metadata.BuyBackRequest{}
+
+	case metadata.BuyFromGOVResponseMeta:
+		md = &metadata.BuySellResponse{}
+
+	case metadata.BuyBackResponseMeta:
+		md = &metadata.BuyBackResponse{}
+
+	case metadata.LoanRequestMeta:
+		md = &metadata.LoanRequest{}
+
+	case metadata.LoanResponseMeta:
+		md = &metadata.LoanResponse{}
+
+	default:
+		return nil, errors.New("Could not parse metadata with known types.")
+	}
+
+	err = json.Unmarshal(metaInBytes, &md)
+	if err != nil {
+		return nil, err
+	}
+	return md, nil
 }
 
 /*
@@ -31,7 +77,7 @@ Customize UnmarshalJSON to parse list TxNormal
 because we have many types of block, so we can need to customize data from marshal from json string to build a block
 */
 func (self *Block) UnmarshalJSON(data []byte) error {
-	//Logger.log.Info("UnmarshalJSON of block")
+	Logger.log.Info("UnmarshalJSON of block")
 	type Alias Block
 	temp := &struct {
 		Transactions []map[string]interface{}
@@ -48,120 +94,41 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 	// process tx from tx interface of temp
 	for _, txTemp := range temp.Transactions {
 		txTempJson, _ := json.MarshalIndent(txTemp, "", "\t")
-		Logger.log.Debugf("TxNormal json data: ", string(txTempJson))
+		Logger.log.Debugf("Tx json data: ", string(txTempJson))
+
+		var tx metadata.Transaction
+		var parseErr error
 		switch txTemp["Type"].(string) {
 		case common.TxNormalType:
 			{
-				txNormal := &transaction.Tx{}
-				_ = json.Unmarshal(txTempJson, &txNormal)
-				self.Transactions = append(self.Transactions, txNormal)
+				tx = &transaction.Tx{}
+				parseErr = json.Unmarshal(txTempJson, &tx)
 			}
 		case common.TxSalaryType:
 			{
-				txNormal := &transaction.Tx{}
-				err := json.Unmarshal(txTempJson, &txNormal)
-				if err != nil {
-					Logger.log.Error(err)
-					panic(err)
-				}
-				self.Transactions = append(self.Transactions, txNormal)
+				tx = &transaction.Tx{}
+				parseErr = json.Unmarshal(txTempJson, &tx)
 			}
 		case common.TxCustomTokenType:
 			{
-				txCustomToken := &transaction.TxCustomToken{}
-				_ = json.Unmarshal(txTempJson, &txCustomToken)
-				self.Transactions = append(self.Transactions, txCustomToken)
+				tx = &transaction.TxCustomToken{}
+				parseErr = json.Unmarshal(txTempJson, &tx)
 			}
-			/*case common.TxBuyRequest, common.TxSellRequest:
-			  {
-				  buySellReqTx := &transaction.TxBuySellRequest{}
-				  _ = json.Unmarshal(txTempJson, &buySellReqTx)
-				  self.Transactions = append(self.Transactions, buySellReqTx)
-			  }*/
-			/*case common.TxBuyFromGOVResponse:
-			  {
-				  buyFromGOVResTx := &transaction.TxCustomToken{}
-				  _ = json.Unmarshal(txTempJson, &buyFromGOVResTx)
-				  self.Transactions = append(self.Transactions, buyFromGOVResTx)
-			  }
-		  case common.TxSubmitDCBProposal:
-			  {
-				  submitDCBProposalTx := &transaction.TxSubmitDCBProposal{}
-				  _ = json.Unmarshal(txTempJson, &submitDCBProposalTx)
-				  self.Transactions = append(self.Transactions, submitDCBProposalTx)
-			  }
-		  case common.TxSubmitGOVProposal:
-			  {
-				  submitGOVProposalTx := &transaction.TxSubmitGOVProposal{}
-				  _ = json.Unmarshal(txTempJson, &submitGOVProposalTx)
-				  self.Transactions = append(self.Transactions, submitGOVProposalTx)
-			  }
-		  case common.TxVoteDCBProposal:
-			  {
-				  VoteDCBProposalTx := &transaction.TxVoteDCBProposal{}
-				  _ = json.Unmarshal(txTempJson, &VoteDCBProposalTx)
-				  self.Transactions = append(self.Transactions, VoteDCBProposalTx)
-			  }
-		  case common.TxVoteGOVProposal:
-			  {
-				  VoteDcbProposalTx := &transaction.TxVoteGOVProposal{}
-				  _ = json.Unmarshal(txTempJson, &VoteDcbProposalTx)
-				  self.Transactions = append(self.Transactions, VoteDcbProposalTx)
-			  }
-		  case common.TxAcceptDCBProposal:
-			  {
-				  AcceptDCBProposal := &transaction.TxAcceptDCBProposal{}
-				  _ = json.Unmarshal(txTempJson, &AcceptDCBProposal)
-				  self.Transactions = append(self.Transactions, AcceptDCBProposal)
-			  }
-		  case common.TxAcceptGOVProposal:
-			  {
-				  AcceptGovProposal := &transaction.TxAcceptGOVProposal{}
-				  _ = json.Unmarshal(txTempJson, &AcceptGovProposal)
-				  self.Transactions = append(self.Transactions, AcceptGovProposal)
-			  }
-		  case common.TxLoanRequest:
-			  {
-				  tx := &transaction.TxLoanRequest{}
-				  _ = json.Unmarshal(txTempJson, &tx)
-				  self.Transactions = append(self.Transactions, tx)
-			  }
-		  case common.TxLoanResponse:
-			  {
-				  tx := &transaction.TxLoanResponse{}
-				  _ = json.Unmarshal(txTempJson, &tx)
-				  self.Transactions = append(self.Transactions, tx)
-			  }
-		  case common.TxLoanPayment:
-			  {
-				  tx := &transaction.TxLoanPayment{}
-				  _ = json.Unmarshal(txTempJson, &tx)
-				  self.Transactions = append(self.Transactions, tx)
-			  }
-		  case common.TxLoanWithdraw:
-			  {
-				  tx := &transaction.TxLoanWithdraw{}
-				  _ = json.Unmarshal(txTempJson, &tx)
-				  self.Transactions = append(self.Transactions, tx)
-			  }*/
-			/*case common.TxBuySellDCBRequest:
-			  {
-				  tx := &transaction.TxBuySellRequest{}
-				  _ = json.Unmarshal(txTempJson, &tx)
-				  self.Transactions = append(self.Transactions, tx)
-			  }
-		  case common.TxBuySellDCBResponse:
-			  {
-				  tx := &transaction.TxBuySellDCBResponse{}
-				  _ = json.Unmarshal(txTempJson, &tx)
-				  self.Transactions = append(self.Transactions, tx)
-			  }*/
-
 		default:
 			{
 				return NewBlockChainError(UnmashallJsonBlockError, errors.New("Can not parse a wrong tx"))
 			}
 		}
+
+		if parseErr != nil {
+			return NewBlockChainError(UnmashallJsonBlockError, parseErr)
+		}
+		meta, parseErr := parseMetadata(txTemp["Metadata"])
+		if parseErr != nil {
+			return NewBlockChainError(UnmashallJsonBlockError, parseErr)
+		}
+		tx.SetMetadata(meta)
+		self.Transactions = append(self.Transactions, tx)
 	}
 
 	self.Header = temp.Alias.Header
@@ -172,7 +139,7 @@ func (self *Block) UnmarshalJSON(data []byte) error {
 AddTransaction adds a new transaction into block
 */
 // #1 - tx
-func (self *Block) AddTransaction(tx transaction.Transaction) error {
+func (self *Block) AddTransaction(tx metadata.Transaction) error {
 	if self.Transactions == nil {
 		return NewBlockChainError(UnExpectedError, errors.New("Not init tx arrays"))
 	}
@@ -183,7 +150,6 @@ func (self *Block) AddTransaction(tx transaction.Transaction) error {
 /*
 Hash creates a hash from block data
 */
-
 func (self Block) Hash() *common.Hash {
 	if self.blockHash != nil {
 		return self.blockHash
@@ -195,7 +161,7 @@ func (self Block) Hash() *common.Hash {
 	record += strconv.FormatInt(self.Header.Timestamp, 10) +
 		string(self.Header.ChainID) +
 		self.Header.MerkleRoot.String() +
-	//self.Header.MerkleRootCommitments.String() +
+		//self.Header.MerkleRootCommitments.String() +
 		self.Header.PrevBlockHash.String() +
 		strconv.Itoa(int(self.Header.SalaryFund)) +
 		strconv.Itoa(int(self.Header.GOVConstitution.GOVParams.SalaryPerTx)) +
@@ -219,52 +185,34 @@ func (self Block) Hash() *common.Hash {
 	return self.blockHash
 }
 
-/*func (block *Block) updateDCBConstitution(tx transaction.Transaction, blockgen *BlkTmplGenerator) error {
-	txAcceptDCBProposal := tx.(transaction.TxAcceptDCBProposal)
-	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(txAcceptDCBProposal.DCBProposalTXID)
-	DCBProposal := getTx.(*transaction.TxSubmitDCBProposal)
+func (block *Block) updateDCBConstitution(tx metadata.Transaction, blockgen *BlkTmplGenerator) error {
+	metadataAcceptDCBProposal := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
+	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(&metadataAcceptDCBProposal.DCBProposalTXID)
+	DCBProposal := getTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
 	if err != nil {
 		return err
 	}
 	block.Header.DCBConstitution.StartedBlockHeight = block.Header.Height
-	block.Header.DCBConstitution.ExecuteDuration = DCBProposal.DCBProposalData.ExecuteDuration
-	block.Header.DCBConstitution.ProposalTXID = txAcceptDCBProposal.DCBProposalTXID
+	block.Header.DCBConstitution.ExecuteDuration = DCBProposal.ExecuteDuration
+	block.Header.DCBConstitution.ProposalTXID = metadataAcceptDCBProposal.DCBProposalTXID
 	block.Header.DCBConstitution.CurrentDCBNationalWelfare = GetOracleDCBNationalWelfare()
 
-	//	proposalParams := DCBProposal.DCBProposalData.DCBParams // not use yet
-	block.Header.DCBConstitution.DCBParams = DCBParams{}
+	block.Header.DCBConstitution.DCBParams = DCBProposal.DCBParams
 	return nil
 }
 
-func (block *Block) updateGOVConstitution(tx transaction.Transaction, blockgen *BlkTmplGenerator) error {
-	txAcceptGOVProposal := tx.(transaction.TxAcceptGOVProposal)
-	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(txAcceptGOVProposal.GOVProposalTXID)
-	GOVProposal := getTx.(*transaction.TxSubmitGOVProposal)
+func (block *Block) updateGOVConstitution(tx metadata.Transaction, blockgen *BlkTmplGenerator) error {
+	metadataAcceptGOVProposal := tx.GetMetadata().(*metadata.AcceptGOVProposalMetadata)
+	_, _, _, getTx, err := blockgen.chain.GetTransactionByHash(&metadataAcceptGOVProposal.GOVProposalTXID)
+	GOVProposal := getTx.GetMetadata().(*metadata.SubmitGOVProposalMetadata)
 	if err != nil {
 		return err
 	}
 	block.Header.GOVConstitution.StartedBlockHeight = block.Header.Height
-	block.Header.GOVConstitution.ExecuteDuration = GOVProposal.GOVProposalData.ExecuteDuration
-	block.Header.GOVConstitution.ProposalTXID = txAcceptGOVProposal.GOVProposalTXID
+	block.Header.GOVConstitution.ExecuteDuration = GOVProposal.ExecuteDuration
+	block.Header.GOVConstitution.ProposalTXID = metadataAcceptGOVProposal.GOVProposalTXID
 	block.Header.GOVConstitution.CurrentGOVNationalWelfare = GetOracleGOVNationalWelfare()
 
-	proposalParams := GOVProposal.GOVProposalData.GOVParams
-	block.Header.GOVConstitution.GOVParams = GOVParams{
-		proposalParams.SalaryPerTx,
-		proposalParams.BasicSalary,
-		proposalParams.TxFee,
-		&SellingBonds{
-			proposalParams.SellingBonds.BondsToSell,
-			proposalParams.SellingBonds.BondPrice,
-			proposalParams.SellingBonds.Maturity,
-			proposalParams.SellingBonds.BuyBackPrice,
-			proposalParams.SellingBonds.StartSellingAt,
-			proposalParams.SellingBonds.SellingWithin,
-		},
-		&RefundInfo{
-			proposalParams.RefundInfo.ThresholdToLargeTx,
-			proposalParams.RefundInfo.RefundAmount,
-		},
-	}
+	block.Header.GOVConstitution.GOVParams = GOVProposal.GOVParams
 	return nil
-}*/
+}

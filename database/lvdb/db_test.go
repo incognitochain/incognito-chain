@@ -10,7 +10,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/database"
 	_ "github.com/ninjadotorg/constant/database/lvdb"
-	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/metadata"
 )
 
 func setup(t *testing.T) (database.DatabaseInterface, func()) {
@@ -37,7 +37,7 @@ func TestBlock(t *testing.T) {
 
 	block := &blockchain.Block{
 		Header:       blockchain.BlockHeader{},
-		Transactions: []transaction.Transaction{},
+		Transactions: []metadata.Transaction{},
 	}
 
 	err := db.StoreBlock(block)

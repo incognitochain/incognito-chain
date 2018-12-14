@@ -64,6 +64,8 @@ type IcoParams struct {
 	InitialCMBToken       uint64
 	InitialGOVToken       uint64
 	InitialBondToken      uint64
+	InitialVoteDCBToken   uint64
+	InitialVoteGOVToken   uint64
 }
 
 var preSelectValidatorsMainnet = []string{}
@@ -75,6 +77,7 @@ var icoParamsMainnet = IcoParams{
 	InitialDCBToken:       MainnetInitDCBToken,
 	InitialGOVToken:       MainnetInitGovToken,
 }
+
 // MainNetParams defines the network parameters for the main coin network.
 var MainNetParams = Params{
 	Name:        MainetName,
@@ -116,6 +119,7 @@ var icoParamsTestnet = IcoParams{
 	InitialDCBToken:       TestnetInitDCBToken,
 	InitialGOVToken:       TestnetInitGovToken,
 }
+
 // TestNetParams defines the network parameters for the test coin network.
 var TestNetParams = Params{
 	Name:        TestnetName,

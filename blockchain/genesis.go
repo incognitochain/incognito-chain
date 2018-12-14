@@ -1,24 +1,27 @@
 package blockchain
 
 import (
+	"log"
 	"time"
 
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/voting"
 	"github.com/ninjadotorg/constant/wallet"
-	"log"
 )
 
 type GenesisBlockGenerator struct {
 }
 
-func (self GenesisBlockGenerator) CalcMerkleRoot(txns []transaction.Transaction) common.Hash {
+func (self GenesisBlockGenerator) CalcMerkleRoot(txns []metadata.Transaction) common.Hash {
 	if len(txns) == 0 {
 		return common.Hash{}
 	}
 
-	utilTxns := make([]transaction.Transaction, 0, len(txns))
+	utilTxns := make([]metadata.Transaction, 0, len(txns))
 	for _, tx := range txns {
 		utilTxns = append(utilTxns, tx)
 	}
@@ -43,7 +46,7 @@ func (self GenesisBlockGenerator) CalcMerkleRoot(txns []transaction.Transaction)
 	spendingKey := &privacy.SpendingKey{} // SpendingKey for input of genesis transaction is 0x0
 	input := new(client.JSInput)
 	input.InputNote = createGenesisInputNote(spendingKey, idx)
-	input.Key = spendingKey
+	input.PubKey = spendingKey
 	input.WitnessPath = (&client.MerklePath{}).CreateDummyPath()
 	return input
 }*/
@@ -257,9 +260,8 @@ func createSpecialTokenTx(
 	log.Printf("Init token %s: %s \n", tokenSymbol, tokenID.String())
 	paymentAddr := initialAddress
 	vout := transaction.TxTokenVout{
-		Value:           amount,
-		PaymentAddress:  paymentAddr,
-		BuySellResponse: nil,
+		Value:          amount,
+		PaymentAddress: paymentAddr,
 	}
 	vout.SetIndex(0)
 	txTokenData := transaction.TxTokenData{
@@ -289,7 +291,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	loc, _ := time.LoadLocation("America/New_York")
 	time := time.Date(2018, 8, 1, 0, 0, 0, 0, loc)
 	genesisBlock := Block{
-		Transactions: []transaction.Transaction{},
+		Transactions: []metadata.Transaction{},
 	}
 	genesisBlock.Header = BlockHeader{}
 
@@ -299,23 +301,23 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	genesisBlock.Header.Committee = make([]string, len(preSelectValidators))
 
 	// Gov param
-	genesisBlock.Header.GOVConstitution.GOVParams = GOVParams{
+	genesisBlock.Header.GOVConstitution.GOVParams = params.GOVParams{
 		SalaryPerTx:  salaryPerTx,
 		BasicSalary:  basicSalary,
-		SellingBonds: &SellingBonds{},
-		RefundInfo:   &RefundInfo{},
+		SellingBonds: &voting.SellingBonds{},
+		RefundInfo:   &voting.RefundInfo{},
 	}
-	genesisBlock.Header.LoanParams = []transaction.LoanParams{}
-	genesisBlock.Header.LoanParams = append(genesisBlock.Header.LoanParams,
-		transaction.LoanParams{
+	// Decentralize central bank params
+	loanParams := []params.LoanParams{
+		params.LoanParams{
 			InterestRate:     0,
 			Maturity:         7776000, // 3 months in seconds
 			LiquidationStart: 15000,   // 150%
 		},
-	)
-
-	// Decentralize central bank params
-	genesisBlock.Header.DCBConstitution.DCBParams = DCBParams{}
+	}
+	genesisBlock.Header.DCBConstitution.DCBParams = params.DCBParams{
+		LoanParams: loanParams,
+	}
 
 	// Commercial bank params
 	genesisBlock.Header.CBParams = CBParams{}
@@ -332,7 +334,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 	}
 	// Create genesis token tx for DCB
 	dcbTokenTx := createSpecialTokenTx( // DCB
-		common.Hash(DCBTokenID),
+		common.Hash(common.DCBTokenID),
 		"Decentralized central bank token",
 		"DCB",
 		icoParams.InitialDCBToken,
@@ -342,7 +344,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 
 	// Create genesis token tx for GOV
 	govTokenTx := createSpecialTokenTx(
-		common.Hash(GOVTokenID),
+		common.Hash(common.GOVTokenID),
 		"Government token",
 		"GOV",
 		icoParams.InitialGOVToken,
@@ -352,7 +354,7 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 
 	// Create genesis token tx for CMB
 	cmbTokenTx := createSpecialTokenTx(
-		common.Hash(CMBTokenID),
+		common.Hash(common.CMBTokenID),
 		"Commercial bank token",
 		"CMB",
 		icoParams.InitialCMBToken,
@@ -369,6 +371,26 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		key.KeySet.PaymentAddress,
 	)
 	genesisBlock.AddTransaction(&bondTokenTx)
+
+	// Create genesis vote token tx for DCB
+	VoteDCBTokenTx := createSpecialTokenTx(
+		common.Hash(common.VoteDCBTokenID),
+		"Bond",
+		"BON",
+		icoParams.InitialVoteDCBToken,
+		key.KeySet.PaymentAddress,
+	)
+	genesisBlock.AddTransaction(&VoteDCBTokenTx)
+
+	// Create genesis vote token tx for GOV
+	VoteGOVTokenTx := createSpecialTokenTx(
+		common.Hash(common.VoteGOVTokenID),
+		"Bond",
+		"BON",
+		icoParams.InitialVoteGOVToken,
+		key.KeySet.PaymentAddress,
+	)
+	genesisBlock.AddTransaction(&VoteGOVTokenTx)
 
 	// calculate merkle root tx for genesis block
 	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
