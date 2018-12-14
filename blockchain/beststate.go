@@ -1,11 +1,7 @@
 package blockchain
 
 import (
-	"fmt"
-
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
-	"github.com/ninjadotorg/constant/transaction"
 )
 
 // BestState houses information about the current best block and other info
@@ -21,13 +17,12 @@ type BestState struct {
 	BestBlockHash *common.Hash // The hash of the block.
 	BestBlock     *Block       // The hash of the block.
 
-	CmTree *client.IncMerkleTree // The commitments merkle tree of the best block
+	//CmTree *client.IncMerkleTree // The commitments merkle tree of the best block
 
 	Height     int32  // The height of the block.
 	NumTxns    uint64 // The number of txns in the block.
 	TotalTxns  uint64 // The total number of txns in the chain.
 	Candidates map[string]CommitteeCandidateInfo
-	LoanIDs    [][]byte // Unique IDs of all loans requested.
 }
 
 /*
@@ -35,46 +30,36 @@ Init create a beststate data from block and commitment tree
 */
 // #1 - block
 // #2 - commitment merkle tree
-func (self *BestState) Init(block *Block, tree *client.IncMerkleTree) {
+func (self *BestState) Init(block *Block /*, tree *client.IncMerkleTree*/) {
 	bestBlockHash := block.Hash()
 	self.BestBlock = block
 	self.BestBlockHash = bestBlockHash
-	self.CmTree = tree
+	//self.CmTree = tree
 
 	self.TotalTxns += uint64(len(block.Transactions))
 	self.NumTxns = uint64(len(block.Transactions))
 	self.Height = block.Header.Height
 	if self.Candidates == nil {
 		self.Candidates = make(map[string]CommitteeCandidateInfo)
-	}
-
-	if self.LoanIDs == nil {
-		self.LoanIDs = make([][]byte, 0)
 	}
 }
 
 func (self *BestState) Update(block *Block) error {
-	tree := self.CmTree
-	err := UpdateMerkleTreeForBlock(tree, block)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
+	//tree := self.CmTree
+	//err := UpdateMerkleTreeForBlock(tree, block)
+	//if err != nil {
+	//	return NewBlockChainError(UnExpectedError, err)
+	//}
 	bestBlockHash := block.Hash()
 	self.BestBlock = block
 	self.BestBlockHash = bestBlockHash
-	self.CmTree = tree
+	//self.CmTree = tree
 
 	self.TotalTxns += uint64(len(block.Transactions))
 	self.NumTxns = uint64(len(block.Transactions))
 	self.Height = block.Header.Height
 	if self.Candidates == nil {
 		self.Candidates = make(map[string]CommitteeCandidateInfo)
-	}
-
-	// Update list of loan ids
-	err = self.UpdateLoanIDs(block)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
 	}
 	return nil
 }
@@ -84,18 +69,4 @@ func (self *BestState) RemoveCandidate(producerPbk string) {
 	if ok {
 		delete(self.Candidates, producerPbk)
 	}
-}
-
-func (self *BestState) UpdateLoanIDs(block *Block) error {
-	for _, blockTx := range block.Transactions {
-		if blockTx.GetType() == common.TxLoanRequest {
-			tx, ok := blockTx.(*transaction.TxLoanRequest)
-			if ok == false {
-				return NewBlockChainError(UnExpectedError, fmt.Errorf("Transaction in block not valid, expected TxLoanRequest"))
-			}
-
-			self.LoanIDs = append(self.LoanIDs, tx.LoanID)
-		}
-	}
-	return nil
 }

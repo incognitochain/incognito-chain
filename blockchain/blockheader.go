@@ -2,41 +2,38 @@ package blockchain
 
 import (
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/voting"
 )
 
-type GOVParams struct {
-	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
-	BasicSalary  uint64 // basic salary per block(mili constant)
-	TxFee        uint64
-	SellingBonds *SellingBonds
-	RefundInfo   *RefundInfo
-}
-
-type DCBParams struct {
-	SaleData *voting.SaleData
-}
+// type GOVParams struct {
+// 	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
+// 	BasicSalary  uint64 // basic salary per block(mili constant)
+// 	TxFee        uint64
+// 	SellingBonds *SellingBonds
+// 	RefundInfo   *RefundInfo
+// }
 
 type CBParams struct {
 }
 
-type RefundInfo struct {
-	ThresholdToLargeTx uint64
-	RefundAmount       uint64
-}
+// type RefundInfo struct {
+// 	ThresholdToLargeTx uint64
+// 	RefundAmount       uint64
+// }
 
-type SellingBonds struct {
-	BondsToSell    uint64
-	BondPrice      uint64 // in Constant unit
-	Maturity       uint32
-	BuyBackPrice   uint64 // in Constant unit
-	StartSellingAt uint32 // start selling bonds at block height
-	SellingWithin  uint32 // selling bonds within n blocks
-}
+// type SellingBonds struct {
+// 	BondsToSell    uint64
+// 	BondPrice      uint64 // in Constant unit
+// 	Maturity       uint32
+// 	BuyBackPrice   uint64 // in Constant unit
+// 	StartSellingAt uint32 // start selling bonds at block height
+// 	SellingWithin  uint32 // selling bonds within n blocks
+// }
 
 type Oracle struct {
-	Bonds map[string]uint64 // key: bondTypeID, value: price
+	// TODO(@0xankylosaurus): generic prices (ETH, BTC, ...) instead of just bonds
+	Bonds    map[string]uint64 // key: bondTypeID, value: price
+	DCBToken uint64            // against USD
+	Constant uint64            // against USD
 }
 
 type BlockHeader struct {
@@ -50,7 +47,7 @@ type BlockHeader struct {
 	MerkleRoot common.Hash
 
 	// Merkle tree reference to hash of all commitments to the current block.
-	MerkleRootCommitments common.Hash
+	//MerkleRootCommitments common.Hash
 
 	// Time the block was created.  This is, unfortunately, encoded as a
 	// uint64 on the wire and therefore is limited to 2106.
@@ -70,11 +67,10 @@ type BlockHeader struct {
 	DCBConstitution DCBConstitution
 	CBParams        CBParams
 
-	DCBGovernor    DCBGovernor
-	GOVGovernor    GOVGovernor
-	CBBoardPubKeys []string
-
-	LoanParams []transaction.LoanParams // params for collateralized loans of Constant
+	// BOARD
+	DCBGovernor DCBGovernor
+	GOVGovernor GOVGovernor
+	CMBGovernor CMBGovernor
 
 	//Block Height
 	Height int32

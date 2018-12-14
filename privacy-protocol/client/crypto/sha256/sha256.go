@@ -165,7 +165,7 @@ func (d *digest) Reset() {
 	d.len = 0
 }
 
-// New returns a new hash.Hash computing the SHA256 checksum. The Hash
+// Zero returns a new hash.Hash computing the SHA256 checksum. The Hash
 // also implements encoding.BinaryMarshaler and
 // encoding.BinaryUnmarshaler to marshal and unmarshal the internal
 // state of the hash.

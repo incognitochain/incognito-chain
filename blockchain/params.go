@@ -64,6 +64,8 @@ type IcoParams struct {
 	InitialCMBToken       uint64
 	InitialGOVToken       uint64
 	InitialBondToken      uint64
+	InitialVoteDCBToken   uint64
+	InitialVoteGOVToken   uint64
 }
 
 var preSelectValidatorsMainnet = []string{}
@@ -75,6 +77,7 @@ var icoParamsMainnet = IcoParams{
 	InitialDCBToken:       MainnetInitDCBToken,
 	InitialGOVToken:       MainnetInitGovToken,
 }
+
 // MainNetParams defines the network parameters for the main coin network.
 var MainNetParams = Params{
 	Name:        MainetName,
@@ -95,12 +98,12 @@ var preSelectValidatorsTestnet = []string{
 	"112hmH8nGFpJoqbevB7pmXGqyHenzxuP67tSyh4jfGqr5PbC4yNQ",
 	"12ixtJSwVqvLrB4x14ux9c3h2DyUgdfvyjt5XooHkxh6vbcZomW",
 	"1cizgU9GeDuEiH7GddwnV2YhPBB3aD1DMir3dynDQahjwQyqTk",
-	"13Ls2HCSLZUEW6oE53LZFuZiHdxQ4erCcsTacFHzBb4M7tggSJW", // me
+	"17EMNk6W3QpgmjxdtCaZAYmG7sBqN4XxC9bo6YfnAu587ASGv9g",
 	"1Jd94JYrqLGLUV6wEa43gdsDGc6JGcy2hYbsNptRuSS3iPz24e",
 	"1Q7P7QZGfJSrzC3US1Eqw2iPYDX5rqEG2T8ADsjrML5cQbSaU8",
 	"12mZfvHfV5h92TTF45EQgsKU7SkLNRZXLUf6WGLf24EcKfU5Xb6",
 	"1n7Zch76tzjdQVLpJxeBmPkimBTWbFmQkSsDsvGAE7GMyUYmuh",
-	"12uoLbfkWGiuYQ9JTRJMkJy1q3HUdrSr5Rzat7dBfHwYGfoDnta",
+	"17V5TXkUr12JvDrChUQ1kHaQPVFUoVCGGQji9qphTS8asVJBwdF", // me
 	"1YX8vFm8zkQEyHLMRSdr8LG4TS7Ua1xq7pWp8dzsbWkDZjsoZY",
 	"12ts69QMg83g2v8tutoFPxaKbbxPzpSCCQ12k6XTtDxHzr4d46S",
 	"1AH2pPWpF9TjmMaaAUT26WgfSJw31EhdyssHUecxKCmCzZGMB3",
@@ -116,6 +119,7 @@ var icoParamsTestnet = IcoParams{
 	InitialDCBToken:       TestnetInitDCBToken,
 	InitialGOVToken:       TestnetInitGovToken,
 }
+
 // TestNetParams defines the network parameters for the test coin network.
 var TestNetParams = Params{
 	Name:        TestnetName,

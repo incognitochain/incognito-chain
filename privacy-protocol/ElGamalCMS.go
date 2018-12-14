@@ -35,7 +35,7 @@ package privacy
 //	G [CM_CAPACITY]EllipticPoint // generators
 //	// G[0]: the first component's commitment
 //	// G[1]: public key
-//	// G[2]: Value
+//	// G[2]: H
 //	// G[3]: SNDerivator
 //	// G[4]: Random
 //}
@@ -107,7 +107,7 @@ package privacy
 //		com.G[i] = com.G[i-1].HashPoint()
 //	}
 //
-//	//TODO: hard code parameters
+//
 //}
 //
 //// CommitAll commits a list of CM_CAPACITY value(s)
@@ -251,10 +251,10 @@ package privacy
 //		value2 := RandBytes(32)
 //		value3 := RandBytes(32)
 //		valuer := RandBytes(32)
-//		fmt.Println("Value 1: ", value1)
-//		fmt.Println("Value 2: ", value2)
-//		fmt.Println("Value 3: ", value3)
-//		fmt.Println("Value r: ", valuer)
+//		fmt.Println("H 1: ", value1)
+//		fmt.Println("H 2: ", value2)
+//		fmt.Println("H 3: ", value3)
+//		fmt.Println("H r: ", valuer)
 //
 //		//Compute commitment for all value, 4 is value of constant CM_CAPACITY
 //		commitmentAll := Elcm.Commit([CM_CAPACITY - 1][]byte{value1, value2, value3, valuer})
@@ -265,8 +265,8 @@ package privacy
 //		//Generate 2 random value
 //		value1 := RandBytes(32)
 //		valuer := RandBytes(32)
-//		fmt.Println("Value 1: ", value1)
-//		fmt.Println("Value r: ", valuer)
+//		fmt.Println("H 1: ", value1)
+//		fmt.Println("H r: ", valuer)
 //
 //		//Compute commitment for special value with index 0
 //		commitmentSpec := Elcm.CommitAtIndex(value1, valuer, 0)

@@ -1,6 +1,8 @@
 package jsonresult
 
-import "github.com/ninjadotorg/constant/transaction"
+import (
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+)
 
 type TransactionDetail struct {
 	BlockHash string `json:"BlockHash"`
@@ -12,10 +14,9 @@ type TransactionDetail struct {
 	LockTime  int64  `json:"LockTime"`
 	Fee       uint64 `json:"Fee"` // Fee applies: always consant
 
-	Descs    []*transaction.JoinSplitDesc `json:"Descs"`
-	JSPubKey []byte                       `json:"JSPubKey,omitempty"` // 64 bytes
-	JSSig    []byte                       `json:"JSSig,omitempty"`    // 64 bytes
+	Proof     *zkp.PaymentProof `json:"Proof"`
+	SigPubKey []byte            `json:"SigPubKey,omitempty"` // 64 bytes
+	Sig       []byte            `json:"Sig,omitempty"`       // 64 bytes
 
-	AddressLastByte byte   `json:"AddressLastByte"`
-	MetaData        string `json:"MetaData"`
+	MetaData string `json:"MetaData"`
 }

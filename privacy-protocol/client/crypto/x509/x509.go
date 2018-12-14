@@ -133,7 +133,7 @@ type certificate struct {
 
 type tbsCertificate struct {
 	Raw                asn1.RawContent
-	Version            int              `asn1:"optional,explicit,default:0,tag:0"`
+	Version            int `asn1:"optional,explicit,default:0,tag:0"`
 	SerialNumber       *big.Int
 	SignatureAlgorithm pkix.AlgorithmIdentifier
 	Issuer             asn1.RawValue
@@ -315,7 +315,7 @@ var signatureAlgorithmDetails = []struct {
 	pubKeyAlgo PublicKeyAlgorithm
 	hash       crypto.Hash
 }{
-	{MD2WithRSA, "MD2-RSA", oidSignatureMD2WithRSA, RSA, crypto.Hash(0) /* no value for MD2 */ },
+	{MD2WithRSA, "MD2-RSA", oidSignatureMD2WithRSA, RSA, crypto.Hash(0) /* no value for MD2 */},
 	{MD5WithRSA, "MD5-RSA", oidSignatureMD5WithRSA, RSA, crypto.MD5},
 	{SHA1WithRSA, "SHA1-RSA", oidSignatureSHA1WithRSA, RSA, crypto.SHA1},
 	{SHA1WithRSA, "SHA1-RSA", oidISOSignatureSHA1WithRSA, RSA, crypto.SHA1},
@@ -440,7 +440,7 @@ func getSignatureAlgorithmFromAI(ai pkix.AlgorithmIdentifier) SignatureAlgorithm
 	return UnknownSignatureAlgorithm
 }
 
-// RFC 3279, 2.3 Public Key Algorithms
+// RFC 3279, 2.3 Public PubKey Algorithms
 //
 // pkcs-1 OBJECT IDENTIFIER ::== { iso(1) member-body(2) us(840)
 //    rsadsi(113549) pkcs(1) 1 }
@@ -529,7 +529,7 @@ func oidFromNamedCurve(curve elliptic.Curve) (asn1.ObjectIdentifier, bool) {
 type KeyUsage int
 
 const (
-	KeyUsageDigitalSignature  KeyUsage = 1 << iota
+	KeyUsageDigitalSignature KeyUsage = 1 << iota
 	KeyUsageContentCommitment
 	KeyUsageKeyEncipherment
 	KeyUsageDataEncipherment
@@ -540,7 +540,7 @@ const (
 	KeyUsageDecipherOnly
 )
 
-// RFC 5280, 4.2.1.12  Extended Key Usage
+// RFC 5280, 4.2.1.12  Extended PubKey Usage
 //
 // anyExtendedKeyUsage OBJECT IDENTIFIER ::= { id-ce-extKeyUsage 0 }
 //
@@ -574,7 +574,7 @@ var (
 type ExtKeyUsage int
 
 const (
-	ExtKeyUsageAny                            ExtKeyUsage = iota
+	ExtKeyUsageAny ExtKeyUsage = iota
 	ExtKeyUsageServerAuth
 	ExtKeyUsageClientAuth
 	ExtKeyUsageCodeSigning
@@ -1488,7 +1488,7 @@ func parseCertificate(in *certificate) (*Certificate, error) {
 				out.AuthorityKeyId = a.Id
 
 			case 37:
-				// RFC 5280, 4.2.1.12.  Extended Key Usage
+				// RFC 5280, 4.2.1.12.  Extended PubKey Usage
 
 				// id-ce-extKeyUsage OBJECT IDENTIFIER ::= { id-ce 37 }
 				//
@@ -2210,7 +2210,7 @@ func (c *Certificate) CreateCRL(rand io.Reader, priv interface{}, revokedCerts [
 		RevokedCertificates: revokedCertsUTC,
 	}
 
-	// Authority Key Id
+	// Authority PubKey Id
 	if len(c.SubjectKeyId) > 0 {
 		var aki pkix.Extension
 		aki.Id = oidExtensionAuthorityKeyId

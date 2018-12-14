@@ -87,7 +87,7 @@ contract MultiSigWallet {
         require(ownerCount <= MAX_OWNER_COUNT
                 && _required <= ownerCount
                 && _required != 0
-                && ownerCount != 0);
+                && ownerCount != 0, "invalid requirement");
                 _;
     }
 
@@ -107,7 +107,7 @@ contract MultiSigWallet {
     constructor(address[] memory _owners, uint _required) public validRequirement(_owners.length, _required)
     {
         for (uint i=0; i<_owners.length; i++) {
-            require(!isOwner[_owners[i]] && _owners[i] != address(0));
+            require(!isOwner[_owners[i]] && _owners[i] != address(0), "invalid owner");
             isOwner[_owners[i]] = true;
         }
         owners = _owners;

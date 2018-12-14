@@ -6,6 +6,7 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
@@ -42,6 +43,10 @@ const (
 	CmdSwapRequest = "swaprequest"
 	CmdSwapSig     = "swapsig"
 	CmdSwapUpdate  = "swapupdate"
+
+	// heavy message check cmd
+	CmdMsgCheck     = "msgcheck"
+	CmdMsgCheckResp = "msgcheckresp"
 )
 
 // Interface for message wire on P2P network
@@ -59,7 +64,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdBlock:
 		msg = &MessageBlock{
 			Block: blockchain.Block{
-				Transactions: make([]transaction.Transaction, 0),
+				Transactions: make([]metadata.Transaction, 0),
 			},
 		}
 		break
@@ -70,22 +75,30 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdCLoanRequestToken:
 		msg = &MessageTx{
-			Transaction: &transaction.TxLoanRequest{},
+			Transaction: &transaction.Tx{
+				Metadata: &metadata.LoanRequest{},
+			},
 		}
 		break
 	case CmdCLoanResponseToken:
 		msg = &MessageTx{
-			Transaction: &transaction.TxLoanResponse{},
+			Transaction: &transaction.Tx{
+				Metadata: &metadata.LoanResponse{},
+			},
 		}
 		break
 	case CmdCLoanWithdrawToken:
 		msg = &MessageTx{
-			Transaction: &transaction.TxLoanWithdraw{},
+			Transaction: &transaction.Tx{
+				Metadata: &metadata.LoanWithdraw{},
+			},
 		}
 		break
 	case CmdCLoanPayToken:
 		msg = &MessageTx{
-			Transaction: &transaction.TxLoanPayment{},
+			Transaction: &transaction.Tx{
+				Metadata: &metadata.LoanPayment{},
+			},
 		}
 		break
 	case CmdGetBlocks:
@@ -135,6 +148,12 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 			Signatures: make(map[string]string),
 		}
 		break
+	case CmdMsgCheck:
+		msg = &MessageMsgCheck{}
+		break
+	case CmdMsgCheckResp:
+		msg = &MessageMsgCheckResp{}
+		break
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}
@@ -177,6 +196,10 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdSwapSig, nil
 	case reflect.TypeOf(&MessageSwapUpdate{}):
 		return CmdSwapUpdate, nil
+	case reflect.TypeOf(&MessageMsgCheck{}):
+		return CmdMsgCheck, nil
+	case reflect.TypeOf(&MessageMsgCheckResp{}):
+		return CmdMsgCheckResp, nil
 	default:
 		return "", fmt.Errorf("unhandled this message type [%s]", msgType)
 	}

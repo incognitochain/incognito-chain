@@ -10,6 +10,8 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/wire"
+	"github.com/ninjadotorg/constant/common"
+	"time"
 )
 
 type PeerConn struct {
@@ -24,6 +26,7 @@ type PeerConn struct {
 	cRead            chan struct{}
 	cWrite           chan struct{}
 	cClose           chan struct{}
+	cMsgHash         map[string]chan bool
 
 	RetryCount int32
 
@@ -32,6 +35,7 @@ type PeerConn struct {
 	RemotePeerID     peer.ID
 	RemoteRawAddress string
 	IsOutbound       bool
+	isForceClose     bool
 
 	ReaderWriterStream *bufio.ReadWriter
 	VerValid           bool
@@ -52,17 +56,24 @@ Handle all in message
 func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	self.IsConnected = true
 	for {
-		Logger.log.Infof("PEER %s (address: %s) Reading stream", self.RemotePeer.PeerID.String(), self.RemotePeer.RawAddress)
+		Logger.log.Infof("PEER %s (address: %s) Reading stream", self.RemotePeer.PeerID.Pretty(), self.RemotePeer.RawAddress)
 		str, err := rw.ReadString(DelimMessageByte)
 		if err != nil {
 			self.IsConnected = false
 			Logger.log.Error("---------------------------------------------------------------------")
-			Logger.log.Errorf("InMessageHandler ERROR %s %s", self.RemotePeerID, self.RemotePeer.RawAddress)
+			Logger.log.Errorf("InMessageHandler ERROR %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
 			Logger.log.Error(err)
-			Logger.log.Errorf("InMessageHandler QUIT %s %s", self.RemotePeerID, self.RemotePeer.RawAddress)
+			Logger.log.Errorf("InMessageHandler QUIT %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
 			Logger.log.Error("---------------------------------------------------------------------")
 			close(self.cWrite)
 			return
+		}
+
+		// disconnect when received spam message
+		if len(str) >= SPAM_MESSAGE_SIZE {
+			Logger.log.Errorf("InMessageHandler received spam message")
+			self.ForceClose()
+			continue
 		}
 
 		if str != DelimMessageStr {
@@ -86,6 +97,10 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 
 				// Parse Message body
 				messageBody := jsonDecodeString[:len(jsonDecodeString)-wire.MessageHeaderSize]
+				// cache message hash S
+				hashMsg := common.HashH(messageBody).String()
+				self.ListenerPeer.ReceivedHashMessage(hashMsg)
+				// cache message hash E
 				err = json.Unmarshal(messageBody, &message)
 				if err != nil {
 					Logger.log.Error("Can not parse struct from json message")
@@ -163,6 +178,10 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnSwapUpdate != nil {
 						self.Config.MessageListeners.OnSwapUpdate(self, message.(*wire.MessageSwapUpdate))
 					}
+				case reflect.TypeOf(&wire.MessageMsgCheck{}):
+					self.handleMsgCheck(message.(*wire.MessageMsgCheck))
+				case reflect.TypeOf(&wire.MessageMsgCheckResp{}):
+					self.handleMsgCheckResp(message.(*wire.MessageMsgCheckResp))
 				default:
 					Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, self)
 				}
@@ -202,7 +221,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				message += DelimMessageStr
 
 				// send on p2p stream
-				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.RemotePeer.PeerID.String())
+				Logger.log.Infof("Send a message %s to %s", outMsg.message.MessageType(), self.RemotePeer.PeerID.Pretty())
 				_, err = rw.Writer.WriteString(message)
 				if err != nil {
 					Logger.log.Critical("DM ERROR", err)
@@ -215,7 +234,7 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				}
 			}
 		case <-self.cWrite:
-			Logger.log.Infof("OutMessageHandler QUIT %s %s", self.RemotePeerID, self.RemotePeer.RawAddress)
+			Logger.log.Infof("OutMessageHandler QUIT %s %s", self.RemotePeerID.Pretty(), self.RemotePeer.RawAddress)
 
 			self.IsConnected = false
 
@@ -237,8 +256,92 @@ func (self *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 //
 // This function is safe for concurrent access.
 func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}) {
-	if self.IsConnected {
-		self.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
+	go func() {
+		if self.IsConnected {
+			data, _ := msg.JsonSerialize()
+			if len(data) >= HEAVY_MESSAGE_SIZE && msg.MessageType() != wire.CmdMsgCheck && msg.MessageType() != wire.CmdMsgCheckResp {
+				hash := common.HashH(data).String()
+
+				Logger.log.Infof("QueueMessageWithEncoding HEAVY_MESSAGE_SIZE %s %s", hash, msg.MessageType())
+				numRetries := 0
+
+			BeginCheckHashMessage:
+				numRetries++
+				bTimeOut := false
+				// new model for received response
+				self.cMsgHash[hash] = make(chan bool)
+				cTimeOut := make(chan struct{})
+				bOk := false
+				// send msg for check has
+				go func() {
+					msgCheck, _ := wire.MakeEmptyMessage(wire.CmdMsgCheck)
+					msgCheck.(*wire.MessageMsgCheck).Hash = hash
+					self.QueueMessageWithEncoding(msgCheck, nil)
+				}()
+				Logger.log.Infof("QueueMessageWithEncoding WAIT result check hash %s", hash)
+				for {
+					select {
+					case accept := <-self.cMsgHash[hash]:
+						Logger.log.Infof("QueueMessageWithEncoding RECEIVED hash %s accept %s", hash, accept)
+						bOk = accept
+						cTimeOut = nil
+						break
+					case <-cTimeOut:
+						Logger.log.Infof("QueueMessageWithEncoding RECEIVED time out")
+						cTimeOut = nil
+						bTimeOut = true
+						break
+					}
+					if cTimeOut == nil {
+						delete(self.cMsgHash, hash)
+						break
+					}
+				}
+				// set time out for check message
+				go func() {
+					select {
+					case <-time.NewTimer(10 * time.Second).C:
+						if cTimeOut != nil {
+							Logger.log.Infof("QueueMessageWithEncoding TIMER time out %s", hash)
+							bTimeOut = true
+							close(cTimeOut)
+						}
+						return
+					}
+				}()
+				Logger.log.Infof("QueueMessageWithEncoding FINISHED check hash %s %s", hash, bOk)
+				if bTimeOut && numRetries >= MAX_RETRIES_CHECK_HASH_MESSAGE {
+					goto BeginCheckHashMessage
+				}
+
+				if bOk {
+					self.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
+				}
+			} else {
+				self.sendMessageQueue <- outMsg{message: msg, doneChan: doneChan}
+			}
+		}
+	}()
+}
+
+func (p *PeerConn) handleMsgCheck(msg *wire.MessageMsgCheck) {
+	Logger.log.Infof("handleMsgCheck %s", msg.Hash)
+	msgResp, _ := wire.MakeEmptyMessage(wire.CmdMsgCheckResp)
+	if p.ListenerPeer.CheckHashMessage(msg.Hash) {
+		msgResp.(*wire.MessageMsgCheckResp).Hash = msg.Hash
+		msgResp.(*wire.MessageMsgCheckResp).Accept = false
+	} else {
+		msgResp.(*wire.MessageMsgCheckResp).Hash = msg.Hash
+		msgResp.(*wire.MessageMsgCheckResp).Accept = true
+	}
+	p.QueueMessageWithEncoding(msgResp, nil)
+}
+
+func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) {
+	Logger.log.Infof("handleMsgCheckResp %s", msg.Hash)
+	m, ok := p.cMsgHash[msg.Hash]
+	if ok {
+		m <- msg.Accept
 	}
 }
 
@@ -263,4 +366,16 @@ func (p *PeerConn) ConnState() ConnState {
 
 func (p *PeerConn) Close() {
 	close(p.cClose)
+}
+
+func (p *PeerConn) ForceClose() {
+	p.isForceClose = true
+	close(p.cClose)
+}
+
+func (p *PeerConn) CheckAccepted() bool {
+	// check max conn
+	// check max shard conn
+	// check max unknown shard conn
+	return true
 }

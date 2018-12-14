@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 
 	"github.com/libp2p/go-libp2p-peer"
+	"time"
 )
 
 type MessageVerAck struct {
-	Valid bool
+	Valid     bool
+	Timestamp time.Time
 }
 
 func (self MessageVerAck) MessageType() string {

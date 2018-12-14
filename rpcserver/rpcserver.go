@@ -70,9 +70,9 @@ type RpcServerConfig struct {
 	Wallet          *wallet.Wallet
 	ConnMgr         *connmanager.ConnManager
 	AddrMgr         *addrmanager.AddrManager
-	IsGenerateNode  bool
+	NodeRole        string
 	Server          interface {
-		// Push Tx Message
+		// Push TxNormal Message
 		PushMessageToAll(message wire.Message) error
 		PushMessageToPeer(message wire.Message, id peer2.ID) error
 	}

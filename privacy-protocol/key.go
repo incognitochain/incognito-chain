@@ -9,18 +9,6 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
-// var curve *elliptic.Curve
-// var once sync.Once
-
-// func GetCurve() *elliptic.Curve {
-// 	once.Do(func() {
-// 		curve = (elliptic.Curve*)&elliptic.P256()
-// 	})
-
-// 	fmt.Printf("Pk curve: %v\n", &curve)
-// 	return &curve
-// }
-
 // const (
 // const (
 // 	P = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF
@@ -29,10 +17,10 @@ import (
 // )
 
 // These constants define the lengths of serialized public keys.
-const (
-	PubKeyBytesLenCompressed      = 33
-	pubkeyCompressed         byte = 0x2 // y_bit + x coord
-)
+//const (
+//	PubKeyBytesLenCompressed      = 33
+//	pubkeyCompressed         byte = 0x2 // y_bit + x coord
+//)
 
 // fmt.Printf("N: %v\n", curve.N)
 // fmt.Printf("P: %v\n", curve.P)
@@ -47,7 +35,7 @@ type SpendingKey []byte
 // Pk 33 bytes
 type PublicKey []byte
 
-// Rk 33 bytes
+// Rk 32 bytes
 type ReceivingKey []byte
 
 // Tk 33 bytes
@@ -88,11 +76,7 @@ func GenerateSpendingKey(seed []byte) SpendingKey {
 func GeneratePublicKey(spendingKey []byte) PublicKey {
 	var p EllipticPoint
 	p.X, p.Y = Curve.ScalarBaseMult(spendingKey)
-	fmt.Printf("Public key is not compressed\n")
-	fmt.Printf("%+v\n", p)
-	//Logger.log.Infof("p.X: %v\n", p.X)
-	//Logger.log.Infof("p.Y: %v\n", p.Y)
-	fmt.Printf("\n%v %v \n", p.X.Bytes(), p.Y.Bytes())
+	//fmt.Printf("Public key is not compressed: %+v\n\n", p)
 	publicKey := p.Compress()
 
 	return publicKey
@@ -110,15 +94,10 @@ func GenerateReceivingKey(spendingKey []byte) ReceivingKey {
 // GenerateTransmissionKey computes a transmission key corresponding with receivingKey
 // Tk : 33 bytes
 func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
-	var p, generator EllipticPoint
-	//random := RandBytes(256)
-	random := [32]byte{2}
-	//create new generator from base generator
-	generator.X, generator.Y = Curve.ScalarBaseMult(random[:])
+	var p EllipticPoint
 
-	p.X, p.Y = Curve.ScalarMult(generator.X, generator.Y, receivingKey)
-	fmt.Printf("Transmission key point: %+v\n ", p)
-	// transmissionKey := FromPointToByteArray(p)
+	p.X, p.Y = Curve.ScalarBaseMult(receivingKey)
+	//fmt.Printf("Transmission key is not compressed: %+v\n\n", p)
 	transmissionKey := p.Compress()
 	return transmissionKey
 }
@@ -186,7 +165,7 @@ func DecompressKey(pubKeyStr []byte) (pubkey *EllipticPoint, err error) {
 	return pubkey, nil
 }
 
-// PAdd1Div4 computes (p + 1) mod 4
+// PAdd1Div4 computes (p + 1) / 4
 func PAdd1Div4(p *big.Int) (res *big.Int) {
 	res = new(big.Int)
 	res.Add(p, new(big.Int).SetInt64(1))
@@ -220,8 +199,8 @@ func (addr *PaymentAddress) Size() int {
 func (addr *PaymentAddress) FromBytes(data []byte) *PaymentAddress {
 	addr.Pk = make([]byte, 33)
 	addr.Tk = make([]byte, 33)
-	copy(addr.Pk[:], data[:33]) // First 32 bytes are PaymentAddress's
-	copy(addr.Tk[:], data[33:]) // Last 32 bytes are Pkenc's
+	copy(addr.Pk[:], data[:33]) // First 33 bytes are PaymentAddress's
+	copy(addr.Tk[:], data[33:]) // Last 33 bytes are Pkenc's
 	return addr
 }
 

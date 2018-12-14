@@ -70,6 +70,8 @@ type config struct {
 	DiscoverPeers        bool     `long:"discoverpeers" description:"Enable discover peers"`
 	DiscoverPeersAddress string   `long:"discoverpeersaddress" description:"Url to connect discover peers server"`
 
+	ExternalAddress string `long:"externaladdress" description:"External address"`
+
 	RPCDisableAuth bool     `long:"norpcauth" description:"Disable RPC authorization by username/password"`
 	RPCUser        string   `short:"u" long:"rpcuser" description:"Username for RPC connections"`
 	RPCPass        string   `short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`

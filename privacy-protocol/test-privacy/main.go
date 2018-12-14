@@ -1,10 +1,12 @@
 package main
 
 import (
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-	//"fmt"
-	//"github.com/ninjadotorg/constant/privacy-protocol"
-	//"math/big"
+	"fmt"
+	"math/big"
+
+	"github.com/ninjadotorg/constant/cashec"
+	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	zkp "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
 func main() {
@@ -20,8 +22,8 @@ func main() {
 	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
 	//fmt.Printf("\nSpending key: %v\n", spendingKey)
 	//fmt.Println(len(spendingKey))
-
-	// publicKey is compressed
+	//
+	////publicKey is compressed
 	//publicKey := privacy.GeneratePublicKey(spendingKey)
 	//fmt.Printf("\nPublic key: %v\n", publicKey)
 	//fmt.Printf("Len public key: %v\n", len(publicKey))
@@ -44,7 +46,7 @@ func main() {
 	//	fmt.Println(err)
 	//}
 	//fmt.Printf("Transmission key point decompress: %+v\n ", point)
-
+	//
 	//paymentAddress := privacy.GeneratePaymentAddress(spendingKey)
 	//fmt.Println(paymentAddress.ToBytes())
 	//fmt.Printf("tk: %v\n", paymentAddress.Tk)
@@ -60,9 +62,13 @@ func main() {
 
 	// privacy.TestProofIsZero()
 
-	zkp.TestPKComZeroOne()
+	/*****************zkp.TestPKComZeroOne()****************/
 
-	// privacy.TestPKOneOfMany()
+	//zkp.TestPKOneOfMany()
+
+	//zkp.TestPKComMultiRange()
+
+	zkp.TestOpeningsProtocol()
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -159,12 +165,151 @@ func main() {
 	//generators[2] = privacy.EllipticPoint{big.NewInt(45), big.NewInt(0)}
 	//generators[2].ComputeYCoord()
 	//newPedCom := privacy.NewPedersenParams(generators)
-	//fmt.Printf("New PedCom: %+v\n", newPedCom)
+	//fmt.Printf("Zero PedCom: %+v\n", newPedCom)
 
 	/*----------------- TEST COMMITMENT -----------------*/
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
-	//privacy.TestSchn()
+	// privacy.TestSchn()
+	//zkp.PKComMultiRangeTest()
+	//privacy.TestMultiSig()
+
+	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
+	//for i :=0; i<1000; i++{
+	//	fmt.Printf("N: %v\n",privacy.Curve.Params().N)
+	//	rand, _ := rand.Int(rand.Reader, privacy.Curve.Params().N)
+	//
+	//	fmt.Printf("rand: %v\n", rand)
+	//	fmt.Printf("Len rand: %v\n", len(rand.Bytes()))
+	//}
+
+	/*----------------- TEST AES -----------------*/
+	//privacy.TestAESCTR()
+
+	/*----------------- TEST ENCRYPT/DECRYPT COIN -----------------*/
+
+	coin := new(privacy.OutputCoin)
+	coin.CoinDetails = new(privacy.Coin)
+	coin.CoinDetails.Randomness = privacy.RandInt()
+	coin.CoinDetails.Value = 10
+
+	fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+
+	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	keySetSender := cashec.KeySet{}
+	keySetSender.ImportFromPrivateKey(&spendingKey)
+	coin.CoinDetails.PublicKey, _ = privacy.DecompressKey(keySetSender.PaymentAddress.Pk)
+
+	err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	coinByte := coin.Bytes()
+
+	fmt.Printf("Coin encrypt bytes: %v\n", coinByte)
+	coin2 := new(privacy.OutputCoin)
+	err = coin2.SetBytes(coinByte)
+	if err != nil {
+		fmt.Printf("Coin encrypt setbytes: %+v\n", coin2)
+	}
+
+	coin.Decrypt(keySetSender.ReadonlyKey)
+	//outCoin := new(privacy.OutputCoin)
+	//outCoin.CoinDetails = coin
+	//outCoin.CoinDetailsEncrypted = coin.Encrypt(keySetSender.PaymentAddress.Tk)
+
+	fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+	fmt.Printf("DEcrypted Plain text 1: Value : %v\n", coin.CoinDetails.Value)
+
+	/*----------------- TEST NDH -----------------*/
+	//fmt.Println(zkp.TestProofIsZero())
+	//fmt.Println(zkp.TestOpeningsProtocol())
+	//fmt.Println(zkp.TestPKEqualityOfCommittedVal())
+	//fmt.Printf("ElGamal PublicKey Encryption Scheme test: %v", privacy.TestElGamalPubKeyEncryption())
+	/*--------------------------------------------*/
+
+	// keySetSender := new(cashec.KeySet)
+	// //spendingKey := privacy.GenerateSpendingKey([]byte{0, 1, 23, 235})
+	// spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	// keySetSender.ImportFromPrivateKey(&spendingKey)
+
+	// data := []byte{0}
+	// signature, err := keySetSender.Sign(data)
+	// if err != nil{
+	// 	fmt.Println(err)
+	// }
+	// fmt.Println(hex.EncodeToString(signature))
+
+	// //signature , _:= hex.DecodeString("5d9f5e9c350a877ddbbe227b40c19b00c040e715924740f2d92cc9dc02da5937ba433dbca431f2a0a447e21fd096d894f869a9e31b8217ee0cf9c33f8b032ade")
+	// //
+	// res, err := keySetSender.Verify(data, signature)
+	// if err != nil{
+	// 	fmt.Println(err)
+	// }
+
+	// fmt.Println(res)
+
+	/*----------------- TEST TX SALARY -----------------*/
+
+	// keySet := new(cashec.KeySet)
+	// spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	// keySet.ImportFromPrivateKey(&spendingKey)
+
+	// var db database.DatabaseInterface
+
+	// tx, err := transaction.CreateTxSalary(10, &keySet.PaymentAddress, &keySet.PrivateKey, db)
+	// if err != nil{
+	// 	fmt.Println(err)
+	// }
+	// fmt.Printf("Tx: %+v\n", tx)
+
+	// res := transaction.ValidateTxSalary(tx, db)
+
+	// fmt.Printf("Res: %v\n", res)
+
+	/*----------------- TEST IS NIL -----------------*/
+	//zkp := new(zkp.PKOneOfManyProof)
+	//fmt.Printf("len zkp.cl: %v\n", len(zkp.cl))
+	//fmt.Println(zkp.IsNil())
+
+	//coin := new(privacy.Coin).Init()
+	//fmt.Println(coin.SerialNumber == nil)
+	//fmt.Printf("coin.Serial numbre: %v\n", coin.SerialNumber)
+
+	//num := 0
+	//bytes := privacy.IntToByteArr(num)
+	//fmt.Printf("bytes: %v\n", bytes)
+	//
+	//num2 := privacy.ByteArrToInt(bytes)
+	//fmt.Printf("num2: %v\n", num2)
+
+	/*----------------- TEST COIN BYTES -----------------*/
+
+	//keySet := new(cashec.KeySet)
+	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	//keySet.ImportFromPrivateKey(&spendingKey)
+	//
+	//coin := new(privacy.Coin)
+	//coin.PublicKey, _ = privacy.DecompressKey(keySet.PaymentAddress.Pk)
+	//
+	//coin.Value = 10
+	//coin.SNDerivator = privacy.RandInt()
+	//coin.Randomness = privacy.RandInt()
+	//coin.CommitAll()
+	//coin.Value = 0
+	//
+	//
+	//outCoin := new(privacy.OutputCoin)
+	//outCoin.CoinDetails = coin
+	//outCoin.CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted)
+	//outCoin.Encrypt(keySet.PaymentAddress.Tk)
+	//coin.Randomness = nil
+	//
+	//outCoinBytes := outCoin.Bytes()
+	//
+	//fmt.Printf("Out coin bytes: %v\n", outCoinBytes)
+	//fmt.Printf("Len Out coin bytes: %v\n", len(outCoinBytes))
 
 }

@@ -1,7 +1,6 @@
 package ppos
 
 import (
-	"bytes"
 	"encoding/json"
 	"time"
 
@@ -9,12 +8,12 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/wire"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/wire"
 )
 
-func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
+func (self *Engine) ValidateTxList(txList []metadata.Transaction) error {
 	for _, tx := range txList {
 		err := self.ValidateSpecTxWithBlockChain(tx)
 		if err != nil {
@@ -28,19 +27,22 @@ func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
 }
 
 // Check tx with blockchain
-func (self *Engine) ValidateSpecTxWithBlockChain(tx transaction.Transaction) error {
+func (self *Engine) ValidateSpecTxWithBlockChain(tx metadata.Transaction) error {
 	// get chainID of tx
 	chainID, err := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
 	if err != nil {
 		return err
 	}
-	return self.config.MemPool.ValidateTxWithBlockChain(tx, chainID)
+	// return self.config.MemPool.ValidateTxWithBlockChain(tx, chainID)
+	return tx.ValidateTxWithBlockChain(self.config.BlockChain, chainID, self.config.BlockChain.GetDatabase())
 }
 
 // Checl spec tx by it self
-func (self *Engine) ValidateSpecTxByItSelf(tx transaction.Transaction) bool {
+func (self *Engine) ValidateSpecTxByItSelf(tx metadata.Transaction) bool {
 	// get chainID of tx
-	return self.config.MemPool.ValidateTxByItSelf(tx)
+	// return self.config.MemPool.ValidateTxByItSelf(tx)
+	chainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	return tx.ValidateTxByItself(tx.IsPrivacy(), self.config.BlockChain.GetDatabase(), self.config.BlockChain, chainID)
 }
 
 func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, sigs []string) error {
@@ -78,7 +80,7 @@ func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, 
 	return nil
 }
 
-func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error {
+/*func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error {
 	rtOld := self.config.BlockChain.BestState[block.Header.ChainID].BestBlock.Header.MerkleRootCommitments.CloneBytes()
 	newTree := self.config.BlockChain.BestState[block.Header.ChainID].CmTree.MakeCopy()
 	Logger.log.Infof("[validateblock] old tree rt: %x\n", newTree.GetRoot(common.IncMerkleTreeHeight))
@@ -92,7 +94,7 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 		Logger.log.Errorf("MerkleRootCommitments diff!! \n%x\n%x\n%x", rtOld, rt[:], block.Header.MerkleRootCommitments[:])
 		for _, blockTx := range block.Transactions {
 			if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
-				tx, ok := blockTx.(*transaction.Tx)
+				tx, ok := blockTx.(*transaction.TxNormal)
 				if ok == false {
 					Logger.log.Errorf("Transaction in block not valid")
 				}
@@ -107,7 +109,7 @@ func (self *Engine) ValidateMerkleRootCommitments(block *blockchain.Block) error
 		return NewConsensusError(ErrMerkleRootCommitments, nil)
 	}
 	return nil
-}
+}*/
 
 func (self *Engine) CheckBlockSize(block *blockchain.Block) error {
 	blockBytes, err := json.Marshal(*block)
@@ -182,10 +184,10 @@ func (self *Engine) validateBlockSanity(block *blockchain.Block) error {
 	}
 
 	// 5. ValidateTransaction MerkleRootCommitments
-	err = self.ValidateMerkleRootCommitments(block)
+	/*err = self.ValidateMerkleRootCommitments(block)
 	if err != nil {
 		return err
-	}
+	}*/
 
 	// 6. Validate transactions
 	return self.ValidateTxList(block.Transactions)
@@ -212,10 +214,10 @@ func (self *Engine) validatePreSignBlockSanity(block *blockchain.Block) error {
 	}
 
 	// 4. ValidateTransaction MerkleRootCommitments
-	err = self.ValidateMerkleRootCommitments(block)
+	/*err = self.ValidateMerkleRootCommitments(block)
 	if err != nil {
 		return err
-	}
+	}*/
 
 	// 5. ValidateTransaction transactions
 	return self.ValidateTxList(block.Transactions)

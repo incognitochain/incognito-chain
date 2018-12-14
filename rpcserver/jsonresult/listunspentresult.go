@@ -1,49 +1,41 @@
 package jsonresult
 
+import (
+	"math/big"
+	"encoding/json"
+)
+
 type ListUnspentResult struct {
-	ListUnspentResultItems map[string]map[byte][]ListUnspentResultItem `json:"ListUnspentResultItems"`
+	ListUnspentResultItems map[string][]ListUnspentResultItem `json:"ListUnspentResultItems"`
 }
 
 type ListUnspentResultItem struct {
-	TxId          string          `json:"TxId"`
-	JoinSplitDesc []JoinSplitDesc `json:"JoinSplitDesc"`
+	OutCoins []OutCoin `json:"OutCoins"`
 }
 
 func (self *ListUnspentResultItem) Init(data interface{}) {
-	mapData := data.(map[string]interface{})
-	self.TxId = mapData["TxId"].(string)
-	self.JoinSplitDesc = make([]JoinSplitDesc, 0)
-	temps := mapData["JoinSplitDesc"].([]interface{})
-	for _, temp := range temps {
-		item := JoinSplitDesc{}
-		item.Init(temp)
-		self.JoinSplitDesc = append(self.JoinSplitDesc, item)
+	self.OutCoins = []OutCoin{}
+	for _, item := range data.([]interface{}) {
+		i := OutCoin{}
+		i.Init(item)
+		self.OutCoins = append(self.OutCoins, i)
 	}
 }
 
-type JoinSplitDesc struct {
-	Commitments [][]byte `json:"Commitments"`
-	Amounts     []uint64 `json:"Amounts"`
-	Anchors     [][]byte `json:"Anchors"`
+type OutCoin struct {
+	PublicKey      string
+	CoinCommitment string
+	SNDerivator    big.Int
+	SerialNumber   string
+	Randomness     big.Int
+	Value          uint64
+	Info           string
 }
 
-func (self *JoinSplitDesc) Init(data interface{}) {
-	mapData := data.(map[string]interface{})
-	self.Amounts = make([]uint64, 0)
-	tempsAmounts := mapData["Amounts"].([]interface{})
-	for _, temp := range tempsAmounts {
-		self.Amounts = append(self.Amounts, uint64(temp.(float64)))
+func (self *OutCoin) Init(data interface{}) {
+	temp, err := json.Marshal(data)
+	if err != nil {
+		return
 	}
-
-	self.Anchors = make([][]byte, 0)
-	temps := mapData["Anchor"].([]interface{})
-	for _, temp := range temps {
-		self.Anchors = append(self.Anchors, []byte(temp.(string)))
-	}
-
-	self.Commitments = make([][]byte, 0)
-	temps = mapData["Commitments"].([]interface{})
-	for _, temp := range temps {
-		self.Commitments = append(self.Commitments, []byte(temp.(string)))
-	}
+	err = json.Unmarshal(temp, self)
 }

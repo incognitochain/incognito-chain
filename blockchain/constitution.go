@@ -1,81 +1,91 @@
 package blockchain
 
 import (
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
 type ConstitutionInfo struct {
 	StartedBlockHeight int32
 	ExecuteDuration    int32
-	ProposalTXID       *common.Hash
+	ProposalTXID       common.Hash
 }
 
 type GOVConstitution struct {
 	ConstitutionInfo
 	CurrentGOVNationalWelfare int32
-	GOVParams                 GOVParams
+	GOVParams                 params.GOVParams
 }
 
 type DCBConstitution struct {
 	ConstitutionInfo
 	CurrentDCBNationalWelfare int32
-	DCBParams                 DCBParams
+	DCBParams                 params.DCBParams
+}
+
+func (dcbConstitution *DCBConstitution) GetEndedBlockHeight() int32 {
+	return dcbConstitution.StartedBlockHeight + dcbConstitution.ExecuteDuration
+}
+
+func (govConstitution *GOVConstitution) GetEndedBlockHeight() int32 {
+	return govConstitution.StartedBlockHeight + govConstitution.ExecuteDuration
 }
 
 type DCBConstitutionHelper struct{}
 type GOVConstitutionHelper struct{}
 
-func (DCBConstitutionHelper) GetStartedBlockHeight(blockgen *BlkTmplGenerator, chainID byte) int32 {
+func (DCBConstitutionHelper) GetStartedNormalVote(blockgen *BlkTmplGenerator, chainID byte) int32 {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	lastDCBConstitution := BestBlock.Header.DCBConstitution
-	return lastDCBConstitution.StartedBlockHeight
+	return lastDCBConstitution.StartedBlockHeight - common.EncryptionPhaseDuration
 }
 
-func (DCBConstitutionHelper) CheckSubmitProposalType(tx transaction.Transaction) bool {
-	return tx.GetType() == common.TxSubmitDCBProposal
+func (DCBConstitutionHelper) CheckSubmitProposalType(tx metadata.Transaction) bool {
+	return tx.GetMetadataType() == metadata.SubmitDCBProposalMeta
 }
 
-func (DCBConstitutionHelper) CheckVotingProposalType(tx transaction.Transaction) bool {
-	return tx.GetType() == common.TxVoteDCBProposal
+func (DCBConstitutionHelper) CheckVotingProposalType(tx metadata.Transaction) bool {
+	return tx.GetMetadataType() == metadata.VoteDCBProposalMeta
 }
 
-func (DCBConstitutionHelper) GetAmountVoteToken(tx transaction.Transaction) uint32 {
-	return tx.(*transaction.TxVoteDCBProposal).VoteDCBProposalData.AmountVoteToken
+func (DCBConstitutionHelper) GetAmountVoteToken(tx metadata.Transaction) uint64 {
+	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
 }
 
-func (GOVConstitutionHelper) GetStartedBlockHeight(blockgen *BlkTmplGenerator, chainID byte) int32 {
+func (GOVConstitutionHelper) GetStartedNormalVote(blockgen *BlkTmplGenerator, chainID byte) int32 {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	lastGOVConstitution := BestBlock.Header.GOVConstitution
-	return lastGOVConstitution.StartedBlockHeight
+	return lastGOVConstitution.StartedBlockHeight - common.EncryptionPhaseDuration
 }
 
-func (GOVConstitutionHelper) CheckSubmitProposalType(tx transaction.Transaction) bool {
-	return tx.GetType() == common.TxSubmitGOVProposal
+func (GOVConstitutionHelper) CheckSubmitProposalType(tx metadata.Transaction) bool {
+	return tx.GetMetadataType() == metadata.SubmitGOVProposalMeta
 }
 
-func (GOVConstitutionHelper) CheckVotingProposalType(tx transaction.Transaction) bool {
-	return tx.GetType() == common.TxVoteGOVProposal
+func (GOVConstitutionHelper) CheckVotingProposalType(tx metadata.Transaction) bool {
+	return tx.GetMetadataType() == metadata.VoteGOVProposalMeta
 }
 
-func (GOVConstitutionHelper) GetAmountVoteToken(tx transaction.Transaction) uint32 {
-	return tx.(*transaction.TxVoteGOVProposal).VoteGOVProposalData.AmountVoteToken
+func (GOVConstitutionHelper) GetAmountVoteToken(tx metadata.Transaction) uint64 {
+	return tx.(*transaction.TxCustomToken).GetAmountOfVote()
 }
 
-func (DCBConstitutionHelper) TxAcceptProposal(originTx transaction.Transaction) transaction.Transaction {
-	SubmitTx := originTx.(*transaction.TxSubmitDCBProposal)
-	AcceptTx := transaction.TxAcceptDCBProposal{
-		DCBProposalTXID: SubmitTx.GetTxID(),
+func (DCBConstitutionHelper) TxAcceptProposal(originTx metadata.Transaction) metadata.Transaction {
+	acceptTx := transaction.Tx{
+		Metadata: &metadata.AcceptDCBProposalMetadata{
+			DCBProposalTXID: *originTx.Hash(),
+		},
 	}
-	AcceptTx.Type = common.TxAcceptDCBProposal
-	return AcceptTx
+	return &acceptTx
 }
 
-func (GOVConstitutionHelper) TxAcceptProposal(originTx transaction.Transaction) transaction.Transaction {
-	SubmitTx := originTx.(*transaction.TxSubmitGOVProposal)
-	AcceptTx := transaction.TxAcceptGOVProposal{
-		GOVProposalTXID: SubmitTx.GetTxID(),
+func (GOVConstitutionHelper) TxAcceptProposal(originTx metadata.Transaction) metadata.Transaction {
+	acceptTx := transaction.Tx{
+		Metadata: &metadata.AcceptGOVProposalMetadata{
+			GOVProposalTXID: *originTx.Hash(),
+		},
 	}
-	AcceptTx.Type = common.TxAcceptGOVProposal
-	return AcceptTx
+	return &acceptTx
 }

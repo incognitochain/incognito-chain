@@ -10,25 +10,16 @@ import (
 	"github.com/pkg/errors"
 )
 
-type BuyBackInfo struct {
-	StartSellingAt uint32
-	Maturity       uint32
-	BuyBackPrice   uint64 // in Constant unit
-}
-
-type BuySellResponse struct {
-	BuyBackInfo *BuyBackInfo
-	AssetID     string // only bond for now - encoded string of compound values (Maturity + BuyBackPrice + StartSellingAt) from SellingBonds param
-}
-
-// TxTokenVin ...
+// TxTokenVin - vin format for custom token data
+// It look like vin format of bitcoin
 type TxTokenVin struct {
-	TxCustomTokenID common.Hash
-	VoutIndex       int
-	Signature       string
+	TxCustomTokenID common.Hash            // TxNormal-id(or hash) of before tx, which is used as a input for current tx as a pre-utxo
+	VoutIndex       int                    // index in vouts array of before TxNormal-id
+	Signature       string                 // Signature to verify owning before tx(pre-utxo)
 	PaymentAddress  privacy.PaymentAddress // use to verify signature of pre-utxo of token
 }
 
+// Hash - return hash data of TxTokenVin
 func (self TxTokenVin) Hash() *common.Hash {
 	record := common.EmptyString
 	record += self.TxCustomTokenID.String()
@@ -40,16 +31,20 @@ func (self TxTokenVin) Hash() *common.Hash {
 	return &hash
 }
 
-// TxTokenVout ...
+// TxTokenVout - vout format for custom token data
+// It look like vout format of bitcoin
 type TxTokenVout struct {
-	Value          uint64
+	Value          uint64                 // Amount to transfer
 	PaymentAddress privacy.PaymentAddress // public key of receiver
 
-	index           int
+	// temp variable to determine position of itself in vouts arrays of tx which contain itself
+	index int
+	// temp variable to know what is id of tx which contain itself
 	txCustomTokenID common.Hash
-	BuySellResponse *BuySellResponse
+	// BuySellResponse *BuySellResponse
 }
 
+// Hash - return hash data of TxTokenVout
 func (self TxTokenVout) Hash() *common.Hash {
 	record := common.EmptyString
 	record += fmt.Sprintf("%d", self.Value)
@@ -59,34 +54,40 @@ func (self TxTokenVout) Hash() *common.Hash {
 	return &hash
 }
 
+// Set index temp variable
 func (self *TxTokenVout) SetIndex(index int) {
 	self.index = index
 }
 
+// Get index temp variable
 func (self TxTokenVout) GetIndex() int {
 	return self.index
 }
 
+// Set tx id temp variable
 func (self *TxTokenVout) SetTxCustomTokenID(txCustomTokenID common.Hash) {
 	self.txCustomTokenID = txCustomTokenID
 }
 
+// Get tx id temp variable
 func (self TxTokenVout) GetTxCustomTokenID() common.Hash {
 	return self.txCustomTokenID
 }
 
-// TxTokenData ...
+// TxTokenData - main struct which contain vin and vout array for transferring or issuing custom token
+// of course, it also contain token metadata: name, symbol, id(hash of token data)
 type TxTokenData struct {
 	PropertyID     common.Hash // = hash of TxTokenData data
 	PropertyName   string
 	PropertySymbol string
 
-	Type   int // action type
-	Amount uint64
+	Type   int    // action type [init, transfer]
+	Amount uint64 // init amount
 	Vins   []TxTokenVin
 	Vouts  []TxTokenVout
 }
 
+// Hash - return hash of token data, be used as Token ID
 func (self TxTokenData) Hash() (*common.Hash, error) {
 	if self.Vouts == nil {
 		return nil, errors.New("Vout is empty")
@@ -109,6 +110,7 @@ type CustomTokenParamTx struct {
 	TokenTxType    int           `json:"TokenTxType"`
 	Receiver       []TxTokenVout `json:"TokenReceiver"`
 
+	// temp variable to process coding
 	vins       []TxTokenVin
 	vinsAmount uint64
 }
@@ -121,7 +123,8 @@ func (self *CustomTokenParamTx) SetVinsAmount(vinsAmount uint64) {
 	self.vinsAmount = vinsAmount
 }
 
-// CreateCustomTokenReceiverArray ...
+// CreateCustomTokenReceiverArray - parse data frm rpc request to create a list vout for preparing to create a custom token tx
+// data interface is a map[paymentt-address]{transferring-amount}
 func CreateCustomTokenReceiverArray(data interface{}) []TxTokenVout {
 	result := []TxTokenVout{}
 	receivers := data.(map[string]interface{})

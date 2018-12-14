@@ -34,10 +34,10 @@ package privacy
 ////}
 ////
 ////type Opening struct{
-////	Value []byte
+////	H []byte
 ////	index byte
 ////	// index = 0: PublicKey
-////	// index = 1: Value
+////	// index = 1: H
 ////	// index = 2: Serial Number Derivator
 ////	// index = 3: Random
 ////}
@@ -93,7 +93,7 @@ package privacy
 //	temp := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 //
 //	for _, opening := range openings{
-//		temp.X, temp.Y = Curve.ScalarMult(pcmParams.G[opening.index].X, pcmParams.G[opening.index].Y, opening.Value)
+//		temp.X, temp.Y = Curve.ScalarMult(pcmParams.G[opening.index].X, pcmParams.G[opening.index].Y, opening.H)
 //		pcm.commitment.X, pcm.commitment.Y = Curve.Add(pcm.commitment.X, pcm.commitment.Y, temp.X, temp.Y)
 //	}
 //	return nil
@@ -167,11 +167,11 @@ package privacy
 ////	temp := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 ////
 ////	for _, opening := range openings{
-////		temp.X, temp.Y = Curve.ScalarMult(ecmParams.G[opening.index].X, ecmParams.G[opening.index].Y, opening.Value)
+////		temp.X, temp.Y = Curve.ScalarMult(ecmParams.G[opening.index].X, ecmParams.G[opening.index].Y, opening.H)
 ////		ecm.PedersenCommitment[0].X, ecm.PedersenCommitment[0].Y = Curve.Add(ecm.PedersenCommitment[0].X, ecm.PedersenCommitment[0].Y, temp.X, temp.Y)
 ////
 ////		if opening.index == RAND{
-////			ecm.PedersenCommitment[0].X, ecm.PedersenCommitment[0].Y = Curve.ScalarMult(ecmParams.G[ECM_CAPACITY-1].X, ecmParams.G[ECM_CAPACITY-1].Y, opening.Value)
+////			ecm.PedersenCommitment[0].X, ecm.PedersenCommitment[0].Y = Curve.ScalarMult(ecmParams.G[ECM_CAPACITY-1].X, ecmParams.G[ECM_CAPACITY-1].Y, opening.H)
 ////		}
 ////	}
 ////	return nil
@@ -205,8 +205,8 @@ package privacy
 //	var pcm PedersenCommitment
 //
 //	openings := []Opening{
-//		{Value: big.NewInt(1).Bytes(), index: VALUE},
-//		{Value: RandBytes(32), index: RAND},
+//		{H: big.NewInt(1).Bytes(), index: VALUE},
+//		{H: RandBytes(32), index: RAND},
 //	}
 //
 //	pcm.Commit(openings)

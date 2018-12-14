@@ -63,7 +63,7 @@ func TestParsePKIXPublicKey(t *testing.T) {
 	}
 	rsaPub, ok := pub.(*rsa.PublicKey)
 	if !ok {
-		t.Errorf("Value returned from ParsePKIXPublicKey was not an RSA public key")
+		t.Errorf("H returned from ParsePKIXPublicKey was not an RSA public key")
 		return
 	}
 
@@ -551,7 +551,7 @@ func TestCreateSelfSignedCertificate(t *testing.T) {
 			UnknownExtKeyUsage: testUnknownExtKeyUsage,
 
 			BasicConstraintsValid: true,
-			IsCA: true,
+			IsCA:                  true,
 
 			OCSPServer:            []string{"http://ocsp.example.com"},
 			IssuingCertificateURL: []string{"http://crt.example.com/ca1.crt"},
@@ -1361,7 +1361,7 @@ func TestMaxPathLen(t *testing.T) {
 		NotAfter:  time.Unix(100000, 0),
 
 		BasicConstraintsValid: true,
-		IsCA: true,
+		IsCA:                  true,
 	}
 
 	cert1 := serialiseAndParse(t, template)
@@ -1402,8 +1402,8 @@ func TestNoAuthorityKeyIdInSelfSignedCert(t *testing.T) {
 		NotAfter:  time.Unix(100000, 0),
 
 		BasicConstraintsValid: true,
-		IsCA:         true,
-		SubjectKeyId: []byte{1, 2, 3, 4},
+		IsCA:                  true,
+		SubjectKeyId:          []byte{1, 2, 3, 4},
 	}
 
 	if cert := serialiseAndParse(t, template); len(cert.AuthorityKeyId) != 0 {

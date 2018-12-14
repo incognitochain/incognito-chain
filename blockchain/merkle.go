@@ -1,12 +1,10 @@
 package blockchain
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
-	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/metadata"
 )
 
 type Merkle struct {
@@ -45,7 +43,7 @@ type Merkle struct {
 // using witness transaction id's rather than regular transaction id's. This
 // also presents an additional case wherein the wtxid of the salary transaction
 // is the zeroHash.
-func (self Merkle) BuildMerkleTreeStore(transactions []transaction.Transaction) []*common.Hash {
+func (self Merkle) BuildMerkleTreeStore(transactions []metadata.Transaction) []*common.Hash {
 	// Calculate how many entries are required to hold the binary merkle
 	// tree as a linear array and create an array of that size.
 	nextPoT := self.nextPowerOfTwo(len(transactions))
@@ -132,10 +130,10 @@ func (self Merkle) hashMerkleBranches(left *common.Hash, right *common.Hash) *co
 /*
 // UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
 */
-func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
+/*func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 	for _, blockTx := range block.Transactions {
 		if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
-			tx, ok := blockTx.(*transaction.Tx)
+			tx, ok := blockTx.(*transaction.TxNormal)
 			if ok == false {
 				return NewBlockChainError(UnExpectedError, fmt.Errorf("Transaction in block not valid"))
 			}
@@ -148,4 +146,4 @@ func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
 		}
 	}
 	return nil
-}
+}*/

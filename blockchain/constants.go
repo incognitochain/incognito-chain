@@ -1,7 +1,5 @@
 package blockchain
 
-import "github.com/ninjadotorg/constant/common"
-
 // constant for network
 const (
 	//Network fixed params
@@ -9,41 +7,29 @@ const (
 	ThresholdRatioOfGovCrisis = 90
 
 	// Mainnet
-	Mainnet                           = 0x01
-	MainetName                        = "mainnet"
-	MainnetDefaultPort                = "9333"
-	MainnetInitFundSalary             = 0
-	MainnetInitDCBToken               = 0
-	MainnetInitGovToken               = 0
-	MainnetInitCmBToken               = 0
-	MainnetInitBondToken              = 0
+	Mainnet               = 0x01
+	MainetName            = "mainnet"
+	MainnetDefaultPort    = "9333"
+	MainnetInitFundSalary = 0
+	MainnetInitDCBToken   = 0
+	MainnetInitGovToken   = 0
+	MainnetInitCmBToken   = 0
+	MainnetInitBondToken  = 0
+	MainnetVote
 	MainnetGenesisblockPaymentAddress = "1UuyYcHgVFLMd8Qy7T1ZWRmfFvaEgogF7cEsqY98ubQjoQUy4VozTqyfSNjkjhjR85C6GKBmw1JKekgMwCeHtHex25XSKwzb9QPQ2g6a3"
 
 	// Testnet
-	Testnet                           = 0x02
-	TestnetName                       = "testnet"
-	TestnetDefaultPort                = "9444"
-	TestnetInitFundSalary             = 1000000000000000
-	TestnetInitDCBToken               = 10000
-	TestnetInitGovToken               = 10000
-	TestnetInitCmBToken               = 0
-	TestnetInitBondToken              = 0
-	TestnetGenesisBlockPaymentAddress = "1Uv12YEcd5w5Qm79sTGHSHYnCfVKM2ui8mbapD1dgziUf9211b5cnCSdxVb1DoXyDD19V1THMSnaAWZ18sJtmaVnh56wVhwb1HuYpkTa4"
-)
+	Testnet               = 0x02
+	TestnetName           = "testnet"
+	TestnetDefaultPort    = "9444"
+	TestnetInitFundSalary = 1000000000000000
+	TestnetInitDCBToken   = 10000
+	TestnetInitGovToken   = 10000
 
-// board addresses
-var (
-	DCBAddress = []byte{}
-	GOVAddress = []byte{}
-)
-
-// special token ids (aka. PropertyID in custom token)
-var (
-	ConstantID  = [common.HashSize]byte{0} // To send Constant in custom token
-	DCBTokenID  = [common.HashSize]byte{1}
-	GOVTokenID  = [common.HashSize]byte{2}
-	CMBTokenID  = [common.HashSize]byte{3}
-	BondTokenID = [common.HashSize]byte{4}
+	//board and proposal parameters
+	TestnetInitCmBToken               = 10000
+	TestnetInitBondToken              = 10000
+	TestnetGenesisBlockPaymentAddress = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
 )
 
 const (

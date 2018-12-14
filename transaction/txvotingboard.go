@@ -20,9 +20,9 @@ type VoteGOVBoardData struct {
 	CandidatePubKey string
 }
 
-func (thisTx TxVoteDCBBoard) Hash() *common.Hash{
-	record := string(common.ToBytes(thisTx.TxCustomToken.Hash()))
-	record += string(common.ToBytes(thisTx.VoteDCBBoardData.Hash()))
+func (thisTx TxVoteDCBBoard) Hash() *common.Hash {
+	record := string(common.ToBytes(*thisTx.TxCustomToken.Hash()))
+	record += string(common.ToBytes(*thisTx.VoteDCBBoardData.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -33,9 +33,9 @@ func (VoteDCBBoardData VoteDCBBoardData) Hash() *common.Hash {
 	return &hash
 }
 
-func (thisTx TxVoteGOVBoard) Hash() *common.Hash{
-	record := string(common.ToBytes(thisTx.TxCustomToken.Hash()))
-	record += string(common.ToBytes(thisTx.VoteGOVBoardData.Hash()))
+func (thisTx TxVoteGOVBoard) Hash() *common.Hash {
+	record := string(common.ToBytes(*thisTx.TxCustomToken.Hash()))
+	record += string(common.ToBytes(*thisTx.VoteGOVBoardData.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -47,9 +47,6 @@ func (VoteGOVBoardData VoteGOVBoardData) Hash() *common.Hash {
 }
 
 //xxx
-func (TxVoteDCBBoard) Validate() bool {
-	return true
-}
 func (TxVoteGOVBoard) Validate() bool {
 	return true
 }

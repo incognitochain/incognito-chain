@@ -2,32 +2,19 @@ package common
 
 const (
 	EmptyString         = ""
-	MiliConstant        = 3 // 1 constant = 10^3 mili constant, we will use 1 miliconstant as minimum unit constant in tx
+	NanoConstant        = 2 // 1 constant = 10^2 nano constant, we will use 1 miliconstant as minimum unit constant in tx
 	IncMerkleTreeHeight = 29
 	RefundPeriod        = 1000 // after 1000 blocks since a tx (small & no-privacy) happens, the network will refund an amount of constants to tx initiator automatically
 )
 
 const (
-	TxSubmitDCBProposal = "pd"  // submit DCB proposal tx
-	TxSubmitGOVProposal = "pg"  // submit GOV proposal tx
-	TxVoteDCBProposal   = "vd"  // submit DCB proposal voted tx
-	TxVoteGOVProposal   = "vg"  // submit GOV proposal voted tx
-	TxVoteDCBBoard      = "vbd" // vote DCB board tx
-	TxVoteGOVBoard      = "vbg" // vote DCB board tx
+	TxNormalType             = "n"  // normal tx(send and receive coin)
+	TxSalaryType             = "s"  // salary tx(gov pay salary for block producer)
+	TxRefundType             = "rf" // refund tx(gov does refund to end users for small txs)
+	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
+	TxCustomTokenPrivacyType = "t"  // token  tx with supporting privacy
 
-	TxAcceptDCBProposal  = "ad" // accept DCB proposal
-	TxAcceptGOVProposal  = "ag" // accept GOV proposal
-	TxNormalType         = "n"  // normal tx(send and receive coin)
-	TxSalaryType         = "s"  // salary tx(gov pay salary for block producer)
-	TxCustomTokenType    = "t"  // token  tx
-	TxLoanRequest        = "lr"
-	TxLoanResponse       = "ls"
-	TxLoanPayment        = "lp"
-	TxLoanWithdraw       = "lw"
-	TxDividendPayout     = "td"
 	TxBuyFromGOVRequest  = "bgr"
-	TxBuySellDCBRequest  = "bsdr"
-	TxBuySellDCBResponse = "bsds"
 	TxBuyFromGOVResponse = "bgrs"
 	TxBuyBackRequest     = "bbr"
 	TxBuyBackResponse    = "bbrs"
@@ -35,6 +22,8 @@ const (
 
 // for mining consensus
 const (
+	DurationOfTermDCB     = 1000    //number of block one DCB board in charge
+	DurationOfTermGOV     = 1000    //number of block one GOV board in charge
 	MaxBlockSize          = 5000000 //byte 5MB
 	MaxTxsInBlock         = 1000
 	MinTxsInBlock         = 10                    // minium txs for block to get immediate process (meaning no wait time)
@@ -47,10 +36,42 @@ const (
 	MinBlockSigs          = (TotalValidators / 2) + 1
 	GetChainStateInterval = 10 //second
 	MaxBlockTime          = 10 //second Maximum for a chain to grow
+
+)
+
+// for voting parameter
+const (
+	SumOfVoteDCBToken                 = 100000000
+	SumOfVoteGOVToken                 = 100000000
+	MinimumBlockOfProposalDuration    = 50
+	MaximumBlockOfProposalDuration    = 200
+	MaximumProposalExplainationLength = 1000
+	NumberOfDCBGovernors              = 50
+	NumberOfGOVGovernors              = 50
+	EncryptionPhaseDuration           = 5
 )
 
 // board types
 const (
 	DCB = 1
 	GOV = 2
+)
+
+// special token ids (aka. PropertyID in custom token)
+var (
+	BondTokenID     = [HashSize]byte{0, 0, 0, 0, 0, 0, 0, 0}
+	DCBTokenID      = [HashSize]byte{1}
+	GOVTokenID      = [HashSize]byte{2}
+	CMBTokenID      = [HashSize]byte{3}
+	ConstantID      = [HashSize]byte{4} // To send Constant in custom token
+	VoteDCBTokenID  = [HashSize]byte{5}
+	VoteGOVTokenID  = [HashSize]byte{6}
+	OffchainAssetID = [HashSize]byte{7}
+)
+
+// board addresses
+const (
+	DCBAddress  = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
+	GOVAddress  = "1Uv3jP4ixNx3BkEtmUUxKXA1TXUduix3KMCWXHvLqVyA9CFfoLRZ949zTBNqDUPSzaPCZPrQKSfiEHguFazK6VeDmEk1RMLfX1kQiSqJ6"
+	VoteAddress = ""
 )
