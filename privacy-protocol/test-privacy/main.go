@@ -171,7 +171,7 @@ func main() {
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
-	//privacy.TestSchn()
+	privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
 	//privacy.TestMultiSig()
 
@@ -314,5 +314,4 @@ func main() {
 
 	fmt.Printf("Out coin bytes: %v\n", outCoinBytes)
 	fmt.Printf("Len Out coin bytes: %v\n", len(outCoinBytes))
-
 }
