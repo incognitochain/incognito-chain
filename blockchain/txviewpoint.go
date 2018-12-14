@@ -75,36 +75,36 @@ func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.Datab
 	}
 	for _, item := range proof.InputCoins {
 		serialNum := item.CoinDetails.SerialNumber.Compress()
-		temp, err := db.HasSerialNumber(serialNum, chainID)
+		ok, err := db.HasSerialNumber(serialNum, chainID)
 		if err != nil {
 			return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
-		if !temp {
+		if !ok {
 			acceptedNullifiers = append(acceptedNullifiers, serialNum)
 		}
 	}
 	for _, item := range proof.OutputCoins {
 		commitment := item.CoinDetails.CoinCommitment.Compress()
 		pubkey := item.CoinDetails.PublicKey.Compress()
-		temp, err := db.HasCommitment(commitment, chainID)
+		ok, err := db.HasCommitment(commitment, chainID)
 		if err != nil {
 			return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
-		if !temp {
-			temp := base58.Base58Check{}.Encode(pubkey, byte(0x00))
-			if acceptedCommitments[temp] == nil {
-				acceptedCommitments[temp] = make([][]byte, 0)
+		if !ok {
+			pubkeyStr := base58.Base58Check{}.Encode(pubkey, byte(0x00))
+			if acceptedCommitments[pubkeyStr] == nil {
+				acceptedCommitments[pubkeyStr] = make([][]byte, 0)
 			}
-			acceptedCommitments[temp] = append(acceptedCommitments[temp], item.CoinDetails.CoinCommitment.Compress())
-			if acceptedOutputcoins[temp] == nil {
-				acceptedOutputcoins[temp] = make([]privacy.OutputCoin, 0)
+			acceptedCommitments[pubkeyStr] = append(acceptedCommitments[pubkeyStr], item.CoinDetails.CoinCommitment.Compress())
+			if acceptedOutputcoins[pubkeyStr] == nil {
+				acceptedOutputcoins[pubkeyStr] = make([]privacy.OutputCoin, 0)
 			}
-			acceptedOutputcoins[temp] = append(acceptedOutputcoins[temp], *item)
+			acceptedOutputcoins[pubkeyStr] = append(acceptedOutputcoins[pubkeyStr], *item)
 		}
 
 		snD := item.CoinDetails.SNDerivator
-		temp, err = db.HasSNDerivator(*snD, chainID)
-		if !temp && err != nil {
+		ok, err = db.HasSNDerivator(*snD, chainID)
+		if !ok && err == nil {
 			acceptedSnD = append(acceptedSnD, *snD)
 		}
 	}

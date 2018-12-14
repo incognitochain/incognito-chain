@@ -23,4 +23,5 @@ const (
 	CommitmentSize 									= 0
 	BigIntSize     									= 32
 
+
 )
