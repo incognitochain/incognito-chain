@@ -242,7 +242,7 @@ func (outputCoin *OutputCoin) Bytes() []byte {
 	var outCoinBytes []byte
 	if outputCoin.CoinDetailsEncrypted != nil {
 		coinDetailsEncryptedBytes := outputCoin.CoinDetailsEncrypted.Bytes()
-		outCoinBytes = append(outCoinBytes, byte(len(coinDetailsEncryptedBytes))) //114 bytes
+		outCoinBytes = append(outCoinBytes, byte(len(coinDetailsEncryptedBytes))) //114 + ? bytes
 		outCoinBytes = append(outCoinBytes, coinDetailsEncryptedBytes...)
 	} else {
 		outCoinBytes = append(outCoinBytes, byte(0))
@@ -309,12 +309,13 @@ func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() [] byte {
 	var res []byte
 	res = append(res, coinDetailsEncrypted.RandomEncrypted...)
 	res = append(res, coinDetailsEncrypted.SymKeyEncrypted...)
-	lenValueEncrypted := len(coinDetailsEncrypted.ValueEncrypted)
-	res = append(res, byte(lenValueEncrypted))
+	//lenValueEncrypted := len(coinDetailsEncrypted.ValueEncrypted)
+	//res = append(res, byte(lenValueEncrypted))
 	res = append(res, coinDetailsEncrypted.ValueEncrypted...)
 
 	fmt.Printf("Byte - len random encrypted: %v\n", len(coinDetailsEncrypted.RandomEncrypted))
 	fmt.Printf("Byte - len sym key encrypted: %v\n", len(coinDetailsEncrypted.SymKeyEncrypted))
+	fmt.Printf("Byte - len value encrypted: %v\n", len(coinDetailsEncrypted.ValueEncrypted))
 
 	return res
 }
@@ -322,14 +323,14 @@ func (coinDetailsEncrypted *CoinDetailsEncrypted) SetBytes(bytes []byte) error{
 	if len(bytes) == 0 {
 		return nil
 	}
-	if len(bytes) != 114{
-		return errors.New("len of coin detail encrypted wrong!")
-	}
+	//if len(bytes) != 114{
+	//	//	return errors.New("len of coin detail encrypted wrong!")
+	//	//}
 
 	coinDetailsEncrypted.RandomEncrypted = bytes[0:48]
 	coinDetailsEncrypted.SymKeyEncrypted = bytes[48:48+66]
-	lenValueEncrypted := bytes[48+66]
-	coinDetailsEncrypted.ValueEncrypted = bytes[48+66+1:lenValueEncrypted]
+	//lenValueEncrypted := bytes[48+66]
+	coinDetailsEncrypted.ValueEncrypted = bytes[48+66:]
 
 	return nil
 }
