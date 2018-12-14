@@ -379,28 +379,30 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		return false
 	}
 
-	for i := 0; i < len(tx.Proof.OutputCoins); i++ {
-		// Check output coins' SND is not exists in SND list (Database)
-		if ok, err := CheckSNDerivatorExistence(tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, chainId, db); ok || err != nil {
-			return false
-		}
-	}
-
-	if !hasPrivacy {
-		// Check input coins' cm is exists in cm list (Database)
-		for i := 0; i < len(tx.Proof.InputCoins); i++ {
-			ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, chainId)
-			if !ok || err != nil {
+	if tx.Proof != nil {
+		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
+			// Check output coins' SND is not exists in SND list (Database)
+			if ok, err := CheckSNDerivatorExistence(tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, chainId, db); ok || err != nil {
 				return false
 			}
 		}
-	}
 
-	// Verify the payment proof
-	valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db, chainId)
-	if valid == false {
-		fmt.Printf("Error verifying the payment proof")
-		return false
+		if !hasPrivacy {
+			// Check input coins' cm is exists in cm list (Database)
+			for i := 0; i < len(tx.Proof.InputCoins); i++ {
+				ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, chainId)
+				if !ok || err != nil {
+					return false
+				}
+			}
+		}
+
+		// Verify the payment proof
+		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db, chainId)
+		if valid == false {
+			fmt.Printf("Error verifying the payment proof")
+			return false
+		}
 	}
 
 	return true
@@ -532,6 +534,9 @@ func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 }
 
 func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {
+	if tx.Proof == nil {
+		return nil
+	}
 	for _, temp1 := range poolNullifiers {
 		for _, desc := range tx.Proof.InputCoins {
 			if ok, err := common.SliceBytesExists(temp1, desc.CoinDetails.SerialNumber.Compress()); ok > -1 || err != nil {

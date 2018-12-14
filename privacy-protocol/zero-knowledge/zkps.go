@@ -666,6 +666,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		cmOutputSum[i] = new(privacy.EllipticPoint)
 		cmOutputSum[i].X, cmOutputSum[i].Y = cmOutputValue[i].X, cmOutputValue[i].Y
 		cmOutputSum[i].X, cmOutputSum[i].Y = privacy.Curve.Add(cmOutputSum[i].X, cmOutputSum[i].Y, cmOutputSND[i].X, cmOutputSND[i].Y)
+		cmOutputSumwithoutShardID[i] = new(privacy.EllipticPoint)
 		cmOutputSumwithoutShardID[i].X, cmOutputSumwithoutShardID[i].Y = big.NewInt(0), big.NewInt(0)
 		cmOutputSumwithoutShardID[i].X.Set(cmOutputSum[i].X)
 		cmOutputSumwithoutShardID[i].Y.Set(cmOutputSum[i].Y)
