@@ -434,8 +434,10 @@ func (tx *Tx) GetType() string {
 
 func (tx *Tx) ListNullifiers() [][]byte {
 	result := [][]byte{}
-	for _, d := range tx.Proof.InputCoins {
-		result = append(result, d.CoinDetails.SerialNumber.Compress())
+	if tx.Proof != nil {
+		for _, d := range tx.Proof.InputCoins {
+			result = append(result, d.CoinDetails.SerialNumber.Compress())
+		}
 	}
 	return result
 }
