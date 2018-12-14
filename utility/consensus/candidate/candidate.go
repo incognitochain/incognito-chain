@@ -15,7 +15,7 @@ func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock
 	//variable
 	// swap 3 validators each time
 	const offset = int(3)
-	shardSwapValidator := make(map[byte][]string)
+	// shardSwapValidator := make(map[byte][]string)
 	beaconSwapValidator := []string{}
 	// TODO:
 	// update BestShardHash, BestBlock, BestBlockHash
@@ -26,15 +26,13 @@ func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock
 		beaconBestState.BestShardHash[idx] = l[len(l)-1]
 	}
 
+	// Assign Validator
+	// Shuffle candidate + validator for beacon
 	if beaconBestState.BeaconHeight%200 == 1 {
 		newBeaconNode, newShardNode := GetStakingCandidate(newBlock)
 		beaconBestState.UnassignBeaconCandidate = append(beaconBestState.UnassignBeaconCandidate, newBeaconNode...)
 		beaconBestState.UnassignShardCandidate = append(beaconBestState.UnassignShardCandidate, newShardNode...)
 		//TODO: assign unAssignCandidate to assignCandidate	& clear UnassignShardCandidate
-		// ShardCandidate         map[byte][]string
-		// ShardPendingCandidate  map[byte][]string
-		// BeaconCandidate        []string
-		// BeaconPendingCandidate []string
 
 		/// Shuffle candidate for shard
 		// assign UnassignShardCandidate to ShardPendingCandidate with CurrentRandom this shard
@@ -45,14 +43,14 @@ func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock
 		if err != nil {
 			return beaconBestState, err
 		}
-		for i := 0; i < 256; i++ {
-			shardID := byte(i)
-			//swap validator for each shard
-			beaconBestState.ShardPendingCandidate[shardID], beaconBestState.ShardCandidate[shardID], shardSwapValidator[shardID], err = SwapValidator(beaconBestState.ShardPendingCandidate[shardID], beaconBestState.ShardCandidate[shardID], offset)
-			if err != nil {
-				return beaconBestState, err
-			}
-		}
+		// for i := 0; i < 256; i++ {
+		// 	shardID := byte(i)
+		// 	//swap validator for each shard
+		// 	beaconBestState.ShardPendingCandidate[shardID], beaconBestState.ShardCandidate[shardID], shardSwapValidator[shardID], err = SwapValidator(beaconBestState.ShardPendingCandidate[shardID], beaconBestState.ShardCandidate[shardID], offset)
+		// 	if err != nil {
+		// 		return beaconBestState, err
+		// 	}
+		// }
 		// ShuffleCandidate
 		shuffleBeaconCandidate, err := ShuffleCandidate(beaconBestState.UnassignBeaconCandidate, beaconBestState.CurrentRandomNumber)
 		if err != nil {
@@ -90,6 +88,38 @@ func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock
 		}
 		if l[0] == "swap" {
 			//TODO: remove from candidate list
+			// format
+			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "shard" "shardID"]
+			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "beacon"]
+			inPubkeys := strings.Split(l[1], ",")
+			outPubkeys := strings.Split(l[2], ",")
+			if l[3] == "shard" {
+				temp, err := strconv.Atoi(l[4])
+				if err != nil {
+					return beaconBestState, nil
+				}
+				shardID := byte(temp)
+				beaconBestState.ShardPendingCandidate[shardID], err = RemoveValidator(beaconBestState.ShardPendingCandidate[shardID], inPubkeys)
+				if err != nil {
+					return beaconBestState, nil
+				}
+				beaconBestState.ShardCandidate[shardID], err = RemoveValidator(beaconBestState.ShardPendingCandidate[shardID], outPubkeys)
+				if err != nil {
+					return beaconBestState, nil
+				}
+				beaconBestState.ShardCandidate[shardID] = append(beaconBestState.ShardCandidate[shardID], inPubkeys...)
+			} else if l[3] == "beacon" {
+				var err error
+				beaconBestState.BeaconPendingCandidate, err = RemoveValidator(beaconBestState.BeaconPendingCandidate, inPubkeys)
+				if err != nil {
+					return beaconBestState, nil
+				}
+				beaconBestState.BeaconCandidate, err = RemoveValidator(beaconBestState.BeaconPendingCandidate, outPubkeys)
+				if err != nil {
+					return beaconBestState, nil
+				}
+				beaconBestState.BeaconCandidate = append(beaconBestState.BeaconCandidate, inPubkeys...)
+			}
 		}
 	}
 
@@ -187,6 +217,26 @@ func SwapValidator(pendingValidators []string, currentValidators []string, offse
 	// enqueue new validator to the remaning of current validators list
 	currentValidators = append(currentValidators, tempValidators...)
 	return pendingValidators, currentValidators, swapValidator, nil
+}
+
+// return: #param1: validator list after remove
+// in parameter: #param1: list of full validator
+// in parameter: #param2: list of removed validator
+// removed validators list must be a subset of full validator list and it must be first in the list
+func RemoveValidator(validators []string, removedValidators []string) ([]string, error) {
+	// if number of pending validator is less or equal than offset, set offset equal to number of pending validator
+	if len(removedValidators) > len(validators) {
+		return validators, errors.New("Trying to remove too many validators")
+	}
+
+	for index, validator := range removedValidators {
+		if strings.Compare(validators[index], validator) == 0 {
+			validators = validators[1:]
+		} else {
+			return validators, errors.New("Remove Validator with Wrong Format")
+		}
+	}
+	return validators, nil
 }
 
 func ShuffleCandidate(candidates []string, rand int64) ([]string, error) {
