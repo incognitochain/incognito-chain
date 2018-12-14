@@ -536,7 +536,8 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	cmInputSumInverse := make([]*privacy.EllipticPoint, numInputCoin)
 	//cmInputSumInverse := make([]*privacy.EllipticPoint, numInputCoin)
 	randInputSum := make([]*big.Int, numInputCoin)
-
+	randInputSumwithoutShardID := make([]*big.Int, numInputCoin)
+	cmInputSumwithoutShardID := make([]*privacy.EllipticPoint, numInputCoin)
 	// randInputSumAll is sum of all randomess of coin commitments
 	randInputSumAll := big.NewInt(0)
 
@@ -554,21 +555,21 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		cmInputSum[i] = cmInputSK
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputValue[i].X, cmInputValue[i].Y)
 		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputSND[i].X, cmInputSND[i].Y)
-		cmInputSumOpening := new(privacy.EllipticPoint)
-		cmInputSumOpening.X, cmInputSumOpening.Y = big.NewInt(0), big.NewInt(0)
-		cmInputSumOpening.X.Set(cmInputSum[i].X)
-		cmInputSumOpening.Y.Set(cmInputSum[i].Y)
+		cmInputSumwithoutShardID[i] = new(privacy.EllipticPoint)
+		cmInputSumwithoutShardID[i].X, cmInputSumwithoutShardID[i].Y = big.NewInt(0), big.NewInt(0)
+		cmInputSumwithoutShardID[i].X.Set(cmInputSum[i].X)
+		cmInputSumwithoutShardID[i].Y.Set(cmInputSum[i].Y)
 		randInputSum[i] = randInputSK
 		randInputSum[i].Add(randInputSum[i], randInputValue[i])
 		randInputSum[i].Add(randInputSum[i], randInputSND[i])
 		randInputSum[i].Mod(randInputSum[i], privacy.Curve.Params().N)
-		randInputOpening := big.NewInt(0)
-		randInputOpening.Set(randInputSum[i])
+		randInputSumwithoutShardID[i] = big.NewInt(0)
+		randInputSumwithoutShardID[i].Set(randInputSum[i])
 		if wit.ComInputOpeningsWitness[i] == nil {
 			wit.ComInputOpeningsWitness[i] = new(PKComOpeningsWitness)
 		}
-		wit.ComInputOpeningsWitness[i].Set(cmInputSumOpening,
-			[]*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randInputOpening},
+		wit.ComInputOpeningsWitness[i].Set(cmInputSumwithoutShardID[i],
+			[]*big.Int{wit.spendingKey, big.NewInt(int64(inputCoins[i].CoinDetails.Value)), inputCoins[i].CoinDetails.SNDerivator, randInputSumwithoutShardID[i]},
 			[]byte{privacy.SK, privacy.VALUE, privacy.SND, privacy.RAND})
 
 		/***** Build witness for proving one-out-of-N commitments is a commitment to the coins being spent *****/
@@ -604,7 +605,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		if wit.EqualityOfCommittedValWitness[i] == nil {
 			wit.EqualityOfCommittedValWitness[i] = new(PKEqualityOfCommittedValWitness)
 		}
-		wit.EqualityOfCommittedValWitness[i].Set([]*privacy.EllipticPoint{cmInputSNDIndexSK[i], cmInputSND[i]}, indexZKPEqual, []*big.Int{inputCoins[i].CoinDetails.SNDerivator, randInputSK, randInputSND[i]})
+		wit.EqualityOfCommittedValWitness[i].Set([]*privacy.EllipticPoint{cmInputSNDIndexSK[i], cmInputSND[i]}, indexZKPEqual, []*big.Int{inputCoins[i].CoinDetails.SNDerivator, randInputSNDIndexSK[i], randInputSND[i]})
 
 		/****Build witness for proving that the commitment of serial number is equivalent to Mul(com(sk), com(snd))****/
 		witnesssA := new(big.Int)
