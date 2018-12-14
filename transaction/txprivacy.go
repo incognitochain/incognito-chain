@@ -30,6 +30,8 @@ type Tx struct {
 	Sig       []byte `json:"Sig, omitempty"`       // 64 bytes
 	Proof     *zkp.PaymentProof
 
+	PubKeyLastByteSender byte
+
 	// Metadata
 	Metadata metadata.Metadata
 
@@ -88,7 +90,7 @@ func (tx *Tx) Init(
 	sumOutputValue = 0
 	for _, p := range paymentInfo {
 		sumOutputValue += p.Amount
-		fmt.Printf("[CreateTx] paymentInfo.H: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
+		fmt.Printf("[CreateTx] paymentInfo.Value: %+v, paymentInfo.PaymentAddress: %x\n", p.Amount, p.PaymentAddress.Pk)
 	}
 
 	// Calculate sum of all input coins' value
@@ -101,8 +103,10 @@ func (tx *Tx) Init(
 	// Calculate over balance, it will be returned to sender
 	overBalance := sumInputValue - sumOutputValue - fee
 
+	valueMax := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(64)), nil)
+	valueMax = valueMax.Sub(valueMax, big.NewInt(1))
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
-	if overBalance < 0 {
+	if overBalance < 0 || overBalance > valueMax.Uint64() {
 		return fmt.Errorf("Input value less than output value")
 	}
 
@@ -226,7 +230,7 @@ func (tx *Tx) Init(
 	}
 
 	// sign tx
-	tx.Proof.PubKeyLastByteSender = pkLastByteSender
+	tx.PubKeyLastByteSender = pkLastByteSender
 	err = tx.SignTx(hasPrivacy)
 
 	return err
@@ -354,7 +358,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
-// - Check double spending
+// - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte) bool {
 	// Verify tx signature
 	var valid bool
@@ -410,7 +414,7 @@ func (tx *Tx) Hash() *common.Hash {
 }
 
 func (tx *Tx) GetSenderAddrLastByte() byte {
-	return tx.Proof.PubKeyLastByteSender
+	return tx.PubKeyLastByteSender
 }
 
 func (tx *Tx) GetTxFee() uint64 {
@@ -520,7 +524,7 @@ func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {
 	for _, temp1 := range poolNullifiers {
 		for _, desc := range tx.Proof.InputCoins {
-			if ok, err := common.SliceBytesExists(temp1, desc.CoinDetails.SerialNumber.Compress()); ok == -1 || err != nil {
+			if ok, err := common.SliceBytesExists(temp1, desc.CoinDetails.SerialNumber.Compress()); ok > -1 || err != nil {
 				return errors.New("Double spend")
 			}
 		}

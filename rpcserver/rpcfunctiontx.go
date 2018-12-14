@@ -159,6 +159,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 
 	// list unspent tx for create tx
 	totalAmmount += int64(realFee)
+	estimateTotalAmount = totalAmmount
 	if totalAmmount > 0 {
 		candidateOutputCoins = make([]*privacy.OutputCoin, 0)
 		for _, note := range outCoins {
@@ -253,7 +254,7 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 	result := jsonresult.CreateTransactionResult{
 		TxID: txID,
 	}
-	return result, nil
+ 	return result, nil
 }
 
 /*
