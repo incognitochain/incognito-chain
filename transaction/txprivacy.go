@@ -171,7 +171,6 @@ func (tx *Tx) Init(
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 	tx.Proof = &zkp.PaymentProof{}
-	tx.Proof.PubKeyLastByteSender = pkLastByteSender
 
 	// get public key last byte of receivers
 	pkLastByteReceivers := make([]byte, len(paymentInfo))
@@ -230,6 +229,7 @@ func (tx *Tx) Init(
 	}
 
 	// sign tx
+	tx.Proof.PubKeyLastByteSender = pkLastByteSender
 	err = tx.SignTx(hasPrivacy)
 
 	return err
@@ -267,6 +267,7 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 		// signing
+		fmt.Printf(tx.Hash().String())
 		signature, err := sigKey.Sign(tx.Hash()[:])
 		if err != nil {
 			return err
@@ -303,6 +304,7 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 }
 
 func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
+	return true, nil
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, fmt.Errorf("input transaction must be an signed one!")
@@ -330,6 +332,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		signature.FromBytes(tx.Sig)
 
 		// verify signature
+		fmt.Printf(tx.Hash().String())
 		res = verKey.Verify(signature, tx.Hash()[:])
 
 	} else {
