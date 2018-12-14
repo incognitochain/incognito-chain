@@ -440,7 +440,6 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	stream.XORKeyStream(value, coin.CoinDetailsEncrypted.ValueEncrypted[aes.BlockSize:])
 
 	// assign public key to coin detail
-	//coin.CoinDetails.PublicKey = PublicKeyPoint
 	coin.CoinDetails.Randomness = new(big.Int).SetBytes(randomness)
 	coin.CoinDetails.Value = new(big.Int).SetBytes(value).Uint64()
 
