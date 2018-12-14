@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha512"
+
 	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
-// KeySet represents a bip32 extended Key
+// KeySet represents a bip32 extended PubKey
 type Key struct {
 	Depth       byte   // 1 bytes
 	ChildNumber []byte // 4 bytes
@@ -17,9 +18,9 @@ type Key struct {
 	KeySet      cashec.KeySet
 }
 
-// NewMasterKey creates a new master extended Key from a Seed
+// NewMasterKey creates a new master extended PubKey from a Seed
 func NewMasterKey(seed []byte) (*Key, error) {
-	// Generate Key and chaincode
+	// Generate PubKey and chaincode
 	hmac := hmac.New(sha512.New, []byte("Constant Seed"))
 	_, err := hmac.Write(seed)
 	if err != nil {
@@ -28,13 +29,13 @@ func NewMasterKey(seed []byte) (*Key, error) {
 	}
 	intermediary := hmac.Sum(nil)
 
-	// Split it into our Key and chain code
+	// Split it into our PubKey and chain code
 	keyBytes := intermediary[:32]  // use to create master private/public keypair
-	chainCode := intermediary[32:] // be used with public Key (in keypair) for new Child keys
+	chainCode := intermediary[32:] // be used with public PubKey (in keypair) for new Child keys
 
 	keySet := (&cashec.KeySet{}).GenerateKey(keyBytes)
 
-	// Create the Key struct
+	// Create the PubKey struct
 	key := &Key{
 		ChainCode:   chainCode,
 		KeySet:      *keySet,
@@ -45,7 +46,7 @@ func NewMasterKey(seed []byte) (*Key, error) {
 	return key, nil
 }
 
-// NewChildKey derives a Child Key from a given parent as outlined by bip32
+// NewChildKey derives a Child PubKey from a given parent as outlined by bip32
 func (key *Key) NewChildKey(childIdx uint32) (*Key, error) {
 	intermediary, err := key.getIntermediary(childIdx)
 	if err != nil {
@@ -162,7 +163,7 @@ func Deserialize(data []byte) (*Key, error) {
 	}
 
 	// validate checksum
-	cs1 := base58.ChecksumFirst4Bytes(data[0: len(data)-4])
+	cs1 := base58.ChecksumFirst4Bytes(data[0 : len(data)-4])
 	cs2 := data[len(data)-4:]
 	for i := range cs1 {
 		if cs1[i] != cs2[i] {

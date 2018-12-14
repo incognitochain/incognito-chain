@@ -12,6 +12,7 @@ import (
 
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/ninjadotorg/constant/privacy-protocol/proto/zksnark"
@@ -35,13 +36,7 @@ type TxNormal struct {
 	// temp variable to view sign priv key which use in tx
 	sigPrivKey *privacy.SpendingKey // is always private property of struct
 
-	// this one is a hash id of requested tx
-	// and is used inside response txs
-	// so that we can determine pair of req/res txs
-	// for example, BuySellRequestTx/BuySellResponseTx
-	RequestedTxID *common.Hash
-
-	Metadata interface{}
+	Metadata metadata.Metadata
 }
 
 func (tx *TxNormal) SetTxID(txId *common.Hash) {
@@ -60,13 +55,200 @@ func (tx TxNormal) Hash() *common.Hash {
 	record += strconv.FormatUint(tx.Fee, 10)
 	record += strconv.Itoa(len(tx.Descs))
 	for _, desc := range tx.Descs {
-		record += desc.toString()
+		for _, note := range desc.Note {
+			added := false
+			for i, key := range pubkeys {
+				if bytes.Equal(note.Apk[:], key) {
+					added = true
+					amounts[i] += note.Value
+				}
+			}
+			if !added {
+				pubkeys = append(pubkeys, note.Apk[:])
+				amounts = append(amounts, note.Value)
+			}
+		}
 	}
-	record += string(tx.JSPubKey)
-	// record += string(tx.JSSig)
-	record += string(tx.AddressLastByte)
-	hash := common.DoubleHashH([]byte(record))
-	return &hash
+	return pubkeys, amounts
+}
+
+func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {
+	for _, temp1 := range poolNullifiers {
+		for _, desc := range tx.Descs {
+			for _, nullifier := range desc.Nullifiers {
+				if ok, err := common.SliceBytesExists(temp1, nullifier); !ok || err != nil {
+					return errors.New("Double spend")
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
+	if tx.Type == common.TxSalaryType {
+		return errors.New("Can not receive a salary tx from other node, this is a violation")
+	}
+	poolNullifiers := mr.GetPoolNullifiers()
+	return tx.validateDoubleSpendTxWithCurrentMempool(poolNullifiers)
+}
+
+// ValidateDoubleSpend - check double spend for any transaction type
+func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(bcr metadata.BlockchainRetriever, chainID byte) error {
+	txHash := tx.Hash()
+	nullifierDb, err := bcr.GetNulltifiersList(chainID)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Can not check double spend for tx"))
+	}
+	descs := tx.Descs
+	for _, desc := range descs {
+		for _, nullifer := range desc.Nullifiers {
+			existed, err := common.SliceBytesExists(nullifierDb, nullifer)
+			if err != nil {
+				return errors.New(fmt.Sprintf("Can not check double spend for tx"))
+			}
+			if existed {
+				return errors.New(fmt.Sprintf("Nullifiers of transaction %+v already existed", txHash.String()))
+			}
+		}
+	}
+	return nil
+}
+
+func (tx *Tx) ValidateTxWithBlockChain(bcr metadata.BlockchainRetriever, chainID byte) error {
+	if tx.GetType() == common.TxSalaryType {
+		return nil
+	}
+	if tx.Metadata != nil {
+		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, chainID)
+		if err != nil {
+			return err
+		}
+		if !isContinued {
+			return nil
+		}
+	}
+	return tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID)
+}
+
+func (tx *Tx) validateNormalTxSanityData() (bool, error) {
+	txN := tx
+	//check version
+	if txN.Version > TxVersion {
+		return false, errors.New("Wrong tx version")
+	}
+	// check LockTime before now
+	if int64(txN.LockTime) > time.Now().Unix() {
+		return false, errors.New("Wrong tx locktime")
+	}
+	// check Type is normal or salary tx
+	if len(txN.Type) != 1 || (txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType) { // only 1 byte
+		return false, errors.New("Wrong tx type")
+	}
+	// check length of JSPubKey
+	if len(txN.JSPubKey) != 64 {
+		return false, errors.New("Wrong tx jspubkey")
+	}
+	// check length of JSSig
+	if len(txN.JSSig) != 64 {
+		return false, errors.New("Wrong tx jssig")
+	}
+	//check Descs
+
+	for _, desc := range txN.Descs {
+		// check length of Anchor
+		if len(desc.Anchor) != 2 {
+			return false, errors.New("Wrong tx desc's anchor")
+		}
+		// check length of EphemeralPubKey
+		if len(desc.EphemeralPubKey) != client.EphemeralKeyLength {
+			return false, errors.New("Wrong tx desc's ephemeralpubkey")
+		}
+		// check length of HSigSeed
+		if len(desc.HSigSeed) != 32 {
+			return false, errors.New("Wrong tx desc's hsigseed")
+		}
+		// check length of Nullifiers
+		if len(desc.Nullifiers) != 2 {
+			return false, errors.New("Wrong tx desc's nullifiers")
+		}
+		if len(desc.Nullifiers[0]) != 32 {
+			return false, errors.New("Wrong tx desc's nullifiers")
+		}
+		if len(desc.Nullifiers[1]) != 32 {
+			return false, errors.New("Wrong tx desc's nullifiers")
+		}
+		// check length of Commitments
+		if len(desc.Commitments) != 2 {
+			return false, errors.New("Wrong tx desc's commitments")
+		}
+		if len(desc.Commitments[0]) != 32 {
+			return false, errors.New("Wrong tx desc's commitments")
+		}
+		if len(desc.Commitments[1]) != 32 {
+			return false, errors.New("Wrong tx desc's commitments")
+		}
+		// check length of Vmacs
+		if len(desc.Vmacs) != 2 {
+			return false, errors.New("Wrong tx desc's vmacs")
+		}
+		if len(desc.Vmacs[0]) != 32 {
+			return false, errors.New("Wrong tx desc's vmacs")
+		}
+		if len(desc.Vmacs[1]) != 32 {
+			return false, errors.New("Wrong tx desc's vmacs")
+		}
+		//
+		if desc.Proof == nil && len(desc.Note) == 0 {
+			return false, errors.New("Wrong tx desc's proof")
+		}
+		if desc.Proof != nil {
+			// check length of Proof
+			if len(desc.Proof.G_A) != 33 ||
+				len(desc.Proof.G_APrime) != 33 ||
+				len(desc.Proof.G_B) != 65 ||
+				len(desc.Proof.G_BPrime) != 33 ||
+				len(desc.Proof.G_C) != 33 ||
+				len(desc.Proof.G_CPrime) != 33 ||
+				len(desc.Proof.G_K) != 33 ||
+				len(desc.Proof.G_H) != 33 {
+				return false, errors.New("Wrong tx desc's proof")
+			}
+			//
+			if len(desc.EncryptedData) != 2 {
+				return false, errors.New("Wrong tx desc's encryptedData")
+			}
+		}
+		// // TODO: @0xbunyip - should move logic below to BuySellDCBResponse metadata type's logic
+		// check nulltifier is existed in DB
+		// if desc.Reward != 0 && !allowReward {
+		// 	return false, errors.New("Wrong tx desc's reward")
+		// }
+	}
+	return true, nil
+}
+
+func (tx *Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
+	if tx.Metadata != nil {
+		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, tx)
+		if err != nil || !ok || !isContinued {
+			return ok, err
+		}
+	}
+	return tx.validateNormalTxSanityData()
+}
+
+func (tx *Tx) ValidateTxByItself(
+	bcr metadata.BlockchainRetriever,
+) bool {
+	ok := tx.ValidateTransaction()
+	if !ok {
+		return false
+	}
+	if tx.Metadata != nil {
+		return tx.Metadata.ValidateMetadataByItself()
+	}
+	return true
 }
 
 // ValidateTransaction returns true if transaction is valid:
@@ -123,9 +305,48 @@ func (tx *TxNormal) ValidateTransaction() bool {
 	return true
 }
 
+// Hash returns the hash of all fields of the transaction
+func (tx Tx) Hash() *common.Hash {
+	record := strconv.Itoa(int(tx.Version))
+	record += tx.Type
+	record += strconv.FormatInt(tx.LockTime, 10)
+	record += strconv.FormatUint(tx.Fee, 10)
+	record += strconv.Itoa(len(tx.Descs))
+	for _, desc := range tx.Descs {
+		record += desc.toString()
+	}
+
+	record += string(tx.JSPubKey)
+	// record += string(tx.JSSig)
+	record += string(tx.AddressLastByte)
+	if tx.Metadata != nil {
+		record += string(tx.Metadata.Hash()[:])
+	}
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
 // GetType returns the type of the transaction
 func (tx *TxNormal) GetType() string {
 	return tx.Type
+}
+
+// GetMetadataType returns the type of underlying metadata if is existed
+func (tx *Tx) GetMetadataType() int {
+	if tx.Metadata != nil {
+		return tx.Metadata.GetType()
+	}
+	return metadata.InvalidMeta
+}
+
+// GetMetadata returns metadata of tx is existed
+func (tx *Tx) GetMetadata() metadata.Metadata {
+	return tx.Metadata
+}
+
+// SetMetadata sets metadata to tx
+func (tx *Tx) SetMetadata(meta metadata.Metadata) {
+	tx.Metadata = meta
 }
 
 // GetTxVirtualSize computes the virtual size of a given transaction
@@ -573,7 +794,7 @@ func createDummyNote(spendingKey *privacy.SpendingKey) *client.Note {
 func (tx *TxNormal) SignTx() error {
 	//Check input transaction
 	if tx.JSSig != nil {
-		return errors.New("Input transaction must be an unsigned one")
+		return errors.Zero("Input transaction must be an unsigned one")
 	}
 
 	// Hash transaction
@@ -583,13 +804,13 @@ func (tx *TxNormal) SignTx() error {
 	copy(data, hash[:])
 
 	// Sign
-	*/
+*/
 /*ecdsaSignature := new(client.EcdsaSignature)
-	var err error
-	ecdsaSignature.R, ecdsaSignature.S, err = client.Sign(rand.Reader, tx.sigPrivKey, data[:])
-	if err != nil {
-		return err
-	}*//*
+var err error
+ecdsaSignature.R, ecdsaSignature.S, err = client.Sign(rand.Reader, tx.sigPrivKey, data[:])
+if err != nil {
+	return err
+}*/ /*
 
 	keyset := cashec.KeySet{}
 	keyset.ImportFromPrivateKey(tx.sigPrivKey)
@@ -608,21 +829,21 @@ func (tx *TxNormal) SignTx() error {
 func (tx *TxNormal) VerifySign() (bool, error) {
 	//Check input transaction
 	if tx.JSSig == nil || tx.JSPubKey == nil {
-		return false, errors.New("Input transaction must be an signed one!")
+		return false, errors.Zero("Input transaction must be an signed one!")
 	}
 
 	// UnParse Public key
-	*/
+*/
 /*pubKey := new(client.PublicKey)
-	pubKey.X = new(big.Int).SetBytes(tx.JSPubKey[0:32])
-	pubKey.Y = new(big.Int).SetBytes(tx.JSPubKey[32:64])*//*
+pubKey.X = new(big.Int).SetBytes(tx.JSPubKey[0:32])
+pubKey.Y = new(big.Int).SetBytes(tx.JSPubKey[32:64])*/ /*
 
 
 	// UnParse ECDSA signature
-	*/
+*/
 /*ecdsaSignature := new(client.EcdsaSignature)
-	ecdsaSignature.R = new(big.Int).SetBytes(tx.JSSig[0:32])
-	ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])*//*
+ecdsaSignature.R = new(big.Int).SetBytes(tx.JSSig[0:32])
+ecdsaSignature.S = new(big.Int).SetBytes(tx.JSSig[32:64])*/ /*
 
 
 	// Hash origin transaction

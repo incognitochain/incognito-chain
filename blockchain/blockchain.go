@@ -5,20 +5,23 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"math/big"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
-	"fmt"
-	"strconv"
-
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/database/lvdb"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/voting"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -68,6 +71,54 @@ type Config struct {
 	customTokenRewardSnapshot map[string]uint64
 }
 
+func (self *BlockChain) GetDatabase() database.DatabaseInterface {
+	return self.config.DataBase
+}
+
+func (self *BlockChain) GetHeight() int32 {
+	return self.BestState[0].BestBlock.Header.Height
+}
+
+func (self *BlockChain) GetDCBBoardPubKeys() [][]byte {
+	return self.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys
+}
+
+func (self *BlockChain) GetGOVBoardPubKeys() [][]byte {
+	return self.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys
+}
+
+func (self *BlockChain) GetDCBParams() params.DCBParams {
+	return self.BestState[0].BestBlock.Header.DCBConstitution.DCBParams
+}
+
+func (self *BlockChain) GetGOVParams() params.GOVParams {
+	return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams
+}
+
+func (self *BlockChain) GetLoanTxs(loanID []byte) ([][]byte, error) {
+	return self.config.DataBase.GetLoanTxs(loanID)
+}
+
+func (self *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint32, error) {
+	return self.config.DataBase.GetLoanPayment(loanID)
+}
+
+func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*voting.SaleData, error) {
+	endBlock, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := self.config.DataBase.LoadCrowdsaleData(saleID)
+	var saleData *voting.SaleData
+	if err != nil {
+		saleData = &voting.SaleData{
+			SaleID:        saleID,
+			EndBlock:      endBlock,
+			BuyingAsset:   buyingAsset,
+			BuyingAmount:  buyingAmount,
+			SellingAsset:  sellingAsset,
+			SellingAmount: sellingAmount,
+		}
+	}
+	return saleData, err
+}
+
 /*
 Init - init a blockchain view from config
 */
@@ -96,6 +147,35 @@ func (self *BlockChain) Init(config *Config) error {
 
 	return nil
 }
+
+// -------------- Blockchain retriever's implementation --------------
+// func (self *BlockChain) GetNulltifiersList(chainId byte) ([][]byte, error) {
+// 	txViewPoint, err := self.FetchTxViewPoint(chainId)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	nullifierDb := txViewPoint.ListNullifiers()
+// 	return nullifierDb, nil
+// }
+
+// GetCustomTokenTxsHash - return list of tx which relate to custom token
+func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]metadata.Transaction, error) {
+	txHashesInByte, err := self.config.DataBase.CustomTokenTxs(tokenID)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[common.Hash]metadata.Transaction)
+	for _, temp := range txHashesInByte {
+		_, _, _, tx, err := self.GetTransactionByHash(temp)
+		if err != nil {
+			return nil, err
+		}
+		result[*tx.Hash()] = tx
+	}
+	return result, nil
+}
+
+// -------------- End of Blockchain retriever's implementation --------------
 
 /*
 // initChainState attempts to load and initialize the chain state from the
@@ -309,8 +389,8 @@ func (self *BlockChain) StoreTransactionIndex(txHash *common.Hash, blockHash *co
 Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
 this is a list tx-out which are used by a new tx
 */
-func (self *BlockChain) StoreNullifiersFromTxViewPoint(view TxViewPoint) error {
-	for _, item1 := range view.listNullifiers {
+func (self *BlockChain) StoreSerialNumbersFromTxViewPoint(view TxViewPoint) error {
+	for _, item1 := range view.listSerialNumbers {
 		err := self.config.DataBase.StoreSerialNumbers(item1, view.chainID)
 		if err != nil {
 			return err
@@ -338,10 +418,28 @@ Uses an existing database to update the set of not used tx by saving list commit
 this is a list tx-in which are used by a new tx
 */
 func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
-	for _, item1 := range view.listCommitments {
-		err := self.config.DataBase.StoreCommitments(item1, view.chainID)
+	for pubkey, item1 := range view.mapCommitments {
+		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
 		if err != nil {
 			return err
+		}
+		for _, com := range item1 {
+			err = self.config.DataBase.StoreCommitments(pubkeyBytes, com, view.chainID)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	for pubkey, item1 := range view.mapOutputCoins {
+		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
+		if err != nil {
+			return err
+		}
+		for _, com := range item1 {
+			err = self.config.DataBase.StoreOutputCoins(pubkeyBytes, com.Bytes(), view.chainID)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -365,7 +463,7 @@ func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, ch
 Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
 this is a list tx-in which are used by a new tx
 */
-func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, chainId byte) error {
+/*func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, chainId byte) error {
 	for _, item := range commitments {
 		err := self.config.DataBase.StoreCommitments(item, chainId)
 		if err != nil {
@@ -373,7 +471,7 @@ func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte,
 		}
 	}
 	return nil
-}
+}*/
 
 /*
 Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
@@ -397,7 +495,7 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
 Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
 this is a list tx-in which are used by a new tx
 */
-func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
+/*func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
 	for _, desc := range tx.Proof.OutputCoins {
 		chainId, err := common.GetTxSenderChain(desc.CoinDetails.GetPubKeyLastByte())
 		if err != nil {
@@ -409,7 +507,7 @@ func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
 		}
 	}
 	return nil
-}
+}*/
 
 /*
 Get all blocks in chain
@@ -495,46 +593,165 @@ func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 	return data, err
 }
 
-/*func (self *BlockChain) SaveLoanTxsForBlock(block *Block) error {
-	for _, tx := range block.Transactions {
-		switch tx.GetType() {
-		case common.TxLoanRequest:
-			{
-				tx := tx.(*transaction.TxLoanRequest)
-				self.config.DataBase.StoreLoanRequest(tx.LoanID, tx.Hash()[:])
+func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
+	txs, err := self.config.DataBase.GetLoanTxs(loanID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, txHash := range txs {
+		hash := &common.Hash{}
+		copy(hash[:], txHash)
+		_, _, _, tx, err := self.GetTransactionByHash(hash)
+		if err != nil {
+			return nil, err
+		}
+		if tx.GetMetadataType() == metadata.LoanRequestMeta {
+			meta := tx.GetMetadata()
+			if meta == nil {
+				continue
 			}
-		case common.TxLoanResponse:
-			{
-				tx := tx.(*transaction.TxLoanResponse)
-				self.config.DataBase.StoreLoanResponse(tx.LoanID, tx.Hash()[:])
+			requestMeta, ok := meta.(*metadata.LoanRequest)
+			if !ok {
+				continue
+			}
+			if bytes.Equal(requestMeta.LoanID, loanID) {
+				return requestMeta, nil
 			}
 		}
 	}
+	return nil, nil
+}
 
-	return nil
-}*/
+func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
+	value := uint64(0)
+	//TODO: need to update to new txprivacy's fields
+	// txNormal := tx.(*transaction.Tx)
+	// for _, desc := range txNormal.Descs {
+	// 	for _, note := range desc.Note {
+	// 		accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	// 		dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+	// 		if bytes.Equal(note.Apk[:], dcbPk) {
+	// 			value += note.Value
+	// 		}
+	// 	}
+	// }
+	meta := tx.GetMetadata().(*metadata.LoanPayment)
+	principle, interest, deadline, err := self.config.DataBase.GetLoanPayment(meta.LoanID)
+	if meta.PayPrinciple {
+		if err != nil {
+			return err
+		}
+		if principle < value {
+			value = principle
+		}
+		principle -= value
+	} else {
+		requestMeta, err := self.GetLoanRequestMeta(meta.LoanID)
+		if err != nil {
+			return err
+		}
+		interestPerPeriod := GetInterestAmount(principle, requestMeta.Params.InterestRate)
+		periodInc := uint32(0)
+		if value < interest {
+			interest -= value
+		} else {
+			periodInc = 1 + uint32((value-interest)/interestPerPeriod)
+			interest = interestPerPeriod - (value-interest)%interestPerPeriod
+		}
+		deadline = deadline + periodInc*requestMeta.Params.Maturity
+	}
+	return self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, deadline)
+}
 
-/*func (self *BlockChain) UpdateDividendPayout(block *Block) error {
+func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 	for _, tx := range block.Transactions {
-		switch tx.GetType() {
-		case common.TxDividendPayout:
+		switch tx.GetMetadataType() {
+		case metadata.LoanRequestMeta:
 			{
-				tx := tx.(*transaction.TxDividendPayout)
-				tokenID := tx.TokenID
-				for _, desc := range tx.Descs {
-					for _, note := range desc.Note {
-						// TODO(@0xbunyip): replace note.Apk with bytes of PaymentAddress, not just Pk
-						paymentAddress := (&privacy.PaymentAddress{}).FromBytes(note.Apk[:])
-						utxos, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, *paymentAddress)
+				tx := tx.(*transaction.Tx)
+				meta := tx.Metadata.(*metadata.LoanRequest)
+				self.config.DataBase.StoreLoanRequest(meta.LoanID, tx.Hash()[:])
+			}
+		case metadata.LoanResponseMeta:
+			{
+				tx := tx.(*transaction.Tx)
+				meta := tx.Metadata.(*metadata.LoanResponse)
+				self.config.DataBase.StoreLoanResponse(meta.LoanID, tx.Hash()[:])
+			}
+		case metadata.LoanUnlockMeta:
+			{
+				// Update loan payment info after withdrawing Constant
+				tx := tx.(*transaction.Tx)
+				meta := tx.GetMetadata().(*metadata.LoanUnlock)
+				requestMeta, _ := self.GetLoanRequestMeta(meta.LoanID)
+				principle := requestMeta.LoanAmount
+				interest := GetInterestAmount(principle, requestMeta.Params.InterestRate)
+				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, uint32(block.Header.Height))
+			}
+		case metadata.LoanPaymentMeta:
+			{
+				self.ProcessLoanPayment(tx)
+			}
+		}
+	}
+	return nil
+}
+
+// parseCustomTokenUTXO helper method for parsing UTXO data for updating dividend payout
+func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte) ([]transaction.TxTokenVout, error) {
+	utxoData, err := self.config.DataBase.GetCustomTokenPaymentAddressUTXO(tokenID, pubkey)
+	if err != nil {
+		return nil, err
+	}
+	var finalErr error
+	vouts := []transaction.TxTokenVout{}
+	for key, value := range utxoData {
+		keys := strings.Split(key, string(lvdb.Splitter))
+		values := strings.Split(value, string(lvdb.Splitter))
+		// get unspent and unreward transaction output
+		if strings.Compare(values[1], string(lvdb.Unspent)) == 0 {
+			vout := transaction.TxTokenVout{}
+			vout.PaymentAddress = privacy.PaymentAddress{Pk: pubkey}
+			txHash, err := common.Hash{}.NewHash([]byte(keys[3]))
+			if err != nil {
+				finalErr = err
+				continue
+			}
+			vout.SetTxCustomTokenID(*txHash)
+			voutIndexByte := []byte(keys[4])[0]
+			voutIndex := int(voutIndexByte)
+			vout.SetIndex(voutIndex)
+			value, err := strconv.Atoi(values[0])
+			if err != nil {
+				finalErr = err
+				continue
+			}
+			vout.Value = uint64(value)
+			vouts = append(vouts, vout)
+		}
+	}
+	return vouts, finalErr
+}
+
+func (self *BlockChain) UpdateDividendPayout(block *Block) error {
+	for _, tx := range block.Transactions {
+		switch tx.GetMetadataType() {
+		case metadata.DividendMeta:
+			{
+				tx := tx.(*transaction.Tx)
+				meta := tx.Metadata.(*metadata.Dividend)
+				for _, coin := range tx.Proof.OutputCoins {
+					pubkey := coin.CoinDetails.PublicKey.Compress()
+					vouts, err := self.parseCustomTokenUTXO(meta.TokenID, pubkey)
+					if err != nil {
+						return err
+					}
+					for _, vout := range vouts {
+						txHash := vout.GetTxCustomTokenID()
+						err := self.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, pubkey, &txHash, vout.GetIndex())
 						if err != nil {
 							return err
-						}
-						for _, utxo := range utxos {
-							txHash := utxo.GetTxCustomTokenID()
-							err := self.config.DataBase.UpdateRewardAccountUTXO(tokenID, *paymentAddress, &txHash, utxo.GetIndex())
-							if err != nil {
-								return err
-							}
 						}
 					}
 				}
@@ -542,24 +759,116 @@ func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 		}
 	}
 	return nil
-}*/
+}
 
-/*func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
+func (self *BlockChain) UpdateVoteCountBoard(block *Block) error {
+	DCBEndedBlock := block.Header.DCBGovernor.EndBlock
+	GOVEndedBlock := block.Header.GOVGovernor.EndBlock
 	for _, tx := range block.Transactions {
-		switch tx.GetType() {
-		case common.TxAcceptDCBProposal:
+		switch tx.GetMetadataType() {
+		case metadata.VoteDCBBoardMeta:
 			{
-				txAccepted := tx.(*transaction.TxAcceptDCBProposal)
-				_, _, _, getTx, err := self.GetTransactionByHash(txAccepted.DCBProposalTXID)
-				proposal := getTx.(*transaction.TxSubmitDCBProposal)
+				tx := tx.(*transaction.TxCustomToken)
+				voteAmount := tx.GetAmountOfVote()
+				voteDCBBoardMetadata := tx.Metadata.(*metadata.VoteDCBBoardMetadata)
+				err := self.config.DataBase.AddVoteDCBBoard(DCBEndedBlock, tx.TxTokenData.Vins[0].PaymentAddress.Pk, voteDCBBoardMetadata.CandidatePubKey, voteAmount)
+				if err != nil {
+					return err
+				}
+			}
+		case metadata.VoteGOVBoardMeta:
+			{
+				tx := tx.(*transaction.TxCustomToken)
+				voteAmount := tx.GetAmountOfVote()
+				voteGOVBoardMetadata := tx.Metadata.(*metadata.VoteGOVBoardMetadata)
+				err := self.config.DataBase.AddVoteGOVBoard(GOVEndedBlock, tx.TxTokenData.Vins[0].PaymentAddress.Pk, voteGOVBoardMetadata.CandidatePubKey, voteAmount)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (self *BlockChain) UpdateVoteTokenHolder(block *Block) error {
+	for _, tx := range block.Transactions {
+		switch tx.GetMetadataType() {
+		case metadata.SendInitDCBVoteTokenMeta:
+			{
+				meta := tx.GetMetadata().(*metadata.SendInitDCBVoteTokenMetadata)
+				err := self.config.DataBase.SendInitDCBVoteToken(uint32(block.Header.Height), meta.ReceiverPubKey, meta.Amount)
+				if err != nil {
+					return err
+				}
+			}
+		case metadata.SendInitGOVVoteTokenMeta:
+			{
+				meta := tx.GetMetadata().(*metadata.SendInitDCBVoteTokenMetadata)
+				err := self.config.DataBase.SendInitDCBVoteToken(uint32(block.Header.Height), meta.ReceiverPubKey, meta.Amount)
+				if err != nil {
+					return err
+				}
+			}
+
+		}
+	}
+	return nil
+}
+
+func (self *BlockChain) ProcessVoteProposal(block *Block) error {
+	nextDCBConstitutionBlockHeight := uint32(block.Header.DCBConstitution.GetEndedBlockHeight())
+	for _, tx := range block.Transactions {
+		meta := tx.GetMetadata()
+		switch tx.GetMetadataType() {
+		case metadata.SealedLv3DCBBallotMeta:
+			underlieMetadata := meta.(*metadata.SealedLv3DCBBallotMetadata)
+			self.config.DataBase.AddVoteLv3Proposal("dcb", nextDCBConstitutionBlockHeight, underlieMetadata.Hash())
+		case metadata.SealedLv2DCBBallotMeta:
+			underlieMetadata := meta.(*metadata.SealedLv2DCBBallotMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
+		case metadata.SealedLv1DCBBallotMeta:
+			underlieMetadata := meta.(*metadata.SealedLv1DCBBallotMetadata)
+			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
+		case metadata.NormalDCBBallotMetaFromOwner:
+			underlieMetadata := meta.(*metadata.NormalDCBBallotFromOwnerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
+		case metadata.NormalDCBBallotMetaFromSealer:
+			underlieMetadata := meta.(*metadata.NormalDCBBallotFromSealerMetadata)
+			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
+			// todo: gov
+
+		}
+	}
+	return nil
+}
+
+func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
+	for _, tx := range block.Transactions {
+		switch tx.GetMetadataType() {
+		case metadata.AcceptDCBProposalMeta:
+			{
+				meta := tx.GetMetadata().(*metadata.AcceptDCBProposalMetadata)
+				_, _, _, getTx, err := self.GetTransactionByHash(&meta.DCBProposalTXID)
+				proposal := getTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
 				if err != nil {
 					return err
 				}
 
 				// Store saledata in db if needed
-				if proposal.DCBProposalData.DCBParams.SaleData != nil {
-					err := self.config.DataBase.SaveCrowdsaleData(proposal.DCBProposalData.DCBParams.SaleData)
-					if err != nil {
+				if proposal.DCBParams.SaleData != nil {
+					saleData := proposal.DCBParams.SaleData
+					if _, _, _, _, _, err := self.config.DataBase.LoadCrowdsaleData(saleData.SaleID); err == nil {
+						return fmt.Errorf("SaleID not unique")
+					}
+					if err := self.config.DataBase.SaveCrowdsaleData(
+						saleData.SaleID,
+						saleData.EndBlock,
+						saleData.BuyingAsset,
+						saleData.BuyingAmount,
+						saleData.SellingAsset,
+						saleData.SellingAmount,
+					); err != nil {
 						return err
 					}
 				}
@@ -567,13 +876,13 @@ func (self *BlockChain) GetAllHashBlocks() (map[byte][]*common.Hash, error) {
 		}
 	}
 	return nil
-}*/
+}
 
 /*
 FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
 Param coinType - COIN or BOND
 */
-func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
+/*func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 	view := NewTxViewPoint(chainId)
 	commitments, err := self.config.DataBase.FetchCommitments(chainId)
 	if err != nil {
@@ -584,14 +893,14 @@ func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
 	if err != nil {
 		return nil, err
 	}
-	view.listNullifiers = nullifiers
+	view.listSerialNumbers = nullifiers
 	snDerivators, err := self.config.DataBase.FetchSNDerivator(chainId)
 	if err != nil {
 		return nil, err
 	}
 	view.listSnD = snDerivators
 	return view, nil
-}
+}*/
 
 func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	view := NewTxViewPoint(block.Header.ChainID)
@@ -643,7 +952,7 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.
-	err = self.StoreNullifiersFromTxViewPoint(*view)
+	err = self.StoreSerialNumbersFromTxViewPoint(*view)
 	if err != nil {
 		return err
 	}
@@ -661,10 +970,10 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	return nil
 }
 
-/*
-	Key: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
-  H: value-spent/unspent-rewarded/unreward
-*/
+// /*
+// 	Key: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
+//   H: value-spent/unspent-rewarded/unreward
+// */
 func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken) error {
 	Splitter := lvdb.Splitter
 	TokenPaymentAddressPrefix := lvdb.TokenPaymentAddressPrefix
@@ -735,297 +1044,90 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 	//return self.config.DataBase.StoreCustomTokenPaymentAddresstHistory(&customTokenTx.TxTokenData.PropertyID, customTokenTx)
 }
 
-/*
-GetListTxByReadonlyKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key
-- Param #1: key - key set which contain readonly-key and pub-key
-- Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
-*/
-func (self *BlockChain) GetListTxByReadonlyKey(keySet *cashec.KeySet) (map[byte][]transaction.Tx, error) {
-	results := make(map[byte][]transaction.Tx, 0)
-
-	// lock chain
-	self.chainLock.Lock()
-
-	for _, bestState := range self.BestState {
-		// get best block
-		bestBlock := bestState.BestBlock
-		chainId := bestState.BestBlock.Header.ChainID
-		blockHeight := bestBlock.Header.Height
-
-		for blockHeight > 0 {
-			txsInBlock := bestBlock.Transactions
-			txsInBlockAccepted := make([]transaction.Tx, 0)
-			for _, txInBlock := range txsInBlock {
-				if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
-					tx := txInBlock.(*transaction.Tx)
-					copyTx := transaction.Tx{
-						Version:   tx.Version,
-						Sig:       tx.Sig,
-						SigPubKey: tx.SigPubKey,
-						Fee:       tx.Fee,
-						Type:      tx.Type,
-						LockTime:  tx.LockTime,
-						Proof: &zkp.PaymentProof{
-							ComInputOpeningsProof:       tx.Proof.ComInputOpeningsProof,
-							ComOutputMultiRangeProof:    tx.Proof.ComOutputMultiRangeProof,
-							ComOutputOpeningsProof:      tx.Proof.ComOutputOpeningsProof,
-							EqualityOfCommittedValProof: tx.Proof.EqualityOfCommittedValProof,
-							ComZeroProof:                tx.Proof.ComZeroProof,
-							ProductCommitmentProof:      tx.Proof.ProductCommitmentProof,
-							OneOfManyProof:              tx.Proof.OneOfManyProof,
-							InputCoins:                  tx.Proof.InputCoins,
-							OutputCoins:                 []*privacy.OutputCoin{},
-							PubKeyLastByteSender:        tx.Proof.PubKeyLastByteSender,
-							ComOutputValue:              tx.Proof.ComOutputValue,
-							ComOutputSND:                tx.Proof.ComOutputSND,
-							ComOutputShardID:            tx.Proof.ComOutputShardID,
-						},
-						Metadata: tx.Metadata,
-					}
-					// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
-					isPrivacy := tx.Proof.ComInputOpeningsProof != nil
-					for _, outcoinTemp := range tx.Proof.OutputCoins {
-						if isPrivacy {
-							err := outcoinTemp.Decrypt(keySet.ReadonlyKey)
-							if err != nil {
-								outcoin := &privacy.OutputCoin{
-									CoinDetails:          outcoinTemp.CoinDetails,
-									CoinDetailsEncrypted: outcoinTemp.CoinDetailsEncrypted,
-								}
-								copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outcoin)
-							}
-						} else {
-							// no privacy-protocol
-							if bytes.Equal(outcoinTemp.CoinDetails.PublicKey.Compress()[:], keySet.PaymentAddress.Pk[:]) {
-								outcoin := &privacy.OutputCoin{
-									CoinDetails:          outcoinTemp.CoinDetails,
-									CoinDetailsEncrypted: outcoinTemp.CoinDetailsEncrypted,
-								}
-								copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outcoin)
-							}
-						}
-					}
-					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
-				}
-			}
-			// detected some tx can be accepted
-			if len(txsInBlockAccepted) > 0 {
-				// add to result
-				results[chainId] = append(results[chainId], txsInBlockAccepted...)
-			}
-
-			// continue with previous block
-			blockHeight--
-			if blockHeight > 0 {
-				// not is genesis block
-				preBlockHash := bestBlock.Header.PrevBlockHash
-				bestBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-				if blockHeight != bestBlock.Header.Height || err != nil {
-					// pre-block is not the same block-height with calculation -> invalid blockchain
-					return nil, errors.New("Invalid blockchain")
+// DecryptTxByKey - process outputcoin to get outputcoin data which relate to keyset
+func (self *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.OutputCoin, keySet *cashec.KeySet, chainID byte) *privacy.OutputCoin {
+	/*
+		- Param keyset - (priv-key, payment-address, readonlykey)
+		in case priv-key: return unspent outputcoin tx
+		in case readonly-key: return all outputcoin tx with amount value
+		in case payment-address: return all outputcoin tx with no amount value
+	*/
+	pubkeyCompress := outCoinTemp.CoinDetails.PublicKey.Compress()
+	if bytes.Equal(pubkeyCompress, keySet.PaymentAddress.Pk[:]) {
+		result := &privacy.OutputCoin{
+			CoinDetails:          outCoinTemp.CoinDetails,
+			CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
+		}
+		if result.CoinDetailsEncrypted != nil {
+			if len(keySet.PrivateKey) > 0 || len(keySet.ReadonlyKey.Rk) > 0 {
+				// try to decrypt to get more data
+				err := result.Decrypt(keySet.ReadonlyKey)
+				if err == nil {
+					result.CoinDetails = outCoinTemp.CoinDetails
 				}
 			}
 		}
-	}
-
-	// unlock chain
-	self.chainLock.Unlock()
-	return results, nil
-}
-
-func (self *BlockChain) DecryptTxByKey(txInBlock transaction.Transaction, serialNumberInDB [][]byte, keys *cashec.KeySet) transaction.Tx {
-	tx := txInBlock.(*transaction.Tx)
-	copyTx := transaction.Tx{
-		Version:   tx.Version,
-		Sig:       tx.Sig,
-		SigPubKey: tx.SigPubKey,
-		Fee:       tx.Fee,
-		Type:      tx.Type,
-		LockTime:  tx.LockTime,
-		Proof: &zkp.PaymentProof{
-			ComInputOpeningsProof:       tx.Proof.ComInputOpeningsProof,
-			ComOutputMultiRangeProof:    tx.Proof.ComOutputMultiRangeProof,
-			ComOutputOpeningsProof:      tx.Proof.ComOutputOpeningsProof,
-			EqualityOfCommittedValProof: tx.Proof.EqualityOfCommittedValProof,
-			ComZeroProof:                tx.Proof.ComZeroProof,
-			ProductCommitmentProof:      tx.Proof.ProductCommitmentProof,
-			OneOfManyProof:              tx.Proof.OneOfManyProof,
-			InputCoins:                  tx.Proof.InputCoins,
-			OutputCoins:                 []*privacy.OutputCoin{},
-			PubKeyLastByteSender:        tx.Proof.PubKeyLastByteSender,
-			ComOutputValue:              tx.Proof.ComOutputValue,
-			ComOutputSND:                tx.Proof.ComOutputSND,
-			ComOutputShardID:            tx.Proof.ComOutputShardID,
-		},
-		Metadata: tx.Metadata,
-	}
-	// try to decrypt each of desc in tx with readonly Key and add to txsInBlockAccepted
-	isPrivacy := tx.Proof.ComInputOpeningsProof != nil
-	for _, outCoinTemp := range tx.Proof.OutputCoins {
-		if isPrivacy {
-			// have privacy-protocol
-			if len(keys.PrivateKey) == 0 || len(keys.ReadonlyKey.Rk) == 0 {
-				continue
-			}
-			err := outCoinTemp.Decrypt(keys.ReadonlyKey)
-			if err == nil {
-				outCoin := &privacy.OutputCoin{
-					CoinDetails:          outCoinTemp.CoinDetails,
-					CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
-				}
-				if len(serialNumberInDB) > 0 {
-					checkCandiateSerialNumber, err := common.SliceBytesExists(serialNumberInDB, outCoin.CoinDetails.SerialNumber.Compress())
-					if err != nil || checkCandiateSerialNumber != -1 {
-						// candidate serialNumber is not existed in db
-						continue
-					}
-				}
-				copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outCoin)
-			}
-		} else {
-			pubkeyCompress := outCoinTemp.CoinDetails.PublicKey.Compress()
-			if bytes.Equal(pubkeyCompress, keys.PaymentAddress.Pk[:]) {
-				outCoin := &privacy.OutputCoin{
-					CoinDetails:          outCoinTemp.CoinDetails,
-					CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
-				}
-				if len(serialNumberInDB) > 0 {
-					checkCandiateNullifier, err := common.SliceBytesExists(serialNumberInDB, outCoinTemp.CoinDetails.SerialNumber.Compress())
-					if err != nil || checkCandiateNullifier != -1 {
-						// candidate nullifier is not existed in db
-						continue
-					}
-				}
-				copyTx.Proof.OutputCoins = append(copyTx.Proof.OutputCoins, outCoin)
+		if len(keySet.PrivateKey) > 0 {
+			// check spent with private-key
+			result.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(keySet.PrivateKey), result.CoinDetails.SNDerivator)
+			ok, err := self.config.DataBase.HasSerialNumber(result.CoinDetails.SerialNumber.Compress(), chainID)
+			if ok || err != nil {
+				return nil
 			}
 		}
+		return result
 	}
-	return copyTx
-}
-
-// GetListUnspentTxByKeysetInBlock - fetch block to get unspent tx commitment which privatekey can use it
-// return a list tx which contain commitment which can be used
-func (self *BlockChain) GetListUnspentTxByKeysetInBlock(keys *cashec.KeySet, block *Block, nullifiersInDb [][]byte, returnFullTx bool) (map[byte][]transaction.Tx, error) {
-	results := make(map[byte][]transaction.Tx)
-
-	chainId := block.Header.ChainID
-	results[chainId] = make([]transaction.Tx, 0)
-
-	txsInBlock := block.Transactions
-	txsInBlockAccepted := make([]transaction.Tx, 0)
-	for _, txInBlock := range txsInBlock {
-		if txInBlock.GetType() == common.TxNormalType || txInBlock.GetType() == common.TxSalaryType {
-			// copyTx ONLY contains commitment which relate to keys
-			copyTx := self.DecryptTxByKey(txInBlock, nullifiersInDb, keys)
-			if len(copyTx.Proof.OutputCoins) > 0 {
-				if !returnFullTx {
-					// only return copy tx which contain unspent commitment which relate with private key
-					txsInBlockAccepted = append(txsInBlockAccepted, copyTx)
-				} else {
-					// only return full tx which contain unspent commitment which relate with private key and other commitments
-					txsInBlockAccepted = append(txsInBlockAccepted, *txInBlock.(*transaction.Tx))
-				}
-			}
-		}
-	}
-	// detected some tx can be accepted
-	if len(txsInBlockAccepted) > 0 {
-		// add to result
-		results[chainId] = append(results[chainId], txsInBlockAccepted...)
-	}
-	return results, nil
+	return nil
 }
 
 /*
-GetListTxByPrivateKey - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
+GetListOutputCoinsByKeyset - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
 With private-key, we can check unspent tx by check nullifiers from database
-- Param #1: privateKey - byte[] of privatekey
+- Param #1: keyset - (priv-key, payment-address, readonlykey)
+in case priv-key: return unspent outputcoin tx
+in case readonly-key: return all outputcoin tx with amount value
+in case payment-address: return all outputcoin tx with no amount value
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListUnspentTxByKeyset(keyset *cashec.KeySet, sortType int, sortAsc bool) (map[byte][]transaction.Tx, error) {
-	results := make(map[byte][]transaction.Tx)
-
+func (self *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, chainID byte) ([]*privacy.OutputCoin, error) {
 	// lock chain
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 
-	// get list nullifiers from db to check spending
-	nullifiersInDb := make([][]byte, 0)
-	for _, bestState := range self.BestState {
-		bestBlock := bestState.BestBlock
-		chainId := bestBlock.Header.ChainID
-		txViewPoint, err := self.FetchTxViewPoint(chainId)
-		if err != nil {
-			return nil, err
-		}
-		nullifiersInDb = append(nullifiersInDb, txViewPoint.listNullifiers...)
-	}
 	if self.config.Light {
 		// Get unspent tx with light mode
-		fullTxs, err := self.config.DataBase.GetTransactionLightModeByPrivateKey(&keyset.PrivateKey)
-		// common.Logger.Infof("UTXO lightmode %+v", fullTxs)
-		if err != nil {
-			return nil, err
-		}
-		// decrypt to get utxo with commitments with relate to private key
-		for chainID, txArrays := range fullTxs {
-			for _, txBytes := range txArrays {
-				keys := cashec.KeySet{}
-				keys.ImportFromPrivateKey(&keyset.PrivateKey)
-				tx := transaction.Tx{}
-				err := json.Unmarshal(txBytes, &tx)
-				if err != nil {
-					return nil, NewBlockChainError(UnExpectedError, errors.New("json.Unmarshal"))
-				}
-				copyTx := self.DecryptTxByKey(&tx, nullifiersInDb, &keys)
-				results[chainID] = append(results[chainID], copyTx)
-			}
-		}
-		if len(results) > 0 {
-			return results, nil
-		}
-	}
-	// loop on all chains
-	for _, bestState := range self.BestState {
-		// get best block
-		block := bestState.BestBlock
-		chainId := block.Header.ChainID
-		blockHeight := bestState.BestBlock.Header.Height
-		// loop on all blocks in chain
-		for blockHeight > 0 {
-			var err1 error
-			// fetch block to get tx
-			resultsInChain, err1 := self.GetListUnspentTxByKeysetInBlock(keyset, block, nullifiersInDb, false)
-			if err1 != nil {
-				// unlock chain
-				//self.chainLock.Unlock()
-				return nil, err1
-			}
-			results[chainId] = append(results[chainId], resultsInChain[chainId]...)
-			// continue with previous block
-			blockHeight--
-			if chainId != 0 && blockHeight == 1 {
-				break
-			}
-			if blockHeight > 0 {
-				// not is genesis block
-				preBlockHash := block.Header.PrevBlockHash
-				preBlock, err := self.GetBlockByBlockHash(&preBlockHash)
-				if err != nil || blockHeight != preBlock.Header.Height {
-					// pre-block is not the same block-height with calculation -> invalid blockchain
-					//self.chainLock.Unlock()
-					return nil, errors.New("Invalid blockchain")
-				}
-				block = preBlock
-			}
-		}
-		// sort txs
 		// TODO
-		//transaction.SortArrayTxs(results[chainId], sortType, sortAsc)
+	}
+	// get list outputcoin of pubkey from db
+	outCointsInBytes, err := self.config.DataBase.GetOutcoinsByPubkey(keyset.PaymentAddress.Pk[:], chainID)
+	if err != nil {
+		return nil, err
+	}
+	// convert from []byte to object
+	outCoints := make([]*privacy.OutputCoin, 0)
+	for _, item := range outCointsInBytes {
+		outcoin := &privacy.OutputCoin{}
+		outcoin.Init()
+		outcoin.SetBytes(item)
+		outCoints = append(outCoints, outcoin)
 	}
 
-	// unlock chain
-	//self.chainLock.Unlock()
+	// loop on all outputcoin to decrypt data
+	results := make([]*privacy.OutputCoin, 0)
+	for _, out := range outCoints {
+		pubkeyCompress := out.CoinDetails.PublicKey.Compress()
+		if bytes.Equal(pubkeyCompress, keyset.PaymentAddress.Pk[:]) {
+			out = self.DecryptOutputCoinByKey(out, keyset, chainID)
+			if out == nil {
+				continue
+			} else {
+				results = append(results, out)
+			}
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
 
 	return results, nil
 }
@@ -1130,7 +1232,7 @@ func (self *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet
 	return voutList, nil
 }
 
-func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (byte, *common.Hash, int, transaction.Transaction, error) {
+func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
 	const (
 		bigNumber   = 999999999
 		bigNumberTx = 999999999
@@ -1182,7 +1284,7 @@ func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (by
 }
 
 // GetTransactionByHash - retrieve tx from txId(txHash)
-func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, transaction.Transaction, error) {
+func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
 	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
 		// check lightweight
@@ -1238,23 +1340,6 @@ func (self *BlockChain) GetCustomTokenTxsHash(tokenID *common.Hash) ([]common.Ha
 	return result, nil
 }
 
-// GetCustomTokenTxsHash - return list of tx which relate to custom token
-func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]transaction.Transaction, error) {
-	txHashesInByte, err := self.config.DataBase.CustomTokenTxs(tokenID)
-	if err != nil {
-		return nil, err
-	}
-	result := make(map[common.Hash]transaction.Transaction)
-	for _, temp := range txHashesInByte {
-		_, _, _, tx, err := self.GetTransactionByHash(temp)
-		if err != nil {
-			return nil, err
-		}
-		result[*tx.Hash()] = tx
-	}
-	return result, nil
-}
-
 // GetListTokenHolders - return list paymentaddress (in hexstring) of someone who hold custom token in network
 func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]uint64, error) {
 	result, err := self.config.DataBase.GetCustomTokenPaymentAddressesBalance(tokenID)
@@ -1266,4 +1351,19 @@ func (self *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]ui
 
 func (self *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {
 	return self.config.customTokenRewardSnapshot
+}
+
+func (self *BlockChain) GetNumberOfDCBGovernors() int {
+	return common.NumberOfDCBGovernors
+}
+func (self *BlockChain) GetNumberOfGOVGovernors() int {
+	return common.NumberOfGOVGovernors
+}
+
+func (self BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+	return transaction.RandomCommitmentsProcess(usableInputCoins, randNum, self.config.DataBase, chainID)
+}
+
+func (self BlockChain) CheckSNDerivatorExistence(snd *big.Int, chainID byte) (bool, error) {
+	return transaction.CheckSNDerivatorExistence(snd, chainID, self.config.DataBase)
 }

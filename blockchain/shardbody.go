@@ -5,12 +5,13 @@ import (
 	"errors"
 
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
 type BlockBodyShard struct {
 	RefBlocks    []BlockRef
-	Transactions []transaction.Transaction
+	Transactions []metadata.Transaction
 }
 
 type BlockRef struct {

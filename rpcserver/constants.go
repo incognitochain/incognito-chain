@@ -19,7 +19,7 @@ const (
 	GetBlockCount     = "getblockcount"
 	GetBlockHash      = "getblockhash"
 
-	ListTransactions                    = "listtransactions"
+	ListOutputCoins                     = "listoutputcoins"
 	CreateRawTransaction                = "createtransaction"
 	SendRawTransaction                  = "sendtransaction"
 	CreateAndSendTransaction            = "createandsendtransaction"
@@ -42,6 +42,8 @@ const (
 	GetListCustomTokenBalance           = "getlistcustomtokenbalance"
 	GetLoanParams                       = "loanparams"
 	GetBlockHeader                      = "getheader"
+	RandomCommitments                   = "randomcommitments"
+	HasSerialNumbers                    = "hasserialnumbers"
 
 	// Wallet rpc cmd
 	ListAccounts               = "listaccounts"
@@ -51,7 +53,7 @@ const (
 	DumpPrivkey                = "dumpprivkey"
 	ImportAccount              = "importaccount"
 	RemoveAccount              = "removeaccount"
-	ListUnspent                = "listunspent"
+	ListUnspentOutputCoins     = "listunspentoutputcoins"
 	GetBalance                 = "getbalance"
 	GetBalanceByPrivatekey     = "getbalancebyprivatekey"
 	GetBalanceByPaymentAddress = "getbalancebypaymentaddress"
@@ -76,6 +78,14 @@ const (
 	SendRawVoteBoardGOVTx                = "sendrawvoteboardgovtx"
 	CreateRawVoteGOVBoardTx              = "createrawvotegovboardtx"
 	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
+
+	// Submit Proposal
+	CreateAndSendSubmitDCBProposalTx = "createandsendsubmitdcbproposaltx"
+	CreateRawSubmitDCBProposalTx     = "createrawsubmitdcbproposaltx"
+	SendRawSubmitDCBProposalTx       = "sendrawsubmitdcbproposaltx"
+	CreateAndSendSubmitGOVProposalTx = "createandsendsubmitgovproposaltx"
+	CreateRawSubmitGOVProposalTx     = "createrawsubmitgovproposaltx"
+	SendRawSubmitGOVProposalTx       = "sendrawsubmitgovproposaltx"
 
 	// gov
 	GetBondTypes = "getbondtypes"

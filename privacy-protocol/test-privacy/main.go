@@ -1,6 +1,11 @@
 package main
 
-import privacy "github.com/ninjadotorg/constant/privacy-protocol"
+import (
+	"fmt"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"math/big"
+)
 
 func main() {
 
@@ -59,7 +64,10 @@ func main() {
 
 	//zkp.TestPKOneOfMany()
 
+
 	//zkp.TestPKComMultiRange()
+
+	//zkp.TestOpeningsProtocol()
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -156,15 +164,15 @@ func main() {
 	//generators[2] = privacy.EllipticPoint{big.NewInt(45), big.NewInt(0)}
 	//generators[2].ComputeYCoord()
 	//newPedCom := privacy.NewPedersenParams(generators)
-	//fmt.Printf("New PedCom: %+v\n", newPedCom)
+	//fmt.Printf("Zero PedCom: %+v\n", newPedCom)
 
 	/*----------------- TEST COMMITMENT -----------------*/
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
-	//privacy.TestSchn()
+	privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
-	privacy.TestMultiSig()
+	//privacy.TestMultiSig()
 
 	/*----------------- TEST RANDOM WITH MAXIMUM VALUE -----------------*/
 	//for i :=0; i<1000; i++{
@@ -180,23 +188,25 @@ func main() {
 
 	/*----------------- TEST ENCRYPT/DECRYPT COIN -----------------*/
 
-	//coin := new(privacy.OutputCoin)
-	//coin.CoinDetails = new(privacy.Coin)
-	//coin.CoinDetails.Randomness = privacy.RandInt()
-	//fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
-	//
-	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	//keySetSender := cashec.KeySet{}
-	//keySetSender.ImportFromPrivateKey(&spendingKey)
-	//
-	//err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
-	//if err!= nil{
-	//	fmt.Println(err)
-	//}
-	//
-	//coin.Decrypt(keySetSender.ReadonlyKey.Rk)
-	//
-	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+	coin := new(privacy.OutputCoin)
+	coin.CoinDetails = new(privacy.Coin)
+	coin.CoinDetails.Randomness = privacy.RandInt()
+	coin.CoinDetails.Value = 100000
+	fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+
+	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	keySetSender := cashec.KeySet{}
+	keySetSender.ImportFromPrivateKey(&spendingKey)
+
+	err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
+	if err!= nil{
+		fmt.Println(err)
+	}
+
+	coin.Decrypt(keySetSender.ReadonlyKey)
+
+	fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+	fmt.Printf("DEcrypted Plain text 1: Value : %v\n", coin.CoinDetails.Value)
 
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
@@ -243,5 +253,53 @@ func main() {
 	// res := transaction.ValidateTxSalary(tx, db)
 
 	// fmt.Printf("Res: %v\n", res)
+
+	/*----------------- TEST IS NIL -----------------*/
+	//zkp := new(zkp.PKOneOfManyProof)
+	//fmt.Printf("len zkp.cl: %v\n", len(zkp.cl))
+	//fmt.Println(zkp.IsNil())
+
+	//coin := new(privacy.Coin).Init()
+	//fmt.Println(coin.SerialNumber == nil)
+	//fmt.Printf("coin.Serial numbre: %v\n", coin.SerialNumber)
+
+	//num := 0
+	//bytes := privacy.IntToByteArr(num)
+	//fmt.Printf("bytes: %v\n", bytes)
+	//
+	//num2 := privacy.ByteArrToInt(bytes)
+	//fmt.Printf("num2: %v\n", num2)
+
+	/*----------------- TEST COIN BYTES -----------------*/
+
+	//keySet := new(cashec.KeySet)
+	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	//keySet.ImportFromPrivateKey(&spendingKey)
+	//
+	//coin := new(privacy.Coin)
+	//coin.PublicKey, _ = privacy.DecompressKey(keySet.PaymentAddress.Pk)
+	//
+	//coin.Value = 10
+	//coin.SNDerivator = privacy.RandInt()
+	//coin.Randomness = privacy.RandInt()
+	//coin.CommitAll()
+	//coin.Value = 0
+	//
+	//
+	//outCoin := new(privacy.OutputCoin)
+	//outCoin.CoinDetails = coin
+	//outCoin.CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted)
+	//outCoin.Encrypt(keySet.PaymentAddress.Tk)
+	//coin.Randomness = nil
+	//
+	//outCoinBytes := outCoin.Bytes()
+	//
+	//fmt.Printf("Out coin bytes: %v\n", outCoinBytes)
+	//fmt.Printf("Len Out coin bytes: %v\n", len(outCoinBytes))
+
+
+
+
+
 
 }

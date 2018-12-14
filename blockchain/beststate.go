@@ -106,17 +106,3 @@ Init create a beststate data from block and commitment tree
 // 		delete(self.Candidates, producerPbk)
 // 	}
 // }
-
-/*func (self *BestState) UpdateLoanIDs(block *Block) error {
-	for _, blockTx := range block.Transactions {
-		if blockTx.GetType() == common.TxLoanRequest {
-			tx, ok := blockTx.(*transaction.TxLoanRequest)
-			if ok == false {
-				return NewBlockChainError(UnExpectedError, fmt.Errorf("Transaction in block not valid, expected TxLoanRequest"))
-			}
-
-			self.LoanIDs = append(self.LoanIDs, tx.LoanID)
-		}
-	}
-	return nil
-}*/

@@ -42,6 +42,9 @@ func (elgamalCipher *ElGamalCipherText) Set(R, C *EllipticPoint) {
 }
 
 func (elgamalCipher *ElGamalCipherText) SetBytes(bytearr []byte) {
+	if len(bytearr) == 0{
+		return
+	}
 	if elgamalCipher.C == nil {
 		elgamalCipher.C = new(EllipticPoint)
 	}
@@ -67,6 +70,9 @@ func (priv *ElGamalPrivKey) Set(
 }
 
 func (cipherText *ElGamalCipherText) Bytes() []byte {
+	if cipherText.R.IsEqual(new(EllipticPoint).Zero()){
+		return []byte{}
+	}
 	res := append(cipherText.C.Compress(), cipherText.R.Compress()...)
 	return res
 }

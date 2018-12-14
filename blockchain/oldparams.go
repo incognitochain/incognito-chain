@@ -26,6 +26,8 @@ type IcoParams struct {
 	InitialCMBToken       uint64
 	InitialGOVToken       uint64
 	InitialBondToken      uint64
+	InitialVoteDCBToken   uint64
+	InitialVoteGOVToken   uint64
 }
 
 var preSelectValidatorsMainnet = []string{}

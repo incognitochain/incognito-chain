@@ -10,12 +10,12 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/voting"
+	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
-	key := db.getKey(string(tokenInitPrefix), tokenID) // token-init-{tokenID}
+	key := db.GetKey(string(tokenInitPrefix), tokenID) // token-init-{tokenID}
 	if err := db.lvdb.Put(key, txHash, nil); err != nil {
 		return err
 	}
@@ -23,7 +23,7 @@ func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
 }
 
 func (db *db) StoreCustomTokenTx(tokenID *common.Hash, chainID byte, blockHeight int32, txIndex int32, txHash []byte) error {
-	key := db.getKey(string(TokenPrefix), tokenID) // token-{tokenID}-chainID-(999999999-blockHeight)-(999999999-txIndex)
+	key := db.GetKey(string(TokenPrefix), tokenID) // token-{tokenID}-chainID-(999999999-blockHeight)-(999999999-txIndex)
 	key = append(key, chainID)
 	bs := make([]byte, 4)
 	binary.LittleEndian.PutUint32(bs, uint32(bigNumber-blockHeight))
@@ -52,8 +52,8 @@ func (db *db) ListCustomToken() ([][]byte, error) {
 
 func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 	result := make([]*common.Hash, 0)
-	key := db.getKey(string(TokenPrefix), tokenID)
-	// key = token-{tokenID}
+	key := db.GetKey(string(TokenPrefix), tokenID)
+	// PubKey = token-{tokenID}
 	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
 	log.Println(string(key))
 	for iter.Next() {
@@ -70,7 +70,8 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 	Key: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
   H: value-spent/unspent-rewarded/unreward
 */
-/*func (db *db) StoreCustomTokenPaymentAddresstHistory(tokenID *common.Hash, tx *transaction.TxCustomToken) error {
+// TODO(@0xsirrush): use/update this method?
+/*func (db *db) StoreCustomTokenPaymentAddressHistory(tokenID *common.Hash, tx *transaction.TxCustomToken) error {
 	tokenKey := TokenPaymentAddressPrefix
 	tokenKey = append(tokenKey, Splitter...)
 	tokenKey = append(tokenKey, (*tokenID)[:]...)
@@ -96,10 +97,10 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 		// old value: {value}-unspent-unreward/reward
 		values := strings.Split(string(value), string(Splitter))
 		if strings.Compare(values[1], string(Unspent)) != 0 {
-			return errors.New("Double Spend Detected")
+			return errors.Zero("Double Spend Detected")
 		}
 		// new value: {value}-spent-unreward/reward
-		newValues := values[0] + string(Splitter) + string(spent) + string(Splitter) + values[2]
+		newValues := values[0] + string(Splitter) + string(Spent) + string(Splitter) + values[2]
 		if err := db.Put(paymentAddressKey, []byte(newValues)); err != nil {
 			return err
 		}
@@ -119,13 +120,13 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 		ok, err := db.HasValue(paymentAddressKey)
 		// Vout already exist
 		if ok {
-			return errors.New("UTXO already exist")
+			return errors.Zero("UTXO already exist")
 		}
 		if err != nil {
 			return err
 		}
 		// init value: {value}-unspent-unreward
-		paymentAddressValue := strconv.Itoa(int(value)) + string(Splitter) + string(Unspent) + string(Splitter) + string(unreward)
+		paymentAddressValue := strconv.Itoa(int(value)) + string(Splitter) + string(Unspent) + string(Splitter) + string(Unreward)
 		if err := db.Put(paymentAddressKey, []byte(paymentAddressValue)); err != nil {
 			return err
 		}
@@ -136,7 +137,7 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 /*
 	Return a list of all address with balance > 0
 */
-/*func (db *db) GetCustomTokenListPaymentAddress(tokenID *common.Hash) ([][]byte, error) {
+func (db *db) GetCustomTokenListPaymentAddress(tokenID *common.Hash) ([][]byte, error) {
 	results := [][]byte{}
 	tempsResult := make(map[string]bool)
 	prefix := TokenPaymentAddressPrefix
@@ -148,7 +149,7 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 		value := string(iter.Value())
 		keys := strings.Split(key, string(Splitter))
 		values := strings.Split(value, string(Splitter))
-		if strings.Compare(values[1], string(unspent)) == 0 {
+		if strings.Compare(values[1], string(Unspent)) == 0 {
 			paymentAddressStr := keys[2]
 			tempsResult[paymentAddressStr] = true
 		}
@@ -160,7 +161,7 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 	}
 	iter.Release()
 	return results, nil
-}*/
+}
 
 /*
 	Return a list of all address with balance > 0
@@ -186,7 +187,7 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 			i, ok := results[hex.EncodeToString(paymentAddress.Pk)]
 			fmt.Println("GetCustomTokenListPaymentAddressesBalance, current balance", i)
 			if ok == false {
-				fmt.Println("ERROR geting value in GetCustomTokenAccountHistory of account", paymentAddress)
+				fmt.Println("ERROR geting VoteAmount in GetCustomTokenAccountHistory of account", paymentAddress)
 			}
 			balance, _ := strconv.Atoi(values[0])
 			fmt.Println("GetCustomTokenListPaymentAddressesBalance, add balance", balance)
@@ -201,11 +202,11 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 
 /*
 	Get a list of UTXO that can be reward all payment address
-	key: payment address
-	value: a list of utxo
+	PubKey: payment address
+	VoteAmount: a list of utxo
 	Each utxo consist of two part: txHash-index
 */
-/*func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[client.PaymentAddress][][]byte, error) {
+func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[client.PaymentAddress][][]byte, error) {
 
 	results := make(map[client.PaymentAddress][][]byte)
 	prefix := TokenPaymentAddressPrefix
@@ -214,11 +215,11 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		key := string(iter.Key())
-		value := string(iter.H())
+		value := string(iter.Value())
 		keys := strings.Split(key, string(Splitter))
 		values := strings.Split(value, string(Splitter))
 		// get unspent and unreward transaction output
-		if (strings.Compare(values[1], string(unspent)) == 0) && (strings.Compare(values[2], string(unreward)) == 0) {
+		if (strings.Compare(values[1], string(Unspent)) == 0) && (strings.Compare(values[2], string(Unreward)) == 0) {
 			paymentAddress := client.PaymentAddress{}
 			paymentAddress.FromBytes([]byte(keys[2]))
 			utxo := keys[4] + string(Splitter) + keys[5]
@@ -228,7 +229,7 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 	}
 	iter.Release()
 	return results, nil
-}*/
+}
 
 /*
 	Get a list of UTXO of one address
@@ -256,7 +257,7 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []by
 /*
 	Update UTXO from unreward -> reward
 */
-/*func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, pubkey []byte, txHash *common.Hash, voutIndex int) error {
+func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, pubkey []byte, txHash *common.Hash, voutIndex int) error {
 	key := TokenPaymentAddressPrefix
 	key = append(key, Splitter...)
 	key = append(key, (*tokenID)[:]...)
@@ -268,7 +269,7 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []by
 	key = append(key, byte(voutIndex))
 	_, err := db.HasValue([]byte(key))
 	if err != nil {
-		fmt.Println("ERROR finding key in DB, UpdateRewardAccountUTXO", err)
+		fmt.Println("ERROR finding PubKey in DB, UpdateRewardAccountUTXO", err)
 		return err
 	}
 	res, err := db.Get([]byte(key))
@@ -282,12 +283,12 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []by
 		return err
 	}
 	return nil
-}*/
+}
 
-func (db *db) SaveCrowdsaleData(saleData *voting.SaleData) error {
+func (db *db) SaveCrowdsaleData(saleID []byte, endBlock int32, buyingAsset []byte, amountBuying uint64, sellingAsset []byte, amountSelling uint64) error {
 	return nil
 }
 
-func (db *db) LoadCrowdsaleData(saleID []byte) (*voting.SaleData, error) {
-	return nil, nil
+func (db *db) LoadCrowdsaleData(saleID []byte) (int32, []byte, uint64, []byte, uint64, error) {
+	return 0, nil, 0, nil, 0, nil
 }

@@ -13,7 +13,7 @@ const (
 )
 
 type MessageRegistration struct {
-	Transaction transaction.Transaction
+	Transaction metadata.Transaction
 }
 
 func (self MessageRegistration) MessageType() string {

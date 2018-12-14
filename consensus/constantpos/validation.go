@@ -7,11 +7,11 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/transaction"
 )
 
-func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
+func (self *Engine) ValidateTxList(txList []metadata.Transaction) error {
 	for _, tx := range txList {
 		err := self.ValidateSpecTxWithBlockChain(tx)
 		if err != nil {
@@ -25,19 +25,19 @@ func (self *Engine) ValidateTxList(txList []transaction.Transaction) error {
 }
 
 // Check tx with blockchain
-func (self *Engine) ValidateSpecTxWithBlockChain(tx transaction.Transaction) error {
+func (self *Engine) ValidateSpecTxWithBlockChain(tx metadata.Transaction) error {
 	// get chainID of tx
-	chainID, err := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	_, err := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
 	if err != nil {
 		return err
 	}
-	return self.config.MemPool.ValidateTxWithBlockChain(tx, chainID)
+	return nil //self.config.MemPool.ValidateTxWithBlockChain(tx, chainID)
 }
 
 // Checl spec tx by it self
-func (self *Engine) ValidateSpecTxByItSelf(tx transaction.Transaction) bool {
+func (self *Engine) ValidateSpecTxByItSelf(tx metadata.Transaction) bool {
 	// get chainID of tx
-	return self.config.MemPool.ValidateTxByItSelf(tx)
+	return true //self.config.MemPool.ValidateTxByItSelf(tx)
 }
 
 func (self *Engine) ValidateCommitteeSigs(blockHash []byte, committee []string, sigs []string) error {

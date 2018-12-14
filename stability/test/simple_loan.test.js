@@ -59,32 +59,14 @@ contract("SimpleLoan", (accounts) => {
             eq(lid1, lid)
         })
 
-        it("should add new payment", async () => {
-            let amount = 100
-            let eInterest = 9, ePrinciple = 910
-            let data = web3.eth.abi.encodeFunctionCall(getFunc(abi, "addPayment"), [lid, amount, offchain])
+        it("should wipe debt", async () => {
+            let data = web3.eth.abi.encodeFunctionCall(getFunc(abi, "wipeDebt"), [lid, offchain])
             tx = await s.submitTransaction(c.address, 0, data, { from: msAcc })
-            lid1 = await u.roc(tx, abi, "__addPayment", "lid")
+            lid1 = await u.roc(tx, abi, "__wipeDebt", "lid")
             eq(lid1, lid)
             let loan = await c.loans(lid)
             let newPrinciple = loan[5].toNumber()
-            let newInterest = loan[6].toNumber()
-            eq(newInterest, eInterest)
-            eq(newPrinciple, ePrinciple)
-        })
-
-        it("should add another payment and wipe debt", async () => {
-            let amount = 910
-            let eInterest = 9, ePrinciple = 0
-            let data = web3.eth.abi.encodeFunctionCall(getFunc(abi, "addPayment"), [lid, amount, offchain])
-            tx = await s.submitTransaction(c.address, 0, data, { from: msAcc })
-            lid1 = await u.roc(tx, abi, "__addPayment", "lid")
-            eq(lid1, lid)
-            let loan = await c.loans(lid)
-            let newPrinciple = loan[5].toNumber()
-            let newInterest = loan[6].toNumber()
-            eq(newInterest, eInterest)
-            eq(newPrinciple, ePrinciple)
+            eq(newPrinciple, 0)
         })
 
         it("should be able to refund", async () => {
@@ -114,28 +96,14 @@ contract("SimpleLoan", (accounts) => {
             eq(lid1, lid)
         })
 
-        it("should add new payment", async () => {
-            let amount = 5
-            let eInterest = 5, ePrinciple = 1000
-            let data = web3.eth.abi.encodeFunctionCall(getFunc(abi, "addPayment"), [lid, amount, offchain])
-            tx = await s.submitTransaction(c.address, 0, data, { from: msAcc })
-            lid1 = await u.roc(tx, abi, "__addPayment", "lid")
-            eq(lid1, lid)
-            let loan = await c.loans(lid)
-            let newPrinciple = loan[5].toNumber()
-            let newInterest = loan[6].toNumber()
-            eq(newInterest, eInterest)
-            eq(newPrinciple, ePrinciple)
-        })
-
         it("should fail to liquidate", async () => {
             u.increaseTime(u.d2s(100)) // pass maturity date of loan
-            await u.assertRevert(c.liquidate(lid, 12000, 100, offchain, { from: requester2 })) // Caller not authorized
+            await u.assertRevert(c.liquidate(lid, 5, 12000, 100, offchain, { from: requester2 })) // Caller not authorized
         })
 
         it("should be able to liquidate", async () => {
             let x = await c.loans(lid)
-            tx = await c.liquidate(lid, 12000, 100, offchain, { from: owner })
+            tx = await c.liquidate(lid, 5, 12000, 100, offchain, { from: owner })
             x = await c.loans(lid)
             let amount = await u.oc(tx, "__liquidate", "amount")
             eq(amount.toString(), web3.utils.toWei("9.2125"))
@@ -170,13 +138,13 @@ contract("SimpleLoan", (accounts) => {
         it('should update price but fail to liquidate', async () => {
             let collateralPrice = 180 * 100
             let assetPrice = 1 * 100
-            await u.assertRevert(c.liquidate(lid, collateralPrice, assetPrice, offchain, { from: msAcc }))
+            await u.assertRevert(c.liquidate(lid, 10, collateralPrice, assetPrice, offchain, { from: msAcc }))
         })
 
         it("should be able to liquidate", async () => {
             let collateralPrice = 120 * 100
             let assetPrice = 1 * 100
-            let data = web3.eth.abi.encodeFunctionCall(getFunc(abi, "liquidate"), [lid, collateralPrice, assetPrice, offchain])
+            let data = web3.eth.abi.encodeFunctionCall(getFunc(abi, "liquidate"), [lid, 10, collateralPrice, assetPrice, offchain])
             tx = await s.submitTransaction(c.address, 0, data, { from: msAcc })
             let amount = await u.roc(tx, abi, "__liquidate", "amount")
             eq(amount.toString().substr(0, 5), web3.utils.toWei("9.2583333").substr(0, 5))

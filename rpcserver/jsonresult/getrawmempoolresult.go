@@ -1,11 +1,11 @@
 package jsonresult
 
-import "github.com/ninjadotorg/constant/transaction"
+import "github.com/ninjadotorg/constant/metadata"
 
 type GetRawMempoolResult struct {
 	TxHashes []string
 }
 
 type GetMempoolEntryResult struct {
-	Tx transaction.Transaction
+	Tx metadata.Transaction
 }

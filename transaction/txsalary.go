@@ -27,21 +27,27 @@ func CreateTxSalary(
 	// assign fee tx = 0
 	tx.Fee = 0
 
+	var err error
 	// create new output coins with info: Pk, value, SND, randomness, last byte pk, coin commitment
 	tx.Proof = new(zkp.PaymentProof)
 	tx.Proof.OutputCoins = make([]*privacy.OutputCoin, 1)
 	tx.Proof.OutputCoins[0] = new(privacy.OutputCoin)
+	//tx.Proof.OutputCoins[0].CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted).Init()
 	tx.Proof.OutputCoins[0].CoinDetails = new(privacy.Coin)
-	tx.Proof.OutputCoins[0].CoinDetails.SerialNumber = &privacy.EllipticPoint{X: big.NewInt(int64(0)), Y: big.NewInt(int64(0))}
 	tx.Proof.OutputCoins[0].CoinDetails.Value = salary
-	tx.Proof.OutputCoins[0].CoinDetails.PublicKey, _ = privacy.DecompressKey(receiverAddr.Pk)
+	tx.Proof.OutputCoins[0].CoinDetails.PublicKey, err = privacy.DecompressKey(receiverAddr.Pk)
+	if err != nil {
+		return nil, err
+	}
 	tx.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
 
 	sndOut := privacy.RandInt()
 	for true {
-		ok, err := tx.CheckSNDExistence(sndOut, db)
+		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
+		chainIdSender, err := common.GetTxSenderChain(lastByte)
+		ok, err := CheckSNDerivatorExistence(sndOut, chainIdSender, db)
 		if err != nil {
-			fmt.Println(err)
+			return nil, err
 		}
 		if ok {
 			sndOut = privacy.RandInt()
@@ -54,9 +60,10 @@ func CreateTxSalary(
 
 	// create coin commitment
 	tx.Proof.OutputCoins[0].CoinDetails.CommitAll()
+	// get last byte
+	tx.Proof.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
 
 	// sign Tx
-	var err error
 	tx.SigPubKey = receiverAddr.Pk
 	tx.sigPrivKey = *privKey
 	err = tx.SignTx(false)
@@ -81,7 +88,9 @@ func ValidateTxSalary(
 	}
 
 	// check whether output coin's SND exists in SND list or not
-	if ok, err := tx.CheckSNDExistence(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, db); ok || err != nil {
+	lastByte := tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
+	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	if ok, err := CheckSNDerivatorExistence(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, chainIdSender, db); ok || err != nil {
 		return false
 	}
 
