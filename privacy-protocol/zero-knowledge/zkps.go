@@ -14,6 +14,7 @@ import (
 // PaymentWitness contains all of witness for proving when spending coins
 type PaymentWitness struct {
 	spendingKey        *big.Int
+	RandSK  					*big.Int
 	inputCoins         []*privacy.InputCoin
 	outputCoins        []*privacy.OutputCoin
 	commitmentIndexs   []uint64
@@ -36,6 +37,7 @@ type PaymentWitness struct {
 	ComOutputValue   []*privacy.EllipticPoint
 	ComOutputSND     []*privacy.EllipticPoint
 	ComOutputShardID []*privacy.EllipticPoint
+
 }
 
 // PaymentProof contains all of PoK for spending coin
@@ -498,6 +500,8 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	numInputCoin := len(wit.inputCoins)
 
 	randInputSK := privacy.RandInt()
+	// set rand SK for Schnorr signature
+	wit.RandSK = randInputSK
 	cmInputSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randInputSK, privacy.SK)
 
 	randInputShardID := privacy.RandInt()
