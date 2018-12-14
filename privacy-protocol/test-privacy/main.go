@@ -1,6 +1,8 @@
 package main
 
-import "github.com/ninjadotorg/constant/privacy-protocol"
+import (
+	zkp "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+)
 
 func main() {
 
@@ -59,10 +61,9 @@ func main() {
 
 	//zkp.TestPKOneOfMany()
 
-
 	//zkp.TestPKComMultiRange()
 
-	//zkp.TestOpeningsProtocol()
+	zkp.TestOpeningsProtocol()
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -165,7 +166,7 @@ func main() {
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
-	privacy.TestSchn()
+	// privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
 	//privacy.TestMultiSig()
 
@@ -289,10 +290,5 @@ func main() {
 	//
 	//fmt.Printf("Out coin bytes: %v\n", outCoinBytes)
 	//fmt.Printf("Len Out coin bytes: %v\n", len(outCoinBytes))
-
-
-
-
-
 
 }
