@@ -5,7 +5,7 @@ import (
 	"errors"
 	"math/big"
 
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 // PKComZeroProof contains Proof's value

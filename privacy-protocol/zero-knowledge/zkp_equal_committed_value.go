@@ -121,6 +121,7 @@ func (pro *PKEqualityOfCommittedValProof) SetBytes(proofbytes []byte) error {
 	for i := 0; i < len(pro.Index); i++ {
 		pro.Index[i] = proofbytes[i+len(pro.C)*privacy.CompressedPointSize]
 	}
+
 	pro.T = make([]*privacy.EllipticPoint, 2)
 	for i := 0; i < len(pro.T); i++ {
 		pro.T[i] = new(privacy.EllipticPoint)
