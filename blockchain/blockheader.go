@@ -2,42 +2,38 @@ package blockchain
 
 import (
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/voting"
 )
 
-type GOVParams struct {
-	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
-	BasicSalary  uint64 // basic salary per block(mili constant)
-	TxFee        uint64
-	SellingBonds *SellingBonds
-	RefundInfo   *RefundInfo
-}
-
-type DCBParams struct {
-	SaleData               *voting.SaleData
-	MinLoanResponseRequire uint8
-}
+// type GOVParams struct {
+// 	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
+// 	BasicSalary  uint64 // basic salary per block(mili constant)
+// 	TxFee        uint64
+// 	SellingBonds *SellingBonds
+// 	RefundInfo   *RefundInfo
+// }
 
 type CBParams struct {
 }
 
-type RefundInfo struct {
-	ThresholdToLargeTx uint64
-	RefundAmount       uint64
-}
+// type RefundInfo struct {
+// 	ThresholdToLargeTx uint64
+// 	RefundAmount       uint64
+// }
 
-type SellingBonds struct {
-	BondsToSell    uint64
-	BondPrice      uint64 // in Constant unit
-	Maturity       uint32
-	BuyBackPrice   uint64 // in Constant unit
-	StartSellingAt uint32 // start selling bonds at block height
-	SellingWithin  uint32 // selling bonds within n blocks
-}
+// type SellingBonds struct {
+// 	BondsToSell    uint64
+// 	BondPrice      uint64 // in Constant unit
+// 	Maturity       uint32
+// 	BuyBackPrice   uint64 // in Constant unit
+// 	StartSellingAt uint32 // start selling bonds at block height
+// 	SellingWithin  uint32 // selling bonds within n blocks
+// }
 
 type Oracle struct {
-	Bonds map[string]uint64 // key: bondTypeID, value: price
+	// TODO(@0xankylosaurus): generic prices (ETH, BTC, ...) instead of just bonds
+	Bonds    map[string]uint64 // key: bondTypeID, value: price
+	DCBToken uint64            // against USD
+	Constant uint64            // against USD
 }
 
 type BlockHeader struct {
@@ -75,8 +71,6 @@ type BlockHeader struct {
 	DCBGovernor DCBGovernor
 	GOVGovernor GOVGovernor
 	CMBGovernor CMBGovernor
-
-	LoanParams []transaction.LoanParams // params for collateralized loans of Constant
 
 	//Block Height
 	Height int32

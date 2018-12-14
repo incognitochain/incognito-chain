@@ -242,7 +242,7 @@ func (outputCoin *OutputCoin) Bytes() []byte {
 	var outCoinBytes []byte
 	if outputCoin.CoinDetailsEncrypted != nil {
 		coinDetailsEncryptedBytes := outputCoin.CoinDetailsEncrypted.Bytes()
-		outCoinBytes = append(outCoinBytes, byte(len(coinDetailsEncryptedBytes))) //114 bytes
+		outCoinBytes = append(outCoinBytes, byte(len(coinDetailsEncryptedBytes))) //114 + ? bytes
 		outCoinBytes = append(outCoinBytes, coinDetailsEncryptedBytes...)
 	} else {
 		outCoinBytes = append(outCoinBytes, byte(0))
@@ -279,11 +279,13 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 
 type CoinDetailsEncrypted struct {
 	RandomEncrypted []byte // 48 bytes
+	ValueEncrypted []byte
 	SymKeyEncrypted []byte // 66 bytes
 }
 
 func (self *CoinDetailsEncrypted) Init() *CoinDetailsEncrypted {
 	self.RandomEncrypted = []byte{}
+	self.ValueEncrypted = []byte{}
 	self.SymKeyEncrypted = []byte{}
 	return self
 }
@@ -292,6 +294,9 @@ func (coinDetailsEncrypted *CoinDetailsEncrypted) IsNil() bool {
 		return true
 	}
 	if coinDetailsEncrypted.RandomEncrypted == nil {
+		return true
+	}
+	if coinDetailsEncrypted.ValueEncrypted == nil {
 		return true
 	}
 	return false
@@ -304,9 +309,13 @@ func (coinDetailsEncrypted *CoinDetailsEncrypted) Bytes() [] byte {
 	var res []byte
 	res = append(res, coinDetailsEncrypted.RandomEncrypted...)
 	res = append(res, coinDetailsEncrypted.SymKeyEncrypted...)
+	//lenValueEncrypted := len(coinDetailsEncrypted.ValueEncrypted)
+	//res = append(res, byte(lenValueEncrypted))
+	res = append(res, coinDetailsEncrypted.ValueEncrypted...)
 
 	fmt.Printf("Byte - len random encrypted: %v\n", len(coinDetailsEncrypted.RandomEncrypted))
 	fmt.Printf("Byte - len sym key encrypted: %v\n", len(coinDetailsEncrypted.SymKeyEncrypted))
+	fmt.Printf("Byte - len value encrypted: %v\n", len(coinDetailsEncrypted.ValueEncrypted))
 
 	return res
 }
@@ -314,12 +323,15 @@ func (coinDetailsEncrypted *CoinDetailsEncrypted) SetBytes(bytes []byte) error{
 	if len(bytes) == 0 {
 		return nil
 	}
-	if len(bytes) != 114{
-		return errors.New("len of coin detail encrypted wrong!")
-	}
+	//if len(bytes) != 114{
+	//	//	return errors.New("len of coin detail encrypted wrong!")
+	//	//}
 
 	coinDetailsEncrypted.RandomEncrypted = bytes[0:48]
 	coinDetailsEncrypted.SymKeyEncrypted = bytes[48:48+66]
+	//lenValueEncrypted := bytes[48+66]
+	coinDetailsEncrypted.ValueEncrypted = bytes[48+66:]
+
 	return nil
 }
 
@@ -329,13 +341,15 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {
 	symKeyPoint := new(EllipticPoint)
 	symKeyPoint.Randomize()
 	symKeyByte := symKeyPoint.X.Bytes()
+	fmt.Printf("ENCRYPT --------- symKey plaintext : %v\n", symKeyByte)
 
 	/**** Encrypt coin details using symKeyByte ****/
 	// just encrypt Randomness of coin
 	randomnessBytes := coin.CoinDetails.Randomness.Bytes()
+	fmt.Printf("ENCRYPT --------- randomnessBytes plaintext : %v\n", randomnessBytes)
+	fmt.Printf("ENCRYPT --------- Len randomnessBytes plaintext : %v\n", len(randomnessBytes))
 
 	block, err := aes.NewCipher(symKeyByte)
-
 	if err != nil {
 		return err
 	}
@@ -346,11 +360,34 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {
 	coin.CoinDetailsEncrypted.RandomEncrypted = make([]byte, aes.BlockSize+len(randomnessBytes))
 	iv := coin.CoinDetailsEncrypted.RandomEncrypted[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		panic(err)
+		return err
 	}
 
 	stream := cipher.NewCTR(block, iv)
 	stream.XORKeyStream(coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:], randomnessBytes)
+
+
+
+	// ***************** encrypt Value of coin
+	ValueBytes := new(big.Int).SetUint64(coin.CoinDetails.Value).Bytes()
+	fmt.Printf("ENCRYPT ------- Value byte : %v\n", ValueBytes)
+
+	//block2, err := aes.NewCipher(symKeyByte)
+	//if err != nil {
+	//	return err
+	//}
+
+
+	// The IV needs to be unique, but not secure. Therefore it's common to
+	// include it at the beginning of the ciphertext.
+	coin.CoinDetailsEncrypted.ValueEncrypted = make([]byte, aes.BlockSize+len(ValueBytes))
+	//iv2 := coin.CoinDetailsEncrypted.RandomEncrypted[:aes.BlockSize]
+	//if _, err := io.ReadFull(rand.Reader, iv2); err != nil {
+	//	panic(err)
+	//}
+
+	stream = cipher.NewCTR(block, iv)
+	stream.XORKeyStream(coin.CoinDetailsEncrypted.ValueEncrypted[aes.BlockSize:], ValueBytes)
 
 	/****** Encrypt symKeyByte using Transmission key's receiver with ElGamal cryptosystem ****/
 	// prepare public key for ElGamal cryptosystem
@@ -381,6 +418,9 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	symKeyCipher.SetBytes(coin.CoinDetailsEncrypted.SymKeyEncrypted)
 	symKeyPoint := privKey.ElGamalDec(symKeyCipher)
 
+	//fmt.Printf("DECRYPT --------- symKeybyte plaintext : %v\n", symKeyPoint.X.Bytes())
+
+
 	/*** Decrypt Encrypted using receiver's receiving key to get coin details (Randomness) ***/
 	randomness := make([]byte, 32)
 	// Set key to decrypt
@@ -390,41 +430,19 @@ func (coin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
 	}
 
 	iv := coin.CoinDetailsEncrypted.RandomEncrypted[:aes.BlockSize]
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return err
-	}
-
 	stream := cipher.NewCTR(block, iv)
 	stream.XORKeyStream(randomness, coin.CoinDetailsEncrypted.RandomEncrypted[aes.BlockSize:])
 
-	coin.CoinDetails.Randomness = new(big.Int).SetBytes(randomness)
-	// Calculate value of coin
-	gRandom := PedCom.G[RAND].ScalarMul(coin.CoinDetails.Randomness)
-	gRandomInverse, _ := gRandom.Inverse()
-	gShardID := PedCom.G[SHARDID].ScalarMul(big.NewInt(int64(coin.CoinDetails.GetPubKeyLastByte())))
-	gShardIDInverse, _ := gShardID.Inverse()
-	gSND := PedCom.G[SND].ScalarMul(coin.CoinDetails.SNDerivator)
-	gSNDInverse, _ := gSND.Inverse()
+	//fmt.Printf("DECRYPT --------- randomness plaintext : %v\n", randomness)
 
-	PublicKeyPoint, _ := DecompressKey(viewingKey.Pk)
-	PublicKeyPointInverse, _ := PublicKeyPoint.Inverse()
-
-	gValue := coin.CoinDetails.CoinCommitment.Add(gRandomInverse)
-	gValue = gValue.Add(gShardIDInverse)
-	gValue = gValue.Add(gSNDInverse)
-	gValue = gValue.Add(PublicKeyPointInverse)
-
-	// brute force to find value
-	for v := 0; ; v++ {
-		gv := PedCom.G[VALUE].ScalarMul(big.NewInt(int64(v)))
-		if gv.IsEqual(gValue) {
-			coin.CoinDetails.Value = uint64(v)
-			break
-		}
-	}
+	/*** Decrypt Encrypted using receiver's receiving key to get coin details (Value) ***/
+	value := make([]byte, len(coin.CoinDetailsEncrypted.ValueEncrypted[aes.BlockSize:]))
+	stream = cipher.NewCTR(block, iv)
+	stream.XORKeyStream(value, coin.CoinDetailsEncrypted.ValueEncrypted[aes.BlockSize:])
 
 	// assign public key to coin detail
-	coin.CoinDetails.PublicKey = PublicKeyPoint
+	coin.CoinDetails.Randomness = new(big.Int).SetBytes(randomness)
+	coin.CoinDetails.Value = new(big.Int).SetBytes(value).Uint64()
 
 	return nil
 }

@@ -75,3 +75,13 @@ func (db *db) GetLoanTxs(loanID []byte) ([][]byte, error) {
 	iter.Release()
 	return results, nil
 }
+
+func (db *db) StoreLoanPayment(loanID []byte, principle, interest uint64, deadline uint32) error {
+	// TODO(@0xbunyip): implement
+	return nil
+}
+
+func (db *db) GetLoanPayment(loanID []byte) (uint64, uint64, uint32, error) {
+	// TODO(@0xbunyip): implement
+	return 0, 0, 0, nil
+}

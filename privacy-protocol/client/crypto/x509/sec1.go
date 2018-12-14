@@ -15,7 +15,7 @@ import (
 
 const ecPrivKeyVersion = 1
 
-// ecPrivateKey reflects an ASN.1 Elliptic Curve Private Key Structure.
+// ecPrivateKey reflects an ASN.1 Elliptic Curve Private PubKey Structure.
 // References:
 //   RFC 5915
 //   SEC1 - http://www.secg.org/sec1-v2.pdf
@@ -28,7 +28,7 @@ type ecPrivateKey struct {
 	PublicKey     asn1.BitString        `asn1:"optional,explicit,tag:1"`
 }
 
-// ParseECPrivateKey parses an ASN.1 Elliptic Curve Private Key Structure.
+// ParseECPrivateKey parses an ASN.1 Elliptic Curve Private PubKey Structure.
 func ParseECPrivateKey(der []byte) (*ecdsa.PrivateKey, error) {
 	return parseECPrivateKey(nil, der)
 }
@@ -58,7 +58,7 @@ func marshalECPrivateKeyWithOID(key *ecdsa.PrivateKey, oid asn1.ObjectIdentifier
 	})
 }
 
-// parseECPrivateKey parses an ASN.1 Elliptic Curve Private Key Structure.
+// parseECPrivateKey parses an ASN.1 Elliptic Curve Private PubKey Structure.
 // The OID for the named curve may be provided from another source (such as
 // the PKCS8 container) - if it is provided then use this instead of the OID
 // that may exist in the EC private key structure.

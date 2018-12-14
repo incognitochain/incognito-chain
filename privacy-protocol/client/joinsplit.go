@@ -280,7 +280,7 @@ func JSInputs2ZkInputs(inputs []*JSInput) []*zksnark.JSInput {
 			zkinput.WitnessPath.AuthPath = append(zkinput.WitnessPath.AuthPath, &zksnark.MerkleHash{Hash: hash})
 		}
 		copy(zkinput.SpendingKey, (*input.Key)[:])
-		// fmt.Printf("zkinput.SpendingKey: %x %x\n", zkinput.SpendingKey, input.Key)
+		// fmt.Printf("zkinput.SpendingKey: %x %x\n", zkinput.SpendingKey, input.PubKey)
 
 		zkinput.Note = Note2ZksnarkNote(input.InputNote)
 

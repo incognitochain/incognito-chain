@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
+	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/wire"
 
 	"github.com/ninjadotorg/constant/common"
@@ -14,32 +15,28 @@ import (
 
 func (self RpcServer) buildRawVoteDCBBoardTransaction(
 	params interface{},
-) (*transaction.TxVoteDCBBoard, error) {
+) (*transaction.TxCustomToken, error) {
 	arrayParams := common.InterfaceSlice(params)
 	tx, err := self.buildRawCustomTokenTransaction(params)
 	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
 	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	newTx := transaction.TxVoteDCBBoard{
-		TxCustomToken: *tx,
-		VoteDCBBoardData: transaction.VoteDCBBoardData{
-			string(account.KeySet.PaymentAddress.Pk),
-		},
+	tx.Metadata = &metadata.VoteDCBBoardMetadata{
+		CandidatePubKey: account.KeySet.PaymentAddress.Pk,
 	}
-	return &newTx, err
+	return tx, err
 }
 
 func (self RpcServer) buildRawVoteGOVBoardTransaction(
 	params interface{},
-) (*transaction.TxVoteGOVBoard, error) {
+) (*transaction.TxCustomToken, error) {
 	arrayParams := common.InterfaceSlice(params)
 	tx, err := self.buildRawCustomTokenTransaction(params)
-	newTx := transaction.TxVoteGOVBoard{
-		TxCustomToken: *tx,
-		VoteGOVBoardData: transaction.VoteGOVBoardData{
-			arrayParams[len(arrayParams)-1].(string),
-		},
+	candidatePaymentAddress := arrayParams[len(arrayParams)-1].(string)
+	account, _ := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+	tx.Metadata = &metadata.VoteGOVBoardMetadata{
+		CandidatePubKey: account.KeySet.PaymentAddress.Pk,
 	}
-	return &newTx, err
+	return tx, err
 }
 
 func (self RpcServer) handleSendRawVoteBoardDCBTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -51,7 +48,7 @@ func (self RpcServer) handleSendRawVoteBoardDCBTransaction(params interface{}, c
 	if err != nil {
 		return nil, err
 	}
-	tx := transaction.TxVoteDCBBoard{}
+	tx := transaction.TxCustomToken{}
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
@@ -87,7 +84,7 @@ func (self RpcServer) handleSendRawVoteBoardGOVTransaction(params interface{}, c
 	if err != nil {
 		return nil, err
 	}
-	tx := transaction.TxVoteGOVBoard{}
+	tx := transaction.TxCustomToken{}
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {

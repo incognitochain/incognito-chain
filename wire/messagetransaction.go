@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/transaction"
+	"github.com/ninjadotorg/constant/metadata"
 )
 
 const (
@@ -13,7 +13,7 @@ const (
 )
 
 type MessageTx struct {
-	Transaction transaction.Transaction
+	Transaction metadata.Transaction
 }
 
 func (self MessageTx) MessageType() string {

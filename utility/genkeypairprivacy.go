@@ -13,8 +13,8 @@ func main() {
 	Seed := mnemonicGen.NewSeed(Mnemonic, "123456")
 
 	key, _ := wallet.NewMasterKey(Seed)
-	fmt.Printf("Key: %v\n\n", *key)
-	fmt.Printf("Key: %x\n\n", *key)
+	fmt.Printf("PubKey: %v\n\n", *key)
+	fmt.Printf("PubKey: %x\n\n", *key)
 
 	/*pubAddr := key.Base58CheckSerialize(wallet.PaymentAddressType)
 	privAddr := key.Base58CheckSerialize(wallet.PriKeyType)
