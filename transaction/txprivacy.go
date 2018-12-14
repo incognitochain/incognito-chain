@@ -51,10 +51,17 @@ func (tx *Tx) Init(
 	db database.DatabaseInterface,
 ) error {
 
+	// create sender's key set from sender's spending key
+	senderFullKey := cashec.KeySet{}
+	senderFullKey.ImportFromPrivateKey(senderSK)
+	// get public key last byte of sender
+	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
+
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
 		fmt.Printf("CREATE TX CUSTOM TOKEN\n")
 		tx.Fee = fee
 		tx.sigPrivKey = *senderSK
+		tx.PubKeyLastByteSender = pkLastByteSender
 
 		err := tx.SignTx(hasPrivacy)
 		if err != nil {
@@ -109,10 +116,6 @@ func (tx *Tx) Init(
 	if overBalance < 0 || overBalance > valueMax.Uint64() {
 		return fmt.Errorf("Input value less than output value")
 	}
-
-	// create sender's key set from sender's spending key
-	senderFullKey := cashec.KeySet{}
-	senderFullKey.ImportFromPrivateKey(senderSK)
 
 	// if overBalance > 0, create a new payment info with pk is sender's pk and amount is overBalance
 	if overBalance > 0 {
@@ -169,8 +172,6 @@ func (tx *Tx) Init(
 	// assign fee tx
 	tx.Fee = fee
 
-	// get public key last byte of sender
-	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 	tx.Proof = &zkp.PaymentProof{}
 
 	// get public key last byte of receivers
