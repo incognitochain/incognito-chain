@@ -25,6 +25,7 @@ var MAX_PEERS_OTHER_SHARD = 2
 var MAX_PEERS_OTHER = 100
 var MAX_PEERS = 200
 var MAX_PEERS_NOSHARD = 100
+var SHARD_NUMBER = 256
 
 // ConnState represents the state of the requested connection.
 type ConnState uint8
@@ -322,7 +323,7 @@ func (self *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 	var err error
 
 	self.CurrentShard = self.Config.GetCurrentShard()
-	self.OtherShards = self.randShards(256)
+	self.OtherShards = self.randShards(SHARD_NUMBER)
 
 listen:
 	for {
@@ -492,62 +493,6 @@ func (self *ConnManager) checkPeerConnByPbk(pubKey string) bool {
 	return false
 }
 
-//func (self *ConnManager) getRandPeersOfShard(shard byte, maxPeers int, mPeers map[string]*wire.RawPeer) []*wire.RawPeer {
-//	retPs := make([]*wire.RawPeer, 0)
-//	if maxPeers <= 0 {
-//		return retPs
-//	}
-//	pbks := self.Config.GetPbksOfShard(shard)
-//	for len(pbks) > 0 {
-//		randN := common.RandInt() % len(pbks)
-//		pbk := pbks[randN]
-//		pbks = append(pbks[:randN], pbks[randN+1:]...)
-//		peerI, ok := mPeers[pbk]
-//		if ok {
-//			// if existed conn then not append to array
-//			if !self.checkPeerConnByPbk(pbk) {
-//				retPs = append(retPs, peerI)
-//			}
-//			if len(retPs) > maxPeers {
-//				return retPs
-//			}
-//		}
-//	}
-//	return retPs
-//}
-//
-//func (self *ConnManager) getRandPeersOfOtherShard(shard *byte, maxShards int, maxShardPeers int, mPeers map[string]*wire.RawPeer) []*wire.RawPeer {
-//	retPs := make([]*wire.RawPeer, 0)
-//	randShards := self.getRandShards(shard, maxShards)
-//	for _, randShard := range randShards {
-//		cPeerShard := self.countPeerConnByShard(&randShard)
-//		randPeers := self.getRandPeersOfShard(randShard, maxShardPeers-cPeerShard, mPeers)
-//		retPs = append(retPs, randPeers...)
-//	}
-//	return retPs
-//}
-//
-//func (self *ConnManager) getRandShards(shard *byte, maxShards int) []byte {
-//	shardBytes := make([]byte, 0)
-//	for i := 0; i < 256; i++ {
-//		if shard != nil && *shard != byte(i) {
-//			shardBytes = append(shardBytes, byte(i))
-//		}
-//	}
-//	shardsRet := make([]byte, 0)
-//	if len(shardBytes) > maxShards {
-//		for len(shardsRet) < maxShards {
-//			randN := common.RandInt() % len(shardBytes)
-//			shardV := shardBytes[randN]
-//			shardBytes = append(shardBytes[:randN], shardBytes[randN+1:]...)
-//			shardsRet = append(shardsRet, shardV)
-//		}
-//	} else {
-//		shardsRet = shardBytes
-//	}
-//	return shardsRet
-//}
-
 func (self *ConnManager) closePeerConnOfShard(shard byte) {
 	cPeers := self.GetPeerConnOfShard(&shard)
 	for _, p := range cPeers {
@@ -625,7 +570,7 @@ func (self *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers
 
 func (self *ConnManager) randShards(maxShards int) []byte {
 	shardBytes := make([]byte, 0)
-	for i := 0; i < 256; i++ {
+	for i := 0; i < SHARD_NUMBER; i++ {
 		shardBytes = append(shardBytes, byte(i))
 	}
 	shardsRet := make([]byte, 0)
