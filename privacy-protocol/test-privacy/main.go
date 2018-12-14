@@ -1,6 +1,11 @@
 package main
 
-import "github.com/ninjadotorg/constant/privacy-protocol"
+import (
+	"fmt"
+	"github.com/ninjadotorg/constant/cashec"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"math/big"
+)
 
 func main() {
 
@@ -183,23 +188,25 @@ func main() {
 
 	/*----------------- TEST ENCRYPT/DECRYPT COIN -----------------*/
 
-	//coin := new(privacy.OutputCoin)
-	//coin.CoinDetails = new(privacy.Coin)
-	//coin.CoinDetails.Randomness = privacy.RandInt()
-	//fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
-	//
-	//spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
-	//keySetSender := cashec.KeySet{}
-	//keySetSender.ImportFromPrivateKey(&spendingKey)
-	//
-	//err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
-	//if err!= nil{
-	//	fmt.Println(err)
-	//}
-	//
-	//coin.Decrypt(keySetSender.ReadonlyKey.Rk)
-	//
-	//fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+	coin := new(privacy.OutputCoin)
+	coin.CoinDetails = new(privacy.Coin)
+	coin.CoinDetails.Randomness = privacy.RandInt()
+	coin.CoinDetails.Value = 100000
+	fmt.Printf("Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+
+	spendingKey := privacy.GenerateSpendingKey(new(big.Int).SetInt64(123).Bytes())
+	keySetSender := cashec.KeySet{}
+	keySetSender.ImportFromPrivateKey(&spendingKey)
+
+	err := coin.Encrypt(keySetSender.PaymentAddress.Tk)
+	if err!= nil{
+		fmt.Println(err)
+	}
+
+	coin.Decrypt(keySetSender.ReadonlyKey)
+
+	fmt.Printf("DEcrypted Plain text 1: Radnomness : %v\n", coin.CoinDetails.Randomness)
+	fmt.Printf("DEcrypted Plain text 1: Value : %v\n", coin.CoinDetails.Value)
 
 	/*----------------- TEST NDH -----------------*/
 	//fmt.Println(zkp.TestProofIsZero())
