@@ -41,7 +41,15 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	db database.DatabaseInterface,
 ) (bool, error) {
 	if iReq.AssetType == common.DCBTokenID {
-		return false, nil
+		saleDBCTOkensByUSDData := bcr.GetDCBParams().SaleDBCTOkensByUSDData
+		if bcr.GetHeight()+1 > saleDBCTOkensByUSDData.EndBlock {
+			return false, nil
+		}
+		oracleParams := bcr.GetOracleParams()
+		reqAmt := iReq.DepositedAmount / oracleParams.DCBToken
+		if saleDBCTOkensByUSDData.Amount < reqAmt {
+			return false, nil
+		}
 	}
 	// check double spending on fee tx
 	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)

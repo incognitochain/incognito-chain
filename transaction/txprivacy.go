@@ -51,10 +51,17 @@ func (tx *Tx) Init(
 	db database.DatabaseInterface,
 ) error {
 
+	// create sender's key set from sender's spending key
+	senderFullKey := cashec.KeySet{}
+	senderFullKey.ImportFromPrivateKey(senderSK)
+	// get public key last byte of sender
+	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
+
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
 		fmt.Printf("CREATE TX CUSTOM TOKEN\n")
 		tx.Fee = fee
 		tx.sigPrivKey = *senderSK
+		tx.PubKeyLastByteSender = pkLastByteSender
 
 		err := tx.SignTx(hasPrivacy)
 		if err != nil {
@@ -109,10 +116,6 @@ func (tx *Tx) Init(
 	if overBalance < 0 || overBalance > valueMax.Uint64() {
 		return fmt.Errorf("Input value less than output value")
 	}
-
-	// create sender's key set from sender's spending key
-	senderFullKey := cashec.KeySet{}
-	senderFullKey.ImportFromPrivateKey(senderSK)
 
 	// if overBalance > 0, create a new payment info with pk is sender's pk and amount is overBalance
 	if overBalance > 0 {
@@ -169,8 +172,6 @@ func (tx *Tx) Init(
 	// assign fee tx
 	tx.Fee = fee
 
-	// get public key last byte of sender
-	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 	tx.Proof = &zkp.PaymentProof{}
 
 	// get public key last byte of receivers
@@ -365,7 +366,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
-// - Check double spending
+// - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte) bool {
 	// Verify tx signature
 	var valid bool
@@ -441,8 +442,10 @@ func (tx *Tx) GetType() string {
 
 func (tx *Tx) ListNullifiers() [][]byte {
 	result := [][]byte{}
-	for _, d := range tx.Proof.InputCoins {
-		result = append(result, d.CoinDetails.SerialNumber.Compress())
+	if tx.Proof != nil {
+		for _, d := range tx.Proof.InputCoins {
+			result = append(result, d.CoinDetails.SerialNumber.Compress())
+		}
 	}
 	return result
 }
@@ -531,7 +534,7 @@ func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {
 	for _, temp1 := range poolNullifiers {
 		for _, desc := range tx.Proof.InputCoins {
-			if ok, err := common.SliceBytesExists(temp1, desc.CoinDetails.SerialNumber.Compress()); ok == -1 || err != nil {
+			if ok, err := common.SliceBytesExists(temp1, desc.CoinDetails.SerialNumber.Compress()); ok > -1 || err != nil {
 				return errors.New("Double spend")
 			}
 		}
@@ -553,7 +556,8 @@ func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
 	chainID byte,
 	db database.DatabaseInterface,
 ) error {
-	for i := 0; i < len(tx.Proof.InputCoins); i++ {
+
+	for i := 0; tx.Proof != nil && i < len(tx.Proof.InputCoins); i++ {
 		serialNumber := tx.Proof.InputCoins[i].CoinDetails.SerialNumber.Compress()
 		ok, err := db.HasSerialNumber(serialNumber, chainID)
 		if ok || err != nil {
@@ -594,9 +598,9 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 		return false, errors.New("Wrong tx locktime")
 	}
 	// check Type is normal or salary tx
-	if len(txN.Type) != 1 || (txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType) { // only 1 byte
+	/*if len(txN.Type) != 1 || (txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType) { // only 1 byte
 		return false, errors.New("Wrong tx type")
-	}
+	}*/
 
 	return true, nil
 }
@@ -679,6 +683,11 @@ func (tx *Tx) IsPrivacy() bool {
 	}
 }
 
+
 func (tx* Tx) SetSigPrivKey(privKey []byte, randSK *big.Int) {
 	tx.sigPrivKey = append(privKey, randSK.Bytes()...)
+}
+
+func (tx *Tx) ValidateType() bool {
+	return tx.Type == common.TxNormalType || tx.Type == common.TxSalaryType
 }

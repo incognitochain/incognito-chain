@@ -1,39 +1,11 @@
 package blockchain
 
 import (
+	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 )
 
-// type GOVParams struct {
-// 	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
-// 	BasicSalary  uint64 // basic salary per block(mili constant)
-// 	TxFee        uint64
-// 	SellingBonds *SellingBonds
-// 	RefundInfo   *RefundInfo
-// }
-
 type CBParams struct {
-}
-
-// type RefundInfo struct {
-// 	ThresholdToLargeTx uint64
-// 	RefundAmount       uint64
-// }
-
-// type SellingBonds struct {
-// 	BondsToSell    uint64
-// 	BondPrice      uint64 // in Constant unit
-// 	Maturity       uint32
-// 	BuyBackPrice   uint64 // in Constant unit
-// 	StartSellingAt uint32 // start selling bonds at block height
-// 	SellingWithin  uint32 // selling bonds within n blocks
-// }
-
-type Oracle struct {
-	// TODO(@0xankylosaurus): generic prices (ETH, BTC, ...) instead of just bonds
-	Bonds    map[string]uint64 // key: bondTypeID, value: price
-	DCBToken uint64            // against USD
-	Constant uint64            // against USD
 }
 
 type BlockHeader struct {
@@ -76,5 +48,5 @@ type BlockHeader struct {
 	Height int32
 
 	// Price feeds through Oracle
-	Oracle *Oracle
+	Oracle *params.Oracle
 }

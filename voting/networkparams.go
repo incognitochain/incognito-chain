@@ -28,6 +28,11 @@ type RefundInfo struct {
 	RefundAmount       uint64
 }
 
+type SaleDBCTOkensByUSDData struct {
+	Amount   uint64
+	EndBlock int32
+}
+
 func (saleData *SaleData) Hash() *common.Hash {
 	record := ""
 	for _, i := range saleData.SaleID {
