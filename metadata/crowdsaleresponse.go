@@ -73,6 +73,20 @@ func (cr *CrowdsaleResponse) ValidateTxWithBlockChain(txr Transaction, bcr Block
 			}
 		}
 	}
+
+	// Check if selling asset is of the right type
+	_, _, _, txRequest, err := bcr.GetTransactionByHash(cr.RequestedTxID)
+	if err != nil {
+		return false, err
+	}
+	requestMeta := txRequest.GetMetadata().(*CrowdsaleRequest)
+	saleData, err := bcr.GetCrowdsaleData(requestMeta.SaleID)
+	if err != nil {
+		return false, err
+	}
+	if !bytes.Equal(saleData.SellingAsset, common.ConstantID[:]) && !bytes.Equal(saleData.SellingAsset[:8], common.BondTokenID[:8]) && !bytes.Equal(saleData.SellingAsset, common.DCBTokenID[:]) {
+		return false, fmt.Errorf("Selling asset of the crowdsale cannot have response tx")
+	}
 	return true, nil
 }
 
