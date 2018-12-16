@@ -19,16 +19,21 @@ type BuySellRequest struct {
 	MetadataBase
 }
 
-func NewBuySellRequest(bsReqData map[string]interface{}) *BuySellRequest {
+func NewBuySellRequest(
+	paymentAddress privacy.PaymentAddress,
+	assetType common.Hash,
+	amount uint64,
+	buyPrice uint64,
+	metaType int,
+) *BuySellRequest {
 	metadataBase := MetadataBase{
-		Type: int(bsReqData["type"].(float64)),
+		Type: metaType,
 	}
 	return &BuySellRequest{
-		PaymentAddress: bsReqData["paymentAddress"].(privacy.PaymentAddress),
-		AssetType:      bsReqData["assetType"].(common.Hash),
-		Amount:         uint64(bsReqData["amount"].(float64)),
-		BuyPrice:       uint64(bsReqData["buyPrice"].(float64)),
-		SaleID:         bsReqData["saleId"].([]byte),
+		PaymentAddress: paymentAddress,
+		AssetType:      assetType,
+		Amount:         amount,
+		BuyPrice:       buyPrice,
 		MetadataBase:   metadataBase,
 	}
 }

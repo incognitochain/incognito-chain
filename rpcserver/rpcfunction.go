@@ -9,10 +9,10 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -94,13 +94,17 @@ var RpcHandler = map[string]commandHandler{
 	SendRawSubmitGOVProposalTx:       RpcServer.handleSendRawSubmitGOVProposalTransaction,
 
 	// dcb
-	GetDCBParams:       RpcServer.handleGetDCBParams,
-	GetDCBConstitution: RpcServer.handleGetDCBConstitution,
+	GetDCBParams:                          RpcServer.handleGetDCBParams,
+	GetDCBConstitution:                    RpcServer.handleGetDCBConstitution,
+	CreateAndSendTxWithIssuingRequest:     RpcServer.handleCreateAndSendTxWithIssuingRequest,
+	CreateAndSendTxWithContractingRequest: RpcServer.handleCreateAndSendTxWithContractingRequest,
 
 	// gov
-	GetBondTypes:       RpcServer.handleGetBondTypes,
-	GetGOVConstitution: RpcServer.handleGetGOVConstitution,
-	GetGOVParams:       RpcServer.handleGetGOVParams,
+	GetBondTypes:                      RpcServer.handleGetBondTypes,
+	GetGOVConstitution:                RpcServer.handleGetGOVConstitution,
+	GetGOVParams:                      RpcServer.handleGetGOVParams,
+	CreateAndSendTxWithBuyBackRequest: RpcServer.handleCreateAndSendTxWithBuyBackRequest,
+	CreateAndSendTxWithBuySellRequest: RpcServer.handleCreateAndSendTxWithBuySellRequest,
 }
 
 // Commands that are available to a limited user
