@@ -14,13 +14,8 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 type BestStateNew struct {
-	BestBlockHash common.Hash // The hash of the block.
-	BestBlock     *BlockV2    // The hash of the block.
-
-	Height           int32    // The height of the block.
-	NumTxns          uint64   // The number of txns in the block.
-	TotalTxns        uint64   // The total number of txns in the chain.
-	PendingValidator []string //pending validators pubkey in base58
+	Beacon BestStateBeacon
+	Shard  map[byte]BestStateShard
 }
 
 type BestStateBeacon struct {
@@ -31,8 +26,8 @@ type BestStateBeacon struct {
 	BeaconHeight           uint64
 	BeaconCandidate        []string
 	BeaconPendingCandidate []string
-	ShardCandidate         map[byte][]string
-	ShardPendingCandidate  map[byte][]string
+	ShardValidator         map[byte][]string
+	ShardPendingValidator  map[byte][]string
 
 	UnassignBeaconCandidate []string
 	UnassignShardCandidate  []string
