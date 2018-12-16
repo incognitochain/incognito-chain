@@ -159,10 +159,10 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnBFTReply != nil {
 						self.Config.MessageListeners.OnBFTReply(self, message.(*wire.MessageBFTReply))
 					}
-				case reflect.TypeOf(&wire.MessageInvalidBlock{}):
-					if self.Config.MessageListeners.OnInvalidBlock != nil {
-						self.Config.MessageListeners.OnInvalidBlock(self, message.(*wire.MessageInvalidBlock))
-					}
+				// case reflect.TypeOf(&wire.MessageInvalidBlock{}):
+				// 	if self.Config.MessageListeners.OnInvalidBlock != nil {
+				// 		self.Config.MessageListeners.OnInvalidBlock(self, message.(*wire.MessageInvalidBlock))
+				// 	}
 				case reflect.TypeOf(&wire.MessageGetChainState{}):
 					if self.Config.MessageListeners.OnGetChainState != nil {
 						self.Config.MessageListeners.OnGetChainState(self, message.(*wire.MessageGetChainState))
@@ -175,18 +175,18 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					  if self.Config.MessageListeners.OnRegistration != nil {
 						  self.Config.MessageListeners.OnRegistration(self, message.(*wire.MessageRegistration))
 					  }*/
-				case reflect.TypeOf(&wire.MessageSwapRequest{}):
-					if self.Config.MessageListeners.OnSwapRequest != nil {
-						self.Config.MessageListeners.OnSwapRequest(self, message.(*wire.MessageSwapRequest))
-					}
-				case reflect.TypeOf(&wire.MessageSwapSig{}):
-					if self.Config.MessageListeners.OnSwapSig != nil {
-						self.Config.MessageListeners.OnSwapSig(self, message.(*wire.MessageSwapSig))
-					}
-				case reflect.TypeOf(&wire.MessageSwapUpdate{}):
-					if self.Config.MessageListeners.OnSwapUpdate != nil {
-						self.Config.MessageListeners.OnSwapUpdate(self, message.(*wire.MessageSwapUpdate))
-					}
+				// case reflect.TypeOf(&wire.MessageSwapRequest{}):
+				// 	if self.Config.MessageListeners.OnSwapRequest != nil {
+				// 		self.Config.MessageListeners.OnSwapRequest(self, message.(*wire.MessageSwapRequest))
+				// 	}
+				// case reflect.TypeOf(&wire.MessageSwapSig{}):
+				// 	if self.Config.MessageListeners.OnSwapSig != nil {
+				// 		self.Config.MessageListeners.OnSwapSig(self, message.(*wire.MessageSwapSig))
+				// 	}
+				// case reflect.TypeOf(&wire.MessageSwapUpdate{}):
+				// 	if self.Config.MessageListeners.OnSwapUpdate != nil {
+				// 		self.Config.MessageListeners.OnSwapUpdate(self, message.(*wire.MessageSwapUpdate))
+				// 	}
 				case reflect.TypeOf(&wire.MessageMsgCheck{}):
 					self.handleMsgCheck(message.(*wire.MessageMsgCheck))
 				case reflect.TypeOf(&wire.MessageMsgCheckResp{}):

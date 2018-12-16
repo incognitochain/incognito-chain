@@ -5,8 +5,8 @@ type Layerbeacon struct {
 	Committee             CommitteeStruct
 	started               bool
 	protocol              *BFTProtocol
-	knownChainsHeight     chainsHeight
-	validatedChainsHeight chainsHeight
+	knownChainsHeight     int
+	validatedChainsHeight int
 }
 
 func (self *Layerbeacon) Start() {

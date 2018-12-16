@@ -5,7 +5,7 @@ import (
 	"reflect"
 
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
 )
@@ -58,17 +58,22 @@ type Message interface {
 	JsonSerialize() ([]byte, error)
 	JsonDeserialize(string) error
 	SetSenderID(peer.ID) error
+
+	//SetIntendedReceiver set intended receiver of this msg
+	SetIntendedReceiver(string) error
+
+	//SignMsg sig this msg with a keyset
+	SignMsg(*cashec.KeySet) error
+
+	//VerifyMsgSanity verify msg before push it to final handler
+	VerifyMsgSanity() error
 }
 
 func MakeEmptyMessage(messageType string) (Message, error) {
 	var msg Message
 	switch messageType {
 	case CmdBlock:
-		msg = &MessageBlock{
-			Block: blockchain.Block{
-				Transactions: make([]metadata.Transaction, 0),
-			},
-		}
+		msg = &MessageBlock{}
 		break
 	case CmdCustomToken:
 		msg = &MessageTx{
@@ -125,9 +130,9 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageBFTCommit{}
 	case CmdBFTReply:
 		msg = &MessageBFTReply{}
-	case CmdInvalidBlock:
-		msg = &MessageInvalidBlock{}
-		break
+	// case CmdInvalidBlock:
+	// 	msg = &MessageInvalidBlock{}
+	// 	break
 	case CmdGetChainState:
 		msg = &MessageGetChainState{}
 	case CmdChainState:
@@ -141,17 +146,17 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdPing:
 		msg = &MessagePing{}
 		break
-	case CmdSwapRequest:
-		msg = &MessageSwapRequest{}
-		break
-	case CmdSwapSig:
-		msg = &MessageSwapSig{}
-		break
-	case CmdSwapUpdate:
-		msg = &MessageSwapUpdate{
-			Signatures: make(map[string]string),
-		}
-		break
+	// case CmdSwapRequest:
+	// 	msg = &MessageSwapRequest{}
+	// 	break
+	// case CmdSwapSig:
+	// 	msg = &MessageSwapSig{}
+	// 	break
+	// case CmdSwapUpdate:
+	// 	msg = &MessageSwapUpdate{
+	// 		Signatures: make(map[string]string),
+	// 	}
+	// 	break
 	case CmdMsgCheck:
 		msg = &MessageMsgCheck{}
 		break

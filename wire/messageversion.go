@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -46,5 +47,16 @@ func (self MessageVersion) JsonDeserialize(jsonStr string) error {
 }
 
 func (self MessageVersion) SetSenderID(senderID peer.ID) error {
+	return nil
+}
+func (self *MessageVersion) SetIntendedReceiver(_ string) error {
+	return nil
+}
+
+func (self *MessageVersion) SignMsg(_ *cashec.KeySet) error {
+	return nil
+}
+
+func (self *MessageVersion) VerifyMsgSanity() error {
 	return nil
 }

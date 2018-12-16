@@ -3,8 +3,10 @@ package wire
 import (
 	"encoding/json"
 
-	"github.com/libp2p/go-libp2p-peer"
 	"time"
+
+	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 const (
@@ -36,5 +38,16 @@ func (self *MessageGetChainState) JsonDeserialize(jsonStr string) error {
 
 func (self *MessageGetChainState) SetSenderID(senderID peer.ID) error {
 	self.SenderID = senderID.Pretty()
+	return nil
+}
+func (self *MessageGetChainState) SetIntendedReceiver(_ string) error {
+	return nil
+}
+
+func (self *MessageGetChainState) SignMsg(_ *cashec.KeySet) error {
+	return nil
+}
+
+func (self *MessageGetChainState) VerifyMsgSanity() error {
 	return nil
 }

@@ -15,13 +15,9 @@ type Engine struct {
 	started bool
 
 	// channel
-	cQuit      chan struct{}
-	cBFTMsg    chan wire.Message
-	cBlockSig  chan blockSig
-	cQuitSwap  chan struct{}
-	cSwapChain chan byte
-	cSwapSig   chan swapSig
-	cNewBlock  chan blockchain.Block
+	cQuit     chan struct{}
+	cBFTMsg   chan wire.Message
+	cNewBlock chan blockchain.Block
 
 	config EngineConfig
 	Layers struct {

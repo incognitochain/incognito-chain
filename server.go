@@ -16,6 +16,7 @@ import (
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/addrmanager"
 	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/connmanager"
 	"github.com/ninjadotorg/constant/consensus/constantpos"
@@ -28,7 +29,6 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
-	"github.com/ninjadotorg/constant/cashec"
 )
 
 type Server struct {
@@ -246,10 +246,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	connManager := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
-		GetCurrentShard:      self.GetCurrentShard,
-		GetPbksOfShard:       self.GetPbksOfShard,
-		GetCurrentPbk:        self.GetCurrentPbk,
-		GetShardByPbk:        self.GetShardByPbk,
 		ListenerPeers:        peers,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
@@ -537,21 +533,19 @@ func (self *Server) NewPeerConfig() *peer.Config {
 			OnAddr:      self.OnAddr,
 
 			//constantpos
-			OnBFTPropose:    self.OnBFTPropose,
-			OnBFTPrepare:    self.OnBFTPrepare,
-			OnBFTCommit:     self.OnBFTCommit,
-			OnBFTReply:      self.OnBFTReply,
-			OnInvalidBlock:  self.OnInvalidBlock,
+			OnBFTPropose: self.OnBFTPropose,
+			OnBFTPrepare: self.OnBFTPrepare,
+			OnBFTCommit:  self.OnBFTCommit,
+			OnBFTReply:   self.OnBFTReply,
+			// OnInvalidBlock:  self.OnInvalidBlock,
 			OnGetChainState: self.OnGetChainState,
 			OnChainState:    self.OnChainState,
 			//
 			//OnRegistration: self.OnRegistration,
-			OnSwapRequest: self.OnSwapRequest,
-			OnSwapSig:     self.OnSwapSig,
-			OnSwapUpdate:  self.OnSwapUpdate,
+			// OnSwapRequest: self.OnSwapRequest,
+			// OnSwapSig:     self.OnSwapSig,
+			// OnSwapUpdate:  self.OnSwapUpdate,
 		},
-
-		GetShardByPbk: self.GetShardByPbk,
 	}
 	if len(KeySetUser.PrivateKey) != 0 {
 		config.UserKeySet = KeySetUser
@@ -603,26 +597,26 @@ func (self *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Info("Receive a new registration END")
 }*/
 
-func (self *Server) OnSwapRequest(peer *peer.PeerConn, msg *wire.MessageSwapRequest) {
-	Logger.log.Info("Receive a new request swap START")
-	var txProcessed chan struct{}
-	self.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a new request swap END")
-}
+// func (self *Server) OnSwapRequest(peer *peer.PeerConn, msg *wire.MessageSwapRequest) {
+// 	Logger.log.Info("Receive a new request swap START")
+// 	var txProcessed chan struct{}
+// 	self.netSync.QueueMessage(nil, msg, txProcessed)
+// 	Logger.log.Info("Receive a new request swap END")
+// }
 
-func (self *Server) OnSwapSig(peer *peer.PeerConn, msg *wire.MessageSwapSig) {
-	Logger.log.Info("Receive a new sign swap START")
-	var txProcessed chan struct{}
-	self.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a new sign swap END")
-}
+// func (self *Server) OnSwapSig(peer *peer.PeerConn, msg *wire.MessageSwapSig) {
+// 	Logger.log.Info("Receive a new sign swap START")
+// 	var txProcessed chan struct{}
+// 	self.netSync.QueueMessage(nil, msg, txProcessed)
+// 	Logger.log.Info("Receive a new sign swap END")
+// }
 
-func (self *Server) OnSwapUpdate(peer *peer.PeerConn, msg *wire.MessageSwapUpdate) {
-	Logger.log.Info("Receive a new update swap START")
-	var txProcessed chan struct{}
-	self.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a new update swap END")
-}
+// func (self *Server) OnSwapUpdate(peer *peer.PeerConn, msg *wire.MessageSwapUpdate) {
+// 	Logger.log.Info("Receive a new update swap START")
+// 	var txProcessed chan struct{}
+// 	self.netSync.QueueMessage(nil, msg, txProcessed)
+// 	Logger.log.Info("Receive a new update swap END")
+// }
 
 /*
 // OnVersion is invoked when a peer receives a version message
@@ -801,12 +795,13 @@ func (self *Server) OnBFTReply(_ *peer.PeerConn, msg *wire.MessageBFTReply) {
 	self.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Info("Receive a requestsign END")
 }
-func (self *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {
-	Logger.log.Info("Receive a invalidblock START", msg)
-	var txProcessed chan struct{}
-	self.netSync.QueueMessage(nil, msg, txProcessed)
-	Logger.log.Info("Receive a invalidblock END", msg)
-}
+
+// func (self *Server) OnInvalidBlock(_ *peer.PeerConn, msg *wire.MessageInvalidBlock) {
+// 	Logger.log.Info("Receive a invalidblock START", msg)
+// 	var txProcessed chan struct{}
+// 	self.netSync.QueueMessage(nil, msg, txProcessed)
+// 	Logger.log.Info("Receive a invalidblock END", msg)
+// }
 
 func (self *Server) OnGetChainState(_ *peer.PeerConn, msg *wire.MessageGetChainState) {
 	Logger.log.Info("Receive a getchainstate START")
@@ -973,9 +968,9 @@ func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	// }
 
 	// ValidateTransaction Public Key from ProducerPrvKey
-	if peerConn.ListenerPeer.Config.ProducerKeySet != nil {
-		msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.Config.ProducerKeySet.GetPublicKeyB58()
-		signDataB58, err := peerConn.ListenerPeer.Config.ProducerKeySet.SignDataB58([]byte{0x00})
+	if peerConn.ListenerPeer.Config.UserKeySet != nil {
+		msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.Config.UserKeySet.GetPublicKeyB58()
+		signDataB58, err := peerConn.ListenerPeer.Config.UserKeySet.SignDataB58([]byte{0x00})
 		if err == nil {
 			msg.(*wire.MessageVersion).SignDataB58 = signDataB58
 		}
@@ -985,74 +980,6 @@ func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	}
 	peerConn.QueueMessageWithEncoding(msg, nil)
 	return nil
-}
-
-func (self *Server) GetShardByPbk(pbk string) *byte {
-	if pbk == "" {
-		return nil
-	}
-	shard, ok := mPBK[pbk]
-	if ok {
-		return &shard
-	}
-	return nil
-}
-
-func (self *Server) GetCurrentPbk() *string {
-	ks, err := cfg.GetProducerKeySet()
-	if err != nil {
-		return nil
-	}
-	pbk := ks.GetPublicKeyB58()
-	return &pbk
-}
-
-func (self *Server) GetCurrentShard() *byte {
-	ks, err := cfg.GetProducerKeySet()
-	if err != nil {
-		return nil
-	}
-	pbk := ks.GetPublicKeyB58()
-	shard, ok := mPBK[pbk]
-	if ok {
-		return &shard
-	}
-	return nil
-}
-
-func (self *Server) GetPbksOfShard(shard byte) []string {
-	pBKs := make([]string, 0)
-	for k, v := range mPBK {
-		if v == shard {
-			pBKs = append(pBKs, k)
-		}
-	}
-	return pBKs
-}
-
-func (self *Server) getCurrentShardInfoByPbk() (*byte, string) {
-	ks, err := cfg.GetProducerKeySet()
-	if err != nil {
-		return nil, ""
-	}
-	pbk := ks.GetPublicKeyB58()
-	shard, ok := mPBK[pbk]
-	if ok {
-		return &shard, ""
-	}
-	return nil, ""
-}
-
-func (self *Server) getShardInfoByPbk(pbk string) (*byte, string) {
-	shard, ok := mPBK[pbk]
-	if ok {
-		return &shard, ""
-	}
-	return nil, ""
-}
-
-func (self *Server) shardChanged(oldShard *byte, newShard *byte) {
-	// update shard connection, random peers, drop peers and new peers
 }
 
 var mPBK = map[string]byte{

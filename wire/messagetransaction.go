@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/metadata"
 )
 
@@ -36,5 +37,16 @@ func (self MessageTx) JsonDeserialize(jsonStr string) error {
 }
 
 func (self MessageTx) SetSenderID(senderID peer.ID) error {
+	return nil
+}
+func (self *MessageTx) SetIntendedReceiver(_ string) error {
+	return nil
+}
+
+func (self *MessageTx) SignMsg(_ *cashec.KeySet) error {
+	return nil
+}
+
+func (self *MessageTx) VerifyMsgSanity() error {
 	return nil
 }

@@ -111,17 +111,17 @@ type MessageListeners struct {
 	OnAddr      func(p *PeerConn, msg *wire.MessageAddr)
 
 	//PoS
-	OnBFTPropose    func(p *PeerConn, msg *wire.MessageBFTPropose)
-	OnBFTPrepare    func(p *PeerConn, msg *wire.MessageBFTPrepare)
-	OnBFTCommit     func(p *PeerConn, msg *wire.MessageBFTCommit)
-	OnBFTReply      func(p *PeerConn, msg *wire.MessageBFTReply)
-	OnInvalidBlock  func(p *PeerConn, msg *wire.MessageInvalidBlock)
+	OnBFTPropose func(p *PeerConn, msg *wire.MessageBFTPropose)
+	OnBFTPrepare func(p *PeerConn, msg *wire.MessageBFTPrepare)
+	OnBFTCommit  func(p *PeerConn, msg *wire.MessageBFTCommit)
+	OnBFTReply   func(p *PeerConn, msg *wire.MessageBFTReply)
+	// OnInvalidBlock  func(p *PeerConn, msg *wire.MessageInvalidBlock)
 	OnGetChainState func(p *PeerConn, msg *wire.MessageGetChainState)
 	OnChainState    func(p *PeerConn, msg *wire.MessageChainState)
 	//OnRegistration  func(p *PeerConn, msg *wire.MessageRegistration)
-	OnSwapRequest func(p *PeerConn, msg *wire.MessageSwapRequest)
-	OnSwapSig     func(p *PeerConn, msg *wire.MessageSwapSig)
-	OnSwapUpdate  func(p *PeerConn, msg *wire.MessageSwapUpdate)
+	// OnSwapRequest func(p *PeerConn, msg *wire.MessageSwapRequest)
+	// OnSwapSig     func(p *PeerConn, msg *wire.MessageSwapSig)
+	// OnSwapUpdate  func(p *PeerConn, msg *wire.MessageSwapUpdate)
 }
 
 // outMsg is used to house a message to be sent along with a channel to signal

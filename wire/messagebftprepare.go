@@ -3,9 +3,8 @@ package wire
 import (
 	"encoding/json"
 
-	"github.com/ninjadotorg/constant/privacy-protocol"
-
 	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 )
 
 type MessageBFTPrepare struct {
-	Ri     privacy.EllipticPoint
+	Ri     []byte
 	Pubkey string
 	MsgSig string
 }
@@ -37,5 +36,17 @@ func (self *MessageBFTPrepare) JsonDeserialize(jsonStr string) error {
 }
 
 func (self *MessageBFTPrepare) SetSenderID(senderID peer.ID) error {
+	return nil
+}
+
+func (self *MessageBFTPrepare) SetIntendedReceiver(_ string) error {
+	return nil
+}
+
+func (self *MessageBFTPrepare) SignMsg(_ *cashec.KeySet) error {
+	return nil
+}
+
+func (self *MessageBFTPrepare) VerifyMsgSanity() error {
 	return nil
 }

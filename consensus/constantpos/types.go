@@ -1,8 +1,6 @@
 package constantpos
 
 import (
-	"sync"
-
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/wire"
 )
@@ -11,16 +9,6 @@ type ChainInfo struct {
 	CurrentCommittee        []string
 	CandidateListMerkleHash string
 	ChainsHeight            []int
-}
-
-type chainsHeight struct {
-	Heights []int
-	sync.Mutex
-}
-
-type blockSig struct {
-	Validator string
-	BlockSig  string
 }
 
 type swapSig struct {

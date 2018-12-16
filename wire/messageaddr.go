@@ -2,6 +2,9 @@ package wire
 
 import (
 	"encoding/json"
+
+	"github.com/ninjadotorg/constant/cashec"
+
 	"github.com/libp2p/go-libp2p-peer"
 )
 
@@ -37,5 +40,17 @@ func (self MessageAddr) JsonDeserialize(jsonStr string) error {
 }
 
 func (self MessageAddr) SetSenderID(senderID peer.ID) error {
+	return nil
+}
+
+func (self MessageAddr) SetIntendedReceiver(_ string) error {
+	return nil
+}
+
+func (self MessageAddr) SignMsg(_ *cashec.KeySet) error {
+	return nil
+}
+
+func (self MessageAddr) VerifyMsgSanity() error {
 	return nil
 }

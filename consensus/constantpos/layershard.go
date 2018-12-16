@@ -6,8 +6,8 @@ type Layershard struct {
 	CurrentShard          byte
 	started               bool
 	protocol              *BFTProtocol
-	knownChainsHeight     chainsHeight
-	validatedChainsHeight chainsHeight
+	knownChainsHeight     []int
+	validatedChainsHeight []int
 }
 
 func (self *Layershard) Start() {

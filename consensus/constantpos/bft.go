@@ -7,16 +7,17 @@ import (
 	"time"
 
 	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/wire"
 )
 
 type BlockGenFn func() *blockchain.BlockV2
 
 type BFTProtocol struct {
 	sync.Mutex
-	Phase    string
-	cQuit    chan struct{}
-	cTimeout chan struct{}
-
+	Phase      string
+	cQuit      chan struct{}
+	cTimeout   chan struct{}
+	cBFTMsg    chan wire.Message
 	BlockGenFn BlockGenFn
 	Server     serverInterface
 	started    bool
@@ -45,26 +46,40 @@ func (self *BFTProtocol) Start() error {
 					time.AfterFunc(ListenTimeout*time.Second, func() {
 						close(self.cTimeout)
 					})
-
-					<-self.cTimeout
+					select {
+					case msgPropose := <-self.cBFTMsg:
+						if msgPropose.MessageType() == wire.CmdBFTPropose {
+							fmt.Println(msgPropose)
+						}
+					case <-self.cTimeout:
+					}
 				case "prepare":
 					time.AfterFunc(PrepareTimeout*time.Second, func() {
 						close(self.cTimeout)
 					})
-
-					<-self.cTimeout
+					select {
+					case msgPrepare := <-self.cBFTMsg:
+						fmt.Println(msgPrepare)
+					case <-self.cTimeout:
+					}
 				case "commit":
 					time.AfterFunc(CommitTimeout*time.Second, func() {
 						close(self.cTimeout)
 					})
-
-					<-self.cTimeout
+					select {
+					case msgCommit := <-self.cBFTMsg:
+						fmt.Println(msgCommit)
+					case <-self.cTimeout:
+					}
 				case "reply":
 					time.AfterFunc(ReplyTimeout*time.Second, func() {
 						close(self.cTimeout)
 					})
-
-					<-self.cTimeout
+					select {
+					case msgReply := <-self.cBFTMsg:
+						fmt.Println(msgReply)
+					case <-self.cTimeout:
+					}
 				}
 			}
 
@@ -84,3 +99,5 @@ func (self *BFTProtocol) Stop() error {
 	close(self.cQuit)
 	return nil
 }
+
+// func (self *BFTProtocol)

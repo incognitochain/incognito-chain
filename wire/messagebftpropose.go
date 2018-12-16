@@ -5,6 +5,7 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 const (
@@ -12,10 +13,11 @@ const (
 )
 
 type MessageBFTPropose struct {
-	AggregatedSig string
-	ValidatorsIdx []int
-	Block         blockchain.BlockV2
-	MsgSig        string
+	AggregatedSig    string
+	ValidatorsIdx    []int
+	Block            blockchain.BlockV2
+	MsgSig           string
+	IntendedReceiver string
 }
 
 func (self *MessageBFTPropose) MessageType() string {
@@ -37,5 +39,17 @@ func (self *MessageBFTPropose) JsonDeserialize(jsonStr string) error {
 }
 
 func (self *MessageBFTPropose) SetSenderID(senderID peer.ID) error {
+	return nil
+}
+
+func (self *MessageBFTPropose) SetIntendedReceiver(_ string) error {
+	return nil
+}
+
+func (self *MessageBFTPropose) SignMsg(_ *cashec.KeySet) error {
+	return nil
+}
+
+func (self *MessageBFTPropose) VerifyMsgSanity() error {
 	return nil
 }

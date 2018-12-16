@@ -4,8 +4,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"github.com/libp2p/go-libp2p-peer"
 	"time"
+
+	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 type MessageVerAck struct {
@@ -33,5 +35,16 @@ func (self MessageVerAck) JsonDeserialize(jsonStr string) error {
 }
 
 func (self MessageVerAck) SetSenderID(senderID peer.ID) error {
+	return nil
+}
+func (self *MessageVerAck) SetIntendedReceiver(_ string) error {
+	return nil
+}
+
+func (self *MessageVerAck) SignMsg(_ *cashec.KeySet) error {
+	return nil
+}
+
+func (self *MessageVerAck) VerifyMsgSanity() error {
 	return nil
 }

@@ -3,15 +3,13 @@ package constantpos
 import (
 	"time"
 
-	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/wire"
 )
 
-func (self *Engine) sendBlockMsg(block *blockchain.Block) {
+func (self *Engine) sendBlockMsg(block *blockchain.BlockV2) {
 	blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
 	if err != nil {
 		Logger.log.Error(err)
@@ -68,23 +66,23 @@ func (self *Engine) sendBlockMsg(block *blockchain.Block) {
 // 	return
 // }
 
-func (self *Engine) OnBlockReceived(block *blockchain.Block) {
-	if self.config.BlockChain.BestState[block.Header.ChainID].Height < block.Header.Height {
-		exists, err := self.config.BlockChain.BlockExists(block.Hash())
-		if err != nil {
-			Logger.log.Error(err)
-			return
-		} else {
-			if !exists {
-				err := self.validateBlockSanity(block)
-				if err != nil {
-					Logger.log.Error(err)
-					return
-				}
-				self.UpdateChain(block)
-			}
-		}
-	}
+func (self *Engine) OnBlockReceived(block *blockchain.BlockV2) {
+	// if self.config.BlockChain.BestState[block.Header.ChainID].Height < block.Header.Height {
+	// 	exists, err := self.config.BlockChain.BlockExists(block.Hash())
+	// 	if err != nil {
+	// 		Logger.log.Error(err)
+	// 		return
+	// 	} else {
+	// 		if !exists {
+	// 			err := self.validateBlockSanity(block)
+	// 			if err != nil {
+	// 				Logger.log.Error(err)
+	// 				return
+	// 			}
+	// 			self.UpdateChain(block)
+	// 		}
+	// 	}
+	// }
 	return
 }
 
@@ -161,73 +159,73 @@ func (self *Engine) OnGetBeaconState(msg *wire.MessageChainState) {
 
 }
 
-func (self *Engine) OnSwapRequest(msg *wire.MessageSwapRequest) {
-	Logger.log.Info("Received a MessageSwapRequest")
+// func (self *Engine) OnSwapRequest(msg *wire.MessageSwapRequest) {
+// 	Logger.log.Info("Received a MessageSwapRequest")
 
-	if msg.LockTime > time.Now().Unix() {
-		return
-	}
+// 	if msg.LockTime > time.Now().Unix() {
+// 		return
+// 	}
 
-	committee := self.Committee().GetCommittee()
+// 	committee := self.Committee().GetCommittee()
 
-	if common.IndexOfStr(msg.Requester, committee) < 0 {
-		Logger.log.Error("ERROR OnSwapRequest is not existed committee")
-		return
-	}
+// 	if common.IndexOfStr(msg.Requester, committee) < 0 {
+// 		Logger.log.Error("ERROR OnSwapRequest is not existed committee")
+// 		return
+// 	}
 
-	// rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.Requester, msg.ChainID, msg.Candidate)
-	// // TODO check requester signature
-	// err := cashec.ValidateDataB58(msg.RequesterPbk, msg.RequesterSig, rawBytes)
-	// if err != nil {
-	// 	Logger.log.Info("Received a MessageSwapRequest validate error", err)
-	// 	return
-	// }
-	err := msg.Verify()
-	if err != nil {
-		Logger.log.Info("Received a MessageSwapRequest validate error", err)
-		return
-	}
-	// validate condition for swap
+// 	// rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.Requester, msg.ChainID, msg.Candidate)
+// 	// // TODO check requester signature
+// 	// err := cashec.ValidateDataB58(msg.RequesterPbk, msg.RequesterSig, rawBytes)
+// 	// if err != nil {
+// 	// 	Logger.log.Info("Received a MessageSwapRequest validate error", err)
+// 	// 	return
+// 	// }
+// 	err := msg.Verify()
+// 	if err != nil {
+// 		Logger.log.Info("Received a MessageSwapRequest validate error", err)
+// 		return
+// 	}
+// 	// validate condition for swap
 
-	peerIDs := self.config.Server.GetPeerIDsFromPublicKey(msg.Candidate)
-	if len(peerIDs) == 0 {
-		return
-	}
+// 	peerIDs := self.config.Server.GetPeerIDsFromPublicKey(msg.Candidate)
+// 	if len(peerIDs) == 0 {
+// 		return
+// 	}
 
-	sig, err := self.config.UserKeySet.SignBase58(msg.GetMsgByte())
-	if err != nil {
-		Logger.log.Error("Can't sign swap ", err)
-		return
-	}
-	messageSigMsg, err := wire.MakeEmptyMessage(wire.CmdSwapSig)
-	if err != nil {
-		return
-	}
-	// messageSigMsg.(*wire.MessageSwapSig).LockTime = msg.LockTime
-	// messageSigMsg.(*wire.MessageSwapSig).RequesterPbk = msg.RequesterPbk
-	// messageSigMsg.(*wire.MessageSwapSig).ChainID = msg.ChainID
-	// messageSigMsg.(*wire.MessageSwapSig).ProducerPbk = msg.ProducerPbk
-	messageSigMsg.(*wire.MessageSwapSig).Validator = base58.Base58Check{}.Encode(self.config.UserKeySet.PaymentAddress.Pk, byte(0x00))
-	messageSigMsg.(*wire.MessageSwapSig).SwapSig = sig
+// 	sig, err := self.config.UserKeySet.SignBase58(msg.GetMsgByte())
+// 	if err != nil {
+// 		Logger.log.Error("Can't sign swap ", err)
+// 		return
+// 	}
+// 	messageSigMsg, err := wire.MakeEmptyMessage(wire.CmdSwapSig)
+// 	if err != nil {
+// 		return
+// 	}
+// 	// messageSigMsg.(*wire.MessageSwapSig).LockTime = msg.LockTime
+// 	// messageSigMsg.(*wire.MessageSwapSig).RequesterPbk = msg.RequesterPbk
+// 	// messageSigMsg.(*wire.MessageSwapSig).ChainID = msg.ChainID
+// 	// messageSigMsg.(*wire.MessageSwapSig).ProducerPbk = msg.ProducerPbk
+// 	messageSigMsg.(*wire.MessageSwapSig).Validator = base58.Base58Check{}.Encode(self.config.UserKeySet.PaymentAddress.Pk, byte(0x00))
+// 	messageSigMsg.(*wire.MessageSwapSig).SwapSig = sig
 
-	peerID, err := libp2p.IDB58Decode(msg.SenderID)
-	if err != nil {
-		Logger.log.Error("ERROR", msg.SenderID, peerID, err)
-		return
-	}
-	self.config.Server.PushMessageToPeer(messageSigMsg, peerID)
+// 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
+// 	if err != nil {
+// 		Logger.log.Error("ERROR", msg.SenderID, peerID, err)
+// 		return
+// 	}
+// 	self.config.Server.PushMessageToPeer(messageSigMsg, peerID)
 
-	return
-}
+// 	return
+// }
 
-func (self *Engine) OnSwapSig(msg *wire.MessageSwapSig) {
-	Logger.log.Info("Received a MessageSwapSig")
-	self.cSwapSig <- swapSig{
-		Validator: msg.Validator,
-		SwapSig:   msg.SwapSig,
-	}
-	return
-}
+// func (self *Engine) OnSwapSig(msg *wire.MessageSwapSig) {
+// 	Logger.log.Info("Received a MessageSwapSig")
+// 	self.cSwapSig <- swapSig{
+// 		Validator: msg.Validator,
+// 		SwapSig:   msg.SwapSig,
+// 	}
+// 	return
+// }
 
 func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
 	Logger.log.Info("Received a MessageSwapUpdate")

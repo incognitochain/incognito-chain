@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/libp2p/go-libp2p-peer"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 type MessageMsgCheck struct {
@@ -31,5 +32,16 @@ func (self MessageMsgCheck) JsonDeserialize(jsonStr string) error {
 }
 
 func (self MessageMsgCheck) SetSenderID(senderID peer.ID) error {
+	return nil
+}
+func (self *MessageMsgCheck) SetIntendedReceiver(_ string) error {
+	return nil
+}
+
+func (self *MessageMsgCheck) SignMsg(_ *cashec.KeySet) error {
+	return nil
+}
+
+func (self *MessageMsgCheck) VerifyMsgSanity() error {
 	return nil
 }

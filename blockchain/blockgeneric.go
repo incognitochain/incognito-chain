@@ -43,10 +43,17 @@ type BlockV2 struct {
 	Body   BlockBodyV2
 }
 
+//Hash creates a hash from block data that not include AggregatedSig & ValidatorsIdx
 func (self *BlockV2) Hash() common.Hash {
 	record := common.EmptyString
-	record += self.Header.Hash().String() + string(self.AggregatedSig) + common.IntArrayToString(self.ValidatorsIdx, ",") + self.ProducerSig + self.Type
+	record += self.Header.Hash().String() + self.ProducerSig + self.Type
+	return common.DoubleHashH([]byte(record))
+}
 
+//HashFinal creates a hash from block data that include AggregatedSig & ValidatorsIdx
+func (self *BlockV2) HashFinal() common.Hash {
+	record := common.EmptyString
+	record += self.Header.Hash().String() + self.ProducerSig + self.Type + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
 	return common.DoubleHashH([]byte(record))
 }
 

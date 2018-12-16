@@ -5,6 +5,7 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/cashec"
 )
 
 const (
@@ -12,7 +13,7 @@ const (
 )
 
 type MessageBlock struct {
-	Block blockchain.Block
+	Block blockchain.BlockV2
 }
 
 func (self MessageBlock) MessageType() string {
@@ -34,5 +35,17 @@ func (self MessageBlock) JsonDeserialize(jsonStr string) error {
 }
 
 func (self MessageBlock) SetSenderID(senderID peer.ID) error {
+	return nil
+}
+
+func (self *MessageBlock) SetIntendedReceiver(_ string) error {
+	return nil
+}
+
+func (self *MessageBlock) SignMsg(_ *cashec.KeySet) error {
+	return nil
+}
+
+func (self *MessageBlock) VerifyMsgSanity() error {
 	return nil
 }
