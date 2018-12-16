@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"errors"
@@ -16,6 +17,7 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"github.com/ninjadotorg/constant/wallet"
 )
 
 type Tx struct {
@@ -340,7 +342,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		// verify signature
 		fmt.Printf(tx.Hash().String())
 		res = verKey.Verify(signature, tx.Hash()[:])
-		if !res{
+		if !res {
 			fmt.Println("HIENNNNNNNNNNNNNNNNNNNNN - FAILED VERIFICATION SIGNATURE")
 		}
 
@@ -460,9 +462,9 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 	var sizeFee uint64 = 8      // uint64
 	var sizeDescs uint64        // uint64
 	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) + len(payments) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
 	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx) - 3))) * EstimateJSDescSize()
+		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
 	}
 	var sizejSPubKey uint64 = 64 // [64]byte
 	var sizejSSig uint64 = 64    // [64]byte
@@ -654,27 +656,6 @@ func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 	tx.Metadata = meta
 }
 
-func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
-	// TODO: 0xankylosaurus - update here
-	return nil, 0
-
-	// initiatorPubKey := tx.JSPubKey
-	// txValue := uint64(0)
-	// var addr *privacy.PaymentAddress
-	// for _, desc := range tx.Descs {
-	// 	for _, note := range desc.Note {
-	// 		if string(note.Apk[:]) == string(initiatorPubKey) {
-	// 			continue
-	// 		}
-	// 		addr = &privacy.PaymentAddress{
-	// 			Pk: note.Apk,
-	// 		}
-	// 		txValue += note.Value
-	// 	}
-	// }
-	// return addr, txValue
-}
-
 func (tx *Tx) GetJSPubKey() []byte {
 	return tx.SigPubKey
 }
@@ -688,11 +669,44 @@ func (tx *Tx) IsPrivacy() bool {
 	}
 }
 
-
-func (tx* Tx) SetSigPrivKey(privKey []byte, randSK *big.Int) {
+func (tx *Tx) SetSigPrivKey(privKey []byte, randSK *big.Int) {
 	tx.sigPrivKey = append(privKey, randSK.Bytes()...)
 }
 
 func (tx *Tx) ValidateType() bool {
 	return tx.Type == common.TxNormalType || tx.Type == common.TxSalaryType
+}
+
+func (tx *Tx) IsCoinsBurning() bool {
+	if tx.Proof == nil || len(tx.Proof.InputCoins) == 0 || len(tx.Proof.OutputCoins) == 0 {
+		return false
+	}
+	senderPKBytes := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	buringAcc, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	for _, outCoin := range tx.Proof.OutputCoins {
+		outPKBytes := outCoin.CoinDetails.PublicKey.Compress()
+		if !bytes.Equal(senderPKBytes, outPKBytes) && !bytes.Equal(outPKBytes, buringAcc.KeySet.PaymentAddress.Pk[:]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (tx *Tx) CalculateTxValue() (*privacy.PaymentAddress, uint64) {
+	if tx.Proof == nil || len(tx.Proof.InputCoins) == 0 || len(tx.Proof.OutputCoins) == 0 {
+		return nil, 0
+	}
+	senderPKBytes := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	senderAddr := &privacy.PaymentAddress{
+		Pk: senderPKBytes,
+	}
+	txValue := uint64(0)
+	for _, outCoin := range tx.Proof.OutputCoins {
+		outPKBytes := outCoin.CoinDetails.PublicKey.Compress()
+		if bytes.Equal(senderPKBytes, outPKBytes) {
+			continue
+		}
+		txValue += outCoin.CoinDetails.Value
+	}
+	return senderAddr, txValue
 }

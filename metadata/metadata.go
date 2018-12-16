@@ -123,4 +123,5 @@ type Transaction interface {
 	GetJSPubKey() []byte
 	GetReceivers() ([][]byte, []uint64)
 	IsPrivacy() bool
+	IsCoinsBurning() bool
 }
