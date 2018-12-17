@@ -149,7 +149,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	ok = tx.CheckTransactionFee(minFeePerKbTx)
 	if !ok {
 		err := MempoolTxError{}
-		err.Init(RejectVersion, errors.New(fmt.Sprintf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, minFee)))
+		err.Init(RejectVersion, errors.New(fmt.Sprintf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, minFeePerKbTx)))
 		return nil, nil, err
 	}
 	// end check with policy
