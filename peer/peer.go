@@ -80,8 +80,6 @@ type Config struct {
 	UserKeySet       *cashec.KeySet
 	MaxOutbound      int
 	MaxInbound       int
-
-	GetShardByPbk func(pbk string) *byte
 }
 
 type WrappedStream struct {
@@ -367,17 +365,6 @@ func (self *Peer) GetPeerConnByPbk(pbk string) *PeerConn {
 		}
 	}
 	return nil
-}
-
-func (self *Peer) GetListPeerConnByShard(shard byte) []*PeerConn {
-	peerConns := make([]*PeerConn, 0)
-	for _, peerConn := range self.PeerConns {
-		shardT := self.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
-		if shardT != nil && *shardT == shard {
-			peerConns = append(peerConns, peerConn)
-		}
-	}
-	return peerConns
 }
 
 func (self *Peer) UpdateShardForPeerConn() {
@@ -703,35 +690,4 @@ func (self *Peer) renewPeerConnection() {
 		Logger.log.Infof("*end - Creating peer conn to %d pending peers", len(self.PendingPeers))
 		self.pendingPeersMutex.Unlock()
 	}
-}
-
-func (self *Peer) ClosePeerConnsOfShard(shard byte) {
-	for _, peerConn := range self.PeerConns {
-		sh := self.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
-		if sh != nil && *sh == shard {
-			peerConn.ForceClose()
-		}
-	}
-}
-
-func (self *Peer) CountPeerConnOfShard(shard *byte) int {
-	c := 0
-	for _, peerConn := range self.PeerConns {
-		sh := self.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
-		if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
-			c++
-		}
-	}
-	return c
-}
-
-func (self *Peer) GetPeerConnOfShard(shard *byte) []*PeerConn {
-	c := make([]*PeerConn, 0)
-	for _, peerConn := range self.PeerConns {
-		sh := self.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
-		if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
-			c = append(c, peerConn)
-		}
-	}
-	return c
 }

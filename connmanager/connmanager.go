@@ -27,6 +27,7 @@ var MAX_PEERS_OTHER_SHARD = 2
 var MAX_PEERS_OTHER = 100
 var MAX_PEERS = 200
 var MAX_PEERS_NOSHARD = 100
+var MAX_PEERS_BEACON = 20
 var SHARD_NUMBER = 256
 
 // ConnState represents the state of the requested connection.
@@ -36,6 +37,15 @@ type ConnState uint8
 // a new connection is requested, it is attempted and categorized as
 // established or failed depending on the connection result.  An established
 // connection which was disconnected is categorized as disconnected.
+
+type ConsensusState struct {
+	sync.Mutex
+	Role            string
+	CurrentShard    *byte
+	BeaconCommittee []string
+	ShardCommittee  map[byte][]string
+	UserPbk         string
+}
 
 type ConnManager struct {
 	connReqCount uint64
@@ -55,7 +65,12 @@ type ConnManager struct {
 }
 
 type Config struct {
-	ExternalAddress string
+	ExternalAddress   string
+	MaxPeerSameShard  int
+	MaxPeerOtherShard int
+	MaxPeerOther      int
+	MaxPeerNoShard    int
+	MaxPeerBeacon     int
 	// ListenerPeers defines a slice of listeners for which the connection
 	// manager will take ownership of and accept connections.  When a
 	// connection is accepted, the OnAccept handler will be invoked with the
@@ -79,15 +94,7 @@ type Config struct {
 
 	DiscoverPeers        bool
 	DiscoverPeersAddress string
-
-	ConsensusState struct {
-		sync.Mutex
-		Role            string
-		CurrentShard    byte
-		BeaconCommittee []string
-		ShardCommittee  map[byte][]string
-		UserPbk         string
-	}
+	ConsensusState       *ConsensusState
 }
 
 type DiscoverPeerInfo struct {
@@ -96,13 +103,13 @@ type DiscoverPeerInfo struct {
 	PeerID     libpeer.ID
 }
 
-func (self *ConnManager) UpdateConsensusState(role string, userPbk string, currentShard byte, beaconCmte []string, shardCmte map[byte][]string) {
+func (self *ConnManager) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) {
 	self.Config.ConsensusState.Lock()
 	defer self.Config.ConsensusState.Unlock()
 	self.Config.ConsensusState.Role = role
 	self.Config.ConsensusState.CurrentShard = currentShard
-	self.Config.ConsensusState.BeaconCommittee = beaconCmte
-	self.Config.ConsensusState.ShardCommittee = shardCmte
+	self.Config.ConsensusState.BeaconCommittee = beaconCommittee
+	self.Config.ConsensusState.ShardCommittee = shardCommittee
 	self.Config.ConsensusState.UserPbk = userPbk
 	return
 }
@@ -131,6 +138,43 @@ func (self ConnManager) New(cfg *Config) *ConnManager {
 	self.discoveredPeers = make(map[string]*DiscoverPeerInfo)
 
 	self.ListeningPeers = map[libpeer.ID]*peer.Peer{}
+
+	self.Config.ConsensusState = &ConsensusState{}
+	// set default config
+	if self.Config.MaxPeerSameShard <= 0 {
+		self.Config.MaxPeerSameShard = MAX_PEERS_SAME_SHARD
+	}
+	if self.Config.MaxPeerOtherShard <= 0 {
+		self.Config.MaxPeerOtherShard = MAX_PEERS_OTHER_SHARD
+	}
+	if self.Config.MaxPeerOther <= 0 {
+		self.Config.MaxPeerOther = MAX_PEERS_OTHER
+	}
+	if self.Config.MaxPeerNoShard <= 0 {
+		self.Config.MaxPeerNoShard = MAX_PEERS_NOSHARD
+	}
+	if self.Config.MaxPeerBeacon <= 0 {
+		self.Config.MaxPeerBeacon = MAX_PEERS_BEACON
+	}
+
+	// for testing
+	//var mPBK = map[string]byte{
+	//	"15Z7uGSzG4ZR5ENDnBE6PuGcquNGYj7PqPFj4ojEEGk8QQNZoN6": 0,
+	//	"15CfJ8vH78zw8PT2FbBeNssFWcHMW1sSxoJ6RKv2hZ6nztp4mCQ": 1,
+	//	"17PnJ3sjHvFLp3Sck12FaHfvk4AghGctecTG54bdLNFVGygi8DN": 2,
+	//	"17qiWdX7ubTHpVu5eMDxMCCwesYYcLWKE1KTP62LQK3ALrQ6A5T": 3,
+	//	"18mxtXGaaRkfkLS9L7eNGTjawpxTnqZSBqKXLSDc4Un8VLGgVPg": 4,
+	//	"17W59bSax64ykVeGPk8nnXQAoWmiDfPGtVQMVvqJSSep3Py2Jxn": 5,
+	//	"15nvyVJvmrzp3KK7SF8xMcsffZyvV2BTBmnR4kx8XszdtXhqUm9": 6,
+	//	"15VmkDTBgFs86h8fD7c9Bk41xndCGA3qXKmqMjy2dJpC6UVWNhZ": 7,
+	//	"159DQTsMrzrKyF1787R2iK8RA9X8GMXjgwLqPsVR1a129RjSAi5": 8,
+	//	"18fk4aLAT7F8aTf4Uo784DiGgEBJajC3u8SqcY766FcRPPLHPBz": 9,
+	//	"15ma6n91BbgyCJNeWa9TzG5gQGCERLZ9F9jaYB1mMPGsJGKhmB7": 10,
+	//	"18NwuP2PqDNcAWyhAgPpcRgFeS8h7LWv8LX7vzRgfaVmTzBERBZ": 11,
+	//	"165RABeGBuYYX72S6w8wJqvSgZE7JZ32YVG8ApSwUW38Lm3RrEt": 12,
+	//	"15yDGFUwf5r7rZcfEzEmpcNvMfC5zi1g454AeHMZNSGEiBFacvt": 13,
+	//	"16C6356Xst2bKnAuXYM3Ezfz7ZwG9kiKmHAPTFMupQs3wzQfaoM": 14,
+	//}
 
 	return &self
 }
@@ -338,11 +382,12 @@ func (self *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 	var client *rpc.Client
 	var err error
 
-	self.CurrentShard = &self.Config.ConsensusState.CurrentShard
 	self.OtherShards = self.randShards(SHARD_NUMBER)
 
 listen:
 	for {
+		self.CurrentShard = self.Config.ConsensusState.CurrentShard
+
 		//Logger.log.Infof("Peers", self.discoveredPeers)
 		if client == nil {
 			client, err = rpc.Dial("tcp", discoverPeerAddress)
@@ -453,10 +498,13 @@ listen:
 				//		}
 				//	}
 				//}
-				// connect to same shard
-				self.handleRandPeersOfShard(self.CurrentShard, MAX_PEERS_SAME_SHARD, mPeers)
-				// connect to other shard
-				self.handleRandPeersOfOtherShard(self.CurrentShard, MAX_PEERS_OTHER_SHARD, MAX_PEERS_OTHER, mPeers)
+
+				// connect to beacon peers
+				self.handleRandPeersOfBeacon(self.Config.MaxPeerBeacon, mPeers)
+				// connect to same shard peers
+				self.handleRandPeersOfShard(self.CurrentShard, self.Config.MaxPeerSameShard, mPeers)
+				// connect to other shard peers
+				self.handleRandPeersOfOtherShard(self.CurrentShard, self.Config.MaxPeerOtherShard, self.Config.MaxPeerOther, mPeers)
 			}
 		}
 		time.Sleep(time.Second * 60)
@@ -487,13 +535,31 @@ func (self *ConnManager) getPeerIdsFromPublicKey(pubKey string) []libpeer.ID {
 	return result
 }
 
+func (self *ConnManager) getPeerConnOfShard(shard *byte) []*peer.PeerConn {
+	c := make([]*peer.PeerConn, 0)
+	for _, listener := range self.Config.ListenerPeers {
+		for _, peerConn := range listener.PeerConns {
+			sh := self.getShardByPbk(peerConn.RemotePeer.PublicKey)
+			if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
+				c = append(c, peerConn)
+			}
+		}
+	}
+	return c
+}
+
 func (self *ConnManager) countPeerConnByShard(shard *byte) int {
 	if shard == nil {
 		return 0
 	}
 	c := 0
 	for _, listener := range self.Config.ListenerPeers {
-		c += listener.CountPeerConnOfShard(shard)
+		for _, peerConn := range listener.PeerConns {
+			sh := self.getShardByPbk(peerConn.RemotePeer.PublicKey)
+			if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
+				c++
+			}
+		}
 	}
 	return c
 }
@@ -510,19 +576,10 @@ func (self *ConnManager) checkPeerConnByPbk(pubKey string) bool {
 }
 
 func (self *ConnManager) closePeerConnOfShard(shard byte) {
-	cPeers := self.GetPeerConnOfShard(&shard)
+	cPeers := self.getPeerConnOfShard(&shard)
 	for _, p := range cPeers {
 		p.ForceClose()
 	}
-}
-
-func (self *ConnManager) GetPeerConnOfShard(shard *byte) []*peer.PeerConn {
-	c := make([]*peer.PeerConn, 0)
-	for _, listener := range self.Config.ListenerPeers {
-		cT := listener.GetPeerConnOfShard(shard)
-		c = append(c, cT...)
-	}
-	return c
 }
 
 func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeers map[string]*wire.RawPeer) int {
@@ -534,7 +591,7 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 	if countPeerShard >= maxPeers {
 		// close if over max conn
 		if countPeerShard > maxPeers {
-			cPeers := self.GetPeerConnOfShard(shard)
+			cPeers := self.getPeerConnOfShard(shard)
 			lPeers := len(cPeers)
 			for idx := maxPeers; idx < lPeers; idx++ {
 				cPeers[idx].ForceClose()
@@ -549,9 +606,9 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 		pBKs = append(pBKs[:randN], pBKs[randN+1:]...)
 		peerI, ok := mPeers[pbk]
 		if ok {
-			cPbk := &self.Config.ConsensusState.UserPbk
+			cPbk := self.Config.ConsensusState.UserPbk
 			// if existed conn then not append to array
-			if !self.checkPeerConnByPbk(pbk) && (cPbk == nil || *cPbk != pbk) {
+			if !self.checkPeerConnByPbk(pbk) && (cPbk == "" || cPbk != pbk) {
 				go self.Connect(peerI.RawAddress, peerI.PublicKey)
 				countPeerShard++
 			}
@@ -584,6 +641,30 @@ func (self *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers
 	return countPeers
 }
 
+func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[string]*wire.RawPeer) int {
+	Logger.log.Info("handleRandPeersOfBeacon")
+	countPeerShard := 0
+	pBKs := self.Config.ConsensusState.BeaconCommittee
+	for len(pBKs) > 0 {
+		randN := common.RandInt() % len(pBKs)
+		pbk := pBKs[randN]
+		pBKs = append(pBKs[:randN], pBKs[randN+1:]...)
+		peerI, ok := mPeers[pbk]
+		if ok {
+			cPbk := self.Config.ConsensusState.UserPbk
+			// if existed conn then not append to array
+			if !self.checkPeerConnByPbk(pbk) && (cPbk == "" || cPbk != pbk) {
+				go self.Connect(peerI.RawAddress, peerI.PublicKey)
+			}
+			countPeerShard ++
+			if countPeerShard >= maxBeaconPeers {
+				return countPeerShard
+			}
+		}
+	}
+	return countPeerShard
+}
+
 func (self *ConnManager) randShards(maxShards int) []byte {
 	shardBytes := make([]byte, 0)
 	for i := 0; i < SHARD_NUMBER; i++ {
@@ -603,25 +684,24 @@ func (self *ConnManager) CheckAcceptConn(peerConn *peer.PeerConn) bool {
 	if peerConn == nil {
 		return false
 	}
-	// check max conn
 	// check max shard conn
 	sh := self.getShardByPbk(peerConn.RemotePeer.PublicKey)
 	if sh != nil && self.CurrentShard != nil && *sh == *self.CurrentShard {
 		//	same shard
 		countPeerShard := self.countPeerConnByShard(sh)
-		if countPeerShard > MAX_PEERS_SAME_SHARD {
+		if countPeerShard > self.Config.MaxPeerSameShard {
 			return false
 		}
 	} else if sh != nil {
 		//	order shard
 		countPeerShard := self.countPeerConnByShard(sh)
-		if countPeerShard > MAX_PEERS_OTHER_SHARD {
+		if countPeerShard > self.Config.MaxPeerOtherShard {
 			return false
 		}
 	} else if sh == nil {
 		// none shard
 		countPeerShard := self.countPeerConnByShard(sh)
-		if countPeerShard > MAX_PEERS_NOSHARD {
+		if countPeerShard > self.Config.MaxPeerNoShard {
 			return false
 		}
 	}
@@ -629,5 +709,25 @@ func (self *ConnManager) CheckAcceptConn(peerConn *peer.PeerConn) bool {
 }
 
 func (self *ConnManager) getShardByPbk(pbk string) *byte {
+	for shard, committees := range self.Config.ConsensusState.ShardCommittee {
+		for _, committee := range committees {
+			if committee == pbk {
+				return &shard
+			}
+		}
+	}
 	return nil
+}
+
+func (self *ConnManager) GetListPeerConnByShard(shard byte) []*peer.PeerConn {
+	peerConns := make([]*peer.PeerConn, 0)
+	for _, listener := range self.Config.ListenerPeers {
+		for _, peerConn := range listener.PeerConns {
+			shardT := self.getShardByPbk(peerConn.RemotePeer.PublicKey)
+			if shardT != nil && *shardT == shard {
+				peerConns = append(peerConns, peerConn)
+			}
+		}
+	}
+	return peerConns
 }
