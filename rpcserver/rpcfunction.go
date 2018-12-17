@@ -348,13 +348,21 @@ handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to
 func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// Param #1: —how many blocks the transaction may wait before being included
 	arrayParams := common.InterfaceSlice(params)
-	numBlock := uint32(arrayParams[0].(float64))
+	numBlock := uint64(arrayParams[0].(float64))
 	result := jsonresult.EstimateFeeResult{
 		FeeRate: make(map[string]uint64),
 	}
 	for chainID, feeEstimator := range self.config.FeeEstimator {
-		feeRate, err := feeEstimator.EstimateFee(numBlock)
-		result.FeeRate[strconv.Itoa(int(chainID))] = uint64(feeRate)
+		var feeRate uint64
+		var err error
+		temp, err := feeEstimator.EstimateFee(numBlock)
+		if err != nil {
+			feeRate = uint64(temp)
+		}
+		if feeRate == 0 {
+			feeRate = self.config.BlockChain.GetFeePerKbTx()
+		}
+		result.FeeRate[strconv.Itoa(int(chainID))] = feeRate
 		if err != nil {
 			return -1, NewRPCError(ErrUnexpected, err)
 		}

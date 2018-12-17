@@ -144,7 +144,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 
 	// check fee of tx
-	minFeePerKbTx := tp.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
+	minFeePerKbTx := tp.config.BlockChain.GetFeePerKbTx()
 	txFee := tx.GetTxFee()
 	ok = tx.CheckTransactionFee(minFeePerKbTx)
 	if !ok {

@@ -520,7 +520,7 @@ func (ef *FeeEstimator) estimates() []CoinPerKilobyte {
 
 // EstimateFee estimates the fee per byte to have a tx confirmed a given
 // number of blocks from now.
-func (ef *FeeEstimator) EstimateFee(numBlocks uint32) (CoinPerKilobyte, error) {
+func (ef *FeeEstimator) EstimateFee(numBlocks uint64) (CoinPerKilobyte, error) {
 	ef.mtx.Lock()
 	defer ef.mtx.Unlock()
 
