@@ -718,3 +718,16 @@ func (self *ConnManager) getShardByPbk(pbk string) *byte {
 	}
 	return nil
 }
+
+func (self *ConnManager) GetListPeerConnByShard(shard byte) []*peer.PeerConn {
+	peerConns := make([]*peer.PeerConn, 0)
+	for _, listener := range self.Config.ListenerPeers {
+		for _, peerConn := range listener.PeerConns {
+			shardT := self.getShardByPbk(peerConn.RemotePeer.PublicKey)
+			if shardT != nil && *shardT == shard {
+				peerConns = append(peerConns, peerConn)
+			}
+		}
+	}
+	return peerConns
+}

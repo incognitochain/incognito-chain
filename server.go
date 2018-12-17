@@ -257,6 +257,26 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		MaxPeerNoShard:    cfg.MaxPeerNoShard,
 		MaxPeerBeacon:     cfg.MaxPeerBeacon,
 	})
+
+	// for testing
+	//currentShard := byte(0)
+	//userPbk := ""
+	//ks, err := cfg.GetUserKeySet()
+	//if err == nil {
+	//	userPbk = ks.GetPublicKeyB58()
+	//}
+	//shardCommittee := map[byte][]string{
+	//	byte(0): []string{"15Z7uGSzG4ZR5ENDnBE6PuGcquNGYj7PqPFj4ojEEGk8QQNZoN6"},
+	//	byte(1): []string{"15CfJ8vH78zw8PT2FbBeNssFWcHMW1sSxoJ6RKv2hZ6nztp4mCQ"},
+	//	byte(2): []string{"17PnJ3sjHvFLp3Sck12FaHfvk4AghGctecTG54bdLNFVGygi8DN"},
+	//	byte(3): []string{"17qiWdX7ubTHpVu5eMDxMCCwesYYcLWKE1KTP62LQK3ALrQ6A5T"},
+	//}
+	//beaconCommittee := []string{
+	//	"15yDGFUwf5r7rZcfEzEmpcNvMfC5zi1g454AeHMZNSGEiBFacvt",
+	//	"16C6356Xst2bKnAuXYM3Ezfz7ZwG9kiKmHAPTFMupQs3wzQfaoM",
+	//}
+	//connManager.UpdateConsensusState("", userPbk, &currentShard, beaconCommittee, shardCommittee)
+
 	self.connManager = connManager
 
 	// Start up persistent peers.
@@ -907,7 +927,7 @@ func (self *Server) PushMessageToShard(msg wire.Message, shard byte) error {
 	Logger.log.Infof("Push msg to shard %d", shard)
 	var dc chan<- struct{}
 	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
-		peerConns := self.connManager.Config.ListenerPeers[index].GetListPeerConnByShard(shard)
+		peerConns := self.connManager.GetListPeerConnByShard(shard)
 		if peerConns != nil && len(peerConns) > 0 {
 			for _, peerConn := range peerConns {
 				msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
@@ -986,22 +1006,4 @@ func (self *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	}
 	peerConn.QueueMessageWithEncoding(msg, nil)
 	return nil
-}
-
-var mPBK = map[string]byte{
-	"15Z7uGSzG4ZR5ENDnBE6PuGcquNGYj7PqPFj4ojEEGk8QQNZoN6": 0,
-	"15CfJ8vH78zw8PT2FbBeNssFWcHMW1sSxoJ6RKv2hZ6nztp4mCQ": 1,
-	"17PnJ3sjHvFLp3Sck12FaHfvk4AghGctecTG54bdLNFVGygi8DN": 2,
-	"17qiWdX7ubTHpVu5eMDxMCCwesYYcLWKE1KTP62LQK3ALrQ6A5T": 3,
-	"18mxtXGaaRkfkLS9L7eNGTjawpxTnqZSBqKXLSDc4Un8VLGgVPg": 4,
-	"17W59bSax64ykVeGPk8nnXQAoWmiDfPGtVQMVvqJSSep3Py2Jxn": 5,
-	"15nvyVJvmrzp3KK7SF8xMcsffZyvV2BTBmnR4kx8XszdtXhqUm9": 6,
-	"15VmkDTBgFs86h8fD7c9Bk41xndCGA3qXKmqMjy2dJpC6UVWNhZ": 7,
-	"159DQTsMrzrKyF1787R2iK8RA9X8GMXjgwLqPsVR1a129RjSAi5": 8,
-	"18fk4aLAT7F8aTf4Uo784DiGgEBJajC3u8SqcY766FcRPPLHPBz": 9,
-	"15ma6n91BbgyCJNeWa9TzG5gQGCERLZ9F9jaYB1mMPGsJGKhmB7": 10,
-	"18NwuP2PqDNcAWyhAgPpcRgFeS8h7LWv8LX7vzRgfaVmTzBERBZ": 11,
-	"165RABeGBuYYX72S6w8wJqvSgZE7JZ32YVG8ApSwUW38Lm3RrEt": 12,
-	"15yDGFUwf5r7rZcfEzEmpcNvMfC5zi1g454AeHMZNSGEiBFacvt": 13,
-	"16C6356Xst2bKnAuXYM3Ezfz7ZwG9kiKmHAPTFMupQs3wzQfaoM": 14,
 }
