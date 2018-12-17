@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -54,5 +55,29 @@ func GenerateChallengeFromByte(values [][]byte) *big.Int {
 
 // EstimateProofSize returns the estimated size of the proof in kilobyte
 func EstimateProofSize(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo) uint64 {
-	return 0
+	nInput := len(inputCoins)
+	nOutput := len(payments)
+
+	sizeComInputOpeningsProof := nInput * privacy.ComInputOpeningsProofSize
+	sizeOneOfManyProof := nInput * privacy.OneOfManyProofSize
+	sizeEqualityOfCommittedValProof := nInput * privacy.EqualityOfCommittedValProofSize
+	sizeProductCommitmentProof := nInput * privacy.ProductCommitmentProofSize
+
+	sizeComOutputOpeningsProof := nOutput * privacy.ComOutputOpeningsProofSize
+	sizeComOutputMultiRangeProof := privacy.ComOutputMultiRangeProofSize
+	sizeSumOutRangeProof := privacy.ComZeroProofSize
+	sizeComZeroProof := privacy.ComZeroProofSize
+
+	sizeInputCoins :=  nInput * privacy.InputCoinsPrivacySize
+	sizeOutputCoins := nOutput * privacy.OutputCoinsPrivacySize
+
+	sizeComOutputValue  := nOutput * privacy.CompressedPointSize
+	sizeComOutputSND  := nOutput * privacy.CompressedPointSize
+	sizeComOutputShardID  := nOutput * privacy.CompressedPointSize
+
+	sizeProof := sizeComInputOpeningsProof + sizeOneOfManyProof + sizeEqualityOfCommittedValProof + sizeProductCommitmentProof +
+		sizeComOutputOpeningsProof + sizeComOutputMultiRangeProof + sizeSumOutRangeProof + sizeComZeroProof + sizeInputCoins + sizeOutputCoins +
+		sizeComOutputValue + sizeComOutputSND + sizeComOutputShardID
+
+	return uint64(math.Ceil(float64(sizeProof) / 1024))
 }
