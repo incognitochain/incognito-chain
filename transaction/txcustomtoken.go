@@ -11,6 +11,7 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
 // TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -182,10 +183,8 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 			utxo := tx.listUtxo[vin.TxCustomTokenID]
 			vout := utxo.TxTokenData.Vouts[vin.VoutIndex]
 			data := vout.Hash() // hash of vout in utxo
-
-			ok, err := keySet.Verify(data[:], []byte(vin.Signature))
-			// TODO
-			ok = true
+			signature, _, _ := base58.Base58Check{}.Decode(vin.Signature)
+			ok, err := keySet.Verify(data[:], signature)
 			if err != nil {
 				return false
 			}

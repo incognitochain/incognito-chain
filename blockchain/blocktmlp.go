@@ -93,6 +93,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	var issuingReqTxs []metadata.Transaction
 	var buyBackFromInfos []*buyBackFromInfo
 	bondsSold := uint64(0)
+	dcbTokensSold := uint64(0)
 	incomeFromBonds := uint64(0)
 	totalFee := uint64(0)
 	buyBackCoins := uint64(0)
@@ -205,10 +206,9 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 			if !(currentBlockHeight < lv3GOVPivot && currentBlockHeight >= startedGOVPivot) {
 				continue
 			}
-		}
-
-		if tx.GetMetadataType() == metadata.IssuingRequestMeta {
-			addable := blockgen.checkIssuingReqTx(chainID, tx)
+		case metadata.IssuingRequestMeta:
+			addable, newDCBTokensSold := blockgen.checkIssuingReqTx(chainID, tx, dcbTokensSold)
+			dcbTokensSold = newDCBTokensSold
 			if !addable {
 				txToRemove = append(txToRemove, tx)
 				continue
@@ -431,6 +431,9 @@ concludeBlock:
 	}
 	if block.Header.GOVConstitution.GOVParams.SellingBonds != nil {
 		block.Header.GOVConstitution.GOVParams.SellingBonds.BondsToSell -= bondsSold
+	}
+	if block.Header.DCBConstitution.DCBParams.SaleDBCTOkensByUSDData != nil {
+		block.Header.DCBConstitution.DCBParams.SaleDBCTOkensByUSDData.Amount -= dcbTokensSold
 	}
 
 	for _, tx := range txsToAdd {
@@ -787,32 +790,29 @@ func (blockgen *BlkTmplGenerator) buildBuyBackResponsesTx(
 func (blockgen *BlkTmplGenerator) checkIssuingReqTx(
 	chainID byte,
 	tx metadata.Transaction,
-	// dcbTokensSold uint64,
-) bool {
-	return true
-
-	// issuingReqMeta := tx.GetMetadata()
-	// issuingReq, ok := issuingReqMeta.(*metadata.IssuingRequest)
-	// if issuingReq.AssetType == common.DCBTokenID {
-
-	// }
-
-	// prevBlock := blockgen.chain.BestState[chainID].BestBlock
-	// sellingBondsParams := prevBlock.Header.GOVConstitution.GOVParams.SellingBonds
-	// if uint32(prevBlock.Header.Height)+1 > sellingBondsParams.StartSellingAt+sellingBondsParams.SellingWithin {
-	// 	return 0, 0, false
-	// }
-
-	// buySellReqMeta := tx.GetMetadata()
-	// req, ok := buySellReqMeta.(*metadata.BuySellRequest)
-	// if !ok {
-	// 	return 0, 0, false
-	// }
-
-	// if bondsSold+req.Amount > sellingBondsParams.BondsToSell { // run out of bonds for selling
-	// 	return 0, 0, false
-	// }
-	// return req.Amount * req.BuyPrice, req.Amount, true
+	dcbTokensSold uint64,
+) (bool, uint64) {
+	issuingReqMeta := tx.GetMetadata()
+	issuingReq, ok := issuingReqMeta.(*metadata.IssuingRequest)
+	if !ok {
+		Logger.log.Error(errors.New("Could not parse IssuingRequest metadata"))
+		return false, dcbTokensSold
+	}
+	if !bytes.Equal(issuingReq.AssetType[:], common.DCBTokenID[:]) {
+		return true, dcbTokensSold
+	}
+	header := blockgen.chain.BestState[chainID].BestBlock.Header
+	saleDBCTOkensByUSDData := header.DCBConstitution.DCBParams.SaleDBCTOkensByUSDData
+	oracleParams := header.Oracle
+	dcbTokenPrice := uint64(1)
+	if oracleParams.DCBToken != 0 {
+		dcbTokenPrice = oracleParams.DCBToken
+	}
+	dcbTokensReq := issuingReq.DepositedAmount / dcbTokenPrice
+	if dcbTokensSold+dcbTokensReq > saleDBCTOkensByUSDData.Amount {
+		return false, dcbTokensSold
+	}
+	return true, dcbTokensSold + dcbTokensReq
 }
 
 func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
@@ -835,7 +835,11 @@ func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
 				RequestedTxID: issuingReqTx.Hash(),
 			}
 			issuingRes.Type = metadata.IssuingResponseMeta
-			issuingAmt := issuingReq.DepositedAmount / oracleParams.DCBToken
+			dcbTokenPrice := uint64(1)
+			if oracleParams.DCBToken != 0 {
+				dcbTokenPrice = oracleParams.DCBToken
+			}
+			issuingAmt := issuingReq.DepositedAmount / dcbTokenPrice
 			txTokenVout := transaction.TxTokenVout{
 				Value:          issuingAmt,
 				PaymentAddress: issuingReq.ReceiverAddress,
@@ -858,7 +862,11 @@ func (blockgen *BlkTmplGenerator) buildIssuingResTxs(
 			continue
 		}
 		if issuingReq.AssetType == common.ConstantID {
-			issuingAmt := issuingReq.DepositedAmount / oracleParams.Constant
+			constantPrice := uint64(1)
+			if oracleParams.Constant != 0 {
+				constantPrice = oracleParams.Constant
+			}
+			issuingAmt := issuingReq.DepositedAmount / constantPrice
 			resTx, err := transaction.CreateTxSalary(issuingAmt, &issuingReq.ReceiverAddress, privatekey, blockgen.chain.GetDatabase())
 			if err != nil {
 				return []metadata.Transaction{}, err

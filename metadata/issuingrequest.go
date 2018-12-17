@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"bytes"
 	"errors"
 
 	"github.com/ninjadotorg/constant/common"
@@ -40,7 +41,7 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	chainID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	if iReq.AssetType == common.DCBTokenID {
+	if bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {
 		saleDBCTOkensByUSDData := bcr.GetDCBParams().SaleDBCTOkensByUSDData
 		if bcr.GetHeight()+1 > saleDBCTOkensByUSDData.EndBlock {
 			return false, nil
@@ -81,7 +82,13 @@ func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 }
 
 func (iReq *IssuingRequest) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning true here
+	if iReq.Type != IssuingRequestMeta {
+		return false
+	}
+	if !bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) &&
+		!bytes.Equal(iReq.AssetType[:], common.ConstantID[:]) {
+		return false
+	}
 	return true
 }
 

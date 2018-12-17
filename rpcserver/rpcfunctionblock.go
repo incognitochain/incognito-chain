@@ -211,6 +211,7 @@ func (self RpcServer) handleGetBlockHash(params interface{}, closeChan <-chan st
 	return hash.Hash().String(), nil
 }
 
+// handleGetBlockHeader - return block header data
 func (self RpcServer) handleGetBlockHeader(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	result := jsonresult.GetHeaderResult{}
