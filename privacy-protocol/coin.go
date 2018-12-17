@@ -279,7 +279,7 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 
 type CoinDetailsEncrypted struct {
 	RandomEncrypted []byte // 48 bytes
-	ValueEncrypted []byte
+	ValueEncrypted []byte  // min: 17 bytes, max: 24 bytes
 	SymKeyEncrypted []byte // 66 bytes
 }
 

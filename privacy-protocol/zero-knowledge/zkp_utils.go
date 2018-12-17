@@ -51,3 +51,8 @@ func GenerateChallengeFromByte(values [][]byte) *big.Int {
 	result.Mod(result, privacy.Curve.Params().N)
 	return result
 }
+
+// EstimateProofSize returns the estimated size of the proof in kilobyte
+func EstimateProofSize(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo) uint64 {
+	return 0
+}
