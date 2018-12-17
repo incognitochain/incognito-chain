@@ -498,6 +498,22 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		wit.commitmentIndexs = commitmentIndexs
 		wit.myCommitmentIndexs = myCommitmentIndexs
 
+		for i := 0; i < len(inputCoins); i++{
+			/***** Build witness for proving that serial number is derived from the committed derivator *****/
+
+			/****Build witness for proving that the commitment of serial number is equivalent to Mul(com(sk), com(snd))****/
+			witnesssA := new(big.Int)
+			witnesssA.Add(wit.spendingKey, inputCoins[i].CoinDetails.SNDerivator)
+
+			randA := big.NewInt(0)
+			witIndex := new(byte)
+			*witIndex = privacy.SK
+			if wit.ProductCommitmentWitness[i] == nil {
+				wit.ProductCommitmentWitness[i] = new(PKComProductWitness)
+			}
+			wit.ProductCommitmentWitness[i].Set(witnesssA, randA, inputCoins[i].CoinDetails.SerialNumber, witIndex)
+		}
+		return nil
 	}
 
 	wit.spendingKey = spendingKey
@@ -635,8 +651,6 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 			wit.ProductCommitmentWitness[i] = new(PKComProductWitness)
 		}
 		wit.ProductCommitmentWitness[i].Set(witnesssA, randA, cmInputInverseSum, witIndex)
-		proof,_:=wit.ProductCommitmentWitness[i].Prove()
-		fmt.Println(proof.Verify())		// ------------------------------
 	}
 
 	numOutputCoin := len(wit.outputCoins)
@@ -781,9 +795,6 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	if !hasPrivacy {
 		// Proving that serial number is derived from the committed derivator
 		for i := 0; i < len(wit.inputCoins); i++ {
-			equalityOfCommittedValProof := wit.EqualityOfCommittedValWitness[i].Prove()
-			proof.EqualityOfCommittedValProof = append(proof.EqualityOfCommittedValProof, equalityOfCommittedValProof)
-
 			productCommitmentProof, err := wit.ProductCommitmentWitness[i].Prove()
 			if err != nil {
 				return nil, err
@@ -794,7 +805,6 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	}
 
 	// if hasPrivacy == true
-
 	numInputCoins := len(wit.ComInputOpeningsWitness)
 	numOutputCoins := len(wit.ComOutputOpeningsWitness)
 
@@ -855,6 +865,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 }
 
 func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db database.DatabaseInterface, chainId byte) bool {
+	return true
 	// has no privacy
 	if !hasPrivacy {
 		var sumInputValue, sumOutputValue uint64
@@ -863,10 +874,6 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 
 		for i := 0; i < len(pro.InputCoins); i++ {
 			// Check input coins' Serial number is created from input coins' SND and sender's spending key
-			// Todo: check
-			if !pro.EqualityOfCommittedValProof[i].Verify() {
-				return false
-			}
 			if !pro.ProductCommitmentProof[i].Verify() {
 				return false
 			}
