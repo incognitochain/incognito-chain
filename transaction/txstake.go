@@ -90,3 +90,22 @@ func (tx *Tx) ValidateTxStakeBeacon(db database.DatabaseInterface, chainID byte)
 	}
 	return true
 }
+
+// return param:
+// #param1: state shard Address
+// #param2: state beacon Address
+// #param3: has staker or not?
+func (tx *Tx) ProcessTxStake(db database.DatabaseInterface, chainID byte) ([]byte, []byte, bool) {
+	if tx.ValidateTxStakeBeacon(db, chainID) == true {
+		// skip comparing all address in input coin
+		// ASSUME that all address are the same
+		return []byte{}, tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), true
+	}
+
+	if tx.ValidateTxStakeShard(db, chainID) == true {
+		// skip comparing all address in input coin
+		// ASSUME that all address are the same
+		return tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), []byte{}, true
+	}
+	return []byte{}, []byte{}, false
+}
