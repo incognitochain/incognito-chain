@@ -247,11 +247,11 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	connManager := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      self.InboundPeerConnected,
 		OnOutboundConnection: self.OutboundPeerConnected,
-		GetCurrentShard:      self.GetCurrentShard,
 		GetCurrentPbk:        self.GetCurrentPbk,
-		GetPbksOfShard:       self.GetPbksOfShard,
-		GetShardByPbk:        self.GetShardByPbk,
-		GetPbksOfBeacon:      self.GetPbksOfBeacon,
+		//GetCurrentShard:      self.GetCurrentShard,
+		//GetPbksOfShard:       self.GetPbksOfShard,
+		//GetShardByPbk:        self.GetShardByPbk,
+		//GetPbksOfBeacon:      self.GetPbksOfBeacon,
 		ListenerPeers:        peers,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
@@ -982,67 +982,67 @@ func (self *Server) GetShardByPbk(pbk string) *byte {
 	return nil
 }
 
-func (self *Server) GetCurrentPbk() *string {
+func (self *Server) GetCurrentPbk() string {
 	ks, err := cfg.GetProducerKeySet()
 	if err != nil {
-		return nil
+		return ""
 	}
 	pbk := ks.GetPublicKeyB58()
-	return &pbk
+	return pbk
 }
 
-func (self *Server) GetCurrentShard() *byte {
-	ks, err := cfg.GetProducerKeySet()
-	if err != nil {
-		return nil
-	}
-	pbk := ks.GetPublicKeyB58()
-	shard, ok := mPBK[pbk]
-	if ok {
-		return &shard
-	}
-	return nil
-}
-
-func (self *Server) GetPbksOfShard(shard byte) []string {
-	pBKs := make([]string, 0)
-	for k, v := range mPBK {
-		if v == shard {
-			pBKs = append(pBKs, k)
-		}
-	}
-	return pBKs
-}
-
-func (self *Server) GetPbksOfBeacon() []string {
-	pBKs := make([]string, 0)
-	return pBKs
-}
-
-func (self *Server) getCurrentShardInfoByPbk() (*byte, string) {
-	ks, err := cfg.GetProducerKeySet()
-	if err != nil {
-		return nil, ""
-	}
-	pbk := ks.GetPublicKeyB58()
-	shard, ok := mPBK[pbk]
-	if ok {
-		return &shard, ""
-	}
-	return nil, ""
-}
-
-func (self *Server) getShardInfoByPbk(pbk string) (*byte, string) {
-	shard, ok := mPBK[pbk]
-	if ok {
-		return &shard, ""
-	}
-	return nil, ""
-}
-
-func (self *Server) shardChanged(oldShard *byte, newShard *byte) {
-	// update shard connection, random peers, drop peers and new peers
-}
+//func (self *Server) GetCurrentShard() *byte {
+//	ks, err := cfg.GetProducerKeySet()
+//	if err != nil {
+//		return nil
+//	}
+//	pbk := ks.GetPublicKeyB58()
+//	shard, ok := mPBK[pbk]
+//	if ok {
+//		return &shard
+//	}
+//	return nil
+//}
+//
+//func (self *Server) GetPbksOfShard(shard byte) []string {
+//	pBKs := make([]string, 0)
+//	for k, v := range mPBK {
+//		if v == shard {
+//			pBKs = append(pBKs, k)
+//		}
+//	}
+//	return pBKs
+//}
+//
+//func (self *Server) GetPbksOfBeacon() []string {
+//	pBKs := make([]string, 0)
+//	return pBKs
+//}
+//
+//func (self *Server) getCurrentShardInfoByPbk() (*byte, string) {
+//	ks, err := cfg.GetProducerKeySet()
+//	if err != nil {
+//		return nil, ""
+//	}
+//	pbk := ks.GetPublicKeyB58()
+//	shard, ok := mPBK[pbk]
+//	if ok {
+//		return &shard, ""
+//	}
+//	return nil, ""
+//}
+//
+//func (self *Server) getShardInfoByPbk(pbk string) (*byte, string) {
+//	shard, ok := mPBK[pbk]
+//	if ok {
+//		return &shard, ""
+//	}
+//	return nil, ""
+//}
+//
+//func (self *Server) shardChanged(oldShard *byte, newShard *byte) {
+//	// update shard connection, random peers, drop peers and new peers
+//}
 
 var mPBK = map[string]byte{
 	"15Z7uGSzG4ZR5ENDnBE6PuGcquNGYj7PqPFj4ojEEGk8QQNZoN6": 0,
