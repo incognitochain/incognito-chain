@@ -15,13 +15,34 @@ const (
 	CMRingSizeExp   = 3
 
 	InfoLength 										 	 = 512
-	ComInputOpeningsProofSize  			 =	226
-	EqualityOfCommittedValProofSize  = 230
-	ProductCommitmentProofSize 			= 197
-	ComOutputOpeningsProofSize 			= 226
-	ComZeroProofSize                = 99
-	CommitmentSize 									= 0
+
+	// size of zero knowledge proof corresponding one input
+	ComInputOpeningsProofSize = 198
+	OneOfManyProof    				= 781
+	EqualityOfCommittedValProof = 230
+	ProductCommitmentProof      = 197
+
+	// size of zero knowledge proof corresponding one output
+	ComOutputOpeningsProof = 198
+	ComOutputMultiRangeProof = 1174
+	SumOutRangeProof = 99
+	ComZeroProof = 99
+
+
+	InputCoinsPrivacy = 33  // serial number
+	OutputCoinsPrivacy = 237 // PK + coin commitment + SND + Encrypted (138 bytes)
+
+	InputCoinsNoPrivacy = 171
+	OutputCoinsNoPrivacy = 138 // except serial number
+
+
 	BigIntSize     									= 32
+
+	// it is used for both privacy and no privacy
+	SigPubKeySize = 33
+	SigSize = 64
+
+
 
 
 )
