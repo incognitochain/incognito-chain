@@ -17,10 +17,6 @@ import (
 
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
-	// Policy defines the various mempool configuration options related
-	// to policy.
-	Policy Policy
-
 	// Block chain of node
 	BlockChain *blockchain.BlockChain
 
@@ -139,9 +135,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	bestHeight := tp.config.BlockChain.BestState[chainID].BestBlock.Header.Height
 	// nextBlockHeight := bestHeight + 1
-	// Check tx with policy
 	// check version
-	ok := tx.CheckTxVersion(tp.config.Policy.MaxTxVersion)
+	ok := tx.CheckTxVersion(MaxVersion)
 	if !ok {
 		err := MempoolTxError{}
 		err.Init(RejectVersion, errors.New(fmt.Sprintf("%+v's version is invalid", txHash.String())))
@@ -149,7 +144,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 
 	// check fee of tx
-	minFee := tp.config.Policy.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.TxFee
+	minFee := tp.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.TxFee
 	txFee := tx.GetTxFee()
 	ok = tx.CheckTransactionFee(minFee)
 	if !ok {

@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"strconv"
 	"time"
@@ -452,24 +451,6 @@ func (tx *Tx) ListNullifiers() [][]byte {
 		}
 	}
 	return result
-}
-
-// EstimateTxSize returns the estimated size of the tx in kilobyte
-func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
-	var sizeVersion uint64 = 1  // int8
-	var sizeType uint64 = 8     // string
-	var sizeLockTime uint64 = 8 // int64
-	var sizeFee uint64 = 8      // uint64
-	var sizeDescs uint64        // uint64
-	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
-	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
-	}
-	var sizejSPubKey uint64 = 64 // [64]byte
-	var sizejSSig uint64 = 64    // [64]byte
-	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
-	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
 }
 
 // CheckCMExistence returns true if cm exists in cm list

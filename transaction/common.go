@@ -83,3 +83,9 @@ func CheckSNDerivatorExistence(snd *big.Int, chainID byte, db database.DatabaseI
 	}
 	return ok, nil
 }
+
+// EstimateTxSize returns the estimated size of the tx in kilobyte
+func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo) uint64 {
+	// TODO 0xkraken
+	return 0
+}

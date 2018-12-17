@@ -25,7 +25,6 @@ import (
 	"github.com/ninjadotorg/constant/peer"
 	"github.com/ninjadotorg/constant/rewardagent"
 	"github.com/ninjadotorg/constant/rpcserver"
-	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
 	"github.com/ninjadotorg/constant/cashec"
@@ -187,10 +186,6 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	// create mempool tx
 	self.memPool = &mempool.TxPool{}
 	self.memPool.Init(&mempool.Config{
-		Policy: mempool.Policy{
-			MaxTxVersion: transaction.TxVersion + 1,
-			BlockChain:   self.blockChain,
-		},
 		BlockChain:   self.blockChain,
 		DataBase:     self.dataBase,
 		ChainParams:  chainParams,
