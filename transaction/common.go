@@ -88,16 +88,17 @@ func CheckSNDerivatorExistence(snd *big.Int, chainID byte, db database.DatabaseI
 
 // EstimateTxSize returns the estimated size of the tx in kilobyte
 func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo) uint64 {
-	sizeVersion := uint64(1)  				// int8
-	sizeType := uint64(5)     				// string, max : 5
-	sizeLockTime := uint64(8) 				// int64
-	sizeFee  := uint64(8)							// uint64
+	sizeVersion := uint64(1)  // int8
+	sizeType := uint64(5)     // string, max : 5
+	sizeLockTime := uint64(8) // int64
+	sizeFee := uint64(8)      // uint64
 
 	sizeSigPubKey := uint64(privacy.SigPubKeySize)
 	sizeSig := uint64(privacy.SigSize)
 	sizeProof := zkp.EstimateProofSize(inputCoins, payments)
 
 	sizePubKeyLastByte := uint64(1)
+	// TODO 0xjackpolope
 	//sizeMetadata :=
 
 	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte

@@ -257,7 +257,7 @@ func (tx TxCustomToken) Hash() *common.Hash {
 
 // GetTxActualSize computes the virtual size of a given transaction
 // size of this tx = (normal TxNormal size) + (custom token data size)
-func (tx *TxCustomToken) GetTxVirtualSize() uint64 {
+func (tx *TxCustomToken) GetTxActualSize() uint64 {
 	normalTxSize := tx.Tx.GetTxActualSize()
 
 	tokenDataSize := uint64(0)

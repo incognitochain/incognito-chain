@@ -104,7 +104,7 @@ type Transaction interface {
 	ValidateTransaction(bool, database.DatabaseInterface, byte) bool
 	GetMetadataType() int
 	GetType() string
-	GetTxVirtualSize() uint64
+	GetTxActualSize() uint64
 	GetSenderAddrLastByte() byte
 	GetTxFee() uint64
 	ListNullifiers() [][]byte

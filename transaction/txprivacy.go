@@ -438,16 +438,17 @@ func (tx *Tx) GetTxFee() uint64 {
 
 // GetTxActualSize computes the actual size of a given transaction in kilobytes
 func (tx *Tx) GetTxActualSize() uint64 {
-	sizeVersion := uint64(1)  								// int8
-	sizeType := uint64(len(tx.Type) + 1)     	// string
-	sizeLockTime := uint64(8) 								// int64
-	sizeFee  := uint64(8)
+	sizeVersion := uint64(1)             // int8
+	sizeType := uint64(len(tx.Type) + 1) // string
+	sizeLockTime := uint64(8)            // int64
+	sizeFee := uint64(8)
 
 	sizeSigPubKey := uint64(len(tx.SigPubKey))
 	sizeSig := uint64(len(tx.Sig))
 	sizeProof := uint64(len(tx.Proof.Bytes()))
 
 	sizePubKeyLastByte := uint64(1)
+	// TODO 0xjackpolope
 	//sizeMetadata :=
 
 	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte

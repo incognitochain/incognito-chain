@@ -178,7 +178,7 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 
 	hash := *t.Desc.Tx.Hash()
 	if _, ok := ef.observed[hash]; !ok {
-		size := t.Desc.Tx.GetTxVirtualSize()
+		size := t.Desc.Tx.GetTxActualSize()
 		ef.observed[hash] = &observedTransaction{
 			hash:     hash,
 			feeRate:  NewCoinPerKilobyte(uint64(t.Desc.Fee), size),

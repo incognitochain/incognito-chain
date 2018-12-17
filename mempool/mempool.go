@@ -287,7 +287,7 @@ func (tp *TxPool) Size() uint64 {
 	tp.mtx.RLock()
 	size := uint64(0)
 	for _, tx := range tp.pool {
-		size += tx.Desc.Tx.GetTxVirtualSize()
+		size += tx.Desc.Tx.GetTxActualSize()
 	}
 	tp.mtx.RUnlock()
 
