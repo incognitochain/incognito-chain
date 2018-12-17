@@ -830,7 +830,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	return proof, nil
 }
 
-func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db database.DatabaseInterface, chainId byte) bool {
+func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db database.DatabaseInterface, shardID byte) bool {
 	return true
 	// has no privacy
 	if !hasPrivacy {
@@ -892,7 +892,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 			return false
 		}
 		// Verify for the proof one-out-of-N commitments is a commitment to the coins being spent
-		if !pro.OneOfManyProof[i].Verify(db, chainId) {
+		if !pro.OneOfManyProof[i].Verify(db, shardID) {
 			return false
 		}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator

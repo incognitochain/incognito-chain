@@ -374,12 +374,12 @@ func (w *IncMerkleWitness) getWitnessPath() *MerklePath {
 // // BuildWitnessPathMultiChain builds witness path for multiple input notes from different chains
 // func BuildWitnessPathMultiChain(inputs map[byte][]*JSInput, commitments map[byte][][]byte) (map[byte][]byte, error) {
 // 	mapRt := make(map[byte][]byte)
-// 	for chainID, inputList := range inputs {
-// 		rt, err := BuildWitnessPath(inputList, commitments[chainID])
+// 	for shardID, inputList := range inputs {
+// 		rt, err := BuildWitnessPath(inputList, commitments[shardID])
 // 		if err != nil {
 // 			return nil, err
 // 		}
-// 		mapRt[chainID] = rt
+// 		mapRt[shardID] = rt
 // 	}
 // 	return mapRt, nil
 // }

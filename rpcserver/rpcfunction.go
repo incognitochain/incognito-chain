@@ -9,10 +9,10 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, error)
@@ -246,7 +246,7 @@ func (self RpcServer) handleCheckHashValue(params interface{}, closeChan <-chan 
 	hash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
 
 	// Check block
-	_, err := self.config.BlockChain.GetBlockByBlockHash(hash)
+	_, err := self.config.BlockChain.GetBlockByHash(hash)
 	if err != nil {
 		isBlock = false
 	} else {
@@ -289,7 +289,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
-	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	shardIDSender, err := common.GetTxSenderChain(lastByte)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -355,7 +355,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender)
+	outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, shardIDSender)
 	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, note := range outCoins {
 		amount := note.CoinDetails.Value
@@ -369,7 +369,7 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 	// check real fee per TxNormal
 	var realFee uint64
 	if int64(estimateFeeCoinPerKb) == -1 {
-		temp, _ := self.config.FeeEstimator[chainIdSender].EstimateFee(numBlock)
+		temp, _ := self.config.FeeEstimator[shardIDSender].EstimateFee(numBlock)
 		estimateFeeCoinPerKb = int64(temp)
 	}
 	estimateFeeCoinPerKb += int64(self.config.Wallet.Config.IncrementalFee)
@@ -448,12 +448,12 @@ func (self RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan s
 	// if !self.config.IsGenerateNode {
 	// 	return nil, NewRPCError(ErrUnexpected, errors.New("Not mining"))
 	// }
-	// chainId := byte(int(params.(float64)))
+	// shardID := byte(int(params.(float64)))
 	// result := jsonresult.GetMiningInfoResult{}
-	// result.Blocks = uint64(self.config.BlockChain.BestState[chainId].BestBlock.Header.Height + 1)
+	// result.Blocks = uint64(self.config.BlockChain.BestState[shardID].BestBlock.Header.Height + 1)
 	// result.PoolSize = self.config.TxMemPool.Count()
 	// result.Chain = self.config.ChainParams.Name
-	// result.CurrentBlockTx = len(self.config.BlockChain.BestState[chainId].BestBlock.Transactions)
+	// result.CurrentBlockTx = len(self.config.BlockChain.BestState[shardID].BestBlock.Transactions)
 	return jsonresult.GetMiningInfoResult{}, nil
 }
 
@@ -496,9 +496,9 @@ func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan str
 	result := jsonresult.EstimateFeeResult{
 		FeeRate: make(map[string]uint64),
 	}
-	for chainID, feeEstimator := range self.config.FeeEstimator {
+	for shardID, feeEstimator := range self.config.FeeEstimator {
 		feeRate, err := feeEstimator.EstimateFee(numBlock)
-		result.FeeRate[strconv.Itoa(int(chainID))] = uint64(feeRate)
+		result.FeeRate[strconv.Itoa(int(shardID))] = uint64(feeRate)
 		if err != nil {
 			return -1, NewRPCError(ErrUnexpected, err)
 		}

@@ -26,7 +26,7 @@ func ConvertOutputCoinToInputCoin(usableOutputsOfOld []*privacy.OutputCoin) []*p
 // result contains
 // commitmentIndexs = [{1,2,3,4,myindex1,6,7,8}{9,10,11,12,13,myindex2,15,16}...]
 // myCommitmentIndexs = [4, 13, ...]
-func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, db database.DatabaseInterface, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, db database.DatabaseInterface, shardID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
 	commitmentIndexs = []uint64{}   // : list commitment indexes which: random from full db commitments + commitments of usableInputCoins
 	myCommitmentIndexs = []uint64{} // : list indexes of commitments(usableInputCoins) in {commitmentIndexs}
 	if randNum == 0 {
@@ -40,7 +40,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	for _, in := range usableInputCoins {
 		usableCommitment := in.CoinDetails.CoinCommitment.Compress()
 		listUsableCommitments = append(listUsableCommitments, usableCommitment)
-		index, _ := db.GetCommitmentIndex(usableCommitment, chainID)
+		index, _ := db.GetCommitmentIndex(usableCommitment, shardID)
 		mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(usableCommitment, byte(0x00))] = index
 	}
 
@@ -48,11 +48,11 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	cpRandNum := (len(listUsableCommitments) * randNum) - len(listUsableCommitments)
 	for i := 0; i < cpRandNum; i++ {
 		for true {
-			lenCommitment, _ := db.GetCommitmentLength(chainID)
+			lenCommitment, _ := db.GetCommitmentLength(shardID)
 			index, _ := common.RandBigIntN(lenCommitment)
-			ok, err := db.HasCommitmentIndex(index.Uint64(), chainID)
+			ok, err := db.HasCommitmentIndex(index.Uint64(), shardID)
 			if ok && err == nil {
-				temp, _ := db.GetCommitmentByIndex(index.Uint64(), chainID)
+				temp, _ := db.GetCommitmentByIndex(index.Uint64(), shardID)
 				if index2, err := common.SliceBytesExists(listUsableCommitments, temp); index2 == -1 && err == nil {
 					// random commitment not in commitments of usableinputcoin
 					commitmentIndexs = append(commitmentIndexs, index.Uint64())
@@ -76,8 +76,8 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 }
 
 // CheckSNDerivatorExistence return true if snd exists in snDerivators list
-func CheckSNDerivatorExistence(snd *big.Int, chainID byte, db database.DatabaseInterface) (bool, error) {
-	ok, err := db.HasSNDerivator(*snd, chainID)
+func CheckSNDerivatorExistence(snd *big.Int, shardID byte, db database.DatabaseInterface) (bool, error) {
+	ok, err := db.HasSNDerivator(*snd, shardID)
 	if err != nil {
 		return false, err
 	}

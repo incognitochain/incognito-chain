@@ -62,11 +62,11 @@ func (tx *Tx) Init(
 	}
 
 	tx.Type = common.TxNormalType
-	chainID := byte(14)
+	shardID := byte(14)
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
-	commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, 8, db, chainID)
+	commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, 8, db, shardID)
 
 	// Print list of all input coins
 	fmt.Printf("List of all input coins before building tx:\n")
@@ -134,7 +134,7 @@ func (tx *Tx) Init(
 		for i := 0; i < len(paymentInfo); i++ {
 			sndOut = privacy.RandInt()
 			for true {
-				ok1, err := CheckSNDerivatorExistence(sndOut, chainID, db)
+				ok1, err := CheckSNDerivatorExistence(sndOut, shardID, db)
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -181,7 +181,7 @@ func (tx *Tx) Init(
 	commitmentProving := make([]*privacy.EllipticPoint, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
 		commitmentProving[i] = new(privacy.EllipticPoint)
-		temp, _ := db.GetCommitmentByIndex(cmIndex, chainID)
+		temp, _ := db.GetCommitmentByIndex(cmIndex, shardID)
 		commitmentProving[i], _ = privacy.DecompressKey(temp)
 	}
 
@@ -355,7 +355,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 // - Verify tx signature
 // - Verify the payment proof
 // - Check double spending
-func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte) bool {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte) bool {
 	// Verify tx signature
 	var valid bool
 	var err error
@@ -369,7 +369,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 	for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 		// Check output coins' SND is not exists in SND list (Database)
-		if ok, err := CheckSNDerivatorExistence(tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, chainId, db); ok || err != nil {
+		if ok, err := CheckSNDerivatorExistence(tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, shardID, db); ok || err != nil {
 			return false
 		}
 	}
@@ -377,7 +377,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	if !hasPrivacy {
 		// Check input coins' cm is exists in cm list (Database)
 		for i := 0; i < len(tx.Proof.InputCoins); i++ {
-			ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, chainId)
+			ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, shardID)
 			if !ok || err != nil {
 				return false
 			}
@@ -385,7 +385,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	}
 
 	// Verify the payment proof
-	valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db, chainId)
+	valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db, shardID)
 	if valid == false {
 		fmt.Printf("Error verifying the payment proof")
 		return false
@@ -455,8 +455,8 @@ func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
 }
 
 // CheckCMExistence returns true if cm exists in cm list
-func (tx Tx) CheckCMExistence(cm []byte, db database.DatabaseInterface, chainID byte) (bool, error) {
-	ok, err := db.HasCommitment(cm, chainID)
+func (tx Tx) CheckCMExistence(cm []byte, db database.DatabaseInterface, shardID byte) (bool, error) {
+	ok, err := db.HasCommitment(cm, shardID)
 	return ok, err
 }
 
@@ -539,12 +539,12 @@ func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 // ValidateDoubleSpend - check double spend for any transaction type
 func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
 	bcr metadata.BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) error {
 	for i := 0; i < len(tx.Proof.InputCoins); i++ {
 		serialNumber := tx.Proof.InputCoins[i].CoinDetails.SerialNumber.Compress()
-		ok, err := db.HasSerialNumber(serialNumber, chainID)
+		ok, err := db.HasSerialNumber(serialNumber, shardID)
 		if ok || err != nil {
 			return errors.New("Double spend")
 		}
@@ -554,14 +554,14 @@ func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
 
 func (tx *Tx) ValidateTxWithBlockChain(
 	bcr metadata.BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) error {
 	if tx.GetType() == common.TxSalaryType {
 		return nil
 	}
 	if tx.Metadata != nil {
-		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, chainID, db)
+		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, shardID, db)
 		if err != nil {
 			return err
 		}
@@ -569,7 +569,7 @@ func (tx *Tx) ValidateTxWithBlockChain(
 			return nil
 		}
 	}
-	return tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
+	return tx.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
 }
 
 func (tx *Tx) validateNormalTxSanityData() (bool, error) {
@@ -604,9 +604,9 @@ func (tx *Tx) ValidateTxByItself(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 ) bool {
-	ok := tx.ValidateTransaction(hasPrivacy, db, chainID)
+	ok := tx.ValidateTransaction(hasPrivacy, db, shardID)
 	if !ok {
 		return false
 	}

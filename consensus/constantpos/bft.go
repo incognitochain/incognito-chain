@@ -14,13 +14,23 @@ type BlockGenFn func() *blockchain.BlockV2
 
 type BFTProtocol struct {
 	sync.Mutex
-	Phase      string
-	cQuit      chan struct{}
-	cTimeout   chan struct{}
-	cBFTMsg    chan wire.Message
-	BlockGenFn BlockGenFn
-	Server     serverInterface
-	started    bool
+	Phase        string
+	cQuit        chan struct{}
+	cTimeout     chan struct{}
+	cBFTMsg      chan wire.Message
+	BlockGenFn   BlockGenFn
+	Server       serverInterface
+	PendingBlock struct {
+		Block *blockchain.BlockV2
+		Sigs  map[string]blockFinalSig
+	}
+
+	started bool
+}
+
+type blockFinalSig struct {
+	Count         int
+	ValidatorsIdx []int
 }
 
 func (self *BFTProtocol) Start() error {
@@ -51,34 +61,47 @@ func (self *BFTProtocol) Start() error {
 						if msgPropose.MessageType() == wire.CmdBFTPropose {
 							fmt.Println(msgPropose)
 						}
+						self.Phase = "prepare"
 					case <-self.cTimeout:
 					}
 				case "prepare":
 					time.AfterFunc(PrepareTimeout*time.Second, func() {
 						close(self.cTimeout)
 					})
-					select {
-					case msgPrepare := <-self.cBFTMsg:
-						fmt.Println(msgPrepare)
-					case <-self.cTimeout:
+
+					for {
+						select {
+						case msgPrepare := <-self.cBFTMsg:
+							fmt.Println(msgPrepare)
+						case <-self.cTimeout:
+							break
+						}
 					}
+					self.Phase = "commit"
 				case "commit":
 					time.AfterFunc(CommitTimeout*time.Second, func() {
 						close(self.cTimeout)
 					})
-					select {
-					case msgCommit := <-self.cBFTMsg:
-						fmt.Println(msgCommit)
-					case <-self.cTimeout:
+					for {
+						select {
+						case msgCommit := <-self.cBFTMsg:
+							fmt.Println(msgCommit)
+						case <-self.cTimeout:
+							break
+						}
 					}
+
+					self.Phase = "reply"
 				case "reply":
 					time.AfterFunc(ReplyTimeout*time.Second, func() {
 						close(self.cTimeout)
 					})
-					select {
-					case msgReply := <-self.cBFTMsg:
-						fmt.Println(msgReply)
-					case <-self.cTimeout:
+					for {
+						select {
+						case msgReply := <-self.cBFTMsg:
+							fmt.Println(msgReply)
+						case <-self.cTimeout:
+						}
 					}
 				}
 			}

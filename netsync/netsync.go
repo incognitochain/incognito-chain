@@ -24,7 +24,7 @@ type NetSync struct {
 
 type NetSyncConfig struct {
 	BlockChain *blockchain.BlockChain
-	ChainParam *blockchain.Params
+	ChainParam *blockchain.ParamsNew
 	MemTxPool  *mempool.TxPool
 	Server     interface {
 		// list functions callback which are assigned from Server struct
@@ -254,18 +254,18 @@ func (self *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done chan s
 func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	Logger.log.Info("Handling new message - " + wire.CmdGetBlocks)
 	// blockHash, _ := common.Hash{}.NewHashFromStr(msg.LastBlockHash)
-	// senderBlockHeaderIndex, chainID, err := self.config.BlockChain.GetBlockHeightByBlockHash(blockHash)
+	// senderBlockHeaderIndex, shardID, err := self.config.BlockChain.GetBlockHeightByBlockHash(blockHash)
 	// if err == nil {
-	// 	bestHashStr := self.config.BlockChain.BestState[chainID].BestBlockHash.String()
+	// 	bestHashStr := self.config.BlockChain.BestState[shardID].BestBlockHash.String()
 	// 	Logger.log.Infof("Blockhash from message %s", blockHash.String())
-	// 	Logger.log.Infof("Blockhash of bestChain in chainID %d - %s", chainID, bestHashStr)
+	// 	Logger.log.Infof("Blockhash of bestChain in shardID %d - %s", shardID, bestHashStr)
 	// 	Logger.log.Info("index of block %d \n", senderBlockHeaderIndex)
-	// 	Logger.log.Info("chainId of block %d \n", chainID)
+	// 	Logger.log.Info("shardID of block %d \n", shardID)
 	// 	if bestHashStr != blockHash.String() {
 	// 		// Send Blocks back to requestor
-	// 		chainBlocks, _ := self.config.BlockChain.GetChainBlocks(chainID)
+	// 		chainBlocks, _ := self.config.BlockChain.GetShardBlocks(shardID)
 	// 		for index := int(senderBlockHeaderIndex) + 1; index <= len(chainBlocks); index++ {
-	// 			block, _ := self.config.BlockChain.GetBlockByBlockHeight(int32(index), chainID)
+	// 			block, _ := self.config.BlockChain.GetShardBlockByHeight(int32(index), shardID)
 	// 			Logger.log.Info("Send block %s \n", block.Hash().String())
 
 	// 			blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
@@ -290,7 +290,7 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	// } else {
 	// 	Logger.log.Error(blockHash.String(), "----------")
 	// 	Logger.log.Error(self.config.BlockChain.BestState[9].BestBlockHash.String())
-	// 	chainBlocks, err2 := self.config.BlockChain.GetChainBlocks(9)
+	// 	chainBlocks, err2 := self.config.BlockChain.GetShardBlocks(9)
 	// 	if err2 != nil {
 	// 		Logger.log.Error(err2)
 	// 	}
@@ -329,7 +329,7 @@ func (self *NetSync) HandleMessageBFTReply(msg *wire.MessageBFTReply) {
 
 // func (self *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
 // 	Logger.log.Info("Handling new message invalidblock")
-// 	self.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.ChainID, msg.Reason)
+// 	self.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.shardID, msg.Reason)
 // }
 
 func (self *NetSync) HandleMessageGetChainState(msg *wire.MessageGetChainState) {

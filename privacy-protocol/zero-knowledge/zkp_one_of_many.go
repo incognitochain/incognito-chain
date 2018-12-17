@@ -454,7 +454,7 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	return proof, nil
 }
 
-func (pro *PKOneOfManyProof) Verify(db database.DatabaseInterface, chainId byte) bool {
+func (pro *PKOneOfManyProof) Verify(db database.DatabaseInterface, shardID byte) bool {
 	N := len(pro.commitmentIndexs)
 	// Calculate n
 	//temp := 1
@@ -472,7 +472,7 @@ func (pro *PKOneOfManyProof) Verify(db database.DatabaseInterface, chainId byte)
 	// get commitments list from commitmentIndexs
 	commitments := make([]*privacy.EllipticPoint, N)
 	for i := 0; i < N; i++{
-		commitmentBytes, err := db.GetCommitmentByIndex(pro.commitmentIndexs[i], chainId)
+		commitmentBytes, err := db.GetCommitmentByIndex(pro.commitmentIndexs[i], shardID)
 		if err != nil{
 			fmt.Printf("Error when verify: %v\n", err)
 			return false

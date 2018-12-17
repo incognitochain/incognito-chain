@@ -19,7 +19,7 @@ type hasher interface {
 }
 
 var (
-	chainIDPrefix             = []byte("c")
+	shardIDPrefix             = []byte("c")
 	blockKeyPrefix            = []byte("b-")
 	blockHeaderKeyPrefix      = []byte("bh-")
 	blockKeyIdxPrefix         = []byte("i-")

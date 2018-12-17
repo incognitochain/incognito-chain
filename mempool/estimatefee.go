@@ -70,11 +70,11 @@ type observedTransaction struct {
 	feeRate CoinPerKilobyte
 
 	// The block height when it was observed.
-	observed int32
+	observed uint64
 
 	// The height of the block in which it was mined.
 	// If the transaction has not yet been mined, it is zero.
-	mined int32
+	mined uint64
 }
 
 func (o *observedTransaction) Serialize(w io.Writer) {
@@ -133,7 +133,7 @@ type FeeEstimator struct {
 	minRegisteredBlocks uint32
 
 	// The last known height.
-	lastKnownHeight int32
+	lastKnownHeight uint64
 
 	// The number of blocks that have been registered.
 	numBlocksRegistered uint32
@@ -189,14 +189,14 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 }
 
 // RegisterBlock informs the fee estimator of a new block to take into account.
-func (ef *FeeEstimator) RegisterBlock(block *blockchain.Block) error {
+func (ef *FeeEstimator) RegisterBlock(block *blockchain.BlockV2) error {
 	ef.mtx.Lock()
 	defer ef.mtx.Unlock()
 
 	// The previous sorted list is invalid, so delete it.
 	ef.cached = nil
 
-	height := block.Header.Height
+	height := block.Header.(*blockchain.BlockHeaderShard).Height
 	if height != ef.lastKnownHeight+1 && ef.lastKnownHeight != UnminedHeight {
 		return fmt.Errorf("intermediate block not recorded; current height is %d; new height is %d",
 			ef.lastKnownHeight, height)
@@ -208,7 +208,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.Block) error {
 
 	// Randomly order txs in block.
 	transactions := make(map[*transaction.Tx]struct{})
-	for _, t := range block.Transactions {
+	for _, t := range block.Body.(*blockchain.BlockBodyShard).Transactions {
 		switch t.GetType() {
 		case common.TxNormalType, common.TxSalaryType:
 			{
@@ -301,7 +301,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.Block) error {
 }
 
 // LastKnownHeight returns the height of the last block which was registered.
-func (ef *FeeEstimator) LastKnownHeight() int32 {
+func (ef *FeeEstimator) LastKnownHeight() uint64 {
 	ef.mtx.Lock()
 	defer ef.mtx.Unlock()
 

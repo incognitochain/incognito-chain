@@ -127,6 +127,19 @@ func (self Merkle) hashMerkleBranches(left *common.Hash, right *common.Hash) *co
 	return &newHash
 }
 
+func CalcMerkleRoot(txns []metadata.Transaction) common.Hash {
+	if len(txns) == 0 {
+		return common.Hash{}
+	}
+
+	utilTxns := make([]metadata.Transaction, 0, len(txns))
+	for _, tx := range txns {
+		utilTxns = append(utilTxns, tx)
+	}
+	merkles := Merkle{}.BuildMerkleTreeStore(utilTxns)
+	return *merkles[len(merkles)-1]
+}
+
 /*
 // UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
 */

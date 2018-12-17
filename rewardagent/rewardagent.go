@@ -28,13 +28,14 @@ func (self RewardAgent) Init(cfg *RewardAgentConfig) (*RewardAgent, error) {
 	return &self, nil
 }
 
-
-func (self *RewardAgent) GetBasicSalary(chainID byte) uint64 {
-	return self.config.BlockChain.BestState[chainID].BestBlock.Header.GOVConstitution.GOVParams.BasicSalary
+func (self *RewardAgent) GetBasicSalary() uint64 {
+	// return self.config.BlockChain.BestState.Beacon.BestBlock.Header.(*blockchain.BlockHeaderBeacon).GOVConstitution.GOVParams.BasicSalary
+	return 1
 }
 
-func (self *RewardAgent) GetSalaryPerTx(chainID byte) uint64 {
-	return self.config.BlockChain.BestState[chainID].BestBlock.Header.GOVConstitution.GOVParams.SalaryPerTx
+func (self *RewardAgent) GetSalaryPerTx(shardID byte) uint64 {
+	// return self.config.BlockChain.BestState.Beacon.BestBlock.Header.(*blockchain.BlockHeaderBeacon).GOVConstitution.GOVParams.SalaryPerTx
+	return 1
 }
 
 // func getMedians(agentDataPoints []*blockchain.AgentDataPoint) (

@@ -13,7 +13,7 @@ const (
 type MessageSwapUpdate struct {
 	LockTime   int64
 	Requester  string
-	ChainID    byte
+	shardID    byte
 	Candidate  string
 	Signatures map[string]string
 }

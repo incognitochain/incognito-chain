@@ -149,18 +149,18 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		Logger.log.Info("Load chain dependencies from DB")
 		self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 		for _, bestState := range self.blockChain.BestState {
-			chainID := bestState.BestBlock.Header.ChainID
-			feeEstimatorData, err := self.dataBase.GetFeeEstimator(chainID)
+			shardID := bestState.BestBlock.Header.shardID
+			feeEstimatorData, err := self.dataBase.GetFeeEstimator(shardID)
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 				if err != nil {
 					Logger.log.Errorf("Failed to restore fee estimator %v", err)
 					Logger.log.Info("Init NewFeeEstimator")
-					self.feeEstimator[chainID] = mempool.NewFeeEstimator(
+					self.feeEstimator[shardID] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
 						mempool.DefaultEstimateFeeMinRegisteredBlocks)
 				} else {
-					self.feeEstimator[chainID] = feeEstimator
+					self.feeEstimator[shardID] = feeEstimator
 				}
 			}
 		}
@@ -378,14 +378,14 @@ func (self *Server) Stop() error {
 	}
 
 	// Save fee estimator in the db
-	// for chainId, feeEstimator := range self.feeEstimator {
+	// for shardID, feeEstimator := range self.feeEstimator {
 	// 	feeEstimatorData := feeEstimator.Save()
 	// 	if len(feeEstimatorData) > 0 {
-	// 		err := self.dataBase.StoreFeeEstimator(feeEstimatorData, chainId)
+	// 		err := self.dataBase.StoreFeeEstimator(feeEstimatorData, shardID)
 	// 		if err != nil {
-	// 			Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", chainId, err)
+	// 			Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", shardID, err)
 	// 		} else {
-	// 			Logger.log.Infof("Save fee estimator data on chain #%d", chainId)
+	// 			Logger.log.Infof("Save fee estimator data on chain #%d", shardID)
 	// 		}
 	// 	}
 	// }

@@ -246,7 +246,7 @@ func GetTxSenderChain(senderLastByte byte) (byte, error) {
 			return byte((modResult - index) / 5), nil
 		}
 	}
-	return 0, errors.New("can't get sender's chainID")
+	return 0, errors.New("can't get sender's shardID")
 }
 
 func IntArrayEquals(a []int, b []int) bool {

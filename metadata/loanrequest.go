@@ -32,7 +32,7 @@ func NewLoanRequest(data map[string]interface{}) *LoanRequest {
 		Params: params.LoanParams{
 			InterestRate:     uint64(loanParams["InterestRate"].(float64)),
 			LiquidationStart: uint64(loanParams["LiquidationStart"].(float64)),
-			Maturity:         uint32(loanParams["Maturity"].(float64)),
+			Maturity:         uint64(loanParams["Maturity"].(float64)),
 		},
 		CollateralType: data["CollateralType"].(string),
 		LoanAmount:     uint64(data["LoanAmount"].(float64)),
@@ -75,7 +75,7 @@ func (lr *LoanRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (lr *LoanRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if loan's params are correct
 	dcbParams := bcr.GetDCBParams()
 	validLoanParams := dcbParams.LoanParams

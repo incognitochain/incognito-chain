@@ -1,11 +1,7 @@
 package constantpos
 
 import (
-	"time"
-
 	"github.com/ninjadotorg/constant/blockchain"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/wire"
 )
 
@@ -26,7 +22,7 @@ func (self *Engine) sendBlockMsg(block *blockchain.BlockV2) {
 // 		invalidBlockMsg := &wire.MessageInvalidBlock{
 // 			Reason:    err.Error(),
 // 			BlockHash: block.Hash().String(),
-// 			ChainID:   block.Header.ChainID,
+// 			shardID:   block.Header.shardID,
 // 			Validator: base58.Base58Check{}.Encode(self.config.UserKeySet.PaymentAddress.Pk, byte(0x00)),
 // 		}
 // 		dataByte, _ := invalidBlockMsg.JsonSerialize()
@@ -67,7 +63,7 @@ func (self *Engine) sendBlockMsg(block *blockchain.BlockV2) {
 // }
 
 func (self *Engine) OnBlockReceived(block *blockchain.BlockV2) {
-	// if self.config.BlockChain.BestState[block.Header.ChainID].Height < block.Header.Height {
+	// if self.config.BlockChain.BestState[block.Header.shardID].Height < block.Header.Height {
 	// 	exists, err := self.config.BlockChain.BlockExists(block.Hash())
 	// 	if err != nil {
 	// 		Logger.log.Error(err)
@@ -105,9 +101,9 @@ func (self *Engine) OnBFTReply(msg *wire.MessageBFTReply) {
 
 }
 
-func (self *Engine) OnInvalidBlockReceived(blockHash string, chainID byte, reason string) {
+func (self *Engine) OnInvalidBlockReceived(blockHash string, shardID byte, reason string) {
 	// leave empty for now
-	Logger.log.Error(blockHash, chainID, reason)
+	Logger.log.Error(blockHash, shardID, reason)
 	return
 }
 
@@ -173,7 +169,7 @@ func (self *Engine) OnGetBeaconState(msg *wire.MessageChainState) {
 // 		return
 // 	}
 
-// 	// rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.Requester, msg.ChainID, msg.Candidate)
+// 	// rawBytes := self.getRawBytesForSwap(msg.LockTime, msg.Requester, msg.shardID, msg.Candidate)
 // 	// // TODO check requester signature
 // 	// err := cashec.ValidateDataB58(msg.RequesterPbk, msg.RequesterSig, rawBytes)
 // 	// if err != nil {
@@ -203,7 +199,7 @@ func (self *Engine) OnGetBeaconState(msg *wire.MessageChainState) {
 // 	}
 // 	// messageSigMsg.(*wire.MessageSwapSig).LockTime = msg.LockTime
 // 	// messageSigMsg.(*wire.MessageSwapSig).RequesterPbk = msg.RequesterPbk
-// 	// messageSigMsg.(*wire.MessageSwapSig).ChainID = msg.ChainID
+// 	// messageSigMsg.(*wire.MessageSwapSig).shardID = msg.shardID
 // 	// messageSigMsg.(*wire.MessageSwapSig).ProducerPbk = msg.ProducerPbk
 // 	messageSigMsg.(*wire.MessageSwapSig).Validator = base58.Base58Check{}.Encode(self.config.UserKeySet.PaymentAddress.Pk, byte(0x00))
 // 	messageSigMsg.(*wire.MessageSwapSig).SwapSig = sig
@@ -228,40 +224,40 @@ func (self *Engine) OnGetBeaconState(msg *wire.MessageChainState) {
 // }
 
 func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
-	Logger.log.Info("Received a MessageSwapUpdate")
+	// Logger.log.Info("Received a MessageSwapUpdate")
 
-	if msg.LockTime > time.Now().Unix() {
-		return
-	}
+	// if msg.LockTime > time.Now().Unix() {
+	// 	return
+	// }
 
-	committee := self.Committee().GetCommittee()
+	// committee := self.Committee().GetCommittee()
 
-	if common.IndexOfStr(msg.Candidate, committee) >= 0 {
-		Logger.log.Error("ERROR OnSwapUpdate is existed committee")
-		return
-	}
+	// if common.IndexOfStr(msg.Candidate, committee) >= 0 {
+	// 	Logger.log.Error("ERROR OnSwapUpdate is existed committee")
+	// 	return
+	// }
 
-	//verify signatures
-	rawBytes := getRawBytesForSwap(msg.LockTime, msg.Requester, msg.ChainID, msg.Candidate)
-	cLeader := 0
-	for leaderPbk, leaderSig := range msg.Signatures {
-		if common.IndexOfStr(leaderPbk, committee) >= 0 {
-			err := cashec.ValidateDataB58(leaderPbk, leaderSig, rawBytes)
-			if err != nil {
-				Logger.log.Error("ERROR OnSwapUpdate", leaderPbk, err)
-				continue
-			}
-		} else {
-			continue
-		}
-		cLeader++
-	}
-	if cLeader < common.TotalValidators/2 {
-		Logger.log.Error("ERROR OnSwapUpdate not enough signatures")
-		return
-	}
-	//TODO update committee list
-	self.Committee().UpdateCommittee(msg.Candidate, msg.ChainID)
+	// //verify signatures
+	// rawBytes := getRawBytesForSwap(msg.LockTime, msg.Requester, msg.shardID, msg.Candidate)
+	// cLeader := 0
+	// for leaderPbk, leaderSig := range msg.Signatures {
+	// 	if common.IndexOfStr(leaderPbk, committee) >= 0 {
+	// 		err := cashec.ValidateDataB58(leaderPbk, leaderSig, rawBytes)
+	// 		if err != nil {
+	// 			Logger.log.Error("ERROR OnSwapUpdate", leaderPbk, err)
+	// 			continue
+	// 		}
+	// 	} else {
+	// 		continue
+	// 	}
+	// 	cLeader++
+	// }
+	// if cLeader < common.TotalValidators/2 {
+	// 	Logger.log.Error("ERROR OnSwapUpdate not enough signatures")
+	// 	return
+	// }
+	// //TODO update committee list
+	// self.Committee().UpdateCommittee(msg.Candidate, msg.shardID)
 
-	return
+	// return
 }

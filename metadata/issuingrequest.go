@@ -37,14 +37,14 @@ func NewIssuingRequest(
 func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
 	if iReq.AssetType == common.DCBTokenID {
 		return false, nil
 	}
 	// check double spending on fee tx
-	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
+	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
 	if err != nil {
 		return false, err
 	}

@@ -32,12 +32,12 @@ func (self *CommitteeStruct) CheckCandidate(candidate string) error {
 	return nil
 }
 
-func (self *CommitteeStruct) CheckCommittee(committee []string, blockHeight int, chainID byte) bool {
+func (self *CommitteeStruct) CheckCommittee(committee []string, blockHeight int, shardID byte) bool {
 
 	return true
 }
 
-func (self *CommitteeStruct) getChainIdByPbk(pbk string) byte {
+func (self *CommitteeStruct) getshardIDByPbk(pbk string) byte {
 	committee := self.GetCommittee()
 	return byte(common.IndexOfStr(pbk, committee))
 }
@@ -73,9 +73,9 @@ func (self *CommitteeStruct) UpdateCommittee(producerPbk string, chanId byte) er
 	currentCommittee = append(currentCommittee, committee[chanId+1:]...)
 	self.CurrentCommittee = currentCommittee
 	//remove producerPbk from candidate list
-	// for chainId, bestState := range self.config.BlockChain.BestState {
+	// for shardID, bestState := range self.config.BlockChain.BestState {
 	// 	bestState.RemoveCandidate(producerPbk)
-	// 	self.config.BlockChain.StoreBestState(byte(chainId))
+	// 	self.config.BlockChain.StoreBestState(byte(shardID))
 	// }
 
 	return nil
@@ -122,13 +122,13 @@ func (self *CommitteeStruct) StopCommitteeWatcher() {
 	}
 }
 
-func getRawBytesForSwap(lockTime int64, requesterPbk string, chainId byte, producerPbk string) []byte {
+func getRawBytesForSwap(lockTime int64, requesterPbk string, shardID byte, producerPbk string) []byte {
 	rawBytes := []byte{}
 	bTime := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bTime, uint64(lockTime))
 	rawBytes = append(rawBytes, bTime...)
 	rawBytes = append(rawBytes, []byte(requesterPbk)...)
-	rawBytes = append(rawBytes, chainId)
+	rawBytes = append(rawBytes, shardID)
 	rawBytes = append(rawBytes, []byte(producerPbk)...)
 	return rawBytes
 }

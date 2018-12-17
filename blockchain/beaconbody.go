@@ -6,12 +6,12 @@ import (
 	"github.com/ninjadotorg/constant/common"
 )
 
-type BeaconBlockBody struct {
+type BlockBodyBeacon struct {
 	ShardState   [][]common.Hash
 	Instructions [][]string
 }
 
-func (self *BeaconBlockBody) toString() string {
+func (self *BlockBodyBeacon) toString() string {
 	res := ""
 
 	for _, l := range self.ShardState {
@@ -29,12 +29,12 @@ func (self *BeaconBlockBody) toString() string {
 	return res
 }
 
-func (self *BeaconBlockBody) Hash() common.Hash {
+func (self *BlockBodyBeacon) Hash() common.Hash {
 	return common.DoubleHashH([]byte(self.toString()))
 }
 
-func (self *BeaconBlockBody) UnmarshalJSON(data []byte) error {
-	blkBody := &BeaconBlockBody{}
+func (self *BlockBodyBeacon) UnmarshalJSON(data []byte) error {
+	blkBody := &BlockBodyBeacon{}
 
 	err := json.Unmarshal(data, blkBody)
 	if err != nil {

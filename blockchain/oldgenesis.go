@@ -2,15 +2,11 @@ package blockchain
 
 import (
 	"log"
-	"time"
 
-	"github.com/ninjadotorg/constant/blockchain/params"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
-	"github.com/ninjadotorg/constant/voting"
-	"github.com/ninjadotorg/constant/wallet"
 )
 
 type GenesisBlockGenerator struct {
@@ -280,123 +276,123 @@ func createSpecialTokenTx(
 	return result
 }
 
-func (self GenesisBlockGenerator) CreateGenesisBlock(
-	version int,
-	preSelectValidators []string,
-	icoParams IcoParams,
-	salaryPerTx uint64,
-	basicSalary uint64,
-) *Block {
-	//init the loc
-	loc, _ := time.LoadLocation("America/New_York")
-	time := time.Date(2018, 8, 1, 0, 0, 0, 0, loc)
-	genesisBlock := Block{
-		Transactions: []metadata.Transaction{},
-	}
-	genesisBlock.Header = BlockHeader{}
+// func (self GenesisBlockGenerator) CreateGenesisBlock(
+// 	version int,
+// 	preSelectValidators []string,
+// 	icoParams IcoParams,
+// 	salaryPerTx uint64,
+// 	basicSalary uint64,
+// ) *Block {
+// 	//init the loc
+// 	loc, _ := time.LoadLocation("America/New_York")
+// 	time := time.Date(2018, 8, 1, 0, 0, 0, 0, loc)
+// 	genesisBlock := Block{
+// 		Transactions: []metadata.Transaction{},
+// 	}
+// 	genesisBlock.Header = BlockHeader{}
 
-	// update default genesis block
-	genesisBlock.Header.Timestamp = time.Unix()
-	genesisBlock.Header.Version = version
-	genesisBlock.Header.Committee = make([]string, len(preSelectValidators))
+// 	// update default genesis block
+// 	genesisBlock.Header.Timestamp = time.Unix()
+// 	genesisBlock.Header.Version = version
+// 	genesisBlock.Header.Committee = make([]string, len(preSelectValidators))
 
-	// Gov param
-	genesisBlock.Header.GOVConstitution.GOVParams = params.GOVParams{
-		SalaryPerTx:  salaryPerTx,
-		BasicSalary:  basicSalary,
-		SellingBonds: &voting.SellingBonds{},
-		RefundInfo:   &voting.RefundInfo{},
-	}
-	// Decentralize central bank params
-	loanParams := []params.LoanParams{
-		params.LoanParams{
-			InterestRate:     0,
-			Maturity:         7776000, // 3 months in seconds
-			LiquidationStart: 15000,   // 150%
-		},
-	}
-	genesisBlock.Header.DCBConstitution.DCBParams = params.DCBParams{
-		LoanParams: loanParams,
-	}
+// 	// Gov param
+// 	genesisBlock.Header.GOVConstitution.GOVParams = params.GOVParams{
+// 		SalaryPerTx:  salaryPerTx,
+// 		BasicSalary:  basicSalary,
+// 		SellingBonds: &voting.SellingBonds{},
+// 		RefundInfo:   &voting.RefundInfo{},
+// 	}
+// 	// Decentralize central bank params
+// 	loanParams := []params.LoanParams{
+// 		params.LoanParams{
+// 			InterestRate:     0,
+// 			Maturity:         7776000, // 3 months in seconds
+// 			LiquidationStart: 15000,   // 150%
+// 		},
+// 	}
+// 	genesisBlock.Header.DCBConstitution.DCBParams = params.DCBParams{
+// 		LoanParams: loanParams,
+// 	}
 
-	// Commercial bank params
-	genesisBlock.Header.CBParams = CBParams{}
-	copy(genesisBlock.Header.Committee, preSelectValidators)
+// 	// Commercial bank params
+// 	genesisBlock.Header.CBParams = CBParams{}
+// 	copy(genesisBlock.Header.Committee, preSelectValidators)
 
-	genesisBlock.Header.Height = 1
-	genesisBlock.Header.SalaryFund = icoParams.InitFundSalary
+// 	genesisBlock.Header.Height = 1
+// 	genesisBlock.Header.SalaryFund = icoParams.InitFundSalary
 
-	// Get Ico payment address
-	log.Printf("Ico payment address:", icoParams.InitialPaymentAddress)
-	key, err := wallet.Base58CheckDeserialize(icoParams.InitialPaymentAddress)
-	if err != nil {
-		panic(err)
-	}
-	// Create genesis token tx for DCB
-	dcbTokenTx := createSpecialTokenTx( // DCB
-		common.Hash(common.DCBTokenID),
-		"Decentralized central bank token",
-		"DCB",
-		icoParams.InitialDCBToken,
-		key.KeySet.PaymentAddress,
-	)
-	genesisBlock.AddTransaction(&dcbTokenTx)
+// 	// Get Ico payment address
+// 	log.Printf("Ico payment address:", icoParams.InitialPaymentAddress)
+// 	key, err := wallet.Base58CheckDeserialize(icoParams.InitialPaymentAddress)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	// Create genesis token tx for DCB
+// 	dcbTokenTx := createSpecialTokenTx( // DCB
+// 		common.Hash(common.DCBTokenID),
+// 		"Decentralized central bank token",
+// 		"DCB",
+// 		icoParams.InitialDCBToken,
+// 		key.KeySet.PaymentAddress,
+// 	)
+// 	genesisBlock.AddTransaction(&dcbTokenTx)
 
-	// Create genesis token tx for GOV
-	govTokenTx := createSpecialTokenTx(
-		common.Hash(common.GOVTokenID),
-		"Government token",
-		"GOV",
-		icoParams.InitialGOVToken,
-		key.KeySet.PaymentAddress,
-	)
-	genesisBlock.AddTransaction(&govTokenTx)
+// 	// Create genesis token tx for GOV
+// 	govTokenTx := createSpecialTokenTx(
+// 		common.Hash(common.GOVTokenID),
+// 		"Government token",
+// 		"GOV",
+// 		icoParams.InitialGOVToken,
+// 		key.KeySet.PaymentAddress,
+// 	)
+// 	genesisBlock.AddTransaction(&govTokenTx)
 
-	// Create genesis token tx for CMB
-	cmbTokenTx := createSpecialTokenTx(
-		common.Hash(common.CMBTokenID),
-		"Commercial bank token",
-		"CMB",
-		icoParams.InitialCMBToken,
-		key.KeySet.PaymentAddress,
-	)
-	genesisBlock.AddTransaction(&cmbTokenTx)
+// 	// Create genesis token tx for CMB
+// 	cmbTokenTx := createSpecialTokenTx(
+// 		common.Hash(common.CMBTokenID),
+// 		"Commercial bank token",
+// 		"CMB",
+// 		icoParams.InitialCMBToken,
+// 		key.KeySet.PaymentAddress,
+// 	)
+// 	genesisBlock.AddTransaction(&cmbTokenTx)
 
-	// Create genesis token tx for BOND test
-	bondTokenTx := createSpecialTokenTx(
-		common.Hash([common.HashSize]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
-		"BondTest",
-		"BONTest",
-		icoParams.InitialBondToken,
-		key.KeySet.PaymentAddress,
-	)
-	genesisBlock.AddTransaction(&bondTokenTx)
+// 	// Create genesis token tx for BOND test
+// 	bondTokenTx := createSpecialTokenTx(
+// 		common.Hash([common.HashSize]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
+// 		"BondTest",
+// 		"BONTest",
+// 		icoParams.InitialBondToken,
+// 		key.KeySet.PaymentAddress,
+// 	)
+// 	genesisBlock.AddTransaction(&bondTokenTx)
 
-	// Create genesis vote token tx for DCB
-	VoteDCBTokenTx := createSpecialTokenTx(
-		common.Hash(common.VoteDCBTokenID),
-		"Bond",
-		"BON",
-		icoParams.InitialVoteDCBToken,
-		key.KeySet.PaymentAddress,
-	)
-	genesisBlock.AddTransaction(&VoteDCBTokenTx)
+// 	// Create genesis vote token tx for DCB
+// 	VoteDCBTokenTx := createSpecialTokenTx(
+// 		common.Hash(common.VoteDCBTokenID),
+// 		"Bond",
+// 		"BON",
+// 		icoParams.InitialVoteDCBToken,
+// 		key.KeySet.PaymentAddress,
+// 	)
+// 	genesisBlock.AddTransaction(&VoteDCBTokenTx)
 
-	// Create genesis vote token tx for GOV
-	VoteGOVTokenTx := createSpecialTokenTx(
-		common.Hash(common.VoteGOVTokenID),
-		"Bond",
-		"BON",
-		icoParams.InitialVoteGOVToken,
-		key.KeySet.PaymentAddress,
-	)
-	genesisBlock.AddTransaction(&VoteGOVTokenTx)
+// 	// Create genesis vote token tx for GOV
+// 	VoteGOVTokenTx := createSpecialTokenTx(
+// 		common.Hash(common.VoteGOVTokenID),
+// 		"Bond",
+// 		"BON",
+// 		icoParams.InitialVoteGOVToken,
+// 		key.KeySet.PaymentAddress,
+// 	)
+// 	genesisBlock.AddTransaction(&VoteGOVTokenTx)
 
-	// calculate merkle root tx for genesis block
-	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
+// 	// calculate merkle root tx for genesis block
+// 	genesisBlock.Header.MerkleRoot = self.CalcMerkleRoot(genesisBlock.Transactions)
 
-	// genesisBlock.Header.MerkleRootCommitments = self.calcCommitmentMerkleRoot(tx)
-	// fmt.Printf("Anchor: %x\n", genesisBlock.Header.MerkleRootCommitments[:])
+// 	// genesisBlock.Header.MerkleRootCommitments = self.calcCommitmentMerkleRoot(tx)
+// 	// fmt.Printf("Anchor: %x\n", genesisBlock.Header.MerkleRootCommitments[:])
 
-	return &genesisBlock
-}
+// 	return &genesisBlock
+// }

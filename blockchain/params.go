@@ -14,7 +14,7 @@ type ParamsNew struct {
 
 	// DefaultPort defines the default peer-to-peer port for the network.
 	DefaultPort string
-
+	ShardsNum   int //max 256 shards
 	// GenesisBlock defines the first block of the chain.
 	GenesisBlockBeacon *BlockV2
 
@@ -87,7 +87,18 @@ var TestNetParamsNew = ParamsNew{
 	Name:        TestnetName,
 	Net:         Testnet,
 	DefaultPort: TestnetDefaultPort,
-
+	ShardsNum:   3,
 	// blockChain parameters
 	GenesisBlockBeacon: BeaconBlockGenerator{}.CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey, preSelectShardNodeTestnetSerializedPubkey, icoParamsTestnetNew, 1000, 1000),
+}
+
+type IcoParams struct {
+	InitialPaymentAddress string
+	InitFundSalary        uint64
+	InitialDCBToken       uint64
+	InitialCMBToken       uint64
+	InitialGOVToken       uint64
+	InitialBondToken      uint64
+	InitialVoteDCBToken   uint64
+	InitialVoteGOVToken   uint64
 }

@@ -64,12 +64,12 @@ func CreateTxCustomTokenPrivacy(senderKey *privacy.SpendingKey,
 	usableTx map[byte][]*TxNormal,
 	commitments map[byte]([][]byte),
 	fee uint64,
-	senderChainID byte,
+	sendershardID byte,
 	tokenParams *CustomTokenParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
 ) (*TxCustomTokenPrivacy, error) {
 	// create normal txCustomToken
-	normalTx, err := CreateTx(senderKey, paymentInfo, rts, usableTx, commitments, fee, senderChainID, true)
+	normalTx, err := CreateTx(senderKey, paymentInfo, rts, usableTx, commitments, fee, sendershardID, true)
 	if err != nil {
 		return nil, err
 	}

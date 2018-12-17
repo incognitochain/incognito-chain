@@ -151,7 +151,7 @@ func buildResponseForToken(
 	tokenAmount uint64,
 	tokenID []byte,
 	rt []byte,
-	chainID byte,
+	shardID byte,
 	unspentTokenMap map[string]([]transaction.TxTokenVout),
 	saleID []byte,
 	mint bool,

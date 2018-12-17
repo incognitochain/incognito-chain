@@ -1,7 +1,10 @@
 package blockchain
 
 import (
+	"time"
+
 	"github.com/ninjadotorg/constant/common"
+	"github.com/ninjadotorg/constant/metadata"
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
@@ -9,6 +12,34 @@ type BlkTmplGeneratorNew struct {
 	txPool      TxPool
 	chain       *BlockChain
 	rewardAgent RewardAgent
+}
+
+type TxPool interface {
+	// LastUpdated returns the last time a transaction was added to or
+	// removed from the source pool.
+	LastUpdated() time.Time
+
+	// MiningDescs returns a slice of mining descriptors for all the
+	// transactions in the source pool.
+	MiningDescs() []*metadata.TxDesc
+
+	// HaveTransaction returns whether or not the passed transaction hash
+	// exists in the source pool.
+	HaveTransaction(hash *common.Hash) bool
+
+	// RemoveTx remove tx from tx resource
+	RemoveTx(tx metadata.Transaction) error
+
+	//CheckTransactionFee
+	// CheckTransactionFee(tx metadata.Transaction) (uint64, error)
+
+	// Check tx validate by it self
+	// ValidateTxByItSelf(tx metadata.Transaction) bool
+}
+
+type RewardAgent interface {
+	GetBasicSalary(shardID byte) uint64
+	GetSalaryPerTx(shardID byte) uint64
 }
 
 func (self BlkTmplGeneratorNew) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent) (*BlkTmplGenerator, error) {
@@ -54,10 +85,10 @@ func (blockgen *BlkTmplGeneratorNew) NewBlockBeacon(blockPool BlockPool, bestSta
 	return block, nil
 }
 
-func (blockgen *BlkTmplGeneratorNew) NewBlockTemplate(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, chainID byte) (*BlockV2, error) {
+func (blockgen *BlkTmplGeneratorNew) NewBlockTemplate(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*BlockV2, error) {
 
-	// 	prevBlock := blockgen.chain.BestState[chainID].BestBlock
-	// 	prevBlockHash := blockgen.chain.BestState[chainID].BestBlock.Hash()
+	// 	prevBlock := blockgen.chain.BestState[shardID].BestBlock
+	// 	prevBlockHash := blockgen.chain.BestState[shardID].BestBlock.Hash()
 	// 	sourceTxns := blockgen.txPool.MiningDescs()
 
 	// 	var txsToAdd []transaction.Transaction
@@ -70,23 +101,23 @@ func (blockgen *BlkTmplGeneratorNew) NewBlockTemplate(payToAddress *privacy.Paym
 	// 	buyBackCoins := uint64(0)
 
 	// 	// Get salary per tx
-	// 	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(chainID)
+	// 	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(shardID)
 	// 	// Get basic salary on block
-	// 	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
+	// 	basicSalary := blockgen.rewardAgent.GetBasicSalary(shardID)
 
 	// 	// Check if it is the case we need to apply a new proposal
 	// 	// 1. newNW < lastNW * 0.9
 	// 	// 2. current block height == last Constitution start time + last Constitution execute duration
-	// 	/*if blockgen.neededNewDCBConstitution(chainID) {
-	// 		tx, err := blockgen.createRequestConstitutionTxDecs(chainID, DCBConstitutionHelper{})
+	// 	/*if blockgen.neededNewDCBConstitution(shardID) {
+	// 		tx, err := blockgen.createRequestConstitutionTxDecs(shardID, DCBConstitutionHelper{})
 	// 		if err != nil {
 	// 			Logger.log.Error(err)
 	// 			return nil, err
 	// 		}
 	// 		sourceTxns = append(sourceTxns, tx)
 	// 	}
-	// 	if blockgen.neededNewGovConstitution(chainID) {
-	// 		tx, err := blockgen.createRequestConstitutionTxDecs(chainID, GOVConstitutionHelper{})
+	// 	if blockgen.neededNewGovConstitution(shardID) {
+	// 		tx, err := blockgen.createRequestConstitutionTxDecs(shardID, GOVConstitutionHelper{})
 	// 		if err != nil {
 	// 			Logger.log.Error(err)
 	// 			return nil, err
@@ -112,8 +143,8 @@ func (blockgen *BlkTmplGeneratorNew) NewBlockTemplate(payToAddress *privacy.Paym
 
 	// 	for _, txDesc := range sourceTxns {
 	// 		tx := txDesc.Tx
-	// 		txChainID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
-	// 		if txChainID != chainID {
+	// 		txshardID, _ := common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	// 		if txshardID != shardID {
 	// 			continue
 	// 		}
 	// 		// ValidateTransaction vote and propose transaction
@@ -124,7 +155,7 @@ func (blockgen *BlkTmplGeneratorNew) NewBlockTemplate(payToAddress *privacy.Paym
 	// 		}
 
 	// 		/*if tx.GetType() == common.TxBuyFromGOVRequest {
-	// 			income, soldAmt, addable := blockgen.checkBuyFromGOVReqTx(chainID, tx, bondsSold)
+	// 			income, soldAmt, addable := blockgen.checkBuyFromGOVReqTx(shardID, tx, bondsSold)
 	// 			if !addable {
 	// 				txToRemove = append(txToRemove, tx)
 	// 				continue
@@ -135,7 +166,7 @@ func (blockgen *BlkTmplGeneratorNew) NewBlockTemplate(payToAddress *privacy.Paym
 	// 		}
 
 	// 		if tx.GetType() == common.TxBuyBackRequest {
-	// 			txTokenVout, buyBackReqTxID, addable := blockgen.checkBuyBackReqTx(chainID, tx, buyBackCoins)
+	// 			txTokenVout, buyBackReqTxID, addable := blockgen.checkBuyBackReqTx(shardID, tx, buyBackCoins)
 	// 			if !addable {
 	// 				txToRemove = append(txToRemove, tx)
 	// 				continue
@@ -168,7 +199,7 @@ func (blockgen *BlkTmplGeneratorNew) NewBlockTemplate(payToAddress *privacy.Paym
 	// 	// TODO
 	// 	bankPayoutAmount := uint64(0)
 	// 	// Process dividend payout for DCB if needed
-	// 	/*bankDivTxs, bankPayoutAmount, err := blockgen.processBankDividend(rt, chainID, blockHeight)
+	// 	/*bankDivTxs, bankPayoutAmount, err := blockgen.processBankDividend(rt, shardID, blockHeight)
 	// 	if err != nil {
 	// 		return nil, err
 	// 	}
@@ -178,7 +209,7 @@ func (blockgen *BlkTmplGeneratorNew) NewBlockTemplate(payToAddress *privacy.Paym
 
 	// 	// TODO
 	// 	// Process dividend payout for GOV if needed
-	// 	/*govDivTxs, govPayoutAmount, err := blockgen.processGovDividend(rt, chainID, blockHeight)
+	// 	/*govDivTxs, govPayoutAmount, err := blockgen.processGovDividend(rt, shardID, blockHeight)
 	// 	if err != nil {
 	// 		return nil, err
 	// 	}
@@ -187,7 +218,7 @@ func (blockgen *BlkTmplGeneratorNew) NewBlockTemplate(payToAddress *privacy.Paym
 	// 	}*/
 
 	// 	// Process crowdsale for DCB
-	// 	/*dcbSaleTxs, removableTxs, err := blockgen.processCrowdsale(sourceTxns, rt, chainID)
+	// 	/*dcbSaleTxs, removableTxs, err := blockgen.processCrowdsale(sourceTxns, rt, shardID)
 	// 	if err != nil {
 	// 		return nil, err
 	// 	}
@@ -225,11 +256,11 @@ func (blockgen *BlkTmplGeneratorNew) NewBlockTemplate(payToAddress *privacy.Paym
 	// 	// )
 
 	// 	// create buy-back response txs to distribute constants to buy-back requesters
-	// 	//buyBackResTxs, err := blockgen.buildBuyBackResponsesTx(common.TxBuyBackResponse, txTokenVouts, chainID)
+	// 	//buyBackResTxs, err := blockgen.buildBuyBackResponsesTx(common.TxBuyBackResponse, txTokenVouts, shardID)
 	// 	currentSalaryFund := prevBlock.Header.SalaryFund
 	// 	// create refund txs
 	// 	//remainingFund := currentSalaryFund + totalFee + salaryFundAdd + incomeFromBonds - (totalSalary + buyBackCoins)
-	// 	//refundTxs, totalRefundAmt := blockgen.buildRefundTxs(chainID, remainingFund)
+	// 	//refundTxs, totalRefundAmt := blockgen.buildRefundTxs(shardID, remainingFund)
 
 	// 	coinbases := []transaction.Transaction{salaryTx}
 	// 	for _, resTx := range buySellResTxs {
@@ -270,7 +301,7 @@ func (blockgen *BlkTmplGeneratorNew) NewBlockTemplate(payToAddress *privacy.Paym
 	// 		Timestamp:          time.Now().Unix(),
 	// 		BlockCommitteeSigs: make([]string, common.TotalValidators),
 	// 		Committee:          make([]string, common.TotalValidators),
-	// 		ChainID:            chainID,
+	// 		shardID:            shardID,
 	// 		SalaryFund:         currentSalaryFund + incomeFromBonds + totalFee + salaryFundAdd - totalSalary - govPayoutAmount - buyBackCoins - totalRefundAmt,
 	// 		BankFund:           prevBlock.Header.BankFund - bankPayoutAmount,
 	// 		GOVConstitution:    prevBlock.Header.GOVConstitution, // TODO: need get from gov-params tx

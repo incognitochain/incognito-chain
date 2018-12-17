@@ -43,3 +43,7 @@ func (self *BlockHeaderShard) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
+func (self *BlockHeaderShard) GetHeight() uint64 {
+	return self.Height
+}

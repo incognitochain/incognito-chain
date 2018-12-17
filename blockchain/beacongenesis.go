@@ -46,8 +46,8 @@ func (self BeaconBlockGenerator) CreateBeaconGenesisBlock(
 	inst = append(inst, []string{"set", "initialGOVToken", strconv.Itoa(int(icoParams.InitialGOVToken))})
 	inst = append(inst, []string{"set", "initialBondToken", strconv.Itoa(int(icoParams.InitialBondToken))})
 
-	body := &BeaconBlockBody{ShardState: nil, Instructions: inst}
-	header := &BeaconBlockHeader{
+	body := &BlockBodyBeacon{ShardState: nil, Instructions: inst}
+	header := &BlockHeaderBeacon{
 		BlockHeaderGeneric: BlockHeaderGeneric{
 			Timestamp: time.Unix(),
 			Height:    1,

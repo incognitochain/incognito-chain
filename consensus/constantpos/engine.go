@@ -17,7 +17,7 @@ type Engine struct {
 	// channel
 	cQuit     chan struct{}
 	cBFTMsg   chan wire.Message
-	cNewBlock chan blockchain.Block
+	cNewBlock chan blockchain.BlockV2
 
 	config EngineConfig
 	Layers struct {
@@ -30,7 +30,7 @@ type Engine struct {
 type EngineConfig struct {
 	BlockChain  *blockchain.BlockChain
 	ConnManager *connmanager.ConnManager
-	ChainParams *blockchain.Params
+	ChainParams *blockchain.ParamsNew
 	BlockGen    *blockchain.BlkTmplGenerator
 	MemPool     *mempool.TxPool
 	UserKeySet  cashec.KeySet
@@ -53,7 +53,7 @@ func (self *Engine) Stop() {
 
 }
 
-func (self *Engine) UpdateChain(block *blockchain.Block) {
+func (self *Engine) UpdateChain(block *blockchain.BlockV2) {
 	err := self.config.BlockChain.ConnectBlock(block)
 	if err != nil {
 		Logger.log.Error(err)
@@ -61,26 +61,26 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	}
 
 	// update tx pool
-	for _, tx := range block.Transactions {
+	for _, tx := range block.Body.(*blockchain.BlockBodyShard).Transactions {
 		self.config.MemPool.RemoveTx(tx)
 	}
 
 	// update candidate list
-	err = self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
-	if err != nil {
-		Logger.log.Errorf("Can not update merkle tree for block: %+v", err)
-		return
-	}
-	self.config.BlockChain.StoreBestState(block.Header.ChainID)
+	// err = self.config.BlockChain.BestState[block.Header.shardID].Update(block)
+	// if err != nil {
+	// 	Logger.log.Errorf("Can not update merkle tree for block: %+v", err)
+	// 	return
+	// }
+	// self.config.BlockChain.StoreBestState(block.Header.shardID)
 
 	// self.knownChainsHeight.Lock()
-	// if self.knownChainsHeight.Heights[block.Header.ChainID] < int(block.Header.Height) {
-	// 	self.knownChainsHeight.Heights[block.Header.ChainID] = int(block.Header.Height)
+	// if self.knownChainsHeight.Heights[block.Header.shardID] < int(block.Header.Height) {
+	// 	self.knownChainsHeight.Heights[block.Header.shardID] = int(block.Header.Height)
 	// 	self.sendBlockMsg(block)
 	// }
 	// self.knownChainsHeight.Unlock()
 	// self.validatedChainsHeight.Lock()
-	// self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Header.Height)
+	// self.validatedChainsHeight.Heights[block.Header.shardID] = int(block.Header.Height)
 	// self.validatedChainsHeight.Unlock()
 
 	// self.Committee().UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)
