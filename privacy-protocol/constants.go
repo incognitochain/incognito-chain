@@ -14,6 +14,8 @@ const (
 	CMRingSize      = 8 // 2^3
 	CMRingSizeExp   = 3
 
+	MaxExp = 64
+
 	InfoLength 										 	 = 512
 
 	// size of zero knowledge proof corresponding one input
@@ -30,10 +32,10 @@ const (
 
 
 	InputCoinsPrivacySize = 33  // serial number
-	OutputCoinsPrivacySize = 237 // PK + coin commitment + SND + Encrypted (138 bytes)
+	OutputCoinsPrivacySize = 239 // PK + coin commitment + SND + Encrypted (138 bytes) + 2 bytes saving size
 
-	InputCoinsNoPrivacySize = 171
-	OutputCoinsNoPrivacySize = 138 // except serial number
+	//InputCoinsNoPrivacySize = 171
+	//OutputCoinsNoPrivacySize = 138 // except serial number
 
 
 	BigIntSize     									= 32

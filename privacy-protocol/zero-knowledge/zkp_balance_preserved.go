@@ -595,3 +595,5 @@ func (pro *PKComMultiRangeProof) Verify() bool {
 	}
 	return true
 }
+
+

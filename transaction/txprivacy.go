@@ -436,7 +436,7 @@ func (tx *Tx) GetTxFee() uint64 {
 	return tx.Fee
 }
 
-// GetTxActualSize computes the actual size of a given transaction in kilobytes
+// GetTxActualSize computes the actual size of a given transaction in kilobyte
 func (tx *Tx) GetTxActualSize() uint64 {
 	sizeVersion := uint64(1)             // int8
 	sizeType := uint64(len(tx.Type) + 1) // string

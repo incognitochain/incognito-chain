@@ -1,6 +1,9 @@
 package main
 
-import "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+import (
+	"fmt"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+)
 
 func main() {
 
@@ -57,7 +60,7 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-	zkp.TestPKOneOfMany()
+	//zkp.TestPKOneOfMany()
 
 	//zkp.TestPKComMultiRange()
 
@@ -346,4 +349,6 @@ func main() {
 	//n := "ssssssssss"
 	//fmt.Printf("Lem of n: %v\n", len(n))
 	//fmt.Printf("Lem of n: %v\n", len(n))
+
+	fmt.Println(zkp.EstimateMultiRangeProof(10))
 }
