@@ -266,15 +266,17 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		sigKey.PubKey.H.X, sigKey.PubKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
 
 		sigKey.PubKey.PK = &privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
+		fmt.Println(sigKey)
 		tmp := new(privacy.EllipticPoint)
 		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.G.X, sigKey.PubKey.G.Y, sigKey.SK.Bytes())
 		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
 		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.H.X, sigKey.PubKey.H.Y, sigKey.R.Bytes())
 		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
+		fmt.Printf("SIGN ------ PUBLICKEY: %+v\n", sigKey.PubKey.PK)
 		tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 		// signing
-		fmt.Printf(tx.Hash().String())
+		//fmt.Printf("SIGN ------ HASH TX: %+v\n", tx.Hash().String())
 		signature, err := sigKey.Sign(tx.Hash()[:])
 		if err != nil {
 			return err
@@ -311,7 +313,6 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 }
 
 func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
-	return true, nil
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, fmt.Errorf("input transaction must be an signed one!")
@@ -321,6 +322,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 	res := false
 
 	if hasPrivacy {
+
 		/****** verify Schnorr signature *****/
 		// prepare Public key for verification
 		verKey := new(privacy.SchnPubKey)
@@ -328,21 +330,22 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		if err != nil {
 			return false, err
 		}
+
 		verKey.G = new(privacy.EllipticPoint)
 		verKey.G.X, verKey.G.Y = privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y
 
 		verKey.H = new(privacy.EllipticPoint)
 		verKey.H.X, verKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
-
+		fmt.Println(verKey)
 		// convert signature from byte array to SchnorrSign
 		signature := new(privacy.SchnSignature)
 		signature.FromBytes(tx.Sig)
 
 		// verify signature
-		fmt.Printf(tx.Hash().String())
+		//fmt.Printf("VERIF ------ HASH TX: %+v\n", tx.Hash().String())
 		res = verKey.Verify(signature, tx.Hash()[:])
-		if !res {
-			fmt.Println("HIENNNNNNNNNNNNNNNNNNNNN - FAILED VERIFICATION SIGNATURE")
+		if !res{
+			fmt.Println("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
 		}
 
 	} else {
@@ -650,9 +653,6 @@ func (tx *Tx) IsPrivacy() bool {
 	}
 }
 
-func (tx *Tx) SetSigPrivKey(privKey []byte, randSK *big.Int) {
-	tx.sigPrivKey = append(privKey, randSK.Bytes()...)
-}
 
 func (tx *Tx) ValidateType() bool {
 	return tx.Type == common.TxNormalType || tx.Type == common.TxSalaryType
