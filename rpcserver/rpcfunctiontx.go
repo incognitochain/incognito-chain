@@ -129,7 +129,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 	estimateFeeCoinPerKb := uint64(arrayParams[2].(float64))
 
 	// param #4: estimation fee coin per kb by numblock
-	numBlock := uint32(arrayParams[3].(float64))
+	numBlock := uint64(arrayParams[3].(float64))
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
@@ -145,14 +145,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 	}
 
 	// check real fee(nano constant) per tx
-	var realFee uint64
-	if int64(estimateFeeCoinPerKb) == -1 {
-		temp, _ := self.config.FeeEstimator[chainIdSender].EstimateFee(numBlock)
-		estimateFeeCoinPerKb = uint64(temp)
-	}
-	estimateFeeCoinPerKb += uint64(self.config.Wallet.Config.IncrementalFee)
-	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, nil)
-	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
+	realFee := self.EstimateFee(estimateFeeCoinPerKb, candidateOutputCoins, paymentInfos, chainIdSender, numBlock)
 
 	// list unspent tx for create tx
 	totalAmmount += int64(realFee)
