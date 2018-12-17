@@ -151,7 +151,6 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 		estimateFeeCoinPerKb = int64(temp)
 	}
 	estimateFeeCoinPerKb += int64(self.config.Wallet.Config.IncrementalFee)
-	// TODO
 	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, nil)
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 
