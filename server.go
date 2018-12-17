@@ -942,6 +942,16 @@ func (self *Server) PushMessageToShard(msg wire.Message, shard byte) error {
 	return errors.New("RemotePeer of shard not found")
 }
 
+/*
+PushMessageToBeacon push msg to pbk
+*/
+func (self *Server) PushMessageToBeacon(msg wire.Message) error {
+	Logger.log.Infof("Push msg to beacon")
+	//todo
+
+	return errors.New("RemotePeer of beacon not found")
+}
+
 // handleAddPeerMsg deals with adding new peers.  It is invoked from the
 // peerHandler goroutine.
 func (self *Server) handleAddPeerMsg(peer *peer.Peer) bool {

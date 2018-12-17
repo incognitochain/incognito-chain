@@ -21,5 +21,8 @@ type serverInterface interface {
 	GetPeerIDsFromPublicKey(string) []libp2p.ID
 	PushMessageToAll(wire.Message) error
 	PushMessageToPeer(wire.Message, libp2p.ID) error
+	PushMessageToShard(wire.Message, byte) error
+	PushMessageToBeacon(wire.Message) error
+	PushMessageToPbk(wire.Message, string) error
 	PushMessageGetChainState() error
 }
