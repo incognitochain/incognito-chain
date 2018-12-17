@@ -16,13 +16,15 @@ func BuildBeaconBlock(beaconBestState *blockchain.BestStateBeacon, newShardBlock
 		Type: "beacon",
 	}
 
-	for _, blk := range newShardBlock {
+	for shardBlkIdx, blk := range newShardBlock {
 		shardID := blk.Header.(*blockchain.BlockHeaderShard).ShardID
 		newShardState := newUnsignedBeaconBlock.Body.(*blockchain.BeaconBlockBody).ShardState
 		for idx, state := range newShardState {
 			state = beaconBestState.BestBlock.Body.(*blockchain.BeaconBlockBody).ShardState[idx]
-			if byte(idx) == shardID {
-				state = append(state, newShardBlock[idx].HashFinal())
+			previousHashOfShardBlock := newShardBlock[shardBlkIdx].Header.(*blockchain.BlockHeaderShard).BlockHeaderGeneric.PrevBlockHash
+
+			if byte(idx) == shardID && state[len(state)-1] == previousHashOfShardBlock {
+				state = append(state, newShardBlock[shardBlkIdx].HashFinal())
 			}
 		}
 	}
