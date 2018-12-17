@@ -11,6 +11,13 @@ import (
 	"github.com/ninjadotorg/constant/blockchain"
 )
 
+func BuildBeaconBlock(beaconBestState *blockchain.BestStateBeacon, newShardBlock []blockchain.BlockV2) {
+	//for _, blk := range newShardBlock {
+	//shardID := blk.Header.(*blockchain.BlockHeaderShard).ShardID
+
+	//}
+}
+
 func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock *blockchain.BlockV2) (*blockchain.BestStateBeacon, error) {
 	//variable
 	// swap 3 validators each time
@@ -35,8 +42,8 @@ func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock
 		//TODO: assign unAssignCandidate to assignCandidate	& clear UnassignShardCandidate
 
 		/// Shuffle candidate for shard
-		// assign UnassignShardCandidate to ShardPendingCandidate with CurrentRandom this shard
-		err := AssignValidatorShard(beaconBestState.ShardPendingCandidate, beaconBestState.UnassignShardCandidate, beaconBestState.CurrentRandomNumber)
+		// assign UnassignShardCandidate to ShardPendingValidator with CurrentRandom this shard
+		err := AssignValidatorShard(beaconBestState.ShardPendingValidator, beaconBestState.UnassignShardCandidate, beaconBestState.CurrentRandomNumber)
 		// reset beaconBestState.UnassignShardCandidate
 		beaconBestState.UnassignShardCandidate = []string{}
 
@@ -46,7 +53,7 @@ func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock
 		// for i := 0; i < 256; i++ {
 		// 	shardID := byte(i)
 		// 	//swap validator for each shard
-		// 	beaconBestState.ShardPendingCandidate[shardID], beaconBestState.ShardCandidate[shardID], shardSwapValidator[shardID], err = SwapValidator(beaconBestState.ShardPendingCandidate[shardID], beaconBestState.ShardCandidate[shardID], offset)
+		// 	beaconBestState.ShardPendingValidator[shardID], beaconBestState.ShardValidator[shardID], shardSwapValidator[shardID], err = SwapValidator(beaconBestState.ShardPendingValidator[shardID], beaconBestState.ShardValidator[shardID], offset)
 		// 	if err != nil {
 		// 		return beaconBestState, err
 		// 	}
@@ -99,15 +106,15 @@ func UpdateBeaconBestState(beaconBestState *blockchain.BestStateBeacon, newBlock
 					return beaconBestState, nil
 				}
 				shardID := byte(temp)
-				beaconBestState.ShardPendingCandidate[shardID], err = RemoveValidator(beaconBestState.ShardPendingCandidate[shardID], inPubkeys)
+				beaconBestState.ShardPendingValidator[shardID], err = RemoveValidator(beaconBestState.ShardPendingValidator[shardID], inPubkeys)
 				if err != nil {
 					return beaconBestState, nil
 				}
-				beaconBestState.ShardCandidate[shardID], err = RemoveValidator(beaconBestState.ShardPendingCandidate[shardID], outPubkeys)
+				beaconBestState.ShardValidator[shardID], err = RemoveValidator(beaconBestState.ShardPendingValidator[shardID], outPubkeys)
 				if err != nil {
 					return beaconBestState, nil
 				}
-				beaconBestState.ShardCandidate[shardID] = append(beaconBestState.ShardCandidate[shardID], inPubkeys...)
+				beaconBestState.ShardValidator[shardID] = append(beaconBestState.ShardValidator[shardID], inPubkeys...)
 			} else if l[3] == "beacon" {
 				var err error
 				beaconBestState.BeaconPendingCandidate, err = RemoveValidator(beaconBestState.BeaconPendingCandidate, inPubkeys)
