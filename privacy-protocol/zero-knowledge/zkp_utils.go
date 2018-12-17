@@ -97,7 +97,7 @@ func EstimateMultiRangeProof(nOutput int) uint64{
 	a := privacy.MaxExp * pad(nOutput)
 	a = int(math.Log2(float64(a)))
 	sizeIPP := uint64(a * privacy.CompressedPointSize + a * privacy.CompressedPointSize + 2*privacy.BigIntSize + (a+1)*privacy.BigIntSize)
-	
+
 	sizeMaxExp := uint64(1)
 	// challenges
 	sizeCy := uint64(privacy.BigIntSize) //*big.Int

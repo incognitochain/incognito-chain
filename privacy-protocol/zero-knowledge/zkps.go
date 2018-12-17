@@ -491,6 +491,15 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	commitments []*privacy.EllipticPoint, commitmentIndexs []uint64, myCommitmentIndexs []uint64,
 	fee uint64) (err error) {
 
+	if !hasPrivacy{
+		wit.spendingKey = spendingKey
+		wit.inputCoins = inputCoins
+		wit.outputCoins = outputCoins
+		wit.commitmentIndexs = commitmentIndexs
+		wit.myCommitmentIndexs = myCommitmentIndexs
+
+	}
+
 	wit.spendingKey = spendingKey
 	wit.inputCoins = inputCoins
 	wit.outputCoins = outputCoins
