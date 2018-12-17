@@ -2,8 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"math/big"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
 func main() {
@@ -66,6 +65,8 @@ func main() {
 	//zkp.TestPKComMultiRange()
 
 	//zkp.TestOpeningsProtocol()
+
+
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -338,11 +339,16 @@ func main() {
 
 	/*----------------- TEST AddPaddingBigInt -----------------*/
 
-	num := privacy.RandBytes(30)
-	numInt := new(big.Int).SetBytes(num)
-	fmt.Printf("Num int before adding padding: %v\n", numInt.Bytes())
+	//num := privacy.RandBytes(30)
+	//numInt := new(big.Int).SetBytes(num)
+	//fmt.Printf("Num int before adding padding: %v\n", numInt.Bytes())
+	//
+	//tmp :=privacy.AddPaddingBigInt(numInt,32)
+	//fmt.Printf("Num int after adding padding: %v\n", tmp)
 
-	tmp :=privacy.AddPaddingBigInt(numInt,32)
-	fmt.Printf("Num int after adding padding: %v\n", tmp)
+	//n := "ssssssssss"
+	//fmt.Printf("Lem of n: %v\n", len(n))
+	//fmt.Printf("Lem of n: %v\n", len(n))
 
+	fmt.Println(zkp.EstimateMultiRangeProof(10))
 }

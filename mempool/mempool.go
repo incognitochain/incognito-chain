@@ -144,12 +144,12 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 
 	// check fee of tx
-	minFeePerKbTx := tp.config.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
+	minFeePerKbTx := tp.config.BlockChain.GetFeePerKbTx()
 	txFee := tx.GetTxFee()
 	ok = tx.CheckTransactionFee(minFeePerKbTx)
 	if !ok {
 		err := MempoolTxError{}
-		err.Init(RejectVersion, errors.New(fmt.Sprintf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, minFee)))
+		err.Init(RejectVersion, errors.New(fmt.Sprintf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, minFeePerKbTx)))
 		return nil, nil, err
 	}
 	// end check with policy
@@ -287,7 +287,7 @@ func (tp *TxPool) Size() uint64 {
 	tp.mtx.RLock()
 	size := uint64(0)
 	for _, tx := range tp.pool {
-		size += tx.Desc.Tx.GetTxVirtualSize()
+		size += tx.Desc.Tx.GetTxActualSize()
 	}
 	tp.mtx.RUnlock()
 

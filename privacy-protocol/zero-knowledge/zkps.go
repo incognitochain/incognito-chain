@@ -116,7 +116,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, byte(len(comInputOpeningProof)))
 		proofbytes = append(proofbytes, comInputOpeningProof...)
 	}
-	// OneOfManyProof
+	// OneOfManyProofSize
 	lenOneOfManyProofArray := len(paymentProof.OneOfManyProof)
 	proofbytes = append(proofbytes, byte(lenOneOfManyProofArray))
 	fmt.Printf("Byte - lenOneOfManyProofArray: %v\n", lenOneOfManyProofArray)
@@ -125,12 +125,12 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		oneOfManyProof := paymentProof.OneOfManyProof[i].Bytes()
 
 		fmt.Printf("Byte - lenOneOfManyProof: %v\n", len(oneOfManyProof))
-		//fmt.Printf("Byte - OneOfManyProof: %v\n", oneOfManyProof)
+		//fmt.Printf("Byte - OneOfManyProofSize: %v\n", oneOfManyProof)
 
 		proofbytes = append(proofbytes, privacy.IntToByteArr(len(oneOfManyProof))...)
 		proofbytes = append(proofbytes, oneOfManyProof...)
 	}
-	// EqualityOfCommittedValProof
+	// EqualityOfCommittedValProofSize
 	lenEqualityOfCommittedValProofArray := len(paymentProof.EqualityOfCommittedValProof)
 	proofbytes = append(proofbytes, byte(lenEqualityOfCommittedValProofArray))
 	fmt.Printf("Byte - lenEqualityOfCommittedValProofArray: %v\n", lenEqualityOfCommittedValProofArray)
@@ -143,7 +143,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, byte(len(equalityOfCommittedValProof)))
 		proofbytes = append(proofbytes, equalityOfCommittedValProof...)
 	}
-	// ProductCommitmentProof
+	// ProductCommitmentProofSize
 	proofbytes = append(proofbytes, byte(len(paymentProof.ProductCommitmentProof)))
 	fmt.Printf("Byte - lenProductCommitmentProofArray: %v\n", len(paymentProof.ProductCommitmentProof))
 	for i := 0; i < len(paymentProof.ProductCommitmentProof); i++ {
@@ -153,7 +153,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		fmt.Printf("Byte - LenEqualityOfCommittedValProof: %v\n", len(productCommitmentProof))
 
 	}
-	//ComOutputOpeningsProof
+	//ComOutputOpeningsProofSize
 	proofbytes = append(proofbytes, byte(len(paymentProof.ComOutputOpeningsProof)))
 	fmt.Printf("Byte - lenComOutputOpeningsProofArray: %v\n", len(paymentProof.ComOutputOpeningsProof))
 	for i := 0; i < len(paymentProof.ComOutputOpeningsProof); i++ {
@@ -164,7 +164,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		proofbytes = append(proofbytes, byte(len(comOutputOpeningsProof)))
 		proofbytes = append(proofbytes, comOutputOpeningsProof...)
 	}
-	// ComOutputMultiRangeProof
+	// ComOutputMultiRangeProofSize
 	if paymentProof.ComOutputMultiRangeProof != nil {
 		comOutputMultiRangeProof := paymentProof.ComOutputMultiRangeProof.Bytes()
 		fmt.Printf("Byte - LencomOutputMultiRangeProof: %v\n", len(comOutputMultiRangeProof))
@@ -284,7 +284,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		proof.ComInputOpeningsProof[i].SetBytes(proofbytes[offset : offset+lenComInputOpeningsProof])
 		offset += lenComInputOpeningsProof
 	}
-	// Set OneOfManyProof
+	// Set OneOfManyProofSize
 	lenOneOfManyProofArray := int(proofbytes[offset])
 	offset += 1
 	fmt.Printf("Set Byte - lenOneOfManyProofArray: %v\n", lenOneOfManyProofArray)
@@ -294,13 +294,13 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		lenOneOfManyProof := privacy.ByteArrToInt(proofbytes[offset : offset+2])
 		offset += 2
 		fmt.Printf("Set Byte - lenOneOfManyProof: %v\n", lenOneOfManyProof)
-		//fmt.Printf("Set Byte - OneOfManyProof: %v\n", proofbytes[offset: offset+lenOneOfManyProof])
+		//fmt.Printf("Set Byte - OneOfManyProofSize: %v\n", proofbytes[offset: offset+lenOneOfManyProof])
 
 		proof.OneOfManyProof[i] = new(PKOneOfManyProof).Init()
 		proof.OneOfManyProof[i].SetBytes(proofbytes[offset : offset+lenOneOfManyProof])
 		offset += lenOneOfManyProof
 	}
-	// Set EqualityOfCommittedValProof
+	// Set EqualityOfCommittedValProofSize
 	lenEqualityOfCommittedValProofArray := int(proofbytes[offset])
 	offset += 1
 	fmt.Printf("Set Byte - lenEqualityOfCommittedValProofArray: %v\n", lenEqualityOfCommittedValProofArray)
@@ -309,7 +309,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		lenEqualityOfCommittedValProof := int(proofbytes[offset])
 		offset += 1
 		fmt.Printf("Set Byte - lenEqualityOfCommittedValProof: %v\n", lenEqualityOfCommittedValProof)
-		//fmt.Printf("Set Byte - EqualityOfCommittedValProof: %v\n", proofbytes[offset: offset+lenEqualityOfCommittedValProof])
+		//fmt.Printf("Set Byte - EqualityOfCommittedValProofSize: %v\n", proofbytes[offset: offset+lenEqualityOfCommittedValProof])
 
 		proof.EqualityOfCommittedValProof[i] = new(PKEqualityOfCommittedValProof).Init()
 		err := proof.EqualityOfCommittedValProof[i].SetBytes(proofbytes[offset : offset+lenEqualityOfCommittedValProof])
@@ -318,7 +318,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		}
 		offset += lenEqualityOfCommittedValProof
 	}
-	// Set ProductCommitmentProof
+	// Set ProductCommitmentProofSize
 	lenProductCommitmentProofArray := int(proofbytes[offset])
 	offset += 1
 	fmt.Printf("Set Byte - lenProductCommitmentProofArray: %v\n", lenProductCommitmentProofArray)
@@ -328,12 +328,12 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		offset += 1
 
 		fmt.Printf("Set Byte - lenProductCommitmentProof: %v\n", lenProductCommitmentProof)
-		//fmt.Printf("Set Byte - ProductCommitmentProof: %v\n", proofbytes[offset: offset+lenProductCommitmentProof])
+		//fmt.Printf("Set Byte - ProductCommitmentProofSize: %v\n", proofbytes[offset: offset+lenProductCommitmentProof])
 		proof.ProductCommitmentProof[i] = new(PKComProductProof).Init()
 		proof.ProductCommitmentProof[i].SetBytes(proofbytes[offset : offset+lenProductCommitmentProof])
 		offset += lenProductCommitmentProof
 	}
-	//Set ComOutputOpeningsProof
+	//Set ComOutputOpeningsProofSize
 	lenComOutputOpeningsProofArray := int(proofbytes[offset])
 	offset += 1
 	fmt.Printf("Set Byte - lenComOutputOpeningsProofArray: %v\n", lenComOutputOpeningsProofArray)
@@ -343,18 +343,18 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		offset += 1
 
 		fmt.Printf("Set Byte - lenComOutputOpeningsProof: %v\n", lenComOutputOpeningsProof)
-		//fmt.Printf("Set Byte - ComOutputOpeningsProof: %v\n", proofbytes[offset: offset+lenComOutputOpeningsProof])
+		//fmt.Printf("Set Byte - ComOutputOpeningsProofSize: %v\n", proofbytes[offset: offset+lenComOutputOpeningsProof])
 		proof.ComOutputOpeningsProof[i] = new(PKComOpeningsProof).Init()
 		proof.ComOutputOpeningsProof[i].SetBytes(proofbytes[offset : offset+lenComOutputOpeningsProof])
 		offset += lenComOutputOpeningsProof
 	}
 
-	//ComOutputMultiRangeProof *PKComMultiRangeProof
+	//ComOutputMultiRangeProofSize *PKComMultiRangeProof
 	lenComOutputMultiRangeProof := privacy.ByteArrToInt(proofbytes[offset : offset+2])
 	offset += 2
 	fmt.Printf("Set Byte - lenComOutputMultiRangeProof: %v\n", lenComOutputMultiRangeProof)
 	if lenComOutputMultiRangeProof > 0 {
-		//fmt.Printf("Set Byte - ComOutputMultiRangeProof: %v\n", proofbytes[offset: offset+lenComOutputMultiRangeProof])
+		//fmt.Printf("Set Byte - ComOutputMultiRangeProofSize: %v\n", proofbytes[offset: offset+lenComOutputMultiRangeProof])
 		proof.ComOutputMultiRangeProof = new(PKComMultiRangeProof).Init()
 		proof.ComOutputMultiRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
 		offset += lenComOutputMultiRangeProof
@@ -909,14 +909,14 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 			return false
 		}
 		// Verify for the proof one-out-of-N commitments is a commitment to the coins being spent
-		//if !pro.OneOfManyProof[i].Verify(db, chainId) {
+		//if !pro.OneOfManyProofSize[i].Verify(db, chainId) {
 		//	return false
 		//}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
 		if !pro.EqualityOfCommittedValProof[i].Verify() {
 			return false
 		}
-		//if !pro.ProductCommitmentProof[i].Verify() {
+		//if !pro.ProductCommitmentProofSize[i].Verify() {
 		//	return false
 		//}
 	}

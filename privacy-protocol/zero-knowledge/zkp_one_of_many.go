@@ -611,12 +611,12 @@ func TestPKOneOfMany() bool {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Printf("Proof when prove: %v\n", proof)
+	fmt.Printf("Len of proof: %v\n", len(proof.Bytes()))
 
 	// Convert proof to bytes array
 	proofBytes := proof.Bytes()
-	fmt.Printf("Proof bytes when prove: %v\n", proof)
-	fmt.Printf("Proof bytes len: %v\n", len(proofBytes))
+	//fmt.Printf("Proof bytes when prove: %v\n", proof)
+	//fmt.Printf("Proof bytes len: %v\n", len(proofBytes))
 
 	// revert bytes array to proof
 	proof2 := new(PKOneOfManyProof)
