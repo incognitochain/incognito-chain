@@ -675,7 +675,7 @@ func (self *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVersion)
 	}
 
 	// check for accept connection
-	if !self.connManager.CheckAcceptConn(peerConn) {
+	if !self.connManager.CheckForAcceptConn(peerConn) {
 		peerConn.ForceClose()
 		return
 	}
@@ -905,17 +905,16 @@ PushMessageToPeer push msg to pbk
 */
 func (self *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
 	Logger.log.Infof("Push msg to pbk %s", pbk)
-	var dc chan<- struct{}
-	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
-		peerConn := self.connManager.Config.ListenerPeers[index].GetPeerConnByPbk(pbk)
-		if peerConn != nil {
-			msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
-			peerConn.QueueMessageWithEncoding(msg, dc)
-			Logger.log.Infof("Pushed pbk %s", pbk)
-			return nil
-		} else {
-			Logger.log.Error("RemotePeer not exist!")
+	peerConns := self.connManager.GetPeerConnOfPbk(pbk)
+	if peerConns != nil && len(peerConns) > 0 {
+		for _, peerConn := range peerConns {
+			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
+			peerConn.QueueMessageWithEncoding(msg, nil)
 		}
+		Logger.log.Infof("Pushed pbk %s", pbk)
+		return nil
+	} else {
+		Logger.log.Error("RemotePeer not exist!")
 	}
 	return errors.New("RemotePeer not found")
 }
@@ -925,30 +924,36 @@ PushMessageToPeer push msg to pbk
 */
 func (self *Server) PushMessageToShard(msg wire.Message, shard byte) error {
 	Logger.log.Infof("Push msg to shard %d", shard)
-	var dc chan<- struct{}
-	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
-		peerConns := self.connManager.GetListPeerConnByShard(shard)
-		if peerConns != nil && len(peerConns) > 0 {
-			for _, peerConn := range peerConns {
-				msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
-				peerConn.QueueMessageWithEncoding(msg, dc)
-			}
-			Logger.log.Infof("Pushed shard %d", shard)
-			return nil
-		} else {
-			Logger.log.Error("RemotePeer of shard not exist!")
+	peerConns := self.connManager.GetPeerConnOfShard(shard)
+	if peerConns != nil && len(peerConns) > 0 {
+		for _, peerConn := range peerConns {
+			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
+			peerConn.QueueMessageWithEncoding(msg, nil)
 		}
+		Logger.log.Infof("Pushed shard %d", shard)
+		return nil
+	} else {
+		Logger.log.Error("RemotePeer of shard not exist!")
 	}
 	return errors.New("RemotePeer of shard not found")
 }
 
 /*
-PushMessageToBeacon push msg to pbk
+PushMessageToPeer push msg to beacon node
 */
 func (self *Server) PushMessageToBeacon(msg wire.Message) error {
 	Logger.log.Infof("Push msg to beacon")
-	//todo
-
+	peerConns := self.connManager.GetPeerConnOfBeacon()
+	if peerConns != nil && len(peerConns) > 0 {
+		for _, peerConn := range peerConns {
+			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
+			peerConn.QueueMessageWithEncoding(msg, nil)
+		}
+		Logger.log.Infof("Pushed beacon done")
+		return nil
+	} else {
+		Logger.log.Error("RemotePeer of beacon not exist!")
+	}
 	return errors.New("RemotePeer of beacon not found")
 }
 

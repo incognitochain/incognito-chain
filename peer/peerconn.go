@@ -283,7 +283,11 @@ func (self *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<-
 				bOk := false
 				// send msg for check has
 				go func() {
-					msgCheck, _ := wire.MakeEmptyMessage(wire.CmdMsgCheck)
+					msgCheck, err := wire.MakeEmptyMessage(wire.CmdMsgCheck)
+					if err != nil {
+						Logger.log.Error(err)
+						return
+					}
 					msgCheck.(*wire.MessageMsgCheck).Hash = hash
 					self.QueueMessageWithEncoding(msgCheck, nil)
 				}()
