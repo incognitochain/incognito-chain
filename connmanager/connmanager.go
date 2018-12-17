@@ -539,7 +539,7 @@ func (self *ConnManager) getPeerConnOfShard(shard *byte) []*peer.PeerConn {
 	c := make([]*peer.PeerConn, 0)
 	for _, listener := range self.Config.ListenerPeers {
 		for _, peerConn := range listener.PeerConns {
-			sh := self.getShardByPbk(peerConn.RemotePeer.PublicKey)
+			sh := self.getShardOfPbk(peerConn.RemotePeer.PublicKey)
 			if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 				c = append(c, peerConn)
 			}
@@ -555,7 +555,7 @@ func (self *ConnManager) countPeerConnByShard(shard *byte) int {
 	c := 0
 	for _, listener := range self.Config.ListenerPeers {
 		for _, peerConn := range listener.PeerConns {
-			sh := self.getShardByPbk(peerConn.RemotePeer.PublicKey)
+			sh := self.getShardOfPbk(peerConn.RemotePeer.PublicKey)
 			if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 				c++
 			}
@@ -685,7 +685,7 @@ func (self *ConnManager) CheckAcceptConn(peerConn *peer.PeerConn) bool {
 		return false
 	}
 	// check max shard conn
-	sh := self.getShardByPbk(peerConn.RemotePeer.PublicKey)
+	sh := self.getShardOfPbk(peerConn.RemotePeer.PublicKey)
 	if sh != nil && self.CurrentShard != nil && *sh == *self.CurrentShard {
 		//	same shard
 		countPeerShard := self.countPeerConnByShard(sh)
@@ -708,7 +708,7 @@ func (self *ConnManager) CheckAcceptConn(peerConn *peer.PeerConn) bool {
 	return true
 }
 
-func (self *ConnManager) getShardByPbk(pbk string) *byte {
+func (self *ConnManager) getShardOfPbk(pbk string) *byte {
 	for shard, committees := range self.Config.ConsensusState.ShardCommittee {
 		for _, committee := range committees {
 			if committee == pbk {
@@ -719,11 +719,11 @@ func (self *ConnManager) getShardByPbk(pbk string) *byte {
 	return nil
 }
 
-func (self *ConnManager) GetListPeerConnByShard(shard byte) []*peer.PeerConn {
+func (self *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn {
 	peerConns := make([]*peer.PeerConn, 0)
 	for _, listener := range self.Config.ListenerPeers {
 		for _, peerConn := range listener.PeerConns {
-			shardT := self.getShardByPbk(peerConn.RemotePeer.PublicKey)
+			shardT := self.getShardOfPbk(peerConn.RemotePeer.PublicKey)
 			if shardT != nil && *shardT == shard {
 				peerConns = append(peerConns, peerConn)
 			}

@@ -927,7 +927,7 @@ func (self *Server) PushMessageToShard(msg wire.Message, shard byte) error {
 	Logger.log.Infof("Push msg to shard %d", shard)
 	var dc chan<- struct{}
 	for index := 0; index < len(self.connManager.Config.ListenerPeers); index++ {
-		peerConns := self.connManager.GetListPeerConnByShard(shard)
+		peerConns := self.connManager.GetPeerConnOfShard(shard)
 		if peerConns != nil && len(peerConns) > 0 {
 			for _, peerConn := range peerConns {
 				msg.SetSenderID(self.connManager.Config.ListenerPeers[index].PeerID)
