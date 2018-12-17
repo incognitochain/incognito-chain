@@ -41,7 +41,8 @@ func (IPA InnerProdArg) Print(){
 func (IPA *InnerProdArg) Bytes() []byte{
 	var res []byte
 	for i:=0;i<len(IPA.L);i++{
-		res = append(res, IPA.L[i].Compress()...)
+		//fmt.Println(IPA.L[i].Compress())
+		res =append(res, IPA.L[i].Compress()...)
 	}
 	for i:=0;i<len(IPA.R);i++{
 		res = append(res, IPA.R[i].Compress()...)

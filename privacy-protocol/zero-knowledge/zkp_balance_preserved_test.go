@@ -32,6 +32,7 @@ func TestPKComMultiRange(t *testing.T) {
 	} else {
 		fmt.Println("***** Multi Range Proof FAILURE")
 	}
+	fmt.Println(len(Vproof.Bytes()))
 	//proof_sum,_:= witness.ProveSum()
 	//	if proof.VerifySum(proof_sum) {
 	//		fmt.Println("Sum Proof Verification works")
