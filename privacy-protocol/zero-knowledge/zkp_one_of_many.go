@@ -154,24 +154,28 @@ func (pro * PKOneOfManyProof) Bytes() []byte {
 
 	// convert array f to bytes array
 	for i := 0; i < n; i++ {
-		bytes = append(bytes, pro.f[i].Bytes()...)
+		fBytes := privacy.AddPaddingBigInt(pro.f[i], privacy.BigIntSize)
+		bytes = append(bytes, fBytes...)
 		nBytes += 32
 	}
 
 	// convert array za to bytes array
 	for i := 0; i < n; i++ {
-		bytes = append(bytes, pro.za[i].Bytes()...)
+		zaBytes := privacy.AddPaddingBigInt(pro.za[i], privacy.BigIntSize)
+		bytes = append(bytes, zaBytes...)
 		nBytes += 32
 	}
 
 	// convert array zb to bytes array
 	for i := 0; i < n; i++ {
-		bytes = append(bytes, pro.zb[i].Bytes()...)
+		zbBytes := privacy.AddPaddingBigInt(pro.zb[i], privacy.BigIntSize)
+		bytes = append(bytes, zbBytes...)
 		nBytes += 32
 	}
 
 	// convert array zd to bytes array
-	bytes = append(bytes, pro.zd.Bytes()...)
+	zdBytes := privacy.AddPaddingBigInt(pro.zd, privacy.BigIntSize)
+	bytes = append(bytes, zdBytes...)
 	nBytes += 32
 
 	// convert commitment index to bytes array
