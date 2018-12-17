@@ -9,7 +9,6 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/transaction"
@@ -126,8 +125,8 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
 
-	// param #3: estimation fee coin per kb
-	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
+	// param #3: estimation fee nano constant per kb
+	estimateFeeCoinPerKb := uint64(arrayParams[2].(float64))
 
 	// param #4: estimation fee coin per kb by numblock
 	numBlock := uint32(arrayParams[3].(float64))
@@ -145,16 +144,14 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 		}
 	}
 
-	// check real fee per TxNormal
+	// check real fee(nano constant) per tx
 	var realFee uint64
 	if int64(estimateFeeCoinPerKb) == -1 {
 		temp, _ := self.config.FeeEstimator[chainIdSender].EstimateFee(numBlock)
-		estimateFeeCoinPerKb = int64(temp)
+		estimateFeeCoinPerKb = uint64(temp)
 	}
-	estimateFeeCoinPerKb += int64(self.config.Wallet.Config.IncrementalFee)
-	// TODO
-	estimateTxSizeInKb := 0
-	//estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, nil)
+	estimateFeeCoinPerKb += uint64(self.config.Wallet.Config.IncrementalFee)
+	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, nil)
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 
 	// list unspent tx for create tx
@@ -254,7 +251,7 @@ func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-c
 	result := jsonresult.CreateTransactionResult{
 		TxID: txID,
 	}
- 	return result, nil
+	return result, nil
 }
 
 /*
@@ -560,46 +557,6 @@ func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, c
 		return nil, errors.New("Failed to sign the custom token")
 	}
 	return hex.EncodeToString(jsSignByteArray), nil
-}
-
-func (self RpcServer) handleCreateRawTxWithBuySellRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	arrayParams := common.InterfaceSlice(params)
-	tx, err := self.buildRawCustomTokenTransaction(params)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	// Req param #4: buy/sell request info
-	buySellReq := arrayParams[4].(map[string]interface{})
-	tx.Tx.Metadata = metadata.NewBuySellRequest(buySellReq)
-
-	byteArrays, err := json.Marshal(tx)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	hexData := hex.EncodeToString(byteArrays)
-	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
-	}
-	return result, nil
-}
-
-func (self RpcServer) handleCreateAndSendTxWithBuySellRequest(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	data, err := self.handleCreateRawTxWithBuySellRequest(params, closeChan)
-	if err != nil {
-		return nil, err
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
-	if err != nil {
-		return nil, err
-	}
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
-	txId, err := self.handleSendRawCustomTokenTransaction(newParam, closeChan)
-	return txId, err
 }
 
 // handleRandomCommitments - from input of outputcoin, random to create data for create new tx

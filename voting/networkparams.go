@@ -63,3 +63,10 @@ func (refundInfo *RefundInfo) Hash() *common.Hash {
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
+
+func (sdt *SaleDBCTOkensByUSDData) Hash() *common.Hash {
+	record := string(sdt.Amount)
+	record += string(sdt.EndBlock)
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}

@@ -109,7 +109,7 @@ type Transaction interface {
 	GetTxFee() uint64
 	ListNullifiers() [][]byte
 	CheckTxVersion(int8) bool
-	CheckTransactionFee(uint64) bool
+	CheckTransactionFee(minFeePerKbTx uint64) bool
 	IsSalaryTx() bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
 	ValidateTxWithBlockChain(BlockchainRetriever, byte, database.DatabaseInterface) error
@@ -123,4 +123,5 @@ type Transaction interface {
 	GetJSPubKey() []byte
 	GetReceivers() ([][]byte, []uint64)
 	IsPrivacy() bool
+	IsCoinsBurning() bool
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
 // TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -182,8 +183,8 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 			utxo := tx.listUtxo[vin.TxCustomTokenID]
 			vout := utxo.TxTokenData.Vouts[vin.VoutIndex]
 			data := vout.Hash() // hash of vout in utxo
-
-			ok, err := keySet.Verify(data[:], []byte(vin.Signature))
+			signature, _, _ := base58.Base58Check{}.Decode(vin.Signature)
+			ok, err := keySet.Verify(data[:], signature)
 			if err != nil {
 				return false
 			}
@@ -220,6 +221,9 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	bcr metadata.BlockchainRetriever,
 	chainID byte,
 ) bool {
+	if customTokenTx.TxTokenData.Type == CustomTokenInit {
+		return true
+	}
 	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
 	if !ok {
 		return false
@@ -398,7 +402,6 @@ func (tx *TxCustomToken) GetAmountOfVote() uint64 {
 }
 
 func (tx *TxCustomToken) IsPrivacy() bool {
-	// TODO: update here
 	return false
 }
 

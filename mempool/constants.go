@@ -5,4 +5,5 @@ const (
 	// contextual transaction information provided in a transaction store
 	// when it has not yet been mined into a block.
 	UnminedHeight = 0x7fffffff
+	MaxVersion    = 1
 )

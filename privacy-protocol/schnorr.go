@@ -126,6 +126,8 @@ func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
 		return false
 	}
 
+	fmt.Printf("VERIFY 2 ------ PUBLICKEY: %+v\n", pub.PK)
+
 	rv := new(EllipticPoint)
 	rv.X, rv.Y = Curve.ScalarMult(pub.G.X, pub.G.Y, signature.S1.Bytes())
 	tmp := new(EllipticPoint)
@@ -143,14 +145,29 @@ func (pub SchnPubKey) Verify(signature *SchnSignature, hash []byte) bool {
 }
 
 func (sig *SchnSignature) ToBytes() []byte {
-	res := append(sig.E.Bytes(), sig.S1.Bytes()...)
-	res = append(res, sig.S2.Bytes()...)
+	temp := sig.E.Bytes()
+	for i:=0; i<BigIntSize-len(temp); i++{
+		temp = append([]byte{0}, temp...)
+	}
+	res:=temp
+	temp = sig.S1.Bytes()
+	for i:=0; i<BigIntSize-len(temp); i++{
+		temp = append([]byte{0}, temp...)
+	}
+	res = append(res, temp...)
+	temp = sig.S2.Bytes()
+	for i:=0; i<BigIntSize-len(temp); i++{
+		temp = append([]byte{0}, temp...)
+	}
+	res = append(res, temp...)
+	//res := append(sig.E.Bytes(), sig.S1.Bytes()...)
+	//res = append(res, sig.S2.Bytes()...)
 	return res
 }
 
 func (sig *SchnSignature) FromBytes(bytes []byte) {
 	sig.E = new(big.Int).SetBytes(bytes[0:32])
-	sig.S1 = new(big.Int).SetBytes(bytes[32:66])
+	sig.S1 = new(big.Int).SetBytes(bytes[32:64])
 	sig.S2 = new(big.Int).SetBytes(bytes[64:96])
 }
 

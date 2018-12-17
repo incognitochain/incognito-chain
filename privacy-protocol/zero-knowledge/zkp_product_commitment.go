@@ -97,12 +97,12 @@ func (pro PKComProductProof) Bytes() []byte {
 	//if pro.cmA == nil || pro.cmB == nil || {
 	//
 	//}
-	proofbytes = append(proofbytes, pro.cmA.Compress()...)                           // 33 bytes
-	proofbytes = append(proofbytes, pro.cmB.Compress()...)                           // 33 bytes
-	proofbytes = append(proofbytes, pro.D.Compress()...)                             // 33 bytes
-	proofbytes = append(proofbytes, pro.E.Compress()...)                             // 33 bytes
-	proofbytes = append(proofbytes, privacy.PadBigInt(pro.f, privacy.BigIntSize)...) // 32 bytes
-	proofbytes = append(proofbytes, privacy.PadBigInt(pro.z, privacy.BigIntSize)...) // 32 bytes
+	proofbytes = append(proofbytes, pro.cmA.Compress()...)                                  // 33 bytes
+	proofbytes = append(proofbytes, pro.cmB.Compress()...)                                  // 33 bytes
+	proofbytes = append(proofbytes, pro.D.Compress()...)                                    // 33 bytes
+	proofbytes = append(proofbytes, pro.E.Compress()...)                                    // 33 bytes
+	proofbytes = append(proofbytes, privacy.AddPaddingBigInt(pro.f, privacy.BigIntSize)...) // 32 bytes
+	proofbytes = append(proofbytes, privacy.AddPaddingBigInt(pro.z, privacy.BigIntSize)...) // 32 bytes
 	proofbytes = append(proofbytes, pro.index)
 	return proofbytes
 }

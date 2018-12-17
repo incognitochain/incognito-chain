@@ -35,6 +35,12 @@ type ConnState uint8
 // established or failed depending on the connection result.  An established
 // connection which was disconnected is categorized as disconnected.
 
+type CommitteePbk struct {
+	Shards map[byte][]string
+	Beacon []string
+	//Committee map[string]byte
+}
+
 type ConnManager struct {
 	connReqCount uint64
 	start        int32
@@ -50,6 +56,8 @@ type ConnManager struct {
 
 	CurrentShard *byte
 	OtherShards  []byte
+
+	CommitteePbk CommitteePbk
 }
 
 type Config struct {
@@ -83,11 +91,11 @@ type Config struct {
 	DiscoverPeers        bool
 	DiscoverPeersAddress string
 
-	GetCurrentShard func() *byte
-	GetPbksOfShard  func(shard byte) []string
-	GetPbksOfBeacon func() []string
-	GetCurrentPbk   func() *string
-	GetShardByPbk   func(pbk string) *byte
+	//GetCurrentShard func() *byte
+	//GetPbksOfShard  func(shard byte) []string
+	//GetPbksOfBeacon func() []string
+	GetCurrentPbk func() string
+	//GetShardByPbk   func(pbk string) *byte
 }
 
 type DiscoverPeerInfo struct {
@@ -343,7 +351,7 @@ func (self *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 	var client *rpc.Client
 	var err error
 
-	self.CurrentShard = self.Config.GetCurrentShard()
+	self.CurrentShard = self.GetCurrentShard()
 	self.OtherShards = self.randShards(SHARD_NUMBER)
 
 listen:
@@ -458,9 +466,12 @@ listen:
 				//		}
 				//	}
 				//}
-				// connect to same shard
+
+				// connect to beacon peers
+				self.handleRandPeersOfBeacon(self.Config.MaxPeerBeacon, mPeers)
+				// connect to same shard peers
 				self.handleRandPeersOfShard(self.CurrentShard, self.Config.MaxPeerSameShard, mPeers)
-				// connect to other shard
+				// connect to other shard peers
 				self.handleRandPeersOfOtherShard(self.CurrentShard, self.Config.MaxPeerOtherShard, self.Config.MaxPeerOther, mPeers)
 			}
 		}
@@ -547,7 +558,7 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 		}
 		return maxPeers
 	}
-	pBKs := self.Config.GetPbksOfShard(*shard)
+	pBKs := self.GetPbksOfShard(*shard)
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
 		pbk := pBKs[randN]
@@ -556,7 +567,7 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 		if ok {
 			cPbk := self.Config.GetCurrentPbk()
 			// if existed conn then not append to array
-			if !self.checkPeerConnByPbk(pbk) && (cPbk == nil || *cPbk != pbk) {
+			if !self.checkPeerConnByPbk(pbk) && (cPbk == "" || cPbk != pbk) {
 				go self.Connect(peerI.RawAddress, peerI.PublicKey)
 				countPeerShard ++
 			}
@@ -607,7 +618,7 @@ func (self *ConnManager) randShards(maxShards int) []byte {
 func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[string]*wire.RawPeer) int {
 	Logger.log.Info("handleRandPeersOfBeacon")
 	countPeerShard := 0
-	pBKs := self.Config.GetPbksOfBeacon()
+	pBKs := self.GetPbksOfBeacon()
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
 		pbk := pBKs[randN]
@@ -616,7 +627,7 @@ func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[
 		if ok {
 			cPbk := self.Config.GetCurrentPbk()
 			// if existed conn then not append to array
-			if !self.checkPeerConnByPbk(pbk) && (cPbk == nil || *cPbk != pbk) {
+			if !self.checkPeerConnByPbk(pbk) && (cPbk == "" || cPbk != pbk) {
 				go self.Connect(peerI.RawAddress, peerI.PublicKey)
 			}
 			countPeerShard ++
@@ -634,7 +645,7 @@ func (self *ConnManager) CheckAcceptConn(peerConn *peer.PeerConn) bool {
 	}
 	// check max conn
 	// check max shard conn
-	sh := self.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
+	sh := self.GetShardByPbk(peerConn.RemotePeer.PublicKey)
 	if sh != nil && self.CurrentShard != nil && *sh == *self.CurrentShard {
 		//	same shard
 		countPeerShard := self.countPeerConnByShard(sh)
@@ -655,4 +666,38 @@ func (self *ConnManager) CheckAcceptConn(peerConn *peer.PeerConn) bool {
 		}
 	}
 	return true
+}
+
+func (self *ConnManager) GetCurrentShard() *byte {
+	pbk := self.Config.GetCurrentPbk()
+	if pbk == "" {
+		return nil
+	}
+	return self.GetShardByPbk(pbk)
+}
+func (self *ConnManager) GetPbksOfShard(shard byte) []string {
+	committee, ok := self.CommitteePbk.Shards[shard]
+	if ok {
+		return committee
+	}
+	return make([]string, 0)
+}
+func (self *ConnManager) GetPbksOfBeacon() []string {
+	return self.CommitteePbk.Beacon
+}
+func (self *ConnManager) GetCurrentPbk() string {
+	return self.Config.GetCurrentPbk()
+}
+func (self *ConnManager) GetShardByPbk(pbk string) *byte {
+	if pbk == "" {
+		return nil
+	}
+	for shard, committee := range self.CommitteePbk.Shards {
+		for _, v := range committee {
+			if v == pbk {
+				return &shard
+			}
+		}
+	}
+	return nil
 }

@@ -19,6 +19,7 @@ const (
 	BuyBackResponseMeta
 	IssuingRequestMeta
 	IssuingResponseMeta
+	ContractingRequestMeta
 	DividendMeta
 
 	CrowdsaleRequestMeta
