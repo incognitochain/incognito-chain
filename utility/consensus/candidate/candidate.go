@@ -12,10 +12,15 @@ import (
 )
 
 func BuildBeaconBlock(beaconBestState *blockchain.BestStateBeacon, newShardBlock []blockchain.BlockV2) *blockchain.BlockV2 {
+	// Create new unsigned beacon block (UBB)
 	var newUnsignedBeaconBlock = &blockchain.BlockV2{
 		Type: "beacon",
 	}
 
+	// Assign state of each shard of current beacon block to new UBB.
+	// Iterate over the newShardBlock, if shard id equals to shard index of UBB and previous hash of new shard block
+	// equals to latest state of current beacon's stard state, append the shard state from new shard to the UBB shard
+	// with corresponding index.
 	for shardBlkIdx, blk := range newShardBlock {
 		shardID := blk.Header.(*blockchain.BlockHeaderShard).ShardID
 		newShardState := newUnsignedBeaconBlock.Body.(*blockchain.BeaconBlockBody).ShardState
