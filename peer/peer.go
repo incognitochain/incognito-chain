@@ -704,34 +704,3 @@ func (self *Peer) renewPeerConnection() {
 		self.pendingPeersMutex.Unlock()
 	}
 }
-
-func (self *Peer) ClosePeerConnsOfShard(shard byte) {
-	for _, peerConn := range self.PeerConns {
-		sh := self.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
-		if sh != nil && *sh == shard {
-			peerConn.ForceClose()
-		}
-	}
-}
-
-func (self *Peer) CountPeerConnOfShard(shard *byte) int {
-	c := 0
-	for _, peerConn := range self.PeerConns {
-		sh := self.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
-		if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
-			c++
-		}
-	}
-	return c
-}
-
-func (self *Peer) GetPeerConnOfShard(shard *byte) []*PeerConn {
-	c := make([]*PeerConn, 0)
-	for _, peerConn := range self.PeerConns {
-		sh := self.Config.GetShardByPbk(peerConn.RemotePeer.PublicKey)
-		if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
-			c = append(c, peerConn)
-		}
-	}
-	return c
-}
