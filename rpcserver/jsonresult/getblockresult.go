@@ -6,7 +6,7 @@ type GetBlockResult struct {
 	Data              string             `json:"Data"`
 	Hash              string             `json:"Hash"`
 	Confirmations     int64              `json:"confirmations"`
-	Height            int32              `json:"Height"`
+	Height            uint64             `json:"Height"`
 	Version           int                `json:"Version"`
 	MerkleRoot        string             `json:"MerkleRoot"`
 	Time              int64              `json:"Time"`

@@ -38,6 +38,7 @@ type BlockV2 struct {
 	AggregatedSig string // aggregated signature in base58
 	ValidatorsIdx []int
 	ProducerSig   string // block producer signature in base58
+	Producer      string
 	Type          string
 
 	Header BlockHeaderV2

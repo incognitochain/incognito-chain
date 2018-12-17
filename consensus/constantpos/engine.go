@@ -30,7 +30,7 @@ type Engine struct {
 type EngineConfig struct {
 	BlockChain  *blockchain.BlockChain
 	ConnManager *connmanager.ConnManager
-	ChainParams *blockchain.ParamsNew
+	ChainParams *blockchain.Params
 	BlockGen    *blockchain.BlkTmplGenerator
 	MemPool     *mempool.TxPool
 	UserKeySet  cashec.KeySet

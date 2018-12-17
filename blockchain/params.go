@@ -5,7 +5,7 @@ Params defines a network by its params. These params may be used by Applications
 to differentiate network as well as addresses and keys for one network
 from those intended for use on another network
 */
-type ParamsNew struct {
+type Params struct {
 	// Name defines a human-readable identifier for the network.
 	Name string
 
@@ -83,7 +83,7 @@ var icoParamsTestnetNew = IcoParams{
 	InitialGOVToken:       TestnetInitGovToken,
 }
 
-var TestNetParamsNew = ParamsNew{
+var TestNetParams = Params{
 	Name:        TestnetName,
 	Net:         Testnet,
 	DefaultPort: TestnetDefaultPort,

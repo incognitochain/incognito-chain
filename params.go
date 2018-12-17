@@ -16,7 +16,7 @@ type params struct {
 }
 
 var mainNetParams = params{
-	Params:  &blockchain.MainNetParams,
+	Params:  &blockchain.TestNetParams,
 	rpcPort: MainnetRpcServerPort,
 }
 

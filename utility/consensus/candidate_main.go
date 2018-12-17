@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/utility/consensus/candidate"
 )
 
 func main() {
 
-	beaconBlock := blockchain.TestNetParamsNew.GenesisBlockBeacon
+	beaconBlock := blockchain.TestNetParams.GenesisBlockBeacon
 	beaconStakingCandidate, shardStakingCandidate := candidate.GetStakingCandidate(beaconBlock)
 
 	fmt.Println(beaconStakingCandidate)

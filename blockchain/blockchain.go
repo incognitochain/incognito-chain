@@ -60,7 +60,7 @@ type Config struct {
 	// with.
 	//
 	// This field is required.
-	ChainParams *ParamsNew
+	ChainParams *Params
 
 	//Light mode flag
 	Light bool

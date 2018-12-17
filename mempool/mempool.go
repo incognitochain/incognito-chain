@@ -26,7 +26,7 @@ type Config struct {
 
 	DataBase database.DatabaseInterface
 
-	ChainParams *blockchain.ParamsNew
+	ChainParams *blockchain.Params
 
 	// FeeEstimatator provides a feeEstimator. If it is not nil, the mempool
 	// records all new transactions it observes into the feeEstimator.

@@ -24,7 +24,7 @@ type NetSync struct {
 
 type NetSyncConfig struct {
 	BlockChain *blockchain.BlockChain
-	ChainParam *blockchain.ParamsNew
+	ChainParam *blockchain.Params
 	MemTxPool  *mempool.TxPool
 	Server     interface {
 		// list functions callback which are assigned from Server struct
