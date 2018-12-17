@@ -344,7 +344,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		// verify signature
 		//fmt.Printf("VERIF ------ HASH TX: %+v\n", tx.Hash().String())
 		res = verKey.Verify(signature, tx.Hash()[:])
-		if !res{
+		if !res {
 			fmt.Println("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
 		}
 
@@ -469,14 +469,15 @@ func (tx *Tx) CheckTxVersion(maxTxVersion int8) bool {
 	return true
 }
 
-func (tx *Tx) CheckTransactionFee(minFee uint64) bool {
+func (tx *Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
 	if tx.IsSalaryTx() {
 		return true
 	}
 	if tx.Metadata != nil {
-		return tx.Metadata.CheckTransactionFee(tx, minFee)
+		return tx.Metadata.CheckTransactionFee(tx, minFeePerKbTx)
 	}
-	if tx.Fee < minFee {
+	fullFee := minFeePerKbTx * tx.GetTxVirtualSize()
+	if tx.Fee < fullFee {
 		return false
 	}
 	return true
@@ -652,7 +653,6 @@ func (tx *Tx) IsPrivacy() bool {
 		return true
 	}
 }
-
 
 func (tx *Tx) ValidateType() bool {
 	return tx.Type == common.TxNormalType || tx.Type == common.TxSalaryType
