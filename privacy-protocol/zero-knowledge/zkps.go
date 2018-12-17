@@ -855,7 +855,6 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 }
 
 func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db database.DatabaseInterface, chainId byte) bool {
-	return true
 	// has no privacy
 	if !hasPrivacy {
 		var sumInputValue, sumOutputValue uint64
@@ -918,6 +917,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 			return false
 		}
 		// Verify for the proof one-out-of-N commitments is a commitment to the coins being spent
+		//Todo: 0xkraken
 		//if !pro.OneOfManyProofSize[i].Verify(db, chainId) {
 		//	return false
 		//}
@@ -925,9 +925,9 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 		if !pro.EqualityOfCommittedValProof[i].Verify() {
 			return false
 		}
-		//if !pro.ProductCommitmentProofSize[i].Verify() {
-		//	return false
-		//}
+		if !pro.ProductCommitmentProof[i].Verify() {
+			return false
+		}
 	}
 
 	// Verify the proof for knowledge of output coins' openings
@@ -938,16 +938,17 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 	}
 
 	// Check output coins' cm is calculated correctly
-	for i := 0; i < len(pro.OutputCoins); i++ {
-		cmTmp := pro.OutputCoins[i].CoinDetails.PublicKey
-		cmTmp = cmTmp.Add(pro.ComOutputValue[i])
-		cmTmp = cmTmp.Add(pro.ComOutputSND[i])
-		cmTmp = cmTmp.Add(pro.ComOutputShardID[i])
-
-		if !cmTmp.IsEqual(pro.OutputCoins[i].CoinDetails.CoinCommitment) {
-			return false
-		}
-	}
+	//Todo: 0xkraken
+	//for i := 0; i < len(pro.OutputCoins); i++ {
+	//	cmTmp := pro.OutputCoins[i].CoinDetails.PublicKey
+	//	cmTmp = cmTmp.Add(pro.ComOutputValue[i])
+	//	cmTmp = cmTmp.Add(pro.ComOutputSND[i])
+	//	cmTmp = cmTmp.Add(pro.ComOutputShardID[i])
+	//
+	//	if !cmTmp.IsEqual(pro.OutputCoins[i].CoinDetails.CoinCommitment) {
+	//		return false
+	//	}
+	//}
 
 	// Verify the proof that output values and sum of them do not exceed v_max
 	if !pro.ComOutputMultiRangeProof.Verify() {
@@ -958,9 +959,9 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 		return false
 	}
 	// Verify the proof that sum of all input values is equal to sum of all output values
-	if !pro.ComZeroProof.Verify() {
-		return false
-	}
+	//if !pro.ComZeroProof.Verify() {
+	//	return false
+	//}
 
 	return true
 }
