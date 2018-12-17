@@ -428,6 +428,7 @@ func (ef *FeeEstimator) rollback() {
 
 // estimateFeeSet is a set of txs that can that is sorted
 // by the fee per kb rate.
+// inherit from golang sorter
 type estimateFeeSet struct {
 	feeRate []CoinPerKilobyte
 	bin     [estimateFeeDepth]uint32
@@ -544,7 +545,8 @@ func (ef *FeeEstimator) EstimateFee(numBlocks uint32) (CoinPerKilobyte, error) {
 		ef.cached = ef.estimates()
 	}
 
-	return ef.cached[int(numBlocks)-1], nil
+	result := ef.cached[int(numBlocks)-1]
+	return result, nil
 }
 
 // In case the format for the serialized version of the feeEstimator changes,

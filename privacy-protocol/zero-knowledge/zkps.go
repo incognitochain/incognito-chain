@@ -563,7 +563,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		cmInputSumwithoutShardID[i].X, cmInputSumwithoutShardID[i].Y = big.NewInt(0), big.NewInt(0)
 		cmInputSumwithoutShardID[i].X.Set(cmInputSum[i].X)
 		cmInputSumwithoutShardID[i].Y.Set(cmInputSum[i].Y)
-		randInputSum[i] = randInputSK
+		randInputSum[i] = new(big.Int).Set(randInputSK)
 		randInputSum[i].Add(randInputSum[i], randInputValue[i])
 		randInputSum[i].Add(randInputSum[i], randInputSND[i])
 		randInputSum[i].Mod(randInputSum[i], privacy.Curve.Params().N)
@@ -615,18 +615,19 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		witnesssA := new(big.Int)
 		witnesssA.Add(wit.spendingKey, inputCoins[i].CoinDetails.SNDerivator)
 		randA := new(big.Int)
-		randA.Add(randInputSK, randInputSND[i])
+		randA.Add(randInputSK, randInputSNDIndexSK[i])
 		witnessAInverse := new(big.Int)
 		witnessAInverse.ModInverse(witnesssA, privacy.Curve.Params().N)
-		randAInverse := privacy.RandInt()
-		cmInputInverseSum := privacy.PedCom.CommitAtIndex(witnessAInverse, randAInverse, privacy.SK)
+		//randAInverse := privacy.RandInt()
+		cmInputInverseSum := privacy.PedCom.CommitAtIndex(witnessAInverse, new(big.Int).SetInt64(0), privacy.SK)
 		witIndex := new(byte)
 		*witIndex = privacy.SK
 		if wit.ProductCommitmentWitness[i] == nil {
 			wit.ProductCommitmentWitness[i] = new(PKComProductWitness)
 		}
 		wit.ProductCommitmentWitness[i].Set(witnesssA, randA, cmInputInverseSum, witIndex)
-		// ------------------------------
+		proof,_:=wit.ProductCommitmentWitness[i].Prove()
+		fmt.Println(proof.Verify())		// ------------------------------
 	}
 
 	numOutputCoin := len(wit.outputCoins)

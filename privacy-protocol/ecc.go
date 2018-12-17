@@ -179,7 +179,6 @@ func (eccPoint *EllipticPoint) Decompress(compressPointBytes []byte) error {
 	if format != PointCompressed {
 		return errors.New("invalid magic in compressed compressPoint bytes")
 	}
-
 	var err error
 	if eccPoint.X == nil {
 		eccPoint.X = new(big.Int).SetBytes(compressPointBytes[1:33])

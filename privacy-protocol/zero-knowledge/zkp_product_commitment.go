@@ -108,10 +108,7 @@ func (pro PKComProductProof) Bytes() []byte {
 }
 
 func (pro *PKComProductProof) SetBytes(proofBytes []byte) error {
-	if pro == nil {
-		pro = pro.Init()
-	}
-
+	pro = pro.Init()
 	if len(proofBytes) == 0 {
 		return nil
 	}
