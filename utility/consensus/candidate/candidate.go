@@ -11,7 +11,7 @@ import (
 	"github.com/ninjadotorg/constant/blockchain"
 )
 
-func BuildBeaconBlock(beaconBestState *blockchain.BestStateBeacon, currentBeaconBlock *blockchain.BlockV2, newShardBlock []blockchain.BlockV2) *blockchain.BlockV2 {
+func BuildBeaconBlock(beaconBestState *blockchain.BestStateBeacon, newShardBlock []blockchain.BlockV2) *blockchain.BlockV2 {
 	var newUnsignedBeaconBlock = &blockchain.BlockV2{
 		Type: "beacon",
 	}
@@ -20,7 +20,7 @@ func BuildBeaconBlock(beaconBestState *blockchain.BestStateBeacon, currentBeacon
 		shardID := blk.Header.(*blockchain.BlockHeaderShard).ShardID
 		newShardState := newUnsignedBeaconBlock.Body.(*blockchain.BeaconBlockBody).ShardState
 		for idx, state := range newShardState {
-			state = currentBeaconBlock.Body.(*blockchain.BeaconBlockBody).ShardState[idx]
+			state = beaconBestState.BestBlock.Body.(*blockchain.BeaconBlockBody).ShardState[idx]
 			if byte(idx) == shardID {
 				state = append(state, newShardBlock[idx].HashFinal())
 			}
