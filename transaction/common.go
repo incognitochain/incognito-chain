@@ -2,6 +2,8 @@ package transaction
 
 import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"math"
 	"math/big"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/common/base58"
@@ -82,4 +84,24 @@ func CheckSNDerivatorExistence(snd *big.Int, chainID byte, db database.DatabaseI
 		return false, err
 	}
 	return ok, nil
+}
+
+// EstimateTxSize returns the estimated size of the tx in kilobyte
+func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo) uint64 {
+	sizeVersion := uint64(1)  // int8
+	sizeType := uint64(5)     // string, max : 5
+	sizeLockTime := uint64(8) // int64
+	sizeFee := uint64(8)      // uint64
+
+	sizeSigPubKey := uint64(privacy.SigPubKeySize)
+	sizeSig := uint64(privacy.SigSize)
+	sizeProof := zkp.EstimateProofSize(inputCoins, payments)
+
+	sizePubKeyLastByte := uint64(1)
+	// TODO 0xjackpolope
+	//sizeMetadata :=
+
+	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte
+
+	return uint64(math.Ceil(float64(sizeTx) / 1024))
 }

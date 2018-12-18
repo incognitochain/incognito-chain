@@ -17,10 +17,6 @@ import (
 
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
-	// Policy defines the various mempool configuration options related
-	// to policy.
-	Policy Policy
-
 	// Block chain of node
 	BlockChain *blockchain.BlockChain
 
@@ -139,9 +135,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	bestHeight := tp.config.BlockChain.BestState[chainID].BestBlock.Header.Height
 	// nextBlockHeight := bestHeight + 1
-	// Check tx with policy
 	// check version
-	ok := tx.CheckTxVersion(tp.config.Policy.MaxTxVersion)
+	ok := tx.CheckTxVersion(MaxVersion)
 	if !ok {
 		err := MempoolTxError{}
 		err.Init(RejectVersion, errors.New(fmt.Sprintf("%+v's version is invalid", txHash.String())))
@@ -149,12 +144,12 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 
 	// check fee of tx
-	minFee := tp.config.Policy.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.TxFee
+	minFeePerKbTx := tp.config.BlockChain.GetFeePerKbTx()
 	txFee := tx.GetTxFee()
-	ok = tx.CheckTransactionFee(minFee)
+	ok = tx.CheckTransactionFee(minFeePerKbTx)
 	if !ok {
 		err := MempoolTxError{}
-		err.Init(RejectVersion, errors.New(fmt.Sprintf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, minFee)))
+		err.Init(RejectVersion, errors.New(fmt.Sprintf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, minFeePerKbTx)))
 		return nil, nil, err
 	}
 	// end check with policy
@@ -292,7 +287,7 @@ func (tp *TxPool) Size() uint64 {
 	tp.mtx.RLock()
 	size := uint64(0)
 	for _, tx := range tp.pool {
-		size += tx.Desc.Tx.GetTxVirtualSize()
+		size += tx.Desc.Tx.GetTxActualSize()
 	}
 	tp.mtx.RUnlock()
 

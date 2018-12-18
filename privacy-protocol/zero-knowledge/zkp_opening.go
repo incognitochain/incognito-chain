@@ -177,9 +177,12 @@ func TestOpeningsProtocol() bool {
 	witness.randValue(true)
 	fmt.Printf("Witness: %+v\n", witness)
 	proof, _ := witness.Prove()
+	fmt.Printf("Len of opening proof: %v\n", len(proof.Bytes()))
+
+
 	proof2 := new(PKComOpeningsProof)
 	proof2.SetBytes(proof.Bytes())
-	//fmt.Println(len(proof.Bytes()))
+
 	res := proof.Verify()
 	fmt.Println(res)
 	return res

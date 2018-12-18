@@ -104,12 +104,12 @@ type Transaction interface {
 	ValidateTransaction(bool, database.DatabaseInterface, byte) bool
 	GetMetadataType() int
 	GetType() string
-	GetTxVirtualSize() uint64
+	GetTxActualSize() uint64
 	GetSenderAddrLastByte() byte
 	GetTxFee() uint64
 	ListNullifiers() [][]byte
 	CheckTxVersion(int8) bool
-	CheckTransactionFee(uint64) bool
+	CheckTransactionFee(minFeePerKbTx uint64) bool
 	IsSalaryTx() bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
 	ValidateTxWithBlockChain(BlockchainRetriever, byte, database.DatabaseInterface) error

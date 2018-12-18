@@ -1365,3 +1365,8 @@ func (self BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.Inpu
 func (self BlockChain) CheckSNDerivatorExistence(snd *big.Int, chainID byte) (bool, error) {
 	return transaction.CheckSNDerivatorExistence(snd, chainID, self.config.DataBase)
 }
+
+// GetFeePerKbTx - return fee (per kb of tx) from GOV params data
+func (self BlockChain) GetFeePerKbTx() uint64 {
+	return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
+}

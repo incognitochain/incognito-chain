@@ -267,15 +267,17 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		sigKey.PubKey.H.X, sigKey.PubKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
 
 		sigKey.PubKey.PK = &privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
+		fmt.Println(sigKey)
 		tmp := new(privacy.EllipticPoint)
 		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.G.X, sigKey.PubKey.G.Y, sigKey.SK.Bytes())
 		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
 		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.H.X, sigKey.PubKey.H.Y, sigKey.R.Bytes())
 		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
+		fmt.Printf("SIGN ------ PUBLICKEY: %+v\n", sigKey.PubKey.PK)
 		tx.SigPubKey = sigKey.PubKey.PK.Compress()
 
 		// signing
-		fmt.Printf(tx.Hash().String())
+		//fmt.Printf("SIGN ------ HASH TX: %+v\n", tx.Hash().String())
 		signature, err := sigKey.Sign(tx.Hash()[:])
 		if err != nil {
 			return err
@@ -312,7 +314,6 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 }
 
 func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
-	return true, nil
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, fmt.Errorf("input transaction must be an signed one!")
@@ -322,6 +323,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 	res := false
 
 	if hasPrivacy {
+
 		/****** verify Schnorr signature *****/
 		// prepare Public key for verification
 		verKey := new(privacy.SchnPubKey)
@@ -329,21 +331,22 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		if err != nil {
 			return false, err
 		}
+
 		verKey.G = new(privacy.EllipticPoint)
 		verKey.G.X, verKey.G.Y = privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y
 
 		verKey.H = new(privacy.EllipticPoint)
 		verKey.H.X, verKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
-
+		fmt.Println(verKey)
 		// convert signature from byte array to SchnorrSign
 		signature := new(privacy.SchnSignature)
 		signature.FromBytes(tx.Sig)
 
 		// verify signature
-		fmt.Printf(tx.Hash().String())
+		//fmt.Printf("VERIF ------ HASH TX: %+v\n", tx.Hash().String())
 		res = verKey.Verify(signature, tx.Hash()[:])
 		if !res {
-			fmt.Println("HIENNNNNNNNNNNNNNNNNNNNN - FAILED VERIFICATION SIGNATURE")
+			fmt.Println("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
 		}
 
 	} else {
@@ -433,10 +436,24 @@ func (tx *Tx) GetTxFee() uint64 {
 	return tx.Fee
 }
 
-// GetTxVirtualSize computes the virtual size of a given transaction
-func (tx *Tx) GetTxVirtualSize() uint64 {
-	// TODO 0xkraken
-	return 0
+// GetTxActualSize computes the actual size of a given transaction in kilobyte
+func (tx *Tx) GetTxActualSize() uint64 {
+	sizeVersion := uint64(1)             // int8
+	sizeType := uint64(len(tx.Type) + 1) // string
+	sizeLockTime := uint64(8)            // int64
+	sizeFee := uint64(8)
+
+	sizeSigPubKey := uint64(len(tx.SigPubKey))
+	sizeSig := uint64(len(tx.Sig))
+	sizeProof := uint64(len(tx.Proof.Bytes()))
+
+	sizePubKeyLastByte := uint64(1)
+	// TODO 0xjackpolope
+	//sizeMetadata :=
+
+	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte
+
+	return uint64(math.Ceil(float64(sizeTx) / 1024))
 }
 
 // GetType returns the type of the transaction
@@ -454,24 +471,6 @@ func (tx *Tx) ListNullifiers() [][]byte {
 	return result
 }
 
-// EstimateTxSize returns the estimated size of the tx in kilobyte
-func EstimateTxSize(usableTx []*Tx, payments []*privacy.PaymentInfo) uint64 {
-	var sizeVersion uint64 = 1  // int8
-	var sizeType uint64 = 8     // string
-	var sizeLockTime uint64 = 8 // int64
-	var sizeFee uint64 = 8      // uint64
-	var sizeDescs uint64        // uint64
-	if payments != nil {
-		sizeDescs = uint64(common.Max(1, (len(usableTx)+len(payments)-3))) * EstimateJSDescSize()
-	} else {
-		sizeDescs = uint64(common.Max(1, (len(usableTx)-3))) * EstimateJSDescSize()
-	}
-	var sizejSPubKey uint64 = 64 // [64]byte
-	var sizejSSig uint64 = 64    // [64]byte
-	estimateTxSizeInByte := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeDescs + sizejSPubKey + sizejSSig
-	return uint64(math.Ceil(float64(estimateTxSizeInByte) / 1024))
-}
-
 // CheckCMExistence returns true if cm exists in cm list
 func (tx Tx) CheckCMExistence(cm []byte, db database.DatabaseInterface, chainID byte) (bool, error) {
 	ok, err := db.HasCommitment(cm, chainID)
@@ -485,14 +484,15 @@ func (tx *Tx) CheckTxVersion(maxTxVersion int8) bool {
 	return true
 }
 
-func (tx *Tx) CheckTransactionFee(minFee uint64) bool {
+func (tx *Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
 	if tx.IsSalaryTx() {
 		return true
 	}
 	if tx.Metadata != nil {
-		return tx.Metadata.CheckTransactionFee(tx, minFee)
+		return tx.Metadata.CheckTransactionFee(tx, minFeePerKbTx)
 	}
-	if tx.Fee < minFee {
+	fullFee := minFeePerKbTx * tx.GetTxActualSize()
+	if tx.Fee < fullFee {
 		return false
 	}
 	return true
@@ -667,10 +667,6 @@ func (tx *Tx) IsPrivacy() bool {
 	default:
 		return true
 	}
-}
-
-func (tx *Tx) SetSigPrivKey(privKey []byte, randSK *big.Int) {
-	tx.sigPrivKey = append(privKey, randSK.Bytes()...)
 }
 
 func (tx *Tx) ValidateType() bool {

@@ -9,7 +9,7 @@ import (
 )
 
 func TestPKComMultiRange(t *testing.T) {
-	testNum := 1
+	testNum := 2
 	values := make([]*big.Int, testNum)
 	for i := 0; i < testNum; i++ {
 		values[i] = new(big.Int)
@@ -32,6 +32,7 @@ func TestPKComMultiRange(t *testing.T) {
 	} else {
 		fmt.Println("***** Multi Range Proof FAILURE")
 	}
+	fmt.Println(len(Vproof.Bytes()))
 	//proof_sum,_:= witness.ProveSum()
 	//	if proof.VerifySum(proof_sum) {
 	//		fmt.Println("Sum Proof Verification works")

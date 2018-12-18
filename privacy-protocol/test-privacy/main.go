@@ -2,10 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/cashec"
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/transaction"
+	"math/big"
 )
 
 func main() {
@@ -68,6 +65,8 @@ func main() {
 	//zkp.TestPKComMultiRange()
 
 	//zkp.TestOpeningsProtocol()
+
+
 
 	/*---------------------- TEST ZERO KNOWLEDGE ----------------------*/
 
@@ -170,7 +169,7 @@ func main() {
 	//privacy.TestCommitment(01)
 
 	/*----------------- TEST SIGNATURE -----------------*/
-	privacy.TestSchn()
+	//privacy.TestSchn()
 	//zkp.PKComMultiRangeTest()
 	//privacy.TestMultiSig()
 
@@ -309,27 +308,59 @@ func main() {
 	//fmt.Printf("Len Out coin bytes: %v\n", len(outCoinBytes))
 
 	/*----------------- TEST SIGN TX -----------------*/
-	tx := new(transaction.Tx)
-	tx.Fee = 0
-	tx.Type = common.TxNormalType
+	//tx := new(transaction.Tx)
+	//tx.Fee = 0
+	//tx.Type = common.TxNormalType
+	//
+	//keySet := new(cashec.KeySet)
+	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	//fmt.Printf("spending key byte : %v\n", spendingKey)
+	//keySet.ImportFromPrivateKey(&spendingKey)
+	//
+	//randSK := privacy.RandInt()
+	//
+	//tx.PubKeyLastByteSender = keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk) - 1]
+	//sigPrivKeyBytes := tx.SetSigPrivKey(spendingKey, randSK)
+	//
+	//fmt.Printf("spending key byte : %v\n", spendingKey)
+	//fmt.Printf("randSK byte : %v\n", randSK.Bytes())
+	//fmt.Printf("Private key combine: %v\n", sigPrivKeyBytes)
+	//
+	//
+	//
+	//tx.SignTx(true)
+	//
+	//res, err := tx.VerifySigTx(true)
+	//if err != nil{
+	//	fmt.Printf("Err: %v\n", err)
+	//}
+	//
+	//fmt.Println(res)
 
-	keySet := new(cashec.KeySet)
-	spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	keySet.ImportFromPrivateKey(&spendingKey)
+	/*----------------- TEST AddPaddingBigInt -----------------*/
 
-	randSK := privacy.RandInt()
+	//num := privacy.RandBytes(30)
+	//numInt := new(big.Int).SetBytes(num)
+	//fmt.Printf("Num int before adding padding: %v\n", numInt.Bytes())
+	//
+	//tmp :=privacy.AddPaddingBigInt(numInt,32)
+	//fmt.Printf("Num int after adding padding: %v\n", tmp)
 
-	tx.PubKeyLastByteSender = keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk) - 1]
-	tx.SetSigPrivKey(spendingKey, randSK)
+	//n := "ssssssssss"
+	//fmt.Printf("Lem of n: %v\n", len(n))
+	//fmt.Printf("Lem of n: %v\n", len(n))
 
+	//fmt.Println(zkp.EstimateMultiRangeProof(10))
 
-	tx.SignTx(true)
+	a := new(big.Int).SetUint64(10)
+	//b := new(big.Int).SetBytes(a.Bytes())
+	b := new(big.Int).Set(a)
 
-	res, err := tx.VerifySigTx(true)
-	if err != nil{
-		fmt.Printf("Err: %v\n", err)
-	}
+	fmt.Printf("a before: %v\n", a)
+	fmt.Printf("b before: %v\n", b)
 
-	fmt.Println(res)
+	a = a.Add(a, big.NewInt(10))
 
+	fmt.Printf("a after: %v\n", a)
+	fmt.Printf("b after: %v\n", b)
 }
