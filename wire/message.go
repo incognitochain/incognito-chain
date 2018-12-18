@@ -82,7 +82,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageBlockShard{}
 		break
 	case CmdCrossShard:
-		msg = &MessageBlock{}
+		msg = &MessageCrossShard{}
 		break
 	case CmdBlkShardToBeacon:
 		msg = &MessageShardToBeacon{}

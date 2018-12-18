@@ -97,9 +97,21 @@ out:
 						//	{
 						//		self.HandleMessageRegisteration(msg)
 						//	}
-					case *wire.MessageBlock:
+					case *wire.MessageBlockBeacon:
 						{
-							self.HandleMessageBlock(msg)
+							self.HandleMessageBlockBeacon(msg)
+						}
+					case *wire.MessageBlockShard:
+						{
+							self.HandleMessageBlockShard(msg)
+						}
+					case *wire.MessageCrossShard:
+						{
+							self.HandleMessageCrossShard(msg)
+						}
+					case *wire.MessageShardToBeacon:
+						{
+							self.HandleMessageShardToBeacon(msg)
 						}
 					case *wire.MessageGetBlocks:
 						{
