@@ -1,7 +1,6 @@
 package constantpos
 
 import (
-	"errors"
 	"sync"
 
 	"encoding/binary"
@@ -10,14 +9,20 @@ import (
 )
 
 type CommitteeStruct struct {
-	ValidatorBlkNum       map[string]int //track the number of block created by each validator
-	ValidatorReliablePts  map[string]int //track how reliable is the validator node
 	CurrentCommittee      []string
 	cQuitCommitteeWatcher chan struct{}
 	cmWatcherStarted      bool
 
 	sync.Mutex
 	LastUpdate int64
+}
+
+func (self *CommitteeStruct) UpdateCommittee(newCommitee []string) {
+	self.Lock()
+	defer self.Unlock()
+	self.CurrentCommittee = make([]string, common.TotalValidators)
+	copy(newCommitee, self.CurrentCommittee)
+	// self.LastUpdate
 }
 
 func (self *CommitteeStruct) GetCommittee() []string {
@@ -37,11 +42,6 @@ func (self *CommitteeStruct) CheckCommittee(committee []string, blockHeight int,
 	return true
 }
 
-func (self *CommitteeStruct) getshardIDByPbk(pbk string) byte {
-	committee := self.GetCommittee()
-	return byte(common.IndexOfStr(pbk, committee))
-}
-
 // func (self *CommitteeStruct) UpdateCommitteePoint(chainLeader string, validatorSig []string) {
 // 	self.Lock()
 // 	defer self.Unlock()
@@ -57,29 +57,29 @@ func (self *CommitteeStruct) getshardIDByPbk(pbk string) byte {
 // 	}
 // }
 
-func (self *CommitteeStruct) UpdateCommittee(producerPbk string, chanId byte) error {
-	self.Lock()
-	defer self.Unlock()
+// func (self *CommitteeStruct) UpdateCommittee(producerPbk string, chanId byte) error {
+// 	self.Lock()
+// 	defer self.Unlock()
 
-	committee := make([]string, common.TotalValidators)
-	copy(committee, self.CurrentCommittee)
+// 	committee := make([]string, common.TotalValidators)
+// 	copy(committee, self.CurrentCommittee)
 
-	idx := common.IndexOfStr(producerPbk, committee)
-	if idx >= 0 {
-		return errors.New("pbk is existed on committee list")
-	}
-	currentCommittee := make([]string, common.TotalValidators)
-	currentCommittee = append(committee[:chanId], producerPbk)
-	currentCommittee = append(currentCommittee, committee[chanId+1:]...)
-	self.CurrentCommittee = currentCommittee
-	//remove producerPbk from candidate list
-	// for shardID, bestState := range self.config.BlockChain.BestState {
-	// 	bestState.RemoveCandidate(producerPbk)
-	// 	self.config.BlockChain.StoreBestState(byte(shardID))
-	// }
+// 	idx := common.IndexOfStr(producerPbk, committee)
+// 	if idx >= 0 {
+// 		return errors.New("pbk is existed on committee list")
+// 	}
+// 	currentCommittee := make([]string, common.TotalValidators)
+// 	currentCommittee = append(committee[:chanId], producerPbk)
+// 	currentCommittee = append(currentCommittee, committee[chanId+1:]...)
+// 	self.CurrentCommittee = currentCommittee
+// 	//remove producerPbk from candidate list
+// 	// for shardID, bestState := range self.config.BlockChain.BestState {
+// 	// 	bestState.RemoveCandidate(producerPbk)
+// 	// 	self.config.BlockChain.StoreBestState(byte(shardID))
+// 	// }
 
-	return nil
-}
+// 	return nil
+// }
 
 func (self *CommitteeStruct) StartCommitteeWatcher() {
 	// if self.cmWatcherStarted {

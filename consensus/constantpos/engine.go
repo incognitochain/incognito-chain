@@ -53,7 +53,7 @@ func (self *Engine) Stop() {
 
 }
 
-func (self *Engine) UpdateChain(block *blockchain.BlockV2) {
+func (self *Engine) UpdateShardChain(block *blockchain.BlockV2) {
 	err := self.config.BlockChain.ConnectBlock(block)
 	if err != nil {
 		Logger.log.Error(err)
@@ -86,8 +86,12 @@ func (self *Engine) UpdateChain(block *blockchain.BlockV2) {
 	// self.Committee().UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)
 }
 
-func (self *Engine) Committee() *CommitteeStruct {
-	return &CommitteeStruct{}
+func (self *Engine) GetShardCommittee(shardID byte) CommitteeStruct {
+	return CommitteeStruct{}
+}
+
+func (self *Engine) GetBeaconCommittee() CommitteeStruct {
+	return CommitteeStruct{}
 }
 
 func (self *Engine) createTmplBlock() *blockchain.BlockV2 {
