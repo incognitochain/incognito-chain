@@ -97,14 +97,14 @@ func (customTokenTx *TxCustomToken) validateDoubleSpendCustomTokenWithBlockchain
 
 func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	bcr metadata.BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 	db database.DatabaseInterface,
 ) error {
 	if customTokenTx.GetType() == common.TxSalaryType {
 		return nil
 	}
 	if customTokenTx.Metadata != nil {
-		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, chainID, db)
+		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, shardID, db)
 		if err != nil || !isContinued {
 			return err
 		}
@@ -112,7 +112,7 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 
 	// TODO: add validate signs for multisig tx
 
-	err := customTokenTx.Tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
+	err := customTokenTx.Tx.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
 	if err != nil {
 		return err
 	}
@@ -168,9 +168,9 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
-func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainID byte) bool {
+func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte) bool {
 	// validate for normal tx
-	if tx.Tx.ValidateTransaction(hasPrivacy, db, chainID) {
+	if tx.Tx.ValidateTransaction(hasPrivacy, db, shardID) {
 		if len(tx.listUtxo) == 0 {
 			return false
 		}
@@ -218,13 +218,13 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
-	chainID byte,
+	shardID byte,
 ) bool {
 	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
 	if !ok {
 		return false
 	}
-	ok = customTokenTx.ValidateTransaction(hasPrivacy, db, chainID)
+	ok = customTokenTx.ValidateTransaction(hasPrivacy, db, shardID)
 	if !ok {
 		return false
 	}

@@ -17,7 +17,7 @@ func NewVoteDCBBoardMetadata(voteDCBBoardMetadata map[string]interface{}) *VoteD
 	}
 }
 
-func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	return true, nil
 }
 
@@ -54,7 +54,7 @@ func NewVoteGOVBoardMetadata(voteGOVBoardMetadata map[string]interface{}) *VoteG
 	}
 }
 
-func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (voteGOVBoardMetadata *VoteGOVBoardMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	return true, nil
 }
 

@@ -19,14 +19,14 @@ const (
 type LoanResponse struct {
 	LoanID     []byte
 	Response   ValidLoanResponse
-	ValidUntil int32
+	ValidUntil uint64
 
 	MetadataBase
 }
 
 func NewLoanResponse(data map[string]interface{}) *LoanResponse {
 	result := LoanResponse{
-		ValidUntil: int32(data["ValidUntil"].(float64)),
+		ValidUntil: uint64(data["ValidUntil"].(float64)),
 	}
 	s, _ := hex.DecodeString(data["LoanID"].(string))
 	result.LoanID = s
@@ -47,7 +47,7 @@ func (lr *LoanResponse) Hash() *common.Hash {
 	return &hash
 }
 
-func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (lr *LoanResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if only board members created this tx
 	isBoard := false
 	for _, gov := range bcr.GetDCBBoardPubKeys() {

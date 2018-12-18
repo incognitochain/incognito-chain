@@ -22,7 +22,7 @@ func (sealDCBBallotMetadata *SealedDCBBallotMetadata) Hash() *common.Hash {
 	return &hash
 }
 
-func (sealDCBBallotMetadata *SealedDCBBallotMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (sealDCBBallotMetadata *SealedDCBBallotMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	//Validate these pubKeys are in board
 	dcbBoardPubKeys := bcr.GetDCBBoardPubKeys()
 	for _, j := range sealDCBBallotMetadata.LockerPubKey {
@@ -90,9 +90,9 @@ func (sealedLv1DCBBallotMetadata *SealedLv1DCBBallotMetadata) Hash() *common.Has
 	return &hash
 }
 
-func (sealedLv1DCBBallotMetadata *SealedLv1DCBBallotMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (sealedLv1DCBBallotMetadata *SealedLv1DCBBallotMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	//Check base seal metadata
-	ok, err := sealedLv1DCBBallotMetadata.SealedDCBBallotMetadata.ValidateTxWithBlockChain(tx, bcr, chainID, db)
+	ok, err := sealedLv1DCBBallotMetadata.SealedDCBBallotMetadata.ValidateTxWithBlockChain(tx, bcr, shardID, db)
 	if err != nil || !ok {
 		return ok, err
 	}
@@ -147,9 +147,9 @@ func (sealedLv2DCBBallotMetadata *SealedLv2DCBBallotMetadata) Hash() *common.Has
 	return &hash
 }
 
-func (sealedLv2DCBBallotMetadata *SealedLv2DCBBallotMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (sealedLv2DCBBallotMetadata *SealedLv2DCBBallotMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	//Check base seal metadata
-	ok, err := sealedLv2DCBBallotMetadata.SealedDCBBallotMetadata.ValidateTxWithBlockChain(tx, bcr, chainID, db)
+	ok, err := sealedLv2DCBBallotMetadata.SealedDCBBallotMetadata.ValidateTxWithBlockChain(tx, bcr, shardID, db)
 	if err != nil || !ok {
 		return ok, err
 	}
@@ -244,7 +244,7 @@ func (normalDCBBallotFromSealerMetadata *NormalDCBBallotFromSealerMetadata) Hash
 	return &hash
 }
 
-func (normalDCBBallotFromSealerMetadata *NormalDCBBallotFromSealerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (normalDCBBallotFromSealerMetadata *NormalDCBBallotFromSealerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	//Validate these pubKeys are in board
 	dcbBoardPubKeys := bcr.GetDCBBoardPubKeys()
 	for _, j := range normalDCBBallotFromSealerMetadata.LockerPubKey {
@@ -313,7 +313,7 @@ func (normalDCBBallotFromOwnerMetadata *NormalDCBBallotFromOwnerMetadata) Hash()
 	return &hash
 }
 
-func (normalDCBBallotFromOwnerMetadata *NormalDCBBallotFromOwnerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (normalDCBBallotFromOwnerMetadata *NormalDCBBallotFromOwnerMetadata) ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	//Validate these pubKeys are in board
 	dcbBoardPubKeys := bcr.GetDCBBoardPubKeys()
 	for _, j := range normalDCBBallotFromOwnerMetadata.LockerPubKey {

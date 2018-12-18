@@ -14,7 +14,7 @@ const (
 
 type MessageSwapRequest struct {
 	LockTime     int64
-	ChainID      byte
+	shardID      byte
 	Candidate    string
 	Requester    string
 	RequesterSig string
@@ -49,7 +49,7 @@ func (self *MessageSwapRequest) GetMsgByte() []byte {
 	bLTime := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bLTime, uint64(self.LockTime))
 	rawBytes = append(rawBytes, bLTime...)
-	rawBytes = append(rawBytes, self.ChainID)
+	rawBytes = append(rawBytes, self.shardID)
 	rawBytes = append(rawBytes, []byte(self.Candidate)...)
 	rawBytes = append(rawBytes, []byte(self.Requester)...)
 	rawBytes = append(rawBytes, []byte(self.SenderID)...)

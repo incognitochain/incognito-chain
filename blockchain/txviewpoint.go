@@ -3,17 +3,18 @@ package blockchain
 import (
 	"errors"
 
-	"github.com/ninjadotorg/constant/common"
-	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/transaction"
 	"math/big"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-	"github.com/ninjadotorg/constant/privacy-protocol"
+
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
+	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"github.com/ninjadotorg/constant/transaction"
 )
 
 type TxViewPoint struct {
-	chainID           byte
+	shardID           byte
 	listSerialNumbers [][]byte // array serialNumbers
 	listCommitments   [][]byte
 	mapCommitments    map[string][][]byte //map[base58check.encode{pubkey}]([]([]byte-commitment))
@@ -115,8 +116,8 @@ func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.Datab
 fetchTxViewPointFromBlock get list nullifiers and commitments from txs in block and check if they are not in Main chain db
 return a tx view point which contains list new nullifiers and new commitments from block
 */
-func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface, block *Block) error {
-	transactions := block.Transactions
+func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface, block *BlockV2) error {
+	transactions := block.Body.(*BlockBodyShard).Transactions
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedSerialNumbers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
@@ -127,7 +128,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		case common.TxNormalType:
 			{
 				normalTx := tx.(*transaction.Tx)
-				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.ChainID, db, normalTx.Proof)
+				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.(*BlockHeaderShard).ShardID, db, normalTx.Proof)
 				acceptedSerialNumbers = append(acceptedSerialNumbers, temp1...)
 				for pubkey, data := range temp2 {
 					if acceptedCommitments[pubkey] == nil {
@@ -149,7 +150,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		case common.TxSalaryType:
 			{
 				normalTx := tx.(*transaction.Tx)
-				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.ChainID, db, normalTx.Proof)
+				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.(*BlockHeaderShard).ShardID, db, normalTx.Proof)
 				acceptedSerialNumbers = append(acceptedSerialNumbers, temp1...)
 				for pubkey, data := range temp2 {
 					if acceptedCommitments[pubkey] == nil {
@@ -171,7 +172,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		case common.TxCustomTokenType:
 			{
 				tx := tx.(*transaction.TxCustomToken)
-				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.ChainID, db, tx.Proof)
+				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.(*BlockHeaderShard).ShardID, db, tx.Proof)
 				acceptedSerialNumbers = append(acceptedSerialNumbers, temp1...)
 				for pubkey, data := range temp2 {
 					if acceptedCommitments[pubkey] == nil {
@@ -216,9 +217,9 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 /*
 Create a TxNormal view point, which contains data about nullifiers and commitments
 */
-func NewTxViewPoint(chainId byte) *TxViewPoint {
+func NewTxViewPoint(shardID byte) *TxViewPoint {
 	return &TxViewPoint{
-		chainID:           chainId,
+		shardID:           shardID,
 		listSerialNumbers: make([][]byte, 0),
 		listCommitments:   make([][]byte, 0),
 		mapCommitments:    make(map[string][][]byte, 0),

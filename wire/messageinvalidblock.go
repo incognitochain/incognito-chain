@@ -13,7 +13,7 @@ const (
 type MessageInvalidBlock struct {
 	Reason       string //the reason it's invalid could be in
 	BlockHash    string
-	ChainID      byte
+	shardID      byte
 	Validator    string
 	ValidatorSig string
 }

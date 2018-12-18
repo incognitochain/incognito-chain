@@ -87,7 +87,7 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 /*
 // add transaction into pool
 */
-func (tp *TxPool) addTx(tx metadata.Transaction, height int32, fee uint64) *TxDesc {
+func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxDesc {
 	txD := &TxDesc{
 		Desc: metadata.TxDesc{
 			Tx:     tx,
@@ -105,9 +105,9 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height int32, fee uint64) *TxDe
 	// Record this tx for fee estimation if enabled. only apply for normal tx
 	if tx.GetType() == common.TxNormalType {
 		if tp.config.FeeEstimator != nil {
-			chainId, err := common.GetTxSenderChain(tx.(*transaction.Tx).Proof.PubKeyLastByteSender)
+			shardID, err := common.GetTxSenderChain(tx.(*transaction.Tx).Proof.PubKeyLastByteSender)
 			if err == nil {
-				tp.config.FeeEstimator[chainId].ObserveTransaction(txD)
+				tp.config.FeeEstimator[shardID].ObserveTransaction(txD)
 			} else {
 				Logger.log.Error(err)
 			}
@@ -128,16 +128,16 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	txHash := tx.Hash()
 
 	// that make sure transaction is accepted when passed any rules
-	var chainID byte
+	var shardID byte
 	var err error
 
-	// get chainID of tx
-	chainID, err = common.GetTxSenderChain(tx.GetSenderAddrLastByte())
+	// get shardID of tx
+	shardID, err = common.GetTxSenderChain(tx.GetSenderAddrLastByte())
 
 	if err != nil {
 		return nil, nil, err
 	}
-	bestHeight := tp.config.BlockChain.BestState[chainID].BestBlock.Header.Height
+	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.GetHeight()
 	// nextBlockHeight := bestHeight + 1
 	// Check tx with policy
 	// check version
@@ -149,7 +149,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 
 	// check fee of tx
-	minFee := tp.config.Policy.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.TxFee
+	// minFee := tp.config.Policy.BlockChain.BestState.Beacon.BestBlock.Header.(*blockchain.BlockHeaderBeacon).GOVConstitution.GOVParams.TxFee
+	minFee := uint64(1)
 	txFee := tx.GetTxFee()
 	ok = tx.CheckTransactionFee(minFee)
 	if !ok {
@@ -166,8 +167,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 
 	// validate tx with data of blockchain
-	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, chainID, tp.config.BlockChain.GetDatabase())
-	// err = tp.ValidateTxWithBlockChain(tx, chainID)
+	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.BlockChain.GetDatabase())
+	// err = tp.ValidateTxWithBlockChain(tx, shardID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -198,7 +199,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 
 	// ValidateTransaction tx by it self
 	// validate := tp.ValidateTxByItSelf(tx)
-	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, chainID)
+	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
 	if !validated {
 		err := MempoolTxError{}
 		err.Init(RejectInvalidTx, errors.New("Invalid tx"))

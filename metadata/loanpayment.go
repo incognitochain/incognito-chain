@@ -35,7 +35,7 @@ func (lp *LoanPayment) Hash() *common.Hash {
 	return &hash
 }
 
-func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	receivers, _ := txr.GetReceivers()
 	if len(receivers) == 0 {
 		return false, fmt.Errorf("Loan payment must be sent to DCB address")
@@ -62,7 +62,7 @@ func (lp *LoanPayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainR
 	if err != nil {
 		return false, err
 	}
-	if lp.PayPrinciple && uint32(bcr.GetHeight())+requestMeta.Params.Maturity >= deadline {
+	if lp.PayPrinciple && bcr.GetHeight(shardID)+requestMeta.Params.Maturity >= deadline {
 		return false, fmt.Errorf("Interest must be fully paid before paying principle")
 	}
 	return true, nil

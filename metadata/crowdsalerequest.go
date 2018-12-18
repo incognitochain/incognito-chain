@@ -26,9 +26,9 @@ func NewCrowdsaleRequest(csReqData map[string]interface{}) *CrowdsaleRequest {
 	}
 }
 
-func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// check double spending on fee + buy/sell amount tx
-	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
+	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
 	if err != nil {
 		return false, err
 	}
@@ -44,7 +44,7 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	if err != nil {
 		return false, err
 	}
-	if saleData.EndBlock >= bcr.GetHeight() {
+	if saleData.EndBlock >= bcr.GetHeight(shardID) {
 		return false, err
 	}
 	return false, nil

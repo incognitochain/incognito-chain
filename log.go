@@ -15,7 +15,6 @@ import (
 	"github.com/ninjadotorg/constant/mempool"
 	"github.com/ninjadotorg/constant/netsync"
 	"github.com/ninjadotorg/constant/peer"
-	"github.com/ninjadotorg/constant/rpcserver"
 	"github.com/ninjadotorg/constant/wallet"
 )
 
@@ -28,14 +27,14 @@ var (
 	addrManagerLoger  = backendLog.Logger("Address Log")
 	connManagerLogger = backendLog.Logger("Connection Manager Log")
 	mainLogger        = backendLog.Logger("Server Log")
-	rpcLogger         = backendLog.Logger("RPC Log")
-	netsyncLogger     = backendLog.Logger("Netsync Log")
-	peerLogger        = backendLog.Logger("Peer Log")
-	dbLogger          = backendLog.Logger("Database Log")
-	walletLogger      = backendLog.Logger("Wallet log")
-	blockchainLogger  = backendLog.Logger("blockChain log")
-	consensusLogger   = backendLog.Logger("Consensus log")
-	mempoolLogger     = backendLog.Logger("Mempool log")
+	// rpcLogger         = backendLog.Logger("RPC Log")
+	netsyncLogger    = backendLog.Logger("Netsync Log")
+	peerLogger       = backendLog.Logger("Peer Log")
+	dbLogger         = backendLog.Logger("Database Log")
+	walletLogger     = backendLog.Logger("Wallet log")
+	blockchainLogger = backendLog.Logger("blockChain log")
+	consensusLogger  = backendLog.Logger("Consensus log")
+	mempoolLogger    = backendLog.Logger("Mempool log")
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -55,7 +54,7 @@ func init() {
 	// for other components
 	connmanager.Logger.Init(connManagerLogger)
 	addrmanager.Logger.Init(addrManagerLoger)
-	rpcserver.Logger.Init(rpcLogger)
+	// rpcserver.Logger.Init(rpcLogger)
 	netsync.Logger.Init(netsyncLogger)
 	peer.Logger.Init(peerLogger)
 	database.Logger.Init(dbLogger)
@@ -71,7 +70,7 @@ var subsystemLoggers = map[string]common.Logger{
 
 	"AMGR": addrManagerLoger,
 	"CMGR": connManagerLogger,
-	"RPCS": rpcLogger,
+	// "RPCS": rpcLogger,
 	"NSYN": netsyncLogger,
 	"PEER": peerLogger,
 	"DABA": dbLogger,

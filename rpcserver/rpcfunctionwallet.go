@@ -25,8 +25,8 @@ func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan st
 	accounts := self.config.Wallet.ListAccounts()
 	for accountName, account := range accounts {
 		lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
-		chainIdSender, err := common.GetTxSenderChain(lastByte)
-		outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender)
+		shardIDSender, err := common.GetTxSenderChain(lastByte)
+		outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -155,8 +155,8 @@ func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan
 
 	// get balance for accountName in wallet
 	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
-	chainIdSender, err := common.GetTxSenderChain(lastByte)
-	outcoints, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender)
+	shardIDSender, err := common.GetTxSenderChain(lastByte)
+	outcoints, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, shardIDSender)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -183,8 +183,8 @@ func (self RpcServer) handleGetBalanceByPaymentAddress(params interface{}, close
 
 	// get balance for accountName in wallet
 	lastByte := accountWithPaymentAddress.KeySet.PaymentAddress.Pk[len(accountWithPaymentAddress.KeySet.PaymentAddress.Pk)-1]
-	chainIdSender, err := common.GetTxSenderChain(lastByte)
-	outcoints, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&accountWithPaymentAddress.KeySet, chainIdSender)
+	shardIDSender, err := common.GetTxSenderChain(lastByte)
+	outcoints, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&accountWithPaymentAddress.KeySet, shardIDSender)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -229,8 +229,8 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 		// get balance for all accounts in wallet
 		for _, account := range self.config.Wallet.MasterAccount.Child {
 			lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
-			chainIdSender, err := common.GetTxSenderChain(lastByte)
-			outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender)
+			shardIDSender, err := common.GetTxSenderChain(lastByte)
+			outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
@@ -243,8 +243,8 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 			if account.Name == accountName {
 				// get balance for accountName in wallet
 				lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
-				chainIdSender, err := common.GetTxSenderChain(lastByte)
-				outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender)
+				shardIDSender, err := common.GetTxSenderChain(lastByte)
+				outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender)
 				if err != nil {
 					return nil, NewRPCError(ErrUnexpected, err)
 				}
@@ -293,8 +293,8 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 		if account.Name == accountName {
 			// get balance for accountName in wallet
 			lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
-			chainIdSender, err := common.GetTxSenderChain(lastByte)
-			outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender)
+			shardIDSender, err := common.GetTxSenderChain(lastByte)
+			outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}

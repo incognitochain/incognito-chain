@@ -46,8 +46,8 @@ package transaction
 // 	return nil
 // }
 
-// func (tx *Tx) ValidateTxStake(db database.DatabaseInterface, chainID byte) bool {
-// 	valid := tx.ValidateTransaction(false, db, chainID)
+// func (tx *Tx) ValidateTxStake(db database.DatabaseInterface, shardID byte) bool {
+// 	valid := tx.ValidateTransaction(false, db, shardID)
 // 	if valid == false {
 // 		fmt.Printf("Error validate transaction")
 // 		return false

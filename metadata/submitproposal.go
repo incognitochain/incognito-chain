@@ -23,7 +23,7 @@ func NewSubmitDCBProposalMetadataFromJson(jsonData map[string]interface{}) *Subm
 		j := param.(map[string]interface{})
 		loanParams = append(loanParams, params.LoanParams{
 			InterestRate:     uint64(j["InterestRate"].(float64)),
-			Maturity:         uint32(j["Maturity"].(float64)),
+			Maturity:         uint64(j["Maturity"].(float64)),
 			LiquidationStart: uint64(j["LiquidationStart"].(float64)),
 		})
 	}
@@ -33,7 +33,7 @@ func NewSubmitDCBProposalMetadataFromJson(jsonData map[string]interface{}) *Subm
 				SaleID:       []byte(jsonData["SaleID"].(string)),
 				BuyingAsset:  []byte(jsonData["BuyingAsset"].(string)),
 				SellingAsset: []byte(jsonData["SellingAsset"].(string)),
-				EndBlock:     int32(jsonData["EndBlock"].(float64)),
+				EndBlock:     uint64(jsonData["EndBlock"].(float64)),
 			},
 			MinLoanResponseRequire: uint8(jsonData["MinLoanResponseRequire"].(float64)),
 			LoanParams:             loanParams,

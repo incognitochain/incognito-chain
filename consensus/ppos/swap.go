@@ -23,9 +23,9 @@ func (self *Engine) StartSwap() {
 				Logger.log.Info("Consensus engine STOP SWAP")
 				return
 			}
-		case chainID := <-self.cSwapChain:
+		case shardID := <-self.cSwapChain:
 			{
-				Logger.log.Infof("Consensus engine swap %d START", chainID)
+				Logger.log.Infof("Consensus engine swap %d START", shardID)
 
 				allSigReceived := make(chan struct{})
 				retryTime := 0
@@ -64,7 +64,7 @@ func (self *Engine) StartSwap() {
 				reqSigMsg, _ := wire.MakeEmptyMessage(wire.CmdSwapRequest)
 				reqSigMsg.(*wire.MessageSwapRequest).LockTime = lockTime
 				reqSigMsg.(*wire.MessageSwapRequest).Requester = requesterPbk
-				reqSigMsg.(*wire.MessageSwapRequest).ChainID = chainID
+				reqSigMsg.(*wire.MessageSwapRequest).shardID = shardID
 				reqSigMsg.(*wire.MessageSwapRequest).Candidate = nextProducerPbk
 			BeginSwap:
 			// Collect signatures of other validators
@@ -141,7 +141,7 @@ func (self *Engine) StartSwap() {
 				committeeV := make([]string, common.TotalValidators)
 				copy(committeeV, self.GetCommittee())
 
-				err := self.updateCommittee(nextProducerPbk, chainID)
+				err := self.updateCommittee(nextProducerPbk, shardID)
 				if err != nil {
 					Logger.log.Errorf("Consensus update committee is error", err)
 					continue
@@ -151,13 +151,13 @@ func (self *Engine) StartSwap() {
 				swapUpdMsg, _ := wire.MakeEmptyMessage(wire.CmdSwapUpdate)
 				swapUpdMsg.(*wire.MessageSwapUpdate).LockTime = lockTime
 				swapUpdMsg.(*wire.MessageSwapUpdate).Requester = requesterPbk
-				swapUpdMsg.(*wire.MessageSwapUpdate).ChainID = chainID
+				swapUpdMsg.(*wire.MessageSwapUpdate).shardID = shardID
 				swapUpdMsg.(*wire.MessageSwapUpdate).Candidate = nextProducerPbk
 				swapUpdMsg.(*wire.MessageSwapUpdate).Signatures = signatureMap
 
 				self.config.Server.PushMessageToAll(reqSigMsg)
 
-				Logger.log.Infof("Consensus engine swap %d END", chainID)
+				Logger.log.Infof("Consensus engine swap %d END", shardID)
 				continue
 			}
 		}

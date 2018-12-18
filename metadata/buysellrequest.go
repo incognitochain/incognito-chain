@@ -33,10 +33,10 @@ func NewBuySellRequest(bsReqData map[string]interface{}) *BuySellRequest {
 	}
 }
 
-func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (bsReq *BuySellRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 
 	// check double spending on fee + buy/sell amount tx
-	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
+	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
 	if err != nil {
 		return false, err
 	}

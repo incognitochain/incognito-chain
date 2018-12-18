@@ -113,9 +113,9 @@ func (self *Engine) Start() error {
 	self.committee.ValidatorReliablePts = make(map[string]int)
 	self.committee.CurrentCommittee = make([]string, common.TotalValidators)
 
-	for chainID := 0; chainID < common.TotalValidators; chainID++ {
-		self.knownChainsHeight.Heights[chainID] = int(self.config.BlockChain.BestState[chainID].Height)
-		self.validatedChainsHeight.Heights[chainID] = 1
+	for shardID := 0; shardID < common.TotalValidators; shardID++ {
+		self.knownChainsHeight.Heights[shardID] = int(self.config.BlockChain.BestState[shardID].Height)
+		self.validatedChainsHeight.Heights[shardID] = 1
 	}
 
 	copy(self.committee.CurrentCommittee, self.config.ChainParams.GenesisBlock.Header.Committee)
@@ -126,13 +126,13 @@ func (self *Engine) Start() error {
 		validatedChainsHeight := make([]int, common.TotalValidators)
 		var wg sync.WaitGroup
 		errCh := make(chan error)
-		for chainID := byte(0); chainID < common.TotalValidators; chainID++ {
+		for shardID := byte(0); shardID < common.TotalValidators; shardID++ {
 			//Don't validate genesis block (blockHeight = 1)
-			validatedChainsHeight[chainID] = 1
-			self.config.FeeEstimator[chainID] = mempool.NewFeeEstimator(
+			validatedChainsHeight[shardID] = 1
+			self.config.FeeEstimator[shardID] = mempool.NewFeeEstimator(
 				mempool.DefaultEstimateFeeMaxRollback,
 				mempool.DefaultEstimateFeeMinRegisteredBlocks)
-			go func(chainID byte) {
+			go func(shardID byte) {
 				wg.Add(1)
 				var err error
 				defer func() {
@@ -141,9 +141,9 @@ func (self *Engine) Start() error {
 						errCh <- err
 					}
 				}()
-				for blockHeight := 2; blockHeight <= self.knownChainsHeight.Heights[chainID]; blockHeight++ {
+				for blockHeight := 2; blockHeight <= self.knownChainsHeight.Heights[shardID]; blockHeight++ {
 					var block *blockchain.Block
-					block, err = self.config.BlockChain.GetBlockByBlockHeight(int32(blockHeight), byte(chainID))
+					block, err = self.config.BlockChain.GetBlockByBlockHeight(int32(blockHeight), byte(shardID))
 					if err != nil {
 						Logger.log.Error(err)
 						return
@@ -161,17 +161,17 @@ func (self *Engine) Start() error {
 						Logger.log.Error(err)
 						return
 					}
-					err = self.config.FeeEstimator[block.Header.ChainID].RegisterBlock(block)
+					err = self.config.FeeEstimator[block.Header.shardID].RegisterBlock(block)
 					if err != nil {
 						Logger.log.Error(err)
 						return
 					}
 					self.validatedChainsHeight.Lock()
-					self.validatedChainsHeight.Heights[chainID] = blockHeight
+					self.validatedChainsHeight.Heights[shardID] = blockHeight
 					self.validatedChainsHeight.Unlock()
 					self.committee.UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)
 				}
-			}(chainID)
+			}(shardID)
 		}
 		time.Sleep(1000 * time.Millisecond)
 		wg.Wait()
@@ -242,13 +242,13 @@ func (self *Engine) StartProducer(producerKeySet cashec.KeySet) {
 			default:
 				if self.started {
 					if common.IntArrayEquals(self.knownChainsHeight.Heights, self.validatedChainsHeight.Heights) {
-						chainID := self.getMyChain()
-						if chainID >= 0 && chainID < common.TotalValidators {
+						shardID := self.getMyChain()
+						if shardID >= 0 && shardID < common.TotalValidators {
 							go self.StartCommitteeWatcher()
 							Logger.log.Info("(๑•̀ㅂ•́)و Yay!! It's my turn")
 							Logger.log.Info("Current chainsHeight")
 							Logger.log.Info(self.validatedChainsHeight.Heights)
-							Logger.log.Info("My chainID: ", chainID)
+							Logger.log.Info("My shardID: ", shardID)
 
 							newBlock, err := self.createBlock()
 							if err != nil {
@@ -292,16 +292,16 @@ func (self *Engine) StopProducer() {
 
 func (self *Engine) createBlock() (*blockchain.Block, error) {
 	Logger.log.Info("Start creating block...")
-	myChainID := self.getMyChain()
+	myshardID := self.getMyChain()
 	paymentAddress := self.config.ProducerKeySet.PaymentAddress
 	privatekey := self.config.ProducerKeySet.PrivateKey
-	newblock, err := self.config.BlockGen.NewBlockTemplate(&paymentAddress, &privatekey, myChainID)
+	newblock, err := self.config.BlockGen.NewBlockTemplate(&paymentAddress, &privatekey, myshardID)
 	if err != nil {
 		return &blockchain.Block{}, err
 	}
 	newblock.Header.ChainsHeight = make([]int, common.TotalValidators)
 	copy(newblock.Header.ChainsHeight, self.validatedChainsHeight.Heights)
-	newblock.Header.ChainID = myChainID
+	newblock.Header.shardID = myshardID
 	newblock.BlockProducer = base58.Base58Check{}.Encode(self.config.ProducerKeySet.PaymentAddress.Pk, byte(0x00))
 
 	return newblock, nil
@@ -326,7 +326,7 @@ finalizing:
 	if err != nil {
 		return err
 	}
-	finalBlock.Header.BlockCommitteeSigs[finalBlock.Header.ChainID] = sig
+	finalBlock.Header.BlockCommitteeSigs[finalBlock.Header.shardID] = sig
 
 	committee := finalBlock.Header.Committee
 
@@ -428,7 +428,7 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 		return
 	}
 	// save block into fee estimator
-	err = self.config.FeeEstimator[block.Header.ChainID].RegisterBlock(block)
+	err = self.config.FeeEstimator[block.Header.shardID].RegisterBlock(block)
 	if err != nil {
 		Logger.log.Error(err)
 		return
@@ -440,21 +440,21 @@ func (self *Engine) UpdateChain(block *blockchain.Block) {
 	}
 
 	// update candidate list
-	err = self.config.BlockChain.BestState[block.Header.ChainID].Update(block)
+	err = self.config.BlockChain.BestState[block.Header.shardID].Update(block)
 	if err != nil {
 		Logger.log.Errorf("Can not update merkle tree for block: %+v", err)
 		return
 	}
-	self.config.BlockChain.StoreBestState(block.Header.ChainID)
+	self.config.BlockChain.StoreBestState(block.Header.shardID)
 
 	self.knownChainsHeight.Lock()
-	if self.knownChainsHeight.Heights[block.Header.ChainID] < int(block.Header.Height) {
-		self.knownChainsHeight.Heights[block.Header.ChainID] = int(block.Header.Height)
+	if self.knownChainsHeight.Heights[block.Header.shardID] < int(block.Header.Height) {
+		self.knownChainsHeight.Heights[block.Header.shardID] = int(block.Header.Height)
 		self.sendBlockMsg(block)
 	}
 	self.knownChainsHeight.Unlock()
 	self.validatedChainsHeight.Lock()
-	self.validatedChainsHeight.Heights[block.Header.ChainID] = int(block.Header.Height)
+	self.validatedChainsHeight.Heights[block.Header.shardID] = int(block.Header.Height)
 	self.validatedChainsHeight.Unlock()
 
 	self.committee.UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)

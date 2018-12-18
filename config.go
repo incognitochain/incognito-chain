@@ -99,11 +99,9 @@ type config struct {
 	// Net config
 	TestNet bool `long:"testnet" description:"Use the test network"`
 
-	// Light bool `long:"light" description:"Default 'false'', when node run with mode 'light'', we only save block-header and a transactions database which relate to accounts in wallet"`
-
-	UserPrvKey string `long:"userprvkey" description:"User private key used for operation in consensus"`
-	NodeRole   string `long:"noderole" description:"Role of this node (beacon/producer/wallet/relay/auto | default role is 'relay', 'auto' mode will switch between 'beacon/producer' and 'replay') for more detail please check github doc repo"`
-
+	UserPrvKey  string   `long:"userprvkey" description:"User private key used for operation in consensus"`
+	NodeRole    string   `long:"noderole" description:"Role of this node (beacon/shard/wallet/relay | default role is 'relay' (relayshards must be set to run), 'shard' mode will switch between 'beacon' and 'shard')"`
+	RelayShards []string `long:"relayshards" description:"set relay shards of this node when in 'relay' mode if noderole is auto then it only sync shard data when user is a shard producer/validator"`
 	// For Wallet
 	Wallet           bool   `long:"enablewallet" description:"Enable wallet"`
 	WalletName       string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
@@ -651,7 +649,7 @@ func (self *config) GetUserKeySet() (*cashec.KeySet, error) {
 	}
 	KeySetUser.ImportFromPrivateKey(&temp.KeySet.PrivateKey)
 	lastByte := KeySetUser.PaymentAddress.Pk[len(KeySetUser.PaymentAddress.Pk)-1]
-	chainIdSender, err := common.GetTxSenderChain(lastByte)
-	Logger.log.Info("chainID: ", chainIdSender)
+	shardIDSender, err := common.GetTxSenderChain(lastByte)
+	Logger.log.Info("shardID: ", shardIDSender)
 	return KeySetUser, nil
 }

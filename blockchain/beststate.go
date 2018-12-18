@@ -14,8 +14,8 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 type BestStateNew struct {
-	Beacon BestStateBeacon
-	Shard  map[byte]BestStateShard
+	Beacon *BestStateBeacon
+	Shard  map[byte]*BestStateShard
 }
 
 type BestStateBeacon struct {
@@ -51,53 +51,35 @@ Init create a beststate data from block and commitment tree
 */
 // #1 - block
 // #2 - commitment merkle tree
-// func (self *BestStateNew) Init(block *BlockV2) {
-// 	bestBlockHash := block.Hash()
-// 	self.BestBlock = block
-// 	self.BestBlockHash = bestBlockHash
+func (self *BestStateBeacon) Init(block *BlockV2) {
+	self.BestBlock = block
+	self.BestBlockHash = *block.Hash()
+}
 
-// 	// self.  += uint64(len(block.Transactions))
-// 	self.NumTxns = uint64(len(block.Transactions))
-// 	self.Height = block.Header.Height
-// 	if self.Candidates == nil {
-// 		self.Candidates = make(map[string]CommitteeCandidateInfo)
-// 	}
+func (self *BestStateShard) Init(block *BlockV2) {
 
-// 	if self.LoanIDs == nil {
-// 		self.LoanIDs = make([][]byte, 0)
-// 	}
-// }
+	self.BestBlock = block
+	self.BestBlockHash = *block.Hash()
 
-// func (self *BestStateNew) Update(block *BlockV2) error {
-// 	//tree := self.CmTree
-// 	//err := UpdateMerkleTreeForBlock(tree, block)
-// 	//if err != nil {
-// 	//	return NewBlockChainError(UnExpectedError, err)
-// 	//}
-// 	bestBlockHash := block.Hash()
-// 	self.BestBlock = block
-// 	self.BestBlockHash = bestBlockHash
-// 	//self.CmTree = tree
+	// self.  += uint64(len(block.Transactions))
+	self.NumTxns = uint64(len(block.Body.(*BlockBodyShard).Transactions))
+	self.TotalTxns = self.NumTxns
+}
 
-// 	self.TotalTxns += uint64(len(block.Transactions))
-// 	self.NumTxns = uint64(len(block.Transactions))
-// 	self.Height = block.Header.Height
-// 	if self.Candidates == nil {
-// 		self.Candidates = make(map[string]CommitteeCandidateInfo)
-// 	}
+func (self *BestStateBeacon) Update(block *BlockV2) error {
 
-// 	// Update list of loan ids
-// 	// TODO
-// 	/*err = self.UpdateLoanIDs(block)
-// 	if err != nil {
-// 		return NewBlockChainError(UnExpectedError, err)
-// 	}*/
-// 	return nil
-// }
+	self.BestBlock = block
+	self.BestBlockHash = *block.Hash()
 
-// func (self *BestStateNew) RemoveCandidate(producerPbk string) {
-// 	_, ok := self.Candidates[producerPbk]
-// 	if ok {
-// 		delete(self.Candidates, producerPbk)
-// 	}
-// }
+	return nil
+}
+
+func (self *BestStateShard) Update(block *BlockV2) error {
+
+	self.BestBlock = block
+	self.BestBlockHash = *block.Hash()
+
+	self.TotalTxns += uint64(len(block.Body.(*BlockBodyShard).Transactions))
+	self.NumTxns = uint64(len(block.Body.(*BlockBodyShard).Transactions))
+	return nil
+}

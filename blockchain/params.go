@@ -5,7 +5,7 @@ Params defines a network by its params. These params may be used by Applications
 to differentiate network as well as addresses and keys for one network
 from those intended for use on another network
 */
-type ParamsNew struct {
+type Params struct {
 	// Name defines a human-readable identifier for the network.
 	Name string
 
@@ -14,7 +14,7 @@ type ParamsNew struct {
 
 	// DefaultPort defines the default peer-to-peer port for the network.
 	DefaultPort string
-
+	ShardsNum   int //max 256 shards
 	// GenesisBlock defines the first block of the chain.
 	GenesisBlockBeacon *BlockV2
 
@@ -83,11 +83,22 @@ var icoParamsTestnetNew = IcoParams{
 	InitialGOVToken:       TestnetInitGovToken,
 }
 
-var TestNetParamsNew = ParamsNew{
+var TestNetParams = Params{
 	Name:        TestnetName,
 	Net:         Testnet,
 	DefaultPort: TestnetDefaultPort,
-
+	ShardsNum:   3,
 	// blockChain parameters
 	GenesisBlockBeacon: BeaconBlockGenerator{}.CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey, preSelectShardNodeTestnetSerializedPubkey, icoParamsTestnetNew, 1000, 1000),
+}
+
+type IcoParams struct {
+	InitialPaymentAddress string
+	InitFundSalary        uint64
+	InitialDCBToken       uint64
+	InitialCMBToken       uint64
+	InitialGOVToken       uint64
+	InitialBondToken      uint64
+	InitialVoteDCBToken   uint64
+	InitialVoteGOVToken   uint64
 }

@@ -23,7 +23,7 @@ func (self *Engine) CheckCandidate(candidate string) error {
 	return nil
 }
 
-func (self *Engine) CheckCommittee(committee []string, blockHeight int, chainID byte) bool {
+func (self *Engine) CheckCommittee(committee []string, blockHeight int, shardID byte) bool {
 
 	return true
 }
@@ -36,13 +36,13 @@ func (self *Engine) signData(data []byte) (string, error) {
 	return base58.Base58Check{}.Encode(signatureByte, byte(0x00)), nil
 }
 
-// getMyChain validator chainID and committee of that chainID
+// getMyChain validator shardID and committee of that shardID
 func (self *Engine) getMyChain() byte {
 	pbk := base58.Base58Check{}.Encode(self.config.ProducerKeySet.PaymentAddress.Pk, byte(0x00))
-	return self.getChainIdByPbk(pbk)
+	return self.getshardIDByPbk(pbk)
 }
 
-func (self *Engine) getChainIdByPbk(pbk string) byte {
+func (self *Engine) getshardIDByPbk(pbk string) byte {
 	committee := self.GetCommittee()
 	return byte(common.IndexOfStr(pbk, committee))
 }
@@ -119,21 +119,21 @@ func (self *Engine) updateCommittee(producerPbk string, chanId byte) error {
 	currentCommittee = append(currentCommittee, committee[chanId+1:]...)
 	self.committee.CurrentCommittee = currentCommittee
 	//remove producerPbk from candidate list
-	for chainId, bestState := range self.config.BlockChain.BestState {
+	for shardID, bestState := range self.config.BlockChain.BestState {
 		bestState.RemoveCandidate(producerPbk)
-		self.config.BlockChain.StoreBestState(byte(chainId))
+		self.config.BlockChain.StoreBestState(byte(shardID))
 	}
 
 	return nil
 }
 
-func (self *Engine) getRawBytesForSwap(lockTime int64, requesterPbk string, chainId byte, producerPbk string) []byte {
+func (self *Engine) getRawBytesForSwap(lockTime int64, requesterPbk string, shardID byte, producerPbk string) []byte {
 	rawBytes := []byte{}
 	bTime := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bTime, uint64(lockTime))
 	rawBytes = append(rawBytes, bTime...)
 	rawBytes = append(rawBytes, []byte(requesterPbk)...)
-	rawBytes = append(rawBytes, chainId)
+	rawBytes = append(rawBytes, shardID)
 	rawBytes = append(rawBytes, []byte(producerPbk)...)
 	return rawBytes
 }

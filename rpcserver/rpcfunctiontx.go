@@ -60,11 +60,11 @@ func (self RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan
 			PaymentAddress: pubKey.KeySet.PaymentAddress,
 		}
 		lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
-		chainIdSender, err := common.GetTxSenderChain(lastByte)
+		shardIDSender, err := common.GetTxSenderChain(lastByte)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		outputCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, chainIdSender)
+		outputCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, shardIDSender)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -104,7 +104,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
-	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	shardIDSender, err := common.GetTxSenderChain(lastByte)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -134,7 +134,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender)
+	outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, shardIDSender)
 	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, note := range outCoins {
 		amount := note.CoinDetails.Value
@@ -148,7 +148,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 	// check real fee per TxNormal
 	var realFee uint64
 	if int64(estimateFeeCoinPerKb) == -1 {
-		temp, _ := self.config.FeeEstimator[chainIdSender].EstimateFee(numBlock)
+		temp, _ := self.config.FeeEstimator[shardIDSender].EstimateFee(numBlock)
 		estimateFeeCoinPerKb = int64(temp)
 	}
 	estimateFeeCoinPerKb += int64(self.config.Wallet.Config.IncrementalFee)
@@ -300,7 +300,7 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 	Logger.log.Infof("Get TransactionByHash input Param %+v", arrayParams[0].(string))
 	txHash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
 	Logger.log.Infof("Get Transaction By Hash %+v", txHash)
-	chainId, blockHash, index, tx, err := self.config.BlockChain.GetTransactionByHash(txHash)
+	shardID, blockHash, index, tx, err := self.config.BlockChain.GetTransactionByHash(txHash)
 	if err != nil {
 		return nil, err
 	}
@@ -312,7 +312,7 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 			result = jsonresult.TransactionDetail{
 				BlockHash: blockHash.String(),
 				Index:     uint64(index),
-				ChainId:   chainId,
+				shardID:   shardID,
 				Hash:      tx.Hash().String(),
 				Version:   tempTx.Version,
 				Type:      tempTx.Type,
@@ -329,7 +329,7 @@ func (self RpcServer) handleGetTransactionByHash(params interface{}, closeChan <
 			result = jsonresult.TransactionDetail{
 				BlockHash: blockHash.String(),
 				Index:     uint64(index),
-				ChainId:   chainId,
+				shardID:   shardID,
 				Hash:      tx.Hash().String(),
 				Version:   tempTx.Version,
 				Type:      tempTx.Type,
@@ -368,11 +368,11 @@ func (self RpcServer) handleRetrieveCommiteeCandidate(params interface{}, closeC
 
 func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	result := make(map[string]string)
-	for chainID, bestState := range self.config.BlockChain.BestState {
+	for shardID, bestState := range self.config.BlockChain.BestState {
 		if bestState.BestBlock.BlockProducer != "" {
-			result[strconv.Itoa(chainID)] = bestState.BestBlock.BlockProducer
+			result[strconv.Itoa(shardID)] = bestState.BestBlock.BlockProducer
 		} else {
-			result[strconv.Itoa(chainID)] = self.config.ChainParams.GenesisBlock.Header.Committee[chainID]
+			result[strconv.Itoa(shardID)] = self.config.ChainParams.GenesisBlock.Header.Committee[shardID]
 		}
 	}
 	return result, nil
@@ -612,7 +612,7 @@ func (self RpcServer) handleRandomCommitments(params interface{}, closeChan <-ch
 		return nil, err
 	}
 	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
-	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	shardIDSender, err := common.GetTxSenderChain(lastByte)
 
 	// #2: available inputCoin from old outputcoin
 	data := jsonresult.ListUnspentResultItem{}
@@ -644,7 +644,7 @@ func (self RpcServer) handleRandomCommitments(params interface{}, closeChan <-ch
 		usableOutputCoins = append(usableOutputCoins, i)
 	}
 	usableInputCoins := transaction.ConvertOutputCoinToInputCoin(usableOutputCoins)
-	commitmentIndexs, myCommitmentIndexs := self.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, chainIdSender)
+	commitmentIndexs, myCommitmentIndexs := self.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, shardIDSender)
 	result := make(map[string]interface{})
 	result["CommitmentIndexs"] = commitmentIndexs
 	result["MyCommitmentIndexs"] = myCommitmentIndexs
@@ -663,7 +663,7 @@ func (self RpcServer) handleHasSerialNumbers(params interface{}, closeChan <-cha
 		return nil, err
 	}
 	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
-	chainIdSender, err := common.GetTxSenderChain(lastByte)
+	shardIDSender, err := common.GetTxSenderChain(lastByte)
 
 	//#2: list serialnumbers in base58check encode string
 	serialNumbersStr := arrayParams[1].([]interface{})
@@ -674,7 +674,7 @@ func (self RpcServer) handleHasSerialNumbers(params interface{}, closeChan <-cha
 	for _, item := range serialNumbersStr {
 		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(self.config.Database)
-		ok, err := db.HasSerialNumber(serialNumber, chainIdSender)
+		ok, err := db.HasSerialNumber(serialNumber, shardIDSender)
 		if ok && err != nil {
 			result[0] = append(result[0], item.(string))
 		} else {

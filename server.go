@@ -25,7 +25,6 @@ import (
 	"github.com/ninjadotorg/constant/netsync"
 	"github.com/ninjadotorg/constant/peer"
 	"github.com/ninjadotorg/constant/rewardagent"
-	"github.com/ninjadotorg/constant/rpcserver"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
@@ -40,7 +39,7 @@ type Server struct {
 	connManager     *connmanager.ConnManager
 	blockChain      *blockchain.BlockChain
 	dataBase        database.DatabaseInterface
-	rpcServer       *rpcserver.RpcServer
+	// rpcServer       *rpcserver.RpcServer
 	memPool         *mempool.TxPool
 	waitGroup       sync.WaitGroup
 	netSync         *netsync.NetSync
@@ -67,12 +66,12 @@ func (self *Server) setupRPCListeners() ([]net.Listener, error) {
 		Logger.log.Info("Disable TLS for RPC is false")
 		// Generate the TLS cert and key file if both don't already
 		// exist.
-		if !fileExists(cfg.RPCKey) && !fileExists(cfg.RPCCert) {
-			err := rpcserver.GenCertPair(cfg.RPCCert, cfg.RPCKey)
-			if err != nil {
-				return nil, err
-			}
-		}
+		// if !fileExists(cfg.RPCKey) && !fileExists(cfg.RPCCert) {
+		// 	err := rpcserver.GenCertPair(cfg.RPCCert, cfg.RPCKey)
+		// 	if err != nil {
+		// 		return nil, err
+		// 	}
+		// }
 		keyPair, err := tls.LoadX509KeyPair(cfg.RPCCert, cfg.RPCKey)
 		if err != nil {
 			return nil, err
@@ -148,19 +147,19 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	if false {
 		Logger.log.Info("Load chain dependencies from DB")
 		self.feeEstimator = make(map[byte]*mempool.FeeEstimator)
-		for _, bestState := range self.blockChain.BestState {
-			chainID := bestState.BestBlock.Header.ChainID
-			feeEstimatorData, err := self.dataBase.GetFeeEstimator(chainID)
+		for _, bestState := range self.blockChain.BestState.Shard {
+			shardID := bestState.BestBlock.Header.(*blockchain.BlockHeaderShard).ShardID
+			feeEstimatorData, err := self.dataBase.GetFeeEstimator(shardID)
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 				if err != nil {
 					Logger.log.Errorf("Failed to restore fee estimator %v", err)
 					Logger.log.Info("Init NewFeeEstimator")
-					self.feeEstimator[chainID] = mempool.NewFeeEstimator(
+					self.feeEstimator[shardID] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
 						mempool.DefaultEstimateFeeMinRegisteredBlocks)
 				} else {
-					self.feeEstimator[chainID] = feeEstimator
+					self.feeEstimator[shardID] = feeEstimator
 				}
 			}
 		}
@@ -300,36 +299,36 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 			return errors.New("RPCS: No valid listen address")
 		}
 
-		rpcConfig := rpcserver.RpcServerConfig{
-			Listenters:    rpcListeners,
-			RPCQuirks:     cfg.RPCQuirks,
-			RPCMaxClients: cfg.RPCMaxClients,
-			ChainParams:   chainParams,
-			BlockChain:    self.blockChain,
-			TxMemPool:     self.memPool,
-			Server:        self,
-			Wallet:        self.wallet,
-			ConnMgr:       self.connManager,
-			AddrMgr:       self.addrManager,
-			RPCUser:       cfg.RPCUser,
-			RPCPass:       cfg.RPCPass,
-			RPCLimitUser:  cfg.RPCLimitUser,
-			RPCLimitPass:  cfg.RPCLimitPass,
-			DisableAuth:   cfg.RPCDisableAuth,
-			// IsGenerateNode:  cfg.Generate,
-			NodeRole:        cfg.NodeRole,
-			FeeEstimator:    self.feeEstimator,
-			ProtocolVersion: self.protocolVersion,
-			Database:        &self.dataBase,
-		}
-		self.rpcServer = &rpcserver.RpcServer{}
-		self.rpcServer.Init(&rpcConfig)
+		// rpcConfig := rpcserver.RpcServerConfig{
+		// 	Listenters:    rpcListeners,
+		// 	RPCQuirks:     cfg.RPCQuirks,
+		// 	RPCMaxClients: cfg.RPCMaxClients,
+		// 	ChainParams:   chainParams,
+		// 	BlockChain:    self.blockChain,
+		// 	TxMemPool:     self.memPool,
+		// 	Server:        self,
+		// 	Wallet:        self.wallet,
+		// 	ConnMgr:       self.connManager,
+		// 	AddrMgr:       self.addrManager,
+		// 	RPCUser:       cfg.RPCUser,
+		// 	RPCPass:       cfg.RPCPass,
+		// 	RPCLimitUser:  cfg.RPCLimitUser,
+		// 	RPCLimitPass:  cfg.RPCLimitPass,
+		// 	DisableAuth:   cfg.RPCDisableAuth,
+		// 	// IsGenerateNode:  cfg.Generate,
+		// 	NodeRole:        cfg.NodeRole,
+		// 	FeeEstimator:    self.feeEstimator,
+		// 	ProtocolVersion: self.protocolVersion,
+		// 	Database:        &self.dataBase,
+		// }
+		// self.rpcServer = &rpcserver.RpcServer{}
+		// self.rpcServer.Init(&rpcConfig)
 
-		// Signal process shutdown when the RPC server requests it.
-		go func() {
-			<-self.rpcServer.RequestedProcessShutdown()
-			shutdownRequestChannel <- struct{}{}
-		}()
+		// // Signal process shutdown when the RPC server requests it.
+		// go func() {
+		// 	<-self.rpcServer.RequestedProcessShutdown()
+		// 	shutdownRequestChannel <- struct{}{}
+		// }()
 	}
 
 	return nil
@@ -373,19 +372,19 @@ func (self *Server) Stop() error {
 	self.connManager.Stop()
 
 	// Shutdown the RPC server if it's not disabled.
-	if !cfg.DisableRPC && self.rpcServer != nil {
-		self.rpcServer.Stop()
-	}
+	// if !cfg.DisableRPC && self.rpcServer != nil {
+	// 	self.rpcServer.Stop()
+	// }
 
 	// Save fee estimator in the db
-	// for chainId, feeEstimator := range self.feeEstimator {
+	// for shardID, feeEstimator := range self.feeEstimator {
 	// 	feeEstimatorData := feeEstimator.Save()
 	// 	if len(feeEstimatorData) > 0 {
-	// 		err := self.dataBase.StoreFeeEstimator(feeEstimatorData, chainId)
+	// 		err := self.dataBase.StoreFeeEstimator(feeEstimatorData, shardID)
 	// 		if err != nil {
-	// 			Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", chainId, err)
+	// 			Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", shardID, err)
 	// 		} else {
-	// 			Logger.log.Infof("Save fee estimator data on chain #%d", chainId)
+	// 			Logger.log.Infof("Save fee estimator data on chain #%d", shardID)
 	// 		}
 	// 	}
 	// }
@@ -460,15 +459,15 @@ func (self Server) Start() {
 	self.waitGroup.Add(1)
 
 	go self.peerHandler()
-	if !cfg.DisableRPC && self.rpcServer != nil {
-		self.waitGroup.Add(1)
+	// if !cfg.DisableRPC && self.rpcServer != nil {
+	// 	self.waitGroup.Add(1)
 
-		// Start the rebroadcastHandler, which ensures user tx received by
-		// the RPC server are rebroadcast until being included in a block.
-		//go self.rebroadcastHandler()
+	// 	// Start the rebroadcastHandler, which ensures user tx received by
+	// 	// the RPC server are rebroadcast until being included in a block.
+	// 	//go self.rebroadcastHandler()
 
-		self.rpcServer.Start()
-	}
+	// 	self.rpcServer.Start()
+	// }
 
 	err := self.consensusEngine.Start()
 	if err != nil {

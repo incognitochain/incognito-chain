@@ -37,7 +37,7 @@ func (lw *LoanWithdraw) Hash() *common.Hash {
 	return &hash
 }
 
-func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, chainID byte, db database.DatabaseInterface) (bool, error) {
+func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if a loan response with the same id exists on any chain
 	txHashes, err := bcr.GetLoanTxs(lw.LoanID)
 	if err != nil {
@@ -45,7 +45,7 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	}
 	foundResponse := 0
 	keyCorrect := false
-	validUntil := int32(0)
+	validUntil := uint64(0)
 	for _, txHash := range txHashes {
 		hash := &common.Hash{}
 		copy(hash[:], txHash)
@@ -94,7 +94,7 @@ func (lw *LoanWithdraw) ValidateTxWithBlockChain(txr Transaction, bcr Blockchain
 	if foundResponse < int(minResponse) {
 		return false, fmt.Errorf("Not enough loan accepted response")
 	}
-	if bcr.GetHeight() >= validUntil {
+	if bcr.GetHeight(shardID) >= validUntil {
 		return false, fmt.Errorf("Loan is not valid anymore, cannot claim Constant")
 	}
 	if !keyCorrect {

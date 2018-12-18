@@ -50,7 +50,7 @@ type TxDesc struct {
 	Added time.Time
 
 	// Height is the best block's height when the entry was added to the the source pool.
-	Height int32
+	Height uint64
 
 	// Fee is the total fee the transaction associated with the entry pays.
 	Fee uint64
@@ -65,7 +65,7 @@ type MempoolRetriever interface {
 }
 
 type BlockchainRetriever interface {
-	GetHeight() int32
+	GetHeight(byte) uint64
 	// GetNulltifiersList(byte) ([][]byte, error)
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetDCBParams() params.DCBParams
@@ -78,7 +78,7 @@ type BlockchainRetriever interface {
 	GetLoanTxs([]byte) ([][]byte, error)
 	GetNumberOfDCBGovernors() int
 	GetNumberOfGOVGovernors() int
-	GetLoanPayment([]byte) (uint64, uint64, uint32, error)
+	GetLoanPayment([]byte) (uint64, uint64, uint64, error)
 	GetLoanRequestMeta([]byte) (*LoanRequest, error)
 
 	// For validating dividend

@@ -10,6 +10,7 @@ import (
 type BlockHeaderV2 interface {
 	Hash() common.Hash
 	UnmarshalJSON([]byte) error
+	GetHeight() uint64
 }
 
 type BlockBodyV2 interface {
@@ -37,6 +38,7 @@ type BlockV2 struct {
 	AggregatedSig string // aggregated signature in base58
 	ValidatorsIdx []int
 	ProducerSig   string // block producer signature in base58
+	Producer      string
 	Type          string
 
 	Header BlockHeaderV2
@@ -44,17 +46,19 @@ type BlockV2 struct {
 }
 
 //Hash creates a hash from block data that not include AggregatedSig & ValidatorsIdx
-func (self *BlockV2) Hash() common.Hash {
+func (self *BlockV2) Hash() *common.Hash {
 	record := common.EmptyString
 	record += self.Header.Hash().String() + self.ProducerSig + self.Type
-	return common.DoubleHashH([]byte(record))
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
 }
 
 //HashFinal creates a hash from block data that include AggregatedSig & ValidatorsIdx
-func (self *BlockV2) HashFinal() common.Hash {
+func (self *BlockV2) HashFinal() *common.Hash {
 	record := common.EmptyString
 	record += self.Header.Hash().String() + self.ProducerSig + self.Type + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
-	return common.DoubleHashH([]byte(record))
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
 }
 
 func (self *BlockV2) UnmarshalJSON(data []byte) error {
@@ -77,13 +81,13 @@ func (self *BlockV2) UnmarshalJSON(data []byte) error {
 
 	switch self.Type {
 	case "beacon":
-		self.Header = &BeaconBlockHeader{}
+		self.Header = &BlockHeaderBeacon{}
 		err := json.Unmarshal(*tempBlk.Header, self.Header)
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
 		}
 
-		self.Body = &BeaconBlockBody{}
+		self.Body = &BlockBodyBeacon{}
 		err = json.Unmarshal(*tempBlk.Body, self.Body)
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
@@ -107,6 +111,16 @@ func (self *BlockV2) UnmarshalJSON(data []byte) error {
 	default:
 		return NewBlockChainError(UnmashallJsonBlockError, errors.New("Unknown block type "+self.Type))
 	}
+	return nil
+}
+
+//ValidateSanity validate the correctness of the content of the block
+func (self *BlockV2) ValidateSanity(chain *BlockChain) error {
+	return nil
+}
+
+//ValidateSanity validate the content of the block with AggregatedSig and ValidatorsIdx
+func (self *BlockV2) ValidateFinality(chain *BlockChain) error {
 	return nil
 }
 
