@@ -8,7 +8,7 @@ import (
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 )
 
-type BlkTmplGeneratorNew struct {
+type BlkTmplGenerator struct {
 	blockpool   BlockPool
 	txPool      TxPool
 	chain       *BlockChain
@@ -43,15 +43,15 @@ type RewardAgent interface {
 	GetSalaryPerTx(shardID byte) uint64
 }
 
-func (self BlkTmplGeneratorNew) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent) (*BlkTmplGeneratorNew, error) {
-	return &BlkTmplGeneratorNew{
+func (self BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent) (*BlkTmplGenerator, error) {
+	return &BlkTmplGenerator{
 		txPool:      txPool,
 		chain:       chain,
 		rewardAgent: rewardAgent,
 	}, nil
 }
 
-// func (self *BlkTmplGeneratorNew) NewBlockShard() (*BlockV2, error) {
+// func (self *BlkTmplGenerator) NewBlockShard() (*BlockV2, error) {
 // 	return
 // }
 type BlockPool interface {
@@ -68,7 +68,7 @@ func (self BlockPoolImp) GetNewShardBlock() map[byte]([]common.Hash) {
 	return nil
 }
 
-func (blockgen *BlkTmplGeneratorNew) NewBlockBeacon(blockPool BlockPool, bestState BestStateBeacon) (*BlockV2, error) {
+func (blockgen *BlkTmplGenerator) NewBlockBeacon(blockPool BlockPool, bestState BestStateBeacon) (*BlockV2, error) {
 	block := &BlockV2{}
 	block.ProducerSig = ""
 	block.AggregatedSig = ""
@@ -86,7 +86,7 @@ func (blockgen *BlkTmplGeneratorNew) NewBlockBeacon(blockPool BlockPool, bestSta
 	return block, nil
 }
 
-func (blockgen *BlkTmplGeneratorNew) NewBlockTemplate(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*BlockV2, error) {
+func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey, shardID byte) (*BlockV2, error) {
 
 	// 	prevBlock := blockgen.chain.BestState[shardID].BestBlock
 	// 	prevBlockHash := blockgen.chain.BestState[shardID].BestBlock.Hash()

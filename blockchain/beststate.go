@@ -42,8 +42,10 @@ type BestStateShard struct {
 	BestBlockHash common.Hash // The hash of the block.
 	BestBlock     *BlockV2    // The block.
 
-	NumTxns   uint64 // The number of txns in the block.
-	TotalTxns uint64 // The total number of txns in the chain.
+	ShardCommittee        []string
+	ShardPendingValidator []string
+	NumTxns               uint64 // The number of txns in the block.
+	TotalTxns             uint64 // The total number of txns in the chain.
 }
 
 /*
@@ -56,6 +58,14 @@ func (self *BestStateBeacon) Init(block *BlockV2) {
 	self.BestBlockHash = *block.Hash()
 }
 
+func (self *BestStateBeacon) Update(block *BlockV2) error {
+
+	self.BestBlock = block
+	self.BestBlockHash = *block.Hash()
+
+	return nil
+}
+
 func (self *BestStateShard) Init(block *BlockV2) {
 
 	self.BestBlock = block
@@ -64,14 +74,6 @@ func (self *BestStateShard) Init(block *BlockV2) {
 	// self.  += uint64(len(block.Transactions))
 	self.NumTxns = uint64(len(block.Body.(*BlockBodyShard).Transactions))
 	self.TotalTxns = self.NumTxns
-}
-
-func (self *BestStateBeacon) Update(block *BlockV2) error {
-
-	self.BestBlock = block
-	self.BestBlockHash = *block.Hash()
-
-	return nil
 }
 
 func (self *BestStateShard) Update(block *BlockV2) error {
