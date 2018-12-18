@@ -106,12 +106,12 @@ func (pro PKComMultiRangeProof) Bytes() []byte {
 	res = append(res, pro.S.Compress()...)
 	res = append(res, pro.T1.Compress()...)
 	res = append(res, pro.T2.Compress()...)
-	res = append(res, pro.Tau.Bytes()...)
-	res = append(res, pro.Th.Bytes()...)
-	res = append(res, pro.Mu.Bytes()...)
-	res = append(res, pro.Cx.Bytes()...)
-	res = append(res, pro.Cy.Bytes()...)
-	res = append(res, pro.Cz.Bytes()...)
+	res = append(res, privacy.AddPaddingBigInt(pro.Tau,32)...)
+	res = append(res, privacy.AddPaddingBigInt(pro.Th,32)...)
+	res = append(res, privacy.AddPaddingBigInt(pro.Mu,32)...)
+	res = append(res, privacy.AddPaddingBigInt(pro.Cx,32)...)
+	res = append(res, privacy.AddPaddingBigInt(pro.Cy,32)...)
+	res = append(res, privacy.AddPaddingBigInt(pro.Cz,32)...)
 	res = append(res, pro.IPP.Bytes()...)
 	return res
 

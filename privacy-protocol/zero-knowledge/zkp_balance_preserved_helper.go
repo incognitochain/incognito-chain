@@ -48,10 +48,10 @@ func (IPA *InnerProdArg) Bytes() []byte{
 		res = append(res, IPA.R[i].Compress()...)
 	}
 	for i:=0;i<len(IPA.Challenges);i++{
-		res = append(res, IPA.Challenges[i].Bytes()...)
+		res = append(res, privacy.AddPaddingBigInt(IPA.Challenges[i],32)...)
 	}
-	res = append(res,IPA.A.Bytes()...)
-	res = append(res,IPA.B.Bytes()...)
+	res = append(res,privacy.AddPaddingBigInt(IPA.A,32)...)
+	res = append(res,privacy.AddPaddingBigInt(IPA.B,32)...)
 	return res
 }
 func (IPA *InnerProdArg) SetBytes(IPA_byte []byte){
