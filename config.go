@@ -22,19 +22,24 @@ import (
 
 // default config
 const (
-	defaultConfigFilename  = "config.conf"
-	defaultDataDirname     = "data"
-	defaultDatabaseDirname = "block"
-	defaultLogLevel        = "info"
-	defaultLogDirname      = "logs"
-	defaultLogFilename     = "log.log"
-	defaultMaxPeers        = 125
-	defaultMaxRPCClients   = 10
-	defaultGenerate        = false
-	sampleConfigFilename   = "sample-config.conf"
-	defaultDisableRpcTLS   = true
-	defaultFastMode        = true
-	defaultNodeRole        = "relay"
+	defaultConfigFilename     = "config.conf"
+	defaultDataDirname        = "data"
+	defaultDatabaseDirname    = "block"
+	defaultLogLevel           = "info"
+	defaultLogDirname         = "logs"
+	defaultLogFilename        = "log.log"
+	defaultMaxPeers           = 125
+	defaultMaxPeersSameShard  = 10
+	defaultMaxPeersOtherShard = 5
+	defaultMaxPeersOther      = 100
+	defaultMaxPeersNoShard    = 100
+	defaultMaxPeersBeacon     = 20
+	defaultMaxRPCClients      = 10
+	defaultGenerate           = false
+	sampleConfigFilename      = "sample-config.conf"
+	defaultDisableRpcTLS      = true
+	defaultFastMode           = true
+	defaultNodeRole           = "relay"
 	// For wallet
 	defaultWalletName = "wallet"
 )
@@ -70,11 +75,11 @@ type config struct {
 	MaxInPeers           int      `long:"maxinpeers" description:"Max number of inbound peers"`
 	DiscoverPeers        bool     `long:"discoverpeers" description:"Enable discover peers"`
 	DiscoverPeersAddress string   `long:"discoverpeersaddress" description:"Url to connect discover peers server"`
-	MaxPeerSameShard     int      `long:"maxpeersameshard" description:"Max peers in same shard for connection"`
-	MaxPeerOtherShard    int      `long:"maxpeerothershard" description:"Max peers in other shard for connection"`
-	MaxPeerOther         int      `long:"maxpeerother" description:"Max peers in other for connection"`
-	MaxPeerNoShard       int      `long:"maxpeernoshard" description:"Max peers in no shard for connection"`
-	MaxPeerBeacon        int      `long:"maxpeerbeacon" description:"Max peers in beacon for connection"`
+	MaxPeersSameShard    int      `long:"maxpeersameshard" description:"Max peers in same shard for connection"`
+	MaxPeersOtherShard   int      `long:"maxpeerothershard" description:"Max peers in other shard for connection"`
+	MaxPeersOther        int      `long:"maxpeerother" description:"Max peers in other for connection"`
+	MaxPeersNoShard      int      `long:"maxpeernoshard" description:"Max peers in no shard for connection"`
+	MaxPeersBeacon       int      `long:"maxpeerbeacon" description:"Max peers in beacon for connection"`
 
 	ExternalAddress string `long:"externaladdress" description:"External address"`
 
@@ -261,16 +266,22 @@ func removeDuplicateAddresses(addrs []string) []string {
 */
 func loadConfig() (*config, []string, error) {
 	cfg := config{
-		ConfigFile:    defaultConfigFile,
-		LogLevel:      defaultLogLevel,
-		MaxOutPeers:   defaultMaxPeers,
-		MaxInPeers:    defaultMaxPeers,
-		RPCMaxClients: defaultMaxRPCClients,
-		DataDir:       defaultDataDir,
-		DatabaseDir:   defaultDatabaseDirname,
-		LogDir:        defaultLogDir,
-		RPCKey:        defaultRPCKeyFile,
-		RPCCert:       defaultRPCCertFile,
+		ConfigFile:         defaultConfigFile,
+		LogLevel:           defaultLogLevel,
+		MaxOutPeers:        defaultMaxPeers,
+		MaxInPeers:         defaultMaxPeers,
+		MaxPeers:           defaultMaxPeers,
+		MaxPeersSameShard:  defaultMaxPeersSameShard,
+		MaxPeersOtherShard: defaultMaxPeersOtherShard,
+		MaxPeersOther:      defaultMaxPeersOther,
+		MaxPeersNoShard:    defaultMaxPeersNoShard,
+		MaxPeersBeacon:     defaultMaxPeersBeacon,
+		RPCMaxClients:      defaultMaxRPCClients,
+		DataDir:            defaultDataDir,
+		DatabaseDir:        defaultDatabaseDirname,
+		LogDir:             defaultLogDir,
+		RPCKey:             defaultRPCKeyFile,
+		RPCCert:            defaultRPCCertFile,
 		// Generate:             defaultGenerate,
 		WalletName:           defaultWalletName,
 		DisableTLS:           defaultDisableRpcTLS,

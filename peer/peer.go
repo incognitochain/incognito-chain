@@ -78,8 +78,9 @@ type NewStreamMsg struct {
 type Config struct {
 	MessageListeners MessageListeners
 	UserKeySet       *cashec.KeySet
-	MaxOutbound      int
-	MaxInbound       int
+	MaxOutPeers      int
+	MaxInPeers       int
+	MaxPeers         int
 }
 
 type WrappedStream struct {
@@ -134,6 +135,10 @@ type outMsg struct {
 func (self *Peer) ReceivedHashMessage(hash string) {
 	if self.messagePool == nil {
 		self.messagePool = make(map[string]bool)
+	}
+	ok, _ := self.messagePool[hash]
+	if ok {
+		return
 	}
 	self.messagePool[hash] = true
 	if len(self.messagePool) > MESSAGE_HASH_POOL_SIZE {
@@ -272,14 +277,14 @@ func (self *Peer) processConn() {
 			return
 		case newPeerMsg := <-self.cNewConn:
 			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.Peer.PeerID, newPeerMsg.Peer.RawAddress)
-			cDone := make(chan *PeerConn)
+			cConn := make(chan *PeerConn)
 			go func(self *Peer) {
-				peerConn, err := self.handleConn(newPeerMsg.Peer, cDone)
+				peerConn, err := self.handleConn(newPeerMsg.Peer, cConn)
 				if err != nil && peerConn == nil {
 					Logger.log.Errorf("Fail in opening stream from PEER Id - %s with err: %s", self.PeerID.Pretty(), err.Error())
 				}
 			}(self)
-			p := <-cDone
+			p := <-cConn
 			if newPeerMsg.CConn != nil {
 				newPeerMsg.CConn <- p
 			}
@@ -418,7 +423,7 @@ func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error
 		return nil, nil
 	}
 
-	if self.NumOutbound() >= self.Config.MaxOutbound && self.Config.MaxOutbound > 0 && !ok {
+	if self.NumOutbound() >= self.Config.MaxOutPeers && self.Config.MaxOutPeers > 0 && !ok {
 		Logger.log.Infof("Checked Max Outbound Connection PEER Id - %s", peer.RawAddress)
 
 		//push to pending peers
@@ -503,7 +508,7 @@ func (self *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
-	if self.NumInbound() >= self.Config.MaxInbound && self.Config.MaxInbound > 0 {
+	if self.NumInbound() >= self.Config.MaxInPeers && self.Config.MaxInPeers > 0 {
 		Logger.log.Infof("Max RemotePeer Inbound Connection")
 
 		if cDone != nil {

@@ -235,7 +235,7 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 	var peers []*peer.Peer
 	if !cfg.DisableListen {
 		var err error
-		peers, err = self.InitListenerPeers(self.addrManager, listenAddrs, cfg.MaxOutPeers, cfg.MaxInPeers)
+		peers, err = self.InitListenerPeers(self.addrManager, listenAddrs, cfg.MaxPeers, cfg.MaxOutPeers, cfg.MaxInPeers)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
@@ -250,11 +250,11 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
 		ExternalAddress:      cfg.ExternalAddress,
 		// config for connection of shard
-		MaxPeerSameShard:  cfg.MaxPeerSameShard,
-		MaxPeerOtherShard: cfg.MaxPeerOtherShard,
-		MaxPeerOther:      cfg.MaxPeerOther,
-		MaxPeerNoShard:    cfg.MaxPeerNoShard,
-		MaxPeerBeacon:     cfg.MaxPeerBeacon,
+		MaxPeersSameShard:  cfg.MaxPeersSameShard,
+		MaxPeersOtherShard: cfg.MaxPeersOtherShard,
+		MaxPeersOther:      cfg.MaxPeersOther,
+		MaxPeersNoShard:    cfg.MaxPeersNoShard,
+		MaxPeersBeacon:     cfg.MaxPeersBeacon,
 	})
 
 	// for testing
@@ -491,7 +491,7 @@ func (self Server) Start() {
 // addresses to the address manager. Returns the listeners and a NAT interface,
 // which is non-nil if UPnP is in use.
 */
-func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string, targetOutbound int, targetInbound int) ([]*peer.Peer, error) {
+func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs []string, maxPeers int, maxOutPeers int, maxInPeers int) ([]*peer.Peer, error) {
 	netAddrs, err := common.ParseListeners(listenAddrs, "ip")
 	if err != nil {
 		return nil, err
@@ -526,8 +526,9 @@ func (self *Server) InitListenerPeers(amgr *addrmanager.AddrManager, listenAddrs
 			PeerConns:        make(map[string]*peer.PeerConn),
 			PendingPeers:     make(map[string]*peer.Peer),
 		}.NewPeer()
-		peer.Config.MaxInbound = targetInbound
-		peer.Config.MaxOutbound = targetOutbound
+		peer.Config.MaxInPeers = maxInPeers
+		peer.Config.MaxOutPeers = maxOutPeers
+		peer.Config.MaxPeers = maxPeers
 		if err != nil {
 			return nil, err
 		}
