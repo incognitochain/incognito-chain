@@ -13,11 +13,11 @@ const (
 )
 
 type MessageBlockShard struct {
-	Block blockchain.BlockV2
+	Block blockchain.ShardBlock
 }
 
 func (self MessageBlockShard) MessageType() string {
-	return CmdBlock
+	return CmdShardBlock
 }
 
 func (self MessageBlockShard) MaxPayloadLength(pver int) int {
