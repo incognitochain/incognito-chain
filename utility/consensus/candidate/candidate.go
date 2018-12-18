@@ -9,7 +9,30 @@ import (
 	"strings"
 
 	"github.com/ninjadotorg/constant/blockchain"
+	"github.com/ninjadotorg/constant/common"
 )
+
+type ByShardIDAndBlockHeight []blockchain.BlockV2
+
+func (a ByShardIDAndBlockHeight) Len() int { return len(a) }
+func (a ByShardIDAndBlockHeight) Less(i, j int) bool {
+	shardIDi := a[i].Header.(*blockchain.BlockHeaderShard).ShardID
+	shardIDj := a[j].Header.(*blockchain.BlockHeaderShard).ShardID
+	heightI := a[i].Header.(*blockchain.BlockHeaderShard).Height
+	heightJ := a[j].Header.(*blockchain.BlockHeaderShard).Height
+
+	if shardIDi < shardIDj {
+		return true
+	} else if shardIDi > shardIDj {
+		return false
+	} else {
+		if heightI <= heightJ {
+			return true
+		}
+		return false
+	}
+}
+func (a ByShardIDAndBlockHeight) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
 func BuildBeaconBlock(beaconBestState *blockchain.BestStateBeacon, newShardBlock []blockchain.BlockV2) *blockchain.BlockV2 {
 	// Create new unsigned beacon block (UBB)
@@ -17,22 +40,41 @@ func BuildBeaconBlock(beaconBestState *blockchain.BestStateBeacon, newShardBlock
 		Type: "beacon",
 	}
 
-	// Assign state of each shard of current beacon block to new UBB.
-	// Iterate over the newShardBlock, if shard id equals to shard index of UBB and previous hash of new shard block
-	// equals to latest state of current beacon's stard state, append the shard state from new shard to the UBB shard
-	// with corresponding index.
-	for shardBlkIdx, blk := range newShardBlock {
-		shardID := blk.Header.(*blockchain.BlockHeaderShard).ShardID
-		newShardState := newUnsignedBeaconBlock.Body.(*blockchain.BeaconBlockBody).ShardState
-		for idx, state := range newShardState {
-			state = beaconBestState.BestBlock.Body.(*blockchain.BeaconBlockBody).ShardState[idx]
-			previousHashOfShardBlock := newShardBlock[shardBlkIdx].Header.(*blockchain.BlockHeaderShard).BlockHeaderGeneric.PrevBlockHash
+	sort.Sort(ByShardIDAndBlockHeight(newShardBlock))
 
-			if byte(idx) == shardID && state[len(state)-1] == previousHashOfShardBlock {
-				state = append(state, newShardBlock[shardBlkIdx].HashFinal())
+	var tempBeaconShardState [][]common.Hash
+	var blocksInShardWithIdx map[int][]blockchain.BlockV2
+
+	for shardBlkIdx, shardBlk := range newShardBlock {
+		shardID := shardBlk.Header.(*blockchain.BlockHeaderShard).ShardID
+		blocksInShardWithIdx[int(shardID)] = append(blocksInShardWithIdx[int(shardID)], shardBlk)
+	}
+
+	for i1, v := range blocksInShardWithIdx {
+		bestShardHash := beaconBestState.BestShardHash[i1]
+
+		if v[0].Header.(*blockchain.BlockHeaderShard).PrevBlockHash != bestShardHash {
+			continue
+		}
+
+		for i2, blk := range v {
+			if i2 == len(v)-1 {
+				break
+			}
+			if *blk.HashFinal() != v[i2+1].Header.(*blockchain.BlockHeaderShard).PrevBlockHash {
+				blocksInShardWithIdx[i1] = blocksInShardWithIdx[i1][:i2+1]
+				break
 			}
 		}
 	}
+
+	for idx, v := range blocksInShardWithIdx {
+		for _, u := range v {
+			tempBeaconShardState[idx] = append(tempBeaconShardState[idx], *u.HashFinal())
+		}
+	}
+
+	newUnsignedBeaconBlock.Body.(*blockchain.BlockBodyBeacon).ShardState = tempBeaconShardState
 
 	return newUnsignedBeaconBlock
 }
