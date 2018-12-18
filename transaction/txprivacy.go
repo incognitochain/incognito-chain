@@ -322,11 +322,12 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		return false, fmt.Errorf("input transaction must be an signed one!")
 	}
 
+	fmt.Printf("VERIFY SIGNATURE ------------- TX.PROOF: %v\n", tx.Proof.Bytes())
+
 	var err error
 	res := false
 
 	if hasPrivacy {
-
 		/****** verify Schnorr signature *****/
 		// prepare Public key for verification
 		verKey := new(privacy.SchnPubKey)

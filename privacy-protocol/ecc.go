@@ -114,8 +114,8 @@ func (eccPoint EllipticPoint) Inverse() (*EllipticPoint, error) {
 	//resPoint.X.SetBytes(eccPoint.X.Bytes())
 	//resPoint.Y.SetBytes(eccPoint.Y.Bytes())
 
-	*(resPoint.X) = *(eccPoint.X)
-	*(resPoint.Y) = *(eccPoint.Y)
+	resPoint.X.Set(eccPoint.X)
+	resPoint.Y.Set(eccPoint.Y)
 
 	resPoint.Y.Sub(Curve.Params().P, resPoint.Y)
 	resPoint.Y.Mod(resPoint.Y, Curve.Params().P)

@@ -71,6 +71,9 @@ func CreateTxSalary(
 		return nil, err
 	}
 
+	if len(tx.Proof.InputCoins) > 0 {
+		fmt.Println(11111)
+	}
 	return tx, nil
 }
 

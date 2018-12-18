@@ -99,8 +99,15 @@ func (pro PKComMultiRangeProof) Bytes() []byte {
 	res = append(res, pro.Counter)
 	res = append(res, pro.maxExp)
 	for i := 0; i < int(pro.Counter); i++ {
-		//fmt.Println(pro.Comms[i])
 		res = append(res, pro.Comms[i].Compress()...)
+		if i ==3 {
+			fmt.Printf("TESTTTTTTTTTTTTTTT - COM[3] --- BYTES : %+v\n", pro.Comms[i])
+			point2 := new(privacy.EllipticPoint)
+			point2.Decompress(pro.Comms[i].Compress())
+			if !pro.Comms[i].IsEqual(point2){
+				fmt.Printf(" DECOWRONGMPRESS!!!!!!")
+			}
+		}
 	}
 	res = append(res, pro.A.Compress()...)
 	res = append(res, pro.S.Compress()...)
@@ -131,9 +138,14 @@ func (pro *PKComMultiRangeProof) SetBytes(proofbytes []byte) {
 	offset := 2
 	for i := 0; i < int(pro.Counter); i++ {
 		pro.Comms[i] = new(privacy.EllipticPoint)
-		pro.Comms[i].Decompress(proofbytes[offset:])
+		pro.Comms[i].Decompress(proofbytes[offset:offset + privacy.CompressedPointSize])
 		//fmt.Println(pro.Comms[i])
 		offset += privacy.CompressedPointSize
+
+		//if i == 3 {
+		//	fmt.Printf("TESTTTTTTTTTTTTTTT - COM[3] --- SETBYTES : %+v\n", pro.Comms[i])
+		//	fmt.Printf("TESTTTTTTTTTTTTTTT - COM[3] --- SETBYTES COMPRESS: %+v\n", pro.Comms[i].Compress())
+		//}
 	}
 	pro.A = new(privacy.EllipticPoint)
 	pro.A.Decompress(proofbytes[offset:])
