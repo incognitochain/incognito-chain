@@ -93,9 +93,11 @@ func (self *BlockBodyShard) UnmarshalJSON(data []byte) error {
 }
 
 func (self *BlockBodyShard) CalcMerkleRootShard() {
+	//TODO
 
 }
 func (self *BlockBodyShard) CalcMerkleRootTx() {
+	//TODO
 
 }
 
