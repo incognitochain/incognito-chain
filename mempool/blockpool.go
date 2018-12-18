@@ -3,23 +3,21 @@ package mempool
 import (
 	"errors"
 	"sync"
-
-	"github.com/ninjadotorg/constant/blockchain/blocktype"
 )
 
 type BlockPool struct {
 	mtx  sync.RWMutex
-	pool []blocktype.ShardToBeaconBlock
+	pool []ShardToBeaconBlock
 }
 
 type ShardPoolItem struct {
 	state bool
-	block blocktype.ShardToBeaconBlock
+	block ShardToBeaconBlock
 }
 
 var shardMap = map[byte][]ShardPoolItem{}
 
-func (self *BlockPool) AddBlock(newBlock blocktype.ShardToBeaconBlock) error {
+func (self *BlockPool) AddBlock(newBlock ShardToBeaconBlock) error {
 	blockHeader := newBlock.Header
 	ShardID := blockHeader.ShardID
 	if ShardID <= 0 {
