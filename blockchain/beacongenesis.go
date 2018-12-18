@@ -46,15 +46,16 @@ func CreateBeaconGenesisBlock(
 	inst = append(inst, []string{"set", "initialBondToken", strconv.Itoa(int(icoParams.InitialBondToken))})
 	inst = append(inst, []string{"set", "randomnumber", strconv.Itoa(int(0))})
 
-	body := &BeaconBody{ShardState: nil, Instructions: inst}
-	header := &BeaconHeader{
+	body := BeaconBody{ShardState: nil, Instructions: inst}
+	header := BeaconHeader{
 		Timestamp: time.Unix(),
 		Height:    1,
 		Version:   1,
-		DataHash:  body.Hash(),
+		//TODO:
+
 	}
 
-	block := &ShardBlock{
+	block := &BeaconBlock{
 		Body:   body,
 		Header: header,
 	}

@@ -77,7 +77,7 @@ func (self *BlockChain) GetDatabase() database.DatabaseInterface {
 }
 
 func (self *BlockChain) GetHeight(shardID byte) uint64 {
-	return self.BestState.Shard[shardID].BestBlock.Header.(*BlockHeaderBeacon).Height
+	return self.BestState.Shard[shardID].BestBlock.Header.Height
 }
 
 func (self *BlockChain) GetDCBBoardPubKeys() [][]byte {
@@ -249,15 +249,15 @@ func (self *BlockChain) initChainState() error {
 */
 func (self *BlockChain) createShardState(shardID byte) error {
 	// Create a new block from genesis block and set it as best block of chain
-	var initBlock *BlockV2
+	var initBlock *ShardBlock
 	if shardID == 0 {
 		initBlock = self.config.ChainParams.GenesisBlockShard
 	} else {
 		initBlock.Header = self.config.ChainParams.GenesisBlockShard.Header
-		initBlock.Header.(*BlockHeaderShard).ShardID = shardID
-		initBlock.Header.(*BlockHeaderShard).PrevBlockHash = common.Hash{}
+		initBlock.Header.ShardID = shardID
+		initBlock.Header.PrevBlockHash = common.Hash{}
 	}
-	initBlock.Header.(*BlockHeaderShard).Height = 1
+	initBlock.Header.Height = 1
 
 	/*tree := new(client.IncMerkleTree) // Build genesis block commitment merkle tree
 	if err := UpdateMerkleTreeForBlock(tree, initBlock); err != nil {
@@ -283,7 +283,7 @@ func (self *BlockChain) createShardState(shardID byte) error {
 }
 
 func (self *BlockChain) createBeaconState() error {
-	var initBlock *BlockV2
+	var initBlock *BeaconBlock
 	initBlock = self.config.ChainParams.GenesisBlockBeacon
 	self.BestState.Beacon = &BestStateBeacon{}
 	self.BestState.Beacon.Init(initBlock)
@@ -328,7 +328,7 @@ func (self *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (*Sha
 		return nil, err
 	}
 
-	block := BlockV2{}
+	block := ShardBlock{}
 	err = json.Unmarshal(blockBytes, &block)
 	if err != nil {
 		return nil, err
@@ -340,12 +340,14 @@ func (self *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (*Sha
 Fetch DatabaseInterface and get block data by block hash
 */
 func (self *BlockChain) GetShardBlockByHash(hash *common.Hash) (*ShardBlock, error) {
-	blockBytes, err := self.config.DataBase.FetchBlock(hash)
+	//TODO:
+	_, err := self.config.DataBase.FetchBlock(hash)
 	if err != nil {
 		return nil, err
 	}
 	block := ShardBlock{}
-	err = block
+	//TODO:
+	//err = block
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +385,7 @@ func (self *BlockChain) GetShardBestState(shardID byte) (*BestStateShard, error)
 Store block into Database
 */
 func (self *BlockChain) StoreShardBlock(block *ShardBlock) error {
-	return self.config.DataBase.StoreShardBlock(block, block.Header.(*BlockHeaderShard).ShardID)
+	return self.config.DataBase.StoreShardBlock(block, block.Header.ShardID)
 }
 
 /*
@@ -391,7 +393,7 @@ func (self *BlockChain) StoreShardBlock(block *ShardBlock) error {
 */
 func (self *BlockChain) StoreShardBlockHeader(block *ShardBlock) error {
 	//Logger.log.Infof("Store Block Header, block header %+v, block hash %+v, chain id %+v",block.Header, block.blockHash, block.Header.shardID)
-	return self.config.DataBase.StoreShardBlockHeader(block.Header, block.Hash(), block.Header.(*BlockHeaderShard).ShardID)
+	return self.config.DataBase.StoreShardBlockHeader(block.Header, block.Hash(), block.Header.ShardID)
 }
 
 /*
@@ -411,7 +413,7 @@ and
 Save block hash by index(height) of block
 */
 func (self *BlockChain) StoreShardBlockIndex(block *ShardBlock) error {
-	return self.config.DataBase.StoreShardBlockIndex(block.Hash(), block.Header.(*BlockHeaderShard).Height, block.Header.(*BlockHeaderShard).ShardID)
+	return self.config.DataBase.StoreShardBlockIndex(block.Hash(), block.Header.Height, block.Header.ShardID)
 }
 
 func (self *BlockChain) StoreTransactionIndex(txHash *common.Hash, blockHash *common.Hash, index int) error {
@@ -547,7 +549,7 @@ Get all blocks in shard
 Return block array
 */
 func (self *BlockChain) GetAllShardBlocks() ([][]*ShardBlock, error) {
-	result := make([][]*BlockV2, 0)
+	result := make([][]*ShardBlock, 0)
 	data, err := self.config.DataBase.FetchAllBlocks()
 	if err != nil {
 		return nil, err
@@ -559,7 +561,7 @@ func (self *BlockChain) GetAllShardBlocks() ([][]*ShardBlock, error) {
 			if err != nil {
 				return nil, err
 			}
-			block := BlockV2{}
+			block := ShardBlock{}
 			err = json.Unmarshal(blockBytes, &block)
 			if err != nil {
 				return nil, err
@@ -579,12 +581,13 @@ func (self *BlockChain) GetShardBlocks(shardID byte) ([]*ShardBlock, error) {
 	}
 
 	for _, item := range data {
-		blockBytes, err := self.config.DataBase.FetchBlock(item)
+		_, err := self.config.DataBase.FetchBlock(item)
 		if err != nil {
 			return nil, err
 		}
 		block := ShardBlock{}
-		err = block.UnmarshalJSON()
+		//TODO:
+		//err = block.UnmarshalJSON()
 		if err != nil {
 			return nil, err
 		}
@@ -677,8 +680,8 @@ func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
 	return self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, deadline)
 }
 
-func (self *BlockChain) ProcessLoanForBlock(block *BlockV2) error {
-	for _, tx := range block.Body.(*BlockBodyShard).Transactions {
+func (self *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
+	for _, tx := range block.Body.Transactions {
 		switch tx.GetMetadataType() {
 		case metadata.LoanRequestMeta:
 			{
@@ -700,7 +703,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *BlockV2) error {
 				requestMeta, _ := self.GetLoanRequestMeta(meta.LoanID)
 				principle := requestMeta.LoanAmount
 				interest := GetInterestAmount(principle, requestMeta.Params.InterestRate)
-				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, block.Header.(*BlockHeaderShard).Height)
+				self.config.DataBase.StoreLoanPayment(meta.LoanID, principle, interest, block.Header.Height)
 			}
 		case metadata.LoanPaymentMeta:
 			{
@@ -747,8 +750,8 @@ func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte
 	return vouts, finalErr
 }
 
-func (self *BlockChain) UpdateDividendPayout(block *BlockV2) error {
-	for _, tx := range block.Body.(*BlockBodyShard).Transactions {
+func (self *BlockChain) UpdateDividendPayout(block *ShardBlock) error {
+	for _, tx := range block.Body.Transactions {
 		switch tx.GetMetadataType() {
 		case metadata.DividendMeta:
 			{
@@ -774,7 +777,7 @@ func (self *BlockChain) UpdateDividendPayout(block *BlockV2) error {
 	return nil
 }
 
-func (self *BlockChain) UpdateVoteCountBoard(block *BlockV2) error {
+func (self *BlockChain) UpdateVoteCountBoard(block *ShardBlock) error {
 	// DCBEndedBlock := block.Header.DCBGovernor.EndBlock
 	// GOVEndedBlock := block.Header.GOVGovernor.EndBlock
 	// for _, tx := range block.Transactions {
@@ -804,7 +807,7 @@ func (self *BlockChain) UpdateVoteCountBoard(block *BlockV2) error {
 	return nil
 }
 
-func (self *BlockChain) UpdateVoteTokenHolder(block *BlockV2) error {
+func (self *BlockChain) UpdateVoteTokenHolder(block *ShardBlock) error {
 	// for _, tx := range block.Transactions {
 	// 	switch tx.GetMetadataType() {
 	// 	case metadata.SendInitDCBVoteTokenMeta:
@@ -829,7 +832,7 @@ func (self *BlockChain) UpdateVoteTokenHolder(block *BlockV2) error {
 	return nil
 }
 
-func (self *BlockChain) ProcessVoteProposal(block *BlockV2) error {
+func (self *BlockChain) ProcessVoteProposal(block *ShardBlock) error {
 	// nextDCBConstitutionBlockHeight := uint32(block.Header.DCBConstitution.GetEndedBlockHeight())
 	// for _, tx := range block.Transactions {
 	// 	meta := tx.GetMetadata()
@@ -856,7 +859,7 @@ func (self *BlockChain) ProcessVoteProposal(block *BlockV2) error {
 	return nil
 }
 
-func (self *BlockChain) ProcessCrowdsaleTxs(block *BlockV2) error {
+func (self *BlockChain) ProcessCrowdsaleTxs(block *ShardBlock) error {
 	// for _, tx := range block.Transactions {
 	// 	switch tx.GetMetadataType() {
 	// 	case metadata.AcceptDCBProposalMeta:
@@ -915,8 +918,8 @@ Param coinType - COIN or BOND
 	return view, nil
 }*/
 
-func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *BlockV2) error {
-	view := NewTxViewPoint(block.Header.(*BlockHeaderShard).ShardID)
+func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) error {
+	view := NewTxViewPoint(block.Header.ShardID)
 
 	err := view.fetchTxViewPointFromBlock(self.config.DataBase, block)
 	if err != nil {
@@ -947,10 +950,10 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *BlockV2) error 
 			// Skip double spend
 			continue
 		}
-		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxTokenData.PropertyID, block.Header.(*BlockHeaderShard).ShardID, block.Header.GetHeight(), indexTx, customTokenTx.Hash()[:])
+		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxTokenData.PropertyID, block.Header.ShardID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
 
 		// replace 1000 with proper value for snapshot
-		if block.Header.GetHeight()%1000 == 0 {
+		if block.Header.Height%1000 == 0 {
 			// list of unreward-utxo
 			self.config.customTokenRewardSnapshot, err = self.config.DataBase.GetCustomTokenPaymentAddressesBalance(&customTokenTx.TxTokenData.PropertyID)
 			if err != nil {
@@ -1296,6 +1299,11 @@ func (self *BlockChain) GetTransactionByHashInLightMode(txHash *common.Hash) (by
 	return shardID[0], block.Hash(), int(txIndex), &tx, nil
 }
 
+//TODO:
+func (self *BlockChain) GetBlockByHash(txHash *common.Hash) (ShardBlock, error) {
+	return ShardBlock{}, nil
+}
+
 // GetTransactionByHash - retrieve tx from txId(txHash)
 func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common.Hash, int, metadata.Transaction, error) {
 	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
@@ -1309,13 +1317,14 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 
 		return byte(255), nil, -1, nil, err
 	}
+
 	block, err := self.GetBlockByHash(blockHash)
 	if err != nil {
-		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.(*BlockBodyShard).Transactions[index])
+		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
 		return byte(255), nil, -1, nil, err
 	}
-	Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.(*BlockBodyShard).Transactions[index])
-	return block.Header.(*BlockHeaderShard).ShardID, blockHash, index, block.Body.(*BlockBodyShard).Transactions[index], nil
+	Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
+	return block.Header.ShardID, blockHash, index, block.Body.Transactions[index], nil
 }
 
 // ListCustomToken - return all custom token which existed in network
