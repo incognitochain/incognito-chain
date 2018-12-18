@@ -3,7 +3,8 @@ package transaction
 import (
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
-	privacy "github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/privacy-protocol"
+	"errors"
 )
 
 // TxCustomTokenPrivacy is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -55,29 +56,29 @@ func (tx *TxCustomTokenPrivacy) GetTxActualSize() uint64 {
 }
 
 // CreateTxCustomToken ...
-func (tx *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
+func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 	paymentInfo []*privacy.PaymentInfo,
-	rts map[byte]*common.Hash,
-	usableTx map[byte][]*Tx,
-	commitments map[byte]([][]byte),
+	inputCoin []*privacy.InputCoin,
 	fee uint64,
-	senderChainID byte,
-	tokenParams *CustomTokenParamTx,
+	tokenParams *CustomTokenPrivacyParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
-) (*TxCustomTokenPrivacy, error) {
+) (error) {
 
-	// create normal txCustomToken
-	normalTx, err := CreateTx(senderKey, paymentInfo, rts, usableTx, commitments, fee, senderChainID, true)
+	normalTx := Tx{}
+	err := normalTx.Init(senderKey,
+		paymentInfo,
+		inputCoin,
+		fee,
+		false,
+		nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// override txCustomToken type
 	normalTx.Type = common.TxCustomTokenType
 
-	txCustomToken := &TxCustomTokenPrivacy{
-		TxNormal:           *normalTx,
-		TxTokenPrivacyData: TxTokenPrivacyData{},
-	}
+	txCustomToken.TxNormal = normalTx
+	txCustomToken.TxTokenPrivacyData = TxTokenPrivacyData{}
 
 	var handled = false
 
@@ -92,7 +93,7 @@ func (tx *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 				PropertySymbol: tokenParams.PropertySymbol,
 				Amount:         tokenParams.Amount,
 			}
-			// TODO create descs
+			/*// TODO create descs
 			hashInitToken, err := txCustomToken.TxTokenPrivacyData.Hash()
 			if err != nil {
 				return nil, errors.Zero("Can't handle this TokenTxType")
@@ -103,11 +104,11 @@ func (tx *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 					return nil, errors.Zero("This token is existed in network")
 				}
 			}
-			txCustomToken.TxTokenPrivacyData.PropertyID = *hashInitToken
+			txCustomToken.TxTokenPrivacyData.PropertyID = *hashInitToken*/
 
 		}
 	case CustomTokenTransfer:
-		handled = true
+		/*handled = true
 		paymentTokenAmount := uint64(0)
 		for _, receiver := range tokenParams.Receiver {
 			paymentTokenAmount += receiver.Value
@@ -121,14 +122,14 @@ func (tx *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 		}
 		_ = refundTokenAmount
 		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
-		txCustomToken.TxTokenPrivacyData.PropertyID = *propertyID
+		txCustomToken.TxTokenPrivacyData.PropertyID = *propertyID*/
 		// TODO create descs
 	}
 
 	if handled != true {
-		return nil, errors.Zero("Can't handle this TokenTxType")
+		return errors.New("Can't handle this TokenTxType")
 	}
-	return txCustomToken, nil
+	return nil
 }
 
 /*
