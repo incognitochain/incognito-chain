@@ -306,6 +306,13 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		BasicSalary:  basicSalary,
 		SellingBonds: &voting.SellingBonds{},
 		RefundInfo:   &voting.RefundInfo{},
+		OracleNetwork: &voting.OracleNetwork{
+			OraclePubKeys:         [][]byte{},
+			WrongTimesAllowed:     2,
+			Quorum:                1,
+			AcceptableErrorMargin: 200, // 2 USD
+			UpdateFrequency:       10,
+		},
 	}
 	// Decentralize central bank params
 	loanParams := []params.LoanParams{
@@ -316,7 +323,8 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 		},
 	}
 	genesisBlock.Header.DCBConstitution.DCBParams = params.DCBParams{
-		LoanParams: loanParams,
+		LoanParams:             loanParams,
+		SaleDBCTOkensByUSDData: &voting.SaleDBCTOkensByUSDData{},
 	}
 
 	// Commercial bank params
@@ -325,6 +333,11 @@ func (self GenesisBlockGenerator) CreateGenesisBlockPoSParallel(
 
 	genesisBlock.Header.Height = 1
 	genesisBlock.Header.SalaryFund = icoParams.InitFundSalary
+	genesisBlock.Header.Oracle = &params.Oracle{
+		Bonds:    map[string]uint64{},
+		DCBToken: 1,
+		Constant: 1,
+	}
 
 	// Get Ico payment address
 	log.Printf("Ico payment address:", icoParams.InitialPaymentAddress)
