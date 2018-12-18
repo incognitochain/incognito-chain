@@ -7,16 +7,14 @@ import (
 	"time"
 )
 
-type BeaconBlockGenerator struct{}
-
 // @Hung: genesis should be build as configuration file like JSON
-func (self BeaconBlockGenerator) CreateBeaconGenesisBlock(
+func CreateBeaconGenesisBlock(
 	version int,
 	beaconNodes []string,
-	shardNodes []string,
 	icoParams IcoParams,
 	salaryPerTx uint64,
 	basicSalary uint64,
+	randomnumber int,
 ) *BlockV2 {
 
 	time := time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC)
@@ -34,6 +32,7 @@ func (self BeaconBlockGenerator) CreateBeaconGenesisBlock(
 	strShard := []string{"assign"}
 	strShard = append(strShard, strings.Join(preSelectShardNodeTestnetSerializedPubkey, ","))
 	strShard = append(strShard, "shard")
+
 	inst = append(inst, strBeacon)
 	inst = append(inst, strShard)
 	// build network param
@@ -45,6 +44,7 @@ func (self BeaconBlockGenerator) CreateBeaconGenesisBlock(
 	inst = append(inst, []string{"set", "initialCMBToken", strconv.Itoa(int(icoParams.InitialCMBToken))})
 	inst = append(inst, []string{"set", "initialGOVToken", strconv.Itoa(int(icoParams.InitialGOVToken))})
 	inst = append(inst, []string{"set", "initialBondToken", strconv.Itoa(int(icoParams.InitialBondToken))})
+	inst = append(inst, []string{"set", "randomnumber", strconv.Itoa(int(0))})
 
 	body := &BlockBodyBeacon{ShardState: nil, Instructions: inst}
 	header := &BlockHeaderBeacon{

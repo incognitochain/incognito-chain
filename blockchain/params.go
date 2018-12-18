@@ -87,9 +87,10 @@ var TestNetParams = Params{
 	Name:        TestnetName,
 	Net:         Testnet,
 	DefaultPort: TestnetDefaultPort,
-	ShardsNum:   3,
+	ShardsNum:   4,
 	// blockChain parameters
-	GenesisBlockBeacon: BeaconBlockGenerator{}.CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey, preSelectShardNodeTestnetSerializedPubkey, icoParamsTestnetNew, 1000, 1000),
+	GenesisBlockBeacon: CreateBeaconGenesisBlock(1, preSelectBeaconNodeTestnetSerializedPubkey, icoParamsTestnetNew, 1000, 1000, 0),
+	GenesisBlockShard:  CreateShardGenesisBlock(1, preSelectShardNodeTestnetSerializedPubkey, 4, icoParamsTestnetNew, 1000, 1000),
 }
 
 type IcoParams struct {

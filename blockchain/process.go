@@ -34,65 +34,65 @@ func (self *BlockChain) ConnectBlock(block *BlockV2) error {
 	// expensive connection logic.  It also has some other nice properties
 	// such as making blocks that never become part of the main chain or
 	// blocks that fail to connect available for further analysis.
-	if self.config.Light {
-		/*Logger.log.Infof("Storing Block Header of Block %+v", blockHash)
-		err := self.StoreShardBlockHeader(block)
-		if err != nil {
-			return NewBlockChainError(UnExpectedError, err)
+	// if self.config.Light {
+	/*Logger.log.Infof("Storing Block Header of Block %+v", blockHash)
+	err := self.StoreShardBlockHeader(block)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+
+	Logger.log.Infof("Fetch Block %+v to get unspent tx of all accoutns in wallet", blockHash)
+	for _, account := range self.config.Wallet.MasterAccount.Child {
+		unspentTxs, err1 := self.GetListUnspentTxByKeysetInBlock(&account.Key.KeySet, block.Header.shardID, block.Transactions, true)
+		if err1 != nil {
+			return NewBlockChainError(UnExpectedError, err1)
 		}
 
-		Logger.log.Infof("Fetch Block %+v to get unspent tx of all accoutns in wallet", blockHash)
-		for _, account := range self.config.Wallet.MasterAccount.Child {
-			unspentTxs, err1 := self.GetListUnspentTxByKeysetInBlock(&account.Key.KeySet, block.Header.shardID, block.Transactions, true)
-			if err1 != nil {
-				return NewBlockChainError(UnExpectedError, err1)
-			}
-
-			for shardID, txs := range unspentTxs {
-				for _, unspent := range txs {
-					var txIndex = -1
-					// Iterate to get TxNormal index of transaction in a block
-					for i, _ := range block.Transactions {
-						txHash := unspent.Hash().String()
-						blockTxHash := block.Transactions[i].(*transaction.Tx).Hash().String()
-						if strings.Compare(txHash, blockTxHash) == 0 {
-							txIndex = i
-							fmt.Println("Found Transaction i", unspent.Hash(), i)
-							break
-						}
-					}
-					if txIndex == -1 {
-						return NewBlockChainError(UnExpectedError, err)
-					}
-					err := self.StoreUnspentTransactionLightMode(&account.Key.KeySet.PrivateKey, shardID, block.Header.Height, txIndex, &unspent)
-					if err != nil {
-						return NewBlockChainError(UnExpectedError, err)
+		for shardID, txs := range unspentTxs {
+			for _, unspent := range txs {
+				var txIndex = -1
+				// Iterate to get TxNormal index of transaction in a block
+				for i, _ := range block.Transactions {
+					txHash := unspent.Hash().String()
+					blockTxHash := block.Transactions[i].(*transaction.Tx).Hash().String()
+					if strings.Compare(txHash, blockTxHash) == 0 {
+						txIndex = i
+						fmt.Println("Found Transaction i", unspent.Hash(), i)
+						break
 					}
 				}
+				if txIndex == -1 {
+					return NewBlockChainError(UnExpectedError, err)
+				}
+				err := self.StoreUnspentTransactionLightMode(&account.Key.KeySet.PrivateKey, shardID, block.Header.Height, txIndex, &unspent)
+				if err != nil {
+					return NewBlockChainError(UnExpectedError, err)
+				}
 			}
-		}*/
+		}
+	}*/
+	// } else {
+	err := self.StoreShardBlock(block)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+	if len(block.Body.(*BlockBodyShard).Transactions) < 1 {
+		Logger.log.Infof("No transaction in this block")
 	} else {
-		err := self.StoreShardBlock(block)
+		Logger.log.Infof("Number of transaction in this block %+v", len(block.Body.(*BlockBodyShard).Transactions))
+	}
+	for index, tx := range block.Body.(*BlockBodyShard).Transactions {
+		err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
 		if err != nil {
+			Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
 			return NewBlockChainError(UnExpectedError, err)
 		}
-		if len(block.Body.(*BlockBodyShard).Transactions) < 1 {
-			Logger.log.Infof("No transaction in this block")
-		} else {
-			Logger.log.Infof("Number of transaction in this block %+v", len(block.Body.(*BlockBodyShard).Transactions))
-		}
-		for index, tx := range block.Body.(*BlockBodyShard).Transactions {
-			err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
-			if err != nil {
-				Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
-				return NewBlockChainError(UnExpectedError, err)
-			}
-			Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
-		}
+		Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
 	}
+	// }
 	// TODO: @0xankylosaurus optimize for loop once instead of multiple times ; metadata.process
 	// save index of block
-	err := self.StoreShardBlockIndex(block)
+	err = self.StoreShardBlockIndex(block)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
