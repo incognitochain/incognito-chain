@@ -84,7 +84,7 @@ func (self *BestStateShard) Init(block *ShardBlock) {
 	self.BestBlockHash = *block.Hash()
 
 	// self.  += uint64(len(block.Transactions))
-	self.NumTxns = uint64(len(block.Body.(*BlockBodyShard).Transactions))
+	self.NumTxns = uint64(len(block.Body.Transactions))
 	self.TotalTxns = self.NumTxns
 }
 
@@ -93,7 +93,7 @@ func (self *BestStateShard) Update(block *ShardBlock) error {
 	self.BestBlock = block
 	self.BestBlockHash = *block.Hash()
 
-	self.TotalTxns += uint64(len(block.Body.(*BlockBodyShard).Transactions))
-	self.NumTxns = uint64(len(block.Body.(*BlockBodyShard).Transactions))
+	self.TotalTxns += uint64(len(block.Body.Transactions))
+	self.NumTxns = uint64(len(block.Body.Transactions))
 	return nil
 }

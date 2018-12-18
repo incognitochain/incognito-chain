@@ -20,12 +20,12 @@ type BlockRef struct {
 }
 
 type ShardHeader struct {
-	Version    int         `json:"Version"`
-	ParentHash common.Hash `json:"ParentBlockHash"`
-	Height     uint64      `json:"Height"`
+	Version int    `json:"Version"`
+	Height  uint64 `json:"Height"`
 	//epoch length should be config in consensus
-	Epoch     uint64 `json:"Epoch"`
-	Timestamp int64  `json:"Timestamp"`
+	Epoch         uint64      `json:"Epoch"`
+	Timestamp     int64       `json:"Timestamp"`
+	PrevBlockHash common.Hash `json:"PrevBlockHash"`
 
 	//Validator list will be store in database/memory (locally)
 	ValidatorsRoot common.Hash `json:"CurrentValidatorRootHash"`
@@ -74,14 +74,14 @@ func (self *ShardBody) Hash() common.Hash {
 }
 
 //HashFinal creates a hash from block data that include AggregatedSig & ValidatorsIdx
-func (self *ShardBody) HashFinal() *common.Hash {
+func (self *ShardBlock) Hash() *common.Hash {
 	record := common.EmptyString
-	record += self.Header.Hash().String() + self.ProducerSig + self.Type + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
+	record += self.Header.Hash().String() + self.ProducerSig + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
 
-func (self *ShardBody) UnmarshalJSON(data []byte) error {
+func (self *ShardBlock) UnmarshalJSON(data []byte) error {
 	tempBlk := &struct {
 		AggregatedSig string
 		ValidatorsIdx []int
@@ -109,10 +109,9 @@ func (self *ShardBody) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
-	self.Header = &BlockHeaderShard{
-		BlockHeaderGeneric: blkHeader.BlockHeaderGeneric,
-	}
-	self.Body = &blkBody
+	self.Header = blkHeader
+
+	self.Body = blkBody
 	return nil
 }
 
