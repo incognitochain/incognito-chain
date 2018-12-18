@@ -80,6 +80,7 @@ type Config struct {
 	UserKeySet       *cashec.KeySet
 	MaxOutbound      int
 	MaxInbound       int
+	MaxPeers         int
 }
 
 type WrappedStream struct {
@@ -134,6 +135,10 @@ type outMsg struct {
 func (self *Peer) ReceivedHashMessage(hash string) {
 	if self.messagePool == nil {
 		self.messagePool = make(map[string]bool)
+	}
+	ok, _ := self.messagePool[hash]
+	if ok {
+		return
 	}
 	self.messagePool[hash] = true
 	if len(self.messagePool) > MESSAGE_HASH_POOL_SIZE {
@@ -272,14 +277,14 @@ func (self *Peer) processConn() {
 			return
 		case newPeerMsg := <-self.cNewConn:
 			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.Peer.PeerID, newPeerMsg.Peer.RawAddress)
-			cDone := make(chan *PeerConn)
+			cConn := make(chan *PeerConn)
 			go func(self *Peer) {
-				peerConn, err := self.handleConn(newPeerMsg.Peer, cDone)
+				peerConn, err := self.handleConn(newPeerMsg.Peer, cConn)
 				if err != nil && peerConn == nil {
 					Logger.log.Errorf("Fail in opening stream from PEER Id - %s with err: %s", self.PeerID.Pretty(), err.Error())
 				}
 			}(self)
-			p := <-cDone
+			p := <-cConn
 			if newPeerMsg.CConn != nil {
 				newPeerMsg.CConn <- p
 			}

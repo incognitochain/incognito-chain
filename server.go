@@ -250,11 +250,11 @@ func (self *Server) NewServer(listenAddrs []string, db database.DatabaseInterfac
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
 		ExternalAddress:      cfg.ExternalAddress,
 		// config for connection of shard
-		MaxPeerSameShard:  cfg.MaxPeerSameShard,
-		MaxPeerOtherShard: cfg.MaxPeerOtherShard,
-		MaxPeerOther:      cfg.MaxPeerOther,
-		MaxPeerNoShard:    cfg.MaxPeerNoShard,
-		MaxPeerBeacon:     cfg.MaxPeerBeacon,
+		MaxPeersSameShard:  cfg.MaxPeersSameShard,
+		MaxPeersOtherShard: cfg.MaxPeersOtherShard,
+		MaxPeersOther:      cfg.MaxPeersOther,
+		MaxPeersNoShard:    cfg.MaxPeersNoShard,
+		MaxPeersBeacon:     cfg.MaxPeersBeacon,
 	})
 
 	// for testing

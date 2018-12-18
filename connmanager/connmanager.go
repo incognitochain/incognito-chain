@@ -22,12 +22,12 @@ import (
 	"github.com/ninjadotorg/constant/wire"
 )
 
-var MAX_PEERS_SAME_SHARD = 10
-var MAX_PEERS_OTHER_SHARD = 2
-var MAX_PEERS_OTHER = 100
-var MAX_PEERS = 200
-var MAX_PEERS_NOSHARD = 100
-var MAX_PEERS_BEACON = 20
+//var MAX_PEERS_SAME_SHARD = 10
+//var MAX_PEERS_OTHER_SHARD = 2
+//var MAX_PEERS_OTHER = 100
+//var MAX_PEERS = 200
+//var MAX_PEERS_NOSHARD = 100
+//var MAX_PEERS_BEACON = 20
 var SHARD_NUMBER = 256
 
 // ConnState represents the state of the requested connection.
@@ -64,12 +64,12 @@ type ConnManager struct {
 }
 
 type Config struct {
-	ExternalAddress   string
-	MaxPeerSameShard  int
-	MaxPeerOtherShard int
-	MaxPeerOther      int
-	MaxPeerNoShard    int
-	MaxPeerBeacon     int
+	ExternalAddress    string
+	MaxPeersSameShard  int
+	MaxPeersOtherShard int
+	MaxPeersOther      int
+	MaxPeersNoShard    int
+	MaxPeersBeacon     int
 	// ListenerPeers defines a slice of listeners for which the connection
 	// manager will take ownership of and accept connections.  When a
 	// connection is accepted, the OnAccept handler will be invoked with the
@@ -140,21 +140,6 @@ func (self ConnManager) New(cfg *Config) *ConnManager {
 
 	self.Config.ConsensusState = &ConsensusState{}
 	// set default config
-	if self.Config.MaxPeerSameShard <= 0 {
-		self.Config.MaxPeerSameShard = MAX_PEERS_SAME_SHARD
-	}
-	if self.Config.MaxPeerOtherShard <= 0 {
-		self.Config.MaxPeerOtherShard = MAX_PEERS_OTHER_SHARD
-	}
-	if self.Config.MaxPeerOther <= 0 {
-		self.Config.MaxPeerOther = MAX_PEERS_OTHER
-	}
-	if self.Config.MaxPeerNoShard <= 0 {
-		self.Config.MaxPeerNoShard = MAX_PEERS_NOSHARD
-	}
-	if self.Config.MaxPeerBeacon <= 0 {
-		self.Config.MaxPeerBeacon = MAX_PEERS_BEACON
-	}
 
 	// for testing
 	//var mPBK = map[string]byte{
@@ -497,11 +482,11 @@ listen:
 				//}
 
 				// connect to beacon peers
-				self.handleRandPeersOfBeacon(self.Config.MaxPeerBeacon, mPeers)
+				self.handleRandPeersOfBeacon(self.Config.MaxPeersBeacon, mPeers)
 				// connect to same shard peers
-				self.handleRandPeersOfShard(self.Config.ConsensusState.CurrentShard, self.Config.MaxPeerSameShard, mPeers)
+				self.handleRandPeersOfShard(self.Config.ConsensusState.CurrentShard, self.Config.MaxPeersSameShard, mPeers)
 				// connect to other shard peers
-				self.handleRandPeersOfOtherShard(self.Config.ConsensusState.CurrentShard, self.Config.MaxPeerOtherShard, self.Config.MaxPeerOther, mPeers)
+				self.handleRandPeersOfOtherShard(self.Config.ConsensusState.CurrentShard, self.Config.MaxPeersOtherShard, self.Config.MaxPeersOther, mPeers)
 			}
 		}
 		time.Sleep(time.Second * 60)
@@ -691,19 +676,19 @@ func (self *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) bool {
 	if sh != nil && currentShard != nil && *sh == *currentShard {
 		//	same shard
 		countPeerShard := self.countPeerConnOfShard(sh)
-		if countPeerShard > self.Config.MaxPeerSameShard {
+		if countPeerShard > self.Config.MaxPeersSameShard {
 			return false
 		}
 	} else if sh != nil {
 		//	order shard
 		countPeerShard := self.countPeerConnOfShard(sh)
-		if countPeerShard > self.Config.MaxPeerOtherShard {
+		if countPeerShard > self.Config.MaxPeersOtherShard {
 			return false
 		}
 	} else if sh == nil {
 		// none shard
 		countPeerShard := self.countPeerConnOfShard(nil)
-		if countPeerShard > self.Config.MaxPeerNoShard {
+		if countPeerShard > self.Config.MaxPeersNoShard {
 			return false
 		}
 	}
