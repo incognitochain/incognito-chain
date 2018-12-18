@@ -26,10 +26,23 @@ type DatabaseInterface interface {
 	FetchChainBlocks(byte) ([]*common.Hash, error)
 	DeleteBlock(*common.Hash, uint64, byte) error
 
+	// Beacon
+	StoreBeaconBlock(interface{}) error
+	StoreBeaconBlockHeader(interface{}, *common.Hash) error
+	FetchBeaconBlock(*common.Hash) ([]byte, error)
+	HasBeaconBlock(*common.Hash) (bool, error)
+	FetchBeaconBlockChain() ([]*common.Hash, error)
+	DeleteBeaconBlock(*common.Hash, uint64) error
+
 	// Block index
 	StoreShardBlockIndex(*common.Hash, uint64, byte) error
 	GetIndexOfBlock(*common.Hash) (uint64, byte, error)
 	GetBlockByIndex(uint64, byte) (*common.Hash, error)
+
+	// Block index
+	StoreBeaconBlockIndex(*common.Hash, uint64) error
+	GetIndexOfBeaconBlock(*common.Hash) (uint64, error)
+	GetBeaconBlockByIndex(uint64) (*common.Hash, error)
 
 	// Transaction index
 	StoreTransactionIndex(*common.Hash, *common.Hash, int) error
@@ -42,6 +55,11 @@ type DatabaseInterface interface {
 	StoreBestState(interface{}, byte) error
 	FetchBestState(byte) ([]byte, error)
 	CleanBestState() error
+
+	// Best state of chain
+	StoreBeaconBestState(interface{}) error
+	FetchBeaconBestState() ([]byte, error)
+	CleanBeaconBestState() error
 
 	// SerialNumber
 	StoreSerialNumbers([]byte, byte) error
