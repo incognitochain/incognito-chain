@@ -270,6 +270,7 @@ func loadConfig() (*config, []string, error) {
 		LogLevel:           defaultLogLevel,
 		MaxOutPeers:        defaultMaxPeers,
 		MaxInPeers:         defaultMaxPeers,
+		MaxPeers:           defaultMaxPeers,
 		MaxPeersSameShard:  defaultMaxPeersSameShard,
 		MaxPeersOtherShard: defaultMaxPeersOtherShard,
 		MaxPeersOther:      defaultMaxPeersOther,

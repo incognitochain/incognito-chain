@@ -78,8 +78,8 @@ type NewStreamMsg struct {
 type Config struct {
 	MessageListeners MessageListeners
 	UserKeySet       *cashec.KeySet
-	MaxOutbound      int
-	MaxInbound       int
+	MaxOutPeers      int
+	MaxInPeers       int
 	MaxPeers         int
 }
 
@@ -423,7 +423,7 @@ func (self *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error
 		return nil, nil
 	}
 
-	if self.NumOutbound() >= self.Config.MaxOutbound && self.Config.MaxOutbound > 0 && !ok {
+	if self.NumOutbound() >= self.Config.MaxOutPeers && self.Config.MaxOutPeers > 0 && !ok {
 		Logger.log.Infof("Checked Max Outbound Connection PEER Id - %s", peer.RawAddress)
 
 		//push to pending peers
@@ -508,7 +508,7 @@ func (self *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
-	if self.NumInbound() >= self.Config.MaxInbound && self.Config.MaxInbound > 0 {
+	if self.NumInbound() >= self.Config.MaxInPeers && self.Config.MaxInPeers > 0 {
 		Logger.log.Infof("Max RemotePeer Inbound Connection")
 
 		if cDone != nil {
