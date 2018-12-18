@@ -1,35 +1,26 @@
 package transaction
 
 import (
-	"github.com/ninjadotorg/constant/common"
-	"errors"
 	"fmt"
+
+	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/wallet"
-	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
 type TxTokenPrivacyData struct {
+	TxNormal       Tx          // used for privacy functionality
 	PropertyID     common.Hash // = hash of TxTokenData data
 	PropertyName   string
 	PropertySymbol string
 
 	Type   int    // action type
 	Amount uint64 // init amount
-	Proof  *zkp.PaymentProof `json:"Descs"`
 }
 
 // Hash - return hash of token data, be used as Token ID
-func (self TxTokenPrivacyData) Hash() (*common.Hash, error) {
-	if self.Proof == nil {
-		return nil, errors.New("Privacy data is empty")
-	}
-	record := self.PropertyName + self.PropertySymbol + fmt.Sprintf("%d", self.Amount)
-	/*for _, out := range self.Proof {
-		record += out.toString()
-	}*/
-	// final hash
-	hash := common.DoubleHashH([]byte(record))
-	return &hash, nil
+func (self TxTokenPrivacyData) Hash() common.Hash {
+	record := self.PropertyName + self.PropertySymbol + fmt.Sprintf("%d", self.Amount) + self.TxNormal.Hash().String()
+	return common.DoubleHashH([]byte(record))
 }
 
 // CustomTokenParamTx - use for rpc request json body
