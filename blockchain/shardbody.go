@@ -92,13 +92,44 @@ func (self *BlockBodyShard) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (self *BlockBodyShard) CalcMerkleRootShard() {
+func (self *BlockBodyShard) CalcMerkleRootShard() *common.Hash {
 	//TODO
+	var shardTxs map[int][]*common.Hash
 
+	for _, tx := range self.Transactions {
+		shardID := int(tx.GetSenderAddrLastByte())
+		shardTxs[shardID] = append(shardTxs[shardID], tx.Hash())
+	}
+
+	shardsHash := make([]*common.Hash, TestNetParams.ShardsNum)
+	for idx, _ := range shardsHash {
+		h := &common.Hash{}
+		shardsHash[idx], _ = h.NewHashFromStr("")
+	}
+
+	for idx, shard := range shardTxs {
+		txHashStrConcat := ""
+
+		for _, tx := range shard {
+			txHashStrConcat += tx.String()
+		}
+
+		h := &common.Hash{}
+		hash, _ := h.NewHashFromStr(txHashStrConcat)
+
+		shardsHash[idx] = hash
+	}
+
+	merkleRoots := Merkle{}.BuildMerkleShards(shardsHash)
+	merkleRoot := merkleRoots[len(merkleRoots)-1]
+	return merkleRoot
 }
-func (self *BlockBodyShard) CalcMerkleRootTx() {
-	//TODO
 
+func (self *BlockBodyShard) CalcMerkleRootTx() *common.Hash {
+	//TODO
+	merkleRoots := Merkle{}.BuildMerkleTreeStore(self.Transactions)
+	merkleRoot := merkleRoots[len(merkleRoots)-1]
+	return merkleRoot
 }
 
 func parseMetadata(meta interface{}) (metadata.Metadata, error) {
