@@ -786,6 +786,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db database.DatabaseInterface, chainId byte) bool {
 	//return true
 	// has no privacy
+	//return true
 	if !hasPrivacy {
 		var sumInputValue, sumOutputValue uint64
 		sumInputValue = 0
@@ -888,6 +889,7 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 	//if !pro.ComZeroProof.Verify() {
 	//	return false
 	//}
+
 
 	return true
 }

@@ -33,6 +33,14 @@ type SaleDBCTOkensByUSDData struct {
 	EndBlock int32
 }
 
+type OracleNetwork struct {
+	OraclePubKeys         [][]byte
+	WrongTimesAllowed     uint8
+	Quorum                uint8
+	AcceptableErrorMargin uint32
+	UpdateFrequency       uint32
+}
+
 func (saleData *SaleData) Hash() *common.Hash {
 	record := ""
 	for _, i := range saleData.SaleID {
@@ -67,6 +75,18 @@ func (refundInfo *RefundInfo) Hash() *common.Hash {
 func (sdt *SaleDBCTOkensByUSDData) Hash() *common.Hash {
 	record := string(sdt.Amount)
 	record += string(sdt.EndBlock)
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+func (on *OracleNetwork) Hash() *common.Hash {
+	record := string(on.WrongTimesAllowed)
+	record += string(on.Quorum)
+	record += string(on.AcceptableErrorMargin)
+	record += string(on.UpdateFrequency)
+	for _, oraclePk := range on.OraclePubKeys {
+		record += string(oraclePk)
+	}
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

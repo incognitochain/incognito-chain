@@ -126,7 +126,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 	}
 
 	// param #3: estimation fee nano constant per kb
-	estimateFeeCoinPerKb := uint64(arrayParams[2].(float64))
+	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
 
 	// param #4: estimation fee coin per kb by numblock
 	numBlock := uint64(arrayParams[3].(float64))

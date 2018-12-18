@@ -9,7 +9,7 @@ import (
 )
 
 func TestPKComMultiRange(t *testing.T) {
-	testNum := 6
+	testNum := 2
 	values := make([]*big.Int, testNum)
 	for i := 0; i < testNum; i++ {
 		values[i] = new(big.Int)

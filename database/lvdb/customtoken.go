@@ -10,7 +10,6 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -138,9 +137,9 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 	VoteAmount: a list of utxo
 	Each utxo consist of two part: txHash-index
 */
-func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[client.PaymentAddress][][]byte, error) {
+/*func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[privacy.PaymentAddress][][]byte, error) {
 
-	results := make(map[client.PaymentAddress][][]byte)
+	results := make(map[privacy.PaymentAddress][][]byte)
 	prefix := TokenPaymentAddressPrefix
 	prefix = append(prefix, Splitter...)
 	prefix = append(prefix, (*tokenID)[:]...)
@@ -152,7 +151,7 @@ func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[client.P
 		values := strings.Split(value, string(Splitter))
 		// get unspent and unreward transaction output
 		if (strings.Compare(values[1], string(Unspent)) == 0) && (strings.Compare(values[2], string(Unreward)) == 0) {
-			paymentAddress := client.PaymentAddress{}
+			paymentAddress := privacy.PaymentAddress{}
 			paymentAddress.FromBytes([]byte(keys[2]))
 			utxo := keys[4] + string(Splitter) + keys[5]
 			//utxo := append([]byte(keys[4]), []byte(keys[5])[:]...)
@@ -161,7 +160,7 @@ func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[client.P
 	}
 	iter.Release()
 	return results, nil
-}
+}*/
 
 /*
 	Get a list of UTXO of one address
