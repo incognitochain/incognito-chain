@@ -458,20 +458,6 @@ func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, ch
 }
 
 /*
-Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
-this is a list tx-in which are used by a new tx
-*/
-/*func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, chainId byte) error {
-	for _, item := range commitments {
-		err := self.config.DataBase.StoreCommitments(item, chainId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
-
-/*
 Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
 this is a list tx-out which are used by a new tx
 */
@@ -488,24 +474,6 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
 	}
 	return nil
 }
-
-/*
-Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
-this is a list tx-in which are used by a new tx
-*/
-/*func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
-	for _, desc := range tx.Proof.OutputCoins {
-		chainId, err := common.GetTxSenderChain(desc.CoinDetails.GetPubKeyLastByte())
-		if err != nil {
-			return err
-		}
-		err = self.config.DataBase.StoreCommitments(desc.CoinDetails.CoinCommitment.Compress(), chainId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
 
 /*
 Get all blocks in chain
@@ -876,30 +844,7 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 	return nil
 }
 
-/*
-FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
-Param coinType - COIN or BOND
-*/
-/*func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
-	view := NewTxViewPoint(chainId)
-	commitments, err := self.config.DataBase.FetchCommitments(chainId)
-	if err != nil {
-		return nil, err
-	}
-	view.listCommitments = commitments
-	nullifiers, err := self.config.DataBase.FetchSerialNumbers(chainId)
-	if err != nil {
-		return nil, err
-	}
-	view.listSerialNumbers = nullifiers
-	snDerivators, err := self.config.DataBase.FetchSNDerivator(chainId)
-	if err != nil {
-		return nil, err
-	}
-	view.listSnD = snDerivators
-	return view, nil
-}*/
-
+// CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
 func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	view := NewTxViewPoint(block.Header.ChainID)
 
@@ -1354,6 +1299,7 @@ func (self *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {
 func (self *BlockChain) GetNumberOfDCBGovernors() int {
 	return common.NumberOfDCBGovernors
 }
+
 func (self *BlockChain) GetNumberOfGOVGovernors() int {
 	return common.NumberOfGOVGovernors
 }
