@@ -37,7 +37,7 @@ this struct has a array best state with len = 20,
 every beststate present for a best block in every chain
 */
 type BlockChain struct {
-	BestState *BestStateNew
+	BestState *BestState
 	IsReady   bool
 	config    Config
 	chainLock sync.RWMutex
@@ -304,7 +304,7 @@ func (self *BlockChain) createBeaconState() error {
 /*
 Get block index(height) of block
 */
-func (self *BlockChain) GetBlockHeightByBlockHash(hash *common.Hash) (uint64, byte, error) {
+func (self *BlockChain) GetShardBlockHeightByHash(hash *common.Hash) (uint64, byte, error) {
 	return self.config.DataBase.GetIndexOfBlock(hash)
 }
 
@@ -318,7 +318,7 @@ func (self *BlockChain) GetShardBlockHashByHeight(height uint64, shardID byte) (
 /*
 Fetch DatabaseInterface and get block by index(height) of block
 */
-func (self *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (*BlockV2, error) {
+func (self *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (*ShardBlock, error) {
 	hashBlock, err := self.config.DataBase.GetBlockByIndex(height, shardID)
 	if err != nil {
 		return nil, err
@@ -339,13 +339,13 @@ func (self *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (*Blo
 /*
 Fetch DatabaseInterface and get block data by block hash
 */
-func (self *BlockChain) GetBlockByHash(hash *common.Hash) (*BlockV2, error) {
+func (self *BlockChain) GetShardBlockByHash(hash *common.Hash) (*ShardBlock, error) {
 	blockBytes, err := self.config.DataBase.FetchBlock(hash)
 	if err != nil {
 		return nil, err
 	}
-	block := BlockV2{}
-	err = json.Unmarshal(blockBytes, &block)
+	block := ShardBlock{}
+	err = block
 	if err != nil {
 		return nil, err
 	}
@@ -382,14 +382,14 @@ func (self *BlockChain) GetShardBestState(shardID byte) (*BestStateShard, error)
 /*
 Store block into Database
 */
-func (self *BlockChain) StoreShardBlock(block *BlockV2) error {
+func (self *BlockChain) StoreShardBlock(block *ShardBlock) error {
 	return self.config.DataBase.StoreShardBlock(block, block.Header.(*BlockHeaderShard).ShardID)
 }
 
 /*
 	Store Only Block Header into database
 */
-func (self *BlockChain) StoreShardBlockHeader(block *BlockV2) error {
+func (self *BlockChain) StoreShardBlockHeader(block *ShardBlock) error {
 	//Logger.log.Infof("Store Block Header, block header %+v, block hash %+v, chain id %+v",block.Header, block.blockHash, block.Header.shardID)
 	return self.config.DataBase.StoreShardBlockHeader(block.Header, block.Hash(), block.Header.(*BlockHeaderShard).ShardID)
 }
@@ -410,7 +410,7 @@ Save index(height) of block by block hash
 and
 Save block hash by index(height) of block
 */
-func (self *BlockChain) StoreShardBlockIndex(block *BlockV2) error {
+func (self *BlockChain) StoreShardBlockIndex(block *ShardBlock) error {
 	return self.config.DataBase.StoreShardBlockIndex(block.Hash(), block.Header.(*BlockHeaderShard).Height, block.Header.(*BlockHeaderShard).ShardID)
 }
 
@@ -546,7 +546,7 @@ this is a list tx-in which are used by a new tx
 Get all blocks in shard
 Return block array
 */
-func (self *BlockChain) GetAllShardBlocks() ([][]*BlockV2, error) {
+func (self *BlockChain) GetAllShardBlocks() ([][]*ShardBlock, error) {
 	result := make([][]*BlockV2, 0)
 	data, err := self.config.DataBase.FetchAllBlocks()
 	if err != nil {
@@ -571,8 +571,8 @@ func (self *BlockChain) GetAllShardBlocks() ([][]*BlockV2, error) {
 	return result, nil
 }
 
-func (self *BlockChain) GetShardBlocks(shardID byte) ([]*BlockV2, error) {
-	result := make([]*BlockV2, 0)
+func (self *BlockChain) GetShardBlocks(shardID byte) ([]*ShardBlock, error) {
+	result := make([]*ShardBlock, 0)
 	data, err := self.config.DataBase.FetchChainBlocks(shardID)
 	if err != nil {
 		return nil, err
@@ -583,8 +583,8 @@ func (self *BlockChain) GetShardBlocks(shardID byte) ([]*BlockV2, error) {
 		if err != nil {
 			return nil, err
 		}
-		block := BlockV2{}
-		err = json.Unmarshal(blockBytes, &block)
+		block := ShardBlock{}
+		err = block.UnmarshalJSON()
 		if err != nil {
 			return nil, err
 		}

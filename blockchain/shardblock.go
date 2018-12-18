@@ -3,23 +3,66 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/transaction"
 )
 
-type BlockBodyShard struct {
+type ShardBody struct {
 	RefBlocks    []BlockRef
 	Transactions []metadata.Transaction
 }
-
 type BlockRef struct {
 	ShardID byte
 	Block   common.Hash
 }
 
-func (self *BlockBodyShard) Hash() common.Hash {
+type ShardHeader struct {
+	Version    int         `json:"Version"`
+	ParentHash common.Hash `json:"ParentBlockHash"`
+	Height     uint64      `json:"Height"`
+	//epoch length should be config in consensus
+	Epoch     uint64 `json:"Epoch"`
+	Timestamp int64  `json:"Timestamp"`
+
+	//Validator list will be store in database/memory (locally)
+	ValidatorsRoot common.Hash `json:"CurrentValidatorRootHash"`
+	//Candidate = unassigned_validator list will be store in database/memory (locally)
+	// infer from history
+	PendingValidatorRoot common.Hash `json:"PendingValidatorRoot"`
+	// Store these two list make sure all node process the same data
+
+	MerkleRoot      common.Hash
+	MerkleRootShard common.Hash
+	Actions         []interface{}
+	ShardID         byte
+}
+
+type ShardBlock struct {
+	AggregatedSig string `json:"AggregatedSig"`
+	ValidatorsIdx []int  `json:"ValidatorsIdx"`
+	ProducerSig   string `json:"BlockProducerSignature"`
+	Producer      string `json:"Producer"`
+
+	Body   ShardBody
+	Header ShardHeader
+}
+
+type ShardToBeaconBlock struct {
+	Header        ShardHeader
+	AggregatedSig string `json:"AggregatedSig"`
+	ValidatorsIdx []int  `json:"ValidatorsIdx"`
+	ProducerSig   string `json:"BlockProducerSignature"`
+	Producer      string `json:"Producer"`
+}
+
+type ShardToShardBlock struct {
+	///
+}
+
+func (self *ShardBody) Hash() common.Hash {
 	record := common.EmptyString
 	for _, ref := range self.RefBlocks {
 		record += string(ref.ShardID) + ref.Block.String()
@@ -30,13 +73,56 @@ func (self *BlockBodyShard) Hash() common.Hash {
 	return common.DoubleHashH([]byte(record))
 }
 
+//HashFinal creates a hash from block data that include AggregatedSig & ValidatorsIdx
+func (self *ShardBody) HashFinal() *common.Hash {
+	record := common.EmptyString
+	record += self.Header.Hash().String() + self.ProducerSig + self.Type + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+func (self *ShardBody) UnmarshalJSON(data []byte) error {
+	tempBlk := &struct {
+		AggregatedSig string
+		ValidatorsIdx []int
+		ProducerSig   string
+		Producer      string
+		Header        *json.RawMessage
+		Body          *json.RawMessage
+	}{}
+	err := json.Unmarshal(data, &tempBlk)
+	if err != nil {
+		return NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	self.AggregatedSig = tempBlk.AggregatedSig
+	self.ValidatorsIdx = tempBlk.ValidatorsIdx
+	self.ProducerSig = tempBlk.ProducerSig
+	self.Producer = tempBlk.Producer
+
+	blkHeader := ShardHeader{}
+	err = json.Unmarshal(*tempBlk.Header, &blkHeader)
+	if err != nil {
+		return NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	blkBody := ShardBody{}
+	err = blkBody.UnmarshalJSON(*tempBlk.Body)
+	if err != nil {
+		return NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+	self.Header = &BlockHeaderShard{
+		BlockHeaderGeneric: blkHeader.BlockHeaderGeneric,
+	}
+	self.Body = &blkBody
+	return nil
+}
+
 /*
 Customize UnmarshalJSON to parse list TxNormal
 because we have many types of block, so we can need to customize data from marshal from json string to build a block
 */
-func (self *BlockBodyShard) UnmarshalJSON(data []byte) error {
+func (self *ShardBody) UnmarshalJSON(data []byte) error {
 	Logger.log.Info("UnmarshalJSON of block")
-	type Alias BlockBodyShard
+	type Alias ShardBody
 	temp := &struct {
 		Transactions []map[string]interface{}
 		*Alias
@@ -92,7 +178,7 @@ func (self *BlockBodyShard) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (self *BlockBodyShard) CalcMerkleRootShard() *common.Hash {
+func (self *ShardBody) CalcMerkleRootShard() *common.Hash {
 	//TODO
 	var shardTxs map[int][]*common.Hash
 
@@ -125,7 +211,7 @@ func (self *BlockBodyShard) CalcMerkleRootShard() *common.Hash {
 	return merkleRoot
 }
 
-func (self *BlockBodyShard) CalcMerkleRootTx() *common.Hash {
+func (self *ShardBody) CalcMerkleRootTx() *common.Hash {
 	//TODO
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(self.Transactions)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
@@ -175,4 +261,16 @@ func parseMetadata(meta interface{}) (metadata.Metadata, error) {
 		return nil, err
 	}
 	return md, nil
+}
+
+func (self ShardHeader) Hash() common.Hash {
+	record := common.EmptyString
+
+	// add data from header
+	record += strconv.FormatInt(self.Timestamp, 10) +
+		string(self.ShardID) +
+		self.MerkleRoot.String() +
+		self.PrevBlockHash.String()
+
+	return common.DoubleHashH([]byte(record))
 }

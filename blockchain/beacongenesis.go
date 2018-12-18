@@ -15,7 +15,7 @@ func CreateBeaconGenesisBlock(
 	salaryPerTx uint64,
 	basicSalary uint64,
 	randomnumber int,
-) *BlockV2 {
+) *BeaconBlock {
 
 	time := time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC)
 
@@ -46,18 +46,15 @@ func CreateBeaconGenesisBlock(
 	inst = append(inst, []string{"set", "initialBondToken", strconv.Itoa(int(icoParams.InitialBondToken))})
 	inst = append(inst, []string{"set", "randomnumber", strconv.Itoa(int(0))})
 
-	body := &BlockBodyBeacon{ShardState: nil, Instructions: inst}
-	header := &BlockHeaderBeacon{
-		BlockHeaderGeneric: BlockHeaderGeneric{
-			Timestamp: time.Unix(),
-			Height:    1,
-			Version:   1,
-		},
-		DataHash: body.Hash(),
+	body := &BeaconBody{ShardState: nil, Instructions: inst}
+	header := &BeaconHeader{
+		Timestamp: time.Unix(),
+		Height:    1,
+		Version:   1,
+		DataHash:  body.Hash(),
 	}
 
-	block := &BlockV2{
-		Type:   "beacon",
+	block := &ShardBlock{
 		Body:   body,
 		Header: header,
 	}

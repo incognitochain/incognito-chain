@@ -1,4 +1,4 @@
-package blocktype
+package blockchain
 
 import "github.com/ninjadotorg/constant/common"
 

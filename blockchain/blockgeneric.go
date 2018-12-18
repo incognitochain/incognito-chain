@@ -1,128 +1,121 @@
 package blockchain
 
-import (
-	"encoding/json"
-	"errors"
+// type BlockHeaderV2 interface {
+// 	Hash() common.Hash
+// 	UnmarshalJSON([]byte) error
+// 	GetHeight() uint64
+// }
 
-	"github.com/ninjadotorg/constant/common"
-)
+// type BlockBodyV2 interface {
+// 	Hash() common.Hash
+// 	UnmarshalJSON([]byte) error
+// }
 
-type BlockHeaderV2 interface {
-	Hash() common.Hash
-	UnmarshalJSON([]byte) error
-	GetHeight() uint64
-}
+// type BlockHeaderGeneric struct {
+// 	// Version of the block.  This is not the same as the protocol version.
+// 	Version int `json:"Version"`
 
-type BlockBodyV2 interface {
-	Hash() common.Hash
-	UnmarshalJSON([]byte) error
-}
+// 	// Hash of the previous block header in the block chain.
+// 	PrevBlockHash common.Hash `json:"PrevBlockHash"`
 
-type BlockHeaderGeneric struct {
-	// Version of the block.  This is not the same as the protocol version.
-	Version int `json:"Version"`
+// 	//Block Height
+// 	Height uint64 `json:"Height"`
 
-	// Hash of the previous block header in the block chain.
-	PrevBlockHash common.Hash `json:"PrevBlockHash"`
+// 	// Time the block was created.  This is, unfortunately, encoded as a
+// 	// uint64 on the wire and therefore is limited to 2106.
+// 	Timestamp int64  `json:"Timestamp"`
+// 	Epoch     uint64 `json:"Epoch"`
+// }
 
-	//Block Height
-	Height uint64 `json:"Height"`
+// // type BlockV2 struct {
+// // 	AggregatedSig string // aggregated signature in base58
+// // 	ValidatorsIdx []int
+// // 	ProducerSig   string // block producer signature in base58
+// // 	Producer      string
+// // 	Type          string
 
-	// Time the block was created.  This is, unfortunately, encoded as a
-	// uint64 on the wire and therefore is limited to 2106.
-	Timestamp int64  `json:"Timestamp"`
-	Epoch     uint64 `json:"Epoch"`
-}
+// // 	Header BlockHeaderV2
+// // 	Body   BlockBodyV2
+// // }
 
-type BlockV2 struct {
-	AggregatedSig string // aggregated signature in base58
-	ValidatorsIdx []int
-	ProducerSig   string // block producer signature in base58
-	Producer      string
-	Type          string
+// //Hash creates a hash from block data that not include AggregatedSig & ValidatorsIdx
+// func (self *BlockV2) Hash() *common.Hash {
+// 	record := common.EmptyString
+// 	record += self.Header.Hash().String() + self.ProducerSig + self.Type
+// 	hash := common.DoubleHashH([]byte(record))
+// 	return &hash
+// }
 
-	Header BlockHeaderV2
-	Body   BlockBodyV2
-}
+// //HashFinal creates a hash from block data that include AggregatedSig & ValidatorsIdx
+// func (self *BlockV2) HashFinal() *common.Hash {
+// 	record := common.EmptyString
+// 	record += self.Header.Hash().String() + self.ProducerSig + self.Type + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
+// 	hash := common.DoubleHashH([]byte(record))
+// 	return &hash
+// }
 
-//Hash creates a hash from block data that not include AggregatedSig & ValidatorsIdx
-func (self *BlockV2) Hash() *common.Hash {
-	record := common.EmptyString
-	record += self.Header.Hash().String() + self.ProducerSig + self.Type
-	hash := common.DoubleHashH([]byte(record))
-	return &hash
-}
+// func (self *BlockV2) UnmarshalJSON(data []byte) error {
+// 	tempBlk := &struct {
+// 		AggregatedSig string
+// 		ValidatorsIdx []int
+// 		ProducerSig   string
+// 		Type          string
+// 		Header        *json.RawMessage
+// 		Body          *json.RawMessage
+// 	}{}
+// 	err := json.Unmarshal(data, &tempBlk)
+// 	if err != nil {
+// 		return NewBlockChainError(UnmashallJsonBlockError, err)
+// 	}
+// 	self.Type = tempBlk.Type
+// 	self.AggregatedSig = tempBlk.AggregatedSig
+// 	self.ValidatorsIdx = tempBlk.ValidatorsIdx
+// 	self.ProducerSig = tempBlk.ProducerSig
 
-//HashFinal creates a hash from block data that include AggregatedSig & ValidatorsIdx
-func (self *BlockV2) HashFinal() *common.Hash {
-	record := common.EmptyString
-	record += self.Header.Hash().String() + self.ProducerSig + self.Type + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
-	hash := common.DoubleHashH([]byte(record))
-	return &hash
-}
+// 	switch self.Type {
+// 	case "beacon":
+// 		self.Header = &BlockHeaderBeacon{}
+// 		err := json.Unmarshal(*tempBlk.Header, self.Header)
+// 		if err != nil {
+// 			return NewBlockChainError(UnmashallJsonBlockError, err)
+// 		}
 
-func (self *BlockV2) UnmarshalJSON(data []byte) error {
-	tempBlk := &struct {
-		AggregatedSig string
-		ValidatorsIdx []int
-		ProducerSig   string
-		Type          string
-		Header        *json.RawMessage
-		Body          *json.RawMessage
-	}{}
-	err := json.Unmarshal(data, &tempBlk)
-	if err != nil {
-		return NewBlockChainError(UnmashallJsonBlockError, err)
-	}
-	self.Type = tempBlk.Type
-	self.AggregatedSig = tempBlk.AggregatedSig
-	self.ValidatorsIdx = tempBlk.ValidatorsIdx
-	self.ProducerSig = tempBlk.ProducerSig
+// 		self.Body = &BlockBodyBeacon{}
+// 		err = json.Unmarshal(*tempBlk.Body, self.Body)
+// 		if err != nil {
+// 			return NewBlockChainError(UnmashallJsonBlockError, err)
+// 		}
 
-	switch self.Type {
-	case "beacon":
-		self.Header = &BlockHeaderBeacon{}
-		err := json.Unmarshal(*tempBlk.Header, self.Header)
-		if err != nil {
-			return NewBlockChainError(UnmashallJsonBlockError, err)
-		}
+// 	case "shard":
+// 		blkHeader := BlockHeaderShard{}
+// 		err := blkHeader.UnmarshalJSON(*tempBlk.Header)
+// 		if err != nil {
+// 			return NewBlockChainError(UnmashallJsonBlockError, err)
+// 		}
+// 		blkBody := BlockBodyShard{}
+// 		err = blkBody.UnmarshalJSON(*tempBlk.Body)
+// 		if err != nil {
+// 			return NewBlockChainError(UnmashallJsonBlockError, err)
+// 		}
+// 		self.Header = &BlockHeaderShard{
+// 			BlockHeaderGeneric: blkHeader.BlockHeaderGeneric,
+// 		}
+// 		self.Body = &blkBody
+// 	default:
+// 		return NewBlockChainError(UnmashallJsonBlockError, errors.New("Unknown block type "+self.Type))
+// 	}
+// 	return nil
+// }
 
-		self.Body = &BlockBodyBeacon{}
-		err = json.Unmarshal(*tempBlk.Body, self.Body)
-		if err != nil {
-			return NewBlockChainError(UnmashallJsonBlockError, err)
-		}
+// //ValidateSanity validate the correctness of the content of the block
+// func (self *BlockV2) ValidateSanity(chain *BlockChain) error {
+// 	return nil
+// }
 
-	case "shard":
-		blkHeader := BlockHeaderShard{}
-		err := blkHeader.UnmarshalJSON(*tempBlk.Header)
-		if err != nil {
-			return NewBlockChainError(UnmashallJsonBlockError, err)
-		}
-		blkBody := BlockBodyShard{}
-		err = blkBody.UnmarshalJSON(*tempBlk.Body)
-		if err != nil {
-			return NewBlockChainError(UnmashallJsonBlockError, err)
-		}
-		self.Header = &BlockHeaderShard{
-			BlockHeaderGeneric: blkHeader.BlockHeaderGeneric,
-		}
-		self.Body = &blkBody
-	default:
-		return NewBlockChainError(UnmashallJsonBlockError, errors.New("Unknown block type "+self.Type))
-	}
-	return nil
-}
-
-//ValidateSanity validate the correctness of the content of the block
-func (self *BlockV2) ValidateSanity(chain *BlockChain) error {
-	return nil
-}
-
-//ValidateSanity validate the content of the block with AggregatedSig and ValidatorsIdx
-func (self *BlockV2) ValidateFinality(chain *BlockChain) error {
-	return nil
-}
+// //ValidateSanity validate the content of the block with AggregatedSig and ValidatorsIdx
+// func (self *BlockV2) ValidateFinality(chain *BlockChain) error {
+// 	return nil
+// }
 
 /*@Hung
 type BeaconHeader struct {
