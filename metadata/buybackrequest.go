@@ -35,11 +35,6 @@ func (bbReq *BuyBackRequest) ValidateTxWithBlockChain(
 	chainID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	// check double spending on fee tx
-	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
-	if err != nil {
-		return false, err
-	}
 	return true, nil
 }
 

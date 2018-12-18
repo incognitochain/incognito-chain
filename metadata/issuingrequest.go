@@ -52,11 +52,6 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 			return false, nil
 		}
 	}
-	// check double spending on fee tx
-	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
-	if err != nil {
-		return false, err
-	}
 	return true, nil
 }
 
@@ -74,8 +69,7 @@ func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 	if iReq.Type == IssuingRequestMeta {
 		return false, false, errors.New("Wrong request info's meta type")
 	}
-	assetTypeStr := string(iReq.AssetType[:])
-	if assetTypeStr != string(common.ConstantID[:]) && assetTypeStr != string(common.DCBTokenID[:]) {
+	if len(iReq.AssetType) != common.HashSize {
 		return false, false, errors.New("Wrong request info's asset type")
 	}
 	return false, true, nil
