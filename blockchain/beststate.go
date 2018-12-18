@@ -23,14 +23,26 @@ type BestStateBeacon struct {
 	BestBlock     *BlockV2    // The block.
 	BestShardHash []common.Hash
 
-	BeaconHeight           uint64
-	BeaconCandidate        []string
-	BeaconPendingCandidate []string
-	ShardCommittee         map[byte][]string
-	ShardPendingValidator  map[byte][]string
+	BeaconHeight uint64
 
-	UnassignBeaconCandidate []string
-	UnassignShardCandidate  []string
+	BeaconCommittee        []string
+	BeaconPendingCommittee []string
+
+	// assigned candidate
+	CandidateShardWaitingForCurrentRandom  []string
+	CandidateBeaconWaitingForCurrentRandom []string
+
+	// assigned candidate
+	CandidateShardWaitingForNextRandom  []string
+	CandidateBeaconWaitingForNextRandom []string
+
+	// validator of shards
+	ShardCommittee map[byte][]string
+	// pending validator of shards
+	ShardPendingValidator map[byte][]string
+
+	// UnassignBeaconCandidate []string
+	// UnassignShardCandidate  []string
 
 	CurrentRandomNumber int64
 	NextRandomNumber    int64
