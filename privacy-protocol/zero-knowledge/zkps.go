@@ -493,7 +493,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 	preIndex := 0
 	for i := 0; i < numInputCoin; i++ {
-		/***** Build witness for proving the knowledge of input coins' Openings  *****/
+		/***** Build witness for provingLS the knowledge of input coins' Openings  *****/
 		cmInputSum[i] = new(privacy.EllipticPoint)
 		cmInputSum[i].X, cmInputSum[i].Y = big.NewInt(0), big.NewInt(0)
 		cmInputSum[i].X.Set(cmInputSK.X)

@@ -354,7 +354,7 @@ func main() {
 
 	a := new(big.Int).SetUint64(10)
 	//b := new(big.Int).SetBytes(a.Bytes())
-	b := new(big.Int).Set(a)
+	b := new(big.Int).Set(a)x
 
 	fmt.Printf("a before: %v\n", a)
 	fmt.Printf("b before: %v\n", b)
