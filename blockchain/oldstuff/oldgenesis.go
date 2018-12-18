@@ -263,7 +263,7 @@ func createSpecialTokenTx(
 	txTokenData := transaction.TxTokenData{
 		PropertyID:     tokenID,
 		PropertyName:   tokenName,
-		PropertySymbol: tokenSymbol,
+		PropertySymbol: tokenSymbol,preSelectShardNodeTestnetSerializedPubkey
 		Type:           transaction.CustomTokenInit,
 		Amount:         amount,
 		Vins:           []transaction.TxTokenVin{},

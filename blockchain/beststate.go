@@ -26,7 +26,7 @@ type BestStateBeacon struct {
 	BeaconHeight           uint64
 	BeaconCandidate        []string
 	BeaconPendingCandidate []string
-	ShardValidator         map[byte][]string
+	ShardCommittee         map[byte][]string
 	ShardPendingValidator  map[byte][]string
 
 	UnassignBeaconCandidate []string

@@ -61,9 +61,9 @@ type Config struct {
 	//
 	// This field is required.
 	ChainParams *Params
-
+	NodeRole    string
 	//Light mode flag
-	Light bool
+	// Light bool
 	//Wallet for light mode
 	Wallet *wallet.Wallet
 	//snapshot reward
@@ -189,7 +189,10 @@ func (self *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	var initialized bool
+	nodeRole := self.config.NodeRole
+	if nodeRole == "beacon" || nodeRole == "shard" {
 
+	}
 	self.BestState.Shard = make(map[byte]*BestStateShard)
 	for shard := 1; shard < self.config.ChainParams.ShardsNum; shard++ {
 		shardID := byte(shard - 1)
@@ -208,7 +211,7 @@ func (self *BlockChain) initChainState() error {
 		if !initialized {
 			// At this point the database has not already been initialized, so
 			// initialize both it and the chain state to the genesis block.
-			err := self.createChainState(shardID)
+			err := self.createShardState(shardID)
 			if err != nil {
 				return err
 			}
@@ -224,13 +227,12 @@ func (self *BlockChain) initChainState() error {
 // genesis block.  This includes creating the necessary buckets and inserting
 // the genesis block, so it must only be called on an uninitialized database.
 */
-func (self *BlockChain) createChainState(shardID byte) error {
+func (self *BlockChain) createShardState(shardID byte) error {
 	// Create a new block from genesis block and set it as best block of chain
 	var initBlock *BlockV2
 	if shardID == 0 {
 		initBlock = self.config.ChainParams.GenesisBlockShard
 	} else {
-		initBlock = &BlockV2{}
 		initBlock.Header = self.config.ChainParams.GenesisBlockShard.Header
 		initBlock.Header.(*BlockHeaderShard).ShardID = shardID
 		initBlock.Header.(*BlockHeaderShard).PrevBlockHash = common.Hash{}
@@ -243,7 +245,7 @@ func (self *BlockChain) createChainState(shardID byte) error {
 	}*/
 
 	self.BestState.Shard[shardID] = &BestStateShard{}
-	self.BestState.Shard[shardID].Init(initBlock /*, tree*/)
+	self.BestState.Shard[shardID].Init(initBlock)
 
 	err := self.ConnectBlock(initBlock)
 	if err != nil {
@@ -257,6 +259,25 @@ func (self *BlockChain) createChainState(shardID byte) error {
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
+	return nil
+}
+
+func (self *BlockChain) createBeaconState() error {
+	var initBlock *BlockV2
+	initBlock = self.config.ChainParams.GenesisBlockBeacon
+	self.BestState.Beacon = &BestStateBeacon{}
+	self.BestState.Beacon.Init(initBlock)
+	err := self.ConnectBlock(initBlock)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
+
+	// store best state
+	err = self.StoreBeaconBestState()
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
 	return nil
 }
 
@@ -309,6 +330,13 @@ func (self *BlockChain) GetBlockByHash(hash *common.Hash) (*BlockV2, error) {
 		return nil, err
 	}
 	return &block, nil
+}
+
+/*
+Store best state of block(best block, num of tx, ...) into Database
+*/
+func (self *BlockChain) StoreBeaconBestState() error {
+	return self.config.DataBase.StoreBeaconBestState(self.BestState.Beacon)
 }
 
 /*
@@ -1059,10 +1087,10 @@ func (self *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, shardI
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 
-	if self.config.Light {
-		// Get unspent tx with light mode
-		// TODO
-	}
+	// if self.config.Light {
+	// 	// Get unspent tx with light mode
+	// 	// TODO
+	// }
 	// get list outputcoin of pubkey from db
 	outCointsInBytes, err := self.config.DataBase.GetOutcoinsByPubkey(keyset.PaymentAddress.Pk[:], shardID)
 	if err != nil {
@@ -1253,11 +1281,11 @@ func (self *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *common
 	blockHash, index, err := self.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
 		// check lightweight
-		if self.config.Light {
-			// with light node, we can try get data in light mode
-			Logger.log.Info("ERROR in GetTransactionByHash, change to get in light mode", err)
-			return self.GetTransactionByHashInLightMode(txHash)
-		}
+		// if self.config.Light {
+		// 	// with light node, we can try get data in light mode
+		// 	Logger.log.Info("ERROR in GetTransactionByHash, change to get in light mode", err)
+		// 	return self.GetTransactionByHashInLightMode(txHash)
+		// }
 
 		return byte(255), nil, -1, nil, err
 	}

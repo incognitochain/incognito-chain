@@ -9,6 +9,7 @@ import (
 )
 
 type BlkTmplGeneratorNew struct {
+	blockpool   BlockPool
 	txPool      TxPool
 	chain       *BlockChain
 	rewardAgent RewardAgent
@@ -42,8 +43,8 @@ type RewardAgent interface {
 	GetSalaryPerTx(shardID byte) uint64
 }
 
-func (self BlkTmplGeneratorNew) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent) (*BlkTmplGenerator, error) {
-	return &BlkTmplGenerator{
+func (self BlkTmplGeneratorNew) Init(txPool TxPool, chain *BlockChain, rewardAgent RewardAgent) (*BlkTmplGeneratorNew, error) {
+	return &BlkTmplGeneratorNew{
 		txPool:      txPool,
 		chain:       chain,
 		rewardAgent: rewardAgent,
