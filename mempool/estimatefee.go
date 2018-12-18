@@ -189,14 +189,14 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 }
 
 // RegisterBlock informs the fee estimator of a new block to take into account.
-func (ef *FeeEstimator) RegisterBlock(block *blockchain.BlockV2) error {
+func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 	ef.mtx.Lock()
 	defer ef.mtx.Unlock()
 
 	// The previous sorted list is invalid, so delete it.
 	ef.cached = nil
 
-	height := block.Header.(*blockchain.BlockHeaderShard).Height
+	height := block.Header.Height
 	if height != ef.lastKnownHeight+1 && ef.lastKnownHeight != UnminedHeight {
 		return fmt.Errorf("intermediate block not recorded; current height is %d; new height is %d",
 			ef.lastKnownHeight, height)
@@ -208,7 +208,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.BlockV2) error {
 
 	// Randomly order txs in block.
 	transactions := make(map[*transaction.Tx]struct{})
-	for _, t := range block.Body.(*blockchain.BlockBodyShard).Transactions {
+	for _, t := range block.Body.Transactions {
 		switch t.GetType() {
 		case common.TxNormalType, common.TxSalaryType:
 			{
