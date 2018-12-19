@@ -156,5 +156,14 @@ func (self *BlockChain) BlockExists(hash *common.Hash) (bool, error) {
 func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
+
+	blockHash := block.Hash().String()
+	Logger.log.Infof("Processing block %+v", blockHash)
+
+	err := self.config.DataBase.StoreBeaconBlock(block)
+	if err != nil {
+		return err
+	}
+	// Process best state or not?
 	return nil
 }
