@@ -7,7 +7,6 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/common/base58"
-	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/rpcserver/jsonresult"
 	"github.com/ninjadotorg/constant/wallet"
 )
@@ -60,6 +59,14 @@ var RpcHandler = map[string]commandHandler{
 	ListCustomToken:                     RpcServer.handleListCustomToken,
 	CustomToken:                         RpcServer.handleCustomTokenDetail,
 	GetListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
+
+	// custom token which support privacy
+	CreateRawPrivacyCustomTokenTransaction:     RpcServer.handleCreateRawPrivacyCustomTokenTransaction,
+	SendRawPrivacyCustomTokenTransaction:       RpcServer.handleSendRawPrivacyCustomTokenTransaction,
+	CreateAndSendPrivacyCustomTokenTransaction: RpcServer.handleCreateAndSendPrivacyCustomTokenTransaction,
+	ListPrivacyCustomToken:                     RpcServer.handleListPrivacyCustomToken,
+	PrivacyCustomToken:                         RpcServer.handlePrivacyCustomTokenDetail,
+	GetListPrivacyCustomTokenBalance:           RpcServer.handleGetListPrivacyCustomTokenBalance,
 
 	// Loan tx
 	GetLoanParams:             RpcServer.handleGetLoanParams,
@@ -204,7 +211,9 @@ func (self RpcServer) handleListUnspentOutputCoins(params interface{}, closeChan
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&key.KeySet, 14)
+		tokenID := &common.Hash{}
+		tokenID.SetBytes(common.ConstantID[:])
+		outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&key.KeySet, 14, tokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -353,7 +362,7 @@ func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan str
 	result := jsonresult.EstimateFeeResult{
 		FeeRate: make(map[string]uint64),
 	}
-	for chainID, feeEstimator := range self.config.FeeEstimator {
+	for shardID, feeEstimator := range self.config.FeeEstimator {
 		var feeRate uint64
 		var err error
 		temp, err := feeEstimator.EstimateFee(numBlock)
@@ -363,7 +372,7 @@ func (self RpcServer) handleEstimateFee(params interface{}, closeChan <-chan str
 		if feeRate == 0 {
 			feeRate = self.config.BlockChain.GetFeePerKbTx()
 		}
-		result.FeeRate[strconv.Itoa(int(chainID))] = feeRate
+		result.FeeRate[strconv.Itoa(int(shardID))] = feeRate
 		if err != nil {
 			return -1, NewRPCError(ErrUnexpected, err)
 		}

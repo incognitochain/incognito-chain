@@ -87,7 +87,22 @@ func (self *BlockChain) ConnectBlock(block *ShardBlock) error {
 			Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
 			return NewBlockChainError(UnExpectedError, err)
 		}
-		Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
+		if len(block.Body.Transactions) < 1 {
+			Logger.log.Infof("No transaction in this block")
+		} else {
+			Logger.log.Infof("Number of transaction in this block %+v", len(block.Body.Transactions))
+		}
+		for index, tx := range block.Body.Transactions {
+			if tx.GetType() == common.TxCustomTokenPrivacyType {
+				_ = 1
+			}
+			err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
+			if err != nil {
+				Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
+				return NewBlockChainError(UnExpectedError, err)
+			}
+			Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
+		}
 	}
 
 	err = self.BestState.Shard[block.Header.ShardID].Update(block)
@@ -98,48 +113,48 @@ func (self *BlockChain) ConnectBlock(block *ShardBlock) error {
 	// }
 	// TODO: @0xankylosaurus optimize for loop once instead of multiple times ; metadata.process
 	// save index of block
-	err = self.StoreShardBlockIndex(block)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
-	// fetch serialNumbers and commitments(utxo) from block and save
-	err = self.CreateAndSaveTxViewPointFromBlock(block)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
+	// err = self.StoreShardBlockIndex(block)
+	// if err != nil {
+	// 	return NewBlockChainError(UnExpectedError, err)
+	// }
+	// // fetch serialNumbers and commitments(utxo) from block and save
+	// err = self.CreateAndSaveTxViewPointFromBlock(block)
+	// if err != nil {
+	// 	return NewBlockChainError(UnExpectedError, err)
+	// }
 
-	// Save loan txs
-	err = self.ProcessLoanForBlock(block)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
+	// // Save loan txs
+	// err = self.ProcessLoanForBlock(block)
+	// if err != nil {
+	// 	return NewBlockChainError(UnExpectedError, err)
+	// }
 
-	// Update utxo reward for dividends
-	err = self.UpdateDividendPayout(block)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
+	// // Update utxo reward for dividends
+	// err = self.UpdateDividendPayout(block)
+	// if err != nil {
+	// 	return NewBlockChainError(UnExpectedError, err)
+	// }
 
-	//Update database for vote board
-	err = self.UpdateVoteCountBoard(block)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
+	// //Update database for vote board
+	// err = self.UpdateVoteCountBoard(block)
+	// if err != nil {
+	// 	return NewBlockChainError(UnExpectedError, err)
+	// }
 
-	//Update amount of token of each holder
-	err = self.UpdateVoteTokenHolder(block)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
+	// //Update amount of token of each holder
+	// err = self.UpdateVoteTokenHolder(block)
+	// if err != nil {
+	// 	return NewBlockChainError(UnExpectedError, err)
+	// }
 
-	// Update database for vote proposal
-	err = self.ProcessVoteProposal(block)
+	// // Update database for vote proposal
+	// err = self.ProcessVoteProposal(block)
 
-	// Process crowdsale tx
-	err = self.ProcessCrowdsaleTxs(block)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
+	// // Process crowdsale tx
+	// err = self.ProcessCrowdsaleTxs(block)
+	// if err != nil {
+	// 	return NewBlockChainError(UnExpectedError, err)
+	// }
 
 	Logger.log.Infof("Accepted block %s", blockHash)
 

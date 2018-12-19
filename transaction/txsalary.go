@@ -2,11 +2,12 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
-	"math/big"
 )
 
 // CreateTxSalary
@@ -45,7 +46,10 @@ func CreateTxSalary(
 	for true {
 		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
 		shardIDSender, err := common.GetTxSenderChain(lastByte)
-		ok, err := CheckSNDerivatorExistence(sndOut, shardIDSender, db)
+
+		tokenID := &common.Hash{}
+		tokenID.SetBytes(common.ConstantID[:])
+		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, shardIDSender, db)
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +97,9 @@ func ValidateTxSalary(
 	// check whether output coin's SND exists in SND list or not
 	lastByte := tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
 	shardIDSender, err := common.GetTxSenderChain(lastByte)
-	if ok, err := CheckSNDerivatorExistence(tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, shardIDSender, db); ok || err != nil {
+	tokenID := &common.Hash{}
+	tokenID.SetBytes(common.ConstantID[:])
+	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, shardIDSender, db); ok || err != nil {
 		return false
 	}
 

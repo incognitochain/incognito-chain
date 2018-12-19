@@ -62,28 +62,28 @@ type DatabaseInterface interface {
 	CleanBeaconBestState() error
 
 	// SerialNumber
-	StoreSerialNumbers([]byte, byte) error
-	FetchSerialNumbers(byte) ([][]byte, error)
-	HasSerialNumber([]byte, byte) (bool, error)
+	StoreSerialNumbers(tokenID *common.Hash, data []byte, shardID byte) error
+	FetchSerialNumbers(tokenID *common.Hash, shardID byte) ([][]byte, error)
+	HasSerialNumber(tokenID *common.Hash, data []byte, shardID byte) (bool, error)
 	CleanSerialNumbers() error
 
 	// PedersenCommitment
-	StoreCommitments(pubkey []byte, commitment []byte, shardID byte) error
-	StoreOutputCoins(pubkey []byte, outputcoin []byte, shardID byte) error
-	FetchCommitments(shardID byte) ([][]byte, error)
-	HasCommitment(commitment []byte, shardID byte) (bool, error)
-	HasCommitmentIndex(commitmentIndex uint64, shardID byte) (bool, error)
-	GetCommitmentByIndex(commitmentIndex uint64, shardID byte) ([]byte, error)
-	GetCommitmentIndex(commitment []byte, shardID byte) (*big.Int, error)
-	GetCommitmentLength(shardID byte) (*big.Int, error)
-	GetCommitmentIndexsByPubkey(pubkey []byte, shardID byte) ([][]byte, error)
-	GetOutcoinsByPubkey(pubkey []byte, shardID byte) ([][]byte, error)
+	StoreCommitments(tokenID *common.Hash, pubkey []byte, commitment []byte, shardID byte) error
+	StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin []byte, shardID byte) error
+	FetchCommitments(tokenID *common.Hash, shardID byte) ([][]byte, error)
+	HasCommitment(tokenID *common.Hash, commitment []byte, shardID byte) (bool, error)
+	HasCommitmentIndex(tokenID *common.Hash, commitmentIndex uint64, shardID byte) (bool, error)
+	GetCommitmentByIndex(tokenID *common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error)
+	GetCommitmentIndex(tokenID *common.Hash, commitment []byte, shardID byte) (*big.Int, error)
+	GetCommitmentLength(tokenID *common.Hash, shardID byte) (*big.Int, error)
+	GetCommitmentIndexsByPubkey(tokenID *common.Hash, pubkey []byte, shardID byte) ([][]byte, error)
+	GetOutcoinsByPubkey(tokenID *common.Hash, pubkey []byte, shardID byte) ([][]byte, error)
 	CleanCommitments() error
 
 	// SNDerivator
-	StoreSNDerivators(big.Int, byte) error
-	FetchSNDerivator(byte) ([]big.Int, error)
-	HasSNDerivator(big.Int, byte) (bool, error)
+	StoreSNDerivators(tokenID *common.Hash, data big.Int, shardID byte) error
+	FetchSNDerivator(tokenID *common.Hash, shardID byte) ([]big.Int, error)
+	HasSNDerivator(tokenID *common.Hash, data big.Int, shardID byte) (bool, error)
 	CleanSNDerivator() error
 
 	// Fee estimator
@@ -96,10 +96,16 @@ type DatabaseInterface interface {
 	StoreCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight uint64, txIndex int32, data []byte) error // store custom token tx. Param: tokenID, shardID, block height, tx-id, data tx
 	ListCustomToken() ([][]byte, error)                                                                          // get list all custom token which issued in network
 	CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error)                                                 // from token id get all custom txs
-	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []byte) (map[string]string, error) // get list of utxo of an paymentaddress.pubkey of a token
-	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)           // get balance of all paymentaddress of a token (only return payment address with balance > 0)
+	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []byte) (map[string]string, error)             // get list of utxo of an paymentaddress.pubkey of a token
+	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)                       // get balance of all paymentaddress of a token (only return payment address with balance > 0)
 	UpdateRewardAccountUTXO(*common.Hash, []byte, *common.Hash, int) error
 	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error) // get all paymentaddress owner that have balance > 0 of a custom token
+
+	// privacy Custom token
+	StorePrivacyCustomToken(tokenID *common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
+	StorePrivacyCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error
+	ListPrivacyCustomToken() ([][]byte, error)                          // get list all custom token which issued in network
+	PrivacyCustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) // from token id get all custom txs
 
 	// Loans
 	StoreLoanRequest([]byte, []byte) error                 // param: loanID, tx hash
@@ -109,8 +115,11 @@ type DatabaseInterface interface {
 	GetLoanPayment([]byte) (uint64, uint64, uint64, error) // param: loanID; return: principle, interest, deadline
 
 	// Crowdsale
-	SaveCrowdsaleData([]byte, int32, []byte, uint64, []byte, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
+	SaveCrowdsaleData([]byte, uint64, []byte, uint64, []byte, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
 	LoadCrowdsaleData([]byte) (uint64, []byte, uint64, []byte, uint64, error)
+	StoreCrowdsaleRequest([]byte, []byte, []byte, []byte, []byte) error
+	StoreCrowdsaleResponse([]byte, []byte) error
+	GetCrowdsaleTxs([]byte) ([][]byte, error)
 
 	//Vote
 	AddVoteDCBBoard(uint32, []byte, []byte, uint64) error
@@ -121,15 +130,15 @@ type DatabaseInterface interface {
 	GetKey(string, interface{}) []byte
 	GetVoteDCBBoardListPrefix() []byte
 	GetVoteGOVBoardListPrefix() []byte
-	GetThreePhraseLv3CryptoPrefix() []byte
+	GetThreePhraseSealerPrefix() []byte
+	GetThreePhraseOwnerPrefix() []byte
+	GetThreePhraseVoteValuePrefix() []byte
 	SendInitDCBVoteToken(uint32, []byte, uint64) error
 	SendInitGOVVoteToken(uint32, []byte, uint64) error
 	AddVoteLv3Proposal(string, uint32, *common.Hash) error
 	AddVoteLv1or2Proposal(string, uint32, *common.Hash) error
-	AddVoteNormalProposalFromOwner(string, uint32, *common.Hash) error
-	AddVoteNormalProposalFromSealer(string, uint32, *common.Hash) error
-
-	ReverseGetKey(string, []byte) (interface{}, error)
+	AddVoteNormalProposalFromOwner(string, uint32, *common.Hash, []byte) error
+	AddVoteNormalProposalFromSealer(string, uint32, *common.Hash, []byte) error
 
 	Close() error
 }

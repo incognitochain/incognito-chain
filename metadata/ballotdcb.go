@@ -18,6 +18,7 @@ func (sealDCBBallotMetadata *SealedDCBBallotMetadata) Hash() *common.Hash {
 	for _, i := range sealDCBBallotMetadata.LockerPubKey {
 		record += string(i)
 	}
+	record += string(sealDCBBallotMetadata.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -86,6 +87,7 @@ func (sealedLv1DCBBallotMetadata *SealedLv1DCBBallotMetadata) Hash() *common.Has
 	record := string(common.ToBytes(*sealedLv1DCBBallotMetadata.SealedDCBBallotMetadata.Hash()))
 	record += string(common.ToBytes(sealedLv1DCBBallotMetadata.PointerToLv2Ballot))
 	record += string(common.ToBytes(sealedLv1DCBBallotMetadata.PointerToLv3Ballot))
+	record += string(sealedLv1DCBBallotMetadata.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -143,6 +145,7 @@ func NewSealedLv2DCBBallotMetadata(data map[string]interface{}) *SealedLv2DCBBal
 func (sealedLv2DCBBallotMetadata *SealedLv2DCBBallotMetadata) Hash() *common.Hash {
 	record := string(common.ToBytes(*sealedLv2DCBBallotMetadata.SealedDCBBallotMetadata.Hash()))
 	record += string(common.ToBytes(sealedLv2DCBBallotMetadata.PointerToLv3Ballot))
+	record += string(sealedLv2DCBBallotMetadata.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -240,6 +243,7 @@ func (normalDCBBallotFromSealerMetadata *NormalDCBBallotFromSealerMetadata) Hash
 	}
 	record += string(common.ToBytes(normalDCBBallotFromSealerMetadata.PointerToLv1Ballot))
 	record += string(common.ToBytes(normalDCBBallotFromSealerMetadata.PointerToLv3Ballot))
+	record += string(normalDCBBallotFromSealerMetadata.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -309,6 +313,7 @@ func (normalDCBBallotFromOwnerMetadata *NormalDCBBallotFromOwnerMetadata) Hash()
 		record += string(i)
 	}
 	record += string(common.ToBytes(normalDCBBallotFromOwnerMetadata.PointerToLv3Ballot))
+	record += string(normalDCBBallotFromOwnerMetadata.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -381,4 +386,21 @@ func (normalDCBBallotFromOwnerMetadata *NormalDCBBallotFromOwnerMetadata) Valida
 		}
 	}
 	return true
+}
+
+type PunishDCBDecryptMetadata struct {
+	pubKey []byte
+	MetadataBase
+}
+
+func (PunishDCBDecryptMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
+	panic("implement me")
+}
+
+func (PunishDCBDecryptMetadata) ValidateSanityData(BlockchainRetriever, Transaction) (bool, bool, error) {
+	panic("implement me")
+}
+
+func (PunishDCBDecryptMetadata) ValidateMetadataByItself() bool {
+	panic("implement me")
 }

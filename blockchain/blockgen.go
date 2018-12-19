@@ -188,7 +188,7 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 		// 		continue
 		// 	}
 		// case metadata.IssuingRequestMeta:
-		// 	addable, newDCBTokensSold := blockgen.checkIssuingReqTx(chainID, tx, dcbTokensSold)
+		// 	addable, newDCBTokensSold := blockgen.checkIssuingReqTx(shardID, tx, dcbTokensSold)
 		// 	dcbTokensSold = newDCBTokensSold
 		// 	if !addable {
 		// 		txToRemove = append(txToRemove, tx)
@@ -233,7 +233,7 @@ concludeBlock:
 	// }
 
 	// // Process crowdsale for DCB
-	// dcbSaleTxs, removableTxs, err := blockgen.processCrowdsale(sourceTxns, rt, chainID, privatekey)
+	// dcbSaleTxs, removableTxs, err := blockgen.processCrowdsale(sourceTxns, rt, shardID, privatekey)
 	// if err != nil {
 	// 	return nil, err
 	// }
@@ -273,7 +273,7 @@ concludeBlock:
 	// 	return nil, err
 	// }
 	// // create buy-back response txs to distribute constants to buy-back requesters
-	// buyBackResTxs, err := blockgen.buildBuyBackResponsesTx(buyBackFromInfos, chainID, privatekey)
+	// buyBackResTxs, err := blockgen.buildBuyBackResponsesTx(buyBackFromInfos, shardID, privatekey)
 	// if err != nil {
 	// 	Logger.log.Error(err)
 	// 	return nil, err
@@ -283,9 +283,9 @@ concludeBlock:
 	currentSalaryFund := prevBlock.Header.SalaryFund
 	remainingFund := currentSalaryFund + totalFee + salaryFundAdd - totalSalary
 	// remainingFund := currentSalaryFund + totalFee + salaryFundAdd + incomeFromBonds - (totalSalary + buyBackCoins)
-	// refundTxs, totalRefundAmt := blockgen.buildRefundTxs(chainID, remainingFund, privatekey)
+	// refundTxs, totalRefundAmt := blockgen.buildRefundTxs(shardID, remainingFund, privatekey)
 
-	// issuingResTxs, err := blockgen.buildIssuingResTxs(chainID, issuingReqTxs, privatekey)
+	// issuingResTxs, err := blockgen.buildIssuingResTxs(shardID, issuingReqTxs, privatekey)
 	// if err != nil {
 	// 	Logger.log.Error(err)
 	// 	return nil, err
@@ -302,16 +302,16 @@ concludeBlock:
 	// Check if it is the case we need to apply a new proposal
 	// 1. newNW < lastNW * 0.9
 	// 2. current block height == last Constitution start time + last Constitution execute duration
-	// if blockgen.neededNewDCBConstitution(chainID) {
-	// 	tx, err := blockgen.createAcceptConstitutionAndPunishTx(chainID, DCBConstitutionHelper{})
+	// if blockgen.neededNewDCBConstitution(shardID) {
+	// 	tx, err := blockgen.createAcceptConstitutionAndPunishTx(shardID, DCBConstitutionHelper{})
 	// 	coinbases = append(coinbases, tx...)
 	// 	if err != nil {
 	// 		Logger.log.Error(err)
 	// 		return nil, err
 	// 	}
 	// }
-	// if blockgen.neededNewGOVConstitution(chainID) {
-	// 	tx, err := blockgen.createAcceptConstitutionAndPunishTx(chainID, GOVConstitutionHelper{})
+	// if blockgen.neededNewGOVConstitution(shardID) {
+	// 	tx, err := blockgen.createAcceptConstitutionAndPunishTx(shardID, GOVConstitutionHelper{})
 	// 	coinbases = append(coinbases, tx...)
 	// 	if err != nil {
 	// 		Logger.log.Error(err)
@@ -330,9 +330,9 @@ concludeBlock:
 	// 	}
 
 	// 	coinbases = append(coinbases, blockgen.createAcceptDCBBoardTx(newDCBBoardPubKey, sumOfVote))
-	// 	coinbases = append(coinbases, blockgen.CreateSendDCBVoteTokenToGovernorTx(chainID, newBoardList, sumOfVote)...)
+	// 	coinbases = append(coinbases, blockgen.CreateSendDCBVoteTokenToGovernorTx(shardID, newBoardList, sumOfVote)...)
 
-	// 	coinbases = append(coinbases, blockgen.CreateSendBackDCBTokenAfterVoteFail(chainID, newDCBBoardPubKey)...)
+	// 	coinbases = append(coinbases, blockgen.CreateSendBackDCBTokenAfterVoteFail(shardID, newDCBBoardPubKey)...)
 	// 	// Todo @0xjackalope: send reward to old board and delete them from database before send back token to new board
 	// 	//xxx add to pool
 	// }
@@ -348,9 +348,9 @@ concludeBlock:
 	// 	}
 
 	// 	coinbases = append(coinbases, blockgen.createAcceptGOVBoardTx(newGOVBoardPubKey, sumOfVote))
-	// 	coinbases = append(coinbases, blockgen.CreateSendGOVVoteTokenToGovernorTx(chainID, newBoardList, sumOfVote)...)
+	// 	coinbases = append(coinbases, blockgen.CreateSendGOVVoteTokenToGovernorTx(shardID, newBoardList, sumOfVote)...)
 
-	// 	coinbases = append(coinbases, blockgen.CreateSendBackGOVTokenAfterVoteFail(chainID, newGOVBoardPubKey)...)
+	// 	coinbases = append(coinbases, blockgen.CreateSendBackGOVTokenAfterVoteFail(shardID, newGOVBoardPubKey)...)
 	// 	// Todo @0xjackalope: send reward to old board and delete them from database before send back token to new board
 	// 	//xxx add to pool
 	// }

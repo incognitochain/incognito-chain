@@ -2,7 +2,9 @@ package metadata
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
+	"math/big"
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
@@ -12,18 +14,38 @@ import (
 
 type CrowdsaleRequest struct {
 	PaymentAddress privacy.PaymentAddress
-	Amount         uint64
 	SaleID         []byte // only when requesting to DCB
+	Info           []byte // offchain payment info (e.g. ETH/BTC txhash)
+
+	Amount     *big.Int // amount of offchain asset (ignored if buying asset is not offchain)
+	AssetPrice uint64   // ignored if buying asset is not offchain; otherwise, represents the price of buying asset; set by miner at mining time
 
 	MetadataBase
 }
 
 func NewCrowdsaleRequest(csReqData map[string]interface{}) *CrowdsaleRequest {
-	return &CrowdsaleRequest{
-		PaymentAddress: csReqData["paymentAddress"].(privacy.PaymentAddress),
-		Amount:         uint64(csReqData["amount"].(float64)),
-		SaleID:         csReqData["saleId"].([]byte),
+	saleID, err := hex.DecodeString(csReqData["SaleId"].(string))
+	if err != nil {
+		return nil
 	}
+	info, err := hex.DecodeString(csReqData["Info"].(string))
+	if err != nil {
+		return nil
+	}
+	n := big.NewInt(0)
+	n, ok := n.SetString(csReqData["Amount"].(string), 10)
+	if !ok {
+		n = big.NewInt(0)
+	}
+	result := &CrowdsaleRequest{
+		PaymentAddress: csReqData["PaymentAddress"].(privacy.PaymentAddress),
+		SaleID:         saleID,
+		Info:           info,
+		Amount:         n,
+		AssetPrice:     0,
+	}
+	result.Type = CrowdsaleRequestMeta
+	return result
 }
 
 func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
@@ -58,9 +80,6 @@ func (csReq *CrowdsaleRequest) ValidateSanityData(bcr BlockchainRetriever, txr T
 	if len(csReq.PaymentAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's payment address")
 	}
-	if csReq.Amount == 0 {
-		return false, false, errors.New("Wrong request info's amount")
-	}
 	return false, true, nil
 }
 
@@ -71,10 +90,12 @@ func (csReq *CrowdsaleRequest) ValidateMetadataByItself() bool {
 
 func (csReq *CrowdsaleRequest) Hash() *common.Hash {
 	record := string(csReq.PaymentAddress.ToBytes())
-	record += string(csReq.Amount)
 	record += string(csReq.SaleID)
+	record += string(csReq.Info)
+	record += string(csReq.Amount.String())
 
 	// final hash
+	record += string(csReq.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

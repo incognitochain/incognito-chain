@@ -22,6 +22,7 @@ const (
 	CmdTx                 = "tx"
 	CmdRegisteration      = "registeration"
 	CmdCustomToken        = "txtoken"
+	CmdPrivacyCustomToken = "txprivacytok"
 	CmdCLoanRequestToken  = "txloanreq"
 	CmdCLoanResponseToken = "txloanres"
 	CmdCLoanWithdrawToken = "txloanwith"
@@ -87,6 +88,11 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdCustomToken:
 		msg = &MessageTx{
 			Transaction: &transaction.TxCustomToken{},
+		}
+		break
+	case CmdPrivacyCustomToken:
+		msg = &MessageTx{
+			Transaction: &transaction.TxCustomTokenPrivacy{},
 		}
 		break
 	case CmdCLoanRequestToken:

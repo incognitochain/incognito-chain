@@ -1,9 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"github.com/ninjadotorg/constant/privacy-protocol"
-)
+import "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 
 func main() {
 
@@ -60,7 +57,7 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-	//zkp.TestPKOneOfMany()
+	zkp.TestPKOneOfMany()
 
 	//zkp.TestPKComMultiRange()
 
@@ -351,27 +348,6 @@ func main() {
 	//fmt.Printf("Lem of n: %v\n", len(n))
 
 	//fmt.Println(zkp.EstimateMultiRangeProof(10))
-
-	for true{
-		point := new(privacy.EllipticPoint)
-		point.Randomize()
-
-		bytes := point.Compress()
-		fmt.Println("Running!!!!")
-
-		point2 := new(privacy.EllipticPoint)
-		err := point2.Decompress(bytes)
-
-		if err != nil{
-			fmt.Println(err)
-			break
-		}
-
-		if !point.IsEqual(point2){
-			break
-		}
-
-	}
 
 
 }

@@ -37,6 +37,7 @@ package metadata
 // 	record += string(div.TokenID[:])
 
 // 	// final hash
+// record += string(div.MetadataBase.Hash()[:])
 // 	hash := common.DoubleHashH([]byte(record))
 // 	return &hash
 // }

@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
-	"github.com/ninjadotorg/constant/database"
 	"math/big"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
@@ -27,44 +26,44 @@ type PKOneOfManyProof struct {
 	f, za, zb      []*big.Int
 	zd             *big.Int
 	// general info
-	// just send to verifier commitmentIndexs, don't send commitments list
-	//commitments []*privacy.EllipticPoint
-	commitmentIndexs []uint64
-	index       byte
+	// just send to verifier CommitmentIndexs, don't send commitments list
+	Commitments      []*privacy.EllipticPoint
+	CommitmentIndexs []uint64
+	index            byte
 }
 
-func (pro * PKOneOfManyProof) IsNil() bool {
-	if pro.cl == nil{
+func (pro *PKOneOfManyProof) IsNil() bool {
+	if pro.cl == nil {
 		return true
 	}
-	if pro.ca == nil{
+	if pro.ca == nil {
 		return true
 	}
-	if pro.cb == nil{
+	if pro.cb == nil {
 		return true
 	}
-	if pro.cd == nil{
+	if pro.cd == nil {
 		return true
 	}
-	if pro.f == nil{
+	if pro.f == nil {
 		return true
 	}
-	if pro.za == nil{
+	if pro.za == nil {
 		return true
 	}
-	if pro.zb == nil{
+	if pro.zb == nil {
 		return true
 	}
-	if pro.zd == nil{
+	if pro.zd == nil {
 		return true
 	}
-	if pro.commitmentIndexs == nil{
+	if pro.CommitmentIndexs == nil {
 		return true
 	}
 	return false
 }
 
-func (pro * PKOneOfManyProof) Init() * PKOneOfManyProof {
+func (pro *PKOneOfManyProof) Init() *PKOneOfManyProof {
 	pro.zd = new(big.Int)
 	return pro
 }
@@ -77,7 +76,7 @@ func (wit *PKOneOfManyWitness) Set(
 	indexIsZero uint64,
 	index byte) {
 
-	if wit == nil{
+	if wit == nil {
 		wit = new(PKOneOfManyWitness)
 	}
 
@@ -96,18 +95,18 @@ func (pro *PKOneOfManyProof) Set(
 	zd *big.Int,
 	index byte) {
 
-	if pro == nil{
+	if pro == nil {
 		pro = new(PKOneOfManyProof)
 	}
 
-	pro.commitmentIndexs = commitmentIndexs
+	pro.CommitmentIndexs = commitmentIndexs
 	pro.cl, pro.ca, pro.cb, pro.cd = cl, ca, cb, cd
 	pro.f, pro.za, pro.zb = f, za, zb
 	pro.zd = zd
 	pro.index = index
 }
 
-func (pro * PKOneOfManyProof) Bytes() []byte {
+func (pro *PKOneOfManyProof) Bytes() []byte {
 	if pro.IsNil() {
 		return []byte{}
 	}
@@ -181,7 +180,7 @@ func (pro * PKOneOfManyProof) Bytes() []byte {
 	// convert commitment index to bytes array
 	for i := 0; i < N; i++ {
 		commitmentIndexBytes := make([]byte, 8)
-		binary.LittleEndian.PutUint64(commitmentIndexBytes, pro.commitmentIndexs[i])
+		binary.LittleEndian.PutUint64(commitmentIndexBytes, pro.CommitmentIndexs[i])
 		bytes = append(bytes, commitmentIndexBytes...)
 		nBytes += 8
 	}
@@ -198,7 +197,7 @@ func (pro * PKOneOfManyProof) Bytes() []byte {
 
 // SetBytes convert from bytes array to PKOneOfManyProof
 func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
-	if pro == nil{
+	if pro == nil {
 		pro = pro.Init()
 	}
 
@@ -220,8 +219,8 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
 	pro.cl = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
 		pro.cl[i] = new(privacy.EllipticPoint)
-		pro.cl[i], err = privacy.DecompressKey(bytes[offset : offset+33])
-		if err != nil{
+		pro.cl[i], err = privacy.DecompressKey(bytes[offset: offset+33])
+		if err != nil {
 			return err
 		}
 		offset = offset + 33
@@ -230,8 +229,8 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
 	pro.ca = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
 		pro.ca[i] = new(privacy.EllipticPoint)
-		pro.ca[i], err = privacy.DecompressKey(bytes[offset : offset+33])
-		if err != nil{
+		pro.ca[i], err = privacy.DecompressKey(bytes[offset: offset+33])
+		if err != nil {
 			return err
 		}
 		offset = offset + 33
@@ -240,8 +239,8 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
 	pro.cb = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
 		pro.cb[i] = new(privacy.EllipticPoint)
-		pro.cb[i], err = privacy.DecompressKey(bytes[offset : offset+33])
-		if err != nil{
+		pro.cb[i], err = privacy.DecompressKey(bytes[offset: offset+33])
+		if err != nil {
 			return err
 		}
 		offset = offset + 33
@@ -251,8 +250,8 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
 	pro.cd = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
 		pro.cd[i] = new(privacy.EllipticPoint)
-		pro.cd[i], err = privacy.DecompressKey(bytes[offset : offset+33])
-		if err != nil{
+		pro.cd[i], err = privacy.DecompressKey(bytes[offset: offset+33])
+		if err != nil {
 			return err
 		}
 		offset = offset + 33
@@ -261,32 +260,32 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
 	// get f array
 	pro.f = make([]*big.Int, n)
 	for i := 0; i < n; i++ {
-		pro.f[i] = new(big.Int).SetBytes(bytes[offset : offset+32])
+		pro.f[i] = new(big.Int).SetBytes(bytes[offset: offset+32])
 		offset = offset + 32
 	}
 
 	// get za array
 	pro.za = make([]*big.Int, n)
 	for i := 0; i < n; i++ {
-		pro.za[i] = new(big.Int).SetBytes(bytes[offset : offset+32])
+		pro.za[i] = new(big.Int).SetBytes(bytes[offset: offset+32])
 		offset = offset + 32
 	}
 
 	// get zb array
 	pro.zb = make([]*big.Int, n)
 	for i := 0; i < n; i++ {
-		pro.zb[i] = new(big.Int).SetBytes(bytes[offset : offset+32])
+		pro.zb[i] = new(big.Int).SetBytes(bytes[offset: offset+32])
 		offset = offset + 32
 	}
 
 	// get zd
-	pro.zd = new(big.Int).SetBytes(bytes[offset : offset+32])
+	pro.zd = new(big.Int).SetBytes(bytes[offset: offset+32])
 	offset = offset + 32
 
 	// get commitments list
-	pro.commitmentIndexs = make([]uint64, N)
+	pro.CommitmentIndexs = make([]uint64, N)
 	for i := 0; i < N; i++ {
-		pro.commitmentIndexs[i] = binary.LittleEndian.Uint64(bytes[offset : offset+8])
+		pro.CommitmentIndexs[i] = binary.LittleEndian.Uint64(bytes[offset: offset+8])
 		offset = offset + 8
 	}
 
@@ -344,23 +343,23 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	for j := n - 1; j >= 0; j-- {
 		// Generate random numbers
 		r[j], err = rand.Int(rand.Reader, privacy.Curve.Params().N)
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 		a[j], err = rand.Int(rand.Reader, privacy.Curve.Params().N)
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 		s[j], err = rand.Int(rand.Reader, privacy.Curve.Params().N)
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 		t[j], err = rand.Int(rand.Reader, privacy.Curve.Params().N)
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 		u[j], err = rand.Int(rand.Reader, privacy.Curve.Params().N)
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 
@@ -455,11 +454,14 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	proof := new(PKOneOfManyProof).Init()
 	proof.Set(wit.commitmentIndexs, cl, ca, cb, cd, f, za, zb, zd, wit.index)
 
+	proof.Commitments = wit.commitments
+
 	return proof, nil
 }
 
-func (pro *PKOneOfManyProof) Verify(db database.DatabaseInterface, shardID byte) bool {
-	N := len(pro.commitmentIndexs)
+func (pro *PKOneOfManyProof) Verify() bool {
+	//N := len(pro.CommitmentIndexs)
+	N := 8
 	// Calculate n
 	//temp := 1
 	//n := 0
@@ -472,21 +474,6 @@ func (pro *PKOneOfManyProof) Verify(db database.DatabaseInterface, shardID byte)
 		return false
 	}
 	n := privacy.CMRingSizeExp
-
-	// get commitments list from commitmentIndexs
-	commitments := make([]*privacy.EllipticPoint, N)
-	for i := 0; i < N; i++{
-		commitmentBytes, err := db.GetCommitmentByIndex(pro.commitmentIndexs[i], shardID)
-		if err != nil{
-			fmt.Printf("Error when verify: %v\n", err)
-			return false
-		}
-		commitments[i], err = privacy.DecompressKey(commitmentBytes)
-		if err != nil{
-			fmt.Printf("Error when verify: %v\n", err)
-			return false
-		}
-	}
 
 	//Calculate x
 	x := big.NewInt(0)
@@ -556,7 +543,7 @@ func (pro *PKOneOfManyProof) Verify(db database.DatabaseInterface, shardID byte)
 			exp.Mod(exp, privacy.Curve.Params().N)
 		}
 
-		tmpPoint.X, tmpPoint.Y = privacy.Curve.ScalarMult(commitments[i].X, commitments[i].Y, exp.Bytes())
+		tmpPoint.X, tmpPoint.Y = privacy.Curve.ScalarMult(pro.Commitments[i].X, pro.Commitments[i].Y, exp.Bytes())
 		leftPoint3.X, leftPoint3.Y = privacy.Curve.Add(leftPoint3.X, leftPoint3.Y, tmpPoint.X, tmpPoint.Y)
 	}
 
@@ -614,21 +601,20 @@ func TestPKOneOfMany() bool {
 	fmt.Printf("Len of proof: %v\n", len(proof.Bytes()))
 
 	// Convert proof to bytes array
-	proofBytes := proof.Bytes()
+	//proofBytes := proof.Bytes()
 	//fmt.Printf("Proof bytes when prove: %v\n", proof)
 	//fmt.Printf("Proof bytes len: %v\n", len(proofBytes))
 
 	// revert bytes array to proof
-	proof2 := new(PKOneOfManyProof)
-	proof2.SetBytes(proofBytes)
-	fmt.Printf("Proof when set bytes: %v\n", proof)
+	//proof2 := new(PKOneOfManyProof)
+	//proof2.SetBytes(proofBytes)
+	//fmt.Printf("Proof when set bytes: %v\n", proof)
 
-
-	//res := proof.Verify(db)
+	res := proof.Verify()
 
 	//end := time.Now()
 	//fmt.Printf("%v_+_\n", end.Sub(start))
-	//fmt.Println(res)
+	fmt.Println(res)
 	return false
 }
 
