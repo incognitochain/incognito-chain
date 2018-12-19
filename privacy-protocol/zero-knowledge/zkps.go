@@ -38,6 +38,11 @@ type PaymentWitness struct {
 	ComOutputSND     []*privacy.EllipticPoint
 	ComOutputShardID []*privacy.EllipticPoint
 
+	ComInputSK 				*privacy.EllipticPoint
+	ComInputValue 		[]*privacy.EllipticPoint
+	ComInputSND 			[]*privacy.EllipticPoint
+	ComInputShardID 	*privacy.EllipticPoint
+
 }
 
 // PaymentProof contains all of PoK for spending coin
@@ -63,6 +68,11 @@ type PaymentProof struct {
 	ComOutputValue   []*privacy.EllipticPoint
 	ComOutputSND     []*privacy.EllipticPoint
 	ComOutputShardID []*privacy.EllipticPoint
+
+	ComInputSK 				*privacy.EllipticPoint
+	ComInputValue 		[]*privacy.EllipticPoint
+	ComInputSND 			[]*privacy.EllipticPoint
+	ComInputShardID 	*privacy.EllipticPoint
 }
 
 func (proof *PaymentProof) Init() *PaymentProof {
@@ -80,6 +90,11 @@ func (proof *PaymentProof) Init() *PaymentProof {
 		ComOutputValue:              []*privacy.EllipticPoint{},
 		ComOutputSND:                []*privacy.EllipticPoint{},
 		ComOutputShardID:            []*privacy.EllipticPoint{},
+		ComInputSK:              			new(privacy.EllipticPoint),
+		ComInputValue:              	[]*privacy.EllipticPoint{},
+		ComInputSND:                	[]*privacy.EllipticPoint{},
+		ComInputShardID:            	new(privacy.EllipticPoint),
+
 	}
 	return proof
 }
@@ -211,6 +226,37 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 		comOutputShardID := paymentProof.ComOutputShardID[i].Compress()
 		proofbytes = append(proofbytes, byte(len(comOutputShardID)))
 		proofbytes = append(proofbytes, comOutputShardID...)
+	}
+
+	//ComInputSK 				*privacy.EllipticPoint
+	if paymentProof.ComInputSK != nil {
+		comInputSK := paymentProof.ComInputSK.Compress()
+		proofbytes = append(proofbytes, byte(len(comInputSK)))
+		proofbytes = append(proofbytes, comInputSK...)
+	} else {
+		proofbytes = append(proofbytes, byte(0))
+	}
+	//ComInputValue 		[]*privacy.EllipticPoint
+	proofbytes = append(proofbytes, byte(len(paymentProof.ComInputValue)))
+	for i := 0; i < len(paymentProof.ComInputValue); i++ {
+		comInputValue := paymentProof.ComInputValue[i].Compress()
+		proofbytes = append(proofbytes, byte(len(comInputValue)))
+		proofbytes = append(proofbytes, comInputValue...)
+	}
+	//ComInputSND 			[]*privacy.EllipticPoint
+	proofbytes = append(proofbytes, byte(len(paymentProof.ComInputSND)))
+	for i := 0; i < len(paymentProof.ComInputSND); i++ {
+		comInputSND := paymentProof.ComInputSND[i].Compress()
+		proofbytes = append(proofbytes, byte(len(comInputSND)))
+		proofbytes = append(proofbytes, comInputSND...)
+	}
+	//ComInputShardID 	*privacy.EllipticPoint
+	if paymentProof.ComInputShardID != nil {
+		comInputShardID := paymentProof.ComInputShardID.Compress()
+		proofbytes = append(proofbytes, byte(len(comInputShardID)))
+		proofbytes = append(proofbytes, comInputShardID...)
+	} else {
+		proofbytes = append(proofbytes, byte(0))
 	}
 
 	return proofbytes
@@ -381,17 +427,68 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		}
 		offset += lenComOutputShardId
 	}
-	fmt.Printf("***************AFTER SETBYTE - PROOF %v\n", proof.Bytes())
+
+	//ComInputSK 				*privacy.EllipticPoint
+	lenComInputSK := int(proofbytes[offset])
+	offset += 1
+	if lenComZeroProof > 0 {
+		proof.ComInputSK = new(privacy.EllipticPoint)
+		proof.ComInputSK, err = privacy.DecompressKey(proofbytes[offset : offset+lenComInputSK])
+		if err != nil{
+			return err
+		}
+		offset += lenComInputSK
+	}
+	//ComInputValue 		[]*privacy.EllipticPoint
+	lenComInputValueArr := int(proofbytes[offset])
+	offset += 1
+	proof.ComInputValue = make([]*privacy.EllipticPoint, lenComInputValueArr)
+	for i := 0; i < lenComInputValueArr; i++ {
+		lenComInputValue := int(proofbytes[offset])
+		offset += 1
+		proof.ComInputValue[i] = new(privacy.EllipticPoint)
+		proof.ComInputValue[i], err = privacy.DecompressKey(proofbytes[offset : offset+lenComInputValue])
+		if err != nil {
+			return err
+		}
+		offset += lenComInputValue
+	}
+	//ComInputSND 			[]*privacy.EllipticPoint
+	lenComInputSNDArr := int(proofbytes[offset])
+	offset += 1
+	proof.ComInputSND = make([]*privacy.EllipticPoint, lenComInputSNDArr)
+	for i := 0; i < lenComInputSNDArr; i++ {
+		lenComInputSND := int(proofbytes[offset])
+		offset += 1
+		proof.ComInputSND[i] = new(privacy.EllipticPoint)
+		proof.ComInputSND[i], err = privacy.DecompressKey(proofbytes[offset : offset+lenComInputSND])
+		if err != nil {
+			return err
+		}
+		offset += lenComInputSND
+	}
+	//ComInputShardID 	*privacy.EllipticPoint
+	lenComInputShardID := int(proofbytes[offset])
+	offset += 1
+	if lenComZeroProof > 0 {
+		proof.ComInputShardID = new(privacy.EllipticPoint)
+		proof.ComInputShardID, err = privacy.DecompressKey(proofbytes[offset : offset+lenComInputShardID])
+		if err != nil{
+			return err
+		}
+		offset += lenComInputShardID
+	}
+	//fmt.Printf("***************AFTER SETBYTE - PROOF %v\n", proof.Bytes())
 	return nil
 }
 
 // END----------------------------------------------------------------------------------------------------------------------------------------------
 
-func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
-	wit.spendingKey = spendingKey
-	wit.inputCoins = inputCoins
-	wit.outputCoins = outputCoins
-}
+//func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
+//	wit.spendingKey = spendingKey
+//	wit.inputCoins = inputCoins
+//	wit.outputCoins = outputCoins
+//}
 
 // Build prepares witnesses for all protocol need to be proved when create tx
 // if hashPrivacy = false, witness includes spending key, input coins, output coins
@@ -441,12 +538,17 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	wit.RandSK = new(big.Int).Set(randInputSK)
 
 	cmInputSK := privacy.PedCom.CommitAtIndex(wit.spendingKey, randInputSK, privacy.SK)
+	wit.ComInputSK = new(privacy.EllipticPoint)
+	wit.ComInputSK.X = big.NewInt(0)
+	wit.ComInputSK.Y = big.NewInt(0)
+	wit.ComInputSK.X.Set(cmInputSK.X)
+	wit.ComInputSK.Y.Set(cmInputSK.Y)
 
 	randInputShardID := privacy.RandInt()
-	cmInputShardID := privacy.PedCom.CommitAtIndex(big.NewInt(int64(wit.pkLastByteSender)), randInputShardID, privacy.SHARDID)
+	wit.ComInputShardID = privacy.PedCom.CommitAtIndex(big.NewInt(int64(wit.pkLastByteSender)), randInputShardID, privacy.SHARDID)
 
-	cmInputValue := make([]*privacy.EllipticPoint, numInputCoin)
-	cmInputSND := make([]*privacy.EllipticPoint, numInputCoin)
+	wit.ComInputValue = make([]*privacy.EllipticPoint, numInputCoin)
+	wit.ComInputSND = make([]*privacy.EllipticPoint, numInputCoin)
 	// It is used for proving 2 commitments commit to the same value (SND)
 	cmInputSNDIndexSK := make([]*privacy.EllipticPoint, numInputCoin)
 
@@ -464,14 +566,16 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		randInputSND[i] = privacy.RandInt()
 		randInputSNDIndexSK[i] = privacy.RandInt()
 
-		cmInputValue[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(inputCoin.CoinDetails.Value)), randInputValue[i], privacy.VALUE)
-		cmInputSND[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randInputSND[i], privacy.SND)
+		wit.ComInputValue[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(inputCoin.CoinDetails.Value)), randInputValue[i], privacy.VALUE)
+		wit.ComInputSND[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randInputSND[i], privacy.SND)
 		cmInputSNDIndexSK[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randInputSNDIndexSK[i], privacy.SK)
 
-		cmInputValueAll = *cmInputValueAll.Add(cmInputValue[i])
+		cmInputValueAll = *cmInputValueAll.Add(wit.ComInputValue[i])
 		randInputValueAll.Add(randInputValueAll, randInputValue[i])
 		randInputValueAll.Mod(randInputValueAll, privacy.Curve.Params().N)
 	}
+
+
 
 	// Summing all commitments of each input coin into one commitment and proving the knowledge of its Openings
 	cmInputSum := make([]*privacy.EllipticPoint, numInputCoin)
@@ -491,16 +595,20 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 	indexZKPEqual[0] = privacy.SK
 	indexZKPEqual[1] = privacy.SND
 
+	commitmentTemps := make([][]*privacy.EllipticPoint, numInputCoin)
+	rndInputIsZero := make([]*big.Int, numInputCoin)
+	//commitmentIndexTemps := make([][])
+
 	preIndex := 0
 	for i := 0; i < numInputCoin; i++ {
-		/***** Build witness for provingLS the knowledge of input coins' Openings  *****/
+		/***** Build witness for proving the knowledge of input coins' Openings  *****/
 		cmInputSum[i] = new(privacy.EllipticPoint)
 		cmInputSum[i].X, cmInputSum[i].Y = big.NewInt(0), big.NewInt(0)
 		cmInputSum[i].X.Set(cmInputSK.X)
 		cmInputSum[i].Y.Set(cmInputSK.Y)
 		//cmInputSum[i] = cmInputSK
-		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputValue[i].X, cmInputValue[i].Y)
-		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputSND[i].X, cmInputSND[i].Y)
+		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, wit.ComInputValue[i].X, wit.ComInputValue[i].Y)
+		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, wit.ComInputSND[i].X, wit.ComInputSND[i].Y)
 		cmInputSumwithoutShardID[i] = new(privacy.EllipticPoint)
 		cmInputSumwithoutShardID[i].X, cmInputSumwithoutShardID[i].Y = big.NewInt(0), big.NewInt(0)
 		cmInputSumwithoutShardID[i].X.Set(cmInputSum[i].X)
@@ -522,12 +630,12 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 		/***** Build witness for proving one-out-of-N commitments is a commitment to the coins being spent *****/
 		// commitmentTemps is a list of commitments for protocol one-out-of-N
-		commitmentTemps := make([]*privacy.EllipticPoint, privacy.CMRingSize)
+		commitmentTemps[i] = make([]*privacy.EllipticPoint, privacy.CMRingSize)
 		randInputSum[i].Add(randInputSum[i], randInputShardID)
-		rndInputIsZero := big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randInputSum[i])
-		rndInputIsZero.Mod(rndInputIsZero, privacy.Curve.Params().N)
+		rndInputIsZero[i] = big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randInputSum[i])
+		rndInputIsZero[i].Mod(rndInputIsZero[i], privacy.Curve.Params().N)
 
-		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputShardID.X, cmInputShardID.Y)
+		cmInputSum[i].X, cmInputSum[i].Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, wit.ComInputShardID.X, wit.ComInputShardID.Y)
 		cmInputSumInverse[i], _ = cmInputSum[i].Inverse()
 
 		randInputSumAll.Add(randInputSumAll, randInputSum[i])
@@ -536,24 +644,26 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		//cmInputSumAll.X, cmInputSumAll.Y = privacy.Curve.Add(cmInputSum[i].X, cmInputSum[i].Y, cmInputSumAll.X, cmInputSumAll.Y)
 
 		for j := 0; j < privacy.CMRingSize; j++ {
-			commitmentTemps[j] = new(privacy.EllipticPoint)
-			commitmentTemps[j].X = big.NewInt(0)
-			commitmentTemps[j].Y = big.NewInt(0)
-			commitmentTemps[j].X, commitmentTemps[j].Y = privacy.Curve.Add(commitments[preIndex+j].X, commitments[preIndex+j].Y, cmInputSumInverse[i].X, cmInputSumInverse[i].Y)
+			commitmentTemps[i][j] = new(privacy.EllipticPoint)
+			commitmentTemps[i][j].X = big.NewInt(0)
+			commitmentTemps[i][j].Y = big.NewInt(0)
+			commitmentTemps[i][j].X, commitmentTemps[i][j].Y = privacy.Curve.Add(commitments[preIndex+j].X, commitments[preIndex+j].Y, cmInputSumInverse[i].X, cmInputSumInverse[i].Y)
 		}
-		preIndex = privacy.CMRingSize * (i + 1)
+
 
 		if wit.OneOfManyWitness[i] == nil {
 			wit.OneOfManyWitness[i] = new(PKOneOfManyWitness)
 		}
 		indexIsZero := myCommitmentIndexs[i] % privacy.CMRingSize
-		wit.OneOfManyWitness[i].Set(commitmentTemps, commitmentIndexs, rndInputIsZero, indexIsZero, privacy.SK)
+		wit.OneOfManyWitness[i].Set(commitmentTemps[i], commitmentIndexs[preIndex:preIndex + privacy.CMRingSize], rndInputIsZero[i], indexIsZero, privacy.SK)
+
+		preIndex = privacy.CMRingSize * (i + 1)
 
 		/***** Build witness for proving that serial number is derived from the committed derivator *****/
 		if wit.EqualityOfCommittedValWitness[i] == nil {
 			wit.EqualityOfCommittedValWitness[i] = new(PKEqualityOfCommittedValWitness)
 		}
-		wit.EqualityOfCommittedValWitness[i].Set([]*privacy.EllipticPoint{cmInputSNDIndexSK[i], cmInputSND[i]}, indexZKPEqual, []*big.Int{inputCoins[i].CoinDetails.SNDerivator, randInputSNDIndexSK[i], randInputSND[i]})
+		wit.EqualityOfCommittedValWitness[i].Set([]*privacy.EllipticPoint{cmInputSNDIndexSK[i], wit.ComInputSND[i]}, indexZKPEqual, []*big.Int{inputCoins[i].CoinDetails.SNDerivator, randInputSNDIndexSK[i], randInputSND[i]})
 
 		/****Build witness for proving that the commitment of serial number is equivalent to Mul(com(sk), com(snd))****/
 		witnesssA := new(big.Int)
@@ -703,10 +813,10 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	proof.ComOutputSND = wit.ComOutputSND
 	proof.ComOutputShardID = wit.ComOutputShardID
 
-	//printf output's value to test
-	for i, outCoin := range wit.outputCoins {
-		fmt.Printf("Output coin's value %v: %v\n", i, outCoin.CoinDetails.Value)
-	}
+	proof.ComInputSK = wit.ComInputSK
+	proof.ComInputValue = wit.ComInputValue
+	proof.ComInputSND = wit.ComInputSND
+	proof.ComInputShardID = wit.ComInputShardID
 
 	// if hasPrivacy == false, don't need to create the zero knowledge proof
 	// proving user has spending key corresponding with public key in input coins
@@ -784,9 +894,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 }
 
 func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db database.DatabaseInterface, chainId byte) bool {
-	//return true
 	// has no privacy
-	//return true
 	if !hasPrivacy {
 		var sumInputValue, sumOutputValue uint64
 		sumInputValue = 0
@@ -838,6 +946,9 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 
 	// if hasPrivacy == true
 	// verify for input coins
+	var err error
+	cmInputSum := make([]*privacy.EllipticPoint, len(pro.ComInputOpeningsProof))
+	cmInputSumInverse := make([]*privacy.EllipticPoint, len(pro.ComInputOpeningsProof))
 	for i := 0; i < len(pro.ComInputOpeningsProof); i++ {
 		// Verify the proof for knowledge of input coins' Openings
 		if !pro.ComInputOpeningsProof[i].Verify() {
@@ -845,7 +956,43 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 		}
 		// Verify for the proof one-out-of-N commitments is a commitment to the coins being spent
 		//Todo: 0xkraken
-		//if !pro.OneOfManyProofSize[i].Verify(db, chainId) {
+		// Calculate cm input inverse
+		cmInputSum[i] = new(privacy.EllipticPoint)
+		cmInputSum[i].X = big.NewInt(0)
+		cmInputSum[i].Y = big.NewInt(0)
+		cmInputSum[i].X.Set(pro.ComInputSK.X)
+		cmInputSum[i].Y.Set(pro.ComInputSK.Y)
+
+		cmInputSum[i] = cmInputSum[i].Add(pro.ComInputValue[i])
+		cmInputSum[i] = cmInputSum[i].Add(pro.ComInputSND[i])
+		cmInputSum[i] = cmInputSum[i].Add(pro.ComInputShardID)
+
+		cmInputSumInverse[i], err = cmInputSum[i].Inverse()
+		if err != nil {
+			return false
+		}
+
+		// get commitments list from CommitmentIndexs
+		commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
+		for j := 0; j < privacy.CMRingSize; j++{
+			commitmentBytes, err := db.GetCommitmentByIndex(pro.OneOfManyProof[i].CommitmentIndexs[j], chainId)
+			if err != nil{
+				fmt.Printf("Error when verify: %v\n", err)
+				return false
+			}
+			commitments[j], err = privacy.DecompressKey(commitmentBytes)
+			if err != nil{
+				fmt.Printf("Error when verify: %v\n", err)
+				return false
+			}
+
+			commitments[j] = commitments[j].Add(cmInputSumInverse[i])
+		}
+
+		pro.OneOfManyProof[i].Commitments = commitments
+
+		//if !pro.OneOfManyProof[i].Verify() {
+		//	fmt.Printf("[PRIVACY LOG] ONE OF MANY PROTOCOL FAILED")
 		//	return false
 		//}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
