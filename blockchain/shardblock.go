@@ -11,8 +11,6 @@ import (
 type ShardBlock struct {
 	AggregatedSig string `json:"AggregatedSig"`
 	ValidatorsIdx []int  `json:"ValidatorsIdx"`
-	ProducerSig   string `json:"BlockProducerSignature"`
-	Producer      string `json:"Producer"`
 
 	Body   ShardBody
 	Header ShardHeader
@@ -33,7 +31,7 @@ type ShardToShardBlock struct {
 //HashFinal creates a hash from block data that include AggregatedSig & ValidatorsIdx
 func (self *ShardBlock) Hash() *common.Hash {
 	record := common.EmptyString
-	record += self.Header.Hash().String() + self.ProducerSig + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
+	record += self.Header.Hash().String() + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -42,8 +40,6 @@ func (self *ShardBlock) UnmarshalJSON(data []byte) error {
 	tempBlk := &struct {
 		AggregatedSig string
 		ValidatorsIdx []int
-		ProducerSig   string
-		Producer      string
 		Header        ShardHeader
 		Body          *json.RawMessage
 	}{}
@@ -53,8 +49,6 @@ func (self *ShardBlock) UnmarshalJSON(data []byte) error {
 	}
 	self.AggregatedSig = tempBlk.AggregatedSig
 	self.ValidatorsIdx = tempBlk.ValidatorsIdx
-	self.ProducerSig = tempBlk.ProducerSig
-	self.Producer = tempBlk.Producer
 
 	blkBody := ShardBody{}
 	err = blkBody.UnmarshalJSON(*tempBlk.Body)

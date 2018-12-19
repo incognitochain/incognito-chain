@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/ninjadotorg/constant/common"
 )
 
@@ -12,9 +13,11 @@ type BeaconBody struct {
 }
 
 type BeaconHeader struct {
-	Version    int         `json:"Version"`
-	ParentHash common.Hash `json:"ParentBlockHash"`
-	Height     uint64      `json:"Height"`
+	ProducerSig string      `json:"BlockProducerSignature"`
+	Producer    string      `json:"Producer"`
+	Version     int         `json:"Version"`
+	ParentHash  common.Hash `json:"ParentBlockHash"`
+	Height      uint64      `json:"Height"`
 	//epoch length should be config in consensus
 	Epoch         uint64      `json:"Epoch"`
 	Timestamp     int64       `json:"Timestamp"`
@@ -37,8 +40,6 @@ type BeaconHeader struct {
 type BeaconBlock struct {
 	AggregatedSig string `json:"AggregatedSig"`
 	ValidatorsIdx []int  `json:"ValidatorsIdx"`
-	ProducerSig   string `json:"BlockProducerSignature"`
-	Producer      string `json:"Producer"`
 
 	Body   BeaconBody
 	Header BeaconHeader
@@ -46,7 +47,7 @@ type BeaconBlock struct {
 
 func (self *BeaconBlock) Hash() *common.Hash {
 	record := common.EmptyString
-	record += self.Header.Hash().String() + self.ProducerSig + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
+	record += self.Header.Hash().String() + self.AggregatedSig + common.IntArrayToString(self.ValidatorsIdx, ",")
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -90,6 +91,8 @@ func (self *BeaconHeader) toString() string {
 	res += self.PrevBlockHash.String()
 	res += self.ShardStateHash.String()
 	res += self.InstructionHash.String()
+	res += self.Producer
+	res += self.ProducerSig
 	return res
 }
 
@@ -105,8 +108,4 @@ func (self *BeaconHeader) UnmarshalJSON(data []byte) error {
 	}
 	self = blkHeader
 	return nil
-}
-
-func (self *BeaconHeader) GetHeight() uint64 {
-	return self.Height
 }

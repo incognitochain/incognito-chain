@@ -106,7 +106,7 @@ type MessageListeners struct {
 	OnGetAddr       func(p *PeerConn, msg *wire.MessageGetAddr)
 	OnAddr          func(p *PeerConn, msg *wire.MessageAddr)
 
-	//PoS
+	//PBFT
 	OnBFTPropose func(p *PeerConn, msg *wire.MessageBFTPropose)
 	OnBFTPrepare func(p *PeerConn, msg *wire.MessageBFTPrepare)
 	OnBFTCommit  func(p *PeerConn, msg *wire.MessageBFTCommit)
