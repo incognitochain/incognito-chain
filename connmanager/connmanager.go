@@ -22,12 +22,6 @@ import (
 	"github.com/ninjadotorg/constant/wire"
 )
 
-//var MAX_PEERS_SAME_SHARD = 10
-//var MAX_PEERS_OTHER_SHARD = 2
-//var MAX_PEERS_OTHER = 100
-//var MAX_PEERS = 200
-//var MAX_PEERS_NOSHARD = 100
-//var MAX_PEERS_BEACON = 20
 var SHARD_NUMBER = 256
 
 // ConnState represents the state of the requested connection.

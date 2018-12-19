@@ -25,7 +25,6 @@ import (
 	"github.com/ninjadotorg/constant/netsync"
 	"github.com/ninjadotorg/constant/peer"
 	"github.com/ninjadotorg/constant/rewardagent"
-	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wallet"
 	"github.com/ninjadotorg/constant/wire"
 )
