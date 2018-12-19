@@ -97,21 +97,18 @@ func (pro PKComProductProof) Bytes() []byte {
 	//if pro.cmA == nil || pro.cmB == nil || {
 	//
 	//}
-	proofbytes = append(proofbytes, pro.cmA.Compress()...)                           // 33 bytes
-	proofbytes = append(proofbytes, pro.cmB.Compress()...)                           // 33 bytes
-	proofbytes = append(proofbytes, pro.D.Compress()...)                             // 33 bytes
-	proofbytes = append(proofbytes, pro.E.Compress()...)                             // 33 bytes
-	proofbytes = append(proofbytes, privacy.PadBigInt(pro.f, privacy.BigIntSize)...) // 32 bytes
-	proofbytes = append(proofbytes, privacy.PadBigInt(pro.z, privacy.BigIntSize)...) // 32 bytes
+	proofbytes = append(proofbytes, pro.cmA.Compress()...)                                  // 33 bytes
+	proofbytes = append(proofbytes, pro.cmB.Compress()...)                                  // 33 bytes
+	proofbytes = append(proofbytes, pro.D.Compress()...)                                    // 33 bytes
+	proofbytes = append(proofbytes, pro.E.Compress()...)                                    // 33 bytes
+	proofbytes = append(proofbytes, privacy.AddPaddingBigInt(pro.f, privacy.BigIntSize)...) // 32 bytes
+	proofbytes = append(proofbytes, privacy.AddPaddingBigInt(pro.z, privacy.BigIntSize)...) // 32 bytes
 	proofbytes = append(proofbytes, pro.index)
 	return proofbytes
 }
 
 func (pro *PKComProductProof) SetBytes(proofBytes []byte) error {
-	if pro == nil {
-		pro = pro.Init()
-	}
-
+	pro = pro.Init()
 	if len(proofBytes) == 0 {
 		return nil
 	}
@@ -276,21 +273,14 @@ func (pro *PKComProductProof) Verify() bool {
 	A := pro.cmA
 	pts_cmp = A.ScalarMul(x).Add(pro.D)
 	com1 := privacy.PedCom.CommitAtIndex(pro.f, pro.z, pro.index)
-	if com1.IsEqual(pts_cmp) {
-		fmt.Println("Passed test 1")
-	} else {
-		fmt.Println("Failed test 1")
+	if !com1.IsEqual(pts_cmp) {
 		return false
 	}
 
 	//Check witness 2: xB + E == 	CommitAll(f2,z2)
 	com2 := pro.cmB.ScalarMul(pro.f)
 	pts_cmp = privacy.PedCom.G[pro.index].ScalarMul(x).Add(pro.E)
-	if com2.IsEqual(pts_cmp) {
-		fmt.Println("Passed test 2")
-		fmt.Println("Passed all test. This proof is valid.")
-	} else {
-		fmt.Println("Failed test 2")
+	if !com2.IsEqual(pts_cmp) {
 		return false
 	}
 	return true

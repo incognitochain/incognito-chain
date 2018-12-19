@@ -105,7 +105,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.Datab
 
 		snD := item.CoinDetails.SNDerivator
 		ok, err = db.HasSNDerivator(*snD, chainID)
-		if !ok && err != nil {
+		if !ok && err == nil {
 			acceptedSnD = append(acceptedSnD, *snD)
 		}
 	}

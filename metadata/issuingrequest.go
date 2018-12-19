@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"bytes"
 	"errors"
 
 	"github.com/ninjadotorg/constant/common"
@@ -40,13 +41,16 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	if iReq.AssetType == common.DCBTokenID {
-		return false, nil
-	}
-	// check double spending on fee tx
-	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
-	if err != nil {
-		return false, err
+	if bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {
+		saleDBCTOkensByUSDData := bcr.GetDCBParams().SaleDBCTOkensByUSDData
+		if bcr.GetHeight()+1 > saleDBCTOkensByUSDData.EndBlock {
+			return false, nil
+		}
+		oracleParams := bcr.GetOracleParams()
+		reqAmt := iReq.DepositedAmount / oracleParams.DCBToken
+		if saleDBCTOkensByUSDData.Amount < reqAmt {
+			return false, nil
+		}
 	}
 	return true, nil
 }
@@ -65,15 +69,20 @@ func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 	if iReq.Type == IssuingRequestMeta {
 		return false, false, errors.New("Wrong request info's meta type")
 	}
-	assetTypeStr := string(iReq.AssetType[:])
-	if assetTypeStr != string(common.ConstantID[:]) && assetTypeStr != string(common.DCBTokenID[:]) {
+	if len(iReq.AssetType) != common.HashSize {
 		return false, false, errors.New("Wrong request info's asset type")
 	}
 	return false, true, nil
 }
 
 func (iReq *IssuingRequest) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning true here
+	if iReq.Type != IssuingRequestMeta {
+		return false
+	}
+	if !bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) &&
+		!bytes.Equal(iReq.AssetType[:], common.ConstantID[:]) {
+		return false
+	}
 	return true
 }
 

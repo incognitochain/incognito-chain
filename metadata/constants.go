@@ -19,6 +19,8 @@ const (
 	BuyBackResponseMeta
 	IssuingRequestMeta
 	IssuingResponseMeta
+	ContractingRequestMeta
+	OracleFeedMeta
 	DividendMeta
 
 	CrowdsaleRequestMeta

@@ -41,16 +41,17 @@ func (IPA InnerProdArg) Print(){
 func (IPA *InnerProdArg) Bytes() []byte{
 	var res []byte
 	for i:=0;i<len(IPA.L);i++{
-		res = append(res, IPA.L[i].Compress()...)
+		//fmt.Println(IPA.L[i].Compress())
+		res =append(res, IPA.L[i].Compress()...)
 	}
 	for i:=0;i<len(IPA.R);i++{
 		res = append(res, IPA.R[i].Compress()...)
 	}
 	for i:=0;i<len(IPA.Challenges);i++{
-		res = append(res, IPA.Challenges[i].Bytes()...)
+		res = append(res, privacy.AddPaddingBigInt(IPA.Challenges[i],32)...)
 	}
-	res = append(res,IPA.A.Bytes()...)
-	res = append(res,IPA.B.Bytes()...)
+	res = append(res,privacy.AddPaddingBigInt(IPA.A,32)...)
+	res = append(res,privacy.AddPaddingBigInt(IPA.B,32)...)
 	return res
 }
 func (IPA *InnerProdArg) SetBytes(IPA_byte []byte){

@@ -65,8 +65,6 @@ type DatabaseInterface interface {
 	StoreSerialNumbers([]byte, byte) error
 	FetchSerialNumbers(byte) ([][]byte, error)
 	HasSerialNumber([]byte, byte) (bool, error)
-	//HasSerialNumberIndex(serialNumberIndex int64, shardID byte) (bool, error)
-	//GetSerialNumberByIndex(serialNumberIndex int64, shardID byte) ([]byte, error)
 	CleanSerialNumbers() error
 
 	// PedersenCommitment
@@ -98,7 +96,6 @@ type DatabaseInterface interface {
 	StoreCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight uint64, txIndex int32, data []byte) error // store custom token tx. Param: tokenID, shardID, block height, tx-id, data tx
 	ListCustomToken() ([][]byte, error)                                                                          // get list all custom token which issued in network
 	CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error)                                                 // from token id get all custom txs
-	//	StoreCustomTokenPaymentAddressHistory(tokenID *common.Hash, customTokenTxData *transaction.TxCustomToken) error // store account history of custom token
 	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, pubkey []byte) (map[string]string, error) // get list of utxo of an paymentaddress.pubkey of a token
 	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)           // get balance of all paymentaddress of a token (only return payment address with balance > 0)
 	UpdateRewardAccountUTXO(*common.Hash, []byte, *common.Hash, int) error

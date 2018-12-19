@@ -105,7 +105,7 @@ func (pub *ElGamalPubKey) ElGamalEnc(plainPoint *EllipticPoint) *ElGamalCipherTe
 
 func (priv *ElGamalPrivKey) ElGamalDec(cipher *ElGamalCipherText) *EllipticPoint {
 
-	plainPoint := new(EllipticPoint)
+	plainPoint := EllipticPoint{big.NewInt(0), big.NewInt(0)}
 	inversePrivKey := new(big.Int)
 	inversePrivKey.Set((*priv.Curve).Params().N)
 	inversePrivKey.Sub(inversePrivKey, priv.X)
@@ -113,7 +113,7 @@ func (priv *ElGamalPrivKey) ElGamalDec(cipher *ElGamalCipherText) *EllipticPoint
 	// fmt.Println(big.NewInt(0).Mod(big.NewInt(0).Add(inversePrivKey, priv.H), Curve.Params().N))
 	plainPoint.X, plainPoint.Y = (*priv.Curve).ScalarMult(cipher.R.X, cipher.R.Y, inversePrivKey.Bytes())
 	plainPoint.X, plainPoint.Y = (*priv.Curve).Add(plainPoint.X, plainPoint.Y, cipher.C.X, cipher.C.Y)
-	return plainPoint
+	return &plainPoint
 }
 
 func TestElGamalPubKeyEncryption() bool {

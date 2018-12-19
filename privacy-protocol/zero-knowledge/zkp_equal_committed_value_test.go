@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestPKEqualityOfCommittedVal(t*testing.T) {
+func TestPKEqualityOfCommittedVal(t *testing.T) {
 	res := true
 	for res {
 		witness := new(PKEqualityOfCommittedValWitness)

@@ -87,6 +87,12 @@ const (
 	CreateRawSubmitGOVProposalTx     = "createrawsubmitgovproposaltx"
 	SendRawSubmitGOVProposalTx       = "sendrawsubmitgovproposaltx"
 
+	// dcb
+	CreateAndSendTxWithIssuingRequest     = "createandsendtxwithissuingrequest"
+	CreateAndSendTxWithContractingRequest = "createandsendtxwithcontractingrequest"
+
 	// gov
-	GetBondTypes = "getbondtypes"
+	GetBondTypes                      = "getbondtypes"
+	CreateAndSendTxWithBuyBackRequest = "createandsendtxwithbuybackrequest"
+	CreateAndSendTxWithBuySellRequest = "createandsendtxwithbuysellrequest"
 )

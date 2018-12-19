@@ -154,15 +154,6 @@ func (self *BlockChain) Init(config *Config) error {
 }
 
 // -------------- Blockchain retriever's implementation --------------
-// func (self *BlockChain) GetNulltifiersList(shardID byte) ([][]byte, error) {
-// 	txViewPoint, err := self.FetchTxViewPoint(shardID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	nullifierDb := txViewPoint.ListNullifiers()
-// 	return nullifierDb, nil
-// }
-
 // GetCustomTokenTxsHash - return list of tx which relate to custom token
 func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]metadata.Transaction, error) {
 	txHashesInByte, err := self.config.DataBase.CustomTokenTxs(tokenID)
@@ -178,6 +169,11 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 		result[*tx.Hash()] = tx
 	}
 	return result, nil
+}
+
+// GetOracleParams returns oracle params
+func (self *BlockChain) GetOracleParams() *params.Oracle {
+	return self.BestState[0].BestBlock.Header.Oracle
 }
 
 // -------------- End of Blockchain retriever's implementation --------------
@@ -471,7 +467,9 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 			return err
 		}
 		for _, com := range item1 {
-			err = self.config.DataBase.StoreOutputCoins(pubkeyBytes, com.Bytes(), view.shardID)
+			lastByte := pubkeyBytes[len(pubkeyBytes)-1]
+			chainID, err := common.GetTxSenderChain(lastByte)
+			err = self.config.DataBase.StoreOutputCoins(pubkeyBytes, com.Bytes(), chainID)
 			if err != nil {
 				return err
 			}
@@ -495,26 +493,12 @@ func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, sh
 }
 
 /*
-Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
-this is a list tx-in which are used by a new tx
-*/
-/*func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, shardID byte) error {
-	for _, item := range commitments {
-		err := self.config.DataBase.StoreCommitments(item, shardID)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
-
-/*
 Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
 this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
 	for _, desc := range tx.Proof.InputCoins {
-		shardID, err := common.GetTxSenderChain(tx.Proof.PubKeyLastByteSender)
+		chainId, err := common.GetTxSenderChain(tx.PubKeyLastByteSender)
 		if err != nil {
 			return err
 		}
@@ -527,25 +511,7 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
 }
 
 /*
-Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
-this is a list tx-in which are used by a new tx
-*/
-/*func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
-	for _, desc := range tx.Proof.OutputCoins {
-		shardID, err := common.GetTxSenderChain(desc.CoinDetails.GetPubKeyLastByte())
-		if err != nil {
-			return err
-		}
-		err = self.config.DataBase.StoreCommitments(desc.CoinDetails.CoinCommitment.Compress(), shardID)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
-
-/*
-Get all blocks in shard
+Get all blocks in chain
 Return block array
 */
 func (self *BlockChain) GetAllShardBlocks() ([][]*ShardBlock, error) {
@@ -894,32 +860,9 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *ShardBlock) error {
 	return nil
 }
 
-/*
-FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
-Param coinType - COIN or BOND
-*/
-/*func (self *BlockChain) FetchTxViewPoint(shardID byte) (*TxViewPoint, error) {
-	view := NewTxViewPoint(shardID)
-	commitments, err := self.config.DataBase.FetchCommitments(shardID)
-	if err != nil {
-		return nil, err
-	}
-	view.listCommitments = commitments
-	nullifiers, err := self.config.DataBase.FetchSerialNumbers(shardID)
-	if err != nil {
-		return nil, err
-	}
-	view.listSerialNumbers = nullifiers
-	snDerivators, err := self.config.DataBase.FetchSNDerivator(shardID)
-	if err != nil {
-		return nil, err
-	}
-	view.listSnD = snDerivators
-	return view, nil
-}*/
-
-func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) error {
-	view := NewTxViewPoint(block.Header.ShardID)
+// CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
+func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
+	view := NewTxViewPoint(block.Header.ChainID)
 
 	err := view.fetchTxViewPointFromBlock(self.config.DataBase, block)
 	if err != nil {
@@ -1378,6 +1321,7 @@ func (self *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {
 func (self *BlockChain) GetNumberOfDCBGovernors() int {
 	return common.NumberOfDCBGovernors
 }
+
 func (self *BlockChain) GetNumberOfGOVGovernors() int {
 	return common.NumberOfGOVGovernors
 }
@@ -1390,144 +1334,7 @@ func (self BlockChain) CheckSNDerivatorExistence(snd *big.Int, shardID byte) (bo
 	return transaction.CheckSNDerivatorExistence(snd, shardID, self.config.DataBase)
 }
 
-func (self *BlockChain) GetAmountPerAccount(proposal *metadata.DividendProposal) (uint64, []string, []uint64, error) {
-	// TODO(@0xsirrush): cache list so that list of receivers is fixed across blocks
-	tokenHolders, err := self.config.DataBase.GetCustomTokenPaymentAddressesBalance(proposal.TokenID)
-	if err != nil {
-		return 0, nil, nil, err
-	}
-
-	// Get total token supply
-	totalTokenSupply := uint64(0)
-	for _, value := range tokenHolders {
-		totalTokenSupply += value
-	}
-
-	// Get amount per account (only count unrewarded utxo)
-	rewardHolders := []string{}
-	amounts := []uint64{}
-	for holder, _ := range tokenHolders {
-		temp, _ := hex.DecodeString(holder)
-		paymentAddress := (&privacy.PaymentAddress{}).FromBytes(temp)
-		vouts, err := self.parseCustomTokenUTXO(proposal.TokenID, paymentAddress.Pk)
-		if err != nil {
-			return 0, nil, nil, err
-		}
-		amount := uint64(0)
-		for _, vout := range vouts {
-			amount += vout.Value
-		}
-
-		if amount > 0 {
-			rewardHolders = append(rewardHolders, holder)
-			amounts = append(amounts, amount)
-		}
-	}
-	return totalTokenSupply, rewardHolders, amounts, nil
-}
-
-func isAnyBoardAddressInVins(customToken *transaction.TxCustomToken) bool {
-	GOVAddressStr := string(common.GOVAddress)
-	DCBAddressStr := string(common.DCBAddress)
-	for _, vin := range customToken.TxTokenData.Vins {
-		apkStr := string(vin.PaymentAddress.Pk[:])
-		if apkStr == GOVAddressStr || apkStr == DCBAddressStr {
-			return true
-		}
-	}
-	return false
-}
-
-func isAllBoardAddressesInVins(
-	customToken *transaction.TxCustomToken,
-	boardAddrStr string,
-) bool {
-	for _, vin := range customToken.TxTokenData.Vins {
-		apkStr := string(vin.PaymentAddress.Pk[:])
-		if apkStr != boardAddrStr {
-			return false
-		}
-	}
-	return true
-}
-
-func verifySignatures(
-	tx *transaction.TxCustomToken,
-	boardPubKeys [][]byte,
-) bool {
-	boardLen := len(boardPubKeys)
-	if boardLen == 0 {
-		return false
-	}
-
-	signs := tx.BoardSigns
-	verifiedSignCount := 0
-	tx.BoardSigns = nil
-
-	for _, pubKey := range boardPubKeys {
-		sign, ok := signs[string(pubKey)]
-		if !ok {
-			continue
-		}
-		keyObj, err := wallet.Base58CheckDeserialize(string(pubKey))
-		if err != nil {
-			Logger.log.Info(err)
-			continue
-		}
-		isValid, err := keyObj.KeySet.Verify(common.ToBytes(*tx), common.ToBytes(sign))
-		if err != nil {
-			Logger.log.Info(err)
-			continue
-		}
-		if isValid {
-			verifiedSignCount += 1
-		}
-	}
-
-	if verifiedSignCount >= int(math.Floor(float64(boardLen/2)))+1 {
-		return true
-	}
-	return false
-}
-
-func (bc *BlockChain) verifyByBoard(
-	boardType uint8,
-	customToken *transaction.TxCustomToken,
-) bool {
-	// var address string
-	// var pubKeys [][]byte
-	// if boardType == common.DCB {
-	// 	address = string(common.DCBAddress)
-	// 	pubKeys = bc.BestState[0].BestBlock.Header.DCBGovernor.DCBBoardPubKeys
-	// } else if boardType == common.GOV {
-	// 	govAccount, _ := wallet.Base58CheckDeserialize(common.GOVAddress)
-	// 	address = string(govAccount.KeySet.PaymentAddress.Pk)
-	// 	pubKeys = bc.BestState[0].BestBlock.Header.GOVGovernor.GOVBoardPubKeys
-	// } else {
-	// 	return false
-	// }
-
-	// if !isAllBoardAddressesInVins(customToken, address) {
-	// 	return false
-	// }
-	// return verifySignatures(customToken, pubKeys)
-	return true
-}
-
-// VerifyMultiSigByBoard: verify multisig if the tx is for board's spending
-func (bc *BlockChain) VerifyCustomTokenSigns(tx metadata.Transaction) bool {
-	customToken, ok := tx.(*transaction.TxCustomToken)
-	if !ok {
-		return false
-	}
-
-	boardType := customToken.BoardType
-	if boardType == 0 { // this tx is not for board's spending so no need to verify multisig
-		if isAnyBoardAddressInVins(customToken) {
-			return false
-		}
-		return true
-	}
-
-	return bc.verifyByBoard(boardType, customToken)
+// GetFeePerKbTx - return fee (per kb of tx) from GOV params data
+func (self BlockChain) GetFeePerKbTx() uint64 {
+	return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
 }

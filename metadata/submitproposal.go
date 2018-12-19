@@ -91,7 +91,7 @@ func NewSubmitGOVProposalMetadataFromJson(jsonData map[string]interface{}) *Subm
 		GOVParams: params.GOVParams{
 			SalaryPerTx: uint64(jsonData["SalaryPerTx"].(float64)),
 			BasicSalary: uint64(jsonData["BasicSalary"].(float64)),
-			TxFee:       uint64(jsonData["TxFee"].(float64)),
+			FeePerKbTx:  uint64(jsonData["FeePerKbTx"].(float64)),
 			SellingBonds: &voting.SellingBonds{
 				BondsToSell:    uint64(jsonData["BondsToSell"].(float64)),
 				BondPrice:      uint64(jsonData["BondPrice"].(float64)),

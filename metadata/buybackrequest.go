@@ -14,13 +14,17 @@ type BuyBackRequest struct {
 	MetadataBase
 }
 
-func NewBuyBackRequest(bbReqData map[string]interface{}) *BuyBackRequest {
+func NewBuyBackRequest(
+	buyBackFromTxID common.Hash,
+	voutIndex int,
+	metaType int,
+) *BuyBackRequest {
 	metadataBase := MetadataBase{
-		Type: int(bbReqData["type"].(float64)),
+		Type: metaType,
 	}
 	return &BuyBackRequest{
-		BuyBackFromTxID: bbReqData["buyBackFromTxId"].(common.Hash),
-		VoutIndex:       bbReqData["voutIndex"].(int),
+		BuyBackFromTxID: buyBackFromTxID,
+		VoutIndex:       voutIndex,
 		MetadataBase:    metadataBase,
 	}
 }
@@ -31,11 +35,6 @@ func (bbReq *BuyBackRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	// check double spending on fee tx
-	err := txr.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
-	if err != nil {
-		return false, err
-	}
 	return true, nil
 }
 

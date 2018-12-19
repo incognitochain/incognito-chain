@@ -40,10 +40,10 @@ func (tx *TxCustomTokenPrivacy) ValidateTransaction() bool {
 	return false
 }
 
-// GetTxVirtualSize computes the virtual size of a given transaction
+// GetTxActualSize computes the virtual size of a given transaction
 // size of this tx = (normal TxNormal size) + (custom token data size)
-func (tx *TxCustomTokenPrivacy) GetTxVirtualSize() uint64 {
-	normalTxSize := tx.TxNormal.GetTxVirtualSize()
+func (tx *TxCustomTokenPrivacy) GetTxActualSize() uint64 {
+	normalTxSize := tx.TxNormal.GetTxActualSize()
 
 	tokenDataSize := uint64(0)
 

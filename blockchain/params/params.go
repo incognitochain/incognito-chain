@@ -5,6 +5,13 @@ import (
 	"github.com/ninjadotorg/constant/voting"
 )
 
+type Oracle struct {
+	// TODO(@0xankylosaurus): generic prices (ETH, BTC, ...) instead of just bonds
+	Bonds    map[string]uint64 // key: bondTypeID, value: price
+	DCBToken uint64            // against USD
+	Constant uint64            // against USD
+}
+
 type LoanParams struct {
 	InterestRate     uint64 `json:"InterestRate"`     // basis points, e.g. 125 represents 1.25%
 	Maturity         uint64 `json:"Maturity"`         // in number of blocks
@@ -15,18 +22,21 @@ type DCBParams struct {
 	SaleData               *voting.SaleData
 	MinLoanResponseRequire uint8
 	LoanParams             []LoanParams // params for collateralized loans of Constant
+	SaleDBCTOkensByUSDData *voting.SaleDBCTOkensByUSDData
 }
 
 type GOVParams struct {
-	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
-	BasicSalary  uint64 // basic salary per block(mili constant)
-	TxFee        uint64
-	SellingBonds *voting.SellingBonds
-	RefundInfo   *voting.RefundInfo
+	SalaryPerTx   uint64 // salary for each tx in block(mili constant)
+	BasicSalary   uint64 // basic salary per block(mili constant)
+	FeePerKbTx    uint64
+	SellingBonds  *voting.SellingBonds
+	RefundInfo    *voting.RefundInfo
+	OracleNetwork *voting.OracleNetwork
 }
 
 func (dcbParams *DCBParams) Hash() *common.Hash {
 	record := string(common.ToBytes(*dcbParams.SaleData.Hash()))
+	record += string(common.ToBytes(*dcbParams.SaleDBCTOkensByUSDData.Hash()))
 	record += string(dcbParams.MinLoanResponseRequire)
 	for _, i := range dcbParams.LoanParams {
 		record += string(i.InterestRate)
@@ -40,9 +50,10 @@ func (dcbParams *DCBParams) Hash() *common.Hash {
 func (govParams *GOVParams) Hash() *common.Hash {
 	record := string(govParams.SalaryPerTx)
 	record += string(govParams.BasicSalary)
-	record += string(govParams.TxFee)
+	record += string(govParams.FeePerKbTx)
 	record += string(common.ToBytes(*govParams.SellingBonds.Hash()))
 	record += string(common.ToBytes(*govParams.RefundInfo.Hash()))
+	record += string(common.ToBytes(*govParams.OracleNetwork.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

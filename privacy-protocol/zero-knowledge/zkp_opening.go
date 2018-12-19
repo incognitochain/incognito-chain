@@ -40,12 +40,19 @@ func (pro *PKComOpeningsProof) IsNil() bool {
 
 // randValue return random witness value for testing
 func (wit *PKComOpeningsWitness) randValue(testcase bool) {
-	wit.Openings = make([]*big.Int, privacy.PedCom.Capacity)
-	for i := 0; i < privacy.PedCom.Capacity; i++ {
+	wit.Openings = make([]*big.Int, privacy.PedCom.Capacity-1)
+	for i := 0; i < privacy.PedCom.Capacity-1; i++ {
 		wit.Openings[i], _ = rand.Int(rand.Reader, privacy.Curve.Params().N)
 	}
-	wit.commitmentValue = privacy.PedCom.CommitAll(wit.Openings)
-	wit.indexs = []byte{privacy.SK, privacy.VALUE, privacy.SND, privacy.SHARDID, privacy.RAND}
+	commit1 := privacy.PedCom.CommitAtIndex(wit.Openings[0], wit.Openings[3], 0)
+	commit2 := privacy.PedCom.CommitAtIndex(wit.Openings[1], wit.Openings[3], 1)
+	commit3 := privacy.PedCom.CommitAtIndex(wit.Openings[2], wit.Openings[3], 2)
+	wit.commitmentValue = commit1.Add(commit2)
+	wit.Openings[3].Mul(wit.Openings[3], big.NewInt(3))
+	wit.Openings[3].Mod(wit.Openings[3], privacy.Curve.Params().N)
+	wit.commitmentValue = wit.commitmentValue.Add(commit3)
+	// wit.commitmentValue = privacy.PedCom.CommitAll(wit.Openings)
+	wit.indexs = []byte{privacy.SK, privacy.VALUE, privacy.SND, privacy.RAND}
 }
 
 // Set dosomethings
@@ -96,12 +103,6 @@ func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) error {
 	if len(bytestr) == 0 {
 		return nil
 	}
-	// if len(pro.gamma) == 0 {
-	// 	return nil
-	// }
-	// if (pro.commitmentValue == nil) || (pro.alpha == nil) || (pro.indexs == nil) || (pro.gamma == nil){
-	// 	return nil
-	// }
 	pro.commitmentValue = new(privacy.EllipticPoint)
 	pro.commitmentValue.Decompress(bytestr[0:privacy.CompressedPointSize])
 	if !pro.commitmentValue.IsSafe() {
@@ -112,11 +113,7 @@ func (pro *PKComOpeningsProof) SetBytes(bytestr []byte) error {
 	if !pro.alpha.IsSafe() {
 		return errors.New("Decompressed failed!")
 	}
-	// pro.gamma = make([]*big.Int, privacy.PedCom.Capacity)
-	// for i := 0; i < privacy.PedCom.Capacity; i++ {
-	// 	pro.gamma[i] = big.NewInt(0)
-	// 	pro.gamma[i].SetBytes(bytestr[privacy.CompressedPointSize*2+i*privacy.BigIntSize : privacy.CompressedPointSize*2+(i+1)*privacy.BigIntSize])
-	// }
+
 	pro.gamma = make([]*big.Int, (len(bytestr)-privacy.CompressedPointSize*2)/privacy.BigIntSize)
 	for i := 0; i < len(pro.gamma); i++ {
 		pro.gamma[i] = big.NewInt(0)
@@ -150,11 +147,16 @@ func (wit *PKComOpeningsWitness) Prove() (*PKComOpeningsProof, error) {
 	}
 	proof := new(PKComOpeningsProof)
 	proof.Set(wit.commitmentValue, alpha, gamma, wit.indexs)
+	fmt.Println(proof.commitmentValue)
+	fmt.Println(proof.alpha)
+	fmt.Println(proof.gamma)
+	fmt.Println(proof.indexs)
 	return proof, nil
 }
 
 // Verify ... (for verifier)
 func (pro *PKComOpeningsProof) Verify() bool {
+	fmt.Println(pro.indexs)
 	beta := GenerateChallengeFromPoint([]*privacy.EllipticPoint{pro.commitmentValue})
 	rightPoint := new(privacy.EllipticPoint)
 	rightPoint.X, rightPoint.Y = privacy.Curve.ScalarMult(pro.commitmentValue.X, pro.commitmentValue.Y, beta.Bytes())
@@ -175,10 +177,12 @@ func TestOpeningsProtocol() bool {
 	witness.randValue(true)
 	fmt.Printf("Witness: %+v\n", witness)
 	proof, _ := witness.Prove()
-	for i := 0; i < len(proof.gamma); i++ {
-		fmt.Println(len(proof.gamma[i].Bytes()))
-	}
-	//fmt.Println(len(proof.Bytes()))
+	fmt.Printf("Len of opening proof: %v\n", len(proof.Bytes()))
+
+
+	proof2 := new(PKComOpeningsProof)
+	proof2.SetBytes(proof.Bytes())
+
 	res := proof.Verify()
 	fmt.Println(res)
 	return res
