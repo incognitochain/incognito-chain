@@ -4,8 +4,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 
-	"log"
-
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
 )
@@ -97,7 +95,6 @@ func (db *db) Delete(key []byte) error {
 func (db *db) Get(key []byte) ([]byte, error) {
 	value, err := db.lvdb.Get(key, nil)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 	return value, nil
