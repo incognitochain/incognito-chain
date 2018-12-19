@@ -18,38 +18,6 @@ type BestState struct {
 	Shard  map[byte]*BestStateShard
 }
 
-type BestStateBeacon struct {
-	BestBlockHash common.Hash  // The hash of the block.
-	BestBlock     *BeaconBlock // The block.
-	BestShardHash []common.Hash
-
-	BeaconHeight uint64
-
-	BeaconCommittee        []string
-	BeaconPendingCommittee []string
-
-	// assigned candidate
-	CandidateShardWaitingForCurrentRandom  []string
-	CandidateBeaconWaitingForCurrentRandom []string
-
-	// assigned candidate
-	CandidateShardWaitingForNextRandom  []string
-	CandidateBeaconWaitingForNextRandom []string
-
-	// validator of shards
-	ShardCommittee map[byte][]string
-	// pending validator of shards
-	ShardPendingValidator map[byte][]string
-
-	// UnassignBeaconCandidate []string
-	// UnassignShardCandidate  []string
-
-	CurrentRandomNumber int64
-	NextRandomNumber    int64
-
-	Params map[string]string
-}
-
 type BestStateShard struct {
 	BestBlockHash common.Hash // The hash of the block.
 	BestBlock     *ShardBlock // The block.
@@ -58,24 +26,6 @@ type BestStateShard struct {
 	ShardPendingValidator []string
 	NumTxns               uint64 // The number of txns in the block.
 	TotalTxns             uint64 // The total number of txns in the chain.
-}
-
-/*
-Init create a beststate data from block and commitment tree
-*/
-// #1 - block
-// #2 - commitment merkle tree
-func (self *BestStateBeacon) Init(block *BeaconBlock) {
-	self.BestBlock = block
-	self.BestBlockHash = *block.Hash()
-}
-
-func (self *BestStateBeacon) Update(block *BeaconBlock) error {
-
-	self.BestBlock = block
-	self.BestBlockHash = *block.Hash()
-
-	return nil
 }
 
 func (self *BestStateShard) Init(block *ShardBlock) {

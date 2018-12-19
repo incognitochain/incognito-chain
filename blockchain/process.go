@@ -79,7 +79,7 @@ func (self *BlockChain) ConnectBlock(block *ShardBlock) error {
 	if len(block.Body.Transactions) < 1 {
 		Logger.log.Infof("No transaction in this block")
 	} else {
-		Logger.log.Infof("Number of transaction in this block %+v", len(block.Body.Transactions))
+		Logger.log.Infof("Number of transaction in this block %d", len(block.Body.Transactions))
 	}
 	for index, tx := range block.Body.Transactions {
 		err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
@@ -88,6 +88,12 @@ func (self *BlockChain) ConnectBlock(block *ShardBlock) error {
 			return NewBlockChainError(UnExpectedError, err)
 		}
 		Logger.log.Infof("Transaction in block with hash", blockHash, "and index", index, ":", tx)
+	}
+
+	err = self.BestState.Shard[block.Header.ShardID].Update(block)
+	if err != nil {
+		Logger.log.Error("Error update best state for block", block, "in shard", block.Header.ShardID)
+		return NewBlockChainError(UnExpectedError, err)
 	}
 	// }
 	// TODO: @0xankylosaurus optimize for loop once instead of multiple times ; metadata.process
@@ -165,5 +171,13 @@ func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
 		return err
 	}
 	// Process best state or not?
+	err = self.BestState.Beacon.Update(block)
+
+	if err != nil {
+		Logger.log.Error("Error update best state for block", block, "in beacon chain")
+		return NewBlockChainError(UnExpectedError, err)
+	}
+	Logger.log.Infof("Accepted block %+v", blockHash)
+
 	return nil
 }
