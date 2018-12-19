@@ -6,24 +6,21 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ninjadotorg/constant/cashec"
+
 	"github.com/ninjadotorg/constant/blockchain"
 	"github.com/ninjadotorg/constant/wire"
 )
 
-type BlockShardGenFn func() *blockchain.ShardBlock
-type BlockBeaconGenFn func() *blockchain.BeaconBlock
-
 type BFTProtocol struct {
 	sync.Mutex
-	Phase    string
-	cQuit    chan struct{}
-	cTimeout chan struct{}
-	cBFTMsg  chan wire.Message
-	BlockGen struct {
-		Layer  BlockShardGenFn
-		Beacon BlockBeaconGenFn
-	}
-	Server serverInterface
+	Phase      string
+	cQuit      chan struct{}
+	cTimeout   chan struct{}
+	cBFTMsg    chan wire.Message
+	BlockGen   *blockchain.BlkTmplGenerator
+	Server     serverInterface
+	UserKeySet *cashec.KeySet
 
 	started bool
 }
@@ -33,7 +30,7 @@ type blockFinalSig struct {
 	ValidatorsIdx []int
 }
 
-func (self *BFTProtocol) Start() error {
+func (self *BFTProtocol) Start(roundRole string, shardID byte) error {
 	self.Lock()
 	defer self.Unlock()
 	if self.started {
@@ -41,6 +38,10 @@ func (self *BFTProtocol) Start() error {
 	}
 	self.started = true
 	self.cQuit = make(chan struct{})
+	self.Phase = "listen"
+	if roundRole == "beacon-proposer" || roundRole == "shard-proposer" {
+		self.Phase = "propose"
+	}
 	go func() {
 		for {
 			self.cTimeout = make(chan struct{})
@@ -50,8 +51,18 @@ func (self *BFTProtocol) Start() error {
 			default:
 				switch self.Phase {
 				case "propose":
-					newBlock := self.BlockGen.Layer()
-					fmt.Println(newBlock)
+					time.AfterFunc(ProposeTimeout*time.Second, func() {
+						close(self.cTimeout)
+					})
+					if roundRole == "beacon-proposer" {
+						newBlock, err := self.BlockGen.NewBlockBeacon()
+						if err != nil {
+							return
+						}
+
+					} else {
+						newBlock, err := self.BlockGen.NewBlockShard(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey, shardID)
+					}
 				case "listen":
 					time.AfterFunc(ListenTimeout*time.Second, func() {
 						close(self.cTimeout)
@@ -122,5 +133,3 @@ func (self *BFTProtocol) Stop() error {
 	close(self.cQuit)
 	return nil
 }
-
-// func (self *BFTProtocol)

@@ -1,6 +1,7 @@
 package constantpos
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/ninjadotorg/constant/blockchain"
@@ -15,9 +16,8 @@ type Engine struct {
 	started bool
 
 	// channel
-	cQuit     chan struct{}
-	cBFTMsg   chan wire.Message
-	cNewBlock chan blockchain.BlockV2
+	cQuit   chan struct{}
+	cBFTMsg chan wire.Message
 
 	config EngineConfig
 	Layers struct {
@@ -46,45 +46,72 @@ func (self Engine) Init(cfg *EngineConfig) (*Engine, error) {
 }
 
 func (self *Engine) Start() error {
+	for {
+		if self.config.BlockChain.IsReady == true {
+
+		}
+	}
+	switch self.config.RoleMode {
+	case "beacon":
+
+	case "shard":
+
+	case "auto":
+
+	}
+
 	return nil
 }
 
-func (self *Engine) Stop() {
-
+func (self *Engine) Stop() error {
+	self.Lock()
+	defer self.Unlock()
+	if !self.started {
+		return errors.New("Protocol is already stopped")
+	}
+	self.started = false
+	if self.Layers.Beacon != nil {
+		self.Layers.Beacon.Stop()
+	}
+	if self.Layers.Beacon != nil {
+		self.Layers.Beacon.Stop()
+	}
+	close(self.cQuit)
+	return nil
 }
 
-func (self *Engine) UpdateShardChain(block *blockchain.BlockV2) {
-	err := self.config.BlockChain.ConnectBlock(block)
-	if err != nil {
-		Logger.log.Error(err)
-		return
-	}
+// func (self *Engine) UpdateShardChain(block *blockchain.BlockV2) {
+// 	err := self.config.BlockChain.ConnectBlock(block)
+// 	if err != nil {
+// 		Logger.log.Error(err)
+// 		return
+// 	}
 
-	// update tx pool
-	for _, tx := range block.Body.(*blockchain.BlockBodyShard).Transactions {
-		self.config.MemPool.RemoveTx(tx)
-	}
+// 	// update tx pool
+// 	for _, tx := range block.Body.(*blockchain.BlockBodyShard).Transactions {
+// 		self.config.MemPool.RemoveTx(tx)
+// 	}
 
-	// update candidate list
-	// err = self.config.BlockChain.BestState[block.Header.shardID].Update(block)
-	// if err != nil {
-	// 	Logger.log.Errorf("Can not update merkle tree for block: %+v", err)
-	// 	return
-	// }
-	// self.config.BlockChain.StoreBestState(block.Header.shardID)
+// 	// update candidate list
+// 	// err = self.config.BlockChain.BestState[block.Header.shardID].Update(block)
+// 	// if err != nil {
+// 	// 	Logger.log.Errorf("Can not update merkle tree for block: %+v", err)
+// 	// 	return
+// 	// }
+// 	// self.config.BlockChain.StoreBestState(block.Header.shardID)
 
-	// self.knownChainsHeight.Lock()
-	// if self.knownChainsHeight.Heights[block.Header.shardID] < int(block.Header.Height) {
-	// 	self.knownChainsHeight.Heights[block.Header.shardID] = int(block.Header.Height)
-	// 	self.sendBlockMsg(block)
-	// }
-	// self.knownChainsHeight.Unlock()
-	// self.validatedChainsHeight.Lock()
-	// self.validatedChainsHeight.Heights[block.Header.shardID] = int(block.Header.Height)
-	// self.validatedChainsHeight.Unlock()
+// 	// self.knownChainsHeight.Lock()
+// 	// if self.knownChainsHeight.Heights[block.Header.shardID] < int(block.Header.Height) {
+// 	// 	self.knownChainsHeight.Heights[block.Header.shardID] = int(block.Header.Height)
+// 	// 	self.sendBlockMsg(block)
+// 	// }
+// 	// self.knownChainsHeight.Unlock()
+// 	// self.validatedChainsHeight.Lock()
+// 	// self.validatedChainsHeight.Heights[block.Header.shardID] = int(block.Header.Height)
+// 	// self.validatedChainsHeight.Unlock()
 
-	// self.Committee().UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)
-}
+// 	// self.Committee().UpdateCommitteePoint(block.BlockProducer, block.Header.BlockCommitteeSigs)
+// }
 
 func (self *Engine) GetShardCommittee(shardID byte) CommitteeStruct {
 	return CommitteeStruct{}
@@ -92,9 +119,4 @@ func (self *Engine) GetShardCommittee(shardID byte) CommitteeStruct {
 
 func (self *Engine) GetBeaconCommittee() CommitteeStruct {
 	return CommitteeStruct{}
-}
-
-func (self *Engine) createTmplBlock() *blockchain.BlockV2 {
-
-	return nil
 }
