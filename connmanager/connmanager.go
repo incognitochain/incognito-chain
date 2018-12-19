@@ -45,6 +45,16 @@ type ConsensusState struct {
 	BeaconCommittee []string
 	ShardCommittee  map[byte][]string
 	UserPbk         string
+	Committee       map[string]byte
+}
+
+func (self *ConsensusState) rebuild() {
+	self.Committee = make(map[string]byte)
+	for shard, committees := range self.ShardCommittee {
+		for _, committee := range committees {
+			self.Committee[committee] = shard
+		}
+	}
 }
 
 type ConnManager struct {
@@ -110,6 +120,7 @@ func (self *ConnManager) UpdateConsensusState(role string, userPbk string, curre
 	self.Config.ConsensusState.BeaconCommittee = beaconCommittee
 	self.Config.ConsensusState.ShardCommittee = shardCommittee
 	self.Config.ConsensusState.UserPbk = userPbk
+	self.Config.ConsensusState.rebuild()
 	return
 }
 
@@ -696,12 +707,9 @@ func (self *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) bool {
 }
 
 func (self *ConnManager) getShardOfPbk(pbk string) *byte {
-	for shard, committees := range self.Config.ConsensusState.ShardCommittee {
-		for _, committee := range committees {
-			if committee == pbk {
-				return &shard
-			}
-		}
+	shard, ok := self.Config.ConsensusState.Committee[pbk]
+	if ok {
+		return &shard
 	}
 	return nil
 }
