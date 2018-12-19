@@ -282,7 +282,7 @@ func (self *BlockChain) createBeaconState() error {
 	initBlock = self.config.ChainParams.GenesisBlockBeacon
 	self.BestState.Beacon = &BestStateBeacon{}
 	self.BestState.Beacon.Init(initBlock)
-	err := self.ConnectBlock(initBlock)
+	err := self.ConnectBlockBeacon(initBlock)
 	if err != nil {
 		Logger.log.Error(err)
 		return err

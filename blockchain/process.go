@@ -18,7 +18,7 @@ import (
 // isMainChain
 // isOrphan
 // err
-func (self *BlockChain) ConnectBlock(block *BlockV2) error {
+func (self *BlockChain) ConnectBlock(block *ShardBlock) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 
@@ -76,12 +76,12 @@ func (self *BlockChain) ConnectBlock(block *BlockV2) error {
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
-	if len(block.Body.(*BlockBodyShard).Transactions) < 1 {
+	if len(block.Body.Transactions) < 1 {
 		Logger.log.Infof("No transaction in this block")
 	} else {
-		Logger.log.Infof("Number of transaction in this block %+v", len(block.Body.(*BlockBodyShard).Transactions))
+		Logger.log.Infof("Number of transaction in this block %+v", len(block.Body.Transactions))
 	}
-	for index, tx := range block.Body.(*BlockBodyShard).Transactions {
+	for index, tx := range block.Body.Transactions {
 		err := self.StoreTransactionIndex(tx.Hash(), block.Hash(), index)
 		if err != nil {
 			Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
@@ -151,4 +151,10 @@ func (self *BlockChain) BlockExists(hash *common.Hash) (bool, error) {
 	} else {
 		return result, nil
 	}
+}
+
+func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
+	self.chainLock.Lock()
+	defer self.chainLock.Unlock()
+	return nil
 }

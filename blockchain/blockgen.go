@@ -80,20 +80,20 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 
 	var txsToAdd []metadata.Transaction
 	var txToRemove []metadata.Transaction
-	var buySellReqTxs []metadata.Transaction
-	var issuingReqTxs []metadata.Transaction
-	var buyBackFromInfos []*buyBackFromInfo
-	bondsSold := uint64(0)
-	dcbTokensSold := uint64(0)
-	incomeFromBonds := uint64(0)
+	// var buySellReqTxs []metadata.Transaction
+	// var issuingReqTxs []metadata.Transaction
+	// var buyBackFromInfos []*buyBackFromInfo
+	// bondsSold := uint64(0)
+	// dcbTokensSold := uint64(0)
+	// incomeFromBonds := uint64(0)
+	// buyBackCoins := uint64(0)
 	totalFee := uint64(0)
-	buyBackCoins := uint64(0)
 
 	// Get salary per tx
 	salaryPerTx := self.rewardAgent.GetSalaryPerTx(shardID)
 	// Get basic salary on block
 	basicSalary := self.rewardAgent.GetBasicSalary(shardID)
-	currentBlockHeight := prevBlock.Header.Height + 1
+	// currentBlockHeight := prevBlock.Header.Height + 1
 
 	if len(sourceTxns) < common.MinTxsInBlock {
 		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
@@ -212,8 +212,6 @@ func (self *BlkTmplGenerator) NewBlockShard(payToAddress *privacy.PaymentAddress
 
 concludeBlock:
 	// rt := prevBlock.Header.MerkleRootCommitments.CloneBytes()
-	rt := []byte{}
-	blockHeight := prevBlock.Header.Height + 1
 
 	// TODO(@0xbunyip): cap #tx to common.MaxTxsInBlock
 	// Process dividend payout for DCB if needed
@@ -373,11 +371,11 @@ concludeBlock:
 	// 	coinbases = append(coinbases, refundTx)
 	// }
 
-	// txsToAdd = append(coinbases, txsToAdd...)
+	txsToAdd = append(coinbases, txsToAdd...)
 
-	// for _, tx := range txToRemove {
-	// 	blockgen.txPool.RemoveTx(tx)
-	// }
+	for _, tx := range txToRemove {
+		self.txPool.RemoveTx(tx)
+	}
 
 	// // Check for final balance of DCB and GOV
 	// if currentSalaryFund+totalFee+salaryFundAdd+incomeFromBonds < totalSalary+govPayoutAmount+buyBackCoins+totalRefundAmt {
