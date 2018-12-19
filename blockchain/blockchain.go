@@ -282,7 +282,7 @@ func (self *BlockChain) createBeaconState() error {
 	initBlock = self.config.ChainParams.GenesisBlockBeacon
 	self.BestState.Beacon = &BestStateBeacon{}
 	self.BestState.Beacon.Init(initBlock)
-	err := self.ConnectBlock(initBlock)
+	err := self.ConnectBlockBeacon(initBlock)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
@@ -1334,6 +1334,7 @@ func (self BlockChain) CheckSNDerivatorExistence(snd *big.Int, shardID byte) (bo
 }
 
 // GetFeePerKbTx - return fee (per kb of tx) from GOV params data
-// func (self BlockChain) GetFeePerKbTx() uint64 {
-// 	return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
-// }
+func (self BlockChain) GetFeePerKbTx() uint64 {
+	// return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
+	return 0
+}

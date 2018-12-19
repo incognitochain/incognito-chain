@@ -13,7 +13,7 @@ const (
 )
 
 type MessageBFTPropose struct {
-	Block            blockchain.BlockInterface
+	Block            blockchain.BFTBlockInterface
 	MsgSig           string
 	IntendedReceiver string
 }

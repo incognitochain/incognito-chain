@@ -1,6 +1,5 @@
 package blockchain
 
-type BFTBlock interface {
-	Verify()
-	GetType()
+type BFTBlockInterface interface {
+	Verify() error
 }

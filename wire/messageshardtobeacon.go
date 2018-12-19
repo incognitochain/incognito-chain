@@ -8,16 +8,16 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 )
 
-const (
-	MaxBlockPayload = 1000000 // 1 Mb
-)
+// const (
+// 	MaxBlockPayload = 1000000 // 1 Mb
+// )
 
 type MessageShardToBeacon struct {
 	Block blockchain.ShardToBeaconBlock
 }
 
 func (self MessageShardToBeacon) MessageType() string {
-	return CmdShardToBeacon
+	return CmdBlkShardToBeacon
 }
 
 func (self MessageShardToBeacon) MaxPayloadLength(pver int) int {
