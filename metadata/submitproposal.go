@@ -9,7 +9,7 @@ import (
 
 type SubmitDCBProposalMetadata struct {
 	DCBParams       params.DCBParams
-	ExecuteDuration int32
+	ExecuteDuration uint32
 	Explanation     string
 
 	MetadataBase
@@ -38,7 +38,7 @@ func NewSubmitDCBProposalMetadataFromJson(jsonData map[string]interface{}) *Subm
 			MinLoanResponseRequire: uint8(jsonData["MinLoanResponseRequire"].(float64)),
 			LoanParams:             loanParams,
 		},
-		ExecuteDuration: int32(jsonData["ExecuteDuration"].(float64)),
+		ExecuteDuration: uint32(jsonData["ExecuteDuration"].(float64)),
 		Explanation:     jsonData["Explanation"].(string),
 		MetadataBase: MetadataBase{
 			Type: SubmitDCBProposalMeta,
@@ -79,7 +79,7 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateMetadataByIt
 
 type SubmitGOVProposalMetadata struct {
 	GOVParams       params.GOVParams
-	ExecuteDuration int32
+	ExecuteDuration uint32
 	Explaination    string
 
 	MetadataBase
@@ -105,7 +105,7 @@ func NewSubmitGOVProposalMetadataFromJson(jsonData map[string]interface{}) *Subm
 				RefundAmount:       uint64(jsonData["RefundAmount"].(float64)),
 			},
 		},
-		ExecuteDuration: int32(jsonData["ExecuteDuration"].(float64)),
+		ExecuteDuration: uint32(jsonData["ExecuteDuration"].(float64)),
 		Explaination:    string(jsonData["Explaination"].(string)),
 		MetadataBase: MetadataBase{
 			Type: SubmitGOVProposalMeta,
