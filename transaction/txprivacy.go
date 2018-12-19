@@ -51,9 +51,12 @@ func (tx *Tx) Init(
 	fee uint64,
 	hasPrivacy bool,
 	db database.DatabaseInterface,
+	tokenID *common.Hash, // default is nill -> use for constant coin
 ) error {
-	tokenID := &common.Hash{}
-	tokenID.SetBytes(common.ConstantID[:])
+	if tokenID == nil {
+		tokenID := &common.Hash{}
+		tokenID.SetBytes(common.ConstantID[:])
+	}
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKey(senderSK)

@@ -70,6 +70,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 		inputCoin,
 		fee,
 		false,
+		nil,
 		nil)
 	if err != nil {
 		return err

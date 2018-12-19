@@ -177,6 +177,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 		realFee,
 		true,
 		*self.config.Database,
+		nil, // use for constant coin -> nil is valid
 	)
 	return &tx, err
 }
