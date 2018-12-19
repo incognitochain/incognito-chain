@@ -499,3 +499,4 @@ func (self RpcServer) writeHTTPResponseHeaders(req *http.Request, headers http.H
 	_, err = io.WriteString(w, "\r\n")
 	return err
 }
+

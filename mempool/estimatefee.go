@@ -178,7 +178,7 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 
 	hash := *t.Desc.Tx.Hash()
 	if _, ok := ef.observed[hash]; !ok {
-		size := t.Desc.Tx.GetTxVirtualSize()
+		size := t.Desc.Tx.GetTxActualSize()
 		ef.observed[hash] = &observedTransaction{
 			hash:     hash,
 			feeRate:  NewCoinPerKilobyte(uint64(t.Desc.Fee), size),
@@ -189,14 +189,14 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 }
 
 // RegisterBlock informs the fee estimator of a new block to take into account.
-func (ef *FeeEstimator) RegisterBlock(block *blockchain.BlockV2) error {
+func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 	ef.mtx.Lock()
 	defer ef.mtx.Unlock()
 
 	// The previous sorted list is invalid, so delete it.
 	ef.cached = nil
 
-	height := block.Header.(*blockchain.BlockHeaderShard).Height
+	height := block.Header.Height
 	if height != ef.lastKnownHeight+1 && ef.lastKnownHeight != UnminedHeight {
 		return fmt.Errorf("intermediate block not recorded; current height is %d; new height is %d",
 			ef.lastKnownHeight, height)
@@ -208,7 +208,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.BlockV2) error {
 
 	// Randomly order txs in block.
 	transactions := make(map[*transaction.Tx]struct{})
-	for _, t := range block.Body.(*blockchain.BlockBodyShard).Transactions {
+	for _, t := range block.Body.Transactions {
 		switch t.GetType() {
 		case common.TxNormalType, common.TxSalaryType:
 			{
@@ -428,6 +428,7 @@ func (ef *FeeEstimator) rollback() {
 
 // estimateFeeSet is a set of txs that can that is sorted
 // by the fee per kb rate.
+// inherit from golang sorter
 type estimateFeeSet struct {
 	feeRate []CoinPerKilobyte
 	bin     [estimateFeeDepth]uint32
@@ -519,7 +520,7 @@ func (ef *FeeEstimator) estimates() []CoinPerKilobyte {
 
 // EstimateFee estimates the fee per byte to have a tx confirmed a given
 // number of blocks from now.
-func (ef *FeeEstimator) EstimateFee(numBlocks uint32) (CoinPerKilobyte, error) {
+func (ef *FeeEstimator) EstimateFee(numBlocks uint64) (CoinPerKilobyte, error) {
 	ef.mtx.Lock()
 	defer ef.mtx.Unlock()
 
@@ -544,7 +545,8 @@ func (ef *FeeEstimator) EstimateFee(numBlocks uint32) (CoinPerKilobyte, error) {
 		ef.cached = ef.estimates()
 	}
 
-	return ef.cached[int(numBlocks)-1], nil
+	result := ef.cached[int(numBlocks)-1]
+	return result, nil
 }
 
 // In case the format for the serialized version of the feeEstimator changes,

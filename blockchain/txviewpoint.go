@@ -105,7 +105,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.Datab
 
 		snD := item.CoinDetails.SNDerivator
 		ok, err = db.HasSNDerivator(*snD, chainID)
-		if !ok && err != nil {
+		if !ok && err == nil {
 			acceptedSnD = append(acceptedSnD, *snD)
 		}
 	}
@@ -116,8 +116,8 @@ func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.Datab
 fetchTxViewPointFromBlock get list nullifiers and commitments from txs in block and check if they are not in Main chain db
 return a tx view point which contains list new nullifiers and new commitments from block
 */
-func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface, block *BlockV2) error {
-	transactions := block.Body.(*BlockBodyShard).Transactions
+func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock) error {
+	transactions := block.Body.Transactions
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedSerialNumbers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
@@ -128,7 +128,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		case common.TxNormalType:
 			{
 				normalTx := tx.(*transaction.Tx)
-				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.(*BlockHeaderShard).ShardID, db, normalTx.Proof)
+				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.ShardID, db, normalTx.Proof)
 				acceptedSerialNumbers = append(acceptedSerialNumbers, temp1...)
 				for pubkey, data := range temp2 {
 					if acceptedCommitments[pubkey] == nil {
@@ -150,7 +150,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		case common.TxSalaryType:
 			{
 				normalTx := tx.(*transaction.Tx)
-				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.(*BlockHeaderShard).ShardID, db, normalTx.Proof)
+				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.ShardID, db, normalTx.Proof)
 				acceptedSerialNumbers = append(acceptedSerialNumbers, temp1...)
 				for pubkey, data := range temp2 {
 					if acceptedCommitments[pubkey] == nil {
@@ -172,7 +172,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		case common.TxCustomTokenType:
 			{
 				tx := tx.(*transaction.TxCustomToken)
-				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.(*BlockHeaderShard).ShardID, db, tx.Proof)
+				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.ShardID, db, tx.Proof)
 				acceptedSerialNumbers = append(acceptedSerialNumbers, temp1...)
 				for pubkey, data := range temp2 {
 					if acceptedCommitments[pubkey] == nil {

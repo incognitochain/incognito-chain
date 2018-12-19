@@ -13,9 +13,7 @@ const (
 )
 
 type MessageBFTPropose struct {
-	AggregatedSig    string
-	ValidatorsIdx    []int
-	Block            blockchain.BlockV2
+	Block            blockchain.BlockInterface
 	MsgSig           string
 	IntendedReceiver string
 }

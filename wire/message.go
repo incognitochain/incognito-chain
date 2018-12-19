@@ -15,7 +15,10 @@ const (
 	MessageHeaderSize  = 24
 	MessageCmdTypeSize = 12
 
-	CmdBlock              = "block"
+	CmdBlockShard         = "blockshard"
+	CmdBlockBeacon        = "blockbeacon"
+	CmdCrossShard         = "blockshard"
+	CmdBlkShardToBeacon   = "blkshdtobcn"
 	CmdTx                 = "tx"
 	CmdRegisteration      = "registeration"
 	CmdCustomToken        = "txtoken"
@@ -72,8 +75,17 @@ type Message interface {
 func MakeEmptyMessage(messageType string) (Message, error) {
 	var msg Message
 	switch messageType {
-	case CmdBlock:
-		msg = &MessageBlock{}
+	case CmdBlockBeacon:
+		msg = &MessageBlockBeacon{}
+		break
+	case CmdBlockShard:
+		msg = &MessageBlockShard{}
+		break
+	case CmdCrossShard:
+		msg = &MessageCrossShard{}
+		break
+	case CmdBlkShardToBeacon:
+		msg = &MessageShardToBeacon{}
 		break
 	case CmdCustomToken:
 		msg = &MessageTx{

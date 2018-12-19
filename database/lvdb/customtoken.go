@@ -10,7 +10,6 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"github.com/ninjadotorg/constant/privacy-protocol/client"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -65,74 +64,6 @@ func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
 	iter.Release()
 	return result, nil
 }
-
-/*
-	Key: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
-  H: value-spent/unspent-rewarded/unreward
-*/
-// TODO(@0xsirrush): use/update this method?
-/*func (db *db) StoreCustomTokenPaymentAddressHistory(tokenID *common.Hash, tx *transaction.TxCustomToken) error {
-	tokenKey := TokenPaymentAddressPrefix
-	tokenKey = append(tokenKey, Splitter...)
-	tokenKey = append(tokenKey, (*tokenID)[:]...)
-	for _, vin := range tx.TxTokenData.Vins {
-		paymentAddressPubkey := vin.PaymentAddress.Pk
-		utxoHash := &vin.TxCustomTokenID
-		voutIndex := vin.VoutIndex
-		paymentAddressKey := tokenKey
-		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, paymentAddressPubkey...)
-		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
-		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
-		_, err := db.HasValue(paymentAddressKey)
-		if err != nil {
-			return err
-		}
-		value, err := db.Get(paymentAddressKey)
-		if err != nil {
-			return err
-		}
-		// old value: {value}-unspent-unreward/reward
-		values := strings.Split(string(value), string(Splitter))
-		if strings.Compare(values[1], string(Unspent)) != 0 {
-			return errors.Zero("Double Spend Detected")
-		}
-		// new value: {value}-spent-unreward/reward
-		newValues := values[0] + string(Splitter) + string(Spent) + string(Splitter) + values[2]
-		if err := db.Put(paymentAddressKey, []byte(newValues)); err != nil {
-			return err
-		}
-	}
-	for _, vout := range tx.TxTokenData.Vouts {
-		paymentAddressPubkey := vout.PaymentAddress.Pk
-		utxoHash := tx.Hash()
-		voutIndex := vout.GetIndex()
-		value := vout.Value
-		paymentAddressKey := tokenKey
-		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, paymentAddressPubkey...)
-		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
-		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
-		ok, err := db.HasValue(paymentAddressKey)
-		// Vout already exist
-		if ok {
-			return errors.Zero("UTXO already exist")
-		}
-		if err != nil {
-			return err
-		}
-		// init value: {value}-unspent-unreward
-		paymentAddressValue := strconv.Itoa(int(value)) + string(Splitter) + string(Unspent) + string(Splitter) + string(Unreward)
-		if err := db.Put(paymentAddressKey, []byte(paymentAddressValue)); err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
 
 /*
 	Return a list of all address with balance > 0
@@ -206,9 +137,9 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 	VoteAmount: a list of utxo
 	Each utxo consist of two part: txHash-index
 */
-func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[client.PaymentAddress][][]byte, error) {
+/*func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[privacy.PaymentAddress][][]byte, error) {
 
-	results := make(map[client.PaymentAddress][][]byte)
+	results := make(map[privacy.PaymentAddress][][]byte)
 	prefix := TokenPaymentAddressPrefix
 	prefix = append(prefix, Splitter...)
 	prefix = append(prefix, (*tokenID)[:]...)
@@ -220,7 +151,7 @@ func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[client.P
 		values := strings.Split(value, string(Splitter))
 		// get unspent and unreward transaction output
 		if (strings.Compare(values[1], string(Unspent)) == 0) && (strings.Compare(values[2], string(Unreward)) == 0) {
-			paymentAddress := client.PaymentAddress{}
+			paymentAddress := privacy.PaymentAddress{}
 			paymentAddress.FromBytes([]byte(keys[2]))
 			utxo := keys[4] + string(Splitter) + keys[5]
 			//utxo := append([]byte(keys[4]), []byte(keys[5])[:]...)
@@ -229,7 +160,7 @@ func (db *db) GetCustomTokenListUnrewardUTXO(tokenID *common.Hash) (map[client.P
 	}
 	iter.Release()
 	return results, nil
-}
+}*/
 
 /*
 	Get a list of UTXO of one address

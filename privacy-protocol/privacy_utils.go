@@ -92,16 +92,22 @@ func ConvertIntToBinary(inum int, n int) []byte {
 func getindex(bigint *big.Int, stableSz int) int {
 	return  stableSz - len(bigint.Bytes())
 }
-func PadBigInt(fckBigInt *big.Int, stableSz int) []byte{
-	idx:=getindex(fckBigInt,stableSz)
-	paddedBig:=make([]byte, stableSz)
-	for i:=0;i<idx;i++{
-		paddedBig[i] = byte(0x00)
+func AddPaddingBigInt(numInt *big.Int, fixedSize int) []byte{
+	//idx:=getindex(numInt, fixedSize)
+	//paddedBig:=make([]byte, fixedSize)
+	//
+	//for i:=idx;i< fixedSize;i++{
+	//	paddedBig[i] = numInt.Bytes()[i-idx]
+	//}
+	//return paddedBig
+
+	numBytes := numInt.Bytes()
+	lenNumBytes := len(numBytes)
+
+	for i := 0; i < fixedSize - lenNumBytes; i++ {
+		numBytes = append([]byte{0}, numBytes...)
 	}
-	for i:=idx;i<stableSz;i++{
-		paddedBig[i] = fckBigInt.Bytes()[i-idx]
-	}
-	return paddedBig
+	return numBytes
 }
 
 func IntToByteArr(n int) []byte{

@@ -61,7 +61,7 @@ func CreateTxSalary(
 	// create coin commitment
 	tx.Proof.OutputCoins[0].CoinDetails.CommitAll()
 	// get last byte
-	tx.Proof.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
+	tx.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
 
 	// sign Tx
 	tx.SigPubKey = receiverAddr.Pk
@@ -71,6 +71,9 @@ func CreateTxSalary(
 		return nil, err
 	}
 
+	if len(tx.Proof.InputCoins) > 0 {
+		fmt.Println(11111)
+	}
 	return tx, nil
 }
 

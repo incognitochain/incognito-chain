@@ -8,8 +8,8 @@ func CreateShardGenesisBlock(
 	icoParams IcoParams,
 	salaryPerTx uint64,
 	basicSalary uint64,
-) *BlockV2 {
-	var shardGenesis *BlockV2
+) *ShardBlock {
+	var shardGenesis *ShardBlock
 
 	return shardGenesis
 }

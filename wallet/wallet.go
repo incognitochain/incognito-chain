@@ -92,6 +92,7 @@ func (self *Wallet) RemoveAccount(privateKeyStr string, accountName string, pass
 	for i, account := range self.MasterAccount.Child {
 		if account.Key.Base58CheckSerialize(PriKeyType) == privateKeyStr {
 			self.MasterAccount.Child = append(self.MasterAccount.Child[:i], self.MasterAccount.Child[i+1:]...)
+			self.Save(passPhrase)
 			return nil
 		}
 	}

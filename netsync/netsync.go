@@ -32,7 +32,6 @@ type NetSyncConfig struct {
 		PushMessageToAll(wire.Message) error
 	}
 	Consensus interface {
-		OnBlockReceived(*blockchain.BlockV2)
 		OnBFTPropose(*wire.MessageBFTPropose)
 		OnBFTPrepare(*wire.MessageBFTPrepare)
 		OnBFTCommit(*wire.MessageBFTCommit)
@@ -97,9 +96,21 @@ out:
 						//	{
 						//		self.HandleMessageRegisteration(msg)
 						//	}
-					case *wire.MessageBlock:
+					case *wire.MessageBlockBeacon:
 						{
-							self.HandleMessageBlock(msg)
+							self.HandleMessageBlockBeacon(msg)
+						}
+					case *wire.MessageBlockShard:
+						{
+							self.HandleMessageBlockShard(msg)
+						}
+					case *wire.MessageCrossShard:
+						{
+							self.HandleMessageCrossShard(msg)
+						}
+					case *wire.MessageShardToBeacon:
+						{
+							self.HandleMessageShardToBeacon(msg)
 						}
 					case *wire.MessageGetBlocks:
 						{
@@ -302,9 +313,21 @@ func (self *NetSync) HandleMessageGetBlocks(msg *wire.MessageGetBlocks) {
 	// }
 }
 
-func (self *NetSync) HandleMessageBlock(msg *wire.MessageBlock) {
-	Logger.log.Info("Handling new message BlockSig")
+func (self *NetSync) HandleMessageBlockBeacon(msg *wire.MessageBlockBeacon) {
+	Logger.log.Info("Handling new message BlockBeacon")
 	self.config.Consensus.OnBlockReceived(&msg.Block)
+}
+func (self *NetSync) HandleMessageBlockShard(msg *wire.MessageBlockShard) {
+	Logger.log.Info("Handling new message BlockShard")
+	self.config.Consensus.OnBlockReceived(&msg.Block)
+}
+func (self *NetSync) HandleMessageCrossShard(msg *wire.MessageCrossShard) {
+	Logger.log.Info("Handling new message CrossShard")
+	// self.config.Consensus.OnBlockReceived(&msg.Block)
+}
+func (self *NetSync) HandleMessageShardToBeacon(msg *wire.MessageShardToBeacon) {
+	Logger.log.Info("Handling new message ShardToBeacon")
+	//ToDo send to blockpool for process
 }
 
 func (self *NetSync) HandleMessageBFTPropose(msg *wire.MessageBFTPropose) {

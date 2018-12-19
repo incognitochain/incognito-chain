@@ -16,10 +16,10 @@ type Params struct {
 	DefaultPort string
 	ShardsNum   int //max 256 shards
 	// GenesisBlock defines the first block of the chain.
-	GenesisBlockBeacon *BlockV2
+	GenesisBlockBeacon *BeaconBlock
 
 	// GenesisBlock defines the first block of the chain.
-	GenesisBlockShard *BlockV2
+	GenesisBlockShard *ShardBlock
 }
 
 var preSelectBeaconNodeTestnetSerializedPubkey = []string{

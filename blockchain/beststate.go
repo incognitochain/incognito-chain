@@ -13,24 +13,36 @@ import (
 // the caller when chain state changes occur as the function name implies.
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
-type BestStateNew struct {
+type BestState struct {
 	Beacon *BestStateBeacon
 	Shard  map[byte]*BestStateShard
 }
 
 type BestStateBeacon struct {
-	BestBlockHash common.Hash // The hash of the block.
-	BestBlock     *BlockV2    // The block.
+	BestBlockHash common.Hash  // The hash of the block.
+	BestBlock     *BeaconBlock // The block.
 	BestShardHash []common.Hash
 
-	BeaconHeight           uint64
-	BeaconCandidate        []string
-	BeaconPendingCandidate []string
-	ShardCommittee         map[byte][]string
-	ShardPendingValidator  map[byte][]string
+	BeaconHeight uint64
 
-	UnassignBeaconCandidate []string
-	UnassignShardCandidate  []string
+	BeaconCommittee        []string
+	BeaconPendingCommittee []string
+
+	// assigned candidate
+	CandidateShardWaitingForCurrentRandom  []string
+	CandidateBeaconWaitingForCurrentRandom []string
+
+	// assigned candidate
+	CandidateShardWaitingForNextRandom  []string
+	CandidateBeaconWaitingForNextRandom []string
+
+	// validator of shards
+	ShardCommittee map[byte][]string
+	// pending validator of shards
+	ShardPendingValidator map[byte][]string
+
+	// UnassignBeaconCandidate []string
+	// UnassignShardCandidate  []string
 
 	CurrentRandomNumber int64
 	NextRandomNumber    int64
@@ -40,7 +52,7 @@ type BestStateBeacon struct {
 
 type BestStateShard struct {
 	BestBlockHash common.Hash // The hash of the block.
-	BestBlock     *BlockV2    // The block.
+	BestBlock     *ShardBlock // The block.
 
 	ShardCommittee        []string
 	ShardPendingValidator []string
@@ -53,12 +65,12 @@ Init create a beststate data from block and commitment tree
 */
 // #1 - block
 // #2 - commitment merkle tree
-func (self *BestStateBeacon) Init(block *BlockV2) {
+func (self *BestStateBeacon) Init(block *BeaconBlock) {
 	self.BestBlock = block
 	self.BestBlockHash = *block.Hash()
 }
 
-func (self *BestStateBeacon) Update(block *BlockV2) error {
+func (self *BestStateBeacon) Update(block *BeaconBlock) error {
 
 	self.BestBlock = block
 	self.BestBlockHash = *block.Hash()
@@ -66,22 +78,22 @@ func (self *BestStateBeacon) Update(block *BlockV2) error {
 	return nil
 }
 
-func (self *BestStateShard) Init(block *BlockV2) {
+func (self *BestStateShard) Init(block *ShardBlock) {
 
 	self.BestBlock = block
 	self.BestBlockHash = *block.Hash()
 
 	// self.  += uint64(len(block.Transactions))
-	self.NumTxns = uint64(len(block.Body.(*BlockBodyShard).Transactions))
+	self.NumTxns = uint64(len(block.Body.Transactions))
 	self.TotalTxns = self.NumTxns
 }
 
-func (self *BestStateShard) Update(block *BlockV2) error {
+func (self *BestStateShard) Update(block *ShardBlock) error {
 
 	self.BestBlock = block
 	self.BestBlockHash = *block.Hash()
 
-	self.TotalTxns += uint64(len(block.Body.(*BlockBodyShard).Transactions))
-	self.NumTxns = uint64(len(block.Body.(*BlockBodyShard).Transactions))
+	self.TotalTxns += uint64(len(block.Body.Transactions))
+	self.NumTxns = uint64(len(block.Body.Transactions))
 	return nil
 }

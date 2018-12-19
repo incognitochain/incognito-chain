@@ -10,20 +10,20 @@ import (
 	"github.com/ninjadotorg/constant/wire"
 )
 
-type BlockGenFn func() *blockchain.BlockV2
+type BlockShardGenFn func() *blockchain.ShardBlock
+type BlockBeaconGenFn func() *blockchain.BeaconBlock
 
 type BFTProtocol struct {
 	sync.Mutex
-	Phase        string
-	cQuit        chan struct{}
-	cTimeout     chan struct{}
-	cBFTMsg      chan wire.Message
-	BlockGenFn   BlockGenFn
-	Server       serverInterface
-	PendingBlock struct {
-		Block *blockchain.BlockV2
-		Sigs  map[string]blockFinalSig
+	Phase    string
+	cQuit    chan struct{}
+	cTimeout chan struct{}
+	cBFTMsg  chan wire.Message
+	BlockGen struct {
+		Layer  BlockShardGenFn
+		Beacon BlockBeaconGenFn
 	}
+	Server serverInterface
 
 	started bool
 }
@@ -50,7 +50,7 @@ func (self *BFTProtocol) Start() error {
 			default:
 				switch self.Phase {
 				case "propose":
-					newBlock := self.BlockGenFn()
+					newBlock := self.BlockGen.Layer()
 					fmt.Println(newBlock)
 				case "listen":
 					time.AfterFunc(ListenTimeout*time.Second, func() {
