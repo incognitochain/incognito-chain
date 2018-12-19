@@ -1334,6 +1334,7 @@ func (self BlockChain) CheckSNDerivatorExistence(snd *big.Int, shardID byte) (bo
 }
 
 // GetFeePerKbTx - return fee (per kb of tx) from GOV params data
-// func (self BlockChain) GetFeePerKbTx() uint64 {
-// 	return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
-// }
+func (self BlockChain) GetFeePerKbTx() uint64 {
+	// return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
+	return 0
+}

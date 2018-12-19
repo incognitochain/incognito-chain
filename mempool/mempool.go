@@ -101,7 +101,7 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 	// Record this tx for fee estimation if enabled. only apply for normal tx
 	if tx.GetType() == common.TxNormalType {
 		if tp.config.FeeEstimator != nil {
-			shardID, err := common.GetTxSenderChain(tx.(*transaction.Tx).Proof.PubKeyLastByteSender)
+			shardID, err := common.GetTxSenderChain(tx.(*transaction.Tx).PubKeyLastByteSender)
 			if err == nil {
 				tp.config.FeeEstimator[shardID].ObserveTransaction(txD)
 			} else {
