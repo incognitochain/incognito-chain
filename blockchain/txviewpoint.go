@@ -17,7 +17,6 @@ type TxViewPoint struct {
 	tokenID           *common.Hash
 	chainID           byte
 	listSerialNumbers [][]byte // array serialNumbers
-	listCommitments   [][]byte
 	listSnD           []big.Int
 	mapCommitments    map[string][][]byte //map[base58check.encode{pubkey}]([]([]byte-commitment))
 	mapOutputCoins    map[string][]privacy.OutputCoin
@@ -27,9 +26,6 @@ type TxViewPoint struct {
 
 	// data of privacy custom token
 	privacyCustomTokenTxs map[common.Hash]*TxViewPoint
-
-	// hash of best block in current
-	currentBestBlockHash common.Hash
 }
 
 /*
@@ -38,14 +34,6 @@ ListSerialNumbers returns list nullifers which is contained in TxViewPoint
 // #1: joinSplitDescType is "Coin" Or "Bond" or other token
 func (view *TxViewPoint) ListSerialNumbers() [][]byte {
 	return view.listSerialNumbers
-}
-
-/*
-ListCommitments returns list commitments which is contained in TxViewPoint
-*/
-// #1: joinSplitDescType is "Coin" Or "Bond"
-func (view *TxViewPoint) ListCommitments() [][]byte {
-	return view.listCommitments
 }
 
 func (view *TxViewPoint) ListSnDerivators() []big.Int {
@@ -60,14 +48,6 @@ func (view *TxViewPoint) ListSerialNumnbersEclipsePoint() []*privacy.EllipticPoi
 		result = append(result, point)
 	}
 	return result
-}
-
-/*
-CurrentBestBlockHash returns the hash of the best block in the chain the view currently
-represents.
-*/
-func (view *TxViewPoint) CurrentBestBlockHash() *common.Hash {
-	return &view.currentBestBlockHash
 }
 
 // fetch from desc of tx to get nullifiers and commitments
@@ -136,6 +116,9 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 			{
 				normalTx := tx.(*transaction.Tx)
 				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ChainID, db, normalTx.Proof, constantTolenID)
+				if err != nil {
+					return NewBlockChainError(UnExpectedError, err)
+				}
 				acceptedSerialNumbers = append(acceptedSerialNumbers, serialNumbers...)
 				for pubkey, data := range commitments {
 					if acceptedCommitments[pubkey] == nil {
@@ -150,14 +133,14 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
 				}
 				acceptedSnD = append(acceptedSnD, snDs...)
-				if err != nil {
-					return NewBlockChainError(UnExpectedError, err)
-				}
 			}
 		case common.TxSalaryType:
 			{
 				normalTx := tx.(*transaction.Tx)
 				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ChainID, db, normalTx.Proof, constantTolenID)
+				if err != nil {
+					return NewBlockChainError(UnExpectedError, err)
+				}
 				acceptedSerialNumbers = append(acceptedSerialNumbers, serialNumbers...)
 				for pubkey, data := range commitments {
 					if acceptedCommitments[pubkey] == nil {
@@ -172,14 +155,14 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
 				}
 				acceptedSnD = append(acceptedSnD, snDs...)
-				if err != nil {
-					return NewBlockChainError(UnExpectedError, err)
-				}
 			}
 		case common.TxCustomTokenType:
 			{
 				tx := tx.(*transaction.TxCustomToken)
 				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ChainID, db, tx.Proof, constantTolenID)
+				if err != nil {
+					return NewBlockChainError(UnExpectedError, err)
+				}
 				acceptedSerialNumbers = append(acceptedSerialNumbers, serialNumbers...)
 				for pubkey, data := range commitments {
 					if acceptedCommitments[pubkey] == nil {
@@ -194,15 +177,15 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
 				}
 				acceptedSnD = append(acceptedSnD, snDs...)
-				if err != nil {
-					return NewBlockChainError(UnExpectedError, err)
-				}
 				view.customTokenTxs[int32(indexTx)] = tx
 			}
 		case common.TxCustomTokenPrivacyType:
 			{
 				tx := tx.(*transaction.TxCustomTokenPrivacy)
 				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ChainID, db, tx.Proof, constantTolenID)
+				if err != nil {
+					return NewBlockChainError(UnExpectedError, err)
+				}
 				acceptedSerialNumbers = append(acceptedSerialNumbers, serialNumbers...)
 				for pubkey, data := range commitments {
 					if acceptedCommitments[pubkey] == nil {
@@ -221,9 +204,31 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					return NewBlockChainError(UnExpectedError, err)
 				}
 
+				// sub view for privacy custom token
 				subView := NewTxViewPoint(block.Header.ChainID)
 				subView.tokenID = &tx.TxTokenPrivacyData.PropertyID
-
+				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPoint(subView.chainID, db, tx.TxTokenPrivacyData.TxNormal.Proof, subView.tokenID)
+				if errP != nil {
+					return NewBlockChainError(UnExpectedError, errP)
+				}
+				subView.listSerialNumbers = serialNumbersP
+				for pubkey, data := range commitmentsP {
+					if subView.mapCommitments[pubkey] == nil {
+						subView.mapCommitments[pubkey] = make([][]byte, 0)
+					}
+					subView.mapCommitments[pubkey] = append(subView.mapCommitments[pubkey], data...)
+				}
+				for pubkey, data := range outCoinsP {
+					if subView.mapOutputCoins[pubkey] == nil {
+						subView.mapOutputCoins[pubkey] = make([]privacy.OutputCoin, 0)
+					}
+					subView.mapOutputCoins[pubkey] = append(subView.mapOutputCoins[pubkey], data...)
+				}
+				subView.listSnD = append(subView.listSnD, snDsP...)
+				if err != nil {
+					return NewBlockChainError(UnExpectedError, err)
+				}
+				view.privacyCustomTokenTxs[*tx.Hash()] = subView
 			}
 		default:
 			{
@@ -252,14 +257,14 @@ Create a TxNormal view point, which contains data about nullifiers and commitmen
 */
 func NewTxViewPoint(chainId byte) *TxViewPoint {
 	result := &TxViewPoint{
-		chainID:           chainId,
-		listSerialNumbers: make([][]byte, 0),
-		listCommitments:   make([][]byte, 0),
-		mapCommitments:    make(map[string][][]byte, 0),
-		mapOutputCoins:    make(map[string][]privacy.OutputCoin, 0),
-		listSnD:           make([]big.Int, 0),
-		customTokenTxs:    make(map[int32]*transaction.TxCustomToken, 0),
-		tokenID:           &common.Hash{},
+		chainID:               chainId,
+		listSerialNumbers:     make([][]byte, 0),
+		mapCommitments:        make(map[string][][]byte, 0),
+		mapOutputCoins:        make(map[string][]privacy.OutputCoin, 0),
+		listSnD:               make([]big.Int, 0),
+		customTokenTxs:        make(map[int32]*transaction.TxCustomToken, 0),
+		tokenID:               &common.Hash{},
+		privacyCustomTokenTxs: make(map[common.Hash]*TxViewPoint),
 	}
 	result.tokenID.SetBytes(common.ConstantID[:])
 	return result
