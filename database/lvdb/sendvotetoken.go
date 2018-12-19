@@ -8,7 +8,7 @@ import (
 )
 
 func (db *db) SendInitDCBVoteToken(startedBlock uint32, pubKey []byte, amount uint64) error {
-	key := db.GetKey(string(DCBVoteTokenAmountPrefix), string(startedBlock)+string(pubKey))
+	key := GetDCBVoteTokenAmountKey(startedBlock, pubKey)
 	ok, err := db.HasValue(key)
 	if err != nil {
 		return err
@@ -34,7 +34,7 @@ func (db *db) SendInitDCBVoteToken(startedBlock uint32, pubKey []byte, amount ui
 }
 
 func (db *db) SendInitGOVVoteToken(startedBlock uint32, pubKey []byte, amount uint64) error {
-	key := db.GetKey(string(GOVVoteTokenAmountPrefix), string(startedBlock)+string(pubKey))
+	key := GetGOVVoteTokenAmountKey(startedBlock, pubKey)
 	ok, err := db.HasValue(key)
 	if err != nil {
 		return err

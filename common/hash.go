@@ -62,9 +62,12 @@ func (hash *Hash) SetBytes(newHash []byte) error {
 
 	return nil
 }
+func (hash *Hash) GetBytes() []byte {
+	return hash[:]
+}
 
 // BytesToHash sets b to hash If b is larger than len(h), b will be cropped from the left.
-func (hash *Hash) BytesToHash(b []byte) Hash {
+func NewHash(b []byte) Hash {
 	var h Hash
 	h.SetBytes(b)
 	return h
@@ -144,7 +147,6 @@ func (self *Hash) Decode(dst *Hash, src string) error {
 	return nil
 }
 
-
 // Cmp compare two hash
 // hash = target : return 0
 // hash > target : return 1
@@ -160,4 +162,3 @@ func (hash *Hash) Cmp(target *Hash) int {
 	}
 	return 0
 }
-

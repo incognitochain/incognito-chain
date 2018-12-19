@@ -20,6 +20,7 @@ const (
 	IssuingRequestMeta
 	IssuingResponseMeta
 	ContractingRequestMeta
+	OracleFeedMeta
 	DividendMeta
 
 	CrowdsaleRequestMeta

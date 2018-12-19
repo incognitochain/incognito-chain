@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"math/big"
+	"github.com/ninjadotorg/constant/privacy-protocol"
 )
 
 func main() {
@@ -352,15 +352,26 @@ func main() {
 
 	//fmt.Println(zkp.EstimateMultiRangeProof(10))
 
-	a := new(big.Int).SetUint64(10)
-	//b := new(big.Int).SetBytes(a.Bytes())
-	b := new(big.Int).Set(a)
+	for true{
+		point := new(privacy.EllipticPoint)
+		point.Randomize()
 
-	fmt.Printf("a before: %v\n", a)
-	fmt.Printf("b before: %v\n", b)
+		bytes := point.Compress()
+		fmt.Println("Running!!!!")
 
-	a = a.Add(a, big.NewInt(10))
+		point2 := new(privacy.EllipticPoint)
+		err := point2.Decompress(bytes)
 
-	fmt.Printf("a after: %v\n", a)
-	fmt.Printf("b after: %v\n", b)
+		if err != nil{
+			fmt.Println(err)
+			break
+		}
+
+		if !point.IsEqual(point2){
+			break
+		}
+
+	}
+
+
 }

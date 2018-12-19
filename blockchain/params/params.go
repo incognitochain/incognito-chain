@@ -26,11 +26,12 @@ type DCBParams struct {
 }
 
 type GOVParams struct {
-	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
-	BasicSalary  uint64 // basic salary per block(mili constant)
-	FeePerKbTx   uint64
-	SellingBonds *voting.SellingBonds
-	RefundInfo   *voting.RefundInfo
+	SalaryPerTx   uint64 // salary for each tx in block(mili constant)
+	BasicSalary   uint64 // basic salary per block(mili constant)
+	FeePerKbTx    uint64
+	SellingBonds  *voting.SellingBonds
+	RefundInfo    *voting.RefundInfo
+	OracleNetwork *voting.OracleNetwork
 }
 
 func (dcbParams *DCBParams) Hash() *common.Hash {
@@ -52,6 +53,7 @@ func (govParams *GOVParams) Hash() *common.Hash {
 	record += string(govParams.FeePerKbTx)
 	record += string(common.ToBytes(*govParams.SellingBonds.Hash()))
 	record += string(common.ToBytes(*govParams.RefundInfo.Hash()))
+	record += string(common.ToBytes(*govParams.OracleNetwork.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

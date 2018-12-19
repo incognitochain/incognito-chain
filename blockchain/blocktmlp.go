@@ -25,11 +25,13 @@ type BlkTmplGenerator struct {
 }
 
 type ConstitutionHelper interface {
-	GetStartedNormalVote(generator *BlkTmplGenerator, chainID byte) int32
+	GetStartedNormalVote(generator *BlkTmplGenerator, chainID byte) uint32
 	CheckSubmitProposalType(tx metadata.Transaction) bool
 	CheckVotingProposalType(tx metadata.Transaction) bool
 	GetAmountVoteToken(tx metadata.Transaction) uint64
-	TxAcceptProposal(originTx metadata.Transaction) metadata.Transaction
+	TxAcceptProposal(txId *common.Hash) metadata.Transaction
+	GetLowerCaseBoardType() string
+	GetEndedBlockHeight(generator *BlkTmplGenerator, chainID byte) uint32
 }
 
 // txPool represents a source of transactions to consider for inclusion in
@@ -102,7 +104,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(chainID)
 	// Get basic salary on block
 	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
-	currentBlockHeight := prevBlock.Header.Height + 1
+	currentBlockHeight := uint32(prevBlock.Header.Height + 1)
 
 	if len(sourceTxns) < common.MinTxsInBlock {
 		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
@@ -483,7 +485,7 @@ func (blockgen *BlkTmplGenerator) neededNewDCBConstitution(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	lastDCBConstitution := BestBlock.Header.DCBConstitution
 	if GetOracleDCBNationalWelfare() < lastDCBConstitution.CurrentDCBNationalWelfare*ThresholdRatioOfDCBCrisis/100 ||
-		BestBlock.Header.Height+1 == lastDCBConstitution.StartedBlockHeight+lastDCBConstitution.ExecuteDuration {
+		uint32(BestBlock.Header.Height+1) == lastDCBConstitution.StartedBlockHeight+lastDCBConstitution.ExecuteDuration {
 		return true
 	}
 	return false
@@ -492,13 +494,13 @@ func (blockgen *BlkTmplGenerator) neededNewGOVConstitution(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	lastGovConstitution := BestBlock.Header.GOVConstitution
 	if GetOracleGOVNationalWelfare() < lastGovConstitution.CurrentGOVNationalWelfare*ThresholdRatioOfGovCrisis/100 ||
-		BestBlock.Header.Height+1 == lastGovConstitution.StartedBlockHeight+lastGovConstitution.ExecuteDuration {
+		uint32(BestBlock.Header.Height+1) == lastGovConstitution.StartedBlockHeight+lastGovConstitution.ExecuteDuration {
 		return true
 	}
 	return false
 }
 
-func (blockgen *BlkTmplGenerator) createRequestConstitutionTxDecs(
+func (blockgen *BlkTmplGenerator) createAcceptConstitutionTxDecs(
 	chainID byte,
 	ConstitutionHelper ConstitutionHelper,
 ) (*metadata.TxDesc, error) {
@@ -507,9 +509,9 @@ func (blockgen *BlkTmplGenerator) createRequestConstitutionTxDecs(
 	// count vote from lastConstitution.StartedBlockHeight to Bestblock height
 	CountVote := make(map[common.Hash]int64)
 	Transaction := make(map[common.Hash]*metadata.Transaction)
-	for blockHeight := ConstitutionHelper.GetStartedNormalVote(blockgen, chainID); blockHeight < BestBlock.Header.Height; blockHeight += 1 {
+	for blockHeight := ConstitutionHelper.GetStartedNormalVote(blockgen, chainID); blockHeight < uint32(BestBlock.Header.Height); blockHeight += 1 {
 		//retrieve block from block's height
-		hashBlock, err := blockgen.chain.config.DataBase.GetBlockByIndex(blockHeight, chainID)
+		hashBlock, err := blockgen.chain.config.DataBase.GetBlockByIndex(int32(blockHeight), chainID)
 		if err != nil {
 			return nil, err
 		}
@@ -552,7 +554,7 @@ func (blockgen *BlkTmplGenerator) createRequestConstitutionTxDecs(
 		}
 	}
 
-	acceptedSubmitProposalTransaction := ConstitutionHelper.TxAcceptProposal(*Transaction[res])
+	acceptedSubmitProposalTransaction := ConstitutionHelper.TxAcceptProposal(&res)
 
 	AcceptedTransactionDesc := metadata.TxDesc{
 		Tx:     acceptedSubmitProposalTransaction,

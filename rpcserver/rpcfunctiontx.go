@@ -126,14 +126,20 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 	}
 
 	// param #3: estimation fee nano constant per kb
-	estimateFeeCoinPerKb := uint64(arrayParams[2].(float64))
+	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
 
 	// param #4: estimation fee coin per kb by numblock
 	numBlock := uint64(arrayParams[3].(float64))
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender)
+	outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	if len(outCoins) == 0 {
+		return nil, NewRPCError(ErrUnexpected, nil)
+	}
 	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, note := range outCoins {
 		amount := note.CoinDetails.Value
