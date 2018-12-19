@@ -12,10 +12,10 @@ import (
 // 	pool []blockchain.ShardToBeaconBlock
 // }
 
-var pLock sync.RWMutex
+var beaconPoolLock sync.RWMutex
 var beaconPool = map[byte]map[uint64][]blockchain.ShardToBeaconBlock{}
 
-func AddBlock(newBlock blockchain.ShardToBeaconBlock) error {
+func AddBeaconBlock(newBlock blockchain.ShardToBeaconBlock) error {
 
 	blockHeader := newBlock.Header
 	ShardID := blockHeader.ShardID
@@ -27,7 +27,7 @@ func AddBlock(newBlock blockchain.ShardToBeaconBlock) error {
 		return errors.New("Invalid Block Heght")
 	}
 
-	pLock.Lock()
+	beaconPoolLock.Lock()
 	// TODO validate block pool item
 	beaconPoolShardItem, ok := beaconPool[ShardID]
 	if beaconPoolShardItem == nil || !ok {
@@ -38,45 +38,59 @@ func AddBlock(newBlock blockchain.ShardToBeaconBlock) error {
 	if len(items) <= 0 || !ok {
 		items = []blockchain.ShardToBeaconBlock{}
 	}
-	items = items.append(newBlock)
+	items = append(items, newBlock)
 	beaconPoolShardItem[Height] = items
 
-	beaconPool[ShardID] = beaconPoolShardItem)
-	pLock.Unlock()
+	beaconPool[ShardID] = beaconPoolShardItem
+	beaconPoolLock.Unlock()
+
+	// TODO validate pool
 
 	return nil
 }
 
-func GetBlock(ShardId byte, BlockHeight uint64) (blockchain.ShardToBeaconBlock, error){
-	var result blockchain.ShardToBeaconBlock
+func GetBeaconBlock(ShardId byte, BlockHeight uint64) (blockchain.ShardToBeaconBlock, error) {
+	result := blockchain.ShardToBeaconBlock{}
 	if ShardId < 0 || BlockHeight < 0 {
-		return nil, errors.New("Invalid Shard ID or Block Heght")
+		return blockchain.ShardToBeaconBlock{}, errors.New("Invalid Shard ID or Block Heght")
 	}
 	shardItems, ok := beaconPool[ShardId]
 	if shardItems == nil || !ok {
-		return nil, errors.New("Shard not exist")
+		return blockchain.ShardToBeaconBlock{}, errors.New("Shard not exist")
 	}
-	blocks, ok := shardItems[Height]
+	blocks, ok := shardItems[BlockHeight]
 	if blocks == nil || len(blocks) <= 0 || !ok {
-		return nil, errors.New("Block not exist")
+		return blockchain.ShardToBeaconBlock{}, errors.New("Block not exist")
 	}
 
 	result = blocks[0]
 	return result, nil
 }
 
-func RemoveBlock() error {
+func RemoveBeaconBlock() error {
 	// TODO check condition for remove block
 	return nil
 }
 
-func GetAllBlocks() ([]blockchain.ShardShardToBeaconBlock, error){
-	results := []blockchain.ShardShardToBeaconBlock
-
+func GetAllBeaconBlocks() ([]blockchain.ShardToBeaconBlock, error) {
+	results := []blockchain.ShardToBeaconBlock{}
+	for _, shards := range beaconPool {
+		if shards == nil {
+			continue
+		}
+		for _, items := range shards {
+			results = append(results, items...)
+		}
+	}
 	return results, nil
 }
 
-func ValidateBlock() bool {
+func ValidateBeaconBlock() bool {
 	// TODO validate block
 	return true
+}
+
+func ReviseBeaconPool(blockchain.ShardToBeaconBlock) error {
+	// TODO validate all block with same height
+	return nil
 }
