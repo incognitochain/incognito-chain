@@ -38,10 +38,6 @@ func (self MessageBlockShard) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (self *MessageBlockShard) SetIntendedReceiver(_ string) error {
-	return nil
-}
-
 func (self *MessageBlockShard) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }

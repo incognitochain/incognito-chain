@@ -36,9 +36,6 @@ func (self MessagePing) JsonDeserialize(jsonStr string) error {
 func (self MessagePing) SetSenderID(senderID peer.ID) error {
 	return nil
 }
-func (self *MessagePing) SetIntendedReceiver(_ string) error {
-	return nil
-}
 
 func (self *MessagePing) SignMsg(_ *cashec.KeySet) error {
 	return nil

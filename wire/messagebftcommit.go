@@ -41,10 +41,6 @@ func (self *MessageBFTCommit) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (self *MessageBFTCommit) SetIntendedReceiver(_ string) error {
-	return nil
-}
-
 func (self *MessageBFTCommit) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }

@@ -39,10 +39,6 @@ func (self *MessageBFTPrepare) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (self *MessageBFTPrepare) SetIntendedReceiver(_ string) error {
-	return nil
-}
-
 func (self *MessageBFTPrepare) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }

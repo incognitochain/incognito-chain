@@ -49,9 +49,6 @@ func (self MessageVersion) JsonDeserialize(jsonStr string) error {
 func (self MessageVersion) SetSenderID(senderID peer.ID) error {
 	return nil
 }
-func (self *MessageVersion) SetIntendedReceiver(_ string) error {
-	return nil
-}
 
 func (self *MessageVersion) SignMsg(_ *cashec.KeySet) error {
 	return nil

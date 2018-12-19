@@ -43,10 +43,6 @@ func (self MessageAddr) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (self MessageAddr) SetIntendedReceiver(_ string) error {
-	return nil
-}
-
 func (self MessageAddr) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }

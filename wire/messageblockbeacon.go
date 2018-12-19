@@ -38,10 +38,6 @@ func (self MessageBlockBeacon) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (self *MessageBlockBeacon) SetIntendedReceiver(_ string) error {
-	return nil
-}
-
 func (self *MessageBlockBeacon) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }
