@@ -340,3 +340,17 @@ func (self RpcServer) handleListCustomToken(params interface{}, closeChan <-chan
 	}
 	return result, nil
 }
+
+func (self RpcServer) handleListPrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	temps, err := self.config.BlockChain.ListPrivacyCustomToken()
+	if err != nil {
+		return nil, err
+	}
+	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
+	for _, token := range temps {
+		item := jsonresult.CustomToken{}
+		item.InitPrivacy(token)
+		result.ListCustomToken = append(result.ListCustomToken, item)
+	}
+	return result, nil
+}

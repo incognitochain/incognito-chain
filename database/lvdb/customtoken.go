@@ -21,6 +21,14 @@ func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
 	return nil
 }
 
+func (db *db) StorePrivacyCustomToken(tokenID *common.Hash, txHash []byte) error {
+	key := db.GetKey(string(tokenInitPrefix), tokenID) // token-init-{tokenID}
+	if err := db.lvdb.Put(key, txHash, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (db *db) StoreCustomTokenTx(tokenID *common.Hash, chainID byte, blockHeight int32, txIndex int32, txHash []byte) error {
 	key := db.GetKey(string(TokenPrefix), tokenID) // token-{tokenID}-chainID-(999999999-blockHeight)-(999999999-txIndex)
 	key = append(key, chainID)
@@ -40,6 +48,18 @@ func (db *db) StoreCustomTokenTx(tokenID *common.Hash, chainID byte, blockHeight
 func (db *db) ListCustomToken() ([][]byte, error) {
 	result := make([][]byte, 0)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(tokenInitPrefix), nil)
+	for iter.Next() {
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
+		result = append(result, value)
+	}
+	iter.Release()
+	return result, nil
+}
+
+func (db *db) ListPrivacyCustomToken() ([][]byte, error) {
+	result := make([][]byte, 0)
+	iter := db.lvdb.NewIterator(util.BytesPrefix(privacyTokenInitPrefix), nil)
 	for iter.Next() {
 		value := make([]byte, len(iter.Value()))
 		copy(value, iter.Value())

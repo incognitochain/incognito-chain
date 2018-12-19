@@ -25,7 +25,8 @@ type TxViewPoint struct {
 	customTokenTxs map[int32]*transaction.TxCustomToken
 
 	// data of privacy custom token
-	privacyCustomTokenTxs map[common.Hash]*TxViewPoint
+	privacyCustomTokenViewPoint map[common.Hash]*TxViewPoint
+	privacyCustomTokenTxs       map[common.Hash]*transaction.TxCustomTokenPrivacy
 }
 
 /*
@@ -228,7 +229,8 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
-				view.privacyCustomTokenTxs[*tx.Hash()] = subView
+				view.privacyCustomTokenViewPoint[*tx.Hash()] = subView
+				view.privacyCustomTokenTxs[*tx.Hash()] = tx
 			}
 		default:
 			{
@@ -257,14 +259,15 @@ Create a TxNormal view point, which contains data about nullifiers and commitmen
 */
 func NewTxViewPoint(chainId byte) *TxViewPoint {
 	result := &TxViewPoint{
-		chainID:               chainId,
-		listSerialNumbers:     make([][]byte, 0),
-		mapCommitments:        make(map[string][][]byte, 0),
-		mapOutputCoins:        make(map[string][]privacy.OutputCoin, 0),
-		listSnD:               make([]big.Int, 0),
-		customTokenTxs:        make(map[int32]*transaction.TxCustomToken, 0),
-		tokenID:               &common.Hash{},
-		privacyCustomTokenTxs: make(map[common.Hash]*TxViewPoint),
+		chainID:                     chainId,
+		listSerialNumbers:           make([][]byte, 0),
+		mapCommitments:              make(map[string][][]byte, 0),
+		mapOutputCoins:              make(map[string][]privacy.OutputCoin, 0),
+		listSnD:                     make([]big.Int, 0),
+		customTokenTxs:              make(map[int32]*transaction.TxCustomToken, 0),
+		tokenID:                     &common.Hash{},
+		privacyCustomTokenViewPoint: make(map[common.Hash]*TxViewPoint),
+		privacyCustomTokenTxs:       make(map[common.Hash]*transaction.TxCustomTokenPrivacy),
 	}
 	result.tokenID.SetBytes(common.ConstantID[:])
 	return result

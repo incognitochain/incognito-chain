@@ -33,6 +33,7 @@ var (
 	TokenPrefix               = []byte("token-")
 	TokenPaymentAddressPrefix = []byte("token-paymentaddress-")
 	tokenInitPrefix           = []byte("token-init-")
+	privacyTokenInitPrefix    = []byte("privacy-token-init-")
 	loanIDKeyPrefix           = []byte("loanID-")
 	loanTxKeyPrefix           = []byte("loanTx-")
 	loanRequestPostfix        = []byte("-req")
@@ -119,6 +120,8 @@ func (db db) GetKey(keyType string, key interface{}) []byte {
 		dbkey = append(TokenPrefix, key.(*common.Hash)[:]...)
 	case string(tokenInitPrefix):
 		dbkey = append(tokenInitPrefix, key.(*common.Hash)[:]...)
+	case string(privacyTokenInitPrefix):
+		dbkey = append(privacyTokenInitPrefix, []byte(key.(*common.Hash).String())...)
 
 		// Voting case
 	case string(voteDCBBoardSumPrefix):

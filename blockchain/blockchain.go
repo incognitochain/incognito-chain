@@ -949,7 +949,22 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	}
 
 	// check privacy custom token
-	for _, privacyCustomTokenSubView := range view.privacyCustomTokenTxs {
+	for txHash, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
+		privacyCustomTokenTx := view.privacyCustomTokenTxs[txHash]
+		switch privacyCustomTokenTx.TxTokenPrivacyData.Type {
+		case transaction.CustomTokenInit:
+			{
+				Logger.log.Info("Store custom token when it is issued", privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, privacyCustomTokenTx.TxTokenPrivacyData.PropertySymbol, privacyCustomTokenTx.TxTokenPrivacyData.PropertyName)
+				err = self.config.DataBase.StorePrivacyCustomToken(&privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, privacyCustomTokenTx.Hash()[:])
+				if err != nil {
+					return err
+				}
+			}
+		case transaction.CustomTokenTransfer:
+			{
+				Logger.log.Info("Transfer custom token %+v", privacyCustomTokenTx)
+			}
+		}
 		err = self.StoreSerialNumbersFromTxViewPoint(*privacyCustomTokenSubView)
 		if err != nil {
 			return err
@@ -1341,6 +1356,28 @@ func (self *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomT
 		}
 		txCustomToken := tx.(*transaction.TxCustomToken)
 		result[txCustomToken.TxTokenData.PropertyID] = *txCustomToken
+	}
+	return result, nil
+}
+
+// ListCustomToken - return all custom token which existed in network
+func (self *BlockChain) ListPrivacyCustomToken() (map[common.Hash]transaction.TxCustomTokenPrivacy, error) {
+	data, err := self.config.DataBase.ListPrivacyCustomToken()
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[common.Hash]transaction.TxCustomTokenPrivacy)
+	for _, txData := range data {
+		hash := common.Hash{}
+		hash.SetBytes(txData)
+		_, blockHash, index, tx, err := self.GetTransactionByHash(&hash)
+		_ = blockHash
+		_ = index
+		if err != nil {
+			return nil, err
+		}
+		txPrivacyCustomToken := tx.(*transaction.TxCustomTokenPrivacy)
+		result[txPrivacyCustomToken.TxTokenPrivacyData.PropertyID] = *txPrivacyCustomToken
 	}
 	return result, nil
 }

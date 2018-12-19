@@ -17,6 +17,13 @@ func (self *CustomToken) Init(obj transaction.TxCustomToken) {
 	self.Amount = obj.TxTokenData.Amount
 }
 
+func (self *CustomToken) InitPrivacy(obj transaction.TxCustomTokenPrivacy) {
+	self.ID = obj.TxTokenPrivacyData.PropertyID.String()
+	self.Symbol = obj.TxTokenPrivacyData.PropertySymbol
+	self.Name = obj.TxTokenPrivacyData.PropertyName
+	self.Amount = obj.TxTokenPrivacyData.Amount
+}
+
 type ListCustomToken struct {
 	ListCustomToken []CustomToken `json:"ListCustomToken"`
 }
