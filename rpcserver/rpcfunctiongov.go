@@ -1,7 +1,6 @@
 package rpcserver
 
 import (
-	"encoding/hex"
 	"encoding/json"
 
 	"github.com/ninjadotorg/constant/common"
@@ -11,6 +10,7 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wire"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
 func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -67,9 +67,9 @@ func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, cl
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		TxID:            normalTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -80,12 +80,12 @@ func (self RpcServer) handleCreateAndSendTxWithBuyBackRequest(params interface{}
 		return nil, err
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
+	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, base58CheckData)
 	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -129,9 +129,9 @@ func (self RpcServer) handleCreateRawTxWithBuySellRequest(params interface{}, cl
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		TxID:            normalTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -142,12 +142,12 @@ func (self RpcServer) handleCreateAndSendTxWithBuySellRequest(params interface{}
 		return nil, err
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
+	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, base58CheckData)
 	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -188,9 +188,9 @@ func (self RpcServer) handleCreateRawSealLv3VoteGOVProposalTransaction(params in
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -202,12 +202,12 @@ func (self RpcServer) handleCreateAndSendSealLv3VoteGOVProposalTransaction(param
 		return nil, err
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
+	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, base58CheckData)
 	txId, err := self.handleSendRawTransaction(newParam, closeChan)
 	return txId, err
 }
@@ -248,9 +248,9 @@ func (self RpcServer) handleCreateRawSealLv2VoteGOVProposalTransaction(params in
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -262,12 +262,12 @@ func (self RpcServer) handleCreateAndSendSealLv2VoteGOVProposalTransaction(param
 		return nil, err
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
+	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, base58CheckData)
 	txId, err := self.handleSendRawTransaction(newParam, closeChan)
 	return txId, err
 }
@@ -314,9 +314,9 @@ func (self RpcServer) handleCreateRawSealLv1VoteGOVProposalTransaction(params in
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -327,12 +327,12 @@ func (self RpcServer) handleCreateAndSendSealLv1VoteGOVProposalTransaction(param
 		return nil, err
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
+	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, base58CheckData)
 	txId, err := self.handleSendRawTransaction(newParam, closeChan)
 	return txId, err
 }
@@ -379,9 +379,9 @@ func (self RpcServer) handleCreateRawNormalVoteGOVProposalTransactionFromSealer(
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -392,12 +392,12 @@ func (self RpcServer) handleCreateAndSendNormalVoteGOVProposalTransactionFromSea
 		return nil, err
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
+	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, base58CheckData)
 	txId, err := self.handleSendRawTransaction(newParam, closeChan)
 	return txId, err
 }
@@ -435,9 +435,9 @@ func (self RpcServer) handleCreateRawNormalVoteGOVProposalTransactionFromOwner(p
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -448,12 +448,12 @@ func (self RpcServer) handleCreateAndSendNormalVoteGOVProposalTransactionFromOwn
 		return nil, err
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
+	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, base58CheckData)
 	txId, err := self.handleSendRawTransaction(newParam, closeChan)
 	return txId, err
 }
@@ -474,8 +474,8 @@ func (self RpcServer) buildRawVoteGOVBoardTransaction(
 func (self RpcServer) handleSendRawVoteBoardGOVTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
-	hexRawTx := arrayParams[0].(string)
-	rawTxBytes, err := hex.DecodeString(hexRawTx)
+	base58CheckData := arrayParams[0].(string)
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 
 	if err != nil {
 		return nil, err
@@ -522,9 +522,10 @@ func (self RpcServer) handleCreateRawVoteGOVBoardTransaction(
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		//HexData:         hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -535,12 +536,12 @@ func (self RpcServer) handleCreateAndSendVoteGOVBoardTransaction(params interfac
 		return nil, err
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
+	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, base58CheckData)
 	txId, err := self.handleSendRawVoteBoardGOVTransaction(newParam, closeChan)
 	return txId, err
 }
@@ -570,9 +571,10 @@ func (self RpcServer) handleCreateRawSubmitGOVProposalTransaction(
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		//HexData:         hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -580,8 +582,8 @@ func (self RpcServer) handleCreateRawSubmitGOVProposalTransaction(
 func (self RpcServer) handleSendRawSubmitGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
-	hexRawTx := arrayParams[0].(string)
-	rawTxBytes, err := hex.DecodeString(hexRawTx)
+	base58CheckData := arrayParams[0].(string)
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 
 	if err != nil {
 		return nil, err
@@ -619,12 +621,12 @@ func (self RpcServer) handleCreateAndSendSubmitGOVProposalTransaction(params int
 		return nil, err
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
+	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, base58CheckData)
 	txId, err := self.handleSendRawSubmitGOVProposalTransaction(newParam, closeChan)
 	return txId, err
 }

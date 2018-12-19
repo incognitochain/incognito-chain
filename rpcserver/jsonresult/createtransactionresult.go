@@ -1,6 +1,7 @@
 package jsonresult
 
 type CreateTransactionResult struct {
-	HexData string
-	TxID    string
+	Base58CheckData string
+	//HexData         string
+	TxID string
 }

@@ -20,8 +20,8 @@ import (
 )
 
 // StoreSerialNumbers - store list serialNumbers by chainID
-func (db *db) StoreSerialNumbers(serialNumber []byte, chainId byte) error {
-	key := db.GetKey(string(serialNumbersPrefix), "")
+func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumber []byte, chainId byte) error {
+	key := db.GetKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -58,8 +58,8 @@ func (db *db) StoreSerialNumbers(serialNumber []byte, chainId byte) error {
 }
 
 // FetchSerialNumbers - Get list SerialNumbers by chainID
-func (db *db) FetchSerialNumbers(chainID byte) ([][]byte, error) {
-	key := db.GetKey(string(serialNumbersPrefix), "")
+func (db *db) FetchSerialNumbers(tokenID *common.Hash, chainID byte) ([][]byte, error) {
+	key := db.GetKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, chainID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -76,13 +76,12 @@ func (db *db) FetchSerialNumbers(chainID byte) ([][]byte, error) {
 }
 
 // HasSerialNumber - Check serialNumber in list SerialNumbers by chainID
-func (db *db) HasSerialNumber(serialNumber []byte, chainID byte) (bool, error) {
-	key := db.GetKey(string(serialNumbersPrefix), "")
+func (db *db) HasSerialNumber(tokenID *common.Hash, serialNumber []byte, chainID byte) (bool, error) {
+	key := db.GetKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, chainID)
 	keySpec := append(key, serialNumber...)
 	_, err := db.Get(keySpec)
 	if err != nil {
-		fmt.Println(err)
 		return false, nil
 	} else {
 		return true, nil
@@ -133,8 +132,8 @@ func (db *db) CleanSerialNumbers() error {
 	return nil
 }
 
-func (db *db) StoreOutputCoins(pubkey []byte, outputcoin []byte, chainID byte) error {
-	key := db.GetKey(string(outcoinsPrefix), "")
+func (db *db) StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin []byte, chainID byte) error {
+	key := db.GetKey(string(outcoinsPrefix), tokenID)
 	key = append(key, chainID)
 
 	// store for pubkey:[outcoint1, outcoint2, ...]
@@ -159,8 +158,8 @@ func (db *db) StoreOutputCoins(pubkey []byte, outputcoin []byte, chainID byte) e
 }
 
 // StoreCommitments - store list commitments by chainID
-func (db *db) StoreCommitments(pubkey []byte, commitments []byte, chainId byte) error {
-	key := db.GetKey(string(commitmentsPrefix), "")
+func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments []byte, chainId byte) error {
+	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -231,8 +230,8 @@ func (db *db) StoreCommitments(pubkey []byte, commitments []byte, chainId byte) 
 }
 
 // FetchCommitments - Get list commitments by chainID
-func (db *db) FetchCommitments(chainId byte) ([][]byte, error) {
-	key := db.GetKey(string(commitmentsPrefix), "")
+func (db *db) FetchCommitments(tokenID *common.Hash, chainId byte) ([][]byte, error) {
+	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -249,8 +248,8 @@ func (db *db) FetchCommitments(chainId byte) ([][]byte, error) {
 }
 
 // HasCommitment - Check commitment in list commitments by chainID
-func (db *db) HasCommitment(commitment []byte, chainId byte) (bool, error) {
-	key := db.GetKey(string(commitmentsPrefix), "")
+func (db *db) HasCommitment(tokenID *common.Hash, commitment []byte, chainId byte) (bool, error) {
+	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, chainId)
 	keySpec := append(key, commitment...)
 	_, err := db.Get(keySpec)
@@ -262,8 +261,8 @@ func (db *db) HasCommitment(commitment []byte, chainId byte) (bool, error) {
 	return false, nil
 }
 
-func (db *db) HasCommitmentIndex(commitmentIndex uint64, chainId byte) (bool, error) {
-	key := db.GetKey(string(commitmentsPrefix), "")
+func (db *db) HasCommitmentIndex(tokenID *common.Hash, commitmentIndex uint64, chainId byte) (bool, error) {
+	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, chainId)
 	keySpec := append(key, new(big.Int).SetUint64(commitmentIndex).Bytes()...)
 	_, err := db.Get(keySpec)
@@ -275,8 +274,8 @@ func (db *db) HasCommitmentIndex(commitmentIndex uint64, chainId byte) (bool, er
 	return false, nil
 }
 
-func (db *db) GetCommitmentByIndex(commitmentIndex uint64, chainId byte) ([]byte, error) {
-	key := db.GetKey(string(commitmentsPrefix), "")
+func (db *db) GetCommitmentByIndex(tokenID *common.Hash, commitmentIndex uint64, chainId byte) ([]byte, error) {
+	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, chainId)
 	keySpec := make([]byte, len(key))
 	if commitmentIndex == 0 {
@@ -294,8 +293,8 @@ func (db *db) GetCommitmentByIndex(commitmentIndex uint64, chainId byte) ([]byte
 }
 
 // GetCommitmentIndex - return index of commitment in db list
-func (db *db) GetCommitmentIndex(commitment []byte, chainId byte) (*big.Int, error) {
-	key := db.GetKey(string(commitmentsPrefix), "")
+func (db *db) GetCommitmentIndex(tokenID *common.Hash, commitment []byte, chainId byte) (*big.Int, error) {
+	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, chainId)
 	keySpec := append(key, commitment...)
 	data, err := db.Get(keySpec)
@@ -308,8 +307,8 @@ func (db *db) GetCommitmentIndex(commitment []byte, chainId byte) (*big.Int, err
 }
 
 // GetCommitmentIndex - return index of commitment in db list
-func (db *db) GetCommitmentLength(chainId byte) (*big.Int, error) {
-	key := db.GetKey(string(commitmentsPrefix), "")
+func (db *db) GetCommitmentLength(tokenID *common.Hash, chainId byte) (*big.Int, error) {
+	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, chainId)
 	keySpec := append(key, []byte("len")...)
 	data, err := db.Get(keySpec)
@@ -323,8 +322,8 @@ func (db *db) GetCommitmentLength(chainId byte) (*big.Int, error) {
 	return nil, nil
 }
 
-func (db *db) GetCommitmentIndexsByPubkey(pubkey []byte, chainID byte) ([][]byte, error) {
-	key := db.GetKey(string(commitmentsPrefix), "")
+func (db *db) GetCommitmentIndexsByPubkey(tokenID *common.Hash, pubkey []byte, chainID byte) ([][]byte, error) {
+	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, chainID)
 
 	keySpec4 := make([]byte, len(key))
@@ -342,8 +341,8 @@ func (db *db) GetCommitmentIndexsByPubkey(pubkey []byte, chainID byte) ([][]byte
 	return arrDatabyPubkey, nil
 }
 
-func (db *db) GetOutcoinsByPubkey(pubkey []byte, chainID byte) ([][]byte, error) {
-	key := db.GetKey(string(outcoinsPrefix), "")
+func (db *db) GetOutcoinsByPubkey(tokenID *common.Hash, pubkey []byte, chainID byte) ([][]byte, error) {
+	key := db.GetKey(string(outcoinsPrefix), tokenID)
 	key = append(key, chainID)
 
 	key = append(key, pubkey...)
@@ -377,8 +376,8 @@ func (db *db) CleanCommitments() error {
 }
 
 // StoreSNDerivators - store list serialNumbers by chainID
-func (db *db) StoreSNDerivators(data big.Int, chainID byte) error {
-	key := db.GetKey(string(snderivatorsPrefix), "")
+func (db *db) StoreSNDerivators(tokenID *common.Hash, data big.Int, chainID byte) error {
+	key := db.GetKey(string(snderivatorsPrefix), tokenID)
 	key = append(key, chainID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -411,8 +410,8 @@ func (db *db) StoreSNDerivators(data big.Int, chainID byte) error {
 }
 
 // FetchSerialNumbers - Get list all SnDerivators by chainID
-func (db *db) FetchSNDerivator(chainID byte) ([]big.Int, error) {
-	key := db.GetKey(string(snderivatorsPrefix), "")
+func (db *db) FetchSNDerivator(tokenID *common.Hash, chainID byte) ([]big.Int, error) {
+	key := db.GetKey(string(snderivatorsPrefix), tokenID)
 	key = append(key, chainID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -435,8 +434,8 @@ func (db *db) FetchSNDerivator(chainID byte) ([]big.Int, error) {
 }
 
 // HasSNDerivator - Check SnDerivator in list SnDerivators by chainID
-func (db *db) HasSNDerivator(data big.Int, chainID byte) (bool, error) {
-	key := db.GetKey(string(snderivatorsPrefix), "")
+func (db *db) HasSNDerivator(tokenID *common.Hash, data big.Int, chainID byte) (bool, error) {
+	key := db.GetKey(string(snderivatorsPrefix), tokenID)
 	key = append(key, chainID)
 	snderivatorData := data.Bytes()
 	keySpec := append(key, snderivatorData...)
@@ -507,8 +506,6 @@ func (db *db) CleanFeeEstimator() error {
 func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, index int) error {
 	key := string(transactionKeyPrefix) + txId.String()
 	value := blockHash.String() + string(Splitter) + strconv.Itoa(index)
-	fmt.Println("Key in StoreTransactionIndex", key)
-	fmt.Println("H in StoreTransactionIndex", value)
 	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
 		return err
 	}
@@ -521,11 +518,9 @@ func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, i
 */
 
 func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, error) {
-	fmt.Println("TxID in GetTransactionById", txId.String())
 	key := string(transactionKeyPrefix) + txId.String()
 	_, err := db.HasValue([]byte(key))
 	if err != nil {
-		fmt.Println("ERROR in finding transaction id", txId.String(), err)
 		return nil, -1, err
 	}
 
@@ -542,7 +537,6 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 	if err != nil {
 		return nil, -1, err
 	}
-	fmt.Println("BlockHash", hash, "Transaction index", index)
 	return hash, index, nil
 }
 
@@ -599,8 +593,6 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 
-	fmt.Println("Storing Transaction in light mode: txLocation -> tx", key1, unspentTx)
-	fmt.Println("Storing Transaction in light mode: txHash -> txLocation", key2, key1)
 	return nil
 }
 
@@ -619,11 +611,9 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKe
 		key := iter.Key()
 		value := iter.Value()
 
-		fmt.Println("GetTransactionLightModeByPrivateKey, key", string(key))
 		reses := strings.Split(string(key), string(Splitter))
 		tempChainId, _ := strconv.Atoi(reses[2])
 		chainId := byte(tempChainId)
-		fmt.Println("GetTransactionLightModeByPrivateKey, chainId", chainId)
 		/*tx := transaction.Tx{}
 		err := json.Unmarshal(value, &tx)
 		if err != nil {
@@ -645,20 +635,16 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKe
 */
 func (db *db) GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, error) {
 	key := string(transactionKeyPrefix) + txId.String()
-	fmt.Println("GetTransactionLightModeByHash - key", key)
 	_, err := db.HasValue([]byte(key))
 	if err != nil {
-		fmt.Println("ERROR in finding transaction id", txId.String(), err)
 		return nil, nil, err
 	}
 	value, err := db.lvdb.Get([]byte(key), nil)
-	fmt.Println("GetTransactionLightModeByHash - value", value)
 	if err != nil {
 		return nil, nil, err
 	}
 	_, err1 := db.HasValue([]byte(value))
 	if err1 != nil {
-		fmt.Println("ERROR in finding location transaction id", txId.String(), err1)
 		return nil, nil, err
 	}
 	tx, err := db.lvdb.Get([]byte(value), nil)

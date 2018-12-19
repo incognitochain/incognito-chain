@@ -63,7 +63,9 @@ func (self RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		outputCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, chainIdSender)
+		constantTokenID := &common.Hash{}
+		constantTokenID.SetBytes(common.ConstantID[:])
+		outputCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, chainIdSender, constantTokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -133,7 +135,9 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender)
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, constantTokenID)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -179,6 +183,7 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 		realFee,
 		true,
 		*self.config.Database,
+		nil, // use for constant coin -> nil is valid
 	)
 	return &tx, err
 }
@@ -197,9 +202,9 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		// return hex for a new tx
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -213,8 +218,8 @@ Result—a TXID or error Message
 func (self RpcServer) handleSendRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
-	hexRawTx := arrayParams[0].(string)
-	rawTxBytes, err := hex.DecodeString(hexRawTx)
+	base58CheckData := arrayParams[0].(string)
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -262,12 +267,12 @@ func (self RpcServer) handlCreateAndSendTx(params interface{}, closeChan <-chan 
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
+	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, base58CheckData)
 	sendResult, err := self.handleSendRawTransaction(newParam, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -391,9 +396,9 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -402,8 +407,8 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(
 func (self RpcServer) handleSendRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
-	hexRawTx := arrayParams[0].(string)
-	rawTxBytes, err := hex.DecodeString(hexRawTx)
+	base58CheckData := arrayParams[0].(string)
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 
 	if err != nil {
 		return nil, err
@@ -443,12 +448,12 @@ func (self RpcServer) handleCreateAndSendCustomTokenTransaction(params interface
 		return nil, err
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
-	hexStrOfTx := tx.HexData
+	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
-	newParam = append(newParam, hexStrOfTx)
+	newParam = append(newParam, base58CheckData)
 	txId, err := self.handleSendRawCustomTokenTransaction(newParam, closeChan)
 	return txId, err
 }
@@ -488,6 +493,51 @@ func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeC
 	return result, nil
 }
 
+func (self RpcServer) handleGetListPrivacyCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+	privateKey := arrayParams[0].(string)
+	account, err := wallet.Base58CheckDeserialize(privateKey)
+	account.KeySet.ImportFromPrivateKey(&account.KeySet.PrivateKey)
+	if err != nil {
+		return nil, nil
+	}
+	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
+	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
+	temps, err := self.config.BlockChain.ListCustomToken()
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range temps {
+		item := jsonresult.CustomTokenBalance{}
+		item.Name = tx.TxTokenData.PropertyName
+		item.Symbol = tx.TxTokenData.PropertySymbol
+		item.TokenID = tx.TxTokenData.PropertyID.String()
+		tokenID := tx.TxTokenData.PropertyID
+
+		balance := uint64(0)
+		// get balance for accountName in wallet
+		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
+		chainIdSender, err := common.GetTxSenderChain(lastByte)
+		constantTokenID := &common.Hash{}
+		constantTokenID.SetBytes(common.ConstantID[:])
+		outcoints, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, chainIdSender, &tokenID)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		for _, out := range outcoints {
+			balance += out.CoinDetails.Value
+		}
+
+		item.Amount = balance
+		if item.Amount == 0 {
+			continue
+		}
+		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
+		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
+	}
+	return result, nil
+}
+
 // handleCustomTokenDetail - return list tx which relate to custom token by token id
 func (self RpcServer) handleCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	arrayParams := common.InterfaceSlice(params)
@@ -496,6 +546,23 @@ func (self RpcServer) handleCustomTokenDetail(params interface{}, closeChan <-ch
 		return nil, err
 	}
 	txs, _ := self.config.BlockChain.GetCustomTokenTxsHash(tokenID)
+	result := jsonresult.CustomToken{
+		ListTxs: []string{},
+	}
+	for _, tx := range txs {
+		result.ListTxs = append(result.ListTxs, tx.String())
+	}
+	return result, nil
+}
+
+// handlePrivacyCustomTokenDetail - return list tx which relate to privacy custom token by token id
+func (self RpcServer) handlePrivacyCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+	tokenID, err := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
+	if err != nil {
+		return nil, err
+	}
+	txs, _ := self.config.BlockChain.GetPrivacyCustomTokenTxsHash(tokenID)
 	result := jsonresult.CustomToken{
 		ListTxs: []string{},
 	}
@@ -529,8 +596,8 @@ func (self RpcServer) handleListUnspentCustomTokenTransaction(params interface{}
 func (self RpcServer) handleCreateSignatureOnCustomTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
-	hexRawTx := arrayParams[0].(string)
-	rawTxBytes, err := hex.DecodeString(hexRawTx)
+	base58CheckDate := arrayParams[0].(string)
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
 
 	if err != nil {
 		return nil, err
@@ -601,7 +668,9 @@ func (self RpcServer) handleRandomCommitments(params interface{}, closeChan <-ch
 		usableOutputCoins = append(usableOutputCoins, i)
 	}
 	usableInputCoins := transaction.ConvertOutputCoinToInputCoin(usableOutputCoins)
-	commitmentIndexs, myCommitmentIndexs := self.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, chainIdSender)
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	commitmentIndexs, myCommitmentIndexs := self.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, chainIdSender, constantTokenID)
 	result := make(map[string]interface{})
 	result["CommitmentIndexs"] = commitmentIndexs
 	result["MyCommitmentIndexs"] = myCommitmentIndexs
@@ -628,10 +697,12 @@ func (self RpcServer) handleHasSerialNumbers(params interface{}, closeChan <-cha
 	result := make(map[byte][]string)
 	result[0] = []string{}
 	result[1] = []string{}
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
 	for _, item := range serialNumbersStr {
 		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(self.config.Database)
-		ok, err := db.HasSerialNumber(serialNumber, chainIdSender)
+		ok, err := db.HasSerialNumber(constantTokenID, serialNumber, chainIdSender)
 		if ok && err != nil {
 			result[0] = append(result[0], item.(string))
 		} else {
@@ -640,4 +711,80 @@ func (self RpcServer) handleHasSerialNumbers(params interface{}, closeChan <-cha
 	}
 
 	return result, nil
+}
+
+// handleCreateRawCustomTokenTransaction - handle create a custom token command and return in hex string format.
+func (self RpcServer) handleCreateRawPrivacyCustomTokenTransaction(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, error) {
+	tx, err := self.buildRawPrivacyCustomTokenTransaction(params)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+// handleSendRawTransaction...
+func (self RpcServer) handleSendRawPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	Logger.log.Info(params)
+	arrayParams := common.InterfaceSlice(params)
+	base58CheckData := arrayParams[0].(string)
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
+
+	if err != nil {
+		return nil, err
+	}
+	tx := transaction.TxCustomTokenPrivacy{}
+	err = json.Unmarshal(rawTxBytes, &tx)
+	if err != nil {
+		return nil, err
+	}
+
+	hash, txDesc, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	if err != nil {
+		return nil, err
+	}
+
+	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+
+	// broadcast message
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg.(*wire.MessageTx).Transaction = &tx
+	self.config.Server.PushMessageToAll(txMsg)
+
+	return tx.Hash(), nil
+}
+
+// handleCreateAndSendCustomTokenTransaction - create and send a tx which process on a custom token look like erc-20 on eth
+func (self RpcServer) handleCreateAndSendPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	data, err := self.handleCreateRawPrivacyCustomTokenTransaction(params, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	if err != nil {
+		return nil, err
+	}
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	txId, err := self.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	return txId, err
 }

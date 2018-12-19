@@ -6,6 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/common/base58"
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/common"
 )
 
 // count in miliconstant
@@ -47,7 +48,9 @@ func (tx *Tx) validateTxStake(db database.DatabaseInterface, chainID byte) bool 
 	// - Verify tx signature
 	// - Verify the payment proof
 	// - Check double spendingComInputOpeningsWitnessval
-	valid := tx.ValidateTransaction(false, db, chainID)
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	valid := tx.ValidateTransaction(false, db, chainID, constantTokenID)
 	if valid == false {
 		return valid
 	}
