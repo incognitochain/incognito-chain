@@ -25,8 +25,8 @@ type TxViewPoint struct {
 	customTokenTxs map[int32]*transaction.TxCustomToken
 
 	// data of privacy custom token
-	privacyCustomTokenViewPoint map[common.Hash]*TxViewPoint
-	privacyCustomTokenTxs       map[common.Hash]*transaction.TxCustomTokenPrivacy
+	privacyCustomTokenViewPoint map[int32]*TxViewPoint
+	privacyCustomTokenTxs       map[int32]*transaction.TxCustomTokenPrivacy
 }
 
 /*
@@ -229,8 +229,8 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
-				view.privacyCustomTokenViewPoint[*tx.Hash()] = subView
-				view.privacyCustomTokenTxs[*tx.Hash()] = tx
+				view.privacyCustomTokenViewPoint[int32(indexTx)] = subView
+				view.privacyCustomTokenTxs[int32(indexTx)] = tx
 			}
 		default:
 			{
@@ -266,8 +266,8 @@ func NewTxViewPoint(chainId byte) *TxViewPoint {
 		listSnD:                     make([]big.Int, 0),
 		customTokenTxs:              make(map[int32]*transaction.TxCustomToken, 0),
 		tokenID:                     &common.Hash{},
-		privacyCustomTokenViewPoint: make(map[common.Hash]*TxViewPoint),
-		privacyCustomTokenTxs:       make(map[common.Hash]*transaction.TxCustomTokenPrivacy),
+		privacyCustomTokenViewPoint: make(map[int32]*TxViewPoint),
+		privacyCustomTokenTxs:       make(map[int32]*transaction.TxCustomTokenPrivacy),
 	}
 	result.tokenID.SetBytes(common.ConstantID[:])
 	return result

@@ -83,7 +83,9 @@ type DatabaseInterface interface {
 	UpdateRewardAccountUTXO(*common.Hash, []byte, *common.Hash, int) error
 	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error) // get all paymentaddress owner that have balance > 0 of a custom token
 	StorePrivacyCustomToken(tokenID *common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
-	ListPrivacyCustomToken() ([][]byte, error)                       // get list all custom token which issued in network
+	StorePrivacyCustomTokenTx(tokenID *common.Hash, chainID byte, blockHeight int32, txIndex int32, txHash []byte) error
+	ListPrivacyCustomToken() ([][]byte, error)                          // get list all custom token which issued in network
+	PrivacyCustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) // from token id get all custom txs
 
 	// Loans
 	StoreLoanRequest([]byte, []byte) error                 // param: loanID, tx hash

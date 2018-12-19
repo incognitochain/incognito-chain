@@ -934,6 +934,9 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 			continue
 		}
 		err = self.config.DataBase.StoreCustomTokenTx(&customTokenTx.TxTokenData.PropertyID, block.Header.ChainID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
+		if err != nil {
+			return err
+		}
 
 		// replace 1000 with proper value for snapshot
 		if block.Header.Height%1000 == 0 {
@@ -949,8 +952,8 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	}
 
 	// check privacy custom token
-	for txHash, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
-		privacyCustomTokenTx := view.privacyCustomTokenTxs[txHash]
+	for indexTx, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
+		privacyCustomTokenTx := view.privacyCustomTokenTxs[indexTx]
 		switch privacyCustomTokenTx.TxTokenPrivacyData.Type {
 		case transaction.CustomTokenInit:
 			{
@@ -965,6 +968,11 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 				Logger.log.Info("Transfer custom token %+v", privacyCustomTokenTx)
 			}
 		}
+		err = self.config.DataBase.StorePrivacyCustomTokenTx(&privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, block.Header.ChainID, block.Header.Height, indexTx, privacyCustomTokenTx.Hash()[:])
+		if err != nil {
+			return err
+		}
+
 		err = self.StoreSerialNumbersFromTxViewPoint(*privacyCustomTokenSubView)
 		if err != nil {
 			return err
@@ -1385,6 +1393,19 @@ func (self *BlockChain) ListPrivacyCustomToken() (map[common.Hash]transaction.Tx
 // GetCustomTokenTxsHash - return list hash of tx which relate to custom token
 func (self *BlockChain) GetCustomTokenTxsHash(tokenID *common.Hash) ([]common.Hash, error) {
 	txHashesInByte, err := self.config.DataBase.CustomTokenTxs(tokenID)
+	if err != nil {
+		return nil, err
+	}
+	result := []common.Hash{}
+	for _, temp := range txHashesInByte {
+		result = append(result, *temp)
+	}
+	return result, nil
+}
+
+// GetPrivacyCustomTokenTxsHash - return list hash of tx which relate to custom token
+func (self *BlockChain) GetPrivacyCustomTokenTxsHash(tokenID *common.Hash) ([]common.Hash, error) {
+	txHashesInByte, err := self.config.DataBase.PrivacyCustomTokenTxs(tokenID)
 	if err != nil {
 		return nil, err
 	}

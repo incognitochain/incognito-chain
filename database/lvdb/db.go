@@ -31,6 +31,7 @@ var (
 	feeEstimator              = []byte("feeEstimator")
 	Splitter                  = []byte("-[-]-")
 	TokenPrefix               = []byte("token-")
+	PrivacyTokenPrefix        = []byte("privacy-token-")
 	TokenPaymentAddressPrefix = []byte("token-paymentaddress-")
 	tokenInitPrefix           = []byte("token-init-")
 	privacyTokenInitPrefix    = []byte("privacy-token-init-")
@@ -118,6 +119,8 @@ func (db db) GetKey(keyType string, key interface{}) []byte {
 		dbkey = append(snderivatorsPrefix, []byte(key.(*common.Hash).String())...)
 	case string(TokenPrefix):
 		dbkey = append(TokenPrefix, key.(*common.Hash)[:]...)
+	case string(PrivacyTokenPrefix):
+		dbkey = append(PrivacyTokenPrefix, []byte(key.(*common.Hash).String())...)
 	case string(tokenInitPrefix):
 		dbkey = append(tokenInitPrefix, key.(*common.Hash)[:]...)
 	case string(privacyTokenInitPrefix):

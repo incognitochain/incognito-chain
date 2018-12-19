@@ -549,6 +549,23 @@ func (self RpcServer) handleCustomTokenDetail(params interface{}, closeChan <-ch
 	return result, nil
 }
 
+// handlePrivacyCustomTokenDetail - return list tx which relate to privacy custom token by token id
+func (self RpcServer) handlePrivacyCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+	tokenID, err := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
+	if err != nil {
+		return nil, err
+	}
+	txs, _ := self.config.BlockChain.GetPrivacyCustomTokenTxsHash(tokenID)
+	result := jsonresult.CustomToken{
+		ListTxs: []string{},
+	}
+	for _, tx := range txs {
+		result.ListTxs = append(result.ListTxs, tx.String())
+	}
+	return result, nil
+}
+
 func (self RpcServer) handleListUnspentCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	arrayParams := common.InterfaceSlice(params)
 	// param #1: paymentaddress of sender
