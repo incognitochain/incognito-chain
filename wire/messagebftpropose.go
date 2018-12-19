@@ -13,8 +13,10 @@ const (
 )
 
 type MessageBFTPropose struct {
-	Block  blockchain.BFTBlockInterface
-	MsgSig string
+	AggregatedSig string
+	ValidatorsIdx []int
+	Block         blockchain.BFTBlockInterface
+	MsgSig        string
 }
 
 func (self *MessageBFTPropose) MessageType() string {

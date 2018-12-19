@@ -5,15 +5,15 @@ import (
 	"github.com/ninjadotorg/constant/wire"
 )
 
-func (self *Engine) sendBlockMsg(block *blockchain.BlockV2) {
-	blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
-	if err != nil {
-		Logger.log.Error(err)
-		return
-	}
-	blockMsg.(*wire.MessageBlock).Block = *block
-	self.config.Server.PushMessageToAll(blockMsg)
-}
+// func (self *Engine) sendBlockMsg(block *blockchain.BlockV2) {
+// 	blockMsg, err := wire.MakeEmptyMessage(wire.CmdBlock)
+// 	if err != nil {
+// 		Logger.log.Error(err)
+// 		return
+// 	}
+// 	blockMsg.(*wire.MessageBlock).Block = *block
+// 	self.config.Server.PushMessageToAll(blockMsg)
+// }
 
 // func (self *Engine) OnRequestSign(msgBlock *wire.MessageBlockSigReq) {
 // 	block := &msgBlock.Block
@@ -62,25 +62,25 @@ func (self *Engine) sendBlockMsg(block *blockchain.BlockV2) {
 // 	return
 // }
 
-func (self *Engine) OnBlockReceived(block *blockchain.BlockV2) {
-	// if self.config.BlockChain.BestState[block.Header.shardID].Height < block.Header.Height {
-	// 	exists, err := self.config.BlockChain.BlockExists(block.Hash())
-	// 	if err != nil {
-	// 		Logger.log.Error(err)
-	// 		return
-	// 	} else {
-	// 		if !exists {
-	// 			err := self.validateBlockSanity(block)
-	// 			if err != nil {
-	// 				Logger.log.Error(err)
-	// 				return
-	// 			}
-	// 			self.UpdateChain(block)
-	// 		}
-	// 	}
-	// }
-	return
-}
+// func (self *Engine) OnBlockReceived(block *blockchain.BlockV2) {
+// 	// if self.config.BlockChain.BestState[block.Header.shardID].Height < block.Header.Height {
+// 	// 	exists, err := self.config.BlockChain.BlockExists(block.Hash())
+// 	// 	if err != nil {
+// 	// 		Logger.log.Error(err)
+// 	// 		return
+// 	// 	} else {
+// 	// 		if !exists {
+// 	// 			err := self.validateBlockSanity(block)
+// 	// 			if err != nil {
+// 	// 				Logger.log.Error(err)
+// 	// 				return
+// 	// 			}
+// 	// 			self.UpdateChain(block)
+// 	// 		}
+// 	// 	}
+// 	// }
+// 	return
+// }
 
 func (self *Engine) OnBFTPropose(msg *wire.MessageBFTPropose) {
 	return
@@ -260,4 +260,51 @@ func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
 	// self.Committee().UpdateCommittee(msg.Candidate, msg.shardID)
 
 	// return
+}
+
+func MakeMsgBFTPropose(aggregatedSig string, validatorsIdx []int, block *blockchain.BFTBlockInterface) (*wire.Message, error) {
+	msg, err := wire.MakeEmptyMessage(wire.CmdBFTPropose)
+	if err != nil {
+		Logger.log.Error(err)
+		return msg, err
+	}
+	msg.(*wire.MessageBFTPropose).Block = *block
+	msg.(*wire.MessageBFTPropose).AggregatedSig = aggregatedSig
+	msg.(*wire.MessageBFTPropose).ValidatorsIdx = validatorsIdx
+
+}
+
+func MakeMsgBFTPrepare(Ri []byte, pubkey string) (*wire.Message, error) {
+	msg, err := wire.MakeEmptyMessage(wire.CmdBFTPrepare)
+	if err != nil {
+		Logger.log.Error(err)
+
+		return msg, err
+	}
+	msg.(*wire.MessageBFTPrepare).Ri = Ri
+	msg.(*wire.MessageBFTPrepare).Pubkey = pubkey
+}
+
+func MakeMsgBFTCommit(commitSig string, R []byte, validatorsIdx []int, pubkey string) (*wire.Message, error) {
+	msg, err := wire.MakeEmptyMessage(wire.CmdBFTCommit)
+	if err != nil {
+		Logger.log.Error(err)
+		return msg, err
+	}
+	msg.(*wire.MessageBFTCommit).CommitSig = commitSig
+	msg.(*wire.MessageBFTCommit).R = R
+	msg.(*wire.MessageBFTCommit).ValidatorsIdx = validatorsIdx
+	msg.(*wire.MessageBFTCommit).Pubkey = pubkey
+
+}
+
+func MakeMsgBFTReply(blockHash string, aggregatedSig string, validatorsIdx []int) (*wire.Message, error) {
+	msg, err := wire.MakeEmptyMessage(wire.CmdBFTReply)
+	if err != nil {
+		Logger.log.Error(err)
+		return msg, err
+	}
+	msg.(*wire.MessageBFTReply).BlockHash = blockHash
+	msg.(*wire.MessageBFTReply).AggregatedSig = aggregatedSig
+	msg.(*wire.MessageBFTReply).ValidatorsIdx = validatorsIdx
 }
