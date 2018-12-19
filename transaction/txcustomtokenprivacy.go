@@ -158,7 +158,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 		temp.Init(senderKey,
 			tokenParams.Receiver,
-			tokenParams.InputCoin,
+			tokenParams.TokenInput,
 			0,
 			true,
 			db,

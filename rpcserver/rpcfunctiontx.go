@@ -706,3 +706,79 @@ func (self RpcServer) handleHasSerialNumbers(params interface{}, closeChan <-cha
 
 	return result, nil
 }
+
+// handleCreateRawCustomTokenTransaction - handle create a custom token command and return in hex string format.
+func (self RpcServer) handleCreateRawPrivacyCustomTokenTransaction(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, error) {
+	tx, err := self.buildRawPrivacyCustomTokenTransaction(params)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	hexData := hex.EncodeToString(byteArrays)
+	result := jsonresult.CreateTransactionResult{
+		HexData: hexData,
+	}
+	return result, nil
+}
+
+// handleSendRawTransaction...
+func (self RpcServer) handleSendRawPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	Logger.log.Info(params)
+	arrayParams := common.InterfaceSlice(params)
+	hexRawTx := arrayParams[0].(string)
+	rawTxBytes, err := hex.DecodeString(hexRawTx)
+
+	if err != nil {
+		return nil, err
+	}
+	tx := transaction.TxCustomTokenPrivacy{}
+	err = json.Unmarshal(rawTxBytes, &tx)
+	if err != nil {
+		return nil, err
+	}
+
+	hash, txDesc, err := self.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	if err != nil {
+		return nil, err
+	}
+
+	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+	Logger.log.Infof("there is priority of transaction in pool: %d", txDesc.StartingPriority)
+
+	// broadcast message
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg.(*wire.MessageTx).Transaction = &tx
+	self.config.Server.PushMessageToAll(txMsg)
+
+	return tx.Hash(), nil
+}
+
+// handleCreateAndSendCustomTokenTransaction - create and send a tx which process on a custom token look like erc-20 on eth
+func (self RpcServer) handleCreateAndSendPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	data, err := self.handleCreateRawPrivacyCustomTokenTransaction(params, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	hexStrOfTx := tx.HexData
+	if err != nil {
+		return nil, err
+	}
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, hexStrOfTx)
+	txId, err := self.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	return txId, err
+}

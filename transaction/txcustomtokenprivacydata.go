@@ -33,19 +33,19 @@ type CustomTokenPrivacyParamTx struct {
 	Amount         uint64                 `json:"TokenAmount"`
 	TokenTxType    int                    `json:"TokenTxType"`
 	Receiver       []*privacy.PaymentInfo `json:"TokenReceiver"`
-	InputCoin      []*privacy.InputCoin   `json:"TokenInput"`
+	TokenInput     []*privacy.InputCoin   `json:"TokenInput"`
 }
 
 // CreateCustomTokenReceiverArray - parse data frm rpc request to create a list vout for preparing to create a custom token tx
 // data interface is a map[paymentt-address]{transferring-amount}
-func CreateCustomTokenPrivacyReceiverArray(data interface{}) []TxTokenVout {
-	result := []TxTokenVout{}
+func CreateCustomTokenPrivacyReceiverArray(data interface{}) []*privacy.PaymentInfo {
+	result := []*privacy.PaymentInfo{}
 	receivers := data.(map[string]interface{})
 	for key, value := range receivers {
 		key, _ := wallet.Base58CheckDeserialize(key)
-		temp := TxTokenVout{
+		temp := &privacy.PaymentInfo{
 			PaymentAddress: key.KeySet.PaymentAddress,
-			Value:          uint64(value.(float64)),
+			Amount:         uint64(value.(float64)),
 		}
 		result = append(result, temp)
 	}
