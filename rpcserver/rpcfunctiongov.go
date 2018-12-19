@@ -11,6 +11,7 @@ import (
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/ninjadotorg/constant/wire"
 	"github.com/ninjadotorg/constant/wallet"
+	"github.com/ninjadotorg/constant/common/base58"
 )
 
 func (self RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -69,7 +70,9 @@ func (self RpcServer) handleCreateRawTxWithBuyBackRequest(params interface{}, cl
 	}
 	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		HexData:         hexData,
+		TxID:            normalTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -131,7 +134,9 @@ func (self RpcServer) handleCreateRawTxWithBuySellRequest(params interface{}, cl
 	}
 	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		HexData:         hexData,
+		TxID:            normalTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -190,7 +195,9 @@ func (self RpcServer) handleCreateRawSealLv3VoteGOVProposalTransaction(params in
 	}
 	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		HexData:         hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -250,7 +257,9 @@ func (self RpcServer) handleCreateRawSealLv2VoteGOVProposalTransaction(params in
 	}
 	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		HexData:         hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -316,7 +325,9 @@ func (self RpcServer) handleCreateRawSealLv1VoteGOVProposalTransaction(params in
 	}
 	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		HexData:         hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -381,7 +392,9 @@ func (self RpcServer) handleCreateRawNormalVoteGOVProposalTransactionFromSealer(
 	}
 	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		HexData:         hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -437,7 +450,9 @@ func (self RpcServer) handleCreateRawNormalVoteGOVProposalTransactionFromOwner(p
 	}
 	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		HexData:         hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -524,7 +539,9 @@ func (self RpcServer) handleCreateRawVoteGOVBoardTransaction(
 	}
 	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		HexData:         hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
@@ -572,7 +589,9 @@ func (self RpcServer) handleCreateRawSubmitGOVProposalTransaction(
 	}
 	hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		HexData: hexData,
+		HexData:         hexData,
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }
