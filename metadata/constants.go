@@ -21,6 +21,8 @@ const (
 	IssuingResponseMeta
 	ContractingRequestMeta
 	OracleFeedMeta
+	OracleRewardMeta
+	RefundMeta
 	DividendMeta
 
 	CrowdsaleRequestMeta

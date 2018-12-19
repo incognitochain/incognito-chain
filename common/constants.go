@@ -13,11 +13,6 @@ const (
 	TxRefundType             = "rf" // refund tx(gov does refund to end users for small txs)
 	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "t"  // token  tx with supporting privacy
-
-	TxBuyFromGOVRequest  = "bgr"
-	TxBuyFromGOVResponse = "bgrs"
-	TxBuyBackRequest     = "bbr"
-	TxBuyBackResponse    = "bbrs"
 )
 
 // for mining consensus
