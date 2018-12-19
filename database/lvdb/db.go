@@ -111,7 +111,7 @@ func (db db) GetKey(keyType string, key interface{}) []byte {
 	case string(blockKeyIdxPrefix):
 		dbkey = append(blockKeyIdxPrefix, key.(*common.Hash)[:]...)
 	case string(serialNumbersPrefix):
-		dbkey = append(serialNumbersPrefix, []byte(key.(string))...)
+		dbkey = append(serialNumbersPrefix, []byte(key.(*common.Hash).String())...)
 	case string(commitmentsPrefix):
 		dbkey = append(commitmentsPrefix, []byte(key.(*common.Hash).String())...)
 	case string(outcoinsPrefix):

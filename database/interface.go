@@ -44,9 +44,9 @@ type DatabaseInterface interface {
 	CleanBestState() error
 
 	// SerialNumber
-	StoreSerialNumbers([]byte, byte) error
-	FetchSerialNumbers(byte) ([][]byte, error)
-	HasSerialNumber([]byte, byte) (bool, error)
+	StoreSerialNumbers(tokenID *common.Hash, data []byte, chainID byte) error
+	FetchSerialNumbers(tokenID *common.Hash, chainID byte) ([][]byte, error)
+	HasSerialNumber(tokenID *common.Hash, data []byte, chainID byte) (bool, error)
 	CleanSerialNumbers() error
 
 	// PedersenCommitment

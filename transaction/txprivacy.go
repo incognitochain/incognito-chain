@@ -567,9 +567,11 @@ func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
 	db database.DatabaseInterface,
 ) error {
 
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
 	for i := 0; tx.Proof != nil && i < len(tx.Proof.InputCoins); i++ {
 		serialNumber := tx.Proof.InputCoins[i].CoinDetails.SerialNumber.Compress()
-		ok, err := db.HasSerialNumber(serialNumber, chainID)
+		ok, err := db.HasSerialNumber(constantTokenID, serialNumber, chainID)
 		if ok || err != nil {
 			return errors.New("Double spend")
 		}

@@ -76,7 +76,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.Datab
 	}
 	for _, item := range proof.InputCoins {
 		serialNum := item.CoinDetails.SerialNumber.Compress()
-		ok, err := db.HasSerialNumber(serialNum, chainID)
+		ok, err := db.HasSerialNumber(tokenID, serialNum, chainID)
 		if err != nil {
 			return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}

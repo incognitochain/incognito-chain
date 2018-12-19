@@ -387,7 +387,7 @@ this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreSerialNumbersFromTxViewPoint(view TxViewPoint) error {
 	for _, item1 := range view.listSerialNumbers {
-		err := self.config.DataBase.StoreSerialNumbers(item1, view.chainID)
+		err := self.config.DataBase.StoreSerialNumbers(view.tokenID, item1, view.chainID)
 		if err != nil {
 			return err
 		}
@@ -448,7 +448,7 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
 this is a list tx-out which are used by a new tx
 */
-func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, chainId byte) error {
+/*func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, chainId byte) error {
 	for _, nullifier := range nullifiers {
 		err := self.config.DataBase.StoreSerialNumbers(nullifier, chainId)
 		if err != nil {
@@ -456,7 +456,7 @@ func (self *BlockChain) StoreNullifiersFromListNullifier(nullifiers [][]byte, ch
 		}
 	}
 	return nil
-}
+}*/
 
 /*
 Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
@@ -476,7 +476,7 @@ this is a list tx-in which are used by a new tx
 Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
 this is a list tx-out which are used by a new tx
 */
-func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
+/*func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
 	for _, desc := range tx.Proof.InputCoins {
 		chainId, err := common.GetTxSenderChain(tx.PubKeyLastByteSender)
 		if err != nil {
@@ -488,7 +488,7 @@ func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
 		}
 	}
 	return nil
-}
+}*/
 
 /*
 Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
@@ -1044,7 +1044,7 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 }
 
 // DecryptTxByKey - process outputcoin to get outputcoin data which relate to keyset
-func (self *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.OutputCoin, keySet *cashec.KeySet, chainID byte) *privacy.OutputCoin {
+func (self *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.OutputCoin, keySet *cashec.KeySet, chainID byte, tokenID *common.Hash) *privacy.OutputCoin {
 	/*
 		- Param keyset - (priv-key, payment-address, readonlykey)
 		in case priv-key: return unspent outputcoin tx
@@ -1069,7 +1069,7 @@ func (self *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.OutputCoin, 
 		if len(keySet.PrivateKey) > 0 {
 			// check spent with private-key
 			result.CoinDetails.SerialNumber = privacy.Eval(new(big.Int).SetBytes(keySet.PrivateKey), result.CoinDetails.SNDerivator)
-			ok, err := self.config.DataBase.HasSerialNumber(result.CoinDetails.SerialNumber.Compress(), chainID)
+			ok, err := self.config.DataBase.HasSerialNumber(tokenID, result.CoinDetails.SerialNumber.Compress(), chainID)
 			if ok || err != nil {
 				return nil
 			}
@@ -1117,7 +1117,7 @@ func (self *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, chainI
 	for _, out := range outCoints {
 		pubkeyCompress := out.CoinDetails.PublicKey.Compress()
 		if bytes.Equal(pubkeyCompress, keyset.PaymentAddress.Pk[:]) {
-			out = self.DecryptOutputCoinByKey(out, keyset, chainID)
+			out = self.DecryptOutputCoinByKey(out, keyset, chainID, tokenID)
 			if out == nil {
 				continue
 			} else {

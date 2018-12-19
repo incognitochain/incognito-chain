@@ -628,10 +628,12 @@ func (self RpcServer) handleHasSerialNumbers(params interface{}, closeChan <-cha
 	result := make(map[byte][]string)
 	result[0] = []string{}
 	result[1] = []string{}
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
 	for _, item := range serialNumbersStr {
 		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(self.config.Database)
-		ok, err := db.HasSerialNumber(serialNumber, chainIdSender)
+		ok, err := db.HasSerialNumber(constantTokenID, serialNumber, chainIdSender)
 		if ok && err != nil {
 			result[0] = append(result[0], item.(string))
 		} else {

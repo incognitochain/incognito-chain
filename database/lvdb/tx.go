@@ -20,8 +20,8 @@ import (
 )
 
 // StoreSerialNumbers - store list serialNumbers by chainID
-func (db *db) StoreSerialNumbers(serialNumber []byte, chainId byte) error {
-	key := db.GetKey(string(serialNumbersPrefix), "")
+func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumber []byte, chainId byte) error {
+	key := db.GetKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, chainId)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -58,8 +58,8 @@ func (db *db) StoreSerialNumbers(serialNumber []byte, chainId byte) error {
 }
 
 // FetchSerialNumbers - Get list SerialNumbers by chainID
-func (db *db) FetchSerialNumbers(chainID byte) ([][]byte, error) {
-	key := db.GetKey(string(serialNumbersPrefix), "")
+func (db *db) FetchSerialNumbers(tokenID *common.Hash, chainID byte) ([][]byte, error) {
+	key := db.GetKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, chainID)
 	res, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -76,8 +76,8 @@ func (db *db) FetchSerialNumbers(chainID byte) ([][]byte, error) {
 }
 
 // HasSerialNumber - Check serialNumber in list SerialNumbers by chainID
-func (db *db) HasSerialNumber(serialNumber []byte, chainID byte) (bool, error) {
-	key := db.GetKey(string(serialNumbersPrefix), "")
+func (db *db) HasSerialNumber(tokenID *common.Hash, serialNumber []byte, chainID byte) (bool, error) {
+	key := db.GetKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, chainID)
 	keySpec := append(key, serialNumber...)
 	_, err := db.Get(keySpec)
