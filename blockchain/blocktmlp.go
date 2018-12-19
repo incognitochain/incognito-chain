@@ -1008,7 +1008,8 @@ func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, pro
 				continue
 			}
 			unlockMeta := &metadata.LoanUnlock{
-				LoanID: make([]byte, len(withdrawMeta.LoanID)),
+				LoanID:       make([]byte, len(withdrawMeta.LoanID)),
+				MetadataBase: metadata.MetadataBase{Type: metadata.LoanUnlockMeta},
 			}
 			copy(unlockMeta.LoanID, withdrawMeta.LoanID)
 			txNormals[0].Metadata = unlockMeta
