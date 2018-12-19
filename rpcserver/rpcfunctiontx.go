@@ -487,6 +487,51 @@ func (self RpcServer) handleGetListCustomTokenBalance(params interface{}, closeC
 	return result, nil
 }
 
+func (self RpcServer) handleGetListPrivacyCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	arrayParams := common.InterfaceSlice(params)
+	privateKey := arrayParams[0].(string)
+	account, err := wallet.Base58CheckDeserialize(privateKey)
+	account.KeySet.ImportFromPrivateKey(&account.KeySet.PrivateKey)
+	if err != nil {
+		return nil, nil
+	}
+	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
+	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
+	temps, err := self.config.BlockChain.ListCustomToken()
+	if err != nil {
+		return nil, err
+	}
+	for _, tx := range temps {
+		item := jsonresult.CustomTokenBalance{}
+		item.Name = tx.TxTokenData.PropertyName
+		item.Symbol = tx.TxTokenData.PropertySymbol
+		item.TokenID = tx.TxTokenData.PropertyID.String()
+		tokenID := tx.TxTokenData.PropertyID
+
+		balance := uint64(0)
+		// get balance for accountName in wallet
+		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
+		chainIdSender, err := common.GetTxSenderChain(lastByte)
+		constantTokenID := &common.Hash{}
+		constantTokenID.SetBytes(common.ConstantID[:])
+		outcoints, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, chainIdSender, &tokenID)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		for _, out := range outcoints {
+			balance += out.CoinDetails.Value
+		}
+
+		item.Amount = balance
+		if item.Amount == 0 {
+			continue
+		}
+		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
+		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
+	}
+	return result, nil
+}
+
 // handleCustomTokenDetail - return list tx which relate to custom token by token id
 func (self RpcServer) handleCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	arrayParams := common.InterfaceSlice(params)
