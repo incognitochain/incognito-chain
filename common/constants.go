@@ -66,7 +66,7 @@ var (
 	ConstantID      = [HashSize]byte{4} // To send Constant in custom token
 	VoteDCBTokenID  = [HashSize]byte{5}
 	VoteGOVTokenID  = [HashSize]byte{6}
-	OffchainAssetID = [HashSize]byte{7}
+	OffchainAssetID = [HashSize]byte{7, 7, 7, 7, 7, 7, 7, 7} // First 8 bytes of offchain asset
 )
 
 // asset IDs for oracle feed

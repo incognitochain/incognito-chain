@@ -103,6 +103,10 @@ func (self *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint32, e
 	return self.config.DataBase.GetLoanPayment(loanID)
 }
 
+func (self *BlockChain) GetCrowdsaleTxs(requestTxHash []byte) ([][]byte, error) {
+	return self.config.DataBase.GetCrowdsaleTxs(requestTxHash)
+}
+
 func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*voting.SaleData, error) {
 	endBlock, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := self.config.DataBase.LoadCrowdsaleData(saleID)
 	var saleData *voting.SaleData
@@ -643,6 +647,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 			{
 				tx := tx.(*transaction.Tx)
 				meta := tx.Metadata.(*metadata.LoanResponse)
+				// TODO(@0xbunyip): store multiple responses with different suffixes
 				self.config.DataBase.StoreLoanResponse(meta.LoanID, tx.Hash()[:])
 			}
 		case metadata.LoanUnlockMeta:
@@ -837,6 +842,28 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 					); err != nil {
 						return err
 					}
+				}
+			}
+		case metadata.CrowdsaleRequestMeta:
+			{
+				meta := tx.GetMetadata().(*metadata.CrowdsaleRequest)
+				hash := tx.Hash()
+				if err := self.config.DataBase.StoreCrowdsaleRequest(hash[:], meta.SaleID, meta.PaymentAddress.Pk[:], meta.PaymentAddress.Tk[:], meta.Info); err != nil {
+					return err
+				}
+			}
+		case metadata.CrowdsaleResponseMeta:
+			{
+				meta := tx.GetMetadata().(*metadata.CrowdsaleResponse)
+				_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
+				if err != nil {
+					return err
+				}
+				requestHash := txRequest.Hash()
+
+				hash := tx.Hash()
+				if err := self.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
+					return err
 				}
 			}
 		}
