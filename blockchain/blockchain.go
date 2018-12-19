@@ -909,7 +909,7 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 		return err
 	}
 
-	// check custom token and privacy custom token
+	// check normal custom token
 	for indexTx, customTokenTx := range view.customTokenTxs {
 		switch customTokenTx.TxTokenData.Type {
 		case transaction.CustomTokenInit:
@@ -943,6 +943,24 @@ func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 				return err
 			}
 		}
+		if err != nil {
+			return err
+		}
+	}
+
+	// check privacy custom token
+	for _, privacyCustomTokenSubView := range view.privacyCustomTokenTxs {
+		err = self.StoreSerialNumbersFromTxViewPoint(*privacyCustomTokenSubView)
+		if err != nil {
+			return err
+		}
+
+		err = self.StoreCommitmentsFromTxViewPoint(*privacyCustomTokenSubView)
+		if err != nil {
+			return err
+		}
+
+		err = self.StoreSNDerivatorsFromTxViewPoint(*privacyCustomTokenSubView)
 		if err != nil {
 			return err
 		}
