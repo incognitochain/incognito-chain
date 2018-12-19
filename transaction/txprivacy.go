@@ -661,7 +661,13 @@ func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 }
 
 func (tx *Tx) GetJSPubKey() []byte {
-	return tx.SigPubKey
+	result := []byte{}
+	if len(tx.Proof.InputCoins) > 0 {
+		pubkey := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+		result = make([]byte, len(pubkey))
+		copy(result, pubkey)
+	}
+	return result
 }
 
 func (tx *Tx) IsPrivacy() bool {

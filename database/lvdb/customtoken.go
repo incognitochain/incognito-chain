@@ -215,11 +215,3 @@ func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, pubkey []byte, txHas
 	}
 	return nil
 }
-
-func (db *db) SaveCrowdsaleData(saleID []byte, endBlock int32, buyingAsset []byte, amountBuying uint64, sellingAsset []byte, amountSelling uint64) error {
-	return nil
-}
-
-func (db *db) LoadCrowdsaleData(saleID []byte) (int32, []byte, uint64, []byte, uint64, error) {
-	return 0, nil, 0, nil, 0, nil
-}

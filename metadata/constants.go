@@ -13,6 +13,11 @@ const (
 	LoanWithdrawMeta
 	LoanUnlockMeta
 	LoanPaymentMeta
+	DividendMeta
+	CrowdsaleRequestMeta
+	CrowdsaleResponseMeta
+	CrowdsalePaymentMeta
+
 	BuyFromGOVRequestMeta
 	BuyFromGOVResponseMeta
 	BuyBackRequestMeta
@@ -21,9 +26,6 @@ const (
 	IssuingResponseMeta
 	ContractingRequestMeta
 	OracleFeedMeta
-	DividendMeta
-
-	CrowdsaleRequestMeta
 
 	//Voting
 	SubmitDCBProposalMeta

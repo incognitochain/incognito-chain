@@ -17,7 +17,7 @@ type SaleData struct {
 	EndBlock int32
 
 	BuyingAsset  []byte
-	BuyingAmount uint64
+	BuyingAmount uint64 // TODO(@0xbunyip): change to big.Int
 
 	SellingAsset  []byte
 	SellingAmount uint64
