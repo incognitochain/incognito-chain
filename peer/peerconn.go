@@ -117,9 +117,21 @@ func (self *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if self.Config.MessageListeners.OnTx != nil {
 						self.Config.MessageListeners.OnTx(self, message.(*wire.MessageTx))
 					}
-				case reflect.TypeOf(&wire.MessageBlock{}):
-					if self.Config.MessageListeners.OnBlock != nil {
-						self.Config.MessageListeners.OnBlock(self, message.(*wire.MessageBlock))
+				case reflect.TypeOf(&wire.MessageBlockShard{}):
+					if self.Config.MessageListeners.OnBlockShard != nil {
+						self.Config.MessageListeners.OnBlockShard(self, message.(*wire.MessageBlockShard))
+					}
+				case reflect.TypeOf(&wire.MessageBlockBeacon{}):
+					if self.Config.MessageListeners.OnBlockBeacon != nil {
+						self.Config.MessageListeners.OnBlockBeacon(self, message.(*wire.MessageBlockBeacon))
+					}
+				case reflect.TypeOf(&wire.MessageCrossShard{}):
+					if self.Config.MessageListeners.OnCrossShard != nil {
+						self.Config.MessageListeners.OnCrossShard(self, message.(*wire.MessageCrossShard))
+					}
+				case reflect.TypeOf(&wire.MessageShardToBeacon{}):
+					if self.Config.MessageListeners.OnShardToBeacon != nil {
+						self.Config.MessageListeners.OnShardToBeacon(self, message.(*wire.MessageShardToBeacon))
 					}
 				case reflect.TypeOf(&wire.MessageGetBlocks{}):
 					if self.Config.MessageListeners.OnGetBlocks != nil {

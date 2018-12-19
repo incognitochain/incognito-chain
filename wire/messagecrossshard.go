@@ -8,9 +8,9 @@ import (
 	"github.com/ninjadotorg/constant/cashec"
 )
 
-const (
-	MaxBlockPayload = 1000000 // 1 Mb
-)
+// const (
+// 	MaxBlockPayload = 1000000 // 1 Mb
+// )
 
 type MessageCrossShard struct {
 	Block blockchain.ShardToShardBlock

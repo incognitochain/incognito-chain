@@ -101,13 +101,16 @@ type WrappedStream struct {
 // result in a deadlock.
 */
 type MessageListeners struct {
-	OnTx        func(p *PeerConn, msg *wire.MessageTx)
-	OnBlock     func(p *PeerConn, msg *wire.MessageBlock)
-	OnGetBlocks func(p *PeerConn, msg *wire.MessageGetBlocks)
-	OnVersion   func(p *PeerConn, msg *wire.MessageVersion)
-	OnVerAck    func(p *PeerConn, msg *wire.MessageVerAck)
-	OnGetAddr   func(p *PeerConn, msg *wire.MessageGetAddr)
-	OnAddr      func(p *PeerConn, msg *wire.MessageAddr)
+	OnTx            func(p *PeerConn, msg *wire.MessageTx)
+	OnBlockShard    func(p *PeerConn, msg *wire.MessageBlockShard)
+	OnBlockBeacon   func(p *PeerConn, msg *wire.MessageBlockBeacon)
+	OnCrossShard    func(p *PeerConn, msg *wire.MessageCrossShard)
+	OnShardToBeacon func(p *PeerConn, msg *wire.MessageShardToBeacon)
+	OnGetBlocks     func(p *PeerConn, msg *wire.MessageGetBlocks)
+	OnVersion       func(p *PeerConn, msg *wire.MessageVersion)
+	OnVerAck        func(p *PeerConn, msg *wire.MessageVerAck)
+	OnGetAddr       func(p *PeerConn, msg *wire.MessageGetAddr)
+	OnAddr          func(p *PeerConn, msg *wire.MessageAddr)
 
 	//PoS
 	OnBFTPropose func(p *PeerConn, msg *wire.MessageBFTPropose)

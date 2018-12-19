@@ -17,7 +17,7 @@ type MessageBlockShard struct {
 }
 
 func (self MessageBlockShard) MessageType() string {
-	return CmdShardBlock
+	return CmdBlockShard
 }
 
 func (self MessageBlockShard) MaxPayloadLength(pver int) int {
