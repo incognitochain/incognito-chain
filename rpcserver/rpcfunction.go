@@ -60,6 +60,14 @@ var RpcHandler = map[string]commandHandler{
 	CustomToken:                         RpcServer.handleCustomTokenDetail,
 	GetListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
 
+	// custom token which support privacy
+	"CreateRawPrivacyCustomTokenTransaction":     RpcServer.handleCreateRawPrivacyCustomTokenTransaction,
+	"SendRawPrivacyCustomTokenTransaction":       RpcServer.handleSendRawPrivacyCustomTokenTransaction,
+	"CreateAndSendPrivacyCustomTokenTransaction": RpcServer.handleCreateAndSendPrivacyCustomTokenTransaction,
+	"ListPrivacyCustomToken":                     RpcServer.handleListPrivacyCustomToken,
+	"PrivacyCustomToken":                         RpcServer.handlePrivacyCustomTokenDetail,
+	"GetListPrivacyCustomTokenBalance":           RpcServer.handleGetListPrivacyCustomTokenBalance,
+
 	// Loan tx
 	GetLoanParams:             RpcServer.handleGetLoanParams,
 	CreateAndSendLoanRequest:  RpcServer.handleCreateAndSendLoanRequest,

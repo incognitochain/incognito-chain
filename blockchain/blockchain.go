@@ -902,14 +902,14 @@ Param coinType - COIN or BOND
 }*/
 
 func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
+	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ChainID)
-
 	err := view.fetchTxViewPointFromBlock(self.config.DataBase, block)
 	if err != nil {
 		return err
 	}
 
-	// check custom token and save
+	// check custom token and privacy custom token
 	for indexTx, customTokenTx := range view.customTokenTxs {
 		switch customTokenTx.TxTokenData.Type {
 		case transaction.CustomTokenInit:

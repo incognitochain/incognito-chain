@@ -14,14 +14,14 @@ import (
 // TxCustomTokenPrivacy is an advance format of TxCustomToken
 // so that user need to spend a lot fee to create this class tx
 type TxCustomTokenPrivacy struct {
-	TxNormal           Tx                 // inherit from normal tx of constant(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
+	Tx                                    // inherit from normal tx of constant(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
 	TxTokenPrivacyData TxTokenPrivacyData // supporting privacy format
 }
 
 // Hash returns the hash of all fields of the transaction
 func (tx *TxCustomTokenPrivacy) Hash() *common.Hash {
 	// get hash of tx
-	record := tx.TxNormal.Hash().String()
+	record := tx.Tx.Hash().String()
 
 	// add more hash of tx custom token data privacy
 	tokenPrivacyDataHash, _ := tx.TxTokenPrivacyData.Hash()
@@ -34,7 +34,7 @@ func (tx *TxCustomTokenPrivacy) Hash() *common.Hash {
 
 func (tx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainID byte) bool {
 	// validate for normal tx
-	if tx.TxNormal.ValidateTransaction(hasPrivacy, db, chainID) {
+	if tx.Tx.ValidateTransaction(hasPrivacy, db, chainID) {
 		// TODO
 		return true
 	}
@@ -44,7 +44,7 @@ func (tx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, db database
 // GetTxActualSize computes the virtual size of a given transaction
 // size of this tx = (normal TxNormal size) + (custom token data size)
 func (tx *TxCustomTokenPrivacy) GetTxActualSize() uint64 {
-	normalTxSize := tx.TxNormal.GetTxActualSize()
+	normalTxSize := tx.Tx.GetTxActualSize()
 
 	tokenDataSize := uint64(0)
 	tokenDataSize += tx.TxTokenPrivacyData.TxNormal.GetTxActualSize()
@@ -81,7 +81,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 	}
 	// override TxCustomTokenPrivacyType type
 	normalTx.Type = common.TxCustomTokenPrivacyType
-	txCustomToken.TxNormal = normalTx
+	txCustomToken.Tx = normalTx
 
 	var handled = false
 	// Add token data params
