@@ -8,6 +8,7 @@ import (
 	"math/big"
 
 	"github.com/ninjadotorg/constant/privacy-protocol"
+	"github.com/ninjadotorg/constant/common"
 )
 
 // PKOneOfManyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
@@ -458,7 +459,7 @@ func (wit *PKOneOfManyWitness) Prove() (*PKOneOfManyProof, error) {
 	return proof, nil
 }
 
-func (pro *PKOneOfManyProof) Verify(db database.DatabaseInterface, chainId byte) bool {
+func (pro *PKOneOfManyProof) Verify(tokenID *common.Hash, db database.DatabaseInterface, chainId byte) bool {
 	N := len(pro.commitmentIndexs)
 	// Calculate n
 	//temp := 1
@@ -476,7 +477,7 @@ func (pro *PKOneOfManyProof) Verify(db database.DatabaseInterface, chainId byte)
 	// get commitments list from commitmentIndexs
 	commitments := make([]*privacy.EllipticPoint, N)
 	for i := 0; i < N; i++{
-		commitmentBytes, err := db.GetCommitmentByIndex(pro.commitmentIndexs[i], chainId)
+		commitmentBytes, err := db.GetCommitmentByIndex(tokenID, pro.commitmentIndexs[i], chainId)
 		if err != nil{
 			fmt.Printf("Error when verify: %v\n", err)
 			return false

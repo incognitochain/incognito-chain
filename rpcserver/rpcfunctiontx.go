@@ -63,7 +63,9 @@ func (self RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		outputCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, chainIdSender)
+		constantTokenID := &common.Hash{}
+		constantTokenID.SetBytes(common.ConstantID[:])
+		outputCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, chainIdSender, constantTokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -133,7 +135,9 @@ func (self RpcServer) buildRawTransaction(params interface{}) (*transaction.Tx, 
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender)
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, constantTokenID)
 	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, note := range outCoins {
 		amount := note.CoinDetails.Value
@@ -595,7 +599,9 @@ func (self RpcServer) handleRandomCommitments(params interface{}, closeChan <-ch
 		usableOutputCoins = append(usableOutputCoins, i)
 	}
 	usableInputCoins := transaction.ConvertOutputCoinToInputCoin(usableOutputCoins)
-	commitmentIndexs, myCommitmentIndexs := self.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, chainIdSender)
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	commitmentIndexs, myCommitmentIndexs := self.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, chainIdSender, constantTokenID)
 	result := make(map[string]interface{})
 	result["CommitmentIndexs"] = commitmentIndexs
 	result["MyCommitmentIndexs"] = myCommitmentIndexs

@@ -90,7 +90,9 @@ func (self RpcServer) buildRawCustomTokenTransaction(
 
 	// list unspent tx for estimation fee
 	estimateTotalAmount := totalAmmount
-	outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender)
+	tokenID := &common.Hash{}
+	tokenID.SetBytes(common.ConstantID[:])
+	outCoins, _ := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, tokenID)
 	candidateOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, note := range outCoins {
 		amount := note.CoinDetails.Value

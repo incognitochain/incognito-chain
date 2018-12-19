@@ -203,7 +203,9 @@ func (self RpcServer) handleListUnspentOutputCoins(params interface{}, closeChan
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&key.KeySet, 14)
+		tokenID := &common.Hash{}
+		tokenID.SetBytes(common.ConstantID[:])
+		outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&key.KeySet, 14, tokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}

@@ -50,22 +50,22 @@ type DatabaseInterface interface {
 	CleanSerialNumbers() error
 
 	// PedersenCommitment
-	StoreCommitments(pubkey []byte, commitment []byte, chainID byte) error
-	StoreOutputCoins(pubkey []byte, outputcoin []byte, chainID byte) error
-	FetchCommitments(chainID byte) ([][]byte, error)
-	HasCommitment(commitment []byte, chainID byte) (bool, error)
-	HasCommitmentIndex(commitmentIndex uint64, chainID byte) (bool, error)
-	GetCommitmentByIndex(commitmentIndex uint64, chainID byte) ([]byte, error)
-	GetCommitmentIndex(commitment []byte, chainId byte) (*big.Int, error)
-	GetCommitmentLength(chainId byte) (*big.Int, error)
-	GetCommitmentIndexsByPubkey(pubkey []byte, chainID byte) ([][]byte, error)
-	GetOutcoinsByPubkey(pubkey []byte, chainID byte) ([][]byte, error)
+	StoreCommitments(tokenID *common.Hash, pubkey []byte, commitment []byte, chainID byte) error
+	StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin []byte, chainID byte) error
+	FetchCommitments(tokenID *common.Hash, chainID byte) ([][]byte, error)
+	HasCommitment(tokenID *common.Hash, commitment []byte, chainID byte) (bool, error)
+	HasCommitmentIndex(tokenID *common.Hash, commitmentIndex uint64, chainID byte) (bool, error)
+	GetCommitmentByIndex(tokenID *common.Hash, commitmentIndex uint64, chainID byte) ([]byte, error)
+	GetCommitmentIndex(tokenID *common.Hash, commitment []byte, chainId byte) (*big.Int, error)
+	GetCommitmentLength(tokenID *common.Hash, chainId byte) (*big.Int, error)
+	GetCommitmentIndexsByPubkey(tokenID *common.Hash, pubkey []byte, chainID byte) ([][]byte, error)
+	GetOutcoinsByPubkey(tokenID *common.Hash, pubkey []byte, chainID byte) ([][]byte, error)
 	CleanCommitments() error
 
 	// SNDerivator
-	StoreSNDerivators(big.Int, byte) error
-	FetchSNDerivator(byte) ([]big.Int, error)
-	HasSNDerivator(big.Int, byte) (bool, error)
+	StoreSNDerivators(tokenID *common.Hash, data big.Int, shardID byte) error
+	FetchSNDerivator(tokenID *common.Hash, chainID byte) ([]big.Int, error)
+	HasSNDerivator(tokenID *common.Hash, data big.Int, chainID byte) (bool, error)
 	CleanSNDerivator() error
 
 	// Fee estimator

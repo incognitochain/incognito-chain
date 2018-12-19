@@ -113,17 +113,17 @@ func (db db) GetKey(keyType string, key interface{}) []byte {
 	case string(serialNumbersPrefix):
 		dbkey = append(serialNumbersPrefix, []byte(key.(string))...)
 	case string(commitmentsPrefix):
-		dbkey = append(commitmentsPrefix, []byte(key.(string))...)
+		dbkey = append(commitmentsPrefix, []byte(key.(*common.Hash).String())...)
 	case string(outcoinsPrefix):
-		dbkey = append(outcoinsPrefix, []byte(key.(string))...)
+		dbkey = append(outcoinsPrefix, []byte(key.(*common.Hash).String())...)
 	case string(snderivatorsPrefix):
-		dbkey = append(snderivatorsPrefix, []byte(key.(string))...)
+		dbkey = append(snderivatorsPrefix, []byte(key.(*common.Hash).String())...)
 	case string(TokenPrefix):
 		dbkey = append(TokenPrefix, key.(*common.Hash)[:]...)
 	case string(tokenInitPrefix):
 		dbkey = append(tokenInitPrefix, key.(*common.Hash)[:]...)
 
-	// Voting case
+		// Voting case
 	case string(voteDCBBoardSumPrefix):
 		postfix := []byte(key.(string))
 		dbkey = append(voteDCBBoardSumPrefix, postfix...)

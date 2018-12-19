@@ -26,7 +26,9 @@ func (self RpcServer) handleListAccounts(params interface{}, closeChan <-chan st
 	for accountName, account := range accounts {
 		lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
 		chainIdSender, err := common.GetTxSenderChain(lastByte)
-		outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender)
+		constantTokenID := &common.Hash{}
+		constantTokenID.SetBytes(common.ConstantID[:])
+		outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender, constantTokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -156,7 +158,9 @@ func (self RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan
 	// get balance for accountName in wallet
 	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
-	outcoints, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender)
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	outcoints, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, chainIdSender, constantTokenID)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -184,7 +188,9 @@ func (self RpcServer) handleGetBalanceByPaymentAddress(params interface{}, close
 	// get balance for accountName in wallet
 	lastByte := accountWithPaymentAddress.KeySet.PaymentAddress.Pk[len(accountWithPaymentAddress.KeySet.PaymentAddress.Pk)-1]
 	chainIdSender, err := common.GetTxSenderChain(lastByte)
-	outcoints, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&accountWithPaymentAddress.KeySet, chainIdSender)
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	outcoints, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&accountWithPaymentAddress.KeySet, chainIdSender, constantTokenID)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -225,12 +231,14 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 		return balance, NewRPCError(ErrUnexpected, errors.New("Password phrase is wrong for local wallet"))
 	}
 
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
 	if accountName == "*" {
 		// get balance for all accounts in wallet
 		for _, account := range self.config.Wallet.MasterAccount.Child {
 			lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
 			chainIdSender, err := common.GetTxSenderChain(lastByte)
-			outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender)
+			outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender, constantTokenID)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
@@ -244,7 +252,7 @@ func (self RpcServer) handleGetBalance(params interface{}, closeChan <-chan stru
 				// get balance for accountName in wallet
 				lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
 				chainIdSender, err := common.GetTxSenderChain(lastByte)
-				outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender)
+				outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender, constantTokenID)
 				if err != nil {
 					return nil, NewRPCError(ErrUnexpected, err)
 				}
@@ -294,7 +302,9 @@ func (self RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <
 			// get balance for accountName in wallet
 			lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
 			chainIdSender, err := common.GetTxSenderChain(lastByte)
-			outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender)
+			constantTokenID := &common.Hash{}
+			constantTokenID.SetBytes(common.ConstantID[:])
+			outCoins, err := self.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, chainIdSender, constantTokenID)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}

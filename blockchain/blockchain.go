@@ -401,7 +401,8 @@ this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint) error {
 	for _, item1 := range view.listSnD {
-		err := self.config.DataBase.StoreSNDerivators(item1, view.chainID)
+		err := self.config.DataBase.StoreSNDerivators(view.tokenID, item1, view.chainID)
+
 		if err != nil {
 			return err
 		}
@@ -420,7 +421,7 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 			return err
 		}
 		for _, com := range item1 {
-			err = self.config.DataBase.StoreCommitments(pubkeyBytes, com, view.chainID)
+			err = self.config.DataBase.StoreCommitments(view.tokenID, pubkeyBytes, com, view.chainID)
 			if err != nil {
 				return err
 			}
@@ -434,7 +435,7 @@ func (self *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint) error 
 		for _, com := range item1 {
 			lastByte := pubkeyBytes[len(pubkeyBytes)-1]
 			chainID, err := common.GetTxSenderChain(lastByte)
-			err = self.config.DataBase.StoreOutputCoins(pubkeyBytes, com.Bytes(), chainID)
+			err = self.config.DataBase.StoreOutputCoins(view.tokenID, pubkeyBytes, com.Bytes(), chainID)
 			if err != nil {
 				return err
 			}
@@ -1087,7 +1088,7 @@ in case readonly-key: return all outputcoin tx with amount value
 in case payment-address: return all outputcoin tx with no amount value
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (self *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, chainID byte) ([]*privacy.OutputCoin, error) {
+func (self *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, chainID byte, tokenID *common.Hash) ([]*privacy.OutputCoin, error) {
 	// lock chain
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
@@ -1097,7 +1098,8 @@ func (self *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, chainI
 		// TODO
 	}
 	// get list outputcoin of pubkey from db
-	outCointsInBytes, err := self.config.DataBase.GetOutcoinsByPubkey(keyset.PaymentAddress.Pk[:], chainID)
+
+	outCointsInBytes, err := self.config.DataBase.GetOutcoinsByPubkey(tokenID, keyset.PaymentAddress.Pk[:], chainID)
 	if err != nil {
 		return nil, err
 	}
@@ -1358,12 +1360,12 @@ func (self *BlockChain) GetNumberOfGOVGovernors() int {
 	return common.NumberOfGOVGovernors
 }
 
-func (self BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, chainID byte) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
-	return transaction.RandomCommitmentsProcess(usableInputCoins, randNum, self.config.DataBase, chainID)
+func (self BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, chainID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64) {
+	return transaction.RandomCommitmentsProcess(usableInputCoins, randNum, self.config.DataBase, chainID, tokenID)
 }
 
-func (self BlockChain) CheckSNDerivatorExistence(snd *big.Int, chainID byte) (bool, error) {
-	return transaction.CheckSNDerivatorExistence(snd, chainID, self.config.DataBase)
+func (self BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, chainID byte) (bool, error) {
+	return transaction.CheckSNDerivatorExistence(tokenID, snd, chainID, self.config.DataBase)
 }
 
 // GetFeePerKbTx - return fee (per kb of tx) from GOV params data

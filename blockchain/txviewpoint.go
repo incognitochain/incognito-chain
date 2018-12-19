@@ -13,6 +13,7 @@ import (
 )
 
 type TxViewPoint struct {
+	tokenID           *common.Hash
 	chainID           byte
 	listSerialNumbers [][]byte // array serialNumbers
 	listCommitments   [][]byte
@@ -65,7 +66,7 @@ func (view *TxViewPoint) CurrentBestBlockHash() *common.Hash {
 }
 
 // fetch from desc of tx to get nullifiers and commitments
-func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.DatabaseInterface, proof *zkp.PaymentProof) ([][]byte, map[string][][]byte, map[string][]privacy.OutputCoin, []big.Int, error) {
+func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.DatabaseInterface, proof *zkp.PaymentProof, tokenID *common.Hash) ([][]byte, map[string][][]byte, map[string][]privacy.OutputCoin, []big.Int, error) {
 	acceptedNullifiers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
@@ -86,7 +87,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.Datab
 	for _, item := range proof.OutputCoins {
 		commitment := item.CoinDetails.CoinCommitment.Compress()
 		pubkey := item.CoinDetails.PublicKey.Compress()
-		ok, err := db.HasCommitment(commitment, chainID)
+		ok, err := db.HasCommitment(tokenID, commitment, chainID)
 		if err != nil {
 			return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
@@ -103,7 +104,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(chainID byte, db database.Datab
 		}
 
 		snD := item.CoinDetails.SNDerivator
-		ok, err = db.HasSNDerivator(*snD, chainID)
+		ok, err = db.HasSNDerivator(tokenID, *snD, chainID)
 		if !ok && err == nil {
 			acceptedSnD = append(acceptedSnD, *snD)
 		}
@@ -126,8 +127,10 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		switch tx.GetType() {
 		case common.TxNormalType:
 			{
+				tokenID := &common.Hash{}
+				tokenID.SetBytes(common.ConstantID[:])
 				normalTx := tx.(*transaction.Tx)
-				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.ChainID, db, normalTx.Proof)
+				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.ChainID, db, normalTx.Proof, tokenID)
 				acceptedSerialNumbers = append(acceptedSerialNumbers, temp1...)
 				for pubkey, data := range temp2 {
 					if acceptedCommitments[pubkey] == nil {
@@ -148,8 +151,10 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 			}
 		case common.TxSalaryType:
 			{
+				tokenID := &common.Hash{}
+				tokenID.SetBytes(common.ConstantID[:])
 				normalTx := tx.(*transaction.Tx)
-				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.ChainID, db, normalTx.Proof)
+				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.ChainID, db, normalTx.Proof, tokenID)
 				acceptedSerialNumbers = append(acceptedSerialNumbers, temp1...)
 				for pubkey, data := range temp2 {
 					if acceptedCommitments[pubkey] == nil {
@@ -170,8 +175,10 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 			}
 		case common.TxCustomTokenType:
 			{
+				tokenID := &common.Hash{}
+				tokenID.SetBytes(common.ConstantID[:])
 				tx := tx.(*transaction.TxCustomToken)
-				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.ChainID, db, tx.Proof)
+				temp1, temp2, temp22, temp3, err := view.processFetchTxViewPoint(block.Header.ChainID, db, tx.Proof, tokenID)
 				acceptedSerialNumbers = append(acceptedSerialNumbers, temp1...)
 				for pubkey, data := range temp2 {
 					if acceptedCommitments[pubkey] == nil {
@@ -217,7 +224,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 Create a TxNormal view point, which contains data about nullifiers and commitments
 */
 func NewTxViewPoint(chainId byte) *TxViewPoint {
-	return &TxViewPoint{
+	result := &TxViewPoint{
 		chainID:           chainId,
 		listSerialNumbers: make([][]byte, 0),
 		listCommitments:   make([][]byte, 0),
@@ -225,5 +232,8 @@ func NewTxViewPoint(chainId byte) *TxViewPoint {
 		mapOutputCoins:    make(map[string][]privacy.OutputCoin, 0),
 		listSnD:           make([]big.Int, 0),
 		customTokenTxs:    make(map[int32]*transaction.TxCustomToken, 0),
+		tokenID:           &common.Hash{},
 	}
+	result.tokenID.SetBytes(common.ConstantID[:])
+	return result
 }

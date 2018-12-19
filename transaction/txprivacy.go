@@ -52,7 +52,8 @@ func (tx *Tx) Init(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 ) error {
-
+	tokenID := &common.Hash{}
+	tokenID.SetBytes(common.ConstantID[:])
 	// create sender's key set from sender's spending key
 	senderFullKey := cashec.KeySet{}
 	senderFullKey.ImportFromPrivateKey(senderSK)
@@ -77,7 +78,7 @@ func (tx *Tx) Init(
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
-	commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, 8, db, chainID)
+	commitmentIndexs, myCommitmentIndexs = RandomCommitmentsProcess(inputCoins, 8, db, chainID, tokenID)
 
 	// Print list of all input coins
 	fmt.Printf("List of all input coins before building tx:\n")
@@ -143,7 +144,7 @@ func (tx *Tx) Init(
 		for i := 0; i < len(paymentInfo); i++ {
 			sndOut = privacy.RandInt()
 			for true {
-				ok1, err := CheckSNDerivatorExistence(sndOut, chainID, db)
+				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, chainID, db)
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -188,7 +189,7 @@ func (tx *Tx) Init(
 	commitmentProving := make([]*privacy.EllipticPoint, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
 		commitmentProving[i] = new(privacy.EllipticPoint)
-		temp, _ := db.GetCommitmentByIndex(cmIndex, chainID)
+		temp, _ := db.GetCommitmentByIndex(tokenID, cmIndex, chainID)
 		commitmentProving[i], _ = privacy.DecompressKey(temp)
 	}
 
@@ -385,9 +386,11 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	}
 
 	if tx.Proof != nil {
+		tokenID := &common.Hash{}
+		tokenID.SetBytes(common.ConstantID[:])
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
-			if ok, err := CheckSNDerivatorExistence(tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, chainId, db); ok || err != nil {
+			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, chainId, db); ok || err != nil {
 				return false
 			}
 		}
@@ -395,7 +398,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		if !hasPrivacy {
 			// Check input coins' cm is exists in cm list (Database)
 			for i := 0; i < len(tx.Proof.InputCoins); i++ {
-				ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, chainId)
+				ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, chainId, tokenID)
 				if !ok || err != nil {
 					return false
 				}
@@ -472,8 +475,8 @@ func (tx *Tx) ListNullifiers() [][]byte {
 }
 
 // CheckCMExistence returns true if cm exists in cm list
-func (tx Tx) CheckCMExistence(cm []byte, db database.DatabaseInterface, chainID byte) (bool, error) {
-	ok, err := db.HasCommitment(cm, chainID)
+func (tx Tx) CheckCMExistence(cm []byte, db database.DatabaseInterface, chainID byte, tokenID *common.Hash) (bool, error) {
+	ok, err := db.HasCommitment(tokenID, cm, chainID)
 	return ok, err
 }
 
