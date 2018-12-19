@@ -82,7 +82,6 @@ func (db *db) HasSerialNumber(tokenID *common.Hash, serialNumber []byte, chainID
 	keySpec := append(key, serialNumber...)
 	_, err := db.Get(keySpec)
 	if err != nil {
-		fmt.Println(err)
 		return false, nil
 	} else {
 		return true, nil
@@ -507,8 +506,6 @@ func (db *db) CleanFeeEstimator() error {
 func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, index int) error {
 	key := string(transactionKeyPrefix) + txId.String()
 	value := blockHash.String() + string(Splitter) + strconv.Itoa(index)
-	fmt.Println("Key in StoreTransactionIndex", key)
-	fmt.Println("H in StoreTransactionIndex", value)
 	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
 		return err
 	}
@@ -521,11 +518,9 @@ func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, i
 */
 
 func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, error) {
-	fmt.Println("TxID in GetTransactionById", txId.String())
 	key := string(transactionKeyPrefix) + txId.String()
 	_, err := db.HasValue([]byte(key))
 	if err != nil {
-		fmt.Println("ERROR in finding transaction id", txId.String(), err)
 		return nil, -1, err
 	}
 
@@ -542,7 +537,6 @@ func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, err
 	if err != nil {
 		return nil, -1, err
 	}
-	fmt.Println("BlockHash", hash, "Transaction index", index)
 	return hash, index, nil
 }
 
@@ -599,8 +593,6 @@ func (db *db) StoreTransactionLightMode(privateKey *privacy.SpendingKey, chainId
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 
-	fmt.Println("Storing Transaction in light mode: txLocation -> tx", key1, unspentTx)
-	fmt.Println("Storing Transaction in light mode: txHash -> txLocation", key2, key1)
 	return nil
 }
 
@@ -619,11 +611,9 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKe
 		key := iter.Key()
 		value := iter.Value()
 
-		fmt.Println("GetTransactionLightModeByPrivateKey, key", string(key))
 		reses := strings.Split(string(key), string(Splitter))
 		tempChainId, _ := strconv.Atoi(reses[2])
 		chainId := byte(tempChainId)
-		fmt.Println("GetTransactionLightModeByPrivateKey, chainId", chainId)
 		/*tx := transaction.Tx{}
 		err := json.Unmarshal(value, &tx)
 		if err != nil {
@@ -645,20 +635,16 @@ func (db *db) GetTransactionLightModeByPrivateKey(privateKey *privacy.SpendingKe
 */
 func (db *db) GetTransactionLightModeByHash(txId *common.Hash) ([]byte, []byte, error) {
 	key := string(transactionKeyPrefix) + txId.String()
-	fmt.Println("GetTransactionLightModeByHash - key", key)
 	_, err := db.HasValue([]byte(key))
 	if err != nil {
-		fmt.Println("ERROR in finding transaction id", txId.String(), err)
 		return nil, nil, err
 	}
 	value, err := db.lvdb.Get([]byte(key), nil)
-	fmt.Println("GetTransactionLightModeByHash - value", value)
 	if err != nil {
 		return nil, nil, err
 	}
 	_, err1 := db.HasValue([]byte(value))
 	if err1 != nil {
-		fmt.Println("ERROR in finding location transaction id", txId.String(), err1)
 		return nil, nil, err
 	}
 	tx, err := db.lvdb.Get([]byte(value), nil)
