@@ -3,10 +3,11 @@ package blockchain
 import (
 	"crypto/sha256"
 	"errors"
-	"github.com/ninjadotorg/constant/common"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/ninjadotorg/constant/common"
 )
 
 // BestState houses information about the current best block and other info
@@ -18,6 +19,12 @@ import (
 // the caller when chain state changes occur as the function name implies.
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
+const (
+	EPOCH       = 200
+	RANDOM_TIME = 100
+	OFFSET      = 3
+)
+
 type BestStateBeacon struct {
 	BestBlockHash common.Hash  // The hash of the block.
 	BestBlock     *BeaconBlock // The block.
@@ -26,9 +33,10 @@ type BestStateBeacon struct {
 	BeaconHeight uint64
 
 	BeaconCommittee        []string
-	BeaconPendingCommittee []string
+	BeaconPendingValidator []string
 
 	// assigned candidate
+	// function as a snapshot list, waiting for random
 	CandidateShardWaitingForCurrentRandom  []string
 	CandidateBeaconWaitingForCurrentRandom []string
 
@@ -45,7 +53,7 @@ type BestStateBeacon struct {
 	// UnassignShardCandidate  []string
 
 	CurrentRandomNumber int64
-	NextRandomNumber    int64
+	// NextRandomNumber    int64
 
 	Params map[string]string
 }
@@ -58,122 +66,150 @@ Init create a beststate data from block and commitment tree
 func (self *BestStateBeacon) Init(block *BeaconBlock) {
 	self.BestBlock = block
 	self.BestBlockHash = *block.Hash()
+	// read block and build state if not
 }
 
 func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {
-	//TODO:
-	/*
-		//variable
-		// swap 3 validators each time
-		const offset = int(3)
-		// shardSwapValidator := make(map[byte][]string)
-		beaconSwapValidator := []string{}
+	if newBlock == nil {
+		return errors.New("Null pointer")
+	}
+	// signal of random parameter from beacon block
+	randomFlag := false
+	// update BestShardHash, BestBlock, BestBlockHash
+	self.BestBlockHash = *newBlock.Hash()
+	self.BestBlock = newBlock
+	shardState := newBlock.Body.ShardState
+	for idx, l := range shardState {
+		self.BestShardHash[idx] = l[len(l)-1]
+	}
 
-		// update BestShardHash, BestBlock, BestBlockHash
-		self.BestBlockHash = *newBlock.Hash()
-		self.BestBlock = newBlock
-		shardState := newBlock.Body.ShardState
-		for idx, l := range shardState {
-			self.BestShardHash[idx] = l[len(l)-1]
+	// update param
+	instructions := newBlock.Body.Instructions
+
+	for _, l := range instructions {
+		if l[0] == "set" {
+			self.Params[l[1]] = l[2]
 		}
-
-
-
-			// Assign Validator
-			// Shuffle candidate + validator for beacon
-			if self.BeaconHeight%200 == 1 {
-				newBeaconNode, newShardNode := GetStakingCandidate(newBlock)
-				self.UnassignBeaconCandidate = append(self.UnassignBeaconCandidate, newBeaconNode...)
-				self.UnassignShardCandidate = append(self.UnassignShardCandidate, newShardNode...)
-
-				/// Shuffle candidate for shard
-				// assign UnassignShardCandidate to ShardPendingValidator with CurrentRandom this shard
-				err := AssignValidatorShard(self.ShardPendingValidator, self.UnassignShardCandidate, self.CurrentRandomNumber)
-				// reset self.UnassignShardCandidate
-				self.UnassignShardCandidate = []string{}
-
+		if l[0] == "del" {
+			delete(self.Params, l[1])
+		}
+		if l[0] == "swap" {
+			//TODO: remove from candidate list
+			// format
+			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "shard" "shardID"]
+			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "beacon"]
+			inPubkeys := strings.Split(l[1], ",")
+			outPubkeys := strings.Split(l[2], ",")
+			if l[3] == "shard" {
+				temp, err := strconv.Atoi(l[4])
 				if err != nil {
-					return self, err
+					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+					return NewBlockChainError(UnExpectedError, err)
 				}
-				// for i := 0; i < 256; i++ {
-				// 	shardID := byte(i)
-				// 	//swap validator for each shard
-				// 	self.ShardPendingValidator[shardID], self.ShardValidator[shardID], shardSwapValidator[shardID], err = SwapValidator(self.ShardPendingValidator[shardID], self.ShardValidator[shardID], offset)
-				// 	if err != nil {
-				// 		return self, err
-				// 	}
-				// }
-				// ShuffleCandidate
-				shuffleBeaconCandidate, err := ShuffleCandidate(self.UnassignBeaconCandidate, self.CurrentRandomNumber)
+				shardID := byte(temp)
+				// delete in public key out of sharding pending validator list
+				self.ShardPendingValidator[shardID], err = RemoveValidator(self.ShardPendingValidator[shardID], inPubkeys)
 				if err != nil {
-					return self, err
+					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+					return NewBlockChainError(UnExpectedError, err)
 				}
-				// append new candidate to pending validator in beacon
-				self.BeaconPendingCandidate = append(self.BeaconPendingCandidate, shuffleBeaconCandidate...)
-				// reset UnassignBeaconCandidate
-				self.UnassignBeaconCandidate = []string{}
-				//swap validator in beacon
-				self.BeaconPendingCandidate, self.BeaconCandidate, beaconSwapValidator, err = SwapValidator(self.BeaconPendingCandidate, self.BeaconCandidate, offset)
+				// delete out public key out of current committees
+				self.ShardCommittee[shardID], err = RemoveValidator(self.ShardPendingValidator[shardID], outPubkeys)
 				if err != nil {
-					return self, err
+					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+					return NewBlockChainError(UnExpectedError, err)
 				}
-				// update random number for new epoch
-				fmt.Println(beaconSwapValidator)
-				self.CurrentRandomNumber = self.NextRandomNumber
-			} else {
-				// GetStakingCandidate -> UnassignCandidate
-				newBeaconNode, newShardNode := GetStakingCandidate(newBlock)
-				self.UnassignBeaconCandidate = append(self.UnassignBeaconCandidate, newBeaconNode...)
-				self.UnassignShardCandidate = append(self.UnassignShardCandidate, newShardNode...)
+				// append in public key to committees
+				self.ShardCommittee[shardID] = append(self.ShardCommittee[shardID], inPubkeys...)
+
+				// TODO: Check new list with root hash received from block
+			} else if l[3] == "beacon" {
+				var err error
+				self.BeaconPendingValidator, err = RemoveValidator(self.BeaconPendingValidator, inPubkeys)
+				if err != nil {
+					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+					return NewBlockChainError(UnExpectedError, err)
+				}
+				self.BeaconCommittee, err = RemoveValidator(self.BeaconCommittee, outPubkeys)
+				if err != nil {
+					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+					return NewBlockChainError(UnExpectedError, err)
+				}
+				self.BeaconCommittee = append(self.BeaconCommittee, inPubkeys...)
+				// TODO: Check new list with root hash received from block
 			}
-
-			// update param
-			instructions := newBlock.Body.Instructions
-
-			for _, l := range instructions {
-				if l[0] == "set" {
-					self.Params[l[1]] = l[2]
-				}
-				if l[0] == "del" {
-					delete(self.Params, l[1])
-				}
-				if l[0] == "swap" {
-					//TODO: remove from candidate list
-					// format
-					// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "shard" "shardID"]
-					// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,...") "beacon"]
-					inPubkeys := strings.Split(l[1], ",")
-					outPubkeys := strings.Split(l[2], ",")
-					if l[3] == "shard" {
-						temp, err := strconv.Atoi(l[4])
-						if err != nil {
-							return self, nil
-						}
-						shardID := byte(temp)
-						self.ShardPendingValidator[shardID], err = RemoveValidator(self.ShardPendingValidator[shardID], inPubkeys)
-						if err != nil {
-							return self, nil
-						}
-						self.ShardValidator[shardID], err = RemoveValidator(self.ShardPendingValidator[shardID], outPubkeys)
-						if err != nil {
-							return self, nil
-						}
-						self.ShardValidator[shardID] = append(self.ShardValidator[shardID], inPubkeys...)
-					} else if l[3] == "beacon" {
-						var err error
-						self.BeaconPendingCandidate, err = RemoveValidator(self.BeaconPendingCandidate, inPubkeys)
-						if err != nil {
-							return self, nil
-						}
-						self.BeaconCandidate, err = RemoveValidator(self.BeaconPendingCandidate, outPubkeys)
-						if err != nil {
-							return self, nil
-						}
-						self.BeaconCandidate = append(self.BeaconCandidate, inPubkeys...)
-					}
-				}
+		}
+		// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
+		if l[0] == "random" {
+			//TODO: Verify nonce is from a right block
+			temp, err := strconv.Atoi(l[4])
+			if err != nil {
+				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+				return NewBlockChainError(UnExpectedError, err)
 			}
-	*/
+			self.CurrentRandomNumber = int64(temp)
+			randomFlag = true
+		}
+	}
+	// get staking candidate list and store
+	newBeaconCandidate, newShardCandidate := GetStakingCandidate(*newBlock)
+	// store new staking candidate
+	self.CandidateBeaconWaitingForNextRandom = append(self.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
+	self.CandidateShardWaitingForNextRandom = append(self.CandidateShardWaitingForNextRandom, newShardCandidate...)
+	if self.BeaconHeight%EPOCH == 0 && self.BeaconHeight != 0 {
+		// Begin of each epoch
+	} else if self.BeaconHeight%EPOCH < RANDOM_TIME {
+		// Before get random from bitcoin
+
+	} else if self.BeaconHeight%EPOCH >= RANDOM_TIME {
+		// After get random from bitcoin
+		if self.BeaconHeight%EPOCH == RANDOM_TIME {
+			// snapshot candidate list
+			self.CandidateShardWaitingForCurrentRandom = self.CandidateShardWaitingForNextRandom
+			self.CandidateBeaconWaitingForCurrentRandom = self.CandidateBeaconWaitingForNextRandom
+
+			// reset candidate list
+			self.CandidateShardWaitingForNextRandom = []string{}
+			self.CandidateBeaconWaitingForNextRandom = []string{}
+		}
+		// if get new random number???
+		// Assign candidate to shard
+		// assign CandidateShardWaitingForCurrentRandom to ShardPendingValidator with CurrentRandom this shard
+		if randomFlag {
+			err := AssignValidatorShard(self.ShardPendingValidator, self.CandidateShardWaitingForCurrentRandom, self.CurrentRandomNumber)
+			if err != nil {
+				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+				return NewBlockChainError(UnExpectedError, err)
+			}
+			// delete CandidateShardWaitingForCurrentRandom list
+			self.CandidateShardWaitingForCurrentRandom = []string{}
+
+			/// Shuffle candidate
+			// shuffle CandidateBeaconWaitingForCurrentRandom with current random number
+			newBeaconPendingValidator, err := ShuffleCandidate(self.CandidateBeaconWaitingForCurrentRandom, self.CurrentRandomNumber)
+			if err != nil {
+				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+				return NewBlockChainError(UnExpectedError, err)
+			}
+			self.CandidateBeaconWaitingForCurrentRandom = []string{}
+			self.BeaconPendingValidator = append(self.BeaconPendingValidator, newBeaconPendingValidator...)
+		}
+	} else if self.BeaconHeight%EPOCH == EPOCH-1 {
+		// At the end of each epoch, eg: block 199, 399, 599 with epoch is 200
+		// Swap pending validator in committees, pop some of public key in committees out
+		// ONLY SWAP FOR BEACON
+		// SHARD WILL SWAP ITSELF
+		var (
+			beaconSwapedCommittees []string
+			err                    error
+		)
+		self.BeaconPendingValidator, self.BeaconCommittee, beaconSwapedCommittees, err = SwapValidator(self.BeaconPendingValidator, self.BeaconCommittee, OFFSET)
+		Logger.log.Infof("Swaped out committees %+v", beaconSwapedCommittees)
+		if err != nil {
+			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+			return NewBlockChainError(UnExpectedError, err)
+		}
+	}
 	return nil
 }
 
