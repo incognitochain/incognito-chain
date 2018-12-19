@@ -448,7 +448,7 @@ concludeBlock:
 	return block, nil
 }
 
-func (blockgen *BlkTmplGenerator) NewBlockBeacon(blockPool BlockPool, bestState BestStateBeacon) (*BeaconBlock, error) {
+func (self *BlkTmplGenerator) NewBlockBeacon() (*BeaconBlock, error) {
 	block := &BeaconBlock{}
 	// block.ProducerSig = ""
 	// block.AggregatedSig = ""
