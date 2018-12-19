@@ -326,7 +326,9 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		return false, fmt.Errorf("input transaction must be an signed one!")
 	}
 
-	fmt.Printf("VERIFY SIGNATURE ------------- TX.PROOF: %v\n", tx.Proof.Bytes())
+	if tx.Proof != nil {
+		fmt.Printf("VERIFY SIGNATURE ------------- TX.PROOF: %v\n", tx.Proof.Bytes())
+	}
 
 	var err error
 	res := false
@@ -381,6 +383,10 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
 	// Verify tx signature
+	// TODO
+	/*if tx.GetType() == common.TxSalaryType {
+		return ValidateTxSalary(tx, db)
+	}*/
 	var valid bool
 	var err error
 	valid, err = tx.VerifySigTx(hasPrivacy)
@@ -425,7 +431,6 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 func (tx *Tx) Hash() *common.Hash {
 	record := strconv.Itoa(int(tx.Version))
-	record += tx.Type
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
 	if tx.Proof != nil {

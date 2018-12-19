@@ -63,9 +63,11 @@ func (customTokenTx *TxCustomToken) ValidateTxWithCurrentMempool(
 	}
 	txsInMem := mr.GetTxsInMem()
 	for _, txInMem := range txsInMem {
-		err := customTokenTx.validateDoubleSpendCustomTokenOnTx(txInMem.Tx)
-		if err != nil {
-			return err
+		if txInMem.Tx.GetType() == common.TxCustomTokenType {
+			err := customTokenTx.validateDoubleSpendCustomTokenOnTx(txInMem.Tx)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
