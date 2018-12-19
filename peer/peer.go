@@ -83,12 +83,6 @@ type Config struct {
 	MaxPeers         int
 }
 
-type WrappedStream struct {
-	Stream net.Stream
-	Writer *bufio.Writer
-	Reader *bufio.Reader
-}
-
 /*
 // MessageListeners defines callback function pointers to invoke with message
 // listeners for a peer. Any listener which is not set to a concrete callback
@@ -688,14 +682,14 @@ func (self *Peer) retryPeerConnection(peerConn *PeerConn) {
 renewPeerConnection - create peer conn by goroutines for pending peers(reconnect)
 */
 func (self *Peer) renewPeerConnection() {
+	self.pendingPeersMutex.Lock()
+	defer self.pendingPeersMutex.Unlock()
 	if len(self.PendingPeers) > 0 {
-		self.pendingPeersMutex.Lock()
 		Logger.log.Infof("*start - Creating peer conn to %d pending peers", len(self.PendingPeers))
 		for _, peer := range self.PendingPeers {
 			Logger.log.Infof("---> RemotePeer: ", peer.RawAddress)
 			go self.PushConn(peer, nil)
 		}
 		Logger.log.Infof("*end - Creating peer conn to %d pending peers", len(self.PendingPeers))
-		self.pendingPeersMutex.Unlock()
 	}
 }
