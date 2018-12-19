@@ -133,7 +133,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if err != nil {
 		return nil, nil, err
 	}
-	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.GetHeight()
+	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height
 	// nextBlockHeight := bestHeight + 1
 	// check version
 	ok := tx.CheckTxVersion(MaxVersion)
@@ -145,7 +145,6 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 
 	// check fee of tx
 	minFeePerKbTx := tp.config.BlockChain.GetFeePerKbTx()
-	minFee := uint64(1)
 	txFee := tx.GetTxFee()
 	ok = tx.CheckTransactionFee(minFeePerKbTx)
 	if !ok {
