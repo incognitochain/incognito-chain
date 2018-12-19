@@ -262,7 +262,7 @@ func (self *Engine) OnSwapUpdate(msg *wire.MessageSwapUpdate) {
 	// return
 }
 
-func MakeMsgBFTPropose(aggregatedSig string, validatorsIdx []int, block *blockchain.BFTBlockInterface) (*wire.Message, error) {
+func MakeMsgBFTPropose(aggregatedSig string, validatorsIdx []int, block *blockchain.BFTBlockInterface) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTPropose)
 	if err != nil {
 		Logger.log.Error(err)
@@ -271,10 +271,10 @@ func MakeMsgBFTPropose(aggregatedSig string, validatorsIdx []int, block *blockch
 	msg.(*wire.MessageBFTPropose).Block = *block
 	msg.(*wire.MessageBFTPropose).AggregatedSig = aggregatedSig
 	msg.(*wire.MessageBFTPropose).ValidatorsIdx = validatorsIdx
-
+	return msg, nil
 }
 
-func MakeMsgBFTPrepare(Ri []byte, pubkey string) (*wire.Message, error) {
+func MakeMsgBFTPrepare(Ri []byte, pubkey string) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTPrepare)
 	if err != nil {
 		Logger.log.Error(err)
@@ -283,9 +283,10 @@ func MakeMsgBFTPrepare(Ri []byte, pubkey string) (*wire.Message, error) {
 	}
 	msg.(*wire.MessageBFTPrepare).Ri = Ri
 	msg.(*wire.MessageBFTPrepare).Pubkey = pubkey
+	return msg, nil
 }
 
-func MakeMsgBFTCommit(commitSig string, R []byte, validatorsIdx []int, pubkey string) (*wire.Message, error) {
+func MakeMsgBFTCommit(commitSig string, R []byte, validatorsIdx []int, pubkey string) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTCommit)
 	if err != nil {
 		Logger.log.Error(err)
@@ -295,10 +296,10 @@ func MakeMsgBFTCommit(commitSig string, R []byte, validatorsIdx []int, pubkey st
 	msg.(*wire.MessageBFTCommit).R = R
 	msg.(*wire.MessageBFTCommit).ValidatorsIdx = validatorsIdx
 	msg.(*wire.MessageBFTCommit).Pubkey = pubkey
-
+	return msg, nil
 }
 
-func MakeMsgBFTReply(blockHash string, aggregatedSig string, validatorsIdx []int) (*wire.Message, error) {
+func MakeMsgBFTReply(blockHash string, aggregatedSig string, validatorsIdx []int) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTReply)
 	if err != nil {
 		Logger.log.Error(err)
@@ -307,4 +308,5 @@ func MakeMsgBFTReply(blockHash string, aggregatedSig string, validatorsIdx []int
 	msg.(*wire.MessageBFTReply).BlockHash = blockHash
 	msg.(*wire.MessageBFTReply).AggregatedSig = aggregatedSig
 	msg.(*wire.MessageBFTReply).ValidatorsIdx = validatorsIdx
+	return msg, nil
 }

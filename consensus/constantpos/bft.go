@@ -55,13 +55,16 @@ func (self *BFTProtocol) Start(roundRole string, shardID byte) error {
 						close(self.cTimeout)
 					})
 					if roundRole == "beacon-proposer" {
-						newBlock, err := self.BlockGen.NewBlockBeacon()
+						_, err := self.BlockGen.NewBlockBeacon()
 						if err != nil {
 							return
 						}
 
 					} else {
-						newBlock, err := self.BlockGen.NewBlockShard(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey, shardID)
+						_, err := self.BlockGen.NewBlockShard(&self.UserKeySet.PaymentAddress, &self.UserKeySet.PrivateKey, shardID)
+						if err != nil {
+							return
+						}
 					}
 				case "listen":
 					time.AfterFunc(ListenTimeout*time.Second, func() {
