@@ -54,7 +54,7 @@ func (tx *Tx) Init(
 	tokenID *common.Hash, // default is nill -> use for constant coin
 ) error {
 	if tokenID == nil {
-		tokenID := &common.Hash{}
+		tokenID = &common.Hash{}
 		tokenID.SetBytes(common.ConstantID[:])
 	}
 	// create sender's key set from sender's spending key
