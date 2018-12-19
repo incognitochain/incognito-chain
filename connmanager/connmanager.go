@@ -2,7 +2,6 @@ package connmanager
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"net/rpc"
 	"os"
@@ -10,9 +9,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
 	"math"
-
 	libpeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	ma "github.com/multiformats/go-multiaddr"
@@ -62,7 +59,7 @@ type ConnManager struct {
 
 	Config Config
 
-	ListeningPeers map[libpeer.ID]*peer.Peer
+	ListeningPeers map[string]*peer.Peer
 
 	OtherShards []byte
 }
@@ -141,7 +138,7 @@ func (self ConnManager) New(cfg *Config) *ConnManager {
 	self.cQuit = make(chan struct{})
 	self.discoveredPeers = make(map[string]*DiscoverPeerInfo)
 
-	self.ListeningPeers = map[libpeer.ID]*peer.Peer{}
+	self.ListeningPeers = map[string]*peer.Peer{}
 
 	self.Config.ConsensusState = &ConsensusState{}
 	// set default config
@@ -171,39 +168,20 @@ func (self ConnManager) New(cfg *Config) *ConnManager {
 func (self *ConnManager) GetPeerId(addr string) string {
 	ipfsAddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
-		log.Print(err)
+		Logger.log.Error(err)
 		return EmptyString
 	}
 	pid, err := ipfsAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
-		log.Print(err)
+		Logger.log.Error(err)
 		return EmptyString
 	}
 	peerId, err := libpeer.IDB58Decode(pid)
 	if err != nil {
-		log.Print(err)
+		Logger.log.Error(err)
 		return EmptyString
 	}
 	return peerId.Pretty()
-}
-
-func (self *ConnManager) GetPeerIDStr(addr string) (string, error) {
-	ipfsaddr, err := ma.NewMultiaddr(addr)
-	if err != nil {
-		Logger.log.Error(err)
-		return EmptyString, err
-	}
-	pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
-	if err != nil {
-		Logger.log.Error(err)
-		return EmptyString, err
-	}
-	peerId, err := libpeer.IDB58Decode(pid)
-	if err != nil {
-		Logger.log.Error(err)
-		return EmptyString, err
-	}
-	return peerId.Pretty(), nil
 }
 
 // Connect assigns an id and dials a connection to the address of the
@@ -285,7 +263,7 @@ func (self *ConnManager) Start(discoverPeerAddress string) {
 			listner.HandleFailed = self.handleFailed
 			go self.listenHandler(listner)
 
-			self.ListeningPeers[listner.PeerID] = listner
+			self.ListeningPeers[listner.PeerID.Pretty()] = listner
 		}
 
 		if self.Config.DiscoverPeers && self.Config.DiscoverPeersAddress != EmptyString {
@@ -315,7 +293,7 @@ func (self *ConnManager) handleConnected(peerConn *peer.PeerConn) {
 	}
 }
 
-func (p *ConnManager) handleDisconnected(peerConn *peer.PeerConn) {
+func (self *ConnManager) handleDisconnected(peerConn *peer.PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.Pretty())
 }
 
@@ -548,10 +526,10 @@ func (self *ConnManager) countPeerConnOfShard(shard *byte) int {
 	return c
 }
 
-func (self *ConnManager) checkPeerConnOfPbk(pubKey string) bool {
+func (self *ConnManager) checkPeerConnOfPbk(pbk string) bool {
 	for _, listener := range self.Config.ListenerPeers {
 		for _, peerConn := range listener.PeerConns {
-			if peerConn.RemotePeer.PublicKey == pubKey {
+			if peerConn.RemotePeer.PublicKey == pbk {
 				return true
 			}
 		}
@@ -599,7 +577,7 @@ func (self *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeer
 		if ok {
 			cPbk := self.Config.ConsensusState.UserPbk
 			// if existed conn then not append to array
-			if !self.checkPeerConnOfPbk(pbk) && (cPbk == "" || cPbk != pbk) {
+			if cPbk != pbk && !self.checkPeerConnOfPbk(pbk) {
 				go self.Connect(peerI.RawAddress, peerI.PublicKey)
 				countPeerShard++
 			}
@@ -644,7 +622,7 @@ func (self *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[
 		if ok {
 			cPbk := self.Config.ConsensusState.UserPbk
 			// if existed conn then not append to array
-			if !self.checkPeerConnOfPbk(pbk) && (cPbk == "" || cPbk != pbk) {
+			if cPbk != pbk && !self.checkPeerConnOfPbk(pbk) {
 				go self.Connect(peerI.RawAddress, peerI.PublicKey)
 			}
 			countPeerShard ++
