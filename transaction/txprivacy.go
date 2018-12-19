@@ -413,7 +413,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 
 		// Verify the payment proof
-		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db, chainId)
+		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db, chainId, tokenID)
 		if valid == false {
 			fmt.Println("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
 			return false
