@@ -271,17 +271,20 @@ func (tx *Tx) SignTx(hasPrivacy bool) error {
 		sigKey.PubKey.H.X, sigKey.PubKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
 
 		sigKey.PubKey.PK = &privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
-		fmt.Println(sigKey)
+		//fmt.Println(sigKey)
 		tmp := new(privacy.EllipticPoint)
 		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.G.X, sigKey.PubKey.G.Y, sigKey.SK.Bytes())
 		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
+
 		tmp.X, tmp.Y = privacy.Curve.ScalarMult(sigKey.PubKey.H.X, sigKey.PubKey.H.Y, sigKey.R.Bytes())
 		sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y = privacy.Curve.Add(sigKey.PubKey.PK.X, sigKey.PubKey.PK.Y, tmp.X, tmp.Y)
 		fmt.Printf("SIGN ------ PUBLICKEY: %+v\n", sigKey.PubKey.PK)
 		tx.SigPubKey = sigKey.PubKey.PK.Compress()
+		fmt.Printf("SIGN ------ PUBLICKEY BYTE: %+v\n", tx.SigPubKey)
 
 		// signing
 		//fmt.Printf("SIGN ------ HASH TX: %+v\n", tx.Hash().String())
+		fmt.Printf(" SIGN SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 		signature, err := sigKey.Sign(tx.Hash()[:])
 		if err != nil {
 			return err
@@ -323,35 +326,35 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 		return false, fmt.Errorf("input transaction must be an signed one!")
 	}
 
+	fmt.Printf("VERIFY SIGNATURE ------------- TX.PROOF: %v\n", tx.Proof.Bytes())
+
 	var err error
 	res := false
 
 	if hasPrivacy {
-
 		/****** verify Schnorr signature *****/
 		// prepare Public key for verification
 		verKey := new(privacy.SchnPubKey)
+		fmt.Printf("VERIFY ------ PUBLICKEY BYTE: %+v\n", tx.SigPubKey)
 		verKey.PK, err = privacy.DecompressKey(tx.SigPubKey)
 		if err != nil {
 			return false, err
 		}
+		fmt.Printf("VERIFY ------ PUBLICKEY: %+v\n", verKey.PK)
 
 		verKey.G = new(privacy.EllipticPoint)
 		verKey.G.X, verKey.G.Y = privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y
 
 		verKey.H = new(privacy.EllipticPoint)
 		verKey.H.X, verKey.H.Y = privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y
-		fmt.Println(verKey)
+		//fmt.Println(verKey)
 		// convert signature from byte array to SchnorrSign
 		signature := new(privacy.SchnSignature)
 		signature.FromBytes(tx.Sig)
 
 		// verify signature
-		//fmt.Printf("VERIF ------ HASH TX: %+v\n", tx.Hash().String())
+		fmt.Printf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash().String())
 		res = verKey.Verify(signature, tx.Hash()[:])
-		if !res {
-			fmt.Println("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
-		}
 
 	} else {
 		/****** verify ECDSA signature *****/
@@ -383,8 +386,9 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	valid, err = tx.VerifySigTx(hasPrivacy)
 	if valid == false {
 		if err != nil {
-			fmt.Printf("Error verifying signature of tx: %+v", err)
+			fmt.Printf("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
 		}
+		fmt.Println("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
 		return false
 	}
 
@@ -411,7 +415,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		// Verify the payment proof
 		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, db, chainId)
 		if valid == false {
-			fmt.Printf("Error verifying the payment proof")
+			fmt.Println("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
 			return false
 		}
 	}
@@ -669,7 +673,13 @@ func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 }
 
 func (tx *Tx) GetJSPubKey() []byte {
-	return tx.SigPubKey
+	result := []byte{}
+	if len(tx.Proof.InputCoins) > 0 {
+		pubkey := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+		result = make([]byte, len(pubkey))
+		copy(result, pubkey)
+	}
+	return result
 }
 
 func (tx *Tx) IsPrivacy() bool {

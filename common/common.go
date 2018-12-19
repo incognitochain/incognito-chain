@@ -3,6 +3,7 @@ package common
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
@@ -13,16 +14,18 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 	"unicode"
 
 	"log"
 	"math"
 
+	"crypto/rand"
+
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
-	"crypto/rand"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -212,7 +215,7 @@ func SliceExists(slice interface{}, item interface{}) (bool, error) {
 /*
 SliceBytesExists - Check slice []byte contain item
 */
-func GetBytes(key interface{}) ([]byte) {
+func GetBytes(key interface{}) []byte {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	enc.Encode(key)
@@ -343,4 +346,19 @@ func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
 	r = new(big.Int).SetBytes(sig[0:32])
 	s = new(big.Int).SetBytes(sig[32:64])
 	return
+}
+
+func Uint32ToString(I uint32) string {
+	return strconv.FormatUint(uint64(I), 10)
+}
+
+//return slice of 4 element as little endian
+func Uint32ToBytes(value uint32) []byte {
+	b := make([]byte, 4)
+	binary.LittleEndian.PutUint32(b, value)
+	return b
+}
+
+func BytesToUint32(b []byte) uint32 {
+	return binary.LittleEndian.Uint32(b)
 }

@@ -21,16 +21,19 @@ type LoanParams struct {
 type DCBParams struct {
 	SaleData               *voting.SaleData
 	MinLoanResponseRequire uint8
-	LoanParams             []LoanParams // params for collateralized loans of Constant
 	SaleDBCTOkensByUSDData *voting.SaleDBCTOkensByUSDData
+
+	// TODO(@0xbunyip): read loan params from proposal instead of storing and reading separately
+	LoanParams []LoanParams // params for collateralized loans of Constant
 }
 
 type GOVParams struct {
-	SalaryPerTx  uint64 // salary for each tx in block(mili constant)
-	BasicSalary  uint64 // basic salary per block(mili constant)
-	FeePerKbTx   uint64
-	SellingBonds *voting.SellingBonds
-	RefundInfo   *voting.RefundInfo
+	SalaryPerTx   uint64 // salary for each tx in block(mili constant)
+	BasicSalary   uint64 // basic salary per block(mili constant)
+	FeePerKbTx    uint64
+	SellingBonds  *voting.SellingBonds
+	RefundInfo    *voting.RefundInfo
+	OracleNetwork *voting.OracleNetwork
 }
 
 func (dcbParams *DCBParams) Hash() *common.Hash {
@@ -52,6 +55,7 @@ func (govParams *GOVParams) Hash() *common.Hash {
 	record += string(govParams.FeePerKbTx)
 	record += string(common.ToBytes(*govParams.SellingBonds.Hash()))
 	record += string(common.ToBytes(*govParams.RefundInfo.Hash()))
+	record += string(common.ToBytes(*govParams.OracleNetwork.Hash()))
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

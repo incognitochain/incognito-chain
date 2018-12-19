@@ -25,11 +25,13 @@ type BlkTmplGenerator struct {
 }
 
 type ConstitutionHelper interface {
-	GetStartedNormalVote(generator *BlkTmplGenerator, chainID byte) int32
+	GetStartedNormalVote(generator *BlkTmplGenerator, chainID byte) uint32
 	CheckSubmitProposalType(tx metadata.Transaction) bool
 	CheckVotingProposalType(tx metadata.Transaction) bool
 	GetAmountVoteToken(tx metadata.Transaction) uint64
-	TxAcceptProposal(originTx metadata.Transaction) metadata.Transaction
+	TxAcceptProposal(txId *common.Hash) metadata.Transaction
+	GetLowerCaseBoardType() string
+	GetEndedBlockHeight(generator *BlkTmplGenerator, chainID byte) uint32
 }
 
 // txPool represents a source of transactions to consider for inclusion in
@@ -102,7 +104,7 @@ func (blockgen *BlkTmplGenerator) NewBlockTemplate(payToAddress *privacy.Payment
 	salaryPerTx := blockgen.rewardAgent.GetSalaryPerTx(chainID)
 	// Get basic salary on block
 	basicSalary := blockgen.rewardAgent.GetBasicSalary(chainID)
-	currentBlockHeight := prevBlock.Header.Height + 1
+	currentBlockHeight := uint32(prevBlock.Header.Height + 1)
 
 	if len(sourceTxns) < common.MinTxsInBlock {
 		// if len of sourceTxns < MinTxsInBlock -> wait for more transactions
@@ -483,7 +485,7 @@ func (blockgen *BlkTmplGenerator) neededNewDCBConstitution(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	lastDCBConstitution := BestBlock.Header.DCBConstitution
 	if GetOracleDCBNationalWelfare() < lastDCBConstitution.CurrentDCBNationalWelfare*ThresholdRatioOfDCBCrisis/100 ||
-		BestBlock.Header.Height+1 == lastDCBConstitution.StartedBlockHeight+lastDCBConstitution.ExecuteDuration {
+		uint32(BestBlock.Header.Height+1) == lastDCBConstitution.StartedBlockHeight+lastDCBConstitution.ExecuteDuration {
 		return true
 	}
 	return false
@@ -492,13 +494,13 @@ func (blockgen *BlkTmplGenerator) neededNewGOVConstitution(chainID byte) bool {
 	BestBlock := blockgen.chain.BestState[chainID].BestBlock
 	lastGovConstitution := BestBlock.Header.GOVConstitution
 	if GetOracleGOVNationalWelfare() < lastGovConstitution.CurrentGOVNationalWelfare*ThresholdRatioOfGovCrisis/100 ||
-		BestBlock.Header.Height+1 == lastGovConstitution.StartedBlockHeight+lastGovConstitution.ExecuteDuration {
+		uint32(BestBlock.Header.Height+1) == lastGovConstitution.StartedBlockHeight+lastGovConstitution.ExecuteDuration {
 		return true
 	}
 	return false
 }
 
-func (blockgen *BlkTmplGenerator) createRequestConstitutionTxDecs(
+func (blockgen *BlkTmplGenerator) createAcceptConstitutionTxDecs(
 	chainID byte,
 	ConstitutionHelper ConstitutionHelper,
 ) (*metadata.TxDesc, error) {
@@ -507,9 +509,9 @@ func (blockgen *BlkTmplGenerator) createRequestConstitutionTxDecs(
 	// count vote from lastConstitution.StartedBlockHeight to Bestblock height
 	CountVote := make(map[common.Hash]int64)
 	Transaction := make(map[common.Hash]*metadata.Transaction)
-	for blockHeight := ConstitutionHelper.GetStartedNormalVote(blockgen, chainID); blockHeight < BestBlock.Header.Height; blockHeight += 1 {
+	for blockHeight := ConstitutionHelper.GetStartedNormalVote(blockgen, chainID); blockHeight < uint32(BestBlock.Header.Height); blockHeight += 1 {
 		//retrieve block from block's height
-		hashBlock, err := blockgen.chain.config.DataBase.GetBlockByIndex(blockHeight, chainID)
+		hashBlock, err := blockgen.chain.config.DataBase.GetBlockByIndex(int32(blockHeight), chainID)
 		if err != nil {
 			return nil, err
 		}
@@ -552,7 +554,7 @@ func (blockgen *BlkTmplGenerator) createRequestConstitutionTxDecs(
 		}
 	}
 
-	acceptedSubmitProposalTransaction := ConstitutionHelper.TxAcceptProposal(*Transaction[res])
+	acceptedSubmitProposalTransaction := ConstitutionHelper.TxAcceptProposal(&res)
 
 	AcceptedTransactionDesc := metadata.TxDesc{
 		Tx:     acceptedSubmitProposalTransaction,
@@ -964,110 +966,6 @@ func (blockgen *BlkTmplGenerator) buildRefundTxs(
 		privatekey,
 	)
 	return refundTxs, totalRefundAmt
-}
-
-func (blockgen *BlkTmplGenerator) buildResponseForCrowdsale(
-	tx *transaction.TxCustomToken,
-	saleDataMap map[string]*voting.SaleData,
-	unspentTokenMap map[string]([]transaction.TxTokenVout),
-	rt []byte,
-	chainID byte,
-	saleID []byte,
-	producerPrivateKey *privacy.SpendingKey,
-) (*transaction.TxCustomToken, error) {
-	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
-	saleData := saleDataMap[string(saleID)]
-
-	// Get price for asset
-	prices := blockgen.chain.BestState[chainID].BestBlock.Header.Oracle.Bonds
-	// TODO(@0xbunyip): validate sale data in proposal to admit only valid pair of assets
-	txResponse := &transaction.TxCustomToken{}
-	err := errors.New("Incorrect assets for crowdsale")
-	sellingAsset := &common.Hash{}
-	copy(sellingAsset[:], saleData.SellingAsset)
-	if bytes.Equal(sellingAsset[:], common.ConstantID[:]) {
-		if bytes.Equal(saleData.BuyingAsset, common.OffchainAssetID[:]) {
-			return nil, nil // no response for offchain asset
-		}
-
-		tokenAmount, valuesInConstant := getTxTokenValue(tx.TxTokenData, saleData.BuyingAsset, dcbPk, prices)
-		if tokenAmount > saleData.BuyingAmount || valuesInConstant > saleData.SellingAmount {
-			// User sent too many token, reject request
-			return nil, fmt.Errorf("Crowdsale reached limit")
-		}
-		// Update amount of buying/selling asset of the crowdsale
-		saleData.BuyingAmount -= tokenAmount
-		saleData.SellingAmount -= valuesInConstant
-		txResponse, err = buildResponseForCoin(tx, valuesInConstant, saleData.SaleID, producerPrivateKey, blockgen.chain.GetDatabase())
-	} else if bytes.Equal(sellingAsset[:8], common.BondTokenID[:8]) || bytes.Equal(sellingAsset[:], common.DCBTokenID[:]) {
-		// Get unspent token UTXO to send to user
-		if _, ok := unspentTokenMap[string(sellingAsset[:])]; !ok {
-			unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(accountDCB.KeySet, sellingAsset)
-			if err == nil {
-				unspentTokenMap[string(sellingAsset[:])] = unspentTxTokenOuts
-			} else {
-				unspentTokenMap[string(sellingAsset[:])] = []transaction.TxTokenVout{}
-			}
-		}
-		mint := bytes.Equal(sellingAsset[:], common.DCBTokenID[:]) // Mint DCB token, transfer bonds
-		constantAmount, valuesInToken := getTxValue(&tx.Tx, sellingAsset[:], dcbPk, prices)
-		if constantAmount > saleData.BuyingAmount || valuesInToken > saleData.SellingAmount {
-			return nil, fmt.Errorf("Crowdsale reached limit")
-		}
-		saleData.BuyingAmount -= constantAmount
-		saleData.SellingAmount -= valuesInToken
-		txResponse, err = buildResponseForToken(tx, valuesInToken, sellingAsset[:], rt, chainID, unspentTokenMap, saleData.SaleID, mint)
-	}
-	return txResponse, err
-}
-
-func (blockgen *BlkTmplGenerator) processCrowdsale(sourceTxns []*metadata.TxDesc, rt []byte, chainID byte, producerPrivateKey *privacy.SpendingKey) ([]*transaction.TxCustomToken, []metadata.Transaction, error) {
-	txsToRemove := []metadata.Transaction{}
-	txsResponse := []*transaction.TxCustomToken{}
-
-	// Get unspent bond tx to spend if needed
-	unspentTokenMap := map[string]([]transaction.TxTokenVout){}
-	saleDataMap := map[string]*voting.SaleData{}
-	for _, txDesc := range sourceTxns {
-		if txDesc.Tx.GetMetadataType() != metadata.CrowdsaleRequestMeta {
-			continue
-		}
-
-		tx, ok := (txDesc.Tx).(*transaction.TxCustomToken)
-		if !ok {
-			txsToRemove = append(txsToRemove, tx)
-		}
-
-		// Create corresponding response to send selling asset
-		// Get buying and selling asset from current sale
-		meta := txDesc.Tx.GetMetadata()
-		if meta == nil {
-			txsToRemove = append(txsToRemove, tx)
-			continue
-		}
-		metaRequest, ok := meta.(*metadata.CrowdsaleRequest)
-		if !ok {
-			txsToRemove = append(txsToRemove, tx)
-			continue
-		}
-		if _, ok := saleDataMap[string(metaRequest.SaleID)]; !ok {
-			saleData, err := blockgen.chain.GetCrowdsaleData(metaRequest.SaleID)
-			if err != nil {
-				txsToRemove = append(txsToRemove, tx)
-				continue
-			}
-
-			saleDataMap[string(metaRequest.SaleID)] = saleData
-		}
-		txResponse, err := blockgen.buildResponseForCrowdsale(tx, saleDataMap, unspentTokenMap, rt, chainID, metaRequest.SaleID, producerPrivateKey)
-		if err != nil {
-			txsToRemove = append(txsToRemove, tx)
-		} else if txResponse != nil {
-			txsResponse = append(txsResponse, txResponse)
-		}
-	}
-	return txsResponse, txsToRemove, nil
 }
 
 func (blockgen *BlkTmplGenerator) processLoan(sourceTxns []*metadata.TxDesc, producerPrivateKey *privacy.SpendingKey) (uint64, []*transaction.Tx, []metadata.Transaction) {

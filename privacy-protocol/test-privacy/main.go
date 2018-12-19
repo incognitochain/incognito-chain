@@ -1,9 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"math/big"
-)
+import "github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 
 func main() {
 
@@ -60,7 +57,7 @@ func main() {
 
 	/*****************zkp.TestPKComZeroOne()****************/
 
-	//zkp.TestPKOneOfMany()
+	zkp.TestPKOneOfMany()
 
 	//zkp.TestPKComMultiRange()
 
@@ -352,15 +349,5 @@ func main() {
 
 	//fmt.Println(zkp.EstimateMultiRangeProof(10))
 
-	a := new(big.Int).SetUint64(10)
-	//b := new(big.Int).SetBytes(a.Bytes())
-	b := new(big.Int).Set(a)
 
-	fmt.Printf("a before: %v\n", a)
-	fmt.Printf("b before: %v\n", b)
-
-	a = a.Add(a, big.NewInt(10))
-
-	fmt.Printf("a after: %v\n", a)
-	fmt.Printf("b after: %v\n", b)
 }

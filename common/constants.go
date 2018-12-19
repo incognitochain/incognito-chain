@@ -48,7 +48,7 @@ const (
 	MaximumProposalExplainationLength = 1000
 	NumberOfDCBGovernors              = 50
 	NumberOfGOVGovernors              = 50
-	EncryptionPhaseDuration           = 5
+	EncryptionPhaseDuration           = uint32(5)
 )
 
 // board types
@@ -66,7 +66,13 @@ var (
 	ConstantID      = [HashSize]byte{4} // To send Constant in custom token
 	VoteDCBTokenID  = [HashSize]byte{5}
 	VoteGOVTokenID  = [HashSize]byte{6}
-	OffchainAssetID = [HashSize]byte{7}
+	OffchainAssetID = [HashSize]byte{7, 7, 7, 7, 7, 7, 7, 7} // First 8 bytes of offchain asset
+)
+
+// asset IDs for oracle feed
+var (
+	ETHAssetID = [HashSize]byte{99}
+	BTCAssetID = [HashSize]byte{88}
 )
 
 // board addresses

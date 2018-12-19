@@ -99,6 +99,9 @@ type DatabaseInterface interface {
 	// Crowdsale
 	SaveCrowdsaleData([]byte, int32, []byte, uint64, []byte, uint64) error // param: saleID, end block, buying asset, buying amount, selling asset, selling amount
 	LoadCrowdsaleData([]byte) (int32, []byte, uint64, []byte, uint64, error)
+	StoreCrowdsaleRequest([]byte, []byte, []byte, []byte, []byte) error
+	StoreCrowdsaleResponse([]byte, []byte) error
+	GetCrowdsaleTxs([]byte) ([][]byte, error)
 
 	//Vote
 	AddVoteDCBBoard(uint32, []byte, []byte, uint64) error
@@ -109,15 +112,15 @@ type DatabaseInterface interface {
 	GetKey(string, interface{}) []byte
 	GetVoteDCBBoardListPrefix() []byte
 	GetVoteGOVBoardListPrefix() []byte
-	GetThreePhraseLv3CryptoPrefix() []byte
+	GetThreePhraseSealerPrefix() []byte
+	GetThreePhraseOwnerPrefix() []byte
+	GetThreePhraseVoteValuePrefix() []byte
 	SendInitDCBVoteToken(uint32, []byte, uint64) error
 	SendInitGOVVoteToken(uint32, []byte, uint64) error
 	AddVoteLv3Proposal(string, uint32, *common.Hash) error
 	AddVoteLv1or2Proposal(string, uint32, *common.Hash) error
-	AddVoteNormalProposalFromOwner(string, uint32, *common.Hash) error
-	AddVoteNormalProposalFromSealer(string, uint32, *common.Hash) error
-
-	ReverseGetKey(string, []byte) (interface{}, error)
+	AddVoteNormalProposalFromOwner(string, uint32, *common.Hash, []byte) error
+	AddVoteNormalProposalFromSealer(string, uint32, *common.Hash, []byte) error
 
 	Close() error
 }

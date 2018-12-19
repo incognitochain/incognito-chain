@@ -31,6 +31,7 @@ func (lp *LoanPayment) Hash() *common.Hash {
 	record += string(strconv.FormatBool(lp.PayPrinciple))
 
 	// final hash
+	record += string(lp.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

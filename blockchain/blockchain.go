@@ -103,6 +103,10 @@ func (self *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint32, e
 	return self.config.DataBase.GetLoanPayment(loanID)
 }
 
+func (self *BlockChain) GetCrowdsaleTxs(requestTxHash []byte) ([][]byte, error) {
+	return self.config.DataBase.GetCrowdsaleTxs(requestTxHash)
+}
+
 func (self *BlockChain) GetCrowdsaleData(saleID []byte) (*voting.SaleData, error) {
 	endBlock, buyingAsset, buyingAmount, sellingAsset, sellingAmount, err := self.config.DataBase.LoadCrowdsaleData(saleID)
 	var saleData *voting.SaleData
@@ -459,20 +463,6 @@ this is a list tx-out which are used by a new tx
 }*/
 
 /*
-Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
-this is a list tx-in which are used by a new tx
-*/
-/*func (self *BlockChain) StoreCommitmentsFromListCommitment(commitments [][]byte, chainId byte) error {
-	for _, item := range commitments {
-		err := self.config.DataBase.StoreCommitments(item, chainId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
-
-/*
 Uses an existing database to update the set of used tx by saving list nullifier of privacy-protocol,
 this is a list tx-out which are used by a new tx
 */
@@ -483,24 +473,6 @@ this is a list tx-out which are used by a new tx
 			return err
 		}
 		err = self.config.DataBase.StoreSerialNumbers(desc.CoinDetails.SerialNumber.Compress(), chainId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}*/
-
-/*
-Uses an existing database to update the set of not used tx by saving list commitments of privacy-protocol,
-this is a list tx-in which are used by a new tx
-*/
-/*func (self *BlockChain) StoreCommitmentsFromTx(tx *transaction.Tx) error {
-	for _, desc := range tx.Proof.OutputCoins {
-		chainId, err := common.GetTxSenderChain(desc.CoinDetails.GetPubKeyLastByte())
-		if err != nil {
-			return err
-		}
-		err = self.config.DataBase.StoreCommitments(desc.CoinDetails.CoinCommitment.Compress(), chainId)
 		if err != nil {
 			return err
 		}
@@ -676,6 +648,7 @@ func (self *BlockChain) ProcessLoanForBlock(block *Block) error {
 			{
 				tx := tx.(*transaction.Tx)
 				meta := tx.Metadata.(*metadata.LoanResponse)
+				// TODO(@0xbunyip): store multiple responses with different suffixes
 				self.config.DataBase.StoreLoanResponse(meta.LoanID, tx.Hash()[:])
 			}
 		case metadata.LoanUnlockMeta:
@@ -831,11 +804,11 @@ func (self *BlockChain) ProcessVoteProposal(block *Block) error {
 			self.config.DataBase.AddVoteLv1or2Proposal("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
 		case metadata.NormalDCBBallotMetaFromOwner:
 			underlieMetadata := meta.(*metadata.NormalDCBBallotFromOwnerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
+			self.config.DataBase.AddVoteNormalProposalFromOwner("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
 		case metadata.NormalDCBBallotMetaFromSealer:
 			underlieMetadata := meta.(*metadata.NormalDCBBallotFromSealerMetadata)
-			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot)
-			// todo: gov
+			self.config.DataBase.AddVoteNormalProposalFromSealer("dcb", nextDCBConstitutionBlockHeight, &underlieMetadata.PointerToLv3Ballot, underlieMetadata.Ballot)
+			// todo: @0xjackalope
 
 		}
 	}
@@ -872,35 +845,34 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 					}
 				}
 			}
+		case metadata.CrowdsaleRequestMeta:
+			{
+				meta := tx.GetMetadata().(*metadata.CrowdsaleRequest)
+				hash := tx.Hash()
+				if err := self.config.DataBase.StoreCrowdsaleRequest(hash[:], meta.SaleID, meta.PaymentAddress.Pk[:], meta.PaymentAddress.Tk[:], meta.Info); err != nil {
+					return err
+				}
+			}
+		case metadata.CrowdsaleResponseMeta:
+			{
+				meta := tx.GetMetadata().(*metadata.CrowdsaleResponse)
+				_, _, _, txRequest, err := self.GetTransactionByHash(meta.RequestedTxID)
+				if err != nil {
+					return err
+				}
+				requestHash := txRequest.Hash()
+
+				hash := tx.Hash()
+				if err := self.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
 }
 
-/*
-FetchTxViewPoint -  return a tx view point, which contain list commitments and nullifiers
-Param coinType - COIN or BOND
-*/
-/*func (self *BlockChain) FetchTxViewPoint(chainId byte) (*TxViewPoint, error) {
-	view := NewTxViewPoint(chainId)
-	commitments, err := self.config.DataBase.FetchCommitments(chainId)
-	if err != nil {
-		return nil, err
-	}
-	view.listCommitments = commitments
-	nullifiers, err := self.config.DataBase.FetchSerialNumbers(chainId)
-	if err != nil {
-		return nil, err
-	}
-	view.listSerialNumbers = nullifiers
-	snDerivators, err := self.config.DataBase.FetchSNDerivator(chainId)
-	if err != nil {
-		return nil, err
-	}
-	view.listSnD = snDerivators
-	return view, nil
-}*/
-
+// CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
 func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ChainID)
@@ -1432,6 +1404,7 @@ func (self *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {
 func (self *BlockChain) GetNumberOfDCBGovernors() int {
 	return common.NumberOfDCBGovernors
 }
+
 func (self *BlockChain) GetNumberOfGOVGovernors() int {
 	return common.NumberOfGOVGovernors
 }

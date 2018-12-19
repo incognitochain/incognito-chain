@@ -33,6 +33,7 @@ func (lw *LoanWithdraw) Hash() *common.Hash {
 	record += string(lw.Key)
 
 	// final hash
+	record += string(lw.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

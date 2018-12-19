@@ -9,7 +9,7 @@ import (
 
 type SubmitDCBProposalMetadata struct {
 	DCBParams       params.DCBParams
-	ExecuteDuration int32
+	ExecuteDuration uint32
 	Explanation     string
 
 	MetadataBase
@@ -38,7 +38,7 @@ func NewSubmitDCBProposalMetadataFromJson(jsonData map[string]interface{}) *Subm
 			MinLoanResponseRequire: uint8(jsonData["MinLoanResponseRequire"].(float64)),
 			LoanParams:             loanParams,
 		},
-		ExecuteDuration: int32(jsonData["ExecuteDuration"].(float64)),
+		ExecuteDuration: uint32(jsonData["ExecuteDuration"].(float64)),
 		Explanation:     jsonData["Explanation"].(string),
 		MetadataBase: MetadataBase{
 			Type: SubmitDCBProposalMeta,
@@ -51,6 +51,7 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) Hash() *common.Hash 
 	record := string(common.ToBytes(*submitDCBProposalMetadata.DCBParams.Hash()))
 	record += string(submitDCBProposalMetadata.ExecuteDuration)
 	record += submitDCBProposalMetadata.Explanation
+	record += string(submitDCBProposalMetadata.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -79,7 +80,7 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateMetadataByIt
 
 type SubmitGOVProposalMetadata struct {
 	GOVParams       params.GOVParams
-	ExecuteDuration int32
+	ExecuteDuration uint32
 	Explaination    string
 
 	MetadataBase
@@ -105,7 +106,7 @@ func NewSubmitGOVProposalMetadataFromJson(jsonData map[string]interface{}) *Subm
 				RefundAmount:       uint64(jsonData["RefundAmount"].(float64)),
 			},
 		},
-		ExecuteDuration: int32(jsonData["ExecuteDuration"].(float64)),
+		ExecuteDuration: uint32(jsonData["ExecuteDuration"].(float64)),
 		Explaination:    string(jsonData["Explaination"].(string)),
 		MetadataBase: MetadataBase{
 			Type: SubmitGOVProposalMeta,
@@ -118,6 +119,7 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash 
 	record := string(common.ToBytes(*submitGOVProposalMetadata.GOVParams.Hash()))
 	record += string(submitGOVProposalMetadata.ExecuteDuration)
 	record += submitGOVProposalMetadata.Explaination
+	record += string(submitGOVProposalMetadata.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

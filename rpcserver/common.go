@@ -264,18 +264,18 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 	return tx, err
 }
 
-func (self RpcServer) EstimateFee(defaultFee uint64, candidateOutputCoins []*privacy.OutputCoin, paymentInfos []*privacy.PaymentInfo, chainID byte, numBlock uint64) uint64 {
+func (self RpcServer) EstimateFee(defaultFee int64, candidateOutputCoins []*privacy.OutputCoin, paymentInfos []*privacy.PaymentInfo, chainID byte, numBlock uint64) uint64 {
 	// check real fee(nano constant) per tx
 	var realFee uint64
-	estimateFeeCoinPerKb := defaultFee
-	if estimateFeeCoinPerKb == 0 {
+	estimateFeeCoinPerKb := uint64(0)
+	if defaultFee == -1 {
 		temp, _ := self.config.FeeEstimator[chainID].EstimateFee(numBlock)
 		estimateFeeCoinPerKb = uint64(temp)
 	}
 	if estimateFeeCoinPerKb == 0 {
 		estimateFeeCoinPerKb = self.config.BlockChain.GetFeePerKbTx()
 	}
-	defaultFee += uint64(self.config.Wallet.Config.IncrementalFee)
+	estimateFeeCoinPerKb += uint64(self.config.Wallet.Config.IncrementalFee)
 	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, nil)
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	return realFee

@@ -5,108 +5,107 @@ import (
 
 	"github.com/ninjadotorg/constant/common"
 	"github.com/ninjadotorg/constant/database"
+	"github.com/ninjadotorg/constant/database/lvdb"
 	"github.com/ninjadotorg/constant/metadata"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-//func parseKeyVoteLv3Proposal(keyType string, key []byte) (string, string, string, string) {
-//	realKey :=
-//	return
-//}
+func CreatePunishTx() metadata.Transaction {
+	return nil
+}
 
 //Todo: @0xjackalope count by database
 func (blockgen *BlkTmplGenerator) createAcceptConstitutionAndPunishTx(
 	chainID byte,
 	ConstitutionHelper ConstitutionHelper,
 ) ([]metadata.Transaction, error) {
-	//BestBlock := blockgen.chain.BestState[chainID].BestBlock
-	//
-	//// count vote from lastConstitution.StartedBlockHeight to Bestblock height
-	//CountVote := make(map[common.Hash]int64)
-	//Transaction := make(map[common.Hash]*metadata.Transaction)
-	//resTx := make([]metadata.Transaction, 0)
-	//for blockHeight := ConstitutionHelper.GetStartedNormalVote(blockgen, chainID); blockHeight <= BestBlock.Header.Height; blockHeight++ {
-	//	//retrieve block from block's height
-	//	hashBlock, err := blockgen.chain.config.DataBase.GetBlockByIndex(blockHeight, chainID)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	blockBytes, err := blockgen.chain.config.DataBase.FetchBlock(hashBlock)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	block := Block{}
-	//	err = json.Unmarshal(blockBytes, &block)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//
-	//	db := blockgen.chain.config.DataBase
-	//	begin := db.GetKey(string(db.GetThreePhraseLv3CryptoPrefix()), ConstitutionHelper.GetLowerCaseBoardType() + string(0))))
-	//	end := db.GetKey(string(db.GetThreePhraseLv3CryptoPrefix()), ConstitutionHelper.GetLowerCaseBoardType() + string(ConstitutionHelper.GetEndedOfConstitution())))
-	//
-	//	searchrange := util.Range{
-	//		Start: begin,
-	//		Limit: end,
-	//	}
-	//	iter := db.NewIterator(&searchrange, nil)
-	//	rightStartedBlock := BestBlock.Header.Height + 1
-	//	for iter.Next(){
-	//		key := iter.Key()
-	//		_, _, startedBlock ,transactionID := parseKeyVoteLv3Proposal(db.GetThreePhraseLv3CryptoPrefix(), key)
-	//		if (startedBlock != rightStartedBlock) {
-	//			db.Delete(key)
-	//			continue
-	//		}
-	//
-	//	}
-	//
-	//	for _, tx := range block.Transactions {
-	//		if ConstitutionHelper.CheckNormalVoteProposaFromOwnerType(tx) {
-	//		}
-	//		if ConstitutionHelper.CheckNormalVoteProposaFromSealerType(tx) {
-	//			blockgen.chain.config.DataBase.SetDecryptedFromSealertx(tx.Hash())
-	//		}
-	//	}
-	//	//count vote of this block
-	//	for _, tx := range block.Transactions {
-	//		_, exist := CountVote[*tx.Hash()]
-	//		if ConstitutionHelper.CheckSubmitProposalType(tx) {
-	//			if exist {
-	//				return nil, err
-	//			}
-	//			CountVote[*tx.Hash()] = 0
-	//			Transaction[*tx.Hash()] = &tx
-	//		} else if ConstitutionHelper.CheckVotingProposalType(tx) {
-	//			if !exist {
-	//				return nil, err
-	//			}
-	//			CountVote[*tx.Hash()] += int64(ConstitutionHelper.GetAmountVoteToken(tx))
-	//		}
-	//	}
-	//	for i, j := range CountVote {
-	//		unSealLv := blockgen.chain.config.DataBase.GetUnsealLv(i)
-	//		resTx = append(resTx, createPunishEncryptionTx(i, unSealLv))
-	//	}
-	//}
-	//
-	//// get transaction and create transaction desc
-	//var maxVote int64
-	//var res common.Hash
-	//for key, value := range CountVote {
-	//	if value > maxVote {
-	//		maxVote = value
-	//		res = key
-	//	}
-	//}
-	//
-	//acceptedSubmitProposalTransaction := ConstitutionHelper.TxAcceptProposal(*Transaction[res])
-	//resTx = append(resTx, acceptedSubmitProposalTransaction)
-	//
-	//return resTx, nil
-	return nil, nil
+	resTx := make([]metadata.Transaction, 0)
+	SumVote := make(map[common.Hash]uint64)
+	CountVote := make(map[common.Hash]uint32)
+	BestBlock := blockgen.chain.BestState[chainID].BestBlock
+
+	db := blockgen.chain.config.DataBase
+	begin := lvdb.GetThreePhraseCryptoSealerKey(ConstitutionHelper.GetLowerCaseBoardType(), 0, nil)
+	end := lvdb.GetThreePhraseCryptoSealerKey(ConstitutionHelper.GetLowerCaseBoardType(), ConstitutionHelper.GetEndedBlockHeight(blockgen, chainID), nil)
+
+	searchrange := util.Range{
+		Start: begin,
+		Limit: end,
+	}
+	iter := db.NewIterator(&searchrange, nil)
+	rightStartedBlock := BestBlock.Header.Height + 1
+	for iter.Next() {
+		key := iter.Key()
+		boardType, startedBlock, transactionID, err := lvdb.ParseKeyThreePhraseCryptoSealer(key)
+		if err != nil {
+			return nil, err
+		}
+		if startedBlock != uint32(rightStartedBlock) {
+			//@todo 0xjackalope delete all relevant thing
+			db.Delete(key)
+			continue
+		}
+		//Punish owner if he don't send decrypted message
+		keyOwner := lvdb.GetThreePhraseCryptoOwnerKey(boardType, startedBlock, transactionID)
+		valueOwnerInByte, err := db.Get(keyOwner)
+		if err != nil {
+			return nil, err
+		}
+		valueOwner := binary.LittleEndian.Uint32(valueOwnerInByte)
+		if valueOwner != 1 {
+			//Count number of time she don't send encrypted message if number==2 create punish transaction
+			newTx := CreatePunishTx()
+			resTx = append(resTx, newTx)
+		}
+		//Punish sealer if he don't send decrypted message
+		keySealer := lvdb.GetThreePhraseCryptoSealerKey(boardType, startedBlock, transactionID)
+		valueSealerInByte, err := db.Get(keySealer)
+		if err != nil {
+			return nil, err
+		}
+		valueSealer := binary.LittleEndian.Uint32(valueSealerInByte)
+		if valueSealer != 3 {
+			//Count number of time she don't send encrypted message if number==2 create punish transaction
+			newTx := CreatePunishTx()
+			resTx = append(resTx, newTx)
+		}
+
+		//Accumulate count vote
+		keyVote := lvdb.GetThreePhraseVoteValueKey(boardType, startedBlock, transactionID)
+		valueVote, err := db.Get(keyVote)
+		if err != nil {
+			return nil, err
+		}
+		txId, voteAmount, err := lvdb.ParseValueThreePhraseVoteValue(valueVote)
+		if err != nil {
+			return nil, err
+		}
+
+		SumVote[*txId] += uint64(voteAmount)
+		CountVote[*txId] += 1
+	}
+
+	// Get most vote proposal
+	maxVoteAmount := uint64(0)
+	maxVoteCount := uint32(0)
+	bestTxId := common.Hash{}
+	for txId, voteAmount := range SumVote {
+		if voteAmount > maxVoteAmount ||
+			(voteAmount == maxVoteAmount && CountVote[txId] > maxVoteCount) ||
+			(voteAmount == maxVoteAmount && CountVote[txId] == maxVoteCount && string(txId.GetBytes()) > string(bestTxId.GetBytes())) {
+			maxVoteAmount = voteAmount
+			maxVoteCount = CountVote[txId]
+			bestTxId = txId
+		}
+	}
+
+	acceptedSubmitProposalTransaction := ConstitutionHelper.TxAcceptProposal(&bestTxId)
+
+	resTx = append(resTx, acceptedSubmitProposalTransaction)
+
+	return resTx, nil
 }
 
 func (blockgen *BlkTmplGenerator) createSingleSendDCBVoteTokenTx(chainID byte, pubKey []byte, amount uint64) (metadata.Transaction, error) {
@@ -191,26 +190,6 @@ func (block *Block) UpdateGOVBoard(thisTx metadata.Transaction) error {
 	return nil
 }
 
-// startblock, pubkey, index
-func (blockgen *BlkTmplGenerator) parseVoteDCBBoardListKey(key []byte) (int32, []byte, uint32) {
-	keyWithoutPrefixI, _ := blockgen.chain.config.DataBase.ReverseGetKey(string(blockgen.chain.config.DataBase.GetVoteDCBBoardListPrefix()), key)
-	keyWithoutPrefix := keyWithoutPrefixI.([]byte)
-	startedBlock := int32(binary.LittleEndian.Uint32(keyWithoutPrefix[:4]))
-	pubKey := keyWithoutPrefix[4 : 4+common.HashSize]
-	currentIndex := binary.LittleEndian.Uint32(keyWithoutPrefix[4+common.HashSize:])
-	return startedBlock, pubKey, currentIndex
-}
-
-// startblock, pubkey, index
-func (blockgen *BlkTmplGenerator) parseVoteGOVBoardListKey(key []byte) (int32, []byte, uint32) {
-	keyWithoutPrefixI, _ := blockgen.chain.config.DataBase.ReverseGetKey(string(blockgen.chain.config.DataBase.GetVoteGOVBoardListPrefix()), key)
-	keyWithoutPrefix := keyWithoutPrefixI.([]byte)
-	startedBlock := int32(binary.LittleEndian.Uint32(keyWithoutPrefix[:4]))
-	pubKey := keyWithoutPrefix[4 : 4+common.HashSize]
-	currentIndex := binary.LittleEndian.Uint32(keyWithoutPrefix[4+common.HashSize:])
-	return startedBlock, pubKey, currentIndex
-}
-
 func parseVoteDCBBoardListValue(value []byte) ([]byte, uint64) {
 	voterPubKey := value[:common.HashSize]
 	amount := binary.LittleEndian.Uint64(value[common.HashSize:])
@@ -282,11 +261,11 @@ func (blockgen *BlkTmplGenerator) CreateSendBackDCBTokenAfterVoteFail(chainID by
 	listNewTx := make([]metadata.Transaction, 0)
 	for iter.Next() {
 		key := iter.Key()
-		startedBlock, PubKey, _ := blockgen.parseVoteDCBBoardListKey(key)
+		startedBlock, PubKey, _, _ := lvdb.ParseKeyVoteDCBBoardList(key)
 		value := iter.Value()
 		senderPubkey, amountOfDCBToken := parseVoteDCBBoardListValue(value)
 		_, found := setOfNewDCB[string(PubKey)]
-		if startedBlock < currentHeight || !found {
+		if startedBlock < uint32(currentHeight) || !found {
 			listNewTx = append(listNewTx, createSingleSendDCBVoteTokenFail(senderPubkey, amountOfDCBToken))
 		}
 	}
@@ -311,11 +290,11 @@ func (blockgen *BlkTmplGenerator) CreateSendBackGOVTokenAfterVoteFail(chainID by
 	listNewTx := make([]metadata.Transaction, 0)
 	for iter.Next() {
 		key := iter.Key()
-		startedBlock, PubKey, _ := blockgen.parseVoteGOVBoardListKey(key)
+		startedBlock, PubKey, _, _ := lvdb.ParseKeyVoteGOVBoardList(key)
 		value := iter.Value()
 		senderPubkey, amountOfGOVToken := parseVoteGOVBoardListValue(value)
 		_, found := setOfNewGOV[string(PubKey)]
-		if startedBlock < currentHeight || !found {
+		if startedBlock < uint32(currentHeight) || !found {
 			listNewTx = append(listNewTx, createSingleSendGOVVoteTokenFail(senderPubkey, amountOfGOVToken))
 		}
 	}

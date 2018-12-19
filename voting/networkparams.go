@@ -17,7 +17,7 @@ type SaleData struct {
 	EndBlock int32
 
 	BuyingAsset  []byte
-	BuyingAmount uint64
+	BuyingAmount uint64 // TODO(@0xbunyip): change to big.Int
 
 	SellingAsset  []byte
 	SellingAmount uint64
@@ -31,6 +31,14 @@ type RefundInfo struct {
 type SaleDBCTOkensByUSDData struct {
 	Amount   uint64
 	EndBlock int32
+}
+
+type OracleNetwork struct {
+	OraclePubKeys         [][]byte
+	WrongTimesAllowed     uint8
+	Quorum                uint8
+	AcceptableErrorMargin uint32
+	UpdateFrequency       uint32
 }
 
 func (saleData *SaleData) Hash() *common.Hash {
@@ -67,6 +75,18 @@ func (refundInfo *RefundInfo) Hash() *common.Hash {
 func (sdt *SaleDBCTOkensByUSDData) Hash() *common.Hash {
 	record := string(sdt.Amount)
 	record += string(sdt.EndBlock)
+	hash := common.DoubleHashH([]byte(record))
+	return &hash
+}
+
+func (on *OracleNetwork) Hash() *common.Hash {
+	record := string(on.WrongTimesAllowed)
+	record += string(on.Quorum)
+	record += string(on.AcceptableErrorMargin)
+	record += string(on.UpdateFrequency)
+	for _, oraclePk := range on.OraclePubKeys {
+		record += string(oraclePk)
+	}
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

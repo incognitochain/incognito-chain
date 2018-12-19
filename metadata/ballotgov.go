@@ -18,6 +18,7 @@ func (sealGOVBallotMetadata *SealedGOVBallotMetadata) Hash() *common.Hash {
 	for _, i := range sealGOVBallotMetadata.LockerPubKey {
 		record += string(i)
 	}
+	record += string(sealGOVBallotMetadata.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -86,6 +87,7 @@ func (sealedLv1GOVBallotMetadata *SealedLv1GOVBallotMetadata) Hash() *common.Has
 	record := string(common.ToBytes(*sealedLv1GOVBallotMetadata.SealedGOVBallotMetadata.Hash()))
 	record += string(common.ToBytes(sealedLv1GOVBallotMetadata.PointerToLv2Ballot))
 	record += string(common.ToBytes(sealedLv1GOVBallotMetadata.PointerToLv3Ballot))
+	record += string(sealedLv1GOVBallotMetadata.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -143,6 +145,7 @@ func NewSealedLv2GOVBallotMetadata(data map[string]interface{}) *SealedLv2GOVBal
 func (sealedLv2GOVBallotMetadata *SealedLv2GOVBallotMetadata) Hash() *common.Hash {
 	record := string(common.ToBytes(*sealedLv2GOVBallotMetadata.SealedGOVBallotMetadata.Hash()))
 	record += string(common.ToBytes(sealedLv2GOVBallotMetadata.PointerToLv3Ballot))
+	record += string(sealedLv2GOVBallotMetadata.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -240,6 +243,7 @@ func (normalGOVBallotFromSealerMetadata *NormalGOVBallotFromSealerMetadata) Hash
 	}
 	record += string(common.ToBytes(normalGOVBallotFromSealerMetadata.PointerToLv1Ballot))
 	record += string(common.ToBytes(normalGOVBallotFromSealerMetadata.PointerToLv3Ballot))
+	record += string(normalGOVBallotFromSealerMetadata.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -309,6 +313,7 @@ func (normalGOVBallotFromOwnerMetadata *NormalGOVBallotFromOwnerMetadata) Hash()
 		record += string(i)
 	}
 	record += string(common.ToBytes(normalGOVBallotFromOwnerMetadata.PointerToLv3Ballot))
+	record += string(normalGOVBallotFromOwnerMetadata.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
