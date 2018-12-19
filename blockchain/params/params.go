@@ -21,8 +21,10 @@ type LoanParams struct {
 type DCBParams struct {
 	SaleData               *voting.SaleData
 	MinLoanResponseRequire uint8
-	LoanParams             []LoanParams // params for collateralized loans of Constant
 	SaleDBCTOkensByUSDData *voting.SaleDBCTOkensByUSDData
+
+	// TODO(@0xbunyip): read loan params from proposal instead of storing and reading separately
+	LoanParams []LoanParams // params for collateralized loans of Constant
 }
 
 type GOVParams struct {

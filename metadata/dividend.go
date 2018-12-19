@@ -47,6 +47,7 @@ func (div *Dividend) Hash() *common.Hash {
 	record += string(div.TokenID[:])
 
 	// final hash
+	record += string(div.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
