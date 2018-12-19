@@ -3,11 +3,9 @@ package blockchain
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"strconv"
 	"strings"
@@ -173,7 +171,8 @@ func (self *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash
 
 // GetOracleParams returns oracle params
 func (self *BlockChain) GetOracleParams() *params.Oracle {
-	return self.BestState[0].BestBlock.Header.Oracle
+	return &params.Oracle{}
+	// return self.BestState[0].BestBlock.Header.Oracle
 }
 
 // -------------- End of Blockchain retriever's implementation --------------
@@ -498,7 +497,7 @@ this is a list tx-out which are used by a new tx
 */
 func (self *BlockChain) StoreNullifiersFromTx(tx *transaction.Tx) error {
 	for _, desc := range tx.Proof.InputCoins {
-		chainId, err := common.GetTxSenderChain(tx.PubKeyLastByteSender)
+		shardID, err := common.GetTxSenderChain(tx.PubKeyLastByteSender)
 		if err != nil {
 			return err
 		}
@@ -717,29 +716,29 @@ func (self *BlockChain) parseCustomTokenUTXO(tokenID *common.Hash, pubkey []byte
 }
 
 func (self *BlockChain) UpdateDividendPayout(block *ShardBlock) error {
-	for _, tx := range block.Body.Transactions {
-		switch tx.GetMetadataType() {
-		case metadata.DividendMeta:
-			{
-				tx := tx.(*transaction.Tx)
-				meta := tx.Metadata.(*metadata.Dividend)
-				for _, coin := range tx.Proof.OutputCoins {
-					pubkey := coin.CoinDetails.PublicKey.Compress()
-					vouts, err := self.parseCustomTokenUTXO(meta.TokenID, pubkey)
-					if err != nil {
-						return err
-					}
-					for _, vout := range vouts {
-						txHash := vout.GetTxCustomTokenID()
-						err := self.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, pubkey, &txHash, vout.GetIndex())
-						if err != nil {
-							return err
-						}
-					}
-				}
-			}
-		}
-	}
+	// for _, tx := range block.Body.Transactions {
+	// 	switch tx.GetMetadataType() {
+	// 	case metadata.DividendMeta:
+	// 		{
+	// 			tx := tx.(*transaction.Tx)
+	// 			meta := tx.Metadata.(*metadata.Dividend)
+	// 			for _, coin := range tx.Proof.OutputCoins {
+	// 				pubkey := coin.CoinDetails.PublicKey.Compress()
+	// 				vouts, err := self.parseCustomTokenUTXO(meta.TokenID, pubkey)
+	// 				if err != nil {
+	// 					return err
+	// 				}
+	// 				for _, vout := range vouts {
+	// 					txHash := vout.GetTxCustomTokenID()
+	// 					err := self.config.DataBase.UpdateRewardAccountUTXO(meta.TokenID, pubkey, &txHash, vout.GetIndex())
+	// 					if err != nil {
+	// 						return err
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 	return nil
 }
 
@@ -861,8 +860,8 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *ShardBlock) error {
 }
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
-func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *Block) error {
-	view := NewTxViewPoint(block.Header.ChainID)
+func (self *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) error {
+	view := NewTxViewPoint(block.Header.ShardID)
 
 	err := view.fetchTxViewPointFromBlock(self.config.DataBase, block)
 	if err != nil {
@@ -1335,6 +1334,6 @@ func (self BlockChain) CheckSNDerivatorExistence(snd *big.Int, shardID byte) (bo
 }
 
 // GetFeePerKbTx - return fee (per kb of tx) from GOV params data
-func (self BlockChain) GetFeePerKbTx() uint64 {
-	return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
-}
+// func (self BlockChain) GetFeePerKbTx() uint64 {
+// 	return self.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.FeePerKbTx
+// }

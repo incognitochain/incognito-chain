@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"github.com/ninjadotorg/constant/database"
-	"github.com/ninjadotorg/constant/metadata"
 	privacy "github.com/ninjadotorg/constant/privacy-protocol"
 	"github.com/ninjadotorg/constant/transaction"
 )
@@ -29,30 +28,30 @@ func buildCoinbaseTxs(
 	return txs, nil
 }
 
-func buildDividendTxs(
-	infos []metadata.DividendInfo,
-	proposal *metadata.DividendProposal,
-	producerPrivateKey *privacy.SpendingKey,
-	db database.DatabaseInterface,
-) ([]*transaction.Tx, error) {
-	pks := [][]byte{}
-	tks := [][]byte{}
-	amounts := []uint64{}
-	for _, info := range infos {
-		pks = append(pks, info.TokenHolder.Pk)
-		tks = append(tks, info.TokenHolder.Tk)
-		amounts = append(amounts, info.Amount)
-	}
+// func buildDividendTxs(
+// 	infos []metadata.DividendInfo,
+// 	proposal *metadata.DividendProposal,
+// 	producerPrivateKey *privacy.SpendingKey,
+// 	db database.DatabaseInterface,
+// ) ([]*transaction.Tx, error) {
+// 	pks := [][]byte{}
+// 	tks := [][]byte{}
+// 	amounts := []uint64{}
+// 	for _, info := range infos {
+// 		pks = append(pks, info.TokenHolder.Pk)
+// 		tks = append(tks, info.TokenHolder.Tk)
+// 		amounts = append(amounts, info.Amount)
+// 	}
 
-	txs, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db)
-	if err != nil {
-		return nil, err
-	}
-	for _, tx := range txs {
-		tx.Metadata = &metadata.Dividend{
-			PayoutID: proposal.PayoutID,
-			TokenID:  proposal.TokenID,
-		}
-	}
-	return txs, nil
-}
+// 	txs, err := buildCoinbaseTxs(pks, tks, amounts, producerPrivateKey, db)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	for _, tx := range txs {
+// 		tx.Metadata = &metadata.Dividend{
+// 			PayoutID: proposal.PayoutID,
+// 			TokenID:  proposal.TokenID,
+// 		}
+// 	}
+// 	return txs, nil
+// }

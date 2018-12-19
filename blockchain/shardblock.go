@@ -26,7 +26,7 @@ type ShardHeader struct {
 	Epoch         uint64      `json:"Epoch"`
 	Timestamp     int64       `json:"Timestamp"`
 	PrevBlockHash common.Hash `json:"PrevBlockHash"`
-
+	SalaryFund    uint64
 	//Validator list will be store in database/memory (locally)
 	ValidatorsRoot common.Hash `json:"CurrentValidatorRootHash"`
 	//Candidate = unassigned_validator list will be store in database/memory (locally)
@@ -272,4 +272,16 @@ func (self ShardHeader) Hash() common.Hash {
 		self.PrevBlockHash.String()
 
 	return common.DoubleHashH([]byte(record))
+}
+
+// /*
+// AddTransaction adds a new transaction into block
+// */
+// // #1 - tx
+func (self *ShardBlock) AddTransaction(tx metadata.Transaction) error {
+	if self.Body.Transactions == nil {
+		return NewBlockChainError(UnExpectedError, errors.New("Not init tx arrays"))
+	}
+	self.Body.Transactions = append(self.Body.Transactions, tx)
+	return nil
 }

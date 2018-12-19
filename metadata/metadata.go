@@ -82,7 +82,7 @@ type BlockchainRetriever interface {
 	GetLoanRequestMeta([]byte) (*LoanRequest, error)
 
 	// For validating dividend
-	GetAmountPerAccount(*DividendProposal) (uint64, []string, []uint64, error)
+	// GetAmountPerAccount(*DividendProposal) (uint64, []string, []uint64, error)
 
 	// For validating crowdsale
 	GetCrowdsaleData([]byte) (*voting.SaleData, error)

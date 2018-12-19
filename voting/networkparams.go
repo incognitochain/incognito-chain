@@ -30,7 +30,7 @@ type RefundInfo struct {
 
 type SaleDBCTOkensByUSDData struct {
 	Amount   uint64
-	EndBlock int32
+	EndBlock uint64
 }
 
 type OracleNetwork struct {
