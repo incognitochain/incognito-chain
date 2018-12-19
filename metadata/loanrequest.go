@@ -71,6 +71,7 @@ func (lr *LoanRequest) Hash() *common.Hash {
 	record += string(lr.KeyDigest)
 
 	// final hash
+	record += string(lr.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

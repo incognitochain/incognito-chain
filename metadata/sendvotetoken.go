@@ -26,6 +26,7 @@ func NewSendInitDCBVoteTokenMetadata(data map[string]interface{}) *SendInitDCBVo
 func (sendInitDCBVoteTokenMetadata *SendInitDCBVoteTokenMetadata) Hash() *common.Hash {
 	record := string(sendInitDCBVoteTokenMetadata.Amount)
 	record += string(sendInitDCBVoteTokenMetadata.ReceiverPubKey)
+	record += string(sendInitDCBVoteTokenMetadata.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
@@ -66,6 +67,7 @@ func NewSendInitGOVVoteTokenMetadata(data map[string]interface{}) *SendInitGOVVo
 func (sendInitGOVVoteTokenMetadata *SendInitGOVVoteTokenMetadata) Hash() *common.Hash {
 	record := string(sendInitGOVVoteTokenMetadata.Amount)
 	record += string(sendInitGOVVoteTokenMetadata.ReceiverPubKey)
+	record += string(sendInitGOVVoteTokenMetadata.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }

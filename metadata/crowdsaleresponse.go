@@ -32,6 +32,7 @@ func (cr *CrowdsaleResponse) Hash() *common.Hash {
 	record := string(cr.RequestedTxID[:])
 
 	// final hash
+	record += string(cr.MetadataBase.Hash()[:])
 	hash := common.DoubleHashH([]byte(record))
 	return &hash
 }
