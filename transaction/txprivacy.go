@@ -383,10 +383,9 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 // - Check double spendingComInputOpeningsWitnessval
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
 	// Verify tx signature
-	// TODO
-	/*if tx.GetType() == common.TxSalaryType {
+	if tx.GetType() == common.TxSalaryType {
 		return ValidateTxSalary(tx, db)
-	}*/
+	}
 	var valid bool
 	var err error
 	valid, err = tx.VerifySigTx(hasPrivacy)
