@@ -61,9 +61,7 @@ func (self RpcServer) handleCreateRawTxWithIssuingRequest(params interface{}, cl
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	//hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		//HexData:         hexData,
 		TxID:            normalTx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
@@ -105,9 +103,7 @@ func (self RpcServer) handleCreateRawTxWithContractingRequest(params interface{}
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	//hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		//HexData:         hexData,
 		TxID:            normalTx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
@@ -166,9 +162,7 @@ func (self RpcServer) handleCreateRawSealLv3VoteDCBProposalTransaction(params in
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	//hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		//HexData:         hexData,
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
@@ -228,9 +222,7 @@ func (self RpcServer) handleCreateRawSealLv2VoteDCBProposalTransaction(params in
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	//hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		//HexData:         hexData,
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
@@ -296,9 +288,7 @@ func (self RpcServer) handleCreateRawSealLv1VoteDCBProposalTransaction(params in
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	//hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		//HexData: hexData,
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
@@ -363,9 +353,7 @@ func (self RpcServer) handleCreateRawNormalVoteDCBProposalTransactionFromSealer(
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	//hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		//HexData:         hexData,
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
@@ -421,9 +409,7 @@ func (self RpcServer) handleCreateRawNormalVoteDCBProposalTransactionFromOwner(p
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	//hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		//HexData:         hexData,
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
@@ -510,9 +496,7 @@ func (self RpcServer) handleCreateRawVoteDCBBoardTransaction(
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	//hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		//HexData:         hexData,
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
@@ -560,9 +544,7 @@ func (self RpcServer) handleCreateRawSubmitDCBProposalTransaction(
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	//hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		//HexData:         hexData,
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}

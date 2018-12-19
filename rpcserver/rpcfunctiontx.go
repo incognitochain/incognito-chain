@@ -203,7 +203,6 @@ func (self RpcServer) handleCreateRawTransaction(params interface{}, closeChan <
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := jsonresult.CreateTransactionResult{
-		//HexData:         hex.EncodeToString(byteArrays),
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
@@ -397,9 +396,7 @@ func (self RpcServer) handleCreateRawCustomTokenTransaction(
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	//hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		//HexData:         hexData,
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
@@ -732,9 +729,7 @@ func (self RpcServer) handleCreateRawPrivacyCustomTokenTransaction(
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	//hexData := hex.EncodeToString(byteArrays)
 	result := jsonresult.CreateTransactionResult{
-		//HexData:         hexData,
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
