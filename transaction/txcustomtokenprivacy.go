@@ -5,6 +5,7 @@ import (
 	"github.com/ninjadotorg/constant/database"
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"errors"
+	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
 )
 
 // TxCustomTokenPrivacy is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -23,7 +24,8 @@ func (tx *TxCustomTokenPrivacy) Hash() *common.Hash {
 	record := tx.TxNormal.Hash().String()
 
 	// add more hash of tx custom token data privacy
-	record += tx.TxTokenPrivacyData.Hash().String()
+	tokenPrivacyDataHash, _ := tx.TxTokenPrivacyData.Hash()
+	record += tokenPrivacyDataHash.String()
 
 	// final hash
 	hash := common.DoubleHashH([]byte(record))
@@ -62,8 +64,10 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 	fee uint64,
 	tokenParams *CustomTokenPrivacyParamTx,
 	listCustomTokens map[common.Hash]TxCustomToken,
+	db database.DatabaseInterface,
 ) (error) {
 
+	// init data for tx constant for fee
 	normalTx := Tx{}
 	err := normalTx.Init(senderKey,
 		paymentInfo,
@@ -75,14 +79,11 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 	if err != nil {
 		return err
 	}
-	// override txCustomToken type
-	normalTx.Type = common.TxCustomTokenType
-
+	// override TxCustomTokenPrivacyType type
+	normalTx.Type = common.TxCustomTokenPrivacyType
 	txCustomToken.TxNormal = normalTx
-	txCustomToken.TxTokenPrivacyData = TxTokenPrivacyData{}
 
 	var handled = false
-
 	// Add token data params
 	switch tokenParams.TokenTxType {
 	case CustomTokenInit:
@@ -94,37 +95,76 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 				PropertySymbol: tokenParams.PropertySymbol,
 				Amount:         tokenParams.Amount,
 			}
-			/*// TODO create descs
+
+			// issue token with data of privacy
+			temp := Tx{}
+			temp.Proof = new(zkp.PaymentProof)
+			temp.Proof.OutputCoins = make([]*privacy.OutputCoin, 1)
+			temp.Proof.OutputCoins[0] = new(privacy.OutputCoin)
+			temp.Proof.OutputCoins[0].CoinDetails = new(privacy.Coin)
+			temp.Proof.OutputCoins[0].CoinDetails.Value = tokenParams.Amount
+			temp.Proof.OutputCoins[0].CoinDetails.PublicKey, err = privacy.DecompressKey(tokenParams.Receiver[0].PaymentAddress.Pk)
+			if err != nil {
+				return err
+			}
+			temp.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
+
+			sndOut := privacy.RandInt()
+			for true {
+				lastByte := tokenParams.Receiver[0].PaymentAddress.Pk[len(tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+				chainIdSender, err := common.GetTxSenderChain(lastByte)
+
+				tokenID := &common.Hash{}
+				tokenID.SetBytes(common.ConstantID[:])
+				ok, err := CheckSNDerivatorExistence(tokenID, sndOut, chainIdSender, db)
+				if err != nil {
+					return err
+				}
+				if ok {
+					sndOut = privacy.RandInt()
+				} else {
+					break
+				}
+			}
+
+			temp.Proof.OutputCoins[0].CoinDetails.SNDerivator = sndOut
+
+			// create coin commitment
+			temp.Proof.OutputCoins[0].CoinDetails.CommitAll()
+			// get last byte
+			temp.PubKeyLastByteSender = tokenParams.Receiver[0].PaymentAddress.Pk[len(tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+
+			// sign Tx
+			temp.SigPubKey = tokenParams.Receiver[0].PaymentAddress.Pk
+			temp.sigPrivKey = *senderKey
+			err = temp.SignTx(false)
+
+			txCustomToken.TxTokenPrivacyData.TxNormal = temp
 			hashInitToken, err := txCustomToken.TxTokenPrivacyData.Hash()
 			if err != nil {
-				return nil, errors.Zero("Can't handle this TokenTxType")
+				return errors.New("Can't handle this TokenTxType")
 			}
 			// validate PropertyID is the only one
 			for customTokenID := range listCustomTokens {
 				if hashInitToken.String() == customTokenID.String() {
-					return nil, errors.Zero("This token is existed in network")
+					return errors.New("This token is existed in network")
 				}
 			}
-			txCustomToken.TxTokenPrivacyData.PropertyID = *hashInitToken*/
-
+			txCustomToken.TxTokenPrivacyData.PropertyID = *hashInitToken
 		}
 	case CustomTokenTransfer:
-		/*handled = true
-		paymentTokenAmount := uint64(0)
-		for _, receiver := range tokenParams.Receiver {
-			paymentTokenAmount += receiver.Value
-		}
-		refundTokenAmount := tokenParams.vinsAmount - paymentTokenAmount
-		txCustomToken.TxTokenPrivacyData = TxTokenPrivacyData{
-			Type:           tokenParams.TokenTxType,
-			PropertyName:   tokenParams.PropertyName,
-			PropertySymbol: tokenParams.PropertySymbol,
-			Descs:          nil,
-		}
-		_ = refundTokenAmount
+		// create privacy tx for token
+		temp := Tx{}
 		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
-		txCustomToken.TxTokenPrivacyData.PropertyID = *propertyID*/
-		// TODO create descs
+		temp.Init(senderKey,
+			tokenParams.Receiver,
+			tokenParams.InputCoin,
+			0,
+			true,
+			db,
+			propertyID,
+		)
+		txCustomToken.TxTokenPrivacyData.TxNormal = temp
 	}
 
 	if handled != true {
