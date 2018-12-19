@@ -35,9 +35,6 @@ func (self MessageMsgCheckResp) JsonDeserialize(jsonStr string) error {
 func (self MessageMsgCheckResp) SetSenderID(senderID peer.ID) error {
 	return nil
 }
-func (self *MessageMsgCheckResp) SetIntendedReceiver(_ string) error {
-	return nil
-}
 
 func (self *MessageMsgCheckResp) SignMsg(_ *cashec.KeySet) error {
 	return nil

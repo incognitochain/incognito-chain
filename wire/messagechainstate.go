@@ -41,9 +41,6 @@ func (self *MessageChainState) SetSenderID(senderID peer.ID) error {
 	self.SenderID = senderID.Pretty()
 	return nil
 }
-func (self *MessageChainState) SetIntendedReceiver(_ string) error {
-	return nil
-}
 
 func (self *MessageChainState) SignMsg(_ *cashec.KeySet) error {
 	return nil

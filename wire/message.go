@@ -62,9 +62,6 @@ type Message interface {
 	JsonDeserialize(string) error
 	SetSenderID(peer.ID) error
 
-	//SetIntendedReceiver set intended receiver of this msg
-	SetIntendedReceiver(string) error
-
 	//SignMsg sig this msg with a keyset
 	SignMsg(*cashec.KeySet) error
 

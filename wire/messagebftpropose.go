@@ -40,10 +40,6 @@ func (self *MessageBFTPropose) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (self *MessageBFTPropose) SetIntendedReceiver(_ string) error {
-	return nil
-}
-
 func (self *MessageBFTPropose) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }

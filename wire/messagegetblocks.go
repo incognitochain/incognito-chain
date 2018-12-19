@@ -38,9 +38,6 @@ func (self *MessageGetBlocks) SetSenderID(senderID peer.ID) error {
 	self.SenderID = senderID.Pretty()
 	return nil
 }
-func (self *MessageGetBlocks) SetIntendedReceiver(_ string) error {
-	return nil
-}
 
 func (self *MessageGetBlocks) SignMsg(_ *cashec.KeySet) error {
 	return nil

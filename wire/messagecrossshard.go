@@ -38,10 +38,6 @@ func (self MessageCrossShard) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (self *MessageCrossShard) SetIntendedReceiver(_ string) error {
-	return nil
-}
-
 func (self *MessageCrossShard) SignMsg(_ *cashec.KeySet) error {
 	return nil
 }
