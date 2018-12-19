@@ -22,7 +22,7 @@ func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
 }
 
 func (db *db) StorePrivacyCustomToken(tokenID *common.Hash, txHash []byte) error {
-	key := db.GetKey(string(tokenInitPrefix), tokenID) // token-init-{tokenID}
+	key := db.GetKey(string(privacyTokenInitPrefix), tokenID) // token-init-{tokenID}
 	if err := db.lvdb.Put(key, txHash, nil); err != nil {
 		return err
 	}
