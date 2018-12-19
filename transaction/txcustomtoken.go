@@ -169,9 +169,9 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
-func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainID byte) bool {
+func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainID byte, tokenID *common.Hash) bool {
 	// validate for normal tx
-	if tx.Tx.ValidateTransaction(hasPrivacy, db, chainID) {
+	if tx.Tx.ValidateTransaction(hasPrivacy, db, chainID, tokenID) {
 		if len(tx.listUtxo) == 0 {
 			return false
 		}
@@ -228,7 +228,9 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	if !ok {
 		return false
 	}
-	ok = customTokenTx.ValidateTransaction(hasPrivacy, db, chainID)
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	ok = customTokenTx.ValidateTransaction(hasPrivacy, db, chainID, constantTokenID)
 	if !ok {
 		return false
 	}

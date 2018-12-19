@@ -247,7 +247,7 @@ func (self RpcServer) buildRawPrivacyCustomTokenTransaction(
 	}
 
 	// get list custom token
-	listCustomTokens, err := self.config.BlockChain.ListCustomToken()
+	listCustomTokens, err := self.config.BlockChain.ListPrivacyCustomToken()
 
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
 	tx := &transaction.TxCustomTokenPrivacy{}

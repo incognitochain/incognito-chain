@@ -60,7 +60,7 @@ type TxDesc struct {
 }
 
 type MempoolRetriever interface {
-	GetPoolNullifiers() map[common.Hash][][]byte
+	GetSerialNumbers() map[common.Hash][][]byte
 	GetTxsInMem() map[common.Hash]TxDesc
 }
 
@@ -101,7 +101,7 @@ type Metadata interface {
 // Interface for all type of transaction
 type Transaction interface {
 	Hash() *common.Hash
-	ValidateTransaction(bool, database.DatabaseInterface, byte) bool
+	ValidateTransaction(bool, database.DatabaseInterface, byte, *common.Hash) bool
 	GetMetadataType() int
 	GetType() string
 	GetTxActualSize() uint64

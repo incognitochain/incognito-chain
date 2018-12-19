@@ -77,7 +77,7 @@ func (tx *Tx) Init(
 	}
 
 	tx.Type = common.TxNormalType
-	chainID := byte(14)
+	chainID, _ := common.GetTxSenderChain(pkLastByteSender)
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
@@ -376,7 +376,7 @@ func (tx *Tx) VerifySigTx(hasPrivacy bool) (bool, error) {
 // - Verify tx signature
 // - Verify the payment proof
 // - Check double spendingComInputOpeningsWitnessval
-func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte) bool {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainId byte, tokenID *common.Hash) bool {
 	// Verify tx signature
 	var valid bool
 	var err error
@@ -444,20 +444,22 @@ func (tx *Tx) GetTxFee() uint64 {
 
 // GetTxActualSize computes the actual size of a given transaction in kilobyte
 func (tx *Tx) GetTxActualSize() uint64 {
-	sizeVersion := uint64(1)             // int8
-	sizeType := uint64(len(tx.Type) + 1) // string
-	sizeLockTime := uint64(8)            // int64
-	sizeFee := uint64(8)
+	sizeTx := uint64(1)                // int8
+	sizeTx += uint64(len(tx.Type) + 1) // string
+	sizeTx += uint64(8)                // int64
+	sizeTx += uint64(8)
 
-	sizeSigPubKey := uint64(len(tx.SigPubKey))
-	sizeSig := uint64(len(tx.Sig))
-	sizeProof := uint64(len(tx.Proof.Bytes()))
+	sizeTx += uint64(len(tx.SigPubKey))
+	sizeTx += uint64(len(tx.Sig))
+	if tx.Proof != nil {
+		sizeTx += uint64(len(tx.Proof.Bytes()))
+	}
 
-	sizePubKeyLastByte := uint64(1)
+	sizeTx += uint64(1)
 	// TODO 0xjackpolope
-	//sizeMetadata :=
-
-	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte
+	if tx.Metadata != nil {
+		//
+	}
 
 	return uint64(math.Ceil(float64(sizeTx) / 1024))
 }
@@ -559,7 +561,7 @@ func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	if tx.Type == common.TxSalaryType {
 		return errors.New("Can not receive a salary tx from other node, this is a violation")
 	}
-	poolNullifiers := mr.GetPoolNullifiers()
+	poolNullifiers := mr.GetSerialNumbers()
 	return tx.validateDoubleSpendTxWithCurrentMempool(poolNullifiers)
 }
 
@@ -636,7 +638,9 @@ func (tx *Tx) ValidateTxByItself(
 	bcr metadata.BlockchainRetriever,
 	chainID byte,
 ) bool {
-	ok := tx.ValidateTransaction(hasPrivacy, db, chainID)
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	ok := tx.ValidateTransaction(hasPrivacy, db, chainID, constantTokenID)
 	if !ok {
 		return false
 	}

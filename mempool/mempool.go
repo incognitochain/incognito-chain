@@ -42,10 +42,10 @@ type TxPool struct {
 	// The following variables must only be used atomically.
 	lastUpdated int64 // last time pool was updated
 
-	mtx            sync.RWMutex
-	config         Config
-	pool           map[common.Hash]*TxDesc
-	poolNullifiers map[common.Hash][][]byte
+	mtx               sync.RWMutex
+	config            Config
+	pool              map[common.Hash]*TxDesc
+	poolSerialNumbers map[common.Hash][][]byte
 }
 
 /*
@@ -54,12 +54,12 @@ Init Txpool from config
 func (tp *TxPool) Init(cfg *Config) {
 	tp.config = *cfg
 	tp.pool = make(map[common.Hash]*TxDesc)
-	tp.poolNullifiers = make(map[common.Hash][][]byte)
+	tp.poolSerialNumbers = make(map[common.Hash][][]byte)
 }
 
 // ----------- transaction.MempoolRetriever's implementation -----------------
-func (tp *TxPool) GetPoolNullifiers() map[common.Hash][][]byte {
-	return tp.poolNullifiers
+func (tp *TxPool) GetSerialNumbers() map[common.Hash][][]byte {
+	return tp.poolSerialNumbers
 }
 
 func (tp *TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
@@ -95,7 +95,7 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height int32, fee uint64) *TxDe
 	}
 	log.Printf(tx.Hash().String())
 	tp.pool[*tx.Hash()] = txD
-	tp.poolNullifiers[*tx.Hash()] = txD.Desc.Tx.ListNullifiers()
+	tp.poolSerialNumbers[*tx.Hash()] = txD.Desc.Tx.ListNullifiers()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 
 	// Record this tx for fee estimation if enabled. only apply for normal tx

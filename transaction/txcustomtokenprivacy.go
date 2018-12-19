@@ -6,6 +6,7 @@ import (
 	"github.com/ninjadotorg/constant/privacy-protocol"
 	"errors"
 	"github.com/ninjadotorg/constant/privacy-protocol/zero-knowledge"
+	"github.com/ninjadotorg/constant/metadata"
 )
 
 // TxCustomTokenPrivacy is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -32,14 +33,14 @@ func (tx *TxCustomTokenPrivacy) Hash() *common.Hash {
 	return &hash
 }
 
-func (tx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainID byte) bool {
+/*func (tx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainID byte, tokenID) bool {
 	// validate for normal tx
 	if tx.Tx.ValidateTransaction(hasPrivacy, db, chainID) {
 		// TODO
 		return true
 	}
 	return false
-}
+}*/
 
 // GetTxActualSize computes the virtual size of a given transaction
 // size of this tx = (normal TxNormal size) + (custom token data size)
@@ -63,7 +64,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 	inputCoin []*privacy.InputCoin,
 	fee uint64,
 	tokenParams *CustomTokenPrivacyParamTx,
-	listCustomTokens map[common.Hash]TxCustomToken,
+	listCustomTokens map[common.Hash]TxCustomTokenPrivacy,
 	db database.DatabaseInterface,
 ) (error) {
 
@@ -110,23 +111,6 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 			temp.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandInt()
 
 			sndOut := privacy.RandInt()
-			for true {
-				lastByte := tokenParams.Receiver[0].PaymentAddress.Pk[len(tokenParams.Receiver[0].PaymentAddress.Pk)-1]
-				chainIdSender, err := common.GetTxSenderChain(lastByte)
-
-				tokenID := &common.Hash{}
-				tokenID.SetBytes(common.ConstantID[:])
-				ok, err := CheckSNDerivatorExistence(tokenID, sndOut, chainIdSender, db)
-				if err != nil {
-					return err
-				}
-				if ok {
-					sndOut = privacy.RandInt()
-				} else {
-					break
-				}
-			}
-
 			temp.Proof.OutputCoins[0].CoinDetails.SNDerivator = sndOut
 
 			// create coin commitment
@@ -171,4 +155,58 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.SpendingKey,
 		return errors.New("Can't handle this TokenTxType")
 	}
 	return nil
+}
+
+func (tx *TxCustomTokenPrivacy) ValidateType() bool {
+	return tx.Type == common.TxCustomTokenPrivacyType
+}
+
+func (tx *TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
+	poolSerialNumbers := mr.GetSerialNumbers()
+	return tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers)
+}
+
+func (tx *TxCustomTokenPrivacy) ValidateTxWithBlockChain(
+	bcr metadata.BlockchainRetriever,
+	chainID byte,
+	db database.DatabaseInterface,
+) error {
+	return tx.ValidateConstDoubleSpendWithBlockchain(bcr, chainID, db)
+}
+
+func (tx *TxCustomTokenPrivacy) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
+	return tx.validateNormalTxSanityData()
+}
+
+func (customTokenTx *TxCustomTokenPrivacy) ValidateTxByItself(
+	hasPrivacy bool,
+	db database.DatabaseInterface,
+	bcr metadata.BlockchainRetriever,
+	chainID byte,
+) bool {
+	if customTokenTx.TxTokenPrivacyData.Type == CustomTokenInit {
+		return true
+	}
+	constantTokenID := &common.Hash{}
+	constantTokenID.SetBytes(common.ConstantID[:])
+	ok := customTokenTx.ValidateTransaction(hasPrivacy, db, chainID, constantTokenID)
+	if !ok {
+		return false
+	}
+
+	if customTokenTx.Metadata != nil {
+		return customTokenTx.Metadata.ValidateMetadataByItself()
+	}
+	return true
+}
+
+func (customTokenTx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, chainID byte, tokenID *common.Hash) bool {
+	if customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, chainID, tokenID) {
+		if customTokenTx.TxTokenPrivacyData.Type == CustomTokenInit {
+			customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(false, db, chainID, &customTokenTx.TxTokenPrivacyData.PropertyID)
+		} else {
+			customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(true, db, chainID, &customTokenTx.TxTokenPrivacyData.PropertyID)
+		}
+	}
+	return false
 }
