@@ -192,6 +192,55 @@ func (tx *Tx) Init(
 		commitmentProving[i], _ = privacy.DecompressKey(temp)
 	}
 
+	// check
+	com := make([]*privacy.EllipticPoint, len(inputCoins))
+	for i :=0; i < len(inputCoins); i++{
+		com[i] = new(privacy.EllipticPoint)
+		com[i].X, com[i].Y = big.NewInt(0), big.NewInt(0)
+		com[i].X.Set(inputCoins[i].CoinDetails.PublicKey.X)
+		com[i].Y.Set(inputCoins[i].CoinDetails.PublicKey.Y)
+
+		tmp := new(privacy.EllipticPoint)
+		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+		tmp.X.Set(privacy.PedCom.G[privacy.VALUE].X)
+		tmp.Y.Set(privacy.PedCom.G[privacy.VALUE].Y)
+		tmp.ScalarMul(new(big.Int).SetUint64(inputCoins[i].CoinDetails.Value))
+		com[i] = com[i].Add(tmp)
+
+		tmp = new(privacy.EllipticPoint)
+		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+		tmp.X.Set(privacy.PedCom.G[privacy.SND].X)
+		tmp.Y.Set(privacy.PedCom.G[privacy.SND].Y)
+		tmp.ScalarMul(inputCoins[i].CoinDetails.SNDerivator)
+		com[i] = com[i].Add(tmp)
+
+		tmp = new(privacy.EllipticPoint)
+		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+		tmp.X.Set(privacy.PedCom.G[privacy.SHARDID].X)
+		tmp.Y.Set(privacy.PedCom.G[privacy.SHARDID].Y)
+		tmp.ScalarMul(new(big.Int).SetBytes([]byte{inputCoins[i].CoinDetails.GetPubKeyLastByte()}))
+		com[i] = com[i].Add(tmp)
+
+		tmp = new(privacy.EllipticPoint)
+		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+		tmp.X.Set(privacy.PedCom.G[privacy.RAND].X)
+		tmp.Y.Set(privacy.PedCom.G[privacy.RAND].Y)
+		tmp.ScalarMul(inputCoins[i].CoinDetails.Randomness)
+		com[i] = com[i].Add(tmp)
+
+		if !com[i].IsEqual(inputCoins[i].CoinDetails.CoinCommitment){
+			fmt.Println("WRONG")
+		}
+
+		inputCoins[i].CoinDetails.CommitAll()
+		if !com[i].IsEqual(inputCoins[i].CoinDetails.CoinCommitment){
+			fmt.Println("WRONG")
+		}
+
+
+	}
+
+
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
 	err := witness.Build(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, pkLastByteReceivers, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)

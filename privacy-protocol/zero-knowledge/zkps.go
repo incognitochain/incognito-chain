@@ -357,6 +357,11 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		offset += lenComZeroProof
 	}
 
+	//ComOutputShardID []*privacy.EllipticPoint
+	if len(proof.ComInputOpeningsProof) == 0 {
+		offset -= 1
+	}
+
 	//InputCoins  []*privacy.InputCoin
 	lenInputCoinsArray := int(proofbytes[offset])
 	offset += 1
@@ -427,6 +432,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		}
 		offset += lenComOutputShardId
 	}
+
 
 	//ComInputSK 				*privacy.EllipticPoint
 	lenComInputSK := int(proofbytes[offset])
@@ -632,6 +638,8 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		// commitmentTemps is a list of commitments for protocol one-out-of-N
 		commitmentTemps[i] = make([]*privacy.EllipticPoint, privacy.CMRingSize)
 		randInputSum[i].Add(randInputSum[i], randInputShardID)
+		randInputSum[i].Mod(randInputSum[i], privacy.Curve.Params().N)
+
 		rndInputIsZero[i] = big.NewInt(0).Sub(inputCoins[i].CoinDetails.Randomness, randInputSum[i])
 		rndInputIsZero[i].Mod(rndInputIsZero[i], privacy.Curve.Params().N)
 
@@ -657,6 +665,14 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		indexIsZero := myCommitmentIndexs[i] % privacy.CMRingSize
 		wit.OneOfManyWitness[i].Set(commitmentTemps[i], commitmentIndexs[preIndex:preIndex + privacy.CMRingSize], rndInputIsZero[i], indexIsZero, privacy.SK)
 
+		gRand := privacy.EllipticPoint{big.NewInt(0), big.NewInt(0)}
+		gRand.X.Set(privacy.PedCom.G[privacy.RAND].X)
+		gRand.Y.Set(privacy.PedCom.G[privacy.RAND].Y)
+
+		gRand.ScalarMul(rndInputIsZero[i])
+		if gRand.IsEqual(commitmentTemps[i][int(indexIsZero)]){
+			fmt.Printf("*******************TRUE*******************")
+		}
 		preIndex = privacy.CMRingSize * (i + 1)
 
 		/***** Build witness for proving that serial number is derived from the committed derivator *****/
