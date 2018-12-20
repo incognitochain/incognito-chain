@@ -161,7 +161,29 @@ func (self *BlockChain) ConnectBlock(block *ShardBlock) error {
 	return nil
 }
 
-func (self *BlockChain) VerifyBlockShard(block *ShardBlock) error {
-	//Todo validate block with blockchain
+func (self *BlockChain) VerifyPreProcessingBlockShard(block *ShardBlock) error {
+	return nil
+	/* Verify Pre-prosessing data
+	- Signature
+	- version
+	- parent hash
+	- Height = parent hash + 1
+	- Epoch
+	- Timestamp can not excess some limit
+	- Instruction hash
+	- ShardStateHash
+	- Random number
+	- Sanity
+	*/
+	return nil
+}
+
+func (self *BlockChain) VerifyPostProcessingBlockShard(block *ShardBlock) error {
+	return nil
+	/* Verify Post-processing data
+	- Validator root
+	- Candidate root
+
+	*/
 	return nil
 }
