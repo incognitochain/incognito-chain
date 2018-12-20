@@ -448,7 +448,7 @@ concludeBlock:
 	return block, nil
 }
 
-func (self *BlkTmplGenerator) NewBlockBeacon() (*BeaconBlock, error) {
+func (self *BlkTmplGenerator) NewBlockBeacon(payToAddress *privacy.PaymentAddress, privatekey *privacy.SpendingKey) (*BeaconBlock, error) {
 	block := &BeaconBlock{}
 	// block.ProducerSig = ""
 	// block.AggregatedSig = ""

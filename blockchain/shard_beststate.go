@@ -28,15 +28,15 @@ type BestStateShard struct {
 	TotalTxns             uint64 // The total number of txns in the chain.
 }
 
-func (self *BestStateShard) Init(block *ShardBlock) {
+// func (self *BestStateShard) Init(block *ShardBlock) {
 
-	self.BestBlock = block
-	self.BestBlockHash = *block.Hash()
+// 	self.BestBlock = block
+// 	self.BestBlockHash = *block.Hash()
 
-	// self.  += uint64(len(block.Transactions))
-	self.NumTxns = uint64(len(block.Body.Transactions))
-	self.TotalTxns = self.NumTxns
-}
+// 	// self.  += uint64(len(block.Transactions))
+// 	self.NumTxns = uint64(len(block.Body.Transactions))
+// 	self.TotalTxns = self.NumTxns
+// }
 
 func (self *BestStateShard) Update(block *ShardBlock) error {
 

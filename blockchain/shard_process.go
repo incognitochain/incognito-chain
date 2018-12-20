@@ -161,15 +161,7 @@ func (self *BlockChain) ConnectBlock(block *ShardBlock) error {
 	return nil
 }
 
-// blockExists determines whether a block with the given hash exists either in
-// the main chain or any side chains.
-//
-// This function is safe for concurrent access.
-func (self *BlockChain) BlockExists(hash *common.Hash) (bool, error) {
-	result, err := self.config.DataBase.HasBlock(hash)
-	if err != nil {
-		return false, NewBlockChainError(UnExpectedError, err)
-	} else {
-		return result, nil
-	}
+func (self *BlockChain) VerifyBlockShard(block *ShardBlock) error {
+	//Todo validate block with blockchain
+	return nil
 }
