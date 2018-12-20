@@ -481,7 +481,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		}
 		offset += lenComInputShardID
 	}
-	fmt.Printf("***************AFTER SETBYTE - PROOF %v\n", proof.Bytes())
+	//fmt.Printf("***************AFTER SETBYTE - PROOF %v\n", proof.Bytes())
 	return nil
 }
 
@@ -667,18 +667,6 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		}
 		indexIsZero := myCommitmentIndexs[i] % privacy.CMRingSize
 
-		//openingWitnessHien := new(PKComOpeningsWitness)
-		openingWitnessHien.Set(commitmentTemps[i][indexIsZero],
-			[]*big.Int{big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), rndInputIsZero[i]},
-			[]byte{privacy.SK, privacy.VALUE, privacy.SND, privacy.SHARDID, privacy.RAND})
-
-		openingProofHien, _ = openingWitnessHien.Prove()
-		fmt.Println(openingProofHien.Verify())
-		hRand := privacy.PedCom.G[privacy.RAND].ScalarMul(rndInputIsZero[i])
-		if hRand.IsEqual(commitmentTemps[i][indexIsZero]) {
-			fmt.Printf("TRUE")
-		}
-
 		wit.OneOfManyWitness[i].Set(commitmentTemps[i], commitmentIndexs[preIndex:preIndex+privacy.CMRingSize], rndInputIsZero[i], indexIsZero, privacy.SK)
 		preIndex = privacy.CMRingSize * (i + 1)
 
@@ -778,14 +766,7 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 
 		outputCoins[i].CoinDetails.CoinCommitment = cmOutputSum[i]
 		outputCoins[i].CoinDetails.Randomness = randOutputSum[i]
-		committemp := new(privacy.EllipticPoint)
-		committemp.X, committemp.Y = big.NewInt(0), big.NewInt(0)
-		committemp.X.Set(cmOutputSum[i].X)
-		committemp.Y.Set(cmOutputSum[i].Y)
-		outputCoins[i].CoinDetails.CommitAll()
-		if !outputCoins[i].CoinDetails.CoinCommitment.IsEqual(committemp) {
-			fmt.Printf("\n\n\nCommitment wronggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg\n\n\n")
-		}
+
 		cmOutputSumAll.X, cmOutputSumAll.Y = privacy.Curve.Add(cmOutputSumAll.X, cmOutputSumAll.Y, cmOutputSum[i].X, cmOutputSum[i].Y)
 	}
 
@@ -1028,7 +1009,6 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 		pro.OneOfManyProof[i].Commitments = commitments
 
 		if !pro.OneOfManyProof[i].Verify() {
-			fmt.Printf("[PRIVACY LOG] ONE OF MANY PROTOCOL FAILED")
 			return false
 		}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
@@ -1048,17 +1028,16 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 	}
 
 	// Check output coins' cm is calculated correctly
-	//Todo: 0xkraken
-	//for i := 0; i < len(pro.OutputCoins); i++ {
-	//	cmTmp := pro.OutputCoins[i].CoinDetails.PublicKey
-	//	cmTmp = cmTmp.Add(pro.ComOutputValue[i])
-	//	cmTmp = cmTmp.Add(pro.ComOutputSND[i])
-	//	cmTmp = cmTmp.Add(pro.ComOutputShardID[i])
-	//
-	//	if !cmTmp.IsEqual(pro.OutputCoins[i].CoinDetails.CoinCommitment) {
-	//		return false
-	//	}
-	//}
+	for i := 0; i < len(pro.OutputCoins); i++ {
+		cmTmp := pro.OutputCoins[i].CoinDetails.PublicKey
+		cmTmp = cmTmp.Add(pro.ComOutputValue[i])
+		cmTmp = cmTmp.Add(pro.ComOutputSND[i])
+		cmTmp = cmTmp.Add(pro.ComOutputShardID[i])
+
+		if !cmTmp.IsEqual(pro.OutputCoins[i].CoinDetails.CoinCommitment) {
+			return false
+		}
+	}
 
 	// Verify the proof that output values and sum of them do not exceed v_max
 	if !pro.ComOutputMultiRangeProof.Verify() {
