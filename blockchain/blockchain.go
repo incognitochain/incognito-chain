@@ -205,7 +205,7 @@ func (self *BlockChain) initChainState() error {
 	if !initialized {
 		// At this point the database has not already been initialized, so
 		// initialize both it and the chain state to the genesis block.
-		err := self.createBeaconState()
+		err := self.initBeaconState()
 		if err != nil {
 			return err
 		}
@@ -230,7 +230,7 @@ func (self *BlockChain) initChainState() error {
 		if !initialized {
 			// At this point the database has not already been initialized, so
 			// initialize both it and the chain state to the genesis block.
-			err := self.createShardState(shardID)
+			err := self.initShardState(shardID)
 			if err != nil {
 				return err
 			}
@@ -246,7 +246,7 @@ func (self *BlockChain) initChainState() error {
 // genesis block.  This includes creating the necessary buckets and inserting
 // the genesis block, so it must only be called on an uninitialized database.
 */
-func (self *BlockChain) createShardState(shardID byte) error {
+func (self *BlockChain) initShardState(shardID byte) error {
 	// Create a new block from genesis block and set it as best block of chain
 	var initBlock *ShardBlock
 	if shardID == 0 {
@@ -281,12 +281,14 @@ func (self *BlockChain) createShardState(shardID byte) error {
 	return nil
 }
 
-func (self *BlockChain) createBeaconState() error {
+func (self *BlockChain) initBeaconState() error {
 	var initBlock *BeaconBlock
 	initBlock = self.config.ChainParams.GenesisBlockBeacon
 	self.BestState.Beacon = &BestStateBeacon{}
-	self.BestState.Beacon.Init(initBlock)
+	//TODO: initiate first beacon state
+
 	err := self.ConnectBlockBeacon(initBlock)
+
 	if err != nil {
 		Logger.log.Error(err)
 		return err

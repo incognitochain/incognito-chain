@@ -3,11 +3,10 @@ package blockchain
 import (
 	"crypto/sha256"
 	"errors"
+	"github.com/ninjadotorg/constant/common"
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/ninjadotorg/constant/common"
 )
 
 // BestState houses information about the current best block and other info
@@ -56,17 +55,6 @@ type BestStateBeacon struct {
 	// NextRandomNumber    int64
 
 	Params map[string]string
-}
-
-/*
-Init create a beststate data from block and commitment tree
-*/
-// #1 - block
-// #2 - commitment merkle tree
-func (self *BestStateBeacon) Init(block *BeaconBlock) {
-	self.BestBlock = block
-	self.BestBlockHash = *block.Hash()
-	// read block and build state if not
 }
 
 func (self *BestStateBeacon) Update(newBlock *BeaconBlock) error {

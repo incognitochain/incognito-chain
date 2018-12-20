@@ -178,15 +178,17 @@ func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
 	self.chainLock.Lock()
 	defer self.chainLock.Unlock()
 
+	//TODO: verify
 	blockHash := block.Hash().String()
 	Logger.log.Infof("Processing block %+v", blockHash)
 
-	err := self.config.DataBase.StoreBeaconBlock(block)
+	// Process best state or not and store beststate
+	err := self.BestState.Beacon.Update(block)
+
+	err = self.config.DataBase.StoreBeaconBlock(block)
 	if err != nil {
 		return err
 	}
-	// Process best state or not?
-	err = self.BestState.Beacon.Update(block)
 
 	if err != nil {
 		Logger.log.Error("Error update best state for block", block, "in beacon chain")
