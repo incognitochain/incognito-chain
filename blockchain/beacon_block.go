@@ -24,8 +24,10 @@ type BeaconHeader struct {
 	PrevBlockHash common.Hash `json:"PrevBlockHash"`
 
 	//Validator list will be store in database/memory (locally)
+	//Build from two list: BeaconCommittee + BeaconPendingValidator
 	ValidatorsRoot common.Hash `json:"CurrentValidatorRootHash"`
 	//Candidate = unassigned_validator list will be store in database/memory (locally)
+	//Build from two list: CandidateBeaconWaitingForCurrentRandom + CandidateBeaconWaitingForNextRandom
 	// infer from history
 	CandidateRoot common.Hash `json:"CandidateListRootHash"`
 	// Store these two list make sure all node process the same data

@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/ninjadotorg/constant/common"
 )
 
 /*
@@ -44,18 +46,16 @@ func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
 	}
 
 	Logger.log.Infof("Verify Post-Process block %+v to Blockchain", blockHash)
-
 	err = self.VerifyPostProcessingBlockBeacon(block)
 	if err != nil {
-		Logger.log.Error("Error update best state for block", block, "in beacon chain")
+		Logger.log.Error("Error Verify Post-Processing block", block, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
 	Logger.log.Infof("Store BeaconBestState block %+v", blockHash)
 	err = self.StoreBeaconBestState()
-
 	if err != nil {
-		Logger.log.Error("Error update best state for block", block, "in beacon chain")
+		Logger.log.Error("Error Store best state for block", block, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
@@ -63,12 +63,8 @@ func (self *BlockChain) ConnectBlockBeacon(block *BeaconBlock) error {
 	Logger.log.Infof("Store Beacon block %+v", blockHash)
 	err = self.config.DataBase.StoreBeaconBlock(block)
 	if err != nil {
+		Logger.log.Error("Error store beacon block", block, "in beacon chain")
 		return err
-	}
-
-	if err != nil {
-		Logger.log.Error("Error update best state for block", block, "in beacon chain")
-		return NewBlockChainError(UnExpectedError, err)
 	}
 	Logger.log.Infof("Accepted block %+v", blockHash)
 
@@ -95,10 +91,22 @@ func (self *BlockChain) VerifyPreProcessingBlockBeacon(block *BeaconBlock) error
 func (self *BlockChain) VerifyPostProcessingBlockBeacon(block *BeaconBlock) error {
 	return nil
 	/* Verify Post-processing data
-	- Validator root
-	- Candidate root
-
+	- Validator root: BeaconCommittee + BeaconPendingValidator
+	- Candidate root: CandidateBeaconWaitingForCurrentRandom + CandidateBeaconWaitingForNextRandom
 	*/
+	var (
+		err error
+	)
+	err = VerifyRootHashFromStringArray(self.BestState.Beacon.BeaconCommittee, self.BestState.Beacon.BeaconPendingValidator, block.Header.ValidatorsRoot)
+	if err != nil {
+		return err
+	}
+
+	err = VerifyRootHashFromStringArray(self.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom, self.BestState.Beacon.CandidateBeaconWaitingForNextRandom, block.Header.CandidateRoot)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -371,4 +379,35 @@ func ShuffleCandidate(candidates []string, rand int64) ([]string, error) {
 		sortedCandidate = append(sortedCandidate, candidate)
 	}
 	return hashes, nil
+}
+
+func VerifyRootHashFromStringArray(strs1 []string, strs2 []string, hash common.Hash) error {
+	var (
+		tempMerkle Merkle
+		merkleTree []*common.Hash
+		hashArrays []*common.Hash
+		// merkleRoot *common.Hash
+	)
+
+	hashes1, err := common.ConvertArrayStringToArrayHash(strs1)
+	if err != nil {
+		Logger.log.Errorf("Error converting from string array to hash array %+v", err)
+		return err
+	}
+
+	hashes2, err := common.ConvertArrayStringToArrayHash(strs2)
+	if err != nil {
+		Logger.log.Errorf("Error converting from string array to hash array %+v", err)
+		return err
+	}
+	hashArrays = append(hashArrays, hashes1...)
+	hashArrays = append(hashArrays, hashes2...)
+
+	merkleTree = tempMerkle.BuildMerkleTreeOfHashs(hashArrays)
+	if tempMerkle.VerifyMerkleRootOfHashs(merkleTree, &hash) == false {
+		err = NewBlockChainError(UnExpectedError, errors.New("Error verify merkle root"))
+		Logger.log.Errorf("Error in VerifyRootHashFromStringArray %+v", err)
+		return err
+	}
+	return nil
 }

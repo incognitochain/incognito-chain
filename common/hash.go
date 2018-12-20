@@ -162,3 +162,16 @@ func (hash *Hash) Cmp(target *Hash) int {
 	}
 	return 0
 }
+
+func ConvertArrayStringToArrayHash(strs []string) ([]*Hash, error) {
+	hashes := []*Hash{}
+	for _, str := range strs {
+		temp := Hash{}
+		hash, err := temp.NewHashFromStr(str)
+		if err != nil {
+			return nil, err
+		}
+		hashes = append(hashes, hash)
+	}
+	return hashes, nil
+}
