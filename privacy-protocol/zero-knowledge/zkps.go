@@ -780,11 +780,11 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		randOutputSum[i].Mod(randOutputSum[i], privacy.Curve.Params().N)
 
 		outputCoins[i].CoinDetails.CoinCommitment = cmOutputSum[i]
-		fmt.Printf("coin commitment 1: %v\n", outputCoins[i].CoinDetails.CoinCommitment)
+		//fmt.Printf("coin commitment 1: %v\n", outputCoins[i].CoinDetails.CoinCommitment)
 		outputCoins[i].CoinDetails.Randomness = randOutputSum[i]
 
-		outputCoins[i].CoinDetails.CommitAll()
-		fmt.Printf("coin commitment 2: %v\n", outputCoins[i].CoinDetails.CoinCommitment)
+		//outputCoins[i].CoinDetails.CommitAll()
+		//fmt.Printf("coin commitment 2: %v\n", outputCoins[i].CoinDetails.CoinCommitment)
 		cmOutputSumAll.X, cmOutputSumAll.Y = privacy.Curve.Add(cmOutputSumAll.X, cmOutputSumAll.Y, cmOutputSum[i].X, cmOutputSum[i].Y)
 	}
 
@@ -925,7 +925,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	//Calculate new coin commitment
 
 
-	fmt.Println("PROVING DONE!!!")
+	fmt.Println("Privacy log: PROVING DONE!!!")
 	return proof, nil
 }
 

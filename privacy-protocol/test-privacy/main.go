@@ -403,11 +403,7 @@ func main() {
 
 	point := new(privacy.EllipticPoint)
 	point.Randomize()
-
-	point2, _ := point.Inverse()
-
-	point3 := point.Add(point2)
-	fmt.Printf("%+v", point3)
+	fmt.Println(point)
 
 
 

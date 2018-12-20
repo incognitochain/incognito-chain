@@ -123,11 +123,6 @@ func (pro *PKOneOfManyProof) Bytes() []byte {
 	var bytes []byte
 	nBytes := 0
 
-	//// save N to the first byte
-	//bytes = append(bytes, byte(N))
-	//// save n to the second byte
-	//bytes = append(bytes, byte(n))
-
 	// convert array cl to bytes array
 	for i := 0; i < n; i++ {
 		bytes = append(bytes, pro.cl[i].Compress()...)
@@ -188,9 +183,6 @@ func (pro *PKOneOfManyProof) Bytes() []byte {
 	// append index
 	bytes = append(bytes, pro.index)
 	nBytes += 1
-
-	//fmt.Printf("Len of proof bytes: %v\n", len(bytes))
-	//fmt.Printf("Len of proof bytes: %v\n", nBytes)
 
 	return bytes
 }
@@ -291,7 +283,6 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
 
 	//get index
 	pro.index = bytes[len(bytes)-1]
-	//fmt.Printf("proof index setbytes: %v\n", pro.index)
 	return nil
 }
 
@@ -485,37 +476,21 @@ func (pro *PKOneOfManyProof) Verify() bool {
 
 	for i := 0; i < n; i++ {
 		// Check cl^x * ca = Com(f, za)
-		//leftPoint1 := new(privacy.EllipticPoint)
-		//leftPoint1.X, leftPoint1.Y = privacy.Curve.ScalarMult(pro.cl[i].X, pro.cl[i].Y, x.Bytes())
-		//leftPoint1.X, leftPoint1.Y = privacy.Curve.Add(leftPoint1.X, leftPoint1.Y, pro.ca[i].X, pro.ca[i].Y)
 		leftPoint1 := pro.cl[i].ScalarMul(x).Add(pro.ca[i])
-
 		rightPoint1 := privacy.PedCom.CommitAtIndex(pro.f[i], pro.za[i], pro.index)
-		fmt.Printf("Left point 1 X: %v\n", leftPoint1.X)
-		fmt.Printf("Right point 1 X: %v\n", rightPoint1.X)
-		fmt.Printf("Left point 1 Y: %v\n", leftPoint1.Y)
-		fmt.Printf("Right point 1 Y: %v\n", rightPoint1.Y)
 
 		if !leftPoint1.IsEqual(rightPoint1) {
 			return false
 		}
 
 		// Check cl^(x-f) * cb = Com(0, zb)
-
 		xSubF := new(big.Int)
 		xSubF.Sub(x, pro.f[i])
 		xSubF.Mod(xSubF, privacy.Curve.Params().N)
 
 		leftPoint2 := pro.cl[i].ScalarMul(xSubF).Add(pro.cb[i])
-		//	new(privacy.EllipticPoint)
-		//leftPoint2.X, leftPoint2.Y = privacy.Curve.ScalarMult(pro.cl[i].X, pro.cl[i].Y, xSubF.Bytes())
-		//leftPoint2.X, leftPoint2.Y = privacy.Curve.Add(leftPoint2.X, leftPoint2.Y, pro.cb[i].X, pro.cb[i].Y)
 		rightPoint2 := privacy.PedCom.CommitAtIndex(big.NewInt(0), pro.zb[i], pro.index)
 
-		//fmt.Printf("Left point 2 X: %v\n", leftPoint2.X)
-		//fmt.Printf("Right point 2 X: %v\n", rightPoint2.X)
-		//fmt.Printf("Left point 2 Y: %v\n", leftPoint2.Y)
-		//fmt.Printf("Right point 2 Y: %v\n", rightPoint2.Y)
 
 		if !leftPoint2.IsEqual(rightPoint2) {
 			return false

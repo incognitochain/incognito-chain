@@ -12,12 +12,8 @@ import (
 )
 
 // Curve P256
+// We only use P256 Curve in our protocol
 var Curve = elliptic.P256()
-
-// const (
-// 	CompressedPointSize      = 33
-// 	PointCompressed         byte = 0x2
-// )
 
 //EllipticPointHelper contain some function for elliptic point
 type EllipticPointHelper interface {
@@ -43,11 +39,15 @@ type EllipticPointHelper interface {
 type EllipticPoint struct {
 	X, Y *big.Int
 }
+
+// Zero initializes elliptic point with X = 0, Y = 0
 func (self *EllipticPoint) Zero() *EllipticPoint{
 	self.X = new(big.Int).SetInt64(0)
 	self.Y = new(big.Int).SetInt64(0)
 	return self
 }
+
+// UnmarshalJSON unmarshal from byte array to elliptic point
 func (self *EllipticPoint) UnmarshalJSON(data []byte) error {
 	dataStr := ""
 	_ = json.Unmarshal(data, &dataStr)
@@ -59,6 +59,7 @@ func (self *EllipticPoint) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON marshal from elliptic point to byte array
 func (self EllipticPoint) MarshalJSON() ([]byte, error) {
 	data := self.Compress()
 	temp := base58.Base58Check{}.Encode(data, byte(0x00))
@@ -91,8 +92,6 @@ func (eccPoint *EllipticPoint) ComputeYCoord() error {
 	// Check that y is a square root of x^3  - 3*x + B.
 	y2 := new(big.Int).Mul(eccPoint.Y, eccPoint.Y)
 	y2.Mod(y2, Curve.Params().P)
-	//fmt.Printf("y2: %X\n", y2)
-	//fmt.Printf("x3: %X\n", x3)
 	if y2.Cmp(x3) != 0 {
 		return errors.New("Cant compute y")
 	}
@@ -105,18 +104,15 @@ func (eccPoint EllipticPoint) Inverse() (*EllipticPoint, error) {
 	if !Curve.IsOnCurve(eccPoint.X, eccPoint.Y) {
 		return nil, errors.New("Input is not ECC Point")
 	}
+
 	//Create result point
 	resPoint := new(EllipticPoint)
 	resPoint.X = big.NewInt(0)
 	resPoint.Y = big.NewInt(0)
 
 	//inverse point of A(x,y) in ECC is A'(x, P - y) with P is order of Curve
-	//resPoint.X.SetBytes(eccPoint.X.Bytes())
-	//resPoint.Y.SetBytes(eccPoint.Y.Bytes())
-
 	resPoint.X.Set(eccPoint.X)
 	resPoint.Y.Set(eccPoint.Y)
-
 	resPoint.Y.Sub(Curve.Params().P, resPoint.Y)
 	resPoint.Y.Mod(resPoint.Y, Curve.Params().P)
 
@@ -140,6 +136,7 @@ func (eccPoint *EllipticPoint) Randomize() {
 		}
 	}
 
+	//Logger.Log.Infof("Privacy log: Randomize elliptic point: %+v\n", eccPoint)
 }
 
 // IsSafe return true if eccPoint*eccPoint is not at infinity
@@ -249,14 +246,6 @@ func (eccPoint EllipticPoint) Hash(index int) *EllipticPoint {
 			break
 		}
 	}
-	// //check Point of degree 2
-	// pointToChecked := new(EllipticPoint)
-	// pointToChecked.X, pointToChecked.Y = Curve.Double(res.X, res.Y)
-
-	// if pointToChecked.X == nil || pointToChecked.Y == nil {
-	// 	//errors.Zero("Point at infinity")
-	// 	return *new(EllipticPoint)
-	// }
 	return res
 }
 
