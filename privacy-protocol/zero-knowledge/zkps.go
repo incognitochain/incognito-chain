@@ -431,7 +431,6 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 		offset += lenComOutputShardId
 	}
 
-
 	//ComInputSK 				*privacy.EllipticPoint
 	lenComInputSK := int(proofbytes[offset])
 	offset += 1
@@ -488,7 +487,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 
 // END----------------------------------------------------------------------------------------------------------------------------------------------
 
-//func (wit *PaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
+//func (wit *Pprivacy-protocol/zero-knowledge/zkp_opening.goaymentWitness) Set(spendingKey *big.Int, inputCoins []*privacy.InputCoin, outputCoins []*privacy.OutputCoin) {
 //	wit.spendingKey = spendingKey
 //	wit.inputCoins = inputCoins
 //	wit.outputCoins = outputCoins
@@ -676,11 +675,11 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		openingProofHien, _ = openingWitnessHien.Prove()
 		fmt.Println(openingProofHien.Verify())
 		hRand := privacy.PedCom.G[privacy.RAND].ScalarMul(rndInputIsZero[i])
-		if hRand.IsEqual(commitmentTemps[i][indexIsZero]){
+		if hRand.IsEqual(commitmentTemps[i][indexIsZero]) {
 			fmt.Printf("TRUE")
 		}
 
-		wit.OneOfManyWitness[i].Set(commitmentTemps[i], commitmentIndexs[preIndex:preIndex + privacy.CMRingSize], rndInputIsZero[i], indexIsZero, privacy.SK)
+		wit.OneOfManyWitness[i].Set(commitmentTemps[i], commitmentIndexs[preIndex:preIndex+privacy.CMRingSize], rndInputIsZero[i], indexIsZero, privacy.SK)
 		preIndex = privacy.CMRingSize * (i + 1)
 
 		/***** Build witness for proving that serial number is derived from the committed derivator *****/
@@ -754,8 +753,6 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		cmOutputValueAll = *(cmOutputValueAll.Add(cmOutputValue[i]))
 		randOutputValueAll.Add(randOutputValueAll, randOutputValue[i])
 
-
-
 		/***** Build witness for proving the knowledge of output coins' Openings (value, snd, randomness) *****/
 		if wit.ComOutputOpeningsWitness[i] == nil {
 			wit.ComOutputOpeningsWitness[i] = new(PKComOpeningsWitness)
@@ -780,11 +777,15 @@ func (wit *PaymentWitness) Build(hasPrivacy bool,
 		randOutputSum[i].Mod(randOutputSum[i], privacy.Curve.Params().N)
 
 		outputCoins[i].CoinDetails.CoinCommitment = cmOutputSum[i]
-		fmt.Printf("coin commitment 1: %v\n", outputCoins[i].CoinDetails.CoinCommitment)
 		outputCoins[i].CoinDetails.Randomness = randOutputSum[i]
-
+		committemp := new(privacy.EllipticPoint)
+		committemp.X, committemp.Y = big.NewInt(0), big.NewInt(0)
+		committemp.X.Set(cmOutputSum[i].X)
+		committemp.Y.Set(cmOutputSum[i].Y)
 		outputCoins[i].CoinDetails.CommitAll()
-		fmt.Printf("coin commitment 2: %v\n", outputCoins[i].CoinDetails.CoinCommitment)
+		if !outputCoins[i].CoinDetails.CoinCommitment.IsEqual(committemp) {
+			fmt.Printf("\n\n\nCommitment wronggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg\n\n\n")
+		}
 		cmOutputSumAll.X, cmOutputSumAll.Y = privacy.Curve.Add(cmOutputSumAll.X, cmOutputSumAll.Y, cmOutputSum[i].X, cmOutputSum[i].Y)
 	}
 
@@ -915,7 +916,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	// privacy-protocol/zero-knowledge/zkp_opening.go
 	// Proving that sum of all input values is equal to sum of all output values
 	proof.ComZeroProof, err = wit.ComZeroWitness.Prove()
 	if err != nil {
@@ -923,7 +924,6 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, error) {
 	}
 
 	//Calculate new coin commitment
-
 
 	fmt.Println("PROVING DONE!!!")
 	return proof, nil
@@ -1027,10 +1027,10 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 
 		pro.OneOfManyProof[i].Commitments = commitments
 
-		//if !pro.OneOfManyProof[i].Verify() {
-		//	fmt.Printf("[PRIVACY LOG] ONE OF MANY PROTOCOL FAILED")
-		//	return false
-		//}
+		if !pro.OneOfManyProof[i].Verify() {
+			fmt.Printf("[PRIVACY LOG] ONE OF MANY PROTOCOL FAILED")
+			return false
+		}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
 		if !pro.EqualityOfCommittedValProof[i].Verify() {
 			return false
@@ -1069,9 +1069,9 @@ func (pro PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, db dat
 		return false
 	}
 	// Verify the proof that sum of all input values is equal to sum of all output values
-	//if !pro.ComZeroProof.Verify() {
-	//	return false
-	//}
+	if !pro.ComZeroProof.Verify() {
+		return false
+	}
 
 	return true
 }
