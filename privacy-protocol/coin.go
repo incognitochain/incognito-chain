@@ -115,7 +115,7 @@ func (coin *Coin) Bytes() []byte {
 		coin_bytes = append(coin_bytes, byte(0))
 	}
 
-	fmt.Printf("len coin bytes : %v\n", len(coin_bytes))
+	//fmt.Printf("len coin bytes : %v\n", len(coin_bytes))
 	return coin_bytes
 }
 
@@ -335,13 +335,13 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {
 	symKeyPoint := new(EllipticPoint)
 	symKeyPoint.Randomize()
 	symKeyByte := symKeyPoint.X.Bytes()
-	fmt.Printf("ENCRYPT --------- symKey plaintext : %v\n", symKeyByte)
+	//fmt.Printf("ENCRYPT --------- symKey plaintext : %v\n", symKeyByte)
 
 	/**** Encrypt coin details using symKeyByte ****/
 	// encrypt Randomness of coin
 	randomnessBytes := coin.CoinDetails.Randomness.Bytes()
-	fmt.Printf("ENCRYPT --------- randomnessBytes plaintext : %v\n", randomnessBytes)
-	fmt.Printf("ENCRYPT --------- Len randomnessBytes plaintext : %v\n", len(randomnessBytes))
+	//fmt.Printf("ENCRYPT --------- randomnessBytes plaintext : %v\n", randomnessBytes)
+	//fmt.Printf("ENCRYPT --------- Len randomnessBytes plaintext : %v\n", len(randomnessBytes))
 
 	block, err := aes.NewCipher(symKeyByte)
 	if err != nil {
@@ -364,7 +364,7 @@ func (coin *OutputCoin) Encrypt(receiverTK TransmissionKey) error {
 
 	// ***************** encrypt Value of coin
 	ValueBytes := new(big.Int).SetUint64(coin.CoinDetails.Value).Bytes()
-	fmt.Printf("ENCRYPT ------- Value byte : %v\n", ValueBytes)
+	//fmt.Printf("ENCRYPT ------- Value byte : %v\n", ValueBytes)
 
 	//block2, err := aes.NewCipher(symKeyByte)
 	//if err != nil {

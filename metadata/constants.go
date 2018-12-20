@@ -36,6 +36,8 @@ const (
 	IssuingResponseMeta
 	ContractingRequestMeta
 	OracleFeedMeta
+	OracleRewardMeta
+	RefundMeta
 
 	//Voting
 	SubmitDCBProposalMeta

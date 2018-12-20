@@ -263,7 +263,7 @@ func (paymentProof *PaymentProof) Bytes() []byte {
 
 func (proof *PaymentProof) SetBytes(proofbytes []byte) (err error) {
 
-	fmt.Printf("***************BEFORE SETBYTE - PROOF %v\n", proofbytes)
+	//fmt.Printf("***************BEFORE SETBYTE - PROOF %v\n", proofbytes)
 	offset := 0
 	// Set ComInputOpeningsProof
 	lenComInputOpeningsProofArray := int(proofbytes[offset])

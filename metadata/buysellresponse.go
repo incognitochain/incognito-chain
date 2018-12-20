@@ -10,13 +10,34 @@ import (
 type BuySellResponse struct {
 	// for either bond or gov tokens
 	MetadataBase
-	RequestedTxID *common.Hash
+	RequestedTxID common.Hash
 
 	// for buying bonds requested tx
 	StartSellingAt uint32
 	Maturity       uint32
 	BuyBackPrice   uint64 // in Constant unit
 	BondID         []byte // 24 bytes as compound value of (Maturity + BuyBackPrice + StartSellingAt) from SellingBonds param
+}
+
+func NewBuySellResponse(
+	requestedTxID common.Hash,
+	startSellingAt uint32,
+	maturity uint32,
+	buyBackPrice uint64,
+	bondID []byte,
+	metaType int,
+) *BuySellResponse {
+	metaBase := MetadataBase{
+		Type: metaType,
+	}
+	return &BuySellResponse{
+		RequestedTxID:  requestedTxID,
+		StartSellingAt: startSellingAt,
+		Maturity:       maturity,
+		BuyBackPrice:   buyBackPrice,
+		BondID:         bondID,
+		MetadataBase:   metaBase,
+	}
 }
 
 func (bsRes *BuySellResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
