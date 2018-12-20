@@ -595,18 +595,15 @@ func (self *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest
 }
 
 func (self *BlockChain) ProcessLoanPayment(tx metadata.Transaction) error {
+	txNormal := tx.(*transaction.Tx)
+	accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	dcbPk := accountDCB.KeySet.PaymentAddress.Pk
 	value := uint64(0)
-	//TODO: need to update to new txprivacy's fields
-	// txNormal := tx.(*transaction.Tx)
-	// for _, desc := range txNormal.Descs {
-	// 	for _, note := range desc.Note {
-	// 		accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	// 		dcbPk := accountDCB.KeySet.PaymentAddress.Pk
-	// 		if bytes.Equal(note.Apk[:], dcbPk) {
-	// 			value += note.Value
-	// 		}
-	// 	}
-	// }
+	for _, coin := range txNormal.Proof.OutputCoins {
+		if bytes.Equal(coin.CoinDetails.PublicKey.Compress(), dcbPk) {
+			value += coin.CoinDetails.Value
+		}
+	}
 	meta := tx.GetMetadata().(*metadata.LoanPayment)
 	principle, interest, deadline, err := self.config.DataBase.GetLoanPayment(meta.LoanID)
 	if meta.PayPrinciple {
@@ -864,6 +861,41 @@ func (self *BlockChain) ProcessCrowdsaleTxs(block *Block) error {
 
 				hash := tx.Hash()
 				if err := self.config.DataBase.StoreCrowdsaleResponse(requestHash[:], hash[:]); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (self *BlockChain) ProcessCMBTxs(block *Block) error {
+	for _, tx := range block.Transactions {
+		switch tx.GetMetadataType() {
+		case metadata.CMBInitRequestMeta:
+			{
+				meta := tx.GetMetadata().(*metadata.CMBInitRequest)
+
+				// Members of the CMB
+				members := [][]byte{}
+				for _, member := range meta.Members {
+					members = append(members, member.Pk[:])
+				}
+
+				// Capital of the CMB
+				txPrivacy := tx.(*transaction.Tx)
+				accountDCB, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+				dcbPk := accountDCB.KeySet.PaymentAddress.Pk
+				capital := uint64(0)
+				for _, coin := range txPrivacy.Proof.OutputCoins {
+					if bytes.Equal(coin.CoinDetails.PublicKey.Compress(), dcbPk) {
+						capital += coin.CoinDetails.Value
+					}
+				}
+
+				// Store in DB
+				err := self.config.DataBase.StoreCMB(meta.MainAccount.Pk[:], members, capital)
+				if err != nil {
 					return err
 				}
 			}

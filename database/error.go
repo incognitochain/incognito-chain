@@ -40,8 +40,8 @@ var ErrCodeMessage = map[int]struct {
 	KeyExisted:        {-3003, "PubKey already existed in database"},
 
 	// -4xxx voting
-	NotEnoughCandidateDCB: {-4000, "Note enough candidate for DCB Board"},
-	NotEnoughCandidateGOV: {-4001, "Note enough candidate for GOV Board"},
+	NotEnoughCandidateDCB: {-4000, "Not enough candidate for DCB Board"},
+	NotEnoughCandidateGOV: {-4001, "Not enough candidate for GOV Board"},
 }
 
 type DatabaseError struct {

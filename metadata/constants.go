@@ -18,6 +18,16 @@ const (
 	CrowdsaleResponseMeta
 	CrowdsalePaymentMeta
 
+	// CMB
+	CMBInitRequestMeta
+	CMBInitResponseMeta // offchain multisig
+	CMBInitRefundMeta   // miner
+	CMBDepositRequestMeta
+	CMBDepositResponseMeta // offchain multisig
+	CMBDepositRefundMeta   // miner
+	CMBWithdrawRequestMeta
+	CMBWithdrawResponseMeta // offchain multisig
+
 	BuyFromGOVRequestMeta
 	BuyFromGOVResponseMeta
 	BuyBackRequestMeta
