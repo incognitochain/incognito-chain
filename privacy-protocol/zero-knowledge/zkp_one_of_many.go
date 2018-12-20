@@ -189,8 +189,8 @@ func (pro *PKOneOfManyProof) Bytes() []byte {
 	bytes = append(bytes, pro.index)
 	nBytes += 1
 
-	fmt.Printf("Len of proof bytes: %v\n", len(bytes))
-	fmt.Printf("Len of proof bytes: %v\n", nBytes)
+	//fmt.Printf("Len of proof bytes: %v\n", len(bytes))
+	//fmt.Printf("Len of proof bytes: %v\n", nBytes)
 
 	return bytes
 }
@@ -291,7 +291,7 @@ func (pro *PKOneOfManyProof) SetBytes(bytes []byte) error {
 
 	//get index
 	pro.index = bytes[len(bytes)-1]
-	fmt.Printf("proof index setbytes: %v\n", pro.index)
+	//fmt.Printf("proof index setbytes: %v\n", pro.index)
 	return nil
 }
 
