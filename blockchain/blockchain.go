@@ -284,20 +284,15 @@ func (self *BlockChain) initShardState(shardID byte) error {
 func (self *BlockChain) initBeaconState() error {
 	var initBlock *BeaconBlock
 	initBlock = self.config.ChainParams.GenesisBlockBeacon
-	self.BestState.Beacon = &BestStateBeacon{}
 	//TODO: initiate first beacon state
+	self.BestState.Beacon = NewBestStateBeacon()
 
+	// Insert new block into beacon chain
 	err := self.ConnectBlockBeacon(initBlock)
 
 	if err != nil {
 		Logger.log.Error(err)
 		return err
-	}
-
-	// store best state
-	err = self.StoreBeaconBestState()
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
 	}
 	return nil
 }
