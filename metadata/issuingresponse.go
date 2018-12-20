@@ -7,7 +7,17 @@ import (
 
 type IssuingResponse struct {
 	MetadataBase
-	RequestedTxID *common.Hash
+	RequestedTxID common.Hash
+}
+
+func NewIssuingResponse(requestedTxID common.Hash, metaType int) *IssuingResponse {
+	metadataBase := MetadataBase{
+		Type: metaType,
+	}
+	return &IssuingResponse{
+		RequestedTxID: requestedTxID,
+		MetadataBase:  metadataBase,
+	}
 }
 
 func (iRes *IssuingResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
