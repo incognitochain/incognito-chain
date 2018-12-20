@@ -1026,10 +1026,10 @@ func (self *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *tr
 			return err
 		}
 	}
-	for _, vout := range customTokenTx.TxTokenData.Vouts {
+	for index, vout := range customTokenTx.TxTokenData.Vouts {
 		paymentAddressPubkey := vout.PaymentAddress.Pk
 		utxoHash := customTokenTx.Hash()
-		voutIndex := vout.GetIndex()
+		voutIndex := index
 		value := vout.Value
 		paymentAddressKey := tokenKey
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
