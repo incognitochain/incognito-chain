@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant/cashec"
 	"github.com/ninjadotorg/constant/privacy-protocol"
-	"math/big"
 )
 
 func main() {
@@ -342,61 +340,75 @@ func main() {
 	/*----------------- TEST AddPaddingBigInt -----------------*/
 
 
-	keySet := new(cashec.KeySet)
-	spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
-	keySet.ImportFromPrivateKey(&spendingKey)
+	//keySet := new(cashec.KeySet)
+	//spendingKey := privacy.GenerateSpendingKey([]byte{1, 1, 1, 1})
+	//keySet.ImportFromPrivateKey(&spendingKey)
+	//
+	//coin := new(privacy.Coin)
+	//coin.PublicKey, _ = privacy.DecompressKey(keySet.PaymentAddress.Pk)
+	//
+	//coin.Value = 10
+	//coin.SNDerivator = privacy.RandInt()
+	//coin.Randomness = privacy.RandInt()
+	//coin.CommitAll()
+	//
+	//// recalculate coin commitment
+	//fmt.Printf("coin info: %+v\n", coin)
+	//com := new(privacy.EllipticPoint)
+	//com.X, com.Y = big.NewInt(0), big.NewInt(0)
+	//com.X.Set(coin.PublicKey.X)
+	//com.Y.Set(coin.PublicKey.Y)
+	//fmt.Printf("g_sK : %+v\n", privacy.PedCom.G[privacy.SK])
+	//fmt.Printf("g^sK : %+v\n", com)
+	//
+	//tmp := new(privacy.EllipticPoint)
+	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+	//tmp.X.Set(privacy.PedCom.G[privacy.VALUE].X)
+	//tmp.Y.Set(privacy.PedCom.G[privacy.VALUE].Y)
+	//tmp = tmp.ScalarMul(new(big.Int).SetUint64(coin.Value))
+	//com = com.Add(tmp)
+	//fmt.Printf("g_VALUE : %+v\n", privacy.PedCom.G[privacy.VALUE])
+	//fmt.Printf("g^Value : %+v\n", tmp)
+	//
+	//tmp = new(privacy.EllipticPoint)
+	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+	//tmp.X.Set(privacy.PedCom.G[privacy.SND].X)
+	//tmp.Y.Set(privacy.PedCom.G[privacy.SND].Y)
+	//tmp = tmp.ScalarMul(coin.SNDerivator)
+	//com = com.Add(tmp)
+	//fmt.Printf("g_SND : %+v\n", privacy.PedCom.G[privacy.SND])
+	//fmt.Printf("g^SND : %+v\n", tmp)
+	//
+	//tmp = new(privacy.EllipticPoint)
+	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+	//tmp.X.Set(privacy.PedCom.G[privacy.SHARDID].X)
+	//tmp.Y.Set(privacy.PedCom.G[privacy.SHARDID].Y)
+	//tmp = tmp.ScalarMul(new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}))
+	//com = com.Add(tmp)
+	//fmt.Printf("g_SHARDID : %+v\n", privacy.PedCom.G[privacy.SHARDID])
+	//fmt.Printf("g^Sharid : %+v\n", tmp)
+	//
+	//tmp = new(privacy.EllipticPoint)
+	//tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
+	//tmp.X.Set(privacy.PedCom.G[privacy.RAND].X)
+	//tmp.Y.Set(privacy.PedCom.G[privacy.RAND].Y)
+	//tmp = tmp.ScalarMul(coin.Randomness)
+	//com = com.Add(tmp)
+	//fmt.Printf("g_RAND : %+v\n", privacy.PedCom.G[privacy.RAND])
+	//fmt.Printf("g^Randomness : %+v\n", tmp)
+	//
+	//if !com.IsEqual(coin.CoinCommitment){
+	//	fmt.Printf("wrong")
+	//}
 
-	coin := new(privacy.Coin)
-	coin.PublicKey, _ = privacy.DecompressKey(keySet.PaymentAddress.Pk)
+	point := new(privacy.EllipticPoint)
+	point.Randomize()
 
-	coin.Value = 10
-	coin.SNDerivator = privacy.RandInt()
-	coin.Randomness = privacy.RandInt()
-	coin.CommitAll()
+	point2, _ := point.Inverse()
 
-	// recalculate coin commitment
-	fmt.Printf("coin info: %+v\n", coin)
-	com := new(privacy.EllipticPoint)
-	com.X, com.Y = big.NewInt(0), big.NewInt(0)
-	com.X.Set(coin.PublicKey.X)
-	com.Y.Set(coin.PublicKey.Y)
-	fmt.Printf("g^sK : %+v\n", com)
+	point3 := point.Add(point2)
+	fmt.Printf("%+v", point3)
 
-	tmp := new(privacy.EllipticPoint)
-	tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
-	tmp.X.Set(privacy.PedCom.G[privacy.VALUE].X)
-	tmp.Y.Set(privacy.PedCom.G[privacy.VALUE].Y)
-	tmp.ScalarMul(new(big.Int).SetUint64(coin.Value))
-	com = com.Add(tmp)
-	fmt.Printf("g^Value : %+v\n", tmp)
-
-	tmp = new(privacy.EllipticPoint)
-	tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
-	tmp.X.Set(privacy.PedCom.G[privacy.SND].X)
-	tmp.Y.Set(privacy.PedCom.G[privacy.SND].Y)
-	tmp.ScalarMul(coin.SNDerivator)
-	com = com.Add(tmp)
-	fmt.Printf("g^SND : %+v\n", tmp)
-
-	tmp = new(privacy.EllipticPoint)
-	tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
-	tmp.X.Set(privacy.PedCom.G[privacy.SHARDID].X)
-	tmp.Y.Set(privacy.PedCom.G[privacy.SHARDID].Y)
-	tmp.ScalarMul(new(big.Int).SetBytes([]byte{coin.GetPubKeyLastByte()}))
-	com = com.Add(tmp)
-	fmt.Printf("g^Sharid : %+v\n", tmp)
-
-	tmp = new(privacy.EllipticPoint)
-	tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
-	tmp.X.Set(privacy.PedCom.G[privacy.RAND].X)
-	tmp.Y.Set(privacy.PedCom.G[privacy.RAND].Y)
-	tmp.ScalarMul(coin.Randomness)
-	com = com.Add(tmp)
-	fmt.Printf("g^Randomness : %+v\n", tmp)
-
-	if !com.IsEqual(coin.CoinCommitment){
-		fmt.Printf("wrong")
-	}
 
 
 }

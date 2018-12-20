@@ -192,6 +192,7 @@ func (tx *Tx) Init(
 		commitmentProving[i], _ = privacy.DecompressKey(temp)
 	}
 
+
 	// check
 	com := make([]*privacy.EllipticPoint, len(inputCoins))
 	for i :=0; i < len(inputCoins); i++{
@@ -204,38 +205,59 @@ func (tx *Tx) Init(
 		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
 		tmp.X.Set(privacy.PedCom.G[privacy.VALUE].X)
 		tmp.Y.Set(privacy.PedCom.G[privacy.VALUE].Y)
-		tmp.ScalarMul(new(big.Int).SetUint64(inputCoins[i].CoinDetails.Value))
+		tmp = tmp.ScalarMul(new(big.Int).SetUint64(inputCoins[i].CoinDetails.Value))
 		com[i] = com[i].Add(tmp)
 
 		tmp = new(privacy.EllipticPoint)
 		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
 		tmp.X.Set(privacy.PedCom.G[privacy.SND].X)
 		tmp.Y.Set(privacy.PedCom.G[privacy.SND].Y)
-		tmp.ScalarMul(inputCoins[i].CoinDetails.SNDerivator)
+		tmp = tmp.ScalarMul(inputCoins[i].CoinDetails.SNDerivator)
 		com[i] = com[i].Add(tmp)
 
 		tmp = new(privacy.EllipticPoint)
 		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
 		tmp.X.Set(privacy.PedCom.G[privacy.SHARDID].X)
 		tmp.Y.Set(privacy.PedCom.G[privacy.SHARDID].Y)
-		tmp.ScalarMul(new(big.Int).SetBytes([]byte{inputCoins[i].CoinDetails.GetPubKeyLastByte()}))
+		tmp = tmp.ScalarMul(new(big.Int).SetBytes([]byte{inputCoins[i].CoinDetails.GetPubKeyLastByte()}))
 		com[i] = com[i].Add(tmp)
 
 		tmp = new(privacy.EllipticPoint)
 		tmp.X, tmp.Y = big.NewInt(0), big.NewInt(0)
 		tmp.X.Set(privacy.PedCom.G[privacy.RAND].X)
 		tmp.Y.Set(privacy.PedCom.G[privacy.RAND].Y)
-		tmp.ScalarMul(inputCoins[i].CoinDetails.Randomness)
+		tmp = tmp.ScalarMul(inputCoins[i].CoinDetails.Randomness)
 		com[i] = com[i].Add(tmp)
-
-		if !com[i].IsEqual(inputCoins[i].CoinDetails.CoinCommitment){
-			fmt.Println("WRONG")
+    inputCoins[i].CoinDetails.CommitAll()
+		if !com[i].IsEqual(commitmentProving[myCommitmentIndexs[i]]){
+			fmt.Println("WRONG 1")
+		} else{
+			fmt.Println("Right")
 		}
 
-		inputCoins[i].CoinDetails.CommitAll()
-		if !com[i].IsEqual(inputCoins[i].CoinDetails.CoinCommitment){
-			fmt.Println("WRONG")
+		if !inputCoins[i].CoinDetails.CoinCommitment.IsEqual(commitmentProving[myCommitmentIndexs[i]]){
+			fmt.Println("WRONG 2")
+		} else{
+			fmt.Println("Right")
 		}
+		if !inputCoins[i].CoinDetails.CoinCommitment.IsEqual(com[i]){
+			fmt.Println("WRONG 3")
+		} else{
+			fmt.Println("Right")
+		}
+
+		//openingWitnessInputCoin := new(zkp.PKComOpeningsWitness)
+		//openingWitnessInputCoin.Set(inputCoins[i].CoinDetails.CoinCommitment,
+		//	[]*big.Int{, new(big.Int).SetUint64(inputCoins[i].CoinDetails.Value), inputCoins[i].CoinDetails.SNDerivator, big.NewInt(int64(wit.pkLastByteSender)), randInputSum[i]},
+		//	[]byte{privacy.SK, privacy.VALUE, privacy.SND, privacy.SHARDID, privacy.RAND})
+		//
+		//openingProofHien, _ := openingWitnessHien.Prove()
+		//fmt.Println(openingProofHien.Verify())
+
+		//inputCoins[i].CoinDetails.CommitAll()
+		//if !com[i].IsEqual(inputCoins[i].CoinDetails.CoinCommitment){
+		//	fmt.Println("WRONG")
+		//}
 
 
 	}
