@@ -119,7 +119,7 @@ func (self *ShardBody) CalcMerkleRootShard() *common.Hash {
 		shardsHash[idx] = hash
 	}
 
-	merkleRoots := Merkle{}.BuildMerkleShards(shardsHash)
+	merkleRoots := Merkle{}.BuildMerkleTreeOfHashs(shardsHash)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 	return merkleRoot
 }
