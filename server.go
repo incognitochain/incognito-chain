@@ -545,16 +545,16 @@ func (self *Server) NewPeerConfig() *peer.Config {
 	}
 	config := &peer.Config{
 		MessageListeners: peer.MessageListeners{
-			OnBlockShard: ,
-			OnBlockBeacon: ,
-			OnCrossShard: ,
-			OnShardToBeacon: ,
-			OnTx:        self.OnTx,
-			OnVersion:   self.OnVersion,
-			OnGetBlocks: self.OnGetBlocks,
-			OnVerAck:    self.OnVerAck,
-			OnGetAddr:   self.OnGetAddr,
-			OnAddr:      self.OnAddr,
+			OnBlockShard:    self.OnBlockShard,
+			OnBlockBeacon:   self.OnBlockBeacon,
+			OnCrossShard:    self.OnCrossShard,
+			OnShardToBeacon: self.OnShardToBeacon,
+			OnTx:            self.OnTx,
+			OnVersion:       self.OnVersion,
+			OnGetBlocks:     self.OnGetBlocks,
+			OnVerAck:        self.OnVerAck,
+			OnGetAddr:       self.OnGetAddr,
+			OnAddr:          self.OnAddr,
 
 			//constantpos
 			OnBFTPropose: self.OnBFTPropose,
